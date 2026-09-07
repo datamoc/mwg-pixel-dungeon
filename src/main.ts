@@ -4981,7 +4981,13 @@ export class SewersScene extends Scene2D {
 			if (monster.kind === 'goo') this.takeGooTurn(monster);
 			else if (monster.kind === 'dm300') this.takeDM300Turn(monster);
 			else if (monster.kind === 'king') this.takeKingTurn(monster);
-			else if (monster.kind === 'necromancer') this.zapHero(monster, [2, 10]);
+			//`SpectralNecromancer extends Necromancer` and shares its adjacent-bolt/skeleton-
+			//summon behavior unchanged (its own overrides - a wraith-summoning variant and a
+			//Scroll of Remove Curse drop - are both beyond this port's scope) - previously
+			//excluded here by the same literal-kind-check bug found for ArmoredBrute/DM201/
+			//Senior, so a SpectralNecromancer fought as a plain melee attacker with no ranged
+			//bolt or skeleton summon at all.
+			else if (monster.kind === 'necromancer' || monster.kind === 'spectralNecromancer') this.zapHero(monster, [2, 10]);
 			else if (monster.kind === 'gnollTrickster') this.stepAway(monster);
 			//Thief.FLEEING never attacks - it runs (same stepper as the Trickster's retreat)
 			else if (monster.kind === 'thief' && monster.stolen) this.stepAway(monster);
@@ -5004,8 +5010,9 @@ export class SewersScene extends Scene2D {
 		}
 		//Necromancer: summons while it has none and the hero is close (spend first summon is
 		//one turn here, two in Java - stated), otherwise bolts (blocker-damage branch: the
-		//push-aside needs a full knockback system, so adjacency bolts too)
-		if (monster.kind === 'necromancer') {
+		//push-aside needs a full knockback system, so adjacency bolts too). SpectralNecromancer
+		//shares all of this unchanged (see the adjacent-bolt branch's own comment above).
+		if (monster.kind === 'necromancer' || monster.kind === 'spectralNecromancer') {
 			const skel = monster.skeleton;
 			//Necromancer.onZapComplete(): while its skeleton lives and is in its own sight, it
 			//supports rather than attacks directly - heals HT/5 if the skeleton is hurt, else
@@ -6346,8 +6353,8 @@ export class SewersScene extends Scene2D {
 			}
 		}
 
-		//Necromancer.die kills its skeleton with it
-		if (creature.kind === 'necromancer' && creature.skeleton && creature.skeleton.hp > 0) {
+		//Necromancer.die kills its skeleton with it (SpectralNecromancer shares this unchanged)
+		if ((creature.kind === 'necromancer' || creature.kind === 'spectralNecromancer') && creature.skeleton && creature.skeleton.hp > 0) {
 			this.say(t('port.log.skeletoncollapses'));
 			this.kill(creature.skeleton);
 		}

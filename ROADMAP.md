@@ -252,8 +252,12 @@ the corresponding Java source and recorded in `PORT_COVERAGE.md`.
         `distance === 1` early return, so a Monk actively meleeing the hero (the normal state
         during a real fight) never regained Focus at all, only one chasing from range. Both
         fixed - see `PORT_COVERAGE.md`'s Monk/Senior-Focus row.
-      The other 5 rare kinds (Albino/CausticSlime/Bandit/SpectralNecromancer/Acidic) already
-      had their on-hit/stat behaviors live from the earlier spawn-selection pass.
+      - `SpectralNecromancer` (`extends Necromancer`) never got the bolt/summon/support
+        behavior at all - fought as a plain melee attacker. All three check sites (adjacent
+        bolt, summon/support branch, skeleton-death cleanup) fixed - see
+        `PORT_COVERAGE.md`'s Necromancer-summon row.
+      The other 4 rare kinds (Albino/CausticSlime/Bandit/Acidic) already had their on-hit/stat
+      behaviors live from the earlier spawn-selection pass.
 - [ ] Implement Java corpse, meat, gold, loot-stack, and limited-drop behavior.
 
 ## 6. Complete hero progression
@@ -417,6 +421,26 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
 - [ ] Re-check `mwg`'s exports on every version bump for the plan's remaining assumed
       primitives (raw 2D primitive re-exports, the Semantic Messaging shape) - some phases of
       the v3 plan still stay blocked until those land upstream.
+
+## 12. Publish a playable build on GitHub Pages
+
+- [ ] Deploy `dist/` to GitHub Pages so the game is playable at
+      `https://<user>.github.io/mwg-pixel-dungeon/` without a local checkout. `vite.config.ts`
+      already sets `base: './'` (relative asset paths), which works both for `file://` and for
+      a project-subpath Pages URL with no changes needed there; `tools/emit.mjs`'s built
+      `index.html` (non-module `<script defer>`) should load the same way over `https://` as it
+      does over `file://`. Concretely:
+      - Add a `.github/workflows/deploy.yml` that runs `npm ci && npm run build` and publishes
+        `dist/` via `actions/upload-pages-artifact` + `actions/deploy-pages` on push to `main`
+        (no existing CI in this repo to build on - confirmed no `.github/` directory exists yet).
+      - Enable Pages in the repo settings (source: GitHub Actions).
+      - Verify live, not just "build succeeded": open the deployed URL in a browser and confirm
+        the title screen, class-select pointer-event workaround (see this file's own browser-
+        verification section), and a played floor all work identically to the local `dist/`
+        build - a project-subpath URL is exactly the case most likely to expose an asset-path
+        regression `file://`/localhost testing wouldn't catch.
+      - Decide whether every push to `main` deploys automatically, or only tagged
+        releases/manual dispatch - ask the user before making commits auto-deploy publicly.
 
 ## Definition of done
 
