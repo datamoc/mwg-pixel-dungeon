@@ -475,13 +475,13 @@ function ringDef(id: string): { stat: string; op: Actors.ModifierOp; at: (level:
 
 /**
  * Unidentified appearances (`ItemSpriteSheet`'s shuffled variants) as `mwg/actors`
- * Appearances: six potion looks, seven scroll looks, dealt per run. This replaces the
+ * Appearances: nine potion looks, eight scroll looks, dealt per run. This replaces the
  * old "always the first variant" simplification with the real shuffle.
  */
 const APPEARANCE_TABLES: Record<string, Actors.AppearanceTable> = {
 	potion: {
-		kinds: ['potion', 'potionHealing', 'potionStrength', 'potionFlame', 'potionMindVision', 'potionInvis', 'potionPurity', 'potionExperience'],
-		labels: POTION_APPEARANCE_KEYS.slice(0, 8) as string[],
+		kinds: ['potion', 'potionHealing', 'potionStrength', 'potionFlame', 'potionMindVision', 'potionInvis', 'potionPurity', 'potionExperience', 'potionLevitation'],
+		labels: POTION_APPEARANCE_KEYS.slice(0, 9) as string[],
 	},
 	scroll: {
 		kinds: ['scroll', 'scrollIdentify', 'scrollUpgrade', 'scrollRage', 'scrollLullaby', 'scrollMapping', 'scrollMirror', 'scrollCleanse'],
@@ -2867,7 +2867,14 @@ export class SewersScene extends Scene2D {
 		else if (generated.cat === Cat.RING) id = `ring_${cls.replace(/^RingOf/, '').replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`).replace(/^_/, '')}`;
 		else if (generated.cat === Cat.WAND) id = 'wand';
 		else if (generated.cat === Cat.POTION) {
-			const name = cls.replace(/^PotionOf/, '');
+			//`quaffPotion()` and the rest of this file use the shorter `potionFlame`/`potionInvis`
+			//ids (matching the starting-kit items makeHero() adds directly and every other
+			//lookup table keyed on them) rather than the literal `PotionOfLiquidFlame`/
+			//`PotionOfInvisibility` class-name mapping every other potion uses - previously
+			//unrenamed here, so a genuinely-generated Liquid Flame or Invisibility potion got an
+			//id nothing recognized and silently fell through `quaffPotion()`'s default (Purity)
+			//branch instead of its real effect when quaffed.
+			const name = cls === 'PotionOfLiquidFlame' ? 'Flame' : cls === 'PotionOfInvisibility' ? 'Invis' : cls.replace(/^PotionOf/, '');
 			id = `potion${name}`;
 		} else if (generated.cat === Cat.SCROLL) {
 			const name = cls.replace(/^ScrollOf/, '');
@@ -3189,7 +3196,24 @@ export class SewersScene extends Scene2D {
 			const maxExp = SPD_LEVEL_CURVE.experienceFor(this.progression.level + 1) - SPD_LEVEL_CURVE.experienceFor(this.progression.level);
 			this.grantExperience(maxExp);
 			this.say(t('port.log.quaffexperience'), 'positive');
+		} else if (id === 'potionLevitation') {
+			//PotionOfLevitation.apply(): grants Levitation.DURATION (20 turns, already this
+			//port's BUFF_DURATION.levitation) and nothing else - no blast, no identification
+			//side effect beyond the buff itself. Levitation.attachTo() also clears Roots the
+			//instant it lands (flight lifts you clear of whatever rooted you); this port's
+			//`cripple`/`roots` are separate buffs, so only `roots` needs clearing here.
+			addBuff(this.hero, 'levitation');
+			delete this.hero.buffs['roots'];
+			this.say(t('port.log.levitate'), 'positive');
 		} else {
+			//PotionOfPurity.apply() itself only clears poison/burning ('potionPurity' - Java's
+			//`GasCloud`/`Fire` extinguish). Java's Frost/Haste/ToxicGas/ParalyticGas potions
+			//('potionFrost'/'potionHaste'/'potionToxicGas'/'potionParalyticGas', all in the real
+			//Generator pool per `spdItems/generator.ts`) still land here too and get this same
+			//Purity-shaped effect - not their own, and not merely "unported" as previously implied:
+			//each needs a system this port doesn't have yet (a freeze/immobilize status, a hero
+			//speed buff, and a "blob that applies a status to whoever stands in it" consequence
+			//for the two gas potions) before it can have its real effect. See `PORT_COVERAGE.md`.
 			for (const b of ['poison', 'burning'] as BuffId[]) delete this.hero.buffs[b];
 			this.say(t('port.log.purity'), 'positive');
 		}
@@ -3689,7 +3713,8 @@ export class SewersScene extends Scene2D {
 		const concrete = sourceClass ?? id;
 		const lower = concrete.toLowerCase();
 		if (lower.includes('gold')) return { id: 'gold', quantity: 1, identified: true, sourceClass: concrete };
-		if (lower.includes('potion')) return { id: concrete.replace(/^PotionOf/, 'potion'), quantity: 1, identified: false, sourceClass: concrete };
+		//same short-id rename `generatedInventoryItem` needs for these two (see its comment)
+		if (lower.includes('potion')) return { id: concrete === 'PotionOfLiquidFlame' ? 'potionFlame' : concrete === 'PotionOfInvisibility' ? 'potionInvis' : concrete.replace(/^PotionOf/, 'potion'), quantity: 1, identified: false, sourceClass: concrete };
 		if (lower.includes('scroll')) return { id: concrete.replace(/^ScrollOf/, 'scroll'), quantity: 1, identified: false, sourceClass: concrete };
 		if (lower.includes('ring')) return { id: `ring_${concrete.replace(/^RingOf/, '').replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`).replace(/^_/, '')}`, quantity: 1, identified: false, instanceId: this.newItemInstanceId('ring'), sourceClass: concrete };
 		if (lower.includes('timekeepershourglass')) return { id: 'hourglass', quantity: 1, identified: false, sandBags: 0, instanceId: this.newItemInstanceId('hourglass'), sourceClass: concrete };

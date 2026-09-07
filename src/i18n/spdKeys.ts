@@ -144,6 +144,7 @@ export const ITEM_KEYS: Record<string, string> = {
 	potionMindVision: 'items.potions.potionofmindvision.name',
 	potionInvis: 'items.potions.potionofinvisibility.name',
 	potionPurity: 'items.potions.potionofpurity.name',
+	potionLevitation: 'items.potions.potionoflevitation.name',
 	scroll: 'port.name.scroll',
 	scrollIdentify: 'items.scrolls.scrollofidentify.name',
 	scrollUpgrade: 'items.scrolls.scrollofupgrade.name',

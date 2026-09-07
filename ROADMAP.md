@@ -17,6 +17,12 @@ the corresponding Java source and recorded in `PORT_COVERAGE.md`.
       (the sandboxed environment's local HTTP servers all fail to bind a socket), so treat this
       as needing a playtest pass before fully trusting it.
 - [ ] Port all remaining weapons, wands, rings, artifacts, bombs, alchemy, and crafting.
+- [ ] Port the remaining potions. `PotionOfLevitation` is now live (real buff + chasm bypass,
+      matching the trap bypass Levitation already had); a live id-mapping bug that made
+      generated `PotionOfLiquidFlame`/`PotionOfInvisibility` silently quaff as Purity is fixed.
+      `PotionOfParalyticGas`/`ToxicGas`/`Confusion`/`Frost`/`Haste` remain unported (each needs a
+      system this port doesn't have - a status-on-contact gas blob, a freeze effect, or a hero
+      speed buff) - see `PORT_COVERAGE.md`'s potions row for what currently happens instead.
 - [ ] Port the remaining enchantments, glyphs, weapon curses, and armor curses. Only 4 weapon
       curses now lack proc logic at all (`friendly`, plus Kinetic/Blooming/Corrupting/Elastic/
       Projecting/Unstable's missing-subsystem group) - `polarized`/`sacrificial`/`displacing`

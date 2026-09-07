@@ -15,6 +15,7 @@ const BASE_PRICES: Record<string, number> = {
 	potionMindVision: 50,
 	potionInvis: 50,
 	potionPurity: 50,
+	potionLevitation: 50,
 
 	// Scrolls (varying by rarity)
 	scrollIdentify: 30,
