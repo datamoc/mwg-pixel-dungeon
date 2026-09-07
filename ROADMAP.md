@@ -210,7 +210,11 @@ the corresponding Java source and recorded in `PORT_COVERAGE.md`.
       something for it to attack besides the hero). Necromancer's summoned skeleton already
       fights monsters *for the hero's opponent*, so some of the shape may be reusable, but the
       hero-side case (something the player controls fighting alongside them) is new.
-- [ ] Port all champion types and their effects.
+- [ ] Port all champion types and their effects. Blessed/Blazing/Giant/Growing are now live
+      (4 of 6) - fixed a real bug in Blessed's factor (x3 -> the real x4) and added Giant/
+      Growing this pass. AntiMagic remains unported (needs a magic-vs-physical damage
+      distinction); Giant/Projecting's extra-reach melee is not modeled either. See
+      `PORT_COVERAGE.md`'s `ChampionEnemy` row.
 - [ ] Implement blob area propagation, gas, and fire terrain.
 - [x] Port the Necromancer's skeleton heal/Adrenaline/teleport support behavior - previously it
       had none at all (a summoned skeleton just fought alone forever). Now heals `HT/5` when

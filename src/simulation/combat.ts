@@ -54,7 +54,8 @@ export function liveStats(c: Readonly<Combatant>): { accuracy: number; evasion: 
  * suggest at a glance.
  *
  * Plus Char.hit()'s real roll multipliers: Bless x1.25, Hex x0.8, Daze x0.5 on *both* rolls
- * (each side's own buffs), ChampionEnemy.Blessed x3, AscensionChallenge's per-mob table
+ * (each side's own buffs), ChampionEnemy.Blessed x4 (`evasionAndAccuracyFactor()` - previously
+ * x3 here, an unconfirmed guess; corrected against source), AscensionChallenge's per-mob table
  * (gated by ASCENSION_ON - no challenge UI exists to turn it on), and the
  * INFINITE_ACCURACY/INFINITE_EVASION short-circuits (a sleeping target grants a surprise
  * attack that always lands; GreatCrab blocks seen melee and NPCs can't be hit at all).
@@ -65,7 +66,10 @@ export function accRollMulti(c: Readonly<Combatant>): number {
 	if (c.buffs['bless']) m *= 1.25;
 	if (c.buffs['hex']) m *= 0.8;
 	if (c.buffs['daze']) m *= 0.5;
-	if (c.champion === 'blessed') m *= 3;
+	if (c.champion === 'blessed') m *= 4;
+	//ChampionEnemy.Growing.evasionAndAccuracyFactor(): same growth multiplier as its own
+	//damage/damage-taken factors, read on whichever side of the roll this creature is on.
+	if (c.champion === 'growing') m *= c.championPower ?? 1.19;
 	if (ascensionOn() && c.kind && ASCENSION_MOD[c.kind]) m *= ASCENSION_MOD[c.kind]!;
 	return m;
 }
@@ -115,11 +119,20 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 	}
 	if (attacker.buffs['fury'] && attacker.hp <= attacker.maxHp * 0.5) dmg *= 1.5;
 	if (attacker.champion === 'blazing') dmg *= 1.25;
+	//ChampionEnemy.Growing.meleeDamageFactor(): its own growth multiplier, same value read
+	//below for damageTakenFactor's inverse.
+	if (attacker.champion === 'growing') dmg *= attacker.championPower ?? 1.19;
 	if (ascensionOn() && attacker.kind && ASCENSION_MOD[attacker.kind]) dmg *= ASCENSION_MOD[attacker.kind]!;
 	if (attacker.buffs['weakness']) dmg *= 0.67;
 	const dr = random.normalRange(defender.armor[0], defender.armor[1]);
 	let effective = Math.max(0, Math.round(dmg) - dr);
 	if (defender.buffs['vulnerable']) effective *= 1.33;
+	//ChampionEnemy.Giant.damageTakenFactor()/Growing.damageTakenFactor(): flat 0.2x for Giant,
+	//1/growthMultiplier for Growing (so its rising offense is paired with falling defense, as
+	//real Java's own inverse relationship works). Not modeled: Java's Giant/Projecting
+	//`canAttackWithExtraReach` (a 2/4-cell melee reach via pathfinding) - see `PORT_COVERAGE.md`.
+	if (defender.champion === 'giant') effective *= 0.2;
+	if (defender.champion === 'growing') effective /= defender.championPower ?? 1.19;
 	return Math.max(0, Math.round(effective));
 }
 

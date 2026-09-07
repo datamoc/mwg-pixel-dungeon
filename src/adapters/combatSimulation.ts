@@ -11,7 +11,7 @@ function combatState(c: Combatant): Combatant {
 		damage: [...c.damage], armor: [...c.armor], buffs: { ...c.buffs },
 		isHero: c.isHero, kind: c.kind, sleeping: c.sleeping,
 		champion: c.champion, str: c.str, strReq: c.strReq,
-		raged: c.raged,
+		raged: c.raged, championPower: c.championPower,
 	};
 }
 

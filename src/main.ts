@@ -633,7 +633,8 @@ interface SavedCreature {
 	armor: [number, number];
 	buffs: [BuffId, number][];
 	sleeping?: boolean;
-	champion?: 'blessed' | 'blazing' | null;
+	champion?: 'blessed' | 'blazing' | 'giant' | 'growing' | null;
+	championPower?: number;
 	pumped?: number;
 	combo?: number;
 	moving?: number;
@@ -1482,12 +1483,16 @@ export class SewersScene extends Scene2D {
 			isNPC,
 			npcKind: isNPC ? (kind as 'ghost' | 'wandmaker' | 'shopkeeper' | 'blacksmith' | 'imp') : undefined,
 			//Mob.java: everything spawns SLEEPING (bosses and NPCs excepted); champions are a
-			//flat 10% roll here, Blessed-or-Blazing only - a stated subset of the full
-			//ChampionEnemy type list, whose per-type procs need systems (fire blobs, reach)
-			//this port does not model
+			//flat 10% roll here (real `rollForChampion` instead scales the roster-wide budget
+			//by depth via `Dungeon.mobsToChampion`, not modeled), among 4 of the real 6
+			//ChampionEnemy types - Blessed/Blazing/Giant/Growing; Projecting/AntiMagic still need
+			//systems (reach-based targeting, a magic-vs-physical damage distinction) this port
+			//doesn't model, so the roll is a 1-in-4 among the ported subset rather than Java's
+			//real 1-in-6 with 2 silently no-op'd - see `PORT_COVERAGE.md`
 			//DemonSpawner never sleeps (state=PASSIVE from the start, not SLEEPING)
 			sleeping: restoring || !(isNPC || isBoss || kind === 'fetidRat' || kind === 'gnollTrickster' || kind === 'greatCrab' || kind === 'demonSpawner'),
-			champion: restoring ? null : (!isNPC && !isBoss && kind !== 'necroSkeleton' && kind !== 'demonSpawner' && Random.chance(0.1) ? Random.element(['blessed', 'blazing'] as const)! : null),
+			champion: restoring ? null : (!isNPC && !isBoss && kind !== 'necroSkeleton' && kind !== 'demonSpawner' && Random.chance(0.1) ? Random.element(['blessed', 'blazing', 'giant', 'growing'] as const)! : null),
+			championPower: 1.19,
 			combo: 0,
 			moving: 0,
 			skeleton: null,
@@ -1521,7 +1526,7 @@ export class SewersScene extends Scene2D {
 				accuracy: creature.accuracy, evasion: creature.evasion,
 				damage: [...creature.damage] as [number, number], armor: [...creature.armor] as [number, number],
 				buffs: Object.entries(creature.buffs) as [BuffId, number][],
-				sleeping: creature.sleeping, champion: creature.champion, pumped: creature.pumped,
+				sleeping: creature.sleeping, champion: creature.champion, championPower: creature.championPower, pumped: creature.pumped,
 				combo: creature.combo, moving: creature.moving, arenaJumps: creature.arenaJumps,
 				weaponLevel: creature.weaponLevel, stolen: creature.stolen, mimicLoot: creature.mimicLoot, generation: creature.generation,
 				spawnCooldown: creature.spawnCooldown, seesHero: creature.seesHero, mimicRevealed: creature.mimicRevealed,
@@ -1583,7 +1588,7 @@ export class SewersScene extends Scene2D {
 				hp: saved.hp, maxHp: saved.maxHp, accuracy: saved.accuracy, evasion: saved.evasion,
 				damage: [...saved.damage] as [number, number], armor: [...saved.armor] as [number, number],
 				buffs: Object.fromEntries(saved.buffs), sleeping: saved.sleeping, champion: saved.champion,
-				pumped: saved.pumped, combo: saved.combo, moving: saved.moving, arenaJumps: saved.arenaJumps,
+				championPower: saved.championPower, pumped: saved.pumped, combo: saved.combo, moving: saved.moving, arenaJumps: saved.arenaJumps,
 				weaponLevel: saved.weaponLevel, stolen: saved.stolen, mimicLoot: saved.mimicLoot, generation: saved.generation,
 				spawnCooldown: saved.spawnCooldown, seesHero: saved.seesHero,
 				mimicRevealed: saved.mimicRevealed ?? Boolean(saved.stolen),
@@ -4854,6 +4859,11 @@ export class SewersScene extends Scene2D {
 		const monsterFov = new Roguelike.FieldOfView(this.level);
 		monsterFov.update(monster.x, monster.y, VIEW_RADIUS);
 		monster.seesHero = monsterFov.isVisible(this.hero.x, this.hero.y) && !this.hero.buffs['invisibility'];
+		//ChampionEnemy.Growing.act(): its own real per-turn tick, `+0.01` to the multiplier
+		//`meleeDamageFactor`/`damageTakenFactor`/`evasionAndAccuracyFactor` all read from
+		//(real Java spends its own separate `4*TICK` actor slot for this; this port folds it
+		//into the monster's ordinary turn instead, since it has no secondary-actor scheduling).
+		if (monster.champion === 'growing') monster.championPower = (monster.championPower ?? 1.19) + 0.01;
 		//dots tick on the sufferer's own turn, like Java's Buff.act()
 		const dot = tickBuffs(monster);
 		if (dot > 0) {
