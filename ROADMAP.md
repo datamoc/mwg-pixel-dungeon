@@ -263,8 +263,10 @@ the corresponding Java source and recorded in `PORT_COVERAGE.md`.
       - `Acidic` (`extends Scorpio`) never retreated from melee, never attacked at range, and
         never applied Scorpio's own 50% cripple proc - only its own corrosion effect worked.
         All three fixed - see `PORT_COVERAGE.md`'s Scorpio row.
-      The other 2 rare kinds (Albino/CausticSlime) already had their on-hit/stat behaviors
-      live from the earlier spawn-selection pass.
+      Albino already had its on-hit behavior live from the earlier spawn-selection pass.
+      `Slime.damage()`'s incoming-hit soft cap (shared unchanged by `CausticSlime`) turned out
+      to be missing for the base kind too, not a literal-kind-check bug - now ported for both,
+      see `PORT_COVERAGE.md`'s Slime row.
 - [ ] Implement Java corpse, meat, gold, loot-stack, and limited-drop behavior.
 
 ## 6. Complete hero progression

@@ -5762,6 +5762,13 @@ export class SewersScene extends Scene2D {
 		if (defender.kind === 'demonSpawner' && damage >= 20) {
 			damage = 19 + Math.floor((Math.sqrt(8 * (damage - 19) + 1) - 1) / 2);
 		}
+		//Slime.damage(): the same shape of soft cap as DemonSpawner's above, just with a lower
+		//threshold (takes 5/6/7/8/9/10 at 5/7/10/14/19/25 incoming) - previously not ported at
+		//all, for either Slime or `CausticSlime extends Slime` (which shares it unchanged; its
+		//own override only adds the Ooze/corrosion attack proc, already ported separately).
+		if ((defender.kind === 'slime' || defender.kind === 'causticSlime') && damage >= 5) {
+			damage = 4 + Math.floor((Math.sqrt(8 * (damage - 4) + 1) - 1) / 2);
+		}
 		const lethalThreshold = Math.max(0.4 * this.talentRank('combined_lethality') / 3, enhancedLethalityThreshold(this.subclass(), this.talentRank('enhanced_lethality')));
 		if (attacker === this.hero && lethalThreshold > 0 && defender.hp - damage <= defender.maxHp * lethalThreshold) {
 			damage = defender.hp;
