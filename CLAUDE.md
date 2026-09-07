@@ -36,9 +36,9 @@ respects it: don't propose sending fixes back to his tree, in any form or scope.
   in-progress port that used to live at `web-mwg/` inside a `shattered-pixel-dungeon`
   checkout. That original location remains the working copy for its own history.
 - The licensing boundary two sections up is unaffected by this: SPD is still GPL-3.0, this
-  port is still GPL-3.0-or-later, Evan Debenham still can't unilaterally relicense it, and
-  reading Java source for values/formulas/assets is still the normal, legitimate way this
-  port is built. What doesn't apply here is only the idea of sending fixes back to his tree.
+  port is still GPL-3.0-or-later, and reading Java source for values/formulas/assets is
+  still the normal, legitimate way this port is built. What doesn't apply here is only the
+  idea of sending fixes back to his tree.
 
 ## Documenting deviations — mandatory, not optional
 
