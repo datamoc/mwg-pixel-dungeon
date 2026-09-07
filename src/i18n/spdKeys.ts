@@ -154,6 +154,7 @@ export const ITEM_KEYS: Record<string, string> = {
 	scrollMirror: 'items.scrolls.scrollofmirrorimage.name',
 	scrollCleanse: 'items.scrolls.scrollofremovecurse.name',
 	scrollRecharging: 'items.scrolls.scrollofrecharging.name',
+	scrollTeleportation: 'items.scrolls.scrollofteleportation.name',
 };
 
 /** `items.rings.*` */

@@ -30,9 +30,11 @@ the corresponding Java source and recorded in `PORT_COVERAGE.md`.
       `ScrollOfMirrorImage`/`ScrollOfMagicMapping` (both silently read as Remove Curse instead of
       their real, already-ported effects). `ScrollOfRecharging` is now ported (grants the
       already-modeled `recharging` buff, previously just never wired to a scroll).
-      `ScrollOfTeleportation`/`Retribution`/`Terror`/`Transmutation` remain unported (each needs
-      a system this port doesn't have) and still fall through to Remove Curse's effect when
-      read - see `PORT_COVERAGE.md`.
+      `ScrollOfTeleportation` is now ported too (random-free-cell placement + Roots clear,
+      reusing the same search the Displacing/Displacement curses already had, now factored into
+      a shared `randomFreeCell()` helper). `ScrollOfRetribution`/`Terror`/`Transmutation` remain
+      unported (each needs a system this port doesn't have) and still fall through to Remove
+      Curse's effect when read - see `PORT_COVERAGE.md`.
 - [ ] Port the remaining enchantments, glyphs, weapon curses, and armor curses. Only 4 weapon
       curses now lack proc logic at all (`friendly`, plus Kinetic/Blooming/Corrupting/Elastic/
       Projecting/Unstable's missing-subsystem group) - `polarized`/`sacrificial`/`displacing`

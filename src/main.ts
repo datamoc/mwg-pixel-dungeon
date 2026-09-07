@@ -490,8 +490,8 @@ const APPEARANCE_TABLES: Record<string, Actors.AppearanceTable> = {
 		labels: POTION_APPEARANCE_KEYS.slice(0, 9) as string[],
 	},
 	scroll: {
-		kinds: ['scroll', 'scrollIdentify', 'scrollUpgrade', 'scrollRage', 'scrollLullaby', 'scrollMapping', 'scrollMirror', 'scrollCleanse', 'scrollRecharging'],
-		labels: SCROLL_APPEARANCE_KEYS.slice(0, 9) as string[],
+		kinds: ['scroll', 'scrollIdentify', 'scrollUpgrade', 'scrollRage', 'scrollLullaby', 'scrollMapping', 'scrollMirror', 'scrollCleanse', 'scrollRecharging', 'scrollTeleportation'],
+		labels: SCROLL_APPEARANCE_KEYS.slice(0, 10) as string[],
 	},
 };
 
@@ -3332,15 +3332,30 @@ export class SewersScene extends Scene2D {
 			//to the buff it already fully supports.
 			addBuff(this.hero, 'recharging');
 			this.say(t('port.log.recharging'), 'positive');
+		} else if (id === 'scrollTeleportation') {
+			//ScrollOfTeleportation.doRead()/teleportToLocation(): moves the reader to a free cell
+			//and clears Roots. Real Java's `teleportPreferringUnseen` biases toward an unvisited
+			//room with a reachability check via `PathFinder`; this port has no room-visited
+			//tracking or reachability search to draw on, so it reuses `randomFreeCell` - the same
+			//uniformly-random, unchecked placement already used for the Displacing/Displacement
+			//curse teleports elsewhere in this file, extended to a third caller rather than
+			//inventing a second placement strategy.
+			delete this.hero.buffs['roots'];
+			const destination = this.randomFreeCell(this.hero);
+			if (destination) {
+				this.moveTo(this.hero, destination);
+				//real Java message keys, already in the generated catalog for every locale -
+				//no new port.log.* entry needed for this one.
+				this.say(t('items.scrolls.scrollofteleportation.tele'), 'positive');
+			} else this.say(t('items.scrolls.scrollofteleportation.no_tele'), 'negative');
 		} else {
 			//ScrollOfRemoveCurse.doRead() is genuinely this branch's effect ('scrollCleanse' hits
-			//it correctly), but so does anything unread: ScrollOfTeleportation/Retribution/Terror/
-			//Transmutation are all in the real Generator pool (`spdItems/generator.ts`) and none
-			//has its own branch here, so each still falls through to Remove Curse's effect
-			//instead of its own - not merely inert, an active (if narrow) misbehavior, same as
-			//the equivalent unported potions above. Each needs its own system (a teleport-to-
-			//random-cell, retaliation damage, an escape-inducing fear status, and item-
-			//transmutation respectively) - see `PORT_COVERAGE.md`.
+			//it correctly), but so does anything unread: ScrollOfRetribution/Terror/Transmutation
+			//are all in the real Generator pool (`spdItems/generator.ts`) and none has its own
+			//branch here, so each still falls through to Remove Curse's effect instead of its own
+			//- not merely inert, an active (if narrow) misbehavior, same as the equivalent
+			//unported potions above. Each needs its own system (retaliation damage, an escape-
+			//inducing fear status, and item-transmutation respectively) - see `PORT_COVERAGE.md`.
 			for (const b of ['weakness', 'vulnerable', 'hex', 'daze'] as BuffId[]) delete this.hero.buffs[b];
 			for (const item of this.bag.items) if (item.cursed || getCurse(item.affix ?? '')) Actors.removeAffix(item);
 			if (getCurse(this.weaponAffix ?? '')) this.weaponAffix = null;
@@ -5445,6 +5460,18 @@ export class SewersScene extends Scene2D {
 		this.attack(goo, this.hero);
 	}
 
+	/** A uniformly random free (passable, unoccupied) cell other than `exclude`'s own position -
+	 * the shared search `Displacing`/`Displacement`/`ScrollOfTeleportation` all use in place of
+	 * Java's real `teleportToLocation`'s room-preferring, reachability-checked placement (a
+	 * documented simplification - see each caller's own comment). */
+	private randomFreeCell(exclude: Step): Step | undefined {
+		const candidates: Step[] = [];
+		for (let y = 1; y < this.level.height - 1; y++) for (let x = 1; x < this.level.width - 1; x++) {
+			if ((x !== exclude.x || y !== exclude.y) && this.level.passable(x, y) && !this.creatureAt(x, y)) candidates.push({ x, y });
+		}
+		return Random.element(candidates) ?? undefined;
+	}
+
 	private moveTo(creature: Creature, to: Step): void {
 		if (creature.buffs['roots']) return;
 		// Java mobs treat CHASM as solid for pathing even though the hero can enter it
@@ -5570,21 +5597,13 @@ export class SewersScene extends Scene2D {
 		//HUNTING mob back to WANDERING; this port has no such explicit state to reset, but the
 		//next monster-turn FOV recompute (`seesHero`) naturally loses track once far enough away.
 		if (attacker === this.hero && this.weaponAffix === 'displacing' && !defender.isNPC && Random.chance(1 / 12)) {
-			const candidates: Step[] = [];
-			for (let y = 1; y < this.level.height - 1; y++) for (let x = 1; x < this.level.width - 1; x++) {
-				if ((x !== defender.x || y !== defender.y) && this.level.passable(x, y) && !this.creatureAt(x, y)) candidates.push({ x, y });
-			}
-			const destination = Random.element(candidates);
+			const destination = this.randomFreeCell(defender);
 			if (destination) this.moveTo(defender, destination);
 		}
 		//Displacement.proc(): a 1-in-20 armor-curse proc teleports the defender
 		//and replaces the incoming hit with zero damage.
 		if (defender.isHero && this.armorGlyph === 'displacement' && Random.chance(1 / 20)) {
-			const candidates: Step[] = [];
-			for (let y = 1; y < this.level.height - 1; y++) for (let x = 1; x < this.level.width - 1; x++) {
-				if ((x !== defender.x || y !== defender.y) && this.level.passable(x, y) && !this.creatureAt(x, y)) candidates.push({ x, y });
-			}
-			const destination = Random.element(candidates);
+			const destination = this.randomFreeCell(defender);
 			if (destination) {
 				this.moveTo(defender, destination);
 				defender.sleeping = false;
