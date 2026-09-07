@@ -95,18 +95,3 @@ export function getShopPrice(itemId: string, depth: number = 1, tier: number = 1
 export function getSellPrice(itemId: string, depth: number = 1, tier: number = 1, sellFraction: number = 0.67): number {
 	return Math.round(getShopPrice(itemId, depth, tier) * sellFraction);
 }
-
-/**
- * Get the identify cost (always 30 gold per the current port).
- */
-export function getIdentifyCost(): number {
-	return 30;
-}
-
-/**
- * Get the healing service cost.
- * In the port, costs 50 gold per HP healed (Wandmaker's well healing).
- */
-export function getHealingCost(hpHealed: number): number {
-	return hpHealed * 50;
-}
