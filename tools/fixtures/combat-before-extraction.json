@@ -1,0 +1,3763 @@
+{
+  "provenance": "Captured from the working tree combat.ts and monsters.ts before step 2, 2026-09-05. Regression baseline for this port, not Java parity.",
+  "cases": [
+    {
+      "name": "plain",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 7,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "plain",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 7,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "plain",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "plain",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "tie-zero",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 0,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 0,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 7,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "tie-zero",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 0,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 0,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 7,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "tie-zero",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 0,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 0,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "tie-zero",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 0,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 0,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "sleeping",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "sleeping": true
+      },
+      "expected": {
+        "hit": true,
+        "damage": 1,
+        "rng": [
+          1315614963,
+          1733097625,
+          -912371946,
+          4014626318
+        ]
+      }
+    },
+    {
+      "name": "sleeping",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "sleeping": true
+      },
+      "expected": {
+        "hit": true,
+        "damage": 1,
+        "rng": [
+          1315614963,
+          1733097625,
+          -912371946,
+          4014626318
+        ]
+      }
+    },
+    {
+      "name": "sleeping",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "sleeping": true
+      },
+      "expected": {
+        "hit": true,
+        "damage": 0,
+        "rng": [
+          1516442669,
+          -2119168973,
+          -1510514816,
+          3600568941
+        ]
+      }
+    },
+    {
+      "name": "sleeping",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "sleeping": true
+      },
+      "expected": {
+        "hit": true,
+        "damage": 0,
+        "rng": [
+          1516442669,
+          -2119168973,
+          -1510514816,
+          3600568941
+        ]
+      }
+    },
+    {
+      "name": "untouchable",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 1000000,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "sleeping": true
+      },
+      "expected": {
+        "hit": false,
+        "damage": 1,
+        "rng": [
+          1315614963,
+          1733097625,
+          -912371946,
+          4014626318
+        ]
+      }
+    },
+    {
+      "name": "untouchable",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 1000000,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "sleeping": true
+      },
+      "expected": {
+        "hit": false,
+        "damage": 1,
+        "rng": [
+          1315614963,
+          1733097625,
+          -912371946,
+          4014626318
+        ]
+      }
+    },
+    {
+      "name": "untouchable",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 1000000,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "sleeping": true
+      },
+      "expected": {
+        "hit": false,
+        "damage": 0,
+        "rng": [
+          1516442669,
+          -2119168973,
+          -1510514816,
+          3600568941
+        ]
+      }
+    },
+    {
+      "name": "untouchable",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 1000000,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "sleeping": true
+      },
+      "expected": {
+        "hit": false,
+        "damage": 0,
+        "rng": [
+          1516442669,
+          -2119168973,
+          -1510514816,
+          3600568941
+        ]
+      }
+    },
+    {
+      "name": "invisible",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "invisibility": 3
+        }
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 1,
+        "rng": [
+          1315614963,
+          1733097625,
+          -912371946,
+          4014626318
+        ]
+      }
+    },
+    {
+      "name": "invisible",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "invisibility": 3
+        }
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 1,
+        "rng": [
+          1315614963,
+          1733097625,
+          -912371946,
+          4014626318
+        ]
+      }
+    },
+    {
+      "name": "invisible",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "invisibility": 3
+        }
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 0,
+        "rng": [
+          1516442669,
+          -2119168973,
+          -1510514816,
+          3600568941
+        ]
+      }
+    },
+    {
+      "name": "invisible",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "invisibility": 3
+        }
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 0,
+        "rng": [
+          1516442669,
+          -2119168973,
+          -1510514816,
+          3600568941
+        ]
+      }
+    },
+    {
+      "name": "hero-sees-invisible",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "invisibility": 3
+        }
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "isHero": true
+      },
+      "expected": {
+        "hit": true,
+        "damage": 7,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "hero-sees-invisible",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "invisibility": 3
+        }
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "isHero": true
+      },
+      "expected": {
+        "hit": true,
+        "damage": 7,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "hero-sees-invisible",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "invisibility": 3
+        }
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "isHero": true
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "hero-sees-invisible",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "invisibility": 3
+        }
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "isHero": true
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "crab-adjacent",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 1,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "greatCrab"
+      },
+      "expected": {
+        "hit": false,
+        "damage": 1,
+        "rng": [
+          1315614963,
+          1733097625,
+          -912371946,
+          4014626318
+        ]
+      }
+    },
+    {
+      "name": "crab-adjacent",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 1,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "greatCrab"
+      },
+      "expected": {
+        "hit": true,
+        "damage": 7,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "crab-adjacent",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 1,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "greatCrab"
+      },
+      "expected": {
+        "hit": false,
+        "damage": 0,
+        "rng": [
+          1516442669,
+          -2119168973,
+          -1510514816,
+          3600568941
+        ]
+      }
+    },
+    {
+      "name": "crab-adjacent",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 1,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "greatCrab"
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "crab-distant",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 2,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "greatCrab"
+      },
+      "expected": {
+        "hit": true,
+        "damage": 7,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "crab-distant",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 2,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "greatCrab"
+      },
+      "expected": {
+        "hit": true,
+        "damage": 7,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "crab-distant",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 2,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "greatCrab"
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "crab-distant",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 2,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "greatCrab"
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "blessed",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "bless": 3,
+          "hex": 2,
+          "daze": 1
+        },
+        "champion": "blessed"
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "hex": 3
+        },
+        "champion": "blessed"
+      },
+      "expected": {
+        "hit": true,
+        "damage": 7,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "blessed",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "bless": 3,
+          "hex": 2,
+          "daze": 1
+        },
+        "champion": "blessed"
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "hex": 3
+        },
+        "champion": "blessed"
+      },
+      "expected": {
+        "hit": true,
+        "damage": 7,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "blessed",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "bless": 3,
+          "hex": 2,
+          "daze": 1
+        },
+        "champion": "blessed"
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "hex": 3
+        },
+        "champion": "blessed"
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "blessed",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "bless": 3,
+          "hex": 2,
+          "daze": 1
+        },
+        "champion": "blessed"
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "hex": 3
+        },
+        "champion": "blessed"
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "under-strength",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "str": 6,
+        "strReq": 10
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 7,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "under-strength",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "str": 6,
+        "strReq": 10
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 7,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "under-strength",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "str": 6,
+        "strReq": 10
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "under-strength",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "str": 6,
+        "strReq": 10
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "excess-strength",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "str": 17,
+        "strReq": 10
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 8,
+        "rng": [
+          1319671563,
+          -2095687132,
+          409892057,
+          1100126952
+        ]
+      }
+    },
+    {
+      "name": "excess-strength",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "str": 17,
+        "strReq": 10
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 8,
+        "rng": [
+          1319671563,
+          -2095687132,
+          409892057,
+          1100126952
+        ]
+      }
+    },
+    {
+      "name": "excess-strength",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "str": 17,
+        "strReq": 10
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 11,
+        "rng": [
+          1222109170,
+          657622218,
+          93660298,
+          1891971786
+        ]
+      }
+    },
+    {
+      "name": "excess-strength",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "str": 17,
+        "strReq": 10
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 11,
+        "rng": [
+          1222109170,
+          657622218,
+          93660298,
+          1891971786
+        ]
+      }
+    },
+    {
+      "name": "multipliers",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 5,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "berserk": 3,
+          "fury": 3,
+          "weakness": 3
+        },
+        "str": 13,
+        "strReq": 10,
+        "champion": "blazing"
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "vulnerable": 3
+        }
+      },
+      "expected": {
+        "hit": true,
+        "damage": 20,
+        "rng": [
+          1319671563,
+          -2095687132,
+          409892057,
+          1100126952
+        ]
+      }
+    },
+    {
+      "name": "multipliers",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 5,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "berserk": 3,
+          "fury": 3,
+          "weakness": 3
+        },
+        "str": 13,
+        "strReq": 10,
+        "champion": "blazing"
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "vulnerable": 3
+        }
+      },
+      "expected": {
+        "hit": true,
+        "damage": 20,
+        "rng": [
+          1319671563,
+          -2095687132,
+          409892057,
+          1100126952
+        ]
+      }
+    },
+    {
+      "name": "multipliers",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 5,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "berserk": 3,
+          "fury": 3,
+          "weakness": 3
+        },
+        "str": 13,
+        "strReq": 10,
+        "champion": "blazing"
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "vulnerable": 3
+        }
+      },
+      "expected": {
+        "hit": true,
+        "damage": 17,
+        "rng": [
+          1222109170,
+          657622218,
+          93660298,
+          1891971786
+        ]
+      }
+    },
+    {
+      "name": "multipliers",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 5,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "berserk": 3,
+          "fury": 3,
+          "weakness": 3
+        },
+        "str": 13,
+        "strReq": 10,
+        "champion": "blazing"
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {
+          "vulnerable": 3
+        }
+      },
+      "expected": {
+        "hit": true,
+        "damage": 17,
+        "rng": [
+          1222109170,
+          657622218,
+          93660298,
+          1891971786
+        ]
+      }
+    },
+    {
+      "name": "goo-healthy",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 11,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "goo"
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "goo-healthy",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 11,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "goo"
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "goo-healthy",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 11,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "goo"
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "goo-healthy",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 11,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "goo"
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "goo-enraged",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 10,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "goo"
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 9,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "goo-enraged",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 10,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "goo"
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 9,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "goo-enraged",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 10,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "goo"
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 9,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "goo-enraged",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 10,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "goo"
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 9,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "goo-defends",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 10,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "goo"
+      },
+      "expected": {
+        "hit": true,
+        "damage": 7,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "goo-defends",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 10,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "goo"
+      },
+      "expected": {
+        "hit": true,
+        "damage": 7,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "goo-defends",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 10,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "goo"
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "goo-defends",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 10,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "goo"
+      },
+      "expected": {
+        "hit": true,
+        "damage": 6,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "brute-enraged",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 10,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "brute",
+        "raged": true
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 34,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "brute-enraged",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 10,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "brute",
+        "raged": true
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 34,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "brute-enraged",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 10,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "brute",
+        "raged": true
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 35,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "brute-enraged",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 10,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {},
+        "kind": "brute",
+        "raged": true
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 35,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "armor-floor",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          100,
+          100
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 0,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "armor-floor",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          100,
+          100
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 0,
+        "rng": [
+          329295192,
+          953275645,
+          -1469633663,
+          1708779182
+        ]
+      }
+    },
+    {
+      "name": "armor-floor",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          100,
+          100
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 0,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "armor-floor",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          100,
+          100
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 0,
+        "rng": [
+          295305044,
+          -320397248,
+          -632529954,
+          3047766246
+        ]
+      }
+    },
+    {
+      "name": "infinite-accuracy",
+      "seed": 0,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 1000000,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 1,
+        "rng": [
+          1315614963,
+          1733097625,
+          -912371946,
+          4014626318
+        ]
+      }
+    },
+    {
+      "name": "infinite-accuracy",
+      "seed": 0,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 1000000,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 1,
+        "rng": [
+          1315614963,
+          1733097625,
+          -912371946,
+          4014626318
+        ]
+      }
+    },
+    {
+      "name": "infinite-accuracy",
+      "seed": 12345,
+      "magic": false,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 1000000,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 0,
+        "rng": [
+          1516442669,
+          -2119168973,
+          -1510514816,
+          3600568941
+        ]
+      }
+    },
+    {
+      "name": "infinite-accuracy",
+      "seed": 12345,
+      "magic": true,
+      "attacker": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 1000000,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "defender": {
+        "x": 0,
+        "y": 0,
+        "hp": 20,
+        "maxHp": 20,
+        "accuracy": 10,
+        "evasion": 5,
+        "damage": [
+          2,
+          8
+        ],
+        "armor": [
+          0,
+          3
+        ],
+        "buffs": {}
+      },
+      "expected": {
+        "hit": true,
+        "damage": 0,
+        "rng": [
+          1516442669,
+          -2119168973,
+          -1510514816,
+          3600568941
+        ]
+      }
+    }
+  ],
+  "buffs": [
+    {
+      "initial": {
+        "burning": 1,
+        "poison": 2,
+        "roots": 1
+      },
+      "seed": 12345,
+      "expected": {
+        "buffs": {
+          "poison": 1
+        },
+        "damage": 3,
+        "rng": [
+          -788531845,
+          -877730924,
+          1736254300,
+          210293064
+        ]
+      }
+    },
+    {
+      "initial": {
+        "poison": 1,
+        "burning": 3
+      },
+      "seed": 12345,
+      "expected": {
+        "buffs": {
+          "burning": 2
+        },
+        "damage": 3,
+        "rng": [
+          -788531845,
+          -877730924,
+          1736254300,
+          210293064
+        ]
+      }
+    },
+    {
+      "initial": {
+        "bless": 2,
+        "paralysis": 1
+      },
+      "seed": 12345,
+      "expected": {
+        "buffs": {
+          "bless": 1
+        },
+        "damage": 0,
+        "rng": [
+          3283241497,
+          613117429,
+          2940958500,
+          516375437
+        ]
+      }
+    },
+    {
+      "initial": {
+        "burning": 0
+      },
+      "seed": 12345,
+      "expected": {
+        "buffs": {},
+        "damage": 2,
+        "rng": [
+          -100768671,
+          1215451336,
+          2049103677,
+          1634976210
+        ]
+      }
+    },
+    {
+      "initial": {},
+      "seed": 12345,
+      "expected": {
+        "buffs": {},
+        "damage": 0,
+        "rng": [
+          3283241497,
+          613117429,
+          2940958500,
+          516375437
+        ]
+      }
+    }
+  ]
+}

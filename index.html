@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Shattered Pixel Dungeon — on mwg</title>
+	<style>
+		html, body { margin: 0; height: 100%; background: #08080c; overflow: hidden; }
+		#game { display: block; width: 100vw; height: 100vh; }
+		#not-built {
+			color: #d0d0d8; font: 14px/1.8 ui-monospace, Consolas, monospace;
+			padding: 40px; max-width: 44em;
+		}
+		#not-built code { color: #8ad9ff; }
+		#not-built strong { color: #fff; }
+		#crash {
+			position: fixed; inset: 0; z-index: 99; overflow: auto;
+			background: #1a0c0c; color: #ffd7d7;
+			font: 12px/1.6 ui-monospace, Consolas, monospace; padding: 24px;
+			white-space: pre-wrap; word-break: break-word;
+		}
+		#crash b { color: #fff; }
+	</style>
+	<script>
+		// A canvas game that throws during start-up leaves nothing but a black rectangle, and
+		// the reason is only visible to whoever opens the devtools console. Print it onto the
+		// page instead, so a screenshot carries the diagnosis.
+		(function () {
+			var shown = 0;
+			function show(title, detail) {
+				if (shown++ > 6) return;
+				var box = document.getElementById('crash');
+				if (!box) {
+					box = document.createElement('div');
+					box.id = 'crash';
+					(document.body || document.documentElement).appendChild(box);
+				}
+				var entry = document.createElement('div');
+				entry.innerHTML = '<b>' + title + '</b>\n';
+				entry.appendChild(document.createTextNode(detail + '\n\n'));
+				box.appendChild(entry);
+			}
+			addEventListener('error', function (e) {
+				var err = e.error;
+				show(
+					String((err && err.name) || 'Error') + ': ' + String((err && err.message) || e.message),
+					(err && err.stack) || (e.filename + ':' + e.lineno + ':' + e.colno)
+				);
+			});
+			addEventListener('unhandledrejection', function (e) {
+				var r = e.reason;
+				show('Unhandled promise rejection: ' + String((r && r.message) || r), (r && r.stack) || '');
+			});
+		})();
+	</script>
+	<script>
+		// This is the development page: it loads TypeScript through the vite dev server.
+		// Opened from disk it can do neither, because file:// blocks ES modules and there
+		// is no server to compile main.ts - so it silently black-screens instead of
+		// erroring. Say so, rather than leaving that black screen unexplained.
+		//
+		// The built page is also opened from file://, and this script is copied into it
+		// verbatim, so the test cannot be on the protocol alone. tools/emit.mjs rewrites
+		// the entry tag away from type="module" on build, so that survives as the tell.
+		addEventListener('DOMContentLoaded', function () {
+			if (location.protocol !== 'file:' || !document.querySelector('script[type="module"]')) return;
+
+			document.body.innerHTML =
+				'<div id="not-built">' +
+				'<p><strong>This is the source page, not the built game.</strong></p>' +
+				'<p>It loads TypeScript through the dev server, and a <code>file://</code> page can do neither.</p>' +
+				'<p>To play it from disk, build it once:</p>' +
+				'<p>&nbsp;&nbsp;<code>npm run build</code></p>' +
+				'<p>then open <code>dist/index.html</code>, in this same folder.</p>' +
+				'<p>To develop against it instead, run <code>npm run dev</code> and open the address it prints.</p>' +
+				'</div>';
+		});
+	</script>
+</head>
+<body>
+	<canvas id="game"></canvas>
+	<script type="module" src="./src/main.ts"></script>
+</body>
+</html>
