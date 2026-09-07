@@ -19,9 +19,6 @@ history before the split lives there, not here.
     verbatim as Java text) — cite the source file/method in a comment.
   - SPD's real art assets, copied byte-for-byte into `src/assets/` (see `src/images.ts`'s
     header comment for provenance notes, e.g. `cleric.png` sourced from tag `v3.3.8`).
-- Evan Debenham (SPD's author) can't unilaterally relicense the project — see the
-  dual-copyright memory. Never treat SPD source as available for anything looser than
-  GPL-3.0-or-later.
 
 ## Upstream contributions — not part of this project's workflow
 
