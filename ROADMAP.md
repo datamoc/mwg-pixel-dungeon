@@ -246,8 +246,14 @@ the corresponding Java source and recorded in `PORT_COVERAGE.md`.
         freely despite real Java's `DM201` being `IMMOVABLE` (unlike `DM200` itself). Both
         fixed - see `PORT_COVERAGE.md`'s DM200-vent row. Also fixed this port's own vent log
         line hardcoding "DM-200" regardless of which kind actually vented.
-      The other 6 rare kinds (Albino/CausticSlime/Bandit/SpectralNecromancer/Senior/Acidic)
-      already had their on-hit/stat behaviors live from the earlier spawn-selection pass.
+      - `Senior` (`extends Monk`) never got Monk's Focus dodge-regain past its one spawn-time
+        grant, same literal-kind-check pattern. Fixing it also surfaced a deeper, more
+        consequential bug in the shared mechanic itself: the regain check sat after the
+        `distance === 1` early return, so a Monk actively meleeing the hero (the normal state
+        during a real fight) never regained Focus at all, only one chasing from range. Both
+        fixed - see `PORT_COVERAGE.md`'s Monk/Senior-Focus row.
+      The other 5 rare kinds (Albino/CausticSlime/Bandit/SpectralNecromancer/Acidic) already
+      had their on-hit/stat behaviors live from the earlier spawn-selection pass.
 - [ ] Implement Java corpse, meat, gold, loot-stack, and limited-drop behavior.
 
 ## 6. Complete hero progression

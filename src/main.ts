@@ -4922,6 +4922,26 @@ export class SewersScene extends Scene2D {
 			monster.sleeping = false;
 			this.say(t('port.log.wakes', { who: capitalize(monster.name) }), 'warning');
 		}
+		//Monk.act(): `focusCooldown` decays every one of its own turns regardless of range or
+		//whether it's currently meleeing, and Focus re-attaches the instant it reaches 0 while
+		//HUNTING (this port's closest equivalent state is simply "not sleeping", checked above).
+		//Found and fixed a real, previously-undiscovered placement bug auditing this: this check
+		//used to sit after the `distance === 1` block below, which returns early for any
+		//adjacent monster - so a Monk (or Senior, once included) actively meleeing the hero
+		//every turn, the single most common case in a real fight, never advanced its combo
+		//timer at all and could never regain Focus after using it once. `Senior extends Monk`
+		//and inherits this unchanged (its own `move()` override only adds a faster movement-
+		//triggered cooldown reduction, not modeled here since this port's flat per-turn combo
+		//timer already doesn't model Monk's own smaller move bonus either - a pre-existing
+		//simplification, not newly introduced for Senior) - previously excluded here too by the
+		//same literal-kind-check bug already found for ArmoredBrute/DM201.
+		if ((monster.kind === 'monk' || monster.kind === 'senior') && !monster.sleeping && !monster.buffs['focus']) {
+			monster.combo = (monster.combo ?? 0) + 1;
+			if (monster.combo >= 6) {
+				monster.combo = 0;
+				addBuff(monster, 'focus');
+			}
+		}
 		//ScrollOfTerror.doRead()/Terror.java: real Java's Terror stops the mob attacking the
 		//specific reader while otherwise letting it act freely (attack allies, flee toward
 		//other exits) - this port's monster-turn model has no per-object avoidance and no
@@ -5133,15 +5153,6 @@ export class SewersScene extends Scene2D {
 			if (monster.moving < 3) return;
 			monster.moving = 0;
 		}
-		//Monk Focus: re-earned over ~6 of its own turns once spent (combo is the timer)
-		if (monster.kind === 'monk' && !monster.buffs['focus']) {
-			monster.combo = (monster.combo ?? 0) + 1;
-			if (monster.combo >= 6) {
-				monster.combo = 0;
-				addBuff(monster, 'focus');
-			}
-		}
-
 		//DM201.properties has IMMOVABLE (DM200 itself does not) - reaching here means it didn't
 		//vent this turn and isn't adjacent, so real Java simply does nothing rather than
 		//stepping closer like every other non-immobile monster.
@@ -5621,8 +5632,11 @@ export class SewersScene extends Scene2D {
 		// doorway is a guaranteed hit.
 		const surprise = defender.sleeping === true || (!defender.isHero && !defender.seesHero);
 		//Monk Focus: the first attack against a focused monk always misses and spends the
-		//focus (re-earned over ~6 of its own turns via combo in takeMonsterTurn)
-		if (defender.kind === 'monk' && defender.buffs['focus']) {
+		//focus (re-earned over ~6 of its own turns via combo in takeMonsterTurn). `Senior
+		//extends Monk` and shares this unchanged - previously excluded here too by the same
+		//literal-kind-check bug, so a Senior's Focus buff (granted at spawn, and regained via
+		//the `takeMonsterTurn` fix above) never actually did anything defensively.
+		if ((defender.kind === 'monk' || defender.kind === 'senior') && defender.buffs['focus']) {
 			delete defender.buffs['focus'];
 			defender.combo = 0;
 			defender.sleeping = false;
