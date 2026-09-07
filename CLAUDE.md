@@ -19,32 +19,29 @@ history before the split lives there, not here.
     verbatim as Java text) — cite the source file/method in a comment.
   - SPD's real art assets, copied byte-for-byte into `src/assets/` (see `src/images.ts`'s
     header comment for provenance notes, e.g. `cleric.png` sourced from tag `v3.3.8`).
-- Evan (SPD's author) can't unilaterally relicense the project — see the dual-copyright
-  memory. Never treat SPD source as available for anything looser than GPL-3.0-or-later.
+- Evan Debenham (SPD's author) can't unilaterally relicense the project — see the
+  dual-copyright memory. Never treat SPD source as available for anything looser than
+  GPL-3.0-or-later.
 
-## Upstream contributions — closed. Evan does not accept code from anyone.
+## Upstream contributions — not part of this project's workflow
 
-**This is now moot; do not act on it.** Evan Debenham (SPD's author) does not accept code
-contributions from anyone, for any reason, full stop — not just "PRs are closed," but
-explicitly refused even a one-line fix suggested by email, citing a deliberate policy of
-keeping Shattered a solo project and avoiding any copyright-ownership questions a merged
-external suggestion could create under GPLv3. Confirmed directly with him by email,
-2026-09-06/07. There is no smaller-scope version of this that is still worth doing — don't
-propose "just the formula fix" or "just the translation string," and don't maintain a
-running list for a PR that will never be opened.
+Evan Debenham keeps Shattered Pixel Dungeon as a solo project and does not take code
+contributions from other developers, including small fixes suggested by email - he
+confirmed this directly, 2026-09-06/07, and explained that accepting and implementing an
+external suggestion could raise copyright-ownership questions under GPLv3 that he'd rather
+avoid. That's a reasonable, well-explained policy for a solo maintainer, and this project
+respects it: don't propose sending fixes back to his tree, in any form or scope.
 
 - `UPSTREAM_CANDIDATES.md` and the "make the fix in both places" workflow it implied are
-  retired. Any real Java source edit that used to go there is unnecessary work now — fix
-  only this port's own file.
-- This project's real home going forward is a separate, dedicated fork:
-  `C:\Users\miche\dev\mwg-pixel-dungeon` (its own git/GitHub project). `web-mwg` here inside
-  the `shattered-pixel-dungeon` checkout remains the working copy for this session's
-  history, but new dedicated project setup (README, its own CLAUDE.md, CI, etc.) belongs in
-  that separate repo, not here.
+  retired accordingly. Any real Java source edit that used to go there is unnecessary work
+  now — fix only this port's own file.
+- This project's home is this dedicated repo, `mwg-pixel-dungeon`, split out from the
+  in-progress port that used to live at `web-mwg/` inside a `shattered-pixel-dungeon`
+  checkout. That original location remains the working copy for its own history.
 - The licensing boundary two sections up is unaffected by this: SPD is still GPL-3.0, this
-  port is still GPL-3.0-or-later, Evan still can't unilaterally relicense it, and reading
-  Java source for values/formulas/assets is still the normal, legitimate way this port is
-  built. What's closed is only the one-way idea of sending fixes *back* to his tree.
+  port is still GPL-3.0-or-later, Evan Debenham still can't unilaterally relicense it, and
+  reading Java source for values/formulas/assets is still the normal, legitimate way this
+  port is built. What doesn't apply here is only the idea of sending fixes back to his tree.
 
 ## Documenting deviations — mandatory, not optional
 
