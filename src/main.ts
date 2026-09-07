@@ -4645,14 +4645,43 @@ export class SewersScene extends Scene2D {
 		}
 	}
 
-	/** Java chasms are traversable only by falling; monster pathfinding still sees them as solid. */
+	/** Java chasms are traversable only by falling; monster pathfinding still sees them as solid.
+	 * `Char.flying` (Levitation) makes `Char.move` skip the chasm interaction entirely in real
+	 * Java - the same bypass already applied to traps in `triggerTrapAt`. */
 	private fallThroughChasm(x: number, y: number): boolean {
-		if (!this.isChasmCell(x, y) || this.miningBranchActive || this.depth >= 26) return false;
+		if (!this.isChasmCell(x, y) || this.miningBranchActive || this.depth >= 26 || this.hero.buffs['levitation']) return false;
 		this.say('You fall through the chasm.', 'negative');
 		this.depth++;
 		this.justDescended = true;
 		this.enterLevel();
+		this.landFromChasm();
 		return true;
+	}
+
+	/**
+	 * `Chasm.heroLand()` (`Chasm.java`): applies on arrival at the new floor, after the fall
+	 * itself. Real Java also plays a landing sound, shakes the camera, and lets
+	 * `ElixirOfFeatherFall.FeatherBuff` cancel the whole thing outright - none of those exist in
+	 * this port (no camera-shake system, no such elixir), so only the two mechanical
+	 * consequences are ported: a `Cripple` application and upfront damage scaled the same way
+	 * Java's is (`max(HP/2, NormalIntRange(HP/2, HT/4))`, run through the same
+	 * Tenacity/Barrier/Iron-Will/Deathless-Fury pipeline every other hero-damage source uses).
+	 * Java also applies a separate `Bleeding` DoT here; this port has no distinct Bleeding
+	 * buff at all (see the Sacrificial weapon curse's comment elsewhere in this file, which
+	 * reuses `poison` as the closest stand-in for that same gap) and does not reuse `poison`
+	 * for it either, since a chasm landing's bleed is a second, independent occurrence of a
+	 * gap already tracked once - see `PORT_COVERAGE.md`.
+	 */
+	private landFromChasm(): void {
+		if (this.hero.hp <= 0) return;
+		addBuff(this.hero, 'cripple');
+		const damage = this.absorbHeroDamage(Math.max(Math.floor(this.hero.hp / 2), Random.normalRange(Math.floor(this.hero.hp / 2), Math.floor(this.hero.maxHp / 4))));
+		this.hero.hp -= damage;
+		this.showDamage(this.hero, damage);
+		//death badges (DEATH_FROM_*: trap/fire/poison/hunger/foe - gas/falling/magic variants,
+		//including this one, need systems this port has none of, so a chasm death still books
+		//as the generic 'foe' bucket via kill()'s default)
+		if (this.hero.hp <= 0) this.kill(this.hero);
 	}
 
 	/** Pickaxe interaction for adjacent Caves/MiningLevel walls. Java mines ordinary WALL in

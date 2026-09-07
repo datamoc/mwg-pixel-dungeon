@@ -109,7 +109,11 @@ the corresponding Java source and recorded in `PORT_COVERAGE.md`.
       Caves walls and real WALL_DECO veins, with only veins yielding DarkGold; the inventory Pickaxe
       MINE action now scans adjacent veins, converts them to WALL, awards DarkGold, and spends two turns;
       generated wells and plants now use MWG `FeatureLayer` for placement, one-shot interaction, and
-      floor save/load while retaining SPD-specific consequences).
+      floor save/load while retaining SPD-specific consequences; chasm falling now also applies
+      `Chasm.heroLand()`'s real Cripple application and HP/HT-scaled landing damage through the
+      normal hero-damage absorption pipeline, correctly killing the hero on a fatal fall, and
+      Levitation now bypasses chasms the same way it already bypassed traps - see
+      `PORT_COVERAGE.md`'s `Chasm.java` row for what's still not ported there).
 - [x] Implement Java's feeling-based water and grass branches; feeling selection and the
       CHASM/WATER/GRASS/LARGE/TRAPS/SECRETS branches are threaded through `PaintLevel` and
       the regional painters.
