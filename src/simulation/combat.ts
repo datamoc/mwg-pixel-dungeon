@@ -37,7 +37,8 @@ export function liveStats(c: Readonly<Combatant>): { accuracy: number; evasion: 
 	}
 	//Brute.damageRoll(): 15-40 while BruteRage is active, 5-25 otherwise - real Java only grants
 	//this after the Brute's one-time near-death revival, not below any HP threshold.
-	if (c.kind === 'brute' && c.raged) {
+	//ArmoredBrute inherits damageRoll() from Brute unchanged, so the same boost applies to it.
+	if ((c.kind === 'brute' || c.kind === 'armoredBrute') && c.raged) {
 		return { accuracy: c.accuracy, evasion: c.evasion, damage: [15, 40] };
 	}
 	//Tengu.attackSkill: 20 at range, 10 adjacent - resolved by the caller (which knows the

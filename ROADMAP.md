@@ -235,7 +235,13 @@ the corresponding Java source and recorded in `PORT_COVERAGE.md`.
       seeds a persistent 3-cell `Web` terrain blob rather than a direct debuff, not modeled here.
       Browser-verified live.
 - [ ] Implement exact Tengu, DM-300, and other boss attack cycles.
-- [ ] Port rare monster variants.
+- [x] Port rare monster variants' unique behaviors. Found and fixed a real bug auditing this:
+      `ArmoredBrute` (a real spawnable alternative kind, `extends Brute` in Java) never got
+      Brute's enrage/revival mechanic at all - both check sites tested `kind === 'brute'`
+      literally. Now ported with its own real numbers (`HT/2+1` shield, decaying 1/3 turns
+      instead of Brute's 4/turn) - see `PORT_COVERAGE.md`'s Brute-enrage row. The other 7 rare
+      kinds (Albino/CausticSlime/Bandit/SpectralNecromancer/DM201/Senior/Acidic) already had
+      their on-hit/stat behaviors live from the earlier spawn-selection pass.
 - [ ] Implement Java corpse, meat, gold, loot-stack, and limited-drop behavior.
 
 ## 6. Complete hero progression
@@ -252,7 +258,10 @@ the corresponding Java source and recorded in `PORT_COVERAGE.md`.
       now apply Java's reduced off-center blast damage to nearby creatures, while toxic and
       fire traps seed the live area effects; exact Java projectile presentation, terrain
       destruction, and cadence remain tracked as narrower follow-up gaps.
-- [ ] Implement chasm falling and traversal.
+- [x] Implement chasm falling and traversal. `isChasmCell`/`fallThroughChasm` model the
+      terrain; `Chasm.heroLand()`'s real Cripple + HP/HT-scaled landing damage and the
+      Levitation bypass are now ported too (see `PORT_COVERAGE.md`'s `Chasm.java` row for the
+      remaining gaps: Bleeding DoT, feather-fall item, landing sound/camera shake).
 - [ ] Implement water and terrain hazards.
 - [ ] Complete plant growth and plant interactions (one-shot regional plant activation, Java-aligned
       single-target statuses, Sungrass healing-over-time, and Warden-sensitive variants are live;

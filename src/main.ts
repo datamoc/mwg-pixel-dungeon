@@ -656,6 +656,7 @@ interface SavedCreature {
 	chainUsed?: boolean;
 	ventCooldown?: number;
 	webCooldown?: number;
+	armoredRageTicks?: number;
 }
 
 /**
@@ -1532,7 +1533,7 @@ export class SewersScene extends Scene2D {
 				spawnCooldown: creature.spawnCooldown, seesHero: creature.seesHero, mimicRevealed: creature.mimicRevealed,
 				hasteTurns: creature.hasteTurns, hasteBaseSpeed: creature.hasteBaseSpeed,
 				hasRaged: creature.hasRaged, raged: creature.raged, chainUsed: creature.chainUsed,
-				ventCooldown: creature.ventCooldown, webCooldown: creature.webCooldown,
+				ventCooldown: creature.ventCooldown, webCooldown: creature.webCooldown, armoredRageTicks: creature.armoredRageTicks,
 				skeletonIndex: creature.skeleton ? savedIndex.get(creature.skeleton) : undefined,
 				nextTurn: this.scheduler.timeOf(creature),
 			});
@@ -1594,7 +1595,7 @@ export class SewersScene extends Scene2D {
 				mimicRevealed: saved.mimicRevealed ?? Boolean(saved.stolen),
 				hasteTurns: saved.hasteTurns, hasteBaseSpeed: saved.hasteBaseSpeed,
 				hasRaged: saved.hasRaged, raged: saved.raged, chainUsed: saved.chainUsed,
-				ventCooldown: saved.ventCooldown, webCooldown: saved.webCooldown,
+				ventCooldown: saved.ventCooldown, webCooldown: saved.webCooldown, armoredRageTicks: saved.armoredRageTicks,
 				speed: saved.hasteTurns ? (saved.hasteBaseSpeed ?? 1) * 2 : undefined,
 			});
 			this.scheduler.add(creature, Math.max(0, (saved.nextTurn ?? state.schedulerNow) - state.schedulerNow));
@@ -4886,6 +4887,20 @@ export class SewersScene extends Scene2D {
 				return;
 			}
 		}
+		//ArmoredBrute.ArmoredRage.act(): the same shield, but drains only 1 point every 3rd
+		//turn (`spend(3*TICK)`) instead of 4 every turn - "similar rate...much slower" per
+		//Java's own comment.
+		if (monster.kind === 'armoredBrute' && monster.raged) {
+			monster.armoredRageTicks = (monster.armoredRageTicks ?? 0) + 1;
+			if (monster.armoredRageTicks >= 3) {
+				monster.armoredRageTicks = 0;
+				monster.hp -= 1;
+				if (monster.hp <= 0) {
+					this.kill(monster);
+					return;
+				}
+			}
+		}
 		if (monster.buffs['paralysis']) return;
 		//DemonSpawner: PASSIVE, IMMOVABLE, never attacks - only its spawn-cooldown ticks, and
 		//unlike every other monster here that happens regardless of hero distance/sleep state.
@@ -5758,10 +5773,22 @@ export class SewersScene extends Scene2D {
 		//damage-application code drains it exactly like real hp would. `raged` then boosts its
 		//own damage roll (`liveStats`) and drives the flat 4/turn passive decay in
 		//`takeMonsterTurn`; only ever fires once (`hasRaged`), matching Java exactly.
-		if (defender.hp <= 0 && defender.kind === 'brute' && !defender.hasRaged) {
+		//`ArmoredBrute extends Brute` and overrides `triggerEnrage()` with its own smaller
+		//shield (`HT/2+1`, not `+4`) that decays far slower (1 point every 3 turns via
+		//`ArmoredRage.act()`'s own `spend(3*TICK)`, vs plain `BruteRage`'s 4/turn) - previously
+		//this port's check here was `kind === 'brute'` literally, so ArmoredBrute (a real,
+		//spawnable alternative monster kind) never got the revival at all and could simply be
+		//killed outright, the exact bug this port's own `Brute` fix once corrected for the base
+		//kind. `armoredRageTicks` starts the every-3rd-turn decay counter.
+		if (defender.hp <= 0 && (defender.kind === 'brute' || defender.kind === 'armoredBrute') && !defender.hasRaged) {
 			defender.hasRaged = true;
 			defender.raged = true;
-			defender.hp = Math.round(defender.maxHp / 2 + 4);
+			if (defender.kind === 'armoredBrute') {
+				defender.hp = Math.round(defender.maxHp / 2 + 1);
+				defender.armoredRageTicks = 0;
+			} else {
+				defender.hp = Math.round(defender.maxHp / 2 + 4);
+			}
 			this.say(t('port.log.bruterage'), 'negative');
 			return;
 		}

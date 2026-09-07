@@ -73,6 +73,9 @@ export interface Creature extends Combatant {
 	ventCooldown?: number;
 	/** `Spinner.webCoolDown`: turns until it may shoot another web at the hero. */
 	webCooldown?: number;
+	/** `ArmoredBrute.ArmoredRage.act()`'s own `spend(3*TICK)`: counts up while `raged`, decaying
+	 * the shield only every 3rd turn instead of every turn like the base `Brute.BruteRage`. */
+	armoredRageTicks?: number;
 }
 
 /** makes a Creature-shaped object with the combat-state fields every spawn needs.
