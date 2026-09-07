@@ -17,6 +17,9 @@ the corresponding Java source and recorded in `PORT_COVERAGE.md`.
       (the sandboxed environment's local HTTP servers all fail to bind a socket), so treat this
       as needing a playtest pass before fully trusting it.
 - [ ] Port all remaining weapons, wands, rings, artifacts, bombs, alchemy, and crafting.
+      Rings: Haste and Energy are now live (6 of 12 ring types total); Arcana/Elements/Force/
+      Furor/Sharpshooting/Wealth remain, each blocked on a system this port doesn't have yet -
+      see `PORT_COVERAGE.md`'s rings row.
 - [ ] Port the remaining potions. `PotionOfLevitation` is now live (real buff + chasm bypass,
       matching the trap bypass Levitation already had); a live id-mapping bug that made
       generated `PotionOfLiquidFlame`/`PotionOfInvisibility` silently quaff as Purity is fixed.

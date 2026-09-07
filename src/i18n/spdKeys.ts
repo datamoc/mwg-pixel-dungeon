@@ -161,6 +161,8 @@ export const RING_KEYS: Record<string, string> = {
 	evasion: 'items.rings.ringofevasion.name',
 	might: 'items.rings.ringofmight.name',
 	tenacity: 'items.rings.ringoftenacity.name',
+	haste: 'items.rings.ringofhaste.name',
+	energy: 'items.rings.ringofenergy.name',
 };
 
 /** `actors.buffs.*`; Berserk carries status strings but no `.name` of its own */

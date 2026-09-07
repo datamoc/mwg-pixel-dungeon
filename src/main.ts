@@ -458,6 +458,12 @@ const RING_DEFS: Record<string, { stat: string; op: Actors.ModifierOp; at: (leve
 	evasion: { stat: 'evasion', op: 'multiply', at: (lvl) => Math.pow(1.125, lvl) },
 	might: { stat: 'strength', op: 'add', at: (lvl) => lvl },
 	tenacity: { stat: 'tenacity', op: 'add', at: (lvl) => lvl },
+	//RingOfHaste.speedMultiplier()/RingOfEnergy.wandChargeMultiplier(): both real Java formulas
+	//are `pow(1.175, level)`, applied outside the StatBlock loop below the same way Tenacity is
+	//(`getActionTurnCostMod`/`recoverWandCharge`'s rate read these via `ringDef` directly, since
+	//"faster turns" and "faster wand recharge" aren't `heroStats` entries).
+	haste: { stat: 'speed', op: 'multiply', at: (lvl) => Math.pow(1.175, lvl) },
+	energy: { stat: 'energy', op: 'multiply', at: (lvl) => Math.pow(1.175, lvl) },
 };
 
 /**
@@ -1327,7 +1333,7 @@ export class SewersScene extends Scene2D {
 		if (this.equippedRing) {
 			const def = ringDef(this.equippedRing.id);
 			const level = this.equippedRing.level;
-			if (def && def.stat !== 'strength' && def.stat !== 'tenacity') {
+			if (def && def.stat !== 'strength' && def.stat !== 'tenacity' && def.stat !== 'speed' && def.stat !== 'energy') {
 				for (const modifier of Actors.scaledModifiers(level, [{ stat: def.stat, op: def.op, base: def.at(level), perLevel: 0 }])) {
 					this.heroStats.addModifier({ ...modifier, source: 'ring' });
 				}
@@ -4346,7 +4352,8 @@ export class SewersScene extends Scene2D {
 			recoverWandCharge: () => {
 				const missing = this.wandCharges.max - this.wandCharges.current;
 				const turnsToCharge = 10 + 40 * Math.pow(0.875, Math.max(0, missing));
-				this.wandCharges.advance((this.hero.buffs['recharging'] ? 1.25 : 1) / turnsToCharge);
+				//RingOfEnergy.wandChargeMultiplier(): 1.175^level, applied straight onto the rate.
+				this.wandCharges.advance((this.hero.buffs['recharging'] ? 1.25 : 1) * this.ringEnergyMultiplier() / turnsToCharge);
 			},
 			recoverTomeCharge: () => { this.tomeCharges.advance(1); },
 			spreadFire: () => this.spreadFire(),
@@ -5756,6 +5763,21 @@ export class SewersScene extends Scene2D {
 		return Math.pow(0.85, this.equippedRing.level * missingFraction);
 	}
 
+	/** `RingOfHaste.speedMultiplier()`: `1.175^level`. Read by `getActionTurnCostMod` as a turn-
+	 * cost divisor - Java expresses this as `Char.speed()` scaling upward, this port's
+	 * fractional-turn-cost model expresses the same thing as the cost per action scaling down. */
+	private ringHasteMultiplier(): number {
+		if (!this.equippedRing || ringDef(this.equippedRing.id)?.stat !== 'speed') return 1;
+		return Math.pow(1.175, this.equippedRing.level);
+	}
+
+	/** `RingOfEnergy.wandChargeMultiplier()`: `1.175^level` (this port doesn't model the
+	 * Light Reading talent's further multiplier on top, since that talent itself isn't ported). */
+	private ringEnergyMultiplier(): number {
+		if (!this.equippedRing || ringDef(this.equippedRing.id)?.stat !== 'energy') return 1;
+		return Math.pow(1.175, this.equippedRing.level);
+	}
+
 	/** Barrier absorbs incoming damage before HP, matching Buff.Barrier's core rule. */
 	private absorbHeroDamage(amount: number): number {
 		//Hero.damage(): `dmg = ceil(dmg * RingOfTenacity.damageMultiplier())` is applied before
@@ -6982,6 +7004,9 @@ export class SewersScene extends Scene2D {
 		//Bulk has no proc: Java's Armor.speedFactor makes movement/actions three times
 		//faster while the hero occupies an open or closed doorway.
 		if (this.armorGlyph === 'bulk' && this.doors.isDoor(this.hero.x, this.hero.y)) mod /= 3;
+		//RingOfHaste.speedMultiplier(): a higher Char.speed() means less time per action in
+		//real Java; this port's turn-cost multiplier expresses the same relationship inverted.
+		mod /= this.ringHasteMultiplier();
 		return mod;
 	}
 
