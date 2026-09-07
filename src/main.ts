@@ -833,6 +833,16 @@ export class SewersScene extends Scene2D {
 
 	private creatures: Creature[] = [];
 	private groundItems: GroundItem[] = [];
+	/** Sprite ownership keyed by `EntityId`, kept outside `Creature`/`GroundItem` themselves -
+	 * see `SIMULATION_ARCHITECTURE.md`'s "Step 6". Every id that reaches this map is registered
+	 * once at spawn and never re-registered, so a plain `Map` (not a WeakMap) is fine; entries
+	 * are removed explicitly wherever the sprite is destroyed. */
+	private spriteFor = new Map<string, TintedSprite>();
+	private sprite(entity: { id: string }): TintedSprite {
+		const sprite = this.spriteFor.get(entity.id);
+		if (!sprite) throw new Error(`no sprite registered for entity ${entity.id}`);
+		return sprite;
+	}
 	/** Seeds planted during play on floors whose original PaintLevel has no plant array. */
 	private manualPlants = new Map<number, string>();
 	/** Java room painters place quest NPCs/special mobs at fixed cells. */
@@ -1161,7 +1171,7 @@ export class SewersScene extends Scene2D {
 		this.shopStock.add({ id: 'scrollIdentify', quantity: 2, stackable: true, identified: true });
 
 		this.hero = this.makeHero();
-		this.heroAnimation = new HeroAnimation(this.hero.sprite, runState.sprites[this.heroClass]);
+		this.heroAnimation = new HeroAnimation(this.sprite(this.hero), runState.sprites[this.heroClass]);
 		this.characterEffects = new CharacterEffects(runState.sprites.uiIcons);
 		this.ammo = CLASSES[this.heroClass].special.ammo ?? 0;
 		this.ammoDurability = 100;
@@ -1253,7 +1263,6 @@ export class SewersScene extends Scene2D {
 
 		const hero = baseCreature({
 			name: t('port.name.you'),
-			sprite,
 			x: 0,
 			y: 0,
 			hp: 20,
@@ -1269,6 +1278,7 @@ export class SewersScene extends Scene2D {
 			strReq: 10,
 			weaponLevel: 0,
 		});
+		this.spriteFor.set(hero.id, sprite);
 		this.creatures.push(hero);
 		return hero;
 	}
@@ -1453,7 +1463,6 @@ export class SewersScene extends Scene2D {
 		const isBoss = kind === 'goo' || kind === 'tengu' || kind === 'dm300' || kind === 'king' || kind === 'yog' || kind === 'yogFist';
 		const monster = baseCreature({
 			name: t(MOB_KEYS[kind] ?? MOB_KEYS.statue),
-			sprite,
 			x: at.x,
 			y: at.y,
 			hp: def.hp,
@@ -1481,6 +1490,7 @@ export class SewersScene extends Scene2D {
 			mimicLoot,
 			mimicRevealed: kind === 'crystalMimic' ? false : undefined,
 		});
+		this.spriteFor.set(monster.id, sprite);
 		//Monk.java: enters HUNTING with Focus (one guaranteed dodge, re-earned over ~6 turns)
 		if (kind === 'monk' || kind === 'senior') addBuff(monster, 'focus');
 		this.creatures.push(monster);
@@ -1596,7 +1606,7 @@ export class SewersScene extends Scene2D {
 		//
 		//The hero's sprite is the one exception - it outlives the floor and is re-added below -
 		//so it is detached before the layer is emptied, keeping it clear of the destroy.
-		if (this.hero?.sprite) this.creatureLayer.removeChild(this.hero.sprite);
+		if (this.hero) this.creatureLayer.removeChild(this.sprite(this.hero));
 		this.map?.destroy({ children: true });
 		this.wallsMap?.destroy({ children: true });
 		this.featuresMap?.destroy({ children: true });
@@ -1844,11 +1854,11 @@ export class SewersScene extends Scene2D {
 		this.heroAnimation?.reset();
 		this.hero.x = start.x;
 		this.hero.y = start.y;
-		this.hero.sprite.x = start.x * TILE;
-		this.hero.sprite.y = start.y * TILE;
+		this.sprite(this.hero).x = start.x * TILE;
+		this.sprite(this.hero).y = start.y * TILE;
 		//removeChildren() above cleared every sprite, including the hero's - it survives
 		//floor transitions, so it goes back in rather than being rebuilt
-		this.creatureLayer.addChild(this.hero.sprite);
+		this.creatureLayer.addChild(this.sprite(this.hero));
 		this.scheduler.add(this.hero, 0);
 		this.placeEntrance(start);
 
@@ -2613,7 +2623,8 @@ export class SewersScene extends Scene2D {
 		//Imp.flee(): the quest giver leaves once paid
 		this.scheduler.remove(npc);
 		this.creatures.splice(this.creatures.indexOf(npc), 1);
-		npc.sprite.destroy();
+		this.sprite(npc).destroy();
+		this.spriteFor.delete(npc.id);
 		this.say(t('port.npc.imp.reward', { ring: t(RING_KEYS[ringId]) }));
 	}
 
@@ -2926,7 +2937,9 @@ export class SewersScene extends Scene2D {
 		sprite.x = x * TILE;
 		sprite.y = y * TILE;
 		this.itemLayer.addChild(sprite);
-		this.groundItems.push({ id: nextEntityId('item'), kind, x, y, sprite, item, chest });
+		const groundItem = { id: nextEntityId('item'), kind, x, y, item, chest };
+		this.spriteFor.set(groundItem.id, sprite);
+		this.groundItems.push(groundItem);
 	}
 
 	/** stepping onto a ground item's cell picks it up - `GameScene.pickUp` without a "leave it" choice, since there is no inventory UI to offer one through */
@@ -2953,7 +2966,8 @@ export class SewersScene extends Scene2D {
 		runState.audio.cue(item.kind === 'gold' ? 'gold' : item.kind === 'dewdrop' ? 'dewdrop' : 'item', 0.6);
 
 		this.groundItems.splice(this.groundItems.indexOf(item), 1);
-		item.sprite.destroy();
+		this.sprite(item).destroy();
+		this.spriteFor.delete(item.id);
 
 		if (item.kind === 'dewdrop') {
 			this.collectDewdrop();
@@ -3154,7 +3168,7 @@ export class SewersScene extends Scene2D {
 			//PotionOfMindVision.apply(): a 20-turn MindVision buff that reveals every monster's
 			//position through walls/fog, not a trap/secret reveal - this port previously
 			//confused it with something closer to Scroll of Magic Mapping (which really does
-			//reveal traps). See `creature.sprite.visible`'s gate for the actual reveal.
+			//reveal traps). See `this.sprite(creature).visible`'s gate for the actual reveal.
 			addBuff(this.hero, 'mindvision');
 			this.say(t(this.creatures.some((c) => !c.isHero && !c.isNPC) ? 'port.log.mindvisionmobs' : 'port.log.mindvisionnone'), 'positive');
 		} else if (id === 'potionInvis') {
@@ -4021,7 +4035,7 @@ export class SewersScene extends Scene2D {
 			this.applyTrapBlast(x, y);
 			this.say(t('port.log.trap.explosive', { damage }), 'negative');
 		}
-		this.hero.sprite.setColorAdd(1, 0.2, 0.2);
+		this.sprite(this.hero).setColorAdd(1, 0.2, 0.2);
 		if (this.hero.hp <= 0) this.kill(this.hero, kind === 'burning' || kind === 'explosive' ? 'fire' : 'trap');
 	}
 
@@ -4131,7 +4145,7 @@ export class SewersScene extends Scene2D {
 				this.showDamage(target, damage);
 				target.sleeping = false;
 				if (this.frostWand) addBuff(target, 'daze');
-				target.sprite.setColorAdd(0.6, 0.7, 1);
+				this.sprite(target).setColorAdd(0.6, 0.7, 1);
 				this.say(t('port.log.wandhits', { target: target.name, damage }), 'positive');
 				if (this.subclass() === 'warlock') this.wandCharges.refund(1);
 				if (fullyCharged && this.talentRank('excess_charge') > 0) this.grantHeroShield(Math.ceil((this.talentRank('excess_charge') * Math.max(1, this.weaponLevel)) / 1.5), this.hero.maxHp);
@@ -4153,7 +4167,7 @@ export class SewersScene extends Scene2D {
 				this.projectileMomentumReady = false;
 				target.hp -= damage;
 				this.showDamage(target, damage);
-				target.sprite.setColorAdd(1, 1, 1);
+				this.sprite(target).setColorAdd(1, 1, 1);
 				this.say(t('port.log.shoot', { target: target.name, damage }), 'positive');
 				if (this.talentRank('followup_strike') > 0) { this.followupTarget = target; this.followupDamage = this.talentRank('followup_strike') === 1 ? 2 : 3; }
 				if (target.hp <= 0) this.kill(target);
@@ -4983,7 +4997,7 @@ export class SewersScene extends Scene2D {
 		dmg = this.absorbHeroDamage(dmg);
 		this.hero.hp -= dmg;
 		this.showDamage(this.hero, dmg);
-		this.hero.sprite.setColorAdd(0.6, 0.7, 1);
+		this.sprite(this.hero).setColorAdd(0.6, 0.7, 1);
 		this.say(t('port.log.bolthits', { who: capitalize(monster.name), damage: dmg }), 'negative');
 		this.spawnProjectile(monster, this.hero);
 		if (this.hero.hp <= 0) this.kill(this.hero);
@@ -5111,11 +5125,12 @@ export class SewersScene extends Scene2D {
 		if (index < 0) return;
 		this.scheduler.remove(monster);
 		this.creatures.splice(index, 1);
-		this.monsterMotion.get(monster.sprite)?.clear();
-		this.monsterMotion.delete(monster.sprite);
+		this.monsterMotion.get(this.sprite(monster))?.clear();
+		this.monsterMotion.delete(this.sprite(monster));
 		this.healthBars.get(monster)?.destroy();
 		this.healthBars.delete(monster);
-		monster.sprite.destroy();
+		this.sprite(monster).destroy();
+		this.spriteFor.delete(monster.id);
 		this.say('The crystal mimic escapes into the darkness.', 'warning');
 	}
 
@@ -5350,7 +5365,7 @@ export class SewersScene extends Scene2D {
 		// and fall. The coarse terrain kind is open for FOV/hero collision, so enforce
 		// the mob-specific rule at the final movement boundary.
 		if (!creature.isHero && this.isChasmCell(to.x, to.y)) return;
-		faceCharacter(creature.sprite, creature.x, to.x);
+		faceCharacter(this.sprite(creature), creature.x, to.x);
 		if (creature.isHero) runState.audio.cue('step', 0.32);
 		creature.x = to.x;
 		creature.y = to.y;
@@ -5360,7 +5375,7 @@ export class SewersScene extends Scene2D {
 			const heal = rejuvenatingStepHeal(this.level.get(to.x, to.y), GRASS, this.hero.hp, this.hero.maxHp, this.talentRank('rejuvenating_steps'));
 			if (heal > 0) { this.hero.hp += heal; this.showHeal(this.hero, heal); }
 		} else {
-			const sprite = creature.sprite;
+			const sprite = this.sprite(creature);
 			const motion = this.monsterMotion.get(sprite) ?? new Tweener();
 			motion.clear(); this.monsterMotion.set(sprite, motion);
 			const fromX = sprite.x, fromY = sprite.y;
@@ -5386,9 +5401,9 @@ export class SewersScene extends Scene2D {
 	 */
 	private attack(attacker: Creature, defender: Creature): void {
 		if (attacker.isHero) this.cancelHourglassFreeze();
-		faceCharacter(attacker.sprite, attacker.x, defender.x);
+		faceCharacter(this.sprite(attacker), attacker.x, defender.x);
 		if (attacker.isHero) this.heroAnimation.attack();
-		else if (attacker.sprite instanceof AnimatedSprite && attacker.sprite.has('attack')) attacker.sprite.play('attack', true);
+		else { const attackerSprite = this.sprite(attacker); if (attackerSprite instanceof AnimatedSprite && attackerSprite.has('attack')) attackerSprite.play('attack', true); }
 		// Invisibility is dispelled by an aggressive action (Invisibility.dispel()).
 		if (attacker.buffs['invisibility']) delete attacker.buffs['invisibility'];
 		const subject = attacker.isHero ? t('port.log.subject.you') : capitalize(attacker.name);
@@ -5541,7 +5556,7 @@ export class SewersScene extends Scene2D {
 			defender.spawnCooldown = Math.max((defender.spawnCooldown ?? 60) - damage, -20);
 		}
 		defender.sleeping = false;
-		defender.sprite.setColorAdd(1, 1, 1);
+		this.sprite(defender).setColorAdd(1, 1, 1);
 		//the one log line whose severity depends on which way the blow went: SPD colours
 		//damage the hero takes red and leaves the hero's own hits plain
 		this.say(
@@ -5951,15 +5966,21 @@ export class SewersScene extends Scene2D {
 		runState.audio.cue('death', 0.65);
 		this.scheduler.remove(creature);
 		this.creatures.splice(index, 1);
-		this.monsterMotion.get(creature.sprite)?.clear();
-		this.monsterMotion.delete(creature.sprite);
-		creature.sprite.position.set(creature.x * TILE, creature.y * TILE);
-		creature.sprite.colorAdd = 0;
+		const deadSprite = this.sprite(creature);
+		this.monsterMotion.get(deadSprite)?.clear();
+		this.monsterMotion.delete(deadSprite);
+		deadSprite.position.set(creature.x * TILE, creature.y * TILE);
+		deadSprite.colorAdd = 0;
 		if (creature.isHero) this.heroAnimation.die();
-		else if (creature.sprite instanceof AnimatedSprite && creature.sprite.has('die')) {
-			creature.sprite.play('die', true);
-			this.dyingMonsters.set(creature.sprite, { x: creature.x, y: creature.y, fade: 0 });
-		} else creature.sprite.destroy();
+		else if (deadSprite instanceof AnimatedSprite && deadSprite.has('die')) {
+			deadSprite.play('die', true);
+			this.dyingMonsters.set(deadSprite, { x: creature.x, y: creature.y, fade: 0 });
+		} else deadSprite.destroy();
+		//the hero's sprite outlives `kill()` for the game-over screen (see the `gameOver`
+		//check further down) - every other creature's sprite is either already destroyed above
+		//or now only reachable through `dyingMonsters`, keyed by the sprite object itself, so
+		//dropping the id mapping here is safe.
+		if (!creature.isHero) this.spriteFor.delete(creature.id);
 		//the bar is keyed on the creature, so it has to go with it or it hangs over an empty
 		//cell for the rest of the floor
 		this.healthBars.get(creature)?.destroy();
@@ -6275,7 +6296,7 @@ export class SewersScene extends Scene2D {
 		//same as Java's real "see_mobs" reveal - NPCs and the hero are unaffected (not Mobs).
 		const mindVision = !!this.hero.buffs['mindvision'];
 		for (const creature of this.creatures) {
-			creature.sprite.visible = creature.isHero === true || this.fov.isVisible(creature.x, creature.y)
+			this.sprite(creature).visible = creature.isHero === true || this.fov.isVisible(creature.x, creature.y)
 				|| (mindVision && !creature.isNPC);
 		}
 		if (this.stairsSprite) {
@@ -6283,8 +6304,8 @@ export class SewersScene extends Scene2D {
 			this.stairsSprite.tint = 0xffffff;
 		}
 		for (const item of this.groundItems) {
-			item.sprite.visible = this.fov.isExplored(item.x, item.y);
-			item.sprite.tint = 0xffffff;
+			this.sprite(item).visible = this.fov.isExplored(item.x, item.y);
+			this.sprite(item).tint = 0xffffff;
 		}
 
 		const boss = BOSSES[this.depth];
@@ -6359,7 +6380,7 @@ export class SewersScene extends Scene2D {
 		}
 		for (const creature of this.creatures) {
 			const hurt = creature.hp < creature.maxHp && creature.hp > 0;
-			const show = hurt && !creature.isHero && creature.sprite.visible;
+			const show = hurt && !creature.isHero && this.sprite(creature).visible;
 
 			let bar = this.healthBars.get(creature);
 			if (!show) {
@@ -7202,7 +7223,7 @@ export class SewersScene extends Scene2D {
 	 * a one-frame white flash, so how hard it landed was only readable in the log.
 	 */
 	private showStatus(creature: Creature, text: string, color: number): void {
-		if (!creature.sprite.visible) return;
+		if (!this.sprite(creature).visible) return;
 		const [x, y] = this.worldOf(creature);
 		this.floaters.show(x, y - TILE / 2, text, color);
 	}
@@ -7316,9 +7337,10 @@ export class SewersScene extends Scene2D {
 		}
 		this.heroAnimation?.update(dt);
 		for (const creature of this.creatures) {
-			if (!creature.sprite.destroyed && creature.sprite instanceof AnimatedSprite) {
-				creature.sprite.update(dt);
-				if (creature.sprite.isFinished) creature.sprite.play('idle');
+			const liveSprite = this.sprite(creature);
+			if (!liveSprite.destroyed && liveSprite instanceof AnimatedSprite) {
+				liveSprite.update(dt);
+				if (liveSprite.isFinished) liveSprite.play('idle');
 			}
 		}
 		// MobSprite finishes the death clip, then fades its corpse over three seconds.
@@ -7338,9 +7360,9 @@ export class SewersScene extends Scene2D {
 			if (sprite.destroyed || !motion.isBusy) { motion.clear(); this.monsterMotion.delete(sprite); }
 		}
 		this.characterEffects.update(dt, [
-			...this.creatures.map(creature => ({ sprite: creature.sprite, sleeping: creature.sleeping })),
+			...this.creatures.map(creature => ({ sprite: this.sprite(creature), sleeping: creature.sleeping })),
 			...Array.from(this.dyingMonsters.keys(), sprite => ({ sprite })),
-			...(this.gameOver && !this.hero.sprite.destroyed ? [{ sprite: this.hero.sprite }] : []),
+			...(this.gameOver && !this.sprite(this.hero).destroyed ? [{ sprite: this.sprite(this.hero) }] : []),
 		]);
 		this.camera.update(dt);
 		this.map?.cull(this.camera);
@@ -7356,7 +7378,7 @@ export class SewersScene extends Scene2D {
 		//creature's identity colour here, and resetColor() would wipe the sprite's own art
 		//back to a flat white square along with the flash
 		for (const creature of this.creatures) {
-			if (creature.sprite.colorAdd !== 0) creature.sprite.colorAdd = 0;
+			if (this.sprite(creature).colorAdd !== 0) this.sprite(creature).colorAdd = 0;
 		}
 
 		for (let i = this.projectiles.length - 1; i >= 0; i--) {

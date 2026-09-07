@@ -331,11 +331,9 @@ parts of it are blocked on `mwg` capabilities not yet released versus actionable
 buffs, hero actions, movement) and the next planned one (Step 6: local `EntityId` + an actor
 view registry, replacing `Creature.sprite`/object-identity lookups).
 
-- [x] Step 6a: give every `Combatant`/`Creature`/`GroundItem` a stable id
-      (`simulation/entityId.ts`).
-- [ ] Step 6b: move `sprite` out of `Creature`/`GroundItem` into a view registry keyed by that
-      id, and update the ~60 call sites in `main.ts` (see `SIMULATION_ARCHITECTURE.md`'s
-      "Step 6").
+- [x] Step 6: give every `Combatant`/`Creature`/`GroundItem` a stable id
+      (`simulation/entityId.ts`), and move `sprite` out of `Creature`/`GroundItem` into a
+      `spriteFor` view registry keyed by that id (see `SIMULATION_ARCHITECTURE.md`'s "Step 6").
 - [ ] Extract `main.ts`'s `attack()` pure resolution (hit/damage rolls, weapon-affix/talent
       branches, event-worthy outcomes like mimic reveal/displacement) from its presentation
       calls (sprite tint, audio cue, floating text) - the single largest concrete instance of

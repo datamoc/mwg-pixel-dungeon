@@ -67,7 +67,7 @@ real, current work:
 | ADR | Decision | Status |
 | --- | --- | --- |
 | SPD-ADR-001 | `SpdSimulation` is the sole gameplay-mutation authority | Proposed; `main.ts`'s `attack()` et al. still mutate state directly and call presentation inline (see `SIMULATION_ARCHITECTURE.md`) |
-| SPD-ADR-002 | Every runtime entity has a stable, renderer-free `EntityId` | Proposed; `Creature` (in `combat.ts`) still embeds `sprite: TintedSprite` directly and is identified by object reference (`Map<Creature, ...>`, `Set<Creature>`), not a stable id - blocked on no MWG `EntityId`/`EntityRegistry` yet, but a locally-owned id is not blocked and is the natural next step |
+| SPD-ADR-002 | Every runtime entity has a stable, renderer-free `EntityId` | Substantially adopted with a locally-owned id (`simulation/entityId.ts`, MWG has no `EntityId`/`EntityRegistry` yet): every `Creature`/`GroundItem` has one, and `sprite` moved off both interfaces into the scene's `spriteFor` registry (SIMULATION_ARCHITECTURE.md's "Step 6"). Still object-reference-identified elsewhere (`Map<Creature, Bar>` for health bars, `Set<Creature>` for king adds) - not yet migrated to id-keyed lookups |
 | SPD-ADR-003 | The MWG scheduler is the sole time authority | Partially adopted: `advanceToInput` drives scheduling (step 3), but monster turns still hardcode `return 1` rather than a real per-action time cost (plan section 6) |
 | SPD-ADR-004 | Scenes contain no business rules; they translate input and events | Not yet; `main.ts` (~7460 lines) still holds most combat/AI/effect logic |
 | SPD-ADR-005 | GameEvents are the ordered output of simulation transactions | Partially: `buffs.ts` already emits `buff-applied`/tick events; `attack()` does not |

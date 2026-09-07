@@ -1,6 +1,7 @@
-// Compatibility boundary for scene callers. Rules live in simulation/; sprites and the
-// legacy announcement hook remain here until the scene migration is complete.
-import type { TintedSprite } from 'mwg';
+// Compatibility boundary for scene callers. Rules live in simulation/; the legacy
+// announcement hook remains here until the scene migration is complete. Sprites are owned by
+// the scene's `spriteFor` registry (see `SIMULATION_ARCHITECTURE.md`'s "Step 6"), not by
+// `Creature`/`GroundItem` here.
 import type { AnyMonsterId } from './monsters';
 import type { GroundItemKind } from './dungeonConstants';
 import type { Combatant, Step } from './simulation/combatState';
@@ -24,7 +25,6 @@ export type { Step } from './simulation/combatState';
 /** a creature on the map - the hero and every monster share this shape */
 export interface Creature extends Combatant {
 	name: string;
-	sprite: TintedSprite;
 	/** mwg/roguelike's Scheduler.Actor speed; Huntress's gloves are the one exception at 2 */
 	speed?: number;
 	/** which MONSTERS entry this is, for its sprite and (for Goo) its special turn logic - absent on the hero */
@@ -88,7 +88,6 @@ export interface GroundItem extends Step {
 	/** Stable across the object's lifetime; see `entityId.ts`. */
 	id: string;
 	kind: GroundItemKind;
-	sprite: TintedSprite;
 	/** Java Heap.Type.CHEST/CRYSTAL_CHEST; contents are opened instead of auto-picked up. */
 	chest?: 'normal' | 'locked' | 'crystal';
 	/** Concrete inventory payload; absent only for legacy scripted/cosmetic drops. */

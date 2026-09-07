@@ -119,35 +119,38 @@ Regression checks cover all 24 occupancy/door/roots/passability combinations, qu
 short-circuiting, waiting, all eight directions, and coordinate independence. Monster
 decisions and movement effect implementations remain scene-owned.
 
-## Step 6 - local EntityId, with the view-registry move still ahead
+## Step 6 - local EntityId and an actor/item view registry
 
 `SPD_ARCHITECTURE_TARGET_V3.md` records a broader target architecture (Command -> State +
 Events, MWG-owned `EntityId`/`EntityRegistry`, full snapshots) that assumes MWG capabilities
 this project's pinned `mwg@0.4.0` does not yet ship. The piece of that target which is *not*
 blocked on an unreleased MWG feature, and is the direct continuation of steps 1-5's own
-"Subsequent steps" item 2 ("move rendering objects into a view map keyed by actor ID"), splits
-into two parts:
+"Subsequent steps" item 2 ("move rendering objects into a view map keyed by actor ID"), is
+done, in two parts:
 
-- Step 6a (done): give every `Combatant`/`Creature`/`GroundItem` a stable, locally-generated
+- Step 6a: give every `Combatant`/`Creature`/`GroundItem` a stable, locally-generated
   `id: EntityId` (`simulation/entityId.ts` - a plain counter; nothing here depends on MWG
-  owning identity). `baseCreature()` and `spawnGroundItem()` assign one automatically, so this
-  is a pure addition - no existing object-identity lookup (`Map<Creature, Bar>` for health
-  bars, `Set<Creature>` for king adds, etc.) was touched or needs to change yet. Verified: type
-  check, `npm run build`, and a live browser session (entered the Sewers, spawned a rat via
-  `scene['spawnMonster']`, attacked it via `scene['attack']`, confirmed `hero.id`/`monster.id`/
-  ground item ids are all populated and combat/sprite/log output is unaffected).
-- Step 6b (not started): move `sprite: TintedSprite` out of the `Creature`/`GroundItem`
-  interfaces in `combat.ts` and into a `Map<id, TintedSprite>` (or small `ActorViewRegistry`
-  class) owned by the scene, then replace the ~60 `creature.sprite`/`item.sprite` call sites in
-  `main.ts` with registry lookups by id (`ui/{badgeBanner,characterEffects,heroAnimation,
-  titleFlame,waterSurface}.ts` were checked and do *not* need changes - they already take
-  locally-typed `{sprite}` projections built by `main.ts`, not `Creature` directly).
+  owning identity). `baseCreature()` and `spawnGroundItem()` assign one automatically.
+- Step 6b: `sprite: TintedSprite` no longer lives on `Creature`/`GroundItem` in `combat.ts`.
+  The scene now owns a `private spriteFor = new Map<string, TintedSprite>()` plus a
+  `sprite(entity: {id})` lookup helper; every constructor site registers into it
+  (`makeHero`/`spawnMonster`/`spawnGroundItem`), and every removal site
+  (`kill`/`escapeCrystalMimic`/the imp-quest departure/`pickupGroundItemAt`) deletes its entry
+  - except the hero's own kill path, which deliberately keeps the mapping alive for the
+  game-over screen's `!sprite(hero).destroyed` check. `ui/{badgeBanner,characterEffects,
+  heroAnimation,titleFlame,waterSurface}.ts` needed no changes: they already take locally-typed
+  `{sprite}` projections built by `main.ts`, not `Creature` directly. `this.projectiles`'
+  own `{flight, sprite}` shape is unrelated and was left alone.
 
 This is scene-internal (the pure `simulation/*` modules already only see `Combatant`, which
-has never had a `sprite` field - confirmed by grep, so this step does not touch the
-domain/simulation boundary at all). Step 6b is real but nontrivial - ~60 call sites in one
-file, every one needing to keep working identically - so it should land as its own reviewed,
-build-and-browser-verified change.
+never had a `sprite` field - confirmed by grep, so this step never touched the
+domain/simulation boundary). Verified: type check, `npm run build`, and two live browser
+sessions - the first confirmed `hero.id`/`monster.id`/ground-item ids populate and ordinary
+combat/log output is unaffected (Step 6a); the second, after Step 6b, spawned and killed a rat
+through `scene['spawnMonster']`/`scene['attack']` and spawned/picked up a gold pile through
+`scene['spawnGroundItem']`/`scene['pickupGroundItemAt']`, confirming `spriteFor` gains an
+entry on spawn and loses it on death/pickup, with correct damage numbers, floor items, and log
+text rendering throughout.
 
 ## Verification
 
