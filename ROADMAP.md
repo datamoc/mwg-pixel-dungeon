@@ -235,13 +235,19 @@ the corresponding Java source and recorded in `PORT_COVERAGE.md`.
       seeds a persistent 3-cell `Web` terrain blob rather than a direct debuff, not modeled here.
       Browser-verified live.
 - [ ] Implement exact Tengu, DM-300, and other boss attack cycles.
-- [x] Port rare monster variants' unique behaviors. Found and fixed a real bug auditing this:
-      `ArmoredBrute` (a real spawnable alternative kind, `extends Brute` in Java) never got
-      Brute's enrage/revival mechanic at all - both check sites tested `kind === 'brute'`
-      literally. Now ported with its own real numbers (`HT/2+1` shield, decaying 1/3 turns
-      instead of Brute's 4/turn) - see `PORT_COVERAGE.md`'s Brute-enrage row. The other 7 rare
-      kinds (Albino/CausticSlime/Bandit/SpectralNecromancer/DM201/Senior/Acidic) already had
-      their on-hit/stat behaviors live from the earlier spawn-selection pass.
+- [x] Port rare monster variants' unique behaviors. Found and fixed two real bugs of the same
+      shape auditing this - a monster's alternative-kind variant never inheriting the base
+      kind's special mechanic because a check tested the literal `kind` string instead of the
+      family relationship Java's own class extension implies:
+      - `ArmoredBrute` (`extends Brute`) never got Brute's enrage/revival mechanic at all. Now
+        ported with its own real numbers (`HT/2+1` shield, decaying 1/3 turns instead of
+        Brute's 4/turn) - see `PORT_COVERAGE.md`'s Brute-enrage row.
+      - `DM201` (`extends DM200`) never got DM200's gas-vent ability, and could also move
+        freely despite real Java's `DM201` being `IMMOVABLE` (unlike `DM200` itself). Both
+        fixed - see `PORT_COVERAGE.md`'s DM200-vent row. Also fixed this port's own vent log
+        line hardcoding "DM-200" regardless of which kind actually vented.
+      The other 6 rare kinds (Albino/CausticSlime/Bandit/SpectralNecromancer/Senior/Acidic)
+      already had their on-hit/stat behaviors live from the earlier spawn-selection pass.
 - [ ] Implement Java corpse, meat, gold, loot-stack, and limited-drop behavior.
 
 ## 6. Complete hero progression

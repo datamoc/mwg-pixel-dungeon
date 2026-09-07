@@ -196,7 +196,7 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.ui.locked': 'Locked - {hint}',
 	//combat
 	'port.log.bruterage': 'The Brute shrugs off the killing blow, seething with rage!',
-	'port.log.dm200vent': 'DM-200 vents a jet of toxic gas!',
+	'port.log.dm200vent': '{who} vents a jet of toxic gas!',
 	'port.log.necroheal': "The necromancer mends its skeleton's bones.",
 	'port.log.necroadrenaline': 'The necromancer fills its skeleton with adrenaline!',
 	'port.log.necroteleport': 'The necromancer teleports its skeleton back to your side!',
@@ -492,7 +492,7 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 	'port.log.oozed': '{who} est couvert de bave !',
 	'port.ui.locked': 'Verrouillé - {hint}',
 	'port.log.bruterage': "La Brute encaisse le coup fatal, submergée par la rage !",
-	'port.log.dm200vent': 'DM-200 relâche un jet de gaz toxique !',
+	'port.log.dm200vent': '{who} relâche un jet de gaz toxique !',
 	'port.log.necroheal': 'Le nécromancien répare les os de son squelette.',
 	'port.log.necroadrenaline': "Le nécromancien remplit son squelette d'adrénaline !",
 	'port.log.necroteleport': 'Le nécromancien téléporte son squelette à vos côtés !',

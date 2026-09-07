@@ -5087,8 +5087,10 @@ export class SewersScene extends Scene2D {
 		//blocking terrain even without line of sight, and retries venting if closing distance
 		//failed; this port requires a clear line instead (a narrower reachability check) and
 		//has no closing-distance-failed fallback - previously DM200 had no special behavior
-		//here at all and fought as a plain melee attacker.
-		if (monster.kind === 'dm200' && distance >= 2) {
+		//here at all and fought as a plain melee attacker. `DM201 extends DM200` and inherits
+		//this vent ability unchanged - previously excluded here by the same literal-kind-check
+		//bug already found and fixed for ArmoredBrute/Brute.
+		if ((monster.kind === 'dm200' || monster.kind === 'dm201') && distance >= 2) {
 			monster.ventCooldown = (monster.ventCooldown ?? 0) - 1;
 			if (
 				(monster.ventCooldown ?? 0) <= 0 &&
@@ -5140,6 +5142,10 @@ export class SewersScene extends Scene2D {
 			}
 		}
 
+		//DM201.properties has IMMOVABLE (DM200 itself does not) - reaching here means it didn't
+		//vent this turn and isn't adjacent, so real Java simply does nothing rather than
+		//stepping closer like every other non-immobile monster.
+		if (monster.kind === 'dm201') return;
 		//GnollTrickster.getCloser(): reaching here means it's about to move via the generic
 		//mover below rather than attack this turn, so its combo resets (see `stepAway`'s own
 		//identical reset for the adjacent-retreat case).
@@ -5221,7 +5227,10 @@ export class SewersScene extends Scene2D {
 		for (let i = 0; i < line.length - 1; i++) this.plantGas.seed(line[i].x, line[i].y, 20);
 		const last = line[line.length - 1]!;
 		this.plantGas.seed(last.x, last.y, 100);
-		this.say(t('port.log.dm200vent'), 'negative');
+		//`DM200.java`'s own `canVent`/vent code has no log line at all (the gas cloud itself is
+		//the only real feedback); this port adds one for clarity, so it should at least name the
+		//actual venting creature - previously hardcoded "DM-200" even when DM201 vented.
+		this.say(t('port.log.dm200vent', { who: capitalize(monster.name) }), 'negative');
 	}
 
 	/** GnollTrickster adjacent: never melees - steps further away instead (Hunting.getFurther) */
