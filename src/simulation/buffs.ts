@@ -9,7 +9,7 @@ import type { SimulationRandom } from './random';
  * because these multipliers apply to transient dice rolls rather than to named stats a
  * StatBlock resolves.
  */
-export type BuffId = 'bless' | 'hex' | 'daze' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision';
+export type BuffId = 'bless' | 'hex' | 'daze' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror';
 export const BUFF_DURATION: Record<BuffId, number> = {
 	bless: 30,
 	hex: 30,
@@ -36,6 +36,8 @@ export const BUFF_DURATION: Record<BuffId, number> = {
 	adrenalineSurge: 200,
 	//MindVision.DURATION
 	mindvision: 20,
+	//Terror.DURATION (ScrollOfTerror)
+	terror: 20,
 };
 
 

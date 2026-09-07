@@ -490,8 +490,8 @@ const APPEARANCE_TABLES: Record<string, Actors.AppearanceTable> = {
 		labels: POTION_APPEARANCE_KEYS.slice(0, 9) as string[],
 	},
 	scroll: {
-		kinds: ['scroll', 'scrollIdentify', 'scrollUpgrade', 'scrollRage', 'scrollLullaby', 'scrollMapping', 'scrollMirror', 'scrollCleanse', 'scrollRecharging', 'scrollTeleportation'],
-		labels: SCROLL_APPEARANCE_KEYS.slice(0, 10) as string[],
+		kinds: ['scroll', 'scrollIdentify', 'scrollUpgrade', 'scrollRage', 'scrollLullaby', 'scrollMapping', 'scrollMirror', 'scrollCleanse', 'scrollRecharging', 'scrollTeleportation', 'scrollTerror'],
+		labels: SCROLL_APPEARANCE_KEYS.slice(0, 11) as string[],
 	},
 };
 
@@ -3348,14 +3348,34 @@ export class SewersScene extends Scene2D {
 				//no new port.log.* entry needed for this one.
 				this.say(t('items.scrolls.scrollofteleportation.tele'), 'positive');
 			} else this.say(t('items.scrolls.scrollofteleportation.no_tele'), 'negative');
+		} else if (id === 'scrollTerror') {
+			//ScrollOfTerror.doRead(): affects every visible non-ally mob with a `Terror` buff
+			//that stops it attacking the reader specifically and makes it flee - modeled here as
+			//`takeMonsterTurn`'s always-flee override (see that check's own comment for why a
+			//per-object avoidance isn't feasible in this port's model). Real Java also tracks
+			//which specific mob(s) got affected for its none/one/many log variants; this port
+			//has no ally mobs to exclude, so "every visible, non-NPC monster" is the full target
+			//set (`isNPC` mobs here are quest givers/shopkeepers, not Java's ally alignment, but
+			//they're non-hostile the same way allies would be excluded).
+			const affected: Creature[] = [];
+			for (const c of this.creatures) {
+				if (!c.isHero && !c.isNPC && this.fov.isVisible(c.x, c.y)) {
+					addBuff(c, 'terror');
+					affected.push(c);
+				}
+			}
+			if (affected.length === 0) this.say(t('items.scrolls.scrollofterror.none'), 'negative');
+			else if (affected.length === 1) this.say(t('items.scrolls.scrollofterror.one', { '0': affected[0]!.name }), 'positive');
+			else this.say(t('items.scrolls.scrollofterror.many'), 'positive');
 		} else {
 			//ScrollOfRemoveCurse.doRead() is genuinely this branch's effect ('scrollCleanse' hits
-			//it correctly), but so does anything unread: ScrollOfRetribution/Terror/Transmutation
-			//are all in the real Generator pool (`spdItems/generator.ts`) and none has its own
+			//it correctly), but so does anything unread: ScrollOfRetribution/Transmutation are
+			//both in the real Generator pool (`spdItems/generator.ts`) and neither has its own
 			//branch here, so each still falls through to Remove Curse's effect instead of its own
 			//- not merely inert, an active (if narrow) misbehavior, same as the equivalent
-			//unported potions above. Each needs its own system (retaliation damage, an escape-
-			//inducing fear status, and item-transmutation respectively) - see `PORT_COVERAGE.md`.
+			//unported potions above. Each needs its own system (retaliation damage that also
+			//needs the unported `Blindness` status, and item-transmutation respectively) - see
+			//`PORT_COVERAGE.md`.
 			for (const b of ['weakness', 'vulnerable', 'hex', 'daze'] as BuffId[]) delete this.hero.buffs[b];
 			for (const item of this.bag.items) if (item.cursed || getCurse(item.affix ?? '')) Actors.removeAffix(item);
 			if (getCurse(this.weaponAffix ?? '')) this.weaponAffix = null;
@@ -4854,6 +4874,21 @@ export class SewersScene extends Scene2D {
 			if (distance > wakeRadius) return;
 			monster.sleeping = false;
 			this.say(t('port.log.wakes', { who: capitalize(monster.name) }), 'warning');
+		}
+		//ScrollOfTerror.doRead()/Terror.java: real Java's Terror stops the mob attacking the
+		//specific reader while otherwise letting it act freely (attack allies, flee toward
+		//other exits) - this port's monster-turn model has no per-object avoidance and no
+		//monster-vs-ally combat for that distinction to matter against, so it approximates the
+		//practical single-hero effect as an always-flee override on the same
+		//`decideMonsterAI`/`fleeBelow` mechanism `Thief.FLEEING` already uses, skipping every
+		//attack branch below entirely for the turn.
+		if (monster.buffs['terror']) {
+			const blocked = new Set(
+				this.creatures.filter((c) => c !== monster && c !== this.hero).map((c) => this.level.index(c.x, c.y))
+			);
+			const decision = Roguelike.decideMonsterAI(this.level, this.pathfinder, monster, monster.hp / monster.maxHp, this.hero, { sightRadius: VIEW_RADIUS, fleeBelow: 1, blocked });
+			if (decision.step) this.moveTo(monster, decision.step);
+			return;
 		}
 		// CrystalMimic remains in FLEEING after revealing itself. Revelation is separate from
 		// `stolen`: Java reveals it before the first theft, so an untouched chest must still be

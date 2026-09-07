@@ -155,6 +155,7 @@ export const ITEM_KEYS: Record<string, string> = {
 	scrollCleanse: 'items.scrolls.scrollofremovecurse.name',
 	scrollRecharging: 'items.scrolls.scrollofrecharging.name',
 	scrollTeleportation: 'items.scrolls.scrollofteleportation.name',
+	scrollTerror: 'items.scrolls.scrollofterror.name',
 };
 
 /** `items.rings.*` */
