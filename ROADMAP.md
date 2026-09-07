@@ -334,17 +334,37 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
 - [x] Step 6: give every `Combatant`/`Creature`/`GroundItem` a stable id
       (`simulation/entityId.ts`), and move `sprite` out of `Creature`/`GroundItem` into a
       `spriteFor` view registry keyed by that id (see `SIMULATION_ARCHITECTURE.md`'s "Step 6").
+- [x] Produce the section 22A/22B data/function/method analysis matrix for one monster family
+      (Rat/Snake/Crab/Goo, see `MONSTER_ANALYSIS_RAT_SNAKE_CRAB_GOO.md`) before any class-level
+      monster refactor, per SPD-ADR-010.
+- [x] **`mwg@0.4.1` shipped `core.EntityRegistry`/`EntityId`, `simulation.SimulationRuntime`
+      (the plan's actual Command -> State + Events + cost + snapshot runtime), and
+      `core.PresentationQueue`** - the single biggest unblock since this section was written.
+      Pin bumped (`package.json`), full verification suite re-run (type check, build, live
+      browser session on the Sewers), see `SPD_ARCHITECTURE_TARGET_V3.md` for the detailed
+      diff against 0.4.0. No game code adopts any of these three yet.
+- [ ] **Next real phase**: wrap the existing per-domain rule functions (`simulation/combat.ts`,
+      `movement.ts`, `heroActions.ts`, `heroTurn.ts`) behind one
+      `SimulationRuntime<SpdGameState, SpdCommand, SpdEvent, Creature>`, migrating `main.ts`'s
+      direct-mutation call sites (`attack()`, `moveTo()`, etc.) to `dispatch()` one command type
+      at a time - start with whichever command is cheapest to convert without touching
+      presentation-heavy code, not necessarily `attack()`. No big-bang (plan section 25).
+- [ ] Consider replacing `simulation/entityId.ts`'s local counter with MWG's own
+      `core.EntityRegistry` now that it exists (SPD-ADR-002) - a smaller, independent follow-up
+      to the `SimulationRuntime` adoption above, since `EntityRegistry` also gives the reverse
+      `idOf(entity)` lookup this project's own `entityId.ts` does not.
 - [ ] Extract `main.ts`'s `attack()` pure resolution (hit/damage rolls, weapon-affix/talent
       branches, event-worthy outcomes like mimic reveal/displacement) from its presentation
       calls (sprite tint, audio cue, floating text) - the single largest concrete instance of
-      plan section 10's complaint, and the next big slice after Step 6.
-- [ ] Produce the section 22A/22B data/function/method analysis matrix for one monster family
-      (e.g. Rat/Snake/Crab/Goo) before any class-level monster refactor, per SPD-ADR-010.
+      plan section 10's complaint. Likely the vehicle for actually adopting `SimulationRuntime`
+      above, rather than a separate step.
 - [ ] Compare `mwg/i18n` against the plan's section 22C "Semantic Messaging" shape before
       committing to SPD-ADR-012.
-- [ ] Re-check `mwg`'s exports on every version bump for the plan's assumed primitives
-      (`EntityId`/`EntityRegistry`, raw 2D primitive re-exports, full snapshots) - several
-      phases of the v3 plan stay blocked until those land upstream.
+- [ ] Continue producing the section 22A/22B analysis matrix for the remaining monster/item/
+      buff families before migrating each one's code, per SPD-ADR-010.
+- [ ] Re-check `mwg`'s exports on every version bump for the plan's remaining assumed
+      primitives (raw 2D primitive re-exports, the Semantic Messaging shape) - some phases of
+      the v3 plan still stay blocked until those land upstream.
 
 ## Definition of done
 
