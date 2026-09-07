@@ -4993,8 +4993,12 @@ export class SewersScene extends Scene2D {
 			//`Bandit extends Thief` and shares this unchanged - previously excluded here by the
 			//same literal-kind-check bug found for ArmoredBrute/DM201/Senior/SpectralNecromancer.
 			else if ((monster.kind === 'thief' || monster.kind === 'bandit') && monster.stolen) this.stepAway(monster);
-			//Scorpio refuses adjacent kills - it backs off to keep its range (getFurther)
-			else if (monster.kind === 'scorpio') this.stepAway(monster);
+			//Scorpio refuses adjacent kills - it backs off to keep its range (getFurther).
+			//`Acidic extends Scorpio` and shares this unchanged (its own override just adds an
+			//Ooze/corrosion proc, already ported separately via the `causticSlime || acidic`
+			//branch elsewhere in this file) - previously excluded here by the same literal-
+			//kind-check bug found for the other rare variants.
+			else if (monster.kind === 'scorpio' || monster.kind === 'acidic') this.stepAway(monster);
 			else this.attack(monster, this.hero);
 			return;
 		}
@@ -5095,8 +5099,9 @@ export class SewersScene extends Scene2D {
 			addBuff(this.hero, effect[monster.combo]);
 			return;
 		}
-		//Scorpio: ranged-only over PROJECTILE ballistics, like the Trickster
-		if (monster.kind === 'scorpio' && Roguelike.canTarget(this.level, monster, this.hero, { range: 6 })) {
+		//Scorpio: ranged-only over PROJECTILE ballistics, like the Trickster. Acidic shares this
+		//unchanged (see the retreat branch's own comment above).
+		if ((monster.kind === 'scorpio' || monster.kind === 'acidic') && Roguelike.canTarget(this.level, monster, this.hero, { range: 6 })) {
 			this.attack(monster, this.hero);
 			this.spawnProjectile(monster, this.hero);
 			return;
@@ -6111,8 +6116,9 @@ export class SewersScene extends Scene2D {
 				}
 			}
 		}
-		//Scorpio: 50% cripple on a hit
-		if (attacker.kind === 'scorpio' && Random.chance(0.5)) {
+		//Scorpio: 50% cripple on a hit. Acidic's own attackProc() calls super.attackProc() after
+		//adding its Ooze proc, so it still applies this too - previously excluded here.
+		if ((attacker.kind === 'scorpio' || attacker.kind === 'acidic') && Random.chance(0.5)) {
 			addBuff(defender, 'cripple');
 			this.say(t('port.log.cripple'), 'negative');
 		}

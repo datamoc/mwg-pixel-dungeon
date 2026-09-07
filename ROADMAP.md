@@ -260,8 +260,11 @@ the corresponding Java source and recorded in `PORT_COVERAGE.md`.
         - the most consequential of the three - a killed Bandit's stolen item was gone for
         good instead of recoverable. All three fixed - see `PORT_COVERAGE.md`'s Thief-steal
         row.
-      The other 3 rare kinds (Albino/CausticSlime/Acidic) already had their on-hit/stat
-      behaviors live from the earlier spawn-selection pass.
+      - `Acidic` (`extends Scorpio`) never retreated from melee, never attacked at range, and
+        never applied Scorpio's own 50% cripple proc - only its own corrosion effect worked.
+        All three fixed - see `PORT_COVERAGE.md`'s Scorpio row.
+      The other 2 rare kinds (Albino/CausticSlime) already had their on-hit/stat behaviors
+      live from the earlier spawn-selection pass.
 - [ ] Implement Java corpse, meat, gold, loot-stack, and limited-drop behavior.
 
 ## 6. Complete hero progression
