@@ -119,6 +119,36 @@ Regression checks cover all 24 occupancy/door/roots/passability combinations, qu
 short-circuiting, waiting, all eight directions, and coordinate independence. Monster
 decisions and movement effect implementations remain scene-owned.
 
+## Step 6 - local EntityId, with the view-registry move still ahead
+
+`SPD_ARCHITECTURE_TARGET_V3.md` records a broader target architecture (Command -> State +
+Events, MWG-owned `EntityId`/`EntityRegistry`, full snapshots) that assumes MWG capabilities
+this project's pinned `mwg@0.4.0` does not yet ship. The piece of that target which is *not*
+blocked on an unreleased MWG feature, and is the direct continuation of steps 1-5's own
+"Subsequent steps" item 2 ("move rendering objects into a view map keyed by actor ID"), splits
+into two parts:
+
+- Step 6a (done): give every `Combatant`/`Creature`/`GroundItem` a stable, locally-generated
+  `id: EntityId` (`simulation/entityId.ts` - a plain counter; nothing here depends on MWG
+  owning identity). `baseCreature()` and `spawnGroundItem()` assign one automatically, so this
+  is a pure addition - no existing object-identity lookup (`Map<Creature, Bar>` for health
+  bars, `Set<Creature>` for king adds, etc.) was touched or needs to change yet. Verified: type
+  check, `npm run build`, and a live browser session (entered the Sewers, spawned a rat via
+  `scene['spawnMonster']`, attacked it via `scene['attack']`, confirmed `hero.id`/`monster.id`/
+  ground item ids are all populated and combat/sprite/log output is unaffected).
+- Step 6b (not started): move `sprite: TintedSprite` out of the `Creature`/`GroundItem`
+  interfaces in `combat.ts` and into a `Map<id, TintedSprite>` (or small `ActorViewRegistry`
+  class) owned by the scene, then replace the ~60 `creature.sprite`/`item.sprite` call sites in
+  `main.ts` with registry lookups by id (`ui/{badgeBanner,characterEffects,heroAnimation,
+  titleFlame,waterSurface}.ts` were checked and do *not* need changes - they already take
+  locally-typed `{sprite}` projections built by `main.ts`, not `Creature` directly).
+
+This is scene-internal (the pure `simulation/*` modules already only see `Combatant`, which
+has never had a `sprite` field - confirmed by grep, so this step does not touch the
+domain/simulation boundary at all). Step 6b is real but nontrivial - ~60 call sites in one
+file, every one needing to keep working identically - so it should land as its own reviewed,
+build-and-browser-verified change.
+
 ## Verification
 
 Run `npm run check`, `npm run test:simulation`, and `npm run build`. The simulation checks

@@ -6,7 +6,7 @@ import { applyBuff, advanceBuffs, type BuffId, type BuffState } from '../simulat
 /** Explicit projection prevents a scene Creature's sprite/skeleton graph entering the core. */
 function combatState(c: Combatant): Combatant {
 	return {
-		x: c.x, y: c.y, hp: c.hp, maxHp: c.maxHp,
+		id: c.id, x: c.x, y: c.y, hp: c.hp, maxHp: c.maxHp,
 		accuracy: c.accuracy, evasion: c.evasion,
 		damage: [...c.damage], armor: [...c.armor], buffs: { ...c.buffs },
 		isHero: c.isHero, kind: c.kind, sleeping: c.sleeping,

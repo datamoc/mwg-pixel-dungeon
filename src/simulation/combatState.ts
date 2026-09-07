@@ -1,9 +1,12 @@
 import type { BuffState } from './buffs';
+import type { EntityId } from './entityId';
 
 export interface Step { x: number; y: number; }
 
 /** Only the data needed by combat formulas. No sprite, scene, or framework reference. */
 export interface Combatant extends Step {
+	/** Stable across the object's lifetime; see `entityId.ts`. */
+	id: EntityId;
 	hp: number;
 	maxHp: number;
 	accuracy: number;

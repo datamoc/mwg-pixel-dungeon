@@ -320,6 +320,34 @@ browser pass before they can be treated as done rather than merely built:
       was not confirmed either way. Reproduce under normal human-paced play (or a scripted wait
       for the loading screen to clear) before deciding whether this needs an actual fix.
 
+## 11. Architecture refactor toward the v3 target
+
+This section tracks structural work, as distinct from the Java-parity work above. See
+`SPD_ARCHITECTURE_TARGET_V3.md` for the target architecture (Command -> State + Events
+simulation, renderer-free `EntityId`-addressed actors, event-driven presentation, data/
+function/method-driven business families instead of Java-class transposition) and which
+parts of it are blocked on `mwg` capabilities not yet released versus actionable now.
+`SIMULATION_ARCHITECTURE.md` tracks the actual extraction steps taken so far (turns, combat,
+buffs, hero actions, movement) and the next planned one (Step 6: local `EntityId` + an actor
+view registry, replacing `Creature.sprite`/object-identity lookups).
+
+- [x] Step 6a: give every `Combatant`/`Creature`/`GroundItem` a stable id
+      (`simulation/entityId.ts`).
+- [ ] Step 6b: move `sprite` out of `Creature`/`GroundItem` into a view registry keyed by that
+      id, and update the ~60 call sites in `main.ts` (see `SIMULATION_ARCHITECTURE.md`'s
+      "Step 6").
+- [ ] Extract `main.ts`'s `attack()` pure resolution (hit/damage rolls, weapon-affix/talent
+      branches, event-worthy outcomes like mimic reveal/displacement) from its presentation
+      calls (sprite tint, audio cue, floating text) - the single largest concrete instance of
+      plan section 10's complaint, and the next big slice after Step 6.
+- [ ] Produce the section 22A/22B data/function/method analysis matrix for one monster family
+      (e.g. Rat/Snake/Crab/Goo) before any class-level monster refactor, per SPD-ADR-010.
+- [ ] Compare `mwg/i18n` against the plan's section 22C "Semantic Messaging" shape before
+      committing to SPD-ADR-012.
+- [ ] Re-check `mwg`'s exports on every version bump for the plan's assumed primitives
+      (`EntityId`/`EntityRegistry`, raw 2D primitive re-exports, full snapshots) - several
+      phases of the v3 plan stay blocked until those land upstream.
+
 ## Definition of done
 
 - Every Java gameplay system has an equivalent TypeScript implementation.

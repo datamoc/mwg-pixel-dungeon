@@ -5,6 +5,7 @@ import type { AnyMonsterId } from './monsters';
 import type { GroundItemKind } from './dungeonConstants';
 import type { Combatant, Step } from './simulation/combatState';
 import type { BuffId } from './simulation/buffs';
+import { nextEntityId } from './simulation/entityId';
 import { createCombatAdapter } from './adapters/combatSimulation';
 import { simulationRandom } from './adapters/mwgRandom';
 export { INFINITE_ACCURACY, INFINITE_EVASION, ASCENSION_MOD, ASCENSION_ON, accRollMulti, setStrongerBossesEnabled } from './simulation/combat';
@@ -74,14 +75,18 @@ export interface Creature extends Combatant {
 	webCooldown?: number;
 }
 
-/** makes a Creature-shaped object with the combat-state fields every spawn needs */
-export function baseCreature(init: Omit<Creature, 'buffs'> & { buffs?: Creature['buffs'] }): Creature {
-	const { buffs, ...rest } = init;
-	return { sleeping: true, champion: null, ...rest, buffs: { ...(buffs ?? {}) } };
+/** makes a Creature-shaped object with the combat-state fields every spawn needs.
+ * `id` is optional at call sites - it defaults to a fresh one, since no caller today has a
+ * reason to name its own (see `entityId.ts`). */
+export function baseCreature(init: Omit<Creature, 'buffs' | 'id'> & { buffs?: Creature['buffs']; id?: Creature['id'] }): Creature {
+	const { buffs, id, ...rest } = init;
+	return { id: id ?? nextEntityId(rest.isHero ? 'hero' : 'actor'), sleeping: true, champion: null, ...rest, buffs: { ...(buffs ?? {}) } };
 }
 
 /** an item lying on the floor, picked up by stepping onto its cell - see `pickupGroundItemAt` */
 export interface GroundItem extends Step {
+	/** Stable across the object's lifetime; see `entityId.ts`. */
+	id: string;
 	kind: GroundItemKind;
 	sprite: TintedSprite;
 	/** Java Heap.Type.CHEST/CRYSTAL_CHEST; contents are opened instead of auto-picked up. */

@@ -127,6 +127,7 @@ import {
 	type GroundItem,
 	type BuffId,
 } from './combat';
+import { nextEntityId } from './simulation/entityId';
 import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, type AnyMonsterId, type MonsterId } from './monsters';
 
 /**
@@ -2925,7 +2926,7 @@ export class SewersScene extends Scene2D {
 		sprite.x = x * TILE;
 		sprite.y = y * TILE;
 		this.itemLayer.addChild(sprite);
-		this.groundItems.push({ kind, x, y, sprite, item, chest });
+		this.groundItems.push({ id: nextEntityId('item'), kind, x, y, sprite, item, chest });
 	}
 
 	/** stepping onto a ground item's cell picks it up - `GameScene.pickUp` without a "leave it" choice, since there is no inventory UI to offer one through */
