@@ -490,8 +490,8 @@ const APPEARANCE_TABLES: Record<string, Actors.AppearanceTable> = {
 		labels: POTION_APPEARANCE_KEYS.slice(0, 9) as string[],
 	},
 	scroll: {
-		kinds: ['scroll', 'scrollIdentify', 'scrollUpgrade', 'scrollRage', 'scrollLullaby', 'scrollMapping', 'scrollMirror', 'scrollCleanse', 'scrollRecharging', 'scrollTeleportation', 'scrollTerror'],
-		labels: SCROLL_APPEARANCE_KEYS.slice(0, 11) as string[],
+		kinds: ['scroll', 'scrollIdentify', 'scrollUpgrade', 'scrollRage', 'scrollLullaby', 'scrollMapping', 'scrollMirror', 'scrollCleanse', 'scrollRecharging', 'scrollTeleportation', 'scrollTerror', 'scrollRetribution'],
+		labels: SCROLL_APPEARANCE_KEYS.slice(0, 12) as string[],
 	},
 };
 
@@ -3367,15 +3367,37 @@ export class SewersScene extends Scene2D {
 			if (affected.length === 0) this.say(t('items.scrolls.scrollofterror.none'), 'negative');
 			else if (affected.length === 1) this.say(t('items.scrolls.scrollofterror.one', { '0': affected[0]!.name }), 'positive');
 			else this.say(t('items.scrolls.scrollofterror.many'), 'positive');
+		} else if (id === 'scrollRetribution') {
+			//ScrollOfRetribution.doRead(): damages every visible mob for
+			//`round(mob.HT/10 + mob.HP*power*0.225)` where `power = min(4, 4.45*missingHpFraction)`
+			//- the weaker the reader, the harder the blast hits (can one-shot most enemies at very
+			//low HP) - then applies `Weakness` and `Blindness` to the reader as the cost. This
+			//port has no `Blindness` status (a `FlavourBuff` whose real mechanical effect lives
+			//in vision-radius/targeting code this port doesn't have an equivalent seam for), so
+			//only `Weakness` is applied; `Weakness` and `Vulnerable` were both dead code before
+			//this (defined, correctly wired into `rollDamage`, but never actually granted by
+			//anything) - this scroll is their first real source. `Vulnerable` is Java's own
+			//separate mob-side debuff and is not part of Retribution; unaffected here.
+			const missingHpFraction = (this.hero.maxHp - this.hero.hp) / this.hero.maxHp;
+			const power = Math.min(4, 4.45 * missingHpFraction);
+			for (const c of [...this.creatures]) {
+				if (c.isHero || c.isNPC || !this.fov.isVisible(c.x, c.y)) continue;
+				const damage = Math.round(c.maxHp / 10 + c.hp * power * 0.225);
+				c.hp -= damage;
+				this.showDamage(c, damage);
+				if (c.hp <= 0) this.kill(c);
+			}
+			addBuff(this.hero, 'weakness');
+			this.say(t('items.scrolls.scrollofretribution.blast'), 'warning');
 		} else {
 			//ScrollOfRemoveCurse.doRead() is genuinely this branch's effect ('scrollCleanse' hits
-			//it correctly), but so does anything unread: ScrollOfRetribution/Transmutation are
-			//both in the real Generator pool (`spdItems/generator.ts`) and neither has its own
-			//branch here, so each still falls through to Remove Curse's effect instead of its own
-			//- not merely inert, an active (if narrow) misbehavior, same as the equivalent
-			//unported potions above. Each needs its own system (retaliation damage that also
-			//needs the unported `Blindness` status, and item-transmutation respectively) - see
-			//`PORT_COVERAGE.md`.
+			//it correctly), but so does anything unread: `ScrollOfTransmutation` is also in the
+			//real Generator pool (`spdItems/generator.ts`) and has no branch here, so it still
+			//falls through to Remove Curse's effect instead of its own - not merely inert, an
+			//active (if narrow) misbehavior, same as the equivalent unported potions above. It
+			//needs a whole item-transmutation system (`usableOnItem`/`changeItem`'s per-category
+			//reroll rules, plus a generic item-picker UI this port doesn't have - every other
+			//"pick one item" scroll here auto-targets instead) - see `PORT_COVERAGE.md`.
 			for (const b of ['weakness', 'vulnerable', 'hex', 'daze'] as BuffId[]) delete this.hero.buffs[b];
 			for (const item of this.bag.items) if (item.cursed || getCurse(item.affix ?? '')) Actors.removeAffix(item);
 			if (getCurse(this.weaponAffix ?? '')) this.weaponAffix = null;

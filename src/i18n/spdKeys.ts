@@ -156,6 +156,7 @@ export const ITEM_KEYS: Record<string, string> = {
 	scrollRecharging: 'items.scrolls.scrollofrecharging.name',
 	scrollTeleportation: 'items.scrolls.scrollofteleportation.name',
 	scrollTerror: 'items.scrolls.scrollofterror.name',
+	scrollRetribution: 'items.scrolls.scrollofretribution.name',
 };
 
 /** `items.rings.*` */

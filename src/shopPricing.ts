@@ -28,6 +28,7 @@ const BASE_PRICES: Record<string, number> = {
 	scrollRecharging: 30,
 	scrollTeleportation: 30,
 	scrollTerror: 40,
+	scrollRetribution: 40,
 
 	// Weapons (tier 1 base, scale up per tier)
 	wornshortsword: 20,

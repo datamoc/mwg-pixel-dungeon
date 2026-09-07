@@ -16,8 +16,11 @@ export const BUFF_DURATION: Record<BuffId, number> = {
 	daze: 5,
 	fury: 9999,
 	berserk: 9999,
-	weakness: 10,
-	vulnerable: 10,
+	//Weakness.DURATION/Vulnerable.DURATION are both really 20, not 10 - neither buff had any
+	//real source applying it before ScrollOfRetribution, so the earlier 10 was an unconfirmed
+	//placeholder guess, not a deliberate match to some other formula.
+	weakness: 20,
+	vulnerable: 20,
 	burning: 3,
 	poison: 6,
 	cripple: 4,

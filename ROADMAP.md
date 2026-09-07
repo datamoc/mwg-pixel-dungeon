@@ -34,10 +34,12 @@ the corresponding Java source and recorded in `PORT_COVERAGE.md`.
       reusing the same search the Displacing/Displacement curses already had, now factored into
       a shared `randomFreeCell()` helper). `ScrollOfTerror` is now ported (a new `terror` buff
       forces `takeMonsterTurn`'s existing `decideMonsterAI` fleeBelow threshold to 1, the same
-      mechanism Thief's fleeing already uses). `ScrollOfRetribution`/`Transmutation` remain
-      unported (Retribution needs the still-unported `Blindness` status; Transmutation needs
-      item-transmutation) and still fall through to Remove Curse's effect when read - see
-      `PORT_COVERAGE.md`.
+      mechanism Thief's fleeing already uses). `ScrollOfRetribution` is now ported too (minus
+      `Blindness`, which this port has no seam for) - this also uncovered `Weakness`/
+      `Vulnerable` as fully-wired but previously never-granted dead code, and corrected both
+      buffs' durations (`10` -> the real `20`). `ScrollOfTransmutation` remains unported (needs
+      a full item-transmutation system plus a generic item-picker UI this port doesn't have)
+      and still falls through to Remove Curse's effect when read - see `PORT_COVERAGE.md`.
 - [ ] Port the remaining enchantments, glyphs, weapon curses, and armor curses. Only 4 weapon
       curses now lack proc logic at all (`friendly`, plus Kinetic/Blooming/Corrupting/Elastic/
       Projecting/Unstable's missing-subsystem group) - `polarized`/`sacrificial`/`displacing`
