@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ROADMAP.md progress</title>
+<style>
+	html, body { margin: 0; padding: 0; background: #14161c; }
+	canvas { display: block; }
+</style>
+</head>
+<body>
+<!-- Standalone mwg build - no bundler needed, per MWG_EXTRACTION.md's own note that the
+	 global build is "what window.mw_games" exposes. Served (not opened via file://) so the
+	 fetch() of ../ROADMAP.md below actually resolves - see CLAUDE.md's browser-verification
+	 workflow for why file:// can't do this. -->
+<script src="../node_modules/mwg/dist/mw_games.global.js"></script>
+<script src="./roadmapProgress.js"></script>
+</body>
+</html>

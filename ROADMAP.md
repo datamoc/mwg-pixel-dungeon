@@ -4,6 +4,14 @@ Goal: make the TypeScript game functionally equivalent to the Java Shattered
 Pixel Dungeon implementation. Every completed item should be checked against
 the corresponding Java source and recorded in `PORT_COVERAGE.md`.
 
+`tools/roadmap-progress.html` renders this file's own checkbox completion (overall and
+per `##` section) as real `mwg` `two-d.ui.Bar`/`Label` widgets, loaded from the
+standalone `mw_games.global.js` build (no bundler needed). Serve the repo root (e.g.
+`python -m http.server 8000` from the repo root - not `dist/`) and open
+`http://localhost:<port>/tools/roadmap-progress.html`; it `fetch()`es `../ROADMAP.md`
+directly, so opening the file via `file://` won't work (see this project's own
+browser-verification workflow for why).
+
 ## 1. Complete the item system
 
 - [x] Wire `rollAffix`/`ENCHANT_TABLE`/`GLYPH_TABLE` into real item generation and equip.
