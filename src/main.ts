@@ -4989,8 +4989,10 @@ export class SewersScene extends Scene2D {
 			//bolt or skeleton summon at all.
 			else if (monster.kind === 'necromancer' || monster.kind === 'spectralNecromancer') this.zapHero(monster, [2, 10]);
 			else if (monster.kind === 'gnollTrickster') this.stepAway(monster);
-			//Thief.FLEEING never attacks - it runs (same stepper as the Trickster's retreat)
-			else if (monster.kind === 'thief' && monster.stolen) this.stepAway(monster);
+			//Thief.FLEEING never attacks - it runs (same stepper as the Trickster's retreat).
+			//`Bandit extends Thief` and shares this unchanged - previously excluded here by the
+			//same literal-kind-check bug found for ArmoredBrute/DM201/Senior/SpectralNecromancer.
+			else if ((monster.kind === 'thief' || monster.kind === 'bandit') && monster.stolen) this.stepAway(monster);
 			//Scorpio refuses adjacent kills - it backs off to keep its range (getFurther)
 			else if (monster.kind === 'scorpio') this.stepAway(monster);
 			else this.attack(monster, this.hero);
@@ -5185,8 +5187,9 @@ export class SewersScene extends Scene2D {
 			this.hero,
 			{
 				sightRadius: VIEW_RADIUS,
-				//Thief.FLEEING once it has stolen something; everyone else fights on (0.25)
-				fleeBelow: monster.kind === 'thief' && monster.stolen ? 1 : 0.25,
+				//Thief.FLEEING once it has stolen something; everyone else fights on (0.25).
+				//Bandit extends Thief and shares this unchanged.
+				fleeBelow: (monster.kind === 'thief' || monster.kind === 'bandit') && monster.stolen ? 1 : 0.25,
 				blocked,
 			}
 		);
@@ -6332,8 +6335,11 @@ export class SewersScene extends Scene2D {
 				this.spawnGroundItem('ironKey', creature.x, creature.y, { id: 'ironKey', quantity: 1, identified: true });
 				this.say(t('port.log.guardkey'));
 			}
-			//a slain thief returns what it stole, plus the gold it drops fleeing-or-dead
-			if (creature.kind === 'thief' && creature.stolen) {
+			//a slain thief returns what it stole, plus the gold it drops fleeing-or-dead.
+			//Bandit extends Thief and shares this unchanged - previously excluded here too by
+			//the same literal-kind-check bug found for its flee behavior above, so a killed
+			//Bandit's stolen item vanished for good instead of being recoverable.
+			if ((creature.kind === 'thief' || creature.kind === 'bandit') && creature.stolen) {
 				if (creature.stolen.startsWith('gold:')) {
 					this.heroStats.setBase('gold', this.heroStats.base('gold') + 10);
 				} else {

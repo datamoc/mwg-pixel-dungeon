@@ -256,7 +256,11 @@ the corresponding Java source and recorded in `PORT_COVERAGE.md`.
         behavior at all - fought as a plain melee attacker. All three check sites (adjacent
         bolt, summon/support branch, skeleton-death cleanup) fixed - see
         `PORT_COVERAGE.md`'s Necromancer-summon row.
-      The other 4 rare kinds (Albino/CausticSlime/Bandit/Acidic) already had their on-hit/stat
+      - `Bandit` (`extends Thief`) never actually fled after stealing (two check sites), and
+        - the most consequential of the three - a killed Bandit's stolen item was gone for
+        good instead of recoverable. All three fixed - see `PORT_COVERAGE.md`'s Thief-steal
+        row.
+      The other 3 rare kinds (Albino/CausticSlime/Acidic) already had their on-hit/stat
       behaviors live from the earlier spawn-selection pass.
 - [ ] Implement Java corpse, meat, gold, loot-stack, and limited-drop behavior.
 
