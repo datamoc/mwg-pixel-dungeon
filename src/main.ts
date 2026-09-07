@@ -2877,7 +2877,15 @@ export class SewersScene extends Scene2D {
 			const name = cls === 'PotionOfLiquidFlame' ? 'Flame' : cls === 'PotionOfInvisibility' ? 'Invis' : cls.replace(/^PotionOf/, '');
 			id = `potion${name}`;
 		} else if (generated.cat === Cat.SCROLL) {
-			const name = cls.replace(/^ScrollOf/, '');
+			//Same class of rename `Cat.POTION` needs above: `readScroll()` and the identification-
+			//appearance table use the shorter `scrollMirror`/`scrollMapping`/`scrollCleanse` ids
+			//(matching this port's own naming, not the literal Java class name), so a genuinely-
+			//generated Mirror Image, Magic Mapping, or Remove Curse scroll previously got an id
+			//nothing recognized and silently fell through to the default (Remove Curse) branch
+			//instead of its own real effect - Remove Curse was accidentally correct for itself,
+			//but Mirror Image and Magic Mapping (both of which have real, working ported effects)
+			//were unreachable through actual play.
+			const name = cls === 'ScrollOfMirrorImage' ? 'Mirror' : cls === 'ScrollOfMagicMapping' ? 'Mapping' : cls === 'ScrollOfRemoveCurse' ? 'Cleanse' : cls.replace(/^ScrollOf/, '');
 			id = `scroll${name}`;
 		} else if (generated.cat === Cat.FOOD) id = 'food';
 		let affix: string | undefined;
@@ -3311,6 +3319,15 @@ export class SewersScene extends Scene2D {
 			this.grantHeroShield(Math.round(this.hero.maxHp * 0.15), this.hero.maxHp);
 			this.say(t('port.log.mirror'), 'positive');
 		} else {
+			//ScrollOfRemoveCurse.doRead() is genuinely this branch's effect ('scrollCleanse' hits
+			//it correctly), but so does anything unread: ScrollOfRecharging/Teleportation/
+			//Retribution/Terror/Transmutation are all in the real Generator pool
+			//(`spdItems/generator.ts`) and none has its own branch here, so each still falls
+			//through to Remove Curse's effect instead of its own - not merely inert, an active
+			//(if narrow) misbehavior, same as the equivalent unported potions above. Each needs
+			//its own system (wand-charge refund, a teleport-to-random-cell, retaliation damage,
+			//an escape-inducing fear status, and item-transmutation respectively) - see
+			//`PORT_COVERAGE.md`.
 			for (const b of ['weakness', 'vulnerable', 'hex', 'daze'] as BuffId[]) delete this.hero.buffs[b];
 			for (const item of this.bag.items) if (item.cursed || getCurse(item.affix ?? '')) Actors.removeAffix(item);
 			if (getCurse(this.weaponAffix ?? '')) this.weaponAffix = null;
@@ -3715,7 +3732,8 @@ export class SewersScene extends Scene2D {
 		if (lower.includes('gold')) return { id: 'gold', quantity: 1, identified: true, sourceClass: concrete };
 		//same short-id rename `generatedInventoryItem` needs for these two (see its comment)
 		if (lower.includes('potion')) return { id: concrete === 'PotionOfLiquidFlame' ? 'potionFlame' : concrete === 'PotionOfInvisibility' ? 'potionInvis' : concrete.replace(/^PotionOf/, 'potion'), quantity: 1, identified: false, sourceClass: concrete };
-		if (lower.includes('scroll')) return { id: concrete.replace(/^ScrollOf/, 'scroll'), quantity: 1, identified: false, sourceClass: concrete };
+		//same short-id rename `generatedInventoryItem` needs for these three (see its comment)
+		if (lower.includes('scroll')) return { id: concrete === 'ScrollOfMirrorImage' ? 'scrollMirror' : concrete === 'ScrollOfMagicMapping' ? 'scrollMapping' : concrete === 'ScrollOfRemoveCurse' ? 'scrollCleanse' : concrete.replace(/^ScrollOf/, 'scroll'), quantity: 1, identified: false, sourceClass: concrete };
 		if (lower.includes('ring')) return { id: `ring_${concrete.replace(/^RingOf/, '').replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`).replace(/^_/, '')}`, quantity: 1, identified: false, instanceId: this.newItemInstanceId('ring'), sourceClass: concrete };
 		if (lower.includes('timekeepershourglass')) return { id: 'hourglass', quantity: 1, identified: false, sandBags: 0, instanceId: this.newItemInstanceId('hourglass'), sourceClass: concrete };
 		if (lower.includes('artifact')) return { id: 'cloak', quantity: 1, identified: false, instanceId: this.newItemInstanceId('artifact'), sourceClass: concrete };

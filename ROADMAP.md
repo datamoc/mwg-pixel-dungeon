@@ -23,6 +23,11 @@ the corresponding Java source and recorded in `PORT_COVERAGE.md`.
       `PotionOfParalyticGas`/`ToxicGas`/`Confusion`/`Frost`/`Haste` remain unported (each needs a
       system this port doesn't have - a status-on-contact gas blob, a freeze effect, or a hero
       speed buff) - see `PORT_COVERAGE.md`'s potions row for what currently happens instead.
+- [ ] Port the remaining scrolls. Fixed the same class of live id-mapping bug for
+      `ScrollOfMirrorImage`/`ScrollOfMagicMapping` (both silently read as Remove Curse instead of
+      their real, already-ported effects). `ScrollOfRecharging`/`Teleportation`/`Retribution`/
+      `Terror`/`Transmutation` remain unported (each needs a system this port doesn't have) and
+      still fall through to Remove Curse's effect when read - see `PORT_COVERAGE.md`.
 - [ ] Port the remaining enchantments, glyphs, weapon curses, and armor curses. Only 4 weapon
       curses now lack proc logic at all (`friendly`, plus Kinetic/Blooming/Corrupting/Elastic/
       Projecting/Unstable's missing-subsystem group) - `polarized`/`sacrificial`/`displacing`
