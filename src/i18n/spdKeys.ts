@@ -153,6 +153,7 @@ export const ITEM_KEYS: Record<string, string> = {
 	scrollMapping: 'items.scrolls.scrollofmagicmapping.name',
 	scrollMirror: 'items.scrolls.scrollofmirrorimage.name',
 	scrollCleanse: 'items.scrolls.scrollofremovecurse.name',
+	scrollRecharging: 'items.scrolls.scrollofrecharging.name',
 };
 
 /** `items.rings.*` */

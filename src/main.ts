@@ -490,8 +490,8 @@ const APPEARANCE_TABLES: Record<string, Actors.AppearanceTable> = {
 		labels: POTION_APPEARANCE_KEYS.slice(0, 9) as string[],
 	},
 	scroll: {
-		kinds: ['scroll', 'scrollIdentify', 'scrollUpgrade', 'scrollRage', 'scrollLullaby', 'scrollMapping', 'scrollMirror', 'scrollCleanse'],
-		labels: SCROLL_APPEARANCE_KEYS.slice(0, 8) as string[],
+		kinds: ['scroll', 'scrollIdentify', 'scrollUpgrade', 'scrollRage', 'scrollLullaby', 'scrollMapping', 'scrollMirror', 'scrollCleanse', 'scrollRecharging'],
+		labels: SCROLL_APPEARANCE_KEYS.slice(0, 9) as string[],
 	},
 };
 
@@ -3255,6 +3255,7 @@ export class SewersScene extends Scene2D {
 		else if (!this.requestedItemId && ids.includes('scrollLullaby')) id = 'scrollLullaby';
 		else if (!this.requestedItemId && ids.includes('scrollMapping')) id = 'scrollMapping';
 		else if (!this.requestedItemId && ids.includes('scrollMirror')) id = 'scrollMirror';
+		else if (!this.requestedItemId && ids.includes('scrollRecharging')) id = 'scrollRecharging';
 		else if (!this.requestedItemId && ids.includes('scrollCleanse')) id = 'scrollCleanse';
 		if (id === 'scrollUpgrade') {
 			this.say(t('port.log.scrollisforgear'));
@@ -3324,16 +3325,22 @@ export class SewersScene extends Scene2D {
 			//real system this port has to the actual effect's practical benefit.
 			this.grantHeroShield(Math.round(this.hero.maxHp * 0.15), this.hero.maxHp);
 			this.say(t('port.log.mirror'), 'positive');
+		} else if (id === 'scrollRecharging') {
+			//ScrollOfRecharging.doRead(): grants the same 30-turn `Recharging` flavour buff this
+			//port already models (`BUFF_DURATION.recharging`, already read by `recoverWandCharge`
+			//for its 1.25x rate bonus) - no new system needed, this scroll was just never wired
+			//to the buff it already fully supports.
+			addBuff(this.hero, 'recharging');
+			this.say(t('port.log.recharging'), 'positive');
 		} else {
 			//ScrollOfRemoveCurse.doRead() is genuinely this branch's effect ('scrollCleanse' hits
-			//it correctly), but so does anything unread: ScrollOfRecharging/Teleportation/
-			//Retribution/Terror/Transmutation are all in the real Generator pool
-			//(`spdItems/generator.ts`) and none has its own branch here, so each still falls
-			//through to Remove Curse's effect instead of its own - not merely inert, an active
-			//(if narrow) misbehavior, same as the equivalent unported potions above. Each needs
-			//its own system (wand-charge refund, a teleport-to-random-cell, retaliation damage,
-			//an escape-inducing fear status, and item-transmutation respectively) - see
-			//`PORT_COVERAGE.md`.
+			//it correctly), but so does anything unread: ScrollOfTeleportation/Retribution/Terror/
+			//Transmutation are all in the real Generator pool (`spdItems/generator.ts`) and none
+			//has its own branch here, so each still falls through to Remove Curse's effect
+			//instead of its own - not merely inert, an active (if narrow) misbehavior, same as
+			//the equivalent unported potions above. Each needs its own system (a teleport-to-
+			//random-cell, retaliation damage, an escape-inducing fear status, and item-
+			//transmutation respectively) - see `PORT_COVERAGE.md`.
 			for (const b of ['weakness', 'vulnerable', 'hex', 'daze'] as BuffId[]) delete this.hero.buffs[b];
 			for (const item of this.bag.items) if (item.cursed || getCurse(item.affix ?? '')) Actors.removeAffix(item);
 			if (getCurse(this.weaponAffix ?? '')) this.weaponAffix = null;

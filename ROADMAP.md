@@ -28,9 +28,11 @@ the corresponding Java source and recorded in `PORT_COVERAGE.md`.
       speed buff) - see `PORT_COVERAGE.md`'s potions row for what currently happens instead.
 - [ ] Port the remaining scrolls. Fixed the same class of live id-mapping bug for
       `ScrollOfMirrorImage`/`ScrollOfMagicMapping` (both silently read as Remove Curse instead of
-      their real, already-ported effects). `ScrollOfRecharging`/`Teleportation`/`Retribution`/
-      `Terror`/`Transmutation` remain unported (each needs a system this port doesn't have) and
-      still fall through to Remove Curse's effect when read - see `PORT_COVERAGE.md`.
+      their real, already-ported effects). `ScrollOfRecharging` is now ported (grants the
+      already-modeled `recharging` buff, previously just never wired to a scroll).
+      `ScrollOfTeleportation`/`Retribution`/`Terror`/`Transmutation` remain unported (each needs
+      a system this port doesn't have) and still fall through to Remove Curse's effect when
+      read - see `PORT_COVERAGE.md`.
 - [ ] Port the remaining enchantments, glyphs, weapon curses, and armor curses. Only 4 weapon
       curses now lack proc logic at all (`friendly`, plus Kinetic/Blooming/Corrupting/Elastic/
       Projecting/Unstable's missing-subsystem group) - `polarized`/`sacrificial`/`displacing`
