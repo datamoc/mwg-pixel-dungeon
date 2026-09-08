@@ -3333,19 +3333,29 @@ export class SewersScene extends Scene2D {
 		}
 		this.bag.remove(id, 1, this.requestedItemInstanceId);
 		if (id === 'potion' || id === 'potionHealing') {
-			//PotionOfHealing.heal(): `Buff.affect(ch, Healing.class).setHeal((int)(0.8*HT+14), 0.25, 0)`
-			//- a gradual heal-over-time, not an instant full heal (see the applyBuffDamage tick
-			//in spendHeroTurn). `setHeal` only replaces `healingLeft` if the new amount is bigger,
-			//so quaffing a second potion mid-heal doesn't stack additively on top of the first.
-			const amount = Math.round(0.8 * this.hero.maxHp + 14);
-			if (amount > this.healingLeft) this.healingLeft = amount;
+			//PotionOfHealing.apply(): cure() always runs first regardless of the challenge below.
 			for (const b of ['poison', 'burning', 'weakness', 'vulnerable', 'cripple'] as BuffId[]) delete this.hero.buffs[b];
-			const willpower = this.talentRank('restored_willpower');
-			if (willpower > 0) this.grantHeroShield(Math.round(this.hero.maxHp * (willpower === 1 ? 0.67 : 1)), this.hero.maxHp);
-			if (this.talentRank('restored_agility') > 0) { this.healingEvasionTurns = 1; this.syncHeroFromStats(); }
-			const nature = this.talentRank('restored_nature');
-			if (nature > 0) for (const enemy of this.creatures.filter(c => !c.isHero && !c.isNPC && Roguelike.chebyshevDistance(this.hero, c) <= 1)) addBuff(enemy, 'roots');
-			this.say(t('port.log.quaffhealing'), 'positive');
+			if (isChallengeEnabled('no_healing')) {
+				//PotionOfHealing.heal()'s real NO_HEALING branch: no Healing buff at all (so none
+				//of the restored_*-talent triggers below fire either, since they key off the heal
+				//actually happening), instead pharmacophobiaProc() sets a fresh Poison(4+lvl/2) -
+				//found dead alongside the other challenge audits this session.
+				this.hero.buffs['poison'] = 4 + Math.floor(this.progression.level / 2);
+				this.say(t('port.log.pharmacophobia'), 'negative');
+			} else {
+				//PotionOfHealing.heal(): `Buff.affect(ch, Healing.class).setHeal((int)(0.8*HT+14), 0.25, 0)`
+				//- a gradual heal-over-time, not an instant full heal (see the applyBuffDamage tick
+				//in spendHeroTurn). `setHeal` only replaces `healingLeft` if the new amount is bigger,
+				//so quaffing a second potion mid-heal doesn't stack additively on top of the first.
+				const amount = Math.round(0.8 * this.hero.maxHp + 14);
+				if (amount > this.healingLeft) this.healingLeft = amount;
+				const willpower = this.talentRank('restored_willpower');
+				if (willpower > 0) this.grantHeroShield(Math.round(this.hero.maxHp * (willpower === 1 ? 0.67 : 1)), this.hero.maxHp);
+				if (this.talentRank('restored_agility') > 0) { this.healingEvasionTurns = 1; this.syncHeroFromStats(); }
+				const nature = this.talentRank('restored_nature');
+				if (nature > 0) for (const enemy of this.creatures.filter(c => !c.isHero && !c.isNPC && Roguelike.chebyshevDistance(this.hero, c) <= 1)) addBuff(enemy, 'roots');
+				this.say(t('port.log.quaffhealing'), 'positive');
+			}
 		} else if (id === 'potionStrength') {
 			this.heroStr++;
 			this.syncHeroFromStats();

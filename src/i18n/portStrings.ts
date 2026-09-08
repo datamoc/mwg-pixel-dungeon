@@ -123,6 +123,8 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.log.drinkwaterskin': 'You drink from your waterskin, healing {heal}.',
 	'port.log.savedraught': 'You save the draught for when you need it.',
 	'port.log.quaffhealing': 'You quaff the healing draught - cleansed, and healing steadily.',
+	//PotionOfHealing.pharmacophobiaProc(), under the real NO_HEALING challenge
+	'port.log.pharmacophobia': 'Your fear of medicine turns the draught to poison in your veins!',
 	'port.log.stronger': 'You feel stronger! STR is now {str}.',
 	'port.log.hurlflame': 'You hurl the liquid flame at {target}!',
 	'port.log.flaskwasted': 'The flask shatters harmlessly - nothing in range.',
@@ -488,6 +490,7 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 	'port.log.drinkwaterskin': 'Vous buvez à votre gourde et récupérez {heal} PV.',
 	'port.log.savedraught': 'Vous gardez la potion pour un moment plus critique.',
 	'port.log.quaffhealing': 'Vous buvez la potion de soin : purifié, et vous vous soignez peu à peu.',
+	'port.log.pharmacophobia': 'Votre peur des remèdes transforme la potion en poison dans vos veines !',
 	'port.log.stronger': 'Vous vous sentez plus fort ! FOR passe à {str}.',
 	'port.log.hurlflame': 'Vous projetez le feu liquide sur {target} !',
 	'port.log.flaskwasted': 'La fiole se brise sans effet : personne à portée.',
