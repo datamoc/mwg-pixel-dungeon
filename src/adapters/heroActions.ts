@@ -11,7 +11,7 @@ export interface HeroActionPorts {
 	free: Record<FreeAction, () => void>;
 	/** Returns true when entering a floor already established its initial input turn. */
 	move(step: Step): boolean;
-	/** Get turn-cost multiplier from equipment/buffs. Default 1; <1 for faster actions (Swiftness), >1 for slower. */
+	/** Get turn-cost multiplier from equipment/buffs. Default 1; <1 for faster actions (augment/glyph/ring/haste), >1 for slower. */
 	getTurnCostMod(): number;
 }
 

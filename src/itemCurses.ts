@@ -2,12 +2,13 @@
  * Weapon and armor curse definitions - permanent negative enchantments.
  * Curses can be removed with cleanse scrolls and are distinguished by cursed flag on items.
  *
- * NOT CURRENTLY WIRED INTO GAMEPLAY: nothing in `main.ts` imports this file (confirmed by a
- * whole-repo search), and no generated/dropped item is ever given one of these concrete curse
- * ids - `main.ts`'s own proc branches (`weaponAffix === 'wayward'`, `armorGlyph === 'fragile'`,
- * etc.) are real but unreachable until item generation/equip actually rolls and assigns an id
- * from here (or an equivalent). See `PORT_COVERAGE.md`'s "Enchant/glyph/curse assignment is
- * unwired" row for the full finding.
+ * Assignment is wired: `main.ts`'s `generatedInventoryItem` rolls a concrete curse id from
+ * the affix tables when the generator flags a roll cursed, and `equipWeapon`/`equipArmor`
+ * apply the cursed-and-known equip lock - see `PORT_COVERAGE.md`'s "Enchant/glyph/curse
+ * assignment" row. **Correction: the old `fragile` entry here never existed in real Java**
+ * (checked tag `v3.3.8` back to `v3.3.1` - the real 8th armor curse is `Stench`); `getCurse`
+ * keeps a legacy `fragile` -> `stench` shim so pre-correction saves still cleanse/lock
+ * correctly even before the load migration rewrites the id itself.
  */
 
 export interface CurseDef {
@@ -21,8 +22,10 @@ export interface CurseDef {
 
 /**
  * The 16 curses in SPD (8 weapon + 8 armor).
- * Ten are currently implemented (Wayward, Fragile, Metabolism, Bulk, Anti-Entropy,
- * Dazzling, Corrosion, Multiplicity, Overgrowth, Annoying).
+ * 15 of the 16 have live proc or passive branches in `main.ts` (weapon: Wayward, Annoying,
+ * Dazzling, Displacing, Explosive, Polarized, Sacrificial; armor: Stench, AntiEntropy, Bulk,
+ * Corrosion, Displacement, Metabolism, Multiplicity, Overgrowth). `Friendly` (needs a
+ * two-way Charm subsystem) is the only curse with no proc logic yet.
  * This defines all of them for reference.
  */
 export const CURSES: CurseDef[] = [
@@ -86,9 +89,9 @@ export const CURSES: CurseDef[] = [
 
 	// Armor Curses (8)
 	{
-		id: 'fragile',
-		nameKey: 'items.armor.curses.fragile.name',
-		descriptionKey: 'items.armor.curses.fragile.desc',
+		id: 'stench',
+		nameKey: 'items.armor.curses.stench.name',
+		descriptionKey: 'items.armor.curses.stench.desc',
 		type: 'armor',
 		locks: true,
 	},
@@ -144,10 +147,13 @@ export const CURSES: CurseDef[] = [
 ];
 
 /**
- * Look up a curse by ID.
+ * Look up a curse by ID. Pre-correction saves may still carry the never-real `fragile` id;
+ * it resolves to the real `stench` entry so equip locks and cleanse keep working on those
+ * items even before the load migration rewrites the id itself.
  */
 export function getCurse(id: string): CurseDef | undefined {
-	return CURSES.find((c) => c.id === id.toLowerCase());
+	const lower = id.toLowerCase();
+	return CURSES.find((c) => c.id === (lower === 'fragile' ? 'stench' : lower));
 }
 
 /**

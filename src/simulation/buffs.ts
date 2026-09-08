@@ -9,7 +9,7 @@ import type { SimulationRandom } from './random';
  * because these multipliers apply to transient dice rolls rather than to named stats a
  * StatBlock resolves.
  */
-export type BuffId = 'bless' | 'hex' | 'daze' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror';
+export type BuffId = 'bless' | 'hex' | 'daze' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'awareness' | 'haste';
 export const BUFF_DURATION: Record<BuffId, number> = {
 	bless: 30,
 	hex: 30,
@@ -41,6 +41,15 @@ export const BUFF_DURATION: Record<BuffId, number> = {
 	mindvision: 20,
 	//Terror.DURATION (ScrollOfTerror)
 	terror: 20,
+	//Awareness.DURATION (WaterOfAwareness). Real Java re-runs Belongings.observe() on detach,
+	//but this port already treats equipped gear as identified/curse-known the instant it's
+	//equipped (a pre-existing simplification - see `equipWeapon`/`equipArmor`), so that second
+	//observe pass would have nothing left to reveal here; the buff exists as a real status (it
+	//shows and expires correctly) without a distinct on-expiry action to wire.
+	awareness: 2,
+	//Haste.DURATION (PotionOfHaste) - Char.speed()'s real x3 multiplier lives in
+	//`getActionTurnCostMod` (main.ts), not here; this is only the turns-left duration.
+	haste: 20,
 };
 
 

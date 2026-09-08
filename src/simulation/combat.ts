@@ -120,6 +120,7 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 	}
 	if (attacker.buffs['fury'] && attacker.hp <= attacker.maxHp * 0.5) dmg *= 1.5;
 	if (attacker.champion === 'blazing') dmg *= 1.25;
+	if (attacker.champion === 'projecting') dmg *= 1.25;
 	//ChampionEnemy.Growing.meleeDamageFactor(): its own growth multiplier, same value read
 	//below for damageTakenFactor's inverse.
 	if (attacker.champion === 'growing') dmg *= attacker.championPower ?? 1.19;
@@ -129,10 +130,11 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 	let effective = Math.max(0, Math.round(dmg) - dr);
 	if (defender.buffs['vulnerable']) effective *= 1.33;
 	//ChampionEnemy.Giant.damageTakenFactor()/Growing.damageTakenFactor(): flat 0.2x for Giant,
-	//1/growthMultiplier for Growing (so its rising offense is paired with falling defense, as
-	//real Java's own inverse relationship works). Not modeled: Java's Giant/Projecting
-	//`canAttackWithExtraReach` (a 2/4-cell melee reach via pathfinding) - see `PORT_COVERAGE.md`.
+	//0.5x for AntiMagic (Char.damage() applies this to every damage source, not just magic -
+	//the separate AntiMagic.RESISTS status-immunity list is the only magic-specific part, and
+	//it is not modeled here), 1/growthMultiplier for Growing.
 	if (defender.champion === 'giant') effective *= 0.2;
+	if (defender.champion === 'antimagic') effective *= 0.5;
 	if (defender.champion === 'growing') effective /= defender.championPower ?? 1.19;
 	return Math.max(0, Math.round(effective));
 }

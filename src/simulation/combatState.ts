@@ -18,7 +18,7 @@ export interface Combatant extends Step {
 	/** Plain rule identifier; the scene narrows it to its MonsterId catalogue. */
 	kind?: string;
 	sleeping?: boolean;
-	champion?: 'blessed' | 'blazing' | 'giant' | 'growing' | null;
+	champion?: 'blessed' | 'blazing' | 'giant' | 'growing' | 'antimagic' | 'projecting' | null;
 	str?: number;
 	strReq?: number;
 	/** `Brute.BruteRage` active (post-revival), boosting `damageRoll()` to 15-40. */

@@ -1,7 +1,8 @@
 import type { Roguelike } from 'mwg';
 import { advanceToInput } from 'mwg/simulation';
-import { advanceHunger, type HungerEvent, type HungerState } from '../simulation/hunger';
+import type { HungerEvent, HungerState } from '../simulation/hunger';
 import type { TurnActor, TurnPorts, TurnStop } from '../simulation/turns';
+import { runHungerStep } from './hungerSimulation';
 
 /** Translate MWG's game-neutral runner outcomes to this port's existing turn contract. */
 export function runUntilHeroInput<A extends TurnActor>(ports: TurnPorts<A>): TurnStop {
@@ -9,7 +10,11 @@ export function runUntilHeroInput<A extends TurnActor>(ports: TurnPorts<A>): Tur
 		scheduler: ports.scheduler,
 		finished: () => ports.isGameOver(),
 		needsInput: (actor) => !!actor.isHero,
-		act: (actor) => { ports.takeMonsterTurn(actor); ports.afterMonsterTurn?.(actor); return 1; },
+		act: (actor) => {
+			ports.takeMonsterTurn(actor);
+			ports.afterMonsterTurn?.(actor);
+			return ports.monsterTurnCost?.(actor) ?? 1;
+		},
 	}, 1000);
 	switch (result.status) {
 		case 'input': return 'hero-input';
@@ -25,6 +30,7 @@ export interface SceneSimulationBindings<A extends TurnActor & { speed?: number 
 	isGameOver(): boolean;
 	takeMonsterTurn(actor: A): void;
 	afterMonsterTurn?(actor: A): void;
+	monsterTurnCost?(actor: A): number;
 	awaitHeroInput(): void;
 	readHunger(): HungerState;
 	writeHunger(state: HungerState): void;
@@ -46,7 +52,10 @@ export class SceneSimulationAdapter<A extends TurnActor & { speed?: number }> {
 	}
 
 	hungerStep(): void {
-		const { state, events } = advanceHunger(this.bindings.readHunger());
+		//Routed through the hunger SimulationRuntime (see hungerSimulation.ts) rather than
+		//calling advanceHunger directly - same transition, same events, committed and
+		//presented exactly as before; only the dispatch path changed.
+		const { state, events } = runHungerStep(this.bindings.readHunger());
 		this.bindings.writeHunger(state);
 		for (const event of events) this.bindings.presentHungerEvent(event);
 	}

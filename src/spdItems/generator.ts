@@ -474,6 +474,46 @@ export function randomBomb(): GenItem {
 	};
 }
 
+const GHOST_TIER_WEIGHTS = [0, 0, 10, 6, 3, 1];
+const GHOST_ARMOR_CLASSES = ['ClothArmor', 'LeatherArmor', 'MailArmor', 'ScaleArmor', 'PlateArmor'];
+
+/**
+ * `Ghost.Quest.spawn()`'s reward roll (Ghost.java) - NOT the generic depth-scaled
+ * `randomWeapon`/`randomArmor`: a fixed 50/30/15/5% tier distribution (tier 2-5) regardless of
+ * depth, a single upgrade level shared by both items, and a single shared 20% enchant/glyph
+ * chance (not rolled per item), in this exact order. Both items are always uncursed - Java
+ * explicitly clears the weapon's own rolled `cursed`/level after generating it, and never calls
+ * `.random()` on armor at all (`new LeatherArmor()` etc., a bare constructor). The weapon's
+ * class-pick still goes through a real `Generator.random()`-shaped roll
+ * (`Generator.wepTiers[wepTier-1].random()` in Java) - its level/cursed/enchant outcome is
+ * discarded, but the draws it consumed are real and must still be burned in order, the same
+ * "burn the roll, drop the unreproducible content" convention used throughout this module.
+ * Armor gets no matching burn, since Java never rolls one for it here.
+ */
+export function ghostQuestReward(): { weapon: GenItem; armor: GenItem } {
+	const armorTier = SpdRandom.chances(GHOST_TIER_WEIGHTS);
+	const armorCls = GHOST_ARMOR_CLASSES[(armorTier < 2 ? 2 : armorTier) - 1] ?? 'LeatherArmor';
+	const wepTier = SpdRandom.chances(GHOST_TIER_WEIGHTS);
+	const rolledWeapon = randomCategory(WEP_TIERS[(wepTier < 2 ? 2 : wepTier) - 1] ?? Cat.WEP_T2);
+	//itemLevelRoll: 50%:+0, 30%:+1, 15%:+2, 5%:+3 - shared by both items
+	const itemLevelRoll = SpdRandom.float();
+	const itemLevel = itemLevelRoll < 0.5 ? 0 : itemLevelRoll < 0.8 ? 1 : itemLevelRoll < 0.95 ? 2 : 3;
+	//Java always generates a real enchant AND a real glyph here ("so the outcome doesn't affect
+	//the number of RNG rolls"), then keeps or discards both together via one final roll below -
+	//this port's `GenItem.hasGoodEnchant` only needs whether it was kept, not the concrete type.
+	const weaponEnchantType = SpdRandom.chances(ENCH_TYPE_CHANCES);
+	SpdRandom.int(ENCH_POOL_SIZES[weaponEnchantType < 0 ? 0 : weaponEnchantType]);
+	const armorGlyphType = SpdRandom.chances(ENCH_TYPE_CHANCES);
+	SpdRandom.int(ENCH_POOL_SIZES[armorGlyphType < 0 ? 0 : armorGlyphType]);
+	//real threshold is `0.2 * ParchmentScrap.enchantChanceMultiplier()`; this port has no
+	//ParchmentScrap trinket, so the multiplier is always its default of 1.
+	const hasGoodEnchant = SpdRandom.float() <= 0.2;
+	return {
+		weapon: { cat: rolledWeapon.cat, cls: rolledWeapon.cls, cursed: false, level: itemLevel, quantity: 1, hasGoodEnchant },
+		armor: { cat: Cat.ARMOR, cls: armorCls, cursed: false, level: itemLevel, quantity: 1, hasGoodEnchant },
+	};
+}
+
 // ---------------------------------------------------------------------------------------------
 // The `Generator` entry points.
 // ---------------------------------------------------------------------------------------------

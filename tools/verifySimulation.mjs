@@ -8,6 +8,7 @@ import { verifyCombat } from './verifyCombat.mjs';
 import { verifyMovement } from './verifyMovement.mjs';
 import { verifyHeroTurn } from './verifyHeroTurn.mjs';
 import { verifyHeroActions } from './verifyHeroActions.mjs';
+import { verifySearch } from './verifySearch.mjs';
 
 // Compile the actual implementation into a private temporary CommonJS tree. Type-only
 // mwg imports disappear, so tests never load Pixi, a DOM, or the full framework barrel.
@@ -30,21 +31,26 @@ function compile(source, destination) {
 try {
 	writeFileSync(join(output, 'package.json'), '{"type":"commonjs"}');
 	for (const file of ['simulation/movement', 'simulation/heroTurn', 'simulation/hunger', 'simulation/turns', 'adapters/sceneSimulation',
-		'simulation/random', 'simulation/combatState', 'simulation/buffs', 'simulation/combat', 'talentEffects',
-		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActions']) {
+		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
+		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActions',
+		'simulation/search', 'adapters/searchSimulation']) {
 		compile(new URL(`../src/${file}.ts`, import.meta.url), `${file}.js`);
 	}
 	// Exercise the installed local scheduler as well as the framework-free simulation.
 	compile(new URL('../../MW_games/src/roguelike/Scheduler.ts', import.meta.url), 'scheduler.js');
+	compile(new URL('../../MW_games/src/roguelike/Scheduler.ts', import.meta.url), 'node_modules/mwg/roguelike/Scheduler.js');
 	compile(new URL('../../MW_games/src/core/Random.ts', import.meta.url), 'random.js');
+	compile(new URL('../../MW_games/src/core/Random.ts', import.meta.url), 'node_modules/mwg/core/Random.js');
 	// Only the real Random module is needed by the mwg adapter; no rendering runtime.
 	mkdirSync(join(output, 'node_modules/mwg'), { recursive: true });
-	writeFileSync(join(output, 'node_modules/mwg/index.js'), "exports.Random = require('../../random.js');");
-	for (const name of ['index', 'Turns', 'Scenario']) {
+	writeFileSync(join(output, 'node_modules/mwg/index.js'),
+		"const random = require('../../random.js'); exports.Random = random; exports.Generator = random.Generator;");
+	for (const name of ['index', 'Turns', 'Scenario', 'Runtime']) {
 		compile(new URL(`../../MW_games/src/simulation/${name}.ts`, import.meta.url), `node_modules/mwg/simulation/${name}.js`);
 	}
 	const require = createRequire(join(output, 'tests.cjs'));
 	const { advanceHunger } = require('./simulation/hunger');
+	const { runHungerStep } = require('./adapters/hungerSimulation');
 	const { runUntilHeroInput } = require('./adapters/sceneSimulation');
 	const { SceneSimulationAdapter } = require('./adapters/sceneSimulation');
 	const { Scheduler } = require('./scheduler');
@@ -107,6 +113,14 @@ try {
 		assert.equal(talents.necromancerMinionChance('battlemage', 3), 0);
 	});
 
+	check('hunger runtime dispatch matches the direct transition exactly', () => {
+		for (const state of [initial({ hunger: 290 }), initial({ hunger: 440, hp: 20 }), initial({ hunger: 450, hp: 20, maxHp: 20 })]) {
+			const direct = advanceHunger(state);
+			const routed = runHungerStep(state);
+			assert.deepEqual(routed.state, direct.state);
+			assert.deepEqual(routed.events, direct.events);
+		}
+	});
 	check('hunger transition is immutable and warns once at 300', () => {
 		const input = Object.freeze(initial({ hunger: 290 }));
 		const result = advanceHunger(input);
@@ -235,6 +249,7 @@ try {
 	verifyHeroTurn(require, check);
 	verifyCombat(require, check);
 	verifyHeroActions(require, check);
+	verifySearch(require, check);
 	console.log(`${passed} simulation checks passed.`);
 } finally {
 	// Only the fresh directory returned by mkdtempSync above is removed.

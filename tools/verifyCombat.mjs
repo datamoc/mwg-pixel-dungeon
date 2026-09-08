@@ -134,9 +134,16 @@ export function verifyCombat(require, check) {
 			const ast = ts.createSourceFile(file, readFileSync(new URL(file, root), 'utf8'), ts.ScriptTarget.Latest);
 			for (const statement of ast.statements) {
 				if ((ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) && statement.moduleSpecifier) {
+					//Type-only imports/exports (`import type`, `export type ... from`) erase to
+					//nothing at compile time - `entityId.ts` re-exports MWG's own `EntityId` type
+					//this way with zero runtime dependency (asserted on the compiled output below).
+					const typeOnly = statement.importClause?.isTypeOnly || statement.isTypeOnly;
+					if (typeOnly) continue;
 					assert.match(statement.moduleSpecifier.text, /^\.\/[\w]+$/, `${file} imports outside simulation`);
 				}
 			}
 		}
+		const compiled = require('./simulation/entityId');
+		assert.equal(typeof compiled.nextEntityId, 'function');
 	});
 }

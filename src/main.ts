@@ -11,6 +11,7 @@ import { Container, extensions, FillGradient, Graphics, NineSliceSpritePipe, Rec
 import { Game, Scene2D, Input, Random, SaveSystem, Achievements } from 'mwg';
 import { SceneSimulationAdapter } from './adapters/sceneSimulation';
 import { dispatchHeroAction, type HeroActionPorts } from './adapters/heroActions';
+import { runSearch } from './adapters/searchSimulation';
 import { MOVES } from './simulation/heroActions';
 import { finishHeroTurn } from './simulation/heroTurn';
 import { planMovement } from './simulation/movement';
@@ -81,7 +82,7 @@ import { BADGE_DEFS, BADGE_ICON, loadBadges } from './badges';
 import { TitleScene } from './scenes/titleScene';
 import { transferEnhancement } from './itemWorkflows';
 import { getCurse } from './itemCurses';
-import { Cat, generatorRandom, randomArmor, randomUsingDefaults, randomWeapon, removeArtifactClass, setGeneratorDepth, type GenItem, type StatueLoot } from './spdItems/generator';
+import { Cat, generatorRandom, ghostQuestReward, randomUsingDefaults, removeArtifactClass, setGeneratorDepth, type GenItem, type StatueLoot } from './spdItems/generator';
 import {
 	TILE,
 	VIEW_RADIUS,
@@ -128,7 +129,7 @@ import {
 	type BuffId,
 } from './combat';
 import { nextEntityId } from './simulation/entityId';
-import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, type AnyMonsterId, type MonsterId } from './monsters';
+import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LIMITED_DROP_DECAY, type AnyMonsterId, type MonsterId } from './monsters';
 
 /**
  * Shattered Pixel Dungeon, on top of mwg: a title screen, hero-class selection, the Sewers
@@ -355,6 +356,8 @@ const SUBCLASS_OPTIONS: Record<ClassId, readonly string[] | undefined> = {
 	duelist: ['champion', 'monk_sub'], cleric: undefined,
 };
 const ARMOR_OPTIONS = ['warding', 'arcane'] as const;
+//Weapon.Augment: SPEED/DAMAGE/NONE, chosen when using StoneOfAugmentation on the equipped weapon.
+const AUGMENT_OPTIONS = ['speed', 'damage', 'none'] as const;
 
 /**
  * Weapon enchantments and armor glyphs as `mwg/actors` affix tables, actually rolled through
@@ -367,11 +370,11 @@ const ARMOR_OPTIONS = ['warding', 'arcane'] as const;
  *
  * Real Java has 13 weapon enchantments + 8 weapon curses, and 13 armor glyphs + 8 armor curses
  * (`items/weapon/enchantments/`, `items/weapon/curses/`, `items/armor/glyphs/`,
- * `items/armor/curses/`). This port models eight enchants (Blazing/Chilling/Shocking/Vampiric/
- * Grim/Lucky/Blocking/Kinetic), one passive (Swiftness), six glyphs (Stone/Thorns/Flow/
- * Entanglement/Swiftness/Potential), all 7 remaining weapon curses with a real effect
+ * `items/armor/curses/`). This port models nine enchants (Blazing/Chilling/Shocking/Vampiric/
+ * Grim/Lucky/Blocking/Kinetic/Blooming), seven glyphs (Stone/Thorns/
+ * Flow/Entanglement/Swiftness/Potential/Camouflage), all 7 remaining weapon curses with a real effect
  * (Wayward/Annoying/Dazzling/Explosive/Polarized/Sacrificial/Displacing), and all 8 armor curses
- * (Fragile/AntiEntropy/Bulk/Corrosion/Displacement/Metabolism/Multiplicity/Overgrowth) - each
+ * (Stench/AntiEntropy/Bulk/Corrosion/Displacement/Metabolism/Multiplicity/Overgrowth) - each
  * chosen because its real effect fits a system this port already has (a buff, a flat stat, a
  * ground-item drop, the shared `heroBarrier`, the shared poison DoT, a free-cell teleport
  * search) rather than needing a new one. Blocking's real proc chance and shield-amount formulas
@@ -384,15 +387,25 @@ const ARMOR_OPTIONS = ['warding', 'arcane'] as const;
  * subsystem this port does not model - Kinetic needs a decaying "conserved damage" carry-over
  * read back into the *next* hit's damage calc before defense is applied (**note**: Kinetic
  * itself is listed among the modeled enchants above via `kineticStored` - only the remaining
- * unmodeled group is: Blooming needs plants; Corrupting needs a "convert enemy" mechanic;
+ * unmodeled group is: Corrupting needs a "convert enemy" mechanic;
  * Elastic/Projecting need AoE/thrown-range geometry; Unstable is a meta-enchant with no fixed
- * effect to port; Friendly needs a two-way Charm subsystem this port lacks; the remaining armor
- * glyphs (Affection/AntiMagic/Brimstone/Camouflage/Obfuscation/Repulsion/Viscosity) need
- * charm/wand-drain/blink/durability systems likewise absent, and the armor-glyph Swiftness needs
- * a per-weapon attack-delay economy for the *hero* that the weapon-enchant Swiftness above
- * doesn't (that one is a flat turn-cost multiplier, already reproduced). See PORT_COVERAGE.md
+ * effect to port; Friendly needs a two-way Charm subsystem this port lacks (confirmed against
+ * `Friendly.java`: mutual Charm + zeroing damage to the charmed target); the remaining armor
+ * glyphs (Affection/AntiMagic/Brimstone/Obfuscation/Repulsion/Viscosity) need
+ * charm/wand-drain/blink/durability systems likewise absent (Obfuscation's stealth boost has
+ * no roll seam - this port's `seesHero` is FOV-binary, not a distance roll). The armor-glyph
+ * Swiftness itself is real but Simplified (flat 0.8x cost with no enemy within 3, instead of
+ * the real level-scaled `(1.2+0.04*lvl)` speed boost). See PORT_COVERAGE.md
  * for the itemized list. The trigger routing (strike vs defend vs passive) is the real shape
- * either way. Every curse entry locks gear via the equipment lock until a cleanse scroll lifts
+ * either way. **Correction, found auditing the curse list against tag `v3.3.8` (and back to
+ * `v3.3.1`) this pass: no `Fragile` armor curse exists in real Java at all** - the closest
+ * match is a `v1.x`-era changelog mention; the real 8th curse is `Stench` (1/8 chance on being
+ * hit to seed 250-volume `ToxicGas` at the wearer's own feet, gassing the wearer too). The
+ * old `fragile` entry (flat -2 armor, a guess with no Java basis whose `items.armor.curses.
+ * fragile.*` name keys don't even exist in the generated catalog) is replaced by a real
+ * `stench` proc; old saves carrying `fragile` migrate it to `stench` on load (see the load
+ * path) with a `getCurse` legacy shim so surviving bag items still cleanse correctly.
+ * Every curse entry locks gear via the equipment lock until a cleanse scroll lifts
  * it (`Actors.applyAffix`/`removeAffix`'s own curse-flag contract, not something this file has
  * to reimplement per curse).
  */
@@ -406,7 +419,7 @@ const ENCHANT_TABLE: Actors.AffixTable = {
 		{ id: 'lucky', trigger: 'strike', weight: 2, description: 'Chance of bonus loot on a kill' },
 		{ id: 'blocking', trigger: 'strike', weight: 2, description: 'Chance to grant a shield on a landed hit' },
 		{ id: 'kinetic', trigger: 'strike', weight: 2, description: 'Stores part of damage for the next hit' },
-		{ id: 'swiftness', trigger: 'passive', weight: 3, description: 'Faster attacks (10% speed increase per rank)' },
+		{ id: 'blooming', trigger: 'strike', weight: 2, description: 'Chance to plant grass where you strike' },
 		{ id: 'wayward', trigger: 'strike', weight: 1, curse: true, description: 'Cursed: -3 accuracy' },
 		{ id: 'annoying', trigger: 'strike', weight: 1, curse: true, description: 'Cursed: chance to alert every monster on the floor' },
 		{ id: 'dazzling', trigger: 'strike', weight: 1, curse: true, description: 'Cursed: chance to blind everyone nearby, including you' },
@@ -424,7 +437,8 @@ const GLYPH_TABLE: Actors.AffixTable = {
 		{ id: 'entanglement', trigger: 'defend', weight: 2, description: 'Chance to root an attacker' },
 		{ id: 'swiftness', trigger: 'passive', weight: 3, description: 'Faster movement when safe (20% speed increase)' },
 		{ id: 'potential', trigger: 'defend', weight: 3, description: 'Chance to recharge wands when hit' },
-		{ id: 'fragile', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: +2 damage taken' },
+		{ id: 'camouflage', trigger: 'passive', weight: 2, description: 'Trampling grass turns you invisible' },
+		{ id: 'stench', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to release toxic gas when hit' },
 		{ id: 'antientropy', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to drain a wand charge' },
 		{ id: 'bulk', trigger: 'passive', weight: 1, curse: true, description: 'Cursed: slower through doorways' },
 		{ id: 'corrosion', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to corrode a weapon or armor level' },
@@ -436,10 +450,11 @@ const GLYPH_TABLE: Actors.AffixTable = {
 };
 
 /**
- * Rings (`items/rings/`) as level-scaled modifiers, 4 of the real 12
- * (`RingOfAccuracy`/`RingOfEvasion`/`RingOfMight`/`RingOfTenacity` - Arcana/Elements/
- * Energy/Force/Furor/Haste/Sharpshooting/Wealth not ported at all). Verified against
- * Java source, all four now exact:
+ * Rings (`items/rings/`) as level-scaled modifiers, all 12 real types
+ * (`RingOfAccuracy`/`RingOfEvasion`/`RingOfMight`/`RingOfTenacity`/`RingOfHaste`/
+ * `RingOfEnergy`/`RingOfWealth`/`RingOfArcana`/`RingOfForce`/`RingOfSharpshooting`/
+ * `RingOfElements`/`RingOfFuror`). Verified against Java source (`RingOfElements.java`,
+ * `RingOfFuror.java` at tag `v3.3.8`):
  * - Accuracy: `accuracyMultiplier()` = x1.30^lvl.
  * - Evasion: `evasionMultiplier()` = x1.125^lvl.
  * - Might: `strengthBonus()` = flat +lvl STR (here); `HTMultiplier()` = x1.035^lvl max HP
@@ -464,6 +479,33 @@ const RING_DEFS: Record<string, { stat: string; op: Actors.ModifierOp; at: (leve
 	//"faster turns" and "faster wand recharge" aren't `heroStats` entries).
 	haste: { stat: 'speed', op: 'multiply', at: (lvl) => Math.pow(1.175, lvl) },
 	energy: { stat: 'energy', op: 'multiply', at: (lvl) => Math.pow(1.175, lvl) },
+	//RingOfWealth.dropChanceMultiplier(): real Java formula is `pow(1.20, level)`, read directly
+	//via `ringDef` the same way (`ringWealthMultiplier`, applied to `MOB_LOOT`'s chance in `kill`).
+	wealth: { stat: 'wealth', op: 'multiply', at: (lvl) => Math.pow(1.2, lvl) },
+	//RingOfArcana.enchantPowerMultiplier(): `pow(1.175, level)`, read via `ringArcanaMultiplier`
+	//at Grim/Lucky/Blocking's proc rolls - the only ported procs Java scales by it.
+	arcana: { stat: 'arcana', op: 'multiply', at: (lvl) => Math.pow(1.175, lvl) },
+	//RingOfForce.armedDamageBonus(): flat `+level`, read via `ringForceBonus` at the hero's own
+	//melee-attack site (excluded from ranged/thrown the same way Java excludes MissileWeapon).
+	force: { stat: 'force', op: 'add', at: (lvl) => lvl },
+	//RingOfSharpshooting.levelDamageBonus(): flat `+level`, read via `ringSharpshootingBonus` at
+	//the hero's own thrown/SpiritBow damage rolls (the ranged mirror of Force's melee-only bonus).
+	sharpshooting: { stat: 'sharpshooting', op: 'add', at: (lvl) => lvl },
+	//RingOfElements.resist(): `pow(0.825, level)` damage multiplier against elemental
+	//sources (Burning/Chill/Frost/Ooze/Paralysis/Poison/Corrosion/ToxicGas/Electricity +
+	//AntiMagic.RESISTS), read via `ringElementsMultiplier` at the hero's elemental-damage
+	//sites (burning/poison DoT, toxic-gas blob, burning trap). Real Java applies this in
+	//`Char.resist()`'s single choke point (`damage *= resist(srcClass)`); this port has no
+	//shared Class-dispatch - each status/damage site calls `addBuff`/damage directly - so
+	//the same factor is applied at each elemental call site instead. Status *durations*
+	//are not scaled (Java scales damage, not buff length, through this path).
+	elements: { stat: 'elements', op: 'multiply', at: (lvl) => Math.pow(0.825, lvl) },
+	//RingOfFuror.attackSpeedMultiplier(): `pow(1.09051, level)`, read via
+	//`ringFurorMultiplier` at the hero's own bump-attack turn cost only (real Java's
+	//`Hero.attackDelay()` is a separate cost function from `Char.speed()`; RingOfHaste
+	//feeds `speed()` while Furor feeds `attackDelay()`, so Furor must never speed up
+	//movement - see `getAttackTurnCostMod`).
+	furor: { stat: 'furor', op: 'multiply', at: (lvl) => Math.pow(1.09051, lvl) },
 };
 
 /**
@@ -478,6 +520,12 @@ const RING_DEFS: Record<string, { stat: string; op: Actors.ModifierOp; at: (leve
 function ringDef(id: string): { stat: string; op: Actors.ModifierOp; at: (level: number) => number } | undefined {
 	return RING_DEFS[id.replace(/^ring_/, '')];
 }
+
+/** Ring stats resolved outside the StatBlock loop (see `syncHeroFromStats`). */
+const NON_STATBLOCK_RING_STATS = new Set([
+	'strength', 'tenacity', 'speed', 'energy', 'wealth', 'arcana', 'force', 'sharpshooting',
+	'elements', 'furor',
+]);
 
 /**
  * Unidentified appearances (`ItemSpriteSheet`'s shuffled variants) as `mwg/actors`
@@ -534,6 +582,7 @@ interface SaveShape {
 	blacksmithSpawned?: boolean;
 	impSpawned?: boolean;
 	blacksmithAlternative?: boolean;
+	limitedDrops?: [MonsterId, number][];
 	bag: { id: string; quantity: number; instanceId?: string; identified?: boolean; level?: number; sandBags?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean;
 		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean }[];
 	/** MWG actor inventory save; `bag` remains for loading pre-migration slots. */
@@ -571,6 +620,8 @@ interface SaveShape {
 	heroShield?: number;
 	heroBarrierState?: { layers: { amount: number; decayPerTick?: number }[] };
 	barrierPartialLoss?: number;
+	blockingShieldLeft?: number;
+	blockingTurnsLeft?: number;
 	stealthTalentTicks?: number;
 	wandBonusDamage?: number;
 	physicalBonusDamage?: number;
@@ -610,6 +661,8 @@ interface FloorState {
 	fire: FireState;
 	plantGas?: FireState;
 	plantFreeze?: FireState;
+	toxicGas?: FireState;
+	paralyticGas?: FireState;
 	sacrificialFire?: FireState;
 	sacrificialFireCharge?: number;
 	sacrificialFireCell?: number;
@@ -633,7 +686,7 @@ interface SavedCreature {
 	armor: [number, number];
 	buffs: [BuffId, number][];
 	sleeping?: boolean;
-	champion?: 'blessed' | 'blazing' | 'giant' | 'growing' | null;
+	champion?: 'blessed' | 'blazing' | 'giant' | 'growing' | 'antimagic' | 'projecting' | null;
 	championPower?: number;
 	pumped?: number;
 	combo?: number;
@@ -650,12 +703,16 @@ interface SavedCreature {
 	hasteBaseSpeed?: number;
 	/** Index into this floor's saved non-hero creatures, for Necromancer.mySkeleton. */
 	skeletonIndex?: number;
+	firstSummon?: boolean;
 	nextTurn: number | null;
 	hasRaged?: boolean;
 	raged?: boolean;
 	chainUsed?: boolean;
 	ventCooldown?: number;
 	webCooldown?: number;
+	golemTeleCooldown?: number;
+	beamCharged?: boolean;
+	beamCooldown?: number;
 	armoredRageTicks?: number;
 }
 
@@ -773,11 +830,16 @@ export class SewersScene extends Scene2D {
 	private pathfinder!: Roguelike.Pathfinder;
 	private secrets!: Roguelike.Secrets;
 	private scheduler = new Roguelike.Scheduler<Creature>();
+	/** Set by a monster-turn action that costs more than the default 1 (only
+	 * `Necromancer.firstSummon`'s summon so far), read once via `monsterTurnCost` right after
+	 * `takeMonsterTurn` returns, then cleared at the start of the next monster's turn. */
+	private pendingMonsterTurnCost: number | null = null;
 	private simulation = new SceneSimulationAdapter<Creature>({
 		scheduler: this.scheduler,
 		isGameOver: () => this.gameOver,
 		takeMonsterTurn: (actor) => this.takeMonsterTurn(actor),
 		afterMonsterTurn: (actor) => this.afterMonsterTurn(actor),
+		monsterTurnCost: () => this.pendingMonsterTurnCost ?? 1,
 		awaitHeroInput: () => {
 			this.awaitingInput = true;
 			this.refresh();
@@ -819,7 +881,7 @@ export class SewersScene extends Scene2D {
 		free: {
 			examine: () => this.examineTile(this.hero.x, this.hero.y),
 			talents: () => {
-				this.talentOpen = this.subclassChoiceOpen || this.armorChoiceOpen || !this.talentOpen;
+				this.talentOpen = this.subclassChoiceOpen || this.armorChoiceOpen || this.augmentChoiceOpen || !this.talentOpen;
 				this.refreshTalentPanel();
 			},
 			buyHeal: () => this.shopBuy('potion'), buyId: () => this.shopBuy('scrollIdentify'),
@@ -828,6 +890,23 @@ export class SewersScene extends Scene2D {
 		move: (step) => {
 			this.justDescended = false;
 			this.actionSpentTurn = false;
+			//Furor's attack-only cost (`Hero.attackDelay()` vs `Char.speed()`): when the
+			//step leads into a hostile creature, `takeHeroTurn` resolves a bump-attack, so
+			//spend that turn here at the attack rate and report it spent - the adapter must
+			//not also spend the blanket cost. Movement/door/NPC steps fall through to the
+			//adapter's own blanket-cost spend, matching Java's split where Furor never
+			//speeds non-attacks. The occupant test mirrors `takeHeroTurn`'s own
+			//`occupantAt` query (same `creatureAt`, same NPC exclusion).
+			const target = { x: this.hero.x + step.x, y: this.hero.y + step.y };
+			const occupant = this.creatureAt(target.x, target.y);
+			if (occupant && !occupant.isNPC) {
+				this.takeHeroTurn(step);
+				if (!this.justDescended && !this.actionSpentTurn) {
+					this.actionSpentTurn = true;
+					this.spendHeroTurn(this.getAttackTurnCostMod());
+				}
+				return true;
+			}
 			this.takeHeroTurn(step);
 			// enterLevel already establishes the new floor's first input turn.
 			return this.justDescended || this.actionSpentTurn;
@@ -950,6 +1029,10 @@ export class SewersScene extends Scene2D {
 	private impSpawned = false;
 	/** Imp token ask for this run (5 monk tokens on odd depths, 4 golem tokens on even) */
 	private impNeed = 5;
+	/** `Dungeon.LimitedDrops`: how many times each of these mobs has already dropped its special
+	 * loot this run - real Java scales `lootChance()` down further with every successful drop
+	 * (`Bat`/`Necromancer`/`Guard` below), reset only on a new game, not per floor. */
+	private limitedDrops: Partial<Record<MonsterId, number>> = {};
 	/** Ghost Quest.type for this run (1 Fetid Rat, 2 Gnoll Trickster, 3 Great Crab) */
 	private ghostType = 1;
 	/** shop stock + prices (Shopkeeper.sellPrice simplified to flat numbers, see interact) */
@@ -1007,6 +1090,14 @@ export class SewersScene extends Scene2D {
 	private heroBarrier = new Actors.Barrier();
 	/** Barrier.partialLostShield (`actors/buffs/Barrier.java`): fractional decay accumulator. */
 	private barrierPartialLoss = 0;
+	/** Blocking.BlockBuff's own real fixed 5-turn cliff-edge expiry (`left -= 1; left<=0 -> detach()`,
+	 * `setShield()` always resets `left=5`), layered on top of the shared `heroBarrier` pool since
+	 * this port doesn't keep separate shield-source buffs. Tracks only how much of the pool is
+	 * currently attributable to Blocking and how many turns that portion has left; real Java's
+	 * priority-ordered absorption (Blocking's shield drains before Barrier's on incoming damage)
+	 * is not modeled - the pool is drained in whatever order the existing decay/absorb calls run. */
+	private blockingShieldLeft = 0;
+	private blockingTurnsLeft = 0;
 	private stealthTalentTicks = 0;
 	private wandBonusDamage = 0;
 	private physicalBonusDamage = 0;
@@ -1040,6 +1131,11 @@ export class SewersScene extends Scene2D {
 	/** Java Rotberry ToxicGas and Icecap Freezing blobs, persisted with the floor. */
 	private plantGas!: Roguelike.Blob;
 	private plantFreeze!: Roguelike.Blob;
+	/** ToxicGas.java: both `PotionOfToxicGas.shatter()` and `ToxicTrap.activate()` seed this
+	 * same blob class in real Java - `1 + scalingDepth()/5` direct damage/turn, no buff involved. */
+	private toxicGas!: Roguelike.Blob;
+	/** ParalyticGas.java: `PotionOfParalyticGas.shatter()` seeds this - prolongs `paralysis` each turn. */
+	private paralyticGas!: Roguelike.Blob;
 	/** SacrificialFire blob and its generated prize, adopted from SacrificeRoom. */
 	private sacrificialFire!: Roguelike.Blob;
 	private sacrificialFireCharge = 0;
@@ -1078,6 +1174,9 @@ export class SewersScene extends Scene2D {
 	private talentOpen = false;
 	private subclassChoiceOpen = false;
 	private armorChoiceOpen = false;
+	/** StoneOfAugmentation.onItemSelected(): reuses the same choice-panel mechanism as the
+	 * level-up armor-ability/subclass windows, but item-use-triggered instead of level-triggered. */
+	private augmentChoiceOpen = false;
 	private victoryPanel!: Container;
 	private bossChrome!: Container;
 	private bossHealthBar!: Bar;
@@ -1225,6 +1324,8 @@ export class SewersScene extends Scene2D {
 		this.talentTier = 1;
 		this.heroBarrier.clear();
 		this.barrierPartialLoss = 0;
+		this.blockingShieldLeft = 0;
+		this.blockingTurnsLeft = 0;
 		this.deathlessFuryUsed = false;
 		this.stealthTalentTicks = 0;
 		this.wandBonusDamage = 0;
@@ -1323,7 +1424,6 @@ export class SewersScene extends Scene2D {
 		//Stone +2 armor, Fragile -2 armor (floored at 0), Flow +2 evasion
 		if (this.weaponAffix === 'wayward') this.hero.accuracy = Math.max(0, this.hero.accuracy - 3);
 		if (this.armorGlyph === 'stone') this.hero.armor = [this.hero.armor[0] + 2, this.hero.armor[1] + 2];
-		if (this.armorGlyph === 'fragile') this.hero.armor = [Math.max(0, this.hero.armor[0] - 2), Math.max(0, this.hero.armor[1] - 2)];
 		if (this.armorGlyph === 'flow') this.hero.evasion += 2;
 		//ring effects: Might already widened hero.str above; Tenacity's real
 		//`RingOfTenacity.damageMultiplier()` is applied directly to incoming damage in
@@ -1335,7 +1435,12 @@ export class SewersScene extends Scene2D {
 		if (this.equippedRing) {
 			const def = ringDef(this.equippedRing.id);
 			const level = this.equippedRing.level;
-			if (def && def.stat !== 'strength' && def.stat !== 'tenacity' && def.stat !== 'speed' && def.stat !== 'energy') {
+			//Stats applied outside the StatBlock loop (direct damage/turn-cost reads) are
+			//marker-only here: Might (str), Tenacity (incoming-damage curve), Haste/Energy
+			//(turn-cost/wand-rate divisors), Wealth/Arcana/Force/Sharpshooting (kill-loot,
+			//proc-chance, flat damage bonuses), Elements (elemental-damage multiplier) and
+			//Furor (attack-only turn-cost divisor). A Set, not an OR-chain (see ROADMAP §11).
+			if (def && !NON_STATBLOCK_RING_STATS.has(def.stat)) {
 				for (const modifier of Actors.scaledModifiers(level, [{ stat: def.stat, op: def.op, base: def.at(level), perLevel: 0 }])) {
 					this.heroStats.addModifier({ ...modifier, source: 'ring' });
 				}
@@ -1485,18 +1590,18 @@ export class SewersScene extends Scene2D {
 			npcKind: isNPC ? (kind as 'ghost' | 'wandmaker' | 'shopkeeper' | 'blacksmith' | 'imp') : undefined,
 			//Mob.java: everything spawns SLEEPING (bosses and NPCs excepted); champions are a
 			//flat 10% roll here (real `rollForChampion` instead scales the roster-wide budget
-			//by depth via `Dungeon.mobsToChampion`, not modeled), among 4 of the real 6
-			//ChampionEnemy types - Blessed/Blazing/Giant/Growing; Projecting/AntiMagic still need
-			//systems (reach-based targeting, a magic-vs-physical damage distinction) this port
-			//doesn't model, so the roll is a 1-in-4 among the ported subset rather than Java's
-			//real 1-in-6 with 2 silently no-op'd - see `PORT_COVERAGE.md`
+			//by depth via `Dungeon.mobsToChampion`, not modeled). All 6 real ChampionEnemy types
+			//are now represented (`Random.Int(6)` in Java, `Random.element` on all 6 here) -
+			//Projecting's `canAttackWithExtraReach()` (2/4-cell melee reach via pathfinding) is
+			//still not modeled, so it only gets its damage-factor half; see `PORT_COVERAGE.md`.
 			//DemonSpawner never sleeps (state=PASSIVE from the start, not SLEEPING)
 			sleeping: restoring || !(isNPC || isBoss || kind === 'fetidRat' || kind === 'gnollTrickster' || kind === 'greatCrab' || kind === 'demonSpawner'),
-			champion: restoring ? null : (!isNPC && !isBoss && kind !== 'necroSkeleton' && kind !== 'demonSpawner' && Random.chance(0.1) ? Random.element(['blessed', 'blazing', 'giant', 'growing'] as const)! : null),
+			champion: restoring ? null : (!isNPC && !isBoss && kind !== 'necroSkeleton' && kind !== 'demonSpawner' && Random.chance(0.1) ? Random.element(['blessed', 'blazing', 'giant', 'growing', 'antimagic', 'projecting'] as const)! : null),
 			championPower: 1.19,
 			combo: 0,
 			moving: 0,
 			skeleton: null,
+			firstSummon: true,
 			arenaJumps: 0,
 			generation: 0,
 			mimicLoot,
@@ -1533,8 +1638,10 @@ export class SewersScene extends Scene2D {
 				spawnCooldown: creature.spawnCooldown, seesHero: creature.seesHero, mimicRevealed: creature.mimicRevealed,
 				hasteTurns: creature.hasteTurns, hasteBaseSpeed: creature.hasteBaseSpeed,
 				hasRaged: creature.hasRaged, raged: creature.raged, chainUsed: creature.chainUsed,
-				ventCooldown: creature.ventCooldown, webCooldown: creature.webCooldown, armoredRageTicks: creature.armoredRageTicks,
+				ventCooldown: creature.ventCooldown, webCooldown: creature.webCooldown, golemTeleCooldown: creature.golemTeleCooldown,
+				beamCharged: creature.beamCharged, beamCooldown: creature.beamCooldown, armoredRageTicks: creature.armoredRageTicks,
 				skeletonIndex: creature.skeleton ? savedIndex.get(creature.skeleton) : undefined,
+				firstSummon: creature.firstSummon,
 				nextTurn: this.scheduler.timeOf(creature),
 			});
 		}
@@ -1548,6 +1655,8 @@ export class SewersScene extends Scene2D {
 			fire: this.fire.toJSON(),
 			plantGas: this.plantGas.toJSON(),
 			plantFreeze: this.plantFreeze.toJSON(),
+			toxicGas: this.toxicGas.toJSON(),
+			paralyticGas: this.paralyticGas.toJSON(),
 			portedFeatures: this.portedFeatures.toJSON(),
 			sacrificialFire: this.sacrificialFire.toJSON(),
 			sacrificialFireCharge: this.sacrificialFireCharge,
@@ -1571,6 +1680,8 @@ export class SewersScene extends Scene2D {
 		this.fire = Roguelike.Blob.fromJSON(state.fire);
 		this.plantGas = state.plantGas ? Roguelike.Blob.fromJSON(state.plantGas) : new Roguelike.Blob(this.level.width, this.level.height);
 		this.plantFreeze = state.plantFreeze ? Roguelike.Blob.fromJSON(state.plantFreeze) : new Roguelike.Blob(this.level.width, this.level.height);
+		this.toxicGas = state.toxicGas ? Roguelike.Blob.fromJSON(state.toxicGas) : new Roguelike.Blob(this.level.width, this.level.height);
+		this.paralyticGas = state.paralyticGas ? Roguelike.Blob.fromJSON(state.paralyticGas) : new Roguelike.Blob(this.level.width, this.level.height);
 		this.manualPlants = new Map(state.manualPlants ?? []);
 		this.restorePortedFeatures(state.portedFeatures);
 		for (const [cell, kind] of this.manualPlants) this.placePortedFeature(cell, kind);
@@ -1595,7 +1706,9 @@ export class SewersScene extends Scene2D {
 				mimicRevealed: saved.mimicRevealed ?? Boolean(saved.stolen),
 				hasteTurns: saved.hasteTurns, hasteBaseSpeed: saved.hasteBaseSpeed,
 				hasRaged: saved.hasRaged, raged: saved.raged, chainUsed: saved.chainUsed,
-				ventCooldown: saved.ventCooldown, webCooldown: saved.webCooldown, armoredRageTicks: saved.armoredRageTicks,
+				ventCooldown: saved.ventCooldown, webCooldown: saved.webCooldown, golemTeleCooldown: saved.golemTeleCooldown,
+				beamCharged: saved.beamCharged, beamCooldown: saved.beamCooldown, armoredRageTicks: saved.armoredRageTicks,
+				firstSummon: saved.firstSummon ?? true,
 				speed: saved.hasteTurns ? (saved.hasteBaseSpeed ?? 1) * 2 : undefined,
 			});
 			this.scheduler.add(creature, Math.max(0, (saved.nextTurn ?? state.schedulerNow) - state.schedulerNow));
@@ -1699,6 +1812,8 @@ export class SewersScene extends Scene2D {
 		this.fire = new Roguelike.Blob(this.level.width, this.level.height);
 		this.plantGas = new Roguelike.Blob(this.level.width, this.level.height);
 		this.plantFreeze = new Roguelike.Blob(this.level.width, this.level.height);
+		this.toxicGas = new Roguelike.Blob(this.level.width, this.level.height);
+		this.paralyticGas = new Roguelike.Blob(this.level.width, this.level.height);
 		this.sacrificialFire = new Roguelike.Blob(this.level.width, this.level.height);
 		this.sacrificialFireCharge = 0;
 		this.sacrificialFireCell = -1;
@@ -2548,11 +2663,13 @@ export class SewersScene extends Scene2D {
 		const oldMax = this.hero.maxHp;
 		this.hero.maxHp += 2;
 		this.hero.hp += this.hero.maxHp - oldMax;
-		//Ghost.Quest gives a generated weapon and armor set. These generic instances preserve
-		//the real reward shape while avoiding a second, incomplete weapon table in this port.
+		//Ghost.Quest.spawn(): a fixed 50/30/15/5% tier roll (not the generic depth-scaled
+		//randomWeapon/randomArmor this used to call), a shared upgrade level, and a shared 20%
+		//enchant/glyph chance for both items - see `ghostQuestReward()` for the exact formula.
 		setGeneratorDepth(this.depth);
-		const weaponReward = this.generatedInventoryItem(randomWeapon(Math.floor(this.depth / 5)));
-		const armorReward = this.generatedInventoryItem(randomArmor(Math.floor(this.depth / 5)));
+		const reward = ghostQuestReward();
+		const weaponReward = this.generatedInventoryItem(reward.weapon);
+		const armorReward = this.generatedInventoryItem(reward.armor);
 		Actors.identify(weaponReward);
 		Actors.identify(armorReward);
 		//The generator has already rolled the real curse/enchantment/glyph outcome; the compact
@@ -2870,9 +2987,27 @@ export class SewersScene extends Scene2D {
 	private generatedInventoryItem(generated: GenItem): NonNullable<GroundItem['item']> {
 		const cls = generated.cls;
 		let id = 'food';
+		//`Cat.WEAPON`/`Cat.MISSILE` are never the concrete `.cat` a generated weapon/missile
+		//actually carries - `randomWeapon()`/`randomMissile()` always resolve to one of the
+		//WEP_T1..T5/MIS_T1..T5 sub-tier cats (see `generatedGroundKind`'s own range check, which
+		//already got this right). This strict-equality check never matched either range, so every
+		//procedurally-generated weapon or missile silently fell through to the `'food'` default
+		//with no affix ever rolled - found live while testing the Ghost-quest reward fix above,
+		//not something that fix introduced. Fixed to the same range shape `generatedGroundKind` uses.
 		if (generated.cat === Cat.GOLD) id = 'gold';
-		else if (generated.cat === Cat.WEAPON || generated.cat === Cat.MISSILE) id = 'weaponReward';
-		else if (generated.cat === Cat.STONE) id = 'stone';
+		else if (generated.cat <= Cat.WEP_T5 || (generated.cat >= Cat.MISSILE && generated.cat <= Cat.MIS_T5)) id = 'weaponReward';
+		//Same class of rename `Cat.POTION`/`Cat.SCROLL` need above: every other generated
+		//`Cat.STONE` runestone (StoneOfEnchantment/Intuition/DetectMagic/Flock/Aggression) still
+		//collapses into the generic 'stone' id with no distinct effect at all - a real, wider
+		//"not ported" gap this rename doesn't close, tracked in `PORT_COVERAGE.md` (a previous
+		//revision of that gap list wrongly named a "StoneOfDisarming" that does not exist in real
+		//SPD at all - the real 12th type is `StoneOfDetectMagic`, corrected here).
+		//Augmentation/Fear/DeepSleep/Shock/Blast/Blink/Clairvoyance get their own ids here, since
+		//those are the only ones with an actual use-action wired.
+		else if (generated.cat === Cat.STONE) id = cls === 'StoneOfAugmentation' ? 'stoneOfAugmentation'
+			: cls === 'StoneOfFear' ? 'stoneOfFear' : cls === 'StoneOfDeepSleep' ? 'stoneOfDeepSleep'
+			: cls === 'StoneOfShock' ? 'stoneOfShock' : cls === 'StoneOfBlast' ? 'stoneOfBlast'
+			: cls === 'StoneOfBlink' ? 'stoneOfBlink' : cls === 'StoneOfClairvoyance' ? 'stoneOfClairvoyance' : 'stone';
 		else if (generated.cat === Cat.SEED) id = 'seed';
 		else if (generated.cat === Cat.ARMOR) id = 'armorReward';
 		else if (generated.cat === Cat.ARTIFACT) id = generated.cls.toLowerCase().includes('timekeepershourglass') ? 'hourglass' : 'cloak';
@@ -2901,7 +3036,11 @@ export class SewersScene extends Scene2D {
 			id = `scroll${name}`;
 		} else if (generated.cat === Cat.FOOD) id = 'food';
 		let affix: string | undefined;
-		if (generated.cat === Cat.WEAPON) affix = this.rollGeneratedAffix(ENCHANT_TABLE, generated.cursed, generated.hasGoodEnchant);
+		//Same range fix as the id mapping above - `<= Cat.WEP_T5` also correctly excludes actual
+		//missiles (MIS_T1..T5 are all > WEP_T5), matching real `MissileWeapon.random()` never
+		//rolling an enchant/curse at all (`itemRandom`'s `missile` case always returns
+		//`hasGoodEnchant: false`), so this exclusion needs no separate missile check.
+		if (generated.cat <= Cat.WEP_T5) affix = this.rollGeneratedAffix(ENCHANT_TABLE, generated.cursed, generated.hasGoodEnchant);
 		else if (generated.cat === Cat.ARMOR) affix = this.rollGeneratedAffix(GLYPH_TABLE, generated.cursed, generated.hasGoodEnchant);
 		return {
 			id,
@@ -2943,6 +3082,11 @@ export class SewersScene extends Scene2D {
 		if (item.id.startsWith('ring_')) return 'ring';
 		if (item.id.startsWith('potion')) return 'potion';
 		if (item.id.startsWith('scroll')) return 'scroll';
+		//Found while wiring StoneOfAugmentation: any generated `Cat.STONE` runestone (most still
+		//collapse to the generic 'stone' id, a few now get their own) fell through to whatever
+		//`fallback` the caller passed - 'food' at the one real floor-loot call site - rendering
+		//and behaving as a food ground item instead of a stone. Pre-existing, not introduced here.
+		if (item.id === 'stone' || item.id === 'stoneOfAugmentation' || item.id === 'stoneOfFear' || item.id === 'stoneOfDeepSleep' || item.id === 'stoneOfShock' || item.id === 'stoneOfBlast' || item.id === 'stoneOfBlink' || item.id === 'stoneOfClairvoyance') return 'stone';
 		return fallback;
 	}
 
@@ -3225,15 +3369,49 @@ export class SewersScene extends Scene2D {
 			addBuff(this.hero, 'levitation');
 			delete this.hero.buffs['roots'];
 			this.say(t('port.log.levitate'), 'positive');
+		} else if (id === 'potionToxicGas') {
+			//Potion.apply(hero) is just `shatter(hero.pos)` for every gas potion in real Java -
+			//there is no separate "drink" effect, drinking one gases your own feet exactly like
+			//throwing it at yourself. `PotionOfToxicGas.shatter()` seeds the same 1000-volume
+			//`ToxicGas` blob as `ToxicTrap` (see `triggerTrapAt`'s `toxic` branch above).
+			this.toxicGas.seed(this.hero.x, this.hero.y, 1000);
+			this.say(t('port.log.quafftoxicgas'), 'negative');
+		} else if (id === 'potionParalyticGas') {
+			//PotionOfParalyticGas.shatter(): same shape, seeds a 1000-volume `ParalyticGas` blob
+			//at the hero's own feet.
+			this.paralyticGas.seed(this.hero.x, this.hero.y, 1000);
+			this.say(t('port.log.quaffparalyticgas'), 'negative');
+		} else if (id === 'potionHaste') {
+			//PotionOfHaste.apply(): grants the Haste buff (Haste.DURATION=20). Char.speed()'s real
+			//`speed *= 3f` for Haste is a genuine turn-cost multiplier this port can now express -
+			//the earlier "needs a hero speed buff system this port doesn't have" premise was stale
+			//once `getActionTurnCostMod` existed (see RingOfHaste's own multiplier there already).
+			addBuff(this.hero, 'haste');
+			this.say(t('port.log.quaffhaste'), 'positive');
+		} else if (id === 'potionFrost') {
+			//PotionOfFrost.shatter(): seeds a `Freezing` blob at the shatter cell, which
+			//extinguishes fire, chills (`Chill`) and eventually freezes (`Frost`, an
+			//immobilize) everything caught in it. This port has no blob-freezing terrain and
+			//no freeze/immobilize status distinct from paralysis (see PORT_COVERAGE.md), so
+			//this is Simplified to the shape the neighboring gas-potion branches already use:
+			//extinguish the hero's own `burning`, deal Liquid Flame's own 4 damage to the
+			//nearest visible enemy, and apply `daze` as the chill stand-in (the same
+			//"Frost's damage-plus-chill simplified to damage-plus-daze" substitution the
+			//WandOfFrost branch already documents).
+			delete this.hero.buffs['burning'];
+			const target = this.nearestVisibleEnemy(6);
+			if (target) {
+				target.hp -= 4;
+				this.showDamage(target, 4);
+				addBuff(target, 'daze');
+				if (target.hp <= 0) this.kill(target);
+			}
+			this.say(t('port.log.quafffrost'), 'positive');
 		} else {
 			//PotionOfPurity.apply() itself only clears poison/burning ('potionPurity' - Java's
-			//`GasCloud`/`Fire` extinguish). Java's Frost/Haste/ToxicGas/ParalyticGas potions
-			//('potionFrost'/'potionHaste'/'potionToxicGas'/'potionParalyticGas', all in the real
-			//Generator pool per `spdItems/generator.ts`) still land here too and get this same
-			//Purity-shaped effect - not their own, and not merely "unported" as previously implied:
-			//each needs a system this port doesn't have yet (a freeze/immobilize status, a hero
-			//speed buff, and a "blob that applies a status to whoever stands in it" consequence
-			//for the two gas potions) before it can have its real effect. See `PORT_COVERAGE.md`.
+			//`GasCloud`/`Fire` extinguish). Every generated potion id now has its own branch
+			//above (PotionOfFrost was the last one missing one), so this is genuinely just
+			//Purity's effect. See `PORT_COVERAGE.md`.
 			for (const b of ['poison', 'burning'] as BuffId[]) delete this.hero.buffs[b];
 			this.say(t('port.log.purity'), 'positive');
 		}
@@ -3265,6 +3443,17 @@ export class SewersScene extends Scene2D {
 		else if (!this.requestedItemId && ids.includes('scrollCleanse')) id = 'scrollCleanse';
 		if (id === 'scrollUpgrade') {
 			this.say(t('port.log.scrollisforgear'));
+			return false;
+		}
+		if (id === 'scrollTransmutation') {
+			//ScrollOfTransmutation.doRead(): rerolls one item into another of a related
+			//category (`usableOnItem`/`changeItem`'s per-category rules) via a generic
+			//item-picker UI. This port has neither the transmutation rules nor the picker
+			//(see PORT_COVERAGE.md), so reading it refuses cleanly WITHOUT consuming the
+			//scroll - previously it fell through to the Remove Curse branch below and
+			//consumed itself for someone else's effect, an active misbehavior, not an inert
+			//gap. Returning false (like the upgrade-scroll guard above) keeps it in the bag.
+			this.say(t('port.log.transmutationfizzle'), 'negative');
 			return false;
 		}
 		this.bag.remove(id, 1, this.requestedItemInstanceId);
@@ -3397,13 +3586,10 @@ export class SewersScene extends Scene2D {
 			this.say(t('items.scrolls.scrollofretribution.blast'), 'warning');
 		} else {
 			//ScrollOfRemoveCurse.doRead() is genuinely this branch's effect ('scrollCleanse' hits
-			//it correctly), but so does anything unread: `ScrollOfTransmutation` is also in the
-			//real Generator pool (`spdItems/generator.ts`) and has no branch here, so it still
-			//falls through to Remove Curse's effect instead of its own - not merely inert, an
-			//active (if narrow) misbehavior, same as the equivalent unported potions above. It
-			//needs a whole item-transmutation system (`usableOnItem`/`changeItem`'s per-category
-			//reroll rules, plus a generic item-picker UI this port doesn't have - every other
-			//"pick one item" scroll here auto-targets instead) - see `PORT_COVERAGE.md`.
+			//it correctly). `ScrollOfTransmutation` used to fall through here too, but it now
+			//has its own refuse-without-consuming guard above, so this default is only reached
+			//by genuinely unknown scroll ids - still Remove Curse's effect, a deliberate
+			//fallback rather than a silent misbehavior. See `PORT_COVERAGE.md`.
 			for (const b of ['weakness', 'vulnerable', 'hex', 'daze'] as BuffId[]) delete this.hero.buffs[b];
 			for (const item of this.bag.items) if (item.cursed || getCurse(item.affix ?? '')) Actors.removeAffix(item);
 			if (getCurse(this.weaponAffix ?? '')) this.weaponAffix = null;
@@ -3506,6 +3692,15 @@ export class SewersScene extends Scene2D {
 		if (this.level.get(x, y) !== HIGH_GRASS) return;
 
 		this.level.set(x, y, GRASS);
+		//Camouflage.activate(): trampling high grass while wearing the glyph prolongs
+		//Invisibility for round((3 + lvl/2) x arcana) - keep-max, matching Buff.prolong().
+		//Java also plays its MELD sound when the cell is in FOV; there is no per-effect
+		//audio seam here, so the log line below stands in for that feedback.
+		if (this.armorGlyph === 'camouflage') {
+			const duration = Math.round((3 + this.armorLevel / 2) * this.ringArcanaMultiplier());
+			this.hero.buffs['invisibility'] = Math.max(this.hero.buffs['invisibility'] ?? 0, duration);
+			this.say(t('port.log.camouflage'), 'positive');
+		}
 		if (this.heroClass === 'huntress' && this.talentRank('natures_aid') > 0) this.grantHeroShield(Random.int(0, 3), 2);
 		this.restitchTilesAround(x, y);
 		this.featuresMap?.setLayerData('features', this.featureFrames());
@@ -3517,6 +3712,24 @@ export class SewersScene extends Scene2D {
 		}
 		const dewChance = naturesBountyDewChance(this.heroClass, this.talentRank('natures_bounty'));
 		if (Random.chance(dewChance)) this.spawnGroundItem('dewdrop', x, y);
+	}
+
+	/**
+	 * `Blooming.plantGrass()`: converts one plantable cell to `HIGH_GRASS` (see the Blooming
+	 * branch in `heroOnHit` for the terrain substitution) unless a grown plant already holds
+	 * it, then restitches exactly like `trampleHighGrass` does. Returns whether anything
+	 * was planted, so the caller can spend its plant budget.
+	 */
+	private plantBloomingGrass(x: number, y: number): boolean {
+		if (x < 0 || y < 0 || x >= this.level.width || y >= this.level.height) return false;
+		const kind = this.level.get(x, y);
+		if (kind !== FLOOR && kind !== GRASS) return false;
+		const cell = this.level.index(x, y);
+		if ((this.portedPaint?.plants.some((plant) => plant.pos === cell) ?? false) || this.manualPlants.has(cell)) return false;
+		this.level.set(x, y, HIGH_GRASS);
+		this.restitchTilesAround(x, y);
+		this.featuresMap?.setLayerData('features', this.featureFrames());
+		return true;
 	}
 
 	/**
@@ -3814,6 +4027,14 @@ export class SewersScene extends Scene2D {
 		if (lower.includes('timekeepershourglass')) return { id: 'hourglass', quantity: 1, identified: false, sandBags: 0, instanceId: this.newItemInstanceId('hourglass'), sourceClass: concrete };
 		if (lower.includes('artifact')) return { id: 'cloak', quantity: 1, identified: false, instanceId: this.newItemInstanceId('artifact'), sourceClass: concrete };
 		if (lower.includes('wand')) return { id: 'wand', quantity: 1, identified: false, instanceId: this.newItemInstanceId('wand'), sourceClass: concrete };
+		//same short-id rename `generatedInventoryItem` needs for these seven (see its comment)
+		if (concrete === 'StoneOfAugmentation') return { id: 'stoneOfAugmentation', quantity: 1, identified: false, sourceClass: concrete };
+		if (concrete === 'StoneOfFear') return { id: 'stoneOfFear', quantity: 1, identified: false, sourceClass: concrete };
+		if (concrete === 'StoneOfDeepSleep') return { id: 'stoneOfDeepSleep', quantity: 1, identified: false, sourceClass: concrete };
+		if (concrete === 'StoneOfShock') return { id: 'stoneOfShock', quantity: 1, identified: false, sourceClass: concrete };
+		if (concrete === 'StoneOfBlast') return { id: 'stoneOfBlast', quantity: 1, identified: false, sourceClass: concrete };
+		if (concrete === 'StoneOfBlink') return { id: 'stoneOfBlink', quantity: 1, identified: false, sourceClass: concrete };
+		if (concrete === 'StoneOfClairvoyance') return { id: 'stoneOfClairvoyance', quantity: 1, identified: false, sourceClass: concrete };
 		if (lower.includes('stone')) return { id: 'stone', quantity: 1, identified: false, sourceClass: concrete };
 		if (lower.includes('seed') || lower.includes('starflower')) return { id: 'seed', quantity: 1, identified: true, sourceClass: concrete };
 		if (lower.includes('armor')) return { id: 'armorReward', quantity: 1, identified: false, instanceId: this.newItemInstanceId('armor'), sourceClass: concrete };
@@ -3968,6 +4189,8 @@ export class SewersScene extends Scene2D {
 	private spreadPlantBlobs(): void {
 		this.plantGas.spread((x, y) => this.level.passable(x, y), 0.25, 0.9);
 		this.plantFreeze.spread((x, y) => this.level.passable(x, y), 0.25, 0.9);
+		this.toxicGas.spread((x, y) => this.level.passable(x, y), 0.25, 0.9);
+		this.paralyticGas.spread((x, y) => this.level.passable(x, y), 0.25, 0.9);
 		for (const cell of this.plantGas.cellsAbove(1)) {
 			const target = this.creatureAt(cell.x, cell.y);
 			if (target) addBuff(target, 'poison');
@@ -3976,44 +4199,71 @@ export class SewersScene extends Scene2D {
 			const target = this.creatureAt(cell.x, cell.y);
 			if (target) addBuff(target, 'paralysis');
 		}
+		//ToxicGas.evolve(): `1 + Dungeon.scalingDepth()/5` direct damage/turn, no buff at all -
+		//distinct from the plantGas/Rotberry stand-in above, which reuses the `poison` buff.
+		for (const cell of this.toxicGas.cellsAbove(0.0001)) {
+			const target = this.creatureAt(cell.x, cell.y);
+			if (!target || target.hp <= 0) continue;
+			//RingOfElements.resist(): ToxicGas is in `RESISTS` - scale the hero's share.
+			//Monsters never benefit (only the hero equips rings in this port).
+			const dmg = target.isHero
+				? Math.floor((1 + Math.floor(this.depth / 5)) * this.ringElementsMultiplier())
+				: 1 + Math.floor(this.depth / 5);
+			if (target.isHero) {
+				const blocked = this.absorbHeroDamage(dmg);
+				this.hero.hp -= blocked;
+				this.showDamage(this.hero, dmg);
+				if (this.hero.hp <= 0) { this.kill(this.hero, 'poison'); return; }
+			} else {
+				target.hp -= dmg;
+				this.showDamage(target, dmg);
+				if (target.hp <= 0) this.kill(target);
+			}
+		}
+		//ParalyticGas.evolve(): `Buff.prolong(ch, Paralysis.class, Paralysis.DURATION)` each turn.
+		for (const cell of this.paralyticGas.cellsAbove(0.0001)) {
+			const target = this.creatureAt(cell.x, cell.y);
+			if (target) addBuff(target, 'paralysis');
+		}
 	}
 
+	/** `Hero.search()`: the pure "which cell, if any" decision now runs through
+	 * `runSearch`/`SimulationRuntime` (see `SIMULATION_ARCHITECTURE.md`'s "Step 7"); this method
+	 * keeps every scene-owned effect the decision used to inline - discovering the cell,
+	 * restitching tiles, redrawing the feature map, logging, and guide-progress persistence -
+	 * unchanged, the same "scene executes the selected effect" split `movement.ts`'s
+	 * `planMovement` already established. */
 	private searchForSecrets(): void {
 		const radius = 1 + this.talentRank('wide_search');
-		const offsets: [number, number][] = [];
-		for (let dy = -radius; dy <= radius; dy++) for (let dx = -radius; dx <= radius; dx++) {
-			if (dx !== 0 || dy !== 0) offsets.push([dx, dy]);
-		}
-		for (const [dx, dy] of offsets) {
-			const x = this.hero.x + dx;
-			const y = this.hero.y + dy;
-			if (!this.secrets.isSecret(x, y)) continue;
-			this.secrets.discover(x, y);
-			//a secret door was stored as WALL to hide it, so it was drawn with the wall's own
-			//face; now that it is a door it needs its door frames, and the rock it was
-			//blending into needs restitching around the hole it just left
-			this.restitchTilesAround(x, y);
-			this.featuresMap?.setLayerData('features', this.featureFrames());
-			//a ported floor conceals real SECRET_DOOR cells too, not only traps - and on depths
-			//1-2 finding one is mandatory, not optional: Java's SPDSettings.intro() makes every
-			//entrance-room door secret as its search tutorial, so the hero starts sealed in
-			if (this.secretDoorCells.has(this.level.index(x, y))) {
-				this.say(t('port.log.founddoor'), 'positive');
-				//Real completion signal for SPDSettings.intro()/the depth-2 searching page - see
-				//`guideProgress`'s own comment. Persisted once, permanently, the same as a badge.
-				if (this.depth === 1 && !entranceRoomContext.guideIntroRead) {
-					entranceRoomContext.guideIntroRead = true;
-					this.guideProgress.save('guide', { introRead: true, searchingFound: entranceRoomContext.guideSearchingFound });
-				} else if (this.depth === 2 && !entranceRoomContext.guideSearchingFound) {
-					entranceRoomContext.guideSearchingFound = true;
-					this.guideProgress.save('guide', { introRead: entranceRoomContext.guideIntroRead, searchingFound: true });
-				}
-			} else {
-				this.say(t('port.log.foundtrap'), 'positive');
-			}
+		const outcome = runSearch(this.hero, radius, { isSecret: (cell) => this.secrets.isSecret(cell.x, cell.y) });
+		if (outcome.kind === 'nothing') {
+			this.say(t('port.log.foundnothing'), 'negative');
 			return;
 		}
-		this.say(t('port.log.foundnothing'), 'negative');
+		const { x, y } = outcome.cell;
+		this.secrets.discover(x, y);
+		//a secret door was stored as WALL to hide it, so it was drawn with the wall's own
+		//face; now that it is a door it needs its door frames, and the rock it was
+		//blending into needs restitching around the hole it just left
+		this.restitchTilesAround(x, y);
+		this.featuresMap?.setLayerData('features', this.featureFrames());
+		//a ported floor conceals real SECRET_DOOR cells too, not only traps - and on depths
+		//1-2 finding one is mandatory, not optional: Java's SPDSettings.intro() makes every
+		//entrance-room door secret as its search tutorial, so the hero starts sealed in
+		if (this.secretDoorCells.has(this.level.index(x, y))) {
+			this.say(t('port.log.founddoor'), 'positive');
+			//Real completion signal for SPDSettings.intro()/the depth-2 searching page - see
+			//`guideProgress`'s own comment. Persisted once, permanently, the same as a badge.
+			if (this.depth === 1 && !entranceRoomContext.guideIntroRead) {
+				entranceRoomContext.guideIntroRead = true;
+				this.guideProgress.save('guide', { introRead: true, searchingFound: entranceRoomContext.guideSearchingFound });
+			} else if (this.depth === 2 && !entranceRoomContext.guideSearchingFound) {
+				entranceRoomContext.guideSearchingFound = true;
+				this.guideProgress.save('guide', { introRead: entranceRoomContext.guideIntroRead, searchingFound: true });
+			}
+		} else {
+			this.say(t('port.log.foundtrap'), 'positive');
+		}
 	}
 
 	/**
@@ -4116,13 +4366,17 @@ export class SewersScene extends Scene2D {
 		this.featuresMap?.setLayerData('features', this.featureFrames());
 
 		if (kind === 'toxic') {
-			addBuff(this.hero, 'poison');
-			this.hero.buffs['poison'] = 3;
-			// ToxicTrap seeds a spreading gas blob rather than affecting only the trigger cell.
-			this.plantGas.seed(x, y, 300 + 20 * this.depth);
+			//ToxicTrap.activate(): seeds the real ToxicGas blob (`300 + 20*scalingDepth()`) and
+			//nothing else - no instant poison. The gas itself deals direct per-turn damage next
+			//turn via `spreadPlantBlobs`; the previous instant `poison` buff here was never real
+			//Java behavior, and reusing `plantGas` conflated this with Rotberry's own gas blob.
+			this.toxicGas.seed(x, y, 300 + 20 * this.depth);
 			this.say(t('port.log.trap.toxic'), 'negative');
 		} else if (kind === 'burning') {
-			let damage = Random.int(2, 5);
+			//RingOfElements.resist(): Burning is in `RESISTS` - the trap's fire damage is
+			//scaled before Barrier absorption (matching `Hero.damage()`'s ordering where
+			//the multiplier applies to the raw hit).
+			let damage = Math.floor(Random.int(2, 5) * this.ringElementsMultiplier());
 			damage = this.absorbHeroDamage(damage);
 			this.hero.hp -= damage;
 			this.showDamage(this.hero, damage);
@@ -4228,7 +4482,7 @@ export class SewersScene extends Scene2D {
 			let missileSurvived = true;
 			if (carried) {
 				const baseUses = this.heroClass === 'duelist' ? 10 : 5;
-				const uses = baseUses * (1 + 0.25 * this.talentRank('durable_projectiles'));
+				const uses = baseUses * (1 + 0.25 * this.talentRank('durable_projectiles')) * this.ringSharpshootingDurabilityMultiplier();
 				this.ammoDurability -= 100 / Math.max(1, Math.round(uses));
 				if (this.ammoDurability <= 0) {
 					this.ammo--;
@@ -4244,7 +4498,10 @@ export class SewersScene extends Scene2D {
 			//pickup later merges it back into the carried stack.
 			if (missileSurvived) this.spawnGroundItem('stone', target.x, target.y);
 			if (this.heroClass === 'huntress' && this.talentRank('followup_strike') > 0) { this.followupTarget = target; this.followupDamage = this.talentRank('followup_strike') === 1 ? 2 : 3; }
-			this.attack({ ...this.hero, kind: undefined, damage: special.damage }, target);
+			//MissileWeapon.min()/max(): both bounds get the same flat RingOfSharpshooting bonus.
+			const sharpshooting = this.ringSharpshootingBonus();
+			const thrownDamage: [number, number] = [special.damage[0] + sharpshooting, special.damage[1] + sharpshooting];
+			this.attack({ ...this.hero, kind: undefined, damage: thrownDamage }, target);
 		} else if (special.kind === 'zap') {
 			const fullyCharged = this.wandCharges.current === this.wandCharges.max;
 			const lastCharge = this.wandCharges.current === 1;
@@ -4278,7 +4535,11 @@ export class SewersScene extends Scene2D {
 			} else {
 				const distance = Roguelike.chebyshevDistance(this.hero, target);
 				const multiplier = Math.min(3, 1.2 * Math.pow(1.125, distance - 1));
-				const base = Random.normalRange(special.damage[0], special.damage[1]);
+				//SpiritBow.min()/max(): RingOfSharpshooting's bonus is asymmetric here - +bonus on
+				//the low end, +2*bonus on the high end (unlike MissileWeapon's identical +bonus
+				//on both bounds above).
+				const sharpshooting = this.ringSharpshootingBonus();
+				const base = Random.normalRange(special.damage[0] + sharpshooting, special.damage[1] + 2 * sharpshooting);
 				const dr = Random.normalRange(target.armor[0], target.armor[1]);
 				const closeBonus = this.talentRank('point_blank') > 0 && distance <= 2 ? 1 + 0.2 * this.talentRank('point_blank') : 1;
 				const momentum = projectileMomentumBonus(this.subclass(), this.talentRank('projectile_momentum'), this.projectileMomentumReady);
@@ -4338,7 +4599,7 @@ export class SewersScene extends Scene2D {
 			return true;
 		}
 		if (this.gameOver || !this.awaitingInput) return false;
-		if ((this.subclassChoiceOpen || this.armorChoiceOpen) && action !== 'talents') {
+		if ((this.subclassChoiceOpen || this.armorChoiceOpen || this.augmentChoiceOpen) && action !== 'talents') {
 			this.talentOpen = true;
 			this.refreshTalentPanel();
 			return false;
@@ -4410,7 +4671,8 @@ export class SewersScene extends Scene2D {
 	 * One hero turn passes: the TurnClock drives hunger (Hunger.STEP=10 per turn, HUNGRY 300,
 	 * STARVING 450, continuous partial-damage accrual per `simulation/hunger.ts`), wand charges regenerate, and
 	 * the hero's own buff timers tick down with their dot damage. turnCost (default 1) allows
-	 * fractional turns for attack-speed modifiers (Swiftness enchant, Weapon.Augment SPEED).
+	 * fractional turns for attack-speed modifiers (Weapon.Augment SPEED, Swiftness glyph,
+	 * RingOfFuror/Haste).
 	 */
 	private spendHeroTurn(turnCost: number = 1): void {
 		finishHeroTurn({
@@ -4438,6 +4700,19 @@ export class SewersScene extends Scene2D {
 					if (this.barrierPartialLoss >= 1) {
 						this.heroBarrier.absorb(1);
 						this.barrierPartialLoss = 0;
+					}
+				}
+				//BlockBuff.act(): `left -= 1; left<=0 -> detach()` - a hard cliff independent of
+				//the proportional curve above. Clamp to whatever the pool actually still holds
+				//first, since the proportional decay/absorption elsewhere may have already eaten
+				//into it (this port has no priority-ordered per-source absorption to keep the two
+				//separate, so the tracked amount can only ever be an upper bound on what's left).
+				if (this.blockingTurnsLeft > 0) {
+					this.blockingShieldLeft = Math.min(this.blockingShieldLeft, this.heroBarrier.total);
+					this.blockingTurnsLeft--;
+					if (this.blockingTurnsLeft <= 0 && this.blockingShieldLeft > 0) {
+						this.heroBarrier.absorb(this.blockingShieldLeft);
+						this.blockingShieldLeft = 0;
 					}
 				}
 				if (this.sungrassHealing > 0) {
@@ -4483,7 +4758,9 @@ export class SewersScene extends Scene2D {
 				} else this.stealthTalentTicks = 0;
 				const burning = this.hero.buffs['burning'] !== undefined;
 				const hadAdrenaline = this.hero.buffs['adrenalineSurge'] !== undefined;
-				const dot = tickBuffs(this.hero);
+				//RingOfElements.resist(): Burning/Poison are both in `RESISTS`, so the DoT
+				//they deal through `Char.damage()` is scaled by `0.825^level` in real Java.
+				const dot = Math.floor(tickBuffs(this.hero) * this.ringElementsMultiplier());
 				if (hadAdrenaline !== (this.hero.buffs['adrenalineSurge'] !== undefined)) this.syncHeroFromStats();
 				if (dot > 0) {
 					const blockedDot = this.absorbHeroDamage(dot);
@@ -4595,14 +4872,37 @@ export class SewersScene extends Scene2D {
 		const kind = this.portedWellWater.get(cell);
 		if (!kind || this.portedPaint?.map[cell] !== Terrain.WELL) return;
 		if (kind === 'awareness' || kind === 'waterOfAwareness') {
-			for (const item of this.bag.items) Actors.identify(item);
+			//WaterOfAwareness.affectHero(): `hero.belongings.observe()` - real Java identifies only
+			//the equipped weapon/armor/artifact/ring (this port already treats those as identified
+			//and curse-known the instant they're equipped, a pre-existing simplification, so there
+			//is nothing left to reveal there) and marks every equipable/wand item still sitting in
+			//the backpack cursed-known, without fully identifying it. The previous `for (item of
+			//bag) Actors.identify(item)` was a real overreach with no Java basis at all - Java's
+			//per-item full identify only happens via the separate `affectItem()` path, triggered by
+			//the water blob spreading onto a *ground* item heap over time, which this port's
+			//one-shot touch-the-well interaction doesn't model. Also grants the `awareness` buff.
+			for (const item of this.bag.items) {
+				if (item.id === 'clothArmor' || item.id === 'armor' || item.id === 'armorReward'
+					|| item.id === 'weaponReward' || item.id === 'wand' || item.id.startsWith('ring_')) {
+					(item as typeof item & { cursedKnown?: boolean }).cursedKnown = true;
+				}
+			}
+			addBuff(this.hero, 'awareness');
 			for (let yy = 0; yy < this.level.height; yy++) for (let xx = 0; xx < this.level.width; xx++) {
 				if (this.secrets.isSecret(xx, yy)) this.secrets.discover(xx, yy);
 			}
 			this.say('The well reveals the secrets around you.', 'positive');
 		} else {
 			this.hero.hp = this.hero.maxHp;
-			for (const buff of ['poison', 'burning', 'weakness', 'vulnerable', 'cripple', 'roots'] as BuffId[]) delete this.hero.buffs[buff];
+			//PotionOfHealing.cure(): clears Poison/Cripple/Weakness/Vulnerable/Bleeding/Blindness/
+			//Drowsy/Slow/Vertigo - notably not Burning, which the previous list here wrongly
+			//cleared too (no Java basis; a lit hero stays lit through a health well).
+			for (const buff of ['poison', 'weakness', 'vulnerable', 'cripple', 'roots'] as BuffId[]) delete this.hero.buffs[buff];
+			//Belongings.uncurseEquipped(): clears a known curse from the equipped weapon/armor/ring,
+			//the same three-slot clear ScrollOfRemoveCurse's branch above already uses.
+			if (getCurse(this.weaponAffix ?? '')) this.weaponAffix = null;
+			if (getCurse(this.armorGlyph ?? '')) this.armorGlyph = null;
+			if (this.equippedRing?.cursed) this.equippedRing.cursed = false;
 			this.hunger = Math.max(this.hunger, 300);
 			this.say('The well restores your health.', 'positive');
 		}
@@ -4840,6 +5140,7 @@ export class SewersScene extends Scene2D {
 	 * else hunts through `decideMonsterAI`.
 	 */
 	private takeMonsterTurn(monster: Creature): void {
+		this.pendingMonsterTurnCost = null;
 		if (monster.isNPC) return;
 		//Statue.java is PASSIVE and immobile until struck. `sleeping` is the existing
 		//port's compact passive-state flag; the attack path wakes it after damage lands.
@@ -5152,6 +5453,67 @@ export class SewersScene extends Scene2D {
 				return;
 			}
 		}
+		//Golem.teleportEnemy()/canTele(): while not adjacent and off a 20-turn cooldown, teleports
+		//the hero to whichever of the hero's own free 8-neighbours is farthest from the golem
+		//(pushing the hero away rather than pulling itself closer). Real Java gates this on a real
+		//BFS reachability check around blocking terrain (`canTele`) rather than a hard range, and
+		//separately has its own self-teleport-to-reposition ability while wandering (not modelled
+		//here, same "shape not curve" simplification already used for DM200/Spinner above) - this
+		//port requires a clear line within 8 cells instead. Previously Golem had no special
+		//behavior at all and fought as a plain melee attacker.
+		if (monster.kind === 'golem' && distance >= 2) {
+			monster.golemTeleCooldown = (monster.golemTeleCooldown ?? 0) - 1;
+			if ((monster.golemTeleCooldown ?? 0) <= 0 && Roguelike.canTarget(this.level, monster, this.hero, { range: 8 })) {
+				let best: { x: number; y: number } | null = null;
+				let bestDistance = -1;
+				for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
+					const at = { x: this.hero.x + dx, y: this.hero.y + dy };
+					if (!this.level.passable(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
+					const fromGolem = Math.max(Math.abs(at.x - monster.x), Math.abs(at.y - monster.y));
+					if (fromGolem > bestDistance) { bestDistance = fromGolem; best = at; }
+				}
+				if (best) {
+					this.moveTo(this.hero, best);
+					monster.golemTeleCooldown = 20;
+					this.say(t('port.log.golemteleport'), 'negative');
+					return;
+				}
+			}
+		}
+		//Eye.doAttack()/deathGaze(): a real two-turn ranged beam, not a melee proc - turn 1
+		//charges (Java's own `spend(attackDelay()*2f)`, reproduced via `pendingMonsterTurnCost`;
+		//no damage yet, but the eye takes 1/4 damage meanwhile via the `beamCharged` check
+		//earlier in this file's damage-modifier chain), turn 2 fires along a clear line to the
+		//hero for a real magic hit roll (`hit(this, ch, true)`) and `NormalIntRange(30,50)`
+		//damage - Java's own `ch.damage(dmg, ...)` call bypasses armor/DR entirely here, unlike
+		//`zapHero`'s bolt (which does subtract it), so this doesn't reuse that helper - then a
+		//4-6 turn cooldown. Previously Eye had no ranged ability at all: melee only, with an
+		//"every 3rd hit x1.5" stand-in that didn't match the real shape (ranged, not melee).
+		if (monster.kind === 'eye') {
+			if ((monster.beamCooldown ?? 0) > 0) monster.beamCooldown = (monster.beamCooldown ?? 0) - 1;
+			if (monster.beamCharged) {
+				monster.beamCharged = false;
+				monster.beamCooldown = 4 + Random.int(3);
+				if (Roguelike.canTarget(this.level, monster, this.hero, { range: 8 })) {
+					if (!rollHit(monster, this.hero, true)) {
+						this.say(t('port.log.eyegazemisses'), 'negative');
+					} else {
+						const dmg = this.absorbHeroDamage(Random.normalRange(30, 50));
+						this.hero.hp -= dmg;
+						this.showDamage(this.hero, dmg);
+						this.say(t('port.log.eyegaze'), 'negative');
+						if (this.hero.hp <= 0) this.kill(this.hero);
+					}
+				}
+				return;
+			}
+			if ((monster.beamCooldown ?? 0) <= 0 && Roguelike.canTarget(this.level, monster, this.hero, { range: 8 })) {
+				monster.beamCharged = true;
+				this.pendingMonsterTurnCost = 2;
+				this.say(t('port.log.eyecharge'), 'negative');
+				return;
+			}
+		}
 		//GnollTrickster: ranged-only (never adjacent), combo escalates in attack()
 		if (
 			monster.kind === 'gnollTrickster' &&
@@ -5218,7 +5580,9 @@ export class SewersScene extends Scene2D {
 		if (this.hero.hp <= 0) this.kill(this.hero);
 	}
 
-	/** Necromancer.summonMinion: a NecroSkeleton beside the hero (push-aside simplified away) */
+	/** Necromancer.summonMinion: a NecroSkeleton beside the hero (push-aside simplified away).
+	 * Real Java's own turn cost here is `firstSummon ? TICK : 2*TICK` - the very first summon
+	 * this necromancer ever makes costs the normal 1, every one after that costs double. */
 	private summonSkeleton(necro: Creature): void {
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 			const at = { x: this.hero.x + dx, y: this.hero.y + dy };
@@ -5226,6 +5590,8 @@ export class SewersScene extends Scene2D {
 			const skel = this.spawnMonster('necroSkeleton', at);
 			skel.sleeping = false;
 			necro.skeleton = skel;
+			this.pendingMonsterTurnCost = necro.firstSummon === false ? 2 : 1;
+			necro.firstSummon = false;
 			this.say(t('port.log.summonskeleton'), 'warning');
 			return;
 		}
@@ -5677,6 +6043,12 @@ export class SewersScene extends Scene2D {
 		if (attacker === this.hero && this.weaponAugment === 'damage') {
 			damage = Math.round(damage * 1.2);
 		}
+		//RingOfForce.armedDamageBonus(): flat +level on any armed (non-missile) melee hit -
+		//`Hero.damageRoll()` gates this on `wep instanceof MissileWeapon`, which this port already
+		//expresses the same way every other hero-only bonus here does: `attacker === this.hero`
+		//is only true for the real bump-attack call site, never `useSpecial`'s throw/shoot/zap
+		//branches (those pass a shallow copy of the hero, not the hero itself).
+		if (attacker === this.hero) damage += this.ringForceBonus();
 		if (attacker === this.hero && this.weaponAffix === 'kinetic' && this.kineticStored > 0) {
 			damage += this.kineticStored;
 			this.kineticStored = 0;
@@ -5702,27 +6074,29 @@ export class SewersScene extends Scene2D {
 		if (attacker === this.hero && this.weaponAffix === 'polarized') {
 			damage = Random.chance(0.5) ? Math.round(damage * 1.5) : 0;
 		}
-		//Sacrificial.proc(): real bleed scales ((missingHpFraction^2) * attacker.maxHp)/5,
-		//floored at 1. This port has no separate Bleeding buff (only the shared poison DoT),
-		//so - like Albino's real Bleeding proc elsewhere in this file - it reuses poison as
-		//the closest available damage-over-time primitive; the real magnitude curve is lost
-		//since this port's poison has no configurable per-tick amount.
-		if (attacker === this.hero && this.weaponAffix === 'sacrificial' && Random.chance(1 / 12)) {
+		//Sacrificial.proc(): real chance is 1/10 x arcana (this port previously rolled a flat
+		//1/12, an unconfirmed guess - corrected against `Sacrificial.java`); real bleed scales
+		//((missingHpFraction^2) * attacker.maxHp)/5, floored at 1. This port has no separate
+		//Bleeding buff (only the shared poison DoT), so - like Albino's real Bleeding proc
+		//elsewhere in this file - it reuses poison as the closest available damage-over-time
+		//primitive; the real magnitude curve is lost since this port's poison has no
+		//configurable per-tick amount.
+		if (attacker === this.hero && this.weaponAffix === 'sacrificial' && Random.chance((1 / 10) * this.ringArcanaMultiplier())) {
 			addBuff(attacker, 'poison');
 		}
-		//Displacing.proc(): real chance is 1/12, skipped against IMMOVABLE targets (a Java
+		//Displacing.proc(): real chance is 1/12 x arcana, skipped against IMMOVABLE targets (a Java
 		//property this port doesn't model, so every defender is teleportable here - a narrow
 		//gap). Reuses the same free-cell search this file's Displacement armor curse already
 		//uses in place of Java's ScrollOfTeleportation.teleportChar. Java also resets a fleeing
 		//HUNTING mob back to WANDERING; this port has no such explicit state to reset, but the
 		//next monster-turn FOV recompute (`seesHero`) naturally loses track once far enough away.
-		if (attacker === this.hero && this.weaponAffix === 'displacing' && !defender.isNPC && Random.chance(1 / 12)) {
+		if (attacker === this.hero && this.weaponAffix === 'displacing' && !defender.isNPC && Random.chance((1 / 12) * this.ringArcanaMultiplier())) {
 			const destination = this.randomFreeCell(defender);
 			if (destination) this.moveTo(defender, destination);
 		}
-		//Displacement.proc(): a 1-in-20 armor-curse proc teleports the defender
+		//Displacement.proc(): a 1-in-20 x arcana armor-curse proc teleports the defender
 		//and replaces the incoming hit with zero damage.
-		if (defender.isHero && this.armorGlyph === 'displacement' && Random.chance(1 / 20)) {
+		if (defender.isHero && this.armorGlyph === 'displacement' && Random.chance((1 / 20) * this.ringArcanaMultiplier())) {
 			const destination = this.randomFreeCell(defender);
 			if (destination) {
 				this.moveTo(defender, destination);
@@ -5746,15 +6120,9 @@ export class SewersScene extends Scene2D {
 			damage += (this.subclass() === 'assassin' ? 4 : 2) + assassinReachBonus(this.subclass(), this.talentRank('assassins_reach'));
 			this.awardBadge('surprises');
 		}
-		//Eye DeathGaze, simplified: every third landed hit strikes at 1.5x (no charge-up
-		//turn or beam visuals - the multiplier is the real part)
-		if (attacker.kind === 'eye') {
-			attacker.combo = (attacker.combo ?? 0) + 1;
-			if (attacker.combo % 3 === 0) {
-				damage = Math.round(damage * 1.5);
-				this.say(t('port.log.eyegaze'), 'negative');
-			}
-		}
+		//Eye.damage(): `if (beamCharged) dmg /= 4` - while charging its real ranged DeathGaze
+		//(see `takeMonsterTurn`'s eye branch), it takes quartered damage from any source.
+		if (defender.kind === 'eye' && defender.beamCharged) damage = Math.floor(damage / 4);
 		//DemonSpawner.damage(): big hits are soft-capped (20/21/22/.../30 raw becomes
 		//20/22/25/29/34/40/47/55/64/74/85 incoming before this reduction), and the (possibly
 		//reduced) damage also cuts its spawn-cooldown - being attacked makes it panic and summon
@@ -5880,7 +6248,7 @@ export class SewersScene extends Scene2D {
 		//damage. Simplified to a flat 15% flat-15-bonus-true-damage roll, gated the same way
 		//(only worth rolling once the defender is already below half HP) - the shape (execute
 		//pressure on a weakened target) is real, the curve is not.
-		if (this.weaponAffix === 'grim' && defender.hp > 0 && defender.hp <= defender.maxHp / 2 && Random.chance(0.15)) {
+		if (this.weaponAffix === 'grim' && defender.hp > 0 && defender.hp <= defender.maxHp / 2 && Random.chance(0.15 * this.ringArcanaMultiplier())) {
 			defender.hp -= 15;
 			this.showDamage(defender, 15);
 			this.say(t('port.log.grim'), 'positive');
@@ -5890,24 +6258,65 @@ export class SewersScene extends Scene2D {
 		//10% chance, on an actual kill, to spawn one bonus ground item alongside the corpse's own
 		//loot roll - the "your kill got lucky" shape survives, the ring-of-wealth tier curve does
 		//not (this port's `spawnGroundItem` has no rarity axis to roll on).
-		if (this.weaponAffix === 'lucky' && defender.hp <= 0 && Random.chance(0.1)) {
+		if (this.weaponAffix === 'lucky' && defender.hp <= 0 && Random.chance(0.1 * this.ringArcanaMultiplier())) {
 			this.spawnGroundItem(Random.element(['potion', 'scroll', 'gold'] as const)!, defender.x, defender.y);
 			this.say(t('port.log.lucky'), 'positive');
 		}
 		//Blocking.proc(): real proc chance is (lvl+4)/(lvl+40) (10% at lvl 0, ~14% at lvl 2), and
 		//the shield granted is round(max(1,procChance) * (2+lvl)) - both reproduced exactly. Real
 		//Java grants this into its own BlockBuff (a distinct ShieldBuff from Barrier) whose act()
-		//just detaches outright 5 turns after setShield() - a fixed cliff-edge, not a decay curve.
-		//This port pools every shield source (Barrier, Blocking, talent grants) into one heroBarrier,
-		//which now decays via Barrier.act()'s real proportional curve (see the applyBuffDamage hook
-		//in spendHeroTurn) - closer to Java's actual Barrier behavior than "never decays" was, but
-		//still not BlockBuff's specific fixed-duration expiry, since a shared pool can't expire only
-		//the portion Blocking itself contributed.
+		//just detaches outright 5 turns after setShield() - a fixed cliff-edge, not a decay curve,
+		//and every proc resets that 5-turn timer regardless of whether the shield itself grew.
+		//This port pools every shield source (Barrier, Blocking, talent grants) into one
+		//heroBarrier, which decays via Barrier.act()'s real proportional curve (`applyBuffDamage`
+		//in `spendHeroTurn`) - closer to Java's actual Barrier behavior than "never decays" was,
+		//but a shared pool can't expire only the portion Blocking contributed on its own. This is
+		//now approximated with a side counter (`blockingShieldLeft`/`blockingTurnsLeft`, ticked in
+		//`spendHeroTurn` alongside the proportional decay) that force-expires however much of the
+		//pool is still attributable to Blocking once its own 5 turns are up - real Java's
+		//priority-ordered absorption (Blocking's shield always drains before Barrier's on incoming
+		//damage) is still not modeled, only the fixed-duration expiry.
 		if (this.weaponAffix === 'blocking') {
-			const procChance = (this.weaponLevel + 4) / (this.weaponLevel + 40);
+			const procChance = ((this.weaponLevel + 4) / (this.weaponLevel + 40)) * this.ringArcanaMultiplier();
 			if (Random.chance(procChance)) {
 				const powerMulti = Math.max(1, procChance);
-				this.grantHeroShield(Math.round(powerMulti * (2 + this.weaponLevel)), this.hero.maxHp);
+				const added = this.grantHeroShield(Math.round(powerMulti * (2 + this.weaponLevel)), this.hero.maxHp);
+				this.blockingShieldLeft += added;
+				this.blockingTurnsLeft = 5;
+			}
+		}
+		//Blooming.proc(): (lvl+1)/(lvl+3) x arcana chance to plant grass at the defender's
+		//cell first, then shuffled 8-neighbours with the attacker's own cell dead last (only
+		//when adjacent), planting (1+0.1*lvl) x max(1,procChance) cells with stochastic
+		//rounding. plantGrass() targets EMPTY/EMPTY_DECO/EMBERS/GRASS/FURROWED_GRASS cells
+		//with no plant: this port's terrain has no EMPTY_DECO/EMBERS/FURROWED ids, so FLOOR
+		//and GRASS are the plantable set, and FURROWED (or HIGH_GRASS under Regeneration's
+		//regen - a well-water state this port doesn't model) collapses straight to HIGH_GRASS.
+		//Occupancy reuses the live plant-marker maps; the leaf-burst particles have no seam.
+		if (this.weaponAffix === 'blooming') {
+			const level = Math.max(0, this.weaponLevel);
+			const procChance = ((level + 1) / (level + 3)) * this.ringArcanaMultiplier();
+			if (Random.chance(procChance)) {
+				let plants = (1 + 0.1 * level) * Math.max(1, procChance);
+				plants = Random.float() < (plants % 1) ? Math.ceil(plants) : Math.floor(plants);
+				const cells = [{ x: defender.x, y: defender.y }];
+				const around = Roguelike.neighbourOffsets(8)
+					.map(([dx, dy]) => ({ x: defender.x + dx, y: defender.y + dy }))
+					.filter((at) => !(at.x === attacker.x && at.y === attacker.y));
+				for (let i = around.length - 1; i > 0; i--) {
+					const j = Random.int(0, i + 1);
+					[around[i], around[j]] = [around[j]!, around[i]!];
+				}
+				cells.push(...around);
+				if (Roguelike.chebyshevDistance(attacker, defender) === 1) cells.push({ x: attacker.x, y: attacker.y });
+				let planted = false;
+				for (const cell of cells) {
+					if (this.plantBloomingGrass(cell.x, cell.y)) {
+						planted = true;
+						if (--plants <= 0) break;
+					}
+				}
+				if (planted) this.say(t('port.log.blooming'), 'positive');
 			}
 		}
 	}
@@ -5943,6 +6352,71 @@ export class SewersScene extends Scene2D {
 		return Math.pow(1.175, this.equippedRing.level);
 	}
 
+	/** `RingOfArcana.enchantPowerMultiplier()`: `1.175^level`. Real Java's
+	 * `Enchantment.genericProcChanceMultiplier()`/`Glyph.genericProcChanceMultiplier()` fold
+	 * this into every enchant/glyph/curse proc-chance roll that calls `procChanceMultiplier()`
+	 * - which, checked against tag `v3.3.8`, is every ported chance-proc here including the
+	 * curses (Annoying/Dazzling/Explosive/Sacrificial/Displacing/Friendly and AntiEntropy/
+	 * Corrosion/Displacement/Metabolism/Multiplicity/Overgrowth/Stench all call it; Polarized
+	 * has no chance roll and Wayward's ported shape is a flat passive). **Correction: this
+	 * comment previously claimed curses never scale "by Java's own design" - wrong, and the
+	 * curse branches rolled flat chances accordingly; all of them now scale, and Stench was
+	 * added already-scaled.** Of the good enchants, only Grim/Lucky/Blocking/Blooming currently
+	 * roll a real chance in this port at all (Blazing/Chilling/Shocking/Vampiric are
+	 * unconditional here, a pre-existing simplification unrelated to Arcana - there's no roll
+	 * left for it to scale until those get their own probabilistic formulas). */
+	private ringArcanaMultiplier(): number {
+		if (!this.equippedRing || ringDef(this.equippedRing.id)?.stat !== 'arcana') return 1;
+		return Math.pow(1.175, this.equippedRing.level);
+	}
+
+	/** `RingOfForce.armedDamageBonus()`: flat `+level`, read at the hero's own melee-attack site. */
+	private ringForceBonus(): number {
+		if (!this.equippedRing || ringDef(this.equippedRing.id)?.stat !== 'force') return 0;
+		return this.equippedRing.level;
+	}
+
+	/** `RingOfSharpshooting.levelDamageBonus()`: flat `+level`, read at the hero's thrown/
+	 * SpiritBow damage rolls. */
+	private ringSharpshootingBonus(): number {
+		if (!this.equippedRing || ringDef(this.equippedRing.id)?.stat !== 'sharpshooting') return 0;
+		return this.equippedRing.level;
+	}
+
+	/** `RingOfSharpshooting.durabilityMultiplier()`: `1.2^level`, read at the thrown-missile
+	 * `uses` calculation - Java scales `usages` (this port's `uses`) directly by it. */
+	private ringSharpshootingDurabilityMultiplier(): number {
+		if (!this.equippedRing || ringDef(this.equippedRing.id)?.stat !== 'sharpshooting') return 1;
+		return Math.pow(1.2, this.equippedRing.level);
+	}
+
+	/** `RingOfWealth.dropChanceMultiplier()`: `1.20^level`, read by `kill()`'s `MOB_LOOT` roll.
+	 * Real Java's separate `tryForBonusDrop()` (an independent bonus-item roll, tracked by its
+	 * own `TriesToDropTracker`/`dropsToRare` counters, escalating toward guaranteed rare loot the
+	 * longer it goes unrewarded) is not modeled - this only covers the flat chance multiplier. */
+	private ringWealthMultiplier(): number {
+		if (!this.equippedRing || ringDef(this.equippedRing.id)?.stat !== 'wealth') return 1;
+		return Math.pow(1.2, this.equippedRing.level);
+	}
+
+	/** `RingOfElements.resist()`: `pow(0.825, level)` against elemental sources. Real Java
+	 * gates this on the damage source's class being in `RESISTS`; this port's elemental
+	 * call sites (DoT tick, toxic-gas blob, burning trap) are all in that set by
+	 * construction, so no per-call gating is needed. Returns 1 when no Elements ring is
+	 * equipped (or the equipped ring is another type). */
+	private ringElementsMultiplier(): number {
+		if (!this.equippedRing || ringDef(this.equippedRing.id)?.stat !== 'elements') return 1;
+		return Math.pow(0.825, this.equippedRing.level);
+	}
+
+	/** `RingOfFuror.attackSpeedMultiplier()`: `pow(1.09051, level)`. Real Java multiplies
+	 * attack speed up (dividing `attackDelay()`); this port's turn-cost model expresses
+	 * the same thing as the attack's turn cost scaling down (see `getAttackTurnCostMod`). */
+	private ringFurorMultiplier(): number {
+		if (!this.equippedRing || ringDef(this.equippedRing.id)?.stat !== 'furor') return 1;
+		return Math.pow(1.09051, this.equippedRing.level);
+	}
+
 	/** Barrier absorbs incoming damage before HP, matching Buff.Barrier's core rule. */
 	private absorbHeroDamage(amount: number): number {
 		//Hero.damage(): `dmg = ceil(dmg * RingOfTenacity.damageMultiplier())` is applied before
@@ -5962,40 +6436,43 @@ export class SewersScene extends Scene2D {
 		return reduced;
 	}
 
-	private grantHeroShield(amount: number, cap = 999): void {
-		if (amount <= 0) return;
+	/** Returns the amount actually added (may be less than `amount` if capped). */
+	private grantHeroShield(amount: number, cap = 999): number {
+		if (amount <= 0) return 0;
 		const max = cap + this.talentRank('iron_will');
 		const room = Math.max(0, max - this.heroBarrier.total);
-		this.heroBarrier.add(Math.min(room, amount));
+		const added = Math.min(room, amount);
+		this.heroBarrier.add(added);
 		//Barrier.incShield() resets partialLostShield to 0 on every addition, so a fresh top-up
 		//doesn't immediately spend whatever fraction had already accrued toward the next decay tick
 		this.barrierPartialLoss = 0;
 		this.say(t('port.log.shield', { amount }), 'positive');
+		return added;
 	}
 
 	/** monster-side on-hit hooks (all pre-existing, now grouped) */
 	private mobOnHit(attacker: Creature, defender: Creature, damage: number): void {
 		if (defender.isHero) this.grantHeroShield(lethalDefenseShield(this.subclass(), this.talentRank('lethal_defense')), this.hero.maxHp);
-		//Metabolism.proc(): on a 1-in-6 hit, consume 10 hunger and heal one HP,
+		//Metabolism.proc(): 1-in-6 x arcana, consume 10 hunger and heal one HP,
 		//provided the hero is not starving and has room to heal.
-		if (defender.isHero && this.armorGlyph === 'metabolism' && this.hunger < 450 && this.hero.hp < this.hero.maxHp && Random.chance(1 / 6)) {
+		if (defender.isHero && this.armorGlyph === 'metabolism' && this.hunger < 450 && this.hero.hp < this.hero.maxHp && Random.chance((1 / 6) * this.ringArcanaMultiplier())) {
 			this.hunger = Math.max(0, this.hunger - 10);
 			this.hero.hp++;
 			this.showHeal(this.hero, 1);
 		}
-		//AntiEntropy.proc(): a 1-in-8 proc ignites the wearer and freezes the
+		//AntiEntropy.proc(): a 1-in-8 x arcana proc ignites the wearer and freezes the
 		//eight neighboring cells. Daze is the port's timed freeze equivalent.
-		if (defender.isHero && this.armorGlyph === 'antientropy' && Random.chance(1 / 8)) {
+		if (defender.isHero && this.armorGlyph === 'antientropy' && Random.chance((1 / 8) * this.ringArcanaMultiplier())) {
 			addBuff(this.hero, 'burning');
 			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 				const nearby = this.creatureAt(this.hero.x + dx, this.hero.y + dy);
 				if (nearby && nearby !== this.hero) addBuff(nearby, 'daze');
 			}
 		}
-		//Corrosion.proc(): a 1-in-10 proc spreads corrosive ooze across the
+		//Corrosion.proc(): a 1-in-10 x arcana proc spreads corrosive ooze across the
 		//eight neighboring cells. Poison is the available timed damage-over-time
 		//equivalent; the port has no separate Ooze stack/intensity model.
-		if (defender.isHero && this.armorGlyph === 'corrosion' && Random.chance(1 / 10)) {
+		if (defender.isHero && this.armorGlyph === 'corrosion' && Random.chance((1 / 10) * this.ringArcanaMultiplier())) {
 			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 				const nearby = this.creatureAt(this.hero.x + dx, this.hero.y + dy);
 				if (nearby) addBuff(nearby, 'poison');
@@ -6004,7 +6481,7 @@ export class SewersScene extends Scene2D {
 		//Multiplicity.proc(): a 1-in-20 proc duplicates a non-boss attacker into
 		// an available neighboring cell. Mirror-image duplication is not represented
 		// as a separate actor type here, so hero-attacker procs are intentionally skipped.
-		if (defender.isHero && this.armorGlyph === 'multiplicity' && !attacker.isHero && !attacker.isNPC && Random.chance(1 / 20)) {
+		if (defender.isHero && this.armorGlyph === 'multiplicity' && !attacker.isHero && !attacker.isNPC && Random.chance((1 / 20) * this.ringArcanaMultiplier())) {
 			const adjacent = Roguelike.neighbourOffsets(8)
 				.map(([dx, dy]) => ({ x: this.hero.x + dx, y: this.hero.y + dy }))
 				.filter((at) => this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y));
@@ -6014,10 +6491,10 @@ export class SewersScene extends Scene2D {
 				this.spawnMonster(attackerKind, destination);
 			}
 		}
-		//Overgrowth.proc(): a 1-in-20 proc couches and immediately activates a
+		//Overgrowth.proc(): a 1-in-20 x arcana proc couches and immediately activates a
 		//random supported seed at the defender's cell. The generator's full seed
 		//weight table is not available, so selection is uniform across supported seeds.
-		if (defender.isHero && this.armorGlyph === 'overgrowth' && Random.chance(1 / 20)) {
+		if (defender.isHero && this.armorGlyph === 'overgrowth' && Random.chance((1 / 20) * this.ringArcanaMultiplier())) {
 			const seed = Random.element(['blindweed', 'earthroot', 'fadeleaf', 'firebloom', 'icecap', 'mageroyal',
 				'rotberry', 'sorrowmoss', 'starflower', 'stormvine', 'sungrass', 'swiftthistle'] as const);
 			if (seed) {
@@ -6026,6 +6503,13 @@ export class SewersScene extends Scene2D {
 				this.placePortedFeature(cell, `plant:${seed}`);
 				this.triggerPortedPlantAt(this.hero.x, this.hero.y);
 			}
+		}
+		//Stench.proc(): 1/8 x arcana chance when hit to seed 250-volume ToxicGas at the
+		//wearer's own feet (`Blob.seed(defender.pos, 250, ToxicGas.class)`) - the curse gasses
+		//the wearer too, unlike the 1000-volume trap/potion seeds elsewhere in this file.
+		if (defender.isHero && this.armorGlyph === 'stench' && Random.chance((1 / 8) * this.ringArcanaMultiplier())) {
+			this.toxicGas.seed(this.hero.x, this.hero.y, 250);
+			this.say(t('port.log.stenchcurse'), 'negative');
 		}
 		if (attacker.kind === 'bat' && damage > 4) {
 			const reg = Math.min(damage - 4, attacker.maxHp - attacker.hp);
@@ -6045,28 +6529,28 @@ export class SewersScene extends Scene2D {
 				addBuff(defender, 'daze');
 			}
 		}
-		//Explosive.proc(): every hit removes Random.IntRange(0,10) fuse points and
+		//Explosive.proc(): every hit removes round(IntRange(0,10) x arcana) fuse points and
 		//detonates when the 100-point fuse is exhausted.  The existing blast resolver
 		//supplies the Java-shaped nearby damage and then the fuse resets.
 		if (this.weaponAffix === 'explosive') {
-			this.weaponCurseDurability -= Random.range(0, 10);
+			this.weaponCurseDurability -= Math.round(Random.range(0, 10) * this.ringArcanaMultiplier());
 			if (this.weaponCurseDurability <= 0) {
 				this.applyTrapBlast(defender.x, defender.y);
 				this.weaponCurseDurability = 100;
 			}
 		}
-		//Dazzling.proc(): a 1-in-10 blast blinds visible characters around the
+		//Dazzling.proc(): a 1-in-10 x arcana blast blinds visible characters around the
 		//defender. Daze is the available timed blindness/impairment equivalent.
-		if (this.weaponAffix === 'dazzling' && Random.chance(1 / 10)) {
+		if (this.weaponAffix === 'dazzling' && Random.chance((1 / 10) * this.ringArcanaMultiplier())) {
 			for (const creature of this.creatures) {
 				if (creature.hp <= 0 || !this.fov.isVisible(creature.x, creature.y)) continue;
 				creature.buffs.daze = Math.max(creature.buffs.daze ?? 0, creature === attacker ? 5 : 2);
 			}
 			delete this.hero.buffs.invisibility;
 		}
-		//Annoying.proc(): a 1-in-20 proc beckons every active monster toward
+		//Annoying.proc(): a 1-in-20 x arcana proc beckons every active monster toward
 		//the hero. The AI's persisted seesHero flag is its target-acquisition state.
-		if (this.weaponAffix === 'annoying' && Random.chance(1 / 20)) {
+		if (this.weaponAffix === 'annoying' && Random.chance((1 / 20) * this.ringArcanaMultiplier())) {
 			for (const creature of this.creatures) {
 				if (!creature.isHero && !creature.isNPC && creature.hp > 0) creature.seesHero = true;
 			}
@@ -6292,8 +6776,10 @@ export class SewersScene extends Scene2D {
 			if (this.subclass() === 'champion' && this.talentRank('secondary_charge') > 0) this.ammo += this.talentRank('secondary_charge');
 		}
 
-		//Mob.rollToDropLoot, simplified to one-item ground drops (no stacking heaps, no
-		//LimitedDrops decay, no Wealth rings): one roll per table entry through real rollLoot
+		//Mob.rollToDropLoot, simplified to one-item ground drops (no stacking heaps, no Wealth
+		//rings): one roll per table entry through real rollLoot. `Dungeon.LimitedDrops` decay is
+		//now real for bat/necromancer/guard (`LIMITED_DROP_DECAY`, below) - see `PORT_COVERAGE.md`
+		//for the remaining kinds whose base chance/category still diverges from Java outright.
 		if (creature.kind && !creature.isNPC) {
 			if ((creature.kind === 'statue' || creature.kind === 'armoredStatue') && creature.mimicLoot?.startsWith('statue:')) {
 				try {
@@ -6336,8 +6822,15 @@ export class SewersScene extends Scene2D {
 				}
 			}
 			for (const entry of MOB_LOOT[creature.kind] ?? []) {
-				const drop = Actors.rollLoot({ entries: [{ id: entry.kind, weight: 1 }], chance: entry.chance });
+				//Dungeon.LimitedDrops: Bat/Necromancer/Guard each scale their own lootChance()
+				//down further by how many times this exact drop has already happened this run -
+				//`(7-n)/7`, `(6-n)/6`, `(1/3)^n` respectively, real Java's own per-kind formulas.
+				const decay = LIMITED_DROP_DECAY[creature.kind as MonsterId];
+				const chance = (decay ? entry.chance * decay(this.limitedDrops[creature.kind as MonsterId] ?? 0) : entry.chance)
+					* this.ringWealthMultiplier();
+				const drop = Actors.rollLoot({ entries: [{ id: entry.kind, weight: 1 }], chance });
 				if (drop) {
+					if (decay) this.limitedDrops[creature.kind as MonsterId] = (this.limitedDrops[creature.kind as MonsterId] ?? 0) + 1;
 					this.spawnGroundItem(entry.kind, creature.x, creature.y);
 					this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS[entry.kind]) }));
 					break;
@@ -6711,6 +7204,7 @@ export class SewersScene extends Scene2D {
 			shopkeeperSpawned: this.shopkeeperSpawned,
 			blacksmithSpawned: this.blacksmithSpawned,
 			impSpawned: this.impSpawned,
+			limitedDrops: Object.entries(this.limitedDrops) as [MonsterId, number][],
 			blacksmithAlternative: this.blacksmithAlternative,
 			bag: this.bag.items.map((i) => ({ id: i.id, quantity: i.quantity, instanceId: i.instanceId, identified: i.identified, level: i.level, sandBags: (i as typeof i & { sandBags?: number }).sandBags, charges: (i as typeof i & { charges?: number }).charges, affix: i.affix, cursed: i.cursed,
 				cursedKnown: (i as typeof i & { cursedKnown?: boolean }).cursedKnown,
@@ -6755,6 +7249,8 @@ export class SewersScene extends Scene2D {
 			heroShield: this.heroBarrier.total,
 			heroBarrierState: this.heroBarrier.toJSON(),
 			barrierPartialLoss: this.barrierPartialLoss,
+			blockingShieldLeft: this.blockingShieldLeft,
+			blockingTurnsLeft: this.blockingTurnsLeft,
 			stealthTalentTicks: this.stealthTalentTicks,
 			wandBonusDamage: this.wandBonusDamage,
 			physicalBonusDamage: this.physicalBonusDamage,
@@ -6812,6 +7308,8 @@ export class SewersScene extends Scene2D {
 			: new Actors.Barrier();
 		if (!s.heroBarrierState && s.heroShield) this.heroBarrier.add(s.heroShield);
 		this.barrierPartialLoss = s.barrierPartialLoss ?? 0;
+		this.blockingShieldLeft = s.blockingShieldLeft ?? 0;
+		this.blockingTurnsLeft = s.blockingTurnsLeft ?? 0;
 		this.stealthTalentTicks = s.stealthTalentTicks ?? 0;
 		this.wandBonusDamage = s.wandBonusDamage ?? 0;
 		this.physicalBonusDamage = s.physicalBonusDamage ?? 0;
@@ -6832,9 +7330,18 @@ export class SewersScene extends Scene2D {
 		this.armorId = s.armorId ?? 'clothArmor';
 		this.armorInstanceId = s.armorInstanceId;
 		this.weaponAffix = s.weaponAffix ?? null;
+		//`Swiftness` exists in real Java only as an armor glyph (`Armor.Glyphs.Swiftness` -
+		//checked tag `v3.3.8`: no `Weapon.Enchantments.Swiftness` class at all); this port
+		//previously modeled a phantom 0.9x weapon version too, now removed with no equivalent
+		//to map to, so a pre-correction weapon `swiftness` id is dropped rather than kept.
+		if (this.weaponAffix === 'swiftness') this.weaponAffix = null;
 		this.weaponCurseDurability = s.weaponCurseDurability ?? 100;
 		this.weaponAugment = s.weaponAugment ?? null;
 		this.armorGlyph = s.armorGlyph ?? null;
+		//`Fragile` never existed in real Java (the 8th armor curse is `Stench` - see the
+		//affix-table comment); saves from before the correction carry it here and on bag
+		//items, so both migrate to `stench` on load rather than silently losing their curse.
+		if (this.armorGlyph === 'fragile') this.armorGlyph = 'stench';
 		this.kineticStored = s.kineticStored ?? 0;
 		this.timeBubbleTurns = s.timeBubbleTurns ?? 0;
 		this.timeBubblePresses = new Set(s.timeBubblePresses ?? []);
@@ -6852,6 +7359,7 @@ export class SewersScene extends Scene2D {
 		this.shopkeeperSpawned = s.shopkeeperSpawned;
 		this.blacksmithSpawned = s.blacksmithSpawned ?? this.blacksmithSpawned;
 		this.impSpawned = s.impSpawned ?? this.impSpawned;
+		this.limitedDrops = Object.fromEntries(s.limitedDrops ?? []);
 		this.blacksmithAlternative = s.blacksmithAlternative ?? this.blacksmithAlternative;
 		this.equippedRing = s.equippedRing ?? null;
 		this.ringHtBonus = s.ringHtBonus ?? 0;
@@ -6898,6 +7406,13 @@ export class SewersScene extends Scene2D {
 				this.bag.add({ ...item, instanceId, stackable: true });
 				if (instanceId && s.itemSerial === undefined) this.itemSerial++;
 			}
+		}
+		for (const item of this.bag.items) {
+			if ((item as { affix?: string }).affix === 'fragile') (item as { affix?: string }).affix = 'stench';
+			//Phantom weapon Swiftness (see the weaponAffix migration above): `swiftness` is only
+			//a real id on armor, so a non-armor bag item carrying it is pre-correction residue.
+			if ((item as { affix?: string }).affix === 'swiftness'
+				&& item.id !== 'clothArmor' && item.id !== 'armor' && item.id !== 'armorReward') delete (item as { affix?: string }).affix;
 		}
 		this.armorInstanceId ??= this.bag.find(this.armorId)?.instanceId;
 		this.gameState = new Rpg.GameState();
@@ -7091,17 +7606,33 @@ export class SewersScene extends Scene2D {
 		this.talentPanel.visible = this.talentOpen;
 		if (!this.talentOpen) return;
 		const width = Math.min(320, Math.max(240, Game.current.width - 24));
-		if (this.subclassChoiceOpen || this.armorChoiceOpen) {
-			const options = this.armorChoiceOpen ? ARMOR_OPTIONS : (SUBCLASS_OPTIONS[this.heroClass] ?? []);
-			this.talentPanel.addChild(new Graphics().roundRect(0, 0, width, 92, 6)
+		if (this.subclassChoiceOpen || this.armorChoiceOpen || this.augmentChoiceOpen) {
+			const options: readonly string[] = this.augmentChoiceOpen ? AUGMENT_OPTIONS
+				: this.armorChoiceOpen ? ARMOR_OPTIONS : (SUBCLASS_OPTIONS[this.heroClass] ?? []);
+			//Augment's option text ("Speed (+20% attack speed)") is real Java's own longer wording
+			//(the actual button in `WndAugment` just says "Speed"/"Damage"/"None", with the detail
+			//living in a separate message block above it) - kept as-is since it already existed in
+			//this file before this pass, so it gets one full-width row per option instead of armor/
+			//subclass's existing 2-up column layout, which is too narrow for text this long.
+			const rowHeight = this.augmentChoiceOpen ? 30 : 38;
+			const panelHeight = this.augmentChoiceOpen ? 34 + options.length * (rowHeight + 4) : 92;
+			this.talentPanel.addChild(new Graphics().roundRect(0, 0, width, panelHeight, 6)
 				.fill({ color: 0x101116, alpha: 0.98 }).stroke({ width: 2, color: 0xc9a24c }));
-			const title = new Label({ text: this.armorChoiceOpen ? t('port.ui.armorability') : t('port.ui.subclass'), size: 13, bold: true, color: theme().color.textHighlight });
+			const title = new Label({
+				text: this.augmentChoiceOpen ? t('port.ui.augment.title') : this.armorChoiceOpen ? t('port.ui.armorability') : t('port.ui.subclass'),
+				size: 13, bold: true, color: theme().color.textHighlight,
+			});
 			title.position.set(10, 7);
 			this.talentPanel.addChild(title);
+			const columnWidth = (width - 16) / options.length;
 			options.forEach((option, index) => {
-				const key = this.armorChoiceOpen ? `port.armor.${option}` : `port.subclass.${option}`;
-				const button = new Button({ width: (width - 24) / 2, height: 38, text: t(key), onClick: () => this.armorChoiceOpen ? this.chooseArmorAbility(option) : this.chooseSubclass(option) });
-				button.position.set(8 + index * (width / 2), 34);
+				const key = this.augmentChoiceOpen ? `port.ui.augment.${option}` : this.armorChoiceOpen ? `port.armor.${option}` : `port.subclass.${option}`;
+				const button = new Button({
+					width: this.augmentChoiceOpen ? width - 16 : columnWidth - 8, height: rowHeight, text: t(key),
+					onClick: () => this.augmentChoiceOpen ? this.chooseAugment(option as (typeof AUGMENT_OPTIONS)[number])
+						: this.armorChoiceOpen ? this.chooseArmorAbility(option) : this.chooseSubclass(option),
+				});
+				button.position.set(this.augmentChoiceOpen ? 8 : 8 + index * columnWidth, this.augmentChoiceOpen ? 34 + index * (rowHeight + 4) : 34);
 				button.eventMode = 'static';
 				button.cursor = 'pointer';
 				this.talentPanel.addChild(button);
@@ -7152,15 +7683,12 @@ export class SewersScene extends Scene2D {
 
 	/**
 	 * Turn-cost multiplier for hero actions, based on equipped gear and buffs.
-	 * <1 = faster actions (Swiftness enchant, Weapon.Augment SPEED)
+	 * <1 = faster actions (Weapon.Augment SPEED, Swiftness glyph)
 	 * >1 = slower actions (encumbrance penalties, once modeled)
 	 * Default: 1 (no modifier)
 	 */
 	private getActionTurnCostMod(): number {
 		let mod = 1;
-		// Swiftness enchant: 10% speed increase (0.9x turn cost). Real Java scales per rank via
-		// multiple applications; this port's simplified version gives flat bonus if present.
-		if (this.weaponAffix === 'swiftness') mod *= 0.9;
 		// Weapon.Augment SPEED: 20% speed increase (0.8x turn cost). Applied once per weapon.
 		if (this.weaponAugment === 'speed') mod *= 0.8;
 		// Swiftness glyph: 20% speed increase (0.8x turn cost) when no enemies are within 3 cells.
@@ -7173,10 +7701,24 @@ export class SewersScene extends Scene2D {
 		//Bulk has no proc: Java's Armor.speedFactor makes movement/actions three times
 		//faster while the hero occupies an open or closed doorway.
 		if (this.armorGlyph === 'bulk' && this.doors.isDoor(this.hero.x, this.hero.y)) mod /= 3;
+		//Char.speed()'s real `if (buff(Haste.class)) speed *= 3f` (PotionOfHaste).
+		if (this.hero.buffs['haste']) mod /= 3;
 		//RingOfHaste.speedMultiplier(): a higher Char.speed() means less time per action in
 		//real Java; this port's turn-cost multiplier expresses the same relationship inverted.
 		mod /= this.ringHasteMultiplier();
 		return mod;
+	}
+
+	/**
+	 * `Hero.attackDelay()`'s turn cost: the blanket `getActionTurnCostMod()` divided by
+	 * `RingOfFuror.attackSpeedMultiplier()`. Real Java keeps these as two separate cost
+	 * functions (`attackDelay()` vs `Char.speed()`); this port previously had only the
+	 * single blanket cost, so Furor had no faithful place to land. Only bump-attacks use
+	 * this (see the `move` port's enemy pre-check) - movement, search, and item-use turns
+	 * keep the blanket cost, matching Java's own split where Furor never speeds those up.
+	 */
+	private getAttackTurnCostMod(): number {
+		return this.getActionTurnCostMod() / this.ringFurorMultiplier();
 	}
 
 	private chooseSubclass(option: string): void {
@@ -7198,6 +7740,183 @@ export class SewersScene extends Scene2D {
 		this.refresh();
 	}
 
+	/** `StoneOfAugmentation.usableOnItem()`/`onItemSelected()`: real Java lets the player pick
+	 * any enchantable weapon or armor to augment; this port auto-targets the hero's own equipped
+	 * weapon (armor augment - `Armor.Augment.EVASION`/`DEFENSE`, an unrelated stat trade-off, not
+	 * a turn-cost/damage thing - is not modeled at all, the same auto-target-rather-than-a-picker
+	 * convention `ScrollOfIdentify`/`ScrollOfRemoveCurse` already use). Consumes the stone and
+	 * opens the same choice panel the level-up armor-ability/subclass windows use.
+	 */
+	private useStoneOfAugmentation(instanceId?: string): void {
+		this.bag.remove('stoneOfAugmentation', 1, instanceId);
+		this.augmentChoiceOpen = true;
+		this.talentOpen = true;
+		this.refreshTalentPanel();
+	}
+
+	/** `StoneOfAugmentation.apply(Weapon, augment)`: sets the real `Weapon.Augment` this port
+	 * already fully models (`weaponAugment`, read by `getActionTurnCostMod`/the damage-modifier
+	 * chain). Real Java's stone also grants a genuine `ScrollOfUpgrade.upgrade()` bonus alongside
+	 * the augment choice; this port's own upgrade path is tier-based rather than a plain +1 level
+	 * (`upgradeGear`'s weaponTier/weaponLevel split), with no equivalent free-standing "+1 level"
+	 * primitive to reuse without also advancing the tier state machine unexpectedly - so only the
+	 * augment choice itself is reproduced here, stated as a deliberate, narrower simplification
+	 * rather than silently dropped. */
+	private chooseAugment(option: (typeof AUGMENT_OPTIONS)[number]): void {
+		if (!this.augmentChoiceOpen) return;
+		this.augmentChoiceOpen = false;
+		this.weaponAugment = option;
+		this.say(t('port.log.augmentchosen', { augment: t(`port.ui.augment.${option}`) }), 'highlight');
+		this.refresh();
+	}
+
+	/** `StoneOfFear.activate(cell)`: real Java throws the stone at a chosen cell and applies a
+	 * 20-turn `Terror` (`Terror.DURATION`) to whatever's there, unless it's an ally. This port has
+	 * no map-click cell-targeting for thrown items (the same reason `useSpecial` above auto-targets
+	 * instead of letting the player aim), so it reuses that exact nearest-visible-enemy convention
+	 * rather than adding one just for this stone. `terror` is the same buff `ScrollOfTerror`
+	 * already grants and `takeMonsterTurn` already honors, so no new mechanic was needed here -
+	 * only a new item id/use-action to reach it, the same gap `StoneOfAugmentation` closed for
+	 * weapon augments. */
+	private useStoneOfFear(instanceId?: string): void {
+		this.bag.remove('stoneOfFear', 1, instanceId);
+		const target = this.nearestVisibleEnemy(8);
+		if (target) {
+			addBuff(target, 'terror');
+			this.say(t('port.log.stonefear', { target: target.name }), 'positive');
+		} else this.say(t('port.log.stonewasted'), 'negative');
+	}
+
+	/** `StoneOfDeepSleep.activate(cell)`: real Java applies a gradual `MagicalSleep` debuff (a
+	 * few turns of `Drowsy` before the target actually falls asleep) to a mob at a thrown-to cell.
+	 * This port already collapses that same gradual-then-asleep shape to an instant `sleeping =
+	 * true` for `ScrollOfLullaby` (see its own comment), so this stone reuses the identical
+	 * simplification rather than inventing a second one - the only difference from Lullaby is
+	 * hitting one auto-targeted enemy instead of every visible mob at once, matching Java's own
+	 * single-cell-vs-whole-screen distinction between the two items. */
+	private useStoneOfDeepSleep(instanceId?: string): void {
+		this.bag.remove('stoneOfDeepSleep', 1, instanceId);
+		const target = this.nearestVisibleEnemy(8);
+		if (target) {
+			target.sleeping = true;
+			this.say(t('port.log.stonesleep', { target: target.name }), 'positive');
+		} else this.say(t('port.log.stonewasted'), 'negative');
+	}
+
+	/** `StoneOfShock.activate(cell)`: real Java paralyzes every char within a `PathFinder`
+	 * distance-2 area of the thrown-to cell (each `Buff.prolong(n, Paralysis.class, 1f)`, a
+	 * 1-turn paralysis distinct from the flat 3-turn `paralysis` this port's own buff table
+	 * already uses for every other paralysis source) and refunds the hero's wand `1 + hits`
+	 * charges. This port has no map-click cell-targeting (same as Fear/DeepSleep above) and no
+	 * BFS-through-open-floor distance map handy in `main.ts`, so both are approximated: ground
+	 * zero is the nearest visible enemy (the same auto-target convention), the area is a plain
+	 * Chebyshev-distance-2 circle around it (ignoring walls, unlike Java's real flood fill), and
+	 * every hit gets this port's existing 3-turn `paralysis` rather than a bespoke 1-turn variant
+	 * (the shared `addBuff`/`BUFF_DURATION` mechanism has no per-call duration override) - stated
+	 * simplifications, not silently dropped precision. The wand-charge refund is reproduced
+	 * exactly, since `Actors.Charges.refund` already exists and no-ops harmlessly for classes
+	 * without a wand, matching Java's own generic (and here mostly inert) `Belongings.charge()`. */
+	private useStoneOfShock(instanceId?: string): void {
+		this.bag.remove('stoneOfShock', 1, instanceId);
+		const center = this.nearestVisibleEnemy(8);
+		if (!center) { this.say(t('port.log.stonewasted'), 'negative'); return; }
+		let hits = 0;
+		for (const c of this.creatures) {
+			if (c.isHero || c.isNPC) continue;
+			if (Roguelike.chebyshevDistance(center, c) > 2) continue;
+			addBuff(c, 'paralysis');
+			hits++;
+		}
+		if (hits > 0) {
+			this.wandCharges.refund(1 + hits);
+			this.say(t('port.log.stoneshock', { count: hits }), 'positive');
+		} else this.say(t('port.log.stonewasted'), 'negative');
+	}
+
+	/** `StoneOfBlast.activate(cell)` -> `Bomb.ConjuredBomb().explode(cell)`: real Java flood-fills
+	 * a `PathFinder` distance-1 area through non-solid/flammable terrain (`explosionRange() = 1`,
+	 * the `Bomb` base class default, never overridden by `ConjuredBomb`) and deals
+	 * `NormalIntRange(4 + scalingDepth, 12 + 3*scalingDepth)` damage, minus armor, to every char
+	 * caught in it - the hero included, since a bomb does not discriminate. This port approximates
+	 * the flood fill as a plain Chebyshev-distance-1 circle (same simplification `StoneOfShock`
+	 * above already makes, ignoring walls) around the same auto-targeted nearest-visible-enemy
+	 * ground zero, and reuses `this.depth` for `scalingDepth` (the same substitution every other
+	 * depth-scaled formula in this file already makes). The hero's own share of the blast, if
+	 * caught in range, goes through the existing `absorbHeroDamage`/`kill` path exactly like
+	 * `applyTrapBlast`'s hero branch does. **Not reproduced**: real Java also destroys flammable
+	 * terrain and triggers/destroys heaps caught in the blast - this port has no equivalent
+	 * terrain-destruction call from an item-use site, a real, narrower gap left honestly
+	 * undone rather than faked. */
+	private useStoneOfBlast(instanceId?: string): void {
+		this.bag.remove('stoneOfBlast', 1, instanceId);
+		const center = this.nearestVisibleEnemy(8);
+		if (!center) { this.say(t('port.log.stonewasted'), 'negative'); return; }
+		let hits = 0;
+		for (const c of this.creatures) {
+			if (c.isNPC || c.hp <= 0) continue;
+			if (Roguelike.chebyshevDistance(center, c) > 1) continue;
+			let damage = Math.max(0, Random.normalRange(4 + this.depth, 12 + 3 * this.depth));
+			if (c.isHero) {
+				damage = this.absorbHeroDamage(damage);
+				this.hero.hp -= damage;
+				this.showDamage(this.hero, damage);
+				if (this.hero.hp <= 0) this.kill(this.hero, 'fire');
+			} else {
+				damage = Math.max(0, damage - Random.normalRange(c.armor[0], c.armor[1]));
+				c.hp -= damage;
+				this.showDamage(c, damage);
+				c.sleeping = false;
+				if (c.hp <= 0) this.kill(c, 'fire');
+			}
+			hits++;
+		}
+		this.say(t('port.log.stoneblast', { count: hits }), hits > 0 ? 'positive' : 'negative');
+	}
+
+	/** `StoneOfBlink.activate(cell)` -> `ScrollOfTeleportation.teleportToLocation(curUser, cell)`:
+	 * real Java throws the stone at a player-aimed cell and blinks the hero there directly (a
+	 * short, precise, player-chosen hop - `onThrow`'s own logic even steps back one cell along the
+	 * path if a char already occupies the aimed cell). This port has no map-click cell-targeting
+	 * for a thrown item (the same reason every stone above auto-targets instead of aiming), so it
+	 * reuses the exact placement this port's own already-ported `ScrollOfTeleportation` uses -
+	 * `randomFreeCell` - rather than inventing a second "aim-like" placement strategy; the real
+	 * difference between Blink's short player-aimed hop and Teleportation's full-level random jump
+	 * is lost here, since both collapse to the same uniformly-random free-cell search. */
+	private useStoneOfBlink(instanceId?: string): void {
+		this.bag.remove('stoneOfBlink', 1, instanceId);
+		delete this.hero.buffs['roots'];
+		const destination = this.randomFreeCell(this.hero);
+		if (destination) {
+			this.moveTo(this.hero, destination);
+			this.say(t('items.scrolls.scrollofteleportation.tele'), 'positive');
+		} else this.say(t('items.scrolls.scrollofteleportation.no_tele'), 'negative');
+	}
+
+	/** `StoneOfClairvoyance.activate(cell)`: real Java marks every cell within a `DIST = 20`
+	 * diamond (via `ShadowCaster.rounding`) around the thrown-to cell `mapped` (visible on the map
+	 * regardless of current sight) and reveals any secret terrain caught in that same area - a
+	 * smaller, localized cousin of the already-ported `ScrollOfMagicMapping`'s whole-floor
+	 * `revealAll()`. This port has no map-click cell-targeting (so centers on the hero's own
+	 * position instead of an aimed cell - the natural default absent real aiming, unlike the
+	 * combat stones above which auto-target the nearest enemy instead) and no per-cell partial
+	 * reveal primitive, so it reproduces the same real DIST=20 radius as a plain Chebyshev circle
+	 * (ignoring walls, the same simplification the light/AoE stones above already make) by adding
+	 * each cell directly to `FieldOfView.explored` (a public, mutable `Set`) rather than calling
+	 * `revealAll()`'s whole-level version. */
+	private useStoneOfClairvoyance(instanceId?: string): void {
+		this.bag.remove('stoneOfClairvoyance', 1, instanceId);
+		const DIST = 20;
+		for (let y = Math.max(0, this.hero.y - DIST); y <= Math.min(this.level.height - 1, this.hero.y + DIST); y++) {
+			for (let x = Math.max(0, this.hero.x - DIST); x <= Math.min(this.level.width - 1, this.hero.x + DIST); x++) {
+				if (Roguelike.chebyshevDistance(this.hero, { x, y }) > DIST) continue;
+				this.fov.explored.add(this.level.index(x, y));
+				if (this.secrets.isSecret(x, y)) this.secrets.discover(x, y);
+			}
+		}
+		this.restitchAllTiles();
+		this.say(t('port.log.stoneclairvoyance'), 'positive');
+	}
+
 	private refreshInventoryPanel(): void {
 		if (!this.inventoryPanel) return;
 		this.inventoryPanel.visible = this.inventoryOpen;
@@ -7206,7 +7925,9 @@ export class SewersScene extends Scene2D {
 			const id = item.id;
 			let frame = ({ clothArmor: 176, armor: 176, armorReward: 176, weaponReward: 96,
 				food: 437, meat: 432, seed: 58, waterskin: 480, velvetPouch: 482, cloak: 240, hourglass: 240,
-				spiritBow: 144, wand: 208, holyTome: 246, darkGold: 453, dwarfToken: 454, amulet: 61 } as Record<string, number>)[id] ?? 0;
+				spiritBow: 144, wand: 208, holyTome: 246, darkGold: 453, dwarfToken: 454, amulet: 61,
+				stoneOfAugmentation: 147, stoneOfFear: 147, stoneOfDeepSleep: 147, stoneOfShock: 147, stoneOfBlast: 147,
+				stoneOfBlink: 147, stoneOfClairvoyance: 147 } as Record<string, number>)[id] ?? 0;
 			let action: string | undefined;
 			if (id.startsWith('potion')) { frame = 352; action = capitalize(t('items.potions.potion.ac_drink')); }
 			else if (id.startsWith('scroll')) { frame = 304; action = capitalize(t('items.scrolls.scroll.ac_read')); }
@@ -7214,6 +7935,8 @@ export class SewersScene extends Scene2D {
 			else if (id === 'seed') action = 'Plant';
 			else if (id === 'pickaxe') action = capitalize(t('items.quest.pickaxe.ac_mine'));
 			else if (id === 'hourglass') action = 'Freeze time';
+			else if (id === 'stoneOfAugmentation') action = t('port.ui.augment.title');
+			else if (id === 'stoneOfFear' || id === 'stoneOfDeepSleep' || id === 'stoneOfShock' || id === 'stoneOfBlast' || id === 'stoneOfBlink' || id === 'stoneOfClairvoyance') action = t('items.stones.inventorystone.ac_use');
 			else if (id.startsWith('ring_')) { frame = 224; action = capitalize(t('items.equipableitem.ac_equip')); }
 			else if (['armor', 'armorReward', 'weaponReward', 'wand'].includes(id)) action = capitalize(t('items.equipableitem.ac_equip'));
 			return { ...item, name: this.itemDisplayName(id, item.identified ?? false, item.instanceId), frame, action };
@@ -7280,6 +8003,13 @@ export class SewersScene extends Scene2D {
 			else if (id === 'pickaxe') this.mineWithPickaxe();
 			else if (id === 'seed') this.plantSeed();
 			else if (id === 'hourglass') this.useHourglass(instanceId);
+			else if (id === 'stoneOfAugmentation') this.useStoneOfAugmentation(instanceId);
+			else if (id === 'stoneOfFear') this.useStoneOfFear(instanceId);
+			else if (id === 'stoneOfDeepSleep') this.useStoneOfDeepSleep(instanceId);
+			else if (id === 'stoneOfShock') this.useStoneOfShock(instanceId);
+			else if (id === 'stoneOfBlast') this.useStoneOfBlast(instanceId);
+			else if (id === 'stoneOfBlink') this.useStoneOfBlink(instanceId);
+			else if (id === 'stoneOfClairvoyance') this.useStoneOfClairvoyance(instanceId);
 		} finally {
 			this.requestedItemId = null;
 			this.requestedItemInstanceId = undefined;

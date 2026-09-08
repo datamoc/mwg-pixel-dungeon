@@ -14,7 +14,7 @@
     "i18n": "node tools/i18n-extract.mjs"
   },
   "dependencies": {
-    "mwg": "npm:@datamoc/mw_games@^0.4.1",
+    "mwg": "npm:@datamoc/mw_games@^0.4.2",
     "pixi.js": "^8.20.1"
   },
   "devDependencies": {

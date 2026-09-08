@@ -1,9 +1,9 @@
 import { SpriteSheet } from 'mwg';
-import type { Texture } from 'pixi.js';
+import type { Texture2D } from 'mwg/two-d/render';
 import type { GroundItemKind } from './dungeonConstants';
 
 /** a class's real idle-stance frame: tier row 1 (the starting cloth-armour look), column 0 - `HeroSprite.updateArmor()`'s `idle.frames(film, 0, 0, 0, 1, 0, 0, 1, 1)` */
-export function heroSheet(texture: Texture): SpriteSheet {
+export function heroSheet(texture: Texture2D): SpriteSheet {
 	return SpriteSheet.fromTexture(texture, 12, 15);
 }
 
@@ -326,7 +326,11 @@ export const MOB_LOOT: Record<string, { chance: number; kind: GroundItemKind }[]
 	brute: [{ chance: 0.5, kind: 'gold' }],
 	shaman: [{ chance: 0.03, kind: 'wand' }],
 	spinner: [{ chance: 0.125, kind: 'meat' }],
-	dm200: [{ chance: 0.125, kind: 'armor' }],
+	//DM200.lootChance() base is really 0.2 (this port previously had 0.125, an unconfirmed
+	//guess with no derivation from Java's actual field); Java also picks weapon-or-armor 50/50
+	//(`Random.oneOf(WEAPON,ARMOR)`), simplified here to always 'armor' - not newly introduced,
+	//tracked in `PORT_COVERAGE.md`'s `MOB_LOOT`/`LIMITED_DROP_DECAY` row.
+	dm200: [{ chance: 0.2, kind: 'armor' }],
 	//GnollTrickster.createLoot: MISSILE at half quantity, always - a stone here
 	gnollTrickster: [{ chance: 1, kind: 'stone' }],
 	//GreatCrab: 2x MysteryMeat, always - one lands on the cell, the second beside it (or the
@@ -334,11 +338,13 @@ export const MOB_LOOT: Record<string, { chance: number; kind: GroundItemKind }[]
 	greatCrab: [{ chance: 1, kind: 'meat' }],
 	//City/Halls loot: Ghoul gold 0.2, Warlock potion 0.5 (always non-healing in Java -
 	//simplified to the shared potion), Monk food ~0.083 (rounded to 0.1), Golem armor
-	//0.125, Succubus scroll 0.33, Eye dewdrop 1.0, Scorpio potion 0.5
+	//0.2 (Java's real base - the previous 0.125 here was the same unconfirmed-guess bug as
+	//DM200's above, weapon-or-armor also simplified to always 'armor'), Succubus scroll 0.33,
+	//Eye dewdrop 1.0, Scorpio potion 0.5
 	ghoul: [{ chance: 0.2, kind: 'gold' }],
 	warlock: [{ chance: 0.5, kind: 'potion' }],
 	monk: [{ chance: 0.1, kind: 'food' }],
-	golem: [{ chance: 0.125, kind: 'armor' }],
+	golem: [{ chance: 0.2, kind: 'armor' }],
 	succubus: [{ chance: 0.33, kind: 'scroll' }],
 	eye: [{ chance: 1, kind: 'dewdrop' }],
 	scorpio: [{ chance: 0.5, kind: 'potion' }],
@@ -346,4 +352,26 @@ export const MOB_LOOT: Record<string, { chance: number; kind: GroundItemKind }[]
 	//simplified like every other potion-class loot here to the shared generic 'potion' kind
 	//rather than a specific PotionOfHealing sprite/effect.
 	demonSpawner: [{ chance: 1, kind: 'potion' }],
+};
+
+/**
+ * `Dungeon.LimitedDrops`: a handful of mobs further scale their own `lootChance()` down with
+ * every successful drop this run, on top of the flat `MOB_LOOT` chance above - real Java's own
+ * per-kind formula, keyed on how many times `n` this exact drop has already happened. Only the
+ * kinds whose `MOB_LOOT` base chance already matches (or, for dm200/golem, now matches after
+ * fixing it above) Java's `lootChance` field get their decay here; `slime`/`skeleton`/`thief`/
+ * `swarm` have no `MOB_LOOT` entry at all yet (a "not ported" gap, not a decay gap), tracked in
+ * `PORT_COVERAGE.md` instead of folded into this pass.
+ */
+export const LIMITED_DROP_DECAY: Partial<Record<MonsterId, (n: number) => number>> = {
+	//Bat.lootChance(): (7-n)/7
+	bat: (n) => (7 - n) / 7,
+	//Necromancer.lootChance(): (6-n)/6
+	necromancer: (n) => (6 - n) / 6,
+	//Guard.lootChance(): (1/3)^n
+	guard: (n) => Math.pow(1 / 3, n),
+	//DM200.lootChance()/Golem.lootChance()/Shaman.lootChance(): all (1/3)^n too
+	dm200: (n) => Math.pow(1 / 3, n),
+	golem: (n) => Math.pow(1 / 3, n),
+	shaman: (n) => Math.pow(1 / 3, n),
 };

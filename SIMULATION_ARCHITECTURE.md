@@ -152,6 +152,29 @@ through `scene['spawnMonster']`/`scene['attack']` and spawned/picked up a gold p
 entry on spawn and loses it on death/pickup, with correct damage numbers, floor items, and log
 text rendering throughout.
 
+## Step 7 - first SimulationRuntime adoption (search)
+
+`adapters/searchSimulation.ts` routes the pure `simulation/search.ts` decision
+(`planSearch`, extracted alongside `movement.ts`) through MWG's
+`simulation.SimulationRuntime` with `cost: null` - the rule never touches the scheduler,
+so it runs on an inert local `Scheduler`/`Generator` pair rather than the scene's real
+ones. The caller still owns the effect (discovery, tile restitching, log, guide progress),
+the same "scene executes the selected effect" split as Step 5. Reconciling runtimes with
+the scene's real scheduler/random waits for the first command with a real cost (plan
+section 25: no big-bang).
+
+## Step 8 - second SimulationRuntime adoption (hunger) + MWG EntityId type
+
+- `adapters/hungerSimulation.ts` wraps the pure `advanceHunger` transition the same way
+(cost `null`, inert local scheduler/random), and `SceneSimulationAdapter.hungerStep()`
+now dispatches through `runHungerStep()` instead of calling `advanceHunger` directly -
+same state committed, same events presented, only the dispatch path changed.
+- `simulation/entityId.ts`'s `EntityId` is now MWG's own `core.EntityId` (re-exported),
+plus a reverse `idOfEntity(entity)` lookup the plain counter never had. Minting stays
+local and prefixed (`hero-N`/`item-N`): MWG's `EntityRegistry.add()` mints opaque `eN`
+ids with no caller-chosen-id primitive, and the prefixed ids are persisted in saves -
+full registry adoption needs that primitive upstream or a save migration first.
+
 ## Verification
 
 Run `npm run check`, `npm run test:simulation`, and `npm run build`. The simulation checks

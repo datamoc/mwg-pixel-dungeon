@@ -25,15 +25,48 @@ browser-verification workflow for why).
       (the sandboxed environment's local HTTP servers all fail to bind a socket), so treat this
       as needing a playtest pass before fully trusting it.
 - [ ] Port all remaining weapons, wands, rings, artifacts, bombs, alchemy, and crafting.
-      Rings: Haste and Energy are now live (6 of 12 ring types total); Arcana/Elements/Force/
-      Furor/Sharpshooting/Wealth remain, each blocked on a system this port doesn't have yet -
-      see `PORT_COVERAGE.md`'s rings row.
-- [ ] Port the remaining potions. `PotionOfLevitation` is now live (real buff + chasm bypass,
+      Rings: all 12 real types are now live (Haste, Energy, Wealth, Arcana, Force, Sharpshooting from earlier passes, plus Elements and Furor this pass - see PORT_COVERAGE.md's rings row; type-check clean, browser verification still owed per section 10) - Sharpshooting mirrors Force's shape for ranged attacks: a flat `+level`
+      damage bonus on thrown missiles (both bounds) and SpiritBow (asymmetric: `+level` on the
+      low bound, `+2*level` on the high one, matching `SpiritBow.min()`/`max()` exactly), plus a
+      `1.2^level` durability multiplier folded straight into the existing `uses` calculation
+      that already drives `ammoDurability`'s per-throw decrement. Force's flat `+level`
+      melee-only damage bonus (`ringForceBonus`, gated the same way this
+      port's other hero-only attack bonuses already are - `attacker === this.hero` is only true
+      at the real bump-attack call site, never `useSpecial`'s throw/shoot/zap branches, matching
+      Java's own `MissileWeapon` exclusion for free) needed no new system either. Wealth's
+      flat `1.20^level` drop-chance multiplier (`ringWealthMultiplier`, applied to `MOB_LOOT`'s
+      roll in `kill`) needed no new system at all, the "blocked" claim was stale; its separate
+      bonus-item generation (`tryForBonusDrop`'s escalating rare-loot tracker) remains unported, a
+      real narrower gap now rather than a total block. Arcana's real scope turned out much
+      smaller than first guessed: it's a `1.175^level` proc-*chance* multiplier real Java only
+      folds into whichever enchant's own `proc()` explicitly calls `procChanceMultiplier()` -
+      **corrected this pass: the old text here claimed curses never call it "by design" - wrong
+      (checked tag `v3.3.8`: Annoying/Dazzling/Explosive/Sacrificial/Displacing/Friendly and
+      AntiEntropy/Corrosion/Displacement/Metabolism/Multiplicity/Overgrowth/Stench all do;
+      only Polarized has no chance roll at all). Every ported curse chance-proc now scales, and
+      Sacrificial's base chance is corrected (flat 1/12 was a guess; real is 1/10)** - and of
+      this port's ported good-enchant procs, Grim/Lucky/Blocking/Blooming roll a chance real
+      Java scales this way (Blazing/Chilling/Shocking/Vampiric are
+      unconditional here, a separate pre-existing simplification with no roll left to scale).
+      `ringArcanaMultiplier()` now feeds all of them. Elements/Furor are now ported (this pass), both genuinely - not just assumed - needing more than a stale-claim fix, and both got it: Elements applies RingOfElements.resist()'s real pow(0.825, level) at each hero-side elemental-damage site (burning/poison DoT tick, toxic-gas blob damage, burning-trap fire damage - all in RESISTS, scaled before Barrier absorption like Hero.damage()'s own ordering; durations untouched, as in Java), since this port has no equivalent of Char.resist(Class)'s single shared dispatch. Furor got the attack-only turn-cost split it needed (a new getAttackTurnCostMod(), blanket divided by RingOfFuror.attackSpeedMultiplier()'s real pow(1.09051, level), spent only for bump-attacks via a move-port pre-check; movement keeps the blanket cost, matching Java's attackDelay()-vs-speed() split). See PORT_COVERAGE.md's rings row.
+- [x] Port the remaining potions. `PotionOfLevitation` is now live (real buff + chasm bypass,
       matching the trap bypass Levitation already had); a live id-mapping bug that made
       generated `PotionOfLiquidFlame`/`PotionOfInvisibility` silently quaff as Purity is fixed.
-      `PotionOfParalyticGas`/`ToxicGas`/`Confusion`/`Frost`/`Haste` remain unported (each needs a
-      system this port doesn't have - a status-on-contact gas blob, a freeze effect, or a hero
-      speed buff) - see `PORT_COVERAGE.md`'s potions row for what currently happens instead.
+      `PotionOfToxicGas`/`PotionOfParalyticGas` are now live too: both are real Java "gas blob at
+      your own feet" potions (`Potion.apply(hero)` is just `shatter(hero.pos)` - drinking one
+      gases yourself exactly like throwing it at yourself, so this port's quaff-only flow already
+      matches Java's own effect, no simplification needed there), now backed by dedicated
+      `toxicGas`/`paralyticGas` blobs (direct `1+scalingDepth()/5` damage/turn and a per-turn
+      `paralysis` reapplication respectively) shared with `ToxicTrap`, which was fixed in the same
+      pass to seed the real blob instead of an instant `poison` buff it never had in Java.
+      `PotionOfHaste` is now ported too, found stale in a later pass: the "needs a hero speed
+      buff system this port doesn't have" premise no longer held once `getActionTurnCostMod`
+      existed (added for Weapon Augment/Swiftness/RingOfHaste) - a real `haste` buff
+      (`BUFF_DURATION.haste = 20`) now applies `Char.speed()`'s own `*3f` there as `mod /= 3`,
+      the same shape RingOfHaste's multiplier already used. `PotionOfFrost` is now ported (Simplified, and the last generated potion id missing its own branch - it silently quaffed as Purity before): no blob-freezing terrain and no freeze/immobilize status distinct from paralysis exist here, so it extinguishes the hero's own `burning`, deals Liquid Flame's own 4 damage to the nearest visible enemy, and applies `daze` as the chill stand-in (the same substitution the WandOfFrost branch already documents) - see `PORT_COVERAGE.md`'s new row. All 12 generator potion classes now have their own branch (type-check/build only, browser verification owed per section 10) - see `PORT_COVERAGE.md`'s
+      potions row for what currently happens instead. (There is no `PotionOfConfusion` in real
+      Java - the
+      earlier text here was wrong; `ConfusionGas` is a trap-only blob, unrelated to potions.)
 - [ ] Port the remaining scrolls. Fixed the same class of live id-mapping bug for
       `ScrollOfMirrorImage`/`ScrollOfMagicMapping` (both silently read as Remove Curse instead of
       their real, already-ported effects). `ScrollOfRecharging` is now ported (grants the
@@ -47,20 +80,137 @@ browser-verification workflow for why).
       `Vulnerable` as fully-wired but previously never-granted dead code, and corrected both
       buffs' durations (`10` -> the real `20`). `ScrollOfTransmutation` remains unported (needs
       a full item-transmutation system plus a generic item-picker UI this port doesn't have)
-      and still falls through to Remove Curse's effect when read - see `PORT_COVERAGE.md`.
-- [ ] Port the remaining enchantments, glyphs, weapon curses, and armor curses. Only 4 weapon
-      curses now lack proc logic at all (`friendly`, plus Kinetic/Blooming/Corrupting/Elastic/
-      Projecting/Unstable's missing-subsystem group) - `polarized`/`sacrificial`/`displacing`
-      gained real proc branches this pass, alongside the already-live `wayward`/`annoying`/
-      `dazzling`/`explosive`. All 8 armor curses already have proc logic, and (this pass) all of
-      it is now actually reachable through the assignment fix above.
-- [ ] Implement weapon augments. **Blocked on a prerequisite**: `Weapon.Augment`
-      (SPEED/DAMAGE/NONE) and the Swiftness enchant both trade off a per-weapon
-      attack-delay economy that this port's hero turn model does not have (every
-      hero action currently costs exactly one turn, so there is no delay to
-      shorten/lengthen) - implement the fractional-turn-cost system first, or the
-      damage half of Augment ends up half-ported against advice already recorded
-      in `PORT_COVERAGE.md`.
+      but no longer falls through to Remove Curse's effect when read - it now refuses cleanly
+      WITHOUT consuming the scroll (`port.log.transmutationfizzle`, same shape as the
+      upgrade-scroll guard) - see `PORT_COVERAGE.md`'s new row.
+- [ ] Port the remaining enchantments, glyphs, weapon curses, and armor curses. Only 1 weapon
+      curse now lacks proc logic at all (`friendly` - checked against `Friendly.java` this pass:
+      mutual Charm plus zeroing damage to the charmed target, needs the two-way Charm subsystem
+      the missing-subsystem bullet below already tracks). `Blooming` (uncommon, real
+      `(lvl+1)/(lvl+3)` chance, level-scaled plant count, defender-first/shuffled-neighbour order)
+      and `Camouflage` (uncommon, `round((3+lvl/2) x arcana)` invisibility on grass trample) are
+      now ported - both genuinely fitting existing systems (plantable terrain + buff map), verified
+      against tag `v3.3.8` source, not assumed. **Found and fixed in the same audit: no `Fragile`
+      armor curse exists in real Java** (checked `v3.3.8` back to `v3.3.1` - closest match is a
+      `v1.x`-era changelog mention); the real 8th curse is `Stench` (1/8 x arcana to seed
+      250-volume ToxicGas at the wearer's own feet), now ported with a `fragile`->`stench` load
+      migration plus a `getCurse` legacy shim. See `PORT_COVERAGE.md`'s new rows. Remaining, each
+      still needing its own system first: Kinetic's decay read-back is live but Corrupting's
+      conversion, Elastic/Projecting's geometry, Unstable's meta-dispatch, and Affection/
+      AntiMagic/Brimstone/Obfuscation/Repulsion/Viscosity (Obfuscation checked: its stealth boost
+      feeds a distance roll this port's FOV-binary `seesHero` has no seam for). `polarized`/
+      `sacrificial`/`displacing` gained real proc branches in an earlier pass, alongside the
+      already-live `wayward`/`annoying`/`dazzling`/`explosive`.
+- [x] Implement weapon augments. **This roadmap line's own history is worth reading before
+      trusting any future "done" claim on it: it was marked done, then found still-wrong by its
+      own next revision, then actually finished on a third pass** - a real cautionary example of
+      why "the formula is correct" and "the feature is reachable" are different claims that both
+      need checking. Pass 1 wrongly declared it blocked (no fractional-turn-cost system). Pass 2
+      correctly un-blocked that part (`getActionTurnCostMod` is real) but wrongly declared the
+      whole feature "fully wired" without checking for an actual `weaponAugment =` assignment
+      site anywhere outside the save-restore line - there wasn't one, so the correct formulas
+      were completely unreachable through real gameplay. Pass 3 (this one) actually built the
+      missing piece: a `stoneOfAugmentation` item (id-mapped from the generator's already-present
+      `StoneOfAugmentation` class, previously silently collapsing into the generic `'stone'` id
+      alongside 10 other still-unported runestones - a real, wider gap noted but not closed
+      here), a `useStoneOfAugmentation()` bag-use action, and a `chooseAugment()` choice reusing
+      the existing armor-ability/subclass choice-panel mechanism (a new `augmentChoiceOpen` flag
+      threaded through the same handful of gate conditions, with its own full-width stacked-row
+      layout instead of that panel's usual 2-column one, since Augment's option text is longer).
+      Auto-targets the hero's own equipped weapon rather than presenting Java's real item-picker
+      (this port's established convention for "use item on another item" actions). Real Java's
+      stone also grants a genuine bonus weapon-upgrade level alongside the augment choice - not
+      reproduced, since this port's own upgrade path is tier-based with no free-standing "+1
+      level" primitive to borrow without disturbing that tier state machine - stated as a
+      deliberate simplification, not silently dropped. Also fixed in passing: `groundKindForItem`
+      had no case for `'stone'`/`'stoneOfAugmentation'` bag ids at all, so any generated runestone
+      dropped as ordinary floor loot fell through to the caller's fallback (`'food'` at the one
+      real call site) instead of rendering/behaving as a stone - pre-existing, not introduced by
+      this change. Browser-verified live end-to-end: using the stone opened a real French choice
+      panel ("Choisir un augment d'arme" / "Vitesse (+20 % de vitesse d'attaque)" / "Dégâts (+20 %
+      de dégâts)" / "Aucun"), choosing Speed set `weaponAugment` to `'speed'`, closed the panel,
+      logged "Arme augmentée : Vitesse (+20 % de vitesse d'attaque)." and immediately changed
+      `getActionTurnCostMod()` from `1` to the real `0.8`. See `PORT_COVERAGE.md`'s enchant/glyph
+      row.
+- [x] Port three more runestone (`Cat.STONE`) types beyond Augmentation: `StoneOfFear`,
+      `StoneOfDeepSleep`, and `StoneOfShock`, each getting its own item id
+      (`stoneOfFear`/`stoneOfDeepSleep`/`stoneOfShock`, wired through
+      `generatedInventoryItem`/`sourceInventoryItem`/`groundKindForItem` the same way
+      Augmentation's id was) and a use-action, since all three auto-target the nearest visible
+      enemy the same way `useSpecial`'s ranged targeting already does - no map-click cell-targeting
+      exists in this port for either the real thrown-stone aim or the choice of ally-vs-enemy a
+      full `StoneOfFear` needs, so this only ever affects an enemy, never an ally (moot anyway,
+      no ally-vs-monster combat exists). `StoneOfFear` applies the `terror` buff `ScrollOfTerror`
+      already grants and `takeMonsterTurn` already honors in full - no new mechanic needed, just
+      a new way to reach the existing one. `StoneOfDeepSleep` reuses the exact same instant-sleep
+      simplification `ScrollOfLullaby` already uses for real Java's gradual `MagicalSleep`/`Drowsy`
+      debuff (setting `sleeping = true` directly), just on one auto-targeted enemy instead of every
+      visible mob. `StoneOfShock` paralyzes every creature within a Chebyshev-distance-2 circle of
+      the auto-targeted enemy (real Java uses a wall-aware `PathFinder` flood fill instead, and a
+      1-turn paralysis rather than this port's shared 3-turn `paralysis` buff - both stated
+      simplifications, not silently dropped precision) and refunds the hero's wand `1 + hits`
+      charges via the existing, already-generic `Actors.Charges.refund`. Browser-verified live:
+      adding a fresh `stoneOfFear`/`stoneOfDeepSleep` to the bag and using each against a test
+      target applied `terror: 20` and flipped `sleeping` to `true` respectively, decrementing the
+      bag by exactly 1 each time; a fresh `stoneOfShock` used against two adjacent test targets
+      applied `paralysis: 3` to both and raised a pre-drained wand's charge count (capped at its
+      max of 4); the inventory panel's item-detail popup rendered the correct name and the real
+      Java `items.stones.inventorystone.ac_use` action label ("사용한다") in Korean for all three,
+      and the shock log line rendered its interpolated hit count ("Lightning arcs out, paralyzing
+      3 nearby foes."). **This pass's own gap-list correction, worth noting**: this line originally
+      (mis)named a 12th runestone type "StoneOfDisarming" - that class does not exist in real SPD
+      at all (checked against the actual `items/stones/` directory listing in the local checkout);
+      the real 12th type is `StoneOfDetectMagic`, corrected here and in `PORT_COVERAGE.md`.
+- [x] Port a fourth runestone type, `StoneOfBlast` -> `stoneOfBlast` (`useStoneOfBlast()`), the
+      same rename-plus-use-action pattern the three above already established. Real Java's
+      `activate()` just calls `new Bomb.ConjuredBomb().explode(cell)`: a `PathFinder`
+      distance-1 flood fill through non-solid/flammable terrain, dealing
+      `NormalIntRange(4 + scalingDepth, 12 + 3*scalingDepth)` damage minus armor to every char
+      caught in it - the hero included, since a bomb does not discriminate - plus destroying
+      flammable terrain and triggering/destroying caught heaps. This port reuses the same
+      Chebyshev-distance-1-circle approximation `StoneOfShock` already makes for its own radius
+      (ignoring walls), substitutes `this.depth` for `scalingDepth` (the same substitution every
+      other depth-scaled formula in this file already makes), and routes the hero's own share of
+      the blast through the existing `absorbHeroDamage`/`kill` path exactly like
+      `applyTrapBlast`'s hero branch already does for a different (trap) bomb formula. **Not
+      reproduced**: the terrain-destruction/heap-triggering half of the real explosion - this port
+      has no equivalent call from an item-use site, a real, narrower gap left honest rather than
+      faked. Browser-verified live: placing the hero adjacent to a 500-HP test target and using a
+      fresh `stoneOfBlast` dealt 9 damage to the hero (from full HP) and 8 damage to the adjacent
+      target, while a second target 6 cells away took none - confirming both the radius cutoff and
+      the hero's own inclusion in the blast; the bag stack decremented by exactly 1.
+- [x] Port two more runestone types, `StoneOfBlink` -> `stoneOfBlink` (`useStoneOfBlink()`) and
+      `StoneOfClairvoyance` -> `stoneOfClairvoyance` (`useStoneOfClairvoyance()`), bringing 7 of
+      12 real runestone types to distinct effects (Augmentation/Fear/DeepSleep/Shock/Blast from
+      earlier passes, plus these two). **Blink**: real Java's `activate()` calls
+      `ScrollOfTeleportation.teleportToLocation(curUser, cell)` on a player-aimed thrown-to cell -
+      a short, precise, chosen hop, distinct from Teleportation's own full-level random jump. This
+      port has no map-click cell-targeting for a thrown item (the same reason every combat stone
+      above auto-targets instead of aiming), so it reuses the exact `randomFreeCell` placement
+      this port's own `ScrollOfTeleportation` already uses rather than inventing a second
+      "aim-like" strategy - the real distinction between Blink's short aimed hop and
+      Teleportation's full random jump is lost, both collapsing to the same uniformly-random free
+      cell. **Clairvoyance**: real Java marks every cell within a real `DIST = 20`
+      `ShadowCaster`-diamond around the thrown-to cell `mapped`, plus reveals any secret terrain
+      caught in that area - a smaller, localized cousin of the already-ported
+      `ScrollOfMagicMapping`'s whole-floor `revealAll()`. With no cell-targeting, this port centers
+      on the hero's own position instead (the natural default absent aiming, unlike the combat
+      stones' nearest-enemy convention), and reproduces the same DIST=20 as a plain
+      Chebyshev circle (ignoring walls) by adding each cell directly to `FieldOfView.explored` (a
+      public, mutable `Set`) rather than calling the whole-level `revealAll()`. Browser-verified
+      live: using a fresh `stoneOfBlink` moved the hero from `(6,16)` to `(16,13)` in one action;
+      using a fresh `stoneOfClairvoyance` grew `fov.explored.size` from 54 to 832 (the floor's full
+      `cellCount`, since this port's small Sewers-sized levels fit entirely within a 20-cell
+      radius of the hero) and rendered the previously-fogged room fully visible on screen; both
+      logged their correct French text ("Vous avez été téléporté en un clin d'œil..." reusing the
+      real Java teleport key, "Le donjon vous révèle ses secrets." a new port string), and the
+      inventory popup showed "stoneOfBlink" with the correct "UTILISER" action label. The
+      remaining 5 runestone types (Enchantment/Intuition/DetectMagic/Flock/Aggression) stay
+      unported, still collapsing to the generic `'stone'` id: Enchantment/Intuition/DetectMagic
+      are all `InventoryStone` subclasses needing a real item-picker UI this port doesn't have
+      (same blocker as `ScrollOfTransmutation`); Flock spawns allied Sheep (needs an
+      ally-spawning/combat system this port doesn't have); Aggression's own buff would be mostly
+      moot without ally-vs-monster combat to make its enemy-vs-enemy redirection observable.
 - [ ] Implement complete weapon and armor tiers, transfer formulas, upgrade formulas, curse infusion, and degradation.
 - [ ] Implement the remaining charm/knockback/stealth/blink/durability-per-hit
       subsystems the unported enchants, glyphs, and curses depend on (Kinetic's
@@ -140,7 +290,15 @@ browser-verification workflow for why).
       Caves walls and real WALL_DECO veins, with only veins yielding DarkGold; the inventory Pickaxe
       MINE action now scans adjacent veins, converts them to WALL, awards DarkGold, and spends two turns;
       generated wells and plants now use MWG `FeatureLayer` for placement, one-shot interaction, and
-      floor save/load while retaining SPD-specific consequences; chasm falling now also applies
+      floor save/load while retaining SPD-specific consequences (fetched `WaterOfAwareness.java`/
+      `WaterOfHealth.java` to confirm the exact effects this pass, and fixed two real divergences:
+      the awareness well was fully identifying the whole bag with no Java basis - real
+      `Belongings.observe()` only touches the equipped weapon/armor/ring, already covered by this
+      port's existing equip-time identify simplification, plus marks unequipped backpack
+      equipable/wand items cursed-known without fully identifying them, now matched, alongside a
+      real `awareness` buff grant; the health well was also wrongly clearing `burning` - real
+      `PotionOfHealing.cure()` never touches it - and was missing `uncurseEquipped()`'s weapon/
+      armor/ring curse-clear entirely, both fixed); chasm falling now also applies
       `Chasm.heroLand()`'s real Cripple application and HP/HT-scaled landing damage through the
       normal hero-damage absorption pipeline, correctly killing the hero on a fatal fall, and
       Levitation now bypasses chasms the same way it already bypassed traps - see
@@ -195,7 +353,22 @@ browser-verification workflow for why).
 - [ ] Port Caves NPCs and quests.
 - [ ] Port City NPCs and quests.
 - [ ] Port Halls NPCs and quests.
-- [ ] Implement the full Ghost quest reward generator.
+- [x] Implement the full Ghost quest reward generator. Was calling the generic depth-scaled
+      `randomWeapon`/`randomArmor` instead of `Ghost.Quest.spawn()`'s own distinct formula - a
+      fixed 50/30/15/5% tier roll (not depth-scaled), a single upgrade level shared by both
+      items, and a single shared 20% enchant/glyph chance (not per-item); see `generator.ts`'s
+      new `ghostQuestReward()`. **Found and fixed a much bigger bug in the same pass, auditing
+      `generatedInventoryItem`'s category dispatch while wiring this up**: every procedurally-
+      generated weapon or missile in the entire game (ordinary floor loot, statue drops, and now
+      Ghost's reward) was silently mislabeled as a plain `'food'` item with no enchant/curse ever
+      applied, because that function checked `generated.cat === Cat.WEAPON` when the real value
+      is always one of the WEP_T1..T5 sub-tier cats (`generatedGroundKind`, a few lines away,
+      already had the correct range check - this was a narrow, isolated miss in one sibling
+      function, not a systemic gap). Fixed to the same range check; verified live (a real Sickle
+      +2 and ScaleArmor +2 landed correctly instead of two `'food'` items) and statistically (a
+      20000-sample Node check of `ghostQuestReward()`'s tier/level/enchant fractions matched
+      Java's 50/30/15/5%/20% closely, with zero cursed outcomes as Java requires). See
+      `PORT_COVERAGE.md`.
 - [ ] Replace the simplified Wandmaker quests with Mass Grave, Ritual Site, and Rot Garden.
 - [ ] Port the Troll Blacksmith's mining and forge mechanics.
 - [ ] Port Rat King and other missing special NPCs.
@@ -207,7 +380,29 @@ browser-verification workflow for why).
       something Java never allows). Now a genuine `hasRaged`/`raged`-gated revival with the real
       `HT/2+4` shield and flat 4/turn decay. Browser-verified live. See `PORT_COVERAGE.md`.
 - [ ] Implement exact wandering, hunting, fleeing, and stealth calculations.
-- [ ] Implement monster-specific AI overrides.
+- [ ] Implement monster-specific AI overrides. **Golem's teleport-the-hero-away ability is now
+      ported** - previously it had none at all and fought as a plain melee attacker despite
+      having a real, distinctive ranged ability in Java. Fetched `Golem.java` to confirm: while
+      not adjacent and off a 20-turn cooldown, it teleports the hero to whichever of the hero's
+      own free 8-neighbour cells is farthest from the golem (pushing the hero away, not pulling
+      itself closer). Real Java's own reachability check (`canTele`, a BFS around blocking
+      terrain) and its separate self-teleport-to-reposition ability while wandering are not
+      modeled - this port requires a clear line within 8 cells instead, the same "shape not
+      curve" simplification already used for DM200's vent/Spinner's web. Browser-verified live:
+      a golem teleported the hero to a genuinely farther cell, set the cooldown to 20, and a
+      second immediate attempt correctly did nothing while the cooldown ticked down. **Eye's
+      real DeathGaze is now ported too** - it was implemented as a completely wrong-shaped
+      stand-in (an "every 3rd melee hit deals 1.5x" damage multiplier); fetched `Eye.java` to
+      confirm the real ability is entirely ranged and never a melee proc at all: a two-turn
+      charge-then-fire beam (turn 1 charges, no damage, the eye takes only 1/4 damage from any
+      source meanwhile; turn 2 fires a real magic hit roll for 30-50 damage along a clear line
+      to the hero, bypassing armor/DR entirely unlike this port's own `zapHero` bolts), then a
+      4-6 turn cooldown. Uses the new `monsterTurnCost` hook (from the `firstSummon` fix above)
+      to give the charge turn its own real 2x cost. Browser-verified live: charging set
+      `beamCharged`/cost `2` correctly and a 20-damage test hit was quartered to `5` while
+      charged versus the full `20` once uncharged; firing reset the charge, set a cooldown
+      within the real 4-6 range, and dealt damage within the real 30-50 range. See
+      `PORT_COVERAGE.md`.
 - [ ] **Implement ally-vs-monster combat.** Found this session while auditing the scroll branch
       against Java source: this port's monster AI has no concept of a non-hero target at all -
       every `takeMonsterTurn` decision hardcodes the hero as the only possible thing to attack
@@ -218,20 +413,30 @@ browser-verification workflow for why).
       something for it to attack besides the hero). Necromancer's summoned skeleton already
       fights monsters *for the hero's opponent*, so some of the shape may be reusable, but the
       hero-side case (something the player controls fighting alongside them) is new.
-- [ ] Port all champion types and their effects. Blessed/Blazing/Giant/Growing are now live
-      (4 of 6) - fixed a real bug in Blessed's factor (x3 -> the real x4) and added Giant/
-      Growing this pass. AntiMagic remains unported (needs a magic-vs-physical damage
-      distinction); Giant/Projecting's extra-reach melee is not modeled either. See
-      `PORT_COVERAGE.md`'s `ChampionEnemy` row.
+- [x] Port all champion types and their effects. All 6 real types (Blessed/Blazing/Giant/
+      Growing/AntiMagic/Projecting) are now live, each with its real per-type factor
+      (`accRollMulti`/`rollDamage`), and the type roll is a true 1-in-6 matching Java's
+      `Random.Int(6)`. Fixed a real bug in Blessed's factor (x3 -> the real x4) along the way.
+      Remaining, tracked as narrower gaps rather than missing types: Giant/Projecting's
+      extra-reach melee (`canAttackWithExtraReach`) is not modeled (attack range is fixed at 1
+      regardless of champion type), `AntiMagic.RESISTS`'s status-immunity list is not modeled,
+      and the champion roll itself is still a flat 10% rather than Java's roster-wide
+      `Dungeon.mobsToChampion` budget. See `PORT_COVERAGE.md`'s `ChampionEnemy` row.
 - [ ] Implement blob area propagation, gas, and fire terrain.
 - [x] Port the Necromancer's skeleton heal/Adrenaline/teleport support behavior - previously it
       had none at all (a summoned skeleton just fought alone forever). Now heals `HT/5` when
       hurt, grants a one-time Adrenaline (reusing the existing haste stand-in) if visible and
       already at full health, and teleports an out-of-sight skeleton back beside the hero
       instead of leaving it stranded. Remaining: the teleport destination is any free neighbour
-      of the hero rather than Java's closest-and-in-sight pick, and `firstSummon`'s variable
-      tick cost is blocked on the same fractional-monster-turn prerequisite as Weapon
-      Augment/Swiftness above. Browser-verified live. See `PORT_COVERAGE.md`.
+      of the hero rather than Java's closest-and-in-sight pick. `firstSummon`'s variable tick
+      cost is now ported too - the "blocked on a fractional-monster-turn prerequisite" premise
+      was stale: `mwg/roguelike`'s `Scheduler.spend(cost)` already takes an arbitrary cost, and
+      this port's own monster-turn adapter (`adapters/sceneSimulation.ts`) already threads a
+      per-actor cost back to it, just hardcoded to `1`. A new optional `TurnPorts.monsterTurnCost`
+      port reads a scene-side `pendingMonsterTurnCost` (set by `summonSkeleton`, cleared at the
+      start of every `takeMonsterTurn`) instead. Browser-verified live end-to-end through the real
+      scheduler: a necromancer's second summon (after its first skeleton died) advanced its
+      scheduled turn by exactly 2, versus 1 for its first ever summon. See `PORT_COVERAGE.md`.
 - [x] Port DM-200's hunting/venting override - previously it had no special behavior at all
       (plain melee attacker only). Now vents toxic gas along a line to the hero from range with
       the real distance-scaled odds, seed amounts, and 30-turn cooldown; the BFS-around-terrain
@@ -275,7 +480,15 @@ browser-verification workflow for why).
       `Slime.damage()`'s incoming-hit soft cap (shared unchanged by `CausticSlime`) turned out
       to be missing for the base kind too, not a literal-kind-check bug - now ported for both,
       see `PORT_COVERAGE.md`'s Slime row.
-- [ ] Implement Java corpse, meat, gold, loot-stack, and limited-drop behavior.
+- [ ] Implement Java corpse, meat, gold, loot-stack, and limited-drop behavior. `Dungeon.LimitedDrops`
+      decay (each successful special-item drop makes the next one rarer, for the run's lifetime)
+      is now real for `bat`/`necromancer`/`guard`/`dm200`/`golem`/`shaman` - `dm200`/`golem` also
+      had their base chance itself fixed in the same pass (`0.125` was an unconfirmed guess; real
+      Java is `0.2` for both). `slime`/`skeleton`/`thief`/`swarm` still have no `MOB_LOOT` entry
+      at all despite being real spawnable kinds - a "not ported" base-drop gap, not a decay gap,
+      left as its own follow-up. See `PORT_COVERAGE.md`'s `MOB_LOOT`/`LIMITED_DROP_DECAY` row.
+      Stacking heaps, Wealth rings, and dm200/golem's real weapon-or-armor 50/50 pick (simplified
+      to always-armor here) remain unmodeled.
 
 ## 6. Complete hero progression
 
@@ -311,10 +524,14 @@ browser-verification workflow for why).
 - [ ] Match stealth, invisibility, surprise, and attack-delay systems exactly.
 - [x] Implement shield decay (`Barrier.act()`'s real `min(1,shielding/20)`-per-turn proportional
       curve now runs every hero turn against the shared `heroBarrier` pool - previously never
-      invoked at all, so shields held indefinitely). Remaining gap: this port pools every shield
-      source into one barrier, so Blocking's own separate fixed 5-turn cliff-edge `BlockBuff`
-      expiry isn't modeled distinctly (tracked in `PORT_COVERAGE.md`'s Barrier-decay row); healing-
-      over-time - Sungrass is live, other Java Health-buff variants remain.
+      invoked at all, so shields held indefinitely). `Blocking.BlockBuff`'s own separate fixed
+      5-turn cliff-edge expiry is now also approximated - a `blockingShieldLeft`/`blockingTurnsLeft`
+      side counter, ticked alongside the proportional decay, force-expires however much of the
+      pool is still attributable to Blocking once its own 5 turns are up, and every fresh proc
+      resets the timer (matching real `setShield()`). Java's priority-ordered absorption (Blocking's
+      shield always drains before Barrier's on incoming damage) remains unmodeled - tracked in
+      `PORT_COVERAGE.md`'s Barrier-decay row; healing-over-time - Sungrass is live, other Java
+      Health-buff variants remain.
 
 ## 8. Complete UI and input parity
 
@@ -350,7 +567,31 @@ browser-verification workflow for why).
       `` t(`port.subclass.${option}`) `` for the armor-ability/subclass choice UI) needed a
       manual check - all 12 possible ids across `ARMOR_OPTIONS`/`SUBCLASS_OPTIONS` were missing
       from both locales too (the entire level-13/21 choice window showed raw ids), now fixed and
-      browser-verified live.
+      browser-verified live. **Same dynamic-key class, now closed**: `itemDisplayName` renders
+      `` t(`port.affix.${item.affix}`) `` with no `port.affix.*` key in either locale, so every
+      enchant/glyph/curse name on the item-detail popup showed a raw key - all 32 affix ids now
+      have EN+FR entries, sourced from SPD's own `<class>.name` strings (FR uses the masculine
+      base form; Java resolves its (e)/(le) markers by item gender, which this port does not
+      model - see `PORT_COVERAGE.md`).
+- [ ] Translate the port's own strings into every Java locale. The picker already offers all
+      19 of `Languages.java`'s locales (same codes, same complete/unreviewed/unfinished
+      statuses - see `src/i18n/languages.ts`), and SPD's own text arrives translated through
+      the generated catalog, but the port's own ~305 `port.*` keys exist only in English and
+      French - every other locale reads English sentences (with SPD-translated names inside).
+      Scope: 305 keys x 17 locales (~5,200 strings), mirroring the `Languages` enum exactly
+      (Java's `.properties` dirs also carry be/eo/sv/zh-hant files, but SPD doesn't ship
+      anything below 80% and neither should this). Notes for whoever does it: nothing structural
+      stands in the way - `catalogFor()` already merges `PORT_STRINGS[code]` per locale with
+      base-catalog fallback, so each locale is purely additive; `mwg/i18n`'s typography and
+      CLDR plurals already cover the per-locale mechanics. The bar is human: SPD labels each
+      locale complete/unreviewed/unfinished for a reason, and machine-translated game text ships
+      exactly the kind of errors only native speakers catch (see `languages.ts`'s `in`/`id`
+      note for the shape of that risk) - each locale needs a translator, or a machine draft
+      explicitly marked unreviewed or worse. Sequence against the still-growing key set
+      (`port.affix.*` landed 32 keys this pass alone): either freeze `port.*` first or track
+      per-locale key deltas on every pass that adds one. Font coverage is part of done, not a
+      footnote - zh/ko/ja need the section-10 tofu check per locale, not just key resolution.
+      See `PORT_COVERAGE.md`'s locales row.
 
 ## 9. Build the Java-vs-TypeScript parity harness
 
@@ -375,12 +616,20 @@ browser pass before they can be treated as done rather than merely built:
       to show tofu from a missing glyph; the i18n check only proves keys
       resolve and interpolate, not that text fits its widget or that a font
       covers a script).
-- [ ] Re-confirm the UI/presentation section's widgets in a live session
+- [x] Re-confirm the UI/presentation section's widgets in a live session
       (status pane, bars, floating text, compass, coloured log, boss health
-      bar, badge banner, inventory `ListView`) now that a browser is
-      available again - some of these were already spot-checked individually
-      in later passes, but the section as a whole was last marked "nothing
-      here has been looked at."
+      bar, badge banner, inventory panel) now that a browser is available
+      again. Status pane/HP bar/depth badge, coloured log (orange/yellow/
+      white/green all observed), boss health bar+chrome+25%-bleed tint, the
+      compass (correctly gated on `hasStairs`, correctly oriented), and the
+      inventory panel (a clean icon grid with quantity badges, not the old
+      degenerate unbounded text-row layout) are all confirmed live via
+      screenshots. Floating damage numbers and the badge-banner pop-in
+      couldn't be caught mid-animation (their round-trip-vs-lifetime timing
+      lost the race against this tooling's screenshot latency), but their
+      triggering logic was confirmed correct via the log line each produces -
+      a tooling limitation, not a finding of anything wrong. See
+      `PORT_COVERAGE.md`'s UI verification section.
 - [ ] **Unresolved, flagged rather than silently dropped or guess-fixed**: a live browser
       session surfaced `TypeError: Cannot read properties of undefined (reading 'frame')` from
       `spawnMonster` -> `spawnPortedMobs` -> `enterLevel`, reached from a scene-transition
@@ -392,6 +641,19 @@ browser pass before they can be treated as done rather than merely built:
       race specific to that unnatural pacing, not a reachable-through-normal-play bug - but this
       was not confirmed either way. Reproduce under normal human-paced play (or a scripted wait
       for the loading screen to clear) before deciding whether this needs an actual fix.
+      **New evidence this session, narrowing (not yet fully confirming) the theory**: while
+      verifying the `mwg` 0.4.2 bump, this same error reproduced 3/3 times immediately after a
+      fresh `npm run build`, using timing that had worked fine moments earlier - but then
+      reproduced 0/5 times on subsequent page loads of that *same already-built* `dist/` (fresh
+      tabs, reloads, and the original fast timing all included), with no code or config change in
+      between. That pattern (fails only right after a rebuild, then stops failing) points at
+      something slow on *first access* to a freshly-written `dist/game.js` specifically - most
+      likely OS/antivirus file-scan latency on Windows delaying the initial asset decode - rather
+      than at `mwg` 0.4.2 or at pointer-burst pacing per se (the version bump was A/B-tested
+      directly against 0.4.1 under identical conditions and showed no difference once this
+      first-access effect was controlled for). Still not proven, and still worth a real fix
+      investigation (e.g. an explicit "assets ready" gate before `enterLevel` can run) rather than
+      accepting "wait a bit and retry" as a permanent workaround.
 
 ## 11. Architecture refactor toward the v3 target
 
@@ -422,22 +684,60 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       direct-mutation call sites (`attack()`, `moveTo()`, etc.) to `dispatch()` one command type
       at a time - start with whichever command is cheapest to convert without touching
       presentation-heavy code, not necessarily `attack()`. No big-bang (plan section 25).
-- [ ] Consider replacing `simulation/entityId.ts`'s local counter with MWG's own
-      `core.EntityRegistry` now that it exists (SPD-ADR-002) - a smaller, independent follow-up
-      to the `SimulationRuntime` adoption above, since `EntityRegistry` also gives the reverse
-      `idOf(entity)` lookup this project's own `entityId.ts` does not.
+      Progress: search already routes through its own runtime (`adapters/searchSimulation.ts`,
+      cost `null`), and hunger now does too (`adapters/hungerSimulation.ts`, with
+      `SceneSimulationAdapter.hungerStep()` dispatching through it - same transition, same
+      events, only the dispatch path changed). Both keep inert local scheduler/random pairs;
+      reconciling those with the scene's real ones waits for the first command with a real
+      cost.
+- [x] Consider replacing `simulation/entityId.ts`'s local counter with MWG's own
+      `core.EntityRegistry` now that it exists (SPD-ADR-002) - resolved as a split decision:
+      the `EntityId` type IS now MWG's own (re-exported from `mwg/core`, not a local alias),
+      plus the reverse `idOfEntity(entity)` lookup the counter never had. Full `EntityRegistry`
+      adoption (minting through `add()`) is deliberately deferred: it mints opaque `eN` ids
+      while this port's prefixed ids (`hero-N`/`item-N`) are persisted in the save schema, and
+      it has no caller-chosen-id primitive - needs that upstream or a save migration first.
 - [ ] Extract `main.ts`'s `attack()` pure resolution (hit/damage rolls, weapon-affix/talent
       branches, event-worthy outcomes like mimic reveal/displacement) from its presentation
       calls (sprite tint, audio cue, floating text) - the single largest concrete instance of
       plan section 10's complaint. Likely the vehicle for actually adopting `SimulationRuntime`
       above, rather than a separate step.
-- [ ] Compare `mwg/i18n` against the plan's section 22C "Semantic Messaging" shape before
-      committing to SPD-ADR-012.
+- [x] Compare `mwg/i18n` against the plan's section 22C "Semantic Messaging" shape before
+      committing to SPD-ADR-012. Done against the installed 0.4.2 `.d.ts` files: it matches
+      (`SemanticMessage`/`MessageChannel`/`MessageFormatter`/`createCatalogFormatter`,
+      `EntityTextResolver`/`GrammaticalEntity`, CLDR plurals, FTL, catalog audit tools - see
+      `SPD_ARCHITECTURE_TARGET_V3.md`). The catalog mechanism is already adopted
+      (`src/i18n/index.ts` builds on it); pending is only the message half (typed messages at
+      `say()` sites, combat log lines as pilot). Whether the shape landed in 0.4.1 or 0.4.2 is
+      unconfirmed - the 0.4.1 review never enumerated these files.
 - [ ] Continue producing the section 22A/22B analysis matrix for the remaining monster/item/
       buff families before migrating each one's code, per SPD-ADR-010.
-- [ ] Re-check `mwg`'s exports on every version bump for the plan's remaining assumed
+- [x] Re-check `mwg`'s exports on every version bump for the plan's remaining assumed
       primitives (raw 2D primitive re-exports, the Semantic Messaging shape) - some phases of
-      the v3 plan still stay blocked until those land upstream.
+      the v3 plan still stay blocked until those land upstream. Re-checked at 0.4.2 this pass:
+      both arrived in some form -       `two-d/render`'s `Types2D.ts` (`Container2D`/`Texture2D` type
+      aliases, plain `Rect`, `rectOf()`) unblocks converting *type-only* `pixi.js` imports
+      (value positions still blocked - Phase 0's exit criterion still cannot be met), and
+      `mwg/i18n`'s Semantic Messaging family resolved the checkbox above. Follow-up survey,
+      done with the compiler API: of 26 `from 'pixi.js'` imports, exactly one file
+      (`monsters.ts`, `import type { Texture }`) was convertible - now `Texture2D`, no pixi
+      import left there. Everything else is a value use (`extends Container`, `new
+      Texture`/`new Rectangle`, `Texture.from`, `extensions.add(pipe)`), which type aliases
+      cannot express: recorded as upstream proposal P2 in `SPD_ARCHITECTURE_TARGET_V3.md`.
+- [ ] **Code-quality note, flagged by the user**: a long `if (x === 'a' || x === 'b' || x === 'c'
+      || ...)` OR-chain is itself a code smell worth watching for across `main.ts` (e.g. the
+      inventory/ground-kind dispatch's `item.id === 'stone' || item.id === 'stoneOf...'` chains
+      that have grown by one clause with every newly-ported runestone this session). Where the
+      values share a real, checkable structural property (a common prefix like `'stone'`/`id
+      .startsWith('stone')`, a shared category the item's own definition already carries, or a
+      lookup table/`Set` membership test), prefer that over enumerating every literal by hand -
+      it stops scaling linearly with every new case and reads its own intent instead of a list of
+      exceptions. **Keep It Simple, Stupid (KISS) is a good default principle here**: reach for
+      the simplest structure that actually matches the domain shape, not the first chain of
+      conditions that happens to work. Not applied retroactively to the existing runestone
+      chains in this pass (each addition was small, verified, and consistent with its own
+      neighbors at the time) - a candidate for the "architecture refactor" pass above, not an
+      emergency fix.
 
 ## 12. Publish a playable build on GitHub Pages
 
@@ -450,6 +750,9 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       - Add a `.github/workflows/deploy.yml` that runs `npm ci && npm run build` and publishes
         `dist/` via `actions/upload-pages-artifact` + `actions/deploy-pages` on push to `main`
         (no existing CI in this repo to build on - confirmed no `.github/` directory exists yet).
+        DONE this pass: `.github/workflows/deploy.yml` now exists (`npm ci`, `npm run build`,
+        upload `dist/`, deploy; triggers on push to `main` plus `workflow_dispatch` - keeping
+        both until the owner picks auto-deploy vs manual per the decision below).
       - Enable Pages in the repo settings (source: GitHub Actions).
       - Verify live, not just "build succeeded": open the deployed URL in a browser and confirm
         the title screen, class-select pointer-event workaround (see this file's own browser-

@@ -40,6 +40,9 @@ export interface Creature extends Combatant {
 	moving?: number;
 	/** Necromancer.mySkeleton: its summoned skeleton, null until it summons one */
 	skeleton?: Creature | null;
+	/** Necromancer.firstSummon: true until this necromancer has ever summoned once - its real
+	 * `spend(firstSummon ? TICK : 2*TICK)` only costs double from its second summon onward. */
+	firstSummon?: boolean;
 	/** Tengu.arenaJumps: how many times it has relocated this fight */
 	arenaJumps?: number;
 	/** MeleeWeapon upgrade level: min/max grow as tier+lvl / 5(tier+1)+lvl(tier+1) */
@@ -73,6 +76,11 @@ export interface Creature extends Combatant {
 	ventCooldown?: number;
 	/** `Spinner.webCoolDown`: turns until it may shoot another web at the hero. */
 	webCooldown?: number;
+	/** `Golem.enemyTeleCooldown`: turns until it may teleport the hero away again. */
+	golemTeleCooldown?: number;
+	/** `Eye.beamCharged`/`beamCooldown`: DeathGaze's two-turn charge-then-fire cycle. */
+	beamCharged?: boolean;
+	beamCooldown?: number;
 	/** `ArmoredBrute.ArmoredRage.act()`'s own `spend(3*TICK)`: counts up while `raged`, decaying
 	 * the shield only every 3rd turn instead of every turn like the base `Brute.BruteRage`. */
 	armoredRageTicks?: number;
