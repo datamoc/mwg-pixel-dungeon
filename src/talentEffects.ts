@@ -13,10 +13,6 @@ export function rejuvenatingStepHeal(terrain: number, grass: number, hp: number,
 	return terrain === grass && rank > 0 ? Math.min(Math.max(0, maxHp - hp), rank) : 0;
 }
 
-export function naturesBountyDewChance(classId: ClassId, rank: number): number {
-	return classId === 'huntress' && rank > 0 ? 1 / (6 - rank) : 1 / 6;
-}
-
 export function lethalHasteFreeTurn(classId: ClassId, rank: number): boolean {
 	return classId === 'duelist' && rank > 0;
 }

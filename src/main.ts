@@ -54,7 +54,7 @@ import { BadgeBannerLayer } from './ui/badgeBanner';
 import { SpdToolbar } from './ui/toolbar';
 import { StatusPane } from './ui/statusPane';
 import { SpdAudio } from './audio';
-import { arcaneVisionRadius, assassinReachBonus, bountyGoldBonus, cachedRationChance, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, endlessRageFreeTurn, enhancedLethalityThreshold, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightRange, ironStomachReduction, ironWillReduction, lethalDefenseShield, lethalHasteFreeTurn, monasticVigorShield, naturesBountyDewChance, necromancerMinionChance, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, shieldBatteryGain, shieldingDewGain, sharedUpgradeArmor, soulSiphonCharge, twinUpgradeArmor, unencumberedSpiritEvasion, weaponRechargingGain } from './talentEffects';
+import { arcaneVisionRadius, assassinReachBonus, bountyGoldBonus, cachedRationChance, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, endlessRageFreeTurn, enhancedLethalityThreshold, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightRange, ironStomachReduction, ironWillReduction, lethalDefenseShield, lethalHasteFreeTurn, monasticVigorShield, necromancerMinionChance, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, shieldBatteryGain, shieldingDewGain, sharedUpgradeArmor, soulSiphonCharge, twinUpgradeArmor, unencumberedSpiritEvasion, weaponRechargingGain } from './talentEffects';
 import pixelFontUrl from './assets/pixel_font.ttf';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth, SpdRandom } from './spdRng';
 import {
@@ -633,6 +633,7 @@ interface SaveShape {
 	blockingShieldLeft?: number;
 	blockingTurnsLeft?: number;
 	stealthTalentTicks?: number;
+	natureBerriesDropped?: number;
 	wandBonusDamage?: number;
 	physicalBonusDamage?: number;
 	physicalBonusAttacks?: number;
@@ -1109,6 +1110,9 @@ export class SewersScene extends Scene2D {
 	private blockingShieldLeft = 0;
 	private blockingTurnsLeft = 0;
 	private stealthTalentTicks = 0;
+	/** `Talent.NatureBerriesDropped`: a whole-run counter capping Nature's Bounty's real berry
+	 * drops at `2+2*rank` total, never reset mid-run (`revivePersists = true` in Java). */
+	private natureBerriesDropped = 0;
 	private wandBonusDamage = 0;
 	private physicalBonusDamage = 0;
 	private physicalBonusAttacks = 0;
@@ -1338,6 +1342,7 @@ export class SewersScene extends Scene2D {
 		this.blockingTurnsLeft = 0;
 		this.deathlessFuryUsed = false;
 		this.stealthTalentTicks = 0;
+		this.natureBerriesDropped = 0;
 		this.wandBonusDamage = 0;
 		this.physicalBonusDamage = 0;
 		this.physicalBonusAttacks = 0;
@@ -3764,8 +3769,31 @@ export class SewersScene extends Scene2D {
 			const seed = randomUsingDefaults(Cat.SEED);
 				this.spawnGroundItem('seed', x, y, this.sourceInventoryItem('seed', seed.cls));
 		}
-		const dewChance = naturesBountyDewChance(this.heroClass, this.talentRank('natures_bounty'));
-		if (Random.chance(dewChance)) this.spawnGroundItem('dewdrop', x, y);
+		//HighGrass.trample()'s real base dew chance: 1/6, independent of Nature's Bounty
+		//entirely (it scales instead with Sandals of Nature's naturalismLevel, an artifact this
+		//port doesn't model, so the naturalismLevel=0 case applies uniformly here).
+		if (Random.chance(1 / 6)) this.spawnGroundItem('dewdrop', x, y);
+		//HighGrass.trample()'s real Nature's Bounty: NOT a dew-chance boost (that guess was
+		//simply wrong, found auditing it against the real source) - it drops a depth-paced
+		//Berry food item, capped at 2+2*rank total for the whole run (Talent.NatureBerriesDropped,
+		//a CounterBuff that never resets mid-run). `targetFloor` is the depth the schedule wants
+		//the next berry to land on; behind it the odds are generous (1/10), on it modest (1/30),
+		//ahead of it stingy (1/90). This port has no distinct Berry item (a real Ration-strength
+		//pickup, not modeled separately), so it drops the shared generic `'food'` kind instead -
+		//a real, narrower simplification, not the wrong-mechanic bug this replaces.
+		const bountyRank = this.talentRank('natures_bounty');
+		if (this.heroClass === 'huntress' && bountyRank > 0) {
+			const berriesAvailable = 2 + 2 * bountyRank - this.natureBerriesDropped;
+			if (berriesAvailable > 0) {
+				let targetFloor = 2 + 2 * bountyRank - berriesAvailable;
+				targetFloor += targetFloor >= 5 ? 3 : 2;
+				const chance = this.depth > targetFloor ? 1 / 10 : this.depth === targetFloor ? 1 / 30 : 1 / 90;
+				if (Random.chance(chance)) {
+					this.natureBerriesDropped++;
+					this.spawnGroundItem('food', x, y);
+				}
+			}
+		}
 	}
 
 	/**
@@ -7395,6 +7423,7 @@ export class SewersScene extends Scene2D {
 			blockingShieldLeft: this.blockingShieldLeft,
 			blockingTurnsLeft: this.blockingTurnsLeft,
 			stealthTalentTicks: this.stealthTalentTicks,
+			natureBerriesDropped: this.natureBerriesDropped,
 			wandBonusDamage: this.wandBonusDamage,
 			physicalBonusDamage: this.physicalBonusDamage,
 			physicalBonusAttacks: this.physicalBonusAttacks,
@@ -7454,6 +7483,7 @@ export class SewersScene extends Scene2D {
 		this.blockingShieldLeft = s.blockingShieldLeft ?? 0;
 		this.blockingTurnsLeft = s.blockingTurnsLeft ?? 0;
 		this.stealthTalentTicks = s.stealthTalentTicks ?? 0;
+		this.natureBerriesDropped = s.natureBerriesDropped ?? 0;
 		this.wandBonusDamage = s.wandBonusDamage ?? 0;
 		this.physicalBonusDamage = s.physicalBonusDamage ?? 0;
 		this.physicalBonusAttacks = s.physicalBonusAttacks ?? 0;

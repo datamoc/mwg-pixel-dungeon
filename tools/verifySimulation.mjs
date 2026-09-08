@@ -63,8 +63,6 @@ try {
 		assert.equal(talents.shieldBatteryGain(0, 2), 0);
 		assert.equal(talents.rejuvenatingStepHeal(4, 4, 19, 20, 2), 1);
 		assert.equal(talents.rejuvenatingStepHeal(3, 4, 10, 20, 2), 0);
-		assert.equal(talents.naturesBountyDewChance('huntress', 2), 0.25);
-		assert.equal(talents.naturesBountyDewChance('warrior', 2), 1 / 6);
 		assert.equal(talents.lethalHasteFreeTurn('duelist', 1), true);
 		assert.equal(talents.lethalHasteFreeTurn('rogue', 1), false);
 		assert.equal(talents.weaponRechargingGain('duelist', 2), 2);
