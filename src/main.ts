@@ -3684,9 +3684,13 @@ export class SewersScene extends Scene2D {
 	 * against re-triggering on an item's own drop cell, neither reproduced here), then rolls
 	 * Java's naturalism-level-0 seed chance (1/25) followed by an independent dew chance
 	 * (1/6, modified by the port's Nature's Bounty talent). The seed category selection uses
-	 * the real Generator defaults/substream and its concrete class is retained in the payload;
-	 * seed use/growth remains a separate unported item interaction, so the live inventory still
-	 * presents that payload through the current food-family stand-in.
+	 * the real Generator defaults/substream and its concrete class is retained in the payload,
+	 * and `plantSeed()` now consumes it the same way real `Seed.execute(AC_PLANT)` does -
+	 * instant activation with no growth delay, matching `Plant.Seed`'s own `onThrow()`-on-plant
+	 * shape (real Java has no "wait and it grows" timer for a planted seed at all). What
+	 * remains unported is `WandOfRegrowth`'s `Lotus` ally, whose `seedPreservation()` chance
+	 * lets a nearby plant drop its own seed back when consumed instead of vanishing outright -
+	 * this port has no Wand of Regrowth or ally-summon system to hang that off yet.
 	 */
 	private trampleHighGrass(x: number, y: number): void {
 		if (this.level.get(x, y) !== HIGH_GRASS) return;

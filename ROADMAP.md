@@ -516,8 +516,13 @@ browser-verification workflow for why).
       Dewcatcher now releases 3-6 distinct adjacent dewdrops and Seedpod releases 2-4 generated
       seed stand-ins; exact teleport/TimeBubble behavior, seed growth/Lotus preservation, and
       full dew collection rules remain).
-- [ ] Implement the remaining Java seed and dew behavior in high grass (actual seed payloads,
-      growth timing, Lotus preservation, and exact waterskin/dewdrop interactions).
+- [ ] Implement the remaining Java seed and dew behavior in high grass. Actual seed payloads
+      (real `Generator` category roll, concrete class retained) and planting them (`plantSeed()`,
+      instant activation with no growth delay - confirmed against `Plant.java`'s own
+      `Seed.execute(AC_PLANT)`, which has none either) are both already live; a stale comment
+      claiming otherwise at `trampleHighGrass` is now fixed. What remains: `WandOfRegrowth`'s
+      `Lotus` ally seed-preservation chance (needs a Wand of Regrowth item plus an ally-summon
+      system this port doesn't have) and exact waterskin/dewdrop interactions.
 - [x] Match hunger and starvation damage exactly (`Hunger.act()`'s real `partialDamage`
       fractional accrual and crossing-into-STARVING 1-damage hit, replacing the former flat
       "every 10 turns" guess). Java has no attack-delay/accuracy penalty while merely hungry
