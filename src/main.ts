@@ -1620,7 +1620,16 @@ export class SewersScene extends Scene2D {
 			//simplification itself is unchanged and still tracked above.
 			//DemonSpawner never sleeps (state=PASSIVE from the start, not SLEEPING)
 			sleeping: restoring || !(isNPC || isBoss || kind === 'fetidRat' || kind === 'gnollTrickster' || kind === 'greatCrab' || kind === 'demonSpawner'),
-			champion: restoring || !isChallengeEnabled('champion_enemies') ? null : (!isNPC && !isBoss && kind !== 'necroSkeleton' && kind !== 'demonSpawner' && Random.chance(0.1) ? Random.element(['blessed', 'blazing', 'giant', 'growing', 'antimagic', 'projecting'] as const)! : null),
+			//rollForChampion() also blocks certain standout enemies from becoming champions on
+			//shallow floors (`instanceof` checks, so Java's own GreatCrab/Bandit subclasses are
+			//covered by the Crab/Thief checks too) - `this.depth` substitutes for `scalingDepth()`
+			//the same way every other depth-scaled formula in this file already does.
+			champion: restoring || !isChallengeEnabled('champion_enemies')
+				|| ((kind === 'crab' || kind === 'greatCrab') && this.depth <= 3)
+				|| (baseKind === 'thief' && this.depth <= 4)
+				|| (kind === 'guard' && this.depth <= 7)
+				|| (kind === 'bat' && this.depth <= 9)
+				? null : (!isNPC && !isBoss && kind !== 'necroSkeleton' && kind !== 'demonSpawner' && Random.chance(0.1) ? Random.element(['blessed', 'blazing', 'giant', 'growing', 'antimagic', 'projecting'] as const)! : null),
 			championPower: 1.19,
 			combo: 0,
 			moving: 0,

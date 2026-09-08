@@ -425,8 +425,10 @@ browser-verification workflow for why).
       only ever rolls a champion when the `CHAMPION_ENEMIES` challenge is active (it's an
       opt-in challenge, not a baseline mechanic) - this port's flat 10% roll had no such gate,
       so its own selectable "Champion Enemies" challenge toggle did nothing either way. Now
-      gated on `isChallengeEnabled('champion_enemies')`. See `PORT_COVERAGE.md`'s
-      `ChampionEnemy` row.
+      gated on `isChallengeEnabled('champion_enemies')`. The by-depth exclusions (Crab/Thief/
+      Guard/Bat can't become champions below depths 3/4/7/9, `GreatCrab`/`Bandit` inheriting
+      their base kind's exclusion) are now ported too. See `PORT_COVERAGE.md`'s `ChampionEnemy`
+      row.
 - [ ] Implement blob area propagation, gas, and fire terrain.
 - [x] Port the Necromancer's skeleton heal/Adrenaline/teleport support behavior - previously it
       had none at all (a summoned skeleton just fought alone forever). Now heals `HT/5` when
