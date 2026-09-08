@@ -2402,7 +2402,7 @@ export class SewersScene extends Scene2D {
 
 	private populate(): void {
 		if (this.miningBranchActive) {
-			this.say('The abandoned mine is quiet.', 'warning');
+			this.say(t('port.log.mineabandonedquiet'), 'warning');
 			return;
 		}
 		const boss = BOSSES[this.depth];
@@ -3150,19 +3150,19 @@ export class SewersScene extends Scene2D {
 		if (!item) return;
 		if (item.chest === 'crystal') {
 			if (!this.bag.find('crystalKey')) {
-				this.say('The crystal chest is locked.', 'negative');
+				this.say(t('port.log.crystalchestlocked'), 'negative');
 				return;
 			}
 			this.bag.remove('crystalKey', 1);
-			this.say('You unlock the crystal chest.', 'positive');
+			this.say(t('port.log.unlockcrystalchest'), 'positive');
 		}
 		if (item.chest === 'locked') {
 			if (!this.bag.find('goldenKey')) {
-				this.say('The locked chest needs a golden key.', 'negative');
+				this.say(t('port.log.lockedchestneedsgoldenkey'), 'negative');
 				return;
 			}
 			this.bag.remove('goldenKey', 1);
-			this.say('You unlock the chest.', 'positive');
+			this.say(t('port.log.unlockchest'), 'positive');
 		}
 		if (item.chest) item.chest = undefined;
 		runState.audio.cue(item.kind === 'gold' ? 'gold' : item.kind === 'dewdrop' ? 'dewdrop' : 'item', 0.6);
@@ -3178,7 +3178,7 @@ export class SewersScene extends Scene2D {
 		if (item.item?.id === 'sandBag') {
 			const hourglass = this.bag.find('hourglass') as (typeof item.item & { sandBags?: number }) | undefined;
 			if (!hourglass || hourglass.cursed) {
-				this.say('You have no usable hourglass for this sand.', 'negative');
+				this.say(t('port.log.nohourglasssand'), 'negative');
 				return;
 			}
 			hourglass.sandBags = Math.min(5, (hourglass.sandBags ?? hourglass.level ?? 0) + 1);
@@ -4224,7 +4224,7 @@ export class SewersScene extends Scene2D {
 			: { x: creature.x, y: creature.y };
 		const kind = this.groundKindForItem(this.sacrificialFirePrize, 'armor');
 		this.spawnGroundItem(kind, cell.x, cell.y, this.sacrificialFirePrize);
-		this.say('The sacrificial fire grants its reward.', 'positive');
+		this.say(t('port.log.sacrificialfirereward'), 'positive');
 		this.sacrificialFirePrize = undefined;
 		this.sacrificialFireCharge = 0;
 		this.sacrificialFire = new Roguelike.Blob(this.level.width, this.level.height);
@@ -4943,7 +4943,7 @@ export class SewersScene extends Scene2D {
 			for (let yy = 0; yy < this.level.height; yy++) for (let xx = 0; xx < this.level.width; xx++) {
 				if (this.secrets.isSecret(xx, yy)) this.secrets.discover(xx, yy);
 			}
-			this.say('The well reveals the secrets around you.', 'positive');
+			this.say(t('port.log.wellreveals'), 'positive');
 		} else {
 			this.hero.hp = this.hero.maxHp;
 			//PotionOfHealing.cure(): clears Poison/Cripple/Weakness/Vulnerable/Bleeding/Blindness/
@@ -4956,7 +4956,7 @@ export class SewersScene extends Scene2D {
 			if (getCurse(this.armorGlyph ?? '')) this.armorGlyph = null;
 			if (this.equippedRing?.cursed) this.equippedRing.cursed = false;
 			this.hunger = Math.max(this.hunger, 300);
-			this.say('The well restores your health.', 'positive');
+			this.say(t('port.log.wellheals'), 'positive');
 		}
 		this.portedWellWater.delete(cell);
 		const plantIndex = this.portedPaint?.plants.findIndex((plant) => plant.pos === cell && plant.kind.startsWith('wellWater:')) ?? -1;
@@ -5011,25 +5011,25 @@ export class SewersScene extends Scene2D {
 				this.sungrassHealing = Math.max(0, this.hero.maxHp - this.hero.hp);
 				this.sungrassPartial = 0;
 				this.sungrassPos = cell;
-				this.say('The sungrass begins restoring your health.', 'positive');
+				this.say(t('port.log.sungrassheal'), 'positive');
 				break;
 			case 'blandfruit':
 			case 'blandfruitbush':
 				this.spawnGroundItem('food', x, y);
-				this.say('The plant drops a nourishing fruit.', 'positive');
+				this.say(t('port.log.plantfruit'), 'positive');
 				break;
 			case 'starflower':
 				addBuff(this.hero, 'bless');
 				if (this.subclass() === 'warden') addBuff(this.hero, 'recharging');
-				this.say('The starflower fills you with confidence.', 'positive');
+				this.say(t('port.log.starflowerconfidence'), 'positive');
 				break;
 			case 'dewcatcher':
 				this.dropPlantNeighbourLoot(x, y, 3, 6, 'dew');
-				this.say('The dewcatcher releases dew.', 'positive');
+				this.say(t('port.log.dewcatcherdew'), 'positive');
 				break;
 			case 'seedpod':
 				this.dropPlantNeighbourLoot(x, y, 2, 4, 'seed');
-				this.say('The seedpod bursts open.', 'positive');
+				this.say(t('port.log.seedpodburst'), 'positive');
 				break;
 			case 'earthroot':
 				this.grantHeroShield(this.hero.maxHp, this.hero.maxHp);
@@ -5046,59 +5046,59 @@ export class SewersScene extends Scene2D {
 					candidates.push({ x: xx, y: yy });
 				}
 				if (candidates.length > 0) this.moveTo(this.hero, Random.element(candidates)!);
-				this.say('The fadeleaf carries you elsewhere.', 'positive');
+				this.say(t('port.log.fadeleafteleport'), 'positive');
 				break;
 			}
 			case 'mageroyal':
 				for (const buff of ['poison', 'burning', 'weakness', 'vulnerable', 'cripple', 'daze'] as BuffId[]) delete this.hero.buffs[buff];
-				this.say('The mageroyal clears your afflictions.', 'positive');
+				this.say(t('port.log.mageroyalclear'), 'positive');
 				break;
 			case 'icecap':
 				this.plantFreeze.seed(x, y, 2);
 				if (this.subclass() === 'warden') {
 					addBuff(this.hero, 'frostImbue');
-					this.say('The icecap imbues your attacks with frost.', 'positive');
+					this.say(t('port.log.icecapfrost'), 'positive');
 				} else {
 					addBuff(this.hero, 'paralysis');
-					this.say('The icecap freezes you in place.', 'negative');
+					this.say(t('port.log.icecapfreeze'), 'negative');
 				}
 				break;
 			case 'rotberry':
 				if (this.subclass() === 'warden') {
 					addBuff(this.hero, 'adrenalineSurge');
 					this.syncHeroFromStats();
-					this.say('The rotberry fills you with adrenaline.', 'positive');
+					this.say(t('port.log.rotberryadrenaline'), 'positive');
 				} else {
 					this.plantGas.seed(x, y, 100);
 					addBuff(this.hero, 'poison');
-					this.say('The rotberry releases toxic gas.', 'negative');
+					this.say(t('port.log.rotberrygas'), 'negative');
 				}
 				break;
 			case 'sorrowmoss':
 				addBuff(this.hero, 'poison');
 				this.hero.buffs.poison = 5 + Math.round(2 * this.depth / 3);
-				this.say('The sorrowmoss poisons you.', 'negative');
+				this.say(t('port.log.sorrowmosspoison'), 'negative');
 				break;
 			case 'firebloom':
 				// Firebloom seeds Java's Fire blob at its cell. Warden FireImbue has no
 				// matching attack-status subsystem yet, but the area consequence is live.
 				this.fire.seed(x, y, 2);
-				this.say('The firebloom ignites the ground.', 'negative');
+				this.say(t('port.log.firebloomignite'), 'negative');
 				break;
 			case 'stormvine':
 				if (this.subclass() === 'warden') addBuff(this.hero, 'levitation');
 				else addBuff(this.hero, 'daze');
-				this.say('The stormvine twists your senses.', 'negative');
+				this.say(t('port.log.stormvinetwist'), 'negative');
 				break;
 			case 'swiftthistle':
 				// Swiftthistle.TimeBubble freezes other actors for seven hero-time units.
 				// Count those units at the automatic-actor boundary instead of granting a
 				// free hero action, which would incorrectly skip hunger and buffs.
 				this.timeBubbleTurns = 7;
-				this.say('Time bends around the swiftthistle.', 'positive');
+				this.say(t('port.log.swiftthistletime'), 'positive');
 				break;
 			default:
-				this.say('The plant withers beneath your step.');
+				this.say(t('port.log.plantwithers'));
 		}
 		this.featuresMap?.setLayerData('features', this.featureFrames());
 	}
@@ -5122,7 +5122,7 @@ export class SewersScene extends Scene2D {
 	 * Java - the same bypass already applied to traps in `triggerTrapAt`. */
 	private fallThroughChasm(x: number, y: number): boolean {
 		if (!this.isChasmCell(x, y) || this.miningBranchActive || this.depth >= 26 || this.hero.buffs['levitation']) return false;
-		this.say('You fall through the chasm.', 'negative');
+		this.say(t('port.log.fallchasm'), 'negative');
 		this.depth++;
 		this.justDescended = true;
 		this.enterLevel();
@@ -5746,7 +5746,7 @@ export class SewersScene extends Scene2D {
 			monster.speed = monster.hasteBaseSpeed * 2;
 			monster.hasteTurns = 2;
 		}
-		this.say('The crystal mimic reveals itself.', 'warning');
+		this.say(t('port.log.mimicreveals'), 'warning');
 	}
 
 	/** CrystalMimic.steal(): the first neutral attack may consume one eligible item from
@@ -5788,7 +5788,7 @@ export class SewersScene extends Scene2D {
 		this.healthBars.delete(monster);
 		this.sprite(monster).destroy();
 		this.spriteFor.delete(monster.id);
-		this.say('The crystal mimic escapes into the darkness.', 'warning');
+		this.say(t('port.log.mimicescapes'), 'warning');
 	}
 
 	/**
@@ -6174,7 +6174,7 @@ export class SewersScene extends Scene2D {
 			if (destination) {
 				this.moveTo(defender, destination);
 				defender.sleeping = false;
-				this.say('Your armor displaces you.', 'warning');
+				this.say(t('port.log.armordisplace'), 'warning');
 				return;
 			}
 		}
@@ -6248,7 +6248,7 @@ export class SewersScene extends Scene2D {
 			const at = Random.element(candidates);
 			if (at) {
 				this.moveTo(this.hero, at);
-				this.say('The crystal mimic displaces you.', 'warning');
+				this.say(t('port.log.mimicdisplace'), 'warning');
 			}
 		}
 		if (defender.hp <= 0 && defender.kind === 'ghoul') this.ghoulDown(defender);
@@ -6867,7 +6867,7 @@ export class SewersScene extends Scene2D {
 					const payload = JSON.parse(creature.mimicLoot.slice('statue:'.length)) as StatueLoot;
 					this.dropGeneratedStatueItem(payload.weapon, creature.x, creature.y);
 					if (payload.armor) this.dropGeneratedStatueItem(payload.armor, creature.x, creature.y);
-					this.say('The statue drops its enchanted equipment.', 'positive');
+					this.say(t('port.log.statuedrops'), 'positive');
 				} catch {
 					// An old save can contain a pre-payload statue; its generic loot table is absent
 					// deliberately, so a malformed legacy payload simply has no statue equipment.
@@ -8144,7 +8144,7 @@ export class SewersScene extends Scene2D {
 	private useHourglass(instanceId?: string): void {
 		const hourglass = this.bag.find('hourglass', instanceId) as (typeof this.bag.items[number] & { charges?: number }) | undefined;
 		if (!hourglass || hourglass.cursed) {
-			this.say('You cannot use a cursed hourglass.', 'negative');
+			this.say(t('port.log.cursedhourglass'), 'negative');
 			return;
 		}
 		if (this.timeBubbleTurns > 0) {
@@ -8154,14 +8154,14 @@ export class SewersScene extends Scene2D {
 		const maxCharge = 5 + Math.min(5, hourglass.level ?? 0);
 		const charge = Math.min(maxCharge, hourglass.charges ?? maxCharge);
 		if (charge <= 0) {
-			this.say('Your hourglass has no charge.', 'negative');
+			this.say(t('port.log.hourglassnocharge'), 'negative');
 			return;
 		}
 		hourglass.charges = charge - 1;
 		this.hourglassFreeze = true;
 		this.hourglassTurnsToCost = 2;
 		this.timeBubbleTurns = charge * 2;
-		this.say('Time freezes around you.', 'positive');
+		this.say(t('port.log.timefreezes'), 'positive');
 	}
 
 	private cancelHourglassFreeze(): void {

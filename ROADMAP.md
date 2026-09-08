@@ -589,7 +589,15 @@ browser-verification workflow for why).
       enchant/glyph/curse name on the item-detail popup showed a raw key - all 32 affix ids now
       have EN+FR entries, sourced from SPD's own `<class>.name` strings (FR uses the masculine
       base form; Java resolves its (e)/(le) markers by item gender, which this port does not
-      model - see `PORT_COVERAGE.md`).
+      model - see `PORT_COVERAGE.md`). **A third class of gap, orthogonal to both of the above,
+      found and closed this pass**: the literal-key audit only ever catches `t('port.…')` calls -
+      it can't see a `this.say('some literal English sentence', ...)` call that skips `t()`
+      entirely. A full sweep found 33 of those, scattered across chest/hourglass unlocking, both
+      wells, every `triggerPlant` branch, chasm falling, crystal-mimic reveal/escape/displace,
+      the armor-displacement curse, the statue equipment drop, and the hourglass freeze lines -
+      every one of them rendered raw English text in every locale, French included, with no
+      fallback message even to show it was untranslated. All 33 now have real `port.log.*` keys
+      with EN/FR entries; see `PORT_COVERAGE.md`.
 - [ ] Translate the port's own strings into every Java locale. The picker already offers all
       19 of `Languages.java`'s locales (same codes, same complete/unreviewed/unfinished
       statuses - see `src/i18n/languages.ts`), and SPD's own text arrives translated through
