@@ -2208,22 +2208,29 @@ export class SewersScene extends Scene2D {
 	private plantSeed(): void {
 		const seed = this.requestedItemId ? this.bag.find(this.requestedItemId, this.requestedItemInstanceId) : undefined;
 		if (!seed || seed.id !== 'seed') return;
+		//Plant.Seed.onThrow(): the real NO_HERBALISM challenge falls through to a plain thrown-
+		//item drop instead of ever planting - this port has no throw-to-cell targeting, so the
+		//closest equivalent is simply refusing the plant action without consuming the seed.
+		if (isChallengeEnabled('no_herbalism')) {
+			this.say(t('port.log.noherbalism'), 'negative');
+			return;
+		}
 		const x = this.hero.x, y = this.hero.y;
 		const cell = this.level.index(x, y);
 		if (!this.level.passable(x, y) || this.isChasmCell(x, y) || this.portedFeatures.kindAt(cell) !== undefined) {
-			this.say('This cell cannot grow a plant.', 'negative');
+			this.say(t('port.log.noplantcell'), 'negative');
 			return;
 		}
 		const sourceClass = (seed as typeof seed & { sourceClass?: string }).sourceClass;
 		const kind = this.seedPlantKind(sourceClass);
 		if (!kind) {
-			this.say('The seed has no known plant effect.', 'negative');
+			this.say(t('port.log.noseedeffect'), 'negative');
 			return;
 		}
 		this.bag.remove('seed', 1, seed.instanceId);
 		this.manualPlants.set(cell, kind);
 		this.placePortedFeature(cell, kind);
-		this.say('You plant a ' + kind + ' seed.', 'positive');
+		this.say(t('port.log.plantseed', { kind }), 'positive');
 		this.actionSpentTurn = true;
 		this.spendHeroTurn(1);
 	}

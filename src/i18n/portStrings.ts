@@ -126,6 +126,12 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	//PotionOfHealing.pharmacophobiaProc(), under the real NO_HEALING challenge
 	'port.log.pharmacophobia': 'Your fear of medicine turns the draught to poison in your veins!',
 	'port.log.stronger': 'You feel stronger! STR is now {str}.',
+	//plantSeed() - previously hardcoded English with no locale fallback at all, found and
+	//fixed auditing the new NO_HERBALISM gate right next to them
+	'port.log.noherbalism': "You can't bring yourself to plant this seed.",
+	'port.log.noplantcell': 'This cell cannot grow a plant.',
+	'port.log.noseedeffect': 'The seed has no known plant effect.',
+	'port.log.plantseed': 'You plant a {kind} seed.',
 	'port.log.hurlflame': 'You hurl the liquid flame at {target}!',
 	'port.log.flaskwasted': 'The flask shatters harmlessly - nothing in range.',
 	'port.log.quaffexperience': 'You feel a surge of experience!',
@@ -492,6 +498,10 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 	'port.log.quaffhealing': 'Vous buvez la potion de soin : purifié, et vous vous soignez peu à peu.',
 	'port.log.pharmacophobia': 'Votre peur des remèdes transforme la potion en poison dans vos veines !',
 	'port.log.stronger': 'Vous vous sentez plus fort ! FOR passe à {str}.',
+	'port.log.noherbalism': "Vous ne parvenez pas à vous résoudre à planter cette graine.",
+	'port.log.noplantcell': "Une plante ne peut pas pousser ici.",
+	'port.log.noseedeffect': "Cette graine n'a aucun effet connu.",
+	'port.log.plantseed': 'Vous plantez une graine de {kind}.',
 	'port.log.hurlflame': 'Vous projetez le feu liquide sur {target} !',
 	'port.log.flaskwasted': 'La fiole se brise sans effet : personne à portée.',
 	'port.log.quaffexperience': 'Vous ressentez un afflux d’expérience !',
