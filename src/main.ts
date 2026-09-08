@@ -5279,6 +5279,22 @@ export class SewersScene extends Scene2D {
 			if (distance > wakeRadius) return;
 			monster.sleeping = false;
 			this.say(t('port.log.wakes', { who: capitalize(monster.name) }), 'warning');
+			//Mob.Sleeping.act()'s real SWARM_INTELLIGENCE hook: every other non-paralyzed,
+			//not-yet-HUNTING enemy mob within 8 tiles of the noticing mob (not the hero) also
+			//beckons toward the hero's position immediately, rather than each mob only ever
+			//noticing independently. This port has no HUNTING/WANDERING state machine, so "not
+			//yet HUNTING" is approximated as "not already awake-and-seesHero"; beckoning itself
+			//reuses the same `sleeping=false`/`seesHero=true` stand-in ScrollOfRage's own beckon
+			//already uses, and distance is this port's usual Chebyshev metric.
+			if (isChallengeEnabled('swarm_intelligence')) {
+				for (const other of this.creatures) {
+					if (other === monster || other.isHero || other.isNPC || other.buffs['paralysis']) continue;
+					if (other.sleeping === false && other.seesHero) continue;
+					if (Roguelike.chebyshevDistance(monster, other) > 8) continue;
+					other.sleeping = false;
+					other.seesHero = true;
+				}
+			}
 		}
 		//Monk.act(): `focusCooldown` decays every one of its own turns regardless of range or
 		//whether it's currently meleeing, and Focus re-attaches the instant it reaches 0 while
