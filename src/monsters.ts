@@ -338,15 +338,15 @@ export const MOB_LOOT: Record<string, { chance: number; kind: GroundItemKind }[]
 	greatCrab: [{ chance: 1, kind: 'meat' }],
 	//City/Halls loot: Ghoul gold 0.2, Monk food ~0.083 (rounded to 0.1), Golem armor
 	//0.2 (Java's real base - the previous 0.125 here was the same unconfirmed-guess bug as
-	//DM200's above, weapon-or-armor also simplified to always 'armor'), Succubus scroll 0.33,
-	//Eye dewdrop 1.0. Warlock's and Scorpio's 0.5 potion drops are both handled outside this
-	//table entirely (see `kill()`'s own dedicated branches) since their real Java loot each
-	//excludes/biases against `PotionOfHealing`, a distinction this port's generic 'potion'
-	//MOB_LOOT kind can't express (drinking that generic id always heals).
+	//DM200's above, weapon-or-armor also simplified to always 'armor'), Eye dewdrop 1.0.
+	//Warlock/Scorpio's 0.5 potion drops and Succubus's 0.33 scroll drop are all handled
+	//outside this table entirely (see `kill()`'s own dedicated branches) since their real
+	//Java loot each excludes specific classes this port's generic 'potion'/'scroll' MOB_LOOT
+	//kinds can't express (drinking/reading the generic id always resolves to one of exactly
+	//the classes each of these three is required to avoid).
 	ghoul: [{ chance: 0.2, kind: 'gold' }],
 	monk: [{ chance: 0.1, kind: 'food' }],
 	golem: [{ chance: 0.2, kind: 'armor' }],
-	succubus: [{ chance: 0.33, kind: 'scroll' }],
 	eye: [{ chance: 1, kind: 'dewdrop' }],
 	//DemonSpawner: `loot = PotionOfHealing.class; lootChance = 1f;` - a real, guaranteed drop,
 	//simplified like every other potion-class loot here to the shared generic 'potion' kind

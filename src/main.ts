@@ -529,8 +529,9 @@ const NON_STATBLOCK_RING_STATS = new Set([
 
 /**
  * Unidentified appearances (`ItemSpriteSheet`'s shuffled variants) as `mwg/actors`
- * Appearances: nine potion looks, eight scroll looks, dealt per run. This replaces the
- * old "always the first variant" simplification with the real shuffle.
+ * Appearances: nine potion looks, thirteen scroll looks (12 real Java scroll classes plus
+ * this port's own synthetic pre-resolution 'scroll' placeholder), dealt per run. This
+ * replaces the old "always the first variant" simplification with the real shuffle.
  */
 const APPEARANCE_TABLES: Record<string, Actors.AppearanceTable> = {
 	potion: {
@@ -538,8 +539,17 @@ const APPEARANCE_TABLES: Record<string, Actors.AppearanceTable> = {
 		labels: POTION_APPEARANCE_KEYS.slice(0, 9) as string[],
 	},
 	scroll: {
-		kinds: ['scroll', 'scrollIdentify', 'scrollUpgrade', 'scrollRage', 'scrollLullaby', 'scrollMapping', 'scrollMirror', 'scrollCleanse', 'scrollRecharging', 'scrollTeleportation', 'scrollTerror', 'scrollRetribution'],
-		labels: SCROLL_APPEARANCE_KEYS.slice(0, 12) as string[],
+		//13 kinds for real Java's 12 (`ScrollOfTransmutation` plus this port's own synthetic
+		//pre-resolution 'scroll' placeholder, which has no real Java counterpart at all - the
+		//ground kind that becomes a concrete scrollUpgrade/scrollIdentify only at pickup).
+		//`scrollTransmutation` was missing here entirely until found this pass - a real,
+		//pre-existing crash (`appearanceOf` throws on an unmapped kind) reachable through
+		//ordinary floor generation (`sourceInventoryItem`'s `ScrollOf* -> 'scroll'+Name` rename
+		//already produces this exact id), not something newly introduced. `labels` duplicates
+		//its first rune name onto the synthetic 'scroll' placeholder rather than inventing a
+		//13th fake SPD rune name Java doesn't have.
+		kinds: ['scroll', 'scrollIdentify', 'scrollUpgrade', 'scrollRage', 'scrollLullaby', 'scrollMapping', 'scrollMirror', 'scrollCleanse', 'scrollRecharging', 'scrollTeleportation', 'scrollTerror', 'scrollRetribution', 'scrollTransmutation'],
+		labels: [...SCROLL_APPEARANCE_KEYS.slice(0, 12), SCROLL_APPEARANCE_KEYS[0]] as string[],
 	},
 };
 
@@ -6854,6 +6864,19 @@ export class SewersScene extends Scene2D {
 				const eligible = ['potionFlame', 'potionMindVision', 'potionInvis', 'potionPurity', 'potionExperience', 'potionLevitation'] as const;
 				this.spawnGroundItem('potion', creature.x, creature.y, { id: Random.element(eligible)!, quantity: 1, identified: false });
 				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.potion) }));
+			}
+			//Succubus.createLoot(): a flat 0.33 lootChance, always a scroll class that is neither
+			//Identify nor Upgrade (a redraw-until-excluded loop, no LimitedDrops counter) - the
+			//same mismatch as Warlock/Scorpio above, since this port's generic 'scroll' bag id
+			//only ever resolves to exactly those two excluded ids (see the pickup branch's own
+			//25%-upgrade/75%-identify split). Reproduced with a uniform pick among this port's 9
+			//other modeled scroll ids (all 10 non-Identify/Upgrade members of Java's real
+			//12-class `SCROLL` pool, now that `scrollTransmutation`'s own appearance-table gap -
+			//found and fixed in the same pass - no longer makes it a crash risk to hand out).
+			if (creature.kind === 'succubus' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.33 * this.ringWealthMultiplier() })) {
+				const eligible = ['scrollCleanse', 'scrollMirror', 'scrollRecharging', 'scrollTeleportation', 'scrollLullaby', 'scrollMapping', 'scrollRage', 'scrollRetribution', 'scrollTerror', 'scrollTransmutation'] as const;
+				this.spawnGroundItem('scroll', creature.x, creature.y, { id: Random.element(eligible)!, quantity: 1, identified: false });
+				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.scroll) }));
 			}
 			for (const entry of MOB_LOOT[creature.kind] ?? []) {
 				//Dungeon.LimitedDrops: Bat/Necromancer/Guard each scale their own lootChance()
