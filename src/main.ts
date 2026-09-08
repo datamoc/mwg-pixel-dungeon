@@ -589,6 +589,7 @@ interface SaveShape {
 	ghostType: number;
 	wandmakerSpawned: boolean;
 	shopkeeperSpawned: boolean;
+	shopkeeperWarned?: boolean;
 	blacksmithSpawned?: boolean;
 	impSpawned?: boolean;
 	blacksmithAlternative?: boolean;
@@ -1034,6 +1035,8 @@ export class SewersScene extends Scene2D {
 	private ghostSpawned = false;
 	private wandmakerSpawned = false;
 	private shopkeeperSpawned = false;
+	/** `Shopkeeper.processHarm()`'s one-warning buffer before fleeing for good. */
+	private shopkeeperWarned = false;
 	private blacksmithSpawned = false;
 	/** Java Blacksmith.Quest.alternative: blood-stained pickaxe instead of 15 DarkGold. */
 	private blacksmithAlternative = false;
@@ -4230,6 +4233,26 @@ export class SewersScene extends Scene2D {
 			if (creature.isHero || creature.isNPC || creature.hp <= 0) continue;
 			if (this.fire.volumeAt(creature.x, creature.y) >= 1 && !creature.buffs['burning']) addBuff(creature, 'burning');
 		}
+		//Shopkeeper.processHarm()/flee(): every other NPC is flatly immune to environmental
+		//damage in this port (the `isNPC` skip just above), but real Java's Shopkeeper is a
+		//real exception - catching them in fire (or any harmful buff) warns once, then makes
+		//them flee for good on the next hit, closing the shop. Only the fire path is wired here
+		//(the far more common real-play way to accidentally harm them); Java's other harmful-buff
+		//triggers and its per-heap shop-stock item removal on flee (this port's shop is a shared
+		//bag, not floor heaps) are not reproduced - a narrower, honestly-flagged gap.
+		const shopkeeper = this.creatures.find((c) => c.kind === 'shopkeeper');
+		if (shopkeeper && this.fire.volumeAt(shopkeeper.x, shopkeeper.y) >= 1) {
+			if (!this.shopkeeperWarned) {
+				this.shopkeeperWarned = true;
+				this.say(t('port.log.shopkeeperwarn'), 'warning');
+			} else {
+				this.scheduler.remove(shopkeeper);
+				this.creatures.splice(this.creatures.indexOf(shopkeeper), 1);
+				this.sprite(shopkeeper).destroy();
+				this.spriteFor.delete(shopkeeper.id);
+				this.say(t('port.log.shopkeeperflee'), 'negative');
+			}
+		}
 		this.spreadSacrificialFire();
 		this.spreadPlantBlobs();
 	}
@@ -7373,6 +7396,7 @@ export class SewersScene extends Scene2D {
 			ghostType: this.ghostType,
 			wandmakerSpawned: this.wandmakerSpawned,
 			shopkeeperSpawned: this.shopkeeperSpawned,
+			shopkeeperWarned: this.shopkeeperWarned,
 			blacksmithSpawned: this.blacksmithSpawned,
 			impSpawned: this.impSpawned,
 			limitedDrops: Object.entries(this.limitedDrops) as [MonsterId, number][],
@@ -7530,6 +7554,7 @@ export class SewersScene extends Scene2D {
 		this.ghostType = s.ghostType;
 		this.wandmakerSpawned = s.wandmakerSpawned;
 		this.shopkeeperSpawned = s.shopkeeperSpawned;
+		this.shopkeeperWarned = s.shopkeeperWarned ?? false;
 		this.blacksmithSpawned = s.blacksmithSpawned ?? this.blacksmithSpawned;
 		this.impSpawned = s.impSpawned ?? this.impSpawned;
 		this.limitedDrops = Object.fromEntries(s.limitedDrops ?? []);

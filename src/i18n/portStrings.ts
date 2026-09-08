@@ -253,6 +253,9 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.log.unlock': 'You unlock the door with the iron key.',
 	'port.log.opendoor': 'You open the door.',
 	'port.log.firecatches': 'The fire around you catches!',
+	//Shopkeeper.processHarm()/flee()
+	'port.log.shopkeeperwarn': 'The shopkeeper yells: "Hey! Watch it with that fire!"',
+	'port.log.shopkeeperflee': 'The shopkeeper flees, and the shop closes for good.',
 	'port.log.founddoor': 'You find a hidden door!',
 	'port.log.foundtrap': 'You find a hidden trap!',
 	'port.log.foundnothing': 'You find nothing.',
@@ -657,6 +660,8 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 	'port.log.unlock': 'Vous déverrouillez la porte avec la clé de fer.',
 	'port.log.opendoor': 'Vous ouvrez la porte.',
 	'port.log.firecatches': 'Le feu autour de vous vous atteint !',
+	'port.log.shopkeeperwarn': 'Le marchand hurle : "Hé ! Attention avec ce feu !"',
+	'port.log.shopkeeperflee': 'Le marchand prend la fuite, et la boutique ferme pour de bon.',
 	'port.log.founddoor': 'Vous trouvez une porte dissimulée !',
 	'port.log.foundtrap': 'Vous trouvez un piège dissimulé !',
 	'port.log.foundnothing': 'Vous ne trouvez rien.',
