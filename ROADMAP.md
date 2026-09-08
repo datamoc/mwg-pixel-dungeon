@@ -480,15 +480,16 @@ browser-verification workflow for why).
       `Slime.damage()`'s incoming-hit soft cap (shared unchanged by `CausticSlime`) turned out
       to be missing for the base kind too, not a literal-kind-check bug - now ported for both,
       see `PORT_COVERAGE.md`'s Slime row.
-- [ ] Implement Java corpse, meat, gold, loot-stack, and limited-drop behavior. `Dungeon.LimitedDrops`
+- [x] Implement Java corpse, meat, gold, loot-stack, and limited-drop behavior. `Dungeon.LimitedDrops`
       decay (each successful special-item drop makes the next one rarer, for the run's lifetime)
       is now real for `bat`/`necromancer`/`guard`/`dm200`/`golem`/`shaman` - `dm200`/`golem` also
       had their base chance itself fixed in the same pass (`0.125` was an unconfirmed guess; real
-      Java is `0.2` for both). `slime`/`skeleton`/`thief`/`swarm` still have no `MOB_LOOT` entry
-      at all despite being real spawnable kinds - a "not ported" base-drop gap, not a decay gap,
-      left as its own follow-up. See `PORT_COVERAGE.md`'s `MOB_LOOT`/`LIMITED_DROP_DECAY` row.
-      Stacking heaps, Wealth rings, and dm200/golem's real weapon-or-armor 50/50 pick (simplified
-      to always-armor here) remain unmodeled.
+      Java is `0.2` for both). `slime`/`skeleton`/`thief`/`swarm` now have real `MOB_LOOT` entries
+      and decay too (closing the last base-drop gap this line tracked) - see `PORT_COVERAGE.md`'s
+      `MOB_LOOT`/`LIMITED_DROP_DECAY` row for each one's exact base chance/decay formula and the
+      weapon-as-`'armor'`/`Random.oneOf(RING,ARTIFACT)`-as-`'ring'` stand-ins involved.
+      Stacking heaps, Wealth rings' `tryForBonusDrop()` half, and dm200/golem's real
+      weapon-or-armor 50/50 pick (simplified to always-armor here) remain unmodeled.
 
 ## 6. Complete hero progression
 

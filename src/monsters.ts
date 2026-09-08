@@ -352,16 +352,30 @@ export const MOB_LOOT: Record<string, { chance: number; kind: GroundItemKind }[]
 	//simplified like every other potion-class loot here to the shared generic 'potion' kind
 	//rather than a specific PotionOfHealing sprite/effect.
 	demonSpawner: [{ chance: 1, kind: 'potion' }],
+	//Slime.lootChance() base 0.2, drops a random WEP_T2 melee weapon - this port has no
+	//weapon-specific ground-item kind (see `portItemKind`'s own `weapon -> 'armor'` fold), so
+	//it reuses the same weapon-as-'armor' stand-in dm200/golem already use above.
+	slime: [{ chance: 1 / 5, kind: 'armor' }],
+	//Skeleton.lootChance() base 0.1667 (~1/6), `loot = Generator.Category.WEAPON` (any tier,
+	//not just T2 like Slime) - same weapon-as-'armor' stand-in.
+	skeleton: [{ chance: 1 / 6, kind: 'armor' }],
+	//Thief.lootChance() base 0.03, `loot = Random.oneOf(RING, ARTIFACT)` - collapsed to the
+	//single 'ring' kind (this port's `portItemKind` already folds Artifact into the shared
+	//'wand' kind, which would make Thief's drop indistinguishable from a real wand pickup;
+	//'ring' stays a closer, still-distinct stand-in for "rare misc treasure").
+	thief: [{ chance: 0.03, kind: 'ring' }],
+	//Swarm.lootChance(): `1/(6*(generation+1)) * (5-SWARM_HP.count)/5`, `loot =
+	//PotionOfHealing.class`. `generation` (how many times this exact Swarm has split) is
+	//always 0 here - Swarm's on-hit split-into-two behaviour is not modeled by this port's
+	//monster AI, so every swarm behaves like Java's un-split generation-0 case.
+	swarm: [{ chance: 1 / 6, kind: 'potion' }],
 };
 
 /**
  * `Dungeon.LimitedDrops`: a handful of mobs further scale their own `lootChance()` down with
  * every successful drop this run, on top of the flat `MOB_LOOT` chance above - real Java's own
- * per-kind formula, keyed on how many times `n` this exact drop has already happened. Only the
- * kinds whose `MOB_LOOT` base chance already matches (or, for dm200/golem, now matches after
- * fixing it above) Java's `lootChance` field get their decay here; `slime`/`skeleton`/`thief`/
- * `swarm` have no `MOB_LOOT` entry at all yet (a "not ported" gap, not a decay gap), tracked in
- * `PORT_COVERAGE.md` instead of folded into this pass.
+ * per-kind formula, keyed on how many times `n` this exact drop has already happened. Every kind
+ * whose `MOB_LOOT` base chance matches Java's own `lootChance` field gets its decay here.
  */
 export const LIMITED_DROP_DECAY: Partial<Record<MonsterId, (n: number) => number>> = {
 	//Bat.lootChance(): (7-n)/7
@@ -374,4 +388,12 @@ export const LIMITED_DROP_DECAY: Partial<Record<MonsterId, (n: number) => number
 	dm200: (n) => Math.pow(1 / 3, n),
 	golem: (n) => Math.pow(1 / 3, n),
 	shaman: (n) => Math.pow(1 / 3, n),
+	//Slime.lootChance(): SLIME_WEP counter, (1/4)^n
+	slime: (n) => Math.pow(1 / 4, n),
+	//Skeleton.lootChance(): SKELE_WEP counter, (1/3)^n
+	skeleton: (n) => Math.pow(1 / 3, n),
+	//Thief.lootChance(): THEIF_MISC counter, (1/3)^n
+	thief: (n) => Math.pow(1 / 3, n),
+	//Swarm.lootChance(): SWARM_HP counter, (5-n)/5
+	swarm: (n) => (5 - n) / 5,
 };
