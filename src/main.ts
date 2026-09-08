@@ -1604,9 +1604,16 @@ export class SewersScene extends Scene2D {
 			//are now represented (`Random.Int(6)` in Java, `Random.element` on all 6 here) -
 			//Projecting's `canAttackWithExtraReach()` (2/4-cell melee reach via pathfinding) is
 			//still not modeled, so it only gets its damage-factor half; see `PORT_COVERAGE.md`.
+			//**`rollForChampion` only ever assigns a champion at all when the real
+			//`Challenges.CHAMPION_ENEMIES` challenge is active** - found this pass auditing why
+			//this port's own selectable "Champion Enemies" challenge toggle (`isChallengeEnabled`,
+			//already wired for `stronger_bosses`) did nothing either way: champions spawned at the
+			//same flat 10% whether the challenge was on or off. Gated behind that toggle now, so
+			//toggling it actually changes anything - the flat-10%-vs-real-depth-scaled-budget
+			//simplification itself is unchanged and still tracked above.
 			//DemonSpawner never sleeps (state=PASSIVE from the start, not SLEEPING)
 			sleeping: restoring || !(isNPC || isBoss || kind === 'fetidRat' || kind === 'gnollTrickster' || kind === 'greatCrab' || kind === 'demonSpawner'),
-			champion: restoring ? null : (!isNPC && !isBoss && kind !== 'necroSkeleton' && kind !== 'demonSpawner' && Random.chance(0.1) ? Random.element(['blessed', 'blazing', 'giant', 'growing', 'antimagic', 'projecting'] as const)! : null),
+			champion: restoring || !isChallengeEnabled('champion_enemies') ? null : (!isNPC && !isBoss && kind !== 'necroSkeleton' && kind !== 'demonSpawner' && Random.chance(0.1) ? Random.element(['blessed', 'blazing', 'giant', 'growing', 'antimagic', 'projecting'] as const)! : null),
 			championPower: 1.19,
 			combo: 0,
 			moving: 0,

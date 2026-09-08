@@ -421,7 +421,12 @@ browser-verification workflow for why).
       extra-reach melee (`canAttackWithExtraReach`) is not modeled (attack range is fixed at 1
       regardless of champion type), `AntiMagic.RESISTS`'s status-immunity list is not modeled,
       and the champion roll itself is still a flat 10% rather than Java's roster-wide
-      `Dungeon.mobsToChampion` budget. See `PORT_COVERAGE.md`'s `ChampionEnemy` row.
+      `Dungeon.mobsToChampion` budget. **Found and fixed a real bug this pass**: real Java
+      only ever rolls a champion when the `CHAMPION_ENEMIES` challenge is active (it's an
+      opt-in challenge, not a baseline mechanic) - this port's flat 10% roll had no such gate,
+      so its own selectable "Champion Enemies" challenge toggle did nothing either way. Now
+      gated on `isChallengeEnabled('champion_enemies')`. See `PORT_COVERAGE.md`'s
+      `ChampionEnemy` row.
 - [ ] Implement blob area propagation, gas, and fire terrain.
 - [x] Port the Necromancer's skeleton heal/Adrenaline/teleport support behavior - previously it
       had none at all (a summoned skeleton just fought alone forever). Now heals `HT/5` when
