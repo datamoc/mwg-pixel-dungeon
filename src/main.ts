@@ -5187,7 +5187,7 @@ export class SewersScene extends Scene2D {
 		// moves it. This is what makes the classic door trick work: a snake that steps into
 		// the doorway while it cannot yet see the hero remains surprised until its next turn.
 		const monsterFov = new Roguelike.FieldOfView(this.level);
-		monsterFov.update(monster.x, monster.y, VIEW_RADIUS);
+		monsterFov.update(monster.x, monster.y, this.viewRadius());
 		monster.seesHero = monsterFov.isVisible(this.hero.x, this.hero.y) && !this.hero.buffs['invisibility'];
 		//ChampionEnemy.Growing.act(): its own real per-turn tick, `+0.01` to the multiplier
 		//`meleeDamageFactor`/`damageTakenFactor`/`evasionAndAccuracyFactor` all read from
@@ -5287,7 +5287,7 @@ export class SewersScene extends Scene2D {
 			const blocked = new Set(
 				this.creatures.filter((c) => c !== monster && c !== this.hero).map((c) => this.level.index(c.x, c.y))
 			);
-			const decision = Roguelike.decideMonsterAI(this.level, this.pathfinder, monster, monster.hp / monster.maxHp, this.hero, { sightRadius: VIEW_RADIUS, fleeBelow: 1, blocked });
+			const decision = Roguelike.decideMonsterAI(this.level, this.pathfinder, monster, monster.hp / monster.maxHp, this.hero, { sightRadius: this.viewRadius(), fleeBelow: 1, blocked });
 			if (decision.step) this.moveTo(monster, decision.step);
 			return;
 		}
@@ -5586,7 +5586,7 @@ export class SewersScene extends Scene2D {
 			monster.hp / monster.maxHp,
 			this.hero,
 			{
-				sightRadius: VIEW_RADIUS,
+				sightRadius: this.viewRadius(),
 				//Thief.FLEEING once it has stolen something; everyone else fights on (0.25).
 				//Bandit extends Thief and shares this unchanged.
 				fleeBelow: (monster.kind === 'thief' || monster.kind === 'bandit') && monster.stolen ? 1 : 0.25,
@@ -5769,7 +5769,7 @@ export class SewersScene extends Scene2D {
 					this.creatures.filter((c) => c !== tengu && c !== this.hero).map((c) => this.level.index(c.x, c.y))
 				);
 				const decision = Roguelike.decideMonsterAI(this.level, this.pathfinder, tengu, tengu.hp / tengu.maxHp, this.hero, {
-					sightRadius: VIEW_RADIUS,
+					sightRadius: this.viewRadius(),
 					blocked,
 				});
 				if (decision.step) this.moveTo(tengu, decision.step);
@@ -6421,6 +6421,14 @@ export class SewersScene extends Scene2D {
 	private ringSharpshootingDurabilityMultiplier(): number {
 		if (!this.equippedRing || ringDef(this.equippedRing.id)?.stat !== 'sharpshooting') return 1;
 		return Math.pow(1.2, this.equippedRing.level);
+	}
+
+	/** `Level.viewDistance`: `8`, or `2` under the real `DARKNESS` challenge - the same shared
+	 * radius this port already uses for both the hero's own FOV and every monster's
+	 * `seesHero`/AI sight check (real Java's own light-casting array backs both alike, so one
+	 * shared radius is the faithful shape, not a coincidence of this port's own structure). */
+	private viewRadius(): number {
+		return isChallengeEnabled('darkness') ? 2 : VIEW_RADIUS;
 	}
 
 	/** `RingOfWealth.dropChanceMultiplier()`: `1.20^level`, read by `kill()`'s `MOB_LOOT` roll.
@@ -7110,7 +7118,7 @@ export class SewersScene extends Scene2D {
 	// -------------------------------------------------------------- drawing
 
 	private refresh(): void {
-		this.fov.update(this.hero.x, this.hero.y, VIEW_RADIUS);
+		this.fov.update(this.hero.x, this.hero.y, this.viewRadius());
 
 		// FogOfWar owns explored shading and half-wall occlusion above every world layer.
 		// Keep water quads disabled while unexplored, but do not darken explored art twice.
