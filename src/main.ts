@@ -6825,6 +6825,27 @@ export class SewersScene extends Scene2D {
 					if (heldKind && at) this.spawnGroundItem(heldKind, at.x, at.y, this.sourceInventoryItem(heldFamily, heldClass));
 				}
 			}
+			//Warlock.createLoot(): a flat 0.5 lootChance (no LimitedDrops decay on the roll
+			//itself, unlike Bat/Necromancer/Guard/etc.), but the *kind* of potion it drops is a
+			//separate roll this port's generic 'potion' MOB_LOOT kind can't express - drinking
+			//this port's plain 'potion' id always heals (see quaffPotion), so a Warlock always
+			//"dropping a potion" would always be a free heal, when real Java guarantees the
+			//opposite most of the time. `Random.Int(3)==0 && Random.Int(8) > WARLOCK_HP.count`
+			//(1/3 chance, then scaled to never over 8 real healing drops this run) picks
+			//`PotionOfHealing`; otherwise a fresh non-healing potion class is redrawn until it
+			//isn't Healing. Reproduced here as a real `potionHealing` drop on the rare branch,
+			//else a uniform pick among this port's 7 already-modeled non-healing potion ids.
+			if (creature.kind === 'warlock' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * this.ringWealthMultiplier() })) {
+				const warlockHp = this.limitedDrops.warlock ?? 0;
+				if (Random.int(3) === 0 && Random.int(8) > warlockHp) {
+					this.limitedDrops.warlock = warlockHp + 1;
+					this.spawnGroundItem('potion', creature.x, creature.y, { id: 'potionHealing', quantity: 1, identified: false });
+				} else {
+					const nonHealing = ['potionStrength', 'potionFlame', 'potionMindVision', 'potionInvis', 'potionPurity', 'potionExperience', 'potionLevitation'] as const;
+					this.spawnGroundItem('potion', creature.x, creature.y, { id: Random.element(nonHealing)!, quantity: 1, identified: false });
+				}
+				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.potion) }));
+			}
 			for (const entry of MOB_LOOT[creature.kind] ?? []) {
 				//Dungeon.LimitedDrops: Bat/Necromancer/Guard each scale their own lootChance()
 				//down further by how many times this exact drop has already happened this run -

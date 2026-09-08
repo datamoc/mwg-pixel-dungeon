@@ -336,13 +336,14 @@ export const MOB_LOOT: Record<string, { chance: number; kind: GroundItemKind }[]
 	//GreatCrab: 2x MysteryMeat, always - one lands on the cell, the second beside it (or the
 	//bag when crowded); heaps stack in Java, single-item cells here do not
 	greatCrab: [{ chance: 1, kind: 'meat' }],
-	//City/Halls loot: Ghoul gold 0.2, Warlock potion 0.5 (always non-healing in Java -
-	//simplified to the shared potion), Monk food ~0.083 (rounded to 0.1), Golem armor
+	//City/Halls loot: Ghoul gold 0.2, Monk food ~0.083 (rounded to 0.1), Golem armor
 	//0.2 (Java's real base - the previous 0.125 here was the same unconfirmed-guess bug as
 	//DM200's above, weapon-or-armor also simplified to always 'armor'), Succubus scroll 0.33,
-	//Eye dewdrop 1.0, Scorpio potion 0.5
+	//Eye dewdrop 1.0, Scorpio potion 0.5. Warlock's 0.5 potion drop is handled outside this
+	//table entirely (see `kill()`'s own dedicated branch) since its real Java loot picks
+	//between healing and non-healing potion classes, a distinction this port's generic
+	//'potion' MOB_LOOT kind can't express (drinking that generic id always heals).
 	ghoul: [{ chance: 0.2, kind: 'gold' }],
-	warlock: [{ chance: 0.5, kind: 'potion' }],
 	monk: [{ chance: 0.1, kind: 'food' }],
 	golem: [{ chance: 0.2, kind: 'armor' }],
 	succubus: [{ chance: 0.33, kind: 'scroll' }],
