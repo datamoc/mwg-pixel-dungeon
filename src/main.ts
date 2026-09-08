@@ -5999,6 +5999,16 @@ export class SewersScene extends Scene2D {
 	 * already carrying explicitly.
 	 */
 	private takeGooTurn(goo: Creature): void {
+		//Goo.act(): while standing in water and not at full HP, heals a flat amount every turn
+		//(this port's own simplification: real Java's healInc ramps 1->3 under the
+		//STRONGER_BOSSES challenge and resets to 1 on leaving water/reaching full HP, and also
+		//eats into a boss-room door-lock countdown this port has no LockedFloor equivalent of -
+		//neither reproduced here, a real, narrower gap left honest rather than faked). This
+		//always runs before whatever else Goo's turn does below, exactly like Java's own act().
+		if (this.level.get(goo.x, goo.y) === WATER && goo.hp < goo.maxHp) {
+			goo.hp = Math.min(goo.maxHp, goo.hp + 1);
+			this.showHeal(goo, 1);
+		}
 		const pumped = goo.pumped ?? 0;
 
 		if (pumped >= 2) {

@@ -95,6 +95,7 @@ been replaced with what the Java actually contains.
 
 | Java block | TS destination | Status |
 | --- | --- | --- |
+| `Goo.act()`'s water-healing regen (`healInc` while submerged and below full HP) | `takeGooTurn` | **Now ported, found missing entirely while auditing the Sewers boss against `Goo.java`** - Goo's pump-up/slam mechanic was already live, but the separate "retreat into water to heal" behavior real players use as a tell had no equivalent at all. Simplified to a flat `+1 HP`/turn while standing in water and below full HP (real Java's `healInc` ramps `1`->`3` only under the `STRONGER_BOSSES` challenge, not modeled here) and does not interact with a `LockedFloor` door-lock countdown, since this port has no boss-room door-lock system at all - both narrower, honestly-flagged gaps rather than a rushed full match. |
 | `Rat`: `HP`, `defenseSkill`, `attackSkill()`, `damageRoll()`, `drRoll()` | `MONSTERS.rat` | Ported |
 | `actors.properties`' `actors.mobs.rat.name=marsupial rat` display name | `MONSTERS.rat.name` | Ported |
 | `Snake`: same four | `MONSTERS.snake` | Ported |
