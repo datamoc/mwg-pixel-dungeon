@@ -768,26 +768,30 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
 
 ## 12. Publish a playable build on GitHub Pages
 
-- [ ] Deploy `dist/` to GitHub Pages so the game is playable at
-      `https://<user>.github.io/mwg-pixel-dungeon/` without a local checkout. `vite.config.ts`
-      already sets `base: './'` (relative asset paths), which works both for `file://` and for
-      a project-subpath Pages URL with no changes needed there; `tools/emit.mjs`'s built
-      `index.html` (non-module `<script defer>`) should load the same way over `https://` as it
-      does over `file://`. Concretely:
-      - Add a `.github/workflows/deploy.yml` that runs `npm ci && npm run build` and publishes
-        `dist/` via `actions/upload-pages-artifact` + `actions/deploy-pages` on push to `main`
-        (no existing CI in this repo to build on - confirmed no `.github/` directory exists yet).
-        DONE this pass: `.github/workflows/deploy.yml` now exists (`npm ci`, `npm run build`,
-        upload `dist/`, deploy; triggers on push to `main` plus `workflow_dispatch` - keeping
-        both until the owner picks auto-deploy vs manual per the decision below).
-      - Enable Pages in the repo settings (source: GitHub Actions).
-      - Verify live, not just "build succeeded": open the deployed URL in a browser and confirm
-        the title screen, class-select pointer-event workaround (see this file's own browser-
-        verification section), and a played floor all work identically to the local `dist/`
-        build - a project-subpath URL is exactly the case most likely to expose an asset-path
-        regression `file://`/localhost testing wouldn't catch.
-      - Decide whether every push to `main` deploys automatically, or only tagged
-        releases/manual dispatch - ask the user before making commits auto-deploy publicly.
+- [x] Deploy `dist/` to GitHub Pages so the game is playable at
+      `https://datamoc.github.io/mwg-pixel-dungeon/` without a local checkout. `vite.config.ts`'s
+      `base: './'` (relative asset paths) needed no changes for the project-subpath Pages URL;
+      `tools/emit.mjs`'s built `index.html` (non-module `<script defer>`) loads over `https://`
+      exactly like it does over `file://`. `.github/workflows/deploy.yml` (`npm ci`, `npm run
+      build`, upload `dist/`, deploy; triggers on push to `main` plus `workflow_dispatch`) existed
+      from an earlier pass but had never actually been pushed - this repo was 42 commits ahead of
+      `origin/main` the whole time, so the workflow, and everything else committed since, only
+      existed locally. The user explicitly asked for the deployment this pass (confirmed via
+      `AskUserQuestion` that the project-subpath URL, not a separate root `datamoc.github.io`
+      user-page repo, is what they want), which resolved both open items below at once: pushed
+      main, enabled Pages via `gh api -X POST repos/.../pages -f build_type=workflow` (source:
+      GitHub Actions), and the push-triggered run deployed successfully
+      (`gh run watch` - both `build`/`deploy` jobs green). Verified live over HTTP: the deployed
+      page serves the real built `index.html` (non-module `<script defer src="./game.js">`, not
+      the unbuilt-source fallback) and `game.js` itself returns `200` at its full ~25.6MB build
+      size. **Not verified this pass**: actual in-browser rendering (title screen, class-select,
+      a played floor) - no working browser tool was available this session (`claude-in-chrome`
+      extension not connected, `chrome-devtools-mcp`'s browser unreachable/already running
+      elsewhere), so this is HTTP/asset-shape verification only, honestly short of the real
+      "open it and look" bar the rest of this file holds itself to - owed as a follow-up. Every
+      future push to `main` now deploys automatically (the auto-vs-manual choice both options
+      being kept for was implicitly resolved by asking the user to trigger deployment via a push-
+      based workflow at all).
 
 ## Definition of done
 
