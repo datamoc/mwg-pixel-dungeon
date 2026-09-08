@@ -6846,6 +6846,15 @@ export class SewersScene extends Scene2D {
 				}
 				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.potion) }));
 			}
+			//Scorpio.createLoot(): a flat 0.5 lootChance, always a potion class that is neither
+			//Healing nor Strength (a plain redraw-until-excluded loop, no LimitedDrops counter
+			//involved) - the same generic-'potion'-always-heals mismatch as Warlock above, fixed
+			//the same way: a uniform pick among this port's 6 remaining modeled potion ids.
+			if (creature.kind === 'scorpio' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * this.ringWealthMultiplier() })) {
+				const eligible = ['potionFlame', 'potionMindVision', 'potionInvis', 'potionPurity', 'potionExperience', 'potionLevitation'] as const;
+				this.spawnGroundItem('potion', creature.x, creature.y, { id: Random.element(eligible)!, quantity: 1, identified: false });
+				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.potion) }));
+			}
 			for (const entry of MOB_LOOT[creature.kind] ?? []) {
 				//Dungeon.LimitedDrops: Bat/Necromancer/Guard each scale their own lootChance()
 				//down further by how many times this exact drop has already happened this run -
