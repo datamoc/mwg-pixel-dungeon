@@ -4786,6 +4786,13 @@ export class SewersScene extends Scene2D {
 						return true;
 					}
 				}
+				//Level.java's per-turn WATER hook: a non-flying char standing in water forces
+				//Burning to act (the DoT above already covers this turn's damage) then extinguish
+				//on the following check, matching `Burning.act()`'s own `acted && water && !flying
+				//-> detach()` cliff - collapsed here to an immediate extinguish once this turn's
+				//tick has already landed, rather than reproducing the exact one-turn-late timing.
+				//`Char.flying` is Levitation in this port (see `fallThroughChasm`'s own comment).
+				if (burning && this.level.get(this.hero.x, this.hero.y) === WATER && !this.hero.buffs['levitation']) delete this.hero.buffs['burning'];
 				if (this.tickCavesBossEnergy()) return true;
 				return false;
 			},
@@ -5181,6 +5188,7 @@ export class SewersScene extends Scene2D {
 		//into the monster's ordinary turn instead, since it has no secondary-actor scheduling).
 		if (monster.champion === 'growing') monster.championPower = (monster.championPower ?? 1.19) + 0.01;
 		//dots tick on the sufferer's own turn, like Java's Buff.act()
+		const monsterWasBurning = monster.buffs['burning'] !== undefined;
 		const dot = tickBuffs(monster);
 		if (dot > 0) {
 			monster.hp -= dot;
@@ -5190,6 +5198,10 @@ export class SewersScene extends Scene2D {
 				return;
 			}
 		}
+		//Level.java's per-turn WATER hook (see the matching hero-side comment above): no monster
+		//kind in this port tracks a real `flying` property (Java's own Bat/Swarm/Eye would be
+		//exempt), so this applies uniformly, consistent with that existing simplification.
+		if (monsterWasBurning && this.level.get(monster.x, monster.y) === WATER) delete monster.buffs['burning'];
 		//Brute.BruteRage.act(): while active it drains at a flat 4/turn (Java's
 		//`AscensionChallenge.statModifier` multiplier is 1 with no ascension-challenge UI), on
 		//top of whatever combat damage also lands on it (both drain the same pool). Once it

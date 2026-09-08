@@ -509,7 +509,13 @@ browser-verification workflow for why).
       terrain; `Chasm.heroLand()`'s real Cripple + HP/HT-scaled landing damage and the
       Levitation bypass are now ported too (see `PORT_COVERAGE.md`'s `Chasm.java` row for the
       remaining gaps: Bleeding DoT, feather-fall item, landing sound/camera shake).
-- [ ] Implement water and terrain hazards.
+- [ ] Implement water and terrain hazards. `Level.java`'s per-turn water hook (a non-flying
+      char standing in `WATER` extinguishes `Burning`, matching `Burning.act()`'s own
+      `acted && water && !flying -> detach()`) is now ported for both hero and monsters,
+      collapsed to an immediate extinguish once the current turn's DoT tick has landed rather
+      than reproducing the exact one-turn-late real timing - see `PORT_COVERAGE.md`. Ooze's own
+      water interaction (the same hook also force-ticks `Ooze`) and other terrain hazards
+      remain.
 - [ ] Complete plant growth and plant interactions (one-shot regional plant activation, Java-aligned
       single-target statuses, Sungrass healing-over-time, and Warden-sensitive variants are live;
       Icecap/Rotberry blob diffusion and Warden FrostImbue/AdrenalineSurge variants are live;
