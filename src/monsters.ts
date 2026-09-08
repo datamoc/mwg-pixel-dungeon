@@ -308,6 +308,13 @@ export const BOSSES: Record<number, { kind: MonsterId; victory: string; next: 'c
  * one-entry LootTable rather than reimplementing the roll).
  */
 export const MOB_LOOT: Record<string, { chance: number; kind: GroundItemKind }[]> = {
+	//Sewers base loot, found missing entirely while auditing every real spawnable kind
+	//against MOB_LOOT: Snake.loot = Generator.Category.SEED (0.25), Gnoll.loot = Gold.class
+	//(0.5), Crab.loot = MysteryMeat.class (0.167, ~1/6) - Rat and Goo have no `loot` field in
+	//Java at all, correctly no entry here.
+	snake: [{ chance: 0.25, kind: 'seed' }],
+	gnoll: [{ chance: 0.5, kind: 'gold' }],
+	crab: [{ chance: 1 / 6, kind: 'meat' }],
 	// Alternative mobs inherit their base loot table unless Java replaces it with a
 	// guaranteed special item; these entries make the inheritance explicit to callers.
 	albino: [{ chance: 1, kind: 'meat' }],
