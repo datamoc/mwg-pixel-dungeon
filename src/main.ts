@@ -1424,7 +1424,14 @@ export class SewersScene extends Scene2D {
 		const bark = this.talentRank('barkskin');
 		//Armor: min = lvl, max = tier*(2+lvl). Tier 1 (cloth): [lvl, 2+lvl],
 		//tier 2 (leather): [lvl, 4+2*lvl], tier 3 (mail): [lvl, 6+3*lvl], etc.
-		this.hero.armor = [this.armorLevel + (bark > 0 ? 1 : 0), this.armorTier * (2 + this.armorLevel) + bark];
+		//Armor.DRMin/DRMax under the real NO_ARMOR challenge: min drops to a flat 0, max drops to
+		//1+tier+lvl(+augment, not modeled here) instead of the normal tier*(2+lvl) scaling -
+		//found dead alongside champion_enemies/darkness while auditing every challenge toggle.
+		//`bark` (Barkskin talent rank) is this port's own additive layer on top of either
+		//formula, not part of Java's DRMin/DRMax bodies themselves, so it stays unconditional.
+		this.hero.armor = isChallengeEnabled('no_armor')
+			? [bark > 0 ? 1 : 0, 1 + this.armorTier + this.armorLevel + bark]
+			: [this.armorLevel + (bark > 0 ? 1 : 0), this.armorTier * (2 + this.armorLevel) + bark];
 		const subclass = this.subclass();
 		if (subclass === 'champion') this.hero.damage = [this.hero.damage[0] + 1, this.hero.damage[1] + 1];
 		if (subclass === 'warden' && this.level && this.level.get(this.hero.x, this.hero.y) === HIGH_GRASS) {
