@@ -12535,12 +12535,46 @@ async function loadSpdFont(): Promise<void> {
 	}
 }
 
+/**
+ * The Java game lets its platform asset pipeline cover startup loading. A browser build has
+ * no equivalent native curtain, so this small DOM layer makes the real async font/sprite work
+ * visible before `Game.start(TitleScene)` reveals the title splash; it is intentionally removed
+ * only after the splash scene has been created, keeping the splash screen last in the sequence.
+ */
+function updateStartupProgress(progress: number, status: string): void {
+	const value = Math.max(0, Math.min(100, Math.round(progress * 100)));
+	const fill = document.getElementById('loading-fill');
+	const label = document.getElementById('loading-status');
+	const percent = document.getElementById('loading-percent');
+	const track = document.getElementById('loading-track');
+	if (fill) fill.style.width = `${value}%`;
+	if (label) label.textContent = status;
+	if (percent) percent.textContent = `${value} %`;
+	track?.setAttribute('aria-valuenow', String(value));
+}
+
+async function revealTitleSplash(): Promise<void> {
+	updateStartupProgress(1, 'Le donjon est prêt.');
+	// Let the completed bar paint before its curtain fades; the title splash is then the last
+	// startup surface the player sees, rather than competing with a half-loaded canvas.
+	await new Promise<void>(resolve => setTimeout(resolve, 180));
+	await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+	const screen = document.getElementById('loading-screen');
+	if (!screen) return;
+	screen.classList.add('is-hidden');
+	await new Promise<void>(resolve => setTimeout(resolve, 240));
+	screen.remove();
+}
+
 async function main(): Promise<void> {
+	updateStartupProgress(0.05, 'Initialisation…');
 	//before any table is read or any widget built: a catalog installed later would leave
 	//already-built strings in the previous language
 	initI18n(localStorage.getItem(LANGUAGE_KEY));
 	runState.audio = new SpdAudio();
+	updateStartupProgress(0.14, 'Chargement de la police…');
 	await loadSpdFont();
+	updateStartupProgress(0.24, 'Préparation du moteur…');
 
 	const game = new Game({
 		canvas: document.getElementById('game') as HTMLCanvasElement,
@@ -12571,6 +12605,7 @@ async function main(): Promise<void> {
 			() => extensions.add(NineSliceSpritePipe),
 		],
 	});
+	updateStartupProgress(0.42, 'Préparation des commandes…');
 
 	Input.bind('search', ['KeyF']);
 	Input.bind('examine', ['KeyL']);
@@ -12586,11 +12621,14 @@ async function main(): Promise<void> {
 	Input.bind('save', ['KeyO']);
 	Input.bind('load', ['KeyP']);
 
+	updateStartupProgress(0.48, 'Chargement des sprites…');
 	runState.sprites = await loadSpdSprites();
+	updateStartupProgress(0.90, 'Assemblage de l’interface…');
 	//before any widget is constructed, so every Label/Window/IconGrid built from here on
 	//already carries SPD's frame and palette instead of mwg's default dark panel
 	applySpdTheme(runState.sprites.uiChrome);
 	await game.start(TitleScene);
+	await revealTitleSplash();
 }
 
 main().catch((error) => {
