@@ -1705,8 +1705,9 @@ export class SewersScene extends Scene2D {
 	}
 
 	/** ScrollOfMirrorImage's two one-hit-point allied copies use the hero's current combat
-	 * values.  A rat sprite is only the available actor-sheet carrier; the ally flag keeps it
-	 * out of hostile loot/champion logic and the blue tint makes the visual distinction clear. */
+	 * values. Java's `MirrorSprite` uses the hero's own class sheet and changes its armor-tier
+	 * film, so replace the temporary factory sprite with that same class sheet here rather than
+	 * using an unrelated monster as a graphical carrier. */
 	private spawnMirrorImage(at: Step): Creature {
 		const image = this.spawnMonster('rat', at, false, undefined, true);
 		image.name = `${this.hero.name} (image)`;
@@ -1719,9 +1720,17 @@ export class SewersScene extends Scene2D {
 		image.sleeping = false;
 		image.seesHero = true;
 		image.allyKind = 'mirror';
-		const sprite = this.sprite(image);
+		const carrier = this.sprite(image);
+		carrier.destroy();
+		const mirrorSheet = heroSheet(runState.sprites[this.heroClass]);
+		const mirrorFrame = Math.max(0, Math.min(5, this.armorTier)) * 21;
+		const sprite = new TintedSprite(mirrorSheet.get(mirrorFrame));
+		placeCharacterArt(sprite);
+		sprite.x = at.x * TILE;
+		sprite.y = at.y * TILE;
+		this.creatureLayer.addChild(sprite);
+		this.spriteFor.set(image.id, sprite);
 		sprite.alpha = 0.72;
-		sprite.colorAdd = 0x5577aa;
 		return image;
 	}
 
