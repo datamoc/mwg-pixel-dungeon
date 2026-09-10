@@ -624,15 +624,14 @@ The load-bearing distinctions, all confirmed against `Generator.java`:
   the verify scripts. Its `Random.Int(2)` sets `usingFirstDeck`, which decides every
   `categoryProbs` weight and therefore steers level content on every floor of the run.
 
-One real upstream bug found and fixed (2026-09-06, see `UPSTREAM_CANDIDATES.md`): `Generator.java`'s
-static init had `WEP_T3.probs = WEP_T1.defaultProbs.clone()`, so tier 3's starting deck was tier
-1's 5-entry array, not its own 6-entry one - zeroing `Mace`'s weight and making `Sai`/`Whip`
-unreachable until the deck reset. Confirmed still present on real upstream `master` as of this
-writing (there with 6-entry arrays on both sides, so only the weight-zeroing half of the bug
-applies there, not the length mismatch this checkout's older arrays also had). Fixed in this
-checkout's `Generator.java` and mirrored in `spdItems/generator.ts`'s `WEP_T3` entry - `chances()`
-always burns exactly one `Random.Float` regardless of array contents, so the fix changes which
-weapon index a draw resolves to but not the level-generation RNG call count/order.
+One real Java bug is deliberately corrected only in this port: `Generator.java`'s static init has
+`WEP_T3.probs = WEP_T1.defaultProbs.clone()`, so tier 3's starting deck copies tier 1 instead of
+its own table. In the `4.0.0-beta` source both arrays have six entries, so the observable defect
+is the zero weight at tier-3 index 1 (`Mace`); the older source snapshot also made the final
+`Whip` entry unreachable because tier 1 had only five weights. The Java source is left unchanged
+by project policy. `spdItems/generator.ts` corrects the port locally with tier 3's own six weights;
+`chances()` always burns exactly one `Random.Float`, so this changes which weapon index a draw
+resolves to but not the level-generation RNG call count/order.
 
 ### The draws that were being skipped
 
@@ -1613,6 +1612,7 @@ capitalisation rules.
 | `Messages.get(cls, key, args)`'s key derivation: the class's package path below the SPD root, lowercased, plus the key suffix (`actors.mobs.Rat` + `name` -> `actors.mobs.rat.name`) | `src/i18n/spdKeys.ts` | Ported - the port uses SPD's dotted keys **verbatim**, so any key greps straight back to the Java class that owns it and its `.properties` entry, with no mapping table in between. `$` separates a Java inner class, as in Java |
 | `assets/messages/**/*.properties`: 9 domains x base English + 18 locales, 171 files | `src/generated/spdMessages.ts`, built by `tools/i18n-extract.mjs` (`npm run i18n`) | **Ported in full: 3,753 SPD keys x 19 languages.** The built page runs from `file://`, so the complete catalog is deliberately compiled in rather than fetched on demand. This makes every original string immediately available when its Java screen is ported; the cost is a materially larger game bundle. |
 | Java text for screens/windows not yet implemented (`WndBag`/`WndUseItem`/journal entries/full talent trees/shop dialogue etc.) | Complete `src/generated/spdMessages.ts` catalog | Text is ported and callable, but its owning Java UI/feature is still not necessarily ported. This is intentionally distinct from a missing translation: MWG already provides generic windows, stacks, scrolling lists, icon grids and message boxes; each remaining item requires its SPD-specific data and interactions to be implemented. |
+| `Item.itemComparator` / `Generator.Category.order(Item)` (including tier and special subcategory ordering) | `generatorItemOrder()` + `refreshInventoryPanel()` | Ported for the compact inventory payloads: concrete generated classes use the latest matching Java category, bombs sort after missile weapons, and regular potions/scrolls retain their Java subcategory positions. Unknown compact IDs use the Java sprite-order fallback; equal keys retain bag insertion order through the stable display sort. |
 | `.properties` syntax (`=`/`:` separators, `\n`, `\uXXXX`, continuations, comments) and `String.format`'s `%s`/`%d` | `tools/i18n-extract.mjs` | Ported - placeholders are converted to `mwg/i18n`'s `{token}` form at extraction time, not at runtime |
 | User-visible `GameLog` messages | `main.ts` + `tools/i18nCheck.ts` | Ported at the output boundary - every direct `say()` literal was removed. Java-owned paralysis, roots and descent text use their original SPD keys; port-only mechanics remain under `port.log.*`. The localization verifier rejects any future direct quoted `say()` argument, so an English-only message cannot silently bypass the catalog. |
 | Enchant/glyph/curse display names (`port.affix.*`, rendered by `itemDisplayName`) | `src/i18n/portStrings.ts`'s `//affixes` block (EN+FR) | Ported - all 32 affix ids now resolve instead of rendering raw keys. Values are SPD's own `<class>.name` strings (tag `v3.3.8`): weapon affixes keep the bare adjective (`blazing`), armor affixes the `of`-suffix (`of stench`); FR uses the masculine base form, since Java resolves its `(e)`/`(le)` markers by item gender and this port models no gender data. `swiftness` takes the armor form (it is armor-glyph-only). Type-check/build only; never visually confirmed, like every other locale string. |

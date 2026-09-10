@@ -119,7 +119,7 @@ import { BADGE_DEFS, BADGE_ICON, loadBadges } from './badges';
 import { TitleScene } from './scenes/titleScene';
 import { transferEnhancement } from './itemWorkflows';
 import { getCurse } from './itemCurses';
-import { Cat, generatorRandom, ghostQuestReward, randomUsingDefaults, removeArtifactClass, setGeneratorDepth, type GenItem, type StatueLoot } from './spdItems/generator';
+import { Cat, generatorItemOrder, generatorRandom, ghostQuestReward, randomUsingDefaults, removeArtifactClass, setGeneratorDepth, type GenItem, type StatueLoot } from './spdItems/generator';
 import { setWandmakerQuestType, wandmakerQuestType } from './spdLevelGen/wandmaker';
 
 /** Concrete wand families retained by the equipped-wand save state. */
@@ -10624,7 +10624,7 @@ export class SewersScene extends Scene2D {
 		if (!this.inventoryPanel) return;
 		this.inventoryPanel.visible = this.inventoryOpen;
 		if (!this.inventoryOpen) return;
-		const entry = (item: { id: string; quantity: number; instanceId?: string; level?: number; identified?: boolean; cursed?: boolean }): InventoryEntry => {
+		const entry = (item: { id: string; quantity: number; instanceId?: string; level?: number; identified?: boolean; cursed?: boolean; sourceClass?: string }): InventoryEntry => {
 			const id = item.id;
 			let frame = ({ clothArmor: 176, armor: 176, armorReward: 176, weaponReward: 96,
 				food: 437, meat: 432, seed: 58, waterskin: 480, velvetPouch: 482, cloak: 240, hourglass: 240,
@@ -10649,7 +10649,8 @@ export class SewersScene extends Scene2D {
 			else if (['armor', 'armorReward', 'weaponReward', 'wand'].includes(id)) action = capitalize(t('items.equipableitem.ac_equip'));
 			return { ...item, name: this.itemDisplayName(id, item.identified ?? false, item.instanceId), frame, action };
 		};
-		const rows = this.bag.items.filter(item => item.quantity > 0).map(entry);
+		const rows = this.bag.items.filter(item => item.quantity > 0).map(entry)
+			.sort((a, b) => generatorItemOrder(a.sourceClass, a.id, a.frame) - generatorItemOrder(b.sourceClass, b.id, b.frame));
 		const armor = this.armorId === 'startingArmor' ? null : entry({ id: this.armorId, instanceId: this.armorInstanceId, quantity: 1, identified: true, level: this.armorLevel });
 		if (armor) armor.action = undefined;
 		const artifact = rows.find(item => item.id === 'cloak' || item.id === 'hourglass' || item.id === 'holyTome') ?? null;

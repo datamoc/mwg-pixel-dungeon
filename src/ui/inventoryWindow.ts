@@ -17,6 +17,7 @@ export interface InventoryEntry {
 	cursed?: boolean;
 	equipped?: boolean;
 	action?: string;
+	sourceClass?: string;
 }
 
 /** WndBag/InventorySlot: 5 columns, 28px cells, 1px gutters, 14px title.

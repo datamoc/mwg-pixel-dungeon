@@ -89,12 +89,12 @@ const CATS: CatDef[] = [
 	},
 	{
 		// `Generator.java`'s static init had a real copy-paste bug here - `WEP_T3.probs =
-		// WEP_T1.defaultProbs.clone()` - cloning tier 1's 5-entry `{2,0,2,2,2}` onto tier 3's
-		// 6-entry deck instead of tier 3's own `defaultProbs`. That zeroed `Mace`'s weight (tier
-		// 1 index 1, `MagesStaff`, is a real 0) and made `Sai`/`Whip` unreachable until the deck
-		// reset. Fixed upstream in this checkout's `Generator.java` (logged in
-		// `UPSTREAM_CANDIDATES.md`) and mirrored here to match: `initialProbs` now starts equal
-		// to `defaultProbs`, same as every other correctly-initialized category. `chances()`
+		// WEP_T1.defaultProbs.clone()` - copying tier 1's `{2,0,2,2,2,2}` onto tier 3 instead of
+		// tier 3's own `{2,2,2,2,2,2}`. That zeroed `Mace`'s weight (tier-1 index 1,
+		// `MagesStaff`, is a real 0). An older Java snapshot had only five tier-1 weights, which
+		// also made the final `Whip` entry unreachable. This port intentionally corrects the Java
+		// source's still-present typo locally:
+		// `initialProbs` starts equal to `defaultProbs`, rather than copying tier 1. `chances()`
 		// always burns exactly one `Random.Float` regardless of array length/values, so this fix
 		// does not change the level-generation RNG call count or order - only which weapon class
 		// index a given draw resolves to.
@@ -276,6 +276,48 @@ export function generatedGroundKind(item: GenItem): string {
 	else if (item.cat === Cat.GOLD) family = 'gold';
 	else family = 'stone';
 	return `${family}|${item.cls}`;
+}
+
+/**
+ * Port of `Generator.Category.order(Item)` (`Generator.java`, tag `4.0.0-beta`) for the
+ * inventory-facing item payloads. Java checks the concrete class against every category and
+ * keeps the latest matching category; the special sub-orderings are then applied to
+ * `MissileWeapon`, `Potion`, and `Scroll` families. `fallbackFrame` is the equivalent of Java's
+ * `Short.MAX_VALUE + item.image()` for an item class this compact port does not know.
+ */
+export function generatorItemOrder(sourceClass?: string, id?: string, fallbackFrame = 0): number {
+	const raw = sourceClass ?? id ?? '';
+	const cls = raw.split('.').pop()!.toLowerCase();
+	let category = -1;
+	for (let i = 0; i < CATS.length; i++) {
+		if (CATS[i]!.classes.some(name => name.toLowerCase() === cls)) category = i;
+	}
+
+	// The live bag also contains compact ids for starting items and quest objects whose Java
+	// concrete classes are not part of the generated category tables.
+	if (category < 0) {
+		if (cls === 'bomb' || cls === 'doublebomb' || id === 'bomb' || id === 'doubleBomb') category = Cat.MISSILE;
+		else if (cls.includes('missile')) category = Cat.MISSILE;
+		else if (cls.includes('stone') || id === 'stone' || id?.startsWith('stoneOf')) category = Cat.STONE;
+		else if (cls.includes('potion') || id?.startsWith('potion')) category = Cat.POTION;
+		else if (id === 'waterskin') category = Cat.POTION;
+		else if (cls.includes('scroll') || id?.startsWith('scroll')) category = Cat.SCROLL;
+		else if (cls.includes('ring') || id?.startsWith('ring_')) category = Cat.RING;
+		else if (cls.includes('wand') || id === 'wand') category = Cat.WAND;
+		else if (id === 'cloak' || id === 'hourglass' || id === 'holyTome') category = Cat.ARTIFACT;
+		else if (cls.includes('armor') || id === 'armor' || id === 'armorReward' || id === 'clothArmor') category = Cat.ARMOR;
+		else if (cls.includes('weapon') || id === 'weaponReward' || id === 'equippedWeapon') category = Cat.WEAPON;
+		else if (cls.includes('food') || id === 'food' || id === 'meat') category = Cat.FOOD;
+		else if (cls.includes('seed') || id === 'seed') category = Cat.SEED;
+		else if (cls.includes('gold') || id === 'gold' || id === 'darkGold') category = Cat.GOLD;
+	}
+
+	if (category < 0) return 0x7fff + fallbackFrame;
+	let sub = 0;
+	if (category === Cat.MISSILE && (cls === 'bomb' || cls === 'doublebomb' || id === 'bomb' || id === 'doubleBomb')) sub = 1;
+	else if (category === Cat.POTION) sub = 1; // Potion, after Waterskin and before exotic/brew families.
+	else if (category === Cat.SCROLL) sub = 0; // Regular Scroll, before exotic/spell families.
+	return category * 100 + sub;
 }
 
 // ---------------------------------------------------------------------------------------------
