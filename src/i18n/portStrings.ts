@@ -286,6 +286,7 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.log.wandhits': 'Your wand strikes {target} for {damage}.',
 	'port.log.wandregrowth': 'The wand restores the area with flourishing growth.',
 	'port.log.wandtransfusion': 'The wand transfers life through the blood-red beam.',
+	'port.log.wandwarding': 'A ward takes shape and begins to guard this place.',
 	'port.log.wandcorrosion': 'Corrosive gas clings to {target}.',
 	'port.log.wandcorruption': '{target} is corrupted and turns to your side!',
 	'port.log.arrowmisses': 'Your arrow misses {target}.',
@@ -738,6 +739,7 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 	'port.log.wandhits': 'Votre baguette frappe {target} pour {damage}.',
 	'port.log.wandregrowth': 'La baguette fait renaître la végétation alentour.',
 	'port.log.wandtransfusion': 'La baguette transfère la vie dans un rayon rouge sang.',
+	'port.log.wandwarding': 'Une sentinelle se forme et commence à garder les lieux.',
 	'port.log.wandcorrosion': 'Un gaz corrosif s’accroche à {target}.',
 	'port.log.wandcorruption': '{target} est corrompu et rejoint votre camp !',
 	'port.log.arrowmisses': 'Votre flèche manque {target}.',
@@ -1154,6 +1156,8 @@ export const PORT_STRINGS_DE: Record<string, string> = {
 	'port.log.wandregrowth': 'Der Stab lässt die Umgebung üppig erblühen.',
 	// MT: no Java source key exists for this port-only message.
 	'port.log.wandtransfusion': 'Der Stab überträgt Leben durch den blutroten Strahl.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.wandwarding': 'Ein Wächter nimmt Gestalt an und bewacht diesen Ort.',
 	'port.log.arrowmisses': 'Dein Pfeil verfehlt {target}.',
 	'port.log.shoot': 'Du triffst {target} für {damage}.',
 
@@ -1567,6 +1571,8 @@ export const PORT_STRINGS_ES: Record<string, string> = {
 	'port.log.wandregrowth': 'La varita hace que la vegetación crezca exuberantemente.',
 	// MT: no Java source key exists for this port-only message.
 	'port.log.wandtransfusion': 'La varita transfiere vida mediante el rayo rojo sangre.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.wandwarding': 'Un guardián toma forma y comienza a proteger este lugar.',
 	'port.log.arrowmisses': 'Tu flecha falla contra {target}.',
 	'port.log.shoot': 'Golpeas a {target} por {damage}.',
 
@@ -1981,6 +1987,8 @@ export const PORT_STRINGS_PT: Record<string, string> = {
 	'port.log.wandregrowth': 'A varinha faz a vegetação ao redor florescer.',
 	// MT: no Java source key exists for this port-only message.
 	'port.log.wandtransfusion': 'A varinha transfere vida através do raio vermelho-sangue.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.wandwarding': 'Um guardião toma forma e começa a proteger este lugar.',
 	'port.log.arrowmisses': 'Sua flecha erra {target}.',
 	'port.log.shoot': 'Você atira em {target} por {damage}.',
 
@@ -2394,6 +2402,8 @@ export const PORT_STRINGS_IT: Record<string, string> = {
 	'port.log.wandregrowth': 'La bacchetta fa rigogliosa la vegetazione circostante.',
 	// MT: no Java source key exists for this port-only message.
 	'port.log.wandtransfusion': 'La bacchetta trasferisce la vita attraverso il raggio rosso sangue.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.wandwarding': 'Un guardiano prende forma e inizia a proteggere questo luogo.',
 	'port.log.arrowmisses': 'La tua freccia manca {target}.',
 	'port.log.shoot': 'Spari a {target} per {damage}.',
 
@@ -2807,6 +2817,8 @@ export const PORT_STRINGS_PL: Record<string, string> = {
 	'port.log.wandregrowth': 'Różdżka bujnie odradza roślinność wokół.',
 	// MT: no Java source key exists for this port-only message.
 	'port.log.wandtransfusion': 'Różdżka przenosi życie przez krwistoczerwony promień.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.wandwarding': 'Strażnik przyjmuje kształt i zaczyna chronić to miejsce.',
 	'port.log.arrowmisses': 'Twoja strzała chybia {target}.',
 	'port.log.shoot': 'Strzelasz do {target} za {damage} obrażeń.',
 

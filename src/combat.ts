@@ -39,6 +39,10 @@ export interface Creature extends Combatant {
 	/** Friendly summon subtype; sheep are neutral, short-lived and non-combatant. */
 	allyKind?: 'mirror' | 'sheep' | 'ward';
 	sheepTurns?: number;
+	/** `WandOfWarding.Ward`'s persistent tier, wand level, and zap count. */
+	wardTier?: number;
+	wardWandLevel?: number;
+	wardTotalZaps?: number;
 	npcKind?: 'ghost' | 'wandmaker' | 'shopkeeper' | 'blacksmith' | 'imp' | 'ratKing';
 	/** GnollTrickster.combo: attacks escalate the longer it keeps hitting */
 	combo?: number;

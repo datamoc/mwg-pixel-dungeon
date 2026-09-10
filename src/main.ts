@@ -760,6 +760,9 @@ interface SavedCreature {
 	isAlly?: boolean;
 	allyKind?: 'mirror' | 'sheep' | 'ward';
 	sheepTurns?: number;
+	wardTier?: number;
+	wardWandLevel?: number;
+	wardTotalZaps?: number;
 	hasRaged?: boolean;
 	raged?: boolean;
 	chainUsed?: boolean;
@@ -1753,6 +1756,7 @@ export class SewersScene extends Scene2D {
 				isAlly: creature.isAlly,
 				allyKind: creature.allyKind,
 				sheepTurns: creature.sheepTurns,
+				wardTier: creature.wardTier, wardWandLevel: creature.wardWandLevel, wardTotalZaps: creature.wardTotalZaps,
 				nextTurn: this.scheduler.timeOf(creature),
 			});
 		}
@@ -1840,6 +1844,7 @@ export class SewersScene extends Scene2D {
 				isAlly: saved.isAlly,
 				allyKind: saved.allyKind,
 				sheepTurns: saved.sheepTurns,
+				wardTier: saved.wardTier, wardWandLevel: saved.wardWandLevel, wardTotalZaps: saved.wardTotalZaps,
 				speed: saved.hasteTurns ? (saved.hasteBaseSpeed ?? 1) * 2 : undefined,
 			});
 			this.scheduler.add(creature, Math.max(0, (saved.nextTurn ?? state.schedulerNow) - state.schedulerNow));
@@ -4369,6 +4374,40 @@ export class SewersScene extends Scene2D {
 		this.say(t('port.log.wandtransfusion'), 'positive');
 	}
 
+	/** `WandOfWarding.onZap()` and its nested `WandOfWarding.Ward.zap()` actor (local SPD
+	 * checkout). Java does have a dedicated Ward NPC actor; this port represents it with a
+	 * scheduled, blue-tinted skeleton carrier because the TypeScript port has no Ward actor type
+	 * or dedicated sprite registry. A fresh cast places a tier-1 ward in a free cell next to the selected
+	 * target, preserving Java's energy budget (`2 + wand level`) and the ward's always-hit damage
+	 * roll. Java's aimed-cell upgrade/dismiss UI is not available, so existing wards are not
+	 * upgraded by an explicit cell selection here; their tier/zap expiry and self-damage rules
+	 * remain real once created.
+	 */
+	private useWardingWand(target: Creature): void {
+		const level = Math.max(0, this.degradedLevel(this.weaponLevel));
+		const wards = this.creatures.filter((creature) => creature.isAlly && creature.allyKind === 'ward' && creature.hp > 0);
+		const energy = wards.reduce((sum, ward) => sum + (ward.wardTier ?? 1), 0);
+		if (energy >= 2 + level) {
+			this.say(t('port.log.staffempty'), 'negative');
+			return;
+		}
+		const candidates = [{ x: target.x, y: target.y }, ...Roguelike.neighbourOffsets(8).map(([dx, dy]) => ({ x: target.x + dx, y: target.y + dy }))]
+			.filter((at) => this.level.inside(at.x, at.y) && this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y));
+		const cell = candidates[0];
+		if (!cell) {
+			this.say(t('port.log.notarget'), 'negative');
+			return;
+		}
+		const ward = this.spawnMonster('skeleton', cell, false, undefined, true, 'ward');
+		ward.name = 'Ward';
+		ward.wardTier = 1;
+		ward.wardWandLevel = level;
+		ward.wardTotalZaps = 0;
+		ward.hp = ward.maxHp = 10 + 2 * level;
+		ward.sleeping = false;
+		this.say(t('port.log.wandwarding'), 'positive');
+	}
+
 	/** `WandOfRegrowth.chargeLimit()`: Java's level/hero-level degradation threshold. */
 	private regrowthChargeLimit(): number {
 		if (this.weaponLevel >= 10) return Number.MAX_SAFE_INTEGER;
@@ -6328,6 +6367,10 @@ export class SewersScene extends Scene2D {
 	 * Java's individual ally subclasses can add richer orders once their own quests are ported. */
 	private takeAllyTurn(ally: Creature): void {
 		if (ally.buffs['paralysis']) return;
+		if (ally.allyKind === 'ward') {
+			this.takeWardTurn(ally);
+			return;
+		}
 		if (ally.allyKind === 'sheep') {
 			ally.sheepTurns = (ally.sheepTurns ?? 1) - 1;
 			if ((ally.sheepTurns ?? 0) <= 0) this.kill(ally);
@@ -6348,6 +6391,32 @@ export class SewersScene extends Scene2D {
 		this.eternalFireBlockedInto(blocked);
 		const next = this.pathfinder.find({ x: ally.x, y: ally.y }, { x: destination.x, y: destination.y }, { blocked })[0];
 		if (next) this.moveTo(ally, next);
+	}
+
+	/** `WandOfWarding.Ward.zap()`: an always-hit ranged attack followed by the real tier
+	 * lifetime/self-damage rule. The carrier is immovable in practice because wards do not
+	 * enter the movement branch above; its compact ally turn only fires at visible hostiles. */
+	private takeWardTurn(ward: Creature): void {
+		const target = this.creatures
+			.filter((creature) => !creature.isHero && !creature.isNPC && !creature.isAlly && creature.hp > 0 && this.fov.isVisible(creature.x, creature.y))
+			.filter((creature) => Roguelike.chebyshevDistance(ward, creature) <= 8)
+			.sort((a, b) => Roguelike.chebyshevDistance(ward, a) - Roguelike.chebyshevDistance(ward, b))[0];
+		if (target) {
+			const wandLevel = ward.wardWandLevel ?? 0;
+			const damage = Random.normalRange(2 + wandLevel, 8 + 4 * wandLevel);
+			target.hp -= damage;
+			this.showDamage(target, damage);
+			target.sleeping = false;
+			if (target.hp <= 0) this.kill(target);
+			ward.wardTotalZaps = (ward.wardTotalZaps ?? 0) + 1;
+		}
+		const tier = ward.wardTier ?? 1;
+		if (tier <= 3) {
+			if ((ward.wardTotalZaps ?? 0) >= 2 * tier - 1) this.kill(ward);
+		} else {
+			ward.hp -= tier === 4 ? 5 : tier === 5 ? 6 : 7;
+			if (ward.hp <= 0) this.kill(ward);
+		}
 	}
 
 	/** `Amok.act()` lets a visible mob attack any nearby character, including another hostile
