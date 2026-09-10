@@ -453,7 +453,7 @@ const AUGMENT_OPTIONS = ['speed', 'damage', 'none'] as const;
 	 * defending hero; Projecting still needs thrown-range geometry; Unstable is
  * now ported (delegates per swing, see `attack()`); Friendly needs a two-way Charm subsystem this port lacks (confirmed against
  * `Friendly.java`: mutual Charm + zeroing damage to the charmed target); the remaining armor
- * glyphs (Affection/AntiMagic/Obfuscation) need
+ * glyphs (AntiMagic/Obfuscation) need
  * charm/wand-drain/blink/durability systems likewise absent (Obfuscation's stealth boost has
  * no roll seam - this port's `seesHero` is FOV-binary, not a distance roll). The armor-glyph
  * Swiftness itself is real but Simplified (flat 0.8x cost with no enemy within 3, instead of
@@ -511,6 +511,7 @@ const GLYPH_TABLE: Actors.AffixTable = {
 		{ id: 'repulsion', trigger: 'defend', weight: 2, description: 'Chance to knock an adjacent attacker backward' },
 		{ id: 'brimstone', trigger: 'defend', weight: 2, description: 'Immune to burning' },
 		{ id: 'viscosity', trigger: 'defend', weight: 3, description: 'Defers part of incoming damage' },
+		{ id: 'affection', trigger: 'defend', weight: 1, description: 'Charms an attacker' },
 		{ id: 'camouflage', trigger: 'passive', weight: 2, description: 'Trampling grass turns you invisible' },
 		{ id: 'stench', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to release toxic gas when hit' },
 		{ id: 'antientropy', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to drain a wand charge' },
@@ -8119,6 +8120,11 @@ export class SewersScene extends Scene2D {
 		}
 
 		let damage = attackRoll.damage;
+		//Charm.recover()/Charm.object: an actor charmed toward this specific target
+		//does not harm it. This also makes Affection's armor-glyph charm usable by
+		//ordinary monsters, not only by the already-portable Friendly weapon path.
+		const charmedForTarget = attacker.buffs['charm'] !== undefined && this.charmTargets.get(attacker.id) === defender.id;
+		if (charmedForTarget) damage = 0;
 		if (defender.kind === 'pylon' && damage >= 15) {
 			//Pylon.damage(): 14 + floor((sqrt(8*(dmg-14)+1)-1)/2), Java's heavy-metal curve.
 			damage = 14 + Math.floor((Math.sqrt(8 * (damage - 14) + 1) - 1) / 2);
@@ -8369,6 +8375,16 @@ export class SewersScene extends Scene2D {
 
 		if (attacker.isHero) this.heroOnHit(attacker, defender, damage);
 		else this.mobOnHit(attacker, defender, damage);
+		//Charm.recover() spends five turns when the charmed actor reaches its
+		//recorded object; preserve that shortens-on-contact behavior for both
+		//Affection and Friendly charms.
+		if (charmedForTarget && attacker.buffs.charm !== undefined) {
+			attacker.buffs.charm -= 5;
+			if (attacker.buffs.charm <= 0) {
+				delete attacker.buffs.charm;
+				this.charmTargets.delete(attacker.id);
+			}
+		}
 		//Repulsion.proc() (items/armor/glyphs/Repulsion.java, tag 4.0.0-beta): an
 		//adjacent attacker is pushed directly away from the armor wearer with
 		//round(2 * max(1, (level+1)/(level+5) * Arcana)). The port has no Ballistica/
@@ -8709,6 +8725,19 @@ export class SewersScene extends Scene2D {
 	/** monster-side on-hit hooks (all pre-existing, now grouped) */
 	private mobOnHit(attacker: Creature, defender: Creature, damage: number): void {
 		if (defender.isHero) this.grantHeroShield(lethalDefenseShield(this.subclass(), this.talentRank('lethal_defense')), this.hero.maxHp);
+		//Affection.proc() (items/armor/glyphs/Affection.java, tag 4.0.0-beta):
+		//an adjacent hit can charm the attacker toward the armor wearer with
+		//(level+3)/(level+20) x Arcana chance, for round(10 x max(1, chance)).
+		//The existing charm target map supplies Java's object payload; direct map
+		//assignment preserves the level-scaled duration that addBuff alone cannot set.
+		if (defender.isHero && this.armorGlyph === 'affection' && attacker.hp > 0
+			&& Random.chance(((Math.max(0, this.degradedLevel(this.armorLevel)) + 3) / (Math.max(0, this.degradedLevel(this.armorLevel)) + 20)) * ringArcanaMultiplier(this.equippedRing))) {
+			const level = Math.max(0, this.degradedLevel(this.armorLevel));
+			const chance = ((level + 3) / (level + 20)) * ringArcanaMultiplier(this.equippedRing);
+			addBuff(attacker, 'charm');
+			attacker.buffs.charm = Math.max(attacker.buffs.charm ?? 0, Math.round(10 * Math.max(1, chance)));
+			this.charmTargets.set(attacker.id, defender.id);
+		}
 		//Metabolism.proc(): 1-in-6 x arcana, consume 10 hunger and heal one HP,
 		//provided the hero is not starving and has room to heal.
 		if (defender.isHero && this.armorGlyph === 'metabolism' && this.hunger < 450 && this.hero.hp < this.hero.maxHp && Random.chance((1 / 6) * ringArcanaMultiplier(this.equippedRing))) {
