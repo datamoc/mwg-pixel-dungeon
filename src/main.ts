@@ -867,7 +867,7 @@ export class SewersScene extends Scene2D {
 		},
 	});
 	private readonly heroActions: HeroActionPorts = {
-		isParalysed: () => !!this.hero.buffs['paralysis'],
+		isParalysed: () => !!this.hero.buffs['paralysis'] || !!this.hero.buffs['frost'],
 		beginTurn: () => { this.awaitingInput = false; },
 		spendTurn: (turnCost?: number) => { if (this.freeTurnNext) this.freeTurnNext = false; else this.spendHeroTurn(turnCost); },
 		announceParalysis: () => this.say(t('actors.buffs.paralysis.heromsg'), 'negative'),
@@ -3783,12 +3783,17 @@ export class SewersScene extends Scene2D {
 		},
 		//PotionOfFrost.shatter(): seeds a `Freezing` blob at the shatter cell, which
 		//extinguishes fire, chills (`Chill`) and eventually freezes (`Frost`, an
-		//immobilize) everything caught in it. This port has no blob-freezing terrain and
-		//no freeze/immobilize status distinct from paralysis (see PORT_COVERAGE.md), so
-			//this is Simplified to a target-centred cast because no thrown-cell picker exists;
-			//the status itself is now the real 10-turn Chill rather than a daze stand-in.
+		//immobilize) everything caught in it. This remains target-centred because no
+		//thrown-cell picker exists, but the final Frost state is represented explicitly.
 		potionFrost: () => {
 			delete this.hero.buffs['burning'];
+			const existingHeroChill = this.hero.buffs['chill'] ?? 0;
+			addBuff(this.hero, 'chill');
+			if (existingHeroChill >= BUFF_DURATION.chill) {
+				delete this.hero.buffs['chill'];
+				this.hero.buffs['frost'] = BUFF_DURATION.frost;
+				this.hero.buffs['paralysis'] = Math.max(this.hero.buffs['paralysis'] ?? 0, BUFF_DURATION.frost);
+			}
 			//EternalFire vs Freezing: any frost touching any part of the wall clears the whole
 			//thing (`clear()` -> `fullyClear()` - the room's own dropped PotionOfFrost is the
 			//intended key past its wall). This port has no Freezing blob (see the branch comment
@@ -3815,7 +3820,16 @@ export class SewersScene extends Scene2D {
 					this.showDamage(target, scald);
 				}
 				delete target.buffs['burning'];
+				const existingChill = target.buffs['chill'] ?? 0;
 				addBuff(target, 'chill');
+				//Freezing.freeze(): once Chill reaches its cap, Frost removes Chill and
+				//increments Char.paralysed. The shared paralysis timer is the movement lock;
+				//the frost marker also makes later Chill applications ineffective.
+				if (existingChill >= BUFF_DURATION.chill) {
+					delete target.buffs['chill'];
+					target.buffs['frost'] = BUFF_DURATION.frost;
+					target.buffs['paralysis'] = Math.max(target.buffs['paralysis'] ?? 0, BUFF_DURATION.frost);
+				}
 				if (target.hp <= 0) this.kill(target);
 			}
 			this.say(t('port.log.quafffrost'), 'positive');
@@ -6299,7 +6313,7 @@ export class SewersScene extends Scene2D {
 				}
 			}
 		}
-		if (monster.buffs['paralysis']) return;
+		if (monster.buffs['paralysis'] || monster.buffs['frost']) return;
 		if (monster.buffs['amok']) {
 			this.takeAmokTurn(monster);
 			return;
@@ -6544,7 +6558,7 @@ export class SewersScene extends Scene2D {
 	 * hero. This is the shared combat seam required by MirrorImage and future directable allies;
 	 * Java's individual ally subclasses can add richer orders once their own quests are ported. */
 	private takeAllyTurn(ally: Creature): void {
-		if (ally.buffs['paralysis']) return;
+		if (ally.buffs['paralysis'] || ally.buffs['frost']) return;
 		if (ally.allyKind === 'ward') {
 			this.takeWardTurn(ally);
 			return;

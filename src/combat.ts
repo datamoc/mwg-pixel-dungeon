@@ -197,6 +197,8 @@ export const ANNOUNCED_BUFFS = new Set<BuffId>([
 ]);
 
 export function addBuff(c: Creature, id: BuffId): void {
+	//Frost.java declares immunity to Chill: a frozen creature cannot be slowed again.
+	if (id === 'chill' && c.buffs.frost !== undefined) return;
 	const event = combat.addBuff(c, id);
 	if (event.fresh && announceBuff && ANNOUNCED_BUFFS.has(id)) announceBuff(c, id);
 }
