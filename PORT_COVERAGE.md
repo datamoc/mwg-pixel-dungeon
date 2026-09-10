@@ -107,6 +107,7 @@ been replaced with what the Java actually contains.
 | `Gnoll`: same four | `MONSTERS.gnoll` | Ported |
 | `Swarm`: same four (base stats only) and `flying = true` terrain access | `MONSTERS.swarm`, `Creature.flying`, `spawnPortedMobs`/`populate`/`swarmSplit`/`moveTo` | Ported: Swarm may be generated on, split into, and move across raw chasm cells, matching `Swarm.java`'s `flying = true`. `YogFist.java` does not set `flying`, so Yog's fists remain correctly grounded. |
 | `Swarm.defenseProc` split (`HP >= damage+2`, clone holds half the post-hit HP, `EXP = 0` past generation 0, free 4-neighbour) | `swarmSplit` | Ported |
+| `Piranha.act()` water-only occupancy and `dieOnLand()` after forced movement | `spawnPortedMobs`/`populate` water gate, `moveTo` post-move check | Ported: Piranhas are only created in water, follow water-only movement paths, and die immediately when an effect moves one onto dry terrain, matching `Piranha.java`. |
 | `Crab`: same four | `MONSTERS.crab` | Ported |
 | `Slime`: same four | `MONSTERS.slime` | Ported |
 | `Skeleton`: same four | `MONSTERS.skeleton` | Ported |
