@@ -465,6 +465,8 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.window.settings.version': 'Version {version}',
 	'port.window.support.title': 'Support the Game',
 	'port.window.support.body': 'If you enjoy this game, consider supporting the original Shattered Pixel Dungeon.',
+	'port.log.missilebroken': 'Your missile breaks!',
+	'port.log.rockfallkill': 'The falling rocks crush you!',
 };
 
 /**
@@ -893,6 +895,8 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 	'port.window.settings.version': 'Version {version}',
 	'port.window.support.title': 'Soutenir le jeu',
 	'port.window.support.body': 'Si vous appréciez ce jeu, pensez à soutenir le Shattered Pixel Dungeon original.',
+	'port.log.missilebroken': 'Votre projectile se brise !',
+	'port.log.rockfallkill': 'Les rochers qui tombent vous écrasent !',
 };
 
 /**
@@ -1299,6 +1303,9 @@ export const PORT_STRINGS_DE: Record<string, string> = {
 	'port.window.settings.version': 'Version {version}',
 	'port.window.support.title': 'Unterstütze das Spiel',
 	'port.window.support.body': 'Wenn dir dieses Spiel gefällt, erwäge, das ursprüngliche Shattered Pixel Dungeon zu unterstützen.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.missilebroken': 'Dein Projektil zerbricht!',
+	'port.log.rockfallkill': 'Die fallenden Felsen zerschmettern dich!',
 };
 
 /**
@@ -1705,6 +1712,9 @@ export const PORT_STRINGS_ES: Record<string, string> = {
 	'port.window.settings.version': 'Versión {version}',
 	'port.window.support.title': 'Apoya el Juego',
 	'port.window.support.body': 'Si disfrutas este juego, considera apoyar el Shattered Pixel Dungeon original.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.missilebroken': '¡Tu proyectil se rompe!',
+	'port.log.rockfallkill': '¡Las rocas que caen te aplastan!',
 };
 
 /**
@@ -2112,6 +2122,9 @@ export const PORT_STRINGS_PT: Record<string, string> = {
 	'port.window.settings.version': 'Versão {version}',
 	'port.window.support.title': 'Apoie o Jogo',
 	'port.window.support.body': 'Se você gosta deste jogo, considere apoiar o Shattered Pixel Dungeon original.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.missilebroken': 'Seu projétil se quebra!',
+	'port.log.rockfallkill': 'As pedras que caem esmagam você!',
 };
 
 /**
@@ -2518,6 +2531,9 @@ export const PORT_STRINGS_IT: Record<string, string> = {
 	'port.window.settings.version': 'Versione {version}',
 	'port.window.support.title': 'Supporta il Gioco',
 	'port.window.support.body': "Se ti piace questo gioco, considera di supportare l'originale Shattered Pixel Dungeon.",
+	// MT: no Java source key exists for this port-only message.
+	'port.log.missilebroken': 'Il tuo proiettile si rompe!',
+	'port.log.rockfallkill': 'Le rocce che cadono ti schiacciano!',
 };
 
 /**
@@ -2924,6 +2940,9 @@ export const PORT_STRINGS_PL: Record<string, string> = {
 	'port.window.settings.version': 'Wersja {version}',
 	'port.window.support.title': 'Wesprzyj Grę',
 	'port.window.support.body': 'Jeśli podoba ci się ta gra, rozważ wsparcie oryginalnego Shattered Pixel Dungeon.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.missilebroken': 'Twój pocisk pęka!',
+	'port.log.rockfallkill': 'Spadające skały miażdżą cię!',
 };
 
 /**

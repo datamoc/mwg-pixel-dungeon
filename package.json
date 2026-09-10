@@ -11,7 +11,8 @@
     "check": "tsc --noEmit",
     "test:simulation": "node tools/verifySimulation.mjs",
     "test:items": "node tools/verifyItemWorkflows.mjs",
-    "i18n": "node tools/i18n-extract.mjs"
+    "i18n": "node tools/i18n-extract.mjs",
+    "i18n:check": "node tools/i18n-extract.mjs --check"
   },
   "dependencies": {
     "mwg": "npm:@datamoc/mw_games@^0.5.2",

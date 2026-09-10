@@ -647,6 +647,8 @@ interface SaveShape {
 	hourglassTurnsToCost?: number;
 	heroShield?: number;
 	heroBarrierState?: { layers: { amount: number; decayPerTick?: number }[] };
+	livingEarthArmor?: number;
+	livingEarthWandLevel?: number;
 	barrierPartialLoss?: number;
 	blockingBarrierState?: { layers: { amount: number; decayPerTick?: number }[] };
 	/** Legacy (pre-two-pool saves): Blocking's share used to live inside `heroBarrier`. */
@@ -1099,6 +1101,9 @@ export class SewersScene extends Scene2D {
 	private hourglassTurnsToCost = 2;
 	/** Java Barrier/BrokenSeal-style shielding, consumed before HP and saved with the run. */
 	private heroBarrier = new Actors.Barrier();
+	/** `WandOfLivingEarth.RockArmor`: stored rock armor and the wand level that set its cap. */
+	private livingEarthArmor = 0;
+	private livingEarthWandLevel = 0;
 	/** Barrier.partialLostShield (`actors/buffs/Barrier.java`): fractional decay accumulator. */
 	private barrierPartialLoss = 0;
 	/** Blocking.BlockBuff's own real shield (`items/weapon/enchantments/Blocking.java`): a separate
@@ -5037,7 +5042,7 @@ export class SewersScene extends Scene2D {
 					this.ammo--;
 					this.ammoDurability = this.ammo > 0 ? 100 : 0;
 					missileSurvived = false;
-					this.say(t('items.weapon.missiles.missileweapon.has_broken'), 'negative');
+					this.say(t('port.log.missilebroken'), 'negative');
 				} else if (this.ammoDurability <= cost) {
 					this.say(t('items.weapon.missiles.missileweapon.about_to_break'), 'warning');
 				}
@@ -5079,6 +5084,8 @@ export class SewersScene extends Scene2D {
 				for (const victim of zapTargets) {
 					const raw = this.wandType === 'corrosion' || this.wandType === 'corruption'
 						? 0
+						: this.wandType === 'livingEarth'
+							? Random.normalRange(4, 6 + 2 * this.weaponLevel)
 						: this.wandType === 'fireblast'
 						? Random.normalRange(1 + this.weaponLevel, 2 + 2 * this.weaponLevel)
 						: this.wandType === 'lightning'
@@ -5095,6 +5102,17 @@ export class SewersScene extends Scene2D {
 					victim.hp -= damage;
 					this.showDamage(victim, damage);
 					victim.sleeping = false;
+					if (this.wandType === 'livingEarth') {
+						//WandOfLivingEarth.onZap() adds the damage dealt to RockArmor, capped
+						//at twice `armorToGuardian()` (8 + 4*wand level). This port stores the
+						//same persistent amount directly; the guardian conversion is still a
+						//separate missing actor, so reaching the cap does not spawn one yet.
+						this.livingEarthWandLevel = Math.max(this.livingEarthWandLevel, this.weaponLevel);
+						this.livingEarthArmor = Math.min(
+							2 * (8 + 4 * this.livingEarthWandLevel),
+							this.livingEarthArmor + damage,
+						);
+					}
 					if (this.wandType === 'corrosion') {
 						//WandOfCorrosion.onZap() seeds CorrosiveGas at the collision cell and
 						//lets its volume affect the 9-cell neighbourhood. This port has no
@@ -7107,7 +7125,7 @@ export class SewersScene extends Scene2D {
 					this.hero.hp -= blocked;
 					this.showDamage(this.hero, dmg);
 					if (this.hero.hp <= 0) {
-						this.say(t('actors.mobs.gnollgeomancer.rockfall_kill'), 'negative');
+						this.say(t('port.log.rockfallkill'), 'negative');
 						this.kill(this.hero);
 						heroDied = true;
 					} else if (challenge) this.hero.buffs['paralysis'] = 5;
@@ -8046,11 +8064,18 @@ export class SewersScene extends Scene2D {
 		//Char.damage()'s own Barrier absorption, so Tenacity scales the raw hit here too.
 		const tenacityMultiplier = ringTenacityMultiplier(this.equippedRing, this.hero.hp, this.hero.maxHp);
 		const scaled = tenacityMultiplier < 1 ? Math.ceil(amount * tenacityMultiplier) : amount;
+		//WandOfLivingEarth.RockArmor.absorb(): blocks `damage - damage/2` (ceil half)
+		//until its stored rock amount is exhausted, before ordinary ShieldBuff layers.
+		//The port has no distinct Buff priority for RockArmor, so it drains first here;
+		//the amount and half-damage rule are retained even though EarthGuardian is not.
+		const livingEarthBlocked = Math.min(this.livingEarthArmor, Math.ceil(Math.max(0, scaled) / 2));
+		this.livingEarthArmor -= livingEarthBlocked;
 		//ShieldBuff.processDamage(): higher `shieldUsePriority` drains first - BlockBuff (2)
 		//before Barrier (0) - so Blocking's own pool absorbs ahead of the shared pool.
-		const blockedBlocking = this.blockingBarrier.absorb(Math.max(0, scaled));
-		const blockedBase = this.heroBarrier.absorb(Math.max(0, scaled - blockedBlocking));
-		const blocked = blockedBlocking + blockedBase;
+		const afterLivingEarth = Math.max(0, scaled - livingEarthBlocked);
+		const blockedBlocking = this.blockingBarrier.absorb(afterLivingEarth);
+		const blockedBase = this.heroBarrier.absorb(Math.max(0, afterLivingEarth - blockedBlocking));
+		const blocked = livingEarthBlocked + blockedBlocking + blockedBase;
 		this.wandCharges.refund(shieldBatteryGain(blocked, this.talentRank('shield_battery')));
 		const remaining = Math.max(0, scaled - blocked);
 		const reduced = Math.max(0, remaining - ironWillReduction(this.hero.hp, this.hero.maxHp, this.talentRank('iron_will')));
@@ -9025,6 +9050,8 @@ export class SewersScene extends Scene2D {
 			talents: Object.entries(this.talentRanks),
 			heroShield: this.heroBarrier.total + this.blockingBarrier.total,
 			heroBarrierState: this.heroBarrier.toJSON(),
+			livingEarthArmor: this.livingEarthArmor,
+			livingEarthWandLevel: this.livingEarthWandLevel,
 			barrierPartialLoss: this.barrierPartialLoss,
 			blockingBarrierState: this.blockingBarrier.toJSON(),
 			blockingTurnsLeft: this.blockingTurnsLeft,
@@ -9087,6 +9114,8 @@ export class SewersScene extends Scene2D {
 		this.heroBarrier = s.heroBarrierState
 			? Actors.Barrier.fromJSON(s.heroBarrierState)
 			: new Actors.Barrier();
+		this.livingEarthArmor = s.livingEarthArmor ?? 0;
+		this.livingEarthWandLevel = s.livingEarthWandLevel ?? 0;
 		if (!s.heroBarrierState && s.heroShield) this.heroBarrier.add(s.heroShield);
 		this.barrierPartialLoss = s.barrierPartialLoss ?? 0;
 		this.blockingBarrier = s.blockingBarrierState

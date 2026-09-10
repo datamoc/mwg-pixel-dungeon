@@ -26,7 +26,21 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const web = join(here, '..');
-const messages = join(web, '..', 'core', 'src', 'main', 'assets', 'messages');
+
+/**
+ * The port lives in its own repository now, so the SPD Java checkout is deliberately an
+ * explicit input instead of an assumed sibling. `--spd-root` points at the checkout root;
+ * `SPD_SOURCE_ROOT` is convenient for CI/local scripts. Keeping this required makes a missing
+ * source tree fail loudly instead of producing a plausible but tiny partial catalogue.
+ */
+const rootArgument = process.argv.indexOf('--spd-root');
+const spdRoot = rootArgument >= 0 ? process.argv[rootArgument + 1] : process.env.SPD_SOURCE_ROOT;
+if (!spdRoot || spdRoot.startsWith('--')) {
+	console.error('i18n-extract: provide the Java SPD checkout with --spd-root <path> or SPD_SOURCE_ROOT');
+	process.exit(1);
+}
+const messages = join(spdRoot, 'core', 'src', 'main', 'assets', 'messages');
+const checkOnly = process.argv.includes('--check');
 
 /** the 9 domains `Messages.java`'s `prop_files` loads, in its own order */
 const DOMAINS = ['actors', 'items', 'journal', 'levels', 'misc', 'plants', 'scenes', 'ui', 'windows'];
@@ -213,12 +227,25 @@ const body = Object.entries(catalogs)
 	.map(([locale, table]) => `\t${JSON.stringify(locale)}: ${JSON.stringify(table, null, 1).replace(/\n/g, '\n\t')},`)
 	.join('\n');
 
-await mkdir(join(web, 'src', 'generated'), { recursive: true });
-await writeFile(
-	join(web, 'src', 'generated', 'spdMessages.ts'),
-	`${header}export const SPD_MESSAGES: Record<string, Record<string, string>> = {\n${body}\n};\n`,
-	'utf8'
-);
+const generated = `${header}export const SPD_MESSAGES: Record<string, Record<string, string>> = {\n${body}\n};\n`;
+const output = join(web, 'src', 'generated', 'spdMessages.ts');
+if (checkOnly) {
+	let current;
+	try {
+		current = await readFile(output, 'utf8');
+	} catch {
+		console.error(`i18n-extract: generated catalog is missing: ${output}`);
+		process.exit(1);
+	}
+	if (current !== generated) {
+		console.error(`i18n-extract: generated catalog is stale: ${output}`);
+		process.exit(1);
+	}
+	console.log(`i18n-extract: catalog is up to date (${wanted.length} referenced SPD keys)`);
+} else {
+	await mkdir(join(web, 'src', 'generated'), { recursive: true });
+	await writeFile(output, generated, 'utf8');
+}
 
 const counts = Object.entries(catalogs).map(([locale, table]) => `${locale}:${Object.keys(table).length}`);
 console.log(`wrote src/generated/spdMessages.ts - ${wanted.length} keys referenced`);
