@@ -758,7 +758,7 @@ interface SavedCreature {
 	firstSummon?: boolean;
 	nextTurn: number | null;
 	isAlly?: boolean;
-	allyKind?: 'mirror' | 'sheep';
+	allyKind?: 'mirror' | 'sheep' | 'ward';
 	sheepTurns?: number;
 	hasRaged?: boolean;
 	raged?: boolean;
@@ -1573,7 +1573,7 @@ export class SewersScene extends Scene2D {
 	}
 
 	/** any monster in MONSTERS, cut from its own real sprite sheet at its own real frame size */
-	private spawnMonster(kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep'): Creature {
+	private spawnMonster(kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward'): Creature {
 		const baseDef = MONSTERS[kind];
 		//Data-driven: was two long ternary chains (a 7-kind stat-override chain and a 10-kind
 		//base-alias chain) - see `DEPTH_SCALED_STATS`/`BASE_KIND_ALIASES` in monsters.ts.
@@ -4332,6 +4332,43 @@ export class SewersScene extends Scene2D {
 		this.say(t('port.log.wandregrowth'), 'positive');
 	}
 
+	/**
+	 * `WandOfTransfusion.onZap()` (local SPD `WandOfTransfusion.java`). Against an enemy the
+	 * wand grants the real `5 + level` hero shield and charms living targets; undead instead
+	 * take the real direct damage roll. Against an ally it heals by `round(5% of hero HT) +
+	 * 3*level` and pays that health cost. The current port has no generic ally Barrier pool, so
+	 * excess ally healing is intentionally omitted; the existing hero Barrier is still used
+	 * for the enemy branch. Targeting an ally is auto-preferred because this port has no cell
+	 * picker, while the enemy fallback keeps the wand useful before ally combat is present.
+	 */
+	private useTransfusionWand(target: Creature): void {
+		const level = Math.max(0, this.degradedLevel(this.weaponLevel));
+		if (target.isAlly) {
+			const selfDamage = Math.round(this.hero.maxHp * 0.05);
+			const healing = selfDamage + 3 * level;
+			const before = target.hp;
+			target.hp = Math.min(target.maxHp, target.hp + healing);
+			const blocked = this.absorbHeroDamage(selfDamage);
+			this.hero.hp -= blocked;
+			this.showHeal(target, target.hp - before);
+			if (this.hero.hp <= 0) this.kill(this.hero);
+		} else {
+			this.grantHeroShield(5 + level, this.hero.maxHp);
+			const undead = target.kind === 'skeleton' || target.kind === 'necroSkeleton' || target.kind === 'necromancer' || target.kind === 'spectralNecromancer';
+			if (undead) {
+				const raw = Random.normalRange(3 + level, 6 + 2 * level);
+				const damage = Math.max(0, raw - Random.normalRange(target.armor[0], target.armor[1]));
+				target.hp -= damage;
+				this.showDamage(target, damage);
+				if (target.hp <= 0) this.kill(target);
+			} else {
+				addBuff(target, 'charm');
+				this.charmTargets.set(target.id, this.hero.id);
+			}
+		}
+		this.say(t('port.log.wandtransfusion'), 'positive');
+	}
+
 	/** `WandOfRegrowth.chargeLimit()`: Java's level/hero-level degradation threshold. */
 	private regrowthChargeLimit(): number {
 		if (this.weaponLevel >= 10) return Number.MAX_SAFE_INTEGER;
@@ -5094,9 +5131,11 @@ export class SewersScene extends Scene2D {
 		//`viewRadius()`, where the talent really lives).
 		const range = 6;
 		const target = this.creatures
-			.filter((c) => !c.isHero && !c.isNPC && this.fov.isVisible(c.x, c.y))
+			.filter((c) => !c.isHero && !c.isNPC && this.fov.isVisible(c.x, c.y)
+				&& (this.wandType === 'transfusion' || !c.isAlly))
 			.filter((c) => Roguelike.canTarget(this.level, this.hero, c, { range }))
-			.sort((a, b) => Roguelike.chebyshevDistance(this.hero, a) - Roguelike.chebyshevDistance(this.hero, b))[0];
+			.sort((a, b) => (this.wandType === 'transfusion' && a.isAlly !== b.isAlly ? (a.isAlly ? -1 : 1)
+				: Roguelike.chebyshevDistance(this.hero, a) - Roguelike.chebyshevDistance(this.hero, b)))[0];
 
 		if (!target) {
 			this.say(t('port.log.notarget'), 'negative');
@@ -5170,6 +5209,8 @@ export class SewersScene extends Scene2D {
 				//explicitly documented in PORT_COVERAGE.md.
 				if (this.wandType === 'regrowth') {
 					this.useRegrowthWand(target, regrowthCharges);
+				} else if (this.wandType === 'transfusion') {
+					this.useTransfusionWand(target);
 				} else {
 				const zapTargets = this.wandType === 'lightning'
 					? [target, ...this.creatures.filter((c) => c !== target && !c.isHero && !c.isNPC && c.hp > 0

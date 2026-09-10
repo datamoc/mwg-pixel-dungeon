@@ -37,7 +37,7 @@ export interface Creature extends Combatant {
 	/** Java-aligned friendly combatant (MirrorImage and future directable allies). */
 	isAlly?: boolean;
 	/** Friendly summon subtype; sheep are neutral, short-lived and non-combatant. */
-	allyKind?: 'mirror' | 'sheep';
+	allyKind?: 'mirror' | 'sheep' | 'ward';
 	sheepTurns?: number;
 	npcKind?: 'ghost' | 'wandmaker' | 'shopkeeper' | 'blacksmith' | 'imp' | 'ratKing';
 	/** GnollTrickster.combo: attacks escalate the longer it keeps hitting */

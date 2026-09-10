@@ -285,6 +285,7 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.log.crabparries': 'The great crab parries the projectile with its claw!',
 	'port.log.wandhits': 'Your wand strikes {target} for {damage}.',
 	'port.log.wandregrowth': 'The wand restores the area with flourishing growth.',
+	'port.log.wandtransfusion': 'The wand transfers life through the blood-red beam.',
 	'port.log.wandcorrosion': 'Corrosive gas clings to {target}.',
 	'port.log.wandcorruption': '{target} is corrupted and turns to your side!',
 	'port.log.arrowmisses': 'Your arrow misses {target}.',
@@ -736,6 +737,7 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 	'port.log.crabparries': 'Le crabe géant pare le projectile de sa pince !',
 	'port.log.wandhits': 'Votre baguette frappe {target} pour {damage}.',
 	'port.log.wandregrowth': 'La baguette fait renaître la végétation alentour.',
+	'port.log.wandtransfusion': 'La baguette transfère la vie dans un rayon rouge sang.',
 	'port.log.wandcorrosion': 'Un gaz corrosif s’accroche à {target}.',
 	'port.log.wandcorruption': '{target} est corrompu et rejoint votre camp !',
 	'port.log.arrowmisses': 'Votre flèche manque {target}.',
@@ -1150,6 +1152,8 @@ export const PORT_STRINGS_DE: Record<string, string> = {
 	'port.log.wandhits': 'Dein Stab trifft {target} für {damage}.',
 	// MT: no Java source key exists for this port-only message.
 	'port.log.wandregrowth': 'Der Stab lässt die Umgebung üppig erblühen.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.wandtransfusion': 'Der Stab überträgt Leben durch den blutroten Strahl.',
 	'port.log.arrowmisses': 'Dein Pfeil verfehlt {target}.',
 	'port.log.shoot': 'Du triffst {target} für {damage}.',
 
@@ -1561,6 +1565,8 @@ export const PORT_STRINGS_ES: Record<string, string> = {
 	'port.log.wandhits': 'Tu varita golpea a {target} por {damage}.',
 	// MT: no Java source key exists for this port-only message.
 	'port.log.wandregrowth': 'La varita hace que la vegetación crezca exuberantemente.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.wandtransfusion': 'La varita transfiere vida mediante el rayo rojo sangre.',
 	'port.log.arrowmisses': 'Tu flecha falla contra {target}.',
 	'port.log.shoot': 'Golpeas a {target} por {damage}.',
 
@@ -1973,6 +1979,8 @@ export const PORT_STRINGS_PT: Record<string, string> = {
 	'port.log.wandhits': 'Sua varinha atinge {target} por {damage}.',
 	// MT: no Java source key exists for this port-only message.
 	'port.log.wandregrowth': 'A varinha faz a vegetação ao redor florescer.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.wandtransfusion': 'A varinha transfere vida através do raio vermelho-sangue.',
 	'port.log.arrowmisses': 'Sua flecha erra {target}.',
 	'port.log.shoot': 'Você atira em {target} por {damage}.',
 
@@ -2384,6 +2392,8 @@ export const PORT_STRINGS_IT: Record<string, string> = {
 	'port.log.wandhits': 'La tua bacchetta colpisce {target} per {damage}.',
 	// MT: no Java source key exists for this port-only message.
 	'port.log.wandregrowth': 'La bacchetta fa rigogliosa la vegetazione circostante.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.wandtransfusion': 'La bacchetta trasferisce la vita attraverso il raggio rosso sangue.',
 	'port.log.arrowmisses': 'La tua freccia manca {target}.',
 	'port.log.shoot': 'Spari a {target} per {damage}.',
 
@@ -2795,6 +2805,8 @@ export const PORT_STRINGS_PL: Record<string, string> = {
 	'port.log.wandhits': 'Twoja różdżka trafia {target} za {damage} obrażeń.',
 	// MT: no Java source key exists for this port-only message.
 	'port.log.wandregrowth': 'Różdżka bujnie odradza roślinność wokół.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.wandtransfusion': 'Różdżka przenosi życie przez krwistoczerwony promień.',
 	'port.log.arrowmisses': 'Twoja strzała chybia {target}.',
 	'port.log.shoot': 'Strzelasz do {target} za {damage} obrażeń.',
 
