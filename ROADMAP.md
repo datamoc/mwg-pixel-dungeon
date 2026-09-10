@@ -662,7 +662,7 @@ browser-verification workflow for why).
 - [x] Implement chasm falling and traversal. `isChasmCell`/`fallThroughChasm` model the
       terrain; `Chasm.heroLand()`'s real Cripple + HP/HT-scaled landing damage and the
       Levitation bypass are now ported too (see `PORT_COVERAGE.md`'s `Chasm.java` row for the
-      remaining gaps: Bleeding DoT, feather-fall item, landing sound/camera shake).
+      remaining gaps: source-specific Bleeding death badges/blood visuals, feather-fall item, landing sound/camera shake).
 - [ ] Implement water and terrain hazards. `Level.java`'s per-turn water hook (a non-flying
       char standing in `WATER` extinguishes `Burning`, matching `Burning.act()`'s own
       `acted && water && !flying -> detach()`) is now ported for both hero and monsters,
