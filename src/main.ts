@@ -3438,16 +3438,19 @@ export class SewersScene extends Scene2D {
 		}
 		if (item.chest) item.chest = undefined;
 		if (item.forSale && item.item) {
-			//Heap.Type.FOR_SALE: a shop stand is bought, never picked up free - previously
-			//these spawned as ordinary loot, so whole generated shop stocks were stealable.
-			//Priced with the real `sellPrice()` formula and the `for_sale` line; buying from
-			//a stand still needs the shop-browse UI (see PORT_COVERAGE.md), so the heap stays
-			//put. Stands with no priced payload behind them (cosmetic-only mappings) fall
-			//through to the ordinary pickup below, exactly as before this gate existed.
+			//Heap.Type.FOR_SALE: a shop stand is bought, never picked up free. Java opens
+			//WndTradeItem when the hero steps on the heap; this port has no heap window, so
+			//the same contact action completes the purchase directly.
 			const price = getShopPrice(item.item.id, this.depth, item.item.quantity, item.item.identified ?? false);
 			if (price > 0) {
-				this.say(t('items.heap.for_sale', { '0': price, '1': this.itemDisplayName(item.item.id, item.item.identified ?? false, item.item.instanceId) }), 'info');
-				return;
+				const name = this.itemDisplayName(item.item.id, item.item.identified ?? false, item.item.instanceId);
+				if (this.heroStats.base('gold') < price) {
+					this.say(t('port.log.cannotafford', { item: name, price }), 'negative');
+					return;
+				}
+				this.heroStats.setBase('gold', this.heroStats.base('gold') - price);
+				item.forSale = false;
+				this.say(t('port.log.buy', { item: name, price }), 'positive');
 			}
 		}
 		runState.audio.cue(item.kind === 'gold' ? 'gold' : item.kind === 'dewdrop' ? 'dewdrop' : 'item', 0.6);

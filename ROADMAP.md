@@ -295,9 +295,10 @@ browser-verification workflow for why).
       per-shop shelf stock and a persisted cap-3 buyback shelf rebought at flat `value()`
       (G key, newest sale first), and generated FOR_SALE stands are priced and no longer
       free loot. Remaining, each needing its own system: `ShopRoom` geometry (keepers stand
-      in random rooms), stand-by-stand purchasing plus selling anything but food (both need
-      a shop-browse/item-picker UI), and the full generated stock as live goods (needs
-      Ankhs/Styluses/darts/spells/bags as real items first). See `PORT_COVERAGE.md`'s
+      in random rooms), selling anything but food (needs the generic item-picker UI), and
+      the full generated stock as priced live goods (needs Ankhs/Styluses/darts/spells/bags
+      as real items first). Priced stands can now be bought directly by stepping onto them;
+      the Java trade window is still simplified. See `PORT_COVERAGE.md`'s
       `Shopkeeper` + pricing rows.
 - [x] Implement Timekeeper's Hourglass sand-bag state and its level-generation effects. The
       identified/uncursed inventory state now follows Java's depth-specific shop percentages,
