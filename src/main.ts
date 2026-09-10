@@ -1502,6 +1502,7 @@ export class SewersScene extends Scene2D {
 		//Burning immunity in Char.isImmune(). Derive the shared buff-boundary flag
 		//from the currently equipped glyph whenever equipment/stats are refreshed.
 		this.hero.fireImmune = this.armorGlyph === 'brimstone';
+		this.hero.magicImmune = this.armorGlyph === 'antimagic';
 		//Hero.java increments the raw skills, then applies weapon/armor factors when
 		//attackSkill()/defenseSkill() is queried. Keep those counters separate from
 		//talent points so every level has the real +1/+1 combat-skill growth.
@@ -5779,8 +5780,10 @@ export class SewersScene extends Scene2D {
 				if (wasDrowsy && this.hero.buffs['drowsy'] === undefined && this.hero.hp < this.hero.maxHp) {
 					//Drowsy.act() attaches MagicalSleep; a full-health reader takes Java's
 					//"too healthy" path and is not put to sleep.
-					this.hero.buffs['magicalSleep'] = 1;
-					this.hero.buffs['paralysis'] = Math.max(this.hero.buffs['paralysis'] ?? 0, BUFF_DURATION.paralysis);
+					if (!this.hero.magicImmune) {
+						this.hero.buffs['magicalSleep'] = 1;
+						this.hero.buffs['paralysis'] = Math.max(this.hero.buffs['paralysis'] ?? 0, BUFF_DURATION.paralysis);
+					}
 				}
 				if (hadAdrenaline !== (this.hero.buffs['adrenalineSurge'] !== undefined)) this.syncHeroFromStats();
 				if (dot > 0) {

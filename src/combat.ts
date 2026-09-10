@@ -28,6 +28,8 @@ export interface Creature extends Combatant {
 	name: string;
 	/** Derived from the equipped Brimstone glyph; Java's `Char.isImmune(Burning)` path. */
 	fireImmune?: boolean;
+	/** Derived from AntiMagic; blocks the ported magical status applications. */
+	magicImmune?: boolean;
 	/** Viscosity's accumulated deferred damage and its one-turn initial delay. */
 	deferredDamage?: number;
 	deferredDamageDelay?: boolean;
@@ -206,6 +208,10 @@ export function addBuff(c: Creature, id: BuffId): void {
 	//effect can be attached. Keep this check at the shared buff boundary so fire
 	//from traps, blobs, wands, plants, and enemy attacks all obey it.
 	if (id === 'burning' && c.fireImmune) return;
+	//AntiMagic.RESISTS (items/armor/glyphs/AntiMagic.java): these status classes
+	//are magical in Java and are rejected before attachment. Damage-source
+	//resistance is handled separately by the scene's explicit magical flag.
+	if (c.magicImmune && (id === 'charm' || id === 'weakness' || id === 'vulnerable' || id === 'hex' || id === 'degrade' || id === 'magicalSleep')) return;
 	//Frost.java declares immunity to Chill: a frozen creature cannot be slowed again.
 	if (id === 'chill' && c.buffs.frost !== undefined) return;
 	const event = combat.addBuff(c, id);
