@@ -453,7 +453,7 @@ const AUGMENT_OPTIONS = ['speed', 'damage', 'none'] as const;
 	 * defending hero; Projecting still needs thrown-range geometry; Unstable is
  * now ported (delegates per swing, see `attack()`); Friendly needs a two-way Charm subsystem this port lacks (confirmed against
  * `Friendly.java`: mutual Charm + zeroing damage to the charmed target); the remaining armor
- * glyphs (AntiMagic/Obfuscation) need
+ * glyphs (Obfuscation) need
  * charm/wand-drain/blink/durability systems likewise absent (Obfuscation's stealth boost has
  * no roll seam - this port's `seesHero` is FOV-binary, not a distance roll). The armor-glyph
  * Swiftness itself is real but Simplified (flat 0.8x cost with no enemy within 3, instead of
@@ -512,6 +512,7 @@ const GLYPH_TABLE: Actors.AffixTable = {
 		{ id: 'brimstone', trigger: 'defend', weight: 2, description: 'Immune to burning' },
 		{ id: 'viscosity', trigger: 'defend', weight: 3, description: 'Defers part of incoming damage' },
 		{ id: 'affection', trigger: 'defend', weight: 1, description: 'Charms an attacker' },
+		{ id: 'antimagic', trigger: 'defend', weight: 1, description: 'Reduces magical damage' },
 		{ id: 'camouflage', trigger: 'passive', weight: 2, description: 'Trampling grass turns you invisible' },
 		{ id: 'stench', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to release toxic gas when hit' },
 		{ id: 'antientropy', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to drain a wand charge' },
@@ -7003,7 +7004,7 @@ export class SewersScene extends Scene2D {
 				if (!rollHit(monster, this.hero, true)) {
 					this.say(t('port.log.eyegazemisses'), 'negative');
 				} else {
-					const dmg = this.absorbHeroDamage(Random.normalRange(30, 50));
+					const dmg = this.absorbHeroDamage(Random.normalRange(30, 50), true);
 					this.hero.hp -= dmg;
 					this.showDamage(this.hero, dmg);
 					this.say(t('port.log.eyegaze'), 'negative');
@@ -7030,7 +7031,7 @@ export class SewersScene extends Scene2D {
 			return;
 		}
 		let dmg = Math.max(0, Random.normalRange(damage[0], damage[1]) - Random.normalRange(target.armor[0], target.armor[1]));
-		if (target.isHero) dmg = this.absorbHeroDamage(dmg);
+		if (target.isHero) dmg = this.absorbHeroDamage(dmg, true);
 		target.hp -= dmg;
 		this.showDamage(target, dmg);
 		this.sprite(target).setColorAdd(0.6, 0.7, 1);
@@ -8646,11 +8647,22 @@ export class SewersScene extends Scene2D {
 	}
 
 	/** Barrier absorbs incoming damage before HP, matching Buff.Barrier's core rule. */
-	private absorbHeroDamage(amount: number): number {
+	private absorbHeroDamage(amount: number, magical = false): number {
 		//Hero.damage(): `dmg = ceil(dmg * RingOfTenacity.damageMultiplier())` is applied before
 		//Char.damage()'s own Barrier absorption, so Tenacity scales the raw hit here too.
 		const tenacityMultiplier = ringTenacityMultiplier(this.equippedRing, this.hero.hp, this.hero.maxHp);
-		const scaled = tenacityMultiplier < 1 ? Math.ceil(amount * tenacityMultiplier) : amount;
+		let scaled = tenacityMultiplier < 1 ? Math.ceil(amount * tenacityMultiplier) : amount;
+		//AntiMagic.drRoll()/Char.damage() (items/armor/glyphs/AntiMagic.java and
+		//actors/Char.java, tag 4.0.0-beta): listed magical sources lose a
+		//NormalIntRange(level*Arcana, (3+1.5*level)*Arcana) roll before shields.
+		//The port's explicit magical flag is used only at its real ranged-magic
+		//callers; physical melee and unclassified environmental damage stay untouched.
+		if (magical && this.armorGlyph === 'antimagic') {
+			const level = Math.max(0, this.degradedLevel(this.armorLevel));
+			const multiplier = ringArcanaMultiplier(this.equippedRing);
+			const reduction = Random.normalRange(Math.round(level * multiplier), Math.round((3 + level * 1.5) * multiplier));
+			scaled = Math.max(0, scaled - reduction);
+		}
 		let viscosityDamage = Math.max(0, scaled);
 		//Viscosity.proc()/ViscosityTracker.deferDamage() (items/armor/glyphs/Viscosity.java,
 		//tag 4.0.0-beta): after the normal incoming-damage scaling, defer

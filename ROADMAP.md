@@ -145,7 +145,7 @@ browser-verification workflow for why).
       replacing not adding), decay is `2.5%/turn min 0.1` as a float, and the read-back is
       `ceil`.** Remaining, each still needing its own system first: Corrupting's
       conversion, Elastic/Projecting's geometry, and Affection/
-      AntiMagic/Obfuscation (Obfuscation checked: its stealth boost feeds a distance roll this
+      Obfuscation (Obfuscation checked: its stealth boost feeds a distance roll this
       port's FOV-binary `seesHero` has no seam for). `polarized`/
       `sacrificial`/`displacing` gained real proc branches in an earlier pass, alongside the
       already-live `wayward`/`annoying`/`dazzling`/`explosive`.
