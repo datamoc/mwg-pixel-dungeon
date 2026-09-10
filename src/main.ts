@@ -449,10 +449,11 @@ const AUGMENT_OPTIONS = ['speed', 'damage', 'none'] as const;
 	 * subsystem this port does not model - Kinetic's old "store half of every hit" shorthand is
 	 * replaced this pass by the real `Char.damage()` kill-overkill rule below; Corrupting now
 	 * converts lethal targets through the existing ally model; Elastic now uses the
-	 * existing straight shove path; Projecting still needs thrown-range geometry; Unstable is
+	 * existing straight shove path; Repulsion now uses the same straight shove path for a
+	 * defending hero; Projecting still needs thrown-range geometry; Unstable is
  * now ported (delegates per swing, see `attack()`); Friendly needs a two-way Charm subsystem this port lacks (confirmed against
  * `Friendly.java`: mutual Charm + zeroing damage to the charmed target); the remaining armor
- * glyphs (Affection/AntiMagic/Brimstone/Obfuscation/Repulsion/Viscosity) need
+ * glyphs (Affection/AntiMagic/Brimstone/Obfuscation/Viscosity) need
  * charm/wand-drain/blink/durability systems likewise absent (Obfuscation's stealth boost has
  * no roll seam - this port's `seesHero` is FOV-binary, not a distance roll). The armor-glyph
  * Swiftness itself is real but Simplified (flat 0.8x cost with no enemy within 3, instead of
@@ -507,6 +508,7 @@ const GLYPH_TABLE: Actors.AffixTable = {
 		{ id: 'entanglement', trigger: 'defend', weight: 2, description: 'Chance to root an attacker' },
 		{ id: 'swiftness', trigger: 'passive', weight: 3, description: 'Faster movement when safe (20% speed increase)' },
 		{ id: 'potential', trigger: 'defend', weight: 3, description: 'Chance to recharge wands when hit' },
+		{ id: 'repulsion', trigger: 'defend', weight: 2, description: 'Chance to knock an adjacent attacker backward' },
 		{ id: 'camouflage', trigger: 'passive', weight: 2, description: 'Trampling grass turns you invisible' },
 		{ id: 'stench', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to release toxic gas when hit' },
 		{ id: 'antientropy', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to drain a wand charge' },
@@ -8339,6 +8341,29 @@ export class SewersScene extends Scene2D {
 
 		if (attacker.isHero) this.heroOnHit(attacker, defender, damage);
 		else this.mobOnHit(attacker, defender, damage);
+		//Repulsion.proc() (items/armor/glyphs/Repulsion.java, tag 4.0.0-beta): an
+		//adjacent attacker is pushed directly away from the armor wearer with
+		//round(2 * max(1, (level+1)/(level+5) * Arcana)). The port has no Ballistica/
+		//WandOfBlastWave primitive, so the equivalent existing straight shove is used;
+		//it still stops at walls/occupants and lets moveTo apply flying/chasm and piranha
+		//post-move rules. This is deliberately after damage, while Java's armor proc is
+		//inside Char.damage(), because the observable result is the same hit plus displacement.
+		if (defender.isHero && this.armorGlyph === 'repulsion' && attacker.hp > 0
+			&& Roguelike.chebyshevDistance(attacker, defender) <= 1) {
+			const level = this.degradedLevel(this.armorLevel);
+			const procChance = ((level + 1) / (level + 5)) * ringArcanaMultiplier(this.equippedRing);
+			if (Random.chance(procChance)) {
+				const power = Math.round(2 * Math.max(1, procChance));
+				const dx = Math.sign(attacker.x - defender.x);
+				const dy = Math.sign(attacker.y - defender.y);
+				for (let step = 0; step < power; step++) {
+					const next = { x: attacker.x + dx, y: attacker.y + dy };
+					if ((!this.level.passable(next.x, next.y) && !(attacker.flying && this.isChasmCell(next.x, next.y))) || this.creatureAt(next.x, next.y)) break;
+					this.moveTo(attacker, next);
+					if (attacker.hp <= 0) break;
+				}
+			}
+		}
 		// CrystalMimic.attackProc(): after its crystal-chest reveal it repositions the
 		// struck hero to a neighbouring free cell instead of dealing bonus damage.
 		if (attacker.kind === 'crystalMimic' && defender.isHero && defender.hp > 0) {

@@ -118,7 +118,9 @@ browser-verification workflow for why).
       is exact `changeItem` including exotics/wands/trinkets/missiles/equipped gear, still owed
       with the section-1 item-system completion (those items must exist as distinct ported items
       first), not as a standalone scroll pass.**
-- [ ] Port the remaining enchantments, glyphs, weapon curses, and armor curses. `Friendly` is
+- [ ] Port the remaining enchantments, glyphs, weapon curses, and armor curses. `Repulsion` is
+      now ported with its exact level/Arcana-scaled adjacent knockback through the existing
+      shove path. `Friendly` is
       now ported with its exact mutual Charm target/ignore-next-hit state and 1/10 x Arcana proc
       (the heart particles remain presentation-only). `Blooming` (uncommon, real
       `(lvl+1)/(lvl+3)` chance, level-scaled plant count, defender-first/shuffled-neighbour order)
