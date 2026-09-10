@@ -205,7 +205,10 @@ const CATS: CatDef[] = [
 		name: 'STONE', firstProb: 1, secondProb: 1, superKind: 'item',
 		defaultProbs: [0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0],
 		initialProbs: [0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0],
-		classes: ['StoneOfEnchantment', 'StoneOfIntuition', 'StoneOfDisarming', 'StoneOfFlock',
+		// Generator.java (4.0.0-beta) uses StoneOfDetectMagic here; StoneOfDisarming is not
+		// an SPD runestone and would silently make the implemented detect-magic item unreachable
+		// through ordinary floor generation.
+		classes: ['StoneOfEnchantment', 'StoneOfIntuition', 'StoneOfDetectMagic', 'StoneOfFlock',
 			'StoneOfShock', 'StoneOfBlink', 'StoneOfDeepSleep', 'StoneOfClairvoyance',
 			'StoneOfAggression', 'StoneOfBlast', 'StoneOfFear', 'StoneOfAugmentation'],
 	},

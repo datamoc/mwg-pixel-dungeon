@@ -263,6 +263,9 @@ browser-verification workflow for why).
       marks the nearest visible enemy for the Java 20-turn (5-turn boss) forced-target rule.
       Both now have distinct ids and generated/floor-loot mappings; the remaining differences
       are the no-cell-picker center convention and reduced Sheep art/lifespan presentation.
+      The generator table now also uses the real `StoneOfDetectMagic` class instead of the
+      nonexistent `StoneOfDisarming`, so all 12 Java runestone classes are reachable from
+      ordinary generation.
 - [ ] Implement complete weapon and armor tiers, transfer formulas, upgrade formulas, curse infusion, and degradation. Upgrade transitions are now exact Java (`Weapon/Armor.upgrade(false)`: curse-affix 1-in-3 removal with the real line, good-affix loss 10-100% from +4 with the real warnings, pre-level-change ordering), and Warlock Degrade is now the real 30-turn buff (50% on landed ranged zaps, sqrt effective-level reduction) instead of a permanent chip - the old shorthands had no Java basis. Remaining: the tier-jump progression itself (real Java has fixed per-class tiers with plain +1 levels - a full state-machine rework, not a formula fix), Blacksmith reforge transfers (section 4's forge item), and curse infusion proper (`items.spells.curseinfusion` is an alchemy-brewed spell, so it waits on the alchemy system with everything else brewed). See `PORT_COVERAGE.md`'s upgrade/degrade row.
 - [ ] Implement the remaining charm/knockback/stealth/blink/durability-per-hit
       subsystems the unported enchants, glyphs, and curses depend on (Kinetic's
