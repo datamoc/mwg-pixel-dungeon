@@ -8264,6 +8264,23 @@ export class SewersScene extends Scene2D {
 			damage = defender.hp;
 			this.say(t('port.log.talentexecute'), 'positive');
 		}
+		//Corrupting.proc(): a lethal weapon hit can convert a living Mob instead of
+		//killing it. The port's ally model already provides the permanent controlled
+		//actor shape, so preserve the target, fully heal it, clear negative buffs, and
+		//mark it as an ally. This is evaluated before damage is committed, matching the
+		//Java proc's `damage >= defender.HP` guard and its zero-damage return.
+		if (attacker === this.hero && this.weaponAffix === 'corrupting' && damage >= defender.hp
+			&& !defender.isHero && !defender.isNPC && !defender.isAlly && Random.chance(
+			((Math.max(0, this.degradedLevel(this.weaponLevel)) + 5) / (Math.max(0, this.degradedLevel(this.weaponLevel)) + 25))
+				* ringArcanaMultiplier(this.equippedRing))) {
+			defender.hp = defender.maxHp;
+			for (const buff of NEGATIVE_BUFFS) delete defender.buffs[buff];
+			defender.isAlly = true;
+			defender.allyKind = 'mirror';
+			defender.sleeping = false;
+			damage = 0;
+			this.say(t('port.log.corrupting', { target: defender.name }), 'positive');
+		}
 		const preHp = defender.hp;
 		if (defender.isHero) damage = this.absorbHeroDamage(damage);
 		//LifeLink (Char.damage): damage to a linked subject splits evenly (ceil) between it
