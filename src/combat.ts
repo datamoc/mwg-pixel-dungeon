@@ -34,6 +34,8 @@ export interface Creature extends Combatant {
 	pumped?: number;
 	/** NPCs (ghost/wandmaker/shopkeeper): bumping into them opens dialogue instead of combat */
 	isNPC?: boolean;
+	/** Java Char.flying: Swarm is the currently ported monster that can occupy chasms. */
+	flying?: boolean;
 	/** Java-aligned friendly combatant (MirrorImage and future directable allies). */
 	isAlly?: boolean;
 	/** Friendly summon subtype; sheep are neutral, short-lived and non-combatant. */

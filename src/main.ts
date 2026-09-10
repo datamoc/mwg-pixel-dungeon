@@ -1651,6 +1651,9 @@ export class SewersScene extends Scene2D {
 			damage: def.damage,
 			armor: def.armor,
 			kind,
+			//Swarm.java sets flying=true, so its actor may be generated on and move across
+			//raw Terrain.CHASM cells; YogFist.java does not set flying and remains grounded.
+			flying: kind === 'swarm',
 			pumped: kind === 'goo' ? 0 : undefined,
 			isNPC,
 			isAlly,
@@ -2650,8 +2653,11 @@ export class SewersScene extends Scene2D {
 				const at = { x: Random.range(room.left, room.right), y: Random.range(room.top, room.bottom) };
 				//Java's Char.canEnterCell() treats a chasm as solid for mobs. The coarse MWG
 				//terrain map intentionally exposes chasms as passable so the hero can fall through,
-				//so the raw ported terrain must be checked separately before spawning a monster.
-				if (!this.level.passable(at.x, at.y) || this.isChasmCell(at.x, at.y)) continue;
+				//so the raw ported terrain must be checked separately before spawning a monster;
+				//the roster's flying Swarm is the Java exception.
+				const kind = roster[rotationIndex % roster.length]!;
+				if (!this.level.passable(at.x, at.y) || (this.isChasmCell(at.x, at.y) && kind !== 'swarm')
+					|| (kind === 'piranha' && this.level.get(at.x, at.y) !== WATER)) continue;
 				if (at.x === this.hero.x && at.y === this.hero.y) continue;
 				if (this.portedMobCells.has(this.level.index(at.x, at.y))) continue;
 				if (this.creatureAt(at.x, at.y)) continue;
@@ -4793,8 +4799,9 @@ export class SewersScene extends Scene2D {
 	private spawnPortedMobs(): void {
 		for (const mob of this.portedMobSpawns) {
 			//The raw Terrain.CHASM cell is rendered through the hero-facing FLOOR code so
-			//falling remains possible, but Java never leaves a monster standing over a chasm.
-			if (!this.level.passable(mob.x, mob.y) || this.isChasmCell(mob.x, mob.y) || this.creatureAt(mob.x, mob.y)) continue;
+			//falling remains possible; Java's flying Swarm is the exception to the grounded-mob rule.
+			if (!this.level.passable(mob.x, mob.y) || (this.isChasmCell(mob.x, mob.y) && mob.kind !== 'swarm')
+				|| (mob.kind === 'piranha' && this.level.get(mob.x, mob.y) !== WATER) || this.creatureAt(mob.x, mob.y)) continue;
 			//Painter markers (`alchemyBlob`, `eternalFire`) are filtered upstream, but any
 			//future unknown kind must refuse cleanly here instead of crashing inside
 			//`spawnMonster` reading `.frame` off an undefined catalogue entry - that exact
@@ -7934,11 +7941,18 @@ export class SewersScene extends Scene2D {
 		// Java mobs treat CHASM as solid for pathing even though the hero can enter it
 		// and fall. The coarse terrain kind is open for FOV/hero collision, so enforce
 		// the mob-specific rule at the final movement boundary.
-		if (!creature.isHero && this.isChasmCell(to.x, to.y)) return;
+		if (!creature.isHero && !creature.flying && this.isChasmCell(to.x, to.y)) return;
 		faceCharacter(this.sprite(creature), creature.x, to.x);
 		if (creature.isHero) runState.audio.cue('step', 0.32);
 		creature.x = to.x;
 		creature.y = to.y;
+		//Piranha.java's act() calls dieOnLand() when an effect leaves it outside water.
+		//Normal piranha pathing only offers water cells, but forced movement deliberately
+		//reaches this post-move check so knockback/teleport effects kill it immediately.
+		if (creature.kind === 'piranha' && this.level.get(to.x, to.y) !== WATER) {
+			this.kill(creature);
+			return;
+		}
 		if (this.level.get(to.x, to.y) === WATER) this.waterSurface?.ripple(to.x, to.y);
 		if (creature.isHero) {
 			this.heroAnimation.move(to.x * TILE, to.y * TILE);
@@ -8783,7 +8797,7 @@ export class SewersScene extends Scene2D {
 		if (preHp < damage + 2) return;
 		for (const [dx, dy] of Roguelike.neighbourOffsets(4)) {
 			const at = { x: swarm.x + dx, y: swarm.y + dy };
-			if (!this.level.passable(at.x, at.y) || this.isChasmCell(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
+			if (!this.level.passable(at.x, at.y) || (this.isChasmCell(at.x, at.y) && !swarm.flying) || this.creatureAt(at.x, at.y)) continue;
 			const clone = this.spawnMonster('swarm', at);
 			clone.hp = Math.floor((preHp - damage) / 2);
 			swarm.hp -= clone.hp;
