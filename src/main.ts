@@ -180,6 +180,7 @@ import {
 	setStrongerBossesEnabled,
 	setAnnounceBuff,
 	addBuff,
+	setBleeding,
 	tickBuffs,
 	NEGATIVE_BUFFS,
 	BUFF_DURATION,
@@ -3819,11 +3820,11 @@ export class SewersScene extends Scene2D {
 
 	private applyPotionHealing(): void {
 		//PotionOfHealing.apply(): cure() always runs first regardless of the challenge below.
-		//Real cure() also detaches Bleeding/Blindness/Drowsy/Slow/Vertigo - none exist as buffs
-		//in this port, so there's nothing to clear for them. It does NOT touch Burning; that was
+		//Real cure() also detaches Bleeding/Blindness/Drowsy/Slow/Vertigo. Only Bleeding and
+		//Drowsy exist in this port so far, and both are cleared here. It does NOT touch Burning; that was
 		//a real, unwarranted addition here (2026-09-09 item-system audit) - a healing potion
 		//does not extinguish fire in real Java, removed.
-		for (const b of ['poison', 'weakness', 'vulnerable', 'cripple'] as BuffId[]) delete this.hero.buffs[b];
+		for (const b of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'drowsy'] as BuffId[]) delete this.hero.buffs[b];
 		if (isChallengeEnabled('no_healing')) {
 			//PotionOfHealing.heal()'s real NO_HEALING branch: no Healing buff at all (so none
 			//of the restored_*-talent triggers below fire either, since they key off the heal
@@ -5900,7 +5901,7 @@ export class SewersScene extends Scene2D {
 			//PotionOfHealing.cure(): clears Poison/Cripple/Weakness/Vulnerable/Bleeding/Blindness/
 			//Drowsy/Slow/Vertigo - notably not Burning, which the previous list here wrongly
 			//cleared too (no Java basis; a lit hero stays lit through a health well).
-			for (const buff of ['poison', 'weakness', 'vulnerable', 'cripple', 'roots'] as BuffId[]) delete this.hero.buffs[buff];
+			for (const buff of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'roots', 'drowsy'] as BuffId[]) delete this.hero.buffs[buff];
 			//Belongings.uncurseEquipped(): clears a known curse from the equipped weapon/armor/ring,
 			//the same three-slot clear ScrollOfRemoveCurse's branch above already uses.
 			if (getCurse(this.weaponAffix ?? '')) this.weaponAffix = null;
@@ -6089,15 +6090,14 @@ export class SewersScene extends Scene2D {
 	 * consequences are ported: a `Cripple` application and upfront damage scaled the same way
 	 * Java's is (`max(HP/2, NormalIntRange(HP/2, HT/4))`, run through the same
 	 * Tenacity/Barrier/Iron-Will/Deathless-Fury pipeline every other hero-damage source uses).
-	 * Java also applies a separate `Bleeding` DoT here; this port has no distinct Bleeding
-	 * buff at all (see the Sacrificial weapon curse's comment elsewhere in this file, which
-	 * reuses `poison` as the closest stand-in for that same gap) and does not reuse `poison`
-	 * for it either, since a chasm landing's bleed is a second, independent occurrence of a
-	 * gap already tracked once - see `PORT_COVERAGE.md`.
+	 * Java also applies a separate `Bleeding` DoT here; the port now keeps its intensity in the
+	 * shared buff map and ticks it with Java's NormalFloat/rounding rule. Source-class death
+	 * badges and blood splash presentation remain unmodeled.
 	 */
 	private landFromChasm(): void {
 		if (this.hero.hp <= 0) return;
 		addBuff(this.hero, 'cripple');
+		setBleeding(this.hero, Math.round(this.hero.maxHp / (6 + 6 * (this.hero.hp / this.hero.maxHp))));
 		const damage = this.absorbHeroDamage(Math.max(Math.floor(this.hero.hp / 2), Random.normalRange(Math.floor(this.hero.hp / 2), Math.floor(this.hero.maxHp / 4))));
 		this.hero.hp -= damage;
 		this.showDamage(this.hero, damage);
@@ -8142,15 +8142,12 @@ export class SewersScene extends Scene2D {
 		if (attacker === this.hero && this.weaponAffix === 'polarized') {
 			damage = Random.chance(0.5) ? Math.round(damage * 1.5) : 0;
 		}
-		//Sacrificial.proc(): real chance is 1/10 x arcana (this port previously rolled a flat
-		//1/12, an unconfirmed guess - corrected against `Sacrificial.java`); real bleed scales
-		//((missingHpFraction^2) * attacker.maxHp)/5, floored at 1. This port has no separate
-		//Bleeding buff (only the shared poison DoT), so - like Albino's real Bleeding proc
-		//elsewhere in this file - it reuses poison as the closest available damage-over-time
-		//primitive; the real magnitude curve is lost since this port's poison has no
-		//configurable per-tick amount.
+		//Sacrificial.proc(): Java rolls 1/10 x Arcana, then rolls a second time against
+		//(HP/HT)^2 * HT / 8 and applies Bleeding at max(1, bleedAmt). The first draft
+		//mistakenly used missing HP and a poison stand-in; both were wrong.
 		if (attacker === this.hero && this.weaponAffix === 'sacrificial' && Random.chance((1 / 10) * ringArcanaMultiplier(this.equippedRing))) {
-			addBuff(attacker, 'poison');
+			const bleedAmount = (attacker.hp / attacker.maxHp) ** 2 * attacker.maxHp / 8;
+			if (Random.chance(bleedAmount)) setBleeding(attacker, Math.max(1, bleedAmount));
 		}
 		//Displacing.proc(): real chance is 1/12 x arcana, skipped against IMMOVABLE targets (a Java
 		//property this port doesn't model, so every defender is teleportable here - a narrow
@@ -8633,8 +8630,8 @@ export class SewersScene extends Scene2D {
 			this.thiefSteal(attacker);
 			if (attacker.kind === 'bandit' && attacker.stolen) {
 				// Bandit.java adds blindness, poison and cripple to a successful steal. The
-				// framework buff set has no blindness/bleeding ids, so poison/cripple are the
-				// closest live equivalents and preserve the dangerous post-steal consequence.
+				// framework buff set has no blindness id, so daze is the blindness stand-in;
+				// poison and cripple are direct status equivalents.
 				addBuff(defender, 'poison');
 				addBuff(defender, 'cripple');
 				addBuff(defender, 'daze');

@@ -184,6 +184,7 @@ export function setAnnounceBuff(hook: ((c: Creature, id: BuffId) => void) | null
 export const ANNOUNCED_BUFFS = new Set<BuffId>([
 	'burning',
 	'poison',
+	'bleeding',
 	'ooze',
 	'cripple',
 	'weakness',
@@ -198,4 +199,13 @@ export const ANNOUNCED_BUFFS = new Set<BuffId>([
 export function addBuff(c: Creature, id: BuffId): void {
 	const event = combat.addBuff(c, id);
 	if (event.fresh && announceBuff && ANNOUNCED_BUFFS.has(id)) announceBuff(c, id);
+}
+
+/** `Buff.affect(..., Bleeding).set(level)`: retain the strongest active bleed. */
+export function setBleeding(c: Creature, level: number): void {
+	const current = c.buffs.bleeding ?? 0;
+	if (level > current) {
+		c.buffs.bleeding = level;
+		if (announceBuff && ANNOUNCED_BUFFS.has('bleeding') && current <= 0) announceBuff(c, 'bleeding');
+	}
 }

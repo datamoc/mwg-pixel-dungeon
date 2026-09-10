@@ -9,7 +9,7 @@ import type { SimulationRandom } from './random';
  * because these multipliers apply to transient dice rolls rather than to named stats a
  * StatBlock resolves.
  */
-export type BuffId = 'bless' | 'hex' | 'daze' | 'drowsy' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown';
+export type BuffId = 'bless' | 'hex' | 'daze' | 'drowsy' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown';
 export const BUFF_DURATION: Record<BuffId, number> = {
 	bless: 30,
 	hex: 30,
@@ -25,6 +25,8 @@ export const BUFF_DURATION: Record<BuffId, number> = {
 	vulnerable: 20,
 	burning: 3,
 	poison: 6,
+	//Bleeding has no fixed duration in Java: its numeric value is the next tick's level.
+	bleeding: 0,
 	cripple: 4,
 	// FlavourBuff durations used by the corresponding Java effects. They are creature
 	// state, not UI-only markers, because Char.act()/Char.move() gate turns on them.
@@ -81,7 +83,7 @@ export const BUFF_DURATION: Record<BuffId, number> = {
  * existed). `focus`/`cloak`/`frostImbue`/`lethalHasteCooldown` are this port's own invented
  * stand-ins with no real monster-facing negative equivalent, so they're excluded. */
 export const NEGATIVE_BUFFS: ReadonlySet<BuffId> = new Set<BuffId>([
-	'poison', 'burning', 'cripple', 'weakness', 'vulnerable', 'paralysis', 'roots', 'terror', 'amok', 'aggression', 'ooze', 'charm', 'degrade', 'daze', 'hex',
+	'poison', 'burning', 'bleeding', 'cripple', 'weakness', 'vulnerable', 'paralysis', 'roots', 'terror', 'amok', 'aggression', 'ooze', 'charm', 'degrade', 'daze', 'hex',
 ]);
 
 export type BuffState = Partial<Record<BuffId, number>>;
@@ -115,6 +117,15 @@ export function advanceBuffs(previous: Readonly<BuffState>, random: SimulationRa
 		if (left === undefined) continue;
 		if (id === 'burning') damage += random.int(1, 3);
 		if (id === 'poison') damage += random.int(1, 2);
+		//Bleeding.act(): Java redraws the intensity from NormalFloat(level/2, level),
+		//deals round(level), and keeps the new intensity until the next actor turn.
+		if (id === 'bleeding') {
+			const next = random.normalRange(left / 2, left);
+			const tick = Math.round(next);
+			if (tick > 0) { damage += tick; buffs[id] = next; }
+			else delete buffs[id];
+			continue;
+		}
 		if (left <= 1) delete buffs[id];
 		else buffs[id] = left - 1;
 	}
