@@ -23,6 +23,8 @@ import huntressUrl from './assets/huntress.png';
 import duelistUrl from './assets/duelist.png';
 import clericUrl from './assets/cleric.png';
 import ratUrl from './assets/rat.png';
+// `SheepSprite`'s dedicated 16x15 film, copied byte-for-byte from the Java assets.
+import sheepUrl from './assets/sheep.png';
 import snakeUrl from './assets/snake.png';
 import gnollUrl from './assets/gnoll.png';
 import swarmUrl from './assets/swarm.png';
@@ -124,6 +126,7 @@ export interface SpdSprites {
 	duelist: Texture;
 	cleric: Texture;
 	rat: Texture;
+	sheep: Texture;
 	snake: Texture;
 	gnoll: Texture;
 	swarm: Texture;
@@ -268,6 +271,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		duelist,
 		cleric,
 		rat,
+		sheep,
 		snake,
 		gnoll,
 		swarm,
@@ -356,6 +360,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(duelistUrl),
 		loadImage(clericUrl),
 		loadImage(ratUrl),
+		loadImage(sheepUrl),
 		loadImage(snakeUrl),
 		loadImage(gnollUrl),
 		loadImage(swarmUrl),
@@ -446,6 +451,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		duelist: Texture.from(duelist),
 		cleric: Texture.from(cleric),
 		rat: Texture.from(rat),
+		sheep: Texture.from(sheep),
 		snake: Texture.from(snake),
 		gnoll: Texture.from(gnoll),
 		swarm: Texture.from(swarm),

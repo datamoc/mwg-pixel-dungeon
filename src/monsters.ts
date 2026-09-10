@@ -17,6 +17,7 @@ export type MonsterId =
 	| 'slime'
 	| 'goo'
 	| 'skeleton'
+	| 'sheep'
 	| 'ward'
 	| 'earthGuardian'
 	| 'thief'
@@ -130,6 +131,9 @@ export const MONSTERS: Record<AnyMonsterId, MonsterDef> = {
 	//numbers are supplied by the wand/ward state in the scene; these values only satisfy the
 	//shared actor factory before that state is applied.
 	ward: { hp: 10, accuracy: 0, evasion: 999999, damage: [0, 0], armor: [0, 0], frame: [12, 15], idle: 0, exp: 0, maxLvl: 0 },
+	// `StoneOfFlock` creates Java's neutral Sheep actor; its stats are irrelevant because
+	// Sheep is invulnerable and never attacks, but the real 16x15 sprite film is preserved.
+	sheep: { hp: 1, accuracy: 0, evasion: 999999, damage: [0, 0], armor: [0, 0], frame: [16, 15], idle: 0, exp: 0, maxLvl: 0 },
 	// `WandOfLivingEarth.EarthGuardian` starts with no HP until the wand supplies its
 	// level/armor payload; the live actor state overrides these placeholder values.
 	earthGuardian: { hp: 0, accuracy: 0, evasion: 0, damage: [2, 4], armor: [0, 0], frame: [12, 15], idle: 0, exp: 0, maxLvl: 0 },
@@ -362,6 +366,7 @@ export const DEPTH_SCALED_STATS: Partial<Record<AnyMonsterId, (depth: number) =>
  * `BASE_KIND_ALIASES` entry of its own, so `baseKind` already equals `kind` for each of them.
  */
 export const SPRITE_KIND_OVERRIDE: Partial<Record<MonsterId, keyof SpdSprites>> = {
+	sheep: 'sheep',
 	// `WandOfWarding.WardSprite` has its own six-tier film; it is not a skeleton variant.
 	ward: 'wards',
 	earthGuardian: 'guardian',

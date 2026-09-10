@@ -1726,12 +1726,11 @@ export class SewersScene extends Scene2D {
 	}
 
 	/** `Sheep.initialize(8)` gives a neutral, invulnerable NPC a lifespan of roughly eight
-	 * actor turns. The compact actor model uses the shared ally scheduler and a tinted carrier
-	 * sprite, but preserves the important gameplay result: sheep do not attack and disappear
-	 * after their lifespan. */
+	 * actor turns. The actor now uses Java's dedicated `SheepSprite` film; only its neutral
+	 * scheduling and expiration remain represented through the shared ally path. */
 	private spawnSheep(at: Step): Creature {
-		const sheep = this.spawnMonster('rat', at, false, undefined, true, 'sheep');
-		sheep.name = 'Sheep';
+		const sheep = this.spawnMonster('sheep', at, false, undefined, true, 'sheep');
+		sheep.name = t(MOB_KEYS.sheep);
 		sheep.hp = sheep.maxHp = 1;
 		sheep.sheepTurns = Math.max(1, Math.round(Random.float(6, 10)));
 		sheep.sleeping = false;
