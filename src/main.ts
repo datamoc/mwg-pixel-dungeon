@@ -3547,9 +3547,13 @@ export class SewersScene extends Scene2D {
 	}
 
 	/**
-	 * Food.TIME_TO_EAT/energy: eating resets hunger (HUNGRY=300 worth of energy) - meat works
-	 * too (raw MysteryMeat with a flat +5 heal, a stand-in for the whole cook/carpaccio
-	 * system). Warrior's HEARTY_MEAL talent is real: 1+2pts at <=25% HP, 1+1pts at <=50%.
+	 * Food.TIME_TO_EAT/energy: eating satisfies hunger by the item's energy
+	 * (Food.java:satisfy, HUNGRY=300 for Food and HUNGRY/2 for MysteryMeat) - the old
+	 * normal-food path happened to be equivalent to setting hunger to zero, but the exact
+	 * subtraction matters for Challenges.NO_FOOD, where Java divides energy by three.
+	 * Meat works too (raw MysteryMeat with a flat +5 heal, a stand-in for the whole
+	 * cook/carpaccio system). Warrior's HEARTY_MEAL talent is real: 1+2pts at <=25% HP,
+	 * 1+1pts at <=50%.
 	 */
 	private eatFood(): boolean {
 		const food = this.requestedItemId
@@ -3562,7 +3566,13 @@ export class SewersScene extends Scene2D {
 		this.bag.remove(food.id, 1);
 		const cached = cachedRationChance(this.heroClass, this.talentRank('cached_rations'));
 		if (cached > 0 && Random.chance(cached)) this.bag.add({ id: food.id, quantity: 1, stackable: true, identified: food.identified });
-		this.hunger = 0;
+		//Food.satisfy() (checked against items/food/Food.java, tag 4.0.0-beta) subtracts
+		//the food's energy from Hunger.level, while Challenges.NO_FOOD divides that energy
+		//by three. Plain Food is 300 energy; MysteryMeat is 150. The former's normal result is
+		//the same as the legacy hunger = 0 for every reachable pre-eating value, but NO_FOOD
+		//must leave hunger partially unsatisfied instead of silently restoring full rations.
+		const energy = food.id === 'meat' ? 150 : 300;
+		this.hunger = Math.max(0, this.hunger - (isChallengeEnabled('no_food') ? energy / 3 : energy));
 		let heal = food.id === 'meat' ? 5 : 0;
 		//Talent.onFoodEaten()'s Hearty Meal: single threshold at HP/HT < 33.4%, flat `2 + 2*pts`
 		//healing - found using two invented thresholds (25%/50%) with different, non-Java shapes
