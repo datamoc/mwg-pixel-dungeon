@@ -145,8 +145,8 @@ browser-verification workflow for why).
       replacing not adding), decay is `2.5%/turn min 0.1` as a float, and the read-back is
       `ceil`.** Remaining, each still needing its own system first: Corrupting's
       conversion, Elastic/Projecting's geometry, and Affection/
-      Obfuscation (Obfuscation checked: its stealth boost feeds a distance roll this
-      port's FOV-binary `seesHero` has no seam for). `polarized`/
+      `Obfuscation` now contributes its Java-scaled stealth to sleeping detection; only the
+      non-sleeping FOV-binary `seesHero` path remains simplified. `polarized`/
       `sacrificial`/`displacing` gained real proc branches in an earlier pass, alongside the
       already-live `wayward`/`annoying`/`dazzling`/`explosive`.
 - [x] Implement weapon augments. **This roadmap line's own history is worth reading before

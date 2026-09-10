@@ -455,7 +455,7 @@ const AUGMENT_OPTIONS = ['speed', 'damage', 'none'] as const;
  * `Friendly.java`: mutual Charm + zeroing damage to the charmed target); the remaining armor
  * glyphs (Obfuscation) need
  * charm/wand-drain/blink/durability systems likewise absent (Obfuscation's stealth boost has
- * no roll seam - this port's `seesHero` is FOV-binary, not a distance roll). The armor-glyph
+ * no non-sleeping roll seam - this port's `seesHero` is otherwise FOV-binary, not a distance roll). The armor-glyph
  * Swiftness itself is real but Simplified (flat 0.8x cost with no enemy within 3, instead of
  * the real level-scaled `(1.2+0.04*lvl)` speed boost). See PORT_COVERAGE.md
  * for the itemized list. The trigger routing (strike vs defend vs passive) is the real shape
@@ -513,6 +513,7 @@ const GLYPH_TABLE: Actors.AffixTable = {
 		{ id: 'viscosity', trigger: 'defend', weight: 3, description: 'Defers part of incoming damage' },
 		{ id: 'affection', trigger: 'defend', weight: 1, description: 'Charms an attacker' },
 		{ id: 'antimagic', trigger: 'defend', weight: 1, description: 'Reduces magical damage' },
+		{ id: 'obfuscation', trigger: 'passive', weight: 3, description: 'Makes the wearer harder to detect' },
 		{ id: 'camouflage', trigger: 'passive', weight: 2, description: 'Trampling grass turns you invisible' },
 		{ id: 'stench', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to release toxic gas when hit' },
 		{ id: 'antientropy', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to drain a wand charge' },
@@ -6409,7 +6410,9 @@ export class SewersScene extends Scene2D {
 				const silent = this.heroClass === 'rogue' ? this.talentRank('silent_steps') : 0;
 				const flying = this.hero.buffs['levitation'] !== undefined;
 				if ((silent > 0 && distance >= 4 - silent) || (flying && distance >= 2)) return;
-				if (!Random.chance(1 / distance)) return;
+				//Obfuscation.stealthBoost(): sleeping detection is 1/(distance+stealth),
+				//with the glyph's (1+level/3) x Arcana stealth contribution.
+				if (!Random.chance(1 / (distance + this.heroStealth()))) return;
 			}
 			monster.sleeping = false;
 			this.say(t('port.log.wakes', { who: capitalize(monster.name) }), 'warning');
@@ -8644,6 +8647,13 @@ export class SewersScene extends Scene2D {
 		//The darkness minimum still applies on top, matching `updateVisibility()`'s own order.
 		const scaled = base * farsightMultiplier(this.subclass(), this.talentRank('farsight'));
 		return isChallengeEnabled('darkness') ? Math.min(scaled, 2) : scaled;
+	}
+
+	/** `Char.stealth()`/`Obfuscation.stealthBoost()` (tag 4.0.0-beta). */
+	private heroStealth(): number {
+		if (this.armorGlyph !== 'obfuscation') return 0;
+		const level = Math.max(0, this.degradedLevel(this.armorLevel));
+		return (1 + level / 3) * ringArcanaMultiplier(this.equippedRing);
 	}
 
 	/** Barrier absorbs incoming damage before HP, matching Buff.Barrier's core rule. */
