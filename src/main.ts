@@ -10369,6 +10369,40 @@ export class SewersScene extends Scene2D {
 		actions[id]?.(instanceId);
 	}
 
+	/** `Stylus`'s `INSCRIBE` action and `itemSelector`: the Java item picker may select any
+	 * armor, then refuses unidentified or cursed armor before consuming the stylus. This port
+	 * reuses its generic bag picker (equipped gear is not exposed by that picker) and rolls the
+	 * real good-glyph pool; the selected armor remains in the bag, just as Java's item object does.
+	 * The inscription animation and two-turn busy state have no equivalent UI/timing seam here.
+	 */
+	private useStylus(instanceId?: string): void {
+		type Armor = { id: string; instanceId?: string; quantity: number; identified?: boolean; cursed?: boolean; affix?: string };
+		const candidates = (this.bag.items as Armor[]).filter((item) =>
+			item.quantity > 0 && (item.id === 'armor' || item.id === 'armorReward' || item.id === 'clothArmor'));
+		if (candidates.length === 0) {
+			this.say(t('items.stylus.identify'), 'negative');
+			return;
+		}
+		this.openItemPicker(t('items.stylus.prompt'), candidates, (pick) => {
+			const armor = (this.bag.items as Armor[]).find((item) => item.quantity > 0
+				&& item.id === pick.id && (item.instanceId ?? undefined) === (pick.instanceId ?? undefined));
+			if (!armor) return;
+			if (!armor.identified) {
+				this.say(t('items.stylus.identify'), 'negative');
+				return;
+			}
+			if (armor.cursed || getCurse(armor.affix ?? '')) {
+				this.say(t('items.stylus.cursed'), 'negative');
+				return;
+			}
+			const glyph = rollGeneratedAffix(GLYPH_TABLE, false, true);
+			if (!glyph) return;
+			this.bag.remove('stylus', 1, instanceId);
+			armor.affix = glyph;
+			this.say(t('items.stylus.inscribed'), 'positive');
+		});
+	}
+
 	/** `StoneOfFlock.activate(cell)`: Java fills every reachable non-solid cell within distance
 	 * two with a temporary Sheep NPC. This port has no thrown-cell targeting, so the hero's
 	 * cell is the center; the same radius is represented by a Chebyshev circle and each sheep
@@ -10939,6 +10973,7 @@ export class SewersScene extends Scene2D {
 			else if (id === 'hourglass') action = 'Freeze time';
 			else if (id === 'stoneOfAugmentation') action = t('port.ui.augment.title');
 			else if (id.startsWith('stoneOf')) action = t('items.stones.inventorystone.ac_use');
+			else if (id === 'stylus') action = t('items.stylus.ac_inscribe');
 			else if (id === 'candle') action = t('port.ui.candle.place');
 			else if (id.startsWith('ring_')) { frame = 224; action = capitalize(t('items.equipableitem.ac_equip')); }
 			else if (['armor', 'armorReward', 'weaponReward', 'wand'].includes(id)) action = capitalize(t('items.equipableitem.ac_equip'));
@@ -11010,6 +11045,7 @@ export class SewersScene extends Scene2D {
 			else if (id.startsWith('stoneOf')) this.useStoneById(id, instanceId);
 			else if (id === 'candle') this.useCandle(instanceId);
 			else if (id === 'bomb') this.useBomb(instanceId);
+			else if (id === 'stylus') this.useStylus(instanceId);
 		} finally {
 			this.requestedItemId = null;
 			this.requestedItemInstanceId = undefined;
