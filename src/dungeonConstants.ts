@@ -145,7 +145,13 @@ export type GroundItemKind =
 	| 'bomb'
 	| 'corpseDust'
 	| 'candle'
-	| 'embers';
+	| 'embers'
+	| 'ankh'
+	| 'stylus'
+	| 'honeypot'
+	| 'alchemize'
+	| 'bag'
+	| 'sandBag';
 
 /**
  * `ItemSpriteSheet`'s real 256x512 grid (`xy(x,y) = (x-1) + 16*(y-1)`, matching this sheet's
@@ -182,6 +188,15 @@ export const ITEM_FRAME: Record<GroundItemKind, number> = {
 	//CANDLE = QUEST+2, EMBER = QUEST+3 (the Wandmaker type-2 ritual props)
 	candle: 466,
 	embers: 467,
+	//`ItemSpriteSheet`'s MISC_CONSUMABLE/SPELLS/BAGS/UNCOLLECTIBLE frames (tag v3.3.8).
+	//The item id selects the exact frame in `spawnGroundItem`, since these six kinds share
+	//different Java sprite families while remaining one ground-kind union for the renderer.
+	ankh: 48,
+	stylus: 49,
+	honeypot: 53,
+	alchemize: 237, // SPELLS = xy(1,15) = 224, ALCHEMIZE = SPELLS + 13
+	bag: 480, // BAGS = xy(1,31)
+	sandBag: 23, // SANDBAG = UNCOLLECTIBLE + 5, UNCOLLECTIBLE = xy(3,2)
 };
 /** `Waterskin.MAX_VOLUME` */
 export const WATERSKIN_MAX = 20;

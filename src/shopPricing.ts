@@ -37,6 +37,9 @@ const UNIT_VALUES: Record<string, number> = {
 	stone: 15, stoneOfAugmentation: 15, stoneOfFear: 15, stoneOfDeepSleep: 15,
 	stoneOfShock: 15, stoneOfBlast: 15, stoneOfBlink: 15, stoneOfClairvoyance: 15,
 	seed: 10, sandBag: 30,
+	//`Ankh.value()`/`Stylus.value()`/`Honeypot.value()` are 50/30/30; Alchemize
+	//uses `(40 * quantity / 8)` in Java's spell implementation, so one shop use is 5.
+	ankh: 50, stylus: 30, honeypot: 30, alchemize: 5, bag: 30,
 };
 
 /**

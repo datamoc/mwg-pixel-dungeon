@@ -22,6 +22,12 @@ export function groundKindForItem(item: NonNullable<GroundItem['item']>, fallbac
 	if (item.id === 'corpseDust') return 'corpseDust';
 	if (item.id === 'candle') return 'candle';
 	if (item.id === 'embers') return 'embers';
+	if (item.id === 'ankh') return 'ankh';
+	if (item.id === 'stylus') return 'stylus';
+	if (item.id === 'honeypot') return 'honeypot';
+	if (item.id === 'alchemize') return 'alchemize';
+	if (item.id === 'bag') return 'bag';
+	if (item.id === 'sandBag') return 'sandBag';
 	if (item.id.startsWith('potion')) return 'potion';
 	if (item.id.startsWith('scroll')) return 'scroll';
 	//Found while wiring StoneOfAugmentation: any generated `Cat.STONE` runestone (most still
@@ -38,6 +44,11 @@ export function groundKindForItem(item: NonNullable<GroundItem['item']>, fallbac
 export function sourceInventoryItem(id: string, sourceClass: string | undefined, newItemInstanceId: (kind: string) => string): GroundItem['item'] {
 	if (id === 'crystalKey' || id === 'ironKey' || id === 'goldenKey') return { id, quantity: 1, identified: true };
 	if (id.toLowerCase().includes('sandbag')) return { id: 'sandBag', quantity: 1, identified: true };
+	if (id.toLowerCase() === 'ankh') return { id: 'ankh', quantity: 1, identified: true, sourceClass: 'Ankh' };
+	if (id.toLowerCase() === 'stylus') return { id: 'stylus', quantity: 1, identified: true, sourceClass: 'Stylus' };
+	if (id.toLowerCase() === 'honeypot') return { id: 'honeypot', quantity: 1, identified: true, sourceClass: 'Honeypot' };
+	if (id.toLowerCase().startsWith('alchemize')) return { id: 'alchemize', quantity: 1, identified: true, sourceClass: 'Alchemize' };
+	if (id.toLowerCase() === 'bag') return { id: 'bag', quantity: 1, identified: true, sourceClass: 'Bag' };
 	if (id.toLowerCase().includes('timekeepershourglass')) return { id: 'hourglass', quantity: 1, identified: false, sandBags: 0, instanceId: newItemInstanceId('hourglass'), sourceClass };
 	if (id.split('|', 1)[0]!.toLowerCase() === 'artifact') return { id: 'cloak', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass };
 	if (id.toLowerCase() === 'seed') return { id: 'seed', quantity: 1, identified: true, sourceClass };
@@ -98,7 +109,7 @@ export function sourceInventoryItem(id: string, sourceClass: string | undefined,
 
 export function portItemKind(id: string): GroundItemKind | null {
 	if (id === 'crystalKey') return 'crystalKey';
-	if (id.toLowerCase().includes('sandbag')) return 'food';
+	if (id.toLowerCase().includes('sandbag')) return 'sandBag';
 	if (id === 'ironKey') return 'ironKey';
 	if (id === 'goldenKey') return 'goldenKey';
 	if (id === 'seed') return 'seed';
@@ -118,6 +129,14 @@ export function portItemKind(id: string): GroundItemKind | null {
 	//RitualSiteRoom's queued candles and the newborn's Embers drop (quest type 2).
 	if (lower === 'ceremonialcandle') return 'candle';
 	if (lower === 'embers') return 'embers';
+	//ShopRoom's concrete stock classes were previously dropped here because they are neither
+	//Generator categories nor ordinary room currencies. Preserve the Java class identity and
+	//sprite family now; their specialized use windows remain separate roadmap work.
+	if (lower === 'ankh') return 'ankh';
+	if (lower === 'stylus') return 'stylus';
+	if (lower === 'honeypot' || lower === 'shatteredpot') return 'honeypot';
+	if (lower.startsWith('alchemize')) return 'alchemize';
+	if (lower === 'bag' || lower.includes('backpack') || lower.includes('pouch') || lower.includes('bandolier') || lower.includes('holder') || lower.includes('holster')) return 'bag';
 	if (lower.includes('energycrystal')) return 'stone';
 	if (lower.includes('alchemypage') || lower.includes('guidebook')) return 'scroll';
 	if (lower.includes('honeypot')) return 'food';

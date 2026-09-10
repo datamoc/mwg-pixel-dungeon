@@ -127,6 +127,12 @@ export const GROUND_ITEM_KEYS: Record<string, string> = {
 	//Wandmaker type-2 ritual props (both catalog keys verified present)
 	candle: 'items.quest.ceremonialcandle.name',
 	embers: 'items.quest.embers.name',
+	ankh: 'items.ankh.name',
+	stylus: 'items.stylus.name',
+	honeypot: 'items.honeypot.name',
+	alchemize: 'items.spells.alchemize.name',
+	bag: 'items.bags.bag.name',
+	sandBag: 'items.artifacts.timekeepershourglass$sandbag.name',
 };
 
 /** the bag's item ids, against SPD's real item names */
@@ -188,6 +194,12 @@ export const ITEM_KEYS: Record<string, string> = {
 	stoneOfDetectMagic: 'port.name.stoneOfDetectMagic',
 	candle: 'items.quest.ceremonialcandle.name',
 	embers: 'items.quest.embers.name',
+	ankh: 'items.ankh.name',
+	stylus: 'items.stylus.name',
+	honeypot: 'items.honeypot.name',
+	alchemize: 'items.spells.alchemize.name',
+	bag: 'items.bags.bag.name',
+	sandBag: 'items.artifacts.timekeepershourglass$sandbag.name',
 };
 
 /** `items.rings.*` */
