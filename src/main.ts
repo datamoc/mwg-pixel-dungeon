@@ -4375,9 +4375,9 @@ export class SewersScene extends Scene2D {
 	}
 
 	/** `WandOfWarding.onZap()` and its nested `WandOfWarding.Ward.zap()` actor (local SPD
-	 * checkout). Java does have a dedicated Ward NPC actor; this port represents it with a
-	 * scheduled, blue-tinted skeleton carrier because the TypeScript port has no Ward actor type
-	 * or dedicated sprite registry. A fresh cast places a tier-1 ward in a free cell next to the selected
+	 * checkout). Java does have a dedicated Ward NPC actor; this port now gives it its own
+	 * `kind: 'ward'` actor and persisted state. Its sprite reuses the skeleton sheet only because
+	 * this checkout has no Ward art asset. A fresh cast places a tier-1 ward in a free cell next to the selected
 	 * target, preserving Java's energy budget (`2 + wand level`) and the ward's always-hit damage
 	 * roll. Java's aimed-cell upgrade/dismiss UI is not available, so existing wards are not
 	 * upgraded by an explicit cell selection here; their tier/zap expiry and self-damage rules
@@ -4398,8 +4398,7 @@ export class SewersScene extends Scene2D {
 			this.say(t('port.log.notarget'), 'negative');
 			return;
 		}
-		const ward = this.spawnMonster('skeleton', cell, false, undefined, true, 'ward');
-		ward.name = 'Ward';
+		const ward = this.spawnMonster('ward', cell, false, undefined, true, 'ward');
 		ward.wardTier = 1;
 		ward.wardWandLevel = level;
 		ward.wardTotalZaps = 0;
@@ -6394,7 +6393,7 @@ export class SewersScene extends Scene2D {
 	}
 
 	/** `WandOfWarding.Ward.zap()`: an always-hit ranged attack followed by the real tier
-	 * lifetime/self-damage rule. The carrier is immovable in practice because wards do not
+	 * lifetime/self-damage rule. The actor is immovable in practice because wards do not
 	 * enter the movement branch above; its compact ally turn only fires at visible hostiles. */
 	private takeWardTurn(ward: Creature): void {
 		const target = this.creatures

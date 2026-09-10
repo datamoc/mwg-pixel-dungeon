@@ -17,6 +17,7 @@ export type MonsterId =
 	| 'slime'
 	| 'goo'
 	| 'skeleton'
+	| 'ward'
 	| 'thief'
 	| 'dm100'
 	| 'guard'
@@ -124,6 +125,10 @@ export const MONSTERS: Record<AnyMonsterId, MonsterDef> = {
 	slime: { hp: 20, accuracy: 12, evasion: 5, damage: [2, 5], armor: [0, 0], frame: [14, 12], idle: 0, exp: 4, maxLvl: 9 },
 	goo: { hp: 100, accuracy: 10, evasion: 8, damage: [1, 8], armor: [0, 2], frame: [20, 14], idle: 2, exp: 10, maxLvl: 29 },
 	skeleton: { hp: 25, accuracy: 12, evasion: 9, damage: [2, 10], armor: [0, 0], frame: [12, 15], idle: 0, exp: 5, maxLvl: 10 },
+	//`WandOfWarding.Ward` is a dedicated Java NPC actor, not a Skeleton. Its live combat
+	//numbers are supplied by the wand/ward state in the scene; these values only satisfy the
+	//shared actor factory before that state is applied.
+	ward: { hp: 10, accuracy: 0, evasion: 999999, damage: [0, 0], armor: [0, 0], frame: [12, 15], idle: 0, exp: 0, maxLvl: 0 },
 	thief: { hp: 20, accuracy: 12, evasion: 12, damage: [1, 10], armor: [0, 3], frame: [12, 13], idle: 0, exp: 5, maxLvl: 11 },
 	dm100: { hp: 20, accuracy: 11, evasion: 8, damage: [2, 8], armor: [0, 4], frame: [16, 14], idle: 0, exp: 6, maxLvl: 13 },
 	guard: { hp: 40, accuracy: 12, evasion: 10, damage: [4, 12], armor: [0, 7], frame: [12, 16], idle: 0, exp: 7, maxLvl: 14 },
@@ -361,6 +366,7 @@ export const SPRITE_KIND_OVERRIDE: Partial<Record<MonsterId, keyof SpdSprites>> 
 	gnollTrickster: 'gnoll',
 	greatCrab: 'crab',
 	necroSkeleton: 'skeleton',
+	ward: 'skeleton',
 	newbornElemental: 'elemental',
 	mimic: 'slime',
 	piranha: 'crab',
