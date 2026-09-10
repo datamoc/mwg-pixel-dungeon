@@ -606,6 +606,8 @@ interface SaveShape {
 	impSpawned?: boolean;
 	blacksmithAlternative?: boolean;
 	limitedDrops?: [MonsterId, number][];
+	/** Java Dungeon.LimitedDrops.UPGRADE_SCROLLS count, including suppressed NO_SCROLLS drops. */
+	upgradeScrollDrops?: number;
 	bag: { id: string; quantity: number; instanceId?: string; identified?: boolean; level?: number; sandBags?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean;
 		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean }[];
 	/** MWG actor inventory save; `bag` remains for loading pre-migration slots. */
@@ -1063,6 +1065,8 @@ export class SewersScene extends Scene2D {
 	 * loot this run - real Java scales `lootChance()` down further with every successful drop
 	 * (`Bat`/`Necromancer`/`Guard` below), reset only on a new game, not per floor. */
 	private limitedDrops: Partial<Record<MonsterId, number>> = {};
+	/** `Dungeon.LimitedDrops.UPGRADE_SCROLLS.count`: guaranteed upgrade scrolls allocated this run. */
+	private upgradeScrollDrops = 0;
 	/** Ghost Quest.type for this run (1 Fetid Rat, 2 Gnoll Trickster, 3 Great Crab) */
 	private ghostType = 1;
 	/** Version 3 adds MWG actor serializers (Barrier/Inventory/progression state). Legacy fields
@@ -2644,7 +2648,10 @@ export class SewersScene extends Scene2D {
 				if (this.level.rooms.length > 1 && index === entranceRoomIdx) index = (index + 1) % this.level.rooms.length;
 				const room = this.level.rooms[index];
 				const at = { x: Random.range(room.left, room.right), y: Random.range(room.top, room.bottom) };
-				if (!this.level.passable(at.x, at.y)) continue;
+				//Java's Char.canEnterCell() treats a chasm as solid for mobs. The coarse MWG
+				//terrain map intentionally exposes chasms as passable so the hero can fall through,
+				//so the raw ported terrain must be checked separately before spawning a monster.
+				if (!this.level.passable(at.x, at.y) || this.isChasmCell(at.x, at.y)) continue;
 				if (at.x === this.hero.x && at.y === this.hero.y) continue;
 				if (this.portedMobCells.has(this.level.index(at.x, at.y))) continue;
 				if (this.creatureAt(at.x, at.y)) continue;
@@ -2673,14 +2680,14 @@ export class SewersScene extends Scene2D {
 	 */
 	private standableCellIn(room: Roguelike.Rect): Step | null {
 		const centre = Roguelike.rectCenter(room);
-		if (this.level.passable(centre.x, centre.y) && !this.creatureAt(centre.x, centre.y)) return centre;
+		if (this.level.passable(centre.x, centre.y) && !this.isChasmCell(centre.x, centre.y) && !this.creatureAt(centre.x, centre.y)) return centre;
 		for (let attempt = 0; attempt < 20; attempt++) {
 			const at = { x: Random.range(room.left, room.right), y: Random.range(room.top, room.bottom) };
-			if (this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y)) return at;
+			if (this.level.passable(at.x, at.y) && !this.isChasmCell(at.x, at.y) && !this.creatureAt(at.x, at.y)) return at;
 		}
 		for (let y = room.top; y <= room.bottom; y++) {
 			for (let x = room.left; x <= room.right; x++) {
-				if (this.level.passable(x, y) && !this.creatureAt(x, y)) return { x, y };
+				if (this.level.passable(x, y) && !this.isChasmCell(x, y) && !this.creatureAt(x, y)) return { x, y };
 			}
 		}
 		return null;
@@ -3264,6 +3271,19 @@ export class SewersScene extends Scene2D {
 				this.spawnGroundItem(groundKindForItem(item, 'food'), at.x, at.y, item,
 					heapRoll >= 1 && heapRoll <= 4 ? 'normal' : undefined);
 				break;
+			}
+		}
+		//Level.create()/Dungeon.souNeeded(): three guaranteed ScrollOfUpgrade allocations per
+		//five-floor chapter, distributed with `Random.Int(floorsLeft) < scrollsLeft`. The Java
+		//NO_SCROLLS challenge suppresses every second allocated scroll, but still increments the
+		//run-level counter; this is intentionally done after the ordinary generated items because
+		//Java appends `itemsToSpawn` after RegularLevel.createItems().
+		const floorThisSet = this.depth % 5;
+		const scrollsLeft = 3 - (this.upgradeScrollDrops - Math.floor(this.depth / 5) * 3);
+		if (scrollsLeft > 0 && Random.int(5 - floorThisSet) < scrollsLeft) {
+			this.upgradeScrollDrops++;
+			if (!isChallengeEnabled('no_scrolls') || this.upgradeScrollDrops % 2 !== 0) {
+				this.placeQueuedPortedItem('ScrollOfUpgrade', this.level.rooms);
 			}
 		}
 		// RegularLevel.addItemToSpawn(new GoldenKey(depth)) is placed after generated
@@ -4772,7 +4792,9 @@ export class SewersScene extends Scene2D {
 	 */
 	private spawnPortedMobs(): void {
 		for (const mob of this.portedMobSpawns) {
-			if (!this.level.passable(mob.x, mob.y) || this.creatureAt(mob.x, mob.y)) continue;
+			//The raw Terrain.CHASM cell is rendered through the hero-facing FLOOR code so
+			//falling remains possible, but Java never leaves a monster standing over a chasm.
+			if (!this.level.passable(mob.x, mob.y) || this.isChasmCell(mob.x, mob.y) || this.creatureAt(mob.x, mob.y)) continue;
 			//Painter markers (`alchemyBlob`, `eternalFire`) are filtered upstream, but any
 			//future unknown kind must refuse cleanly here instead of crashing inside
 			//`spawnMonster` reading `.frame` off an undefined catalogue entry - that exact
@@ -9402,6 +9424,7 @@ export class SewersScene extends Scene2D {
 			blacksmithSpawned: this.blacksmithSpawned,
 			impSpawned: this.impSpawned,
 			limitedDrops: Object.entries(this.limitedDrops) as [MonsterId, number][],
+			upgradeScrollDrops: this.upgradeScrollDrops,
 			blacksmithAlternative: this.blacksmithAlternative,
 			bag: this.bag.items.map((i) => ({ id: i.id, quantity: i.quantity, instanceId: i.instanceId, identified: i.identified, level: i.level, sandBags: (i as typeof i & { sandBags?: number }).sandBags, charges: (i as typeof i & { charges?: number }).charges, affix: i.affix, cursed: i.cursed,
 				cursedKnown: (i as typeof i & { cursedKnown?: boolean }).cursedKnown,
@@ -9598,6 +9621,7 @@ export class SewersScene extends Scene2D {
 		this.blacksmithSpawned = s.blacksmithSpawned ?? this.blacksmithSpawned;
 		this.impSpawned = s.impSpawned ?? this.impSpawned;
 		this.limitedDrops = Object.fromEntries(s.limitedDrops ?? []);
+		this.upgradeScrollDrops = s.upgradeScrollDrops ?? 0;
 		this.blacksmithAlternative = s.blacksmithAlternative ?? this.blacksmithAlternative;
 		this.equippedRing = s.equippedRing ?? null;
 		this.ringHtBonus = s.ringHtBonus ?? 0;
