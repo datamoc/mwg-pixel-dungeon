@@ -30,6 +30,17 @@ interface WandmakerState {
 
 const state: WandmakerState = { type: 0, spawned: false, questRoomSpawned: false };
 
+/** Live-game read of the run's quest type (0 while undecided). The NPC dialogue and
+ * turn-in key off this, not the room shape - persisted scene-side (see SaveShape). */
+export function wandmakerQuestType(): number {
+	return state.type;
+}
+
+/** Restore a persisted quest type (save/load across floors, where levelgen never reruns). */
+export function setWandmakerQuestType(type: number): void {
+	state.type = type;
+}
+
 /** `Wandmaker.Quest.reset()` - plus `questRoomSpawned`, which Java leaves alone in `reset()`
  *  but which is always false at run start anyway. Consumes no RNG. */
 export function resetWandmakerRunState(): void {

@@ -3,6 +3,7 @@
 // the scene's `spriteFor` registry (see `SIMULATION_ARCHITECTURE.md`'s "Step 6"), not by
 // `Creature`/`GroundItem` here.
 import type { AnyMonsterId } from './monsters';
+import type { ReactionTable } from 'mwg';
 import type { GroundItemKind } from './dungeonConstants';
 import type { Combatant, Step } from './simulation/combatState';
 import type { BuffId } from './simulation/buffs';
@@ -10,7 +11,7 @@ import { nextEntityId } from './simulation/entityId';
 import { createCombatAdapter } from './adapters/combatSimulation';
 import { simulationRandom } from './adapters/mwgRandom';
 export { INFINITE_ACCURACY, INFINITE_EVASION, ASCENSION_MOD, ASCENSION_ON, accRollMulti, setStrongerBossesEnabled } from './simulation/combat';
-export { BUFF_DURATION, type BuffId } from './simulation/buffs';
+export { BUFF_DURATION, NEGATIVE_BUFFS, type BuffId } from './simulation/buffs';
 
 const combat = createCombatAdapter(simulationRandom);
 export const rollHit = combat.rollHit;
@@ -33,7 +34,12 @@ export interface Creature extends Combatant {
 	pumped?: number;
 	/** NPCs (ghost/wandmaker/shopkeeper): bumping into them opens dialogue instead of combat */
 	isNPC?: boolean;
-	npcKind?: 'ghost' | 'wandmaker' | 'shopkeeper' | 'blacksmith' | 'imp';
+	/** Java-aligned friendly combatant (MirrorImage and future directable allies). */
+	isAlly?: boolean;
+	/** Friendly summon subtype; sheep are neutral, short-lived and non-combatant. */
+	allyKind?: 'mirror' | 'sheep';
+	sheepTurns?: number;
+	npcKind?: 'ghost' | 'wandmaker' | 'shopkeeper' | 'blacksmith' | 'imp' | 'ratKing';
 	/** GnollTrickster.combo: attacks escalate the longer it keeps hitting */
 	combo?: number;
 	/** GreatCrab.moving: only really advances every 3rd turn */
@@ -45,6 +51,8 @@ export interface Creature extends Combatant {
 	firstSummon?: boolean;
 	/** Tengu.arenaJumps: how many times it has relocated this fight */
 	arenaJumps?: number;
+	/** Tengu's phase-2 bomb-ability countdown (Java's `abilityCooldown`, bomb-first rotation). */
+	tenguAbilityCd?: number;
 	/** MeleeWeapon upgrade level: min/max grow as tier+lvl / 5(tier+1)+lvl(tier+1) */
 	weaponLevel?: number;
 	/** Thief.item: what it stole (dropped again on death); Swarm split generation (EXP=0 past 0) */
@@ -81,9 +89,37 @@ export interface Creature extends Combatant {
 	/** `Eye.beamCharged`/`beamCooldown`: DeathGaze's two-turn charge-then-fire cycle. */
 	beamCharged?: boolean;
 	beamCooldown?: number;
+	/** `Elemental.rangedCooldown` (3-5 turns) and `NewbornFireElemental.targetingPos`: the
+	 * telegraphed fireball's charge state. Only the newborn uses the targeted cell. */
+	rangedCooldown?: number;
+	newbornTarget?: { x: number; y: number } | null;
 	/** `ArmoredBrute.ArmoredRage.act()`'s own `spend(3*TICK)`: counts up while `raged`, decaying
 	 * the shield only every 3rd turn instead of every turn like the base `Brute.BruteRage`. */
 	armoredRageTicks?: number;
+	/** `PinCushion`: thrown missiles stuck in this living target, scattering back out as
+	 * ground heaps when it dies (knives and spikes; stones are sticky=false and drop). */
+	stuckAmmo?: number;
+	/** `SentryRoom$Sentry.curChargeDelay`: turns of charge-up left before the beam starts
+	 * firing every visible turn (undefined = idle, reset whenever the hero leaves sight). */
+	sentryWarmup?: number;
+	/** DM300's GAS/ROCKS ability state (`turnsSinceLastAbility`/`abilityCooldown`/`lastAbility`). */
+	dmAbilityTurns?: number;
+	dmAbilityCd?: number;
+	dmLastAbility?: number;
+	/** DwarfKing phase machine (1/2/3), summon/ability cooldowns, P2 shield. */
+	kingPhase?: number;
+	kingSummonsMade?: number;
+	kingSummonCd?: number;
+	kingAbilityCd?: number;
+	kingLastAbility?: number;
+	kingShield?: number;
+	/** Edge-triggered phase-1->2, phase-2->3, and losing-yell rules (`mwg/core`'s
+	 * `ReactionTable`), lazily built per King instance in `takeKingTurn`. Not part of the
+	 * plain `SavedCreature` field list - its own `toJSON()`/`fromJSON()` round-trip is wired
+	 * separately in `captureActiveFloor`/`restoreFloor`. */
+	kingReactions?: ReactionTable<Creature>;
+	/** YogDzewa phase (1-5; 0-dormancy unmodeled, wakes on entry). */
+	yogPhase?: number;
 }
 
 /** makes a Creature-shaped object with the combat-state fields every spawn needs.
@@ -101,9 +137,15 @@ export interface GroundItem extends Step {
 	kind: GroundItemKind;
 	/** Java Heap.Type.CHEST/CRYSTAL_CHEST; contents are opened instead of auto-picked up. */
 	chest?: 'normal' | 'locked' | 'crystal';
+	/** Java Heap.Type.FOR_SALE: a shop stand - priced, never free loot. */
+	forSale?: boolean;
 	/** Concrete inventory payload; absent only for legacy scripted/cosmetic drops. */
 	item?: { id: string; quantity: number; level?: number; sandBags?: number; charges?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; instanceId?: string; sourceClass?: string;
-		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean };
+		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean;
+		/** `Bomb.Fuse`: lit bombs count down 2 hero turns on the ground, then detonate. */
+		fuseTurns?: number;
+		/** Tengu's `BombAbility` ordnance: a 3-turn fuse and the range-2 scaled blast. */
+		tenguBomb?: boolean };
 }
 
 /**
@@ -130,6 +172,7 @@ export function setAnnounceBuff(hook: ((c: Creature, id: BuffId) => void) | null
 export const ANNOUNCED_BUFFS = new Set<BuffId>([
 	'burning',
 	'poison',
+	'ooze',
 	'cripple',
 	'weakness',
 	'vulnerable',
@@ -137,6 +180,7 @@ export const ANNOUNCED_BUFFS = new Set<BuffId>([
 	'hex',
 	'berserk',
 	'fury',
+	'degrade',
 ]);
 
 export function addBuff(c: Creature, id: BuffId): void {

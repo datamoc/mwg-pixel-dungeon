@@ -52,6 +52,34 @@ Every simplification or deviation from real Java behavior must be explicitly doc
 
 Never silently drop a piece of real behavior without a corresponding "Not ported" line.
 
+## Documentation work counts as real roadmap progress
+
+Correcting, sharpening, or filling in this project's own documentation (`ROADMAP.md`,
+`PORT_COVERAGE.md`, code comments) is a legitimate item of work in its own right, not just
+overhead alongside "real" code changes. Concretely:
+
+- Finding and fixing a **wrong claim already recorded** (a `PORT_COVERAGE.md`/`ROADMAP.md` row
+  that calls something "invented" or "not ported" when it turns out to be real, or vice versa)
+  is exactly as valuable as fixing a code bug, since a wrong claim actively misleads whoever
+  reads it next into skipping real work or attempting fake work. This has happened for real in
+  this project: an earlier audit pass checked only two Java tags and wrongly declared several
+  real talents (`test_subject`/`tested_hypothesis`) invented substitutes with no Java basis,
+  when `src/generated/spdMessages.ts`'s own real English text (built from a more complete SPD
+  source than those two tags covered) showed they were genuine, named talents the port's code
+  already matched almost exactly. Recheck a documented claim against every source actually
+  available in this repo (not just the tag(s) an earlier pass happened to check) before
+  trusting it forward.
+- A malformed `ROADMAP.md` checkbox (a missing `- [x]`/`- [ ]` marker, wrong indentation) is a
+  real bug: `tools/roadmap-progress.html` silently drops anything that doesn't match its
+  parser, which means the item stops counting toward progress at all - fixing the marker is a
+  genuine, closeable fix, not busywork.
+- Rewriting a stale strategy note (e.g. a section of `ROADMAP.md` that recommended a worse
+  approach than one later discovered) is worth doing the moment the better approach is known,
+  not deferred until whoever eventually executes that item happens to rediscover it themselves.
+
+None of this replaces the dual-documentation rule above - a documentation fix is not a
+substitute for the code fix it may also reveal is needed - but it is not lesser work either.
+
 ## Verification before reporting done
 
 Before calling any non-trivial change complete:

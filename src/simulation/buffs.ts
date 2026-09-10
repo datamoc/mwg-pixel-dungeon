@@ -9,7 +9,7 @@ import type { SimulationRandom } from './random';
  * because these multipliers apply to transient dice rolls rather than to named stats a
  * StatBlock resolves.
  */
-export type BuffId = 'bless' | 'hex' | 'daze' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'awareness' | 'haste';
+export type BuffId = 'bless' | 'hex' | 'daze' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown';
 export const BUFF_DURATION: Record<BuffId, number> = {
 	bless: 30,
 	hex: 30,
@@ -41,6 +41,10 @@ export const BUFF_DURATION: Record<BuffId, number> = {
 	mindvision: 20,
 	//Terror.DURATION (ScrollOfTerror)
 	terror: 20,
+	//Amok.DURATION (ScrollOfRage): a visible hostile mob attacks any nearby creature.
+	amok: 5,
+	//StoneOfAggression.Aggression.DURATION for ordinary targets (bosses are shortened scene-side).
+	aggression: 20,
 	//Awareness.DURATION (WaterOfAwareness). Real Java re-runs Belongings.observe() on detach,
 	//but this port already treats equipped gear as identified/curse-known the instant it's
 	//equipped (a pre-existing simplification - see `equipWeapon`/`equipArmor`), so that second
@@ -50,8 +54,33 @@ export const BUFF_DURATION: Record<BuffId, number> = {
 	//Haste.DURATION (PotionOfHaste) - Char.speed()'s real x3 multiplier lives in
 	//`getActionTurnCostMod` (main.ts), not here; this is only the turns-left duration.
 	haste: 20,
+	//Degrade.DURATION (Warlock's DarkBolt) - the sqrt level-reduction itself lives in
+	//`degradedLevel` (main.ts), mirroring `Item.buffedLevel()`; this is only the duration.
+	degrade: 30,
+	//Ooze.DURATION - the depth-scaled tick itself lives scene-side (main.ts, mirroring
+	//`Ooze.act()`); this is only the turns-left duration. Ticks in the shared map like
+	//every other buff, so duration countdown/save/load need no special casing.
+	ooze: 20,
+	//Charm.DURATION (Friendly enchantment): the scene stores Java's object/ignore-next-hit
+	//payload separately because the generic buff map intentionally contains only durations.
+	charm: 10,
+	//`Talent.LethalHasteCooldown` (100 turns gating Lethal Haste's next GreaterHaste grant).
+	//Display only: `statusPane.ts` skips buff ids with no icon entry, so no art is needed.
+	lethalHasteCooldown: 100,
 };
 
+/** `Buff.buffType.NEGATIVE` for every buff this port grants to a *monster* (checked against
+ * each buff's own Java class at tag `v3.3.8`: `Poison`/`Burning`/`Cripple`/`Weakness`/
+ * `Vulnerable`/`Paralysis`/`Roots`/`Terror`/`Ooze`/`Charm`/`Degrade`/`Daze`/`Hex` all set
+ * `type = buffType.NEGATIVE`). Used by `Mob.Sleeping.act()`'s "debuffs cause mobs to wake as
+ * well" unconditional wake check - a sleeping monster with any of these active wakes
+ * immediately, no detection roll needed (e.g. standing in fire/gas already ignites/poisons a
+ * sleeping monster elsewhere in this port; it just didn't wake it up before this check
+ * existed). `focus`/`cloak`/`frostImbue`/`lethalHasteCooldown` are this port's own invented
+ * stand-ins with no real monster-facing negative equivalent, so they're excluded. */
+export const NEGATIVE_BUFFS: ReadonlySet<BuffId> = new Set<BuffId>([
+	'poison', 'burning', 'cripple', 'weakness', 'vulnerable', 'paralysis', 'roots', 'terror', 'amok', 'aggression', 'ooze', 'charm', 'degrade', 'daze', 'hex',
+]);
 
 export type BuffState = Partial<Record<BuffId, number>>;
 

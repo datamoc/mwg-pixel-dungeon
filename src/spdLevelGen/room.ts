@@ -225,9 +225,9 @@ export const SPECIAL_ROOM_META: Record<SpecialRoomKind, SpecialRoomMeta> = {
  * run-level queue, same shape as `blacksmith`/`ritualSite`/`gooDiamond` etc under
  * `StandardRoomKind`. Its own room (walls/floor/connections) is ported for graph-stage RNG
  * fidelity - the `createBranches`/`placeRoom` calls that place it burn real RNG regardless of
- * gameplay content - but its `RatKing` NPC and chest-loot `paint()` content are NOT: this port
- * has no `RatKing` mob, so `paintRatKingRoom` below is a plain walled room, documented as a
- * content gap in PORT_COVERAGE.md rather than silently dropped.
+ * gameplay content - and its chest-lined perimeter plus the `RatKing` NPC are live now too
+ * (see `rooms/sewerBoss/ratKingRoom.ts`); only the crown exchange stays blocked (no King's
+ * Crown item or Ratmogrify ability yet), tracked in PORT_COVERAGE.md.
  */
 export type SecretRoomKind =
 	| 'garden' | 'laboratory' | 'library' | 'larder' | 'well' | 'runestone'

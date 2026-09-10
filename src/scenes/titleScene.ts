@@ -27,16 +27,20 @@ export class TitleScene extends Scene2D {
 		this.background = new TitleBackground(runState.sprites.uiArcsBg, runState.sprites.uiArcsFg);
 		this.stage.addChild(this.background);
 
-		//BannerSprites.PIXEL_DUNGEON and PIXEL_DUNGEON_SIGNS: the Java title uses
-		//two regions of interfaces/banners.png (132x90 and 124x90 respectively).
-		//The bitmap is SPD's own asset, copied byte-for-byte into this GPL port.
+		//BannerSprites.PIXEL_DUNGEON and PIXEL_DUNGEON_SIGNS: real Java's own
+		//interfaces/banners.png regions are 132x90/124x90, but this port's asset is a
+		//custom "MWG Pixel Dungeon" redraw (see `banners old.png` for the original SPD
+		//art it replaced), not byte-for-byte SPD art - three stacked lines instead of
+		//"SHATTERED"/"PIXEL DUNGEON"'s two, so it needs 108px of height, not 90, or the
+		//real Java frame rect clips the bottom of "Dungeon" against the next sprite
+		//(BossSlain) below it in the sheet. Found live via browser screenshot.
 		const title = new Sprite(new Texture({
 			source: runState.sprites.banners.source,
-			frame: new Rectangle(0, 0, 132, 90),
+			frame: new Rectangle(0, 0, 132, 108),
 		}));
 		const signs = new Sprite(new Texture({
 			source: runState.sprites.banners.source,
-			frame: new Rectangle(132, 0, 124, 90),
+			frame: new Rectangle(132, 0, 124, 108),
 		}));
 		this.stage.addChild(title);
 
@@ -89,10 +93,21 @@ export class TitleScene extends Scene2D {
 			const w = width / scale, h = height / scale;
 			this.background.resize(w, h);
 			const topRegion = Math.max(84, h * 0.45);
-			title.position.set(Math.round((w - 132) / 2), Math.round(2 + (topRegion - 90) / 2));
+			//The redrawn "MWG Pixel Dungeon" art's own bbox (all 3 lines) is centred in
+			//the 132px frame (x~7..124, centre 65.5, matching the frame's own 66) - but
+			//the "Pixel" line the torches sit level with is narrower and shifted left
+			//(x~8..110, centre 59). Flanking the torches on the frame centre (66, the
+			//original 22/110 offsets) put them symmetric on the frame but visibly off
+			//from the "Pixel" glyphs beside them; flanking them on the glyph centre (59)
+			//fixed that but then threw the whole title+torches *group* off true screen
+			//centre by 66-59=7px. GROUP_X_OFFSET shifts the whole group right by that
+			//7px so the torch/glyph-centred layout also lands on screen centre - found
+			//live via browser screenshot, both alignments confirmed together.
+			const GROUP_X_OFFSET = 7;
+			title.position.set(Math.round((w - 132) / 2) + GROUP_X_OFFSET, Math.round(2 + (topRegion - 108) / 2));
 			signs.position.set(title.x + 4, title.y);
-			torchLeft.position.set(title.x + 22, title.y + 46);
-			torchRight.position.set(title.x + 110, title.y + 46);
+			torchLeft.position.set(title.x + 15, title.y + 46);
+			torchRight.position.set(title.x + 103, title.y + 46);
 			const landscape = w > h;
 			const gap = Math.max(2, Math.floor(Math.floor((h - topRegion - (landscape ? 3 : 4) * 20) / 3) / (landscape ? 3 : 5)));
 			const rect = (i: number, x: number, y: number, bw: number) => {

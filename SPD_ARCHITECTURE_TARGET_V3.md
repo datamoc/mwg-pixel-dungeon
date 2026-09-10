@@ -12,7 +12,7 @@ assumed. **Updated 2026-09-07, same day**: `mw_games@0.4.1` published mid-sessio
 dependency" section) and turned out to ship most of the plan's previously-assumed core
 primitives for real - see below.
 
-## What exists in `mwg@0.4.2` (the pinned version; reviewed at 0.4.1, re-checked at 0.4.2)
+## What exists in `mwg@0.5.0` (the pinned version; reviewed at 0.4.1, re-checked at 0.4.2 and 0.5.0)
 
 - **`core.EntityRegistry`/`EntityId`** (new in 0.4.1, `core/Entity.ts`): exactly the plan's
   assumed identity primitive - `add(entity): EntityId`, `get(id)`, `idOf(entity)`, `has`,
@@ -21,6 +21,25 @@ primitives for real - see below.
    stand-in for exactly this - the `EntityId` type half is now adopted (Step 8 re-exports
    MWG's own type plus a reverse lookup); the `EntityRegistry.add()` minting half is
    deliberately deferred (opaque `eN` ids vs save-persisted prefixed ids - see Step 8).
+- **`core.ReactionTable`/`ReactionRule`** (new in 0.5.0, `core/Reactions.ts`, re-exported
+  from `mwg` root): declarative edge-triggered rules over any state shape (`when` predicate
+  + `action`, `check()` returning fired ids, `once` retirement, `toJSON`/`fromJSON` with
+  caller-supplied rules). Evaluated against every latch/transition site in `main.ts`
+  (shopkeeper warn-then-flee, `yogFistWarned`, `kingLostYell`, Brute `hasRaged`, Tengu/King/
+  Yog/DM300 phase gates, ability cooldowns): the verdict is to ADOPT IT AS A MECHANISM BUT
+  NOT RETROFIT - every current site is already a minimal single boolean/inline check, and a
+  table costs net lines plus save plumbing there (`fromJSON` needs the rules re-supplied at
+  every load site), the exact speculative-scaffolding shape this repo deletes on sight.
+  Its designated home is the v3 event-driven presentation phase (plan section 16):
+  `check()`'s fired-id lists are the natural edge-event source once `attack()` and friends
+  emit real events instead of calling presentation inline - at which point per-domain rule
+  tables replace today's inline phase checks as they're extracted, one command at a time,
+  under the "no big-bang" rule (plan section 25), not as a drive-by rewrite of working code.
+- **`core.EntityRegistry`** (0.5.0): still `add`/`get`/`idOf`/`has`/`remove` only - no
+  caller-chosen-id primitive, so upstream proposal P1 below stays open and the local
+  counter stays.
+- **`two-d/render` `Types2D.ts`** (0.5.0): still type aliases only - upstream proposal P2
+  stays open and Phase 0's exit criterion stays blocked.
 - **`simulation.SimulationRuntime`** (new in 0.4.1, `simulation/Runtime.ts`): the plan's actual
   Command -> State + Events runtime. `SimulationContext<A>` bundles `random`+`scheduler`
   exactly as the plan describes; `dispatch(command)` runs one `SimulationRuntimeRule` and
@@ -68,7 +87,7 @@ primitives for real - see below.
   *type-only* `pixi.js` imports across `src/` (of the 25 files importing it, whichever use it
   for types alone) to the mwg aliases. Not started; listed as the next Phase-0 slice.
 
-## What the plan assumes but is still NOT in `mwg@0.4.2`
+## What the plan assumes but is still NOT in `mwg@0.5.0`
 
 - No *value-level* Pixi primitive re-exports through `mwg/two-d` (constructing a `Container`/
   `Graphics`/`Sprite` still means `import ... from 'pixi.js'`): the plan's section 3 exit

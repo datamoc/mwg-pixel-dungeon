@@ -6,3 +6,4 @@ tools/scratch/uiCheck.mjs
 tools/scratch/i18nCheck.mjs
 tools/scratch/*.py
 tools/scratch/i18nCheck.mjs
+.aider*

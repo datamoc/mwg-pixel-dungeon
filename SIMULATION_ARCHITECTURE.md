@@ -175,6 +175,15 @@ local and prefixed (`hero-N`/`item-N`): MWG's `EntityRegistry.add()` mints opaqu
 ids with no caller-chosen-id primitive, and the prefixed ids are persisted in saves -
 full registry adoption needs that primitive upstream or a save migration first.
 
+## Step 9 - runtime-routed movement planning
+
+`adapters/movementSimulation.ts` now dispatches the existing pure `planMovement` decision
+through MWG's `SimulationRuntime`, and `main.ts` consumes that plan in its existing effect
+pipeline. The scene continues to retain the occupant reference from the lazy query and owns
+all presentation and world mutation. This is intentionally a cost-free command with an inert
+scheduler/random pair, matching the search and hunger adapters; reconciling those with the
+scene's live turn runtime remains part of the later cost-bearing command migration.
+
 ## Verification
 
 Run `npm run check`, `npm run test:simulation`, and `npm run build`. The simulation checks

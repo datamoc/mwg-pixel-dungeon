@@ -21,11 +21,23 @@ browser-verification workflow for why).
       (curse-pool pick when `generated.cursed`, weighted good-enchant pick when
       `generated.hasGoodEnchant`), and `equipWeapon`/`equipArmor` gained the real cursed-and-known
       equip-lock rings already had. See `PORT_COVERAGE.md`'s "Enchant/glyph/curse assignment"
-      row - **flagged there as implemented but not yet confirmed in a live browser session**
-      (the sandboxed environment's local HTTP servers all fail to bind a socket), so treat this
-      as needing a playtest pass before fully trusting it.
+      row. **Correction (2026-09-09 audit): this bullet's own "not yet confirmed in a live
+      browser session" caveat was stale** - a later pass already ran the playtest it asked
+      for (a 3000-trial statistical check of the curse/enchant roll distributions, a live
+      equip-lock test with the correct FR message, a live cleanse test, and a Barrier-decay
+      tick check - all recorded in `PORT_COVERAGE.md`'s same row), this bullet was just never
+      updated afterward. A fresh static re-audit this pass found no functional bugs in
+      `rollGeneratedAffix`/`equipWeapon`/`equipArmor`; the only real findings were code-quality
+      (the two equip functions duplicate ~40 lines of shape between weapon/armor variants, and
+      use inconsistent starting-gear sentinel checks) - left as a future cleanup candidate, not
+      urgent enough to risk touching untested.
 - [ ] Port all remaining weapons, wands, rings, artifacts, bombs, alchemy, and crafting.
-      Rings: all 12 real types are now live (Haste, Energy, Wealth, Arcana, Force, Sharpshooting from earlier passes, plus Elements and Furor this pass - see PORT_COVERAGE.md's rings row; type-check clean, browser verification still owed per section 10) - Sharpshooting mirrors Force's shape for ranged attacks: a flat `+level`
+      Wand identity is now persisted from generated `sourceClass` through equipment/save state;
+      Fireblast and Lightning use their real level formulas, with Fireblast's burning and
+      Lightning's per-target scaling. Prismatic Light and Disintegration now use their real
+      level formulas; Prismatic Light's blindness is represented by the existing timed daze
+      status. Their Java cone/ballistic-chain/line geometry is simplified to the selected target
+      and visible adjacent targets respectively. Rings: all 12 real types are now live (Haste, Energy, Wealth, Arcana, Force, Sharpshooting from earlier passes, plus Elements and Furor this pass - see PORT_COVERAGE.md's rings row; type-check clean, browser verification still owed per section 10) - Sharpshooting mirrors Force's shape for ranged attacks: a flat `+level`
       damage bonus on thrown missiles (both bounds) and SpiritBow (asymmetric: `+level` on the
       low bound, `+2*level` on the high one, matching `SpiritBow.min()`/`max()` exactly), plus a
       `1.2^level` durability multiplier folded straight into the existing `uses` calculation
@@ -48,7 +60,7 @@ browser-verification workflow for why).
       this port's ported good-enchant procs, Grim/Lucky/Blocking/Blooming roll a chance real
       Java scales this way (Blazing/Chilling/Shocking/Vampiric are
       unconditional here, a separate pre-existing simplification with no roll left to scale).
-      `ringArcanaMultiplier()` now feeds all of them. Elements/Furor are now ported (this pass), both genuinely - not just assumed - needing more than a stale-claim fix, and both got it: Elements applies RingOfElements.resist()'s real pow(0.825, level) at each hero-side elemental-damage site (burning/poison DoT tick, toxic-gas blob damage, burning-trap fire damage - all in RESISTS, scaled before Barrier absorption like Hero.damage()'s own ordering; durations untouched, as in Java), since this port has no equivalent of Char.resist(Class)'s single shared dispatch. Furor got the attack-only turn-cost split it needed (a new getAttackTurnCostMod(), blanket divided by RingOfFuror.attackSpeedMultiplier()'s real pow(1.09051, level), spent only for bump-attacks via a move-port pre-check; movement keeps the blanket cost, matching Java's attackDelay()-vs-speed() split). See PORT_COVERAGE.md's rings row.
+       `ringArcanaMultiplier()` now feeds all of them. Elements/Furor are now ported (this pass), both genuinely - not just assumed - needing more than a stale-claim fix, and both got it: Elements applies RingOfElements.resist()'s real pow(0.825, level) at each hero-side elemental-damage site (burning/poison DoT tick, toxic-gas blob damage, burning-trap fire damage - all in RESISTS, scaled before Barrier absorption like Hero.damage()'s own ordering; durations untouched, as in Java), since this port has no equivalent of Char.resist(Class)'s single shared dispatch. Furor got the attack-only turn-cost split it needed (a new getAttackTurnCostMod(), blanket divided by RingOfFuror.attackSpeedMultiplier()'s real pow(1.09051, level), spent only for bump-attacks via a move-port pre-check; movement keeps the blanket cost, matching Java's attackDelay()-vs-speed() split). See PORT_COVERAGE.md's rings row. Bombs are now ported too (this pass): usable `bomb` bag item with LIGHT & THROW, landing as a lit heap with a real 2-turn fuse ticked from the end-of-turn pipeline (frozen by Timekeeper freeze, snuffable by stepping onto it, chained blasts, DoubleBomb pickup as Bomb x2 with the English-only status) and `Bomb.explode()`'s exact `NormalIntRange(4+depth, 12+3*depth)`-minus-armor blast including the hero - this also fixed generated bomb loot never spawning at all (`portItemKind` returned null). `EnhanceBomb` alchemy and the 10 specialty bombs still need the alchemy system. See PORT_COVERAGE.md's new `Bomb` row.
 - [x] Port the remaining potions. `PotionOfLevitation` is now live (real buff + chasm bypass,
       matching the trap bypass Levitation already had); a live id-mapping bug that made
       generated `PotionOfLiquidFlame`/`PotionOfInvisibility` silently quaff as Purity is fixed.
@@ -63,10 +75,20 @@ browser-verification workflow for why).
       buff system this port doesn't have" premise no longer held once `getActionTurnCostMod`
       existed (added for Weapon Augment/Swiftness/RingOfHaste) - a real `haste` buff
       (`BUFF_DURATION.haste = 20`) now applies `Char.speed()`'s own `*3f` there as `mod /= 3`,
-      the same shape RingOfHaste's multiplier already used. `PotionOfFrost` is now ported (Simplified, and the last generated potion id missing its own branch - it silently quaffed as Purity before): no blob-freezing terrain and no freeze/immobilize status distinct from paralysis exist here, so it extinguishes the hero's own `burning`, deals Liquid Flame's own 4 damage to the nearest visible enemy, and applies `daze` as the chill stand-in (the same substitution the WandOfFrost branch already documents) - see `PORT_COVERAGE.md`'s new row. All 12 generator potion classes now have their own branch (type-check/build only, browser verification owed per section 10) - see `PORT_COVERAGE.md`'s
+      the same shape RingOfHaste's multiplier already used. `PotionOfFrost` is now ported (Simplified, and the last generated potion id missing its own branch - it silently quaffed as Purity before): no blob-freezing terrain and no freeze/immobilize status distinct from paralysis exist here, so it extinguishes the hero's own `burning`, deals Liquid Flame's own 4 damage to the nearest visible enemy, and applies `daze` as the chill stand-in (the same substitution the WandOfFrost branch already documents) - see `PORT_COVERAGE.md`'s new row. All 12 generator potion classes now have their own branch - see `PORT_COVERAGE.md`'s
       potions row for what currently happens instead. (There is no `PotionOfConfusion` in real
       Java - the
       earlier text here was wrong; `ConfusionGas` is a trap-only blob, unrelated to potions.)
+      **Re-audited 2026-09-09**: static re-check of all 12 id branches against their cited
+      Java formulas found no id-shadowing regression (the historical "silently falls through
+      to Purity" bug class does not currently reproduce for any of the 12) and no arithmetic
+      bugs. Two low-severity quality notes: LiquidFlame/Frost's branches are near-identical
+      (worth a shared helper, not fixed here) and the `else`-branch Purity fallback had no
+      guard against an unrecognized id reaching it silently by accident - the exact shape that
+      bit this file twice before (Frost, then Toxic/Paralytic Gas each briefly fell through
+      here) - now fixed with a `console.warn` on any id reaching the fallback other than
+      `potionPurity` itself (`potion`/`potionHealing` already branch earlier and can never
+      reach it, but are excluded from the warning too as a defensive belt-and-suspenders).
 - [ ] Port the remaining scrolls. Fixed the same class of live id-mapping bug for
       `ScrollOfMirrorImage`/`ScrollOfMagicMapping` (both silently read as Remove Curse instead of
       their real, already-ported effects). `ScrollOfRecharging` is now ported (grants the
@@ -78,15 +100,25 @@ browser-verification workflow for why).
       mechanism Thief's fleeing already uses). `ScrollOfRetribution` is now ported too (minus
       `Blindness`, which this port has no seam for) - this also uncovered `Weakness`/
       `Vulnerable` as fully-wired but previously never-granted dead code, and corrected both
-      buffs' durations (`10` -> the real `20`). `ScrollOfTransmutation` remains unported (needs
-      a full item-transmutation system plus a generic item-picker UI this port doesn't have)
-      but no longer falls through to Remove Curse's effect when read - it now refuses cleanly
-      WITHOUT consuming the scroll (`port.log.transmutationfizzle`, same shape as the
-      upgrade-scroll guard) - see `PORT_COVERAGE.md`'s new row.
-- [ ] Port the remaining enchantments, glyphs, weapon curses, and armor curses. Only 1 weapon
-      curse now lacks proc logic at all (`friendly` - checked against `Friendly.java` this pass:
-      mutual Charm plus zeroing damage to the charmed target, needs the two-way Charm subsystem
-      the missing-subsystem bullet below already tracks). `Blooming` (uncommon, real
+      buffs' durations (`10` -> the real `20`). `ScrollOfTransmutation` is now ported
+      (Simplified): `usableOnItem`/`changeItem`'s per-category reroll (same-tier melee
+      weapons, 12-class potion/scroll/seed/runestone decks, 12-type rings, `cloak` via
+      Java's own no-artifacts-left ring fallback), preserving upgrade level/enchant/curse
+      state and consuming the scroll, logging the real `morph`/`nothing` keys. Target
+      selection is now a real generic item-picker panel (`openItemPicker`/`chooseItemPicker`,
+      built for reuse by the other picker-blocked uses - Enchantment/Intuition/DetectMagic
+      stones, shop buy/sell, alchemy) with the real `inv_title` prompt, cancel-keeps-scroll,
+      live-bag re-validation, and self-stack (2+) eligibility; armor (never eligible in real
+      Java either), single-id `wand`, `MagesStaff`, thrown-stone ammo, `hourglass`, and
+      equipped gear are still excluded - see `PORT_COVERAGE.md`'s updated row (type-check/build
+      plus both suites green, browser verification owed per section 10). **Correction narrowed:
+      the auto-target half of the old correction is now done (real picker, above) - what remains
+      is exact `changeItem` including exotics/wands/trinkets/missiles/equipped gear, still owed
+      with the section-1 item-system completion (those items must exist as distinct ported items
+      first), not as a standalone scroll pass.**
+- [ ] Port the remaining enchantments, glyphs, weapon curses, and armor curses. `Friendly` is
+      now ported with its exact mutual Charm target/ignore-next-hit state and 1/10 x Arcana proc
+      (the heart particles remain presentation-only). `Blooming` (uncommon, real
       `(lvl+1)/(lvl+3)` chance, level-scaled plant count, defender-first/shuffled-neighbour order)
       and `Camouflage` (uncommon, `round((3+lvl/2) x arcana)` invisibility on grass trample) are
       now ported - both genuinely fitting existing systems (plantable terrain + buff map), verified
@@ -94,9 +126,18 @@ browser-verification workflow for why).
       armor curse exists in real Java** (checked `v3.3.8` back to `v3.3.1` - closest match is a
       `v1.x`-era changelog mention); the real 8th curse is `Stench` (1/8 x arcana to seed
       250-volume ToxicGas at the wearer's own feet), now ported with a `fragile`->`stench` load
-      migration plus a `getCurse` legacy shim. See `PORT_COVERAGE.md`'s new rows. Remaining, each
-      still needing its own system first: Kinetic's decay read-back is live but Corrupting's
-      conversion, Elastic/Projecting's geometry, Unstable's meta-dispatch, and Affection/
+      migration plus a `getCurse` legacy shim. See `PORT_COVERAGE.md`'s new rows. `Unstable`
+      (uncommon) is now ported too (this pass): per-swing delegation to one draw over the
+      real `randomEnchants` list minus Projecting (Java's own exclusion) and minus
+      Corrupting/Elastic (no ported proc to delegate into yet), with the pick shared
+      between the pre- and post-damage proc halves and Kinetic's conserved read-back
+      flowing through the delegation. **Found and corrected in the same pass, auditing
+      `Kinetic`/`Char.java` for the delegation: the old "store half of every hit, cap 20,
+      decay x0.75" shorthand had no Java basis - real storage is kill-overkill only
+      (`-HP` beyond the swing's conserved bonus, `round(x arcana x berserk-catalyst)`,
+      replacing not adding), decay is `2.5%/turn min 0.1` as a float, and the read-back is
+      `ceil`.** Remaining, each still needing its own system first: Corrupting's
+      conversion, Elastic/Projecting's geometry, and Affection/
       AntiMagic/Brimstone/Obfuscation/Repulsion/Viscosity (Obfuscation checked: its stealth boost
       feeds a distance roll this port's FOV-binary `seesHero` has no seam for). `polarized`/
       `sacrificial`/`displacing` gained real proc branches in an earlier pass, alongside the
@@ -204,14 +245,23 @@ browser-verification workflow for why).
       radius of the hero) and rendered the previously-fogged room fully visible on screen; both
       logged their correct French text ("Vous avez été téléporté en un clin d'œil..." reusing the
       real Java teleport key, "Le donjon vous révèle ses secrets." a new port string), and the
-      inventory popup showed "stoneOfBlink" with the correct "UTILISER" action label. The
-      remaining 5 runestone types (Enchantment/Intuition/DetectMagic/Flock/Aggression) stay
-      unported, still collapsing to the generic `'stone'` id: Enchantment/Intuition/DetectMagic
-      are all `InventoryStone` subclasses needing a real item-picker UI this port doesn't have
-      (same blocker as `ScrollOfTransmutation`); Flock spawns allied Sheep (needs an
-      ally-spawning/combat system this port doesn't have); Aggression's own buff would be mostly
-      moot without ally-vs-monster combat to make its enemy-vs-enemy redirection observable.
-- [ ] Implement complete weapon and armor tiers, transfer formulas, upgrade formulas, curse infusion, and degradation.
+      inventory popup showed "stoneOfBlink" with the correct "UTILISER" action label.
+      **Three more runestones, `StoneOfEnchantment`/`StoneOfIntuition`/`StoneOfDetectMagic`,
+      ported this pass (10 of 12 real), first consumers of the new generic item-picker panel
+      alongside Transmutation - the picker blocker cited below is now gone for good:**
+      Enchantment imbues a picked bag weapon/armor with a random good affix (overwriting, like
+      Java's own `enchant()`); Intuition runs the real two-stage guess (unidentified
+      potion/scroll/ring, then its unknown classes by true name, class-level identify on a
+      correct guess) with the real alternating free/paid `IntuitionUseTracker` rule; DetectMagic
+      reveals a picked equipable/wand's curse state and reports none/both/good/bad magic from
+      its real curse/level/affix inputs. See `PORT_COVERAGE.md`'s new row for the stated
+      simplifications (bag-only picker, no exotics, single-id wand, consumed-knowns read
+      unknown, no select-then-confirm). **Flock and Aggression are now wired too:** Flock
+      creates temporary scheduled Sheep actors within the radius-2 cast area, while Aggression
+      marks the nearest visible enemy for the Java 20-turn (5-turn boss) forced-target rule.
+      Both now have distinct ids and generated/floor-loot mappings; the remaining differences
+      are the no-cell-picker center convention and reduced Sheep art/lifespan presentation.
+- [ ] Implement complete weapon and armor tiers, transfer formulas, upgrade formulas, curse infusion, and degradation. Upgrade transitions are now exact Java (`Weapon/Armor.upgrade(false)`: curse-affix 1-in-3 removal with the real line, good-affix loss 10-100% from +4 with the real warnings, pre-level-change ordering), and Warlock Degrade is now the real 30-turn buff (50% on landed ranged zaps, sqrt effective-level reduction) instead of a permanent chip - the old shorthands had no Java basis. Remaining: the tier-jump progression itself (real Java has fixed per-class tiers with plain +1 levels - a full state-machine rework, not a formula fix), Blacksmith reforge transfers (section 4's forge item), and curse infusion proper (`items.spells.curseinfusion` is an alchemy-brewed spell, so it waits on the alchemy system with everything else brewed). See `PORT_COVERAGE.md`'s upgrade/degrade row.
 - [ ] Implement the remaining charm/knockback/stealth/blink/durability-per-hit
       subsystems the unported enchants, glyphs, and curses depend on (Kinetic's
       carried-damage buffer, Blooming's plant seeding, Corrupting's
@@ -222,15 +272,27 @@ browser-verification workflow for why).
       the enchant/glyph/curse itself can be anything but a stub.
 - [ ] Replace simplified missile durability and wand recharge behavior with the Java formulas.
       Wand recharge is now Java-shaped (`10 + 40 * 0.875^missing`, with Recharging's bonus)
-      and explicit charge refunds are separated from passive recharge; missile durability
-      now persists a Java-shaped durability budget and decrements the stack only on break;
-      PinCushion/item-specific recovery and missile upgrade levels remain.
+      and explicit charge refunds are separated from passive recharge; missile durability,
+      damage, and upgrade levels are now exact too (per-type `baseUses` 5/5/12 with the
+      `1.5^level` scaling the old formula missed, durable-talent corrected to
+      `1.25+0.25/point`, hit-only wear with the real break warnings, PinCushion sticking
+      for knives/spikes with kill-scatter, uncapped missile levels via SoU) - this also
+      fixed a live `{level}`/`{tier}` log interpolation bug in the upgrade messages.
+      Remaining: per-missile identity (boomerang return/merge), the last-missile confirm,
+      the dust-pickup tracker, and Sharpshooting's Aim-buff rework (flagged, own pass).
 - [x] Implement identification appearance randomization. Potion and scroll appearances are
       shuffled once per seeded run, pre-drawn without disturbing later gameplay RNG, and
       persisted through save/load.
-- [ ] Implement full shop pricing, buyback shelves, and wealth modifiers. The live keeper now
-      uses depth-scaled prices and retains sold stock in its buyback inventory; exact Java
-      shop-room placement and wealth modifiers remain.
+- [ ] Implement full shop pricing, buyback shelves, and wealth modifiers. Pricing is now
+      exact Java (`sellPrice = value x 5 x (depth/5+1)` bracket, verified per-unit `value()`
+      bodies, selling pays flat `value()`), keepers spawn on the real 6/11/16/21 depths with
+      per-shop shelf stock and a persisted cap-3 buyback shelf rebought at flat `value()`
+      (G key, newest sale first), and generated FOR_SALE stands are priced and no longer
+      free loot. Remaining, each needing its own system: `ShopRoom` geometry (keepers stand
+      in random rooms), stand-by-stand purchasing plus selling anything but food (both need
+      a shop-browse/item-picker UI), and the full generated stock as live goods (needs
+      Ankhs/Styluses/darts/spells/bags as real items first). See `PORT_COVERAGE.md`'s
+      `Shopkeeper` + pricing rows.
 - [x] Implement Timekeeper's Hourglass sand-bag state and its level-generation effects. The
       identified/uncursed inventory state now follows Java's depth-specific shop percentages,
       sand bags upgrade and persist on the hourglass, and concrete item identities survive the
@@ -269,8 +331,14 @@ browser-verification workflow for why).
       generated class ids too; SuspiciousChest and Treasury mimics now retain their held item,
       and Secret Honeypot now preserves the Java Bomb-versus-DoubleBomb result and class id;
       generated bonus, and treasury gold drops on death.
--      Halls `DemonSpawnerRoom` now also uses the Java room placement and `HALLS_SP` custom-floor
+- [x] Port Halls' `DemonSpawnerRoom`: real Java room placement and the `HALLS_SP` custom-floor
       atlas through the live MWG sprite-sheet path; defeated spawners remain absent on revisit.
+      **Formatting fix, 2026-09-09**: this bullet was a malformed list item missing its own
+      `- [x]` checkbox marker entirely (just a bare `-` before the text), so
+      `tools/roadmap-progress.html`'s checkbox counter silently dropped it from both the
+      numerator and denominator - it never actually counted toward either "done" or "total".
+      Content unchanged, only the marker restored to match what the prose already describes as
+      finished.
 - [x] Preserve Java room-placed NPCs and special mobs through the live-game bridge.
 - [x] Implement rare and alternative monster spawns. Regional 2.5% additions and Java's
       per-entry 1-in-50 alternative swaps (Albino, Caustic Slime, Bandit, Spectral
@@ -332,19 +400,36 @@ browser-verification workflow for why).
 - [x] Port the fixed City boss-floor layout at depth 20.
 - [x] Port the fixed Halls/Yog boss-floor layout at depth 25.
 - [x] Port the fixed final vault/endgame layout at depth 26.
-- [ ] Port Prison/Tengu's full multi-stage arena transition and trap scripts (the one-time
-      below-half relocation and trap burst are now live; floor shifting and exact ability
-      cadence remain).
+- [ ] Port Prison/Tengu's full multi-stage arena transition and trap scripts (bracket
+      floor, per-bracket capped relocation with trap burst, and the bomb-ability rotation
+      with real 3-turn fuses are now live, plus Terror immunity; floor shifting, the
+      FIGHT_START/ARENA room split, the Fire cone, the Shocker bursts, and the exact
+      catch-up ability cadence remain).
 - [ ] Port Caves/DM-300's full pylon, gate, energy field, and supercharge scripts (pylon
-      proximity sealing, short energy pressure, and overcharge ground effects are now live;
-      rockfall/gas and exact pylon state remain).
-- [ ] Port City/Dwarf King's throne and Imp-shop scripts (the live King summon/barrier
-      cycle is already present; throne geometry and the conditional Imp shop remain).
-- [ ] Port Halls/Yog's full fist, flame, shadow, and arena scripts (three fists now gate
-      Yog's beam, with rotating burning/roots/cripple/daze pressure; flame/shadow arenas
-      remain).
+      proximity sealing and short energy pressure are live, and the GAS/ROCKS ability
+      rotation is now real: live toxic-gas venting plus telegraphed rockfalls on the real
+      cooldown/pick rules with the real ability lines - replacing an every-3rd-turn
+      fire-ring + double strike that had no Java basis; exact pylon/supercharge state,
+      targeting refinements, and presentation remain).
+- [ ] Port City/Dwarf King's throne and Imp-shop scripts (the full 1/2/3 phase machine
+      is now live: P1 hunt with exact summon/ability cooldowns and LINK/TELE-lite, P2
+      immobile shield with real wave schedule and self-chip, P3 bleed/summons/losing yell
+      - replacing a sketch whose Fury and hold-the-barrier turn had no Java basis; throne
+      geometry, the Imp shop, P3 viscosity, and the crown drop remain).
+- [ ] Port Halls/Yog's full fist, flame, shadow, and arena scripts (HP-gate floors,
+      per-gate fist spawns, fist-gated invulnerability across ALL damage sources, fist
+      proximity guards, and the phase-5 hope trigger are now live with the real
+      darkness/hope lines - replacing a turn-based spawner that double-spawned against
+      the new hooks and a 0.75/0.5/0.25 rhythm with no Java basis; distinct fist classes,
+      larva/ripper summons, beam-count scaling, challenge pairs, flame/shadow arenas,
+      and the visibility shrink remain).
 - [x] Port final-vault Amulet placement at Java's `AMULET_POS` (depth 26, x=8, y=12).
-- [ ] Port final-vault endgame-specific terrain, custom visuals, and compass behavior.
+- [ ] Port final-vault endgame-specific terrain, custom visuals, and compass behavior. The
+      vault now runs Java's own `viewDistance = 4` through the shared sight radius (with the
+      darkness-challenge minimum applied on top, matching `updateVisibility()`); chasm cells
+      were already real there, and the compass was already correctly gated on `hasStairs`
+      (false on 26). Remaining: the HALLS_SP custom floor, candle visuals, and the
+      THEME_FINALE music cue (presentation/audio systems with no seam here).
 - [x] Stop dungeon music on entry to the final vault, matching `LastLevel.playLevelMusic()`.
 - [ ] Implement exact arena layouts, seals, pylons, boss phases, minions, traps, projectiles, movement scripts, and victory transitions.
 
@@ -370,8 +455,27 @@ browser-verification workflow for why).
       Java's 50/30/15/5%/20% closely, with zero cursed outcomes as Java requires). See
       `PORT_COVERAGE.md`.
 - [ ] Replace the simplified Wandmaker quests with Mass Grave, Ritual Site, and Rot Garden.
+      Corpse-dust (type 1) and rotberry-seed (type 3) fetches are now live with the real
+      intro/reminder lines: MassGrave's dust heap spawns as a real cursed pickup (it used
+      to vanish), grass druid... rotberry seeds already drop from grass, the quest type
+      persists across save/load, and turn-in consumes the real item for the existing wand
+      reward. **Type 2 (elemental embers) is now live too, with the real `intro_ember`/
+      `reminder_ember` lines**: the four queued candles spawn as real pickups (same
+      null-branch bug class as bombs/dust), a Place action sets them into the ritual slots
+      from the bag (no aimed throw UI - stated shape change), all four lit rises a real
+      `NewbornFireElemental` kit (HP 60, `[10,12]` melee, telegraphed 3x3 fireball, `3-5`
+      cooldown, guaranteed `Embers` drop) for the existing wand reward - plus shared
+      elemental rules (`FIERY` immunity, Frost harm) that also cover the base kind. See
+      `PORT_COVERAGE.md` (type-check/build plus both suites green, browser owed per
+      section 10).
 - [ ] Port the Troll Blacksmith's mining and forge mechanics.
-- [ ] Port Rat King and other missing special NPCs.
+- [ ] Port Rat King and other missing special NPCs. Rat King is done (room drops real
+      `Gold(10-25)` CHEST heaps, the king spawns sleeping with his own art, wakes with
+      the real yell, answers with the real fallback line - the crown exchange waits on
+      the King's Crown item + Ratmogrify ability). Remaining: other special NPCs
+      (MirrorImage/PrismaticImage/Sheep allies, ImpShopkeeper, VaultSentry,
+      DirectableAlly), which need the ally/combat systems behind them -
+      see `PORT_COVERAGE.md`'s quests row.
 
 ## 5. Improve monster behavior and loot
 
@@ -404,15 +508,18 @@ browser-verification workflow for why).
       within the real 4-6 range, and dealt damage within the real 30-50 range. See
       `PORT_COVERAGE.md`.
 - [ ] **Implement ally-vs-monster combat.** Found this session while auditing the scroll branch
-      against Java source: this port's monster AI has no concept of a non-hero target at all -
-      every `takeMonsterTurn` decision hardcodes the hero as the only possible thing to attack
-      or path toward. This blocks at least two real mechanics from ever being more than a
-      documented stand-in: `ScrollOfMirrorImage`'s allied `MirrorImage` NPCs (currently a
-      `heroBarrier` shield stand-in - see `PORT_COVERAGE.md`) and `ScrollOfRage`'s `Amok` status
-      (currently unmodeled entirely, since an Amok'd mob attacking "anything nearby" needs
-      something for it to attack besides the hero). Necromancer's summoned skeleton already
+      against Java source: this port's monster AI originally had no concept of a non-hero target
+      at all. This blocked at least two real mechanics from ever being more than a documented
+      stand-in: `ScrollOfMirrorImage`'s allied `MirrorImage` NPCs and `ScrollOfRage`'s `Amok`
+      status. Necromancer's summoned skeleton already
       fights monsters *for the hero's opponent*, so some of the shape may be reusable, but the
       hero-side case (something the player controls fighting alongside them) is new.
+      **Progress this pass:** `Creature.isAlly` is now persisted and scheduled; MirrorImage
+      summons are real 1-HP allied actors that copy the hero's combat stats, attack the nearest
+      visible hostile, follow the hero when idle, and can be intercepted by adjacent hostile
+      melee turns. Simple ranged targeting now also considers the nearest visible ally, and
+      `Amok` now attacks nearby creatures. Boss-specific ranged target migration and dedicated
+      ally sprites/orders remain.
 - [x] Port all champion types and their effects. All 6 real types (Blessed/Blazing/Giant/
       Growing/AntiMagic/Projecting) are now live, each with its real per-type factor
       (`accRollMulti`/`rollDamage`), and the type roll is a true 1-in-6 matching Java's
@@ -500,7 +607,42 @@ browser-verification workflow for why).
 
 ## 6. Complete hero progression
 
-- [ ] Implement exact formulas for the remaining talents.
+- [ ] Implement exact formulas for the remaining talents. Five wrong-shaped stand-ins
+      corrected this pass against tag `v3.3.8` (Lethal Haste is now GreaterHaste-on-kill with
+      a real 100-turn cooldown, Weapon Recharging a Recharging-gated melee multiplier,
+      Farsight a sight-radius multiplier, Arcane Vision a zap-applied reveal, Necromancer's
+      Minions removed until SoulMark/Wraith/ally exist, Endless Rage's free-turn line gone -
+      see `PORT_COVERAGE.md`'s talent row; type-check/build plus both suites green, browser
+      owed per section 10). **2026-09-09 audit, four more real formula bugs found and fixed**
+      (Hearty Meal, Sucker Punch, Aggressive Barrier, plus the per-tier talent-point pool
+      described below) **and a batch of previously-undocumented invented substitutions/gaps
+      now recorded in code comments and `PORT_COVERAGE.md`** (Iron Will, Secondary Charge,
+      Monastic Vigor, Twin Upgrades, Bounty Hunter, Thief's Intuition rank 1, Shared
+      Enchantment/Durable Tips) - see `PORT_COVERAGE.md`'s talent rows for exact formulas and
+      browser verification. **Correction, same day, later pass: Test Subject/Tested Hypothesis
+      and Swift Equip were wrongly filed under "invented substitution" above - a real
+      methodology gap, not just two wrong entries.** That audit pass checked only Java tags
+      `v3.3.8`/`4.0.0-beta` for whether a talent id was real; it should also have checked
+      `src/generated/spdMessages.ts`'s own real, fully-translated `actors.hero.talent.*`
+      strings, built from a more complete SPD source than either tag - which show Test
+      Subject/Tested Hypothesis/Swift Equip are all genuine, named talents. Test Subject's
+      formula was already exactly right; Tested Hypothesis had a real, drastic overpower bug
+      (granting whole wand charges instead of a fraction of one, fixed twice over - first the
+      unit, then the rate); Swift Equip's real spec (a cooldown-gated quickslot re-equip, not
+      a general equip-cost reduction) was simply wrong, though the practical "cannot be
+      modeled, no baseline cost to be an exception to" conclusion still holds for a different,
+      now-correct reason. **Lesson for future talent work: check the generated message catalog
+      before concluding a talent id is invented, not just whichever Java tags happen to be
+      checked out locally** - see `PORT_COVERAGE.md`'s talent rows for the corrected formulas
+      and fresh browser verification. **Also found and fixed: talent
+      points were drawn from one shared pool across all three UI tiers instead of Java's
+      separate per-tier pools**, letting a player freely cross-spend a leftover T1 point into
+      T2/T3 - replaced with a real per-tier `talentPoints` array, browser-verified to grant the
+      exact real per-tier totals (5/6/8) with T4's unimplemented 10 correctly never granted.
+      **Cleric's entire talent tree is Mage's copied verbatim, with zero disclosure anywhere
+      until this pass** - now documented in `src/talents.ts` and `PORT_COVERAGE.md`; not
+      replaced, since a real Cleric tree needs the Cleric class's own Holy Lantern/spell
+      mechanics built first.
 - [ ] Implement rune transfer and shared-enchantment behavior.
 - [ ] Complete subclass and armor-ability effects.
 - [ ] Match Java talent timing, identification, recharge, and threshold rules.
@@ -519,10 +661,12 @@ browser-verification workflow for why).
 - [ ] Implement water and terrain hazards. `Level.java`'s per-turn water hook (a non-flying
       char standing in `WATER` extinguishes `Burning`, matching `Burning.act()`'s own
       `acted && water && !flying -> detach()`) is now ported for both hero and monsters,
-      collapsed to an immediate extinguish once the current turn's DoT tick has landed rather
+      collapsed to an immediate extinguish once this turn's DoT tick has landed rather
       than reproducing the exact one-turn-late real timing - see `PORT_COVERAGE.md`. Ooze's own
-      water interaction (the same hook also force-ticks `Ooze`) and other terrain hazards
-      remain.
+      water interaction is now ported too: CausticSlime/Acidic/FetidRat/Corrosion feed a real
+      `ooze` buff (20 turns, announced, own icon, `Ooze.act()`'s depth curve with the real
+      `ondeath` line) instead of the shared `poison`, and standing water washes it off after
+      the tick for hero and monsters alike. Other terrain hazards remain.
 - [ ] Complete plant growth and plant interactions (one-shot regional plant activation, Java-aligned
       single-target statuses, Sungrass healing-over-time, and Warden-sensitive variants are live;
       Icecap/Rotberry blob diffusion and Warden FrostImbue/AdrenalineSurge variants are live;
@@ -540,7 +684,23 @@ browser-verification workflow for why).
       fractional accrual and crossing-into-STARVING 1-damage hit, replacing the former flat
       "every 10 turns" guess). Java has no attack-delay/accuracy penalty while merely hungry
       beyond the log line, so there is no further penalty to match there.
-- [ ] Match stealth, invisibility, surprise, and attack-delay systems exactly.
+- [ ] Match stealth, invisibility, surprise, and attack-delay systems exactly. Sleeping
+      wake-ups now roll the real `1/(distance+stealth)` detection (stealth 0 - only
+      Obfuscation raises it; the old flat 6/3/2 radii had no Java basis), gated on the
+      mob's own sight so invisibility still hides, with Silent Steps and levitation as
+      their real never-wake immunities (an infinity chance never beats the selection's
+      initial infinity, so gated heroes are never even rolled) and the woken mob waiting
+      its turn. Surprise on the attack side already matched (`sleeping || !seesHero`;
+      STRReq/flail gating unmodeled). **The negative-buff wake is now ported too (2026-09-09
+      pass)**: a sleeping monster with any real negative-type buff (poison/burning/cripple/
+      weakness/vulnerable/paralysis/roots/terror/ooze/degrade/daze/hex - checked against each
+      one's own Java class) wakes unconditionally, no roll, even out of the hero's sight -
+      real and reachable here since `spreadFire`/`spreadPlantBlobs` already apply those buffs
+      to sleeping monsters without waking them. Browser-verified live. See
+      `PORT_COVERAGE.md`'s sleeping/wandering row. Remaining: the WANDERING notice roll (needs
+      a genuine awake-but-unnoticed monster state plus random-patrol movement `mwg` has no
+      primitive for - a real, moderate-scope feature, not a quick fix) and ally-aware
+      targeting (needs the unported ally-vs-monster combat system).
 - [x] Implement shield decay (`Barrier.act()`'s real `min(1,shielding/20)`-per-turn proportional
       curve now runs every hero turn against the shared `heroBarrier` pool - previously never
       invoked at all, so shields held indefinitely). `Blocking.BlockBuff`'s own separate fixed
@@ -565,6 +725,16 @@ browser-verification workflow for why).
       walked the whole distance in one call; a click with a hostile monster already in view
       correctly refused to start rather than taking even one step. Cell targeting and path
       preview (the visual line/highlight while aiming) remain unported.
+- [x] Fix the title screen's banner art: the redrawn "MWG Pixel Dungeon" logo (three stacked
+      lines, replacing real SPD's two-line "SHATTERED"/"PIXEL DUNGEON" - see `banners old.png`)
+      was cropped by a frame rect sized for the old two-line art, clipping the bottom of
+      "Dungeon" clean off, and its flanking torches were positioned for the old asset's
+      evenly-filled width, sitting visibly asymmetric against the new, narrower, left-shifted
+      text. Found live via browser screenshot (a user report, not a code read). Fixed: frame
+      height 90->108, torch x-offsets recentred on the actual glyph midpoint, and the whole
+      title+torches group shifted as a rigid unit so that glyph-centred layout also lands
+      dead-centre on screen (measured post-fix: 1px off centre at 1078px width). See
+      `PORT_COVERAGE.md`'s title-screen row.
 - [ ] Complete the journal UI and identification tabs.
 - [ ] Port pause/menu chrome, boss banners, toast animations, and Java-style transitions.
 - [ ] Implement large interface-size layouts.
@@ -610,15 +780,95 @@ browser-verification workflow for why).
       anything below 80% and neither should this). Notes for whoever does it: nothing structural
       stands in the way - `catalogFor()` already merges `PORT_STRINGS[code]` per locale with
       base-catalog fallback, so each locale is purely additive; `mwg/i18n`'s typography and
-      CLDR plurals already cover the per-locale mechanics. The bar is human: SPD labels each
-      locale complete/unreviewed/unfinished for a reason, and machine-translated game text ships
-      exactly the kind of errors only native speakers catch (see `languages.ts`'s `in`/`id`
-      note for the shape of that risk) - each locale needs a translator, or a machine draft
-      explicitly marked unreviewed or worse. Sequence against the still-growing key set
-      (`port.affix.*` landed 32 keys this pass alone): either freeze `port.*` first or track
-      per-locale key deltas on every pass that adds one. Font coverage is part of done, not a
-      footnote - zh/ko/ja need the section-10 tofu check per locale, not just key resolution.
-      See `PORT_COVERAGE.md`'s locales row.
+      CLDR plurals already cover the per-locale mechanics. **First locale done: German (`de`),
+      2026-09-09, 374/374 keys** (the key count grew since the 305 estimate - `port.affix.*`
+      alone added 32). **Correction to this bullet's own prior "grounding" strategy note,
+      found the moment the work was actually attempted**: `portStrings.ts`'s own header
+      comment already says why grounding in real Java translations mostly doesn't apply here -
+      "the strings this port invented, which have no SPD original to borrow a translation
+      from... everything the real game also says is looked up under its own SPD key instead."
+      That is `portStrings.ts`'s entire selection criterion: anything with a real Java
+      equivalent already resolves through the generated catalog directly and was never a
+      candidate for this file. The prior note's premise (most `port.*` keys closely paraphrase
+      a real Java string with a translation to ground against) does not hold for the actual
+      content - it is this port's own invented quest dialogue, its own simplified-mechanic log
+      lines, and hint text SPD has no equivalent of. What worked in practice: direct
+      translation key-by-key from `PORT_STRINGS_EN`, matching the source's tone (short, direct
+      game-log sentences) rather than searching for a Java analogue that usually doesn't
+      exist, then a **programmatic QA pass** before wiring anything in - diffing the new
+      locale's key set against EN's (0 missing, 0 extra) and comparing each value's
+      `{placeholder}` tokens exactly (0 mismatches) - catching exactly the class of error a
+      human proofread would also have to catch, before any human proofreading happens. Marked
+      `unreviewed` in `PORT_STRINGS_DE`'s own doc comment and `PORT_STRINGS`'s registration,
+      matching SPD's own complete/unreviewed/unfinished convention - a machine-assisted draft
+      is not silently promoted to `complete`. Browser-verified live: the welcome log line, bag/
+      talent panel labels, and the settings/badges/changes windows all rendered correctly-
+      composed German with no raw keys and no console errors. **Second locale done: Spanish
+      (`es`), 2026-09-09, 374/374 keys**, same process (direct translation, then the
+      programmatic key/placeholder QA diff against EN, then wiring, then live verification) -
+      marked `unreviewed` in `PORT_STRINGS_ES`'s own doc comment for the same reason. Both `de`
+      and `es` are real Java SPD locales (confirmed against `src/generated/spdMessages.ts`'s own
+      generated table, which only exists for locales SPD actually ships translations for) - this
+      work only ever adds a `port.*` catalog for a language Java's own base catalog already
+      covers, never for one it doesn't.
+
+      Verifying Spanish live surfaced a real, independent bug that predates this translation
+      work and affects every non-English locale already shipped (French and German too):
+      `main.ts`'s `attack()` built its combat-log `object` slot for a hero defender as a
+      hardcoded English literal `'you'` bypassing translation entirely, instead of the same
+      `t('port.log.subject.you')` pattern the `subject` slot already used correctly one line
+      above. Reusing `subject.you` outright would have been wrong too - that key is capitalized/
+      nominative ("You"/"Vous"/"Du"/"Tú") for sentence-initial use, not the lowercase/accusative
+      form an object slot needs (English "you" lowercase, French "vous", German accusative
+      "dich", Spanish "ti" after "a"). Fixed with a new `port.log.object.you` key per locale and
+      confirmed by directly re-running `attack()` in the browser via `window.__MWG__` for all
+      four locales (en/fr/de/es) post-fix - every locale's combat log now reads correctly instead
+      of showing raw "you" mid-sentence.
+
+      **Third locale done: Portuguese (`pt`), 2026-09-09, 375/375 keys** (key count grew to 375
+      after the `object.you` fix above added one key to every locale), same process throughout -
+      direct translation, the programmatic key/placeholder QA diff against EN (0 missing/extra,
+      0 mismatches), wiring, then live verification. Marked `unreviewed` in `PORT_STRINGS_PT`'s
+      own doc comment for the same reason as `de`/`es`. Confirmed `pt` is a real Java SPD locale
+      the same way as `de`/`es` (present in `src/generated/spdMessages.ts`'s generated table).
+      Browser-verified live: title screen buttons, the welcome log line, the hero info panel
+      (Java's own real strings, confirming the whole locale resolves end to end, not just this
+      port's own keys), and the `object.you`-fixed combat log all rendered correctly-composed
+      Portuguese with no raw keys and no console errors.
+
+      **Fourth locale done: Italian (`it`), 2026-09-09, 375/375 keys**, same process throughout -
+      direct translation, the programmatic key/placeholder QA diff against EN (0 missing/extra,
+      0 mismatches), wiring, then live verification. Marked `unreviewed` in `PORT_STRINGS_IT`'s
+      own doc comment for the same reason as `de`/`es`/`pt`. Confirmed `it` is a real Java SPD
+      locale the same way (present in `src/generated/spdMessages.ts`'s generated table). Caught
+      and fixed a stray Cyrillic-character typo in the draft (`Ripони` for intended `Riponi`)
+      via a scripted non-Latin-character scan of the draft file before wiring it in - worth
+      keeping as a habit for future locales sharing a keyboard/IME slip risk, since a single
+      corrupted key would otherwise only surface by chance during manual proofreading or a
+      player report. Browser-verified live: title screen buttons ("Entra nel Dungeon",
+      "Risultati", "Notizie", "Opzioni", "Trofei", "Cambiamenti", "Info"), the welcome log line
+      ("Fogne, piano 1. Sei un guerriero, che impugna una spada corta consumata."), and the
+      `object.you`-fixed combat log ("Ratto marsupiale colpisce te per 3.") all rendered
+      correctly-composed Italian with no raw keys and no console errors.
+
+      **Fifth locale done: Polish (`pl`), 2026-09-09, 375/375 keys**, same process throughout -
+      direct translation, a scripted non-Latin-character scan (catching zero issues this time,
+      confirming the Italian find wasn't a fluke worth repeating each pass), the programmatic
+      key/placeholder QA diff against EN (0 missing/extra, 0 mismatches), wiring, then live
+      verification. Marked `unreviewed` in `PORT_STRINGS_PL`'s own doc comment for the same
+      reason as the other machine-drafted locales. Confirmed `pl` is a real Java SPD locale the
+      same way (present in `src/generated/spdMessages.ts`'s generated table). Browser-verified
+      live: title screen buttons ("Wejdź do Lochu", "Rankingi", "Aktualności", "Ustawienia",
+      "Odznaki", "Zmiany", "O grze"), the welcome log line ("Kanały, poziom 1. Jesteś wojownik,
+      dzierżysz zużyty krótki miecz."), and the `object.you`-fixed combat log ("Wielki szczur
+      trafia ciebie za 2 obrażeń.") all rendered correctly-composed Polish (diacritics included)
+      with no raw keys and no console errors.
+
+      **12 locales remain** (see `languages.ts` for the full list); sequence against the still-
+      growing key set - either freeze `port.*` first or track per-locale key deltas on every pass
+      that adds one. Font coverage is part of done, not a footnote - zh/ko/ja need the section-10
+      tofu check per locale (already done for zh/ko this session), not just key resolution. See
+      `PORT_COVERAGE.md`'s locales row.
 
 ## 9. Build the Java-vs-TypeScript parity harness
 
@@ -638,11 +888,20 @@ project's `CLAUDE.md` ("type-checking and a successful build are not evidence
 the feature actually looks/behaves right in-game"), these need a real
 browser pass before they can be treated as done rather than merely built:
 
-- [ ] Visually confirm non-English locale rendering (font coverage for
+- [x] Visually confirm non-English locale rendering (font coverage for
       non-Latin scripts in particular - a CJK locale is the one most likely
       to show tofu from a missing glyph; the i18n check only proves keys
       resolve and interpolate, not that text fits its widget or that a font
-      covers a script).
+      covers a script). **Confirmed live, 2026-09-09**: switched to Chinese
+      (`zh`) and Korean (`ko`) via `localStorage`'s `spd-on-mwg.language` key
+      and screenshotted the title screen, class-select, in-game HUD/log, the
+      inventory panel, and the talent panel (zoomed 3x on the smallest text)
+      - every translated string rendered with complete, correctly-formed
+      glyphs in both scripts, no tofu/missing-glyph boxes anywhere, no
+      console errors. Untranslated strings (e.g. "Bag", "Talents") fall back
+      to English as expected - a translation-completeness gap tracked
+      separately under section 8's "Translate the port's own strings"
+      bullet, not a font-coverage issue, which is what this item asked about.
 - [x] Re-confirm the UI/presentation section's widgets in a live session
       (status pane, bars, floating text, compass, coloured log, boss health
       bar, badge banner, inventory panel) now that a browser is available
@@ -657,30 +916,30 @@ browser pass before they can be treated as done rather than merely built:
       triggering logic was confirmed correct via the log line each produces -
       a tooling limitation, not a finding of anything wrong. See
       `PORT_COVERAGE.md`'s UI verification section.
-- [ ] **Unresolved, flagged rather than silently dropped or guess-fixed**: a live browser
-      session surfaced `TypeError: Cannot read properties of undefined (reading 'frame')` from
-      `spawnMonster` -> `spawnPortedMobs` -> `enterLevel`, reached from a scene-transition
-      callback (`applySwitch`/`frame` in the stack) well *after* a batch of direct scene-method
-      test calls had already returned correct results on the same page load. `spawnMonster`'s
-      sprite lookup depends on `runState.sprites[kind]`, populated by an asset-preload step a
-      real player waits behind a loading screen for; the test harness dispatches synthetic
-      pointer events in rapid bursts with no such wait, so the leading theory is a load-order
-      race specific to that unnatural pacing, not a reachable-through-normal-play bug - but this
-      was not confirmed either way. Reproduce under normal human-paced play (or a scripted wait
-      for the loading screen to clear) before deciding whether this needs an actual fix.
-      **New evidence this session, narrowing (not yet fully confirming) the theory**: while
-      verifying the `mwg` 0.4.2 bump, this same error reproduced 3/3 times immediately after a
-      fresh `npm run build`, using timing that had worked fine moments earlier - but then
-      reproduced 0/5 times on subsequent page loads of that *same already-built* `dist/` (fresh
-      tabs, reloads, and the original fast timing all included), with no code or config change in
-      between. That pattern (fails only right after a rebuild, then stops failing) points at
-      something slow on *first access* to a freshly-written `dist/game.js` specifically - most
-      likely OS/antivirus file-scan latency on Windows delaying the initial asset decode - rather
-      than at `mwg` 0.4.2 or at pointer-burst pacing per se (the version bump was A/B-tested
-      directly against 0.4.1 under identical conditions and showed no difference once this
-      first-access effect was controlled for). Still not proven, and still worth a real fix
-      investigation (e.g. an explicit "assets ready" gate before `enterLevel` can run) rather than
-      accepting "wait a bit and retry" as a permanent workaround.
+- [x] **Resolved (was: unresolved race theory, now a proven reachable-through-normal-play
+      crash with a fix)**: the `TypeError: Cannot read properties of undefined (reading
+      'frame')` from `spawnMonster` was re-root-caused by reading the crash site instead of
+      the timing evidence - `.frame` is read off `MONSTERS[kind]`, so an undefined `def`
+      means an unknown mob *kind*, not an unloaded sprite. Three painter markers reach the
+      live bridge with no catalogue entry: `alchemyBlob` (LaboratoryRoom's `Blob.seed(pot,
+      Alchemy)`), `eternalFire` (MagicalFireRoom's `Blob.seed(cell, EternalFire)`), and
+      `sentry` (SentryRoom's real beam turret). Any floor containing those rooms crashed on
+      entry - which also explains the flakiness (only some seeds/floors contain them), with
+      no asset race involved at all. Fixed three ways: both blob markers are filtered at the
+      bridge (the pot stays inert scenery; the eternal-fire wall stays unported for now -
+      **correction, 2026-09-09 MWG-utilization audit: the "needs a non-diffusing fire
+      primitive" premise is stale**, `Roguelike.Blob.spread(passable, 0, 1)` (0% shared to
+      neighbours, 100% kept - already exported by the installed `mwg` and already the same
+      `Blob` class this port's `fire`/`toxicGas`/etc. blobs use) is exactly a static,
+      non-spreading, non-decaying blob; porting `eternalFire` through it is now a real,
+      actionable follow-up, not blocked on any missing engine capability), the sentry is
+      fully ported (own `red_sentry.png` art, `20+depth*2` accuracy, infinite evasion,
+      immobile charge-and-fire beam for the real `2+depth/2..4+depth` armor-bypassing damage,
+      sees through invisibility), and `spawnPortedMobs` refuses any future unknown kind with a
+      log line instead of crashing. See `PORT_COVERAGE.md`'s new sentry row. **Live browser
+      confirmation done 2026-09-09** (`chrome-devtools-mcp`, `claude-in-chrome` unavailable
+      this session): spawned a `sentry` mid-run via `window.__MWG__.currentScene.spawnMonster`
+      - no crash, the real `red_sentry.png` art rendered on screen after a `refresh()`.
 
 ## 11. Architecture refactor toward the v3 target
 
@@ -716,7 +975,9 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       `SceneSimulationAdapter.hungerStep()` dispatching through it - same transition, same
       events, only the dispatch path changed). Both keep inert local scheduler/random pairs;
       reconciling those with the scene's real ones waits for the first command with a real
-      cost.
+      cost. **Movement planning is now also runtime-routed** through
+      `adapters/movementSimulation.ts`; `main.ts` still owns the resulting attack, door,
+      pickup, trap, and rendering effects.
 - [x] Consider replacing `simulation/entityId.ts`'s local counter with MWG's own
       `core.EntityRegistry` now that it exists (SPD-ADR-002) - resolved as a split decision:
       the `EntityId` type IS now MWG's own (re-exported from `mwg/core`, not a local alias),
@@ -728,7 +989,10 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       branches, event-worthy outcomes like mimic reveal/displacement) from its presentation
       calls (sprite tint, audio cue, floating text) - the single largest concrete instance of
       plan section 10's complaint. Likely the vehicle for actually adopting `SimulationRuntime`
-      above, rather than a separate step.
+      above, rather than a separate step. **Progress (2026-09-09):** the hit/damage roll pair is
+      now extracted into `simulation/attackResolution.ts`; the scene consumes its result while
+      retaining all presentation, proc, shield, death, and event effects. The remaining hook
+      branches still need incremental extraction.
 - [x] Compare `mwg/i18n` against the plan's section 22C "Semantic Messaging" shape before
       committing to SPD-ADR-012. Done against the installed 0.4.2 `.d.ts` files: it matches
       (`SemanticMessage`/`MessageChannel`/`MessageFormatter`/`createCatalogFormatter`,
@@ -739,6 +1003,48 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       unconfirmed - the 0.4.1 review never enumerated these files.
 - [ ] Continue producing the section 22A/22B analysis matrix for the remaining monster/item/
       buff families before migrating each one's code, per SPD-ADR-010.
+- [ ] **MWG-utilization audit (2026-09-09)**: checked whether this port reimplements
+      functionality `mwg` (`@datamoc/mw_games` ^0.4.2) already exports. Well-utilized, no
+      action: `Roguelike.Pathfinder`/`chebyshevDistance`/`canTarget`/`traceLine`/
+      `hasLineOfSight` (~30 call sites), `Roguelike.Blob`, `Actors.rollLoot`/`LootTable`,
+      `Actors.Charges`, the `EntityId` re-export (already tracked above), the custom
+      Java-bit-matching LCG RNG (`spdRng.ts`, correctly *not* using mwg's own xoshiro128 since
+      it must reproduce Java's exact sequence), and `ui/floatingText.ts`'s custom
+      `FloatingTextLayer` (checked against mwg's own `FloatingText` and deliberately not
+      reused - different fade curve/stacking, a justified sibling not a duplicate). Three
+      genuine gaps found between roadmap claims and mwg's actual exports:
+      1. `heroBarrier` only ever used mwg `Actors.Barrier` as a single pooled
+         layer, then hand-rolled a side counter to approximate section 7's "Blocking drains
+         before Barrier" ordering gap - **resolved this pass, and the audit's own prescription
+         turned out to undersell the problem**: re-checking against `ShieldBuff.java` (not just
+         the `Barrier` API) showed the pooled model had three real bugs, not one ordering
+         simplification - additive stacking where `setShield()` keeps the max, proportional
+         decay nibbling a shield `BlockBuff.act()` exempts, and recency-order draining instead
+         of `shieldUsePriority`. Blocking now owns a separate `blockingBarrier` pool drained
+         first in `absorbHeroDamage` (priority 2 before 0, matching `processDamage()`'s sort),
+         exempt from the proportional accrual, with max-semantics + always-reset 5-turn timer in
+         `grantBlockingShield` and a load-time carve-out migration for pre-two-pool saves (see
+         `PORT_COVERAGE.md`'s Barrier-decay row). Remaining there, not here: HoldFast scaling
+         of both clocks and the ProvokedAnger break tracker (both need Sec 6 talent systems).
+      2. Section 10's `eternalFire` "needs a non-diffusing fire primitive" claim (see above)
+         was stale - **resolved this pass, and the audit's own prescription is now recorded as
+         over-mechanized**: re-checked against `MagicalFireRoom.EternalFire`'s real `evolve()`,
+         which never diffuses by construction, so the port simply never calls `spread()` on the
+         new static `eternalFire` blob (no `spread(passable, 0, 1)` call needed to express
+         "static"). Live with ignition, hero/monster/travel passage-blocking, and
+         frost-quenches-whole-wall (see `PORT_COVERAGE.md`'s new `EternalFire` row); remaining,
+         narrower gaps there: flammable-spread, heap burning, water/blizzard clearing.
+      3. `summonSkeleton`'s push-aside comment claimed Necromancer's
+         "push the hero aside when no free cell exists" needs "a full knockback system this
+         port doesn't have" - **resolved this pass, and the audit's own suggested fix would
+         have been wrong**: re-checked against `Necromancer.summonMinion()`'s exact rule (an
+         8-neighbour search maximizing `trueDistance` from the necro, not a directional shove),
+         `Roguelike.knockbackPath`'s straight-line push does NOT match that direction-choice
+         logic, so it was correctly *not* adopted. The real rule needed no framework primitive
+         at all and is now ported directly (nearest-passable pick, farthest-free-neighbour
+         shove with an `IMMOVABLE_KINDS` redirect, direct 2-10 `SummoningBlockDamage` with no
+         hit roll, wait when nothing is passable - see `PORT_COVERAGE.md`'s Necromancer row).
+      No UI-widget/i18n-catalog/scheduler/FOV/geometry reimplementation found elsewhere.
 - [x] Re-check `mwg`'s exports on every version bump for the plan's remaining assumed
       primitives (raw 2D primitive re-exports, the Semantic Messaging shape) - some phases of
       the v3 plan still stay blocked until those land upstream. Re-checked at 0.4.2 this pass:
@@ -749,9 +1055,21 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       done with the compiler API: of 26 `from 'pixi.js'` imports, exactly one file
       (`monsters.ts`, `import type { Texture }`) was convertible - now `Texture2D`, no pixi
       import left there. Everything else is a value use (`extends Container`, `new
-      Texture`/`new Rectangle`, `Texture.from`, `extensions.add(pipe)`), which type aliases
-      cannot express: recorded as upstream proposal P2 in `SPD_ARCHITECTURE_TARGET_V3.md`.
-- [ ] **Code-quality note, flagged by the user**: a long `if (x === 'a' || x === 'b' || x === 'c'
+       Texture`/`new Rectangle`, `Texture.from`, `extensions.add(pipe)`), which type aliases
+       cannot express: recorded as upstream proposal P2 in `SPD_ARCHITECTURE_TARGET_V3.md`.
+       Re-checked at 0.5.0 this pass (pin `^0.4.2` -> `^0.5.0`, full suite green):
+       `core.ReactionTable`/`ReactionRule` is new and root-exported - evaluated against
+       every latch/transition site and deliberately NOT retrofitted (each site is already
+       a minimal boolean; a table costs net lines plus save plumbing - recorded in
+       `SPD_ARCHITECTURE_TARGET_V3.md` as the designated v3 event-presentation mechanism
+       instead); `EntityRegistry` still has no caller-chosen ids (P1 stays open); `Types2D`
+       still type-only (P2 stays open, Phase 0 exit still blocked).
+       Re-checked at 0.5.1 this pass (pin `^0.5.0` -> `^0.5.1`, full suite green):
+       no new game-logic primitives relevant to open items (no Alchemy/ally/Charm systems);
+       `EntityRegistry.add()` still mints opaque ids with no caller-chosen-id primitive (P1
+       stays open); `Types2D` still type-only aliases plus `Rect`/`rectOf()` (P2 stays open,
+       Phase 0 exit still blocked).
+- [x] **Code-quality note, flagged by the user**: a long `if (x === 'a' || x === 'b' || x === 'c'
       || ...)` OR-chain is itself a code smell worth watching for across `main.ts` (e.g. the
       inventory/ground-kind dispatch's `item.id === 'stone' || item.id === 'stoneOf...'` chains
       that have grown by one clause with every newly-ported runestone this session). Where the
@@ -762,9 +1080,90 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       exceptions. **Keep It Simple, Stupid (KISS) is a good default principle here**: reach for
       the simplest structure that actually matches the domain shape, not the first chain of
       conditions that happens to work. Not applied retroactively to the existing runestone
-      chains in this pass (each addition was small, verified, and consistent with its own
-      neighbors at the time) - a candidate for the "architecture refactor" pass above, not an
-      emergency fix.
+      chains in that pass (each addition was small, verified, and consistent with its own
+      neighbors at the time). **Closed this pass (2026-09-09)**: audited every remaining
+      `x === 'a' || x === 'b' || ...` chain in `main.ts` (regex swept every occurrence, not a
+      sample). Found one genuine instance of the flagged smell - `spawnMonster`'s "never
+      sleeps on spawn" gate, an 8-clause chain that had grown by one kind with every pass
+      porting a new always-awake special mob (FetidRat/GnollTrickster/GreatCrab/DemonSpawner/
+      Sentry/RotHeart/RotLasher/newbornElemental) - extracted into `monsters.ts`'s
+      `NEVER_SLEEPS_KINDS` Set, the same pattern `NPC_KINDS`/`BOSS_KINDS`/`IMMOVABLE_KINDS`
+      already established. Browser-verified live: a plain rat still spawns sleeping, a
+      GnollTrickster still spawns already awake. The other short chains found (region lists,
+      key-item groupings, a 3-kind Ghost-quest-target check) are each a fixed, real-world-
+      bounded enumeration that doesn't grow with every new ported feature - the exact
+      condition this note itself says NOT to force into a lookup table just for its own sake,
+      so they were deliberately left alone rather than converted for no structural reason.
+      `tsc`/build/both suites green.
+- [x] **Data-driven dispatch pass (2026-09-09), user-flagged**: acted on the code-quality note
+      above for the two largest concrete instances found by a full `main.ts` audit (205
+      `kind === '...'`/`id === '...'` checks total, spread across ~19 functions - not one
+      giant cascade, but two genuinely large ones: `takeMonsterTurn`'s 43 and `spawnMonster`'s
+      37). Converted `quaffPotion`'s 39-branch potion-effect `if/else if` chain and
+      `takeMonsterTurn`'s 236-line, 16-case non-adjacent "ranged special ability" cascade
+      (DM100/Shaman/Necromancer/Tengu/DM300/Yog/Warlock/Elemental/YogFist/Scorpio-Acidic/Guard/
+      DM200-DM201/Spinner/Golem/Eye/GnollTrickster/GreatCrab) each into a `Record<Kind,
+      handler>` registry (`potionEffects`, `rangedAiOverrides`) - O(1) lookup instead of a
+      linear string-compare cascade, same behavior per case, same Java-citation comments
+      moved onto their own handler. Each `rangedAiOverrides` handler returns `true` if it
+      consumed the monster's turn, `false` to fall through to the shared movement AI exactly
+      as the original branch's condition failing did; three shared cases (Necromancer/
+      SpectralNecromancer, Scorpio/Acidic, DM200/DM201) route through one helper method from
+      two registry keys instead of one `||`-joined condition. Browser-verified live for every
+      handler with real branching complexity: Eye's two-turn charge-then-fire beam (including
+      the 1/4-damage-while-charged interaction), Golem's teleport-and-cooldown, Guard's
+      chain-once-ever (confirmed a second attempt does nothing), DM200 (movable, resumes
+      chasing when its vent roll fails) vs DM201 (always immobile, confirmed via a
+      forced-cooldown vent-miss), GreatCrab's every-3rd-turn movement throttle, Scorpio's
+      ranged attack, Spinner's web-root, and Necromancer's full summon->heal->adrenaline
+      chain - all matched their pre-refactor values exactly. **`spawnMonster`'s 37-branch
+      cascade converted too, same pass**: its stat-override chain (7 kinds), base-kind alias
+      chain (10 kinds), and sprite-texture-reuse chain (12 cases, checking both `kind` and
+      `baseKind`) all moved into `monsters.ts` as real data tables
+      (`DEPTH_SCALED_STATS`/`BASE_KIND_ALIASES`/`SPRITE_KIND_OVERRIDE`), plus the `isNPC`/
+      `isBoss` `||`-chains collapsed into `NPC_KINDS`/`BOSS_KINDS` sets - the single biggest
+      concrete instance yet of this session's own "data belongs in asset data, not code" theme.
+      The texture chain in particular collapsed from 12 checked cases to one lookup once
+      re-derived correctly: every kind the original checked against `kind` directly
+      (`sentry`/`ratKing`/`rotHeart`/`rotLasher`) has no `BASE_KIND_ALIASES` entry, so
+      `baseKind` already equals `kind` for each - meaning checking `baseKind` alone, as the
+      original's own fallback chain already did for the other 8 cases, covers all 12.
+      Live-verified via direct texture-identity comparison (not just "no crash"): spawned one
+      of every affected kind and confirmed `mimic`/`crystalMimic` share one texture source,
+      `piranha`/`bee`/`statue`/`armoredStatue`/`greatCrab` share another (crab), and every
+      dedicated-asset kind resolves to its own distinct source - exactly the grouping
+      `SPRITE_KIND_OVERRIDE` specifies, with no cross-contamination. `tsc`/`build` clean
+      throughout. **Not a candidate for `mwg` itself** (raised by the user):
+      the *pattern* (keyed handler registry over branch-cascade dispatch, a "return true if
+      you handled it" contract) is genuinely generic and would be a reasonable thing for the
+      framework to offer as a documented convention or even a small typed helper - but every
+      handler *body* here is SPD-specific game logic, which the licensing-boundary section of
+      `CLAUDE.md` forbids putting in `mwg` (MPL-2.0, must stay game-agnostic, no SPD data/logic
+      ever). Recorded as a possible upstream proposal (a generic `keyedDispatch<K,
+      Args>(table, key, ...args)` utility, or documentation of the pattern) for the user to
+      raise in the framework's own repo if they want it - not actionable from inside this one.
+- [x] **`mwg` bumped to 0.5.0** (`package.json`'s pin, already installed). This release ships
+      `core.ReactionTable` - edge-triggered condition->action rules with a `once: true` option
+      the framework's own doc comment illustrates with "a boss entering phase two" as the
+      worked example, a closer match to this port's hand-rolled one-shot transition flags than
+      anything 0.4.x offered. Adopted immediately for `takeKingTurn`'s three real one-way
+      transitions (P1->P2 at an HP threshold, P2->P3 at shield-zero, P3's one-time "losing"
+      yell under 20 HP) - previously three separate ad-hoc latch fields
+      (`kingPhase`-gated `if` blocks plus a standalone `kingLostYell` boolean), now one
+      `ReactionTable<Creature>` (`kingPhaseRules`) built lazily per King and stored on
+      `Creature.kingReactions`. Since `ReactionTable` is a stateful class instance (not plain
+      data), its own `toJSON()`/`fromJSON()` needed wiring into the existing save/restore path
+      separately from the plain `SavedCreature` field list - done via a new
+      `kingReactionsState` field, reconstructed with the same `kingPhaseRules(creature)` used
+      to build a fresh table. Live-verified all three transitions firing exactly once
+      (including that HP recovering above 20 and dropping again correctly does *not* re-fire
+      the spent losing-yell rule - true `once` semantics, not just edge-triggering), a second
+      call with wildly out-of-range state not reverting or double-firing an already-spent
+      transition, lazy construction on a fresh King, and a full save-then-load round-trip
+      preserving phase and every fired-rule id exactly. `tsc`/`build` clean throughout. Brute's
+      `hasRaged` one-time revival is a smaller, single-rule instance of the same shape,
+      identified but not converted this pass (lower value - a single flag, not a multi-rule
+      state machine like the King's).
 
 ## 12. Publish a playable build on GitHub Pages
 
@@ -791,7 +1190,10 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       "open it and look" bar the rest of this file holds itself to - owed as a follow-up. Every
       future push to `main` now deploys automatically (the auto-vs-manual choice both options
       being kept for was implicitly resolved by asking the user to trigger deployment via a push-
-      based workflow at all).
+      based workflow at all). **Live browser confirmation done 2026-09-09** (`chrome-devtools-mcp`):
+      opened `https://datamoc.github.io/mwg-pixel-dungeon/` directly, the title screen rendered
+      correctly (menu buttons, background, title art - showing the pre-existing cropped-logo bug
+      documented below, since that fix was made locally this same pass and not yet pushed).
 
 ## Definition of done
 

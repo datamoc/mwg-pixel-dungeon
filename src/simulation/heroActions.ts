@@ -18,7 +18,7 @@ export const TURN_COSTS: Record<string, number> = {
 };
 
 export type AttemptAction = 'special' | 'eat' | 'quaff' | 'read' | 'upgrade';
-export type FreeAction = 'examine' | 'talents' | 'buyHeal' | 'buyId' | 'sellFood' | 'save' | 'load';
+export type FreeAction = 'examine' | 'talents' | 'buyHeal' | 'buyId' | 'sellFood' | 'buyback' | 'save' | 'load';
 export type HeroActionPlan =
 	| { kind: 'paralysed' | 'search' | 'unknown'; turnCost?: number }
 	| { kind: 'attempt'; action: AttemptAction; turnCost: number }
@@ -37,7 +37,7 @@ export function planHeroAction(action: string, paralysed: boolean, turnCostMod: 
 		case 'search': return { kind: 'search', turnCost: TURN_COSTS.search * turnCostMod };
 		case 'special': case 'eat': case 'quaff': case 'read': case 'upgrade':
 			return { kind: 'attempt', action, turnCost: TURN_COSTS.ranged * turnCostMod };
-		case 'examine': case 'talents': case 'buyHeal': case 'buyId': case 'sellFood': case 'save': case 'load':
+		case 'examine': case 'talents': case 'buyHeal': case 'buyId': case 'sellFood': case 'buyback': case 'save': case 'load':
 			return { kind: 'free', action };
 		default: return Object.hasOwn(MOVES, action) ? { kind: 'move', step: { ...MOVES[action] }, turnCost: TURN_COSTS.move * turnCostMod } : { kind: 'unknown', turnCost: TURN_COSTS.move * turnCostMod };
 	}

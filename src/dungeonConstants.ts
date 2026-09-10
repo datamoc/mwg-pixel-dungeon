@@ -141,7 +141,11 @@ export type GroundItemKind =
 	| 'ring'
 	| 'crystalKey'
 	| 'ironKey'
-	| 'goldenKey';
+	| 'goldenKey'
+	| 'bomb'
+	| 'corpseDust'
+	| 'candle'
+	| 'embers';
 
 /**
  * `ItemSpriteSheet`'s real 256x512 grid (`xy(x,y) = (x-1) + 16*(y-1)`, matching this sheet's
@@ -171,6 +175,13 @@ export const ITEM_FRAME: Record<GroundItemKind, number> = {
 	crystalKey: 57,
 	ironKey: 56,
 	goldenKey: 56,
+	//BOMB = BOMBS+0 where BOMBS = xy(1,6) = 80 (DBL_BOMB = 81, used for doubleBomb heaps)
+	bomb: 80,
+	//DUST = QUEST+1 where QUEST = xy(1,30) = 464
+	corpseDust: 465,
+	//CANDLE = QUEST+2, EMBER = QUEST+3 (the Wandmaker type-2 ritual props)
+	candle: 466,
+	embers: 467,
 };
 /** `Waterskin.MAX_VOLUME` */
 export const WATERSKIN_MAX = 20;

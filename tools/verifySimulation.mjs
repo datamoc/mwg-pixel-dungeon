@@ -33,7 +33,7 @@ try {
 	for (const file of ['simulation/movement', 'simulation/heroTurn', 'simulation/hunger', 'simulation/turns', 'adapters/sceneSimulation',
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActions',
-		'simulation/search', 'adapters/searchSimulation']) {
+		'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution']) {
 		compile(new URL(`../src/${file}.ts`, import.meta.url), `${file}.js`);
 	}
 	// Exercise the installed local scheduler as well as the framework-free simulation.
@@ -51,11 +51,38 @@ try {
 	const require = createRequire(join(output, 'tests.cjs'));
 	const { advanceHunger } = require('./simulation/hunger');
 	const { runHungerStep } = require('./adapters/hungerSimulation');
+	const { runMovement } = require('./adapters/movementSimulation');
+	const { resolveAttack } = require('./simulation/attackResolution');
 	const { runUntilHeroInput } = require('./adapters/sceneSimulation');
 	const { SceneSimulationAdapter } = require('./adapters/sceneSimulation');
 	const { Scheduler } = require('./scheduler');
 	const talents = require('./talentEffects');
 	const initial = (extra = {}) => ({ hunger: 0, partialDamage: 0, hp: 20, maxHp: 20, ...extra });
+	check('movement runtime preserves the pure decision and lazy query order', () => {
+		const calls = [];
+		const plan = runMovement({ x: 4, y: 8 }, { x: -1, y: 1 }, {
+			occupantAt: target => { assert.deepEqual(target, { x: 3, y: 9 }); calls.push('actor'); return null; },
+			closedDoorAt: () => { calls.push('door'); return true; },
+			isRooted: () => { throw new Error('queried after closed door'); },
+			passable: () => { throw new Error('queried after closed door'); },
+		});
+		assert.deepEqual(plan, { kind: 'door', target: { x: 3, y: 9 } });
+		assert.deepEqual(calls, ['actor', 'door']);
+		assert.deepEqual(runMovement({ x: 4, y: 8 }, { x: 0, y: 0 }, {}), { kind: 'wait' });
+	});
+	check('attack resolution preserves hit short-circuit and base damage rolls', () => {
+		const random = {
+			float: () => 0,
+			normalRange: (min) => min,
+			range: (min) => min,
+			int: (min) => min,
+		};
+		const attacker = { id: 'hero-1', x: 1, y: 1, hp: 20, maxHp: 20, accuracy: 10, evasion: 5, damage: [3, 7], armor: [0, 0], buffs: {}, isHero: true };
+		const defender = { id: 'rat-1', x: 2, y: 1, hp: 10, maxHp: 10, accuracy: 5, evasion: 0, damage: [1, 2], armor: [1, 1], buffs: {}, isHero: false };
+		assert.deepEqual(resolveAttack(attacker, defender, random), { hit: true, damage: 2 });
+		const untargetable = { ...defender, evasion: 1000000 };
+		assert.deepEqual(resolveAttack(attacker, untargetable, random), { hit: false, damage: 0 });
+	});
 	check('recent talent effects cover thresholds, class gates, and rank scaling', () => {
 		assert.equal(talents.ironWillReduction(10, 20, 1), 1);
 		assert.equal(talents.ironWillReduction(11, 20, 2), 0);
@@ -63,12 +90,13 @@ try {
 		assert.equal(talents.shieldBatteryGain(0, 2), 0);
 		assert.equal(talents.rejuvenatingStepHeal(4, 4, 19, 20, 2), 1);
 		assert.equal(talents.rejuvenatingStepHeal(3, 4, 10, 20, 2), 0);
-		assert.equal(talents.lethalHasteFreeTurn('duelist', 1), true);
-		assert.equal(talents.lethalHasteFreeTurn('rogue', 1), false);
-		assert.equal(talents.weaponRechargingGain('duelist', 2), 2);
-		assert.equal(talents.weaponRechargingGain('mage', 2), 0);
-		assert.equal(talents.farsightRange('sniper', 2), 10);
-		assert.equal(talents.farsightRange('warden', 2), 6);
+		assert.equal(talents.lethalHasteDuration(1), 4);
+		assert.equal(talents.lethalHasteDuration(2), 6);
+		assert.equal(talents.LETHAL_HASTE_COOLDOWN, 100);
+		assert.equal(talents.weaponRechargingDamage(100, 2), 103);
+		assert.equal(talents.weaponRechargingDamage(40, 1), 41);
+		assert.equal(talents.farsightMultiplier('sniper', 2), 1.5);
+		assert.equal(talents.farsightMultiplier('warden', 2), 1);
 		assert.equal(talents.shieldingDewGain('warden', 2), 2);
 		assert.equal(talents.shieldingDewGain('sniper', 2), 0);
 		assert.equal(talents.preservationChance(1), 0.2);
@@ -102,10 +130,8 @@ try {
 		assert.equal(talents.deathlessFuryTriggers('berserker', 1, true, 20, 10), false);
 		assert.equal(talents.enhancedLethalityThreshold('assassin', 2), 0.4);
 		assert.equal(talents.enhancedLethalityThreshold('berserker', 2), 0);
-		assert.equal(talents.endlessRageFreeTurn('berserker', 1), true);
-		assert.equal(talents.endlessRageFreeTurn('gladiator', 1), false);
-		assert.equal(talents.arcaneVisionRadius('mage', 2), 6);
-		assert.equal(talents.arcaneVisionRadius('rogue', 2), 0);
+		assert.equal(talents.arcaneVisionDuration(2), 15);
+		assert.equal(talents.arcaneVisionDuration(0), 5);
 		assert.equal(talents.necromancerMinionChance('warlock', 1), 0.13);
 		assert.equal(talents.necromancerMinionChance('warlock', 3), 0.4);
 		assert.equal(talents.necromancerMinionChance('battlemage', 3), 0);

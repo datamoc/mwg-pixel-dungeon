@@ -61,6 +61,10 @@ import scorpioUrl from './assets/scorpio.png';
 import kingUrl from './assets/king.png';
 import yogUrl from './assets/yog.png';
 import fistsUrl from './assets/yog_fists.png';
+import sentryUrl from './assets/red_sentry.png';
+import rotHeartUrl from './assets/rot_heart.png';
+import rotLasherUrl from './assets/rot_lasher.png';
+import ratkingUrl from './assets/ratking.png';
 // spawner.png/ripper.png: DemonSpawner/RipperDemon (levels/rooms/special/DemonSpawnerRoom.java),
 // byte-for-byte from this Java checkout's core/src/main/assets/sprites/.
 import spawnerUrl from './assets/spawner.png';
@@ -153,6 +157,13 @@ export interface SpdSprites {
 	king: Texture;
 	yog: Texture;
 	fists: Texture;
+	/** `SentryRoom$Sentry`'s own sheet (`Assets.Sprites.RED_SENTRY`, 8x15 film). */
+	sentry: Texture;
+	/** `RotHeartSprite`/`RotLasherSprite`'s own sheets (16x16 / 12x16 films). */
+	rotHeart: Texture;
+	rotLasher: Texture;
+	/** `RatKingSprite`'s own sheet (16x17 film). */
+	ratking: Texture;
 	/** Alias used by the MonsterId key for Yog's summoned fists. */
 	yogFist: Texture;
 	blacksmith: Texture;
@@ -231,6 +242,14 @@ export interface SpdSprites {
  * within its cell) for a snugger icon; this port draws the full 16x16 cell instead of
  * reproducing that per-item crop table, a real but minor simplification (a little more
  * transparent padding around each icon than SPD itself shows).
+ *
+ * `red_sentry.png` is likewise pulled from tag `v3.3.8`
+ * (`git show v3.3.8:core/src/main/assets/sprites/red_sentry.png`) - the SentryRoom turret
+ * postdates this checkout's own sprite set, and its 8x15 film is cut in `main.ts` from
+ * `SentrySprite`'s own `uvRect(0, 0, 8, 15)` numbers, like every other mob sheet here.
+ * `rot_heart.png`/`rot_lasher.png` come from the same tag for the same reason (the
+ * RotGarden pair postdates the set too), cut at their sprites' own 16x16 / 12x16 films.
+ * `ratking.png` likewise (`RatKingSprite`'s own 16x17 film) for the RatKingRoom denizen.
  */
 export async function loadSpdSprites(): Promise<SpdSprites> {
 	const [
@@ -278,6 +297,10 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		king,
 		yog,
 		fists,
+		sentry,
+		rotHeart,
+		rotLasher,
+		ratking,
 		blacksmith,
 		imp,
 		demonSpawner,
@@ -360,6 +383,10 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(kingUrl),
 		loadImage(yogUrl),
 		loadImage(fistsUrl),
+		loadImage(sentryUrl),
+		loadImage(rotHeartUrl),
+		loadImage(rotLasherUrl),
+		loadImage(ratkingUrl),
 		loadImage(blacksmithUrl),
 		loadImage(impUrl),
 		loadImage(spawnerUrl),
@@ -444,6 +471,10 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		king: Texture.from(king),
 		yog: Texture.from(yog),
 		fists: Texture.from(fists),
+		sentry: Texture.from(sentry),
+		rotHeart: Texture.from(rotHeart),
+		rotLasher: Texture.from(rotLasher),
+		ratking: Texture.from(ratking),
 		yogFist: Texture.from(fists),
 		blacksmith: Texture.from(blacksmith),
 		imp: Texture.from(imp),

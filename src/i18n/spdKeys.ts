@@ -49,6 +49,7 @@ export const MOB_KEYS: Record<string, string> = {
 	ghoul: 'actors.mobs.ghoul.name',
 	//SPD has five elementals; this port models only the fire one
 	elemental: 'actors.mobs.elemental$fireelemental.name',
+	newbornElemental: 'actors.mobs.elemental$newbornfireelemental.name',
 	warlock: 'actors.mobs.warlock.name',
 	monk: 'actors.mobs.monk.name',
 	golem: 'actors.mobs.golem.name',
@@ -70,6 +71,10 @@ export const MOB_KEYS: Record<string, string> = {
 	senior: 'actors.mobs.senior.name',
 	acidic: 'actors.mobs.acidic.name',
 	mimic: 'actors.mobs.mimic.name',
+	sentry: 'levels.rooms.special.sentryroom$sentry.name',
+	rotHeart: 'actors.mobs.rotheart.name',
+	rotLasher: 'actors.mobs.rotlasher.name',
+	ratKing: 'actors.mobs.npcs.ratking.name',
 	crystalMimic: 'items.heap.crystal_chest',
 	piranha: 'actors.mobs.piranha.name',
 	bee: 'actors.mobs.bee.name',
@@ -113,6 +118,11 @@ export const GROUND_ITEM_KEYS: Record<string, string> = {
 	ring: 'port.name.ring',
 	crystalKey: 'items.keys.crystalkey.name',
 	goldenKey: 'items.keys.goldenkey.name',
+	bomb: 'items.bombs.bomb.name',
+	corpseDust: 'items.quest.corpsedust.name',
+	//Wandmaker type-2 ritual props (both catalog keys verified present)
+	candle: 'items.quest.ceremonialcandle.name',
+	embers: 'items.quest.embers.name',
 };
 
 /** the bag's item ids, against SPD's real item names */
@@ -157,6 +167,23 @@ export const ITEM_KEYS: Record<string, string> = {
 	scrollTeleportation: 'items.scrolls.scrollofteleportation.name',
 	scrollTerror: 'items.scrolls.scrollofterror.name',
 	scrollRetribution: 'items.scrolls.scrollofretribution.name',
+	bomb: 'items.bombs.bomb.name',
+	corpseDust: 'items.quest.corpsedust.name',
+	stoneOfAugmentation: 'items.stones.stoneofaugmentation.name',
+	stoneOfFear: 'items.stones.stoneoffear.name',
+	stoneOfDeepSleep: 'items.stones.stoneofdeepsleep.name',
+	stoneOfShock: 'items.stones.stoneofshock.name',
+	stoneOfBlast: 'items.stones.stoneofblast.name',
+	stoneOfBlink: 'items.stones.stoneofblink.name',
+	stoneOfClairvoyance: 'items.stones.stoneofclairvoyance.name',
+	stoneOfEnchantment: 'items.stones.stoneofenchantment.name',
+	stoneOfIntuition: 'items.stones.stoneofintuition.name',
+	//The generated catalog carries no `stoneofdetectmagic` keys at all (it even holds a
+	//phantom `stoneofdisarming` set instead - a catalog-generation gap, not a Java one),
+	//so this one name resolves through the port's own strings, sourced verbatim from Java.
+	stoneOfDetectMagic: 'port.name.stoneOfDetectMagic',
+	candle: 'items.quest.ceremonialcandle.name',
+	embers: 'items.quest.embers.name',
 };
 
 /** `items.rings.*` */
@@ -180,7 +207,9 @@ export const BUFF_KEYS: Record<string, string> = {
 	vulnerable: 'actors.buffs.vulnerable.name',
 	burning: 'actors.buffs.burning.name',
 	poison: 'actors.buffs.poison.name',
+	ooze: 'actors.buffs.ooze.name',
 	cripple: 'actors.buffs.cripple.name',
+	degrade: 'actors.buffs.degrade.name',
 	cloak: 'actors.buffs.invisibility.name',
 	focus: 'actors.mobs.monk$focus.name',
 };

@@ -35,6 +35,8 @@ const BUFF_ICON: Record<string, number> = {
 	burning: 2,
 	//POISON = 3
 	poison: 3,
+	//OOZE = 8
+	ooze: 8,
 	//PARALYSIS = 4; ROOTS = 11; INVISIBLE = 12; LEVITATION = 1
 	paralysis: 4,
 	roots: 11,
@@ -56,6 +58,8 @@ const BUFF_ICON: Record<string, number> = {
 	vulnerable: 46,
 	//HEX = 47
 	hex: 47,
+	//DEGRADE = 48
+	degrade: 48,
 	//DAZE = 70
 	daze: 70,
 };

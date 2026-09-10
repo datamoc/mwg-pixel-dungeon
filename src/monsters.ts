@@ -1,6 +1,7 @@
 import { SpriteSheet } from 'mwg';
 import type { Texture2D } from 'mwg/two-d/render';
 import type { GroundItemKind } from './dungeonConstants';
+import type { SpdSprites } from './images';
 
 /** a class's real idle-stance frame: tier row 1 (the starting cloth-armour look), column 0 - `HeroSprite.updateArmor()`'s `idle.frames(film, 0, 0, 0, 1, 0, 0, 1, 1)` */
 export function heroSheet(texture: Texture2D): SpriteSheet {
@@ -54,7 +55,12 @@ export type MonsterId =
 	| 'piranha'
 	| 'bee'
 	| 'statue'
-	| 'armoredStatue';
+	| 'armoredStatue'
+	| 'sentry'
+	| 'rotHeart'
+	| 'rotLasher'
+	| 'newbornElemental'
+	| 'ratKing';
 
 // Bestiary.swapMobAlts() variants. They deliberately remain distinct ids even when this
 // checkout has no separate texture sheet for the variant: their Java stats/loot identity and
@@ -94,20 +100,19 @@ export type AnyMonsterId = MonsterId | MonsterVariantId;
  * `INFINITE_EVASION`, `damage()` does nothing), modelled here as effectively unkillable
  * (huge HP and evasion) rather than wiring a real "cannot be targeted" flag through combat.
  */
-export const MONSTERS: Record<
-	AnyMonsterId,
-	{
-		hp: number;
-		accuracy: number;
-		evasion: number;
-		damage: [number, number];
-		armor: [number, number];
-		frame: [number, number];
-		idle: number;
-		exp: number;
-		maxLvl: number;
-	}
-> = {
+export interface MonsterDef {
+	hp: number;
+	accuracy: number;
+	evasion: number;
+	damage: [number, number];
+	armor: [number, number];
+	frame: [number, number];
+	idle: number;
+	exp: number;
+	maxLvl: number;
+}
+
+export const MONSTERS: Record<AnyMonsterId, MonsterDef> = {
 	//`Rat.java` itself is unchanged since this checkout (same HP/defenseSkill/maxLvl); only
 	//its display name changed later, to "marsupial rat" (actors.properties, confirmed at tag
 	//v4.0.0-beta) - a flavour-text update, not a new or rebalanced creature
@@ -161,6 +166,12 @@ export const MONSTERS: Record<
 	//elemental 12x14, warlock 12x15, monk 15x14 idle 1, golem 17x19)
 	ghoul: { hp: 45, accuracy: 24, evasion: 20, damage: [16, 22], armor: [0, 4], frame: [12, 14], idle: 0, exp: 5, maxLvl: 20 },
 	elemental: { hp: 60, accuracy: 25, evasion: 20, damage: [20, 25], armor: [0, 5], frame: [12, 14], idle: 0, exp: 10, maxLvl: 20 },
+	//Elemental.NewbornFireElemental (the Wandmaker's type-2 ritual summon): base HP 60 and
+	//dr 0-5 inherited, defenseSkill 12 (not 20), MINIBOSS, melee acc 15 for 10-12 with no
+	//fiery on-hit, and the telegraphed 3x3 fireball instead of bolts (see takeMonsterTurn).
+	//EXP 10/maxLvl 20 inherited. No separate newborn sprite sheet exists here, so it reuses
+	//the fire elemental's own 12x14 film (same precedent as crab-texture reuse above).
+	newbornElemental: { hp: 60, accuracy: 15, evasion: 12, damage: [10, 12], armor: [0, 5], frame: [12, 14], idle: 0, exp: 10, maxLvl: 20 },
 	warlock: { hp: 70, accuracy: 25, evasion: 18, damage: [12, 18], armor: [0, 8], frame: [12, 15], idle: 0, exp: 11, maxLvl: 21 },
 	monk: { hp: 70, accuracy: 30, evasion: 30, damage: [12, 25], armor: [0, 2], frame: [15, 14], idle: 1, exp: 11, maxLvl: 21 },
 	golem: { hp: 120, accuracy: 28, evasion: 15, damage: [25, 30], armor: [0, 12], frame: [17, 19], idle: 0, exp: 12, maxLvl: 22 },
@@ -216,6 +227,145 @@ export const MONSTERS: Record<
 	// shared combat roll until weapon instances are attached to monsters.
 	statue: { hp: 15, accuracy: 9, evasion: 4, damage: [2, 8], armor: [0, 2], frame: [16, 16], idle: 0, exp: 0, maxLvl: 29 },
 	armoredStatue: { hp: 30, accuracy: 9, evasion: 4, damage: [2, 8], armor: [0, 2], frame: [16, 16], idle: 0, exp: 0, maxLvl: 29 },
+	//SentryRoom$Sentry: HP=HT=1 (NPC base), INFINITE_EVASION (modelled as the real
+	//1000000 constant `rollHit` short-circuits on, not the NPC display-999999), no melee
+	//to speak of (damage unused - it only ever fires its beam), EXP=0. Accuracy is set at
+	//spawn (`20 + depth*2`); the beam formula reads depth live. Own `red_sentry.png` sheet
+	//at its sprite's 8x15 idle film - no placeholder reuse needed.
+	sentry: { hp: 1, accuracy: 20, evasion: 1000000, damage: [0, 0], armor: [0, 0], frame: [8, 15], idle: 0, exp: 0, maxLvl: 0 },
+	//RotHeart/RotLasher: HP=HT=80, defenseSkill 0, IMMOVABLE (+MINIBOSS, STATIC on the
+	//heart), ToxicGas-immune both. Heart: EXP 4, PASSIVE, damageRoll/attackSkill 0,
+	//drRoll +0-5 (armor [0,5]); killing it kills every lasher on the level. Lasher:
+	//EXP 1, Waiting (immobile, attacks adjacent), damage 10-20, attack 25, dr +0-8,
+	//seed loot 0.75, +5/turn regen while hurt with no adjacent enemy. Own sheets at
+	//their sprites' films (heart 16x16, lasher 12x16) - no placeholders. maxLvl is the
+	//Mob default (Hero.MAX_LEVEL-1 = 29) for both, neither class overrides it.
+	rotHeart: { hp: 80, accuracy: 0, evasion: 0, damage: [0, 0], armor: [0, 5], frame: [16, 16], idle: 0, exp: 4, maxLvl: 29 },
+	rotLasher: { hp: 80, accuracy: 25, evasion: 0, damage: [10, 20], armor: [0, 8], frame: [12, 16], idle: 0, exp: 1, maxLvl: 29 },
+	//RatKingRoom's denizen: sleeping NPC (infinite evasion, NPC-base HP), EXP 0. Own
+	//`ratking.png` sheet at its sprite's 16x17 idle film.
+	ratKing: { hp: 1, accuracy: 0, evasion: 999999, damage: [0, 0], armor: [0, 0], frame: [16, 17], idle: 0, exp: 0, maxLvl: 0 },
+};
+
+/**
+ * `Bestiary.swapMobAlts()` variants and quest/room minibosses that reuse their family's real
+ * Java `extends` relationship for anything keyed off the *base* kind rather than the literal
+ * spawned id (sprite-sheet reuse, AI behavior inheritance in `takeMonsterTurn`, champion-roll
+ * depth exclusions). Was a 10-case ternary chain in `spawnMonster`
+ * (`kind === 'albino' ? 'rat' : kind === 'causticSlime' ? 'slime' : ...`); a lookup here reads
+ * as the alias table it always was. A kind with no entry is its own base kind (see
+ * `spawnMonster`'s `BASE_KIND_ALIASES[kind] ?? kind` fallback).
+ */
+export const BASE_KIND_ALIASES: Partial<Record<AnyMonsterId, MonsterId>> = {
+	albino: 'rat',
+	causticSlime: 'slime',
+	bandit: 'thief',
+	spectralNecromancer: 'necromancer',
+	armoredBrute: 'brute',
+	dm201: 'dm200',
+	senior: 'monk',
+	acidic: 'scorpio',
+	crystalMimic: 'mimic',
+	armoredStatue: 'statue',
+};
+
+/** Quest-giver/shop/crafting NPCs (`Mob.java` subclasses with `alignment = ALLY` or an
+ * unkillable `defenseSkill()`/`damage()` override) - was a 6-case `||` chain in `spawnMonster`. */
+export const NPC_KINDS = new Set<AnyMonsterId>(['ghost', 'wandmaker', 'shopkeeper', 'blacksmith', 'imp', 'ratKing']);
+
+/** Fixed-floor bosses (Goo/Tengu/DM-300/King/Yog + Yog's own summoned fists) - was a 6-case
+ * `||` chain in `spawnMonster`, used to exempt them from the ordinary sleeping-on-spawn and
+ * champion-roll rules every regular mob gets. */
+export const BOSS_KINDS = new Set<AnyMonsterId>(['goo', 'tengu', 'dm300', 'king', 'yog', 'yogFist']);
+
+/** Kinds that never change cells (`Property.IMMOVABLE` or an equivalent never-moves turn):
+ * DM201 (real `IMMOVABLE`, consumes its turn), the Sentry turret and the RotHeart/RotLasher
+ * pair (all own their whole turn and never step). Used for Necromancer.summonMinion's
+ * "no push if char is immovable" rule - such an occupant is never shoved aside. */
+export const IMMOVABLE_KINDS = new Set<AnyMonsterId>(['dm201', 'sentry', 'rotHeart', 'rotLasher']);
+
+/** Kinds that spawn already awake (real Java `state = PASSIVE`/`WANDERING` from the start,
+ * never `SLEEPING`): Ghost-quest mobs (FetidRat/GnollTrickster/GreatCrab, spawned mid-quest
+ * with the hero already nearby, not lying in ambush), DemonSpawner/Sentry/RotHeart/RotLasher
+ * (each `PASSIVE` from spawn in real Java), and the newborn fire elemental (spawned by a lit
+ * ritual, already alert). `NPC_KINDS`/`BOSS_KINDS` are exempted from ordinary sleeping-on-spawn
+ * separately, so aren't repeated here. **2026-09-09 code-quality pass, user-flagged**: was an
+ * 8-case `||` chain in `spawnMonster` that had grown by one clause with each newly-ported kind
+ * needing this exemption - exactly the "OR-chain that grows linearly with every new case"
+ * smell ROADMAP.md's own code-quality note calls out, moved into a table for the same reason
+ * `NPC_KINDS`/`BOSS_KINDS`/`IMMOVABLE_KINDS` already were. */
+export const NEVER_SLEEPS_KINDS = new Set<AnyMonsterId>(['fetidRat', 'gnollTrickster', 'greatCrab', 'demonSpawner', 'sentry', 'rotHeart', 'rotLasher', 'newbornElemental']);
+
+/**
+ * Per-kind depth-scaled stat overrides, applied on top of `MONSTERS`' base entry at spawn
+ * time. Was a 6-case (7-kind, since Mimic/CrystalMimic shared one formula) nested-ternary
+ * chain building `spawnMonster`'s `def`; a lookup keyed by kind reads as the table of formulas
+ * it always was. A kind with no entry here spawns at its plain `MONSTERS` stats unmodified.
+ */
+export const DEPTH_SCALED_STATS: Partial<Record<AnyMonsterId, (depth: number) => Partial<MonsterDef>>> = {
+	//Mimic.java scales HP/defence/damage from Dungeon.depth at spawn time. CrystalMimic shares
+	//the exact same formula (`extends Mimic`, no override).
+	mimic: (depth) => ({
+		hp: (1 + depth) * 6,
+		accuracy: 6 + depth,
+		evasion: 2 + Math.floor(depth / 2),
+		damage: [1 + depth, 2 + depth * 2],
+		armor: [0, 1 + Math.floor(depth / 2)],
+	}),
+	crystalMimic: (depth) => DEPTH_SCALED_STATS.mimic!(depth),
+	//Piranha.act(): HT=10+depth*5, defense/attack skill=20+depth*2/10+depth*2, EXP=0.
+	piranha: (depth) => ({
+		hp: 10 + depth * 5,
+		accuracy: 20 + depth * 2,
+		evasion: 10 + depth * 2,
+		damage: [depth, 4 + depth * 2],
+		armor: [0, depth],
+	}),
+	//Bee.java: HT=(2+depth)*4, defense/attack skill=9+depth, damage a 1/10-1/4 HT fraction.
+	bee: (depth) => {
+		const hp = (2 + depth) * 4;
+		return {
+			hp,
+			accuracy: 9 + depth,
+			evasion: 9 + depth,
+			damage: [Math.max(1, Math.floor(hp / 10)), Math.max(1, Math.floor(hp / 4))],
+			armor: [0, 0],
+		};
+	},
+	//Statue.java scales HP/defense from depth; damage stays its generated-weapon roll (this
+	//port's shared combat roll stands in, per the base `statue` entry's own comment above).
+	statue: (depth) => ({ hp: 15 + depth * 5, accuracy: 9 + depth, evasion: 4 + depth, damage: [2, 8 + depth], armor: [0, 2 + depth] }),
+	armoredStatue: (depth) => ({ hp: 30 + depth * 10, accuracy: 9 + depth, evasion: 4 + depth, damage: [2, 8 + depth], armor: [0, 4 + depth] }),
+	//SentryRoom$Sentry.attackSkill(): 20 + depth*2 (HP/EXP are the NPC base 1/0 - unaffected).
+	sentry: (depth) => ({ accuracy: 20 + depth * 2 }),
+};
+
+/**
+ * Sprite-sheet reuse for kinds with no dedicated asset of their own (a quest miniboss texturing
+ * its base family's sheet at its own idle frame, or a mob standing in on a visually-similar
+ * sheet - `FetidRatSprite` on `rat.png:32`, `GnollTricksterSprite` on `gnoll.png:21`,
+ * `GreatCrabSprite` on `crab.png:16`, all three real Java sprite classes `texture()`-ing their
+ * base family's sheet unchanged; Mimic/Piranha/Bee/Statue reusing slime/crab placeholders where
+ * this checkout has no dedicated asset). Was a 12-case cascade in `spawnMonster` checking both
+ * `kind` and `baseKind` (`kind === 'sentry' ? ... : kind === 'ratKing' ? ... : ... : baseKind
+ * === 'fetidRat' ? ... : ...`) - collapses to one lookup keyed by `baseKind` alone, since every
+ * kind checked against `kind` directly (`sentry`/`ratKing`/`rotHeart`/`rotLasher`) has no
+ * `BASE_KIND_ALIASES` entry of its own, so `baseKind` already equals `kind` for each of them.
+ */
+export const SPRITE_KIND_OVERRIDE: Partial<Record<MonsterId, keyof SpdSprites>> = {
+	sentry: 'sentry',
+	ratKing: 'ratking',
+	rotHeart: 'rotHeart',
+	rotLasher: 'rotLasher',
+	fetidRat: 'rat',
+	gnollTrickster: 'gnoll',
+	greatCrab: 'crab',
+	necroSkeleton: 'skeleton',
+	newbornElemental: 'elemental',
+	mimic: 'slime',
+	piranha: 'crab',
+	bee: 'crab',
+	statue: 'crab',
 };
 
 /**
@@ -313,6 +463,8 @@ export const MOB_LOOT: Record<string, { chance: number; kind: GroundItemKind }[]
 	//(0.5), Crab.loot = MysteryMeat.class (0.167, ~1/6) - Rat and Goo have no `loot` field in
 	//Java at all, correctly no entry here.
 	snake: [{ chance: 0.25, kind: 'seed' }],
+	//RotLasher.loot = Generator.Category.SEED at 0.75.
+	rotLasher: [{ chance: 0.75, kind: 'seed' }],
 	gnoll: [{ chance: 0.5, kind: 'gold' }],
 	crab: [{ chance: 1 / 6, kind: 'meat' }],
 	// Alternative mobs inherit their base loot table unless Java replaces it with a
