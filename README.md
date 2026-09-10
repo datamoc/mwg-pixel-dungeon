@@ -58,6 +58,16 @@ with provenance noted in `src/images.ts`). The `mwg` framework it's built on is 
 generic, MPL-2.0 project maintained independently - see `CLAUDE.md`'s licensing-boundary
 section for how the two are kept apart.
 
+The Java asset registry can be audited and extracted with the repository tool below. It
+reports referenced assets missing from this port and can copy missing image files explicitly;
+it never embeds binary asset data in TypeScript.
+
+```sh
+node tools/extract-spd-assets.mjs --spd-root <path-to-spd-checkout> --check
+node tools/extract-spd-assets.mjs --spd-root <path-to-spd-checkout> --copy
+node tools/extract-spd-assets.mjs --spd-root <path-to-spd-checkout> --check --strict
+```
+
 ## More documentation
 
 - [`CLAUDE.md`](./CLAUDE.md) - working rules for this repo: the licensing boundary, the

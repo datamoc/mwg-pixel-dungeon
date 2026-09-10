@@ -17,8 +17,8 @@
  * an error for CI once the port reaches its full asset-parity gate.
  */
 
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { basename, dirname, extname, join, relative, resolve } from 'node:path';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
+import { basename, extname, join, relative, resolve } from 'node:path';
 
 const args = process.argv.slice(2);
 const valueAfter = (flag) => {
@@ -110,21 +110,24 @@ for (const [group, constants] of registry) {
 }
 
 const images = [...references.values()].filter(({ assetPath }) => isImage(assetPath));
-const missing = images.filter(({ assetPath }) => !existsSync(join(assetsRoot, assetPath)));
+const missingFromJava = images.filter(({ assetPath }) => !existsSync(join(assetsRoot, assetPath)));
 const localNames = new Map();
 for (const path of allFiles(localRoot)) localNames.set(basename(path).toLowerCase(), path);
-const missingInPort = missing.filter(({ assetPath }) => !localNames.has(destinationName(assetPath).toLowerCase()));
+const missingInPort = images.filter(({ assetPath }) => !localNames.has(destinationName(assetPath).toLowerCase()));
 const unreferencedImages = [...registry].flatMap(([, constants]) => [...constants.values()])
 	.filter((assetPath) => isImage(assetPath) && ![...references.values()].some((ref) => ref.assetPath === assetPath));
 
 console.log(`Java asset registry: ${[...registry.values()].reduce((total, constants) => total + constants.size, 0)} string constants`);
 console.log(`Referenced assets: ${references.size} (${images.length} images)`);
-console.log(`Missing from Java checkout: ${missing.length}`);
+console.log(`Missing from Java checkout: ${missingFromJava.length}`);
 console.log(`Missing from port by flattened name: ${missingInPort.length}`);
 
-if (missing.length) {
+if (missingInPort.length) {
 	console.log('\nReferenced image assets not copied into the port:');
-	for (const ref of missing) console.log(`- ${ref.assetPath} -> ${destinationName(ref.assetPath)} (${ref.users[0]})`);
+	for (const ref of missingInPort) {
+		const javaStatus = missingFromJava.includes(ref) ? 'missing from Java checkout' : ref.users[0];
+		console.log(`- ${ref.assetPath} -> ${destinationName(ref.assetPath)} (${javaStatus})`);
+	}
 }
 if (unreferencedImages.length) {
 	console.log(`\nRegistry image assets not referenced by Java source (${unreferencedImages.length}):`);
@@ -134,7 +137,7 @@ if (unreferencedImages.length) {
 if (args.includes('--copy')) {
 	mkdirSync(localRoot, { recursive: true });
 	let copied = 0;
-	for (const ref of missingInPort) {
+	for (const ref of missingInPort.filter((ref) => !missingFromJava.includes(ref))) {
 		const source = join(assetsRoot, ref.assetPath);
 		const destination = join(localRoot, destinationName(ref.assetPath));
 		if (!existsSync(source)) continue;
