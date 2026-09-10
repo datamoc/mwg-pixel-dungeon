@@ -81,6 +81,11 @@ export type MonsterVariantId =
 
 export type AnyMonsterId = MonsterId | MonsterVariantId;
 
+/** Java mob classes whose `Char.flying` flag lets them occupy avoid terrain such as chasms. */
+export const FLYING_KINDS = new Set<AnyMonsterId>([
+	'bat', 'bee', 'elemental', 'newbornElemental', 'eye', 'swarm', 'ghost',
+]);
+
 /**
  * Every real Sewers monster's own base stats (`actors/mobs/*.java`: `HP = HT`,
  * `defenseSkill`, `attackSkill()`'s return, `damageRoll()`'s `Random.NormalIntRange`, and

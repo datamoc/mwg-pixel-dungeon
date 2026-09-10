@@ -190,7 +190,7 @@ import {
 	type BuffId,
 } from './combat';
 import { nextEntityId } from './simulation/entityId';
-import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LIMITED_DROP_DECAY, BASE_KIND_ALIASES, NPC_KINDS, BOSS_KINDS, IMMOVABLE_KINDS, NEVER_SLEEPS_KINDS, DEPTH_SCALED_STATS, SPRITE_KIND_OVERRIDE, type AnyMonsterId, type MonsterId } from './monsters';
+import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LIMITED_DROP_DECAY, BASE_KIND_ALIASES, NPC_KINDS, BOSS_KINDS, IMMOVABLE_KINDS, NEVER_SLEEPS_KINDS, FLYING_KINDS, DEPTH_SCALED_STATS, SPRITE_KIND_OVERRIDE, type AnyMonsterId, type MonsterId } from './monsters';
 
 /**
  * Shattered Pixel Dungeon, on top of mwg: a title screen, hero-class selection, the Sewers
@@ -1652,9 +1652,9 @@ export class SewersScene extends Scene2D {
 			damage: def.damage,
 			armor: def.armor,
 			kind,
-			//Swarm.java sets flying=true, so its actor may be generated on and move across
-			//raw Terrain.CHASM cells; YogFist.java does not set flying and remains grounded.
-			flying: kind === 'swarm',
+			//Java's Bat/Bee/Elemental/Eye/Swarm/Ghost classes set flying=true (Newborn
+			//Elemental inherits it); YogFist.java does not and remains grounded.
+			flying: FLYING_KINDS.has(kind),
 			pumped: kind === 'goo' ? 0 : undefined,
 			isNPC,
 			isAlly,
@@ -2655,9 +2655,9 @@ export class SewersScene extends Scene2D {
 				//Java's Char.canEnterCell() treats a chasm as solid for mobs. The coarse MWG
 				//terrain map intentionally exposes chasms as passable so the hero can fall through,
 				//so the raw ported terrain must be checked separately before spawning a monster;
-				//the roster's flying Swarm is the Java exception.
+				//the roster's flying actors are the Java exception.
 				const kind = roster[rotationIndex % roster.length]!;
-				if (!this.level.passable(at.x, at.y) || (this.isChasmCell(at.x, at.y) && kind !== 'swarm')
+				if (!this.level.passable(at.x, at.y) || (this.isChasmCell(at.x, at.y) && !FLYING_KINDS.has(kind))
 					|| (kind === 'piranha' && this.level.get(at.x, at.y) !== WATER)) continue;
 				if (at.x === this.hero.x && at.y === this.hero.y) continue;
 				if (this.portedMobCells.has(this.level.index(at.x, at.y))) continue;
@@ -4800,8 +4800,8 @@ export class SewersScene extends Scene2D {
 	private spawnPortedMobs(): void {
 		for (const mob of this.portedMobSpawns) {
 			//The raw Terrain.CHASM cell is rendered through the hero-facing FLOOR code so
-			//falling remains possible; Java's flying Swarm is the exception to the grounded-mob rule.
-			if (!this.level.passable(mob.x, mob.y) || (this.isChasmCell(mob.x, mob.y) && mob.kind !== 'swarm')
+			//falling remains possible; Java's flying actors are the exception to the grounded-mob rule.
+			if (!this.level.passable(mob.x, mob.y) || (this.isChasmCell(mob.x, mob.y) && !FLYING_KINDS.has(mob.kind as AnyMonsterId))
 				|| (mob.kind === 'piranha' && this.level.get(mob.x, mob.y) !== WATER) || this.creatureAt(mob.x, mob.y)) continue;
 			//Painter markers (`alchemyBlob`, `eternalFire`) are filtered upstream, but any
 			//future unknown kind must refuse cleanly here instead of crashing inside
@@ -6247,11 +6247,10 @@ export class SewersScene extends Scene2D {
 			}
 			if (monster.kind === 'tengu') this.tenguBracketJump(monster, preHp);
 		}
-		//Level.java's per-turn WATER hook (see the matching hero-side comment above): no monster
-		//kind in this port tracks a real `flying` property (Java's own Bat/Swarm/Eye would be
-		//exempt), so this applies uniformly, consistent with that existing simplification.
+		//Level.java's per-turn WATER hook: flying Java actors are exempt from the ground-status
+		//cleanup, just as the hero's Levitation is checked in the matching branch above.
 		//Ooze washes alongside Burning (real Poison shares nothing but the old stand-in).
-		if (monsterWasBurning && this.level.get(monster.x, monster.y) === WATER) delete monster.buffs['burning'];
+		if (monsterWasBurning && this.level.get(monster.x, monster.y) === WATER && !monster.flying) delete monster.buffs['burning'];
 		//Ooze.act()'s own depth-scaled tick for monsters (same formula as the hero side).
 		if (monsterWasOozing && monster.hp > 0) {
 			const ooze = this.depth > 5 ? 1 + Math.floor(this.depth / 5)
@@ -6264,7 +6263,7 @@ export class SewersScene extends Scene2D {
 					return;
 				}
 			}
-			if (this.level.get(monster.x, monster.y) === WATER) delete monster.buffs['ooze'];
+			if (this.level.get(monster.x, monster.y) === WATER && !monster.flying) delete monster.buffs['ooze'];
 		}
 		//Brute.BruteRage.act(): while active it drains at a flat 4/turn (Java's
 		//`AscensionChallenge.statModifier` multiplier is 1 with no ascension-challenge UI), on
