@@ -34,7 +34,9 @@ browser-verification workflow for why).
 - [ ] Port all remaining weapons, wands, rings, artifacts, bombs, alchemy, and crafting.
       Wand identity is now persisted from generated `sourceClass` through equipment/save state;
       Fireblast and Lightning use their real level formulas, with Fireblast's burning and
-      Lightning's per-target scaling. Prismatic Light and Disintegration now use their real
+      Lightning's per-target scaling. Corrosion and Corruption are now reachable too (their
+      gas-volume/intensity and permanent corruption-loot payloads remain documented
+      simplifications). Prismatic Light and Disintegration now use their real
       level formulas; Prismatic Light's blindness is represented by the existing timed daze
       status. Their Java cone/ballistic-chain/line geometry is simplified to the selected target
       and visible adjacent targets respectively. Rings: all 12 real types are now live (Haste, Energy, Wealth, Arcana, Force, Sharpshooting from earlier passes, plus Elements and Furor this pass - see PORT_COVERAGE.md's rings row; type-check clean, browser verification still owed per section 10) - Sharpshooting mirrors Force's shape for ranged attacks: a flat `+level`

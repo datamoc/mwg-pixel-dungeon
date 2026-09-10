@@ -5071,10 +5071,15 @@ export class SewersScene extends Scene2D {
 				const zapTargets = this.wandType === 'lightning'
 					? [target, ...this.creatures.filter((c) => c !== target && !c.isHero && !c.isNPC && c.hp > 0
 						&& Roguelike.chebyshevDistance(target, c) <= 1)]
+					: this.wandType === 'corrosion'
+						? [target, ...this.creatures.filter((c) => c !== target && !c.isHero && !c.isNPC && c.hp > 0
+							&& Roguelike.chebyshevDistance(target, c) <= 1 && this.fov.isVisible(c.x, c.y))]
 					: [target];
 				const lightningMultiplier = this.wandType === 'lightning' ? 0.4 + 0.6 / zapTargets.length : 1;
 				for (const victim of zapTargets) {
-					const raw = this.wandType === 'fireblast'
+					const raw = this.wandType === 'corrosion' || this.wandType === 'corruption'
+						? 0
+						: this.wandType === 'fireblast'
 						? Random.normalRange(1 + this.weaponLevel, 2 + 2 * this.weaponLevel)
 						: this.wandType === 'lightning'
 							? Random.normalRange(5 + this.weaponLevel, 10 + 5 * this.weaponLevel)
@@ -5090,13 +5095,35 @@ export class SewersScene extends Scene2D {
 					victim.hp -= damage;
 					this.showDamage(victim, damage);
 					victim.sleeping = false;
+					if (this.wandType === 'corrosion') {
+						//WandOfCorrosion.onZap() seeds CorrosiveGas at the collision cell and
+						//lets its volume affect the 9-cell neighbourhood. This port has no
+						//corrosive-gas intensity/volume actor, so the already-live Ooze status is
+						//the documented damage-over-time stand-in; the target neighbourhood is
+						//retained and no artificial direct zap damage is dealt.
+						addBuff(victim, 'ooze');
+					}
+					if (this.wandType === 'corruption' && !victim.isHero && !victim.isNPC) {
+						//WandOfCorruption.corruptEnemy() creates a permanent controlled ally
+						//after healing/cleansing it. The port has no separate Corruption buff
+						//or loot-transfer payload, so the existing ally scheduler is used for
+						//the observable controlled-combat result.
+						victim.isAlly = true;
+						victim.allyKind = 'mirror';
+						victim.hp = victim.maxHp;
+						victim.buffs = {};
+						victim.sleeping = false;
+						victim.seesHero = false;
+					}
 					if (this.frostWand && victim === target) addBuff(victim, 'daze');
 					if (this.wandType === 'fireblast') addBuff(victim, 'burning');
 					if (this.wandType === 'prismaticLight' && Random.int(0, 5 + this.weaponLevel) >= 3) addBuff(victim, 'daze');
 					this.sprite(victim).setColorAdd(0.6, 0.7, 1);
-					this.say(t('port.log.wandhits', { target: victim.name, damage }), 'positive');
+					if (this.wandType === 'corrosion') this.say(t('port.log.wandcorrosion', { target: victim.name }), 'positive');
+					else if (this.wandType === 'corruption') this.say(t('port.log.wandcorruption', { target: victim.name }), 'positive');
+					else this.say(t('port.log.wandhits', { target: victim.name, damage }), 'positive');
 					if (this.subclass() === 'warlock') this.wandCharges.refund(1);
-					if (victim.hp <= 0) this.kill(victim);
+					if (victim.hp <= 0 && !victim.isAlly) this.kill(victim);
 				}
 				if (fullyCharged && this.talentRank('excess_charge') > 0) this.grantHeroShield(Math.ceil((this.talentRank('excess_charge') * Math.max(1, this.weaponLevel)) / 1.5), this.hero.maxHp);
 				//Arcane Vision (Mage T2, `Wand.wandProc()`): every zap marks its target with

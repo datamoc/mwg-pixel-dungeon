@@ -283,6 +283,8 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.log.notarget': 'Nothing in range to target.',
 	'port.log.crabparries': 'The great crab parries the projectile with its claw!',
 	'port.log.wandhits': 'Your wand strikes {target} for {damage}.',
+	'port.log.wandcorrosion': 'Corrosive gas clings to {target}.',
+	'port.log.wandcorruption': '{target} is corrupted and turns to your side!',
 	'port.log.arrowmisses': 'Your arrow misses {target}.',
 	'port.log.shoot': 'You shoot {target} for {damage}.',
 
@@ -728,6 +730,8 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 	'port.log.notarget': 'Aucune cible à portée.',
 	'port.log.crabparries': 'Le crabe géant pare le projectile de sa pince !',
 	'port.log.wandhits': 'Votre baguette frappe {target} pour {damage}.',
+	'port.log.wandcorrosion': 'Un gaz corrosif s’accroche à {target}.',
+	'port.log.wandcorruption': '{target} est corrompu et rejoint votre camp !',
 	'port.log.arrowmisses': 'Votre flèche manque {target}.',
 	'port.log.shoot': 'Vous touchez {target} pour {damage}.',
 

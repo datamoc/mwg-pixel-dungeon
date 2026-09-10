@@ -2064,3 +2064,5 @@ rather than freshly re-derived:
 
 No new formula/value bugs found in this direct re-verification; the one real finding is the
 losing-yell edge-trigger-vs-once-lock distinction above.
+
+| `WandOfCorrosion.onZap()` / `WandOfCorruption.onZap()` | `useSpecial` zap branch, `wandTypeFromSource`, generated wand identity | Simplified but playable: Corrosion now deals no artificial direct damage and applies the existing depth-scaled `Ooze` damage-over-time status to the selected cell and visible adjacent creatures, preserving the real gas burst's area shape without a separate `CorrosiveGas` volume/intensity actor. Corruption now heals/cleanses the selected monster and converts it into a scheduled ally using the port's existing ally AI; the real permanent `Corruption`/loot-transfer buff payload and immunity-specific `Doom` fallback are not modeled. Both wand families are now reachable through generated `sourceClass` identity and saved equipment state. Checked against local SPD `WandOfCorrosion.java` and `WandOfCorruption.java` at the current checkout. |
