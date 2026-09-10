@@ -25,6 +25,10 @@ import clericUrl from './assets/cleric.png';
 import ratUrl from './assets/rat.png';
 // `SheepSprite`'s dedicated 16x15 film, copied byte-for-byte from the Java assets.
 import sheepUrl from './assets/sheep.png';
+import piranhaUrl from './assets/piranha.png';
+import beeUrl from './assets/bee.png';
+import statueUrl from './assets/statue.png';
+import mimicUrl from './assets/mimic.png';
 import snakeUrl from './assets/snake.png';
 import gnollUrl from './assets/gnoll.png';
 import swarmUrl from './assets/swarm.png';
@@ -127,6 +131,10 @@ export interface SpdSprites {
 	cleric: Texture;
 	rat: Texture;
 	sheep: Texture;
+	piranha: Texture;
+	bee: Texture;
+	statue: Texture;
+	mimic: Texture;
 	snake: Texture;
 	gnoll: Texture;
 	swarm: Texture;
@@ -272,6 +280,10 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		cleric,
 		rat,
 		sheep,
+		piranha,
+		bee,
+		statue,
+		mimic,
 		snake,
 		gnoll,
 		swarm,
@@ -361,6 +373,10 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(clericUrl),
 		loadImage(ratUrl),
 		loadImage(sheepUrl),
+		loadImage(piranhaUrl),
+		loadImage(beeUrl),
+		loadImage(statueUrl),
+		loadImage(mimicUrl),
 		loadImage(snakeUrl),
 		loadImage(gnollUrl),
 		loadImage(swarmUrl),
@@ -452,6 +468,10 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		cleric: Texture.from(cleric),
 		rat: Texture.from(rat),
 		sheep: Texture.from(sheep),
+		piranha: Texture.from(piranha),
+		bee: Texture.from(bee),
+		statue: Texture.from(statue),
+		mimic: Texture.from(mimic),
 		snake: Texture.from(snake),
 		gnoll: Texture.from(gnoll),
 		swarm: Texture.from(swarm),

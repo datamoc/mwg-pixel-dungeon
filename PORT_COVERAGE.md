@@ -1981,9 +1981,11 @@ The texture chain simplified further than a direct transcription: the original c
 already equals `kind` for each of them - meaning a single lookup by `baseKind` covers every
 case the original needed two dispatch passes for. Live-verified via direct texture-identity
 comparison (spawning one of every affected kind and reading each sprite's underlying texture
-source): `mimic`/`crystalMimic` share one source, `piranha`/`bee`/`statue`/`armoredStatue`/
-`greatCrab` share another (crab), every dedicated-asset kind resolves to its own distinct
-source - exactly `SPRITE_KIND_OVERRIDE`'s intended grouping, no cross-contamination.
+source): `mimic`/`crystalMimic` share the dedicated `mimic.png` source, `piranha` uses
+`piranha.png`, `bee` uses `bee.png`, and `statue`/`armoredStatue` use `statue.png`;
+`greatCrab` alone continues to reuse `crab.png` because its Java sprite explicitly does so.
+Every dedicated-asset kind resolves to its own distinct source - exactly
+`SPRITE_KIND_OVERRIDE`'s intended grouping, no cross-contamination.
 `tsc --noEmit`/`npm run build` clean throughout. See `ROADMAP.md` section 11's matching entry.
 
 **Not a candidate for `mwg` itself** (the user asked whether this pattern belongs in the

@@ -226,20 +226,20 @@ export const MONSTERS: Record<AnyMonsterId, MonsterDef> = {
 	acidic: { hp: 110, accuracy: 36, evasion: 24, damage: [30, 40], armor: [0, 16], frame: [17, 17], idle: 15, exp: 14, maxLvl: 27 },
 	// Mimic.java scales HP/defence/damage from Dungeon.depth at spawn time; the scene applies
 	// that depth scaling below while this catalogue supplies the level-zero shape and chest-art
-	// fallback dimensions.
-	mimic: { hp: 6, accuracy: 6, evasion: 2, damage: [1, 2], armor: [0, 1], frame: [14, 12], idle: 0, exp: 0, maxLvl: 29 },
+	// the dedicated 16x16 `mimic.png` film copied from the Java assets.
+	mimic: { hp: 6, accuracy: 6, evasion: 2, damage: [1, 2], armor: [0, 1], frame: [16, 16], idle: 3, exp: 0, maxLvl: 29 },
 	// CrystalMimic reuses MimicSprite's sheet but flees after revealing itself instead of
 	// behaving like an ordinary stationary chest ambush.
-	crystalMimic: { hp: 6, accuracy: 6, evasion: 2, damage: [1, 2], armor: [0, 1], frame: [14, 12], idle: 0, exp: 0, maxLvl: 29 },
-	piranha: { hp: 10, accuracy: 20, evasion: 10, damage: [1, 6], armor: [0, 1], frame: [16, 16], idle: 0, exp: 0, maxLvl: 29 },
+	crystalMimic: { hp: 6, accuracy: 6, evasion: 2, damage: [1, 2], armor: [0, 1], frame: [16, 16], idle: 3, exp: 0, maxLvl: 29 },
+	piranha: { hp: 10, accuracy: 20, evasion: 10, damage: [1, 6], armor: [0, 1], frame: [12, 16], idle: 0, exp: 0, maxLvl: 29 },
 	// Bee.java: HT=(2+depth)*4, defense/attack skill=9+depth, EXP=0. The checkout has
-	// no BeeSprite asset in the web catalogue, so main.ts reuses the crab sheet dimensions.
+	// BeeSprite uses the dedicated 16x16 `bee.png` film copied from the Java assets.
 	bee: { hp: 12, accuracy: 10, evasion: 10, damage: [1, 3], armor: [0, 0], frame: [16, 16], idle: 0, exp: 0, maxLvl: 29 },
 	// Statue.java scales HP/defense from depth and uses its generated weapon for the exact
 	// damage roll. The live port preserves the actor and weapon-family reward while using the
 	// shared combat roll until weapon instances are attached to monsters.
-	statue: { hp: 15, accuracy: 9, evasion: 4, damage: [2, 8], armor: [0, 2], frame: [16, 16], idle: 0, exp: 0, maxLvl: 29 },
-	armoredStatue: { hp: 30, accuracy: 9, evasion: 4, damage: [2, 8], armor: [0, 2], frame: [16, 16], idle: 0, exp: 0, maxLvl: 29 },
+	statue: { hp: 15, accuracy: 9, evasion: 4, damage: [2, 8], armor: [0, 2], frame: [12, 15], idle: 0, exp: 0, maxLvl: 29 },
+	armoredStatue: { hp: 30, accuracy: 9, evasion: 4, damage: [2, 8], armor: [0, 2], frame: [12, 15], idle: 0, exp: 0, maxLvl: 29 },
 	//SentryRoom$Sentry: HP=HT=1 (NPC base), INFINITE_EVASION (modelled as the real
 	//1000000 constant `rollHit` short-circuits on, not the NPC display-999999), no melee
 	//to speak of (damage unused - it only ever fires its beam), EXP=0. Accuracy is set at
@@ -358,8 +358,7 @@ export const DEPTH_SCALED_STATS: Partial<Record<AnyMonsterId, (depth: number) =>
  * its base family's sheet at its own idle frame, or a mob standing in on a visually-similar
  * sheet - `FetidRatSprite` on `rat.png:32`, `GnollTricksterSprite` on `gnoll.png:21`,
  * `GreatCrabSprite` on `crab.png:16`, all three real Java sprite classes `texture()`-ing their
- * base family's sheet unchanged; Mimic/Piranha/Bee/Statue reusing slime/crab placeholders where
- * this checkout has no dedicated asset). Was a 12-case cascade in `spawnMonster` checking both
+	 * base family's sheet unchanged). Was a 12-case cascade in `spawnMonster` checking both
  * `kind` and `baseKind` (`kind === 'sentry' ? ... : kind === 'ratKing' ? ... : ... : baseKind
  * === 'fetidRat' ? ... : ...`) - collapses to one lookup keyed by `baseKind` alone, since every
  * kind checked against `kind` directly (`sentry`/`ratKing`/`rotHeart`/`rotLasher`) has no
@@ -379,10 +378,10 @@ export const SPRITE_KIND_OVERRIDE: Partial<Record<MonsterId, keyof SpdSprites>> 
 	greatCrab: 'crab',
 	necroSkeleton: 'skeleton',
 	newbornElemental: 'elemental',
-	mimic: 'slime',
-	piranha: 'crab',
-	bee: 'crab',
-	statue: 'crab',
+	mimic: 'mimic',
+	piranha: 'piranha',
+	bee: 'bee',
+	statue: 'statue',
 };
 
 /**
