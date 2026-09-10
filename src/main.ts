@@ -6527,6 +6527,16 @@ export class SewersScene extends Scene2D {
 			}
 			return;
 		}
+		//ChampionEnemy.Giant/Projecting.canAttackWithExtraReach() (ChampionEnemy.java,
+		//tag 4.0.0-beta): Giant reaches two cells and Projecting reaches four. The
+		//port has no path-distance attack query, so a clear line with the same range
+		//is the closest available geometry; damage factors remain in combat rolls.
+		const extraReach = monster.champion === 'giant' ? 2 : monster.champion === 'projecting' ? 4 : 0;
+		if (extraReach > 0 && distance > 1 && distance <= extraReach
+			&& monster.seesHero && Roguelike.canTarget(this.level, monster, this.hero, { range: extraReach })) {
+			this.attack(monster, this.hero);
+			return;
+		}
 		if (distance === 1) {
 			if (monster.kind === 'crystalMimic') {
 				this.revealCrystalMimic(monster);
