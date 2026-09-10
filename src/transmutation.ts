@@ -9,8 +9,8 @@ import { RING_DEFS, ringDef } from './ringModifiers';
  * `generatedInventoryItem` applies (`PotionOfLiquidFlame` -> `potionFlame`,
  * `PotionOfInvisibility` -> `potionInvis`); the generic bag `'potion'` placeholder counts
  * as `PotionOfHealing` for exclusion purposes. Stone classes are the real 12 from
- * `items/stones/` (note: `generator.ts`'s deck still lists a `StoneOfDisarming` that does
- * not exist - the real 12th combat-adjacent entry here is `StoneOfDetectMagic`); all 12
+ * `items/stones/` (the generator deck uses the real `StoneOfDetectMagic` class; the former
+ * `StoneOfDisarming` name was a stale port typo); all 12
  * stones now have distinct port ids and use-actions.
  */
 const WEP_TIER_CLASSES: string[][] = [
