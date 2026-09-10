@@ -13,7 +13,7 @@
  *   node tools/extract-spd-assets.mjs --spd-root <checkout> --check --strict
  *
  * `--check` is intentionally non-failing by default: the report is also useful
- * while the port is incomplete. `--strict` makes missing referenced image assets
+ * while the port is incomplete. `--strict` makes missing referenced binary assets
  * an error for CI once the port reaches its full asset-parity gate.
  */
 
@@ -75,6 +75,10 @@ function isImage(path) {
 	return new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif']).has(extname(path).toLowerCase());
 }
 
+function isBinaryAsset(path) {
+	return extname(path).length > 0;
+}
+
 function destinationName(assetPath) {
 	const [group, ...parts] = assetPath.split('/');
 	const file = parts.join('/');
@@ -110,21 +114,24 @@ for (const [group, constants] of registry) {
 }
 
 const images = [...references.values()].filter(({ assetPath }) => isImage(assetPath));
+const binaryAssets = [...references.values()].filter(({ assetPath }) => isBinaryAsset(assetPath));
 const missingFromJava = images.filter(({ assetPath }) => !existsSync(join(assetsRoot, assetPath)));
+const missingBinaryFromJava = binaryAssets.filter(({ assetPath }) => !existsSync(join(assetsRoot, assetPath)));
 const localNames = new Map();
 for (const path of allFiles(localRoot)) localNames.set(basename(path).toLowerCase(), path);
-const missingInPort = images.filter(({ assetPath }) => !localNames.has(destinationName(assetPath).toLowerCase()));
+const missingInPort = binaryAssets.filter(({ assetPath }) => !localNames.has(destinationName(assetPath).toLowerCase()));
+const missingImagesInPort = images.filter(({ assetPath }) => !localNames.has(destinationName(assetPath).toLowerCase()));
 const unreferencedImages = [...registry].flatMap(([, constants]) => [...constants.values()])
 	.filter((assetPath) => isImage(assetPath) && ![...references.values()].some((ref) => ref.assetPath === assetPath));
 
 console.log(`Java asset registry: ${[...registry.values()].reduce((total, constants) => total + constants.size, 0)} string constants`);
-console.log(`Referenced assets: ${references.size} (${images.length} images)`);
-console.log(`Missing from Java checkout: ${missingFromJava.length}`);
+console.log(`Referenced assets: ${references.size} (${binaryAssets.length} binary, ${images.length} images)`);
+console.log(`Missing binary assets from Java checkout: ${missingBinaryFromJava.length}`);
 console.log(`Missing from port by flattened name: ${missingInPort.length}`);
 
-if (missingInPort.length) {
-	console.log('\nReferenced image assets not copied into the port:');
-	for (const ref of missingInPort) {
+if (missingImagesInPort.length) {
+	console.log(`\nReferenced image assets not copied into the port (${missingImagesInPort.length}):`);
+	for (const ref of missingImagesInPort) {
 		const javaStatus = missingFromJava.includes(ref) ? 'missing from Java checkout' : ref.users[0];
 		console.log(`- ${ref.assetPath} -> ${destinationName(ref.assetPath)} (${javaStatus})`);
 	}
@@ -137,7 +144,7 @@ if (unreferencedImages.length) {
 if (args.includes('--copy')) {
 	mkdirSync(localRoot, { recursive: true });
 	let copied = 0;
-	for (const ref of missingInPort.filter((ref) => !missingFromJava.includes(ref))) {
+	for (const ref of missingInPort.filter((ref) => !missingBinaryFromJava.includes(ref))) {
 		const source = join(assetsRoot, ref.assetPath);
 		const destination = join(localRoot, destinationName(ref.assetPath));
 		if (!existsSync(source)) continue;
@@ -146,10 +153,10 @@ if (args.includes('--copy')) {
 		copied++;
 		console.log(`copied ${relative(process.cwd(), destination)}`);
 	}
-	console.log(`Copied ${copied} new image assets.`);
+	console.log(`Copied ${copied} new binary assets.`);
 }
 
 if (args.includes('--strict') && missingInPort.length) {
-	console.error(`\nextract-spd-assets: strict check failed (${missingInPort.length} referenced image assets are absent)`);
+	console.error(`\nextract-spd-assets: strict check failed (${missingInPort.length} referenced binary assets are absent)`);
 	process.exit(1);
 }

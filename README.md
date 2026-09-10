@@ -59,7 +59,7 @@ generic, MPL-2.0 project maintained independently - see `CLAUDE.md`'s licensing-
 section for how the two are kept apart.
 
 The Java asset registry can be audited and extracted with the repository tool below. It
-reports referenced assets missing from this port and can copy missing image files explicitly;
+reports referenced assets missing from this port and can copy missing binary files explicitly;
 it never embeds binary asset data in TypeScript.
 
 ```sh
