@@ -26,6 +26,8 @@ export type { Step } from './simulation/combatState';
 /** a creature on the map - the hero and every monster share this shape */
 export interface Creature extends Combatant {
 	name: string;
+	/** Derived from the equipped Brimstone glyph; Java's `Char.isImmune(Burning)` path. */
+	fireImmune?: boolean;
 	/** mwg/roguelike's Scheduler.Actor speed; Huntress's gloves are the one exception at 2 */
 	speed?: number;
 	/** which MONSTERS entry this is, for its sprite and (for Goo) its special turn logic - absent on the hero */
@@ -197,6 +199,10 @@ export const ANNOUNCED_BUFFS = new Set<BuffId>([
 ]);
 
 export function addBuff(c: Creature, id: BuffId): void {
+	//Brimstone.java grants Burning immunity through Char.isImmune(), before the
+	//effect can be attached. Keep this check at the shared buff boundary so fire
+	//from traps, blobs, wands, plants, and enemy attacks all obey it.
+	if (id === 'burning' && c.fireImmune) return;
 	//Frost.java declares immunity to Chill: a frozen creature cannot be slowed again.
 	if (id === 'chill' && c.buffs.frost !== undefined) return;
 	const event = combat.addBuff(c, id);

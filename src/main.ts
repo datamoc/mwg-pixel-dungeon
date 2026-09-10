@@ -509,6 +509,7 @@ const GLYPH_TABLE: Actors.AffixTable = {
 		{ id: 'swiftness', trigger: 'passive', weight: 3, description: 'Faster movement when safe (20% speed increase)' },
 		{ id: 'potential', trigger: 'defend', weight: 3, description: 'Chance to recharge wands when hit' },
 		{ id: 'repulsion', trigger: 'defend', weight: 2, description: 'Chance to knock an adjacent attacker backward' },
+		{ id: 'brimstone', trigger: 'defend', weight: 2, description: 'Immune to burning' },
 		{ id: 'camouflage', trigger: 'passive', weight: 2, description: 'Trampling grass turns you invisible' },
 		{ id: 'stench', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to release toxic gas when hit' },
 		{ id: 'antientropy', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to drain a wand charge' },
@@ -1489,6 +1490,10 @@ export class SewersScene extends Scene2D {
 
 	/** copies the StatBlock's resolved values into the flat fields combat actually reads - the same pattern mwg's own dungeon example uses for equipment */
 	private syncHeroFromStats(): void {
+		//Brimstone.proc() has no damage-side effect: Java's glyph contributes a
+		//Burning immunity in Char.isImmune(). Derive the shared buff-boundary flag
+		//from the currently equipped glyph whenever equipment/stats are refreshed.
+		this.hero.fireImmune = this.armorGlyph === 'brimstone';
 		//Hero.java increments the raw skills, then applies weapon/armor factors when
 		//attackSkill()/defenseSkill() is queried. Keep those counters separate from
 		//talent points so every level has the real +1/+1 combat-skill growth.
