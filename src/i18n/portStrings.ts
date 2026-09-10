@@ -284,6 +284,7 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.log.notarget': 'Nothing in range to target.',
 	'port.log.crabparries': 'The great crab parries the projectile with its claw!',
 	'port.log.wandhits': 'Your wand strikes {target} for {damage}.',
+	'port.log.wandregrowth': 'The wand restores the area with flourishing growth.',
 	'port.log.wandcorrosion': 'Corrosive gas clings to {target}.',
 	'port.log.wandcorruption': '{target} is corrupted and turns to your side!',
 	'port.log.arrowmisses': 'Your arrow misses {target}.',
@@ -734,6 +735,7 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 	'port.log.notarget': 'Aucune cible à portée.',
 	'port.log.crabparries': 'Le crabe géant pare le projectile de sa pince !',
 	'port.log.wandhits': 'Votre baguette frappe {target} pour {damage}.',
+	'port.log.wandregrowth': 'La baguette fait renaître la végétation alentour.',
 	'port.log.wandcorrosion': 'Un gaz corrosif s’accroche à {target}.',
 	'port.log.wandcorruption': '{target} est corrompu et rejoint votre camp !',
 	'port.log.arrowmisses': 'Votre flèche manque {target}.',
@@ -1146,6 +1148,8 @@ export const PORT_STRINGS_DE: Record<string, string> = {
 	'port.log.notarget': 'Nichts in Reichweite als Ziel.',
 	'port.log.crabparries': 'Die Riesenkrabbe pariert das Geschoss mit ihrer Schere!',
 	'port.log.wandhits': 'Dein Stab trifft {target} für {damage}.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.wandregrowth': 'Der Stab lässt die Umgebung üppig erblühen.',
 	'port.log.arrowmisses': 'Dein Pfeil verfehlt {target}.',
 	'port.log.shoot': 'Du triffst {target} für {damage}.',
 
@@ -1555,6 +1559,8 @@ export const PORT_STRINGS_ES: Record<string, string> = {
 	'port.log.notarget': 'Nada al alcance para apuntar.',
 	'port.log.crabparries': '¡La gran cangreja para el proyectil con su pinza!',
 	'port.log.wandhits': 'Tu varita golpea a {target} por {damage}.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.wandregrowth': 'La varita hace que la vegetación crezca exuberantemente.',
 	'port.log.arrowmisses': 'Tu flecha falla contra {target}.',
 	'port.log.shoot': 'Golpeas a {target} por {damage}.',
 
@@ -1965,6 +1971,8 @@ export const PORT_STRINGS_PT: Record<string, string> = {
 	'port.log.notarget': 'Nada ao alcance para mirar.',
 	'port.log.crabparries': 'O grande caranguejo para o projétil com sua garra!',
 	'port.log.wandhits': 'Sua varinha atinge {target} por {damage}.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.wandregrowth': 'A varinha faz a vegetação ao redor florescer.',
 	'port.log.arrowmisses': 'Sua flecha erra {target}.',
 	'port.log.shoot': 'Você atira em {target} por {damage}.',
 
@@ -2374,6 +2382,8 @@ export const PORT_STRINGS_IT: Record<string, string> = {
 	'port.log.notarget': 'Nulla a portata da mirare.',
 	'port.log.crabparries': 'Il grande granchio para il proiettile con la sua chela!',
 	'port.log.wandhits': 'La tua bacchetta colpisce {target} per {damage}.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.wandregrowth': 'La bacchetta fa rigogliosa la vegetazione circostante.',
 	'port.log.arrowmisses': 'La tua freccia manca {target}.',
 	'port.log.shoot': 'Spari a {target} per {damage}.',
 
@@ -2783,6 +2793,8 @@ export const PORT_STRINGS_PL: Record<string, string> = {
 	'port.log.notarget': 'Nic w zasięgu do namierzenia.',
 	'port.log.crabparries': 'Wielki krab paruje pocisk swoją szczypcem!',
 	'port.log.wandhits': 'Twoja różdżka trafia {target} za {damage} obrażeń.',
+	// MT: no Java source key exists for this port-only message.
+	'port.log.wandregrowth': 'Różdżka bujnie odradza roślinność wokół.',
 	'port.log.arrowmisses': 'Twoja strzała chybia {target}.',
 	'port.log.shoot': 'Strzelasz do {target} za {damage} obrażeń.',
 

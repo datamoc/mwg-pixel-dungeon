@@ -679,9 +679,10 @@ browser-verification workflow for why).
       (real `Generator` category roll, concrete class retained) and planting them (`plantSeed()`,
       instant activation with no growth delay - confirmed against `Plant.java`'s own
       `Seed.execute(AC_PLANT)`, which has none either) are both already live; a stale comment
-      claiming otherwise at `trampleHighGrass` is now fixed. What remains: `WandOfRegrowth`'s
-      `Lotus` ally seed-preservation chance (needs a Wand of Regrowth item plus an ally-summon
-      system this port doesn't have) and exact waterskin/dewdrop interactions.
+      claiming otherwise at `trampleHighGrass` is now fixed. `WandOfRegrowth`'s charge-scaled
+      regional growth, roots, high-grass budget, seed/dewcatcher/seedpod chances, and persistent
+      degradation counters are now live too. What remains: its Lotus ally seed-preservation
+      chance, exact cone targeting, and exact waterskin/dewdrop interactions.
 - [x] Match hunger and starvation damage exactly (`Hunger.act()`'s real `partialDamage`
       fractional accrual and crossing-into-STARVING 1-damage hit, replacing the former flat
       "every 10 turns" guess). Java has no attack-delay/accuracy penalty while merely hungry

@@ -649,6 +649,8 @@ interface SaveShape {
 	heroBarrierState?: { layers: { amount: number; decayPerTick?: number }[] };
 	livingEarthArmor?: number;
 	livingEarthWandLevel?: number;
+	regrowthTotalChargesUsed?: number;
+	regrowthChargesOverLimit?: number;
 	barrierPartialLoss?: number;
 	blockingBarrierState?: { layers: { amount: number; decayPerTick?: number }[] };
 	/** Legacy (pre-two-pool saves): Blocking's share used to live inside `heroBarrier`. */
@@ -1104,6 +1106,9 @@ export class SewersScene extends Scene2D {
 	/** `WandOfLivingEarth.RockArmor`: stored rock armor and the wand level that set its cap. */
 	private livingEarthArmor = 0;
 	private livingEarthWandLevel = 0;
+	/** `WandOfRegrowth`'s persistent degradation counters, saved with the wand's run state. */
+	private regrowthTotalChargesUsed = 0;
+	private regrowthChargesOverLimit = 0;
 	/** Barrier.partialLostShield (`actors/buffs/Barrier.java`): fractional decay accumulator. */
 	private barrierPartialLoss = 0;
 	/** Blocking.BlockBuff's own real shield (`items/weapon/enchantments/Blocking.java`): a separate
@@ -4248,6 +4253,93 @@ export class SewersScene extends Scene2D {
 	}
 
 	/**
+	 * `WandOfRegrowth.onZap()` (checked against the local SPD checkout's
+	 * `WandOfRegrowth.java`). The charge cost, grass budget, root duration, and seed chances
+	 * follow Java. The real effect uses `ConeAOE` from the aimed Ballistica path; this port has
+	 * no cell picker and its ranged action already selects a creature, so the same target is
+	 * used as the centre of a Chebyshev circle. That preserves the affected-area shape and
+	 * distance scaling while explicitly omitting the exact cone orientation.
+	 */
+	private useRegrowthWand(target: Creature, charges: number): void {
+		const level = Math.max(0, this.degradedLevel(this.weaponLevel));
+		const furrowedChance = this.regrowthTotalChargesUsed >= this.regrowthChargeLimit()
+			? (this.regrowthChargesOverLimit + 1) / 5
+			: 0;
+		const radius = 2 + 2 * charges;
+		const cells: { x: number; y: number; distance: number }[] = [];
+		for (let y = Math.max(0, target.y - radius); y <= Math.min(this.level.height - 1, target.y + radius); y++) {
+			for (let x = Math.max(0, target.x - radius); x <= Math.min(this.level.width - 1, target.x + radius); x++) {
+				const distance = Math.max(Math.abs(x - target.x), Math.abs(y - target.y));
+				if (distance <= radius) cells.push({ x, y, distance });
+			}
+		}
+		cells.sort((a, b) => a.distance - b.distance);
+		const eligible = cells.filter(({ x, y }) => {
+			const cell = this.level.index(x, y);
+			return (this.level.get(x, y) === FLOOR || this.level.get(x, y) === GRASS || this.level.get(x, y) === HIGH_GRASS)
+				&& !this.isChasmCell(x, y)
+				&& !this.portedFeatures.kindAt(cell)
+				&& !this.manualPlants.has(cell);
+		});
+		for (const { x, y } of eligible) {
+			const creature = this.creatureAt(x, y);
+			if (this.level.get(x, y) !== HIGH_GRASS) {
+				this.level.set(x, y, GRASS);
+				this.restitchTilesAround(x, y);
+			}
+			if (creature) creature.buffs['roots'] = Math.max(creature.buffs['roots'] ?? 0, 4 * charges);
+		}
+
+		const grassToPlace = Math.round((3.67 + level / 3) * charges);
+		const line = eligible
+			.filter(({ x, y }) => Math.abs((x - this.hero.x) * (target.y - this.hero.y) - (y - this.hero.y) * (target.x - this.hero.x)) <= Math.max(1, radius))
+			.slice(0, grassToPlace);
+		for (const { x, y } of line) {
+			if (Random.float() > furrowedChance) this.level.set(x, y, HIGH_GRASS);
+		}
+		const remaining = eligible.filter(({ x, y }) => !line.some((cell) => cell.x === x && cell.y === y));
+		for (const { x, y } of remaining.slice(0, Math.max(0, grassToPlace - line.length))) {
+			if (this.level.get(x, y) !== HIGH_GRASS && Random.float() > furrowedChance) this.level.set(x, y, HIGH_GRASS);
+		}
+
+		const plant = (cell: { x: number; y: number }, kind: string): void => {
+			const index = this.level.index(cell.x, cell.y);
+			if (this.portedFeatures.kindAt(index) || this.manualPlants.has(index)) return;
+			this.manualPlants.set(index, kind);
+			this.placePortedFeature(index, kind);
+		};
+		if (remaining.length > 0 && Random.float() > furrowedChance && Random.int(0, 6) < charges) {
+			const cell = remaining[0]!;
+			plant(cell, Random.int(0, 2) === 0 ? 'seedpod' : 'dewcatcher');
+		}
+		if (remaining.length > 1 && Random.float() > furrowedChance && Random.int(0, 3) < charges) {
+			const cell = remaining[1]!;
+			const seed = randomUsingDefaults(Cat.SEED);
+			plant(cell, this.seedPlantKind(seed.cls) ?? 'sungrass');
+		}
+		this.restitchTilesAround(target.x, target.y);
+		this.featuresMap?.setLayerData('features', this.featureFrames());
+
+		const limit = this.regrowthChargeLimit();
+		if (this.regrowthTotalChargesUsed < limit) {
+			this.regrowthChargesOverLimit = 0;
+			this.regrowthTotalChargesUsed += charges;
+			if (this.regrowthTotalChargesUsed > limit) {
+				this.regrowthChargesOverLimit = this.regrowthTotalChargesUsed - limit;
+				this.regrowthTotalChargesUsed = limit;
+			}
+		} else this.regrowthChargesOverLimit += charges;
+		this.say(t('port.log.wandregrowth'), 'positive');
+	}
+
+	/** `WandOfRegrowth.chargeLimit()`: Java's level/hero-level degradation threshold. */
+	private regrowthChargeLimit(): number {
+		if (this.weaponLevel >= 10) return Number.MAX_SAFE_INTEGER;
+		const level = this.weaponLevel;
+		return Math.round(20 + this.progression.level * (2 + level) * (1 + level / (50 - 5 * level)));
+	}
+
+	/**
 	 * A real door (`DungeonTileSheet.FLAT_DOOR`) at every point a room's own generator carved
 	 * a corridor straight through its wall ring - `mwg/roguelike`'s generic room-and-corridor
 	 * generator already punches exactly one passable cell through the wall at each such
@@ -4989,7 +5081,10 @@ export class SewersScene extends Scene2D {
 			this.say(t('port.log.noammo', { item: t(special.labelKey) }), 'negative');
 			return false;
 		}
-		if (special.kind === 'zap' && !this.wandCharges.canAfford(1)) {
+		const regrowthCharges = this.wandType === 'regrowth'
+			? Math.min(3, Math.max(1, Math.ceil(this.wandCharges.current * 0.3)))
+			: 1;
+		if (special.kind === 'zap' && !this.wandCharges.canAfford(regrowthCharges)) {
 			this.say(t('port.log.staffempty'), 'negative');
 			return false;
 		}
@@ -5059,7 +5154,7 @@ export class SewersScene extends Scene2D {
 		} else if (special.kind === 'zap') {
 			const fullyCharged = this.wandCharges.current === this.wandCharges.max;
 			const lastCharge = this.wandCharges.current === 1;
-			this.wandCharges.spend(1);
+			this.wandCharges.spend(regrowthCharges);
 			const preservation = preservationChance(this.talentRank('wand_preservation'));
 			if (preservation > 0 && Random.chance(preservation)) this.wandCharges.refund(1);
 			if (lastCharge && this.talentRank('backup_barrier') > 0) this.grantHeroShield(this.talentRank('backup_barrier') === 1 ? 3 : 5, this.hero.maxHp);
@@ -5073,6 +5168,9 @@ export class SewersScene extends Scene2D {
 				//cell and Lightning arcs to visible adjacent foes; the damage formulas and
 				//Lightning's per-target multiplier are retained, while the geometry reduction is
 				//explicitly documented in PORT_COVERAGE.md.
+				if (this.wandType === 'regrowth') {
+					this.useRegrowthWand(target, regrowthCharges);
+				} else {
 				const zapTargets = this.wandType === 'lightning'
 					? [target, ...this.creatures.filter((c) => c !== target && !c.isHero && !c.isNPC && c.hp > 0
 						&& Roguelike.chebyshevDistance(target, c) <= 1)]
@@ -5142,6 +5240,7 @@ export class SewersScene extends Scene2D {
 					else this.say(t('port.log.wandhits', { target: victim.name, damage }), 'positive');
 					if (this.subclass() === 'warlock') this.wandCharges.refund(1);
 					if (victim.hp <= 0 && !victim.isAlly) this.kill(victim);
+				}
 				}
 				if (fullyCharged && this.talentRank('excess_charge') > 0) this.grantHeroShield(Math.ceil((this.talentRank('excess_charge') * Math.max(1, this.weaponLevel)) / 1.5), this.hero.maxHp);
 				//Arcane Vision (Mage T2, `Wand.wandProc()`): every zap marks its target with
@@ -9052,6 +9151,8 @@ export class SewersScene extends Scene2D {
 			heroBarrierState: this.heroBarrier.toJSON(),
 			livingEarthArmor: this.livingEarthArmor,
 			livingEarthWandLevel: this.livingEarthWandLevel,
+			regrowthTotalChargesUsed: this.regrowthTotalChargesUsed,
+			regrowthChargesOverLimit: this.regrowthChargesOverLimit,
 			barrierPartialLoss: this.barrierPartialLoss,
 			blockingBarrierState: this.blockingBarrier.toJSON(),
 			blockingTurnsLeft: this.blockingTurnsLeft,
@@ -9116,6 +9217,8 @@ export class SewersScene extends Scene2D {
 			: new Actors.Barrier();
 		this.livingEarthArmor = s.livingEarthArmor ?? 0;
 		this.livingEarthWandLevel = s.livingEarthWandLevel ?? 0;
+		this.regrowthTotalChargesUsed = s.regrowthTotalChargesUsed ?? 0;
+		this.regrowthChargesOverLimit = s.regrowthChargesOverLimit ?? 0;
 		if (!s.heroBarrierState && s.heroShield) this.heroBarrier.add(s.heroShield);
 		this.barrierPartialLoss = s.barrierPartialLoss ?? 0;
 		this.blockingBarrier = s.blockingBarrierState
