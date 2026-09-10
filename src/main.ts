@@ -783,6 +783,22 @@ interface SavedCreature {
 
 // -------------------------------------------------------------------- sewers
 
+// `WardSprite` cuts six variable-width frames from wards.png, rather than a regular grid.
+// Keep those exact source rectangles so the port uses the Java actor's own art at every tier.
+const WARD_FRAME_RECTS = [
+	{ x: 0, y: 0, width: 9, height: 10 },
+	{ x: 10, y: 0, width: 11, height: 12 },
+	{ x: 22, y: 0, width: 15, height: 16 },
+	{ x: 38, y: 0, width: 6, height: 13 },
+	{ x: 45, y: 0, width: 6, height: 15 },
+	{ x: 52, y: 0, width: 9, height: 15 },
+] as const;
+
+function wardTexture(texture: Texture, tier: number): Texture {
+	const rect = WARD_FRAME_RECTS[Math.max(1, Math.min(6, tier)) - 1]!;
+	return new Texture({ source: texture.source, frame: new Rectangle(rect.x, rect.y, rect.width, rect.height) });
+}
+
 export class SewersScene extends Scene2D {
 	private terrainSheet!: SpriteSheet;
 	private heroClass!: ClassId;
@@ -1588,7 +1604,9 @@ export class SewersScene extends Scene2D {
 		//covers every case the original also checked `kind` for.
 		const texture = runState.sprites[SPRITE_KIND_OVERRIDE[baseKind] ?? (baseKind as keyof typeof runState.sprites)];
 		const sheet = SpriteSheet.fromTexture(texture, def.frame[0], def.frame[1]);
-		const sprite = new AnimatedSprite(sheet.get(def.idle));
+		// WardSprite's frames are variable-width and therefore cannot be represented by the
+		// regular SpriteSheet grid used by ordinary mobs.
+		const sprite = new AnimatedSprite(kind === 'ward' ? wardTexture(texture, 1) : sheet.get(def.idle));
 		placeCharacterArt(sprite);
 		// Java's base variants use MWG's player. Shaman/elemental/fist variants and
 		// DM300 supercharge effects still follow the port's reduced gameplay roster.
@@ -4376,17 +4394,38 @@ export class SewersScene extends Scene2D {
 
 	/** `WandOfWarding.onZap()` and its nested `WandOfWarding.Ward.zap()` actor (local SPD
 	 * checkout). Java does have a dedicated Ward NPC actor; this port now gives it its own
-	 * `kind: 'ward'` actor and persisted state. Its sprite reuses the skeleton sheet only because
-	 * this checkout has no Ward art asset. A fresh cast places a tier-1 ward in a free cell next to the selected
-	 * target, preserving Java's energy budget (`2 + wand level`) and the ward's always-hit damage
-	 * roll. Java's aimed-cell upgrade/dismiss UI is not available, so existing wards are not
-	 * upgraded by an explicit cell selection here; their tier/zap expiry and self-damage rules
-	 * remain real once created.
+	 * `kind: 'ward'` actor and persisted state. Its six-tier sprite film is the Java
+	 * `sprites/wards.png` asset, cut with the exact variable-width rectangles from `WardSprite`.
+	 * A fresh cast places a tier-1 ward in a free cell next to the selected target, preserving
+	 * Java's energy budget (`2 + wand level`) and the ward's always-hit damage roll. Java's
+	 * aimed-cell upgrade/dismiss UI is not available, so existing wards are selected by the
+	 * port's nearest-target policy; their tier/zap expiry and self-damage rules remain real.
 	 */
 	private useWardingWand(target: Creature): void {
 		const level = Math.max(0, this.degradedLevel(this.weaponLevel));
 		const wards = this.creatures.filter((creature) => creature.isAlly && creature.allyKind === 'ward' && creature.hp > 0);
 		const energy = wards.reduce((sum, ward) => sum + (ward.wardTier ?? 1), 0);
+		if (target.allyKind === 'ward') {
+			const tier = target.wardTier ?? 1;
+			if (tier < 6 && energy < 2 + level) {
+				target.wardTier = tier + 1;
+				target.wardWandLevel = Math.max(target.wardWandLevel ?? 0, level);
+				if (target.wardTier >= 4) target.maxHp = target.wardTier === 4 ? 35 : target.wardTier === 5 ? 54 : 84;
+				target.hp = Math.min(target.maxHp, target.hp + (target.wardTier >= 4 ? target.wardTier === 4 ? 9 : target.wardTier === 5 ? 12 : 16 : 0));
+				this.sprite(target).texture = wardTexture(runState.sprites.wards, target.wardTier);
+				placeCharacterArt(this.sprite(target));
+				this.say(t('port.log.wandwarding'), 'positive');
+				return;
+			}
+			if (tier >= 4) {
+				const heal = tier === 4 ? 9 : tier === 5 ? 12 : 16;
+				target.hp = Math.min(target.maxHp, target.hp + heal);
+				this.say(t('port.log.wandwarding'), 'positive');
+				return;
+			}
+			this.say(t('port.log.staffempty'), 'negative');
+			return;
+		}
 		if (energy >= 2 + level) {
 			this.say(t('port.log.staffempty'), 'negative');
 			return;
@@ -5170,9 +5209,10 @@ export class SewersScene extends Scene2D {
 		const range = 6;
 		const target = this.creatures
 			.filter((c) => !c.isHero && !c.isNPC && this.fov.isVisible(c.x, c.y)
-				&& (this.wandType === 'transfusion' || !c.isAlly))
+				&& (this.wandType === 'transfusion' || this.wandType === 'warding' || !c.isAlly))
 			.filter((c) => Roguelike.canTarget(this.level, this.hero, c, { range }))
 			.sort((a, b) => (this.wandType === 'transfusion' && a.isAlly !== b.isAlly ? (a.isAlly ? -1 : 1)
+				: this.wandType === 'warding' && a.allyKind !== b.allyKind ? (a.allyKind === 'ward' ? -1 : 1)
 				: Roguelike.chebyshevDistance(this.hero, a) - Roguelike.chebyshevDistance(this.hero, b)))[0];
 
 		if (!target) {

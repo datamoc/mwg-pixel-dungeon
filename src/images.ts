@@ -72,6 +72,8 @@ import ripperUrl from './assets/ripper.png';
 import blacksmithUrl from './assets/blacksmith.png';
 import impUrl from './assets/demon.png';
 import bannersUrl from './assets/banners.png';
+// `WandOfWarding.WardSprite`'s dedicated variable-width tier film.
+import wardsUrl from './assets/wards.png';
 //interface art, copied byte-for-byte from core/src/main/assets/interfaces/ and prefixed
 //`ui_` here to keep it apart from the sprite sheets above
 import uiToolbarUrl from './assets/ui_toolbar.png';
@@ -172,6 +174,8 @@ export interface SpdSprites {
 	ripperDemon: Texture;
 	items: Texture;
 	banners: Texture;
+	/** `WandOfWarding.WardSprite`'s six tier frames, from `sprites/wards.png`. */
+	wards: Texture;
 	/** `interfaces/chrome.png` - window frames, cut by `Chrome.Type` */
 	uiToolbar: Texture;
 	effects: Texture;
@@ -307,6 +311,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		ripperDemon,
 		items,
 		banners,
+		wards,
 		uiToolbar,
 		effects,
 		terrainFeatures,
@@ -393,6 +398,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(ripperUrl),
 		loadImage(itemsUrl),
 		loadImage(bannersUrl),
+		loadImage(wardsUrl),
 		loadImage(uiToolbarUrl),
 		loadImage(effectsUrl),
 		loadImage(terrainFeaturesUrl),
@@ -482,6 +488,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		ripperDemon: Texture.from(ripperDemon),
 		items: Texture.from(items),
 		banners: Texture.from(banners),
+		wards: Texture.from(wards),
 		uiToolbar: Texture.from(uiToolbar),
 		effects: Texture.from(effects),
 		terrainFeatures: Texture.from(terrainFeatures),

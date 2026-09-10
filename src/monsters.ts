@@ -358,6 +358,8 @@ export const DEPTH_SCALED_STATS: Partial<Record<AnyMonsterId, (depth: number) =>
  * `BASE_KIND_ALIASES` entry of its own, so `baseKind` already equals `kind` for each of them.
  */
 export const SPRITE_KIND_OVERRIDE: Partial<Record<MonsterId, keyof SpdSprites>> = {
+	// `WandOfWarding.WardSprite` has its own six-tier film; it is not a skeleton variant.
+	ward: 'wards',
 	sentry: 'sentry',
 	ratKing: 'ratking',
 	rotHeart: 'rotHeart',
@@ -366,7 +368,6 @@ export const SPRITE_KIND_OVERRIDE: Partial<Record<MonsterId, keyof SpdSprites>> 
 	gnollTrickster: 'gnoll',
 	greatCrab: 'crab',
 	necroSkeleton: 'skeleton',
-	ward: 'skeleton',
 	newbornElemental: 'elemental',
 	mimic: 'slime',
 	piranha: 'crab',
