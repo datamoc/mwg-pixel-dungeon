@@ -54,9 +54,13 @@ function cavesBoss(): BossFloorData {
 	fillRect(level, 15, 0, 17, 2, Terrain.EXIT);
 	fillRect(level, 14, 13, 19, 14, Terrain.SIGN);
 	set(level, 16, 25, Terrain.ENTRANCE);
-	// Java's four pylons are neutral actors. Their cells are kept as inactive traps until
-	// the dedicated pylon actor/electricity system is ported.
-	for (const [x, y] of [[4, 13], [28, 13], [4, 37], [28, 37]]) set(level, x, y, Terrain.INACTIVE_TRAP);
+	// Java's four neutral Pylon actors occupy these cells. Their actor payload is preserved
+	// separately from terrain so the live bridge can restore the dedicated pylon sprite and
+	// activate the pylons when DM-300's gate is triggered.
+	for (const [x, y] of [[4, 13], [28, 13], [4, 37], [28, 37]]) {
+		set(level, x, y, Terrain.EMPTY);
+		level.mobs.push({ pos: x + y * level.w, kind: 'pylon' });
+	}
 	// Keep the scene's existing boss spawn convention away from the entrance cell; Java's
 	// real Caves arena chooses a free point after the gate seals.
 	return { paint: level, rooms: [room(8, 18, 24, 34)], feeling: null };

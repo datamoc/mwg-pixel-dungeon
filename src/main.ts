@@ -773,6 +773,8 @@ interface SavedCreature {
 	golemTeleCooldown?: number;
 	beamCharged?: boolean;
 	beamCooldown?: number;
+	pylonActive?: boolean;
+	pylonTargetNeighbor?: number;
 	rangedCooldown?: number;
 	newbornTarget?: { x: number; y: number } | null;
 	armoredRageTicks?: number;
@@ -1600,12 +1602,15 @@ export class SewersScene extends Scene2D {
 		//base-alias chain) - see `DEPTH_SCALED_STATS`/`BASE_KIND_ALIASES` in monsters.ts.
 		const statOverride = DEPTH_SCALED_STATS[kind]?.(this.depth);
 		const def = statOverride ? { ...baseDef, ...statOverride } : baseDef;
+		const adjustedDef = kind === 'pylon' && isChallengeEnabled('stronger_bosses')
+			? { ...def, hp: 80 }
+			: def;
 		const baseKind: MonsterId = BASE_KIND_ALIASES[kind] ?? (kind as MonsterId);
 		//Data-driven: was a 12-case cascade checking both `kind` and `baseKind` - see
 		//`SPRITE_KIND_OVERRIDE`'s own doc comment in monsters.ts for why `baseKind` alone
 		//covers every case the original also checked `kind` for.
 		const texture = runState.sprites[SPRITE_KIND_OVERRIDE[baseKind] ?? (baseKind as keyof typeof runState.sprites)];
-		const sheet = SpriteSheet.fromTexture(texture, def.frame[0], def.frame[1]);
+		const sheet = SpriteSheet.fromTexture(texture, adjustedDef.frame[0], adjustedDef.frame[1]);
 		// WardSprite's frames are variable-width and therefore cannot be represented by the
 		// regular SpriteSheet grid used by ordinary mobs.
 		const sprite = new AnimatedSprite(kind === 'ward' ? wardTexture(texture, 1) : sheet.get(def.idle));
@@ -1635,8 +1640,8 @@ export class SewersScene extends Scene2D {
 			name: t(MOB_KEYS[kind] ?? MOB_KEYS.statue),
 			x: at.x,
 			y: at.y,
-			hp: def.hp,
-			maxHp: def.hp,
+			hp: adjustedDef.hp,
+			maxHp: adjustedDef.hp,
 			accuracy: def.accuracy,
 			evasion: def.evasion,
 			damage: def.damage,
@@ -1673,6 +1678,7 @@ export class SewersScene extends Scene2D {
 				|| (baseKind === 'thief' && this.depth <= 4)
 				|| (kind === 'guard' && this.depth <= 7)
 				|| (kind === 'bat' && this.depth <= 9)
+				|| kind === 'pylon'
 				? null : (!isNPC && !isBoss && kind !== 'necroSkeleton' && kind !== 'demonSpawner' && kind !== 'sentry' && kind !== 'rotHeart' && kind !== 'rotLasher' && kind !== 'newbornElemental' && Random.chance(0.1) ? Random.element(['blessed', 'blazing', 'giant', 'growing', 'antimagic', 'projecting'] as const)! : null),
 			championPower: 1.19,
 			combo: 0,
@@ -1686,6 +1692,8 @@ export class SewersScene extends Scene2D {
 			dmAbilityTurns: -1,
 			dmAbilityCd: Random.normalRange(5, 9),
 			dmLastAbility: 0,
+			pylonActive: false,
+			pylonTargetNeighbor: kind === 'pylon' ? Random.int(0, 8) : undefined,
 			generation: 0,
 			mimicLoot,
 			mimicRevealed: kind === 'crystalMimic' ? false : undefined,
@@ -1776,6 +1784,7 @@ export class SewersScene extends Scene2D {
 				hasRaged: creature.hasRaged, raged: creature.raged, chainUsed: creature.chainUsed,
 				ventCooldown: creature.ventCooldown, webCooldown: creature.webCooldown, golemTeleCooldown: creature.golemTeleCooldown,
 				beamCharged: creature.beamCharged, beamCooldown: creature.beamCooldown, armoredRageTicks: creature.armoredRageTicks,
+				pylonActive: creature.pylonActive, pylonTargetNeighbor: creature.pylonTargetNeighbor,
 				rangedCooldown: creature.rangedCooldown, newbornTarget: creature.newbornTarget ? { ...creature.newbornTarget } : undefined,
 				stuckAmmo: creature.stuckAmmo, sentryWarmup: creature.sentryWarmup,
 				dmAbilityTurns: creature.dmAbilityTurns, dmAbilityCd: creature.dmAbilityCd, dmLastAbility: creature.dmLastAbility,
@@ -1866,6 +1875,7 @@ export class SewersScene extends Scene2D {
 				hasRaged: saved.hasRaged, raged: saved.raged, chainUsed: saved.chainUsed,
 				ventCooldown: saved.ventCooldown, webCooldown: saved.webCooldown, golemTeleCooldown: saved.golemTeleCooldown,
 				beamCharged: saved.beamCharged, beamCooldown: saved.beamCooldown, armoredRageTicks: saved.armoredRageTicks,
+				pylonActive: saved.pylonActive, pylonTargetNeighbor: saved.pylonTargetNeighbor,
 				rangedCooldown: saved.rangedCooldown, newbornTarget: saved.newbornTarget ? { ...saved.newbornTarget } : undefined,
 				stuckAmmo: saved.stuckAmmo, sentryWarmup: saved.sentryWarmup,
 				dmAbilityTurns: saved.dmAbilityTurns, dmAbilityCd: saved.dmAbilityCd, dmLastAbility: saved.dmLastAbility,
@@ -6093,6 +6103,36 @@ export class SewersScene extends Scene2D {
 			this.takeAllyTurn(monster);
 			return;
 		}
+		//Pylon.act()/Pylon.activate(): inactive pylons are neutral, immovable and do not
+		//attack. Once the DM-300 gate activates them, each pylon shocks the next neighbour
+		//in its clockwise cursor (three extra targets on the stronger-bosses challenge).
+		if (monster.kind === 'pylon') {
+			if (!monster.pylonActive) return;
+			const cursor = monster.pylonTargetNeighbor ?? 0;
+			const offsets = Roguelike.neighbourOffsets(8);
+			const indices = isChallengeEnabled('stronger_bosses')
+				? [cursor, (cursor + 3) % 8, (cursor + 5) % 8]
+				: [cursor, (cursor + 4) % 8];
+			for (const index of indices) {
+				const [dx, dy] = offsets[index]!;
+				const target = this.creatureAt(monster.x + dx, monster.y + dy);
+				if (!target || target.kind === 'dm300' || target.hp <= 0) continue;
+				const raw = Random.normalRange(10, 20);
+				const reduced = Math.max(0, raw - Random.range(target.armor[0], target.armor[1] + 1));
+				if (target.isHero) {
+					const damage = this.absorbHeroDamage(reduced);
+					target.hp -= damage;
+					this.showDamage(target, damage);
+					if (target.hp <= 0) this.kill(target, 'foe');
+				} else {
+					target.hp -= reduced;
+					this.showDamage(target, reduced);
+					if (target.hp <= 0) this.kill(target, 'foe');
+				}
+			}
+			monster.pylonTargetNeighbor = (cursor + 1) % 8;
+			return;
+		}
 		// Hostile mobs now recognize an adjacent friendly summon as a valid combat target.
 		// Longer-range special attacks still use their existing hero-only dispatch until their
 		// target selection is migrated, but this makes MirrorImage bodies able to intercept
@@ -7290,6 +7330,13 @@ export class SewersScene extends Scene2D {
 		this.cavesBossSealed = true;
 		this.cavesBossEnergyTurns = 3;
 		this.say(t('port.log.dm300overcharge'), 'warning');
+		for (const pylon of this.creatures.filter((creature) => creature.kind === 'pylon')) {
+			pylon.pylonActive = true;
+			const sprite = this.sprite(pylon);
+			const sheet = SpriteSheet.fromTexture(runState.sprites.pylon, 10, 20);
+			sprite.texture = sheet.get(1);
+			placeCharacterArt(sprite);
+		}
 		for (const pylon of this.cavesBossPylons) {
 			for (const [dx, dy] of Roguelike.neighbourOffsets(4)) {
 				const at = { x: pylon.x + dx, y: pylon.y + dy };
@@ -7930,6 +7977,12 @@ export class SewersScene extends Scene2D {
 			defender.sleeping = false;
 			return false;
 		}
+		//Pylon.isInvulnerable(): a neutral pylon cannot be damaged until the DM-300 gate
+		//activates it. Active-pylon damage reduction is applied below before procs/death.
+		if (defender.kind === 'pylon' && !defender.pylonActive) {
+			defender.sleeping = false;
+			return false;
+		}
 
 		const attackRoll = resolveAttack(attacker, defender, simulationRandom, false, surprise);
 		if (!attackRoll.hit) {
@@ -7940,6 +7993,10 @@ export class SewersScene extends Scene2D {
 		}
 
 		let damage = attackRoll.damage;
+		if (defender.kind === 'pylon' && damage >= 15) {
+			//Pylon.damage(): 14 + floor((sqrt(8*(dmg-14)+1)-1)/2), Java's heavy-metal curve.
+			damage = 14 + Math.floor((Math.sqrt(8 * (damage - 14) + 1) - 1) / 2);
+		}
 		//Weapon.Augment: real Java's `Augment` enum (`Weapon.java`, tag `v3.3.8`) trades damage
 		//against attack speed in both directions - `SPEED(0.7f damageFactor, 2/3f delayFactor)`,
 		//`DAMAGE(1.5f damageFactor, 5/3f delayFactor)` - not a flat "20% up, nothing down" this

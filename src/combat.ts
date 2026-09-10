@@ -109,6 +109,9 @@ export interface Creature extends Combatant {
 	/** `SentryRoom$Sentry.curChargeDelay`: turns of charge-up left before the beam starts
 	 * firing every visible turn (undefined = idle, reset whenever the hero leaves sight). */
 	sentryWarmup?: number;
+	/** Pylon.java's neutral/active alignment and clockwise shock cursor. */
+	pylonActive?: boolean;
+	pylonTargetNeighbor?: number;
 	/** DM300's GAS/ROCKS ability state (`turnsSinceLastAbility`/`abilityCooldown`/`lastAbility`). */
 	dmAbilityTurns?: number;
 	dmAbilityCd?: number;

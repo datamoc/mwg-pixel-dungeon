@@ -82,6 +82,7 @@ export const MOB_KEYS: Record<string, string> = {
 	piranha: 'actors.mobs.piranha.name',
 	bee: 'actors.mobs.bee.name',
 	statue: 'actors.mobs.statue.name',
+	pylon: 'actors.mobs.pylon.name',
 };
 
 /** `actors.hero.heroclass.*`; the Cleric postdates this checkout's message files */

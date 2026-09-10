@@ -29,6 +29,7 @@ import piranhaUrl from './assets/piranha.png';
 import beeUrl from './assets/bee.png';
 import statueUrl from './assets/statue.png';
 import mimicUrl from './assets/mimic.png';
+import pylonUrl from './assets/pylon.png';
 import snakeUrl from './assets/snake.png';
 import gnollUrl from './assets/gnoll.png';
 import swarmUrl from './assets/swarm.png';
@@ -135,6 +136,7 @@ export interface SpdSprites {
 	bee: Texture;
 	statue: Texture;
 	mimic: Texture;
+	pylon: Texture;
 	snake: Texture;
 	gnoll: Texture;
 	swarm: Texture;
@@ -284,6 +286,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		bee,
 		statue,
 		mimic,
+		pylon,
 		snake,
 		gnoll,
 		swarm,
@@ -377,6 +380,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(beeUrl),
 		loadImage(statueUrl),
 		loadImage(mimicUrl),
+		loadImage(pylonUrl),
 		loadImage(snakeUrl),
 		loadImage(gnollUrl),
 		loadImage(swarmUrl),
@@ -472,6 +476,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		bee: Texture.from(bee),
 		statue: Texture.from(statue),
 		mimic: Texture.from(mimic),
+		pylon: Texture.from(pylon),
 		snake: Texture.from(snake),
 		gnoll: Texture.from(gnoll),
 		swarm: Texture.from(swarm),

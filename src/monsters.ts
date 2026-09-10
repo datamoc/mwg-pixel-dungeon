@@ -59,6 +59,7 @@ export type MonsterId =
 	| 'bee'
 	| 'statue'
 	| 'armoredStatue'
+	| 'pylon'
 	| 'sentry'
 	| 'rotHeart'
 	| 'rotLasher'
@@ -240,6 +241,9 @@ export const MONSTERS: Record<AnyMonsterId, MonsterDef> = {
 	// shared combat roll until weapon instances are attached to monsters.
 	statue: { hp: 15, accuracy: 9, evasion: 4, damage: [2, 8], armor: [0, 2], frame: [12, 15], idle: 0, exp: 0, maxLvl: 29 },
 	armoredStatue: { hp: 30, accuracy: 9, evasion: 4, damage: [2, 8], armor: [0, 2], frame: [12, 15], idle: 0, exp: 0, maxLvl: 29 },
+	// Pylon.java: inactive neutral boss minion, HP 50 (80 with stronger bosses),
+	// immovable and inorganic. PylonSprite's dedicated 10x20 film is used directly.
+	pylon: { hp: 50, accuracy: 0, evasion: 0, damage: [0, 0], armor: [0, 0], frame: [10, 20], idle: 0, exp: 0, maxLvl: -2 },
 	//SentryRoom$Sentry: HP=HT=1 (NPC base), INFINITE_EVASION (modelled as the real
 	//1000000 constant `rollHit` short-circuits on, not the NPC display-999999), no melee
 	//to speak of (damage unused - it only ever fires its beam), EXP=0. Accuracy is set at
@@ -280,6 +284,7 @@ export const BASE_KIND_ALIASES: Partial<Record<AnyMonsterId, MonsterId>> = {
 	acidic: 'scorpio',
 	crystalMimic: 'mimic',
 	armoredStatue: 'statue',
+	pylon: 'pylon',
 };
 
 /** Quest-giver/shop/crafting NPCs (`Mob.java` subclasses with `alignment = ALLY` or an
@@ -295,7 +300,7 @@ export const BOSS_KINDS = new Set<AnyMonsterId>(['goo', 'tengu', 'dm300', 'king'
  * DM201 (real `IMMOVABLE`, consumes its turn), the Sentry turret and the RotHeart/RotLasher
  * pair (all own their whole turn and never step). Used for Necromancer.summonMinion's
  * "no push if char is immovable" rule - such an occupant is never shoved aside. */
-export const IMMOVABLE_KINDS = new Set<AnyMonsterId>(['dm201', 'sentry', 'rotHeart', 'rotLasher']);
+export const IMMOVABLE_KINDS = new Set<AnyMonsterId>(['dm201', 'sentry', 'rotHeart', 'rotLasher', 'pylon']);
 
 /** Kinds that spawn already awake (real Java `state = PASSIVE`/`WANDERING` from the start,
  * never `SLEEPING`): Ghost-quest mobs (FetidRat/GnollTrickster/GreatCrab, spawned mid-quest
@@ -307,7 +312,7 @@ export const IMMOVABLE_KINDS = new Set<AnyMonsterId>(['dm201', 'sentry', 'rotHea
  * needing this exemption - exactly the "OR-chain that grows linearly with every new case"
  * smell ROADMAP.md's own code-quality note calls out, moved into a table for the same reason
  * `NPC_KINDS`/`BOSS_KINDS`/`IMMOVABLE_KINDS` already were. */
-export const NEVER_SLEEPS_KINDS = new Set<AnyMonsterId>(['fetidRat', 'gnollTrickster', 'greatCrab', 'demonSpawner', 'sentry', 'rotHeart', 'rotLasher', 'newbornElemental']);
+export const NEVER_SLEEPS_KINDS = new Set<AnyMonsterId>(['fetidRat', 'gnollTrickster', 'greatCrab', 'demonSpawner', 'sentry', 'rotHeart', 'rotLasher', 'newbornElemental', 'pylon']);
 
 /**
  * Per-kind depth-scaled stat overrides, applied on top of `MONSTERS`' base entry at spawn
