@@ -448,8 +448,8 @@ const AUGMENT_OPTIONS = ['speed', 'damage', 'none'] as const;
  * still not modeled - this port has neither system). Every other real enchant/glyph/curse needs a
 	 * subsystem this port does not model - Kinetic's old "store half of every hit" shorthand is
 	 * replaced this pass by the real `Char.damage()` kill-overkill rule below; Corrupting now
-	 * converts lethal targets through the existing ally model; Elastic/Projecting need
-	 * AoE/thrown-range geometry; Unstable is
+	 * converts lethal targets through the existing ally model; Elastic now uses the
+	 * existing straight shove path; Projecting still needs thrown-range geometry; Unstable is
  * now ported (delegates per swing, see `attack()`); Friendly needs a two-way Charm subsystem this port lacks (confirmed against
  * `Friendly.java`: mutual Charm + zeroing damage to the charmed target); the remaining armor
  * glyphs (Affection/AntiMagic/Brimstone/Obfuscation/Repulsion/Viscosity) need
@@ -481,6 +481,7 @@ const ENCHANT_TABLE: Actors.AffixTable = {
 		{ id: 'blocking', trigger: 'strike', weight: 2, description: 'Chance to grant a shield on a landed hit' },
 		{ id: 'kinetic', trigger: 'strike', weight: 2, description: 'Stores part of damage for the next hit' },
 		{ id: 'corrupting', trigger: 'strike', weight: 2, description: 'Lethal hits can convert the victim into an ally' },
+		{ id: 'elastic', trigger: 'strike', weight: 2, description: 'Chance to knock the victim backward' },
 		{ id: 'blooming', trigger: 'strike', weight: 2, description: 'Chance to plant grass where you strike' },
 		{ id: 'unstable', trigger: 'strike', weight: 2, description: 'A random enchantment effect on every hit' },
 		{ id: 'wayward', trigger: 'strike', weight: 1, curse: true, description: 'Cursed: -3 accuracy' },
@@ -493,9 +494,9 @@ const ENCHANT_TABLE: Actors.AffixTable = {
 	],
 };
 /** `Unstable.randomEnchants` minus Projecting (Java's own exclusion - no on-hit effect) and
- * minus Elastic (no ported proc exists to delegate into; drawing it would make Unstable
- * randomly fizzle with no feedback, so it stays out openly until its own system lands).
- * Corrupting now has a live lethal conversion branch, so it is a valid delegate too.
+ * Elastic (its shove is intentionally not delegated by Unstable, matching Java's own
+ * `randomEnchants` exclusion). Corrupting now has a live lethal conversion branch, so it is
+ * a valid delegate too.
  * Uncommon, like the real `Unstable` in `Weapon.java`'s rarity lists. */
 const UNSTABLE_DELEGATES = ['blazing', 'blocking', 'blooming', 'chilling', 'corrupting', 'kinetic', 'grim', 'lucky', 'shocking', 'vampiric'] as const;
 const GLYPH_TABLE: Actors.AffixTable = {
@@ -8444,6 +8445,24 @@ export class SewersScene extends Scene2D {
 			attacker.hp = Math.min(attacker.maxHp, attacker.hp + 1);
 			this.showHeal(attacker, 1);
 			this.say(t('port.log.vampiric'), 'positive');
+		}
+		//Elastic.proc(): on a successful proc, knock the defender along the part of
+		//the attack trajectory beyond its cell by `round(2 * max(1, chance))` cells.
+		//The scene already owns forced movement and collision rules in `moveTo`, so a
+		//straight grid shove reproduces the meaningful result without a new actor type.
+		if (affix === 'elastic' && defender.hp > 0 && attacker === this.hero) {
+			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
+			const procChance = ((level + 1) / (level + 5)) * ringArcanaMultiplier(this.equippedRing);
+			if (Random.chance(procChance)) {
+				const dx = Math.sign(defender.x - attacker.x);
+				const dy = Math.sign(defender.y - attacker.y);
+				const distance = Math.round(2 * Math.max(1, procChance));
+				for (let step = 0; step < distance; step++) {
+					const next = { x: defender.x + dx, y: defender.y + dy };
+					if (!this.level.passable(next.x, next.y) || this.creatureAt(next.x, next.y)) break;
+					this.moveTo(defender, next);
+				}
+			}
 		}
 		//Grim.proc(): real chance scales 0-50% with the defender's missing-HP fraction plus
 		//0-5%/weapon level, deferred through a tracker buff so `Char.damage` sees the *final*

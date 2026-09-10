@@ -270,7 +270,7 @@ browser-verification workflow for why).
 - [ ] Implement complete weapon and armor tiers, transfer formulas, upgrade formulas, curse infusion, and degradation. Upgrade transitions are now exact Java (`Weapon/Armor.upgrade(false)`: curse-affix 1-in-3 removal with the real line, good-affix loss 10-100% from +4 with the real warnings, pre-level-change ordering), and Warlock Degrade is now the real 30-turn buff (50% on landed ranged zaps, sqrt effective-level reduction) instead of a permanent chip - the old shorthands had no Java basis. Remaining: the tier-jump progression itself (real Java has fixed per-class tiers with plain +1 levels - a full state-machine rework, not a formula fix), Blacksmith reforge transfers (section 4's forge item), and curse infusion proper (`items.spells.curseinfusion` is an alchemy-brewed spell, so it waits on the alchemy system with everything else brewed). See `PORT_COVERAGE.md`'s upgrade/degrade row.
 - [ ] Implement the remaining charm/knockback/stealth/blink/durability-per-hit
       subsystems the unported enchants, glyphs, and curses depend on (Kinetic's
-      carried-damage buffer, Blooming's plant seeding, Elastic/Projecting's
+      carried-damage buffer, Blooming's plant seeding, Projecting's
       line-AoE geometry, and the
       charm/wand-drain/blink/durability mechanics behind
       Affection/AntiMagic/Brimstone/Camouflage/Obfuscation/Potential/Repulsion/Viscosity
