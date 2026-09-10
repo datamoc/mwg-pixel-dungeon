@@ -3068,7 +3068,7 @@ export class SewersScene extends Scene2D {
 		return shelf;
 	}
 
-	/** Shopkeeper: bump to hear prices, B/N to buy, V to sell food, G to buy back the latest sale */
+	/** Shopkeeper: bump to hear prices, B/N to buy, V to choose a sale, G to buy back the latest sale */
 	private interactWithShopkeeper(): void {
 		const potionPrice = this.shopPrice('potion');
 		const identifyPrice = this.shopPrice('scrollIdentify');
@@ -3105,22 +3105,34 @@ export class SewersScene extends Scene2D {
 	}
 
 	private shopSellFood(): void {
-		const food = this.bag.find('food') ?? this.bag.find('meat');
-		if (!food) {
+		//`Shopkeeper.canSell()`: value-positive items, excluding equipped cursed gear and
+		//sealed armor. The port has no seal primitive; its picker therefore only needs the
+		//value/equipped-curse checks that can exist in the live inventory model.
+		type Sellable = { id: string; quantity: number; instanceId?: string; identified?: boolean; cursed?: boolean };
+		const candidates = (this.bag.items as Sellable[]).filter((item) =>
+			item.quantity > 0 && getSellPrice(item.id, this.depth, 1, item.identified ?? true) > 0
+			&& !(item.cursed && (item.id === 'weaponReward' || item.id === 'armorReward' || item.id.startsWith('ring_')))
+		);
+		if (candidates.length === 0) {
 			this.say(t('port.log.nofoodtosell'));
 			return;
 		}
-		//`WndTradeItem.sell`: flat `value()` for one unit, no time spent (a free action
-		//here too), and the sale lands on the buyback shelf capped at 3 (oldest dropped).
-		//Selling anything but food needs the same item-picker UI Transmutation is waiting
-		//on, so the sell side stays food-only.
-		const price = getSellPrice(food.id, this.depth);
-		this.bag.remove(food.id, 1);
-		this.heroStats.setBase('gold', this.heroStats.base('gold') + price);
-		const shelf = this.buybackFor(this.depth);
-		shelf.push({ id: food.id, quantity: 1, identified: food.identified ?? true });
-		while (shelf.length > 3) shelf.shift();
-		this.say(t('port.log.soldfood', { price }), 'positive');
+		this.openItemPicker(t('actors.mobs.npcs.shopkeeper.sell'), candidates, (pick) => {
+			const item = (this.bag.items as Sellable[]).find((entry) => entry.id === pick.id
+				&& (entry.instanceId ?? undefined) === (pick.instanceId ?? undefined) && entry.quantity > 0);
+			if (!item) return;
+			const price = getSellPrice(item.id, this.depth, 1, item.identified ?? true);
+			if (price <= 0) return;
+			//`WndTradeItem.sellOne`/`sell`: one selected stack unit is sold here; the Java
+			//quantity chooser is the remaining UI simplification. The sale is free-action
+			//and lands on the buyback shelf capped at three entries.
+			this.bag.remove(item.id, 1, item.instanceId);
+			this.heroStats.setBase('gold', this.heroStats.base('gold') + price);
+			const shelf = this.buybackFor(this.depth);
+			shelf.push({ id: item.id, quantity: 1, identified: item.identified ?? true });
+			while (shelf.length > 3) shelf.shift();
+			this.say(t('port.log.solditem', { item: this.itemDisplayName(item.id, item.identified ?? true), price }), 'positive');
+		});
 	}
 
 	/** Rebuy the most recent sale at flat `value()` (`Dungeon.gold -= returned.value()`).
