@@ -5718,11 +5718,12 @@ export class SewersScene extends Scene2D {
 				//RingOfElements.resist(): Burning/Poison are both in `RESISTS`, so the DoT
 				//they deal through `Char.damage()` is scaled by `0.825^level` in real Java.
 				const wasDrowsy = this.hero.buffs['drowsy'] !== undefined;
+				const wasMagicalSleep = this.hero.buffs['magicalSleep'] !== undefined;
 				const dot = Math.floor(tickBuffs(this.hero) * ringElementsMultiplier(this.equippedRing));
 				if (wasDrowsy && this.hero.buffs['drowsy'] === undefined && this.hero.hp < this.hero.maxHp) {
-					//Drowsy.act() attaches MagicalSleep. Currently, the port has no sustained
-					//sleep/healing state for the hero, so post-Drowsy paralysis is the explicit stand-in; a
-					//full-health reader remains awake like Java's "too healthy" path.
+					//Drowsy.act() attaches MagicalSleep; a full-health reader takes Java's
+					//"too healthy" path and is not put to sleep.
+					this.hero.buffs['magicalSleep'] = 1;
 					this.hero.buffs['paralysis'] = Math.max(this.hero.buffs['paralysis'] ?? 0, BUFF_DURATION.paralysis);
 				}
 				if (hadAdrenaline !== (this.hero.buffs['adrenalineSurge'] !== undefined)) this.syncHeroFromStats();
@@ -5735,6 +5736,17 @@ export class SewersScene extends Scene2D {
 						this.kill(this.hero, burning ? 'fire' : 'poison');
 						return true;
 					}
+				}
+				//MagicalSleep.act(): a sleeping ally restores exactly 1 HP per actor turn,
+				//then wakes and removes its paralysis as soon as it reaches full health. A
+				//fresh Drowsy transition waits until the next turn before healing, matching
+				//Drowsy.act() attaching MagicalSleep after its own actor tick.
+				if (wasMagicalSleep && this.hero.buffs['magicalSleep'] !== undefined && this.hero.hp > 0) {
+					this.hero.hp = Math.min(this.hero.maxHp, this.hero.hp + 1);
+					if (this.hero.hp >= this.hero.maxHp) {
+						delete this.hero.buffs['magicalSleep'];
+						delete this.hero.buffs['paralysis'];
+					} else this.hero.buffs['paralysis'] = BUFF_DURATION.paralysis;
 				}
 				//Ooze.act(): depth-scaled direct damage (`1+depth/5` past depth 5, 1 at
 				//depth 5, a coin-flip 1 in the Sewers), in RESISTS like Burning/Poison, with
@@ -8269,6 +8281,12 @@ export class SewersScene extends Scene2D {
 			defender.spawnCooldown = Math.max((defender.spawnCooldown ?? 60) - damage, -20);
 		}
 		defender.sleeping = false;
+		//Char.damage(): incoming damage detaches MagicalSleep before normal damage
+		//resolution; the port's marker/paralysis pair is the equivalent state.
+		if (defender.buffs['magicalSleep'] !== undefined) {
+			delete defender.buffs['magicalSleep'];
+			delete defender.buffs['paralysis'];
+		}
 		this.sprite(defender).setColorAdd(1, 1, 1);
 		//the one log line whose severity depends on which way the blow went: SPD colours
 		//damage the hero takes red and leaves the hero's own hits plain

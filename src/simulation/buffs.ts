@@ -9,13 +9,15 @@ import type { SimulationRandom } from './random';
  * because these multipliers apply to transient dice rolls rather than to named stats a
  * StatBlock resolves.
  */
-export type BuffId = 'bless' | 'hex' | 'daze' | 'drowsy' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown';
+export type BuffId = 'bless' | 'hex' | 'daze' | 'drowsy' | 'magicalSleep' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown';
 export const BUFF_DURATION: Record<BuffId, number> = {
 	bless: 30,
 	hex: 30,
 	daze: 5,
 	//Drowsy.DURATION (ScrollOfLullaby/Drowsy.java)
 	drowsy: 5,
+	//MagicalSleep has no timer in Java: it remains until the ally is fully healed or hit.
+	magicalSleep: 0,
 	fury: 9999,
 	berserk: 9999,
 	//Weakness.DURATION/Vulnerable.DURATION are both really 20, not 10 - neither buff had any
@@ -119,6 +121,7 @@ export function advanceBuffs(previous: Readonly<BuffState>, random: SimulationRa
 		if (id === 'poison') damage += random.int(1, 2);
 		//Bleeding.act(): Java redraws the intensity from NormalFloat(level/2, level),
 		//deals round(level), and keeps the new intensity until the next actor turn.
+		if (id === 'magicalSleep') continue;
 		if (id === 'bleeding') {
 			const next = random.normalRange(left / 2, left);
 			const tick = Math.round(next);

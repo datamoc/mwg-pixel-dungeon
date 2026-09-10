@@ -186,7 +186,8 @@ browser-verification workflow for why).
       no ally-vs-monster combat exists). `StoneOfFear` applies the `terror` buff `ScrollOfTerror`
       already grants and `takeMonsterTurn` already honors in full - no new mechanic needed, just
       a new way to reach the existing one. `StoneOfDeepSleep` still uses an instant-sleep
-      simplification for real Java's gradual `MagicalSleep`/`Drowsy` debuff (setting
+      simplification for real Java's gradual `Drowsy`/`MagicalSleep` debuff (the shared
+      Lullaby path now carries the sustained hero healing/resting state; setting
       `sleeping = true` directly), just on one auto-targeted enemy instead of every
       visible mob. `StoneOfShock` paralyzes every creature within a Chebyshev-distance-2 circle of
       the auto-targeted enemy (real Java uses a wall-aware `PathFinder` flood fill instead, and a
