@@ -18,6 +18,7 @@ export type MonsterId =
 	| 'goo'
 	| 'skeleton'
 	| 'ward'
+	| 'earthGuardian'
 	| 'thief'
 	| 'dm100'
 	| 'guard'
@@ -129,6 +130,9 @@ export const MONSTERS: Record<AnyMonsterId, MonsterDef> = {
 	//numbers are supplied by the wand/ward state in the scene; these values only satisfy the
 	//shared actor factory before that state is applied.
 	ward: { hp: 10, accuracy: 0, evasion: 999999, damage: [0, 0], armor: [0, 0], frame: [12, 15], idle: 0, exp: 0, maxLvl: 0 },
+	// `WandOfLivingEarth.EarthGuardian` starts with no HP until the wand supplies its
+	// level/armor payload; the live actor state overrides these placeholder values.
+	earthGuardian: { hp: 0, accuracy: 0, evasion: 0, damage: [2, 4], armor: [0, 0], frame: [12, 15], idle: 0, exp: 0, maxLvl: 0 },
 	thief: { hp: 20, accuracy: 12, evasion: 12, damage: [1, 10], armor: [0, 3], frame: [12, 13], idle: 0, exp: 5, maxLvl: 11 },
 	dm100: { hp: 20, accuracy: 11, evasion: 8, damage: [2, 8], armor: [0, 4], frame: [16, 14], idle: 0, exp: 6, maxLvl: 13 },
 	guard: { hp: 40, accuracy: 12, evasion: 10, damage: [4, 12], armor: [0, 7], frame: [12, 16], idle: 0, exp: 7, maxLvl: 14 },
@@ -360,6 +364,7 @@ export const DEPTH_SCALED_STATS: Partial<Record<AnyMonsterId, (depth: number) =>
 export const SPRITE_KIND_OVERRIDE: Partial<Record<MonsterId, keyof SpdSprites>> = {
 	// `WandOfWarding.WardSprite` has its own six-tier film; it is not a skeleton variant.
 	ward: 'wards',
+	earthGuardian: 'guardian',
 	sentry: 'sentry',
 	ratKing: 'ratking',
 	rotHeart: 'rotHeart',

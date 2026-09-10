@@ -74,6 +74,8 @@ import impUrl from './assets/demon.png';
 import bannersUrl from './assets/banners.png';
 // `WandOfWarding.WardSprite`'s dedicated variable-width tier film.
 import wardsUrl from './assets/wards.png';
+// `WandOfLivingEarth.EarthGuardianSprite`'s dedicated 12x15 film.
+import guardianUrl from './assets/guardian.png';
 //interface art, copied byte-for-byte from core/src/main/assets/interfaces/ and prefixed
 //`ui_` here to keep it apart from the sprite sheets above
 import uiToolbarUrl from './assets/ui_toolbar.png';
@@ -176,6 +178,8 @@ export interface SpdSprites {
 	banners: Texture;
 	/** `WandOfWarding.WardSprite`'s six tier frames, from `sprites/wards.png`. */
 	wards: Texture;
+	/** `WandOfLivingEarth.EarthGuardianSprite`'s 12x15 film. */
+	guardian: Texture;
 	/** `interfaces/chrome.png` - window frames, cut by `Chrome.Type` */
 	uiToolbar: Texture;
 	effects: Texture;
@@ -312,6 +316,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		items,
 		banners,
 		wards,
+		guardian,
 		uiToolbar,
 		effects,
 		terrainFeatures,
@@ -399,6 +404,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(itemsUrl),
 		loadImage(bannersUrl),
 		loadImage(wardsUrl),
+		loadImage(guardianUrl),
 		loadImage(uiToolbarUrl),
 		loadImage(effectsUrl),
 		loadImage(terrainFeaturesUrl),
@@ -489,6 +495,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		items: Texture.from(items),
 		banners: Texture.from(banners),
 		wards: Texture.from(wards),
+		guardian: Texture.from(guardian),
 		uiToolbar: Texture.from(uiToolbar),
 		effects: Texture.from(effects),
 		terrainFeatures: Texture.from(terrainFeatures),

@@ -27,6 +27,7 @@ export const MOB_KEYS: Record<string, string> = {
 	goo: 'actors.mobs.goo.name',
 	skeleton: 'actors.mobs.skeleton.name',
 	ward: 'items.wands.wandofwarding$ward.name_1',
+	earthGuardian: 'items.wands.wandoflivingearth$earthguardian.name',
 	thief: 'actors.mobs.thief.name',
 	dm100: 'actors.mobs.dm100.name',
 	guard: 'actors.mobs.guard.name',

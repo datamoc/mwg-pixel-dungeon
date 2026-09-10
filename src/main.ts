@@ -758,11 +758,13 @@ interface SavedCreature {
 	firstSummon?: boolean;
 	nextTurn: number | null;
 	isAlly?: boolean;
-	allyKind?: 'mirror' | 'sheep' | 'ward';
+	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian';
 	sheepTurns?: number;
 	wardTier?: number;
 	wardWandLevel?: number;
 	wardTotalZaps?: number;
+	earthGuardianWandLevel?: number;
+	earthGuardianDefense?: number;
 	hasRaged?: boolean;
 	raged?: boolean;
 	chainUsed?: boolean;
@@ -1592,7 +1594,7 @@ export class SewersScene extends Scene2D {
 	}
 
 	/** any monster in MONSTERS, cut from its own real sprite sheet at its own real frame size */
-	private spawnMonster(kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward'): Creature {
+	private spawnMonster(kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian'): Creature {
 		const baseDef = MONSTERS[kind];
 		//Data-driven: was two long ternary chains (a 7-kind stat-override chain and a 10-kind
 		//base-alias chain) - see `DEPTH_SCALED_STATS`/`BASE_KIND_ALIASES` in monsters.ts.
@@ -1691,7 +1693,7 @@ export class SewersScene extends Scene2D {
 		this.spriteFor.set(monster.id, sprite);
 		if (isAlly) {
 			sprite.alpha = 0.72;
-			sprite.colorAdd = allyKind === 'sheep' ? 0xdddddd : 0x5577aa;
+			sprite.colorAdd = allyKind === 'sheep' ? 0xdddddd : allyKind === 'earthGuardian' ? 0x997744 : 0x5577aa;
 		}
 		//Monk.java: enters HUNTING with Focus (one guaranteed dodge, re-earned over ~6 turns)
 		if (kind === 'monk' || kind === 'senior') addBuff(monster, 'focus');
@@ -1775,6 +1777,7 @@ export class SewersScene extends Scene2D {
 				allyKind: creature.allyKind,
 				sheepTurns: creature.sheepTurns,
 				wardTier: creature.wardTier, wardWandLevel: creature.wardWandLevel, wardTotalZaps: creature.wardTotalZaps,
+				earthGuardianWandLevel: creature.earthGuardianWandLevel, earthGuardianDefense: creature.earthGuardianDefense,
 				nextTurn: this.scheduler.timeOf(creature),
 			});
 		}
@@ -1863,6 +1866,7 @@ export class SewersScene extends Scene2D {
 				allyKind: saved.allyKind,
 				sheepTurns: saved.sheepTurns,
 				wardTier: saved.wardTier, wardWandLevel: saved.wardWandLevel, wardTotalZaps: saved.wardTotalZaps,
+				earthGuardianWandLevel: saved.earthGuardianWandLevel, earthGuardianDefense: saved.earthGuardianDefense,
 				speed: saved.hasteTurns ? (saved.hasteBaseSpeed ?? 1) * 2 : undefined,
 			});
 			this.scheduler.add(creature, Math.max(0, (saved.nextTurn ?? state.schedulerNow) - state.schedulerNow));
@@ -5209,10 +5213,12 @@ export class SewersScene extends Scene2D {
 		const range = 6;
 		const target = this.creatures
 			.filter((c) => !c.isHero && !c.isNPC && this.fov.isVisible(c.x, c.y)
-				&& (this.wandType === 'transfusion' || this.wandType === 'warding' || !c.isAlly))
+				&& (this.wandType === 'transfusion' || this.wandType === 'warding'
+					|| (this.wandType === 'livingEarth' && c.allyKind === 'earthGuardian') || !c.isAlly))
 			.filter((c) => Roguelike.canTarget(this.level, this.hero, c, { range }))
 			.sort((a, b) => (this.wandType === 'transfusion' && a.isAlly !== b.isAlly ? (a.isAlly ? -1 : 1)
 				: this.wandType === 'warding' && a.allyKind !== b.allyKind ? (a.allyKind === 'ward' ? -1 : 1)
+				: this.wandType === 'livingEarth' && a.allyKind !== b.allyKind ? (a.allyKind === 'earthGuardian' ? -1 : 1)
 				: Roguelike.chebyshevDistance(this.hero, a) - Roguelike.chebyshevDistance(this.hero, b)))[0];
 
 		if (!target) {
@@ -5316,19 +5322,33 @@ export class SewersScene extends Scene2D {
 						+ (this.wandType === 'magicMissile' || this.wandType === 'frost' ? (this.subclass() === 'warlock' ? 2 : 0) : 0)
 						+ (victim === target ? enragedCatalystBonus(this.subclass(), this.talentRank('enraged_catalyst'), this.hero.hp, this.hero.maxHp) + this.wandBonusDamage : 0);
 					this.wandBonusDamage = victim === target ? 0 : this.wandBonusDamage;
-					victim.hp -= damage;
-					this.showDamage(victim, damage);
-					victim.sleeping = false;
-					if (this.wandType === 'livingEarth') {
-						//WandOfLivingEarth.onZap() adds the damage dealt to RockArmor, capped
-						//at twice `armorToGuardian()` (8 + 4*wand level). This port stores the
-						//same persistent amount directly; the guardian conversion is still a
-						//separate missing actor, so reaching the cap does not spawn one yet.
-						this.livingEarthWandLevel = Math.max(this.livingEarthWandLevel, this.weaponLevel);
-						this.livingEarthArmor = Math.min(
-							2 * (8 + 4 * this.livingEarthWandLevel),
-							this.livingEarthArmor + damage,
-						);
+					const livingEarthGuardian = this.wandType === 'livingEarth' && victim.allyKind === 'earthGuardian';
+					if (livingEarthGuardian) {
+						//EarthGuardian.setInfo(): shooting the guardian heals it by the fresh
+						//damage roll; the guardian is never damaged by its own wand.
+						victim.hp = Math.min(victim.maxHp, victim.hp + Math.max(0, raw));
+						this.showHeal(victim, Math.max(0, raw));
+					} else {
+						victim.hp -= damage;
+						this.showDamage(victim, damage);
+						victim.sleeping = false;
+					}
+					if (this.wandType === 'livingEarth' && !livingEarthGuardian) {
+						//WandOfLivingEarth.onZap() adds the successful damage roll to
+						//RockArmor, capped at twice armorToGuardian(). Once the cap is reached,
+						//the Java actor is created and consumes that stored armor.
+						const guardian = this.creatures.find((c) => c.allyKind === 'earthGuardian' && c.hp > 0);
+						if (guardian) {
+							guardian.hp = Math.min(guardian.maxHp, guardian.hp + Math.max(0, raw));
+							this.showHeal(guardian, Math.max(0, raw));
+						} else {
+							this.livingEarthWandLevel = Math.max(this.livingEarthWandLevel, this.weaponLevel);
+							this.livingEarthArmor = Math.min(
+								2 * (8 + 4 * this.livingEarthWandLevel),
+								this.livingEarthArmor + Math.max(0, raw),
+							);
+							this.maybeSummonEarthGuardian(victim);
+						}
 					}
 					if (this.wandType === 'corrosion') {
 						//WandOfCorrosion.onZap() seeds CorrosiveGas at the collision cell and
@@ -6410,6 +6430,10 @@ export class SewersScene extends Scene2D {
 			this.takeWardTurn(ally);
 			return;
 		}
+		if (ally.allyKind === 'earthGuardian') {
+			this.takeEarthGuardianTurn(ally);
+			return;
+		}
 		if (ally.allyKind === 'sheep') {
 			ally.sheepTurns = (ally.sheepTurns ?? 1) - 1;
 			if ((ally.sheepTurns ?? 0) <= 0) this.kill(ally);
@@ -6430,6 +6454,53 @@ export class SewersScene extends Scene2D {
 		this.eternalFireBlockedInto(blocked);
 		const next = this.pathfinder.find({ x: ally.x, y: ally.y }, { x: destination.x, y: destination.y }, { blocked })[0];
 		if (next) this.moveTo(ally, next);
+	}
+
+	/** `WandOfLivingEarth.onZap()` creates the guardian once RockArmor reaches its
+	 * `armorToGuardian()` threshold. The Java actor consumes the stored armor as HP and
+	 * appears in the closest free neighbour of the zap target. */
+	private maybeSummonEarthGuardian(target: Creature): void {
+		if (this.livingEarthArmor < 8 + 4 * this.livingEarthWandLevel) return;
+		const cells = [{ x: target.x, y: target.y }, ...Roguelike.neighbourOffsets(8).map(([dx, dy]) => ({ x: target.x + dx, y: target.y + dy }))]
+			.filter((at) => this.level.inside(at.x, at.y) && this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y))
+			.sort((a, b) => Roguelike.chebyshevDistance(this.hero, a) - Roguelike.chebyshevDistance(this.hero, b));
+		const cell = cells[0];
+		if (!cell) return;
+		const guardian = this.spawnMonster('earthGuardian', cell, false, undefined, true, 'earthGuardian');
+		guardian.earthGuardianWandLevel = this.livingEarthWandLevel;
+		guardian.earthGuardianDefense = Math.floor((this.progression.level + 4) / 2);
+		guardian.maxHp = guardian.earthGuardianWandLevel * 8 + 16;
+		guardian.hp = Math.min(guardian.maxHp, this.livingEarthArmor);
+		guardian.accuracy = 2 * guardian.earthGuardianDefense + 5;
+		guardian.evasion = guardian.earthGuardianDefense;
+		guardian.damage = [2, 4 + Math.floor(this.depth / 2)];
+		guardian.armor = [guardian.earthGuardianWandLevel, 3 + 3 * guardian.earthGuardianWandLevel];
+		this.livingEarthArmor = 0;
+		this.say(t('port.log.wandlivingearth'), 'positive');
+	}
+
+	/** `EarthGuardian.Wandering.act()`: when no enemy remains in its sight, the guardian
+	 * returns its current HP to RockArmor and disappears. While an enemy is visible it uses
+	 * the ordinary allied melee/pathing loop, with the Java-derived stats set at summon. */
+	private takeEarthGuardianTurn(guardian: Creature): void {
+		const hostiles = this.creatures
+			.filter((c) => !c.isHero && !c.isNPC && !c.isAlly && c.hp > 0 && this.fov.isVisible(c.x, c.y))
+			.sort((a, b) => Roguelike.chebyshevDistance(guardian, a) - Roguelike.chebyshevDistance(guardian, b));
+		const target = hostiles[0];
+		if (!target) {
+			this.livingEarthWandLevel = Math.max(this.livingEarthWandLevel, guardian.earthGuardianWandLevel ?? 0);
+			this.livingEarthArmor = Math.min(2 * (8 + 4 * this.livingEarthWandLevel), this.livingEarthArmor + guardian.hp);
+			this.kill(guardian);
+			return;
+		}
+		if (Roguelike.chebyshevDistance(guardian, target) === 1) {
+			this.attack(guardian, target);
+			return;
+		}
+		const blocked = new Set(this.creatures.filter((c) => c !== guardian && c !== target).map((c) => this.level.index(c.x, c.y)));
+		this.eternalFireBlockedInto(blocked);
+		const next = this.pathfinder.find({ x: guardian.x, y: guardian.y }, { x: target.x, y: target.y }, { blocked })[0];
+		if (next) this.moveTo(guardian, next);
 	}
 
 	/** `WandOfWarding.Ward.zap()`: an always-hit ranged attack followed by the real tier
