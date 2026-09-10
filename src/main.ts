@@ -5712,8 +5712,8 @@ export class SewersScene extends Scene2D {
 				const wasDrowsy = this.hero.buffs['drowsy'] !== undefined;
 				const dot = Math.floor(tickBuffs(this.hero) * ringElementsMultiplier(this.equippedRing));
 				if (wasDrowsy && this.hero.buffs['drowsy'] === undefined && this.hero.hp < this.hero.maxHp) {
-					//Drowsy.act() attaches MagicalSleep. The port has no sustained sleep/healing
-					//state for the hero, so post-Drowsy paralysis is the explicit stand-in; a
+					//Drowsy.act() attaches MagicalSleep. Currently, the port has no sustained
+					//sleep/healing state for the hero, so post-Drowsy paralysis is the explicit stand-in; a
 					//full-health reader remains awake like Java's "too healthy" path.
 					this.hero.buffs['paralysis'] = Math.max(this.hero.buffs['paralysis'] ?? 0, BUFF_DURATION.paralysis);
 				}

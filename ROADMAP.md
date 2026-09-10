@@ -185,9 +185,9 @@ browser-verification workflow for why).
       full `StoneOfFear` needs, so this only ever affects an enemy, never an ally (moot anyway,
       no ally-vs-monster combat exists). `StoneOfFear` applies the `terror` buff `ScrollOfTerror`
       already grants and `takeMonsterTurn` already honors in full - no new mechanic needed, just
-      a new way to reach the existing one. `StoneOfDeepSleep` reuses the exact same instant-sleep
-      simplification `ScrollOfLullaby` already uses for real Java's gradual `MagicalSleep`/`Drowsy`
-      debuff (setting `sleeping = true` directly), just on one auto-targeted enemy instead of every
+      a new way to reach the existing one. `StoneOfDeepSleep` still uses an instant-sleep
+      simplification for real Java's gradual `MagicalSleep`/`Drowsy` debuff (setting
+      `sleeping = true` directly), just on one auto-targeted enemy instead of every
       visible mob. `StoneOfShock` paralyzes every creature within a Chebyshev-distance-2 circle of
       the auto-targeted enemy (real Java uses a wall-aware `PathFinder` flood fill instead, and a
       1-turn paralysis rather than this port's shared 3-turn `paralysis` buff - both stated
