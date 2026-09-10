@@ -3853,8 +3853,8 @@ export class SewersScene extends Scene2D {
 	/**
 	 * Reads the best scroll for the moment (identify first while anything is unidentified,
 	 * then rage/lullaby/mapping/mirror/cleanse/upgrade in bag order). ScrollOfRage beckons
-	 * (wakes) everything, Lullaby puts visible mobs to sleep (Drowsy->MagicalSleep in one
-	 * step, stated), Mapping reveals traps (mob-reveal needs the mob layer UI), MirrorImage
+	 * (wakes) everything, Lullaby applies five-turn Drowsy before MagicalSleep, Mapping reveals
+	 * traps (mob-reveal needs the mob layer UI), MirrorImage
 	 * is a 10-turn bless ("your reflections guard you" - no image-actor AI exists to move
 	 * real duplicates), RemoveCurse clears weakness/vulnerability, Upgrade is U's action.
 	 */
@@ -3959,10 +3959,10 @@ export class SewersScene extends Scene2D {
 		} else if (id === 'scrollLullaby') {
 			//ScrollOfLullaby.doRead(): visible mobs get `Drowsy` (a gradual debuff that puts them
 			//to sleep after several turns, not instantly), and the *reader* also becomes Drowsy -
-			//a real downside to using it while enemies are near. This port has no Drowsy buff, so
-			//visible mobs are put to sleep immediately instead (stronger and more certain than
-			//the real effect), and the hero-side drawback isn't modeled at all.
-			for (const c of this.creatures) if (!c.isHero && !c.isNPC && this.fov.isVisible(c.x, c.y)) c.sleeping = true;
+			//a real downside to using it while enemies are near. The shared buff ticker now
+			//performs that five-turn transition for both mobs and the reader.
+			for (const c of this.creatures) if (!c.isHero && !c.isNPC && this.fov.isVisible(c.x, c.y)) addBuff(c, 'drowsy');
+			addBuff(this.hero, 'drowsy');
 			this.say(t('port.log.lullaby'));
 		} else if (id === 'scrollMapping') {
 			//ScrollOfMagicMapping.doRead(): marks every discoverable cell on the floor `mapped`
@@ -5709,7 +5709,14 @@ export class SewersScene extends Scene2D {
 				const hadAdrenaline = this.hero.buffs['adrenalineSurge'] !== undefined;
 				//RingOfElements.resist(): Burning/Poison are both in `RESISTS`, so the DoT
 				//they deal through `Char.damage()` is scaled by `0.825^level` in real Java.
+				const wasDrowsy = this.hero.buffs['drowsy'] !== undefined;
 				const dot = Math.floor(tickBuffs(this.hero) * ringElementsMultiplier(this.equippedRing));
+				if (wasDrowsy && this.hero.buffs['drowsy'] === undefined && this.hero.hp < this.hero.maxHp) {
+					//Drowsy.act() attaches MagicalSleep. The port has no sustained sleep/healing
+					//state for the hero, so post-Drowsy paralysis is the explicit stand-in; a
+					//full-health reader remains awake like Java's "too healthy" path.
+					this.hero.buffs['paralysis'] = Math.max(this.hero.buffs['paralysis'] ?? 0, BUFF_DURATION.paralysis);
+				}
 				if (hadAdrenaline !== (this.hero.buffs['adrenalineSurge'] !== undefined)) this.syncHeroFromStats();
 				if (dot > 0) {
 					const blockedDot = this.absorbHeroDamage(dot);
@@ -6202,7 +6209,13 @@ export class SewersScene extends Scene2D {
 		//dots tick on the sufferer's own turn, like Java's Buff.act()
 		const monsterWasBurning = monster.buffs['burning'] !== undefined;
 		const monsterWasOozing = monster.buffs['ooze'] !== undefined;
+		const monsterWasDrowsy = monster.buffs['drowsy'] !== undefined;
 		const dot = tickBuffs(monster);
+		if (monsterWasDrowsy && monster.buffs['drowsy'] === undefined) {
+			//Drowsy.act() attaches MagicalSleep after five turns; monsters have a native
+			//sleeping state here, so this transition needs no second buff.
+			monster.sleeping = true;
+		}
 		if (dot > 0 && !(monster.kind === 'yog' && this.yogShielded(monster)) && !(monster.kind === 'yogFist' && this.guardFist(monster))) {
 			const preHp = monster.hp;
 			monster.hp -= dot;

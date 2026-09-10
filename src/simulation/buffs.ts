@@ -9,11 +9,13 @@ import type { SimulationRandom } from './random';
  * because these multipliers apply to transient dice rolls rather than to named stats a
  * StatBlock resolves.
  */
-export type BuffId = 'bless' | 'hex' | 'daze' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown';
+export type BuffId = 'bless' | 'hex' | 'daze' | 'drowsy' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown';
 export const BUFF_DURATION: Record<BuffId, number> = {
 	bless: 30,
 	hex: 30,
 	daze: 5,
+	//Drowsy.DURATION (ScrollOfLullaby/Drowsy.java)
+	drowsy: 5,
 	fury: 9999,
 	berserk: 9999,
 	//Weakness.DURATION/Vulnerable.DURATION are both really 20, not 10 - neither buff had any
