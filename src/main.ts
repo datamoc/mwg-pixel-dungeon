@@ -483,6 +483,7 @@ const ENCHANT_TABLE: Actors.AffixTable = {
 		{ id: 'kinetic', trigger: 'strike', weight: 2, description: 'Stores part of damage for the next hit' },
 		{ id: 'corrupting', trigger: 'strike', weight: 2, description: 'Lethal hits can convert the victim into an ally' },
 		{ id: 'elastic', trigger: 'strike', weight: 2, description: 'Chance to knock the victim backward' },
+		{ id: 'projecting', trigger: 'strike', weight: 2, description: 'Extends melee reach' },
 		{ id: 'blooming', trigger: 'strike', weight: 2, description: 'Chance to plant grass where you strike' },
 		{ id: 'unstable', trigger: 'strike', weight: 2, description: 'A random enchantment effect on every hit' },
 		{ id: 'wayward', trigger: 'strike', weight: 1, curse: true, description: 'Cursed: -3 accuracy' },
@@ -5872,6 +5873,24 @@ export class SewersScene extends Scene2D {
 	}
 
 	private takeHeroTurn(move: Step): void {
+		//Weapon.Projecting.reachFactor() (Weapon.java, tag 4.0.0-beta): a projecting
+		//weapon reaches its normal melee range plus round(Arcana). The port's input
+		//is a direction rather than Java's free cell selector, so scan that direction
+		//for the first occupant and attack it when it lies within the real reach.
+		//Walls and doors stop the scan, preserving ordinary bump movement otherwise.
+		if (this.weaponAffix === 'projecting') {
+			const reach = 1 + Math.round(ringArcanaMultiplier(this.equippedRing));
+			for (let distance = 2; distance <= reach; distance++) {
+				const at = { x: this.hero.x + move.x * distance, y: this.hero.y + move.y * distance };
+				if (!this.level.inside(at.x, at.y)) break;
+				const occupant = this.creatureAt(at.x, at.y);
+				if (occupant) {
+					if (!occupant.isNPC && !occupant.isAlly && occupant.hp > 0) this.attack(this.hero, occupant);
+					return;
+				}
+				if (!this.level.passable(at.x, at.y) || this.doors.isDoor(at.x, at.y)) break;
+			}
+		}
 		let occupant: Creature | null = null;
 		const plan = runMovement({ x: this.hero.x, y: this.hero.y }, move, {
 			occupantAt: (target) => {
