@@ -1,5 +1,14 @@
 # Port coverage
 
+## 2026-09-10 roadmap pass
+
+- **Ported:** the Dwarf King's death now awards the identified, non-upgradable King's Crown;
+  the Rat King consumes it when a real armor is worn and grants the Ratmogrify armor ability.
+  Ratmogrify affects the nearest visible non-boss enemy for six turns and preserves its combat
+  stats while routing it through ordinary melee/pathing. The port has no `TransmogRat` actor or
+  cell-targeting window, so the original mob sprite remains and those two presentation/targeting
+  details are documented reductions at the call sites in `main.ts`.
+
 ## Simulation extraction (steps 1-5)
 
 Turn contracts and hunger live in `src/simulation/turns.ts` and
@@ -32,6 +41,18 @@ currently does not, at all.
 Update this alongside `main.ts` - when a block moves from "Not ported" to "Ported", add its
 row here in the same commit, the same way the file header comments are kept current.
 
+The transmutation implementation also preserves an eligible ring's upgrade level when
+rerolling its type; this was corrected after a focused audit found the level was being
+dropped despite the behavior already being documented as preserved in the transmutation row.
+The picker now also retains the exact selected transmutation-scroll instance across its
+asynchronous UI callback, preventing a duplicate stack from consuming the wrong scroll.
+
+The Troll Blacksmith now retains quest favor and reforge count across saves. Its forge
+selects two identified, non-cursed, same-category weapon/armor payloads, keeps the higher
+level item, upgrades it once, consumes the other, and charges Java's progressive reforge
+cost. The remaining harden/upgrade menu, missile/seal transfer details, and alternative
+quest reward bookkeeping are still open and remain explicitly simplified in `main.ts`.
+
 Two corrections to earlier revisions of this file: this checkout's `DM100.java` has no
 self-destruct blast (its kit is melee plus a lightning zap; the blast belongs to
 `DM200`/`DM201`/bomb territory), and its `Guard.java` has no peaceful-until-provoked state
@@ -56,7 +77,7 @@ been replaced with what the Java actually contains.
 | `Bleeding` buff and `Sacrificial.proc()` / chasm source applications | `simulation/buffs.ts`, `setBleeding`, `landFromChasm`, `attack` | Ported for the active Chasm and Sacrificial sources: intensity keeps the strongest application, ticks with Java's `NormalFloat(level/2, level)` then `round`, and healing cures it. Remaining Bleeding sources (Sickle harvest, monster/trap effects) and source-specific death badges/blood visuals are not yet ported. |
 | `Char.canEnterCell()` monster treatment of `Terrain.CHASM` | `populate`, `spawnPortedMobs`, `standableCellIn` | Ported: monsters and NPCs are now rejected from raw chasm cells even though the coarse MWG terrain map exposes those cells as passable for the hero's falling interaction. This closes a live generation bug where a ported-floor monster could render over unsupported black/chasm terrain. |
 | Chasm exclusion for summoned/created actors | `spawnMirrorImage`, `maybeSummonEarthGuardian`, `summonSkeleton`, `summonKingAdd`, `summonYogFist`, `Multiplicity`, `Swarm`, ritual elemental | Ported: every runtime actor-placement path now applies the same raw-chasm rejection, so abilities and summons cannot recreate the unsupported placement after initial generation. |
-| Ally perception and ally-vs-monster turns | `visibleAllyHostiles`, `takeAllyTurn`, `takeMonsterTurn`, `takeEarthGuardianTurn`, `takeWardTurn` | Simplified: allied actors now compute visibility from their own position before selecting hostile targets, and hostile mobs pursue visible non-sheep allies when they cannot see the hero. Full ally orders, dedicated ally sprite classes, and boss-specific ranged target migration remain open; specialized ranged attacks still target only the hero. |
+| Ally perception and ally-vs-monster turns | `visibleAllyHostiles`, `takeAllyTurn`, `takeMonsterTurn`, `takeEarthGuardianTurn`, `takeWardTurn`, `fadeMirrorOnDamage` | Simplified: allied actors now compute visibility from their own position before selecting hostile targets, hostile mobs pursue visible non-sheep allies when they cannot see the hero, and Mirror Images fade on their first positive damage event through melee, wand, gas, and falling-rock paths. Full ally orders, dedicated ally sprite classes, and boss-specific ranged target migration remain open; specialized ranged attacks still target only the hero. |
 
 ## Hero (`actors/hero/Hero.java`, `HeroClass.java`)
 

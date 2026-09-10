@@ -1,6 +1,6 @@
 {
   "name": "spd-on-mwg",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Shattered Pixel Dungeon, ported onto the mwg framework. GPL-3.0-or-later, same as the game it ports.",
@@ -16,7 +16,7 @@
     "assets": "node tools/extract-spd-assets.mjs"
   },
   "dependencies": {
-    "mwg": "npm:@datamoc/mw_games@^0.5.2",
+    "mwg": "npm:@datamoc/mw_games@^0.6.0",
     "pixi.js": "^8.20.1"
   },
   "devDependencies": {

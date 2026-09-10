@@ -8,7 +8,7 @@ import { WaterSurface } from './ui/waterSurface';
 import { InventoryWindow, type InventoryEntry } from './ui/inventoryWindow';
 import { createJournalWindow, type JournalPage } from './ui/journalWindow';
 import { Container, extensions, FillGradient, Graphics, NineSliceSpritePipe, Rectangle, Sprite, Texture, TilingSprite, TilingSpritePipe } from 'pixi.js';
-import { Game, Scene2D, Input, Random, SaveSystem, Achievements, ReactionTable, type ReactionRule } from 'mwg';
+import { Blob, Game, Scene2D, Input, Random, SaveSystem, Achievements, ReactionTable, type ReactionRule } from 'mwg';
 import { SceneSimulationAdapter } from './adapters/sceneSimulation';
 import { dispatchHeroAction, type HeroActionPorts } from './adapters/heroActions';
 import { runSearch } from './adapters/searchSimulation';
@@ -632,6 +632,8 @@ interface SaveShape {
 	blacksmithSpawned?: boolean;
 	impSpawned?: boolean;
 	blacksmithAlternative?: boolean;
+	blacksmithFavor?: number;
+	blacksmithReforges?: number;
 	limitedDrops?: [MonsterId, number][];
 	wealthTriesToDrop?: number;
 	wealthDropsToEquip?: number;
@@ -673,6 +675,7 @@ interface SaveShape {
 	charmTargets?: [string, string][];
 	charmIgnoreNextHit?: string[];
 	armorGlyph?: string | null;
+	armorAbility?: 'warding' | 'arcane' | 'ratmogrify' | null;
 	deferredDamage?: number;
 	deferredDamageDelay?: boolean;
 	kineticStored?: number;
@@ -832,6 +835,8 @@ interface SavedCreature {
 	newbornTarget?: { x: number; y: number } | null;
 	armoredRageTicks?: number;
 	stuckAmmo?: number;
+	ratmogrifiedTurns?: number;
+	ratmogrifiedPermanent?: boolean;
 	sentryWarmup?: number;
 	dmAbilityTurns?: number;
 	dmAbilityCd?: number;
@@ -1113,6 +1118,10 @@ export class SewersScene extends Scene2D {
 	private blacksmithSpawned = false;
 	/** Java Blacksmith.Quest.alternative: blood-stained pickaxe instead of 15 DarkGold. */
 	private blacksmithAlternative = false;
+	/** `Blacksmith.Quest.favor/reforges`: forge currency and progressive reforge count. */
+	private blacksmithFavor = 0;
+	private blacksmithReforges = 0;
+	private blacksmithReforgeFirst: { id: string; instanceId?: string } | null = null;
 	private impSpawned = false;
 	/** Imp token ask for this run (5 monk tokens on odd depths, 4 golem tokens on even) */
 	private impNeed = 5;
@@ -1166,6 +1175,8 @@ export class SewersScene extends Scene2D {
 	/** Explosive curse's separate 100-point fuse, persisted with the equipped weapon. */
 	private weaponCurseDurability = 100;
 	private armorGlyph: string | null = null;
+	/** King's Crown choice; `ratmogrify` is granted by the Rat King rather than level 21. */
+	private armorAbility: 'warding' | 'arcane' | 'ratmogrify' | null = null;
 	/** Weapon augment choice: SPEED/DAMAGE/NONE. Applied once per weapon at upgrade time. */
 	private weaponAugment: 'speed' | 'damage' | 'none' | null = null;
 	/** Kinetic's conserved damage (`ConservedDamage.preservedDamage`) - a float: it decays
@@ -1251,16 +1262,16 @@ export class SewersScene extends Scene2D {
 	 * change-detection, so the delta lives here instead, applied once per actual ring swap.
 	 */
 	private ringHtBonus = 0;
-	/** fire on the ground this floor (`mwg/roguelike` Blob; floor-scoped, not saved) */
-	private fire!: Roguelike.Blob;
+	/** fire on the ground this floor (`mwg` core Blob; floor-scoped, not saved) */
+	private fire!: Blob;
 	/** Java Rotberry ToxicGas and Icecap Freezing blobs, persisted with the floor. */
-	private plantGas!: Roguelike.Blob;
-	private plantFreeze!: Roguelike.Blob;
+	private plantGas!: Blob;
+	private plantFreeze!: Blob;
 	/** ToxicGas.java: both `PotionOfToxicGas.shatter()` and `ToxicTrap.activate()` seed this
 	 * same blob class in real Java - `1 + scalingDepth()/5` direct damage/turn, no buff involved. */
-	private toxicGas!: Roguelike.Blob;
+	private toxicGas!: Blob;
 	/** ParalyticGas.java: `PotionOfParalyticGas.shatter()` seeds this - prolongs `paralysis` each turn. */
-	private paralyticGas!: Roguelike.Blob;
+	private paralyticGas!: Blob;
 	/** MagicalFireRoom.EternalFire (`levels/rooms/special/MagicalFireRoom.java`): a permanent,
 	 * non-spreading, non-decaying fire wall. Unlike every other blob here it is never
 	 * `spread()`ed - seeded once at 1 per wall cell (Java's own `Blob.seed(cell, 1,
@@ -1273,9 +1284,9 @@ export class SewersScene extends Scene2D {
 	 * StoneOfBlast's unported terrain half), no heap burning (no heap-burn primitive), no
 	 * water/blizzard clearing (no water-on-fire-cell or Blizzard systems touch blobs), and no
 	 * visuals (consistent with every other logic-only blob here). */
-	private eternalFire!: Roguelike.Blob;
+	private eternalFire!: Blob;
 	/** SacrificialFire blob and its generated prize, adopted from SacrificeRoom. */
-	private sacrificialFire!: Roguelike.Blob;
+	private sacrificialFire!: Blob;
 	/** Wandmaker type-2 `RitualSiteRoom` state (`CeremonialCandle.ritualPos` + which of its 4
 	 * cardinal neighbours holds a placed candle, N/E/S/W order). Captured from levelgen at
 	 * the live bridge and persisted per floor, since the module-level paint state goes stale
@@ -1898,6 +1909,8 @@ export class SewersScene extends Scene2D {
 				weaponLevel: creature.weaponLevel, stolen: creature.stolen, mimicLoot: creature.mimicLoot, generation: creature.generation,
 				spawnCooldown: creature.spawnCooldown, seesHero: creature.seesHero,
 				fleeing: creature.fleeing,
+				ratmogrifiedTurns: creature.ratmogrifiedTurns,
+				ratmogrifiedPermanent: creature.ratmogrifiedPermanent,
 				patrolTarget: creature.patrolTarget ? { ...creature.patrolTarget } : undefined,
 				mimicRevealed: creature.mimicRevealed,
 				hasteTurns: creature.hasteTurns, hasteBaseSpeed: creature.hasteBaseSpeed,
@@ -1957,20 +1970,20 @@ export class SewersScene extends Scene2D {
 		this.trapKinds = new Map(state.trapKinds);
 		this.secretDoorCells = new Set(state.secretDoorCells);
 		this.crystalDoorCells = new Set(state.crystalDoorCells);
-		this.fire = Roguelike.Blob.fromJSON(state.fire);
-		this.plantGas = state.plantGas ? Roguelike.Blob.fromJSON(state.plantGas) : new Roguelike.Blob(this.level.width, this.level.height);
-		this.plantFreeze = state.plantFreeze ? Roguelike.Blob.fromJSON(state.plantFreeze) : new Roguelike.Blob(this.level.width, this.level.height);
-		this.toxicGas = state.toxicGas ? Roguelike.Blob.fromJSON(state.toxicGas) : new Roguelike.Blob(this.level.width, this.level.height);
-		this.paralyticGas = state.paralyticGas ? Roguelike.Blob.fromJSON(state.paralyticGas) : new Roguelike.Blob(this.level.width, this.level.height);
+		this.fire = Blob.fromJSON(state.fire);
+		this.plantGas = state.plantGas ? Blob.fromJSON(state.plantGas) : new Blob(this.level.width, this.level.height);
+		this.plantFreeze = state.plantFreeze ? Blob.fromJSON(state.plantFreeze) : new Blob(this.level.width, this.level.height);
+		this.toxicGas = state.toxicGas ? Blob.fromJSON(state.toxicGas) : new Blob(this.level.width, this.level.height);
+		this.paralyticGas = state.paralyticGas ? Blob.fromJSON(state.paralyticGas) : new Blob(this.level.width, this.level.height);
 		this.manualPlants = new Map(state.manualPlants ?? []);
 		this.fallingRocks = (state.fallingRocks ?? []).map((v) => ({ cells: v.cells.map((c) => ({ ...c })), turns: v.turns }));
 		this.cavesBossEnergyCells = new Set(state.cavesBossEnergyCells ?? []);
 		this.restorePortedFeatures(state.portedFeatures);
 		for (const [cell, kind] of this.manualPlants) this.placePortedFeature(cell, kind);
-		this.eternalFire = state.eternalFire ? Roguelike.Blob.fromJSON(state.eternalFire) : new Roguelike.Blob(this.level.width, this.level.height);
+		this.eternalFire = state.eternalFire ? Blob.fromJSON(state.eternalFire) : new Blob(this.level.width, this.level.height);
 		this.ritualPos = state.ritualPos ?? -1;
 		this.ritualCandles = [...(state.ritualCandles ?? [false, false, false, false])];
-		this.sacrificialFire = state.sacrificialFire ? Roguelike.Blob.fromJSON(state.sacrificialFire) : new Roguelike.Blob(this.level.width, this.level.height);
+		this.sacrificialFire = state.sacrificialFire ? Blob.fromJSON(state.sacrificialFire) : new Blob(this.level.width, this.level.height);
 		this.sacrificialFireCharge = state.sacrificialFireCharge ?? 0;
 		this.sacrificialFireCell = state.sacrificialFireCell ?? -1;
 		this.sacrificialFirePrize = state.sacrificialFirePrize;
@@ -1995,6 +2008,8 @@ export class SewersScene extends Scene2D {
 				weaponLevel: saved.weaponLevel, stolen: saved.stolen, mimicLoot: saved.mimicLoot, generation: saved.generation,
 				spawnCooldown: saved.spawnCooldown, seesHero: saved.seesHero,
 				fleeing: saved.fleeing,
+				ratmogrifiedTurns: saved.ratmogrifiedTurns,
+				ratmogrifiedPermanent: saved.ratmogrifiedPermanent,
 				patrolTarget: saved.patrolTarget ? { ...saved.patrolTarget } : undefined,
 				mimicRevealed: saved.mimicRevealed ?? Boolean(saved.stolen),
 				hasteTurns: saved.hasteTurns, hasteBaseSpeed: saved.hasteBaseSpeed,
@@ -2118,15 +2133,15 @@ export class SewersScene extends Scene2D {
 		this.trapKinds = new Map();
 		this.secretDoorCells = new Set();
 		this.crystalDoorCells = new Set();
-		this.fire = new Roguelike.Blob(this.level.width, this.level.height);
-		this.plantGas = new Roguelike.Blob(this.level.width, this.level.height);
-		this.plantFreeze = new Roguelike.Blob(this.level.width, this.level.height);
-		this.toxicGas = new Roguelike.Blob(this.level.width, this.level.height);
-		this.paralyticGas = new Roguelike.Blob(this.level.width, this.level.height);
-		this.eternalFire = new Roguelike.Blob(this.level.width, this.level.height);
+		this.fire = new Blob(this.level.width, this.level.height);
+		this.plantGas = new Blob(this.level.width, this.level.height);
+		this.plantFreeze = new Blob(this.level.width, this.level.height);
+		this.toxicGas = new Blob(this.level.width, this.level.height);
+		this.paralyticGas = new Blob(this.level.width, this.level.height);
+		this.eternalFire = new Blob(this.level.width, this.level.height);
 		this.ritualPos = -1;
 		this.ritualCandles = [false, false, false, false];
-		this.sacrificialFire = new Roguelike.Blob(this.level.width, this.level.height);
+		this.sacrificialFire = new Blob(this.level.width, this.level.height);
 		this.sacrificialFireCharge = 0;
 		this.fallingRocks = [];
 		this.yogFistWarned = false;
@@ -2956,14 +2971,26 @@ export class SewersScene extends Scene2D {
 
 	/**
 	 * `RatKing.interact()`: sleeping kings wake with the real `not_sleeping` yell; awake
-	 * kings without a King's Crown get `what_is_it`. The crown exchange (King's Crown +
-	 * Ratmogrify armor ability) needs two systems this port has neither of, so it stays a
-	 * documented block - the king keeps his exposition lines regardless.
+	 * kings without a King's Crown get `what_is_it`; a worn armor and the crown unlock
+	 * Ratmogrify, matching RatKing.interact()'s one-way exchange.
 	 */
 	private interactWithRatKing(npc: Creature): void {
 		if (npc.sleeping) {
 			npc.sleeping = false;
 			this.say(t('actors.mobs.npcs.ratking.not_sleeping'), 'positive');
+		} else if (this.armorAbility === 'ratmogrify') {
+			this.say(t('actors.mobs.npcs.ratking.crown_after'), 'positive');
+		} else if (this.bag.find('kingsCrown')) {
+			if (this.armorId === 'clothArmor' || this.armorId === 'startingArmor') {
+				this.say(t('actors.mobs.npcs.ratking.crown_clothes'), 'negative');
+				return;
+			}
+			//Java opens a confirmation/info window here. The port's NPC conversations are
+			//single-step, so the explicit player interaction is treated as accepting the
+			//positive exchange; the crown is still consumed only after the armor check.
+			this.bag.remove('kingsCrown', 1);
+			this.armorAbility = 'ratmogrify';
+			this.say(t('actors.mobs.npcs.ratking.crown_thankyou'), 'positive');
 		} else {
 			this.say(t('actors.mobs.npcs.ratking.what_is_it'));
 		}
@@ -3019,7 +3046,7 @@ export class SewersScene extends Scene2D {
 		this.say(t('port.npc.ghost.reward'), 'positive');
 	}
 
-	/** Troll Blacksmith quest: pickaxe + 15 dark gold in, a reforge (+1 weapon and armor) out */
+	/** Troll Blacksmith quest: pickaxe + payment in, then persistent favor for forge services. */
 	private interactWithBlacksmith(): void {
 		const status = this.quests.status('blacksmith');
 		if (status === 'available') {
@@ -3030,7 +3057,9 @@ export class SewersScene extends Scene2D {
 			return;
 		}
 		if (status === 'complete') {
-			this.say(t('port.npc.blacksmith.done'));
+			if (this.blacksmithFavor >= this.blacksmithReforgeCost()) {
+				this.openBlacksmithReforge();
+			} else this.say(t('port.npc.blacksmith.done'));
 			return;
 		}
 		const pick = this.bag.find('pickaxe');
@@ -3047,16 +3076,49 @@ export class SewersScene extends Scene2D {
 			return;
 		}
 		this.bag.remove('pickaxe', 1);
-		this.bag.remove('darkGold', 15);
+		this.blacksmithFavor = (gold?.quantity ?? 0) * 50;
+		this.bag.remove('darkGold', gold?.quantity ?? 0);
 		}
-		//WndBlacksmith reforge, collapsed: +1 weapon and +1 armor past the scroll cap of 3
-		//(Java's reforge genuinely pushes past normal upgrade limits), one use ever
-		this.weaponLevel = Math.min(5, this.weaponLevel + 1);
-		this.armorLevel = Math.min(5, this.armorLevel + 1);
-		this.syncHeroFromStats();
 		this.gameState.setSwitch('blacksmithDone', true);
 		this.quests.advanceStage('blacksmith', this.gameState);
-		this.say(t('port.npc.blacksmith.reward', { weapon: this.weaponLevel, armor: this.armorLevel }), 'positive');
+		this.say(t('windows.wndblacksmith.prompt', { '0': this.blacksmithFavor }), 'positive');
+	}
+
+	private blacksmithReforgeCost(): number { return 500 + 1000 * this.blacksmithReforges; }
+
+	/** `WndBlacksmith.WndReforge`: select two identified, non-cursed, same-category items;
+	 * the higher-level item survives and gains one upgrade level while the other is consumed.
+	 * The Java window supports more equipment classes and seal/missile bookkeeping; this port
+	 * limits the picker to its concrete weapon/armor inventory payloads, documenting that
+	 * missing item taxonomy instead of silently treating unrelated items as forgeable. */
+	private openBlacksmithReforge(): void {
+		const candidates = this.bag.items.filter((item) =>
+			item.quantity > 0 && ['weaponReward', 'armorReward', 'armor'].includes(item.id)
+				&& (item.identified ?? false) && !item.cursed);
+		if (candidates.length < 2) {
+			this.say(t('windows.wndblacksmith.prompt', { '0': this.blacksmithFavor }), 'negative');
+			return;
+		}
+		this.blacksmithReforgeFirst = null;
+		this.openItemPicker(t('windows.wndblacksmith.prompt'), candidates, (first) => {
+			this.blacksmithReforgeFirst = first;
+			const remaining = candidates.filter((item) => item.id !== first.id || (item.instanceId ?? undefined) !== (first.instanceId ?? undefined));
+			this.openItemPicker(t('windows.wndblacksmith.prompt'), remaining, (second) => this.completeBlacksmithReforge(first, second));
+		});
+	}
+
+	private completeBlacksmithReforge(first: { id: string; instanceId?: string }, second: { id: string; instanceId?: string }): void {
+		if (this.blacksmithFavor < this.blacksmithReforgeCost()) return;
+		const a = this.bag.find(first.id, first.instanceId);
+		const b = this.bag.find(second.id, second.instanceId);
+		if (!a || !b || a.id !== b.id || a.cursed || b.cursed || !(a.identified ?? false) || !(b.identified ?? false)) return;
+		const keep = (a.level ?? 0) >= (b.level ?? 0) ? a : b;
+		const discard = keep === a ? b : a;
+		keep.level = (keep.level ?? 0) + 1;
+		this.bag.remove(discard.id, 1, discard.instanceId);
+		this.blacksmithFavor -= this.blacksmithReforgeCost();
+		this.blacksmithReforges++;
+		this.say(t('port.npc.blacksmith.reward', { weapon: keep.id === 'weaponReward' ? keep.level : this.weaponLevel, armor: keep.id !== 'weaponReward' ? keep.level : this.armorLevel }), 'positive');
 	}
 
 	/** Imp quest: dwarf tokens in, a +2 cursed ring out (Java's exact reward shape) */
@@ -3946,7 +4008,7 @@ export class SewersScene extends Scene2D {
 				for (let dx = -2; dx <= 2 && !touchesFire; dx++)
 					if (this.eternalFire.volumeAt(this.hero.x + dx, this.hero.y + dy) >= 1) touchesFire = true;
 			if (touchesFire) {
-				this.eternalFire = new Roguelike.Blob(this.level.width, this.level.height);
+				this.eternalFire = new Blob(this.level.width, this.level.height);
 				this.say(t('port.log.frostfire'), 'positive');
 			}
 			//PotionOfFrost.shatter() seeds Freezing in NEIGHBOURS9 (tag v3.3.8), so every
@@ -4060,7 +4122,9 @@ export class SewersScene extends Scene2D {
 			//a cancel or an empty eligible list consumes nothing (Java's `result == null`
 			//path collects `curItem` back), logging the real `nothing` key. The
 			//identifiedByUse/already-detached cancel nuance has no expression here - this
-			//port only ever consumes the scroll inside `completeTransmutation`. See
+			//port only ever consumes the scroll inside `completeTransmutation`. Equipped rings
+			//are replaced in their live slot there; equipped weapons and armor remain outside
+			//the picker because their concrete class identity is not yet retained by the scene. See
 			//`transmuteCandidates`/`transmuteItem` for the per-category rules and
 			//`PORT_COVERAGE.md`.
 			const candidates = this.transmuteCandidates();
@@ -4068,8 +4132,12 @@ export class SewersScene extends Scene2D {
 				this.say(t('items.scrolls.scrolloftransmutation.nothing'), 'negative');
 				return false;
 			}
+			//The inventory callback runs after useItemById clears the transient selection;
+			//capture the exact scroll instance now so a stack/duplicate cannot be consumed
+			//from the wrong entry when the picker closes.
+			const scrollInstanceId = this.requestedItemInstanceId;
 			this.openItemPicker(t('items.scrolls.scrolloftransmutation.inv_title'), candidates, (entry) =>
-				this.completeTransmutation(entry)
+				this.completeTransmutation(entry, scrollInstanceId)
 			);
 			return true;
 		}
@@ -4244,18 +4312,24 @@ export class SewersScene extends Scene2D {
 	}
 
 	/**
-	 * Picker-eligible entries for the transmutation scroll, in bag order. Self-targeting
+	 * Picker-eligible entries for the transmutation scroll, in bag order, followed by the
+	 * currently equipped ring when present. Java's item selector includes equipped gear;
+	 * the ring case is represented as a synthetic picker entry because equipped rings live
+	 * in the scene slot rather than in the bag.
+	 * Self-targeting
 	 * the read scroll itself follows real Java (`usableOnItem`: `item != this ||
 	 * quantity > 1`): a `scrollTransmutation` stack of 2+ is eligible, since reading
 	 * consumes one and leaves one to transmute.
 	 */
 	private transmuteCandidates(): { id: string; quantity: number; instanceId?: string; identified?: boolean; level?: number; affix?: string; cursed?: boolean; sourceClass?: string }[] {
 		const items = this.bag.items as { id: string; quantity: number; instanceId?: string; identified?: boolean; level?: number; affix?: string; cursed?: boolean; sourceClass?: string }[];
-		return items.filter(
+		const candidates = items.filter(
 			(i) =>
 				i.quantity > 0 &&
 				(isTransmutableForScroll(i) || (i.id === 'scrollTransmutation' && i.quantity > 1))
 		);
+		if (this.equippedRing) candidates.push({ ...this.equippedRing, quantity: 1, identified: true });
+		return candidates;
 	}
 
 	/**
@@ -4266,7 +4340,7 @@ export class SewersScene extends Scene2D {
 	 * scroll's own stack, eligible only at quantity 2+) consumes two units total - one for
 	 * the read, one as the transmuted target - matching Java's detach-then-detach order.
 	 */
-	private completeTransmutation(pick: { id: string; instanceId?: string }): void {
+	private completeTransmutation(pick: { id: string; instanceId?: string }, scrollInstanceId?: string): void {
 		const live = (this.bag.items as { id: string; quantity: number; instanceId?: string; identified?: boolean; level?: number; affix?: string; cursed?: boolean; sourceClass?: string }[]).find(
 			(i) =>
 				i.quantity > 0 &&
@@ -4274,18 +4348,45 @@ export class SewersScene extends Scene2D {
 				(i.instanceId ?? undefined) === (pick.instanceId ?? undefined) &&
 				(isTransmutableForScroll(i) || (i.id === 'scrollTransmutation' && i.quantity > 1))
 		);
-		if (!live) {
+		const equipped = !live && this.equippedRing
+			&& this.equippedRing.id === pick.id
+			&& (this.equippedRing.instanceId ?? undefined) === (pick.instanceId ?? undefined)
+			? { ...this.equippedRing, quantity: 1, identified: true }
+			: undefined;
+		if (!live && !equipped) {
 			this.say(t('items.scrolls.scrolloftransmutation.nothing'), 'negative');
 			return;
 		}
-		const result = transmuteItem(live, (kind) => this.newItemInstanceId(kind));
+		const result = transmuteItem(live ?? equipped!, (kind) => this.newItemInstanceId(kind));
 		if (!result) {
 			this.say(t('items.scrolls.scrolloftransmutation.nothing'), 'negative');
 			return;
 		}
-		this.bag.remove('scrollTransmutation', 1, this.requestedItemInstanceId);
-		this.bag.remove(live.id, 1, live.instanceId);
-		this.bag.add(result);
+		this.bag.remove('scrollTransmutation', 1, scrollInstanceId);
+		if (live) {
+			this.bag.remove(live.id, 1, live.instanceId);
+			this.bag.add(result);
+		} else {
+			//Equipped rings are not bag entries: replace the live slot in place, then
+			//recompute Might's max-HP contribution exactly as equipRing does. Other ring
+			//effects are read from the slot by syncHeroFromStats.
+			this.equippedRing = {
+				id: result.id,
+				level: result.level ?? 0,
+				cursed: result.cursed,
+				instanceId: result.instanceId,
+			};
+			const baseMaxHp = this.hero.maxHp - this.ringHtBonus;
+			const newRingHtBonus = ringDef(result.id)?.stat === 'strength'
+				? Math.round(baseMaxHp * (Math.pow(1.035, result.level ?? 0) - 1))
+				: 0;
+			if (newRingHtBonus !== this.ringHtBonus) {
+				this.hero.maxHp = baseMaxHp + newRingHtBonus;
+				this.hero.hp += newRingHtBonus - this.ringHtBonus;
+				this.ringHtBonus = newRingHtBonus;
+			}
+			this.syncHeroFromStats();
+		}
 		this.say(t('items.scrolls.scrolloftransmutation.morph'), 'positive');
 	}
 
@@ -5031,7 +5132,7 @@ export class SewersScene extends Scene2D {
 	}
 
 	/**
-	 * Ground fire as an `mwg/roguelike` Blob: explosive and burning traps seed it (and the
+	 * Ground fire as an `mwg` core Blob: explosive and burning traps seed it (and the
 	 * fireblast wand below), it diffuses one step per hero turn, and standing in volume ≥1
 	 * ignites. Monster-side ignition is not modelled (monster turns never read the blob) -
 	 * stated, not silent.
@@ -5131,7 +5232,7 @@ export class SewersScene extends Scene2D {
 		this.say(t('port.log.sacrificialfirereward'), 'positive');
 		this.sacrificialFirePrize = undefined;
 		this.sacrificialFireCharge = 0;
-		this.sacrificialFire = new Roguelike.Blob(this.level.width, this.level.height);
+		this.sacrificialFire = new Blob(this.level.width, this.level.height);
 	}
 
 	/** Applies the Java plant blobs to every actor standing in an active cell. */
@@ -5170,6 +5271,7 @@ export class SewersScene extends Scene2D {
 			} else {
 				const preHp = target.hp;
 				target.hp -= dmg;
+				if (this.fadeMirrorOnDamage(target, dmg)) continue;
 				if (target.kind === 'yog' && target.hp > 0) this.yogDamageHook(target, preHp);
 				this.showDamage(target, dmg);
 				if (target.hp <= 0) this.kill(target);
@@ -5401,6 +5503,7 @@ export class SewersScene extends Scene2D {
 	 */
 	private useSpecial(): boolean {
 		this.cancelHourglassFreeze();
+		if (this.armorAbility === 'ratmogrify') return this.useRatmogrify();
 		const special = CLASSES[this.heroClass].special;
 
 		if (special.kind === 'none') {
@@ -5570,6 +5673,7 @@ export class SewersScene extends Scene2D {
 						this.showHeal(victim, Math.max(0, raw));
 					} else {
 						victim.hp -= damage;
+						if (this.fadeMirrorOnDamage(victim, damage)) continue;
 						this.showDamage(victim, damage);
 						victim.sleeping = false;
 					}
@@ -5716,6 +5820,10 @@ export class SewersScene extends Scene2D {
 
 	/** Java's Buff.act() boundary for temporary monster speed effects. */
 	private afterMonsterTurn(monster: Creature): void {
+		if (monster.ratmogrifiedTurns !== undefined && !monster.ratmogrifiedPermanent) {
+			monster.ratmogrifiedTurns--;
+			if (monster.ratmogrifiedTurns <= 0) delete monster.ratmogrifiedTurns;
+		}
 		if (monster.kind === 'monk' || monster.kind === 'senior') {
 			//Monk.spend(): Focus cooldown loses the action time after every own turn.
 			//Focus is attached by Monk.act() after that action when the mob is hunting.
@@ -6458,6 +6566,25 @@ export class SewersScene extends Scene2D {
 			this.takeAllyTurn(monster);
 			return;
 		}
+		if (monster.ratmogrifiedTurns !== undefined || monster.ratmogrifiedPermanent) {
+			//TransmogRat has no original mob abilities; ordinary pathing/melee is the
+			//faithful common denominator for the compact scene AI.
+			const dot = tickBuffs(monster);
+			if (dot > 0) {
+				monster.hp -= dot;
+				this.showDamage(monster, dot);
+				if (monster.hp <= 0) { this.kill(monster); return; }
+			}
+			if (Roguelike.chebyshevDistance(monster, this.hero) === 1) this.attack(monster, this.hero);
+			else {
+				const blocked = new Set(this.creatures.filter((c) => c !== monster).map((c) => this.level.index(c.x, c.y)));
+				const decision = Roguelike.decideMonsterAI(this.level, this.pathfinder, monster, monster.hp / monster.maxHp, this.hero, {
+					sightRadius: this.viewRadius(), fleeBelow: 0, blocked,
+				});
+				if (decision.step) this.moveTo(monster, decision.step);
+			}
+			return;
+		}
 		//Pylon.act()/Pylon.activate(): inactive pylons are neutral, immovable and do not
 		//attack. Once the DM-300 gate activates them, each pylon shocks the next neighbour
 		//in its clockwise cursor (three extra targets on the stronger-bosses challenge).
@@ -6961,6 +7088,15 @@ export class SewersScene extends Scene2D {
 		this.eternalFireBlockedInto(blocked);
 		const next = this.pathfinder.find({ x: ally.x, y: ally.y }, { x: destination.x, y: destination.y }, { blocked })[0];
 		if (next) this.moveTo(ally, next);
+	}
+
+	/** `MirrorImage.damage()`: a mirror has no durability and fades on the first positive
+	 * damage event, regardless of whether ordinary armor/HP resolution would be lethal. */
+	private fadeMirrorOnDamage(target: Creature, damage: number): boolean {
+		if (!target.isAlly || target.allyKind !== 'mirror' || damage <= 0) return false;
+		this.showDamage(target, damage);
+		this.kill(target);
+		return true;
 	}
 
 	/** Java allies run their own `Char.fieldOfView`, not the player's current FOV. Using the
@@ -8114,6 +8250,7 @@ export class SewersScene extends Scene2D {
 				} else {
 					const hurt = Math.max(0, dmg - Random.normalRange(target.armor[0], target.armor[1]));
 					target.hp -= hurt;
+					if (this.fadeMirrorOnDamage(target, hurt)) continue;
 					this.showDamage(target, hurt);
 					if (target.hp <= 0) this.kill(target);
 					else if (challenge) target.buffs['paralysis'] = 5;
@@ -8916,6 +9053,9 @@ export class SewersScene extends Scene2D {
 			damage -= blocked;
 		}
 		defender.hp -= damage;
+		if (this.fadeMirrorOnDamage(defender, damage)) {
+			return true;
+		}
 		//`Grim.proc()`/`Char.damage()` + `GrimTracker` (tag v3.3.8): the enchant arms
 		//after the hit, then rolls against `(0.5 + .05*buffedWeaponLevel) * Arcana`
 		//scaled by the square of the defender's missing-HP fraction. A successful roll
@@ -10055,6 +10195,12 @@ export class SewersScene extends Scene2D {
 			if (creature.kind === 'king') {
 				this.awardBadge('boss_king');
 				for (const add of [...this.kingAdds]) if (add.hp > 0) this.kill(add);
+				//DwarfKing.java drops a non-upgradable King's Crown. This port enters the next
+				//floor immediately on boss death, so grant the concrete pickup to the bag at
+				//that boundary; otherwise the reward would be stranded on a floor destroyed by
+				//the transition.
+				this.bag.add({ id: 'kingsCrown', quantity: 1, stackable: true, identified: true });
+				this.say(t('port.log.pickup', { item: t('items.kingscrown.name') }), 'positive');
 			}
 			if (creature.kind === 'yog') {
 				for (const minion of this.creatures.filter((c) => c.kind !== undefined && ['yogFist', 'ripperDemon', 'eye', 'scorpio'].includes(c.kind))) this.kill(minion);
@@ -10486,6 +10632,8 @@ export class SewersScene extends Scene2D {
 			suckerPunchTargets: [...this.suckerPunchTargets],
 			upgradeScrollDrops: this.upgradeScrollDrops,
 			blacksmithAlternative: this.blacksmithAlternative,
+			blacksmithFavor: this.blacksmithFavor,
+			blacksmithReforges: this.blacksmithReforges,
 			bag: this.bag.items.map((i) => ({ id: i.id, quantity: i.quantity, instanceId: i.instanceId, identified: i.identified, level: i.level, sandBags: (i as typeof i & { sandBags?: number }).sandBags, charges: (i as typeof i & { charges?: number }).charges, affix: i.affix, cursed: i.cursed,
 				cursedKnown: (i as typeof i & { cursedKnown?: boolean }).cursedKnown,
 				usesLeftToIdentify: (i as typeof i & { usesLeftToIdentify?: number }).usesLeftToIdentify,
@@ -10555,6 +10703,7 @@ export class SewersScene extends Scene2D {
 			charmTargets: [...this.charmTargets.entries()],
 			charmIgnoreNextHit: [...this.charmIgnoreNextHit],
 			armorGlyph: this.armorGlyph,
+			armorAbility: this.armorAbility,
 			deferredDamage: this.hero.deferredDamage,
 			deferredDamageDelay: this.hero.deferredDamageDelay,
 			kineticStored: this.kineticStored,
@@ -10648,6 +10797,7 @@ export class SewersScene extends Scene2D {
 		this.charmTargets = new Map(s.charmTargets ?? []);
 		this.charmIgnoreNextHit = new Set(s.charmIgnoreNextHit ?? []);
 		this.armorGlyph = s.armorGlyph ?? null;
+		this.armorAbility = s.armorAbility ?? null;
 		//`Fragile` never existed in real Java (the 8th armor curse is `Stench` - see the
 		//affix-table comment); saves from before the correction carry it here and on bag
 		//items, so both migrate to `stench` on load rather than silently losing their curse.
@@ -10692,6 +10842,8 @@ export class SewersScene extends Scene2D {
 		this.suckerPunchTargets = new Set(s.suckerPunchTargets ?? []);
 		this.upgradeScrollDrops = s.upgradeScrollDrops ?? 0;
 		this.blacksmithAlternative = s.blacksmithAlternative ?? this.blacksmithAlternative;
+		this.blacksmithFavor = s.blacksmithFavor ?? 0;
+		this.blacksmithReforges = s.blacksmithReforges ?? 0;
 		this.equippedRing = s.equippedRing ?? null;
 		this.ringHtBonus = s.ringHtBonus ?? 0;
 		this.advancement = s.advancement ? Actors.Advancement.fromJSON(SUBCLASS_TRACK, s.advancement) : new Actors.Advancement(SUBCLASS_TRACK);
@@ -11802,7 +11954,7 @@ export class SewersScene extends Scene2D {
 			const id = item.id;
 			let frame = ({ clothArmor: 176, armor: 176, armorReward: 176, weaponReward: 96,
 				food: 437, meat: 432, seed: 58, waterskin: 480, velvetPouch: 482, cloak: 240, hourglass: 240,
-				spiritBow: 144, wand: 208, holyTome: 246, darkGold: 453, dwarfToken: 454, amulet: 61, bomb: 80,
+				spiritBow: 144, wand: 208, holyTome: 246, darkGold: 453, dwarfToken: 454, kingsCrown: 60, amulet: 61, bomb: 80,
 				corpseDust: 465 } as Record<string, number>)[id] ?? 0;
 			//Every distinct runestone shares the generic stone icon frame (no per-type art here,
 			//the same economy as the single shared wand/cloak icons) - one prefix rule rather
@@ -11821,6 +11973,7 @@ export class SewersScene extends Scene2D {
 			else if (id === 'stoneOfAugmentation') action = t('port.ui.augment.title');
 			else if (id.startsWith('stoneOf')) action = t('items.stones.inventorystone.ac_use');
 			else if (id === 'stylus') action = t('items.stylus.ac_inscribe');
+			else if (id === 'kingsCrown') action = t('items.kingscrown.ac_wear');
 			else if (id === 'candle') action = t('port.ui.candle.place');
 			else if (id.startsWith('ring_')) { frame = 224; action = capitalize(t('items.equipableitem.ac_equip')); }
 			else if (['armor', 'armorReward', 'weaponReward', 'wand'].includes(id)) action = capitalize(t('items.equipableitem.ac_equip'));
@@ -11895,10 +12048,40 @@ export class SewersScene extends Scene2D {
 			else if (id === 'candle') this.useCandle(instanceId);
 			else if (id === 'bomb') this.useBomb(instanceId);
 			else if (id === 'stylus') this.useStylus(instanceId);
+			else if (id === 'kingsCrown') this.useKingsCrown(instanceId);
 		} finally {
 			this.requestedItemId = null;
 			this.requestedItemInstanceId = undefined;
 		}
+	}
+
+	/** `Ratmogrify.activate` (tag v3.3.8): transform one visible ordinary enemy for six
+	 * turns while preserving its combat stats and disabling its specialised AI. The Java
+	 * implementation uses a cell-targeting window and a separate TransmogRat actor; this
+	 * port's action surface has no targeting window or alternate sprite actor, so it selects
+	 * the nearest visible enemy and keeps the original sprite/kind while the state is active.
+	 */
+	private useRatmogrify(): boolean {
+		const target = this.creatures
+			.filter((c) => !c.isHero && !c.isNPC && !c.isAlly && c.hp > 0 && !c.ratmogrifiedPermanent && c.kind !== 'rat'
+				&& !BOSS_KINDS.has(c.kind as MonsterId) && this.fov.isVisible(c.x, c.y))
+			.sort((a, b) => Roguelike.chebyshevDistance(this.hero, a) - Roguelike.chebyshevDistance(this.hero, b))[0];
+		if (!target) {
+			this.say(t('actors.hero.abilities.ratmogrify.cant_transform'), 'negative');
+			return false;
+		}
+		target.ratmogrifiedTurns = 6;
+		this.say(t('actors.hero.abilities.ratmogrify$transmograt.name', { 0: target.name }), 'positive');
+		this.actionSpentTurn = true;
+		this.spendHeroTurn(1);
+		return true;
+	}
+
+	/** `KingsCrown.WEAR`: the crown is exchanged at the Rat King, not consumed from
+	 * inventory directly. The inventory action therefore gives the same useful hint as
+	 * Java's item description while preserving the one-way NPC transaction. */
+	private useKingsCrown(_instanceId?: string): void {
+		this.say(t('items.kingscrown.desc'));
 	}
 
 	/** `TimekeepersHourglass.timeFreeze`: freeze automatic actors while hero actions are free. */

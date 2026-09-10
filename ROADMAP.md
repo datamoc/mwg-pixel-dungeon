@@ -276,7 +276,7 @@ browser-verification workflow for why).
       The generator table now also uses the real `StoneOfDetectMagic` class instead of the
       nonexistent `StoneOfDisarming`, so all 12 Java runestone classes are reachable from
       ordinary generation.
- - [ ] Implement complete weapon and armor tiers, transfer formulas, upgrade formulas, curse infusion, and degradation. Upgrade transitions now preserve generated weapon/armor tiers through inventory and equip, and scroll upgrades keep the fixed tier while applying Java's plain +1 level (the no-picker auto-target remains a documented UI simplification); the existing affix-loss rolls/Warlock Degrade are Java-shaped. Remaining: Blacksmith reforge transfers (section 4's forge item), and curse infusion proper (`items.spells.curseinfusion` is an alchemy-brewed spell, so it waits on the alchemy system with everything else brewed). See `PORT_COVERAGE.md`'s upgrade/degrade row.
+ - [ ] Implement complete weapon and armor tiers, transfer formulas, upgrade formulas, curse infusion, and degradation. Upgrade transitions now preserve generated weapon/armor tiers through inventory and equip, and scroll upgrades keep the fixed tier while applying Java's plain +1 level (the no-picker auto-target remains a documented UI simplification); the existing affix-loss rolls/Warlock Degrade are Java-shaped. Blacksmith reforge now has persistent favor, progressive costs, same-category two-item selection, level preservation and one-item consumption; hardening, dedicated transfer/seal handling, and curse infusion proper (`items.spells.curseinfusion` is an alchemy-brewed spell, so it waits on the alchemy system with everything else brewed) remain. See `PORT_COVERAGE.md`'s upgrade/degrade row.
 - [ ] Implement the remaining charm/knockback/stealth/blink/durability-per-hit
       subsystems the unported enchants, glyphs, and curses depend on (Kinetic's
       carried-damage buffer, Blooming's plant seeding, Projecting's
@@ -493,10 +493,10 @@ browser-verification workflow for why).
       `PORT_COVERAGE.md` (type-check/build plus both suites green, browser owed per
       section 10).
 - [ ] Port the Troll Blacksmith's mining and forge mechanics.
-- [ ] Port Rat King and other missing special NPCs. Rat King is done (room drops real
-      `Gold(10-25)` CHEST heaps, the king spawns sleeping with his own art, wakes with
-      the real yell, answers with the real fallback line - the crown exchange waits on
-      the King's Crown item + Ratmogrify ability). Remaining: other special NPCs
+- [ ] Port Rat King and other missing special NPCs. Rat King is now complete for its core
+      exchange (room drops real `Gold(10-25)` CHEST heaps, the king spawns sleeping with
+      his own art, wakes with the real yell, awards the crown exchange when worn armor is
+      present, and grants the six-turn Ratmogrify ability). Remaining: other special NPCs
       (MirrorImage/PrismaticImage/Sheep allies, ImpShopkeeper, VaultSentry,
       DirectableAlly), which need the ally/combat systems behind them -
       see `PORT_COVERAGE.md`'s quests row.

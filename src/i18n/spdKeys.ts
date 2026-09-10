@@ -118,6 +118,7 @@ export const GROUND_ITEM_KEYS: Record<string, string> = {
 	seed: 'plants.plant$seed$placeholder.name',
 	darkGold: 'items.quest.darkgold.name',
 	dwarfToken: 'items.quest.dwarftoken.name',
+	kingsCrown: 'items.kingscrown.name',
 	amulet: 'items.amulet.name',
 	ring: 'port.name.ring',
 	crystalKey: 'items.keys.crystalkey.name',
@@ -137,6 +138,7 @@ export const GROUND_ITEM_KEYS: Record<string, string> = {
 
 /** the bag's item ids, against SPD's real item names */
 export const ITEM_KEYS: Record<string, string> = {
+	kingsCrown: 'items.kingscrown.name',
 	clothArmor: 'items.armor.clotharmor.name',
 	armor: 'items.armor.clotharmor.name',
 	armorReward: 'items.armor.clotharmor.name',

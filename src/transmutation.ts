@@ -81,14 +81,15 @@ export interface TransmutedItem extends TransmutableItem {
  * melee weapons (`weaponReward`), rings, potions, scrolls (except itself - real Java only
  * allows self-target when the stack holds 2+ or the scroll was already consumed by
  * identify-on-read, neither of which this port models), seeds, runestones, and the
- * `cloak` artifact stand-in. Deliberately ineligible, each for a stated model reason:
+ * `cloak` artifact stand-in. Deliberately ineligible in this bag-item helper, each for a
+ * stated model reason (the scene picker handles equipped rings separately):
  * armor (real Java's `usableOnItem` never accepts armor at all - no `changeArmor`
  * exists); `wand` (one shared id with no class identity to change into something
  * different); thrown `stone` ammo (a bare count, like missiles, not an item - and real
  * Java excludes plain `Dart` the same way); `hourglass` (unique artifact, like real
- * Java's Holy Tome/Cloak of Shadows exclusion); and equipped gear (tier fields and the
- * ring slot, not bag items - real Java's picker includes them, this port's bag-only
- * picker does not yet). `MagesStaff` weapons are excluded too: real Java's `changeStaff` keeps the
+ * Java's Holy Tome/Cloak of Shadows exclusion); and equipped weapons/armor (tier fields,
+ * not bag items - real Java's picker includes them, while this port's scene currently
+ * handles only equipped rings). `MagesStaff` weapons are excluded too: real Java's `changeStaff` keeps the
  * staff and only re-imbues its wand, which has no expression in a tier-only model.
  */
 export function isTransmutableForScroll(item: { id: string; sourceClass?: string }): boolean {
@@ -162,7 +163,7 @@ export function transmuteItem(target: TransmutableItem, newItemInstanceId: (kind
 	if (target.id === 'cloak') {
 		const pool = Object.keys(RING_DEFS);
 		if (pool.length === 0) return undefined;
-		return { id: `ring_${Random.element(pool)!}`, quantity: 1, instanceId: newItemInstanceId('ring'), identified: target.identified, level: 0, cursed: target.cursed };
+		return { id: `ring_${Random.element(pool)!}`, quantity: 1, instanceId: newItemInstanceId('ring'), identified: target.identified, level: target.level, cursed: target.cursed };
 	}
 	return undefined;
 }

@@ -34,6 +34,9 @@ export interface Creature extends Combatant {
 	magicImmune?: boolean;
 	/** Java Mob.target: persistent random destination while the mob is wandering. */
 	patrolTarget?: { x: number; y: number };
+	/** Ratmogrify's temporary wrapper: the original kind/stats remain intact while abilities are disabled. */
+	ratmogrifiedTurns?: number;
+	ratmogrifiedPermanent?: boolean;
 	/** Viscosity's accumulated deferred damage and its one-turn initial delay. */
 	deferredDamage?: number;
 	deferredDamageDelay?: boolean;
