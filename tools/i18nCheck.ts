@@ -13,7 +13,7 @@
  */
 
 import { SPD_MESSAGES } from '../src/generated/spdMessages';
-import { PORT_STRINGS_EN, PORT_STRINGS_FR } from '../src/i18n/portStrings';
+import { PORT_STRINGS_EN, PORT_STRINGS_FR, PORT_TRANSLATION_ORIGIN } from '../src/i18n/portStrings';
 import { readFileSync } from 'node:fs';
 import { LANGUAGES, detectLanguage } from '../src/i18n/languages';
 import {
@@ -113,6 +113,12 @@ for (const key of Object.keys(PORT_STRINGS_EN)) {
 	check(`French has ${key}`, PORT_STRINGS_FR[key] !== undefined);
 }
 check('French adds no key English lacks', Object.keys(PORT_STRINGS_FR).every((key) => key in PORT_STRINGS_EN));
+
+// 3c. Every port-only catalogue is labelled in source. This prevents a machine draft from
+// being mistaken for a reviewed translation when a new locale is wired into `index.ts`.
+for (const code of ['en', 'fr', 'de', 'es', 'pt', 'it', 'pl']) {
+	check(`port locale ${code} declares translation origin`, PORT_TRANSLATION_ORIGIN[code] !== undefined);
+}
 
 // 4. a translated string keeps the placeholders its English original declares. A dropped
 //    token silently loses a number the player needed; an invented one renders as literal

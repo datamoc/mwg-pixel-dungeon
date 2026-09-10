@@ -15,7 +15,16 @@
 
 import { I18n } from 'mwg';
 import { SPD_MESSAGES } from '../generated/spdMessages';
-import { PORT_STRINGS_EN, PORT_STRINGS_FR, PORT_STRINGS_DE, PORT_STRINGS_ES, PORT_STRINGS_PT, PORT_STRINGS_IT, PORT_STRINGS_PL } from './portStrings';
+import {
+	PORT_STRINGS_EN,
+	PORT_STRINGS_FR,
+	PORT_STRINGS_DE,
+	PORT_STRINGS_ES,
+	PORT_STRINGS_PT,
+	PORT_STRINGS_IT,
+	PORT_STRINGS_PL,
+	PORT_TRANSLATION_ORIGIN,
+} from './portStrings';
 import { LANGUAGES, detectLanguage, languageByCode, type Language } from './languages';
 
 export { LANGUAGES, languageByCode, type Language, type LanguageStatus } from './languages';
@@ -28,12 +37,11 @@ export const has = I18n.has;
 /**
  * This port's own strings, per language.
  *
- * English and French are hand-written; German, Spanish, Portuguese, Italian and Polish are
- * machine-assisted first drafts (see `PORT_STRINGS_DE`/`PORT_STRINGS_ES`/`PORT_STRINGS_PT`/
- * `PORT_STRINGS_IT`/`PORT_STRINGS_PL`'s own doc comments - `unreviewed`, not `complete`). Every
- * other language still resolves through the base catalog, so e.g. a Russian player reads SPD's
- * Russian *names* inside English sentences. That is a real gap and PORT_COVERAGE.md records it
- * as one.
+ * English and French are human-written; German, Spanish, Portuguese, Italian and Polish are
+ * machine-translated first drafts. Their origin is also exported as data from `portStrings.ts`
+ * so audits can distinguish `human` from `machine` without inferring it from language status.
+ * The remaining languages still resolve through the base catalog for port-only prose until an
+ * explicitly marked `MT` catalogue is added.
  */
 const PORT_STRINGS: Record<string, Record<string, string>> = {
 	en: PORT_STRINGS_EN,

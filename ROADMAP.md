@@ -801,7 +801,7 @@ browser-verification workflow for why).
       locale's key set against EN's (0 missing, 0 extra) and comparing each value's
       `{placeholder}` tokens exactly (0 mismatches) - catching exactly the class of error a
       human proofread would also have to catch, before any human proofreading happens. Marked
-      `unreviewed` in `PORT_STRINGS_DE`'s own doc comment and `PORT_STRINGS`'s registration,
+      `unreviewed` in `PORT_STRINGS_DE`'s own `MT` doc comment and `PORT_STRINGS`'s registration,
       matching SPD's own complete/unreviewed/unfinished convention - a machine-assisted draft
       is not silently promoted to `complete`. Browser-verified live: the welcome log line, bag/
       talent panel labels, and the settings/badges/changes windows all rendered correctly-
@@ -866,10 +866,11 @@ browser-verification workflow for why).
       trafia ciebie za 2 obrażeń.") all rendered correctly-composed Polish (diacritics included)
       with no raw keys and no console errors.
 
-      **12 locales remain** (see `languages.ts` for the full list); sequence against the still-
-      growing key set - either freeze `port.*` first or track per-locale key deltas on every pass
-      that adds one. Font coverage is part of done, not a footnote - zh/ko/ja need the section-10
-      tofu check per locale (already done for zh/ko this session), not just key resolution. See
+      **12 locales remain** (see `languages.ts` for the full list). Their future catalogues must
+      be machine-translated from `PORT_STRINGS_EN`, marked `MT` in source and in the provenance
+      map exported by `portStrings.ts`, then checked for key/placeholder parity before wiring.
+      Font coverage is part of done, not a footnote - zh/ko/ja need the section-10 tofu check per
+      locale (already done for zh/ko this session), not just key resolution. See
       `PORT_COVERAGE.md`'s locales row.
 
 ## 9. Build the Java-vs-TypeScript parity harness

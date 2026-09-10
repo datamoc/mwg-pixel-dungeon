@@ -170,7 +170,12 @@ const wanted = [...new Set([...base.keys(), ...referenced])].filter((key) => !ke
 const missing = wanted.filter((key) => !base.has(key));
 if (missing.length > 0) {
 	console.error(`these keys are referenced but exist in no SPD properties file:\n  ${missing.join('\n  ')}`);
-	process.exitCode = 1;
+	//Do not overwrite the committed generated catalog with a partial result. The old behavior
+	//reported the audit failure but continued into writeFile(), leaving the next build with a
+	//small, silently incomplete SPD catalog. A failed source audit is therefore transactional:
+	//the caller must fix the missing Java-side keys (or deliberately move a port-only key under
+	//port.*) before generation can replace the last known-good artifact.
+	process.exit(1);
 }
 
 const catalogs = {};

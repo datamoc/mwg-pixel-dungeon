@@ -7,16 +7,17 @@
  * quests it simplified, its own hints, and the handful of names SPD's message files in this
  * checkout do not carry.
  *
- * English and French are supplied. Every other language falls back to English through
- * `mwg/i18n`'s base-catalog fallback - a real gap, listed as such in PORT_COVERAGE.md, not
- * something to paper over: a Russian player gets SPD's Russian monster and item names in
- * English sentences.
+ * English and French are human-written. German, Spanish, Portuguese, Italian and Polish are
+ * machine translations, explicitly marked `MT` below; they are complete first drafts but are
+ * not presented as native-speaker work. The remaining SPD languages still fall back to English
+ * for port-only prose until an `MT` catalogue is added for them.
  *
  * `{token}` placeholders are `mwg/i18n`'s own interpolation form. They are named rather than
  * positional here, unlike the generated SPD catalog, because these strings are written and
  * translated in this file where a name reads better than an index.
  */
 
+// HUMAN: English source copy for strings invented by this port.
 export const PORT_STRINGS_EN: Record<string, string> = {
 	//`triggerPlant`/misc scene log lines found hardcoded in English with no t() call at all
 	//across an entire pass - a real, pre-existing i18n gap this project's own audit convention exists to catch
@@ -473,6 +474,7 @@ export const PORT_STRINGS_EN: Record<string, string> = {
  * SPD's own French translation supplies every monster, item, class and region name through the
  * generated catalog, so these sentences interpolate names that are already French.
  */
+// HUMAN: French translation reviewed by the project owner.
 export const PORT_STRINGS_FR: Record<string, string> = {
 	//voir la section EN pour le contexte : lignes de log codées en dur trouvées sans t() du tout
 	'port.log.mineabandonedquiet': 'La mine abandonnée est silencieuse.',
@@ -894,8 +896,8 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 };
 
 /**
- * German (`de`), status `unreviewed` per SPD's own convention (`languages.ts`). Machine-
- * assisted draft, not a native speaker's pass: adapted key-by-key from `PORT_STRINGS_EN`,
+ * MT: German (`de`), status `unreviewed` per SPD's own convention (`languages.ts`). Machine-
+ * translated draft, not a native speaker's pass: adapted key-by-key from `PORT_STRINGS_EN`,
  * every `{placeholder}` token preserved exactly (checked programmatically - see this project's
  * own translation-strategy note in ROADMAP.md section 8), German grammar/word order applied,
  * but not proofread by a fluent speaker. Flag this status honestly rather than silently
@@ -1300,8 +1302,8 @@ export const PORT_STRINGS_DE: Record<string, string> = {
 };
 
 /**
- * Spanish (`es`), status `unreviewed` per SPD's own convention (`languages.ts`). Machine-
- * assisted draft, not a native speaker's pass: adapted key-by-key from `PORT_STRINGS_EN`,
+ * MT: Spanish (`es`), status `unreviewed` per SPD's own convention (`languages.ts`). Machine-
+ * translated draft, not a native speaker's pass: adapted key-by-key from `PORT_STRINGS_EN`,
  * every `{placeholder}` token preserved exactly (checked programmatically - see this project's
  * own translation-strategy note in ROADMAP.md section 8), Spanish grammar/word order applied,
  * but not proofread by a fluent speaker. Flag this status honestly rather than silently
@@ -1706,8 +1708,8 @@ export const PORT_STRINGS_ES: Record<string, string> = {
 };
 
 /**
- * Portuguese (`pt`), status `unreviewed` per SPD's own convention (`languages.ts`). Machine-
- * assisted draft, not a native speaker's pass: adapted key-by-key from `PORT_STRINGS_EN`,
+ * MT: Portuguese (`pt`), status `unreviewed` per SPD's own convention (`languages.ts`). Machine-
+ * translated draft, not a native speaker's pass: adapted key-by-key from `PORT_STRINGS_EN`,
  * every `{placeholder}` token preserved exactly (checked programmatically - see this project's
  * own translation-strategy note in ROADMAP.md section 8), Portuguese grammar/word order
  * applied, but not proofread by a fluent speaker. Flag this status honestly rather than
@@ -2113,8 +2115,8 @@ export const PORT_STRINGS_PT: Record<string, string> = {
 };
 
 /**
- * Italian (`it`), status `unreviewed` per SPD's own convention (`languages.ts`). Machine-
- * assisted draft, not a native speaker's pass: adapted key-by-key from `PORT_STRINGS_EN`,
+ * MT: Italian (`it`), status `unreviewed` per SPD's own convention (`languages.ts`). Machine-
+ * translated draft, not a native speaker's pass: adapted key-by-key from `PORT_STRINGS_EN`,
  * every `{placeholder}` token preserved exactly (checked programmatically - see this project's
  * own translation-strategy note in ROADMAP.md section 8), Italian grammar/word order applied,
  * but not proofread by a fluent speaker. Flag this status honestly rather than silently
@@ -2519,8 +2521,8 @@ export const PORT_STRINGS_IT: Record<string, string> = {
 };
 
 /**
- * Polish (`pl`), status `unreviewed` per SPD's own convention (`languages.ts`). Machine-
- * assisted draft, not a native speaker's pass: adapted key-by-key from `PORT_STRINGS_EN`,
+ * MT: Polish (`pl`), status `unreviewed` per SPD's own convention (`languages.ts`). Machine-
+ * translated draft, not a native speaker's pass: adapted key-by-key from `PORT_STRINGS_EN`,
  * every `{placeholder}` token preserved exactly (checked programmatically - see this project's
  * own translation-strategy note in ROADMAP.md section 8), Polish grammar/word order applied,
  * but not proofread by a fluent speaker. Flag this status honestly rather than silently
@@ -2922,4 +2924,21 @@ export const PORT_STRINGS_PL: Record<string, string> = {
 	'port.window.settings.version': 'Wersja {version}',
 	'port.window.support.title': 'Wesprzyj Grę',
 	'port.window.support.body': 'Jeśli podoba ci się ta gra, rozważ wsparcie oryginalnego Shattered Pixel Dungeon.',
+};
+
+/**
+ * Provenance is deliberately data as well as a nearby comment: tooling and reviewers can
+ * distinguish human copy from an MT draft without guessing from the language's SPD status.
+ * `machine` means the port-only strings were generated from English and still need native
+ * proofreading; it says nothing about SPD's separate `.properties` catalog.
+ */
+export type PortTranslationOrigin = 'human' | 'machine';
+export const PORT_TRANSLATION_ORIGIN: Readonly<Record<string, PortTranslationOrigin>> = {
+	en: 'human',
+	fr: 'human',
+	de: 'machine',
+	es: 'machine',
+	pt: 'machine',
+	it: 'machine',
+	pl: 'machine',
 };

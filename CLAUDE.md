@@ -40,6 +40,13 @@ respects it: don't propose sending fixes back to his tree, in any form or scope.
   still the normal, legitimate way this port is built. What doesn't apply here is only the
   idea of sending fixes back to his tree.
 
+## Port-side corrections
+
+The original SPD source is a reference for values, formulas, behavior, and translations; it is
+not a contribution target. When an audit finds a bug or inconsistency in the original behavior,
+this port corrects its own implementation and documents the correction in `PORT_COVERAGE.md`.
+No patch, proposal, or “fix it in both places” workflow is sent to the SPD author.
+
 ## Documenting deviations — mandatory, not optional
 
 Every simplification or deviation from real Java behavior must be explicitly documented in
