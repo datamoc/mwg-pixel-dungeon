@@ -446,9 +446,10 @@ const AUGMENT_OPTIONS = ['speed', 'damage', 'none'] as const;
  * the always-reset 5-turn cliff-edge expiry, priority-first drain order, and exemption from the
  * proportional decay (HoldFast scaling of both clocks and the ProvokedAnger break tracker are
  * still not modeled - this port has neither system). Every other real enchant/glyph/curse needs a
- * subsystem this port does not model - Kinetic's old "store half of every hit" shorthand is
- * replaced this pass by the real `Char.damage()` kill-overkill rule below; Corrupting needs
- * a "convert enemy" mechanic; Elastic/Projecting need AoE/thrown-range geometry; Unstable is
+	 * subsystem this port does not model - Kinetic's old "store half of every hit" shorthand is
+	 * replaced this pass by the real `Char.damage()` kill-overkill rule below; Corrupting now
+	 * converts lethal targets through the existing ally model; Elastic/Projecting need
+	 * AoE/thrown-range geometry; Unstable is
  * now ported (delegates per swing, see `attack()`); Friendly needs a two-way Charm subsystem this port lacks (confirmed against
  * `Friendly.java`: mutual Charm + zeroing damage to the charmed target); the remaining armor
  * glyphs (Affection/AntiMagic/Brimstone/Obfuscation/Repulsion/Viscosity) need
@@ -479,6 +480,7 @@ const ENCHANT_TABLE: Actors.AffixTable = {
 		{ id: 'lucky', trigger: 'strike', weight: 2, description: 'Chance of bonus loot on a kill' },
 		{ id: 'blocking', trigger: 'strike', weight: 2, description: 'Chance to grant a shield on a landed hit' },
 		{ id: 'kinetic', trigger: 'strike', weight: 2, description: 'Stores part of damage for the next hit' },
+		{ id: 'corrupting', trigger: 'strike', weight: 2, description: 'Lethal hits can convert the victim into an ally' },
 		{ id: 'blooming', trigger: 'strike', weight: 2, description: 'Chance to plant grass where you strike' },
 		{ id: 'unstable', trigger: 'strike', weight: 2, description: 'A random enchantment effect on every hit' },
 		{ id: 'wayward', trigger: 'strike', weight: 1, curse: true, description: 'Cursed: -3 accuracy' },
@@ -491,10 +493,11 @@ const ENCHANT_TABLE: Actors.AffixTable = {
 	],
 };
 /** `Unstable.randomEnchants` minus Projecting (Java's own exclusion - no on-hit effect) and
- * minus Corrupting/Elastic (no ported proc exists to delegate into; drawing them would make
- * Unstable randomly fizzle with no feedback, so they stay out openly until their own
- * systems land). Uncommon, like the real `Unstable` in `Weapon.java`'s rarity lists. */
-const UNSTABLE_DELEGATES = ['blazing', 'blocking', 'blooming', 'chilling', 'kinetic', 'grim', 'lucky', 'shocking', 'vampiric'] as const;
+ * minus Elastic (no ported proc exists to delegate into; drawing it would make Unstable
+ * randomly fizzle with no feedback, so it stays out openly until its own system lands).
+ * Corrupting now has a live lethal conversion branch, so it is a valid delegate too.
+ * Uncommon, like the real `Unstable` in `Weapon.java`'s rarity lists. */
+const UNSTABLE_DELEGATES = ['blazing', 'blocking', 'blooming', 'chilling', 'corrupting', 'kinetic', 'grim', 'lucky', 'shocking', 'vampiric'] as const;
 const GLYPH_TABLE: Actors.AffixTable = {
 	entries: [
 		{ id: 'stone', trigger: 'defend', weight: 3, description: '+2 armor' },
@@ -8269,7 +8272,7 @@ export class SewersScene extends Scene2D {
 		//actor shape, so preserve the target, fully heal it, clear negative buffs, and
 		//mark it as an ally. This is evaluated before damage is committed, matching the
 		//Java proc's `damage >= defender.HP` guard and its zero-damage return.
-		if (attacker === this.hero && this.weaponAffix === 'corrupting' && damage >= defender.hp
+		if (attacker === this.hero && (this.weaponAffix === 'corrupting' || this.unstableDelegated === 'corrupting') && damage >= defender.hp
 			&& !defender.isHero && !defender.isNPC && !defender.isAlly && Random.chance(
 			((Math.max(0, this.degradedLevel(this.weaponLevel)) + 5) / (Math.max(0, this.degradedLevel(this.weaponLevel)) + 25))
 				* ringArcanaMultiplier(this.equippedRing))) {
