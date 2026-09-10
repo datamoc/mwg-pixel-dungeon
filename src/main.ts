@@ -453,7 +453,7 @@ const AUGMENT_OPTIONS = ['speed', 'damage', 'none'] as const;
 	 * defending hero; Projecting still needs thrown-range geometry; Unstable is
  * now ported (delegates per swing, see `attack()`); Friendly needs a two-way Charm subsystem this port lacks (confirmed against
  * `Friendly.java`: mutual Charm + zeroing damage to the charmed target); the remaining armor
- * glyphs (Affection/AntiMagic/Brimstone/Obfuscation/Viscosity) need
+ * glyphs (Affection/AntiMagic/Obfuscation) need
  * charm/wand-drain/blink/durability systems likewise absent (Obfuscation's stealth boost has
  * no roll seam - this port's `seesHero` is FOV-binary, not a distance roll). The armor-glyph
  * Swiftness itself is real but Simplified (flat 0.8x cost with no enemy within 3, instead of
@@ -510,6 +510,7 @@ const GLYPH_TABLE: Actors.AffixTable = {
 		{ id: 'potential', trigger: 'defend', weight: 3, description: 'Chance to recharge wands when hit' },
 		{ id: 'repulsion', trigger: 'defend', weight: 2, description: 'Chance to knock an adjacent attacker backward' },
 		{ id: 'brimstone', trigger: 'defend', weight: 2, description: 'Immune to burning' },
+		{ id: 'viscosity', trigger: 'defend', weight: 3, description: 'Defers part of incoming damage' },
 		{ id: 'camouflage', trigger: 'passive', weight: 2, description: 'Trampling grass turns you invisible' },
 		{ id: 'stench', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to release toxic gas when hit' },
 		{ id: 'antientropy', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to drain a wand charge' },
@@ -650,6 +651,8 @@ interface SaveShape {
 	charmTargets?: [string, string][];
 	charmIgnoreNextHit?: string[];
 	armorGlyph?: string | null;
+	deferredDamage?: number;
+	deferredDamageDelay?: boolean;
 	kineticStored?: number;
 	timeBubbleTurns?: number;
 	timeBubblePresses?: number[];
@@ -1136,6 +1139,8 @@ export class SewersScene extends Scene2D {
 	/** Timekeeper's Hourglass freeze state; unlike Swiftthistle's bubble it consumes charges. */
 	private hourglassFreeze = false;
 	private hourglassTurnsToCost = 2;
+	/** Prevent Viscosity from recursively deferring its own scheduled damage tick. */
+	private applyingDeferredDamage = false;
 	/** Java Barrier/BrokenSeal-style shielding, consumed before HP and saved with the run. */
 	private heroBarrier = new Actors.Barrier();
 	/** `WandOfLivingEarth.RockArmor`: stored rock armor and the wand level that set its cap. */
@@ -5694,6 +5699,24 @@ export class SewersScene extends Scene2D {
 						this.barrierPartialLoss = 0;
 					}
 				}
+				//Viscosity.DeferedDamage.act(): a fresh deferred pool waits one actor turn,
+				//then deals max(1, floor(pool*0.1)) and spends that amount each turn. The
+				//scheduled damage uses the normal shield/HP path but must not be deferred
+				//again by the same glyph.
+				if (this.hero.deferredDamage && this.hero.deferredDamage > 0) {
+					if (this.hero.deferredDamageDelay) this.hero.deferredDamageDelay = false;
+					else {
+						const tick = Math.max(1, Math.floor(this.hero.deferredDamage * 0.1));
+						this.applyingDeferredDamage = true;
+						const blocked = this.absorbHeroDamage(tick);
+						this.applyingDeferredDamage = false;
+						this.hero.hp -= blocked;
+						this.hero.deferredDamage = Math.max(0, this.hero.deferredDamage - tick);
+						this.showDamage(this.hero, blocked);
+						if (this.hero.hp <= 0) { this.kill(this.hero, 'poison'); return true; }
+						if (this.hero.deferredDamage <= 0) this.hero.deferredDamageDelay = false;
+					}
+				}
 				//BlockBuff.act(): `left -= 1; left<=0 -> detach()` - a hard cliff-edge expiry of
 				//Blocking's own pool, independent of the proportional curve above. Every fresh
 				//proc resets the timer via grantBlockingShield; damage absorption eats into the
@@ -8612,20 +8635,37 @@ export class SewersScene extends Scene2D {
 		//Char.damage()'s own Barrier absorption, so Tenacity scales the raw hit here too.
 		const tenacityMultiplier = ringTenacityMultiplier(this.equippedRing, this.hero.hp, this.hero.maxHp);
 		const scaled = tenacityMultiplier < 1 ? Math.ceil(amount * tenacityMultiplier) : amount;
+		let viscosityDamage = Math.max(0, scaled);
+		//Viscosity.proc()/ViscosityTracker.deferDamage() (items/armor/glyphs/Viscosity.java,
+		//tag 4.0.0-beta): after the normal incoming-damage scaling, defer
+		//ceil(damage * (level+1)/(level+6) * Arcana), while the remainder lands now.
+		//When Arcana pushes the fraction above 1, Java instead divides the full hit
+		//by that fraction and defers that reduced amount. The shared hero damage
+		//boundary covers melee, missiles, wands, traps, and environmental damage.
+		if (!this.applyingDeferredDamage && this.armorGlyph === 'viscosity' && viscosityDamage > 0) {
+			const level = Math.max(0, this.degradedLevel(this.armorLevel));
+			const percent = ((level + 1) / (level + 6)) * ringArcanaMultiplier(this.equippedRing);
+			const deferred = percent > 1 ? Math.round(viscosityDamage / percent) : Math.ceil(viscosityDamage * percent);
+			if (deferred > 0) {
+				this.hero.deferredDamage = (this.hero.deferredDamage ?? 0) + deferred;
+				if (!this.hero.deferredDamageDelay) this.hero.deferredDamageDelay = true;
+				viscosityDamage = percent > 1 ? Math.round(viscosityDamage / percent) - deferred : viscosityDamage - deferred;
+			}
+		}
 		//WandOfLivingEarth.RockArmor.absorb(): blocks `damage - damage/2` (ceil half)
 		//until its stored rock amount is exhausted, before ordinary ShieldBuff layers.
 		//The port has no distinct Buff priority for RockArmor, so it drains first here;
 		//the amount and half-damage rule are retained even though EarthGuardian is not.
-		const livingEarthBlocked = Math.min(this.livingEarthArmor, Math.ceil(Math.max(0, scaled) / 2));
+		const livingEarthBlocked = Math.min(this.livingEarthArmor, Math.ceil(viscosityDamage / 2));
 		this.livingEarthArmor -= livingEarthBlocked;
 		//ShieldBuff.processDamage(): higher `shieldUsePriority` drains first - BlockBuff (2)
 		//before Barrier (0) - so Blocking's own pool absorbs ahead of the shared pool.
-		const afterLivingEarth = Math.max(0, scaled - livingEarthBlocked);
+		const afterLivingEarth = Math.max(0, viscosityDamage - livingEarthBlocked);
 		const blockedBlocking = this.blockingBarrier.absorb(afterLivingEarth);
 		const blockedBase = this.heroBarrier.absorb(Math.max(0, afterLivingEarth - blockedBlocking));
 		const blocked = livingEarthBlocked + blockedBlocking + blockedBase;
 		this.wandCharges.refund(shieldBatteryGain(blocked, this.talentRank('shield_battery')));
-		const remaining = Math.max(0, scaled - blocked);
+		const remaining = Math.max(0, viscosityDamage - blocked);
 		const reduced = Math.max(0, remaining - ironWillReduction(this.hero.hp, this.hero.maxHp, this.talentRank('iron_will')));
 		if (deathlessFuryTriggers(this.subclass(), this.talentRank('deathless_fury'), this.deathlessFuryUsed, reduced, this.hero.hp)) {
 			this.deathlessFuryUsed = true;
@@ -9625,6 +9665,8 @@ export class SewersScene extends Scene2D {
 			charmTargets: [...this.charmTargets.entries()],
 			charmIgnoreNextHit: [...this.charmIgnoreNextHit],
 			armorGlyph: this.armorGlyph,
+			deferredDamage: this.hero.deferredDamage,
+			deferredDamageDelay: this.hero.deferredDamageDelay,
 			kineticStored: this.kineticStored,
 			timeBubbleTurns: this.timeBubbleTurns,
 			timeBubblePresses: [...this.timeBubblePresses],
@@ -9824,6 +9866,8 @@ export class SewersScene extends Scene2D {
 		this.hero.hp = Math.min(s.hp, s.maxHp);
 		this.hero.maxHp = s.maxHp;
 		this.hero.buffs = Object.fromEntries(s.buffs ?? []) as Partial<Record<BuffId, number>>;
+		this.hero.deferredDamage = s.deferredDamage ?? 0;
+		this.hero.deferredDamageDelay = s.deferredDamageDelay ?? false;
 		this.syncHeroFromStats();
 		this.enterLevel();
 		this.say(t('port.log.loaded', { depth: s.depth, level: s.level }), 'highlight');

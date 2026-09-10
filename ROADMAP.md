@@ -118,9 +118,10 @@ browser-verification workflow for why).
       is exact `changeItem` including exotics/wands/trinkets/missiles/equipped gear, still owed
       with the section-1 item-system completion (those items must exist as distinct ported items
       first), not as a standalone scroll pass.**
-- [ ] Port the remaining enchantments, glyphs, weapon curses, and armor curses. `Repulsion` and
+- [ ] Port the remaining enchantments, glyphs, weapon curses, and armor curses. `Repulsion`,
       `Brimstone` are now ported (`Brimstone` grants Java's Burning immunity at the shared buff
-      boundary). `Repulsion` is
+      boundary), and `Viscosity` now defers incoming damage with its Java-scaled delayed drain.
+      `Repulsion` is
       now ported with its exact level/Arcana-scaled adjacent knockback through the existing
       shove path. `Friendly` is
       now ported with its exact mutual Charm target/ignore-next-hit state and 1/10 x Arcana proc
@@ -144,8 +145,8 @@ browser-verification workflow for why).
       replacing not adding), decay is `2.5%/turn min 0.1` as a float, and the read-back is
       `ceil`.** Remaining, each still needing its own system first: Corrupting's
       conversion, Elastic/Projecting's geometry, and Affection/
-      AntiMagic/Brimstone/Obfuscation/Repulsion/Viscosity (Obfuscation checked: its stealth boost
-      feeds a distance roll this port's FOV-binary `seesHero` has no seam for). `polarized`/
+      AntiMagic/Obfuscation (Obfuscation checked: its stealth boost feeds a distance roll this
+      port's FOV-binary `seesHero` has no seam for). `polarized`/
       `sacrificial`/`displacing` gained real proc branches in an earlier pass, alongside the
       already-live `wayward`/`annoying`/`dazzling`/`explosive`.
 - [x] Implement weapon augments. **This roadmap line's own history is worth reading before
@@ -277,7 +278,7 @@ browser-verification workflow for why).
       carried-damage buffer, Blooming's plant seeding, Projecting's
       line-AoE geometry, and the
       charm/wand-drain/blink/durability mechanics behind
-      Affection/AntiMagic/Brimstone/Camouflage/Obfuscation/Potential/Repulsion/Viscosity
+      Affection/AntiMagic/Camouflage/Obfuscation/Potential
       and the matching armor curses) - each needs its own system stood up before
       the enchant/glyph/curse itself can be anything but a stub.
 - [ ] Replace simplified missile durability and wand recharge behavior with the Java formulas.

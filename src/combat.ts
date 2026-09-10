@@ -28,6 +28,9 @@ export interface Creature extends Combatant {
 	name: string;
 	/** Derived from the equipped Brimstone glyph; Java's `Char.isImmune(Burning)` path. */
 	fireImmune?: boolean;
+	/** Viscosity's accumulated deferred damage and its one-turn initial delay. */
+	deferredDamage?: number;
+	deferredDamageDelay?: boolean;
 	/** mwg/roguelike's Scheduler.Actor speed; Huntress's gloves are the one exception at 2 */
 	speed?: number;
 	/** which MONSTERS entry this is, for its sprite and (for Goo) its special turn logic - absent on the hero */
