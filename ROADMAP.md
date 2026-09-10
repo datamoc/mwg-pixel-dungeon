@@ -77,7 +77,7 @@ browser-verification workflow for why).
       buff system this port doesn't have" premise no longer held once `getActionTurnCostMod`
       existed (added for Weapon Augment/Swiftness/RingOfHaste) - a real `haste` buff
       (`BUFF_DURATION.haste = 20`) now applies `Char.speed()`'s own `*3f` there as `mod /= 3`,
-      the same shape RingOfHaste's multiplier already used. `PotionOfFrost` is now ported (Simplified, and the last generated potion id missing its own branch - it silently quaffed as Purity before): no blob-freezing terrain and no freeze/immobilize status distinct from paralysis exist here, so it extinguishes the hero's own `burning`, deals Liquid Flame's own 4 damage to the nearest visible enemy, and applies `daze` as the chill stand-in (the same substitution the WandOfFrost branch already documents) - see `PORT_COVERAGE.md`'s new row. All 12 generator potion classes now have their own branch - see `PORT_COVERAGE.md`'s
+      the same shape RingOfHaste's multiplier already used. `PotionOfFrost` is now ported (Simplified, and the last generated potion id missing its own branch - it silently quaffed as Purity before): no blob-freezing terrain or distinct Frost immobilize exists here, so it uses a target-centred `chill` buff, extinguishes the hero's `burning`, and applies the real elemental harm when the target is an Elemental - see `PORT_COVERAGE.md`'s new row. All 12 generator potion classes now have their own branch - see `PORT_COVERAGE.md`'s
       potions row for what currently happens instead. (There is no `PotionOfConfusion` in real
       Java - the
       earlier text here was wrong; `ConfusionGas` is a trap-only blob, unrelated to potions.)

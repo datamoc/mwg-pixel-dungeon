@@ -2979,7 +2979,7 @@ export class SewersScene extends Scene2D {
 
 	/** Wandmaker turn-in: the run's real quest fetch (corpse dust, embers, rotberry seed)
 	 * for a choice of two wands (Magic Missile's clean damage, or Frost's
-	 * damage-plus-chill simplified to damage-plus-daze). All three types are live with the
+	 * damage-plus-Chill). All three types are live with the
 	 * real intro/reminder lines; type 2's candle ritual, newborn harvest, and embers
 	 * turn-in are ported below (`useCandle`/`fireRitual`/`newbornElementalTurn`). */
 	private interactWithWandmaker(): void {
@@ -3770,11 +3770,8 @@ export class SewersScene extends Scene2D {
 		//extinguishes fire, chills (`Chill`) and eventually freezes (`Frost`, an
 		//immobilize) everything caught in it. This port has no blob-freezing terrain and
 		//no freeze/immobilize status distinct from paralysis (see PORT_COVERAGE.md), so
-		//this is Simplified to the shape the neighboring gas-potion branches already use:
-		//extinguish the hero's own `burning`, deal Liquid Flame's own 4 damage to the
-		//nearest visible enemy, and apply `daze` as the chill stand-in (the same
-		//"Frost's damage-plus-chill simplified to damage-plus-daze" substitution the
-		//WandOfFrost branch already documents).
+			//this is Simplified to a target-centred cast because no thrown-cell picker exists;
+			//the status itself is now the real 10-turn Chill rather than a daze stand-in.
 		potionFrost: () => {
 			delete this.hero.buffs['burning'];
 			//EternalFire vs Freezing: any frost touching any part of the wall clears the whole
@@ -3796,22 +3793,15 @@ export class SewersScene extends Scene2D {
 			if (target) {
 				//Elemental.add(): Frost/Chill are `harmfulBuffs` - gaining either deals
 				//`NormalIntRange(HT/2, HT*3/5)` instead of applying (fire elementals included;
-				//the newborn shares it via `FireElemental`). This port has no Frost/Chill buffs
-				//at all, so the stand-in daze branch below would tickle a 60-HP elemental for 4
-				//- the one place the frost stand-in is not just imprecise but wrong-shaped, and
-				//exactly the counter the ritual room's own dropped Frost potion implies. Chill
-				//itself stays unmodeled (no chill buff exists to trigger on).
+				//the newborn shares it via `FireElemental`).
 				if (target.kind === 'elemental' || target.kind === 'newbornElemental') {
 					const scald = Random.normalRange(Math.floor(target.maxHp / 2), Math.floor((target.maxHp * 3) / 5));
 					target.hp -= scald;
 					this.showDamage(target, scald);
-					if (target.hp <= 0) this.kill(target);
-				} else {
-					target.hp -= 4;
-					this.showDamage(target, 4);
-					addBuff(target, 'daze');
-					if (target.hp <= 0) this.kill(target);
 				}
+				delete target.buffs['burning'];
+				addBuff(target, 'chill');
+				if (target.hp <= 0) this.kill(target);
 			}
 			this.say(t('port.log.quafffrost'), 'positive');
 		},
@@ -5428,7 +5418,7 @@ export class SewersScene extends Scene2D {
 						victim.sleeping = false;
 						victim.seesHero = false;
 					}
-					if (this.frostWand && victim === target) addBuff(victim, 'daze');
+					if (this.frostWand && victim === target) addBuff(victim, 'chill');
 					if (this.wandType === 'fireblast') addBuff(victim, 'burning');
 					if (this.wandType === 'prismaticLight' && Random.int(0, 5 + this.weaponLevel) >= 3) addBuff(victim, 'daze');
 					this.sprite(victim).setColorAdd(0.6, 0.7, 1);
@@ -6156,6 +6146,9 @@ export class SewersScene extends Scene2D {
 	 */
 	private takeMonsterTurn(monster: Creature): void {
 		this.pendingMonsterTurnCost = null;
+		//Chill.speedFactor() also slows monster actor speed; the scheduler reads this
+		//pending cost after the actor finishes its turn.
+		if (monster.buffs['chill']) this.pendingMonsterTurnCost = 1 / Math.max(0.5, 1 - monster.buffs['chill']! * 0.1);
 		if (monster.isNPC) return;
 		if (monster.isAlly) {
 			this.takeAllyTurn(monster);
@@ -10046,6 +10039,8 @@ export class SewersScene extends Scene2D {
 		if (this.armorGlyph === 'bulk' && this.doors.isDoor(this.hero.x, this.hero.y)) mod /= 3;
 		//Char.speed()'s real `if (buff(Haste.class)) speed *= 3f` (PotionOfHaste).
 		if (this.hero.buffs['haste']) mod /= 3;
+		//Chill.speedFactor(): speed falls by 10% per remaining turn, capped at 50%.
+		if (this.hero.buffs['chill']) mod /= Math.max(0.5, 1 - this.hero.buffs['chill']! * 0.1);
 		//RingOfHaste.speedMultiplier(): a higher Char.speed() means less time per action in
 		//real Java; this port's turn-cost multiplier expresses the same relationship inverted.
 		mod /= ringHasteMultiplier(this.equippedRing);

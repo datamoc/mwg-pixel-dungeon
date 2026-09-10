@@ -9,11 +9,13 @@ import type { SimulationRandom } from './random';
  * because these multipliers apply to transient dice rolls rather than to named stats a
  * StatBlock resolves.
  */
-export type BuffId = 'bless' | 'hex' | 'daze' | 'drowsy' | 'magicalSleep' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown';
+export type BuffId = 'bless' | 'hex' | 'daze' | 'chill' | 'drowsy' | 'magicalSleep' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown';
 export const BUFF_DURATION: Record<BuffId, number> = {
 	bless: 30,
 	hex: 30,
 	daze: 5,
+	//Chill.DURATION (Chill.java); its remaining turns also determine speedFactor().
+	chill: 10,
 	//Drowsy.DURATION (ScrollOfLullaby/Drowsy.java)
 	drowsy: 5,
 	//MagicalSleep has no timer in Java: it remains until the ally is fully healed or hit.
@@ -85,7 +87,7 @@ export const BUFF_DURATION: Record<BuffId, number> = {
  * existed). `focus`/`cloak`/`frostImbue`/`lethalHasteCooldown` are this port's own invented
  * stand-ins with no real monster-facing negative equivalent, so they're excluded. */
 export const NEGATIVE_BUFFS: ReadonlySet<BuffId> = new Set<BuffId>([
-	'poison', 'burning', 'bleeding', 'cripple', 'weakness', 'vulnerable', 'paralysis', 'roots', 'terror', 'amok', 'aggression', 'ooze', 'charm', 'degrade', 'daze', 'hex',
+	'poison', 'burning', 'bleeding', 'cripple', 'weakness', 'vulnerable', 'paralysis', 'roots', 'terror', 'amok', 'aggression', 'ooze', 'charm', 'degrade', 'daze', 'chill', 'hex',
 ]);
 
 export type BuffState = Partial<Record<BuffId, number>>;
