@@ -26,10 +26,14 @@ export type { Step } from './simulation/combatState';
 /** a creature on the map - the hero and every monster share this shape */
 export interface Creature extends Combatant {
 	name: string;
+	/** Internal combat provenance; thrown missiles use the Sniper shared-enchantment gate. */
+	attackMode?: 'melee' | 'throw';
 	/** Derived from the equipped Brimstone glyph; Java's `Char.isImmune(Burning)` path. */
 	fireImmune?: boolean;
 	/** Derived from AntiMagic; blocks the ported magical status applications. */
 	magicImmune?: boolean;
+	/** Java Mob.target: persistent random destination while the mob is wandering. */
+	patrolTarget?: { x: number; y: number };
 	/** Viscosity's accumulated deferred damage and its one-turn initial delay. */
 	deferredDamage?: number;
 	deferredDamageDelay?: boolean;
@@ -39,6 +43,10 @@ export interface Creature extends Combatant {
 	kind?: AnyMonsterId;
 	/** Goo's pump-up counter: 0 idle, 1 first charge turn, 2 primed to unleash next turn - `Goo.java`'s `pumpedUp` field */
 	pumped?: number;
+	/** Goo.java's water-healing increment; STRONGER_BOSSES ramps this from 1 to 3. */
+	gooHealInc?: number;
+	/** Monk.java's floating Focus cooldown, reduced by action time and extra movement time. */
+	focusCooldown?: number;
 	/** NPCs (ghost/wandmaker/shopkeeper): bumping into them opens dialogue instead of combat */
 	isNPC?: boolean;
 	/** Java Char.flying: Swarm is the currently ported monster that can occupy chasms. */
@@ -46,7 +54,7 @@ export interface Creature extends Combatant {
 	/** Java-aligned friendly combatant (MirrorImage and future directable allies). */
 	isAlly?: boolean;
 	/** Friendly summon subtype; sheep are neutral, short-lived and non-combatant. */
-	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian';
+	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus';
 	sheepTurns?: number;
 	/** `WandOfWarding.Ward`'s persistent tier, wand level, and zap count. */
 	wardTier?: number;
@@ -69,6 +77,10 @@ export interface Creature extends Combatant {
 	arenaJumps?: number;
 	/** Tengu's phase-2 bomb-ability countdown (Java's `abilityCooldown`, bomb-first rotation). */
 	tenguAbilityCd?: number;
+	/** Tengu's persisted phase-2 ability count, used to keep Bomb/Shocker ordering across saves. */
+	tenguAbilityUses?: number;
+	/** Tengu.lastAbility: the id of the previous phase-2 ability, so a repeat is rerolled 9/10. */
+	tenguLastAbility?: number;
 	/** MeleeWeapon upgrade level: min/max grow as tier+lvl / 5(tier+1)+lvl(tier+1) */
 	weaponLevel?: number;
 	/** Thief.item: what it stole (dropped again on death); Swarm split generation (EXP=0 past 0) */
@@ -90,6 +102,9 @@ export interface Creature extends Combatant {
 	 * moved around a blind corner (especially into a doorway) remains vulnerable until it gets
 	 * another turn to notice the hero. */
 	seesHero?: boolean;
+	/** Generic `Mob.Fleeing` state. Thief/Bandit derive it from `stolen` (see
+	 * `takeMonsterTurn`); Spinner sets it directly from `Spinner.attackProc()`. */
+	fleeing?: boolean;
 	/** `Brute.hasRaged`: true once it has used its one-time near-death revival this fight. */
 	hasRaged?: boolean;
 	/** Currently past that revival, boosting `damageRoll()` to 15-40 (`Brute.BruteRage` active). */
@@ -102,6 +117,8 @@ export interface Creature extends Combatant {
 	webCooldown?: number;
 	/** `Golem.enemyTeleCooldown`: turns until it may teleport the hero away again. */
 	golemTeleCooldown?: number;
+	/** `Golem.selfTeleCooldown`: turns until its wandering reposition teleport is available. */
+	golemSelfTeleCooldown?: number;
 	/** `Eye.beamCharged`/`beamCooldown`: DeathGaze's two-turn charge-then-fire cycle. */
 	beamCharged?: boolean;
 	beamCooldown?: number;
@@ -125,6 +142,10 @@ export interface Creature extends Combatant {
 	dmAbilityTurns?: number;
 	dmAbilityCd?: number;
 	dmLastAbility?: number;
+	/** DM300.java's persisted overcharge state and number of pylons activated so far. */
+	dmSupercharged?: boolean;
+	dmPylonsActivated?: number;
+	dmBarrier?: number;
 	/** DwarfKing phase machine (1/2/3), summon/ability cooldowns, P2 shield. */
 	kingPhase?: number;
 	kingSummonsMade?: number;
@@ -139,6 +160,15 @@ export interface Creature extends Combatant {
 	kingReactions?: ReactionTable<Creature>;
 	/** YogDzewa phase (1-5; 0-dormancy unmodeled, wakes on entry). */
 	yogPhase?: number;
+	/** YogFist.java's six concrete fist subclasses, selected by Yog's summon deck. */
+	yogFistType?: 'burning' | 'soiled' | 'rotting' | 'rusted' | 'bright' | 'dark';
+	/** Elemental.random()'s concrete subtype, retained by the compact shared sprite/AI carrier. */
+	elementalType?: 'fire' | 'frost' | 'shock' | 'chaos';
+	/** Shaman.random()'s red/blue/purple spell subtype, retained by the shared sprite carrier. */
+	shamanType?: 'red' | 'blue' | 'purple';
+	yogSummonCd?: number;
+	yogSummonIndex?: number;
+	yogBeamCd?: number;
 }
 
 /** makes a Creature-shaped object with the combat-state fields every spawn needs.
@@ -159,7 +189,7 @@ export interface GroundItem extends Step {
 	/** Java Heap.Type.FOR_SALE: a shop stand - priced, never free loot. */
 	forSale?: boolean;
 	/** Concrete inventory payload; absent only for legacy scripted/cosmetic drops. */
-	item?: { id: string; quantity: number; level?: number; sandBags?: number; charges?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; instanceId?: string; sourceClass?: string;
+	item?: { id: string; quantity: number; level?: number; tier?: number; sandBags?: number; charges?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; instanceId?: string; sourceClass?: string;
 		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean;
 		/** `Bomb.Fuse`: lit bombs count down 2 hero turns on the ground, then detonate. */
 		fuseTurns?: number;

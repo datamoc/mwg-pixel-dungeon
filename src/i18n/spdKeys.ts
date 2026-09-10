@@ -191,7 +191,7 @@ export const ITEM_KEYS: Record<string, string> = {
 	//The generated catalog carries no `stoneofdetectmagic` keys at all (it even holds a
 	//phantom `stoneofdisarming` set instead - a catalog-generation gap, not a Java one),
 	//so this one name resolves through the port's own strings, sourced verbatim from Java.
-	stoneOfDetectMagic: 'port.name.stoneOfDetectMagic',
+	stoneOfDetectMagic: 'port.name.stoneofdetectmagic',
 	candle: 'items.quest.ceremonialcandle.name',
 	embers: 'items.quest.embers.name',
 	ankh: 'items.ankh.name',

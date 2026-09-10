@@ -1,5 +1,5 @@
-/** Port of `levels/rooms/standard/PlatformRoom.java`. `merge()` (used by `RegularPainter`'s
- *  room-merge pass) is out of scope this sub-pass - not ported here. */
+/** Port of `levels/rooms/standard/PlatformRoom.java`; its `merge()` behavior is implemented in
+ *  `regularPainter.ts` alongside the other class-specific room merge overrides. */
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, fillXY, drawInside } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';

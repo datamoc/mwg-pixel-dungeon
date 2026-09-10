@@ -33,6 +33,10 @@ browser-verification workflow for why).
       urgent enough to risk touching untested.
 - [ ] Port all remaining weapons, wands, rings, artifacts, bombs, alchemy, and crafting.
       Wand identity is now persisted from generated `sourceClass` through equipment/save state;
+      the shared Elemental carrier also preserves its four Java subtypes and now emits the
+      corresponding Fire/Frost/Shock/Chaos loot outcomes; their shared combat carrier now
+      applies the available subtype-specific fire/frost/shock/chaos ranged and melee effects,
+      with Blindness/cursed-wand delegation explicitly reduced where no port subsystem exists;
       Fireblast and Lightning use their real level formulas, with Fireblast's burning and
       Lightning's per-target scaling. Corrosion and Corruption are now reachable too (their
       gas-volume/intensity and permanent corruption-loot payloads remain documented
@@ -272,7 +276,7 @@ browser-verification workflow for why).
       The generator table now also uses the real `StoneOfDetectMagic` class instead of the
       nonexistent `StoneOfDisarming`, so all 12 Java runestone classes are reachable from
       ordinary generation.
-- [ ] Implement complete weapon and armor tiers, transfer formulas, upgrade formulas, curse infusion, and degradation. Upgrade transitions are now exact Java (`Weapon/Armor.upgrade(false)`: curse-affix 1-in-3 removal with the real line, good-affix loss 10-100% from +4 with the real warnings, pre-level-change ordering), and Warlock Degrade is now the real 30-turn buff (50% on landed ranged zaps, sqrt effective-level reduction) instead of a permanent chip - the old shorthands had no Java basis. Remaining: the tier-jump progression itself (real Java has fixed per-class tiers with plain +1 levels - a full state-machine rework, not a formula fix), Blacksmith reforge transfers (section 4's forge item), and curse infusion proper (`items.spells.curseinfusion` is an alchemy-brewed spell, so it waits on the alchemy system with everything else brewed). See `PORT_COVERAGE.md`'s upgrade/degrade row.
+ - [ ] Implement complete weapon and armor tiers, transfer formulas, upgrade formulas, curse infusion, and degradation. Upgrade transitions now preserve generated weapon/armor tiers through inventory and equip, and scroll upgrades keep the fixed tier while applying Java's plain +1 level (the no-picker auto-target remains a documented UI simplification); the existing affix-loss rolls/Warlock Degrade are Java-shaped. Remaining: Blacksmith reforge transfers (section 4's forge item), and curse infusion proper (`items.spells.curseinfusion` is an alchemy-brewed spell, so it waits on the alchemy system with everything else brewed). See `PORT_COVERAGE.md`'s upgrade/degrade row.
 - [ ] Implement the remaining charm/knockback/stealth/blink/durability-per-hit
       subsystems the unported enchants, glyphs, and curses depend on (Kinetic's
       carried-damage buffer, Blooming's plant seeding, Projecting's
@@ -299,10 +303,11 @@ browser-verification workflow for why).
       bodies, selling pays flat `value()`), keepers spawn on the real 6/11/16/21 depths with
       per-shop shelf stock and a persisted cap-3 buyback shelf rebought at flat `value()`
       (G key, newest sale first), and generated FOR_SALE stands are priced and no longer
-      free loot. Remaining, each needing its own system: `ShopRoom` geometry (keepers stand
-      in random rooms), selling anything but food (needs the generic item-picker UI), and
-      the full generated stock as priced live goods (needs Ankhs/Styluses/darts/spells/bags
-      as real items first). Priced stands can now be bought directly by stepping onto them;
+      free loot. `ShopRoom` geometry and generic selling are now live: generated weapon/armor
+      stock becomes concrete level-0 inventory payloads with preserved Java tiers, and the
+      picker sells any positively-valued supported item one unit at a time. Remaining: full
+      generated stock as priced live goods (darts/spells/bags still need distinct item systems).
+      Priced stands can now be bought directly by stepping onto them;
       the Java trade window is still simplified. See `PORT_COVERAGE.md`'s
       `Shopkeeper` + pricing rows.
 - [x] Implement Timekeeper's Hourglass sand-bag state and its level-generation effects. The
@@ -414,15 +419,20 @@ browser-verification workflow for why).
 - [x] Port the fixed final vault/endgame layout at depth 26.
 - [ ] Port Prison/Tengu's full multi-stage arena transition and trap scripts (bracket
       floor, per-bracket capped relocation with trap burst, and the bomb-ability rotation
-      with real 3-turn fuses are now live, plus Terror immunity; floor shifting, the
-      FIGHT_START/ARENA room split, the Fire cone, the Shocker bursts, and the exact
-      catch-up ability cadence remain).
+      with real 3-turn fuses are now live, plus Terror immunity; the Fire cone and Shocker
+      burst are now ported too, and the ability cadence is Java's real
+      `canUseAbility()`/`targetAbilityUses()` schedule - the arena-jump-scaled cast budget,
+      the 1-4 turn gap, and all three catch-up rules - extracted to a tested
+      `simulation/tenguAbility.ts` rather than a flat every-third-turn rotation, and the
+      adjacent-turn ability check (previously swallowed by the generic melee branch) is
+      fixed; the Fire/Shocker actors are still collapsed to one turn each and an ability
+      still costs one whole turn rather than Java's 1-2 ticks; floor shifting and the
+      FIGHT_START/ARENA room split remain).
 - [ ] Port Caves/DM-300's full pylon, gate, energy field, and supercharge scripts (pylon
-      proximity sealing and short energy pressure are live, and the GAS/ROCKS ability
-      rotation is now real: live toxic-gas venting plus telegraphed rockfalls on the real
-      cooldown/pick rules with the real ability lines - replacing an every-3rd-turn
-      fire-ring + double strike that had no Java basis; exact pylon/supercharge state,
-      targeting refinements, and presentation remain).
+      proximity sealing, sequential threshold supercharges, pylon activation, boss
+      invulnerability, x2 speed, and supercharge loss on pylon death are live; the
+      GAS/ROCKS rotation is real with telegraphed rockfalls; exact PylonEnergy terrain,
+      locked-floor timing, targeting refinements, and presentation remain).
 - [ ] Port City/Dwarf King's throne and Imp-shop scripts (the full 1/2/3 phase machine
       is now live: P1 hunt with exact summon/ability cooldowns and LINK/TELE-lite, P2
       immobile shield with real wave schedule and self-chip, P3 bleed/summons/losing yell
@@ -431,10 +441,12 @@ browser-verification workflow for why).
 - [ ] Port Halls/Yog's full fist, flame, shadow, and arena scripts (HP-gate floors,
       per-gate fist spawns, fist-gated invulnerability across ALL damage sources, fist
       proximity guards, and the phase-5 hope trigger are now live with the real
-      darkness/hope lines - replacing a turn-based spawner that double-spawned against
-      the new hooks and a 0.75/0.5/0.25 rhythm with no Java basis; distinct fist classes,
-      larva/ripper summons, beam-count scaling, challenge pairs, flame/shadow arenas,
-      and the visibility shrink remain).
+      darkness/hope lines, the regular Yog minion cadence, phase-5 summon burst, and
+      DeathRay cooldown/damage range -
+      replacing a turn-based spawner that double-spawned against the new hooks and a
+      0.75/0.5/0.25 rhythm with no Java basis; the six fist identities and base stats are
+      now preserved with their shared fire/root/ooze/cripple effects. Exact Larva stats,
+      beam-count scaling, challenge pairs, flame/shadow arenas, and visibility shrink remain).
 - [x] Port final-vault Amulet placement at Java's `AMULET_POS` (depth 26, x=8, y=12).
 - [ ] Port final-vault endgame-specific terrain, custom visuals, and compass behavior. The
       vault now runs Java's own `viewDistance = 4` through the shared sight radius (with the
@@ -502,9 +514,9 @@ browser-verification workflow for why).
       not adjacent and off a 20-turn cooldown, it teleports the hero to whichever of the hero's
       own free 8-neighbour cells is farthest from the golem (pushing the hero away, not pulling
       itself closer). Real Java's own reachability check (`canTele`, a BFS around blocking
-      terrain) and its separate self-teleport-to-reposition ability while wandering are not
-      modeled - this port requires a clear line within 8 cells instead, the same "shape not
-      curve" simplification already used for DM200's vent/Spinner's web. Browser-verified live:
+      terrain) remains simplified to the port's clear-line check. Its wandering self-teleport-
+      to-reposition ability is now ported with the real 30-turn cooldown and 2-tick cost; the
+      charge particles and delayed animation are not modeled. Browser-verified live:
       a golem teleported the hero to a genuinely farther cell, set the cooldown to 20, and a
       second immediate attempt correctly did nothing while the cooldown ticked down. **Eye's
       real DeathGaze is now ported too** - it was implemented as a completely wrong-shaped
@@ -529,9 +541,11 @@ browser-verification workflow for why).
       **Progress this pass:** `Creature.isAlly` is now persisted and scheduled; MirrorImage
       summons are real 1-HP allied actors that copy the hero's combat stats, attack the nearest
       visible hostile, follow the hero when idle, and can be intercepted by adjacent hostile
-      melee turns. Simple ranged targeting now also considers the nearest visible ally, and
-      `Amok` now attacks nearby creatures. Boss-specific ranged target migration and dedicated
-      ally sprites/orders remain.
+      melee turns. Ally turns now use an ally-centered field of view instead of the hero's FOV;
+       simple ranged targeting also considers the nearest visible ally, and hostile mobs now
+       path toward a visible ally when they cannot see the hero. `Amok` now attacks nearby
+       creatures. Boss-specific ranged target migration and dedicated ally sprites/orders
+       remain.
 - [x] Port all champion types and their effects. All 6 real types (Blessed/Blazing/Giant/
       Growing/AntiMagic/Projecting) are now live, each with its real per-type factor
       (`accRollMulti`/`rollDamage`), and the type roll is a true 1-in-6 matching Java's
@@ -655,10 +669,14 @@ browser-verification workflow for why).
       until this pass** - now documented in `src/talents.ts` and `PORT_COVERAGE.md`; not
       replaced, since a real Cleric tree needs the Cleric class's own Holy Lantern/spell
       mechanics built first.
-- [ ] Implement rune transfer and shared-enchantment behavior.
+ - [ ] Implement rune transfer and shared-enchantment behavior. Sniper's `shared_enchantment`
+       proc is now live for thrown hits with Java's `Random.Int(3) < points` gate and explicit
+       ranged attack provenance; Warden's `durable_tips` still waits on a real TippedDart item.
 - [ ] Complete subclass and armor-ability effects.
 - [ ] Match Java talent timing, identification, recharge, and threshold rules.
-- [ ] Complete class-specific item and ability behavior.
+ - [ ] Complete class-specific item and ability behavior.
+      `SuckerPunchTracker` is now also ported: the Rogue surprise bonus uses Java's
+      `Random.IntRange(points, 2)` once per stable enemy, with save/load and death cleanup.
 
 ## 7. Replace simplified terrain and status mechanics
 
@@ -683,16 +701,18 @@ browser-verification workflow for why).
       single-target statuses, Sungrass healing-over-time, and Warden-sensitive variants are live;
       Icecap/Rotberry blob diffusion and Warden FrostImbue/AdrenalineSurge variants are live;
       Dewcatcher now releases 3-6 distinct adjacent dewdrops and Seedpod releases 2-4 generated
-      seed stand-ins; exact teleport/TimeBubble behavior, seed growth/Lotus preservation, and
-      full dew collection rules remain).
+      seed stand-ins; exact teleport/TimeBubble behavior and full dew collection rules remain
+      (Lotus seed preservation is done - see the `WandOfRegrowth` note in the next bullet;
+      this line's earlier "Lotus preservation remains" was stale, contradicting it)).
 - [ ] Implement the remaining Java seed and dew behavior in high grass. Actual seed payloads
       (real `Generator` category roll, concrete class retained) and planting them (`plantSeed()`,
       instant activation with no growth delay - confirmed against `Plant.java`'s own
       `Seed.execute(AC_PLANT)`, which has none either) are both already live; a stale comment
       claiming otherwise at `trampleHighGrass` is now fixed. `WandOfRegrowth`'s charge-scaled
       regional growth, roots, high-grass budget, seed/dewcatcher/seedpod chances, and persistent
-      degradation counters are now live too. What remains: its Lotus ally seed-preservation
-      chance, exact cone targeting, and exact waterskin/dewdrop interactions.
+      degradation counters are now live too. Lotus now spawns on qualifying casts, expires on
+      its Java HP timer, and preserves nearby non-Rotberry seeds with the real level-scaled
+      chance. Exact cone targeting and exact waterskin/dewdrop interactions remain.
 - [x] Match hunger and starvation damage exactly (`Hunger.act()`'s real `partialDamage`
       fractional accrual and crossing-into-STARVING 1-damage hit, replacing the former flat
       "every 10 turns" guess). Java has no attack-delay/accuracy penalty while merely hungry
@@ -710,10 +730,12 @@ browser-verification workflow for why).
       one's own Java class) wakes unconditionally, no roll, even out of the hero's sight -
       real and reachable here since `spreadFire`/`spreadPlantBlobs` already apply those buffs
       to sleeping monsters without waking them. Browser-verified live. See
-      `PORT_COVERAGE.md`'s sleeping/wandering row. Remaining: the WANDERING notice roll (needs
-      a genuine awake-but-unnoticed monster state plus random-patrol movement `mwg` has no
-      primitive for - a real, moderate-scope feature, not a quick fix) and ally-aware
-      targeting (needs the unported ally-vs-monster combat system).
+       `PORT_COVERAGE.md`'s sleeping/wandering row. The awake WANDERING notice roll is now
+       Java-shaped too: the port uses the `seesHero` transition as its compact
+       awake-but-unnoticed state and holds the mob when the real detection roll fails.
+       Persistent random-destination patrol state now covers the Java movement half (including
+       save/load and piranhas' water restriction). Remaining: specialized ally-aware ranged
+       targeting.
 - [x] Implement shield decay (`Barrier.act()`'s real `min(1,shielding/20)`-per-turn proportional
       curve now runs every hero turn against the shared `heroBarrier` pool - previously never
       invoked at all, so shields held indefinitely). `Blocking.BlockBuff`'s own separate fixed
@@ -875,9 +897,37 @@ browser-verification workflow for why).
       "Odznaki", "Zmiany", "O grze"), the welcome log line ("Kanały, poziom 1. Jesteś wojownik,
       dzierżysz zużyty krótki miecz."), and the `object.you`-fixed combat log ("Wielki szczur
       trafia ciebie za 2 obrażeń.") all rendered correctly-composed Polish (diacritics included)
-      with no raw keys and no console errors.
+       with no raw keys and no console errors.
 
-      **12 locales remain** (see `languages.ts` for the full list). Their future catalogues must
+       **Sixth locale done: Russian (`ru`), 2026-09-10, 389/389 keys**, same process throughout -
+       direct translation (formal «Вы» address, matching SPD RU's own second-person style;
+       `port.name.cursed`/affixes use the masculine base form like every other locale, since
+       Java resolves its gender markers by item and this port does not model that), the
+       programmatic key/placeholder QA diff against EN (0 missing/extra, 0 mismatches), wiring
+       (`PORT_STRINGS_RU` + `PORT_STRINGS` registration + `ru: 'machine'` provenance), then
+       type-check/build/both suites green. Marked `MT` in `PORT_STRINGS_RU`'s own doc comment
+       for the same reason as the other machine-drafted locales - note the nuance recorded
+       there: SPD itself ships Russian as reviewed, but that status covers SPD's own
+       `.properties` catalog, not this port-only draft. Confirmed `ru` is a real Java SPD
+       locale the same way (present in `src/generated/spdMessages.ts`'s generated table, one
+       of its 19 base locales). No Cyrillic-typo scan was needed this pass (Russian is
+       natively Cyrillic, so the Latin-script scan from the Italian pass does not apply).
+       Browser verification owed per section 10 (no working browser tool in this session).
+
+       **Seventh locale done: Turkish (`tr`), 2026-09-10, 389/389 keys**, same process throughout -
+       direct translation (informal sen-forms, matching DE's Du and ES's Tú rather than FR's
+       Vous; dotted/dotless İ/ı applied throughout, which is exactly the locale `capitalize()`
+       calls out as easy to get wrong), the programmatic key/placeholder QA diff against EN
+       (0 missing/extra, 0 mismatches - note the combat line `port.log.hit` reorders placeholders
+       to verb-final Turkish (`{subject} {object} {damage} {verb}`) while keeping the token set
+       identical, which the sorted-token QA accepts by design), wiring (`PORT_STRINGS_TR` +
+       `PORT_STRINGS` registration + `tr: 'machine'` provenance), then type-check/build/both
+       suites green. Marked `MT` in `PORT_STRINGS_TR`'s own doc comment like the other
+       machine-drafted locales. Confirmed `tr` is a real Java SPD locale the same way (one of
+       `src/generated/spdMessages.ts`'s 19 base locales). Browser verification owed per
+       section 10 (no working browser tool in this session).
+
+       **10 locales remain** (see `languages.ts` for the full list). Their future catalogues must
       be machine-translated from `PORT_STRINGS_EN`, marked `MT` in source and in the provenance
       map exported by `portStrings.ts`, then checked for key/placeholder parity before wiring.
       Font coverage is part of done, not a footnote - zh/ko/ja need the section-10 tofu check per

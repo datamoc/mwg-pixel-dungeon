@@ -549,10 +549,9 @@ export const MOB_LOOT: Record<string, { chance: number; kind: GroundItemKind }[]
 	//'wand' kind, which would make Thief's drop indistinguishable from a real wand pickup;
 	//'ring' stays a closer, still-distinct stand-in for "rare misc treasure").
 	thief: [{ chance: 0.03, kind: 'ring' }],
-	//Swarm.lootChance(): `1/(6*(generation+1)) * (5-SWARM_HP.count)/5`, `loot =
-	//PotionOfHealing.class`. `generation` (how many times this exact Swarm has split) is
-	//always 0 here - Swarm's on-hit split-into-two behaviour is not modeled by this port's
-	//monster AI, so every swarm behaves like Java's un-split generation-0 case.
+	//Swarm.lootChance(): `1/(6*(generation+1)) * (5-SWARM_HP.count)/5`,
+	//`loot = PotionOfHealing.class`. `generation` is persisted and incremented by
+	//`swarmSplit()` so split descendants receive Java's reduced loot chance.
 	swarm: [{ chance: 1 / 6, kind: 'potion' }],
 };
 

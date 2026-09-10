@@ -2,6 +2,15 @@ import { Actors } from 'mwg';
 import type { GroundItem } from './combat';
 import type { GroundItemKind } from './dungeonConstants';
 
+const SHOP_WEAPON_TIERS: Record<string, number> = Object.fromEntries([
+	['WornShortsword', 1], ['MagesStaff', 1], ['Dagger', 1], ['Gloves', 1], ['Rapier', 1],
+	['Shortsword', 2], ['HandAxe', 2], ['Spear', 2], ['Quarterstaff', 2], ['Dirk', 2], ['Sickle', 2],
+	['Sword', 3], ['Mace', 3], ['Scimitar', 3], ['RoundShield', 3], ['Sai', 3], ['Whip', 3],
+	['Longsword', 4], ['BattleAxe', 4], ['Flail', 4], ['RunicBlade', 4], ['AssassinsBlade', 4], ['Crossbow', 4], ['Katana', 4],
+	['Greatsword', 5], ['WarHammer', 5], ['Glaive', 5], ['Greataxe', 5], ['Greatshield', 5], ['Gauntlet', 5], ['WarScythe', 5],
+]);
+const SHOP_ARMOR_TIERS: Record<string, number> = { ClothArmor: 1, LeatherArmor: 2, MailArmor: 3, ScaleArmor: 4, PlateArmor: 5 };
+
 /** Rolls an affix from `table` when eligible, `undefined` otherwise - `generatedInventoryItem`'s
  * cursed/hasGoodEnchant gates decide eligibility, this only does the roll itself. */
 export function rollGeneratedAffix(table: Actors.AffixTable, cursed: boolean, hasGoodEnchant: boolean): string | undefined {
@@ -63,6 +72,12 @@ export function sourceInventoryItem(id: string, sourceClass: string | undefined,
 	if (lower.includes('timekeepershourglass')) return { id: 'hourglass', quantity: 1, identified: false, sandBags: 0, instanceId: newItemInstanceId('hourglass'), sourceClass: concrete };
 	if (lower.includes('artifact')) return { id: 'cloak', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
 	if (lower.includes('wand')) return { id: 'wand', quantity: 1, identified: false, instanceId: newItemInstanceId('wand'), sourceClass: concrete };
+	//`ShopRoom.generateItems()` places concrete weapon/armor classes directly. Preserve their
+	//class and tier so generated stock becomes a real level-0 shop item instead of disappearing.
+	const weaponTier = SHOP_WEAPON_TIERS[concrete];
+	if (weaponTier !== undefined) return { id: 'weaponReward', quantity: 1, tier: weaponTier, level: 0, identified: false, instanceId: newItemInstanceId('weapon'), sourceClass: concrete };
+	const armorTier = SHOP_ARMOR_TIERS[concrete];
+	if (armorTier !== undefined) return { id: 'armorReward', quantity: 1, tier: armorTier, level: 0, identified: false, instanceId: newItemInstanceId('armor'), sourceClass: concrete };
 	//Bomb room loot: `Bomb` stacks, `DoubleBomb` stays its own id so pickup can grant
 	//the real "1+1 free!" Bomb x2 (`DoubleBomb.doPickUp`). Bombs are always identified
 	//(`Bomb.isIdentified()` returns true unconditionally).

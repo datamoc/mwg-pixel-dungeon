@@ -11,11 +11,9 @@
  *   flat value - never at the x5 shelf price. The port previously paid 67% of its own
  *   guessed shelf price and restocked sold goods as full-price shelf items instead.
  *
- * Only ids the live shop actually trades carry values here ( shelf potions/identify,
- * food/meat sold by the hero, bombs for future stock). Ring/wand/armor/weapon `value()`
- * bodies (75 base with curse/level terms, `20 x tier` with glyph/enchant terms) are not
- * reproduced because nothing prices them - the sell side is food-only until a generic
- * item-picker UI exists to choose what to sell.
+ * The live shop trades shelf potions/identify, generated gear, and positively-valued
+ * inventory items sold by the hero. Bombs and the remaining generated goods are included
+ * where their distinct item implementations already exist.
  */
 
 /** Per-unit `value()` bodies for the traded ids (quantity folds in at the call). */
@@ -48,12 +46,21 @@ const UNIT_VALUES: Record<string, number> = {
  * super.value()`); unknown ids are worthless (`Item.value()` defaults to 0, which is
  * also what gates `Shopkeeper.canSell`).
  */
-export function itemValue(itemId: string, quantity = 1, identified = true): number {
+export interface ShopItemMeta { tier?: number; level?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; seal?: boolean }
+
+export function itemValue(itemId: string, quantity = 1, identified = true, meta: ShopItemMeta = {}): number {
 	if ((itemId === 'scrollUpgrade' || itemId === 'scrollTransmutation') && !identified) {
 		return 30 * quantity;
 	}
-	//`Ring.value()`/`Wand.value()` are 75 base (curse/level terms need a level the shop
-	//stands never carry - generated shop rings/wands arrive level-0 and uncursed).
+	if (meta.seal) return 0;
+	if (itemId === 'weaponReward' || itemId === 'armorReward') {
+		let price = 20 * Math.max(1, meta.tier ?? 1);
+		if (meta.affix && !meta.affix.toLowerCase().includes('curse')) price *= 1.5;
+		if (meta.cursedKnown && (meta.cursed || meta.affix?.toLowerCase().includes('curse'))) price /= 2;
+		if (identified && (meta.level ?? 0) > 0) price *= (meta.level! + 1);
+		return Math.max(1, Math.floor(price)) * quantity;
+	}
+	//`Ring.value()`/`Wand.value()` are 75 base (generated shop variants are level-0).
 	if (itemId.startsWith('ring_') || itemId === 'wand') return 75 * quantity;
 	return (UNIT_VALUES[itemId] ?? 0) * quantity;
 }
@@ -62,16 +69,16 @@ export function itemValue(itemId: string, quantity = 1, identified = true): numb
  * `Shopkeeper.sellPrice()`: what the hero PAYS for shelf (and buyback-shelf) goods.
  * Java sells buyback rebuys at flat `value()` instead - use `buybackPrice` for those.
  */
-export function getShopPrice(itemId: string, depth = 1, quantity = 1, identified = true): number {
-	return itemValue(itemId, quantity, identified) * 5 * (Math.floor(depth / 5) + 1);
+export function getShopPrice(itemId: string, depth = 1, quantity = 1, identified = true, meta: ShopItemMeta = {}): number {
+	return itemValue(itemId, quantity, identified, meta) * 5 * (Math.floor(depth / 5) + 1);
 }
 
 /** `WndTradeItem.sell`: what the keeper PAYS the hero - flat `value()`, no bracket. */
-export function getSellPrice(itemId: string, _depth = 1, quantity = 1, identified = true): number {
-	return itemValue(itemId, quantity, identified);
+export function getSellPrice(itemId: string, _depth = 1, quantity = 1, identified = true, meta: ShopItemMeta = {}): number {
+	return itemValue(itemId, quantity, identified, meta);
 }
 
 /** Buyback rebuys cost flat `value()` (`Dungeon.gold -= returned.value()`). */
-export function buybackPrice(itemId: string, quantity = 1, identified = true): number {
-	return itemValue(itemId, quantity, identified);
+export function buybackPrice(itemId: string, quantity = 1, identified = true, meta: ShopItemMeta = {}): number {
+	return itemValue(itemId, quantity, identified, meta);
 }

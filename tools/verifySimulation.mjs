@@ -33,7 +33,7 @@ try {
 	for (const file of ['simulation/movement', 'simulation/heroTurn', 'simulation/hunger', 'simulation/turns', 'adapters/sceneSimulation',
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActions',
-		'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution']) {
+		'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'simulation/tenguAbility']) {
 		compile(new URL(`../src/${file}.ts`, import.meta.url), `${file}.js`);
 	}
 	// Exercise the installed local scheduler as well as the framework-free simulation.
@@ -53,6 +53,7 @@ try {
 	const { runHungerStep } = require('./adapters/hungerSimulation');
 	const { runMovement } = require('./adapters/movementSimulation');
 	const { resolveAttack } = require('./simulation/attackResolution');
+	const { stepTenguAbility, tenguTargetAbilityUses } = require('./simulation/tenguAbility');
 	const { runUntilHeroInput } = require('./adapters/sceneSimulation');
 	const { SceneSimulationAdapter } = require('./adapters/sceneSimulation');
 	const { Scheduler } = require('./scheduler');
@@ -270,6 +271,42 @@ try {
 		assert.equal(ready, 2);
 	});
 	verifyMovement(require, check);
+	check('tengu ability cadence matches Java targetAbilityUses and catch-up cooldown', () => {
+		// Tengu.targetAbilityUses(): 1 base, +2 per jump, +2 more for jumps 3 and 4.
+		assert.deepEqual([0, 1, 2, 3, 4, 5].map(tenguTargetAbilityUses), [1, 3, 5, 8, 11, 14]);
+		// Phase 1 (HP > HT/2) never draws, never casts, and leaves the cooldown untouched.
+		let draws = 0;
+		let step = stepTenguAbility({ hp: 101, maxHp: 200, cooldown: 2, used: 0, arenaJumps: 0, strongerBosses: false },
+			() => { draws++; return 4; });
+		assert.equal(step.ready, false); assert.equal(step.cooldown, 2); assert.equal(draws, 0);
+		// Phase 2 starts at cooldown 2: one waiting turn (2->1), then a cast (1->0).
+		step = stepTenguAbility({ hp: 100, maxHp: 200, cooldown: 2, used: 0, arenaJumps: 0, strongerBosses: false },
+			() => { draws++; return 4; });
+		assert.equal(step.ready, false); assert.equal(step.cooldown, 1); assert.equal(draws, 0);
+		step = stepTenguAbility({ hp: 100, maxHp: 200, cooldown: 1, used: 0, arenaJumps: 0, strongerBosses: false },
+			() => { draws++; return 4; });
+		assert.equal(step.ready, true); assert.equal(step.cooldown, 0); assert.equal(draws, 0);
+		// After a cast the cooldown sits at 0; the next turn draws the real IntRange(1,4).
+		step = stepTenguAbility({ hp: 100, maxHp: 200, cooldown: 0, used: 0, arenaJumps: 0, strongerBosses: false }, () => 3);
+		assert.equal(step.ready, false); assert.equal(step.cooldown, 3); assert.equal(step.target, 1);
+		// The cast budget scales with arena jumps, so a two-jump fight stops at five casts.
+		assert.equal(stepTenguAbility({ hp: 100, maxHp: 200, cooldown: 1, used: 5, arenaJumps: 2, strongerBosses: false }, () => 1).ready, false);
+		assert.equal(stepTenguAbility({ hp: 100, maxHp: 200, cooldown: 1, used: 4, arenaJumps: 2, strongerBosses: false }, () => 1).ready, true);
+		// 3+ behind: pinned to every other turn (cooldown forced to 1), no draw.
+		const lag3 = stepTenguAbility({ hp: 100, maxHp: 200, cooldown: 0, used: 2, arenaJumps: 2, strongerBosses: false },
+			() => { assert.fail('3-behind must not draw'); });
+		assert.equal(lag3.cooldown, 1); assert.equal(lag3.ready, false); assert.equal(lag3.behind, 3);
+		// 4+ behind, normal rules: cast immediately, no draw.
+		const lag4 = stepTenguAbility({ hp: 100, maxHp: 200, cooldown: 2, used: 1, arenaJumps: 2, strongerBosses: false },
+			() => { assert.fail('4-behind must not draw'); });
+		assert.equal(lag4.cooldown, 0); assert.equal(lag4.ready, true);
+		// 4+ behind, bosses challenge: the instant branch is skipped, so it paces like 3-behind.
+		const lag4s = stepTenguAbility({ hp: 100, maxHp: 200, cooldown: 0, used: 1, arenaJumps: 2, strongerBosses: true },
+			() => { assert.fail('challenge 4-behind must not draw either'); });
+		assert.equal(lag4s.cooldown, 1); assert.equal(lag4s.ready, false);
+		// Dead Tengu is inert.
+		assert.equal(stepTenguAbility({ hp: 0, maxHp: 200, cooldown: 0, used: 0, arenaJumps: 0, strongerBosses: false }, () => 1).ready, false);
+	});
 	verifyHeroTurn(require, check);
 	verifyCombat(require, check);
 	verifyHeroActions(require, check);

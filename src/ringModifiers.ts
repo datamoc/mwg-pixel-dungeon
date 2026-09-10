@@ -141,6 +141,13 @@ export function ringWealthMultiplier(ring: EquippedRing | null): number {
 	return Math.pow(1.2, ring.level);
 }
 
+/** `Ring.getBuffedBonus(Wealth.class)`: positive bonus levels enable the separate
+ * tryForBonusDrop tracker; cursed/zero-level rings do not start that tracker. */
+export function ringWealthBonus(ring: EquippedRing | null): number {
+	if (!ring || ringDef(ring.id)?.stat !== 'wealth') return 0;
+	return Math.max(0, ring.level);
+}
+
 /** `RingOfElements.resist()`: `pow(0.825, level)` against elemental sources. Real Java
  * gates this on the damage source's class being in `RESISTS`; this port's elemental
  * call sites (DoT tick, toxic-gas blob, burning trap) are all in that set by

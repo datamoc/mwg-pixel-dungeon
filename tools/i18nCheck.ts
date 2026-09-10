@@ -116,7 +116,7 @@ check('French adds no key English lacks', Object.keys(PORT_STRINGS_FR).every((ke
 
 // 3c. Every port-only catalogue is labelled in source. This prevents a machine draft from
 // being mistaken for a reviewed translation when a new locale is wired into `index.ts`.
-for (const code of ['en', 'fr', 'de', 'es', 'pt', 'it', 'pl']) {
+for (const code of ['en', 'fr', 'de', 'es', 'pt', 'it', 'pl', 'ru', 'tr']) {
 	check(`port locale ${code} declares translation origin`, PORT_TRANSLATION_ORIGIN[code] !== undefined);
 }
 
