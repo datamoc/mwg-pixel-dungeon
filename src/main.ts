@@ -2806,7 +2806,7 @@ export class SewersScene extends Scene2D {
 		const candidates: Step[] = [];
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 			const at = { x: spawner.x + dx, y: spawner.y + dy };
-			if (this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y)) candidates.push(at);
+			if (this.level.passable(at.x, at.y) && !this.isChasmCell(at.x, at.y) && !this.creatureAt(at.x, at.y)) candidates.push(at);
 		}
 		if (candidates.length === 0) return;
 
@@ -3987,7 +3987,7 @@ export class SewersScene extends Scene2D {
 			//in PORT_COVERAGE.md (no dedicated MirrorImage sheet exists in this port).
 			const cells = Roguelike.neighbourOffsets(8)
 				.map(([dx, dy]) => ({ x: this.hero.x + dx, y: this.hero.y + dy }))
-				.filter((at) => this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y));
+				.filter((at) => this.level.passable(at.x, at.y) && !this.isChasmCell(at.x, at.y) && !this.creatureAt(at.x, at.y));
 			for (const at of cells.slice(0, 2)) this.spawnMirrorImage(at);
 			this.say(t('port.log.mirror'), 'positive');
 		} else if (id === 'scrollRecharging') {
@@ -4483,7 +4483,7 @@ export class SewersScene extends Scene2D {
 			return;
 		}
 		const candidates = [{ x: target.x, y: target.y }, ...Roguelike.neighbourOffsets(8).map(([dx, dy]) => ({ x: target.x + dx, y: target.y + dy }))]
-			.filter((at) => this.level.inside(at.x, at.y) && this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y));
+			.filter((at) => this.level.inside(at.x, at.y) && this.level.passable(at.x, at.y) && !this.isChasmCell(at.x, at.y) && !this.creatureAt(at.x, at.y));
 		const cell = candidates[0];
 		if (!cell) {
 			this.say(t('port.log.notarget'), 'negative');
@@ -6555,7 +6555,7 @@ export class SewersScene extends Scene2D {
 	private maybeSummonEarthGuardian(target: Creature): void {
 		if (this.livingEarthArmor < 8 + 4 * this.livingEarthWandLevel) return;
 		const cells = [{ x: target.x, y: target.y }, ...Roguelike.neighbourOffsets(8).map(([dx, dy]) => ({ x: target.x + dx, y: target.y + dy }))]
-			.filter((at) => this.level.inside(at.x, at.y) && this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y))
+			.filter((at) => this.level.inside(at.x, at.y) && this.level.passable(at.x, at.y) && !this.isChasmCell(at.x, at.y) && !this.creatureAt(at.x, at.y))
 			.sort((a, b) => Roguelike.chebyshevDistance(this.hero, a) - Roguelike.chebyshevDistance(this.hero, b));
 		const cell = cells[0];
 		if (!cell) return;
@@ -7005,7 +7005,7 @@ export class SewersScene extends Scene2D {
 		let best = Infinity;
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 			const at = { x: this.hero.x + dx, y: this.hero.y + dy };
-			if (!this.level.passable(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
+			if (!this.level.passable(at.x, at.y) || this.isChasmCell(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
 			const d = Math.hypot(necro.x - at.x, necro.y - at.y);
 			if (d < best) {
 				best = d;
@@ -7687,7 +7687,7 @@ export class SewersScene extends Scene2D {
 	private summonKingAdd(king: Creature, kind: 'ghoul' | 'monk' | 'warlock' | 'golem'): boolean {
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 			const at = { x: king.x + dx, y: king.y + dy };
-			if (!this.level.passable(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
+			if (!this.level.passable(at.x, at.y) || this.isChasmCell(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
 			const add = this.spawnMonster(kind, at);
 			add.sleeping = false;
 			this.kingAdds.add(add);
@@ -7862,7 +7862,7 @@ export class SewersScene extends Scene2D {
 		if (this.creatures.filter((c) => c.kind === 'yogFist' && c.hp > 0).length >= 3) return;
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 			const at = { x: yog.x + dx, y: yog.y + dy };
-			if (!this.level.passable(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
+			if (!this.level.passable(at.x, at.y) || this.isChasmCell(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
 			const fist = this.spawnMonster('yogFist', at);
 			fist.sleeping = false;
 			this.say(t('port.log.yogfistslam'), 'warning');
@@ -8581,7 +8581,7 @@ export class SewersScene extends Scene2D {
 		if (defender.isHero && this.armorGlyph === 'multiplicity' && !attacker.isHero && !attacker.isNPC && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing))) {
 			const adjacent = Roguelike.neighbourOffsets(8)
 				.map(([dx, dy]) => ({ x: this.hero.x + dx, y: this.hero.y + dy }))
-				.filter((at) => this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y));
+				.filter((at) => this.level.passable(at.x, at.y) && !this.isChasmCell(at.x, at.y) && !this.creatureAt(at.x, at.y));
 			const destination = Random.element(adjacent);
 			const attackerKind = attacker.kind;
 			if (destination && attackerKind && !['goo', 'tengu', 'dm300', 'king', 'yog', 'yogFist'].includes(attackerKind)) {
@@ -8783,7 +8783,7 @@ export class SewersScene extends Scene2D {
 		if (preHp < damage + 2) return;
 		for (const [dx, dy] of Roguelike.neighbourOffsets(4)) {
 			const at = { x: swarm.x + dx, y: swarm.y + dy };
-			if (!this.level.passable(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
+			if (!this.level.passable(at.x, at.y) || this.isChasmCell(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
 			const clone = this.spawnMonster('swarm', at);
 			clone.hp = Math.floor((preHp - damage) / 2);
 			swarm.hp -= clone.hp;
@@ -10532,10 +10532,10 @@ export class SewersScene extends Scene2D {
 		const cx = this.ritualPos % w;
 		const cy = Math.floor(this.ritualPos / w);
 		let at = { x: cx, y: cy };
-		if (this.creatureAt(cx, cy) || !this.level.passable(cx, cy)) {
+		if (this.creatureAt(cx, cy) || !this.level.passable(cx, cy) || this.isChasmCell(cx, cy)) {
 			const free = Roguelike.neighbourOffsets(8)
 				.map(([dx, dy]) => ({ x: cx + dx, y: cy + dy }))
-				.filter((c) => this.level.passable(c.x, c.y) && !this.creatureAt(c.x, c.y));
+				.filter((c) => this.level.passable(c.x, c.y) && !this.isChasmCell(c.x, c.y) && !this.creatureAt(c.x, c.y));
 			if (free.length > 0) at = Random.element(free)!;
 		}
 		const elemental = this.spawnMonster('newbornElemental', at);
