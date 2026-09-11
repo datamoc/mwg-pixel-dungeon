@@ -44,9 +44,12 @@
   proposing the hold-then-fade curve and a `FloatingTextStack` sits in
   `tools/scratch/mwg-proposal/`. `src/ui/bar.ts`'s does not: the pinned
   `@datamoc/mw_games@0.7.2` already ships `fillTexture` and `roundUpToPixel` on its own `Bar`
-  (`tests/bar.test.ts` covers the rounding), so this file is avoidable duplication rather than
-  the justified sibling it claimed to be, and it is scheduled for deletion in ROADMAP.md's
-  framework-adoption items. Also confirmed while checking: five capabilities this port
+  (`tests/bar.test.ts` covers the rounding), so the two reasons it gave for existing are gone.
+  It is not deletable yet either: `mwg`'s `Bar` cannot recolour its fill after construction or
+  colour its track, and this file does both (the boss bar's bleeding red, the HP bar's black
+  missing-health strip). Those two are proposed as
+  `tools/scratch/mwg-proposal/0002-bar-runtime-colour-and-track.patch`, with framework tests,
+  and the deletion is scheduled in ROADMAP.md's framework-adoption items behind it. Also confirmed while checking: five capabilities this port
   approximates - `Level.viewDistance`, `TerrainKind.flags`/`extras`, `Scheduler` priority,
   `Roguelike.Targeting`'s `Ballistica`, and `MultiTurnBeam`/`MultiStageAbility` - are all in
   0.7.3, so the work there is adopting them, not asking for them.

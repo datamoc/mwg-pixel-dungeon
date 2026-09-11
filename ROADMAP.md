@@ -177,14 +177,19 @@ Do not add new authored content as object literals or scattered constants in the
       Bresenham `traceLine` used for Yog beams, Tengu cone and projectile impacts; and
       `MultiTurnBeam`/`MultiStageAbility` for the multi-turn beam and staged-ability shapes
       Tengu's Fire/Shocker actors and DM-300's pylon sequence need.
-- [ ] Replace `src/ui/bar.ts` with `mwg/ui`'s `Bar` and delete it. `fillTexture` and
-      `roundUpToPixel` are in the already-pinned 0.7.2, so this needs no version bump - the
-      file's own comment claimed the framework's `Bar` could take neither a texture fill nor had
-      any rounding rule, which the framework's `tests/bar.test.ts` disproves. Check `StatusPane`'s
-      two real bar arts still stretch the way Java's `scale.x` does before deleting.
+- [ ] Replace `src/ui/bar.ts` with `mwg/ui`'s `Bar` and delete it, once
+      `tools/scratch/mwg-proposal/0002-bar-runtime-colour-and-track.patch` lands. `fillTexture`
+      (the real bar art, stretched) and `roundUpToPixel` (`HealthBar.layout()`'s ceil-to-pixel
+      rule) are already in the framework's `Bar`, so those are covered today. What blocks the
+      deletion is the two things it still lacks and this file uses: recolouring the fill after
+      construction (the boss bar goes red while the boss bleeds) and a track colour (the HP bar's
+      missing-health strip is black, not the theme's panel fill). Both are in that patch, with
+      framework tests. Check `StatusPane`'s two real bar arts still stretch the way Java's
+      `scale.x` does before deleting.
 - [ ] Once the proposed framework patch in `tools/scratch/mwg-proposal/` lands, replace
       `src/ui/floatingText.ts` with `mwg/ui`'s `FloatingTextStack` plus `FloatingText`'s `hold`
       curve, and `titleFlame`'s four-frame flame with `ParticleEmitter`'s `frames`.
+
 ## 1. Complete the item system
 
 - [x] Wire `rollAffix`/`ENCHANT_TABLE`/`GLYPH_TABLE` into real item generation and equip.

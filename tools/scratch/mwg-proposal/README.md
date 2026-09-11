@@ -1,25 +1,40 @@
-# Proposed `mwg` patch — floating text + particle frames
+# Proposed `mwg` patches — floating text, particles, and `Bar`
 
-Two files are involved, and they are the *remainder*: everything else this port asked the
-framework for already ships.
+The *remainder*: everything else this port asked the framework for already ships (see the
+framework roadmap items at the end).
 
 - `0001-floating-text-stack-and-particle-frames.patch` — applies to `MW_games` at `a5602af`
   (`0.7.3`), verified with `git apply --check --cached`. Touches
   `src/two-d/ui/FloatingText.ts`, `src/two-d/ui/FloatingTextStack.ts` (new),
   `src/two-d/ui/index.ts`, `src/two-d/render/Particles.ts`, `tests/floating-text.test.ts` (new),
-  `tests/particles.test.ts`, `CHANGELOG.md` — no SPD values anywhere in it.
+  `tests/particles.test.ts`, `CHANGELOG.md` — no SPD values anywhere in it. Applied in the checkout
+  as of this writing, and folded into its `0.7.4` changelog.
+- `0002-bar-runtime-colour-and-track.patch` — `Bar.ts` and its tests only; independent of 0001
+  except that its `CHANGELOG.md` hunk sits after 0001's entry, so apply 0001 first. Verified the
+  same way, with `node --test tests/bar.test.ts` at 19/19 (14 pre-existing, 5 new).
 
 ```sh
 cd <MW_games>
 git apply --check /path/to/0001-floating-text-stack-and-particle-frames.patch
 git apply       /path/to/0001-floating-text-stack-and-particle-frames.patch
+git apply --check /path/to/0002-bar-runtime-colour-and-track.patch
+git apply       /path/to/0002-bar-runtime-colour-and-track.patch
 npm run check                       # tsc --noEmit, clean
-node --test tests/particles.test.ts tests/floating-text.test.ts   # 24 pass
+node --test tests/particles.test.ts tests/floating-text.test.ts tests/bar.test.ts  # 43 pass
 npm test                            # 1491 pass - see "generated docs" below
-npx prettier --check <the seven files>
+npx prettier --check <the nine files>
 ```
 
-## What it adds, and why each piece is missing today
+## What they add, and why each piece is missing today
+
+- **`Bar.setColor` + `BarOptions.background`** (patch 0002) — the port's `src/ui/bar.ts` keeps
+  itself alive for two things the framework's `Bar` cannot do: recolour the fill after construction
+  (the boss health bar goes red while the boss bleeds) and colour the track (the HP bar's
+  missing-health strip is black, not the theme's panel fill). `mwg`'s `Bar` already covers the two
+  things that file *used* to be justified by - `fillTexture` and `roundUpToPixel` - so this pair is
+  all that stands between the port and deleting the file. Both are readable back through `color`/
+  `background`, and a runtime colour counts as explicit so a theme change cannot throw it away,
+  which is what the tests assert.
 
 - **`FloatingTextStack`** — the port's `src/ui/floatingText.ts` owns its live pop-ups and nudges a
   new one clear of any that is *nearby*, which its own comment flags as a reduction of Java's
@@ -67,6 +82,11 @@ Matching the existing item style; the first is what the patch above delivers.
       numbers use, and `FloatingText.update` no longer overwrites the `y` its docstring tells the
       caller to set. The curves and the stacking rule are exported as pure functions and tested
       without a DOM.
+- [ ] `Bar`: recolour the fill after construction (`setColor`) and take a track colour
+      (`background`), both readable back through `color`/`background`. A bar's two changing things
+      are its length and its colour - `setValue` covers one - while the track is the one part a
+      game may want black rather than the theme's panel fill. Without these, a game whose bars
+      tint on state has to keep its own bar widget.
 - [ ] Particles: a `frames` texture sequence per emitter, walked per particle across its own life
       (a four-frame flame, a puff of smoke), with the current index exposed as `Particle.frame`.
       Today one `texture` per emitter forces games with an animated particle to leave the pooled

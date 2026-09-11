@@ -4,13 +4,16 @@ import { Container, Sprite, Texture } from 'pixi.js';
  * A horizontal fill meter: a background strip with a coloured strip drawn over a fraction
  * of it.
  *
- * GENERIC - nothing here knows about SPD, and it is now AVOIDABLE duplication: the pinned
- * `@datamoc/mw_games@0.7.2` already ships `Bar` with both of the things this file was kept for -
- * `fillTexture` (a texture fill that can be stretched via `scale.x`, the way Java's `StatusPane`
- * does) and `roundUpToPixel` (`HealthBar.layout()`'s ceil-to-whole-pixel rounding, which the
- * framework's own `tests/bar.test.ts` covers). Replacing this file with `mwg/ui`'s `Bar` is
- * scheduled in ROADMAP.md section 0; the earlier claim here that `mwg`'s `Bar` had neither was
- * true of an older release, not of the pinned one.
+ * GENERIC - nothing here knows about SPD, and most of it is now duplication: `mwg/ui`'s `Bar`
+ * ships `fillTexture` (art stretched to the filled width, the way Java's `StatusPane` stretches
+ * with `scale.x`) and `roundUpToPixel` (`HealthBar.layout()`'s ceil-to-whole-pixel rounding,
+ * covered by the framework's own `tests/bar.test.ts`) - the two things this file was originally
+ * kept for, so the earlier claim that `mwg`'s `Bar` had neither was true of an older release only.
+ * Two capabilities it still lacks, and this file uses both: recolouring the fill after
+ * construction (the boss bar goes red while the boss bleeds) and a track colour (the HP bar's
+ * missing-health strip is black, not the theme's panel fill). That pair is proposed as
+ * `tools/scratch/mwg-proposal/0002-bar-runtime-colour-and-track.patch`; with it applied this file
+ * is just `setValue`, which is why ROADMAP.md schedules its deletion.
  *
  * `SPD-classes`' own `ColorBlock` is a solid rectangle, which is what `HealthBar.java` uses;
  * a texture may be given instead so `StatusPane`'s real bar art can be stretched the way
