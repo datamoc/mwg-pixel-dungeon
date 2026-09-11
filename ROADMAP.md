@@ -165,18 +165,30 @@ Do not add new authored content as object literals or scattered constants in the
       hourly check while porting is `npm run mwg:check` (`tools/check-mwg-version.mjs`), which
       reports the pin, the installed version, npm's latest, and a checkout's version when passed
       with `--checkout`.
-- [ ] Adopt the five 0.7.3 capabilities this port hand-rolls, so each becomes a deletion rather
-      than new code: `Level.viewDistance` plus
-      `FieldOfView.update`'s default radius (the Yog visibility shrink stays game logic, but
-      stops being a radius passed at every call site); `TerrainKind.flags`/`extras` ("carried
-      without interpretation by MWG"), which replaces hand-written flamable lists like Yog's beam
-      `[GRASS, HIGH_GRASS, DOOR, DOOR_CLOSED].includes(...)`; `Scheduler` priority
-      (`add(actor, delay, priority)`), which is Java's `actPriority = VFX_PRIO` and lets the
-      Tengu/Yog telegraph fields (`yogTargeted`, `pendingMonsterTurnCost`) become real scheduled
-      actors; `Roguelike.Targeting`'s `Ballistica` (stop modes, `collisionPos`), replacing the
-      Bresenham `traceLine` used for Yog beams, Tengu cone and projectile impacts; and
-      `MultiTurnBeam`/`MultiStageAbility` for the multi-turn beam and staged-ability shapes
-      Tengu's Fire/Shocker actors and DM-300's pylon sequence need.
+- [ ] Adopt the five 0.7.3 capabilities this port hand-rolls, where each is genuinely a deletion
+      rather than new code - scoped by reading both sides, not by assuming the framework version is
+      automatically better:
+      - `Scheduler` priority (`add(actor, delay, priority)`), which is Java's
+        `actPriority = VFX_PRIO` and lets the Tengu/Yog telegraph fields (`yogTargeted`,
+        `pendingMonsterTurnCost`) become real scheduled actors. `Roguelike.Targeting`'s `Ballistica`
+        (stop modes, `collisionPos`), replacing the Bresenham `traceLine` used for Yog beams, Tengu
+        cone and projectile impacts. `MultiTurnBeam`/`MultiStageAbility` for the staged-ability
+        shapes - DM-300's pylon sequence, the Yog telegraph - keeping in mind that `MultiTurnBeam` is
+        a *straight* line, so it serves Yog's beams but neither Tengu's fire *cone* (ported instead as
+        state on the creature, `advanceTenguFire`) nor the shocker's 3x3 pulses.
+      - `Level.viewDistance` + `FieldOfView.update`'s default radius: **worth it only if `Level` is
+        made to own the value on the same events Java does.** `viewRadius()` already computes exactly
+        that number live, from subclass, talents, challenge, depth and Yog's phase, so routing it
+        through a mutable field trades a pure function for a cache that has to be invalidated on
+        every one of those, and a stale `level.viewDistance` silently means monsters seeing the whole
+        map. If adopted, set it in one `updateVisibility()`-shaped method called from those events -
+        never as a convenience default.
+      - `TerrainKind.flags`/`extras`: **not yet**, one consumer is not a table. The only true
+        "flamable" test in the port is the Yog beam's
+        `[GRASS, HIGH_GRASS, DOOR, DOOR_CLOSED].includes(...)`; the other ~48 `GRASS`/`HIGH_GRASS`
+        sites are specific semantics (frame ids, plantable cells, trampling, Warden healing) that no
+        generic flag expresses. Revisit when a second flamable consumer appears - fire spreading is
+        the likely one.
 - [ ] Replace `src/ui/bar.ts` with `mwg/ui`'s `Bar` and delete it, once
       `tools/scratch/mwg-proposal/0002-bar-runtime-colour-and-track.patch` lands. `fillTexture`
       (the real bar art, stretched) and `roundUpToPixel` (`HealthBar.layout()`'s ceil-to-pixel
