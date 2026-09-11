@@ -1286,6 +1286,19 @@ export class SewersScene extends Scene2D {
 	private itemPickerTitle = '';
 	private itemPickerEntries: { id: string; instanceId?: string; identified?: boolean; quantity: number }[] = [];
 	private itemPickerOnPick: ((entry: { id: string; instanceId?: string }) => void) | null = null;
+
+	/** An active player aim, backed by MWG 0.7.7's renderer-free `Roguelike.TargetingController`:
+	 * a cell cursor, range + line-of-sight legality, a shape preview and a cells-only
+	 * confirm/cancel. This is the port's first real map-click cell-targeting - it replaces
+	 * `nearestVisibleEnemy`'s auto-target for the cell-aimed runestones (Fear/DeepSleep/Shock/
+	 * Blast/Blink/Clairvoyance), and is the seam the thrown-weapon and wand paths adopt next.
+	 * Transient UI state, never saved, like every other choice flag here. */
+	private aiming: {
+		controller: Roguelike.TargetingController;
+		onConfirm: (target: { x: number; y: number }, cells: readonly { x: number; y: number }[]) => void;
+	} | null = null;
+	/** The aim cursor highlight, drawn in world space so it tracks cells under the camera. */
+	private aimOverlay: Graphics | null = null;
 	private victoryPanel!: Container;
 	private bossChrome!: Container;
 	private bossHealthBar!: Bar;
@@ -2236,9 +2249,18 @@ export class SewersScene extends Scene2D {
 		this.map.eventMode = 'static';
 		this.map.cursor = 'pointer';
 		this.map.on('pointerdown', (event) => this.handleMapPointer(event.global.x, event.global.y));
+		this.map.on('pointermove', (event) => this.handleMapHover(event.global.x, event.global.y));
 		this.onDestroy.add(() => {
 			this.map?.removeAllListeners('pointerdown');
+			this.map?.removeAllListeners('pointermove');
 		});
+		//Aiming highlight, in world space so it tracks cells under the camera. `enterLevel`
+		//clears `camera.world`, so it is (re)created here, and any aim from the previous level is
+		//dropped with it.
+		this.aiming = null;
+		this.aimOverlay = new Graphics();
+		this.aimOverlay.eventMode = 'none';
+		this.camera.world.addChild(this.aimOverlay);
 		//`SewerLevel`/`PrisonLevel`/`CityLevel`'s `Sink`/`Torch`/`Smoke` decorations, real `WALL_DECO`
 		//cells the ported painter already placed (see `wallDecorations.ts`'s own doc comment).
 		//`CavesLevel`'s own `WALL_DECO` is a Vein/Sparkle effect rather than a Sink, Torch or
@@ -5974,6 +5996,20 @@ export class SewersScene extends Scene2D {
 			return true;
 		}
 		if (this.gameOver || !this.awaitingInput) return false;
+		//An active aim owns the keyboard too: arrows move the cursor, Confirm resolves it, and
+		//anything else (Cancel included) abandons it rather than acting through it.
+		if (this.aiming) {
+			const move = MOVES[action];
+			if (move) {
+				this.aiming.controller.move(move.x, move.y);
+				this.refreshAimOverlay();
+			} else if (action === 'confirm') {
+				this.confirmAiming();
+			} else {
+				this.cancelAiming();
+			}
+			return true;
+		}
 		if ((this.subclassChoiceOpen || this.armorChoiceOpen || this.augmentChoiceOpen || this.itemPickerOpen) && action !== 'talents') {
 			this.talentOpen = true;
 			this.refreshTalentPanel();
@@ -5996,6 +6032,13 @@ export class SewersScene extends Scene2D {
 		const local = this.map.toLocal({ x: screenX, y: screenY });
 		const target = { x: Math.floor(local.x / TILE), y: Math.floor(local.y / TILE) };
 		if (!this.level.inside(target.x, target.y)) return;
+		//An active aim consumes the click: the cursor moves there and a legal cell confirms it.
+		if (this.aiming) {
+			this.aiming.controller.moveTo(target);
+			this.refreshAimOverlay();
+			this.confirmAiming();
+			return;
+		}
 		const dx = Math.sign(target.x - this.hero.x);
 		const dy = Math.sign(target.y - this.hero.y);
 		if (Math.max(Math.abs(target.x - this.hero.x), Math.abs(target.y - this.hero.y)) <= 1) {
@@ -6007,6 +6050,78 @@ export class SewersScene extends Scene2D {
 		this.travelTarget = target;
 		this.travelStartHp = this.hero.hp;
 		this.stepTravel();
+	}
+
+	/** Hover feedback while aiming: moves the cursor and redraws the preview, nothing else. The
+	 * port has no hover behaviour outside an aim, matching its click-only UI. */
+	private handleMapHover(screenX: number, screenY: number): void {
+		if (!this.aiming || !this.map) return;
+		const local = this.map.toLocal({ x: screenX, y: screenY });
+		const cell = { x: Math.floor(local.x / TILE), y: Math.floor(local.y / TILE) };
+		if (!this.level.inside(cell.x, cell.y)) return;
+		this.aiming.controller.moveTo(cell);
+		this.refreshAimOverlay();
+	}
+
+	/**
+	 * Opens a player aim over the map, backed by MWG 0.7.7's renderer-free
+	 * `Roguelike.TargetingController` (`move`/`moveTo`, range + line-of-sight legality with an
+	 * optional `validate` hook, `preview()`, `confirm()`/`cancel()`). The controller only ever
+	 * returns cells; the caller's `onConfirm` decides what a cell means and what it consumes.
+	 * Click or Confirm resolves it; any other key or Cancel abandons it. Nothing is consumed
+	 * until a legal cell is confirmed, so cancelling is always free.
+	 */
+	private beginAiming(options: {
+		range: number;
+		shape?: Roguelike.AreaShape;
+		validate?: (cell: { x: number; y: number }) => boolean;
+		onConfirm: (target: { x: number; y: number }, cells: readonly { x: number; y: number }[]) => void;
+	}): void {
+		const controller = new Roguelike.TargetingController(this.level, {
+			origin: { x: this.hero.x, y: this.hero.y },
+			range: options.range,
+			shape: options.shape ?? { kind: 'single' },
+			...(options.validate ? { validate: options.validate } : {}),
+		});
+		this.aiming = { controller, onConfirm: options.onConfirm };
+		this.travelTarget = null;
+		this.refreshAimOverlay();
+	}
+
+	/** Abandons an aim without consuming or resolving anything. */
+	private cancelAiming(): void {
+		if (!this.aiming) return;
+		this.aiming = null;
+		this.aimOverlay?.clear();
+	}
+
+	/** Resolves an aim: confirms the controller, and on a legal cell runs the caller's effect. */
+	private confirmAiming(): boolean {
+		const aiming = this.aiming;
+		if (!aiming) return false;
+		const result = aiming.controller.confirm();
+		if (!result) {
+			this.say(t('port.log.notarget'), 'negative');
+			return false;
+		}
+		this.aiming = null;
+		this.aimOverlay?.clear();
+		aiming.onConfirm({ ...result.target }, result.cells);
+		return true;
+	}
+
+	/** Redraws the aim preview: every cell the current shape would affect, in world space. */
+	private refreshAimOverlay(): void {
+		const overlay = this.aimOverlay;
+		if (!overlay) return;
+		overlay.clear();
+		const aiming = this.aiming;
+		if (!aiming) return;
+		for (const cell of aiming.controller.preview()) {
+			overlay.rect(cell.x * TILE, cell.y * TILE, TILE, TILE)
+				.fill({ color: 0xffd54a, alpha: 0.28 })
+				.stroke({ width: 1, color: 0xffd54a, alpha: 0.9 });
+		}
 	}
 
 	/** Takes one step of a queued `travelTarget`, or cancels it once arrived/interrupted. */
@@ -12085,20 +12200,25 @@ export class SewersScene extends Scene2D {
 	}
 
 	/** `StoneOfFear.activate(cell)`: real Java throws the stone at a chosen cell and applies a
-	 * 20-turn `Terror` (`Terror.DURATION`) to whatever's there, unless it's an ally. This port has
-	 * no map-click cell-targeting for thrown items (the same reason `useSpecial` above auto-targets
-	 * instead of letting the player aim), so it reuses that exact nearest-visible-enemy convention
-	 * rather than adding one just for this stone. `terror` is the same buff `ScrollOfTerror`
+	 * 20-turn `Terror` (`Terror.DURATION`) to whatever's there, unless it's an ally. This port now
+	 * aims for real - a click (or arrow keys) picks the cell through MWG 0.7.7's renderer-free
+	 * `TargetingController`, and the stone is consumed only once a legal cell is confirmed, so
+	 * cancelling is free. `terror` is the same buff `ScrollOfTerror`
 	 * already grants and `takeMonsterTurn` already honors, so no new mechanic was needed here -
 	 * only a new item id/use-action to reach it, the same gap `StoneOfAugmentation` closed for
 	 * weapon augments. */
 	private useStoneOfFear(instanceId?: string): void {
-		this.bag.remove('stoneOfFear', 1, instanceId);
-		const target = this.nearestVisibleEnemy(8);
-		if (target) {
-			addBuff(target, 'terror');
-			this.say(t('port.log.stonefear', { target: target.name }), 'positive');
-		} else this.say(t('port.log.stonewasted'), 'negative');
+		this.beginAiming({
+			range: 8,
+			onConfirm: (target) => {
+				const hit = this.creatureAt(target.x, target.y);
+				if (hit && !hit.isHero && !hit.isNPC && hit.hp > 0) {
+					this.bag.remove('stoneOfFear', 1, instanceId);
+					addBuff(hit, 'terror');
+					this.say(t('port.log.stonefear', { target: hit.name }), 'positive');
+				} else this.say(t('port.log.stonewasted'), 'negative');
+			},
+		});
 	}
 
 	/** `StoneOfDeepSleep.activate(cell)`: real Java applies a gradual `MagicalSleep` debuff (a
@@ -12106,45 +12226,54 @@ export class SewersScene extends Scene2D {
 	 * This port already collapses that same gradual-then-asleep shape to an instant `sleeping =
 	 * true` for `ScrollOfLullaby` (see its own comment), so this stone reuses the identical
 	 * simplification rather than inventing a second one - the only difference from Lullaby is
-	 * hitting one auto-targeted enemy instead of every visible mob at once, matching Java's own
-	 * single-cell-vs-whole-screen distinction between the two items. */
+	 * hitting one cell the player aims at instead of every visible mob at once, matching Java's
+	 * own single-cell-vs-whole-screen distinction between the two items. */
 	private useStoneOfDeepSleep(instanceId?: string): void {
-		this.bag.remove('stoneOfDeepSleep', 1, instanceId);
-		const target = this.nearestVisibleEnemy(8);
-		if (target) {
-			target.sleeping = true;
-			this.say(t('port.log.stonesleep', { target: target.name }), 'positive');
-		} else this.say(t('port.log.stonewasted'), 'negative');
+		this.beginAiming({
+			range: 8,
+			onConfirm: (target) => {
+				const hit = this.creatureAt(target.x, target.y);
+				if (hit && !hit.isHero && !hit.isNPC && hit.hp > 0) {
+					this.bag.remove('stoneOfDeepSleep', 1, instanceId);
+					hit.sleeping = true;
+					this.say(t('port.log.stonesleep', { target: hit.name }), 'positive');
+				} else this.say(t('port.log.stonewasted'), 'negative');
+			},
+		});
 	}
 
 	/** `StoneOfShock.activate(cell)`: real Java paralyzes every char within a `PathFinder`
 	 * distance-2 area of the thrown-to cell (each `Buff.prolong(n, Paralysis.class, 1f)`, a
 	 * 1-turn paralysis distinct from the flat 3-turn `paralysis` this port's own buff table
 	 * already uses for every other paralysis source) and refunds the hero's wand `1 + hits`
-	 * charges. This port has no map-click cell-targeting (same as Fear/DeepSleep above) and no
-	 * BFS-through-open-floor distance map handy in `main.ts`, so both are approximated: ground
-	 * zero is the nearest visible enemy (the same auto-target convention), the area is a plain
-	 * Chebyshev-distance-2 circle around it (ignoring walls, unlike Java's real flood fill), and
+	 * charges. This port aims the stone for real (a click picks the cell) but has no
+	 * BFS-through-open-floor distance map handy in `main.ts`, so the area is approximated: the
+	 * area is a plain Chebyshev-distance-2 circle around the aimed cell (ignoring walls, unlike
+	 * Java's real flood fill), and
 	 * every hit gets this port's existing 3-turn `paralysis` rather than a bespoke 1-turn variant
 	 * (the shared `addBuff`/`BUFF_DURATION` mechanism has no per-call duration override) - stated
 	 * simplifications, not silently dropped precision. The wand-charge refund is reproduced
 	 * exactly, since `Actors.Charges.refund` already exists and no-ops harmlessly for classes
 	 * without a wand, matching Java's own generic (and here mostly inert) `Belongings.charge()`. */
 	private useStoneOfShock(instanceId?: string): void {
-		this.bag.remove('stoneOfShock', 1, instanceId);
-		const center = this.nearestVisibleEnemy(8);
-		if (!center) { this.say(t('port.log.stonewasted'), 'negative'); return; }
-		let hits = 0;
-		for (const c of this.creatures) {
-			if (c.isHero || c.isNPC) continue;
-			if (Roguelike.chebyshevDistance(center, c) > 2) continue;
-			addBuff(c, 'paralysis');
-			hits++;
-		}
-		if (hits > 0) {
-			this.wandCharges.refund(1 + hits);
-			this.say(t('port.log.stoneshock', { count: hits }), 'positive');
-		} else this.say(t('port.log.stonewasted'), 'negative');
+		this.beginAiming({
+			range: 8,
+			shape: { kind: 'burst', radius: 2 },
+			onConfirm: (center) => {
+				this.bag.remove('stoneOfShock', 1, instanceId);
+				let hits = 0;
+				for (const c of this.creatures) {
+					if (c.isHero || c.isNPC) continue;
+					if (Roguelike.chebyshevDistance(center, c) > 2) continue;
+					addBuff(c, 'paralysis');
+					hits++;
+				}
+				if (hits > 0) {
+					this.wandCharges.refund(1 + hits);
+					this.say(t('port.log.stoneshock', { count: hits }), 'positive');
+				} else this.say(t('port.log.stonewasted'), 'negative');
+			},
+		});
 	}
 
 	/** `Bomb.execute(AC_LIGHTTHROW)` + `onThrow()`: lighting the fuse and throwing the bomb
@@ -12400,8 +12529,8 @@ export class SewersScene extends Scene2D {
 	 * `NormalIntRange(4 + scalingDepth, 12 + 3*scalingDepth)` damage, minus armor, to every char
 	 * caught in it - the hero included, since a bomb does not discriminate. This port approximates
 	 * the flood fill as a plain Chebyshev-distance-1 circle (same simplification `StoneOfShock`
-	 * above already makes, ignoring walls) around the same auto-targeted nearest-visible-enemy
-	 * ground zero, and reuses `this.depth` for `scalingDepth` (the same substitution every other
+	 * above already makes, ignoring walls) around the cell the player aims at, and reuses
+	 * `this.depth` for `scalingDepth` (the same substitution every other
 	 * depth-scaled formula in this file already makes). The hero's own share of the blast, if
 	 * caught in range, goes through the existing `absorbHeroDamage`/`kill` path exactly like
 	 * `applyTrapBlast`'s hero branch does. **Not reproduced**: real Java also destroys flammable
@@ -12409,76 +12538,86 @@ export class SewersScene extends Scene2D {
 	 * terrain-destruction call from an item-use site, a real, narrower gap left honestly
 	 * undone rather than faked. */
 	private useStoneOfBlast(instanceId?: string): void {
-		this.bag.remove('stoneOfBlast', 1, instanceId);
-		const center = this.nearestVisibleEnemy(8);
-		if (!center) { this.say(t('port.log.stonewasted'), 'negative'); return; }
-		let hits = 0;
-		//`kill()` splices the dying creature out of `this.creatures` - iterating a snapshot
-		//copy (the same guard `detonateGroundBomb` already uses) so a kill mid-loop can't shift
-		//a later creature into the just-visited index and make it silently dodge the blast.
-		for (const c of [...this.creatures]) {
-			if (c.isNPC || c.hp <= 0) continue;
-			if (Roguelike.chebyshevDistance(center, c) > 1) continue;
-			let damage = Math.max(0, Random.normalRange(4 + this.depth, 12 + 3 * this.depth));
-			if (c.isHero) {
-				damage = this.absorbHeroDamage(damage);
-				this.hero.hp -= damage;
-				this.showDamage(this.hero, damage);
-				if (this.hero.hp <= 0) this.kill(this.hero, 'fire');
-			} else {
-				damage = Math.max(0, damage - Random.normalRange(c.armor[0], c.armor[1]));
-				c.hp -= damage;
-				this.showDamage(c, damage);
-				c.sleeping = false;
-				if (c.hp <= 0) this.kill(c, 'fire');
-			}
-			hits++;
-		}
-		this.say(t('port.log.stoneblast', { count: hits }), hits > 0 ? 'positive' : 'negative');
+		this.beginAiming({
+			range: 8,
+			shape: { kind: 'burst', radius: 1 },
+			onConfirm: (center) => {
+				this.bag.remove('stoneOfBlast', 1, instanceId);
+				let hits = 0;
+				//`kill()` splices the dying creature out of `this.creatures` - iterating a snapshot
+				//copy (the same guard `detonateGroundBomb` already uses) so a kill mid-loop can't shift
+				//a later creature into the just-visited index and make it silently dodge the blast.
+				for (const c of [...this.creatures]) {
+					if (c.isNPC || c.hp <= 0) continue;
+					if (Roguelike.chebyshevDistance(center, c) > 1) continue;
+					let damage = Math.max(0, Random.normalRange(4 + this.depth, 12 + 3 * this.depth));
+					if (c.isHero) {
+						damage = this.absorbHeroDamage(damage);
+						this.hero.hp -= damage;
+						this.showDamage(this.hero, damage);
+						if (this.hero.hp <= 0) this.kill(this.hero, 'fire');
+					} else {
+						damage = Math.max(0, damage - Random.normalRange(c.armor[0], c.armor[1]));
+						c.hp -= damage;
+						this.showDamage(c, damage);
+						c.sleeping = false;
+						if (c.hp <= 0) this.kill(c, 'fire');
+					}
+					hits++;
+				}
+				this.say(t('port.log.stoneblast', { count: hits }), hits > 0 ? 'positive' : 'negative');
+			},
+		});
 	}
 
 	/** `StoneOfBlink.activate(cell)` -> `ScrollOfTeleportation.teleportToLocation(curUser, cell)`:
 	 * real Java throws the stone at a player-aimed cell and blinks the hero there directly (a
 	 * short, precise, player-chosen hop - `onThrow`'s own logic even steps back one cell along the
-	 * path if a char already occupies the aimed cell). This port has no map-click cell-targeting
-	 * for a thrown item (the same reason every stone above auto-targets instead of aiming), so it
-	 * reuses the exact placement this port's own already-ported `ScrollOfTeleportation` uses -
-	 * `randomFreeCell` - rather than inventing a second "aim-like" placement strategy; the real
-	 * difference between Blink's short player-aimed hop and Teleportation's full-level random jump
-	 * is lost here, since both collapse to the same uniformly-random free-cell search. */
+	 * path if a char already occupies the aimed cell). This port now aims for real, so Blink is a
+	 * genuine player-chosen hop again, distinct from `ScrollOfTeleportation`'s full-level random
+	 * jump; the one simplification is that an occupied or impassable aimed cell is refused outright
+	 * rather than Java's step-back-along-the-path. */
 	private useStoneOfBlink(instanceId?: string): void {
-		this.bag.remove('stoneOfBlink', 1, instanceId);
-		delete this.hero.buffs['roots'];
-		const destination = this.randomFreeCell(this.hero);
-		if (destination) {
-			this.moveTo(this.hero, destination);
-			this.say(t('items.scrolls.scrollofteleportation.tele'), 'positive');
-		} else this.say(t('items.scrolls.scrollofteleportation.no_tele'), 'negative');
+		this.beginAiming({
+			range: 8,
+			//Java steps back one cell only when the aimed cell is occupied; refusing an occupied
+			//or impassable cell up front is this port's simpler equivalent.
+			validate: (cell) => this.level.passable(cell.x, cell.y) && !this.creatureAt(cell.x, cell.y),
+			onConfirm: (target) => {
+				this.bag.remove('stoneOfBlink', 1, instanceId);
+				delete this.hero.buffs['roots'];
+				this.moveTo(this.hero, target);
+				this.say(t('items.scrolls.scrollofteleportation.tele'), 'positive');
+			},
+		});
 	}
 
 	/** `StoneOfClairvoyance.activate(cell)`: real Java marks every cell within a `DIST = 20`
 	 * diamond (via `ShadowCaster.rounding`) around the thrown-to cell `mapped` (visible on the map
 	 * regardless of current sight) and reveals any secret terrain caught in that same area - a
 	 * smaller, localized cousin of the already-ported `ScrollOfMagicMapping`'s whole-floor
-	 * `revealAll()`. This port has no map-click cell-targeting (so centers on the hero's own
-	 * position instead of an aimed cell - the natural default absent real aiming, unlike the
-	 * combat stones above which auto-target the nearest enemy instead) and no per-cell partial
-	 * reveal primitive, so it reproduces the same real DIST=20 radius as a plain Chebyshev circle
+	 * `revealAll()`. This port now aims for real (a click picks the center) but has no per-cell
+	 * partial reveal primitive, so it reproduces the same real DIST=20 radius as a plain Chebyshev circle
 	 * (ignoring walls, the same simplification the light/AoE stones above already make) by adding
 	 * each cell directly to `FieldOfView.explored` (a public, mutable `Set`) rather than calling
 	 * `revealAll()`'s whole-level version. */
 	private useStoneOfClairvoyance(instanceId?: string): void {
-		this.bag.remove('stoneOfClairvoyance', 1, instanceId);
-		const DIST = 20;
-		for (let y = Math.max(0, this.hero.y - DIST); y <= Math.min(this.level.height - 1, this.hero.y + DIST); y++) {
-			for (let x = Math.max(0, this.hero.x - DIST); x <= Math.min(this.level.width - 1, this.hero.x + DIST); x++) {
-				if (Roguelike.chebyshevDistance(this.hero, { x, y }) > DIST) continue;
-				this.fov.explored.add(this.level.index(x, y));
-				if (this.secrets.isSecret(x, y)) this.secrets.discover(x, y);
-			}
-		}
-		this.restitchAllTiles();
-		this.say(t('port.log.stoneclairvoyance'), 'positive');
+		this.beginAiming({
+			range: 8,
+			onConfirm: (center) => {
+				this.bag.remove('stoneOfClairvoyance', 1, instanceId);
+				const DIST = 20;
+				for (let y = Math.max(0, center.y - DIST); y <= Math.min(this.level.height - 1, center.y + DIST); y++) {
+					for (let x = Math.max(0, center.x - DIST); x <= Math.min(this.level.width - 1, center.x + DIST); x++) {
+						if (Roguelike.chebyshevDistance(center, { x, y }) > DIST) continue;
+						this.fov.explored.add(this.level.index(x, y));
+						if (this.secrets.isSecret(x, y)) this.secrets.discover(x, y);
+					}
+				}
+				this.restitchAllTiles();
+				this.say(t('port.log.stoneclairvoyance'), 'positive');
+			},
+		});
 	}
 
 	/** `StoneOfEnchantment.onItemSelected()`: imbue a picked weapon or armor with a random

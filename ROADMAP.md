@@ -1698,11 +1698,14 @@ still owes is named inline.
 - [x] **P1 — Add a renderer-neutral grid targeting controller.** *Shipped in 0.7.7 (item 280).*
       `roguelike.TargetingController` gives a cursor moved by `move(dx, dy)`/`moveTo(cell)`,
       range + line-of-sight legality with an optional `validate` hook, a `preview()` of the shape's
-      cells, and a cells-only `confirm()`/`cancel()` result, hex levels included. **Port adoption
-      owed, and the highest-value item here**: this is the missing piece behind the port's most
-      repeated simplification, "no map-click cell-targeting" (every thrown runestone,
-      `ScrollOfIdentify`/`RemoveCurse`/`Transmutation`/`Enchantment`, aimed wands, and
-      `useSpecial`'s auto-target).
+      cells, and a cells-only `confirm()`/`cancel()` result, hex levels included. **Adopted
+      2026-09-12 for the six cell-aimed runestones** (Fear/DeepSleep/Shock/Blast/Blink/
+      Clairvoyance) through a new `beginAiming`/`confirmAiming`/`cancelAiming` trio plus a
+      world-space preview overlay in `main.ts`: a click (or the arrow keys) picks the cell, an
+      illegal cell is refused with the real "nothing to target" line, and nothing is consumed
+      until a legal cell is confirmed - so cancelling is free. That retires "no map-click
+      cell-targeting" for those six. Still auto-targeting, and the next adopters: thrown weapons
+      (`useSpecial`), aimed wands, and bombs.
 - [x] **P2 — Add reusable tabbed, paginated list primitives.** *Shipped in 0.7.7 (item 281).*
       `ui.TabbedList`/`ListTab` is a renderer-free tabbed, filtered, paged list with selection and a
       detail/close state over caller-supplied rows; the page is derived from the selection, so the
