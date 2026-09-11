@@ -6623,6 +6623,8 @@ export class SewersScene extends Scene2D {
 		//(real Java spends its own separate `4*TICK` actor slot for this; this port folds it
 		//into the monster's ordinary turn instead, since it has no secondary-actor scheduling).
 		if (monster.champion === 'growing') monster.championPower = (monster.championPower ?? 1.19) + 0.01;
+		//`SoiledFist.act()`: a soiled fist keeps growing grass around itself every turn.
+		if (monster.kind === 'yogFist' && monster.yogFistType === 'soiled') this.soiledFistAct(monster);
 		//DwarfKing P3 banks damage into Viscosity's deferred pool instead of losing HP directly;
 		//pay it out on the King's own turn, exactly like the hero's pool above.
 		if (this.tickMonsterDeferredDamage(monster)) return;
@@ -6631,17 +6633,24 @@ export class SewersScene extends Scene2D {
 		const monsterWasOozing = monster.buffs['ooze'] !== undefined;
 		const monsterWasDrowsy = monster.buffs['drowsy'] !== undefined;
 		const dot = tickBuffs(monster);
+		//`SoiledFist.damage()` can be ignited but takes no damage from Burning itself. This port's
+		//per-turn tick applies one combined total, so when Burning is the only damaging effect the
+		//whole tick is discarded (the roll is still spent, as Java's own `damage()` call would be);
+		//with another DoT also running the burning share cannot be split out - a stated reduction.
+		const soiledBurningOnly = monster.kind === 'yogFist' && monster.yogFistType === 'soiled'
+			&& monster.buffs['burning'] !== undefined && monster.buffs['poison'] === undefined && monster.buffs['bleeding'] === undefined;
+		const dotDealt = soiledBurningOnly ? 0 : dot;
 		if (monsterWasDrowsy && monster.buffs['drowsy'] === undefined) {
 			//Drowsy.act() attaches MagicalSleep after five turns; monsters have a native
 			//sleeping state here, so this transition needs no second buff.
 			monster.sleeping = true;
 		}
-		if (dot > 0 && !(monster.kind === 'yog' && this.yogShielded(monster)) && !(monster.kind === 'yogFist' && this.guardFist(monster))) {
+		if (dotDealt > 0 && !(monster.kind === 'yog' && this.yogShielded(monster)) && !(monster.kind === 'yogFist' && this.guardFist(monster))) {
 			const preHp = monster.hp;
-			monster.hp -= dot;
+			monster.hp -= dotDealt;
 			if (monster.kind === 'tengu') this.clampTenguBracket(monster, preHp);
 			if (monster.kind === 'yog' && monster.hp > 0) this.yogDamageHook(monster, preHp);
-			this.showDamage(monster, dot);
+			this.showDamage(monster, dotDealt);
 			if (monster.hp <= 0) {
 				this.kill(monster);
 				return;
@@ -8765,6 +8774,41 @@ export class SewersScene extends Scene2D {
 		}
 	}
 
+	/** `SoiledFist.canSpreadGrass()`: new grass only takes more than 4 cells (Chebyshev) from
+	 * Yog's own anchor (`exit + width*3`), on a non-solid cell that is not already tall grass.
+	 * This port's live terrain has no `FURROWED_GRASS` id, so Java's furrow rolls land on the
+	 * `HIGH_GRASS` ("tall grass") state this port does have. */
+	private canSpreadFistGrass(x: number, y: number): boolean {
+		if (!this.level.inside(x, y) || !this.level.passable(x, y)) return false;
+		if (this.level.get(x, y) === HIGH_GRASS) return false;
+		if (this.stairs && Math.max(Math.abs(x - this.stairs.x), Math.abs(y - (this.stairs.y + 3))) <= 4) return false;
+		return true;
+	}
+
+	/** Grows grass on every eligible cell of the 3x3 around `at` (Java's `NEIGHBOURS9`), asking
+	 * `furrow` per cell whether to leave tall grass (Java's `FURROWED_GRASS`) instead of plain -
+	 * Java rolls that only in `zap()`, never in `act()`. */
+	private spreadFistGrass(at: { x: number; y: number }, furrow: () => boolean): void {
+		for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as ReadonlyArray<readonly [number, number]>) {
+			const x = at.x + dx, y = at.y + dy;
+			if (!this.canSpreadFistGrass(x, y)) continue;
+			this.level.set(x, y, furrow() ? HIGH_GRASS : GRASS);
+		}
+	}
+
+	/** `SoiledFist.act()`: `Random.chances([0,2,1])` furrow rolls (1.33 cells on average) that
+	 * upgrade a plain GRASS neighbour to tall grass, then plain grass across the rest of its 3x3. */
+	private soiledFistAct(fist: Creature): void {
+		const furrows = Random.chance(2 / 3) ? 2 : 1;
+		const cells = [[0, 0], ...Roguelike.neighbourOffsets(8)] as ReadonlyArray<readonly [number, number]>;
+		for (let i = 0; i < furrows; i++) {
+			const [dx, dy] = cells[Random.int(cells.length)]!;
+			const x = fist.x + dx, y = fist.y + dy;
+			if (this.level.inside(x, y) && this.level.get(x, y) === GRASS) this.level.set(x, y, HIGH_GRASS);
+		}
+		this.spreadFistGrass(fist, () => false);
+	}
+
 	/**
 	 * Goo's real pump-up mechanic (`Goo.java`'s `doAttack`/`pumpedUp`), simplified to melee
 	 * range: `pumped` 0 -> chance to start charging instead of attacking (higher below half
@@ -9226,6 +9270,17 @@ export class SewersScene extends Scene2D {
 			const blocked = Math.min(defender.dmBarrier ?? 0, damage);
 			defender.dmBarrier = (defender.dmBarrier ?? 0) - blocked;
 			damage -= blocked;
+		}
+		//`SoiledFist.damage()`: grass around the fist blunts incoming blows by `(6-n)/6`, where n is
+		//the number of tall-grass cells in its 3x3 (Java counts FURROWED_GRASS or HIGH_GRASS; this
+		//port's furrows are tall grass). Burning itself does no damage to a soiled fist - see the
+		//DoT tick, which skips it.
+		if (defender.kind === 'yogFist' && defender.yogFistType === 'soiled') {
+			let grassCells = 0;
+			for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as ReadonlyArray<readonly [number, number]>) {
+				if (this.level.inside(defender.x + dx, defender.y + dy) && this.level.get(defender.x + dx, defender.y + dy) === HIGH_GRASS) grassCells++;
+			}
+			if (grassCells > 0) damage = Math.round((damage * (6 - grassCells)) / 6);
 		}
 		defender.hp -= damage;
 		if (this.fadeMirrorOnDamage(defender, damage)) {
@@ -10483,7 +10538,11 @@ export class SewersScene extends Scene2D {
 				this.fire.seed(target.x, target.y, 4);
 				addBuff(target, 'burning');
 				break;
-			case 'soiled': addBuff(target, 'roots'); break;
+			case 'soiled':
+				addBuff(target, 'roots');
+				//`SoiledFist.zap()`: roots the target, then grows grass (1-in-5 tall) across its 3x3.
+				this.spreadFistGrass(target, () => Random.int(5) === 0);
+				break;
 			case 'rotting': this.toxicGas.seed(target.x, target.y, 100); break;
 			case 'rusted': addBuff(target, 'cripple'); break;
 			case 'bright': addBuff(target, 'daze'); break;

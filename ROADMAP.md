@@ -623,8 +623,10 @@ Do not add new authored content as object literals or scattered constants in the
       own deferred damage is now banked through the same monster pool as the King's phase 3; the
       visibility shrink is ported as well (the Halls floor caps view distance at 4 and it falls to
       3/2/1 as Yog's phases advance), and the beams now burn flamable terrain along their paths -
-      which matters because the player can grow grass (Regrowth, furrows). Flame/shadow arenas
-      remain).
+      which matters because the player can grow grass (Regrowth, furrows). The Soiled fist's own
+      grass is ported too - it grows grass around itself each turn and around its zap target,
+      blunts incoming blows by the tall grass beside it, and ignores Burning (2026-09-11).
+      Bright/Dark Light and flame/shadow arenas remain).
 - [x] Port final-vault Amulet placement at Java's `AMULET_POS` (depth 26, x=8, y=12).
 - [ ] Port final-vault endgame-specific terrain, custom visuals, and compass behavior. The
       vault now runs Java's own `viewDistance = 4` through the shared sight radius (with the
