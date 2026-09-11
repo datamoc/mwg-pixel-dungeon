@@ -8285,9 +8285,10 @@ export class SewersScene extends Scene2D {
 	 * full-HP shield and escalating ghoul/monk/warlock/golem waves that chip him as they land
 	 * (`KingDamager` HT/12, HT/18 on the challenge); at shield 0, P3 bleeds (the bar's own
 	 * 25% tint covers it), summons while fewer than 4 adds stand, and yells once under 20 HP.
-	 * Not modeled: throne geometry (he stands his ground instead of teleporting to it),
-	 * P3 viscosity-deferral (no Viscosity system), the LloydsBeacon upgrade, and presentation
-	 * (particles/sounds). The King's Crown drop is granted on his death (see `kill`'s king
+	 * Not modeled: throne geometry (he stands his ground instead of teleporting to it), the
+	 * LloydsBeacon upgrade (this port has no beacon artifact), and presentation
+	 * (particles/sounds). P3 now defers every incoming hit into Viscosity's pool instead of HP
+	 * (`deferKingDamage`/`tickMonsterDeferredDamage`). The King's Crown drop is granted on his death (see `kill`'s king
 	 * branch) - it enters the bag directly because the port moves to the next floor at that same
 	 * boundary. Summon/ability cooldown
 	 * damage-acceleration in P1 is exact (`-= taken/8`).
