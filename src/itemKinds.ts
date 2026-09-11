@@ -13,10 +13,12 @@ const SHOP_WEAPON_TIERS: Record<string, number> = Object.fromEntries([
 const SHOP_ARMOR_TIERS: Record<string, number> = { ClothArmor: 1, LeatherArmor: 2, MailArmor: 3, ScaleArmor: 4, PlateArmor: 5 };
 
 /** Rolls an affix from `table` when eligible, `undefined` otherwise - `generatedInventoryItem`'s
- * cursed/hasGoodEnchant gates decide eligibility, this only does the roll itself. */
+ * cursed/hasGoodEnchant gates decide eligibility. MWG 0.7.2's `rollAffix` `curse` option does the
+ * pool split itself (`Boolean(entry.curse) === options.curse`), so the port no longer filters the
+ * entry list by hand. */
 export function rollGeneratedAffix(table: Actors.AffixTable, cursed: boolean, hasGoodEnchant: boolean): string | undefined {
-	if (cursed) return Actors.rollAffix({ entries: table.entries.filter((e) => e.curse) })?.id;
-	if (hasGoodEnchant) return Actors.rollAffix({ entries: table.entries.filter((e) => !e.curse) })?.id;
+	if (cursed) return Actors.rollAffix(table, { curse: true })?.id;
+	if (hasGoodEnchant) return Actors.rollAffix(table, { curse: false })?.id;
 	return undefined;
 }
 

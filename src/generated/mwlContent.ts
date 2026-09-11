@@ -179,22 +179,348 @@ export const gameData = {
 			},
 			"children": [
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "weaponEnchants",
-						"name": "Weapon.enchantments"
+						"columns": "id:string|trigger:string|weight:number|curse:boolean|description:string"
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "blazing|strike|3|false|Ignites the victim;chilling|strike|3|false|Chills the victim;shocking|strike|3|false|+2 damage;vampiric|strike|2|false|Heals 1 on a hit;grim|strike|2|false|Chance of bonus damage against a weakened foe;lucky|strike|2|false|Chance of bonus loot on a kill;blocking|strike|2|false|Chance to grant a shield on a landed hit;kinetic|strike|2|false|Stores part of damage for the next hit;corrupting|strike|2|false|Lethal hits can convert the victim into an ally;elastic|strike|2|false|Chance to knock the victim backward;projecting|strike|2|false|Extends melee reach;blooming|strike|2|false|Chance to plant grass where you strike;unstable|strike|2|false|A random enchantment effect on every hit;wayward|strike|1|true|Cursed: -3 accuracy;annoying|strike|1|true|Cursed: chance to alert every monster on the floor;dazzling|strike|1|true|Cursed: chance to blind everyone nearby, including you;explosive|strike|1|true|Cursed: eventually detonates on its wielder;polarized|strike|1|true|Cursed: every other hit is amplified, the rest whiff entirely;sacrificial|strike|1|true|Cursed: chance to wound its wielder;displacing|strike|1|true|Cursed: chance to teleport the struck target away"
+								"id": "blazing",
+								"trigger": "strike",
+								"weight": "3",
+								"curse": "false",
+								"description": "Ignites the victim"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
 								"line": 7,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "chilling",
+								"trigger": "strike",
+								"weight": "3",
+								"curse": "false",
+								"description": "Chills the victim"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 14,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "shocking",
+								"trigger": "strike",
+								"weight": "3",
+								"curse": "false",
+								"description": "+2 damage"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 21,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "vampiric",
+								"trigger": "strike",
+								"weight": "2",
+								"curse": "false",
+								"description": "Heals 1 on a hit"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 28,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "grim",
+								"trigger": "strike",
+								"weight": "2",
+								"curse": "false",
+								"description": "Chance of bonus damage against a weakened foe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 35,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "lucky",
+								"trigger": "strike",
+								"weight": "2",
+								"curse": "false",
+								"description": "Chance of bonus loot on a kill"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 42,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "blocking",
+								"trigger": "strike",
+								"weight": "2",
+								"curse": "false",
+								"description": "Chance to grant a shield on a landed hit"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 49,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "kinetic",
+								"trigger": "strike",
+								"weight": "2",
+								"curse": "false",
+								"description": "Stores part of damage for the next hit"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 56,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "corrupting",
+								"trigger": "strike",
+								"weight": "2",
+								"curse": "false",
+								"description": "Lethal hits can convert the victim into an ally"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 63,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "elastic",
+								"trigger": "strike",
+								"weight": "2",
+								"curse": "false",
+								"description": "Chance to knock the victim backward"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 70,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "projecting",
+								"trigger": "strike",
+								"weight": "2",
+								"curse": "false",
+								"description": "Extends melee reach"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 77,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "blooming",
+								"trigger": "strike",
+								"weight": "2",
+								"curse": "false",
+								"description": "Chance to plant grass where you strike"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 84,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "unstable",
+								"trigger": "strike",
+								"weight": "2",
+								"curse": "false",
+								"description": "A random enchantment effect on every hit"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 91,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "wayward",
+								"trigger": "strike",
+								"weight": "1",
+								"curse": "true",
+								"description": "Cursed: -3 accuracy"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 98,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "annoying",
+								"trigger": "strike",
+								"weight": "1",
+								"curse": "true",
+								"description": "Cursed: chance to alert every monster on the floor"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 105,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "dazzling",
+								"trigger": "strike",
+								"weight": "1",
+								"curse": "true",
+								"description": "Cursed: chance to blind everyone nearby, including you"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 112,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "explosive",
+								"trigger": "strike",
+								"weight": "1",
+								"curse": "true",
+								"description": "Cursed: eventually detonates on its wielder"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 119,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "polarized",
+								"trigger": "strike",
+								"weight": "1",
+								"curse": "true",
+								"description": "Cursed: every other hit is amplified, the rest whiff entirely"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 126,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "sacrificial",
+								"trigger": "strike",
+								"weight": "1",
+								"curse": "true",
+								"description": "Cursed: chance to wound its wielder"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 133,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "displacing",
+								"trigger": "strike",
+								"weight": "1",
+								"curse": "true",
+								"description": "Cursed: chance to teleport the struck target away"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 140,
 								"column": 1
 							},
 							"gettext": []
@@ -208,22 +534,365 @@ export const gameData = {
 					"gettext": []
 				},
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "armorGlyphs",
-						"name": "Armor.glyphs"
+						"columns": "id:string|trigger:string|weight:number|curse:boolean|description:string"
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "stone|defend|3|false|+2 armor;thorns|defend|3|false|Reflects 2;flow|passive|3|false|Moves faster in water;entanglement|defend|2|false|Chance to root an attacker;swiftness|passive|3|false|Faster movement when safe (20% speed increase);potential|defend|3|false|Chance to recharge wands when hit;repulsion|defend|2|false|Chance to knock an adjacent attacker backward;brimstone|defend|2|false|Immune to burning;viscosity|defend|3|false|Defers part of incoming damage;affection|defend|1|false|Charms an attacker;antimagic|defend|1|false|Reduces magical damage;obfuscation|passive|3|false|Makes the wearer harder to detect;camouflage|passive|2|false|Trampling grass turns you invisible;stench|defend|1|true|Cursed: chance to release toxic gas when hit;antientropy|defend|1|true|Cursed: chance to drain a wand charge;bulk|passive|1|true|Cursed: slower through doorways;corrosion|defend|1|true|Cursed: chance to corrode a weapon or armor level;displacement|defend|1|true|Cursed: chance to teleport its wearer away;metabolism|defend|1|true|Cursed: consumes extra hunger;multiplicity|defend|1|true|Cursed: chance to summon a spectral copy of the attacker;overgrowth|defend|1|true|Cursed: chance to root its wearer in grass"
+								"id": "stone",
+								"trigger": "defend",
+								"weight": "3",
+								"curse": "false",
+								"description": "+2 armor"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
-								"line": 16,
+								"line": 152,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "thorns",
+								"trigger": "defend",
+								"weight": "3",
+								"curse": "false",
+								"description": "Reflects 2"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 159,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "flow",
+								"trigger": "passive",
+								"weight": "3",
+								"curse": "false",
+								"description": "Moves faster in water"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 166,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "entanglement",
+								"trigger": "defend",
+								"weight": "2",
+								"curse": "false",
+								"description": "Chance to root an attacker"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 173,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "swiftness",
+								"trigger": "passive",
+								"weight": "3",
+								"curse": "false",
+								"description": "Faster movement when safe (20% speed increase)"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 180,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "potential",
+								"trigger": "defend",
+								"weight": "3",
+								"curse": "false",
+								"description": "Chance to recharge wands when hit"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 187,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "repulsion",
+								"trigger": "defend",
+								"weight": "2",
+								"curse": "false",
+								"description": "Chance to knock an adjacent attacker backward"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 194,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "brimstone",
+								"trigger": "defend",
+								"weight": "2",
+								"curse": "false",
+								"description": "Immune to burning"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 201,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "viscosity",
+								"trigger": "defend",
+								"weight": "3",
+								"curse": "false",
+								"description": "Defers part of incoming damage"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 208,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "affection",
+								"trigger": "defend",
+								"weight": "1",
+								"curse": "false",
+								"description": "Charms an attacker"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 215,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "antimagic",
+								"trigger": "defend",
+								"weight": "1",
+								"curse": "false",
+								"description": "Reduces magical damage"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 222,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "obfuscation",
+								"trigger": "passive",
+								"weight": "3",
+								"curse": "false",
+								"description": "Makes the wearer harder to detect"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 229,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "camouflage",
+								"trigger": "passive",
+								"weight": "2",
+								"curse": "false",
+								"description": "Trampling grass turns you invisible"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 236,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "stench",
+								"trigger": "defend",
+								"weight": "1",
+								"curse": "true",
+								"description": "Cursed: chance to release toxic gas when hit"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 243,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "antientropy",
+								"trigger": "defend",
+								"weight": "1",
+								"curse": "true",
+								"description": "Cursed: chance to drain a wand charge"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 250,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "bulk",
+								"trigger": "passive",
+								"weight": "1",
+								"curse": "true",
+								"description": "Cursed: slower through doorways"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 257,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "corrosion",
+								"trigger": "defend",
+								"weight": "1",
+								"curse": "true",
+								"description": "Cursed: chance to corrode a weapon or armor level"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 264,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "displacement",
+								"trigger": "defend",
+								"weight": "1",
+								"curse": "true",
+								"description": "Cursed: chance to teleport its wearer away"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 271,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "metabolism",
+								"trigger": "defend",
+								"weight": "1",
+								"curse": "true",
+								"description": "Cursed: consumes extra hunger"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 278,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "multiplicity",
+								"trigger": "defend",
+								"weight": "1",
+								"curse": "true",
+								"description": "Cursed: chance to summon a spectral copy of the attacker"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 285,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "overgrowth",
+								"trigger": "defend",
+								"weight": "1",
+								"curse": "true",
+								"description": "Cursed: chance to root its wearer in grass"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 292,
 								"column": 1
 							},
 							"gettext": []
@@ -231,28 +900,144 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
-						"line": 13,
+						"line": 149,
 						"column": 1
 					},
 					"gettext": []
 				},
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "unstableEnchants",
-						"name": "Unstable.randomEnchants"
+						"columns": "id:string"
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "ids",
-								"set": "blazing,blocking,blooming,chilling,corrupting,kinetic,grim,lucky,shocking,vampiric"
+								"id": "blazing"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
-								"line": 25,
+								"line": 304,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "blocking"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 307,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "blooming"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 310,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "chilling"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 313,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "corrupting"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 316,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "kinetic"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 319,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "grim"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 322,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "lucky"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 325,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "shocking"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 328,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "vampiric"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 331,
 								"column": 1
 							},
 							"gettext": []
@@ -260,7 +1045,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
-						"line": 22,
+						"line": 301,
 						"column": 1
 					},
 					"gettext": []

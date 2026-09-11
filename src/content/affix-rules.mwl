@@ -1,30 +1,336 @@
 [game]
 schema=0.1
 
-[trait]
+[table]
 id=weaponEnchants
-name=Weapon.enchantments
-[effect]
-apply_to=entries
-set=blazing|strike|3|false|Ignites the victim;chilling|strike|3|false|Chills the victim;shocking|strike|3|false|+2 damage;vampiric|strike|2|false|Heals 1 on a hit;grim|strike|2|false|Chance of bonus damage against a weakened foe;lucky|strike|2|false|Chance of bonus loot on a kill;blocking|strike|2|false|Chance to grant a shield on a landed hit;kinetic|strike|2|false|Stores part of damage for the next hit;corrupting|strike|2|false|Lethal hits can convert the victim into an ally;elastic|strike|2|false|Chance to knock the victim backward;projecting|strike|2|false|Extends melee reach;blooming|strike|2|false|Chance to plant grass where you strike;unstable|strike|2|false|A random enchantment effect on every hit;wayward|strike|1|true|Cursed: -3 accuracy;annoying|strike|1|true|Cursed: chance to alert every monster on the floor;dazzling|strike|1|true|Cursed: chance to blind everyone nearby, including you;explosive|strike|1|true|Cursed: eventually detonates on its wielder;polarized|strike|1|true|Cursed: every other hit is amplified, the rest whiff entirely;sacrificial|strike|1|true|Cursed: chance to wound its wielder;displacing|strike|1|true|Cursed: chance to teleport the struck target away
-[/effect]
-[/trait]
+columns=id:string|trigger:string|weight:number|curse:boolean|description:string
+[row]
+id=blazing
+trigger=strike
+weight=3
+curse=false
+description=Ignites the victim
+[/row]
+[row]
+id=chilling
+trigger=strike
+weight=3
+curse=false
+description=Chills the victim
+[/row]
+[row]
+id=shocking
+trigger=strike
+weight=3
+curse=false
+description=+2 damage
+[/row]
+[row]
+id=vampiric
+trigger=strike
+weight=2
+curse=false
+description=Heals 1 on a hit
+[/row]
+[row]
+id=grim
+trigger=strike
+weight=2
+curse=false
+description=Chance of bonus damage against a weakened foe
+[/row]
+[row]
+id=lucky
+trigger=strike
+weight=2
+curse=false
+description=Chance of bonus loot on a kill
+[/row]
+[row]
+id=blocking
+trigger=strike
+weight=2
+curse=false
+description=Chance to grant a shield on a landed hit
+[/row]
+[row]
+id=kinetic
+trigger=strike
+weight=2
+curse=false
+description=Stores part of damage for the next hit
+[/row]
+[row]
+id=corrupting
+trigger=strike
+weight=2
+curse=false
+description=Lethal hits can convert the victim into an ally
+[/row]
+[row]
+id=elastic
+trigger=strike
+weight=2
+curse=false
+description=Chance to knock the victim backward
+[/row]
+[row]
+id=projecting
+trigger=strike
+weight=2
+curse=false
+description=Extends melee reach
+[/row]
+[row]
+id=blooming
+trigger=strike
+weight=2
+curse=false
+description=Chance to plant grass where you strike
+[/row]
+[row]
+id=unstable
+trigger=strike
+weight=2
+curse=false
+description=A random enchantment effect on every hit
+[/row]
+[row]
+id=wayward
+trigger=strike
+weight=1
+curse=true
+description=Cursed: -3 accuracy
+[/row]
+[row]
+id=annoying
+trigger=strike
+weight=1
+curse=true
+description=Cursed: chance to alert every monster on the floor
+[/row]
+[row]
+id=dazzling
+trigger=strike
+weight=1
+curse=true
+description=Cursed: chance to blind everyone nearby, including you
+[/row]
+[row]
+id=explosive
+trigger=strike
+weight=1
+curse=true
+description=Cursed: eventually detonates on its wielder
+[/row]
+[row]
+id=polarized
+trigger=strike
+weight=1
+curse=true
+description=Cursed: every other hit is amplified, the rest whiff entirely
+[/row]
+[row]
+id=sacrificial
+trigger=strike
+weight=1
+curse=true
+description=Cursed: chance to wound its wielder
+[/row]
+[row]
+id=displacing
+trigger=strike
+weight=1
+curse=true
+description=Cursed: chance to teleport the struck target away
+[/row]
+[/table]
 
-[trait]
+[table]
 id=armorGlyphs
-name=Armor.glyphs
-[effect]
-apply_to=entries
-set=stone|defend|3|false|+2 armor;thorns|defend|3|false|Reflects 2;flow|passive|3|false|Moves faster in water;entanglement|defend|2|false|Chance to root an attacker;swiftness|passive|3|false|Faster movement when safe (20% speed increase);potential|defend|3|false|Chance to recharge wands when hit;repulsion|defend|2|false|Chance to knock an adjacent attacker backward;brimstone|defend|2|false|Immune to burning;viscosity|defend|3|false|Defers part of incoming damage;affection|defend|1|false|Charms an attacker;antimagic|defend|1|false|Reduces magical damage;obfuscation|passive|3|false|Makes the wearer harder to detect;camouflage|passive|2|false|Trampling grass turns you invisible;stench|defend|1|true|Cursed: chance to release toxic gas when hit;antientropy|defend|1|true|Cursed: chance to drain a wand charge;bulk|passive|1|true|Cursed: slower through doorways;corrosion|defend|1|true|Cursed: chance to corrode a weapon or armor level;displacement|defend|1|true|Cursed: chance to teleport its wearer away;metabolism|defend|1|true|Cursed: consumes extra hunger;multiplicity|defend|1|true|Cursed: chance to summon a spectral copy of the attacker;overgrowth|defend|1|true|Cursed: chance to root its wearer in grass
-[/effect]
-[/trait]
+columns=id:string|trigger:string|weight:number|curse:boolean|description:string
+[row]
+id=stone
+trigger=defend
+weight=3
+curse=false
+description=+2 armor
+[/row]
+[row]
+id=thorns
+trigger=defend
+weight=3
+curse=false
+description=Reflects 2
+[/row]
+[row]
+id=flow
+trigger=passive
+weight=3
+curse=false
+description=Moves faster in water
+[/row]
+[row]
+id=entanglement
+trigger=defend
+weight=2
+curse=false
+description=Chance to root an attacker
+[/row]
+[row]
+id=swiftness
+trigger=passive
+weight=3
+curse=false
+description=Faster movement when safe (20% speed increase)
+[/row]
+[row]
+id=potential
+trigger=defend
+weight=3
+curse=false
+description=Chance to recharge wands when hit
+[/row]
+[row]
+id=repulsion
+trigger=defend
+weight=2
+curse=false
+description=Chance to knock an adjacent attacker backward
+[/row]
+[row]
+id=brimstone
+trigger=defend
+weight=2
+curse=false
+description=Immune to burning
+[/row]
+[row]
+id=viscosity
+trigger=defend
+weight=3
+curse=false
+description=Defers part of incoming damage
+[/row]
+[row]
+id=affection
+trigger=defend
+weight=1
+curse=false
+description=Charms an attacker
+[/row]
+[row]
+id=antimagic
+trigger=defend
+weight=1
+curse=false
+description=Reduces magical damage
+[/row]
+[row]
+id=obfuscation
+trigger=passive
+weight=3
+curse=false
+description=Makes the wearer harder to detect
+[/row]
+[row]
+id=camouflage
+trigger=passive
+weight=2
+curse=false
+description=Trampling grass turns you invisible
+[/row]
+[row]
+id=stench
+trigger=defend
+weight=1
+curse=true
+description=Cursed: chance to release toxic gas when hit
+[/row]
+[row]
+id=antientropy
+trigger=defend
+weight=1
+curse=true
+description=Cursed: chance to drain a wand charge
+[/row]
+[row]
+id=bulk
+trigger=passive
+weight=1
+curse=true
+description=Cursed: slower through doorways
+[/row]
+[row]
+id=corrosion
+trigger=defend
+weight=1
+curse=true
+description=Cursed: chance to corrode a weapon or armor level
+[/row]
+[row]
+id=displacement
+trigger=defend
+weight=1
+curse=true
+description=Cursed: chance to teleport its wearer away
+[/row]
+[row]
+id=metabolism
+trigger=defend
+weight=1
+curse=true
+description=Cursed: consumes extra hunger
+[/row]
+[row]
+id=multiplicity
+trigger=defend
+weight=1
+curse=true
+description=Cursed: chance to summon a spectral copy of the attacker
+[/row]
+[row]
+id=overgrowth
+trigger=defend
+weight=1
+curse=true
+description=Cursed: chance to root its wearer in grass
+[/row]
+[/table]
 
-[trait]
+[table]
 id=unstableEnchants
-name=Unstable.randomEnchants
-[effect]
-apply_to=ids
-set=blazing,blocking,blooming,chilling,corrupting,kinetic,grim,lucky,shocking,vampiric
-[/effect]
-[/trait]
+columns=id:string
+[row]
+id=blazing
+[/row]
+[row]
+id=blocking
+[/row]
+[row]
+id=blooming
+[/row]
+[row]
+id=chilling
+[/row]
+[row]
+id=corrupting
+[/row]
+[row]
+id=kinetic
+[/row]
+[row]
+id=grim
+[/row]
+[row]
+id=lucky
+[/row]
+[row]
+id=shocking
+[/row]
+[row]
+id=vampiric
+[/row]
+[/table]
+
 [/game]

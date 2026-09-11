@@ -131,44 +131,11 @@ function validateRoomRuleTables() {
   }
 }
 
-/**
- * The weapon-enchant and armor-glyph tables are positional rows parsed at runtime by
- * `mwlContent.ts`. Validate each row's shape, id uniqueness, and the `Unstable` delegate
- * membership here so a malformed affix row fails the build instead of the first generated roll.
- */
-function validateAffixTables() {
-  const tableIds = new Map();
-  for (const traitId of ['weaponEnchants', 'armorGlyphs']) {
-    const ids = new Set();
-    for (const row of effectSet(traitId, 'entries').split(';').filter(Boolean)) {
-      const [id, trigger, weightText, curseText, ...descriptionParts] = row.split('|');
-      const weight = Number(weightText);
-      if (
-        !id ||
-        (trigger !== 'strike' && trigger !== 'defend' && trigger !== 'passive') ||
-        !Number.isInteger(weight) || weight < 0 ||
-        (curseText !== 'true' && curseText !== 'false') ||
-        descriptionParts.join('|').trim() === ''
-      ) {
-        throw new Error(`MWL ${traitId} row must be id|trigger|weight|curse|description: ${row}`);
-      }
-      if (ids.has(id)) throw new Error(`MWL ${traitId} contains duplicate affix id: ${id}`);
-      ids.add(id);
-    }
-    tableIds.set(traitId, ids);
-  }
-  const enchants = tableIds.get('weaponEnchants');
-  for (const id of effectSet('unstableEnchants', 'ids').split(',').filter(Boolean)) {
-    if (!enchants.has(id)) throw new Error(`MWL Unstable delegate references unknown enchantment: ${id}`);
-  }
-}
-
 validateRosterReferences();
 validateBossReferences();
 validateActorReferences();
 validateHookReferences();
 validateRoomRuleTables();
-validateAffixTables();
 
 const missingAssets = game.assets.filter((asset) => !fs.existsSync(path.join(root, 'src', asset)));
 if (missingAssets.length > 0) {

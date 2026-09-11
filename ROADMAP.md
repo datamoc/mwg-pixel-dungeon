@@ -109,9 +109,18 @@ Do not add new authored content as object literals or scattered constants in the
       time now: it enforces the seven-field region-row format and one chance value per class for
       the standard and connection room tables. Added 2026-09-11 after the first real browser
       start-up smoke found two such malformed rows (a dropped `specialBase` field and a 27-value
-      depth-5 chance row) that had passed both `tsc` and the build. `validateAffixTables()`
-      similarly enforces the enchant/glyph row shape, unique affix ids, and that every Unstable
-      delegate names a real enchantment.
+      depth-5 chance row) that had passed both `tsc` and the build. `validateAffixTables()` used to
+      do the same for the enchant/glyph rows; MWG 0.7.2's typed MWL tables replaced it, so their
+      row shape and cell types are validated by the framework now, and only row-id uniqueness plus
+      the Unstable-delegate membership are still checked (`mwlContent.ts` - MWG does not validate
+      table row ids).
+- [x] Adopt MWG 0.7.2 (2026-09-11): bump the `mwg` pin and use typed MWL tables for the first
+      authored tables. The enchant/glyph/Unstable catalogues are now `[table]`/`[row]` data in
+      `affix-rules.mwl`, read through a single `MWL_TABLE`/`MWL_TABLE_ROWS` accessor in
+      `mwlContent.ts`; the hand-split `set=` parser and `validateAffixTables()` are gone, and
+      `rollGeneratedAffix` uses `Actors.rollAffix`'s own `curse` pool option instead of filtering
+      entries by hand. Browser-verified on 0.7.2 with an identical roll distribution (13/7 weapon,
+      13/8 armor, none when ineligible). The remaining ~27 `set=` row-tables still need converting.
 - [ ] Update the build, test, package, and browser-smoke documentation so a clean checkout can
       reproduce every generated resource without a local MWG checkout.
 

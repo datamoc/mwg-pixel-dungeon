@@ -17,7 +17,7 @@
     "assets": "node tools/extract-spd-assets.mjs"
   },
   "dependencies": {
-    "mwg": "npm:@datamoc/mw_games@^0.7.1",
+    "mwg": "npm:@datamoc/mw_games@^0.7.2",
     "pixi.js": "^8.20.1"
   },
   "devDependencies": {

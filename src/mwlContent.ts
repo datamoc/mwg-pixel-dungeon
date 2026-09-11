@@ -1,4 +1,4 @@
-import { contentCatalog } from 'mwg/mwl';
+import { contentCatalog, type MwlTableDefinition } from 'mwg/mwl';
 import { gameData } from './generated/mwlContent';
 
 /**
@@ -12,6 +12,28 @@ const MWL_CONTENT = contentCatalog(gameData);
 export const MWL_RING_ITEMS = MWL_CONTENT.items;
 export const MWL_MONSTERS = MWL_CONTENT.monsters;
 export const MWL_CONSUMABLE_ITEMS = MWL_CONTENT.items.filter((item) => item.slot === 'consumable');
+
+/**
+ * MWG 0.7.2 typed MWL tables: `[table] columns=...` with `[row]` children. The framework validates
+ * each column's shape and coerces every cell (`coerceTableValue`), so this port no longer
+ * hand-splits `set=` positional rows or re-checks cell types - it only narrows the few columns
+ * whose values are a closed set (a trigger name, a roster of ids). Every authored table below is
+ * authored this way; `MWL_TABLE` is the single reader.
+ */
+const MWL_TABLES = new Map(MWL_CONTENT.tables.map((table) => [table.id, table]));
+
+export function MWL_TABLE(id: string): MwlTableDefinition {
+	const table = MWL_TABLES.get(id);
+	if (!table) throw new Error(`MWL table is missing: ${id}`);
+	return table;
+}
+
+/** Reads a table's rows and rejects duplicate ids - MWG validates cell shape, not row uniqueness. */
+export function MWL_TABLE_ROWS(id: string): readonly Readonly<Record<string, unknown>>[] {
+	const rows = MWL_TABLE(id).rows;
+	if (new Set(rows.map((row) => String(row.id))).size !== rows.length) throw new Error(`MWL table ${id} contains duplicate ids`);
+	return rows;
+}
 
 export interface MwlRawNode {
 	readonly tag: string;
@@ -197,52 +219,32 @@ export interface MwlAffixDefinition {
 
 /**
  * Weapon enchantments (`Weapon.java`'s `enchantments`) and armor glyphs (`Armor.java`'s `glyphs`)
- * as `mwg/actors` affix data. Real Java ties each id to its own `Enchantment`/`Glyph` subclass;
- * this port authors the shared routing metadata (trigger, weight, curse flag, description) here
- * and interprets the id itself when the trigger fires, so the proc bodies stay in `main.ts`.
+ * as `mwg/actors` affix data, authored as MWG typed MWL tables (`src/content/affix-rules.mwl`), so
+ * the framework validates column shape and coerces every cell and this module only narrows the
+ * `trigger` column to the three real routes. Real Java ties each id to its own `Enchantment`/
+ * `Glyph` subclass; this port authors the shared routing metadata and interprets the id itself
+ * when the trigger fires, so the proc bodies stay in `main.ts`.
  */
-function parseAffixDefinitions(traitId: string): readonly MwlAffixDefinition[] {
-	const trait = MWL_TRAIT_NODES.find((node) => node.attributes.id === traitId);
-	if (!trait) throw new Error(`MWL affix catalogue is missing ${traitId}`);
-	const effect = trait.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
-	if (!effect?.attributes.set) throw new Error(`MWL affix catalogue is missing entries for ${traitId}`);
-	const definitions = effect.attributes.set.split(';').filter(Boolean).map((entry) => {
-		const [id, trigger, weightText, curseText, ...descriptionParts] = entry.split('|');
-		const description = descriptionParts.join('|');
-		const weight = Number(weightText);
-		if (
-			!id || !isMwlAffixTrigger(trigger) ||
-			!Number.isInteger(weight) || weight < 0 ||
-			(curseText !== 'true' && curseText !== 'false') || !description
-		) {
-			throw new Error(`Invalid MWL affix definition: ${entry}`);
-		}
-		return { id, trigger, weight, curse: curseText === 'true', description };
+function affixRows(tableId: string): readonly MwlAffixDefinition[] {
+	return MWL_TABLE_ROWS(tableId).map((row) => {
+		const trigger = String(row.trigger);
+		if (!isMwlAffixTrigger(trigger)) throw new Error(`MWL ${tableId} row has an invalid trigger: ${String(row.id)}`);
+		return { id: String(row.id), trigger, weight: Number(row.weight), curse: row.curse === true, description: String(row.description) };
 	});
-	if (new Set(definitions.map((definition) => definition.id)).size !== definitions.length) {
-		throw new Error(`MWL affix catalogue ${traitId} contains duplicate ids`);
-	}
-	return definitions;
 }
 
-export const MWL_WEAPON_ENCHANTS = parseAffixDefinitions('weaponEnchants');
-export const MWL_ARMOR_GLYPHS = parseAffixDefinitions('armorGlyphs');
+export const MWL_WEAPON_ENCHANTS = affixRows('weaponEnchants');
+export const MWL_ARMOR_GLYPHS = affixRows('armorGlyphs');
 
 /** `Unstable.randomEnchants`: the enchantments `Unstable` may delegate a swing to. */
-function parseUnstableDelegates(): readonly string[] {
-	const trait = MWL_TRAIT_NODES.find((node) => node.attributes.id === 'unstableEnchants');
-	if (!trait) throw new Error('MWL Unstable delegate catalogue is missing');
-	const effect = trait.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'ids');
-	if (!effect?.attributes.set) throw new Error('MWL Unstable delegate catalogue is missing ids');
-	const ids = effect.attributes.set.split(',').filter(Boolean);
+export const MWL_UNSTABLE_DELEGATES: readonly string[] = (() => {
 	const known = new Set(MWL_WEAPON_ENCHANTS.map((definition) => definition.id));
+	const ids = MWL_TABLE_ROWS('unstableEnchants').map((row) => String(row.id));
 	for (const id of ids) {
 		if (!known.has(id)) throw new Error(`MWL Unstable delegate references unknown enchantment: ${id}`);
 	}
 	return ids;
-}
-
-export const MWL_UNSTABLE_DELEGATES = parseUnstableDelegates();
+})();
 
 function requiredClassValue(values: Readonly<Record<string, string>>, key: string): string {
 	const value = values[key];
