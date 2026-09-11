@@ -537,8 +537,15 @@ Do not add new authored content as object literals or scattered constants in the
 - [ ] Port Caves/DM-300's full pylon, gate, energy field, and supercharge scripts (pylon
       proximity sealing, sequential threshold supercharges, pylon activation, boss
       invulnerability, x2 speed, and supercharge loss on pylon death are live; the
-      GAS/ROCKS rotation is real with telegraphed rockfalls; exact PylonEnergy terrain,
-      locked-floor timing, targeting refinements, and presentation remain).
+      GAS/ROCKS rotation is real with telegraphed rockfalls. **PylonEnergy terrain is now
+      real too** (2026-09-11): the arena generates Java's own `Patch.generate(width, height-14,
+      0.15f, 2, true)` water scatter and `Random.Int(challenge ? 4 : 8)` inactive-trap scatter on a
+      per-floor seeded stream, `activatePylon()` seeds the field on INACTIVE_TRAP/WATER/SIGN from
+      row 13 down *at DM-300's supercharge* (not at seal), the seal triggers at Java's real
+      Chebyshev distance 3, and the energy tick's double-damage of the hero is fixed - all
+      browser-verified live. Remaining: Java's locked-floor timing spawns DM-300 inside `seal()` at
+      a random `mainArena` point while this port still spawns it in `populate()` on floor entry,
+      plus targeting refinements and presentation).
 - [ ] Port City/Dwarf King's throne and Imp-shop scripts (the full 1/2/3 phase machine
       is now live: P1 hunt with exact summon/ability cooldowns and LINK/TELE-lite, P2
       immobile shield with real wave schedule and self-chip, P3 bleed/summons/losing yell

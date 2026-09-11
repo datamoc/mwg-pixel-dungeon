@@ -8,6 +8,8 @@
  */
 import { PaintLevel, Terrain, fillEllipse, fillXY, set } from './paintLevel';
 import type { Room } from './room';
+import { spdPatchGenerate } from './spdPatch';
+import { SpdRandom } from '../spdRng';
 
 export interface BossFloorData {
 	paint: PaintLevel;
@@ -41,10 +43,25 @@ function prisonBoss(): BossFloorData {
 	return { paint: level, rooms: [room(6, 23, 15, 31)], feeling: null };
 }
 
-function cavesBoss(): BossFloorData {
+function cavesBoss(strongerBosses: boolean): BossFloorData {
 	// CavesBossLevel: WIDTH=33, HEIGHT=42, mainArena=(5,14)-(28,37).
 	const level = new PaintLevel(33, 42, Terrain.CHASM);
 	fillEllipse(level, 5, 14, 24, 24, Terrain.EMPTY);
+	// `CavesBossLevel.build()`: after the arena ellipse, scatter water and sprung traps across it
+	// with the real `Patch.generate(width, height-14, 0.15f, 2, true)` and one
+	// `Random.Int(challenge ? 4 : 8) == 0` roll per eligible EMPTY cell. These are exactly the
+	// cells `activatePylon()`'s `PylonEnergy` seed later energizes (WATER/INACTIVE_TRAP/SIGN), so
+	// without them DM-300's pylon mechanic has no terrain to work on at all. The port's wider
+	// arena layout is still a hand-approximation of Java's build order, so the RNG stream position
+	// here is deterministic but not Java's exact draw index.
+	const patch = spdPatchGenerate(level.w, level.h - 14, 0.15, 2, true);
+	const patchOffset = 14 * level.w;
+	const trapBound = strongerBosses ? 4 : 8;
+	for (let i = patchOffset; i < level.w * level.h; i++) {
+		if (level.map[i] !== Terrain.EMPTY) continue;
+		if (patch[i - patchOffset]) level.map[i] = Terrain.WATER;
+		else if (SpdRandom.int(trapBound) === 0) level.map[i] = Terrain.INACTIVE_TRAP;
+	}
 	fillRect(level, 14, 3, 18, 12, Terrain.EMPTY);
 	fillRect(level, 15, 2, 17, 4, Terrain.EMPTY_SP);
 	fillRect(level, 15, 5, 17, 5, Terrain.STATUE);
@@ -119,10 +136,10 @@ function lastLevel(): BossFloorData {
 	return { paint: level, rooms: [room(mid - 1, 10, mid + 1, 62)], feeling: null };
 }
 
-export function generateBossFloor(depth: number): BossFloorData {
+export function generateBossFloor(depth: number, strongerBosses = false): BossFloorData {
 		switch (depth) {
 		case 10: return prisonBoss();
-		case 15: return cavesBoss();
+		case 15: return cavesBoss(strongerBosses);
 		case 20: return cityBoss();
 		case 25: return hallsBoss();
 		case 26: return lastLevel();

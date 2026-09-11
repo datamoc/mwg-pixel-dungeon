@@ -2027,7 +2027,7 @@ export class SewersScene extends Scene2D {
 		ritualSiteState.ritualPos = -1;
 		const ported = this.miningBranchActive
 			? miningBranchFloor(this.runSeedLong, this.depth)
-			: isPortedDepth(this.depth) ? portedFloor(this.runSeedLong, this.depth) : null;
+			: isPortedDepth(this.depth) ? portedFloor(this.runSeedLong, this.depth, isChallengeEnabled('stronger_bosses')) : null;
 		this.portedFloorActive = ported !== null;
 		this.portedPaint = ported?.paint ?? null;
 		this.restorePortedFeatures();
@@ -7993,39 +7993,31 @@ export class SewersScene extends Scene2D {
 		return true;
 	}
 
-	/** Java CavesBossLevel seals its arena when the hero approaches a pylon. */
+	/** `CavesBossLevel.occupyCell()`: seal the arena once the hero comes within Chebyshev
+	 * distance 3 of a pylon (`Level.distance` is `max(|dx|,|dy|)`). Energizing the floor is NOT
+	 * part of the seal: `activatePylon()` does that, and only `DM300.supercharge()` calls it (see
+	 * `dm300Supercharge`), so no pylon energy exists before DM-300's first HP bracket. */
 	private checkCavesBossPylonGate(): void {
 		if (this.depth !== 15 || this.cavesBossSealed) return;
 		const boss = this.creatures.find((creature) => creature.kind === 'dm300' && creature.hp > 0);
 		if (!boss) return;
 		const nearPylon = this.cavesBossPylons.some((pylon) =>
-			Math.max(Math.abs(this.hero.x - pylon.x), Math.abs(this.hero.y - pylon.y)) <= 2
+			Math.max(Math.abs(this.hero.x - pylon.x), Math.abs(this.hero.y - pylon.y)) <= 3
 		);
 		if (!nearPylon) return;
 		this.cavesBossSealed = true;
-		//PylonEnergy persists until CavesBossLevel.eliminatePylon() clears it; the old
-		//three-turn counter was only a temporary stand-in and made the arena safe too soon.
 		this.say(t('port.log.dm300overcharge'), 'warning');
-		//CavesBossLevel.activatePylon() is called by DM300.supercharge(), not by the
-		//arena seal itself. The previous port activated all four here, making the pylon
-		//sequence impossible to play and allowing damage before the real HP threshold.
-		for (let cell = 0; cell < this.level.cellCount; cell++) {
-			const x = cell % this.level.width, y = Math.floor(cell / this.level.width);
-			if (this.level.get(x, y) === WATER || this.level.get(x, y) === Terrain.INACTIVE_TRAP) this.cavesBossEnergyCells.add(cell);
-		}
-		for (const pylon of this.cavesBossPylons) {
-			for (const [dx, dy] of Roguelike.neighbourOffsets(4)) {
-				const at = { x: pylon.x + dx, y: pylon.y + dy };
-				if (this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y)) this.fire.seed(at.x, at.y, 2);
-			}
-		}
 	}
 
 	/** `CavesBossLevel.PylonEnergy.evolve()`: damage grounded characters standing on
-	 * energized terrain until the active pylon cycle clears the field. */
+	 * energized terrain until the active pylon cycle clears the field. `this.creatures` already
+	 * contains the hero, so the target list is deduplicated by identity - the previous
+	 * `[this.hero, ...this.creatures]` damaged the hero twice in a single tick. */
 	private tickCavesBossEnergy(): boolean {
 		if (this.depth !== 15 || !this.cavesBossSealed || this.cavesBossEnergyCells.size === 0) return false;
-		for (const target of [this.hero, ...this.creatures]) {
+		const targets = new Set(this.creatures);
+		if (this.hero) targets.add(this.hero);
+		for (const target of targets) {
 			if (target.hp <= 0 || target.flying || target.kind === 'dm300') continue;
 			if (!this.cavesBossEnergyCells.has(this.level.index(target.x, target.y))) continue;
 			const damage = Random.normalRange(6, 12);
@@ -9333,10 +9325,10 @@ export class SewersScene extends Scene2D {
 		return isChallengeEnabled('darkness') ? Math.min(scaled, 2) : scaled;
 	}
 
-	/** DM300.supercharge()/CavesBossLevel.activatePylon(): activate the pylon farthest
-	 * from the hero after reserving the closest inactive pylon, then seed the floor's
-	 * existing short-lived fire pressure as the PylonEnergy stand-in. The pylon actor,
-	 * exact electricity blob, and challenge-specific terrain spread remain simplified. */
+	/** DM300.supercharge()/CavesBossLevel.activatePylon(): activate the pylon farthest from the
+	 * hero after reserving the closest inactive pylon, then seed `PylonEnergy` on the arena's
+	 * INACTIVE_TRAP/WATER/SIGN cells (from row 13 down, plus any water via `evolve()`'s spread).
+	 * `eliminatePylon()` clears the field again while more than the final pylons remain. */
 	private dm300Supercharge(dm300: Creature): void {
 		const total = isChallengeEnabled('stronger_bosses') ? 3 : 2;
 		const activated = dm300.dmPylonsActivated ?? 0;
@@ -9355,7 +9347,20 @@ export class SewersScene extends Scene2D {
 				const sheet = SpriteSheet.fromTexture(runState.sprites.pylon, 10, 20);
 				sprite.texture = sheet.get(1);
 				placeCharacterArt(sprite);
-				for (const [dx, dy] of Roguelike.neighbourOffsets(4)) this.fire.seed(pylon.x + dx, pylon.y + dy, 2);
+			}
+		}
+		//The eligible cells come from the untranslated `PaintLevel`, because the live level's
+		//coarse terrain mapping collapses `INACTIVE_TRAP` (and gates) to plain floor - reading
+		//`this.level.get` here would never match a single seeded cell.
+		this.cavesBossEnergyCells.clear();
+		const paint = this.portedPaint;
+		if (paint) {
+			for (let cell = 0; cell < paint.map.length; cell++) {
+				const terrain = paint.map[cell];
+				const y = Math.floor(cell / paint.w);
+				if (terrain === Terrain.WATER || (y >= 13 && (terrain === Terrain.INACTIVE_TRAP || terrain === Terrain.SIGN))) {
+					this.cavesBossEnergyCells.add(cell);
+				}
 			}
 		}
 		this.say(t('port.log.dm300overcharge'), 'warning');

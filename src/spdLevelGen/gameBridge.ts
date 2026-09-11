@@ -242,6 +242,8 @@ export interface PortedFloor {
 
 interface RunCache {
 	seed: bigint;
+	/** `CavesBossLevel`'s arena water/trap scatter depends on the Stronger Bosses challenge. */
+	strongerBosses: boolean;
 	floors: Map<number, { paint: PaintLevel; rooms: Room[]; feeling: number | null }>;
 }
 
@@ -263,9 +265,17 @@ function resetRunState(seed: bigint): void {
 }
 
 /** One floor, generated exactly as the harness does: push the floor seed, build, paint, pop. */
-function generateFloor(seed: bigint, depth: number) {
+function generateFloor(seed: bigint, depth: number, strongerBosses: boolean) {
 	if (depth === 10 || depth === 15 || depth === 20 || depth === 25 || depth === 26) {
-		return generateBossFloor(depth);
+		// Boss floors also run inside Java's per-floor `Random` stream now, so the Caves arena's
+		// `Patch.generate` water/trap scatter is deterministic. Push/pop keeps the shared stream
+		// restored for the next floor in `portedFloor`'s loop (no draws are consumed otherwise).
+		SpdRandom.pushGenerator(spdSeedForDepth(seed, depth, 0));
+		try {
+			return generateBossFloor(depth, strongerBosses);
+		} finally {
+			SpdRandom.popGenerator();
+		}
 	}
 	entranceRoomContext.depth = depth;
 	entranceRoomContext.branchSeed = spdSeedForDepth(seed, depth, 0);
@@ -322,17 +332,17 @@ function generateMiningBranch(seed: bigint, depth: number): PortedFloor {
  * from this immutable generated baseline. It snapshots that layer when leaving a depth, so this
  * cache only needs to guarantee that revisits receive the same generated layout.
  */
-export function portedFloor(seed: bigint, depth: number): PortedFloor {
+export function portedFloor(seed: bigint, depth: number, strongerBosses = false): PortedFloor {
 	if (!isPortedDepth(depth)) {
 		throw new Error(`portedFloor: depth ${depth} is not one of the ported depths (${PORTED_DEPTHS.join(', ')})`);
 	}
-	if (!run || run.seed !== seed) {
+	if (!run || run.seed !== seed || run.strongerBosses !== strongerBosses) {
 		resetRunState(seed);
-		run = { seed, floors: new Map() };
+		run = { seed, strongerBosses, floors: new Map() };
 	}
 	for (const d of PORTED_DEPTHS) {
 		if (d > depth) break;
-		if (!run.floors.has(d)) run.floors.set(d, generateFloor(seed, d));
+		if (!run.floors.has(d)) run.floors.set(d, generateFloor(seed, d, strongerBosses));
 	}
 	const floor = run.floors.get(depth)!;
 	return extract(floor.paint, floor.rooms, floor.feeling);
