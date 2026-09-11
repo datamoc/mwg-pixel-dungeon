@@ -8796,10 +8796,10 @@ export class SewersScene extends Scene2D {
 		}
 	}
 
-	/** `BrightFist.damage()`'s warp: relocate to a random level cell that is not in the hero's
-	 * field of view, not solid, unoccupied, and reachable from the level exit - Java redraws
+	/** `BrightFist`/`DarkFist.damage()`'s warp: relocate to a random level cell that is not in the
+	 * hero's field of view, not solid, unoccupied, and reachable from the level exit - Java redraws
 	 * `Random.Int(level.length())` until all four hold. */
-	private teleportBrightFist(fist: Creature): void {
+	private teleportFistAway(fist: Creature): void {
 		if (!this.stairs) return;
 		const fov = new Roguelike.FieldOfView(this.level);
 		fov.update(this.hero.x, this.hero.y, this.viewRadius());
@@ -9335,16 +9335,17 @@ export class SewersScene extends Scene2D {
 			}
 		}
 		if (defender.kind === 'tengu') this.clampTenguBracket(defender, preHp);
-		//`BrightFist.damage()`: the first time it drops past half health it pins there, warps to a
-		//random cell the hero cannot see (reachable from the exit) and prolongs the hero's
-		//Blindness; on death the Blindness is prolonged for three times as long. Java's Blindness is
-		//a cosmetic screen darkening (a FlavourBuff with no mechanical effect), so the port keeps
-		//its `daze` stand-in for that feedback.
-		if (defender.kind === 'yogFist' && defender.yogFistType === 'bright' && defender.hp > 0
-			&& preHp > defender.maxHp / 2 && defender.hp <= defender.maxHp / 2) {
+		//`BrightFist`/`DarkFist.damage()`: the first time either drops past half health it pins
+		//there, warps to a random cell the hero cannot see (reachable from the exit), and costs the
+		//hero something - Bright prolongs Blindness (1.5x; 3x on death), Dark detaches the hero's
+		//Light (an artifact this port has no model for). Java's Blindness is a cosmetic screen
+		//darkening (a FlavourBuff with no mechanical effect), so the port keeps its `daze`
+		//stand-in for both feedback paths.
+		if (defender.kind === 'yogFist' && (defender.yogFistType === 'bright' || defender.yogFistType === 'dark')
+			&& defender.hp > 0 && preHp > defender.maxHp / 2 && defender.hp <= defender.maxHp / 2) {
 			defender.hp = defender.maxHp / 2;
 			this.hero.buffs['daze'] = Math.max(this.hero.buffs['daze'] ?? 0, 15);
-			this.teleportBrightFist(defender);
+			this.teleportFistAway(defender);
 		}
 		if (defender.kind === 'yog' && defender.hp > 0) this.yogDamageHook(defender, preHp);
 		// FrostImbue.proc(): a surviving enemy hit receives Chill for two turns. The compact
@@ -10143,9 +10144,10 @@ export class SewersScene extends Scene2D {
 		const index = this.creatures.indexOf(creature);
 		if (index < 0) return;
 		runState.audio.cue('death', 0.65);
-		//`BrightFist.damage()`'s death case: the hero's Blindness is prolonged for three times the
-		//base duration (the port's `daze` stand-in).
-		if (creature.kind === 'yogFist' && creature.yogFistType === 'bright') {
+		//`BrightFist`/`DarkFist.damage()`'s death case: Bright prolongs the hero's Blindness for
+		//three times the base duration and Dark detaches the hero's Light (no model here) - both
+		//use the port's `daze` stand-in.
+		if (creature.kind === 'yogFist' && (creature.yogFistType === 'bright' || creature.yogFistType === 'dark')) {
 			this.hero.buffs['daze'] = Math.max(this.hero.buffs['daze'] ?? 0, 30);
 		}
 		this.scheduler.remove(creature);
