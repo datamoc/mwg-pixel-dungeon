@@ -3605,8 +3605,9 @@ export class SewersScene extends Scene2D {
 
 		const sprite = new TintedSprite(this.itemsSheet.get(kind === 'bomb' && item?.id === 'doubleBomb' ? ITEM_FRAME[kind] + 1 : ITEM_FRAME[kind]));
 		//`Bomb.glowing()`: a lit fuse glows red - reapplied here (rather than only at
-		//throw time) so lit bombs reloaded from a save glow too.
-		if (kind === 'bomb' && item?.fuseTurns !== undefined) sprite.tint = 0xff4444;
+		//throw time) so lit bombs reloaded from a save glow too. An armed noisemaker has spent
+		//its `fuseTurns` but is the most dangerous state, so it stays lit-looking.
+		if (kind === 'bomb' && (item?.fuseTurns !== undefined || item?.noisemakerArmed)) sprite.tint = 0xff4444;
 		sprite.x = x * TILE;
 		sprite.y = y * TILE;
 		this.itemLayer.addChild(sprite);
@@ -3674,9 +3675,14 @@ export class SewersScene extends Scene2D {
 			return;
 		}
 		if (item.item) {
+			//`Noisemaker.doPickUp()`: once its alarm has been triggered it cannot be picked up at
+			//all (Java returns false with no message), so it can never be disarmed.
+			if (item.item.id === 'noisemaker' && item.item.noisemakerArmed) return;
 			//`Bomb.doPickUp()`: stepping onto your own lit bomb snuffs its fuse instead of
-			//detonating it - the bomb returns to the bag unlit, with the real snuff message.
-			if (item.item.id === 'bomb' && item.item.fuseTurns !== undefined) {
+			//detonating it - the bomb returns to the bag unlit, with the real snuff message. This
+			//covers every lit bomb, not just the plain one: a lit specialty bomb used to keep its
+			//`fuseTurns` in the bag.
+			if (item.item.fuseTurns !== undefined) {
 				const { fuseTurns: _snuffed, ...unlit } = item.item;
 				this.bag.add({ ...unlit, stackable: true });
 				this.say(t('items.bombs.bomb.snuff_fuse'), 'positive');
@@ -12284,21 +12290,58 @@ export class SewersScene extends Scene2D {
 		return heroDied;
 	}
 
+	/** `Mob.beckon(pos)` - the alarmed noisemaker's scream. This port has no positional mob
+	 * target, so it uses the same stand-in `ScrollOfRage` and the Annoying curse already use:
+	 * every mob wakes and turns toward the hero. Java would send them to the noisemaker's cell
+	 * instead, and plays an alert sound plus a scream particle that are not reproduced. */
+	private beckonMobs(): void {
+		for (const c of this.creatures) {
+			if (c.isHero || c.isNPC) continue;
+			c.sleeping = false;
+			c.seesHero = true;
+		}
+	}
+
 	/** `Bomb.Fuse.act()`: lit bombs tick down once per hero turn (`Actor.addDelayed(fuse, 2)`
-	 * is two fuse-acts, i.e. two rounds) and detonate at zero. Called from the end-of-turn
-	 * pipeline, where a hero-killing blast returns true exactly like fatal buff damage.
-	 * A running Timekeeper freeze stops every automatic actor, fuses included. Lit bombs
-	 * ride ordinary ground-item payloads, so leaving the floor or saving/loading carries
-	 * them exactly like any other heap (Java abandons level actors on descent the same way).
-	 * Returns true when a blast kills the hero. */
+	 * is two fuse-acts, i.e. two rounds) and detonate at zero. `NoisemakerFuse` instead arms at
+	 * zero and then acts on its own (see below). Called from the end-of-turn pipeline, where a
+	 * hero-killing blast returns true exactly like fatal buff damage. A running Timekeeper freeze
+	 * stops every automatic actor, fuses included, but a triggered noisemaker refuses `freeze()`
+	 * in Java, so its alarm keeps running. Lit bombs ride ordinary ground-item payloads, so
+	 * leaving the floor or saving/loading carries them exactly like any other heap (Java abandons
+	 * level actors on descent the same way). Returns true when a blast kills the hero. */
 	private tickBombFuses(): boolean {
 		let heroDied = false;
 		for (const g of [...this.groundItems]) {
-			const fuse = g.item?.fuseTurns;
-			if (g.kind !== 'bomb' || fuse === undefined || !g.item) continue;
+			if (g.kind !== 'bomb' || !g.item) continue;
 			if (!this.groundItems.includes(g)) continue; //chained-detonated earlier this tick
-			if (this.timeBubbleTurns > 0) continue;
+			const armedNoisemaker = g.item.id === 'noisemaker' && g.item.noisemakerArmed === true;
+			if (this.timeBubbleTurns > 0 && !armedNoisemaker) continue;
+			if (armedNoisemaker) {
+				//`NoisemakerFuse.act()` once triggered: any char on its cell sets it off, otherwise
+				//it screams every 6 acts and beckons the level toward the cell.
+				if (this.creatureAt(g.x, g.y)) {
+					if (this.detonateGroundBomb(g, new Set())) heroDied = true;
+					continue;
+				}
+				const left = (g.item.noisemakerAlertIn ?? 1) - 1;
+				if (left <= 0) {
+					this.beckonMobs();
+					g.item.noisemakerAlertIn = 6;
+				} else g.item.noisemakerAlertIn = left;
+				continue;
+			}
+			const fuse = g.item.fuseTurns;
+			if (fuse === undefined) continue;
 			if (fuse <= 1) {
+				//`NoisemakerFuse.trigger()`: the first trigger arms the alarm instead of exploding,
+				//spending the fuse; a plain bomb (or Tengu ordnance) detonates here.
+				if (g.item.id === 'noisemaker') {
+					delete g.item.fuseTurns;
+					g.item.noisemakerArmed = true;
+					g.item.noisemakerAlertIn = 1;
+					continue;
+				}
 				if (this.detonateGroundBomb(g, new Set())) heroDied = true;
 			} else g.item.fuseTurns = fuse - 1;
 		}

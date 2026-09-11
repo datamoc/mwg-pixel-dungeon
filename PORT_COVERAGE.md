@@ -2591,8 +2591,15 @@ was a plain bug. Holy's bonus is Java's own `Math.round(NormalIntRange(scalingDe
 Fire, Flashbang, Shock and Woolly still reuse the existing chill/fire/status/sheep seams. Every
 one of these effects deliberately uses a Chebyshev circle where Java builds a PathFinder distance
 map or a ShadowCaster field of view, shared statuses rather than Java's exact blob/bolt/blindness
-subsystems, and three sheep rather than the real spawn field and lifetimes. Noisemaker currently
-has only the base blast because its armed proximity-trigger state is not represented. The crystal
+subsystems, and three sheep rather than the real spawn field and lifetimes. Noisemaker's own fuse
+is now ported (`tickBombFuses`): its 2-turn fuse arms the alarm instead of exploding, an armed
+unit detonates as soon as any character stands on its cell, it re-screams every 6 acts, cannot be
+picked up or snuffed once armed, and keeps acting through a Timekeeper freeze
+(`NoisemakerFuse.freeze()`). Its scream reuses the port's `Mob.beckon(pos)` stand-in, so it wakes
+and turns the level's mobs instead of sending them to the bomb's cell, and the Java alert
+sound/scream particle are not reproduced; the state (`noisemakerArmed`/`noisemakerAlertIn`) rides
+the heap payload and so survives save/load. Picking up any lit bomb now snuffs it, not only a
+plain `bomb` (a lit specialty bomb used to keep its `fuseTurns` in the bag). The crystal
 pool is now enforced, but its scrap/add UI and blast particles/sound remain open. GooBlob and
 MetalShard identities are authored, their Java value/energy metadata is represented, and
 Goo/DM-300 now drop 2/3/4 materials with the real 60/30/10 distribution. The port's

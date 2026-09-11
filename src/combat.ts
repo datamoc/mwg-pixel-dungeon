@@ -212,6 +212,11 @@ export interface GroundItem extends Step {
 		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean;
 		/** `Bomb.Fuse`: lit bombs count down 2 hero turns on the ground, then detonate. */
 		fuseTurns?: number;
+		/** `Noisemaker.NoisemakerFuse`: after its fuse burns out the bomb arms instead of
+		 * exploding; it then detonates on contact and screams every 6 acts. Both persist with
+		 * the heap. */
+		noisemakerArmed?: boolean;
+		noisemakerAlertIn?: number;
 		/** Tengu's `BombAbility` ordnance: a 3-turn fuse and the range-2 scaled blast. */
 		tenguBomb?: boolean };
 }

@@ -262,7 +262,9 @@ Do not add new authored content as object literals or scattered constants in the
       the three subclasses whose `explodesDestructively()` is false (Arcane, Regrowth, Shrapnel),
       which then run their own damage or heal through the same target rules; the crystal energy
       pool and the remaining specialty effects reuse existing scene systems. Noisemaker's armed
-      trigger and the
+      fuse is ported too (2-turn fuse arms the alarm, contact detonates it, a scream every 6 acts
+      beckons the level, and it cannot be snuffed or picked up once armed), and picking up any lit
+      bomb - not just a plain one - now snuffs it. The
       GooBlob/MetalShard boss drops now use the real 2/3/4 60/30/10 distribution and are
       recoverable for alchemy. The alchemy pot's examine interaction opens the authored recipes
       that the carried energy pool and bag can currently afford, through the shared item picker and
