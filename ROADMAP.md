@@ -619,8 +619,12 @@ Do not add new authored content as object literals or scattered constants in the
       `arenaJumps` and with it the cast budget. The move still runs over the port's single
       Tengu-cell arena: Java rebuilds the whole map into its separate `arena` ellipse
       (`setMapArena()`, (3,1)-(18,16)) and moves both combatants there, so the port's darts persist
-      into phase 2 and a phase-2 jump can land outside the cell. The Fire/Shocker actors are still
-      collapsed to one turn each, and that arena geometry remains).
+      into phase 2 and a phase-2 jump can land outside the cell. The fire ability's actor is now
+      real (2026-09-11): `tenguFire` holds Java's `CIRCLE8` direction and the ring it has reached,
+      advanced one ring per Tengu turn with the cast itself seeding nothing, verified live at depth
+      10. The Shocker actor is still collapsed to its one turn of direct damage - its Java `act()`
+      as written never detaches, so its lifetime needs resolving against a real fight before it is
+      guessed at - and that arena geometry remains).
 - [ ] Port Caves/DM-300's full pylon, gate, energy field, and supercharge scripts (pylon
       proximity sealing, sequential threshold supercharges, pylon activation, boss
       invulnerability, x2 speed, and supercharge loss on pylon death are live; the

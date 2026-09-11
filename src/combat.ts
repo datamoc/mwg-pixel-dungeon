@@ -80,6 +80,13 @@ export interface Creature extends Combatant {
 	 * FIGHT_START (the small Tengu cell - warps and dart fills, no abilities), `arena` is
 	 * FIGHT_ARENA (5-7 relocations, abilities, `arenaJumps`). Latched at HP <= HT/2. */
 	tenguPhase?: 'cell' | 'arena';
+
+	/**
+	 * `Tengu.FireAbility`: the `PathFinder.CIRCLE8` index of the cone's direction and the ring of
+	 * cells it has reached so far, grown one ring per Tengu turn. Java keeps both on a `Buff` that
+	 * acts with its host; the port keeps them on the creature the buff belonged to.
+	 */
+	tenguFire?: { direction: number; cells: { x: number; y: number }[] };
 	/** Tengu's phase-2 bomb-ability countdown (Java's `abilityCooldown`, bomb-first rotation). */
 	tenguAbilityCd?: number;
 	/** Tengu's persisted phase-2 ability count, used to keep Bomb/Shocker ordering across saves. */

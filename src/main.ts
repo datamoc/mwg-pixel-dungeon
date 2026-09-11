@@ -443,6 +443,22 @@ const SUBCLASS_OPTIONS: Record<ClassId, readonly string[] | undefined> = {
 	duelist: ['champion', 'monk_sub'], cleric: undefined,
 };
 const ARMOR_OPTIONS = ['warding', 'arcane'] as const;
+
+/**
+ * `PathFinder.CIRCLE8` in Java's own index order: 0 is up-left and 3 is right, so
+ * `index - 1`/`index + 1` walk the ring the way `FireAbility.left()`/`right()` do. The port's
+ * own neighbour ordering is a different one, so this table is spelled out rather than reused.
+ */
+const TENGU_CIRCLE8: ReadonlyArray<readonly [number, number]> = [
+	[-1, -1],
+	[0, -1],
+	[1, -1],
+	[1, 0],
+	[1, 1],
+	[0, 1],
+	[-1, 1],
+	[-1, 0],
+];
 //Weapon.Augment: SPEED/DAMAGE/NONE, chosen when using StoneOfAugmentation on the equipped weapon.
 const AUGMENT_OPTIONS = ['speed', 'damage', 'none'] as const;
 
@@ -689,6 +705,7 @@ interface SavedCreature {
 	moving?: number;
 	arenaJumps?: number;
 	tenguPhase?: 'cell' | 'arena';
+	tenguFire?: { direction: number; cells: { x: number; y: number }[] };
 	tenguAbilityCd?: number;
 	tenguAbilityUses?: number;
 	tenguLastAbility?: number;
@@ -1821,7 +1838,7 @@ export class SewersScene extends Scene2D {
 				damage: [...creature.damage] as [number, number], armor: [...creature.armor] as [number, number],
 				buffs: Object.entries(creature.buffs) as [BuffId, number][],
 				sleeping: creature.sleeping, champion: creature.champion, championPower: creature.championPower, pumped: creature.pumped,
-				combo: creature.combo, moving: creature.moving, arenaJumps: creature.arenaJumps, tenguPhase: creature.tenguPhase, tenguAbilityCd: creature.tenguAbilityCd, tenguAbilityUses: creature.tenguAbilityUses, tenguLastAbility: creature.tenguLastAbility,
+				combo: creature.combo, moving: creature.moving, arenaJumps: creature.arenaJumps, tenguPhase: creature.tenguPhase, tenguAbilityCd: creature.tenguAbilityCd, tenguAbilityUses: creature.tenguAbilityUses, tenguLastAbility: creature.tenguLastAbility, tenguFire: creature.tenguFire,
 				gooHealInc: creature.gooHealInc,
 				focusCooldown: creature.focusCooldown,
 				shamanType: creature.shamanType,
@@ -1922,7 +1939,7 @@ export class SewersScene extends Scene2D {
 				hp: saved.hp, maxHp: saved.maxHp, accuracy: saved.accuracy, evasion: saved.evasion,
 				damage: [...saved.damage] as [number, number], armor: [...saved.armor] as [number, number],
 				buffs: Object.fromEntries(saved.buffs), sleeping: saved.sleeping, champion: saved.champion,
-				championPower: saved.championPower, pumped: saved.pumped, gooHealInc: saved.gooHealInc, focusCooldown: saved.focusCooldown, shamanType: saved.shamanType, combo: saved.combo, moving: saved.moving, arenaJumps: saved.arenaJumps, tenguPhase: saved.tenguPhase, tenguAbilityCd: saved.tenguAbilityCd, tenguAbilityUses: saved.tenguAbilityUses, tenguLastAbility: saved.tenguLastAbility,
+				championPower: saved.championPower, pumped: saved.pumped, gooHealInc: saved.gooHealInc, focusCooldown: saved.focusCooldown, shamanType: saved.shamanType, combo: saved.combo, moving: saved.moving, arenaJumps: saved.arenaJumps, tenguPhase: saved.tenguPhase, tenguAbilityCd: saved.tenguAbilityCd, tenguAbilityUses: saved.tenguAbilityUses, tenguLastAbility: saved.tenguLastAbility, tenguFire: saved.tenguFire,
 				yogPhase: saved.yogPhase, yogFistType: saved.yogFistType, elementalType: saved.elementalType, yogSummonCd: saved.yogSummonCd, yogSummonIndex: saved.yogSummonIndex, yogBeamCd: saved.yogBeamCd, yogTargeted: saved.yogTargeted, yogFistDeck: saved.yogFistDeck, yogChallengeDeck: saved.yogChallengeDeck,
 				kingPhase: saved.kingPhase, kingSummonsMade: saved.kingSummonsMade, kingSummonCd: saved.kingSummonCd,
 				kingAbilityCd: saved.kingAbilityCd, kingLastAbility: saved.kingLastAbility, kingShield: saved.kingShield,
@@ -6490,6 +6507,9 @@ export class SewersScene extends Scene2D {
 	 */
 	private takeMonsterTurn(monster: Creature): void {
 		this.pendingMonsterTurnCost = null;
+		//`Tengu.FireAbility` is a `Buff`: it acts with its host, one ring per turn, whatever else
+		//Tengu does that turn (`FireAbility.act()`).
+		if (monster.tenguFire) this.advanceTenguFire(monster);
 		if (monster.kind === 'golem') {
 			//Golem.act() decrements both teleport cooldowns before delegating to its AI,
 			//including adjacent melee turns (Golem.java, tag v3.3.8).
@@ -8032,22 +8052,72 @@ export class SewersScene extends Scene2D {
 		return true;
 	}
 
-	/** Tengu.throwFire()/FireAbility: grow a three-cell-wide cone from the hero-facing
-	 * edge. The real actor grows one ring per tick; the port has no temporary ability actor,
-	 * so the three rings are seeded in one turn while retaining the same directional shape,
-	 * volume, and solid-cell stopping rule. Returns false only in the degenerate
-	 * standing-on-the-hero case, matching Java's own `throwFire` false path. */
+	/** Tengu.throwFire(): aim a `Ballistica` at the hero and take the ring direction of its first
+	 * step, which is what Java stores on the ability (`FireAbility.direction` - the `CIRCLE8` index
+	 * whose offset equals `aim.path.get(1)`). No cone is seeded here: the ability acts on the
+	 * Tengu's next turn, one ring at a time, in `advanceTenguFire`. Returns false only in the
+	 * degenerate standing-on-the-hero case, matching Java's own `throwFire` false path. */
 	private tenguThrowFire(tengu: Creature): boolean {
-		const direction = { x: Math.sign(this.hero.x - tengu.x), y: Math.sign(this.hero.y - tengu.y) };
-		if (direction.x === 0 && direction.y === 0) return false;
-		const side = { x: -direction.y, y: direction.x };
-		for (let depth = 1; depth <= 3; depth++) {
-			for (let lateral = -depth + 1; lateral <= depth - 1; lateral++) {
-				const at = { x: this.hero.x + direction.x * depth + side.x * lateral, y: this.hero.y + direction.y * depth + side.y * lateral };
-				if (this.level.inside(at.x, at.y) && this.level.passable(at.x, at.y)) this.fire.seed(at.x, at.y, 2);
+		const step = Roguelike.traceLine({ x: tengu.x, y: tengu.y }, { x: this.hero.x, y: this.hero.y })[1];
+		if (!step) return false;
+		const direction = TENGU_CIRCLE8.findIndex(([dx, dy]) => dx === step.x - tengu.x && dy === step.y - tengu.y);
+		if (direction < 0) return false;
+		tengu.tenguFire = { direction, cells: [] };
+		this.say(t('port.log.tengudart'), 'negative');
+		return true;
+	}
+
+	/**
+	 * `Tengu.FireAbility.act()`: one ring per Tengu turn, in the stored `CIRCLE8` direction.
+	 *
+	 * Java anchors the cone on Tengu's own cell and spreads three cells from each cell of the ring
+	 * it is on - the direction and its two neighbours around the ring
+	 * (`left(direction)`/`right(direction)`) - skipping solid cells, and never re-adding the ring it
+	 * just came from (`toCells.remove(c)`). What ends the cone is the fire itself: every act after
+	 * the first spreads only from cells where the previous ring's `FireBlob` still has volume
+	 * (`FireBlob.volumeAt(c) > 0`), so it advances while its own fire is still burning and detaches
+	 * when a spread finally comes back empty. Measured live on the port's depth-10 floor: a
+	 * right-facing cone in an open room reaches one further ring per turn, three cells on the first
+	 * ring and nine by the sixth, all on the aimed side, and stops only against walls - it is an
+	 * advancing front, not a three-ring burst. `this.fire` is the port's counterpart of `FireBlob`
+	 * and `volumeAt` is the same reading, with one difference worth knowing: the port's fire field
+	 * diffuses, where Java's `FireBlob` decays in place at one per turn, so a ring that has been
+	 * extinguished by water can still read as burning because the volume moved to a neighbour. The
+	 * guard is Java's, then, but a shade more permissive; the port's own fire spreading is what
+	 * decides where the front can go.
+	 */
+	private advanceTenguFire(tengu: Creature): boolean {
+		const ability = tengu.tenguFire;
+		if (!ability) return false;
+
+		//`curCells == null` on the first act, which spreads from Tengu's own cell
+		const spreadFrom =
+			ability.cells.length === 0
+				? [{ x: tengu.x, y: tengu.y }]
+				: ability.cells.filter((cell) => this.fire.volumeAt(cell.x, cell.y) > 0);
+
+		const previous = new Set(ability.cells.map((cell) => cell.y * this.level.width + cell.x));
+		const seen = new Set<number>();
+		const next: { x: number; y: number }[] = [];
+		for (const cell of spreadFrom) {
+			for (const turn of [ability.direction - 1, ability.direction, ability.direction + 1]) {
+				const [dx, dy] = TENGU_CIRCLE8[(turn + TENGU_CIRCLE8.length) % TENGU_CIRCLE8.length]!;
+				const at = { x: cell.x + dx, y: cell.y + dy };
+				if (!this.level.inside(at.x, at.y) || !this.level.passable(at.x, at.y)) continue;
+				const index = at.y * this.level.width + at.x;
+				if (previous.has(index) || seen.has(index)) continue;
+				seen.add(index);
+				next.push(at);
 			}
 		}
-		this.say(t('port.log.tengudart'), 'negative');
+
+		if (next.length === 0) {
+			tengu.tenguFire = undefined;
+			return false;
+		}
+
+		for (const cell of next) this.fire.seed(cell.x, cell.y, 2);
+		ability.cells = next;
 		return true;
 	}
 
