@@ -170,6 +170,8 @@ export interface Creature extends Combatant {
 	yogSummonCd?: number;
 	yogSummonIndex?: number;
 	yogBeamCd?: number;
+	/** `YogDzewa.targetedCells`: cells DeathGaze has painted but not yet fired along (cell indices). */
+	yogTargeted?: number[];
 }
 
 /** makes a Creature-shaped object with the combat-state fields every spawn needs.

@@ -575,7 +575,7 @@ image=assets/king.png
 [monster]
 id=yog
 hp=400
-accuracy=30
+accuracy=1000000
 evasion=0
 damage_min=8
 damage_max=16
@@ -598,6 +598,20 @@ armor_max=5
 experience=10
 max_level=29
 image=assets/yog_fists.png
+[/monster]
+
+[monster]
+id=larva
+hp=20
+accuracy=30
+evasion=12
+damage_min=15
+damage_max=25
+armor_min=0
+armor_max=4
+experience=5
+max_level=-2
+image=assets/larva.png
 [/monster]
 
 [monster]

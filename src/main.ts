@@ -697,6 +697,9 @@ interface SavedCreature {
 	yogSummonCd?: number;
 	yogSummonIndex?: number;
 	yogBeamCd?: number;
+	/** `YogDzewa.targetedCells`: DeathGaze is two-phase - the turn that aims paints these cells,
+	 * and the next turn fires a beam along each path. Stored as cell indices. */
+	yogTargeted?: number[];
 	kingPhase?: number;
 	kingSummonsMade?: number;
 	kingSummonCd?: number;
@@ -1814,7 +1817,7 @@ export class SewersScene extends Scene2D {
 				gooHealInc: creature.gooHealInc,
 				focusCooldown: creature.focusCooldown,
 				shamanType: creature.shamanType,
-				yogPhase: creature.yogPhase, yogFistType: creature.yogFistType, elementalType: creature.elementalType, yogSummonCd: creature.yogSummonCd, yogSummonIndex: creature.yogSummonIndex, yogBeamCd: creature.yogBeamCd,
+				yogPhase: creature.yogPhase, yogFistType: creature.yogFistType, elementalType: creature.elementalType, yogSummonCd: creature.yogSummonCd, yogSummonIndex: creature.yogSummonIndex, yogBeamCd: creature.yogBeamCd, yogTargeted: creature.yogTargeted,
 				kingPhase: creature.kingPhase, kingSummonsMade: creature.kingSummonsMade, kingSummonCd: creature.kingSummonCd,
 				kingAbilityCd: creature.kingAbilityCd, kingLastAbility: creature.kingLastAbility, kingShield: creature.kingShield,
 				kingReactionsState: creature.kingReactions?.toJSON(),
@@ -1911,7 +1914,7 @@ export class SewersScene extends Scene2D {
 				damage: [...saved.damage] as [number, number], armor: [...saved.armor] as [number, number],
 				buffs: Object.fromEntries(saved.buffs), sleeping: saved.sleeping, champion: saved.champion,
 				championPower: saved.championPower, pumped: saved.pumped, gooHealInc: saved.gooHealInc, focusCooldown: saved.focusCooldown, shamanType: saved.shamanType, combo: saved.combo, moving: saved.moving, arenaJumps: saved.arenaJumps, tenguAbilityCd: saved.tenguAbilityCd, tenguAbilityUses: saved.tenguAbilityUses, tenguLastAbility: saved.tenguLastAbility,
-				yogPhase: saved.yogPhase, yogFistType: saved.yogFistType, elementalType: saved.elementalType, yogSummonCd: saved.yogSummonCd, yogSummonIndex: saved.yogSummonIndex, yogBeamCd: saved.yogBeamCd,
+				yogPhase: saved.yogPhase, yogFistType: saved.yogFistType, elementalType: saved.elementalType, yogSummonCd: saved.yogSummonCd, yogSummonIndex: saved.yogSummonIndex, yogBeamCd: saved.yogBeamCd, yogTargeted: saved.yogTargeted,
 				kingPhase: saved.kingPhase, kingSummonsMade: saved.kingSummonsMade, kingSummonCd: saved.kingSummonCd,
 				kingAbilityCd: saved.kingAbilityCd, kingLastAbility: saved.kingLastAbility, kingShield: saved.kingShield,
 				kingReactions: saved.kingReactionsState
@@ -8450,15 +8453,93 @@ export class SewersScene extends Scene2D {
 		//advancement all ride the damage hook (`yogDamageHook`), never the turn.
 		const fists = this.creatures.filter((c) => c.kind === 'yogFist' && c.hp > 0);
 		if (fists.length > 0) return;
-		yog.yogBeamCd = (yog.yogBeamCd ?? Random.normalRange(10, 15)) - 1;
-		if (yog.yogBeamCd <= 0 && Roguelike.canTarget(this.level, yog, this.hero, { range: 8 })) {
-			this.say(t('port.log.yogbeam'), 'warning');
-			//YogDzewa's DeathRay uses NormalIntRange(20,30), or 30-50 under
-			//Stronger Bosses. `zapHero` retains this port's single-target/armor
-			//simplification while the cooldown and damage roll are exact.
-			this.zapHero(yog, isChallengeEnabled('stronger_bosses') ? [30, 50] : [20, 30]);
-			yog.yogBeamCd = Math.max(2, Random.normalRange(10, 15) - Math.max(0, (yog.yogPhase ?? 1) - 1));
+
+		//`YogDzewa.act()` runs DeathGaze in two phases: the aiming turn only paints
+		//`targetedCells`, and a later turn fires a beam along each painted cell's path. A rooted hero
+		//delays the fire (the beams stay painted until the roots lift), matching Java's
+		//`!Dungeon.hero.rooted` gate.
+		const targeted = yog.yogTargeted ?? [];
+		if (targeted.length > 0) {
+			if (this.hero.buffs.roots) return;
+			this.fireYogDeathGaze(yog, targeted);
+			yog.yogTargeted = [];
+			return;
 		}
+		yog.yogBeamCd = (yog.yogBeamCd ?? Random.normalRange(10, 15)) - 1;
+		if (yog.yogBeamCd > 0 || !Roguelike.canTarget(this.level, yog, this.hero, { range: 8 })) return;
+		yog.yogTargeted = this.aimYogDeathGaze(yog);
+		yog.yogBeamCd = Math.max(2, Random.normalRange(10, 15) - Math.max(0, (yog.yogPhase ?? 1) - 1));
+	}
+
+	/** `YogDzewa.act()`'s aiming half: `beams = 1 + (HT - HP)/400` target cells, one per beam - the
+	 * hero's own cell first, then random 8-neighbours no farther from Yog than the hero is
+	 * (`Level.trueDistance`, i.e. Euclidean). If the union of the beams' paths already covers every
+	 * passable cell beside the hero, Java drops one beam so a volley cannot blanket the whole 3x3
+	 * around the hero. Returns the painted cell indices, persisted as `yogTargeted`. */
+	private aimYogDeathGaze(yog: Creature): number[] {
+		const beams = 1 + Math.floor((yog.maxHp - yog.hp) / 400);
+		const neighbours = Roguelike.neighbourOffsets(8);
+		const pathOf = (cell: number): number[] => {
+			const to = { x: cell % this.level.width, y: Math.floor(cell / this.level.width) };
+			return Roguelike.traceLine(yog, to).map((point) => this.level.index(point.x, point.y));
+		};
+		const targets = new Set<number>();
+		const affected = new Set<number>();
+		for (let i = 0; i < beams; i++) {
+			let cell = this.level.index(this.hero.x, this.hero.y);
+			if (i > 0) {
+				const heroDistance = Math.hypot(this.hero.x - yog.x, this.hero.y - yog.y);
+				for (let attempt = 0; attempt < 20; attempt++) {
+					const [dx, dy] = neighbours[Random.int(neighbours.length)]!;
+					const x = this.hero.x + dx, y = this.hero.y + dy;
+					if (!this.level.inside(x, y)) continue;
+					if (Math.hypot(x - yog.x, y - yog.y) > heroDistance) continue;
+					cell = this.level.index(x, y);
+					break;
+				}
+			}
+			targets.add(cell);
+			for (const pathCell of pathOf(cell)) affected.add(pathCell);
+		}
+		let allAdjacentTargeted = true;
+		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
+			const x = this.hero.x + dx, y = this.hero.y + dy;
+			if (!this.level.inside(x, y) || !this.level.passable(x, y)) continue;
+			if (!affected.has(this.level.index(x, y))) { allAdjacentTargeted = false; break; }
+		}
+		if (allAdjacentTargeted) {
+			const last = [...targets].pop();
+			if (last !== undefined) targets.delete(last);
+		}
+		return [...targets];
+	}
+
+	/** `YogDzewa.act()`'s firing half: a beam along each painted cell's path damages every character
+	 * it crosses - Java's `ch.alignment != alignment || ch instanceof Bee`, and every non-Yog
+	 * character here is hostile - through the shared hit roll and armor reduction, for the real
+	 * `NormalIntRange(20,30)`, or 30-50 under Stronger Bosses. Java also burns flamable terrain along
+	 * each path; this port leaves terrain alone (a stated simplification, recorded in
+	 * `PORT_COVERAGE.md`). */
+	private fireYogDeathGaze(yog: Creature, targeted: readonly number[]): void {
+		const stronger = isChallengeEnabled('stronger_bosses');
+		const affected = new Set<Creature>();
+		for (const cell of targeted) {
+			const to = { x: cell % this.level.width, y: Math.floor(cell / this.level.width) };
+			for (const point of Roguelike.traceLine(yog, to)) {
+				const creature = this.creatureAt(point.x, point.y);
+				if (creature && creature !== yog) affected.add(creature);
+			}
+		}
+		this.say(t('port.log.yogbeam'), 'warning');
+		for (const target of affected) {
+			if (!rollHit(yog, target, true)) continue;
+			let dmg = Math.max(0, Random.normalRange(stronger ? 30 : 20, stronger ? 50 : 30) - Random.normalRange(target.armor[0], target.armor[1]));
+			if (target.isHero) dmg = this.absorbHeroDamage(dmg, true);
+			target.hp -= dmg;
+			this.showDamage(target, dmg);
+			if (target.hp <= 0) this.kill(target, 'foe');
+		}
+		this.spawnProjectile(yog, this.hero);
 	}
 
 	/** YogFist.isNearYog(): within 4 cells of a live Yog (the real anchor is the exit+3
@@ -10253,16 +10334,14 @@ export class SewersScene extends Scene2D {
 		return true;
 	}
 
-	/** `YogDzewa.act()`'s regularSummons deck. Existing monster kinds supply the real
-	 * Larva/Ripper/Eye/Scorpio combat kits; the subtype-specific sprite and exact seeded
-	 * deck order remain outside this compact roster. */
+	/** `YogDzewa.act()`'s regularSummons deck. Larva/Ripper/Eye/Scorpio now each supply their real
+	 * combat kit (Larva has its own stats/sprite since it was promoted to a standalone kind); the
+	 * exact seeded deck order Java draws still remains outside this compact roster. */
 	private summonYogMinion(yog: Creature): boolean {
 		const challenge = isChallengeEnabled('stronger_bosses');
-		const normalDeck: AnyMonsterId[] = ['ripperDemon', 'larva' as AnyMonsterId, 'ripperDemon', 'larva' as AnyMonsterId];
+		const normalDeck: AnyMonsterId[] = ['ripperDemon', 'larva', 'ripperDemon', 'larva'];
 		const challengeDeck: AnyMonsterId[] = ['eye', 'scorpio', 'ripperDemon', 'ripperDemon', 'ripperDemon', 'ripperDemon'];
-		//`larva` is a Java nested class without a standalone MonsterId in this port;
-		//use the existing ripper kit for the missing class until its dedicated stats/art are added.
-		const deck = challenge ? challengeDeck : normalDeck.map((kind) => kind === ('larva' as AnyMonsterId) ? 'ripperDemon' : kind);
+		const deck = challenge ? challengeDeck : normalDeck;
 		const index = yog.yogSummonIndex ?? 0;
 		const kind = deck[index % deck.length]!;
 		yog.yogSummonIndex = index + 1;

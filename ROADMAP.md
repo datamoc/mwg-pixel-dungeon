@@ -601,8 +601,11 @@ Do not add new authored content as object literals or scattered constants in the
       DeathRay cooldown/damage range -
       replacing a turn-based spawner that double-spawned against the new hooks and a
       0.75/0.5/0.25 rhythm with no Java basis; the six fist identities and base stats are
-      now preserved with their shared fire/root/ooze/cripple effects. Exact Larva stats,
-      beam-count scaling, challenge pairs, flame/shadow arenas, and visibility shrink remain).
+      now preserved with their shared fire/root/ooze/cripple effects; Larva is now a standalone
+      kind with its exact Java stats/art instead of reusing the Ripper kit, and the DeathGaze is
+      now the real two-phase `targetedCells` telegraph plus `beams = 1 + (HT-HP)/400` multi-target
+      volley with Java's adjacent-cell beam reduction and `INFINITE_ACCURACY`.
+      Challenge pairs, flame/shadow arenas, beam terrain-burning, and visibility shrink remain).
 - [x] Port final-vault Amulet placement at Java's `AMULET_POS` (depth 26, x=8, y=12).
 - [ ] Port final-vault endgame-specific terrain, custom visuals, and compass behavior. The
       vault now runs Java's own `viewDistance = 4` through the shared sight radius (with the

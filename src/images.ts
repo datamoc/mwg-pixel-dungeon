@@ -76,6 +76,8 @@ import ratkingUrl from './assets/ratking.png';
 // byte-for-byte from this Java checkout's core/src/main/assets/sprites/.
 import spawnerUrl from './assets/spawner.png';
 import ripperUrl from './assets/ripper.png';
+// larva.png: YogDzewa$Larva (12x8 film) - the standalone minion kind the summon deck now uses.
+import larvaUrl from './assets/larva.png';
 import blacksmithUrl from './assets/blacksmith.png';
 import impUrl from './assets/demon.png';
 import bannersUrl from './assets/banners.png';
@@ -140,6 +142,7 @@ const MWL_ASSET_URLS: Readonly<Record<string, string>> = {
 	'assets/guard.png': guardUrl,
 	'assets/guardian.png': guardianUrl,
 	'assets/king.png': kingUrl,
+	'assets/larva.png': larvaUrl,
 	'assets/mimic.png': mimicUrl,
 	'assets/monk.png': monkUrl,
 	'assets/necromancer.png': necromancerUrl,
@@ -249,6 +252,8 @@ export interface SpdSprites {
 	ratking: Texture;
 	/** Alias used by the MonsterId key for Yog's summoned fists. */
 	yogFist: Texture;
+	/** `YogDzewa$Larva`'s own sheet, keyed by the standalone `larva` MonsterId. */
+	larva: Texture;
 	blacksmith: Texture;
 	imp: Texture;
 	demonSpawner: Texture;
@@ -391,6 +396,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		king,
 		yog,
 		fists,
+		larva,
 		sentry,
 		rotHeart,
 		rotLasher,
@@ -485,6 +491,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(kingUrl),
 		loadImage(yogUrl),
 		loadImage(fistsUrl),
+		loadImage(larvaUrl),
 		loadImage(sentryUrl),
 		loadImage(rotHeartUrl),
 		loadImage(rotLasherUrl),
@@ -581,6 +588,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		king: Texture.from(king),
 		yog: Texture.from(yog),
 		fists: Texture.from(fists),
+		larva: Texture.from(larva),
 		sentry: Texture.from(sentry),
 		rotHeart: Texture.from(rotHeart),
 		rotLasher: Texture.from(rotLasher),

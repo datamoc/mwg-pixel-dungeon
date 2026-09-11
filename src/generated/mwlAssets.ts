@@ -19,6 +19,7 @@ export const MWL_ASSET_MANIFEST = [
 	"assets/guard.png",
 	"assets/guardian.png",
 	"assets/king.png",
+	"assets/larva.png",
 	"assets/mimic.png",
 	"assets/monk.png",
 	"assets/necromancer.png",

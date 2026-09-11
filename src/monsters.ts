@@ -61,6 +61,7 @@ export type MonsterId =
 	| 'king'
 	| 'yog'
 	| 'yogFist'
+	| 'larva'
 	| 'demonSpawner'
 	| 'ripperDemon'
 	| 'mimic'
@@ -134,7 +135,9 @@ export interface MonsterDef {
  * TypeScript. This map is the remaining renderer metadata: MWL currently describes portable
  * gameplay data, while sprite film dimensions and idle frame selection belong to this Pixi
  * adapter. The special actors below intentionally retain the port's documented simplifications
- * (invulnerable NPCs use very large evasion, Goo uses its base state, and Yog is balance-scaled).
+ * (invulnerable NPCs use very large evasion, Goo uses its base state, and Yog's HP is
+ * balance-scaled to 400 from Java's 1000 - its accuracy is Java's `INFINITE_ACCURACY`, so the
+ * DeathGaze always lands as it does in Java).
  */
 const MONSTER_VISUALS: Record<AnyMonsterId, Pick<MonsterDef, 'frame' | 'idle'>> = {
 	rat: { frame: [16, 15], idle: 0 },
@@ -180,6 +183,8 @@ const MONSTER_VISUALS: Record<AnyMonsterId, Pick<MonsterDef, 'frame' | 'idle'>> 
 	king: { frame: [16, 16], idle: 0 },
 	yog: { frame: [20, 19], idle: 0 },
 	yogFist: { frame: [24, 17], idle: 0 },
+	// `LarvaSprite`'s own `TextureFilm(12, 8)`; its idle animation shows frame 4.
+	larva: { frame: [12, 8], idle: 4 },
 	demonSpawner: { frame: [16, 16], idle: 0 },
 	ripperDemon: { frame: [15, 14], idle: 1 },
 	albino: { frame: [16, 15], idle: 16 },
