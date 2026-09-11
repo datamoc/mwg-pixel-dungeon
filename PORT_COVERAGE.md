@@ -7,6 +7,37 @@ longer the goal, and Java's own bugs and limitations are not reproduced).
 
 ## 2026-09-11 mwg alignment pass
 
+- **`mwg` 0.7.6 adopted (2026-09-11).** Published latest, pin moved from `^0.7.4`. Two changes,
+  neither needing port code: `Blob.spread` now **returns the cells it just emptied**, which is the
+  burnout hook the flamable work was waiting for (`GEOMETRY-AND-FIRE.md` §4.2 asked for exactly
+  it) - so `Fire.evolve`'s "the fire left a flamable cell, turn it to embers" is now expressible
+  without diffing `cellsAbove`; and `pixi.js` became an optional peer dependency, which this port
+  needs no change for because it already lists `pixi.js` in its own dependencies. The bump itself
+  is inert: MWL output byte-identical, tsc/build clean, 47/47 simulation, item suite, smoke and
+  save round-trip clean.
+- **`src/ui/floatingText.ts` deleted: the damage numbers are `mwg/ui`'s `FloatingTextStack`.**
+  0.7.4 gave it both things the port's layer existed for - `FloatingTextOptions.hold` for Java's
+  hold-then-fade curve (`alpha(p > 0.5f ? 1 : p * 2)`) and the keyed stacking `FloatingTextLayer`
+  had approximated by proximity - so the 101-line wrapper went, along with its stale claim that
+  the framework's class "fades linearly and has no per-target stacking". Java's numbers are kept
+  through the stack's options: `LIFESPAN = 1f` second, one tile (`DungeonTilemap.SIZE`) of rise,
+  `hold: 0.5`, one key per creature from a `WeakMap`, and the world-space trick of rasterising at
+  full size then scaling the pop-up down (with the rise divided by the same factor, so it still
+  travels exactly one tile). Verified live (`_browsercheck/floaters_check.mjs`): two numbers on one
+  target in one turn both exist, the second is offset, scale is exactly `1/3`, alpha is `1` at
+  300 ms of a 1 s life, `0.8` at 600 ms and the pop-up is gone by 1 s; the real `showStatus` path
+  shows 'search' with no console or page errors.
+- **Known defect in 0.7.4's `FloatingTextStack`, found by that verification and not yet fixed.**
+  Java's `FloatingText.push()` anchors the **newcomer** on the target and nudges the **older** text
+  *up* to `below.top() - above.height() - 4` (4 px gap), also shortening the nudged text's
+  `timeLeft` (**Simplified** here, pending a framework patch): `FloatingTextStack` instead moves
+  the newcomer *down* by `height + 1`, so a second number in one turn lands below the target rather
+  than above the first - the framework's own `floatingTextStackOffset` is a pure function and a
+  sign/order change fixes it, with the lifetime shortening as a second step. Recorded in
+  `tools/scratch/mwg-proposal/README.md` as the next patch to write; the adoption above is still a
+  strict improvement over the port's proximity approximation, which is why it is not held back for
+  this.
+
 - **Adopted `mwg/core`'s `RunHistory` for the run rankings.** `src/rankings.ts` no longer
   hand-rolls its own localStorage read/validate/sort/write: `RunHistory<RunRecord>` owns the
   storage, the id/`endedAt` stamping and the ranking sort, and only the summary shape is

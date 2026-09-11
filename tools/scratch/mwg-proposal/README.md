@@ -99,3 +99,21 @@ Matching the existing item style; the first is what the patch above delivers.
 - [ ] Tile-art placement: a helper for centring a sprite's art over a cell with a pivot and a
       vertical raise (the port's `src/ui/characterPlacement.ts` is ten lines of exactly this, and
       `ActorAnimator` does not cover it). Small, and only worth it if a second consumer appears.
+
+## Known defect to patch next: `FloatingTextStack` stacks the wrong way
+
+Found by the port's own live verification of its adoption, 2026-09-11.
+
+`FloatingTextStack` (0.7.4) moves the **newcomer** down by `height + 1`, where Java's
+`FloatingText.push()` (`v3.3.8`, `effects/FloatingText.java:270-300`) anchors the newcomer on the
+target and nudges the **older** texts *up* to `below.top() - above.height() - 4` (a 4 px gap),
+also shortening the nudged text's life - `min(above.timeLeft, LIFESPAN - numBelow / 5f)` - so
+spam self-limits instead of piling up. The port sees the difference plainly: two damage numbers on
+one creature in one turn put the second *below* the creature (measured y 332.5 then 361.85, where
+332.5 is the target's own pop-up position).
+
+Fix, in two steps: `floatingTextStackOffset` becomes "how far the older pop-ups must move" rather
+than "where the newcomer goes", with the 4 px gap replacing `+ 1`; then the lifetime shortening,
+which needs the stack to reach into the pop-ups it already holds. `tests/floating-text.test.ts`
+should assert the direction, not just the magnitude - it currently checks only the latter, which
+is why the sign survived review.

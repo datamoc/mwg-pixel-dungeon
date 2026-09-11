@@ -8,7 +8,7 @@ import { WaterSurface } from './ui/waterSurface';
 import { InventoryWindow, type InventoryEntry } from './ui/inventoryWindow';
 import { createJournalWindow, type JournalPage } from './ui/journalWindow';
 import { Container, extensions, FillGradient, Graphics, NineSliceSpritePipe, Rectangle, Sprite, Texture, TilingSprite, TilingSpritePipe } from 'pixi.js';
-import { Bar, Blob, Game, Scene2D, Input, Random, SaveSystem, Achievements, ReactionTable, type ReactionRule } from 'mwg';
+import { Bar, Blob, FloatingTextStack, Game, Scene2D, Input, Random, SaveSystem, Achievements, ReactionTable, type ReactionRule } from 'mwg';
 import { SceneSimulationAdapter } from './adapters/sceneSimulation';
 import { dispatchHeroAction, type HeroActionPorts } from './adapters/heroActions';
 import { runSearch } from './adapters/searchSimulation';
@@ -87,7 +87,6 @@ import {
 } from './i18n/index';
 import { applySpdTheme, SPD_STATUS_COLOR } from './ui/spdTheme';
 import { GameLog, type LogLevel } from './ui/gameLog';
-import { FloatingTextLayer } from './ui/floatingText';
 import { Compass } from './ui/compass';
 import { BadgeBannerLayer } from './ui/badgeBanner';
 import { SpdToolbar } from './ui/toolbar';
@@ -1298,7 +1297,32 @@ export class SewersScene extends Scene2D {
 	 * the map, and counter-scales by the camera's zoom so the text itself draws at screen
 	 * resolution - `FloatingText`'s own `zoom(1/PixelScene.defaultZoom)`.
 	 */
-	private floaters = new FloatingTextLayer(1 / 3, 7);
+	/**
+	 * Damage numbers and status text: `mwg/ui`'s `FloatingTextStack`, one `push` per number and
+	 * one `update(dt)` for all of them, with pop-ups on one target stacking apart instead of
+	 * overprinting. That is Java's own `FloatingText.push` keyed stacking (`CharSprite` keys by
+	 * the sprite), which this port used to approximate by proximity because `mwg`'s
+	 * `FloatingText` had neither the curve nor the stacking until 0.7.4. The numbers are
+	 * `effects/FloatingText.java`'s: `LIFESPAN = 1f` second over `DISTANCE = DungeonTilemap.SIZE`
+	 * of rise, alpha held at 1 for the first half of the life and falling linearly after - the
+	 * stack's `hold: 0.5` - and the label is rasterised at full size then scaled down, never the
+	 * other way round, since Pixi rasterises text once at its style size and scaling a small
+	 * raster up is what looks blurry.
+	 */
+	private floaters = new FloatingTextStack();
+
+	/** how much to shrink each pop-up, for a layer living in world space under a zoomed camera */
+	private readonly floaterTextScale = 1 / 3;
+
+	/** the on-screen size the text ends up at, `PixelScene`'s status text */
+	private readonly floaterFontSize = 7;
+
+	/**
+	 * A stable id per target, so a pop-up stacks against the last one on the same creature.
+	 * A `WeakMap` because a creature that leaves the level should not be kept alive by this.
+	 */
+	private readonly floaterKeys = new WeakMap<Creature, number>();
+	private nextFloaterKey = 1;
 	/** one health bar per damaged creature, `ui/CharHealthIndicator.java` */
 	private healthBars = new Map<Creature, Bar>();
 
@@ -12705,7 +12729,24 @@ export class SewersScene extends Scene2D {
 	private showStatus(creature: Creature, text: string, color: number): void {
 		if (!this.sprite(creature).visible) return;
 		const [x, y] = this.worldOf(creature);
-		this.floaters.show(x, y - TILE / 2, text, color);
+		const key = this.floaterKeys.get(creature) ?? this.nextFloaterKey++;
+		this.floaterKeys.set(creature, key);
+		//the stack centres text on the point; Java's sprite anchors it by its bottom edge, so half
+		//a line is added back to keep the text sitting where it used to. The rise is divided by the
+		//scale because the pop-up container is scaled as a whole - one tile of rise either way.
+		this.floaters
+			.push({
+				text,
+				color,
+				x,
+				y: y - TILE / 2 - this.floaterFontSize / 2,
+				key,
+				size: this.floaterFontSize / this.floaterTextScale,
+				duration: 1,
+				rise: TILE / this.floaterTextScale,
+				hold: 0.5,
+			})
+			.scale.set(this.floaterTextScale);
 	}
 
 	/** damage taken, in `CharSprite.NEGATIVE` */

@@ -225,9 +225,13 @@ Do not add new authored content as object literals or scattered constants in the
       missing-health strip is black, not the theme's panel fill). Both are in that patch, with
       framework tests. Check `StatusPane`'s two real bar arts still stretch the way Java's
       `scale.x` does before deleting.
-- [ ] Once the proposed framework patch in `tools/scratch/mwg-proposal/` lands, replace
-      `src/ui/floatingText.ts` with `mwg/ui`'s `FloatingTextStack` plus `FloatingText`'s `hold`
-      curve, and `titleFlame`'s four-frame flame with `ParticleEmitter`'s `frames`.
+- [x] `src/ui/floatingText.ts` replaced by `mwg/ui`'s `FloatingTextStack` + `FloatingText`'s
+      `hold` curve (2026-09-11, on 0.7.6): the file is deleted and `showStatus` pushes one pop-up
+      per number keyed by creature. One defect carried, found by the live check and not ours to
+      hide: 0.7.4's stack moves the *newcomer* down by `height + 1` where Java anchors the newcomer
+      and nudges the *older* text up by `height + 4` (shortening its life to stop spam) - see
+      PORT_COVERAGE and `tools/scratch/mwg-proposal/README.md` for the patch to write.
+- [ ] `titleFlame`'s four-frame flame -> `ParticleEmitter`'s `frames` (0.7.4).
 
 ## 1. Complete the item system
 
