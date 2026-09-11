@@ -4662,7 +4662,7 @@ export const gameData = {
 					"tag": "effect",
 					"attributes": {
 						"apply_to": "damage_max",
-						"set": "10"
+						"set": "8"
 					},
 					"children": [],
 					"location": {

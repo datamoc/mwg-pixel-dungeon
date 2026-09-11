@@ -142,9 +142,11 @@ set=port.name.dagger
 apply_to=damage_min
 set=1
 [/effect]
+#Dagger overrides MeleeWeapon.max to `4*(tier+1) + lvl*(tier+1)` = 8 at tier 1, not the
+#tier-1 base of 10 (same at v2.1.4 and v3.3.8; the 10 here was simply wrong).
 [effect]
 apply_to=damage_max
-set=10
+set=8
 [/effect]
 [effect]
 apply_to=speed
