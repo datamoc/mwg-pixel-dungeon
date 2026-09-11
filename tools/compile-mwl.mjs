@@ -54,16 +54,11 @@ function tableRows(id) {
 }
 
 function validateRosterReferences() {
-  for (const row of effectSet('monsterRosters', 'entries').split(';')) {
-    const [, roster] = row.split('|');
-    for (const id of (roster ?? '').split(',').filter(Boolean)) {
-      if (!monsterIds.has(id)) throw new Error(`MWL monster roster references unknown monster: ${id}`);
-    }
-  }
-  for (const row of effectSet('monsterRosters', 'fallbacks').split(';')) {
-    const [, roster] = row.split('|');
-    for (const id of (roster ?? '').split(',').filter(Boolean)) {
-      if (!monsterIds.has(id)) throw new Error(`MWL monster fallback references unknown monster: ${id}`);
+  for (const tableId of ['monsterRosterByDepth', 'monsterRosterFallback']) {
+    for (const row of tableRows(tableId)) {
+      for (const id of row.roster ?? []) {
+        if (!monsterIds.has(String(id))) throw new Error(`MWL roster ${tableId} references unknown monster: ${id}`);
+      }
     }
   }
 }
@@ -75,19 +70,17 @@ function validateBossReferences() {
 }
 
 function validateActorReferences() {
-  for (const row of effectSet('actorFlags', 'base_aliases').split(';')) {
-    const [variant, base] = row.split('|');
-    if (!monsterIds.has(variant) || !monsterIds.has(base)) {
-      throw new Error(`MWL actor alias references unknown monster: ${row}`);
+  for (const row of tableRows('actorBaseAliases')) {
+    if (!monsterIds.has(String(row.variant)) || !monsterIds.has(String(row.base))) {
+      throw new Error(`MWL actor alias references unknown monster: ${row.variant}|${row.base}`);
     }
   }
 }
 
 function validateHookReferences() {
   const hooks = new Set(effectSet('hookManifest', 'ai_profiles').split(',').filter(Boolean));
-  for (const row of effectSet('monsterAiProfiles', 'entries').split(';')) {
-    const [, hook] = row.split('|');
-    if (!hooks.has(hook)) throw new Error(`MWL AI profile references undeclared hook: ${hook}`);
+  for (const row of tableRows('monsterAiProfiles')) {
+    if (!hooks.has(String(row.profile))) throw new Error(`MWL AI profile references undeclared hook: ${row.profile}`);
   }
 }
 

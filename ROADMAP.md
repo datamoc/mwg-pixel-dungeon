@@ -128,7 +128,11 @@ Do not add new authored content as object literals or scattered constants in the
       third batch converted the room-rule tables `regionRoomCounts`, `standardRoomChances`, and
       `connectionRoomChanceRows` (the last is a new table beside the retained
       `connectionRoomChances` classes trait), which `regularLevel.ts`/`connectionRoom.ts` now read
-      as typed row arrays. The remaining ~17 `set=` row-tables still need converting.
+      as typed row arrays. A fourth batch converted the monster/actor tables `monsterRosterByDepth`,
+      `monsterRosterFallback` (from `monsterRosters`' two effects), `monsterLoot`,
+      `limitedDropDecay`, `monsterAiProfiles`, and `actorBaseAliases` (from `actorFlags`), which
+      `monsters.ts` now maps directly; the build script's roster/alias/AI-profile validators read
+      those tables too. The remaining ~11 `set=` row-tables still need converting.
 - [ ] Update the build, test, package, and browser-smoke documentation so a clean checkout can
       reproduce every generated resource without a local MWG checkout.
 

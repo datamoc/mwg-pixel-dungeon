@@ -237,20 +237,9 @@ export const MONSTERS: Record<AnyMonsterId, MonsterDef> = Object.fromEntries(
  * as the alias table it always was. A kind with no entry is its own base kind (see
  * `spawnMonster`'s `BASE_KIND_ALIASES[kind] ?? kind` fallback).
  */
-export const BASE_KIND_ALIASES: Partial<Record<AnyMonsterId, MonsterId>> = (() => {
-	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'actorFlags');
-	if (!node) throw new Error('MWL actor rule is missing actorFlags');
-	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'base_aliases');
-	const raw = effect?.attributes.set;
-	if (raw === undefined) throw new Error('MWL actor rule is missing base aliases');
-	const aliases: Partial<Record<AnyMonsterId, MonsterId>> = {};
-	for (const entry of raw.split(';')) {
-		const [variant, base] = entry.split('|');
-		if (!variant || !base || aliases[variant as AnyMonsterId]) throw new Error(`MWL actor rule has invalid base alias ${entry}`);
-		aliases[variant as AnyMonsterId] = base as MonsterId;
-	}
-	return aliases;
-})();
+export const BASE_KIND_ALIASES: Partial<Record<AnyMonsterId, MonsterId>> = Object.fromEntries(
+	MWL_TABLE_ROWS('actorBaseAliases', 'variant').map((row) => [String(row.variant), String(row.base) as MonsterId]),
+) as Partial<Record<AnyMonsterId, MonsterId>>;
 
 /** Quest-giver/shop/crafting NPCs (`Mob.java` subclasses with `alignment = ALLY` or an
  * unkillable `defenseSkill()`/`damage()` override) - was a 6-case `||` chain in `spawnMonster`. */
@@ -280,20 +269,9 @@ export const IMMOVABLE_KINDS = mwlActorFlagSet('immovable');
 export const NEVER_SLEEPS_KINDS = mwlActorFlagSet('never_sleeps');
 
 /** Monster special-turn profiles are authored in MWL; TypeScript only supplies hook bodies. */
-export const MWL_AI_PROFILES: Readonly<Record<string, string>> = (() => {
-	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'monsterAiProfiles');
-	if (!node) throw new Error('MWL actor rule is missing monsterAiProfiles');
-	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
-	const raw = effect?.attributes.set;
-	if (raw === undefined) throw new Error('MWL actor rule is missing AI profile entries');
-	const profiles: Record<string, string> = {};
-	for (const entry of raw.split(';')) {
-		const [monster, profile] = entry.split('|');
-		if (!monster || !profile || profiles[monster]) throw new Error(`MWL actor rule has invalid AI profile ${entry}`);
-		profiles[monster] = profile;
-	}
-	return profiles;
-})();
+export const MWL_AI_PROFILES: Readonly<Record<string, string>> = Object.fromEntries(
+	MWL_TABLE_ROWS('monsterAiProfiles', 'monster').map((row) => [String(row.monster), String(row.profile)]),
+);
 
 /**
  * Per-kind depth-scaled stat overrides, applied on top of `MONSTERS`' base entry at spawn
@@ -370,25 +348,18 @@ export const SPRITE_KIND_OVERRIDE: Partial<Record<MonsterId, keyof SpdSprites>> 
 	statue: 'statue',
 };
 
-/** Standard mob rotations are authored in MWL; this adapter preserves the Java region fallback
- * selection while validating every authored row at module initialization. */
+/** Standard mob rotations are authored as typed MWL tables (`monsterRosterByDepth` /
+ * `monsterRosterFallback`); this adapter preserves the Java region fallback selection. */
+const rosterOf = (row: Readonly<Record<string, unknown>>): MonsterId[] =>
+	(Array.isArray(row.roster) ? row.roster.map((kind) => String(kind) as MonsterId) : []);
+const ROSTER_BY_DEPTH = new Map(MWL_TABLE_ROWS('monsterRosterByDepth', 'depth').map((row) => [String(row.depth), rosterOf(row)]));
+const ROSTER_FALLBACK = new Map(MWL_TABLE_ROWS('monsterRosterFallback', 'region').map((row) => [String(row.region), rosterOf(row)]));
+
 export function mobRosterForDepth(depth: number): MonsterId[] {
-	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'monsterRosters');
-	if (!node) throw new Error('MWL dungeon roster is missing monsterRosters');
-	const effect = (key: string): string => {
-		const child = node.children.find((candidate) => candidate.tag === 'effect' && candidate.attributes.apply_to === key);
-		if (child?.attributes.set === undefined) throw new Error(`MWL dungeon roster is missing ${key}`);
-		return child.attributes.set;
-	};
-	const parseRoster = (raw: string, separator: string): Map<string, MonsterId[]> => new Map(raw.split(separator).map((entry) => {
-		const [key, roster] = entry.split('|');
-		if (!key || !roster) throw new Error(`MWL dungeon roster has invalid entry ${entry}`);
-		return [key, roster.split(',').map((kind) => kind as MonsterId)];
-	}));
-	const direct = parseRoster(effect('entries'), ';').get(String(depth));
+	const direct = ROSTER_BY_DEPTH.get(String(depth));
 	if (direct) return direct;
 	const region = depth < 6 ? 'sewers' : depth < 11 ? 'caves' : depth < 16 ? 'city' : 'halls';
-	const fallback = parseRoster(effect('fallbacks'), ';').get(region);
+	const fallback = ROSTER_FALLBACK.get(region);
 	if (!fallback) throw new Error(`MWL dungeon roster has no fallback for ${region}`);
 	return fallback;
 }
@@ -494,21 +465,10 @@ const LEGACY_MOB_LOOT: Record<string, { chance: number; kind: GroundItemKind }[]
 	swarm: [{ chance: 1 / 6, kind: 'potion' }],
 };
 
-const MWL_MOB_LOOT: Array<[string, { chance: number; kind: GroundItemKind }[]]> = (() => {
-	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'monsterLoot');
-	if (!node) throw new Error('MWL monster loot rule is missing monsterLoot');
-	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
-	const raw = effect?.attributes.set;
-	if (raw === undefined) throw new Error('MWL monster loot rule is missing entries');
-	return raw.split(';').map((entry) => {
-		const [monster, chanceText, kind] = entry.split('|');
-		const chance = Number(chanceText);
-		if (!monster || !kind || !Number.isFinite(chance) || chance < 0 || chance > 1) {
-			throw new Error(`MWL monster loot rule has invalid entry ${entry}`);
-		}
-		return [monster, [{ chance, kind: kind as GroundItemKind }]];
-	});
-})();
+const MWL_MOB_LOOT: Array<[string, { chance: number; kind: GroundItemKind }[]]> = MWL_TABLE_ROWS('monsterLoot', 'monster').map((row) => [
+	String(row.monster),
+	[{ chance: Number(row.chance), kind: String(row.kind) as GroundItemKind }],
+]);
 
 /** Runtime loot data is read from MWL; the legacy table above remains only as an audit fixture
  * until the remaining Java-specific category and multi-item drops are represented. */
@@ -541,22 +501,12 @@ const LEGACY_LIMITED_DROP_DECAY: Partial<Record<MonsterId, (n: number) => number
 	swarm: (n) => (5 - n) / 5,
 };
 
-const MWL_LIMITED_DROP_DECAY = (() => {
-	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'limitedDropDecay');
-	if (!node) throw new Error('MWL monster loot rule is missing limitedDropDecay');
-	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
-	const raw = effect?.attributes.set;
-	if (raw === undefined) throw new Error('MWL monster loot rule is missing limited-drop entries');
-	return Object.fromEntries(raw.split(';').map((entry) => {
-		const [monster, mode, valueText] = entry.split('|');
-		const value = Number(valueText);
-		if (!monster || !mode || !Number.isFinite(value) || value <= 0 || (mode !== 'linear' && mode !== 'power')) {
-			throw new Error(`MWL limited-drop rule has invalid entry ${entry}`);
-		}
-		const decay = mode === 'linear' ? (n: number) => (value - n) / value : (n: number) => Math.pow(1 / value, n);
-		return [monster, decay];
-	}));
-})();
+const MWL_LIMITED_DROP_DECAY = Object.fromEntries(MWL_TABLE_ROWS('limitedDropDecay', 'monster').map((row) => {
+	const value = Number(row.value);
+	const mode = String(row.mode);
+	const decay = mode === 'linear' ? (n: number) => (value - n) / value : (n: number) => Math.pow(1 / value, n);
+	return [String(row.monster), decay];
+}));
 
 /** The Java-specific decay formulas stay executable hooks; their authored parameters come from
  * MWL and are validated above. */

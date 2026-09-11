@@ -83,20 +83,6 @@ export const gameData = {
 								"column": 1
 							},
 							"gettext": []
-						},
-						{
-							"tag": "effect",
-							"attributes": {
-								"apply_to": "base_aliases",
-								"set": "albino|rat;causticSlime|slime;bandit|thief;spectralNecromancer|necromancer;armoredBrute|brute;dm201|dm200;senior|monk;acidic|scorpio;crystalMimic|mimic;armoredStatue|statue;pylon|pylon"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
-								"line": 27,
-								"column": 1
-							},
-							"gettext": []
 						}
 					],
 					"location": {
@@ -107,17 +93,31 @@ export const gameData = {
 					"gettext": []
 				},
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
-						"id": "monsterAiProfiles",
-						"name": "Mob.aiProfiles"
+						"id": "actorBaseAliases",
+						"columns": "variant:string|base:string"
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "dm100|dm100;shaman|shaman;necromancer|necromancer;spectralNecromancer|necromancer;tengu|tengu;dm300|dm300;yog|yog;warlock|warlock;elemental|elemental;newbornElemental|newbornElemental;yogFist|yogFist;scorpio|scorpio;acidic|scorpio;guard|guard;dm200|dm200;dm201|dm201;spinner|spinner;golem|golem;eye|eye;gnollTrickster|gnollTrickster;greatCrab|greatCrab"
+								"variant": "albino",
+								"base": "rat"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 32,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"variant": "causticSlime",
+								"base": "slime"
 							},
 							"children": [],
 							"location": {
@@ -126,11 +126,446 @@ export const gameData = {
 								"column": 1
 							},
 							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"variant": "bandit",
+								"base": "thief"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 40,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"variant": "spectralNecromancer",
+								"base": "necromancer"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 44,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"variant": "armoredBrute",
+								"base": "brute"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 48,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"variant": "dm201",
+								"base": "dm200"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 52,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"variant": "senior",
+								"base": "monk"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 56,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"variant": "acidic",
+								"base": "scorpio"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 60,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"variant": "crystalMimic",
+								"base": "mimic"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 64,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"variant": "armoredStatue",
+								"base": "statue"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 68,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"variant": "pylon",
+								"base": "pylon"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 72,
+								"column": 1
+							},
+							"gettext": []
 						}
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
-						"line": 33,
+						"line": 29,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "table",
+					"attributes": {
+						"id": "monsterAiProfiles",
+						"columns": "monster:string|profile:string"
+					},
+					"children": [
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "dm100",
+								"profile": "dm100"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 81,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "shaman",
+								"profile": "shaman"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 85,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "necromancer",
+								"profile": "necromancer"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 89,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "spectralNecromancer",
+								"profile": "necromancer"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 93,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "tengu",
+								"profile": "tengu"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 97,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "dm300",
+								"profile": "dm300"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 101,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "yog",
+								"profile": "yog"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 105,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "warlock",
+								"profile": "warlock"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 109,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "elemental",
+								"profile": "elemental"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 113,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "newbornElemental",
+								"profile": "newbornElemental"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 117,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "yogFist",
+								"profile": "yogFist"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 121,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "scorpio",
+								"profile": "scorpio"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 125,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "acidic",
+								"profile": "scorpio"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 129,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "guard",
+								"profile": "guard"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 133,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "dm200",
+								"profile": "dm200"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 137,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "dm201",
+								"profile": "dm201"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 141,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "spinner",
+								"profile": "spinner"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 145,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "golem",
+								"profile": "golem"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 149,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "eye",
+								"profile": "eye"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 153,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "gnollTrickster",
+								"profile": "gnollTrickster"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 157,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "greatCrab",
+								"profile": "greatCrab"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 161,
+								"column": 1
+							},
+							"gettext": []
+						}
+					],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+						"line": 78,
 						"column": 1
 					},
 					"gettext": []
@@ -151,7 +586,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
-								"line": 45,
+								"line": 170,
 								"column": 1
 							},
 							"gettext": []
@@ -159,7 +594,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
-						"line": 42,
+						"line": 167,
 						"column": 1
 					},
 					"gettext": []
@@ -4765,36 +5200,65 @@ export const gameData = {
 			},
 			"children": [
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
-						"id": "monsterRosters",
-						"name": "Bestiary.standardMobRotation"
+						"id": "monsterRosterFallback",
+						"columns": "region:string|roster:list",
+						"list_delimiter": ","
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "1|rat,rat,rat,snake;2|rat,rat,snake,gnoll,gnoll;3|rat,snake,gnoll,gnoll,gnoll,swarm,crab;4|gnoll,swarm,crab,crab,slime,slime;6|skeleton,skeleton,skeleton,thief,swarm;7|skeleton,skeleton,skeleton,thief,dm100,guard;8|skeleton,skeleton,thief,dm100,dm100,guard,guard,necromancer;9|skeleton,thief,dm100,dm100,guard,guard,necromancer,necromancer;11|bat,bat,bat,brute,shaman;12|bat,bat,brute,brute,shaman,spinner;13|bat,brute,brute,shaman,shaman,spinner,spinner,dm200;14|bat,brute,shaman,shaman,spinner,spinner,dm200,dm200;16|ghoul,ghoul,ghoul,elemental,warlock;17|ghoul,elemental,elemental,warlock,monk;18|ghoul,elemental,warlock,warlock,monk,monk,golem;19|elemental,warlock,warlock,monk,monk,golem,golem,golem;21|succubus,succubus,eye;22|succubus,eye;23|succubus,eye,eye,scorpio;24|succubus,eye,eye,scorpio,scorpio,scorpio"
+								"region": "sewers",
+								"roster": "skeleton,thief,dm100,dm100,guard,guard,necromancer,necromancer"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
-								"line": 7,
+								"line": 8,
 								"column": 1
 							},
 							"gettext": []
 						},
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "fallbacks",
-								"set": "sewers|skeleton,thief,dm100,dm100,guard,guard,necromancer,necromancer;caves|bat,brute,shaman,shaman,spinner,spinner,dm200,dm200;city|elemental,warlock,warlock,monk,monk,golem,golem,golem;halls|succubus,eye,eye,scorpio,scorpio,scorpio"
+								"region": "caves",
+								"roster": "bat,brute,shaman,shaman,spinner,spinner,dm200,dm200"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
-								"line": 11,
+								"line": 12,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"region": "city",
+								"roster": "elemental,warlock,warlock,monk,monk,golem,golem,golem"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 16,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"region": "halls",
+								"roster": "succubus,eye,eye,scorpio,scorpio,scorpio"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 20,
 								"column": 1
 							},
 							"gettext": []
@@ -4803,6 +5267,302 @@ export const gameData = {
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
 						"line": 4,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "table",
+					"attributes": {
+						"id": "monsterRosterByDepth",
+						"columns": "depth:number|roster:list",
+						"list_delimiter": ","
+					},
+					"children": [
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "1",
+								"roster": "rat,rat,rat,snake"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 30,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "2",
+								"roster": "rat,rat,snake,gnoll,gnoll"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 34,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "3",
+								"roster": "rat,snake,gnoll,gnoll,gnoll,swarm,crab"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 38,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "4",
+								"roster": "gnoll,swarm,crab,crab,slime,slime"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 42,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "6",
+								"roster": "skeleton,skeleton,skeleton,thief,swarm"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 46,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "7",
+								"roster": "skeleton,skeleton,skeleton,thief,dm100,guard"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 50,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "8",
+								"roster": "skeleton,skeleton,thief,dm100,dm100,guard,guard,necromancer"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 54,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "9",
+								"roster": "skeleton,thief,dm100,dm100,guard,guard,necromancer,necromancer"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 58,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "11",
+								"roster": "bat,bat,bat,brute,shaman"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 62,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "12",
+								"roster": "bat,bat,brute,brute,shaman,spinner"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 66,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "13",
+								"roster": "bat,brute,brute,shaman,shaman,spinner,spinner,dm200"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 70,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "14",
+								"roster": "bat,brute,shaman,shaman,spinner,spinner,dm200,dm200"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 74,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "16",
+								"roster": "ghoul,ghoul,ghoul,elemental,warlock"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 78,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "17",
+								"roster": "ghoul,elemental,elemental,warlock,monk"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 82,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "18",
+								"roster": "ghoul,elemental,warlock,warlock,monk,monk,golem"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 86,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "19",
+								"roster": "elemental,warlock,warlock,monk,monk,golem,golem,golem"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 90,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "21",
+								"roster": "succubus,succubus,eye"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 94,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "22",
+								"roster": "succubus,eye"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 98,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "23",
+								"roster": "succubus,eye,eye,scorpio"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 102,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "24",
+								"roster": "succubus,eye,eye,scorpio,scorpio,scorpio"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+								"line": 106,
+								"column": 1
+							},
+							"gettext": []
+						}
+					],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rosters.mwl",
+						"line": 26,
 						"column": 1
 					},
 					"gettext": []
@@ -8092,22 +8852,488 @@ export const gameData = {
 			},
 			"children": [
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "monsterLoot",
-						"name": "Mob.loot"
+						"columns": "monster:string|chance:number|kind:string"
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "snake|0.25|seed;rotLasher|0.75|seed;gnoll|0.5|gold;crab|0.1666666667|meat;albino|1|meat;causticSlime|0.5|meat;bandit|1|gold;spectralNecromancer|0.2|potion;armoredBrute|1|armor;dm201|0.125|armor;senior|1|food;acidic|1|potion;piranha|1|meat;dm100|0.25|scroll;guard|0.2|armor;necromancer|0.2|potion;bat|0.1666666667|potion;brute|0.5|gold;shaman|0.03|wand;spinner|0.125|meat;dm200|0.2|armor;gnollTrickster|1|stone;greatCrab|1|meat;ghoul|0.2|gold;monk|0.1|food;golem|0.2|armor;eye|1|dewdrop;demonSpawner|1|potion;slime|0.2|armor;skeleton|0.1666666667|armor;thief|0.03|ring;swarm|0.1666666667|potion"
+								"monster": "snake",
+								"chance": "0.25",
+								"kind": "seed"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
 								"line": 7,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "rotLasher",
+								"chance": "0.75",
+								"kind": "seed"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 12,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "gnoll",
+								"chance": "0.5",
+								"kind": "gold"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 17,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "crab",
+								"chance": "0.1666666667",
+								"kind": "meat"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 22,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "albino",
+								"chance": "1",
+								"kind": "meat"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 27,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "causticSlime",
+								"chance": "0.5",
+								"kind": "meat"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 32,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "bandit",
+								"chance": "1",
+								"kind": "gold"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 37,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "spectralNecromancer",
+								"chance": "0.2",
+								"kind": "potion"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 42,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "armoredBrute",
+								"chance": "1",
+								"kind": "armor"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 47,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "dm201",
+								"chance": "0.125",
+								"kind": "armor"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 52,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "senior",
+								"chance": "1",
+								"kind": "food"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 57,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "acidic",
+								"chance": "1",
+								"kind": "potion"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 62,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "piranha",
+								"chance": "1",
+								"kind": "meat"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 67,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "dm100",
+								"chance": "0.25",
+								"kind": "scroll"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 72,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "guard",
+								"chance": "0.2",
+								"kind": "armor"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 77,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "necromancer",
+								"chance": "0.2",
+								"kind": "potion"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 82,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "bat",
+								"chance": "0.1666666667",
+								"kind": "potion"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 87,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "brute",
+								"chance": "0.5",
+								"kind": "gold"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 92,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "shaman",
+								"chance": "0.03",
+								"kind": "wand"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 97,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "spinner",
+								"chance": "0.125",
+								"kind": "meat"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 102,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "dm200",
+								"chance": "0.2",
+								"kind": "armor"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 107,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "gnollTrickster",
+								"chance": "1",
+								"kind": "stone"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 112,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "greatCrab",
+								"chance": "1",
+								"kind": "meat"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 117,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "ghoul",
+								"chance": "0.2",
+								"kind": "gold"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 122,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "monk",
+								"chance": "0.1",
+								"kind": "food"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 127,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "golem",
+								"chance": "0.2",
+								"kind": "armor"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 132,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "eye",
+								"chance": "1",
+								"kind": "dewdrop"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 137,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "demonSpawner",
+								"chance": "1",
+								"kind": "potion"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 142,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "slime",
+								"chance": "0.2",
+								"kind": "armor"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 147,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "skeleton",
+								"chance": "0.1666666667",
+								"kind": "armor"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 152,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "thief",
+								"chance": "0.03",
+								"kind": "ring"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 157,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "swarm",
+								"chance": "0.1666666667",
+								"kind": "potion"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 162,
 								"column": 1
 							},
 							"gettext": []
@@ -8121,22 +9347,158 @@ export const gameData = {
 					"gettext": []
 				},
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "limitedDropDecay",
-						"name": "Dungeon.LimitedDrops"
+						"columns": "monster:string|mode:string|value:number"
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "bat|linear|7;necromancer|linear|6;guard|power|3;dm200|power|3;golem|power|3;shaman|power|3;slime|power|4;skeleton|power|3;thief|power|3;swarm|linear|5"
+								"monster": "bat",
+								"mode": "linear",
+								"value": "7"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 16,
+								"line": 172,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "necromancer",
+								"mode": "linear",
+								"value": "6"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 177,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "guard",
+								"mode": "power",
+								"value": "3"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 182,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "dm200",
+								"mode": "power",
+								"value": "3"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 187,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "golem",
+								"mode": "power",
+								"value": "3"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 192,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "shaman",
+								"mode": "power",
+								"value": "3"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 197,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "slime",
+								"mode": "power",
+								"value": "4"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 202,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "skeleton",
+								"mode": "power",
+								"value": "3"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 207,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "thief",
+								"mode": "power",
+								"value": "3"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 212,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "swarm",
+								"mode": "linear",
+								"value": "5"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
+								"line": 217,
 								"column": 1
 							},
 							"gettext": []
@@ -8144,7 +9506,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-						"line": 13,
+						"line": 169,
 						"column": 1
 					},
 					"gettext": []
