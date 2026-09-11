@@ -282,7 +282,12 @@ Do not add new authored content as object literals or scattered constants in the
       rather than approximated. The runtime generic seed also gained the MWL identity it lacked
       (bag seeds used to render the raw id `seed`), and `shopPricing`'s alchemize value was
       corrected from 5 to Java's `20/8`.
-      Wand identity is now persisted from generated `sourceClass` through equipment/save state;
+      Wand identity is now persisted from generated `sourceClass` through equipment/save state,
+      and (2026-09-11) a wand's *name* is too: every identified wand used to display the single
+      generic `port.name.wand` word because `ITEM_KEYS.wand` has no class in it, so all 13
+      classes read as "wand"/"baguette". `WAND_KEYS` + `itemDisplayName` now use the real class
+      key, `i18nCheck` validates all 13, and the three wrong keys repeated across five tiers of
+      `items.mwl`'s dead wand nodes were corrected;
       the shared Elemental carrier also preserves its four Java subtypes and now emits the
       corresponding Fire/Frost/Shock/Chaos loot outcomes; their shared combat carrier now
       applies the available subtype-specific fire/frost/shock/chaos ranged and melee effects,

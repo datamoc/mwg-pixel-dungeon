@@ -9247,7 +9247,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "wand_wandfirebolt_t1",
-						"name": "items.wands.wandoffirebolt.name",
+						"name": "items.wands.wandoffireblast.name",
 						"slot": "wand"
 					},
 					"children": [
@@ -9423,7 +9423,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "wand_wandblast_t1",
-						"name": "items.wands.wandofblast.name",
+						"name": "items.wands.wandofblastwave.name",
 						"slot": "wand"
 					},
 					"children": [
@@ -9555,7 +9555,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "wand_wandprismatic_t1",
-						"name": "items.wands.wandofprismatic.name",
+						"name": "items.wands.wandofprismaticlight.name",
 						"slot": "wand"
 					},
 					"children": [
@@ -9687,7 +9687,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "wand_wandfirebolt_t2",
-						"name": "items.wands.wandoffirebolt.name",
+						"name": "items.wands.wandoffireblast.name",
 						"slot": "wand"
 					},
 					"children": [
@@ -9863,7 +9863,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "wand_wandblast_t2",
-						"name": "items.wands.wandofblast.name",
+						"name": "items.wands.wandofblastwave.name",
 						"slot": "wand"
 					},
 					"children": [
@@ -9995,7 +9995,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "wand_wandprismatic_t2",
-						"name": "items.wands.wandofprismatic.name",
+						"name": "items.wands.wandofprismaticlight.name",
 						"slot": "wand"
 					},
 					"children": [
@@ -10127,7 +10127,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "wand_wandfirebolt_t3",
-						"name": "items.wands.wandoffirebolt.name",
+						"name": "items.wands.wandoffireblast.name",
 						"slot": "wand"
 					},
 					"children": [
@@ -10303,7 +10303,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "wand_wandblast_t3",
-						"name": "items.wands.wandofblast.name",
+						"name": "items.wands.wandofblastwave.name",
 						"slot": "wand"
 					},
 					"children": [
@@ -10435,7 +10435,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "wand_wandprismatic_t3",
-						"name": "items.wands.wandofprismatic.name",
+						"name": "items.wands.wandofprismaticlight.name",
 						"slot": "wand"
 					},
 					"children": [
@@ -10567,7 +10567,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "wand_wandfirebolt_t4",
-						"name": "items.wands.wandoffirebolt.name",
+						"name": "items.wands.wandoffireblast.name",
 						"slot": "wand"
 					},
 					"children": [
@@ -10743,7 +10743,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "wand_wandblast_t4",
-						"name": "items.wands.wandofblast.name",
+						"name": "items.wands.wandofblastwave.name",
 						"slot": "wand"
 					},
 					"children": [
@@ -10875,7 +10875,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "wand_wandprismatic_t4",
-						"name": "items.wands.wandofprismatic.name",
+						"name": "items.wands.wandofprismaticlight.name",
 						"slot": "wand"
 					},
 					"children": [
@@ -11007,7 +11007,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "wand_wandfirebolt_t5",
-						"name": "items.wands.wandoffirebolt.name",
+						"name": "items.wands.wandoffireblast.name",
 						"slot": "wand"
 					},
 					"children": [
@@ -11183,7 +11183,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "wand_wandblast_t5",
-						"name": "items.wands.wandofblast.name",
+						"name": "items.wands.wandofblastwave.name",
 						"slot": "wand"
 					},
 					"children": [
@@ -11315,7 +11315,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "wand_wandprismatic_t5",
-						"name": "items.wands.wandofprismatic.name",
+						"name": "items.wands.wandofprismaticlight.name",
 						"slot": "wand"
 					},
 					"children": [

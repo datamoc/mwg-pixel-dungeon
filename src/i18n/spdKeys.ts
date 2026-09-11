@@ -114,7 +114,10 @@ export const GROUND_ITEM_KEYS: Record<string, string> = {
 	meat: 'items.food.mysterymeat.name',
 	gold: 'items.gold.name',
 	armor: 'items.armor.clotharmor.name',
-	wand: 'items.wands.wandofmagicmissile.name',
+	//The ground kind has no class identity at its call sites (a dropped wand keeps it in
+	//`sourceClass`), and an equipped wand reads `WAND_KEYS` instead, so this stays generic
+	//rather than naming every dropped wand the Magic Missile one.
+	wand: 'port.name.wand',
 	food: 'items.food.food.name',
 	seed: 'plants.plant$seed$placeholder.name',
 	darkGold: 'items.quest.darkgold.name',
@@ -225,6 +228,29 @@ export const RING_KEYS: Record<string, string> = {
 	sharpshooting: 'items.rings.ringofsharpshooting.name',
 	elements: 'items.rings.ringofelements.name',
 	furor: 'items.rings.ringoffuror.name',
+};
+
+/**
+ * `items/wands/*.java`, by this port's `wandType` id. An identified wand used to fall through to
+ * `ITEM_KEYS.wand`, a single generic `port.name.wand` ("wand"), so every class displayed the same
+ * unidentified word; `itemDisplayName` now reads the real class name from here. The ground-item
+ * table no longer claims every dropped wand is the Magic Missile one either - those call sites
+ * have no class to read.
+ */
+export const WAND_KEYS: Record<string, string> = {
+	magicMissile: 'items.wands.wandofmagicmissile.name',
+	frost: 'items.wands.wandoffrost.name',
+	fireblast: 'items.wands.wandoffireblast.name',
+	lightning: 'items.wands.wandoflightning.name',
+	corrosion: 'items.wands.wandofcorrosion.name',
+	corruption: 'items.wands.wandofcorruption.name',
+	disintegration: 'items.wands.wandofdisintegration.name',
+	blastWave: 'items.wands.wandofblastwave.name',
+	livingEarth: 'items.wands.wandoflivingearth.name',
+	prismaticLight: 'items.wands.wandofprismaticlight.name',
+	regrowth: 'items.wands.wandofregrowth.name',
+	transfusion: 'items.wands.wandoftransfusion.name',
+	warding: 'items.wands.wandofwarding.name',
 };
 
 /** `actors.buffs.*`; Berserk carries status strings but no `.name` of its own */

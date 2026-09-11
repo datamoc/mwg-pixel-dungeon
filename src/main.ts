@@ -83,6 +83,7 @@ import {
 	GROUND_ITEM_KEYS,
 	ITEM_KEYS,
 	RING_KEYS,
+	WAND_KEYS,
 	POTION_APPEARANCE_KEYS,
 	SCROLL_APPEARANCE_KEYS,
 } from './i18n/index';
@@ -13180,6 +13181,9 @@ export class SewersScene extends Scene2D {
 		}
 		if (identified) {
 		const item = this.bag.find(id, instanceId);
+			//The equipped wand's class lives in `wandType`, not in its bag id, so its real class
+			//name has to come from `WAND_KEYS`; an unidentified wand keeps the generic word.
+			if (id === 'wand') return t(WAND_KEYS[this.wandType] ?? WAND_KEYS.magicMissile);
 			const affix = item?.affix ? ` (${t(`port.affix.${item.affix}`)})` : '';
 			return `${t(ITEM_KEYS[id] ?? id)}${affix}`;
 		}
