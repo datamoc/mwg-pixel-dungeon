@@ -1,0 +1,20 @@
+[game]
+schema=0.1
+
+[trait]
+id=talentTrees
+name=Hero.talentTrees
+[effect]
+apply_to=class_entries
+set=warrior|1|hearty_meal,veterans_intuition,test_subject,iron_will;warrior|2|iron_stomach,restored_willpower,runic_transference,lethal_momentum,improvised_projectiles;mage|1|empowering_meal,scholars_intuition,tested_hypothesis,backup_barrier;mage|2|energizing_meal,energizing_upgrade,wand_preservation,arcane_vision,shield_battery;rogue|1|cached_rations,thiefs_intuition,sucker_punch,protective_shadows;rogue|2|mystical_meal,mystical_upgrade,wide_search,silent_steps,rogues_foresight;huntress|1|natures_bounty,survivalists_intuition,followup_strike,natures_aid;huntress|2|invigorating_meal,restored_nature,rejuvenating_steps,heightened_senses,durable_projectiles;duelist|1|strengthening_meal,adventurers_intuition,patient_strike,aggressive_barrier;duelist|2|focused_meal,restored_agility,weapon_recharging,lethal_haste,swift_equip;cleric|1|empowering_meal,scholars_intuition,tested_hypothesis,backup_barrier;cleric|2|energizing_meal,energizing_upgrade,wand_preservation,arcane_vision,shield_battery
+[/effect]
+[effect]
+apply_to=subclass_entries
+set=berserker|endless_rage,deathless_fury,enraged_catalyst;gladiator|cleave,lethal_defense,enhanced_combo;battlemage|empowered_strike,mystical_charge,excess_charge;warlock|soul_eater,soul_siphon,necromancers_minions;assassin|enhanced_lethality,assassins_reach,bounty_hunter;freerunner|evasive_armor,projectile_momentum,speedy_stealth;sniper|farsight,shared_enchantment,shared_upgrades;warden|durable_tips,barkskin,shielding_dew;champion|secondary_charge,twin_upgrades,combined_lethality;monk_sub|unencumbered_spirit,monastic_vigor,combined_energy
+[/effect]
+ [effect]
+apply_to=tier_thresholds
+set=0,2,7,13,21,31
+[/effect]
+[/trait]
+[/game]

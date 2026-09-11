@@ -2,6 +2,16 @@ import { SpriteSheet } from 'mwg';
 import type { Texture2D } from 'mwg/two-d/render';
 import type { GroundItemKind } from './dungeonConstants';
 import type { SpdSprites } from './images';
+import { MWL_MONSTERS, MWL_SCENARIO_CHAPTERS, MWL_TRAIT_NODES } from './mwlContent';
+
+function mwlActorFlagSet(flag: string): Set<AnyMonsterId> {
+	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'actorFlags');
+	if (!node) throw new Error('MWL actor rule is missing actorFlags');
+	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === flag);
+	const value = effect?.attributes.set;
+	if (value === undefined) throw new Error(`MWL actor rule actorFlags is missing ${flag}`);
+	return new Set(value.split(',').map((entry) => entry.trim()).filter(Boolean) as AnyMonsterId[]);
+}
 
 /** a class's real idle-stance frame: tier row 1 (the starting cloth-armour look), column 0 - `HeroSprite.updateArmor()`'s `idle.frames(film, 0, 0, 0, 1, 0, 0, 1, 1)` */
 export function heroSheet(texture: Texture2D): SpriteSheet {
@@ -82,9 +92,7 @@ export type MonsterVariantId =
 export type AnyMonsterId = MonsterId | MonsterVariantId;
 
 /** Java mob classes whose `Char.flying` flag lets them occupy avoid terrain such as chasms. */
-export const FLYING_KINDS = new Set<AnyMonsterId>([
-	'bat', 'bee', 'elemental', 'newbornElemental', 'eye', 'swarm', 'ghost',
-]);
+export const FLYING_KINDS = mwlActorFlagSet('flying');
 
 /**
  * Every real Sewers monster's own base stats (`actors/mobs/*.java`: `HP = HT`,
@@ -121,153 +129,104 @@ export interface MonsterDef {
 	maxLvl: number;
 }
 
-export const MONSTERS: Record<AnyMonsterId, MonsterDef> = {
-	//`Rat.java` itself is unchanged since this checkout (same HP/defenseSkill/maxLvl); only
-	//its display name changed later, to "marsupial rat" (actors.properties, confirmed at tag
-	//v4.0.0-beta) - a flavour-text update, not a new or rebalanced creature
-	rat: { hp: 8, accuracy: 8, evasion: 2, damage: [1, 4], armor: [0, 1], frame: [16, 15], idle: 0, exp: 1, maxLvl: 5 },
-	snake: { hp: 4, accuracy: 10, evasion: 25, damage: [1, 4], armor: [0, 0], frame: [12, 11], idle: 0, exp: 2, maxLvl: 7 },
-	gnoll: { hp: 12, accuracy: 10, evasion: 4, damage: [1, 6], armor: [0, 2], frame: [12, 15], idle: 0, exp: 2, maxLvl: 8 },
-	swarm: { hp: 50, accuracy: 10, evasion: 5, damage: [1, 4], armor: [0, 0], frame: [16, 16], idle: 0, exp: 3, maxLvl: 9 },
-	crab: { hp: 15, accuracy: 12, evasion: 5, damage: [1, 7], armor: [0, 4], frame: [16, 16], idle: 0, exp: 4, maxLvl: 9 },
-	slime: { hp: 20, accuracy: 12, evasion: 5, damage: [2, 5], armor: [0, 0], frame: [14, 12], idle: 0, exp: 4, maxLvl: 9 },
-	goo: { hp: 100, accuracy: 10, evasion: 8, damage: [1, 8], armor: [0, 2], frame: [20, 14], idle: 2, exp: 10, maxLvl: 29 },
-	skeleton: { hp: 25, accuracy: 12, evasion: 9, damage: [2, 10], armor: [0, 0], frame: [12, 15], idle: 0, exp: 5, maxLvl: 10 },
-	//`WandOfWarding.Ward` is a dedicated Java NPC actor, not a Skeleton. Its live combat
-	//numbers are supplied by the wand/ward state in the scene; these values only satisfy the
-	//shared actor factory before that state is applied.
-	ward: { hp: 10, accuracy: 0, evasion: 999999, damage: [0, 0], armor: [0, 0], frame: [12, 15], idle: 0, exp: 0, maxLvl: 0 },
-	// `StoneOfFlock` creates Java's neutral Sheep actor; its stats are irrelevant because
-	// Sheep is invulnerable and never attacks, but the real 16x15 sprite film is preserved.
-	sheep: { hp: 1, accuracy: 0, evasion: 999999, damage: [0, 0], armor: [0, 0], frame: [16, 15], idle: 0, exp: 0, maxLvl: 0 },
-	// `WandOfLivingEarth.EarthGuardian` starts with no HP until the wand supplies its
-	// level/armor payload; the live actor state overrides these placeholder values.
-	earthGuardian: { hp: 0, accuracy: 0, evasion: 0, damage: [2, 4], armor: [0, 0], frame: [12, 15], idle: 0, exp: 0, maxLvl: 0 },
-	thief: { hp: 20, accuracy: 12, evasion: 12, damage: [1, 10], armor: [0, 3], frame: [12, 13], idle: 0, exp: 5, maxLvl: 11 },
-	dm100: { hp: 20, accuracy: 11, evasion: 8, damage: [2, 8], armor: [0, 4], frame: [16, 14], idle: 0, exp: 6, maxLvl: 13 },
-	guard: { hp: 40, accuracy: 12, evasion: 10, damage: [4, 12], armor: [0, 7], frame: [12, 16], idle: 0, exp: 7, maxLvl: 14 },
-	//Necromancer.java has no melee attackSkill of its own (base Char default: attackSkill 0,
-	//damageRoll 1) - it is a pure ranged summoner in Java, and never really melees. Standing
-	//in for that with its real ranged bolt (`blocker.damage(Random.NormalIntRange(2,10),...)`)
-	//and a plain accuracy of 10, since a literal 0 would make it unable to ever land a hit here
-	necromancer: { hp: 40, accuracy: 10, evasion: 14, damage: [2, 10], armor: [0, 5], frame: [16, 16], idle: 0, exp: 7, maxLvl: 14 },
-	tengu: { hp: 200, accuracy: 10, evasion: 15, damage: [6, 12], armor: [0, 5], frame: [14, 16], idle: 0, exp: 20, maxLvl: 29 },
-	fetidRat: { hp: 20, accuracy: 12, evasion: 5, damage: [1, 4], armor: [0, 2], frame: [16, 15], idle: 32, exp: 4, maxLvl: 5 },
-	//Ghost Quest types 2/3 (Ghost.java type = depth-1): the Gnoll Trickster reuses GNOLL's
-	//own sheet at its own sprite's idle frame (GnollTricksterSprite: TextureFilm(12,15),
-	//idle 21 - same precedent as FetidRat reusing rat.png), the Great Crab reuses CRAB at
-	//GreatCrabSprite's idle frame 16. Stats are each class's own (Trickster: HP20/eva5/
-	//acc16, Gnoll's 1-6 damage; GreatCrab: HP25/eva0 - see rollHit for its block).
-	gnollTrickster: { hp: 20, accuracy: 16, evasion: 5, damage: [1, 6], armor: [0, 2], frame: [12, 15], idle: 21, exp: 5, maxLvl: 8 },
-	greatCrab: { hp: 25, accuracy: 12, evasion: 0, damage: [1, 7], armor: [0, 4], frame: [16, 16], idle: 16, exp: 6, maxLvl: 9 },
-	//Caves roster (Bestiary cases 11-15), each mob's own HP/defenseSkill/attackSkill/
-	//damageRoll/drRoll/EXP/maxLvl - films are each sprite's own TextureFilm (bat 15x15,
-	//brute 12x16, shaman 12x15, spinner 16x16, dm200 21x18, dm300 25x22), all idling on 0
-	bat: { hp: 30, accuracy: 16, evasion: 15, damage: [5, 18], armor: [0, 4], frame: [15, 15], idle: 0, exp: 7, maxLvl: 15 },
-	brute: { hp: 40, accuracy: 20, evasion: 15, damage: [5, 25], armor: [0, 8], frame: [12, 16], idle: 0, exp: 8, maxLvl: 16 },
-	shaman: { hp: 35, accuracy: 18, evasion: 15, damage: [5, 10], armor: [0, 6], frame: [12, 15], idle: 0, exp: 8, maxLvl: 16 },
-	spinner: { hp: 50, accuracy: 22, evasion: 17, damage: [10, 20], armor: [0, 6], frame: [16, 16], idle: 0, exp: 9, maxLvl: 17 },
-	dm200: { hp: 80, accuracy: 20, evasion: 12, damage: [10, 25], armor: [0, 8], frame: [21, 18], idle: 0, exp: 9, maxLvl: 17 },
-	dm300: { hp: 300, accuracy: 20, evasion: 15, damage: [15, 25], armor: [0, 10], frame: [25, 22], idle: 0, exp: 30, maxLvl: 29 },
-	//Necromancer.summonMinion's NecroSkeleton: a real Skeleton with HP 20, WANDERING, no EXP
-	necroSkeleton: { hp: 20, accuracy: 12, evasion: 9, damage: [2, 10], armor: [0, 0], frame: [12, 15], idle: 0, exp: 0, maxLvl: 0 },
-	ghost: { hp: 999999, accuracy: 0, evasion: 999999, damage: [0, 0], armor: [0, 0], frame: [14, 15], idle: 0, exp: 0, maxLvl: 0 },
-	//Wandmaker/Shopkeeper: peaceful NPCs (defenseSkill INFINITE_EVASION, damage() no-op in
-	//Java) - same unkillable modelling as the Ghost, at their own sprite films
-	wandmaker: { hp: 999999, accuracy: 0, evasion: 999999, damage: [0, 0], armor: [0, 0], frame: [12, 14], idle: 0, exp: 0, maxLvl: 0 },
-	shopkeeper: { hp: 999999, accuracy: 0, evasion: 999999, damage: [0, 0], armor: [0, 0], frame: [14, 14], idle: 1, exp: 0, maxLvl: 0 },
-	//Blacksmith (TROLL texture at its own 13x16 film) and Imp (IMP = demon.png at its own
-	//12x14 film) - quest NPCs, unkillable like the Ghost
-	blacksmith: { hp: 999999, accuracy: 0, evasion: 999999, damage: [0, 0], armor: [0, 0], frame: [13, 16], idle: 0, exp: 0, maxLvl: 0 },
-	imp: { hp: 999999, accuracy: 0, evasion: 999999, damage: [0, 0], armor: [0, 0], frame: [12, 14], idle: 0, exp: 0, maxLvl: 0 },
-	//City roster (Bestiary cases 16-20), each mob's own HP/defenseSkill/attackSkill/
-	//damageRoll/drRoll/EXP/maxLvl at each sprite's own TextureFilm (ghoul 12x14,
-	//elemental 12x14, warlock 12x15, monk 15x14 idle 1, golem 17x19)
-	ghoul: { hp: 45, accuracy: 24, evasion: 20, damage: [16, 22], armor: [0, 4], frame: [12, 14], idle: 0, exp: 5, maxLvl: 20 },
-	elemental: { hp: 60, accuracy: 25, evasion: 20, damage: [20, 25], armor: [0, 5], frame: [12, 14], idle: 0, exp: 10, maxLvl: 20 },
-	//Elemental.NewbornFireElemental (the Wandmaker's type-2 ritual summon): base HP 60 and
-	//dr 0-5 inherited, defenseSkill 12 (not 20), MINIBOSS, melee acc 15 for 10-12 with no
-	//fiery on-hit, and the telegraphed 3x3 fireball instead of bolts (see takeMonsterTurn).
-	//EXP 10/maxLvl 20 inherited. No separate newborn sprite sheet exists here, so it reuses
-	//the fire elemental's own 12x14 film (same precedent as crab-texture reuse above).
-	newbornElemental: { hp: 60, accuracy: 15, evasion: 12, damage: [10, 12], armor: [0, 5], frame: [12, 14], idle: 0, exp: 10, maxLvl: 20 },
-	warlock: { hp: 70, accuracy: 25, evasion: 18, damage: [12, 18], armor: [0, 8], frame: [12, 15], idle: 0, exp: 11, maxLvl: 21 },
-	monk: { hp: 70, accuracy: 30, evasion: 30, damage: [12, 25], armor: [0, 2], frame: [15, 14], idle: 1, exp: 11, maxLvl: 21 },
-	golem: { hp: 120, accuracy: 28, evasion: 15, damage: [25, 30], armor: [0, 12], frame: [17, 19], idle: 0, exp: 12, maxLvl: 22 },
-	//Halls roster (Bestiary cases 21-26: succubus 12x15, eye 16x18, scorpio 17x17)
-	succubus: { hp: 80, accuracy: 40, evasion: 25, damage: [25, 30], armor: [0, 10], frame: [12, 15], idle: 0, exp: 12, maxLvl: 25 },
-	eye: { hp: 100, accuracy: 30, evasion: 20, damage: [20, 30], armor: [0, 10], frame: [16, 18], idle: 0, exp: 13, maxLvl: 26 },
-	scorpio: { hp: 110, accuracy: 36, evasion: 24, damage: [30, 40], armor: [0, 16], frame: [17, 17], idle: 0, exp: 14, maxLvl: 27 },
-	//DwarfKing.java: HP=HT=300, acc26, eva22, dmg 15-25, dr 0-10, EXP 40 (KingSprite 16x16)
-	king: { hp: 300, accuracy: 26, evasion: 22, damage: [15, 25], armor: [0, 10], frame: [16, 16], idle: 0, exp: 40, maxLvl: 29 },
-	//YogDzewa, scaled for tier-1 gear: Java HP 1000, beams 20-30, fists HP 300 dmg 18-36.
-	//At this port's damage output (~8/turn) real numbers are unwinnable, so HP 400, beams
-	//8-16, fists HP 60 dmg 6-12 - stated balance reduction, not a claim about Java.
-	yog: { hp: 400, accuracy: 30, evasion: 0, damage: [8, 16], armor: [0, 0], frame: [20, 19], idle: 0, exp: 50, maxLvl: 29 },
-	yogFist: { hp: 60, accuracy: 20, evasion: 10, damage: [6, 12], armor: [0, 5], frame: [24, 17], idle: 0, exp: 10, maxLvl: 29 },
-	//DemonSpawner (levels/rooms/special/DemonSpawnerRoom.java, Halls only): HP=HT=120,
-	//defenseSkill=0 (a flat field, not a formula - real and depth-independent), drRoll
-	//+NormalIntRange(0,12), EXP=15. Never attacks (state=PASSIVE, no attackSkill/damageRoll
-	//override) - accuracy 0/damage [0,0] model that, same trick as the invincible quest NPCs
-	//above but with real HP/evasion, so the hero can actually kill it (see `tickDemonSpawner`
-	//for its periodic-spawn behaviour and `attack()`'s damage soft-cap, both in main.ts).
-	demonSpawner: { hp: 120, accuracy: 0, evasion: 0, damage: [0, 0], armor: [0, 12], frame: [16, 16], idle: 0, exp: 15, maxLvl: 29 },
-	//RipperDemon (actors/mobs/RipperDemon.java): HP=HT=60, defenseSkill(evasion)=22,
-	//attackSkill=30, damageRoll Normal(15,25), drRoll +Normal(0,4). maxLvl=-2 (always below any
-	//real hero level, so a kill grants 0 XP - Java's own comment marks its EXP=9 as "for
-	//corrupting" instead, a system this port doesn't model). Never naturally spawns via the
-	//normal per-depth roster (`spawningWeight() == 0`) - only `tickDemonSpawner` creates one.
-	//Its real leap-to-target mechanic and faster attack delay aren't modeled, the same
-	//"no special movement AI" simplification already applied to every other mob here.
-	ripperDemon: { hp: 60, accuracy: 30, evasion: 22, damage: [15, 25], armor: [0, 4], frame: [15, 14], idle: 1, exp: 9, maxLvl: -2 },
-	// Bestiary alternative mobs. Where the Java subclass inherits its parent's combat values,
-	// those values are repeated here so the scene can treat every spawned id uniformly.
-	albino: { hp: 15, accuracy: 8, evasion: 2, damage: [1, 4], armor: [0, 1], frame: [16, 15], idle: 16, exp: 2, maxLvl: 5 },
-	causticSlime: { hp: 20, accuracy: 12, evasion: 5, damage: [2, 5], armor: [0, 0], frame: [14, 12], idle: 0, exp: 4, maxLvl: 9 },
-	bandit: { hp: 20, accuracy: 12, evasion: 12, damage: [1, 10], armor: [0, 3], frame: [12, 13], idle: 21, exp: 5, maxLvl: 11 },
-	spectralNecromancer: { hp: 40, accuracy: 10, evasion: 14, damage: [2, 10], armor: [0, 5], frame: [16, 16], idle: 0, exp: 7, maxLvl: 14 },
-	armoredBrute: { hp: 40, accuracy: 20, evasion: 15, damage: [5, 25], armor: [4, 16], frame: [12, 16], idle: 21, exp: 8, maxLvl: 16 },
-	dm201: { hp: 120, accuracy: 20, evasion: 12, damage: [15, 25], armor: [0, 8], frame: [21, 18], idle: 0, exp: 9, maxLvl: 17 },
-	senior: { hp: 70, accuracy: 30, evasion: 30, damage: [16, 25], armor: [0, 2], frame: [15, 14], idle: 18, exp: 11, maxLvl: 21 },
-	acidic: { hp: 110, accuracy: 36, evasion: 24, damage: [30, 40], armor: [0, 16], frame: [17, 17], idle: 15, exp: 14, maxLvl: 27 },
-	// Mimic.java scales HP/defence/damage from Dungeon.depth at spawn time; the scene applies
-	// that depth scaling below while this catalogue supplies the level-zero shape and chest-art
-	// the dedicated 16x16 `mimic.png` film copied from the Java assets.
-	mimic: { hp: 6, accuracy: 6, evasion: 2, damage: [1, 2], armor: [0, 1], frame: [16, 16], idle: 3, exp: 0, maxLvl: 29 },
-	// CrystalMimic reuses MimicSprite's sheet but flees after revealing itself instead of
-	// behaving like an ordinary stationary chest ambush.
-	crystalMimic: { hp: 6, accuracy: 6, evasion: 2, damage: [1, 2], armor: [0, 1], frame: [16, 16], idle: 3, exp: 0, maxLvl: 29 },
-	piranha: { hp: 10, accuracy: 20, evasion: 10, damage: [1, 6], armor: [0, 1], frame: [12, 16], idle: 0, exp: 0, maxLvl: 29 },
-	// Bee.java: HT=(2+depth)*4, defense/attack skill=9+depth, EXP=0. The checkout has
-	// BeeSprite uses the dedicated 16x16 `bee.png` film copied from the Java assets.
-	bee: { hp: 12, accuracy: 10, evasion: 10, damage: [1, 3], armor: [0, 0], frame: [16, 16], idle: 0, exp: 0, maxLvl: 29 },
-	// Statue.java scales HP/defense from depth and uses its generated weapon for the exact
-	// damage roll. The live port preserves the actor and weapon-family reward while using the
-	// shared combat roll until weapon instances are attached to monsters.
-	statue: { hp: 15, accuracy: 9, evasion: 4, damage: [2, 8], armor: [0, 2], frame: [12, 15], idle: 0, exp: 0, maxLvl: 29 },
-	armoredStatue: { hp: 30, accuracy: 9, evasion: 4, damage: [2, 8], armor: [0, 2], frame: [12, 15], idle: 0, exp: 0, maxLvl: 29 },
-	// Pylon.java: inactive neutral boss minion, HP 50 (80 with stronger bosses),
-	// immovable and inorganic. PylonSprite's dedicated 10x20 film is used directly.
-	pylon: { hp: 50, accuracy: 0, evasion: 0, damage: [0, 0], armor: [0, 0], frame: [10, 20], idle: 0, exp: 0, maxLvl: -2 },
-	//SentryRoom$Sentry: HP=HT=1 (NPC base), INFINITE_EVASION (modelled as the real
-	//1000000 constant `rollHit` short-circuits on, not the NPC display-999999), no melee
-	//to speak of (damage unused - it only ever fires its beam), EXP=0. Accuracy is set at
-	//spawn (`20 + depth*2`); the beam formula reads depth live. Own `red_sentry.png` sheet
-	//at its sprite's 8x15 idle film - no placeholder reuse needed.
-	sentry: { hp: 1, accuracy: 20, evasion: 1000000, damage: [0, 0], armor: [0, 0], frame: [8, 15], idle: 0, exp: 0, maxLvl: 0 },
-	//RotHeart/RotLasher: HP=HT=80, defenseSkill 0, IMMOVABLE (+MINIBOSS, STATIC on the
-	//heart), ToxicGas-immune both. Heart: EXP 4, PASSIVE, damageRoll/attackSkill 0,
-	//drRoll +0-5 (armor [0,5]); killing it kills every lasher on the level. Lasher:
-	//EXP 1, Waiting (immobile, attacks adjacent), damage 10-20, attack 25, dr +0-8,
-	//seed loot 0.75, +5/turn regen while hurt with no adjacent enemy. Own sheets at
-	//their sprites' films (heart 16x16, lasher 12x16) - no placeholders. maxLvl is the
-	//Mob default (Hero.MAX_LEVEL-1 = 29) for both, neither class overrides it.
-	rotHeart: { hp: 80, accuracy: 0, evasion: 0, damage: [0, 0], armor: [0, 5], frame: [16, 16], idle: 0, exp: 4, maxLvl: 29 },
-	rotLasher: { hp: 80, accuracy: 25, evasion: 0, damage: [10, 20], armor: [0, 8], frame: [12, 16], idle: 0, exp: 1, maxLvl: 29 },
-	//RatKingRoom's denizen: sleeping NPC (infinite evasion, NPC-base HP), EXP 0. Own
-	//`ratking.png` sheet at its sprite's 16x17 idle film.
-	ratKing: { hp: 1, accuracy: 0, evasion: 999999, damage: [0, 0], armor: [0, 0], frame: [16, 17], idle: 0, exp: 0, maxLvl: 0 },
+/**
+ * Monster combat values are authored in `src/content/monsters.mwl` and compiled before
+ * TypeScript. This map is the remaining renderer metadata: MWL currently describes portable
+ * gameplay data, while sprite film dimensions and idle frame selection belong to this Pixi
+ * adapter. The special actors below intentionally retain the port's documented simplifications
+ * (invulnerable NPCs use very large evasion, Goo uses its base state, and Yog is balance-scaled).
+ */
+const MONSTER_VISUALS: Record<AnyMonsterId, Pick<MonsterDef, 'frame' | 'idle'>> = {
+	rat: { frame: [16, 15], idle: 0 },
+	snake: { frame: [12, 11], idle: 0 },
+	gnoll: { frame: [12, 15], idle: 0 },
+	swarm: { frame: [16, 16], idle: 0 },
+	crab: { frame: [16, 16], idle: 0 },
+	slime: { frame: [14, 12], idle: 0 },
+	goo: { frame: [20, 14], idle: 2 },
+	skeleton: { frame: [12, 15], idle: 0 },
+	ward: { frame: [12, 15], idle: 0 },
+	sheep: { frame: [16, 15], idle: 0 },
+	earthGuardian: { frame: [12, 15], idle: 0 },
+	thief: { frame: [12, 13], idle: 0 },
+	dm100: { frame: [16, 14], idle: 0 },
+	guard: { frame: [12, 16], idle: 0 },
+	necromancer: { frame: [16, 16], idle: 0 },
+	tengu: { frame: [14, 16], idle: 0 },
+	fetidRat: { frame: [16, 15], idle: 32 },
+	gnollTrickster: { frame: [12, 15], idle: 21 },
+	greatCrab: { frame: [16, 16], idle: 16 },
+	bat: { frame: [15, 15], idle: 0 },
+	brute: { frame: [12, 16], idle: 0 },
+	shaman: { frame: [12, 15], idle: 0 },
+	spinner: { frame: [16, 16], idle: 0 },
+	dm200: { frame: [21, 18], idle: 0 },
+	dm300: { frame: [25, 22], idle: 0 },
+	necroSkeleton: { frame: [12, 15], idle: 0 },
+	ghost: { frame: [14, 15], idle: 0 },
+	wandmaker: { frame: [12, 14], idle: 0 },
+	shopkeeper: { frame: [14, 14], idle: 1 },
+	blacksmith: { frame: [13, 16], idle: 0 },
+	imp: { frame: [12, 14], idle: 0 },
+	ghoul: { frame: [12, 14], idle: 0 },
+	elemental: { frame: [12, 14], idle: 0 },
+	newbornElemental: { frame: [12, 14], idle: 0 },
+	warlock: { frame: [12, 15], idle: 0 },
+	monk: { frame: [15, 14], idle: 1 },
+	golem: { frame: [17, 19], idle: 0 },
+	succubus: { frame: [12, 15], idle: 0 },
+	eye: { frame: [16, 18], idle: 0 },
+	scorpio: { frame: [17, 17], idle: 0 },
+	king: { frame: [16, 16], idle: 0 },
+	yog: { frame: [20, 19], idle: 0 },
+	yogFist: { frame: [24, 17], idle: 0 },
+	demonSpawner: { frame: [16, 16], idle: 0 },
+	ripperDemon: { frame: [15, 14], idle: 1 },
+	albino: { frame: [16, 15], idle: 16 },
+	causticSlime: { frame: [14, 12], idle: 0 },
+	bandit: { frame: [12, 13], idle: 21 },
+	spectralNecromancer: { frame: [16, 16], idle: 0 },
+	armoredBrute: { frame: [12, 16], idle: 21 },
+	dm201: { frame: [21, 18], idle: 0 },
+	senior: { frame: [15, 14], idle: 18 },
+	acidic: { frame: [17, 17], idle: 15 },
+	mimic: { frame: [16, 16], idle: 3 },
+	crystalMimic: { frame: [16, 16], idle: 3 },
+	piranha: { frame: [12, 16], idle: 0 },
+	bee: { frame: [16, 16], idle: 0 },
+	statue: { frame: [12, 15], idle: 0 },
+	armoredStatue: { frame: [12, 15], idle: 0 },
+	pylon: { frame: [10, 20], idle: 0 },
+	sentry: { frame: [8, 15], idle: 0 },
+	rotHeart: { frame: [16, 16], idle: 0 },
+	rotLasher: { frame: [12, 16], idle: 0 },
+	ratKing: { frame: [16, 17], idle: 0 },
 };
+
+function requiredMonsterNumber(value: number | undefined, key: string): number {
+	if (value === undefined) throw new Error(`MWL monster definition is missing ${key}`);
+	return value;
+}
+
+export const MONSTERS: Record<AnyMonsterId, MonsterDef> = Object.fromEntries(
+	MWL_MONSTERS.map((monster) => {
+		const id = monster.id as AnyMonsterId;
+		const visual = MONSTER_VISUALS[id];
+		if (!visual) throw new Error(`Missing MWL monster visual metadata for ${monster.id}`);
+		return [id, {
+			hp: requiredMonsterNumber(monster.hp, 'hp'),
+			accuracy: requiredMonsterNumber(monster.accuracy, 'accuracy'),
+			evasion: requiredMonsterNumber(monster.evasion, 'evasion'),
+			damage: [requiredMonsterNumber(monster.damage?.[0], 'damage_min'), requiredMonsterNumber(monster.damage?.[1], 'damage_max')],
+			armor: [requiredMonsterNumber(monster.armor?.[0], 'armor_min'), requiredMonsterNumber(monster.armor?.[1], 'armor_max')],
+			frame: visual.frame,
+			idle: visual.idle,
+			exp: requiredMonsterNumber(monster.experience, 'experience'),
+			maxLvl: requiredMonsterNumber(monster.maxLevel, 'max_level'),
+		}];
+	}),
+) as Record<AnyMonsterId, MonsterDef>;
+
 
 /**
  * `Bestiary.swapMobAlts()` variants and quest/room minibosses that reuse their family's real
@@ -278,34 +237,35 @@ export const MONSTERS: Record<AnyMonsterId, MonsterDef> = {
  * as the alias table it always was. A kind with no entry is its own base kind (see
  * `spawnMonster`'s `BASE_KIND_ALIASES[kind] ?? kind` fallback).
  */
-export const BASE_KIND_ALIASES: Partial<Record<AnyMonsterId, MonsterId>> = {
-	albino: 'rat',
-	causticSlime: 'slime',
-	bandit: 'thief',
-	spectralNecromancer: 'necromancer',
-	armoredBrute: 'brute',
-	dm201: 'dm200',
-	senior: 'monk',
-	acidic: 'scorpio',
-	crystalMimic: 'mimic',
-	armoredStatue: 'statue',
-	pylon: 'pylon',
-};
+export const BASE_KIND_ALIASES: Partial<Record<AnyMonsterId, MonsterId>> = (() => {
+	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'actorFlags');
+	if (!node) throw new Error('MWL actor rule is missing actorFlags');
+	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'base_aliases');
+	const raw = effect?.attributes.set;
+	if (raw === undefined) throw new Error('MWL actor rule is missing base aliases');
+	const aliases: Partial<Record<AnyMonsterId, MonsterId>> = {};
+	for (const entry of raw.split(';')) {
+		const [variant, base] = entry.split('|');
+		if (!variant || !base || aliases[variant as AnyMonsterId]) throw new Error(`MWL actor rule has invalid base alias ${entry}`);
+		aliases[variant as AnyMonsterId] = base as MonsterId;
+	}
+	return aliases;
+})();
 
 /** Quest-giver/shop/crafting NPCs (`Mob.java` subclasses with `alignment = ALLY` or an
  * unkillable `defenseSkill()`/`damage()` override) - was a 6-case `||` chain in `spawnMonster`. */
-export const NPC_KINDS = new Set<AnyMonsterId>(['ghost', 'wandmaker', 'shopkeeper', 'blacksmith', 'imp', 'ratKing']);
+export const NPC_KINDS = mwlActorFlagSet('npc');
 
 /** Fixed-floor bosses (Goo/Tengu/DM-300/King/Yog + Yog's own summoned fists) - was a 6-case
  * `||` chain in `spawnMonster`, used to exempt them from the ordinary sleeping-on-spawn and
  * champion-roll rules every regular mob gets. */
-export const BOSS_KINDS = new Set<AnyMonsterId>(['goo', 'tengu', 'dm300', 'king', 'yog', 'yogFist']);
+export const BOSS_KINDS = mwlActorFlagSet('boss');
 
 /** Kinds that never change cells (`Property.IMMOVABLE` or an equivalent never-moves turn):
  * DM201 (real `IMMOVABLE`, consumes its turn), the Sentry turret and the RotHeart/RotLasher
  * pair (all own their whole turn and never step). Used for Necromancer.summonMinion's
  * "no push if char is immovable" rule - such an occupant is never shoved aside. */
-export const IMMOVABLE_KINDS = new Set<AnyMonsterId>(['dm201', 'sentry', 'rotHeart', 'rotLasher', 'pylon']);
+export const IMMOVABLE_KINDS = mwlActorFlagSet('immovable');
 
 /** Kinds that spawn already awake (real Java `state = PASSIVE`/`WANDERING` from the start,
  * never `SLEEPING`): Ghost-quest mobs (FetidRat/GnollTrickster/GreatCrab, spawned mid-quest
@@ -317,7 +277,23 @@ export const IMMOVABLE_KINDS = new Set<AnyMonsterId>(['dm201', 'sentry', 'rotHea
  * needing this exemption - exactly the "OR-chain that grows linearly with every new case"
  * smell ROADMAP.md's own code-quality note calls out, moved into a table for the same reason
  * `NPC_KINDS`/`BOSS_KINDS`/`IMMOVABLE_KINDS` already were. */
-export const NEVER_SLEEPS_KINDS = new Set<AnyMonsterId>(['fetidRat', 'gnollTrickster', 'greatCrab', 'demonSpawner', 'sentry', 'rotHeart', 'rotLasher', 'newbornElemental', 'pylon']);
+export const NEVER_SLEEPS_KINDS = mwlActorFlagSet('never_sleeps');
+
+/** Monster special-turn profiles are authored in MWL; TypeScript only supplies hook bodies. */
+export const MWL_AI_PROFILES: Readonly<Record<string, string>> = (() => {
+	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'monsterAiProfiles');
+	if (!node) throw new Error('MWL actor rule is missing monsterAiProfiles');
+	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
+	const raw = effect?.attributes.set;
+	if (raw === undefined) throw new Error('MWL actor rule is missing AI profile entries');
+	const profiles: Record<string, string> = {};
+	for (const entry of raw.split(';')) {
+		const [monster, profile] = entry.split('|');
+		if (!monster || !profile || profiles[monster]) throw new Error(`MWL actor rule has invalid AI profile ${entry}`);
+		profiles[monster] = profile;
+	}
+	return profiles;
+})();
 
 /**
  * Per-kind depth-scaled stat overrides, applied on top of `MONSTERS`' base entry at spawn
@@ -394,88 +370,54 @@ export const SPRITE_KIND_OVERRIDE: Partial<Record<MonsterId, keyof SpdSprites>> 
 	statue: 'statue',
 };
 
-/**
- * `Bestiary.getMobRotation`'s real per-depth entries (depth 5 is `SewerBossLevel`, depth 10
- * `PrisonBossLevel`, depth 15 `CavesBossLevel` - Goo/Tengu/DM-300 alone, handled separately).
- * A repeated id is Java's repeated `Arrays.asList` entry - `Random.element` on this array
- * reproduces the same relative odds a repeated entry gives `Random.Int(list.size())` in Java.
- */
+/** Standard mob rotations are authored in MWL; this adapter preserves the Java region fallback
+ * selection while validating every authored row at module initialization. */
 export function mobRosterForDepth(depth: number): MonsterId[] {
-	switch (depth) {
-		case 1:
-			return ['rat', 'rat', 'rat', 'snake'];
-		case 2:
-			return ['rat', 'rat', 'snake', 'gnoll', 'gnoll'];
-		case 3:
-			return ['rat', 'snake', 'gnoll', 'gnoll', 'gnoll', 'swarm', 'crab'];
-		case 4:
-			return ['gnoll', 'swarm', 'crab', 'crab', 'slime', 'slime'];
-		case 6:
-			return ['skeleton', 'skeleton', 'skeleton', 'thief', 'swarm'];
-		case 7:
-			return ['skeleton', 'skeleton', 'skeleton', 'thief', 'dm100', 'guard'];
-		case 8:
-			return ['skeleton', 'skeleton', 'thief', 'dm100', 'dm100', 'guard', 'guard', 'necromancer'];
-		case 9:
-			return ['skeleton', 'thief', 'dm100', 'dm100', 'guard', 'guard', 'necromancer', 'necromancer'];
-		//Bestiary.standardMobRotation cases 11-15 (Caves): 11 is 3xBat/Brute/Shaman, 12 adds
-		//a second Brute and a Spinner, 13 doubles Shamans/Spinners plus a DM200, 14-15 double
-		//the DM200s
-		case 11:
-			return ['bat', 'bat', 'bat', 'brute', 'shaman'];
-		case 12:
-			return ['bat', 'bat', 'brute', 'brute', 'shaman', 'spinner'];
-		case 13:
-			return ['bat', 'brute', 'brute', 'shaman', 'shaman', 'spinner', 'spinner', 'dm200'];
-		case 14:
-			return ['bat', 'brute', 'shaman', 'shaman', 'spinner', 'spinner', 'dm200', 'dm200'];
-		//Bestiary.standardMobRotation cases 16-19 (City): 3xGhoul/Elemental/Warlock,
-		//then Monk joins, then Golem; 19-20 triple the Golems
-		case 16:
-			return ['ghoul', 'ghoul', 'ghoul', 'elemental', 'warlock'];
-		case 17:
-			return ['ghoul', 'elemental', 'elemental', 'warlock', 'monk'];
-		case 18:
-			return ['ghoul', 'elemental', 'warlock', 'warlock', 'monk', 'monk', 'golem'];
-		case 19:
-			return ['elemental', 'warlock', 'warlock', 'monk', 'monk', 'golem', 'golem', 'golem'];
-		//cases 21-26 (Halls): Succubus/Eye, then Scorpio (the depth-19 +Succubus rare and
-		//the 1/50 alt-swaps are not modelled)
-		case 21:
-			return ['succubus', 'succubus', 'eye'];
-		case 22:
-			return ['succubus', 'eye'];
-		case 23:
-			return ['succubus', 'eye', 'eye', 'scorpio'];
-		case 24:
-			return ['succubus', 'eye', 'eye', 'scorpio', 'scorpio', 'scorpio'];
-		default:
-			return depth < 6
-				? ['skeleton', 'thief', 'dm100', 'dm100', 'guard', 'guard', 'necromancer', 'necromancer']
-				: depth < 11
-					? ['bat', 'brute', 'shaman', 'shaman', 'spinner', 'spinner', 'dm200', 'dm200']
-					: depth < 16
-						? ['elemental', 'warlock', 'warlock', 'monk', 'monk', 'golem', 'golem', 'golem']
-						: ['succubus', 'eye', 'eye', 'scorpio', 'scorpio', 'scorpio'];
-	}
+	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'monsterRosters');
+	if (!node) throw new Error('MWL dungeon roster is missing monsterRosters');
+	const effect = (key: string): string => {
+		const child = node.children.find((candidate) => candidate.tag === 'effect' && candidate.attributes.apply_to === key);
+		if (child?.attributes.set === undefined) throw new Error(`MWL dungeon roster is missing ${key}`);
+		return child.attributes.set;
+	};
+	const parseRoster = (raw: string, separator: string): Map<string, MonsterId[]> => new Map(raw.split(separator).map((entry) => {
+		const [key, roster] = entry.split('|');
+		if (!key || !roster) throw new Error(`MWL dungeon roster has invalid entry ${entry}`);
+		return [key, roster.split(',').map((kind) => kind as MonsterId)];
+	}));
+	const direct = parseRoster(effect('entries'), ';').get(String(depth));
+	if (direct) return direct;
+	const region = depth < 6 ? 'sewers' : depth < 11 ? 'caves' : depth < 16 ? 'city' : 'halls';
+	const fallback = parseRoster(effect('fallbacks'), ';').get(region);
+	if (!fallback) throw new Error(`MWL dungeon roster has no fallback for ${region}`);
+	return fallback;
 }
 
 // Combat formulas live in the framework-free simulation; retained export for callers.
 export { liveStats } from './simulation/combat';
 
-/** depth -> which boss owns that level, and what happens once it dies */
-export const BOSSES: Record<number, { kind: MonsterId; victory: string; next: 'continue' | 'end' }> = {
-	5: { kind: 'goo', victory: 'Goo bursts apart in a spray of ooze. You have slain the Sewers boss!', next: 'continue' },
-	10: {
-		kind: 'tengu',
-		victory: 'Tengu collapses, his tricks spent at last. You have slain the Prison boss!',
-		next: 'continue',
-	},
-	15: { kind: 'dm300', victory: 'DM-300 grinds to a halt. You have slain the Caves boss!', next: 'continue' },
-	//DwarfKing.java: HP=HT=300, the City boss; YogDzewa the Halls boss, scaled (see MONSTERS.yog)
-	20: { kind: 'king', victory: 'The Dwarf King crumbles from his throne. You have slain the City boss!', next: 'continue' },
-	25: { kind: 'yog', victory: 'Yog-Dzewa dissolves into screaming dark. The Amulet lies before you...', next: 'continue' },
-};
+/** Scenario boss transitions are authored in MWL; victory handling remains executable scene code. */
+export const BOSSES: Record<number, { kind: MonsterId; victory: string; next: 'continue' | 'end' }> = (() => {
+	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'bossTransitions');
+	if (!node) throw new Error('MWL scenario rule is missing bossTransitions');
+	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
+	const raw = effect?.attributes.set;
+	if (raw === undefined) throw new Error('MWL scenario rule is missing boss transitions');
+	const bosses = Object.fromEntries(raw.split(';').map((entry) => {
+		const [depthText, kind, next, ...victoryParts] = entry.split('|');
+		const depth = Number(depthText);
+		const victory = victoryParts.join('|');
+		if (!Number.isInteger(depth) || !kind || (next !== 'continue' && next !== 'end') || !victory) {
+			throw new Error(`MWL scenario rule has invalid boss transition ${entry}`);
+		}
+		return [depth, { kind: kind as MonsterId, victory, next: next as 'continue' | 'end' }];
+	})) as Record<number, { kind: MonsterId; victory: string; next: 'continue' | 'end' }>;
+	for (const chapter of MWL_SCENARIO_CHAPTERS) {
+		const boss = bosses[chapter.bossDepth];
+		if (!boss || boss.kind !== chapter.bossKind) throw new Error(`MWL scenario chapter ${chapter.id} does not match its boss transition`);
+	}
+	return bosses;
+})();
 
 /**
  * Mob.java loot, simplified to ground-item kinds this port can actually drop: every entry is
@@ -483,7 +425,7 @@ export const BOSSES: Record<number, { kind: MonsterId; victory: string; next: 'c
  * shape as mwg/actors' rollLoot (a single-entry table each, so the call below passes a
  * one-entry LootTable rather than reimplementing the roll).
  */
-export const MOB_LOOT: Record<string, { chance: number; kind: GroundItemKind }[]> = {
+const LEGACY_MOB_LOOT: Record<string, { chance: number; kind: GroundItemKind }[]> = {
 	//Sewers base loot, found missing entirely while auditing every real spawnable kind
 	//against MOB_LOOT: Snake.loot = Generator.Category.SEED (0.25), Gnoll.loot = Gold.class
 	//(0.5), Crab.loot = MysteryMeat.class (0.167, ~1/6) - Rat and Goo have no `loot` field in
@@ -555,13 +497,33 @@ export const MOB_LOOT: Record<string, { chance: number; kind: GroundItemKind }[]
 	swarm: [{ chance: 1 / 6, kind: 'potion' }],
 };
 
+const MWL_MOB_LOOT: Array<[string, { chance: number; kind: GroundItemKind }[]]> = (() => {
+	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'monsterLoot');
+	if (!node) throw new Error('MWL monster loot rule is missing monsterLoot');
+	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
+	const raw = effect?.attributes.set;
+	if (raw === undefined) throw new Error('MWL monster loot rule is missing entries');
+	return raw.split(';').map((entry) => {
+		const [monster, chanceText, kind] = entry.split('|');
+		const chance = Number(chanceText);
+		if (!monster || !kind || !Number.isFinite(chance) || chance < 0 || chance > 1) {
+			throw new Error(`MWL monster loot rule has invalid entry ${entry}`);
+		}
+		return [monster, [{ chance, kind: kind as GroundItemKind }]];
+	});
+})();
+
+/** Runtime loot data is read from MWL; the legacy table above remains only as an audit fixture
+ * until the remaining Java-specific category and multi-item drops are represented. */
+export const MOB_LOOT: Record<string, { chance: number; kind: GroundItemKind }[]> = Object.fromEntries(MWL_MOB_LOOT);
+
 /**
  * `Dungeon.LimitedDrops`: a handful of mobs further scale their own `lootChance()` down with
  * every successful drop this run, on top of the flat `MOB_LOOT` chance above - real Java's own
  * per-kind formula, keyed on how many times `n` this exact drop has already happened. Every kind
  * whose `MOB_LOOT` base chance matches Java's own `lootChance` field gets its decay here.
  */
-export const LIMITED_DROP_DECAY: Partial<Record<MonsterId, (n: number) => number>> = {
+const LEGACY_LIMITED_DROP_DECAY: Partial<Record<MonsterId, (n: number) => number>> = {
 	//Bat.lootChance(): (7-n)/7
 	bat: (n) => (7 - n) / 7,
 	//Necromancer.lootChance(): (6-n)/6
@@ -581,3 +543,24 @@ export const LIMITED_DROP_DECAY: Partial<Record<MonsterId, (n: number) => number
 	//Swarm.lootChance(): SWARM_HP counter, (5-n)/5
 	swarm: (n) => (5 - n) / 5,
 };
+
+const MWL_LIMITED_DROP_DECAY = (() => {
+	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'limitedDropDecay');
+	if (!node) throw new Error('MWL monster loot rule is missing limitedDropDecay');
+	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
+	const raw = effect?.attributes.set;
+	if (raw === undefined) throw new Error('MWL monster loot rule is missing limited-drop entries');
+	return Object.fromEntries(raw.split(';').map((entry) => {
+		const [monster, mode, valueText] = entry.split('|');
+		const value = Number(valueText);
+		if (!monster || !mode || !Number.isFinite(value) || value <= 0 || (mode !== 'linear' && mode !== 'power')) {
+			throw new Error(`MWL limited-drop rule has invalid entry ${entry}`);
+		}
+		const decay = mode === 'linear' ? (n: number) => (value - n) / value : (n: number) => Math.pow(1 / value, n);
+		return [monster, decay];
+	}));
+})();
+
+/** The Java-specific decay formulas stay executable hooks; their authored parameters come from
+ * MWL and are validated above. */
+export const LIMITED_DROP_DECAY: Partial<Record<MonsterId, (n: number) => number>> = MWL_LIMITED_DROP_DECAY;

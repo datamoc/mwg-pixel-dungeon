@@ -1,6 +1,7 @@
 import { Actors } from 'mwg';
 import type { GroundItem } from './combat';
 import type { GroundItemKind } from './dungeonConstants';
+import { MWL_MISSILE_BY_CLASS } from './mwlContent';
 
 const SHOP_WEAPON_TIERS: Record<string, number> = Object.fromEntries([
 	['WornShortsword', 1], ['MagesStaff', 1], ['Dagger', 1], ['Gloves', 1], ['Rapier', 1],
@@ -36,6 +37,7 @@ export function groundKindForItem(item: NonNullable<GroundItem['item']>, fallbac
 	if (item.id === 'honeypot') return 'honeypot';
 	if (item.id === 'alchemize') return 'alchemize';
 	if (item.id === 'bag') return 'bag';
+	if (item.id.startsWith('missile_')) return 'stone';
 	if (item.id === 'sandBag') return 'sandBag';
 	if (item.id.startsWith('potion')) return 'potion';
 	if (item.id.startsWith('scroll')) return 'scroll';
@@ -63,6 +65,14 @@ export function sourceInventoryItem(id: string, sourceClass: string | undefined,
 	if (id.toLowerCase() === 'seed') return { id: 'seed', quantity: 1, identified: true, sourceClass };
 	const concrete = sourceClass ?? id;
 	const lower = concrete.toLowerCase();
+	const missile = MWL_MISSILE_BY_CLASS.get(concrete);
+	if (missile) return {
+		id: missile.id,
+		quantity: 1,
+		identified: true,
+		tier: missile.tier,
+		sourceClass: missile.sourceClass,
+	};
 	if (lower.includes('gold')) return { id: 'gold', quantity: 1, identified: true, sourceClass: concrete };
 	//same short-id rename `generatedInventoryItem` needs for these two (see its comment)
 	if (lower.includes('potion')) return { id: concrete === 'PotionOfLiquidFlame' ? 'potionFlame' : concrete === 'PotionOfInvisibility' ? 'potionInvis' : concrete.replace(/^PotionOf/, 'potion'), quantity: 1, identified: false, sourceClass: concrete };

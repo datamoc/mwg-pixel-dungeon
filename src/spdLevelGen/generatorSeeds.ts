@@ -12,16 +12,27 @@
  * Found via the Phase 2 call-by-call RNG trace diff against the real Java harness.
  */
 import { SpdRandom } from '../spdRng';
+import { MWL_TRAIT_NODES } from '../mwlContent';
 
 /**
  * `Generator.Category.SEED`'s real class order and `defaultProbs` (`Generator.java`'s static
  * init). Rotberry is the quest item at weight 0; Starflower is the rare one at 2.
  */
-export const SEED_CLASSES = [
-	'rotberry', 'sungrass', 'fadeleaf', 'icecap', 'firebloom', 'sorrowmoss',
-	'swiftthistle', 'blindweed', 'stormvine', 'earthroot', 'mageroyal', 'starflower',
-] as const;
-export const SEED_DEFAULT_PROBS = [0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 2];
+const seedDeck = MWL_TRAIT_NODES.find((node) => node.attributes.id === 'seedDeck')
+	?? (() => { throw new Error('MWL seed deck is missing'); })();
+
+function seedDeckValue(key: string): string {
+	const effect = seedDeck.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === key);
+	const value = effect?.attributes.set;
+	if (value === undefined) throw new Error(`MWL seed deck is missing ${key}`);
+	return value;
+}
+
+export const SEED_CLASSES = seedDeckValue('classes').split(',').map((value) => value.trim()).filter(Boolean);
+export const SEED_DEFAULT_PROBS = seedDeckValue('default_probs').split(',').map(Number);
+if (SEED_CLASSES.length !== SEED_DEFAULT_PROBS.length) {
+	throw new Error('MWL seed deck classes and probabilities must have the same length');
+}
 
 const FIREBLOOM_INDEX = SEED_CLASSES.indexOf('firebloom');
 

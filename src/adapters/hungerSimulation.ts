@@ -6,10 +6,10 @@ interface HungerActor extends Actor {
 	id: string;
 }
 
-type HungerCommand = { state: HungerState };
+type HungerCommand = { state: HungerState; step?: number };
 
 const rule: SimulationRuntimeRule<HungerState, HungerCommand, HungerEvent, HungerActor> = (_state, command) => {
-	const { state, events } = advanceHunger(command.state);
+	const { state, events } = advanceHunger(command.state, command.step);
 	return { state, events, status: 'ready', cost: null };
 };
 
@@ -36,7 +36,7 @@ const runtime = new SimulationRuntime<HungerState, HungerCommand, HungerEvent, H
 /** Advances one hunger step through the runtime - the pure transition only; the caller still
  * owns committing the state and presenting the events, the same "scene executes the selected
  * effect" split `movement.ts` established in Step 5. */
-export function runHungerStep(state: HungerState): { state: HungerState; events: HungerEvent[] } {
-	const outcome = runtime.dispatch({ state });
+export function runHungerStep(state: HungerState, step = 10): { state: HungerState; events: HungerEvent[] } {
+	const outcome = runtime.dispatch({ state, step });
 	return { state: outcome.state, events: [...outcome.events] };
 }

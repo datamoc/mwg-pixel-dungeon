@@ -8,6 +8,8 @@ import { SpdRandom } from '../spdRng';
 import { PaintLevel, Terrain } from './paintLevel';
 import { paintLevel, TrapTable, Feeling } from './regularPainter';
 import { setGeneratorDepth } from '../spdItems/generator';
+import { MWL_TRAIT_NODES } from '../mwlContent';
+import { mwlPaintRule } from './mwlDungeonRules';
 
 /** `RegularLevel.nTraps()`: `Random.NormalIntRange(2, 3 + depth/5)` - SewerLevel doesn't override it. */
 function nTraps(depth: number): number {
@@ -17,11 +19,20 @@ function nTraps(depth: number): number {
 /** `SewerLevel.trapClasses()`/`trapChances()`. Trap *behavior* isn't ported (see PORT_COVERAGE.md) -
  *  these are name-only stand-ins, kept in the real class order/weights for RNG-order fidelity. */
 function trapTable(depth: number): TrapTable {
-	if (depth === 1) return { classes: ['wornDart'], chances: [1] };
-	return {
-		classes: ['chilling', 'shocking', 'toxic', 'wornDart', 'alarm', 'ooze', 'confusion', 'flock', 'summoning', 'teleportation', 'gateway'],
-		chances: [4, 4, 4, 4, 2, 2, 1, 1, 1, 1, 1],
+	const id = depth === 1 ? 'sewerTrapsDepth1' : 'sewerTrapsDefault';
+	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === id);
+	if (!node) throw new Error(`MWL dungeon rule is missing ${id}`);
+	const value = (key: string): string => {
+		const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === key);
+		if (effect?.attributes.set === undefined) throw new Error(`MWL dungeon rule ${id} is missing ${key}`);
+		return effect.attributes.set;
 	};
+	const classes = value('classes').split(',').map((entry) => entry.trim()).filter(Boolean);
+	const chances = value('chances').split(',').map(Number);
+	if (classes.length !== chances.length || chances.some((chance) => !Number.isFinite(chance))) {
+		throw new Error(`MWL dungeon rule ${id} has invalid trap data`);
+	}
+	return { classes, chances };
 }
 
 /** `SewerPainter.decorate()`. */
@@ -72,8 +83,8 @@ export function paintSewerLevel(rooms: Room[], depth: number, feeling: number | 
 	// `SewerLevel.painter()`: WATER feeling floods to 0.85 fill, GRASS feeling to 0.80.
 	return paintLevel(
 		rooms, depth,
-		{ fill: feeling === Feeling.WATER ? 0.85 : 0.3, smoothness: 5 },
-		{ fill: feeling === Feeling.GRASS ? 0.8 : 0.2, smoothness: 4 },
+		{ fill: feeling === Feeling.WATER ? mwlPaintRule('sewers').water.feeling : mwlPaintRule('sewers').water.normal, smoothness: mwlPaintRule('sewers').water.smoothness },
+		{ fill: feeling === Feeling.GRASS ? mwlPaintRule('sewers').grass.feeling : mwlPaintRule('sewers').grass.normal, smoothness: mwlPaintRule('sewers').grass.smoothness },
 		{ n: nTraps(depth), table: trapTable(depth) },
 		decorate,
 		feeling,

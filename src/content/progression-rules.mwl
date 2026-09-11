@@ -1,0 +1,16 @@
+[game]
+schema=0.1
+
+[trait]
+id=heroProgression
+name=Hero.level
+[effect]
+apply_to=max_level
+set=30
+[/effect]
+[effect]
+apply_to=experience_formula
+set=5|2|2
+[/effect]
+[/trait]
+[/game]

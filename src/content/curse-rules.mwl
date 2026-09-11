@@ -1,0 +1,12 @@
+[game]
+schema=0.1
+
+[trait]
+id=curseDefinitions
+name=ItemCurses
+[effect]
+apply_to=entries
+set=wayward|weapon|true|items.weapon.curses.wayward.name|items.weapon.curses.wayward.desc;annoying|weapon|true|items.weapon.curses.annoying.name|items.weapon.curses.annoying.desc;dazzling|weapon|true|items.weapon.curses.dazzling.name|items.weapon.curses.dazzling.desc;displacing|weapon|true|items.weapon.curses.displacing.name|items.weapon.curses.displacing.desc;explosive|weapon|true|items.weapon.curses.explosive.name|items.weapon.curses.explosive.desc;friendly|weapon|true|items.weapon.curses.friendly.name|items.weapon.curses.friendly.desc;polarized|weapon|true|items.weapon.curses.polarized.name|items.weapon.curses.polarized.desc;sacrificial|weapon|true|items.weapon.curses.sacrificial.name|items.weapon.curses.sacrificial.desc;stench|armor|true|items.armor.curses.stench.name|items.armor.curses.stench.desc;antientropy|armor|true|items.armor.curses.antientropy.name|items.armor.curses.antientropy.desc;bulk|armor|true|items.armor.curses.bulk.name|items.armor.curses.bulk.desc;corrosion|armor|true|items.armor.curses.corrosion.name|items.armor.curses.corrosion.desc;displacement|armor|true|items.armor.curses.displacement.name|items.armor.curses.displacement.desc;metabolism|armor|true|items.armor.curses.metabolism.name|items.armor.curses.metabolism.desc;multiplicity|armor|true|items.armor.curses.multiplicity.name|items.armor.curses.multiplicity.desc;overgrowth|armor|true|items.armor.curses.overgrowth.name|items.armor.curses.overgrowth.desc
+[/effect]
+[/trait]
+[/game]

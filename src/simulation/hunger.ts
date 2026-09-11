@@ -33,11 +33,11 @@ export const STARVING = 450;
  * replaces the port's older "flat max(1,round(maxHp/100)) damage every 10 ticks" guess with
  * Java's real continuous curve (e.g. HT=20 deals 1 damage roughly every 5 turns, not 10).
  */
-export function advanceHunger(previous: Readonly<HungerState>): HungerResult {
+export function advanceHunger(previous: Readonly<HungerState>, step = STEP): HungerResult {
 	const state = { ...previous };
 	const events: HungerEvent[] = [];
 	if (state.hunger >= STARVING) {
-		state.partialDamage += (STEP * state.maxHp) / 1000;
+		state.partialDamage += (step * state.maxHp) / 1000;
 		if (state.partialDamage > 1) {
 			const damage = Math.trunc(state.partialDamage);
 			state.partialDamage -= damage;
@@ -46,7 +46,7 @@ export function advanceHunger(previous: Readonly<HungerState>): HungerResult {
 			if (state.hp <= 0) events.push({ type: 'starvation-death' });
 		}
 	} else {
-		const newLevel = state.hunger + STEP;
+		const newLevel = state.hunger + step;
 		if (newLevel >= STARVING) {
 			events.push({ type: 'starving' });
 			state.hp -= 1;

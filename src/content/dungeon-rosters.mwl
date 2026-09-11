@@ -1,0 +1,16 @@
+[game]
+schema=0.1
+
+[trait]
+id=monsterRosters
+name=Bestiary.standardMobRotation
+[effect]
+apply_to=entries
+set=1|rat,rat,rat,snake;2|rat,rat,snake,gnoll,gnoll;3|rat,snake,gnoll,gnoll,gnoll,swarm,crab;4|gnoll,swarm,crab,crab,slime,slime;6|skeleton,skeleton,skeleton,thief,swarm;7|skeleton,skeleton,skeleton,thief,dm100,guard;8|skeleton,skeleton,thief,dm100,dm100,guard,guard,necromancer;9|skeleton,thief,dm100,dm100,guard,guard,necromancer,necromancer;11|bat,bat,bat,brute,shaman;12|bat,bat,brute,brute,shaman,spinner;13|bat,brute,brute,shaman,shaman,spinner,spinner,dm200;14|bat,brute,shaman,shaman,spinner,spinner,dm200,dm200;16|ghoul,ghoul,ghoul,elemental,warlock;17|ghoul,elemental,elemental,warlock,monk;18|ghoul,elemental,warlock,warlock,monk,monk,golem;19|elemental,warlock,warlock,monk,monk,golem,golem,golem;21|succubus,succubus,eye;22|succubus,eye;23|succubus,eye,eye,scorpio;24|succubus,eye,eye,scorpio,scorpio,scorpio
+[/effect]
+[effect]
+apply_to=fallbacks
+set=sewers|skeleton,thief,dm100,dm100,guard,guard,necromancer,necromancer;caves|bat,brute,shaman,shaman,spinner,spinner,dm200,dm200;city|elemental,warlock,warlock,monk,monk,golem,golem,golem;halls|succubus,eye,eye,scorpio,scorpio,scorpio
+[/effect]
+[/trait]
+[/game]

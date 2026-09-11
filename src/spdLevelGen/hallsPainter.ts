@@ -17,6 +17,7 @@ import { SpdRandom } from '../spdRng';
 import { PaintLevel, Terrain, isPassableTerrain, neighbours8 } from './paintLevel';
 import { paintLevel, TrapTable, Feeling, mergeRooms } from './regularPainter';
 import { setGeneratorDepth } from '../spdItems/generator';
+import { mwlPaintRule, mwlTrapTable } from './mwlDungeonRules';
 
 /** `RegularLevel.nTraps()`: `Random.NormalIntRange(2, 3 + depth/5)` - `depth/5` is 4 across all
  *  of Halls (21-24), giving range (2, 7). `HallsLevel` doesn't override `nTraps()`. */
@@ -29,14 +30,7 @@ function nTraps(depth: number): number {
  *  PORT_COVERAGE.md) but `grim` specifically already has a real behaviour, routed via
  *  `gameBridge.ts`'s `TRAP_BEHAVIOUR` - shared with `main.ts`'s own `TRAP_KINDS`. */
 function trapTable(): TrapTable {
-	return {
-		classes: [
-			'frost', 'storm', 'corrosion', 'blazing', 'disintegration',
-			'rockfall', 'flashing', 'guardian', 'weakening',
-			'disarming', 'summoning', 'warping', 'cursing', 'grim', 'pitfall', 'distortion', 'gateway', 'geyser',
-		],
-		chances: [4, 4, 4, 4, 4, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-	};
+	return mwlTrapTable('halls');
 }
 
 /** `HallsPainter.decorate()`. */
@@ -78,8 +72,8 @@ export function paintHallsLevel(rooms: Room[], depth: number, feeling: number | 
 	setGeneratorDepth(depth);
 	return paintLevel(
 		rooms, depth,
-		{ fill: feeling === Feeling.WATER ? 0.70 : 0.15, smoothness: 6 },
-		{ fill: feeling === Feeling.GRASS ? 0.65 : 0.10, smoothness: 3 },
+		{ fill: feeling === Feeling.WATER ? mwlPaintRule('halls').water.feeling : mwlPaintRule('halls').water.normal, smoothness: mwlPaintRule('halls').water.smoothness },
+		{ fill: feeling === Feeling.GRASS ? mwlPaintRule('halls').grass.feeling : mwlPaintRule('halls').grass.normal, smoothness: mwlPaintRule('halls').grass.smoothness },
 		{ n: nTraps(depth), table: trapTable() },
 		decorate,
 		feeling,

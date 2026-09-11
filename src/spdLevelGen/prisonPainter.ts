@@ -18,6 +18,7 @@ import { PaintLevel, Terrain } from './paintLevel';
 import { paintLevel, TrapTable, Feeling } from './regularPainter';
 import { setGeneratorDepth } from '../spdItems/generator';
 import { spawnWandmaker } from './wandmaker';
+import { mwlPaintRule, mwlTrapTable } from './mwlDungeonRules';
 
 /** `RegularLevel.nTraps()`: `Random.NormalIntRange(2, 3 + depth/5)` - PrisonLevel doesn't
  *  override it either, but note `depth/5` is 1 across all of Prison, so the range is (2, 4)
@@ -31,18 +32,7 @@ function nTraps(depth: number): number {
  *  PORT_COVERAGE.md); these are name-only stand-ins in the real class order/weights, which is
  *  what `Random.chances` and the `avoidsHallways` routing need. */
 function trapTable(): TrapTable {
-	return {
-		classes: [
-			'chilling', 'shocking', 'toxic', 'burning', 'poisonDart',
-			'alarm', 'ooze', 'gripping',
-			'confusion', 'flock', 'summoning', 'teleportation', 'gateway', 'geyser',
-		],
-		chances: [
-			4, 4, 4, 4, 4,
-			2, 2, 2,
-			1, 1, 1, 1, 1, 1,
-		],
-	};
+	return mwlTrapTable('prison');
 }
 
 /** `PrisonPainter.decorate()`. */
@@ -98,8 +88,8 @@ export function paintPrisonLevel(rooms: Room[], depth: number, feeling: number |
 	setGeneratorDepth(depth);
 	return paintLevel(
 		rooms, depth,
-		{ fill: feeling === Feeling.WATER ? 0.9 : 0.3, smoothness: 4 },
-		{ fill: feeling === Feeling.GRASS ? 0.8 : 0.2, smoothness: 3 },
+		{ fill: feeling === Feeling.WATER ? mwlPaintRule('prison').water.feeling : mwlPaintRule('prison').water.normal, smoothness: mwlPaintRule('prison').water.smoothness },
+		{ fill: feeling === Feeling.GRASS ? mwlPaintRule('prison').grass.feeling : mwlPaintRule('prison').grass.normal, smoothness: mwlPaintRule('prison').grass.smoothness },
 		{ n: nTraps(depth), table: trapTable() },
 		decorate,
 		feeling,

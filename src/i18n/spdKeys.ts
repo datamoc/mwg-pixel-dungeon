@@ -15,6 +15,7 @@
  * instead: the Cleric (a later version than these `.properties`; the class itself came from
  * tag `v3.3.8`) and Berserk (which has status strings but no `.name`).
  */
+import { MWL_CONSUMABLE_ITEMS, MWL_TRAIT_NODES } from '../mwlContent';
 
 /** `actors.mobs.*` - the port's roster against SPD's own class names */
 export const MOB_KEYS: Record<string, string> = {
@@ -137,7 +138,7 @@ export const GROUND_ITEM_KEYS: Record<string, string> = {
 };
 
 /** the bag's item ids, against SPD's real item names */
-export const ITEM_KEYS: Record<string, string> = {
+const LEGACY_ITEM_KEYS: Record<string, string> = {
 	kingsCrown: 'items.kingscrown.name',
 	clothArmor: 'items.armor.clotharmor.name',
 	armor: 'items.armor.clotharmor.name',
@@ -204,6 +205,12 @@ export const ITEM_KEYS: Record<string, string> = {
 	sandBag: 'items.artifacts.timekeepershourglass$sandbag.name',
 };
 
+/** Consumable names are authored in MWL; retain legacy aliases for runtime-only quest items. */
+export const ITEM_KEYS: Record<string, string> = {
+	...LEGACY_ITEM_KEYS,
+	...Object.fromEntries(MWL_CONSUMABLE_ITEMS.map((item) => [item.id, item.name])),
+};
+
 /** `items.rings.*` */
 export const RING_KEYS: Record<string, string> = {
 	accuracy: 'items.rings.ringofaccuracy.name',
@@ -212,6 +219,12 @@ export const RING_KEYS: Record<string, string> = {
 	tenacity: 'items.rings.ringoftenacity.name',
 	haste: 'items.rings.ringofhaste.name',
 	energy: 'items.rings.ringofenergy.name',
+	wealth: 'items.rings.ringofwealth.name',
+	arcana: 'items.rings.ringofarcana.name',
+	force: 'items.rings.ringofforce.name',
+	sharpshooting: 'items.rings.ringofsharpshooting.name',
+	elements: 'items.rings.ringofelements.name',
+	furor: 'items.rings.ringoffuror.name',
 };
 
 /** `actors.buffs.*`; Berserk carries status strings but no `.name` of its own */
@@ -253,32 +266,13 @@ export const TRAP_KEYS: Record<string, string> = {
  * Still simplified: SPD shuffles which appearance maps to which item per run, and this port
  * assigns them from its own seeded table (see `APPEARANCE_TABLES`).
  */
-export const POTION_APPEARANCE_KEYS: readonly string[] = [
-	'items.potions.potion.turquoise',
-	'items.potions.potion.crimson',
-	'items.potions.potion.azure',
-	'items.potions.potion.jade',
-	'items.potions.potion.golden',
-	'items.potions.potion.magenta',
-	'items.potions.potion.charcoal',
-	'items.potions.potion.ivory',
-	'items.potions.potion.amber',
-	'items.potions.potion.bistre',
-	'items.potions.potion.indigo',
-	'items.potions.potion.silver',
-];
+function appearanceKeys(id: string): readonly string[] {
+	const trait = MWL_TRAIT_NODES.find((node) => node.attributes.id === id);
+	const effect = trait?.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'keys');
+	const keys = effect?.attributes.set?.split(',').map((key) => key.trim()).filter(Boolean);
+	if (!keys?.length) throw new Error(`MWL appearance table is missing ${id}`);
+	return keys;
+}
 
-export const SCROLL_APPEARANCE_KEYS: readonly string[] = [
-	'items.scrolls.scroll.kaunan',
-	'items.scrolls.scroll.sowilo',
-	'items.scrolls.scroll.laguz',
-	'items.scrolls.scroll.yngvi',
-	'items.scrolls.scroll.gyfu',
-	'items.scrolls.scroll.raido',
-	'items.scrolls.scroll.isaz',
-	'items.scrolls.scroll.mannaz',
-	'items.scrolls.scroll.naudiz',
-	'items.scrolls.scroll.berkanan',
-	'items.scrolls.scroll.odal',
-	'items.scrolls.scroll.tiwaz',
-];
+export const POTION_APPEARANCE_KEYS = appearanceKeys('potionAppearances');
+export const SCROLL_APPEARANCE_KEYS = appearanceKeys('scrollAppearances');

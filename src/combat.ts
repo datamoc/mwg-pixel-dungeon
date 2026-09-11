@@ -18,9 +18,6 @@ export const rollHit = combat.rollHit;
 export const rollDamage = combat.rollDamage;
 export const tickBuffs = combat.tickBuffs;
 
-/** Talent.tierLevelThresholds = [0,2,7,13,21,31] - tiers unlock at 2/7/13/21 */
-export const TALENT_TIERS = [0, 2, 7, 13, 21, 31];
-
 export type { Step } from './simulation/combatState';
 
 /** a creature on the map - the hero and every monster share this shape */

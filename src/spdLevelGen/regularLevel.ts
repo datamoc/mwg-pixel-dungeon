@@ -10,6 +10,7 @@ import { Room } from './room';
 import { LoopBuilder } from './loopBuilder';
 import { FigureEightBuilder } from './figureEightBuilder';
 import { SpdRandom } from '../spdRng';
+import { MWL_TRAIT_NODES } from '../mwlContent';
 import { STANDARD_ROOM_CLASS_ORDER } from './rooms/standard/registry';
 import { createSpecialRoom, initSpecialRoomFloor } from './rooms/special/registry';
 import { createSecretRoom, secretsForFloor } from './rooms/secret/registry';
@@ -22,48 +23,34 @@ import { randomGooBossKind } from './rooms/sewerBoss/gooBossRoom';
  * far; every other `RegularLevel` subclass inherits the base `return 0`, which would generate
  * a degenerate floor, so `regionRoomCounts()` throws rather than silently doing that.
  */
-function sewerStandardRooms(forceMax: boolean): number {
-	if (forceMax) return 6;
-	return 4 + SpdRandom.chances([1, 3, 1]);
-}
-function sewerSpecialRooms(forceMax: boolean): number {
-	if (forceMax) return 2;
-	return 1 + SpdRandom.chances([1, 4]);
-}
-function prisonStandardRooms(forceMax: boolean): number {
-	if (forceMax) return 6;
-	return 5 + SpdRandom.chances([1, 1]);
-}
-function prisonSpecialRooms(forceMax: boolean): number {
-	if (forceMax) return 3;
-	return 1 + SpdRandom.chances([1, 3, 1]);
-}
-/** `CavesLevel.standardRooms()`/`specialRooms()`. */
-function cavesStandardRooms(forceMax: boolean): number {
-	if (forceMax) return 7;
-	return 6 + SpdRandom.chances([2, 1]);
-}
-function cavesSpecialRooms(forceMax: boolean): number {
-	if (forceMax) return 3;
-	return 2 + SpdRandom.chances([4, 1]);
-}
-/** `CityLevel.standardRooms()`/`specialRooms()`. */
-function cityStandardRooms(forceMax: boolean): number {
-	if (forceMax) return 8;
-	return 6 + SpdRandom.chances([1, 3, 1]);
-}
-function citySpecialRooms(forceMax: boolean): number {
-	if (forceMax) return 3;
-	return 2 + SpdRandom.chances([2, 1]);
-}
-/** `HallsLevel.standardRooms()`/`specialRooms()`. */
-function hallsStandardRooms(forceMax: boolean): number {
-	if (forceMax) return 9;
-	return 8 + SpdRandom.chances([2, 1]);
-}
-function hallsSpecialRooms(forceMax: boolean): number {
-	if (forceMax) return 3;
-	return 2 + SpdRandom.chances([1, 1]);
+const REGION_ROOM_COUNTS = (() => {
+	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'regionRoomCounts');
+	if (!node) throw new Error('MWL room rule is missing regionRoomCounts');
+	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
+	const raw = effect?.attributes.set;
+	if (raw === undefined) throw new Error('MWL room rule is missing region counts');
+	return new Map(raw.split(';').map((entry) => {
+		const [region, standardMaxText, standardBaseText, standardWeightsText, specialMaxText, specialBaseText, specialWeightsText] = entry.split('|');
+		const standardMax = Number(standardMaxText), standardBase = Number(standardBaseText), specialMax = Number(specialMaxText), specialBase = Number(specialBaseText);
+		const standardWeights = standardWeightsText?.split(',').map(Number) ?? [];
+		const specialWeights = specialWeightsText?.split(',').map(Number) ?? [];
+		if (!region || !Number.isInteger(standardMax) || !Number.isInteger(standardBase) || !Number.isInteger(specialMax) || !Number.isInteger(specialBase)
+			|| standardWeights.length === 0 || specialWeights.length === 0
+			|| standardWeights.some((weight) => !Number.isFinite(weight) || weight < 0)
+			|| specialWeights.some((weight) => !Number.isFinite(weight) || weight < 0)) {
+			throw new Error(`MWL room rule has invalid region counts ${entry}`);
+		}
+		return [region, { standardMax, standardBase, standardWeights, specialMax, specialBase, specialWeights }];
+	}));
+})();
+
+function regionRoomCount(region: string, kind: 'standard' | 'special', forceMax: boolean): number {
+	const counts = REGION_ROOM_COUNTS.get(region);
+	if (!counts) throw new Error(`MWL room rule has no counts for ${region}`);
+	const max = kind === 'standard' ? counts.standardMax : counts.specialMax;
+	const base = kind === 'standard' ? counts.standardBase : counts.specialBase;
+	const weights = kind === 'standard' ? counts.standardWeights : counts.specialWeights;
+	return forceMax ? max : base + SpdRandom.chances(weights);
 }
 
 /** `Dungeon.shopOnLevel()`: the first floor of each region past the Sewers gets a shop. */
@@ -86,24 +73,31 @@ function regionForDepth(depth: number): 'sewers' | 'prison' | 'caves' | 'city' |
  *  `CellBlockRoom` (4-6) instead; Caves' zeroes those in turn and enables `CaveRoom`/
  *  `CavesFissureRoom`/`CirclePitRoom` (7-9). The 10 shared "misc" classes (16-25) keep weight 1
  *  in all three regions. */
-const STANDARD_ROOM_CHANCES: Record<number, number[]> = {
-	1: [10, 10, 10, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0],
-	2: [10, 10, 10, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-	5: [10, 10, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-	6: [10, 0, 0, 0, 10, 10, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-	11: [10, 0, 0, 0, 0, 0, 0, 10, 10, 5, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-	16: [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 5, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-	21: [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-};
-STANDARD_ROOM_CHANCES[3] = STANDARD_ROOM_CHANCES[4] = STANDARD_ROOM_CHANCES[2];
-STANDARD_ROOM_CHANCES[7] = STANDARD_ROOM_CHANCES[8] = STANDARD_ROOM_CHANCES[9] =
-	STANDARD_ROOM_CHANCES[10] = STANDARD_ROOM_CHANCES[6];
-STANDARD_ROOM_CHANCES[12] = STANDARD_ROOM_CHANCES[13] = STANDARD_ROOM_CHANCES[14] =
-	STANDARD_ROOM_CHANCES[11];
-STANDARD_ROOM_CHANCES[17] = STANDARD_ROOM_CHANCES[18] = STANDARD_ROOM_CHANCES[19] =
-	STANDARD_ROOM_CHANCES[16];
-STANDARD_ROOM_CHANCES[22] = STANDARD_ROOM_CHANCES[23] = STANDARD_ROOM_CHANCES[24] =
-	STANDARD_ROOM_CHANCES[21];
+const STANDARD_ROOM_CHANCE_ROWS = (() => {
+	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'standardRoomChances');
+	if (!node) throw new Error('MWL room rule is missing standardRoomChances');
+	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
+	const raw = effect?.attributes.set;
+	if (raw === undefined) throw new Error('MWL room rule is missing entries');
+	return raw.split(';').map((entry) => {
+		const [depthText, values] = entry.split('|');
+		const depth = Number(depthText);
+		const chances = values?.split(',').map(Number) ?? [];
+		if (!Number.isInteger(depth) || chances.length !== 26 || chances.some((chance) => !Number.isFinite(chance) || chance < 0)) {
+			throw new Error(`MWL room rule has invalid entry ${entry}`);
+		}
+		return [depth, chances] as const;
+	});
+})();
+
+function standardRoomChances(depth: number): number[] {
+	let selected = STANDARD_ROOM_CHANCE_ROWS[0]?.[1];
+	for (const [rowDepth, chances] of STANDARD_ROOM_CHANCE_ROWS) {
+		if (rowDepth <= depth) selected = chances;
+	}
+	if (!selected) throw new Error(`MWL room rule has no row for depth ${depth}`);
+	return selected;
+}
 
 /**
  * `RegularLevel.initRooms()`. `EntranceRoom`/`ExitRoom` both extend `StandardRoom` in Java, so
@@ -122,10 +116,7 @@ function initRooms(depth: number, feelingLarge: boolean, feelingSecrets: boolean
 	rooms.push(entrance, exit);
 
 	const region = regionForDepth(depth);
-	const standards0 = region === 'halls' ? hallsStandardRooms(feelingLarge)
-		: region === 'city' ? cityStandardRooms(feelingLarge)
-		: region === 'caves' ? cavesStandardRooms(feelingLarge)
-		: region === 'prison' ? prisonStandardRooms(feelingLarge) : sewerStandardRooms(feelingLarge);
+	const standards0 = regionRoomCount(region, 'standard', feelingLarge);
 	const standards = feelingLarge ? Math.ceil(standards0 * 1.5) : standards0;
 
 	for (let i = 0; i < standards; i++) {
@@ -134,7 +125,7 @@ function initRooms(depth: number, feelingLarge: boolean, feelingSecrets: boolean
 			// StandardRoom.createRoom(): Random.chances(chances[depth]) picks the concrete
 			// class via Reflection.newInstance - now wired to the real 14-class registry (see
 			// rooms/standard/registry.ts) instead of discarding the roll.
-			const table = STANDARD_ROOM_CHANCES[depth] ?? STANDARD_ROOM_CHANCES[1];
+			const table = standardRoomChances(depth);
 			const idx = SpdRandom.chances(table);
 			const standardKind = STANDARD_ROOM_CLASS_ORDER[idx];
 			if (!standardKind) {
@@ -158,10 +149,7 @@ function initRooms(depth: number, feelingLarge: boolean, feelingSecrets: boolean
 		rooms.push(shop);
 	}
 
-	const specials0 = region === 'halls' ? hallsSpecialRooms(feelingLarge)
-		: region === 'city' ? citySpecialRooms(feelingLarge)
-		: region === 'caves' ? cavesSpecialRooms(feelingLarge)
-		: region === 'prison' ? prisonSpecialRooms(feelingLarge) : sewerSpecialRooms(feelingLarge);
+	const specials0 = regionRoomCount(region, 'special', feelingLarge);
 	const specials = feelingLarge ? specials0 + 1 : specials0;
 
 	// SpecialRoom.initForFloor(): must run before the specials loop rolls any SpecialRoom class,
@@ -258,7 +246,7 @@ function sewerBossInitRooms(depth: number): Room[] {
 	rooms.push(entrance, exit);
 
 	for (let i = 0; i < 3; i++) {
-		const table = STANDARD_ROOM_CHANCES[depth] ?? STANDARD_ROOM_CHANCES[1];
+		const table = standardRoomChances(depth);
 		const idx = SpdRandom.chances(table);
 		const standardKind = STANDARD_ROOM_CLASS_ORDER[idx];
 		if (!standardKind) {

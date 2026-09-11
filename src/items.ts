@@ -10,6 +10,8 @@
  * by tier and name. Actual damage calculation is in main.ts using syncHeroFromStats().
  */
 
+import { MWL_ITEM_NODES, MWL_RING_ITEMS } from './mwlContent';
+
 export interface ItemDef {
 	id: string;
 	nameKey: string;
@@ -31,134 +33,123 @@ export interface WandDef extends ItemDef {
 }
 
 export interface RingDef extends ItemDef {
-	stat: 'accuracy' | 'evasion' | 'strength' | 'tenacity';
+	stat: string;
 }
 
-// WEAPONS by tier (5 tiers × 5-7 weapons each)
-export const WEAPONS: Record<number, WeaponDef[]> = {
-	1: [
-		{ id: 'wornshortsword', nameKey: 'port.name.wornshortsword', tier: 1 },
-		{ id: 'magesstaff', nameKey: 'port.name.magesstaff', tier: 1 },
-		{ id: 'dagger', nameKey: 'port.name.dagger', tier: 1 },
-		{ id: 'gloves', nameKey: 'port.name.gloves', tier: 1, speed: 2 },
-		{ id: 'rapier', nameKey: 'port.name.rapier', tier: 1 },
-	],
-	2: [
-		{ id: 'shortsword', nameKey: 'items.weapon.melee.shortsword.name', tier: 2 },
-		{ id: 'handaxe', nameKey: 'items.weapon.melee.handaxe.name', tier: 2 },
-		{ id: 'spear', nameKey: 'items.weapon.melee.spear.name', tier: 2 },
-		{ id: 'quarterstaff', nameKey: 'items.weapon.melee.quarterstaff.name', tier: 2 },
-		{ id: 'dirk', nameKey: 'items.weapon.melee.dirk.name', tier: 2 },
-		{ id: 'sickle', nameKey: 'items.weapon.melee.sickle.name', tier: 2 },
-	],
-	3: [
-		{ id: 'sword', nameKey: 'items.weapon.melee.sword.name', tier: 3 },
-		{ id: 'mace', nameKey: 'items.weapon.melee.mace.name', tier: 3 },
-		{ id: 'scimitar', nameKey: 'items.weapon.melee.scimitar.name', tier: 3 },
-		{ id: 'roundshield', nameKey: 'items.weapon.melee.roundshield.name', tier: 3 },
-		{ id: 'sai', nameKey: 'items.weapon.melee.sai.name', tier: 3 },
-		{ id: 'whip', nameKey: 'items.weapon.melee.whip.name', tier: 3 },
-	],
-	4: [
-		{ id: 'longsword', nameKey: 'items.weapon.melee.longsword.name', tier: 4 },
-		{ id: 'battleaxe', nameKey: 'items.weapon.melee.battleaxe.name', tier: 4 },
-		{ id: 'flail', nameKey: 'items.weapon.melee.flail.name', tier: 4 },
-		{ id: 'unicblade', nameKey: 'items.weapon.melee.runicblade.name', tier: 4 },
-		{ id: 'assassinsblade', nameKey: 'items.weapon.melee.assassinsblade.name', tier: 4 },
-		{ id: 'crossbow', nameKey: 'items.weapon.melee.crossbow.name', tier: 4 },
-		{ id: 'katana', nameKey: 'items.weapon.melee.katana.name', tier: 4 },
-	],
-	5: [
-		{ id: 'greatsword', nameKey: 'items.weapon.melee.greatsword.name', tier: 5 },
-		{ id: 'warhammer', nameKey: 'items.weapon.melee.warhammer.name', tier: 5 },
-		{ id: 'glaive', nameKey: 'items.weapon.melee.glaive.name', tier: 5 },
-		{ id: 'greataxe', nameKey: 'items.weapon.melee.greataxe.name', tier: 5 },
-		{ id: 'greatshield', nameKey: 'items.weapon.melee.greatshield.name', tier: 5 },
-		{ id: 'gauntlet', nameKey: 'items.weapon.melee.gauntlet.name', tier: 5 },
-		{ id: 'warscythe', nameKey: 'items.weapon.melee.warscythe.name', tier: 5 },
-	],
+/** Equipment catalogue authored in `src/content/items.mwl`, compiled before TypeScript. */
+function requiredItemAttribute(attributes: Readonly<Record<string, string | undefined>>, key: string): string {
+	const value = attributes[key];
+	if (value === undefined) throw new Error(`MWL item definition is missing ${key}`);
+	return value;
+}
+
+function itemNumber(attributes: Readonly<Record<string, string | undefined>>, key: string): number {
+	const value = Number(requiredItemAttribute(attributes, key));
+	if (!Number.isFinite(value)) throw new Error(`MWL item definition has invalid ${key}`);
+	return value;
+}
+
+function itemIdParts(id: string): { baseId: string; tier: number; armorType?: ArmorDef['type'] } {
+	const armor = /^armor_(.+)_t(\d+)_(cloth|leather|mail|scale|plate)$/.exec(id);
+	if (armor) return { baseId: armor[1], tier: Number(armor[2]), armorType: armor[3] as ArmorDef['type'] };
+	const equipment = /^(?:weapon|wand)_(.+)_t(\d+)$/.exec(id);
+	if (equipment) return { baseId: equipment[1], tier: Number(equipment[2]) };
+	throw new Error(`MWL equipment id has invalid shape: ${id}`);
+}
+
+function effectNumber(node: (typeof MWL_ITEM_NODES)[number], key: string): number | undefined {
+	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === key);
+	return effect?.attributes.set === undefined ? undefined : itemNumber(effect.attributes, 'set');
+}
+
+function requiredEffectNumber(node: (typeof MWL_ITEM_NODES)[number], key: string): number {
+	const value = effectNumber(node, key);
+	if (value === undefined) throw new Error(`MWL item definition is missing effect ${key}`);
+	return value;
+}
+
+function byTier<T extends ItemDef>(items: readonly T[]): Record<number, T[]> {
+	return items.reduce<Record<number, T[]>>((groups, item) => {
+		(groups[item.tier] ??= []).push(item);
+		return groups;
+	}, {});
+}
+
+const authoredEquipment = MWL_ITEM_NODES.filter((node) => {
+	const slot = node.attributes.slot;
+	return slot === 'weapon' || slot === 'armor' || slot === 'wand';
+});
+
+const authoredWeapons = authoredEquipment
+	.filter((node) => node.attributes.slot === 'weapon')
+	.map((node): WeaponDef => {
+		const parts = itemIdParts(requiredItemAttribute(node.attributes, 'id'));
+		const speed = effectNumber(node, 'speed');
+		return {
+		id: parts.baseId,
+		nameKey: requiredItemAttribute(node.attributes, 'name'),
+		tier: parts.tier,
+		...(speed === undefined ? {} : { speed }),
+	};
+	});
+
+export const WEAPONS: Record<number, WeaponDef[]> = byTier(authoredWeapons);
+
+const authoredArmor = authoredEquipment
+	.filter((node) => node.attributes.slot === 'armor')
+	.map((node): ArmorDef => {
+		const parts = itemIdParts(requiredItemAttribute(node.attributes, 'id'));
+		if (!parts.armorType) throw new Error(`MWL armor id is missing its armor type: ${node.attributes.id}`);
+		return {
+		id: parts.baseId,
+		nameKey: requiredItemAttribute(node.attributes, 'name'),
+		tier: parts.tier,
+		type: parts.armorType,
+	};
+	});
+
+export const ARMOR: Record<number, ArmorDef[]> = byTier(authoredArmor);
+
+const authoredWands = authoredEquipment
+	.filter((node) => node.attributes.slot === 'wand')
+	.map((node): WandDef => {
+		const parts = itemIdParts(requiredItemAttribute(node.attributes, 'id'));
+		return {
+		id: parts.baseId,
+		nameKey: requiredItemAttribute(node.attributes, 'name'),
+		tier: parts.tier,
+		minDamage: requiredEffectNumber(node, 'min_damage'),
+		maxDamage: requiredEffectNumber(node, 'max_damage'),
+	};
+	});
+
+export const WANDS: Record<number, WandDef[]> = byTier(authoredWands);
+
+
+
+// MWL owns the ring catalogue and effect metadata; SPD-specific formulas remain in
+// ringModifiers.ts/main.ts because MWL intentionally describes content, not Java combat code.
+const RING_NAME_KEYS: Record<string, string> = {
+	ringAccuracy: 'items.rings.ringofaccuracy.name',
+	ringEvasion: 'items.rings.ringofevasion.name',
+	ringMight: 'items.rings.ringofmight.name',
+	ringTenacity: 'items.rings.ringoftenacity.name',
+	ringHaste: 'items.rings.ringofhaste.name',
+	ringEnergy: 'items.rings.ringofenergy.name',
+	ringWealth: 'items.rings.ringofwealth.name',
+	ringArcana: 'items.rings.ringofarcana.name',
+	ringForce: 'items.rings.ringofforce.name',
+	ringSharpshooting: 'items.rings.ringofsharpshooting.name',
+	ringElements: 'items.rings.ringofelements.name',
+	ringFuror: 'items.rings.ringoffuror.name',
 };
 
-// ARMOR by tier (cloth, leather, mail, scale, plate + class variants)
-export const ARMOR: Record<number, ArmorDef[]> = {
-	1: [{ id: 'clothArmor', nameKey: 'items.armor.clotharmor.name', tier: 1, type: 'cloth' }],
-	2: [{ id: 'leatherArmor', nameKey: 'items.armor.leatherarmor.name', tier: 2, type: 'leather' }],
-	3: [{ id: 'mailArmor', nameKey: 'items.armor.mailarmor.name', tier: 3, type: 'mail' }],
-	4: [{ id: 'scaleArmor', nameKey: 'items.armor.scalearmor.name', tier: 4, type: 'scale' }],
-	5: [{ id: 'plateArmor', nameKey: 'items.armor.platearmor.name', tier: 5, type: 'plate' }],
-};
-
-// WANDS (10 types, each available at tiers 1-5)
-export const WANDS: Record<number, WandDef[]> = {
-	1: [
-		{ id: 'wandmagicmissile', nameKey: 'items.wands.wandofmagicmissile.name', tier: 1, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandfirebolt', nameKey: 'items.wands.wandoffirebolt.name', tier: 1, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandcorruption', nameKey: 'items.wands.wandofcorruption.name', tier: 1, minDamage: 1, maxDamage: 6 },
-		{ id: 'wandfrost', nameKey: 'items.wands.wandoffrost.name', tier: 1, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandlightning', nameKey: 'items.wands.wandoflightning.name', tier: 1, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandblast', nameKey: 'items.wands.wandofblast.name', tier: 1, minDamage: 1, maxDamage: 6 },
-		{ id: 'wandlivingearth', nameKey: 'items.wands.wandoflivingearth.name', tier: 1, minDamage: 1, maxDamage: 6 },
-		{ id: 'wandregrowth', nameKey: 'items.wands.wandofregrowth.name', tier: 1, minDamage: 1, maxDamage: 1 },
-		{ id: 'wandprismatic', nameKey: 'items.wands.wandofprismatic.name', tier: 1, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandwarding', nameKey: 'items.wands.wandofwarding.name', tier: 1, minDamage: 1, maxDamage: 1 },
-	],
-	2: [
-		{ id: 'wandmagicmissile', nameKey: 'items.wands.wandofmagicmissile.name', tier: 2, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandfirebolt', nameKey: 'items.wands.wandoffirebolt.name', tier: 2, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandcorruption', nameKey: 'items.wands.wandofcorruption.name', tier: 2, minDamage: 1, maxDamage: 6 },
-		{ id: 'wandfrost', nameKey: 'items.wands.wandoffrost.name', tier: 2, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandlightning', nameKey: 'items.wands.wandoflightning.name', tier: 2, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandblast', nameKey: 'items.wands.wandofblast.name', tier: 2, minDamage: 1, maxDamage: 6 },
-		{ id: 'wandlivingearth', nameKey: 'items.wands.wandoflivingearth.name', tier: 2, minDamage: 1, maxDamage: 6 },
-		{ id: 'wandregrowth', nameKey: 'items.wands.wandofregrowth.name', tier: 2, minDamage: 1, maxDamage: 1 },
-		{ id: 'wandprismatic', nameKey: 'items.wands.wandofprismatic.name', tier: 2, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandwarding', nameKey: 'items.wands.wandofwarding.name', tier: 2, minDamage: 1, maxDamage: 1 },
-	],
-	3: [
-		{ id: 'wandmagicmissile', nameKey: 'items.wands.wandofmagicmissile.name', tier: 3, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandfirebolt', nameKey: 'items.wands.wandoffirebolt.name', tier: 3, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandcorruption', nameKey: 'items.wands.wandofcorruption.name', tier: 3, minDamage: 1, maxDamage: 6 },
-		{ id: 'wandfrost', nameKey: 'items.wands.wandoffrost.name', tier: 3, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandlightning', nameKey: 'items.wands.wandoflightning.name', tier: 3, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandblast', nameKey: 'items.wands.wandofblast.name', tier: 3, minDamage: 1, maxDamage: 6 },
-		{ id: 'wandlivingearth', nameKey: 'items.wands.wandoflivingearth.name', tier: 3, minDamage: 1, maxDamage: 6 },
-		{ id: 'wandregrowth', nameKey: 'items.wands.wandofregrowth.name', tier: 3, minDamage: 1, maxDamage: 1 },
-		{ id: 'wandprismatic', nameKey: 'items.wands.wandofprismatic.name', tier: 3, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandwarding', nameKey: 'items.wands.wandofwarding.name', tier: 3, minDamage: 1, maxDamage: 1 },
-	],
-	4: [
-		{ id: 'wandmagicmissile', nameKey: 'items.wands.wandofmagicmissile.name', tier: 4, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandfirebolt', nameKey: 'items.wands.wandoffirebolt.name', tier: 4, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandcorruption', nameKey: 'items.wands.wandofcorruption.name', tier: 4, minDamage: 1, maxDamage: 6 },
-		{ id: 'wandfrost', nameKey: 'items.wands.wandoffrost.name', tier: 4, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandlightning', nameKey: 'items.wands.wandoflightning.name', tier: 4, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandblast', nameKey: 'items.wands.wandofblast.name', tier: 4, minDamage: 1, maxDamage: 6 },
-		{ id: 'wandlivingearth', nameKey: 'items.wands.wandoflivingearth.name', tier: 4, minDamage: 1, maxDamage: 6 },
-		{ id: 'wandregrowth', nameKey: 'items.wands.wandofregrowth.name', tier: 4, minDamage: 1, maxDamage: 1 },
-		{ id: 'wandprismatic', nameKey: 'items.wands.wandofprismatic.name', tier: 4, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandwarding', nameKey: 'items.wands.wandofwarding.name', tier: 4, minDamage: 1, maxDamage: 1 },
-	],
-	5: [
-		{ id: 'wandmagicmissile', nameKey: 'items.wands.wandofmagicmissile.name', tier: 5, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandfirebolt', nameKey: 'items.wands.wandoffirebolt.name', tier: 5, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandcorruption', nameKey: 'items.wands.wandofcorruption.name', tier: 5, minDamage: 1, maxDamage: 6 },
-		{ id: 'wandfrost', nameKey: 'items.wands.wandoffrost.name', tier: 5, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandlightning', nameKey: 'items.wands.wandoflightning.name', tier: 5, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandblast', nameKey: 'items.wands.wandofblast.name', tier: 5, minDamage: 1, maxDamage: 6 },
-		{ id: 'wandlivingearth', nameKey: 'items.wands.wandoflivingearth.name', tier: 5, minDamage: 1, maxDamage: 6 },
-		{ id: 'wandregrowth', nameKey: 'items.wands.wandofregrowth.name', tier: 5, minDamage: 1, maxDamage: 1 },
-		{ id: 'wandprismatic', nameKey: 'items.wands.wandofprismatic.name', tier: 5, minDamage: 2, maxDamage: 8 },
-		{ id: 'wandwarding', nameKey: 'items.wands.wandofwarding.name', tier: 5, minDamage: 1, maxDamage: 1 },
-	],
-};
-
-// RINGS (4 types per the port's current system)
-export const RINGS: RingDef[] = [
-	{ id: 'ringAccuracy', nameKey: 'items.rings.ringofaccuracy.name', tier: 1, stat: 'accuracy' },
-	{ id: 'ringEvasion', nameKey: 'items.rings.ringofevasion.name', tier: 1, stat: 'evasion' },
-	{ id: 'ringMight', nameKey: 'items.rings.ringofmight.name', tier: 1, stat: 'strength' },
-	{ id: 'ringTenacity', nameKey: 'items.rings.ringoftenacity.name', tier: 1, stat: 'tenacity' },
-];
+export const RINGS: RingDef[] = MWL_RING_ITEMS.map((item) => ({
+	id: item.id,
+	nameKey: RING_NAME_KEYS[item.id] ?? item.name,
+	tier: 1,
+	stat: item.effects[0]?.applyTo ?? 'unknown',
+}));
 
 /**
  * Look up a weapon by tier and name (simplified search).

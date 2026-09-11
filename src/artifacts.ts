@@ -4,6 +4,8 @@
  * This is a foundational definitions file; full effect implementation requires system support.
  */
 
+import { MWL_ITEM_NODES } from './mwlContent';
+
 export interface ArtifactDef {
 	id: string;
 	nameKey: string;
@@ -16,92 +18,30 @@ export interface ArtifactDef {
 	rechargeRate: number;
 }
 
-/**
- * The 10 artifacts available in SPD (one per depth roughly).
- * Not all are fully implemented; this provides a reference for future completion.
- */
-export const ARTIFACTS: ArtifactDef[] = [
-	{
-		id: 'cloak',
-		nameKey: 'items.artifacts.cloakofshadows.name',
-		descriptionKey: 'items.artifacts.cloakofshadows.desc',
-		baseCharge: 40,
-		maxCharge: 40,
-		rechargeRate: 10,
-	},
-	{
-		id: 'armband',
-		nameKey: 'items.artifacts.armbandsofherculaneum.name',
-		descriptionKey: 'items.artifacts.armbandsofherculaneum.desc',
-		baseCharge: 10,
-		maxCharge: 10,
-		rechargeRate: 5,
-	},
-	{
-		id: 'capstone',
-		nameKey: 'items.artifacts.capstoneofexecution.name',
-		descriptionKey: 'items.artifacts.capstoneofexecution.desc',
-		baseCharge: 1,
-		maxCharge: 1,
-		rechargeRate: 30,
-	},
-	{
-		id: 'chalice',
-		nameKey: 'items.artifacts.chaliceofblood.name',
-		descriptionKey: 'items.artifacts.chaliceofblood.desc',
-		baseCharge: 30,
-		maxCharge: 30,
-		rechargeRate: 15,
-	},
-	{
-		id: 'chronometer',
-		nameKey: 'items.artifacts.timekeeperhourglass.name',
-		descriptionKey: 'items.artifacts.timekeeperhourglass.desc',
-		baseCharge: 100,
-		maxCharge: 100,
-		rechargeRate: 50,
-	},
-	{
-		id: 'dragonslayer',
-		nameKey: 'items.artifacts.demonslayerarmor.name',
-		descriptionKey: 'items.artifacts.demonslayerarmor.desc',
-		baseCharge: 0,
-		maxCharge: 0,
-		rechargeRate: 0,
-	},
-	{
-		id: 'emerald',
-		nameKey: 'items.artifacts.pickaxeofmining.name',
-		descriptionKey: 'items.artifacts.pickaxeofmining.desc',
-		baseCharge: 25,
-		maxCharge: 25,
-		rechargeRate: 10,
-	},
-	{
-		id: 'hourglass',
-		nameKey: 'items.artifacts.hourglass.name',
-		descriptionKey: 'items.artifacts.hourglass.desc',
-		baseCharge: 100,
-		maxCharge: 100,
-		rechargeRate: 40,
-	},
-	{
-		id: 'locket',
-		nameKey: 'items.artifacts.mysteriouslocket.name',
-		descriptionKey: 'items.artifacts.mysteriouslocket.desc',
-		baseCharge: 200,
-		maxCharge: 200,
-		rechargeRate: 80,
-	},
-	{
-		id: 'sandals',
-		nameKey: 'items.artifacts.sandalsoftime.name',
-		descriptionKey: 'items.artifacts.sandalsoftime.desc',
-		baseCharge: 50,
-		maxCharge: 50,
-		rechargeRate: 25,
-	},
-];
+/** Artifact definitions are authored in `src/content/artifacts.mwl`. */
+function artifactEffect(node: (typeof MWL_ITEM_NODES)[number], key: string): string {
+	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === key);
+	const value = effect?.attributes.set;
+	if (value === undefined) throw new Error(`MWL artifact ${node.attributes.id} is missing ${key}`);
+	return value;
+}
+
+function artifactNumber(node: (typeof MWL_ITEM_NODES)[number], key: string): number {
+	const value = Number(artifactEffect(node, key));
+	if (!Number.isFinite(value)) throw new Error(`MWL artifact ${node.attributes.id} has invalid ${key}`);
+	return value;
+}
+
+export const ARTIFACTS: ArtifactDef[] = MWL_ITEM_NODES
+	.filter((node) => node.attributes.slot === 'artifact')
+	.map((node): ArtifactDef => ({
+		id: node.attributes.id.replace(/^artifact_/, ''),
+		nameKey: node.attributes.name ?? (() => { throw new Error(`MWL artifact ${node.attributes.id} is missing name`); })(),
+		descriptionKey: artifactEffect(node, 'description'),
+		baseCharge: artifactNumber(node, 'base_charge'),
+		maxCharge: artifactNumber(node, 'max_charge'),
+		rechargeRate: artifactNumber(node, 'recharge_rate'),
+	}));
 
 /**
  * Look up an artifact by ID.

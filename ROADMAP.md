@@ -12,6 +12,101 @@ standalone `mw_games.global.js` build (no bundler needed). Serve the repo root (
 directly, so opening the file via `file://` won't work (see this project's own
 browser-verification workflow for why).
 
+## 0. Move authored game data into MWL resources
+
+Follow MWG's `examples/mwl-content` layout. The `.mwl` files are the source of truth for
+authored data; TypeScript supplies the engine, presentation, and explicit executable hooks.
+Do not add new authored content as object literals or scattered constants in the game code.
+
+- [x] Create `src/content/` as the canonical resource tree, using one or more `.mwl` files
+      per domain and stable path ordering for deterministic builds.
+- [x] Compile the resource tree before TypeScript and import generated `src/generated/` data;
+      the browser must not parse MWL at runtime. The first catalogue contains all twelve rings
+      and the adventure turn clock (`content/rings.mwl`).
+- [ ] Add the complete item catalogue: weapons, missiles, armor, wands, rings, artifacts,
+      potions, scrolls, seeds, runestones, bombs, alchemy ingredients, and crafting inputs.
+      Weapons, armor, wands, and rings are now authored in `src/content/items.mwl` and
+      `src/content/rings.mwl`; the ten artifact definitions are now authored in
+      `src/content/artifacts.mwl`. Missiles, consumables, alchemy, and crafting inputs still
+      Alchemy and crafting inputs still need to be added; potion and scroll generator decks are
+      now in `src/content/decks.mwl`.
+      The runestone generator deck is now in `src/content/runestones.mwl`. Keep Java formulas and
+      executable effects in explicit game hooks, referenced by MWL. The five missile generator
+      decks are now in `src/content/missiles.mwl`, and the five weapon-tier generator decks are
+      in `src/content/weapon-decks.mwl`; concrete missile behavior remains open.
+      The fifteen generated missile classes now also have MWL item definitions with tier and
+      base damage metadata, and generated loot preserves those identities through the inventory
+      boundary; class-ammo pickup/use and specialty effects remain open.
+      Floor-tier, affix-pool, and Ghost-reward generator tables are also authored in
+      `src/content/generator-tables.mwl` and `src/content/generator-rules.mwl`.
+      Wand, ring, artifact, and food generator decks are authored in
+      `src/content/generator-decks.mwl`; remaining generator metadata and concrete item behavior
+      are still open. The 48 generated potion, scroll, seed, and runestone item identities, plus
+      food and bomb identities, are now authored in `src/content/consumables.mwl` and feed the
+      runtime item-name map.
+      The initial alchemy energy table and portable food recipes are now authored in
+      `src/content/alchemy.mwl` and resolved through the MWG crafting transaction; the pot UI,
+      energy resource, catalysts, exotic recipes, and specialty bombs remain open.
+- [ ] Add actor and combat resources: hero classes, stats, talents, buffs, enchantments,
+      glyphs, curses, monster definitions, resistances, drops, and monster AI profiles.
+      Hero class kits are now authored in `src/content/classes.mwl` and adapted by `classes.ts`,
+      and the complete base monster-stat catalogue is now authored in `src/content/monsters.mwl`
+      and adapted by `monsters.ts`; talents, buffs, resistances, drops, AI profiles, and the
+      remaining actor metadata still need the same treatment. The current monster loot table is
+      now authored in `src/content/loot-rules.mwl`; Java-specific drop behavior still needs
+      further parity work. Its limited-drop decay parameters are also authored there, while the
+      Java formulas remain explicit hooks in `monsters.ts`. Actor classification flags are now
+      authored in `src/content/actor-rules.mwl`; special-turn AI profile assignments are now
+      authored there too, while detailed AI behavior and special abilities remain open. Talent
+      tree membership/order is now authored in `src/content/talent-rules.mwl`; talent formulas
+      and remaining Java-specific abilities remain open. Buff duration metadata is now authored
+      in `src/content/buff-rules.mwl`; buff behavior remains executable in the simulation layer.
+      Badge counters, thresholds, descriptions, and icon indices are now authored in
+      `src/content/badges.mwl`; achievement persistence and UI remain runtime adapters.
+      Hero level-cap and experience-curve parameters are authored in
+      `src/content/progression-rules.mwl`; the arithmetic remains an executable hook.
+- [ ] Add dungeon resources: terrain and visual asset references, room templates, floor/depth
+      tables, traps, plants, special rooms, NPCs, quests, boss phases, and branch transitions.
+      Sewer trap class order and weights are now authored in `src/content/dungeon-rules.mwl`;
+      the standard monster roster is now authored in `src/content/dungeon-rosters.mwl`; terrain,
+      and standard-room weight rows are now authored in `src/content/room-rules.mwl`; plant, quest,
+      and branch resources remain open. Trap tables for all five regions are now authored in
+      `src/content/dungeon-rules.mwl`. Regional standard/special room counts are also authored in
+      `src/content/room-rules.mwl`; region water/grass patch parameters are also authored in
+      `src/content/dungeon-rules.mwl`; the standard-room class order is also authored in
+      `src/content/room-rules.mwl`; special-room selection lists are now authored in
+      `src/content/room-rules.mwl`; ConnectionRoom depth weights are now authored there too.
+- [ ] Add scenario/event resources: title/start flow, level entry/exit, dialogue, objectives,
+      shops, scripted encounters, victory/death transitions, and save-schema metadata. The five
+      fixed boss transitions and victory messages are now authored in
+      `src/content/scenario-rules.mwl`; the rest of the scenario flow remains open.
+- [ ] Move authored asset references to MWL and consume its generated asset manifest; retain
+      only renderer registration and runtime loading code in TypeScript. Monster sprite
+      references are now authored in `src/content/monsters.mwl`, validated against `src/assets`,
+      and emitted in the generated asset manifest; `images.ts` now consumes a generated,
+      typed manifest and validates every MWL sprite reference against the bundler registry at
+      startup. Terrain/UI references remain open.
+- [ ] Move the port's messages and descriptions to MWL gettext-marked values, generate the
+      i18n catalogue, and remove duplicate hand-maintained content strings. The ordered potion
+      and scroll appearance tables are now in `src/content/appearances.mwl`; message bodies and
+      the remaining key tables still need migration.
+- [x] Add MWL hook manifests for executable rules and AI. The MWL compiler validates every AI
+      profile reference against `actor-rules.mwl`'s hook manifest, and scene initialization rejects
+      a declared profile with no executable TypeScript hook; broader executable-rule manifests
+      remain open.
+- [ ] Add resource validation and parity tests: duplicate IDs, missing references, stable
+      ordering, deterministic generated output, and representative generated-vs-Java values.
+      The MWL compiler now rejects duplicate item/monster/trait IDs and validates monster-roster,
+      boss-transition, and asset references; deterministic-output and broader Java parity tests
+      are now partly covered by a repeated-compile comparison; broader Java parity tests remain
+      open. `validateRoomRuleTables()` also catches positional room-table shape errors at build
+      time now: it enforces the seven-field region-row format and one chance value per class for
+      the standard and connection room tables. Added 2026-09-11 after the first real browser
+      start-up smoke found two such malformed rows (a dropped `specialBase` field and a 27-value
+      depth-5 chance row) that had passed both `tsc` and the build.
+- [ ] Update the build, test, package, and browser-smoke documentation so a clean checkout can
+      reproduce every generated resource without a local MWG checkout.
+
 ## 1. Complete the item system
 
 - [x] Wire `rollAffix`/`ENCHANT_TABLE`/`GLYPH_TABLE` into real item generation and equip.
@@ -122,7 +217,10 @@ browser-verification workflow for why).
       is exact `changeItem` including exotics/wands/trinkets/missiles/equipped gear, still owed
       with the section-1 item-system completion (those items must exist as distinct ported items
       first), not as a standalone scroll pass.**
-- [ ] Port the remaining enchantments, glyphs, weapon curses, and armor curses. `Repulsion`,
+- [ ] Port the remaining enchantments and glyphs, and complete their executable behavior. The
+      16 weapon/armor curse definitions (including the corrected `stench` entry) are now
+      authored in `src/content/curse-rules.mwl` and adapted by `itemCurses.ts`; `Friendly`
+      interaction and the remaining enchantment/glyph behavior remain open. `Repulsion`,
       `Brimstone` are now ported (`Brimstone` grants Java's Burning immunity at the shared buff
       boundary), and `Viscosity` now defers incoming damage with its Java-scaled delayed drain.
       `Repulsion` is

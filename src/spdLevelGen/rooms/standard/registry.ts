@@ -50,16 +50,14 @@ import { paintConnectionRoom } from '../connection/paint';
 import { paintMazeConnection } from '../connection/mazeConnection';
 import { Terrain } from '../../paintLevel';
 import { Feeling } from '../../regularPainter';
+import { MWL_TRAIT_NODES } from '../../../mwlContent';
 
-export const STANDARD_ROOM_CLASS_ORDER: (StandardRoomKind | undefined)[] = [
-	'empty', 'sewerPipe', 'ring', 'circleBasin',           // 0-3
-	'segmented', 'pillars', 'cellBlock',                    // 4-6 (Prison)
-	'cave', 'cavesFissure', 'circlePit',                    // 7-9 (Caves)
-	'hallway', 'statues', 'segmentedLibrary',               // 10-12 (City)
-	'ruins', 'chasm', 'skulls',                             // 13-15 (Halls)
-	'plants', 'aquarium', 'platform', 'burned', 'fissure',   // 16-20
-	'grassyGrave', 'striped', 'study', 'suspiciousChest', 'minefield', // 21-25
-];
+const roomOrderNode = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'standardRoomClassOrder');
+if (!roomOrderNode) throw new Error('MWL room rule is missing standardRoomClassOrder');
+const roomOrderEffect = roomOrderNode.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'classes');
+const roomOrder = roomOrderEffect?.attributes.set?.split(',').map((kind) => kind.trim()).filter(Boolean) ?? [];
+if (roomOrder.length !== 26) throw new Error(`MWL room rule has ${roomOrder.length} standard room classes; expected 26`);
+export const STANDARD_ROOM_CLASS_ORDER = roomOrder as StandardRoomKind[];
 
 type PaintFn = (level: PaintLevel, room: Room) => void;
 const PAINTERS: Record<StandardRoomKind, PaintFn> = {

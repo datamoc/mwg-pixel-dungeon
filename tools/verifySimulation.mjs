@@ -31,7 +31,7 @@ function compile(source, destination) {
 try {
 	writeFileSync(join(output, 'package.json'), '{"type":"commonjs"}');
 	for (const file of ['simulation/movement', 'simulation/heroTurn', 'simulation/hunger', 'simulation/turns', 'adapters/sceneSimulation',
-		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
+		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActions',
 		'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'simulation/tenguAbility']) {
 		compile(new URL(`../src/${file}.ts`, import.meta.url), `${file}.js`);

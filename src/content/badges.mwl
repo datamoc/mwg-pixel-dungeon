@@ -1,0 +1,12 @@
+[game]
+schema=0.1
+
+[trait]
+id=badgeCatalogue
+name=Badges.Badge
+[effect]
+apply_to=entries
+set=boss1|boss_goo|1|Slew Goo|15;boss2|boss_tengu|1|Slew Tengu|47;boss3|boss_dm300|1|Slew DM-300|48;boss4|boss_king|1|Slew the Dwarf King|78;victory|amulet|1|Escaped with the Amulet|82;unlock_mage|upgrades_used|1|Used an upgrade scroll|1;unlock_rogue|surprises|10|10 surprise attacks|2;unlock_huntress|throws|10|10 thrown attacks|3;unlock_duelist|weapon_plus2|1|Raised a weapon to +2|4;death_trap|death_trap|1|Died to a trap|81;death_fire|death_fire|1|Died to fire|16;death_poison|death_poison|1|Died to poison|17;death_hunger|death_hunger|1|Starved to death|19;death_foe|death_foe|1|Slain by a foe|104
+[/effect]
+[/trait]
+[/game]

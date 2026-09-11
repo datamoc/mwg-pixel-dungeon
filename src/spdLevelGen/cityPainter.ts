@@ -8,6 +8,7 @@ import { SpdRandom } from '../spdRng';
 import { PaintLevel, Terrain } from './paintLevel';
 import { paintLevel, TrapTable, Feeling } from './regularPainter';
 import { setGeneratorDepth } from '../spdItems/generator';
+import { mwlPaintRule, mwlTrapTable } from './mwlDungeonRules';
 
 /** `RegularLevel.nTraps()`: `Random.NormalIntRange(2, 3 + depth/5)` - CityLevel doesn't override it. */
 function nTraps(depth: number): number {
@@ -17,14 +18,7 @@ function nTraps(depth: number): number {
 /** `CityLevel.trapClasses()`/`trapChances()`. Trap *behavior* isn't ported (see PORT_COVERAGE.md) -
  *  these are name-only stand-ins, kept in the real class order/weights for RNG-order fidelity. */
 function trapTable(): TrapTable {
-	return {
-		classes: [
-			'frost', 'storm', 'corrosion', 'blazing', 'disintegration',
-			'rockfall', 'flashing', 'guardian', 'weakening',
-			'disarming', 'summoning', 'warping', 'cursing', 'pitfall', 'distortion', 'gateway', 'geyser',
-		],
-		chances: [4, 4, 4, 4, 4, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1],
-	};
+	return mwlTrapTable('city');
 }
 
 /**
@@ -63,8 +57,8 @@ export function paintCityLevel(rooms: Room[], depth: number, feeling: number | n
 	setGeneratorDepth(depth);
 	return paintLevel(
 		rooms, depth,
-		{ fill: feeling === Feeling.WATER ? 0.90 : 0.3, smoothness: 4 },
-		{ fill: feeling === Feeling.GRASS ? 0.8 : 0.2, smoothness: 3 },
+		{ fill: feeling === Feeling.WATER ? mwlPaintRule('city').water.feeling : mwlPaintRule('city').water.normal, smoothness: mwlPaintRule('city').water.smoothness },
+		{ fill: feeling === Feeling.GRASS ? mwlPaintRule('city').grass.feeling : mwlPaintRule('city').grass.normal, smoothness: mwlPaintRule('city').grass.smoothness },
 		{ n: nTraps(depth), table: trapTable() },
 		(level, r) => decorate(level, r, depth),
 		feeling,

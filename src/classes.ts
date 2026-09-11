@@ -1,4 +1,4 @@
-import { CLASS_KEYS } from './i18n/index';
+import { MWL_CLASSES } from './mwlContent';
 
 export type ClassId = 'warrior' | 'mage' | 'rogue' | 'huntress' | 'duelist' | 'cleric';
 
@@ -40,86 +40,25 @@ export interface SpecialAction {
  * fresh-save state, but gating now reads the live badge store (`classUnlocked`, in
  * `./badges.ts`) - earn the badge, unlock the class, across runs.
  */
-export const CLASSES: Record<
-	ClassId,
-	{
-		/** SPD's own key for the class name; `port.name.cleric` where SPD has none */
-		nameKey: string;
-		/** SPD's own key for the starting weapon */
-		weaponKey: string;
-		damage: [number, number];
-		speed: number;
-		accuracy: number;
-		/** this port's own summary: SPD's `_desc_short` describes mechanics this port does not model */
-		blurbKey: string;
-		unlocked: boolean;
-		special: SpecialAction;
-	}
-> = {
-	warrior: {
-		nameKey: CLASS_KEYS.warrior,
-		weaponKey: 'port.name.wornshortsword',
-		damage: [1, 10],
-		speed: 1,
-		accuracy: 10,
-		blurbKey: 'port.class.warrior.blurb',
-		unlocked: true,
-		special: { kind: 'throw', labelKey: 'items.weapon.missiles.throwingstone.name', ammo: 3, damage: [2, 5] },
-	},
-	mage: {
-		nameKey: CLASS_KEYS.mage,
-		weaponKey: 'port.name.magesstaff',
-		damage: [1, 6],
-		speed: 1,
-		accuracy: 10,
-		blurbKey: 'port.class.mage.blurb',
-		unlocked: false,
-		special: { kind: 'zap', labelKey: 'items.wands.wandofmagicmissile.name', ammo: null, damage: [2, 8] },
-	},
-	rogue: {
-		nameKey: CLASS_KEYS.rogue,
-		weaponKey: 'port.name.dagger',
-		damage: [1, 10],
-		speed: 1,
-		accuracy: 10,
-		blurbKey: 'port.class.rogue.blurb',
-		unlocked: false,
-		special: { kind: 'throw', labelKey: 'items.weapon.missiles.throwingknife.name', ammo: 3, damage: [2, 6] },
-	},
-	huntress: {
-		nameKey: CLASS_KEYS.huntress,
-		weaponKey: 'port.name.gloves',
-		damage: [1, 5],
-		speed: 2,
-		accuracy: 10,
-		blurbKey: 'port.class.huntress.blurb',
-		unlocked: false,
-		special: { kind: 'shoot', labelKey: 'items.weapon.spiritbow.name', ammo: null, damage: [1, 6] },
-	},
-	duelist: {
-		nameKey: CLASS_KEYS.duelist,
-		weaponKey: 'port.name.rapier',
-		damage: [1, 8],
-		speed: 1,
-		accuracy: 10,
-		blurbKey: 'port.class.duelist.blurb',
-		unlocked: false,
-		special: { kind: 'throw', labelKey: 'items.weapon.missiles.throwingspike.name', ammo: 2, damage: [2, 5] },
-	},
-	cleric: {
-		nameKey: CLASS_KEYS.cleric,
-		weaponKey: 'port.name.cudgel',
-		damage: [1, 8],
-		speed: 1,
-		accuracy: 14,
-		blurbKey: 'port.class.cleric.blurb',
-		unlocked: false,
-		special: { kind: 'none', labelKey: '', ammo: 0, damage: [0, 0] },
-	},
-};
+export interface ClassDefinition {
+	nameKey: string;
+	weaponKey: string;
+	damage: [number, number];
+	speed: number;
+	accuracy: number;
+	blurbKey: string;
+	unlocked: boolean;
+	special: SpecialAction;
+}
+
+export const CLASSES: Record<ClassId, ClassDefinition> = Object.fromEntries(
+	MWL_CLASSES.map(({ id, ...definition }) => [id, definition]),
+) as unknown as Record<ClassId, ClassDefinition>;
 
 /** classes whose T action spends finite ammo (Warrior/Rogue/Duelist) */
-export const CLASS_AMMO = new Set<ClassId>(['warrior', 'rogue', 'duelist']);
+export const CLASS_AMMO = new Set<ClassId>(
+	MWL_CLASSES.filter(({ ammo }) => ammo).map(({ id }) => id as ClassId),
+);
 
 /**
  * Badge-gated classes (`HeroClass.isUnlocked()` + `Badges.Badge.UNLOCK_*`): Warrior is
@@ -127,23 +66,13 @@ export const CLASS_AMMO = new Set<ClassId>(['warrior', 'rogue', 'duelist']);
  * meta store. The Cleric has no Java unlock (it postdates the checkout), so first victory
  * opens it - a stated port rule.
  */
-export const CLASS_BADGE: Record<ClassId, string | null> = {
-	warrior: null,
-	mage: 'unlock_mage',
-	rogue: 'unlock_rogue',
-	huntress: 'unlock_huntress',
-	duelist: 'unlock_duelist',
-	cleric: 'victory',
-};
+export const CLASS_BADGE: Record<ClassId, string | null> = Object.fromEntries(
+	MWL_CLASSES.map(({ id, badge }) => [id, badge]),
+) as Record<ClassId, string | null>;
 
-export const CLASS_UNLOCK_HINT: Record<ClassId, string> = {
-	warrior: '',
-	mage: 'Unlock: use an upgrade scroll.',
-	rogue: 'Unlock: land 10 surprise attacks.',
-	huntress: 'Unlock: throw 10 times.',
-	duelist: 'Unlock: raise a weapon to +2.',
-	cleric: 'Unlock: win a run.',
-};
+export const CLASS_UNLOCK_HINT: Record<ClassId, string> = Object.fromEntries(
+	MWL_CLASSES.map(({ id, unlockHint }) => [id, unlockHint]),
+) as Record<ClassId, string>;
 
 /** a class's real idle-stance frame: tier row 1 (the starting cloth-armour look), column 0 -
  * `HeroSprite.updateArmor()`'s `idle.frames(film, 0, 0, 0, 1, 0, 0, 1, 1)` */

@@ -40,6 +40,7 @@
  * `Wand`, `Artifact`, `Gold` are the only ones that exist.
  */
 import { SpdRandom } from '../spdRng';
+import { MWL_TRAIT_NODES } from '../mwlContent';
 
 /** `Generator.Category`'s declaration order - load-bearing, since `categoryProbs` is a
  *  `LinkedHashMap` populated by iterating `Category.values()`, so `Random.chances()` sees the
@@ -73,19 +74,75 @@ interface CatDef {
 	classes: string[];
 }
 
+function mwlDeck(id: string): { classes: string[]; probabilities: number[] } {
+	const deck = MWL_TRAIT_NODES.find((node) => node.attributes.id === id)
+		?? (() => { throw new Error(`MWL generator deck is missing ${id}`); })();
+	const value = (key: string): string => {
+		const effect = deck.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === key);
+		if (effect?.attributes.set === undefined) throw new Error(`MWL generator deck ${id} is missing ${key}`);
+		return effect.attributes.set;
+	};
+	const classes = value('classes').split(',').map((entry) => entry.trim()).filter(Boolean);
+	const probabilities = value('default_probs').split(',').map(Number);
+	if (classes.length !== probabilities.length || probabilities.some((entry) => !Number.isFinite(entry))) {
+		throw new Error(`MWL generator deck ${id} has invalid class/probability data`);
+	}
+	return { classes, probabilities };
+}
+
+const POTION_DECK = mwlDeck('potionDeck');
+const SCROLL_DECK = mwlDeck('scrollDeck');
+const RUNESTONE_DECK = mwlDeck('runestoneDeck');
+const MISSILE_DECKS = [1, 2, 3, 4, 5].map((tier) => mwlDeck(`missileDeckT${tier}`));
+const WEAPON_DECKS = [1, 2, 3, 4, 5].map((tier) => mwlDeck(`weaponDeckT${tier}`));
+const WAND_DECK = mwlDeck('wandGeneratorDeck');
+const RING_DECK = mwlDeck('ringGeneratorDeck');
+const ARTIFACT_DECK = mwlDeck('artifactGeneratorDeck');
+const FOOD_DECK = mwlDeck('foodGeneratorDeck');
+
+function mwlMatrix(id: string): number[][] {
+	const table = MWL_TRAIT_NODES.find((node) => node.attributes.id === id)
+		?? (() => { throw new Error(`MWL generator table is missing ${id}`); })();
+	const effect = table.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'rows');
+	const value = effect?.attributes.set;
+	if (value === undefined) throw new Error(`MWL generator table ${id} is missing rows`);
+	const rows = value.split(';').map((row) => row.split(',').map(Number));
+	if (rows.some((row) => row.length === 0 || row.some((entry) => !Number.isFinite(entry)))) {
+		throw new Error(`MWL generator table ${id} has invalid rows`);
+	}
+	return rows;
+}
+
+function mwlList(id: string, key: string): string[] {
+	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === id)
+		?? (() => { throw new Error(`MWL generator rule is missing ${id}`); })();
+	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === key);
+	const value = effect?.attributes.set;
+	if (value === undefined) throw new Error(`MWL generator rule ${id} is missing ${key}`);
+	return value.split(',').map((entry) => entry.trim()).filter(Boolean);
+}
+
+function mwlNumbers(id: string, key: string): number[] {
+	const values = mwlList(id, key).map(Number);
+	if (values.some((value) => !Number.isFinite(value))) throw new Error(`MWL generator rule ${id} has invalid ${key}`);
+	return values;
+}
+
+const FLOOR_SET_TIER_PROBS = mwlMatrix('floorSetTierProbs');
+
 /** Exactly `Generator.java`'s static initializer. Weights and class order both matter: the
  *  weights drive `Random.chances`, and the order decides which class an index maps to. */
 const CATS: CatDef[] = [
 	{ name: 'WEAPON', firstProb: 2, secondProb: 2, superKind: 'weapon', defaultProbs: null, initialProbs: [], classes: [] },
 	{
 		name: 'WEP_T1', firstProb: 0, secondProb: 0, superKind: 'weapon',
-		defaultProbs: [2, 0, 2, 2, 2], initialProbs: [2, 0, 2, 2, 2],
-		classes: ['WornShortsword', 'MagesStaff', 'Dagger', 'Gloves', 'Rapier'],
+		defaultProbs: WEAPON_DECKS[0]!.probabilities, initialProbs: [...WEAPON_DECKS[0]!.probabilities],
+		classes: WEAPON_DECKS[0]!.classes,
 	},
 	{
 		name: 'WEP_T2', firstProb: 0, secondProb: 0, superKind: 'weapon',
-		defaultProbs: [2, 2, 2, 2, 2, 2], initialProbs: [2, 2, 2, 2, 2, 2],
-		classes: ['Shortsword', 'HandAxe', 'Spear', 'Quarterstaff', 'Dirk', 'Sickle'],
+		defaultProbs: WEAPON_DECKS[1]!.probabilities, initialProbs: [...WEAPON_DECKS[1]!.probabilities],
+		classes: WEAPON_DECKS[1]!.classes,
 	},
 	{
 		// `Generator.java`'s static init had a real copy-paste bug here - `WEP_T3.probs =
@@ -99,18 +156,18 @@ const CATS: CatDef[] = [
 		// does not change the level-generation RNG call count or order - only which weapon class
 		// index a given draw resolves to.
 		name: 'WEP_T3', firstProb: 0, secondProb: 0, superKind: 'weapon',
-		defaultProbs: [2, 2, 2, 2, 2, 2], initialProbs: [2, 2, 2, 2, 2, 2],
-		classes: ['Sword', 'Mace', 'Scimitar', 'RoundShield', 'Sai', 'Whip'],
+		defaultProbs: WEAPON_DECKS[2]!.probabilities, initialProbs: [...WEAPON_DECKS[2]!.probabilities],
+		classes: WEAPON_DECKS[2]!.classes,
 	},
 	{
 		name: 'WEP_T4', firstProb: 0, secondProb: 0, superKind: 'weapon',
-		defaultProbs: [2, 2, 2, 2, 2, 2, 2], initialProbs: [2, 2, 2, 2, 2, 2, 2],
-		classes: ['Longsword', 'BattleAxe', 'Flail', 'RunicBlade', 'AssassinsBlade', 'Crossbow', 'Katana'],
+		defaultProbs: WEAPON_DECKS[3]!.probabilities, initialProbs: [...WEAPON_DECKS[3]!.probabilities],
+		classes: WEAPON_DECKS[3]!.classes,
 	},
 	{
 		name: 'WEP_T5', firstProb: 0, secondProb: 0, superKind: 'weapon',
-		defaultProbs: [2, 2, 2, 2, 2, 2, 2], initialProbs: [2, 2, 2, 2, 2, 2, 2],
-		classes: ['Greatsword', 'WarHammer', 'Glaive', 'Greataxe', 'Greatshield', 'Gauntlet', 'WarScythe'],
+		defaultProbs: WEAPON_DECKS[4]!.probabilities, initialProbs: [...WEAPON_DECKS[4]!.probabilities],
+		classes: WEAPON_DECKS[4]!.classes,
 	},
 	{
 		// No `defaultProbs`: `randomArmor()` handles tier selection itself, so `random(ARMOR)`
@@ -123,68 +180,56 @@ const CATS: CatDef[] = [
 	{ name: 'MISSILE', firstProb: 1, secondProb: 2, superKind: 'missile', defaultProbs: null, initialProbs: [], classes: [] },
 	{
 		name: 'MIS_T1', firstProb: 0, secondProb: 0, superKind: 'missile',
-		defaultProbs: [3, 3, 3], initialProbs: [3, 3, 3],
-		classes: ['ThrowingStone', 'ThrowingKnife', 'ThrowingSpike'],
+		defaultProbs: MISSILE_DECKS[0]!.probabilities, initialProbs: [...MISSILE_DECKS[0]!.probabilities],
+		classes: MISSILE_DECKS[0]!.classes,
 	},
 	{
 		name: 'MIS_T2', firstProb: 0, secondProb: 0, superKind: 'missile',
-		defaultProbs: [3, 3, 3], initialProbs: [3, 3, 3],
-		classes: ['FishingSpear', 'ThrowingClub', 'Shuriken'],
+		defaultProbs: MISSILE_DECKS[1]!.probabilities, initialProbs: [...MISSILE_DECKS[1]!.probabilities],
+		classes: MISSILE_DECKS[1]!.classes,
 	},
 	{
 		name: 'MIS_T3', firstProb: 0, secondProb: 0, superKind: 'missile',
-		defaultProbs: [3, 3, 3], initialProbs: [3, 3, 3],
-		classes: ['ThrowingSpear', 'Kunai', 'Bolas'],
+		defaultProbs: MISSILE_DECKS[2]!.probabilities, initialProbs: [...MISSILE_DECKS[2]!.probabilities],
+		classes: MISSILE_DECKS[2]!.classes,
 	},
 	{
 		name: 'MIS_T4', firstProb: 0, secondProb: 0, superKind: 'missile',
-		defaultProbs: [3, 3, 3], initialProbs: [3, 3, 3],
-		classes: ['Javelin', 'Tomahawk', 'HeavyBoomerang'],
+		defaultProbs: MISSILE_DECKS[3]!.probabilities, initialProbs: [...MISSILE_DECKS[3]!.probabilities],
+		classes: MISSILE_DECKS[3]!.classes,
 	},
 	{
 		name: 'MIS_T5', firstProb: 0, secondProb: 0, superKind: 'missile',
-		defaultProbs: [3, 3, 3], initialProbs: [3, 3, 3],
-		classes: ['Trident', 'ThrowingHammer', 'ForceCube'],
+		defaultProbs: MISSILE_DECKS[4]!.probabilities, initialProbs: [...MISSILE_DECKS[4]!.probabilities],
+		classes: MISSILE_DECKS[4]!.classes,
 	},
 	{
 		name: 'WAND', firstProb: 1, secondProb: 1, superKind: 'wand',
-		defaultProbs: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
-		initialProbs: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
-		classes: ['WandOfMagicMissile', 'WandOfLightning', 'WandOfDisintegration', 'WandOfFireblast',
-			'WandOfCorrosion', 'WandOfBlastWave', 'WandOfLivingEarth', 'WandOfFrost',
-			'WandOfPrismaticLight', 'WandOfWarding', 'WandOfTransfusion', 'WandOfCorruption',
-			'WandOfRegrowth'],
+		defaultProbs: WAND_DECK.probabilities, initialProbs: [...WAND_DECK.probabilities],
+		classes: WAND_DECK.classes,
 	},
 	{
 		name: 'RING', firstProb: 1, secondProb: 0, superKind: 'ring',
-		defaultProbs: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
-		initialProbs: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
-		classes: ['RingOfAccuracy', 'RingOfArcana', 'RingOfElements', 'RingOfEnergy', 'RingOfEvasion',
-			'RingOfForce', 'RingOfFuror', 'RingOfHaste', 'RingOfMight', 'RingOfSharpshooting',
-			'RingOfTenacity', 'RingOfWealth'],
+		defaultProbs: RING_DECK.probabilities, initialProbs: [...RING_DECK.probabilities],
+		classes: RING_DECK.classes,
 	},
 	{
 		// Artifacts never reset their deck (uniqueness across a run), hence the exhaustion path
 		// in `randomArtifact()`.
 		name: 'ARTIFACT', firstProb: 0, secondProb: 1, superKind: 'artifact',
-		defaultProbs: [1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-		initialProbs: [1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-		classes: ['AlchemistsToolkit', 'ChaliceOfBlood', 'CloakOfShadows', 'DriedRose',
-			'EtherealChains', 'HornOfPlenty', 'MasterThievesArmband', 'SandalsOfNature',
-			'TalismanOfForesight', 'TimekeepersHourglass', 'UnstableSpellbook'],
+		defaultProbs: ARTIFACT_DECK.probabilities, initialProbs: [...ARTIFACT_DECK.probabilities],
+		classes: ARTIFACT_DECK.classes,
 	},
 	{
 		name: 'FOOD', firstProb: 0, secondProb: 0, superKind: 'item',
-		defaultProbs: [4, 1, 0], initialProbs: [4, 1, 0],
-		classes: ['Food', 'Pasty', 'MysteryMeat'],
+		defaultProbs: FOOD_DECK.probabilities, initialProbs: [...FOOD_DECK.probabilities],
+		classes: FOOD_DECK.classes,
 	},
 	{
 		name: 'POTION', firstProb: 8, secondProb: 8, superKind: 'item',
-		defaultProbs: [0, 6, 4, 3, 3, 3, 2, 2, 2, 2, 2, 1],
-		initialProbs: [0, 6, 4, 3, 3, 3, 2, 2, 2, 2, 2, 1],
-		classes: ['PotionOfStrength', 'PotionOfHealing', 'PotionOfMindVision', 'PotionOfFrost',
-			'PotionOfLiquidFlame', 'PotionOfToxicGas', 'PotionOfHaste', 'PotionOfInvisibility',
-			'PotionOfLevitation', 'PotionOfParalyticGas', 'PotionOfPurity', 'PotionOfExperience'],
+		defaultProbs: POTION_DECK.probabilities,
+		initialProbs: [...POTION_DECK.probabilities],
+		classes: POTION_DECK.classes,
 	},
 	{
 		name: 'SEED', firstProb: 1, secondProb: 1, superKind: 'item',
@@ -195,22 +240,18 @@ const CATS: CatDef[] = [
 	},
 	{
 		name: 'SCROLL', firstProb: 8, secondProb: 8, superKind: 'item',
-		defaultProbs: [0, 6, 4, 3, 3, 3, 2, 2, 2, 2, 2, 1],
-		initialProbs: [0, 6, 4, 3, 3, 3, 2, 2, 2, 2, 2, 1],
-		classes: ['ScrollOfUpgrade', 'ScrollOfIdentify', 'ScrollOfRemoveCurse', 'ScrollOfMirrorImage',
-			'ScrollOfRecharging', 'ScrollOfTeleportation', 'ScrollOfLullaby', 'ScrollOfMagicMapping',
-			'ScrollOfRage', 'ScrollOfRetribution', 'ScrollOfTerror', 'ScrollOfTransmutation'],
+		defaultProbs: SCROLL_DECK.probabilities,
+		initialProbs: [...SCROLL_DECK.probabilities],
+		classes: SCROLL_DECK.classes,
 	},
 	{
 		name: 'STONE', firstProb: 1, secondProb: 1, superKind: 'item',
-		defaultProbs: [0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0],
-		initialProbs: [0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0],
+		defaultProbs: RUNESTONE_DECK.probabilities,
+		initialProbs: [...RUNESTONE_DECK.probabilities],
 		// Generator.java (4.0.0-beta) uses StoneOfDetectMagic here; StoneOfDisarming is not
 		// an SPD runestone and would silently make the implemented detect-magic item unreachable
 		// through ordinary floor generation.
-		classes: ['StoneOfEnchantment', 'StoneOfIntuition', 'StoneOfDetectMagic', 'StoneOfFlock',
-			'StoneOfShock', 'StoneOfBlink', 'StoneOfDeepSleep', 'StoneOfClairvoyance',
-			'StoneOfAggression', 'StoneOfBlast', 'StoneOfFear', 'StoneOfAugmentation'],
+		classes: RUNESTONE_DECK.classes,
 	},
 	{
 		// `defaultProbs == null`, so `random(GOLD)`'s `chances(probs)` runs on the LEVEL stream
@@ -222,23 +263,15 @@ const CATS: CatDef[] = [
 
 /** `Generator.floorSetTierProbs` - indexed by `floorSet`, i.e. `Dungeon.depth / 5` (plus 1 in
  *  the rooms that ask for a better-than-usual prize). */
-const FLOOR_SET_TIER_PROBS: number[][] = [
-	[0, 75, 20, 4, 1],
-	[0, 25, 50, 20, 5],
-	[0, 0, 40, 50, 10],
-	[0, 0, 20, 40, 40],
-	[0, 0, 0, 20, 80],
-];
-
 const WEP_TIERS = [Cat.WEP_T1, Cat.WEP_T2, Cat.WEP_T3, Cat.WEP_T4, Cat.WEP_T5];
 const MIS_TIERS = [Cat.MIS_T1, Cat.MIS_T2, Cat.MIS_T3, Cat.MIS_T4, Cat.MIS_T5];
 
 /** `Weapon.Enchantment`/`Armor.Glyph` share identical shapes: 4 common, 6 uncommon, 3 rare,
  *  8 curses, and the same `{50,40,10}` rarity split. Only the array *lengths* matter here, since
  *  the draw is `Random.element(list)` = `Random.Int(list.length)`. */
-const ENCH_TYPE_CHANCES = [50, 40, 10];
-const ENCH_POOL_SIZES = [4, 6, 3];
-const CURSE_POOL_SIZE = 8;
+const ENCH_TYPE_CHANCES = mwlNumbers('affixPools', 'type_chances');
+const ENCH_POOL_SIZES = mwlNumbers('affixPools', 'pool_sizes');
+const CURSE_POOL_SIZE = mwlNumbers('affixPools', 'curse_pool_size')[0] ?? 0;
 
 /** What a generated item was, for callers that need to report or branch on it. `cursed` is the
  *  load-bearing field: several rooms re-roll `while (prize.cursed)`, so the retry count - and
@@ -519,8 +552,8 @@ export function randomBomb(): GenItem {
 	};
 }
 
-const GHOST_TIER_WEIGHTS = [0, 0, 10, 6, 3, 1];
-const GHOST_ARMOR_CLASSES = ['ClothArmor', 'LeatherArmor', 'MailArmor', 'ScaleArmor', 'PlateArmor'];
+const GHOST_TIER_WEIGHTS = mwlNumbers('ghostQuestReward', 'tier_weights');
+const GHOST_ARMOR_CLASSES = mwlList('ghostQuestReward', 'armor_classes');
 
 /**
  * `Ghost.Quest.spawn()`'s reward roll (Ghost.java) - NOT the generic depth-scaled

@@ -47,6 +47,180 @@ dropped despite the behavior already being documented as preserved in the transm
 The picker now also retains the exact selected transmutation-scroll instance across its
 asynchronous UI callback, preventing a duplicate stack from consuming the wrong scroll.
 
+The authored monster catalogue is now in `src/content/monsters.mwl` and compiled before the
+game imports it. `monsters.ts` adapts those MWL values into the scene's typed combat records
+with required-field validation; sprite film dimensions and idle frames remain adapter metadata
+until the MWL asset-reference pass. The catalogue includes the port's documented special-actor
+values and balance reductions (for example invulnerable NPCs, Goo's base state, and Yog's
+scaled encounter), so those values are no longer duplicated in TypeScript.
+
+The weapon, armor, and wand catalogues now follow the same path in `src/content/items.mwl`.
+Tiered variants use deterministic MWL item IDs, while portable numeric properties such as wand
+damage and weapon speed are represented by MWL effects and read by `items.ts`; formulas and
+runtime behavior remain in the game hooks.
+
+The ten artifact definitions now live in `src/content/artifacts.mwl`, including their display
+keys and charge values. `artifacts.ts` only adapts the generated resource into its public typed
+records; artifact charge behavior remains executable game logic.
+
+The potion and scroll generator decks now live in `src/content/decks.mwl`; `generator.ts` reads
+their class order and default probabilities from the compiled MWL traits and validates matching
+lengths before use. This preserves the Java RNG table data while leaving generator algorithms and
+substream handling as executable code.
+
+The runestone deck now follows the same model in `src/content/runestones.mwl`, including the
+correct `StoneOfDetectMagic` entry and the zero-weight boundary entries from Java.
+
+The five missile decks now live in `src/content/missiles.mwl`. `generator.ts` consumes their
+class order and equal weights through the same validated MWL deck reader, preserving the
+level-generation substream behavior.
+
+The five weapon-tier generator decks now live in `src/content/weapon-decks.mwl`. This preserves
+the corrected tier-3 probability table and keeps generator class ordering separate from the
+runtime equipment catalogue.
+
+The potion and scroll unidentified-appearance key tables now live in
+`src/content/appearances.mwl`; `spdKeys.ts` validates and reads their ordered keys through the
+compiled MWL traits. The existing seeded per-run assignment simplification remains unchanged.
+
+The floor tier matrix, affix pool sizes/weights, and Ghost reward tables now live in
+`src/content/generator-tables.mwl` and `src/content/generator-rules.mwl`; `generator.ts` validates
+their numeric rows before using them for RNG. The Java-specific correction comments remain next
+to the executable adapter logic.
+
+The WAND, RING, ARTIFACT, and FOOD generator deck class lists and weights now live in
+`src/content/generator-decks.mwl`; `generator.ts` reads them through the shared MWL deck adapter.
+
+The generated potion, scroll, seed, runestone, food, and bomb item identities now live in
+`src/content/consumables.mwl`; `spdKeys.ts` consumes their MWL names while retaining explicit
+aliases for runtime-only quest items. Their executable use effects remain in the game hooks.
+
+The SewerLevel trap class order and weights now live in `src/content/dungeon-rules.mwl`; the
+SewerPainter adapter validates and reads the depth-specific MWL rule while retaining Java's
+depth-1 special case and RNG order. Trap effects themselves remain a separate gameplay hook gap.
+
+Monster loot entries now live in `src/content/loot-rules.mwl`; `monsters.ts` validates and adapts
+the MWL table while retaining the executable roll and limited-drop decay hooks. Java-specific
+multi-item and category-selection behavior remains documented as a port simplification.
+The fifteen generated missile classes are catalogued in `src/content/missiles.mwl` with names,
+tiers, stackability, and base damage ranges. `generatedInventoryItem()` now preserves their
+concrete MWL id/source class/tier when generated loot crosses into the inventory boundary;
+the class special action still uses the compact shared ammo counter, so pickup integration and
+distinct missile behavior (boomerang return, bolas, etc.) remain open.
+The same resource now carries the ten limited-drop decay parameters; the linear and power-law
+formulas remain explicit executable hooks so their Java semantics stay reviewable.
+
+The five main scenario chapter ranges and boss depths are now authored in
+`src/content/scenario-rules.mwl`; `mwlContent.ts` validates ordering and `monsters.ts` verifies
+that every chapter points at the matching boss transition. Dialogue, objective progression,
+and boss-fight scripting remain scene-owned runtime behavior.
+The same resource now owns the exact quest/NPC spawn depth lists and roll bases for Ghost,
+Wandmaker, Shopkeeper, Blacksmith, and Imp; `main.ts` consumes those tables instead of carrying
+duplicate depth literals. Quest-specific dialogue and completion logic remain runtime hooks.
+Quest stage condition keys and objective descriptions are also authored in the
+`questDefinitions` MWL trait and consumed when building the runtime `QuestLog`; localized NPC
+conversation strings remain in the existing i18n catalogue.
+
+Hero progression's maximum level and experience-curve coefficients are authored in
+`src/content/progression-rules.mwl`; `main.ts` retains only the formula adapter consumed by
+MWG's `Progression` class.
+
+Alchemy ingredient energy values and the currently portable food recipes are authored in
+`src/content/alchemy.mwl`; `src/alchemy.ts` parses them and resolves them through MWG's
+all-or-nothing `craft()` transaction. The same MWL resource now contains a manifest of every
+recipe registered by SPD's `Recipe.java`, including the recipes whose item effects are not yet
+implemented here. The alchemy-pot selection window, energy accounting, random seed-to-potion
+brewing, catalysts, exotic items, and specialty bomb recipes remain unported until the scene has
+an interaction path for selecting multiple ingredients.
+
+Monster actor classifications (flying, NPC, boss, immovable, and initially-awake) now live in
+`src/content/actor-rules.mwl` and are adapted to runtime sets. Special actor abilities and AI
+decision hooks remain executable TypeScript until their complete Java behavior is ported.
+Variant-to-base actor inheritance aliases are also authored in that resource and consumed by
+`monsters.ts`.
+
+The monster special-turn profile assignments now live in `src/content/actor-rules.mwl`; the
+scene resolves those MWL profile names to executable TypeScript hooks. The hook algorithms and
+their documented Java simplifications remain in `main.ts`.
+The same resource now contains a hook manifest; the MWL compiler validates profile references,
+and scene initialization fails explicitly if a declared profile has no executable hook.
+
+The class and subclass talent membership and ordering are authored in
+`src/content/talent-rules.mwl` and adapted by `talents.ts`; rank limits remain adapter metadata
+while the formulas stay in `talentEffects.ts` hooks.
+The tier-unlock thresholds are also authored in that MWL resource.
+
+Buff durations and the negative-buff classification are authored in
+`src/content/buff-rules.mwl` and consumed by the simulation buff adapter; ticking, damage
+formulas, and expiry semantics remain executable rules.
+
+The five fixed boss-depth transitions and victory messages now live in
+`src/content/scenario-rules.mwl`; scene victory/death execution remains in `main.ts`.
+
+The standard monster rotation by depth and its regional fallback rosters now live in
+`src/content/dungeon-rosters.mwl`; `monsters.ts` validates and adapts those lists.
+
+The standard-room class weight rows now live in `src/content/room-rules.mwl`; `regularLevel.ts`
+validates the 26-class rows and preserves Java's regional row inheritance by depth.
+Hero class ammo categories, badge gates, and unlock hints are authored in
+`src/content/classes.mwl` and adapted by `classes.ts`; the badge achievement catalogue itself
+is now authored in `src/content/badges.mwl` and adapted by `badges.ts`, including counters,
+targets, descriptions, and badge sprites. The Cleric unlock rule remains the explicitly
+documented port-specific fallback because this checkout has no Java counterpart for it.
+Regional standard/special room counts, maxima, and RNG weight arrays are also authored in that
+resource and consumed by `regularLevel.ts`.
+The standard room class order is also authored there and validated before room selection.
+
+The special-room selection queues (equipment, consumable, crystal-key, and potion-spawn
+categories) are authored in `src/content/room-rules.mwl` and adapted by the special-room
+registry. Their queue mutation and RNG behavior remain executable TypeScript because those
+are runtime algorithms rather than resource data.
+
+The monster roster adapter no longer carries a duplicate TypeScript roster fallback: every
+standard depth entry and regional fallback must be present in `src/content/dungeon-rosters.mwl`,
+so an incomplete resource fails at startup instead of silently reverting to code data.
+
+The ConnectionRoom depth-indexed class weights are authored in `src/content/room-rules.mwl` and
+validated by `connectionRoom.ts`; its six-class registration order is authored in the same
+resource and only adapted to the concrete room behavior.
+
+The Prison, Caves, City, and Halls trap class/weight tables now live in
+`src/content/dungeon-rules.mwl`; their painters use one validated MWL adapter. Trap effects
+remain a separate gameplay-hook gap.
+
+Monster resource entries now carry their logical sprite references (`image=assets/...`) in
+`src/content/monsters.mwl`, and the generated `mwlAssets.json` includes the deduplicated set.
+The MWL compiler now validates those manifest entries against `src/assets` during the build, so
+missing referenced files fail fast instead of producing a partial resource catalogue.
+The renderer still registers its Vite-imported textures directly, but `images.ts` now consumes
+the generated MWL asset manifest through a bundler-facing URL registry and validates every
+manifest entry before loading sprites. Terrain and UI references still use renderer metadata
+directly.
+
+The MWL build now rejects duplicate item, monster, and trait IDs and validates every monster
+roster, boss-transition, and asset reference before emitting generated files. Deterministic
+output comparison is also performed by compiling the resource tree twice; broad
+generated-vs-Java parity fixtures remain open.
+
+**Browser-verified 2026-09-11 (first real start-up smoke of the MWL migration):** the resource
+tree compiled and type-checked cleanly but did not actually run. Importing the level generator
+threw on two malformed `room-rules.mwl` rows, which a real browser load surfaced immediately as
+a black screen - exactly the "type-checking is not evidence" case section 10 of `ROADMAP.md`
+warns about, and the reason this pass did not treat the green build as sufficient. Both bugs are
+fixed and re-verified live: the five `regionRoomCounts` rows were missing their `specialBase`
+field entirely (six fields where the runtime parser in `spdLevelGen/regularLevel.ts` reads
+seven; Caves/City/Halls also need `2`, which the missing field had hidden), and the depth-5
+`standardRoomChances` row carried 27 values where Java's `StandardRoom.Chances[5]` has 26.
+`tools/compile-mwl.mjs`'s new `validateRoomRuleTables()` now enforces both shapes at build time
+(seven fields per region row with non-empty, non-negative weight lists; one chance entry per
+class, cross-checked against each table's own `classes` list), so this class of data/parser
+mismatch fails `npm run build` instead of first floor generation. JavaScript build/test coverage
+is unchanged and still green (`npx tsc --noEmit`, `npm run build`, `test:simulation` 46/46,
+`test:items` 1/1); browser run: the built `dist/index.html` loads with no console or page
+errors, Enter reaches class select, a pointer click selects a class, Enter starts depth 1
+(a 27x46 level with 9 creatures and 12 ground items), and turns process. The rendering itself
+is the real dark FOV-limited floor, not a failed load - only the starting room is lit.
+
 The Troll Blacksmith now retains quest favor and reforge count across saves. Its forge
 selects two identified, non-cursed, same-category weapon/armor payloads, keeps the higher
 level item, upgrades it once, consumes the other, and charges Java's progressive reforge
@@ -100,7 +274,7 @@ been replaced with what the Java actually contains.
 | `MeleeWeapon`/`Armor` tier and upgrade terms (`min = tier+lvl`, `max = 5(tier+1)+lvl(tier+1)`; armor `min = lvl`, `max = tier(2+lvl)`) | `syncHeroFromStats`, `generatedInventoryItem`, `equipWeapon`/`equipArmor`, `weaponTier`/`armorTier` | Simplified but improved: generated weapon sub-tier cats and concrete armor classes persist their real fixed 1-5 tier in inventory and restore it when equipped; old saves default to tier 1. Scroll upgrades now preserve that tier and add Java's plain +1 level; because this port has no item-picker modal, the action auto-targets the lower-level equipped weapon or armor, and ammo users let missiles catch up after both equipped items reach that level. Blacksmith transfer and curse infusion remain open roadmap work. |
 | `Gloves.DLY = 0.5` (2x attack speed) | `CLASSES.huntress.speed = 2` | Ported |
 | `Cudgel.ACC = 1.40f` | `CLASSES.cleric.accuracy = 14` | Ported |
-| **All weapon/armor/wand definitions (35 weapons × 5 tiers, 5 armor types, 10 wands × 5 tiers, 4 rings)** | `src/items.ts` WEAPONS/ARMOR/WANDS/RINGS and lookup functions | **Ported** - comprehensive item database with all SPD weapon/armor/wand/ring entries defined by tier, including names (via i18n keys) and stat multipliers. Provides `getWeapon()`, `getArmor()`, `getWand()`, `getRing()` lookup functions. Foundation for dungeon generation to spawn real items instead of placeholders. |
+| **All weapon/armor/wand definitions (35 weapons × 5 tiers, 5 armor types, 10 wands × 5 tiers, 12 rings)** | `src/items.ts` WEAPONS/ARMOR/WANDS/RINGS and lookup functions; `src/mwlContent.ts` | **Ported** - the MWL catalogue now declares all 12 ring ids, slots, weights and high-level effect metadata; SPD-specific formulas and runtime hooks remain in `ringModifiers.ts`/`main.ts`. The other item families remain the existing typed database. |
 | Ring effects (`items/rings/RingOf*.java`, 12 real types) | `main.ts`'s `RING_DEFS`, `ringDef`, `equipRing`, `ringTenacityMultiplier`/`absorbHeroDamage`, `ringHtBonus`, `ringElementsMultiplier` (`spendHeroTurn` DoT / `spreadPlantBlobs` toxic gas / `triggerTrapAt` burning), `ringFurorMultiplier`/`getAttackTurnCostMod` (bump-attack-only cost via the `move` port pre-check), `NON_STATBLOCK_RING_STATS` | **Both gaps found in the previous audit pass are now closed, and a real crash bug found while closing them is fixed too.** Only 4 of 12 ring types exist at all (Accuracy/Evasion/Might/Tenacity - Arcana/Elements/Energy/Force/Furor/Haste/Sharpshooting/Wealth are **not ported**), but all 4 now reproduce their exact real Java formula: **Accuracy** (`accuracyMultiplier()` x1.30^lvl) and **Evasion** (`evasionMultiplier()` x1.125^lvl), unchanged, via `scaledModifiers`. **Might**: `strengthBonus()` (flat +lvl STR) and now also `HTMultiplier()` (x1.035^lvl max HP, previously not ported) - the HT bonus is tracked as `ringHtBonus`, an absolute HP delta recomputed only in `equipRing` (the sole ring-mutation choke point) using the same old-max/hp-delta-preserving pattern `levelUp`'s +5/level bump already used, backing out the ring's own prior contribution first so repeated ring swaps don't compound. **Tenacity**: `damageMultiplier()` = x0.85^(lvl × currentMissingHpFraction), previously a flat +2 armor/lvl stand-in with a different shape entirely, is now the real curve, applied to incoming hero damage in a new `ringTenacityMultiplier()` called from `absorbHeroDamage` before Barrier absorption (matching `Hero.damage()`'s real ordering: the multiplier applies to the raw hit before `Char.damage()`'s Barrier logic runs). **Bug found and fixed in the same pass**: `RING_DEFS` is keyed bare (`"might"`) but every stored ring id carries the UI's `"ring_"` prefix (`"ring_might"`) - indexing `RING_DEFS[equippedRing.id]` directly (both read sites) was silently looking up `undefined` and would throw a `TypeError` reading `.stat` the moment any ring was actually equipped, a live crash that predates this pass and was never previously exercised/caught. Fixed via a new `ringDef()` helper that strips the prefix before lookup; both call sites and the new HT/Tenacity code route through it. **Browser-verified live** via `window.__MWG__.currentScene`: equipping a level-5 Might ring took `maxHp` 20→24 and `str` 10→15 (`round(20×(1.035^5−1))=4`, `+5` STR, exact); equipping a level-5 Tenacity ring at 50%-missing HP made `ringTenacityMultiplier()` return `0.6661...` (`0.85^(5×0.5)`, exact) and `absorbHeroDamage(20)` return `14` (`ceil(20×0.6661)`, exact); re-equipping a level-3 Accuracy ring afterward still gave exactly `1.3^3 = 2.197×` accuracy, confirming the refactor didn't regress the two rings that were already correct. `npx tsc --noEmit`, `npm run build`, and both test suites (`test:simulation` 36/36, `test:items` 1/1) all clean. **Two more ring types now ported, fetching `RingOfHaste.java`/`RingOfEnergy.java` from the local shattered-pixel-dungeon checkout (tag `4.0.0-beta`) to confirm the exact formulas** (6 of 12 now real; Arcana/Elements/Force/Furor/Sharpshooting/Wealth remain **not ported**, each needing a system this port doesn't have - wand-damage scaling, elemental status resistance, melee damage bonus, attack-speed distinct from movement speed, ranged-specific accuracy/damage, and loot-drop-rate modification respectively). **Haste**: `speedMultiplier()` = `1.175^level`, applied as a divisor on `getActionTurnCostMod()`'s existing multiplicative turn-cost chain (the same mechanism Swiftness/Weapon.Augment SPEED/Bulk already use) - Java expresses this as `Char.speed()` scaling up, this port's fractional-turn-cost model expresses the identical relationship as action cost scaling down. **Energy**: `wandChargeMultiplier()` = `1.175^level` (the Light Reading talent's further multiplier on top is not modeled, since that talent itself isn't ported), applied directly to `recoverWandCharge`'s existing per-turn recharge-rate calculation. Both skip the generic `heroStats`-modifier loop the same way Tenacity does (via new `stat !== 'speed' && stat !== 'energy'` guards) since neither is a `StatBlock` entry, and both read through dedicated `ringHasteMultiplier()`/`ringEnergyMultiplier()` helpers mirroring `ringTenacityMultiplier()`'s existing shape. `RING_KEYS`/`RING_DEFS`/the appearance-shuffle's implicit ring pool (`Random.element(Object.keys(RING_DEFS))`, used for the Imp quest reward and one other spawn site) pick these two up automatically - the `PotionOf`/`ScrollOf`-style manual id-rename bug that hit potions/scrolls doesn't apply here, since `generatedInventoryItem`'s ring-id transform (`RingOfHaste` -> `haste`) already matches `RING_DEFS`'s bare keys with no special-casing needed. Browser-verified live: equipping a level-3 Haste ring made `getActionTurnCostMod()` return exactly `1/1.175^3 = 0.61643...`; equipping a level-4 Energy ring made `ringEnergyMultiplier()` return exactly `1.175^4 = 1.90613...`; both rings' French names/levels rendered correctly on equip ("bague de célérité +3 (+3)", "bague d'énergie +4 (+4)"). **A third ring type, Wealth, is now ported too, found stale in the same "re-check other blocked claims" pass that fixed Weapon Augment/`firstSummon`/`PotionOfHaste`** (7 of 12 now real): fetched `RingOfWealth.java` to confirm the exact shape - it's actually two independent mechanics, not one. `dropChanceMultiplier()` = `1.20^level`, a flat multiplier Java applies wherever a mob's own `lootChance()` gets rolled, needed no new system at all and is now wired into the `MOB_LOOT` roll in `kill()` via a new `ringWealthMultiplier()` (same shape as `ringHasteMultiplier`/`ringEnergyMultiplier`). The *separate* `tryForBonusDrop()` mechanic (an independent escalating-toward-guaranteed-rare-loot bonus roll, tracked by its own `TriesToDropTracker`/`dropsToRare` counters, generating an *additional* item via `Generator` on top of whatever the mob's own table already dropped) is a real, distinct subsystem this port doesn't have and is **not ported** - a narrower, honestly-flagged remaining gap, not glossed over as done. Browser-verified live: sampling 3000 fresh-bat kills with no ring equipped versus 3000 more with a level-3 Wealth ring equipped gave a drop-count ratio of `1.782` against real Java's exact `1.20^3 = 1.728` predicted ratio, within sampling noise. **Arcana is now ported too - a follow-up correction to this row's own previous entry, which overstated the scope after only checking `RingOfArcana.java` itself and guessing every enchant/curse proc would need touching.** Actually reading each of `Blazing`/`Chilling`/`Shocking`/`Vampiric`/`Grim`/`Lucky`/`Blocking`/`Polarized`/`Sacrificial`/`Displacing`/`Annoying`/`Dazzling`/`Explosive`/`Wayward`'s real Java `proc()` source showed `procChanceMultiplier()` is called *only* by the seven good-enchant classes, never by any curse - a deliberate Java design split (Arcana rewards keeping good enchants, never boosts a curse you're stuck with), not an oversight to retrofit everywhere. Of those seven, this port only rolls a real probabilistic chance for three - **Grim** (`0.15 * ringArcanaMultiplier()`), **Lucky** (`0.1 * ringArcanaMultiplier()`), and **Blocking** (folded into its existing exact `(lvl+4)/(lvl+40)` formula, which also correctly cascades into `powerMulti = max(1, procChance)`'s shield-amount calculation, matching Java's own order of operations) - since Blazing/Chilling/Shocking/Vampiric are unconditional in this port already (a separate, pre-existing simplification with no roll left for Arcana to scale). A new `ringArcanaMultiplier()` (`1.175^level`, mirroring `ringHasteMultiplier`/`ringEnergyMultiplier`'s shape) feeds all three. Browser-verified live: with no ring equipped, `ringArcanaMultiplier()` reads `1`; with a level-3 Arcana ring, it reads exactly `1.175^3 = 1.62223...`; a 4000-kill sampling comparison of Grim's proc rate with and without the ring gave a `1.737` ratio against the same `1.622` prediction, within sampling noise. **Force is now ported too**: fetched `RingOfForce.java`/`Hero.java` to confirm - `armedDamageBonus()` is a flat `+level` Java adds to `Hero.damageRoll()` whenever the wielded weapon isn't a `MissileWeapon` (its `fightingUnarmed`/`unarmedGetsWeaponAugment` branches, for a monk-style barehanded fighting mode this port has no equivalent of, are not modeled - moot anyway since this port always has *some* weapon equipped). A new `ringForceBonus()` is added at the hero's own melee-attack site, gated by the exact same `attacker === this.hero` reference check every other hero-only attack bonus here already uses (`kinetic`, `physicalBonusAttacks`, etc.) - true only at the real bump-attack call site (`this.attack(this.hero, occupant)`), never inside `useSpecial`'s throw/shoot/zap branches (which pass a shallow *copy* of the hero, not the hero itself) - so it excludes ranged/thrown attacks for free, with no extra weapon-kind check needed, matching Java's `MissileWeapon` exclusion exactly. Browser-verified live: with a level-4 Force ring equipped and the hero's own weapon damage roll zeroed out to isolate the ring's contribution, 50 real melee attacks averaged exactly `+4` damage each, while 50 attacks through the `useSpecial`-shaped copy-attacker path averaged `0` - confirming the exclusion holds. **Sharpshooting is now ported too**, the ranged mirror of Force's shape: fetched `RingOfSharpshooting.java`/`MissileWeapon.java`/`SpiritBow.java` to confirm two effects. `levelDamageBonus()` (flat `+level`) is added to `MissileWeapon.min()`/`max()` identically on both bounds (thrown stones/knives/spikes) but asymmetrically on `SpiritBow.min()`/`max()` - `+level` low, `+2*level` high - both now reproduced exactly via a new `ringSharpshootingBonus()`, added to `special.damage`'s two bounds at the `'throw'` and SpiritBow (`else`/`'shoot'`) branches in `useSpecial()` respectively, before their existing roll. `durabilityMultiplier()` (`1.2^level`) scales Java's `usages` directly; this port's equivalent `uses` (the divisor behind `ammoDurability`'s per-throw percentage decrement) now gets a matching `* ringSharpshootingDurabilityMultiplier()`. Browser-verified live: with a level-5 ring equipped, `ringSharpshootingBonus()` read `5` and `ringSharpshootingDurabilityMultiplier()` read exactly `1.2^5 = 2.48832`; a real thrown attack's `ammoDurability` dropped by exactly `100/round(5*2.48832) = 8.333`, matching the scaled `uses` divisor precisely; a 200-throw sampling comparison with and without the ring showed average damage rise from `3.54` to `8.495` (a `4.955` difference against the exact `+5` expected, within sampling noise). **Elements and Furor are now both ported, closing the last two ring gaps (all 12 real types live)** - fetched RingOfElements.java/RingOfFuror.java/Hero.java/Char.java (tag v3.3.8) to confirm the exact formulas, which overturned this row's own earlier scoping (written before the Java was actually read). **Elements**: resist() = pow(0.825, level) for sources in RESISTS (Burning/Chill/Frost/Ooze/Paralysis/Poison/Corrosion/ToxicGas/Electricity + AntiMagic.RESISTS). Real Java applies this in Char.resist()'s single choke point (damage *= resist(srcClass) - damage only, never buff duration); this port has no such shared dispatch, so the same factor is applied at each hero-side elemental-damage call site instead, via a new ringElementsMultiplier(): the burning/poison DoT tick in spendHeroTurn's applyBuffDamage hook, the toxic-gas blob's direct damage in spreadPlantBlobs, and the burning trap's fire damage in triggerTrapAt - all scaled before Barrier absorption, matching Hero.damage()'s ordering. Status durations are not scaled - Java does not scale those through this path either. **Furor**: attackSpeedMultiplier() = pow(1.09051, level), scaling only Hero.attackDelay() (a cost function entirely separate from Char.speed()). This port previously had only the single blanket getActionTurnCostMod(), so the split was built first: a new getAttackTurnCostMod() (blanket divided by ringFurorMultiplier()), and the move action port pre-checks whether the step leads into a hostile creature (the same creatureAt/NPC-exclusion test takeHeroTurn's own occupantAt query uses, which also correctly takes precedence over roots) - bump-attacks spend the attack rate and report the turn spent so the adapter does not also spend the blanket cost, while movement/door/NPC steps keep the blanket path, matching Java's split where Furor never speeds non-attacks. Both new defs ride RING_DEFS as marker-only entries (via a new NON_STATBLOCK_RING_STATS set, which also replaces the old 8-clause OR-chain in syncHeroFromStats per the ROADMAP section-11 KISS note), so ring generation (Random.element(Object.keys(RING_DEFS))) picks them up with no spawn-site changes. Type-check clean (npx tsc --noEmit); browser verification still owed per ROADMAP section 10 (no browser available this session). **Superseded scoping note, kept for history rather than deleted**: the paragraph below had checked the Java and concluded Elements needed a double-digit-site retrofit and Furor needed an attack-cost split - both turned out to be implementable in this same shape (3 elemental-damage sites; one attack-cost branch), not left as gaps. **Elements checked and confirmed a genuinely broad retrofit, not a quick win like Force/Sharpshooting/Arcana turned out to be** - fetched `RingOfElements.java`/`Char.java` to check before assuming either way. Real Java's `resist(Class effect)` is a single generic dispatch `Char.resist()` (0.5x per matching creature/property/buff-level resistance, then `* RingOfElements.resist()` on top) that EVERY status-effect application in the whole codebase is expected to call before applying its damage/duration - burning, chill/frost, poison, paralysis, corrosion, the ToxicGas/Electricity blobs, and `AntiMagic.RESISTS`'s list all route through it. This port has no equivalent generic resistance dispatch at all; every status buff this port already has (`poison`/`paralysis`/`burning`/etc.) is granted via its own scattered `addBuff(hero, id)` call site (gas blobs, potions, traps, plants, monster procs - a genuine double-digit count of sites, confirmed by grep), each of which would need its own multiply-by-`ringElementsMultiplier()` retrofit to get this right, not the 1-3 sites Force/Sharpshooting/Arcana each turned out to need. Not attempted this pass - correctly scoped as a real, broader gap rather than assumed simple and rushed. **Furor is also not ported, but its blocker is now narrower and more precisely understood, not a blanket "no system"**: fetched `RingOfFuror.java`/`Hero.java` to confirm - real Java's `RingOfFuror.attackSpeedMultiplier()` (`1.09051^level`) only scales `Hero.attackDelay()`, a cost function entirely separate from `Char.speed()` (`Hero.java`'s own `spend(attackDelay())` at the melee-hit site, distinct from the generic per-action `spend()` everything else uses) - this port's `getActionTurnCostMod()` is a single blanket multiplier applied to every hero action alike (move, search, ranged, melee) with no attack-only cost path to hang a Furor-specific multiplier on. Implementing Furor for real needs that split first, not just a stale-claim fix like Haste/Wealth/Augment/`firstSummon` turned out to be. **2026-09-09 item-system audit, two real bugs found and fixed, unrelated to the ring formulas themselves**: (1) `equipRing`'s Might HT-bonus branch checked `id.startsWith('ring_might')` directly instead of `ringDef(id)?.stat === 'strength'` like every other ring-stat branch - not a live bug (no other id starts with "might"), but an inconsistent exception now matched to the established pattern. (2) The Recharging buff's wand-charge bonus (`recoverWandCharge`, unrelated to rings but audited alongside Energy) was a `1.25x` multiplier on the ring-scaled base rate instead of `Wand.java`'s real `Charger.recharge()` shape - a flat `+CHARGE_BUFF_BONUS(0.25) * remainder()` added on top, independent of the base rate. At typical missing-charge counts the flat bonus dwarfs the base rate (e.g. `+0.25`/turn vs a `~0.02-0.03`/turn base), so the old multiplier made Recharging far weaker than real Java - fixed to `baseRate + (buff active ? 0.25 : 0)`, `remainder()`'s "half benefit on the last partial turn" collapsed to the flat value since this port's buff countdown has no sub-turn fraction to read. Both browser-verified live via `window.__MWG__.currentScene`: `getActionTurnCostMod`/`getAttackTurnCostMod`'s ring math unaffected; `recoverWandCharge` now banks `~0.28`/turn (`0.02` base `+0.25`) with `recharging` active at 4 missing charges, versus the old formula's `~0.0375`. |
 | **Shop pricing (`Shopkeeper.sellPrice`, `Item.value`)** | `src/shopPricing.ts` (`itemValue`/`getShopPrice`/`getSellPrice`/`buybackPrice`) | **Ported, replacing the old guessed table wholesale**: the old `~10%/depth x 1.5x/tier` curve and invented bases (potions 50, scrolls 30-50, rings 80) had no Java basis - now `sellPrice = value x 5 x (depth/5+1)` with the integer depth bracket (Java's own wealth modifier) and per-unit `value()` bodies verified class by class (potions/scrolls 30, upgrade/transmutation 50-known else 30, food 10, meat 5, bombs 15, runestones 15, seeds 10, sandbags 30, rings/wands 75 at shop-stand level/curse state). Selling to the keeper pays flat `value()` (the old 67%-of-shelf guess is gone). Ring/wand/armor/weapon full `value()` bodies (curse halving, level/tier scaling) are deliberately not reproduced - nothing prices them, since the sell side is food-only until a picker UI exists. |
 | **Artifact definitions (all 10 unique items)** | `src/artifacts.ts` ARTIFACTS array | **Defined** - all 10 SPD artifacts listed with charge mechanics (CloakOfShadows, ArmbandsOfHerculaneum, CapstoneOfExecution, ChaliceOfBlood, TimekeeperHourglass, DemonSlayerArmor, PickaxeOfMining, Hourglass, MysteriousLocket, SandalsOfTime). Full effect implementation requires system support. |

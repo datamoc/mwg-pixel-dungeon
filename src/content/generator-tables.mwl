@@ -1,0 +1,11 @@
+[game]
+schema=0.1
+[trait]
+id=floorSetTierProbs
+name=Generator.floorSetTierProbs
+[effect]
+apply_to=rows
+set=0,75,20,4,1;0,25,50,20,5;0,0,40,50,10;0,0,20,40,40;0,0,0,20,80
+[/effect]
+[/trait]
+[/game]

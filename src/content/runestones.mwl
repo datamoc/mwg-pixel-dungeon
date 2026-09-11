@@ -1,0 +1,15 @@
+[game]
+schema=0.1
+[trait]
+id=runestoneDeck
+name=Generator.Category.STONE
+[effect]
+apply_to=default_probs
+set=0,5,5,5,5,5,5,5,5,5,5,0
+[/effect]
+[effect]
+apply_to=classes
+set=StoneOfEnchantment,StoneOfIntuition,StoneOfDetectMagic,StoneOfFlock,StoneOfShock,StoneOfBlink,StoneOfDeepSleep,StoneOfClairvoyance,StoneOfAggression,StoneOfBlast,StoneOfFear,StoneOfAugmentation
+[/effect]
+[/trait]
+[/game]

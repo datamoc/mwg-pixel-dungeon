@@ -13,6 +13,7 @@ import { SpdRandom } from '../spdRng';
 import { PaintLevel, Terrain } from './paintLevel';
 import { paintLevel, TrapTable, Feeling, mergeRooms } from './regularPainter';
 import { setGeneratorDepth } from '../spdItems/generator';
+import { mwlPaintRule, mwlTrapTable } from './mwlDungeonRules';
 
 /** `RegularLevel.nTraps()`: `Random.NormalIntRange(2, 3 + depth/5)` - `depth/5` is 2 across all
  *  of Caves (11-14), giving range (2, 5), against Sewers' (2,3) and Prison's (2,4). */
@@ -24,18 +25,7 @@ function nTraps(depth: number): number {
  *  PORT_COVERAGE.md/gameBridge.ts's `TRAP_BEHAVIOUR`); these are name-only stand-ins in the real
  *  class order/weights, which is what `Random.chances`/`avoidsHallways` need. */
 function trapTable(): TrapTable {
-	return {
-		classes: [
-			'burning', 'poisonDart', 'frost', 'storm', 'corrosion',
-			'gripping', 'rockfall', 'guardian',
-			'confusion', 'summoning', 'warping', 'pitfall', 'gateway', 'geyser',
-		],
-		chances: [
-			4, 4, 4, 4, 4,
-			2, 2, 2,
-			1, 1, 1, 1, 1, 1,
-		],
-	};
+	return mwlTrapTable('caves');
 }
 
 /**
@@ -151,8 +141,8 @@ export function paintCavesLevel(rooms: Room[], depth: number, feeling: number | 
 	setGeneratorDepth(depth);
 	return paintLevel(
 		rooms, depth,
-		{ fill: feeling === Feeling.WATER ? 0.85 : 0.3, smoothness: 6 },
-		{ fill: feeling === Feeling.GRASS ? 0.65 : 0.15, smoothness: 3 },
+		{ fill: feeling === Feeling.WATER ? mwlPaintRule('caves').water.feeling : mwlPaintRule('caves').water.normal, smoothness: mwlPaintRule('caves').water.smoothness },
+		{ fill: feeling === Feeling.GRASS ? mwlPaintRule('caves').grass.feeling : mwlPaintRule('caves').grass.normal, smoothness: mwlPaintRule('caves').grass.smoothness },
 		{ n: nTraps(depth), table: trapTable() },
 		decorate,
 		feeling,

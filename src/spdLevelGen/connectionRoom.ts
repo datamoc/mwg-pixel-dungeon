@@ -13,6 +13,7 @@
  */
 import { Room, type ConnectionRoomKind } from './room';
 import { SpdRandom } from '../spdRng';
+import { MWL_TRAIT_NODES } from '../mwlContent';
 
 /**
  * `ConnectionRoom.chances[]`, indexed by depth (1-26); this port covers Sewers (1-5) and
@@ -20,15 +21,33 @@ import { SpdRandom } from '../spdRng';
  * by `PerimeterRoom` (22) with a little `WalkwayRoom` (3) - the inverse of Sewers, where
  * `PerimeterRoom` is the one class that can never appear.
  */
-const CHANCES: Record<number, number[]> = {
-	1: [20, 1, 0, 2, 2, 1], 2: [20, 1, 0, 2, 2, 1], 3: [20, 1, 0, 2, 2, 1], 4: [20, 1, 0, 2, 2, 1],
-	5: [20, 0, 0, 0, 0, 0],
-	6: [0, 0, 22, 3, 0, 0], 7: [0, 0, 22, 3, 0, 0], 8: [0, 0, 22, 3, 0, 0],
-	9: [0, 0, 22, 3, 0, 0], 10: [0, 0, 22, 3, 0, 0],
-};
-
 /** `ConnectionRoom.rooms[]`'s real registration order (`ConnectionRoom.java:50-57`). */
-const KINDS: ConnectionRoomKind[] = ['tunnel', 'bridge', 'perimeter', 'walkway', 'ringTunnel', 'ringBridge'];
+const KINDS: ConnectionRoomKind[] = (() => {
+	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'connectionRoomChances');
+	const effect = node?.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'classes');
+	const values = effect?.attributes.set?.split(',').filter(Boolean) ?? [];
+	if (values.length !== 6) throw new Error('MWL room rule has invalid connection-room class order');
+	return values as ConnectionRoomKind[];
+})();
+
+const CHANCES: Record<number, number[]> = (() => {
+	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'connectionRoomChances');
+	if (!node) throw new Error('MWL room rule is missing connectionRoomChances');
+	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
+	const raw = effect?.attributes.set;
+	if (raw === undefined) throw new Error('MWL room rule is missing connection-room entries');
+	const rows: Record<number, number[]> = {};
+	for (const entry of raw.split(';')) {
+		const [depthText, valuesText] = entry.split('|');
+		const depth = Number(depthText);
+		const values = valuesText?.split(',').map(Number) ?? [];
+		if (!Number.isInteger(depth) || values.length !== KINDS.length || values.some((value) => !Number.isFinite(value) || value < 0)) {
+			throw new Error(`MWL room rule has invalid connection-room row ${entry}`);
+		}
+		rows[depth] = values;
+	}
+	return rows;
+})();
 
 export function createConnectionRoom(depth: number, maze: boolean): Room {
 	if (maze) {

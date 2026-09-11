@@ -112,6 +112,72 @@ import splashRogueUrl from './assets/splash_rogue.jpg';
 import splashHuntressUrl from './assets/splash_huntress.jpg';
 import splashDuelistUrl from './assets/splash_duelist.jpg';
 import splashClericUrl from './assets/splash_cleric.jpg';
+import { MWL_ASSET_MANIFEST } from './generated/mwlAssets';
+
+/**
+ * Renderer registration is intentionally kept in TypeScript, but the list of assets that
+ * game data is allowed to reference comes from MWL. This registry is the bundler-facing
+ * adapter for those references: adding an `image=` value to a `.mwl` resource requires a
+ * matching imported URL here, and the manifest check below makes omissions fail loudly.
+ */
+const MWL_ASSET_URLS: Readonly<Record<string, string>> = {
+	'assets/bat.png': batUrl,
+	'assets/bee.png': beeUrl,
+	'assets/blacksmith.png': blacksmithUrl,
+	'assets/brute.png': bruteUrl,
+	'assets/crab.png': crabUrl,
+	'assets/demon.png': impUrl,
+	'assets/dm100.png': dm100Url,
+	'assets/dm200.png': dm200Url,
+	'assets/dm300.png': dm300Url,
+	'assets/elemental.png': elementalUrl,
+	'assets/eye.png': eyeUrl,
+	'assets/ghost.png': ghostUrl,
+	'assets/ghoul.png': ghoulUrl,
+	'assets/gnoll.png': gnollUrl,
+	'assets/golem.png': golemUrl,
+	'assets/goo.png': gooUrl,
+	'assets/guard.png': guardUrl,
+	'assets/guardian.png': guardianUrl,
+	'assets/king.png': kingUrl,
+	'assets/mimic.png': mimicUrl,
+	'assets/monk.png': monkUrl,
+	'assets/necromancer.png': necromancerUrl,
+	'assets/piranha.png': piranhaUrl,
+	'assets/pylon.png': pylonUrl,
+	'assets/rat.png': ratUrl,
+	'assets/ratking.png': ratkingUrl,
+	'assets/red_sentry.png': sentryUrl,
+	'assets/ripper.png': ripperUrl,
+	'assets/rot_heart.png': rotHeartUrl,
+	'assets/rot_lasher.png': rotLasherUrl,
+	'assets/scorpio.png': scorpioUrl,
+	'assets/shaman.png': shamanUrl,
+	'assets/sheep.png': sheepUrl,
+	'assets/shopkeeper.png': shopkeeperUrl,
+	'assets/skeleton.png': skeletonUrl,
+	'assets/slime.png': slimeUrl,
+	'assets/snake.png': snakeUrl,
+	'assets/spawner.png': spawnerUrl,
+	'assets/spinner.png': spinnerUrl,
+	'assets/statue.png': statueUrl,
+	'assets/succubus.png': succubusUrl,
+	'assets/swarm.png': swarmUrl,
+	'assets/tengu.png': tenguUrl,
+	'assets/thief.png': thiefUrl,
+	'assets/wandmaker.png': wandmakerUrl,
+	'assets/wards.png': wardsUrl,
+	'assets/warlock.png': warlockUrl,
+	'assets/yog.png': yogUrl,
+	'assets/yog_fists.png': fistsUrl,
+};
+
+function validateMwlAssetBindings(): void {
+	const missing = MWL_ASSET_MANIFEST.filter((asset) => !MWL_ASSET_URLS[asset]);
+	if (missing.length > 0) {
+		throw new Error(`MWL assets are not registered with the sprite loader: ${missing.join(', ')}`);
+	}
+}
 
 /** decodes a data: URI into an HTMLImageElement - Pixi's own loader expects a real URL, not a bare data: string */
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -273,6 +339,7 @@ export interface SpdSprites {
  * `ratking.png` likewise (`RatKingSprite`'s own 16x17 film) for the RatKingRoom denizen.
  */
 export async function loadSpdSprites(): Promise<SpdSprites> {
+	validateMwlAssetBindings();
 	const [
 		warrior,
 		mage,

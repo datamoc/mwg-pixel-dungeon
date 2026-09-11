@@ -115,13 +115,26 @@ import { WallDecorationLayer, WaterEmberLayer } from './ui/wallDecorations';
 import { runState, LANGUAGE_KEY } from './runState';
 import { recordRun } from './rankings';
 import { isChallengeEnabled } from './challenges';
-import { CLASS_TALENTS, subclassTalentDefinitions, type TalentDefinition } from './talents';
+import { CLASS_TALENTS, subclassTalentDefinitions, TALENT_TIERS, type TalentDefinition } from './talents';
 import { CLASSES, CLASS_AMMO, HERO_IDLE_FRAME, type ClassId } from './classes';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from './badges';
 import { TitleScene } from './scenes/titleScene';
 import { transferEnhancement } from './itemWorkflows';
 import { getCurse } from './itemCurses';
 import { Cat, generatorItemOrder, generatorRandom, ghostQuestReward, randomUsingDefaults, removeArtifactClass, setGeneratorDepth, type GenItem, type StatueLoot } from './spdItems/generator';
+import { MWL_MISSILE_BY_CLASS, MWL_PROGRESSION, MWL_QUEST_DEFINITIONS, MWL_SCENARIO_QUESTS, MWL_TURN_CLOCK } from './mwlContent';
+
+function scenarioQuest(id: string) {
+	const quest = MWL_SCENARIO_QUESTS.find((candidate) => candidate.id === id);
+	if (!quest) throw new Error(`MWL scenario quest is missing ${id}`);
+	return quest;
+}
+
+function questDefinition(id: string) {
+	const definition = MWL_QUEST_DEFINITIONS.find((candidate) => candidate.id === id);
+	if (!definition) throw new Error(`MWL quest definition is missing ${id}`);
+	return definition;
+}
 
 function randomElementalType(): NonNullable<Creature['elementalType']> {
 	//Elemental.random() (Elemental.java, tag v3.3.8): Chaos is a 1/50 roll; otherwise
@@ -185,7 +198,6 @@ import {
 	type Region,
 } from './genericDungeon';
 import {
-	TALENT_TIERS,
 	baseCreature,
 	rollHit,
 	rollDamage,
@@ -202,7 +214,7 @@ import {
 	type BuffId,
 } from './combat';
 import { nextEntityId } from './simulation/entityId';
-import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LIMITED_DROP_DECAY, BASE_KIND_ALIASES, NPC_KINDS, BOSS_KINDS, IMMOVABLE_KINDS, NEVER_SLEEPS_KINDS, FLYING_KINDS, DEPTH_SCALED_STATS, SPRITE_KIND_OVERRIDE, type AnyMonsterId, type MonsterId } from './monsters';
+import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LIMITED_DROP_DECAY, BASE_KIND_ALIASES, NPC_KINDS, BOSS_KINDS, IMMOVABLE_KINDS, NEVER_SLEEPS_KINDS, FLYING_KINDS, DEPTH_SCALED_STATS, SPRITE_KIND_OVERRIDE, MWL_AI_PROFILES, type AnyMonsterId, type MonsterId } from './monsters';
 
 /**
  * Shattered Pixel Dungeon, on top of mwg: a title screen, hero-class selection, the Sewers
@@ -342,8 +354,8 @@ import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LI
  * `maxExp(1)+maxExp(2)` directly). `maxLevel: 30` is `Hero.MAX_LEVEL`.
  */
 const SPD_LEVEL_CURVE: Actors.GrowthCurve = {
-	maxLevel: 30,
-	experienceFor: (level) => (level <= 1 ? 0 : Math.round((5 * (level - 1) * (level + 2)) / 2)),
+	maxLevel: MWL_PROGRESSION.maxLevel,
+	experienceFor: (level) => (level <= 1 ? 0 : Math.round((MWL_PROGRESSION.experienceNumerator * (level - 1) * (level + MWL_PROGRESSION.experienceOffset)) / MWL_PROGRESSION.experienceDivisor)),
 };
 
 /**
@@ -358,7 +370,7 @@ const SPD_LEVEL_CURVE: Actors.GrowthCurve = {
  */
 const SAD_GHOST_QUEST: Rpg.QuestDefinition = {
 	id: 'sadGhost',
-	stages: [{}, { condition: { switch: 'ghostTargetSlain', equals: true }, description: 'Slay the ghost\'s tormentor.' }, {}],
+	stages: [{}, { condition: { switch: questDefinition('sadGhost').conditionSwitch, equals: true }, description: questDefinition('sadGhost').description }, {}],
 };
 
 /**
@@ -369,7 +381,7 @@ const SAD_GHOST_QUEST: Rpg.QuestDefinition = {
  */
 const WANDMAKER_QUEST: Rpg.QuestDefinition = {
 	id: 'wandmaker',
-	stages: [{}, { condition: { switch: 'wandQuestDone', equals: true }, description: 'Bring the wandmaker a scroll.' }, {}],
+	stages: [{}, { condition: { switch: questDefinition('wandmaker').conditionSwitch, equals: true }, description: questDefinition('wandmaker').description }, {}],
 };
 
 /**
@@ -381,7 +393,7 @@ const WANDMAKER_QUEST: Rpg.QuestDefinition = {
  */
 const BLACKSMITH_QUEST: Rpg.QuestDefinition = {
 	id: 'blacksmith',
-	stages: [{}, { condition: { switch: 'blacksmithDone', equals: true }, description: 'Complete the Blacksmith quest.' }, {}],
+	stages: [{}, { condition: { switch: questDefinition('blacksmith').conditionSwitch, equals: true }, description: questDefinition('blacksmith').description }, {}],
 };
 
 /**
@@ -392,7 +404,7 @@ const BLACKSMITH_QUEST: Rpg.QuestDefinition = {
  */
 const IMP_QUEST: Rpg.QuestDefinition = {
 	id: 'imp',
-	stages: [{}, { condition: { switch: 'impDone', equals: true }, description: 'Bring 5 dwarf tokens.' }, {}],
+	stages: [{}, { condition: { switch: questDefinition('imp').conditionSwitch, equals: true }, description: questDefinition('imp').description }, {}],
 };
 
 /**
@@ -2843,8 +2855,9 @@ export class SewersScene extends Scene2D {
 	}
 
 	private maybeSpawnGhost(): void {
-		if (this.ghostSpawned || this.depth < 2 || this.depth > 4) return;
-		if (Random.int(0, 5 - this.depth) !== 0) return;
+		const quest = scenarioQuest('ghost');
+		if (this.ghostSpawned || !quest.depths.includes(this.depth)) return;
+		if (Random.int(0, quest.rollBase - this.depth) !== 0) return;
 
 		const at = this.standableCellIn(this.randomSpawnRoom());
 		if (!at) return;
@@ -2860,8 +2873,9 @@ export class SewersScene extends Scene2D {
 	 * targets (dust, embers, rotberry) are now real items with real turn-ins.
 	 */
 	private maybeSpawnWandmaker(): void {
-		if (this.wandmakerSpawned || this.depth < 7 || this.depth > 9) return;
-		if (Random.int(0, 10 - this.depth) !== 0) return;
+		const quest = scenarioQuest('wandmaker');
+		if (this.wandmakerSpawned || !quest.depths.includes(this.depth)) return;
+		if (Random.int(0, quest.rollBase - this.depth) !== 0) return;
 
 		const at = this.standableCellIn(this.randomSpawnRoom());
 		if (!at) return;
@@ -2877,7 +2891,8 @@ export class SewersScene extends Scene2D {
 	 * and buyback shelf.
 	 */
 	private maybeSpawnShopkeeper(): void {
-		if (![6, 11, 16, 21].includes(this.depth) || this.shopSpawnedDepths.has(this.depth)) return;
+		const quest = scenarioQuest('shopkeeper');
+		if (!quest.depths.includes(this.depth) || this.shopSpawnedDepths.has(this.depth)) return;
 		const at = this.standableCellIn(this.randomSpawnRoom());
 		if (!at) return;
 		this.spawnMonster('shopkeeper', at);
@@ -2890,8 +2905,9 @@ export class SewersScene extends Scene2D {
 	 * fallback is retained only for non-ported floors and therefore uses the normal path.
 	 */
 	private maybeSpawnBlacksmith(): void {
-		if (this.blacksmithSpawned || this.depth < 12 || this.depth > 14) return;
-		if (Random.int(0, 15 - this.depth) !== 0) return;
+		const quest = scenarioQuest('blacksmith');
+		if (this.blacksmithSpawned || !quest.depths.includes(this.depth)) return;
+		if (Random.int(0, quest.rollBase - this.depth) !== 0) return;
 
 		const at = this.standableCellIn(this.randomSpawnRoom());
 		if (!at) return;
@@ -2906,8 +2922,9 @@ export class SewersScene extends Scene2D {
 	 * are real either way.
 	 */
 	private maybeSpawnImp(): void {
-		if (this.impSpawned || this.depth < 17 || this.depth > 19) return;
-		if (Random.int(0, 20 - this.depth) !== 0) return;
+		const quest = scenarioQuest('imp');
+		if (this.impSpawned || !quest.depths.includes(this.depth)) return;
+		if (Random.int(0, quest.rollBase - this.depth) !== 0) return;
 
 		const at = this.standableCellIn(this.randomSpawnRoom());
 		if (!at) return;
@@ -3516,7 +3533,13 @@ export class SewersScene extends Scene2D {
 		//with no affix ever rolled - found live while testing the Ghost-quest reward fix above,
 		//not something that fix introduced. Fixed to the same range shape `generatedGroundKind` uses.
 		if (generated.cat === Cat.GOLD) id = 'gold';
-		else if (generated.cat <= Cat.WEP_T5 || (generated.cat >= Cat.MISSILE && generated.cat <= Cat.MIS_T5)) id = 'weaponReward';
+		else if (generated.cat >= Cat.MISSILE && generated.cat <= Cat.MIS_T5) {
+			//Missile classes are concrete `MissileWeapon`s in Java, not generic weapons. Their
+			//identity now survives the Generator -> inventory boundary through the MWL catalogue;
+			//the compact class-ammo action still consumes its shared ammo counter below, so the
+			//per-class effects (returning boomerangs, bolas, etc.) remain explicitly documented.
+			id = MWL_MISSILE_BY_CLASS.get(cls)?.id ?? 'stone';
+		} else if (generated.cat <= Cat.WEP_T5) id = 'weaponReward';
 		//Same class of rename `Cat.POTION`/`Cat.SCROLL` need above: every other generated
 		//`Cat.STONE` runestone (StoneOfEnchantment/Intuition/DetectMagic/Flock/Aggression) used to
 		//collapse into the generic 'stone' id with no distinct effect at all - a real, wider
@@ -5932,7 +5955,7 @@ export class SewersScene extends Scene2D {
 		finishHeroTurn({
 			isAlive: () => this.hero.hp > 0,
 			advanceClock: () => {
-				this.clock.advance(turnCost);
+				this.clock.advance(turnCost * (MWL_TURN_CLOCK.tick ?? 1));
 				//`ConservedDamage.act()`: `preservedDamage -= max(preserved*0.025, 0.1)`,
 				//detaching at zero - previously a flat `*0.75` floor, a guess with no Java
 				//basis, and the store rule below used to add half of every hit instead of
@@ -6168,7 +6191,7 @@ export class SewersScene extends Scene2D {
 
 	/** Hunger.act(): +10 per turn, warnings/1-damage on crossing STARVING, then continuous partialDamage accrual */
 	private hungerStep(): void {
-		this.simulation.hungerStep();
+		this.simulation.hungerStep(MWL_TURN_CLOCK.hunger ?? 10);
 		const reduction = ironStomachReduction(this.heroClass, this.talentRank('iron_stomach'));
 		if (reduction > 0) this.hunger = Math.max(0, this.hunger - reduction);
 	}
@@ -7017,7 +7040,7 @@ export class SewersScene extends Scene2D {
 		//cascade - see `rangedAiOverrides`'s own doc comment). `distance` is always >=2 here
 		//(the `distance === 1` block above always returns), so every handler below runs only
 		//for a non-adjacent monster, matching where each original branch used to sit.
-		const rangedOverride = monster.kind ? this.rangedAiOverrides[monster.kind] : undefined;
+		const rangedOverride = monster.kind ? this.validatedRangedAiProfiles[monster.kind] : undefined;
 		if (rangedOverride && rangedOverride(monster, distance)) return;
 		const blocked = new Set(
 			this.creatures.filter((c) => c !== monster && c !== this.hero).map((c) => this.level.index(c.x, c.y))
@@ -7370,6 +7393,16 @@ export class SewersScene extends Scene2D {
 			return false;
 		},
 	};
+
+	private readonly validatedRangedAiProfiles: Readonly<Record<string, (monster: Creature, distance: number) => boolean>> = (() => {
+		const resolved: Record<string, (monster: Creature, distance: number) => boolean> = {};
+		for (const [monster, profile] of Object.entries(MWL_AI_PROFILES)) {
+			const hook = this.rangedAiOverrides[profile];
+			if (!hook) throw new Error(`MWL AI profile ${profile} has no TypeScript hook for ${monster}`);
+			resolved[monster] = hook;
+		}
+		return resolved;
+	})();
 
 	/** Necromancer/SpectralNecromancer's non-adjacent turn (the adjacent case bolts instead,
 	 * handled at the `distance === 1` dispatch via `zapHero` directly). See the

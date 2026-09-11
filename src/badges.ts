@@ -1,5 +1,6 @@
 import { Achievements, SaveSystem } from 'mwg';
 import { CLASS_BADGE, type ClassId } from './classes';
+import { MWL_TRAIT_NODES } from './mwlContent';
 
 /**
  * Badges (`Badges.java`) as `mwg/core` Achievements: one boss badge per chapter, victory,
@@ -8,22 +9,15 @@ import { CLASS_BADGE, type ClassId } from './classes';
  * weapon at +2); the Cleric has no Java unlock (predates it), so first victory opens it -
  * a stated port rule, not a Java one.
  */
-export const BADGE_DEFS: { id: string; counter: string; target: number; description: string }[] = [
-	{ id: 'boss1', counter: 'boss_goo', target: 1, description: 'Slew Goo' },
-	{ id: 'boss2', counter: 'boss_tengu', target: 1, description: 'Slew Tengu' },
-	{ id: 'boss3', counter: 'boss_dm300', target: 1, description: 'Slew DM-300' },
-	{ id: 'boss4', counter: 'boss_king', target: 1, description: 'Slew the Dwarf King' },
-	{ id: 'victory', counter: 'amulet', target: 1, description: 'Escaped with the Amulet' },
-	{ id: 'unlock_mage', counter: 'upgrades_used', target: 1, description: 'Used an upgrade scroll' },
-	{ id: 'unlock_rogue', counter: 'surprises', target: 10, description: '10 surprise attacks' },
-	{ id: 'unlock_huntress', counter: 'throws', target: 10, description: '10 thrown attacks' },
-	{ id: 'unlock_duelist', counter: 'weapon_plus2', target: 1, description: 'Raised a weapon to +2' },
-	{ id: 'death_trap', counter: 'death_trap', target: 1, description: 'Died to a trap' },
-	{ id: 'death_fire', counter: 'death_fire', target: 1, description: 'Died to fire' },
-	{ id: 'death_poison', counter: 'death_poison', target: 1, description: 'Died to poison' },
-	{ id: 'death_hunger', counter: 'death_hunger', target: 1, description: 'Starved to death' },
-	{ id: 'death_foe', counter: 'death_foe', target: 1, description: 'Slain by a foe' },
-];
+const badgeTrait = MWL_TRAIT_NODES.find((node) => node.attributes.id === 'badgeCatalogue');
+if (!badgeTrait) throw new Error('MWL badge catalogue is missing');
+const badgeEntries = badgeTrait.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries')?.attributes.set;
+if (!badgeEntries) throw new Error('MWL badge catalogue is missing entries');
+export const BADGE_DEFS: { id: string; counter: string; target: number; description: string }[] = badgeEntries.split(';').filter(Boolean).map((entry) => {
+	const [id, counter, target, description, icon] = entry.split('|');
+	if (!id || !counter || !description || !Number.isFinite(Number(target)) || !icon) throw new Error(`Invalid MWL badge: ${entry}`);
+	return { id, counter, target: Number(target), description };
+});
 
 /**
  * `Badges.Badge.image` - the real 16x16-cell index each of `BADGE_DEFS`' entries cuts from
@@ -34,22 +28,10 @@ export const BADGE_DEFS: { id: string; counter: string; target: number; descript
  * borrows `DEATH_FROM_ALL`'s icon (a generic skull) since Java has no "killed by a monster"
  * badge at all - every other entry below is an exact match.
  */
-export const BADGE_ICON: Record<string, number> = {
-	boss1: 15, // BOSS_SLAIN_1
-	boss2: 47, // BOSS_SLAIN_2
-	boss3: 48, // BOSS_SLAIN_3
-	boss4: 78, // BOSS_SLAIN_4
-	victory: 82, // VICTORY
-	unlock_mage: 1, // UNLOCK_MAGE
-	unlock_rogue: 2, // UNLOCK_ROGUE
-	unlock_huntress: 3, // UNLOCK_HUNTRESS
-	unlock_duelist: 4, // UNLOCK_DUELIST
-	death_trap: 81, // DEATH_FROM_GRIM_TRAP (closest available)
-	death_fire: 16, // DEATH_FROM_FIRE
-	death_poison: 17, // DEATH_FROM_POISON
-	death_hunger: 19, // DEATH_FROM_HUNGER
-	death_foe: 104, // DEATH_FROM_ALL (closest available - generic)
-};
+export const BADGE_ICON: Record<string, number> = Object.fromEntries(badgeEntries.split(';').filter(Boolean).map((entry) => {
+	const [id, , , , icon] = entry.split('|');
+	return [id, Number(icon)];
+}));
 
 /** badges earned across runs, shared by the title, select and game scenes */
 export function loadBadges(): Achievements {

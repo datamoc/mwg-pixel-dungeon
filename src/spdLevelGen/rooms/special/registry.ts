@@ -21,6 +21,7 @@ import type { SpecialRoomKind } from '../../room';
 import { Room } from '../../room';
 import { PaintLevel } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
+import { MWL_TRAIT_NODES } from '../../../mwlContent';
 
 import { paintWeakFloorRoom } from './weakFloorRoom';
 import { paintMassGraveRoom } from './massGraveRoom';
@@ -47,10 +48,19 @@ import { paintCrystalPathRoom } from './crystalPathRoom';
 import { paintLaboratoryRoom } from './laboratoryRoom';
 import { paintPitRoom } from './pitRoom';
 
-const EQUIP_SPECIALS: SpecialRoomKind[] = ['weakFloor', 'crypt', 'pool', 'armory', 'sentry', 'statue', 'crystalVault', 'crystalChoice', 'sacrifice'];
-const CONSUMABLE_SPECIALS: SpecialRoomKind[] = ['runestone', 'garden', 'library', 'storage', 'treasury', 'magicWell', 'toxicGas', 'magicalFire', 'traps', 'crystalPath'];
-const CRYSTAL_KEY_SPECIALS: SpecialRoomKind[] = ['pit', 'crystalVault', 'crystalChoice', 'crystalPath'];
-const POTION_SPAWN_ROOMS: SpecialRoomKind[] = ['pool', 'sentry', 'storage', 'toxicGas', 'magicalFire', 'traps'];
+function specialRoomList(id: string, applyTo: string): SpecialRoomKind[] {
+	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === id);
+		if (!node) throw new Error(`MWL room rule is missing ${id}`);
+	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === applyTo);
+	const values = effect?.attributes.set?.split(',').filter(Boolean) ?? [];
+	if (values.length === 0) throw new Error(`MWL room rule is missing ${id}.${applyTo}`);
+	return values as SpecialRoomKind[];
+}
+
+const EQUIP_SPECIALS = specialRoomList('specialRoomRules', 'equipSpecials');
+const CONSUMABLE_SPECIALS = specialRoomList('specialRoomRules', 'consumableSpecials');
+const CRYSTAL_KEY_SPECIALS = specialRoomList('specialRoomRules', 'crystalKeySpecials');
+const POTION_SPAWN_ROOMS = specialRoomList('specialRoomRules', 'potionSpawnRooms');
 
 let runSpecials: SpecialRoomKind[] = [];
 let floorSpecials: SpecialRoomKind[] = [];

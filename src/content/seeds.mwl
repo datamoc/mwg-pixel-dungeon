@@ -1,0 +1,15 @@
+[game]
+schema=0.1
+[trait]
+id=seedDeck
+name=Generator.Category.SEED
+[effect]
+apply_to=classes
+set=rotberry,sungrass,fadeleaf,icecap,firebloom,sorrowmoss,swiftthistle,blindweed,stormvine,earthroot,mageroyal,starflower
+[/effect]
+[effect]
+apply_to=default_probs
+set=0,5,5,5,5,5,5,5,5,5,5,2
+[/effect]
+[/trait]
+[/game]
