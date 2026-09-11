@@ -62,6 +62,10 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.log.alchemy.noingredients': 'You have no ingredients for the available recipes.',
 	'port.log.alchemy.unavailable': 'That recipe is no longer available.',
 	'port.log.alchemy.crafted': 'You craft {item}.',
+	//`Alchemize`'s energize branch logs `"You energized: " + item.name()` in hardcoded English
+	//(Java never keyed it), so this is the port's own translated line.
+	'port.log.alchemize.energized': 'You energized {item}.',
+	'port.log.alchemize.nothing': 'You have nothing to energize.',
 	//The four alchemy catalogue entries with no single SPD item class behind them - see
 	//`consumables.mwl`'s matching comment. Every other alchemy output names itself through its
 	//real Java message key, so it needs no entry here.
@@ -557,6 +561,8 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 	'port.log.alchemy.noingredients': "Vous n'avez aucun ingrédient pour les recettes disponibles.",
 	'port.log.alchemy.unavailable': "Cette recette n'est plus disponible.",
 	'port.log.alchemy.crafted': 'Vous fabriquez {item}.',
+	'port.log.alchemize.energized': 'Vous avez transformé {item} en énergie.',
+	'port.log.alchemize.nothing': "Vous n'avez rien à transformer en énergie.",
 	'port.name.alchemy.scrolltostone': 'parchemin de pierre',
 	'port.name.alchemy.exoticpotion': 'potion exotique',
 	'port.name.alchemy.exoticscroll': 'parchemin exotique',

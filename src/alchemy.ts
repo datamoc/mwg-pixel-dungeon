@@ -56,9 +56,38 @@ export function alchemyRecipe(id: string): AlchemyRecipe | undefined {
 	return ALCHEMY_RECIPES.find((recipe) => recipe.id === id);
 }
 
-/** Returns the authored crystal yield for one item kind, or zero for non-consumables. */
-export function alchemyEnergyFor(itemId: string): number {
-	return ALCHEMY_ENERGY[itemId] ?? 0;
+/**
+ * The authored energy table is keyed by SPD's *kind* (seed/stone/scroll/potion/food), but this
+ * port carries concrete consumable ids in the bag (`potionHealing`, `seedRotberry`...) and only
+ * sometimes the generic one, so a concrete id has to be reduced to its kind before lookup.
+ */
+function energyKindOf(itemId: string): string | undefined {
+	const id = itemId.toLowerCase();
+	if (id.startsWith('seed')) return 'seed';
+	if (id === 'stone' || id.startsWith('stoneof')) return 'stone';
+	if (id.startsWith('scroll')) return 'scroll';
+	if (id.startsWith('potion')) return 'potion';
+	if (id === 'food' || id === 'meat' || id === 'chargrilledmeat') return 'food';
+	return undefined;
+}
+
+/**
+ * `Item.energyVal()`'s `isKnown()` overrides: these four classes give 10 while identified and
+ * their base 6 while not (`PotionOfStrength`/`PotionOfExperience`/`ScrollOfUpgrade`/
+ * `ScrollOfTransmutation`, tag v3.3.8). Every other energy value is the class base, which the
+ * authored table already carries.
+ */
+const KNOWN_ENERGY_10 = new Set(['potionstrength', 'potionexperience', 'scrollupgrade', 'scrolltransmutation']);
+
+/** `Item.energyVal()` for one carried item: an exact authored row wins, then the item's own
+ * consumable kind, else zero (Java's `Item.energyVal()` default). */
+export function alchemyEnergyFor(itemId: string, identified: boolean): number {
+	const exact = ALCHEMY_ENERGY[itemId];
+	if (exact !== undefined) return exact;
+	const kind = energyKindOf(itemId);
+	const base = kind === undefined ? 0 : ALCHEMY_ENERGY[kind] ?? 0;
+	if (base > 0 && identified && KNOWN_ENERGY_10.has(itemId.toLowerCase())) return 10;
+	return base;
 }
 
 /** Resolves an authored recipe through MWG's all-or-nothing inventory transaction. */

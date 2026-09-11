@@ -272,6 +272,16 @@ Do not add new authored content as object literals or scattered constants in the
       message keys (see the i18n item under section 0), and the four recipe outputs with no single
       SPD class keep port keys. That pot window is still single-choice rather than Java's
       multi-ingredient add/scrap UI.
+      **The `Alchemize` spell's cast is ported (2026-09-11)**: it scraps a picked bag consumable
+      into its real `Item.energyVal()` (kind bases plus the four `isKnown()` 10s), identifying it
+      and spending no turn, through the same free-action shape `useStylus` uses - this also put
+      `alchemyEnergyFor` and the authored energy table to work instead of leaving both dead. Its
+      recipe is *not* executable: Java's takes any seed plus any runestone, which the port's
+      concrete-id recipe model cannot express (runestones carry 12 `stoneOf*` ids plus a generic
+      `stone` id shared with the throwing-missile identity), so it is recorded as not ported
+      rather than approximated. The runtime generic seed also gained the MWL identity it lacked
+      (bag seeds used to render the raw id `seed`), and `shopPricing`'s alchemize value was
+      corrected from 5 to Java's `20/8`.
       Wand identity is now persisted from generated `sourceClass` through equipment/save state;
       the shared Elemental carrier also preserves its four Java subtypes and now emits the
       corresponding Fire/Frost/Shock/Chaos loot outcomes; their shared combat carrier now

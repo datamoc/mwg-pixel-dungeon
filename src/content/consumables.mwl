@@ -241,6 +241,16 @@ name=plants.starflower$seed.name
 slot=consumable
 stackable=true
 [/item]
+# The runtime generic seed: `sourceInventoryItem` maps any picked-up `Plant.Seed` to this one id
+# (keeping the concrete plant in `sourceClass`), and the alchemy pot needs it as an ingredient
+# identity. SPD has no generic seed class, so it names itself through the unknown-seed
+# placeholder, exactly as the ground-item key table already assumed.
+[item]
+id=seed
+name=plants.plant$seed$placeholder.name
+slot=consumable
+stackable=true
+[/item]
 
 [item]
 id=stewedMeat

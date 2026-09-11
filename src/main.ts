@@ -13,7 +13,7 @@ import { SceneSimulationAdapter } from './adapters/sceneSimulation';
 import { dispatchHeroAction, type HeroActionPorts } from './adapters/heroActions';
 import { runSearch } from './adapters/searchSimulation';
 import { runMovement } from './adapters/movementSimulation';
-import { ALCHEMY_RECIPES, craftAlchemy } from './alchemy';
+import { ALCHEMY_RECIPES, alchemyEnergyFor, craftAlchemy } from './alchemy';
 import { runAttackResolution } from './adapters/attackSimulation';
 import { simulationRandom } from './adapters/mwgRandom';
 import { MOVES } from './simulation/heroActions';
@@ -11973,6 +11973,38 @@ export class SewersScene extends Scene2D {
 		});
 	}
 
+	/** `Alchemize`'s in-game cast: `WndAlchemizeItem`/`WndEnergizeItem` scrap one carried
+	 * consumable into its `energyVal()` of alchemical energy and identify the scrapped item.
+	 * Java spends no time for this (`energize()` calls `hero.spend(-hero.cooldown())`), and this
+	 * port reaches the effect without going through `onAction`, so it likewise spends no turn -
+	 * the same shape `useStylus` uses. Java's window also offers a sell branch and an
+	 * "energize all" button; this direct picker grants one unit's energy. Java refuses to scrap
+	 * another Alchemize, and anything whose `energyVal()` is zero. */
+	private useAlchemize(instanceId?: string): void {
+		const candidates = this.bag.items.filter((item) => item.quantity > 0
+			&& item.id !== 'alchemize'
+			&& alchemyEnergyFor(item.id, item.identified ?? false) > 0);
+		if (candidates.length === 0) {
+			this.say(t('port.log.alchemize.nothing'), 'negative');
+			return;
+		}
+		this.openItemPicker(t('items.spells.alchemize.prompt'), candidates, (pick) => {
+			const target = this.bag.items.find((item) => item.quantity > 0
+				&& item.id === pick.id && (item.instanceId ?? undefined) === (pick.instanceId ?? undefined));
+			if (!target) return;
+			const energy = alchemyEnergyFor(target.id, target.identified ?? false);
+			if (energy <= 0) return;
+			const name = this.itemDisplayName(target.id, target.identified ?? false, target.instanceId);
+			this.bag.remove(target.id, 1, target.instanceId);
+			this.bag.remove('alchemize', 1, instanceId);
+			this.alchemyEnergy += energy;
+			//`energize()` identifies the item as it is consumed, even though it is gone.
+			target.identified = true;
+			this.say(t('port.log.alchemize.energized', { item: name }), 'positive');
+			this.refreshInventoryPanel();
+		});
+	}
+
 	/** `StoneOfFlock.activate(cell)`: Java fills every reachable non-solid cell within distance
 	 * two with a temporary Sheep NPC. This port has no thrown-cell targeting, so the hero's
 	 * cell is the center; the same radius is represented by a Chebyshev circle and each sheep
@@ -12790,6 +12822,7 @@ export class SewersScene extends Scene2D {
 			else if (id === 'candle') this.useCandle(instanceId);
 			else if (id === 'bomb' || SPECIALTY_BOMB_IDS.has(id)) this.useBomb(id, instanceId);
 			else if (id === 'stylus') this.useStylus(instanceId);
+			else if (id === 'alchemize') this.useAlchemize(instanceId);
 			else if (id === 'kingsCrown') this.useKingsCrown(instanceId);
 		} finally {
 			this.requestedItemId = null;

@@ -38,9 +38,11 @@ const UNIT_VALUES: Record<string, number> = {
 	stone: 15, stoneOfAugmentation: 15, stoneOfFear: 15, stoneOfDeepSleep: 15,
 	stoneOfShock: 15, stoneOfBlast: 15, stoneOfBlink: 15, stoneOfClairvoyance: 15,
 	seed: 10, sandBag: 30,
-	//`Ankh.value()`/`Stylus.value()`/`Honeypot.value()` are 50/30/30; Alchemize
-	//uses `(40 * quantity / 8)` in Java's spell implementation, so one shop use is 5.
-	ankh: 50, stylus: 30, honeypot: 30, alchemize: 5, bag: 30,
+	//`Ankh.value()`/`Stylus.value()`/`Honeypot.value()` are 50/30/30; `Alchemize.value()` is
+	//`(int)(20 * quantity / OUT_QUANTITY)` with OUT_QUANTITY 8, i.e. 2.5 per unit. This port's
+	//per-unit model keeps 2.5 so a full recipe stack of 8 is worth Java's 20; Java truncates a
+	//single one to 2, which a per-unit table cannot also express.
+	ankh: 50, stylus: 30, honeypot: 30, alchemize: 2.5, bag: 30,
 };
 
 /**
