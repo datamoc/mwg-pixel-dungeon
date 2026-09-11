@@ -61,13 +61,29 @@
   0.7.2. `tools/check-mwg-version.mjs` (`npm run mwg:check`) reports the pin, the installed
   version and npm's latest in one line and is the hourly check while porting, per AGENTS.md.
   Adopting what 0.7.3 makes redundant is tracked separately in ROADMAP.md.
-- **A fidelity bug found while scoping the fire work: the Yog beam burns doors** (2026-09-11).
-  `fireYogDeathGaze` treats `[GRASS, HIGH_GRASS, DOOR, DOOR_CLOSED]` as flamable, but Java's
-  flamable set is exactly `GRASS`/`HIGH_GRASS`/`FURROWED_GRASS` (`Terrain.flags`' `FLAMABLE` bit)
-  plus the `SewerLevel` special case that force-marks `REGION_DECO`/`REGION_DECO_ALT`; `DOOR` and
-  `DOOR_CLOSED` carry no such flag, so a door in the beam's path must not catch fire. The same
-  check also misses `FURROWED_GRASS` (trampled high grass, which keeps the flag) and the sewer
-  deco case. Recorded here rather than fixed in place because the whole flammable model is a gap:
+- **`mwg` 0.7.4 adopted (2026-09-11), and the port's own `Bar` is gone with it.** 0.7.4 is the
+  published latest, so the pin moved to `^0.7.4`; the MWL compile emits byte-identical modules,
+  `check`/`build` are clean, both suites pass and the browser smoke/save checks are clean, so the
+  bump alone changes nothing here. What the release unblocked came with it: `src/ui/bar.ts` is
+  **deleted** (and `tools/scratch/uiCheck.ts` with it, since it only proved the rounding that the
+  framework now owns and tests), with the HUD's two bars, the per-monster bars and the boss bar
+  moved to `mwg/ui`'s `Bar` - `fillTexture`/`background` for the art and the black track,
+  `roundUpToPixel` for `HealthBar.layout()`'s sliver rule, `setValue` for the fraction and
+  `setColor` for the boss bar's bleeding tint. Verified live (`_browsercheck/bar_check.mjs`): the
+  HP bar reads exactly `hp/maxHp`, a half-dead monster gets its own bar at `0.5`, Goo's boss bar
+  reads `0.2` and tints `0xff7777` on the 25% edge, and the HUD screenshot shows the bar drawn
+  over its black track. One capture caveat learned here: `page.screenshot()` returned a stale
+  frame of the *previous* scene on this WebGL canvas, so the HUD was captured with
+  `canvas.toDataURL()` inside a double `requestAnimationFrame` instead.
+- **Correcting my own claim: the Yog beam's door handling is faithful, not a bug** (2026-09-11).
+  I first recorded the opposite, from a grep that never matched `DOOR`; at `v3.3.8`
+  `Terrain.flags[DOOR] = PASSABLE | LOS_BLOCKING | FLAMABLE | SOLID` and
+  `flags[OPEN_DOOR] = PASSABLE | FLAMABLE`, so a door *is* combustible and the beam's
+  `[GRASS, HIGH_GRASS, DOOR, DOOR_CLOSED]` list reproduces it - the port's own comment already
+  said so. What the list still misses, if those kinds ever reach the live level, is
+  `FURROWED_GRASS` (trampled high grass, which keeps the flag) and the `SewerLevel` case where
+  `REGION_DECO`/`REGION_DECO_ALT` are force-marked flamable (`flags[REGION_DECO]` is `STATUE`'s,
+  so it is the level, not the terrain, that makes those burn). Recorded here rather than fixed in place because the whole flammable model is a gap:
   the port has no flamable map at all and `spreadFire()` says so ("no flammable map", "no
   heap-burn primitive"), and `gameBridge.ts` collapses `EMBERS` to `floor`, so burned ground
   cannot even be represented in the live level. The full scoping, both sides read, is

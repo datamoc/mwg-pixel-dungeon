@@ -1,6 +1,5 @@
 import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
-import { Label, NinePatch } from 'mwg';
-import { Bar } from './bar';
+import { Bar, Label, NinePatch } from 'mwg';
 import { SPD_TITLE_COLOR } from './spdTheme';
 
 /**
@@ -128,8 +127,11 @@ export class StatusPane extends Container {
 		this.hpBar = new Bar({
 			width: BAR_WIDTH,
 			height: 4,
-			fill: new Texture({ source: statusSheet.source, frame: new Rectangle(0, 36, BAR_WIDTH, 4) }),
-			backgroundColor: 0x000000,
+			fillTexture: new Texture({ source: statusSheet.source, frame: new Rectangle(0, 36, BAR_WIDTH, 4) }),
+			background: 0x000000,
+			//`HealthBar.layout()` lights a sliver of health rather than a sub-pixel nothing, and the
+			//framework's `Bar` has that rule as an option rather than always, so it is asked for.
+			roundUpToPixel: true,
 		});
 		this.hpBar.x = 30 * SCALE;
 		this.hpBar.y = 3 * SCALE;
@@ -140,8 +142,9 @@ export class StatusPane extends Container {
 		this.expBar = new Bar({
 			width: 16,
 			height: 1,
-			fill: new Texture({ source: statusSheet.source, frame: new Rectangle(0, 44, 16, 1) }),
-			backgroundColor: 0x222222,
+			fillTexture: new Texture({ source: statusSheet.source, frame: new Rectangle(0, 44, 16, 1) }),
+			background: 0x222222,
+			roundUpToPixel: true,
 		});
 		this.expBar.x = 0;
 		this.expBar.y = 0;
@@ -186,12 +189,12 @@ export class StatusPane extends Container {
 	update(state: StatusPaneState): void {
 		//hp.scale.x = max(0, (health - shield)/max); no shielding here, so health/max
 		const shield = state.shield ?? 0;
-		this.hpBar.setLevel(state.maxHp > 0 ? Math.max(0, state.hp - shield) / state.maxHp : 0);
+		this.hpBar.setValue(state.maxHp > 0 ? Math.max(0, state.hp - shield) / state.maxHp : 0);
 		this.hpText.setText(`${Math.max(0, state.hp)}/${state.maxHp}`);
 
 		//exp.scale.x = (width/exp.width) * hero.exp / hero.maxExp() - the width factor is
 		//baked into this bar's own scale, so only the fraction is set here
-		this.expBar.setLevel(state.maxExp > 0 ? state.exp / state.maxExp : 0);
+		this.expBar.setValue(state.maxExp > 0 ? state.exp / state.maxExp : 0);
 
 		this.levelText.setText(String(state.level));
 		this.placeText.setText(state.place);

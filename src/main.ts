@@ -8,7 +8,7 @@ import { WaterSurface } from './ui/waterSurface';
 import { InventoryWindow, type InventoryEntry } from './ui/inventoryWindow';
 import { createJournalWindow, type JournalPage } from './ui/journalWindow';
 import { Container, extensions, FillGradient, Graphics, NineSliceSpritePipe, Rectangle, Sprite, Texture, TilingSprite, TilingSpritePipe } from 'pixi.js';
-import { Blob, Game, Scene2D, Input, Random, SaveSystem, Achievements, ReactionTable, type ReactionRule } from 'mwg';
+import { Bar, Blob, Game, Scene2D, Input, Random, SaveSystem, Achievements, ReactionTable, type ReactionRule } from 'mwg';
 import { SceneSimulationAdapter } from './adapters/sceneSimulation';
 import { dispatchHeroAction, type HeroActionPorts } from './adapters/heroActions';
 import { runSearch } from './adapters/searchSimulation';
@@ -88,7 +88,6 @@ import {
 import { applySpdTheme, SPD_STATUS_COLOR } from './ui/spdTheme';
 import { GameLog, type LogLevel } from './ui/gameLog';
 import { FloatingTextLayer } from './ui/floatingText';
-import { Bar } from './ui/bar';
 import { Compass } from './ui/compass';
 import { BadgeBannerLayer } from './ui/badgeBanner';
 import { SpdToolbar } from './ui/toolbar';
@@ -10890,13 +10889,13 @@ export class SewersScene extends Scene2D {
 			this.bossNameLabel.visible = true;
 			this.bossNameLabel.text = `${Math.max(0, boss.hp)}/${boss.maxHp}`;
 			const fraction = boss.hp / boss.maxHp;
-			this.bossHealthBar.setLevel(Math.max(0, fraction));
+			this.bossHealthBar.setValue(Math.max(0, fraction));
 			//`BossHealthBar.bleed`: a one-shot colour swap when HP crosses 25%, not a
 			//continuous flash - Java's own `update()` only re-tints on the boolean's *edge*
 			const bleeding = fraction < 0.25;
 			if (bleeding !== this.bossBleeding) {
 				this.bossBleeding = bleeding;
-				this.bossHealthBar.setFillColor(bleeding ? 0xff7777 : 0xffffff);
+				this.bossHealthBar.setColor(bleeding ? 0xff7777 : 0xffffff);
 				this.bossNameLabel.setColor(bleeding ? 0xff3030 : theme().color.textHighlight);
 			}
 		} else {
@@ -10918,8 +10917,9 @@ export class SewersScene extends Scene2D {
 				bar = new Bar({
 					width: TILE * (4 / 6),
 					height: 1,
-					fillColor: 0x00ee00,
-					backgroundColor: 0xcc0000,
+					color: 0x00ee00,
+					background: 0xcc0000,
+					roundUpToPixel: true,
 				});
 				this.healthBars.set(creature, bar);
 				this.camera.world.addChild(bar);
@@ -10927,7 +10927,7 @@ export class SewersScene extends Scene2D {
 			bar.visible = true;
 			bar.x = creature.x * TILE + TILE / 6;
 			bar.y = creature.y * TILE - 2;
-			bar.setLevel(creature.hp / creature.maxHp);
+			bar.setValue(creature.hp / creature.maxHp);
 		}
 	}
 
@@ -11368,7 +11368,7 @@ export class SewersScene extends Scene2D {
 		skull.position.set(5, 5); this.bossChrome.addChild(skull);
 		this.bossChrome.scale.set(2);
 		this.stage.addChild(this.bossChrome);
-		this.bossHealthBar = new Bar({ width: 94, height: 8, fill: new Texture({ source: runState.sprites.uiBossHp.source, frame: new Rectangle(15, 19, 47, 4) }), backgroundColor: 0x000000 });
+		this.bossHealthBar = new Bar({ width: 94, height: 8, fillTexture: new Texture({ source: runState.sprites.uiBossHp.source, frame: new Rectangle(15, 19, 47, 4) }), background: 0x000000, roundUpToPixel: true });
 		this.stage.addChild(this.bossHealthBar);
 		this.stage.addChild(this.bossNameLabel);
 		this.bossNameLabel.style.fontSize = 7;

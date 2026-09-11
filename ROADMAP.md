@@ -158,7 +158,13 @@ Do not add new authored content as object literals or scattered constants in the
       `../MW_games` references are `tools/verify-mwg-integration.mjs` and
       `tools/prepare-mwg-ui.py`, both deliberate, documented, opt-in framework-development tools
       that no npm script invokes.
-- [x] Bump the `mwg` pin to 0.7.3 (2026-09-11). 0.7.3 is published, and the bump alone changes
+- [x] Bump the `mwg` pin to 0.7.3 (2026-09-11), then to **0.7.4** the same day once it was
+      published. 0.7.4 brings what this port had asked for and could not have: `FloatingTextStack`
+      and `FloatingTextOptions.hold`, `ParticleEmitterOptions.frames`, `Bar.setColor`/`background`,
+      and in the framework checkout's tree `TerrainKind.flags`/`extras` and `Scheduler` priority.
+      Still to adopt from it: `src/ui/floatingText.ts` -> `FloatingTextStack` + `hold`, and the
+      title flame -> `frames`.
+      The 0.7.3 step, for the record: 0.7.3 is published, and the bump alone changes
       nothing else here: the MWL compile emits byte-identical generated modules, `check`/`build`
       are clean, both suites pass, the start-up and save smoke are clean, and the depth-25 live
       checks (fist decks, challenge pairs, beam burning, view radii) come out identical. The
@@ -202,8 +208,12 @@ Do not add new authored content as object literals or scattered constants in the
       right), then the `FLAMABLE` set + `burn()`. The one framework nicety that would help is a
       burnout callback/return on `Blob.spread` (spec §4.2); everything else is port-side.
 
-- [ ] Replace `src/ui/bar.ts` with `mwg/ui`'s `Bar` and delete it, once
-      `tools/scratch/mwg-proposal/0002-bar-runtime-colour-and-track.patch` lands. `fillTexture`
+- [x] Replace `src/ui/bar.ts` with `mwg/ui`'s `Bar` and delete it (2026-09-11, on 0.7.4): done,
+      and with it `tools/scratch/uiCheck.ts`. The four consumers (HUD health and experience, the
+      per-monster bars, the boss bar) use `fillTexture`/`background`/`roundUpToPixel`/`setValue`
+      and `setColor`, behaviour-identically - the port's `Bar` always rounded up, so every bar was
+      given `roundUpToPixel: true` rather than changing any pixel. Verified live in the browser.
+      The item's original scoping, kept below because it is how the blocker was found: `fillTexture`
       (the real bar art, stretched) and `roundUpToPixel` (`HealthBar.layout()`'s ceil-to-pixel
       rule) are already in the framework's `Bar`, so those are covered today. What blocks the
       deletion is the two things it still lacks and this file uses: recolouring the fill after

@@ -7,9 +7,9 @@
   "license": "GPL-3.0-or-later",
   "scripts": {
     "dev": "vite",
-	"build": "npm run mwl:compile && tsc --noEmit && vite build && node tools/emit.mjs",
-	"check": "npm run mwl:compile && tsc --noEmit",
-	"mwl:compile": "node tools/compile-mwl.mjs",
+    "build": "npm run mwl:compile && tsc --noEmit && vite build && node tools/emit.mjs",
+    "check": "npm run mwl:compile && tsc --noEmit",
+    "mwl:compile": "node tools/compile-mwl.mjs",
     "test:simulation": "node tools/verifySimulation.mjs",
     "test:items": "node tools/verifyItemWorkflows.mjs",
     "i18n": "node tools/i18n-extract.mjs",
@@ -18,7 +18,7 @@
     "mwg:check": "node tools/check-mwg-version.mjs"
   },
   "dependencies": {
-    "mwg": "npm:@datamoc/mw_games@^0.7.3",
+    "mwg": "npm:@datamoc/mw_games@^0.7.4",
     "pixi.js": "^8.20.1"
   },
   "devDependencies": {
