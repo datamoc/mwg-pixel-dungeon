@@ -33,6 +33,7 @@ import { Label, theme, Button, Window } from 'mwg';
 import { Roguelike, Actors, Rpg, World } from 'mwg';
 import { loadSpdSprites } from './images';
 import { rollGeneratedAffix, groundKindForItem, portItemKind, sourceInventoryItem } from './itemKinds';
+import { ENCHANT_TABLE, GLYPH_TABLE, UNSTABLE_DELEGATES } from './itemAffixes';
 import {
 	POTION_CLASS_BY_PORT_ID,
 	stonePortId,
@@ -443,112 +444,10 @@ const ARMOR_OPTIONS = ['warding', 'arcane'] as const;
 //Weapon.Augment: SPEED/DAMAGE/NONE, chosen when using StoneOfAugmentation on the equipped weapon.
 const AUGMENT_OPTIONS = ['speed', 'damage', 'none'] as const;
 
-/**
- * Weapon enchantments and armor glyphs as `mwg/actors` affix tables, actually rolled through
- * `Actors.rollAffix` (see `generatedInventoryItem`) rather than sitting unused - a real wiring
- * gap this file had until this pass: `generatedInventoryItem` set `cursed` from the generator's
- * RNG-faithful `cursed`/`hasGoodEnchant` flags but never picked or attached a concrete id, so no
- * weapon/armor obtained through normal play could ever carry one, and every proc branch below
- * keyed on `weaponAffix`/`armorGlyph` was dead code in an actual playthrough. See
- * `PORT_COVERAGE.md`'s "Enchant/glyph/curse assignment is unwired" row for the full history.
- *
- * Real Java has 13 weapon enchantments + 8 weapon curses, and 13 armor glyphs + 8 armor curses
- * (`items/weapon/enchantments/`, `items/weapon/curses/`, `items/armor/glyphs/`,
- * `items/armor/curses/`). This port models nine enchants (Blazing/Chilling/Shocking/Vampiric/
- * Grim/Lucky/Blocking/Kinetic/Blooming), seven glyphs (Stone/Thorns/
- * Flow/Entanglement/Swiftness/Potential/Camouflage), all 7 remaining weapon curses with a real effect
- * (Wayward/Annoying/Dazzling/Explosive/Polarized/Sacrificial/Displacing), and all 8 armor curses
- * (Stench/AntiEntropy/Bulk/Corrosion/Displacement/Metabolism/Multiplicity/Overgrowth) - each
- * chosen because its real effect fits a system this port already has (a buff, a flat stat, a
- * ground-item drop, the shared `heroBarrier`, the shared poison DoT, a free-cell teleport
- * search) rather than needing a new one. Blocking's real proc chance and shield-amount formulas
- * are both reproduced (`(lvl+4)/(lvl+40)`, `round(max(1,procChance) * (2+lvl))`); the shared
- * `heroBarrier` pool now decays every hero turn via `Barrier.act()`'s real proportional curve
- * (`min(1, shielding/20)` per turn, accumulated fractionally), and Blocking's own `BlockBuff`
- * gets its own `blockingBarrier` pool with the real max-not-additive `setShield()` semantics,
- * the always-reset 5-turn cliff-edge expiry, priority-first drain order, and exemption from the
- * proportional decay (HoldFast scaling of both clocks and the ProvokedAnger break tracker are
- * still not modeled - this port has neither system). Every other real enchant/glyph/curse needs a
-	 * subsystem this port does not model - Kinetic's old "store half of every hit" shorthand is
-	 * replaced this pass by the real `Char.damage()` kill-overkill rule below; Corrupting now
-	 * converts lethal targets through the existing ally model; Elastic now uses the
-	 * existing straight shove path; Repulsion now uses the same straight shove path for a
-	 * defending hero; Projecting still needs thrown-range geometry; Unstable is
- * now ported (delegates per swing, see `attack()`); Friendly needs a two-way Charm subsystem this port lacks (confirmed against
- * `Friendly.java`: mutual Charm + zeroing damage to the charmed target); the remaining armor
- * glyphs (Obfuscation) need
- * charm/wand-drain/blink/durability systems likewise absent (Obfuscation's stealth boost has
- * no non-sleeping roll seam - this port's `seesHero` is otherwise FOV-binary, not a distance roll). The armor-glyph
- * Swiftness now uses the real level-scaled `(1.2+0.04*buffedLvl) x Arcana` speed boost and
- * PathFinder-distance-2 safety check, represented as inverse turn cost. See PORT_COVERAGE.md
- * for the itemized list. The trigger routing (strike vs defend vs passive) is the real shape
- * either way. **Correction, found auditing the curse list against tag `v3.3.8` (and back to
- * `v3.3.1`) this pass: no `Fragile` armor curse exists in real Java at all** - the closest
- * match is a `v1.x`-era changelog mention; the real 8th curse is `Stench` (1/8 chance on being
- * hit to seed 250-volume `ToxicGas` at the wearer's own feet, gassing the wearer too). The
- * old `fragile` entry (flat -2 armor, a guess with no Java basis whose `items.armor.curses.
- * fragile.*` name keys don't even exist in the generated catalog) is replaced by a real
- * `stench` proc; old saves carrying `fragile` migrate it to `stench` on load (see the load
- * path) with a `getCurse` legacy shim so surviving bag items still cleanse correctly.
- * Every curse entry locks gear via the equipment lock until a cleanse scroll lifts
- * it (`Actors.applyAffix`/`removeAffix`'s own curse-flag contract, not something this file has
- * to reimplement per curse).
- */
-const ENCHANT_TABLE: Actors.AffixTable = {
-	entries: [
-		{ id: 'blazing', trigger: 'strike', weight: 3, description: 'Ignites the victim' },
-		{ id: 'chilling', trigger: 'strike', weight: 3, description: 'Chills the victim' },
-		{ id: 'shocking', trigger: 'strike', weight: 3, description: '+2 damage' },
-		{ id: 'vampiric', trigger: 'strike', weight: 2, description: 'Heals 1 on a hit' },
-		{ id: 'grim', trigger: 'strike', weight: 2, description: 'Chance of bonus damage against a weakened foe' },
-		{ id: 'lucky', trigger: 'strike', weight: 2, description: 'Chance of bonus loot on a kill' },
-		{ id: 'blocking', trigger: 'strike', weight: 2, description: 'Chance to grant a shield on a landed hit' },
-		{ id: 'kinetic', trigger: 'strike', weight: 2, description: 'Stores part of damage for the next hit' },
-		{ id: 'corrupting', trigger: 'strike', weight: 2, description: 'Lethal hits can convert the victim into an ally' },
-		{ id: 'elastic', trigger: 'strike', weight: 2, description: 'Chance to knock the victim backward' },
-		{ id: 'projecting', trigger: 'strike', weight: 2, description: 'Extends melee reach' },
-		{ id: 'blooming', trigger: 'strike', weight: 2, description: 'Chance to plant grass where you strike' },
-		{ id: 'unstable', trigger: 'strike', weight: 2, description: 'A random enchantment effect on every hit' },
-		{ id: 'wayward', trigger: 'strike', weight: 1, curse: true, description: 'Cursed: -3 accuracy' },
-		{ id: 'annoying', trigger: 'strike', weight: 1, curse: true, description: 'Cursed: chance to alert every monster on the floor' },
-		{ id: 'dazzling', trigger: 'strike', weight: 1, curse: true, description: 'Cursed: chance to blind everyone nearby, including you' },
-		{ id: 'explosive', trigger: 'strike', weight: 1, curse: true, description: 'Cursed: eventually detonates on its wielder' },
-		{ id: 'polarized', trigger: 'strike', weight: 1, curse: true, description: 'Cursed: every other hit is amplified, the rest whiff entirely' },
-		{ id: 'sacrificial', trigger: 'strike', weight: 1, curse: true, description: 'Cursed: chance to wound its wielder' },
-		{ id: 'displacing', trigger: 'strike', weight: 1, curse: true, description: 'Cursed: chance to teleport the struck target away' },
-	],
-};
-/** `Unstable.randomEnchants` minus Projecting (Java's own exclusion - no on-hit effect) and
- * Elastic (its shove is intentionally not delegated by Unstable, matching Java's own
- * `randomEnchants` exclusion). Corrupting now has a live lethal conversion branch, so it is
- * a valid delegate too.
- * Uncommon, like the real `Unstable` in `Weapon.java`'s rarity lists. */
-const UNSTABLE_DELEGATES = ['blazing', 'blocking', 'blooming', 'chilling', 'corrupting', 'kinetic', 'grim', 'lucky', 'shocking', 'vampiric'] as const;
-const GLYPH_TABLE: Actors.AffixTable = {
-	entries: [
-		{ id: 'stone', trigger: 'defend', weight: 3, description: '+2 armor' },
-		{ id: 'thorns', trigger: 'defend', weight: 3, description: 'Reflects 2' },
-		{ id: 'flow', trigger: 'passive', weight: 3, description: 'Moves faster in water' },
-		{ id: 'entanglement', trigger: 'defend', weight: 2, description: 'Chance to root an attacker' },
-		{ id: 'swiftness', trigger: 'passive', weight: 3, description: 'Faster movement when safe (20% speed increase)' },
-		{ id: 'potential', trigger: 'defend', weight: 3, description: 'Chance to recharge wands when hit' },
-		{ id: 'repulsion', trigger: 'defend', weight: 2, description: 'Chance to knock an adjacent attacker backward' },
-		{ id: 'brimstone', trigger: 'defend', weight: 2, description: 'Immune to burning' },
-		{ id: 'viscosity', trigger: 'defend', weight: 3, description: 'Defers part of incoming damage' },
-		{ id: 'affection', trigger: 'defend', weight: 1, description: 'Charms an attacker' },
-		{ id: 'antimagic', trigger: 'defend', weight: 1, description: 'Reduces magical damage' },
-		{ id: 'obfuscation', trigger: 'passive', weight: 3, description: 'Makes the wearer harder to detect' },
-		{ id: 'camouflage', trigger: 'passive', weight: 2, description: 'Trampling grass turns you invisible' },
-		{ id: 'stench', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to release toxic gas when hit' },
-		{ id: 'antientropy', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to drain a wand charge' },
-		{ id: 'bulk', trigger: 'passive', weight: 1, curse: true, description: 'Cursed: slower through doorways' },
-		{ id: 'corrosion', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to corrode a weapon or armor level' },
-		{ id: 'displacement', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to teleport its wearer away' },
-		{ id: 'metabolism', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: consumes extra hunger' },
-		{ id: 'multiplicity', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to summon a spectral copy of the attacker' },
-		{ id: 'overgrowth', trigger: 'defend', weight: 1, curse: true, description: 'Cursed: chance to root its wearer in grass' },
-	],
-};
+/** Weapon enchantments and armor glyphs now live in `src/content/affix-rules.mwl` and are
+ * adapted to `Actors.AffixTable` by `itemAffixes.ts`; the per-id proc bodies stay here, where
+ * they need live scene and combat state. See `itemAffixes.ts` and `PORT_COVERAGE.md` for the
+ * Java-cited list of which enchantments/glyphs/curses are modeled and which remain gaps. */
 
 /**
  * Rings (`items/rings/`) as level-scaled modifiers, all 12 real types

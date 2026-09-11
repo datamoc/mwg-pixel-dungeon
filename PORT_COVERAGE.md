@@ -202,6 +202,21 @@ roster, boss-transition, and asset reference before emitting generated files. De
 output comparison is also performed by compiling the resource tree twice; broad
 generated-vs-Java parity fixtures remain open.
 
+Weapon enchantments and armor glyphs now follow the same path. Their ids, triggers
+(`strike`/`defend`/`passive`), roll weights, curse flags, and descriptions are authored in
+`src/content/affix-rules.mwl`, and `itemAffixes.ts` adapts them into the `mwg/actors`
+`AffixTable`s `generatedInventoryItem` already rolled through; `Unstable.randomEnchants`'
+delegate list is authored beside them and cross-checked against the enchant catalogue. The
+per-id proc bodies stay in `main.ts`, where they need live scene/combat state. Moving the tables
+is behavior-preserving: `affix-rules.mwl` was verified value-identical to the inline arrays it
+replaced (20 weapon entries, 21 armor entries, 10 delegates), and a live browser run that called
+`generatedInventoryItem` 6000 times per table produced exactly the expected 13 good/7 cursed
+weapon ids and 13 good/8 cursed glyph ids with none missing or spurious, while a plain
+(non-cursed, non-enchanted) roll left `affix` undefined in all 200 samples. `tools/compile-mwl.mjs`'s
+`validateAffixTables()` enforces the row shape, id uniqueness, and delegate membership at build
+time, so a malformed affix row now fails `npm run build` rather than the first generated roll.
+`npx tsc --noEmit`, `npm run build`, `test:simulation` 46/46, and `test:items` 1/1 all pass.
+
 **Browser-verified 2026-09-11 (first real start-up smoke of the MWL migration):** the resource
 tree compiled and type-checked cleanly but did not actually run. Importing the level generator
 threw on two malformed `room-rules.mwl` rows, which a real browser load surfaced immediately as

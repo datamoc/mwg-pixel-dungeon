@@ -181,6 +181,107 @@ export const gameData = {
 				{
 					"tag": "trait",
 					"attributes": {
+						"id": "weaponEnchants",
+						"name": "Weapon.enchantments"
+					},
+					"children": [
+						{
+							"tag": "effect",
+							"attributes": {
+								"apply_to": "entries",
+								"set": "blazing|strike|3|false|Ignites the victim;chilling|strike|3|false|Chills the victim;shocking|strike|3|false|+2 damage;vampiric|strike|2|false|Heals 1 on a hit;grim|strike|2|false|Chance of bonus damage against a weakened foe;lucky|strike|2|false|Chance of bonus loot on a kill;blocking|strike|2|false|Chance to grant a shield on a landed hit;kinetic|strike|2|false|Stores part of damage for the next hit;corrupting|strike|2|false|Lethal hits can convert the victim into an ally;elastic|strike|2|false|Chance to knock the victim backward;projecting|strike|2|false|Extends melee reach;blooming|strike|2|false|Chance to plant grass where you strike;unstable|strike|2|false|A random enchantment effect on every hit;wayward|strike|1|true|Cursed: -3 accuracy;annoying|strike|1|true|Cursed: chance to alert every monster on the floor;dazzling|strike|1|true|Cursed: chance to blind everyone nearby, including you;explosive|strike|1|true|Cursed: eventually detonates on its wielder;polarized|strike|1|true|Cursed: every other hit is amplified, the rest whiff entirely;sacrificial|strike|1|true|Cursed: chance to wound its wielder;displacing|strike|1|true|Cursed: chance to teleport the struck target away"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 7,
+								"column": 1
+							},
+							"gettext": []
+						}
+					],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+						"line": 4,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "trait",
+					"attributes": {
+						"id": "armorGlyphs",
+						"name": "Armor.glyphs"
+					},
+					"children": [
+						{
+							"tag": "effect",
+							"attributes": {
+								"apply_to": "entries",
+								"set": "stone|defend|3|false|+2 armor;thorns|defend|3|false|Reflects 2;flow|passive|3|false|Moves faster in water;entanglement|defend|2|false|Chance to root an attacker;swiftness|passive|3|false|Faster movement when safe (20% speed increase);potential|defend|3|false|Chance to recharge wands when hit;repulsion|defend|2|false|Chance to knock an adjacent attacker backward;brimstone|defend|2|false|Immune to burning;viscosity|defend|3|false|Defers part of incoming damage;affection|defend|1|false|Charms an attacker;antimagic|defend|1|false|Reduces magical damage;obfuscation|passive|3|false|Makes the wearer harder to detect;camouflage|passive|2|false|Trampling grass turns you invisible;stench|defend|1|true|Cursed: chance to release toxic gas when hit;antientropy|defend|1|true|Cursed: chance to drain a wand charge;bulk|passive|1|true|Cursed: slower through doorways;corrosion|defend|1|true|Cursed: chance to corrode a weapon or armor level;displacement|defend|1|true|Cursed: chance to teleport its wearer away;metabolism|defend|1|true|Cursed: consumes extra hunger;multiplicity|defend|1|true|Cursed: chance to summon a spectral copy of the attacker;overgrowth|defend|1|true|Cursed: chance to root its wearer in grass"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 16,
+								"column": 1
+							},
+							"gettext": []
+						}
+					],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+						"line": 13,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "trait",
+					"attributes": {
+						"id": "unstableEnchants",
+						"name": "Unstable.randomEnchants"
+					},
+					"children": [
+						{
+							"tag": "effect",
+							"attributes": {
+								"apply_to": "ids",
+								"set": "blazing,blocking,blooming,chilling,corrupting,kinetic,grim,lucky,shocking,vampiric"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 25,
+								"column": 1
+							},
+							"gettext": []
+						}
+					],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+						"line": 22,
+						"column": 1
+					},
+					"gettext": []
+				}
+			],
+			"location": {
+				"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+				"line": 1,
+				"column": 1
+			},
+			"gettext": []
+		},
+		{
+			"tag": "game",
+			"attributes": {
+				"schema": "0.1"
+			},
+			"children": [
+				{
+					"tag": "trait",
+					"attributes": {
 						"id": "alchemyEnergy",
 						"name": "Item.energyVal"
 					},

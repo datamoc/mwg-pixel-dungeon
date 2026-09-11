@@ -180,6 +180,70 @@ function parseCurseDefinitions(): readonly MwlCurseDefinition[] {
 
 export const MWL_CURSE_DEFINITIONS = parseCurseDefinitions();
 
+export type MwlAffixTrigger = 'strike' | 'defend' | 'passive';
+
+function isMwlAffixTrigger(value: string | undefined): value is MwlAffixTrigger {
+	return value === 'strike' || value === 'defend' || value === 'passive';
+}
+
+export interface MwlAffixDefinition {
+	readonly id: string;
+	readonly trigger: MwlAffixTrigger;
+	readonly weight: number;
+	/** A curse both restricts a generated roll to the curse pool and locks the item once identified. */
+	readonly curse: boolean;
+	readonly description: string;
+}
+
+/**
+ * Weapon enchantments (`Weapon.java`'s `enchantments`) and armor glyphs (`Armor.java`'s `glyphs`)
+ * as `mwg/actors` affix data. Real Java ties each id to its own `Enchantment`/`Glyph` subclass;
+ * this port authors the shared routing metadata (trigger, weight, curse flag, description) here
+ * and interprets the id itself when the trigger fires, so the proc bodies stay in `main.ts`.
+ */
+function parseAffixDefinitions(traitId: string): readonly MwlAffixDefinition[] {
+	const trait = MWL_TRAIT_NODES.find((node) => node.attributes.id === traitId);
+	if (!trait) throw new Error(`MWL affix catalogue is missing ${traitId}`);
+	const effect = trait.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
+	if (!effect?.attributes.set) throw new Error(`MWL affix catalogue is missing entries for ${traitId}`);
+	const definitions = effect.attributes.set.split(';').filter(Boolean).map((entry) => {
+		const [id, trigger, weightText, curseText, ...descriptionParts] = entry.split('|');
+		const description = descriptionParts.join('|');
+		const weight = Number(weightText);
+		if (
+			!id || !isMwlAffixTrigger(trigger) ||
+			!Number.isInteger(weight) || weight < 0 ||
+			(curseText !== 'true' && curseText !== 'false') || !description
+		) {
+			throw new Error(`Invalid MWL affix definition: ${entry}`);
+		}
+		return { id, trigger, weight, curse: curseText === 'true', description };
+	});
+	if (new Set(definitions.map((definition) => definition.id)).size !== definitions.length) {
+		throw new Error(`MWL affix catalogue ${traitId} contains duplicate ids`);
+	}
+	return definitions;
+}
+
+export const MWL_WEAPON_ENCHANTS = parseAffixDefinitions('weaponEnchants');
+export const MWL_ARMOR_GLYPHS = parseAffixDefinitions('armorGlyphs');
+
+/** `Unstable.randomEnchants`: the enchantments `Unstable` may delegate a swing to. */
+function parseUnstableDelegates(): readonly string[] {
+	const trait = MWL_TRAIT_NODES.find((node) => node.attributes.id === 'unstableEnchants');
+	if (!trait) throw new Error('MWL Unstable delegate catalogue is missing');
+	const effect = trait.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'ids');
+	if (!effect?.attributes.set) throw new Error('MWL Unstable delegate catalogue is missing ids');
+	const ids = effect.attributes.set.split(',').filter(Boolean);
+	const known = new Set(MWL_WEAPON_ENCHANTS.map((definition) => definition.id));
+	for (const id of ids) {
+		if (!known.has(id)) throw new Error(`MWL Unstable delegate references unknown enchantment: ${id}`);
+	}
+	return ids;
+}
+
+export const MWL_UNSTABLE_DELEGATES = parseUnstableDelegates();
+
 function requiredClassValue(values: Readonly<Record<string, string>>, key: string): string {
 	const value = values[key];
 	if (value === undefined) throw new Error(`MWL class definition is missing ${key}`);

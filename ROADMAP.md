@@ -65,6 +65,10 @@ Do not add new authored content as object literals or scattered constants in the
       `src/content/badges.mwl`; achievement persistence and UI remain runtime adapters.
       Hero level-cap and experience-curve parameters are authored in
       `src/content/progression-rules.mwl`; the arithmetic remains an executable hook.
+      Weapon enchantments, armor glyphs, and Unstable's delegate list are now authored in
+      `src/content/affix-rules.mwl` and adapted to `mwg/actors` affix tables by
+      `itemAffixes.ts`; the per-id proc behavior stays in `main.ts`. Stat blocks and status
+      resistances still need the same treatment.
 - [ ] Add dungeon resources: terrain and visual asset references, room templates, floor/depth
       tables, traps, plants, special rooms, NPCs, quests, boss phases, and branch transitions.
       Sewer trap class order and weights are now authored in `src/content/dungeon-rules.mwl`;
@@ -103,7 +107,9 @@ Do not add new authored content as object literals or scattered constants in the
       time now: it enforces the seven-field region-row format and one chance value per class for
       the standard and connection room tables. Added 2026-09-11 after the first real browser
       start-up smoke found two such malformed rows (a dropped `specialBase` field and a 27-value
-      depth-5 chance row) that had passed both `tsc` and the build.
+      depth-5 chance row) that had passed both `tsc` and the build. `validateAffixTables()`
+      similarly enforces the enchant/glyph row shape, unique affix ids, and that every Unstable
+      delegate names a real enchantment.
 - [ ] Update the build, test, package, and browser-smoke documentation so a clean checkout can
       reproduce every generated resource without a local MWG checkout.
 
