@@ -158,7 +158,26 @@ Do not add new authored content as object literals or scattered constants in the
       `../MW_games` references are `tools/verify-mwg-integration.mjs` and
       `tools/prepare-mwg-ui.py`, both deliberate, documented, opt-in framework-development tools
       that no npm script invokes.
-
+- [ ] Adopt MWG 0.7.3 (published 2026-09-11). Five things this port hand-rolls are in the
+      framework now, so each is a deletion rather than new code: `Level.viewDistance` plus
+      `FieldOfView.update`'s default radius (the Yog visibility shrink stays game logic, but
+      stops being a radius passed at every call site); `TerrainKind.flags`/`extras` ("carried
+      without interpretation by MWG"), which replaces hand-written flamable lists like Yog's beam
+      `[GRASS, HIGH_GRASS, DOOR, DOOR_CLOSED].includes(...)`; `Scheduler` priority
+      (`add(actor, delay, priority)`), which is Java's `actPriority = VFX_PRIO` and lets the
+      Tengu/Yog telegraph fields (`yogTargeted`, `pendingMonsterTurnCost`) become real scheduled
+      actors; `Roguelike.Targeting`'s `Ballistica` (stop modes, `collisionPos`), replacing the
+      Bresenham `traceLine` used for Yog beams, Tengu cone and projectile impacts; and
+      `MultiTurnBeam`/`MultiStageAbility` for the multi-turn beam and staged-ability shapes
+      Tengu's Fire/Shocker actors and DM-300's pylon sequence need.
+- [ ] Replace `src/ui/bar.ts` with `mwg/ui`'s `Bar` and delete it. `fillTexture` and
+      `roundUpToPixel` are in the already-pinned 0.7.2, so this needs no version bump - the
+      file's own comment claimed the framework's `Bar` could take neither a texture fill nor had
+      any rounding rule, which the framework's `tests/bar.test.ts` disproves. Check `StatusPane`'s
+      two real bar arts still stretch the way Java's `scale.x` does before deleting.
+- [ ] Once the proposed framework patch in `tools/scratch/mwg-proposal/` lands, replace
+      `src/ui/floatingText.ts` with `mwg/ui`'s `FloatingTextStack` plus `FloatingText`'s `hold`
+      curve, and `titleFlame`'s four-frame flame with `ParticleEmitter`'s `frames`.
 ## 1. Complete the item system
 
 - [x] Wire `rollAffix`/`ENCHANT_TABLE`/`GLYPH_TABLE` into real item generation and equip.

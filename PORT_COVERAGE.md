@@ -38,6 +38,18 @@
   sizes the frame from what is actually inside it (rows, gap and button) through `Window.resize`;
   the same live measurement now reports 113.3px of content with the button clear of the last row,
   reconfirmed visually.
+- **Checked both "framework could not do this" claims against the pinned package, and one was
+  wrong** (2026-09-11, follow-up to the same day's alignment pass). `src/ui/floatingText.ts`'s
+  holds: `mwg/ui`'s `FloatingText` really does fade linearly with no stacking, so a patch
+  proposing the hold-then-fade curve and a `FloatingTextStack` sits in
+  `tools/scratch/mwg-proposal/`. `src/ui/bar.ts`'s does not: the pinned
+  `@datamoc/mw_games@0.7.2` already ships `fillTexture` and `roundUpToPixel` on its own `Bar`
+  (`tests/bar.test.ts` covers the rounding), so this file is avoidable duplication rather than
+  the justified sibling it claimed to be, and it is scheduled for deletion in ROADMAP.md's
+  framework-adoption items. Also confirmed while checking: five capabilities this port
+  approximates - `Level.viewDistance`, `TerrainKind.flags`/`extras`, `Scheduler` priority,
+  `Roguelike.Targeting`'s `Ballistica`, and `MultiTurnBeam`/`MultiStageAbility` - are all in
+  0.7.3, so the work there is adopting them, not asking for them.
 ## 2026-09-10 roadmap pass
 
 - **Ported:** the Dwarf King's death now awards the identified, non-upgradable King's Crown;
