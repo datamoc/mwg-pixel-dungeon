@@ -707,7 +707,7 @@ interface SavedCreature {
 	moving?: number;
 	arenaJumps?: number;
 	tenguPhase?: 'cell' | 'arena';
-	tenguFire?: { direction: number; cells: { x: number; y: number }[] };
+	tenguFire?: { direction: number; beam: Roguelike.MultiTurnBeamSave };
 	tenguAbilityCd?: number;
 	tenguAbilityUses?: number;
 	tenguLastAbility?: number;
@@ -1299,6 +1299,10 @@ export class SewersScene extends Scene2D {
 	} | null = null;
 	/** The aim cursor highlight, drawn in world space so it tracks cells under the camera. */
 	private aimOverlay: Graphics | null = null;
+	/** Live Tengu fire cones, keyed by creature. MWG 0.7.7's `MultiTurnBeam` owns the ring-per-turn
+	 * traversal; the creature's own `tenguFire` carries that beam's `toJSON()` for saves, so this
+	 * map is rebuilt from it on load and never serialized itself. */
+	private tenguBeams = new Map<Creature, Roguelike.MultiTurnBeam>();
 	private victoryPanel!: Container;
 	private bossChrome!: Container;
 	private bossHealthBar!: Bar;
@@ -2022,6 +2026,15 @@ export class SewersScene extends Scene2D {
 			const skeletonIndex = state.creatures[i].skeletonIndex;
 			if (skeletonIndex !== undefined) restored[i].skeleton = restored[skeletonIndex] ?? null;
 		}
+		//Rebuild any in-progress Tengu fire cone from its saved beam: the live `MultiTurnBeam`
+		//itself is never serialized, only its `toJSON()` on the creature's `tenguFire`. A save
+		//written before the beam adoption carries the old `{ direction, cells }` shape instead, so
+		//the `beam` guard simply drops that cone rather than crashing on it.
+		for (const creature of restored) {
+			if (creature.tenguFire?.beam) {
+				this.tenguBeams.set(creature, this.rebuildTenguBeam(creature.tenguFire.direction, creature.tenguFire.beam));
+			}
+		}
 	}
 
 	private enterLevel(): void {
@@ -2064,6 +2077,7 @@ export class SewersScene extends Scene2D {
 		for (const motion of this.monsterMotion.values()) motion.clear();
 		this.monsterMotion.clear();
 		this.dyingMonsters.clear();
+		this.tenguBeams.clear();
 		this.characterEffects?.clear();
 		for (const sprite of this.itemLayer.removeChildren()) sprite.destroy();
 		this.creatures = this.creatures.filter((c) => c.isHero);
@@ -6791,7 +6805,7 @@ export class SewersScene extends Scene2D {
 		this.pendingMonsterTurnCost = null;
 		//`Tengu.FireAbility` is a `Buff`: it acts with its host, one ring per turn, whatever else
 		//Tengu does that turn (`FireAbility.act()`).
-		if (monster.tenguFire) this.advanceTenguFire(monster);
+		if (this.tenguBeams.has(monster)) this.advanceTenguFire(monster);
 		if (monster.kind === 'golem') {
 			//Golem.act() decrements both teleport cooldowns before delegating to its AI,
 			//including adjacent melee turns (Golem.java, tag v3.3.8).
@@ -8344,63 +8358,108 @@ export class SewersScene extends Scene2D {
 		if (!step) return false;
 		const direction = TENGU_CIRCLE8.findIndex(([dx, dy]) => dx === step.x - tengu.x && dy === step.y - tengu.y);
 		if (direction < 0) return false;
-		tengu.tenguFire = { direction, cells: [] };
+		const beam = this.buildTenguBeam({ x: tengu.x, y: tengu.y }, direction);
+		beam.start();
+		this.tenguBeams.set(tengu, beam);
+		tengu.tenguFire = { direction, beam: beam.toJSON() };
 		this.say(t('port.log.tengudart'), 'negative');
 		return true;
 	}
 
 	/**
-	 * `Tengu.FireAbility.act()`: one ring per Tengu turn, in the stored `CIRCLE8` direction.
+	 * `Tengu.FireAbility.act()`: one ring per Tengu turn, in the stored `CIRCLE8` direction. The
+	 * ring-per-turn traversal is MWG 0.7.7's `MultiTurnBeam` now (see `buildTenguBeam` and the
+	 * `fronts` resolver `tenguConeFront`), which owns the cone's save too; this method just
+	 * advances one front and drops the cone once the beam is done or blocked.
 	 *
-	 * Java anchors the cone on Tengu's own cell and spreads three cells from each cell of the ring
-	 * it is on - the direction and its two neighbours around the ring
-	 * (`left(direction)`/`right(direction)`) - skipping solid cells, and never re-adding the ring it
-	 * just came from (`toCells.remove(c)`). What ends the cone is the fire itself: every act after
+	 * The rule the resolver carries is Java's: the cone is anchored on Tengu's own cell and spreads
+	 * three cells from each cell of the ring it is on - the direction and its two neighbours around
+	 * the ring (`left(direction)`/`right(direction)`) - skipping solid cells and never re-adding the
+	 * ring it just came from (`toCells.remove(c)`). What ends it is the fire itself: every act after
 	 * the first spreads only from cells where the previous ring's `FireBlob` still has volume
-	 * (`FireBlob.volumeAt(c) > 0`), so it advances while its own fire is still burning and detaches
-	 * when a spread finally comes back empty. Measured live on the port's depth-10 floor: a
-	 * right-facing cone in an open room reaches one further ring per turn, three cells on the first
-	 * ring and nine by the sixth, all on the aimed side, and stops only against walls - it is an
-	 * advancing front, not a three-ring burst. `this.fire` is the port's counterpart of `FireBlob`
-	 * and `volumeAt` is the same reading, with one difference worth knowing: the port's fire field
-	 * diffuses, where Java's `FireBlob` decays in place at one per turn, so a ring that has been
-	 * extinguished by water can still read as burning because the volume moved to a neighbour. The
-	 * guard is Java's, then, but a shade more permissive; the port's own fire spreading is what
-	 * decides where the front can go.
+	 * (`FireBlob.volumeAt(c) > 0`), so it advances while its own fire still burns and detaches when
+	 * a spread comes back empty. Measured live on the port's depth-10 floor: a right-facing cone in
+	 * an open room reaches one further ring per turn, three cells on the first ring and nine by the
+	 * sixth, all on the aimed side, stopping only against walls - an advancing front, not a
+	 * three-ring burst. `this.fire` is the port's counterpart of `FireBlob` and `volumeAt` the same
+	 * reading, with one difference worth knowing: the port's fire field diffuses, where Java's
+	 * `FireBlob` decays in place at one per turn, so a ring extinguished by water can still read as
+	 * burning because the volume moved to a neighbour. The guard is Java's, then, but a shade more
+	 * permissive; the port's own fire spreading decides where the front goes.
 	 */
 	private advanceTenguFire(tengu: Creature): boolean {
-		const ability = tengu.tenguFire;
-		if (!ability) return false;
+		const beam = this.tenguBeams.get(tengu);
+		const saved = tengu.tenguFire;
+		if (!beam || !saved || !beam.active) {
+			this.tenguBeams.delete(tengu);
+			tengu.tenguFire = undefined;
+			return false;
+		}
+		beam.advance();
+		if (beam.done) {
+			this.tenguBeams.delete(tengu);
+			tengu.tenguFire = undefined;
+			return false;
+		}
+		tengu.tenguFire = { direction: saved.direction, beam: beam.toJSON() };
+		return true;
+	}
 
-		//`curCells == null` on the first act, which spreads from Tengu's own cell
-		const spreadFrom =
-			ability.cells.length === 0
-				? [{ x: tengu.x, y: tengu.y }]
-				: ability.cells.filter((cell) => this.fire.volumeAt(cell.x, cell.y) > 0);
-
-		const previous = new Set(ability.cells.map((cell) => cell.y * this.level.width + cell.x));
+	/** Java's `FireAbility.act()` ring rule, as a `MultiTurnBeam` `fronts` resolver: from every
+	 * cell the previous ring reached (Tengu's own cell on turn 0) that still has fire volume, step
+	 * one cell in the aimed `CIRCLE8` direction and its two neighbours, skipping off-map, solid,
+	 * and already-seen cells and never re-adding the ring just left. An empty result ends the beam.
+	 * The volume filter is Java's `FireBlob.volumeAt(c) > 0` gate, read against this port's fire
+	 * field. */
+	private tenguConeFront(
+		direction: number,
+		previous: readonly { x: number; y: number }[],
+		turn: number,
+	): { x: number; y: number }[] {
+		const spreadFrom = turn === 0 ? previous : previous.filter((cell) => this.fire.volumeAt(cell.x, cell.y) > 0);
+		const previousSet = new Set(previous.map((cell) => cell.y * this.level.width + cell.x));
 		const seen = new Set<number>();
 		const next: { x: number; y: number }[] = [];
 		for (const cell of spreadFrom) {
-			for (const turn of [ability.direction - 1, ability.direction, ability.direction + 1]) {
-				const [dx, dy] = TENGU_CIRCLE8[(turn + TENGU_CIRCLE8.length) % TENGU_CIRCLE8.length]!;
+			for (const step of [direction - 1, direction, direction + 1]) {
+				const [dx, dy] = TENGU_CIRCLE8[(step + TENGU_CIRCLE8.length) % TENGU_CIRCLE8.length]!;
 				const at = { x: cell.x + dx, y: cell.y + dy };
 				if (!this.level.inside(at.x, at.y) || !this.level.passable(at.x, at.y)) continue;
 				const index = at.y * this.level.width + at.x;
-				if (previous.has(index) || seen.has(index)) continue;
+				if (previousSet.has(index) || seen.has(index)) continue;
 				seen.add(index);
 				next.push(at);
 			}
 		}
+		return next;
+	}
 
-		if (next.length === 0) {
-			tengu.tenguFire = undefined;
-			return false;
-		}
+	/** A live Tengu cone: MWG's `MultiTurnBeam` with the game-supplied `fronts` resolver above. The
+	 * beam owns the per-turn traversal and its own save; `onCell` seeds the port's fire field, which
+	 * is what actually burns creatures, so no damage callback is involved. */
+	private buildTenguBeam(from: { x: number; y: number }, direction: number): Roguelike.MultiTurnBeam {
+		return new Roguelike.MultiTurnBeam({
+			level: this.level,
+			from,
+			target: from,
+			damage: 0,
+			blocker: 'none',
+			shape: 'tengu-cone',
+			fronts: (previous, turn) => this.tenguConeFront(direction, previous, turn),
+			onCell: (cell) => this.fire.seed(cell.x, cell.y, 2),
+		});
+	}
 
-		for (const cell of next) this.fire.seed(cell.x, cell.y, 2);
-		ability.cells = next;
-		return true;
+	/** Rebuilds a saved cone (`creature.tenguFire.beam`) into a live `MultiTurnBeam` on load. */
+	private rebuildTenguBeam(direction: number, save: Roguelike.MultiTurnBeamSave): Roguelike.MultiTurnBeam {
+		return Roguelike.MultiTurnBeam.fromJSON({
+			level: this.level,
+			damage: 0,
+			blocker: 'none',
+			shape: 'tengu-cone',
+			fronts: (previous, turn) => this.tenguConeFront(direction, previous, turn),
+			onCell: (cell) => this.fire.seed(cell.x, cell.y, 2),
+		}, save);
 	}
 
 	/** Tengu.throwShocker()/ShockerAbility: choose a free hero-adjacent anchor and apply

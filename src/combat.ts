@@ -4,6 +4,7 @@
 // `Creature`/`GroundItem` here.
 import type { AnyMonsterId } from './monsters';
 import type { ReactionTable } from 'mwg';
+import type { MultiTurnBeamSave } from 'mwg/roguelike';
 import type { GroundItemKind } from './dungeonConstants';
 import type { Combatant, Step } from './simulation/combatState';
 import type { BuffId } from './simulation/buffs';
@@ -86,7 +87,9 @@ export interface Creature extends Combatant {
 	 * cells it has reached so far, grown one ring per Tengu turn. Java keeps both on a `Buff` that
 	 * acts with its host; the port keeps them on the creature the buff belonged to.
 	 */
-	tenguFire?: { direction: number; cells: { x: number; y: number }[] };
+	/** An in-progress Tengu fire cone: the `CIRCLE8` direction it was aimed in, plus MWG's
+	 * `MultiTurnBeam.toJSON()` payload (the ring-per-turn traversal this used to hand-roll). */
+	tenguFire?: { direction: number; beam: MultiTurnBeamSave };
 	/** Tengu's phase-2 bomb-ability countdown (Java's `abilityCooldown`, bomb-first rotation). */
 	tenguAbilityCd?: number;
 	/** Tengu's persisted phase-2 ability count, used to keep Bomb/Shocker ordering across saves. */

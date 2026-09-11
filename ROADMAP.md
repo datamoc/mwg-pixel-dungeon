@@ -1687,9 +1687,15 @@ still owes is named inline.
       `MultiTurnBeamOptions` now takes `fronts?(previous, turn)` (a game-supplied resolver, so a
       line, cone, burst, fork or moving front is expressible), `blocker?: BeamBlocker` (`'terrain'
       | 'none' | (cell, context) => boolean`), `onCell?`, and a `shape` string saved so a reload
-      resumes the same shape (pre-fronts saves still load). Port adoption owed: rewrite the Yog
-      beam and Tengu's cone onto it - Tengu supplying its own `fronts` resolver, since its spread
-      rule is narrower than any built-in shape - and drop the `yogTargeted`/`tenguFire` hand-state.
+      resumes the same shape (pre-fronts saves still load). **Adopted 2026-09-12 for Tengu's fire
+      cone**: the hand-rolled `tenguFire.cells` ring state is gone, replaced by a per-creature
+      `MultiTurnBeam` (built in `buildTenguBeam`) whose `fronts` resolver `tenguConeFront` carries
+      Java's exact ring rule, `onCell` seeding the port's fire field. The creature's `tenguFire`
+      now holds the beam's `toJSON()` plus the `CIRCLE8` direction the resolver needs, and
+      `restoreFloor` rebuilds the live beam from it (old `{ direction, cells }` saves load by
+      dropping that cone, not crashing). The Yog death gaze is deliberately left alone: it is an
+      aim-one-turn/fire-the-next effect here and in Java, not a per-turn front sequence, so
+      `MultiTurnBeam` is not its shape.
 - [x] **P1 — Add generic particle spawn bounds.** *Shipped in 0.7.7 (item 279).*
       `ParticleEmitterOptions.spawn` takes a `ParticleSpawnArea` (`{ shape: 'rect' | 'ellipse',
       width, height? }`), spreading births across an extent rather than one origin; a point
