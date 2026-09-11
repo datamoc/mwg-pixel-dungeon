@@ -1313,7 +1313,17 @@ Do not add new authored content as object literals or scattered constants in the
        this port-only draft. Browser verification owed per section 10 (no working browser tool in
        this session).
 
-       **8 locales remain** (see `languages.ts` for the full list). Their future catalogues must
+       **Tenth locale done: Dutch (`nl`), 2026-09-11, 415/415 keys.** Direct machine
+       translation from `PORT_STRINGS_EN`, validated programmatically (415/415 keys, 0
+       missing/extra, 0 `{placeholder}` mismatches against the current EN table), then wired
+       (`PORT_STRINGS_NL` + `PORT_STRINGS` registration + `nl: 'machine'` provenance, plus the
+       `index.ts`/`portStrings.ts` header locale lists). `npx tsc --noEmit`, `npm run build` and
+       both test suites green, `i18nCheck: OK - 300 mapped keys, 415 port strings, 19 languages`.
+       Informal je-forms. Marked `MT` in `PORT_STRINGS_NL`'s own doc comment; SPD ships Dutch as
+       `unfinished` in `languages.ts`. Browser verification owed per section 10 (no working
+       browser tool in this session).
+
+       **7 locales remain** (see `languages.ts` for the full list). Their future catalogues must
       be machine-translated from `PORT_STRINGS_EN`, marked `MT` in source and in the provenance
       map exported by `portStrings.ts`, then checked for key/placeholder parity before wiring.
       Font coverage is part of done, not a footnote - zh/ko/ja need the section-10 tofu check per
