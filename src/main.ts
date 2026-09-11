@@ -8796,6 +8796,23 @@ export class SewersScene extends Scene2D {
 		}
 	}
 
+	/** `BrightFist.damage()`'s warp: relocate to a random level cell that is not in the hero's
+	 * field of view, not solid, unoccupied, and reachable from the level exit - Java redraws
+	 * `Random.Int(level.length())` until all four hold. */
+	private teleportBrightFist(fist: Creature): void {
+		if (!this.stairs) return;
+		const fov = new Roguelike.FieldOfView(this.level);
+		fov.update(this.hero.x, this.hero.y, this.viewRadius());
+		for (let attempt = 0; attempt < 200; attempt++) {
+			const at = { x: Random.int(this.level.width), y: Random.int(this.level.height) };
+			if (!this.level.passable(at.x, at.y) || this.isChasmCell(at.x, at.y)) continue;
+			if (this.creatureAt(at.x, at.y) || fov.isVisible(at.x, at.y)) continue;
+			if (!this.pathfinder.find(at, this.stairs)) continue;
+			this.moveTo(fist, at);
+			return;
+		}
+	}
+
 	/** `SoiledFist.act()`: `Random.chances([0,2,1])` furrow rolls (1.33 cells on average) that
 	 * upgrade a plain GRASS neighbour to tall grass, then plain grass across the rest of its 3x3. */
 	private soiledFistAct(fist: Creature): void {
@@ -9318,6 +9335,17 @@ export class SewersScene extends Scene2D {
 			}
 		}
 		if (defender.kind === 'tengu') this.clampTenguBracket(defender, preHp);
+		//`BrightFist.damage()`: the first time it drops past half health it pins there, warps to a
+		//random cell the hero cannot see (reachable from the exit) and prolongs the hero's
+		//Blindness; on death the Blindness is prolonged for three times as long. Java's Blindness is
+		//a cosmetic screen darkening (a FlavourBuff with no mechanical effect), so the port keeps
+		//its `daze` stand-in for that feedback.
+		if (defender.kind === 'yogFist' && defender.yogFistType === 'bright' && defender.hp > 0
+			&& preHp > defender.maxHp / 2 && defender.hp <= defender.maxHp / 2) {
+			defender.hp = defender.maxHp / 2;
+			this.hero.buffs['daze'] = Math.max(this.hero.buffs['daze'] ?? 0, 15);
+			this.teleportBrightFist(defender);
+		}
 		if (defender.kind === 'yog' && defender.hp > 0) this.yogDamageHook(defender, preHp);
 		// FrostImbue.proc(): a surviving enemy hit receives Chill for two turns. The compact
 		// status model uses the same short-duration movement/turn lock as the closest Chill hook.
@@ -10115,6 +10143,11 @@ export class SewersScene extends Scene2D {
 		const index = this.creatures.indexOf(creature);
 		if (index < 0) return;
 		runState.audio.cue('death', 0.65);
+		//`BrightFist.damage()`'s death case: the hero's Blindness is prolonged for three times the
+		//base duration (the port's `daze` stand-in).
+		if (creature.kind === 'yogFist' && creature.yogFistType === 'bright') {
+			this.hero.buffs['daze'] = Math.max(this.hero.buffs['daze'] ?? 0, 30);
+		}
 		this.scheduler.remove(creature);
 		this.creatures.splice(index, 1);
 		const deadSprite = this.sprite(creature);

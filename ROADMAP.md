@@ -626,7 +626,9 @@ Do not add new authored content as object literals or scattered constants in the
       which matters because the player can grow grass (Regrowth, furrows). The Soiled fist's own
       grass is ported too - it grows grass around itself each turn and around its zap target,
       blunts incoming blows by the tall grass beside it, and ignores Burning (2026-09-11).
-      Bright/Dark Light and flame/shadow arenas remain).
+      The Bright fist's half-health warp is ported as well - it pins at HT/2, warps out of the
+      hero's sight and prolongs the hero's Blindness (2026-09-11). Dark Light and flame/shadow
+      arenas remain).
 - [x] Port final-vault Amulet placement at Java's `AMULET_POS` (depth 26, x=8, y=12).
 - [ ] Port final-vault endgame-specific terrain, custom visuals, and compass behavior. The
       vault now runs Java's own `viewDistance = 4` through the shared sight radius (with the
