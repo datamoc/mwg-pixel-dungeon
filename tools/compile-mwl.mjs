@@ -134,10 +134,7 @@ if (emittedContent !== emitModule(repeatGame)) {
 
 fs.mkdirSync(generatedRoot, { recursive: true });
 fs.writeFileSync(path.join(generatedRoot, 'mwlContent.ts'), emittedContent);
-const buffDurationData = Object.fromEntries(effectSet('buffDurations', 'entries').split(';').map((entry) => {
-  const [id, duration] = entry.split('|');
-  return [id, Number(duration)];
-}));
+const buffDurationData = Object.fromEntries(tableRows('buffDurations').map((row) => [String(row.buff), Number(row.duration)]));
 const negativeBuffData = effectSet('buffDurations', 'negative').split(',').filter(Boolean);
 for (const id of negativeBuffData) {
   if (!(id in buffDurationData)) throw new Error(`MWL negative-buff rule references unknown buff: ${id}`);

@@ -1,5 +1,5 @@
 import type { ClassId } from './classes';
-import { MWL_TRAIT_NODES } from './mwlContent';
+import { MWL_TABLE_ROWS, MWL_TRAIT_NODES } from './mwlContent';
 
 export interface TalentDefinition {
 	id: string;
@@ -8,25 +8,19 @@ export interface TalentDefinition {
 	maxRank: 2 | 3;
 }
 
-function talentEntries(applyTo: string): Map<string, string[]> {
-	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'talentTrees');
-	if (!node) throw new Error('MWL talent rule is missing talentTrees');
-	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === applyTo);
-	const raw = effect?.attributes.set;
-	if (raw === undefined) throw new Error(`MWL talent rule is missing ${applyTo}`);
+const talentsOf = (row: Readonly<Record<string, unknown>>): string[] =>
+	(Array.isArray(row.talents) ? row.talents.map(String) : []);
+
+const CLASS_TALENT_ENTRIES = (() => {
 	const entries = new Map<string, string[]>();
-	for (const entry of raw.split(';')) {
-		const [owner, tier, values] = entry.split('|');
-		const key = applyTo === 'class_entries' ? `${owner}|${tier}` : owner;
-		const list = applyTo === 'class_entries' ? values : tier;
-		if (!key || !list || entries.has(key)) throw new Error(`MWL talent rule has invalid entry ${entry}`);
-		entries.set(key, list.split(',').filter(Boolean));
+	for (const row of MWL_TABLE_ROWS('talentClassEntries')) {
+		const key = `${String(row.class)}|${Number(row.tier)}`;
+		if (entries.has(key)) throw new Error(`MWL talent rule has duplicate class entry ${key}`);
+		entries.set(key, talentsOf(row));
 	}
 	return entries;
-}
-
-const CLASS_TALENT_ENTRIES = talentEntries('class_entries');
-const SUBCLASS_TALENT_ENTRIES = talentEntries('subclass_entries');
+})();
+const SUBCLASS_TALENT_ENTRIES = new Map(MWL_TABLE_ROWS('talentSubclassEntries', 'subclass').map((row) => [String(row.subclass), talentsOf(row)]));
 
 const TALENT_TREE_NODE = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'talentTrees')!;
 const TIER_THRESHOLD_TEXT = TALENT_TREE_NODE.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'tier_thresholds')?.attributes.set;

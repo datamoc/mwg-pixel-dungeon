@@ -1,40 +1,44 @@
 import type { TrapTable } from './regularPainter';
-import { MWL_TRAIT_NODES } from '../mwlContent';
+import { MWL_TABLE_ROWS } from '../mwlContent';
 
-/** Reads region-specific dungeon tables authored in MWL and validates their parallel arrays. */
-export function mwlTrapTable(region: string): TrapTable {
-	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'regionTrapTables');
-	if (!node) throw new Error('MWL dungeon rule is missing regionTrapTables');
-	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
-	const entry = effect?.attributes.set?.split(';').find((candidate) => candidate.startsWith(`${region}|`));
-	if (!entry) throw new Error(`MWL dungeon rule has no trap table for ${region}`);
-	const [, classesText, chancesText] = entry.split('|');
-	const classes = classesText?.split(',').filter(Boolean) ?? [];
-	const chances = chancesText?.split(',').map(Number) ?? [];
+const list = (value: unknown): string[] => (Array.isArray(value) ? value.map(String) : []);
+
+/** Region-specific dungeon tables authored as MWG typed MWL tables, with their parallel arrays
+ * checked once at module load rather than on every lookup. */
+const TRAP_TABLES: ReadonlyMap<string, TrapTable> = new Map(MWL_TABLE_ROWS('regionTrapTables', 'region').map((row) => {
+	const classes = list(row.kinds);
+	const chances = list(row.weights).map(Number);
 	if (classes.length === 0 || classes.length !== chances.length || chances.some((chance) => !Number.isFinite(chance) || chance < 0)) {
-		throw new Error(`MWL dungeon rule has invalid trap table for ${region}`);
+		throw new Error(`MWL dungeon rule has invalid trap table for ${String(row.region)}`);
 	}
-	return { classes, chances };
-}
+	return [String(row.region), { classes, chances }] as const;
+}));
 
+export function mwlTrapTable(region: string): TrapTable {
+	const table = TRAP_TABLES.get(region);
+	if (!table) throw new Error(`MWL dungeon rule has no trap table for ${region}`);
+	return table;
+}
 
 export interface MwlPaintRule {
 	water: { normal: number; feeling: number; smoothness: number };
 	grass: { normal: number; feeling: number; smoothness: number };
 }
 
-export function mwlPaintRule(region: string): MwlPaintRule {
-	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'regionPaintRules');
-	if (!node) throw new Error('MWL dungeon rule is missing regionPaintRules');
-	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
-	const entry = effect?.attributes.set?.split(';').find((candidate) => candidate.startsWith(`${region}|`));
-	const values = entry?.split('|').slice(1).map(Number) ?? [];
-	if (values.length !== 6 || values.some((value) => !Number.isFinite(value) || value < 0)) {
-		throw new Error(`MWL dungeon rule has invalid paint rule for ${region}`);
+const PAINT_RULES: ReadonlyMap<string, MwlPaintRule> = new Map(MWL_TABLE_ROWS('regionPaintRules', 'region').map((row) => {
+	const numbers = [row.waterNormal, row.waterFeeling, row.grassNormal, row.grassFeeling, row.waterSmoothness, row.grassSmoothness].map(Number);
+	if (numbers.some((value) => !Number.isFinite(value) || value < 0)) {
+		throw new Error(`MWL dungeon rule has invalid paint rule for ${String(row.region)}`);
 	}
-	const [waterNormal, waterFeeling, grassNormal, grassFeeling, waterSmoothness, grassSmoothness] = values;
-	return {
+	const [waterNormal, waterFeeling, grassNormal, grassFeeling, waterSmoothness, grassSmoothness] = numbers;
+	return [String(row.region), {
 		water: { normal: waterNormal!, feeling: waterFeeling!, smoothness: waterSmoothness! },
 		grass: { normal: grassNormal!, feeling: grassFeeling!, smoothness: grassSmoothness! },
-	};
+	}] as const;
+}));
+
+export function mwlPaintRule(region: string): MwlPaintRule {
+	const rule = PAINT_RULES.get(region);
+	if (!rule) throw new Error(`MWL dungeon rule has no paint rule for ${region}`);
+	return rule;
 }

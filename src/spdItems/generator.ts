@@ -40,7 +40,7 @@
  * `Wand`, `Artifact`, `Gold` are the only ones that exist.
  */
 import { SpdRandom } from '../spdRng';
-import { MWL_TRAIT_NODES } from '../mwlContent';
+import { MWL_TABLE_ROWS, MWL_TRAIT_NODES } from '../mwlContent';
 
 /** `Generator.Category`'s declaration order - load-bearing, since `categoryProbs` is a
  *  `LinkedHashMap` populated by iterating `Category.values()`, so `Random.chances()` sees the
@@ -101,16 +101,7 @@ const ARTIFACT_DECK = mwlDeck('artifactGeneratorDeck');
 const FOOD_DECK = mwlDeck('foodGeneratorDeck');
 
 function mwlMatrix(id: string): number[][] {
-	const table = MWL_TRAIT_NODES.find((node) => node.attributes.id === id)
-		?? (() => { throw new Error(`MWL generator table is missing ${id}`); })();
-	const effect = table.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'rows');
-	const value = effect?.attributes.set;
-	if (value === undefined) throw new Error(`MWL generator table ${id} is missing rows`);
-	const rows = value.split(';').map((row) => row.split(',').map(Number));
-	if (rows.some((row) => row.length === 0 || row.some((entry) => !Number.isFinite(entry)))) {
-		throw new Error(`MWL generator table ${id} has invalid rows`);
-	}
-	return rows;
+	return MWL_TABLE_ROWS(id).map((row) => (Array.isArray(row.chances) ? row.chances.map(Number) : []));
 }
 
 function mwlList(id: string, key: string): string[] {

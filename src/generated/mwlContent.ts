@@ -1500,22 +1500,78 @@ export const gameData = {
 			},
 			"children": [
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "alchemyEnergy",
-						"name": "Item.energyVal"
+						"columns": "kind:string|energy:number"
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "seed|2;stone|3;scroll|6;potion|6;food|6"
+								"kind": "seed",
+								"energy": "2"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
 								"line": 7,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"kind": "stone",
+								"energy": "3"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 11,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"kind": "scroll",
+								"energy": "6"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 15,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"kind": "potion",
+								"energy": "6"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 19,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"kind": "food",
+								"energy": "6"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 23,
 								"column": 1
 							},
 							"gettext": []
@@ -1529,22 +1585,77 @@ export const gameData = {
 					"gettext": []
 				},
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "alchemyRecipes",
-						"name": "Recipe"
+						"columns": "id:string|ingredients:list|result:string|resultQuantity:number|energyCost:number",
+						"list_delimiter": ","
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "stewedMeat1|meat:1|stewedMeat|1|1;stewedMeat2|meat:2|stewedMeat|2|2;stewedMeat3|meat:3|stewedMeat|3|2;meatPie|pasty:1,food:1,meat:1|meatPie|1|6"
+								"id": "stewedMeat1",
+								"ingredients": "meat:1",
+								"result": "stewedMeat",
+								"resultQuantity": "1",
+								"energyCost": "1"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 16,
+								"line": 33,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "stewedMeat2",
+								"ingredients": "meat:2",
+								"result": "stewedMeat",
+								"resultQuantity": "2",
+								"energyCost": "2"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 40,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "stewedMeat3",
+								"ingredients": "meat:3",
+								"result": "stewedMeat",
+								"resultQuantity": "3",
+								"energyCost": "2"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 47,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "meatPie",
+								"ingredients": "pasty:1,food:1,meat:1",
+								"result": "meatPie",
+								"resultQuantity": "1",
+								"energyCost": "6"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 54,
 								"column": 1
 							},
 							"gettext": []
@@ -1552,28 +1663,569 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-						"line": 13,
+						"line": 29,
 						"column": 1
 					},
 					"gettext": []
 				},
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "alchemyRecipeManifest",
-						"name": "Recipe.all"
+						"columns": "id:string|group:string|javaRecipe:string"
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "liquidMetal|variable|LiquidMetal.Recipe;scrollToStone|one|Scroll.ScrollToStone;exoticPotion|one|ExoticPotion.PotionToExotic;exoticScroll|one|ExoticScroll.ScrollToExotic;arcaneResin|one|ArcaneResin.Recipe;alchemize|one|Alchemize.Recipe;stewedMeat1|one|StewedMeat.oneMeat;blandfruit|two|Blandfruit.CookFruit;enhanceBomb|two|Bomb.EnhanceBomb;alchemicalCatalyst|two|AlchemicalCatalyst.Recipe;arcaneCatalyst|two|ArcaneCatalyst.Recipe;elixirArcaneArmor|two|ElixirOfArcaneArmor.Recipe;elixirAquaticRejuvenation|two|ElixirOfAquaticRejuvenation.Recipe;elixirDragonsBlood|two|ElixirOfDragonsBlood.Recipe;elixirIcyTouch|two|ElixirOfIcyTouch.Recipe;elixirMight|two|ElixirOfMight.Recipe;elixirHoneyedHealing|two|ElixirOfHoneyedHealing.Recipe;elixirToxicEssence|two|ElixirOfToxicEssence.Recipe;blizzardBrew|two|BlizzardBrew.Recipe;infernalBrew|two|InfernalBrew.Recipe;shockingBrew|two|ShockingBrew.Recipe;causticBrew|two|CausticBrew.Recipe;aquaBlast|two|AquaBlast.Recipe;beaconOfReturning|two|BeaconOfReturning.Recipe;curseInfusion|two|CurseInfusion.Recipe;featherFall|two|FeatherFall.Recipe;magicalInfusion|two|MagicalInfusion.Recipe;phaseShift|two|PhaseShift.Recipe;reclaimTrap|two|ReclaimTrap.Recipe;recycle|two|Recycle.Recipe;wildEnergy|two|WildEnergy.Recipe;telekineticGrab|two|TelekineticGrab.Recipe;summonElemental|two|SummonElemental.Recipe;stewedMeat2|two|StewedMeat.twoMeat;potionSeed|three|Potion.SeedToPotion;stewedMeat3|three|StewedMeat.threeMeat;meatPie|three|MeatPie.Recipe"
+								"id": "liquidMetal",
+								"group": "variable",
+								"javaRecipe": "LiquidMetal.Recipe"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 25,
+								"line": 66,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "scrollToStone",
+								"group": "one",
+								"javaRecipe": "Scroll.ScrollToStone"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 71,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "exoticPotion",
+								"group": "one",
+								"javaRecipe": "ExoticPotion.PotionToExotic"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 76,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "exoticScroll",
+								"group": "one",
+								"javaRecipe": "ExoticScroll.ScrollToExotic"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 81,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "arcaneResin",
+								"group": "one",
+								"javaRecipe": "ArcaneResin.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 86,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "alchemize",
+								"group": "one",
+								"javaRecipe": "Alchemize.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 91,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "stewedMeat1",
+								"group": "one",
+								"javaRecipe": "StewedMeat.oneMeat"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 96,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "blandfruit",
+								"group": "two",
+								"javaRecipe": "Blandfruit.CookFruit"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 101,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBomb",
+								"group": "two",
+								"javaRecipe": "Bomb.EnhanceBomb"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 106,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "alchemicalCatalyst",
+								"group": "two",
+								"javaRecipe": "AlchemicalCatalyst.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 111,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "arcaneCatalyst",
+								"group": "two",
+								"javaRecipe": "ArcaneCatalyst.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 116,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "elixirArcaneArmor",
+								"group": "two",
+								"javaRecipe": "ElixirOfArcaneArmor.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 121,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "elixirAquaticRejuvenation",
+								"group": "two",
+								"javaRecipe": "ElixirOfAquaticRejuvenation.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 126,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "elixirDragonsBlood",
+								"group": "two",
+								"javaRecipe": "ElixirOfDragonsBlood.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 131,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "elixirIcyTouch",
+								"group": "two",
+								"javaRecipe": "ElixirOfIcyTouch.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 136,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "elixirMight",
+								"group": "two",
+								"javaRecipe": "ElixirOfMight.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 141,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "elixirHoneyedHealing",
+								"group": "two",
+								"javaRecipe": "ElixirOfHoneyedHealing.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 146,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "elixirToxicEssence",
+								"group": "two",
+								"javaRecipe": "ElixirOfToxicEssence.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 151,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "blizzardBrew",
+								"group": "two",
+								"javaRecipe": "BlizzardBrew.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 156,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "infernalBrew",
+								"group": "two",
+								"javaRecipe": "InfernalBrew.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 161,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "shockingBrew",
+								"group": "two",
+								"javaRecipe": "ShockingBrew.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 166,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "causticBrew",
+								"group": "two",
+								"javaRecipe": "CausticBrew.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 171,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "aquaBlast",
+								"group": "two",
+								"javaRecipe": "AquaBlast.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 176,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "beaconOfReturning",
+								"group": "two",
+								"javaRecipe": "BeaconOfReturning.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 181,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "curseInfusion",
+								"group": "two",
+								"javaRecipe": "CurseInfusion.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 186,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "featherFall",
+								"group": "two",
+								"javaRecipe": "FeatherFall.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 191,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "magicalInfusion",
+								"group": "two",
+								"javaRecipe": "MagicalInfusion.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 196,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "phaseShift",
+								"group": "two",
+								"javaRecipe": "PhaseShift.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 201,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "reclaimTrap",
+								"group": "two",
+								"javaRecipe": "ReclaimTrap.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 206,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "recycle",
+								"group": "two",
+								"javaRecipe": "Recycle.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 211,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "wildEnergy",
+								"group": "two",
+								"javaRecipe": "WildEnergy.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 216,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "telekineticGrab",
+								"group": "two",
+								"javaRecipe": "TelekineticGrab.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 221,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "summonElemental",
+								"group": "two",
+								"javaRecipe": "SummonElemental.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 226,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "stewedMeat2",
+								"group": "two",
+								"javaRecipe": "StewedMeat.twoMeat"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 231,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "potionSeed",
+								"group": "three",
+								"javaRecipe": "Potion.SeedToPotion"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 236,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "stewedMeat3",
+								"group": "three",
+								"javaRecipe": "StewedMeat.threeMeat"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 241,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "meatPie",
+								"group": "three",
+								"javaRecipe": "MeatPie.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 246,
 								"column": 1
 							},
 							"gettext": []
@@ -1581,7 +2233,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-						"line": 22,
+						"line": 63,
 						"column": 1
 					},
 					"gettext": []
@@ -2407,22 +3059,246 @@ export const gameData = {
 			},
 			"children": [
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "badgeCatalogue",
-						"name": "Badges.Badge"
+						"columns": "id:string|counter:string|target:number|description:string|icon:number"
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "boss1|boss_goo|1|Slew Goo|15;boss2|boss_tengu|1|Slew Tengu|47;boss3|boss_dm300|1|Slew DM-300|48;boss4|boss_king|1|Slew the Dwarf King|78;victory|amulet|1|Escaped with the Amulet|82;unlock_mage|upgrades_used|1|Used an upgrade scroll|1;unlock_rogue|surprises|10|10 surprise attacks|2;unlock_huntress|throws|10|10 thrown attacks|3;unlock_duelist|weapon_plus2|1|Raised a weapon to +2|4;death_trap|death_trap|1|Died to a trap|81;death_fire|death_fire|1|Died to fire|16;death_poison|death_poison|1|Died to poison|17;death_hunger|death_hunger|1|Starved to death|19;death_foe|death_foe|1|Slain by a foe|104"
+								"id": "boss1",
+								"counter": "boss_goo",
+								"target": "1",
+								"description": "Slew Goo",
+								"icon": "15"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
 								"line": 7,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "boss2",
+								"counter": "boss_tengu",
+								"target": "1",
+								"description": "Slew Tengu",
+								"icon": "47"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 14,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "boss3",
+								"counter": "boss_dm300",
+								"target": "1",
+								"description": "Slew DM-300",
+								"icon": "48"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 21,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "boss4",
+								"counter": "boss_king",
+								"target": "1",
+								"description": "Slew the Dwarf King",
+								"icon": "78"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 28,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "victory",
+								"counter": "amulet",
+								"target": "1",
+								"description": "Escaped with the Amulet",
+								"icon": "82"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 35,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "unlock_mage",
+								"counter": "upgrades_used",
+								"target": "1",
+								"description": "Used an upgrade scroll",
+								"icon": "1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 42,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "unlock_rogue",
+								"counter": "surprises",
+								"target": "10",
+								"description": "10 surprise attacks",
+								"icon": "2"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 49,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "unlock_huntress",
+								"counter": "throws",
+								"target": "10",
+								"description": "10 thrown attacks",
+								"icon": "3"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 56,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "unlock_duelist",
+								"counter": "weapon_plus2",
+								"target": "1",
+								"description": "Raised a weapon to +2",
+								"icon": "4"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 63,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "death_trap",
+								"counter": "death_trap",
+								"target": "1",
+								"description": "Died to a trap",
+								"icon": "81"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 70,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "death_fire",
+								"counter": "death_fire",
+								"target": "1",
+								"description": "Died to fire",
+								"icon": "16"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 77,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "death_poison",
+								"counter": "death_poison",
+								"target": "1",
+								"description": "Died to poison",
+								"icon": "17"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 84,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "death_hunger",
+								"counter": "death_hunger",
+								"target": "1",
+								"description": "Starved to death",
+								"icon": "19"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 91,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "death_foe",
+								"counter": "death_foe",
+								"target": "1",
+								"description": "Slain by a foe",
+								"icon": "104"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 98,
 								"column": 1
 							},
 							"gettext": []
@@ -2459,8 +3335,8 @@ export const gameData = {
 						{
 							"tag": "effect",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "bless|30;hex|30;daze|5;chill|10;frost|10;drowsy|5;magicalSleep|0;fury|9999;berserk|9999;weakness|20;vulnerable|20;burning|3;poison|6;bleeding|0;cripple|4;paralysis|3;roots|3;levitation|20;invisibility|20;cloak|9999;focus|9999;recharging|30;frostImbue|15;adrenalineSurge|200;mindvision|20;terror|20;amok|5;aggression|20;awareness|2;haste|20;degrade|30;ooze|20;charm|10;lethalHasteCooldown|100"
+								"apply_to": "negative",
+								"set": "poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,chill,frost,hex"
 							},
 							"children": [],
 							"location": {
@@ -2469,17 +3345,494 @@ export const gameData = {
 								"column": 1
 							},
 							"gettext": []
-						},
+						}
+					],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+						"line": 4,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "table",
+					"attributes": {
+						"id": "buffDurations",
+						"columns": "buff:string|duration:number"
+					},
+					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "negative",
-								"set": "poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,chill,frost,hex"
+								"buff": "bless",
+								"duration": "30"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-								"line": 11,
+								"line": 16,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "hex",
+								"duration": "30"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 20,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "daze",
+								"duration": "5"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 24,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "chill",
+								"duration": "10"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 28,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "frost",
+								"duration": "10"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 32,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "drowsy",
+								"duration": "5"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 36,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "magicalSleep",
+								"duration": "0"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 40,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "fury",
+								"duration": "9999"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 44,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "berserk",
+								"duration": "9999"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 48,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "weakness",
+								"duration": "20"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 52,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "vulnerable",
+								"duration": "20"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 56,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "burning",
+								"duration": "3"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 60,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "poison",
+								"duration": "6"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 64,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "bleeding",
+								"duration": "0"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 68,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "cripple",
+								"duration": "4"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 72,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "paralysis",
+								"duration": "3"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 76,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "roots",
+								"duration": "3"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 80,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "levitation",
+								"duration": "20"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 84,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "invisibility",
+								"duration": "20"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 88,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "cloak",
+								"duration": "9999"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 92,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "focus",
+								"duration": "9999"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 96,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "recharging",
+								"duration": "30"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 100,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "frostImbue",
+								"duration": "15"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 104,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "adrenalineSurge",
+								"duration": "200"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 108,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "mindvision",
+								"duration": "20"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 112,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "terror",
+								"duration": "20"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 116,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "amok",
+								"duration": "5"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 120,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "aggression",
+								"duration": "20"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 124,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "awareness",
+								"duration": "2"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 128,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "haste",
+								"duration": "20"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 132,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "degrade",
+								"duration": "30"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 136,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "ooze",
+								"duration": "20"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 140,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "charm",
+								"duration": "10"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 144,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "lethalHasteCooldown",
+								"duration": "100"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 148,
 								"column": 1
 							},
 							"gettext": []
@@ -2487,7 +3840,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-						"line": 4,
+						"line": 13,
 						"column": 1
 					},
 					"gettext": []
@@ -5668,22 +7021,69 @@ export const gameData = {
 					"gettext": []
 				},
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "regionTrapTables",
-						"name": "RegularLevel.trapTables"
+						"columns": "region:string|kinds:list|weights:list",
+						"list_delimiter": ","
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "prison|chilling,shocking,toxic,burning,poisonDart,alarm,ooze,gripping,confusion,flock,summoning,teleportation,gateway,geyser|4,4,4,4,4,2,2,2,1,1,1,1,1,1;caves|burning,poisonDart,frost,storm,corrosion,gripping,rockfall,guardian,confusion,summoning,warping,pitfall,gateway,geyser|4,4,4,4,4,2,2,2,1,1,1,1,1,1;city|frost,storm,corrosion,blazing,disintegration,rockfall,flashing,guardian,weakening,disarming,summoning,warping,cursing,pitfall,distortion,gateway,geyser|4,4,4,4,4,2,2,2,2,1,1,1,1,1,1,1,1;halls|frost,storm,corrosion,blazing,disintegration,rockfall,flashing,guardian,weakening,disarming,summoning,warping,cursing,grim,pitfall,distortion,gateway,geyser|4,4,4,4,4,2,2,2,2,1,1,1,1,1,1,1,1,1"
+								"region": "prison",
+								"kinds": "chilling,shocking,toxic,burning,poisonDart,alarm,ooze,gripping,confusion,flock,summoning,teleportation,gateway,geyser",
+								"weights": "4,4,4,4,4,2,2,2,1,1,1,1,1,1"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
-								"line": 33,
+								"line": 34,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"region": "caves",
+								"kinds": "burning,poisonDart,frost,storm,corrosion,gripping,rockfall,guardian,confusion,summoning,warping,pitfall,gateway,geyser",
+								"weights": "4,4,4,4,4,2,2,2,1,1,1,1,1,1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+								"line": 39,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"region": "city",
+								"kinds": "frost,storm,corrosion,blazing,disintegration,rockfall,flashing,guardian,weakening,disarming,summoning,warping,cursing,pitfall,distortion,gateway,geyser",
+								"weights": "4,4,4,4,4,2,2,2,2,1,1,1,1,1,1,1,1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+								"line": 44,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"region": "halls",
+								"kinds": "frost,storm,corrosion,blazing,disintegration,rockfall,flashing,guardian,weakening,disarming,summoning,warping,cursing,grim,pitfall,distortion,gateway,geyser",
+								"weights": "4,4,4,4,4,2,2,2,2,1,1,1,1,1,1,1,1,1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+								"line": 49,
 								"column": 1
 							},
 							"gettext": []
@@ -5697,22 +7097,103 @@ export const gameData = {
 					"gettext": []
 				},
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "regionPaintRules",
-						"name": "LevelPainter.terrainPatches"
+						"columns": "region:string|waterNormal:number|waterFeeling:number|grassNormal:number|grassFeeling:number|waterSmoothness:number|grassSmoothness:number"
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "sewers|0.3|0.85|0.2|0.8|5|4;prison|0.3|0.9|0.2|0.8|4|3;caves|0.3|0.85|0.15|0.65|6|3;city|0.3|0.90|0.2|0.8|4|3;halls|0.15|0.70|0.10|0.65|6|3"
+								"region": "sewers",
+								"waterNormal": "0.3",
+								"waterFeeling": "0.85",
+								"grassNormal": "0.2",
+								"grassFeeling": "0.8",
+								"waterSmoothness": "5",
+								"grassSmoothness": "4"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
-								"line": 42,
+								"line": 59,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"region": "prison",
+								"waterNormal": "0.3",
+								"waterFeeling": "0.9",
+								"grassNormal": "0.2",
+								"grassFeeling": "0.8",
+								"waterSmoothness": "4",
+								"grassSmoothness": "3"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+								"line": 68,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"region": "caves",
+								"waterNormal": "0.3",
+								"waterFeeling": "0.85",
+								"grassNormal": "0.15",
+								"grassFeeling": "0.65",
+								"waterSmoothness": "6",
+								"grassSmoothness": "3"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+								"line": 77,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"region": "city",
+								"waterNormal": "0.3",
+								"waterFeeling": "0.90",
+								"grassNormal": "0.2",
+								"grassFeeling": "0.8",
+								"waterSmoothness": "4",
+								"grassSmoothness": "3"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+								"line": 86,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"region": "halls",
+								"waterNormal": "0.15",
+								"waterFeeling": "0.70",
+								"grassNormal": "0.10",
+								"grassFeeling": "0.65",
+								"waterSmoothness": "6",
+								"grassSmoothness": "3"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
+								"line": 95,
 								"column": 1
 							},
 							"gettext": []
@@ -5720,7 +7201,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\dungeon-rules.mwl",
-						"line": 39,
+						"line": 56,
 						"column": 1
 					},
 					"gettext": []
@@ -6040,22 +7521,79 @@ export const gameData = {
 			},
 			"children": [
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "floorSetTierProbs",
-						"name": "Generator.floorSetTierProbs"
+						"columns": "index:number|chances:list",
+						"list_delimiter": ","
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "rows",
-								"set": "0,75,20,4,1;0,25,50,20,5;0,0,40,50,10;0,0,20,40,40;0,0,0,20,80"
+								"index": "0",
+								"chances": "0,75,20,4,1"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-tables.mwl",
-								"line": 6,
+								"line": 7,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"index": "1",
+								"chances": "0,25,50,20,5"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-tables.mwl",
+								"line": 11,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"index": "2",
+								"chances": "0,0,40,50,10"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-tables.mwl",
+								"line": 15,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"index": "3",
+								"chances": "0,0,20,40,40"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-tables.mwl",
+								"line": 19,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"index": "4",
+								"chances": "0,0,0,20,80"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\generator-tables.mwl",
+								"line": 23,
 								"column": 1
 							},
 							"gettext": []
@@ -13295,41 +14833,13 @@ export const gameData = {
 						{
 							"tag": "effect",
 							"attributes": {
-								"apply_to": "class_entries",
-								"set": "warrior|1|hearty_meal,veterans_intuition,test_subject,iron_will;warrior|2|iron_stomach,restored_willpower,runic_transference,lethal_momentum,improvised_projectiles;mage|1|empowering_meal,scholars_intuition,tested_hypothesis,backup_barrier;mage|2|energizing_meal,energizing_upgrade,wand_preservation,arcane_vision,shield_battery;rogue|1|cached_rations,thiefs_intuition,sucker_punch,protective_shadows;rogue|2|mystical_meal,mystical_upgrade,wide_search,silent_steps,rogues_foresight;huntress|1|natures_bounty,survivalists_intuition,followup_strike,natures_aid;huntress|2|invigorating_meal,restored_nature,rejuvenating_steps,heightened_senses,durable_projectiles;duelist|1|strengthening_meal,adventurers_intuition,patient_strike,aggressive_barrier;duelist|2|focused_meal,restored_agility,weapon_recharging,lethal_haste,swift_equip;cleric|1|empowering_meal,scholars_intuition,tested_hypothesis,backup_barrier;cleric|2|energizing_meal,energizing_upgrade,wand_preservation,arcane_vision,shield_battery"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 7,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "effect",
-							"attributes": {
-								"apply_to": "subclass_entries",
-								"set": "berserker|endless_rage,deathless_fury,enraged_catalyst;gladiator|cleave,lethal_defense,enhanced_combo;battlemage|empowered_strike,mystical_charge,excess_charge;warlock|soul_eater,soul_siphon,necromancers_minions;assassin|enhanced_lethality,assassins_reach,bounty_hunter;freerunner|evasive_armor,projectile_momentum,speedy_stealth;sniper|farsight,shared_enchantment,shared_upgrades;warden|durable_tips,barkskin,shielding_dew;champion|secondary_charge,twin_upgrades,combined_lethality;monk_sub|unencumbered_spirit,monastic_vigor,combined_energy"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 11,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "effect",
-							"attributes": {
 								"apply_to": "tier_thresholds",
 								"set": "0,2,7,13,21,31"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 15,
+								"line": 7,
 								"column": 2
 							},
 							"gettext": []
@@ -13338,6 +14848,358 @@ export const gameData = {
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
 						"line": 4,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "table",
+					"attributes": {
+						"id": "talentSubclassEntries",
+						"columns": "subclass:string|talents:list",
+						"list_delimiter": ","
+					},
+					"children": [
+						{
+							"tag": "row",
+							"attributes": {
+								"subclass": "berserker",
+								"talents": "endless_rage,deathless_fury,enraged_catalyst"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 17,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"subclass": "gladiator",
+								"talents": "cleave,lethal_defense,enhanced_combo"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 21,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"subclass": "battlemage",
+								"talents": "empowered_strike,mystical_charge,excess_charge"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 25,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"subclass": "warlock",
+								"talents": "soul_eater,soul_siphon,necromancers_minions"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 29,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"subclass": "assassin",
+								"talents": "enhanced_lethality,assassins_reach,bounty_hunter"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 33,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"subclass": "freerunner",
+								"talents": "evasive_armor,projectile_momentum,speedy_stealth"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 37,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"subclass": "sniper",
+								"talents": "farsight,shared_enchantment,shared_upgrades"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 41,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"subclass": "warden",
+								"talents": "durable_tips,barkskin,shielding_dew"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 45,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"subclass": "champion",
+								"talents": "secondary_charge,twin_upgrades,combined_lethality"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 49,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"subclass": "monk_sub",
+								"talents": "unencumbered_spirit,monastic_vigor,combined_energy"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 53,
+								"column": 1
+							},
+							"gettext": []
+						}
+					],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+						"line": 13,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "table",
+					"attributes": {
+						"id": "talentClassEntries",
+						"columns": "class:string|tier:number|talents:list",
+						"list_delimiter": ","
+					},
+					"children": [
+						{
+							"tag": "row",
+							"attributes": {
+								"class": "warrior",
+								"tier": "1",
+								"talents": "hearty_meal,veterans_intuition,test_subject,iron_will"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 63,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"class": "warrior",
+								"tier": "2",
+								"talents": "iron_stomach,restored_willpower,runic_transference,lethal_momentum,improvised_projectiles"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 68,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"class": "mage",
+								"tier": "1",
+								"talents": "empowering_meal,scholars_intuition,tested_hypothesis,backup_barrier"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 73,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"class": "mage",
+								"tier": "2",
+								"talents": "energizing_meal,energizing_upgrade,wand_preservation,arcane_vision,shield_battery"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 78,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"class": "rogue",
+								"tier": "1",
+								"talents": "cached_rations,thiefs_intuition,sucker_punch,protective_shadows"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 83,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"class": "rogue",
+								"tier": "2",
+								"talents": "mystical_meal,mystical_upgrade,wide_search,silent_steps,rogues_foresight"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 88,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"class": "huntress",
+								"tier": "1",
+								"talents": "natures_bounty,survivalists_intuition,followup_strike,natures_aid"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 93,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"class": "huntress",
+								"tier": "2",
+								"talents": "invigorating_meal,restored_nature,rejuvenating_steps,heightened_senses,durable_projectiles"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 98,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"class": "duelist",
+								"tier": "1",
+								"talents": "strengthening_meal,adventurers_intuition,patient_strike,aggressive_barrier"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 103,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"class": "duelist",
+								"tier": "2",
+								"talents": "focused_meal,restored_agility,weapon_recharging,lethal_haste,swift_equip"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 108,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"class": "cleric",
+								"tier": "1",
+								"talents": "empowering_meal,scholars_intuition,tested_hypothesis,backup_barrier"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 113,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"class": "cleric",
+								"tier": "2",
+								"talents": "energizing_meal,energizing_upgrade,wand_preservation,arcane_vision,shield_battery"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 118,
+								"column": 1
+							},
+							"gettext": []
+						}
+					],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+						"line": 59,
 						"column": 1
 					},
 					"gettext": []

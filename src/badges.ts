@@ -1,6 +1,6 @@
 import { Achievements, SaveSystem } from 'mwg';
 import { CLASS_BADGE, type ClassId } from './classes';
-import { MWL_TRAIT_NODES } from './mwlContent';
+import { MWL_TABLE_ROWS } from './mwlContent';
 
 /**
  * Badges (`Badges.java`) as `mwg/core` Achievements: one boss badge per chapter, victory,
@@ -9,15 +9,13 @@ import { MWL_TRAIT_NODES } from './mwlContent';
  * weapon at +2); the Cleric has no Java unlock (predates it), so first victory opens it -
  * a stated port rule, not a Java one.
  */
-const badgeTrait = MWL_TRAIT_NODES.find((node) => node.attributes.id === 'badgeCatalogue');
-if (!badgeTrait) throw new Error('MWL badge catalogue is missing');
-const badgeEntries = badgeTrait.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries')?.attributes.set;
-if (!badgeEntries) throw new Error('MWL badge catalogue is missing entries');
-export const BADGE_DEFS: { id: string; counter: string; target: number; description: string }[] = badgeEntries.split(';').filter(Boolean).map((entry) => {
-	const [id, counter, target, description, icon] = entry.split('|');
-	if (!id || !counter || !description || !Number.isFinite(Number(target)) || !icon) throw new Error(`Invalid MWL badge: ${entry}`);
-	return { id, counter, target: Number(target), description };
-});
+const BADGE_ROWS = MWL_TABLE_ROWS('badgeCatalogue', 'id');
+export const BADGE_DEFS: { id: string; counter: string; target: number; description: string }[] = BADGE_ROWS.map((row) => ({
+	id: String(row.id),
+	counter: String(row.counter),
+	target: Number(row.target),
+	description: String(row.description),
+}));
 
 /**
  * `Badges.Badge.image` - the real 16x16-cell index each of `BADGE_DEFS`' entries cuts from
@@ -28,10 +26,7 @@ export const BADGE_DEFS: { id: string; counter: string; target: number; descript
  * borrows `DEATH_FROM_ALL`'s icon (a generic skull) since Java has no "killed by a monster"
  * badge at all - every other entry below is an exact match.
  */
-export const BADGE_ICON: Record<string, number> = Object.fromEntries(badgeEntries.split(';').filter(Boolean).map((entry) => {
-	const [id, , , , icon] = entry.split('|');
-	return [id, Number(icon)];
-}));
+export const BADGE_ICON: Record<string, number> = Object.fromEntries(BADGE_ROWS.map((row) => [String(row.id), Number(row.icon)]));
 
 /** badges earned across runs, shared by the title, select and game scenes */
 export function loadBadges(): Achievements {

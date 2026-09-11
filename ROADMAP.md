@@ -132,7 +132,12 @@ Do not add new authored content as object literals or scattered constants in the
       `monsterRosterFallback` (from `monsterRosters`' two effects), `monsterLoot`,
       `limitedDropDecay`, `monsterAiProfiles`, and `actorBaseAliases` (from `actorFlags`), which
       `monsters.ts` now maps directly; the build script's roster/alias/AI-profile validators read
-      those tables too. The remaining ~11 `set=` row-tables still need converting.
+      those tables too. A fifth batch converted `alchemyEnergy`/`alchemyRecipes`/
+      `alchemyRecipeManifest`, `badgeCatalogue`, `buffDurations`, `regionTrapTables`,
+      `regionPaintRules`, `floorSetTierProbs`, and `talentClassEntries`/`talentSubclassEntries`
+      (from `talentTrees`; its `tier_thresholds` scalar stays a trait effect). That completes the
+      row-table conversion - every remaining `set=` is a scalar, an id-list, or a formula, not an
+      array-of-records. Every converted table was checked value-identical to its old rows.
 - [ ] Update the build, test, package, and browser-smoke documentation so a clean checkout can
       reproduce every generated resource without a local MWG checkout.
 

@@ -1,6 +1,6 @@
 import { craft, type Recipe } from 'mwg/actors';
 import type { Inventory } from 'mwg/actors';
-import { MWL_TRAIT_NODES } from './mwlContent';
+import { MWL_TABLE_ROWS } from './mwlContent';
 
 export interface AlchemyRecipe extends Recipe {
 	readonly id: string;
@@ -13,46 +13,26 @@ export interface AlchemyRecipeManifestEntry {
 	readonly javaRecipe: string;
 }
 
-function entriesFor(traitId: string): string[] {
-	const trait = MWL_TRAIT_NODES.find((node) => node.attributes.id === traitId);
-	if (!trait) throw new Error(`MWL alchemy trait is missing ${traitId}`);
-	const effect = trait.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
-	if (!effect?.attributes.set) throw new Error(`MWL alchemy trait ${traitId} is missing entries`);
-	return effect.attributes.set.split(';').filter(Boolean);
-}
-
-export const ALCHEMY_RECIPE_MANIFEST: readonly AlchemyRecipeManifestEntry[] = entriesFor('alchemyRecipeManifest').map((entry) => {
-	const [id, group, javaRecipe] = entry.split('|');
-	if (!id || !javaRecipe || !['variable', 'one', 'two', 'three'].includes(group ?? '')) throw new Error(`Invalid MWL alchemy manifest entry: ${entry}`);
-	return { id, group: group as AlchemyRecipeManifestEntry['group'], javaRecipe };
+export const ALCHEMY_RECIPE_MANIFEST: readonly AlchemyRecipeManifestEntry[] = MWL_TABLE_ROWS('alchemyRecipeManifest', 'id').map((row) => {
+	const group = String(row.group);
+	if (!['variable', 'one', 'two', 'three'].includes(group)) throw new Error(`Invalid MWL alchemy manifest group: ${group}`);
+	return { id: String(row.id), group: group as AlchemyRecipeManifestEntry['group'], javaRecipe: String(row.javaRecipe) };
 });
-if (new Set(ALCHEMY_RECIPE_MANIFEST.map((recipe) => recipe.id)).size !== ALCHEMY_RECIPE_MANIFEST.length) {
-	throw new Error('MWL alchemy recipe manifest contains duplicate ids');
-}
 
 export const ALCHEMY_ENERGY: Readonly<Record<string, number>> = Object.fromEntries(
-	entriesFor('alchemyEnergy').map((entry) => {
-		const [id, energy] = entry.split('|');
-		if (!id || !Number.isInteger(Number(energy)) || Number(energy) < 0) throw new Error(`Invalid MWL alchemy energy: ${entry}`);
-		return [id, Number(energy)];
-	}),
+	MWL_TABLE_ROWS('alchemyEnergy', 'kind').map((row) => [String(row.kind), Number(row.energy)]),
 );
 
-export const ALCHEMY_RECIPES: readonly AlchemyRecipe[] = entriesFor('alchemyRecipes').map((entry) => {
-	const [id, rawIngredients, resultId, resultQuantity, energyCost] = entry.split('|');
-	if (!id || !rawIngredients || !resultId || !Number.isInteger(Number(resultQuantity)) || !Number.isInteger(Number(energyCost))) {
-		throw new Error(`Invalid MWL alchemy recipe: ${entry}`);
-	}
-	const ingredients = rawIngredients.split(',').map((raw) => {
-		const [ingredientId, quantity] = raw.split(':');
-		if (!ingredientId || !Number.isInteger(Number(quantity)) || Number(quantity) <= 0) throw new Error(`Invalid MWL recipe ingredient: ${raw}`);
-		return { id: ingredientId, quantity: Number(quantity) };
+export const ALCHEMY_RECIPES: readonly AlchemyRecipe[] = MWL_TABLE_ROWS('alchemyRecipes', 'id').map((row) => {
+	const ingredients = (Array.isArray(row.ingredients) ? row.ingredients : []).map((raw) => {
+		const [ingredientId, quantity] = String(raw).split(':');
+		return { id: ingredientId!, quantity: Number(quantity) };
 	});
 	return {
-		id,
+		id: String(row.id),
 		ingredients,
-		energyCost: Number(energyCost),
-		result: { id: resultId, quantity: Number(resultQuantity), stackable: true },
+		energyCost: Number(row.energyCost),
+		result: { id: String(row.result), quantity: Number(row.resultQuantity), stackable: true },
 	};
 });
 for (const recipe of ALCHEMY_RECIPES) {
