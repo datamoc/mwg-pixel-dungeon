@@ -600,7 +600,11 @@ Do not add new authored content as object literals or scattered constants in the
       immobile shield with real wave schedule and self-chip, P3 bleed/summons/losing yell
       - replacing a sketch whose Fury and hold-the-barrier turn had no Java basis; the
       King's Crown drop is also live (granted on his death; see `kill`'s king branch), so
-      throne geometry, the Imp shop, and P3 viscosity remain).
+      the P3 viscosity deferral is now live too (2026-09-11): in phase 3 the King
+      takes no direct HP damage at all - every hit routes into the same
+      `Viscosity.DeferedDamage` pool the armor glyph uses and pays out on his own turns, with
+      the payout excluded from re-deferral. Throne geometry, the Imp shop, and the LloydsBeacon
+      upgrade remain).
 - [ ] Port Halls/Yog's full fist, flame, shadow, and arena scripts (HP-gate floors,
       per-gate fist spawns, fist-gated invulnerability across ALL damage sources, fist
       proximity guards, and the phase-5 hope trigger are now live with the real

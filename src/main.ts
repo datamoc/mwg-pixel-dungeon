@@ -708,6 +708,9 @@ interface SavedCreature {
 	kingAbilityCd?: number;
 	kingLastAbility?: number;
 	kingShield?: number;
+	/** Viscosity's deferred pool on a monster - the Dwarf King's phase-3 damage bank. */
+	deferredDamage?: number;
+	deferredDamageDelay?: boolean;
 	/** `ReactionTable.toJSON()`'s round-trip shape for `Creature.kingReactions` (phase
 	 * transitions + the one-time losing yell) - reconstructed via `ReactionTable.fromJSON`
 	 * in `restoreFloor`. */
@@ -1823,6 +1826,7 @@ export class SewersScene extends Scene2D {
 				yogPhase: creature.yogPhase, yogFistType: creature.yogFistType, elementalType: creature.elementalType, yogSummonCd: creature.yogSummonCd, yogSummonIndex: creature.yogSummonIndex, yogBeamCd: creature.yogBeamCd, yogTargeted: creature.yogTargeted,
 				kingPhase: creature.kingPhase, kingSummonsMade: creature.kingSummonsMade, kingSummonCd: creature.kingSummonCd,
 				kingAbilityCd: creature.kingAbilityCd, kingLastAbility: creature.kingLastAbility, kingShield: creature.kingShield,
+				deferredDamage: creature.deferredDamage, deferredDamageDelay: creature.deferredDamageDelay,
 				kingReactionsState: creature.kingReactions?.toJSON(),
 				weaponLevel: creature.weaponLevel, stolen: creature.stolen, mimicLoot: creature.mimicLoot, generation: creature.generation,
 				spawnCooldown: creature.spawnCooldown, seesHero: creature.seesHero,
@@ -1920,6 +1924,7 @@ export class SewersScene extends Scene2D {
 				yogPhase: saved.yogPhase, yogFistType: saved.yogFistType, elementalType: saved.elementalType, yogSummonCd: saved.yogSummonCd, yogSummonIndex: saved.yogSummonIndex, yogBeamCd: saved.yogBeamCd, yogTargeted: saved.yogTargeted,
 				kingPhase: saved.kingPhase, kingSummonsMade: saved.kingSummonsMade, kingSummonCd: saved.kingSummonCd,
 				kingAbilityCd: saved.kingAbilityCd, kingLastAbility: saved.kingLastAbility, kingShield: saved.kingShield,
+				deferredDamage: saved.deferredDamage, deferredDamageDelay: saved.deferredDamageDelay,
 				kingReactions: saved.kingReactionsState
 					? ReactionTable.fromJSON(this.kingPhaseRules(creature), saved.kingReactionsState)
 					: undefined,
@@ -6616,6 +6621,9 @@ export class SewersScene extends Scene2D {
 		//(real Java spends its own separate `4*TICK` actor slot for this; this port folds it
 		//into the monster's ordinary turn instead, since it has no secondary-actor scheduling).
 		if (monster.champion === 'growing') monster.championPower = (monster.championPower ?? 1.19) + 0.01;
+		//DwarfKing P3 banks damage into Viscosity's deferred pool instead of losing HP directly;
+		//pay it out on the King's own turn, exactly like the hero's pool above.
+		if (this.tickMonsterDeferredDamage(monster)) return;
 		//dots tick on the sufferer's own turn, like Java's Buff.act()
 		const monsterWasBurning = monster.buffs['burning'] !== undefined;
 		const monsterWasOozing = monster.buffs['ooze'] !== undefined;
@@ -8284,6 +8292,44 @@ export class SewersScene extends Scene2D {
 	 * boundary. Summon/ability cooldown
 	 * damage-acceleration in P1 is exact (`-= taken/8`).
 	 */
+	/** `DwarfKing.damage()`'s phase-3 branch: the King takes no direct HP damage unless the hit
+	 * already is his own deferred payout (`src instanceof Viscosity.DeferedDamage` here - the
+	 * scene's shared `applyingDeferredDamage` flag). Everything else is added to the same
+	 * `Viscosity.DeferedDamage` pool the armor glyph uses, shown as a warning number and paid out
+	 * on his own turns (`tickMonsterDeferredDamage`). Returns true when the caller must not apply
+	 * the damage itself. */
+	private deferKingDamage(king: Creature, damage: number): boolean {
+		if (king.kind !== 'king' || (king.kingPhase ?? 1) !== 3 || this.applyingDeferredDamage || damage <= 0) return false;
+		king.deferredDamage = (king.deferredDamage ?? 0) + damage;
+		if (!king.deferredDamageDelay) king.deferredDamageDelay = true;
+		this.showDamage(king, damage);
+		return true;
+	}
+
+	/** `Viscosity.DeferedDamage.act()` for a monster (the King in phase 3): a fresh pool waits one
+	 * actor turn, then pays out `max(1, floor(pool*0.1))` per turn. Routed through the shared
+	 * `applyingDeferredDamage` flag so the payout is never banked straight back. Returns true when
+	 * the payout killed the creature. */
+	private tickMonsterDeferredDamage(monster: Creature): boolean {
+		if (!monster.deferredDamage || monster.deferredDamage <= 0) return false;
+		if (monster.deferredDamageDelay) {
+			monster.deferredDamageDelay = false;
+			return false;
+		}
+		const tick = Math.max(1, Math.floor(monster.deferredDamage * 0.1));
+		this.applyingDeferredDamage = true;
+		monster.hp -= tick;
+		this.applyingDeferredDamage = false;
+		monster.deferredDamage = Math.max(0, monster.deferredDamage - tick);
+		this.showDamage(monster, tick);
+		if (monster.hp <= 0) {
+			this.kill(monster);
+			return true;
+		}
+		if (monster.deferredDamage <= 0) monster.deferredDamageDelay = false;
+		return false;
+	}
+
 	/**
 	 * DwarfKing's three one-way phase transitions (P1->P2 at an HP threshold, P2->P3 at
 	 * shield-zero, and P3's one-time "losing" yell under 20 HP), as `mwg/core`'s
@@ -9103,6 +9149,11 @@ export class SewersScene extends Scene2D {
 		}
 		const preHp = defender.hp;
 		if (defender.isHero) damage = this.absorbHeroDamage(damage);
+		//`DwarfKing.damage()`: while the King is in phase 3 he takes no direct HP damage at all -
+		//every hit whose source is not his own deferred-damage payout is banked into the same
+		//`Viscosity.DeferedDamage` pool the glyph uses and paid out on his own turns. Checked here,
+		//before the linked-add split below, so his LifeLink share is deferred the same way.
+		if (this.deferKingDamage(defender, damage)) return true;
 		//LifeLink (Char.damage): damage to a linked subject splits evenly (ceil) between it
 		//and the King - the King's own share runs through his P2 shield below like any hit.
 		//A share lethal to the King ends the swing here (boss-death transition owns the rest).
@@ -9110,7 +9161,7 @@ export class SewersScene extends Scene2D {
 			const linkKing = this.creatures.find((c) => c.kind === 'king' && c.hp > 0 && this.kingLinkedAdds.has(defender));
 			if (linkKing) {
 				const share = Math.ceil(damage / 2);
-				linkKing.hp -= share;
+				if (!this.deferKingDamage(linkKing, share)) linkKing.hp -= share;
 				if (linkKing.hp <= 0) {
 					this.kill(linkKing);
 					return true;
