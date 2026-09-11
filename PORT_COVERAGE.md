@@ -2110,15 +2110,16 @@ files - live under a `port.*` namespace (`src/i18n/portStrings.ts`, **415** stri
 is deliberate: a `port.*` key is a string SPD never had, not a missing translation, and the two
 distinguish themselves at a glance. English and French are hand-written (415 keys each).
 **German (`de`), Spanish (`es`), Portuguese (`pt`), Italian (`it`), Polish (`pl`), Russian
-(`ru`), Turkish (`tr`) and Ukrainian (`uk`) are now
+(`ru`), Turkish (`tr`), Ukrainian (`uk`) and Hungarian (`hu`) are now
 supplied too** (German 2026-09-09, Spanish 2026-09-09, Portuguese 2026-09-09, Italian
 2026-09-09, Polish 2026-09-09, all 375/375 keys at the time, Russian 2026-09-10, Turkish
 2026-09-10, both 389/389 keys at the time, Ukrainian 2026-09-11, 415/415 keys
-against the current EN table, `unreviewed` status) - machine-assisted direct
+against the current EN table, Hungarian 2026-09-11, 415/415 keys, `unreviewed` status) -
+machine-assisted direct
 translations, not human-proofread, marked as such in `PORT_STRINGS_DE`/`PORT_STRINGS_ES`/
 `PORT_STRINGS_PT`/`PORT_STRINGS_IT`/`PORT_STRINGS_PL`/`PORT_STRINGS_RU`/`PORT_STRINGS_TR`/
-`PORT_STRINGS_UK`'s own doc comments rather than silently
-claimed `complete`. All eight are real Java SPD locales - confirmed against
+`PORT_STRINGS_UK`/`PORT_STRINGS_HU`'s own doc comments rather than silently
+claimed `complete`. All nine are real Java SPD locales - confirmed against
 `src/generated/spdMessages.ts`'s own generated table, which exists only for languages SPD
 actually ships a base translation for - so this only ever supplies the port's *own* invented
 strings on top of a base catalog Java already covers, never invents a locale Java doesn't have.
@@ -2148,6 +2149,12 @@ scan on the Polish draft found nothing, confirming it as a cheap habitual check 
 one-off fix. Ukrainian's own equivalent scan (Latin letters inside an otherwise-Cyrillic word)
 found nothing either - every flagged Latin token was a legitimate untranslated proper noun
 (`Shattered Pixel Dungeon`, `mwg`, `DM-300`) or a keybind letter.
+Hungarian was verified the same programmatic way (415/415 keys, 0 missing/extra, 0
+`{placeholder}` mismatches, via the same QA the earlier drafts used); its live in-browser pass is
+likewise owed per ROADMAP.md section 10 (no working browser tool in that session). SPD itself
+ships Hungarian as reviewed, but that status covers SPD's own `.properties` catalog, not this
+port-only draft - recorded as `MT`/`machine` like Russian. Informal te-form address, matching
+German's Du, Spanish's Tú and Turkish's sen-forms.
 
 **Found and fixed while verifying Spanish, but a real bug affecting French and German too, not
 new to this pass**: `main.ts`'s `attack()` built the combat-log `object` slot for a hero
@@ -2166,7 +2173,7 @@ hero-vs-monster exchange in all four locales after the fix: `"Marsupial rat hits
 of this fix), `"Beutelratte trifft dich für 2."` (de, now correctly accusative), `"Rata
 marsupial golpea a ti por 2."` (es, now grammatically correct instead of "a you").
 
-The remaining 9 `Languages.java` locales still fall back to English through
+The remaining 8 `Languages.java` locales still fall back to English through
 `mwg/i18n`'s base catalog - translating them is tracked as its own ROADMAP.md section 8 item.
 
 `tools/i18nCheck.ts` guards the convention: every SPD-derived key the port uses must exist in

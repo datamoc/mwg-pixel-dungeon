@@ -26,6 +26,7 @@ import {
 	PORT_STRINGS_RU,
 	PORT_STRINGS_TR,
 	PORT_STRINGS_UK,
+	PORT_STRINGS_HU,
 	PORT_TRANSLATION_ORIGIN,
 } from './portStrings';
 import { LANGUAGES, detectLanguage, languageByCode, type Language } from './languages';
@@ -41,8 +42,8 @@ export const has = I18n.has;
  * This port's own strings, per language.
  *
  * English and French are human-written; German, Spanish, Portuguese, Italian, Polish,
- * Russian, Turkish and Ukrainian are
- * machine-translated first drafts. Their origin is also exported as data from `portStrings.ts`
+ * Russian, Turkish, Ukrainian and Hungarian are machine-translated first drafts. Their origin
+ * is also exported as data from `portStrings.ts`
  * so audits can distinguish `human` from `machine` without inferring it from language status.
  * The remaining languages still resolve through the base catalog for port-only prose until an
  * explicitly marked `MT` catalogue is added.
@@ -58,6 +59,7 @@ const PORT_STRINGS: Record<string, Record<string, string>> = {
 	ru: PORT_STRINGS_RU,
 	tr: PORT_STRINGS_TR,
 	uk: PORT_STRINGS_UK,
+	hu: PORT_STRINGS_HU,
 };
 
 /**

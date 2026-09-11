@@ -1299,7 +1299,21 @@ Do not add new authored content as object literals or scattered constants in the
        confirmed) this is a flat "not attempted" rather than "attempted and blocked" - flagging
        it plainly rather than implying a check that didn't happen.
 
-       **9 locales remain** (see `languages.ts` for the full list). Their future catalogues must
+       **Ninth locale done: Hungarian (`hu`), 2026-09-11, 415/415 keys.** The draft was
+       already in progress (`tools/scratch/hu-check.mjs` against a generated `hu-map.json`); this
+       pass ran that script's own key/placeholder QA (415/415 keys, 0 missing/extra, 0
+       placeholder mismatches against the current EN table), wired the resulting block in
+       (`PORT_STRINGS_HU` + `PORT_STRINGS` registration + `hu: 'machine'` provenance, plus the
+       `index.ts` header locale list), and confirmed `i18nCheck: OK - 300 mapped keys, 415 port
+       strings, 19 languages` (`npx esbuild tools/i18nCheck.ts … && node tools/scratch/i18nCheck.mjs`),
+       `npx tsc --noEmit` and `npm run build` clean, both test suites green. Informal te-form
+       address, matching DE's Du/ES's Tú/TR's sen-forms. Marked `MT` in `PORT_STRINGS_HU`'s own
+       doc comment; note the provenance nuance recorded there - SPD itself ships Hungarian as
+       `complete` in `languages.ts`, but that status covers SPD's own `.properties` catalog, not
+       this port-only draft. Browser verification owed per section 10 (no working browser tool in
+       this session).
+
+       **8 locales remain** (see `languages.ts` for the full list). Their future catalogues must
       be machine-translated from `PORT_STRINGS_EN`, marked `MT` in source and in the provenance
       map exported by `portStrings.ts`, then checked for key/placeholder parity before wiring.
       Font coverage is part of done, not a footnote - zh/ko/ja need the section-10 tofu check per
