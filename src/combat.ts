@@ -76,6 +76,10 @@ export interface Creature extends Combatant {
 	firstSummon?: boolean;
 	/** Tengu.arenaJumps: how many times it has relocated this fight */
 	arenaJumps?: number;
+	/** `PrisonBossLevel.State` collapse for this port's single arena: `cell` is Java's
+	 * FIGHT_START (the small Tengu cell - warps and dart fills, no abilities), `arena` is
+	 * FIGHT_ARENA (5-7 relocations, abilities, `arenaJumps`). Latched at HP <= HT/2. */
+	tenguPhase?: 'cell' | 'arena';
 	/** Tengu's phase-2 bomb-ability countdown (Java's `abilityCooldown`, bomb-first rotation). */
 	tenguAbilityCd?: number;
 	/** Tengu's persisted phase-2 ability count, used to keep Bomb/Shocker ordering across saves. */

@@ -568,9 +568,16 @@ Do not add new authored content as object literals or scattered constants in the
       bosses challenge (0 when 4+ behind), with `Actor.TICK = 1` - previously every cast spent the
       default single turn, so a normal-mode Tengu cast about twice as often as Java. The rule lives
       in `tenguAbilityCost()` in `simulation/tenguAbility.ts`, is unit-tested by
-      `tools/verifySimulation.mjs`, and is browser-verified on all four branches. The Fire/Shocker
-      actors are still collapsed to one turn each; floor shifting and the FIGHT_START/ARENA room
-      split remain).
+      `tools/verifySimulation.mjs`, and is browser-verified on all four branches. **The FIGHT_START/FIGHT_ARENA split is now ported too** (2026-09-11): crossing half
+      health pins HP to exactly `HT/2` and latches `tenguPhase` to `arena`; before that latch each
+      1/8-bracket crossing is Java's cell-phase jump - a warp inside Tengu's cell plus a
+      `Patch`-generated dart fill that thickens as HP falls (`placeTrapsInTenguCell`, `arenaJumps`
+      untouched) - and after it each crossing is the phase-2 5-7 relocation that raises
+      `arenaJumps` and with it the cast budget. The move still runs over the port's single
+      Tengu-cell arena: Java rebuilds the whole map into its separate `arena` ellipse
+      (`setMapArena()`, (3,1)-(18,16)) and moves both combatants there, so the port's darts persist
+      into phase 2 and a phase-2 jump can land outside the cell. The Fire/Shocker actors are still
+      collapsed to one turn each, and that arena geometry remains).
 - [ ] Port Caves/DM-300's full pylon, gate, energy field, and supercharge scripts (pylon
       proximity sealing, sequential threshold supercharges, pylon activation, boss
       invulnerability, x2 speed, and supercharge loss on pylon death are live; the

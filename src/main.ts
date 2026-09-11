@@ -106,6 +106,7 @@ import {
 	type PortedFloor,
 } from './spdLevelGen/gameBridge';
 import { CAVES_BOSS_ARENA } from './spdLevelGen/bossLevels';
+import { spdPatchGenerate } from './spdLevelGen/spdPatch';
 import { entranceRoomContext } from './spdLevelGen/rooms/standard/entranceRoom';
 import { setHourglassShopState } from './spdItems/shopItems';
 import { buybackPrice, getSellPrice, getShopPrice } from './shopPricing';
@@ -687,6 +688,7 @@ interface SavedCreature {
 	combo?: number;
 	moving?: number;
 	arenaJumps?: number;
+	tenguPhase?: 'cell' | 'arena';
 	tenguAbilityCd?: number;
 	tenguAbilityUses?: number;
 	tenguLastAbility?: number;
@@ -1717,6 +1719,7 @@ export class SewersScene extends Scene2D {
 			yogSummonCd: kind === 'yog' ? Random.normalRange(10, 15) : undefined,
 			yogSummonIndex: kind === 'yog' ? 0 : undefined,
 			yogBeamCd: kind === 'yog' ? Random.normalRange(10, 15) : undefined,
+			tenguPhase: kind === 'tengu' ? 'cell' : undefined,
 			pylonActive: false,
 			pylonTargetNeighbor: kind === 'pylon' ? Random.int(0, 8) : undefined,
 			generation: 0,
@@ -1813,7 +1816,7 @@ export class SewersScene extends Scene2D {
 				damage: [...creature.damage] as [number, number], armor: [...creature.armor] as [number, number],
 				buffs: Object.entries(creature.buffs) as [BuffId, number][],
 				sleeping: creature.sleeping, champion: creature.champion, championPower: creature.championPower, pumped: creature.pumped,
-				combo: creature.combo, moving: creature.moving, arenaJumps: creature.arenaJumps, tenguAbilityCd: creature.tenguAbilityCd, tenguAbilityUses: creature.tenguAbilityUses, tenguLastAbility: creature.tenguLastAbility,
+				combo: creature.combo, moving: creature.moving, arenaJumps: creature.arenaJumps, tenguPhase: creature.tenguPhase, tenguAbilityCd: creature.tenguAbilityCd, tenguAbilityUses: creature.tenguAbilityUses, tenguLastAbility: creature.tenguLastAbility,
 				gooHealInc: creature.gooHealInc,
 				focusCooldown: creature.focusCooldown,
 				shamanType: creature.shamanType,
@@ -1913,7 +1916,7 @@ export class SewersScene extends Scene2D {
 				hp: saved.hp, maxHp: saved.maxHp, accuracy: saved.accuracy, evasion: saved.evasion,
 				damage: [...saved.damage] as [number, number], armor: [...saved.armor] as [number, number],
 				buffs: Object.fromEntries(saved.buffs), sleeping: saved.sleeping, champion: saved.champion,
-				championPower: saved.championPower, pumped: saved.pumped, gooHealInc: saved.gooHealInc, focusCooldown: saved.focusCooldown, shamanType: saved.shamanType, combo: saved.combo, moving: saved.moving, arenaJumps: saved.arenaJumps, tenguAbilityCd: saved.tenguAbilityCd, tenguAbilityUses: saved.tenguAbilityUses, tenguLastAbility: saved.tenguLastAbility,
+				championPower: saved.championPower, pumped: saved.pumped, gooHealInc: saved.gooHealInc, focusCooldown: saved.focusCooldown, shamanType: saved.shamanType, combo: saved.combo, moving: saved.moving, arenaJumps: saved.arenaJumps, tenguPhase: saved.tenguPhase, tenguAbilityCd: saved.tenguAbilityCd, tenguAbilityUses: saved.tenguAbilityUses, tenguLastAbility: saved.tenguLastAbility,
 				yogPhase: saved.yogPhase, yogFistType: saved.yogFistType, elementalType: saved.elementalType, yogSummonCd: saved.yogSummonCd, yogSummonIndex: saved.yogSummonIndex, yogBeamCd: saved.yogBeamCd, yogTargeted: saved.yogTargeted,
 				kingPhase: saved.kingPhase, kingSummonsMade: saved.kingSummonsMade, kingSummonCd: saved.kingSummonCd,
 				kingAbilityCd: saved.kingAbilityCd, kingLastAbility: saved.kingLastAbility, kingShield: saved.kingShield,
@@ -7910,6 +7913,16 @@ export class SewersScene extends Scene2D {
 		if (tengu.hp <= (Math.floor(preHp / bracket) - 1) * bracket) {
 			tengu.hp = (Math.floor(preHp / bracket) - 1) * bracket + 1;
 		}
+		if ((tengu.tenguPhase ?? 'cell') === 'cell' && tengu.hp <= Math.floor(tengu.maxHp / 2)) {
+			tengu.hp = Math.floor(tengu.maxHp / 2);
+			tengu.tenguPhase = 'arena';
+			this.say(t('port.log.tenguinteresting'), 'warning');
+			//Java's `progress()` also rebuilds the map into its separate `arena` region
+			//(`setMapArena()`, rect (3,1)-(18,16) - which is what wipes the phase-1 dart field) and
+			//relocates Tengu to that arena's centre. This port keeps its single Tengu-cell arena,
+			//so those moves have no target geometry and the darts persist; the separate arena
+			//layout is the documented remaining gap.
+		}
 	}
 
 	/** Tengu's per-bracket `jump()`: relocate 5-7 away with the trap burst, capped at 4
@@ -7918,24 +7931,65 @@ export class SewersScene extends Scene2D {
 	 * (the phase-shift moment); every jump re-seeds the burst. Called from damage sites
 	 * after the hit resolves (Java queues it past the full attack the same way). */
 	private tenguBracketJump(tengu: Creature, preHp: number): void {
-		if (tengu.kind !== 'tengu' || tengu.hp <= 0 || (tengu.arenaJumps ?? 0) >= 4) return;
+		if (tengu.kind !== 'tengu' || tengu.hp <= 0) return;
 		const bracket = Math.max(1, Math.floor(tengu.maxHp / 8));
 		if (Math.floor(preHp / bracket) === Math.floor(tengu.hp / bracket)) return;
-		for (let attempt = 0; attempt < 20; attempt++) {
-			const room = this.level.rooms[Random.int(0, this.level.rooms.length)];
+		if ((tengu.tenguPhase ?? 'cell') === 'cell') this.tenguCellJump(tengu);
+		else this.tenguArenaJump(tengu);
+	}
+
+	/** `Tengu.jump()`'s FIGHT_START branch: warp within the cell (true distance > 3.5 from the
+	 * hero), then `placeTrapsInTenguCell(fill)` - a `Patch.generate(7, 7, fill, 0, false)` dart
+	 * field whose density ramps from 0.9 down to 0.4 as Tengu nears half health. Java also
+	 * rejects a patch that leaves the hero too close to or too far from Tengu along the
+	 * trap-free path; this port approximates that gate by keeping the hero's own cell and its
+	 * neighbours clear. `arenaJumps` is untouched - phase 1 never casts abilities. */
+	private tenguCellJump(tengu: Creature): void {
+		const room = this.level.rooms[0];
+		if (!room) return;
+		for (let attempt = 0; attempt < 100; attempt++) {
 			const at = { x: Random.range(room.left, room.right), y: Random.range(room.top, room.bottom) };
-			const d = Math.max(Math.abs(at.x - this.hero.x), Math.abs(at.y - this.hero.y));
-			if (d < 5 || d > 7 || !this.level.passable(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
+			if (!this.level.passable(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
+			if (Math.hypot(at.x - this.hero.x, at.y - this.hero.y) <= 3.5) continue;
+			this.moveTo(tengu, at);
+			break;
+		}
+		const half = tengu.maxHp / 2;
+		const fill = Math.min(0.9, Math.max(0.4, 0.9 - 0.5 * ((tengu.hp - half) / half)));
+		const width = room.right - room.left + 1;
+		const height = room.bottom - room.top + 1;
+		const patch = spdPatchGenerate(width, height, fill, 0, false);
+		for (let i = 0; i < patch.length; i++) {
+			if (!patch[i]) continue;
+			const x = room.left + (i % width), y = room.top + Math.floor(i / width);
+			if (this.creatureAt(x, y)) continue;
+			if (Math.max(Math.abs(x - this.hero.x), Math.abs(y - this.hero.y)) <= 1) continue;
+			this.seedBossTrap({ x, y }, 'poisonDart');
+		}
+		this.say(t('port.log.tenguvanish'), 'warning');
+		this.say(t('port.log.tengutraps'), 'warning');
+	}
+
+	/** `Tengu.jump()`'s FIGHT_ARENA branch: pick any level cell 5-7 (Chebyshev) from the hero, the
+	 * old position and the current enemy, non-solid, unoccupied and without a heap - Java draws
+	 * `Random.Int(level.length())` over the whole map exactly like this - then raise `arenaJumps`
+	 * (Java's own phase-2 cap of 4) and burst the vanish cue. Java seeds no traps here. The port
+	 * does not rebuild the map into Java's separate `arena` ellipse (`setMapArena()`), so a jump
+	 * can land outside the Tengu cell; that geometry is the documented remaining gap. */
+	private tenguArenaJump(tengu: Creature): void {
+		if ((tengu.arenaJumps ?? 0) >= 4) return;
+		const from = { x: tengu.x, y: tengu.y };
+		for (let attempt = 0; attempt < 100; attempt++) {
+			const at = { x: Random.int(this.level.width), y: Random.int(this.level.height) };
+			if (this.level.get(at.x, at.y) === WALL) continue;
+			const heroDistance = Math.max(Math.abs(at.x - this.hero.x), Math.abs(at.y - this.hero.y));
+			if (heroDistance < 5 || heroDistance > 7) continue;
+			if (Math.max(Math.abs(at.x - from.x), Math.abs(at.y - from.y)) < 5) continue;
+			if (this.creatureAt(at.x, at.y) || this.groundItemAt(at.x, at.y)) continue;
 			this.moveTo(tengu, at);
 			tengu.arenaJumps = (tengu.arenaJumps ?? 0) + 1;
-			this.seedBossTrap(at, 'explosive');
-			for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1]] as const) {
-				const trap = { x: at.x + dx, y: at.y + dy };
-				if (this.level.passable(trap.x, trap.y) && !this.creatureAt(trap.x, trap.y)) this.seedBossTrap(trap, dx === 0 ? 'burning' : 'poisonDart');
-			}
 			this.say(t('port.log.tenguvanish'), 'warning');
-			this.say(t('port.log.tengutraps'), 'warning');
-			break;
+			return;
 		}
 	}
 
