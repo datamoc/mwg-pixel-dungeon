@@ -43,10 +43,16 @@ function prisonBoss(): BossFloorData {
 	return { paint: level, rooms: [room(6, 23, 15, 31)], feeling: null };
 }
 
+/**
+ * `CavesBossLevel.mainArena` (5,14)-(28,37). `seal()` spawns DM-300 at a random open point inside
+ * it, and `activatePylon()` bands the energy field from `top - 1` down; `main.ts` needs both.
+ */
+export const CAVES_BOSS_ARENA = { left: 5, top: 14, right: 28, bottom: 37 } as const;
+
 function cavesBoss(strongerBosses: boolean): BossFloorData {
 	// CavesBossLevel: WIDTH=33, HEIGHT=42, mainArena=(5,14)-(28,37).
 	const level = new PaintLevel(33, 42, Terrain.CHASM);
-	fillEllipse(level, 5, 14, 24, 24, Terrain.EMPTY);
+	fillEllipse(level, CAVES_BOSS_ARENA.left, CAVES_BOSS_ARENA.top, 24, 24, Terrain.EMPTY);
 	// `CavesBossLevel.build()`: after the arena ellipse, scatter water and sprung traps across it
 	// with the real `Patch.generate(width, height-14, 0.15f, 2, true)` and one
 	// `Random.Int(challenge ? 4 : 8) == 0` roll per eligible EMPTY cell. These are exactly the

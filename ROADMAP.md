@@ -543,9 +543,14 @@ Do not add new authored content as object literals or scattered constants in the
       per-floor seeded stream, `activatePylon()` seeds the field on INACTIVE_TRAP/WATER/SIGN from
       row 13 down *at DM-300's supercharge* (not at seal), the seal triggers at Java's real
       Chebyshev distance 3, and the energy tick's double-damage of the hero is fixed - all
-      browser-verified live. Remaining: Java's locked-floor timing spawns DM-300 inside `seal()` at
-      a random `mainArena` point while this port still spawns it in `populate()` on floor entry,
-      plus targeting refinements and presentation).
+      browser-verified live. **Locked-floor timing is now ported too**: DM-300 is no longer spawned
+      in `populate()` on floor entry - `checkCavesBossPylonGate` creates it during `seal()`, at a
+      random open, unoccupied `mainArena` cell that is not an `EMPTY_SP` tile, matching
+      `CavesBossLevel.seal()`'s own do/while. Remaining: the port's arena layout is still a
+      hand-approximation of Java's build order (so the patch's RNG stream position is deterministic
+      but not Java's exact draw index), Java's entrance-wall relocation/rock-shake on seal and
+      `unseal()` gate reopening are not modeled, and targeting refinements plus presentation
+      remain).
 - [ ] Port City/Dwarf King's throne and Imp-shop scripts (the full 1/2/3 phase machine
       is now live: P1 hunt with exact summon/ability cooldowns and LINK/TELE-lite, P2
       immobile shield with real wave schedule and self-chip, P3 bleed/summons/losing yell

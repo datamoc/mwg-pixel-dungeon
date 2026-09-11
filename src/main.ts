@@ -105,6 +105,7 @@ import {
 	toGameTerrain,
 	type PortedFloor,
 } from './spdLevelGen/gameBridge';
+import { CAVES_BOSS_ARENA } from './spdLevelGen/bossLevels';
 import { entranceRoomContext } from './spdLevelGen/rooms/standard/entranceRoom';
 import { setHourglassShopState } from './spdItems/shopItems';
 import { buybackPrice, getSellPrice, getShopPrice } from './shopPricing';
@@ -2619,6 +2620,10 @@ export class SewersScene extends Scene2D {
 		}
 		const boss = BOSSES[this.depth];
 		if (boss) {
+			//`CavesBossLevel.seal()` creates DM-300 itself, at a random point in `mainArena`,
+			//once the hero nears a pylon - not on floor entry like the other ported bosses.
+			//See `checkCavesBossPylonGate`.
+			if (boss.kind === 'dm300') return;
 			const room = this.level.rooms[this.level.rooms.length - 1] ?? this.level.rooms[1];
 			this.spawnMonster(boss.kind, Roguelike.rectCenter(room));
 			this.say(
@@ -2626,11 +2631,9 @@ export class SewersScene extends Scene2D {
 					? 'You feel a pulse of ooze - Goo is here.'
 					: boss.kind === 'tengu'
 						? 'A dark shape watches from the shadows - Tengu is here.'
-						: boss.kind === 'dm300'
-							? 'The ground trembles - DM-300 is here.'
-							: boss.kind === 'king'
-								? 'A crowned figure rises from the throne - the Dwarf King is here.'
-								: 'The dark stirs - Yog-Dzewa is here.'
+						: boss.kind === 'king'
+							? 'A crowned figure rises from the throne - the Dwarf King is here.'
+							: 'The dark stirs - Yog-Dzewa is here.'
 			);
 			return;
 		}
@@ -7994,19 +7997,31 @@ export class SewersScene extends Scene2D {
 	}
 
 	/** `CavesBossLevel.occupyCell()`: seal the arena once the hero comes within Chebyshev
-	 * distance 3 of a pylon (`Level.distance` is `max(|dx|,|dy|)`). Energizing the floor is NOT
-	 * part of the seal: `activatePylon()` does that, and only `DM300.supercharge()` calls it (see
-	 * `dm300Supercharge`), so no pylon energy exists before DM-300's first HP bracket. */
+	 * distance 3 of a pylon (`Level.distance` is `max(|dx|,|dy|)`), and create DM-300 there at a
+	 * random open `mainArena` point - Java spawns it in `seal()`, not on floor entry. Energizing
+	 * the floor is NOT part of the seal: `activatePylon()` does that, and only
+	 * `DM300.supercharge()` calls it (see `dm300Supercharge`). */
 	private checkCavesBossPylonGate(): void {
 		if (this.depth !== 15 || this.cavesBossSealed) return;
-		const boss = this.creatures.find((creature) => creature.kind === 'dm300' && creature.hp > 0);
-		if (!boss) return;
 		const nearPylon = this.cavesBossPylons.some((pylon) =>
 			Math.max(Math.abs(this.hero.x - pylon.x), Math.abs(this.hero.y - pylon.y)) <= 3
 		);
 		if (!nearPylon) return;
 		this.cavesBossSealed = true;
-		this.say(t('port.log.dm300overcharge'), 'warning');
+		//`CavesBossLevel.seal()`'s do/while over `Random.element(mainArena.getPoints())`: an open,
+		//unoccupied cell that is not an `EMPTY_SP` special-floor tile. `openSpace`/`EMPTY_SP` come
+		//from the untranslated `PaintLevel`, since the live terrain mapping collapses both.
+		const paint = this.portedPaint;
+		const spots: { x: number; y: number }[] = [];
+		for (let y = CAVES_BOSS_ARENA.top; y <= CAVES_BOSS_ARENA.bottom; y++) {
+			for (let x = CAVES_BOSS_ARENA.left; x <= CAVES_BOSS_ARENA.right; x++) {
+				if (!this.level.passable(x, y) || this.creatureAt(x, y)) continue;
+				if (paint && paint.map[y * paint.w + x] === Terrain.EMPTY_SP) continue;
+				spots.push({ x, y });
+			}
+		}
+		if (spots.length > 0) this.spawnMonster('dm300', Random.element(spots)!);
+		this.say('The ground trembles - DM-300 is here.', 'warning');
 	}
 
 	/** `CavesBossLevel.PylonEnergy.evolve()`: damage grounded characters standing on
