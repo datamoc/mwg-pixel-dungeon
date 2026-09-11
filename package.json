@@ -14,10 +14,11 @@
     "test:items": "node tools/verifyItemWorkflows.mjs",
     "i18n": "node tools/i18n-extract.mjs",
     "i18n:check": "node tools/i18n-extract.mjs --check",
-    "assets": "node tools/extract-spd-assets.mjs"
+    "assets": "node tools/extract-spd-assets.mjs",
+    "mwg:check": "node tools/check-mwg-version.mjs"
   },
   "dependencies": {
-    "mwg": "npm:@datamoc/mw_games@^0.7.2",
+    "mwg": "npm:@datamoc/mw_games@^0.7.3",
     "pixi.js": "^8.20.1"
   },
   "devDependencies": {

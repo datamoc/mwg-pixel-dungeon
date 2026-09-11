@@ -158,8 +158,15 @@ Do not add new authored content as object literals or scattered constants in the
       `../MW_games` references are `tools/verify-mwg-integration.mjs` and
       `tools/prepare-mwg-ui.py`, both deliberate, documented, opt-in framework-development tools
       that no npm script invokes.
-- [ ] Adopt MWG 0.7.3 (published 2026-09-11). Five things this port hand-rolls are in the
-      framework now, so each is a deletion rather than new code: `Level.viewDistance` plus
+- [x] Bump the `mwg` pin to 0.7.3 (2026-09-11). 0.7.3 is published, and the bump alone changes
+      nothing else here: the MWL compile emits byte-identical generated modules, `check`/`build`
+      are clean, both suites pass, the start-up and save smoke are clean, and the depth-25 live
+      checks (fist decks, challenge pairs, beam burning, view radii) come out identical. The
+      hourly check while porting is `npm run mwg:check` (`tools/check-mwg-version.mjs`), which
+      reports the pin, the installed version, npm's latest, and a checkout's version when passed
+      with `--checkout`.
+- [ ] Adopt the five 0.7.3 capabilities this port hand-rolls, so each becomes a deletion rather
+      than new code: `Level.viewDistance` plus
       `FieldOfView.update`'s default radius (the Yog visibility shrink stays game logic, but
       stops being a radius passed at every call site); `TerrainKind.flags`/`extras` ("carried
       without interpretation by MWG"), which replaces hand-written flamable lists like Yog's beam

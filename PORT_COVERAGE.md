@@ -50,6 +50,14 @@
   approximates - `Level.viewDistance`, `TerrainKind.flags`/`extras`, `Scheduler` priority,
   `Roguelike.Targeting`'s `Ballistica`, and `MultiTurnBeam`/`MultiStageAbility` - are all in
   0.7.3, so the work there is adopting them, not asking for them.
+- **The `mwg` pin is now 0.7.3** (2026-09-11), the published latest. Bumping it alone changed
+  nothing else in this port: the MWL compile emits byte-identical generated modules, tsc and the
+  build are clean, `test:simulation` is 47/47 and `test:items` passes, and the browser checks
+  (start-up, save round-trip, and the depth-25 live run covering Yog's fist decks, the Stronger
+  Bosses challenge pairs, the beam burning terrain and the phase view radii) are identical to
+  0.7.2. `tools/check-mwg-version.mjs` (`npm run mwg:check`) reports the pin, the installed
+  version and npm's latest in one line and is the hourly check while porting, per AGENTS.md.
+  Adopting what 0.7.3 makes redundant is tracked separately in ROADMAP.md.
 ## 2026-09-10 roadmap pass
 
 - **Ported:** the Dwarf King's death now awards the identified, non-upgradable King's Crown;

@@ -109,11 +109,16 @@ this script.
 ## `mwg` dependency
 
 `mwg` is the real published npm package `@datamoc/mw_games`, aliased to the `mwg` import
-specifier in `package.json` (`"mwg": "npm:@datamoc/mw_games@^0.4.0"`) since every source
+specifier in `package.json` (`"mwg": "npm:@datamoc/mw_games@^0.7.3"`) since every source
 file imports it as `from 'mwg'`. This project consumes it like any other npm dependency now
 — no local checkout, no `file:` link, no per-session drift check. Bump the version pin
 deliberately (and re-run the full verification suite in this `AGENTS.md`) when picking up a
 new `mwg` release; don't silently `npm update` it as a side effect of an unrelated change.
+**Check for a new release once an hour while porting** with `npm run mwg:check`
+(`tools/check-mwg-version.mjs`), which reports the pin, what is installed, and npm's latest, and
+adds the local checkout's version when one is passed with `--checkout <path>`; `--fail-on-update`
+makes it exit 1 so a scheduler can act on it. It stays out of `check`/`build`/the suites on
+purpose: those must keep working offline, and this one is the only thing that needs the network.
 The framework's own source (for reading its implementation, not for depending on it) lives
 in a separate checkout the user maintains locally; ask if you need to see it rather than
 assuming a fixed relative path to it, since this project doesn't sit next to it on disk.
