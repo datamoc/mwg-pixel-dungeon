@@ -3,6 +3,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { verifyCombat } from './verifyCombat.mjs';
 import { verifyMovement } from './verifyMovement.mjs';
@@ -36,18 +37,32 @@ try {
 		'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'simulation/tenguAbility']) {
 		compile(new URL(`../src/${file}.ts`, import.meta.url), `${file}.js`);
 	}
-	// Exercise the installed local scheduler as well as the framework-free simulation.
-	compile(new URL('../../MW_games/src/roguelike/Scheduler.ts', import.meta.url), 'scheduler.js');
-	compile(new URL('../../MW_games/src/roguelike/Scheduler.ts', import.meta.url), 'node_modules/mwg/roguelike/Scheduler.js');
-	compile(new URL('../../MW_games/src/core/Random.ts', import.meta.url), 'random.js');
-	compile(new URL('../../MW_games/src/core/Random.ts', import.meta.url), 'node_modules/mwg/core/Random.js');
-	// Only the real Random module is needed by the mwg adapter; no rendering runtime.
-	mkdirSync(join(output, 'node_modules/mwg'), { recursive: true });
-	writeFileSync(join(output, 'node_modules/mwg/index.js'),
-		"const random = require('../../random.js'); exports.Random = random; exports.Generator = random.Generator;");
-	for (const name of ['index', 'Turns', 'Scenario', 'Runtime']) {
-		compile(new URL(`../../MW_games/src/simulation/${name}.ts`, import.meta.url), `node_modules/mwg/simulation/${name}.js`);
+	// The framework half of the harness is the INSTALLED package - the same
+	// `@datamoc/mw_games` build the game itself ships - rather than a sibling checkout of the
+	// framework's sources. The two are different versions in general (the checkout is typically
+	// ahead), so compiling a checkout would exercise something this port does not depend on.
+	//
+	// mwg's dist is ESM and this temporary tree is CommonJS; `require()` bridges that directly on
+	// Node >= 22.12, and none of these modules use top-level await. Shim rather than compile, so
+	// the harness follows whatever the package re-exports: the previous hand-listed set silently
+	// missed `Campaign.ts` once the framework's `simulation/index.ts` grew it, leaving an
+	// `index.js` that required a file never emitted and failing the suite.
+	const dist = fileURLToPath(new URL('../node_modules/mwg/dist/', import.meta.url));
+	function shim(destination, source) {
+		const file = join(output, destination);
+		mkdirSync(dirname(file), { recursive: true });
+		writeFileSync(file, `module.exports = require(${JSON.stringify(source)});\n`);
 	}
+	shim('scheduler.js', join(dist, 'roguelike', 'Scheduler.js'));
+	shim('random.js', join(dist, 'core', 'Random.js'));
+	shim(join('node_modules', 'mwg', 'roguelike', 'Scheduler.js'), join(dist, 'roguelike', 'Scheduler.js'));
+	shim(join('node_modules', 'mwg', 'core', 'Random.js'), join(dist, 'core', 'Random.js'));
+	shim(join('node_modules', 'mwg', 'simulation', 'index.js'), join(dist, 'simulation', 'index.js'));
+	// The adapters take only `Random`/`Generator` from the barrel, so nothing rendering-side is
+	// pulled in; the real namespace module is re-exported under the barrel's own names.
+	mkdirSync(join(output, 'node_modules', 'mwg'), { recursive: true });
+	writeFileSync(join(output, 'node_modules', 'mwg', 'index.js'),
+		`const random = require(${JSON.stringify(join(dist, 'core', 'Random.js'))}); exports.Random = random; exports.Generator = random.Generator;\n`);
 	const require = createRequire(join(output, 'tests.cjs'));
 	const { advanceHunger } = require('./simulation/hunger');
 	const { runHungerStep } = require('./adapters/hungerSimulation');

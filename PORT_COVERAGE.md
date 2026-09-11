@@ -1,5 +1,43 @@
 # Port coverage
 
+## 2026-09-11 mwg alignment pass
+
+- **Adopted `mwg/core`'s `RunHistory` for the run rankings.** `src/rankings.ts` no longer
+  hand-rolls its own localStorage read/validate/sort/write: `RunHistory<RunRecord>` owns the
+  storage, the id/`endedAt` stamping and the ranking sort, and only the summary shape is
+  SPD-specific - the split `RunHistory` documents. Two behaviours changed with the adoption,
+  both deliberate and stated at the call site: the retained 20 runs are now the most RECENT
+  (`RunHistory`'s own "oldest runs are dropped" rule) rather than the highest-scoring 20, and
+  the storage key is now `mwg-runs:spd-on-mwg.rankings.v1` rather than the old
+  `spd-on-mwg.rankings.v1`, so runs recorded before this change are not carried over. A corrupt
+  or denied store still degrades to an empty title-screen list, as before.
+- **Corrected two stale comments** (`src/ui/bar.ts`, `src/ui/floatingText.ts`) that still claimed
+  `mwg` was "a local dependency that can drift under this project between sessions" with a "once
+  per session" check - removed along with the local-checkout workflow they described. Both files'
+  substantive claims are unchanged: each is generic code that belongs in `mwg/ui`, together with
+  the exact capability the framework counterpart still lacks (`Bar`: a texture fill and
+  `HealthBar.layout()`'s ceil-to-whole-pixel rounding; `FloatingText`: the hold-then-fade alpha
+  curve and per-target stacking).
+- **Fixed both verification harnesses, which were still compiling a local checkout of the
+  framework's sources.** `tools/verifySimulation.mjs` and `tools/verifyItemWorkflows.mjs` reached
+  into a sibling `../MW_games` tree - a *different version* from the pinned dependency (0.7.3
+  against the 0.7.2 this port pins), so both suites were exercising something the game does not
+  ship. They now shim the installed package's `dist` instead (ESM required from CommonJS, which
+  `require()` bridges directly on Node >= 22.12). This also fixes `npm run test:simulation`, which
+  was failing outright before this pass: the old hand-written list of framework modules to
+  compile had missed `Campaign.ts` once the checkout's `simulation/index.ts` grew it, leaving an
+  `index.js` requiring a file that was never emitted (`Cannot find module './Campaign.js'`).
+  Shimming the package barrel means the harness follows whatever it re-exports, so that staleness
+  cannot recur.
+- **Fixed the rankings window's sizing** (`src/scenes/titleScene.ts`), found by this pass's
+  screenshot step rather than by any test. Its height was `Math.min(260, entries.height + 50)`,
+  a guess that ignored both the frame/title chrome `Window` adds around `content` and the close
+  button placed at `contentHeight - 18`. Measured live, three runs needed 97px of content in the
+  74px that guess produced, so the button was drawn over the last row and the final score fell
+  past the panel's bottom edge. It now derives the chrome height from a window of known size and
+  sizes the frame from what is actually inside it (rows, gap and button) through `Window.resize`;
+  the same live measurement now reports 113.3px of content with the button clear of the last row,
+  reconfirmed visually.
 ## 2026-09-10 roadmap pass
 
 - **Ported:** the Dwarf King's death now awards the identified, non-upgradable King's Crown;

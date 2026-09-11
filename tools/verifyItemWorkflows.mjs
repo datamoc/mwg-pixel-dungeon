@@ -6,7 +6,7 @@ import { createRequire } from 'node:module';
 import ts from 'typescript';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const mwg = fileURLToPath(new URL('../../MW_games/', import.meta.url));
+const dist = fileURLToPath(new URL('../node_modules/mwg/dist/', import.meta.url));
 const out = mkdtempSync(join(tmpdir(), 'spd-items-'));
 function fileURLToPath(url) { return new URL(url).pathname.replace(/^\//, '').replaceAll('/', '\\'); }
 function compile(source, destination) {
@@ -18,17 +18,26 @@ function compile(source, destination) {
 }
 try {
 	writeFileSync(join(out, 'package.json'), '{"type":"commonjs"}');
-	compile(join(mwg, 'src/actors/Inventory.ts'), 'actors/Inventory.js');
-	compile(join(mwg, 'src/actors/Affix.ts'), 'actors/Affix.js');
-	compile(join(mwg, 'src/actors/ItemState.ts'), 'actors/ItemState.js');
-	compile(join(mwg, 'src/core/Random.ts'), 'core/Random.js');
-	compile(join(mwg, 'src/actors/Appearances.ts'), 'actors/Appearances.js');
 	compile(join(root, 'src/itemWorkflows.ts'), 'workflows.js');
 	compile(join(root, 'src/ringModifiers.ts'), 'ringModifiers.js');
 	compile(join(root, 'src/transmutation.ts'), 'transmutation.js');
-	//The workflow module imports only actors from the package, so provide a tiny local barrel.
+	// The framework side is the installed `@datamoc/mw_games` build the game itself ships,
+	// shimmed rather than compiled from a sibling checkout of the framework's sources - the two
+	// are different versions in general, so compiling a checkout would test something this port
+	// does not depend on. mwg's dist is ESM and this temporary tree is CommonJS, which `require()`
+	// bridges directly on Node >= 22.12.
+	function shim(destination, source) {
+		const target = join(out, destination);
+		mkdirSync(dirname(target), { recursive: true });
+		writeFileSync(target, `module.exports = require(${JSON.stringify(source)});\n`);
+	}
+	shim(join('actors', 'Inventory.js'), join(dist, 'actors', 'Inventory.js'));
+	shim(join('actors', 'Appearances.js'), join(dist, 'actors', 'Appearances.js'));
+	shim(join('core', 'Random.js'), join(dist, 'core', 'Random.js'));
+	//The workflow module imports only actors and Random from the package, so provide a tiny local barrel.
 	mkdirSync(join(out, 'node_modules/mwg'), { recursive: true });
-	writeFileSync(join(out, 'node_modules/mwg/index.js'), "exports.Actors = { ...require('../../actors/Inventory.js'), ...require('../../actors/Affix.js'), ...require('../../actors/ItemState.js') }; exports.Random = require('../../core/Random.js');\n");
+	writeFileSync(join(out, 'node_modules/mwg/index.js'),
+		`exports.Actors = require(${JSON.stringify(join(dist, 'actors', 'index.js'))}); exports.Random = require(${JSON.stringify(join(dist, 'core', 'Random.js'))});\n`);
 	const require = createRequire(join(out, 'check.cjs'));
 	const { Inventory } = require('./actors/Inventory.js');
 	const { Appearances } = require('./actors/Appearances.js');

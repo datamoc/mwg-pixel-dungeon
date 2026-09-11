@@ -144,8 +144,20 @@ Do not add new authored content as object literals or scattered constants in the
       unused `trackEntity`/`idOfEntity`/`hasEntity` helpers (MWG 0.7.2's caller-chosen
       `EntityRegistry.add(entity, requestedId?)` exists, but `simulation/` is framework-free, so the
       registry belongs at the scene/adapter layer).
-- [ ] Update the build, test, package, and browser-smoke documentation so a clean checkout can
-      reproduce every generated resource without a local MWG checkout.
+- [x] Update the build, test, package, and browser-smoke documentation so a clean checkout can
+      reproduce every generated resource without a local MWG checkout (2026-09-11). No npm
+      script needs the framework sources now: `npm run mwl:compile` reads only the installed
+      package, and the two harnesses that still compiled a sibling `../MW_games` tree -
+      `tools/verifySimulation.mjs` and `tools/verifyItemWorkflows.mjs` - shim the installed
+      `dist` instead (ESM from CommonJS, which `require()` bridges on Node >= 22.12). That was a
+      real defect, not just tidiness: the checkout is a different version from the pinned
+      dependency (0.7.3 against the 0.7.2 pin), so both suites were testing something the game
+      does not ship, and `npm run test:simulation` was failing outright - the old hand-written
+      list of framework modules to compile had missed `Campaign.ts` once the checkout's
+      `simulation/index.ts` grew it (`Cannot find module './Campaign.js'`). The only remaining
+      `../MW_games` references are `tools/verify-mwg-integration.mjs` and
+      `tools/prepare-mwg-ui.py`, both deliberate, documented, opt-in framework-development tools
+      that no npm script invokes.
 
 ## 1. Complete the item system
 

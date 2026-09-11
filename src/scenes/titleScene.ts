@@ -239,11 +239,18 @@ export class TitleScene extends Scene2D {
 		}).join('\n\n');
 		const total = new Label({ text: `${t('scenes.rankingsscene.total')} ${records.length}`, size: 7, color: theme().color.textDim });
 		const entries = new Label({ text: body, size: 6, wrapWidth: width - 16, color: theme().color.text });
-		const window = new Window({ width, height: Math.min(260, entries.height + 50), title, anchor: 'center' });
+		// Size the frame to what is actually inside it. The old `entries.height + 50` guess did not
+		// account for the frame/title chrome or the close button, so the button was drawn over the
+		// last row and the final score fell below the panel's own edge - measured live, three runs
+		// needed 97px of content in the 74px the guess produced. `Window` does not expose its chrome
+		// height, so derive it from a window of known size and then `resize`.
+		const window = new Window({ width, height: 100, title, anchor: 'center' });
 		window.content.addChild(total, entries);
 		entries.y = total.height + 5;
 		const close = new Button({ width: window.contentWidth, height: 18, text: t('port.window.close'), onClick: () => window.close() });
-		close.position.set(0, window.contentHeight - 18);
+		const chrome = window.height - window.contentHeight;
+		window.resize(width, Math.min(400, chrome + total.height + 5 + entries.height + 8 + close.height));
+		close.position.set(0, window.contentHeight - close.height);
 		window.content.addChild(close);
 		this.windows.push(window);
 	}

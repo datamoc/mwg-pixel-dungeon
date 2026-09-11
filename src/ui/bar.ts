@@ -4,15 +4,14 @@ import { Container, Sprite, Texture } from 'pixi.js';
  * A horizontal fill meter: a background strip with a coloured strip drawn over a fraction
  * of it.
  *
- * GENERIC - nothing here knows about SPD. `mwg/ui` has since grown its own `Bar` (checked
- * directly against the `MW_games` checkout - `mwg` is a local dependency that can drift
- * under this project between sessions, see this file's CLAUDE.md for the "once per session"
- * check), but that one only fills a flat colour rect against a 0..1 fraction with no rounding
- * rule - it cannot take a texture fill, so it cannot draw `StatusPane`'s real `status_pane.png`
- * bar art the way `statusPane.ts` needs (stretched via `scale.x`, the way Java does it), and
- * it does not reproduce `HealthBar.layout()`'s ceil-to-whole-pixel rounding verified below.
+ * GENERIC - nothing here knows about SPD. `mwg/ui` has since grown its own `Bar`, but that one
+ * only fills a flat colour rect against a 0..1 fraction with no rounding rule - it cannot take a
+ * texture fill, so it cannot draw `StatusPane`'s real `status_pane.png` bar art the way
+ * `statusPane.ts` needs (stretched via `scale.x`, the way Java does it), and it does not
+ * reproduce `HealthBar.layout()`'s ceil-to-whole-pixel rounding verified below.
  * This one stays a sibling rather than being replaced by `mwg`'s, for exactly the capabilities
- * `mwg`'s lacks - not a case of avoidable duplication.
+ * `mwg`'s lacks - not a case of avoidable duplication. It belongs in `mwg/ui` if that `Bar` ever
+ * grows a texture fill and this rounding rule.
  *
  * `SPD-classes`' own `ColorBlock` is a solid rectangle, which is what `HealthBar.java` uses;
  * a texture may be given instead so `StatusPane`'s real bar art can be stretched the way

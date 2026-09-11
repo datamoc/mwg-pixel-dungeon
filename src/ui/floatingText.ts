@@ -7,11 +7,10 @@ import { Label } from 'mwg';
  *
  * GENERIC - nothing here knows about SPD. Written game-agnostically (a world point, a
  * string, a colour) so it could sit in `mwg/ui` - but not the same thing as `mwg/ui`'s own
- * `FloatingText` (checked directly against the `MW_games` checkout, since `mwg` is a local
- * dependency that can drift under this project between sessions - see this file's CLAUDE.md
- * for the "once per session" check): that class fades *linearly* over its whole lifetime and
- * has no per-target stacking, so it does not reproduce the real Java curve below - the two
- * are siblings, not a drop-in replacement for one another. See PORT_COVERAGE.md's "UI and
+ * `FloatingText`: that class fades *linearly* over its whole lifetime and has no per-target
+ * stacking, so it does not reproduce the real Java curve below - the two are siblings, not a
+ * drop-in replacement for one another. This one belongs in `mwg/ui` if that `FloatingText` ever
+ * grows the hold-then-fade curve and the stacking. See PORT_COVERAGE.md's "UI and
  * presentation" table.
  *
  * `effects/FloatingText.java`'s real numbers: `LIFESPAN = 1f` second, `DISTANCE =
