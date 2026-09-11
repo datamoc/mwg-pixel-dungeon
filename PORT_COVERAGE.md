@@ -61,6 +61,19 @@
   0.7.2. `tools/check-mwg-version.mjs` (`npm run mwg:check`) reports the pin, the installed
   version and npm's latest in one line and is the hourly check while porting, per AGENTS.md.
   Adopting what 0.7.3 makes redundant is tracked separately in ROADMAP.md.
+- **A fidelity bug found while scoping the fire work: the Yog beam burns doors** (2026-09-11).
+  `fireYogDeathGaze` treats `[GRASS, HIGH_GRASS, DOOR, DOOR_CLOSED]` as flamable, but Java's
+  flamable set is exactly `GRASS`/`HIGH_GRASS`/`FURROWED_GRASS` (`Terrain.flags`' `FLAMABLE` bit)
+  plus the `SewerLevel` special case that force-marks `REGION_DECO`/`REGION_DECO_ALT`; `DOOR` and
+  `DOOR_CLOSED` carry no such flag, so a door in the beam's path must not catch fire. The same
+  check also misses `FURROWED_GRASS` (trampled high grass, which keeps the flag) and the sewer
+  deco case. Recorded here rather than fixed in place because the whole flammable model is a gap:
+  the port has no flamable map at all and `spreadFire()` says so ("no flammable map", "no
+  heap-burn primitive"), and `gameBridge.ts` collapses `EMBERS` to `floor`, so burned ground
+  cannot even be represented in the live level. The full scoping, both sides read, is
+  `tools/scratch/mwg-proposal/GEOMETRY-AND-FIRE.md`, which also corrects two claims of mine in
+  ROADMAP.md: `TerrainKind.flags`/`extras` and the `Scheduler` priority are **not** in the
+  published 0.7.3 - both are in the unpublished 0.7.4 checkout.
 ## 2026-09-10 roadmap pass
 
 - **Ported:** the Dwarf King's death now awards the identified, non-upgradable King's Crown;

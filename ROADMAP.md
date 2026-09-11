@@ -165,17 +165,23 @@ Do not add new authored content as object literals or scattered constants in the
       hourly check while porting is `npm run mwg:check` (`tools/check-mwg-version.mjs`), which
       reports the pin, the installed version, npm's latest, and a checkout's version when passed
       with `--checkout`.
-- [ ] Adopt the five 0.7.3 capabilities this port hand-rolls, where each is genuinely a deletion
-      rather than new code - scoped by reading both sides, not by assuming the framework version is
-      automatically better:
-      - `Scheduler` priority (`add(actor, delay, priority)`), which is Java's
-        `actPriority = VFX_PRIO` and lets the Tengu/Yog telegraph fields (`yogTargeted`,
-        `pendingMonsterTurnCost`) become real scheduled actors. `Roguelike.Targeting`'s `Ballistica`
-        (stop modes, `collisionPos`), replacing the Bresenham `traceLine` used for Yog beams, Tengu
-        cone and projectile impacts. `MultiTurnBeam`/`MultiStageAbility` for the staged-ability
-        shapes - DM-300's pylon sequence, the Yog telegraph - keeping in mind that `MultiTurnBeam` is
-        a *straight* line, so it serves Yog's beams but neither Tengu's fire *cone* (ported instead as
-        state on the creature, `advanceTenguFire`) nor the shocker's 3x3 pulses.
+- [ ] Adopt what 0.7.3 actually shipped and what 0.7.4 is bringing, where each is genuinely a
+      deletion rather than new code - scoped by reading both sides, not by assuming a newer framework
+      version is automatically better. `tools/scratch/mwg-proposal/GEOMETRY-AND-FIRE.md` is the full
+      scoping, including two claims corrected there: **`TerrainKind.flags`/`extras` and the
+      `Scheduler` priority are NOT in the published 0.7.3** - both are in the unpublished 0.7.4
+      checkout - so they are adoption work for whenever 0.7.4 lands, not available today.
+      - `Scheduler.add(actor, delay, priority)` + named priorities (0.7.4, unpublished): Java's
+        `VFX_PRIO`/`BUFF_PRIO`, which is what lets the Tengu/Yog telegraph fields (`yogTargeted`,
+        `pendingMonsterTurnCost`, `tenguFire`) become real scheduled actors instead of hand-rolled
+        state.
+      - `Roguelike.Targeting` already ships the geometries the port asked for - `AreaShape`
+        (`single`/`burst`/`line`/`cone`), `resolveArea`/`resolveAreaOnLevel`, `coneCells`,
+        `rangeMultiplier`/`areaFalloffMultiplier` (= Java's `Ballistica` falloff) - so the remaining
+        framework gap is that `MultiTurnBeam` only takes `from`/`target` and captures a straight
+        `traceLine`. Making it take a **front list** (one front per turn, `blockers: 'stop' | 'skip'`,
+        `onCell` for ignition/visuals, save by shape identity) is what unlocks cone/burst beams; see
+        §2 of the spec.
       - `Level.viewDistance` + `FieldOfView.update`'s default radius: **worth it only if `Level` is
         made to own the value on the same events Java does.** `viewRadius()` already computes exactly
         that number live, from subclass, talents, challenge, depth and Yog's phase, so routing it
@@ -183,12 +189,19 @@ Do not add new authored content as object literals or scattered constants in the
         every one of those, and a stale `level.viewDistance` silently means monsters seeing the whole
         map. If adopted, set it in one `updateVisibility()`-shaped method called from those events -
         never as a convenience default.
-      - `TerrainKind.flags`/`extras`: **not yet**, one consumer is not a table. The only true
-        "flamable" test in the port is the Yog beam's
-        `[GRASS, HIGH_GRASS, DOOR, DOOR_CLOSED].includes(...)`; the other ~48 `GRASS`/`HIGH_GRASS`
-        sites are specific semantics (frame ids, plantable cells, trampling, Warden healing) that no
-        generic flag expresses. Revisit when a second flamable consumer appears - fire spreading is
-        the likely one.
+- [ ] Flammable terrain and fire burnout: the port has **no** flammable model at all, and says so
+      in `spreadFire()` ("no flammable map", "no heap-burn primitive"). Java's is small and worth
+      copying exactly: `FLAMABLE` is on `GRASS`, `HIGH_GRASS` and `FURROWED_GRASS` only - **not on
+      doors**, which the port's Yog beam currently burns - plus the `SewerLevel` special case that
+      force-marks `REGION_DECO`/`REGION_DECO_ALT`; `Fire.evolve()` is what burns terrain, converting a
+      flammable cell to `EMBERS` (passable, *not* flammable) when its fire reaches zero, igniting the
+      occupant and burning the heap. Work, in order: give `EMBERS` a real live kind (today
+      `gameBridge.ts` collapses it to `floor`, so burned ground cannot even be represented), switch
+      `this.fire` to `spread(open, 0, decay)` so the fire decays in place like Java's `FireBlob`
+      instead of diffusing (available since 0.7.3, and a prerequisite for the burnout timing being
+      right), then the `FLAMABLE` set + `burn()`. The one framework nicety that would help is a
+      burnout callback/return on `Blob.spread` (spec §4.2); everything else is port-side.
+
 - [ ] Replace `src/ui/bar.ts` with `mwg/ui`'s `Bar` and delete it, once
       `tools/scratch/mwg-proposal/0002-bar-runtime-colour-and-track.patch` lands. `fillTexture`
       (the real bar art, stretched) and `roundUpToPixel` (`HealthBar.layout()`'s ceil-to-pixel
