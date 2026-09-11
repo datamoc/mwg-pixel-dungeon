@@ -531,9 +531,14 @@ Do not add new authored content as object literals or scattered constants in the
       the 1-4 turn gap, and all three catch-up rules - extracted to a tested
       `simulation/tenguAbility.ts` rather than a flat every-third-turn rotation, and the
       adjacent-turn ability check (previously swallowed by the generic melee branch) is
-      fixed; the Fire/Shocker actors are still collapsed to one turn each and an ability
-      still costs one whole turn rather than Java's 1-2 ticks; floor shifting and the
-      FIGHT_START/ARENA room split remain).
+      fixed; **the ability turn cost is now real too** (2026-09-11): `Tengu.useAbility()`'s
+      trailing spend is 2 ticks normally (1 when 4+ behind on the cast budget) and 1 tick on the
+      bosses challenge (0 when 4+ behind), with `Actor.TICK = 1` - previously every cast spent the
+      default single turn, so a normal-mode Tengu cast about twice as often as Java. The rule lives
+      in `tenguAbilityCost()` in `simulation/tenguAbility.ts`, is unit-tested by
+      `tools/verifySimulation.mjs`, and is browser-verified on all four branches. The Fire/Shocker
+      actors are still collapsed to one turn each; floor shifting and the FIGHT_START/ARENA room
+      split remain).
 - [ ] Port Caves/DM-300's full pylon, gate, energy field, and supercharge scripts (pylon
       proximity sealing, sequential threshold supercharges, pylon activation, boss
       invulnerability, x2 speed, and supercharge loss on pylon death are live; the

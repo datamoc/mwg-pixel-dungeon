@@ -17,7 +17,7 @@ import { resolveAttack } from './simulation/attackResolution';
 import { simulationRandom } from './adapters/mwgRandom';
 import { MOVES } from './simulation/heroActions';
 import { finishHeroTurn } from './simulation/heroTurn';
-import { stepTenguAbility } from './simulation/tenguAbility';
+import { stepTenguAbility, tenguAbilityCost } from './simulation/tenguAbility';
 import {
 	TintedSprite,
 	AnimatedSprite,
@@ -7846,7 +7846,7 @@ export class SewersScene extends Scene2D {
 		);
 		tengu.tenguAbilityCd = step.cooldown;
 		if (!step.ready) return false;
-		this.tenguUseAbility(tengu, stronger);
+		this.tenguUseAbility(tengu, stronger, step.behind);
 		return true;
 	}
 
@@ -7859,7 +7859,7 @@ export class SewersScene extends Scene2D {
 	 * reroll at 100 attempts as a defensive guard and, in the pathological case where none
 	 * lands, spends the turn without counting a cast (a stated deviation from a Java hang
 	 * that cannot realistically occur). */
-	private tenguUseAbility(tengu: Creature, stronger: boolean): void {
+	private tenguUseAbility(tengu: Creature, stronger: boolean, behind: number): void {
 		const used = tengu.tenguAbilityUses ?? 0;
 		const last = tengu.tenguLastAbility ?? -1;
 		let abilityUsed = false;
@@ -7888,6 +7888,11 @@ export class SewersScene extends Scene2D {
 			if (abilityUsed && abilityToUse !== 1 && stronger) this.tenguThrowFire(tengu);
 		}
 		if (!abilityUsed) return;
+		//`Tengu.useAbility()`'s trailing spend (tag v3.3.8): the real cost lives in the pure
+		//`tenguAbilityCost` helper. `behind` reads the pre-increment cast count, exactly like
+		//Java's `abilitiesUsed`. The port previously always spent the default full turn, so a
+		//normal-mode Tengu cast roughly twice as often as Java.
+		this.pendingMonsterTurnCost = tenguAbilityCost(stronger, behind);
 		tengu.tenguLastAbility = abilityToUse;
 		tengu.tenguAbilityUses = used + 1;
 	}

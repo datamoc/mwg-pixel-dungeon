@@ -32,6 +32,17 @@ export function tenguTargetAbilityUses(arenaJumps: number): number {
 }
 
 /**
+ * `Tengu.useAbility()`'s trailing `spend()` (tag v3.3.8). `Actor.TICK = 1`, so a normal-mode cast
+ * costs **2 ticks**, or 1 when 4+ behind on the cast budget; the bosses challenge costs 1 tick, or
+ * **none at all** when 4+ behind. `behind` is `targetAbilityUses() - abilitiesUsed` read *before*
+ * the cast is counted, exactly like Java. Returns the turn cost in scheduler units.
+ */
+export function tenguAbilityCost(strongerBosses: boolean, behind: number): number {
+	if (strongerBosses) return behind >= 4 ? 0 : 1;
+	return behind >= 4 ? 1 : 2;
+}
+
+/**
  * Advances the cadence by one Tengu turn. `rollCooldown` supplies `Random.IntRange(1, 4)` and
  * is only called when Java itself would draw - this keeps the random stream identical to Java's
  * (a call at the wrong point would desync every later roll in the run).

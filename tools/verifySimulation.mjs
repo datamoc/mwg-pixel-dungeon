@@ -53,7 +53,7 @@ try {
 	const { runHungerStep } = require('./adapters/hungerSimulation');
 	const { runMovement } = require('./adapters/movementSimulation');
 	const { resolveAttack } = require('./simulation/attackResolution');
-	const { stepTenguAbility, tenguTargetAbilityUses } = require('./simulation/tenguAbility');
+	const { stepTenguAbility, tenguTargetAbilityUses, tenguAbilityCost } = require('./simulation/tenguAbility');
 	const { runUntilHeroInput } = require('./adapters/sceneSimulation');
 	const { SceneSimulationAdapter } = require('./adapters/sceneSimulation');
 	const { Scheduler } = require('./scheduler');
@@ -306,6 +306,13 @@ try {
 		assert.equal(lag4s.cooldown, 1); assert.equal(lag4s.ready, false);
 		// Dead Tengu is inert.
 		assert.equal(stepTenguAbility({ hp: 0, maxHp: 200, cooldown: 0, used: 0, arenaJumps: 0, strongerBosses: false }, () => 1).ready, false);
+		// Ability turn cost (`Tengu.useAbility()`'s trailing spend, `Actor.TICK = 1`): normal mode
+		// costs 2 ticks, or 1 when 4+ behind; the bosses challenge costs 1 tick, or 0 when 4+ behind.
+		assert.deepEqual(
+			[[false, 0], [false, 1], [false, 3], [false, 4], [false, 8], [true, 1], [true, 3], [true, 4], [true, 8]]
+				.map(([stronger, behind]) => tenguAbilityCost(stronger, behind)),
+			[2, 2, 2, 1, 1, 1, 1, 0, 0],
+		);
 	});
 	verifyHeroTurn(require, check);
 	verifyCombat(require, check);
