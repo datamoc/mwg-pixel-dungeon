@@ -1665,52 +1665,67 @@ Java formulas, item values, dungeon rules, sprites, or other GPL game content to
 of these proposals is accepted upstream, this port may consume the published API later and
 must still keep its game-specific rules and adapters here.
 
-The status was checked against the installed `mwg@0.7.6` declarations on 2026-09-11.
+The status was re-derived against `mwg@0.7.7` on 2026-09-12, the day the pin was bumped from
+0.7.6 to 0.7.7 (commit `f736626`). **Five of the six proposals below shipped in 0.7.7** (its items
+278-282); only the MWL asset-reference one is still open. A checked box here records that MWG
+delivered the capability, not that this port consumes it yet - the port-side adoption each one
+still owes is named inline.
 
-- [x] **Keep using the existing generic primitives.** `Scheduler` already supports actor
-      priorities and postponement; `EntityRegistry.add(entity, requestedId?)` supports save-safe
-      caller-chosen ids; `Inventory` supports nested containers and instance state;
-      `craft()` provides an atomic recipe transaction; `ParticleEmitter.frames` supports animated
-      pooled particles; `Blob.spread()` reports emptied cells; and MWL supplies typed tables,
-      references, and deterministic artifact emission. No MWG change is requested for these.
-- [ ] **P0 — Generalise `MultiTurnBeam` traversal.** Add an opt-in sequence of per-turn fronts
-      (or a game-supplied next-front resolver), explicit blocker policy, per-cell callbacks, and
-      shape identity in the save data. The current API correctly handles a straight captured path;
-      the proposal would also cover reusable cone, burst, forked, and moving-front effects without
-      putting any combat rules into MWG. Define the smallest renderer-free API and add deterministic
-      square/hex tests in MWG before this port adopts it.
-- [ ] **P1 — Add generic particle spawn bounds.** Let an emitter choose a seeded local spawn
-      rectangle/ellipse and an optional local height or lifetime envelope, while preserving the
-      current pooled, renderer-agnostic behavior. This would remove common presentation glue for
-      effects that need controlled spread or a capped flame column; the port's current sparks and
-      title flame remain valid local adapters until such an API exists.
-- [ ] **P1 — Add a renderer-neutral grid targeting controller.** Provide pointer and keyboard
-      navigation over cells, range/line-of-sight validation hooks, an optional area preview, and a
-      confirm/cancel result. The controller must return cells or ids only; level rules, targeting
-      legality, damage, and visuals remain game-owned. This is useful to any grid game and would
-      support future wand, missile, and boss targeting in this port without duplicating input state.
-- [ ] **P2 — Add reusable tabbed, paginated list primitives.** A small data/UI contract for tabs,
-      filtered rows, selection, paging, and detail/close actions would serve inventories, journals,
-      shops, and codices across games. It must remain presentation-framework generic, accept caller
-      supplied labels and rows, and not assume an RPG item taxonomy. Until then, this port keeps its
-      compact inventory and journal adapters locally.
-- [ ] **P2 — Add a documented event-to-presentation sequencing recipe.** The existing
-      `SimulationRuntime` and `PresentationQueue` cover the core split, but MWG should document (and
-      test with a small example) how a command result, scheduled secondary actor, animation lock,
-      cancellation, and save/load interact. The goal is a stable integration pattern for turn-based
-      games, not an SPD-specific combat pipeline.
-- [ ] **P2 — Author non-monster asset references in MWL.** The asset manifest (`game.assets`) is
-      already built by scanning every attribute whose *name* is an asset attribute
-      (`image`/`file`/`icon`/`profile`/`sound`/`*_sound`/`*_image`), but the schema only declares
-      `image` on `monster` (and the Wesnoth `unit_type`/`unit`). Adding `image` (and optionally
+- [x] **Keep using the existing generic primitives.** `Scheduler.add(actor, delay?, priority?)`
+      supports actor priorities and postponement; `EntityRegistry.add(entity, requestedId?)`
+      supports save-safe caller-chosen ids; `Inventory` supports nested containers and instance
+      state; `craft()` provides an atomic recipe transaction; `ParticleEmitter.frames` supports
+      animated pooled particles; `Blob.spread(open, spread?, decay?)` reports the cells it just
+      emptied; `TerrainKind.flags` carries game-defined bits without interpretation; and MWL
+      supplies typed tables, references, and deterministic artifact emission. 0.7.7 adds further
+      ready-made primitives the port can adopt as it reaches them (not proposals, so not listed
+      individually): the missing UI widgets (`Slider`/`Checkbox`/`Spinner`/`Dropdown`/`TextModel`/
+      `DataTable`/`TreeView`/`ScrollBox`), `Layout`/`Skins`, `StoryScreen`/`StorySequence`, the
+      battle-UI models, positional audio, IME text input, and MT19937 (`MersenneTwister`/
+      `RandomStreams`).
+- [x] **P0 — Generalise `MultiTurnBeam` traversal.** *Shipped in 0.7.7 (item 278).*
+      `MultiTurnBeamOptions` now takes `fronts?(previous, turn)` (a game-supplied resolver, so a
+      line, cone, burst, fork or moving front is expressible), `blocker?: BeamBlocker` (`'terrain'
+      | 'none' | (cell, context) => boolean`), `onCell?`, and a `shape` string saved so a reload
+      resumes the same shape (pre-fronts saves still load). Port adoption owed: rewrite the Yog
+      beam and Tengu's cone onto it - Tengu supplying its own `fronts` resolver, since its spread
+      rule is narrower than any built-in shape - and drop the `yogTargeted`/`tenguFire` hand-state.
+- [x] **P1 — Add generic particle spawn bounds.** *Shipped in 0.7.7 (item 279).*
+      `ParticleEmitterOptions.spawn` takes a `ParticleSpawnArea` (`{ shape: 'rect' | 'ellipse',
+      width, height? }`, plus an optional emission direction), spreading births across an extent
+      rather than one origin; a point emitter is untouched, so existing seeded replays are
+      identical. Port adoption owed for the title flame and sparks if it removes local glue.
+- [x] **P1 — Add a renderer-neutral grid targeting controller.** *Shipped in 0.7.7 (item 280).*
+      `roguelike.TargetingController` gives a cursor moved by `move(dx, dy)`/`moveTo(cell)`,
+      range + line-of-sight legality with an optional `validate` hook, a `preview()` of the shape's
+      cells, and a cells-only `confirm()`/`cancel()` result, hex levels included. **Port adoption
+      owed, and the highest-value item here**: this is the missing piece behind the port's most
+      repeated simplification, "no map-click cell-targeting" (every thrown runestone,
+      `ScrollOfIdentify`/`RemoveCurse`/`Transmutation`/`Enchantment`, aimed wands, and
+      `useSpecial`'s auto-target).
+- [x] **P2 — Add reusable tabbed, paginated list primitives.** *Shipped in 0.7.7 (item 281).*
+      `ui.TabbedList`/`ListTab` is a renderer-free tabbed, filtered, paged list with selection and a
+      detail/close state over caller-supplied rows; the page is derived from the selection, so the
+      two cannot disagree.
+- [x] **P2 — Add a documented event-to-presentation sequencing recipe.** *Shipped in 0.7.7
+      (item 282).* `simulation.EventPresentation`/`EventPresentationOptions` documents the
+      `SimulationRuntime` -> `PresentationQueue` tie: command result, animation lock, scheduled
+      secondary actor, cancellation, and save/load that resumes idle.
+- [ ] **P2 — Author non-monster asset references in MWL.** *Still open in 0.7.7* - verified
+      against `mwl/schema.ts`: the `item` node is still `{ id, name, slot, stackable, weight }` with
+      no asset attribute, and `image` remains only on `monster`/`unit_type`/`object`/`story`. The
+      manifest scanner (`isAssetAttribute`) already recognises `image`/`file`/`icon`/`profile`/
+      `sound`/`*_sound`/`*_image` by *name* on any node, so only the schema gate blocks it, and
+      authoring a terrain/UI asset in MWL still fails with "unknown attribute image on item" (the
+      dead-end experiment preserved in `tools/scratch/*.mwl`). Adding `image` (and optionally
       `file`) to the generic `item` node - or a dedicated, game-agnostic `asset` node with an
-      optional `slot`/`kind` - would let terrain, UI, and other non-actor art be authored in MWL and
-      flow into the same validated manifest this port already consumes. No SPD names, values, or art
-      belong in MWG; only the attribute contract and determinism tests live there.
-- [ ] **Before proposing API changes, add framework-side acceptance tests and examples.** Each
-      proposal above needs renderer-free determinism tests, a minimal example, save compatibility
-      notes, and an API report entry in the MWG repository. This port should only add an adoption
-      checkbox here after a released version exists and has been checked against its declarations.
+      optional `slot`/`kind` - stays the one requested change; no SPD names, values, or art belong
+      in MWG, only the attribute contract and determinism tests.
+- [ ] **Before proposing further API changes, add framework-side acceptance tests and examples.**
+      The 0.7.7 batch already carries its own renderer-free tests in MWG. Any new proposal needs the
+      same: renderer-free determinism tests, a minimal example, save compatibility notes, and an
+      API report entry in the MWG repository. This port should only add an adoption checkbox here
+      after a released version exists and has been checked against its declarations.
 
 ### Explicitly out of scope for MWG
 
