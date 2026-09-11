@@ -4364,22 +4364,280 @@ export const gameData = {
 			},
 			"children": [
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "curseDefinitions",
-						"name": "ItemCurses"
+						"columns": "id:string|type:string|locks:boolean|nameKey:string|descriptionKey:string"
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "wayward|weapon|true|items.weapon.curses.wayward.name|items.weapon.curses.wayward.desc;annoying|weapon|true|items.weapon.curses.annoying.name|items.weapon.curses.annoying.desc;dazzling|weapon|true|items.weapon.curses.dazzling.name|items.weapon.curses.dazzling.desc;displacing|weapon|true|items.weapon.curses.displacing.name|items.weapon.curses.displacing.desc;explosive|weapon|true|items.weapon.curses.explosive.name|items.weapon.curses.explosive.desc;friendly|weapon|true|items.weapon.curses.friendly.name|items.weapon.curses.friendly.desc;polarized|weapon|true|items.weapon.curses.polarized.name|items.weapon.curses.polarized.desc;sacrificial|weapon|true|items.weapon.curses.sacrificial.name|items.weapon.curses.sacrificial.desc;stench|armor|true|items.armor.curses.stench.name|items.armor.curses.stench.desc;antientropy|armor|true|items.armor.curses.antientropy.name|items.armor.curses.antientropy.desc;bulk|armor|true|items.armor.curses.bulk.name|items.armor.curses.bulk.desc;corrosion|armor|true|items.armor.curses.corrosion.name|items.armor.curses.corrosion.desc;displacement|armor|true|items.armor.curses.displacement.name|items.armor.curses.displacement.desc;metabolism|armor|true|items.armor.curses.metabolism.name|items.armor.curses.metabolism.desc;multiplicity|armor|true|items.armor.curses.multiplicity.name|items.armor.curses.multiplicity.desc;overgrowth|armor|true|items.armor.curses.overgrowth.name|items.armor.curses.overgrowth.desc"
+								"id": "wayward",
+								"type": "weapon",
+								"locks": "true",
+								"nameKey": "items.weapon.curses.wayward.name",
+								"descriptionKey": "items.weapon.curses.wayward.desc"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
 								"line": 7,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "annoying",
+								"type": "weapon",
+								"locks": "true",
+								"nameKey": "items.weapon.curses.annoying.name",
+								"descriptionKey": "items.weapon.curses.annoying.desc"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+								"line": 14,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "dazzling",
+								"type": "weapon",
+								"locks": "true",
+								"nameKey": "items.weapon.curses.dazzling.name",
+								"descriptionKey": "items.weapon.curses.dazzling.desc"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+								"line": 21,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "displacing",
+								"type": "weapon",
+								"locks": "true",
+								"nameKey": "items.weapon.curses.displacing.name",
+								"descriptionKey": "items.weapon.curses.displacing.desc"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+								"line": 28,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "explosive",
+								"type": "weapon",
+								"locks": "true",
+								"nameKey": "items.weapon.curses.explosive.name",
+								"descriptionKey": "items.weapon.curses.explosive.desc"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+								"line": 35,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "friendly",
+								"type": "weapon",
+								"locks": "true",
+								"nameKey": "items.weapon.curses.friendly.name",
+								"descriptionKey": "items.weapon.curses.friendly.desc"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+								"line": 42,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "polarized",
+								"type": "weapon",
+								"locks": "true",
+								"nameKey": "items.weapon.curses.polarized.name",
+								"descriptionKey": "items.weapon.curses.polarized.desc"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+								"line": 49,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "sacrificial",
+								"type": "weapon",
+								"locks": "true",
+								"nameKey": "items.weapon.curses.sacrificial.name",
+								"descriptionKey": "items.weapon.curses.sacrificial.desc"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+								"line": 56,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "stench",
+								"type": "armor",
+								"locks": "true",
+								"nameKey": "items.armor.curses.stench.name",
+								"descriptionKey": "items.armor.curses.stench.desc"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+								"line": 63,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "antientropy",
+								"type": "armor",
+								"locks": "true",
+								"nameKey": "items.armor.curses.antientropy.name",
+								"descriptionKey": "items.armor.curses.antientropy.desc"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+								"line": 70,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "bulk",
+								"type": "armor",
+								"locks": "true",
+								"nameKey": "items.armor.curses.bulk.name",
+								"descriptionKey": "items.armor.curses.bulk.desc"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+								"line": 77,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "corrosion",
+								"type": "armor",
+								"locks": "true",
+								"nameKey": "items.armor.curses.corrosion.name",
+								"descriptionKey": "items.armor.curses.corrosion.desc"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+								"line": 84,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "displacement",
+								"type": "armor",
+								"locks": "true",
+								"nameKey": "items.armor.curses.displacement.name",
+								"descriptionKey": "items.armor.curses.displacement.desc"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+								"line": 91,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "metabolism",
+								"type": "armor",
+								"locks": "true",
+								"nameKey": "items.armor.curses.metabolism.name",
+								"descriptionKey": "items.armor.curses.metabolism.desc"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+								"line": 98,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "multiplicity",
+								"type": "armor",
+								"locks": "true",
+								"nameKey": "items.armor.curses.multiplicity.name",
+								"descriptionKey": "items.armor.curses.multiplicity.desc"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+								"line": 105,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "overgrowth",
+								"type": "armor",
+								"locks": "true",
+								"nameKey": "items.armor.curses.overgrowth.name",
+								"descriptionKey": "items.armor.curses.overgrowth.desc"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+								"line": 112,
 								"column": 1
 							},
 							"gettext": []
@@ -8146,22 +8404,263 @@ export const gameData = {
 					"gettext": []
 				},
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "missileDefinitions",
-						"name": "MissileWeapon.definitions"
+						"columns": "id:string|sourceClass:string|tier:number|minDamage:number|maxDamage:number"
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "missile_throwingstone|ThrowingStone|1|2|5;missile_throwingknife|ThrowingKnife|1|2|6;missile_throwingspike|ThrowingSpike|1|2|5;missile_fishingspear|FishingSpear|2|4|10;missile_throwingclub|ThrowingClub|2|4|10;missile_shuriken|Shuriken|2|4|10;missile_throwingspear|ThrowingSpear|3|6|15;missile_kunai|Kunai|3|6|15;missile_bolas|Bolas|3|6|15;missile_javelin|Javelin|4|8|20;missile_tomahawk|Tomahawk|4|8|20;missile_heavyboomerang|HeavyBoomerang|4|8|20;missile_trident|Trident|5|10|25;missile_throwinghammer|ThrowingHammer|5|10|25;missile_forcecube|ForceCube|5|10|25"
+								"id": "missile_throwingstone",
+								"sourceClass": "ThrowingStone",
+								"tier": "1",
+								"minDamage": "2",
+								"maxDamage": "5"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
 								"line": 98,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "missile_throwingknife",
+								"sourceClass": "ThrowingKnife",
+								"tier": "1",
+								"minDamage": "2",
+								"maxDamage": "6"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+								"line": 105,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "missile_throwingspike",
+								"sourceClass": "ThrowingSpike",
+								"tier": "1",
+								"minDamage": "2",
+								"maxDamage": "5"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+								"line": 112,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "missile_fishingspear",
+								"sourceClass": "FishingSpear",
+								"tier": "2",
+								"minDamage": "4",
+								"maxDamage": "10"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+								"line": 119,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "missile_throwingclub",
+								"sourceClass": "ThrowingClub",
+								"tier": "2",
+								"minDamage": "4",
+								"maxDamage": "10"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+								"line": 126,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "missile_shuriken",
+								"sourceClass": "Shuriken",
+								"tier": "2",
+								"minDamage": "4",
+								"maxDamage": "10"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+								"line": 133,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "missile_throwingspear",
+								"sourceClass": "ThrowingSpear",
+								"tier": "3",
+								"minDamage": "6",
+								"maxDamage": "15"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+								"line": 140,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "missile_kunai",
+								"sourceClass": "Kunai",
+								"tier": "3",
+								"minDamage": "6",
+								"maxDamage": "15"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+								"line": 147,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "missile_bolas",
+								"sourceClass": "Bolas",
+								"tier": "3",
+								"minDamage": "6",
+								"maxDamage": "15"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+								"line": 154,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "missile_javelin",
+								"sourceClass": "Javelin",
+								"tier": "4",
+								"minDamage": "8",
+								"maxDamage": "20"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+								"line": 161,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "missile_tomahawk",
+								"sourceClass": "Tomahawk",
+								"tier": "4",
+								"minDamage": "8",
+								"maxDamage": "20"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+								"line": 168,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "missile_heavyboomerang",
+								"sourceClass": "HeavyBoomerang",
+								"tier": "4",
+								"minDamage": "8",
+								"maxDamage": "20"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+								"line": 175,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "missile_trident",
+								"sourceClass": "Trident",
+								"tier": "5",
+								"minDamage": "10",
+								"maxDamage": "25"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+								"line": 182,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "missile_throwinghammer",
+								"sourceClass": "ThrowingHammer",
+								"tier": "5",
+								"minDamage": "10",
+								"maxDamage": "25"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+								"line": 189,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "missile_forcecube",
+								"sourceClass": "ForceCube",
+								"tier": "5",
+								"minDamage": "10",
+								"maxDamage": "25"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
+								"line": 196,
 								"column": 1
 							},
 							"gettext": []
@@ -8190,7 +8689,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
-								"line": 107,
+								"line": 208,
 								"column": 1
 							},
 							"gettext": []
@@ -8204,7 +8703,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
-								"line": 111,
+								"line": 212,
 								"column": 1
 							},
 							"gettext": []
@@ -8212,7 +8711,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
-						"line": 104,
+						"line": 205,
 						"column": 1
 					},
 					"gettext": []
@@ -8233,7 +8732,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
-								"line": 119,
+								"line": 220,
 								"column": 1
 							},
 							"gettext": []
@@ -8247,7 +8746,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
-								"line": 123,
+								"line": 224,
 								"column": 1
 							},
 							"gettext": []
@@ -8255,7 +8754,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
-						"line": 116,
+						"line": 217,
 						"column": 1
 					},
 					"gettext": []
@@ -8276,7 +8775,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
-								"line": 131,
+								"line": 232,
 								"column": 1
 							},
 							"gettext": []
@@ -8290,7 +8789,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
-								"line": 135,
+								"line": 236,
 								"column": 1
 							},
 							"gettext": []
@@ -8298,7 +8797,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
-						"line": 128,
+						"line": 229,
 						"column": 1
 					},
 					"gettext": []
@@ -8319,7 +8818,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
-								"line": 143,
+								"line": 244,
 								"column": 1
 							},
 							"gettext": []
@@ -8333,7 +8832,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
-								"line": 147,
+								"line": 248,
 								"column": 1
 							},
 							"gettext": []
@@ -8341,7 +8840,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
-						"line": 140,
+						"line": 241,
 						"column": 1
 					},
 					"gettext": []
@@ -8362,7 +8861,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
-								"line": 155,
+								"line": 256,
 								"column": 1
 							},
 							"gettext": []
@@ -8376,7 +8875,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
-								"line": 159,
+								"line": 260,
 								"column": 1
 							},
 							"gettext": []
@@ -8384,7 +8883,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\missiles.mwl",
-						"line": 152,
+						"line": 253,
 						"column": 1
 					},
 					"gettext": []
@@ -10689,22 +11188,88 @@ export const gameData = {
 			},
 			"children": [
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "bossTransitions",
-						"name": "Scenario.bossTransitions"
+						"columns": "depth:number|kind:string|next:string|victory:string"
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "5|goo|continue|Goo bursts apart in a spray of ooze. You have slain the Sewers boss!;10|tengu|continue|Tengu collapses, his tricks spent at last. You have slain the Prison boss!;15|dm300|continue|DM-300 grinds to a halt. You have slain the Caves boss!;20|king|continue|The Dwarf King crumbles from his throne. You have slain the City boss!;25|yog|continue|Yog-Dzewa dissolves into screaming dark. The Amulet lies before you..."
+								"depth": "5",
+								"kind": "goo",
+								"next": "continue",
+								"victory": "Goo bursts apart in a spray of ooze. You have slain the Sewers boss!"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
 								"line": 7,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "10",
+								"kind": "tengu",
+								"next": "continue",
+								"victory": "Tengu collapses, his tricks spent at last. You have slain the Prison boss!"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+								"line": 13,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "15",
+								"kind": "dm300",
+								"next": "continue",
+								"victory": "DM-300 grinds to a halt. You have slain the Caves boss!"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+								"line": 19,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "20",
+								"kind": "king",
+								"next": "continue",
+								"victory": "The Dwarf King crumbles from his throne. You have slain the City boss!"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+								"line": 25,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "25",
+								"kind": "yog",
+								"next": "continue",
+								"victory": "Yog-Dzewa dissolves into screaming dark. The Amulet lies before you..."
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+								"line": 31,
 								"column": 1
 							},
 							"gettext": []
@@ -10718,22 +11283,88 @@ export const gameData = {
 					"gettext": []
 				},
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "scenarioChapters",
-						"name": "Scenario.chapters"
+						"columns": "id:string|firstDepth:number|bossDepth:number|bossKind:string"
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "sewers|1|5|goo;prison|6|10|tengu;caves|11|15|dm300;city|16|20|king;halls|21|25|yog"
+								"id": "sewers",
+								"firstDepth": "1",
+								"bossDepth": "5",
+								"bossKind": "goo"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
-								"line": 16,
+								"line": 42,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "prison",
+								"firstDepth": "6",
+								"bossDepth": "10",
+								"bossKind": "tengu"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+								"line": 48,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "caves",
+								"firstDepth": "11",
+								"bossDepth": "15",
+								"bossKind": "dm300"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+								"line": 54,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "city",
+								"firstDepth": "16",
+								"bossDepth": "20",
+								"bossKind": "king"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+								"line": 60,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "halls",
+								"firstDepth": "21",
+								"bossDepth": "25",
+								"bossKind": "yog"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+								"line": 66,
 								"column": 1
 							},
 							"gettext": []
@@ -10741,28 +11372,90 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
-						"line": 13,
+						"line": 39,
 						"column": 1
 					},
 					"gettext": []
 				},
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "scenarioQuests",
-						"name": "Scenario.quests"
+						"columns": "id:string|depths:list|rollBase:number",
+						"list_delimiter": ","
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "ghost|2,3,4|5;wandmaker|7,8,9|10;shopkeeper|6,11,16,21|0;blacksmith|12,13,14|15;imp|17,18,19|20"
+								"id": "ghost",
+								"depths": "2,3,4",
+								"rollBase": "5"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
-								"line": 25,
+								"line": 78,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "wandmaker",
+								"depths": "7,8,9",
+								"rollBase": "10"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+								"line": 83,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "shopkeeper",
+								"depths": "6,11,16,21",
+								"rollBase": "0"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+								"line": 88,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "blacksmith",
+								"depths": "12,13,14",
+								"rollBase": "15"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+								"line": 93,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "imp",
+								"depths": "17,18,19",
+								"rollBase": "20"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+								"line": 98,
 								"column": 1
 							},
 							"gettext": []
@@ -10770,28 +11463,74 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
-						"line": 22,
+						"line": 74,
 						"column": 1
 					},
 					"gettext": []
 				},
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "questDefinitions",
-						"name": "QuestLog"
+						"columns": "id:string|conditionSwitch:string|description:string"
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "sadGhost|ghostTargetSlain|Slay the ghost's tormentor.;wandmaker|wandQuestDone|Bring the wandmaker a scroll.;blacksmith|blacksmithDone|Complete the Blacksmith quest.;imp|impDone|Bring dwarf tokens."
+								"id": "sadGhost",
+								"conditionSwitch": "ghostTargetSlain",
+								"description": "Slay the ghost's tormentor."
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
-								"line": 34,
+								"line": 108,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "wandmaker",
+								"conditionSwitch": "wandQuestDone",
+								"description": "Bring the wandmaker a scroll."
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+								"line": 113,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "blacksmith",
+								"conditionSwitch": "blacksmithDone",
+								"description": "Complete the Blacksmith quest."
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+								"line": 118,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "imp",
+								"conditionSwitch": "impDone",
+								"description": "Bring dwarf tokens."
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
+								"line": 123,
 								"column": 1
 							},
 							"gettext": []
@@ -10799,7 +11538,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
-						"line": 31,
+						"line": 105,
 						"column": 1
 					},
 					"gettext": []

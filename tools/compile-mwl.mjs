@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { compileSources, emitModule, extractCatalog } from 'mwg/mwl';
+import { compileSources, contentCatalog, emitModule, extractCatalog } from 'mwg/mwl';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const contentRoot = path.join(root, 'src', 'content');
@@ -45,6 +45,14 @@ function effectSet(traitId, applyTo) {
   return effect.attributes.set;
 }
 
+/** Typed rows of a `[table]` authored in MWL, via the framework's own catalog reader. */
+const catalog = contentCatalog(game);
+function tableRows(id) {
+  const table = catalog.tables.find((candidate) => candidate.id === id);
+  if (!table) throw new Error(`MWL table is missing: ${id}`);
+  return table.rows;
+}
+
 function validateRosterReferences() {
   for (const row of effectSet('monsterRosters', 'entries').split(';')) {
     const [, roster] = row.split('|');
@@ -61,9 +69,8 @@ function validateRosterReferences() {
 }
 
 function validateBossReferences() {
-  for (const row of effectSet('bossTransitions', 'entries').split(';')) {
-    const [, id] = row.split('|');
-    if (!monsterIds.has(id)) throw new Error(`MWL boss transition references unknown monster: ${id}`);
+  for (const row of tableRows('bossTransitions')) {
+    if (!monsterIds.has(String(row.kind))) throw new Error(`MWL boss transition references unknown monster: ${row.kind}`);
   }
 }
 

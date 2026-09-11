@@ -120,7 +120,11 @@ Do not add new authored content as object literals or scattered constants in the
       `mwlContent.ts`; the hand-split `set=` parser and `validateAffixTables()` are gone, and
       `rollGeneratedAffix` uses `Actors.rollAffix`'s own `curse` pool option instead of filtering
       entries by hand. Browser-verified on 0.7.2 with an identical roll distribution (13/7 weapon,
-      13/8 armor, none when ineligible). The remaining ~27 `set=` row-tables still need converting.
+      13/8 armor, none when ineligible). A second batch converted `missileDefinitions`,
+      `curseDefinitions`, `bossTransitions`, `scenarioChapters`, `scenarioQuests`, and
+      `questDefinitions`, whose consumers in `mwlContent.ts`/`monsters.ts` now just map typed rows
+      (the build script's `bossTransitions` validator reads the table through `contentCatalog`).
+      The remaining ~22 `set=` row-tables still need converting.
 - [ ] Update the build, test, package, and browser-smoke documentation so a clean checkout can
       reproduce every generated resource without a local MWG checkout.
 

@@ -1,39 +1,129 @@
 [game]
 schema=0.1
 
-[trait]
+[table]
 id=bossTransitions
-name=Scenario.bossTransitions
-[effect]
-apply_to=entries
-set=5|goo|continue|Goo bursts apart in a spray of ooze. You have slain the Sewers boss!;10|tengu|continue|Tengu collapses, his tricks spent at last. You have slain the Prison boss!;15|dm300|continue|DM-300 grinds to a halt. You have slain the Caves boss!;20|king|continue|The Dwarf King crumbles from his throne. You have slain the City boss!;25|yog|continue|Yog-Dzewa dissolves into screaming dark. The Amulet lies before you...
-[/effect]
-[/trait]
+columns=depth:number|kind:string|next:string|victory:string
+[row]
+depth=5
+kind=goo
+next=continue
+victory=Goo bursts apart in a spray of ooze. You have slain the Sewers boss!
+[/row]
+[row]
+depth=10
+kind=tengu
+next=continue
+victory=Tengu collapses, his tricks spent at last. You have slain the Prison boss!
+[/row]
+[row]
+depth=15
+kind=dm300
+next=continue
+victory=DM-300 grinds to a halt. You have slain the Caves boss!
+[/row]
+[row]
+depth=20
+kind=king
+next=continue
+victory=The Dwarf King crumbles from his throne. You have slain the City boss!
+[/row]
+[row]
+depth=25
+kind=yog
+next=continue
+victory=Yog-Dzewa dissolves into screaming dark. The Amulet lies before you...
+[/row]
+[/table]
 
-[trait]
+[table]
 id=scenarioChapters
-name=Scenario.chapters
-[effect]
-apply_to=entries
-set=sewers|1|5|goo;prison|6|10|tengu;caves|11|15|dm300;city|16|20|king;halls|21|25|yog
-[/effect]
-[/trait]
+columns=id:string|firstDepth:number|bossDepth:number|bossKind:string
+[row]
+id=sewers
+firstDepth=1
+bossDepth=5
+bossKind=goo
+[/row]
+[row]
+id=prison
+firstDepth=6
+bossDepth=10
+bossKind=tengu
+[/row]
+[row]
+id=caves
+firstDepth=11
+bossDepth=15
+bossKind=dm300
+[/row]
+[row]
+id=city
+firstDepth=16
+bossDepth=20
+bossKind=king
+[/row]
+[row]
+id=halls
+firstDepth=21
+bossDepth=25
+bossKind=yog
+[/row]
+[/table]
 
-[trait]
+[table]
 id=scenarioQuests
-name=Scenario.quests
-[effect]
-apply_to=entries
-set=ghost|2,3,4|5;wandmaker|7,8,9|10;shopkeeper|6,11,16,21|0;blacksmith|12,13,14|15;imp|17,18,19|20
-[/effect]
-[/trait]
+columns=id:string|depths:list|rollBase:number
+list_delimiter=,
+[row]
+id=ghost
+depths=2,3,4
+rollBase=5
+[/row]
+[row]
+id=wandmaker
+depths=7,8,9
+rollBase=10
+[/row]
+[row]
+id=shopkeeper
+depths=6,11,16,21
+rollBase=0
+[/row]
+[row]
+id=blacksmith
+depths=12,13,14
+rollBase=15
+[/row]
+[row]
+id=imp
+depths=17,18,19
+rollBase=20
+[/row]
+[/table]
 
-[trait]
+[table]
 id=questDefinitions
-name=QuestLog
-[effect]
-apply_to=entries
-set=sadGhost|ghostTargetSlain|Slay the ghost's tormentor.;wandmaker|wandQuestDone|Bring the wandmaker a scroll.;blacksmith|blacksmithDone|Complete the Blacksmith quest.;imp|impDone|Bring dwarf tokens.
-[/effect]
-[/trait]
+columns=id:string|conditionSwitch:string|description:string
+[row]
+id=sadGhost
+conditionSwitch=ghostTargetSlain
+description=Slay the ghost's tormentor.
+[/row]
+[row]
+id=wandmaker
+conditionSwitch=wandQuestDone
+description=Bring the wandmaker a scroll.
+[/row]
+[row]
+id=blacksmith
+conditionSwitch=blacksmithDone
+description=Complete the Blacksmith quest.
+[/row]
+[row]
+id=imp
+conditionSwitch=impDone
+description=Bring dwarf tokens.
+[/row]
+[/table]
 [/game]

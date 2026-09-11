@@ -2,7 +2,7 @@ import { SpriteSheet } from 'mwg';
 import type { Texture2D } from 'mwg/two-d/render';
 import type { GroundItemKind } from './dungeonConstants';
 import type { SpdSprites } from './images';
-import { MWL_MONSTERS, MWL_SCENARIO_CHAPTERS, MWL_TRAIT_NODES } from './mwlContent';
+import { MWL_MONSTERS, MWL_SCENARIO_CHAPTERS, MWL_TABLE_ROWS, MWL_TRAIT_NODES } from './mwlContent';
 
 function mwlActorFlagSet(flag: string): Set<AnyMonsterId> {
 	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'actorFlags');
@@ -398,19 +398,16 @@ export { liveStats } from './simulation/combat';
 
 /** Scenario boss transitions are authored in MWL; victory handling remains executable scene code. */
 export const BOSSES: Record<number, { kind: MonsterId; victory: string; next: 'continue' | 'end' }> = (() => {
-	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'bossTransitions');
-	if (!node) throw new Error('MWL scenario rule is missing bossTransitions');
-	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
-	const raw = effect?.attributes.set;
-	if (raw === undefined) throw new Error('MWL scenario rule is missing boss transitions');
-	const bosses = Object.fromEntries(raw.split(';').map((entry) => {
-		const [depthText, kind, next, ...victoryParts] = entry.split('|');
-		const depth = Number(depthText);
-		const victory = victoryParts.join('|');
-		if (!Number.isInteger(depth) || !kind || (next !== 'continue' && next !== 'end') || !victory) {
-			throw new Error(`MWL scenario rule has invalid boss transition ${entry}`);
+	// `bossTransitions` is an MWG typed MWL table now; only the `next` column's closed set and the
+	// chapter cross-check remain game-side.
+	const bosses = Object.fromEntries(MWL_TABLE_ROWS('bossTransitions', 'depth').map((row) => {
+		const depth = Number(row.depth);
+		const kind = String(row.kind);
+		const next = String(row.next);
+		if (!Number.isInteger(depth) || !kind || (next !== 'continue' && next !== 'end')) {
+			throw new Error(`MWL scenario rule has invalid boss transition ${kind}`);
 		}
-		return [depth, { kind: kind as MonsterId, victory, next: next as 'continue' | 'end' }];
+		return [depth, { kind: kind as MonsterId, victory: String(row.victory), next: next as 'continue' | 'end' }];
 	})) as Record<number, { kind: MonsterId; victory: string; next: 'continue' | 'end' }>;
 	for (const chapter of MWL_SCENARIO_CHAPTERS) {
 		const boss = bosses[chapter.bossDepth];
