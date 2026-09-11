@@ -6,14 +6,15 @@ import { wallBlockingFrame } from './spdLevelGen/wallBlocking';
 import { InfoWindow } from './ui/infoWindow';
 import { WaterSurface } from './ui/waterSurface';
 import { InventoryWindow, type InventoryEntry } from './ui/inventoryWindow';
-import { createJournalWindow, type JournalPage } from './ui/journalWindow';
+import { createJournalWindow, type JournalPage, type JournalTab } from './ui/journalWindow';
 import { Container, extensions, FillGradient, Graphics, NineSliceSpritePipe, Rectangle, Sprite, Texture, TilingSprite, TilingSpritePipe } from 'pixi.js';
 import { Bar, Blob, FloatingTextStack, Game, Scene2D, Input, Random, SaveSystem, Achievements, ReactionTable, type ReactionRule } from 'mwg';
 import { SceneSimulationAdapter } from './adapters/sceneSimulation';
 import { dispatchHeroAction, type HeroActionPorts } from './adapters/heroActions';
 import { runSearch } from './adapters/searchSimulation';
 import { runMovement } from './adapters/movementSimulation';
-import { resolveAttack } from './simulation/attackResolution';
+import { ALCHEMY_RECIPES, craftAlchemy } from './alchemy';
+import { runAttackResolution } from './adapters/attackSimulation';
 import { simulationRandom } from './adapters/mwgRandom';
 import { MOVES } from './simulation/heroActions';
 import { finishHeroTurn } from './simulation/heroTurn';
@@ -32,7 +33,7 @@ import {
 import { Label, theme, Button, Window } from 'mwg';
 import { Roguelike, Actors, Rpg, World } from 'mwg';
 import { loadSpdSprites } from './images';
-import { rollGeneratedAffix, groundKindForItem, portItemKind, sourceInventoryItem } from './itemKinds';
+import { rollGeneratedAffix, groundKindForItem, portItemKind, sourceInventoryItem, SPECIALTY_BOMB_IDS } from './itemKinds';
 import { ENCHANT_TABLE, GLYPH_TABLE, UNSTABLE_DELEGATES } from './itemAffixes';
 import {
 	POTION_CLASS_BY_PORT_ID,
@@ -112,7 +113,7 @@ import { raisedWallFrame, upperWallFrame, foregroundGrassFrame } from './spdLeve
 import { TRAP_VISUALS, PLANT_VISUALS } from './generated/terrainVisuals';
 import { SPRITE_ANIMATIONS } from './generated/spriteAnimations';
 import { Terrain, type PaintLevel } from './spdLevelGen/paintLevel';
-import { WallDecorationLayer, WaterEmberLayer } from './ui/wallDecorations';
+import { WallDecorationLayer, WaterEmberLayer, WellRippleLayer } from './ui/wallDecorations';
 import { runState, LANGUAGE_KEY } from './runState';
 import { recordRun } from './rankings';
 import { isChallengeEnabled } from './challenges';
@@ -178,6 +179,7 @@ import {
 	GRASS,
 	HIGH_GRASS,
 	DOOR_CLOSED,
+	EMBERS,
 	GAME_KIND_CODES,
 	TERRAIN_KINDS,
 	TERRAIN_FRAME,
@@ -610,6 +612,7 @@ interface SaveShape {
 	timeBubblePresses?: number[];
 	hourglassFreeze?: boolean;
 	hourglassTurnsToCost?: number;
+	alchemyEnergy?: number;
 	heroShield?: number;
 	heroBarrierState?: { layers: { amount: number; decayPerTick?: number }[] };
 	livingEarthArmor?: number;
@@ -1032,6 +1035,8 @@ export class SewersScene extends Scene2D {
 
 	/** switches/variables the quest stage conditions read */
 	private gameState = new Rpg.GameState();
+	/** `Dungeon.energy`: carried alchemical energy, spent by recipes and persisted with the run. */
+	private alchemyEnergy = 0;
 	private quests = new Rpg.QuestLog();
 	/** `Ghost.Quest.spawned` / Wandmaker `spawned` - each NPC appears once per run */
 	private ghostSpawned = false;
@@ -1355,6 +1360,7 @@ export class SewersScene extends Scene2D {
 	/** `HallsLevel.Stream`/`FireParticle` embers over this floor's real `WATER` cells - null off a
 	 * ported Halls depth, or on any other region (no other region has this effect) */
 	private waterEmbers: WaterEmberLayer | null = null;
+	private wellRipples: WellRippleLayer | null = null;
 	/** `InterlevelScene` overlay, held above the world/HUD while a floor transition fades. */
 	private interlevel: { root: Container; backdrop: TilingSprite; elapsed: number; duration: number; curtain: Graphics; message: Label } | null = null;
 
@@ -2028,6 +2034,8 @@ export class SewersScene extends Scene2D {
 		this.branchQuestEntrance = null;
 		this.demonSpawnerFloor?.destroy();
 		this.demonSpawnerFloor = null;
+		this.wellRipples?.destroy({ children: true });
+		this.wellRipples = null;
 		this.stairsSprite = undefined;
 		//the floater layer itself survives the floor (it is re-added below), but its live
 		//texts must not: a damage number from the last floor would hang in mid-air on this one
@@ -2202,6 +2210,18 @@ export class SewersScene extends Scene2D {
 			sheet: SpriteSheet.fromTexture(runState.sprites.terrainFeatures, TILE) });
 		this.featuresMap.addLayer('features', this.featureFrames());
 		this.camera.world.addChild(this.featuresMap);
+		//`WellWater` adds a ripple over active magic wells in the Java scene. The port's
+		//well gameplay markers already identify those cells, so this scene-owned overlay
+		//recreates the visible animation without baking animation state into TileMap.
+		this.wellRipples = null;
+		const wellCells = Array.from(this.portedWellWater.keys(), cell => ({
+			x: cell % this.level.width,
+			y: Math.floor(cell / this.level.width),
+		}));
+		if (wellCells.length > 0) {
+			this.wellRipples = new WellRippleLayer(wellCells);
+			this.camera.world.addChild(this.wellRipples);
+		}
 		if (region === 'halls' && this.portedPaint) {
 			this.demonSpawnerFloor = new TileMap({ width: this.level.width, height: this.level.height,
 				sheet: SpriteSheet.fromTexture(runState.sprites.hallsSpecial, TILE) });
@@ -3678,6 +3698,11 @@ export class SewersScene extends Scene2D {
 				this.say(t('port.log.pickupgold', { amount: payload.quantity }), 'positive');
 				return;
 			}
+			if (payload.id === 'energyCrystal') {
+				this.alchemyEnergy += payload.quantity;
+				this.showStatus(this.hero, `+${payload.quantity}`, SPD_STATUS_COLOR.neutral);
+				return;
+			}
 			if (payload.id === 'ironKey' || payload.id === 'goldenKey' || payload.id === 'crystalKey') Actors.identify(payload);
 			this.bag.add(payload);
 			this.say(t('port.log.pickup', { item: this.itemDisplayName(payload.id, payload.identified ?? false, payload.instanceId) }), 'positive');
@@ -4023,13 +4048,19 @@ export class SewersScene extends Scene2D {
 		potionPurity: () => this.applyPotionPurity(),
 	};
 
+	/** `PotionOfHealing.cure()`: the curable debuffs this port models, shared by the potion and by
+	 * `RegrowthBomb`, which calls the same `cure()`/`heal()` pair. */
+	private cureHeroBuffs(): void {
+		for (const b of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'drowsy'] as BuffId[]) delete this.hero.buffs[b];
+	}
+
 	private applyPotionHealing(): void {
 		//PotionOfHealing.apply(): cure() always runs first regardless of the challenge below.
 		//Real cure() also detaches Bleeding/Blindness/Drowsy/Slow/Vertigo. Only Bleeding and
 		//Drowsy exist in this port so far, and both are cleared here. It does NOT touch Burning; that was
 		//a real, unwarranted addition here (2026-09-09 item-system audit) - a healing potion
 		//does not extinguish fire in real Java, removed.
-		for (const b of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'drowsy'] as BuffId[]) delete this.hero.buffs[b];
+		this.cureHeroBuffs();
 		if (isChallengeEnabled('no_healing')) {
 			//PotionOfHealing.heal()'s real NO_HEALING branch: no Healing buff at all (so none
 			//of the restored_*-talent triggers below fire either, since they key off the heal
@@ -4919,7 +4950,16 @@ export class SewersScene extends Scene2D {
 			const payload = remainsGold || fixedGold
 				? { id: 'gold', quantity: Number((remainsGold ?? fixedGold)![1]), stackable: true, identified: true }
 				: sourceInventoryItem(item.kind, item.sourceClass, (kind) => this.newItemInstanceId(kind));
-			if (kind && !this.groundItemAt(item.x, item.y)) this.spawnGroundItem(kind, item.x, item.y, payload, chest, item.note?.includes('forSale'));
+			if (payload && item.quantity !== undefined) payload.quantity = item.quantity;
+			if (!kind || this.groundItemAt(item.x, item.y)) continue;
+			//Java's Heap placement is guaranteed to target a valid level cell. A compact room
+			//adapter can retain the source cell after terrain reduction, which used to strand
+			//keys in walls and make the corresponding locked door impossible to open. Keep the
+			//authored cell when valid; otherwise use the normal valid-cell chooser.
+			const validCell = this.level.inside(item.x, item.y) && this.level.passable(item.x, item.y)
+				&& !(this.hasStairs && this.stairs.x === item.x && this.stairs.y === item.y);
+			if (validCell) this.spawnGroundItem(kind, item.x, item.y, payload, chest, item.note?.includes('forSale'));
+			else this.placeQueuedPortedItem(item.kind, floor.rooms, payload);
 		}
 		// Java's RegularLevel places Level.itemsToSpawn after ordinary room drops using a valid
 		// StandardRoom cell. The generator bridge preserves the queue; consume it here so crystal
@@ -5109,14 +5149,46 @@ export class SewersScene extends Scene2D {
 		}
 	}
 
-	/**
-	 * Ground fire as an `mwg` core Blob: explosive and burning traps seed it (and the
-	 * fireblast wand below), it diffuses one step per hero turn, and standing in volume ≥1
-	 * ignites. Monster-side ignition is not modelled (monster turns never read the blob) -
-	 * stated, not silent.
-	 */
+	/** `Fire.evolve()` in Java: age every existing fire cell by exactly one, burn its contents,
+	 * then ignite each empty flammable orthogonal neighbour at volume 4. The generic `mwg` Blob
+	 * deliberately diffuses and exponentially decays, so this scene-owned transition preserves
+	 * the Java fire shape without teaching the generic framework about SPD's terrain rules.
+	 * Tengu's separate FireAbility blob deliberately does not use this path. */
 	private spreadFire(): void {
-		this.fire.spread((x, y) => this.level.passable(x, y));
+		const before = this.fire.toJSON().volume;
+		const next = before.map((volume) => volume > 0 ? Math.max(0, volume - 1) : 0);
+		const burning: Array<{ x: number; y: number }> = [];
+		const burntOut: Array<{ x: number; y: number }> = [];
+		const flammableSources = new Set<number>();
+		for (let y = 0; y < this.level.height; y++) for (let x = 0; x < this.level.width; x++) {
+			const cell = this.level.index(x, y);
+			if (before[cell] > 0) {
+				burning.push({ x, y });
+				if (next[cell] <= 0 && this.isFireFlammableTerrain(x, y)) burntOut.push({ x, y });
+				continue;
+			}
+			for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+				const nx = x + dx, ny = y + dy;
+				if (this.level.inside(nx, ny) && before[this.level.index(nx, ny)] > 0) {
+					flammableSources.add(cell);
+					break;
+				}
+			}
+		}
+		for (const cell of flammableSources) {
+			const x = cell % this.level.width, y = Math.floor(cell / this.level.width);
+			if (this.isFireFlammableTerrain(x, y)) {
+				next[cell] = 4;
+				burning.push({ x, y });
+			}
+		}
+		this.fire = Blob.fromJSON({ width: this.level.width, height: this.level.height, volume: next });
+		for (const cell of burning) this.burnFireContents(cell.x, cell.y);
+		for (const cell of burntOut) this.burnFireTerrain(cell.x, cell.y);
+		//A burning plant is removed from the features layer, so redraw it when anything burned;
+		//the terrain half restitches its own converted cell, the same as `plantBloomingGrass`
+		//and `trampleHighGrass` do.
+		if (burning.length > 0) this.featuresMap?.setLayerData('features', this.featureFrames());
 		if (this.fire.volumeAt(this.hero.x, this.hero.y) >= 1 && !this.hero.buffs['burning']) {
 			addBuff(this.hero, 'burning');
 			this.say(t('port.log.firecatches'), 'negative');
@@ -5133,9 +5205,9 @@ export class SewersScene extends Scene2D {
 		//regular-fire branch above grants, since this port's `burning` has no separate
 		//reignite-duration dimension). The wall itself is never spread or decayed here -
 		//Java's `evolve()` is non-diffusing by construction, and the audit's suggested
-		//`spread(passable, 0, 1)` is exactly "never call spread at all". Not reproduced:
-		//spreading regular Fire onto flammable terrain (no flammable map) and burning heaps
-		//(no heap-burn primitive) - the same stated gap as StoneOfBlast's unported half.
+		//`spread(passable, 0, 1)` is exactly "never call spread at all". Regular Fire's own
+		//flammable-terrain spread and heap burning are handled above by `spreadFire`/
+		//`burnFireContents`; this eternal wall fire is deliberately not part of that path.
 		if (this.eternalFire.total() > 0) {
 			if (this.eternalFire.volumeAt(this.hero.x, this.hero.y) >= 1 && !this.hero.buffs['burning']) {
 				addBuff(this.hero, 'burning');
@@ -5262,6 +5334,51 @@ export class SewersScene extends Scene2D {
 		}
 	}
 
+	/** `Fire.evolve()` -> `Dungeon.level.destroy(cell)`: convert the flammable terrain this
+	 * port can represent to Java's passable, non-flammable `EMBERS` result. Region decorations
+	 * still need their own seam; the raw `FURROWED_GRASS` id is now handled as grass. */
+	private burnFireTerrain(x: number, y: number): void {
+		if (!this.level.inside(x, y)) return;
+		const cell = this.level.index(x, y);
+		if (!this.isFireFlammableTerrain(x, y)) return;
+		if (this.portedPaint) this.portedPaint.map[cell] = Terrain.EMBERS;
+		this.level.set(x, y, EMBERS);
+		//the burned cell's new face has to be stitched in, exactly as a grass change is
+		this.restitchTilesAround(x, y);
+		this.burnFireContents(x, y);
+	}
+
+	private isFireFlammableTerrain(x: number, y: number): boolean {
+		const cell = this.level.index(x, y);
+		const raw = this.portedPaint?.map[cell];
+		return raw === Terrain.GRASS || raw === Terrain.HIGH_GRASS || raw === Terrain.FURROWED_GRASS
+			|| raw === Terrain.DOOR || raw === Terrain.LOCKED_DOOR || raw === Terrain.BARRICADE
+			|| (!this.portedPaint && [GRASS, HIGH_GRASS, DOOR, DOOR_CLOSED].includes(this.level.get(x, y)));
+	}
+
+	/** `Fire.burn()`/`Heap.burn()`/`Plant.wither()`: apply the content-side fire effects while
+	 * a cell still carries fire. The compact port has no unique scroll heaps, so every current
+	 * ground `scroll` is the ordinary non-unique kind Java burns; bombs reuse the existing blast
+	 * routine, and feature removal keeps the burned plant from being triggered later. */
+	private burnFireContents(x: number, y: number): void {
+		const cell = this.level.index(x, y);
+		const ground = this.groundItemAt(x, y);
+		if (ground?.kind === 'dewdrop' || ground?.kind === 'scroll') {
+			this.removeGroundItem(ground);
+		} else if (ground?.kind === 'bomb' && ground.item) {
+			this.detonateGroundBomb(ground, new Set());
+		} else if (ground?.kind === 'meat') {
+			//`Heap.burn()` replaces MysteryMeat/FrozenCarpaccio with ChargrilledMeat. The
+			//compact port's `meat` ground kind is its MysteryMeat stand-in, so preserve the
+			//heap and replace its payload with the newly-authored cooked-food identity.
+			ground.item = { id: 'chargrilledMeat', quantity: 1, identified: true, sourceClass: 'ChargrilledMeat' };
+		}
+		const plantIndex = this.portedPaint?.plants.findIndex((plant) => plant.pos === cell && !plant.kind.startsWith('wellWater:')) ?? -1;
+		if (plantIndex >= 0) this.portedPaint!.plants.splice(plantIndex, 1);
+		this.manualPlants.delete(cell);
+		if (this.portedFeatures.has(cell) && this.portedFeatures.kindAt(cell)?.startsWith('plant:')) this.portedFeatures.remove(cell);
+	}
+
 	/** `Hero.search()`: the pure "which cell, if any" decision now runs through
 	 * `runSearch`/`SimulationRuntime` (see `SIMULATION_ARCHITECTURE.md`'s "Step 7"); this method
 	 * keeps every scene-owned effect the decision used to inline - discovering the cell,
@@ -5348,6 +5465,13 @@ export class SewersScene extends Scene2D {
 		} else if (raw === Terrain.SIGN) {
 			name = t('levels.level.sign_name');
 			desc = t('levels.level.sign_desc');
+		} else if (raw === Terrain.ALCHEMY) {
+			//`AlchemyPot.onOperate()` opens the recipe window in Java. This port has no
+			//separate cell-targeting interaction, so examining the pot is its direct action
+			//surface; the existing generic picker then presents recipes whose ingredients
+			//are currently in the bag.
+			this.openAlchemyRecipes();
+			return;
 		} else if (raw === Terrain.WELL) {
 			name = t('levels.level.well_name');
 		} else if (raw === Terrain.EMPTY_WELL) {
@@ -8195,7 +8319,7 @@ export class SewersScene extends Scene2D {
 			}
 		}
 		if (spots.length > 0) this.spawnMonster('dm300', Random.element(spots)!);
-		this.say('The ground trembles - DM-300 is here.', 'warning');
+		this.say(t('port.log.dm300arrives'), 'warning');
 	}
 
 	/** `CavesBossLevel.PylonEnergy.evolve()`: damage grounded characters standing on
@@ -9131,7 +9255,7 @@ export class SewersScene extends Scene2D {
 			return false;
 		}
 
-		const attackRoll = resolveAttack(attacker, defender, simulationRandom, false, surprise);
+		const attackRoll = runAttackResolution(attacker, defender, simulationRandom, false, surprise);
 		if (!attackRoll.hit) {
 			runState.audio.cue('miss', 0.55);
 			defender.sleeping = false;
@@ -10373,6 +10497,29 @@ export class SewersScene extends Scene2D {
 		//now real for bat/necromancer/guard (`LIMITED_DROP_DECAY`, below) - see `PORT_COVERAGE.md`
 		//for the remaining kinds whose base chance/category still diverges from Java outright.
 		if (creature.kind && !creature.isNPC) {
+			//`Goo.die()` and `DM300.die()` (tag v3.3.8) each roll
+			//`Random.chances({0:0, 1:0, 2:6, 3:3, 4:1})`, then drop that many
+			//identified one-unit quest items on random passable neighbours. The port has no
+			//stacking heaps, so each material is placed on the first free sampled neighbour;
+			//the item identity and 60/30/10 distribution remain exact.
+			if (creature.kind === 'goo' || creature.kind === 'dm300') {
+				const materialId = creature.kind === 'goo' ? 'gooBlob' : 'metalShard';
+				const countRoll = Random.int(0, 9);
+				const count = countRoll < 6 ? 2 : countRoll < 9 ? 3 : 4;
+				for (let i = 0; i < count; i++) {
+					const candidates = Roguelike.neighbourOffsets(8)
+						.map(([dx, dy]) => ({ x: creature.x + dx, y: creature.y + dy }));
+					const sampled = Random.element(candidates);
+					const at = sampled && this.level.inside(sampled.x, sampled.y)
+						&& this.level.passable(sampled.x, sampled.y) && !this.groundItemAt(sampled.x, sampled.y)
+						? sampled
+						: candidates.find((cell) => this.level.inside(cell.x, cell.y)
+							&& this.level.passable(cell.x, cell.y) && !this.groundItemAt(cell.x, cell.y));
+					if (at) this.spawnGroundItem('food', at.x, at.y, {
+						id: materialId, quantity: 1, identified: true, sourceClass: materialId,
+					});
+				}
+			}
 			if ((creature.kind === 'statue' || creature.kind === 'armoredStatue') && creature.mimicLoot?.startsWith('statue:')) {
 				try {
 					const payload = JSON.parse(creature.mimicLoot.slice('statue:'.length)) as StatueLoot;
@@ -11083,6 +11230,7 @@ export class SewersScene extends Scene2D {
 			healingLeft: this.healingLeft,
 			sungrassPos: this.sungrassPos,
 			deathlessFuryUsed: this.deathlessFuryUsed,
+			alchemyEnergy: this.alchemyEnergy,
 			weaponAffix: this.weaponAffix,
 			weaponCurseDurability: this.weaponCurseDurability,
 			weaponAugment: this.weaponAugment,
@@ -11124,6 +11272,7 @@ export class SewersScene extends Scene2D {
 		this.deepestDepth = Math.max(this.depth, s.deepestDepth ?? this.depth);
 		this.miningBranchActive = s.miningBranchActive ?? false;
 		this.heroStr = s.str;
+		this.alchemyEnergy = s.alchemyEnergy ?? 0;
 		this.heroAttackSkill = s.attackSkill ?? 10;
 		this.heroDefenseSkill = s.defenseSkill ?? 5;
 		this.talentAccuracy = s.talentAccuracy ?? 0;
@@ -11730,6 +11879,38 @@ export class SewersScene extends Scene2D {
 		this.refresh();
 	}
 
+	/**
+	 * Opens the executable subset of the Java alchemy catalogue. `AlchemyPot` normally
+	 * supports a multi-ingredient recipe window plus an energy pool; this port exposes the
+	 * authored executable recipes through the generic picker and MWG's all-or-nothing
+	 * `craft()` transaction. The carried energy pool and recipe costs are enforced here;
+	 * the multi-ingredient selection window and scrap/add controls remain simplified.
+	 */
+	private openAlchemyRecipes(): void {
+		const recipes = ALCHEMY_RECIPES.filter((recipe) => recipe.energyCost <= this.alchemyEnergy && recipe.ingredients.every((ingredient) => {
+			const item = this.bag.find(ingredient.id);
+			return (item?.quantity ?? 0) >= ingredient.quantity;
+		}));
+		if (recipes.length === 0) {
+			this.say(t('port.log.alchemy.noingredients'), 'negative');
+			return;
+		}
+		this.openItemPicker(
+			`${t('port.ui.alchemy.title')} [${this.alchemyEnergy}]`,
+			recipes.map((recipe) => ({ id: recipe.result.id, instanceId: recipe.id, identified: true, quantity: recipe.result.quantity })),
+			(entry) => {
+				const recipe = ALCHEMY_RECIPES.find((candidate) => candidate.id === entry.instanceId);
+				if (!recipe || recipe.energyCost > this.alchemyEnergy || !craftAlchemy(this.bag, recipe.id)) {
+					this.say(t('port.log.alchemy.unavailable'), 'negative');
+					return;
+				}
+				this.alchemyEnergy -= recipe.energyCost;
+				this.say(t('port.log.alchemy.crafted', { item: this.itemDisplayName(recipe.result.id, true) }), 'positive');
+				this.refreshInventoryPanel();
+			},
+		);
+	}
+
 	/** Runestone use-action dispatch, one entry per ported stone id (was a 7-branch else-if
 	 * chain in `useItemById`, converted to a table per the section-11 KISS note so each newly
 	 * ported stone adds one line, not one more clause). The generic `'stone'` id has no entry
@@ -11920,10 +12101,11 @@ export class SewersScene extends Scene2D {
 	 * and `Bomb.Fuse` detonates it after 2 further turns. Refuses WITHOUT consuming when no
 	 * enemy is visible or no free cell exists around the target (pits/chasms are excluded -
 	 * Java never lights a fuse over a pit either). The blast itself is `detonateGroundBomb`.
-	 * Not reproduced: `EnhanceBomb` alchemy (needs the alchemy system) and the specialty
-	 * bombs it brews - tracked in `PORT_COVERAGE.md`, not faked here. */
-	private useBomb(instanceId?: string): void {
-		const bomb = this.bag.find('bomb', instanceId);
+	 * `EnhanceBomb` recipes now produce identified specialty bomb ids. Their fuse and base
+	 * explosion use this same path; per-bomb payload effects remain explicitly tracked in
+	 * `PORT_COVERAGE.md` until each Java subclass has a matching status/terrain seam. */
+	private useBomb(bombId = 'bomb', instanceId?: string): void {
+		const bomb = this.bag.find(bombId, instanceId);
 		if (!bomb) return;
 		const target = this.nearestVisibleEnemy(8);
 		if (!target) { this.say(t('port.log.bombwasted'), 'negative'); return; }
@@ -11931,8 +12113,8 @@ export class SewersScene extends Scene2D {
 		const at = candidates.find((cell) => this.level.inside(cell.x, cell.y) && this.level.passable(cell.x, cell.y)
 			&& !this.isChasmCell(cell.x, cell.y) && !this.groundItemAt(cell.x, cell.y));
 		if (!at) { this.say(t('port.log.bombwasted'), 'negative'); return; }
-		this.bag.remove('bomb', 1, instanceId);
-		this.spawnGroundItem('bomb', at.x, at.y, { id: 'bomb', quantity: 1, identified: true, sourceClass: 'Bomb', fuseTurns: 2 });
+		this.bag.remove(bombId, 1, instanceId);
+		this.spawnGroundItem('bomb', at.x, at.y, { id: bombId, quantity: 1, identified: true, sourceClass: bombId, fuseTurns: 2 });
 		this.say(t('port.log.bomblit', { target: target.name }), 'positive');
 	}
 
@@ -11942,10 +12124,43 @@ export class SewersScene extends Scene2D {
 		this.spriteFor.delete(g.id);
 	}
 
-	/** `Bomb.explode(cell)`: `explosionRange() = 1` with `NormalIntRange(4 + scalingDepth,
-	 * 12 + 3*scalingDepth)` minus armor on every char caught in it, hero included (a bomb
-	 * does not discriminate - the hero's share runs through `absorbHeroDamage`/`kill` like
-	 * every other source, plus the real `ondeath` line when it kills). Tengu's `BombAbility`
+	/** Applies one already-rolled blast damage amount to one creature with exactly the rules the
+	 * ordinary bomb blast uses - the hero's share through `absorbHeroDamage`/`kill`, a monster's
+	 * through its armor roll (skipped when `pierceArmor`, as `ArcaneBomb` does), Tengu's HP
+	 * bracket, Yog's shield/fist guards, and the sleeping reset. Split out so the non-destructive
+	 * subclasses (Arcane, Shrapnel) can reuse it without their own copy. Returns true when the
+	 * hero died. */
+	private applyBlastDamage(c: Creature, damage: number, pierceArmor: boolean): boolean {
+		if (c.isHero) {
+			damage = this.absorbHeroDamage(damage);
+			this.hero.hp -= damage;
+			this.showDamage(this.hero, damage);
+			if (this.hero.hp <= 0) {
+				this.say(t('items.bombs.bomb.ondeath'), 'negative');
+				this.kill(this.hero, 'fire');
+				return true;
+			}
+			return false;
+		}
+		if (c.kind === 'yog' && this.yogShielded(c)) return false;
+		if (c.kind === 'yogFist' && this.guardFist(c)) return false;
+		if (!pierceArmor) damage = Math.max(0, damage - Random.normalRange(c.armor[0], c.armor[1]));
+		const preHp = c.hp;
+		c.hp -= damage;
+		if (c.kind === 'tengu') this.clampTenguBracket(c, preHp);
+		if (c.kind === 'yog' && c.hp > 0) this.yogDamageHook(c, preHp);
+		this.showDamage(c, damage);
+		c.sleeping = false;
+		if (c.hp <= 0) this.kill(c, 'fire');
+		else if (c.kind === 'tengu') this.tenguBracketJump(c, preHp);
+		return false;
+	}
+
+	/** `Bomb.explode(cell)`: `NormalIntRange(4 + scalingDepth, 12 + 3*scalingDepth)` minus armor
+	 * on every char caught in it, hero included (a bomb does not discriminate - the hero's share
+	 * runs through `absorbHeroDamage`/`kill` like every other source, plus the real `ondeath`
+	 * line when it kills). The radius is the bomb's own `explosionRange()` - `1` for a plain bomb,
+	 * overridden per specialty subclass below. Tengu's `BombAbility`
 	 * reuses this with its own ordnance (`fuseTurns: 3`, range-2 flood fill,
 	 * `NormalIntRange(5 + scalingDepth, 10 + 2*scalingDepth)`), read off the payload's
 	 * `tenguBomb` flag - same routine, same chaining, only the numbers differ. The flood
@@ -11961,42 +12176,109 @@ export class SewersScene extends Scene2D {
 		const at = { x: g.x, y: g.y };
 		this.removeGroundItem(g);
 		const tengu = g.item?.tenguBomb === true;
-		const range = tengu ? 2 : 1;
+		const variant = g.item?.id;
+		//`Bomb.explosionRange()`, per subclass: the base bomb is 1, every specialty bomb
+		//overrides it to 2 except Regrowth (3), Arcane (2) and Shrapnel (8), and Tengu's
+		//`BombAbility` flood-fills 2. This is the radius of the base blast and of the heap chain.
+		const explosionRange = tengu ? 2
+			: variant === 'shrapnelBomb' ? 8
+				: variant === 'regrowthBomb' ? 3
+					: variant === 'arcaneBomb' ? 2
+						: variant && SPECIALTY_BOMB_IDS.has(variant) ? 2
+							: 1;
 		const lo = (tengu ? 5 : 4) + this.depth;
 		const hi = (tengu ? 10 : 12) + (tengu ? 2 : 3) * this.depth;
 		let heroDied = false;
-		for (const c of [...this.creatures]) {
-			if (c.isNPC || c.hp <= 0) continue;
-			if (!this.level.passable(c.x, c.y) || Roguelike.chebyshevDistance(at, c) > range) continue;
-			//`if(!ch.isAlive()) continue` - already-dead chars are skipped, matching the
-			//chained-blast guard above.
-			let damage = Math.max(0, Random.normalRange(lo, hi));
-			if (c.isHero) {
-				damage = this.absorbHeroDamage(damage);
-				this.hero.hp -= damage;
-				this.showDamage(this.hero, damage);
-				if (this.hero.hp <= 0) {
-					this.say(t('items.bombs.bomb.ondeath'), 'negative');
-					this.kill(this.hero, 'fire');
-					heroDied = true;
-				}
+		//`Bomb.explode()` only runs this ordinary blast when `explodesDestructively()` is true.
+		//Regrowth, Arcane and Shrapnel each override that to false and deal their own damage (or
+		//none at all), so giving them the base blast as well was a real, undeclared divergence -
+		//it made a regrowth bomb wound everything it was meant to heal.
+		const destructive = variant !== 'regrowthBomb' && variant !== 'arcaneBomb' && variant !== 'shrapnelBomb';
+		if (destructive) {
+			for (const c of [...this.creatures]) {
+				if (c.isNPC || c.hp <= 0) continue;
+				if (!this.level.passable(c.x, c.y) || Roguelike.chebyshevDistance(at, c) > explosionRange) continue;
+				//`if(!ch.isAlive()) continue` - already-dead chars are skipped, matching the
+				//chained-blast guard above.
+				if (this.applyBlastDamage(c, Math.max(0, Random.normalRange(lo, hi)), false)) heroDied = true;
+			}
+		}
+		//The ten EnhanceBomb subclasses override Bomb.explode() with an additional effect. Java
+		//reaches their targets through a PathFinder distance map and, for Shrapnel, a
+		//ShadowCaster field of view; this port uses one Chebyshev circle of the same radius,
+		//which is the geometric reduction here. Everything else follows each class's own rule:
+		//Arcane and Holy pierce armor, Shrapnel subtracts it, Regrowth heals instead of
+		//damaging, and the three non-destructive classes (already skipped above) never get the
+		//base blast. Java's Freezing/Fire blobs, Sheep lifetimes, Flashbang blindness, ShockBomb
+		//bolts, and Regrowth's seed planting still have no fully equivalent scene primitive, so
+		//those reductions are explicit rather than hidden.
+		const affected = [...this.creatures].filter((c) => !c.isNPC && c.hp > 0
+			&& this.level.passable(c.x, c.y) && Roguelike.chebyshevDistance(at, c) <= (variant === 'shrapnelBomb' ? 8 : 2));
+		if (variant === 'frostBomb') {
+			for (const c of affected) {
+				delete c.buffs['burning'];
+				if (c.buffs['chill']) c.buffs['paralysis'] = Math.max(c.buffs['paralysis'] ?? 0, BUFF_DURATION.frost);
+				else addBuff(c, 'chill');
+			}
+		} else if (variant === 'fireBomb') {
+			for (let y = at.y - 2; y <= at.y + 2; y++) for (let x = at.x - 2; x <= at.x + 2; x++) {
+				if (this.level.inside(x, y) && this.level.passable(x, y) && Roguelike.chebyshevDistance(at, { x, y }) <= 2) this.fire.seed(x, y, 2);
+			}
+		} else if (variant === 'flashbang') {
+			for (const c of affected) addBuff(c, 'daze');
+		} else if (variant === 'shockBomb') {
+			for (const c of affected) addBuff(c, 'paralysis');
+		} else if (variant === 'regrowthBomb') {
+			//`RegrowthBomb.explode()` heals only chars on the hero's alignment, through the
+			//ordinary `PotionOfHealing.cure()`/`heal()`. This port has no standing ally side, so
+			//the hero is the only healee - healing the monsters it was thrown at was a plain bug.
+			//The class's `explodesDestructively()` is false, so its blast deals no damage at all.
+			this.cureHeroBuffs();
+			if (isChallengeEnabled('no_healing')) {
+				this.hero.buffs['poison'] = 4 + Math.floor(this.progression.level / 2);
+				this.say(t('port.log.pharmacophobia'), 'negative');
 			} else {
-				if (c.kind === 'yog' && this.yogShielded(c)) continue;
-				if (c.kind === 'yogFist' && this.guardFist(c)) continue;
-				damage = Math.max(0, damage - Random.normalRange(c.armor[0], c.armor[1]));
-				const preHp = c.hp;
-				c.hp -= damage;
-				if (c.kind === 'tengu') this.clampTenguBracket(c, preHp);
-				if (c.kind === 'yog' && c.hp > 0) this.yogDamageHook(c, preHp);
-				this.showDamage(c, damage);
-				c.sleeping = false;
-				if (c.hp <= 0) this.kill(c, 'fire');
-				else if (c.kind === 'tengu') this.tenguBracketJump(c, preHp);
+				const amount = Math.round(0.8 * this.hero.maxHp + 14);
+				if (amount > this.healingLeft) this.healingLeft = amount;
+			}
+			//Java plants seeds and seeds a `Regrowth` blob across `explosionRange() = 3`; this
+			//port's plantable-terrain seam grows high grass over the same radius instead.
+			for (let y = at.y - 3; y <= at.y + 3; y++) for (let x = at.x - 3; x <= at.x + 3; x++) {
+				if (this.level.inside(x, y) && Roguelike.chebyshevDistance(at, { x, y }) <= 3) this.plantBloomingGrass(x, y);
+			}
+		} else if (variant === 'arcaneBomb') {
+			//`ArcaneBomb.explode()`: the ordinary roll, rounded, with armor pierced.
+			for (const c of affected) {
+				if (this.applyBlastDamage(c, Math.round(Random.normalRange(lo, hi)), true)) heroDied = true;
+			}
+		} else if (variant === 'shrapnelBomb') {
+			//`ShrapnelBomb.explode()`: the ordinary roll minus the target's own armor roll, over
+			//the line-of-sight field up to `explosionRange() = 8` (a circle here).
+			for (const c of affected) {
+				if (this.applyBlastDamage(c, Math.max(0, Random.normalRange(lo, hi)), false)) heroDied = true;
+			}
+		} else if (variant === 'woollyBomb') {
+			let sheepCount = 0;
+			for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)]) {
+				if (sheepCount >= 3) break;
+				const cell = { x: at.x + dx, y: at.y + dy };
+				if (!this.level.inside(cell.x, cell.y) || !this.level.passable(cell.x, cell.y)
+					|| this.creatureAt(cell.x, cell.y) || this.groundItemAt(cell.x, cell.y)) continue;
+				this.spawnSheep(cell);
+				sheepCount++;
+			}
+		} else if (variant === 'holyBomb') {
+			const holyTargets = new Set(['skeleton', 'necroSkeleton', 'necromancer', 'spectralNecromancer', 'ripperDemon', 'demonSpawner']);
+			for (const c of affected) {
+				if (!c.kind || !holyTargets.has(c.kind)) continue;
+				//`HolyBomb.explode()`: an extra 50% of the ordinary roll, rounded, armor-piercing.
+				const bonus = Math.round(Random.normalRange(4 + this.depth, 12 + 3 * this.depth) * 0.5);
+				if (this.applyBlastDamage(c, bonus, true)) heroDied = true;
 			}
 		}
 		for (const other of [...this.groundItems]) {
 			if (other.kind !== 'bomb' || !other.item || chained.has(other.id)) continue;
-			if (!this.level.passable(other.x, other.y) || Roguelike.chebyshevDistance(at, other) > range) continue;
+			if (!this.level.passable(other.x, other.y) || Roguelike.chebyshevDistance(at, other) > explosionRange) continue;
 			if (this.detonateGroundBomb(other, chained)) heroDied = true;
 		}
 		return heroDied;
@@ -12339,9 +12621,10 @@ export class SewersScene extends Scene2D {
 		const entry = (item: { id: string; quantity: number; instanceId?: string; level?: number; identified?: boolean; cursed?: boolean; sourceClass?: string }): InventoryEntry => {
 			const id = item.id;
 			let frame = ({ clothArmor: 176, armor: 176, armorReward: 176, weaponReward: 96,
-				food: 437, meat: 432, seed: 58, waterskin: 480, velvetPouch: 482, cloak: 240, hourglass: 240,
+				food: 437, meat: 432, chargrilledMeat: 432, seed: 58, waterskin: 480, velvetPouch: 482, cloak: 240, hourglass: 240,
 				spiritBow: 144, wand: 208, holyTome: 246, darkGold: 453, dwarfToken: 454, kingsCrown: 60, amulet: 61, bomb: 80,
 				corpseDust: 465 } as Record<string, number>)[id] ?? 0;
+			if (SPECIALTY_BOMB_IDS.has(id)) frame = 80;
 			//Every distinct runestone shares the generic stone icon frame (no per-type art here,
 			//the same economy as the single shared wand/cloak icons) - one prefix rule rather
 			//than a per-id entry that grows with every newly-ported stone.
@@ -12349,8 +12632,8 @@ export class SewersScene extends Scene2D {
 			let action: string | undefined;
 			if (id.startsWith('potion')) { frame = 352; action = capitalize(t('items.potions.potion.ac_drink')); }
 			else if (id.startsWith('scroll')) { frame = 304; action = capitalize(t('items.scrolls.scroll.ac_read')); }
-			else if (id === 'bomb') action = capitalize(t('items.bombs.bomb.ac_lightthrow'));
-			else if (id === 'food' || id === 'meat') action = capitalize(t('items.food.food.ac_eat'));
+			else if (id === 'bomb' || SPECIALTY_BOMB_IDS.has(id)) action = capitalize(t('items.bombs.bomb.ac_lightthrow'));
+			else if (id === 'food' || id === 'meat' || id === 'chargrilledMeat') action = capitalize(t('items.food.food.ac_eat'));
 			else if (id === 'waterskin') action = 'Drink';
 			else if (id === 'seed') action = 'Plant';
 			else if (id === 'pickaxe') action = capitalize(t('items.quest.pickaxe.ac_mine'));
@@ -12380,14 +12663,19 @@ export class SewersScene extends Scene2D {
 		this.positionInterface(Game.current.width, Game.current.height);
 	}
 
-	/** `WndJournal`: translated region lore plus live quest progress for this run. */
+	/** `WndJournal`: guide, notes, and the per-run identification catalogue. */
 	private openJournal(): void {
 		if (this.journalOpen) return;
 		this.inventoryOpen = false;
 		if (this.inventoryPanel) this.inventoryPanel.visible = false;
-		const pages: JournalPage[] = (['sewers', 'prison', 'caves', 'city', 'halls'] as const).map(region => ({
+		const regionPages: JournalPage[] = (['sewers', 'prison', 'caves', 'city', 'halls'] as const).map(region => ({
 			title: t(REGION_KEYS[region]),
 			body: t(`journal.document.intros.${region}.body`),
+		}));
+		const guideKeys = ['intro', 'food', 'identifying', 'searching', 'positioning', 'looting', 'strength', 'upgrades', 'magic', 'levelling', 'surprise_attacks', 'dieing'] as const;
+		const guidePages: JournalPage[] = guideKeys.map(key => ({
+			title: t(`journal.document.adventurers_guide.${key}.title`),
+			body: t(`journal.document.adventurers_guide.${key}.body`),
 		}));
 		const quests = [
 			['sadGhost', 'windows.wndsadghost.title'],
@@ -12395,14 +12683,35 @@ export class SewersScene extends Scene2D {
 			['blacksmith', 'windows.wndblacksmith.title'],
 			['imp', 'windows.wndimp.title'],
 		] as const;
-		pages.push({
+		const notesPages: JournalPage[] = [{
 			title: t('windows.wndjournal.notes'),
 			body: quests.map(([id, key]) => t('port.journal.queststatus', {
 				quest: t(key),
 				status: t(`port.journal.${this.quests.status(id)}`),
 			})).join('\n\n'),
-		});
-		this.journalWindow = createJournalWindow(pages, () => this.closeJournal());
+		}];
+		const potionIds = Object.keys(POTION_CLASS_BY_PORT_ID).filter(id => id !== 'potion');
+		const scrollIds = ['scrollIdentify', 'scrollUpgrade', 'scrollCleanse', 'scrollMirror', 'scrollRecharging', 'scrollTeleportation', 'scrollLullaby', 'scrollMapping', 'scrollRage', 'scrollRetribution', 'scrollTerror'];
+		const known = (id: string): boolean => this.bag.items.some(item => item.id === id && item.identified !== false);
+		const itemLine = (id: string): string => `${known(id) ? '✓' : '?'} ${this.itemDisplayName(id, known(id))}`;
+		const itemPages: JournalPage[] = [{
+			title: t('port.ui.journal.items'),
+			body: [
+				t('port.ui.journal.potions'), potionIds.map(itemLine).join('\n'), '',
+				t('port.ui.journal.scrolls'), scrollIds.map(itemLine).join('\n'), '',
+				t('port.ui.journal.rings'), Object.keys(RING_DEFS).map(id => itemLine(`ring_${id}`)).join('\n'),
+			].join('\n'),
+		}];
+		//Java's WndJournal tracks identification globally by item class. This compact port
+		//only persists per-instance `identified` flags, so the catalogue marks a class known
+		//when a carried instance is known; the tab shape is retained and the limitation is
+		//explicit rather than presenting false run-wide identification state.
+		const tabs: JournalTab[] = [
+			{ label: t('port.ui.journal.guide'), pages: guidePages },
+			{ label: t('windows.wndjournal.notes'), pages: [...regionPages, ...notesPages] },
+			{ label: t('port.ui.journal.items'), pages: itemPages },
+		];
+		this.journalWindow = createJournalWindow(tabs, () => this.closeJournal());
 		this.journalOpen = true;
 		this.stage.addChild(this.journalWindow);
 		this.positionInterface(Game.current.width, Game.current.height);
@@ -12411,6 +12720,10 @@ export class SewersScene extends Scene2D {
 	private closeJournal(): void {
 		this.journalOpen = false;
 		this.journalWindow?.close();
+		// A closed `mwg/ui` Window is spent: its internal container is gone, so any later
+		// `positionInterface` assignment (`journalWindow.x = ...`) throws on the null inner object.
+		// Dropping the reference is what makes the guard in `positionInterface` mean anything.
+		this.journalWindow = undefined;
 	}
 
 	private useItemById(id: string, instanceId?: string): void {
@@ -12418,7 +12731,7 @@ export class SewersScene extends Scene2D {
 		this.requestedItemId = id;
 		this.requestedItemInstanceId = instanceId;
 		try {
-			if (id === 'food' || id === 'meat') this.onAction('eat');
+			if (id === 'food' || id === 'meat' || id === 'chargrilledMeat') this.onAction('eat');
 			else if (id === 'waterskin') this.onAction('quaff');
 			else if (id.startsWith('potion')) this.onAction('quaff');
 			else if (id.startsWith('scroll')) this.onAction(id === 'scrollUpgrade' ? 'upgrade' : 'read');
@@ -12432,7 +12745,7 @@ export class SewersScene extends Scene2D {
 			else if (id === 'cloak') this.useCloak(instanceId);
 			else if (id.startsWith('stoneOf')) this.useStoneById(id, instanceId);
 			else if (id === 'candle') this.useCandle(instanceId);
-			else if (id === 'bomb') this.useBomb(instanceId);
+			else if (id === 'bomb' || SPECIALTY_BOMB_IDS.has(id)) this.useBomb(id, instanceId);
 			else if (id === 'stylus') this.useStylus(instanceId);
 			else if (id === 'kingsCrown') this.useKingsCrown(instanceId);
 		} finally {
@@ -12894,6 +13207,7 @@ export class SewersScene extends Scene2D {
 		this.waterSurface?.update(dt);
 		this.wallDecorations?.update(dt, (x, y) => this.fov.isVisible(x, y));
 		this.waterEmbers?.update(dt, (x, y) => this.fov.isVisible(x, y));
+		this.wellRipples?.update(dt, (x, y) => this.fov.isVisible(x, y));
 
 		//the hit-flash fades by clearing only the additive term, never the tint - tint is a
 		//creature's identity colour here, and resetColor() would wipe the sprite's own art

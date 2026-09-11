@@ -37,6 +37,7 @@ export const Terrain = {
 	BARRICADE: 13,
 	EMPTY_SP: 14,
 	HIGH_GRASS: 15,
+	FURROWED_GRASS: 30,
 	SECRET_DOOR: 16,
 	SECRET_TRAP: 17,
 	TRAP: 18,
@@ -69,7 +70,7 @@ const PASSABLE_TERRAIN = new Set<number>([
 
 export function isPassableTerrain(terrain: number): boolean { return PASSABLE_TERRAIN.has(terrain); }
 
-export interface GroundItem { pos: number; kind: string; note?: string; sourceClass?: string; }
+export interface GroundItem { pos: number; kind: string; note?: string; sourceClass?: string; quantity?: number; }
 export interface PlacedMob { pos: number; kind: string; loot?: string; }
 export interface PlacedTrap { kind: string; hidden: boolean; active: boolean; }
 export interface Transition { pos: number; type: 'surface' | 'regularEntrance' | 'regularExit' | 'branchExit'; branch?: number; }

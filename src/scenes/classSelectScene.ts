@@ -62,7 +62,8 @@ export class ClassSelectScene extends Scene2D {
 			const button = new Button({ width: 35, height: 30, icon: portrait, onClick: () => {
 				if (!classUnlocked(id, this.badges)) {
 					name.setText(capitalize(t(CLASSES[id].nameKey)));
-					description.setText(t('port.ui.locked', { hint: CLASS_UNLOCK_HINT[id] }));
+					const hintKey = CLASS_UNLOCK_HINT[id];
+					description.setText(t('port.ui.locked', { hint: hintKey ? t(hintKey) : '' }));
 				} else {
 					this.selected = id;
 					background.texture = runState.sprites[CLASS_SPLASH[id]];

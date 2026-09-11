@@ -7,6 +7,61 @@ longer the goal, and Java's own bugs and limitations are not reproduced).
 
 ## 2026-09-11 mwg alignment pass
 
+- **`Fire.evolve()` / `Level.destroy()` / `Heap.burn()` / `Plant.wither()`** — `main.ts`'s
+  scene-owned `spreadFire`, `burnFireTerrain`, and `burnFireContents`, plus `Terrain.EMBERS` and
+  raw `FURROWED_GRASS` in the level bridge. **Ported for the representable terrain/content slice:**
+  existing cells lose exactly one volume per turn, empty flammable orthogonal neighbours ignite at
+  volume 4, active cells burn their scroll/dewdrop heap, detonate bombs, convert Mystery Meat to
+  Chargrilled Meat, and wither plants; expired grass, furrowed grass, doors, locked doors, and
+  barricades become passable `EMBERS`. A burned cell restitches its own tile face and the
+  features layer is redrawn when a plant withers, the same redraw every grass change already
+  performs - without it the terrain changed in the model only. The generic MWG Blob remains
+  intentionally uninvolved in this SPD-specific transition. Sewer region wall decoration, webs,
+  and Java's full heap/occupant subtype rules remain **Not ported** and are kept out of the coarse
+  terrain model.
+
+- **`Fireball` title flame / `Emitter.pour` / `Flame`** — `src/ui/titleFlame.ts` now uses MWG's
+  `ParticleEmitter.frames` for the `FLAME1`/`FLAME2` film, with Java's 10 particles/second,
+  one-second lifetime, upward motion, and a per-particle lateral angle/speed/spin range so the
+  flame does not form a straight column. **Simplified presentation:** MWG's
+  generic emitter has no per-spawn x/y jitter or Java `heightLimit` clamp, and its linear alpha
+  range replaces Java's two-part fade curve; glow, flare, and local colour-only sparks remain.
+
+- **The MWL item catalogue now resolves its names through SPD's real message keys, and
+  `tools/i18nCheck.ts` is green.** The catalogue had invented keys for items that do exist as Java
+  classes - `items.seeds.<plant>.name` for the twelve seeds, `items.food.pasty.name`,
+  `items.bombs.doublebomb.name`, and thirty `port.name.alchemy.*` alchemy outputs - so `mwg/i18n`
+  answered every one of them with the raw key string, in all 19 languages, and the offline check
+  reported 46 failures (15 of them already on `HEAD`). They now use the real keys: seeds are
+  `plants.<plant>$seed.name` (`Rotberry.Seed` is an inner class), `DoubleBomb` is
+  `items.bombs.bomb$doublebomb.name`, `Pasty` is `items.food.pasty.pasty`, and the elixirs, brews,
+  arcane resin, liquid metal, blandfruit, alchemize and ten spell outputs name themselves through
+  `items.potions.elixirs.*`, `items.potions.brews.*`, `items.arcaneresin.name`,
+  `items.liquidmetal.name`, `items.food.blandfruit.name`, `items.spells.alchemize.name` and
+  `items.spells.*`. Only the four catalogue entries with no single SPD class behind them keep a
+  port key (scroll-to-stone, the generic exotic potion and scroll, and `Bomb.EnhanceBomb`), added
+  to English and French. The same pass keyed the port-authored DM-300 arrival line
+  (`port.log.dm300arrives`, was a raw `say()` literal) and added the English base entries for the
+  new journal tabs and the bag's filter labels, which had translations but no English original.
+  `npm run i18n`/`npm run i18n:check` still need a `--spd-root`, and this session's checkout makes
+  the extractor fail on stray MWL `set=` tokens, so the catalogue was not regenerated - every key
+  used here is one the shipped catalogue already carries.
+  **Two more defects were found by the live browser pass in section 10 of `ROADMAP.md`, both
+  invisible to `tsc`/build/suites.** (1) `CLASSES[id].nameKey` came straight from
+  `classes.mwl` and used invented `port.name.<class>` keys for five of the six classes, so class
+  select rendered the raw string `Port.name.rogue`; the five now use SPD's real
+  `actors.hero.heroclass.<class>` keys (`CLASS_KEYS` already used them for log lines), leaving
+  only the Cleric on a port key, and `tools/i18nCheck.ts` gained a `CLASSES`/`CLASS_UNLOCK_HINT`
+  rule so a raw class name cannot pass again. The same screen's locked hint was an English
+  literal in the MWL, now `port.class.<class>.unlockhint` (English and French; Java has no such
+  string at all - it never states an unlock condition). (2) `closeJournal()` left `journalWindow`
+  pointing at a closed `mwg/ui` `Window`; the next `positionInterface` call then threw
+  `Cannot set properties of null (setting 'x')`, which broke the inventory panel that calls it
+  (`refreshInventoryPanel`) for the rest of the run. `closeJournal` now drops the reference, so
+  the `if (this.journalWindow)` guard means something. The inventory's four filter tabs were also
+  hardcoded English, now `port.ui.bag.*` (French `Équip.` kept short deliberately - the buttons
+  are 35px wide and the fully-spelled word overflowed).
+
 - **`mwg` 0.7.6 adopted (2026-09-11).** Published latest, pin moved from `^0.7.4`. Two changes,
   neither needing port code: `Blob.spread` now **returns the cells it just emptied**, which is the
   burnout hook the flamable work was waiting for (`GEOMETRY-AND-FIRE.md` §4.2 asked for exactly
@@ -121,9 +176,17 @@ longer the goal, and Java's own bugs and limitations are not reproduced).
   `FURROWED_GRASS` (trampled high grass, which keeps the flag) and the `SewerLevel` case where
   `REGION_DECO`/`REGION_DECO_ALT` are force-marked flamable (`flags[REGION_DECO]` is `STATUE`'s,
   so it is the level, not the terrain, that makes those burn). Recorded here rather than fixed in place because the whole flammable model is a gap:
-  the port has no flamable map at all and `spreadFire()` says so ("no flammable map", "no
-  heap-burn primitive"), and `gameBridge.ts` collapses `EMBERS` to `floor`, so burned ground
-  cannot even be represented in the live level. The full scoping, both sides read, is
+  the port still has no complete flamable map or heap-burn primitive, and `spreadFire()` retains
+  those explicit gaps. This pass adds the first live slice: fire decays in place, and the
+  representable grass/door cells burn out into a distinct passable `EMBERS` kind (with plants
+  removed), rather than collapsing back to `floor`. `FURROWED_GRASS`, region decorations,
+  occupant ignition is still handled only by the existing hero/monster fire pass, while ground
+  scrolls/dewdrops are destroyed, bombs detonate, and plants wither while a fire cell is active.
+  Meat-to-chargrilled conversion is now ported for the compact Mystery Meat heap: active fire
+  replaces it with the authored `chargrilledMeat` identity, preserving the heap and ordinary-food
+  eat path. Region decorations remain unported; ordinary fire now propagates orthogonally onto
+  representable grass/door terrain with Java's volume-4 seed. The
+  full scoping, both sides read, is
   `tools/scratch/mwg-proposal/GEOMETRY-AND-FIRE.md`, which also corrects two claims of mine in
   ROADMAP.md: `TerrainKind.flags`/`extras` and the `Scheduler` priority are **not** in the
   published 0.7.3 - both are in the unpublished 0.7.4 checkout.
@@ -220,7 +283,23 @@ The WAND, RING, ARTIFACT, and FOOD generator deck class lists and weights now li
 
 The generated potion, scroll, seed, runestone, food, and bomb item identities now live in
 `src/content/consumables.mwl`; `spdKeys.ts` consumes their MWL names while retaining explicit
-aliases for runtime-only quest items. Their executable use effects remain in the game hooks.
+aliases for runtime-only quest items. `sourceInventoryItem` now normalizes both Java class names
+and painter short ids (`PotionOfLevitation`/`potionOfLevitation`) to the same appearance-table id;
+the lowercase painter form previously crashed on pickup. Their executable use effects remain in
+the game hooks.
+
+Active `WellWater` cells now have a scene-owned, FOV-gated pair of expanding ripple rings over
+the well. This reproduces the Java water-surface animation's visible intent; the port simplifies
+the underlying effect to deterministic vector rings rather than Java's shared ripple emitter.
+
+`WndJournal` now exposes Guide, Notes, and Items tabs. Guide pages use the bundled adventurer
+documentation, Notes retains regional lore and quest status, and Items lists potion/scroll/ring
+classes with the current known/unknown state. The identification state is **Simplified** because
+this port persists `identified` on carried instances rather than Java's run-wide item-class journal.
+
+Ground items adopted from room painters now retain their authored cell only when it is a valid,
+passable non-stair cell; if terrain reduction leaves a key or other queued item inside a wall, the
+port relocates it through the normal valid-cell chooser instead of creating an unreachable pickup.
 
 The SewerLevel trap class order and weights now live in `src/content/dungeon-rules.mwl`; the
 SewerPainter adapter validates and reads the depth-specific MWL rule while retaining Java's
@@ -252,13 +331,16 @@ Hero progression's maximum level and experience-curve coefficients are authored 
 `src/content/progression-rules.mwl`; `main.ts` retains only the formula adapter consumed by
 MWG's `Progression` class.
 
-Alchemy ingredient energy values and the currently portable food recipes are authored in
-`src/content/alchemy.mwl`; `src/alchemy.ts` parses them and resolves them through MWG's
-all-or-nothing `craft()` transaction. The same MWL resource now contains a manifest of every
-recipe registered by SPD's `Recipe.java`, including the recipes whose item effects are not yet
-implemented here. The alchemy-pot selection window, energy accounting, random seed-to-potion
-brewing, catalysts, exotic items, and specialty bomb recipes remain unported until the scene has
-an interaction path for selecting multiple ingredients.
+Alchemy ingredient energy values and executable food plus `Bomb.EnhanceBomb` recipes are
+authored in `src/content/alchemy.mwl`, with their named outputs in
+`src/content/consumables.mwl`; `src/alchemy.ts` parses them and the alchemy-pot interaction
+resolves them through MWG's all-or-nothing `craft()` transaction. The same MWL resource contains
+a manifest of every recipe registered by SPD's `Recipe.java`, and import-time validation rejects
+any recipe reference without an authored item identity. The alchemy-pot interaction is still a
+single-choice picker rather than Java's multi-ingredient window. The carried energy pool is now
+persisted, fed by EnergyCrystal pickups, and consumed by recipe costs; the scene still lacks
+Java's scrap/add controls. Seed-to-potion brewing,
+catalysts, exotic items, and the specialty bombs' subclass effects remain open.
 
 Monster actor classifications (flying, NPC, boss, immovable, and initially-awake) now live in
 `src/content/actor-rules.mwl` and are adapted to runtime sets. Special actor abilities and AI
@@ -1768,7 +1850,7 @@ would be a regression if taken today.
 | --- | --- | --- |
 | `Chrome.Type.WINDOW` = `NinePatch(chrome.png, 0, 0, 20, 20, 6)`, `Window.TITLE_COLOR`, `CharSprite`'s status palette | `src/ui/spdTheme.ts` `applySpdTheme`, called from `main()` before any widget exists | Ported - the real 20x20/border-6 region and the real colours, so every `Window`/`ListView`/`IconGrid` built later inherits SPD's frame |
 | `PixelScene.pixelFont` / `RenderedTextBlock` (SPD's bitmap fonts in `assets/fonts/`) | `pixel_font.ttf` + `loadSpdFont()`/`applySpdTheme()` | Ported through SPD's supplied scalable pixel-font face: it is bundled, registered as `SPD Pixel` before any UI is built, and selected by the global UI theme. System fallbacks remain after it for translations whose glyphs are not in the Latin face. |
-| `ui/GameLog.java`'s severity colours (`GLog`'s `++`/`--`/`**`/`@@` -> `CharSprite.POSITIVE/NEGATIVE/WARNING/NEUTRAL`), same-colour merging, and dropping the oldest block by *line* count | `src/ui/gameLog.ts`, `say(line, level)` | Ported (all three behaviours). Simplified: severity is an argument rather than a prefix encoded into the string and parsed back out, and `MAX_LINES` takes the larger 5 since this port has no `SPDSettings.interfaceSize()` |
+| `ui/GameLog.java`'s severity colours (`GLog`'s `++`/`--`/`**`/`@@` -> `CharSprite.POSITIVE/NEGATIVE/WARNING/NEUTRAL`), same-colour merging, and dropping the oldest block by *line* count | `src/ui/gameLog.ts`, `say(line, level)` | **Divergence (deliberate)**: severity colours and dropping the oldest block by line count are ported, but Java's same-colour concatenation is not - each message stays its own block so rapid messages remain readable as separate lines, at the cost of the vertical space Java saves by merging. Severity is also an argument rather than a prefix encoded into the string and parsed back out, and `MAX_LINES` takes the larger 5 since this port has no `SPDSettings.interfaceSize()` |
 | `GLog`'s severity at each message site | ~106 of 142 `say()` calls tagged | Simplified - the calls where colour carries information (damage taken, deaths, pickups, heals, hunger, boss turns) are tagged; the rest default to `info`. Multi-line `say(` calls are untagged |
 | `effects/FloatingText.java` (`LIFESPAN = 1s`, `DISTANCE = DungeonTilemap.SIZE`, alpha held to half-life then linear), `CharSprite.showStatus` | `src/ui/floatingText.ts`, `showStatus`/`showDamage`/`showHeal`, spawned at 19 damage/heal sites | Ported (timing, rise distance, fade curve, `CharSprite` colours). Simplified: Java stacks texts per-target via a `key`; this stacks by proximity, so it needs no key bookkeeping from callers |
 | `Buff.java`'s `announced` flag (buff name shown over the creature as it lands) | `announceBuff` hook + `ANNOUNCED_BUFFS`, called from `addBuff` | Simplified - a hook, because `addBuff` is module-level with ~60 call sites none of which hold a scene. The announced set is chosen here rather than read from a per-buff flag this port's buffs do not have |
@@ -2493,3 +2575,25 @@ losing-yell edge-trigger-vs-once-lock distinction above.
 | `Monk.focusCooldown` / `Monk.move()` / `Senior.move()` | `Creature.focusCooldown`, `afterMonsterTurn`, `moveTo`, Focus defense branch | Ported: Focus now uses a persistent floating 6–7-turn cooldown after a parry, loses one action-time unit per Monk/Senior turn, and gains Java's extra movement reductions (0.67 for Monk plus 1.66 for Senior). The port still attaches Focus through its shared buff map and has no Java sprite/audio parry presentation. |
 | `Shaman.random()` subtype and `Shaman.zap()` debuff | `Creature.shamanType`, `spawnMonster`, `zapHero` | Ported: Shamans now retain Java's one-draw 40% red/30% blue/30% purple subtype and apply Weakness, Vulnerable, or Hex on a landed magic bolt at the real 1-in-2 chance. Dedicated colour sprites and debuff audio remain unported. |
 | `WandOfFrost.onZap()` damage and Chill interaction | `useSpecial` wand branch | Ported for the selected target: Frost now uses Java's `2+level` to `8+5*level` damage range, deals reduced damage against existing Chill, does nothing to an already-Frozen target, and applies the terrain-sensitive `2+level`/`4+level` Chill duration. The generic Blob API has no per-cell clear method, so Fire/eternal-fire extinction, frozen heap handling, exact Ballistica targeting, and staff-on-hit Frost are not modeled. |
+### Current correction: EnhanceBomb
+
+The ten `Bomb.EnhanceBomb` ingredient/result pairs are now executable through the authored
+alchemy picker. The base blast follows Java's own `explosionRange()` per subclass (1 for a plain
+bomb, 2 for Frost/Fire/Flashbang/Shock/Woolly/Holy/Noisemaker, 3 for Regrowth, 8 for Shrapnel),
+and Regrowth, Arcane and Shrapnel no longer receive it at all - all three override
+`explodesDestructively()` to false in Java, so giving them the base blast was an undeclared
+divergence. Arcane then rolls its own armor-piercing `NormalIntRange(4+scalingDepth,
+12+3*scalingDepth)`, Shrapnel the same roll minus the target's armor over line of sight up to 8,
+and Regrowth heals (through the ordinary `PotionOfHealing.cure()`/`heal()` pair, hero only - the
+port has no standing ally side) instead of damaging anything; healing every monster in the area
+was a plain bug. Holy's bonus is Java's own `Math.round(NormalIntRange(scalingDepth+4,
+12+3*scalingDepth) * 0.5f)` (the previous 5+depth..10+2*depth range was invented), and Frost,
+Fire, Flashbang, Shock and Woolly still reuse the existing chill/fire/status/sheep seams. Every
+one of these effects deliberately uses a Chebyshev circle where Java builds a PathFinder distance
+map or a ShadowCaster field of view, shared statuses rather than Java's exact blob/bolt/blindness
+subsystems, and three sheep rather than the real spawn field and lifetimes. Noisemaker currently
+has only the base blast because its armed proximity-trigger state is not represented. The crystal
+pool is now enforced, but its scrap/add UI and blast particles/sound remain open. GooBlob and
+MetalShard identities are authored, their Java value/energy metadata is represented, and
+Goo/DM-300 now drop 2/3/4 materials with the real 60/30/10 distribution. The port's
+one-item-per-cell placement is a documented heap simplification.

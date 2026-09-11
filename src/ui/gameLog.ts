@@ -14,9 +14,8 @@ import { SPD_STATUS_COLOR } from './spdTheme';
  *    `DEFAULT`. Colour is how "you are starving" reads differently from "you found a
  *    dewdrop" at a glance. The prefixes themselves are not reproduced - a severity is passed
  *    as an argument instead of encoded into the string and parsed back out.
- *  - **Merging.** Consecutive entries of the *same* colour are appended into one block
- *    joined by a space, while that block is still under the line limit, rather than each
- *    taking a line of its own.
+ *  - **One entry per block.** Each message gets its own rendered block, so rapid messages remain
+ *    visually and semantically distinct instead of becoming one horizontally long sentence.
  *  - **Dropping by line, not by entry.** The oldest block is dropped while the total wrapped
  *    line count exceeds the limit, so one long message costs as much room as the several
  *    short ones it is worth.
@@ -40,7 +39,6 @@ const LEVEL_COLOR: Record<LogLevel, number> = {
 interface Block {
 	label: Label;
 	level: LogLevel;
-	text: string;
 }
 
 export class GameLog extends Container {
@@ -54,23 +52,14 @@ export class GameLog extends Container {
 	}
 
 	add(text: string, level: LogLevel = 'info'): void {
-		const last = this.blocks[this.blocks.length - 1];
-
-		//merge into the previous block when the colour matches and it still has room, as
-		//GameLog.update() does with `lastEntry.nLines < maxLines`
-		if (last && last.level === level && this.linesOf(last) < MAX_LINES) {
-			last.text = last.text.length === 0 ? text : `${last.text} ${text}`;
-			last.label.setText(last.text);
-		} else {
-			const label = new Label({
-				text,
-				size: 6,
-				color: LEVEL_COLOR[level],
-				wrapWidth: this.wrapWidth,
-			});
-			this.addChild(label);
-			this.blocks.push({ label, level, text });
-		}
+		const label = new Label({
+			text,
+			size: 6,
+			color: LEVEL_COLOR[level],
+			wrapWidth: this.wrapWidth,
+		});
+		this.addChild(label);
+		this.blocks.push({ label, level });
 
 		this.trim();
 		this.layout();

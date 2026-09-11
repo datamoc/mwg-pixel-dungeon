@@ -1659,6 +1659,176 @@ export const gameData = {
 								"column": 1
 							},
 							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombFrost",
+								"ingredients": "bomb:1,potionFrost:1",
+								"result": "frostBomb",
+								"resultQuantity": "1",
+								"energyCost": "0"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 61,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombWoolly",
+								"ingredients": "bomb:1,scrollMirror:1",
+								"result": "woollyBomb",
+								"resultQuantity": "1",
+								"energyCost": "0"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 68,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombFire",
+								"ingredients": "bomb:1,potionFlame:1",
+								"result": "fireBomb",
+								"resultQuantity": "1",
+								"energyCost": "1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 75,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombNoisemaker",
+								"ingredients": "bomb:1,scrollRage:1",
+								"result": "noisemaker",
+								"resultQuantity": "1",
+								"energyCost": "1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 82,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombFlashbang",
+								"ingredients": "bomb:1,potionInvis:1",
+								"result": "flashbang",
+								"resultQuantity": "1",
+								"energyCost": "2"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 89,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombShock",
+								"ingredients": "bomb:1,scrollRecharging:1",
+								"result": "shockBomb",
+								"resultQuantity": "1",
+								"energyCost": "2"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 96,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombRegrowth",
+								"ingredients": "bomb:1,potionHealing:1",
+								"result": "regrowthBomb",
+								"resultQuantity": "1",
+								"energyCost": "3"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 103,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombHoly",
+								"ingredients": "bomb:1,scrollCleanse:1",
+								"result": "holyBomb",
+								"resultQuantity": "1",
+								"energyCost": "3"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 110,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombArcane",
+								"ingredients": "bomb:1,gooBlob:1",
+								"result": "arcaneBomb",
+								"resultQuantity": "1",
+								"energyCost": "6"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 117,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombShrapnel",
+								"ingredients": "bomb:1,metalShard:1",
+								"result": "shrapnelBomb",
+								"resultQuantity": "1",
+								"energyCost": "6"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 124,
+								"column": 1
+							},
+							"gettext": []
 						}
 					],
 					"location": {
@@ -1685,7 +1855,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 66,
+								"line": 136,
 								"column": 1
 							},
 							"gettext": []
@@ -1700,7 +1870,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 71,
+								"line": 141,
 								"column": 1
 							},
 							"gettext": []
@@ -1715,7 +1885,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 76,
+								"line": 146,
 								"column": 1
 							},
 							"gettext": []
@@ -1730,7 +1900,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 81,
+								"line": 151,
 								"column": 1
 							},
 							"gettext": []
@@ -1745,7 +1915,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 86,
+								"line": 156,
 								"column": 1
 							},
 							"gettext": []
@@ -1760,7 +1930,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 91,
+								"line": 161,
 								"column": 1
 							},
 							"gettext": []
@@ -1775,7 +1945,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 96,
+								"line": 166,
 								"column": 1
 							},
 							"gettext": []
@@ -1790,7 +1960,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 101,
+								"line": 171,
 								"column": 1
 							},
 							"gettext": []
@@ -1805,7 +1975,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 106,
+								"line": 176,
 								"column": 1
 							},
 							"gettext": []
@@ -1820,7 +1990,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 111,
+								"line": 181,
 								"column": 1
 							},
 							"gettext": []
@@ -1835,7 +2005,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 116,
+								"line": 186,
 								"column": 1
 							},
 							"gettext": []
@@ -1850,7 +2020,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 121,
+								"line": 191,
 								"column": 1
 							},
 							"gettext": []
@@ -1865,7 +2035,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 126,
+								"line": 196,
 								"column": 1
 							},
 							"gettext": []
@@ -1880,7 +2050,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 131,
+								"line": 201,
 								"column": 1
 							},
 							"gettext": []
@@ -1895,7 +2065,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 136,
+								"line": 206,
 								"column": 1
 							},
 							"gettext": []
@@ -1910,7 +2080,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 141,
+								"line": 211,
 								"column": 1
 							},
 							"gettext": []
@@ -1925,7 +2095,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 146,
+								"line": 216,
 								"column": 1
 							},
 							"gettext": []
@@ -1940,7 +2110,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 151,
+								"line": 221,
 								"column": 1
 							},
 							"gettext": []
@@ -1955,7 +2125,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 156,
+								"line": 226,
 								"column": 1
 							},
 							"gettext": []
@@ -1970,7 +2140,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 161,
+								"line": 231,
 								"column": 1
 							},
 							"gettext": []
@@ -1985,7 +2155,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 166,
+								"line": 236,
 								"column": 1
 							},
 							"gettext": []
@@ -2000,7 +2170,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 171,
+								"line": 241,
 								"column": 1
 							},
 							"gettext": []
@@ -2015,7 +2185,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 176,
+								"line": 246,
 								"column": 1
 							},
 							"gettext": []
@@ -2030,7 +2200,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 181,
+								"line": 251,
 								"column": 1
 							},
 							"gettext": []
@@ -2045,7 +2215,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 186,
+								"line": 256,
 								"column": 1
 							},
 							"gettext": []
@@ -2060,7 +2230,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 191,
+								"line": 261,
 								"column": 1
 							},
 							"gettext": []
@@ -2075,7 +2245,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 196,
+								"line": 266,
 								"column": 1
 							},
 							"gettext": []
@@ -2090,7 +2260,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 201,
+								"line": 271,
 								"column": 1
 							},
 							"gettext": []
@@ -2105,7 +2275,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 206,
+								"line": 276,
 								"column": 1
 							},
 							"gettext": []
@@ -2120,7 +2290,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 211,
+								"line": 281,
 								"column": 1
 							},
 							"gettext": []
@@ -2135,7 +2305,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 216,
+								"line": 286,
 								"column": 1
 							},
 							"gettext": []
@@ -2150,7 +2320,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 221,
+								"line": 291,
 								"column": 1
 							},
 							"gettext": []
@@ -2165,7 +2335,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 226,
+								"line": 296,
 								"column": 1
 							},
 							"gettext": []
@@ -2180,7 +2350,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 231,
+								"line": 301,
 								"column": 1
 							},
 							"gettext": []
@@ -2195,7 +2365,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 236,
+								"line": 306,
 								"column": 1
 							},
 							"gettext": []
@@ -2210,7 +2380,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 241,
+								"line": 311,
 								"column": 1
 							},
 							"gettext": []
@@ -2225,7 +2395,157 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 246,
+								"line": 316,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombFrost",
+								"group": "two",
+								"javaRecipe": "Bomb.EnhanceBomb(FrostBomb)"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 321,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombWoolly",
+								"group": "two",
+								"javaRecipe": "Bomb.EnhanceBomb(WoollyBomb)"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 326,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombFire",
+								"group": "two",
+								"javaRecipe": "Bomb.EnhanceBomb(Firebomb)"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 331,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombNoisemaker",
+								"group": "two",
+								"javaRecipe": "Bomb.EnhanceBomb(Noisemaker)"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 336,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombFlashbang",
+								"group": "two",
+								"javaRecipe": "Bomb.EnhanceBomb(Flashbang)"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 341,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombShock",
+								"group": "two",
+								"javaRecipe": "Bomb.EnhanceBomb(ShockBomb)"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 346,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombRegrowth",
+								"group": "two",
+								"javaRecipe": "Bomb.EnhanceBomb(RegrowthBomb)"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 351,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombHoly",
+								"group": "two",
+								"javaRecipe": "Bomb.EnhanceBomb(HolyBomb)"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 356,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombArcane",
+								"group": "two",
+								"javaRecipe": "Bomb.EnhanceBomb(ArcaneBomb)"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 361,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "enhanceBombShrapnel",
+								"group": "two",
+								"javaRecipe": "Bomb.EnhanceBomb(ShrapnelBomb)"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 366,
 								"column": 1
 							},
 							"gettext": []
@@ -2233,7 +2553,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-						"line": 63,
+						"line": 133,
 						"column": 1
 					},
 					"gettext": []
@@ -3857,7 +4177,7 @@ export const gameData = {
 			"tag": "trait",
 			"attributes": {
 				"id": "warrior",
-				"name": "port.name.warrior"
+				"name": "actors.hero.heroclass.warrior"
 			},
 			"children": [
 				{
@@ -4082,7 +4402,7 @@ export const gameData = {
 			"tag": "trait",
 			"attributes": {
 				"id": "mage",
-				"name": "port.name.mage"
+				"name": "actors.hero.heroclass.mage"
 			},
 			"children": [
 				{
@@ -4215,7 +4535,7 @@ export const gameData = {
 					"tag": "effect",
 					"attributes": {
 						"apply_to": "unlock_hint",
-						"set": "Unlock: use an upgrade scroll."
+						"set": "port.class.mage.unlockhint"
 					},
 					"children": [],
 					"location": {
@@ -4307,7 +4627,7 @@ export const gameData = {
 			"tag": "trait",
 			"attributes": {
 				"id": "rogue",
-				"name": "port.name.rogue"
+				"name": "actors.hero.heroclass.rogue"
 			},
 			"children": [
 				{
@@ -4440,7 +4760,7 @@ export const gameData = {
 					"tag": "effect",
 					"attributes": {
 						"apply_to": "unlock_hint",
-						"set": "Unlock: land 10 surprise attacks."
+						"set": "port.class.rogue.unlockhint"
 					},
 					"children": [],
 					"location": {
@@ -4532,7 +4852,7 @@ export const gameData = {
 			"tag": "trait",
 			"attributes": {
 				"id": "huntress",
-				"name": "port.name.huntress"
+				"name": "actors.hero.heroclass.huntress"
 			},
 			"children": [
 				{
@@ -4665,7 +4985,7 @@ export const gameData = {
 					"tag": "effect",
 					"attributes": {
 						"apply_to": "unlock_hint",
-						"set": "Unlock: throw 10 times."
+						"set": "port.class.huntress.unlockhint"
 					},
 					"children": [],
 					"location": {
@@ -4757,7 +5077,7 @@ export const gameData = {
 			"tag": "trait",
 			"attributes": {
 				"id": "duelist",
-				"name": "port.name.duelist"
+				"name": "actors.hero.heroclass.duelist"
 			},
 			"children": [
 				{
@@ -4890,7 +5210,7 @@ export const gameData = {
 					"tag": "effect",
 					"attributes": {
 						"apply_to": "unlock_hint",
-						"set": "Unlock: raise a weapon to +2."
+						"set": "port.class.duelist.unlockhint"
 					},
 					"children": [],
 					"location": {
@@ -5115,7 +5435,7 @@ export const gameData = {
 					"tag": "effect",
 					"attributes": {
 						"apply_to": "unlock_hint",
-						"set": "Unlock: win a run."
+						"set": "port.class.cleric.unlockhint"
 					},
 					"children": [],
 					"location": {
@@ -5645,7 +5965,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "seedRotberry",
-						"name": "items.seeds.rotberry.name",
+						"name": "plants.rotberry$seed.name",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -5661,7 +5981,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "seedSungrass",
-						"name": "items.seeds.sungrass.name",
+						"name": "plants.sungrass$seed.name",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -5677,7 +5997,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "seedFadeleaf",
-						"name": "items.seeds.fadeleaf.name",
+						"name": "plants.fadeleaf$seed.name",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -5693,7 +6013,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "seedIcecap",
-						"name": "items.seeds.icecap.name",
+						"name": "plants.icecap$seed.name",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -5709,7 +6029,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "seedFirebloom",
-						"name": "items.seeds.firebloom.name",
+						"name": "plants.firebloom$seed.name",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -5725,7 +6045,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "seedSorrowmoss",
-						"name": "items.seeds.sorrowmoss.name",
+						"name": "plants.sorrowmoss$seed.name",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -5741,7 +6061,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "seedSwiftthistle",
-						"name": "items.seeds.swiftthistle.name",
+						"name": "plants.swiftthistle$seed.name",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -5757,7 +6077,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "seedBlindweed",
-						"name": "items.seeds.blindweed.name",
+						"name": "plants.blindweed$seed.name",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -5773,7 +6093,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "seedStormvine",
-						"name": "items.seeds.stormvine.name",
+						"name": "plants.stormvine$seed.name",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -5789,7 +6109,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "seedEarthroot",
-						"name": "items.seeds.earthroot.name",
+						"name": "plants.earthroot$seed.name",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -5805,7 +6125,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "seedMageroyal",
-						"name": "items.seeds.mageroyal.name",
+						"name": "plants.mageroyal$seed.name",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -5821,7 +6141,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "seedStarflower",
-						"name": "items.seeds.starflower.name",
+						"name": "plants.starflower$seed.name",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -5869,7 +6189,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "pasty",
-						"name": "items.food.pasty.name",
+						"name": "items.food.pasty.pasty",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -6108,8 +6428,8 @@ export const gameData = {
 				{
 					"tag": "item",
 					"attributes": {
-						"id": "bomb",
-						"name": "items.bombs.bomb.name",
+						"id": "chargrilledMeat",
+						"name": "items.food.chargrilledmeat.name",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -6124,8 +6444,8 @@ export const gameData = {
 				{
 					"tag": "item",
 					"attributes": {
-						"id": "doubleBomb",
-						"name": "items.bombs.doublebomb.name",
+						"id": "bomb",
+						"name": "items.bombs.bomb.name",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -6133,6 +6453,694 @@ export const gameData = {
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
 						"line": 352,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "frostBomb",
+						"name": "items.bombs.frostbomb.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 358,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "woollyBomb",
+						"name": "items.bombs.woollybomb.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 364,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "fireBomb",
+						"name": "items.bombs.firebomb.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 370,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "noisemaker",
+						"name": "items.bombs.noisemaker.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 376,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "flashbang",
+						"name": "items.bombs.flashbang.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 382,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "shockBomb",
+						"name": "items.bombs.shockbomb.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 388,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "regrowthBomb",
+						"name": "items.bombs.regrowthbomb.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 394,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "holyBomb",
+						"name": "items.bombs.holybomb.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 400,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "arcaneBomb",
+						"name": "items.bombs.arcanebomb.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 406,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "shrapnelBomb",
+						"name": "items.bombs.shrapnelbomb.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 412,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "gooBlob",
+						"name": "items.quest.gooblob.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 418,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "metalShard",
+						"name": "items.quest.metalshard.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 424,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "doubleBomb",
+						"name": "items.bombs.bomb$doublebomb.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 430,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "liquidMetal",
+						"name": "items.liquidmetal.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 437,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "scrollToStone",
+						"name": "port.name.alchemy.scrolltostone",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 443,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "exoticPotion",
+						"name": "port.name.alchemy.exoticpotion",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 449,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "exoticScroll",
+						"name": "port.name.alchemy.exoticscroll",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 455,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "arcaneResin",
+						"name": "items.arcaneresin.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 461,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "alchemize",
+						"name": "items.spells.alchemize.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 467,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "blandfruit",
+						"name": "items.food.blandfruit.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 473,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "enhanceBomb",
+						"name": "port.name.alchemy.enhancebomb",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 479,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "elixirArcaneArmor",
+						"name": "items.potions.elixirs.elixirofarcanearmor.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 485,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "elixirAquaticRejuvenation",
+						"name": "items.potions.elixirs.elixirofaquaticrejuvenation.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 491,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "elixirDragonsBlood",
+						"name": "items.potions.elixirs.elixirofdragonsblood.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 497,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "elixirIcyTouch",
+						"name": "items.potions.elixirs.elixiroficytouch.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 503,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "elixirMight",
+						"name": "items.potions.elixirs.elixirofmight.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 509,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "elixirHoneyedHealing",
+						"name": "items.potions.elixirs.elixirofhoneyedhealing.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 515,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "elixirToxicEssence",
+						"name": "items.potions.elixirs.elixiroftoxicessence.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 521,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "blizzardBrew",
+						"name": "items.potions.brews.blizzardbrew.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 527,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "infernalBrew",
+						"name": "items.potions.brews.infernalbrew.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 533,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "shockingBrew",
+						"name": "items.potions.brews.shockingbrew.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 539,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "causticBrew",
+						"name": "items.potions.brews.causticbrew.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 545,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "aquaBlast",
+						"name": "items.spells.aquablast.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 551,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "beaconOfReturning",
+						"name": "items.spells.beaconofreturning.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 557,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "curseInfusion",
+						"name": "items.spells.curseinfusion.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 563,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "featherFall",
+						"name": "items.spells.featherfall.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 569,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "magicalInfusion",
+						"name": "items.spells.magicalinfusion.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 575,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "phaseShift",
+						"name": "items.spells.phaseshift.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 581,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "reclaimTrap",
+						"name": "items.spells.reclaimtrap.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 587,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "recycle",
+						"name": "items.spells.recycle.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 593,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "wildEnergy",
+						"name": "items.spells.wildenergy.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 599,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "telekineticGrab",
+						"name": "items.spells.telekineticgrab.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 605,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "item",
+					"attributes": {
+						"id": "summonElemental",
+						"name": "items.spells.summonelemental.name",
+						"slot": "consumable",
+						"stackable": "true"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\consumables.mwl",
+						"line": 611,
 						"column": 1
 					},
 					"gettext": []

@@ -20,9 +20,12 @@ export interface InventoryEntry {
 	sourceClass?: string;
 }
 
+type InventoryFilter = 'all' | 'consumables' | 'equipment' | 'quest';
+
 /** WndBag/InventorySlot: 5 columns, 28px cells, 1px gutters, 14px title.
- * Only the root bag exists in this port; pages preserve access if its bag exceeds
- * Java's 20 backpack slots. WndUseItem shows the actions actually implemented here.
+ * The root bag has Java-shaped category tabs and pages; actual sub-bag ownership is not
+ * invented because this port's compact item payload has no container relationship yet.
+ * WndUseItem shows the actions actually implemented here.
  */
 export class InventoryWindow extends Container {
 	private readonly dim = new Graphics();
@@ -33,12 +36,13 @@ export class InventoryWindow extends Container {
 	private carried: InventoryEntry[] = [];
 	private selection = 5;
 	private page = 0;
+	private filter: InventoryFilter = 'all';
 	private gold = 0;
 	private vw = 0;
 	private vh = 0;
 	private chosen: InventoryEntry | null = null;
 	private readonly width_ = 156;
-	private readonly height_ = 188;
+	private readonly height_ = 226;
 
 	constructor(private use: (id: string, instanceId?: string) => void, private close: () => void) {
 		super();
@@ -54,8 +58,22 @@ export class InventoryWindow extends Container {
 		this.equipment = equipment;
 		this.carried = carried;
 		this.gold = gold;
-		this.page = Math.min(this.page, Math.max(0, Math.ceil(carried.length / 20) - 1));
+		this.page = Math.min(this.page, Math.max(0, Math.ceil(this.filteredCarried().length / 20) - 1));
 		this.draw();
+	}
+
+	private filteredCarried(): InventoryEntry[] {
+		return this.carried.filter((item) => {
+			if (this.filter === 'all') return true;
+			const id = item.id.toLowerCase();
+			const equipment = id.startsWith('weapon') || id.startsWith('armor') || id.startsWith('ring_')
+				|| id === 'wand' || id === 'cloak' || id === 'hourglass' || id === 'holytome';
+			const consumable = id.startsWith('potion') || id.startsWith('scroll') || id.startsWith('stoneof')
+				|| id.startsWith('seed') || ['food', 'meat', 'chargrilledmeat', 'bomb', 'doublebomb'].includes(id);
+			if (this.filter === 'equipment') return equipment;
+			if (this.filter === 'consumables') return consumable;
+			return !equipment && !consumable;
+		});
 	}
 
 	private icon(frame: number): Sprite {
@@ -72,11 +90,26 @@ export class InventoryWindow extends Container {
 		money.anchor.set(1, 0); money.position.set(130, 7);
 		const coin = this.icon(18); coin.position.set(132, 5);
 		this.panel.addChild(title, money, coin);
-		this.entries = [...this.equipment, ...this.carried.slice(this.page * 20, this.page * 20 + 20)];
+		const carried = this.filteredCarried();
+		this.entries = [...this.equipment, ...carried.slice(this.page * 20, this.page * 20 + 20)];
 		while (this.entries.length < 25) this.entries.push(null);
+		//SPD v3.3.8's `WndBag` pages by `Bag` subclass rather than by filter, so these four
+		//compact categories are this port's own labels (and its own category tests in
+		//`filteredCarried`) - translated, not hardcoded English.
+		const filters: [InventoryFilter, string][] = [
+			['all', t('port.ui.bag.all')], ['consumables', t('port.ui.bag.use')],
+			['equipment', t('port.ui.bag.gear')], ['quest', t('port.ui.bag.quest')],
+		];
+		filters.forEach(([filter, text], index) => {
+			const tab = new SpdButton({ width: 35, height: 17, text, onClick: () => {
+				this.filter = filter; this.page = 0; this.draw();
+			} });
+			tab.position.set(5 + index * 37, 20);
+			this.panel.addChild(tab);
+		});
 		this.entries.forEach((item, index) => {
 			const slot = new Container();
-			slot.position.set(6 + (index % 5) * 29, 20 + Math.floor(index / 5) * 29);
+			slot.position.set(6 + (index % 5) * 29, 40 + Math.floor(index / 5) * 29);
 			const equipped = index < 5;
 			const color = item?.cursed ? 0x9f394d : item && item.identified === false ? 0x995399 : equipped ? 0x91938c : 0x53564d;
 			const bg = new Graphics().rect(0, 0, 28, 28).fill({ color, alpha: 0.6 });
@@ -102,16 +135,16 @@ export class InventoryWindow extends Container {
 			this.panel.addChild(slot);
 		});
 		const close = new SpdButton({ width: 20, height: 17, icon: titleIcon(runState.sprites.uiIcons, 'exit', 1), onClick: this.close });
-		close.position.set(130, 166); this.panel.addChild(close);
-		if (this.carried.length > 20) {
-			const pages = Math.ceil(this.carried.length / 20);
+		close.position.set(130, 204); this.panel.addChild(close);
+		if (carried.length > 20) {
+			const pages = Math.ceil(carried.length / 20);
 			for (const [step, x, text] of [[-1, 6, '<'], [1, 90, '>']] as const) {
 				const button = new SpdButton({ width: 20, height: 17, text, onClick: () => { this.page = (this.page + step + pages) % pages; this.draw(); } });
-				button.position.set(x, 166); this.panel.addChild(button);
+				button.position.set(x, 204); this.panel.addChild(button);
 			}
-			const count = new Label({ text: `${this.page + 1}/${pages}`, size: 7 }); count.position.set(40, 170); this.panel.addChild(count);
+			const count = new Label({ text: `${this.page + 1}/${pages}`, size: 7 }); count.position.set(40, 208); this.panel.addChild(count);
 		} else {
-			const bag = titleIcon(runState.sprites.uiIcons, 'bag', 1); bag.position.set(9, 167); this.panel.addChild(bag);
+			const bag = titleIcon(runState.sprites.uiIcons, 'bag', 1); bag.position.set(9, 205); this.panel.addChild(bag);
 		}
 		this.layout(this.vw, this.vh);
 	}

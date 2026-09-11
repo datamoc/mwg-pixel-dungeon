@@ -36,8 +36,8 @@ export function paintLaboratoryRoom(level: PaintLevel, room: Room, depth: number
 	do { pos = level.pointToCell(room.random()); } while (level.map[pos] !== Terrain.EMPTY_SP || level.findHeap(pos) !== undefined);
 	// `new EnergyCrystal().random()`: `quantity = Random.IntRange(4, 6)` - one real level-stream
 	// draw, previously (wrongly) documented as a skippable variant roll.
-	SpdRandom.intRange(4, 6);
-	level.drop('energyCrystal', pos);
+	const energyCrystal = level.drop('energyCrystal', pos);
+	energyCrystal!.quantity = SpdRandom.intRange(4, 6);
 
 	const n = SpdRandom.normalIntRange(1, 2);
 	for (let i = 0; i < n; i++) {

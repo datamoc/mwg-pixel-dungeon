@@ -28,7 +28,9 @@ Do not add new authored content as object literals or scattered constants in the
       Weapons, armor, wands, and rings are now authored in `src/content/items.mwl` and
       `src/content/rings.mwl`; the ten artifact definitions are now authored in
       `src/content/artifacts.mwl`. Missiles, consumables, alchemy, and crafting inputs still
-      Alchemy and crafting inputs still need to be added; potion and scroll generator decks are
+      Alchemy execution and the remaining crafting-input identities still need to be added;
+      the named outputs from SPD's recipe manifest are now authored as catalogue entries;
+      potion and scroll generator decks are
       now in `src/content/decks.mwl`.
       The runestone generator deck is now in `src/content/runestones.mwl`. Keep Java formulas and
       executable effects in explicit game hooks, referenced by MWL. The five missile generator
@@ -96,6 +98,14 @@ Do not add new authored content as object literals or scattered constants in the
       i18n catalogue, and remove duplicate hand-maintained content strings. The ordered potion
       and scroll appearance tables are now in `src/content/appearances.mwl`; message bodies and
       the remaining key tables still need migration.
+      **2026-09-11:** the consumed MWL item names were audited with the offline
+      `tools/i18nCheck.ts` and corrected - the twelve seeds (`plants.<plant>$seed.name`), `Pasty`,
+      `DoubleBomb` and thirty alchemy outputs now point at SPD's real message keys instead of
+      invented ones that rendered as raw key text in all 19 languages; four recipe outputs with no
+      single SPD class keep `port.name.alchemy.*` entries. The check went from 46 failures (15
+      already on `HEAD`) to **OK - 286 mapped keys, 408 port strings, 19 languages**. That check
+      is not in `check`/`build` (it needs esbuild to bundle `src/`), so it stays a manual gate
+      documented in its own header; `npm run i18n` itself needs `--spd-root`.
 - [x] Add MWL hook manifests for executable rules and AI. The MWL compiler validates every AI
       profile reference against `actor-rules.mwl`'s hook manifest, and scene initialization rejects
       a declared profile with no executable TypeScript hook; broader executable-rule manifests
@@ -171,32 +181,16 @@ Do not add new authored content as object literals or scattered constants in the
       hourly check while porting is `npm run mwg:check` (`tools/check-mwg-version.mjs`), which
       reports the pin, the installed version, npm's latest, and a checkout's version when passed
       with `--checkout`.
-- [ ] Adopt what 0.7.3 actually shipped and what 0.7.4 is bringing, where each is genuinely a
-      deletion rather than new code - scoped by reading both sides, not by assuming a newer framework
-      version is automatically better. `tools/scratch/mwg-proposal/GEOMETRY-AND-FIRE.md` is the full
-      scoping, including two claims corrected there: **`TerrainKind.flags`/`extras` and the
-      `Scheduler` priority are NOT in the published 0.7.3** - both are in the unpublished 0.7.4
-      checkout - so they are adoption work for whenever 0.7.4 lands, not available today.
-      - `Scheduler.add(actor, delay, priority)` + named priorities (0.7.4, unpublished): Java's
-        `VFX_PRIO`/`BUFF_PRIO`, which is what lets the Tengu/Yog telegraph fields (`yogTargeted`,
-        `pendingMonsterTurnCost`, `tenguFire`) become real scheduled actors instead of hand-rolled
-        state.
-      - `Roguelike.Targeting` already ships the geometries the port asked for - `AreaShape`
-        (`single`/`burst`/`line`/`cone`), `resolveArea`/`resolveAreaOnLevel`, `coneCells`,
-        `rangeMultiplier`/`areaFalloffMultiplier` (= Java's `Ballistica` falloff) - so the remaining
-        framework gap is that `MultiTurnBeam` only takes `from`/`target` and captures a straight
-        `traceLine`. Making it take a **front list** (one front per turn, `blockers: 'stop' | 'skip'`,
-        `onCell` for ignition/visuals, save by shape identity) is what unlocks cone/burst beams; see
-        §2 of the spec.
-      - `Level.viewDistance` + `FieldOfView.update`'s default radius: **worth it only if `Level` is
-        made to own the value on the same events Java does.** `viewRadius()` already computes exactly
-        that number live, from subclass, talents, challenge, depth and Yog's phase, so routing it
-        through a mutable field trades a pure function for a cache that has to be invalidated on
-        every one of those, and a stale `level.viewDistance` silently means monsters seeing the whole
-        map. If adopted, set it in one `updateVisibility()`-shaped method called from those events -
-        never as a convenience default.
-- [ ] Flammable terrain and fire burnout: the port has **no** flammable model at all, and says so
-      in `spreadFire()` ("no flammable map", "no heap-burn primitive"). The full Java inventory -
+- [x] Re-audit the installed MWG release through `0.7.6` (2026-09-11), rather than treating a
+      version bump as automatic adoption work. The port now consumes the published
+      `ParticleEmitter` film API, `FloatingTextStack`, `Bar`, typed MWL tables, caller-chosen
+      `EntityRegistry` ids, scheduler priorities and `Blob.spread`'s emptied-cell result where
+      they are useful. The remaining generic proposals are intentionally tracked in §11A below;
+      SPD-specific behavior stays in this repository.
+- [ ] Flammable terrain and fire burnout: the port now has a live representable slice of this model:
+      fire decays in place and representable grass/door cells burn out into a distinct `EMBERS`
+      terrain kind, with plants removed, exact one-volume decay, orthogonal volume-4 propagation,
+      and cooked Mystery Meat. The full Java inventory -
       terrain, characters, items, plants, the sixteen igniters, and the Java limitations we will
       deliberately not reproduce - is `tools/scratch/FLAMABLE-INVENTORY.md`, gathered 2026-09-11 under
       AGENTS.md's new fidelity policy (iso is no longer the goal). It corrects the claim this item
@@ -205,12 +199,15 @@ Do not add new authored content as object literals or scattered constants in the
       `FURROWED_GRASS`, both door states and `BARRICADE` (the wooden barricade), plus webs while they
       exist and the `SewerLevel` deco special case. `Fire.evolve()` is what burns terrain, converting
       a flamable cell to `EMBERS` (passable, *not* flammable) through `Level.destroy()` when its fire
-      reaches zero, igniting the occupant, burning the heap and withering the plant. Work, in order: give `EMBERS` a real live kind (today
-      `gameBridge.ts` collapses it to `floor`, so burned ground cannot even be represented), switch
-      `this.fire` to `spread(open, 0, decay)` so the fire decays in place like Java's `FireBlob`
-      instead of diffusing (available since 0.7.3, and a prerequisite for the burnout timing being
-      right), then the `FLAMABLE` set + `burn()`. The one framework nicety that would help is a
-      burnout callback/return on `Blob.spread` (spec §4.2); everything else is port-side.
+      reaches zero, igniting the occupant, burning the heap and withering the plant. `EMBERS` is now
+      a real live kind, fire decays in place, and ordinary fire propagates orthogonally onto the
+      representable grass/door set with Java's volume-4 seed. A burned cell restitches its own
+      tile face and the features layer is redrawn when a plant withers (the same redraw every
+      grass change already performs); before that the terrain changed in the model only, and the
+      old `EMBERS` face never appeared. Remaining work is webs, SewerLevel
+      decoration, the full heap/occupant subtype rules, and other unsupported terrain cases. The
+      generic Blob is deliberately not used for this transition because its diffusion/decay model
+      is not Java Fire's exact one-volume step.
 
 - [x] Replace `src/ui/bar.ts` with `mwg/ui`'s `Bar` and delete it (2026-09-11, on 0.7.4): done,
       and with it `tools/scratch/uiCheck.ts`. The four consumers (HUD health and experience, the
@@ -233,7 +230,11 @@ Do not add new authored content as object literals or scattered constants in the
       `tools/scratch/mwg-proposal/0003-floating-text-stack-upward.patch` is the fix, written and
       verified against 0.7.6; apply it and re-run the port's floaters check once a release carries
       it.
-- [ ] `titleFlame`'s four-frame flame -> `ParticleEmitter`'s `frames` (0.7.4).
+- [x] `titleFlame`'s flame film now uses `ParticleEmitter.frames` with the two flame quadrants
+      from Java's four-quadrant `fireball.png` (2026-09-11, on 0.7.6). MWG owns the pooled
+      cadence, lifetime, motion, and frame selection; the tiny colour-only sparks remain local.
+      The emitter has no per-spawn position range or height clamp, so those two presentation
+      details are documented reductions in `PORT_COVERAGE.md`.
 
 ## 1. Complete the item system
 
@@ -255,6 +256,20 @@ Do not add new authored content as object literals or scattered constants in the
       use inconsistent starting-gear sentinel checks) - left as a future cleanup candidate, not
       urgent enough to risk touching untested.
 - [ ] Port all remaining weapons, wands, rings, artifacts, bombs, alchemy, and crafting.
+      **2026-09-11 progress:** the ten `Bomb.EnhanceBomb` recipes are now authored in MWL,
+      validated as executable all-or-nothing recipes, and produce named specialty bomb items;
+      the base blast follows Java's per-subclass `explosionRange()` and is skipped entirely for
+      the three subclasses whose `explodesDestructively()` is false (Arcane, Regrowth, Shrapnel),
+      which then run their own damage or heal through the same target rules; the crystal energy
+      pool and the remaining specialty effects reuse existing scene systems. Noisemaker's armed
+      trigger and the
+      GooBlob/MetalShard boss drops now use the real 2/3/4 60/30/10 distribution and are
+      recoverable for alchemy. The alchemy pot's examine interaction opens the authored recipes
+      that the carried energy pool and bag can currently afford, through the shared item picker and
+      MWG's all-or-nothing `craft()`; the catalogue outputs' display names now come from SPD's real
+      message keys (see the i18n item under section 0), and the four recipe outputs with no single
+      SPD class keep port keys. That pot window is still single-choice rather than Java's
+      multi-ingredient add/scrap UI.
       Wand identity is now persisted from generated `sourceClass` through equipment/save state;
       the shared Elemental carrier also preserves its four Java subtypes and now emits the
       corresponding Fire/Frost/Shock/Chaos loot outcomes; their shared combat carrier now
@@ -318,7 +333,7 @@ Do not add new authored content as object literals or scattered constants in the
       here) - now fixed with a `console.warn` on any id reaching the fallback other than
       `potionPurity` itself (`potion`/`potionHealing` already branch earlier and can never
       reach it, but are excluded from the warning too as a defensive belt-and-suspenders).
-- [ ] Port the remaining scrolls. Fixed the same class of live id-mapping bug for
+- [x] Port the remaining scrolls. Fixed the same class of live id-mapping bug for
       `ScrollOfMirrorImage`/`ScrollOfMagicMapping` (both silently read as Remove Curse instead of
       their real, already-ported effects). `ScrollOfRecharging` is now ported (grants the
       already-modeled `recharging` buff, previously just never wired to a scroll).
@@ -614,6 +629,8 @@ Do not add new authored content as object literals or scattered constants in the
       normal hero-damage absorption pipeline, correctly killing the hero on a fatal fall, and
       Levitation now bypasses chasms the same way it already bypassed traps - see
       `PORT_COVERAGE.md`'s `Chasm.java` row for what's still not ported there).
+      Active magic wells now also show a scene-owned, FOV-gated ripple animation over the well;
+      its deterministic vector-ring reduction is documented in `PORT_COVERAGE.md`.
 - [x] Implement Java's feeling-based water and grass branches; feeling selection and the
       CHASM/WATER/GRASS/LARGE/TRAPS/SECRETS branches are threaded through `PaintLevel` and
       the regional painters.
@@ -807,7 +824,7 @@ Do not add new authored content as object literals or scattered constants in the
       charged versus the full `20` once uncharged; firing reset the charge, set a cooldown
       within the real 4-6 range, and dealt damage within the real 30-50 range. See
       `PORT_COVERAGE.md`.
-- [ ] **Implement ally-vs-monster combat.** Found this session while auditing the scroll branch
+- [x] **Implement ally-vs-monster combat.** Found this session while auditing the scroll branch
       against Java source: this port's monster AI originally had no concept of a non-hero target
       at all. This blocked at least two real mechanics from ever being more than a documented
       stand-in: `ScrollOfMirrorImage`'s allied `MirrorImage` NPCs and `ScrollOfRage`'s `Amok`
@@ -820,8 +837,9 @@ Do not add new authored content as object literals or scattered constants in the
       melee turns. Ally turns now use an ally-centered field of view instead of the hero's FOV;
        simple ranged targeting also considers the nearest visible ally, and hostile mobs now
        path toward a visible ally when they cannot see the hero. `Amok` now attacks nearby
-       creatures. Boss-specific ranged target migration and dedicated ally sprites/orders
-       remain.
+       creatures. Flock and Aggression runestones are now live through the same ally/combat
+       seam. Boss-specific ranged target migration and dedicated ally sprites/orders remain as
+       narrower documented gaps.
 - [x] Port all champion types and their effects. All 6 real types (Blessed/Blazing/Giant/
       Growing/AntiMagic/Projecting) are now live, each with its real per-type factor
       (`accRollMulti`/`rollDamage`), and the type roll is a true 1-in-6 matching Java's
@@ -838,7 +856,8 @@ Do not add new authored content as object literals or scattered constants in the
       Guard/Bat can't become champions below depths 3/4/7/9, `GreatCrab`/`Bandit` inheriting
       their base kind's exclusion) are now ported too. See `PORT_COVERAGE.md`'s `ChampionEnemy`
       row.
-- [ ] Implement blob area propagation, gas, and fire terrain.
+- [ ] Implement remaining blob area propagation, gas, and fire terrain (ordinary fire's
+      representable terrain/content slice is covered above; gas and unsupported fire cases remain).
 - [x] Port the Necromancer's skeleton heal/Adrenaline/teleport support behavior - previously it
       had none at all (a summoned skeleton just fought alone forever). Now heals `HT/5` when
       hurt, grants a one-time Adrenaline (reusing the existing haste stand-in) if visible and
@@ -1046,7 +1065,11 @@ Do not add new authored content as object literals or scattered constants in the
       title+torches group shifted as a rigid unit so that glyph-centred layout also lands
       dead-centre on screen (measured post-fix: 1px off centre at 1078px width). See
       `PORT_COVERAGE.md`'s title-screen row.
-- [ ] Complete the journal UI and identification tabs.
+- [x] Complete the journal UI and identification tabs (2026-09-11, simplified). The MWG window
+      now exposes Guide, Notes, and Items tabs with paged paragraphs, translated labels, and
+      known/unknown item entries. The port persists identification on item instances rather than
+      Java's run-wide class journal, and the remaining Java-specific journal unlock rules stay
+      documented in `PORT_COVERAGE.md`.
 - [ ] Port pause/menu chrome, boss banners, toast animations, and Java-style transitions.
 - [ ] Implement large interface-size layouts.
 - [ ] Port the hero information window, busy indicator, talent animations, and quick slots.
@@ -1280,6 +1303,29 @@ browser pass before they can be treated as done rather than merely built:
       confirmation done 2026-09-09** (`chrome-devtools-mcp`, `claude-in-chrome` unavailable
       this session): spawned a `sentry` mid-run via `window.__MWG__.currentScene.spawnMonster`
       - no crash, the real `red_sentry.png` art rendered on screen after a `refresh()`.
+- [x] **Live pass on the in-progress 2026-09-11 workstream (done 2026-09-11, without either
+      named browser tool).** Neither `Codex-in-chrome` nor `chrome-devtools-mcp` was connected
+      this session, so the check ran through the globally installed `playwright` driving the
+      full Chromium build over `file://` - the built `dist/index.html` is deliberately
+      server-free, so no port was needed. The scripts live outside this repo, in the usual
+      `_browsercheck/` directory (`mwgpd_browser_smoke.mjs`, `mwgpd_browser_play.mjs`,
+      `mwgpd_browser_ui.mjs`, `mwgpd_browser_probe.mjs`, screenshots in
+      `mwgpd_shots_2026-09-11/`), so nothing untracked was left in `tools/scratch/`. Confirmed
+      with screenshots and zero page/console errors: the title
+      screen; the class-select screen (names and the locked hint now fully translated - see the
+      two fixes below); hero creation; the depth-1 sewer floor with HUD, action bar and a
+      French log; the three-tab journal; the inventory with its four translated filter tabs; and
+      the alchemy recipe picker (`Choisissez une recette (20)` listing `bombe de feu`, `leurre`,
+      `bombe d'engrais` - the authored MWL outputs now resolving through SPD's real keys).
+      **Two real bugs were found only by doing this**, neither catchable by `tsc`, the build or
+      the suites: (1) `CLASSES[id].nameKey` was an invented key for five of six classes, so
+      class select rendered the raw string `Port.name.rogue` - the class keys now use SPD's
+      `actors.hero.heroclass.*`, the unlock hints moved from English literals into the port
+      catalog, and `tools/i18nCheck.ts` now checks `CLASSES`/`CLASS_UNLOCK_HINT` so it cannot
+      recur; (2) closing the journal left `journalWindow` pointing at a spent `mwg/ui` `Window`,
+      so the next `positionInterface` threw `Cannot set properties of null (setting 'x')` and
+      broke the inventory panel that calls it - `closeJournal` now drops the reference. Details
+      in `PORT_COVERAGE.md`'s i18n bullet.
 
 ## 11. Architecture refactor toward the v3 target
 
@@ -1330,9 +1376,10 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       calls (sprite tint, audio cue, floating text) - the single largest concrete instance of
       plan section 10's complaint. Likely the vehicle for actually adopting `SimulationRuntime`
       above, rather than a separate step. **Progress (2026-09-09):** the hit/damage roll pair is
-      now extracted into `simulation/attackResolution.ts`; the scene consumes its result while
-      retaining all presentation, proc, shield, death, and event effects. The remaining hook
-      branches still need incremental extraction.
+      now extracted into `simulation/attackResolution.ts` and routed through
+      `adapters/attackSimulation.ts`; the scene consumes its result while retaining all
+      presentation, proc, shield, death, and event effects. The remaining hook branches still
+      need incremental extraction.
 - [x] Compare `mwg/i18n` against the plan's section 22C "Semantic Messaging" shape before
       committing to SPD-ADR-012. Done against the installed 0.4.2 `.d.ts` files: it matches
       (`SemanticMessage`/`MessageChannel`/`MessageFormatter`/`createCatalogFormatter`,
@@ -1504,6 +1551,61 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       `hasRaged` one-time revival is a smaller, single-rule instance of the same shape,
       identified but not converted this pass (lower value - a single flag, not a multi-rule
       state machine like the King's).
+
+## 11A. MWG framework backlog (separate repository; roadmap only)
+
+This section is a list of generic proposals for the independent `@datamoc/mw_games` project.
+It is intentionally not an implementation plan for this repository: do not add SPD names,
+Java formulas, item values, dungeon rules, sprites, or other GPL game content to MWG. If one
+of these proposals is accepted upstream, this port may consume the published API later and
+must still keep its game-specific rules and adapters here.
+
+The status was checked against the installed `mwg@0.7.6` declarations on 2026-09-11.
+
+- [x] **Keep using the existing generic primitives.** `Scheduler` already supports actor
+      priorities and postponement; `EntityRegistry.add(entity, requestedId?)` supports save-safe
+      caller-chosen ids; `Inventory` supports nested containers and instance state;
+      `craft()` provides an atomic recipe transaction; `ParticleEmitter.frames` supports animated
+      pooled particles; `Blob.spread()` reports emptied cells; and MWL supplies typed tables,
+      references, and deterministic artifact emission. No MWG change is requested for these.
+- [ ] **P0 — Generalise `MultiTurnBeam` traversal.** Add an opt-in sequence of per-turn fronts
+      (or a game-supplied next-front resolver), explicit blocker policy, per-cell callbacks, and
+      shape identity in the save data. The current API correctly handles a straight captured path;
+      the proposal would also cover reusable cone, burst, forked, and moving-front effects without
+      putting any combat rules into MWG. Define the smallest renderer-free API and add deterministic
+      square/hex tests in MWG before this port adopts it.
+- [ ] **P1 — Add generic particle spawn bounds.** Let an emitter choose a seeded local spawn
+      rectangle/ellipse and an optional local height or lifetime envelope, while preserving the
+      current pooled, renderer-agnostic behavior. This would remove common presentation glue for
+      effects that need controlled spread or a capped flame column; the port's current sparks and
+      title flame remain valid local adapters until such an API exists.
+- [ ] **P1 — Add a renderer-neutral grid targeting controller.** Provide pointer and keyboard
+      navigation over cells, range/line-of-sight validation hooks, an optional area preview, and a
+      confirm/cancel result. The controller must return cells or ids only; level rules, targeting
+      legality, damage, and visuals remain game-owned. This is useful to any grid game and would
+      support future wand, missile, and boss targeting in this port without duplicating input state.
+- [ ] **P2 — Add reusable tabbed, paginated list primitives.** A small data/UI contract for tabs,
+      filtered rows, selection, paging, and detail/close actions would serve inventories, journals,
+      shops, and codices across games. It must remain presentation-framework generic, accept caller
+      supplied labels and rows, and not assume an RPG item taxonomy. Until then, this port keeps its
+      compact inventory and journal adapters locally.
+- [ ] **P2 — Add a documented event-to-presentation sequencing recipe.** The existing
+      `SimulationRuntime` and `PresentationQueue` cover the core split, but MWG should document (and
+      test with a small example) how a command result, scheduled secondary actor, animation lock,
+      cancellation, and save/load interact. The goal is a stable integration pattern for turn-based
+      games, not an SPD-specific combat pipeline.
+- [ ] **Before proposing API changes, add framework-side acceptance tests and examples.** Each
+      proposal above needs renderer-free determinism tests, a minimal example, save compatibility
+      notes, and an API report entry in the MWG repository. This port should only add an adoption
+      checkbox here after a released version exists and has been checked against its declarations.
+
+### Explicitly out of scope for MWG
+
+The following remain port-owned work even when they could be made more generic in theory:
+SPD appearance tables and identification, fire/embers and well behavior, exact monster and boss
+rules, talents and subclasses, quests, room generation, item effects, Java-derived numbers,
+translations, and all SPD art/assets. “Could be represented by a generic primitive” is not a
+reason to move those rules or data across the licensing boundary.
 
 ## 12. Publish a playable build on GitHub Pages
 

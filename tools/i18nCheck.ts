@@ -14,6 +14,7 @@
 
 import { SPD_MESSAGES } from '../src/generated/spdMessages';
 import { PORT_STRINGS_EN, PORT_STRINGS_FR, PORT_TRANSLATION_ORIGIN } from '../src/i18n/portStrings';
+import { CLASSES, CLASS_UNLOCK_HINT } from '../src/classes';
 import { readFileSync } from 'node:fs';
 import { LANGUAGES, detectLanguage } from '../src/i18n/languages';
 import {
@@ -70,6 +71,27 @@ for (const [table, keys] of tables) {
 			spdKeyExists(key) && base[key] !== ''
 		);
 	}
+}
+
+/**
+ * 1c. The hero classes' own keys, which no lookup table covered.
+ *
+ * `CLASSES[id].nameKey` reached `t()` straight from MWL, so five of the six classes rendered the
+ * raw string `Port.name.rogue` on the class-select screen while this check passed - the exact
+ * player-visible failure the file exists to catch. `CLASSES` is now a checked table too, and the
+ * unlock hints moved from English literals in the MWL into the port catalog with it.
+ */
+for (const [id, definition] of Object.entries(CLASSES)) {
+	for (const [field, key] of [['nameKey', definition.nameKey], ['weaponKey', definition.weaponKey], ['blurbKey', definition.blurbKey]] as const) {
+		check(`${id}.${field} (${key}) resolves`, spdKeyExists(key) && base[key] !== '');
+	}
+	if (definition.special.labelKey) {
+		check(`${id}.special.labelKey (${definition.special.labelKey}) resolves`, spdKeyExists(definition.special.labelKey) && base[definition.special.labelKey] !== '');
+	}
+}
+for (const [id, key] of Object.entries(CLASS_UNLOCK_HINT)) {
+	if (key === '') continue; // the always-unlocked Warrior has no hint
+	check(`CLASS_UNLOCK_HINT.${id} (${key}) resolves`, spdKeyExists(key) && base[key] !== '');
 }
 
 /**

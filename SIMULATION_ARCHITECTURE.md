@@ -187,6 +187,14 @@ all presentation and world mutation. This is intentionally a cost-free command w
 scheduler/random pair, matching the search and hunger adapters; reconciling those with the
 scene's live turn runtime remains part of the later cost-bearing command migration.
 
+## Step 10 - runtime-routed attack resolution
+
+`adapters/attackSimulation.ts` now dispatches the extracted hit/damage roll pair through MWG's
+`SimulationRuntime`. The command carries the scene's `SimulationRandom`, preserving the existing
+random stream and Java-derived short-circuit (a miss consumes no damage roll); the runtime's
+generator and scheduler remain inert until combat state and turn costs are unified. `main.ts`
+still owns weapon-affix/talent branches, damage application, death, sprites, audio, and logs.
+
 ## Verification
 
 Run `npm run check`, `npm run test:simulation`, and `npm run build`. The simulation checks

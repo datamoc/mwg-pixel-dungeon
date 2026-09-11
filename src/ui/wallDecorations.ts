@@ -217,6 +217,46 @@ export class WaterEmberLayer extends Container {
 	}
 }
 
+/**
+ * `WellWater`'s visual ripple: a quiet pair of expanding rings over each active magic well.
+ * The Java scene uses its water-surface ripple effect for this presentation; the port keeps
+ * the gameplay state in the floor painter and owns this lightweight scene effect separately.
+ * It is deterministic per cell and FOV-gated, so hidden wells do not animate needlessly.
+ */
+export class WellRippleLayer extends Container {
+	private readonly wells: { x: number; y: number; phase: number; gfx: Graphics }[];
+	private elapsed = 0;
+
+	constructor(cells: { x: number; y: number }[]) {
+		super();
+		this.wells = cells.map((cell, index) => {
+			const gfx = new Graphics();
+			this.addChild(gfx);
+			return { ...cell, phase: (index * 0.37) % 1.2, gfx };
+		});
+	}
+
+	/** @param isVisible reports whether a cell is in the hero's current field of view */
+	update(dt: number, isVisible: (x: number, y: number) => boolean): void {
+		this.elapsed = (this.elapsed + dt) % 1.2;
+		for (const well of this.wells) {
+			if (!isVisible(well.x, well.y)) {
+				well.gfx.visible = false;
+				continue;
+			}
+			well.gfx.visible = true;
+			well.gfx.clear();
+			const cx = well.x * TILE + TILE / 2;
+			const cy = well.y * TILE + TILE / 2;
+			for (let ring = 0; ring < 2; ring++) {
+				const t = ((this.elapsed + well.phase + ring * 0.6) % 1.2) / 1.2;
+				well.gfx.ellipse(cx, cy, 2 + t * 5, 1.25 + t * 2.5)
+					.stroke({ color: 0xb7ead5, width: 1, alpha: 0.55 * (1 - t) });
+			}
+		}
+	}
+}
+
 function lerpColor(a: number, b: number, t: number): number {
 	const ar = (a >> 16) & 0xff, ag = (a >> 8) & 0xff, ab = a & 0xff;
 	const br = (b >> 16) & 0xff, bg = (b >> 8) & 0xff, bb = b & 0xff;

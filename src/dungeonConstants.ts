@@ -16,8 +16,9 @@ export const DOOR = 4;
 export const GRASS = 5;
 export const HIGH_GRASS = 6;
 export const DOOR_CLOSED = 7;
+export const EMBERS = 8;
 
-//the same eight ids by name, for spdLevelGen/gameBridge.ts - the ported generator speaks real
+//the same nine ids by name, for spdLevelGen/gameBridge.ts - the ported generator speaks real
 //Terrain.java constants and must not hardcode the ids above, so it maps to names and the codes
 //are handed to it from here (see gameBridge's GameKindCodes)
 export const GAME_KIND_CODES: GameKindCodes = {
@@ -29,6 +30,7 @@ export const GAME_KIND_CODES: GameKindCodes = {
 	grass: GRASS,
 	highGrass: HIGH_GRASS,
 	doorClosed: DOOR_CLOSED,
+	embers: EMBERS,
 };
 
 //the kinds array every Level is built with, in id order - shared by the ported and generic
@@ -46,6 +48,7 @@ export const TERRAIN_KINDS: Roguelike.TerrainKind[] = [
 	{ passable: true, transparent: true }, //GRASS
 	{ passable: true, transparent: true }, //HIGH_GRASS
 	{ passable: false, transparent: false }, //DOOR_CLOSED
+	{ passable: true, transparent: true }, //EMBERS
 ];
 
 //DungeonTileSheet.java: a 16-wide grid of 16x16 tiles, shared by every level's tileset.

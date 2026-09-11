@@ -5,7 +5,7 @@
  * byte for byte (see PORT_COVERAGE.md). None of it knows anything about how this port renders
  * or pathfinds. This module is the one place that translates: it drives generation in the exact
  * order the Java harness does, then reduces a `PaintLevel` (real `Terrain.java` int constants,
- * 0-31) down to the eight coarse terrain kinds `main.ts` actually implements.
+ * 0-31) down to the nine coarse terrain kinds `main.ts` actually implements.
  *
  * Two properties of the translation are worth stating up front, because both are lossy and
  * neither is a bug in the generator:
@@ -41,7 +41,7 @@ import { paintCaveRoom } from './rooms/standard/caveRoom';
 import { paintStandaloneTerrain } from './regularPainter';
 
 /**
- * `main.ts`'s eight terrain kinds, by name. `main.ts` owns the numeric codes (its `WALL`/
+ * `main.ts`'s nine terrain kinds, by name. `main.ts` owns the numeric codes (its `WALL`/
  * `FLOOR`/... consts index its own `Roguelike.TerrainKind[]`); this module deliberately does not
  * hardcode them, so the two can't drift silently - the caller passes its own code table to
  * `toGameTerrain`.
@@ -54,7 +54,8 @@ export type GameKindName =
 	| 'door'
 	| 'grass'
 	| 'highGrass'
-	| 'doorClosed';
+	| 'doorClosed'
+	| 'embers';
 
 export type GameKindCodes = Record<GameKindName, number>;
 
@@ -75,8 +76,11 @@ export type GameKindCodes = Record<GameKindName, number>;
  * - `WELL`/`EMPTY_WELL` -> `floor`. Java's wells hold a `WellWater` effect; here plain floor.
  * - `SIGN` -> `floor`. Java shows text on contact.
  * - `PEDESTAL` -> `floor`. Java's holds the Amulet on the last floor.
- * - `EMBERS`, `EMPTY_SP`, `EMPTY_DECO`, `INACTIVE_TRAP` -> `floor`. Cosmetic in Java too (an
- *   `INACTIVE_TRAP` is a sprung one), so these lose only their distinct sprite.
+ * - `EMBERS` -> `embers`, a distinct passable live kind so fire burnout can preserve Java's
+ *   terrain state. `EMPTY_SP`, `EMPTY_DECO`, `INACTIVE_TRAP` -> `floor`; those are cosmetic in
+ *   Java too (an `INACTIVE_TRAP` is a sprung one), so they lose only their distinct sprite.
+ * - `FURROWED_GRASS` -> `highGrass`; the raw grid preserves the exact Java value while the
+ *   coarse kind retains passability and the existing tall-grass presentation.
  * - `CRYSTAL_DOOR` -> `doorClosed`, and it is registered as locked by the queued
  *   `crystalKey` that `RegularLevel` places after room painting.
  * - `SECRET_DOOR`/`SECRET_TRAP` are NOT in this table: they are concealed via `Secrets`
@@ -92,13 +96,14 @@ export const SPD_TERRAIN_TO_GAME_KIND: Record<number, GameKindName> = {
 	[Terrain.DOOR]: 'door',
 	[Terrain.ENTRANCE]: 'floor',
 	[Terrain.EXIT]: 'floor',
-	[Terrain.EMBERS]: 'floor',
+	[Terrain.EMBERS]: 'embers',
 	[Terrain.LOCKED_DOOR]: 'doorClosed',
 	[Terrain.PEDESTAL]: 'floor',
 	[Terrain.WALL_DECO]: 'wall',
 	[Terrain.BARRICADE]: 'wall',
 	[Terrain.EMPTY_SP]: 'floor',
 	[Terrain.HIGH_GRASS]: 'highGrass',
+	[Terrain.FURROWED_GRASS]: 'highGrass',
 	// SECRET_DOOR / SECRET_TRAP handled via Secrets, see the doc comment above.
 	[Terrain.SECRET_DOOR]: 'wall',
 	[Terrain.SECRET_TRAP]: 'floor',
@@ -228,7 +233,7 @@ export interface PortedFloor {
 	/** NPCs and special mobs placed by a Java room painter (shopkeeper, Wandmaker, etc.). */
 	mobs: { x: number; y: number; kind: string; loot?: string }[];
 	/** Room drops emitted by the real Painter, reduced to positions and source item ids. */
-	groundItems: { x: number; y: number; kind: string; note?: string; sourceClass?: string }[];
+	groundItems: { x: number; y: number; kind: string; note?: string; sourceClass?: string; quantity?: number }[];
 	/** Items queued through Java's Level.addItemToSpawn(), placed after room painting. */
 	queuedItems: string[];
 	/** Run-level Blacksmith.Quest.alternative, carried out of the generator for gameplay. */
@@ -403,6 +408,7 @@ function extract(paint: PaintLevel, rooms: Room[], feeling: number | null): Port
 		kind: item.kind.split('|', 1)[0],
 		note: item.note,
 		sourceClass: item.sourceClass ?? item.kind.split('|')[1],
+		quantity: item.quantity,
 	}));
 	const mobs = paint.mobs.map((mob) => ({
 		x: mob.pos % w,

@@ -11,6 +11,10 @@ const SHOP_WEAPON_TIERS: Record<string, number> = Object.fromEntries([
 	['Greatsword', 5], ['WarHammer', 5], ['Glaive', 5], ['Greataxe', 5], ['Greatshield', 5], ['Gauntlet', 5], ['WarScythe', 5],
 ]);
 const SHOP_ARMOR_TIERS: Record<string, number> = { ClothArmor: 1, LeatherArmor: 2, MailArmor: 3, ScaleArmor: 4, PlateArmor: 5 };
+export const SPECIALTY_BOMB_IDS = new Set([
+	'frostBomb', 'woollyBomb', 'fireBomb', 'noisemaker', 'flashbang',
+	'shockBomb', 'regrowthBomb', 'holyBomb', 'arcaneBomb', 'shrapnelBomb',
+]);
 
 /** Rolls an affix from `table` when eligible, `undefined` otherwise - `generatedInventoryItem`'s
  * cursed/hasGoodEnchant gates decide eligibility. MWG 0.7.2's `rollAffix` `curse` option does the
@@ -24,19 +28,22 @@ export function rollGeneratedAffix(table: Actors.AffixTable, cursed: boolean, ha
 
 export function groundKindForItem(item: NonNullable<GroundItem['item']>, fallback: GroundItemKind): GroundItemKind {
 	if (item.id === 'gold') return 'gold';
+	if (item.id === 'energyCrystal') return 'stone';
+	if (item.id === 'gooBlob' || item.id === 'metalShard') return 'food';
 	if (item.id === 'seed') return 'seed';
 	if (item.id === 'weaponReward') return 'armor'; // same existing equipment sprite path; payload retains weapon identity
 	if (item.id === 'armorReward') return 'armor';
 	if (item.id === 'cloak') return 'wand'; // artifact stand-in uses the existing cloak sprite path
 	if (item.id === 'wand') return 'wand';
 	if (item.id.startsWith('ring_')) return 'ring';
-	if (item.id === 'bomb' || item.id === 'doubleBomb') return 'bomb';
+	if (item.id === 'bomb' || item.id === 'doubleBomb' || SPECIALTY_BOMB_IDS.has(item.id)) return 'bomb';
 	if (item.id === 'corpseDust') return 'corpseDust';
 	if (item.id === 'candle') return 'candle';
 	if (item.id === 'embers') return 'embers';
 	if (item.id === 'ankh') return 'ankh';
 	if (item.id === 'stylus') return 'stylus';
 	if (item.id === 'honeypot') return 'honeypot';
+	if (item.id === 'chargrilledMeat') return 'meat';
 	if (item.id === 'alchemize') return 'alchemize';
 	if (item.id === 'bag') return 'bag';
 	if (item.id.startsWith('missile_')) return 'stone';
@@ -67,6 +74,7 @@ export function sourceInventoryItem(id: string, sourceClass: string | undefined,
 	if (id.toLowerCase() === 'seed') return { id: 'seed', quantity: 1, identified: true, sourceClass };
 	const concrete = sourceClass ?? id;
 	const lower = concrete.toLowerCase();
+	if (concrete === 'ChargrilledMeat' || lower === 'chargrilledmeat') return { id: 'chargrilledMeat', quantity: 1, identified: true, sourceClass: 'ChargrilledMeat' };
 	const missile = MWL_MISSILE_BY_CLASS.get(concrete);
 	if (missile) return {
 		id: missile.id,
@@ -76,8 +84,12 @@ export function sourceInventoryItem(id: string, sourceClass: string | undefined,
 		sourceClass: missile.sourceClass,
 	};
 	if (lower.includes('gold')) return { id: 'gold', quantity: 1, identified: true, sourceClass: concrete };
-	//same short-id rename `generatedInventoryItem` needs for these two (see its comment)
-	if (lower.includes('potion')) return { id: concrete === 'PotionOfLiquidFlame' ? 'potionFlame' : concrete === 'PotionOfInvisibility' ? 'potionInvis' : concrete.replace(/^PotionOf/, 'potion'), quantity: 1, identified: false, sourceClass: concrete };
+	//same short-id rename `generatedInventoryItem` needs for these two (see its comment).
+	//Room painters can pass the already-lowercase `potionOf...` id while generator drops pass
+	//the Java `PotionOf...` class, so the prefix removal must be case-insensitive; otherwise an
+	//unidentified PotionOfLevitation becomes `potionOfLevitation`, which is absent from the
+	//appearance table and crashes when the hero picks it up.
+	if (lower.includes('potion')) return { id: concrete.toLowerCase() === 'potionofliquidflame' ? 'potionFlame' : concrete.toLowerCase() === 'potionofinvisibility' ? 'potionInvis' : concrete.replace(/^PotionOf/i, 'potion'), quantity: 1, identified: false, sourceClass: concrete };
 	//same short-id rename `generatedInventoryItem` needs for these three (see its comment)
 	if (lower.includes('scroll')) return { id: concrete === 'ScrollOfMirrorImage' ? 'scrollMirror' : concrete === 'ScrollOfMagicMapping' ? 'scrollMapping' : concrete === 'ScrollOfRemoveCurse' ? 'scrollCleanse' : concrete.replace(/^ScrollOf/, 'scroll'), quantity: 1, identified: false, sourceClass: concrete };
 	if (lower.includes('ring')) return { id: `ring_${concrete.replace(/^RingOf/, '').replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`).replace(/^_/, '')}`, quantity: 1, identified: false, instanceId: newItemInstanceId('ring'), sourceClass: concrete };
@@ -95,6 +107,10 @@ export function sourceInventoryItem(id: string, sourceClass: string | undefined,
 	//(`Bomb.isIdentified()` returns true unconditionally).
 	if (concrete === 'DoubleBomb' || lower === 'doublebomb') return { id: 'doubleBomb', quantity: 1, identified: true, sourceClass: 'DoubleBomb' };
 	if (concrete === 'Bomb' || lower === 'bomb') return { id: 'bomb', quantity: 1, identified: true, sourceClass: 'Bomb' };
+	if (SPECIALTY_BOMB_IDS.has(id)) return { id, quantity: 1, identified: true, sourceClass: id };
+	if (lower === 'gooblob') return { id: 'gooBlob', quantity: 1, identified: true, sourceClass: concrete };
+	if (lower === 'metalshard') return { id: 'metalShard', quantity: 1, identified: true, sourceClass: concrete };
+	if (lower === 'energycrystal') return { id: 'energyCrystal', quantity: 1, identified: true, sourceClass: concrete };
 	//RitualSiteRoom's four queued `CeremonialCandle`s (quest type 2) - always identified
 	//(`isIdentified()` returns true unconditionally), like every other quest prop here.
 	if (concrete === 'CeremonialCandle' || lower === 'ceremonialcandle') return { id: 'candle', quantity: 1, identified: true, sourceClass: 'CeremonialCandle' };
@@ -149,7 +165,9 @@ export function portItemKind(id: string): GroundItemKind | null {
 	//future Tengu smoke-bomb heap never folds into the throwable-bomb family by
 	//substring accident. Previously returned null, which silently dropped every
 	//generated bomb instead of spawning it.
-	if (lower === 'bomb' || lower === 'doublebomb') return 'bomb';
+	if (lower === 'bomb' || lower === 'doublebomb' || SPECIALTY_BOMB_IDS.has(id)) return 'bomb';
+	if (lower === 'gooblob') return 'food';
+	if (lower === 'metalshard') return 'food';
 	//MassGraveRoom's CorpseDust heap (quest type 1) - exact match like bombs, so it
 	//spawns as a real pickup instead of vanishing on the null branch below.
 	if (lower === 'corpsedust') return 'corpseDust';

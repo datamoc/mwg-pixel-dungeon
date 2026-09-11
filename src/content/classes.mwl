@@ -1,6 +1,9 @@
 [trait]
 id=warrior
-name=port.name.warrior
+#SPD names a hero class through `HeroClass`'s own message key (`actors.hero.heroclass.<id>`),
+#which every shipped language carries. The Cleric is the one exception: it postdates this
+#checkout's HeroClass enum, so it keeps a port-owned name.
+name=actors.hero.heroclass.warrior
 [effect]
 apply_to=weapon_key
 set=port.name.wornshortsword
@@ -65,7 +68,7 @@ set=5
 
 [trait]
 id=mage
-name=port.name.mage
+name=actors.hero.heroclass.mage
 [effect]
 apply_to=weapon_key
 set=port.name.magesstaff
@@ -104,7 +107,7 @@ set=unlock_mage
 [/effect]
 [effect]
 apply_to=unlock_hint
-set=Unlock: use an upgrade scroll.
+set=port.class.mage.unlockhint
 [/effect]
 [effect]
 apply_to=special_kind
@@ -130,7 +133,7 @@ set=8
 
 [trait]
 id=rogue
-name=port.name.rogue
+name=actors.hero.heroclass.rogue
 [effect]
 apply_to=weapon_key
 set=port.name.dagger
@@ -169,7 +172,7 @@ set=unlock_rogue
 [/effect]
 [effect]
 apply_to=unlock_hint
-set=Unlock: land 10 surprise attacks.
+set=port.class.rogue.unlockhint
 [/effect]
 [effect]
 apply_to=special_kind
@@ -195,7 +198,7 @@ set=6
 
 [trait]
 id=huntress
-name=port.name.huntress
+name=actors.hero.heroclass.huntress
 [effect]
 apply_to=weapon_key
 set=port.name.gloves
@@ -234,7 +237,7 @@ set=unlock_huntress
 [/effect]
 [effect]
 apply_to=unlock_hint
-set=Unlock: throw 10 times.
+set=port.class.huntress.unlockhint
 [/effect]
 [effect]
 apply_to=special_kind
@@ -260,7 +263,7 @@ set=6
 
 [trait]
 id=duelist
-name=port.name.duelist
+name=actors.hero.heroclass.duelist
 [effect]
 apply_to=weapon_key
 set=port.name.rapier
@@ -299,7 +302,7 @@ set=unlock_duelist
 [/effect]
 [effect]
 apply_to=unlock_hint
-set=Unlock: raise a weapon to +2.
+set=port.class.duelist.unlockhint
 [/effect]
 [effect]
 apply_to=special_kind
@@ -364,7 +367,7 @@ set=victory
 [/effect]
 [effect]
 apply_to=unlock_hint
-set=Unlock: win a run.
+set=port.class.cleric.unlockhint
 [/effect]
 [effect]
 apply_to=special_kind

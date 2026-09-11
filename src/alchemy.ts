@@ -1,6 +1,6 @@
 import { craft, type Recipe } from 'mwg/actors';
 import type { Inventory } from 'mwg/actors';
-import { MWL_TABLE_ROWS } from './mwlContent';
+import { MWL_ITEM_NODES, MWL_TABLE_ROWS } from './mwlContent';
 
 export interface AlchemyRecipe extends Recipe {
 	readonly id: string;
@@ -35,6 +35,17 @@ export const ALCHEMY_RECIPES: readonly AlchemyRecipe[] = MWL_TABLE_ROWS('alchemy
 		result: { id: String(row.result), quantity: Number(row.resultQuantity), stackable: true },
 	};
 });
+const MWL_ITEM_IDS = new Set(MWL_ITEM_NODES.map((node) => node.attributes.id));
+for (const recipe of ALCHEMY_RECIPES) {
+	for (const ingredient of recipe.ingredients) {
+		if (!MWL_ITEM_IDS.has(ingredient.id)) {
+			throw new Error(`MWL alchemy recipe ${recipe.id} references unknown ingredient item: ${ingredient.id}`);
+		}
+	}
+	if (!MWL_ITEM_IDS.has(recipe.result.id)) {
+		throw new Error(`MWL alchemy recipe ${recipe.id} references unknown result item: ${recipe.result.id}`);
+	}
+}
 for (const recipe of ALCHEMY_RECIPES) {
 	if (!ALCHEMY_RECIPE_MANIFEST.some((manifest) => manifest.id === recipe.id)) {
 		throw new Error(`Executable MWL alchemy recipe is missing from the manifest: ${recipe.id}`);

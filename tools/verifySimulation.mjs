@@ -34,7 +34,7 @@ try {
 	for (const file of ['simulation/movement', 'simulation/heroTurn', 'simulation/hunger', 'simulation/turns', 'adapters/sceneSimulation',
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActions',
-		'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'simulation/tenguAbility']) {
+		'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/tenguAbility']) {
 		compile(new URL(`../src/${file}.ts`, import.meta.url), `${file}.js`);
 	}
 	// The framework half of the harness is the INSTALLED package - the same
@@ -68,6 +68,7 @@ try {
 	const { runHungerStep } = require('./adapters/hungerSimulation');
 	const { runMovement } = require('./adapters/movementSimulation');
 	const { resolveAttack } = require('./simulation/attackResolution');
+	const { runAttackResolution } = require('./adapters/attackSimulation');
 	const { stepTenguAbility, tenguTargetAbilityUses, tenguAbilityCost } = require('./simulation/tenguAbility');
 	const { runUntilHeroInput } = require('./adapters/sceneSimulation');
 	const { SceneSimulationAdapter } = require('./adapters/sceneSimulation');
@@ -96,8 +97,10 @@ try {
 		const attacker = { id: 'hero-1', x: 1, y: 1, hp: 20, maxHp: 20, accuracy: 10, evasion: 5, damage: [3, 7], armor: [0, 0], buffs: {}, isHero: true };
 		const defender = { id: 'rat-1', x: 2, y: 1, hp: 10, maxHp: 10, accuracy: 5, evasion: 0, damage: [1, 2], armor: [1, 1], buffs: {}, isHero: false };
 		assert.deepEqual(resolveAttack(attacker, defender, random), { hit: true, damage: 2 });
+		assert.deepEqual(runAttackResolution(attacker, defender, random), { hit: true, damage: 2 });
 		const untargetable = { ...defender, evasion: 1000000 };
 		assert.deepEqual(resolveAttack(attacker, untargetable, random), { hit: false, damage: 0 });
+		assert.deepEqual(runAttackResolution(attacker, untargetable, random), { hit: false, damage: 0 });
 	});
 	check('recent talent effects cover thresholds, class gates, and rank scaling', () => {
 		assert.equal(talents.ironWillReduction(10, 20, 1), 1);

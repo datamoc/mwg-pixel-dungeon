@@ -30,6 +30,9 @@ const UNIT_VALUES: Record<string, number> = {
 	//`Food.value() = 10 x quantity`, `MysteryMeat.value() = 5 x quantity`,
 	//`Bomb.value() = 15 x quantity`.
 	food: 10, meat: 5, bomb: 15, doubleBomb: 15,
+	frostBomb: 15, woollyBomb: 15, fireBomb: 15, noisemaker: 15, flashbang: 15,
+	shockBomb: 15, regrowthBomb: 15, holyBomb: 15, arcaneBomb: 15, shrapnelBomb: 15,
+	gooBlob: 30, metalShard: 50,
 	//`Runestone.value() = 15 x quantity`, `Plant.Seed.value() = 10 x quantity`,
 	//`TimekeepersHourglass.sandBag.value() = 30` flat.
 	stone: 15, stoneOfAugmentation: 15, stoneOfFear: 15, stoneOfDeepSleep: 15,

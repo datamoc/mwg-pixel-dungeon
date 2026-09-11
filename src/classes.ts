@@ -41,6 +41,8 @@ export interface SpecialAction {
  * `./badges.ts`) - earn the badge, unlock the class, across runs.
  */
 export interface ClassDefinition {
+	/** `actors.hero.heroclass.<id>` for the five classes this checkout's `HeroClass` enum has;
+	 * `port.name.cleric` for the Cleric, which postdates it. */
 	nameKey: string;
 	weaponKey: string;
 	damage: [number, number];
@@ -70,6 +72,8 @@ export const CLASS_BADGE: Record<ClassId, string | null> = Object.fromEntries(
 	MWL_CLASSES.map(({ id, badge }) => [id, badge]),
 ) as Record<ClassId, string | null>;
 
+/** Port message keys for each class's locked hint (empty for the always-open Warrior); the class
+ * select screen resolves them through `t()`. */
 export const CLASS_UNLOCK_HINT: Record<ClassId, string> = Object.fromEntries(
 	MWL_CLASSES.map(({ id, unlockHint }) => [id, unlockHint]),
 ) as Record<ClassId, string>;
