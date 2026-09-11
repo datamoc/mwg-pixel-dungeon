@@ -1,0 +1,28 @@
+[game]
+schema=0.1
+
+# Status-effect immunities (`Char.isImmune`), the class lists real Java gates each source on:
+# Brimstone grants fire immunity (`Brimstone.java`, `isImmune(Burning.class)`), AntiMagic grants
+# magic immunity (`AntiMagic.java`'s `RESISTS` list), and Frost grants chill immunity
+# (`Frost.java`, `isImmune(Chill.class)`). This port models the three sources as the
+# `fireImmune`/`magicImmune` flags and the active `frost` buff, then rejects any buff id listed
+# here before it attaches - see `combat.ts`'s `addBuff`. Damage-source resistance (e.g.
+# `RingOfElements.resist()`) is a separate, executable path, not part of this list.
+
+[trait]
+id=statusImmunities
+name=Char.immunities
+[effect]
+apply_to=fire
+set=burning
+[/effect]
+[effect]
+apply_to=magic
+set=charm,weakness,vulnerable,hex,degrade,magicalSleep
+[/effect]
+[effect]
+apply_to=chill
+set=chill
+[/effect]
+[/trait]
+[/game]

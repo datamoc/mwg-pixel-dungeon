@@ -67,8 +67,10 @@ Do not add new authored content as object literals or scattered constants in the
       `src/content/progression-rules.mwl`; the arithmetic remains an executable hook.
       Weapon enchantments, armor glyphs, and Unstable's delegate list are now authored in
       `src/content/affix-rules.mwl` and adapted to `mwg/actors` affix tables by
-      `itemAffixes.ts`; the per-id proc behavior stays in `main.ts`. Stat blocks and status
-      resistances still need the same treatment.
+      `itemAffixes.ts`; the per-id proc behavior stays in `main.ts`. The three
+      `Char.isImmune` status lists (Brimstone/Frost/AntiMagic) are authored in
+      `src/content/resistance-rules.mwl`, emitted as `simulation/mwlStatusImmunities.ts`, and
+      consumed by `combat.ts`'s `addBuff`. Stat blocks still need the same treatment.
 - [ ] Add dungeon resources: terrain and visual asset references, room templates, floor/depth
       tables, traps, plants, special rooms, NPCs, quests, boss phases, and branch transitions.
       Sewer trap class order and weights are now authored in `src/content/dungeon-rules.mwl`;

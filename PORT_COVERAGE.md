@@ -217,6 +217,19 @@ weapon ids and 13 good/8 cursed glyph ids with none missing or spurious, while a
 time, so a malformed affix row now fails `npm run build` rather than the first generated roll.
 `npx tsc --noEmit`, `npm run build`, `test:simulation` 46/46, and `test:items` 1/1 all pass.
 
+Status immunities (`Char.isImmune`) now follow the same path. The three class lists this port
+models - Brimstone's fire immunity (`Brimstone.java`, `Burning`), AntiMagic's magical-status
+immunity (`AntiMagic.java`'s `RESISTS`: charm/weakness/vulnerable/hex/degrade/magicalSleep), and
+Frost's chill immunity (`Frost.java`, `Chill`) - are authored in
+`src/content/resistance-rules.mwl`. `tools/compile-mwl.mjs` emits
+`src/simulation/mwlStatusImmunities.ts` (the same pattern `mwlBuffDurations.ts` already uses, so
+the framework-free simulation boundary is preserved) and validates every referenced id against
+the buff-duration catalogue. `combat.ts`'s `addBuff` now uses membership sets instead of the
+hardcoded `id === '...'` chains, so a newly ported immunity is a data change. This is
+behavior-preserving and now covered by a dedicated `test:simulation` check (47/47): fire immunity
+blocks only `burning`, magic immunity blocks exactly those six magical statuses and not `poison`,
+and an active `frost` buff blocks only `chill`.
+
 **Browser-verified 2026-09-11 (first real start-up smoke of the MWL migration):** the resource
 tree compiled and type-checked cleanly but did not actually run. Importing the level generator
 threw on two malformed `room-rules.mwl` rows, which a real browser load surfaced immediately as

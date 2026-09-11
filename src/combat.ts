@@ -10,6 +10,7 @@ import type { BuffId } from './simulation/buffs';
 import { nextEntityId } from './simulation/entityId';
 import { createCombatAdapter } from './adapters/combatSimulation';
 import { simulationRandom } from './adapters/mwgRandom';
+import { STATUS_IMMUNITIES } from './simulation/mwlStatusImmunities';
 export { INFINITE_ACCURACY, INFINITE_EVASION, ASCENSION_MOD, ASCENSION_ON, accRollMulti, setStrongerBossesEnabled } from './simulation/combat';
 export { BUFF_DURATION, NEGATIVE_BUFFS, type BuffId } from './simulation/buffs';
 
@@ -233,17 +234,28 @@ export const ANNOUNCED_BUFFS = new Set<BuffId>([
 	'degrade',
 ]);
 
+/**
+ * `Char.isImmune()`'s three class lists, authored in `src/content/resistance-rules.mwl` and
+ * generated into `simulation/mwlStatusImmunities.ts` so this compatibility module keeps its
+ * framework-free, type-only-`mwg` import boundary. Membership replaces the hardcoded
+ * `id === '...'` chains these checks used to be, so adding a newly ported immunity is a data
+ * change, not a code change here.
+ */
+const FIRE_IMMUNITY_BUFFS = new Set<string>(STATUS_IMMUNITIES.fire);
+const MAGIC_IMMUNITY_BUFFS = new Set<string>(STATUS_IMMUNITIES.magic);
+const CHILL_IMMUNITY_BUFFS = new Set<string>(STATUS_IMMUNITIES.chill);
+
 export function addBuff(c: Creature, id: BuffId): void {
 	//Brimstone.java grants Burning immunity through Char.isImmune(), before the
 	//effect can be attached. Keep this check at the shared buff boundary so fire
 	//from traps, blobs, wands, plants, and enemy attacks all obey it.
-	if (id === 'burning' && c.fireImmune) return;
+	if (FIRE_IMMUNITY_BUFFS.has(id) && c.fireImmune) return;
 	//AntiMagic.RESISTS (items/armor/glyphs/AntiMagic.java): these status classes
 	//are magical in Java and are rejected before attachment. Damage-source
 	//resistance is handled separately by the scene's explicit magical flag.
-	if (c.magicImmune && (id === 'charm' || id === 'weakness' || id === 'vulnerable' || id === 'hex' || id === 'degrade' || id === 'magicalSleep')) return;
+	if (MAGIC_IMMUNITY_BUFFS.has(id) && c.magicImmune) return;
 	//Frost.java declares immunity to Chill: a frozen creature cannot be slowed again.
-	if (id === 'chill' && c.buffs.frost !== undefined) return;
+	if (CHILL_IMMUNITY_BUFFS.has(id) && c.buffs.frost !== undefined) return;
 	const event = combat.addBuff(c, id);
 	if (event.fresh && announceBuff && ANNOUNCED_BUFFS.has(id)) announceBuff(c, id);
 }

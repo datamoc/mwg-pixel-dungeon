@@ -119,6 +119,29 @@ export function verifyCombat(require, check) {
 		} finally { facade.setAnnounceBuff(null); }
 		facade.addBuff(creature, 'poison'); // no scene installed
 	});
+	check('MWL status immunities gate fire, magic, and chill buffs and only those', () => {
+		const fireproof = base({ fireImmune: true });
+		facade.addBuff(fireproof, 'burning');
+		assert.equal(fireproof.buffs.burning, undefined, 'fire immunity must block burning');
+		const plain = base();
+		facade.addBuff(plain, 'burning');
+		assert.equal(plain.buffs.burning, facade.BUFF_DURATION.burning);
+
+		const magic = base({ magicImmune: true });
+		for (const id of ['charm', 'weakness', 'vulnerable', 'hex', 'degrade', 'magicalSleep']) {
+			facade.addBuff(magic, id);
+			assert.equal(magic.buffs[id], undefined, `magic immunity must block ${id}`);
+		}
+		facade.addBuff(magic, 'poison'); // not in AntiMagic.RESISTS
+		assert.equal(magic.buffs.poison, facade.BUFF_DURATION.poison, 'magic immunity must not block a non-magical buff');
+
+		const frozen = base({ buffs: { frost: 10 } });
+		facade.addBuff(frozen, 'chill');
+		assert.equal(frozen.buffs.chill, undefined, 'active Frost must block Chill');
+		const thawed = base();
+		facade.addBuff(thawed, 'chill');
+		assert.equal(thawed.buffs.chill, facade.BUFF_DURATION.chill);
+	});
 	check('adapter ignores sprite and skeleton graph and observes the current random stack', () => {
 		const creature = base();
 		Object.defineProperty(creature, 'sprite', { get: () => assert.fail('sprite read') });

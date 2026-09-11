@@ -9148,6 +9148,77 @@ export const gameData = {
 			},
 			"children": [
 				{
+					"tag": "trait",
+					"attributes": {
+						"id": "statusImmunities",
+						"name": "Char.immunities"
+					},
+					"children": [
+						{
+							"tag": "effect",
+							"attributes": {
+								"apply_to": "fire",
+								"set": "burning"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+								"line": 8,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "effect",
+							"attributes": {
+								"apply_to": "magic",
+								"set": "charm,weakness,vulnerable,hex,degrade,magicalSleep"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+								"line": 12,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "effect",
+							"attributes": {
+								"apply_to": "chill",
+								"set": "chill"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+								"line": 16,
+								"column": 1
+							},
+							"gettext": []
+						}
+					],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+						"line": 5,
+						"column": 1
+					},
+					"gettext": []
+				}
+			],
+			"location": {
+				"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
+				"line": 1,
+				"column": 1
+			},
+			"gettext": []
+		},
+		{
+			"tag": "game",
+			"attributes": {
+				"schema": "0.1"
+			},
+			"children": [
+				{
 					"tag": "turn_clock",
 					"attributes": {
 						"id": "spdAdventureClock",
