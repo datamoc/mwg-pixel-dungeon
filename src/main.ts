@@ -8625,9 +8625,9 @@ export class SewersScene extends Scene2D {
 	/** `YogDzewa.act()`'s firing half: a beam along each painted cell's path damages every character
 	 * it crosses - Java's `ch.alignment != alignment || ch instanceof Bee`, and every non-Yog
 	 * character here is hostile - through the shared hit roll and armor reduction, for the real
-	 * `NormalIntRange(20,30)`, or 30-50 under Stronger Bosses. Java also burns flamable terrain along
-	 * each path; this port leaves terrain alone (a stated simplification, recorded in
-	 * `PORT_COVERAGE.md`). */
+	 * `NormalIntRange(20,30)`, or 30-50 under Stronger Bosses. Java also burns flamable terrain
+	 * along each path (`Dungeon.level.destroy`), which this port now does too - see the burn in
+	 * the path walk below. */
 	private fireYogDeathGaze(yog: Creature, targeted: readonly number[]): void {
 		const stronger = isChallengeEnabled('stronger_bosses');
 		const affected = new Set<Creature>();
@@ -8636,6 +8636,14 @@ export class SewersScene extends Scene2D {
 			for (const point of Roguelike.traceLine(yog, to)) {
 				const creature = this.creatureAt(point.x, point.y);
 				if (creature && creature !== yog) affected.add(creature);
+				//`YogDzewa.act()` runs `Dungeon.level.destroy(p)` on every flamable path cell -
+				//Java's FLAMABLE flag covers GRASS/HIGH_GRASS (including the furrows a Soiled fist
+				//or a Regrowth wand leaves) and both door states - rewriting the tile to EMBERS.
+				//This port's live terrain has no EMBERS id, so a burned cell becomes plain FLOOR,
+				//whose flags (passable, not flamable) match EMBERS' own.
+				if ([GRASS, HIGH_GRASS, DOOR, DOOR_CLOSED].includes(this.level.get(point.x, point.y))) {
+					this.level.set(point.x, point.y, FLOOR);
+				}
 			}
 		}
 		this.say(t('port.log.yogbeam'), 'warning');
