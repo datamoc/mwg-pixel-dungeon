@@ -1692,9 +1692,14 @@ still owes is named inline.
       rule is narrower than any built-in shape - and drop the `yogTargeted`/`tenguFire` hand-state.
 - [x] **P1 — Add generic particle spawn bounds.** *Shipped in 0.7.7 (item 279).*
       `ParticleEmitterOptions.spawn` takes a `ParticleSpawnArea` (`{ shape: 'rect' | 'ellipse',
-      width, height? }`, plus an optional emission direction), spreading births across an extent
-      rather than one origin; a point emitter is untouched, so existing seeded replays are
-      identical. Port adoption owed for the title flame and sparks if it removes local glue.
+      width, height? }`), spreading births across an extent rather than one origin; a point
+      emitter is untouched, so existing seeded replays are identical. **Adopted 2026-09-12** for
+      the title flame (`ui/titleFlame.ts`), which had documented the missing spawn range as its
+      one deliberate reduction: the flame column now births across a 4x3 ellipse instead of a
+      single point (the `heightLimit` clamp is still unmodelled - `ParticleEmitter` caps a
+      particle's life, not its height). The colour-only sparks stay local (a `ParticleEmitter`
+      tints per emitter, not per particle, so two colours need two emitters), and the hand-rolled
+      `WallDecorationLayer`/`WaterEmberLayer` spots are a separate candidate, not converted here.
 - [x] **P1 — Add a renderer-neutral grid targeting controller.** *Shipped in 0.7.7 (item 280).*
       `roguelike.TargetingController` gives a cursor moved by `move(dx, dy)`/`moveTo(cell)`,
       range + line-of-sight legality with an optional `validate` hook, a `preview()` of the shape's

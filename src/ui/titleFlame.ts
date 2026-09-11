@@ -44,11 +44,12 @@ export class TitleFlame extends Container {
 		this.glow.blendMode = 'add';
 		this.addChild(this.glow);
 
-		//`Emitter.pour(..., 0.1f)` becomes rate 10. ParticleEmitter has no spawn-position
-		//range or height clamp, so the old few-pixel scatter and `heightLimit` are a deliberate
-		//presentation reduction; its per-particle angle/speed/spin ranges keep the flame from
-		//forming an artificial straight column while frame selection, pooling, lifetime, and
-		//upward motion remain shared.
+		//`Emitter.pour(..., 0.1f)` becomes rate 10. MWG 0.7.7's `ParticleSpawnArea` restores the
+		//few-pixel birth scatter across the torch mouth (a point emitter would birth the whole
+		//column from one origin); the `heightLimit` clamp is still not modelled, since
+		//`ParticleEmitter` caps a particle's life but not its height. Its per-particle
+		//angle/speed/spin ranges keep the flame from forming an artificial straight column, and
+		//frame selection, pooling, lifetime, and upward motion remain shared.
 		this.flameEmitter = new ParticleEmitter({
 			frames: [quadrant(texture, 2), quadrant(texture, 3)],
 			max: 16,
@@ -60,6 +61,7 @@ export class TitleFlame extends Container {
 			scale: [1, 0],
 			alpha: [0, 1],
 			spin: [-0.8, 0.8],
+			spawn: { shape: 'ellipse', width: 4, height: 3 },
 		});
 		this.flameEmitter.blendMode = 'add';
 		this.flameEmitter.start();
