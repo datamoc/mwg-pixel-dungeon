@@ -559,8 +559,9 @@ Do not add new authored content as object literals or scattered constants in the
 - [ ] Port City/Dwarf King's throne and Imp-shop scripts (the full 1/2/3 phase machine
       is now live: P1 hunt with exact summon/ability cooldowns and LINK/TELE-lite, P2
       immobile shield with real wave schedule and self-chip, P3 bleed/summons/losing yell
-      - replacing a sketch whose Fury and hold-the-barrier turn had no Java basis; throne
-      geometry, the Imp shop, P3 viscosity, and the crown drop remain).
+      - replacing a sketch whose Fury and hold-the-barrier turn had no Java basis; the
+      King's Crown drop is also live (granted on his death; see `kill`'s king branch), so
+      throne geometry, the Imp shop, and P3 viscosity remain).
 - [ ] Port Halls/Yog's full fist, flame, shadow, and arena scripts (HP-gate floors,
       per-gate fist spawns, fist-gated invulnerability across ALL damage sources, fist
       proximity guards, and the phase-5 hope trigger are now live with the real
