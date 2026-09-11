@@ -619,7 +619,8 @@ Do not add new authored content as object literals or scattered constants in the
       Challenge pairs are now ported too (2026-09-11): the fist identities come from Java's
       real seeded `fistSummons`/`challengeSummons` decks (one fist per opposed pair, shuffled,
       plus the paired counterparts in Java's two-rotation order on the Stronger Bosses
-      challenge), replacing the rotating-index stand-in and the three-live cap. Flame/shadow
+      challenge), replacing the rotating-index stand-in and the three-live cap; a Rusted fist's
+      own deferred damage is now banked through the same monster pool as the King's phase 3. Flame/shadow
       arenas, beam terrain-burning, and visibility shrink remain).
 - [x] Port final-vault Amulet placement at Java's `AMULET_POS` (depth 26, x=8, y=12).
 - [ ] Port final-vault endgame-specific terrain, custom visuals, and compass behavior. The

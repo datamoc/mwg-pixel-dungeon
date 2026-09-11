@@ -8290,26 +8290,31 @@ export class SewersScene extends Scene2D {
 	 * Not modeled: throne geometry (he stands his ground instead of teleporting to it), the
 	 * LloydsBeacon upgrade (this port has no beacon artifact), and presentation
 	 * (particles/sounds). P3 now defers every incoming hit into Viscosity's pool instead of HP
-	 * (`deferKingDamage`/`tickMonsterDeferredDamage`). The King's Crown drop is granted on his death (see `kill`'s king
+	 * (`deferMonsterDamage`/`tickMonsterDeferredDamage`). The King's Crown drop is granted on his death (see `kill`'s king
 	 * branch) - it enters the bag directly because the port moves to the next floor at that same
 	 * boundary. Summon/ability cooldown
 	 * damage-acceleration in P1 is exact (`-= taken/8`).
 	 */
-	/** `DwarfKing.damage()`'s phase-3 branch: the King takes no direct HP damage unless the hit
-	 * already is his own deferred payout (`src instanceof Viscosity.DeferedDamage` here - the
-	 * scene's shared `applyingDeferredDamage` flag). Everything else is added to the same
-	 * `Viscosity.DeferedDamage` pool the armor glyph uses, shown as a warning number and paid out
-	 * on his own turns (`tickMonsterDeferredDamage`). Returns true when the caller must not apply
-	 * the damage itself. */
-	private deferKingDamage(king: Creature, damage: number): boolean {
-		if (king.kind !== 'king' || (king.kingPhase ?? 1) !== 3 || this.applyingDeferredDamage || damage <= 0) return false;
-		king.deferredDamage = (king.deferredDamage ?? 0) + damage;
-		if (!king.deferredDamageDelay) king.deferredDamageDelay = true;
-		this.showDamage(king, damage);
+	/** The two monster-local `Viscosity.DeferedDamage` sources in Java: `DwarfKing.damage()`'s
+	 * phase-3 branch (the King banks every hit) and `RustedFist.damage()` (a Rusted YogFist banks
+	 * everything). In both cases the creature takes no direct HP damage unless the hit already is
+	 * its own payout (`src instanceof Viscosity.DeferedDamage` - the scene's shared
+	 * `applyingDeferredDamage` flag); everything else is added to the pool the armor glyph uses and
+	 * paid out on its own turns (`tickMonsterDeferredDamage`). Returns true when the caller must
+	 * not apply the damage itself. */
+	private deferMonsterDamage(defender: Creature, damage: number): boolean {
+		if (this.applyingDeferredDamage || damage <= 0) return false;
+		const defers = (defender.kind === 'king' && (defender.kingPhase ?? 1) === 3)
+			|| (defender.kind === 'yogFist' && defender.yogFistType === 'rusted');
+		if (!defers) return false;
+		defender.deferredDamage = (defender.deferredDamage ?? 0) + damage;
+		if (!defender.deferredDamageDelay) defender.deferredDamageDelay = true;
+		this.showDamage(defender, damage);
 		return true;
 	}
 
-	/** `Viscosity.DeferedDamage.act()` for a monster (the King in phase 3): a fresh pool waits one
+	/** `Viscosity.DeferedDamage.act()` for a monster (the King in phase 3, a Rusted YogFist): a
+	 * fresh pool waits one
 	 * actor turn, then pays out `max(1, floor(pool*0.1))` per turn. Routed through the shared
 	 * `applyingDeferredDamage` flag so the payout is never banked straight back. Returns true when
 	 * the payout killed the creature. */
@@ -9179,11 +9184,11 @@ export class SewersScene extends Scene2D {
 		}
 		const preHp = defender.hp;
 		if (defender.isHero) damage = this.absorbHeroDamage(damage);
-		//`DwarfKing.damage()`: while the King is in phase 3 he takes no direct HP damage at all -
-		//every hit whose source is not his own deferred-damage payout is banked into the same
-		//`Viscosity.DeferedDamage` pool the glyph uses and paid out on his own turns. Checked here,
-		//before the linked-add split below, so his LifeLink share is deferred the same way.
-		if (this.deferKingDamage(defender, damage)) return true;
+		//`DwarfKing.damage()` (phase 3) and `RustedFist.damage()` both bank every hit into the same
+		//`Viscosity.DeferedDamage` pool the glyph uses instead of losing HP, paying it out on their
+		//own turns. Checked here, before the linked-add split below, so the King's LifeLink share
+		//is deferred the same way.
+		if (this.deferMonsterDamage(defender, damage)) return true;
 		//LifeLink (Char.damage): damage to a linked subject splits evenly (ceil) between it
 		//and the King - the King's own share runs through his P2 shield below like any hit.
 		//A share lethal to the King ends the swing here (boss-death transition owns the rest).
@@ -9191,7 +9196,7 @@ export class SewersScene extends Scene2D {
 			const linkKing = this.creatures.find((c) => c.kind === 'king' && c.hp > 0 && this.kingLinkedAdds.has(defender));
 			if (linkKing) {
 				const share = Math.ceil(damage / 2);
-				if (!this.deferKingDamage(linkKing, share)) linkKing.hp -= share;
+				if (!this.deferMonsterDamage(linkKing, share)) linkKing.hp -= share;
 				if (linkKing.hp <= 0) {
 					this.kill(linkKing);
 					return true;
@@ -9716,7 +9721,8 @@ export class SewersScene extends Scene2D {
 		if (defender.isHero) this.grantHeroShield(lethalDefenseShield(this.subclass(), this.talentRank('lethal_defense')), this.hero.maxHp);
 		//The fist subclasses also carry these effects on melee contact (`onAttackProc` in
 		//their respective Java classes). Shared buffs/blobs are exact where this port has
-		//the primitive; Bright/Dark Blindness/Light and Rusted's deferred damage are not.
+		//the primitive; Bright/Dark Blindness/Light are not, while Rusted's own deferred damage
+		//is handled at the damage boundary (`deferMonsterDamage`).
 		if (attacker.kind === 'yogFist' && defender.isHero) {
 			switch (attacker.yogFistType) {
 				case 'burning': addBuff(defender, 'burning'); break;
