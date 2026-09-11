@@ -105,15 +105,16 @@ Do not add new authored content as object literals or scattered constants in the
       The MWL compiler now rejects duplicate item/monster/trait IDs and validates monster-roster,
       boss-transition, and asset references; deterministic-output and broader Java parity tests
       are now partly covered by a repeated-compile comparison; broader Java parity tests remain
-      open. `validateRoomRuleTables()` also catches positional room-table shape errors at build
-      time now: it enforces the seven-field region-row format and one chance value per class for
-      the standard and connection room tables. Added 2026-09-11 after the first real browser
-      start-up smoke found two such malformed rows (a dropped `specialBase` field and a 27-value
-      depth-5 chance row) that had passed both `tsc` and the build. `validateAffixTables()` used to
-      do the same for the enchant/glyph rows; MWG 0.7.2's typed MWL tables replaced it, so their
-      row shape and cell types are validated by the framework now, and only row-id uniqueness plus
-      the Unstable-delegate membership are still checked (`mwlContent.ts` - MWG does not validate
-      table row ids).
+      open. The room-rule tables (`regionRoomCounts`, `standardRoomChances`,
+      `connectionRoomChanceRows`) are MWG typed MWL tables since 2026-09-11, so their row shape and
+      cell types are framework-validated; what `validateRoomRuleTables()` still checks is the one
+      cross-table invariant MWG cannot see - one chance value per class in the region's class-order
+      list. That validator was added after the first real browser start-up smoke found two malformed
+      rows (a dropped `specialBase` field and a 27-value depth-5 chance row) that had passed both
+      `tsc` and the build; the typed-table conversion is value-verified identical to the old data.
+      MWG 0.7.2's typed tables also replaced the enchant/glyph row validation, so only row-id
+      uniqueness plus the Unstable-delegate membership are still checked in `mwlContent.ts` (MWG
+      does not validate table row ids).
 - [x] Adopt MWG 0.7.2 (2026-09-11): bump the `mwg` pin and use typed MWL tables for the first
       authored tables. The enchant/glyph/Unstable catalogues are now `[table]`/`[row]` data in
       `affix-rules.mwl`, read through a single `MWL_TABLE`/`MWL_TABLE_ROWS` accessor in
@@ -123,8 +124,11 @@ Do not add new authored content as object literals or scattered constants in the
       13/8 armor, none when ineligible). A second batch converted `missileDefinitions`,
       `curseDefinitions`, `bossTransitions`, `scenarioChapters`, `scenarioQuests`, and
       `questDefinitions`, whose consumers in `mwlContent.ts`/`monsters.ts` now just map typed rows
-      (the build script's `bossTransitions` validator reads the table through `contentCatalog`).
-      The remaining ~22 `set=` row-tables still need converting.
+      (the build script's `bossTransitions` validator reads the table through `contentCatalog`). A
+      third batch converted the room-rule tables `regionRoomCounts`, `standardRoomChances`, and
+      `connectionRoomChanceRows` (the last is a new table beside the retained
+      `connectionRoomChances` classes trait), which `regularLevel.ts`/`connectionRoom.ts` now read
+      as typed row arrays. The remaining ~19 `set=` row-tables still need converting.
 - [ ] Update the build, test, package, and browser-smoke documentation so a clean checkout can
       reproduce every generated resource without a local MWG checkout.
 

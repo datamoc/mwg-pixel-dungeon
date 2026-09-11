@@ -10916,22 +10916,107 @@ export const gameData = {
 			},
 			"children": [
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "standardRoomChances",
-						"name": "StandardRoom.chances"
+						"columns": "depth:number|chances:list",
+						"list_delimiter": ","
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "1|10,10,10,5,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,1,0,1,1,0,0;2|10,10,10,5,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1;5|10,10,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0;6|10,0,0,0,10,10,5,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1;11|10,0,0,0,0,0,0,10,10,5,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1;16|10,0,0,0,0,0,0,0,0,0,10,10,5,0,0,0,1,1,1,1,1,1,1,1,1,1;21|10,0,0,0,0,0,0,0,0,0,0,0,0,10,10,5,1,1,1,1,1,1,1,1,1,1"
+								"depth": "1",
+								"chances": "10,10,10,5,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,1,0,1,1,0,0"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
-								"line": 7,
+								"line": 8,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "2",
+								"chances": "10,10,10,5,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 12,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "5",
+								"chances": "10,10,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 16,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "6",
+								"chances": "10,0,0,0,10,10,5,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 20,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "11",
+								"chances": "10,0,0,0,0,0,0,10,10,5,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 24,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "16",
+								"chances": "10,0,0,0,0,0,0,0,0,0,10,10,5,0,0,0,1,1,1,1,1,1,1,1,1,1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 28,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "21",
+								"chances": "10,0,0,0,0,0,0,0,0,0,0,0,0,10,10,5,1,1,1,1,1,1,1,1,1,1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 32,
 								"column": 1
 							},
 							"gettext": []
@@ -10945,22 +11030,104 @@ export const gameData = {
 					"gettext": []
 				},
 				{
-					"tag": "trait",
+					"tag": "table",
 					"attributes": {
 						"id": "regionRoomCounts",
-						"name": "RegularLevel.roomCounts"
+						"columns": "region:string|standardMax:number|standardBase:number|standardWeights:list|specialMax:number|specialBase:number|specialWeights:list",
+						"list_delimiter": ","
 					},
 					"children": [
 						{
-							"tag": "effect",
+							"tag": "row",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "sewers|6|4|1,3,1|2|1|1,4;prison|6|5|1,1|3|1|1,3,1;caves|7|6|2,1|3|2|4,1;city|8|6|1,3,1|3|2|2,1;halls|9|8|2,1|3|2|1,1"
+								"region": "sewers",
+								"standardMax": "6",
+								"standardBase": "4",
+								"standardWeights": "1,3,1",
+								"specialMax": "2",
+								"specialBase": "1",
+								"specialWeights": "1,4"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
-								"line": 16,
+								"line": 42,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"region": "prison",
+								"standardMax": "6",
+								"standardBase": "5",
+								"standardWeights": "1,1",
+								"specialMax": "3",
+								"specialBase": "1",
+								"specialWeights": "1,3,1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 51,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"region": "caves",
+								"standardMax": "7",
+								"standardBase": "6",
+								"standardWeights": "2,1",
+								"specialMax": "3",
+								"specialBase": "2",
+								"specialWeights": "4,1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 60,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"region": "city",
+								"standardMax": "8",
+								"standardBase": "6",
+								"standardWeights": "1,3,1",
+								"specialMax": "3",
+								"specialBase": "2",
+								"specialWeights": "2,1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 69,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"region": "halls",
+								"standardMax": "9",
+								"standardBase": "8",
+								"standardWeights": "2,1",
+								"specialMax": "3",
+								"specialBase": "2",
+								"specialWeights": "1,1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 78,
 								"column": 1
 							},
 							"gettext": []
@@ -10968,7 +11135,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
-						"line": 13,
+						"line": 38,
 						"column": 1
 					},
 					"gettext": []
@@ -10989,7 +11156,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
-								"line": 25,
+								"line": 92,
 								"column": 1
 							},
 							"gettext": []
@@ -10997,7 +11164,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
-						"line": 22,
+						"line": 89,
 						"column": 1
 					},
 					"gettext": []
@@ -11018,7 +11185,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
-								"line": 34,
+								"line": 101,
 								"column": 1
 							},
 							"gettext": []
@@ -11032,7 +11199,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
-								"line": 38,
+								"line": 105,
 								"column": 1
 							},
 							"gettext": []
@@ -11046,7 +11213,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
-								"line": 42,
+								"line": 109,
 								"column": 1
 							},
 							"gettext": []
@@ -11060,7 +11227,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
-								"line": 46,
+								"line": 113,
 								"column": 1
 							},
 							"gettext": []
@@ -11068,7 +11235,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
-						"line": 31,
+						"line": 98,
 						"column": 1
 					},
 					"gettext": []
@@ -11083,27 +11250,13 @@ export const gameData = {
 						{
 							"tag": "effect",
 							"attributes": {
-								"apply_to": "entries",
-								"set": "1|20,1,0,2,2,1;2|20,1,0,2,2,1;3|20,1,0,2,2,1;4|20,1,0,2,2,1;5|20,0,0,0,0,0;6|0,0,22,3,0,0;7|0,0,22,3,0,0;8|0,0,22,3,0,0;9|0,0,22,3,0,0;10|0,0,22,3,0,0"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
-								"line": 55,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "effect",
-							"attributes": {
 								"apply_to": "classes",
 								"set": "tunnel,bridge,perimeter,walkway,ringTunnel,ringBridge"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
-								"line": 59,
+								"line": 122,
 								"column": 1
 							},
 							"gettext": []
@@ -11111,7 +11264,163 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
-						"line": 52,
+						"line": 119,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "table",
+					"attributes": {
+						"id": "connectionRoomChanceRows",
+						"columns": "depth:number|chances:list",
+						"list_delimiter": ","
+					},
+					"children": [
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "1",
+								"chances": "20,1,0,2,2,1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 132,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "2",
+								"chances": "20,1,0,2,2,1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 136,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "3",
+								"chances": "20,1,0,2,2,1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 140,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "4",
+								"chances": "20,1,0,2,2,1"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 144,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "5",
+								"chances": "20,0,0,0,0,0"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 148,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "6",
+								"chances": "0,0,22,3,0,0"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 152,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "7",
+								"chances": "0,0,22,3,0,0"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 156,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "8",
+								"chances": "0,0,22,3,0,0"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 160,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "9",
+								"chances": "0,0,22,3,0,0"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 164,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"depth": "10",
+								"chances": "0,0,22,3,0,0"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+								"line": 168,
+								"column": 1
+							},
+							"gettext": []
+						}
+					],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\room-rules.mwl",
+						"line": 128,
 						"column": 1
 					},
 					"gettext": []

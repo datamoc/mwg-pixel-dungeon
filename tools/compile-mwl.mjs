@@ -92,48 +92,32 @@ function validateHookReferences() {
 }
 
 /**
- * The room-rule tables are positional pipe/comma rows parsed again at runtime by
- * `spdLevelGen/regularLevel.ts` and `spdLevelGen/connectionRoom.ts`. A row whose shape does
- * not match that parser would otherwise throw while the game imports the level generator - a
- * black screen on start-up, not a build failure. Validate the shapes here so a malformed table
- * (an extra chance value, a dropped region-count field) is caught by `npm run build`.
+ * The room-rule tables are MWG typed MWL tables now, so their row shape and cell types are
+ * validated by the framework at compile time. What remains game-side is the one cross-table
+ * invariant MWG cannot see: every row of a chance table must carry exactly one value per class in
+ * the region's class-order list. A mismatch would otherwise throw while the game imports the level
+ * generator - a black screen on start-up, not a build failure.
  */
 function validateRoomRuleTables() {
   const standardClassCount = effectSet('standardRoomClassOrder', 'classes').split(',').filter(Boolean).length;
   const connectionClassCount = effectSet('connectionRoomChances', 'classes').split(',').filter(Boolean).length;
 
-  for (const row of effectSet('regionRoomCounts', 'entries').split(';').filter(Boolean)) {
-    const fields = row.split('|');
-    if (fields.length !== 7) {
-      throw new Error(`MWL region room counts must have 7 fields (region|stdMax|stdBase|stdWeights|specMax|specBase|specWeights): ${row}`);
-    }
-    const [, stdMax, stdBase, stdWeights, specMax, specBase, specWeights] = fields;
-    const weightsOf = (text) => (text ?? '').split(',').map(Number);
-    const std = weightsOf(stdWeights);
-    const spec = weightsOf(specWeights);
-    const validWeightList = (weights) => weights.length > 0 && weights.every((weight) => Number.isFinite(weight) && weight >= 0);
-    if (
-      !Number.isInteger(Number(stdMax)) || !Number.isInteger(Number(stdBase)) ||
-      !Number.isInteger(Number(specMax)) || !Number.isInteger(Number(specBase)) ||
-      !validWeightList(std) || !validWeightList(spec)
-    ) {
-      throw new Error(`MWL region room counts are invalid: ${row}`);
+  for (const row of tableRows('regionRoomCounts')) {
+    const validWeights = (weights) => weights.length > 0 && weights.map(Number).every((weight) => Number.isFinite(weight) && weight >= 0);
+    if (!validWeights(row.standardWeights ?? []) || !validWeights(row.specialWeights ?? [])) {
+      throw new Error(`MWL region room counts for ${row.region} need non-negative weight lists`);
     }
   }
 
-  for (const row of effectSet('standardRoomChances', 'entries').split(';').filter(Boolean)) {
-    const [depthText, values] = row.split('|');
-    const chances = (values ?? '').split(',');
-    if (!Number.isInteger(Number(depthText)) || chances.length !== standardClassCount) {
-      throw new Error(`MWL standard room chances rows must have one entry per class (${standardClassCount}): ${row}`);
+  for (const row of tableRows('standardRoomChances')) {
+    if ((row.chances ?? []).length !== standardClassCount) {
+      throw new Error(`MWL standard room chances row for depth ${row.depth} must have one entry per class (${standardClassCount})`);
     }
   }
 
-  for (const row of effectSet('connectionRoomChances', 'entries').split(';').filter(Boolean)) {
-    const [depthText, values] = row.split('|');
-    const chances = (values ?? '').split(',');
-    if (!Number.isInteger(Number(depthText)) || chances.length !== connectionClassCount) {
-      throw new Error(`MWL connection room chances rows must have one entry per class (${connectionClassCount}): ${row}`);
+  for (const row of tableRows('connectionRoomChanceRows')) {
+    if ((row.chances ?? []).length !== connectionClassCount) {
+      throw new Error(`MWL connection room chances row for depth ${row.depth} must have one entry per class (${connectionClassCount})`);
     }
   }
 }

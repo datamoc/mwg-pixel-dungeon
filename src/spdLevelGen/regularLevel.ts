@@ -10,7 +10,7 @@ import { Room } from './room';
 import { LoopBuilder } from './loopBuilder';
 import { FigureEightBuilder } from './figureEightBuilder';
 import { SpdRandom } from '../spdRng';
-import { MWL_TRAIT_NODES } from '../mwlContent';
+import { MWL_TABLE_ROWS } from '../mwlContent';
 import { STANDARD_ROOM_CLASS_ORDER } from './rooms/standard/registry';
 import { createSpecialRoom, initSpecialRoomFloor } from './rooms/special/registry';
 import { createSecretRoom, secretsForFloor } from './rooms/secret/registry';
@@ -23,26 +23,21 @@ import { randomGooBossKind } from './rooms/sewerBoss/gooBossRoom';
  * far; every other `RegularLevel` subclass inherits the base `return 0`, which would generate
  * a degenerate floor, so `regionRoomCounts()` throws rather than silently doing that.
  */
-const REGION_ROOM_COUNTS = (() => {
-	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'regionRoomCounts');
-	if (!node) throw new Error('MWL room rule is missing regionRoomCounts');
-	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
-	const raw = effect?.attributes.set;
-	if (raw === undefined) throw new Error('MWL room rule is missing region counts');
-	return new Map(raw.split(';').map((entry) => {
-		const [region, standardMaxText, standardBaseText, standardWeightsText, specialMaxText, specialBaseText, specialWeightsText] = entry.split('|');
-		const standardMax = Number(standardMaxText), standardBase = Number(standardBaseText), specialMax = Number(specialMaxText), specialBase = Number(specialBaseText);
-		const standardWeights = standardWeightsText?.split(',').map(Number) ?? [];
-		const specialWeights = specialWeightsText?.split(',').map(Number) ?? [];
-		if (!region || !Number.isInteger(standardMax) || !Number.isInteger(standardBase) || !Number.isInteger(specialMax) || !Number.isInteger(specialBase)
-			|| standardWeights.length === 0 || specialWeights.length === 0
-			|| standardWeights.some((weight) => !Number.isFinite(weight) || weight < 0)
-			|| specialWeights.some((weight) => !Number.isFinite(weight) || weight < 0)) {
-			throw new Error(`MWL room rule has invalid region counts ${entry}`);
-		}
-		return [region, { standardMax, standardBase, standardWeights, specialMax, specialBase, specialWeights }];
-	}));
-})();
+const REGION_ROOM_COUNTS = new Map(MWL_TABLE_ROWS('regionRoomCounts', 'region').map((row) => {
+	const weights = (value: unknown): number[] => (Array.isArray(value) ? value.map(Number) : []);
+	const counts = {
+		standardMax: Number(row.standardMax),
+		standardBase: Number(row.standardBase),
+		standardWeights: weights(row.standardWeights),
+		specialMax: Number(row.specialMax),
+		specialBase: Number(row.specialBase),
+		specialWeights: weights(row.specialWeights),
+	};
+	if (counts.standardWeights.length === 0 || counts.specialWeights.length === 0) {
+		throw new Error(`MWL room rule has invalid region counts for ${String(row.region)}`);
+	}
+	return [String(row.region), counts] as const;
+}));
 
 function regionRoomCount(region: string, kind: 'standard' | 'special', forceMax: boolean): number {
 	const counts = REGION_ROOM_COUNTS.get(region);
@@ -73,22 +68,8 @@ function regionForDepth(depth: number): 'sewers' | 'prison' | 'caves' | 'city' |
  *  `CellBlockRoom` (4-6) instead; Caves' zeroes those in turn and enables `CaveRoom`/
  *  `CavesFissureRoom`/`CirclePitRoom` (7-9). The 10 shared "misc" classes (16-25) keep weight 1
  *  in all three regions. */
-const STANDARD_ROOM_CHANCE_ROWS = (() => {
-	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'standardRoomChances');
-	if (!node) throw new Error('MWL room rule is missing standardRoomChances');
-	const effect = node.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === 'entries');
-	const raw = effect?.attributes.set;
-	if (raw === undefined) throw new Error('MWL room rule is missing entries');
-	return raw.split(';').map((entry) => {
-		const [depthText, values] = entry.split('|');
-		const depth = Number(depthText);
-		const chances = values?.split(',').map(Number) ?? [];
-		if (!Number.isInteger(depth) || chances.length !== 26 || chances.some((chance) => !Number.isFinite(chance) || chance < 0)) {
-			throw new Error(`MWL room rule has invalid entry ${entry}`);
-		}
-		return [depth, chances] as const;
-	});
-})();
+const STANDARD_ROOM_CHANCE_ROWS = MWL_TABLE_ROWS('standardRoomChances', 'depth').map((row) =>
+	[Number(row.depth), (Array.isArray(row.chances) ? row.chances.map(Number) : [])] as const);
 
 function standardRoomChances(depth: number): number[] {
 	let selected = STANDARD_ROOM_CHANCE_ROWS[0]?.[1];
