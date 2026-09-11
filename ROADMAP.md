@@ -93,7 +93,18 @@ Do not add new authored content as object literals or scattered constants in the
       references are now authored in `src/content/monsters.mwl`, validated against `src/assets`,
       and emitted in the generated asset manifest; `images.ts` now consumes a generated,
       typed manifest and validates every MWL sprite reference against the bundler registry at
-      startup. Terrain/UI references remain open.
+      startup. Terrain/UI references remain open. **2026-09-11:** an attempt to close that gap
+      stalled on a framework schema limit, not on port code - `game.assets` is populated by
+      scanning every node attribute whose *name* is an asset attribute (`image`/`file`/`icon`/
+      `profile`/`sound`/`*_sound`/`*_image`, see `mwg/dist/mwl/compiler.js` `isAssetAttribute`),
+      but the MWL schema only declares `image` on `monster` (plus the Wesnoth `unit_type`/`unit`),
+      so a `[item] image=…` node fails validation with "unknown attribute image on item", and the
+      alternative `[trait]` + `[effect apply_to=image set=assets/…]` form compiles but never reaches
+      the manifest because `apply_to`/`set` are not asset-attribute names. There is no
+      game-agnostic node for authoring a terrain/UI asset reference that flows into `game.assets`.
+      The dead-end experiment is preserved in `tools/scratch/{terrain-assets,ui-assets,test-asset}.mwl`,
+      and the generic capability is tracked as a framework proposal in §11A below; this item stays
+      open until a released MWG version carries it.
 - [ ] Move the port's messages and descriptions to MWL gettext-marked values, generate the
       i18n catalogue, and remove duplicate hand-maintained content strings. The ordered potion
       and scroll appearance tables are now in `src/content/appearances.mwl`; message bodies and
@@ -551,6 +562,15 @@ Do not add new authored content as object literals or scattered constants in the
       `1.25+0.25/point`, hit-only wear with the real break warnings, PinCushion sticking
       for knives/spikes with kill-scatter, uncapped missile levels via SoU) - this also
       fixed a live `{level}`/`{tier}` log interpolation bug in the upgrade messages.
+      **2026-09-11 correction:** the durability formula is now factored into a single
+      `missileDurabilityCost()` helper and fixed in two ways against `v3.3.8`'s
+      `durabilityPerUse()` - the durable-talent multiplier is applied only while the talent is
+      actually taken (`hasTalent`, i.e. rank > 0; the old code applied `1.25` even at rank 0,
+      granting every hero +25% missile durability they had not earned), and rounded usages at or
+      above 100 now return 0 cost (the stack effectively lasts forever, `usages >= 100f return 0`)
+      instead of still wearing down by `100/usages`. The `augment.delayFactor` and MagicalHolster
+      factors remain documented simplifications (missiles are not individually augmentable and
+      there is no holster).
       Remaining: per-missile identity (boomerang return/merge), the last-missile confirm,
       the dust-pickup tracker, and Sharpshooting's Aim-buff rework (flagged, own pass).
 - [x] Implement identification appearance randomization. Potion and scroll appearances are
@@ -1647,6 +1667,14 @@ The status was checked against the installed `mwg@0.7.6` declarations on 2026-09
       test with a small example) how a command result, scheduled secondary actor, animation lock,
       cancellation, and save/load interact. The goal is a stable integration pattern for turn-based
       games, not an SPD-specific combat pipeline.
+- [ ] **P2 — Author non-monster asset references in MWL.** The asset manifest (`game.assets`) is
+      already built by scanning every attribute whose *name* is an asset attribute
+      (`image`/`file`/`icon`/`profile`/`sound`/`*_sound`/`*_image`), but the schema only declares
+      `image` on `monster` (and the Wesnoth `unit_type`/`unit`). Adding `image` (and optionally
+      `file`) to the generic `item` node - or a dedicated, game-agnostic `asset` node with an
+      optional `slot`/`kind` - would let terrain, UI, and other non-actor art be authored in MWL and
+      flow into the same validated manifest this port already consumes. No SPD names, values, or art
+      belong in MWG; only the attribute contract and determinism tests live there.
 - [ ] **Before proposing API changes, add framework-side acceptance tests and examples.** Each
       proposal above needs renderer-free determinism tests, a minimal example, save compatibility
       notes, and an API report entry in the MWG repository. This port should only add an adoption

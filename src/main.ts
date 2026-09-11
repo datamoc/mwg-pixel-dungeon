@@ -5597,6 +5597,25 @@ export class SewersScene extends Scene2D {
 		}
 	}
 
+	/** `MissileWeapon.durabilityPerUse()` (tag `v3.3.8`): `baseUses` (stones/knives 5,
+	 * spikes 12) x `1.5^level`, x durable-projectiles (`1.25+0.25/point`, only while the
+	 * talent is actually taken), x sharpshooting `1.2^level`, rounded, then `100/usages` plus
+	 * Java's `+0.001` rounding epsilon. Java also divides by `augment.delayFactor(1f)` and
+	 * multiplies by the MagicalHolster factor - neither applies here (missiles are not
+	 * individually augmentable and there is no holster) - and returns 0 once rounded usages
+	 * reach 100, when the stack effectively lasts forever. The previous inline form always
+	 * applied `(1.25+0.25*rank)` even at rank 0, granting every hero +25% missile durability
+	 * without the talent; Java gates it behind `hasTalent` (`pointsInTalent > 0`). */
+	private missileDurabilityCost(): number {
+		const baseUses = this.heroClass === 'duelist' ? 12 : 5;
+		const durable = this.talentRank('durable_projectiles');
+		const uses = Math.round(baseUses * Math.pow(1.5, this.missileLevel)
+			* (durable > 0 ? 1.25 + 0.25 * durable : 1)
+			* ringSharpshootingDurabilityMultiplier(this.equippedRing));
+		if (uses >= 100) return 0;
+		return 100 / Math.max(1, uses) + 0.001;
+	}
+
 	/**
 	 * The class's real day-one ranged action (see the file header) against the nearest
 	 * visible, in-range, in-sight target - `mwg/roguelike`'s `canTarget`/`chebyshevDistance`
@@ -5679,15 +5698,9 @@ export class SewersScene extends Scene2D {
 			//than up front, which also wrongly wore missiles down on every miss.
 			let missileSurvived = true;
 			if (hit && carried) {
-				//durabilityPerUse(): baseUses (stones/knives 5, spikes 12 - the duelist's old
-				//flat 10 had no Java basis) x 1.5^missileLevel x durable-talent
-				//(1.25+0.25/point - the old (1+0.25xrank) undercounted every rank) x
-				//sharpshooting, rounded, plus the +0.001 rounding epsilon. Break and
-				//about-to-break use the real log lines.
-				const baseUses = this.heroClass === 'duelist' ? 12 : 5;
-				const uses = Math.round(baseUses * Math.pow(1.5, this.missileLevel)
-					* (1.25 + 0.25 * this.talentRank('durable_projectiles')) * ringSharpshootingDurabilityMultiplier(this.equippedRing));
-				const cost = 100 / Math.max(1, uses) + 0.001;
+				//durabilityPerUse(): the exact formula is in missileDurabilityCost() above.
+				//Break and about-to-break use the real log lines.
+				const cost = this.missileDurabilityCost();
 				this.ammoDurability -= cost;
 				if (this.ammoDurability <= 0) {
 					this.ammo--;
