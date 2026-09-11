@@ -2,9 +2,19 @@ import { craft, type Recipe } from 'mwg/actors';
 import type { Inventory } from 'mwg/actors';
 import { MWL_ITEM_NODES, MWL_TABLE_ROWS } from './mwlContent';
 
+/** This port's authored recipes always name one exact item id, never MWG 0.7.7's category or
+ * predicate forms, so the ingredient id is narrowed back to a plain `string` from `Ingredient`'s
+ * `string | readonly string[] | undefined`. */
+export interface AlchemyIngredient {
+	readonly id: string;
+	readonly quantity: number;
+}
+
 export interface AlchemyRecipe extends Recipe {
 	readonly id: string;
 	readonly energyCost: number;
+	/** narrower than `Recipe`'s `Ingredient[]` so callers keep a plain `string` id */
+	readonly ingredients: AlchemyIngredient[];
 }
 
 export interface AlchemyRecipeManifestEntry {
