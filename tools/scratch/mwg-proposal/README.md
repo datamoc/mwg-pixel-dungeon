@@ -100,9 +100,14 @@ Matching the existing item style; the first is what the patch above delivers.
       vertical raise (the port's `src/ui/characterPlacement.ts` is ten lines of exactly this, and
       `ActorAnimator` does not cover it). Small, and only worth it if a second consumer appears.
 
-## Known defect to patch next: `FloatingTextStack` stacks the wrong way
+## `0003-floating-text-stack-upward.patch`: the stack went the wrong way
 
-Found by the port's own live verification of its adoption, 2026-09-11.
+Found by the port's own live verification of its adoption, 2026-09-11, and written up the
+same day. Applies to `MW_games` at `c25de4c` (0.7.6); verified with
+`git apply --check --cached`, `npm run check` clean, `node --test tests/floating-text.test.ts`
+9/9, the touched suites together 25/25, prettier clean. **Not live-verified end to end**: the
+port installs 0.7.6 from npm, so the fix can only be measured in the game once a release
+carries it - the arithmetic is tested and the defect it fixes was measured.
 
 `FloatingTextStack` (0.7.4) moves the **newcomer** down by `height + 1`, where Java's
 `FloatingText.push()` (`v3.3.8`, `effects/FloatingText.java:270-300`) anchors the newcomer on the
@@ -112,8 +117,10 @@ spam self-limits instead of piling up. The port sees the difference plainly: two
 one creature in one turn put the second *below* the creature (measured y 332.5 then 361.85, where
 332.5 is the target's own pop-up position).
 
-Fix, in two steps: `floatingTextStackOffset` becomes "how far the older pop-ups must move" rather
-than "where the newcomer goes", with the 4 px gap replacing `+ 1`; then the lifetime shortening,
-which needs the stack to reach into the pop-ups it already holds. `tests/floating-text.test.ts`
-should assert the direction, not just the magnitude - it currently checks only the latter, which
-is why the sign survived review.
+What the patch does: `floatingTextStackOffset` (an offset the caller *adds*, whose sign nothing
+pinned) becomes `floatingTextStackLift` (the position the older line must *take*, so the
+direction is in the name and the assignment), `FLOATING_TEXT_STACK_GAP` names Java's 4 px, and
+`FloatingText.shortenLife(seconds)` plus `floatingTextStackLifePenalty(linesBelow)` carry Java's
+`min(timeLeft, LIFESPAN - numBelow / 5f)`. The tests now assert the direction - the older line
+ends up above the newer one and the newcomer never moves - which is exactly what the old ones
+failed to check while passing.

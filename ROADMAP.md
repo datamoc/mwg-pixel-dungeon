@@ -229,8 +229,10 @@ Do not add new authored content as object literals or scattered constants in the
       `hold` curve (2026-09-11, on 0.7.6): the file is deleted and `showStatus` pushes one pop-up
       per number keyed by creature. One defect carried, found by the live check and not ours to
       hide: 0.7.4's stack moves the *newcomer* down by `height + 1` where Java anchors the newcomer
-      and nudges the *older* text up by `height + 4` (shortening its life to stop spam) - see
-      PORT_COVERAGE and `tools/scratch/mwg-proposal/README.md` for the patch to write.
+      and nudges the *older* text up by `height + 4` (shortening its life to stop spam).
+      `tools/scratch/mwg-proposal/0003-floating-text-stack-upward.patch` is the fix, written and
+      verified against 0.7.6; apply it and re-run the port's floaters check once a release carries
+      it.
 - [ ] `titleFlame`'s four-frame flame -> `ParticleEmitter`'s `frames` (0.7.4).
 
 ## 1. Complete the item system

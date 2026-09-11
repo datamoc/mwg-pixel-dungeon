@@ -1,0 +1,292 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index b09e099..d6d3f10 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -5,6 +5,27 @@ All notable changes to `mwg` are documented here. Format follows
+ [Semantic Versioning](https://semver.org/) as of this first release - a 0.y.z version means
+ the public API may still change between minor versions.
+ 
++## [Unreleased]
++
++### Fixed
++
++- `FloatingTextStack` stacked the wrong way round: it moved the **newcomer** down by
++  `height + 1`, where Java's `FloatingText.push()` anchors the newcomer on the target and lifts
++  the lines already there to `below.top - height - 4`. A second pop-up on one target in one turn
++  therefore landed *below* the target instead of above the first - found by a consumer measuring
++  it, not by the tests, which asserted the offset's magnitude and never its direction.
++  `floatingTextStackOffset` is replaced by `floatingTextStackLift`, which returns the position
++  the older line must take: a direction the caller assigns, rather than an offset the caller
++  adds, so the sign cannot be got wrong quietly. `FLOATING_TEXT_STACK_GAP` names Java's 4px gap.
++
++### Changed
++
++- `FloatingText.shortenLife(seconds)` ages a pop-up so it finishes sooner, and
++  `FloatingTextStack` applies it to every line it nudges up - Java's
++  `min(timeLeft, LIFESPAN - numBelow / 5f)`, so a burst of numbers cannot become a column that
++  outlives the fight that produced it. `floatingTextStackLifePenalty(linesBelow)` is the rule as
++  arithmetic.
++
+ ## [0.7.6] - 2026-09-11
+ 
+ ### Added
+diff --git a/src/two-d/ui/FloatingText.ts b/src/two-d/ui/FloatingText.ts
+index a255faa..1b51e01 100644
+--- a/src/two-d/ui/FloatingText.ts
++++ b/src/two-d/ui/FloatingText.ts
+@@ -114,6 +114,20 @@ export class FloatingText extends Container {
+ 		return this.done;
+ 	}
+ 
++	/**
++	 * Ages the pop-up by `seconds` so it finishes sooner - what a stack does to the lines it nudges
++	 * up, Java's `above.timeLeft = Math.min(above.timeLeft, LIFESPAN - numBelow / 5f)`. A line that
++	 * has been pushed up therefore also leaves earlier, which is what stops a burst of numbers from
++	 * becoming a column that outlives the fight.
++	 *
++	 * Clamped to the animation: a shortened pop-up finishes on its next update rather than jumping
++	 * through the rest of its rise in one frame.
++	 */
++	shortenLife(seconds: number): void {
++		if (seconds <= 0) return;
++		this.elapsed = Math.min(this.duration, this.elapsed + seconds);
++	}
++
+ 	/** advances the rise/fade; once complete, removes itself from its parent and destroys itself */
+ 	update(dt: number): void {
+ 		if (this.done) return;
+diff --git a/src/two-d/ui/FloatingTextStack.ts b/src/two-d/ui/FloatingTextStack.ts
+index fe98bbc..26bf83c 100644
+--- a/src/two-d/ui/FloatingTextStack.ts
++++ b/src/two-d/ui/FloatingTextStack.ts
+@@ -2,14 +2,14 @@ import { Container } from 'pixi.js';
+ import { FloatingText, type FloatingTextOptions } from './FloatingText.ts';
+ 
+ /**
+- * One pop-up the stack knows about: where it was asked to appear, how tall it is, and what it
+- * stacks against.
++ * One pop-up the stack knows about: where it sits right now, how tall it is, and what it stacks
++ * against.
+  */
+ export interface FloatingTextStackEntry {
+ 	/** pop-ups sharing a key are stacked apart; leave it unset for one that stands alone */
+ 	key?: string | number;
+ 
+-	/** the world point, as asked for - not wherever stacking moved the pop-up to */
++	/** the pop-up's own centre, as it sits now - stacking moves the older ones, never a newcomer */
+ 	x: number;
+ 	y: number;
+ 
+@@ -17,34 +17,41 @@ export interface FloatingTextStackEntry {
+ 	height: number;
+ }
+ 
++/** The vertical gap left between two stacked lines - Java's `FloatingText.push()` uses `4`. */
++export const FLOATING_TEXT_STACK_GAP = 4;
++
++/**
++ * How much of its life a line loses for each line nudged above it, in seconds. Java shortens the
++ * nudged text to `LIFESPAN - numBelow / 5f`, so a burst of numbers cannot turn into a column that
++ * outlives the fight that produced it. One second per five lines, i.e. a fifth of a second each.
++ */
++export function floatingTextStackLifePenalty(linesBelow: number): number {
++	return Math.max(0, linesBelow) / 5;
++}
++
+ /**
+- * How far a newcomer must move up to clear every live pop-up it shares a key *and* an origin
+- * with - the classic "three numbers on one creature in one turn" case.
++ * The `y` `older` must sit at to clear `below`, or `older.y` when it already does.
++ *
++ * The direction is the point, and it is why this returns a *position* rather than an offset to add:
++ * Java's `FloatingText.push()` anchors the newcomer on the target and lifts the lines already there
++ * (`above.setPos(above.left(), below.top() - above.height() - 4)`), the opposite of moving the
++ * newcomer out of the way. Pop-ups rise, so the older ones belong above the newer ones - an offset
++ * the caller adds is direction-ambiguous, a position the caller assigns is not.
++ *
++ * Both boxes are anchored at their centre, so a line's top is `y - height / 2`; a line is clear when
++ * its bottom plus the gap no longer reaches the other's top.
+  *
+  * Exported and pure on purpose: the stacking rule is arithmetic, and this way it is checked as
+  * arithmetic rather than through a rendered label (`Label` needs a DOM to measure text).
+- * Offsets accumulate by measured height, so a taller line clears the one under it rather than
+- * overlapping it by a fixed guess.
+- *
+- * @example
+- * ```ts
+- * import { floatingTextStackOffset } from '@datamoc/mw_games/two-d/ui';
+- * console.log(floatingTextStackOffset([{ key: 'hero', x: 1, y: 2, height: 10 }], { key: 'hero', x: 1, y: 2, height: 8 })); // 11
+- * ```
+  */
+-export function floatingTextStackOffset(
+-	live: readonly FloatingTextStackEntry[],
+-	incoming: FloatingTextStackEntry,
++export function floatingTextStackLift(
++	older: FloatingTextStackEntry,
++	below: FloatingTextStackEntry,
++	gap: number = FLOATING_TEXT_STACK_GAP,
+ ): number {
+-	if (incoming.key === undefined) return 0;
+-
+-	let lift = 0;
+-	for (const entry of live) {
+-		if (entry.key !== incoming.key) continue;
+-		if (entry.x !== incoming.x || entry.y !== incoming.y) continue;
+-		lift += entry.height + 1;
+-	}
+-	return lift;
++	const belowTop = below.y - below.height / 2;
++	if (older.y + older.height / 2 + gap <= belowTop) return older.y;
++	return belowTop - older.height / 2 - gap;
+ }
+ 
+ export interface FloatingTextPush extends FloatingTextOptions {
+@@ -53,8 +60,8 @@ export interface FloatingTextPush extends FloatingTextOptions {
+ 	y: number;
+ 
+ 	/**
+-	 * Pop-ups pushed with the same key and the same origin stack upward instead of
+-	 * overprinting. A pop-up with no key always stands alone.
++	 * Pop-ups pushed with the same key stack upward instead of overprinting. A pop-up with no key
++	 * always stands alone.
+ 	 */
+ 	key?: string | number;
+ }
+@@ -86,7 +93,13 @@ export interface FloatingTextPush extends FloatingTextOptions {
+ export class FloatingTextStack extends Container {
+ 	private readonly live: Array<{ popup: FloatingText; entry: FloatingTextStackEntry }> = [];
+ 
+-	/** spawns a pop-up at `options.x`/`options.y`, stacked clear of anything it shares a key with */
++	/**
++	 * Spawns a pop-up at `options.x`/`options.y`, lifting the lines already there out of its way.
++	 *
++	 * The newcomer stays exactly where it was asked to appear; anything sharing its key that it
++	 * would overlap moves up, newest first, each one measured against the line below it and each
++	 * nudge costing it a little life - Java's order, so a stack grows upward and self-limits.
++	 */
+ 	push(options: FloatingTextPush): FloatingText {
+ 		const popup = new FloatingText({
+ 			text: options.text,
+@@ -97,15 +110,24 @@ export class FloatingTextStack extends Container {
+ 			hold: options.hold,
+ 		});
+ 		const entry: FloatingTextStackEntry = { key: options.key, x: options.x, y: options.y, height: popup.height };
+-		popup.position.set(
+-			options.x,
+-			options.y +
+-				floatingTextStackOffset(
+-					this.live.map((held) => held.entry),
+-					entry,
+-				),
+-		);
+ 
++		if (entry.key !== undefined) {
++			let below = entry;
++			let linesBelow = 0;
++			for (let i = this.live.length - 1; i >= 0; i--) {
++				const held = this.live[i];
++				if (held.entry.key !== entry.key) continue;
++				const lifted = floatingTextStackLift(held.entry, below);
++				//already clear of the line below, so everything above it is too: Java stops here
++				if (lifted === held.entry.y) break;
++				held.entry.y = lifted;
++				held.popup.y = lifted;
++				held.popup.shortenLife(floatingTextStackLifePenalty(++linesBelow));
++				below = held.entry;
++			}
++		}
++
++		popup.position.set(options.x, options.y);
+ 		this.addChild(popup);
+ 		this.live.push({ popup, entry });
+ 		return popup;
+diff --git a/src/two-d/ui/index.ts b/src/two-d/ui/index.ts
+index 72b5057..904fe1b 100644
+--- a/src/two-d/ui/index.ts
++++ b/src/two-d/ui/index.ts
+@@ -48,7 +48,12 @@ export type { BarOptions } from './Bar.ts';
+ export { FloatingText, floatingTextAlpha, floatingTextRise } from './FloatingText.ts';
+ export type { FloatingTextOptions } from './FloatingText.ts';
+ 
+-export { FloatingTextStack, floatingTextStackOffset } from './FloatingTextStack.ts';
++export {
++	FloatingTextStack,
++	FLOATING_TEXT_STACK_GAP,
++	floatingTextStackLift,
++	floatingTextStackLifePenalty,
++} from './FloatingTextStack.ts';
+ export type { FloatingTextPush, FloatingTextStackEntry } from './FloatingTextStack.ts';
+ 
+ export { Toast } from './Toast.ts';
+diff --git a/tests/floating-text.test.ts b/tests/floating-text.test.ts
+index 6f7ef23..69c5b8b 100644
+--- a/tests/floating-text.test.ts
++++ b/tests/floating-text.test.ts
+@@ -1,7 +1,11 @@
+ import { test } from 'node:test';
+ import assert from 'node:assert/strict';
+ import { floatingTextAlpha, floatingTextRise } from '../src/two-d/ui/FloatingText.ts';
+-import { floatingTextStackOffset } from '../src/two-d/ui/FloatingTextStack.ts';
++import {
++	FLOATING_TEXT_STACK_GAP,
++	floatingTextStackLifePenalty,
++	floatingTextStackLift,
++} from '../src/two-d/ui/FloatingTextStack.ts';
+ 
+ /**
+  * `FloatingText` itself cannot be built here - its `Label` measures text through a DOM, which
+@@ -38,23 +42,41 @@ test('the rise is negative, proportional, and dropped entirely under reduced mot
+ 
+ const entry = (key: string | number | undefined, x: number, y: number, height: number) => ({ key, x, y, height });
+ 
+-test('a pop-up with no key always stands alone', () => {
+-	assert.equal(floatingTextStackOffset([entry('a', 0, 0, 10)], entry(undefined, 0, 0, 10)), 0);
++test('a line already clear of the one below it is not moved', () => {
++	// 10 tall centred at 0 (bottom 5) and 8 tall centred at 20 (top 16): 5 + 4 is short of 16
++	assert.equal(floatingTextStackLift(entry('hero', 0, 0, 10), entry('hero', 0, 20, 8)), 0);
+ });
+ 
+-test('stacking lifts a newcomer clear of every live pop-up sharing its key and origin', () => {
+-	const live = [entry('hero', 8, 16, 10), entry('hero', 8, 16, 12)];
+-	//measured heights, not a fixed guess: 10 + 1 then 12 + 1
+-	assert.equal(floatingTextStackOffset(live, entry('hero', 8, 16, 10)), 24);
++test('an overlapping line is lifted above the newer one, by its own height plus the gap', () => {
++	const older = entry('hero', 0, 0, 10);
++	const below = entry('hero', 0, 0, 8);
++
++	// below.top = 0 - 4 = -4, so the older line goes to -4 - 5 - 4 = -13
++	assert.equal(floatingTextStackLift(older, below), -13);
++	// and the direction is the point: the newcomer stays on the target, the older line moves UP
++	assert.ok(floatingTextStackLift(older, below) < older.y, 'the older line moves up, never the newcomer down');
++});
++
++test("the gap is Java's 4, honoured exactly at the boundary", () => {
++	assert.equal(FLOATING_TEXT_STACK_GAP, 4);
++
++	const below = entry('hero', 0, 0, 8); // top = -4
++	const clear = -4 - FLOATING_TEXT_STACK_GAP - 5; // bottom exactly one gap above the other's top
++	assert.equal(floatingTextStackLift(entry('hero', 0, clear, 10), below), clear, 'exactly clear means untouched');
++	assert.equal(
++		floatingTextStackLift(entry('hero', 0, clear + 1, 10), below),
++		clear,
++		'a pixel lower and it moves to clear',
++	);
+ });
+ 
+-test('a different key or a different origin is not stacked against', () => {
+-	const live = [entry('hero', 8, 16, 10)];
+-	assert.equal(floatingTextStackOffset(live, entry('rat', 8, 16, 10)), 0);
+-	assert.equal(floatingTextStackOffset(live, entry('hero', 9, 16, 10)), 0);
+-	assert.equal(floatingTextStackOffset(live, entry('hero', 8, 17, 10)), 0);
++test("the lift takes the two boxes it is given; which ones stack is the stack's business", () => {
++	assert.equal(floatingTextStackLift(entry('rat', 0, 0, 10), entry('hero', 0, 0, 8)), -13);
+ });
+ 
+-test('an empty stack needs no offset', () => {
+-	assert.equal(floatingTextStackOffset([], entry('hero', 0, 0, 10)), 0);
++test('a nudged line loses a fifth of a second of life per line it is pushed above', () => {
++	assert.equal(floatingTextStackLifePenalty(0), 0);
++	assert.equal(floatingTextStackLifePenalty(1), 0.2);
++	assert.equal(floatingTextStackLifePenalty(5), 1);
++	assert.equal(floatingTextStackLifePenalty(-3), 0, 'a nonsense depth is not a life sentence');
+ });

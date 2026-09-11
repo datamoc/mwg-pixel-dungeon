@@ -34,9 +34,10 @@ longer the goal, and Java's own bugs and limitations are not reproduced).
   the newcomer *down* by `height + 1`, so a second number in one turn lands below the target rather
   than above the first - the framework's own `floatingTextStackOffset` is a pure function and a
   sign/order change fixes it, with the lifetime shortening as a second step. Recorded in
-  `tools/scratch/mwg-proposal/README.md` as the next patch to write; the adoption above is still a
-  strict improvement over the port's proximity approximation, which is why it is not held back for
-  this.
+  `tools/scratch/mwg-proposal/0003-floating-text-stack-upward.patch`, written the same day (applies
+  to 0.7.6, tsc clean, its tests 9/9 and asserting the direction the old ones never checked). The
+  adoption above is still a strict improvement over the port's proximity approximation, which is
+  why it is not held back for it; the port takes the fix when a release carries it.
 
 - **Adopted `mwg/core`'s `RunHistory` for the run rankings.** `src/rankings.ts` no longer
   hand-rolls its own localStorage read/validate/sort/write: `RunHistory<RunRecord>` owns the
