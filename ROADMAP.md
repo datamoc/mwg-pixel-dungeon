@@ -1258,7 +1258,11 @@ Do not add new authored content as object literals or scattered constants in the
        to EN after RU and TR were drafted - this pass's own diff script surfaced that RU and TR
        are now 25 keys short of the current EN table, a real, pre-existing gap this task did not
        fix since fixing RU/TR was out of this task's scope, but is worth closing in a future
-       pass rather than leaving unnoticed), wiring (`PORT_STRINGS_UK` + `PORT_STRINGS`
+       pass rather than leaving unnoticed - **closed the same session**: the same 25 keys
+       (alchemy UI/log/name strings, the five class `unlockhint` lines, `dm300arrives`, and the
+       journal/bag UI labels) translated into both RU and TR and appended to their existing
+       blocks, verified 415/415 keys and 0 placeholder mismatches for both against the current
+       EN table, `tsc`/`build` clean), wiring (`PORT_STRINGS_UK` + `PORT_STRINGS`
        registration + `uk: 'machine'` provenance, plus extending both header comments' locale
        lists), then `npm run i18n:check`/`npx tsc --noEmit`/`npm run build` all green (the
        `i18n:check` failure this session - `these keys are referenced but exist in no SPD
