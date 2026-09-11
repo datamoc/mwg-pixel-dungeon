@@ -2180,6 +2180,10 @@ marsupial golpea a ti por 2."` (es, now grammatically correct instead of "a you"
 
 The remaining 7 `Languages.java` locales still fall back to English through
 `mwg/i18n`'s base catalog - translating them is tracked as its own ROADMAP.md section 8 item.
+Separately, the locale *set* is SPD `v2.1.4`'s 18 non-English locales rather than `v3.3.8`'s 22:
+`be`/`eo`/`sv`/`zh-hant` are absent from both `LANGUAGES` and the extractor's `LOCALES`, a
+newly-found gap recorded under ROADMAP.md section 8's 2026-09-11 correction (their statuses were
+also corrected to `v3.3.8`'s - nine of nineteen had matched no SPD tag at all).
 
 `tools/i18nCheck.ts` guards the convention: every SPD-derived key the port uses must exist in
 SPD's own base `.properties`, so a typo'd key **fails the check** rather than quietly rendering

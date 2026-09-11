@@ -1143,7 +1143,15 @@ Do not add new authored content as object literals or scattered constants in the
       with EN/FR entries; see `PORT_COVERAGE.md`.
 - [ ] Translate the port's own strings into every Java locale. The picker already offers all
       19 of `Languages.java`'s locales (same codes, same complete/unreviewed/unfinished
-      statuses - see `src/i18n/languages.ts`), and SPD's own text arrives translated through
+      statuses - see `src/i18n/languages.ts`). **Correction, 2026-09-11:** that claim was
+      checked against the Java enum and found partly wrong - nine of the nineteen statuses and
+      the `zh`/`in` native names matched no SPD tag (`v2.1.4`-`4.0.0-beta`); they are now
+      `v3.3.8`'s values, and `languages.ts`'s header records the detail. The same check found a
+      **new gap**: the port's list is `v2.1.4`'s 19 (which is also `tools/i18n-extract.mjs`'s
+      `LOCALES`), while `v3.3.8` adds `be`/`eo`/`sv`/`zh-hant` - so the picker is missing four
+      locales SPD later shipped. Closing that needs those locales added to the extractor and a
+      regenerated `spdMessages.ts`, not attempted this pass.
+      The picker's offered set otherwise works as before: SPD's own text arrives translated through
       the generated catalog, but the port's own ~305 `port.*` keys exist only in English and
       French - every other locale reads English sentences (with SPD-translated names inside).
       Scope: 305 keys x 17 locales (~5,200 strings), mirroring the `Languages` enum exactly

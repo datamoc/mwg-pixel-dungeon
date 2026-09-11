@@ -11,6 +11,17 @@
  * `status` is SPD's own assessment of its translations, kept because it is honest to show it:
  * `complete` is 100% reviewed, `unreviewed` is 100% translated, `unfinished` is 80-99%.
  * Anything below 80% SPD does not ship, and neither does this.
+ *
+ * **Correction, 2026-09-11.** Nine of the nineteen statuses and two of the native names were
+ * wrong - checked against every tag from `v2.1.4` through `4.0.0-beta`, the old values matched
+ * none of them. The values below are now `v3.3.8`'s, which `4.0.0-beta` agrees with. The nine
+ * were `ko`/`fr`/`ja`/`uk`/`nl` (marked below their real `complete`), `ru`/`it`/`in` (above
+ * their real `unreviewed`) and `el` (above its real `unfinished`); `zh`'s native name is
+ * `简体中文` (SPD's `CHI_SMPL`) and `in`'s is `indonesia`, not the French `indonésien` that had
+ * stood in. **Known gap:** this list is SPD `v2.1.4`'s 19 (18 non-English), which is also what
+ * `tools/i18n-extract.mjs`'s `LOCALES` ships; `v3.3.8` additionally has `be`/`eo`/`sv`/`zh-hant`
+ * (all >= 80%, so omitting them is a scoping choice here, not an SPD completeness fact), so the
+ * picker is missing four locales SPD later added - see ROADMAP.md section 8.
  */
 
 export type LanguageStatus = 'complete' | 'unreviewed' | 'unfinished';
@@ -28,24 +39,24 @@ export interface Language {
 /** English is the base every other language falls back to, so it is first and always complete */
 export const LANGUAGES: readonly Language[] = [
 	{ code: 'en', tag: 'en', nativeName: 'english', status: 'complete' },
-	{ code: 'zh', tag: 'zh', nativeName: '中文', status: 'unreviewed' },
-	{ code: 'ko', tag: 'ko', nativeName: '한국어', status: 'unreviewed' },
-	{ code: 'ru', tag: 'ru', nativeName: 'русский', status: 'complete' },
+	{ code: 'zh', tag: 'zh', nativeName: '简体中文', status: 'unreviewed' },
+	{ code: 'ko', tag: 'ko', nativeName: '한국어', status: 'complete' },
+	{ code: 'ru', tag: 'ru', nativeName: 'русский', status: 'unreviewed' },
 	{ code: 'es', tag: 'es', nativeName: 'español', status: 'complete' },
 	{ code: 'de', tag: 'de', nativeName: 'deutsch', status: 'unreviewed' },
-	{ code: 'fr', tag: 'fr', nativeName: 'français', status: 'unreviewed' },
+	{ code: 'fr', tag: 'fr', nativeName: 'français', status: 'complete' },
 	{ code: 'pt', tag: 'pt', nativeName: 'português', status: 'complete' },
 	{ code: 'pl', tag: 'pl', nativeName: 'polski', status: 'unreviewed' },
-	{ code: 'it', tag: 'it', nativeName: 'italiano', status: 'complete' },
+	{ code: 'it', tag: 'it', nativeName: 'italiano', status: 'unreviewed' },
 	{ code: 'tr', tag: 'tr', nativeName: 'türkçe', status: 'unreviewed' },
-	{ code: 'ja', tag: 'ja', nativeName: '日本語', status: 'unfinished' },
-	{ code: 'uk', tag: 'uk', nativeName: 'українська', status: 'unreviewed' },
+	{ code: 'ja', tag: 'ja', nativeName: '日本語', status: 'complete' },
+	{ code: 'uk', tag: 'uk', nativeName: 'українська', status: 'complete' },
 	{ code: 'cs', tag: 'cs', nativeName: 'čeština', status: 'unreviewed' },
-	{ code: 'in', tag: 'id', nativeName: 'indonésien', status: 'unfinished' },
-	{ code: 'nl', tag: 'nl', nativeName: 'nederlands', status: 'unfinished' },
+	{ code: 'in', tag: 'id', nativeName: 'indonesia', status: 'unreviewed' },
+	{ code: 'nl', tag: 'nl', nativeName: 'nederlands', status: 'complete' },
 	{ code: 'hu', tag: 'hu', nativeName: 'magyar', status: 'complete' },
 	{ code: 'vi', tag: 'vi', nativeName: 'tiếng việt', status: 'complete' },
-	{ code: 'el', tag: 'el', nativeName: 'ελληνικά', status: 'complete' },
+	{ code: 'el', tag: 'el', nativeName: 'ελληνικά', status: 'unfinished' },
 ];
 
 export function languageByCode(code: string): Language | undefined {
