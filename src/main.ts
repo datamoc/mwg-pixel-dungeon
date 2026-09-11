@@ -702,6 +702,8 @@ interface SavedCreature {
 	/** `YogDzewa.targetedCells`: DeathGaze is two-phase - the turn that aims paints these cells,
 	 * and the next turn fires a beam along each path. Stored as cell indices. */
 	yogTargeted?: number[];
+	yogFistDeck?: string[];
+	yogChallengeDeck?: string[];
 	kingPhase?: number;
 	kingSummonsMade?: number;
 	kingSummonCd?: number;
@@ -1823,7 +1825,7 @@ export class SewersScene extends Scene2D {
 				gooHealInc: creature.gooHealInc,
 				focusCooldown: creature.focusCooldown,
 				shamanType: creature.shamanType,
-				yogPhase: creature.yogPhase, yogFistType: creature.yogFistType, elementalType: creature.elementalType, yogSummonCd: creature.yogSummonCd, yogSummonIndex: creature.yogSummonIndex, yogBeamCd: creature.yogBeamCd, yogTargeted: creature.yogTargeted,
+				yogPhase: creature.yogPhase, yogFistType: creature.yogFistType, elementalType: creature.elementalType, yogSummonCd: creature.yogSummonCd, yogSummonIndex: creature.yogSummonIndex, yogBeamCd: creature.yogBeamCd, yogTargeted: creature.yogTargeted, yogFistDeck: creature.yogFistDeck, yogChallengeDeck: creature.yogChallengeDeck,
 				kingPhase: creature.kingPhase, kingSummonsMade: creature.kingSummonsMade, kingSummonCd: creature.kingSummonCd,
 				kingAbilityCd: creature.kingAbilityCd, kingLastAbility: creature.kingLastAbility, kingShield: creature.kingShield,
 				deferredDamage: creature.deferredDamage, deferredDamageDelay: creature.deferredDamageDelay,
@@ -1921,7 +1923,7 @@ export class SewersScene extends Scene2D {
 				damage: [...saved.damage] as [number, number], armor: [...saved.armor] as [number, number],
 				buffs: Object.fromEntries(saved.buffs), sleeping: saved.sleeping, champion: saved.champion,
 				championPower: saved.championPower, pumped: saved.pumped, gooHealInc: saved.gooHealInc, focusCooldown: saved.focusCooldown, shamanType: saved.shamanType, combo: saved.combo, moving: saved.moving, arenaJumps: saved.arenaJumps, tenguPhase: saved.tenguPhase, tenguAbilityCd: saved.tenguAbilityCd, tenguAbilityUses: saved.tenguAbilityUses, tenguLastAbility: saved.tenguLastAbility,
-				yogPhase: saved.yogPhase, yogFistType: saved.yogFistType, elementalType: saved.elementalType, yogSummonCd: saved.yogSummonCd, yogSummonIndex: saved.yogSummonIndex, yogBeamCd: saved.yogBeamCd, yogTargeted: saved.yogTargeted,
+				yogPhase: saved.yogPhase, yogFistType: saved.yogFistType, elementalType: saved.elementalType, yogSummonCd: saved.yogSummonCd, yogSummonIndex: saved.yogSummonIndex, yogBeamCd: saved.yogBeamCd, yogTargeted: saved.yogTargeted, yogFistDeck: saved.yogFistDeck, yogChallengeDeck: saved.yogChallengeDeck,
 				kingPhase: saved.kingPhase, kingSummonsMade: saved.kingSummonsMade, kingSummonCd: saved.kingSummonCd,
 				kingAbilityCd: saved.kingAbilityCd, kingLastAbility: saved.kingLastAbility, kingShield: saved.kingShield,
 				deferredDamage: saved.deferredDamage, deferredDamageDelay: saved.deferredDamageDelay,
@@ -8673,9 +8675,9 @@ export class SewersScene extends Scene2D {
 	}
 
 	/** YogDzewa.damage(): HP floors at each gate while a phase below 4 holds, and crossing
-	 * a gate advances the phase with the darkness line and a new fist (the shuffled
-	 * fistSummons deck order is cosmetic here - every fist shares one kind - and challenge
-	 * pairs need a second-fist system that doesn't exist). Gates are Java's absolute
+	 * a gate advances the phase with the darkness line and a new fist - drawn from the real
+	 * seeded `fistSummons` deck, plus its `challengeSummons` pair on the Stronger Bosses
+	 * challenge (see `yogFistDecks`). Gates are Java's absolute
 	 * 300-HP steps at HT 1000, scaled to this fight's own balance-scaled HP pool as the
 	 * same 0.3 fractions (280/160/40 at 400 max, P4 floor at step/3 like Java's 100) -
 	 * the old BossPhases 0.75/0.5/0.25 rhythm had no Java basis. Phase 5 opens in `kill()`,
@@ -8697,29 +8699,56 @@ export class SewersScene extends Scene2D {
 		}
 	}
 
-	/** one Yog fist beside Yog (capped at 3 live - the gates can only open three times) */
+	/** `YogDzewa`'s `fistSummons`/`challengeSummons` decks, built once per Yog on the same seeded
+	 * stream Java's own field initializer pushes (`Random.pushGenerator(Dungeon.seedCurDepth()+1)`):
+	 * one fist from each of the three opposed pairs, `Random.shuffle`d, plus - only on the
+	 * Stronger Bosses challenge - the three paired counterparts in one of two rotations, so a
+	 * fist and its own pair can never be summoned by the same gate. */
+	private yogFistDecks(yog: Creature): { summons: string[]; challenge: string[] } {
+		if (yog.yogFistDeck && yog.yogChallengeDeck) return { summons: yog.yogFistDeck, challenge: yog.yogChallengeDeck };
+		const pairOf = (type: string): string =>
+			type === 'burning' ? 'soiled' : type === 'soiled' ? 'burning'
+				: type === 'rotting' ? 'rusted' : type === 'rusted' ? 'rotting'
+					: type === 'bright' ? 'dark' : 'bright';
+		SpdRandom.pushGenerator(spdSeedForDepth(this.runSeedLong, this.depth, 0) + 1n);
+		try {
+			const pairs: [string, string][] = [['burning', 'soiled'], ['rotting', 'rusted'], ['bright', 'dark']];
+			const summons = pairs.map(([a, b]) => (SpdRandom.int(2) === 0 ? a : b));
+			SpdRandom.shuffle(summons);
+			const challenge = SpdRandom.int(2) === 0
+				? [pairOf(summons[1]!), pairOf(summons[2]!), pairOf(summons[0]!)]
+				: [pairOf(summons[2]!), pairOf(summons[0]!), pairOf(summons[1]!)];
+			yog.yogFistDeck = summons;
+			yog.yogChallengeDeck = challenge;
+		} finally {
+			SpdRandom.popGenerator();
+		}
+		return { summons: yog.yogFistDeck!, challenge: yog.yogChallengeDeck! };
+	}
+
+	/** `YogDzewa.damage()`'s gate: `fistSummons.remove(0)`, plus - on the Stronger Bosses
+	 * challenge - `challengeSummons.remove(0)`, each spawned beside Yog. The decks hold exactly
+	 * one entry per gate (three gates), so they bound the number of fists by themselves; Java
+	 * places them at the level exit, this port at the first free neighbour. */
 	private summonFist(yog: Creature): void {
-		if (this.creatures.filter((c) => c.kind === 'yogFist' && c.hp > 0).length >= 3) return;
-		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
-			const at = { x: yog.x + dx, y: yog.y + dy };
-			if (!this.level.passable(at.x, at.y) || this.isChasmCell(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
-			const fist = this.spawnMonster('yogFist', at);
-			//YogDzewa.java's shuffled `fistSummons` deck contains one of each concrete
-			//fist across the three normal gates. Challenge mode can summon a second paired
-			//fist; this port retains its existing three-live-fist cap, but now preserves the
-			//real six-way identity and effects for every fist that is present.
-			const fistTypes = ['burning', 'soiled', 'rotting', 'rusted', 'bright', 'dark'] as const;
-			const type = fistTypes[((yog.yogSummonIndex ?? 0) + 1) % fistTypes.length]!;
-			yog.yogSummonIndex = (yog.yogSummonIndex ?? 0) + 1;
-			fist.yogFistType = type;
-			fist.maxHp = fist.hp = 300;
-			fist.accuracy = 36;
-			fist.evasion = 20;
-			fist.damage = type === 'rusted' ? [22, 44] : [18, 36];
-			fist.armor = [0, 15];
-			fist.sleeping = false;
-			this.say(t('port.log.yogfistslam'), 'warning');
-			return;
+		const { summons, challenge } = this.yogFistDecks(yog);
+		const types = [summons.shift(), ...(isChallengeEnabled('stronger_bosses') ? [challenge.shift()] : [])];
+		for (const type of types) {
+			if (!type) continue;
+			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
+				const at = { x: yog.x + dx, y: yog.y + dy };
+				if (!this.level.passable(at.x, at.y) || this.isChasmCell(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
+				const fist = this.spawnMonster('yogFist', at);
+				fist.yogFistType = type as Creature['yogFistType'];
+				fist.maxHp = fist.hp = 300;
+				fist.accuracy = 36;
+				fist.evasion = 20;
+				fist.damage = type === 'rusted' ? [22, 44] : [18, 36];
+				fist.armor = [0, 15];
+				fist.sleeping = false;
+				this.say(t('port.log.yogfistslam'), 'warning');
+				break;
+			}
 		}
 	}
 

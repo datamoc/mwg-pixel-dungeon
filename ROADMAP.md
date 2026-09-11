@@ -616,7 +616,11 @@ Do not add new authored content as object literals or scattered constants in the
       kind with its exact Java stats/art instead of reusing the Ripper kit, and the DeathGaze is
       now the real two-phase `targetedCells` telegraph plus `beams = 1 + (HT-HP)/400` multi-target
       volley with Java's adjacent-cell beam reduction and `INFINITE_ACCURACY`.
-      Challenge pairs, flame/shadow arenas, beam terrain-burning, and visibility shrink remain).
+      Challenge pairs are now ported too (2026-09-11): the fist identities come from Java's
+      real seeded `fistSummons`/`challengeSummons` decks (one fist per opposed pair, shuffled,
+      plus the paired counterparts in Java's two-rotation order on the Stronger Bosses
+      challenge), replacing the rotating-index stand-in and the three-live cap. Flame/shadow
+      arenas, beam terrain-burning, and visibility shrink remain).
 - [x] Port final-vault Amulet placement at Java's `AMULET_POS` (depth 26, x=8, y=12).
 - [ ] Port final-vault endgame-specific terrain, custom visuals, and compass behavior. The
       vault now runs Java's own `viewDistance = 4` through the shared sight radius (with the

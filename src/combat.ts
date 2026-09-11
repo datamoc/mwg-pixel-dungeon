@@ -176,6 +176,11 @@ export interface Creature extends Combatant {
 	yogBeamCd?: number;
 	/** `YogDzewa.targetedCells`: cells DeathGaze has painted but not yet fired along (cell indices). */
 	yogTargeted?: number[];
+	/** `YogDzewa.fistSummons`/`challengeSummons`: the remaining per-gate fist identities. The
+	 * normal deck holds one fist from each opposed pair; the challenge deck holds the paired
+	 * counterparts, arranged so two of a pair never open together. */
+	yogFistDeck?: string[];
+	yogChallengeDeck?: string[];
 }
 
 /** makes a Creature-shaped object with the combat-state fields every spawn needs.
