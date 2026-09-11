@@ -196,12 +196,16 @@ Do not add new authored content as object literals or scattered constants in the
         map. If adopted, set it in one `updateVisibility()`-shaped method called from those events -
         never as a convenience default.
 - [ ] Flammable terrain and fire burnout: the port has **no** flammable model at all, and says so
-      in `spreadFire()` ("no flammable map", "no heap-burn primitive"). Java's is small and worth
-      copying exactly: `FLAMABLE` is on `GRASS`, `HIGH_GRASS` and `FURROWED_GRASS` only - **not on
-      doors**, which the port's Yog beam currently burns - plus the `SewerLevel` special case that
-      force-marks `REGION_DECO`/`REGION_DECO_ALT`; `Fire.evolve()` is what burns terrain, converting a
-      flammable cell to `EMBERS` (passable, *not* flammable) when its fire reaches zero, igniting the
-      occupant and burning the heap. Work, in order: give `EMBERS` a real live kind (today
+      in `spreadFire()` ("no flammable map", "no heap-burn primitive"). The full Java inventory -
+      terrain, characters, items, plants, the sixteen igniters, and the Java limitations we will
+      deliberately not reproduce - is `tools/scratch/FLAMABLE-INVENTORY.md`, gathered 2026-09-11 under
+      AGENTS.md's new fidelity policy (iso is no longer the goal). It corrects the claim this item
+      used to make: `Terrain.flags[DOOR]` and `flags[OPEN_DOOR]` **do** carry `FLAMABLE`, so the Yog
+      beam's door handling was always right; the flamable set is `GRASS`, `HIGH_GRASS`,
+      `FURROWED_GRASS`, both door states and `BARRICADE` (the wooden barricade), plus webs while they
+      exist and the `SewerLevel` deco special case. `Fire.evolve()` is what burns terrain, converting
+      a flamable cell to `EMBERS` (passable, *not* flammable) through `Level.destroy()` when its fire
+      reaches zero, igniting the occupant, burning the heap and withering the plant. Work, in order: give `EMBERS` a real live kind (today
       `gameBridge.ts` collapses it to `floor`, so burned ground cannot even be represented), switch
       `this.fire` to `spread(open, 0, decay)` so the fire decays in place like Java's `FireBlob`
       instead of diffusing (available since 0.7.3, and a prerequisite for the burnout timing being

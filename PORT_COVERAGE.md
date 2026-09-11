@@ -1,5 +1,10 @@
 # Port coverage
 
+Row categories: **Ported** (reproduces the real numbers/logic), **Simplified** (the shape with a
+stated reduction), **Not ported** (SPD has it, we do not), **Divergence (deliberate)** (we
+deliberately differ - see AGENTS.md's fidelity policy, settled 2026-09-11: iso with Java is no
+longer the goal, and Java's own bugs and limitations are not reproduced).
+
 ## 2026-09-11 mwg alignment pass
 
 - **Adopted `mwg/core`'s `RunHistory` for the run rankings.** `src/rankings.ts` no longer

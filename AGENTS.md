@@ -52,6 +52,26 @@ Every simplification or deviation from real Java behavior must be explicitly doc
 
 Never silently drop a piece of real behavior without a corresponding "Not ported" line.
 
+## Fidelity policy: iso is no longer the goal
+
+Settled 2026-09-11. Matching Java behaviour exactly is **not** an objective in itself any more,
+because Shattered Pixel Dungeon does not take outside fixes (see "Upstream contributions" above):
+there is nothing left to keep in step with, so a Java bug faithfully reproduced here is just a bug
+of ours with a citation.
+
+- **Do not reproduce Java's bugs or limitations.** Where Java's own behaviour is incoherent (one
+  fire burns grass and another does not, an object that survives a fire it should not), this port
+  does the better thing and says so. `tools/scratch/FLAMABLE-INVENTORY.md` lists the fire cases
+  found so far, with the Java sources, and flags the ones to diverge on.
+- **What stays mandatory**: the documentation of every divergence, in both places as above (a code
+  comment naming what Java does, and a `PORT_COVERAGE.md` row). The row's category is now one of
+  "Ported", "Simplified", "Not ported", or **"Divergence (deliberate)"** - the last carrying
+  both why we differ and what Java does instead.
+- **What stays unchanged**: values, formulas and assets still come from the real Java source (the
+  licensing rule), and every claim in this repo's comments and docs still has to be checkable
+  against it. What changes is behaviour, not provenance.
+
+
 ## Verification before reporting done
 
 Before calling any non-trivial change complete:
