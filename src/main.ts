@@ -9556,8 +9556,19 @@ export class SewersScene extends Scene2D {
 	 * uses for both the hero's own FOV and every monster's `seesHero`/AI sight check (real
 	 * Java's own light-casting array backs both alike, so one shared radius is the faithful
 	 * shape, not a coincidence of this port's own structure). Darkness takes the minimum,
-	 * matching `updateVisibility()`'s `min(viewDistance, 2)`. */
+	 * matching `updateVisibility()`'s `min(viewDistance, 2)`. The Halls boss floor is special:
+	 * see the Yog branch below. */
 	private viewRadius(): number {
+		//`HallsBossLevel` caps its own view distance at 4 (`viewDistance = min(4, viewDistance)`),
+		//and while Yog lives `YogDzewa.updateVisibility()` shrinks it further as the fight advances:
+		//phase 1 -> 4, then `max(4 - (phase-1), 1)` (phase 2 -> 3, 3 -> 2, 4/5 -> 1). Java assigns
+		//that value straight to `hero.viewDistance` when the hero has no Light buff, so it also
+		//overrides Farsight's own multiplier while Yog is alive - reproduced here by returning early.
+		const yog = this.depth === 25 ? this.creatures.find((c) => c.kind === 'yog' && c.hp > 0) : undefined;
+		if (yog) {
+			const distance = Math.max(4 - ((yog.yogPhase ?? 1) - 1), 1);
+			return isChallengeEnabled('darkness') ? Math.min(distance, 2) : distance;
+		}
 		const base = this.depth === 26 ? 4 : VIEW_RADIUS;
 		//Farsight (Sniper T3, checked against tag `v3.3.8`'s `Level.updateVisibility()` and
 		//`Dungeon.observe()`): sight radius scales by `1 + 0.25*points` (8/10/12/14 on the

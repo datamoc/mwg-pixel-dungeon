@@ -620,8 +620,9 @@ Do not add new authored content as object literals or scattered constants in the
       real seeded `fistSummons`/`challengeSummons` decks (one fist per opposed pair, shuffled,
       plus the paired counterparts in Java's two-rotation order on the Stronger Bosses
       challenge), replacing the rotating-index stand-in and the three-live cap; a Rusted fist's
-      own deferred damage is now banked through the same monster pool as the King's phase 3. Flame/shadow
-      arenas, beam terrain-burning, and visibility shrink remain).
+      own deferred damage is now banked through the same monster pool as the King's phase 3; the
+      visibility shrink is ported as well (the Halls floor caps view distance at 4 and it falls to
+      3/2/1 as Yog's phases advance). Flame/shadow arenas and beam terrain-burning remain).
 - [x] Port final-vault Amulet placement at Java's `AMULET_POS` (depth 26, x=8, y=12).
 - [ ] Port final-vault endgame-specific terrain, custom visuals, and compass behavior. The
       vault now runs Java's own `viewDistance = 4` through the shared sight radius (with the
