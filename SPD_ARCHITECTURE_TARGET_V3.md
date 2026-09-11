@@ -107,8 +107,12 @@ the framework maintainer; implemented upstream or not at all - never here.
   play, debug tooling that names entities) cannot route minting through the registry and gets
   no unified reverse lookup. Proposal: `register(id: EntityId, entity: T): void` (reject on
   collision), with `get`/`idOf`/`has`/`remove` behaving identically for registered and added
-  entities. No shape imposed on `T`, same as today. On landing: this port's `nextEntityId`
-  counter and `idOfEntity` map collapse into one shared table.
+  entities. No shape imposed on `T`, same as today. **Landed in 0.7.2** as
+  `EntityRegistry.add(entity, requestedId?)`. This port's `simulation/entityId.ts` cannot adopt it
+  in place: that module sits inside the framework-free `simulation/` boundary (no runtime `mwg`
+  import allowed), and its `idOfEntity`/`hasEntity` helpers were unused dead code, so they were
+  removed rather than migrated. The local `nextEntityId` counter stays; the registry belongs at the
+  scene/adapter layer.
 - **P2: a value-level 2D primitive story** (unblocks Phase 0's exit criterion). Surveyed all
   26 `from 'pixi.js'` imports in `src/` with the compiler API: *every* use is a value use -
   `extends Container`, `new Texture(...)` / `new Rectangle(...)`, statics like
@@ -156,7 +160,7 @@ therefore real, current work regardless of version:
 | ADR | Decision | Status |
 | --- | --- | --- |
 | SPD-ADR-001 | `SpdSimulation` is the sole gameplay-mutation authority | Unblocked, partially adopted: `simulation.SimulationRuntime` (0.4.1) fronts the search and hunger commands (`adapters/searchSimulation.ts`, `adapters/hungerSimulation.ts`, both cost-`null` so far); `main.ts`'s `attack()` et al. still mutate state directly and call presentation inline (see `SIMULATION_ARCHITECTURE.md`) |
-| SPD-ADR-002 | Every runtime entity has a stable, renderer-free `EntityId` | Substantially adopted with a locally-minted id (`simulation/entityId.ts`): every `Creature`/`GroundItem` has one, and `sprite` moved off both interfaces into the scene's `spriteFor` registry (SIMULATION_ARCHITECTURE.md's "Step 6" + "Step 8"). The `EntityId` type itself is now MWG's own `core.EntityId` (0.4.2), plus a reverse `idOfEntity(entity)` lookup. Full `EntityRegistry.add()` minting deferred: opaque `eN` ids vs save-persisted prefixed ids, no caller-chosen-id primitive. Still object-reference-identified elsewhere (`Map<Creature, Bar>` for health bars, `Set<Creature>` for king adds) - not yet migrated to id-keyed lookups either way |
+| SPD-ADR-002 | Every runtime entity has a stable, renderer-free `EntityId` | Substantially adopted with a locally-minted id (`simulation/entityId.ts`): every `Creature`/`GroundItem` has one, and `sprite` moved off both interfaces into the scene's `spriteFor` registry (SIMULATION_ARCHITECTURE.md's "Step 6" + "Step 8"). The `EntityId` type itself is MWG's own `core.EntityId` (0.4.2, type-only re-export). `EntityRegistry.add(entity, requestedId?)` landed in 0.7.2, but it cannot be adopted inside the framework-free `simulation/` boundary, and the module's reverse-lookup helpers were unused dead code (removed 2026-09-11); minting stays the local prefixed counter. Still object-reference-identified elsewhere (`Map<Creature, Bar>` for health bars, `Set<Creature>` for king adds) - not yet migrated to id-keyed lookups either way |
 | SPD-ADR-003 | The MWG scheduler is the sole time authority | Partially adopted: `advanceToInput` drives scheduling (step 3), but monster turns still hardcode `return 1` rather than a real per-action time cost (plan section 6). `SimulationRuntime.dispatch`'s `cost` field (0.4.1) is the real mechanism once actions route through it |
 | SPD-ADR-004 | Scenes contain no business rules; they translate input and events | Not yet; `main.ts` (~7460 lines) still holds most combat/AI/effect logic |
 | SPD-ADR-005 | GameEvents are the ordered output of simulation transactions | Partially: `buffs.ts` already emits `buff-applied`/tick events; `attack()` does not. `core.PresentationQueue` (0.4.1) is the consumer-side primitive this needs, once real events exist to feed it |

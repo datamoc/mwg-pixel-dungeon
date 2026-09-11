@@ -137,7 +137,13 @@ Do not add new authored content as object literals or scattered constants in the
       `regionPaintRules`, `floorSetTierProbs`, and `talentClassEntries`/`talentSubclassEntries`
       (from `talentTrees`; its `tier_thresholds` scalar stays a trait effect). That completes the
       row-table conversion - every remaining `set=` is a scalar, an id-list, or a formula, not an
-      array-of-records. Every converted table was checked value-identical to its old rows.
+      array-of-records. Every converted table was checked value-identical to its old rows. Also
+      adopted in the same pass: `tools/compile-mwl.mjs` now emits through `compileAndEmitSources`/
+      `emitArtifacts` (MWG owns the compile-twice determinism check and the artifact set, with the
+      game-owned generated modules passed as `artifacts`), and `simulation/entityId.ts` dropped its
+      unused `trackEntity`/`idOfEntity`/`hasEntity` helpers (MWG 0.7.2's caller-chosen
+      `EntityRegistry.add(entity, requestedId?)` exists, but `simulation/` is framework-free, so the
+      registry belongs at the scene/adapter layer).
 - [ ] Update the build, test, package, and browser-smoke documentation so a clean checkout can
       reproduce every generated resource without a local MWG checkout.
 

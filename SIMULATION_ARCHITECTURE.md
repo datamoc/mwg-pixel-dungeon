@@ -169,11 +169,14 @@ section 25: no big-bang).
 (cost `null`, inert local scheduler/random), and `SceneSimulationAdapter.hungerStep()`
 now dispatches through `runHungerStep()` instead of calling `advanceHunger` directly -
 same state committed, same events presented, only the dispatch path changed.
-- `simulation/entityId.ts`'s `EntityId` is now MWG's own `core.EntityId` (re-exported),
-plus a reverse `idOfEntity(entity)` lookup the plain counter never had. Minting stays
-local and prefixed (`hero-N`/`item-N`): MWG's `EntityRegistry.add()` mints opaque `eN`
-ids with no caller-chosen-id primitive, and the prefixed ids are persisted in saves -
-full registry adoption needs that primitive upstream or a save migration first.
+- `simulation/entityId.ts`'s `EntityId` is MWG's own `core.EntityId` (re-exported, type-only, so
+the module keeps zero runtime `mwg` dependency - the framework-free boundary `tools/verifyCombat.mjs`
+asserts). Minting stays a local prefixed counter (`hero-N`/`item-N`), which the save schema
+persists. `mwg@0.7.2` did add `EntityRegistry.add(entity, requestedId?)` - the caller-chosen-id
+primitive this section previously noted was missing - but `EntityRegistry` cannot be imported
+inside `simulation/`, and the reverse `idOfEntity`/`hasEntity` helpers this module used to carry
+had no call sites, so they were removed as dead API. Wire the registry at the scene/adapter layer
+if an id-keyed lookup is ever needed.
 
 ## Step 9 - runtime-routed movement planning
 
