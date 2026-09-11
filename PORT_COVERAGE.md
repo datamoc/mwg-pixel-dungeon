@@ -2105,19 +2105,20 @@ capitalisation rules.
 
 Strings this port invented, which have no Java equivalent - the sealed-floor search hint, the
 keybind cheat-sheet, port-only status text, and two names absent from this checkout's message
-files - live under a `port.*` namespace (`src/i18n/portStrings.ts`, **389** strings and counting -
+files - live under a `port.*` namespace (`src/i18n/portStrings.ts`, **415** strings and counting -
 `port.affix.*` alone added 32 in an earlier pass). The prefix
 is deliberate: a `port.*` key is a string SPD never had, not a missing translation, and the two
-distinguish themselves at a glance. English and French are hand-written (375 keys each).
+distinguish themselves at a glance. English and French are hand-written (415 keys each).
 **German (`de`), Spanish (`es`), Portuguese (`pt`), Italian (`it`), Polish (`pl`), Russian
-(`ru`) and Turkish (`tr`) are now
+(`ru`), Turkish (`tr`) and Ukrainian (`uk`) are now
 supplied too** (German 2026-09-09, Spanish 2026-09-09, Portuguese 2026-09-09, Italian
 2026-09-09, Polish 2026-09-09, all 375/375 keys at the time, Russian 2026-09-10, Turkish
-2026-09-10, 389/389 keys
+2026-09-10, both 389/389 keys at the time, Ukrainian 2026-09-11, 415/415 keys
 against the current EN table, `unreviewed` status) - machine-assisted direct
 translations, not human-proofread, marked as such in `PORT_STRINGS_DE`/`PORT_STRINGS_ES`/
-`PORT_STRINGS_PT`/`PORT_STRINGS_IT`/`PORT_STRINGS_PL`/`PORT_STRINGS_RU`/`PORT_STRINGS_TR`'s own doc comments rather than silently
-claimed `complete`. All seven are real Java SPD locales - confirmed against
+`PORT_STRINGS_PT`/`PORT_STRINGS_IT`/`PORT_STRINGS_PL`/`PORT_STRINGS_RU`/`PORT_STRINGS_TR`/
+`PORT_STRINGS_UK`'s own doc comments rather than silently
+claimed `complete`. All eight are real Java SPD locales - confirmed against
 `src/generated/spdMessages.ts`'s own generated table, which exists only for languages SPD
 actually ships a base translation for - so this only ever supplies the port's *own* invented
 strings on top of a base catalog Java already covers, never invents a locale Java doesn't have.
@@ -2134,11 +2135,19 @@ Turkish was verified the same programmatic way (389/389 keys, 0 `{placeholder}` 
 its combat line `port.log.hit` uses verb-final `{subject} {object} {damage} {verb}` order with
 an identical token set, accepted by the sorted-token QA by design); its live in-browser pass
 is likewise owed per ROADMAP.md section 10.
+Ukrainian was verified the same programmatic way (415/415 keys, 0 missing/extra, 0
+`{placeholder}` mismatches - the EN table itself had grown to 415 keys by this pass, picking up
+the alchemy/unlockhint/journal/bag keys added since the Russian and Turkish drafts, which is why
+those two remain short of the current EN count until someone revisits them), formal «Ви» address
+matching Russian's register as the closest sibling locale; its live in-browser pass is likewise
+owed per ROADMAP.md section 10 (no working browser tool in that session either).
 The Italian draft also caught a real transcription hazard worth reusing: a scripted
 non-Latin-character scan (`/[Ѐ-ӿ一-鿿...]/`) over the finished draft file,
 before wiring it in, caught one stray Cyrillic-character typo a manual read missed; the same
 scan on the Polish draft found nothing, confirming it as a cheap habitual check rather than a
-one-off fix.
+one-off fix. Ukrainian's own equivalent scan (Latin letters inside an otherwise-Cyrillic word)
+found nothing either - every flagged Latin token was a legitimate untranslated proper noun
+(`Shattered Pixel Dungeon`, `mwg`, `DM-300`) or a keybind letter.
 
 **Found and fixed while verifying Spanish, but a real bug affecting French and German too, not
 new to this pass**: `main.ts`'s `attack()` built the combat-log `object` slot for a hero
@@ -2157,7 +2166,7 @@ hero-vs-monster exchange in all four locales after the fix: `"Marsupial rat hits
 of this fix), `"Beutelratte trifft dich für 2."` (de, now correctly accusative), `"Rata
 marsupial golpea a ti por 2."` (es, now grammatically correct instead of "a you").
 
-The remaining 10 `Languages.java` locales still fall back to English through
+The remaining 9 `Languages.java` locales still fall back to English through
 `mwg/i18n`'s base catalog - translating them is tracked as its own ROADMAP.md section 8 item.
 
 `tools/i18nCheck.ts` guards the convention: every SPD-derived key the port uses must exist in

@@ -1243,7 +1243,39 @@ Do not add new authored content as object literals or scattered constants in the
        `src/generated/spdMessages.ts`'s 19 base locales). Browser verification owed per
        section 10 (no working browser tool in this session).
 
-       **10 locales remain** (see `languages.ts` for the full list). Their future catalogues must
+       **Eighth locale done: Ukrainian (`uk`), 2026-09-11, 415/415 keys**, same process
+       throughout - direct translation from `PORT_STRINGS_EN` (formal «Ви» address, matching
+       RU's register as the closest sibling locale - Cyrillic, same formal-address choice;
+       `port.name.cursed`/affixes use a single masculine base form like every other locale,
+       since Java resolves its gender markers by item and this port does not model that), a
+       scripted non-Latin-character scan of the draft (0 issues - every Latin token found was a
+       legitimate untranslated proper noun: `Shattered Pixel Dungeon`, `mwg`, `DM-300`, or a
+       keybind letter like `T`/`F`/`E`), the programmatic key/placeholder QA diff against EN
+       (0 missing/extra, 0 mismatches, run against the *current* 415-key EN table - up from the
+       375/389 the earlier locales were checked against, since `port.ui.alchemy.*`/
+       `port.log.alchemize.*`/`port.name.alchemy.*`/the five `*.unlockhint` keys/
+       `port.log.dm300arrives`/the five `port.ui.journal.*`/`port.ui.bag.*` keys were all added
+       to EN after RU and TR were drafted - this pass's own diff script surfaced that RU and TR
+       are now 25 keys short of the current EN table, a real, pre-existing gap this task did not
+       fix since fixing RU/TR was out of this task's scope, but is worth closing in a future
+       pass rather than leaving unnoticed), wiring (`PORT_STRINGS_UK` + `PORT_STRINGS`
+       registration + `uk: 'machine'` provenance, plus extending both header comments' locale
+       lists), then `npm run i18n:check`/`npx tsc --noEmit`/`npm run build` all green (the
+       `i18n:check` failure this session - `these keys are referenced but exist in no SPD
+       properties file: ,` / `../mwlContent` / `effect` / `keys` / `potionAppearances` /
+       `scrollAppearances` - was confirmed pre-existing and unrelated to this change by
+       reproducing it identically on a clean `git stash` of the working tree; `port.*` keys are
+       explicitly filtered out of that check's scope by design, per `i18n-extract.mjs`'s own
+       comment). Marked `MT`/`unreviewed` in `PORT_STRINGS_UK`'s own doc comment for the same
+       reason as the other machine-drafted locales. Confirmed `uk` is a real Java SPD locale the
+       same way (present in `src/generated/spdMessages.ts`'s generated table, and already listed
+       in `languages.ts` with `status: 'unreviewed'`). **Browser verification is owed, honestly
+       not done this pass**: this task ran with no browser tool available at all, so unlike RU/TR
+       (which at least ran in sessions where the *absence* of a working browser tool was
+       confirmed) this is a flat "not attempted" rather than "attempted and blocked" - flagging
+       it plainly rather than implying a check that didn't happen.
+
+       **9 locales remain** (see `languages.ts` for the full list). Their future catalogues must
       be machine-translated from `PORT_STRINGS_EN`, marked `MT` in source and in the provenance
       map exported by `portStrings.ts`, then checked for key/placeholder parity before wiring.
       Font coverage is part of done, not a footnote - zh/ko/ja need the section-10 tofu check per
