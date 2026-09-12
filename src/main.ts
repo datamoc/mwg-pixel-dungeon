@@ -4773,14 +4773,15 @@ export class SewersScene extends Scene2D {
 	}
 
 	/**
-	 * One ray of a `ConeAOE`: Java's `new Ballistica(source, cell, ballisticaParams).subPath(1, dist)`
-	 * where the wand's params are `STOP_SOLID | STOP_TARGET`. MWG's `ballistica` covers the terrain
-	 * half (`stop: 'impassable'`, Java's `Level.solid`), and the framework's tracer has no concept of
-	 * characters, so the target half is the first creature the path meets - Java includes the
-	 * stopping cell in the path, so that cell is kept rather than dropped.
+	 * One ray of a `ConeAOE`: Java's `new Ballistica(source, cell, ballisticaParams).subPath(1, dist)`.
+	 * MWG's `ballistica` covers the terrain half (`stop: 'impassable'`, Java's `Level.solid`). The
+	 * character half is the caller's: Java's Regrowth cone casts with `STOP_SOLID | STOP_TARGET`, so
+	 * its rays end at the first creature too (Java includes the stopping cell, so it is kept), while
+	 * DM-300's gas cone casts with `STOP_SOLID` alone and ignores characters - `stopAtTarget: false`.
 	 */
-	private coneRay(from: Step, to: Step): Step[] {
+	private coneRay(from: Step, to: Step, stopAtTarget = true): Step[] {
 		const cells = Roguelike.ballistica(this.level, from, to, { stop: 'impassable' }).cells.slice(1);
+		if (!stopAtTarget) return cells;
 		const blocker = cells.findIndex((cell) => this.creatureAt(cell.x, cell.y) !== null);
 		return blocker === -1 ? cells : cells.slice(0, blocker + 1);
 	}
@@ -8947,15 +8948,50 @@ export class SewersScene extends Scene2D {
 	 * per path cell, topped up around the hero to 250 total, doubled on the challenge).
 	 * ROCKS schedules a telegraphed 7x7 rockfall that slams after 2 turns for
 	 * `NormalIntRange(6,12)` (10-20 on the challenge) plus brief paralysis. The old
-	 * every-3rd-turn fire-ring + double-strike had no Java basis and is gone. Remaining:
-	 * the can't-reach targeting refinements (cone-AOE trickshotting, inorganic rule - the hero
-	 * is never inorganic), and Java's adjacent-only turn spend (abilities cost the full
-	 * turn here either way - 1-turn granularity, stated).
+	 * every-3rd-turn fire-ring + double-strike had no Java basis and is gone. The
+	 * can't-reach branch is ported: with the hero unreachable (see `canReach` below) and
+	 * `turnsSinceLastAbility >= MIN_COOLDOWN` (5), a 30-degree infinite-range `STOP_SOLID`
+	 * cone decides whether the hero can still be gassed - Java's own "account for
+	 * trickshotting angles" - and otherwise drops rocks unless the hero is already
+	 * paralysed; that branch re-rolls no cooldown and spends no turn, exactly as Java's does.
+	 * Remaining: Java's `INORGANIC` clause (provably false for the hero here) and its
+	 * adjacent-only turn spend (abilities cost the full turn here either way - 1-turn
+	 * granularity, stated).
 	 */
 	private takeDM300Turn(dm300: Creature): void {
 		if ((dm300.dmAbilityTurns ?? -1) < 0) dm300.dmAbilityTurns = 0;
 		else dm300.dmAbilityTurns = (dm300.dmAbilityTurns ?? 0) + 1;
 		const maxCooldown = isChallengeEnabled('stronger_bosses') ? 7 : 9;
+		const blocked = new Set(
+			this.creatures.filter((c) => c !== dm300 && c !== this.hero).map((c) => this.level.index(c.x, c.y))
+		);
+		//`DM300.java` 185-189: adjacent, or a step towards the hero exists.
+		const canReach = Roguelike.chebyshevDistance(dm300, this.hero) <= 1
+			|| this.pathfinder.find({ x: dm300.x, y: dm300.y }, { x: this.hero.x, y: this.hero.y }, { blocked }).length > 0;
+		if (dm300.seesHero && !canReach && (dm300.dmAbilityTurns ?? 0) >= 5) {
+			//`DM300.java` 202-234, "more aggressive ability usage when DM can't reach its target": the
+			//gas cone is cast with `STOP_SOLID` only (`Float.POSITIVE_INFINITY` range, 30 degrees), and
+			//a cone that misses falls through to rocks.
+			const aim = coneCells({
+				source: { x: dm300.x, y: dm300.y },
+				target: { x: this.hero.x, y: this.hero.y },
+				degrees: 30,
+				maxDistance: Infinity,
+				width: this.level.width,
+				height: this.level.height,
+				trace: (from, to) => this.coneRay(from, to, false),
+			});
+			const inCone = aim.cells.some((cell) => cell.x === this.hero.x && cell.y === this.hero.y);
+			dm300.dmAbilityTurns = 0;
+			if (inCone) {
+				dm300.dmLastAbility = 1;
+				this.dm300VentGas(dm300);
+			} else if (this.hero.buffs['paralysis'] === undefined) {
+				dm300.dmLastAbility = 2;
+				this.dm300Rockfall(dm300);
+			}
+			return;
+		}
 		if (dm300.seesHero && (dm300.dmAbilityTurns ?? 0) > (dm300.dmAbilityCd ?? 5)) {
 			const last = dm300.dmLastAbility ?? 0;
 			let pick: number;
@@ -8974,9 +9010,6 @@ export class SewersScene extends Scene2D {
 			this.attack(dm300, this.hero);
 			return;
 		}
-		const blocked = new Set(
-			this.creatures.filter((c) => c !== dm300 && c !== this.hero).map((c) => this.level.index(c.x, c.y))
-		);
 		const decision = Roguelike.decideMonsterAI(this.level, this.pathfinder, dm300, dm300.hp / dm300.maxHp, this.hero, {
 			sightRadius: this.viewRadius(),
 			blocked,

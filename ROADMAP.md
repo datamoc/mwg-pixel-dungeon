@@ -1211,11 +1211,13 @@ Do not add new authored content as object literals or scattered constants in the
       sector while the old circle version changed cells outside it, and that a pylon is neither
       grassed under nor rooted while an ordinary monster beside it is both. This wand's own remainder
       is now only the Dwarf King's boss-challenge-badge flag and Java's `fx` animation.
-      **`ConeAOE` has two more live consumers here, both now wiring jobs rather than geometry jobs:**
-      `WandOfFireblast.fx()` (`3 + 2*charges` range, `30 + 20*charges` degrees,
-      `STOP_TARGET|STOP_SOLID|IGNORE_SOFT_SOLID`) and `DM300.java` 203-208 (a 30-degree infinite-range
-      `STOP_SOLID` cone deciding that an unreachable hero can still be gassed - the "trickshotting"
-      named in `takeDM300Turn`'s comment). Exact waterskin/dewdrop interactions remain.
+      **`ConeAOE` has two more live consumers here.** `DM300.java` 203-208 is now **wired and
+      verified** - a 30-degree infinite-range `STOP_SOLID` cone deciding that an unreachable hero can
+      still be gassed (the "trickshotting" `takeDM300Turn`'s comment named), with 8 live assertions in
+      `tools/scratch/dm300-gas-cone-livecheck.mjs` covering the reachable/unreachable, cone-hit/miss,
+      paralysed and under-cooldown cases. `WandOfFireblast.fx()` (`3 + 2*charges` range,
+      `30 + 20*charges` degrees, `STOP_TARGET|STOP_SOLID|IGNORE_SOFT_SOLID`) is the remaining wiring
+      job. Exact waterskin/dewdrop interactions remain.
 - [x] Match hunger and starvation damage exactly (`Hunger.act()`'s real `partialDamage`
       fractional accrual and crossing-into-STARVING 1-damage hit, replacing the former flat
       "every 10 turns" guess). Java has no attack-delay/accuracy penalty while merely hungry
