@@ -6,10 +6,13 @@
  * where a sentence should be. That cannot be caught by `tsc`, because a key is just a string,
  * so it is checked here instead.
  *
- * Run with `npx esbuild tools/i18nCheck.ts --bundle --platform=node --format=esm
- * --outfile=tools/scratch/i18nCheck.mjs && node tools/scratch/i18nCheck.mjs`. It needs
- * bundling because `src/` uses extensionless imports, which Node's ESM loader will not
- * resolve on its own - the same reason the other verify scripts are bundled.
+ * Run with `npm run i18n:verify`, which bundles this file to
+ * `tools/scratch/i18nCheck.mjs` (with esbuild) and runs it. It needs bundling because `src/`
+ * uses extensionless imports, which Node's ESM loader will not resolve on its own - the same
+ * reason the other verify scripts are bundled. `npm run check` runs it too, so a catalogue that
+ * drifts behind English or loses a `{placeholder}` fails the ordinary type-check rather than
+ * waiting for someone to remember this file exists - which is exactly how five catalogues fell
+ * 24-31 keys behind unnoticed.
  */
 
 import { SPD_MESSAGES } from '../src/generated/spdMessages';

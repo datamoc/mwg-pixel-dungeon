@@ -5,5 +5,8 @@ tools/scratch/*_dump.txt
 tools/scratch/uiCheck.mjs
 tools/scratch/i18nCheck.mjs
 tools/scratch/*.py
-tools/scratch/i18nCheck.mjs
 .aider*
+# esbuild output of the tools/scratch/*.ts helpers; regenerate with the command in each header
+tools/scratch/dump-*.mjs
+# session-local agent state (worktrees, replays, temp files)
+.qwen/

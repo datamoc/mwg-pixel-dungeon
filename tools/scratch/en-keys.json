@@ -1,0 +1,1891 @@
+{
+	"port.name.questweapon": {
+		"tokens": [],
+		"value": "quest weapon"
+	},
+	"port.name.wand": {
+		"tokens": [],
+		"value": "wand"
+	},
+	"port.log.mineabandonedquiet": {
+		"tokens": [],
+		"value": "The abandoned mine is quiet."
+	},
+	"port.log.crystalchestlocked": {
+		"tokens": [],
+		"value": "The crystal chest is locked."
+	},
+	"port.log.unlockcrystalchest": {
+		"tokens": [],
+		"value": "You unlock the crystal chest."
+	},
+	"port.log.lockedchestneedsgoldenkey": {
+		"tokens": [],
+		"value": "The locked chest needs a golden key."
+	},
+	"port.log.unlockchest": {
+		"tokens": [],
+		"value": "You unlock the chest."
+	},
+	"port.log.nohourglasssand": {
+		"tokens": [],
+		"value": "You have no usable hourglass for this sand."
+	},
+	"port.log.sacrificialfirereward": {
+		"tokens": [],
+		"value": "The sacrificial fire grants its reward."
+	},
+	"port.log.wellreveals": {
+		"tokens": [],
+		"value": "The well reveals the secrets around you."
+	},
+	"port.log.wellheals": {
+		"tokens": [],
+		"value": "The well restores your health."
+	},
+	"port.log.sungrassheal": {
+		"tokens": [],
+		"value": "The sungrass begins restoring your health."
+	},
+	"port.log.plantfruit": {
+		"tokens": [],
+		"value": "The plant drops a nourishing fruit."
+	},
+	"port.log.starflowerconfidence": {
+		"tokens": [],
+		"value": "The starflower fills you with confidence."
+	},
+	"port.log.dewcatcherdew": {
+		"tokens": [],
+		"value": "The dewcatcher releases dew."
+	},
+	"port.log.seedpodburst": {
+		"tokens": [],
+		"value": "The seedpod bursts open."
+	},
+	"port.log.fadeleafteleport": {
+		"tokens": [],
+		"value": "The fadeleaf carries you elsewhere."
+	},
+	"port.log.mageroyalclear": {
+		"tokens": [],
+		"value": "The mageroyal clears your afflictions."
+	},
+	"port.log.icecapfrost": {
+		"tokens": [],
+		"value": "The icecap imbues your attacks with frost."
+	},
+	"port.log.icecapfreeze": {
+		"tokens": [],
+		"value": "The icecap freezes you in place."
+	},
+	"port.log.rotberryadrenaline": {
+		"tokens": [],
+		"value": "The rotberry fills you with adrenaline."
+	},
+	"port.log.rotberrygas": {
+		"tokens": [],
+		"value": "The rotberry releases toxic gas."
+	},
+	"port.log.sorrowmosspoison": {
+		"tokens": [],
+		"value": "The sorrowmoss poisons you."
+	},
+	"port.log.firebloomignite": {
+		"tokens": [],
+		"value": "The firebloom ignites the ground."
+	},
+	"port.log.stormvinetwist": {
+		"tokens": [],
+		"value": "The stormvine twists your senses."
+	},
+	"port.log.swiftthistletime": {
+		"tokens": [],
+		"value": "Time bends around the swiftthistle."
+	},
+	"port.log.plantwithers": {
+		"tokens": [],
+		"value": "The plant withers beneath your step."
+	},
+	"port.log.fallchasm": {
+		"tokens": [],
+		"value": "You fall through the chasm."
+	},
+	"port.log.mimicreveals": {
+		"tokens": [],
+		"value": "The crystal mimic reveals itself."
+	},
+	"port.log.mimicescapes": {
+		"tokens": [],
+		"value": "The crystal mimic escapes into the darkness."
+	},
+	"port.log.armordisplace": {
+		"tokens": [],
+		"value": "Your armor displaces you."
+	},
+	"port.log.mimicdisplace": {
+		"tokens": [],
+		"value": "The crystal mimic displaces you."
+	},
+	"port.log.statuedrops": {
+		"tokens": [],
+		"value": "The statue drops its enchanted equipment."
+	},
+	"port.log.cursedhourglass": {
+		"tokens": [],
+		"value": "You cannot use a cursed hourglass."
+	},
+	"port.log.hourglassnocharge": {
+		"tokens": [],
+		"value": "Your hourglass has no charge."
+	},
+	"port.log.timefreezes": {
+		"tokens": [],
+		"value": "Time freezes around you."
+	},
+	"port.ui.alchemy.title": {
+		"tokens": [],
+		"value": "Choose a recipe"
+	},
+	"port.log.alchemy.noingredients": {
+		"tokens": [],
+		"value": "You have no ingredients for the available recipes."
+	},
+	"port.log.alchemy.unavailable": {
+		"tokens": [],
+		"value": "That recipe is no longer available."
+	},
+	"port.log.alchemy.crafted": {
+		"tokens": [
+			"item"
+		],
+		"value": "You craft {item}."
+	},
+	"port.log.alchemize.energized": {
+		"tokens": [
+			"item"
+		],
+		"value": "You energized {item}."
+	},
+	"port.log.alchemize.nothing": {
+		"tokens": [],
+		"value": "You have nothing to energize."
+	},
+	"port.name.alchemy.scrolltostone": {
+		"tokens": [],
+		"value": "scroll of stone"
+	},
+	"port.name.alchemy.exoticpotion": {
+		"tokens": [],
+		"value": "exotic potion"
+	},
+	"port.name.alchemy.exoticscroll": {
+		"tokens": [],
+		"value": "exotic scroll"
+	},
+	"port.name.alchemy.enhancebomb": {
+		"tokens": [],
+		"value": "enhanced bomb"
+	},
+	"port.name.cleric": {
+		"tokens": [],
+		"value": "cleric"
+	},
+	"port.name.berserk": {
+		"tokens": [],
+		"value": "berserking"
+	},
+	"port.name.potion": {
+		"tokens": [],
+		"value": "a potion"
+	},
+	"port.name.scroll": {
+		"tokens": [],
+		"value": "a scroll"
+	},
+	"port.name.ring": {
+		"tokens": [],
+		"value": "a ring"
+	},
+	"port.name.you": {
+		"tokens": [],
+		"value": "you"
+	},
+	"port.name.cudgel": {
+		"tokens": [],
+		"value": "a cudgel"
+	},
+	"port.name.wornshortsword": {
+		"tokens": [],
+		"value": "a worn short sword"
+	},
+	"port.name.magesstaff": {
+		"tokens": [],
+		"value": "a mage's staff"
+	},
+	"port.name.dagger": {
+		"tokens": [],
+		"value": "a dagger"
+	},
+	"port.name.gloves": {
+		"tokens": [],
+		"value": "a pair of gloves"
+	},
+	"port.name.rapier": {
+		"tokens": [],
+		"value": "a rapier"
+	},
+	"port.class.warrior.blurb": {
+		"tokens": [],
+		"value": "Starts identified, hits hard, carries throwing stones."
+	},
+	"port.class.mage.blurb": {
+		"tokens": [],
+		"value": "Weakest melee hit of the six - the staff wants to be charged and zapped."
+	},
+	"port.class.rogue.blurb": {
+		"tokens": [],
+		"value": "Same bite as the Warrior, plus a cloak of shadows and throwing knives."
+	},
+	"port.class.huntress.blurb": {
+		"tokens": [],
+		"value": "Weakest single hit, but bare-handed gloves swing twice as often."
+	},
+	"port.class.duelist.blurb": {
+		"tokens": [],
+		"value": "A lighter blade than the Warrior’s, plus throwing spikes."
+	},
+	"port.class.cleric.blurb": {
+		"tokens": [],
+		"value": "The cudgel itself is 40% more accurate than any other starting weapon."
+	},
+	"port.class.mage.unlockhint": {
+		"tokens": [],
+		"value": "Unlock: use an upgrade scroll."
+	},
+	"port.class.rogue.unlockhint": {
+		"tokens": [],
+		"value": "Unlock: land 10 surprise attacks."
+	},
+	"port.class.huntress.unlockhint": {
+		"tokens": [],
+		"value": "Unlock: throw 10 times."
+	},
+	"port.class.duelist.unlockhint": {
+		"tokens": [],
+		"value": "Unlock: raise a weapon to +2."
+	},
+	"port.class.cleric.unlockhint": {
+		"tokens": [],
+		"value": "Unlock: win a run."
+	},
+	"port.name.champion.blessed": {
+		"tokens": [],
+		"value": "blessed champion"
+	},
+	"port.name.champion.blazing": {
+		"tokens": [],
+		"value": "blazing champion"
+	},
+	"port.log.welcome": {
+		"tokens": [
+			"depth",
+			"hero",
+			"region",
+			"weapon"
+		],
+		"value": "{region}, floor {depth}. You are a {hero}, wielding {weapon}."
+	},
+	"port.log.talent": {
+		"tokens": [
+			"talent"
+		],
+		"value": "Your path is set: {talent}!"
+	},
+	"port.log.levelup": {
+		"tokens": [
+			"level"
+		],
+		"value": "Welcome to level {level}!"
+	},
+	"port.log.badge": {
+		"tokens": [
+			"badge"
+		],
+		"value": "Badge earned: {badge}!"
+	},
+	"port.hint.sealedroom": {
+		"tokens": [],
+		"value": "No door leads out of this room. Press F to search the walls for a hidden one."
+	},
+	"port.hint.vault": {
+		"tokens": [],
+		"value": "A quiet vault. Something radiant waits in the dark."
+	},
+	"port.hint.keys": {
+		"tokens": [],
+		"value": "move, F search, T special, E eat, Q quaff, R read, U upgrade, O save, P load"
+	},
+	"port.npc.ghost.offer": {
+		"tokens": [],
+		"value": "The ghost pleads: \"A creature took my bones... please, slay it and bring them back.\""
+	},
+	"port.npc.ghost.done": {
+		"tokens": [],
+		"value": "The ghost has moved on. There is nothing left to say."
+	},
+	"port.npc.ghost.remind": {
+		"tokens": [],
+		"value": "The ghost whispers: \"Please... find my bones...\""
+	},
+	"port.npc.ghost.reward": {
+		"tokens": [],
+		"value": "The ghost thanks you and fades away. You feel a little tougher: max HP +2."
+	},
+	"port.npc.ghost.echo": {
+		"tokens": [],
+		"value": "A ghostly voice echoes: \"My bones... find me...\""
+	},
+	"port.npc.blacksmith.offer": {
+		"tokens": [],
+		"value": "The troll rumbles: \"Bring my pick back with 15 dark gold, and I shall reforge your gear.\""
+	},
+	"port.npc.blacksmith.bloodoffer": {
+		"tokens": [],
+		"value": "The troll snarls: \"Stain my pickaxe with bat blood, and I shall reforge your gear.\""
+	},
+	"port.npc.blacksmith.done": {
+		"tokens": [],
+		"value": "The troll waves you off. \"Get lost - the forge is cooling.\""
+	},
+	"port.npc.blacksmith.remind": {
+		"tokens": [
+			"gold"
+		],
+		"value": "The troll grunts: \"Pickaxe and 15 dark gold. You carry {gold}.\""
+	},
+	"port.npc.blacksmith.bloodremind": {
+		"tokens": [],
+		"value": "The troll grunts: \"Use my pickaxe to kill a bat, then bring it back stained with blood.\""
+	},
+	"port.log.pickaxeblood": {
+		"tokens": [],
+		"value": "The pickaxe is stained with bat blood."
+	},
+	"port.npc.blacksmith.reward": {
+		"tokens": [
+			"armor",
+			"weapon"
+		],
+		"value": "The forge roars! Your gear is reforged (+{weapon} weapon, +{armor} armor)."
+	},
+	"port.npc.imp.offer": {
+		"tokens": [
+			"count",
+			"enemy"
+		],
+		"value": "The imp hisses: \"Bring me {count} dwarf tokens from the {enemy} and a ring is yours.\""
+	},
+	"port.npc.imp.enemy.monks": {
+		"tokens": [],
+		"value": "monks"
+	},
+	"port.npc.imp.enemy.golems": {
+		"tokens": [],
+		"value": "golems"
+	},
+	"port.npc.imp.done": {
+		"tokens": [],
+		"value": "The imp is gone. Only the smell of brimstone remains."
+	},
+	"port.npc.imp.remind": {
+		"tokens": [
+			"count",
+			"held"
+		],
+		"value": "The imp taps its claws: \"{count} tokens. You carry {held}.\""
+	},
+	"port.npc.imp.reward": {
+		"tokens": [
+			"ring"
+		],
+		"value": "The imp cackles and vanishes, leaving a +2 cursed {ring} (cleanse it to wear!)."
+	},
+	"port.npc.wandmaker.offer": {
+		"tokens": [],
+		"value": "The wandmaker rasps: \"Bring me any scroll and I shall make it worth your while.\""
+	},
+	"port.npc.wandmaker.done": {
+		"tokens": [],
+		"value": "The wandmaker nods and returns to their work."
+	},
+	"port.npc.wandmaker.remind": {
+		"tokens": [],
+		"value": "The wandmaker taps the table: \"A scroll. Any scroll. Then we talk wands.\""
+	},
+	"port.log.buy": {
+		"tokens": [
+			"item",
+			"price"
+		],
+		"value": "You buy {item} for {price} gold."
+	},
+	"port.log.cannotafford": {
+		"tokens": [
+			"item",
+			"price"
+		],
+		"value": "You cannot afford {item} ({price} gold)."
+	},
+	"port.log.nofoodtosell": {
+		"tokens": [],
+		"value": "You have no food to sell."
+	},
+	"port.log.soldfood": {
+		"tokens": [
+			"price"
+		],
+		"value": "You sell some food for {price} gold."
+	},
+	"port.log.solditem": {
+		"tokens": [
+			"item",
+			"price"
+		],
+		"value": "You sell {item} for {price} gold."
+	},
+	"port.log.corrupting": {
+		"tokens": [
+			"target"
+		],
+		"value": "{target} is corrupted and joins your side."
+	},
+	"port.log.shopgreet": {
+		"tokens": [
+			"food",
+			"gold",
+			"identify",
+			"potion"
+		],
+		"value": "The shopkeeper grins: \"Healing draughts, {potion} gold (B). Scrolls of identify, {identify} (N). I buy food for {food} (V). You carry {gold} gold.\""
+	},
+	"port.log.shopbuyback": {
+		"tokens": [
+			"items"
+		],
+		"value": " Your sold goods wait on the shelf: {items} (G buys the latest)."
+	},
+	"port.log.nobuyback": {
+		"tokens": [],
+		"value": "There is nothing on the buyback shelf."
+	},
+	"port.ui.augment.title": {
+		"tokens": [],
+		"value": "Choose weapon augment"
+	},
+	"port.ui.augment.speed": {
+		"tokens": [],
+		"value": "Speed (+20% attack speed)"
+	},
+	"port.ui.augment.damage": {
+		"tokens": [],
+		"value": "Damage (+20% damage)"
+	},
+	"port.ui.augment.none": {
+		"tokens": [],
+		"value": "None"
+	},
+	"port.log.augmentchosen": {
+		"tokens": [
+			"augment"
+		],
+		"value": "Weapon augmented with {augment}."
+	},
+	"port.log.stonefear": {
+		"tokens": [
+			"target"
+		],
+		"value": "The stone strikes {target}, filling it with terror."
+	},
+	"port.log.stonesleep": {
+		"tokens": [
+			"target"
+		],
+		"value": "The stone strikes {target}, lulling it to sleep."
+	},
+	"port.log.stonewasted": {
+		"tokens": [],
+		"value": "The stone shatters harmlessly - nothing in range."
+	},
+	"port.log.stoneshock": {
+		"tokens": [
+			"count"
+		],
+		"value": "Lightning arcs out, paralyzing {count} nearby foes."
+	},
+	"port.log.stoneblast": {
+		"tokens": [
+			"count"
+		],
+		"value": "The stone explodes, hitting {count} creatures in the blast."
+	},
+	"port.log.stoneflock": {
+		"tokens": [
+			"count"
+		],
+		"value": "A magical flock gathers around you ({count} sheep)."
+	},
+	"port.log.stoneaggression": {
+		"tokens": [
+			"target"
+		],
+		"value": "The stone marks {target} as the target of nearby enemies."
+	},
+	"port.log.stoneclairvoyance": {
+		"tokens": [],
+		"value": "The dungeon reveals its secrets to you."
+	},
+	"port.log.bomblit": {
+		"tokens": [
+			"target"
+		],
+		"value": "You light the bomb and hurl it at {target}!"
+	},
+	"port.log.bombwasted": {
+		"tokens": [],
+		"value": "No enemy in sight - the bomb stays in your pack."
+	},
+	"port.log.pickupgold": {
+		"tokens": [
+			"amount"
+		],
+		"value": "You pick up {amount} gold."
+	},
+	"port.log.recoverstone": {
+		"tokens": [],
+		"value": "You recover a throwing stone (+1 ammo)."
+	},
+	"port.log.weararmor": {
+		"tokens": [
+			"level"
+		],
+		"value": "You don the sturdier armor (now +{level})."
+	},
+	"port.log.stasharmor": {
+		"tokens": [],
+		"value": "You stash the armor."
+	},
+	"port.log.wandabsorbed": {
+		"tokens": [],
+		"value": "The wand dissolves into your staff, restoring its charges."
+	},
+	"port.log.victory": {
+		"tokens": [],
+		"value": "YOU ESCAPED WITH THE AMULET OF YENDOR. VICTORY!"
+	},
+	"port.log.pickupring": {
+		"tokens": [
+			"item"
+		],
+		"value": "You picked up: {item}. (W to wear)"
+	},
+	"port.log.pickup": {
+		"tokens": [
+			"item"
+		],
+		"value": "You picked up: {item}."
+	},
+	"port.log.drops": {
+		"tokens": [
+			"item",
+			"who"
+		],
+		"value": "{who} drops {item}."
+	},
+	"port.log.guardkey": {
+		"tokens": [],
+		"value": "The guard carried an iron key!"
+	},
+	"port.log.thiefloot": {
+		"tokens": [],
+		"value": "You recover what the thief stole, and a few coins."
+	},
+	"port.log.amuletwaits": {
+		"tokens": [],
+		"value": "The Amulet of Yendor rests in the vault. Take it!"
+	},
+	"port.log.nothingtoeat": {
+		"tokens": [],
+		"value": "You have nothing to eat."
+	},
+	"port.log.eatmeathearty": {
+		"tokens": [
+			"heal"
+		],
+		"value": "You eat the meat and feel hearty (+{heal})."
+	},
+	"port.log.eatmeat": {
+		"tokens": [],
+		"value": "You eat the meat."
+	},
+	"port.log.eathearty": {
+		"tokens": [
+			"heal"
+		],
+		"value": "You eat. Hearty meal heals {heal}."
+	},
+	"port.log.eat": {
+		"tokens": [],
+		"value": "You eat."
+	},
+	"port.log.nothingtodrink": {
+		"tokens": [],
+		"value": "You have nothing to drink."
+	},
+	"port.log.drinkwaterskin": {
+		"tokens": [
+			"heal"
+		],
+		"value": "You drink from your waterskin, healing {heal}."
+	},
+	"port.log.savedraught": {
+		"tokens": [],
+		"value": "You save the draught for when you need it."
+	},
+	"port.log.quaffhealing": {
+		"tokens": [],
+		"value": "You quaff the healing draught - cleansed, and healing steadily."
+	},
+	"port.log.pharmacophobia": {
+		"tokens": [],
+		"value": "Your fear of medicine turns the draught to poison in your veins!"
+	},
+	"port.log.stronger": {
+		"tokens": [
+			"str"
+		],
+		"value": "You feel stronger! STR is now {str}."
+	},
+	"port.log.noherbalism": {
+		"tokens": [],
+		"value": "You can't bring yourself to plant this seed."
+	},
+	"port.log.noplantcell": {
+		"tokens": [],
+		"value": "This cell cannot grow a plant."
+	},
+	"port.log.noseedeffect": {
+		"tokens": [],
+		"value": "The seed has no known plant effect."
+	},
+	"port.log.plantseed": {
+		"tokens": [
+			"kind"
+		],
+		"value": "You plant a {kind} seed."
+	},
+	"port.log.hurlflame": {
+		"tokens": [
+			"target"
+		],
+		"value": "You hurl the liquid flame at {target}!"
+	},
+	"port.log.flaskwasted": {
+		"tokens": [],
+		"value": "The flask shatters harmlessly - nothing in range."
+	},
+	"port.log.quaffexperience": {
+		"tokens": [],
+		"value": "You feel a surge of experience!"
+	},
+	"port.log.mindvisionmobs": {
+		"tokens": [],
+		"value": "Your mind expands: you can sense monsters through walls."
+	},
+	"port.log.mindvisionnone": {
+		"tokens": [],
+		"value": "Your mind expands, but you sense no living things nearby."
+	},
+	"port.log.invisible": {
+		"tokens": [],
+		"value": "You vanish. Everything settles back to sleep."
+	},
+	"port.log.levitate": {
+		"tokens": [],
+		"value": "You feel much lighter, and start to float above the ground!"
+	},
+	"port.log.quafftoxicgas": {
+		"tokens": [],
+		"value": "Toxic gas billows out from the shattered flask!"
+	},
+	"port.log.quaffparalyticgas": {
+		"tokens": [],
+		"value": "A cloud of paralytic gas billows out from the shattered flask!"
+	},
+	"port.log.quaffhaste": {
+		"tokens": [],
+		"value": "You feel a rush of energy!"
+	},
+	"port.log.quafffrost": {
+		"tokens": [],
+		"value": "A blast of freezing air erupts from the shattered flask!"
+	},
+	"port.log.blooming": {
+		"tokens": [],
+		"value": "Grass bursts from the ground where you strike!"
+	},
+	"port.log.camouflage": {
+		"tokens": [],
+		"value": "The grass conceals you - you vanish!"
+	},
+	"port.log.stenchcurse": {
+		"tokens": [],
+		"value": "Your armor releases a cloud of noxious gas!"
+	},
+	"port.log.purity": {
+		"tokens": [],
+		"value": "Purity flows through you: fire and poison cleansed."
+	},
+	"port.log.collectdew": {
+		"tokens": [],
+		"value": "You collect the dewdrop into your waterskin."
+	},
+	"port.log.dewheals": {
+		"tokens": [
+			"heal"
+		],
+		"value": "Your waterskin is full - the dewdrop heals you for {heal}."
+	},
+	"port.log.noscroll": {
+		"tokens": [],
+		"value": "You have no scroll to read."
+	},
+	"port.log.scrollisforgear": {
+		"tokens": [],
+		"value": "That scroll is for enchanting gear (U), not reading."
+	},
+	"port.log.identify": {
+		"tokens": [
+			"item"
+		],
+		"value": "You identify {item} (+3 HP from tested familiarity)."
+	},
+	"port.log.nothingunidentified": {
+		"tokens": [],
+		"value": "You have nothing unidentified."
+	},
+	"port.log.rage": {
+		"tokens": [],
+		"value": "A scroll of rage! Everything on the floor wakes, furious."
+	},
+	"port.log.lullaby": {
+		"tokens": [],
+		"value": "A lullaby settles over the room. Everything visible sleeps."
+	},
+	"port.log.mapping": {
+		"tokens": [],
+		"value": "Your map fills in: every trap on this floor is revealed."
+	},
+	"port.log.mirror": {
+		"tokens": [],
+		"value": "Mirror images shimmer around you, guarding you for a while."
+	},
+	"port.log.recharging": {
+		"tokens": [],
+		"value": "A surge of energy courses through your body, invigorating your wands!"
+	},
+	"port.log.cleanse": {
+		"tokens": [],
+		"value": "A cleansing light lifts every curse from you."
+	},
+	"port.log.noupgrade": {
+		"tokens": [],
+		"value": "You have no scroll of upgrade."
+	},
+	"port.log.weaponupgraded": {
+		"tokens": [
+			"level",
+			"max",
+			"min"
+		],
+		"value": "Your weapon glows: now level {level} (damage {min}-{max})."
+	},
+	"port.log.armorupgraded": {
+		"tokens": [
+			"level"
+		],
+		"value": "Your armor hardens: now level {level}."
+	},
+	"port.log.missileupgraded": {
+		"tokens": [
+			"level"
+		],
+		"value": "Your missiles are honed: now +{level}."
+	},
+	"port.log.cannotupgrade": {
+		"tokens": [],
+		"value": "Your gear cannot be improved further."
+	},
+	"port.log.weaponequipped": {
+		"tokens": [
+			"level"
+		],
+		"value": "You equip your weapon (+{level})."
+	},
+	"port.log.armorequipped": {
+		"tokens": [
+			"level"
+		],
+		"value": "You equip your armor (+{level})."
+	},
+	"port.log.weaponcursed": {
+		"tokens": [],
+		"value": "You can't remove this weapon - it seems to be cursed!"
+	},
+	"port.log.armorcursed": {
+		"tokens": [],
+		"value": "You can't remove this armor - it seems to be cursed!"
+	},
+	"port.log.ringworn": {
+		"tokens": [
+			"item",
+			"level"
+		],
+		"value": "You put on {item} (+{level})."
+	},
+	"port.log.ringalready": {
+		"tokens": [],
+		"value": "You are already wearing that ring."
+	},
+	"port.log.ringcursed": {
+		"tokens": [],
+		"value": "You can't remove this ring - it seems to be cursed!"
+	},
+	"port.affix.annoying": {
+		"tokens": [],
+		"value": "annoying"
+	},
+	"port.affix.blazing": {
+		"tokens": [],
+		"value": "blazing"
+	},
+	"port.affix.blocking": {
+		"tokens": [],
+		"value": "blocking"
+	},
+	"port.affix.blooming": {
+		"tokens": [],
+		"value": "blooming"
+	},
+	"port.affix.chilling": {
+		"tokens": [],
+		"value": "chilling"
+	},
+	"port.affix.dazzling": {
+		"tokens": [],
+		"value": "dazzling"
+	},
+	"port.affix.displacing": {
+		"tokens": [],
+		"value": "displacing"
+	},
+	"port.affix.explosive": {
+		"tokens": [],
+		"value": "explosive"
+	},
+	"port.affix.friendly": {
+		"tokens": [],
+		"value": "friendly"
+	},
+	"port.affix.grim": {
+		"tokens": [],
+		"value": "grim"
+	},
+	"port.affix.kinetic": {
+		"tokens": [],
+		"value": "kinetic"
+	},
+	"port.affix.lucky": {
+		"tokens": [],
+		"value": "lucky"
+	},
+	"port.affix.polarized": {
+		"tokens": [],
+		"value": "polarized"
+	},
+	"port.affix.sacrificial": {
+		"tokens": [],
+		"value": "sacrificial"
+	},
+	"port.affix.shocking": {
+		"tokens": [],
+		"value": "shocking"
+	},
+	"port.affix.unstable": {
+		"tokens": [],
+		"value": "unstable"
+	},
+	"port.affix.vampiric": {
+		"tokens": [],
+		"value": "vampiric"
+	},
+	"port.affix.wayward": {
+		"tokens": [],
+		"value": "wayward"
+	},
+	"port.affix.antientropy": {
+		"tokens": [],
+		"value": "of anti-entropy"
+	},
+	"port.affix.bulk": {
+		"tokens": [],
+		"value": "of bulk"
+	},
+	"port.affix.camouflage": {
+		"tokens": [],
+		"value": "of camouflage"
+	},
+	"port.affix.corrosion": {
+		"tokens": [],
+		"value": "of corrosion"
+	},
+	"port.affix.displacement": {
+		"tokens": [],
+		"value": "of displacement"
+	},
+	"port.affix.entanglement": {
+		"tokens": [],
+		"value": "of entanglement"
+	},
+	"port.affix.flow": {
+		"tokens": [],
+		"value": "of flow"
+	},
+	"port.affix.metabolism": {
+		"tokens": [],
+		"value": "of metabolism"
+	},
+	"port.affix.multiplicity": {
+		"tokens": [],
+		"value": "of multiplicity"
+	},
+	"port.affix.overgrowth": {
+		"tokens": [],
+		"value": "of overgrowth"
+	},
+	"port.affix.potential": {
+		"tokens": [],
+		"value": "of potential"
+	},
+	"port.affix.stench": {
+		"tokens": [],
+		"value": "of stench"
+	},
+	"port.affix.stone": {
+		"tokens": [],
+		"value": "of stone"
+	},
+	"port.affix.swiftness": {
+		"tokens": [],
+		"value": "of swiftness"
+	},
+	"port.affix.thorns": {
+		"tokens": [],
+		"value": "of thorns"
+	},
+	"port.log.locked": {
+		"tokens": [],
+		"value": "Locked. A guard around here must carry the key."
+	},
+	"port.log.unlock": {
+		"tokens": [],
+		"value": "You unlock the door with the iron key."
+	},
+	"port.log.opendoor": {
+		"tokens": [],
+		"value": "You open the door."
+	},
+	"port.log.firecatches": {
+		"tokens": [],
+		"value": "The fire around you catches!"
+	},
+	"port.log.shopkeeperwarn": {
+		"tokens": [],
+		"value": "The shopkeeper yells: \"Hey! Watch it with that fire!\""
+	},
+	"port.log.shopkeeperflee": {
+		"tokens": [],
+		"value": "The shopkeeper flees, and the shop closes for good."
+	},
+	"port.log.founddoor": {
+		"tokens": [],
+		"value": "You find a hidden door!"
+	},
+	"port.log.foundtrap": {
+		"tokens": [],
+		"value": "You find a hidden trap!"
+	},
+	"port.log.foundnothing": {
+		"tokens": [],
+		"value": "You find nothing."
+	},
+	"port.log.trap.toxic": {
+		"tokens": [],
+		"value": "A toxic trap hisses! Gas billows out."
+	},
+	"port.log.trap.burning": {
+		"tokens": [
+			"damage"
+		],
+		"value": "A burning trap erupts! You take {damage} and catch fire."
+	},
+	"port.log.trap.poisondart": {
+		"tokens": [
+			"damage"
+		],
+		"value": "A poison dart strikes you for {damage}!"
+	},
+	"port.log.trap.grim": {
+		"tokens": [
+			"damage"
+		],
+		"value": "A grim trap grips your soul for {damage}!"
+	},
+	"port.log.trap.explosive": {
+		"tokens": [
+			"damage"
+		],
+		"value": "An explosive trap detonates for {damage}!"
+	},
+	"port.log.wall": {
+		"tokens": [],
+		"value": "A wall."
+	},
+	"port.log.wait": {
+		"tokens": [],
+		"value": "You wait."
+	},
+	"port.log.tomecharging": {
+		"tokens": [],
+		"value": "The tome is still gathering light."
+	},
+	"port.log.tomeheal": {
+		"tokens": [
+			"heal"
+		],
+		"value": "Holy light mends you for {heal}."
+	},
+	"port.log.noammo": {
+		"tokens": [
+			"item"
+		],
+		"value": "You have no {item} left."
+	},
+	"port.log.staffempty": {
+		"tokens": [],
+		"value": "The staff has no charge left - it needs a few turns."
+	},
+	"port.log.notarget": {
+		"tokens": [],
+		"value": "Nothing in range to target."
+	},
+	"port.log.crabparries": {
+		"tokens": [],
+		"value": "The great crab parries the projectile with its claw!"
+	},
+	"port.log.wandhits": {
+		"tokens": [
+			"damage",
+			"target"
+		],
+		"value": "Your wand strikes {target} for {damage}."
+	},
+	"port.log.wandregrowth": {
+		"tokens": [],
+		"value": "The wand restores the area with flourishing growth."
+	},
+	"port.log.wandtransfusion": {
+		"tokens": [],
+		"value": "The wand transfers life through the blood-red beam."
+	},
+	"port.log.wandwarding": {
+		"tokens": [],
+		"value": "A ward takes shape and begins to guard this place."
+	},
+	"port.log.wandlivingearth": {
+		"tokens": [],
+		"value": "The earth guardian rises from the stone."
+	},
+	"port.log.wandcorrosion": {
+		"tokens": [
+			"target"
+		],
+		"value": "Corrosive gas clings to {target}."
+	},
+	"port.log.wandcorruption": {
+		"tokens": [
+			"target"
+		],
+		"value": "{target} is corrupted and turns to your side!"
+	},
+	"port.log.arrowmisses": {
+		"tokens": [
+			"target"
+		],
+		"value": "Your arrow misses {target}."
+	},
+	"port.log.shoot": {
+		"tokens": [
+			"damage",
+			"target"
+		],
+		"value": "You shoot {target} for {damage}."
+	},
+	"port.log.affliction": {
+		"tokens": [
+			"damage"
+		],
+		"value": "You suffer {damage} from your affliction."
+	},
+	"port.log.starving": {
+		"tokens": [],
+		"value": "You are starving!"
+	},
+	"port.log.starvation": {
+		"tokens": [
+			"damage"
+		],
+		"value": "Starvation gnaws at you for {damage}."
+	},
+	"port.log.hungry": {
+		"tokens": [],
+		"value": "You are hungry. (E to eat)"
+	},
+	"port.log.subject.you": {
+		"tokens": [],
+		"value": "You"
+	},
+	"port.log.object.you": {
+		"tokens": [],
+		"value": "you"
+	},
+	"port.log.verb.hithero": {
+		"tokens": [],
+		"value": "hit"
+	},
+	"port.log.verb.hit": {
+		"tokens": [],
+		"value": "hits"
+	},
+	"port.log.oozedhero": {
+		"tokens": [],
+		"value": "You are oozed!"
+	},
+	"port.log.oozed": {
+		"tokens": [
+			"who"
+		],
+		"value": "{who} is oozed!"
+	},
+	"port.ui.locked": {
+		"tokens": [
+			"hint"
+		],
+		"value": "Locked - {hint}"
+	},
+	"port.log.bruterage": {
+		"tokens": [],
+		"value": "The Brute shrugs off the killing blow, seething with rage!"
+	},
+	"port.log.dm200vent": {
+		"tokens": [
+			"who"
+		],
+		"value": "{who} vents a jet of toxic gas!"
+	},
+	"port.log.necroheal": {
+		"tokens": [],
+		"value": "The necromancer mends its skeleton's bones."
+	},
+	"port.log.necroadrenaline": {
+		"tokens": [],
+		"value": "The necromancer fills its skeleton with adrenaline!"
+	},
+	"port.log.necroteleport": {
+		"tokens": [],
+		"value": "The necromancer teleports its skeleton back to your side!"
+	},
+	"port.log.wakes": {
+		"tokens": [
+			"who"
+		],
+		"value": "{who} wakes!"
+	},
+	"port.log.boltmisses": {
+		"tokens": [
+			"who"
+		],
+		"value": "{who}'s bolt misses you."
+	},
+	"port.log.bolthits": {
+		"tokens": [
+			"damage",
+			"who"
+		],
+		"value": "{who}'s bolt strikes you for {damage}."
+	},
+	"port.log.summonskeleton": {
+		"tokens": [],
+		"value": "The necromancer summons a skeleton from the dust!"
+	},
+	"port.log.necropush": {
+		"tokens": [
+			"who"
+		],
+		"value": "The necromancer shoves {who} aside to clear room for its skeleton!"
+	},
+	"port.log.necropushhero": {
+		"tokens": [],
+		"value": "The necromancer shoves you aside to clear room for its skeleton!"
+	},
+	"port.log.necroblockdamage": {
+		"tokens": [
+			"damage",
+			"who"
+		],
+		"value": "The necromancer blasts {who} for {damage} to clear room for its skeleton!"
+	},
+	"port.log.necroblockdamagehero": {
+		"tokens": [
+			"damage"
+		],
+		"value": "The necromancer blasts you for {damage} to clear room for its skeleton!"
+	},
+	"port.log.frostfire": {
+		"tokens": [],
+		"value": "The frost quenches the eternal flames!"
+	},
+	"port.ui.itempicker.cancel": {
+		"tokens": [],
+		"value": "Cancel"
+	},
+	"port.ui.candle.place": {
+		"tokens": [],
+		"value": "Place"
+	},
+	"port.log.candleplaced": {
+		"tokens": [],
+		"value": "You set the ceremonial candle down. Its flame catches."
+	},
+	"port.log.candleneeded": {
+		"tokens": [],
+		"value": "The candle belongs on the ritual markings - stand on an empty one."
+	},
+	"port.log.ritualfire": {
+		"tokens": [],
+		"value": "The candles flare up and a newborn fire elemental rises from the markings!"
+	},
+	"port.log.newborncharging": {
+		"tokens": [],
+		"value": "The elemental is charging up!"
+	},
+	"port.log.emberdrop": {
+		"tokens": [],
+		"value": "The elemental collapses into a shovelful of embers."
+	},
+	"port.name.stoneofdetectmagic": {
+		"tokens": [],
+		"value": "stone of detect magic"
+	},
+	"port.stone.detectmagic.inv_title": {
+		"tokens": [],
+		"value": "Detect an item"
+	},
+	"port.stone.detectmagic.detected_none": {
+		"tokens": [],
+		"value": "You don't detect any magic affecting this item."
+	},
+	"port.stone.detectmagic.detected_both": {
+		"tokens": [],
+		"value": "You detect both positive and malevolent magic affecting this item!"
+	},
+	"port.stone.detectmagic.detected_good": {
+		"tokens": [],
+		"value": "You detect positive magic affecting this item!"
+	},
+	"port.stone.detectmagic.detected_bad": {
+		"tokens": [],
+		"value": "You detect malevolent magic affecting this item!"
+	},
+	"port.log.chain": {
+		"tokens": [],
+		"value": "The guard’s chain lashes out, dragging you closer!"
+	},
+	"port.log.tengudart": {
+		"tokens": [],
+		"value": "Tengu hurls a dart from the shadows!"
+	},
+	"port.log.tenguvanish": {
+		"tokens": [],
+		"value": "Tengu vanishes - and the floor feels less trustworthy."
+	},
+	"port.log.dm300arrives": {
+		"tokens": [],
+		"value": "The ground trembles - DM-300 is here."
+	},
+	"port.log.dm300overcharge": {
+		"tokens": [],
+		"value": "DM-300 overcharges its slam!"
+	},
+	"port.log.kingadds": {
+		"tokens": [],
+		"value": "The King calls his servants!"
+	},
+	"port.log.kingphase2": {
+		"tokens": [],
+		"value": "The King retreats behind a shimmering shield!"
+	},
+	"port.log.kinglink": {
+		"tokens": [],
+		"value": "The King links his life to a servant!"
+	},
+	"port.log.gooslam": {
+		"tokens": [],
+		"value": "Goo unleashes its pumped-up slam!"
+	},
+	"port.log.goopumpmore": {
+		"tokens": [],
+		"value": "Goo pumps up further..."
+	},
+	"port.log.goopump": {
+		"tokens": [],
+		"value": "Goo begins to pump up!"
+	},
+	"port.log.monkdodgehero": {
+		"tokens": [
+			"object",
+			"subject"
+		],
+		"value": "{subject} miss {object} - the monk flows aside!"
+	},
+	"port.log.monkdodge": {
+		"tokens": [
+			"object",
+			"subject"
+		],
+		"value": "{subject} misses {object} - the monk flows aside!"
+	},
+	"port.log.yogshielded": {
+		"tokens": [],
+		"value": "The fists shield Yog-Dzewa - it cannot be hurt!"
+	},
+	"port.log.misshero": {
+		"tokens": [
+			"object",
+			"subject"
+		],
+		"value": "{subject} miss {object}."
+	},
+	"port.log.miss": {
+		"tokens": [
+			"object",
+			"subject"
+		],
+		"value": "{subject} misses {object}."
+	},
+	"port.log.eyegaze": {
+		"tokens": [],
+		"value": "The eye’s gaze burns into you!"
+	},
+	"port.log.eyecharge": {
+		"tokens": [],
+		"value": "The eye’s pupil begins to glow ominously."
+	},
+	"port.log.eyegazemisses": {
+		"tokens": [],
+		"value": "The eye’s gaze sweeps past you."
+	},
+	"port.log.sentrygaze": {
+		"tokens": [],
+		"value": "The sentry’s beam burns into you!"
+	},
+	"port.log.sentrycharge": {
+		"tokens": [],
+		"value": "The sentry hums as it charges its beam."
+	},
+	"port.log.sentrymisses": {
+		"tokens": [],
+		"value": "The sentry’s beam sweeps past you."
+	},
+	"port.log.unknownmob": {
+		"tokens": [
+			"kind"
+		],
+		"value": "Something that should not be here ({kind}) fades away."
+	},
+	"port.log.shocking": {
+		"tokens": [],
+		"value": "Lightning arcs through them (+2)."
+	},
+	"port.log.vampiric": {
+		"tokens": [],
+		"value": "Your weapon drinks (+1 HP)."
+	},
+	"port.log.batfeeds": {
+		"tokens": [
+			"amount",
+			"who"
+		],
+		"value": "{who} feeds on the wound (+{amount})."
+	},
+	"port.log.hit": {
+		"tokens": [
+			"damage",
+			"object",
+			"subject",
+			"verb"
+		],
+		"value": "{subject} {verb} {object} for {damage}."
+	},
+	"port.log.tricksterfire": {
+		"tokens": [],
+		"value": "The trickster’s combo bursts into flame and venom!"
+	},
+	"port.log.trickstervenom": {
+		"tokens": [],
+		"value": "The trickster’s combo turns venomous!"
+	},
+	"port.log.charm": {
+		"tokens": [],
+		"value": "The succubus charms you!"
+	},
+	"port.log.succubusfeeds": {
+		"tokens": [
+			"amount",
+			"who"
+		],
+		"value": "{who} feeds on your longing (+{amount})."
+	},
+	"port.log.cripple": {
+		"tokens": [],
+		"value": "The sting cripples you!"
+	},
+	"port.log.degrade": {
+		"tokens": [],
+		"value": "Dark magic degrades your weapon!"
+	},
+	"port.log.thorns": {
+		"tokens": [],
+		"value": "Your armor's thorns bite back for 2."
+	},
+	"port.log.entanglement": {
+		"tokens": [],
+		"value": "Your armor entangles the attacker!"
+	},
+	"port.log.potential": {
+		"tokens": [],
+		"value": "Your armor recharges your wands!"
+	},
+	"port.log.fury": {
+		"tokens": [
+			"who"
+		],
+		"value": "{who} flies into a fury!"
+	},
+	"port.log.ghoulrises": {
+		"tokens": [],
+		"value": "The ghoul crumples... then its life-link drags it back up!"
+	},
+	"port.log.thiefsteals": {
+		"tokens": [],
+		"value": "The thief snatches something from your pack and flees!"
+	},
+	"port.log.thiefgold": {
+		"tokens": [],
+		"value": "The thief snatches 10 gold and flees!"
+	},
+	"port.log.swarmsplits": {
+		"tokens": [],
+		"value": "The swarm splits in two!"
+	},
+	"port.log.skeletoncollapses": {
+		"tokens": [],
+		"value": "The summoned skeleton collapses with its master."
+	},
+	"port.log.dropstoken": {
+		"tokens": [
+			"who"
+		],
+		"value": "{who} drops a dwarf token."
+	},
+	"port.log.dies": {
+		"tokens": [
+			"who"
+		],
+		"value": "{who} dies."
+	},
+	"port.log.saved": {
+		"tokens": [],
+		"value": "Run saved. (O to save again, P to load)"
+	},
+	"port.log.nosave": {
+		"tokens": [],
+		"value": "No saved run."
+	},
+	"port.log.loaded": {
+		"tokens": [
+			"depth",
+			"level"
+		],
+		"value": "Run loaded: floor {depth}, level {level}. (Floor layout re-rolled from its seed.)"
+	},
+	"port.ui.lair": {
+		"tokens": [
+			"boss"
+		],
+		"value": "{boss}'s lair"
+	},
+	"port.ui.place": {
+		"tokens": [
+			"depth",
+			"region"
+		],
+		"value": "{region} {depth}"
+	},
+	"port.ui.seed": {
+		"tokens": [
+			"seed"
+		],
+		"value": "Seed {seed}"
+	},
+	"port.ui.level": {
+		"tokens": [
+			"level"
+		],
+		"value": "Lv {level}"
+	},
+	"port.ui.carried": {
+		"tokens": [
+			"count"
+		],
+		"value": "{count} carried"
+	},
+	"port.ui.language": {
+		"tokens": [
+			"language"
+		],
+		"value": "Language: {language}"
+	},
+	"port.ui.languagehint": {
+		"tokens": [],
+		"value": "click to change language"
+	},
+	"port.action.bag": {
+		"tokens": [],
+		"value": "Bag"
+	},
+	"port.action.talents": {
+		"tokens": [],
+		"value": "Talents"
+	},
+	"port.journal.queststatus": {
+		"tokens": [
+			"quest",
+			"status"
+		],
+		"value": "{quest}: {status}"
+	},
+	"port.ui.journal.guide": {
+		"tokens": [],
+		"value": "Guide"
+	},
+	"port.ui.journal.items": {
+		"tokens": [],
+		"value": "Items"
+	},
+	"port.ui.journal.potions": {
+		"tokens": [],
+		"value": "Potions"
+	},
+	"port.ui.journal.scrolls": {
+		"tokens": [],
+		"value": "Scrolls"
+	},
+	"port.ui.journal.rings": {
+		"tokens": [],
+		"value": "Rings"
+	},
+	"port.ui.bag.all": {
+		"tokens": [],
+		"value": "All"
+	},
+	"port.ui.bag.use": {
+		"tokens": [],
+		"value": "Use"
+	},
+	"port.ui.bag.gear": {
+		"tokens": [],
+		"value": "Gear"
+	},
+	"port.ui.bag.quest": {
+		"tokens": [],
+		"value": "Quest"
+	},
+	"port.log.armorabilitychosen": {
+		"tokens": [
+			"ability"
+		],
+		"value": "You gain {ability}."
+	},
+	"port.log.bossinfo": {
+		"tokens": [
+			"hp",
+			"maxHp",
+			"name"
+		],
+		"value": "{name}: {hp}/{maxHp} HP"
+	},
+	"port.log.deathboss": {
+		"tokens": [],
+		"value": "You have died."
+	},
+	"port.log.deathfloor": {
+		"tokens": [
+			"depth"
+		],
+		"value": "You have died on depth {depth}."
+	},
+	"port.log.descendboss": {
+		"tokens": [],
+		"value": "You descend into the boss chamber."
+	},
+	"port.log.gladiatorcombo": {
+		"tokens": [],
+		"value": "Your combo lands a heavier blow!"
+	},
+	"port.log.grim": {
+		"tokens": [],
+		"value": "Grim finds a weak point - a brutal extra hit!"
+	},
+	"port.log.lucky": {
+		"tokens": [],
+		"value": "Lucky! Extra loot appears."
+	},
+	"port.log.shield": {
+		"tokens": [
+			"amount"
+		],
+		"value": "You gain a shield of {amount}."
+	},
+	"port.log.spinnerweb": {
+		"tokens": [],
+		"value": "Sticky webbing clings to you!"
+	},
+	"port.log.golemteleport": {
+		"tokens": [],
+		"value": "The golem hurls you away with a wave of force!"
+	},
+	"port.log.talentexecute": {
+		"tokens": [],
+		"value": "A finishing blow!"
+	},
+	"port.log.talentspent": {
+		"tokens": [
+			"stat"
+		],
+		"value": "You gain a point in {stat}."
+	},
+	"port.log.tengutraps": {
+		"tokens": [],
+		"value": "Tengu vanishes, leaving traps behind!"
+	},
+	"port.log.tenguinteresting": {
+		"tokens": [],
+		"value": "Let's make this interesting..."
+	},
+	"port.log.tengubomb": {
+		"tokens": [],
+		"value": "Tengu hurls a ticking bomb at you!"
+	},
+	"port.log.wandequipped": {
+		"tokens": [],
+		"value": "You ready your wand."
+	},
+	"port.log.yogbeam": {
+		"tokens": [],
+		"value": "Yog-Dzewa's beam sweeps toward you!"
+	},
+	"port.log.yogfistslam": {
+		"tokens": [],
+		"value": "A fist slams down nearby!"
+	},
+	"port.name.cursed": {
+		"tokens": [],
+		"value": "cursed"
+	},
+	"port.talent.select": {
+		"tokens": [],
+		"value": "Choose one to permanently gain its effect."
+	},
+	"port.subclass.berserker": {
+		"tokens": [],
+		"value": "Berserker"
+	},
+	"port.subclass.gladiator": {
+		"tokens": [],
+		"value": "Gladiator"
+	},
+	"port.subclass.battlemage": {
+		"tokens": [],
+		"value": "Battlemage"
+	},
+	"port.subclass.warlock": {
+		"tokens": [],
+		"value": "Warlock"
+	},
+	"port.subclass.assassin": {
+		"tokens": [],
+		"value": "Assassin"
+	},
+	"port.subclass.freerunner": {
+		"tokens": [],
+		"value": "Freerunner"
+	},
+	"port.subclass.sniper": {
+		"tokens": [],
+		"value": "Sniper"
+	},
+	"port.subclass.warden": {
+		"tokens": [],
+		"value": "Warden"
+	},
+	"port.subclass.champion": {
+		"tokens": [],
+		"value": "Champion"
+	},
+	"port.subclass.monk_sub": {
+		"tokens": [],
+		"value": "Monk"
+	},
+	"port.armor.warding": {
+		"tokens": [],
+		"value": "Warding Armor"
+	},
+	"port.armor.arcane": {
+		"tokens": [],
+		"value": "Arcane Armor"
+	},
+	"port.talent.tier": {
+		"tokens": [
+			"tier"
+		],
+		"value": "Tier {tier}"
+	},
+	"port.ui.accuracy": {
+		"tokens": [],
+		"value": "Accuracy"
+	},
+	"port.ui.armorability": {
+		"tokens": [],
+		"value": "Choose an Armor Ability"
+	},
+	"port.ui.defeatsummary": {
+		"tokens": [
+			"depth"
+		],
+		"value": "You fell on depth {depth}."
+	},
+	"port.ui.defeattitle": {
+		"tokens": [],
+		"value": "You Died"
+	},
+	"port.ui.evasion": {
+		"tokens": [],
+		"value": "Evasion"
+	},
+	"port.ui.newrun": {
+		"tokens": [],
+		"value": "New Run"
+	},
+	"port.ui.subclass": {
+		"tokens": [],
+		"value": "Choose a Subclass"
+	},
+	"port.ui.victorysummary": {
+		"tokens": [
+			"depth",
+			"level"
+		],
+		"value": "You escaped with the Amulet at level {level}, depth {depth}!"
+	},
+	"port.ui.victorytitle": {
+		"tokens": [],
+		"value": "Victory!"
+	},
+	"port.window.about.title": {
+		"tokens": [],
+		"value": "About"
+	},
+	"port.window.about.body": {
+		"tokens": [
+			"version"
+		],
+		"value": "Shattered Pixel Dungeon, ported onto the mwg framework. Version {version}."
+	},
+	"port.window.badges.locked": {
+		"tokens": [],
+		"value": "locked"
+	},
+	"port.window.badges.title": {
+		"tokens": [],
+		"value": "Badges"
+	},
+	"port.window.changes.title": {
+		"tokens": [],
+		"value": "Changes"
+	},
+	"port.window.changes.body": {
+		"tokens": [
+			"version"
+		],
+		"value": "Version {version}."
+	},
+	"port.window.close": {
+		"tokens": [],
+		"value": "Close"
+	},
+	"port.window.news.title": {
+		"tokens": [],
+		"value": "News"
+	},
+	"port.window.news.body": {
+		"tokens": [],
+		"value": "No news right now - check back later."
+	},
+	"port.window.settings.title": {
+		"tokens": [],
+		"value": "Settings"
+	},
+	"port.window.settings.version": {
+		"tokens": [
+			"version"
+		],
+		"value": "Version {version}"
+	},
+	"port.window.support.title": {
+		"tokens": [],
+		"value": "Support the Game"
+	},
+	"port.window.support.body": {
+		"tokens": [],
+		"value": "If you enjoy this game, consider supporting the original Shattered Pixel Dungeon."
+	},
+	"port.log.missilebroken": {
+		"tokens": [],
+		"value": "Your missile breaks!"
+	},
+	"port.log.rockfallkill": {
+		"tokens": [],
+		"value": "The falling rocks crush you!"
+	}
+}

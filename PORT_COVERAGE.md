@@ -2188,6 +2188,38 @@ exported `PORT_STRINGS`, which `index.ts` now imports like any other data. The n
 verified to *fail* on a deliberately removed key before being trusted - not merely observed to
 pass.
 
+**All 19 locales done, 2026-09-12.** The seven languages that still fell back to English for
+port-only prose - `zh`, `ko`, `ja`, `cs`, `in`, `vi`, `el` - now each carry a complete
+415/415-key catalogue, so no SPD language falls back for anything this port wrote itself. Each
+was drafted from `PORT_STRINGS_EN` with SPD's own vocabulary for the game's terms (read out of
+the real `_xx.properties` at tag `v3.3.8`), then validated three ways before being wired: key
+set, key *order* and sorted `{placeholder}` multiset against EN (415/415 on all seven); a
+script-contamination scan for text in the wrong script (no Cyrillic or Latin inside Greek words,
+no kana in Korean, no hanja where it does not belong, no Traditional characters in the
+Simplified draft); and the project's own `tools/i18nCheck.ts`. Splicing is scripted, so the
+2,905 translated lines never pass through a hand-transcription step.
+
+Two of these are worth calling out beyond "counts match", because a count cannot see them:
+- **Chinese** is Simplified only - the draft was scanned for the common Traditional-only
+  characters (`們`/`這`/`來`/`為`/`說`/`時`/`過`/`戰`/`術`...) and contains none.
+- **Japanese, Korean and Chinese** have no grammatical plurality, so where English distinguishes
+  singular from plural (`port.log.hit` vs `port.log.hithero`, `port.log.miss`/`misshero`,
+  `port.log.monkdodge`/`monkdodgehero`, `port.log.oozed`/`oozedhero`) each pair is deliberately
+  identical rather than a translation oversight. Their `{subject}`/`{object}`/`{damage}`/`{verb}`
+  placeholders are re-ordered into natural sentence order, which the token-set comparison
+  accepts by design.
+- **A glyph-coverage scan of every locale verified live found no tofu**, and turned up one
+  curiosity worth recording because of where it lives: SPD's *own* Portuguese table contains a
+  U+200B ZERO WIDTH SPACE, twice, inside `scenes.gamescene.blacksmith_quest_window`. It is
+  invisible and harmless, it ships in `spdMessages.ts` because that is generated from SPD, and
+  it is **not** in any port-only string - but it is the reason the browser scan must ignore
+  characters that are invisible by classification (`\p{Cf}`) rather than only whitespace, since
+  otherwise it reports a missing glyph for a character that is not meant to draw anything.
+
+Every catalogue here is still `MT`/`machine`: a machine draft, complete but not proofread by a
+fluent speaker, and marked that way in source and in `PORT_TRANSLATION_ORIGIN` rather than
+silently upgraded.
+
 **Found and fixed while verifying Spanish, but a real bug affecting French and German too, not
 new to this pass**: `main.ts`'s `attack()` built the combat-log `object` slot for a hero
 defender as a hardcoded English literal `'you'`, bypassing translation entirely - every
@@ -2207,10 +2239,17 @@ marsupial golpea a ti por 2."` (es, now grammatically correct instead of "a you"
 
 The remaining 7 `Languages.java` locales still fall back to English through
 `mwg/i18n`'s base catalog - translating them is tracked as its own ROADMAP.md section 8 item.
-Separately, the locale *set* is SPD `v2.1.4`'s 18 non-English locales rather than `v3.3.8`'s 22:
-`be`/`eo`/`sv`/`zh-hant` are absent from both `LANGUAGES` and the extractor's `LOCALES`, a
-newly-found gap recorded under ROADMAP.md section 8's 2026-09-11 correction (their statuses were
-also corrected to `v3.3.8`'s - nine of nineteen had matched no SPD tag at all).
+**Closed 2026-09-12**: all seven now have catalogues, so no locale falls back for port-only
+prose; see the "All 19 locales done" section above.
+Separately, the locale *set* is still SPD `v2.1.4`'s 18 non-English locales rather than
+`v3.3.8`'s 22: `be`/`eo`/`sv`/`zh-hant` are absent from both `LANGUAGES` and the extractor's
+`LOCALES`. That gap is **still open**, and closing it is now known to be a scoped migration
+rather than a one-line list change: eight keys the port references exist in the v2.1.4-derived
+catalog and do not exist at `v3.3.8` at all (`actors.mobs.dm300.rocks`/`.vent`,
+`items.quest.pickaxe.ac_mine`/`.no_vein`, `levels.level.sign_desc`/`.sign_name`,
+`scenes.titlescene.badges`, `windows.wndjournal.notes`), so the extractor's transactional audit
+refuses a `v3.3.8` regeneration until each is re-pointed at its new Java name or moved under
+`port.*`. Recorded under ROADMAP.md section 8.
 
 `tools/i18nCheck.ts` guards the convention: every SPD-derived key the port uses must exist in
 SPD's own base `.properties`, so a typo'd key **fails the check** rather than quietly rendering

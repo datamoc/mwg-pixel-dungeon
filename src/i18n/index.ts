@@ -10,7 +10,7 @@
  *
  * Everything ships in the bundle. The built page runs from `file://`, where `fetch` is
  * unavailable, so a language cannot be fetched on demand and all 19 are compiled in - which is
- * why `tools/i18n-extract.mjs` ships only the keys the port actually references.
+ * why `tools/i18n-extract.mjs` ships SPD's complete base corpus rather than a per-screen subset.
  */
 
 import { I18n } from 'mwg';
@@ -27,14 +27,10 @@ export const has = I18n.has;
 
 /**
  * This port's own per-language strings live in `portStrings.ts`, already assembled as
- * `PORT_STRINGS`.
- *
- * English and French are human-written; German, Spanish, Portuguese, Italian, Polish, Russian,
- * Turkish, Ukrainian, Hungarian and Dutch are machine-translated first drafts. Their origin is
- * exported as data from `portStrings.ts` too, so audits can distinguish `human` from `machine`
- * without inferring it from the language's SPD status. The remaining SPD languages still
- * resolve through the base catalog for port-only prose until an explicitly marked `MT`
- * catalogue is added.
+ * `PORT_STRINGS`. English and French are human-written there; every other catalogue is a
+ * machine draft, and its origin is exported as data from `portStrings.ts` too, so an audit can
+ * distinguish `human` from `machine` without inferring it from the language's SPD status. A
+ * language with no catalogue still resolves port-only prose through the base catalog.
  */
 
 /**

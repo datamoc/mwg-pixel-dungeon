@@ -114,9 +114,12 @@ Do not add new authored content as object literals or scattered constants in the
       `DoubleBomb` and thirty alchemy outputs now point at SPD's real message keys instead of
       invented ones that rendered as raw key text in all 19 languages; four recipe outputs with no
       single SPD class keep `port.name.alchemy.*` entries. The check went from 46 failures (15
-      already on `HEAD`) to **OK - 286 mapped keys, 408 port strings, 19 languages**. That check
-      is not in `check`/`build` (it needs esbuild to bundle `src/`), so it stays a manual gate
-      documented in its own header; `npm run i18n` itself needs `--spd-root`.
+      already on `HEAD`) to **OK - 286 mapped keys, 408 port strings, 19 languages**. It used to
+      be a manual gate, because it needs esbuild to bundle `src/`; **2026-09-12 it became part of
+      `npm run check`** as `i18n:verify` (esbuild is already required by vite, so this costs a
+      ~0.3s bundle and adds no new dependency). That matters because the gate being manual is
+      precisely why five catalogues could sit 24-31 keys behind without anyone noticing - see
+      section 8's back-fill entry. `npm run i18n` itself still needs `--spd-root`.
       **2026-09-12: `npm run i18n` could not run at all, and now can.** The extractor scrapes
       message keys out of `t('...')` call sites, and for `src/i18n/spdKeys.ts` - where keys appear
       as *values* in lookup tables - treated every string literal in the file as a key. The file
@@ -1362,14 +1365,46 @@ Do not add new authored content as object literals or scattered constants in the
       key fails the check). `npx tsc --noEmit`, `npm run build` and both suites green,
       `i18nCheck: OK - 300 mapped keys, 415 port strings, 19 languages`.
 
-       **7 locales remain** (see `languages.ts` for the full list). Their future catalogues must
-      be machine-translated from `PORT_STRINGS_EN`, marked `MT` in source and in the provenance
-      map exported by `portStrings.ts`, then checked for key/placeholder parity before wiring;
-      `tools/i18nCheck.ts` now fails if a catalogue is incomplete or a key's tokens change, so
-      that parity is a gate rather than a one-off script.
-      Font coverage is part of done, not a footnote - zh/ko/ja need the section-10 tofu check per
-      locale (already done for zh/ko this session), not just key resolution. See
-      `PORT_COVERAGE.md`'s locales row.
+       **Locales 11-17 done, 2026-09-12: `in`, `ja`, `cs`, `vi`, `el`, `ko`, `zh` - 415/415 keys
+      each, which closes this item's translation half: all 19 of SPD's languages now have a
+      complete port-only catalogue.** Seven drafts were produced in parallel, one per language,
+      each given `PORT_STRINGS_EN`, SPD's own vocabulary for the game's terms (read out of the
+      real `_xx.properties` at tag `v3.3.8` rather than invented), a register note (SPD's Czech,
+      Indonesian, Vietnamese and Greek are informal; the CJK three take plain game register), and
+      the requirement that every `{placeholder}` survive. Validated mechanically rather than by
+      eye: a throwaway `block-check.mjs` comparing key set, key *order* and sorted token multiset
+      against EN passed 415/415 on all seven; a script-contamination scan found no Cyrillic in
+      Greek, no kana in Korean, no hanja where none belongs and no Traditional characters in the
+      Simplified draft; and `tools/i18nCheck.ts` - which now compares every catalogue, not just
+      French - reports OK. Splicing is scripted (`splice-block.mjs`), so the 2,905 translated
+      lines never pass through a hand-transcription step that could corrupt them. `npx tsc
+      --noEmit`, `npm run build` and both suites green.
+      The header comments in `portStrings.ts`/`index.ts` no longer enumerate which languages are
+      done: that list is now `PORT_STRINGS` itself, and it was a hand-kept version of it that let
+      five catalogues drift 24-31 keys behind English in the first place.
+      Verified live, not merely built (see section 10): the built game was driven in a real
+      Chromium over `file://` once per locale with `spd-on-mwg.language` set, checking (a) the
+      locale is active, (b) every non-ASCII codepoint that locale can draw renders a real glyph -
+      rendered into a canvas and compared pixel-for-pixel with a codepoint no font has, which is
+      what a missing-glyph box would look like - and (c) both the title screen and the in-game
+      HUD/log differ pixel-wise from English, so the translation genuinely reached the screen.
+      Japanese in particular had never had the font-coverage check this section asks for; it now
+      has, covering 1,730 codepoints with no tofu (Chinese 2,225, Korean 976, Greek 73, Czech 30,
+      Vietnamese 123). Screenshots are in `_browsercheck/mwgpd_shots_2026-09-12-locales/`.
+      Stated plainly: this session could not *look* at those images, so the visual judgement
+      rests on the pixel comparisons rather than an eye - stronger than "no console errors", but
+      not a substitute for someone reading the text for tone and accuracy, which is what the `MT`
+      provenance marker continues to flag.
+      Still open in this bullet, and deliberately not attempted here: the locale *set* is SPD
+      `v2.1.4`'s 18 non-English locales, so `be`/`eo`/`sv`/`zh-hant` are offered neither by
+      `LANGUAGES` nor by the extractor. Closing that means regenerating `spdMessages.ts` from
+      `v3.3.8`, and that is not a strings-only change: eight keys the port references
+      (`actors.mobs.dm300.rocks`/`.vent`, `items.quest.pickaxe.ac_mine`/`.no_vein`,
+      `levels.level.sign_desc`/`.sign_name`, `scenes.titlescene.badges`, `windows.wndjournal.notes`)
+      exist in the v2.1.4-derived catalog and **do not exist at `v3.3.8`** - Java renamed or
+      removed the features behind them - so the extractor's transactional audit refuses the
+      regeneration until each is re-pointed or moved under `port.*`. That is a real, scoped
+      migration (now measured, rather than assumed) and belongs in its own change.
 
 ## 9. Build the Java-vs-TypeScript parity harness
 

@@ -8,12 +8,13 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run mwl:compile && tsc --noEmit && vite build && node tools/emit.mjs",
-    "check": "npm run mwl:compile && tsc --noEmit",
+    "check": "npm run mwl:compile && tsc --noEmit && npm run i18n:verify",
     "mwl:compile": "node tools/compile-mwl.mjs",
     "test:simulation": "node tools/verifySimulation.mjs",
     "test:items": "node tools/verifyItemWorkflows.mjs",
     "i18n": "node tools/i18n-extract.mjs",
     "i18n:check": "node tools/i18n-extract.mjs --check",
+    "i18n:verify": "esbuild tools/i18nCheck.ts --bundle --platform=node --format=esm --outfile=tools/scratch/i18nCheck.mjs && node tools/scratch/i18nCheck.mjs",
     "assets": "node tools/extract-spd-assets.mjs",
     "mwg:check": "node tools/check-mwg-version.mjs"
   },
