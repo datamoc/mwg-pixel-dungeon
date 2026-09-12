@@ -1066,7 +1066,7 @@ Do not add new authored content as object literals or scattered constants in the
       (Hearty Meal, Sucker Punch, Aggressive Barrier, plus the per-tier talent-point pool
       described below) **and a batch of previously-undocumented invented substitutions/gaps
       now recorded in code comments and `PORT_COVERAGE.md`** (Iron Will, Secondary Charge,
-      Monastic Vigor, Twin Upgrades, Bounty Hunter, Thief's Intuition rank 1, Shared
+      Monastic Vigor, Twin Upgrades, Thief's Intuition rank 1, Shared
       Enchantment/Durable Tips) - see `PORT_COVERAGE.md`'s talent rows for exact formulas and
       browser verification. **Correction, same day, later pass: Test Subject/Tested Hypothesis
       and Swift Equip were wrongly filed under "invented substitution" above - a real

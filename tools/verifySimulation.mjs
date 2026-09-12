@@ -131,7 +131,13 @@ try {
 		assert.equal(talents.evasiveArmorBonus('assassin', 2, 3), 0);
 		assert.equal(talents.assassinReachBonus('assassin', 2), 2);
 		assert.equal(talents.empoweredStrikeBonus('battlemage', 2), 2);
-		assert.equal(talents.bountyGoldBonus('assassin', 2), 10);
+		//Bounty Hunter: Java's real term is a drop-chance *multiplier* of `0.02 * 2^(prep-1) *
+		//points`, not the flat gold this used to stand in with. Ranks 1-3 at prep level 4 give
+		//0.16 / 0.32 / 0.48; a level-1 prepare gives an eighth of that.
+		assert.equal(talents.bountyHunterDropBonus(4, 3), 0.48);
+		assert.equal(talents.bountyHunterDropBonus(4, 1), 0.16);
+		assert.equal(talents.bountyHunterDropBonus(1, 3), 0.06);
+		assert.equal(talents.bountyHunterDropBonus(4, 0), 0);
 		assert.equal(talents.unencumberedSpiritEvasion('monk_sub', 2), 2);
 		assert.equal(talents.lethalDefenseShield('gladiator', 2), 2);
 		assert.equal(talents.monasticVigorShield('monk_sub', 2), 2);

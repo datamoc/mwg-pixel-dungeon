@@ -71,8 +71,15 @@ export function empoweredStrikeBonus(subclass: string | null, rank: number): num
 	return subclass === 'battlemage' ? rank : 0;
 }
 
-export function bountyGoldBonus(subclass: string | null, rank: number): number {
-	return subclass === 'assassin' ? 5 * rank : 0;
+/** `Talent.BOUNTY_HUNTER`'s only real effect (`Mob.lootChance()`, tag v3.3.8): while the tracker
+ * armed by a *prepared* attack is live and Preparation is still up, this is **added to the drop
+ * chance multiplier** alongside the Ring of Wealth's own - `0.02 * 2^(prepLevel-1) * points`, then
+ * the whole multiplier is applied to the mob's base chance. It is not gold, and it does not apply
+ * to an ordinary kill; the flat `5 * rank` gold this replaces was an invented stand-in from before
+ * `Preparation` existed. */
+export function bountyHunterDropBonus(prepLevel: number, rank: number): number {
+	if (rank <= 0) return 0;
+	return 0.02 * Math.pow(2, Math.min(Math.max(prepLevel, 1), 4) - 1) * rank;
 }
 
 export function unencumberedSpiritEvasion(subclass: string | null, rank: number): number {

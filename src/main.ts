@@ -96,7 +96,7 @@ import { BadgeBannerLayer } from './ui/badgeBanner';
 import { SpdToolbar } from './ui/toolbar';
 import { StatusPane } from './ui/statusPane';
 import { SpdAudio } from './audio';
-import { arcaneVisionDuration, assassinReachBonus, bountyGoldBonus, cachedRationChance, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, ironWillReduction, lethalDefenseShield, lethalHasteDuration, LETHAL_HASTE_COOLDOWN, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, shieldBatteryGain, shieldingDewGain, sharedUpgradeArmor, soulSiphonCharge, twinUpgradeArmor, unencumberedSpiritEvasion, weaponRechargingDamage } from './talentEffects';
+import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, cachedRationChance, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, ironWillReduction, lethalDefenseShield, lethalHasteDuration, LETHAL_HASTE_COOLDOWN, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, shieldBatteryGain, shieldingDewGain, sharedUpgradeArmor, soulSiphonCharge, twinUpgradeArmor, unencumberedSpiritEvasion, weaponRechargingDamage } from './talentEffects';
 import pixelFontUrl from './assets/pixel_font.ttf';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth, SpdRandom } from './spdRng';
 import {
@@ -1312,6 +1312,11 @@ export class SewersScene extends Scene2D {
 	 * `act()` while `target.invisible > 0` and detaches the buff the moment it is not, so the
 	 * counter resets whenever invisibility ends - see `trackPreparation`/`syncPreparation`. */
 	private prepInvisibleTurns = 0;
+	/** `Talent.BountyHunterTracker`, armed by a *prepared* attack (`Char.attack()` 407-409 does
+	 * `Buff.affect(hero, BountyHunterTracker.class, 0.0f)` only inside its `prep != null` branch).
+	 * Java's buff lives for the rest of that turn - it has a zero duration and detaches on its own
+	 * act - so this clears in the hero-turn pipeline beside the Preparation counter. */
+	private bountyTrackerArmed = false;
 	private victoryPanel!: Container;
 	private bossChrome!: Container;
 	private bossHealthBar!: Bar;
@@ -9542,7 +9547,21 @@ export class SewersScene extends Scene2D {
 	private trackPreparation(turnCost: number): void {
 		if (this.hero.buffs['invisibility']) this.prepInvisibleTurns += Math.max(1, Math.round(turnCost));
 		else this.prepInvisibleTurns = 0;
+		//BountyHunterTracker is a zero-duration FlavourBuff in Java: it survives the turn it was
+		//armed in and is gone by the hero's next one, which is exactly where this sits.
+		this.bountyTrackerArmed = false;
 		this.syncPreparation();
+	}
+
+	/** `Mob.lootChance()`'s Bounty Hunter term. Java adds it to the *drop chance multiplier*
+	 * (beside the Ring of Wealth's own) rather than to the base chance, so the caller adds it into
+	 * the same factor - and it needs both the tracker (armed by a prepared attack) and Preparation
+	 * still being up, which is why an ordinary kill never sees it. */
+	private bountyHunterLootBonus(): number {
+		if (!this.bountyTrackerArmed) return 0;
+		const level = this.hero.prepLevel;
+		if (level === undefined) return 0;
+		return bountyHunterDropBonus(level, this.subclass() === 'assassin' ? this.talentRank('bounty_hunter') : 0);
 	}
 
 	/**
@@ -9568,6 +9587,12 @@ export class SewersScene extends Scene2D {
 		//*not* cleared here, because both readers come later in this function. Every attack
 		//re-syncs at this point, so a dispelled invisibility still ends the state for the next one.
 		this.syncPreparation();
+		//`Char.attack()` 407-409: a *prepared* hero attack with the Bounty Hunter talent arms its
+		//tracker, which is what lets `Mob.lootChance()` raise the drop chance for anything this same
+		//attack kills. Arming happens only on this path - an ordinary attack never sets it.
+		if (attacker === this.hero && this.hero.prepLevel !== undefined && this.talentRank('bounty_hunter') > 0) {
+			this.bountyTrackerArmed = true;
+		}
 		// Invisibility is dispelled by an aggressive action (Invisibility.dispel()).
 		if (attacker.buffs['invisibility']) delete attacker.buffs['invisibility'];
 		//`Sheep` is a neutral NPC in Java: it cannot be damaged or selected as a hostile target.
@@ -10859,18 +10884,12 @@ export class SewersScene extends Scene2D {
 		//Mob.java: `exp = Dungeon.hero.lvl <= maxLvl ? EXP : 0` - a mob outgrown by the hero's
 		//level grants nothing; NPCs never fight and clones past generation 0 grant nothing
 		if (creature.kind && !creature.isNPC) {
-			//Talent.BOUNTY_HUNTER's real effect (`Mob.lootChance()`/`Char.java`, tag `v3.3.8`) is
-			//an item-drop-chance bonus scoped to kills made via a `Preparation` buff (the
-			//Assassin subclass's own special ability: prepare, then attack for a prep-level-
-			//scaled bonus) - `2^(prepLevel-1) * 0.02 * points` added to drop chance, never gold,
-			//and never on an ordinary kill. This port has no Preparation/prep-level ability
-			//subsystem at all (`useSpecial` has no Assassin-specific branch for it), so this
-			//substitutes a flat gold bonus on any kill instead, giving the talent point
-			//something to do until that subsystem exists - found undocumented in the 2026-09-09
-			//hero-progression audit; not fixed to the real mechanic here since it needs the
-			//whole Preparation subsystem built first, not a formula change.
-			const bounty = bountyGoldBonus(this.subclass(), this.talentRank('bounty_hunter'));
-			if (bounty > 0) this.heroStats.setBase('gold', this.heroStats.base('gold') + bounty);
+			//Talent.BOUNTY_HUNTER is now its real mechanic: `Mob.lootChance()`'s drop-chance term,
+			//added into the multiplier by `bountyHunterLootBonus()`, gated on the tracker armed by
+			//a prepared attack (`Char.attack()` 407-409). What stood here was a flat gold bonus on
+			//*any* kill - invented when this port had no Preparation subsystem to arm the tracker
+			//from, and wrong in kind: real Java's talent grants no gold at all, and applies only
+			//while Preparation is up.
 			//Necromancer's Minions' old stand-in is gone outright: real Java only rolls
 			//(`0.4*points/3`, the formula `necromancerMinionChance` still encodes for reference)
 			//on a SOUL-MARKED victim's death, raising a Corrupted Wraith ally - and this port
@@ -11032,7 +11051,7 @@ export class SewersScene extends Scene2D {
 				//`(7-n)/7`, `(6-n)/6`, `(1/3)^n` respectively, real Java's own per-kind formulas.
 				const decay = LIMITED_DROP_DECAY[creature.kind as MonsterId];
 				const chance = (decay ? entry.chance * decay(this.limitedDrops[creature.kind as MonsterId] ?? 0) : entry.chance)
-					* ringWealthMultiplier(this.equippedRing);
+					* (ringWealthMultiplier(this.equippedRing) + this.bountyHunterLootBonus());
 				const drop = Actors.rollLoot({ entries: [{ id: entry.kind, weight: 1 }], chance });
 				if (drop) {
 					if (decay) this.limitedDrops[creature.kind as MonsterId] = (this.limitedDrops[creature.kind as MonsterId] ?? 0) + 1;
