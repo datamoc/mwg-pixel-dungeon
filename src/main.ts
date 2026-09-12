@@ -9705,10 +9705,25 @@ export class SewersScene extends Scene2D {
 		//and they set the target's HP to zero outright rather than routing a damage value
 		//through steps that could still reduce it. The `defender.hp - damage > 0` guard mirrors
 		//Java's own `enemy.isAlive()` check after `damage()` returned: a hit that already kills
-		//does not also report an execution. Threshold semantics are still this port's
-		//simplification of Java's two separate mechanics - see `PORT_COVERAGE.md`'s
-		//`attack()`-tail ordering row.
-		const lethalThreshold = Math.max(0.4 * this.talentRank('combined_lethality') / 3, enhancedLethalityThreshold(this.subclass(), this.talentRank('enhanced_lethality')));
+		//does not also report an execution.
+		//
+		//Java's two mechanics differ in exactly one way that needs no Preparation model, so it is
+		//reproduced here rather than left to the shared threshold: `CombinedLethality` excludes
+		//`BOSS`/`MINIBOSS` targets outright (`!Char.hasProp(enemy, Property.BOSS) &&
+		//!Char.hasProp(enemy, Property.MINIBOSS)`, `Char.java` 543-545), while the Assassin's
+		//`Preparation.canKO` still allows them at *one fifth* of its threshold
+		//(`Preparation.java`: `(defender.HP/(float)defender.HT) < (KOThreshold()/5f)`). What stays
+		//approximated is the Assassin's threshold itself - Java indexes
+		//`AttackLevel.KOThreshold()`'s table by *turns of invisibility* as well as the talent rank
+		//(0.03-1.0, rising with both), where this port uses a flat `0.2*rank` that fires on any
+		//hit rather than only out of Preparation, and `CombinedLethality`'s own arming gate (the
+		//weapon must have changed since the tracker was set) is not modelled. See
+		//`PORT_COVERAGE.md`'s `attack()`-tail ordering row.
+		const combinedLethalityThreshold = defender.boss === true || defender.miniboss === true
+			? 0 : 0.4 * this.talentRank('combined_lethality') / 3;
+		const assassinBase = enhancedLethalityThreshold(this.subclass(), this.talentRank('enhanced_lethality'));
+		const assassinLethalityThreshold = defender.boss === true || defender.miniboss === true ? assassinBase / 5 : assassinBase;
+		const lethalThreshold = Math.max(combinedLethalityThreshold, assassinLethalityThreshold);
 		if (attacker === this.hero && lethalThreshold > 0 && defender.hp - damage > 0 && defender.hp - damage <= defender.maxHp * lethalThreshold) {
 			damage = defender.hp;
 			this.say(t('port.log.talentexecute'), 'positive');

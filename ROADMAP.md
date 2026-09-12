@@ -1630,13 +1630,18 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       game, and both would have been invisible to a unit check - a 20-HP Slime against a raw 40
       (soft-capped to 12) corrupted 34 times in 60 swings where the old order managed 0, and a
       Dwarf King behind a 1000-point `DKBarrier` died outright where the old order left it at full
-      HP with the shield barely touched. **The third remains open and is the reason the row is not
-      simply "Ported"**: the single merged `max()` threshold with its predicted-post-hit-HP test
-      should be Java's two separate mechanics - `combined_lethality`'s exact `0.4*points/3` with
-      its own `BOSS`/`MINIBOSS` and weapon-tracker gates, and the Assassin's
-      `Preparation.AttackLevel.KOThreshold()` table indexed by turns of invisibility (bosses at one
-      fifth), which the port approximates as a flat `0.2*rank` firing on any hit. That needs a
-      Preparation model rather than a formula swap.
+      HP with the shield barely touched. **The third is now half-closed too (2026-09-12)**: the
+      port gained a real `miniboss` property, which is what `CombinedLethality`'s own exclusion
+      needed - a boss/miniboss is no longer executable by that talent at all (`Char.java` 543-545),
+      while the Assassin's `Preparation.canKO` still allows them at a fifth of its threshold, so
+      the shared `max()` now zeroes one half for a boss and divides the other by five. Verified
+      live: a rat at 40% of max HP is executed, GreatCrab and Goo survive that same hit, and an
+      Assassin still executes Goo at 10% but not at 40%. **Still open in that third part**: the
+      Assassin's threshold, which Java indexes by *turns of invisibility* as well as talent rank
+      (`AttackLevel.KOThreshold()`'s 0.03-1.0 table) where the port uses a flat `0.2*rank` firing
+      on any hit; the predicted-post-hit-HP test against Java's current `enemy.HP/enemy.HT`; and
+      `CombinedLethality`'s weapon-changed arming gate. All three need a `Preparation` model
+      rather than a formula swap.
 - [x] Compare `mwg/i18n` against the plan's section 22C "Semantic Messaging" shape before
       committing to SPD-ADR-012. Done against the installed 0.4.2 `.d.ts` files: it matches
       (`SemanticMessage`/`MessageChannel`/`MessageFormatter`/`createCatalogFormatter`,
