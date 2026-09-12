@@ -66,7 +66,7 @@ export function verifyCombat(require, check) {
 		}
 		if (record) {
 			writeFileSync(new URL('./fixtures/combat-before-extraction.json', import.meta.url),
-				`${JSON.stringify(fixture, null, '\t')}\n`);
+				`${JSON.stringify(fixture, null, 2)}\n`);
 		}
 	});
 	check('Burning rolls Java\'s depth-scaled range and reignites rather than resetting', () => {
