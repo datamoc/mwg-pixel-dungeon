@@ -1217,7 +1217,12 @@ Do not add new authored content as object literals or scattered constants in the
       `tools/scratch/dm300-gas-cone-livecheck.mjs` covering the reachable/unreachable, cone-hit/miss,
       paralysed and under-cooldown cases. `WandOfFireblast.fx()` (`3 + 2*charges` range,
       `30 + 20*charges` degrees, `STOP_TARGET|STOP_SOLID|IGNORE_SOFT_SOLID`) is the remaining wiring
-      job. Exact waterskin/dewdrop interactions remain.
+      job - and its **charge/damage half is now exact** (2026-09-12), which turned out to be a bug
+      rather than a simplification: `chargesPerCast()` is the same `gate(1, ceil(curCharges*0.3), 3)`
+      rule Regrowth uses, so the port always cast Fireblast at one charge with the one-charge damage
+      ceiling; a full wand now spends 2 and reaches 8 at level 0, verified live
+      (`tools/scratch/fireblast-charges-livecheck.mjs`, 6 assertions). Exact waterskin/dewdrop
+      interactions remain.
 - [x] Match hunger and starvation damage exactly (`Hunger.act()`'s real `partialDamage`
       fractional accrual and crossing-into-STARVING 1-damage hit, replacing the former flat
       "every 10 turns" guess). Java has no attack-delay/accuracy penalty while merely hungry

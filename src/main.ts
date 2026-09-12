@@ -5860,10 +5860,15 @@ export class SewersScene extends Scene2D {
 			this.say(t('port.log.noammo', { item: t(special.labelKey) }), 'negative');
 			return false;
 		}
-		const regrowthCharges = this.wandType === 'regrowth'
+		//`Wand.chargesPerCast()`, overridden by exactly two wands: Regrowth and Fireblast, both with
+		//Java's own rule - `gate(1, ceil(curCharges * 0.3), 3)`, and 1 when the wand is cursed (this
+		//port has no cursed-wand concept, so that clause cannot arise here). Every other wand casts
+		//for one charge. This used to be computed for Regrowth alone, so a Fireblast wand always cast
+		//at one charge where Java spends up to three (and deals `3*(6 + 2*lvl)` rather than `2 + 2*lvl`).
+		const chargesPerCast = this.wandType === 'regrowth' || this.wandType === 'fireblast'
 			? Math.min(3, Math.max(1, Math.ceil(this.wandCharges.current * 0.3)))
 			: 1;
-		if (special.kind === 'zap' && !this.wandCharges.canAfford(regrowthCharges)) {
+		if (special.kind === 'zap' && !this.wandCharges.canAfford(chargesPerCast)) {
 			this.say(t('port.log.staffempty'), 'negative');
 			return false;
 		}
@@ -5932,7 +5937,7 @@ export class SewersScene extends Scene2D {
 		} else if (special.kind === 'zap') {
 			const fullyCharged = this.wandCharges.current === this.wandCharges.max;
 			const lastCharge = this.wandCharges.current === 1;
-			this.wandCharges.spend(regrowthCharges);
+			this.wandCharges.spend(chargesPerCast);
 			const preservation = preservationChance(this.talentRank('wand_preservation'));
 			if (preservation > 0 && Random.chance(preservation)) this.wandCharges.refund(1);
 			if (lastCharge && this.talentRank('backup_barrier') > 0) this.grantHeroShield(this.talentRank('backup_barrier') === 1 ? 3 : 5, this.hero.maxHp);
@@ -5942,12 +5947,17 @@ export class SewersScene extends Scene2D {
 			} else {
 				//WandOfMagicMissile.onZap calls ch.damage() directly in Java - never a hit
 				//roll. Fireblast and Lightning use their real level-0/level-scaling rolls too.
-				//This port has no Ballistica cone/chain graph, so Fireblast targets the selected
-				//cell and Lightning arcs to visible adjacent foes; the damage formulas and
-				//Lightning's per-target multiplier are retained, while the geometry reduction is
-				//explicitly documented in PORT_COVERAGE.md.
+				//Fireblast's own damage half now scales with the charges it spent - Java's
+				//`min() = (1+lvl) * chargesPerCast()` and the three-case `max()` (2+2*lvl,
+				//2*(4+2*lvl), 3*(6+2*lvl)) - so a full wand hits for up to 18 at level 0 rather than 2.
+				//It still targets the selected cell rather than Java's whole cone: `src/mechanics/cone.ts`
+				//exists now, but `WandOfFireblast.onZap()`'s area half is a wider routine than the
+				//Regrowth wand's (see PORT_COVERAGE.md's row for the exact steps still owed: fire seeding
+				//with its adjacent-to-caster exception, opening doors, burning heaps, the neighbours-8
+				//ignition toward the collision cell, and the Cripple/Paralysis by charge). Lightning
+				//likewise arcs to visible adjacent foes instead of Java's Ballistica chain.
 				if (this.wandType === 'regrowth') {
-					this.useRegrowthWand(target, regrowthCharges);
+					this.useRegrowthWand(target, chargesPerCast);
 				} else if (this.wandType === 'transfusion') {
 					this.useTransfusionWand(target);
 				} else {
@@ -5969,7 +5979,13 @@ export class SewersScene extends Scene2D {
 						: this.wandType === 'livingEarth'
 							? Random.normalRange(4, 6 + 2 * this.weaponLevel)
 						: this.wandType === 'fireblast'
-						? Random.normalRange(1 + this.weaponLevel, 2 + 2 * this.weaponLevel)
+						//`WandOfFireblast.min()`/`max()`: `(1+lvl) * chargesPerCast()` up to one of the
+						//three charge-scaled ceilings - 2+2*lvl, 2*(4+2*lvl), 3*(6+2*lvl).
+						? Random.normalRange(
+							(1 + this.weaponLevel) * chargesPerCast,
+							chargesPerCast === 1 ? 2 + 2 * this.weaponLevel
+								: chargesPerCast === 2 ? 2 * (4 + 2 * this.weaponLevel)
+									: 3 * (6 + 2 * this.weaponLevel))
 						: this.wandType === 'lightning'
 							? Random.normalRange(5 + this.weaponLevel, 10 + 5 * this.weaponLevel)
 								: this.wandType === 'prismaticLight'
