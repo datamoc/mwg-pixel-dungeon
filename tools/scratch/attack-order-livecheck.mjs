@@ -89,33 +89,49 @@ const result = await page.evaluate(() => {
 	}
 	s.weaponAffix = undefined;
 
-	// --- probe 2: the execute runs after the shield pools
+	// --- probe 2: the execute runs after the damage() overrides, and only on a non-boss
+	// A Slime's soft cap is itself a `damage()` override, so it separates the two orders on a
+	// defender `CombinedLethality` still applies to: with raw 80 the curve cuts it to 15, so a
+	// slime on 30 HP both passes the 0.4 threshold and survives the hit - the execute must then
+	// set lethally, where running it *before* the curve would leave 20 HP alive. (A boss cannot be
+	// used for this any more: `CombinedLethality` excludes BOSS/MINIBOSS outright, per
+	// `Char.java` 543-545 - see the King case below, which asserts exactly that.)
+	// the same slime, now simply standing there hurt
+	slime.hp = 30;
+	slime.maxHp = 100;
+	slime.armor = [0, 0];
+	s.hero.damage = [80, 80];
+	const originalTalentRank = s.talentRank.bind(s);
+	s.talentRank = (key) => (key === 'combined_lethality' ? 3 : originalTalentRank(key));
+	s.attack(s.hero, slime);
+	const slimeAfter = { hp: slime.hp, alive: slime.hp > 0 };
+
+	// a BOSS must NOT be executed by the same talent: the King keeps its HP and its shield absorbs
 	const kingCell = cell();
-	slime.hp = 0;
 	const king = s.spawnMonster('king', kingCell);
 	king.maxHp = 300;
-	king.hp = 100;            // 100 - 80 = 20, inside the 0.4 threshold of a rank-3 COMBINED_LETHALITY
+	king.hp = 100;
 	king.kingPhase = 1;
 	king.kingShield = 1000;
 	king.armor = [0, 0];
 	king.evasion = 0;
 	king.sleeping = true;
-	s.hero.damage = [80, 80];
-	const originalTalentRank = s.talentRank.bind(s);
-	s.talentRank = (key) => (key === 'combined_lethality' ? 3 : originalTalentRank(key));
 	s.attack(s.hero, king);
 	s.talentRank = originalTalentRank;
 	const kingAfter = { hp: king.hp, shield: king.kingShield, alive: king.hp > 0 };
 
-	return { corruptions, deaths, kingAfter };
+	return { corruptions, deaths, slimeAfter, kingAfter };
 });
 
 console.log('probe results:', JSON.stringify(result));
 console.log(result.corruptions > 0
 	? `PASS corrupting: ${result.corruptions}/60 hits corrupted the slime through the soft cap (guard sees the pre-curve value)`
 	: 'FAIL corrupting: 0 corruptions in 60 swings - the guard is still evaluated after the damage() curve');
-console.log(result.kingAfter.hp <= 0
-	? `PASS execute: the King died through a 1000-point DKBarrier (hp ${result.kingAfter.hp})`
-	: `FAIL execute: the King survived at hp ${result.kingAfter.hp} with shield ${result.kingAfter.shield} - the shield absorbed the execution`);
+console.log(result.slimeAfter.hp <= 0
+	? 'PASS execute: a non-boss slime at 30 HP died through its own soft cap (execute runs after the damage() overrides)'
+	: `FAIL execute: the slime survived at hp ${result.slimeAfter.hp} - the execute ran before the soft cap, or the threshold misfired`);
+console.log(result.kingAfter.alive
+	? `PASS boss exclusion: the King survived at ${result.kingAfter.hp} HP with ${result.kingAfter.shield} shield left (CombinedLethality excludes BOSS)`
+	: 'FAIL boss exclusion: the King was executed, but CombinedLethality excludes BOSS/MINIBOSS');
 for (const problem of problems) console.log(`PROBLEM ${problem}`);
 await browser.close();

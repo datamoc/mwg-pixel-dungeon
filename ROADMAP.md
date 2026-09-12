@@ -1861,6 +1861,23 @@ The status was re-derived against `mwg@0.7.7` on 2026-09-12, the day the pin was
 delivered the capability, not that this port consumes it yet - the port-side adoption each one
 still owes is named inline.
 
+**Pin bumped 0.7.7 -> 0.7.8 on 2026-09-12**, deliberately and with the whole suite re-run rather
+than as a side effect of other work (the `mwg:check` script reported it available). 0.7.8 is a
+patch release whose every change lies outside this port's surface, so no code changed for it and
+no proposal below moves: its MWL executor fixes (`[if]`/`[else]`/`[while]` no longer running their
+own `[condition]` child, and an `[else]` no longer also running after a taken `[if]`) cannot bite
+here because this port's authored MWL never uses those commands, or `[set_variable]`/`[choice]`;
+its `actors.sell` transactional fix is untouched because the port calls `Actors.buy` only; and its
+`board.*`/classics/tactics work (Go scoring, backgammon bear-off, skirmish pathing, tactical action
+budgets) is for board-game modes this port does not build. What 0.7.8 does add, and what this port
+may adopt when it reaches the relevant feature: `MarkupText` and the canvas-side markup backend
+(as the counterpart to the `RichLabel` HTML text this port's UI is built on), `TerrainGraphicsLayer`
+for `[terrain_graphics]` placements, MWL unit identity (`name`/`role`/`can_recruit`/`leader` and
+`subjectsWhere`/`ScoreSubjectFilter` on the AI side), and one shared variable-path resolver for
+every `$name` reader. Verified on the new version: `tsc --noEmit` clean, `npm run build` clean, 53
+simulation checks, the item suite, the i18n gate, seven behavioural browser probes (33 assertions,
+including the wand/attack/spawn/buff paths), and a full-game load in English and French.
+
 - [x] **Keep using the existing generic primitives.** `Scheduler.add(actor, delay?, priority?)`
       supports actor priorities and postponement; `EntityRegistry.add(entity, requestedId?)`
       supports save-safe caller-chosen ids; `Inventory` supports nested containers and instance
