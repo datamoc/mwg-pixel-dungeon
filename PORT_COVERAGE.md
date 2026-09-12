@@ -2010,6 +2010,26 @@ has no hook for, which is what the library API is for. `mwg/tools/extract-html.m
 of `tools/emit.mjs`'s rewrite (it extracts inline resources *out* of a page), so it is not a
 duplicate of anything here either.
 
+**Coverage map for the whole audit**, so this is not re-derived next time. Adopted and checked:
+`core` (`Game`/`Scene2D` lifecycle, `Input`, `Random`, `SaveSystem`, `Achievements`, `ReactionTable`,
+`Tweener`, `Signal`), `two-d/render` (`TileMap`, `Camera`, `Projectile`, `SpriteSheet`,
+`AnimatedSprite`, `TintedSprite`, `ParticleEmitter`, `autotileFrames`, `BLOB_SHAPES`), `two-d/ui`
+(`Bar`, `Label`, `Button`, `Window`/`WindowStack`, `NinePatch`, `FloatingTextStack`, `theme`),
+`roguelike` (`Pathfinder`, its field of view, `Scheduler`, `TargetingController`, `MultiTurnBeam`,
+`neighbourOffsets`, `chebyshevDistance`), `actors` (`StatBlock`, `Inventory`, `Charges`, `Barrier`,
+`Appearances`, `Progression`, `Advancement`, `rollLoot`, `rollAffix`), `audio` (`Music`, `Sound`),
+`i18n` (catalogue/interpolation/plurals; the typed-message half is a recorded pending adoption),
+`mwl` (compiler, `contentCatalog`, and now `validateCatalog` as a gate), `world`
+(`TurnClock` - the rest of `world` is inapplicable: SPD has no overworld map, transitions or
+encounter tables), `rpg` (`QuestLog`, `GameState`), `simulation` (`Scheduler`, `SimulationRuntime`,
+`advanceToInput`), and `tools/compile-mwl.mjs`'s use of the library API. Deliberately unused, with the
+reason on record: `assets` (Vite inlining, above), `mwg/tools/*` (the library API fits better, above),
+`i18n`'s typed-message layer (recorded in `SPD_ARCHITECTURE_TARGET_V3.md`), and `rpg`'s map-event
+interpreter + `two-d/ui.messageBoxPresenter` (SPD's NPC dialogue is code - Java `interact()` methods
+branching on quest state, class and inventory - not authored event data, so there is nothing for the
+interpreter to run; the *presentation* half of that gap is the hand-rolled-modal bullet above).
+Inapplicable to this game: `3d`, `board`, `battle`, `ai`, `two-d/stage`.
+
 ### Browser verification: done, and what it took
 
 **A ported Sewers floor 1 now renders and plays.** Confirmed from a screenshot of the built page
