@@ -1055,6 +1055,18 @@ Do not add new authored content as object literals or scattered constants in the
       pylon, larva and an allied rat rolled zero.
 - [ ] Implement remaining blob area propagation, gas, and fire terrain (ordinary fire's
       representable terrain/content slice is covered above; gas and unsupported fire cases remain).
+      **The fire model itself is now Java's (2026-09-12)**: `Fire.burn()` runs for every burning
+      cell every turn and does `Buff.affect(ch, Burning.class).reignite(ch)`, so `spreadFire` now
+      reignites every creature standing in fire rather than granting the buff once - the port's
+      fire was a short single burn however long a target stayed in it. The table's `burning` is
+      Java's own `Burning.DURATION` (8) instead of 3, the one Java site with its own value passes
+      it (`MagicalFireRoom.EternalFire`'s `reignite(ch, 4f)`), Burning's damage roll is Java's
+      depth-scaled `NormalIntRange(1, 3 + scalingDepth/4)` instead of a fixed 1-2, and
+      `reignite`/`affect` (prolong vs add) is now expressible at the buff boundary
+      (`reigniteBuff`). Verified live with `tools/scratch/fire-model-livecheck.mjs` (6
+      assertions) and headlessly in `verifyCombat`; see `PORT_COVERAGE.md`'s `BUFF_DURATION` and
+      blob-DoT rows. What remains here is the rest of the blob/gas catalogue (unsupported fire
+      cases such as the hero's own item-burning, plus the gas blobs' own propagation rules).
 - [x] Port the Necromancer's skeleton heal/Adrenaline/teleport support behavior - previously it
       had none at all (a summoned skeleton just fought alone forever). Now heals `HT/5` when
       hurt, grants a one-time Adrenaline (reusing the existing haste stand-in) if visible and

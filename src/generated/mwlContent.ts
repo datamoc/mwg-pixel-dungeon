@@ -3938,7 +3938,7 @@ export const gameData = {
 							"tag": "row",
 							"attributes": {
 								"buff": "burning",
-								"duration": "3"
+								"duration": "8"
 							},
 							"children": [],
 							"location": {

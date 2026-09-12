@@ -217,6 +217,7 @@ import {
 	rollDamage,
 	setAnnounceBuff,
 	addBuff,
+	reigniteBuff,
 	setBleeding,
 	tickBuffs,
 	NEGATIVE_BUFFS,
@@ -482,6 +483,10 @@ const TENGU_CIRCLE8: ReadonlyArray<readonly [number, number]> = [
 ];
 //Weapon.Augment: SPEED/DAMAGE/NONE, chosen when using StoneOfAugmentation on the equipped weapon.
 const AUGMENT_OPTIONS = ['speed', 'damage', 'none'] as const;
+
+/** `MagicalFireRoom.EternalFire.evolve()`'s own burn duration: one of the three Java sites that
+ * pass a literal instead of `Burning.DURATION` (see `src/content/buff-rules.mwl`). */
+const ETERNAL_FIRE_BURN = 4;
 
 /** Weapon enchantments and armor glyphs now live in `src/content/affix-rules.mwl` and are
  * adapted to `Actors.AffixTable` by `itemAffixes.ts`; the per-id proc bodies stay here, where
@@ -5643,16 +5648,22 @@ export class SewersScene extends Scene2D {
 		//the terrain half restitches its own converted cell, the same as `plantBloomingGrass`
 		//and `trampleHighGrass` do.
 		if (burning.length > 0) this.featuresMap?.setLayerData('features', this.featureFrames());
-		if (this.fire.volumeAt(this.hero.x, this.hero.y) >= 1 && !this.hero.buffs['burning']) {
-			addBuff(this.hero, 'burning');
-			this.say(t('port.log.firecatches'), 'negative');
+		//`Fire.burn(pos)` runs for every burning cell every turn, and what it does to a char is
+		//`Buff.affect(ch, Burning.class).reignite(ch)` - a *prolong*, not a one-shot grant, so
+		//standing in fire keeps a full burn armed and stepping out of it leaves the whole 8 turns
+		//running. This port used to grant the buff once and never refresh it, which made fire a
+		//single short burn however long the target stayed in it.
+		if (this.fire.volumeAt(this.hero.x, this.hero.y) >= 1) {
+			const fresh = this.hero.buffs['burning'] === undefined;
+			reigniteBuff(this.hero, 'burning');
+			if (fresh) this.say(t('port.log.firecatches'), 'negative');
 		}
 		for (const creature of this.creatures) {
 			if (creature.isHero || creature.isNPC || creature.hp <= 0) continue;
 			//`Property.FIERY` (every `Elemental`, newborn included): immune to Burning - real
 			//Java refuses the buff in `add()` rather than skipping the grant, same outcome.
 			if (creature.kind === 'elemental' || creature.kind === 'newbornElemental') continue;
-			if (this.fire.volumeAt(creature.x, creature.y) >= 1 && !creature.buffs['burning']) addBuff(creature, 'burning');
+			if (this.fire.volumeAt(creature.x, creature.y) >= 1) reigniteBuff(creature, 'burning');
 		}
 		//EternalFire.evolve()'s ignition half: any char on a burning wall cell catches fire
 		//(`Burning.reignite(ch, 4)` - re-applied while standing in it, the same buff the
@@ -5663,14 +5674,17 @@ export class SewersScene extends Scene2D {
 		//flammable-terrain spread and heap burning are handled above by `spreadFire`/
 		//`burnFireContents`; this eternal wall fire is deliberately not part of that path.
 		if (this.eternalFire.total() > 0) {
-			if (this.eternalFire.volumeAt(this.hero.x, this.hero.y) >= 1 && !this.hero.buffs['burning']) {
-				addBuff(this.hero, 'burning');
-				this.say(t('port.log.firecatches'), 'negative');
+			//Java's eternal wall fire is one of the three sites that pass their own duration:
+			//`MagicalFireRoom.EternalFire.evolve()` is `Burning.reignite(ch, 4f)`
+			if (this.eternalFire.volumeAt(this.hero.x, this.hero.y) >= 1) {
+				const fresh = this.hero.buffs['burning'] === undefined;
+				reigniteBuff(this.hero, 'burning', ETERNAL_FIRE_BURN);
+				if (fresh) this.say(t('port.log.firecatches'), 'negative');
 			}
 			for (const creature of this.creatures) {
 				if (creature.isHero || creature.isNPC || creature.hp <= 0) continue;
 				if (creature.kind === 'elemental' || creature.kind === 'newbornElemental') continue;
-				if (this.eternalFire.volumeAt(creature.x, creature.y) >= 1 && !creature.buffs['burning']) addBuff(creature, 'burning');
+				if (this.eternalFire.volumeAt(creature.x, creature.y) >= 1) reigniteBuff(creature, 'burning', ETERNAL_FIRE_BURN);
 			}
 		}
 		//Shopkeeper.processHarm()/flee(): every other NPC is flatly immune to environmental
@@ -6985,7 +6999,7 @@ export class SewersScene extends Scene2D {
 				//they deal through `Char.damage()` is scaled by `0.825^level` in real Java.
 				const wasDrowsy = this.hero.buffs['drowsy'] !== undefined;
 				const wasMagicalSleep = this.hero.buffs['magicalSleep'] !== undefined;
-				const dot = Math.floor(tickBuffs(this.hero) * ringElementsMultiplier(this.equippedRing, this.hero.magicImmune));
+				const dot = Math.floor(tickBuffs(this.hero, this.depth) * ringElementsMultiplier(this.equippedRing, this.hero.magicImmune));
 				if (wasDrowsy && this.hero.buffs['drowsy'] === undefined && this.hero.hp < this.hero.maxHp) {
 					//Drowsy.act() attaches MagicalSleep; a full-health reader takes Java's
 					//"too healthy" path and is not put to sleep.
@@ -7511,7 +7525,7 @@ export class SewersScene extends Scene2D {
 		if (monster.ratmogrifiedTurns !== undefined || monster.ratmogrifiedPermanent) {
 			//TransmogRat has no original mob abilities; ordinary pathing/melee is the
 			//faithful common denominator for the compact scene AI.
-			const dot = tickBuffs(monster);
+			const dot = tickBuffs(monster, this.depth);
 			if (dot > 0) {
 				monster.hp -= dot;
 				this.showDamage(monster, dot);
@@ -7638,7 +7652,7 @@ export class SewersScene extends Scene2D {
 		const monsterWasBurning = monster.buffs['burning'] !== undefined;
 		const monsterWasOozing = monster.buffs['ooze'] !== undefined;
 		const monsterWasDrowsy = monster.buffs['drowsy'] !== undefined;
-		const dot = tickBuffs(monster);
+		const dot = tickBuffs(monster, this.depth);
 		//`SoiledFist.damage()` can be ignited but takes no damage from Burning itself. This port's
 		//per-turn tick applies one combined total, so when Burning is the only damaging effect the
 		//whole tick is discarded (the roll is still spent, as Java's own `damage()` call would be);

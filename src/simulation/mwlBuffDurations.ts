@@ -11,7 +11,7 @@ export const BUFF_DURATION_DATA = {
   "berserk": 9999,
   "weakness": 20,
   "vulnerable": 20,
-  "burning": 3,
+  "burning": 8,
   "poison": 6,
   "bleeding": 0,
   "cripple": 4,

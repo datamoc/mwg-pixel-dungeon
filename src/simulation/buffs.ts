@@ -36,28 +36,48 @@ export interface BuffAppliedEvent {
 	fresh: boolean;
 }
 
-/** Buff.java-style application: refresh the duration; presentation decides what to announce. */
-export function applyBuff(previous: Readonly<BuffState>, id: BuffId): { buffs: BuffState; event: BuffAppliedEvent } {
+/** Buff.java-style application: refresh the duration; presentation decides what to announce.
+ * `duration` is the per-site override - Java's `Buff.affect(target, class, duration)` - and
+ * defaults to the class's own `DURATION` from the authored table, which is what most sites use. */
+export function applyBuff(previous: Readonly<BuffState>, id: BuffId, duration = BUFF_DURATION[id]): { buffs: BuffState; event: BuffAppliedEvent } {
 	return {
-		buffs: { ...previous, [id]: BUFF_DURATION[id] },
+		buffs: { ...previous, [id]: duration },
 		event: { type: 'buff-applied', id, fresh: previous[id] === undefined },
 	};
+}
+
+/**
+ * `Burning.reignite(ch, duration)`'s *prolong* semantics, which the shared applier above cannot
+ * express: Java raises the remaining time only when the new duration is longer (`if (left <
+ * duration) left = duration`), so standing in fire re-arms a full burn without ever shortening one
+ * that is already longer. Presentation decides what to announce, as with `applyBuff`.
+ */
+export function reigniteBuff(previous: Readonly<BuffState>, id: BuffId, duration = BUFF_DURATION[id]): { buffs: BuffState; event: BuffAppliedEvent } {
+	const left = previous[id];
+	if (left !== undefined && left >= duration) {
+		return { buffs: previous, event: { type: 'buff-applied', id, fresh: false } };
+	}
+	return applyBuff(previous, id, duration);
 }
 
 /**
  * Preserves the old tickBuffs order: damage is rolled before decrement/expiry, including
  * duration 0, and keys with undefined values are skipped. These are per-creature timers;
  * area-fire propagation remains a separate scene system. Existing mwg int calls have
- * exclusive upper bounds: burning is 1-2, poison is 1 (not the previously documented 1-3/1-2).
+ * exclusive upper bounds: poison is 1 (not the previously documented 1-2).
+ *
+ * `Burning.act()` rolls `NormalIntRange(1, 3 + scalingDepth/4)`, an inclusive range, so the
+ * depth-scaled bound is `int(1, 4 + floor(scalingDepth/4))` here. The old fixed `int(1, 3)` was
+ * this port's own invention and made fire strictly weaker than Java's at every depth.
  * Damage is returned for the caller to apply, without mutating HP or the input buff map.
  */
-export function advanceBuffs(previous: Readonly<BuffState>, random: SimulationRandom): { buffs: BuffState; damage: number } {
+export function advanceBuffs(previous: Readonly<BuffState>, random: SimulationRandom, scalingDepth = 0): { buffs: BuffState; damage: number } {
 	const buffs = { ...previous };
 	let damage = 0;
 	for (const id of Object.keys(buffs) as BuffId[]) {
 		const left = buffs[id];
 		if (left === undefined) continue;
-		if (id === 'burning') damage += random.int(1, 3);
+		if (id === 'burning') damage += random.int(1, 4 + Math.floor(scalingDepth / 4));
 		if (id === 'poison') damage += random.int(1, 2);
 		//Bleeding.act(): Java redraws the intensity from NormalFloat(level/2, level),
 		//deals round(level), and keeps the new intensity until the next actor turn.

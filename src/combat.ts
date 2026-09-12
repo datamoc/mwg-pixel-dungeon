@@ -282,18 +282,34 @@ const FIRE_IMMUNITY_BUFFS = new Set<string>(STATUS_IMMUNITIES.fire);
 const MAGIC_IMMUNITY_BUFFS = new Set<string>(STATUS_IMMUNITIES.magic);
 const CHILL_IMMUNITY_BUFFS = new Set<string>(STATUS_IMMUNITIES.chill);
 
-export function addBuff(c: Creature, id: BuffId): void {
+/** The three immunity gates Java applies before a buff can attach, shared by `addBuff` and
+ * `reigniteBuff` so no caller can route around them. */
+function buffBlocked(c: Creature, id: BuffId): boolean {
 	//Brimstone.java grants Burning immunity through Char.isImmune(), before the
 	//effect can be attached. Keep this check at the shared buff boundary so fire
 	//from traps, blobs, wands, plants, and enemy attacks all obey it.
-	if (FIRE_IMMUNITY_BUFFS.has(id) && c.fireImmune) return;
+	if (FIRE_IMMUNITY_BUFFS.has(id) && c.fireImmune) return true;
 	//AntiMagic.RESISTS (items/armor/glyphs/AntiMagic.java): these status classes
 	//are magical in Java and are rejected before attachment. Damage-source
 	//resistance is handled separately by the scene's explicit magical flag.
-	if (MAGIC_IMMUNITY_BUFFS.has(id) && c.magicImmune) return;
+	if (MAGIC_IMMUNITY_BUFFS.has(id) && c.magicImmune) return true;
 	//Frost.java declares immunity to Chill: a frozen creature cannot be slowed again.
-	if (CHILL_IMMUNITY_BUFFS.has(id) && c.buffs.frost !== undefined) return;
-	const event = combat.addBuff(c, id);
+	return CHILL_IMMUNITY_BUFFS.has(id) && c.buffs.frost !== undefined;
+}
+
+/** `Buff.affect(c, id, duration?)`: set the duration (the table's own unless overridden). */
+export function addBuff(c: Creature, id: BuffId, duration?: number): void {
+	if (buffBlocked(c, id)) return;
+	const event = combat.addBuff(c, id, duration);
+	if (event.fresh && announceBuff && ANNOUNCED_BUFFS.has(id)) announceBuff(c, id);
+}
+
+/** `Burning.reignite(c, duration?)`: raise the remaining time to `duration` only when it is
+ * shorter - see `simulation/buffs.ts`'s `reigniteBuff`. Used by fire itself, which re-arms the
+ * burn on every creature standing in it, every turn. */
+export function reigniteBuff(c: Creature, id: BuffId, duration?: number): void {
+	if (buffBlocked(c, id)) return;
+	const event = combat.reigniteBuff(c, id, duration);
 	if (event.fresh && announceBuff && ANNOUNCED_BUFFS.has(id)) announceBuff(c, id);
 }
 

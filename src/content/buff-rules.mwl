@@ -57,9 +57,14 @@ duration=20
 buff=vulnerable
 duration=20
 [/row]
+#Burning.DURATION = 8f. Java's own default, applied by `reignite(ch)` - the path every fire cell
+#takes each turn - and by the fire traps, the Fireblast wand, Blazing and the fire elemental's
+#melee. Three of Java's sites deliberately pass 4f instead (the fire elemental's ranged zap,
+#AntiEntropy, and MagicalFireRoom's eternal wall fire); those pass their own duration at the call
+#site rather than through this table.
 [row]
 buff=burning
-duration=3
+duration=8
 [/row]
 [row]
 buff=poison

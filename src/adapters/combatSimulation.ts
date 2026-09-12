@@ -1,7 +1,7 @@
 import type { Combatant } from '../simulation/combatState';
 import type { SimulationRandom } from '../simulation/random';
 import { rollHit, rollDamage } from '../simulation/combat';
-import { applyBuff, advanceBuffs, type BuffId, type BuffState } from '../simulation/buffs';
+import { applyBuff, reigniteBuff, advanceBuffs, type BuffId, type BuffState } from '../simulation/buffs';
 
 /** Explicit projection prevents a scene Creature's sprite/skeleton graph entering the core. */
 function combatState(c: Combatant): Combatant {
@@ -32,13 +32,19 @@ export function createCombatAdapter(random: SimulationRandom) {
 		rollDamage(attacker: Combatant, defender: Combatant): number {
 			return rollDamage(combatState(attacker), combatState(defender), random);
 		},
-		addBuff(c: { buffs: BuffState }, id: BuffId) {
-			const result = applyBuff(c.buffs, id);
+		addBuff(c: { buffs: BuffState }, id: BuffId, duration?: number) {
+			const result = applyBuff(c.buffs, id, duration);
 			commitBuffs(c.buffs, result.buffs);
 			return result.event;
 		},
-		tickBuffs(c: { buffs: BuffState }): number {
-			const result = advanceBuffs(c.buffs, random);
+		reigniteBuff(c: { buffs: BuffState }, id: BuffId, duration?: number) {
+			const result = reigniteBuff(c.buffs, id, duration);
+			commitBuffs(c.buffs, result.buffs);
+			return result.event;
+		},
+		/** `scalingDepth` is Java's `Dungeon.scalingDepth()` for the depth-scaled DoT rolls. */
+		tickBuffs(c: { buffs: BuffState }, scalingDepth = 0): number {
+			const result = advanceBuffs(c.buffs, random, scalingDepth);
 			commitBuffs(c.buffs, result.buffs);
 			return result.damage;
 		},

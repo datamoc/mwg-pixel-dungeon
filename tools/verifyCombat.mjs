@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import ts from 'typescript';
 
 // Called by verifySimulation.mjs after compiling actual production modules into its temp tree.
 export function verifyCombat(require, check) {
 	const { rollHit, rollDamage, liveStats } = require('./simulation/combat');
-	const { applyBuff, advanceBuffs } = require('./simulation/buffs');
+	const { applyBuff, advanceBuffs, reigniteBuff, BUFF_DURATION } = require('./simulation/buffs');
+	const record = process.env.RECORD_FIXTURES === '1';
 	const facade = require('./combat');
 	const { Random } = require('mwg');
 	const fixture = JSON.parse(readFileSync(new URL('./fixtures/combat-before-extraction.json', import.meta.url), 'utf8'));
@@ -37,18 +38,53 @@ export function verifyCombat(require, check) {
 	check('five pre-extraction buff scenarios preserve timing, damage, and random stream', () => {
 		for (const item of fixture.buffs) {
 			const generator = Random.push(item.seed);
+			let core;
 			try {
-				const result = advanceBuffs(freeze(item.initial), Random);
-				assert.deepEqual({ ...result, rng: generator.getState() }, item.expected);
+				core = { ...advanceBuffs(freeze(item.initial), Random), rng: generator.getState() };
 			} finally { Random.pop(); }
 			const creature = { buffs: { ...item.initial } }, ref = creature.buffs;
 			const adapterGenerator = Random.push(item.seed);
+			let adapted;
 			try {
 				const damage = facade.tickBuffs(creature);
 				assert.equal(creature.buffs, ref);
-				assert.deepEqual({ buffs: creature.buffs, damage, rng: adapterGenerator.getState() }, item.expected);
+				adapted = { buffs: creature.buffs, damage, rng: adapterGenerator.getState() };
 			} finally { Random.pop(); }
+			// `RECORD_FIXTURES=1` re-records the snapshot instead of comparing against it, for the
+			// cases where a rule is deliberately corrected and the old numbers are what changed -
+			// it prints every difference it finds, so the edit is visible in the diff rather than
+			// silent, and the default path stays an exact comparison.
+			if (record) {
+				if (JSON.stringify(core) !== JSON.stringify(item.expected) || JSON.stringify(adapted) !== JSON.stringify(item.expected)) {
+					console.log(`RECORD ${JSON.stringify(item.initial)}: ${JSON.stringify(item.expected)} -> ${JSON.stringify(core)}`);
+				}
+				item.expected = core;
+				continue;
+			}
+			assert.deepEqual(core, item.expected);
+			assert.deepEqual(adapted, item.expected);
 		}
+		if (record) {
+			writeFileSync(new URL('./fixtures/combat-before-extraction.json', import.meta.url),
+				`${JSON.stringify(fixture, null, '\t')}\n`);
+		}
+	});
+	check('Burning rolls Java\'s depth-scaled range and reignites rather than resetting', () => {
+		// `Burning.act()` is `Random.NormalIntRange(1, 3 + Dungeon.scalingDepth()/4)` - an
+		// inclusive range, so the exclusive bound this port's `int` takes is `4 + depth/4`
+		const bounds = [];
+		const spy = { int: (low, high) => { bounds.push([low, high]); return low; }, normalRange: () => 0, float: () => 0 };
+		advanceBuffs({ burning: 5 }, spy, 0);
+		advanceBuffs({ burning: 5 }, spy, 12);
+		advanceBuffs({ burning: 5 }, spy);
+		assert.deepEqual(bounds, [[1, 4], [1, 7], [1, 4]]);
+		// `Burning.reignite(ch, duration)` raises the clock only when it is shorter
+		assert.deepEqual(reigniteBuff({ burning: 2 }, 'burning', 8).buffs, { burning: 8 });
+		assert.deepEqual(reigniteBuff({ burning: 9 }, 'burning', 4).buffs, { burning: 9 });
+		assert.deepEqual(reigniteBuff({ burning: 8 }, 'burning').buffs, { burning: BUFF_DURATION.burning });
+		assert.deepEqual(reigniteBuff({}, 'burning', 4).buffs, { burning: 4 });
+		// and the table now carries Java's own default, not this port's invented 3
+		assert.equal(BUFF_DURATION.burning, 8);
 	});
 	check('hit short circuits consume no random draws; defender invulnerability wins', () => {
 		const random = { float: () => assert.fail('unexpected draw') };
@@ -70,9 +106,14 @@ export function verifyCombat(require, check) {
 		const attacker = base({ str: 13, strReq: 10 }), defender = base();
 		assert.equal(rollHit(attacker, defender, random), true); // ties land
 		rollDamage(attacker, defender, random);
-		advanceBuffs({ poison: 1, burning: 1 }, random);
+		advanceBuffs({ poison: 1, burning: 1 }, random, 0);
+		// the last two are the DoT rolls: poison `int(1, 2)` and Burning's depth-scaled
+		// `NormalIntRange(1, 3 + scalingDepth/4)` - `int(1, 4)` at depth 0
 		assert.deepEqual(calls, [['float', 10], ['float', 5], ['normalRange', 2, 8],
-			['range', 0, 3], ['normalRange', 0, 3], ['int', 1, 2], ['int', 1, 3]]);
+			['range', 0, 3], ['normalRange', 0, 3], ['int', 1, 2], ['int', 1, 4]]);
+		calls.length = 0;
+		advanceBuffs({ burning: 1 }, random, 16);
+		assert.deepEqual(calls, [['int', 1, 8]], 'and the bound grows with depth');
 	});
 	check('Goo tracks the half-HP boundary live; Brute keys off its one-time rage flag, not HP', () => {
 		assert.deepEqual(liveStats(base({ kind: 'goo', hp: 11 })), { accuracy: 10, evasion: 8, damage: [1, 8] });
@@ -87,7 +128,8 @@ export function verifyCombat(require, check) {
 		const original = freeze({ roots: 1, burning: 1 });
 		const refreshed = applyBuff(original, 'burning');
 		assert.equal(original.burning, 1);
-		assert.equal(refreshed.buffs.burning, 3);
+		assert.equal(refreshed.buffs.burning, BUFF_DURATION.burning);
+		assert.equal(applyBuff(original, 'burning', 3).buffs.burning, 3, 'a call site may pass its own duration');
 		assert.deepEqual(refreshed.event, { type: 'buff-applied', id: 'burning', fresh: false });
 		assert.equal(applyBuff(original, 'poison').event.fresh, true);
 		assert.equal(applyBuff({ poison: 0 }, 'poison').event.fresh, false);
