@@ -985,9 +985,28 @@ Do not add new authored content as object literals or scattered constants in the
 
 ## 4. Complete NPCs and quests
 
-- [ ] Port Caves NPCs and quests.
-- [ ] Port City NPCs and quests.
-- [ ] Port Halls NPCs and quests.
+- [x] Port Caves NPCs and quests. **Verified complete 2026-09-12, and the region has exactly one
+      NPC: the Troll Blacksmith.** Its quest (`BlacksmithRoom`, spawned by
+      `CavesLevel.initRooms()`'s `Blacksmith.Quest.spawn`) is ported in all its variants - the
+      normal DarkGold fetch and the alternative bat-stained-pickaxe run, the pickaxe, the
+      favor, the progressive reforge, and now the service window with four of its six services
+      (see the mining/forge bullet below). `CavesLevel` overrides no `createMobs()` at all, so
+      there is nothing else in the region to port.
+- [ ] Port City NPCs and quests. **The quest itself is ported (verified 2026-09-12)**: the
+      Ambitious Imp - `CityLevel.initRooms()`'s `Imp.Quest.spawn` - has its real run-level
+      roll (`depth > 16`, `Random.Int(20 - depth) == 0`), its monk-vs-golem alternative, the
+      token drop on the right mob, the cursed +2 ring reward, and its flee-on-payment. Its
+      token counts are Java's too (`>= 5` for monks, `>= 4` for golems, `Imp.java` 114). One
+      stated simplification remains there: depth 18's 50/50 monk-or-golem pick is decided by
+      depth parity here instead of Java's `Random.Int(2) == 0`, which the code comment at the
+      call site already records. What
+      remains is the *shop* the same unseal opens, which is blocked on the victory-transition
+      flow rather than on the shop code (see section 3's last bullet).
+- [x] Port Halls NPCs and quests. **Closed as not applicable after checking: real Java ships
+      neither** - `HallsLevel.initRooms()` adds exactly one room, `DemonSpawnerRoom` (already
+      ported, with its own ticked bullet in section 2), and the class overrides no
+      `createMobs()` at all (the only region that does is the Sewers, for the Ghost, which is
+      ported). The Halls' content is its mobs and Yog-Dzewa, tracked in sections 3 and 5.
 - [x] Implement the full Ghost quest reward generator. Was calling the generic depth-scaled
       `randomWeapon`/`randomArmor` instead of `Ghost.Quest.spawn()`'s own distinct formula - a
       fixed 50/30/15/5% tier roll (not depth-scaled), a single upgrade level shared by both
