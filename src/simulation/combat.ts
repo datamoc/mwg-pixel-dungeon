@@ -7,20 +7,73 @@ export const INFINITE_ACCURACY = 1000000;
 export const INFINITE_EVASION = 1000000;
 
 /**
- * AscensionChallenge.statModifier's own per-class table (Rat 10 down to Scorpio 1.1): only
- * entries for mobs this port actually spawns are listed. There is no ascension-challenge UI,
- * so this stays 1 in-game; the table is present so the multiplier is real data rather than
- * an undocumented gap.
+ * `AscensionChallenge.statModifier(ch)`'s own per-class table (`AscensionChallenge.java`, tag
+ * `v3.3.8`): `Rat` 10 down to `Scorpio` 1.1.
+ *
+ * Java resolves it by walking the table's classes and returning the first whose
+ * `isAssignableFrom(ch.getClass())` holds, so a *subclass* inherits its parent's value. This
+ * port's mob ids are flat, so every id that Java's inheritance would give a value to is listed
+ * explicitly - `albino`/`fetidRat` beside `rat`, `acidic` beside `scorpio` (Java's
+ * `Acidic extends Scorpio`, not `Slime`), `senior` beside `monk`, and so on. A kind Java's table
+ * never names - bosses, NPCs, `goo`, `mimic`, `piranha`, `demonSpawner`, `rotHeart` - is 1.
+ * `verifyCombat.mjs` cross-checks each `BASE_KIND_ALIASES` variant against its base kind's
+ * value, so a future variant cannot silently drift away from it.
+ *
+ * Three of these values were wrong before 2026-09-12 (`skeleton`/`thief` at 6 instead of 5,
+ * `dm100` at 5 instead of 4.5) and fourteen mobs Java's table names were missing entirely; both
+ * were harmless only because the gate below was itself broken - see `ascensionOn`'s note.
  */
 export const ASCENSION_MOD: Record<string, number> = {
-	rat: 10, snake: 9, gnoll: 9, swarm: 8.5, crab: 8, slime: 8, skeleton: 6, thief: 6, dm100: 5, guard: 4, necromancer: 4,
+	rat: 10, albino: 10, fetidRat: 10,
+	snake: 9,
+	gnoll: 9, gnollTrickster: 9,
+	swarm: 8.5,
+	crab: 8, greatCrab: 8,
+	slime: 8, causticSlime: 8,
+	skeleton: 5, necroSkeleton: 5,
+	thief: 5, bandit: 5,
+	dm100: 4.5,
+	guard: 4,
+	necromancer: 4, spectralNecromancer: 4,
+	bat: 2.5,
+	brute: 2.25, armoredBrute: 2.25,
+	shaman: 2.25,
+	spinner: 2,
+	dm200: 2, dm201: 2,
+	ghoul: 1.67,
+	elemental: 1.67, newbornElemental: 1.67,
+	warlock: 1.5,
+	monk: 1.5, senior: 1.5,
+	golem: 1.33,
+	ripperDemon: 1.2,
+	succubus: 1.2,
+	eye: 1.1,
+	scorpio: 1.1, acidic: 1.1,
 };
-/** Kept for callers that inspect the old port flag; the selected challenge is now persisted. */
-export const ASCENSION_ON = false;
-let strongerBossesEnabled = false;
-/** Runtime hook keeps the simulation module usable in isolated Node tests. */
-export function setStrongerBossesEnabled(enabled: boolean): void { strongerBossesEnabled = enabled; }
-const ascensionOn = (): boolean => strongerBossesEnabled;
+
+/**
+ * `statModifier` returns 1 outright unless the hero carries the `AscensionChallenge` buff:
+ * `if (Dungeon.hero == null || Dungeon.hero.buff(AscensionChallenge.class) == null) return 1;`.
+ * That buff only exists during the post-victory ascent, which this port does not model, so
+ * nothing in the game sets this and the table above is inert data.
+ *
+ * **It must not be a challenge flag.** Until 2026-09-12 this gate was
+ * `setStrongerBossesEnabled()`, wired in `main.ts` to the *Stronger Bosses* challenge - so
+ * simply selecting that challenge multiplied every ordinary mob's accuracy **and** damage by up
+ * to x10 (`rat`), which is the opposite of what Java does: `Challenges.STRONGER_BOSSES`'s every
+ * use is on bosses (Goo 100->120 HP, Tengu 200->250, DM300 300->400, DwarfKing 300->450, Pylon
+ * 50->80, their cooldowns/cadences, `CavesBossLevel`'s trap chance and final-pylon count).
+ * Findings and the corrected table are recorded in `PORT_COVERAGE.md`.
+ *
+ * Unported alongside it, so the port does not claim more than it has: the `statModifier(enemy)`
+ * factor Java applies to the defender's `drRoll()`, and its two exemptions
+ * (`Ratmogrify.TransmogRat` resolving to its original, and an `AscensionBuffBlocker` holder
+ * returning 1).
+ */
+let ascensionActive = false;
+/** Present so the multiplier stays reachable, documented data rather than a silent gap. */
+export function setAscensionActive(active: boolean): void { ascensionActive = active; }
+const ascensionOn = (): boolean => ascensionActive;
 
 /**
  * Combat numbers that can change turn to turn: Goo (`Goo.java`:
@@ -57,7 +110,7 @@ export function liveStats(c: Readonly<Combatant>): { accuracy: number; evasion: 
  * Plus Char.hit()'s real roll multipliers: Bless x1.25, Hex x0.8, Daze x0.5 on *both* rolls
  * (each side's own buffs), ChampionEnemy.Blessed x4 (`evasionAndAccuracyFactor()` - previously
  * x3 here, an unconfirmed guess; corrected against source), AscensionChallenge's per-mob table
- * (gated by ASCENSION_ON - no challenge UI exists to turn it on), and the
+ * (inert here - see `ascensionOn`), and the
  * INFINITE_ACCURACY/INFINITE_EVASION short-circuits (a sleeping target grants a surprise
  * attack that always lands; GreatCrab blocks seen melee and NPCs can't be hit at all).
  * `magic` is hit()'s own accMulti=2 branch for wand/zap attacks.

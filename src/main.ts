@@ -205,7 +205,6 @@ import {
 	baseCreature,
 	rollHit,
 	rollDamage,
-	setStrongerBossesEnabled,
 	setAnnounceBuff,
 	addBuff,
 	setBleeding,
@@ -1383,7 +1382,6 @@ export class SewersScene extends Scene2D {
 	private interlevel: { root: Container; backdrop: TilingSprite; elapsed: number; duration: number; curtain: Graphics; message: Label } | null = null;
 
 	override create(): void {
-		setStrongerBossesEnabled(isChallengeEnabled('stronger_bosses'));
 		this.heroClass = runState.pendingClass;
 
 		const canvas = document.createElement('canvas');

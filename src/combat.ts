@@ -12,7 +12,7 @@ import { nextEntityId } from './simulation/entityId';
 import { createCombatAdapter } from './adapters/combatSimulation';
 import { simulationRandom } from './adapters/mwgRandom';
 import { STATUS_IMMUNITIES } from './simulation/mwlStatusImmunities';
-export { INFINITE_ACCURACY, INFINITE_EVASION, ASCENSION_MOD, ASCENSION_ON, accRollMulti, setStrongerBossesEnabled } from './simulation/combat';
+export { INFINITE_ACCURACY, INFINITE_EVASION, ASCENSION_MOD, accRollMulti, setAscensionActive } from './simulation/combat';
 export { BUFF_DURATION, NEGATIVE_BUFFS, type BuffId } from './simulation/buffs';
 
 const combat = createCombatAdapter(simulationRandom);

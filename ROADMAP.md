@@ -914,6 +914,22 @@ Do not add new authored content as object literals or scattered constants in the
       Guard/Bat can't become champions below depths 3/4/7/9, `GreatCrab`/`Bandit` inheriting
       their base kind's exclusion) are now ported too. See `PORT_COVERAGE.md`'s `ChampionEnemy`
       row.
+      **Found and fixed the same class of bug in the neighbouring multiplier, 2026-09-12**:
+      `AscensionChallenge.statModifier`'s per-mob table (Rat 10 down to Scorpio 1.1) was gated on
+      `setStrongerBossesEnabled()`, wired in `main.ts` to the *Stronger Bosses* challenge - so
+      merely selecting that challenge multiplied **every ordinary mob's** accuracy and damage by
+      up to x10 (proved before fixing: `accRollMulti(rat)` went 1 -> 10 when only that challenge
+      was on). Java couples the two not at all: `statModifier` returns 1 unless the hero carries
+      the `AscensionChallenge` buff (the post-victory ascent, which this port does not model), and
+      `Challenges.STRONGER_BOSSES`'s every use is on bosses - 18 call sites here covering boss HP,
+      DM300 cooldowns/gas, King's phase thresholds, Goo's heal, Tengu's deck, and
+      `CavesBossLevel`'s traps/pylons, all of which were already correct and are untouched. The
+      table was also wrong on its own terms: `skeleton`/`thief` were 6 instead of Java's 5, `dm100`
+      5 instead of 4.5, and fourteen named mobs were missing. Now Java's 25 classes flattened onto
+      this port's 40 ids (Java resolves by `isAssignableFrom`, so subclasses inherit; the port
+      models subclasses partly as MWL aliases and partly as first-class ids, so the flattening is
+      explicit), the gate is its own inert flag, and a `verifyCombat` check pins both the table and
+      the alias-table invariant. See `PORT_COVERAGE.md`'s new `AscensionChallenge` row.
 - [ ] Implement remaining blob area propagation, gas, and fire terrain (ordinary fire's
       representable terrain/content slice is covered above; gas and unsupported fire cases remain).
 - [x] Port the Necromancer's skeleton heal/Adrenaline/teleport support behavior - previously it

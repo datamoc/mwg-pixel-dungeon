@@ -169,4 +169,67 @@ export function verifyCombat(require, check) {
 		const compiled = require('./simulation/entityId');
 		assert.equal(typeof compiled.nextEntityId, 'function');
 	});
+	check('ascension modifiers stay inert in-game, match Java\'s table, and follow the alias table', () => {
+		const { accRollMulti, rollDamage, setAscensionActive, ASCENSION_MOD } = require('./simulation/combat');
+		const zero = { float: () => 0, normalRange: (min) => min, range: (min) => min, int: (min) => min };
+		const rat = base({ kind: 'rat', accuracy: 8, evasion: 4, damage: [1, 4], armor: [0, 0] });
+		// `AscensionChallenge.statModifier` returns 1 unless the hero carries the ascension buff
+		// (`AscensionChallenge.java` at v3.3.8), and this port has no ascent - so an ordinary mob
+		// must never be scaled in-game. Pinned because that gate used to be the *Stronger Bosses*
+		// challenge: selecting it multiplied every ordinary mob's accuracy AND damage by up to
+		// x10 (a rat), while Java's Stronger Bosses only ever touches bosses.
+		assert.equal(accRollMulti(rat), 1);
+		assert.equal(rollDamage(rat, base(), zero), 1);
+		// the gate itself is real and correct for when the ascent does get ported
+		setAscensionActive(true);
+		try {
+			assert.equal(accRollMulti(rat), ASCENSION_MOD.rat);
+			assert.equal(rollDamage(rat, base(), zero), 1 * ASCENSION_MOD.rat);
+		} finally {
+			setAscensionActive(false);
+		}
+		assert.equal(accRollMulti(rat), 1);
+		// Java's own class->value table (`AscensionChallenge.java`, v3.3.8), flattened onto this
+		// port's ids. Pinned in full rather than derived: Java resolves by `isAssignableFrom`, so
+		// a subclass inherits its parent's value, and this port models subclasses two different
+		// ways - some as `BASE_KIND_ALIASES` variants (albino, causticSlime, ...), others as
+		// first-class `MonsterId`s with no alias row (fetidRat, greatCrab, gnollTrickster,
+		// necroSkeleton, newbornElemental). Nothing in the port's data says which port id maps to
+		// which Java class, so the flattened table is the only place that mapping exists.
+		assert.deepEqual(ASCENSION_MOD, {
+			rat: 10, albino: 10, fetidRat: 10,
+			snake: 9,
+			gnoll: 9, gnollTrickster: 9,
+			swarm: 8.5,
+			crab: 8, greatCrab: 8,
+			slime: 8, causticSlime: 8,
+			skeleton: 5, necroSkeleton: 5,
+			thief: 5, bandit: 5,
+			dm100: 4.5,
+			guard: 4,
+			necromancer: 4, spectralNecromancer: 4,
+			bat: 2.5,
+			brute: 2.25, armoredBrute: 2.25,
+			shaman: 2.25,
+			spinner: 2,
+			dm200: 2, dm201: 2,
+			ghoul: 1.67,
+			elemental: 1.67, newbornElemental: 1.67,
+			warlock: 1.5,
+			monk: 1.5, senior: 1.5,
+			golem: 1.33,
+			ripperDemon: 1.2,
+			succubus: 1.2,
+			eye: 1.1,
+			scorpio: 1.1, acidic: 1.1,
+		});
+		// and every variant the authored alias table knows shares its base kind's value, so the
+		// two representations above cannot drift apart for the variants the port does model
+		const mwl = readFileSync(new URL('../src/content/actor-rules.mwl', import.meta.url), 'utf8');
+		const rows = [...mwl.matchAll(/\[row\]\s*variant=(\w+)\s*base=(\w+)\s*\[\/row\]/g)];
+		assert.ok(rows.length >= 11, `alias table not parsed (${rows.length} rows)`);
+		for (const [, variant, kind] of rows) {
+			assert.equal(ASCENSION_MOD[variant] ?? 1, ASCENSION_MOD[kind] ?? 1, `${variant} vs base ${kind}`);
+		}
+	});
 }
