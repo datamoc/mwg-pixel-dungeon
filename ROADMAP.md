@@ -2273,6 +2273,40 @@ compatibility notes and an API report entry in MWG before this port adopts it; P
       to read as "windows swallow clicks in their own area" - they do not, they just sit above the
       thing that does.
 
+- [ ] **P16 - Say who owns the keyboard when a scene and a `WindowStack` both listen.** The
+      stack's own source is explicit that it is *ahead* of anything registered earlier ("stack mode,
+      so this is offered actions before anything registered earlier: a window that is open should
+      always win over the map underneath"), and `Input.d.ts` documents that "a listener returning
+      true stops it reaching anything else". Together those say the opposite of what a game
+      naturally writes: a scene that builds its stack in `create()` and registers its own
+      `Input.onAction` handler *after* that is offered every action **first**, and the moment it
+      returns `true` for anything (which the Signal's contract invites) the windows stop receiving
+      keys entirely - arrow keys never reach a list inside a window. The port hit this head-on
+      trying to give Escape a second meaning, and the only correct recipe today is "return `false`
+      for every key you did not consume *and* check `blocksWorld` yourself first", which nothing
+      documents. Small fix, either way: document the recipe on `WindowStack`, or expose the routing
+      the stack already has - `handleAction` is **private**, so a scene cannot ask "does the top
+      window want this action?" and chain deliberately instead of depending on registration order
+      (and, with two paths able to dispatch to a window, on not double-dispatching). This port's
+      `main.ts` now follows the undocumented recipe, with a comment explaining why, and
+      `BlockingWindowStack` is where the *pointer* half of the same problem lives (P15).
+
+- [ ] **P17 - Cut arbitrary rectangles, not only regular grids, in `SpriteSheet`.** `SpriteSheet`
+      is the right shape and this port uses it for every real grid (hero 12x15, items 16x16, tile
+      and mob sheets via `fromTexture`), but it can only be built as a grid: there is no
+      `region(texture, x, y, w, h)`, and `Types2D` offers `Texture2D`/`Rectangle2D`/`rectOf` without
+      a way to cut a piece out. Irregular sheets are the norm in a port like this - `icons.png`'s
+      hand-packed regions, `status_pane.png`'s bar strips, `ui_chrome.png`'s nine-patch corners,
+      `banners.png`'s two frames, and `items.png`'s per-item *tightened* sub-rects (Java's
+      `assignItemRect` makes each item smaller than its 16px cell, which is exactly why that sheet
+      cannot be used as a plain grid for those) - so the port hand-writes
+      `new Texture({ source, frame: new Rectangle(x, y, w, h) })` at ~20 sites, plus its own helper
+      for the one case it does centrally (`main.ts:835`). A `SpriteSheet.rect(frame, x, y, w, h)`
+      (or a free `region(texture, x, y, w, h)`) would remove that boilerplate and bring the same
+      benefit `SpriteSheet` already advertises for grids: "frames are cut once and cached: asking
+      for the same index twice returns the same Texture", where the hand-written path builds a fresh
+      `Texture` every time a window is opened.
+
 ### Explicitly out of scope for MWG
 
 The following remain port-owned work even when they could be made more generic in theory:

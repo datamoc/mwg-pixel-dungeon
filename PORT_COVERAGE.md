@@ -1991,7 +1991,12 @@ Recorded here, not done, each with the framework API that owns it:
   exist and are used for the title screen, the journal and - since 2026-09-12 - the in-game menu
   (`WndGame`), which is the stack's first in-game inhabitant. SPD's pixel chrome is why the others
   are not `Window`s (a documented look choice), but nothing explains why the *modal stack* is not
-  `WindowStack`, and the item picker is exactly `MessageBox`'s titled-choice shape.
+  `WindowStack`, and the item picker is exactly `MessageBox`'s titled-choice shape. What the menu
+  did expose, and what the framework is short of, is the two halves of Java's `Window` blocker: the
+  pointer half, ported locally as `src/ui/blockingWindowStack.ts` and recorded as proposal **P15**,
+  and the keyboard half - who owns a key when a scene and its stack both listen - recorded as
+  **P16**. Building the menu also turned up **P17** (`SpriteSheet` cuts regular grids only, so
+  irregular sheets are hand-cut here); all three are in `ROADMAP.md` section 11A.
 - **Screen transitions are hand-computed** (`main.ts`'s interlevel curtain: hold plus two 0.33s
   fades) with `ScreenEffects.fadeOut`/`fadeIn`/`flash` unused; a drop-in swap is not possible for
   SPD's single hold+fade phase, so this is a "reduced, not absurd" case rather than a defect.
