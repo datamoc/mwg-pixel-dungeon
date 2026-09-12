@@ -2075,6 +2075,71 @@ including the wand/attack/spawn/buff paths), and a full-game load in English and
       API report entry in the MWG repository. This port should only add an adoption checkbox here
       after a released version exists and has been checked against its declarations.
 
+### New proposals from the 2026-09-12 mwg-usage audit
+
+The audit itself (what is adopted, what is deliberately unused, what is inapplicable) is
+`PORT_COVERAGE.md`'s "mwg usage audit". Everything below is generic - no SPD names, values or art -
+and by this section's own rule an *API* proposal wants renderer-free tests, a minimal example, save
+compatibility notes and an API report entry in MWG before this port adopts it; P4 is doc-only.
+
+- [ ] **P3 — Re-export `extensions` and Pixi's built-in pipe classes from `two-d/pixi-interop`.**
+      That module's doc says a game should import backend classes from there "rather than from
+      `pixi.js` directly", "confined to one file". Of the 85 value symbols this port pulls from
+      `pixi.js` (23 files under `src/`), every one has a facade or interop name except three -
+      `extensions`, `TilingSpritePipe`, `NineSliceSpritePipe` - and those three in `main.ts` are the
+      only reason any file here still names `pixi.js`. Re-export the trio, or add a
+      `registerBuiltinPipes()` helper doing the two `extensions.add` calls.
+- [ ] **P4 — Two shipped doc comments contradict each other; one over-claims.** (Doc-only.)
+      `Shape2D.d.ts` says "`Container2D` ... is a type alias, not something a game can `new`", while
+      `Types2D.d.ts` re-exports `Container as Container2D` as "usable in both type and value
+      positions". And `pixi-interop.d.ts` presents "this project imports the full `pixi.js` package
+      everywhere ... and that package registers every built-in pipe ... as a side effect of the
+      import itself" as a universal guarantee; what actually preserves them is Pixi's own
+      `sideEffects` whitelist (`lib/scene/sprite-tiling/init.*`, `lib/scene/sprite-nine-slice/init.*`)
+      and mwg's for `dist/two-d/render/TintedSprite.js` - this port lost a whole session to a
+      production-only `renderPipes[...] is undefined` failure in that area and still registers all
+      three pipes by hand.
+- [ ] **P5 — Pointer parity for `two-d/ui/ListView`.** `IconGrid` is "driven by the keyboard or the
+      pointer" and exposes `tapCell(index)`; `ListView` exposes only `move`/`select`/`confirm`/
+      `handleAction`, so a list cannot be clicked. This port worked around it by filling each row's
+      `ListItem.icon` with a full-row hit surface; a `tapRow(index)` mirroring `tapCell` would let a
+      bag/menu use the widget as documented.
+- [ ] **P6 — Let a game supply the compiled asset map.** `assets/paths` resolves against
+      `window.__MWG_ASSETS__` (written by `mwg/tools/compile-resources`) or the dev server, with no
+      entry point for a bundler that already produces URLs/data URIs - so a Vite game cannot use
+      `Assets`' loaders, batching (`optional`/`fallback`) or progress reporting at all. This port
+      uses none of `Resources` and hand-rolls asset-to-texture plumbing instead; a `setAssetMap(map)`
+      (or a `setBase` overload) is the whole ask.
+- [ ] **P7 — Compose, don't only prioritise, in `two-d/render/StatusVisuals`.** Its doc is explicit
+      that one active status wins by declaration order and that a caller mixing in an unrelated
+      `tint` write "will fight this"; this port needs an identity `tint`, N simultaneous *additive*
+      effect colours and a transient flash, which is why it drives the additive channel directly and
+      never adopted the class. Layering over that channel - never touching `tint` - is the generic
+      shape.
+- [ ] **P8 — A phase/sequence API for `two-d/render/ScreenEffects`.** `fadeOut`/`fadeIn`/`flash`
+      cannot express hold-then-fade-then-fade-back, the standard transition here, which this port
+      hand-computes. A small `run([{ phase, seconds }...], onMidpoint)` wrapper would.
+- [ ] **P9 — A screen-pixel shake helper on `Camera`.** `Camera.shake(magnitude, duration?)` is in
+      world units, while the genre's convention (Java's `PixelScene.shake(intensity, duration)`, 43
+      call sites) is pixels on screen, so a faithful port converts at every site. A
+      `shakeScreen(intensity, duration)` dividing by the zoom keeps `shake` as the primitive.
+- [ ] **P10 — Say what MWL row ids are scoped to, or make it configurable.** `validateCatalog` keys
+      ids on `tag:id` across the whole document, so any game whose tables carry the domain id as the
+      row id gets one `MWL_DUPLICATE_ID` per reuse (42 here, recorded above), and the code does not
+      distinguish "twice in one table" (a real error) from "the same id in two tables" (often
+      intended). `MwlTableDefinition`'s doc says nothing about the scope. Document it, split the
+      diagnostic code, or take `rowIdScope: 'table' | 'document'`.
+- [ ] **P11 — Let `tools/mwl.mjs` carry extra artifacts, or document the library path as the
+      answer.** This build needs three game-owned generated modules plus cross-table validators the
+      CLI has no hook for, so it drives the library API in its own script; a config/extra-artifacts
+      option keeps the CLI as the one entry point, or the docs can say plainly that a game with
+      game-specific validation should embed the API.
+- [ ] **P12 — A documented `file://` post-build recipe for bundler users.** The README covers the
+      compiled standalone build; a Vite user's own entry tag comes out `type="module"`, which
+      `file://` refuses, so this port wrote its own HTML rewrite and its own "unbuilt source page"
+      guard (which must test for `script[type="module"]`, not just the protocol). A short recipe or a
+      tiny `tools/classic-html.mjs` would remove a step every bundler-based MWG game repeats.
+
 ### Explicitly out of scope for MWG
 
 The following remain port-owned work even when they could be made more generic in theory:
