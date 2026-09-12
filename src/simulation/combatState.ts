@@ -24,6 +24,10 @@ export interface Combatant extends Step {
 	 * them - the two properties are checked separately by name in several Java rules. */
 	boss?: boolean;
 	miniboss?: boolean;
+	/** `Preparation.AttackLevel` level (1-4) while the attacker's Preparation buff is up, which
+	 * replaces its damage roll and unlocks the assassinate. Absent means no Preparation - Java
+	 * reads the same thing from `buff(Preparation.class) != null`. */
+	prepLevel?: number;
 	/** Plain rule identifier; the scene narrows it to its MonsterId catalogue. */
 	kind?: string;
 	sleeping?: boolean;

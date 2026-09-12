@@ -1159,6 +1159,12 @@ Do not add new authored content as object literals or scattered constants in the
        Persistent random-destination patrol state now covers the Java movement half (including
        save/load and piranhas' water restriction). Remaining: specialized ally-aware ranged
        targeting.
+      **Added 2026-09-12: the invisibility half is now complete on the attack side** -
+      `Preparation` is a real state, so an attack made out of invisibility gets its real damage
+      roll (the best of 1-3 rolls plus 10/20/35/50% at 1/3/5/9 turns invisible) and can assassinate
+      a weak target, and invisibility is still dispelled by that attack. See `PORT_COVERAGE.md`'s
+      `Preparation` row; the blink action and `Mob`'s wound-instead-of-surprise presentation remain
+      unported.
 - [x] Implement shield decay (`Barrier.act()`'s real `min(1,shielding/20)`-per-turn proportional
       curve now runs every hero turn against the shared `heroBarrier` pool - previously never
       invoked at all, so shields held indefinitely). `Blocking.BlockBuff`'s own separate fixed
@@ -1669,12 +1675,20 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       while the Assassin's `Preparation.canKO` still allows them at a fifth of its threshold, so
       the shared `max()` now zeroes one half for a boss and divides the other by five. Verified
       live: a rat at 40% of max HP is executed, GreatCrab and Goo survive that same hit, and an
-      Assassin still executes Goo at 10% but not at 40%. **Still open in that third part**: the
-      Assassin's threshold, which Java indexes by *turns of invisibility* as well as talent rank
-      (`AttackLevel.KOThreshold()`'s 0.03-1.0 table) where the port uses a flat `0.2*rank` firing
-      on any hit; the predicted-post-hit-HP test against Java's current `enemy.HP/enemy.HT`; and
-      `CombinedLethality`'s weapon-changed arming gate. All three need a `Preparation` model
-      rather than a formula swap.
+      Assassin still executes Goo at 10% but not at 40%. **The third part is now closed too
+      (2026-09-12)**: the `Preparation` model was ported, so the Assassin's half is no longer a
+      flat stand-in - see the new `Preparation` row in `PORT_COVERAGE.md`. It is a real buff/state
+      (`simulation/preparation.ts` plus a hero-turn counter) that exists only while the hero is
+      invisible: the attack's damage roll is *replaced* by the best of 1-3 rolls plus
+      10/20/35/50% at 1/3/5/9 turns invisible, and the execute fires only while it is up, at
+      `AttackLevel.KOThreshold()`'s real 4x4 table (prep level by `enhanced_lethality` rank),
+      strictly `<`, with a fifth for bosses - and it is read *before* the invisibility dispel,
+      because Java reads it into a local at the top of `Char.attack()` and dispels only after the
+      attack returns. Browser-verified live with 12 assertions, including that a high counter
+      without invisibility assassinates nothing (the old stand-in fired on any hit at all).
+      **Still approximated in that area**: the test is the predicted post-hit HP rather than the
+      HP `damage()` actually leaves (so a shielded defender can be executed slightly early), and
+      `CombinedLethality`'s weapon-changed arming gate is unmodelled.
 - [x] Compare `mwg/i18n` against the plan's section 22C "Semantic Messaging" shape before
       committing to SPD-ADR-012. Done against the installed 0.4.2 `.d.ts` files: it matches
       (`SemanticMessage`/`MessageChannel`/`MessageFormatter`/`createCatalogFormatter`,

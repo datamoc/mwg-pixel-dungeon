@@ -127,10 +127,6 @@ export function deathlessFuryTriggers(subclass: string | null, rank: number, use
 	return !used && subclass === 'berserker' && rank > 0 && damage >= hp;
 }
 
-export function enhancedLethalityThreshold(subclass: string | null, rank: number): number {
-	return subclass === 'assassin' ? 0.2 * rank : 0;
-}
-
 /** `Wand.wandProc()`'s Arcane Vision line: a `CharAwareness`-class mark lasting
  * `5 + 5*points` turns on the zapped target - a per-target reveal, not a secret radius. */
 export function arcaneVisionDuration(rank: number): number {

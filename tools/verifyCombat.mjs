@@ -328,4 +328,51 @@ export function verifyCombat(require, check) {
 		// the ripper demon is the one mob Java marks with both, and the union's consumers rely on it
 		assert.ok(flagSet('undead').includes('ripperDemon') && flagSet('demonic').includes('ripperDemon'));
 	});
+	check('Preparation\'s levels, KO table, blink ranges and damage roll match Java exactly', () => {
+		const prep = require('./simulation/preparation');
+		// AttackLevel's own declarations: turnsReq / baseDmgBonus / damageRolls
+		assert.deepEqual(prep.PREPARATION_LEVELS.map((l) => [l.level, l.turnsReq, l.damageBonus, l.damageRolls]),
+			[[1, 1, 0.1, 1], [2, 3, 0.2, 1], [3, 5, 0.35, 2], [4, 9, 0.5, 3]]);
+		// getLvl walks the levels in reverse, so the boundary turns matter more than the middle
+		assert.deepEqual([0, 1, 2, 3, 4, 5, 8, 9, 40].map((t) => prep.preparationLevel(t).level), [1, 1, 1, 2, 2, 3, 3, 4, 4]);
+		// KOThresholds[prepLevel][enhanced_lethality rank], verbatim
+		assert.deepEqual([1, 2, 3, 4].map((l) => [0, 1, 2, 3].map((r) => prep.preparationKoThreshold(l, r))), [
+			[0.03, 0.04, 0.05, 0.06],
+			[0.10, 0.13, 0.17, 0.20],
+			[0.20, 0.27, 0.33, 0.40],
+			[0.50, 0.67, 0.83, 1.0],
+		]);
+		// canKO is a strict `<` on the HP *fraction*, and a boss/miniboss only dies at a fifth
+		const cases = [
+			[2, 100, 1, 0, false, 0.03],   // 0.02 < 0.03
+			[3, 100, 1, 0, false, 0.03],   // 0.03 is not < 0.03
+			[99, 100, 4, 3, false, 1.0],   // 0.99 < 1.0
+			[100, 100, 4, 3, false, 1.0],  // exactly at full HP is not <
+		];
+		for (const [hp, maxHp, level, rank, boss, threshold] of cases) {
+			assert.equal(prep.preparationCanKo(hp, maxHp, level, rank, boss), hp / maxHp < threshold, `${hp}/${maxHp} at threshold ${threshold}`);
+		}
+		// the fifth for bosses: level 4 rank 3 on a boss needs under 0.2 of maximum
+		assert.equal(prep.preparationCanKo(19, 100, 4, 3, true), true);
+		assert.equal(prep.preparationCanKo(20, 100, 4, 3, true), false);
+		// blinkRanges[prepLevel][assassins_reach rank], verbatim
+		assert.deepEqual([1, 2, 3, 4].map((l) => [0, 1, 2, 3].map((r) => prep.preparationBlinkDistance(l, r))), [
+			[1, 1, 2, 2], [2, 3, 4, 5], [3, 4, 6, 7], [4, 6, 8, 10],
+		]);
+		// damageRoll: the best of `damageRolls` rolls, plus the level's own percentage, rounded
+		const level1 = prep.preparationLevel(1);
+		const level4 = prep.preparationLevel(10);
+		assert.equal(prep.preparationDamageRoll(level1, () => 10), 11);          // 10 * 1.10
+		assert.equal(prep.preparationDamageRoll(level4, () => 10), 15);          // 10 * 1.50, one roll
+		let rolls = 0;
+		const sequence = [4, 9, 5];
+		assert.equal(prep.preparationDamageRoll(level4, () => { rolls++; return sequence[rolls - 1]; }), 14); // max(4,9,5) = 9 -> 13.5 -> 14
+		assert.equal(rolls, 3, 'level 4 must roll three times');
+		// and reading a level *number* must not be confused with reading turns of invisibility -
+		// `rollDamage` holds the number, and passing it to `preparationLevel` shifts every level
+		// by one (a real bug caught by the live probe: level 2 rolled level 1's +10%)
+		assert.deepEqual([1, 2, 3, 4, 7].map((n) => prep.preparationLevelByNumber(n).level), [1, 2, 3, 4, 4]);
+		assert.deepEqual([1, 2, 3, 4].map((n) => prep.preparationLevelByNumber(n).damageBonus), [0.1, 0.2, 0.35, 0.5]);
+		assert.deepEqual([1, 3, 5, 9].map((t) => prep.preparationLevel(t).level), [1, 2, 3, 4]);
+	});
 }

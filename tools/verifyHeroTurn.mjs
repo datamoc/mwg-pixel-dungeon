@@ -8,7 +8,7 @@ export function verifyHeroTurn(require, check) {
 		const state = { hp };
 		const effects = { isAlive: () => state.hp > 0 };
 		for (const name of ['advanceClock', 'advanceHunger', 'recoverWandCharge',
-			'recoverTomeCharge', 'spreadFire', 'applyBuffDamage', 'spendScheduledTurn', 'runAutomaticTurns']) {
+			'recoverTomeCharge', 'spreadFire', 'applyBuffDamage', 'updatePreparation', 'spendScheduledTurn', 'runAutomaticTurns']) {
 			effects[name] = () => { calls.push(name); return false; };
 		}
 		return { calls, state, effects };
@@ -22,7 +22,7 @@ export function verifyHeroTurn(require, check) {
 		const f = fixture();
 		assert.equal(finishHeroTurn(f.effects), 'spent');
 		assert.deepEqual(f.calls, ['advanceClock', 'advanceHunger', 'recoverWandCharge',
-			'recoverTomeCharge', 'spreadFire', 'applyBuffDamage', 'spendScheduledTurn', 'runAutomaticTurns']);
+			'recoverTomeCharge', 'spreadFire', 'applyBuffDamage', 'updatePreparation', 'spendScheduledTurn', 'runAutomaticTurns']);
 	});
 	check('fatal buff damage prevents scheduler spending and automatic actions', () => {
 		const f = fixture();
@@ -37,7 +37,7 @@ export function verifyHeroTurn(require, check) {
 		};
 		assert.equal(finishHeroTurn(f.effects), 'spent');
 		assert.equal(f.state.hp, 0);
-		assert.deepEqual(f.calls.slice(-3), ['applyBuffDamage', 'spendScheduledTurn', 'runAutomaticTurns']);
+		assert.deepEqual(f.calls.slice(-4), ['applyBuffDamage', 'updatePreparation', 'spendScheduledTurn', 'runAutomaticTurns']);
 		f.calls.length = 0;
 		assert.equal(finishHeroTurn(f.effects), 'already-dead');
 		assert.deepEqual(f.calls, []);

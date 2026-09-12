@@ -8,6 +8,11 @@ export interface HeroTurnEffects {
 	spreadFire(): void;
 	/** Tick buffs and apply damage; return true when that damage kills the hero. */
 	applyBuffDamage(): boolean;
+	/** `Preparation.act()`: grow the invisibility counter while it lasts, or clear it. Runs after
+	 * `applyBuffDamage` because that is where this port ticks buff durations, so an invisibility
+	 * that expired this turn is already gone - Java's own buff acts last for the same reason
+	 * (`Preparation` sets `actPriority = BUFF_PRIO - 1`). */
+	updatePreparation(): void;
 	spendScheduledTurn(): void;
 	runAutomaticTurns(): void;
 }
@@ -27,6 +32,7 @@ export function finishHeroTurn(effects: HeroTurnEffects): HeroTurnResult {
 	effects.recoverTomeCharge();
 	effects.spreadFire();
 	if (effects.applyBuffDamage()) return 'buff-death';
+	effects.updatePreparation();
 	effects.spendScheduledTurn();
 	effects.runAutomaticTurns();
 	return 'spent';

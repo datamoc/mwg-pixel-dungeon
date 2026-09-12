@@ -1,5 +1,6 @@
 import type { Combatant } from './combatState';
 import type { SimulationRandom } from './random';
+import { preparationDamageRoll, preparationLevelByNumber } from './preparation';
 
 // Char.java:509-510 - surprise attacks and truly-untargetable defenders short-circuit the
 // whole hit roll around these values, rather than through any percentage
@@ -161,12 +162,22 @@ export function rollHit(attacker: Readonly<Combatant>, defender: Readonly<Combat
  */
 export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Combatant>, random: SimulationRandom): number {
 	const [min, max] = liveStats(attacker).damage;
-	let raw = random.normalRange(min, max);
-	//MeleeWeapon.damageRoll: excess STR over the requirement adds up to the whole surplus
-	if (attacker.str !== undefined && attacker.strReq !== undefined && attacker.str > attacker.strReq) {
-		raw += random.range(0, attacker.str - attacker.strReq);
-	}
-	let dmg = raw;
+	/** The attacker's own `damageRoll()`: the stat roll, plus `MeleeWeapon.damageRoll`'s excess-STR
+	 * bonus (up to the whole surplus over the requirement). A function rather than an inline
+	 * expression because `Preparation` rolls it 1-3 times and keeps the best. */
+	const damageRoll = (): number => {
+		let roll = random.normalRange(min, max);
+		if (attacker.str !== undefined && attacker.strReq !== undefined && attacker.str > attacker.strReq) {
+			roll += random.range(0, attacker.str - attacker.strReq);
+		}
+		return roll;
+	};
+	//Char.attack() 404-412: with Preparation up the damage roll is *replaced* - the best of
+	//1-3 rolls with its own percentage on top (10/20/35/50% at 1/3/5/9 turns of invisibility),
+	//not a multiplier on the ordinary roll. The draws still happen here, in order.
+	let dmg = attacker.prepLevel !== undefined
+		? preparationDamageRoll(preparationLevelByNumber(attacker.prepLevel), damageRoll)
+		: damageRoll();
 	if (attacker.buffs['berserk']) {
 		const power = 1 - attacker.hp / attacker.maxHp;
 		dmg *= Math.min(1.5, 1 + power / 2);

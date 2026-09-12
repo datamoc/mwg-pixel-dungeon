@@ -34,7 +34,7 @@ try {
 	for (const file of ['simulation/movement', 'simulation/heroTurn', 'simulation/hunger', 'simulation/turns', 'adapters/sceneSimulation',
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActions',
-		'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/tenguAbility', 'simulation/defenderDamageCurves']) {
+		'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/tenguAbility', 'simulation/defenderDamageCurves', 'simulation/preparation']) {
 		compile(new URL(`../src/${file}.ts`, import.meta.url), `${file}.js`);
 	}
 	// The framework half of the harness is the INSTALLED package - the same
@@ -147,8 +147,9 @@ try {
 		assert.equal(talents.cleaveComboSeed('berserker', 2), 0);
 		assert.equal(talents.deathlessFuryTriggers('berserker', 1, false, 20, 10), true);
 		assert.equal(talents.deathlessFuryTriggers('berserker', 1, true, 20, 10), false);
-		assert.equal(talents.enhancedLethalityThreshold('assassin', 2), 0.4);
-		assert.equal(talents.enhancedLethalityThreshold('berserker', 2), 0);
+		//`enhancedLethalityThreshold` (the flat `0.2*rank` stand-in for the Assassin's execute) is
+		//gone: the talent now feeds `AttackLevel.KOThreshold()`'s table column directly, and that
+		//whole table is pinned in verifyCombat.
 		assert.equal(talents.arcaneVisionDuration(2), 15);
 		assert.equal(talents.arcaneVisionDuration(0), 5);
 		assert.equal(talents.necromancerMinionChance('warlock', 1), 0.13);

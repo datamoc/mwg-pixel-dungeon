@@ -18,6 +18,7 @@ import { runAttackResolution } from './adapters/attackSimulation';
 import { simulationRandom } from './adapters/mwgRandom';
 import { MOVES } from './simulation/heroActions';
 import { finishHeroTurn } from './simulation/heroTurn';
+import { preparationCanKo, preparationLevel } from './simulation/preparation';
 import { stepTenguAbility, tenguAbilityCost } from './simulation/tenguAbility';
 import { applyDefenderDamageCurves } from './simulation/defenderDamageCurves';
 import {
@@ -95,7 +96,7 @@ import { BadgeBannerLayer } from './ui/badgeBanner';
 import { SpdToolbar } from './ui/toolbar';
 import { StatusPane } from './ui/statusPane';
 import { SpdAudio } from './audio';
-import { arcaneVisionDuration, assassinReachBonus, bountyGoldBonus, cachedRationChance, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, enhancedLethalityThreshold, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, ironWillReduction, lethalDefenseShield, lethalHasteDuration, LETHAL_HASTE_COOLDOWN, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, shieldBatteryGain, shieldingDewGain, sharedUpgradeArmor, soulSiphonCharge, twinUpgradeArmor, unencumberedSpiritEvasion, weaponRechargingDamage } from './talentEffects';
+import { arcaneVisionDuration, assassinReachBonus, bountyGoldBonus, cachedRationChance, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, ironWillReduction, lethalDefenseShield, lethalHasteDuration, LETHAL_HASTE_COOLDOWN, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, shieldBatteryGain, shieldingDewGain, sharedUpgradeArmor, soulSiphonCharge, twinUpgradeArmor, unencumberedSpiritEvasion, weaponRechargingDamage } from './talentEffects';
 import pixelFontUrl from './assets/pixel_font.ttf';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth, SpdRandom } from './spdRng';
 import {
@@ -1303,6 +1304,11 @@ export class SewersScene extends Scene2D {
 	 * traversal; the creature's own `tenguFire` carries that beam's `toJSON()` for saves, so this
 	 * map is rebuilt from it on load and never serialized itself. */
 	private tenguBeams = new Map<Creature, Roguelike.MultiTurnBeam>();
+	/** `Preparation`'s own state: the turns the hero has spent invisible (`Preparation.java`'s
+	 * `turnsInvis`), which is what selects its `AttackLevel`. Java counts it in the buff's own
+	 * `act()` while `target.invisible > 0` and detaches the buff the moment it is not, so the
+	 * counter resets whenever invisibility ends - see `trackPreparation`/`syncPreparation`. */
+	private prepInvisibleTurns = 0;
 	private victoryPanel!: Container;
 	private bossChrome!: Container;
 	private bossHealthBar!: Bar;
@@ -6240,6 +6246,9 @@ export class SewersScene extends Scene2D {
 				this.wandCharges.advance(baseRate + (this.hero.buffs['recharging'] ? 0.25 : 0));
 			},
 			recoverTomeCharge: () => { this.tomeCharges.advance(1); },
+			//Preparation.act(): the invisibility counter lives in the hero-turn pipeline next to
+			//the other per-turn buff state, and reads the turn cost this action actually spent.
+			updatePreparation: () => this.trackPreparation(turnCost),
 			spreadFire: () => this.spreadFire(),
 			applyBuffDamage: () => {
 				//CloakOfShadows.cloakRecharge/cloakStealth.act(): recharge while inactive and
@@ -9422,6 +9431,26 @@ export class SewersScene extends Scene2D {
 		}
 	}
 
+	/** Mirrors `Preparation`'s own rule onto the hero's combat data: the buff exists exactly while
+	 * its target is invisible (`Preparation.act()` detaches the moment it is not), so the level is
+	 * present only then. Java reads `buff(Preparation.class)` *on the attacker* inside
+	 * `Char.attack()`, which is what `rollDamage` reads with `prepLevel`. */
+	private syncPreparation(): void {
+		this.hero.prepLevel = this.hero.buffs['invisibility']
+			? preparationLevel(this.prepInvisibleTurns).level
+			: undefined;
+	}
+
+	/** One hero turn of `Preparation.act()`: the length of the current invisibility grows while it
+	 * lasts, and both the counter and the level reset the moment it ends. The turn cost is rounded
+	 * to a whole turn because every other per-turn counter in this port ticks once per hero action
+	 * (the cloak's own stealth cost, buff durations) rather than per fractional time unit. */
+	private trackPreparation(turnCost: number): void {
+		if (this.hero.buffs['invisibility']) this.prepInvisibleTurns += Math.max(1, Math.round(turnCost));
+		else this.prepInvisibleTurns = 0;
+		this.syncPreparation();
+	}
+
 	/**
 	 * Melee (or missile) exchange with Java's own on-hit hooks: surprise attacks land
 	 * automatically (INFINITE_ACCURACY, inside rollHit) and wake the victim; Rogue's
@@ -9437,6 +9466,14 @@ export class SewersScene extends Scene2D {
 		faceCharacter(this.sprite(attacker), attacker.x, defender.x);
 		if (attacker.isHero) this.heroAnimation.attack();
 		else { const attackerSprite = this.sprite(attacker); if (attackerSprite instanceof AnimatedSprite && attackerSprite.has('attack')) attackerSprite.play('attack', true); }
+		//`Preparation` must be read *before* this dispel: Java reads it into a local at the top of
+		//`Char.attack()` and only calls `Invisibility.dispel()` after the whole attack returns
+		//(`Hero.java` 2325), so the stealth state still applies to this attack's damage roll and
+		//its assassinate check. `syncPreparation` mirrors the live invisibility state onto the
+		//attacker's combat data, which is what `rollDamage` reads - and that mirror is deliberately
+		//*not* cleared here, because both readers come later in this function. Every attack
+		//re-syncs at this point, so a dispelled invisibility still ends the state for the next one.
+		this.syncPreparation();
 		// Invisibility is dispelled by an aggressive action (Invisibility.dispel()).
 		if (attacker.buffs['invisibility']) delete attacker.buffs['invisibility'];
 		//`Sheep` is a neutral NPC in Java: it cannot be damaged or selected as a hostile target.
@@ -9755,24 +9792,27 @@ export class SewersScene extends Scene2D {
 		//Java's own `enemy.isAlive()` check after `damage()` returned: a hit that already kills
 		//does not also report an execution.
 		//
-		//Java's two mechanics differ in exactly one way that needs no Preparation model, so it is
-		//reproduced here rather than left to the shared threshold: `CombinedLethality` excludes
-		//`BOSS`/`MINIBOSS` targets outright (`!Char.hasProp(enemy, Property.BOSS) &&
-		//!Char.hasProp(enemy, Property.MINIBOSS)`, `Char.java` 543-545), while the Assassin's
-		//`Preparation.canKO` still allows them at *one fifth* of its threshold
-		//(`Preparation.java`: `(defender.HP/(float)defender.HT) < (KOThreshold()/5f)`). What stays
-		//approximated is the Assassin's threshold itself - Java indexes
-		//`AttackLevel.KOThreshold()`'s table by *turns of invisibility* as well as the talent rank
-		//(0.03-1.0, rising with both), where this port uses a flat `0.2*rank` that fires on any
-		//hit rather than only out of Preparation, and `CombinedLethality`'s own arming gate (the
-		//weapon must have changed since the tracker was set) is not modelled. See
-		//`PORT_COVERAGE.md`'s `attack()`-tail ordering row.
-		const combinedLethalityThreshold = defender.boss === true || defender.miniboss === true
+		//Java's two mechanics are now both real. `Preparation.canKO` (`Char.java` 524-539) fires
+		//only while the attacker's Preparation buff is up - i.e. only out of invisibility - and
+		//tests the target's HP against `AttackLevel.KOThreshold()`'s table, indexed by the level
+		//reached (1/3/5/9 turns invisible) and the `enhanced_lethality` rank, with a strict `<`
+		//and one fifth of the threshold for a `BOSS`/`MINIBOSS`. `CombinedLethality` (`543-545`)
+		//excludes those two properties outright and uses `<= 0.4*points/3`. What the two mechanics
+		//still read differently from Java: the test here is the *predicted* post-hit HP
+		//(`defender.hp - damage`, pre-shield) rather than the HP `damage()` actually left, so a
+		//shielded defender can be executed a little earlier than Java would; and
+		//`CombinedLethality`'s own arming gate (the attacking weapon must have changed since the
+		//tracker was set) is not modelled. See `PORT_COVERAGE.md`'s `attack()`-tail ordering row.
+		const predictedHp = defender.hp - damage;
+		const combinedThreshold = defender.boss === true || defender.miniboss === true
 			? 0 : 0.4 * this.talentRank('combined_lethality') / 3;
-		const assassinBase = enhancedLethalityThreshold(this.subclass(), this.talentRank('enhanced_lethality'));
-		const assassinLethalityThreshold = defender.boss === true || defender.miniboss === true ? assassinBase / 5 : assassinBase;
-		const lethalThreshold = Math.max(combinedLethalityThreshold, assassinLethalityThreshold);
-		if (attacker === this.hero && lethalThreshold > 0 && defender.hp - damage > 0 && defender.hp - damage <= defender.maxHp * lethalThreshold) {
+		const combinedLethality = combinedThreshold > 0 && predictedHp <= defender.maxHp * combinedThreshold;
+		const assassinLethality = attacker.prepLevel !== undefined && predictedHp > 0 && preparationCanKo(
+			predictedHp, defender.maxHp, attacker.prepLevel,
+			this.subclass() === 'assassin' ? this.talentRank('enhanced_lethality') : 0,
+			defender.boss === true || defender.miniboss === true,
+		);
+		if (attacker === this.hero && (combinedLethality || assassinLethality)) {
 			damage = defender.hp;
 			this.say(t('port.log.talentexecute'), 'positive');
 		}
