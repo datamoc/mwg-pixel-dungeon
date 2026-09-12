@@ -6787,12 +6787,18 @@ export class SewersScene extends Scene2D {
 				this.say(this.subclass() === 'warden' ? 'The blindweed shrouds you from sight.' : 'The blindweed clouds your senses.', this.subclass() === 'warden' ? 'positive' : 'negative');
 				break;
 			case 'fadeleaf': {
-				const candidates: Step[] = [];
-				for (let yy = 1; yy < this.level.height - 1; yy++) for (let xx = 1; xx < this.level.width - 1; xx++) {
-					if ((xx === this.hero.x && yy === this.hero.y) || !this.level.passable(xx, yy) || this.creatureAt(xx, yy)) continue;
-					candidates.push({ x: xx, y: yy });
-				}
-				if (candidates.length > 0) this.moveTo(this.hero, Random.element(candidates)!);
+				//`Fadeleaf.activate(ch)`: a Hero is teleported by `ScrollOfTeleportation.teleportChar`,
+				//and that method detaches `Roots` (`Buff.detach(ch, Roots.class)`, right after it
+				//places the char) - this plant is the canonical escape from entanglement, so without
+				//the detach it silently did nothing for a rooted hero, whose `moveTo` refuses
+				//outright. The same helper the teleportation scroll uses gives the replacement cell.
+				//Not modelled: Java teleports a *Mob* the same way (with a `HazardAssistTracker`),
+				//since plant activation here is hero-only, and a *Warden* with inter-floor
+				//teleporting allowed is sent one depth back instead of moving within the level - a
+				//floor-return transition this port does not have.
+				delete this.hero.buffs['roots'];
+				const fadeDestination = this.randomFreeCell(this.hero);
+				if (fadeDestination) this.moveTo(this.hero, fadeDestination);
 				this.say(t('port.log.fadeleafteleport'), 'positive');
 				break;
 			}

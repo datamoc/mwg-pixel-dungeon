@@ -1127,6 +1127,13 @@ Do not add new authored content as object literals or scattered constants in the
       seed stand-ins; exact teleport/TimeBubble behavior and full dew collection rules remain
       (Lotus seed preservation is done - see the `WandOfRegrowth` note in the next bullet;
       this line's earlier "Lotus preservation remains" was stale, contradicting it)).
+      **2026-09-12: Fadeleaf now frees a rooted hero.** `Plant.activate` teleports through
+      `ScrollOfTeleportation.teleportChar`, which detaches `Roots` as it places the char - the
+      plant path here never did, so a fadeleaf that fired while the hero was entangled (which the
+      Overgrowth glyph's own proc can do, and which is the one route to a plant that does not
+      need a step, the very thing roots prevents) silently did nothing. Fixed and
+      browser-verified. Still unported in the same plant: Java also teleports a Mob this way, and
+      sends a Warden one depth back when inter-floor teleporting is allowed.
 - [ ] Implement the remaining Java seed and dew behavior in high grass. Actual seed payloads
       (real `Generator` category roll, concrete class retained) and planting them (`plantSeed()`,
       instant activation with no growth delay - confirmed against `Plant.java`'s own
