@@ -1331,9 +1331,24 @@ Do not add new authored content as object literals or scattered constants in the
        `unfinished` in `languages.ts`. Browser verification owed per section 10 (no working
        browser tool in this session).
 
+       **Back-fill (2026-09-12): the five earliest machine drafts were 24-31 keys behind.**
+      `de`/`es`/`pt`/`it`/`pl` stood at 386/386/386/384/391 of EN's 415 - the alchemy
+      UI/log/name block, the five class `unlockhint` lines, the runestone/wand/DM-300 lines, and
+      the journal/bag labels had all been added to EN after those drafts and never propagated.
+      A missing key falls back to English silently, so nothing surfaced it. All 142 strings are
+      now translated and every non-English catalogue is 415/415 with 0 `{placeholder}`
+      mismatches. `i18nCheck` now compares *every* registered catalogue (key set + tokens)
+      against EN rather than only French, and asserts each catalogue has a provenance entry and
+      a real `LANGUAGES` code; `PORT_STRINGS` moved into `portStrings.ts` so the check can read
+      the tables without the `mwg` runtime. Verified by negative test (a deliberately removed
+      key fails the check). `npx tsc --noEmit`, `npm run build` and both suites green,
+      `i18nCheck: OK - 300 mapped keys, 415 port strings, 19 languages`.
+
        **7 locales remain** (see `languages.ts` for the full list). Their future catalogues must
       be machine-translated from `PORT_STRINGS_EN`, marked `MT` in source and in the provenance
-      map exported by `portStrings.ts`, then checked for key/placeholder parity before wiring.
+      map exported by `portStrings.ts`, then checked for key/placeholder parity before wiring;
+      `tools/i18nCheck.ts` now fails if a catalogue is incomplete or a key's tokens change, so
+      that parity is a gate rather than a one-off script.
       Font coverage is part of done, not a footnote - zh/ko/ja need the section-10 tofu check per
       locale (already done for zh/ko this session), not just key resolution. See
       `PORT_COVERAGE.md`'s locales row.

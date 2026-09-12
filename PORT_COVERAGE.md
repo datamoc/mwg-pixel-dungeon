@@ -2140,7 +2140,8 @@ is likewise owed per ROADMAP.md section 10.
 Ukrainian was verified the same programmatic way (415/415 keys, 0 missing/extra, 0
 `{placeholder}` mismatches - the EN table itself had grown to 415 keys by this pass, picking up
 the alchemy/unlockhint/journal/bag keys added since the Russian and Turkish drafts, which is why
-those two remain short of the current EN count until someone revisits them), formal «Ви» address
+those two were short of the current EN count at that moment; that gap was closed the same
+session in RU/TR and is not outstanding), formal «Ви» address
 matching Russian's register as the closest sibling locale; its live in-browser pass is likewise
 owed per ROADMAP.md section 10 (no working browser tool in that session either).
 The Italian draft also caught a real transcription hazard worth reusing: a scripted
@@ -2160,6 +2161,31 @@ Dutch was verified the same programmatic way (415/415 keys, 0 missing/extra, 0
 `{placeholder}` mismatches); its live in-browser pass is likewise owed per ROADMAP.md section 10
 (no working browser tool in that session). SPD ships Dutch as `unfinished`, and this port-only
 draft is `MT`/`machine` too. Informal je-forms.
+
+**Found and fixed 2026-09-12: five more locales had silently drifted behind the EN table.**
+`de`/`es`/`pt`/`it`/`pl` stood at 386/386/386/384/391 of EN's 415 keys - 142 strings missing
+across the five (the alchemy UI/log/name block, the five class `unlockhint` lines,
+`port.log.stoneflock`/`stoneaggression`/`wandcorrosion`/`wandcorruption`/`dm300arrives`, and the
+journal/bag UI labels, all added to EN after those drafts were written and never propagated).
+This is the same drift class the Ukrainian pass found in RU/TR, and it is invisible by
+construction: `mwg/i18n` falls back to English for a missing key, so the failure mode is not an
+error or a raw key but a single English sentence in the middle of an otherwise fully translated
+run. All 142 are now translated in the same voice as each block, giving every non-English
+catalogue 415/415 keys with 0 `{placeholder}` mismatches. Italian additionally appeared to be
+missing the two wandmaker lines, but that was an artifact of the ad-hoc audit script's regex
+not matching double-quoted values containing escaped `\"` - a reminder to compare the imported
+tables rather than scrape the source.
+
+The invariant is now enforced instead of hoped for. `tools/i18nCheck.ts` check 3 compares
+**every** registered catalogue's key set and `{placeholder}` tokens against EN; it previously
+compared only French (and only French's placeholders), which is precisely why five incomplete
+locales passed it. Check 3c asserts every catalogue has a `PORT_TRANSLATION_ORIGIN` entry and
+maps to a real `LANGUAGES` code - the old origin check listed nine hardcoded codes and had
+already missed `uk`/`hu`/`nl`. To let the check compare tables without importing the `mwg`
+runtime, the assembled catalogue map moved out of `index.ts` into `portStrings.ts` as an
+exported `PORT_STRINGS`, which `index.ts` now imports like any other data. The new check was
+verified to *fail* on a deliberately removed key before being trusted - not merely observed to
+pass.
 
 **Found and fixed while verifying Spanish, but a real bug affecting French and German too, not
 new to this pass**: `main.ts`'s `attack()` built the combat-log `object` slot for a hero

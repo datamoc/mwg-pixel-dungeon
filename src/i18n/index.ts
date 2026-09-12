@@ -15,21 +15,7 @@
 
 import { I18n } from 'mwg';
 import { SPD_MESSAGES } from '../generated/spdMessages';
-import {
-	PORT_STRINGS_EN,
-	PORT_STRINGS_FR,
-	PORT_STRINGS_DE,
-	PORT_STRINGS_ES,
-	PORT_STRINGS_PT,
-	PORT_STRINGS_IT,
-	PORT_STRINGS_PL,
-	PORT_STRINGS_RU,
-	PORT_STRINGS_TR,
-	PORT_STRINGS_UK,
-	PORT_STRINGS_HU,
-	PORT_STRINGS_NL,
-	PORT_TRANSLATION_ORIGIN,
-} from './portStrings';
+import { PORT_STRINGS, PORT_TRANSLATION_ORIGIN } from './portStrings';
 import { LANGUAGES, detectLanguage, languageByCode, type Language } from './languages';
 
 export { LANGUAGES, languageByCode, type Language, type LanguageStatus } from './languages';
@@ -40,29 +26,16 @@ export const t = I18n.t;
 export const has = I18n.has;
 
 /**
- * This port's own strings, per language.
+ * This port's own per-language strings live in `portStrings.ts`, already assembled as
+ * `PORT_STRINGS`.
  *
- * English and French are human-written; German, Spanish, Portuguese, Italian, Polish,
- * Russian, Turkish, Ukrainian, Hungarian and Dutch are machine-translated first drafts. Their
- * origin is also exported as data from `portStrings.ts`
- * so audits can distinguish `human` from `machine` without inferring it from language status.
- * The remaining languages still resolve through the base catalog for port-only prose until an
- * explicitly marked `MT` catalogue is added.
+ * English and French are human-written; German, Spanish, Portuguese, Italian, Polish, Russian,
+ * Turkish, Ukrainian, Hungarian and Dutch are machine-translated first drafts. Their origin is
+ * exported as data from `portStrings.ts` too, so audits can distinguish `human` from `machine`
+ * without inferring it from the language's SPD status. The remaining SPD languages still
+ * resolve through the base catalog for port-only prose until an explicitly marked `MT`
+ * catalogue is added.
  */
-const PORT_STRINGS: Record<string, Record<string, string>> = {
-	en: PORT_STRINGS_EN,
-	fr: PORT_STRINGS_FR,
-	de: PORT_STRINGS_DE,
-	es: PORT_STRINGS_ES,
-	pt: PORT_STRINGS_PT,
-	it: PORT_STRINGS_IT,
-	pl: PORT_STRINGS_PL,
-	ru: PORT_STRINGS_RU,
-	tr: PORT_STRINGS_TR,
-	uk: PORT_STRINGS_UK,
-	hu: PORT_STRINGS_HU,
-	nl: PORT_STRINGS_NL,
-};
 
 /**
  * SPD ships no right-to-left language, so every catalog here is left-to-right. The direction

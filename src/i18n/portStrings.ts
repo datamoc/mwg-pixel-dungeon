@@ -1395,6 +1395,38 @@ export const PORT_STRINGS_DE: Record<string, string> = {
 	// MT: no Java source key exists for this port-only message.
 	'port.log.missilebroken': 'Dein Projektil zerbricht!',
 	'port.log.rockfallkill': 'Die fallenden Felsen zerschmettern dich!',
+	// MT: back-filled after the EN table grew past this draft (the alchemy UI/log/name strings,
+	// the five class unlock hints, the runestone/wand/DM-300 combat lines, and the journal/bag
+	// UI labels). Same provenance as the rest of this block; see ROADMAP.md section 8.
+	'port.ui.alchemy.title': 'Wähle ein Rezept',
+	'port.log.alchemy.noingredients': 'Du hast keine Zutaten für die verfügbaren Rezepte.',
+	'port.log.alchemy.unavailable': 'Dieses Rezept ist nicht mehr verfügbar.',
+	'port.log.alchemy.crafted': 'Du stellst {item} her.',
+	'port.log.alchemize.energized': 'Du hast {item} mit Energie geladen.',
+	'port.log.alchemize.nothing': 'Du hast nichts, was du mit Energie laden könntest.',
+	'port.name.alchemy.scrolltostone': 'Schriftrolle des Steins',
+	'port.name.alchemy.exoticpotion': 'exotischer Trank',
+	'port.name.alchemy.exoticscroll': 'exotische Schriftrolle',
+	'port.name.alchemy.enhancebomb': 'verbesserte Bombe',
+	'port.class.mage.unlockhint': 'Freischalten: benutze eine Schriftrolle der Verbesserung.',
+	'port.class.rogue.unlockhint': 'Freischalten: führe 10 Überraschungsangriffe aus.',
+	'port.class.huntress.unlockhint': 'Freischalten: wirf 10-mal.',
+	'port.class.duelist.unlockhint': 'Freischalten: verbessere eine Waffe auf +2.',
+	'port.class.cleric.unlockhint': 'Freischalten: gewinne einen Lauf.',
+	'port.log.stoneflock': 'Eine magische Herde versammelt sich um dich ({count} Schafe).',
+	'port.log.stoneaggression': 'Der Stein markiert {target} als Ziel der umliegenden Feinde.',
+	'port.log.wandcorrosion': 'Ätzendes Gas haftet an {target}.',
+	'port.log.wandcorruption': '{target} wird korrumpiert und wechselt auf deine Seite!',
+	'port.log.dm300arrives': 'Der Boden bebt - DM-300 ist hier.',
+	'port.ui.journal.guide': 'Leitfaden',
+	'port.ui.journal.items': 'Gegenstände',
+	'port.ui.journal.potions': 'Tränke',
+	'port.ui.journal.scrolls': 'Schriftrollen',
+	'port.ui.journal.rings': 'Ringe',
+	'port.ui.bag.all': 'Alle',
+	'port.ui.bag.use': 'Benutzen',
+	'port.ui.bag.gear': 'Ausrüstung',
+	'port.ui.bag.quest': 'Auftrag',
 };
 
 /**
@@ -1817,6 +1849,38 @@ export const PORT_STRINGS_ES: Record<string, string> = {
 	// MT: no Java source key exists for this port-only message.
 	'port.log.missilebroken': '¡Tu proyectil se rompe!',
 	'port.log.rockfallkill': '¡Las rocas que caen te aplastan!',
+	// MT: back-filled after the EN table grew past this draft (the alchemy UI/log/name strings,
+	// the five class unlock hints, the runestone/wand/DM-300 combat lines, and the journal/bag
+	// UI labels). Same provenance as the rest of this block; see ROADMAP.md section 8.
+	'port.ui.alchemy.title': 'Elige una receta',
+	'port.log.alchemy.noingredients': 'No tienes ingredientes para las recetas disponibles.',
+	'port.log.alchemy.unavailable': 'Esa receta ya no está disponible.',
+	'port.log.alchemy.crafted': 'Fabricas {item}.',
+	'port.log.alchemize.energized': 'Has energizado {item}.',
+	'port.log.alchemize.nothing': 'No tienes nada que energizar.',
+	'port.name.alchemy.scrolltostone': 'pergamino de piedra',
+	'port.name.alchemy.exoticpotion': 'poción exótica',
+	'port.name.alchemy.exoticscroll': 'pergamino exótico',
+	'port.name.alchemy.enhancebomb': 'bomba mejorada',
+	'port.class.mage.unlockhint': 'Desbloqueo: usa un pergamino de mejora.',
+	'port.class.rogue.unlockhint': 'Desbloqueo: asesta 10 ataques por sorpresa.',
+	'port.class.huntress.unlockhint': 'Desbloqueo: lanza algo 10 veces.',
+	'port.class.duelist.unlockhint': 'Desbloqueo: sube un arma a +2.',
+	'port.class.cleric.unlockhint': 'Desbloqueo: gana una partida.',
+	'port.log.stoneflock': 'Un rebaño mágico se reúne a tu alrededor ({count} ovejas).',
+	'port.log.stoneaggression': 'La piedra marca a {target} como objetivo de los enemigos cercanos.',
+	'port.log.wandcorrosion': 'El gas corrosivo se adhiere a {target}.',
+	'port.log.wandcorruption': '¡{target} queda corrompido y se pasa a tu lado!',
+	'port.log.dm300arrives': 'El suelo tiembla - DM-300 está aquí.',
+	'port.ui.journal.guide': 'Guía',
+	'port.ui.journal.items': 'Objetos',
+	'port.ui.journal.potions': 'Pociones',
+	'port.ui.journal.scrolls': 'Pergaminos',
+	'port.ui.journal.rings': 'Anillos',
+	'port.ui.bag.all': 'Todo',
+	'port.ui.bag.use': 'Usar',
+	'port.ui.bag.gear': 'Equipo',
+	'port.ui.bag.quest': 'Misión',
 };
 
 /**
@@ -2240,6 +2304,38 @@ export const PORT_STRINGS_PT: Record<string, string> = {
 	// MT: no Java source key exists for this port-only message.
 	'port.log.missilebroken': 'Seu projétil se quebra!',
 	'port.log.rockfallkill': 'As pedras que caem esmagam você!',
+	// MT: back-filled after the EN table grew past this draft (the alchemy UI/log/name strings,
+	// the five class unlock hints, the runestone/wand/DM-300 combat lines, and the journal/bag
+	// UI labels). Same provenance as the rest of this block; see ROADMAP.md section 8.
+	'port.ui.alchemy.title': 'Escolha uma receita',
+	'port.log.alchemy.noingredients': 'Você não tem ingredientes para as receitas disponíveis.',
+	'port.log.alchemy.unavailable': 'Essa receita não está mais disponível.',
+	'port.log.alchemy.crafted': 'Você fabrica {item}.',
+	'port.log.alchemize.energized': 'Você energizou {item}.',
+	'port.log.alchemize.nothing': 'Você não tem nada para energizar.',
+	'port.name.alchemy.scrolltostone': 'pergaminho de pedra',
+	'port.name.alchemy.exoticpotion': 'poção exótica',
+	'port.name.alchemy.exoticscroll': 'pergaminho exótico',
+	'port.name.alchemy.enhancebomb': 'bomba aprimorada',
+	'port.class.mage.unlockhint': 'Desbloqueio: use um pergaminho de melhoria.',
+	'port.class.rogue.unlockhint': 'Desbloqueio: acerte 10 ataques surpresa.',
+	'port.class.huntress.unlockhint': 'Desbloqueio: arremesse algo 10 vezes.',
+	'port.class.duelist.unlockhint': 'Desbloqueio: melhore uma arma até +2.',
+	'port.class.cleric.unlockhint': 'Desbloqueio: vença uma partida.',
+	'port.log.stoneflock': 'Um rebanho mágico se reúne ao seu redor ({count} ovelhas).',
+	'port.log.stoneaggression': 'A pedra marca {target} como alvo dos inimigos próximos.',
+	'port.log.wandcorrosion': 'Gás corrosivo se agarra a {target}.',
+	'port.log.wandcorruption': '{target} é corrompido e passa para o seu lado!',
+	'port.log.dm300arrives': 'O chão treme - o DM-300 chegou.',
+	'port.ui.journal.guide': 'Guia',
+	'port.ui.journal.items': 'Itens',
+	'port.ui.journal.potions': 'Poções',
+	'port.ui.journal.scrolls': 'Pergaminhos',
+	'port.ui.journal.rings': 'Anéis',
+	'port.ui.bag.all': 'Tudo',
+	'port.ui.bag.use': 'Usar',
+	'port.ui.bag.gear': 'Equipamento',
+	'port.ui.bag.quest': 'Missão',
 };
 
 /**
@@ -2662,6 +2758,38 @@ export const PORT_STRINGS_IT: Record<string, string> = {
 	// MT: no Java source key exists for this port-only message.
 	'port.log.missilebroken': 'Il tuo proiettile si rompe!',
 	'port.log.rockfallkill': 'Le rocce che cadono ti schiacciano!',
+	// MT: back-filled after the EN table grew past this draft (the alchemy UI/log/name strings,
+	// the five class unlock hints, the runestone/wand/DM-300 combat lines, and the journal/bag
+	// UI labels). Same provenance as the rest of this block; see ROADMAP.md section 8.
+	'port.ui.alchemy.title': 'Scegli una ricetta',
+	'port.log.alchemy.noingredients': 'Non hai ingredienti per le ricette disponibili.',
+	'port.log.alchemy.unavailable': 'Quella ricetta non è più disponibile.',
+	'port.log.alchemy.crafted': 'Fabbrichi {item}.',
+	'port.log.alchemize.energized': 'Hai energizzato {item}.',
+	'port.log.alchemize.nothing': 'Non hai nulla da energizzare.',
+	'port.name.alchemy.scrolltostone': 'pergamena di pietra',
+	'port.name.alchemy.exoticpotion': 'pozione esotica',
+	'port.name.alchemy.exoticscroll': 'pergamena esotica',
+	'port.name.alchemy.enhancebomb': 'bomba potenziata',
+	'port.class.mage.unlockhint': 'Sblocco: usa una pergamena di miglioramento.',
+	'port.class.rogue.unlockhint': 'Sblocco: metti a segno 10 attacchi a sorpresa.',
+	'port.class.huntress.unlockhint': 'Sblocco: lancia qualcosa 10 volte.',
+	'port.class.duelist.unlockhint': 'Sblocco: porta un\'arma a +2.',
+	'port.class.cleric.unlockhint': 'Sblocco: vinci una partita.',
+	'port.log.stoneflock': 'Un gregge magico si raduna intorno a te ({count} pecore).',
+	'port.log.stoneaggression': 'La pietra indica {target} come bersaglio dei nemici vicini.',
+	'port.log.wandcorrosion': 'Il gas corrosivo si aggrappa a {target}.',
+	'port.log.wandcorruption': '{target} viene corrotto e passa dalla tua parte!',
+	'port.log.dm300arrives': 'Il suolo trema - DM-300 è qui.',
+	'port.ui.journal.guide': 'Guida',
+	'port.ui.journal.items': 'Oggetti',
+	'port.ui.journal.potions': 'Pozioni',
+	'port.ui.journal.scrolls': 'Pergamene',
+	'port.ui.journal.rings': 'Anelli',
+	'port.ui.bag.all': 'Tutto',
+	'port.ui.bag.use': 'Usa',
+	'port.ui.bag.gear': 'Equipaggiamento',
+	'port.ui.bag.quest': 'Missione',
 };
 
 /**
@@ -3089,6 +3217,33 @@ export const PORT_STRINGS_PL: Record<string, string> = {
 	// MT: no Java source key exists for this port-only message.
 	'port.log.missilebroken': 'Twój pocisk pęka!',
 	'port.log.rockfallkill': 'Spadające skały miażdżą cię!',
+	// MT: back-filled after the EN table grew past this draft (the alchemy UI/log/name strings,
+	// the five class unlock hints, the runestone/wand/DM-300 combat lines, and the bag UI
+	// labels). Same provenance as the rest of this block; see ROADMAP.md section 8.
+	'port.ui.alchemy.title': 'Wybierz przepis',
+	'port.log.alchemy.noingredients': 'Nie masz składników do dostępnych przepisów.',
+	'port.log.alchemy.unavailable': 'Ten przepis nie jest już dostępny.',
+	'port.log.alchemy.crafted': 'Wytwarzasz {item}.',
+	'port.log.alchemize.energized': 'Ładujesz {item} energią.',
+	'port.log.alchemize.nothing': 'Nie masz niczego do naładowania energią.',
+	'port.name.alchemy.scrolltostone': 'zwój kamienia',
+	'port.name.alchemy.exoticpotion': 'egzotyczny eliksir',
+	'port.name.alchemy.exoticscroll': 'egzotyczny zwój',
+	'port.name.alchemy.enhancebomb': 'ulepszona bomba',
+	'port.class.mage.unlockhint': 'Odblokowanie: użyj zwoju ulepszenia.',
+	'port.class.rogue.unlockhint': 'Odblokowanie: przeprowadź 10 ataków z zaskoczenia.',
+	'port.class.huntress.unlockhint': 'Odblokowanie: rzuć czymś 10 razy.',
+	'port.class.duelist.unlockhint': 'Odblokowanie: ulepsz broń do +2.',
+	'port.class.cleric.unlockhint': 'Odblokowanie: wygraj rozgrywkę.',
+	'port.log.stoneflock': 'Wokół ciebie zbiera się magiczne stado ({count} owiec).',
+	'port.log.stoneaggression': 'Kamień oznacza {target} jako cel pobliskich wrogów.',
+	'port.log.wandcorrosion': 'Żrący gaz przywiera do {target}.',
+	'port.log.wandcorruption': '{target} zostaje skażony i przechodzi na twoją stronę!',
+	'port.log.dm300arrives': 'Ziemia drży - DM-300 tu jest.',
+	'port.ui.bag.all': 'Wszystko',
+	'port.ui.bag.use': 'Użyj',
+	'port.ui.bag.gear': 'Ekwipunek',
+	'port.ui.bag.quest': 'Zadanie',
 };
 
 /**
@@ -5245,6 +5400,29 @@ export const PORT_STRINGS_NL: Record<string, string> = {
 };
 
 
+
+/**
+ * Every port-only catalogue, keyed by SPD's language code (`languages.ts`).
+ *
+ * Assembled here rather than in `index.ts` so tooling can compare the catalogues without
+ * importing the `mwg` runtime: `tools/i18nCheck.ts` asserts that each non-English catalogue
+ * carries exactly English's key set with exactly its `{placeholder}` tokens, the invariant
+ * that silently drifted for five locales before that check existed.
+ */
+export const PORT_STRINGS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+	en: PORT_STRINGS_EN,
+	fr: PORT_STRINGS_FR,
+	de: PORT_STRINGS_DE,
+	es: PORT_STRINGS_ES,
+	pt: PORT_STRINGS_PT,
+	it: PORT_STRINGS_IT,
+	pl: PORT_STRINGS_PL,
+	ru: PORT_STRINGS_RU,
+	tr: PORT_STRINGS_TR,
+	uk: PORT_STRINGS_UK,
+	hu: PORT_STRINGS_HU,
+	nl: PORT_STRINGS_NL,
+};
 
 /**
  * Provenance is deliberately data as well as a nearby comment: tooling and reviewers can

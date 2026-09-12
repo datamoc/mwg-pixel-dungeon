@@ -13,7 +13,7 @@
  */
 
 import { SPD_MESSAGES } from '../src/generated/spdMessages';
-import { PORT_STRINGS_EN, PORT_STRINGS_FR, PORT_TRANSLATION_ORIGIN } from '../src/i18n/portStrings';
+import { PORT_STRINGS, PORT_TRANSLATION_ORIGIN } from '../src/i18n/portStrings';
 import { CLASSES, CLASS_UNLOCK_HINT } from '../src/classes';
 import { readFileSync } from 'node:fs';
 import { LANGUAGES, detectLanguage } from '../src/i18n/languages';
@@ -30,6 +30,8 @@ import {
 	POTION_APPEARANCE_KEYS,
 	SCROLL_APPEARANCE_KEYS,
 } from '../src/i18n/spdKeys';
+
+const PORT_STRINGS_EN = PORT_STRINGS.en;
 
 let failures = 0;
 function check(what: string, ok: boolean, detail = ''): void {
@@ -131,27 +133,39 @@ for (const [, keys] of tables) {
 	for (const key of keys) check(`${key} is not its own value`, base[key] !== key);
 }
 
-// 3. French covers every port-only string English has. SPD's own keys need no such check:
-//    a locale that omits one falls back to the base catalog by design.
-for (const key of Object.keys(PORT_STRINGS_EN)) {
-	check(`French has ${key}`, PORT_STRINGS_FR[key] !== undefined);
-}
-check('French adds no key English lacks', Object.keys(PORT_STRINGS_FR).every((key) => key in PORT_STRINGS_EN));
-
-// 3c. Every port-only catalogue is labelled in source. This prevents a machine draft from
-// being mistaken for a reviewed translation when a new locale is wired into `index.ts`.
-for (const code of ['en', 'fr', 'de', 'es', 'pt', 'it', 'pl', 'ru', 'tr']) {
-	check(`port locale ${code} declares translation origin`, PORT_TRANSLATION_ORIGIN[code] !== undefined);
-}
-
-// 4. a translated string keeps the placeholders its English original declares. A dropped
-//    token silently loses a number the player needed; an invented one renders as literal
-//    braces.
+// 3. every port-only catalogue is a complete, token-preserving translation of English. SPD's
+//    own keys need no such check: a locale that omits one falls back to the base catalog by
+//    design. This is the check that would have caught five locales (de/es/pt/it/pl) silently
+//    falling 24-31 keys behind when the EN table grew past them - a fallback is *safe*, so
+//    nothing else notices, but the player then reads English mid-sentence.
 const tokensOf = (text: string): string[] => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
-for (const [key, english] of Object.entries(PORT_STRINGS_EN)) {
-	const french = PORT_STRINGS_FR[key];
-	if (french === undefined) continue;
-	check(`${key} keeps its tokens in French`, tokensOf(english).join() === tokensOf(french).join(), `en=[${tokensOf(english)}] fr=[${tokensOf(french)}]`);
+for (const [code, catalog] of Object.entries(PORT_STRINGS)) {
+	if (code === 'en') continue;
+	const englishKeys = Object.keys(PORT_STRINGS_EN);
+	const missing = englishKeys.filter((key) => catalog[key] === undefined);
+	check(`${code} has every English port string`, missing.length === 0, `${missing.length} missing: ${missing.slice(0, 6).join(', ')}`);
+	const extra = Object.keys(catalog).filter((key) => !(key in PORT_STRINGS_EN));
+	check(`${code} adds no key English lacks`, extra.length === 0, extra.slice(0, 6).join(', '));
+	for (const key of englishKeys) {
+		const translated = catalog[key];
+		if (translated === undefined) continue;
+		check(
+			`${key} keeps its tokens in ${code}`,
+			tokensOf(PORT_STRINGS_EN[key]).join() === tokensOf(translated).join(),
+			`en=[${tokensOf(PORT_STRINGS_EN[key])}] ${code}=[${tokensOf(translated)}]`
+		);
+	}
+}
+
+// 3c. Every port-only catalogue is labelled in source and belongs to a real SPD language. This
+// prevents a machine draft from being mistaken for a reviewed translation, and a catalogue from
+// being registered for a language the picker cannot offer (or vice versa).
+for (const code of Object.keys(PORT_TRANSLATION_ORIGIN)) {
+	check(`registered port locale ${code} has a catalogue`, PORT_STRINGS[code] !== undefined);
+}
+for (const code of Object.keys(PORT_STRINGS)) {
+	check(`port locale ${code} declares translation origin`, PORT_TRANSLATION_ORIGIN[code] !== undefined);
+	check(`port locale ${code} is an SPD language`, LANGUAGES.some((language) => language.code === code));
 }
 
 // 5. every locale parses, declares itself, and is a real BCP-47 tag `Intl.PluralRules` takes
