@@ -10,6 +10,7 @@ import { verifyMovement } from './verifyMovement.mjs';
 import { verifyHeroTurn } from './verifyHeroTurn.mjs';
 import { verifyHeroActions } from './verifyHeroActions.mjs';
 import { verifySearch } from './verifySearch.mjs';
+import { verifyCone } from './verifyCone.mjs';
 
 // Compile the actual implementation into a private temporary CommonJS tree. Type-only
 // mwg imports disappear, so tests never load Pixi, a DOM, or the full framework barrel.
@@ -34,7 +35,7 @@ try {
 	for (const file of ['simulation/movement', 'simulation/heroTurn', 'simulation/hunger', 'simulation/turns', 'adapters/sceneSimulation',
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActions',
-		'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/tenguAbility', 'simulation/defenderDamageCurves', 'simulation/preparation']) {
+		'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/tenguAbility', 'simulation/defenderDamageCurves', 'simulation/preparation', 'mechanics/cone']) {
 		compile(new URL(`../src/${file}.ts`, import.meta.url), `${file}.js`);
 	}
 	// The framework half of the harness is the INSTALLED package - the same
@@ -343,6 +344,7 @@ try {
 	verifyCombat(require, check);
 	verifyHeroActions(require, check);
 	verifySearch(require, check);
+	verifyCone(require, check);
 	console.log(`${passed} simulation checks passed.`);
 } finally {
 	// Only the fresh directory returned by mkdtempSync above is removed.

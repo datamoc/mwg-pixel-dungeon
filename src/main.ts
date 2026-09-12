@@ -221,6 +221,7 @@ import {
 	type BuffId,
 } from './combat';
 import { nextEntityId } from './simulation/entityId';
+import { coneCells } from './mechanics/cone';
 import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LIMITED_DROP_DECAY, BASE_KIND_ALIASES, NPC_KINDS, BOSS_KINDS, MINIBOSS_KINDS, UNDEAD_KINDS, isUndeadOrDemonic, IMMOVABLE_KINDS, NEVER_SLEEPS_KINDS, FLYING_KINDS, DEPTH_SCALED_STATS, SPRITE_KIND_OVERRIDE, MWL_AI_PROFILES, type AnyMonsterId, type MonsterId } from './monsters';
 
 /**
@@ -4772,12 +4773,24 @@ export class SewersScene extends Scene2D {
 	}
 
 	/**
+	 * One ray of a `ConeAOE`: Java's `new Ballistica(source, cell, ballisticaParams).subPath(1, dist)`
+	 * where the wand's params are `STOP_SOLID | STOP_TARGET`. MWG's `ballistica` covers the terrain
+	 * half (`stop: 'impassable'`, Java's `Level.solid`), and the framework's tracer has no concept of
+	 * characters, so the target half is the first creature the path meets - Java includes the
+	 * stopping cell in the path, so that cell is kept rather than dropped.
+	 */
+	private coneRay(from: Step, to: Step): Step[] {
+		const cells = Roguelike.ballistica(this.level, from, to, { stop: 'impassable' }).cells.slice(1);
+		const blocker = cells.findIndex((cell) => this.creatureAt(cell.x, cell.y) !== null);
+		return blocker === -1 ? cells : cells.slice(0, blocker + 1);
+	}
+
+	/**
 	 * `WandOfRegrowth.onZap()` (checked against the local SPD checkout's
-	 * `WandOfRegrowth.java`). The charge cost, grass budget, root duration, and seed chances
-	 * follow Java. The real effect uses `ConeAOE` from the aimed Ballistica path; this port has
-	 * no cell picker and its ranged action already selects a creature, so the same target is
-	 * used as the centre of a Chebyshev circle. That preserves the affected-area shape and
-	 * distance scaling while explicitly omitting the exact cone orientation.
+	 * `WandOfRegrowth.java`, tag v3.3.8). The charge cost, grass budget, root duration, seed
+	 * chances, the bolt path and the Lotus placement all follow Java, and the affected cells are now
+	 * Java's own `ConeAOE` rather than a target-centred circle: range `2 + 2*charges`, arc
+	 * `20 + 10*charges` degrees, rays cast with `STOP_SOLID | STOP_TARGET` (see `coneCells`).
 	 */
 	private useRegrowthWand(target: Creature, charges: number): void {
 		const level = Math.max(0, this.degradedLevel(this.weaponLevel));
@@ -4789,19 +4802,29 @@ export class SewersScene extends Scene2D {
 		//grass and for the Lotus when the aimed cell is taken. See the `line` comment below for why
 		//this is a straight line rather than a wall-stopping one.
 		const boltPath = Roguelike.traceLine({ x: this.hero.x, y: this.hero.y }, { x: target.x, y: target.y });
-		const cells: { x: number; y: number }[] = [];
-		for (let y = Math.max(0, target.y - radius); y <= Math.min(this.level.height - 1, target.y + radius); y++) {
-			for (let x = Math.max(0, target.x - radius); x <= Math.min(this.level.width - 1, target.x + radius); x++) {
-				const distance = Math.max(Math.abs(x - target.x), Math.abs(y - target.y));
-				if (distance <= radius) cells.push({ x, y });
-			}
-		}
-		let eligible = cells.filter(({ x, y }) => {
+		//`WandOfRegrowth.fx()` 246-252: `new ConeAOE(bolt, 2 + 2*chargesPerCast(),
+		//20 + 10*chargesPerCast(), STOP_SOLID | STOP_TARGET)`.
+		const cone = coneCells({
+			source: { x: this.hero.x, y: this.hero.y },
+			target: { x: target.x, y: target.y },
+			degrees: 20 + 10 * charges,
+			maxDistance: radius,
+			width: this.level.width,
+			height: this.level.height,
+			trace: (from, to) => this.coneRay(from, to),
+		});
+		let eligible = cone.cells.filter(({ x, y }) => {
 			const cell = this.level.index(x, y);
-			return (this.level.get(x, y) === FLOOR || this.level.get(x, y) === GRASS || this.level.get(x, y) === HIGH_GRASS)
-				&& !this.isChasmCell(x, y)
-				&& !this.portedFeatures.kindAt(cell)
-				&& !this.manualPlants.has(cell);
+			if (this.level.get(x, y) !== FLOOR && this.level.get(x, y) !== GRASS && this.level.get(x, y) !== HIGH_GRASS) return false;
+			if (this.isChasmCell(x, y) || this.portedFeatures.kindAt(cell) || this.manualPlants.has(cell)) return false;
+			//`WandOfRegrowth.onZap()` drops a cell whose character is `IMMOVABLE` from the cone before
+			//the roots pass (`Char.hasProp(Actor.findChar(cell), Char.Property.IMMOVABLE)`, checked on
+			//each cell as it is filtered), so a pylon, sentry or similarly fixed actor is neither
+			//grassed under nor rooted. This port reads Java's `Property.IMMOVABLE` through the MWL
+			//actor flags, the same set the knockback path already uses.
+			const occupant = this.creatureAt(x, y);
+			if (occupant?.kind !== undefined && IMMOVABLE_KINDS.has(occupant.kind)) return false;
+			return true;
 		});
 		for (const { x, y } of eligible) {
 			const creature = this.creatureAt(x, y);

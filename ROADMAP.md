@@ -1198,16 +1198,24 @@ Do not add new authored content as object literals or scattered constants in the
       regional growth, roots, high-grass budget, seed/dewcatcher/seedpod chances, and persistent
       degradation counters are now live too. Lotus now spawns on qualifying casts, expires on
       its Java HP timer, and preserves nearby non-Rotberry seeds with the real level-scaled
-      chance. **2026-09-12: the wand's bolt path and Lotus placement are now exact** - the centre
-      line is Java's `bolt.path` through MWG's `traceLine` (an uncursed wand's own
-      `collisionProperties` is `WONT_STOP`), the cells are shuffled at Java's own point in the
-      sequence, and the Lotus takes the aimed cell when free or the first free cell walking that
-      path backwards; browser-verified live (`tools/scratch/regrowth-path-livecheck.mjs`). What
-      remains is the cone *shape*: Java's `ConeAOE` sector (range `2 + 2*charges`, `20 + 10*charges`
-      degrees, rays every 0.5 degrees, unioned `Ballistica.subPath`s with `STOP_SOLID|STOP_TARGET`)
-      instead of a Chebyshev circle - a shared task, since `ConeAOE` also backs this port's
-      Fireblast wand and DM300's gas check plus seven unported features (see `PORT_COVERAGE.md`'s
-      Regrowth row for the exact parameters). Exact waterskin/dewdrop interactions remain.
+      chance. **2026-09-12: the wand now works over Java's own `ConeAOE`.** `src/mechanics/cone.ts`
+      is a line-for-line translation (arc `20 + 10*charges` degrees, range `2 + 2*charges`, rays every
+      0.5 degrees plus the radius-1 ring where the radius is at least 4, each struck cell unioned with
+      its `Ballistica.subPath(1, dist)`, Java's `float` precision kept so the rim samples match), with
+      the ray's `STOP_SOLID` half from MWG's `ballistica({stop: 'impassable'})` and its `STOP_TARGET`
+      half from the first creature on the path; the bolt path and Lotus placement became exact in the
+      same pass, and a cell holding an `IMMOVABLE` character is now dropped from the cone before the
+      roots pass. Verified two ways: seven headless geometry checks in `tools/verifyCone.mjs` (part of
+      `npm run test:simulation`, now 61 checks) and ten live assertions in
+      `tools/scratch/regrowth-path-livecheck.mjs`, including that every changed cell is inside the
+      sector while the old circle version changed cells outside it, and that a pylon is neither
+      grassed under nor rooted while an ordinary monster beside it is both. This wand's own remainder
+      is now only the Dwarf King's boss-challenge-badge flag and Java's `fx` animation.
+      **`ConeAOE` has two more live consumers here, both now wiring jobs rather than geometry jobs:**
+      `WandOfFireblast.fx()` (`3 + 2*charges` range, `30 + 20*charges` degrees,
+      `STOP_TARGET|STOP_SOLID|IGNORE_SOFT_SOLID`) and `DM300.java` 203-208 (a 30-degree infinite-range
+      `STOP_SOLID` cone deciding that an unreachable hero can still be gassed - the "trickshotting"
+      named in `takeDM300Turn`'s comment). Exact waterskin/dewdrop interactions remain.
 - [x] Match hunger and starvation damage exactly (`Hunger.act()`'s real `partialDamage`
       fractional accrual and crossing-into-STARVING 1-damage hit, replacing the former flat
       "every 10 turns" guess). Java has no attack-delay/accuracy penalty while merely hungry
@@ -2180,6 +2188,9 @@ compatibility notes and an API report entry in MWG before this port adopts it; P
       sector directly; this port's Regrowth wand, Fireblast wand and DM-300's gas check are three
       live consumers, and there are seven more in SPD that are not ported yet. Recorded rather than
       requested upstream in a patch, because the shape is a design decision for the framework.
+      **2026-09-12 update:** this port no longer waits on it - `src/mechanics/cone.ts` is the
+      translation, so the proposal is now (a) for other games and (b) a future consolidation, where
+      the framework could take the shape and this port could delete its copy.
 
 ### Explicitly out of scope for MWG
 
