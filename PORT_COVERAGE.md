@@ -507,10 +507,15 @@ services enabled at 2000 favor, Harden opens the picker and clicking it through 
 pointer path hardens the equipped weapon and charges 500, a hardened item below +6 never
 loses its enchant in 200 rolls, and at +6 the hardening itself breaks at Java's 10%.
 **Correction found while implementing it: this file's own earlier claim that hardening is
-granted by `StoneOfEnchantment` was wrong** - it is this Blacksmith service. Still open, and
-each honestly smaller than "the menu": Java's other four services (pickaxe buy-back,
-`upgrade` below +2, `smith`, cash out), missile/seal transfer details, and alternative quest
-reward bookkeeping.
+granted by `StoneOfEnchantment` was wrong** - it is this Blacksmith service. **The paid `upgrade` (`1000 + 1000*upgrades`, an identified, uncursed, upgradable item
+below +2) and `cash out` (the whole favor as gold, 1 for 1, behind Java's own
+`cashout_verify` confirm) are ported too**, so the window carries four of Java's six
+services. The upgrade runs the same affix-loss/hardening rolls a scroll does - including
+for an item still in the bag, which needs its own helper because the equipped slots keep
+that state in scene fields rather than in the payload. Still open, and each honestly
+smaller than "the menu": Java's pickaxe buy-back and `smith` (which needs the quest's
+pre-generated reward pool), missile/seal transfer details, and alternative quest reward
+bookkeeping.
 
 Two corrections to earlier revisions of this file: this checkout's `DM100.java` has no
 self-destruct blast (its kit is melee plus a lightning zap; the blast belongs to

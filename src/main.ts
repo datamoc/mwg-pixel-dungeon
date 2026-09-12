@@ -593,6 +593,7 @@ interface SaveShape {
 	blacksmithAlternative?: boolean;
 	blacksmithFavor?: number;
 	blacksmithHardens?: number;
+	blacksmithUpgrades?: number;
 	/** `Weapon.enchantHardened`/`Armor.glyphHardened` for the equipped gear */
 	weaponHardened?: boolean;
 	armorHardened?: boolean;
@@ -1156,6 +1157,8 @@ export class SewersScene extends Scene2D {
 	private blacksmithFavor = 0;
 	/** `Blacksmith.Quest.hardens`, which each harden costs more than the last. */
 	private blacksmithHardens = 0;
+	/** `Blacksmith.Quest.upgrades`, the paid upgrade service's own counter. */
+	private blacksmithUpgrades = 0;
 	private blacksmithReforges = 0;
 	private blacksmithReforgeFirst: { id: string; instanceId?: string } | null = null;
 	private impSpawned = false;
@@ -3427,7 +3430,110 @@ export class SewersScene extends Scene2D {
 					disabled: this.blacksmithFavor < this.blacksmithHardenCost(),
 					onPick: () => this.openBlacksmithHarden(),
 				},
+				{
+					label: t('port.blacksmith.upgrade', { favor: this.blacksmithUpgradeCost() }),
+					disabled: this.blacksmithFavor < this.blacksmithUpgradeCost(),
+					onPick: () => this.openBlacksmithUpgrade(),
+				},
+				{
+					label: t('port.blacksmith.cashout'),
+					disabled: this.blacksmithFavor <= 0,
+					onPick: () => this.confirmBlacksmithCashOut(),
+				},
 			],
+		);
+	}
+
+	/** `WndBlacksmith`'s `upgradeCost = 1000 + 1000*Blacksmith.Quest.upgrades`. */
+	private blacksmithUpgradeCost(): number { return 1000 + 1000 * this.blacksmithUpgrades; }
+
+	/** `WndBlacksmith.UpgradeSelector`: an identified, uncursed, upgradable item below +2.
+	 * `item.upgrade()` is the plain overload, so the affix-loss roll (and the hardening branch)
+	 * applies here exactly as it does to a scroll - which is why this rolls through the same
+	 * helper rather than nudging the level. */
+	private openBlacksmithUpgrade(): void {
+		const candidates: { id: string; instanceId?: string; identified?: boolean; quantity: number }[] = [];
+		const eligible = (instanceId?: string) => instanceId === this.weaponInstanceId || instanceId === this.armorInstanceId;
+		if (this.weaponLevel < 2 && !getCurse(this.weaponAffix ?? '')) candidates.push({ id: this.weaponId, instanceId: this.weaponInstanceId, identified: true, quantity: 1 });
+		if (this.armorLevel < 2 && !getCurse(this.armorGlyph ?? '')) candidates.push({ id: this.armorId, instanceId: this.armorInstanceId, identified: true, quantity: 1 });
+		for (const item of this.bag.items) {
+			if (item.quantity > 0 && ['weaponReward', 'armorReward', 'armor'].includes(item.id)
+				&& (item.identified ?? false) && !item.cursed && (item.level ?? 0) < 2 && !eligible(item.instanceId)) {
+				candidates.push({ id: item.id, instanceId: item.instanceId, identified: true, quantity: 1 });
+			}
+		}
+		if (candidates.length === 0) {
+			this.say(t('port.blacksmith.prompt', { favor: this.blacksmithFavor }), 'negative');
+			return;
+		}
+		this.openItemPicker(t('port.blacksmith.upgrade', { favor: this.blacksmithUpgradeCost() }), candidates, (pick) => this.completeBlacksmithUpgrade(pick));
+	}
+
+	private completeBlacksmithUpgrade(pick: { id: string; instanceId?: string }): void {
+		if (this.blacksmithFavor < this.blacksmithUpgradeCost()) return;
+		if (pick.id === this.weaponId && pick.instanceId === this.weaponInstanceId) {
+			this.rollUpgradeAffixLoss('weapon');
+			this.weaponLevel++;
+			this.syncHeroFromStats();
+			this.say(t('port.log.weaponupgraded', { level: this.weaponLevel, min: this.hero.damage[0], max: this.hero.damage[1] }), 'positive');
+		} else if (pick.id === this.armorId && pick.instanceId === this.armorInstanceId) {
+			this.rollUpgradeAffixLoss('armor');
+			this.armorLevel++;
+			this.syncHeroFromStats();
+			this.say(t('port.log.armorupgraded', { level: this.armorLevel }), 'positive');
+		} else {
+			const item = this.bag.find(pick.id, pick.instanceId);
+			if (!item || item.cursed || !(item.identified ?? false) || (item.level ?? 0) >= 2) return;
+			this.rollCarriedItemAffixLoss(item);
+			item.level = (item.level ?? 0) + 1;
+			this.say(t('port.log.itemupgraded', { item: this.itemDisplayName(item.id, true, item.instanceId) }), 'positive');
+		}
+		this.blacksmithFavor -= this.blacksmithUpgradeCost();
+		this.blacksmithUpgrades++;
+		this.refresh();
+	}
+
+	/** The same `Weapon.upgrade()`/`Armor.upgrade()` rolls, for an item still in the bag: the
+	 * equipped slots carry their state in the scene fields, so `rollUpgradeAffixLoss` cannot see
+	 * a carried item's affix, level or hardening at all. */
+	private rollCarriedItemAffixLoss(item: { id: string; affix?: string; level?: number; hardened?: boolean }): void {
+		const level = item.level ?? 0;
+		if (!item.affix) return;
+		if (item.hardened) {
+			if (level >= 6 && Random.float(10) < Math.pow(2, level - 6)) {
+				item.hardened = false;
+				this.say(t(item.id.startsWith('armor') ? 'port.log.hardeninggone.armor' : 'port.log.hardeninggone.weapon'), 'warning');
+			}
+			return;
+		}
+		if (getCurse(item.affix)) {
+			if (Random.int(0, 3) === 0) {
+				item.affix = undefined;
+				this.say(t('items.scrolls.scrollofupgrade.remove_curse'), 'positive');
+			}
+		} else if (level >= 4 && Random.float(10) < Math.pow(2, level - 4)) {
+			item.affix = undefined;
+			this.say(t(item.id.startsWith('armor') ? 'items.armor.armor.incompatible' : 'items.weapon.weapon.incompatible'), 'warning');
+		}
+	}
+
+	/** `WndBlacksmith`'s cash out: `new Gold(favor)`, all of it, after a confirm whose prompt
+	 * quotes the amount back. */
+	private confirmBlacksmithCashOut(): void {
+		const favor = this.blacksmithFavor;
+		if (favor <= 0) return;
+		showConfirmWindow(
+			this.gameWindows,
+			t('actors.mobs.npcs.blacksmith.name'),
+			t('port.blacksmith.cashout.verify', { favor }),
+			t('port.blacksmith.cashout.yes'),
+			t('port.blacksmith.cashout.no'),
+			() => {
+				this.blacksmithFavor = 0;
+				this.bag.add({ id: 'gold', quantity: favor, identified: true });
+				this.say(t('port.log.pickup', { item: t('items.gold.gold.name') }), 'positive');
+				this.refresh();
+			},
 		);
 	}
 
@@ -12545,6 +12651,10 @@ export class SewersScene extends Scene2D {
 			blacksmithAlternative: this.blacksmithAlternative,
 			blacksmithFavor: this.blacksmithFavor,
 			blacksmithReforges: this.blacksmithReforges,
+			blacksmithHardens: this.blacksmithHardens,
+			blacksmithUpgrades: this.blacksmithUpgrades,
+			weaponHardened: this.weaponHardened,
+			armorHardened: this.armorHardened,
 			bag: this.bag.items.map((i) => ({ id: i.id, quantity: i.quantity, instanceId: i.instanceId, identified: i.identified, level: i.level, sandBags: (i as typeof i & { sandBags?: number }).sandBags, charges: (i as typeof i & { charges?: number }).charges, affix: i.affix, cursed: i.cursed,
 				cursedKnown: (i as typeof i & { cursedKnown?: boolean }).cursedKnown,
 				usesLeftToIdentify: (i as typeof i & { usesLeftToIdentify?: number }).usesLeftToIdentify,
@@ -12763,6 +12873,7 @@ export class SewersScene extends Scene2D {
 		this.blacksmithFavor = s.blacksmithFavor ?? 0;
 		this.blacksmithReforges = s.blacksmithReforges ?? 0;
 		this.blacksmithHardens = s.blacksmithHardens ?? 0;
+		this.blacksmithUpgrades = s.blacksmithUpgrades ?? 0;
 		this.weaponHardened = s.weaponHardened ?? false;
 		this.armorHardened = s.armorHardened ?? false;
 		this.equippedRing = s.equippedRing ?? null;

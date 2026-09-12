@@ -1016,10 +1016,12 @@ Do not add new authored content as object literals or scattered constants in the
       locales, each entry disabled unless the favor covers it; the harden service sets
       `enchantHardened`/`glyphHardened` on a picked item and replaces the upgrade affix-loss
       roll with Java's hardening-loss roll. Verified live (10 assertions). Remaining: Java's
-      other four services (pickaxe buy-back, `upgrade` below +2, `smith`, cash out), plus the
-      missile/seal transfer details this bullet also tracked. While implementing it, a wrong
-      claim in `main.ts`'s own comment was found and corrected: hardening comes from this
-      service, not from `StoneOfEnchantment`.
+      pickaxe buy-back and `smith` (the latter needs the quest's pre-generated reward pool),
+      plus the missile/seal transfer details this bullet also tracked. The paid `upgrade`
+      (below +2) and `cash out` are ported as well, so four of Java's six services are live
+      and verified (12 assertions). While implementing it, a wrong claim in `main.ts`'s own
+      comment was found and corrected: hardening comes from this service, not from
+      `StoneOfEnchantment`.
 - [ ] Port Rat King and other missing special NPCs. Rat King is now complete for its core
       exchange (room drops real `Gold(10-25)` CHEST heaps, the king spawns sleeping with
       his own art, wakes with the real yell, awards the crown exchange when worn armor is

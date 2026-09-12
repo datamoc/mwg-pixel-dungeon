@@ -123,6 +123,49 @@ const afterHarden = await page.evaluate(() => {
 	};
 });
 
+// ---- the paid upgrade: an item below +2 gains a level for `1000 + 1000*upgrades`
+const afterUpgrade = await page.evaluate(() => {
+	const s = window.__MWG__.currentScene;
+	s['blacksmithFavor'] = 5000;
+	s['blacksmithUpgrades'] = 0;
+	s['weaponLevel'] = 1;
+	s['openBlacksmithUpgrade']();
+	const entries = (s['itemPickerEntries'] ?? []).map((e) => e.id);
+	s['chooseItemPicker'](0);
+	return { entries, weaponLevel: s['weaponLevel'], favor: s['blacksmithFavor'], upgrades: s['blacksmithUpgrades'] };
+});
+
+// ---- cash out: the whole favor becomes gold, 1 for 1, after the confirm
+const cashOut = await page.evaluate(() => {
+	const s = window.__MWG__.currentScene;
+	s['blacksmithFavor'] = 750;
+	const goldBefore = s['bag'].find('gold')?.quantity ?? 0;
+	s['confirmBlacksmithCashOut']();
+	const win = s['gameWindows'].children.filter((c) => c.content).at(-1);
+	const buttons = [];
+	const walk = (node) => {
+		if (node.onClick) buttons.push(node);
+		for (const child of node.children ?? []) walk(child);
+	};
+	walk(win.content);
+	const bounds = buttons[0].getBounds();
+	return { goldBefore, x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2, confirms: buttons.length };
+});
+await page.evaluate(([x, y]) => {
+	const c = document.querySelector('canvas');
+	const r = c.getBoundingClientRect();
+	const opts = { bubbles: true, cancelable: true, composed: true, clientX: r.x + (x / 1024) * r.width, clientY: r.y + (y / 768) * r.height, pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, buttons: 1 };
+	c.dispatchEvent(new PointerEvent('pointermove', opts));
+	c.dispatchEvent(new PointerEvent('pointerdown', opts));
+	c.dispatchEvent(new PointerEvent('pointerup', { ...opts, buttons: 0 }));
+	c.dispatchEvent(new MouseEvent('click', { ...opts, buttons: 0 }));
+}, [cashOut.x, cashOut.y]);
+await page.waitForTimeout(400);
+const afterCashOut = await page.evaluate(() => {
+	const s = window.__MWG__.currentScene;
+	return { favor: s['blacksmithFavor'], gold: s['bag'].find('gold')?.quantity ?? 0 };
+});
+
 // ---- and the upgrade roll itself: hardened protects the enchant, and the protection wears off
 // exactly where Java says it does
 const rolls = await page.evaluate(() => {
@@ -155,12 +198,17 @@ console.log('probe results:', JSON.stringify({
 	opened, afterHarden: { ...afterHarden, name: afterHarden.name }, rolls,
 }, null, 1));
 const expect = [
-	['the Blacksmith offers a service window with two entries', opened.windowCount === 1 && opened.buttonCount === 2],
+	['the Blacksmith offers a service window with his four ported services',
+		opened.windowCount === 1 && opened.buttonCount === 4],
 	['both enabled at 2000 favor (Java `enable(favor >= cost)`)', opened.disabled.every((d) => d === false)],
 	['choosing Harden opens the real item picker', afterHarden.pickerOpen === true && afterHarden.entries.length > 0],
 	['picking the equipped weapon hardens it (`Weapon.enchantHardened`)', afterHarden.weaponHardened === true],
 	['and charges Java\'s `500 + 1000 x hardens`', afterHarden.favor === 1500 && afterHarden.hardens === 1],
 	['the hardened state shows in the item\'s own name', afterHarden.name.includes('hardened') || afterHarden.name.includes('durcie') || afterHarden.name.includes('verhärtet')],
+	['the paid upgrade takes an item below +2 up one level, for its own cost',
+		afterUpgrade.entries.length > 0 && afterUpgrade.weaponLevel === 2 && afterUpgrade.favor === 4000 && afterUpgrade.upgrades === 1],
+	['cash out asks first, then trades the whole favor for gold 1 for 1',
+		cashOut.confirms === 2 && afterCashOut.favor === 0 && afterCashOut.gold === cashOut.goldBefore + 750],
 	['a hardened item below +6 never loses the enchant or the hardening (`level() >= 6` gate)',
 		rolls.hardenedBelowThreshold.affixLost === 0 && rolls.hardenedBelowThreshold.hardeningLost === 0],
 	// Java's rates, not certainties: `Random.Float(10) < 2^(level-6)` is 10% at +6 (100% only at
