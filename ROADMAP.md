@@ -1311,11 +1311,25 @@ Do not add new authored content as object literals or scattered constants in the
       builders moved to `src/ui/portWindows.ts` so both scenes share them, Java's per-`Window`
       full-screen blocker is ported (`src/ui/blockingWindowStack.ts`), and the whole thing is
       verified live by `tools/scratch/game-menu-livecheck.mjs` (23 assertions, including the title
-      screen's own windows after the move). (b) *boss banners*:
-      Java shows level-up, quest and boss banners through
-      `GameScene.showBanner`/`Banner`; this port has only the *badge* banner
-      (`ui/badgeBanner.ts`, wired at `awardBadge`) and logs the rest, so a general `Banner` is
-      missing with that as the precedent. (c) *toast animations*: **not applicable as designed** -
+      screen's own windows after the move). (b) *boss banners*: **checked against v3.3.8 on
+      2026-09-12, and this bullet's own sentence was wrong.** Java's `GameScene.showBanner` is used
+      by exactly two things - `bossSlain()`'s `BOSS_SLAIN` sprite (`show(0xFFFFFF, 0.3f, 5f)`, plus
+      `Assets.Sounds.BOSS`) and `gameOver()`'s `GAME_OVER` sprite (`show(0x000000, 2f)`), each with a
+      button or two whose alpha tracks the banner's own; there are **no level-up or quest banners** in
+      v3.3.8, and `effects/BadgeBanner.java` (which `ui/badgeBanner.ts` already reproduces) is a
+      *different* class from the general `ui/Banner.java`. That widget is small and the framework
+      already has its exact colour semantics - `TintedSprite.lerpTint(color, strength)` *is* watabou's
+      `Visual.tint(int, float)`, and `resetColor()` is `Visual.resetColor()`, so `ui/Banner.java`'s
+      FADE_IN/STATIC/FADE_OUT is about 60 lines over one `TintedSprite`. What is *not* ready is the
+      art: this port's `src/assets/banners.png` is a custom redraw, and measuring it
+      (`tools/scratch/banner-match.mjs`) against Java's `interfaces/banners.png` at tag `v3.3.8` shows
+      its three text-band sprites are not Java's at any scale. Next step, when picked up: cut
+      `BOSS_SLAIN` (Java `(0,157)`-`(127,225)`) and `GAME_OVER` (`(128,157)`-`(256,192)`) out of
+      Java's sheet into their own `src/assets/` files, then implement the widget, wire `bossSlain()`
+      at the boss-death site (`main.ts`'s victory log, which also awards the chapter badge) and
+      `gameOver()` over the port's own defeat panel - that panel is a port invention, and Java's
+      version is the banner plus a restart button and a *menu* button, the latter being exactly the
+      `openGameMenu` added in (a). (c) *toast animations*: **not applicable as designed** -
       `ui/Toast.java` is used only by `GameScene.selectCell()` to show the active cell selector's
       own `prompt()` (one bottom-centred toast whose close button cancels the selection), and this
       port has no cell-selector prompt at all because its targeting is creature-based; the message
