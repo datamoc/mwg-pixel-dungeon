@@ -1606,7 +1606,21 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       now extracted into `simulation/attackResolution.ts` and routed through
       `adapters/attackSimulation.ts`; the scene consumes its result while retaining all
       presentation, proc, shield, death, and event effects. The remaining hook branches still
-      need incremental extraction.
+      need incremental extraction. **Progress (2026-09-12):** the defender-side `damage()`
+      override family (`Pylon` 14+/15, `Eye` /4 while charging, `DemonSpawner` 19+/20,
+      `Slime`/`CausticSlime` 4+/5) is now `simulation/defenderDamageCurves.ts`, called once at
+      Java's point - and moving `Pylon`'s there fixed a real order bug, since it had been applied
+      *above* the augment/talent/proc chain instead of after it (see section 3's Caves/DM-300
+      item). **Three more ordering deviations are now measured but deliberately not yet changed**
+      - reading `Char.java`'s `attack()` to place that family is what surfaced them, and each is a
+      behavioural change in a path with no unit coverage, so they are recorded with Java line
+      numbers in `PORT_COVERAGE.md`'s `attack()`-tail ordering row rather than changed blind:
+      `Corrupting.proc` should compare against the pre-`damage()` value (it currently compares
+      after the curves, so a Slime Java would corrupt survives here); both execute mechanics
+      should run after `enemy.damage()` and set `HP = 0` directly (they currently run before the
+      soiled-fist reduction and the King/DM-300 barrier pools, so a hit the port has already
+      announced as "executed" can leave the target alive); and the port's single merged
+      `max()` threshold should be Java's two separate mechanics, each with its own gates.
 - [x] Compare `mwg/i18n` against the plan's section 22C "Semantic Messaging" shape before
       committing to SPD-ADR-012. Done against the installed 0.4.2 `.d.ts` files: it matches
       (`SemanticMessage`/`MessageChannel`/`MessageFormatter`/`createCatalogFormatter`,
