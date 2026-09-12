@@ -1354,9 +1354,17 @@ export class SewersScene extends Scene2D {
 	 * `FloatingText` had neither the curve nor the stacking until 0.7.4. The numbers are
 	 * `effects/FloatingText.java`'s: `LIFESPAN = 1f` second over `DISTANCE = DungeonTilemap.SIZE`
 	 * of rise, alpha held at 1 for the first half of the life and falling linearly after - the
-	 * stack's `hold: 0.5` - and the label is rasterised at full size then scaled down, never the
-	 * other way round, since Pixi rasterises text once at its style size and scaling a small
-	 * raster up is what looks blurry.
+	 * stack's `hold: 0.5`.
+	 *
+	 * The label is rasterised at the full 21px and shrunk by `floaterTextScale` for this
+	 * world-space layer, rather than rasterised small and scaled up, because Pixi rasterises text
+	 * once at its style size and scaling a small raster up is what looks blurry. That scale is
+	 * passed *into* `push` (`FloatingTextPush.scale`): 0.7.7 moved it there and applies it before
+	 * measuring, because a `FloatingText`'s height includes its own scale - the stacked lines of a
+	 * pop-up scaled after the push were spaced by a size they were never drawn at. `size` and
+	 * `rise` stay divided by that scale: both are expressed in the pop-up's own pre-scale space
+	 * (the rise moves `FloatingText`'s inner `rising` container, inside the scaled pop-up), so the
+	 * text draws at `floaterFontSize` and rises exactly one tile.
 	 */
 	private floaters = new FloatingTextStack();
 
@@ -4114,7 +4122,7 @@ export class SewersScene extends Scene2D {
 			//visible enemy. Cell targeting is still collapsed to the hero's position because
 			//quaffing has no thrown-cell picker in this port.
 			const targets = this.creatures.filter((creature) => creature.hp > 0
-				&& Math.max(Math.abs(creature.x - this.hero.x), Math.abs(creature.y - this.hero.y)) <= 1
+				&& Roguelike.chebyshevDistance(creature, this.hero) <= 1
 				&& this.level.passable(creature.x, creature.y));
 			for (const target of targets) {
 				//Elemental.add(): Frost/Chill are `harmfulBuffs` - gaining either deals
@@ -5835,7 +5843,7 @@ export class SewersScene extends Scene2D {
 					this.useTransfusionWand(target);
 				} else {
 				const zapTargets = this.wandType === 'blastWave'
-					? this.creatures.filter((c) => !c.isNPC && c.hp > 0 && Math.max(Math.abs(c.x - target.x), Math.abs(c.y - target.y)) <= 1)
+					? this.creatures.filter((c) => !c.isNPC && c.hp > 0 && Roguelike.chebyshevDistance(c, target) <= 1)
 					: this.wandType === 'lightning'
 					? [target, ...this.creatures.filter((c) => c !== target && !c.isHero && !c.isNPC && c.hp > 0
 						&& Roguelike.chebyshevDistance(target, c) <= 1)]
@@ -6106,7 +6114,9 @@ export class SewersScene extends Scene2D {
 	 */
 	private handleMapPointer(screenX: number, screenY: number): void {
 		if (this.gameOver || !this.awaitingInput || !this.map) return;
-		const local = this.map.toLocal({ x: screenX, y: screenY });
+		//`Camera.toWorld` is the documented way to turn a click into a tile; the map is a direct
+		//child of `camera.world` at its origin, so this is what `map.toLocal` computed by hand.
+		const local = this.camera.toWorld(screenX, screenY);
 		const target = { x: Math.floor(local.x / TILE), y: Math.floor(local.y / TILE) };
 		if (!this.level.inside(target.x, target.y)) return;
 		//An active aim consumes the click: the cursor moves there and a legal cell confirms it.
@@ -6118,7 +6128,7 @@ export class SewersScene extends Scene2D {
 		}
 		const dx = Math.sign(target.x - this.hero.x);
 		const dy = Math.sign(target.y - this.hero.y);
-		if (Math.max(Math.abs(target.x - this.hero.x), Math.abs(target.y - this.hero.y)) <= 1) {
+		if (Roguelike.chebyshevDistance(target, this.hero) <= 1) {
 			this.travelTarget = null;
 			const action = Object.entries(MOVES).find(([, step]) => step.x === dx && step.y === dy)?.[0] ?? 'wait';
 			this.onAction(action);
@@ -6133,7 +6143,7 @@ export class SewersScene extends Scene2D {
 	 * port has no hover behaviour outside an aim, matching its click-only UI. */
 	private handleMapHover(screenX: number, screenY: number): void {
 		if (!this.aiming || !this.map) return;
-		const local = this.map.toLocal({ x: screenX, y: screenY });
+		const local = this.camera.toWorld(screenX, screenY);
 		const cell = { x: Math.floor(local.x / TILE), y: Math.floor(local.y / TILE) };
 		if (!this.level.inside(cell.x, cell.y)) return;
 		this.aiming.controller.moveTo(cell);
@@ -6236,7 +6246,7 @@ export class SewersScene extends Scene2D {
 
 	/** `Dungeon.hero.canAttack(enemy)`'s practical half for this port: melee reach is one cell. */
 	private canBumpAttack(cell: Step): boolean {
-		return Math.max(Math.abs(cell.x - this.hero.x), Math.abs(cell.y - this.hero.y)) <= 1;
+		return Roguelike.chebyshevDistance(cell, this.hero) <= 1;
 	}
 
 	/**
@@ -6978,11 +6988,14 @@ export class SewersScene extends Scene2D {
 
 	/**
 	 * `Chasm.heroLand()` (`Chasm.java`): applies on arrival at the new floor, after the fall
-	 * itself. Real Java also plays a landing sound, shakes the camera, and lets
-	 * `ElixirOfFeatherFall.FeatherBuff` cancel the whole thing outright - none of those exist in
-	 * this port (no camera-shake system, no such elixir), so only the two mechanical
-	 * consequences are ported: a `Cripple` application and upfront damage scaled the same way
-	 * Java's is (`max(HP/2, NormalIntRange(HP/2, HT/4))`, run through the same
+	 * itself. Real Java also plays a landing sound, shakes the camera (`PixelScene.shake(1, 1f)`),
+	 * and lets `ElixirOfFeatherFall.FeatherBuff` cancel the whole thing outright - the elixir is
+	 * not ported, and the shake is not wired yet (mwg has the primitive: `Camera.shake(magnitude,
+	 * duration?)`, while Java's `PixelScene.shake(intensity, duration)` has 43 call sites across
+	 * the game and this port models none of them - see `PORT_COVERAGE.md`'s mwg-usage section) -
+	 * so only the two mechanical consequences are ported: a `Cripple` application and upfront
+	 * damage scaled the same way Java's is (`max(HP/2, NormalIntRange(HP/2, HT/4))`, run through
+	 * the same
 	 * Tenacity/Barrier/Iron-Will/Deathless-Fury pipeline every other hero-damage source uses).
 	 * Java also applies a separate `Bleeding` DoT here; the port now keeps its intensity in the
 	 * shared buff map and ticks it with Java's NormalFloat/rounding rule. Source-class death
@@ -7120,7 +7133,7 @@ export class SewersScene extends Scene2D {
 		//port's compact passive-state flag; the attack path wakes it after damage lands.
 		if (monster.kind === 'statue') {
 			if (monster.sleeping) return;
-			if (Math.max(Math.abs(monster.x - this.hero.x), Math.abs(monster.y - this.hero.y)) === 1) this.attack(monster, this.hero);
+			if (Roguelike.chebyshevDistance(monster, this.hero) === 1) this.attack(monster, this.hero);
 			return;
 		}
 		//Piranha.act(): water-bound mobs die immediately when a room effect or movement
@@ -7164,7 +7177,7 @@ export class SewersScene extends Scene2D {
 		//`seesHero` edge is the equivalent just-alerted marker; a failed roll holds the mob
 		//in place for this turn, while an already-aware mob continues its normal hunt.
 		if (monster.seesHero && !wasSeen && monster.kind !== 'sentry') {
-			const detectionDistance = Math.max(Math.abs(monster.x - this.hero.x), Math.abs(monster.y - this.hero.y));
+			const detectionDistance = Roguelike.chebyshevDistance(monster, this.hero);
 			const detectionRange = detectionDistance / 2 + this.heroStealth();
 			if (detectionRange >= 1 && Random.float(detectionRange) >= 1) {
 				monster.seesHero = false;
@@ -7283,7 +7296,7 @@ export class SewersScene extends Scene2D {
 			return;
 		}
 
-		const distance = Math.max(Math.abs(monster.x - this.hero.x), Math.abs(monster.y - this.hero.y));
+		const distance = Roguelike.chebyshevDistance(monster, this.hero);
 		if (this.heroClass === 'huntress' && this.talentRank('heightened_senses') > 0 && distance <= (this.talentRank('heightened_senses') === 1 ? 2 : 3)) monster.seesHero = true;
 		// Invisibility makes monsters lose their target until the hero attacks or the
 		// effect expires. Adjacent monsters retain current awareness, which is the
@@ -7475,7 +7488,7 @@ export class SewersScene extends Scene2D {
 		//that random destination, then chooses another one (Mob.java, tag v3.3.8). Keep the
 		//destination on the creature so wandering is not a fresh random walk every turn.
 		if (!monster.seesHero && monster.kind !== 'dm201'
-			&& Math.max(Math.abs(monster.x - this.hero.x), Math.abs(monster.y - this.hero.y)) !== 1) {
+			&& Roguelike.chebyshevDistance(monster, this.hero) !== 1) {
 			const target = monster.patrolTarget;
 			const targetValid = target
 				&& this.level.inside(target.x, target.y)
@@ -7843,7 +7856,7 @@ export class SewersScene extends Scene2D {
 			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 				const at = { x: this.hero.x + dx, y: this.hero.y + dy };
 				if (!this.level.passable(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
-				const fromGolem = Math.max(Math.abs(at.x - monster.x), Math.abs(at.y - monster.y));
+				const fromGolem = Roguelike.chebyshevDistance(at, monster);
 				if (fromGolem > bestDistance) { bestDistance = fromGolem; best = at; }
 			}
 			if (!best) return false;
@@ -7921,7 +7934,7 @@ export class SewersScene extends Scene2D {
 		//free neighbour, a narrower selection than the real distance-ranked search.
 		if (
 			skel && skel.hp > 0 && !skelVisible && monster.seesHero &&
-			Math.max(Math.abs(skel.x - this.hero.x), Math.abs(skel.y - this.hero.y)) > 1
+			Roguelike.chebyshevDistance(skel, this.hero) > 1
 		) {
 			const candidates = Roguelike.neighbourOffsets(8)
 				.map(([dx, dy]) => ({ x: this.hero.x + dx, y: this.hero.y + dy }))
@@ -8296,11 +8309,11 @@ export class SewersScene extends Scene2D {
 		//GnollTrickster.getCloser(): "if he's moving, he isn't attacking, reset combo."
 		if (monster.kind === 'gnollTrickster') monster.combo = 0;
 		let best: Step | null = null;
-		let bestD = Math.max(Math.abs(monster.x - this.hero.x), Math.abs(monster.y - this.hero.y));
+		let bestD = Roguelike.chebyshevDistance(monster, this.hero);
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 			const at = { x: monster.x + dx, y: monster.y + dy };
 			if (!this.level.passable(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
-			const d = Math.max(Math.abs(at.x - this.hero.x), Math.abs(at.y - this.hero.y));
+			const d = Roguelike.chebyshevDistance(at, this.hero);
 			if (d > bestD) {
 				bestD = d;
 				best = at;
@@ -8312,11 +8325,11 @@ export class SewersScene extends Scene2D {
 	/** CrystalMimic.Fleeing: after revealing/attacking, run to the farthest open neighbour. */
 	private fleeCrystalMimic(monster: Creature): boolean {
 		let best: Step | null = null;
-		let bestDistance = Math.max(Math.abs(monster.x - this.hero.x), Math.abs(monster.y - this.hero.y));
+		let bestDistance = Roguelike.chebyshevDistance(monster, this.hero);
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 			const at = { x: monster.x + dx, y: monster.y + dy };
 			if (!this.level.passable(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
-			const distance = Math.max(Math.abs(at.x - this.hero.x), Math.abs(at.y - this.hero.y));
+			const distance = Roguelike.chebyshevDistance(at, this.hero);
 			if (distance > bestDistance) {
 				bestDistance = distance;
 				best = at;
@@ -8396,7 +8409,7 @@ export class SewersScene extends Scene2D {
 		//action on top of a swing, and handleUnreachableTarget() checks it the same way.
 		//The port therefore checks it before both the ranged-dart and melee branches.
 		if (this.tenguFireAbilityIfReady(tengu)) return;
-		const distance = Math.max(Math.abs(tengu.x - this.hero.x), Math.abs(tengu.y - this.hero.y));
+		const distance = Roguelike.chebyshevDistance(tengu, this.hero);
 		if (distance > 1) {
 			if (Roguelike.canTarget(this.level, tengu, this.hero, { range: 8 })) {
 				this.say(t('port.log.tengudart'), 'negative');
@@ -8571,9 +8584,9 @@ export class SewersScene extends Scene2D {
 		for (let attempt = 0; attempt < 100; attempt++) {
 			const at = { x: Random.int(this.level.width), y: Random.int(this.level.height) };
 			if (this.level.get(at.x, at.y) === WALL) continue;
-			const heroDistance = Math.max(Math.abs(at.x - this.hero.x), Math.abs(at.y - this.hero.y));
+			const heroDistance = Roguelike.chebyshevDistance(at, this.hero);
 			if (heroDistance < 5 || heroDistance > 7) continue;
-			if (Math.max(Math.abs(at.x - from.x), Math.abs(at.y - from.y)) < 5) continue;
+			if (Roguelike.chebyshevDistance(at, from) < 5) continue;
 			if (this.creatureAt(at.x, at.y) || this.groundItemAt(at.x, at.y)) continue;
 			this.moveTo(tengu, at);
 			tengu.arenaJumps = (tengu.arenaJumps ?? 0) + 1;
@@ -8731,7 +8744,7 @@ export class SewersScene extends Scene2D {
 		if (!anchor) return false;
 		const targets = [this.hero, ...this.creatures].filter((creature, index, all) => all.indexOf(creature) === index
 			&& creature !== tengu && !creature.isNPC && creature.hp > 0
-			&& Math.max(Math.abs(creature.x - anchor.x), Math.abs(creature.y - anchor.y)) <= 1);
+			&& Roguelike.chebyshevDistance(creature, anchor) <= 1);
 		for (const target of targets) {
 			const damage = 2 + this.depth;
 			const dealt = target.isHero ? this.absorbHeroDamage(damage, true) : damage;
@@ -8750,7 +8763,7 @@ export class SewersScene extends Scene2D {
 	private checkCavesBossPylonGate(): void {
 		if (this.depth !== 15 || this.cavesBossSealed) return;
 		const nearPylon = this.cavesBossPylons.some((pylon) =>
-			Math.max(Math.abs(this.hero.x - pylon.x), Math.abs(this.hero.y - pylon.y)) <= 3
+			Roguelike.chebyshevDistance(this.hero, pylon) <= 3
 		);
 		if (!nearPylon) return;
 		this.cavesBossSealed = true;
@@ -8823,7 +8836,7 @@ export class SewersScene extends Scene2D {
 			else this.dm300Rockfall(dm300);
 			return;
 		}
-		const distance = Math.max(Math.abs(dm300.x - this.hero.x), Math.abs(dm300.y - this.hero.y));
+		const distance = Roguelike.chebyshevDistance(dm300, this.hero);
 		if (distance <= 1) {
 			this.attack(dm300, this.hero);
 			return;
@@ -9089,7 +9102,7 @@ export class SewersScene extends Scene2D {
 			const adds = [...this.kingAdds].filter((add) => add.hp > 0);
 			if (adds.length < 4) this.summonKingAdd(king, this.kingP1Summon(king.kingSummonsMade ?? 1, challenge));
 		}
-		const distance = Math.max(Math.abs(king.x - this.hero.x), Math.abs(king.y - this.hero.y));
+		const distance = Roguelike.chebyshevDistance(king, this.hero);
 		if (distance <= 1) {
 			this.attack(king, this.hero);
 			return;
@@ -13795,21 +13808,21 @@ export class SewersScene extends Scene2D {
 		const key = this.floaterKeys.get(creature) ?? this.nextFloaterKey++;
 		this.floaterKeys.set(creature, key);
 		//the stack centres text on the point; Java's sprite anchors it by its bottom edge, so half
-		//a line is added back to keep the text sitting where it used to. The rise is divided by the
-		//scale because the pop-up container is scaled as a whole - one tile of rise either way.
-		this.floaters
-			.push({
-				text,
-				color,
-				x,
-				y: y - TILE / 2 - this.floaterFontSize / 2,
-				key,
-				size: this.floaterFontSize / this.floaterTextScale,
-				duration: 1,
-				rise: TILE / this.floaterTextScale,
-				hold: 0.5,
-			})
-			.scale.set(this.floaterTextScale);
+		//a line is added back to keep the text sitting where it used to. `size`/`rise` are divided
+		//by the scale because both live in the pop-up's own pre-scale space, while `scale` is passed
+		//to `push` so the stack measures the pop-up at the size it is actually drawn at (0.7.7).
+		this.floaters.push({
+			text,
+			color,
+			x,
+			y: y - TILE / 2 - this.floaterFontSize / 2,
+			key,
+			scale: this.floaterTextScale,
+			size: this.floaterFontSize / this.floaterTextScale,
+			duration: 1,
+			rise: TILE / this.floaterTextScale,
+			hold: 0.5,
+		});
 	}
 
 	/** damage taken, in `CharSprite.NEGATIVE` */

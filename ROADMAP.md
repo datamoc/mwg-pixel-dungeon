@@ -267,12 +267,17 @@ Do not add new authored content as object literals or scattered constants in the
       `scale.x` does before deleting.
 - [x] `src/ui/floatingText.ts` replaced by `mwg/ui`'s `FloatingTextStack` + `FloatingText`'s
       `hold` curve (2026-09-11, on 0.7.6): the file is deleted and `showStatus` pushes one pop-up
-      per number keyed by creature. One defect carried, found by the live check and not ours to
-      hide: 0.7.4's stack moves the *newcomer* down by `height + 1` where Java anchors the newcomer
-      and nudges the *older* text up by `height + 4` (shortening its life to stop spam).
-      `tools/scratch/mwg-proposal/0003-floating-text-stack-upward.patch` is the fix, written and
-      verified against 0.7.6; apply it and re-run the port's floaters check once a release carries
-      it.
+      per number keyed by creature. **Both defects carried at adoption were fixed upstream in
+      0.7.7 and are adopted here as of 2026-09-12 (on 0.7.8)**: the stack now lifts the *older*
+      line above the newcomer instead of moving the newcomer down (this port's own finding, filed
+      as `tools/scratch/mwg-proposal/0003-floating-text-stack-upward.patch` and recorded in
+      0.7.7's changelog as "found by a consumer measuring it, not by the tests, which asserted the
+      offset's magnitude and never its direction"), and `push` takes a `scale` applied *before*
+      measurement, so a pop-up scaled after the push is no longer spaced by the 21px raster it was
+      not drawn at - `showStatus` passes `scale: floaterTextScale` instead of chaining
+      `.scale.set(...)`. Live-verified on the built page
+      (`tools/scratch/floaters-livecheck.mjs`): measured height `9.45` = the drawn `7px x 1.35 / 3`,
+      the older line `13.45` above the newcomer (drawn height + Java's 4px gap), newcomer unmoved.
 - [x] `titleFlame`'s flame film now uses `ParticleEmitter.frames` with the two flame quadrants
       from Java's four-quadrant `fireball.png` (2026-09-11, on 0.7.6). MWG owns the pooled
       cadence, lifetime, motion, and frame selection; the tiny colour-only sparks remain local.
@@ -1925,6 +1930,37 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       `hasRaged` one-time revival is a smaller, single-rule instance of the same shape,
       identified but not converted this pass (lower value - a single flag, not a multi-rule
       state machine like the King's).
+
+- [ ] **Hand-rolled code where the framework now ships the capability** (2026-09-12, from the
+      mwg-usage audit; each gap and its evidence is in `PORT_COVERAGE.md`'s mwg-usage section, and
+      the *adopted* half of that audit - the `FloatingTextStack` defects, `Camera.toWorld`,
+      `theme.direction`, 21 of 26 inlined Chebyshev checks - is already in). Ordered by value:
+      (1) `Scheduler` persistence: `main.ts` saves `schedulerNow` plus a per-creature `nextTurn`
+      and re-adds actors in `state.creatures` order, so `SchedulerSnapshot.sequence` is lost and
+      actors tied on `nextTurn` can resolve in a different order after a load;
+      `Roguelike.Scheduler.toJSON(actorId)`/`Scheduler.restore(snapshot, actorOf)` is the
+      documented pair, and adopting it is a save-shape change plus a legacy branch plus a live
+      save/load round-trip check - the next concrete adoption. (2) The inventory UI
+      (`src/ui/inventoryWindow.ts`) reimplements a slot grid, category tabs, 20-per-page paging and
+      masked scrolling that `IconGrid`/`TabbedList`/`ListView`/`ScrollBox` ship - note the port's
+      own `PORT_COVERAGE.md` row claiming a `ListView`-based panel was *not* true of this
+      repository and is now corrected in place. (3) `src/ui/heroAnimation.ts` hand-rolls a frame
+      animator and a 0.1s move tween while every monster in the same file uses
+      `AnimatedSprite` + `Tweener`. (4) `src/ui/wallDecorations.ts` hand-integrates its particle
+      pool/physics where `ParticleEmitter` is used for the title flame. (5) The talent panel, item
+      picker and `InfoWindow` hand-roll modality where `Window`/`WindowStack`/`MessageBox` exist
+      (SPD's pixel chrome justifies not being a `Window`; the item picker is exactly `MessageBox`'s
+      titled-choice shape). (6) Screen shake is entirely unmodelled against Java's 43
+      `PixelScene.shake(intensity, duration)` sites, with `Camera.shake(magnitude, duration?)`
+      available - including the chasm landing and the rooted-refusal shake this file already names
+      elsewhere. (7) The interlevel curtain hand-computes its fades where `ScreenEffects` exists
+      (not a drop-in swap for SPD's hold+two-fades phase, so lowest priority of the seven). Also
+      recorded: `TileMap.setCellColor` unused (SPD's fog is per-half-tile, which per-cell tint
+      cannot express), `visualWalls.ts`'s neighbour-mask table vs
+      `resolveTerrainGraphics`/`TerrainGraphicsLayer`, `ui/gameLog.ts`'s own line budget vs
+      `ListView`/`ScrollBox`, and the six boss ability cooldowns vs `Roguelike.AbilityCycle` (the
+      phase machines around them stay local on purpose - Java has no such half-HP Fury rhythm, so
+      `BossPhases` would be a regression).
 
 ## 11A. MWG framework backlog (separate repository; roadmap only)
 

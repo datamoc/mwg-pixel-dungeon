@@ -37,17 +37,45 @@ const htmlPath = path.resolve('dist/index.html');
 const bundle = fs.readFileSync(bundlePath, 'utf8');
 const html = fs.readFileSync(htmlPath, 'utf8');
 
-// the minified call site: `new J({canvas:...,background:0,extensions:[rw,()=>ne.add(vc),()=>ne.add(id)]})`
-const REGISTRATIONS = 'extensions:[rw,()=>ne.add(vc),()=>ne.add(id)]';
-if (!bundle.includes(REGISTRATIONS)) {
-	throw new Error('`extensions:[...]` not found in dist/game.js - rebuild, or re-locate the minified call shape');
+// the minified call site is `new J({canvas:...,background:0,extensions:[...]})` inside `main()`.
+// Its *contents* are found structurally rather than by a fixed minified spelling, because a source
+// edit changes Rollup's identifier numbering and a hard-coded shape silently stops matching.
+const anchor = bundle.indexOf('extensions:[');
+if (anchor === -1) throw new Error('`extensions:[...]` not found in dist/game.js - rebuild first');
+let end = -1;
+for (let i = anchor + 'extensions:['.length, depth = 0; i < bundle.length; i++) {
+	const ch = bundle[i];
+	if (ch === '(' || ch === '[') depth++;
+	else if (ch === ')' || ch === ']') {
+		if (ch === ']' && depth === 0) { end = i; break; }
+		depth--;
+	}
 }
+if (end === -1) throw new Error('unterminated `extensions:[...]` array in dist/game.js');
+const REGISTRATIONS = bundle.slice(anchor, end + 1);
+const elements = (() => {
+	const inner = REGISTRATIONS.slice('extensions:['.length, -1);
+	const parts = [];
+	let depth = 0, current = '';
+	for (const ch of inner) {
+		if (ch === '(' || ch === '[') depth++;
+		else if (ch === ')' || ch === ']') depth--;
+		if (ch === ',' && depth === 0) { parts.push(current); current = ''; continue; }
+		current += ch;
+	}
+	if (current.trim()) parts.push(current);
+	return parts.map((p) => p.trim());
+})();
+if (elements.length !== 3) {
+	throw new Error(`expected the three registrations in the shipped bundle, found ${elements.length}: ${JSON.stringify(elements)}`);
+}
+console.log(`shipped registrations found: ${elements.map((e) => e.slice(0, 40)).join(' | ')}`);
 
 const variants = [
 	['all three registrations (shipped)', REGISTRATIONS],
 	['none at all', 'extensions:[]'],
-	['colour transform only', 'extensions:[rw]'],
-	['the two Pixi built-ins only', 'extensions:[()=>ne.add(vc),()=>ne.add(id)]'],
+	['colour transform only', `extensions:[${elements[0]}]`],
+	['the two Pixi built-ins only', `extensions:[${elements.slice(1).join(',')}]`],
 ];
 
 const auditDir = path.resolve('dist/audit');

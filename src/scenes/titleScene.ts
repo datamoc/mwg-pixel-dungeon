@@ -8,6 +8,7 @@ import { TitleFlame } from '../ui/titleFlame';
 import { runState, LANGUAGE_KEY, APP_VERSION } from '../runState';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
 import { ClassSelectScene } from './classSelectScene';
+import { applySpdDirection } from '../ui/spdTheme';
 import { rankings } from '../rankings';
 import { CHALLENGES, challenges, challengeDescription, challengeLabel, toggleChallenge } from '../challenges';
 
@@ -131,10 +132,14 @@ export class TitleScene extends Scene2D {
 		this.layout();
 
 		this.onAction = (action) => {
-			//a window swallows 'cancel' itself (WindowStack's own listener, registered ahead
-			//of this one - see its constructor); 'confirm' has no such window-side handler,
-			//so it is guarded here instead, or Enter would begin a run out from under an open
-			//Support/Rankings/Badges/etc. window rather than dismissing it
+			//`Input.onAction` is a stack-mode `Signal`, so listeners added later are offered the
+			//action *first* (`Signal`'s constructor doc: "new listeners are added at the front ...
+			//so the most recently opened window is offered the event first") - this scene listener
+			//runs before `WindowStack`'s, even though the stack registered its own in its
+			//constructor. That is safe only because this handler never returns `true`, so it cannot
+			//consume an action the stack needs: a window still swallows its own 'cancel'. 'confirm'
+			//has no window-side handler, so it is guarded here instead, or Enter would begin a run
+			//out from under an open Support/Rankings/Badges/etc. window rather than dismissing it.
 			if (action === 'confirm' && this.windows.isEmpty) this.begin();
 		};
 		Input.onAction.add(this.onAction);
@@ -180,6 +185,8 @@ export class TitleScene extends Scene2D {
 			onClick: () => {
 				const next = nextLanguage();
 				setLanguage(next);
+				//`theme.direction` follows the active catalogue - see `applySpdDirection`
+				applySpdDirection();
 				try {
 					localStorage.setItem(LANGUAGE_KEY, next.code);
 				} catch {

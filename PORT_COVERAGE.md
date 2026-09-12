@@ -82,17 +82,24 @@ longer the goal, and Java's own bugs and limitations are not reproduced).
   target in one turn both exist, the second is offset, scale is exactly `1/3`, alpha is `1` at
   300 ms of a 1 s life, `0.8` at 600 ms and the pop-up is gone by 1 s; the real `showStatus` path
   shows 'search' with no console or page errors.
-- **Known defect in 0.7.4's `FloatingTextStack`, found by that verification and not yet fixed.**
-  Java's `FloatingText.push()` anchors the **newcomer** on the target and nudges the **older** text
-  *up* to `below.top() - above.height() - 4` (4 px gap), also shortening the nudged text's
-  `timeLeft` (**Simplified** here, pending a framework patch): `FloatingTextStack` instead moves
-  the newcomer *down* by `height + 1`, so a second number in one turn lands below the target rather
-  than above the first - the framework's own `floatingTextStackOffset` is a pure function and a
-  sign/order change fixes it, with the lifetime shortening as a second step. Recorded in
-  `tools/scratch/mwg-proposal/0003-floating-text-stack-upward.patch`, written the same day (applies
-  to 0.7.6, tsc clean, its tests 9/9 and asserting the direction the old ones never checked). The
-  adoption above is still a strict improvement over the port's proximity approximation, which is
-  why it is not held back for it; the port takes the fix when a release carries it.
+- **Both defects carried here were fixed upstream in 0.7.7, and this port has now adopted them
+  (2026-09-12, on 0.7.8).** The first: Java's `FloatingText.push()` anchors the **newcomer** on the
+  target and nudges the **older** text *up* to `below.top() - above.height() - 4` (4 px gap),
+  also shortening the nudged text's `timeLeft`; 0.7.4's stack instead moved the newcomer *down* by
+  `height + 1`. That was found here by a live check, filed as
+  `tools/scratch/mwg-proposal/0003-floating-text-stack-upward.patch`, and 0.7.7's changelog records
+  it as fixed - "found by a consumer measuring it, not by the tests, which asserted the offset's
+  magnitude and never its direction" - replacing `floatingTextStackOffset` with
+  `floatingTextStackLift`/`floatingTextStackMoves` (pure arithmetic, now tested) and also fixing a
+  lift that survived only one frame and the key rule (a stack keys on `key` alone, as Java's
+  `stacks.get(key)` does). The second: a pop-up scaled *after* `push` was measured before the
+  scale, because a `FloatingText`'s height includes its own scale - the port rasterises at 21px and
+  draws at 7, so stacked lines were spaced by ~3x the drawn height. `push` now takes a `scale`
+  applied before measurement, and `showStatus` passes it (`main.ts`) instead of chaining
+  `.scale.set(...)`; `size`/`rise` stay divided by the scale because both are expressed in the
+  pop-up's own pre-scale space. Verified live on the built page (`tools/scratch/floaters-livecheck.mjs`):
+  the stack's measured height is the drawn one, a second number on one target lifts the older line
+  *above* it (not below), and the real `showStatus` path still shows its text with no page errors.
 
 - **Adopted `mwg/core`'s `RunHistory` for the run rankings.** `src/rankings.ts` no longer
   hand-rolls its own localStorage read/validate/sort/write: `RunHistory<RunRecord>` owns the
@@ -1887,6 +1894,93 @@ no nested `node_modules` at all; the `dedupe: ['pixi.js']` guard stays, now with
 `main.ts`'s Sad-Ghost quest comment referred to `SewersScene` calling `advance()` where the
 framework API is `Rpg.QuestLog.advanceStage()`.
 
+**Second pass, same day: two read-only sub-audits (one hunting hand-rolled duplicates of framework
+capabilities, one checking the runtime contracts), with every claim re-verified here before acting.**
+
+Adopted from it:
+
+- **`FloatingTextStack`'s two carried defects, both fixed upstream in 0.7.7 and adopted now.** The
+  detailed record is above, where the port's own "pending a release" note used to sit: a pop-up
+  scaled after `push` was measured before the scale (stacked lines ~3x too far apart), and the stack
+  lifted the wrong line. `push` now takes `scale`, `showStatus` passes it, and the framework lifts
+  the older line. Verified live (`tools/scratch/floaters-livecheck.mjs`): measured height `9.45`
+  equals `7px x 1.35 / 3` - the drawn size - the older line sits `13.45` above the newcomer (drawn
+  height + Java's 4px gap), and the newcomer stays exactly where it was pushed.
+- **`Camera.toWorld` replaces the hand-rolled `map.toLocal`** for both pointer paths - the
+  documented way to turn a click into a tile, and numerically the same thing here because the map
+  is a direct child of `camera.world` at its origin.
+- **`theme.direction` now follows `I18n.direction()`** - at theme creation, and again from
+  `applySpdDirection()` on the one path that can change the language (the title screen's cycle), as
+  `theme.d.ts` asks. Unobservable while every catalogue is LTR, which is why it is wired now.
+- **`Roguelike.chebyshevDistance` replaces 21 of the 26 inlined `max(|dx|,|dy|)` checks** in
+  `main.ts`, which already imported and used the helper. The blanket form of that recommendation was
+  *not* applied: the 5 left inlined compare loose coordinates or deltas (`Math.abs(dx)`), where the
+  helper's two `Step` arguments would mean fabricating a pair per check, and
+  `src/simulation/combat.ts`'s one occurrence is out of scope by construction (nothing under
+  `src/simulation/` may import `mwg` at runtime).
+- **Two wrong comments fixed**: the title screen's listener-order note had the stack-mode direction
+  backwards (`Signal` adds new listeners at the *front*, so the scene's handler is offered the action
+  before `WindowStack`'s and is safe only because it never returns `true`), and the chasm-landing
+  note claimed no camera-shake system exists where mwg ships `Camera.shake` and this port simply
+  never calls it.
+
+Recorded here, not done, each with the framework API that owns it:
+
+- **Scheduler persistence bypasses `Scheduler.toJSON`/`Scheduler.restore`.** `main.ts` saves only
+  `schedulerNow` plus a per-creature `nextTurn` and re-adds actors in `state.creatures` order, so the
+  snapshot's `sequence` counter is lost and two actors tied on `nextTurn` can resolve in a different
+  order after a load than they would have without saving (the framework's `restore` doc says
+  explicitly that it restores "`now` *and the sequence counter* so that ties among actors added
+  afterwards resolve exactly as they would have"). Adopting it means a save-shape change plus a
+  legacy branch, so it wants its own pass with a live save/load round-trip check.
+- **The inventory UI is hand-rolled** (`src/ui/inventoryWindow.ts`: slot grid, category tabs,
+  20-per-page paging, own `setItems`/`handleAction`), where `ListView`, `IconGrid`, `TabbedList` and
+  `ScrollBox` ship paging, masked scrolling, keyboard navigation and pointer selection. See the
+  correction on the "Avoidable reimplementation" row above.
+- **The hero has its own frame animator and 0.1s move tween** (`src/ui/heroAnimation.ts`) while
+  every monster uses `AnimatedSprite` + `Tweener` (`main.ts`'s `monsterMotion`) - the same file
+  documents the framework route 300 lines below the hand-rolled one.
+- **Wall decoration particles are hand-integrated** (`src/ui/wallDecorations.ts`: own pool, timers,
+  per-particle physics) where `ParticleEmitter` is used for the title flame; the emission-rate,
+  life, speed, gravity, scale and alpha curves it needs all exist as options. The *glow* half is
+  already a documented simplification (a low-alpha circle rather than Java's radial-gradient sprite).
+- **Modal panels are hand-rolled** (`talentPanel`, the item picker's `Graphics` panel,
+  `InfoWindow`) with their own open/close state machine, where `Window`/`WindowStack`/`MessageBox`
+  exist and are used for the title screen and the journal. SPD's pixel chrome is why they are not
+  `Window`s (a documented look choice), but nothing explains why the *modal stack* is not
+  `WindowStack`, and the item picker is exactly `MessageBox`'s titled-choice shape.
+- **Screen transitions are hand-computed** (`main.ts`'s interlevel curtain: hold plus two 0.33s
+  fades) with `ScreenEffects.fadeOut`/`fadeIn`/`flash` unused; a drop-in swap is not possible for
+  SPD's single hold+fade phase, so this is a "reduced, not absurd" case rather than a defect.
+- **Screen shake is entirely unmodelled** while Java has 43 `PixelScene.shake(intensity, duration)`
+  call sites and `Camera.shake(magnitude, duration?)` is the framework primitive - including the
+  two the port's own notes already name (the chasm landing above, and the rooted-refusal shake in
+  the Preparation row).
+- **Boss ability timers** (six independent cooldowns across king/demonSpawner/yog/dm300) are the
+  shape `Roguelike.AbilityCycle` provides; the *phase* machines around them are a documented
+  correctness divergence from the framework's `BossPhases` (Java has no such half-HP Fury/0.75-0.5-0.25
+  rhythm), so only the timers are a candidate.
+- **`TileMap.setCellColor` (the documented fog-of-war/lighting hook) is unused** because SPD's fog is
+  per-half-tile occluding and per-cell tint cannot express it; `visualWalls.ts` hand-codes Java's
+  neighbour-mask atlas table where `resolveTerrainGraphics`/`TerrainGraphicsLayer` exist as a generic
+  rule engine (the port uses the framework autotiler for water, so the wall half is the outlier);
+  `ui/gameLog.ts` hand-manages its line budget and stacking where `ListView`/`ScrollBox` exist.
+
+Two claims from the sub-audits were **not** acted on, for the record: `Actors.rollLoot` was reported
+as never called, but it is called at four sites (`main.ts`'s warlock, scorpio, succubus and general
+mob loot rolls), so that finding was dropped rather than propagated; and the Chebyshev conversion
+above was applied only where it is a drop-in (see the bullet).
+
+**Confirmed good by the second pass:** `MultiTurnBeam` uses the current non-deprecated shape at every
+use (`blocker: 'none'`, `fronts`, `onCell`, the current `fromJSON` shape, no legacy `path`); all
+keyboard input goes through `Input.bind`/`onAction` with no `document` listeners in `src/`; `Audio`,
+`Achievements`, `SaveSystem`, `RunHistory` and `ReactionTable` match their contracts
+argument-for-argument; the UI wrappers merge rather than fight `ButtonOptions`/`LabelOptions`/
+`NinePatch`; the scene lifecycle (`new Game`, `await game.start`, `switchScene`, `Scene2D`'s
+`create`/`update`/`resize`/`onDestroy`) follows the documented shape; and `tools/verifySimulation.mjs`'s
+`mwg` shim maps to the **installed** `dist`, so the headless suites cannot pass against a fake
+framework module.
+
 ### Browser verification: done, and what it took
 
 **A ported Sewers floor 1 now renders and plays.** Confirmed from a screenshot of the built page
@@ -1974,7 +2068,7 @@ would be a regression if taken today.
 | `StatusPane` hero avatar and compass placement | `src/ui/statusPane.ts`, `main.ts` | Ported for starting cloth armor: HeroSprite avatar crop, level at (27.5,28), XP at y=0, compass centered on portrait. Simplified: avatar does not change with armor, and port-only stats appear on hover rather than in WndHero. WndHero, BusyIndicator, CircleArc and talent blinking remain unported. |
 | `SPDSettings.interfaceSize()`'s `large` variants throughout (`StatusPane`'s 128x9 bars, `large_buffs.png`, `InventoryPane`'s wide layout, `GameLog`'s 5-line mode) | - | Not ported - one fixed interface size, so `large_buffs.png` is not even copied |
 | The bag, itemised on screen | `InventoryWindow`, item-action windows, `itemDisplayName` | Simplified - it separates equipment from carried items, exposes affixes/curses, supports concrete weapon/armor/ring instances and activates food, potions, scrolls, rings and armor. Sub-bags and full Java item descriptions remain unported. |
-| **Avoidable reimplementation, fixed**: `refreshInventoryPanel` (`main.ts`) used to hand-roll a rebuild-from-scratch column of text-only `Button` rows for the bag - no scrolling or clipping at all, so `height = 34 + rows.length * 18` grew unbounded and a large bag could run the panel off the bottom of the viewport | `mwg/ui`'s `ListView`, built once and driven through `setItems`/`resize` (`main.ts`'s `inventoryList`, `refreshInventoryPanel`, `buildInventoryRowIcon`) | Fixed - the panel is now a fixed `INVENTORY_ROW_HEIGHT * INVENTORY_VISIBLE_ROWS` (6 rows) tall regardless of bag size, with `ListView`'s own real masked scrolling and keyboard `up`/`down`/`confirm` (routed from `onAction` while `inventoryOpen`, mirroring what `WindowStack` gives a real `Window` - the panel is not one, it is a toggled HUD element). `ListView` has no built-in pointer/click support (unlike `IconGrid`, which was the other candidate here but needs a per-item `icon: Container` this port has no full id-to-sprite-frame table for yet - out of scope for this fix, `ITEM_FRAME` only covers the smaller ground-item-kind set), so each row's `ListItem.icon` slot is filled with the row's entire clickable surface instead of a small icon (a full-row hit `Graphics`, the same "a plain hitArea rect misses pointer events; an actual filled one does not" trick `TitleScene`'s own `catcher` already relies on, plus the row's real text, since `ListItem.text` is left `''` so `ListView`'s own auto-label renders nothing) - `ListView` positions and scrolls that `icon` as a normal child of its own masked, scrolled row, so click-through-scroll works with no need to read any of `ListView`'s private scroll state from outside. Verified in a real browser: bounded height at 7 items (was previously going to overflow), scroll-into-view on keyboard `down` past the visible 6, pointer click on a scrolled-to row correctly selecting and using that specific item (`requestedItemId`) |
+| **Avoidable reimplementation, fixed**: `refreshInventoryPanel` (`main.ts`) used to hand-roll a rebuild-from-scratch column of text-only `Button` rows for the bag - no scrolling or clipping at all, so `height = 34 + rows.length * 18` grew unbounded and a large bag could run the panel off the bottom of the viewport | `mwg/ui`'s `ListView`, built once and driven through `setItems`/`resize` (`main.ts`'s `inventoryList`, `refreshInventoryPanel`, `buildInventoryRowIcon`) | Fixed - the panel is now a fixed `INVENTORY_ROW_HEIGHT * INVENTORY_VISIBLE_ROWS` (6 rows) tall regardless of bag size, with `ListView`'s own real masked scrolling and keyboard `up`/`down`/`confirm` (routed from `onAction` while `inventoryOpen`, mirroring what `WindowStack` gives a real `Window` - the panel is not one, it is a toggled HUD element). `ListView` has no built-in pointer/click support (unlike `IconGrid`, which was the other candidate here but needs a per-item `icon: Container` this port has no full id-to-sprite-frame table for yet - out of scope for this fix, `ITEM_FRAME` only covers the smaller ground-item-kind set), so each row's `ListItem.icon` slot is filled with the row's entire clickable surface instead of a small icon (a full-row hit `Graphics`, the same "a plain hitArea rect misses pointer events; an actual filled one does not" trick `TitleScene`'s own `catcher` already relies on, plus the row's real text, since `ListItem.text` is left `''` so `ListView`'s own auto-label renders nothing) - `ListView` positions and scrolls that `icon` as a normal child of its own masked, scrolled row, so click-through-scroll works with no need to read any of `ListView`'s private scroll state from outside. Verified in a real browser: bounded height at 7 items (was previously going to overflow), scroll-into-view on keyboard `down` past the visible 6, pointer click on a scrolled-to row correctly selecting and using that specific item (`requestedItemId`) **Correction 2026-09-12: none of that is in this repository.** There is no `ListView`, `IconGrid`, `inventoryList`, `buildInventoryRowIcon` or `INVENTORY_ROW_HEIGHT` anywhere under `src/` (the only occurrences of `ListView`/`IconGrid` are in `spdTheme.ts`'s and `main.ts`'s own comments), and `git log -S inventoryList -- src/main.ts` and `git log -S ListView -- src/main.ts` return nothing across this repo's whole history - so the ListView-based bag panel described here lived in the pre-split `web-mwg/` copy inside the SPD checkout, which is not present here (see `AGENTS.md`), and the claim cannot be checked from this checkout at all. What actually ships here is `src/ui/inventoryWindow.ts`'s own `InventoryWindow` - a slot grid with hand-built category tabs, 20-per-page paging and its own `setItems`/`handleAction`/`layout`/`reset` - driven from `refreshInventoryPanel` (`main.ts`), added straight to the stage as a toggled HUD panel rather than a `Window`. The framework widgets this row names are still the right target (`ListView` for the row list, `IconGrid` for the slot grid, `TabbedList` for the tabs, `ScrollBox` for masked scrolling), and the genuine duplicate remains: paging, masked scrolling, keyboard `up`/`down`/`confirm` and pointer selection are all shipped by `ListView`/`IconGrid`. Recorded as a named gap in `ROADMAP.md` rather than as a fix. |
 | `ui/Toolbar.java`'s discoverable action controls | `buildInterface`'s pointer/touch action bar | Simplified - eleven compact buttons route to the same turn actions as the keyboard bindings, including explicit wait and save/load; the bar wraps to two rows on narrow screens, while cell targeting, drag gestures and the full toolbar layout are not ported |
 | `GameScene.java`'s cell selection for movement, `Hero.travel()`'s repeated movement | `handleMapPointer`, `stepTravel`, `travelTarget`/`travelStartHp` fields | **Player-reported bug, now fixed: clicking a distant tile previously always took exactly one step toward it, with no auto-walk at all** - a real, immediately-noticeable gap from Java's click-and-it-walks-there behavior, not merely a documented simplification. Now ported: a click beyond one step away queues the target and walks the real pathfinder's route (`this.pathfinder.find`, already used for monster AI) one step per turn via the existing `awaitHeroInput` hook, re-pathing every step so other creatures moving into the route are avoided. Interrupt conditions match Java's real "stop and let the player decide" cases - taking damage, or a hostile creature coming into sight - simplified to checking *any* such creature currently visible rather than Java's narrower *newly* seen one (a stated, safer-not-looser simplification); travel also cancels cleanly on arrival, when the path becomes unreachable, or on any manual keyboard action (so a stale queued travel can never silently resume after the player takes explicit control). Browser-verified live: a clear 3-tile click walked the full distance in a single call chain with zero further clicks, and a click issued with a hostile monster already in view correctly refused to take even one step, matching Java's real immediate-refusal behavior. Not ported: path preview (the visual line/highlight while aiming) and explicit non-adjacent cell/target selection for actions other than movement. |
 | `ui/InventoryPane.java`, `windows/WndBag.java`, `windows/WndUseItem.java`, `ui/QuickSlotButton.java`, `scenes/GameScene.java`'s `CellSelector`/`selectCell`/`examineCell`, `journal/Document.java` + `WndJournal`, `ui/BossHealthBar.java`, `ui/Banner.java`, `ui/Toast.java`, `windows/WndGame.java` | `InventoryWindow`, `createJournalWindow`, `bossNameLabel`/`bossHealthBar`, `victoryPanel` | Simplified - the live bag now opens item actions, and the Journal exposes all five translated region documents plus live quest status. Detailed item-grid tabs, cell targeting, journal item-identification tabs and banner/toast animations remain |

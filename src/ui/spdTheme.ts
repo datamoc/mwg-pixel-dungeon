@@ -1,5 +1,5 @@
 import { Rectangle, Texture } from 'pixi.js';
-import { setTheme } from 'mwg';
+import { I18n, setTheme } from 'mwg';
 
 /**
  * SPD's look, applied to `mwg/ui`'s theme.
@@ -43,6 +43,11 @@ export function applySpdTheme(chrome: Texture): void {
 		panelBorder: 6,
 		padding: 6,
 		spacing: 2,
+		//`theme.direction` is what `mwg/ui` lays every widget out against, and the framework asks a
+		//game with `mwg/i18n` to set it from `I18n.direction()`. Every catalogue this port ships is
+		//LTR (`src/i18n/index.ts` says so), so this is a no-op today that keeps the contract wired;
+		//`applySpdDirection` re-applies it if a language with another direction ever lands.
+		direction: I18n.direction(),
 		color: {
 			text: SPD_STATUS_COLOR.default,
 			//Window.java's own dimmed body text
@@ -88,4 +93,17 @@ export function applySpdTheme(chrome: Texture): void {
 			lineHeight: 1.35,
 		},
 	});
+}
+
+/**
+ * Re-points `theme.direction` at the active catalogue after a language change.
+ *
+ * `theme.d.ts` asks a game with `mwg/i18n` to set `direction` "from `I18n.direction()` whenever the
+ * active language changes"; the only place this port can change it is the title screen's language
+ * cycle (`TitleScene`), so that is where this is called from. `setTheme` takes a partial and fires
+ * `themeChanged`, so widgets already built restyle in place. Unobservable today - every catalogue
+ * here is LTR - which is exactly why it is wired now rather than discovered later.
+ */
+export function applySpdDirection(): void {
+	setTheme({ direction: I18n.direction() });
 }

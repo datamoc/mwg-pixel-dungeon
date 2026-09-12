@@ -11,7 +11,16 @@ framework roadmap items at the end).
   as of this writing, and folded into its `0.7.4` changelog.
 - `0002-bar-runtime-colour-and-track.patch` — `Bar.ts` and its tests only; independent of 0001
   except that its `CHANGELOG.md` hunk sits after 0001's entry, so apply 0001 first. Verified the
-  same way, with `node --test tests/bar.test.ts` at 19/19 (14 pre-existing, 5 new).
+  same way, with `node --test tests/bar.test.ts` at 19/19 (14 pre-existing, 5 new). **Landed: the
+  installed `0.7.8` carries both halves** (`Bar.setColor(color)` and `BarOptions.background`, in
+  0.7.4's changelog), and the port has since deleted `src/ui/bar.ts` - all four consumer bars use
+  them - so this patch is now only a record of how the gap was found.
+- `0003-floating-text-stack-upward.patch` — the stack lifted the wrong line. **Landed in 0.7.7**,
+  whose changelog records it as found "by a consumer measuring it, not by the tests, which asserted
+  the offset's magnitude and never its direction", replacing `floatingTextStackOffset` with
+  `floatingTextStackLift`/`floatingTextStackMoves` (pure, tested arithmetic). The same release also
+  fixed a lift that survived a single frame and the key rule. The port adopted that and `push`'s
+  `scale` option on 0.7.8 - see `PORT_COVERAGE.md` and `ROADMAP.md`'s floating-text item.
 
 ```sh
 cd <MW_games>
