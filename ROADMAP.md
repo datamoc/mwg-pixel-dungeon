@@ -354,6 +354,27 @@ Do not add new authored content as object literals or scattered constants in the
       Java scales this way (Blazing/Chilling/Shocking/Vampiric are
       unconditional here, a separate pre-existing simplification with no roll left to scale).
        `ringArcanaMultiplier()` now feeds all of them. Elements/Furor are now ported (this pass), both genuinely - not just assumed - needing more than a stale-claim fix, and both got it: Elements applies RingOfElements.resist()'s real pow(0.825, level) at each hero-side elemental-damage site (burning/poison DoT tick, toxic-gas blob damage, burning-trap fire damage - all in RESISTS, scaled before Barrier absorption like Hero.damage()'s own ordering; durations untouched, as in Java), since this port has no equivalent of Char.resist(Class)'s single shared dispatch. Furor got the attack-only turn-cost split it needed (a new getAttackTurnCostMod(), blanket divided by RingOfFuror.attackSpeedMultiplier()'s real pow(1.09051, level), spent only for bump-attacks via a move-port pre-check; movement keeps the blanket cost, matching Java's attackDelay()-vs-speed() split). See PORT_COVERAGE.md's rings row. Bombs are now ported too (this pass): usable `bomb` bag item with LIGHT & THROW, landing as a lit heap with a real 2-turn fuse ticked from the end-of-turn pipeline (frozen by Timekeeper freeze, snuffable by stepping onto it, chained blasts, DoubleBomb pickup as Bomb x2 with the English-only status) and `Bomb.explode()`'s exact `NormalIntRange(4+depth, 12+3*depth)`-minus-armor blast including the hero - this also fixed generated bomb loot never spawning at all (`portItemKind` returned null). `EnhanceBomb` alchemy and the 10 specialty bombs still need the alchemy system. See PORT_COVERAGE.md's new `Bomb` row.
+      **2026-09-12: two more Java mob *properties* are now real data rather than hand-written kind
+      lists, and the holy effects that read them are correct.** `Char.Property.UNDEAD` and
+      `Property.DEMONIC` are authored as actor flags (`UNDEAD_KINDS`/`DEMONIC_KINDS`, with
+      subclasses folded onto this port's ids and `RipperDemon` correctly in both), exposed through
+      `isUndeadOrDemonic()`. Three call sites were guessing before: `WandOfTransfusion`'s four-kind
+      "undead" list meant a Guard, Ghoul, Monk, Senior, Thief, Bandit, Warlock, RipperDemon or the
+      Dwarf King was *charmed* where Java burns it; `HolyBomb`'s list named no demon at all, so the
+      bomb did nothing extra to a Succubus, Eye, Mimic, Goo or Yog; and `WandOfPrismaticLight` was
+      missing its separate x1.333 multiplier against such targets entirely. All three now read the
+      shared helper, browser-verified live (Guard/Ghoul harmed and a Mimic - DEMONIC but not
+      UNDEAD - charmed; prismatic bolts reached 7 = `round(5 * 1.333)` against a Guard and a
+      Succubus where an armor-free rat never passed 5).
+      **And the same reading turned up a systemic one: `Char.damage()` subtracts no DR.** `drRoll()`
+      appears exactly once in `Char.java`, inside `attack()` (line 386), and `damage()`'s own note
+      says so ("if dmg is from a character we already reduced it in Char.attack") - so every mob
+      ability that calls `ch.damage(...)` directly ignores armor. Five paths here were subtracting
+      it anyway: `zapHero` (DM100/Shaman/Warlock bolts and the Necromancer's blocked-summon hit),
+      DM-300's rockfall, Yog's death gaze, the Pylon's shock, and the transfusion wand's harm
+      branch. A Warlock's 12-18 DarkBolt was landing for 2-8 against 10 armor. Bombs are the one
+      deliberate exception and were already right: `Bomb.java` 197 subtracts `ch.drRoll()` itself
+      before calling `damage()`.
 - [x] Port the remaining potions. `PotionOfLevitation` is now live (real buff + chasm bypass,
       matching the trap bypass Levitation already had); a live id-mapping bug that made
       generated `PotionOfLiquidFlame`/`PotionOfInvisibility` silently quaff as Purity is fixed.

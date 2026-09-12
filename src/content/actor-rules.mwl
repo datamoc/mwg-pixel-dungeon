@@ -21,6 +21,14 @@ apply_to=miniboss
 set=fetidRat,gnollTrickster,greatCrab,demonSpawner,pylon,rotHeart,rotLasher,newbornElemental
 [/effect]
 [effect]
+apply_to=undead
+set=king,ghoul,guard,monk,senior,necromancer,spectralNecromancer,ripperDemon,skeleton,necroSkeleton,thief,bandit,warlock
+[/effect]
+[effect]
+apply_to=demonic
+set=demonSpawner,eye,fetidRat,goo,mimic,crystalMimic,ripperDemon,scorpio,acidic,succubus,yog,yogFist
+[/effect]
+[effect]
 apply_to=immovable
 set=dm201,sentry,rotHeart,rotLasher,pylon
 [/effect]

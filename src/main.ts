@@ -218,7 +218,7 @@ import {
 	type BuffId,
 } from './combat';
 import { nextEntityId } from './simulation/entityId';
-import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LIMITED_DROP_DECAY, BASE_KIND_ALIASES, NPC_KINDS, BOSS_KINDS, MINIBOSS_KINDS, IMMOVABLE_KINDS, NEVER_SLEEPS_KINDS, FLYING_KINDS, DEPTH_SCALED_STATS, SPRITE_KIND_OVERRIDE, MWL_AI_PROFILES, type AnyMonsterId, type MonsterId } from './monsters';
+import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LIMITED_DROP_DECAY, BASE_KIND_ALIASES, NPC_KINDS, BOSS_KINDS, MINIBOSS_KINDS, UNDEAD_KINDS, isUndeadOrDemonic, IMMOVABLE_KINDS, NEVER_SLEEPS_KINDS, FLYING_KINDS, DEPTH_SCALED_STATS, SPRITE_KIND_OVERRIDE, MWL_AI_PROFILES, type AnyMonsterId, type MonsterId } from './monsters';
 
 /**
  * Shattered Pixel Dungeon, on top of mwg: a title screen, hero-class selection, the Sewers
@@ -4769,10 +4769,14 @@ export class SewersScene extends Scene2D {
 			if (this.hero.hp <= 0) this.kill(this.hero);
 		} else {
 			this.grantHeroShield(5 + level, this.hero.maxHp);
-			const undead = target.kind === 'skeleton' || target.kind === 'necroSkeleton' || target.kind === 'necromancer' || target.kind === 'spectralNecromancer';
-			if (undead) {
-				const raw = Random.normalRange(3 + level, 6 + 2 * level);
-				const damage = Math.max(0, raw - Random.normalRange(target.armor[0], target.armor[1]));
+			//`WandOfTransfusion.onZap()` charms a living enemy and harms an `UNDEAD` one, testing
+			//Java's real `Property.UNDEAD` - this used to be a four-kind list (skeleton,
+			//necromancer and the two subclasses), so a Guard, Ghoul, Monk, Senior, Thief, Bandit,
+			//Warlock, RipperDemon or the Dwarf King was charmed where Java burns it.
+			if (target.kind !== undefined && UNDEAD_KINDS.has(target.kind)) {
+				//No armor: the harm branch is `ch.damage(damageRoll(), this)` in Java, and
+				//`Char.damage()` subtracts no DR - see `zapHero`'s note.
+				const damage = Random.normalRange(3 + level, 6 + 2 * level);
 				target.hp -= damage;
 				this.showDamage(target, damage);
 				if (target.hp <= 0) this.kill(target);
@@ -5839,6 +5843,13 @@ export class SewersScene extends Scene2D {
 							damage = Math.round(damage * Math.pow(0.9333, Math.min(10, victim.buffs['chill'])));
 						}
 					}
+					if (this.wandType === 'prismaticLight' && isUndeadOrDemonic(victim.kind)) {
+						//`WandOfPrismaticLight.affectTarget()`: against a `Property.DEMONIC` or
+						//`Property.UNDEAD` target the bolt deals `round(dmg * 1.333)` and plays the
+						//shadow-burn FX; everyone else takes the plain roll. The multiplier was
+						//previously missing entirely, so holy light hit a demon for no bonus at all.
+						damage = Math.round(damage * 1.333);
+					}
 					this.wandBonusDamage = victim === target ? 0 : this.wandBonusDamage;
 					const livingEarthGuardian = this.wandType === 'livingEarth' && victim.allyKind === 'earthGuardian';
 					if (livingEarthGuardian) {
@@ -6870,16 +6881,18 @@ export class SewersScene extends Scene2D {
 				const [dx, dy] = offsets[index]!;
 				const target = this.creatureAt(monster.x + dx, monster.y + dy);
 				if (!target || target.kind === 'dm300' || target.hp <= 0) continue;
+				//No armor: `Pylon.act()` calls `ch.damage(Random.NormalIntRange(10, 20), new
+				//Electricity())` directly, and `Char.damage()` subtracts no DR - see `zapHero`'s
+				//note. The armor roll used to come off here.
 				const raw = Random.normalRange(10, 20);
-				const reduced = Math.max(0, raw - Random.range(target.armor[0], target.armor[1] + 1));
 				if (target.isHero) {
-					const damage = this.absorbHeroDamage(reduced);
+					const damage = this.absorbHeroDamage(raw);
 					target.hp -= damage;
 					this.showDamage(target, damage);
 					if (target.hp <= 0) this.kill(target, 'foe');
 				} else {
-					target.hp -= reduced;
-					this.showDamage(target, reduced);
+					target.hp -= raw;
+					this.showDamage(target, raw);
 					if (target.hp <= 0) this.kill(target, 'foe');
 				}
 			}
@@ -7758,9 +7771,10 @@ export class SewersScene extends Scene2D {
 	 * no damage yet, but the eye takes 1/4 damage meanwhile via the `beamCharged` check
 	 * earlier in this file's damage-modifier chain), turn 2 fires along a clear line to the
 	 * hero for a real magic hit roll (`hit(this, ch, true)`) and `NormalIntRange(30,50)`
-	 * damage - Java's own `ch.damage(dmg, ...)` call bypasses armor/DR entirely here, unlike
-	 * `zapHero`'s bolt (which does subtract it), so this doesn't reuse that helper - then a
-	 * 4-6 turn cooldown. */
+	 * damage - Java's own `ch.damage(dmg, ...)` call, which bypasses armor/DR entirely, the
+	 * same as every other bolt here (see `zapHero`'s note) - then a 4-6 turn cooldown. Kept
+	 * separate from `zapHero` because Java's beam is `NormalIntRange` while that helper takes
+	 * a per-mob range pair, and because the beam has its own two-turn state machine. */
 	private eyeBeamTurn(monster: Creature): boolean {
 		if ((monster.beamCooldown ?? 0) > 0) monster.beamCooldown = (monster.beamCooldown ?? 0) - 1;
 		if (monster.beamCharged) {
@@ -7788,7 +7802,18 @@ export class SewersScene extends Scene2D {
 		return false;
 	}
 
-	/** a magic bolt that never misses its roll the melee way - hit(accMulti 2), then damage */
+	/** a magic bolt that never misses its roll the melee way - hit(accMulti 2), then damage.
+	 *
+	 * The damage is applied **unreduced by armor**, which is what Java does for every bolt that
+	 * reuses this helper: `DM100.zap()` (`DM100.java`: `enemy.damage(dmg, new LightningBolt())`),
+	 * `Shaman.zap()` (`new EarthenBolt()`), `Warlock.zap()` (`new DarkBolt()`) and the
+	 * Necromancer's blocked-summon hit (`new SummoningBlockDamage()`) all call `Char.damage()`
+	 * directly. That method subtracts *no* DR - its own comment says so ("if dmg is from a
+	 * character we already reduced it in Char.attack", `Char.java` 851) - so DR is an
+	 * `attack()`-only step and these bolts ignore it. This helper used to subtract the target's
+	 * armor roll anyway, which made every zap weaker than Java's against any armored target
+	 * (a 12-18 DarkBolt became 2-8 against 10 armor); the `eyeBeamTurn` note that called this
+	 * helper "subtracting armor unlike Java" was the misreading that kept it there. */
 	private zapHero(monster: Creature, damage: [number, number]): void {
 		const target = this.rangedTarget(monster, 8);
 		if (!target) return;
@@ -7796,7 +7821,7 @@ export class SewersScene extends Scene2D {
 			this.say(t('port.log.boltmisses', { who: capitalize(monster.name) }), 'negative');
 			return;
 		}
-		let dmg = Math.max(0, Random.normalRange(damage[0], damage[1]) - Random.normalRange(target.armor[0], target.armor[1]));
+		let dmg = Math.max(0, Random.normalRange(damage[0], damage[1]));
 		if (target.isHero) dmg = this.absorbHeroDamage(dmg, true);
 		target.hp -= dmg;
 		this.showDamage(target, dmg);
@@ -8696,10 +8721,14 @@ export class SewersScene extends Scene2D {
 					} else if (challenge) this.hero.buffs['paralysis'] = 5;
 					else addBuff(this.hero, 'paralysis');
 				} else {
-					const hurt = Math.max(0, dmg - Random.normalRange(target.armor[0], target.armor[1]));
-					target.hp -= hurt;
-					if (this.fadeMirrorOnDamage(target, hurt)) continue;
-					this.showDamage(target, hurt);
+					//No armor: `FallingRockBuff.affectChar` calls `ch.damage(...)` directly, and
+					//`Char.damage()` subtracts no DR (that is an `attack()`-only step - see
+					//`Char.java`'s own "we already reduced it in Char.attack" note). This used to
+					//subtract the target's armor roll, making rocks weaker than Java's against any
+					//armored monster.
+					target.hp -= dmg;
+					if (this.fadeMirrorOnDamage(target, dmg)) continue;
+					this.showDamage(target, dmg);
 					if (target.hp <= 0) this.kill(target);
 					else if (challenge) target.buffs['paralysis'] = 5;
 					else addBuff(target, 'paralysis');
@@ -9086,7 +9115,11 @@ export class SewersScene extends Scene2D {
 		this.say(t('port.log.yogbeam'), 'warning');
 		for (const target of affected) {
 			if (!rollHit(yog, target, true)) continue;
-			let dmg = Math.max(0, Random.normalRange(stronger ? 30 : 20, stronger ? 50 : 30) - Random.normalRange(target.armor[0], target.armor[1]));
+			//No armor: `YogDzewa`'s beam calls `ch.damage(Random.NormalIntRange(30, 50), new
+			//Eye.DeathGaze())` directly (20-30 under Stronger Bosses), and `Char.damage()`
+			//subtracts no DR - see `zapHero`'s note. The armor roll used to come off here, which
+			//made the final boss's beam weaker than Java's against an armored hero.
+			let dmg = Random.normalRange(stronger ? 30 : 20, stronger ? 50 : 30);
 			if (target.isHero) dmg = this.absorbHeroDamage(dmg, true);
 			target.hp -= dmg;
 			this.showDamage(target, dmg);
@@ -12554,10 +12587,13 @@ export class SewersScene extends Scene2D {
 				sheepCount++;
 			}
 		} else if (variant === 'holyBomb') {
-			const holyTargets = new Set(['skeleton', 'necroSkeleton', 'necromancer', 'spectralNecromancer', 'ripperDemon', 'demonSpawner']);
 			for (const c of affected) {
-				if (!c.kind || !holyTargets.has(c.kind)) continue;
-				//`HolyBomb.explode()`: an extra 50% of the ordinary roll, rounded, armor-piercing.
+				//`HolyBomb.explode()`: an extra 50% of the ordinary roll, rounded, armor-piercing,
+				//against `Property.UNDEAD || Property.DEMONIC` (the same test HolyLance/Smite/
+				//Sunray/HolyDart use). The list here used to name only skeletons, necromancers,
+				//the ripper demon and the demon spawner, so the bomb did nothing extra to a
+				//Ghoul, Guard, Monk, Thief, Warlock, King, Succubus, Eye, Mimic or Yog.
+				if (!isUndeadOrDemonic(c.kind)) continue;
 				const bonus = Math.round(Random.normalRange(4 + this.depth, 12 + 3 * this.depth) * 0.5);
 				if (this.applyBlastDamage(c, bonus, true)) heroDied = true;
 			}

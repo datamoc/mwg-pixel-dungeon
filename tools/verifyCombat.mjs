@@ -309,4 +309,23 @@ export function verifyCombat(require, check) {
 		assert.equal(rosterCall.length, 1, `expected one rotated-roster spawn, found ${rosterCall.length}`);
 		assert.match(rosterCall[0], /undefined,\s*true\);\s*$/, 'the roster spawn must pass championEligible');
 	});
+	check('the authored UNDEAD/DEMONIC flag sets match Java, and RipperDemon carries both', () => {
+		const mwl = readFileSync(new URL('../src/content/actor-rules.mwl', import.meta.url), 'utf8');
+		const flagSet = (flag) => {
+			const match = new RegExp(`apply_to=${flag}\\r?\\nset=([^\\r\\n]+)`).exec(mwl);
+			assert.ok(match, `no ${flag} flag effect in actor-rules.mwl`);
+			return match[1].split(',').map((k) => k.trim()).sort();
+		};
+		// Java's `Property.UNDEAD` declarations at tag v3.3.8 (DwarfKing/Ghoul/Guard/Monk/
+		// Necromancer/RipperDemon/Skeleton/Thief/Warlock/Wraith), subclasses folded onto this
+		// port's own ids; Wraith is the one Java class in that list the port does not spawn
+		assert.deepEqual(flagSet('undead'),
+			['bandit', 'ghoul', 'guard', 'king', 'monk', 'necroSkeleton', 'necromancer', 'ripperDemon', 'senior', 'skeleton', 'spectralNecromancer', 'thief', 'warlock']);
+		// Java's `Property.DEMONIC` declarations (DemonSpawner/Eye/FetidRat/Goo/Mimic/RipperDemon/
+		// Scorpio/Succubus/YogDzewa/YogFist), with CrystalMimic and Acidic inheriting
+		assert.deepEqual(flagSet('demonic'),
+			['acidic', 'crystalMimic', 'demonSpawner', 'eye', 'fetidRat', 'goo', 'mimic', 'ripperDemon', 'scorpio', 'succubus', 'yog', 'yogFist']);
+		// the ripper demon is the one mob Java marks with both, and the union's consumers rely on it
+		assert.ok(flagSet('undead').includes('ripperDemon') && flagSet('demonic').includes('ripperDemon'));
+	});
 }

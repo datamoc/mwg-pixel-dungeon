@@ -264,6 +264,27 @@ export const BOSS_KINDS = mwlActorFlagSet('boss');
  * (CrystalGuardian, FungalSentry, GnollSapper) are simply absent. */
 export const MINIBOSS_KINDS = mwlActorFlagSet('miniboss');
 
+/** Java's `Char.Property.UNDEAD`: `DwarfKing`/`Ghoul`/`Guard`/`Monk`/`Necromancer`/`RipperDemon`/
+ * `Skeleton`/`Thief`/`Warlock`/`Wraith` at tag `v3.3.8`, with each subclass inheriting it
+ * (`NecroSkeleton`, `SpectralNecromancer`, `Bandit`, `Senior`) - so every ported member is here by
+ * its own id. `Wraith` is the one Java class in the list this port does not spawn.
+ * `WandOfTransfusion` is the site that reads it alone (undead are harmed rather than charmed). */
+export const UNDEAD_KINDS = mwlActorFlagSet('undead');
+
+/** Java's `Char.Property.DEMONIC`: `DemonSpawner`/`Eye`/`FetidRat`/`Goo`/`Mimic`/`RipperDemon`/
+ * `Scorpio`/`Succubus`/`YogDzewa`/`YogFist`, again with subclasses inheriting (`CrystalMimic`,
+ * `Acidic`). Note `RipperDemon` carries *both* properties in Java - it is in both sets here. */
+export const DEMONIC_KINDS = mwlActorFlagSet('demonic');
+
+/** `Char.Property.UNDEAD || Char.Property.DEMONIC` - the test Java repeats in every holy effect:
+ * `HolyBomb`, `HolyLance`, `Smite`, `Sunray`, `HolyDart` and `WandOfPrismaticLight` (whose damage
+ * is x1.333 against such a target). Kept as one helper because the port's predecessors of these
+ * checks were hand-written kind lists, and each of them was a different subset: a transfusion
+ * wand list missing Guard/Monk/Thief and a holy-bomb list missing every demon. */
+export function isUndeadOrDemonic(kind: AnyMonsterId | undefined): boolean {
+	return kind !== undefined && (UNDEAD_KINDS.has(kind) || DEMONIC_KINDS.has(kind));
+}
+
 /** Kinds that never change cells (`Property.IMMOVABLE` or an equivalent never-moves turn):
  * DM201 (real `IMMOVABLE`, consumes its turn), the Sentry turret and the RotHeart/RotLasher
  * pair (all own their whole turn and never step). Used for Necromancer.summonMinion's
