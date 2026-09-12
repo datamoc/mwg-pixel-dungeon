@@ -52,6 +52,9 @@ const DOMAINS = ['actors', 'items', 'journal', 'levels', 'misc', 'plants', 'scen
  */
 const LOCALES = ['zh', 'ko', 'ru', 'es', 'de', 'fr', 'pt', 'pl', 'it', 'tr', 'ja', 'uk', 'cs', 'in', 'nl', 'hu', 'vi', 'el'];
 
+/** the shape every SPD message key takes: dotted identifiers, `$` for a Java inner class */
+const KEY_SHAPE = /^[A-Za-z0-9_$]+(?:\.[A-Za-z0-9_$]+)+$/;
+
 /**
  * Parses one `.properties` file the way libGDX's `I18NBundle` does for these files.
  *
@@ -148,8 +151,15 @@ async function referencedKeys() {
 
 			const source = stripComments(await readFile(path, 'utf8'));
 			if (path === keyTable) {
-				//the lookup tables: every literal in the file is a key
-				for (const match of source.matchAll(/'([^']+)'/g)) keys.add(match[1]);
+				//the lookup tables: a message key is a string literal in this file, but not every
+				//literal in this file is a message key - it also names MWL tags/attributes and
+				//table ids (`'effect'`, `'keys'`, `'potionAppearances'`, `'scrollAppearances'`)
+				//and import specifiers (`'../mwlContent'`). Treating all of them as keys made the
+				//source audit fail on six strings that are not keys at all, so `npm run i18n`
+				//could not run: the audit exits before writing, by design. SPD's real keys are
+				//always a dotted path of identifiers (`domain.class.key`, `inner$class` allowed),
+				//so requiring that shape accepts the whole 3,753-key corpus and rejects all six.
+				for (const match of source.matchAll(/'([^']+)'/g)) if (KEY_SHAPE.test(match[1])) keys.add(match[1]);
 				continue;
 			}
 			for (const match of source.matchAll(/\bt\(\s*'([^']+)'/g)) keys.add(match[1]);
@@ -238,8 +248,15 @@ if (checkOnly) {
 		process.exit(1);
 	}
 	if (current !== generated) {
-		console.error(`i18n-extract: generated catalog is stale: ${output}`);
-		process.exit(1);
+		//Git's `core.autocrlf=true` is the default on Windows and checks this file out with CRLF
+		//while the generator emits LF, so comparing the raw text made `npm run i18n:check` fail
+		//on every Windows checkout with a "stale" verdict that had nothing to do with the keys.
+		//The committed blob is LF either way, so normalizing here compares content, not the
+		//worktree's line-ending policy.
+		if (current.replace(/\r\n/g, '\n') !== generated) {
+			console.error(`i18n-extract: generated catalog is stale: ${output}`);
+			process.exit(1);
+		}
 	}
 	console.log(`i18n-extract: catalog is up to date (${wanted.length} referenced SPD keys)`);
 } else {

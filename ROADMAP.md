@@ -117,6 +117,24 @@ Do not add new authored content as object literals or scattered constants in the
       already on `HEAD`) to **OK - 286 mapped keys, 408 port strings, 19 languages**. That check
       is not in `check`/`build` (it needs esbuild to bundle `src/`), so it stays a manual gate
       documented in its own header; `npm run i18n` itself needs `--spd-root`.
+      **2026-09-12: `npm run i18n` could not run at all, and now can.** The extractor scrapes
+      message keys out of `t('...')` call sites, and for `src/i18n/spdKeys.ts` - where keys appear
+      as *values* in lookup tables - treated every string literal in the file as a key. The file
+      also names MWL tags, attributes and table ids (`'effect'`, `'keys'`,
+      `'potionAppearances'`, `'scrollAppearances'`) and an import specifier (`'../mwlContent'`),
+      so the source audit failed on six strings that are not keys and exited before writing - by
+      design, so the failure was loud rather than a silently truncated catalog, but it meant
+      regeneration needed a hand-patch every time. The scrape now keeps only literals matching
+      SPD's actual key shape (`domain.class.key`, `$` for an inner class); all 3,753 base keys
+      match it and none of the six junk strings do. Verified by making the gate green:
+      `node tools/i18n-extract.mjs --spd-root <checkout> --check` reports **catalog is up to
+      date (3753 referenced SPD keys)**, i.e. the committed `spdMessages.ts` is exactly
+      reproducible. That also pins this file's provenance: it is generated from the SPD
+      checkout's *working tree* (v2.1.4 plus local translation fixes - regenerating from pristine
+      tag `v2.1.4` instead reverts those, e.g. French `’` back to `'`), not from a tag.
+      One more local-only blocker fixed the same way: with git's default `core.autocrlf=true` the
+      file is checked out CRLF while the generator emits LF, so `--check` reported a spurious
+      "stale" on every Windows checkout; the comparison now normalizes line endings.
 - [x] Add MWL hook manifests for executable rules and AI. The MWL compiler validates every AI
       profile reference against `actor-rules.mwl`'s hook manifest, and scene initialization rejects
       a declared profile with no executable TypeScript hook; broader executable-rule manifests
@@ -1292,13 +1310,13 @@ Do not add new authored content as object literals or scattered constants in the
        blocks, verified 415/415 keys and 0 placeholder mismatches for both against the current
        EN table, `tsc`/`build` clean), wiring (`PORT_STRINGS_UK` + `PORT_STRINGS`
        registration + `uk: 'machine'` provenance, plus extending both header comments' locale
-       lists), then `npm run i18n:check`/`npx tsc --noEmit`/`npm run build` all green (the
-       `i18n:check` failure this session - `these keys are referenced but exist in no SPD
-       properties file: ,` / `../mwlContent` / `effect` / `keys` / `potionAppearances` /
-       `scrollAppearances` - was confirmed pre-existing and unrelated to this change by
-       reproducing it identically on a clean `git stash` of the working tree; `port.*` keys are
-       explicitly filtered out of that check's scope by design, per `i18n-extract.mjs`'s own
-       comment). Marked `MT`/`unreviewed` in `PORT_STRINGS_UK`'s own doc comment for the same
+       lists), then `npm run i18n:check`/`npx tsc --noEmit`/`npm run build` all green. The
+       `i18n:check` failure seen then (`these keys are referenced but exist in no SPD properties
+       file: ,` / `../mwlContent` / `effect` / `keys` / `potionAppearances` /
+       `scrollAppearances`) was confirmed pre-existing by reproducing it on a clean `git stash`,
+       but was **root-caused and fixed 2026-09-12** rather than accepted - those six strings are
+       not keys at all, and the extractor's scrape of `spdKeys.ts` was too broad; see section 0's
+       i18n item. `npm run i18n:check` is green now. Marked `MT`/`unreviewed` in `PORT_STRINGS_UK`'s own doc comment for the same
        reason as the other machine-drafted locales. Confirmed `uk` is a real Java SPD locale the
        same way (present in `src/generated/spdMessages.ts`'s generated table, and already listed
        in `languages.ts` with `status: 'unreviewed'`). **Browser verification is owed, honestly
