@@ -32,6 +32,8 @@ import {
 	registerColorTransform,
 } from 'mwg';
 import { Label, theme, Button, Window } from 'mwg';
+import { BlockingWindowStack } from './ui/blockingWindowStack';
+import { titleIcon, type TitleIconName } from './ui/titleIcons';
 import { Roguelike, Actors, Rpg, World } from 'mwg';
 import { loadSpdSprites } from './images';
 import { rollGeneratedAffix, groundKindForItem, portItemKind, sourceInventoryItem, SPECIALTY_BOMB_IDS } from './itemKinds';
@@ -120,11 +122,13 @@ import { Terrain, type PaintLevel } from './spdLevelGen/paintLevel';
 import { WallDecorationLayer, WaterEmberLayer, WellRippleLayer } from './ui/wallDecorations';
 import { runState, LANGUAGE_KEY } from './runState';
 import { recordRun } from './rankings';
-import { isChallengeEnabled } from './challenges';
+import { isChallengeEnabled, challenges } from './challenges';
 import { CLASS_TALENTS, subclassTalentDefinitions, TALENT_TIERS, type TalentDefinition } from './talents';
 import { CLASSES, CLASS_AMMO, HERO_IDLE_FRAME, type ClassId } from './classes';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from './badges';
 import { TitleScene } from './scenes/titleScene';
+import { ClassSelectScene } from './scenes/classSelectScene';
+import { showChallengesWindow, showRankingsWindow, showSettingsWindow } from './ui/portWindows';
 import { transferEnhancement } from './itemWorkflows';
 import { getCurse } from './itemCurses';
 import { Cat, generatorItemOrder, generatorRandom, ghostQuestReward, randomUsingDefaults, removeArtifactClass, setGeneratorDepth, type GenItem, type StatueLoot } from './spdItems/generator';
@@ -1312,6 +1316,17 @@ export class SewersScene extends Scene2D {
 	private infoPanel!: InfoWindow;
 	private compass!: Compass;
 	private hintLabel!: Label;
+	/**
+	 * The in-game window stack: `WndGame` and the windows it opens. Kept separate from the HUD
+	 * containers so a window always draws over them, and so `WindowStack`'s own `Input.onAction`
+	 * listener can swallow `cancel` for whatever is open - the same arrangement the title screen
+	 * uses. It is a `BlockingWindowStack` because every Java `Window` carries a full-screen blocker
+	 * that dismisses it on a click outside its chrome and keeps clicks off the map and the toolbar
+	 * (MWG's stack has no such layer; see `ui/blockingWindowStack.ts`). Its first inhabitant is the
+	 * menu; the hand-rolled talent/item-picker panels remain their own thing for now (see
+	 * `PORT_COVERAGE.md`).
+	 */
+	private gameWindows = new BlockingWindowStack();
 	private actionBar!: SpdToolbar;
 	private inventoryPanel!: InventoryWindow;
 	private inventoryOpen = false;
@@ -1510,7 +1525,10 @@ export class SewersScene extends Scene2D {
 		);
 		//A keyboard action means the player has taken manual control - cancel any queued
 		//click-to-travel rather than let it silently resume after an unrelated keypress.
-		const listener = (action: string) => { this.travelTarget = null; this.onAction(action); };
+		//The returned "consumed" flag is passed on, and matters for one key: a back key this scene
+		//used to open `WndGame` must not reach `WindowStack`'s own listener for the same keystroke,
+		//or the window it just opened is closed again by the keypress that opened it.
+		const listener = (action: string) => { this.travelTarget = null; return this.onAction(action); };
 		Input.onAction.add(listener);
 		this.onDestroy.add(() => Input.onAction.remove(listener));
 	}
@@ -6279,6 +6297,13 @@ export class SewersScene extends Scene2D {
 	}
 
 	private onAction(action: string): boolean {
+		//A window is up: Java's `Window.onSignal` swallows every key while one is open, so the map
+		//underneath must not receive the action either. `WindowStack.blocksWorld` is MWG's seam for
+		//that. This returns "not consumed" on purpose: the stack's own `Input.onAction` listener is
+		//what offers the action to the window (and this listener runs first, so consuming here would
+		//starve a window's own widgets of the arrow keys they need). `cancel` is the exception -
+		//closing the top window is what the stack does with it, so it is left to the stack.
+		if (this.gameWindows.blocksWorld && action !== 'cancel') return false;
 		if (this.infoPanel?.visible) {
 			if (action === 'cancel' || action === 'confirm') this.infoPanel.visible = false;
 			return true;
@@ -6287,7 +6312,17 @@ export class SewersScene extends Scene2D {
 			if (action === 'cancel' || action === 'confirm') this.closeJournal();
 			return true;
 		}
-		if (this.gameOver || !this.awaitingInput) return false;
+		if (this.gameOver || !this.awaitingInput) {
+			//Java's `GameScene.onBackPressed` is independent of the hero's state, and a dead hero is
+			//exactly who `WndGame`'s Start/Rankings entries exist for. A turn still in flight is the
+			//one case this port holds back on: unlike Java it saves mid-animation (`saveRun` below),
+			//so the menu waits for the hero to act again - which `awaitingInput` reports.
+			if ((action === 'cancel' || action === 'gameMenu') && this.gameOver && this.menuCanOpen()) {
+				this.openGameMenu();
+				return true;
+			}
+			return false;
+		}
 		//An active aim owns the keyboard too: arrows move the cursor, Confirm resolves it, and
 		//anything else (Cancel included) abandons it rather than acting through it.
 		if (this.aiming) {
@@ -6310,7 +6345,30 @@ export class SewersScene extends Scene2D {
 
 		// WndBag is modal: arrows select slots and confirm opens item actions.
 		if (this.inventoryOpen) return this.inventoryPanel.handleAction(action);
+		//`GameScene.onBackPressed()`: `if (!cancel()) add(new WndGame())`. Java's `Window`s take the
+		//back key first (`Window.onSignal`), `cancel()` then handles an in-progress hero action or
+		//the cell selector, and only what is left opens `WndGame` - so by the time an action reaches
+		//here, every window and overlay above has already had its chance. `gameMenu` is the toolbar's
+		//on-screen equivalent (`MenuPane`'s own menu entry), since a pointer-only player has no Escape.
+		if ((action === 'cancel' || action === 'gameMenu') && this.menuCanOpen()) {
+			this.openGameMenu();
+			return true;
+		}
 		return dispatchHeroAction(action, this.heroActions);
+	}
+
+	/**
+	 * Whether `WndGame` may open right now. Java runs `GameScene.onBackPressed` at any time, but
+	 * its back key never reaches the scene while a window is open, while a hero action or cell
+	 * selector is mid-cancel, or during an interlevel descent (`InterlevelScene.onBackPressed` does
+	 * nothing) - the port's own stand-ins for those (`ui/journalWindow.ts`, the aim, the inventory
+	 * and talent-choice overlays, the transition curtain) are all covered here or above.
+	 */
+	private menuCanOpen(): boolean {
+		if (this.interlevel) return false;
+		if (this.gameWindows.blocksWorld) return false;
+		return !(this.subclassChoiceOpen || this.armorChoiceOpen || this.augmentChoiceOpen ||
+			this.itemPickerOpen || this.inventoryOpen || this.journalOpen || this.infoPanel?.visible);
 	}
 
 	/**
@@ -12488,6 +12546,8 @@ export class SewersScene extends Scene2D {
 		this.bossHealthBar.visible = false;
 		this.badgeBanner = new BadgeBannerLayer(runState.sprites.uiBadges);
 		this.stage.addChild(this.badgeBanner);
+		//last, so a window is always over the HUD and the badge banner
+		this.stage.addChild(this.gameWindows);
 		//`bossInfo`'s click -> `WndInfoMob`: no mob-info window exists in this port, so this
 		//logs the same name/HP line the bar already shows, the same "detailed window
 		//simplifies to a log line" pattern `awardBadge` already uses for `BadgeBanner`
@@ -13701,6 +13761,83 @@ export class SewersScene extends Scene2D {
 		this.positionInterface(Game.current.width, Game.current.height);
 	}
 
+	/**
+	 * `WndGame`: SPD's in-game menu, opened by the back key (`GameScene.onBackPressed`, wired in
+	 * `onAction`) or by the toolbar's own menu entry.
+	 *
+	 * Java's entries, in its own order and with its own conditions: Settings; Challenges only when
+	 * the run carries any (`Dungeon.challenges > 0`); Start-new-game and Rankings only once the hero
+	 * is dead (`Dungeon.hero == null || !Dungeon.hero.isAlive()`, which this port's `gameOver`
+	 * covers); and always a save-and-exit-to-title (`Dungeon.saveAll()` then `TitleScene`), which
+	 * Java leaves disabled while the intro is still running (`SPDSettings.intro()`, true until the
+	 * player closes the intro's guide page - `entranceRoomContext.guideIntroRead` here). The two
+	 * sub-windows are the same ones the title screen shows - `ui/portWindows.ts` owns them now - and
+	 * the menu closes itself before opening one, exactly as Java's `hide()` does.
+	 *
+	 * The geometry is Java's: `WND_WIDTH = 120`, `BTN_HEIGHT = 20`, `GAP = 2`.
+	 */
+	private openGameMenu(): void {
+		if (!this.gameWindows.isEmpty) return;
+		const width = 120;
+		const buttonHeight = 20;
+		const gap = 2;
+		//each entry carries the icon Java gives it (`Icons.PREFS`, `CHALLENGE_COLOR`, `ENTER`,
+		//`RANKINGS` and `DISPLAY`); `DISPLAY` is two images in Java, chosen by orientation
+		const display: TitleIconName = Game.current.width > Game.current.height ? 'displayLand' : 'displayPort';
+		const entries: { label: string; icon: TitleIconName; onClick: () => void; disabled?: boolean; highlight?: boolean }[] = [];
+		const closeThen = (open: () => void) => () => {
+			menuWindow.close();
+			open();
+		};
+		let menuWindow: Window;
+		entries.push({
+			label: t('windows.wndgame.settings'),
+			icon: 'prefs',
+			//a language change rebuilds the interface; mid-run that means keeping the run and simply
+			//dismissing the menu (`WndSettings` changes language in place)
+			onClick: closeThen(() => showSettingsWindow(this.gameWindows, () => undefined)),
+		});
+		if (challenges().size > 0) {
+			entries.push({ label: t('windows.wndgame.challenges'), icon: 'challenge', onClick: closeThen(() => showChallengesWindow(this.gameWindows)) });
+		}
+		if (this.gameOver) {
+			entries.push({
+				label: t('windows.wndgame.start'),
+				icon: 'enter',
+				//Java tints this one `Window.TITLE_COLOR`, its "highlight"/attention colour
+				highlight: true,
+				onClick: closeThen(() => Game.current.switchScene(ClassSelectScene)),
+			});
+			entries.push({ label: t('windows.wndgame.rankings'), icon: 'rankings', onClick: closeThen(() => showRankingsWindow(this.gameWindows)) });
+		}
+		entries.push({
+			label: t('windows.wndgame.menu'),
+			icon: display,
+			//`SPDSettings.intro()`: a genuinely new player is sealed in until the intro's guide page
+			//closes, so saving and bailing out to the title is not offered yet - see `guideProgress`
+			disabled: !entranceRoomContext.guideIntroRead,
+			onClick: closeThen(() => {
+				this.saveRun();
+				Game.current.switchScene(TitleScene);
+			}),
+		});
+		menuWindow = new Window({ width, height: entries.length * buttonHeight + (entries.length - 1) * gap, anchor: 'center' });
+		entries.forEach((entry, index) => {
+			const button = new Button({
+				width,
+				height: buttonHeight,
+				text: entry.label,
+				icon: titleIcon(runState.sprites.uiIcons, entry.icon, 1),
+				disabled: entry.disabled,
+				...(entry.highlight ? { label: { color: theme().color.textHighlight } } : {}),
+				onClick: entry.onClick,
+			});
+			button.position.set(0, index * (buttonHeight + gap));
+			menuWindow.content.addChild(button);
+		});
+		this.gameWindows.push(menuWindow);
+	}
+
 	/** `WndJournal`: guide, notes, and the per-run identification catalogue. */
 	private openJournal(): void {
 		if (this.journalOpen) return;
@@ -14188,6 +14325,7 @@ export class SewersScene extends Scene2D {
 			this.compass.y = this.statusPane.y + 32;
 		}
 		this.positionInterface(width, height);
+		this.gameWindows.setViewport(width, height);
 	}
 
 	override update(dt: number): void {
@@ -14255,6 +14393,7 @@ export class SewersScene extends Scene2D {
 		this.featuresMap?.cull(this.camera);
 		this.wallBlocking?.cull(this.camera);
 		this.badgeBanner.update(dt);
+		this.gameWindows.update(dt);
 		this.waterSurface?.update(dt);
 		this.wallDecorations?.update(dt, (x, y) => this.fov.isVisible(x, y));
 		this.waterEmbers?.update(dt, (x, y) => this.fov.isVisible(x, y));
@@ -14388,6 +14527,11 @@ async function main(): Promise<void> {
 	Input.bind('buyback', ['KeyG']);
 	Input.bind('save', ['KeyO']);
 	Input.bind('load', ['KeyP']);
+	//No `menu` binding on purpose: SPD opens `WndGame` from the back key (`SPDAction.BACK` -
+	//Escape/Backspace, which is MWG's own `cancel` action), and only when nothing else consumed
+	//it - see `onAction`. Binding that same key to MWG's `menu` action instead would both clobber
+	//the action's own defaults (KeyI/Tab) and make a single Escape close an open window and
+	//immediately reopen the menu, because a keydown fans out to every action bound to it.
 
 	updateStartupProgress(0.48, 'Chargement des sprites…');
 	runState.sprites = await loadSpdSprites();

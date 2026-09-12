@@ -1299,11 +1299,20 @@ Do not add new authored content as object literals or scattered constants in the
       documented in `PORT_COVERAGE.md`.
 - [ ] Port pause/menu chrome, boss banners, toast animations, and Java-style transitions.
       **Checked against tag v3.3.8, 2026-09-12 - the four parts are not one job:**
-      (a) *pause/menu chrome* is simply **absent**: there is no in-game menu at all, and save/load
-      sit on the `KeyO`/`KeyP` bindings instead of Java's `WndGame` (continue / save / journal /
-      badges / rankings / settings / exit to title). This is the real gap, it is bounded, and it is
-      the natural next user of `Window`/`WindowStack` in-game (the title screen and the journal
-      already use them). (b) *boss banners*: Java shows level-up, quest and boss banners through
+      (a) *pause/menu chrome*: **done 2026-09-12.** `WndGame` is now a real in-game `Window` on a
+      `WindowStack` (`main.ts`'s `openGameMenu`), opened by the back key (Escape/Backspace, Java's
+      `SPDAction.BACK` - reachable *only* as an unconsumed `cancel`, which is Java's
+      `GameScene.onBackPressed`'s `if (!cancel())`) and by a new toolbar entry for pointer-only
+      players. Its real entry list is Settings, Challenges (when the run carries any), Start +
+      Rankings (only once the hero is dead) and save-and-exit (disabled while the intro is
+      unfinished), at Java's 120/20/2 geometry - note the earlier parenthetical here
+      ("continue / save / journal / badges / rankings / settings / exit to title") was a *wrong*
+      paraphrase and is corrected in `PORT_COVERAGE.md`'s row. The title screen's five window
+      builders moved to `src/ui/portWindows.ts` so both scenes share them, Java's per-`Window`
+      full-screen blocker is ported (`src/ui/blockingWindowStack.ts`), and the whole thing is
+      verified live by `tools/scratch/game-menu-livecheck.mjs` (23 assertions, including the title
+      screen's own windows after the move). (b) *boss banners*:
+      Java shows level-up, quest and boss banners through
       `GameScene.showBanner`/`Banner`; this port has only the *badge* banner
       (`ui/badgeBanner.ts`, wired at `awardBadge`) and logs the rest, so a general `Banner` is
       missing with that as the precedent. (c) *toast animations*: **not applicable as designed** -
@@ -1995,7 +2004,11 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       Java's per-particle random colour, per-frame size jitter or piecewise alpha (proposal P14). (5) The talent panel, item
       picker and `InfoWindow` hand-roll modality where `Window`/`WindowStack`/`MessageBox` exist
       (SPD's pixel chrome justifies not being a `Window`; the item picker is exactly `MessageBox`'s
-      titled-choice shape). (6) Screen shake: Java's 43 `PixelScene.shake(magnitude, duration)` sites
+      titled-choice shape) - **narrowed 2026-09-12**: the in-game menu now *is* a real `Window` on a
+      `WindowStack` (`main.ts`'s `openGameMenu`, `src/ui/portWindows.ts`), which is the worked
+      example the rest of this item was missing, and it needed one thing the framework still lacks -
+      Java's per-window blocker layer, carried locally as `src/ui/blockingWindowStack.ts` and
+      recorded as proposal P15. (6) Screen shake: Java's 43 `PixelScene.shake(magnitude, duration)` sites
       all route through one wrapper whose body is `Camera.main.shake` - **wired 2026-09-12** at every
       site whose Java feature is ported (the chasm landing, mining, DM-100's bolt, DM-300's ROCKS,
       the Goo taking a hit while pumped up, and the rooted move/blink refusals) through a
@@ -2228,6 +2241,23 @@ compatibility notes and an API report entry in MWG before this port adopts it; P
       watabou-style effect migrate: a per-particle colour range, an optional per-frame jitter on
       scale/alpha, or an alpha/scale *curve* (a function of `age/life`) in place of the endpoint
       pair. The curves and the layer's reasons are quoted in that file's own header.
+
+- [ ] **P15 - A blocker layer for `Window`.** Java's `Window` adds a full-screen `PointerArea`
+      *under its chrome* (`Window`'s constructor) whose click runs `onBackPressed()` unless the
+      click landed on the chrome itself, and because it is a child of the window it also means a
+      window's own buttons win over it. That one layer is what makes a click outside a window
+      dismiss it, and what stops a window open over a map or a toolbar from letting clicks through
+      to whatever is underneath. MWG's `WindowStack` has neither half - its overlay only draws, and
+      Pixi does not hit-test a plain `Container` at all without a `hitArea`
+      (`EventBoundary.hitTestFn` returns false when a container has neither `hitArea` nor
+      `containsPoint`) - so this port carries `src/ui/blockingWindowStack.ts`, a `WindowStack`
+      subclass that inserts a hit-area'd, non-drawing blocker beneath each window it pushes and
+      keeps it sized through `setViewport`. Every game that wants Java-style modal windows needs
+      this same 30 lines; `Window` could take a `blocker: true` option (or `WindowStack` an
+      `autoBlocker`) so a game can plain-use the widget as documented. Related, smaller: nothing
+      documents that a `Window` with no interactive children is not itself clickable, which is easy
+      to read as "windows swallow clicks in their own area" - they do not, they just sit above the
+      thing that does.
 
 ### Explicitly out of scope for MWG
 

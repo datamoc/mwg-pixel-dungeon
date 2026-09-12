@@ -63,7 +63,7 @@ export class SpdToolbar extends Container {
 		add('inventory', 'port.action.bag', 0, 24, 26, new Sprite(crop(160, 0, 16, 16)));
 		add('search', 'port.action.search', 44, 20, 26, new Sprite(crop(192, 0, 16, 16)));
 		add('wait', 'port.action.wait', 24, 20, 26, new Sprite(crop(176, 0, 16, 16)));
-		const extraActions = [['examine', 'port.action.examine'], ['upgrade', 'port.action.upgrade'], ['talents', 'port.action.talents'], ['journal', 'windows.wndkeybindings.journal'], ['save', 'port.action.save'], ['load', 'port.action.load']];
+		const extraActions = [['examine', 'port.action.examine'], ['upgrade', 'port.action.upgrade'], ['talents', 'port.action.talents'], ['journal', 'windows.wndkeybindings.journal'], ['gameMenu', 'windows.wndkeybindings.menu'], ['save', 'port.action.save'], ['load', 'port.action.load']];
 		extraActions.forEach(([action, key], i) => {
 			const button = new SpdButton({ width: 100, height: 21, text: t(key), onClick: () => {
 				this.extras.visible = false;

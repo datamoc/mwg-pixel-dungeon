@@ -19,6 +19,14 @@ const REGIONS: Record<string, [x: number, y: number, w: number, h: number]> = {
 	shpx: [119, 0, 16, 16],
 	prefs: [102, 0, 14, 14],
 	langs: [80, 32, 14, 11],
+	//`WndGame`'s two remaining entries, `Icons.CHALLENGE_COLOR` (Java 144,32,15,12) and `DISPLAY`'s
+	//own portrait/landscape pair (Java 16,16,12,16 and 32,16,16,12, the one Java picks by
+	//orientation). This sheet is hand-packed rather than a density copy of Java's, so these three
+	//were located by template-matching their art against `interfaces/icons.png` at tag `v3.3.8`
+	//rather than by shifting Java's numbers (`tools/scratch/icons-match.mjs`).
+	challenge: [160, 32, 15, 12],
+	displayPort: [16, 32, 12, 16],
+	displayLand: [32, 32, 16, 12],
 };
 
 export type TitleIconName = keyof typeof REGIONS;
