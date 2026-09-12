@@ -489,8 +489,28 @@ is the real dark FOV-limited floor, not a failed load - only the starting room i
 The Troll Blacksmith now retains quest favor and reforge count across saves. Its forge
 selects two identified, non-cursed, same-category weapon/armor payloads, keeps the higher
 level item, upgrades it once, consumes the other, and charges Java's progressive reforge
-cost. The remaining harden/upgrade menu, missile/seal transfer details, and alternative
-quest reward bookkeeping are still open and remain explicitly simplified in `main.ts`.
+cost. **The service menu is now a real `WndBlacksmith` window (2026-09-12)**: talking to him
+with any favor opens a titled `Window` on the scene's `WindowStack` (`showChoiceWindow`),
+listing each service as Java does - `<b>Label (cost favor):</b> description`, greyed out when
+the favor does not cover it - using SPD's own v3.3.8 label text and translations in all 19
+locales. **Harden is ported with it** (`500 + 1000*hardens` favor): it sets
+`Weapon.enchantHardened`/`Armor.glyphHardened` on an identified, uncursed, upgradable item
+the player picks - the equipped weapon or armor included, since Java's selector walks the
+whole belongings and the hardening only ever matters on the item a scroll later upgrades -
+and from then on `upgrade()`'s affix-loss roll is replaced by a *hardening*-loss one
+(`level() >= 6 && Random.Float(10) < 2^(level-6)`), so the enchant is protected until the
+protection wears off. The state lives in the scene flags for equipped gear and in the bag
+payload otherwise, carries through `transferEnhancement`/equip/unequip/save, and shows in the
+item's own name (Java's `item.info()` line). Verified live
+(`tools/scratch/blacksmith-harden-livecheck.mjs`, 10 assertions): the window opens with both
+services enabled at 2000 favor, Harden opens the picker and clicking it through the real
+pointer path hardens the equipped weapon and charges 500, a hardened item below +6 never
+loses its enchant in 200 rolls, and at +6 the hardening itself breaks at Java's 10%.
+**Correction found while implementing it: this file's own earlier claim that hardening is
+granted by `StoneOfEnchantment` was wrong** - it is this Blacksmith service. Still open, and
+each honestly smaller than "the menu": Java's other four services (pickaxe buy-back,
+`upgrade` below +2, `smith`, cash out), missile/seal transfer details, and alternative quest
+reward bookkeeping.
 
 Two corrections to earlier revisions of this file: this checkout's `DM100.java` has no
 self-destruct blast (its kit is melee plus a lightning zap; the blast belongs to

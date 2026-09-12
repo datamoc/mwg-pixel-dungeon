@@ -63,6 +63,51 @@ export function showConfirmWindow(windows: WindowStack, title: string, body: str
 }
 
 /**
+ * A titled window with one button per option - `WndOptions`' general shape, which Java's
+ * `WndBlacksmith` uses for its service list (each entry `<b>Label (cost favor):</b> description`,
+ * greyed out when the player cannot afford it). Rows are full-width and left-justified like Java's
+ * `RedButton`s there; the caller supplies already-translated labels and whether each is enabled.
+ */
+export function showChoiceWindow(
+	windows: WindowStack,
+	title: string,
+	body: string,
+	options: readonly { label: string; disabled?: boolean; onPick: () => void }[],
+): void {
+	const width = windowWidth(180);
+	const label = new Label({ text: body, size: 6, wrapWidth: width - 16, color: theme().color.text });
+	// Each row is as tall as its wrapped text, which is what Java's `b.setSize(width,
+	// b.reqHeight())` does for the same list - a service label is a full sentence plus its cost,
+	// and one line's worth of height would overflow the frame on every locale.
+	// measured a little narrower than the button's own label area, so the row is never shorter
+	// than the wrapped text it ends up holding
+	const rowHeights = options.map((option) =>
+		Math.max(22, new Label({ text: option.label, size: 6, wrapWidth: width - 40, color: theme().color.text }).height + 10));
+	const total = rowHeights.reduce((sum, height) => sum + height + 4, 0);
+	const window = new Window({ width, height: label.height + total + 24, title, anchor: 'center', blocker: true });
+	window.content.addChild(label);
+	let y = label.height + 6;
+	options.forEach((option, index) => {
+		const button = new Button({
+			width: window.contentWidth,
+			height: rowHeights[index]!,
+			text: option.label,
+			label: { wrapWidth: width - 22 },
+			disabled: option.disabled === true,
+			onClick: () => {
+				if (option.disabled) return;
+				window.close();
+				option.onPick();
+			},
+		});
+		button.position.set(0, y);
+		window.content.addChild(button);
+		y += rowHeights[index]! + 4;
+	});
+	windows.push(window);
+}
+
+/**
  * Settings: the port's real settings are the language and the challenge set (`WndSettings`' music,
  * sound and brightness have no seam here, and its other tabs are unported).
  *

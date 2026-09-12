@@ -521,6 +521,16 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.confirm.lastmissile.desc': 'If the last thrown weapon in your enhanced thrown weapon set breaks, the set will be permanently lost. Are you sure you want to throw it?',
 	'port.confirm.lastmissile.yes': 'Yes',
 	'port.confirm.lastmissile.no': 'No',
+	'port.item.hardened.weapon': 'It has been _hardened._',
+	'port.item.hardened.armor': 'It has been _hardened._',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': 'Okay, a deal\'s a deal. Here\'s what I can do for you. I only work with identified and uncursed items.\\n\\n_Current Favor: {favor}_',
+	'port.blacksmith.reforge': '_Reforge ({favor} favor):_ I can reforge two of the same type of item into one of a higher quality.',
+	'port.blacksmith.harden': '_Harden ({favor} favor):_ I can harden a weapon or armor, so it\'s easier to keep an enchantment or glyph.',
+	'port.log.hardeninggone.weapon': 'The hardening on this weapon has worn off!',
+	'port.log.hardeninggone.armor': 'The hardening on this armor has worn off!',
 };
 
 /**
@@ -992,6 +1002,16 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 	'port.confirm.lastmissile.desc': 'Si la dernière des armes de jet d\'un ensemble amélioré se brise, l\'ensemble sera définitivement perdu. Êtes-vous sûr de vouloir la lancer ?',
 	'port.confirm.lastmissile.yes': 'Oui',
 	'port.confirm.lastmissile.no': 'Non',
+	'port.item.hardened.weapon': 'Elle a été _durcie._',
+	'port.item.hardened.armor': 'Elle a été _durcie._',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': 'D’accord, un marché est un marché. Voici ce que je peux faire pour toi. Je ne travaille qu\'avec des objets identifiés et non maudits.\\n\\n_Faveur actuelle : {favor}_',
+	'port.blacksmith.reforge': '_Reforger ({favor} faveur):_ J\'peux reforger deux objets du même type en un de meilleure qualité.',
+	'port.blacksmith.harden': '_Durcir ({favor} faveur):_ J\'peux durcir une arme ou une armure, pour garder plus facilement un enchantement ou un glyphe.',
+	'port.log.hardeninggone.weapon': 'Le durcissement sur cette arme s’est estompé !',
+	'port.log.hardeninggone.armor': 'Le durcissement sur cette armure s’est estompé !',
 };
 
 /**
@@ -1453,6 +1473,16 @@ export const PORT_STRINGS_DE: Record<string, string> = {
 	'port.confirm.lastmissile.desc': 'Wenn die letzte Wurfwaffe aus deinem verbesserten Satz Wurfwaffen bricht, geht der Satz unwiederbringlich verloren. Bist du sicher, dass du sie werfen möchtest?',
 	'port.confirm.lastmissile.yes': 'Ja',
 	'port.confirm.lastmissile.no': 'Nein',
+	'port.item.hardened.weapon': 'Sie wurde _verhärtet._',
+	'port.item.hardened.armor': 'Der Gegenstand wurde _verhärtet._',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': 'Okay, Deal ist Deal. Hier is\' mein Angebot. Ich arbeite aber nur mit identifizierten und nicht verfluchten Gegenständen.\\n\\n_Aktuelle Gunst: {favor}_',
+	'port.blacksmith.reforge': '_Erneuern ({favor} Gunst):_ Ich kann zwei Gegenstände des gleichen Typs zu einem mit verbesserter Qualität erneuern.',
+	'port.blacksmith.harden': '_Härten ({favor} Gunst):_ Ich kann eine Waffe oder Rüstung härten, sodass es leichter ist, eine Verzauberung oder Glyphe daran zu bewahren.',
+	'port.log.hardeninggone.weapon': 'Die Verhärtung dieser Waffe wurde abgetragen!',
+	'port.log.hardeninggone.armor': 'Die Härtung auf dieser Rüstung ist abgetragen!',
 };
 
 /**
@@ -1914,6 +1944,16 @@ export const PORT_STRINGS_ES: Record<string, string> = {
 	'port.confirm.lastmissile.desc': 'Si la última arma arrojadiza de tu conjunto mejorado se rompe, se perderá definitivamente. ¿Seguro que quieres lanzarla?',
 	'port.confirm.lastmissile.yes': 'Sí',
 	'port.confirm.lastmissile.no': 'No',
+	'port.item.hardened.weapon': 'Ha sido _fortalecida._',
+	'port.item.hardened.armor': 'Ha sido _fortalecida._',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': 'Bien, un trato es un trato. Esto es lo que puedo hacer por ti. Solo trabajo con ítems identificados y no maldecidos.\\n\\n_Favor actual: {favor}_',
+	'port.blacksmith.reforge': '_Forjar ({favor} favor):_ Puedo forjar dos ítems del mismo tipo en uno de mayor calidad.',
+	'port.blacksmith.harden': '_Fortalecer ({favor} favor):_ Puedo fortalecer un arma o armadura para que le sea más fácil mantener su encantamiento o glifo.',
+	'port.log.hardeninggone.weapon': '¡El fortalecimiento en esta arma se ha desvanecido!',
+	'port.log.hardeninggone.armor': '¡El fortalecimiento en esta armadura se ha desvanecido!',
 };
 
 /**
@@ -2376,6 +2416,16 @@ export const PORT_STRINGS_PT: Record<string, string> = {
 	'port.confirm.lastmissile.desc': 'Se a última arma de arremesso do seu conjunto de armas de arremesso aprimoradas quebrar, o conjunto será perdido permanentemente. Tem certeza de que deseja arremessá-la?',
 	'port.confirm.lastmissile.yes': 'Sim',
 	'port.confirm.lastmissile.no': 'Não',
+	'port.item.hardened.weapon': 'Foi _endurecido._',
+	'port.item.hardened.armor': 'Foi _endurecido._',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': 'Certo, trato é trato. Eis o que posso fazer por você. Eu só trabalho com itens identificados e não amaldiçoados.\\n\\n_Favor atual: {favor}_',
+	'port.blacksmith.reforge': '_Reforjar ({favor} favor):_ Eu posso reforjar dois itens do mesmo tipo em um de melhor qualidade.',
+	'port.blacksmith.harden': '_Endurecer ({favor} favor):_ Eu posso endurecer uma arma ou armadura, assim será mais fácil manter um encantamento ou um glifo nela.',
+	'port.log.hardeninggone.weapon': 'O endurecimento desta arma acabou!',
+	'port.log.hardeninggone.armor': 'O endurecimento desta armadura acabou!',
 };
 
 /**
@@ -2837,6 +2887,16 @@ export const PORT_STRINGS_IT: Record<string, string> = {
 	'port.confirm.lastmissile.desc': 'Se l\'ultima arma da lancio del tuo set migliorato si rompe, questo verrà perso per sempre. Vuoi davvero lanciarla?',
 	'port.confirm.lastmissile.yes': 'Si',
 	'port.confirm.lastmissile.no': 'No',
+	'port.item.hardened.weapon': 'È stato _indurito._',
+	'port.item.hardened.armor': 'È stata _rinforzata._',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': 'Okay, un affare è un affare. Ecco cosa posso fare per te. Lavoro solo con oggetti identificati e non maledetti.\\n\\n_Favore Attuale: {favor}_',
+	'port.blacksmith.reforge': '_Riforgia ({favor} favore):_ Posso riforgiare due oggetti dello stesso tipo in uno di qualità superiore.',
+	'port.blacksmith.harden': '_Rafforza ({favor} favore):_ Posso indurire un\'arma o un\'armatura, in modo che sia più facile mantenere un incantesimo o un glifo.',
+	'port.log.hardeninggone.weapon': 'L\'indurimento di quest\'arma è svanito!',
+	'port.log.hardeninggone.armor': 'L\'indurimento di questa armatura è svanito!',
 };
 
 /**
@@ -3298,6 +3358,16 @@ export const PORT_STRINGS_PL: Record<string, string> = {
 	'port.confirm.lastmissile.desc': 'Jeżeli ostatnia broń miotana w twoim ulepszonym zestawie broni miotanej się zepsuje, utracisz go na zawsze. Czy na pewno chcesz nią rzucić?',
 	'port.confirm.lastmissile.yes': 'Tak',
 	'port.confirm.lastmissile.no': 'Nie',
+	'port.item.hardened.weapon': 'Ten przedmiot został _zahartowany_.',
+	'port.item.hardened.armor': 'Ten przedmiot został _zahartowany_.',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': 'Dobra, umowa to umowa. Oto co mogę dla Ciebie zrobić. Pracuję tylko na zidentyfikowanych i nieprzeklętych przedmiotach.\\n\\n_Obecna ilość punktów przysługi: {favor}_',
+	'port.blacksmith.reforge': '_Przekucie ({favor} pkt. przysługi):_ Mogę przekuć dla ciebie dwa takie same przedmioty w jeden lepszej jakości.',
+	'port.blacksmith.harden': '_Hartowanie ({favor} pkt. przysługi):_ Mogę wzmocnić broń lub pancerz, aby łatwiej było utrzymać na nich zaklęcie lub glif.',
+	'port.log.hardeninggone.weapon': 'Ta broń się zużyła, nie jest już zahartowana!',
+	'port.log.hardeninggone.armor': 'Ta zbroja się zużyła, nie jest już zahartowana!',
 };
 
 /**
@@ -3737,6 +3807,16 @@ export const PORT_STRINGS_RU: Record<string, string> = {
 	'port.confirm.lastmissile.desc': 'Если последнее метательное оружие в зачарованном комплекте сломается, комплект будет навсегда утерян. Вы уверены, что хотите его бросить?',
 	'port.confirm.lastmissile.yes': 'Да',
 	'port.confirm.lastmissile.no': 'Нет',
+	'port.item.hardened.weapon': 'Подверглось _закалке._',
+	'port.item.hardened.armor': 'Подверглось _закалке_.',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': 'Лады, сделка есть сделка, и вот что я тебе предлагаю. Но имей ввиду, я работаю только с опознанными и не проклятыми предметами.\\n\\n_Текущее уважение: {favor}._',
+	'port.blacksmith.reforge': '_Перековка ({favor} уважения):_ Я могу перековать два предмета одного типа, сделав один с высочайшим качеством.',
+	'port.blacksmith.harden': '_Закалка ({favor} уважения):_ Я могу укрепить закалкой оружие или броню, чтобы они могли дольше удерживать зачарования или руны.',
+	'port.log.hardeninggone.weapon': 'Закалка на этом оружии стерлась!',
+	'port.log.hardeninggone.armor': 'Закалка на этой броне стерлась!',
 };
 
 /**
@@ -4176,6 +4256,16 @@ export const PORT_STRINGS_TR: Record<string, string> = {
 	'port.confirm.lastmissile.desc': 'Geliştirilmiş fırlatılan silah setinizdeki son fırlatılan silah kırılırsa, set kalıcı olarak kaybolacaktır. Fırlatmak istediğine emin misin?',
 	'port.confirm.lastmissile.yes': 'Evet',
 	'port.confirm.lastmissile.no': 'Hayır',
+	'port.item.hardened.weapon': '_Sertleştirilmiş._',
+	'port.item.hardened.armor': '_Sertleştirildi._',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': 'Tamam, anlaşma anlaşmadır. İşte sizin için yapabileceklerim. Sadece tanımlanmış ve lanetlenmemiş eşyalarla çalışırım.\\n\\n\\n_Şu anki iyilik: {favor}_',
+	'port.blacksmith.reforge': '_Yeniden Birleştirme ({favor} minnet):_ Aynı türden iki eşyayı birleştirerek daha yüksek kalitede tek bir eşyaya dönüştürebilirim.',
+	'port.blacksmith.harden': '_Sertleştirme ({favor} minnet):_ Bir silahı veya zırhı sertleştirebilirim, böylece bir büyüyü veya rünü tutmak daha kolay olur.',
+	'port.log.hardeninggone.weapon': 'Bu silahın üzerindeki kaplama aşınmış!',
+	'port.log.hardeninggone.armor': 'Bu zırh üzerindeki sertleşme etkisi kayboldu!',
 };
 
 /**
@@ -4613,6 +4703,16 @@ export const PORT_STRINGS_UK: Record<string, string> = {
 	'port.confirm.lastmissile.desc': 'Якщо остання метальна зброя у вашому покращеному наборі метальної зброї зламається, набір буде назавжди втрачено. Ви впевнені, що хочете її кинути?',
 	'port.confirm.lastmissile.yes': 'Так',
 	'port.confirm.lastmissile.no': 'Ні',
+	'port.item.hardened.weapon': 'Вона була _загартована._',
+	'port.item.hardened.armor': 'Це було _загартовано._',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': 'Що ж, угода є угода. От що я тобі пропоную. Але зважай, я працюю лишень із розпізнаними та не проклятими речами.\\n\\n_Наявні жетони: {favor}_',
+	'port.blacksmith.reforge': '_Перекування ({favor} жетонів):_ Я можу перекувати два однакові предмети в один кращого ґатунку.',
+	'port.blacksmith.harden': '_Загартування ({favor} жетонів):_ Я можу загартувати зброю або обладунок, щоб знизити ризик розвіяти зачарування або руна під час поліпшення сувоєм.',
+	'port.log.hardeninggone.weapon': 'Загартування цієї зброї стерлося!',
+	'port.log.hardeninggone.armor': 'Загартування цього обладунку стерлося!',
 };
 
 /**
@@ -5050,6 +5150,16 @@ export const PORT_STRINGS_HU: Record<string, string> = {
 	'port.confirm.lastmissile.desc': 'Ha a továbbfejlesztett dobófegyver-készleted utolsó darabja is eltörik, akkor a készlet véglegesen elvész. Biztosan el akarod dobni?',
 	'port.confirm.lastmissile.yes': 'Igen',
 	'port.confirm.lastmissile.no': 'Nem',
+	'port.item.hardened.weapon': 'Ez már _keményített._',
+	'port.item.hardened.armor': 'Ez a páncél már _keményített._',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': 'Oké, az alku az alku. Megmondom, mit tehetek érted. Csak azonosított és átok nélküli tárgyakkal dolgozom.\\n\\n_Jelenlegi szívesség: {favor}_',
+	'port.blacksmith.reforge': '_Újrakovácsolás ({favor} szívesség):_ Két azonos típusú azonosított tárgyat tudok újrakovácsolni egy magasabb minőségűvé.',
+	'port.blacksmith.harden': '_Keményítés ({favor} szívesség):_ Egy azonosított fegyvert vagy páncélt meg tudok keményíteni, így könnyebben megtartja a bűvöletet vagy varázsjelet.',
+	'port.log.hardeninggone.weapon': 'Ennek a fegyvernek a keményítése lekopott!',
+	'port.log.hardeninggone.armor': 'Ennek a páncélnak a keményítése lekopott!',
 };
 
 /**
@@ -5486,6 +5596,16 @@ export const PORT_STRINGS_NL: Record<string, string> = {
 	'port.confirm.lastmissile.desc': 'Als het laatst werpwapen in je verbeterde set werpwapens kapotgaat, dan gaat de set permanent verloren. Weet je zeker dat je het wilt gooien?',
 	'port.confirm.lastmissile.yes': 'Ja',
 	'port.confirm.lastmissile.no': 'Nee',
+	'port.item.hardened.weapon': 'Het is _verhard._',
+	'port.item.hardened.armor': 'Het is _verhard._',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': 'Oké, afspraak is afspraak. Dit is wat ik voor je kan doen. Ik werk alleen met geïdentificeerde en niet-vervloekte items.\\n\\n_Huidige gunst: {favor}_',
+	'port.blacksmith.reforge': '_Hersmeden ({favor} gunstpunten):_ Ik kan twee items van hetzelfde type hersmeden tot een item van hogere kwaliteit.',
+	'port.blacksmith.harden': '_Verharden ({favor} gunstpunten):_ Ik kan een wapen of pantser verharden, zodat het gemakkelijker is om een betovering of symbool te behouden.',
+	'port.log.hardeninggone.weapon': 'De verharding van dit wapen is uitgewerkt!',
+	'port.log.hardeninggone.armor': 'De verharding van dit harnas is uitgewerkt!',
 };
 
 
@@ -5923,6 +6043,16 @@ export const PORT_STRINGS_IN: Record<string, string> = {
 	'port.confirm.lastmissile.desc': 'Jika senjata lempar terakhir di set senjata lemparmu yang ditingkatkan rusak, set tersebut akan hilang secara permanen. Yakin ingin melemparnya?',
 	'port.confirm.lastmissile.yes': 'Ya',
 	'port.confirm.lastmissile.no': 'Tidak',
+	'port.item.hardened.weapon': 'Sudah _dikeraskan._',
+	'port.item.hardened.armor': 'Sudah _dikeraskan._',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': 'Oke, kesepakatan adalah kesepaktan. Inilah yang bisa aku lakukan untukmu. Aku hanya bekerja dengan item yang teridentifikasi dan tidak terkutuk. \\n\\n_Bantuan Saat Ini: {favor}_',
+	'port.blacksmith.reforge': '_Tempa Ulang ({favor} bantuan):_ Aku dapat menempa dua jenis item yang sama menjadi salah satu dengan kualitas lebih tinggi.',
+	'port.blacksmith.harden': '_Keraskan ({favor} bantuan):_ Aku dapat mengeraskan senjata atau armor, sehingga lebih mudah untuk menyimpan enchantment atau glyph.',
+	'port.log.hardeninggone.weapon': 'Pengerasan pada senjata ini telah hilang!',
+	'port.log.hardeninggone.armor': 'Pengerasan pada armor ini telah hilang!',
 };
 
 /**
@@ -6358,6 +6488,16 @@ export const PORT_STRINGS_JA: Record<string, string> = {
 	'port.confirm.lastmissile.desc': '強化された投擲武器の組の最後の1つが壊れた場合、その組は永久に失われる。本当に投げますか？',
 	'port.confirm.lastmissile.yes': 'はい',
 	'port.confirm.lastmissile.no': 'いいえ',
+	'port.item.hardened.weapon': 'それは_硬化_されている。',
+	'port.item.hardened.armor': 'それは_硬化_されている。',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': 'よぉし、約束は約束だ、俺ができることはコレだ。ただ俺は識別されてて、呪われてねぇモノしか扱わねぇ。\\n\\n_現在の好意度: {favor}_',
+	'port.blacksmith.reforge': '_再鍛造 (好意度 {favor}):_ 2つの同じアイテムを、より質の高いアイテム1つに鍛え直すぜ。',
+	'port.blacksmith.harden': '_硬化 (好意度 {favor}):_ 武器や鎧を硬化させて、エンチャントや刻印を維持しやすくするぜ。',
+	'port.log.hardeninggone.weapon': '武器の硬化が剥がれてしまった！',
+	'port.log.hardeninggone.armor': '鎧の硬化が剥がれてしまった！',
 };
 
 /**
@@ -6793,6 +6933,16 @@ export const PORT_STRINGS_CS: Record<string, string> = {
 	'port.confirm.lastmissile.desc': 'Pokud se poslední vrhací zbraň v tvé vylepšené sadě rozbije, bude sada navždy ztracena. Jsi si jistý, že ji chceš hodit?',
 	'port.confirm.lastmissile.yes': 'Ano',
 	'port.confirm.lastmissile.no': 'Ne',
+	'port.item.hardened.weapon': 'Předmět byl _vytvrzen_.',
+	'port.item.hardened.armor': 'Předmět byl _vytvrzen_.',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': 'Dobrá, dohoda je dohoda. Tohle pro tebe můžu udělat. Pracuju ale jen s identifikovanejma a neprokletejma věcma.\\n\\n_Momentální přízeň: {favor}_',
+	'port.blacksmith.reforge': '_Skutí ({favor} přízně):_ Můžu skout dva stejný předměty do jednoho s vyšší kvalitou.',
+	'port.blacksmith.harden': '_Vytvrzení ({favor} přízně):_ Můžu ti vytvrdit zbroj nebo zbraň, takže se na ní snáz udrží runa nebo okouzlení.',
+	'port.log.hardeninggone.weapon': 'Vytvrzení této zbraně se vytratilo!',
+	'port.log.hardeninggone.armor': 'Vytvrzení této zbroje se vytratilo!',
 };
 
 /**
@@ -7228,6 +7378,16 @@ export const PORT_STRINGS_VI: Record<string, string> = {
 	'port.confirm.lastmissile.desc': 'Nếu món vũ khí ném cuối cùng trong bộ vũ khí ném được nâng cấp của bạn hỏng, bộ đó sẽ bị mất vĩnh viễn. Bạn có chắc chắn mình muốn ném nó?',
 	'port.confirm.lastmissile.yes': 'Có',
 	'port.confirm.lastmissile.no': 'Không',
+	'port.item.hardened.weapon': 'Nó đã được _gia cố._',
+	'port.item.hardened.armor': 'Nó đã được _gia cố._',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': 'Được rồi, thỏa thuận là thỏa thuận. Đây là những điều ta có thể làm cho ngươi. Ta chỉ làm việc với các vật phẩm đã được thẩm định và không bị nguyền.\\n\\n_Sự hỗ trợ hiện tại: {favor}_',
+	'port.blacksmith.reforge': '_Rèn lại ({favor} sự hỗ trợ):_ Ta có thể rèn lại hai vật phẩm cùng loại thành một vật phẩm tương tự chất lượng cao hơn.',
+	'port.blacksmith.harden': '_Gia cố ({favor} sự hỗ trợ):_ Ta có thể gia cố một món vũ khí hoặc bộ giáp, để dễ giữ lại một phù phép hoặc kí tự hơn.',
+	'port.log.hardeninggone.weapon': 'Sự gia cố trên vũ khí này đã hết tác dụng!',
+	'port.log.hardeninggone.armor': 'Sự gia cố trên bộ giáp này đã hết tác dụng!',
 };
 
 /**
@@ -7663,6 +7823,16 @@ export const PORT_STRINGS_EL: Record<string, string> = {
 	'port.confirm.lastmissile.desc': 'Εάν το τελευταίο όπλο ρίψης στο βελτιωμένο σετ όπλων ρίψης σπάσει, τότε το σετ θα χαθεί μόνιμα. Θέλεις σίγουρα να το πετάξεις;',
 	'port.confirm.lastmissile.yes': 'Ναι',
 	'port.confirm.lastmissile.no': 'Όχι',
+	'port.item.hardened.weapon': 'Έχει _σκληρυνθεί._',
+	'port.item.hardened.armor': 'Έχει _σκληρυνθεί._',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': 'Καλά, η συμφωνία είναι συμφωνία. Να τι μπορώ να κάνω. Δουλεύω μόνο με αναγνωρισμένα και μη καταραμένα εφόδια.\\n\\n_Τρέχουσα εύνοια: {favor}_',
+	'port.blacksmith.reforge': '_Επανασφυρηλάτηση ({favor} εύνοια):_ Θα ξανασφυρηλατήσω δυο εφόδια του ίδιου τύπου σε ένα, καλύτερης ποιότητας.',
+	'port.blacksmith.harden': '_Σκλήρυνση ({favor} εύνοια):_ Θα σκληρύνω ένα όπλο ή πανοπλία, για να διατηρεί πιο εύκολα τη μαγική ενίσχυση ή τον γλύφο.',
+	'port.log.hardeninggone.weapon': 'Η σκλήρυνση του όπλου έχει εξασθενήσει!',
+	'port.log.hardeninggone.armor': 'Η σκλήρυνση της πανοπλίας έχει εξασθενήσει!',
 };
 
 /**
@@ -8098,6 +8268,16 @@ export const PORT_STRINGS_KO: Record<string, string> = {
 	'port.confirm.lastmissile.desc': '만약 세트의 마지막 투척 무기가 부서지면, 이 강화된 투척 무기 세트를 영원히 잃게 됩니다. 정말로 던질 건가요?',
 	'port.confirm.lastmissile.yes': '네',
 	'port.confirm.lastmissile.no': '아니오',
+	'port.item.hardened.weapon': '이 무기는 _경화_되었습니다.',
+	'port.item.hardened.armor': '이 갑옷은 _경화_되었습니다.',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': '그래... 약속은 약속이니. 내가 할 수 있는 것을 해 주지. 난 저주받지 않고 감정되어 있는 물건들만 취급하니까, 알아 두라고.\\n\\n_현재 우호도: {favor}_',
+	'port.blacksmith.reforge': '_재련 ({favor} 우호도):_ 같은 종류의 두 장비를 소모해서 더 높은 성능을 가진 하나의 장비로 재련할 수 있어.',
+	'port.blacksmith.harden': '_경화 ({favor} 우호도):_ 무기나 갑옷을 경화시켜줄 수 있어. 장비에 부여된 마법이나 상형문자를 유지하기 더 쉬울 거야.',
+	'port.log.hardeninggone.weapon': '무기의 경화 효과가 사라졌다!',
+	'port.log.hardeninggone.armor': '갑옷의 경화 효과가 사라졌다!',
 };
 
 /**
@@ -8533,6 +8713,16 @@ export const PORT_STRINGS_ZH: Record<string, string> = {
 	'port.confirm.lastmissile.desc': '如果一组投掷武器的最后一件损坏，这组投掷武器就会永远消失。你确定还要投掷这件武器吗？',
 	'port.confirm.lastmissile.yes': '确定',
 	'port.confirm.lastmissile.no': '算了',
+	'port.item.hardened.weapon': '它被_硬化_了。',
+	'port.item.hardened.armor': '它被_硬化_了。',
+	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
+	// and translations for the two services this port offers, and the two `hardening_gone`
+	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
+	'port.blacksmith.prompt': '好吧，按之前说好的，我得帮你做点事。我干活只收鉴定过还没诅咒的物品。\\n\\n_当前人情：{favor}_',
+	'port.blacksmith.reforge': '_重铸({favor}人情)：_我可以重铸两件同种物品制成一件品质更好的。',
+	'port.blacksmith.harden': '_硬化({favor}人情)：_我可以硬化你的武器护甲，上面的附魔刻印会更容易保留。',
+	'port.log.hardeninggone.weapon': '你武器上的硬化效果被损耗掉了！',
+	'port.log.hardeninggone.armor': '这件护甲上的硬化效果已被损耗！',
 };
 
 /**

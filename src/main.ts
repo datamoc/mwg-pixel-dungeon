@@ -129,7 +129,7 @@ import { CLASSES, CLASS_AMMO, HERO_IDLE_FRAME, type ClassId } from './classes';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from './badges';
 import { TitleScene } from './scenes/titleScene';
 import { ClassSelectScene } from './scenes/classSelectScene';
-import { showChallengesWindow, showConfirmWindow, showRankingsWindow, showSettingsWindow } from './ui/portWindows';
+import { showChallengesWindow, showChoiceWindow, showConfirmWindow, showRankingsWindow, showSettingsWindow } from './ui/portWindows';
 import { Banner } from './ui/banner';
 import { transferEnhancement } from './itemWorkflows';
 import { getCurse } from './itemCurses';
@@ -592,6 +592,10 @@ interface SaveShape {
 	impSpawned?: boolean;
 	blacksmithAlternative?: boolean;
 	blacksmithFavor?: number;
+	blacksmithHardens?: number;
+	/** `Weapon.enchantHardened`/`Armor.glyphHardened` for the equipped gear */
+	weaponHardened?: boolean;
+	armorHardened?: boolean;
 	blacksmithReforges?: number;
 	limitedDrops?: [MonsterId, number][];
 	wealthTriesToDrop?: number;
@@ -601,7 +605,7 @@ interface SaveShape {
 	/** Java Dungeon.LimitedDrops.UPGRADE_SCROLLS count, including suppressed NO_SCROLLS drops. */
 	upgradeScrollDrops?: number;
 	bag: { id: string; quantity: number; instanceId?: string; identified?: boolean; level?: number; sandBags?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean;
-		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean }[];
+		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean; hardened?: boolean }[];
 	/** MWG actor inventory save; `bag` remains for loading pre-migration slots. */
 	bagState?: Actors.SavedInventory;
 	bagDefinitions?: [string, Actors.ItemDefinition][];
@@ -1106,6 +1110,11 @@ export class SewersScene extends Scene2D {
 	private armorLevel = 0;
 	private weaponId = 'startingWeapon';
 	private weaponInstanceId: string | undefined;
+	/** `Weapon.enchantHardened`/`Armor.glyphHardened` for the *equipped* gear - the Blacksmith's
+	 * hardening. While it is set, `upgrade()`'s affix-loss roll is replaced by a hardening-loss
+	 * one, so the enchant is protected until the protection itself wears off (from +6). */
+	private weaponHardened = false;
+	private armorHardened = false;
 	private armorId = 'clothArmor';
 	private armorInstanceId: string | undefined;
 	/** whether the Wandmaker's frost wand was chosen (zap also dazes) */
@@ -1145,6 +1154,8 @@ export class SewersScene extends Scene2D {
 	private blacksmithAlternative = false;
 	/** `Blacksmith.Quest.favor/reforges`: forge currency and progressive reforge count. */
 	private blacksmithFavor = 0;
+	/** `Blacksmith.Quest.hardens`, which each harden costs more than the last. */
+	private blacksmithHardens = 0;
 	private blacksmithReforges = 0;
 	private blacksmithReforgeFirst: { id: string; instanceId?: string } | null = null;
 	private impSpawned = false;
@@ -3359,9 +3370,15 @@ export class SewersScene extends Scene2D {
 			return;
 		}
 		if (status === 'complete') {
-			if (this.blacksmithFavor >= this.blacksmithReforgeCost()) {
-				this.openBlacksmithReforge();
-			} else this.say(t('port.npc.blacksmith.done'));
+			//`WndBlacksmith`: one window listing the services, each enabled only when the favor
+			//covers its cost (`reforge.enable(favor >= reforgecost)`). Java's window also offers
+			//pickaxe, upgrade, smith and cash out; this port implements the two that fit item
+			//systems it already has, and says so here rather than silently showing a shorter list.
+			if (this.blacksmithFavor <= 0) {
+				this.say(t('port.npc.blacksmith.done'));
+				return;
+			}
+			this.openBlacksmithWindow();
 			return;
 		}
 		const pick = this.bag.find('pickaxe');
@@ -3387,6 +3404,76 @@ export class SewersScene extends Scene2D {
 	}
 
 	private blacksmithReforgeCost(): number { return 500 + 1000 * this.blacksmithReforges; }
+
+	/** `WndBlacksmith`'s `hardenCost = 500 + 1000*Blacksmith.Quest.hardens`. */
+	private blacksmithHardenCost(): number { return 500 + 1000 * this.blacksmithHardens; }
+
+	/** `WndBlacksmith`'s service list. Java's window offers pickaxe, reforge, harden, upgrade,
+	 * smith and cash out; this port offers the two whose item systems it has (reforge, harden),
+	 * and each entry is disabled unless the favor covers its cost, as Java's `enable(...)` is. */
+	private openBlacksmithWindow(): void {
+		showChoiceWindow(
+			this.gameWindows,
+			t('actors.mobs.npcs.blacksmith.name'),
+			t('port.blacksmith.prompt', { favor: this.blacksmithFavor }),
+			[
+				{
+					label: t('port.blacksmith.reforge', { favor: this.blacksmithReforgeCost() }),
+					disabled: this.blacksmithFavor < this.blacksmithReforgeCost(),
+					onPick: () => this.openBlacksmithReforge(),
+				},
+				{
+					label: t('port.blacksmith.harden', { favor: this.blacksmithHardenCost() }),
+					disabled: this.blacksmithFavor < this.blacksmithHardenCost(),
+					onPick: () => this.openBlacksmithHarden(),
+				},
+			],
+		);
+	}
+
+	/** `WndBlacksmith.HardenSelector`: an identified, uncursed, upgradable item that is not
+	 * already hardened. Java's selector walks the hero's whole belongings, so the *equipped*
+	 * weapon and armor are candidates too - which is exactly the item a player wants hardened,
+	 * since the hardening only ever matters on the item a scroll later upgrades. */
+	private openBlacksmithHarden(): void {
+		const equipped: { id: string; instanceId?: string; identified?: boolean; quantity: number }[] = [];
+		//the class's own starting gear is a candidate too: Java's selector walks every upgradable
+		//item the hero has, and this port's starting weapon/armor is upgradable like any other
+		if (!this.weaponHardened && !getCurse(this.weaponAffix ?? '')) {
+			equipped.push({ id: this.weaponId, instanceId: this.weaponInstanceId, identified: true, quantity: 1 });
+		}
+		if (!this.armorHardened && !getCurse(this.armorGlyph ?? '')) {
+			equipped.push({ id: this.armorId, instanceId: this.armorInstanceId, identified: true, quantity: 1 });
+		}
+		const carried = this.bag.items.filter((item) =>
+			item.quantity > 0 && ['weaponReward', 'armorReward', 'armor'].includes(item.id)
+				&& (item.identified ?? false) && !item.cursed
+				&& !(item as typeof item & { hardened?: boolean }).hardened);
+		const candidates = [...equipped, ...carried];
+		if (candidates.length === 0) {
+			this.say(t('port.blacksmith.prompt', { favor: this.blacksmithFavor }), 'negative');
+			return;
+		}
+		this.openItemPicker(t('port.blacksmith.harden', { favor: this.blacksmithHardenCost() }), candidates, (pick) => this.completeBlacksmithHarden(pick));
+	}
+
+	private completeBlacksmithHarden(pick: { id: string; instanceId?: string }): void {
+		if (this.blacksmithFavor < this.blacksmithHardenCost()) return;
+		//the picker's entries are re-validated against the live state, as the reforge path does
+		//`id` *and* `instanceId` have to agree: the starting gear has no instance id of its own
+		//early on, and an id-only test would then also match an unrelated bag item
+		if (pick.id === this.weaponId && pick.instanceId === this.weaponInstanceId) this.weaponHardened = true;
+		else if (pick.id === this.armorId && pick.instanceId === this.armorInstanceId) this.armorHardened = true;
+		else {
+			const item = this.bag.find(pick.id, pick.instanceId);
+			if (!item || item.cursed || !(item.identified ?? false)) return;
+			(item as typeof item & { hardened?: boolean }).hardened = true;
+		}
+		this.blacksmithFavor -= this.blacksmithHardenCost();
+		this.blacksmithHardens++;
+		this.say(t('port.blacksmith.prompt', { favor: this.blacksmithFavor }), 'positive');
+		this.refresh();
+	}
 
 	/** `WndBlacksmith.WndReforge`: select two identified, non-cursed, same-category items;
 	 * the higher-level item survives and gains one upgrade level while the other is consumed.
@@ -4751,9 +4838,13 @@ export class SewersScene extends Scene2D {
 	 * static 1-in-3 (with the real `remove_curse` line - the port treats an equipped curse as
 	 * known immediately, so the `cursedKnown` gate Java logs behind is already satisfied);
 	 * otherwise a good affix/glyph is lost at 10/20/40/80/100% when upgrading from
-	 * +4/5/6/7/8 (`Random.Float(10) < 2^(level-4)`, real `incompatible` warning). Not
-	 * modeled: `enchantHardened`/`glyphHardened` loss (hardening is granted by
-	 * StoneOfEnchantment, unported, so nothing can hold it); the seal upgrade
+	 * +4/5/6/7/8 (`Random.Float(10) < 2^(level-4)`, real `incompatible` warning). **Correction
+	 * 2026-09-12: this comment used to say hardening was "granted by StoneOfEnchantment,
+	 * unported, so nothing can hold it" - wrong on both counts.** Hardening is the *Blacksmith's*
+	 * service (`WndBlacksmith`'s harden button, `Blacksmith.Quest.hardens`), it is ported now
+	 * (`openBlacksmithHarden`), and the loss roll it replaces is `rollUpgradeAffixLoss`'s own
+	 * hardened branch: `level() >= 6 && Random.Float(10) < 2^(level-6)` drops the *hardening*
+	 * instead of the enchant, which is the whole point of buying it. Still not modeled: the seal upgrade
 	 * (`Armor.upgrade` feeds a level-0 BrokenSeal - no seal exists here); RunicTransference
 	 * shifting the armor loss floor for non-warriors (the talent itself has no mechanics
 	 * yet, so the floor stays 4); `Degrade.detach` (no Degrade buff exists - Warlock decay
@@ -4815,7 +4906,25 @@ export class SewersScene extends Scene2D {
 	private rollUpgradeAffixLoss(slot: 'weapon' | 'armor'): void {
 		const affix = slot === 'weapon' ? this.weaponAffix : this.armorGlyph;
 		const level = slot === 'weapon' ? this.weaponLevel : this.armorLevel;
+		//`Weapon.upgrade()`/`Armor.upgrade()`'s hardening branch, which comes *before* the affix
+		//rolls and replaces them: while the item is hardened the enchant cannot be lost at all -
+		//what can be lost is the hardening itself, with the same escalating odds but starting one
+		//step later (`level() >= 6 && Random.Float(10) < 2^(level-6)`, against the ordinary
+		//roll's `level() >= 4 && ... 2^(level-4)`). The hardening branch is guarded on the affix
+		//being present in Java too (`else if (glyph != null)`), which the early return covers.
 		if (!affix) return;
+		if (slot === 'weapon' ? this.weaponHardened : this.armorHardened) {
+			if (level >= 6 && Random.float(10) < Math.pow(2, level - 6)) {
+				if (slot === 'weapon') {
+					this.weaponHardened = false;
+					this.say(t('port.log.hardeninggone.weapon'), 'warning');
+				} else {
+					this.armorHardened = false;
+					this.say(t('port.log.hardeninggone.armor'), 'warning');
+				}
+			}
+			return;
+		}
 		if (getCurse(affix)) {
 			if (Random.int(0, 3) === 0) {
 				if (slot === 'weapon') this.weaponAffix = null;
@@ -12653,6 +12762,9 @@ export class SewersScene extends Scene2D {
 		this.blacksmithAlternative = s.blacksmithAlternative ?? this.blacksmithAlternative;
 		this.blacksmithFavor = s.blacksmithFavor ?? 0;
 		this.blacksmithReforges = s.blacksmithReforges ?? 0;
+		this.blacksmithHardens = s.blacksmithHardens ?? 0;
+		this.weaponHardened = s.weaponHardened ?? false;
+		this.armorHardened = s.armorHardened ?? false;
 		this.equippedRing = s.equippedRing ?? null;
 		this.ringHtBonus = s.ringHtBonus ?? 0;
 		this.advancement = s.advancement ? Actors.Advancement.fromJSON(SUBCLASS_TRACK, s.advancement) : new Actors.Advancement(SUBCLASS_TRACK);
@@ -14402,6 +14514,7 @@ export class SewersScene extends Scene2D {
 		this.armorLevel = Math.min(5, item.level ?? 0);
 		this.armorTier = Math.max(1, Math.min(5, (item as typeof item & { tier?: number }).tier ?? this.armorTier));
 		this.armorGlyph = item.affix ?? null;
+		this.armorHardened = (item as typeof item & { hardened?: boolean }).hardened ?? false;
 		this.syncHeroFromStats();
 		this.say(t('port.log.armorequipped', { level: this.armorLevel }), 'positive');
 	}
@@ -14432,6 +14545,7 @@ export class SewersScene extends Scene2D {
 		this.weaponLevel = Math.max(this.weaponLevel, item.level ?? 0);
 		this.weaponTier = Math.max(1, Math.min(5, (item as typeof item & { tier?: number }).tier ?? this.weaponTier));
 		this.weaponAffix = item.affix ?? null;
+		this.weaponHardened = (item as typeof item & { hardened?: boolean }).hardened ?? false;
 		this.syncHeroFromStats();
 		//**Correction, 2026-09-09 roadmap pass**: SWIFT_EQUIP's real spec (recovered from
 		//`src/generated/spdMessages.ts`'s real English text, absent from the older Java tags an
@@ -14577,7 +14691,22 @@ export class SewersScene extends Scene2D {
 			//name has to come from `WAND_KEYS`; an unidentified wand keeps the generic word.
 			if (id === 'wand') return t(WAND_KEYS[this.wandType] ?? WAND_KEYS.magicMissile);
 			const affix = item?.affix ? ` (${t(`port.affix.${item.affix}`)})` : '';
-			return `${t(ITEM_KEYS[id] ?? id)}${affix}`;
+			//`Weapon.info()`/`Armor.info()`'s hardened line, for the gear the Blacksmith has
+			//hardened - without it nothing in the interface would say whether an item is still
+			//protected. The equipped instance's state lives in the scene flags, the rest in the
+			//bag payload, which is the same split `affix` already uses.
+			const weapon = ['weaponReward', 'startingWeapon'].includes(id);
+			const armor = ['armor', 'armorReward', 'clothArmor', 'startingArmor'].includes(id);
+			const hardenedFlag = (item as (typeof item | undefined) & { hardened?: boolean })?.hardened;
+			//the equipped instance's state is the scene flag, matched on the slot's own id (the
+			//class's starting gear has no instance id to match on); everything else reads the bag
+			const isEquipped = (slotId: string, slotInstanceId: string | undefined): boolean =>
+				id === slotId && (instanceId === undefined ? slotInstanceId === undefined : instanceId === slotInstanceId);
+			const hardened = weapon ? (hardenedFlag ?? (isEquipped(this.weaponId, this.weaponInstanceId) ? this.weaponHardened : false))
+				: armor ? (hardenedFlag ?? (isEquipped(this.armorId, this.armorInstanceId) ? this.armorHardened : false))
+					: false;
+			const hardenedNote = hardened ? ` ${t(weapon ? 'port.item.hardened.weapon' : 'port.item.hardened.armor')}` : '';
+			return `${t(ITEM_KEYS[id] ?? id)}${affix}${hardenedNote}`;
 		}
 		if (id.startsWith('potion')) return t(this.appearances.appearanceOf('potion', id));
 		if (id.startsWith('scroll')) return t(this.appearances.appearanceOf('scroll', id));

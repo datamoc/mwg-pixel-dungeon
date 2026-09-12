@@ -1010,7 +1010,16 @@ Do not add new authored content as object literals or scattered constants in the
       elemental rules (`FIERY` immunity, Frost harm) that also cover the base kind. See
       `PORT_COVERAGE.md` (type-check/build plus both suites green, browser owed per
       section 10).
-- [ ] Port the Troll Blacksmith's mining and forge mechanics.
+- [ ] Port the Troll Blacksmith's mining and forge mechanics. **The service window is real now,
+      and hardening is ported with it (2026-09-12)**: `WndBlacksmith`'s list is a
+      `WindowStack` window (`showChoiceWindow`) with SPD's own labels and costs in all 19
+      locales, each entry disabled unless the favor covers it; the harden service sets
+      `enchantHardened`/`glyphHardened` on a picked item and replaces the upgrade affix-loss
+      roll with Java's hardening-loss roll. Verified live (10 assertions). Remaining: Java's
+      other four services (pickaxe buy-back, `upgrade` below +2, `smith`, cash out), plus the
+      missile/seal transfer details this bullet also tracked. While implementing it, a wrong
+      claim in `main.ts`'s own comment was found and corrected: hardening comes from this
+      service, not from `StoneOfEnchantment`.
 - [ ] Port Rat King and other missing special NPCs. Rat King is now complete for its core
       exchange (room drops real `Gold(10-25)` CHEST heaps, the king spawns sleeping with
       his own art, wakes with the real yell, awards the crown exchange when worn armor is
