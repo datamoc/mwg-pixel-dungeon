@@ -6281,6 +6281,38 @@ export class SewersScene extends Scene2D {
 		this.spendHeroTurn(this.getAttackTurnCostMod());
 	}
 
+	/** `Shocking.arc()` (`items/weapon/enchantments/Shocking.java`): a recursive chain. From the
+	 * starting character, every other character within `dist` *path* cells (Java's
+	 * `PathFinder.buildDistanceMap(pos, not(solid), dist)`) joins the affected set, and each of
+	 * those chains onward with a radius of 2 when standing in water and not flying, or 1 otherwise -
+	 * which is how a shock can cascade through a flooded room. The attacker is skipped, and a
+	 * character already in the set is never hit twice, so the recursion terminates. The defender is
+	 * in the set but explicitly excluded from the damage, exactly as Java removes it before applying
+	 * any. */
+	private shockingArc(attacker: Creature, defender: Creature, damage: number, powerMulti: number): void {
+		const affected: Creature[] = [];
+		const queue: { from: Creature; dist: number }[] = [{ from: defender, dist: 2 }];
+		while (queue.length > 0) {
+			const { from, dist } = queue.shift()!;
+			const distances = this.pathfinder.distanceMap({ x: from.x, y: from.y });
+			for (const hit of this.creatures) {
+				if (hit === attacker || hit.hp <= 0 || affected.includes(hit)) continue;
+				const steps = distances[this.level.index(hit.x, hit.y)] ?? -1;
+				if (steps < 0 || steps > dist) continue;
+				affected.push(hit);
+				const inWater = this.level.get(hit.x, hit.y) === WATER && !hit.flying;
+				queue.push({ from: hit, dist: inWater ? 2 : 1 });
+			}
+		}
+		const arcDamage = Math.round(damage * 0.5 * powerMulti);
+		for (const hit of affected) {
+			if (hit === defender || arcDamage <= 0) continue;
+			hit.hp -= arcDamage;
+			this.showDamage(hit, arcDamage);
+			if (hit.hp <= 0) this.kill(hit);
+		}
+	}
+
 	/** Takes one step of a queued `travelTarget`, or cancels it once arrived/interrupted. */
 	private stepTravel(): void {
 		const to = this.travelTarget;
@@ -10174,17 +10206,73 @@ export class SewersScene extends Scene2D {
 			defender.hp -= 2;
 			this.showDamage(defender, 2);
 		}
-		if (affix === 'blazing') addBuff(defender, 'burning');
-		if (affix === 'chilling') addBuff(defender, 'daze');
-		if (affix === 'shocking') {
-			defender.hp -= 2;
-			this.showDamage(defender, 2);
-			this.say(t('port.log.shocking'));
+		//`Blazing.proc()` (tag v3.3.8): `(level+1)/(level+3) x arcana` - 33% at level 0, 50% at 1,
+		//60% at 2 - and on a proc it reignites an unlit target for `Burning`'s own 8 turns (which
+		//consumes the proc's "power", since `reignite` returns 1 of it) and spends whatever power is
+		//left on direct damage, `NormalIntRange(1, 3 + scalingDepth/4) * 0.67 * powerMulti`. What
+		//stood here ignited unconditionally with no roll and dealt no burn damage at all.
+		if (affix === 'blazing') {
+			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
+			const procChance = ((level + 1) / (level + 3)) * ringArcanaMultiplier(this.equippedRing);
+			if (Random.chance(procChance)) {
+				let powerMulti = Math.max(1, procChance);
+				if (defender.buffs['burning'] === undefined) {
+					addBuff(defender, 'burning');
+					powerMulti -= 1;
+				}
+				if (powerMulti > 0 && defender.hp > 0) {
+					const burnDamage = Math.round(Random.normalRange(1, 3 + Math.floor(this.depth / 4)) * 0.67 * powerMulti);
+					if (burnDamage > 0) {
+						defender.hp -= burnDamage;
+						this.showDamage(defender, burnDamage);
+					}
+				}
+			}
 		}
+		//`Chilling.proc()`: `(level+1)/(level+4) x arcana` - 25% at level 0, 40% at 1, 50% at 2 -
+		//adding `3 * max(1, chance)` turns of `Chill` with the running total capped at
+		//`6 * max(1, chance)`. This used to apply `daze` unconditionally: the wrong status
+		//entirely (Java's chill slows the target and escalates into frost) and with no roll.
+		if (affix === 'chilling') {
+			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
+			const procChance = ((level + 1) / (level + 4)) * ringArcanaMultiplier(this.equippedRing);
+			if (Random.chance(procChance)) {
+				const powerMulti = Math.max(1, procChance);
+				const existing = defender.buffs['chill'] ?? 0;
+				const added = Math.min(Math.round(3 * powerMulti), Math.round(6 * powerMulti) - existing);
+				if (added > 0) defender.buffs['chill'] = existing + added;
+			}
+		}
+		//`Shocking.proc()`: a flat `1/3 x arcana` chance, then a lightning arc spreading out from the
+		//defender to every other character within 2 path cells - chaining onward from each one it
+		//reaches with a radius of 2 in water and 1 elsewhere, and explicitly *excluding the
+		//defender*, which Java removes from the affected list - for `round(damage/2 * max(1,
+		//chance))` each. What stood here dealt 2 unconditional points to the defender itself, the
+		//one character Java's arc never touches, and hit nobody else.
+		if (affix === 'shocking') {
+			const procChance = (1 / 3) * ringArcanaMultiplier(this.equippedRing);
+			if (Random.chance(procChance)) {
+				this.shockingArc(attacker, defender, damage, Math.max(1, procChance));
+			}
+		}
+		//`Vampiric.proc()`: `healChance = (0.05 + 0.25 * missing-HP fraction) x arcana`, so it scales
+		//from 5% when unhurt to 30% when nearly dead, then heals `round(damage/2 * max(1, chance))`
+		//capped by the attacker's own missing HP - and only against a non-neutral target (or a
+		//Mimic, which is neutral but meant to be bitten). What stood here healed a flat 1 HP with no
+		//roll, no damage scaling and no target check at all.
 		if (affix === 'vampiric') {
-			attacker.hp = Math.min(attacker.maxHp, attacker.hp + 1);
-			this.showHeal(attacker, 1);
-			this.say(t('port.log.vampiric'), 'positive');
+			const missing = attacker.maxHp > 0 ? (attacker.maxHp - attacker.hp) / attacker.maxHp : 0;
+			const healChance = (0.05 + 0.25 * missing) * ringArcanaMultiplier(this.equippedRing);
+			const neutralTarget = defender.isNPC || defender.isAlly;
+			if (Random.chance(healChance) && !neutralTarget && attacker.hp < attacker.maxHp) {
+				const healAmount = Math.min(
+					Math.round(damage * 0.5 * Math.max(1, healChance)),
+					attacker.maxHp - attacker.hp);
+				if (healAmount > 0) {
+					attacker.hp += healAmount;
+					this.showHeal(attacker, healAmount);
+				}
+			}
 		}
 		//Elastic.proc(): on a successful proc, knock the defender along the part of
 		//the attack trajectory beyond its cell by `round(2 * max(1, chance))` cells.

@@ -63,6 +63,16 @@ Do not add new authored content as object literals or scattered constants in the
       tree membership/order is now authored in `src/content/talent-rules.mwl`; talent formulas
       and remaining Java-specific abilities remain open. Buff duration metadata is now authored
       in `src/content/buff-rules.mwl`; buff behavior remains executable in the simulation layer.
+      **Flagged 2026-09-12: four of those authored durations are shorter than Java's with nothing
+      recorded saying why.** `burning` is 3 where `Burning.DURATION` is 8, `cripple` 4 against 10,
+      `paralysis` 3 against 10 and `roots` 3 against 5 - while `daze` (5), `ooze` (20),
+      `levitation` (20), `invisibility` (20) and `chill` (10) all match Java exactly, which is what
+      makes the four look like tuning rather than transcription. `poison` (6) and `bleeding` (0)
+      have no Java `DURATION` constant to compare against, so they are this port's own convention.
+      Since this project's rule is that values come from the real Java source, the four need either
+      a stated reason or the Java numbers - recorded with the exact values in `PORT_COVERAGE.md`
+      rather than re-balanced here, because changing four core debuff durations is a balance-wide
+      change that wants a deliberate pass.
       Badge counters, thresholds, descriptions, and icon indices are now authored in
       `src/content/badges.mwl`; achievement persistence and UI remain runtime adapters.
       Hero level-cap and experience-curve parameters are authored in
