@@ -10717,12 +10717,18 @@ export class SewersScene extends Scene2D {
 			addBuff(defender, 'cripple');
 			this.say(t('port.log.cripple'), 'negative');
 		}
-		//Thorns glyph: reflect 2 when the hero is hit
-		if (defender.isHero && this.armorGlyph === 'thorns' && attacker.hp > 0) {
-			attacker.hp -= 2;
-			this.showDamage(attacker, 2);
-			this.say(t('port.log.thorns'), 'positive');
-			if (attacker.hp <= 0) this.kill(attacker);
+		//`Thorns.proc()` (tag v3.3.8): an Arcana-scaled `(level+2)/(level+12)` chance - 16.7% at level
+		//0, 23.1% at 1, 28.5% at 2 - against an attacker of the opposite alignment, applying
+		//`Bleeding` at `round((4 + level) * max(1, chance))`. What stood here was 2 points of
+		//*instant* damage with no roll at all, which fired on every single hit the hero took and
+		//scaled with nothing; Java's glyph is a damage-over-time with a real chance.
+		if (defender.isHero && this.armorGlyph === 'thorns' && !attacker.isHero && attacker.hp > 0) {
+			const level = Math.max(0, this.degradedLevel(this.armorLevel));
+			const procChance = ((level + 2) / (level + 12)) * ringArcanaMultiplier(this.equippedRing);
+			if (Random.chance(procChance)) {
+				setBleeding(attacker, Math.round((4 + level) * Math.max(1, procChance)));
+				this.say(t('port.log.thorns'), 'positive');
+			}
 		}
 		//`Entanglement.proc()`/`Earthroot.Armor` (tag v3.3.8): the 1/4 chance is Arcana-scaled, and
 		//the **defender** - the hero wearing the armor - gains the same block pool the Earthroot
