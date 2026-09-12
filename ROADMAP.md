@@ -685,8 +685,16 @@ Do not add new authored content as object literals or scattered constants in the
       instead of still wearing down by `100/usages`. The `augment.delayFactor` and MagicalHolster
       factors remain documented simplifications (missiles are not individually augmentable and
       there is no holster).
-       Remaining: per-missile identity (boomerang return/merge) and Sharpshooting's Aim-buff
-       rework (flagged, own pass). The dust-pickup tracker is ported (`src/missiles.ts` + heap
+       Remaining: per-missile identity (boomerang return/merge). **Correction 2026-09-12: the
+       "Sharpshooting's Aim-buff rework (stand-still charging)" this line carried for its own
+       pass does not exist in Java** - checked both tags the rest of this port is built
+       against: `RingOfSharpshooting.Aim` is an empty `RingBuff` marker in `v3.3.8` *and* in
+       `4.0.0-beta`, with no charge state and no stand-still rule, and the ring's whole public
+       surface is `levelDamageBonus` (a flat bonus level, `MissileWeapon.min()/max()` both add
+       it, `SpiritBow` adds it once to min and twice to max) plus `durabilityMultiplier`
+       (`1.2^bonus`). This port already implements exactly those, through `ringBonusLevel`, so
+       there was nothing to rework; the claim is dropped rather than left as pending work. The
+       dust-pickup tracker is ported (`src/missiles.ts` + heap
        lineage + upgrade recording, item-suite proved), and so is **the last-missile confirm**
        (2026-09-12): `MissileWeapon.doThrow()`'s pre-throw warning is now a real two-button
        window on the scene's `WindowStack` (`showConfirmWindow`), shown when the stack's last
