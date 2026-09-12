@@ -1957,9 +1957,21 @@ Recorded here, not done, each with the framework API that owns it:
   20-per-page paging, own `setItems`/`handleAction`), where `ListView`, `IconGrid`, `TabbedList` and
   `ScrollBox` ship paging, masked scrolling, keyboard navigation and pointer selection. See the
   correction on the "Avoidable reimplementation" row above.
-- **The hero has its own frame animator and 0.1s move tween** (`src/ui/heroAnimation.ts`) while
-  every monster uses `AnimatedSprite` + `Tweener` (`main.ts`'s `monsterMotion`) - the same file
-  documents the framework route 300 lines below the hand-rolled one.
+- **The hero runs on the framework's own animator (2026-09-12).** It used to have its own frame
+  animator and 0.1s move tween (`src/ui/heroAnimation.ts`, deleted) while every monster used
+  `AnimatedSprite` + `Tweener`. The hero is now an `AnimatedSprite` too - which extends
+  `TintedSprite`, so the colour channel its flash/stealth tinting uses is unchanged - playing the
+  same `HeroSprite` cloth-tier tables the animator walked by hand (idle `0,0,0,1,0,0,1,1` at 1 fps,
+  run `2..7` at 20 fps, attack `13,14,15,0` at 15 fps once, death `8,9,10,11,12,11` at 20 fps
+  holding its last frame), and its walk tween is the same `Tweener` in the same shared motion map the
+  monsters use. Two things fell out of doing it: the attack clip is now played by the same line for
+  every character rather than a hero/monster branch, and the loop's "a finished clip returns to
+  idle" rule needed a `playing !== 'die'` guard, because the hero (unlike a monster) stays in
+  `this.creatures` after death and would otherwise stand back up. Browser-verified live
+  (`tools/scratch/hero-animation-livecheck.mjs`, 8 assertions): all four clips registered and idle
+  on spawn; a step plays run and files the tween; sampled mid-tween the sprite sits strictly between
+  the two cells and settles exactly on the destination idling; attacking plays attack; and dying
+  plays the death clip to its end and *holds* it (`isFinished`, then still `die`).
 - **Wall decoration particles are hand-integrated** (`src/ui/wallDecorations.ts`: own pool, timers,
   per-particle physics) where `ParticleEmitter` is used for the title flame; the emission-rate,
   life, speed, gravity, scale and alpha curves it needs all exist as options. The *glow* half is

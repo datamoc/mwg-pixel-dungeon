@@ -24,7 +24,7 @@ Reviewed against MWG commit f8e0278c232956e4bdd79ab5db372a7247acbdb2.
 | Panel frames | MWG already has `NinePatch`; SPD's panel helper supplies a game-specific texture crop. |
 | Inventory and statistics windows | Item classifications, action rules, text and Java layout remain local. MWG already supplies inventory data structures, windows and icon grids. |
 | Toolbar and status pane | Game-specific slots, resources, crops and layout remain local. Their button rendering uses MWG. |
-| Hero animation | MWG already supplies animation and movement primitives. Java frame sequences and timing stay local; the existing presentation controller has not been migrated in this extraction. |
+| Hero animation | MWG supplies the animation and movement primitives, and **the hero now runs on them (2026-09-12)**: it is an `AnimatedSprite` playing `HeroSprite`'s cloth-tier clips (idle/run/attack/die - the Java frame tables and their rates stay local) and shares the monsters' `Tweener` motion map for `CharSprite.moveInterval`'s 0.1s walk, replacing the port-local `src/ui/heroAnimation.ts`, which is deleted. |
 | Water and terrain | Java shoreline rules, visibility integration and ripple values remain local. A configurable scrolling tile layer could be a later framework feature; none was added in this extraction. |
 | Title, badges and class selection | Game-specific screens remain local, using the shared button and text APIs. |
 

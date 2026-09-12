@@ -1971,9 +1971,11 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       (`src/ui/inventoryWindow.ts`) reimplements a slot grid, category tabs, 20-per-page paging and
       masked scrolling that `IconGrid`/`TabbedList`/`ListView`/`ScrollBox` ship - note the port's
       own `PORT_COVERAGE.md` row claiming a `ListView`-based panel was *not* true of this
-      repository and is now corrected in place. (3) `src/ui/heroAnimation.ts` hand-rolls a frame
-      animator and a 0.1s move tween while every monster in the same file uses
-      `AnimatedSprite` + `Tweener`. (4) `src/ui/wallDecorations.ts` hand-integrates its particle
+      repository and is now corrected in place. (3) The hero's hand-rolled frame animator and 0.1s
+      move tween (`src/ui/heroAnimation.ts`) are **gone (2026-09-12)**: the hero is an
+      `AnimatedSprite` playing the same `HeroSprite` cloth-tier clips and sharing the monsters'
+      `Tweener` motion map, with the file deleted and the death pose held (`playing !== 'die'` guard
+      on the loop's return-to-idle). (4) `src/ui/wallDecorations.ts` hand-integrates its particle
       pool/physics where `ParticleEmitter` is used for the title flame. (5) The talent panel, item
       picker and `InfoWindow` hand-roll modality where `Window`/`WindowStack`/`MessageBox` exist
       (SPD's pixel chrome justifies not being a `Window`; the item picker is exactly `MessageBox`'s

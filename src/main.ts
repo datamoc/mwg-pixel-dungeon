@@ -1,4 +1,3 @@
-import { HeroAnimation } from './ui/heroAnimation';
 import { placeCharacterArt, faceCharacter } from './ui/characterPlacement';
 import { CharacterEffects } from './ui/characterEffects';
 import { FogOfWar } from './ui/fogOfWar';
@@ -1311,7 +1310,6 @@ export class SewersScene extends Scene2D {
 	private gameLog!: GameLog;
 	private statusPane!: StatusPane;
 	private infoPanel!: InfoWindow;
-	private heroAnimation!: HeroAnimation;
 	private compass!: Compass;
 	private hintLabel!: Label;
 	private actionBar!: SpdToolbar;
@@ -1494,7 +1492,6 @@ export class SewersScene extends Scene2D {
 		//Shelf stock is per-shop state now (see `shopStockFor`), seeded on first touch -
 		//nothing to pre-fill at run start.
 		this.hero = this.makeHero();
-		this.heroAnimation = new HeroAnimation(this.sprite(this.hero), runState.sprites[this.heroClass]);
 		this.characterEffects = new CharacterEffects(runState.sprites.uiIcons);
 		this.ammo = CLASSES[this.heroClass].special.ammo ?? 0;
 		this.missileLevel = 0;
@@ -1531,8 +1528,21 @@ export class SewersScene extends Scene2D {
 	 */
 	private makeHero(): Creature {
 		const def = CLASSES[this.heroClass];
+		//The hero is an `AnimatedSprite` - which extends `TintedSprite`, so the colour channel the
+		//hero's own flash/stealth tinting uses is still there - rather than a texture-swapping sprite
+		//driven by a hand-rolled animator. It plays the same Java frame tables `HeroSprite` gives its
+		//cloth tier, which a port-local animator used to walk by hand: idle `0,0,0,1,0,0,1,1` at
+		//1 fps, run `2..7` at 20 fps, attack `13,14,15,0` at 15 fps once per swing, and the death
+		//sequence `8,9,10,11,12,11` at 20 fps holding its last frame. Frame `i` is the cloth row's
+		//`i`th cell, which is `HERO_IDLE_FRAME + i` on the class's own sheet.
 		const sheet = heroSheet(runState.sprites[this.heroClass]);
-		const sprite = new TintedSprite(sheet.get(HERO_IDLE_FRAME));
+		const frame = (index: number) => sheet.get(HERO_IDLE_FRAME + index);
+		const sprite = new AnimatedSprite(frame(0));
+		sprite.add('idle', [0, 0, 0, 1, 0, 0, 1, 1].map(frame), { fps: 1 });
+		sprite.add('run', [2, 3, 4, 5, 6, 7].map(frame), { fps: 20 });
+		sprite.add('attack', [13, 14, 15, 0].map(frame), { fps: 15, loop: false });
+		sprite.add('die', [8, 9, 10, 11, 12, 11].map(frame), { fps: 20, loop: false });
+		sprite.play('idle');
 		placeCharacterArt(sprite);
 		this.creatureLayer.addChild(sprite);
 
@@ -2453,7 +2463,10 @@ export class SewersScene extends Scene2D {
 		this.fov = new Roguelike.FieldOfView(this.level);
 		this.pathfinder = new Roguelike.Pathfinder(this.level);
 
-		this.heroAnimation?.reset();
+		//the hero's own clip and walk tween reset with the floor: a fresh level starts standing still
+		const heroSprite = this.sprite(this.hero);
+		this.monsterMotion.get(heroSprite)?.clear();
+		if (heroSprite instanceof AnimatedSprite) heroSprite.play('idle', true);
 		this.hero.x = start.x;
 		this.hero.y = start.y;
 		this.sprite(this.hero).x = start.x * TILE;
@@ -9885,22 +9898,22 @@ export class SewersScene extends Scene2D {
 		}
 		if (this.level.get(to.x, to.y) === WATER) this.waterSurface?.ripple(to.x, to.y);
 		if (creature.isHero) {
-			this.heroAnimation.move(to.x * TILE, to.y * TILE);
 			const heal = rejuvenatingStepHeal(this.level.get(to.x, to.y), GRASS, this.hero.hp, this.hero.maxHp, this.talentRank('rejuvenating_steps'));
 			if (heal > 0) { this.hero.hp += heal; this.showHeal(this.hero, heal); }
-		} else {
-			const sprite = this.sprite(creature);
-			const motion = this.monsterMotion.get(sprite) ?? new Tweener();
-			motion.clear(); this.monsterMotion.set(sprite, motion);
-			const fromX = sprite.x, fromY = sprite.y;
-			if (sprite instanceof AnimatedSprite && sprite.has('run')) sprite.play('run');
-			// CharSprite.moveInterval: visual movement takes 0.1s; logical turns remain immediate.
-			void motion.tween(0.1, progress => {
-				if (sprite.destroyed) return;
-				sprite.position.set(fromX + (to.x * TILE - fromX) * progress, fromY + (to.y * TILE - fromY) * progress);
-				if (progress === 1 && sprite instanceof AnimatedSprite && sprite.playing === 'run') sprite.play('idle');
-			});
 		}
+		//`CharSprite.moveInterval`: visual movement takes 0.1s for every character, the hero included
+		//(the hero used to run its own copy of this inside `HeroAnimation`); logical turns remain
+		//immediate either way.
+		const sprite = this.sprite(creature);
+		const motion = this.monsterMotion.get(sprite) ?? new Tweener();
+		motion.clear(); this.monsterMotion.set(sprite, motion);
+		const fromX = sprite.x, fromY = sprite.y;
+		if (sprite instanceof AnimatedSprite && sprite.has('run')) sprite.play('run');
+		void motion.tween(0.1, progress => {
+			if (sprite.destroyed) return;
+			sprite.position.set(fromX + (to.x * TILE - fromX) * progress, fromY + (to.y * TILE - fromY) * progress);
+			if (progress === 1 && sprite instanceof AnimatedSprite && sprite.playing === 'run') sprite.play('idle');
+		});
 	}
 
 	/** Mirrors `Preparation`'s own rule onto the hero's combat data: the buff exists exactly while
@@ -9950,8 +9963,8 @@ export class SewersScene extends Scene2D {
 	private attack(attacker: Creature, defender: Creature): boolean {
 		if (attacker.isHero) this.cancelHourglassFreeze();
 		faceCharacter(this.sprite(attacker), attacker.x, defender.x);
-		if (attacker.isHero) this.heroAnimation.attack();
-		else { const attackerSprite = this.sprite(attacker); if (attackerSprite instanceof AnimatedSprite && attackerSprite.has('attack')) attackerSprite.play('attack', true); }
+		const attackerSprite = this.sprite(attacker);
+		if (attackerSprite instanceof AnimatedSprite && attackerSprite.has('attack')) attackerSprite.play('attack', true);
 		//`Preparation` must be read *before* this dispel: Java reads it into a local at the top of
 		//`Char.attack()` and only calls `Invisibility.dispel()` after the whole attack returns
 		//(`Hero.java` 2325), so the stealth state still applies to this attack's damage roll and
@@ -11294,11 +11307,11 @@ export class SewersScene extends Scene2D {
 		this.monsterMotion.delete(deadSprite);
 		deadSprite.position.set(creature.x * TILE, creature.y * TILE);
 		deadSprite.colorAdd = 0;
-		if (creature.isHero) this.heroAnimation.die();
-		else if (deadSprite instanceof AnimatedSprite && deadSprite.has('die')) {
+		if (deadSprite instanceof AnimatedSprite && deadSprite.has('die')) {
 			deadSprite.play('die', true);
-			this.dyingMonsters.set(deadSprite, { x: creature.x, y: creature.y, fade: 0 });
-		} else deadSprite.destroy();
+			//a monster's corpse is handed to the fade loop; the hero keeps its pose in place
+			if (!creature.isHero) this.dyingMonsters.set(deadSprite, { x: creature.x, y: creature.y, fade: 0 });
+		} else if (!creature.isHero) deadSprite.destroy();
 		//the hero's sprite outlives `kill()` for the game-over screen (see the `gameOver`
 		//check further down) - every other creature's sprite is either already destroyed above
 		//or now only reachable through `dyingMonsters`, keyed by the sprite object itself, so
@@ -14198,13 +14211,22 @@ export class SewersScene extends Scene2D {
 				}
 			}
 		}
-		this.heroAnimation?.update(dt);
 		for (const creature of this.creatures) {
 			const liveSprite = this.sprite(creature);
 			if (!liveSprite.destroyed && liveSprite instanceof AnimatedSprite) {
 				liveSprite.update(dt);
-				if (liveSprite.isFinished) liveSprite.play('idle');
+				//a non-looping clip returns to idle only if it was not a death - the dead keep their
+				//final pose (the hero stays in `this.creatures`, unlike a monster, which `kill()`
+				//moves into `dyingMonsters` to fade)
+				if (liveSprite.isFinished && liveSprite.playing !== 'die') liveSprite.play('idle');
 			}
+		}
+		//`kill()` splices the hero out of `this.creatures` but keeps its sprite for the game-over
+		//screen, so the loop above would leave a dying hero frozen on the death clip's first frame -
+		//the animator this replaced was advanced unconditionally, so the clip has to keep running.
+		const heroSprite = this.sprite(this.hero);
+		if (!heroSprite.destroyed && heroSprite instanceof AnimatedSprite && !this.creatures.includes(this.hero)) {
+			heroSprite.update(dt);
 		}
 		// MobSprite finishes the death clip, then fades its corpse over three seconds.
 		// Logical removal and loot are immediate; the corpse never blocks a cell.
