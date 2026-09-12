@@ -1961,6 +1961,18 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       `ListView`/`ScrollBox`, and the six boss ability cooldowns vs `Roguelike.AbilityCycle` (the
       phase machines around them stay local on purpose - Java has no such half-HP Fury rhythm, so
       `BossPhases` would be a regression).
+- [ ] **Table-unique row ids in the MWL content** (2026-09-12, from the same audit): MWL's id
+      namespace is global per tag, and 42 of this port's `[row]`s restate another table's *domain*
+      id as their own id - `alchemyRecipeManifest`+`alchemyRecipes` (14),
+      `unstableEnchants`+`weaponEnchants` (10), `armorGlyphs`+`curseDefinitions` (8),
+      `curseDefinitions`+`weaponEnchants` (7), `questDefinitions`+`scenarioQuests` (3). `mwg/mwl`'s
+      `validateCatalog` flags every one, and `tools/compile-mwl.mjs` now runs it as a build gate:
+      any other diagnostic code fails outright, and the duplicate count is pinned at 42 so a new
+      collision fails too. Fixing the class means giving each row a table-unique id and carrying the
+      domain id in a column (e.g. `unstableEnchants` rows naming their enchant in a column rather
+      than being named after it), plus the readers of those five tables - tedious, no behaviour
+      change, and the only reason it is not done: every reader here looks tables up by table id and
+      rows up by column, so nothing is broken by the reuse.
 
 ## 11A. MWG framework backlog (separate repository; roadmap only)
 

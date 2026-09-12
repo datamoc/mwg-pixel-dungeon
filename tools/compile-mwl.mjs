@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { compileAndEmitSources, compileSources, contentCatalog } from 'mwg/mwl';
+import { compileAndEmitSources, compileSources, contentCatalog, validateCatalog } from 'mwg/mwl';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const contentRoot = path.join(root, 'src', 'content');
@@ -18,6 +18,37 @@ const files = mwlFiles(contentRoot).sort();
 if (files.length === 0) throw new Error(`no .mwl files found in ${contentRoot}`);
 const sources = files.map((file) => ({ file, source: fs.readFileSync(file, 'utf8') }));
 const game = compileSources(sources);
+
+/**
+ * `mwg/mwl`'s own shared semantic validator: unknown equipment slots, effects without exactly one
+ * operation, invalid or unknown hook references, and duplicate ids per tag. The hand-written checks
+ * further down cover the cross-table invariants the framework cannot see (roster/boss/alias/AI-profile
+ * references, room-rule table widths), so this is the other half of the split, not a duplicate of it.
+ *
+ * The `slots` list is the set this content actually declares in `[item]` rows; supplying it is what
+ * turns an unknown slot into a diagnostic. `hooks: []` is deliberate too - this port's content
+ * references no script hooks, so any future one must be declared here first.
+ *
+ * Every diagnostic this content produces today is one class, `MWL_DUPLICATE_ID`: MWL's id namespace
+ * is global per tag, and several of this port's tables carry the domain id (an enchant, a recipe, a
+ * curse, a quest) as the row id in a *second* table - `unstableEnchants` restating `weaponEnchants`,
+ * `alchemyRecipeManifest` restating `alchemyRecipes`, and so on. That is a content-modelling choice
+ * this port's readers are built around (tables are looked up by table id, rows read by column), so it
+ * is tolerated - but counted exactly, so a *new* collision fails the build, and every other
+ * diagnostic code fails it outright. Redesigning those rows to carry a table-unique id is recorded in
+ * `ROADMAP.md`.
+ */
+const ITEM_SLOTS = ['artifact', 'consumable', 'weapon', 'armor', 'wand', 'missile', 'ring'];
+const KNOWN_DUPLICATE_ROW_IDS = 42;
+const catalogDiagnostics = validateCatalog(game, { slots: ITEM_SLOTS, hooks: [] });
+const unexpectedDiagnostics = catalogDiagnostics.filter((diagnostic) => diagnostic.code !== 'MWL_DUPLICATE_ID');
+if (unexpectedDiagnostics.length > 0) {
+	throw new Error(`MWL semantic errors:\n${unexpectedDiagnostics.map((diagnostic) => `${diagnostic.code}: ${diagnostic.message} (${diagnostic.location?.file}:${diagnostic.location?.line})`).join('\n')}`);
+}
+const duplicateRowIds = catalogDiagnostics.filter((diagnostic) => diagnostic.code === 'MWL_DUPLICATE_ID');
+if (duplicateRowIds.length !== KNOWN_DUPLICATE_ROW_IDS) {
+	throw new Error(`MWL duplicate row-id count changed: ${duplicateRowIds.length}, expected the known ${KNOWN_DUPLICATE_ROW_IDS} - a new collision (or one fixed) needs this count and PORT_COVERAGE.md updated:\n${duplicateRowIds.map((diagnostic) => `  ${diagnostic.message} (${diagnostic.location?.file}:${diagnostic.location?.line})`).join('\n')}`);
+}
 
 function allNodes(nodes) {
   return nodes.flatMap((node) => [node, ...allNodes(node.children ?? [])]);

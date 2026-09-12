@@ -1981,6 +1981,35 @@ argument-for-argument; the UI wrappers merge rather than fight `ButtonOptions`/`
 `mwg` shim maps to the **installed** `dist`, so the headless suites cannot pass against a fake
 framework module.
 
+**Third pass, same day: the MWL build tooling** (`tools/compile-mwl.mjs`), the one area the two
+sub-audits did not reach. The good news first: it already drives the framework's own compiler -
+`compileSources` for parsing/validation, `compileAndEmitSources` (whose double-compile determinism
+check is the framework's) for the artifacts, `contentCatalog` for typed `[table]` rows - and leaves
+only the cross-table invariants MWG cannot see to its own checks (roster/boss/alias/AI-profile
+references, room-rule table widths, MWL asset existence, buff/immunity references), which is the
+documented split. What it never did was call `mwg/mwl`'s **`validateCatalog`**, the shared semantic
+validator: unknown equipment slots, effects without exactly one operation, invalid or unknown hook
+references, and duplicate ids per tag. It is wired in now as a build gate - every diagnostic code
+other than `MWL_DUPLICATE_ID` fails `npm run mwl:compile` (there are none today: the content passes
+every other shared check), and the duplicate-row-id count is pinned at the known 42, so a new
+collision fails the build rather than surfacing later. Negative-tested: lowering that constant makes
+`mwl:compile` throw with every colliding id and its `file:line`.
+
+All 42 are cross-table reuses, which is why they are tolerated and recorded rather than renamed: this
+port's tables carry the *domain* id as the row id in a second table, while MWL's id namespace is
+global per tag (`validateCatalog` keys its map on `tag:id`). The pairs:
+`alchemyRecipeManifest`+`alchemyRecipes` (14), `unstableEnchants`+`weaponEnchants` (10),
+`armorGlyphs`+`curseDefinitions` (8), `curseDefinitions`+`weaponEnchants` (7),
+`questDefinitions`+`scenarioQuests` (3). Harmless to every reader here (tables are looked up by table
+id, rows read by column), so the redesign - a table-unique row id plus a column carrying the domain
+id - is recorded in `ROADMAP.md` rather than done in an audit pass.
+
+`mwg/tools/mwl.mjs` (the framework's CLI: validate/compile/extract-i18n/assets/report/hooks/build) is
+deliberately not used: this project needs three game-owned generated modules and validators the CLI
+has no hook for, which is what the library API is for. `mwg/tools/extract-html.mjs` is the *inverse*
+of `tools/emit.mjs`'s rewrite (it extracts inline resources *out* of a page), so it is not a
+duplicate of anything here either.
+
 ### Browser verification: done, and what it took
 
 **A ported Sewers floor 1 now renders and plays.** Confirmed from a screenshot of the built page
