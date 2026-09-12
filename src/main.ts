@@ -368,8 +368,8 @@ const SPD_LEVEL_CURVE: Actors.GrowthCurve = {
 /**
  * The real Sewers "Sad Ghost" quest (`Ghost.java`'s inner `Quest` class), all three types -
  * the Fetid Rat (depth 2), Gnoll Trickster (depth 3), Great Crab (depth 4). Stage 0 is a
- * milestone that completes the instant `SewersScene` calls `advance()` right after `start()`
- * (the "you were given this quest" moment); stage 1 is the real objective, gated on the
+ * milestone that completes the instant `SewersScene` calls `advanceStage()` right after
+ * `start()` (the "you were given this quest" moment); stage 1 is the real objective, gated on the
  * `ghostTargetSlain` `GameState` switch whichever miniboss's death sets; stage 2 is another
  * milestone, completing (and so finishing the quest) the next time the hero talks to the
  * Ghost after stage 1 is done. Reward (flat +2 max HP) is the documented stand-in for
@@ -7707,18 +7707,20 @@ export class SewersScene extends Scene2D {
 
 	/** Java's hostile-target query considers the hero and friendly summoned characters. Keep
 	 * the hero first for equal distances so ordinary runs preserve their previous target and
-	 * random stream while a nearer MirrorImage can now draw a ranged attack. */
-	private rangedTarget(monster: Creature, range: number): Creature | undefined {
+	 * random stream while a nearer MirrorImage can now draw a ranged attack. `null`, not
+	 * `undefined`, for "nothing to pick" - mwg's own API-wide convention (REFERENCE.md,
+	 * "Conventions"), which the surrounding port code mostly follows already. */
+	private rangedTarget(monster: Creature, range: number): Creature | null {
 		return [this.hero, ...this.creatures.filter((c) => c.isAlly && c.hp > 0)]
 			.filter((target) => target !== monster && Roguelike.canTarget(this.level, monster, target, { range }))
-			.sort((a, b) => Roguelike.chebyshevDistance(monster, a) - Roguelike.chebyshevDistance(monster, b))[0];
+			.sort((a, b) => Roguelike.chebyshevDistance(monster, a) - Roguelike.chebyshevDistance(monster, b))[0] ?? null;
 	}
 
-	private aggressionTarget(monster: Creature): Creature | undefined {
+	private aggressionTarget(monster: Creature): Creature | null {
 		return this.creatures
 			.filter((c) => c !== monster && !c.isNPC && c.hp > 0 && c.buffs['aggression']
 				&& Roguelike.canTarget(this.level, monster, c, { range: 8 }))
-			.sort((a, b) => Roguelike.chebyshevDistance(monster, a) - Roguelike.chebyshevDistance(monster, b))[0];
+			.sort((a, b) => Roguelike.chebyshevDistance(monster, a) - Roguelike.chebyshevDistance(monster, b))[0] ?? null;
 	}
 
 	/** `Mob.chooseEnemy()` prioritizes a character carrying `Aggression`, even when that
@@ -14048,25 +14050,25 @@ async function main(): Promise<void> {
 		canvas: document.getElementById('game') as HTMLCanvasElement,
 		// Java clears the scene to black, including space outside the dungeon map.
 		background: 0x000000,
-		//Every TintedSprite here (hero, monsters, items, both staircases) draws through mwg's
-		//colour-transform pipe, and Pixi will only accept a custom pipe registered before the
-		//renderer exists - so it cannot be done lazily on first use, and mwg deliberately
-		//leaves the call to the game rather than registering behind our back.  Without it the
-		//first frame that draws one throws "renderPipes[renderPipeId] is undefined" inside
-		//Pixi's render-group walk, killing the renderer: a black screen with no game visible.
-		//`TitleScene`'s scrolling `TilingSprite` background, and every `Chrome`/`Window`/
-		//`Button` built through `mwg/ui`'s `NinePatch` (i.e. all of them - `NineSliceSprite`
-		//is `NinePatch`'s underlying Pixi primitive), hit the exact same pitfall even though
-		//both are *built-in* Pixi pipes, not custom ones: each normally self-registers via a
-		//side-effect import inside the `pixi.js` package, but `vite build`'s production
-		//tree-shaking drops that import once nothing else in the bundle references an export
-		//from it - `npx tsc`/`vite`'s dev server never catch this, only a real `file://` load
-		//of the built `dist/game.js` does (`Cannot read properties of undefined (reading
-		//'validateRenderable')`). `NineSliceSprite`'s registration apparently only survived by
-		//accident before now - adding the `TilingSprite` import changed enough of Rollup's
-		//tree-shaking graph to drop it too. Registering both explicitly here, the same way
-		//`registerColorTransform` already has to be, survives the tree-shake regardless of
-		//what else gets imported later.
+		//
+		//`extensions` is mwg's escape hatch for extensions the *game* defines, and the framework's
+		//own contract (`mwg/two-d/Game.d.ts`: "TintedSprite ... registers its own colour-transform
+		//pipe automatically, at module scope, the moment a game imports it; a game never has to
+		//pass anything here for that") says none of these three are needed: mwg whitelists
+		//`dist/two-d/render/TintedSprite.js` in its `sideEffects` field precisely so the
+		//module-scope registration survives bundling, and Pixi marks its own `sprite-tiling`/
+		//`sprite-nine-slice` init modules the same way. Verified empirically against 0.7.8 by
+		//loading the *built* bundle with this array emptied of all three (`extensions: []`): the
+		//live renderer still reports `mwg-tinted-sprite`, `tilingSprite` and `nineSliceSprite`,
+		//and the game reaches depth 1 with monsters on screen, no page error
+		//(`tools/scratch/pipe-registration-livecheck.mjs`). They are kept anyway, deliberately:
+		//when this did break (against mwg 0.7.x before `Game` gained the option back, and again
+		//in the era of the `file:`-linked framework with two `pixi.js` copies), the symptom was a
+		//black screen with `renderPipes[renderPipeId] is undefined` / `validateRenderable` deep
+		//inside Pixi's render-group walk - one whole session to diagnose, and Pixi only accepts a
+		//pipe that was registered before the renderer exists, so it cannot be repaired lazily.
+		//Two idempotent lines are cheaper than that diagnosis; the port's `window.onerror` overlay
+		//(`index.html`) is the durable mitigation for the same class of failure.
 		extensions: [
 			registerColorTransform,
 			() => extensions.add(TilingSpritePipe),

@@ -1810,6 +1810,83 @@ treated as walkable makes the exit reachable on all 8, which is the decisive tes
 tutorial, not a mapping error that walled the stairs off. `searchForSecrets` checks all 8
 neighbours, so the doors are findable and every ported floor is completable.
 
+### mwg usage audit (2026-09-12, against the installed `@datamoc/mw_games` 0.7.8)
+
+A pass over how this port uses the *framework*, checked against the installed package's own
+`README.md`, its 277 `.d.ts` files (whose doc comments carry the contracts) and the published
+`REFERENCE.md` (read for the conventions it states; the installed version is the authority for
+behaviour). It found no gameplay bug, four documentation defects and one large pending conversion.
+
+**Correctly delegated, checked one by one.** Dungeon generation drives `Roguelike`'s generators,
+`Pathfinder` and its field of view rather than a second implementation of either; terrain drawing
+uses `TileMap` + `autotileFrames` + `BLOB_SHAPES`; actor drawing uses `SpriteSheet`,
+`AnimatedSprite`, `TintedSprite` (with `registerColorTransform`) and `Tweener`; the title flame uses
+`ParticleEmitter`; the HUD uses `Bar`, `Label`, `Button`, `Window`/`WindowStack`, `NinePatch` and one
+live-swappable theme through `setTheme`; floating combat text uses `FloatingTextStack`; the King's
+phase hooks use `ReactionTable` + `ReactionRule`; stateful resources use
+`Actors.Charges`/`Barrier`/`StatBlock`/`Inventory`/`Appearances`/`Progression`/`Advancement`;
+persistence uses `SaveSystem`, `Achievements` and `RunHistory`; sound uses `Audio.Music` and
+`Audio.Sound`; the headless suites drive `Scheduler`/`SimulationRuntime`/`advanceToInput`; quests use
+`Rpg.QuestLog.advanceStage()` + `GameState` switches. `src/i18n/index.ts` says outright that the
+catalog shape, `{token}` interpolation, CLDR plurals and base-language fallback are `mwg/i18n`'s and
+keeps only SPD's own capitalisation/title-case rules local. The framework's save conventions are
+followed throughout: every framework class round-trips through `toJSON()` and
+`fromJSON(defs, data)` with the game's definitions passed in fresh (`StatBlock.fromJSON({base: ...},
+state)`, `Inventory.fromJSON(new Map(this.bagDefinitions), state)`, `Blob.fromJSON`,
+`Charges.fromJSON`, `QuestLog.fromJSON`, `ReactionTable.fromJSON`), and `StatBlock`'s modifiers are
+deliberately *not* saved - `syncHeroFromStats` removes and re-adds the ring source every sync, so a
+load cannot double them, exactly as `StatBlock.toJSON`'s own doc comment requires. The port's
+conventions match the framework's elsewhere too: every `advance(...)` call is on a framework clock
+(`this.clock`, `Charges`, `beam`) and never on a non-time operation, and its "nothing to pick"
+returns are `null` - the two exceptions found (`rangedTarget`, `aggressionTarget`) returned
+`undefined` and now end in `?? null`. `RichLabel` is correctly unused (no long help bodies yet; the
+rule is that it is for descriptions, not per-frame numbers).
+
+**Finding 1 - the three hand-registered render pipes are redundant, and the comment saying otherwise
+was wrong.** `main.ts` passes `extensions: [registerColorTransform, () => extensions.add(
+TilingSpritePipe), () => extensions.add(NineSliceSpritePipe)]`. mwg's contract (`two-d/Game.d.ts`)
+is the opposite of what the old comment claimed: "TintedSprite ... registers its own colour-transform
+pipe automatically, at module scope, the moment a game imports it; a game never has to pass anything
+here for that" - and mwg whitelists `dist/two-d/render/TintedSprite.js` in its `sideEffects` field to
+keep that registration through bundling. Verified by probe rather than by reading:
+`tools/scratch/pipe-registration-livecheck.mjs` writes four variants of the *built* `dist/game.js`
+(all three registrations, none, colour transform only, the two Pixi built-ins only), loads each from
+`file://` and reads `window.__MWG__.app.renderer.renderPipes` - the live registry, the only authority
+on what actually registered. **All four variants reach depth 1 with monsters and report
+`mwg-tinted-sprite`, `tilingSprite` and `nineSliceSprite`**, so none of the three is needed against
+this mwg/pixi pair. They are kept (two idempotent lines against a failure mode that cost a whole
+session when it hit, and that Pixi cannot repair lazily because a pipe must exist before the
+renderer), but the comment now states the contract, the verification, and the history instead of
+asserting that mwg leaves registration to the game.
+
+**Finding 2 - 25 files import `pixi.js` directly, where the framework now offers names for 82 of the
+85 value symbols they use.** `two-d/pixi-interop` re-exports `Container, Sprite, Texture, Graphics,
+Rectangle, Text, FillGradient, TilingSprite` with the explicit instruction that importing from there
+"keeps that dependency visible and confined to one file, instead of spreading `pixi.js` imports
+through the game's own source", and `two-d/render` now offers `Node2D`/`Shape2D`/`Sprite2D`/`Text2D`/
+`TiledSprite`/`Gradient` plus `Container2D`/`Texture2D`/`Rectangle2D` in value positions. Measured:
+25 files, 85 value symbols, of which only `extensions`, `TilingSpritePipe` and
+`NineSliceSpritePipe` (all in `main.ts`) have no facade or interop name. That conversion is *not*
+done here - it is a 25-file mechanical change and is recorded as the actionable half of P2 in
+`SPD_ARCHITECTURE_TARGET_V3.md`, whose "still NOT in `mwg`" section was corrected in the same pass
+(it still described 0.5.0, where value positions were thought to be unreachable).
+
+**Finding 3 - `mwg/assets` and `mwg/tools/compile-resources` are unused, deliberately.** Assets are
+inlined by Vite instead (`assetsInlineLimit: Number.MAX_SAFE_INTEGER` for the 124 PNGs,
+`import.meta.glob(..., {eager: true, query: '?url'})` for the 84 sound files), which produces the
+same runtime property the compiled resource map exists for - build-time resolution, so no lookup
+ever fetches - in one classic script instead of two. The trade-off (the framework's `optional`/
+`fallback` batch semantics are not used because there is no batch) is now stated at the config site
+rather than left implicit.
+
+**Also corrected in this pass, all stale rather than wrong-in-effect:** `vite.config.ts` claimed
+"there are no image/audio assets yet" (there are 124 + 84, both inlined by the two settings in the
+same file) and described `mwg` as "a symlinked `file:../MW_games` dependency with its own nested
+`node_modules/pixi.js`" (it is the published `@datamoc/mw_games` npm alias in a real directory with
+no nested `node_modules` at all; the `dedupe: ['pixi.js']` guard stays, now with that history);
+`main.ts`'s Sad-Ghost quest comment referred to `SewersScene` calling `advance()` where the
+framework API is `Rpg.QuestLog.advanceStage()`.
+
 ### Browser verification: done, and what it took
 
 **A ported Sewers floor 1 now renders and plays.** Confirmed from a screenshot of the built page

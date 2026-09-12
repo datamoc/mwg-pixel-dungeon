@@ -6,8 +6,14 @@ const packageJson = JSON.parse(readFileSync(fileURLToPath(new URL('./package.jso
 
 /**
  * Same file:// constraint as mwg's own examples: no server, no <script type="module">.
- * There are no image/audio assets yet (placeholder textures are drawn at runtime), so
- * unlike mwg's compiled examples there is nothing to inline - just one classic script.
+ *
+ * Assets are inlined by the bundler rather than by `mwg/tools/compile-resources` + `mwg/assets`:
+ * every PNG goes through `assetsInlineLimit` below and every sound through `src/audio.ts`'s eager
+ * `import.meta.glob`, so all of them arrive as `data:` URIs inside one classic script. That gives
+ * the property the framework's compiled resource map exists for - build-time resolution, so a
+ * runtime lookup is synchronous and nothing is ever fetched - without a second generated script.
+ * `mwg/assets` is therefore unused here deliberately, and the trade-off is recorded in
+ * `PORT_COVERAGE.md`'s mwg-usage row rather than left implicit.
  */
 export default defineConfig({
 	base: './',
@@ -18,14 +24,16 @@ export default defineConfig({
 		__APP_VERSION__: JSON.stringify(packageJson.version),
 	},
 	resolve: {
-		//`mwg` is a symlinked `file:../MW_games` dependency with its own nested
-		//`node_modules/pixi.js` - without dedupe, Vite bundles two separate copies of the
-		//package, each with its own `extensions` singleton. `main.ts` registering a pipe
-		//(`registerColorTransform`, `TilingSpritePipe`, `NineSliceSpritePipe`) then adds it to
-		//the wrong copy's registry from the renderer's point of view, since `mwg`'s own
-		//`Game.ts` creates the `Application`/`Renderer` from its copy - every renderable using
-		//that pipe throws "Cannot read properties of undefined (reading 'validateRenderable')"
-		//on its first frame, in production builds only (dev's looser resolution hides it).
+		//`mwg` is the published npm package `@datamoc/mw_games`, aliased as `mwg` in
+		//`package.json`, so there is exactly one `pixi.js` on disk (`mwg` declares it as a peer
+		//dependency, and peers do not nest). `dedupe` is kept as a guard for the case that
+		//changes - a `file:` link or a stray nested install would give the game and the framework
+		//two copies, each with its own `extensions` singleton, and every renderable using a pipe
+		//registered in only one of them throws "Cannot read properties of undefined (reading
+		//'validateRenderable')" on its first frame, in production builds only (dev's looser
+		//resolution hides it). That was the shape of the failure while `mwg` was a symlinked
+		//`file:../MW_games` dependency; the registration itself is no longer hand-rolled at all
+		//(see the `extensions` note in `main.ts`).
 		dedupe: ['pixi.js'],
 	},
 	build: {

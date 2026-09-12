@@ -86,6 +86,23 @@ primitives for real - see below.
   plan's section 3 exit criterion stays blocked, but a new slice is unblocked: converting the
   *type-only* `pixi.js` imports across `src/` (of the 25 files importing it, whichever use it
   for types alone) to the mwg aliases. Not started; listed as the next Phase-0 slice.
+  **(2026-09-12 re-check against the installed 0.7.8: that "value positions still need pixi"
+  half is now out of date.** `Types2D.ts` re-exports its three names as *values* -
+  `export { Container as Container2D }`, `Texture as Texture2D`, `Rectangle as Rectangle2D`,
+  each documented "usable in both type and value positions" - and `Shape2D.ts` adds the
+  constructible `Node2D extends Container`, `Shape2D extends Graphics`, `Sprite2D extends Sprite`,
+  `Text2D`, `TiledSprite extends TilingSprite` and `Gradient = FillGradient`, all bare
+  subclasses/re-exports whose stated purpose is "to give a game a name it can import without
+  naming `pixi.js` itself". `mwg/two-d/pixi-interop` then covers the deliberate exceptions,
+  re-exporting `Container, Sprite, Texture, Graphics, Rectangle, Text, FillGradient,
+  TilingSprite` under the explicit instruction that a game "importing from here rather than from
+  `pixi.js` directly keeps that dependency visible and confined to one file, instead of spreading
+  `pixi.js` imports through the game's own source". Measured state here: 25 files still import
+  `pixi.js`, only 1 of them type-only (`ui/characterPlacement.ts`, whose single type is anyway in
+  the interop list), and of the 85 value symbols they pull in, 82 are available through the
+  facade or the interop module. What is genuinely still missing is exactly three symbols:
+  `extensions` and the two built-in pipe classes `TilingSpritePipe`/`NineSliceSpritePipe`, which
+  no `two-d` entry point re-exports (see P2).)
 
 ## What the plan assumes but is still NOT in `mwg@0.5.0`
 
@@ -95,6 +112,12 @@ primitives for real - see below.
   and removing pixi.js from `package.json` today would still break the build. What changed is
   that *type* positions are now convertible (see `Types2D.ts` above) - the remaining block is
   narrower than "no primitive story at all".
+  **(Superseded for 0.7.8 - see the re-check note above.** Value positions are covered now by
+  `Types2D.ts`'s value re-exports, `Shape2D.ts`'s constructible subclasses and
+  `two-d/pixi-interop`. The only reason `package.json` must still name `pixi.js` directly is
+  that it is a *peer* dependency of the framework - which npm requires the consumer to install -
+  plus the three symbols nothing re-exports yet. So the exit criterion is now a port-side
+  conversion, not a framework gap.)
 
 ## Upstream proposals (game-agnostic; for MWG's own repo, not this one)
 
@@ -122,6 +145,21 @@ the framework maintainer; implemented upstream or not at all - never here.
   dual-copy `dedupe` hazard `vite.config.ts` documents); (2) optionally, constructible
   wrappers later (`Container2D` class, `Texture2D.from(...)`, a `rect(x, y, w, h)` factory
   next to `rectOf`). Either phase lets games delete `pixi.js` from their own manifests.
+  **Phase (1) landed in the framework** (present in the installed 0.7.8): `two-d/pixi-interop`
+  re-exports `Container, Sprite, Texture, Graphics, Rectangle, Text, FillGradient, TilingSprite`
+  as values, and `Types2D.ts` re-exports `Container2D`/`Texture2D`/`Rectangle2D` in value
+  positions too. What remains is therefore two halves: a port-side conversion of the 25 files
+  (82 of their 85 value symbols can move today), and a narrowed framework ask for the three
+  symbols no entry point re-exports - `extensions`, `TilingSpritePipe`, `NineSliceSpritePipe` -
+  without which the last file must keep naming `pixi.js` (and the pipe registrations above
+  deliberately rely on). Two smaller framework doc fixes found while checking this: `Shape2D.d.ts`
+  says "`Container2D` ... is a type alias, not something a game can `new`", which contradicts
+  `Types2D.d.ts`'s own "usable in both type and value positions", and `pixi-interop.d.ts` says
+  "Nothing here has to register one by hand ... this project imports the full `pixi.js` package
+  everywhere ... and that package registers every built-in pipe ... as a side effect of the import
+  itself" - true in this build (verified, see the `extensions` note in `main.ts`), but stated as a
+  guarantee about every bundler configuration, which is what the port's earlier black-screen
+  sessions were.
 - **No proposal for semantic messaging**: `mwg/i18n` already matches the section 22C shape
   and the remaining work (typed messages at event sites) is port-side. Proposing nothing is
   also a decision, recorded so it isn't re-surveyed every bump.
