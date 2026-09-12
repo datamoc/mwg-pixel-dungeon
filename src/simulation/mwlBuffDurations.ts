@@ -32,6 +32,7 @@ export const BUFF_DURATION_DATA = {
   "haste": 20,
   "degrade": 30,
   "ooze": 20,
+  "wayward": 10,
   "charm": 10,
   "lethalHasteCooldown": 100
 } as const;
@@ -53,5 +54,6 @@ export const NEGATIVE_BUFF_DATA = [
   "daze",
   "chill",
   "frost",
-  "hex"
+  "hex",
+  "wayward"
 ] as const;

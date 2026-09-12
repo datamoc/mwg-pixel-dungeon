@@ -72,7 +72,8 @@ Do not add new authored content as object literals or scattered constants in the
       Since this project's rule is that values come from the real Java source, the four need either
       a stated reason or the Java numbers - recorded with the exact values in `PORT_COVERAGE.md`
       rather than re-balanced here, because changing four core debuff durations is a balance-wide
-      change that wants a deliberate pass.
+      change that wants a deliberate pass. The one buff added since (`wayward`, 10 turns for
+      `Wayward.WaywardBuff`) does use Java's own `DURATION` exactly.
       Badge counters, thresholds, descriptions, and icon indices are now authored in
       `src/content/badges.mwl`; achievement persistence and UI remain runtime adapters.
       Hero level-cap and experience-curve parameters are authored in
@@ -473,7 +474,23 @@ Do not add new authored content as object literals or scattered constants in the
       `Obfuscation` now contributes its Java-scaled stealth to sleeping detection; only the
       non-sleeping FOV-binary `seesHero` path remains simplified. `polarized`/
       `sacrificial`/`displacing` gained real proc branches in an earlier pass, alongside the
-      already-live `wayward`/`annoying`/`dazzling`/`explosive`.
+      already-live `wayward`/`annoying`/`dazzling`/`explosive`. **Correction 2026-09-12: those
+      four "already-live" curses were live in the wrong place** - all four resolved in
+      `mobOnHit`, which runs for a *monster's* attack, so a cursed weapon never procced on the
+      hero's own swing and instead fired whenever the hero was hit; they now sit in `heroOnHit`
+      beside the enchants (the correctly-placed `sacrificial`/`displacing` in `attack()`'s own
+      path are what made the anomaly visible). Three of the four also had a real effect bug,
+      fixed in the same pass: Explosive threw the explosive *trap*'s formula at the defender's
+      own cell and skipped the hero, where `ExplosiveCurseBomb` is a bare `Bomb.ConjuredBomb` -
+      plain `Bomb.explode` at the adjacent non-solid cell *closest to the attacker* (its own
+      cell when adjacent), `NormalIntRange(4 + scalingDepth, 12 + 3*scalingDepth)` on every char
+      in range, hero included; Dazzling dazed the hero unconditionally (its visibility test
+      asked whether the hero could see *itself*) and wrongly dispelled the hero's invisibility,
+      which is Annoying's line; and Wayward was a permanent flat -3 accuracy for merely owning
+      the weapon, where Java's `1/4 x arcana` proc *toggles* a 10-turn `WaywardBuff` whose
+      `Weapon.accuracyFactor` divides the weapon's `ACC` (1) by 5, multiplying the hero's whole
+      attack skill - the port's new `wayward` buff id gates a `/5` on `hero.accuracy` in
+      `syncHeroFromStats`. See `PORT_COVERAGE.md`'s curse paragraph for the 20 live assertions.
 - [x] Implement weapon augments. **This roadmap line's own history is worth reading before
       trusting any future "done" claim on it: it was marked done, then found still-wrong by its
       own next revision, then actually finished on a third pass** - a real cautionary example of

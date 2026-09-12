@@ -1615,9 +1615,9 @@ export class SewersScene extends Scene2D {
 		if (subclass === 'warden' && this.level && this.level.get(this.hero.x, this.hero.y) === HIGH_GRASS) {
 			this.hero.armor = [this.hero.armor[0] + 2, this.hero.armor[1] + 2];
 		}
-		//passive affix math lives here, next to every other flat stat: Wayward -3 accuracy,
-		//Stone +2 armor, Fragile -2 armor (floored at 0), Flow +2 evasion
-		if (this.weaponAffix === 'wayward') this.hero.accuracy = Math.max(0, this.hero.accuracy - 3);
+		//passive affix math lives here, next to every other flat stat: Stone +2 armor,
+		//Fragile -2 armor (floored at 0), Flow +2 evasion. Wayward's penalty is deliberately
+		//*not* one of these - see the buff-gated assignment after the ring block below.
 		if (this.armorGlyph === 'stone') this.hero.armor = [this.hero.armor[0] + 2, this.hero.armor[1] + 2];
 		//ring effects: Might already widened hero.str above; Tenacity's real
 		//`RingOfTenacity.damageMultiplier()` is applied directly to incoming damage in
@@ -1638,10 +1638,19 @@ export class SewersScene extends Scene2D {
 				for (const modifier of Actors.scaledModifiers(level, [{ stat: def.stat, op: def.op, base: def.at(level), perLevel: 0 }])) {
 					this.heroStats.addModifier({ ...modifier, source: 'ring' });
 				}
-				this.hero.accuracy = this.heroStats.get('accuracy') + (this.weaponAffix === 'wayward' ? -3 : 0);
 				this.hero.evasion = this.heroStats.get('evasion') + (this.heroClass === 'rogue' ? 3 : 0);
 			}
 		}
+		//`Weapon.accuracyFactor(this, target)`: while the cursed weapon's own
+		//`Wayward.WaywardBuff` is up, the weapon's `ACC` (1 for every ordinary weapon) is divided
+		//by 5 - and that factor multiplies the hero's whole attack skill, since
+		//`Hero.attackSkill()` is `max(1, round(attackSkill * accuracy * factor))`. What stood here
+		//docked a flat 3 accuracy for as long as a wayward weapon was *equipped* (the ring block
+		//above re-added it on the ring path), i.e. permanently; Java's penalty exists only while
+		//the buff is up, and `Wayward.proc` is what toggles it (`Wayward.java` 41-45).
+		this.hero.accuracy = this.weaponAffix === 'wayward' && this.hero.buffs['wayward'] !== undefined
+			? Math.max(1, Math.round(this.heroStats.get('accuracy') / 5))
+			: this.heroStats.get('accuracy');
 		if (subclass === 'freerunner' && !this.creatures.some((c) => !c.isHero && !c.isNPC && Roguelike.chebyshevDistance(this.hero, c) <= 1)) {
 			this.hero.evasion += 2;
 		}
@@ -6313,6 +6322,40 @@ export class SewersScene extends Scene2D {
 		}
 	}
 
+	/** `Explosive.proc()`'s detonation: real Java throws an `ExplosiveCurseBomb` - a bare
+	 * `Bomb.ConjuredBomb`, so the plain `Bomb.explode()` body - at the *closest adjacent
+	 * non-solid cell to the defender*, which it picks by walking `NEIGHBOURS8` and keeping the
+	 * one with the smallest `trueDistance` to the attacker (with the two adjacent, that is the
+	 * attacker's own cell), falling back to the defender's cell when every neighbour is solid
+	 * (`Explosive.java` 70-85). The blast then deals `NormalIntRange(4 + scalingDepth,
+	 * 12 + 3*scalingDepth)` minus armor to every char caught within a `PathFinder` distance-1
+	 * flood through non-solid/flammable cells - the hero included, since a bomb does not
+	 * discriminate, which is exactly why a cursed weapon hurts its own wielder. Approximated here
+	 * the same way `useStoneOfBlast`/`detonateGroundBomb` already are: a Chebyshev circle of
+	 * radius 1 (no wall-aware distance, no flammable-solid flood), Java's `!solid` folded into
+	 * this port's `passable` flag, `this.depth` for `scalingDepth`, and `applyBlastDamage` for the
+	 * per-target consequences. The previous form reused `applyTrapBlast`'s unrelated trap formula
+	 * (`5+depth .. 10+2*depth`, off-center x0.67) at the defender's own cell and skipped the hero,
+	 * so it was neither the same area nor the same damage as a real bomb. */
+	private curseExplosiveBlast(attacker: Creature, defender: Creature): void {
+		let at = { x: defender.x, y: defender.y };
+		let best = Infinity;
+		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
+			const x = defender.x + dx, y = defender.y + dy;
+			if (!this.level.inside(x, y) || !this.level.passable(x, y)) continue;
+			const distance = (x - attacker.x) ** 2 + (y - attacker.y) ** 2;
+			if (distance < best) {
+				best = distance;
+				at = { x, y };
+			}
+		}
+		for (const c of [...this.creatures]) {
+			if (c.isNPC || c.hp <= 0) continue;
+			if (!this.level.passable(c.x, c.y) || Roguelike.chebyshevDistance(at, c) > 1) continue;
+			this.applyBlastDamage(c, Math.max(0, Random.normalRange(4 + this.depth, 12 + 3 * this.depth)), false);
+		}
+	}
+
 	/** Takes one step of a queued `travelTarget`, or cancels it once arrived/interrupted. */
 	private stepTravel(): void {
 		const to = this.travelTarget;
@@ -10274,6 +10317,55 @@ export class SewersScene extends Scene2D {
 				}
 			}
 		}
+		//`Explosive.proc()` (`Explosive.java` v3.3.8, 48-98): every hit removes
+		//`round(IntRange(0,10) x arcana)` points from a 100-point fuse (mean 5, so ~20 hits per
+		//explosion), and at 0 the fuse resets by 100 and `new ExplosiveCurseBomb().explode(...)`
+		//detonates - see `curseExplosiveBlast` for the position and the real `Bomb.explode` body.
+		//These three weapon curses (explosive/dazzling/annoying) used to sit in `mobOnHit`, where
+		//`attacker` is a *monster*: a cursed weapon therefore never procced on the hero's own
+		//swings and instead fired whenever the hero was hit, which is not what `Weapon.Enchantment
+		//.proc(weapon, attacker, defender, damage)` does - it runs on the wielder's attack.
+		if (affix === 'explosive') {
+			this.weaponCurseDurability -= Math.round(Random.range(0, 10) * ringArcanaMultiplier(this.equippedRing));
+			if (this.weaponCurseDurability <= 0) {
+				this.weaponCurseDurability += 100;
+				this.curseExplosiveBlast(attacker, defender);
+			}
+		}
+		//`Dazzling.proc()` (`Dazzling.java` 41-56): `1/10 x arcana`, then every char whose *own*
+		//field of view contains the defender gets `Blindness` - `DURATION` (10 turns) for the
+		//attacker itself, half of that for everyone else. This port has no per-creature FOV grid, so
+		//the hero's case is checked exactly (`fov` covers the defender's cell) while a monster's
+		//"can see the defender" is approximated by the hero's map vision of that monster; daze is the
+		//available stand-in for Java's separate Blindness status (it impairs the target's rolls here).
+		//Two things the old branch got wrong: it dazed the hero unconditionally (the hero always sees
+		//*itself*, so its visibility test was vacuously true), and it dispelled the hero's
+		//invisibility - `Invisibility.dispel()` is `Annoying`'s line, not this one's.
+		if (affix === 'dazzling' && Random.chance((1 / 10) * ringArcanaMultiplier(this.equippedRing))) {
+			if (this.fov.isVisible(defender.x, defender.y)) this.hero.buffs['daze'] = Math.max(this.hero.buffs['daze'] ?? 0, 10);
+			for (const creature of this.creatures) {
+				if (creature.isHero || creature.hp <= 0 || !this.fov.isVisible(creature.x, creature.y)) continue;
+				creature.buffs['daze'] = Math.max(creature.buffs['daze'] ?? 0, creature === attacker ? 10 : 5);
+			}
+		}
+		//`Annoying.proc()` (`Annoying.java` 42-61): `1/20 x arcana`, beckoning every mob in the level
+		//toward the attacker and then dispelling invisibility. `seesHero` is this port's
+		//target-acquisition state, the standing stand-in for `beckon`; the crate/scream/sound
+		//presentation and the 13 flavour lines remain UI gaps.
+		if (affix === 'annoying' && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing))) {
+			for (const creature of this.creatures) {
+				if (!creature.isHero && !creature.isNPC && creature.hp > 0) creature.seesHero = true;
+			}
+			delete this.hero.buffs.invisibility;
+		}
+		//`Wayward.proc()` (`Wayward.java` 41-45): a `1/4 x arcana` roll *toggles* the wielder's own
+		//`WaywardBuff` - detaching it when already up, prolonging it for 10 turns otherwise. The buff
+		//is what docks the weapon's accuracy by 5 (`Weapon.accuracyFactor`, read in
+		//`syncHeroFromStats`), not the affix on its own.
+		if (affix === 'wayward') {
+			if (attacker.buffs['wayward'] !== undefined) delete attacker.buffs['wayward'];
+			else if (Random.chance((1 / 4) * ringArcanaMultiplier(this.equippedRing))) addBuff(attacker, 'wayward');
+		}
 		//Elastic.proc(): on a successful proc, knock the defender along the part of
 		//the attack trajectory beyond its cell by `round(2 * max(1, chance))` cells.
 		//The scene already owns forced movement and collision rules in `moveTo`, so a
@@ -10717,33 +10809,8 @@ export class SewersScene extends Scene2D {
 				addBuff(defender, 'daze');
 			}
 		}
-		//Explosive.proc(): every hit removes round(IntRange(0,10) x arcana) fuse points and
-		//detonates when the 100-point fuse is exhausted.  The existing blast resolver
-		//supplies the Java-shaped nearby damage and then the fuse resets.
-		if (this.weaponAffix === 'explosive') {
-			this.weaponCurseDurability -= Math.round(Random.range(0, 10) * ringArcanaMultiplier(this.equippedRing));
-			if (this.weaponCurseDurability <= 0) {
-				this.applyTrapBlast(defender.x, defender.y);
-				this.weaponCurseDurability = 100;
-			}
-		}
-		//Dazzling.proc(): a 1-in-10 x arcana blast blinds visible characters around the
-		//defender. Daze is the available timed blindness/impairment equivalent.
-		if (this.weaponAffix === 'dazzling' && Random.chance((1 / 10) * ringArcanaMultiplier(this.equippedRing))) {
-			for (const creature of this.creatures) {
-				if (creature.hp <= 0 || !this.fov.isVisible(creature.x, creature.y)) continue;
-				creature.buffs.daze = Math.max(creature.buffs.daze ?? 0, creature === attacker ? 5 : 2);
-			}
-			delete this.hero.buffs.invisibility;
-		}
-		//Annoying.proc(): a 1-in-20 x arcana proc beckons every active monster toward
-		//the hero. The AI's persisted seesHero flag is its target-acquisition state.
-		if (this.weaponAffix === 'annoying' && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing))) {
-			for (const creature of this.creatures) {
-				if (!creature.isHero && !creature.isNPC && creature.hp > 0) creature.seesHero = true;
-			}
-			delete this.hero.buffs.invisibility;
-		}
+		//The three weapon curses this file used to resolve here (explosive/dazzling/annoying) now
+		//live in `heroOnHit`, where the attacker is the weapon's own wielder - see the note there.
 		if (attacker.kind === 'albino' && Random.chance(0.5)) {
 			// Albino's Java proc is Bleeding; poison is the available damage-over-time
 			// primitive and is intentionally applied only after a landed hit.

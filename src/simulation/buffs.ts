@@ -10,7 +10,7 @@ import { BUFF_DURATION_DATA, NEGATIVE_BUFF_DATA } from './mwlBuffDurations';
  * because these multipliers apply to transient dice rolls rather than to named stats a
  * StatBlock resolves.
  */
-export type BuffId = 'bless' | 'hex' | 'daze' | 'chill' | 'frost' | 'drowsy' | 'magicalSleep' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown';
+export type BuffId = 'bless' | 'hex' | 'daze' | 'chill' | 'frost' | 'drowsy' | 'magicalSleep' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown' | 'wayward';
 /** The duration catalogue is authored in MWL and emitted as an isolated simulation module. */
 export const BUFF_DURATION: Record<BuffId, number> = (() => {
 	const values = { ...BUFF_DURATION_DATA } as Record<string, number>;

@@ -6,7 +6,7 @@ id=buffDurations
 name=Buff.durations
 [effect]
 apply_to=negative
-set=poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,chill,frost,hex
+set=poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,chill,frost,hex,wayward
 [/effect]
 [/trait]
 
@@ -140,6 +140,10 @@ duration=30
 [row]
 buff=ooze
 duration=20
+[/row]
+[row]
+buff=wayward
+duration=10
 [/row]
 [row]
 buff=charm

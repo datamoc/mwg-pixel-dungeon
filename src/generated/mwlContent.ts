@@ -3698,7 +3698,7 @@ export const gameData = {
 							"tag": "effect",
 							"attributes": {
 								"apply_to": "negative",
-								"set": "poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,chill,frost,hex"
+								"set": "poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,chill,frost,hex,wayward"
 							},
 							"children": [],
 							"location": {
@@ -4174,7 +4174,7 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"buff": "charm",
+								"buff": "wayward",
 								"duration": "10"
 							},
 							"children": [],
@@ -4188,13 +4188,27 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
+								"buff": "charm",
+								"duration": "10"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 148,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
 								"buff": "lethalHasteCooldown",
 								"duration": "100"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-								"line": 148,
+								"line": 152,
 								"column": 1
 							},
 							"gettext": []
