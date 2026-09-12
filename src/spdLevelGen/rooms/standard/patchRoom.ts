@@ -2,13 +2,20 @@
  * Port of `levels/rooms/standard/PatchRoom.java`'s `setupPatch()` (the shared helper `CircleBasinRoom`
  * and `BurnedRoom` both use). `xyToPatchCoords` and the non-`ensurePath` branch are direct
  * translations. The `ensurePath` branch's connectivity check (`PathFinder.buildDistanceMap` over
- * `BArray.not(patch)`) is reimplemented here as an 8-directional BFS - `PathFinder.java`'s own
- * distance-map connectivity wasn't independently re-read for this pass, so 8-directional is a
- * documented best-effort assumption (SPD movement/pathing is generally 8-directional), not a
- * verified byte-exact match. A wrong connectivity model would only change *how many retry attempts*
- * `setupPatch` takes before converging (and thus how much RNG it burns) - a real, currently
- * unverified fidelity risk for `CircleBasinRoom`/`BurnedRoom` specifically, flagged in
- * PORT_COVERAGE.md.
+ * `BArray.not(patch)`) is reimplemented here as a local 8-directional BFS, and that neighbourhood is
+ * **verified against `PathFinder.java` at tag v3.3.8** (it was previously flagged as a best-effort
+ * assumption with an RNG-burn risk, on the grounds that the neighbour set had not been re-read):
+ * the two-argument `buildDistanceMap(to, passable)` (lines 382-412) walks `dirLR` (line 67), whose
+ * eight offsets are the four axis neighbours plus the four diagonals this loop's `-1..1` box
+ * produces. Two equivalences make it a match rather than an approximation: Java's row-edge
+ * protection (`start = step % width == 0 ? 3 : 0`, `end = (step+1) % width == 0 ? 3 : 0`) exists only
+ * to stop the flat-index arithmetic wrapping into the next row, which the explicit
+ * `nx < 0 || ny < 0 || nx >= pw || ny >= ph` bound here achieves the same way; and Java's
+ * distance-guarded queue (`distance[n] > nextDistance`) re-visits cells while a unit-weight flood
+ * marks on first visit, which yields the same `seen` set. The predicate matches too - every
+ * non-patch cell must be reached - so the retry count, and therefore the RNG this consumes, is
+ * Java's. `CavesFissureRoom`'s own local BFS (`cavesFissureRoom.ts`, over the room interior via
+ * `PathFinder.setMapSize(width()-2, height()-2)`) relies on the same 8-directional set.
  */
 import { Room, Door } from '../../room';
 import { spdPatchGenerate } from '../../spdPatch';

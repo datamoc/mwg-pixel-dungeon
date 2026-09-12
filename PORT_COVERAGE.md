@@ -2030,6 +2030,49 @@ branching on quest state, class and inventory - not authored event data, so ther
 interpreter to run; the *presentation* half of that gap is the hand-rolled-modal bullet above).
 Inapplicable to this game: `3d`, `board`, `battle`, `ai`, `two-d/stage`.
 
+**Reconciling the two sub-audits' remaining claims**, after the notifications landed formally
+everything they reported was re-checked against the workspace, and the items not already dispositioned
+above are these:
+
+- **The `patchRoom.ts` connectivity risk is closed, and the port was right.** The file's own header
+  had called its 8-directional BFS "a documented best-effort assumption ... a real, currently
+  unverified fidelity risk" whose cost would be a different retry count and therefore different RNG
+  burn for `CircleBasinRoom`/`BurnedRoom`. Java settles it: `PathFinder.buildDistanceMap(to,
+  passable)` (`SPD-classes/.../watabou/utils/PathFinder.java` at `v3.3.8`, lines 382-412) walks
+  `dirLR` (line 67) - the four axis neighbours plus the four diagonals - with row-edge trimming that
+  only prevents flat-index wrap, which this port's explicit `nx/ny` bounds already do, and its
+  distance-guarded queue visits the same set a unit-weight first-visit flood does. Same
+  neighbourhood, same predicate, so the retry count is Java's. The comment is now verified rather
+  than flagged, and the sibling `CavesFissureRoom` BFS (which the `CavesFissureRoom` row above
+  already asserted was 8-directional) rests on the same read.
+- **Flat neighbour-offset tables re-declared rather than using `Roguelike.neighbourOffsets(8)`:**
+  `genericDungeon.ts` and `spdLevelGen/spdPatch.ts` each carry a hand-written `neighbourOffsets9`
+  and `maze.ts` a `dirLR` copy. The `maze.ts` one is a documented Java-fidelity translation of
+  `PathFinder.buildDistanceMap`'s own order including its edge trimming, so it stays; the other two
+  are hot-loop flat-index forms over a `boolean[]` that the framework's `(dx, dy)` pair helper does
+  not express (the port's own idiom for including the centre is visible at `main.ts:4014`'s
+  `neighbourOffsets(8).concat([[0, 0]])`). Not a defect, but also not documented - recorded rather
+  than churned.
+- **`SaveSystem` version 3 carries no `migrations` entry.** The framework's `migrations?: Record<number, (state) => state>` is how a `version` bump is meant to be expressed, and its absence
+  means the number is a marker whose compatibility is instead enforced by `??`-tolerant field reads
+  in `loadRun`. That is stated at the call site (`main.ts:1091-1093`) as deliberate, so this is
+  "bypassed but documented" - listed here so the next reader does not re-open it as an oversight.
+- **`src/challenges.ts` persists its selection in its own `localStorage` key** (`spd-on-mwg.challenges.v1`)
+  with no version envelope and only a `try`/`catch` instead of the framework's `defaultStorage()`
+  fallback, where `SaveSystem`/`Collection` exist for exactly this shape. Unlike the language key
+  (`runState.ts:25-28` explains why *that* one is a pre-`main()` setting), nothing records why the
+  challenge set is not a framework store - a small port-side item, recorded not changed.
+- **`SimulationRuntime.snapshot()` is unused**, the same shape as the `Scheduler.toJSON`/`restore`
+  bypass above (both would make a load resume the exact queue rather than a re-derived one).
+- **`Halo`, `LightningArc` and `SpriteAttachment` are unused with no comment** (`Minimap` has one:
+  the port's fog-of-war doubles as its map display; `StatusVisuals` is covered by P7 above). No
+  behaviour depends on them, so this is a note, not a gap.
+- **One sub-audit suggestion was checked and is wrong**, recorded so it is not "fixed" later: it
+  proposed that `showStatus`'s `rise` no longer needs dividing by `floaterTextScale` once `scale` is
+  passed to `push`. It does: the rise moves `FloatingText`'s inner `rising` layer, which lives
+  *inside* the scaled pop-up, so the division is what makes the text travel exactly one tile - the
+  live probe measures the newcomer's lift position from that same local space.
+
 ### Browser verification: done, and what it took
 
 **A ported Sewers floor 1 now renders and plays.** Confirmed from a screenshot of the built page

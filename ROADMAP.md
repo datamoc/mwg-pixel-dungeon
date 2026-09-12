@@ -1960,7 +1960,16 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       `resolveTerrainGraphics`/`TerrainGraphicsLayer`, `ui/gameLog.ts`'s own line budget vs
       `ListView`/`ScrollBox`, and the six boss ability cooldowns vs `Roguelike.AbilityCycle` (the
       phase machines around them stay local on purpose - Java has no such half-HP Fury rhythm, so
-      `BossPhases` would be a regression).
+      `BossPhases` would be a regression). Four smaller ones from the same audit, each with its
+      reason in `PORT_COVERAGE.md`'s mwg-usage section rather than here: `SimulationRuntime.snapshot()`
+      unused (the same shape as the `Scheduler` item above), `src/challenges.ts` keeping its own
+      `localStorage` key instead of `SaveSystem`/`Collection`, `SaveSystem`'s version-3 bump with no
+      `migrations` entry (deliberate, stated at the call site), and the two flat-index
+      `neighbourOffsets9` copies in `genericDungeon.ts`/`spdPatch.ts` that
+      `Roguelike.neighbourOffsets(8)` cannot express as a hot-loop form. And one thing this audit
+      *closed*: `patchRoom.ts`'s BFS neighbourhood, previously flagged there as an unverified
+      fidelity risk, is verified 8-directional against `PathFinder.java` at `v3.3.8` (see the file's
+      own comment for the two equivalences) - the port was right, so only the comment changed.
 - [ ] **Table-unique row ids in the MWL content** (2026-09-12, from the same audit): MWL's id
       namespace is global per tag, and 42 of this port's `[row]`s restate another table's *domain*
       id as their own id - `alchemyRecipeManifest`+`alchemyRecipes` (14),
