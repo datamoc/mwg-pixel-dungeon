@@ -8,5 +8,6 @@ tools/scratch/*.py
 .aider*
 # esbuild output of the tools/scratch/*.ts helpers; regenerate with the command in each header
 tools/scratch/dump-*.mjs
+tools/scratch/find-invisible.mjs
 # session-local agent state (worktrees, replays, temp files)
 .qwen/
