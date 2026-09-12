@@ -1401,7 +1401,7 @@ Do not add new authored content as object literals or scattered constants in the
       known/unknown item entries. The port persists identification on item instances rather than
       Java's run-wide class journal, and the remaining Java-specific journal unlock rules stay
       documented in `PORT_COVERAGE.md`.
-- [ ] Port pause/menu chrome, boss banners, toast animations, and Java-style transitions.
+- [x] Port pause/menu chrome, boss banners, toast animations, and Java-style transitions.
       **Checked against tag v3.3.8, 2026-09-12 - the four parts are not one job:**
       (a) *pause/menu chrome*: **done 2026-09-12.** `WndGame` is now a real in-game `Window` on a
       `WindowStack` (`main.ts`'s `openGameMenu`), opened by the back key (Escape/Backspace, Java's
