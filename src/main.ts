@@ -1336,6 +1336,8 @@ export class SewersScene extends Scene2D {
 	private kingLinkedAdds = new Set<Creature>();
 	/** CavesBossLevel's pylon gate/energy stand-in; the fixed floor supplies these cells. */
 	private cavesBossSealed = false;
+	/** `Level.entrance()`: the cell the hero arrived on. See `CavesBossLevel.seal()`. */
+	private entranceCell: Step | null = null;
 	/** PylonEnergy cells, persisted with the Caves boss floor. */
 	private cavesBossEnergyCells = new Set<number>();
 	/** In-flight DM300 rockfall volleys on this floor (cells + turns to impact). */
@@ -2388,6 +2390,10 @@ export class SewersScene extends Scene2D {
 		//"first room's centre"/"furthest room's centre" - the stairs land where Java puts them.
 		const start = ported?.entrance ?? Roguelike.rectCenter(this.level.rooms[0]);
 		this.miningBranchEntrance = this.miningBranchActive ? start : null;
+		//the cell the hero arrived on: Java's `Level.entrance()`. Only `CavesBossLevel.seal()`
+		//reads it here (it walls the way in behind the player), but it is where an ascent would
+		//start if this port ever grew one.
+		this.entranceCell = { ...start };
 		//depth 26 (LastLevel) has no down staircase - the Amulet is the only way out
 		this.hasStairs = !this.miningBranchActive && !(this.depth in BOSSES) && this.depth < 26;
 		if (this.hasStairs) {
@@ -9235,6 +9241,40 @@ export class SewersScene extends Scene2D {
 				if (paint && paint.map[y * paint.w + x] === Terrain.EMPTY_SP) continue;
 				spots.push({ x, y });
 			}
+		}
+		//`seal()` closes the way the hero came in: the entrance cell becomes a wall, and whatever
+		//is standing on it - or heaped there - is pushed to a random passable 8-neighbour first
+		//(`PathFinder.NEIGHBOURS8`'s own order, since that index is what the draw picks).
+		const entrance = this.entranceCell;
+		if (entrance && this.level.inside(entrance.x, entrance.y)) {
+			const pushOff = (): Step => {
+				const offsets: ReadonlyArray<readonly [number, number]> = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
+				let at = { x: entrance.x, y: entrance.y };
+				for (let attempt = 0; attempt < 32; attempt++) {
+					const [dx, dy] = offsets[Random.int(8)]!;
+					at = { x: entrance.x + dx, y: entrance.y + dy };
+					if (this.level.passable(at.x, at.y)) return at;
+				}
+				return at;
+			};
+			const ground = this.groundItemAt(entrance.x, entrance.y);
+			if (ground) {
+				const at = pushOff();
+				ground.x = at.x;
+				ground.y = at.y;
+				this.sprite(ground).position.set(at.x * TILE, at.y * TILE);
+			}
+			const occupant = this.creatureAt(entrance.x, entrance.y);
+			if (occupant) {
+				const at = pushOff();
+				this.moveTo(occupant, at);
+			}
+			if (this.portedPaint) this.portedPaint.map[this.level.index(entrance.x, entrance.y)] = Terrain.WALL;
+			this.level.set(entrance.x, entrance.y, WALL);
+			this.restitchTilesAround(entrance.x, entrance.y);
+			//`CellEmitter`'s rock burst, `PixelScene.shake(3, 0.7f)` and the ROCKS sample
+			this.shakeScreen(3, 0.7);
+			runState.audio.cue('rocks', 0.7);
 		}
 		if (spots.length > 0) this.spawnMonster('dm300', Random.element(spots)!);
 		this.say(t('port.log.dm300arrives'), 'warning');

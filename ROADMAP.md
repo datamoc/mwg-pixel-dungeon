@@ -849,10 +849,19 @@ Do not add new authored content as object literals or scattered constants in the
       **Locked-floor timing is now ported too**: DM-300 is no longer spawned
       in `populate()` on floor entry - `checkCavesBossPylonGate` creates it during `seal()`, at a
       random open, unoccupied `mainArena` cell that is not an `EMPTY_SP` tile, matching
-      `CavesBossLevel.seal()`'s own do/while. Remaining: the port's arena layout is still a
-      hand-approximation of Java's build order (so the patch's RNG stream position is deterministic
-      but not Java's exact draw index), Java's entrance-wall relocation/rock-shake on seal and
-      `unseal()` gate reopening are not modeled, and targeting refinements plus presentation
+      `CavesBossLevel.seal()`'s own do/while. **The seal's entrance half is ported too
+      (2026-09-12)**: the cell the hero came in on becomes a wall, with anything standing on it -
+      or heaped there - pushed to a random passable `PathFinder.NEIGHBOURS8` neighbour first
+      (Java's own index order, since that is what the draw picks), the tile restitched, and the
+      rock burst's screen shake plus the `rocks` cue played. Verified live
+      (`tools/scratch/caves-seal-livecheck.mjs`, 7 assertions, including a monster actually being
+      pushed off the cell and a heap beside it left alone, as Java does). `unseal()`'s gate
+      reopening is deliberately **not** ported and is recorded as such rather than faked: this
+      port descends the moment the boss dies and has no ascent path at all, so a reopened gate
+      could never be seen - and Java's own reason for it (walk back out through the arena) is the
+      same flow the port's immediate descent replaces. Remaining: the port's arena layout is still
+      a hand-approximation of Java's build order (so the patch's RNG stream position is
+      deterministic but not Java's exact draw index), and targeting refinements plus presentation
       remain).
 - [ ] Port City/Dwarf King's throne and Imp-shop scripts (the full 1/2/3 phase machine
       is now live: P1 hunt with exact summon/ability cooldowns and LINK/TELE-lite, P2
