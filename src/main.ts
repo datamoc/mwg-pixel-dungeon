@@ -4785,14 +4785,17 @@ export class SewersScene extends Scene2D {
 			? (this.regrowthChargesOverLimit + 1) / 5
 			: 0;
 		const radius = 2 + 2 * charges;
-		const cells: { x: number; y: number; distance: number }[] = [];
+		//The wand's bolt path, from the hero to the aimed cell: used for the centre line of the
+		//grass and for the Lotus when the aimed cell is taken. See the `line` comment below for why
+		//this is a straight line rather than a wall-stopping one.
+		const boltPath = Roguelike.traceLine({ x: this.hero.x, y: this.hero.y }, { x: target.x, y: target.y });
+		const cells: { x: number; y: number }[] = [];
 		for (let y = Math.max(0, target.y - radius); y <= Math.min(this.level.height - 1, target.y + radius); y++) {
 			for (let x = Math.max(0, target.x - radius); x <= Math.min(this.level.width - 1, target.x + radius); x++) {
 				const distance = Math.max(Math.abs(x - target.x), Math.abs(y - target.y));
-				if (distance <= radius) cells.push({ x, y, distance });
+				if (distance <= radius) cells.push({ x, y });
 			}
 		}
-		cells.sort((a, b) => a.distance - b.distance);
 		let eligible = cells.filter(({ x, y }) => {
 			const cell = this.level.index(x, y);
 			return (this.level.get(x, y) === FLOOR || this.level.get(x, y) === GRASS || this.level.get(x, y) === HIGH_GRASS)
@@ -4808,21 +4811,31 @@ export class SewersScene extends Scene2D {
 			}
 			if (creature) creature.buffs['roots'] = Math.max(creature.buffs['roots'] ?? 0, 4 * charges);
 		}
+		//`WandOfRegrowth.onZap()` shuffles the surviving cells here, before the Lotus and the
+		//grass line - so the RNG advance happens at Java's point in the sequence. Java's own list
+		//order comes from a `HashSet`, which no port can reproduce; a shuffle of any fixed order
+		//gives the same uniform permutation, which is what the placement below depends on.
+		Random.shuffle(eligible);
 		if (charges >= 3) {
-			//WandOfRegrowth.onZap(): a 3-charge cast creates one Lotus on the aimed cell
-			//when it is free, otherwise on the nearest free cell in the bolt path (Java source,
-			//tag v3.3.8). Cell-targeting is unavailable here, so the target-centred eligible
-			//ordering is the closest equivalent; remove its cell before grass/seed placement.
-			const lotusCell = eligible.find(({ x, y }) => !this.creatureAt(x, y));
-			if (lotusCell) {
-				this.spawnLotus(lotusCell, level);
-				eligible = eligible.filter((cell) => cell !== lotusCell);
+			//`WandOfRegrowth.onZap()`: a 3-charge cast puts one Lotus on the *aimed* cell when that
+			//cell is in the cone and free, otherwise on the first free cone cell walking the bolt
+			//path backwards from its end. Both halves are exact now that the bolt path is real.
+			const free = (cell: { x: number; y: number }): boolean =>
+				eligible.some((e) => e.x === cell.x && e.y === cell.y) && !this.creatureAt(cell.x, cell.y);
+			const lotusAt = free(target) ? { x: target.x, y: target.y } : [...boltPath].reverse().find(free) ?? null;
+			if (lotusAt) {
+				this.spawnLotus(lotusAt, level);
+				eligible = eligible.filter((cell) => !(cell.x === lotusAt.x && cell.y === lotusAt.y));
 			}
 		}
 
 		const grassToPlace = Math.round((3.67 + level / 3) * charges);
-		const line = eligible
-			.filter(({ x, y }) => Math.abs((x - this.hero.x) * (target.y - this.hero.y) - (y - this.hero.y) * (target.x - this.hero.x)) <= Math.max(1, radius))
+		//Java walks the *bolt path* for the centre line, not a cross-product band: the wand's own
+		//`collisionProperties` is `WONT_STOP` for an uncursed one ("only used for targeting, actual
+		//projectile logic is Ballistica.STOP_SOLID"), so this is the wall-ignoring straight line to
+		//the aimed cell - MWG's `traceLine`, the same Bresenham walk.
+		const line = boltPath
+			.filter((cell) => eligible.some((e) => e.x === cell.x && e.y === cell.y))
 			.slice(0, grassToPlace);
 		for (const { x, y } of line) {
 			if (Random.float() > furrowedChance) this.level.set(x, y, HIGH_GRASS);

@@ -1198,7 +1198,16 @@ Do not add new authored content as object literals or scattered constants in the
       regional growth, roots, high-grass budget, seed/dewcatcher/seedpod chances, and persistent
       degradation counters are now live too. Lotus now spawns on qualifying casts, expires on
       its Java HP timer, and preserves nearby non-Rotberry seeds with the real level-scaled
-      chance. Exact cone targeting and exact waterskin/dewdrop interactions remain.
+      chance. **2026-09-12: the wand's bolt path and Lotus placement are now exact** - the centre
+      line is Java's `bolt.path` through MWG's `traceLine` (an uncursed wand's own
+      `collisionProperties` is `WONT_STOP`), the cells are shuffled at Java's own point in the
+      sequence, and the Lotus takes the aimed cell when free or the first free cell walking that
+      path backwards; browser-verified live (`tools/scratch/regrowth-path-livecheck.mjs`). What
+      remains is the cone *shape*: Java's `ConeAOE` sector (range `2 + 2*charges`, `20 + 10*charges`
+      degrees, rays every 0.5 degrees, unioned `Ballistica.subPath`s with `STOP_SOLID|STOP_TARGET`)
+      instead of a Chebyshev circle - a shared task, since `ConeAOE` also backs this port's
+      Fireblast wand and DM300's gas check plus seven unported features (see `PORT_COVERAGE.md`'s
+      Regrowth row for the exact parameters). Exact waterskin/dewdrop interactions remain.
 - [x] Match hunger and starvation damage exactly (`Hunger.act()`'s real `partialDamage`
       fractional accrual and crossing-into-STARVING 1-damage hit, replacing the former flat
       "every 10 turns" guess). Java has no attack-delay/accuracy penalty while merely hungry
@@ -2158,6 +2167,19 @@ compatibility notes and an API report entry in MWG before this port adopts it; P
       `file://` refuses, so this port wrote its own HTML rewrite and its own "unbuilt source page"
       guard (which must test for `script[type="module"]`, not just the protocol). A short recipe or a
       tiny `tools/classic-html.mjs` would remove a step every bundler-based MWG game repeats.
+
+- [ ] **P13 — An angular cone area, not only a snapped spray.** This port needs Java's
+      `mechanics/ConeAOE` exactly - a circular *sector*: rays cast every 0.5 degrees across an arc
+      of a given angle, each struck cell unioned with the line from the source (so a wall stops the
+      part of the cone behind it), with the ray length clamped to a maximum range. `roguelike`'s
+      `coneCells(origin, target, width)` is a different shape: the aim snaps to the nearest of the
+      eight directions, its length is the Chebyshev distance aimed, and step `i` spans
+      `round(i / length * width)` cells per side - a linear spray with no angle, no range clamp and
+      no wall awareness. A generic `coneSector(level, from, to, { degrees, range, stop })` (built on
+      the existing `ballistica`, which already takes a `stop` mode) would let a game express the
+      sector directly; this port's Regrowth wand, Fireblast wand and DM-300's gas check are three
+      live consumers, and there are seven more in SPD that are not ported yet. Recorded rather than
+      requested upstream in a patch, because the shape is a design decision for the framework.
 
 ### Explicitly out of scope for MWG
 
