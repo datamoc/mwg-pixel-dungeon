@@ -21,6 +21,7 @@ try {
 	compile(join(root, 'src/itemWorkflows.ts'), 'workflows.js');
 	compile(join(root, 'src/ringModifiers.ts'), 'ringModifiers.js');
 	compile(join(root, 'src/transmutation.ts'), 'transmutation.js');
+	compile(join(root, 'src/missiles.ts'), 'missiles.js');
 	// The framework side is the installed `@datamoc/mw_games` build the game itself ships,
 	// shimmed rather than compiled from a sibling checkout of the framework's sources - the two
 	// are different versions in general, so compiling a checkout would test something this port
@@ -43,6 +44,7 @@ try {
 	const { Appearances } = require('./actors/Appearances.js');
 	const { transferEnhancement, upgradeItem } = require('./workflows.js');
 	const { transmuteItem } = require('./transmutation.js');
+	const { missilePickupValid, recordMissileUpgrade } = require('./missiles.js');
 	const bag = new Inventory();
 	bag.add({ id: 'sword', quantity: 1, stackable: true, instanceId: 'flame', level: 2, affix: 'blazing' });
 	bag.add({ id: 'sword', quantity: 1, stackable: true, instanceId: 'frost', level: 1, affix: 'chilling' });
@@ -62,7 +64,22 @@ try {
 	const ring = transmuteItem({ id: 'ring_might', quantity: 1, identified: true, level: 4, cursed: false }, (kind) => `test-${kind}`);
 	assert.ok(ring);
 	assert.equal(ring.level, 4);
-	console.log('PASS item-instance separation, enhancement transfer, upgrade policy and appearance restore');
+	// `MissileWeapon.UpgradedSetTracker.pickupValid`: no tracker, no entry, or a level at/above
+	// the recorded threshold merges; anything below the threshold crumbles to dust instead.
+	assert.equal(missilePickupValid(undefined, 1, 0), true);
+	assert.equal(missilePickupValid(new Map(), 1, 0), true);
+	assert.equal(missilePickupValid(new Map([[1, 2]]), undefined, 0), true);
+	assert.equal(missilePickupValid(new Map([[1, 2]]), 2, 0), true);
+	assert.equal(missilePickupValid(new Map([[1, 2]]), 1, 2), true);
+	assert.equal(missilePickupValid(new Map([[1, 2]]), 1, 3), true);
+	assert.equal(missilePickupValid(new Map([[1, 2]]), 1, 1), false);
+	assert.equal(missilePickupValid(new Map([[1, 2]]), 1, 0), false);
+	// `MissileWeapon.upgrade()`: the upgraded set records trueLevel()+1, immutably.
+	const recorded = recordMissileUpgrade(new Map(), 1, 2);
+	assert.deepEqual([...recorded], [[1, 2]]);
+	assert.equal(recordMissileUpgrade(recorded, 1, 5).get(1), 5);
+	assert.equal(recorded.get(1), 2);
+	console.log('PASS item-instance separation, enhancement transfer, upgrade policy, appearance restore, and missile dust pickup');
 } finally {
 	rmSync(out, { recursive: true, force: true });
 }

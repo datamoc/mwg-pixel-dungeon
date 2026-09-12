@@ -1386,13 +1386,14 @@ export const gameData = {
 					"tag": "table",
 					"attributes": {
 						"id": "unstableEnchants",
-						"columns": "id:string"
+						"columns": "id:string|enchant:string"
 					},
 					"children": [
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "blazing"
+								"id": "unstable-blazing",
+								"enchant": "blazing"
 							},
 							"children": [],
 							"location": {
@@ -1405,12 +1406,13 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "blocking"
+								"id": "unstable-blocking",
+								"enchant": "blocking"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
-								"line": 307,
+								"line": 308,
 								"column": 1
 							},
 							"gettext": []
@@ -1418,12 +1420,13 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "blooming"
+								"id": "unstable-blooming",
+								"enchant": "blooming"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
-								"line": 310,
+								"line": 312,
 								"column": 1
 							},
 							"gettext": []
@@ -1431,20 +1434,8 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "chilling"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
-								"line": 313,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "corrupting"
+								"id": "unstable-chilling",
+								"enchant": "chilling"
 							},
 							"children": [],
 							"location": {
@@ -1457,12 +1448,13 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "kinetic"
+								"id": "unstable-corrupting",
+								"enchant": "corrupting"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
-								"line": 319,
+								"line": 320,
 								"column": 1
 							},
 							"gettext": []
@@ -1470,12 +1462,13 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "grim"
+								"id": "unstable-kinetic",
+								"enchant": "kinetic"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
-								"line": 322,
+								"line": 324,
 								"column": 1
 							},
 							"gettext": []
@@ -1483,20 +1476,8 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "lucky"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
-								"line": 325,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "shocking"
+								"id": "unstable-grim",
+								"enchant": "grim"
 							},
 							"children": [],
 							"location": {
@@ -1509,12 +1490,41 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "vampiric"
+								"id": "unstable-lucky",
+								"enchant": "lucky"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
-								"line": 331,
+								"line": 332,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "unstable-shocking",
+								"enchant": "shocking"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 336,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "unstable-vampiric",
+								"enchant": "vampiric"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 340,
 								"column": 1
 							},
 							"gettext": []
@@ -1884,13 +1894,14 @@ export const gameData = {
 					"tag": "table",
 					"attributes": {
 						"id": "alchemyRecipeManifest",
-						"columns": "id:string|group:string|javaRecipe:string"
+						"columns": "id:string|group:string|javaRecipe:string|recipe:string"
 					},
 					"children": [
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "liquidMetal",
+								"id": "manifest-liquidMetal",
+								"recipe": "liquidMetal",
 								"group": "variable",
 								"javaRecipe": "LiquidMetal.Recipe"
 							},
@@ -1905,14 +1916,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "scrollToStone",
+								"id": "manifest-scrollToStone",
+								"recipe": "scrollToStone",
 								"group": "one",
 								"javaRecipe": "Scroll.ScrollToStone"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 141,
+								"line": 142,
 								"column": 1
 							},
 							"gettext": []
@@ -1920,14 +1932,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "exoticPotion",
+								"id": "manifest-exoticPotion",
+								"recipe": "exoticPotion",
 								"group": "one",
 								"javaRecipe": "ExoticPotion.PotionToExotic"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 146,
+								"line": 148,
 								"column": 1
 							},
 							"gettext": []
@@ -1935,14 +1948,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "exoticScroll",
+								"id": "manifest-exoticScroll",
+								"recipe": "exoticScroll",
 								"group": "one",
 								"javaRecipe": "ExoticScroll.ScrollToExotic"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 151,
+								"line": 154,
 								"column": 1
 							},
 							"gettext": []
@@ -1950,14 +1964,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "arcaneResin",
+								"id": "manifest-arcaneResin",
+								"recipe": "arcaneResin",
 								"group": "one",
 								"javaRecipe": "ArcaneResin.Recipe"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 156,
+								"line": 160,
 								"column": 1
 							},
 							"gettext": []
@@ -1965,24 +1980,10 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "alchemize",
+								"id": "manifest-alchemize",
+								"recipe": "alchemize",
 								"group": "one",
 								"javaRecipe": "Alchemize.Recipe"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 161,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "stewedMeat1",
-								"group": "one",
-								"javaRecipe": "StewedMeat.oneMeat"
 							},
 							"children": [],
 							"location": {
@@ -1995,14 +1996,31 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "blandfruit",
+								"id": "manifest-stewedMeat1",
+								"recipe": "stewedMeat1",
+								"group": "one",
+								"javaRecipe": "StewedMeat.oneMeat"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 172,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "manifest-blandfruit",
+								"recipe": "blandfruit",
 								"group": "two",
 								"javaRecipe": "Blandfruit.CookFruit"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 171,
+								"line": 178,
 								"column": 1
 							},
 							"gettext": []
@@ -2010,14 +2028,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "enhanceBomb",
+								"id": "manifest-enhanceBomb",
+								"recipe": "enhanceBomb",
 								"group": "two",
 								"javaRecipe": "Bomb.EnhanceBomb"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 176,
+								"line": 184,
 								"column": 1
 							},
 							"gettext": []
@@ -2025,14 +2044,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "alchemicalCatalyst",
+								"id": "manifest-alchemicalCatalyst",
+								"recipe": "alchemicalCatalyst",
 								"group": "two",
 								"javaRecipe": "AlchemicalCatalyst.Recipe"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 181,
+								"line": 190,
 								"column": 1
 							},
 							"gettext": []
@@ -2040,39 +2060,10 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "arcaneCatalyst",
+								"id": "manifest-arcaneCatalyst",
+								"recipe": "arcaneCatalyst",
 								"group": "two",
 								"javaRecipe": "ArcaneCatalyst.Recipe"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 186,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "elixirArcaneArmor",
-								"group": "two",
-								"javaRecipe": "ElixirOfArcaneArmor.Recipe"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 191,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "elixirAquaticRejuvenation",
-								"group": "two",
-								"javaRecipe": "ElixirOfAquaticRejuvenation.Recipe"
 							},
 							"children": [],
 							"location": {
@@ -2085,14 +2076,47 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "elixirDragonsBlood",
+								"id": "manifest-elixirArcaneArmor",
+								"recipe": "elixirArcaneArmor",
+								"group": "two",
+								"javaRecipe": "ElixirOfArcaneArmor.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 202,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "manifest-elixirAquaticRejuvenation",
+								"recipe": "elixirAquaticRejuvenation",
+								"group": "two",
+								"javaRecipe": "ElixirOfAquaticRejuvenation.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 208,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "manifest-elixirDragonsBlood",
+								"recipe": "elixirDragonsBlood",
 								"group": "two",
 								"javaRecipe": "ElixirOfDragonsBlood.Recipe"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 201,
+								"line": 214,
 								"column": 1
 							},
 							"gettext": []
@@ -2100,14 +2124,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "elixirIcyTouch",
+								"id": "manifest-elixirIcyTouch",
+								"recipe": "elixirIcyTouch",
 								"group": "two",
 								"javaRecipe": "ElixirOfIcyTouch.Recipe"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 206,
+								"line": 220,
 								"column": 1
 							},
 							"gettext": []
@@ -2115,54 +2140,10 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "elixirMight",
+								"id": "manifest-elixirMight",
+								"recipe": "elixirMight",
 								"group": "two",
 								"javaRecipe": "ElixirOfMight.Recipe"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 211,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "elixirHoneyedHealing",
-								"group": "two",
-								"javaRecipe": "ElixirOfHoneyedHealing.Recipe"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 216,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "elixirToxicEssence",
-								"group": "two",
-								"javaRecipe": "ElixirOfToxicEssence.Recipe"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 221,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "blizzardBrew",
-								"group": "two",
-								"javaRecipe": "BlizzardBrew.Recipe"
 							},
 							"children": [],
 							"location": {
@@ -2175,14 +2156,63 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "infernalBrew",
+								"id": "manifest-elixirHoneyedHealing",
+								"recipe": "elixirHoneyedHealing",
+								"group": "two",
+								"javaRecipe": "ElixirOfHoneyedHealing.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 232,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "manifest-elixirToxicEssence",
+								"recipe": "elixirToxicEssence",
+								"group": "two",
+								"javaRecipe": "ElixirOfToxicEssence.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 238,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "manifest-blizzardBrew",
+								"recipe": "blizzardBrew",
+								"group": "two",
+								"javaRecipe": "BlizzardBrew.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 244,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "manifest-infernalBrew",
+								"recipe": "infernalBrew",
 								"group": "two",
 								"javaRecipe": "InfernalBrew.Recipe"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 231,
+								"line": 250,
 								"column": 1
 							},
 							"gettext": []
@@ -2190,69 +2220,10 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "shockingBrew",
+								"id": "manifest-shockingBrew",
+								"recipe": "shockingBrew",
 								"group": "two",
 								"javaRecipe": "ShockingBrew.Recipe"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 236,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "causticBrew",
-								"group": "two",
-								"javaRecipe": "CausticBrew.Recipe"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 241,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "aquaBlast",
-								"group": "two",
-								"javaRecipe": "AquaBlast.Recipe"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 246,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "beaconOfReturning",
-								"group": "two",
-								"javaRecipe": "BeaconOfReturning.Recipe"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 251,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "curseInfusion",
-								"group": "two",
-								"javaRecipe": "CurseInfusion.Recipe"
 							},
 							"children": [],
 							"location": {
@@ -2265,84 +2236,74 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "featherFall",
+								"id": "manifest-causticBrew",
+								"recipe": "causticBrew",
+								"group": "two",
+								"javaRecipe": "CausticBrew.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 262,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "manifest-aquaBlast",
+								"recipe": "aquaBlast",
+								"group": "two",
+								"javaRecipe": "AquaBlast.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 268,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "manifest-beaconOfReturning",
+								"recipe": "beaconOfReturning",
+								"group": "two",
+								"javaRecipe": "BeaconOfReturning.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 274,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "manifest-curseInfusion",
+								"recipe": "curseInfusion",
+								"group": "two",
+								"javaRecipe": "CurseInfusion.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 280,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "manifest-featherFall",
+								"recipe": "featherFall",
 								"group": "two",
 								"javaRecipe": "FeatherFall.Recipe"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 261,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "magicalInfusion",
-								"group": "two",
-								"javaRecipe": "MagicalInfusion.Recipe"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 266,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "phaseShift",
-								"group": "two",
-								"javaRecipe": "PhaseShift.Recipe"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 271,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "reclaimTrap",
-								"group": "two",
-								"javaRecipe": "ReclaimTrap.Recipe"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 276,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "recycle",
-								"group": "two",
-								"javaRecipe": "Recycle.Recipe"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 281,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "wildEnergy",
-								"group": "two",
-								"javaRecipe": "WildEnergy.Recipe"
 							},
 							"children": [],
 							"location": {
@@ -2355,14 +2316,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "telekineticGrab",
+								"id": "manifest-magicalInfusion",
+								"recipe": "magicalInfusion",
 								"group": "two",
-								"javaRecipe": "TelekineticGrab.Recipe"
+								"javaRecipe": "MagicalInfusion.Recipe"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 291,
+								"line": 292,
 								"column": 1
 							},
 							"gettext": []
@@ -2370,14 +2332,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "summonElemental",
+								"id": "manifest-phaseShift",
+								"recipe": "phaseShift",
 								"group": "two",
-								"javaRecipe": "SummonElemental.Recipe"
+								"javaRecipe": "PhaseShift.Recipe"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 296,
+								"line": 298,
 								"column": 1
 							},
 							"gettext": []
@@ -2385,14 +2348,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "stewedMeat2",
+								"id": "manifest-reclaimTrap",
+								"recipe": "reclaimTrap",
 								"group": "two",
-								"javaRecipe": "StewedMeat.twoMeat"
+								"javaRecipe": "ReclaimTrap.Recipe"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 301,
+								"line": 304,
 								"column": 1
 							},
 							"gettext": []
@@ -2400,14 +2364,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "potionSeed",
-								"group": "three",
-								"javaRecipe": "Potion.SeedToPotion"
+								"id": "manifest-recycle",
+								"recipe": "recycle",
+								"group": "two",
+								"javaRecipe": "Recycle.Recipe"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 306,
+								"line": 310,
 								"column": 1
 							},
 							"gettext": []
@@ -2415,24 +2380,10 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "stewedMeat3",
-								"group": "three",
-								"javaRecipe": "StewedMeat.threeMeat"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 311,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "meatPie",
-								"group": "three",
-								"javaRecipe": "MeatPie.Recipe"
+								"id": "manifest-wildEnergy",
+								"recipe": "wildEnergy",
+								"group": "two",
+								"javaRecipe": "WildEnergy.Recipe"
 							},
 							"children": [],
 							"location": {
@@ -2445,14 +2396,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "enhanceBombFrost",
+								"id": "manifest-telekineticGrab",
+								"recipe": "telekineticGrab",
 								"group": "two",
-								"javaRecipe": "Bomb.EnhanceBomb(FrostBomb)"
+								"javaRecipe": "TelekineticGrab.Recipe"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 321,
+								"line": 322,
 								"column": 1
 							},
 							"gettext": []
@@ -2460,14 +2412,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "enhanceBombWoolly",
+								"id": "manifest-summonElemental",
+								"recipe": "summonElemental",
 								"group": "two",
-								"javaRecipe": "Bomb.EnhanceBomb(WoollyBomb)"
+								"javaRecipe": "SummonElemental.Recipe"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 326,
+								"line": 328,
 								"column": 1
 							},
 							"gettext": []
@@ -2475,14 +2428,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "enhanceBombFire",
+								"id": "manifest-stewedMeat2",
+								"recipe": "stewedMeat2",
 								"group": "two",
-								"javaRecipe": "Bomb.EnhanceBomb(Firebomb)"
+								"javaRecipe": "StewedMeat.twoMeat"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 331,
+								"line": 334,
 								"column": 1
 							},
 							"gettext": []
@@ -2490,14 +2444,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "enhanceBombNoisemaker",
-								"group": "two",
-								"javaRecipe": "Bomb.EnhanceBomb(Noisemaker)"
+								"id": "manifest-potionSeed",
+								"recipe": "potionSeed",
+								"group": "three",
+								"javaRecipe": "Potion.SeedToPotion"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 336,
+								"line": 340,
 								"column": 1
 							},
 							"gettext": []
@@ -2505,24 +2460,10 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "enhanceBombFlashbang",
-								"group": "two",
-								"javaRecipe": "Bomb.EnhanceBomb(Flashbang)"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 341,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "enhanceBombShock",
-								"group": "two",
-								"javaRecipe": "Bomb.EnhanceBomb(ShockBomb)"
+								"id": "manifest-stewedMeat3",
+								"recipe": "stewedMeat3",
+								"group": "three",
+								"javaRecipe": "StewedMeat.threeMeat"
 							},
 							"children": [],
 							"location": {
@@ -2535,14 +2476,127 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "enhanceBombRegrowth",
+								"id": "manifest-meatPie",
+								"recipe": "meatPie",
+								"group": "three",
+								"javaRecipe": "MeatPie.Recipe"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 352,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "manifest-enhanceBombFrost",
+								"recipe": "enhanceBombFrost",
+								"group": "two",
+								"javaRecipe": "Bomb.EnhanceBomb(FrostBomb)"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 358,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "manifest-enhanceBombWoolly",
+								"recipe": "enhanceBombWoolly",
+								"group": "two",
+								"javaRecipe": "Bomb.EnhanceBomb(WoollyBomb)"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 364,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "manifest-enhanceBombFire",
+								"recipe": "enhanceBombFire",
+								"group": "two",
+								"javaRecipe": "Bomb.EnhanceBomb(Firebomb)"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 370,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "manifest-enhanceBombNoisemaker",
+								"recipe": "enhanceBombNoisemaker",
+								"group": "two",
+								"javaRecipe": "Bomb.EnhanceBomb(Noisemaker)"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 376,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "manifest-enhanceBombFlashbang",
+								"recipe": "enhanceBombFlashbang",
+								"group": "two",
+								"javaRecipe": "Bomb.EnhanceBomb(Flashbang)"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 382,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "manifest-enhanceBombShock",
+								"recipe": "enhanceBombShock",
+								"group": "two",
+								"javaRecipe": "Bomb.EnhanceBomb(ShockBomb)"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
+								"line": 388,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "manifest-enhanceBombRegrowth",
+								"recipe": "enhanceBombRegrowth",
 								"group": "two",
 								"javaRecipe": "Bomb.EnhanceBomb(RegrowthBomb)"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 351,
+								"line": 394,
 								"column": 1
 							},
 							"gettext": []
@@ -2550,14 +2604,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "enhanceBombHoly",
+								"id": "manifest-enhanceBombHoly",
+								"recipe": "enhanceBombHoly",
 								"group": "two",
 								"javaRecipe": "Bomb.EnhanceBomb(HolyBomb)"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 356,
+								"line": 400,
 								"column": 1
 							},
 							"gettext": []
@@ -2565,14 +2620,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "enhanceBombArcane",
+								"id": "manifest-enhanceBombArcane",
+								"recipe": "enhanceBombArcane",
 								"group": "two",
 								"javaRecipe": "Bomb.EnhanceBomb(ArcaneBomb)"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 361,
+								"line": 406,
 								"column": 1
 							},
 							"gettext": []
@@ -2580,14 +2636,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "enhanceBombShrapnel",
+								"id": "manifest-enhanceBombShrapnel",
+								"recipe": "enhanceBombShrapnel",
 								"group": "two",
 								"javaRecipe": "Bomb.EnhanceBomb(ShrapnelBomb)"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 366,
+								"line": 412,
 								"column": 1
 							},
 							"gettext": []
@@ -7235,13 +7292,14 @@ export const gameData = {
 					"tag": "table",
 					"attributes": {
 						"id": "curseDefinitions",
-						"columns": "id:string|type:string|locks:boolean|nameKey:string|descriptionKey:string"
+						"columns": "id:string|type:string|locks:boolean|nameKey:string|descriptionKey:string|curse:string"
 					},
 					"children": [
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "wayward",
+								"id": "curse-wayward",
+								"curse": "wayward",
 								"type": "weapon",
 								"locks": "true",
 								"nameKey": "items.weapon.curses.wayward.name",
@@ -7258,7 +7316,8 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "annoying",
+								"id": "curse-annoying",
+								"curse": "annoying",
 								"type": "weapon",
 								"locks": "true",
 								"nameKey": "items.weapon.curses.annoying.name",
@@ -7267,7 +7326,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
-								"line": 14,
+								"line": 15,
 								"column": 1
 							},
 							"gettext": []
@@ -7275,7 +7334,8 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "dazzling",
+								"id": "curse-dazzling",
+								"curse": "dazzling",
 								"type": "weapon",
 								"locks": "true",
 								"nameKey": "items.weapon.curses.dazzling.name",
@@ -7284,7 +7344,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
-								"line": 21,
+								"line": 23,
 								"column": 1
 							},
 							"gettext": []
@@ -7292,7 +7352,8 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "displacing",
+								"id": "curse-displacing",
+								"curse": "displacing",
 								"type": "weapon",
 								"locks": "true",
 								"nameKey": "items.weapon.curses.displacing.name",
@@ -7301,7 +7362,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
-								"line": 28,
+								"line": 31,
 								"column": 1
 							},
 							"gettext": []
@@ -7309,7 +7370,8 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "explosive",
+								"id": "curse-explosive",
+								"curse": "explosive",
 								"type": "weapon",
 								"locks": "true",
 								"nameKey": "items.weapon.curses.explosive.name",
@@ -7318,7 +7380,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
-								"line": 35,
+								"line": 39,
 								"column": 1
 							},
 							"gettext": []
@@ -7326,7 +7388,8 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "friendly",
+								"id": "curse-friendly",
+								"curse": "friendly",
 								"type": "weapon",
 								"locks": "true",
 								"nameKey": "items.weapon.curses.friendly.name",
@@ -7335,7 +7398,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
-								"line": 42,
+								"line": 47,
 								"column": 1
 							},
 							"gettext": []
@@ -7343,7 +7406,8 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "polarized",
+								"id": "curse-polarized",
+								"curse": "polarized",
 								"type": "weapon",
 								"locks": "true",
 								"nameKey": "items.weapon.curses.polarized.name",
@@ -7352,7 +7416,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
-								"line": 49,
+								"line": 55,
 								"column": 1
 							},
 							"gettext": []
@@ -7360,28 +7424,12 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "sacrificial",
+								"id": "curse-sacrificial",
+								"curse": "sacrificial",
 								"type": "weapon",
 								"locks": "true",
 								"nameKey": "items.weapon.curses.sacrificial.name",
 								"descriptionKey": "items.weapon.curses.sacrificial.desc"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
-								"line": 56,
-								"column": 1
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"id": "stench",
-								"type": "armor",
-								"locks": "true",
-								"nameKey": "items.armor.curses.stench.name",
-								"descriptionKey": "items.armor.curses.stench.desc"
 							},
 							"children": [],
 							"location": {
@@ -7394,7 +7442,26 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "antientropy",
+								"id": "curse-stench",
+								"curse": "stench",
+								"type": "armor",
+								"locks": "true",
+								"nameKey": "items.armor.curses.stench.name",
+								"descriptionKey": "items.armor.curses.stench.desc"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
+								"line": 71,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "curse-antientropy",
+								"curse": "antientropy",
 								"type": "armor",
 								"locks": "true",
 								"nameKey": "items.armor.curses.antientropy.name",
@@ -7403,7 +7470,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
-								"line": 70,
+								"line": 79,
 								"column": 1
 							},
 							"gettext": []
@@ -7411,7 +7478,8 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "bulk",
+								"id": "curse-bulk",
+								"curse": "bulk",
 								"type": "armor",
 								"locks": "true",
 								"nameKey": "items.armor.curses.bulk.name",
@@ -7420,7 +7488,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
-								"line": 77,
+								"line": 87,
 								"column": 1
 							},
 							"gettext": []
@@ -7428,7 +7496,8 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "corrosion",
+								"id": "curse-corrosion",
+								"curse": "corrosion",
 								"type": "armor",
 								"locks": "true",
 								"nameKey": "items.armor.curses.corrosion.name",
@@ -7437,7 +7506,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
-								"line": 84,
+								"line": 95,
 								"column": 1
 							},
 							"gettext": []
@@ -7445,7 +7514,8 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "displacement",
+								"id": "curse-displacement",
+								"curse": "displacement",
 								"type": "armor",
 								"locks": "true",
 								"nameKey": "items.armor.curses.displacement.name",
@@ -7454,7 +7524,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
-								"line": 91,
+								"line": 103,
 								"column": 1
 							},
 							"gettext": []
@@ -7462,7 +7532,8 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "metabolism",
+								"id": "curse-metabolism",
+								"curse": "metabolism",
 								"type": "armor",
 								"locks": "true",
 								"nameKey": "items.armor.curses.metabolism.name",
@@ -7471,7 +7542,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
-								"line": 98,
+								"line": 111,
 								"column": 1
 							},
 							"gettext": []
@@ -7479,7 +7550,8 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "multiplicity",
+								"id": "curse-multiplicity",
+								"curse": "multiplicity",
 								"type": "armor",
 								"locks": "true",
 								"nameKey": "items.armor.curses.multiplicity.name",
@@ -7488,7 +7560,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
-								"line": 105,
+								"line": 119,
 								"column": 1
 							},
 							"gettext": []
@@ -7496,7 +7568,8 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "overgrowth",
+								"id": "curse-overgrowth",
+								"curse": "overgrowth",
 								"type": "armor",
 								"locks": "true",
 								"nameKey": "items.armor.curses.overgrowth.name",
@@ -7505,7 +7578,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\curse-rules.mwl",
-								"line": 112,
+								"line": 127,
 								"column": 1
 							},
 							"gettext": []
@@ -15784,13 +15857,14 @@ export const gameData = {
 					"tag": "table",
 					"attributes": {
 						"id": "questDefinitions",
-						"columns": "id:string|conditionSwitch:string|description:string"
+						"columns": "id:string|conditionSwitch:string|description:string|quest:string"
 					},
 					"children": [
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "sadGhost",
+								"id": "quest-sadGhost",
+								"quest": "sadGhost",
 								"conditionSwitch": "ghostTargetSlain",
 								"description": "Slay the ghost's tormentor."
 							},
@@ -15805,14 +15879,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "wandmaker",
+								"id": "quest-wandmaker",
+								"quest": "wandmaker",
 								"conditionSwitch": "wandQuestDone",
 								"description": "Bring the wandmaker a scroll."
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
-								"line": 113,
+								"line": 114,
 								"column": 1
 							},
 							"gettext": []
@@ -15820,14 +15895,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "blacksmith",
+								"id": "quest-blacksmith",
+								"quest": "blacksmith",
 								"conditionSwitch": "blacksmithDone",
 								"description": "Complete the Blacksmith quest."
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
-								"line": 118,
+								"line": 120,
 								"column": 1
 							},
 							"gettext": []
@@ -15835,14 +15911,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "imp",
+								"id": "quest-imp",
+								"quest": "imp",
 								"conditionSwitch": "impDone",
 								"description": "Bring dwarf tokens."
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\scenario-rules.mwl",
-								"line": 123,
+								"line": 126,
 								"column": 1
 							},
 							"gettext": []

@@ -1,13 +1,7 @@
-import { Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
-import { ParticleEmitter } from 'mwg';
+import { Container, Graphics, Sprite, Texture } from 'pixi.js';
+import { ParticleEmitter, SpriteSheet } from 'mwg';
 
 const FRAME = 32;
-
-/** `Fireball.java`'s `BLIGHT`/`FLIGHT`/`FLAME1`/`FLAME2` are the four equal quadrants of
- * `effects/fireball.png` (128x32, so 32x32 each), in that left-to-right order. */
-function quadrant(texture: Texture, index: number): Texture {
-	return new Texture({ source: texture.source, frame: new Rectangle(index * FRAME, 0, FRAME, FRAME) });
-}
 
 interface Spark {
 	gfx: Graphics;
@@ -39,7 +33,11 @@ export class TitleFlame extends Container {
 		super();
 		this.position.set(x, y);
 
-		this.glow = new Sprite(quadrant(texture, 0));
+		//`Fireball.java`'s `BLIGHT`/`FLIGHT`/`FLAME1`/`FLAME2` are the four equal quadrants of
+		//`effects/fireball.png` (128x32, so 32x32 each), in that left-to-right order - a regular
+		//grid, so the sheet cuts and caches each quadrant once (MWG 0.8.0 item 326).
+		const quadrants = SpriteSheet.fromTexture(texture, FRAME, FRAME);
+		this.glow = new Sprite(quadrants.get(0));
 		this.glow.anchor.set(0.5);
 		this.glow.blendMode = 'add';
 		this.addChild(this.glow);
@@ -51,7 +49,7 @@ export class TitleFlame extends Container {
 		//angle/speed/spin ranges keep the flame from forming an artificial straight column, and
 		//frame selection, pooling, lifetime, and upward motion remain shared.
 		this.flameEmitter = new ParticleEmitter({
-			frames: [quadrant(texture, 2), quadrant(texture, 3)],
+			frames: [quadrants.get(2), quadrants.get(3)],
 			max: 16,
 			rate: 10,
 			life: 1,
@@ -67,7 +65,7 @@ export class TitleFlame extends Container {
 		this.flameEmitter.start();
 		this.addChild(this.flameEmitter, this.sparkLayer);
 
-		this.flare = new Sprite(quadrant(texture, 1));
+		this.flare = new Sprite(quadrants.get(1));
 		this.flare.anchor.set(0.5);
 		this.flare.blendMode = 'add';
 		this.addChild(this.flare);

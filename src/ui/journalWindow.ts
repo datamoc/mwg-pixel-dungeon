@@ -19,7 +19,7 @@ export interface JournalTab {
 export function createJournalWindow(tabs: JournalTab[], onClose: () => void): Window {
 	const width = 280;
 	const height = 238;
-	const window = new Window({ width, height, title: t('windows.wndjournal.notes'), anchor: 'center' });
+	const window = new Window({ width, height, title: t('windows.wndjournal.notes'), anchor: 'center', blocker: true });
 	let tabIndex = 0;
 	let pageIndex = 0;
 	let paragraphIndex = 0;

@@ -8,11 +8,15 @@
  * therefore truncates the part of the cone behind it, because the ray that would have reached past
  * it stopped at the wall instead.
  *
- * The framework has no equivalent to reuse: `roguelike`'s `coneCells` is a spray whose aim snaps to
- * one of the eight directions and whose width grows linearly with distance - no arc angle, no range
- * clamp, no wall awareness (recorded as proposal P13 in `ROADMAP.md`). The line tracer is injected
- * rather than imported so this stays a pure function of its inputs, testable headlessly; the game
- * passes MWG's `ballistica` with the stop mode Java's `ballisticaParams` names.
+ * The framework has its own generic sector now (`roguelike.coneSector`, MWG 0.8.0 item 322 -
+ * proposal P13, answered): rays every 0.5 degrees across `degrees`, clamped to `range`, stopped
+ * by the first wall. This port deliberately keeps its own translation anyway, because the generic
+ * shape is less exact - no `float`-precision mirroring, no inner-ring fill at radius 4+, no
+ * rim/inner distinction - and the point of this file is that the two can be compared line for
+ * line against `ConeAOE.java`. New cone attacks belong here, not on the generic. The line
+ * tracer is injected rather than imported so this stays a pure function of its inputs, testable
+ * headlessly; the game passes MWG's `ballistica` with the stop mode Java's `ballisticaParams`
+ * names.
  *
  * The arc arithmetic mirrors Java's `float` precision (`Math.fround` at each step). That looks
  * pedantic, but the loop's endpoint is a *sampled* boundary - 60.5 degrees of arc is 121 or 122

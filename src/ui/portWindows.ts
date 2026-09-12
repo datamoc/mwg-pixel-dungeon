@@ -17,7 +17,9 @@ import { titleIcon } from './titleIcons';
  *
  * Each takes the scene's own `WindowStack` (the caller owns it, its viewport and its `update`),
  * and each is sized the way its Java counterpart is: `WndChallenges` at `24` per row, the
- * rankings window to its content, the badges grid to `5` columns of `16px` icons.
+ * rankings window to its content, the badges grid to `5` columns of `16px` icons. Every window
+ * here passes `blocker: true` (MWG 0.8.0, item 324): Java's `Window` carries a full-screen
+ * blocker that swallows outside clicks and dismisses the window, so no caller has to add one.
  */
 function windowWidth(cap: number): number {
 	return Math.min(cap, Game.current.width / menuScale(Game.current.width, Game.current.height) - 16);
@@ -28,7 +30,7 @@ function windowWidth(cap: number): number {
 export function showInfoWindow(windows: WindowStack, title: string, body: string): void {
 	const width = windowWidth(180);
 	const label = new Label({ text: body, size: 6, wrapWidth: width - 16, color: theme().color.text });
-	const window = new Window({ width, height: label.height + 48, title, anchor: 'center' });
+	const window = new Window({ width, height: label.height + 48, title, anchor: 'center', blocker: true });
 	window.content.addChild(label);
 	const close = new Button({
 		width: window.contentWidth,
@@ -52,7 +54,7 @@ export function showInfoWindow(windows: WindowStack, title: string, body: string
  */
 export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () => void): void {
 	const width = windowWidth(180);
-	const window = new Window({ width, height: 136, title: t('port.window.settings.title'), anchor: 'center' });
+	const window = new Window({ width, height: 136, title: t('port.window.settings.title'), anchor: 'center', blocker: true });
 	const versionLabel = new Label({ text: t('port.window.settings.version', { version: APP_VERSION }), size: 7, color: theme().color.textDim });
 	window.content.addChild(versionLabel);
 	const languageButton = new Button({
@@ -96,7 +98,7 @@ export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () =
 /** `WndChallenges`: selected challenge ids persist between runs like SPD's settings. */
 export function showChallengesWindow(windows: WindowStack): void {
 	const width = windowWidth(250);
-	const window = new Window({ width, height: CHALLENGES.length * 24 + 52, title: t('windows.wndchallenges.title'), anchor: 'center' });
+	const window = new Window({ width, height: CHALLENGES.length * 24 + 52, title: t('windows.wndchallenges.title'), anchor: 'center', blocker: true });
 	const description = new Label({ size: 6, wrapWidth: width - 16, color: theme().color.textDim });
 	description.position.set(0, CHALLENGES.length * 24 + 2);
 	window.content.addChild(description);
@@ -142,7 +144,7 @@ export function showRankingsWindow(windows: WindowStack): void {
 	// last row and the final score fell below the panel's own edge - measured live, three runs
 	// needed 97px of content in the 74px the guess produced. `Window` does not expose its chrome
 	// height, so derive it from a window of known size and then `resize`.
-	const window = new Window({ width, height: 100, title, anchor: 'center' });
+	const window = new Window({ width, height: 100, title, anchor: 'center', blocker: true });
 	window.content.addChild(total, entries);
 	entries.y = total.height + 5;
 	const close = new Button({ width: window.contentWidth, height: 18, text: t('port.window.close'), onClick: () => window.close() });
@@ -158,7 +160,7 @@ export function showBadgesWindow(windows: WindowStack): void {
 	const badges = loadBadges();
 	const width = 156;
 	const rows = Math.ceil(BADGE_DEFS.length / 5);
-	const window = new Window({ width, height: rows * 24 + 75, title: t('port.window.badges.title'), anchor: 'center' });
+	const window = new Window({ width, height: rows * 24 + 75, title: t('port.window.badges.title'), anchor: 'center', blocker: true });
 	const description = new Label({ size: 6, wrapWidth: window.contentWidth, align: 'center' });
 	description.position.set(0, rows * 24 + 2);
 	window.content.addChild(description);

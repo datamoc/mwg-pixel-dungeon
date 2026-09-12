@@ -47,15 +47,21 @@ export type WallDecoKind = 'sink' | 'torch' | 'smoke' | 'ore';
  * bright and a smoke puff is born faint.
  *
  * Why this is hand-integrated rather than a `mwg` `ParticleEmitter`, which the title flame does use
- * (checked against `two-d/render/Particles.d.ts` on the installed 0.7.8): the emitter interpolates
- * *scale* and *alpha* linearly between a birth and a death value, with one `tint` for the whole
- * emitter, recomputing each particle's values from its own age every step. Java's three decoration
- * particles need three things that cannot be expressed that way - a per-particle random **colour**
+ * (checked against `two-d/render/Particles.d.ts` on the installed 0.8.0): the emitter used to
+ * interpolate *scale* and *alpha* linearly between a birth and a death value, with one `tint` for
+ * the whole emitter. MWG 0.8.0 closed all three gaps this layer was waiting on (item 323: per-particle
+ * `tint` ranges, `ParticleCurve` scale/alpha of age, `flicker` scale wobble), so the framework half
+ * of proposal P14 is done - but the migration itself is still a redesign, not a swap, and it is
+ * deferred to a browser-verified pass: the per-spot FOV gating here (spots emit only while visible,
+ * particles die the frame their cell leaves FOV) has no emitter-level equivalent, and every new
+ * option changes on-screen pixels. Java's three decoration particles need three things the old
+ * emitter could not express - a per-particle random **colour**
  * (`Sink`'s `WaterParticle`: `color(ColorMath.random(0xb6ccc2, 0x3b6653))` at every birth), a
  * per-frame **jitter** (`Torch`'s `SparkParticle.update()`: `size(Random.Float(size * left /
  * lifespan))`, re-rolled each frame rather than interpolated), and a **piecewise curve** (the smoke
- * above). Recorded as proposal P14 in `ROADMAP.md`; until the framework takes one of the three, this
- * layer keeps its own pool, so the effect stays the effect Java draws rather than a linear
+ * above). Recorded as proposal P14 in `ROADMAP.md`; the framework has since shipped all three, so
+ * what remains is the migration described there, not a missing capability - this layer keeps its
+ * own pool until that pass, so the effect stays the effect Java draws rather than a linear
  * approximation of it.
  */
 export class WallDecorationLayer extends Container {

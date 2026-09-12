@@ -26,7 +26,7 @@ export interface AlchemyRecipeManifestEntry {
 export const ALCHEMY_RECIPE_MANIFEST: readonly AlchemyRecipeManifestEntry[] = MWL_TABLE_ROWS('alchemyRecipeManifest', 'id').map((row) => {
 	const group = String(row.group);
 	if (!['variable', 'one', 'two', 'three'].includes(group)) throw new Error(`Invalid MWL alchemy manifest group: ${group}`);
-	return { id: String(row.id), group: group as AlchemyRecipeManifestEntry['group'], javaRecipe: String(row.javaRecipe) };
+	return { id: String(row.recipe), group: group as AlchemyRecipeManifestEntry['group'], javaRecipe: String(row.javaRecipe) };
 });
 
 export const ALCHEMY_ENERGY: Readonly<Record<string, number>> = Object.fromEntries(

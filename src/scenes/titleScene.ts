@@ -138,15 +138,17 @@ export class TitleScene extends Scene2D {
 		this.layout();
 
 		this.onAction = (action) => {
+			//The windows are asked first (MWG 0.8.0's public `WindowStack.handleAction`, item 325),
+			//so an open window consumes its keys before the scene ever sees them - this handler
+			//can no longer starve a window by returning `true` early, whatever it returns.
 			//`Input.onAction` is a stack-mode `Signal`, so listeners added later are offered the
 			//action *first* (`Signal`'s constructor doc: "new listeners are added at the front ...
 			//so the most recently opened window is offered the event first") - this scene listener
-			//runs before `WindowStack`'s, even though the stack registered its own in its
-			//constructor. That is safe only because this handler never returns `true`, so it cannot
-			//consume an action the stack needs: a window still swallows its own 'cancel'. 'confirm'
-			//has no window-side handler, so it is guarded here instead, or Enter would begin a run
-			//out from under an open Support/Rankings/Badges/etc. window rather than dismissing it.
-			if (action === 'confirm' && this.windows.isEmpty) this.begin();
+			//runs before `WindowStack`'s own, which is why the chain goes through the stack
+			//explicitly rather than relying on registration order. 'confirm' has no window-side
+			//handler, so it is guarded here instead, or Enter would begin a run out from under
+			//an open Support/Rankings/Badges/etc. window rather than dismissing it.
+			if (!this.windows.handleAction(action) && action === 'confirm' && this.windows.isEmpty) this.begin();
 		};
 		Input.onAction.add(this.onAction);
 		this.onDestroy.add(() => Input.onAction.remove(this.onAction));

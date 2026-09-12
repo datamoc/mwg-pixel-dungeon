@@ -1,4 +1,5 @@
-import { Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Container, Graphics, Rectangle, Sprite } from 'pixi.js';
+import { SpriteSheet } from 'mwg';
 import { SpdLabel as Label } from './spdLabel';
 import { SpdButton } from './spdButton';
 import { spdPanel } from './spdPanel';
@@ -21,6 +22,10 @@ export interface InventoryEntry {
 }
 
 type InventoryFilter = 'all' | 'consumables' | 'equipment' | 'quest';
+
+/** Shared `items.png` sheet for the row icons above; built lazily so module load never touches
+ * sprite state, and shared so `icon()` reuses cached frame textures across redraws. */
+let itemsSheet: SpriteSheet | null = null;
 
 /** WndBag/InventorySlot: 5 columns, 28px cells, 1px gutters, 14px title.
  * The root bag has Java-shaped category tabs and pages; actual sub-bag ownership is not
@@ -77,8 +82,10 @@ export class InventoryWindow extends Container {
 	}
 
 	private icon(frame: number): Sprite {
-		return new Sprite(new Texture({ source: runState.sprites.items.source,
-			frame: new Rectangle((frame % 16) * 16, Math.floor(frame / 16) * 16, 16, 16) }));
+		//`items.png` is a 16x16 grid, and a sheet caches each cut `Texture`: every redraw shares
+		//the frame textures instead of cutting a fresh one per row (MWG 0.8.0 item 326).
+		itemsSheet ??= SpriteSheet.fromTexture(runState.sprites.items, 16, 16);
+		return new Sprite(itemsSheet.get(frame));
 	}
 
 	private draw(): void {

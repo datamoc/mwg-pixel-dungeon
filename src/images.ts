@@ -81,6 +81,11 @@ import larvaUrl from './assets/larva.png';
 import blacksmithUrl from './assets/blacksmith.png';
 import impUrl from './assets/demon.png';
 import bannersUrl from './assets/banners.png';
+// `BOSS_SLAIN`/`GAME_OVER` cut out of Java's own `interfaces/banners.png` (tag `v3.3.8`) at
+// `BannerSprites`' exact rects - `uvRect(0,157,127,225)` (127x68) and `uvRect(128,157,256,192)`
+// (128x35) - unlike `banners.png` above, which is this port's own custom redraw.
+import bannerBossSlainUrl from './assets/banner_boss_slain.png';
+import bannerGameOverUrl from './assets/banner_game_over.png';
 // `WandOfWarding.WardSprite`'s dedicated variable-width tier film.
 import wardsUrl from './assets/wards.png';
 // `WandOfLivingEarth.EarthGuardianSprite`'s dedicated 12x15 film.
@@ -260,6 +265,10 @@ export interface SpdSprites {
 	ripperDemon: Texture;
 	items: Texture;
 	banners: Texture;
+	/** Java's `BOSS_SLAIN` banner sprite, cut from its own sheet (see the import comment). */
+	bannerBossSlain: Texture;
+	/** Java's `GAME_OVER` banner sprite, cut from its own sheet (see the import comment). */
+	bannerGameOver: Texture;
 	/** `WandOfWarding.WardSprite`'s six tier frames, from `sprites/wards.png`. */
 	wards: Texture;
 	/** `WandOfLivingEarth.EarthGuardianSprite`'s 12x15 film. */
@@ -407,6 +416,8 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		ripperDemon,
 		items,
 		banners,
+		bannerBossSlain,
+		bannerGameOver,
 		wards,
 		guardian,
 		uiToolbar,
@@ -502,6 +513,8 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(ripperUrl),
 		loadImage(itemsUrl),
 		loadImage(bannersUrl),
+		loadImage(bannerBossSlainUrl),
+		loadImage(bannerGameOverUrl),
 		loadImage(wardsUrl),
 		loadImage(guardianUrl),
 		loadImage(uiToolbarUrl),
@@ -600,6 +613,8 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		ripperDemon: Texture.from(ripperDemon),
 		items: Texture.from(items),
 		banners: Texture.from(banners),
+		bannerBossSlain: Texture.from(bannerBossSlain),
+		bannerGameOver: Texture.from(bannerGameOver),
 		wards: Texture.from(wards),
 		guardian: Texture.from(guardian),
 		uiToolbar: Texture.from(uiToolbar),

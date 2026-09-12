@@ -104,24 +104,28 @@ rollBase=20
 
 [table]
 id=questDefinitions
-columns=id:string|conditionSwitch:string|description:string
+columns=id:string|conditionSwitch:string|description:string|quest:string
 [row]
-id=sadGhost
+id=quest-sadGhost
+quest=sadGhost
 conditionSwitch=ghostTargetSlain
 description=Slay the ghost's tormentor.
 [/row]
 [row]
-id=wandmaker
+id=quest-wandmaker
+quest=wandmaker
 conditionSwitch=wandQuestDone
 description=Bring the wandmaker a scroll.
 [/row]
 [row]
-id=blacksmith
+id=quest-blacksmith
+quest=blacksmith
 conditionSwitch=blacksmithDone
 description=Complete the Blacksmith quest.
 [/row]
 [row]
-id=imp
+id=quest-imp
+quest=imp
 conditionSwitch=impDone
 description=Bring dwarf tokens.
 [/row]

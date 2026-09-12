@@ -29,25 +29,25 @@ const game = compileSources(sources);
  * turns an unknown slot into a diagnostic. `hooks: []` is deliberate too - this port's content
  * references no script hooks, so any future one must be declared here first.
  *
- * Every diagnostic this content produces today is one class, `MWL_DUPLICATE_ID`: MWL's id namespace
- * is global per tag, and several of this port's tables carry the domain id (an enchant, a recipe, a
- * curse, a quest) as the row id in a *second* table - `unstableEnchants` restating `weaponEnchants`,
- * `alchemyRecipeManifest` restating `alchemyRecipes`, and so on. That is a content-modelling choice
- * this port's readers are built around (tables are looked up by table id, rows read by column), so it
- * is tolerated - but counted exactly, so a *new* collision fails the build, and every other
- * diagnostic code fails it outright. Redesigning those rows to carry a table-unique id is recorded in
- * `ROADMAP.md`.
+ * Every table carries table-unique row ids now (ROADMAP section 11's row-id item, done):
+ * the restating tables (`unstableEnchants`, `alchemyRecipeManifest`, `curseDefinitions`,
+ * `questDefinitions`) name their rows `table-domain` and carry the domain id in a column
+ * (`enchant`, `recipe`, `curse`, `quest`), which is what the readers expose - so any diagnostic
+ * at all fails the build, with no tolerated class and no pinned count. (The global id namespace
+ * is why `rowIdScope: 'file'` was evaluated and rejected: scoping per file would silence a real
+ * same-file collision across tables without fixing the modelling.)
+ *
+ * Evaluated against MWG 0.8.0's MWL additions and deliberately not taken: the hook-attribute
+ * declarations (`MwlHookDeclaration`, `validateHookAttributes`) have nothing to declare - this
+ * content authors tables, items and traits, no scenario scripts, so there is no `[hook]`,
+ * `[set_variable]` or `[if]` anywhere under `src/content` and `hooks: []` stays the closed
+ * world. Same for `[set_variable] path=`/`mode=` and the `"""..."""` multiline values: no
+ * wrapped-text converter exists here to delete.
  */
 const ITEM_SLOTS = ['artifact', 'consumable', 'weapon', 'armor', 'wand', 'missile', 'ring'];
-const KNOWN_DUPLICATE_ROW_IDS = 42;
 const catalogDiagnostics = validateCatalog(game, { slots: ITEM_SLOTS, hooks: [] });
-const unexpectedDiagnostics = catalogDiagnostics.filter((diagnostic) => diagnostic.code !== 'MWL_DUPLICATE_ID');
-if (unexpectedDiagnostics.length > 0) {
-	throw new Error(`MWL semantic errors:\n${unexpectedDiagnostics.map((diagnostic) => `${diagnostic.code}: ${diagnostic.message} (${diagnostic.location?.file}:${diagnostic.location?.line})`).join('\n')}`);
-}
-const duplicateRowIds = catalogDiagnostics.filter((diagnostic) => diagnostic.code === 'MWL_DUPLICATE_ID');
-if (duplicateRowIds.length !== KNOWN_DUPLICATE_ROW_IDS) {
-	throw new Error(`MWL duplicate row-id count changed: ${duplicateRowIds.length}, expected the known ${KNOWN_DUPLICATE_ROW_IDS} - a new collision (or one fixed) needs this count and PORT_COVERAGE.md updated:\n${duplicateRowIds.map((diagnostic) => `  ${diagnostic.message} (${diagnostic.location?.file}:${diagnostic.location?.line})`).join('\n')}`);
+if (catalogDiagnostics.length > 0) {
+	throw new Error(`MWL semantic errors:\n${catalogDiagnostics.map((diagnostic) => `${diagnostic.code}: ${diagnostic.message} (${diagnostic.location?.file}:${diagnostic.location?.line})`).join('\n')}`);
 }
 
 function allNodes(nodes) {

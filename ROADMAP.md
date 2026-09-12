@@ -667,8 +667,9 @@ Do not add new authored content as object literals or scattered constants in the
       instead of still wearing down by `100/usages`. The `augment.delayFactor` and MagicalHolster
       factors remain documented simplifications (missiles are not individually augmentable and
       there is no holster).
-      Remaining: per-missile identity (boomerang return/merge), the last-missile confirm,
-      the dust-pickup tracker, and Sharpshooting's Aim-buff rework (flagged, own pass).
+       Remaining: per-missile identity (boomerang return/merge), the last-missile confirm,
+       and Sharpshooting's Aim-buff rework (flagged, own pass). The dust-pickup tracker is
+       ported (`src/missiles.ts` + heap lineage + upgrade recording, item-suite proved).
 - [x] Implement identification appearance randomization. Potion and scroll appearances are
       shuffled once per seeded run, pre-drawn without disturbing later gameplay RNG, and
       persisted through save/load.
@@ -1309,10 +1310,10 @@ Do not add new authored content as object literals or scattered constants in the
       ("continue / save / journal / badges / rankings / settings / exit to title") was a *wrong*
       paraphrase and is corrected in `PORT_COVERAGE.md`'s row. The title screen's five window
       builders moved to `src/ui/portWindows.ts` so both scenes share them, Java's per-`Window`
-      full-screen blocker is ported (`src/ui/blockingWindowStack.ts`), and the whole thing is
+      full-screen blocker is MWG 0.8.0's native `blocker: true` at every window site (the local
+      subclass this bullet used to name is retired - see P15), and the whole thing is
       verified live by `tools/scratch/game-menu-livecheck.mjs` (23 assertions, including the title
-      screen's own windows after the move). (b) *boss banners*: **checked against v3.3.8 on
-      2026-09-12, and this bullet's own sentence was wrong.** Java's `GameScene.showBanner` is used
+       screen's own windows after the move). (b) *boss banners*: **ported.** Java's `GameScene.showBanner` is used
       by exactly two things - `bossSlain()`'s `BOSS_SLAIN` sprite (`show(0xFFFFFF, 0.3f, 5f)`, plus
       `Assets.Sounds.BOSS`) and `gameOver()`'s `GAME_OVER` sprite (`show(0x000000, 2f)`), each with a
       button or two whose alpha tracks the banner's own; there are **no level-up or quest banners** in
@@ -1320,16 +1321,26 @@ Do not add new authored content as object literals or scattered constants in the
       *different* class from the general `ui/Banner.java`. That widget is small and the framework
       already has its exact colour semantics - `TintedSprite.lerpTint(color, strength)` *is* watabou's
       `Visual.tint(int, float)`, and `resetColor()` is `Visual.resetColor()`, so `ui/Banner.java`'s
-      FADE_IN/STATIC/FADE_OUT is about 60 lines over one `TintedSprite`. What is *not* ready is the
-      art: this port's `src/assets/banners.png` is a custom redraw, and measuring it
-      (`tools/scratch/banner-match.mjs`) against Java's `interfaces/banners.png` at tag `v3.3.8` shows
-      its three text-band sprites are not Java's at any scale. Next step, when picked up: cut
-      `BOSS_SLAIN` (Java `(0,157)`-`(127,225)`) and `GAME_OVER` (`(128,157)`-`(256,192)`) out of
-      Java's sheet into their own `src/assets/` files, then implement the widget, wire `bossSlain()`
-      at the boss-death site (`main.ts`'s victory log, which also awards the chapter badge) and
-      `gameOver()` over the port's own defeat panel - that panel is a port invention, and Java's
-      version is the banner plus a restart button and a *menu* button, the latter being exactly the
-      `openGameMenu` added in (a). (c) *toast animations*: **not applicable as designed** -
+       FADE_IN/STATIC/FADE_OUT is about 60 lines over one `TintedSprite`. The widget is
+       `src/ui/banner.ts` over the pure `src/ui/bannerState.ts` translation of that machine
+       (proved headlessly by `tools/verifyBanner.mjs`, 7 checks including the `time >= 0`
+       boundary and the infinite-hold two-argument `show`). The art this bullet was waiting on
+       is cut from Java's own sheet (`BannerSprites`' `uvRect(0,157,127,225)` and
+       `uvRect(128,157,256,192)`) into `src/assets/banner_boss_slain.png`/`banner_game_over.png`,
+      wired in `images.ts`. Wired at both sites: the slain banner on a surviving hero, playing out stage-level over the entered floor;
+      the game-over banner's infinite hold behind the defeat panel, whose alpha tracks
+      the banner squared like Java's buttons. Stated simplifications: no menu button (the panel
+      is a port invention; Escape/toolbar still open the menu on a dead hero), panel-wide rather
+      than button-only alpha tracking. **Live-pixel verified 2026-09-12** (`tools/scratch/banner-livecheck.mjs`,
+      21 assertions: both sites driven through their real `kill()` paths, the art's own 127x68/128x35
+      cuts, the band surviving the floor transition it plays over, each phase's tint/alpha, the
+      panel's alpha-squared tracking, the measured 5.2-7.0s life of the slain band, and a pixel hash
+      of the band's own screen rectangle shown vs hidden vs dead). That pass also **found and fixed a
+      real defect the headless test could not see**: the band is armed in the same frame the port
+      builds the next floor synchronously, so a measured 233ms delta froze the slain band's STATIC at
+      alpha 0.78 where Java's residual is one normal frame - `ui/banner.ts` now clamps its own step
+      to 1/20s (`MAX_STEP`), a deliberate divergence from Java's raw `Game.elapsed` recorded in the
+      code comment and in `PORT_COVERAGE.md`. (c) *toast animations*: **not applicable as designed** -
       `ui/Toast.java` is used only by `GameScene.selectCell()` to show the active cell selector's
       own `prompt()` (one bottom-centred toast whose close button cancels the selection), and this
       port has no cell-selector prompt at all because its targeting is creature-based; the message
@@ -2015,14 +2026,16 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       `Tweener` motion map, with the file deleted and the death pose held (`playing !== 'die'` guard
       on the loop's return-to-idle). (4) `src/ui/wallDecorations.ts` hand-integrates its particle
       pool/physics - **checked 2026-09-12, and deliberately so**: `ParticleEmitter` cannot express
-      Java's per-particle random colour, per-frame size jitter or piecewise alpha (proposal P14). (5) The talent panel, item
+      Java's per-particle random colour, per-frame size jitter or piecewise alpha (proposal P14).
+      **Stale since MWG 0.8.0 (item 323)**, which added `tint` ranges, `ParticleCurve` scale/alpha
+      and `flicker` - the gap this bullet cites is closed upstream, but neither `wallDecorations.ts`
+      nor the title flame has been rewritten onto the new options yet. (5) The talent panel, item
       picker and `InfoWindow` hand-roll modality where `Window`/`WindowStack`/`MessageBox` exist
       (SPD's pixel chrome justifies not being a `Window`; the item picker is exactly `MessageBox`'s
       titled-choice shape) - **narrowed 2026-09-12**: the in-game menu now *is* a real `Window` on a
       `WindowStack` (`main.ts`'s `openGameMenu`, `src/ui/portWindows.ts`), which is the worked
-      example the rest of this item was missing, and it needed one thing the framework still lacks -
-      Java's per-window blocker layer, carried locally as `src/ui/blockingWindowStack.ts` and
-      recorded as proposal P15. (6) Screen shake: Java's 43 `PixelScene.shake(magnitude, duration)` sites
+      example the rest of this item was missing, and its blocker is the framework's own
+      (`blocker: true` at every window site - see P15, done). (6) Screen shake: Java's 43 `PixelScene.shake(magnitude, duration)` sites
       all route through one wrapper whose body is `Camera.main.shake` - **wired 2026-09-12** at every
       site whose Java feature is ported (the chasm landing, mining, DM-100's bolt, DM-300's ROCKS,
       the Goo taking a hit while pumped up, and the rooted move/blink refusals) through a
@@ -2048,18 +2061,16 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       *closed*: `patchRoom.ts`'s BFS neighbourhood, previously flagged there as an unverified
       fidelity risk, is verified 8-directional against `PathFinder.java` at `v3.3.8` (see the file's
       own comment for the two equivalences) - the port was right, so only the comment changed.
-- [ ] **Table-unique row ids in the MWL content** (2026-09-12, from the same audit): MWL's id
-      namespace is global per tag, and 42 of this port's `[row]`s restate another table's *domain*
-      id as their own id - `alchemyRecipeManifest`+`alchemyRecipes` (14),
+- [x] **Table-unique row ids in the MWL content** (2026-09-12, from the same audit) - **done.**
+      MWL's id namespace is global per tag, and 42 of this port's `[row]`s restated another table's
+      *domain* id as their own id - `alchemyRecipeManifest`+`alchemyRecipes` (14),
       `unstableEnchants`+`weaponEnchants` (10), `armorGlyphs`+`curseDefinitions` (8),
-      `curseDefinitions`+`weaponEnchants` (7), `questDefinitions`+`scenarioQuests` (3). `mwg/mwl`'s
-      `validateCatalog` flags every one, and `tools/compile-mwl.mjs` now runs it as a build gate:
-      any other diagnostic code fails outright, and the duplicate count is pinned at 42 so a new
-      collision fails too. Fixing the class means giving each row a table-unique id and carrying the
-      domain id in a column (e.g. `unstableEnchants` rows naming their enchant in a column rather
-      than being named after it), plus the readers of those five tables - tedious, no behaviour
-      change, and the only reason it is not done: every reader here looks tables up by table id and
-      rows up by column, so nothing is broken by the reuse.
+      `curseDefinitions`+`weaponEnchants` (7), `questDefinitions`+`scenarioQuests` (3). Each
+      restating row is now named `table-domain` (`unstable-blazing`, `manifest-stewedMeat1`,
+      `curse-wayward`, `quest-wandmaker`) and carries the domain id in a column (`enchant`,
+      `recipe`, `curse`, `quest`), which is what the five readers expose - downstream code still
+      sees bare domain ids, so nothing outside the readers changed. `tools/compile-mwl.mjs` now
+      fails on any diagnostic at all, with no tolerated class and no pinned count.
 
 ## 11A. MWG framework backlog (separate repository; roadmap only)
 
@@ -2210,12 +2221,13 @@ compatibility notes and an API report entry in MWG before this port adopts it; P
       world units, while the genre's convention (Java's `PixelScene.shake(intensity, duration)`, 43
       call sites) is pixels on screen, so a faithful port converts at every site. A
       `shakeScreen(intensity, duration)` dividing by the zoom keeps `shake` as the primitive.
-- [ ] **P10 — Say what MWL row ids are scoped to, or make it configurable.** `validateCatalog` keys
-      ids on `tag:id` across the whole document, so any game whose tables carry the domain id as the
-      row id gets one `MWL_DUPLICATE_ID` per reuse (42 here, recorded above), and the code does not
-      distinguish "twice in one table" (a real error) from "the same id in two tables" (often
-      intended). `MwlTableDefinition`'s doc says nothing about the scope. Document it, split the
-      diagnostic code, or take `rowIdScope: 'table' | 'document'`.
+- [x] **P10 — Say what MWL row ids are scoped to, or make it configurable - shipped in MWG
+      0.7.9 (item 304), evaluated.** `validateCatalog` takes `rowIdScope: 'file'`, scoping
+      `MWL_DUPLICATE_ID`'s `tag:id` key per source file for games that reuse ids across files on
+      purpose. This port stays on the global scope deliberately: its restating tables were renamed
+      to table-unique ids instead (see the row-id item above), so a per-file scope would only
+      weaken the gate, silencing a real same-file collision across tables. The 42 this proposal
+      cited are gone, not scoped away.
 - [ ] **P11 — Let `tools/mwl.mjs` carry extra artifacts, or document the library path as the
       answer.** This build needs three game-owned generated modules plus cross-table validators the
       CLI has no hook for, so it drives the library API in its own script; a config/extra-artifacts
@@ -2227,85 +2239,73 @@ compatibility notes and an API report entry in MWG before this port adopts it; P
       guard (which must test for `script[type="module"]`, not just the protocol). A short recipe or a
       tiny `tools/classic-html.mjs` would remove a step every bundler-based MWG game repeats.
 
-- [ ] **P13 — An angular cone area, not only a snapped spray.** This port needs Java's
+- [x] **P13 — An angular cone area, not only a snapped spray - shipped in MWG 0.8.0 (item 322),
+      port keeps its own exact translation.** This port needs Java's
       `mechanics/ConeAOE` exactly - a circular *sector*: rays cast every 0.5 degrees across an arc
       of a given angle, each struck cell unioned with the line from the source (so a wall stops the
       part of the cone behind it), with the ray length clamped to a maximum range. `roguelike`'s
       `coneCells(origin, target, width)` is a different shape: the aim snaps to the nearest of the
       eight directions, its length is the Chebyshev distance aimed, and step `i` spans
       `round(i / length * width)` cells per side - a linear spray with no angle, no range clamp and
-      no wall awareness. A generic `coneSector(level, from, to, { degrees, range, stop })` (built on
-      the existing `ballistica`, which already takes a `stop` mode) would let a game express the
-      sector directly; this port's Regrowth wand, Fireblast wand and DM-300's gas check are three
-      live consumers, and there are seven more in SPD that are not ported yet. Recorded rather than
-      requested upstream in a patch, because the shape is a design decision for the framework.
-      **2026-09-12 update:** this port no longer waits on it - `src/mechanics/cone.ts` is the
-      translation, so the proposal is now (a) for other games and (b) a future consolidation, where
-      the framework could take the shape and this port could delete its copy.
+      no wall awareness. MWG 0.8.0 added the generic `coneSector(level, from, to, { degrees, range })`
+      this proposal asked for, which answers it for other games - but this port does **not** migrate
+      its three live consumers (Regrowth wand, Fireblast wand, DM-300's gas check) onto it:
+      `src/mechanics/cone.ts` mirrors Java's `float` precision, fills the inner ring at radius 4+
+      and keeps the rim/inner distinction, all of which the generic drops, so adopting it would be a
+      fidelity regression, not a consolidation. New cone attacks belong on the port's translation.
 
-- [ ] **P14 - Per-particle colour, jitter and curves in `ParticleEmitter`.** The emitter
-      interpolates `scale` and `alpha` linearly between two endpoints and takes one `tint` for the
+- [ ] **P14 - Per-particle colour, jitter and curves in `ParticleEmitter` - shipped in MWG
+      0.8.0 (item 323), migration deferred to a browser-verified pass.** The emitter
+      interpolated `scale` and `alpha` linearly between two endpoints and took one `tint` for the
       whole emitter, recomputing each particle from its own age. Java's decoration particles need
       three things that cannot be expressed that way, which is why this port's
       `ui/wallDecorations.ts` still runs its own pool: `Sink`'s `WaterParticle` rolls a random
       *colour* per particle (`color(ColorMath.random(0xb6ccc2, 0x3b6653))`), `Torch`'s
       `SparkParticle.update()` re-rolls its *size* every frame (`size(Random.Float(size * left /
       lifespan))` - a flicker, not an interpolation), and `SmokeParticle.update()` needs a
-      *piecewise* alpha (`am = p > 0.8 ? 2 - 2p : p * 0.5`). Any one of the three would let a
-      watabou-style effect migrate: a per-particle colour range, an optional per-frame jitter on
-      scale/alpha, or an alpha/scale *curve* (a function of `age/life`) in place of the endpoint
-      pair. The curves and the layer's reasons are quoted in that file's own header.
+      *piecewise* alpha (`am = p > 0.8 ? 2 - 2p : p * 0.5`). MWG 0.8.0 ships all three halves
+      (`tint` ranges drawn per particle, `ParticleCurve` scale/alpha of age, `flicker` scale
+      wobble - the doc names a torch spark as its example), so the framework gap is closed. The
+      migration itself is still a redesign, not a swap, and it is not taken here: the layer's
+      per-spot FOV gating (spots emit only while visible, particles die the frame their cell
+      leaves FOV) has no emitter-level equivalent and would need one emitter per spot plus
+      start/stop/clear wiring, and every option changes on-screen pixels, which needs the
+      browser-verification pass this session has no tooling for. The curves and the layer's
+      reasons stay quoted in that file's own header until then.
 
-- [ ] **P15 - A blocker layer for `Window`.** Java's `Window` adds a full-screen `PointerArea`
-      *under its chrome* (`Window`'s constructor) whose click runs `onBackPressed()` unless the
-      click landed on the chrome itself, and because it is a child of the window it also means a
-      window's own buttons win over it. That one layer is what makes a click outside a window
-      dismiss it, and what stops a window open over a map or a toolbar from letting clicks through
-      to whatever is underneath. MWG's `WindowStack` has neither half - its overlay only draws, and
-      Pixi does not hit-test a plain `Container` at all without a `hitArea`
-      (`EventBoundary.hitTestFn` returns false when a container has neither `hitArea` nor
-      `containsPoint`) - so this port carries `src/ui/blockingWindowStack.ts`, a `WindowStack`
-      subclass that inserts a hit-area'd, non-drawing blocker beneath each window it pushes and
-      keeps it sized through `setViewport`. Every game that wants Java-style modal windows needs
-      this same 30 lines; `Window` could take a `blocker: true` option (or `WindowStack` an
-      `autoBlocker`) so a game can plain-use the widget as documented. Related, smaller: nothing
-      documents that a `Window` with no interactive children is not itself clickable, which is easy
-      to read as "windows swallow clicks in their own area" - they do not, they just sit above the
-      thing that does.
+- [x] **P15 - A blocker layer for `Window` - shipped in MWG 0.8.0 (item 324), adopted.**
+      Java's `Window` adds a full-screen `PointerArea` *under its chrome* (`Window`'s constructor)
+      whose click runs `onBackPressed()` unless the click landed on the chrome itself, and because
+      it is a child of the window it also means a window's own buttons win over it. That one layer
+      is what makes a click outside a window dismiss it, and what stops a window open over a map or
+      a toolbar from letting clicks through to whatever is underneath. MWG's `Window` now takes
+      `blocker: true` for exactly this (outside click closes a closable window, clicks on the frame
+      or empty body are swallowed without dismissing), so every `Window` construction site in this
+      port passes it and the local `src/ui/blockingWindowStack.ts` subclass - which inserted a
+      hit-area'd, non-drawing blocker beneath each pushed window only because the framework had no
+      such layer - is deleted.
 
-- [ ] **P16 - Say who owns the keyboard when a scene and a `WindowStack` both listen.** The
-      stack's own source is explicit that it is *ahead* of anything registered earlier ("stack mode,
-      so this is offered actions before anything registered earlier: a window that is open should
-      always win over the map underneath"), and `Input.d.ts` documents that "a listener returning
-      true stops it reaching anything else". Together those say the opposite of what a game
-      naturally writes: a scene that builds its stack in `create()` and registers its own
-      `Input.onAction` handler *after* that is offered every action **first**, and the moment it
-      returns `true` for anything (which the Signal's contract invites) the windows stop receiving
-      keys entirely - arrow keys never reach a list inside a window. The port hit this head-on
-      trying to give Escape a second meaning, and the only correct recipe today is "return `false`
-      for every key you did not consume *and* check `blocksWorld` yourself first", which nothing
-      documents. Small fix, either way: document the recipe on `WindowStack`, or expose the routing
-      the stack already has - `handleAction` is **private**, so a scene cannot ask "does the top
-      window want this action?" and chain deliberately instead of depending on registration order
-      (and, with two paths able to dispatch to a window, on not double-dispatching). This port's
-      `main.ts` now follows the undocumented recipe, with a comment explaining why, and
-      `BlockingWindowStack` is where the *pointer* half of the same problem lives (P15).
+- [x] **P16 - Say who owns the keyboard when a scene and a `WindowStack` both listen -
+      shipped in MWG 0.8.0 (item 325), adopted.** `WindowStack.handleAction` is now public, and the
+      stack's own class doc prescribes the chain (`stack.handleAction(action) || myOwnHandling(action)`),
+      which is what both scenes do now: `main.ts` asks `gameWindows` first while keeping its
+      `blocksWorld` guard (still needed for the direct `onAction` calls that bypass the listener)
+      and its travel-cancel side effect, and the title scene chains before its `confirm` guard.
+      The old undocumented recipe ("return `false` for every key you did not consume *and* check
+      `blocksWorld` yourself first") is superseded; the pointer half of the same problem was P15,
+      above.
 
-- [ ] **P17 - Cut arbitrary rectangles, not only regular grids, in `SpriteSheet`.** `SpriteSheet`
-      is the right shape and this port uses it for every real grid (hero 12x15, items 16x16, tile
-      and mob sheets via `fromTexture`), but it can only be built as a grid: there is no
-      `region(texture, x, y, w, h)`, and `Types2D` offers `Texture2D`/`Rectangle2D`/`rectOf` without
-      a way to cut a piece out. Irregular sheets are the norm in a port like this - `icons.png`'s
-      hand-packed regions, `status_pane.png`'s bar strips, `ui_chrome.png`'s nine-patch corners,
-      `banners.png`'s two frames, and `items.png`'s per-item *tightened* sub-rects (Java's
-      `assignItemRect` makes each item smaller than its 16px cell, which is exactly why that sheet
-      cannot be used as a plain grid for those) - so the port hand-writes
-      `new Texture({ source, frame: new Rectangle(x, y, w, h) })` at ~20 sites, plus its own helper
-      for the one case it does centrally (`main.ts:835`). A `SpriteSheet.rect(frame, x, y, w, h)`
-      (or a free `region(texture, x, y, w, h)`) would remove that boilerplate and bring the same
-      benefit `SpriteSheet` already advertises for grids: "frames are cut once and cached: asking
-      for the same index twice returns the same Texture", where the hand-written path builds a fresh
-      `Texture` every time a window is opened.
+- [x] **P17 - Cut arbitrary rectangles, not only regular grids, in `SpriteSheet` - shipped in
+      MWG 0.8.0 (item 326), adopted where it pays.** `SpriteSheet.rect(frame, x, y, w, h)` declares
+      irregular frames on a sheet with the same cut-once-and-cache behaviour grids already had.
+      This port uses it for the repeat-cut sites: `main.ts`'s six variable-width ward frames (one
+      sheet per texture, cached in a `WeakMap`), `inventoryWindow.ts`'s 16x16 item grid (one shared
+      sheet, so redraws reuse frame textures), and the title flame's four fireball quadrants (a
+      plain grid sheet). The remaining one-off static crops (toolbar strip, status bars, badges,
+      banners, portraits) stay hand-cut `new Texture` calls deliberately: each is cut exactly
+      once, so a sheet would add a cache nobody reads twice. Java's per-item *tightened* sub-rects
+      (`assignItemRect` making each item smaller than its 16px cell) stay unported as before - a
+      stated simplification in `images.ts`, not a framework gap.
 
 ### Explicitly out of scope for MWG
 

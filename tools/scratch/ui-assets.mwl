@@ -1,0 +1,130 @@
+[game]
+schema=0.1
+
+[item]
+id=uiToolbar
+name=UI Toolbar
+image=assets/ui_toolbar.png
+slot=ui
+[/item]
+
+[item]
+id=uiChrome
+name=UI Chrome
+image=assets/ui_chrome.png
+slot=ui
+[/item]
+
+[item]
+id=uiStatusPane
+name=UI Status Pane
+image=assets/ui_status_pane.png
+slot=ui
+[/item]
+
+[item]
+id=uiBuffs
+name=UI Buffs
+image=assets/ui_buffs.png
+slot=ui
+[/item]
+
+[item]
+id=uiIcons
+name=UI Icons
+image=assets/ui_icons.png
+slot=ui
+[/item]
+
+[item]
+id=uiBadges
+name=UI Badges
+image=assets/ui_badges.png
+slot=ui
+[/item]
+
+[item]
+id=uiBossHp
+name=UI Boss HP
+image=assets/ui_boss_hp.png
+slot=ui
+[/item]
+
+[item]
+id=uiArcsBg
+name=UI Arcs Background
+image=assets/ui_arcs_bg.png
+slot=ui
+[/item]
+
+[item]
+id=uiArcsFg
+name=UI Arcs Foreground
+image=assets/ui_arcs_fg.png
+slot=ui
+[/item]
+
+[item]
+id=effects
+name=Effects Sprite Sheet
+image=assets/effects.png
+slot=ui
+[/item]
+
+[item]
+id=effectFireball
+name=Effect Fireball
+image=assets/effect_fireball.png
+slot=ui
+[/item]
+
+[item]
+id=effectSpecks
+name=Effect Specks
+image=assets/effect_specks.png
+slot=ui
+[/item]
+
+[item]
+id=effectSpellIcons
+name=Effect Spell Icons
+image=assets/effect_spell_icons.png
+slot=ui
+[/item]
+
+[item]
+id=items
+name=Items Sprite Sheet
+image=assets/items.png
+slot=ui
+[/item]
+
+[item]
+id=banners
+name=Banners
+image=assets/banners.png
+slot=ui
+[/item]
+
+[item]
+id=avatars
+name=Avatars
+image=assets/avatars.png
+slot=ui
+[/item]
+
+[item]
+id=wards
+name=Wards Sprite Sheet
+image=assets/wards.png
+slot=ui
+[/item]
+
+[item]
+id=guardian
+name=Guardian Sprite
+image=assets/guardian.png
+slot=ui
+[/item]
+
+[/game]

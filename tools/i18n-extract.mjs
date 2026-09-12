@@ -15,6 +15,12 @@
  * Run with `npm run i18n`. The output is committed, so a plain `npm run build` neither needs
  * the Java tree nor pays for re-parsing 171 files.
  *
+ * A referenced key missing from the pointed working tree fails the run loudly (by design), so a
+ * Java key that exists only at this port's pinned tag - `items.weapon.missiles.missileweapon.dust`
+ * at `v3.3.8`, absent from the local checkout's divergent branch - cannot ship this way: carry
+ * SPD's wording and translations under a `port.*` key in `portStrings.ts` instead (see
+ * `port.log.missiledust`).
+ *
  * Provenance: the strings this reads are SPD's own, GPL-3.0-or-later, from
  * `core/src/main/assets/messages/` in this same checkout. They stay inside `web-mwg/` and
  * must never be copied into `mwg` - see CLAUDE.md's licensing boundary.

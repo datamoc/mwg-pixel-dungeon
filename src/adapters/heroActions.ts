@@ -1,5 +1,6 @@
-import { planHeroAction, type AttemptAction, type FreeAction } from '../simulation/heroActions';
+import type { AttemptAction, FreeAction } from '../simulation/heroActions';
 import type { Step } from '../simulation/combatState';
+import { runHeroActionPlan } from './heroActionSimulation';
 
 export interface HeroActionPorts {
 	isParalysed(): boolean;
@@ -15,9 +16,10 @@ export interface HeroActionPorts {
 	getTurnCostMod(): number;
 }
 
-/** Execute the pure policy against current scene state, preserving callback order. */
+/** Execute the pure policy against current scene state, preserving callback order. The plan
+ * itself routes through the runtime (`heroActionSimulation.ts`); only the dispatch path changed. */
 export function dispatchHeroAction(action: string, ports: HeroActionPorts): boolean {
-	const plan = planHeroAction(action, ports.isParalysed(), ports.getTurnCostMod());
+	const plan = runHeroActionPlan(action, ports.isParalysed(), ports.getTurnCostMod());
 	switch (plan.kind) {
 		case 'unknown': return false;
 		case 'free': ports.free[plan.action](); return true;

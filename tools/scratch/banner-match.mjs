@@ -63,6 +63,28 @@ const javaSheet = decode(javaPath);
 const portSheet = decode('src/assets/banners.png');
 console.log(`java banners.png ${javaSheet.width}x${javaSheet.height}, port banners.png ${portSheet.width}x${portSheet.height}`);
 
+if (process.argv[2] === 'assets') {
+	// the two sprites `ui/banner.ts` draws were cut out of Java's own sheet rather than redrawn:
+	// this is the check that they are *exactly* the regions `BannerSprites.get()` asks for, since
+	// "cut from Java's sheet" is otherwise an unverifiable claim in a comment
+	let bad = 0;
+	for (const [name, file, [x, y, w, h]] of [
+		['BOSS_SLAIN', 'src/assets/banner_boss_slain.png', [0, 157, 127, 68]],
+		['GAME_OVER', 'src/assets/banner_game_over.png', [128, 157, 128, 35]],
+	]) {
+		const cut = decode(file);
+		let diff = 0;
+		for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < w; dx++) {
+			const a = javaSheet.rgba(x + dx, y + dy), b = cut.rgba(dx, dy);
+			if (a[0] !== b[0] || a[1] !== b[1] || a[2] !== b[2] || a[3] !== b[3]) diff++;
+		}
+		const ok = cut.width === w && cut.height === h && diff === 0;
+		if (!ok) bad++;
+		console.log(`${ok ? 'PASS' : 'FAIL'} ${name} ${file}: ${cut.width}x${cut.height} vs java rect ${w}x${h}, ${diff} differing pixels`);
+	}
+	process.exit(bad ? 1 : 0);
+}
+
 if (process.argv[2] === 'map') {
 	// 1 char per 2x2 block of the port's own sheet, so its layout can be read
 	for (let y = 0; y < portSheet.height; y += 2) {

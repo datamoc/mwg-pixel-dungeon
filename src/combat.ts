@@ -214,6 +214,13 @@ export interface GroundItem extends Step {
 	chest?: 'normal' | 'locked' | 'crystal';
 	/** Java Heap.Type.FOR_SALE: a shop stand - priced, never free loot. */
 	forSale?: boolean;
+	/**
+	 * `MissileWeapon` lineage for thrown-ammo heaps (see `src/missiles.ts`): the `missileLevel`
+	 * the heap was scattered or dropped at, and the missile set it belongs to. Absent on every
+	 * other heap - including pre-rule saves, which therefore stay always-valid pickups.
+	 */
+	missileLevel?: number;
+	missileSet?: number;
 	/** Concrete inventory payload; absent only for legacy scripted/cosmetic drops. */
 	item?: { id: string; quantity: number; level?: number; tier?: number; sandBags?: number; charges?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; instanceId?: string; sourceClass?: string;
 		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean;

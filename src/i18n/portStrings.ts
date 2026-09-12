@@ -510,6 +510,11 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.window.support.body': 'If you enjoy this game, consider supporting the original Shattered Pixel Dungeon.',
 	'port.log.missilebroken': 'Your missile breaks!',
 	'port.log.rockfallkill': 'The falling rocks crush you!',
+	// `MissileWeapon.doPickUp()`'s dust warning - SPD's own v3.3.8 text
+	// (`items.weapon.missiles.missileweapon.dust`), with SPD's own translations below.
+	// The i18n extractor cannot ship the Java key: it reads the local checkout's
+	// divergent working tree, which lacks it, so the port key carries SPD's wording.
+	'port.log.missiledust': 'The thrown weapon crumbles to dust as you touch it.',
 };
 
 /**
@@ -974,6 +979,7 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 	'port.window.support.body': 'Si vous appréciez ce jeu, pensez à soutenir le Shattered Pixel Dungeon original.',
 	'port.log.missilebroken': 'Votre projectile se brise !',
 	'port.log.rockfallkill': 'Les rochers qui tombent vous écrasent !',
+	'port.log.missiledust': 'L\'arme de jet tombe en poussière quand vous la touchez.',
 };
 
 /**
@@ -1428,6 +1434,7 @@ export const PORT_STRINGS_DE: Record<string, string> = {
 	'port.ui.bag.use': 'Benutzen',
 	'port.ui.bag.gear': 'Ausrüstung',
 	'port.ui.bag.quest': 'Auftrag',
+	'port.log.missiledust': 'Diese Wurfwaffe zerfällt zu Staub, als du sie berührst.',
 };
 
 /**
@@ -1882,6 +1889,7 @@ export const PORT_STRINGS_ES: Record<string, string> = {
 	'port.ui.bag.use': 'Usar',
 	'port.ui.bag.gear': 'Equipo',
 	'port.ui.bag.quest': 'Misión',
+	'port.log.missiledust': 'El arma arrojadiza se convierte en polvo cuando la tocas.',
 };
 
 /**
@@ -2337,6 +2345,7 @@ export const PORT_STRINGS_PT: Record<string, string> = {
 	'port.ui.bag.use': 'Usar',
 	'port.ui.bag.gear': 'Equipamento',
 	'port.ui.bag.quest': 'Missão',
+	'port.log.missiledust': 'A arma de arremesso vira pó quando você a toca.',
 };
 
 /**
@@ -2791,6 +2800,7 @@ export const PORT_STRINGS_IT: Record<string, string> = {
 	'port.ui.bag.use': 'Usa',
 	'port.ui.bag.gear': 'Equipaggiamento',
 	'port.ui.bag.quest': 'Missione',
+	'port.log.missiledust': 'L\'arma da lancio si polverizza al tuo tocco.',
 };
 
 /**
@@ -3245,6 +3255,7 @@ export const PORT_STRINGS_PL: Record<string, string> = {
 	'port.ui.bag.use': 'Użyj',
 	'port.ui.bag.gear': 'Ekwipunek',
 	'port.ui.bag.quest': 'Zadanie',
+	'port.log.missiledust': 'Broń miotana rozpada się w drobny mak zaraz po dotknięciu.',
 };
 
 /**
@@ -3677,6 +3688,7 @@ export const PORT_STRINGS_RU: Record<string, string> = {
 	'port.ui.bag.use': 'Использовать',
 	'port.ui.bag.gear': 'Снаряжение',
 	'port.ui.bag.quest': 'Задание',
+	'port.log.missiledust': 'Метательное оружие рассыпается в пыль при прикосновении.',
 };
 
 /**
@@ -4109,6 +4121,7 @@ export const PORT_STRINGS_TR: Record<string, string> = {
 	'port.ui.bag.use': 'Kullan',
 	'port.ui.bag.gear': 'Teçhizat',
 	'port.ui.bag.quest': 'Görev',
+	'port.log.missiledust': 'Fırlatılan silaha dokunduğunuzda toz haline gelir.',
 };
 
 /**
@@ -4539,6 +4552,7 @@ export const PORT_STRINGS_UK: Record<string, string> = {
 	'port.window.support.body': 'Якщо вам подобається ця гра, розгляньте можливість підтримати оригінальну Shattered Pixel Dungeon.',
 	'port.log.missilebroken': 'Ваш снаряд ламається!',
 	'port.log.rockfallkill': 'Каміння, що падає, розчавлює вас!',
+	'port.log.missiledust': 'Метальна зброя розсипається на порох, коли ви торкаєтесь її.',
 };
 
 /**
@@ -4969,6 +4983,7 @@ export const PORT_STRINGS_HU: Record<string, string> = {
 	'port.window.support.body': 'Ha élvezed ezt a játékot, fontold meg az eredeti Shattered Pixel Dungeon támogatását.',
 	'port.log.missilebroken': 'A hajítófegyvered eltörik!',
 	'port.log.rockfallkill': 'A lezuhanó kövek összezúznak téged!',
+	'port.log.missiledust': 'A dobófegyver porrá hullik, amint megérinted.',
 };
 
 /**
@@ -5398,6 +5413,7 @@ export const PORT_STRINGS_NL: Record<string, string> = {
 	'port.window.support.body': 'Als je dit spel leuk vindt, overweeg dan het originele Shattered Pixel Dungeon te steunen.',
 	'port.log.missilebroken': 'Je werpwapen breekt!',
 	'port.log.rockfallkill': 'De vallende rotsen verpletteren je!',
+	'port.log.missiledust': 'Het werpwapen verpulvert tot stof zodra je het aanraakt.',
 };
 
 
@@ -5828,6 +5844,7 @@ export const PORT_STRINGS_IN: Record<string, string> = {
 	'port.window.support.body': 'Jika kamu menikmati game ini, pertimbangkan untuk mendukung Shattered Pixel Dungeon yang asli.',
 	'port.log.missilebroken': 'Senjata lemparmu rusak!',
 	'port.log.rockfallkill': 'Batu yang jatuh menghancurkanmu!',
+	'port.log.missiledust': 'Senjata lempar hancur menjadi debu saat kamu menyentuhnya.',
 };
 
 /**
@@ -6256,6 +6273,7 @@ export const PORT_STRINGS_JA: Record<string, string> = {
 	'port.window.support.body': 'このゲームを楽しんでくれるなら、オリジナルのShattered Pixel Dungeonを応援してもらえると嬉しい。',
 	'port.log.missilebroken': 'あなたの投擲武器が壊れた！',
 	'port.log.rockfallkill': '落ちてきた岩があなたを押し潰した！',
+	'port.log.missiledust': '投擲武器は、あなたが触れた瞬間に粉々に砕け散る。',
 };
 
 /**
@@ -6684,6 +6702,7 @@ export const PORT_STRINGS_CS: Record<string, string> = {
 	'port.window.support.body': 'Pokud tě hra baví, zvaž podporu původního Shattered Pixel Dungeon.',
 	'port.log.missilebroken': 'Tvoje vrhací zbraň se zlomila!',
 	'port.log.rockfallkill': 'Padající kameny tě rozdrtily!',
+	'port.log.missiledust': 'Vrhací zbraň se rozpadla v prach, když ses jí dotkl.',
 };
 
 /**
@@ -7112,6 +7131,7 @@ export const PORT_STRINGS_VI: Record<string, string> = {
 	'port.window.support.body': 'Nếu bạn thích trò chơi này, hãy cân nhắc ủng hộ Shattered Pixel Dungeon gốc.',
 	'port.log.missilebroken': 'Vũ khí ném của bạn bị gãy!',
 	'port.log.rockfallkill': 'Đá rơi đè bẹp bạn!',
+	'port.log.missiledust': 'Món vũ khí ném của bạn tan thành cát bụi khi bạn chạm vào nó.',
 };
 
 /**
@@ -7540,6 +7560,7 @@ export const PORT_STRINGS_EL: Record<string, string> = {
 	'port.window.support.body': 'Αν σου αρέσει αυτό το παιχνίδι, σκέψου να υποστηρίξεις το πρωτότυπο Shattered Pixel Dungeon.',
 	'port.log.missilebroken': 'Το βλήμα σου σπάει!',
 	'port.log.rockfallkill': 'Οι πέτρες που πέφτουν σε συνθλίβουν!',
+	'port.log.missiledust': 'Το όπλο ρίψης γίνεται σκόνη καθώς το ακουμπάς.',
 };
 
 /**
@@ -7968,6 +7989,7 @@ export const PORT_STRINGS_KO: Record<string, string> = {
 	'port.window.support.body': '이 게임이 재미있다면, 원작 섀터드 픽셀 던전을 후원해 주는 것도 고려해 보자.',
 	'port.log.missilebroken': '투척 무기가 부서진다!',
 	'port.log.rockfallkill': '떨어지는 바위에 깔려 죽는다!',
+	'port.log.missiledust': '당신이 투척 무기를 만지자마자 가루로 변해버렸다.',
 };
 
 /**
@@ -8396,6 +8418,7 @@ export const PORT_STRINGS_ZH: Record<string, string> = {
 	'port.window.support.body': '如果你喜欢这款游戏，不妨支持原版的 Shattered Pixel Dungeon。',
 	'port.log.missilebroken': '你的投掷物损坏了！',
 	'port.log.rockfallkill': '落石把你砸死了！',
+	'port.log.missiledust': '你一碰这件投掷武器就化为了尘土。',
 };
 
 /**

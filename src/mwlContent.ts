@@ -125,7 +125,7 @@ export interface MwlQuestDefinition {
 
 function parseQuestDefinitions(): readonly MwlQuestDefinition[] {
 	return MWL_TABLE_ROWS('questDefinitions').map((row) => ({
-		id: String(row.id),
+		id: String(row.quest),
 		conditionSwitch: String(row.conditionSwitch),
 		description: String(row.description),
 	}));
@@ -164,7 +164,7 @@ export interface MwlCurseDefinition {
 
 function parseCurseDefinitions(): readonly MwlCurseDefinition[] {
 	return MWL_TABLE_ROWS('curseDefinitions').map((row) => ({
-		id: String(row.id),
+		id: String(row.curse),
 		type: String(row.type) as 'weapon' | 'armor',
 		locks: row.locks === true,
 		nameKey: String(row.nameKey),
@@ -208,10 +208,12 @@ function affixRows(tableId: string): readonly MwlAffixDefinition[] {
 export const MWL_WEAPON_ENCHANTS = affixRows('weaponEnchants');
 export const MWL_ARMOR_GLYPHS = affixRows('armorGlyphs');
 
-/** `Unstable.randomEnchants`: the enchantments `Unstable` may delegate a swing to. */
+/** `Unstable.randomEnchants`: the enchantments `Unstable` may delegate a swing to. Read from the
+ * table-unique rows' `enchant` column (keyed, so a twice-listed delegate fails the build), still
+ * validated against the weapon-enchant domain table. */
 export const MWL_UNSTABLE_DELEGATES: readonly string[] = (() => {
 	const known = new Set(MWL_WEAPON_ENCHANTS.map((definition) => definition.id));
-	const ids = MWL_TABLE_ROWS('unstableEnchants').map((row) => String(row.id));
+	const ids = MWL_TABLE_ROWS('unstableEnchants', 'enchant').map((row) => String(row.enchant));
 	for (const id of ids) {
 		if (!known.has(id)) throw new Error(`MWL Unstable delegate references unknown enchantment: ${id}`);
 	}

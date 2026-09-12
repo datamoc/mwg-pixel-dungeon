@@ -10,6 +10,7 @@ import { Container, extensions, FillGradient, Graphics, NineSliceSpritePipe, Rec
 import { Bar, Blob, FloatingTextStack, Game, Scene2D, Input, Random, SaveSystem, Achievements, ReactionTable, type ReactionRule } from 'mwg';
 import { SceneSimulationAdapter } from './adapters/sceneSimulation';
 import { dispatchHeroAction, type HeroActionPorts } from './adapters/heroActions';
+import { missilePickupValid, recordMissileUpgrade } from './missiles';
 import { runSearch } from './adapters/searchSimulation';
 import { runMovement } from './adapters/movementSimulation';
 import { ALCHEMY_RECIPES, alchemyEnergyFor, craftAlchemy } from './alchemy';
@@ -31,8 +32,7 @@ import {
 	autotileFrames,
 	registerColorTransform,
 } from 'mwg';
-import { Label, theme, Button, Window } from 'mwg';
-import { BlockingWindowStack } from './ui/blockingWindowStack';
+import { Label, theme, Button, Window, WindowStack } from 'mwg';
 import { titleIcon, type TitleIconName } from './ui/titleIcons';
 import { Roguelike, Actors, Rpg, World } from 'mwg';
 import { loadSpdSprites } from './images';
@@ -129,6 +129,7 @@ import { BADGE_DEFS, BADGE_ICON, loadBadges } from './badges';
 import { TitleScene } from './scenes/titleScene';
 import { ClassSelectScene } from './scenes/classSelectScene';
 import { showChallengesWindow, showRankingsWindow, showSettingsWindow } from './ui/portWindows';
+import { Banner } from './ui/banner';
 import { transferEnhancement } from './itemWorkflows';
 import { getCurse } from './itemCurses';
 import { Cat, generatorItemOrder, generatorRandom, ghostQuestReward, randomUsingDefaults, removeArtifactClass, setGeneratorDepth, type GenItem, type StatueLoot } from './spdItems/generator';
@@ -564,6 +565,10 @@ interface SaveShape {
 	ammo: number;
 	ammoDurability?: number;
 	missileLevel?: number;
+	/** `MissileWeapon` set lineage: the wielded pile's set, the mint counter, and the
+	 * `UpgradedSetTracker` thresholds - see `src/missiles.ts`. Absent on pre-rule saves. */
+	ammoSetId?: number;
+	missileThresholds?: [number, number][];
 	frostWand: boolean;
 	wandType?: WandType;
 	ghostSpawned: boolean;
@@ -698,7 +703,7 @@ interface FloorState {
 	sacrificialFireCell?: number;
 	sacrificialFirePrize?: GroundItem['item'];
 	portedFeatures?: { cells: [number, string][] };
-	groundItems: { kind: GroundItemKind; x: number; y: number; item?: GroundItem['item']; chest?: 'normal' | 'locked' | 'crystal'; forSale?: boolean }[];
+	groundItems: { kind: GroundItemKind; x: number; y: number; item?: GroundItem['item']; chest?: 'normal' | 'locked' | 'crystal'; forSale?: boolean; missileLevel?: number; missileSet?: number }[];
 	fallingRocks?: { cells: { x: number; y: number }[]; turns: number }[];
 	cavesBossEnergyCells?: number[];
 	manualPlants?: [number, string][];
@@ -821,6 +826,8 @@ interface SavedCreature {
 
 // `WardSprite` cuts six variable-width frames from wards.png, rather than a regular grid.
 // Keep those exact source rectangles so the port uses the Java actor's own art at every tier.
+// MWG 0.8.0's `SpriteSheet.rect` (item 326) declares those frames once per texture instead of
+// cutting a fresh `Texture` per ward: asking twice returns the same cached `Texture`.
 const WARD_FRAME_RECTS = [
 	{ x: 0, y: 0, width: 9, height: 10 },
 	{ x: 10, y: 0, width: 11, height: 12 },
@@ -830,9 +837,19 @@ const WARD_FRAME_RECTS = [
 	{ x: 52, y: 0, width: 9, height: 15 },
 ] as const;
 
+const wardSheets = new WeakMap<Texture, SpriteSheet>();
+
+function wardSheet(texture: Texture): SpriteSheet {
+	const cached = wardSheets.get(texture);
+	if (cached) return cached;
+	const sheet = SpriteSheet.fromTexture(texture);
+	WARD_FRAME_RECTS.forEach((rect, index) => sheet.rect(index, rect.x, rect.y, rect.width, rect.height));
+	wardSheets.set(texture, sheet);
+	return sheet;
+}
+
 function wardTexture(texture: Texture, tier: number): Texture {
-	const rect = WARD_FRAME_RECTS[Math.max(1, Math.min(6, tier)) - 1]!;
-	return new Texture({ source: texture.source, frame: new Rectangle(rect.x, rect.y, rect.width, rect.height) });
+	return wardSheet(texture).get(Math.max(1, Math.min(6, tier)) - 1);
 }
 
 export class SewersScene extends Scene2D {
@@ -1029,6 +1046,15 @@ export class SewersScene extends Scene2D {
 	private ammo = 0;
 	/** Shared missile upgrade level (all class missiles are tier-1; rogue knives scale max twice as fast - see useSpecial). No cap, like Java. */
 	private missileLevel = 0;
+	/**
+	 * `MissileWeapon.setID` lineage for the wielded ammo pile (see `src/missiles.ts`): Java mints
+	 * a random id per stack, this port uses small sequential ids - starting ammo is set 1, and an
+	 * empty pile adopts the first valid heap it refills from, the way Java wields the picked-up
+	 * stack. `missileThresholds` is the `UpgradedSetTracker.levelThresholds` map (set id to the
+	 * post-upgrade level), persisted with the run since Java's buff revives.
+	 */
+	private ammoSetId = 1;
+	private missileThresholds = new Map<number, number>();
 	/** MissileWeapon durability is shared by the active stack; a projectile breaks only at 0. */
 	private ammoDurability = 100;
 	private projectiles: Array<{ flight: Projectile; sprite: TintedSprite }> = [];
@@ -1320,13 +1346,16 @@ export class SewersScene extends Scene2D {
 	 * The in-game window stack: `WndGame` and the windows it opens. Kept separate from the HUD
 	 * containers so a window always draws over them, and so `WindowStack`'s own `Input.onAction`
 	 * listener can swallow `cancel` for whatever is open - the same arrangement the title screen
-	 * uses. It is a `BlockingWindowStack` because every Java `Window` carries a full-screen blocker
-	 * that dismisses it on a click outside its chrome and keeps clicks off the map and the toolbar
-	 * (MWG's stack has no such layer; see `ui/blockingWindowStack.ts`). Its first inhabitant is the
+	 * uses. Every Java `Window` carries a full-screen blocker that dismisses it on a click
+	 * outside its chrome and keeps clicks off the map and the toolbar; MWG 0.8.0 ships that
+	 * layer natively (`Window({ blocker: true })`, item 324), so each window below opts in at
+	 * its own construction site and this is a plain `WindowStack` - the port used to carry its
+	 * own `WindowStack` subclass for this because the framework had no such layer. Its first
+	 * inhabitant is the
 	 * menu; the hand-rolled talent/item-picker panels remain their own thing for now (see
 	 * `PORT_COVERAGE.md`).
 	 */
-	private gameWindows = new BlockingWindowStack();
+	private gameWindows = new WindowStack();
 	private actionBar!: SpdToolbar;
 	private inventoryPanel!: InventoryWindow;
 	private inventoryOpen = false;
@@ -1377,6 +1406,15 @@ export class SewersScene extends Scene2D {
 	 * act - so this clears in the hero-turn pipeline beside the Preparation counter. */
 	private bountyTrackerArmed = false;
 	private victoryPanel!: Container;
+	/**
+	 * The live `Banner` (`ui/Banner.java`): BOSS_SLAIN across the boss transition, GAME_OVER over
+	 * the defeat panel. Stage-level, so it survives `enterLevel()` like the rest of the HUD;
+	 * `showBanner` centers it, `update()` drives it until its FADE_OUT kills it.
+	 */
+	private banner: Banner | null = null;
+	/** While a GAME_OVER banner lives, the defeat panel tracks its alpha squared - Java's two
+	 * buttons do `alpha(pow(gameOver.am, 2))`, and the panel is this port's stand-in for them. */
+	private bannerPanelFollow = false;
 	private bossChrome!: Container;
 	private bossHealthBar!: Bar;
 	private bossNameLabel!: Label;
@@ -1511,6 +1549,8 @@ export class SewersScene extends Scene2D {
 		this.ammo = CLASSES[this.heroClass].special.ammo ?? 0;
 		this.missileLevel = 0;
 		this.ammoDurability = 100;
+		this.ammoSetId = 1;
+		this.missileThresholds = new Map();
 		this.enterLevel();
 
 		const def = CLASSES[this.heroClass];
@@ -1525,10 +1565,16 @@ export class SewersScene extends Scene2D {
 		);
 		//A keyboard action means the player has taken manual control - cancel any queued
 		//click-to-travel rather than let it silently resume after an unrelated keypress.
-		//The returned "consumed" flag is passed on, and matters for one key: a back key this scene
-		//used to open `WndGame` must not reach `WindowStack`'s own listener for the same keystroke,
-		//or the window it just opened is closed again by the keypress that opened it.
-		const listener = (action: string) => { this.travelTarget = null; return this.onAction(action); };
+		//The windows are asked first (MWG 0.8.0's public `WindowStack.handleAction`, item 325):
+		//the stack holds the keyboard while a window is open, so an open window consumes its
+		//keys before the map ever sees them. The returned "consumed" flag still matters for one
+		//key: a back key this scene used to open `WndGame` must not reach `WindowStack`'s own
+		//listener for the same keystroke, or the window it just opened is closed again by the
+		//keypress that opened it.
+		const listener = (action: string) => {
+			this.travelTarget = null;
+			return this.gameWindows.handleAction(action) || this.onAction(action);
+		};
 		Input.onAction.add(listener);
 		this.onDestroy.add(() => Input.onAction.remove(listener));
 	}
@@ -2061,7 +2107,7 @@ export class SewersScene extends Scene2D {
 			sacrificialFireCharge: this.sacrificialFireCharge,
 			sacrificialFireCell: this.sacrificialFireCell,
 			sacrificialFirePrize: this.sacrificialFirePrize,
-			groundItems: this.groundItems.map(({ kind, x, y, item, chest, forSale }) => ({ kind, x, y, item, chest, forSale })),
+			groundItems: this.groundItems.map(({ kind, x, y, item, chest, forSale, missileLevel, missileSet }) => ({ kind, x, y, item, chest, forSale, missileLevel, missileSet })),
 			fallingRocks: this.fallingRocks.map((v) => ({ cells: v.cells.map((c) => ({ ...c })), turns: v.turns })),
 			cavesBossEnergyCells: [...this.cavesBossEnergyCells],
 			manualPlants: [...this.manualPlants.entries()],
@@ -2101,7 +2147,14 @@ export class SewersScene extends Scene2D {
 		this.sacrificialFireCharge = state.sacrificialFireCharge ?? 0;
 		this.sacrificialFireCell = state.sacrificialFireCell ?? -1;
 		this.sacrificialFirePrize = state.sacrificialFirePrize;
-		for (const item of state.groundItems) this.spawnGroundItem(item.kind, item.x, item.y, item.item, item.chest, item.forSale);
+		for (const item of state.groundItems) {
+			this.spawnGroundItem(item.kind, item.x, item.y, item.item, item.chest, item.forSale);
+			const heap = this.groundItemAt(item.x, item.y);
+			if (heap) {
+				heap.missileLevel = item.missileLevel;
+				heap.missileSet = item.missileSet;
+			}
+		}
 
 		this.scheduler.clear();
 		this.scheduler.now = state.schedulerNow;
@@ -3854,6 +3907,21 @@ export class SewersScene extends Scene2D {
 				this.say(t('port.log.buy', { item: name, price }), 'positive');
 			}
 		}
+		//`MissileWeapon.doPickUp()`'s dust branch: a heap whose set was upgraded past its
+		//level crumbles instead of merging (`UpgradedSetTracker.pickupValid`) - the ITEM sound,
+		//the real `dust` warning, the heap gone, nothing gained. Any class can trigger it, and
+		//heaps with no lineage (pre-rule saves, generic stones) skip the check and merge as
+		//before. Java additionally spends `pickupDelay()`; here the step onto the cell is the
+		//turn cost, so there is no extra spend to model.
+		if (item.kind === 'stone' && item.missileSet !== undefined
+			&& !missilePickupValid(this.missileThresholds, item.missileSet, item.missileLevel ?? 0)) {
+			runState.audio.cue('item', 0.6);
+			this.say(t('port.log.missiledust'), 'negative');
+			this.groundItems.splice(this.groundItems.indexOf(item), 1);
+			this.sprite(item).destroy();
+			this.spriteFor.delete(item.id);
+			return;
+		}
 		runState.audio.cue(item.kind === 'gold' ? 'gold' : item.kind === 'dewdrop' ? 'dewdrop' : 'item', 0.6);
 
 		this.groundItems.splice(this.groundItems.indexOf(item), 1);
@@ -3924,7 +3992,9 @@ export class SewersScene extends Scene2D {
 		}
 		if (item.kind === 'stone' && (this.heroClass === 'warrior' || this.heroClass === 'rogue' || this.heroClass === 'duelist')) {
 			//thrown ammo and ground stones are the same objects in Java (MissileWeapon) - a
-			//recovered stone is ammunition again, whatever the class threw
+			//recovered stone is ammunition again, whatever the class threw. An empty pile adopts
+			//the heap's set, the way Java wields the picked-up stack; a live pile keeps its own.
+			if (this.ammo === 0 && item.missileSet !== undefined) this.ammoSetId = item.missileSet;
 			this.ammo++;
 			if (this.ammoDurability <= 0) this.ammoDurability = 100;
 			this.say(t('port.log.recoverstone'), 'positive');
@@ -4639,6 +4709,9 @@ export class SewersScene extends Scene2D {
 			this.bag.remove('scrollUpgrade', 1);
 			this.missileLevel++;
 			this.ammoDurability = 100;
+			//`MissileWeapon.upgrade()`: the upgraded stack's set records `trueLevel()+1`, so
+			//heaps of that set scattered before this upgrade crumble on pickup (see below).
+			this.missileThresholds = recordMissileUpgrade(this.missileThresholds, this.ammoSetId, this.missileLevel);
 			this.syncHeroFromStats();
 			this.say(t('port.log.missileupgraded', { level: this.missileLevel }), 'positive');
 		} else if (this.weaponLevel <= this.armorLevel) {
@@ -6040,10 +6113,18 @@ export class SewersScene extends Scene2D {
 			if (missileSurvived) {
 				//PinCushion: a surviving missile sticks in a living target and scatters back
 				//out when it dies (see kill()). Throwing stones are sticky=false and always
-				//drop instead; misses drop at the cell through the same path.
+				//drop instead; misses drop at the cell through the same path. Either way the
+				//heap keeps the pile's set at the current level for the dust rule below.
 				if (hit && target.hp > 0 && this.heroClass !== 'warrior') {
 					target.stuckAmmo = (target.stuckAmmo ?? 0) + 1;
-				} else this.spawnGroundItem('stone', target.x, target.y);
+				} else {
+					this.spawnGroundItem('stone', target.x, target.y);
+					const heap = this.groundItemAt(target.x, target.y);
+					if (heap) {
+						heap.missileLevel = this.missileLevel;
+						heap.missileSet = this.ammoSetId;
+					}
+				}
 			}
 			if (this.heroClass === 'huntress' && this.talentRank('followup_strike') > 0) { this.followupTarget = target; this.followupDamage = this.talentRank('followup_strike') === 1 ? 2 : 3; }
 		} else if (special.kind === 'zap') {
@@ -6298,11 +6379,16 @@ export class SewersScene extends Scene2D {
 
 	private onAction(action: string): boolean {
 		//A window is up: Java's `Window.onSignal` swallows every key while one is open, so the map
-		//underneath must not receive the action either. `WindowStack.blocksWorld` is MWG's seam for
-		//that. This returns "not consumed" on purpose: the stack's own `Input.onAction` listener is
-		//what offers the action to the window (and this listener runs first, so consuming here would
-		//starve a window's own widgets of the arrow keys they need). `cancel` is the exception -
-		//closing the top window is what the stack does with it, so it is left to the stack.
+		//underneath must not receive the action either. The scene's `Input.onAction` listener asks
+		//the windows first (`gameWindows.handleAction`, MWG 0.8.0 item 325), so by the time an
+		//action reaches here the top window has already declined it - but `WindowStack.blocksWorld`
+		//is still MWG's seam for that state, and this guard also protects the direct `onAction`
+		//calls (adjacent-tile clicks) that never pass through the listener. This returns "not
+		//consumed" on purpose for anything else while a window is open, so the key stays
+		//available to the stack's own `Input.onAction` listener rather than being swallowed here
+		//(consuming here would starve a window's own widgets of the arrow keys they need).
+		//`cancel` is the exception - closing the top window is what the stack does with it, so
+		//it is left to the stack.
 		if (this.gameWindows.blocksWorld && action !== 'cancel') return false;
 		if (this.infoPanel?.visible) {
 			if (action === 'cancel' || action === 'confirm') this.infoPanel.visible = false;
@@ -11395,6 +11481,16 @@ export class SewersScene extends Scene2D {
 			this.gameOver = true;
 			recordRun({ result: 'lost', depth: this.depth, level: this.progression.level, gold: this.heroStats.base('gold') });
 			this.showDefeatPanel();
+			//`GameScene.gameOver()`: the GAME_OVER banner with Java's own `show(0x000000, 2f)` -
+			//an infinite hold, so it stays up behind the defeat panel until a restart leaves the
+			//scene. The panel tracks the banner's alpha squared, which is what Java's restart and
+			//menu buttons do (`alpha(pow(gameOver.am, 2))`); the menu button itself has no port
+			//counterpart because the panel is a port invention, but its path survives - Escape and
+			//the toolbar entry still open `WndGame` on a dead hero (see `onAction`).
+			const over = new Banner(runState.sprites.bannerGameOver);
+			over.show(0x000000, 2);
+			this.showBanner(over);
+			this.bannerPanelFollow = true;
 			return;
 		}
 		//ChampionEnemy.Blazing.detach() (tag v3.3.8): a grounded blazing champion seeds
@@ -11423,13 +11519,19 @@ export class SewersScene extends Scene2D {
 		if (creature.isAlly) return;
 		this.processSacrifice(creature);
 		//PinCushion: stuck missiles scatter back out as ground heaps (one item per cell here,
-		//so extras take neighbouring cells, like statue drops). Generic stone heaps - the port
-		//tracks no per-missile identity to restore.
+		//so extras take neighbouring cells, like statue drops). The heaps keep the pile's set at
+		//the current level - Java's scattered missiles stay their stack's set, which is what the
+		//dust rule below reads (generic stones have neither field and stay always valid).
 		if (creature.stuckAmmo && creature.stuckAmmo > 0) {
 			const cells = [{ x: creature.x, y: creature.y }, ...Roguelike.neighbourOffsets(8).map(([dx, dy]) => ({ x: creature.x + dx, y: creature.y + dy }))]
 				.filter((at) => this.level.inside(at.x, at.y) && this.level.passable(at.x, at.y) && !this.groundItemAt(at.x, at.y));
 			for (let i = 0; i < Math.min(creature.stuckAmmo, cells.length); i++) {
 				this.spawnGroundItem('stone', cells[i]!.x, cells[i]!.y);
+				const heap = this.groundItemAt(cells[i]!.x, cells[i]!.y);
+				if (heap) {
+					heap.missileLevel = this.missileLevel;
+					heap.missileSet = this.ammoSetId;
+				}
 			}
 			creature.stuckAmmo = 0;
 		}
@@ -11703,6 +11805,16 @@ export class SewersScene extends Scene2D {
 		const boss = creature.kind ? BOSSES[this.depth] : undefined;
 		if (boss && boss.kind === creature.kind) {
 			this.say(boss.victory, 'positive');
+			//`GameScene.bossSlain()`: the BOSS_SLAIN banner plus the BOSS sound, gated on the hero
+			//surviving (`Dungeon.hero.isAlive()`). The banner is stage-level so its 5s hold plays
+			//out over the floor the port enters immediately below, the way Java's plays over the
+			//game the player keeps after the kill.
+			if (this.hero.hp > 0) {
+				runState.audio.cue('boss');
+				const slain = new Banner(runState.sprites.bannerBossSlain);
+				slain.show(0xffffff, 0.3, 5);
+				this.showBanner(slain);
+			}
 			//boss badges, one per chapter (BOSS_SLAIN_1..4)
 			if (creature.kind === 'goo') this.awardBadge('boss_goo');
 			if (creature.kind === 'tengu') this.awardBadge('boss_tengu');
@@ -12132,6 +12244,8 @@ export class SewersScene extends Scene2D {
 			ammo: this.ammo,
 			ammoDurability: this.ammoDurability,
 			missileLevel: this.missileLevel,
+			ammoSetId: this.ammoSetId,
+			missileThresholds: [...this.missileThresholds],
 			frostWand: this.frostWand,
 			wandType: this.wandType,
 			ghostSpawned: this.ghostSpawned,
@@ -12343,6 +12457,8 @@ export class SewersScene extends Scene2D {
 		this.ammo = s.ammo;
 		this.ammoDurability = s.ammoDurability ?? 100;
 		this.missileLevel = s.missileLevel ?? 0;
+		this.ammoSetId = s.ammoSetId ?? 1;
+		this.missileThresholds = new Map(s.missileThresholds ?? []);
 		this.frostWand = s.frostWand;
 		this.wandType = s.wandType ?? (this.frostWand ? 'frost' : 'magicMissile');
 		this.ghostSpawned = s.ghostSpawned;
@@ -12569,6 +12685,7 @@ export class SewersScene extends Scene2D {
 	private showVictoryPanel(): void {
 		this.victoryPanel.removeChildren().forEach((child) => child.destroy());
 		this.victoryPanel.visible = true;
+		this.victoryPanel.alpha = 1;
 		const width = Math.min(380, Math.max(260, Game.current.width - 28));
 		const height = 150;
 		this.victoryPanel.addChild(new Graphics().roundRect(0, 0, width, height, 10)
@@ -12595,6 +12712,7 @@ export class SewersScene extends Scene2D {
 	private showDefeatPanel(): void {
 		this.victoryPanel.removeChildren().forEach((child) => child.destroy());
 		this.victoryPanel.visible = true;
+		this.victoryPanel.alpha = 1;
 		const width = Math.min(380, Math.max(260, Game.current.width - 28));
 		this.victoryPanel.addChild(new Graphics().roundRect(0, 0, width, 150, 10)
 			.fill({ color: 0x160d12, alpha: 0.98 }).stroke({ width: 3, color: 0xb95858 }));
@@ -12612,6 +12730,18 @@ export class SewersScene extends Scene2D {
 		restart.cursor = 'pointer';
 		this.victoryPanel.addChild(restart);
 		this.positionInterface(Game.current.width, Game.current.height);
+	}
+
+	/**
+	 * `GameScene.showBanner`: centers the banner on screen and tracks it until its FADE_OUT kills
+	 * it (the widget removes itself; this only drops the reference). Replaces any live banner -
+	 * Java shows one at a time too.
+	 */
+	private showBanner(banner: Banner): void {
+		this.banner?.destroy();
+		this.banner = banner;
+		banner.position.set(Game.current.width / 2, Game.current.height / 2);
+		this.stage.addChild(banner);
 	}
 
 	/** Small explicit talent window: earned points are assigned to accuracy or evasion. */
@@ -13821,7 +13951,7 @@ export class SewersScene extends Scene2D {
 				Game.current.switchScene(TitleScene);
 			}),
 		});
-		menuWindow = new Window({ width, height: entries.length * buttonHeight + (entries.length - 1) * gap, anchor: 'center' });
+		menuWindow = new Window({ width, height: entries.length * buttonHeight + (entries.length - 1) * gap, anchor: 'center', blocker: true });
 		entries.forEach((entry, index) => {
 			const button = new Button({
 				width,
@@ -14347,6 +14477,14 @@ export class SewersScene extends Scene2D {
 					this.awaitingInput = true;
 					this.refresh();
 				}
+			}
+		}
+		if (this.banner) {
+			this.banner.update(dt);
+			if (this.bannerPanelFollow) this.victoryPanel.alpha = this.banner.alpha * this.banner.alpha;
+			if (!this.banner.showing) {
+				this.banner = null;
+				this.bannerPanelFollow = false;
 			}
 		}
 		for (const creature of this.creatures) {
