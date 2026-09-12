@@ -6,7 +6,7 @@ export function verifyHeroActions(require, check) {
 	const { advanceHunger } = require('./simulation/hunger');
 	const { runScenario } = require('mwg/simulation');
 	const attempts = ['special', 'eat', 'quaff', 'read', 'upgrade'];
-	const free = ['examine', 'talents', 'buyHeal', 'buyId', 'sellFood', 'buyback', 'save', 'load'];
+	const free = ['examine', 'talents', 'buyHeal', 'buyId', 'sellFood', 'buyback', 'save', 'load', 'preparation'];
 	function harness({ paralysed = false, succeeds = true, descended = false } = {}) {
 		const events = [];
 		return { events, ports: {

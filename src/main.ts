@@ -18,7 +18,7 @@ import { runAttackResolution } from './adapters/attackSimulation';
 import { simulationRandom } from './adapters/mwgRandom';
 import { MOVES } from './simulation/heroActions';
 import { finishHeroTurn } from './simulation/heroTurn';
-import { preparationCanKo, preparationLevel } from './simulation/preparation';
+import { preparationBlinkDistance, preparationCanKo, preparationLevel } from './simulation/preparation';
 import { stepTenguAbility, tenguAbilityCost } from './simulation/tenguAbility';
 import { applyDefenderDamageCurves } from './simulation/defenderDamageCurves';
 import {
@@ -879,6 +879,9 @@ export class SewersScene extends Scene2D {
 		},
 		free: {
 			examine: () => this.examineTile(this.hero.x, this.hero.y),
+			//Preparation's blink: opening its aim costs nothing, and the attack it resolves into
+			//is what spends the turn (Java's own `HeroAction.Attack` from the cell picker).
+			preparation: () => this.usePreparationBlink(),
 			talents: () => {
 				this.talentOpen = this.subclassChoiceOpen || this.armorChoiceOpen || this.augmentChoiceOpen || this.itemPickerOpen || !this.talentOpen;
 				this.refreshTalentPanel();
@@ -6172,6 +6175,97 @@ export class SewersScene extends Scene2D {
 		}
 	}
 
+	/**
+	 * `Preparation`'s own action (`Preparation.doAction()` and its cell listener,
+	 * `Preparation.java` 264-334): the prepared strike, which is what makes the Assassin's
+	 * stealth state worth holding. Java opens a cell picker; on a visible hostile it either
+	 * attacks normally when already adjacent, or steps to the cheapest free cell beside the
+	 * target that is within `AttackLevel.blinkDistance()` of the hero and strikes from there.
+	 * Opening the picker costs nothing - the attack spends the turn, like any other attack.
+	 * Java's message strings are SPD's own keys, already translated in every locale.
+	 */
+	private usePreparationBlink(): void {
+		const level = this.hero.prepLevel;
+		if (level === undefined) return;
+		const distance = preparationBlinkDistance(level, this.subclass() === 'assassin' ? this.talentRank('assassins_reach') : 0);
+		this.beginAiming({
+			//Java applies the blink distance to the *destination* beside the target, so the
+			//target itself may sit one step further out than that.
+			range: distance + 1,
+			validate: (cell) => this.blinkTarget(cell) !== null
+				&& (this.canBumpAttack(cell) || this.blinkDestination(cell, distance) !== null),
+			onConfirm: (cell) => this.confirmPreparationBlink(cell, distance),
+		});
+		this.say(t('actors.buffs.preparation.prompt', { 0: distance }), 'positive');
+	}
+
+	/** Java's `no_target` half of the picker: a visible hostile that is not the hero, an NPC, or
+	 * something the hero is charmed by. */
+	private blinkTarget(cell: Step): Creature | null {
+		const creature = this.creatureAt(cell.x, cell.y);
+		if (!creature || creature.isHero || creature.isNPC || creature.isAlly) return null;
+		if (!this.fov.isVisible(cell.x, cell.y)) return null;
+		return creature;
+	}
+
+	/** `Dungeon.hero.canAttack(enemy)`'s practical half for this port: melee reach is one cell. */
+	private canBumpAttack(cell: Step): boolean {
+		return Math.max(Math.abs(cell.x - this.hero.x), Math.abs(cell.y - this.hero.y)) <= 1;
+	}
+
+	/**
+	 * Java's destination search: among the eight cells around the target, the free one with the
+	 * smallest path distance from the hero (which must be within `distance`), ties broken by the
+	 * closer true distance. `distanceMap` is MWG's breadth-first flood, the same shape as Java's
+	 * `PathFinder.buildDistanceMap(hero.pos, passable, range)` - `-1` marks an unreachable cell
+	 * where Java uses `Integer.MAX_VALUE`.
+	 */
+	private blinkDestination(cell: Step, distance: number): Step | null {
+		const distances = this.pathfinder.distanceMap({ x: this.hero.x, y: this.hero.y });
+		let best: Step | null = null;
+		let bestSteps = Infinity;
+		let bestTrue = Infinity;
+		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
+			const x = cell.x + dx, y = cell.y + dy;
+			if (!this.level.inside(x, y)) continue;
+			if (this.creatureAt(x, y)) continue;
+			if (!this.level.passable(x, y)) continue;
+			const steps = distances[this.level.index(x, y)] ?? -1;
+			if (steps < 0 || steps > distance) continue;
+			const trueDistance = (x - this.hero.x) ** 2 + (y - this.hero.y) ** 2;
+			if (steps < bestSteps || (steps === bestSteps && trueDistance < bestTrue)) {
+				best = { x, y };
+				bestSteps = steps;
+				bestTrue = trueDistance;
+			}
+		}
+		return best;
+	}
+
+	/** Resolves the picker's cell for real: attack from where we stand, blink and attack, or
+	 * refuse with Java's own message. A rooted hero refuses exactly as Java does. */
+	private confirmPreparationBlink(cell: Step, distance: number): void {
+		const enemy = this.blinkTarget(cell);
+		if (!enemy) {
+			this.say(t('actors.buffs.preparation.no_target'), 'negative');
+			return;
+		}
+		if (!this.canBumpAttack(cell)) {
+			const destination = this.blinkDestination(cell, distance);
+			if (!destination || this.hero.buffs['roots']) {
+				this.say(t('actors.buffs.preparation.out_of_reach'), 'negative');
+				return;
+			}
+			//Dungeon.observe() + GameScene.updateFog() + checkVisibleMobs(): refresh() re-runs the
+			//hero's own field of view, the fog and the sprite visibility from the new cell.
+			this.moveTo(this.hero, destination);
+			this.refresh();
+		}
+		this.actionSpentTurn = true;
+		this.attack(this.hero, enemy);
+		this.spendHeroTurn(this.getAttackTurnCostMod());
+	}
+
 	/** Takes one step of a queued `travelTarget`, or cancels it once arrived/interrupted. */
 	private stepTravel(): void {
 		const to = this.travelTarget;
@@ -11352,6 +11446,13 @@ export class SewersScene extends Scene2D {
 		});
 		this.refreshInventoryPanel();
 		this.refreshTalentPanel();
+
+		//Java's `ActionIndicator`: the prepared strike is available exactly while Preparation is
+		//up, so the toolbar's contextual button follows `hero.prepLevel`. When it appears or goes
+		//the interface re-sits itself, since the button occupies layout space above the toolbar.
+		if (this.actionBar.setPreparationAvailable(this.hero.prepLevel !== undefined)) {
+			this.positionInterface(Game.current.width, Game.current.height);
+		}
 
 		this.refreshHealthBars();
 	}

@@ -1163,8 +1163,15 @@ Do not add new authored content as object literals or scattered constants in the
       `Preparation` is a real state, so an attack made out of invisibility gets its real damage
       roll (the best of 1-3 rolls plus 10/20/35/50% at 1/3/5/9 turns invisible) and can assassinate
       a weak target, and invisibility is still dispelled by that attack. See `PORT_COVERAGE.md`'s
-      `Preparation` row; the blink action and `Mob`'s wound-instead-of-surprise presentation remain
-      unported.
+      `Preparation` row; `Mob`'s wound-instead-of-surprise presentation remains unported.
+      **And its blink action is ported as well, same day**: the prepared strike is a real
+      toolbar action (Java's `ActionIndicator`, present exactly while Preparation is up) that
+      attacks an adjacent target in place or steps to the cheapest free cell beside a visible
+      hostile within `AttackLevel.blinkDistance()` and strikes from there, refusing an
+      unreachable or rooted case with Java's own message. It reuses the port's existing aim
+      infrastructure and MWG's `distanceMap` (the same breadth-first flood as Java's
+      `buildDistanceMap`), and every string is an SPD key already translated in all 19 locales.
+      See `PORT_COVERAGE.md`'s `Preparation` row.
 - [x] Implement shield decay (`Barrier.act()`'s real `min(1,shielding/20)`-per-turn proportional
       curve now runs every hero turn against the shared `heroBarrier` pool - previously never
       invoked at all, so shields held indefinitely). `Blocking.BlockBuff`'s own separate fixed

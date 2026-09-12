@@ -13,9 +13,16 @@ export class SpdToolbar extends Container {
 	private readonly extras = new Container();
 	private readonly hint = new Label({ size: 8 });
 	private readonly row = new Container();
+	/** Java's `ActionIndicator`: contextual ability buttons living above the toolbar, shown only
+	 * while the ability is available. Only `Preparation`'s blink exists here so far, and it appears
+	 * exactly while the hero holds Preparation - i.e. while invisible. Java draws a dedicated
+	 * `HeroIcon`; this uses SPD's own `action_name` text, because the port has no preparation icon
+	 * art and a text label is honest where invented art would not be. */
+	private readonly actions = new Container();
+	private readonly preparationButton: SpdButton;
 	private readonly rowWidth = 174;
 	private zoom = 2;
-	get occupiedHeight(): number { return (this.extras.visible ? 143 : 26) * this.zoom; }
+	get occupiedHeight(): number { return (this.extras.visible ? 143 : 26) * this.zoom + (this.preparationButton.visible ? 21 * this.zoom : 0); }
 
 	constructor(itemTextures: Texture[], onAction: (action: string) => void, onLayout: () => void) {
 		super();
@@ -23,7 +30,11 @@ export class SpdToolbar extends Container {
 		this.hint.visible = false;
 		this.hint.anchor.set(1, 1);
 		this.hint.position.set(this.rowWidth, -3);
-		this.addChild(this.row, this.extras, this.hint);
+		this.addChild(this.row, this.actions, this.extras, this.hint);
+		this.preparationButton = new SpdButton({ width: 110, height: 19, text: t('actors.buffs.preparation.action_name'), onClick: () => onAction('preparation') });
+		this.preparationButton.position.set(this.rowWidth - 110, -19);
+		this.preparationButton.visible = false;
+		this.actions.addChild(this.preparationButton);
 		const sheet = runState.sprites.uiToolbar;
 		const crop = (x: number, y: number, w: number, h: number) => new Texture({ source: sheet.source, frame: new Rectangle(x, y, w, h) });
 		let x = 0;
@@ -68,5 +79,15 @@ export class SpdToolbar extends Container {
 		this.zoom = width >= 360 ? 2 : 1;
 		this.scale.set(this.zoom);
 		this.position.set(Math.floor(width - this.rowWidth * this.zoom), height - 26 * this.zoom);
+	}
+
+	/** Whether the hero's Preparation is up, i.e. whether the blink action exists right now.
+	 * Called from the scene's own HUD refresh, so the button tracks the buff rather than polling.
+	 * Returns whether that changed anything, since the interface sits its own layout above the
+	 * toolbar and has to move when a button appears or goes. */
+	setPreparationAvailable(available: boolean): boolean {
+		if (this.preparationButton.visible === available) return false;
+		this.preparationButton.visible = available;
+		return true;
 	}
 }
