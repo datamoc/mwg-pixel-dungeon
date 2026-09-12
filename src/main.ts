@@ -6362,6 +6362,9 @@ export class SewersScene extends Scene2D {
 			const destination = this.blinkDestination(cell, distance);
 			if (!destination || this.hero.buffs['roots']) {
 				this.say(t('actors.buffs.preparation.out_of_reach'), 'negative');
+				//`Preparation.java` 308-310: the refusal shakes only when the hero is *rooted* - the
+				//message is the same for an unreachable cell, the shake is not.
+				if (this.hero.buffs['roots']) this.shakeScreen(1, 1);
 				return;
 			}
 			//Dungeon.observe() + GameScene.updateFog() + checkVisibleMobs(): refresh() re-runs the
@@ -6372,6 +6375,22 @@ export class SewersScene extends Scene2D {
 		this.actionSpentTurn = true;
 		this.attack(this.hero, enemy);
 		this.spendHeroTurn(this.getAttackTurnCostMod());
+	}
+
+	/**
+	 * `PixelScene.shake(magnitude, duration)`: Java's one screen-shake entry point, used by 43
+	 * sites across the game. The Java body is a thin wrapper - `magnitude *= SPDSettings.screenShake()`
+	 * then `Camera.main.shake(magnitude, duration)` - and `mwg`'s `Camera.shake` takes the same two
+	 * arguments in the same units (world units, and seconds), so this is that wrapper minus the
+	 * preference: this port has no screen-shake setting, and Java's default is `1` with the setting
+	 * only ever scaling *down*, so leaving it out is the faithful default rather than a reduction.
+	 *
+	 * Wired at every site whose Java feature this port has ported; the rest are listed in
+	 * `PORT_COVERAGE.md` with the reason each cannot be reached yet (mostly hero abilities and two
+	 * monsters that are not ported at all).
+	 */
+	private shakeScreen(magnitude: number, duration: number): void {
+		this.camera.shake(magnitude, duration);
 	}
 
 	/** `Shocking.arc()` (`items/weapon/enchantments/Shocking.java`): a recursive chain. From the
@@ -7060,11 +7079,9 @@ export class SewersScene extends Scene2D {
 
 	/**
 	 * `Chasm.heroLand()` (`Chasm.java`): applies on arrival at the new floor, after the fall
-	 * itself. Real Java also plays a landing sound, shakes the camera (`PixelScene.shake(1, 1f)`),
-	 * and lets `ElixirOfFeatherFall.FeatherBuff` cancel the whole thing outright - the elixir is
-	 * not ported, and the shake is not wired yet (mwg has the primitive: `Camera.shake(magnitude,
-	 * duration?)`, while Java's `PixelScene.shake(intensity, duration)` has 43 call sites across
-	 * the game and this port models none of them - see `PORT_COVERAGE.md`'s mwg-usage section) -
+	 * itself. Real Java also plays a landing sound, shakes the camera (`PixelScene.shake(4, 1f)`,
+	 * `Chasm.java` 143, before the Cripple it also applies), and lets
+	 * `ElixirOfFeatherFall.FeatherBuff` cancel the whole thing outright - the elixir is not ported,
 	 * so only the two mechanical consequences are ported: a `Cripple` application and upfront
 	 * damage scaled the same way Java's is (`max(HP/2, NormalIntRange(HP/2, HT/4))`, run through
 	 * the same
@@ -7075,6 +7092,8 @@ export class SewersScene extends Scene2D {
 	 */
 	private landFromChasm(): void {
 		if (this.hero.hp <= 0) return;
+		//`Chasm.java` 143: the shake comes first, before the Cripple and the damage.
+		this.shakeScreen(4, 1);
 		addBuff(this.hero, 'cripple');
 		setBleeding(this.hero, Math.round(this.hero.maxHp / (6 + 6 * (this.hero.hp / this.hero.maxHp))));
 		const damage = this.absorbHeroDamage(Math.max(Math.floor(this.hero.hp / 2), Random.normalRange(Math.floor(this.hero.hp / 2), Math.floor(this.hero.maxHp / 4))));
@@ -7100,6 +7119,9 @@ export class SewersScene extends Scene2D {
 		if (paint.map[cell] !== Terrain.WALL && !vein) return false;
 		paint.map[cell] = Terrain.EMPTY_DECO;
 		this.level.set(x, y, FLOOR);
+		//`Hero.java` 1299/1310: mining shakes once (0.5, half a second) whichever it struck - the
+		//DarkGold vein and the plain wall branch both do it, beside their own burst and sound.
+		this.shakeScreen(0.5, 0.5);
 		if (vein) {
 			this.bag.add({ id: 'darkGold', quantity: 1, stackable: true, identified: true });
 			this.say(t('port.log.pickup', { item: t('items.quest.darkgold.name') }), 'positive');
@@ -7841,6 +7863,9 @@ export class SewersScene extends Scene2D {
 		//not adjacent - no blast exists in this SPD revision (that is DM200/DM201 territory)
 		dm100: (monster) => {
 			if (!this.rangedTarget(monster, 6)) return false;
+			//`DM100.java` 107-109: the bolt shakes the screen when it lands on the hero (the shake
+			//is inside its `enemy == Dungeon.hero` branch, which is the only target this AI uses).
+			this.shakeScreen(2, 0.3);
 			this.zapHero(monster, [3, 10]);
 			return true;
 		},
@@ -8989,6 +9014,9 @@ export class SewersScene extends Scene2D {
 			if (d <= 1 || Random.int(d) === 0) cells.push(at);
 		}
 		if (cells.length > 0) this.fallingRocks.push({ cells, turns: 2 });
+		//`DM300.java` 655: the ROCKS ability shakes hardest of anything in the game (5, a full
+		//second) as it slams - scheduled here, on the turn the volley is called down.
+		this.shakeScreen(5, 1);
 		this.say(t('actors.mobs.dm300.rocks'), 'warning');
 	}
 
@@ -9663,7 +9691,12 @@ export class SewersScene extends Scene2D {
 	}
 
 	private moveTo(creature: Creature, to: Step): void {
-		if (creature.buffs['roots']) return;
+		if (creature.buffs['roots']) {
+			//`Hero.java` 1770-1772 (`getCloser`): the hero's own rooted refusal shakes; a rooted
+			//*monster* refuses silently in Java too (`Char.move` just returns), so this is hero-only.
+			if (creature.isHero) this.shakeScreen(1, 1);
+			return;
+		}
 		// Java mobs treat CHASM as solid for pathing even though the hero can enter it
 		// and fall. The coarse terrain kind is open for FOV/hero collision, so enforce
 		// the mob-specific rule at the final movement boundary.
@@ -10041,6 +10074,10 @@ export class SewersScene extends Scene2D {
 		//inline blocks, and the `Pylon` curve is now in the same place as the rest instead of
 		//above the multiplier chain where it under-reduced every charged-pylon hit.
 		damage = applyDefenderDamageCurves(defender.kind, damage, { beamCharged: defender.beamCharged === true });
+		//`Goo.damage()` (`Goo.java` 162-164): while the Goo is pumped up, every hit it takes shakes
+		//the screen - the tell that the charge is being interrupted. The port's `pumped` is its
+		//charge-turn counter (`takeGooTurn`), so `> 0` is Java's `pumpedUp > 0`.
+		if (defender.kind === 'goo' && (defender.pumped ?? 0) > 0) this.shakeScreen(3, 0.2);
 		const preHp = defender.hp;
 		if (defender.isHero) damage = this.absorbHeroDamage(damage);
 		//`DwarfKing.damage()` (phase 3) and `RustedFist.damage()` both bank every hit into the same

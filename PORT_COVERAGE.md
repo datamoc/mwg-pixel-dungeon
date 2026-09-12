@@ -1972,10 +1972,32 @@ Recorded here, not done, each with the framework API that owns it:
 - **Screen transitions are hand-computed** (`main.ts`'s interlevel curtain: hold plus two 0.33s
   fades) with `ScreenEffects.fadeOut`/`fadeIn`/`flash` unused; a drop-in swap is not possible for
   SPD's single hold+fade phase, so this is a "reduced, not absurd" case rather than a defect.
-- **Screen shake is entirely unmodelled** while Java has 43 `PixelScene.shake(intensity, duration)`
-  call sites and `Camera.shake(magnitude, duration?)` is the framework primitive - including the
-  two the port's own notes already name (the chasm landing above, and the rooted-refusal shake in
-  the Preparation row).
+- **Screen shake: wired (2026-09-12), where its Java feature exists.** Java routes every shake
+  through `PixelScene.shake(magnitude, duration)` - 43 call sites - whose body is just
+  `magnitude *= SPDSettings.screenShake(); Camera.main.shake(magnitude, duration)`. The port now has
+  the same wrapper (`main.ts`'s `shakeScreen`, minus the preference: there is no screen-shake
+  setting here, and Java's default is 1 with the setting only scaling *down*, so omitting it is the
+  faithful default), and calls it at every site whose Java feature is ported: **the chasm landing**
+  (`Chasm.java` 143, `4, 1f` - and this corrected the port's own comment, which had claimed `1, 1f`),
+  **mining a wall or a DarkGold vein** (`Hero.java` 1299/1310, `0.5, 0.5f`, both branches), **DM-100's
+  lightning bolt** (`DM100.java` 107-109, `2, 0.3f`, on the hero-target branch its AI always uses),
+  **DM-300's ROCKS** (`DM300.java` 655, `5, 1f`, where the volley is called down), **the Goo taking
+  damage while pumped up** (`Goo.java` 162-164, `3, 0.2f`, the port's `pumped` charge counter being
+  its `pumpedUp`), and the **rooted-refusal pair** (`Hero.java` 1770-1772 `getCloser` and the blink's
+  `Preparation.java` 308-310, each `1, 1f` - the port's single `moveTo` roots gate covers Java's
+  movement *and* stair-transition refusals, which are two sites in Java because Java checks them
+  separately, and its blink refusal shakes only when the hero is rooted exactly as Java's does).
+  Browser-verified live (`tools/scratch/screen-shake-livecheck.mjs`, 7 assertions): nothing shakes at
+  rest, `dm300Rockfall` starts a magnitude-5/1s shake and still schedules its volley, the running
+  camera jitters within the magnitude and settles back to zero when the duration elapses, and the
+  chasm landing starts its own magnitude-4 shake. **Not wired, because the feature is not ported:**
+  the hero ability shakers (`HeroicLeap` 71/119, `Shockwave` 102, `SmokeBomb` 91, `Feint` 93,
+  `Challenge` 142/148), `Combo.java` 503 and `MonkEnergy.java` 481 (monk/damage-ability paths),
+  `SuperNovaTracker.java` 103 and `GnollGeomancer.java` 438/520/708/710 (neither monster exists
+  here), `CrystalSpire.java` 169/340/378/384 (the Blacksmith quest's crystal spire - that quest's
+  mining/forge mechanics are still the simplified version), `Hero.java` 1177 (opening a
+  TOMB/SKELETON/REMAINS heap - the port's chest kinds are normal/locked/crystal), and `DM300.java`
+  325 (its `travelling` move, which this port does not model).
 - **Boss ability timers** (six independent cooldowns across king/demonSpawner/yog/dm300) are the
   shape `Roguelike.AbilityCycle` provides; the *phase* machines around them are a documented
   correctness divergence from the framework's `BossPhases` (Java has no such half-HP Fury/0.75-0.5-0.25

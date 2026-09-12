@@ -1954,10 +1954,16 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       pool/physics where `ParticleEmitter` is used for the title flame. (5) The talent panel, item
       picker and `InfoWindow` hand-roll modality where `Window`/`WindowStack`/`MessageBox` exist
       (SPD's pixel chrome justifies not being a `Window`; the item picker is exactly `MessageBox`'s
-      titled-choice shape). (6) Screen shake is entirely unmodelled against Java's 43
-      `PixelScene.shake(intensity, duration)` sites, with `Camera.shake(magnitude, duration?)`
-      available - including the chasm landing and the rooted-refusal shake this file already names
-      elsewhere. (7) The interlevel curtain hand-computes its fades where `ScreenEffects` exists
+      titled-choice shape). (6) Screen shake: Java's 43 `PixelScene.shake(magnitude, duration)` sites
+      all route through one wrapper whose body is `Camera.main.shake` - **wired 2026-09-12** at every
+      site whose Java feature is ported (the chasm landing, mining, DM-100's bolt, DM-300's ROCKS,
+      the Goo taking a hit while pumped up, and the rooted move/blink refusals) through a
+      `shakeScreen` wrapper that is Java's own body minus its `SPDSettings.screenShake()` preference
+      (this port has no such setting, and Java's default is 1 with the setting only scaling down).
+      The unwired remainder is exactly the unported-feature list in `PORT_COVERAGE.md`'s mwg-usage
+      section (hero abilities, monk paths, two monsters absent here, the crystal spire, tomb heaps,
+      DM-300's `travelling` move); verified live with 7 assertions
+      (`tools/scratch/screen-shake-livecheck.mjs`). (7) The interlevel curtain hand-computes its fades where `ScreenEffects` exists
       (not a drop-in swap for SPD's hold+two-fades phase, so lowest priority of the seven). Also
       recorded: `TileMap.setCellColor` unused (SPD's fog is per-half-tile, which per-cell tint
       cannot express), `visualWalls.ts`'s neighbour-mask table vs
