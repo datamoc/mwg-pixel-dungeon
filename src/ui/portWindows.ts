@@ -43,6 +43,25 @@ export function showInfoWindow(windows: WindowStack, title: string, body: string
 	windows.push(window);
 }
 
+/** `WndOptions`' two-button shape, for the one place this port needs a real yes/no rather than a
+ * message: `MissileWeapon.doThrow`'s warning before throwing the last of an upgraded stack.
+ * Java builds the same thing out of `WndOptions` with an `onSelect(index)`; this is that, worded
+ * with SPD's own `break_upgraded_warn_*` strings. */
+export function showConfirmWindow(windows: WindowStack, title: string, body: string, yes: string, no: string, onYes: () => void): void {
+	const width = windowWidth(180);
+	const label = new Label({ text: body, size: 6, wrapWidth: width - 16, color: theme().color.text });
+	const window = new Window({ width, height: label.height + 70, title, anchor: 'center', blocker: true });
+	window.content.addChild(label);
+	const half = Math.floor((window.contentWidth - 6) / 2);
+	const yesButton = new Button({ width: half, height: 18, text: yes, onClick: () => { window.close(); onYes(); } });
+	yesButton.position.set(0, label.height + 6);
+	window.content.addChild(yesButton);
+	const noButton = new Button({ width: half, height: 18, text: no, onClick: () => window.close() });
+	noButton.position.set(half + 6, label.height + 6);
+	window.content.addChild(noButton);
+	windows.push(window);
+}
+
 /**
  * Settings: the port's real settings are the language and the challenge set (`WndSettings`' music,
  * sound and brightness have no seam here, and its other tabs are unported).

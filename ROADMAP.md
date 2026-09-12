@@ -685,9 +685,16 @@ Do not add new authored content as object literals or scattered constants in the
       instead of still wearing down by `100/usages`. The `augment.delayFactor` and MagicalHolster
       factors remain documented simplifications (missiles are not individually augmentable and
       there is no holster).
-       Remaining: per-missile identity (boomerang return/merge), the last-missile confirm,
-       and Sharpshooting's Aim-buff rework (flagged, own pass). The dust-pickup tracker is
-       ported (`src/missiles.ts` + heap lineage + upgrade recording, item-suite proved).
+       Remaining: per-missile identity (boomerang return/merge) and Sharpshooting's Aim-buff
+       rework (flagged, own pass). The dust-pickup tracker is ported (`src/missiles.ts` + heap
+       lineage + upgrade recording, item-suite proved), and so is **the last-missile confirm**
+       (2026-09-12): `MissileWeapon.doThrow()`'s pre-throw warning is now a real two-button
+       window on the scene's `WindowStack` (`showConfirmWindow`), shown when the stack's last
+       missile would break on that throw and the stack is upgraded - the one clause of Java's
+       condition this port's fungible ammo can express - with SPD's own wording in all 19
+       locales. Verified live (`tools/scratch/lastmissile-confirm-livecheck.mjs`, 7
+       assertions), including that clicking "Yes" through the real pointer path throws and
+       that the three neighbours Java does not warn about stay silent.
 - [x] Implement identification appearance randomization. Potion and scroll appearances are
       shuffled once per seeded run, pre-drawn without disturbing later gameplay RNG, and
       persisted through save/load.

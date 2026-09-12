@@ -515,6 +515,12 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	// The i18n extractor cannot ship the Java key: it reads the local checkout's
 	// divergent working tree, which lacks it, so the port key carries SPD's wording.
 	'port.log.missiledust': 'The thrown weapon crumbles to dust as you touch it.',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': 'If the last thrown weapon in your enhanced thrown weapon set breaks, the set will be permanently lost. Are you sure you want to throw it?',
+	'port.confirm.lastmissile.yes': 'Yes',
+	'port.confirm.lastmissile.no': 'No',
 };
 
 /**
@@ -980,6 +986,12 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 	'port.log.missilebroken': 'Votre projectile se brise !',
 	'port.log.rockfallkill': 'Les rochers qui tombent vous écrasent !',
 	'port.log.missiledust': 'L\'arme de jet tombe en poussière quand vous la touchez.',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': 'Si la dernière des armes de jet d\'un ensemble amélioré se brise, l\'ensemble sera définitivement perdu. Êtes-vous sûr de vouloir la lancer ?',
+	'port.confirm.lastmissile.yes': 'Oui',
+	'port.confirm.lastmissile.no': 'Non',
 };
 
 /**
@@ -1435,6 +1447,12 @@ export const PORT_STRINGS_DE: Record<string, string> = {
 	'port.ui.bag.gear': 'Ausrüstung',
 	'port.ui.bag.quest': 'Auftrag',
 	'port.log.missiledust': 'Diese Wurfwaffe zerfällt zu Staub, als du sie berührst.',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': 'Wenn die letzte Wurfwaffe aus deinem verbesserten Satz Wurfwaffen bricht, geht der Satz unwiederbringlich verloren. Bist du sicher, dass du sie werfen möchtest?',
+	'port.confirm.lastmissile.yes': 'Ja',
+	'port.confirm.lastmissile.no': 'Nein',
 };
 
 /**
@@ -1890,6 +1908,12 @@ export const PORT_STRINGS_ES: Record<string, string> = {
 	'port.ui.bag.gear': 'Equipo',
 	'port.ui.bag.quest': 'Misión',
 	'port.log.missiledust': 'El arma arrojadiza se convierte en polvo cuando la tocas.',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': 'Si la última arma arrojadiza de tu conjunto mejorado se rompe, se perderá definitivamente. ¿Seguro que quieres lanzarla?',
+	'port.confirm.lastmissile.yes': 'Sí',
+	'port.confirm.lastmissile.no': 'No',
 };
 
 /**
@@ -2346,6 +2370,12 @@ export const PORT_STRINGS_PT: Record<string, string> = {
 	'port.ui.bag.gear': 'Equipamento',
 	'port.ui.bag.quest': 'Missão',
 	'port.log.missiledust': 'A arma de arremesso vira pó quando você a toca.',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': 'Se a última arma de arremesso do seu conjunto de armas de arremesso aprimoradas quebrar, o conjunto será perdido permanentemente. Tem certeza de que deseja arremessá-la?',
+	'port.confirm.lastmissile.yes': 'Sim',
+	'port.confirm.lastmissile.no': 'Não',
 };
 
 /**
@@ -2801,6 +2831,12 @@ export const PORT_STRINGS_IT: Record<string, string> = {
 	'port.ui.bag.gear': 'Equipaggiamento',
 	'port.ui.bag.quest': 'Missione',
 	'port.log.missiledust': 'L\'arma da lancio si polverizza al tuo tocco.',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': 'Se l\'ultima arma da lancio del tuo set migliorato si rompe, questo verrà perso per sempre. Vuoi davvero lanciarla?',
+	'port.confirm.lastmissile.yes': 'Si',
+	'port.confirm.lastmissile.no': 'No',
 };
 
 /**
@@ -3256,6 +3292,12 @@ export const PORT_STRINGS_PL: Record<string, string> = {
 	'port.ui.bag.gear': 'Ekwipunek',
 	'port.ui.bag.quest': 'Zadanie',
 	'port.log.missiledust': 'Broń miotana rozpada się w drobny mak zaraz po dotknięciu.',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': 'Jeżeli ostatnia broń miotana w twoim ulepszonym zestawie broni miotanej się zepsuje, utracisz go na zawsze. Czy na pewno chcesz nią rzucić?',
+	'port.confirm.lastmissile.yes': 'Tak',
+	'port.confirm.lastmissile.no': 'Nie',
 };
 
 /**
@@ -3689,6 +3731,12 @@ export const PORT_STRINGS_RU: Record<string, string> = {
 	'port.ui.bag.gear': 'Снаряжение',
 	'port.ui.bag.quest': 'Задание',
 	'port.log.missiledust': 'Метательное оружие рассыпается в пыль при прикосновении.',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': 'Если последнее метательное оружие в зачарованном комплекте сломается, комплект будет навсегда утерян. Вы уверены, что хотите его бросить?',
+	'port.confirm.lastmissile.yes': 'Да',
+	'port.confirm.lastmissile.no': 'Нет',
 };
 
 /**
@@ -4122,6 +4170,12 @@ export const PORT_STRINGS_TR: Record<string, string> = {
 	'port.ui.bag.gear': 'Teçhizat',
 	'port.ui.bag.quest': 'Görev',
 	'port.log.missiledust': 'Fırlatılan silaha dokunduğunuzda toz haline gelir.',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': 'Geliştirilmiş fırlatılan silah setinizdeki son fırlatılan silah kırılırsa, set kalıcı olarak kaybolacaktır. Fırlatmak istediğine emin misin?',
+	'port.confirm.lastmissile.yes': 'Evet',
+	'port.confirm.lastmissile.no': 'Hayır',
 };
 
 /**
@@ -4553,6 +4607,12 @@ export const PORT_STRINGS_UK: Record<string, string> = {
 	'port.log.missilebroken': 'Ваш снаряд ламається!',
 	'port.log.rockfallkill': 'Каміння, що падає, розчавлює вас!',
 	'port.log.missiledust': 'Метальна зброя розсипається на порох, коли ви торкаєтесь її.',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': 'Якщо остання метальна зброя у вашому покращеному наборі метальної зброї зламається, набір буде назавжди втрачено. Ви впевнені, що хочете її кинути?',
+	'port.confirm.lastmissile.yes': 'Так',
+	'port.confirm.lastmissile.no': 'Ні',
 };
 
 /**
@@ -4984,6 +5044,12 @@ export const PORT_STRINGS_HU: Record<string, string> = {
 	'port.log.missilebroken': 'A hajítófegyvered eltörik!',
 	'port.log.rockfallkill': 'A lezuhanó kövek összezúznak téged!',
 	'port.log.missiledust': 'A dobófegyver porrá hullik, amint megérinted.',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': 'Ha a továbbfejlesztett dobófegyver-készleted utolsó darabja is eltörik, akkor a készlet véglegesen elvész. Biztosan el akarod dobni?',
+	'port.confirm.lastmissile.yes': 'Igen',
+	'port.confirm.lastmissile.no': 'Nem',
 };
 
 /**
@@ -5414,6 +5480,12 @@ export const PORT_STRINGS_NL: Record<string, string> = {
 	'port.log.missilebroken': 'Je werpwapen breekt!',
 	'port.log.rockfallkill': 'De vallende rotsen verpletteren je!',
 	'port.log.missiledust': 'Het werpwapen verpulvert tot stof zodra je het aanraakt.',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': 'Als het laatst werpwapen in je verbeterde set werpwapens kapotgaat, dan gaat de set permanent verloren. Weet je zeker dat je het wilt gooien?',
+	'port.confirm.lastmissile.yes': 'Ja',
+	'port.confirm.lastmissile.no': 'Nee',
 };
 
 
@@ -5845,6 +5917,12 @@ export const PORT_STRINGS_IN: Record<string, string> = {
 	'port.log.missilebroken': 'Senjata lemparmu rusak!',
 	'port.log.rockfallkill': 'Batu yang jatuh menghancurkanmu!',
 	'port.log.missiledust': 'Senjata lempar hancur menjadi debu saat kamu menyentuhnya.',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': 'Jika senjata lempar terakhir di set senjata lemparmu yang ditingkatkan rusak, set tersebut akan hilang secara permanen. Yakin ingin melemparnya?',
+	'port.confirm.lastmissile.yes': 'Ya',
+	'port.confirm.lastmissile.no': 'Tidak',
 };
 
 /**
@@ -6274,6 +6352,12 @@ export const PORT_STRINGS_JA: Record<string, string> = {
 	'port.log.missilebroken': 'あなたの投擲武器が壊れた！',
 	'port.log.rockfallkill': '落ちてきた岩があなたを押し潰した！',
 	'port.log.missiledust': '投擲武器は、あなたが触れた瞬間に粉々に砕け散る。',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': '強化された投擲武器の組の最後の1つが壊れた場合、その組は永久に失われる。本当に投げますか？',
+	'port.confirm.lastmissile.yes': 'はい',
+	'port.confirm.lastmissile.no': 'いいえ',
 };
 
 /**
@@ -6703,6 +6787,12 @@ export const PORT_STRINGS_CS: Record<string, string> = {
 	'port.log.missilebroken': 'Tvoje vrhací zbraň se zlomila!',
 	'port.log.rockfallkill': 'Padající kameny tě rozdrtily!',
 	'port.log.missiledust': 'Vrhací zbraň se rozpadla v prach, když ses jí dotkl.',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': 'Pokud se poslední vrhací zbraň v tvé vylepšené sadě rozbije, bude sada navždy ztracena. Jsi si jistý, že ji chceš hodit?',
+	'port.confirm.lastmissile.yes': 'Ano',
+	'port.confirm.lastmissile.no': 'Ne',
 };
 
 /**
@@ -7132,6 +7222,12 @@ export const PORT_STRINGS_VI: Record<string, string> = {
 	'port.log.missilebroken': 'Vũ khí ném của bạn bị gãy!',
 	'port.log.rockfallkill': 'Đá rơi đè bẹp bạn!',
 	'port.log.missiledust': 'Món vũ khí ném của bạn tan thành cát bụi khi bạn chạm vào nó.',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': 'Nếu món vũ khí ném cuối cùng trong bộ vũ khí ném được nâng cấp của bạn hỏng, bộ đó sẽ bị mất vĩnh viễn. Bạn có chắc chắn mình muốn ném nó?',
+	'port.confirm.lastmissile.yes': 'Có',
+	'port.confirm.lastmissile.no': 'Không',
 };
 
 /**
@@ -7561,6 +7657,12 @@ export const PORT_STRINGS_EL: Record<string, string> = {
 	'port.log.missilebroken': 'Το βλήμα σου σπάει!',
 	'port.log.rockfallkill': 'Οι πέτρες που πέφτουν σε συνθλίβουν!',
 	'port.log.missiledust': 'Το όπλο ρίψης γίνεται σκόνη καθώς το ακουμπάς.',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': 'Εάν το τελευταίο όπλο ρίψης στο βελτιωμένο σετ όπλων ρίψης σπάσει, τότε το σετ θα χαθεί μόνιμα. Θέλεις σίγουρα να το πετάξεις;',
+	'port.confirm.lastmissile.yes': 'Ναι',
+	'port.confirm.lastmissile.no': 'Όχι',
 };
 
 /**
@@ -7990,6 +8092,12 @@ export const PORT_STRINGS_KO: Record<string, string> = {
 	'port.log.missilebroken': '투척 무기가 부서진다!',
 	'port.log.rockfallkill': '떨어지는 바위에 깔려 죽는다!',
 	'port.log.missiledust': '당신이 투척 무기를 만지자마자 가루로 변해버렸다.',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': '만약 세트의 마지막 투척 무기가 부서지면, 이 강화된 투척 무기 세트를 영원히 잃게 됩니다. 정말로 던질 건가요?',
+	'port.confirm.lastmissile.yes': '네',
+	'port.confirm.lastmissile.no': '아니오',
 };
 
 /**
@@ -8419,6 +8527,12 @@ export const PORT_STRINGS_ZH: Record<string, string> = {
 	'port.log.missilebroken': '你的投掷物损坏了！',
 	'port.log.rockfallkill': '落石把你砸死了！',
 	'port.log.missiledust': '你一碰这件投掷武器就化为了尘土。',
+	// `MissileWeapon.doThrow()`'s pre-throw warning - SPD's own v3.3.8 text and, for every
+	// locale, SPD's own translation of it (`items.weapon.missiles.missileweapon.break_upgraded_warn_*`). The catalog cannot carry them: the extractor reads the local
+	// checkout's divergent working tree, which predates the strings.
+	'port.confirm.lastmissile.desc': '如果一组投掷武器的最后一件损坏，这组投掷武器就会永远消失。你确定还要投掷这件武器吗？',
+	'port.confirm.lastmissile.yes': '确定',
+	'port.confirm.lastmissile.no': '算了',
 };
 
 /**

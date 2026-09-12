@@ -129,7 +129,7 @@ import { CLASSES, CLASS_AMMO, HERO_IDLE_FRAME, type ClassId } from './classes';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from './badges';
 import { TitleScene } from './scenes/titleScene';
 import { ClassSelectScene } from './scenes/classSelectScene';
-import { showChallengesWindow, showRankingsWindow, showSettingsWindow } from './ui/portWindows';
+import { showChallengesWindow, showConfirmWindow, showRankingsWindow, showSettingsWindow } from './ui/portWindows';
 import { Banner } from './ui/banner';
 import { transferEnhancement } from './itemWorkflows';
 import { getCurse } from './itemCurses';
@@ -1061,6 +1061,9 @@ export class SewersScene extends Scene2D {
 	 * post-upgrade level), persisted with the run since Java's buff revives.
 	 */
 	private ammoSetId = 1;
+	/** `MissileWeapon.doThrow()`'s warning has been answered for this throw - see
+	 * `confirmMissileThrow`, which re-enters `useSpecial` with this latched. */
+	private missileThrowConfirmed = false;
 	private missileThresholds = new Map<number, number>();
 	/** MissileWeapon durability is shared by the active stack; a projectile breaks only at 0. */
 	private ammoDurability = 100;
@@ -6073,6 +6076,35 @@ export class SewersScene extends Scene2D {
 	 * reach 100, when the stack effectively lasts forever. The previous inline form always
 	 * applied `(1.25+0.25*rank)` even at rank 0, granting every hero +25% missile durability
 	 * without the talent; Java gates it behind `hasTalent` (`pointsInTalent > 0`). */
+	/**
+	 * `MissileWeapon.doThrow()`'s warning condition: the stack is down to its last missile, that
+	 * throw would break it (`durabilityLeft() <= durabilityPerUse()`), and the stack is worth
+	 * warning about - in Java "known and upgraded, or with a good enchant, or a mastery potion
+	 * bonus, or hardened". This port's ammo is fungible class ammo with no per-stack enchant,
+	 * hardening or mastery state, so the reachable clause is the upgrade level; `extraThrownLeft`
+	 * has no expression here either (it is the flag the same warning is suppressed by).
+	 */
+	private missileThrowNeedsConfirm(): boolean {
+		return this.missileLevel > 0 && this.ammo === 1 && this.ammoDurability <= this.missileDurabilityCost();
+	}
+
+	/** `WndOptions`' yes/no, worded with SPD's own `break_upgraded_warn_*` strings (title is the
+	 * missile's own name, as Java's `Messages.titleCase(title())` is). "Yes" re-enters
+	 * `useSpecial` with the confirmation latched, so the throw runs its one real path. */
+	private confirmMissileThrow(title: string): void {
+		showConfirmWindow(
+			this.gameWindows,
+			title,
+			t('port.confirm.lastmissile.desc'),
+			t('port.confirm.lastmissile.yes'),
+			t('port.confirm.lastmissile.no'),
+			() => {
+				this.missileThrowConfirmed = true;
+				this.useSpecial();
+			},
+		);
+	}
+
 	private missileDurabilityCost(): number {
 		const baseUses = this.heroClass === 'duelist' ? 12 : 5;
 		const durable = this.talentRank('durable_projectiles');
@@ -6150,6 +6182,14 @@ export class SewersScene extends Scene2D {
 			return false;
 		}
 
+		//`MissileWeapon.doThrow()`'s pre-throw warning, before any of the throw's effects: Java asks
+		//first and only throws from the window's "Yes". The port's action is synchronous, so the
+		//confirm re-enters this same method with the flag set, rather than duplicating the branch.
+		if (special.kind === 'throw' && !this.missileThrowConfirmed && this.missileThrowNeedsConfirm()) {
+			this.confirmMissileThrow(t(special.labelKey));
+			return false;
+		}
+		if (special.kind === 'throw') this.missileThrowConfirmed = false;
 		if (special.kind === 'throw') {
 			const carried = this.ammo > 0;
 			if (!carried) this.bag.remove('stone', 1);
