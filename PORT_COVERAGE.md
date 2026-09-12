@@ -2208,13 +2208,18 @@ Two of these are worth calling out beyond "counts match", because a count cannot
   identical rather than a translation oversight. Their `{subject}`/`{object}`/`{damage}`/`{verb}`
   placeholders are re-ordered into natural sentence order, which the token-set comparison
   accepts by design.
-- **A glyph-coverage scan of every locale verified live found no tofu**, and turned up one
-  curiosity worth recording because of where it lives: SPD's *own* Portuguese table contains a
-  U+200B ZERO WIDTH SPACE, twice, inside `scenes.gamescene.blacksmith_quest_window`. It is
-  invisible and harmless, it ships in `spdMessages.ts` because that is generated from SPD, and
-  it is **not** in any port-only string - but it is the reason the browser scan must ignore
-  characters that are invisible by classification (`\p{Cf}`) rather than only whitespace, since
-  otherwise it reports a missing glyph for a character that is not meant to draw anything.
+- **A glyph-coverage scan of all 19 locales found no tofu**, and it turned up two curiosities
+  worth recording for where they live rather than for what they are. Both are in SPD's *own*
+  tables, never in a port-only string, and both are harmless - but each is the reason the scan
+  must ignore characters that draw nothing *by design* rather than only whitespace, since
+  otherwise it reports a missing glyph for a character that is not meant to have one:
+  Ukrainian `actors.buffs.frost.desc` contains a U+0301 COMBINING ACUTE (a stress mark, which
+  only renders attached to the letter before it) and Portuguese
+  `scenes.gamescene.blacksmith_quest_window` contains a U+200B ZERO WIDTH SPACE, twice. The scan
+  now skips `\p{Cf}` (format) and `\p{Mn}`/`\p{Me}` (combining) characters. That the scan can
+  fail at all was verified rather than assumed: with nine rare codepoints injected in place of
+  English's single one, it correctly flagged the three that Chromium has no glyph for (the rest
+  - Kharoshthi, Adlam, Old Turkic - really are covered by fonts Windows ships).
 
 Every catalogue here is still `MT`/`machine`: a machine draft, complete but not proofread by a
 fluent speaker, and marked that way in source and in `PORT_TRANSLATION_ORIGIN` rather than

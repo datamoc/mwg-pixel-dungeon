@@ -1172,9 +1172,17 @@ Do not add new authored content as object literals or scattered constants in the
       `LOCALES`), while `v3.3.8` adds `be`/`eo`/`sv`/`zh-hant` - so the picker is missing four
       locales SPD later shipped. Closing that needs those locales added to the extractor and a
       regenerated `spdMessages.ts`, not attempted this pass.
+      **Status, 2026-09-12: the translation half of this item is complete** - all 19 offered
+      locales carry a full 415-key `port.*` catalogue (see the per-locale entries below), so
+      nothing reads English for port-only prose any more. The checkbox stays unticked for one
+      reason only: the locale *set* above is still `v2.1.4`'s, and adding
+      `be`/`eo`/`sv`/`zh-hant` is entangled with a `v3.3.8` catalogue migration (eight
+      port-referenced keys no longer exist at that tag), which is a separate, now-measured piece
+      of work rather than another locale draft.
       The picker's offered set otherwise works as before: SPD's own text arrives translated through
-      the generated catalog, but the port's own ~305 `port.*` keys exist only in English and
-      French - every other locale reads English sentences (with SPD-translated names inside).
+      the generated catalog, but the port's own `port.*` keys started out in English and French
+      only - every other locale read English sentences (with SPD-translated names inside) until
+      the per-locale passes recorded below filled them in.
       Scope: 305 keys x 17 locales (~5,200 strings), mirroring the `Languages` enum exactly
       (Java's `.properties` dirs also carry be/eo/sv/zh-hant files, but SPD doesn't ship
       anything below 80% and neither should this). Notes for whoever does it: nothing structural
@@ -1389,12 +1397,20 @@ Do not add new authored content as object literals or scattered constants in the
       what a missing-glyph box would look like - and (c) both the title screen and the in-game
       HUD/log differ pixel-wise from English, so the translation genuinely reached the screen.
       Japanese in particular had never had the font-coverage check this section asks for; it now
-      has, covering 1,730 codepoints with no tofu (Chinese 2,225, Korean 976, Greek 73, Czech 30,
-      Vietnamese 123). Screenshots are in `_browsercheck/mwgpd_shots_2026-09-12-locales/`.
+      has. **Result: `LOCALES OK - 19 locale(s) verified live`** - every locale reached a playable
+      depth-1 floor with no console or page errors, no missing glyph (1,730 codepoints probed for
+      `ja`, 2,225 for `zh`, 976 for `ko`, 123 for `vi`, 73 for `el`, 72 for `uk`, 69 for `ru`,
+      single or double digits for the Latin locales), and both screens differing from English.
+      Screenshots are in `_browsercheck/mwgpd_shots_2026-09-12-locales-all/`.
       Stated plainly: this session could not *look* at those images, so the visual judgement
       rests on the pixel comparisons rather than an eye - stronger than "no console errors", but
       not a substitute for someone reading the text for tone and accuracy, which is what the `MT`
       provenance marker continues to flag.
+      Running the pass also caught two bugs in the probe itself (SPD's own U+200B in `pt` and
+      U+0301 in `uk` draw nothing by design, so probing them in isolation reported a missing glyph
+      that does not exist), and the probe was then negative-tested with nine rare codepoints -
+      three of which it correctly flagged - so that "no tofu" is a real result and not a vacuous
+      one. Both details are in `PORT_COVERAGE.md`.
       Still open in this bullet, and deliberately not attempted here: the locale *set* is SPD
       `v2.1.4`'s 18 non-English locales, so `be`/`eo`/`sv`/`zh-hant` are offered neither by
       `LANGUAGES` nor by the extractor. Closing that means regenerating `spdMessages.ts` from
@@ -1438,6 +1454,17 @@ browser pass before they can be treated as done rather than merely built:
       to English as expected - a translation-completeness gap tracked
       separately under section 8's "Translate the port's own strings"
       bullet, not a font-coverage issue, which is what this item asked about.
+      **Re-confirmed across all 19 locales, 2026-09-12, and the gap it pointed at is now
+      closed**: section 8's port-string translation is complete, and the same pass that added
+      those seven catalogues re-ran the font-coverage check for every locale (not just zh/ko),
+      found no tofu, and verified the two screens differ pixel-wise from English in each. The
+      harness is committed as `tools/scratch/browser-locales.mjs` with its codepoint data in
+      `locale-probe.json`, so the next locale change has a one-command check rather than a
+      from-scratch script; screenshots from this pass are in
+      `_browsercheck/mwgpd_shots_2026-09-12-locales-all/`. Two probe bugs were found and fixed by
+      running it - see `PORT_COVERAGE.md`'s locales section for the U+200B/U+0301 details - and
+      the probe was itself negative-tested with uncovered codepoints so that "no tofu" is not a
+      vacuous claim.
 - [x] Re-confirm the UI/presentation section's widgets in a live session
       (status pane, bars, floating text, compass, coloured log, boss health
       bar, badge banner, inventory panel) now that a browser is available

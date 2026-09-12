@@ -84,11 +84,14 @@ for (const locale of locales) {
 		const tofu = [];
 		const blank = [];
 		for (const ch of chars) {
-			// Never judge a character that is invisible by classification: a space, a zero-width
-			// space, a BOM, a bidi mark. SPD's own Portuguese table contains a U+200B inside
-			// `scenes.gamescene.blacksmith_quest_window`, so without this the probe reports a
-			// missing glyph for a character that is not supposed to draw anything.
-			if (/[\s\p{Cf}\p{Zl}\p{Zp}]/u.test(ch)) continue;
+			// Never judge a character that draws nothing *by design*: a space, a zero-width space,
+			// a BOM, a bidi mark, or a combining mark that only shows up attached to a base
+			// letter. Two facts in SPD's own tables make this concrete - Portuguese
+			// `scenes.gamescene.blacksmith_quest_window` holds a U+200B ZERO WIDTH SPACE, and
+			// Ukrainian `actors.buffs.frost.desc` holds a U+0301 COMBINING ACUTE (a stress mark).
+			// Probing either in isolation reports "no glyph" for a character that is not supposed
+			// to have one, which is a bug in the probe, not in the game.
+			if (/[\s\p{Cf}\p{Mn}\p{Me}\p{Zl}\p{Zp}]/u.test(ch)) continue;
 			const pixels = draw(ch);
 			if (pixels.every((v) => v === 0)) {
 				// Chromium with no glyph for a codepoint draws nothing here rather than a hollow
