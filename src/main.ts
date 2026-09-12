@@ -61,6 +61,8 @@ import {
 	RING_DEFS,
 	ringDef,
 	ringTenacityMultiplier,
+	ringBonusLevel,
+	ringMightBonus,
 	ringHasteMultiplier,
 	ringEnergyMultiplier,
 	ringArcanaMultiplier,
@@ -1586,7 +1588,7 @@ export class SewersScene extends Scene2D {
 		this.hero.accuracy = this.heroStats.get('accuracy');
 		this.hero.evasion = this.heroStats.get('evasion') + evasiveArmorBonus(this.subclass(), this.talentRank('evasive_armor'), this.armorLevel) + unencumberedSpiritEvasion(this.subclass(), this.talentRank('unencumbered_spirit'));
 		if (this.healingEvasionTurns > 0) this.hero.evasion = this.talentRank('restored_agility') >= 2 ? 1000000 : this.hero.evasion * 4;
-		this.hero.str = this.heroStr + (this.equippedRing && ringDef(this.equippedRing.id)?.stat === 'strength' ? this.equippedRing.level : 0);
+		this.hero.str = this.heroStr + ringMightBonus(this.equippedRing, this.hero.magicImmune);
 		if (this.hero.buffs['adrenalineSurge']) this.hero.str += 1;
 		//Strongman is the one always-on T1/T2 talent that changes Hero.STR directly.
 		this.hero.str += Math.floor(this.heroStr * (0.03 + 0.05 * this.talentRank('strongman')));
@@ -1628,7 +1630,7 @@ export class SewersScene extends Scene2D {
 		this.heroStats.removeModifiersFrom('ring');
 		if (this.equippedRing) {
 			const def = ringDef(this.equippedRing.id);
-			const level = this.equippedRing.level;
+			const level = ringBonusLevel(this.equippedRing, this.hero.magicImmune);
 			//Stats applied outside the StatBlock loop (direct damage/turn-cost reads) are
 			//marker-only here: Might (str), Tenacity (incoming-damage curve), Haste/Energy
 			//(turn-cost/wand-rate divisors), Wealth/Arcana/Force/Sharpshooting (kill-loot,
@@ -4273,7 +4275,7 @@ export class SewersScene extends Scene2D {
 				if (charge > 0) {
 					const missing = this.wandCharges.max - this.wandCharges.current;
 					const turnsToCharge = 10 + 40 * Math.pow(0.875, Math.max(0, missing));
-					const perTurnRate = ringEnergyMultiplier(this.equippedRing) / turnsToCharge;
+					const perTurnRate = ringEnergyMultiplier(this.equippedRing, this.hero.magicImmune) / turnsToCharge;
 					this.wandCharges.advance(perTurnRate * (charge + 1));
 				}
 				//The old secret-revealing radius here invoked `arcaneVisionRadius()` - removed
@@ -4480,7 +4482,7 @@ export class SewersScene extends Scene2D {
 			};
 			const baseMaxHp = this.hero.maxHp - this.ringHtBonus;
 			const newRingHtBonus = ringDef(result.id)?.stat === 'strength'
-				? Math.round(baseMaxHp * (Math.pow(1.035, result.level ?? 0) - 1))
+				? Math.round(baseMaxHp * (Math.pow(1.035, ringMightBonus({ id: result.id, level: result.level ?? 0, cursed: result.cursed }, this.hero.magicImmune)) - 1))
 				: 0;
 			if (newRingHtBonus !== this.ringHtBonus) {
 				this.hero.maxHp = baseMaxHp + newRingHtBonus;
@@ -4631,7 +4633,7 @@ export class SewersScene extends Scene2D {
 		//Java also plays its MELD sound when the cell is in FOV; there is no per-effect
 		//audio seam here, so the log line below stands in for that feedback.
 		if (this.armorGlyph === 'camouflage') {
-			const duration = Math.round((3 + this.armorLevel / 2) * ringArcanaMultiplier(this.equippedRing));
+			const duration = Math.round((3 + this.armorLevel / 2) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune));
 			this.hero.buffs['invisibility'] = Math.max(this.hero.buffs['invisibility'] ?? 0, duration);
 			this.say(t('port.log.camouflage'), 'positive');
 		}
@@ -5408,7 +5410,7 @@ export class SewersScene extends Scene2D {
 			//RingOfElements.resist(): ToxicGas is in `RESISTS` - scale the hero's share.
 			//Monsters never benefit (only the hero equips rings in this port).
 			const dmg = target.isHero
-				? Math.floor((1 + Math.floor(this.depth / 5)) * ringElementsMultiplier(this.equippedRing))
+				? Math.floor((1 + Math.floor(this.depth / 5)) * ringElementsMultiplier(this.equippedRing, this.hero.magicImmune))
 				: 1 + Math.floor(this.depth / 5);
 			if (target.isHero) {
 				const blocked = this.absorbHeroDamage(dmg);
@@ -5632,7 +5634,7 @@ export class SewersScene extends Scene2D {
 			//RingOfElements.resist(): Burning is in `RESISTS` - the trap's fire damage is
 			//scaled before Barrier absorption (matching `Hero.damage()`'s ordering where
 			//the multiplier applies to the raw hit).
-			let damage = Math.floor(Random.int(2, 5) * ringElementsMultiplier(this.equippedRing));
+			let damage = Math.floor(Random.int(2, 5) * ringElementsMultiplier(this.equippedRing, this.hero.magicImmune));
 			damage = this.absorbHeroDamage(damage);
 			this.hero.hp -= damage;
 			this.showDamage(this.hero, damage);
@@ -5701,7 +5703,7 @@ export class SewersScene extends Scene2D {
 		const durable = this.talentRank('durable_projectiles');
 		const uses = Math.round(baseUses * Math.pow(1.5, this.missileLevel)
 			* (durable > 0 ? 1.25 + 0.25 * durable : 1)
-			* ringSharpshootingDurabilityMultiplier(this.equippedRing));
+			* ringSharpshootingDurabilityMultiplier(this.equippedRing, this.hero.magicImmune));
 		if (uses >= 100) return 0;
 		return 100 / Math.max(1, uses) + 0.001;
 	}
@@ -5776,7 +5778,7 @@ export class SewersScene extends Scene2D {
 			//are tier-1 (Stone/Knife/Spike are all MIS_T1), so the old per-class ranges are
 			//exactly the tier formula at level 0 plus the new missileLevel; both bounds still
 			//take the flat Sharpshooting bonus, as before.
-			const sharpshooting = ringSharpshootingBonus(this.equippedRing);
+			const sharpshooting = ringSharpshootingBonus(this.equippedRing, this.hero.magicImmune);
 			const thrownDamage: [number, number] = this.heroClass === 'rogue'
 				? [2 + this.missileLevel + sharpshooting, 6 + 2 * this.missileLevel + sharpshooting]
 				: [2 + this.missileLevel + sharpshooting, 5 + this.missileLevel + sharpshooting];
@@ -5981,7 +5983,7 @@ export class SewersScene extends Scene2D {
 				//SpiritBow.min()/max(): RingOfSharpshooting's bonus is asymmetric here - +bonus on
 				//the low end, +2*bonus on the high end (unlike MissileWeapon's identical +bonus
 				//on both bounds above).
-				const sharpshooting = ringSharpshootingBonus(this.equippedRing);
+				const sharpshooting = ringSharpshootingBonus(this.equippedRing, this.hero.magicImmune);
 				const base = Random.normalRange(special.damage[0] + sharpshooting, special.damage[1] + 2 * sharpshooting);
 				const dr = Random.normalRange(target.armor[0], target.armor[1]);
 				const closeBonus = this.talentRank('point_blank') > 0 && distance <= 2 ? 1 + 0.2 * this.talentRank('point_blank') : 1;
@@ -6418,7 +6420,7 @@ export class SewersScene extends Scene2D {
 				const missing = this.wandCharges.max - this.wandCharges.current;
 				const turnsToCharge = 10 + 40 * Math.pow(0.875, Math.max(0, missing));
 				//RingOfEnergy.wandChargeMultiplier(): 1.175^level, applied straight onto the base rate.
-				const baseRate = ringEnergyMultiplier(this.equippedRing) / turnsToCharge;
+				const baseRate = ringEnergyMultiplier(this.equippedRing, this.hero.magicImmune) / turnsToCharge;
 				//Charger.recharge(): Recharging's CHARGE_BUFF_BONUS is a flat `+0.25 * remainder()`
 				//added on top of the base rate, not a 1.25x multiplier on it - at typical missing-
 				//charge counts the base rate is a few percent per turn, so the flat bonus dwarfs it
@@ -6550,7 +6552,7 @@ export class SewersScene extends Scene2D {
 				//they deal through `Char.damage()` is scaled by `0.825^level` in real Java.
 				const wasDrowsy = this.hero.buffs['drowsy'] !== undefined;
 				const wasMagicalSleep = this.hero.buffs['magicalSleep'] !== undefined;
-				const dot = Math.floor(tickBuffs(this.hero) * ringElementsMultiplier(this.equippedRing));
+				const dot = Math.floor(tickBuffs(this.hero) * ringElementsMultiplier(this.equippedRing, this.hero.magicImmune));
 				if (wasDrowsy && this.hero.buffs['drowsy'] === undefined && this.hero.hp < this.hero.maxHp) {
 					//Drowsy.act() attaches MagicalSleep; a full-health reader takes Java's
 					//"too healthy" path and is not put to sleep.
@@ -6587,7 +6589,7 @@ export class SewersScene extends Scene2D {
 				if (this.hero.buffs['ooze'] !== undefined) {
 					const rawOoze = this.depth > 5 ? 1 + Math.floor(this.depth / 5)
 						: this.depth === 5 ? 1 : Random.chance(0.5) ? 1 : 0;
-					const oozeDot = Math.floor(rawOoze * ringElementsMultiplier(this.equippedRing));
+					const oozeDot = Math.floor(rawOoze * ringElementsMultiplier(this.equippedRing, this.hero.magicImmune));
 					if (oozeDot > 0) {
 						const blockedOoze = this.absorbHeroDamage(oozeDot);
 						this.hero.hp -= blockedOoze;
@@ -6652,7 +6654,7 @@ export class SewersScene extends Scene2D {
 		//for the first occupant and attack it when it lies within the real reach.
 		//Walls and doors stop the scan, preserving ordinary bump movement otherwise.
 		if (this.weaponAffix === 'projecting') {
-			const reach = 1 + Math.round(ringArcanaMultiplier(this.equippedRing));
+			const reach = 1 + Math.round(ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune));
 			for (let distance = 2; distance <= reach; distance++) {
 				const at = { x: this.hero.x + move.x * distance, y: this.hero.y + move.y * distance };
 				if (!this.level.inside(at.x, at.y)) break;
@@ -9797,7 +9799,7 @@ export class SewersScene extends Scene2D {
 		//expresses the same way every other hero-only bonus here does: `attacker === this.hero`
 		//is only true for the real bump-attack call site, never `useSpecial`'s throw/shoot/zap
 		//branches (those pass a shallow copy of the hero, not the hero itself).
-		if (attacker === this.hero) damage += ringForceBonus(this.equippedRing);
+		if (attacker === this.hero) damage += ringForceBonus(this.equippedRing, this.hero.magicImmune);
 		//`Unstable.proc()`/`Kinetic.proc()`: an Unstable weapon delegates every swing to one
 		//`Random.element` draw over `UNSTABLE_DELEGATES` (Java's `Random.oneOf(randomEnchants)`
 		//minus the documented exclusions). The pick is stashed so `heroOnHit`'s post-damage
@@ -9863,7 +9865,7 @@ export class SewersScene extends Scene2D {
 		//Sacrificial.proc(): Java rolls 1/10 x Arcana, then rolls a second time against
 		//(HP/HT)^2 * HT / 8 and applies Bleeding at max(1, bleedAmt). The first draft
 		//mistakenly used missing HP and a poison stand-in; both were wrong.
-		if (attacker === this.hero && this.weaponAffix === 'sacrificial' && Random.chance((1 / 10) * ringArcanaMultiplier(this.equippedRing))) {
+		if (attacker === this.hero && this.weaponAffix === 'sacrificial' && Random.chance((1 / 10) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
 			const bleedAmount = (attacker.hp / attacker.maxHp) ** 2 * attacker.maxHp / 8;
 			if (Random.chance(bleedAmount)) setBleeding(attacker, Math.max(1, bleedAmount));
 		}
@@ -9873,13 +9875,13 @@ export class SewersScene extends Scene2D {
 		//uses in place of Java's ScrollOfTeleportation.teleportChar. Java also resets a fleeing
 		//HUNTING mob back to WANDERING; this port has no such explicit state to reset, but the
 		//next monster-turn FOV recompute (`seesHero`) naturally loses track once far enough away.
-		if (attacker === this.hero && this.weaponAffix === 'displacing' && !defender.isNPC && Random.chance((1 / 12) * ringArcanaMultiplier(this.equippedRing))) {
+		if (attacker === this.hero && this.weaponAffix === 'displacing' && !defender.isNPC && Random.chance((1 / 12) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
 			const destination = this.randomFreeCell(defender);
 			if (destination) this.moveTo(defender, destination);
 		}
 		//Displacement.proc(): a 1-in-20 x arcana armor-curse proc teleports the defender
 		//and replaces the incoming hit with zero damage.
-		if (defender.isHero && this.armorGlyph === 'displacement' && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing))) {
+		if (defender.isHero && this.armorGlyph === 'displacement' && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
 			const destination = this.randomFreeCell(defender);
 			if (destination) {
 				this.moveTo(defender, destination);
@@ -9897,7 +9899,7 @@ export class SewersScene extends Scene2D {
 		//without pretending Charm is a global, target-free stun.
 		if (attacker === this.hero && this.weaponAffix === 'friendly') {
 			if (attacker.buffs['charm'] !== undefined && this.charmTargets.get(attacker.id) === defender.id) damage = 0;
-			if (Random.chance((1 / 10) * ringArcanaMultiplier(this.equippedRing))) {
+			if (Random.chance((1 / 10) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
 				addBuff(attacker, 'charm');
 				this.charmTargets.set(attacker.id, defender.id);
 				addBuff(defender, 'charm');
@@ -9937,7 +9939,7 @@ export class SewersScene extends Scene2D {
 		if (attacker === this.hero && (this.weaponAffix === 'corrupting' || this.unstableDelegated === 'corrupting') && damage >= defender.hp
 			&& !defender.isHero && !defender.isNPC && !defender.isAlly && Random.chance(
 			((Math.max(0, this.degradedLevel(this.weaponLevel)) + 5) / (Math.max(0, this.degradedLevel(this.weaponLevel)) + 25))
-				* ringArcanaMultiplier(this.equippedRing))) {
+				* ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
 			defender.hp = defender.maxHp;
 			for (const buff of NEGATIVE_BUFFS) delete defender.buffs[buff];
 			defender.isAlly = true;
@@ -10045,7 +10047,7 @@ export class SewersScene extends Scene2D {
 		//also handles Unstable's delegated Grim effect.
 		if (attacker === this.hero && (this.weaponAffix === 'grim' || this.unstableDelegated === 'grim') && defender.hp > 0) {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const maxChance = (0.5 + 0.05 * level) * ringArcanaMultiplier(this.equippedRing);
+			const maxChance = (0.5 + 0.05 * level) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 			const missingFraction = (defender.maxHp - defender.hp) / defender.maxHp;
 			if (Random.chance(maxChance * missingFraction * missingFraction)) {
 				const extra = Math.round(defender.hp);
@@ -10128,7 +10130,7 @@ export class SewersScene extends Scene2D {
 		if (defender.isHero && this.armorGlyph === 'repulsion' && attacker.hp > 0
 			&& Roguelike.chebyshevDistance(attacker, defender) <= 1) {
 			const level = this.degradedLevel(this.armorLevel);
-			const procChance = ((level + 1) / (level + 5)) * ringArcanaMultiplier(this.equippedRing);
+			const procChance = ((level + 1) / (level + 5)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				const power = Math.round(2 * Math.max(1, procChance));
 				const dx = Math.sign(attacker.x - defender.x);
@@ -10235,7 +10237,7 @@ export class SewersScene extends Scene2D {
 		//basis). Fires pre-revival, like Java's HP<0 check ahead of `isAlive()`.
 		if (this.kineticTrackerHit && defender.hp <= 0 && !defender.isHero && !defender.isNPC) {
 			const overkill = Math.max(0, -defender.hp - this.kineticConservedAdded);
-			const multi = ringArcanaMultiplier(this.equippedRing)
+			const multi = ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune)
 				+ (this.hero.buffs['berserk'] ? Math.min(1, 1 - this.hero.hp / this.hero.maxHp) * 0.15 * this.talentRank('enraged_catalyst') : 0);
 			const stored = Math.round(overkill * multi);
 			if (stored > 0) this.kineticStored = stored;
@@ -10256,7 +10258,7 @@ export class SewersScene extends Scene2D {
 		//stood here ignited unconditionally with no roll and dealt no burn damage at all.
 		if (affix === 'blazing') {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const procChance = ((level + 1) / (level + 3)) * ringArcanaMultiplier(this.equippedRing);
+			const procChance = ((level + 1) / (level + 3)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				let powerMulti = Math.max(1, procChance);
 				if (defender.buffs['burning'] === undefined) {
@@ -10278,7 +10280,7 @@ export class SewersScene extends Scene2D {
 		//entirely (Java's chill slows the target and escalates into frost) and with no roll.
 		if (affix === 'chilling') {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const procChance = ((level + 1) / (level + 4)) * ringArcanaMultiplier(this.equippedRing);
+			const procChance = ((level + 1) / (level + 4)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				const powerMulti = Math.max(1, procChance);
 				const existing = defender.buffs['chill'] ?? 0;
@@ -10293,7 +10295,7 @@ export class SewersScene extends Scene2D {
 		//chance))` each. What stood here dealt 2 unconditional points to the defender itself, the
 		//one character Java's arc never touches, and hit nobody else.
 		if (affix === 'shocking') {
-			const procChance = (1 / 3) * ringArcanaMultiplier(this.equippedRing);
+			const procChance = (1 / 3) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				this.shockingArc(attacker, defender, damage, Math.max(1, procChance));
 			}
@@ -10305,7 +10307,7 @@ export class SewersScene extends Scene2D {
 		//roll, no damage scaling and no target check at all.
 		if (affix === 'vampiric') {
 			const missing = attacker.maxHp > 0 ? (attacker.maxHp - attacker.hp) / attacker.maxHp : 0;
-			const healChance = (0.05 + 0.25 * missing) * ringArcanaMultiplier(this.equippedRing);
+			const healChance = (0.05 + 0.25 * missing) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 			const neutralTarget = defender.isNPC || defender.isAlly;
 			if (Random.chance(healChance) && !neutralTarget && attacker.hp < attacker.maxHp) {
 				const healAmount = Math.min(
@@ -10326,7 +10328,7 @@ export class SewersScene extends Scene2D {
 		//swings and instead fired whenever the hero was hit, which is not what `Weapon.Enchantment
 		//.proc(weapon, attacker, defender, damage)` does - it runs on the wielder's attack.
 		if (affix === 'explosive') {
-			this.weaponCurseDurability -= Math.round(Random.range(0, 10) * ringArcanaMultiplier(this.equippedRing));
+			this.weaponCurseDurability -= Math.round(Random.range(0, 10) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune));
 			if (this.weaponCurseDurability <= 0) {
 				this.weaponCurseDurability += 100;
 				this.curseExplosiveBlast(attacker, defender);
@@ -10341,7 +10343,7 @@ export class SewersScene extends Scene2D {
 		//Two things the old branch got wrong: it dazed the hero unconditionally (the hero always sees
 		//*itself*, so its visibility test was vacuously true), and it dispelled the hero's
 		//invisibility - `Invisibility.dispel()` is `Annoying`'s line, not this one's.
-		if (affix === 'dazzling' && Random.chance((1 / 10) * ringArcanaMultiplier(this.equippedRing))) {
+		if (affix === 'dazzling' && Random.chance((1 / 10) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
 			if (this.fov.isVisible(defender.x, defender.y)) this.hero.buffs['daze'] = Math.max(this.hero.buffs['daze'] ?? 0, 10);
 			for (const creature of this.creatures) {
 				if (creature.isHero || creature.hp <= 0 || !this.fov.isVisible(creature.x, creature.y)) continue;
@@ -10352,7 +10354,7 @@ export class SewersScene extends Scene2D {
 		//toward the attacker and then dispelling invisibility. `seesHero` is this port's
 		//target-acquisition state, the standing stand-in for `beckon`; the crate/scream/sound
 		//presentation and the 13 flavour lines remain UI gaps.
-		if (affix === 'annoying' && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing))) {
+		if (affix === 'annoying' && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
 			for (const creature of this.creatures) {
 				if (!creature.isHero && !creature.isNPC && creature.hp > 0) creature.seesHero = true;
 			}
@@ -10364,7 +10366,7 @@ export class SewersScene extends Scene2D {
 		//`syncHeroFromStats`), not the affix on its own.
 		if (affix === 'wayward') {
 			if (attacker.buffs['wayward'] !== undefined) delete attacker.buffs['wayward'];
-			else if (Random.chance((1 / 4) * ringArcanaMultiplier(this.equippedRing))) addBuff(attacker, 'wayward');
+			else if (Random.chance((1 / 4) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) addBuff(attacker, 'wayward');
 		}
 		//Elastic.proc(): on a successful proc, knock the defender along the part of
 		//the attack trajectory beyond its cell by `round(2 * max(1, chance))` cells.
@@ -10372,7 +10374,7 @@ export class SewersScene extends Scene2D {
 		//straight grid shove reproduces the meaningful result without a new actor type.
 		if (affix === 'elastic' && defender.hp > 0 && attacker === this.hero) {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const procChance = ((level + 1) / (level + 5)) * ringArcanaMultiplier(this.equippedRing);
+			const procChance = ((level + 1) / (level + 5)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				const dx = Math.sign(defender.x - attacker.x);
 				const dy = Math.sign(defender.y - attacker.y);
@@ -10394,7 +10396,7 @@ export class SewersScene extends Scene2D {
 		//a neighbouring cell when the corpse cell already has ordinary loot.
 		if (affix === 'lucky' && defender.hp <= 0) {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const chance = ((level + 4) / (level + 40)) * ringArcanaMultiplier(this.equippedRing);
+			const chance = ((level + 4) / (level + 40)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 			if (Random.chance(chance)) {
 				//A five-entry weighted stand-in keeps the one rarity draw (80/20) explicit.
 				const kind = Random.element(['potion', 'scroll', 'stone', 'potion', 'armor'] as const)!;
@@ -10423,7 +10425,7 @@ export class SewersScene extends Scene2D {
 			//found using raw `this.weaponLevel` instead in the 2026-09-09 item-system audit
 			//(so a Degrade-hit weapon procced/shielded as if undegraded).
 			const level = this.degradedLevel(this.weaponLevel);
-			const procChance = ((level + 4) / (level + 40)) * ringArcanaMultiplier(this.equippedRing);
+			const procChance = ((level + 4) / (level + 40)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				const powerMulti = Math.max(1, procChance);
 				this.grantBlockingShield(Math.round(powerMulti * (2 + level)));
@@ -10440,7 +10442,7 @@ export class SewersScene extends Scene2D {
 		if (affix === 'blooming') {
 			//Blooming.proc() also reads `weapon.buffedLvl()`, same Degrade fix as Blocking above.
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const procChance = ((level + 1) / (level + 3)) * ringArcanaMultiplier(this.equippedRing);
+			const procChance = ((level + 1) / (level + 3)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				let plants = (1 + 0.1 * level) * Math.max(1, procChance);
 				plants = Random.float() < (plants % 1) ? Math.ceil(plants) : Math.floor(plants);
@@ -10566,7 +10568,7 @@ export class SewersScene extends Scene2D {
 	private heroStealth(): number {
 		if (this.armorGlyph !== 'obfuscation') return 0;
 		const level = Math.max(0, this.degradedLevel(this.armorLevel));
-		return (1 + level / 3) * ringArcanaMultiplier(this.equippedRing);
+		return (1 + level / 3) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 	}
 
 	/** `Earthroot.Armor.blocking()`: `(Dungeon.scalingDepth() + 5)/2`, integer division. This
@@ -10596,7 +10598,7 @@ export class SewersScene extends Scene2D {
 		}
 		//Hero.damage(): `dmg = ceil(dmg * RingOfTenacity.damageMultiplier())` is applied before
 		//Char.damage()'s own Barrier absorption, so Tenacity scales the raw hit here too.
-		const tenacityMultiplier = ringTenacityMultiplier(this.equippedRing, this.hero.hp, this.hero.maxHp);
+		const tenacityMultiplier = ringTenacityMultiplier(this.equippedRing, this.hero.hp, this.hero.maxHp, this.hero.magicImmune);
 		let scaled = tenacityMultiplier < 1 ? Math.ceil(amount * tenacityMultiplier) : amount;
 		//AntiMagic.drRoll()/Char.damage() (items/armor/glyphs/AntiMagic.java and
 		//actors/Char.java, tag 4.0.0-beta): listed magical sources lose a
@@ -10605,7 +10607,7 @@ export class SewersScene extends Scene2D {
 		//callers; physical melee and unclassified environmental damage stay untouched.
 		if (magical && this.armorGlyph === 'antimagic') {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const multiplier = ringArcanaMultiplier(this.equippedRing);
+			const multiplier = ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 			const reduction = Random.normalRange(Math.round(level * multiplier), Math.round((3 + level * 1.5) * multiplier));
 			scaled = Math.max(0, scaled - reduction);
 		}
@@ -10618,7 +10620,7 @@ export class SewersScene extends Scene2D {
 		//boundary covers melee, missiles, wands, traps, and environmental damage.
 		if (!this.applyingDeferredDamage && this.armorGlyph === 'viscosity' && viscosityDamage > 0) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const percent = ((level + 1) / (level + 6)) * ringArcanaMultiplier(this.equippedRing);
+			const percent = ((level + 1) / (level + 6)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 			const deferred = percent > 1 ? Math.round(viscosityDamage / percent) : Math.ceil(viscosityDamage * percent);
 			if (deferred > 0) {
 				this.hero.deferredDamage = (this.hero.deferredDamage ?? 0) + deferred;
@@ -10715,23 +10717,23 @@ export class SewersScene extends Scene2D {
 		//The existing charm target map supplies Java's object payload; direct map
 		//assignment preserves the level-scaled duration that addBuff alone cannot set.
 		if (defender.isHero && this.armorGlyph === 'affection' && attacker.hp > 0
-			&& Random.chance(((Math.max(0, this.degradedLevel(this.armorLevel)) + 3) / (Math.max(0, this.degradedLevel(this.armorLevel)) + 20)) * ringArcanaMultiplier(this.equippedRing))) {
+			&& Random.chance(((Math.max(0, this.degradedLevel(this.armorLevel)) + 3) / (Math.max(0, this.degradedLevel(this.armorLevel)) + 20)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const chance = ((level + 3) / (level + 20)) * ringArcanaMultiplier(this.equippedRing);
+			const chance = ((level + 3) / (level + 20)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 			addBuff(attacker, 'charm');
 			attacker.buffs.charm = Math.max(attacker.buffs.charm ?? 0, Math.round(10 * Math.max(1, chance)));
 			this.charmTargets.set(attacker.id, defender.id);
 		}
 		//Metabolism.proc(): 1-in-6 x arcana, consume 10 hunger and heal one HP,
 		//provided the hero is not starving and has room to heal.
-		if (defender.isHero && this.armorGlyph === 'metabolism' && this.hunger < 450 && this.hero.hp < this.hero.maxHp && Random.chance((1 / 6) * ringArcanaMultiplier(this.equippedRing))) {
+		if (defender.isHero && this.armorGlyph === 'metabolism' && this.hunger < 450 && this.hero.hp < this.hero.maxHp && Random.chance((1 / 6) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
 			this.hunger = Math.max(0, this.hunger - 10);
 			this.hero.hp++;
 			this.showHeal(this.hero, 1);
 		}
 		//AntiEntropy.proc(): a 1-in-8 x arcana proc ignites the wearer and freezes the
 		//eight neighboring cells. Daze is the port's timed freeze equivalent.
-		if (defender.isHero && this.armorGlyph === 'antientropy' && Random.chance((1 / 8) * ringArcanaMultiplier(this.equippedRing))) {
+		if (defender.isHero && this.armorGlyph === 'antientropy' && Random.chance((1 / 8) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
 			addBuff(this.hero, 'burning');
 			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 				const nearby = this.creatureAt(this.hero.x + dx, this.hero.y + dy);
@@ -10741,7 +10743,7 @@ export class SewersScene extends Scene2D {
 		//Corrosion.proc(): a 1-in-10 x arcana proc spreads corrosive ooze across the
 		//eight neighboring cells - a real `ooze` buff now (it used to reuse `poison`).
 		//Duration refreshes rather than stacking via `extend()`; intensity is flat.
-		if (defender.isHero && this.armorGlyph === 'corrosion' && Random.chance((1 / 10) * ringArcanaMultiplier(this.equippedRing))) {
+		if (defender.isHero && this.armorGlyph === 'corrosion' && Random.chance((1 / 10) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
 			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 				const nearby = this.creatureAt(this.hero.x + dx, this.hero.y + dy);
 				if (nearby) addBuff(nearby, 'ooze');
@@ -10760,7 +10762,7 @@ export class SewersScene extends Scene2D {
 		//un-duplicated here), and mirror-image duplication, which has no separate actor type -
 		//which is why Java's hero half is skipped.
 		if (defender.isHero && this.armorGlyph === 'multiplicity' && !attacker.isHero && !attacker.isNPC
-			&& !attacker.boss && !attacker.miniboss && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing))) {
+			&& !attacker.boss && !attacker.miniboss && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
 			const adjacent = Roguelike.neighbourOffsets(8)
 				.map(([dx, dy]) => ({ x: this.hero.x + dx, y: this.hero.y + dy }))
 				.filter((at) => this.level.passable(at.x, at.y) && !this.isChasmCell(at.x, at.y) && !this.creatureAt(at.x, at.y));
@@ -10774,7 +10776,7 @@ export class SewersScene extends Scene2D {
 		//Overgrowth.proc(): a 1-in-20 x arcana proc couches and immediately activates a
 		//random supported seed at the defender's cell. The generator's full seed
 		//weight table is not available, so selection is uniform across supported seeds.
-		if (defender.isHero && this.armorGlyph === 'overgrowth' && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing))) {
+		if (defender.isHero && this.armorGlyph === 'overgrowth' && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
 			const seed = Random.element(['blindweed', 'earthroot', 'fadeleaf', 'firebloom', 'icecap', 'mageroyal',
 				'rotberry', 'sorrowmoss', 'starflower', 'stormvine', 'sungrass', 'swiftthistle'] as const);
 			if (seed) {
@@ -10787,7 +10789,7 @@ export class SewersScene extends Scene2D {
 		//Stench.proc(): 1/8 x arcana chance when hit to seed 250-volume ToxicGas at the
 		//wearer's own feet (`Blob.seed(defender.pos, 250, ToxicGas.class)`) - the curse gasses
 		//the wearer too, unlike the 1000-volume trap/potion seeds elsewhere in this file.
-		if (defender.isHero && this.armorGlyph === 'stench' && Random.chance((1 / 8) * ringArcanaMultiplier(this.equippedRing))) {
+		if (defender.isHero && this.armorGlyph === 'stench' && Random.chance((1 / 8) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
 			this.toxicGas.seed(this.hero.x, this.hero.y, 250);
 			this.say(t('port.log.stenchcurse'), 'negative');
 		}
@@ -10879,7 +10881,7 @@ export class SewersScene extends Scene2D {
 		//scaled with nothing; Java's glyph is a damage-over-time with a real chance.
 		if (defender.isHero && this.armorGlyph === 'thorns' && !attacker.isHero && attacker.hp > 0) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const procChance = ((level + 2) / (level + 12)) * ringArcanaMultiplier(this.equippedRing);
+			const procChance = ((level + 2) / (level + 12)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				setBleeding(attacker, Math.round((4 + level) * Math.max(1, procChance)));
 				this.say(t('port.log.thorns'), 'positive');
@@ -10892,7 +10894,7 @@ export class SewersScene extends Scene2D {
 		//protects its wearer rather than disabling the enemy, and it protects by blocking damage.
 		if (defender.isHero && this.armorGlyph === 'entanglement' && !attacker.isHero) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const procChance = 0.25 * ringArcanaMultiplier(this.equippedRing);
+			const procChance = 0.25 * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				const pool = Math.round((5 + 2 * level) * Math.max(1, procChance));
 				this.earthrootArmor = {
@@ -10908,7 +10910,7 @@ export class SewersScene extends Scene2D {
 		//progress and retains it through save/load, so it is the correct generic seam here.
 		if (defender.isHero && this.armorGlyph === 'potential') {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const procChance = ((level + 1) / (level + 6)) * ringArcanaMultiplier(this.equippedRing);
+			const procChance = ((level + 1) / (level + 6)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 			if (Random.float() < procChance) {
 				this.wandCharges.advance(Math.max(1, procChance));
 				this.say(t('port.log.potential'), 'positive');
@@ -11222,7 +11224,7 @@ export class SewersScene extends Scene2D {
 			//`PotionOfHealing`; otherwise a fresh non-healing potion class is redrawn until it
 			//isn't Healing. Reproduced here as a real `potionHealing` drop on the rare branch,
 			//else a uniform pick among this port's 7 already-modeled non-healing potion ids.
-			if (creature.kind === 'warlock' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * ringWealthMultiplier(this.equippedRing) })) {
+			if (creature.kind === 'warlock' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * ringWealthMultiplier(this.equippedRing, this.hero.magicImmune) })) {
 				const warlockHp = this.limitedDrops.warlock ?? 0;
 				if (Random.int(3) === 0 && Random.int(8) > warlockHp) {
 					this.limitedDrops.warlock = warlockHp + 1;
@@ -11237,7 +11239,7 @@ export class SewersScene extends Scene2D {
 			//Healing nor Strength (a plain redraw-until-excluded loop, no LimitedDrops counter
 			//involved) - the same generic-'potion'-always-heals mismatch as Warlock above, fixed
 			//the same way: a uniform pick among this port's 6 remaining modeled potion ids.
-			if (creature.kind === 'scorpio' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * ringWealthMultiplier(this.equippedRing) })) {
+			if (creature.kind === 'scorpio' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * ringWealthMultiplier(this.equippedRing, this.hero.magicImmune) })) {
 				const eligible = ['potionFlame', 'potionMindVision', 'potionInvis', 'potionPurity', 'potionExperience', 'potionLevitation'] as const;
 				this.spawnGroundItem('potion', creature.x, creature.y, { id: Random.element(eligible)!, quantity: 1, identified: false });
 				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.potion) }));
@@ -11250,7 +11252,7 @@ export class SewersScene extends Scene2D {
 			//other modeled scroll ids (all 10 non-Identify/Upgrade members of Java's real
 			//12-class `SCROLL` pool, now that `scrollTransmutation`'s own appearance-table gap -
 			//found and fixed in the same pass - no longer makes it a crash risk to hand out).
-			if (creature.kind === 'succubus' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.33 * ringWealthMultiplier(this.equippedRing) })) {
+			if (creature.kind === 'succubus' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.33 * ringWealthMultiplier(this.equippedRing, this.hero.magicImmune) })) {
 				const eligible = ['scrollCleanse', 'scrollMirror', 'scrollRecharging', 'scrollTeleportation', 'scrollLullaby', 'scrollMapping', 'scrollRage', 'scrollRetribution', 'scrollTerror', 'scrollTransmutation'] as const;
 				this.spawnGroundItem('scroll', creature.x, creature.y, { id: Random.element(eligible)!, quantity: 1, identified: false });
 				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.scroll) }));
@@ -11261,7 +11263,7 @@ export class SewersScene extends Scene2D {
 				//`(7-n)/7`, `(6-n)/6`, `(1/3)^n` respectively, real Java's own per-kind formulas.
 				const decay = LIMITED_DROP_DECAY[creature.kind as MonsterId];
 				const chance = (decay ? entry.chance * decay(this.limitedDrops[creature.kind as MonsterId] ?? 0) : entry.chance)
-					* (ringWealthMultiplier(this.equippedRing) + this.bountyHunterLootBonus());
+					* (ringWealthMultiplier(this.equippedRing, this.hero.magicImmune) + this.bountyHunterLootBonus());
 				const drop = Actors.rollLoot({ entries: [{ id: entry.kind, weight: 1 }], chance });
 				if (drop) {
 					if (decay) this.limitedDrops[creature.kind as MonsterId] = (this.limitedDrops[creature.kind as MonsterId] ?? 0) + 1;
@@ -12403,7 +12405,7 @@ export class SewersScene extends Scene2D {
 			const hasNearbyEnemy = this.hasSwiftnessEnemyNearby();
 			if (!hasNearbyEnemy) {
 				const level = Math.max(0, this.degradedLevel(this.armorLevel));
-				mod /= (1.2 + 0.04 * level) * ringArcanaMultiplier(this.equippedRing);
+				mod /= (1.2 + 0.04 * level) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 			}
 		}
 		// Armor.speedFactor()/Flow.java (tag v3.3.8): Flow multiplies speed by
@@ -12412,7 +12414,7 @@ export class SewersScene extends Scene2D {
 		// dividing the shared action cost.
 		if (this.armorGlyph === 'flow' && this.level.get(this.hero.x, this.hero.y) === WATER) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			mod /= (2 + 0.5 * level) * ringArcanaMultiplier(this.equippedRing);
+			mod /= (2 + 0.5 * level) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
 		}
 		//Bulk has no proc: Java's Armor.speedFactor makes movement/actions three times
 		//faster while the hero occupies an open or closed doorway.
@@ -12423,7 +12425,7 @@ export class SewersScene extends Scene2D {
 		if (this.hero.buffs['chill']) mod /= Math.max(0.5, 1 - this.hero.buffs['chill']! * 0.1);
 		//RingOfHaste.speedMultiplier(): a higher Char.speed() means less time per action in
 		//real Java; this port's turn-cost multiplier expresses the same relationship inverted.
-		mod /= ringHasteMultiplier(this.equippedRing);
+		mod /= ringHasteMultiplier(this.equippedRing, this.hero.magicImmune);
 		return mod;
 	}
 
@@ -12467,7 +12469,7 @@ export class SewersScene extends Scene2D {
 	 */
 	private getAttackTurnCostMod(): number {
 		const augmentDelayFactor = this.weaponAugment === 'speed' ? 2 / 3 : this.weaponAugment === 'damage' ? 5 / 3 : 1;
-		return (this.getActionTurnCostMod() / ringFurorMultiplier(this.equippedRing)) * augmentDelayFactor;
+		return (this.getActionTurnCostMod() / ringFurorMultiplier(this.equippedRing, this.hero.magicImmune)) * augmentDelayFactor;
 	}
 
 	private chooseSubclass(option: string): void {
@@ -13642,7 +13644,7 @@ export class SewersScene extends Scene2D {
 		//old-max/hp-delta pattern levelUp's +5/level bump uses, so current HP shifts with it
 		//rather than being clamped.
 		const baseMaxHp = this.hero.maxHp - this.ringHtBonus;
-		const newRingHtBonus = ringDef(id)?.stat === 'strength' ? Math.round(baseMaxHp * (Math.pow(1.035, level) - 1)) : 0;
+		const newRingHtBonus = ringDef(id)?.stat === 'strength' ? Math.round(baseMaxHp * (Math.pow(1.035, ringMightBonus({ id, level, cursed: item.cursed }, this.hero.magicImmune)) - 1)) : 0;
 		if (newRingHtBonus !== this.ringHtBonus) {
 			this.hero.maxHp = baseMaxHp + newRingHtBonus;
 			this.hero.hp += newRingHtBonus - this.ringHtBonus;
