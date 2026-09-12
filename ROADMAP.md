@@ -885,7 +885,11 @@ Do not add new authored content as object literals or scattered constants in the
       takes no direct HP damage at all - every hit routes into the same
       `Viscosity.DeferedDamage` pool the armor glyph uses and pays out on his own turns, with
       the payout excluded from re-deferral. Throne geometry, the Imp shop, and the LloydsBeacon
-      upgrade remain).
+      upgrade remain - **and the Imp shop now has a measured answer for where it lives
+      (2026-09-12)**: not a standard room and not `LastShopLevel` (which is dead code at `v3.3.8` -
+      nothing instantiates it), but a `CityBossLevel` room that `unseal()` fills the moment the
+      King dies, gated on `Imp.Quest.isCompleted()`. That makes it blocked on the victory-transition
+      flow, not on the shop code - see the "victory transitions" item at the end of this section).
 - [ ] Port Halls/Yog's full fist, flame, shadow, and arena scripts (HP-gate floors,
       per-gate fist spawns, fist-gated invulnerability across ALL damage sources, fist
       proximity guards, and the phase-5 hope trigger are now live with the real
@@ -940,6 +944,29 @@ Do not add new authored content as object literals or scattered constants in the
       (the port previously stopped the music on entry, i.e. Java's second branch applied to the
       first, and had no finale asset at all).
 - [ ] Implement exact arena layouts, seals, pylons, boss phases, minions, traps, projectiles, movement scripts, and victory transitions.
+      **"Victory transitions" analysed 2026-09-12 rather than left as one word, because the answer
+      decides whether this is a small change or the largest item left.** Java never descends for the
+      player: the hero kills the boss, walks to the floor's own exit and steps on it. Every boss
+      calls `Dungeon.level.unseal()` from its `die()` - Goo, Tengu, DM-300, the Dwarf King and
+      Yog-Dzewa all do (`Dungeon.level.seal()` is the fight's opening act, called when the fight
+      starts) - and each level's `unseal()` is what reopens the way: `SewerBossLevel` turns the
+      entrance tile back from `WATER` to `ENTRANCE`, `CavesBossLevel` clears the `PylonEnergy` field
+      and opens its gate row, `CityBossLevel` relocks/unlocks its two arena doors and *spawns the
+      Imp shop* when `Imp.Quest.isCompleted()`, `HallsBossLevel` restores its entrance, and
+      `PrisonBossLevel` swaps the whole map to its end state. This port instead descends the
+      instant the boss dies, which is why the King's arena is unlootable, why the Imp shop has no
+      reachable home, and why `unseal()` had nothing to do. **Removing the auto-descent is not a
+      small change, and was measured rather than assumed**: a flood fill from each ported boss
+      floor's entrance to its exit tile (`tools/scratch/boss-reachability.mjs`) shows depth 10 has
+      **no `EXIT` tile at all** - Java's Tengu floor is a three-state map (`setMapStart`/
+      `setMapPause`/`setMapArena`) whose exit exists only in the fourth, `setMapEnd()`, which is
+      built after Tengu dies and teleports the hero back into his cell - and depth 20's exit is
+      **unreachable** until `CityBossLevel.unseal()` unlocks its two doors, so flipping the flow
+      today would soft-lock both. Depth 15 and 25 are already reachable and only need their seals
+      ported; depth 5's floor comes from the regular painter path and still needs its own check.
+      The prerequisite is therefore each floor's state machine (Tengu's four maps above all), which
+      is its own item - recorded here with the measurements so the next pass starts from them
+      instead of rediscovering them.
 
 ## 4. Complete NPCs and quests
 
