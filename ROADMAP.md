@@ -1298,6 +1298,21 @@ Do not add new authored content as object literals or scattered constants in the
       Java's run-wide class journal, and the remaining Java-specific journal unlock rules stay
       documented in `PORT_COVERAGE.md`.
 - [ ] Port pause/menu chrome, boss banners, toast animations, and Java-style transitions.
+      **Checked against tag v3.3.8, 2026-09-12 - the four parts are not one job:**
+      (a) *pause/menu chrome* is simply **absent**: there is no in-game menu at all, and save/load
+      sit on the `KeyO`/`KeyP` bindings instead of Java's `WndGame` (continue / save / journal /
+      badges / rankings / settings / exit to title). This is the real gap, it is bounded, and it is
+      the natural next user of `Window`/`WindowStack` in-game (the title screen and the journal
+      already use them). (b) *boss banners*: Java shows level-up, quest and boss banners through
+      `GameScene.showBanner`/`Banner`; this port has only the *badge* banner
+      (`ui/badgeBanner.ts`, wired at `awardBadge`) and logs the rest, so a general `Banner` is
+      missing with that as the precedent. (c) *toast animations*: **not applicable as designed** -
+      `ui/Toast.java` is used only by `GameScene.selectCell()` to show the active cell selector's
+      own `prompt()` (one bottom-centred toast whose close button cancels the selection), and this
+      port has no cell-selector prompt at all because its targeting is creature-based; the message
+      roles are `gameLog` and the action-bar `hintLabel`. (d) *Java-style transitions*: the
+      interlevel curtain exists and reproduces Java's timing but hand-computes its fades, because
+      `ScreenEffects` has no hold-plus-two-fades phase - recorded as proposal P8 above.
 - [ ] Implement large interface-size layouts.
 - [ ] Port the hero information window, busy indicator, talent animations, and quick slots.
 - [ ] Support armor-dependent hero portraits and complete sprite/effect animations.
