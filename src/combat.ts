@@ -195,7 +195,11 @@ export interface Creature extends Combatant {
 
 /** makes a Creature-shaped object with the combat-state fields every spawn needs.
  * `id` is optional at call sites - it defaults to a fresh one, since no caller today has a
- * reason to name its own (see `entityId.ts`). */
+ * reason to name its own (see `entityId.ts`). `boss`/`miniboss` are *not* derived here: this
+ * module deliberately carries no runtime dependency on the monster catalogue (the simulation
+ * harness compiles it without `monsters.ts`, which needs Pixi), so the spawn site supplies them
+ * from `BOSS_KINDS`/`MINIBOSS_KINDS` - see `spawnMonster`, the one factory every monster,
+ * including a save-restored one, goes through. */
 export function baseCreature(init: Omit<Creature, 'buffs' | 'id'> & { buffs?: Creature['buffs']; id?: Creature['id'] }): Creature {
 	const { buffs, id, ...rest } = init;
 	return { id: id ?? nextEntityId(rest.isHero ? 'hero' : 'actor'), sleeping: true, champion: null, ...rest, buffs: { ...(buffs ?? {}) } };

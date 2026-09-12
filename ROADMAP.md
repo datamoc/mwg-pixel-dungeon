@@ -561,6 +561,16 @@ Do not add new authored content as object literals or scattered constants in the
       unknown, no select-then-confirm). **Flock and Aggression are now wired too:** Flock
       creates temporary scheduled Sheep actors within the radius-2 cast area, while Aggression
       marks the nearest visible enemy for the Java 20-turn (5-turn boss) forced-target rule.
+      **Corrected 2026-09-12**: that sentence described the *intended* rule, not what the code
+      did - `useStoneOfAggression` shortened every non-ally to 5 turns, so an ordinary enemy was
+      marked for a quarter of Java's duration and the "20-turn" half never happened at all
+      (this call site can only target an enemy). Java's condition is
+      `Char.hasProp(ch, Property.BOSS) || Char.hasProp(ch, Property.MINIBOSS)`, a property check
+      with nothing to do with alignment, so only a boss/miniboss is shortened. Fixed and
+      browser-verified live (rat 20; GreatCrab/Pylon 5 as MINIBOSS; Goo 5 as BOSS), along with
+      the mechanic's other half - `Char.attack()` 480-488's half-damage branch for a marked
+      boss/miniboss attacked by its own side - which needed a new `miniboss` actor flag. See
+      `PORT_COVERAGE.md`'s runestone row.
       Both now have distinct ids and generated/floor-loot mappings; the remaining differences
       are the no-cell-picker center convention and reduced Sheep art/lifespan presentation.
       The generator table now also uses the real `StoneOfDetectMagic` class instead of the

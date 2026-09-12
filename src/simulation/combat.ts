@@ -179,6 +179,17 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 	if (attacker.champion === 'growing') dmg *= attacker.championPower ?? 1.19;
 	if (ascensionOn() && attacker.kind && ASCENSION_MOD[attacker.kind]) dmg *= ASCENSION_MOD[attacker.kind]!;
 	if (attacker.buffs['weakness']) dmg *= 0.67;
+	//StoneOfAggression.Aggression (Char.attack 480-488, tag v3.3.8): a marked BOSS/MINIBOSS takes
+	//half damage from an attacker of its *own* alignment - which, since a boss is `ENEMY`, means
+	//another enemy mob forced onto it by the stone, never the hero and never a converted ally
+	//(`attacker.isHero`/`attacker.isAlly` are the port's `Alignment.ALLY`) - and half again when
+	//that boss is Yog-Dzewa. Deliberately before the armor subtraction below, where Java applies
+	//it: applying it afterwards would round differently (10 raw against 3 armor is `round(5)-3 = 2`
+	//here, against `(10-3)/2 = 3.5` if it ran later).
+	if (defender.buffs['aggression'] && (defender.boss || defender.miniboss) && !attacker.isHero && !attacker.isAlly) {
+		dmg *= 0.5;
+		if (defender.kind === 'yog') dmg *= 0.5;
+	}
 	const dr = random.normalRange(defender.armor[0], defender.armor[1]);
 	let effective = Math.max(0, Math.round(dmg) - dr);
 	if (defender.buffs['vulnerable']) effective *= 1.33;

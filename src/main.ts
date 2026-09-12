@@ -218,7 +218,7 @@ import {
 	type BuffId,
 } from './combat';
 import { nextEntityId } from './simulation/entityId';
-import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LIMITED_DROP_DECAY, BASE_KIND_ALIASES, NPC_KINDS, BOSS_KINDS, IMMOVABLE_KINDS, NEVER_SLEEPS_KINDS, FLYING_KINDS, DEPTH_SCALED_STATS, SPRITE_KIND_OVERRIDE, MWL_AI_PROFILES, type AnyMonsterId, type MonsterId } from './monsters';
+import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LIMITED_DROP_DECAY, BASE_KIND_ALIASES, NPC_KINDS, BOSS_KINDS, MINIBOSS_KINDS, IMMOVABLE_KINDS, NEVER_SLEEPS_KINDS, FLYING_KINDS, DEPTH_SCALED_STATS, SPRITE_KIND_OVERRIDE, MWL_AI_PROFILES, type AnyMonsterId, type MonsterId } from './monsters';
 
 /**
  * Shattered Pixel Dungeon, on top of mwg: a title screen, hero-class selection, the Sewers
@@ -1723,6 +1723,12 @@ export class SewersScene extends Scene2D {
 			damage: def.damage,
 			armor: def.armor,
 			kind,
+			//`Char.Property.BOSS`/`MINIBOSS` as plain combat data, so `rollDamage` can key the
+			//rules Java keys on them (the Aggression half-damage branch) without importing the
+			//monster catalogue into `simulation/`. Java checks the two properties *separately*,
+			// so they stay two flags rather than one `isBoss` - see `MINIBOSS_KINDS`.
+			boss: isBoss,
+			miniboss: MINIBOSS_KINDS.has(kind),
 			//Java's Bat/Bee/Elemental/Eye/Swarm/Ghost classes set flying=true (Newborn
 			//Elemental inherits it); YogFist.java does not and remains grounded.
 			flying: FLYING_KINDS.has(kind),
@@ -12209,8 +12215,13 @@ export class SewersScene extends Scene2D {
 		this.say(t('port.log.stoneflock', { count }), 'positive');
 	}
 
-	/** `StoneOfAggression.activate(cell)`: real Java marks the thrown-at character for 20 turns,
-	 * or 5 turns for any enemy target (`DURATION / 4`), making nearby enemies force-target it. With no map-cell picker,
+	/** `StoneOfAggression.activate(cell)`: real Java marks the target for 20 turns, or
+	 * `Aggression.DURATION / 4` (5 turns) when it is a BOSS **or MINIBOSS** - that is the whole
+	 * condition, `Char.hasProp(ch, Property.BOSS) || Char.hasProp(ch, Property.MINIBOSS)`, not the
+	 * target's alignment: an ordinary enemy gets the full 20 turns. This port used to shorten
+	 * every non-ally to 5, i.e. 4x too short for every ordinary enemy, which this project's own
+	 * coverage row then recorded as Java's rule. `addBuff` already applies the 20-turn default
+	 * from `mwlBuffDurations`, so only the short case needs overriding. With no map-cell picker,
 	 * this port uses the same nearest-visible-enemy convention as the other combat stones; the
 	 * shared aggression branch then supports enemy-vs-enemy and enemy-vs-ally combat. */
 	private useStoneOfAggression(instanceId?: string): void {
@@ -12221,7 +12232,7 @@ export class SewersScene extends Scene2D {
 			return;
 		}
 		addBuff(target, 'aggression');
-		if (!target.isAlly) target.buffs.aggression = 5;
+		if (target.boss === true || target.miniboss === true) target.buffs.aggression = 5;
 		this.say(t('port.log.stoneaggression', { target: target.name }), 'positive');
 	}
 

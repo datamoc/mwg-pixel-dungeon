@@ -9,7 +9,8 @@ function combatState(c: Combatant): Combatant {
 		id: c.id, x: c.x, y: c.y, hp: c.hp, maxHp: c.maxHp,
 		accuracy: c.accuracy, evasion: c.evasion,
 		damage: [...c.damage], armor: [...c.armor], buffs: { ...c.buffs },
-		isHero: c.isHero, kind: c.kind, sleeping: c.sleeping,
+		isHero: c.isHero, isAlly: c.isAlly, boss: c.boss, miniboss: c.miniboss,
+		kind: c.kind, sleeping: c.sleeping,
 		champion: c.champion, str: c.str, strReq: c.strReq,
 		raged: c.raged, championPower: c.championPower,
 	};

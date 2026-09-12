@@ -255,6 +255,15 @@ export const NPC_KINDS = mwlActorFlagSet('npc');
  * champion-roll rules every regular mob gets. */
 export const BOSS_KINDS = mwlActorFlagSet('boss');
 
+/** Java's `Char.Property.MINIBOSS` (`CrystalGuardian`/`DemonSpawner`/`Elemental.NewbornFireElemental`/
+ * `FetidRat`/`FungalSentry`/`GnollSapper`/`GnollTrickster`/`GreatCrab`/`Pylon`/`RotHeart`/`RotLasher`
+ * at tag `v3.3.8`) - every one of those this port spawns. Kept separate from `BOSS_KINDS` because
+ * Java checks the two properties separately in several places, and the distinction is not cosmetic:
+ * `StoneOfAggression` shortens its mark to a quarter for either, `Talent.CombinedLethality` excludes
+ * both, and `MonkEnergy`'s gain differs per property. The three Java classes this port does not spawn
+ * (CrystalGuardian, FungalSentry, GnollSapper) are simply absent. */
+export const MINIBOSS_KINDS = mwlActorFlagSet('miniboss');
+
 /** Kinds that never change cells (`Property.IMMOVABLE` or an equivalent never-moves turn):
  * DM201 (real `IMMOVABLE`, consumes its turn), the Sentry turret and the RotHeart/RotLasher
  * pair (all own their whole turn and never step). Used for Necromancer.summonMinion's

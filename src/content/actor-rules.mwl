@@ -17,6 +17,10 @@ apply_to=boss
 set=goo,tengu,dm300,king,yog,yogFist
 [/effect]
 [effect]
+apply_to=miniboss
+set=fetidRat,gnollTrickster,greatCrab,demonSpawner,pylon,rotHeart,rotLasher,newbornElemental
+[/effect]
+[effect]
 apply_to=immovable
 set=dm201,sentry,rotHeart,rotLasher,pylon
 [/effect]

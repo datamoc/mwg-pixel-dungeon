@@ -15,6 +15,15 @@ export interface Combatant extends Step {
 	armor: [number, number];
 	buffs: BuffState;
 	isHero?: boolean;
+	/** Java `Char.Alignment.ALLY` beyond the hero itself: converted/summoned allies. Needed
+	 * because several Java rules compare an attacker's alignment with the target's rather than
+	 * asking whether it is the hero (`Char.attack()`'s Aggression branch is one). */
+	isAlly?: boolean;
+	/** Java `Char.Property.BOSS`/`Property.MINIBOSS`. Plain flags rather than a catalogue lookup
+	 * so this module stays import-free of the monster tables, and `rollDamage` can key rules on
+	 * them - the two properties are checked separately by name in several Java rules. */
+	boss?: boolean;
+	miniboss?: boolean;
 	/** Plain rule identifier; the scene narrows it to its MonsterId catalogue. */
 	kind?: string;
 	sleeping?: boolean;

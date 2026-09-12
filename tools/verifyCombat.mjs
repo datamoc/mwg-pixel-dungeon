@@ -258,4 +258,44 @@ export function verifyCombat(require, check) {
 		assert.equal(heavyDamageCurve(36, 14, 15), 20);
 		assert.equal(heavyDamageCurve(14, 14, 15), 14);
 	});
+	check('a marked boss/miniboss is halved by its own side, before the armor subtraction', () => {
+		const { rollDamage } = require('./simulation/combat');
+		// one deterministic draw for both the damage roll and the armor roll
+		const zero = { float: () => 0, normalRange: (min, max) => min, range: (min) => min, int: (min) => min };
+		const marked = (extra = {}) => base({ armor: [3, 3], hp: 50, maxHp: 50, buffs: { aggression: 5 }, ...extra });
+		const mob = base({ damage: [10, 10], kind: 'rat' });
+		const hero = base({ damage: [10, 10], isHero: true });
+		const ally = base({ damage: [10, 10], isAlly: true, kind: 'rat' });
+		// Char.attack 480-488: round(10 * 0.5) - 3 = 2. The `- 3` coming *after* the halving is the
+		// part that pins the position: applying it post-armor would give (10-3) * 0.5 = 3.5 -> 4.
+		assert.equal(rollDamage(mob, marked({ miniboss: true }), zero), 2);
+		assert.equal(rollDamage(mob, marked({ boss: true }), zero), 2);
+		// Yog-Dzewa takes a quarter: 10 * 0.25 = 2.5 -> round -> 3, against 0 armor
+		assert.equal(rollDamage(mob, marked({ kind: 'yog', boss: true, armor: [0, 0] }), zero), 3);
+		// the hero and a converted ally share the boss's own alignment in Java terms? No - they are
+		// ALLY, the boss is ENEMY, so `enemy.alignment == alignment` is false and nothing is halved
+		assert.equal(rollDamage(hero, marked({ miniboss: true }), zero), 7);
+		assert.equal(rollDamage(ally, marked({ miniboss: true }), zero), 7);
+		// an unmarked boss, and a marked *ordinary* mob, are both untouched: the damage rule keys
+		// on the BOSS/MINIBOSS property, not on the mark alone
+		assert.equal(rollDamage(mob, base({ armor: [3, 3], hp: 50, maxHp: 50, miniboss: true }), zero), 7);
+		assert.equal(rollDamage(mob, marked(), zero), 7);
+	});
+	check('the authored MINIBOSS/BOSS flag sets match Java and stay disjoint', () => {
+		// Source-level rather than through `monsters.ts`, which needs Pixi's `SpriteSheet` and so
+		// cannot load in this harness. Java's own `properties().add(Property.MINIBOSS)` sites at
+		// tag v3.3.8, minus the three classes this port does not spawn (CrystalGuardian,
+		// FungalSentry, GnollSapper).
+		const mwl = readFileSync(new URL('../src/content/actor-rules.mwl', import.meta.url), 'utf8');
+		const flagSet = (flag) => {
+			const match = new RegExp(`apply_to=${flag}\\r?\\nset=([^\\r\\n]+)`).exec(mwl);
+			assert.ok(match, `no ${flag} flag effect in actor-rules.mwl`);
+			return match[1].split(',').map((k) => k.trim()).sort();
+		};
+		assert.deepEqual(flagSet('miniboss'),
+			['demonSpawner', 'fetidRat', 'gnollTrickster', 'greatCrab', 'newbornElemental', 'pylon', 'rotHeart', 'rotLasher']);
+		// Java checks the two properties separately (`BOSS || MINIBOSS` in the stone's duration
+		// rule, `!BOSS && !MINIBOSS` in CombinedLethality), so a kind in both would double-apply
+		for (const kind of flagSet('miniboss')) assert.ok(!flagSet('boss').includes(kind), `${kind} is both BOSS and MINIBOSS`);
+	});
 }
