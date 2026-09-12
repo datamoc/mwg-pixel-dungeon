@@ -19,6 +19,7 @@ import { simulationRandom } from './adapters/mwgRandom';
 import { MOVES } from './simulation/heroActions';
 import { finishHeroTurn } from './simulation/heroTurn';
 import { stepTenguAbility, tenguAbilityCost } from './simulation/tenguAbility';
+import { applyDefenderDamageCurves } from './simulation/defenderDamageCurves';
 import {
 	TintedSprite,
 	AnimatedSprite,
@@ -9461,10 +9462,8 @@ export class SewersScene extends Scene2D {
 		//ordinary monsters, not only by the already-portable Friendly weapon path.
 		const charmedForTarget = attacker.buffs['charm'] !== undefined && this.charmTargets.get(attacker.id) === defender.id;
 		if (charmedForTarget) damage = 0;
-		if (defender.kind === 'pylon' && damage >= 15) {
-			//Pylon.damage(): 14 + floor((sqrt(8*(dmg-14)+1)-1)/2), Java's heavy-metal curve.
-			damage = 14 + Math.floor((Math.sqrt(8 * (damage - 14) + 1) - 1) / 2);
-		}
+		//No `Pylon` curve here: it is a `damage()` override, so it applies after every multiplier
+		//and proc below, not before them - see `applyDefenderDamageCurves`' own note.
 		//Weapon.Augment: real Java's `Augment` enum (`Weapon.java`, tag `v3.3.8`) trades damage
 		//against attack speed in both directions - `SPEED(0.7f damageFactor, 2/3f delayFactor)`,
 		//`DAMAGE(1.5f damageFactor, 5/3f delayFactor)` - not a flat "20% up, nothing down" this
@@ -9621,23 +9620,12 @@ export class SewersScene extends Scene2D {
 			damage += (this.subclass() === 'assassin' ? 4 : 2) + assassinReachBonus(this.subclass(), this.talentRank('assassins_reach'));
 			this.awardBadge('surprises');
 		}
-		//Eye.damage(): `if (beamCharged) dmg /= 4` - while charging its real ranged DeathGaze
-		//(see `takeMonsterTurn`'s eye branch), it takes quartered damage from any source.
-		if (defender.kind === 'eye' && defender.beamCharged) damage = Math.floor(damage / 4);
-		//DemonSpawner.damage(): big hits are soft-capped (20/21/22/.../30 raw becomes
-		//20/22/25/29/34/40/47/55/64/74/85 incoming before this reduction), and the (possibly
-		//reduced) damage also cuts its spawn-cooldown - being attacked makes it panic and summon
-		//backup sooner, not later.
-		if (defender.kind === 'demonSpawner' && damage >= 20) {
-			damage = 19 + Math.floor((Math.sqrt(8 * (damage - 19) + 1) - 1) / 2);
-		}
-		//Slime.damage(): the same shape of soft cap as DemonSpawner's above, just with a lower
-		//threshold (takes 5/6/7/8/9/10 at 5/7/10/14/19/25 incoming) - previously not ported at
-		//all, for either Slime or `CausticSlime extends Slime` (which shares it unchanged; its
-		//own override only adds the Ooze/corrosion attack proc, already ported separately).
-		if ((defender.kind === 'slime' || defender.kind === 'causticSlime') && damage >= 5) {
-			damage = 4 + Math.floor((Math.sqrt(8 * (damage - 4) + 1) - 1) / 2);
-		}
+		//Every defender-side `damage()` override (`Pylon` 14+/15, `Eye` /4 while charging,
+		//`DemonSpawner` 19+/20, `Slime`/`CausticSlime` 4+/5) applies here, at Java's point: after
+		//the attacker's multipliers and procs, before shields and HP. One call rather than four
+		//inline blocks, and the `Pylon` curve is now in the same place as the rest instead of
+		//above the multiplier chain where it under-reduced every charged-pylon hit.
+		damage = applyDefenderDamageCurves(defender.kind, damage, { beamCharged: defender.beamCharged === true });
 		const lethalThreshold = Math.max(0.4 * this.talentRank('combined_lethality') / 3, enhancedLethalityThreshold(this.subclass(), this.talentRank('enhanced_lethality')));
 		if (attacker === this.hero && lethalThreshold > 0 && defender.hp - damage <= defender.maxHp * lethalThreshold) {
 			damage = defender.hp;

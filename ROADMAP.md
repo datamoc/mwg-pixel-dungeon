@@ -754,7 +754,18 @@ Do not add new authored content as object literals or scattered constants in the
       per-floor seeded stream, `activatePylon()` seeds the field on INACTIVE_TRAP/WATER/SIGN from
       row 13 down *at DM-300's supercharge* (not at seal), the seal triggers at Java's real
       Chebyshev distance 3, and the energy tick's double-damage of the hero is fixed - all
-      browser-verified live. **Locked-floor timing is now ported too**: DM-300 is no longer spawned
+      browser-verified live. **The heavy-metal curve is now applied where Java applies it**
+      (2026-09-12): it is a `damage()` override, so it runs *inside* `enemy.damage(...)` - after
+      every attacker multiplier and proc - but this port had it at the top of `attack()`, above
+      the augment/talent/proc chain, which under-reduced every charged-pylon hit (`x1.5` augment:
+      Java multiplies 40 to 60 then curves to 23; the old order curved 40 to 20 then multiplied to
+      30). The whole `damage()`-override family - `Pylon` 14+/15, `Eye` /4 while charging,
+      `DemonSpawner` 19+/20, `Slime`/`CausticSlime` 4+/5 - is now one pure function in
+      `simulation/defenderDamageCurves.ts`, called once at Java's point, with `verifyCombat`
+      asserting Java's own published value tables for each. Browser-verified live on the built
+      game: a raw 40 hit on a slime lands for 12, and on a charged pylon with the x1.5 augment for
+      23 (30 would mean the old order).
+      **Locked-floor timing is now ported too**: DM-300 is no longer spawned
       in `populate()` on floor entry - `checkCavesBossPylonGate` creates it during `seal()`, at a
       random open, unoccupied `mainArena` cell that is not an `EMPTY_SP` tile, matching
       `CavesBossLevel.seal()`'s own do/while. Remaining: the port's arena layout is still a

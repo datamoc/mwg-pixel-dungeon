@@ -232,4 +232,30 @@ export function verifyCombat(require, check) {
 			assert.equal(ASCENSION_MOD[variant] ?? 1, ASCENSION_MOD[kind] ?? 1, `${variant} vs base ${kind}`);
 		}
 	});
+	check('defender damage() curves reproduce Java\'s published value tables exactly', () => {
+		const { applyDefenderDamageCurves, heavyDamageCurve } = require('./simulation/defenderDamageCurves');
+		// Java's own comments state each table, so assert them as written rather than re-deriving.
+		// Pylon.java: "takes 15/16/17/18/19/20 dmg at 15/17/20/24/29/36 incoming dmg"
+		assert.deepEqual([15, 17, 20, 24, 29, 36].map((d) => applyDefenderDamageCurves('pylon', d)), [15, 16, 17, 18, 19, 20]);
+		// below its threshold a pylon takes the hit uncurved (14 is the curve's own base)
+		assert.equal(applyDefenderDamageCurves('pylon', 14), 14);
+		// DemonSpawner.java: "takes 20/21/22/.../30 dmg at 20/22/25/29/34/40/47/55/64/74/85"
+		assert.deepEqual([20, 22, 25, 29, 34, 40, 47, 55, 64, 74, 85].map((d) => applyDefenderDamageCurves('demonSpawner', d)),
+			[20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]);
+		assert.equal(applyDefenderDamageCurves('demonSpawner', 19), 19);
+		// Slime.java: "takes 5/6/7/8/9/10 dmg at 5/7/10/14/19/25 incoming dmg", and CausticSlime
+		// extends Slime, so it shares the curve unchanged
+		assert.deepEqual([5, 7, 10, 14, 19, 25].map((d) => applyDefenderDamageCurves('slime', d)), [5, 6, 7, 8, 9, 10]);
+		assert.deepEqual([5, 7, 10, 14, 19, 25].map((d) => applyDefenderDamageCurves('causticSlime', d)), [5, 6, 7, 8, 9, 10]);
+		assert.equal(applyDefenderDamageCurves('slime', 4), 4);
+		// Eye.java: `if (beamCharged) dmg /= 4` - integer division, and only while charging
+		assert.equal(applyDefenderDamageCurves('eye', 10, { beamCharged: true }), 2);
+		assert.equal(applyDefenderDamageCurves('eye', 10), 10);
+		assert.equal(applyDefenderDamageCurves('eye', 3, { beamCharged: true }), 0);
+		// everything else passes through untouched, including an unknown or absent kind
+		for (const kind of ['rat', 'golem', undefined]) assert.equal(applyDefenderDamageCurves(kind, 40), 40);
+		// and the shared helper is Java's exact expression, its inner truncation included
+		assert.equal(heavyDamageCurve(36, 14, 15), 20);
+		assert.equal(heavyDamageCurve(14, 14, 15), 14);
+	});
 }
