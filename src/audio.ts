@@ -35,10 +35,23 @@ export class SpdAudio {
 		else this.playMusicTracks([`${region}_1.ogg`, `${region}_2.ogg`], 1);
 	}
 
-	/** LastLevel.playLevelMusic(): the Java endgame vault is intentionally silent. */
-	endDungeon(): void {
-		this.currentTrack = null;
-		this.music.stop(1);
+	/** `LastLevel.playLevelMusic()`: the endgame vault plays `THEME_FINALE` on loop while the
+	 * Amulet is still in it, and only goes silent once the Amulet has been taken (`Music.end()`).
+	 * This port used to stop the music on entry, which is Java's *second* branch applied to the
+	 * first - the vault was silent even with the prize still on the floor. */
+	vaultMusic(amuletObtained: boolean): void {
+		if (amuletObtained) {
+			this.currentTrack = null;
+			this.music.stop(1);
+		} else {
+			this.playMusic('theme_finale.ogg', 1);
+		}
+	}
+
+	/** `AmuletScene.create()`'s own pair - `THEME_2` then `THEME_1`, the reverse of the title
+	 * screen's `THEME_1`/`THEME_2` order, both played by the same `playTracks`. */
+	winMusic(): void {
+		this.playMusicTracks(['theme_2.ogg', 'theme_1.ogg'], 1);
 	}
 
 	cue(name: string, volume = 0.7): void {

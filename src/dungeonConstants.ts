@@ -17,6 +17,14 @@ export const GRASS = 5;
 export const HIGH_GRASS = 6;
 export const DOOR_CLOSED = 7;
 export const EMBERS = 8;
+/**
+ * A cell Java forces unwalkable without changing what it looks like (`LastLevel.create()`'s
+ * `passable[i] = avoid[i] = false; solid[i] = true`). No generator places it and no frame mapping
+ * knows it: for a ported floor the tile still comes from the paint grid, so a cell in this kind
+ * draws exactly as its Java terrain does and only `Level.passable()` changes. The vault is its
+ * only user today (its pit cells and its sealed entrance chamber).
+ */
+export const SOLID = 9;
 
 //the same nine ids by name, for spdLevelGen/gameBridge.ts - the ported generator speaks real
 //Terrain.java constants and must not hardcode the ids above, so it maps to names and the codes
@@ -49,6 +57,9 @@ export const TERRAIN_KINDS: Roguelike.TerrainKind[] = [
 	{ passable: true, transparent: true }, //HIGH_GRASS
 	{ passable: false, transparent: false }, //DOOR_CLOSED
 	{ passable: true, transparent: true }, //EMBERS
+	//SOLID: see the constant's own comment - Java's per-cell `solid` override, which changes
+	//movement but not the tile, so it must stay see-through.
+	{ passable: false, transparent: true }, //SOLID
 ];
 
 //DungeonTileSheet.java: a 16-wide grid of 16x16 tiles, shared by every level's tileset.

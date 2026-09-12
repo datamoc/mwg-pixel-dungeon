@@ -137,6 +137,21 @@ function lastLevel(): BossFloorData {
 	set(level, mid, 54, Terrain.ENTRANCE);
 	set(level, mid, 55, Terrain.ENTRANCE);
 	fillRect(level, mid - 1, 56, mid + 1, 56, Terrain.ENTRANCE);
+	//`LastLevel`'s transition, whose *cell* is the one the hero arrives on (`Level.entrance()`
+	//returns the `REGULAR_ENTRANCE` transition, not the tiles): Java widens that transition to a
+	//3x3 area with `left--; right++; bottom += 2` and paints the extra ENTRANCE tiles inside it,
+	//so the three tiles and the one arrival cell are different things. `extract` prefers this
+	//declared cell over its last-ENTRANCE-tile scan because of it - without that the hero lands
+	//on (9,56), a corner of the entrance chamber, which is unwalkable here (`create()` seals it).
+	level.transitions.push({ pos: (level.h - 10) * level.w + 8, type: 'regularEntrance' });
+	//`LastLevel.build()`'s floor-decoration scatter, in its exact stream position: after the
+	//entrance chamber is filled, before the two centre-piece fills below (which is why the
+	//chamber and centre cells it overwrites stay plain). One `Random.Int(5)` per `EMPTY` cell,
+	//cell order - the draws are part of the floor's stream even though nothing after them
+	//consumes randomness on this floor.
+	for (let cell = 0; cell < level.map.length; cell++) {
+		if (level.map[cell] === Terrain.EMPTY && SpdRandom.int(5) === 0) level.map[cell] = Terrain.EMPTY_DECO;
+	}
 	fillRect(level, mid - 2, 9, mid + 2, 15, Terrain.EMPTY);
 	fillRect(level, mid - 3, 10, mid + 3, 14, Terrain.EMPTY);
 	return { paint: level, rooms: [room(mid - 1, 10, mid + 1, 62)], feeling: null };

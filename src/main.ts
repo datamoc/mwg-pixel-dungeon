@@ -111,6 +111,7 @@ import {
 	type PortedFloor,
 } from './spdLevelGen/gameBridge';
 import { CAVES_BOSS_ARENA } from './spdLevelGen/bossLevels';
+import { vaultBlockedCells, vaultCenterVisualFrames, vaultCenterWallFrames, vaultFloorFrames } from './spdLevelGen/vaultVisuals';
 import { spdPatchGenerate } from './spdLevelGen/spdPatch';
 import { entranceRoomContext } from './spdLevelGen/rooms/standard/entranceRoom';
 import { setHourglassShopState } from './spdItems/shopItems';
@@ -189,6 +190,7 @@ import {
 	HIGH_GRASS,
 	DOOR_CLOSED,
 	EMBERS,
+	SOLID,
 	GAME_KIND_CODES,
 	TERRAIN_KINDS,
 	TERRAIN_FRAME,
@@ -1494,6 +1496,8 @@ export class SewersScene extends Scene2D {
 	private branchQuestEntrance: TileMap | null = null;
 	/** Halls' DemonSpawnerRoom.CustomFloor overlay, rebuilt from the live spawner state. */
 	private demonSpawnerFloor: TileMap | null = null;
+	/** `LastLevel`'s three custom tilemaps (depth 26 only), rebuilt when the Amulet is taken. */
+	private vaultVisuals: TileMap | null = null;
 	/** `HallsLevel.Stream`/`FireParticle` embers over this floor's real `WATER` cells - null off a
 	 * ported Halls depth, or on any other region (no other region has this effect) */
 	private waterEmbers: WaterEmberLayer | null = null;
@@ -2300,7 +2304,7 @@ export class SewersScene extends Scene2D {
 
 		const region = regionForDepth(this.depth);
 		const savedFloor = this.miningBranchActive ? null : this.floorStates.get(this.depth);
-		if (this.depth === 26) runState.audio.endDungeon();
+		if (this.depth === 26) runState.audio.vaultMusic(this.gameState.switch('amuletObtained'));
 		else runState.audio.enterDungeon(region, this.depth in BOSSES);
 		this.terrainSheet = SpriteSheet.fromTexture(runState.sprites[region], TILE);
 
@@ -2334,6 +2338,15 @@ export class SewersScene extends Scene2D {
 			this.level = new Roguelike.Level(ported.width, ported.height, TERRAIN_KINDS, WALL);
 			this.level.terrain.set(toGameTerrain(ported, GAME_KIND_CODES));
 			this.level.rooms = ported.rooms;
+			//`LastLevel.create()`'s unwalkable cells - the vault's pit cells and its sealed
+			//entrance chamber. Java mutates `passable`/`avoid`/`solid` per cell; the port's level
+			//takes passability from the terrain kind, so those cells take the SOLID kind while
+			//their tile keeps coming from the paint grid (see that constant's comment).
+			if (this.depth === 26) {
+				for (const cell of vaultBlockedCells(ported.paint.map, ported.width, ported.height)) {
+					this.level.terrain[cell] = SOLID;
+				}
+			}
 		} else {
 			const floorSeed = spdSeedForDepth(this.runSeedLong, this.depth);
 			this.level = generateSpdDungeon(48, 32, TERRAIN_KINDS.slice(2), floorSeed);
@@ -2521,6 +2534,19 @@ export class SewersScene extends Scene2D {
 		this.camera.world.addChild(this.creatureLayer);
 		//wall tops and overhangs draw over the actors, as they do in Java
 		this.camera.world.addChild(this.wallsMap);
+		//`LastLevel`'s three custom tilemaps, drawn over the walls (Java's `customWalls` layer
+		//sits above the wall tilemap too, and its floor strip has no wall cell in its rect, so a
+		//single sheet above both is the same picture with one less layer to keep in order).
+		this.vaultVisuals = null;
+		if (this.depth === 26 && this.portedPaint) {
+			const layers = this.vaultTileLayers();
+			this.vaultVisuals = new TileMap({ width: this.level.width, height: this.level.height,
+				sheet: SpriteSheet.fromTexture(runState.sprites.hallsSpecial, TILE) });
+			this.vaultVisuals.addLayer('vaultFloor', layers.floor);
+			this.vaultVisuals.addLayer('vaultCenter', layers.center);
+			this.vaultVisuals.addLayer('vaultCenterWalls', layers.walls);
+			this.camera.world.addChild(this.vaultVisuals);
+		}
 		this.wallBlocking = new TileMap({ width: this.level.width, height: this.level.height,
 			sheet: SpriteSheet.fromTexture(runState.sprites.wallBlocking, TILE) });
 		this.wallBlocking.addLayer('blocking', new Array(this.level.cellCount).fill(-1));
@@ -2786,6 +2812,22 @@ export class SewersScene extends Scene2D {
 	 * first-visit actors have not been spawned yet; revisits use the live creature list so a
 	 * killed spawner does not reappear from the immutable painted mob list.
 	 */
+	/**
+	 * `LastLevel`'s custom tiles, over the paint grid: the shaft's lit floor strip with its candle
+	 * cluster, and the two fixed centre pieces over the entrance. The Amulet's own state changes
+	 * all three (`amuletObtained` lights the candles and swaps the floor decoration), which is why
+	 * the pickup site rebuilds the layers the same way the demon-spawner overlay is rebuilt.
+	 */
+	private vaultTileLayers(): { floor: number[]; center: number[]; walls: number[] } {
+		const paint = this.portedPaint!;
+		const amuletObtained = this.gameState.switch('amuletObtained');
+		return {
+			floor: vaultFloorFrames(paint.map, paint.w, paint.h, this.tileVariance, amuletObtained),
+			center: vaultCenterVisualFrames(paint.w, paint.h),
+			walls: vaultCenterWallFrames(paint.w, paint.h),
+		};
+	}
+
 	private demonSpawnerFloorFrames(baseline: boolean): number[] {
 		const frames = new Array(this.level.cellCount).fill(-1);
 		const paint = this.portedPaint;
@@ -4021,7 +4063,18 @@ export class SewersScene extends Scene2D {
 		}
 		if (item.kind === 'amulet') {
 			this.gameState.setSwitch('amuletObtained', true);
+			//`Amulet.doPickUp()` -> `showAmuletScene(true)`, whose own `create()` swaps the vault's
+			//finale theme for the title pair (in its own order - see `SpdAudio.winMusic`)
+			runState.audio.winMusic();
 			if (this.demonSpawnerFloor) this.demonSpawnerFloor.setLayerData('demonSpawnerFloor', this.demonSpawnerFloorFrames(false));
+			//the vault's own tiles react to the same flag Java reads: the candles light and the
+			//floor decoration swaps (`LastLevel.CustomFloor.create()`'s `amuletObtained` branches)
+			if (this.vaultVisuals) {
+				const layers = this.vaultTileLayers();
+				this.vaultVisuals.setLayerData('vaultFloor', layers.floor);
+				this.vaultVisuals.setLayerData('vaultCenter', layers.center);
+				this.vaultVisuals.setLayerData('vaultCenterWalls', layers.walls);
+			}
 			this.awardBadge('amulet');
 			this.say(t('port.log.victory'), 'positive');
 			this.awaitingInput = false;
@@ -7054,9 +7107,8 @@ export class SewersScene extends Scene2D {
 			},
 			closedDoorAt: (target) => this.doors.isDoor(target.x, target.y) && !this.doors.isOpen(target.x, target.y),
 			isRooted: () => !!this.hero.buffs['roots'],
-			passable: (target) =>
-				(this.level.passable(target.x, target.y) || this.isChasmCell(target.x, target.y)) &&
-				this.eternalFire.volumeAt(target.x, target.y) < 1,
+			passable: (target) => this.canStepOnto(target.x, target.y)
+				&& this.eternalFire.volumeAt(target.x, target.y) < 1,
 		});
 		if (plan.kind === 'wait') {
 			if (this.talentRank('patient_strike') > 0) this.patientStrikeReady = true;
@@ -7327,6 +7379,21 @@ export class SewersScene extends Scene2D {
 				this.say(t('port.log.plantwithers'));
 		}
 		this.featuresMap?.setLayerData('features', this.featureFrames());
+	}
+
+	/**
+	 * Whether a *step* may land on this cell: Java's `Char.move` test, `passable || avoid`.
+	 *
+	 * A pit cell is enterable here because that is how this port models falling - the chasm is
+	 * `AVOID` in Java, so `move()` accepts it and `Chasm` takes over from there. The one
+	 * exception is a cell Java forced solid outright (`LastLevel.create()`, the `SOLID` kind):
+	 * those are neither passable nor avoid, so a step must be refused *before* the chasm branch,
+	 * which is what stops the hero walking off the Amulet vault's walkway into the void (a fall
+	 * is disabled there by `fallThroughChasm`, so it used to leave them standing in mid-air).
+	 */
+	private canStepOnto(x: number, y: number): boolean {
+		if (this.level.get(x, y) === SOLID) return false;
+		return this.level.passable(x, y) || this.isChasmCell(x, y);
 	}
 
 	private isChasmCell(x: number, y: number): boolean {
@@ -10572,7 +10639,9 @@ export class SewersScene extends Scene2D {
 				const dy = Math.sign(attacker.y - defender.y);
 				for (let step = 0; step < power; step++) {
 					const next = { x: attacker.x + dx, y: attacker.y + dy };
-					if ((!this.level.passable(next.x, next.y) && !(attacker.flying && this.isChasmCell(next.x, next.y))) || this.creatureAt(next.x, next.y)) break;
+					//a flying attacker may be shoved out over a pit (Java: `avoid`, not `passable`),
+					//but not into a cell Java forced solid - see `canStepOnto`
+					if ((!this.canStepOnto(next.x, next.y) && !(attacker.flying && this.isChasmCell(next.x, next.y))) || this.creatureAt(next.x, next.y)) break;
 					this.moveTo(attacker, next);
 					if (attacker.hp <= 0) break;
 				}

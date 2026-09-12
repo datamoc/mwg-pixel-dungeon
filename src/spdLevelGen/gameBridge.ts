@@ -392,6 +392,16 @@ function extract(paint: PaintLevel, rooms: Room[], feeling: number | null): Port
 		else if (t === Terrain.SECRET_DOOR) secretDoors.push({ x, y });
 	}
 
+	//`Level.entrance()` returns the `REGULAR_ENTRANCE` transition's own cell, and a transition may
+	//cover an *area* wider than one tile - so a floor that declares one must place the hero there
+	//rather than on whichever `ENTRANCE` tile the scan above saw last. Only `LastLevel` declares
+	//one today (its entry is 3 wide and 3 tall, and its chamber is sealed by `create()`), which is
+	//exactly the case where the two disagree.
+	const declaredEntrance = paint.transitions.find((transition) => transition.type === 'regularEntrance');
+	if (declaredEntrance !== undefined) {
+		entrance = { x: declaredEntrance.pos % w, y: Math.floor(declaredEntrance.pos / w) };
+	}
+
 	const traps: PortedTrap[] = [];
 	for (const [cell, trap] of paint.traps) {
 		traps.push({

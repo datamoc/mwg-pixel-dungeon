@@ -63,17 +63,22 @@ Do not add new authored content as object literals or scattered constants in the
       tree membership/order is now authored in `src/content/talent-rules.mwl`; talent formulas
       and remaining Java-specific abilities remain open. Buff duration metadata is now authored
       in `src/content/buff-rules.mwl`; buff behavior remains executable in the simulation layer.
-      **Flagged 2026-09-12: four of those authored durations are shorter than Java's with nothing
-      recorded saying why.** `burning` is 3 where `Burning.DURATION` is 8, `cripple` 4 against 10,
-      `paralysis` 3 against 10 and `roots` 3 against 5 - while `daze` (5), `ooze` (20),
-      `levitation` (20), `invisibility` (20) and `chill` (10) all match Java exactly, which is what
-      makes the four look like tuning rather than transcription. `poison` (6) and `bleeding` (0)
-      have no Java `DURATION` constant to compare against, so they are this port's own convention.
-      Since this project's rule is that values come from the real Java source, the four need either
-      a stated reason or the Java numbers - recorded with the exact values in `PORT_COVERAGE.md`
-      rather than re-balanced here, because changing four core debuff durations is a balance-wide
-      change that wants a deliberate pass. The one buff added since (`wayward`, 10 turns for
-      `Wayward.WaywardBuff`) does use Java's own `DURATION` exactly.
+      **Flagged 2026-09-12 as four durations shorter than Java's with nothing recorded saying why;
+      resolved the same day by auditing every application site of each, and the answer was that
+      Java has no single duration to match.** `burning` is 3 where `Burning.DURATION` is 8,
+      `cripple` 4 against 10, `paralysis` 3 against 10 and `roots` 3 against 5 - but the class
+      constant is Java's default at only 17/22, 7/24, 5/25 and 2/11 of the sites that apply each
+      buff; the rest pass their own literal (1f to 30f) or a formula. The port's three smaller
+      values each turn out to equal a *real* Java site (`cripple` 4 = `WandOfFireblast`'s
+      2-charge zap and `RustedFist`'s, `paralysis` 3 = `DM300`'s rockfall, `roots` 3 = the Soiled
+      fist's zap); **`burning` 3 is the one value that matches no Java site at all**, and its
+      mismatch is not only the number - see `PORT_COVERAGE.md`'s `BUFF_DURATION` row for the full
+      per-site table, the reason the table stays as authored, and the fire-model half of that gap
+      (this port's fire neither refreshes the burn nor damages directly while a target stands in
+      it, where Java's does both every turn). `poison` (6) and `bleeding` (0) have no Java
+      `DURATION` constant to compare against, so they remain this port's own convention. The one
+      buff added since (`wayward`, 10 turns for `Wayward.WaywardBuff`) does use Java's own
+      `DURATION` exactly.
       Badge counters, thresholds, descriptions, and icon indices are now authored in
       `src/content/badges.mwl`; achievement persistence and UI remain runtime adapters.
       Hero level-cap and experience-curve parameters are authored in
@@ -886,13 +891,32 @@ Do not add new authored content as object literals or scattered constants in the
       the existing daze stand-in. The Dark zap's Light weakening, flame/shadow arenas, and
       phase-0 dormancy remain).
 - [x] Port final-vault Amulet placement at Java's `AMULET_POS` (depth 26, x=8, y=12).
-- [ ] Port final-vault endgame-specific terrain, custom visuals, and compass behavior. The
-      vault now runs Java's own `viewDistance = 4` through the shared sight radius (with the
-      darkness-challenge minimum applied on top, matching `updateVisibility()`); chasm cells
-      were already real there, and the compass was already correctly gated on `hasStairs`
-      (false on 26). Remaining: the HALLS_SP custom floor, candle visuals, and the
-      THEME_FINALE music cue (presentation/audio systems with no seam here).
+- [x] Port final-vault endgame-specific terrain, custom visuals, and compass behavior. The
+      vault already ran Java's own `viewDistance = 4` through the shared sight radius (with the
+      darkness-challenge minimum applied on top, matching `updateVisibility()`), and the compass
+      was already correctly gated on `hasStairs` (false on 26). **Closed 2026-09-12**: the last
+      three parts - the HALLS_SP custom tiles, the candle visuals, and the floor decoration - are
+      `src/spdLevelGen/vaultVisuals.ts` plus a scene layer, transcribed from the Java source
+      statement for statement (`CustomFloor.create()`'s cursor arithmetic, its candle cluster, its
+      `tileVariance`/`amuletObtained` variants, and the two `CenterPiece` stamps); the
+      `EMPTY_DECO` scatter Java rolls one `Random.Int(5)` per `EMPTY` cell for is now in
+      `lastLevel()` at its exact stream position; and `create()`'s solid override is real, so the
+      hero can neither walk off the walkway into the void nor down into the sealed entrance
+      chamber (a new `SOLID` terrain kind, checked in `canStepOnto` before the chasm branch that
+      otherwise makes pits enterable - this also fixed the hero arriving on `(9,56)`, a corner of
+      that sealed chamber, instead of Java's transition cell `(8,54)`). `verifyVault.mjs` (6
+      checks, in `npm run test:simulation`) pins the transcription and
+      `tools/scratch/vault-livecheck.mjs` (20 assertions) proves it live. Not ported, stated
+      rather than hidden: Java's `discoverable = false` / `visited = true` pre-seeding for the
+      entrance rows, which this port's terrain-derived fog has no per-cell channel for.
 - [x] Stop dungeon music on entry to the final vault, matching `LastLevel.playLevelMusic()`.
+      **Corrected 2026-09-12**: this line's own wording was wrong when it was ticked - Java's
+      `playLevelMusic()` only *ends* the music once `Statistics.amuletObtained` is true; until the
+      Amulet is taken it plays `THEME_FINALE` on loop, and `AmuletScene` then swaps in the title
+      pair (`THEME_2`/`THEME_1`, the reverse of `TitleScene`'s order). `SpdAudio.vaultMusic`/
+      `winMusic` now do exactly that, with `theme_finale.ogg` copied byte-for-byte out of the tag
+      (the port previously stopped the music on entry, i.e. Java's second branch applied to the
+      first, and had no finale asset at all).
 - [ ] Implement exact arena layouts, seals, pylons, boss phases, minions, traps, projectiles, movement scripts, and victory transitions.
 
 ## 4. Complete NPCs and quests
