@@ -619,6 +619,9 @@ interface SaveShape {
 	heroBarrierState?: { layers: { amount: number; decayPerTick?: number }[] };
 	livingEarthArmor?: number;
 	livingEarthWandLevel?: number;
+	/** `Earthroot.Armor`'s own pool and the cell it was granted on: the buff saves both in Java. */
+	earthrootArmorLevel?: number;
+	earthrootArmorPos?: number;
 	regrowthTotalChargesUsed?: number;
 	regrowthChargesOverLimit?: number;
 	barrierPartialLoss?: number;
@@ -1150,6 +1153,13 @@ export class SewersScene extends Scene2D {
 	private heroBarrier = new Actors.Barrier();
 	/** `WandOfLivingEarth.RockArmor`: stored rock armor and the wand level that set its cap. */
 	private livingEarthArmor = 0;
+	/** `Earthroot.Armor` (`plants/Earthroot.java`, tag `v3.3.8`): a block *pool* of `level` points
+	 * that absorbs `min(damage, (scalingDepth + 5)/2)` per hit and ends when it is exhausted or its
+	 * owner has moved - `act()` and `absorb()` both compare the character's position against the
+	 * `pos` stored when the level was set. Shared by the Earthroot plant (level = the char's max
+	 * HP) and the Entanglement armor glyph (its own smaller level), exactly as Java shares one buff
+	 * between them. */
+	private earthrootArmor: { level: number; pos: number } | null = null;
 	private livingEarthWandLevel = 0;
 	/** `WandOfRegrowth`'s persistent degradation counters, saved with the wand's run state. */
 	private regrowthTotalChargesUsed = 0;
@@ -6779,7 +6789,13 @@ export class SewersScene extends Scene2D {
 				this.say(t('port.log.seedpodburst'), 'positive');
 				break;
 			case 'earthroot':
-				this.grantHeroShield(this.hero.maxHp, this.hero.maxHp);
+				//`Earthroot.activate(ch)`: the plain effect is `Buff.affect(ch, Armor.class)
+				//.level(ch.HT)` - a block pool of the character's own maximum HP that blocks
+				//`(scalingDepth + 5)/2` per hit and ends when the character leaves the cell. This
+				//port used to grant a full-strength Barrier shield instead, which ignored both the
+				//per-hit cap and the movement rule. The Warden's `Barkskin` variant stays
+				//unmodelled, as it was before.
+				this.earthrootArmor = { level: this.hero.maxHp, pos: cell };
 				break;
 			case 'blindweed':
 				if (this.subclass() === 'warden') addBuff(this.hero, 'invisibility');
@@ -10373,8 +10389,31 @@ export class SewersScene extends Scene2D {
 		return (1 + level / 3) * ringArcanaMultiplier(this.equippedRing);
 	}
 
+	/** `Earthroot.Armor.blocking()`: `(Dungeon.scalingDepth() + 5)/2`, integer division. This
+	 * port substitutes `this.depth` for `scalingDepth()` everywhere else that formula appears, so
+	 * it does the same here rather than inventing a second convention. */
+	private earthrootBlocking(): number {
+		return Math.floor((this.depth + 5) / 2);
+	}
+
 	/** Barrier absorbs incoming damage before HP, matching Buff.Barrier's core rule. */
 	private absorbHeroDamage(amount: number, magical = false): number {
+		//`Earthroot.Armor.absorb()`: the pool blocks `min(damage, (scalingDepth + 5)/2)` of every
+		//hit and detaches once exhausted or once its owner has left the cell it was granted on.
+		//Java runs this in `Char.defenseProc()` - before the armor subtraction and ahead of every
+		//shield - while this port's absorption point sits after the damage roll, which has already
+		//taken armor off; a hit therefore burns a little less of the pool here than in Java (stated
+		//in PORT_COVERAGE.md rather than silently). Keep-max, as Java's own `level(value)` is.
+		if (this.earthrootArmor) {
+			if (this.earthrootArmor.pos !== this.level.index(this.hero.x, this.hero.y)) {
+				this.earthrootArmor = null;
+			} else if (amount > 0) {
+				const blocked = Math.min(amount, this.earthrootBlocking());
+				this.earthrootArmor.level -= blocked;
+				amount -= blocked;
+				if (this.earthrootArmor.level <= 0) this.earthrootArmor = null;
+			}
+		}
 		//Hero.damage(): `dmg = ceil(dmg * RingOfTenacity.damageMultiplier())` is applied before
 		//Char.damage()'s own Barrier absorption, so Tenacity scales the raw hit here too.
 		const tenacityMultiplier = ringTenacityMultiplier(this.equippedRing, this.hero.hp, this.hero.maxHp);
@@ -10685,17 +10724,21 @@ export class SewersScene extends Scene2D {
 			this.say(t('port.log.thorns'), 'positive');
 			if (attacker.hp <= 0) this.kill(attacker);
 		}
-		//`Entanglement.proc()`/`Earthroot.Armor` (tag v3.3.8): the 1/4 chance is
-		//Arcana-scaled and the root level is `round((5 + 2*armorLevel) * max(1,chance))`.
-		//This port has no separate immobilizing root object, so the existing movement-lock
-		//`cripple` buff carries that exact duration instead.
+		//`Entanglement.proc()`/`Earthroot.Armor` (tag v3.3.8): the 1/4 chance is Arcana-scaled, and
+		//the **defender** - the hero wearing the armor - gains the same block pool the Earthroot
+		//plant grants, at `round((5 + 2 * armorLevel) * max(1, chance))`. This port used to give the
+		//*attacker* a `cripple` movement lock instead, which was wrong twice over: Java's glyph
+		//protects its wearer rather than disabling the enemy, and it protects by blocking damage.
 		if (defender.isHero && this.armorGlyph === 'entanglement' && !attacker.isHero) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
 			const procChance = 0.25 * ringArcanaMultiplier(this.equippedRing);
-			const procced = Random.chance(procChance);
-			if (procced) attacker.buffs.cripple = Math.max(attacker.buffs.cripple ?? 0, Math.round((5 + 2 * level) * Math.max(1, procChance)));
-			if (procced) {
-			this.say(t('port.log.entanglement'), 'positive');
+			if (Random.chance(procChance)) {
+				const pool = Math.round((5 + 2 * level) * Math.max(1, procChance));
+				this.earthrootArmor = {
+					level: Math.max(this.earthrootArmor?.level ?? 0, pool),
+					pos: this.level.index(this.hero.x, this.hero.y),
+				};
+				this.say(t('port.log.entanglement'), 'positive');
 			}
 		}
 		//`Potential.proc()` (tag v3.3.8): proc chance is `(level+1)/(level+6) * Arcana`
@@ -11647,6 +11690,8 @@ export class SewersScene extends Scene2D {
 			heroBarrierState: this.heroBarrier.toJSON(),
 			livingEarthArmor: this.livingEarthArmor,
 			livingEarthWandLevel: this.livingEarthWandLevel,
+			earthrootArmorLevel: this.earthrootArmor?.level ?? 0,
+			earthrootArmorPos: this.earthrootArmor?.pos ?? -1,
 			regrowthTotalChargesUsed: this.regrowthTotalChargesUsed,
 			regrowthChargesOverLimit: this.regrowthChargesOverLimit,
 			barrierPartialLoss: this.barrierPartialLoss,
@@ -11720,6 +11765,7 @@ export class SewersScene extends Scene2D {
 			: new Actors.Barrier();
 		this.livingEarthArmor = s.livingEarthArmor ?? 0;
 		this.livingEarthWandLevel = s.livingEarthWandLevel ?? 0;
+		this.earthrootArmor = (s.earthrootArmorLevel ?? 0) > 0 ? { level: s.earthrootArmorLevel!, pos: s.earthrootArmorPos ?? -1 } : null;
 		this.regrowthTotalChargesUsed = s.regrowthTotalChargesUsed ?? 0;
 		this.regrowthChargesOverLimit = s.regrowthChargesOverLimit ?? 0;
 		if (!s.heroBarrierState && s.heroShield) this.heroBarrier.add(s.heroShield);

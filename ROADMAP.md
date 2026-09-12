@@ -1134,6 +1134,18 @@ Do not add new authored content as object literals or scattered constants in the
       need a step, the very thing roots prevents) silently did nothing. Fixed and
       browser-verified. Still unported in the same plant: Java also teleports a Mob this way, and
       sends a Warden one depth back when inter-floor teleporting is allowed.
+      **Same day, Earthroot's model was corrected outright, and it fixed the Entanglement glyph with
+      it.** Java's `Earthroot.Armor` is a block *pool*: `HT` points that absorb
+      `min(damage, (scalingDepth+5)/2)` per hit and end when exhausted or when the owner leaves the
+      cell. The plant used to grant a full-strength `Barrier` shield instead (no per-hit cap, no
+      movement rule), and the Entanglement armor glyph - which applies the same buff to the
+      *defender* - was modelled as a `cripple` movement lock on the *attacker*, which inverted both
+      the beneficiary and the effect of a defensive glyph. One pool now serves both, saved with the
+      run, browser-verified live (a 20-damage hit on a depth-1 Earthroot plants blocks exactly 3;
+      moving ends it; the glyph grants `round((5 + 2*level) * max(1, chance))` to the wearer and no
+      longer touches the attacker). Java absorbs in `defenseProc`, before the armor subtraction and
+      ahead of every shield, while this port absorbs after the damage roll - recorded as a stage
+      difference rather than silently kept.
 - [ ] Implement the remaining Java seed and dew behavior in high grass. Actual seed payloads
       (real `Generator` category roll, concrete class retained) and planting them (`plantSeed()`,
       instant activation with no growth delay - confirmed against `Plant.java`'s own
