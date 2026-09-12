@@ -10315,16 +10315,27 @@ export class SewersScene extends Scene2D {
 				if (nearby) addBuff(nearby, 'ooze');
 			}
 		}
-		//Multiplicity.proc(): a 1-in-20 proc duplicates a non-boss attacker into
-		// an available neighboring cell. Mirror-image duplication is not represented
-		// as a separate actor type here, so hero-attacker procs are intentionally skipped.
-		if (defender.isHero && this.armorGlyph === 'multiplicity' && !attacker.isHero && !attacker.isNPC && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing))) {
+		//Multiplicity.proc(): a 1-in-20 proc duplicates the attacker into an available
+		//neighboring cell. Java refuses to copy several classes - `!(toDuplicate instanceof Mob)`,
+		//a `BOSS` or `MINIBOSS` carrier, a `Mimic`, a `Statue` or an `NPC` (`Multiplicity.java`
+		//82-84) - and rather than skipping the proc it substitutes `Dungeon.level.createMob()`,
+		//a random floor mob. This port tests those exclusions the way the rest of the file does
+		//now: the two properties through the real flags, and Mimic/Statue through the base-kind
+		//chain (`crystalMimic`/`armoredStatue` inherit their base's exclusion exactly as Java's
+		//`instanceof` gives them). The previous hand-written kind list named only the six bosses,
+		//so every miniboss could be duplicated; it also never covered Mimic or Statue. Still not
+		//modelled: the random-mob substitution itself (an excluded attacker simply goes
+		//un-duplicated here), and mirror-image duplication, which has no separate actor type -
+		//which is why Java's hero half is skipped.
+		if (defender.isHero && this.armorGlyph === 'multiplicity' && !attacker.isHero && !attacker.isNPC
+			&& !attacker.boss && !attacker.miniboss && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing))) {
 			const adjacent = Roguelike.neighbourOffsets(8)
 				.map(([dx, dy]) => ({ x: this.hero.x + dx, y: this.hero.y + dy }))
 				.filter((at) => this.level.passable(at.x, at.y) && !this.isChasmCell(at.x, at.y) && !this.creatureAt(at.x, at.y));
 			const destination = Random.element(adjacent);
 			const attackerKind = attacker.kind;
-			if (destination && attackerKind && !['goo', 'tengu', 'dm300', 'king', 'yog', 'yogFist'].includes(attackerKind)) {
+			const copyBase = attackerKind === undefined ? undefined : BASE_KIND_ALIASES[attackerKind as AnyMonsterId] ?? (attackerKind as MonsterId);
+			if (destination && attackerKind && copyBase !== 'mimic' && copyBase !== 'statue') {
 				this.spawnMonster(attackerKind, destination);
 			}
 		}
