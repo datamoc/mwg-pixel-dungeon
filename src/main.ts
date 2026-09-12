@@ -9620,22 +9620,13 @@ export class SewersScene extends Scene2D {
 			damage += (this.subclass() === 'assassin' ? 4 : 2) + assassinReachBonus(this.subclass(), this.talentRank('assassins_reach'));
 			this.awardBadge('surprises');
 		}
-		//Every defender-side `damage()` override (`Pylon` 14+/15, `Eye` /4 while charging,
-		//`DemonSpawner` 19+/20, `Slime`/`CausticSlime` 4+/5) applies here, at Java's point: after
-		//the attacker's multipliers and procs, before shields and HP. One call rather than four
-		//inline blocks, and the `Pylon` curve is now in the same place as the rest instead of
-		//above the multiplier chain where it under-reduced every charged-pylon hit.
-		damage = applyDefenderDamageCurves(defender.kind, damage, { beamCharged: defender.beamCharged === true });
-		const lethalThreshold = Math.max(0.4 * this.talentRank('combined_lethality') / 3, enhancedLethalityThreshold(this.subclass(), this.talentRank('enhanced_lethality')));
-		if (attacker === this.hero && lethalThreshold > 0 && defender.hp - damage <= defender.maxHp * lethalThreshold) {
-			damage = defender.hp;
-			this.say(t('port.log.talentexecute'), 'positive');
-		}
-		//Corrupting.proc(): a lethal weapon hit can convert a living Mob instead of
-		//killing it. The port's ally model already provides the permanent controlled
-		//actor shape, so preserve the target, fully heal it, clear negative buffs, and
-		//mark it as an ally. This is evaluated before damage is committed, matching the
-		//Java proc's `damage >= defender.HP` guard and its zero-damage return.
+		//Corrupting.proc() is a weapon proc, so Java runs it in `attackProc()` - before
+		//`enemy.damage()`, and therefore on the pre-`damage()`-override value. Its
+		//`damage >= defender.HP` guard must see that value: a hit that only reaches lethal
+		//after the defender's own curves cut it down (a Slime's 4+/5 soft cap) still counts
+		//as lethal in Java. A lethal hit converts a living Mob instead of killing it - the
+		//port's ally model already provides the permanent controlled actor shape, so keep
+		//the target, fully heal it, clear negative buffs, and mark it as an ally.
 		if (attacker === this.hero && (this.weaponAffix === 'corrupting' || this.unstableDelegated === 'corrupting') && damage >= defender.hp
 			&& !defender.isHero && !defender.isNPC && !defender.isAlly && Random.chance(
 			((Math.max(0, this.degradedLevel(this.weaponLevel)) + 5) / (Math.max(0, this.degradedLevel(this.weaponLevel)) + 25))
@@ -9648,6 +9639,12 @@ export class SewersScene extends Scene2D {
 			damage = 0;
 			this.say(t('port.log.corrupting', { target: defender.name }), 'positive');
 		}
+		//Every defender-side `damage()` override (`Pylon` 14+/15, `Eye` /4 while charging,
+		//`DemonSpawner` 19+/20, `Slime`/`CausticSlime` 4+/5) applies here, at Java's point: after
+		//the attacker's multipliers and procs, before shields and HP. One call rather than four
+		//inline blocks, and the `Pylon` curve is now in the same place as the rest instead of
+		//above the multiplier chain where it under-reduced every charged-pylon hit.
+		damage = applyDefenderDamageCurves(defender.kind, damage, { beamCharged: defender.beamCharged === true });
 		const preHp = defender.hp;
 		if (defender.isHero) damage = this.absorbHeroDamage(damage);
 		//`DwarfKing.damage()` (phase 3) and `RustedFist.damage()` both bank every hit into the same
@@ -9695,6 +9692,20 @@ export class SewersScene extends Scene2D {
 				if (this.level.inside(defender.x + dx, defender.y + dy) && this.level.get(defender.x + dx, defender.y + dy) === HIGH_GRASS) grassCells++;
 			}
 			if (grassCells > 0) damage = Math.round((damage * (6 - grassCells)) / 6);
+		}
+		//The execute mechanics are Java's last step in `attack()`: they run after
+		//`enemy.damage()` has applied everything above - the `damage()` overrides (including
+		//`SoiledFist`'s grass reduction just above), the shield pools, and the HP bookkeeping -
+		//and they set the target's HP to zero outright rather than routing a damage value
+		//through steps that could still reduce it. The `defender.hp - damage > 0` guard mirrors
+		//Java's own `enemy.isAlive()` check after `damage()` returned: a hit that already kills
+		//does not also report an execution. Threshold semantics are still this port's
+		//simplification of Java's two separate mechanics - see `PORT_COVERAGE.md`'s
+		//`attack()`-tail ordering row.
+		const lethalThreshold = Math.max(0.4 * this.talentRank('combined_lethality') / 3, enhancedLethalityThreshold(this.subclass(), this.talentRank('enhanced_lethality')));
+		if (attacker === this.hero && lethalThreshold > 0 && defender.hp - damage > 0 && defender.hp - damage <= defender.maxHp * lethalThreshold) {
+			damage = defender.hp;
+			this.say(t('port.log.talentexecute'), 'positive');
 		}
 		defender.hp -= damage;
 		if (this.fadeMirrorOnDamage(defender, damage)) {

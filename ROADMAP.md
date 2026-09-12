@@ -1611,16 +1611,22 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       `Slime`/`CausticSlime` 4+/5) is now `simulation/defenderDamageCurves.ts`, called once at
       Java's point - and moving `Pylon`'s there fixed a real order bug, since it had been applied
       *above* the augment/talent/proc chain instead of after it (see section 3's Caves/DM-300
-      item). **Three more ordering deviations are now measured but deliberately not yet changed**
-      - reading `Char.java`'s `attack()` to place that family is what surfaced them, and each is a
-      behavioural change in a path with no unit coverage, so they are recorded with Java line
-      numbers in `PORT_COVERAGE.md`'s `attack()`-tail ordering row rather than changed blind:
-      `Corrupting.proc` should compare against the pre-`damage()` value (it currently compares
-      after the curves, so a Slime Java would corrupt survives here); both execute mechanics
-      should run after `enemy.damage()` and set `HP = 0` directly (they currently run before the
-      soiled-fist reduction and the King/DM-300 barrier pools, so a hit the port has already
-      announced as "executed" can leave the target alive); and the port's single merged
-      `max()` threshold should be Java's two separate mechanics, each with its own gates.
+      item). **Three more ordering deviations surfaced from that same reading of `Char.java`'s
+      `attack()`, and two are now fixed and verified (2026-09-12)**: `Corrupting.proc` evaluates its `damage >= defender.hp`
+      guard before the curves again, as `attackProc()` does, so a Slime whose soft cap cuts a
+      lethal raw hit below its HP is still corruptible; and both execute mechanics moved after the
+      `damage()` overrides and the shield pools, guarded on the target surviving this hit so a hit
+      that already kills does not also report an execution. Both were proved live on the built
+      game, and both would have been invisible to a unit check - a 20-HP Slime against a raw 40
+      (soft-capped to 12) corrupted 34 times in 60 swings where the old order managed 0, and a
+      Dwarf King behind a 1000-point `DKBarrier` died outright where the old order left it at full
+      HP with the shield barely touched. **The third remains open and is the reason the row is not
+      simply "Ported"**: the single merged `max()` threshold with its predicted-post-hit-HP test
+      should be Java's two separate mechanics - `combined_lethality`'s exact `0.4*points/3` with
+      its own `BOSS`/`MINIBOSS` and weapon-tracker gates, and the Assassin's
+      `Preparation.AttackLevel.KOThreshold()` table indexed by turns of invisibility (bosses at one
+      fifth), which the port approximates as a flat `0.2*rank` firing on any hit. That needs a
+      Preparation model rather than a formula swap.
 - [x] Compare `mwg/i18n` against the plan's section 22C "Semantic Messaging" shape before
       committing to SPD-ADR-012. Done against the installed 0.4.2 `.d.ts` files: it matches
       (`SemanticMessage`/`MessageChannel`/`MessageFormatter`/`createCatalogFormatter`,
