@@ -7964,11 +7964,20 @@ export class SewersScene extends Scene2D {
 	}
 
 	/** `Elemental.doAttack()`/the four `rangedProc()` implementations (tag `v3.3.8`).
-	 * Elementals use a magic bolt outside melee, then apply their concrete kit: Fire ignites,
-	 * Frost freezes, Shock blinds, and Chaos delegates to a cursed-wand effect. The shared
-	 * port has no Blindness or cursed-wand subsystem, so Shock uses Daze and Chaos uses one
-	 * existing harmful status as explicit stand-ins; Fire/Frost use the existing fire/chill/
-	 * frost primitives. */
+	 * Elementals use a magic bolt outside melee, and the bolt **deals no direct damage at all**:
+	 * `Elemental.zap()` is just `hit(this, enemy, true)` -> `rangedProc(enemy)`, and every
+	 * `rangedProc` is a pure status application - `FireElemental` reignites Burning (unless the
+	 * target stands in water), `FrostElemental` calls `Freezing.freeze`, `ShockElemental` applies
+	 * `Blindness.DURATION/2f`, and `ChaosElemental` delegates to a cursed-wand effect. This port
+	 * used to roll `NormalIntRange(20, 25)` on top of the status, damage real Java never deals -
+	 * an Elemental's threat at range is the status, not a hit. The shared port has no Blindness
+	 * or cursed-wand subsystem, so Shock uses Daze and Chaos uses one existing harmful status as
+	 * explicit stand-ins; Fire/Frost use the existing fire/chill/frost primitives. No explicit hit
+	 * message is logged, matching Java (only the sprite zap and the buff's own announcement).
+	 *
+	 * Not modelled: `ShockElemental.meleeProc`'s electric arc, which deals `round(damage * 0.4)`
+	 * to the chars `Shocking.arc` catches around the melee target (this port has no arc geometry),
+	 * and the Chaos cursed-wand table. */
 	private elementalRangedTurn(monster: Creature): boolean {
 		const target = this.rangedTarget(monster, 5);
 		if (!target) return false;
@@ -7976,10 +7985,6 @@ export class SewersScene extends Scene2D {
 			this.say(t('port.log.boltmisses', { who: capitalize(monster.name) }), 'negative');
 			return true;
 		}
-		const damage = Random.normalRange(20, 25);
-		let dealt = target.isHero ? this.absorbHeroDamage(damage, true) : Math.max(0, damage - Random.normalRange(target.armor[0], target.armor[1]));
-		target.hp -= dealt;
-		this.showDamage(target, dealt);
 		this.spawnProjectile(monster, target);
 		const type = monster.elementalType ?? 'fire';
 		if (type === 'fire' && this.level.get(target.x, target.y) !== WATER) addBuff(target, 'burning');
@@ -7992,8 +7997,6 @@ export class SewersScene extends Scene2D {
 			} else addBuff(target, 'chill');
 		} else if (type === 'shock') addBuff(target, 'daze');
 		else addBuff(target, Random.element(['burning', 'chill', 'cripple', 'daze'] as const) ?? 'daze');
-		this.say(t('port.log.bolthits', { who: capitalize(monster.name), damage: dealt }), 'negative');
-		if (target.hp <= 0) this.kill(target);
 		return true;
 	}
 
