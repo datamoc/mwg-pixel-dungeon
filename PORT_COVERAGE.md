@@ -1972,10 +1972,20 @@ Recorded here, not done, each with the framework API that owns it:
   on spawn; a step plays run and files the tween; sampled mid-tween the sprite sits strictly between
   the two cells and settles exactly on the destination idling; attacking plays attack; and dying
   plays the death clip to its end and *holds* it (`isFinished`, then still `die`).
-- **Wall decoration particles are hand-integrated** (`src/ui/wallDecorations.ts`: own pool, timers,
-  per-particle physics) where `ParticleEmitter` is used for the title flame; the emission-rate,
-  life, speed, gravity, scale and alpha curves it needs all exist as options. The *glow* half is
-  already a documented simplification (a low-alpha circle rather than Java's radial-gradient sprite).
+- **Wall decoration particles stay hand-integrated, and that is now checked rather than assumed.**
+  `src/ui/wallDecorations.ts` keeps its own pool, timers and per-particle physics where
+  `ParticleEmitter` is used for the title flame - and the audit's own earlier claim that the
+  emitter's knobs "all exist as options" was wrong. Against the installed 0.7.8 the emitter
+  interpolates *scale* and *alpha* linearly between a birth and a death value, with a single `tint`
+  for the whole emitter, recomputing each particle from its own age each step; Java's three
+  decorations need three things that cannot be expressed that way - `Sink`'s `WaterParticle` rolls a
+  random **colour per particle** (`color(ColorMath.random(0xb6ccc2, 0x3b6653))`), `Torch`'s
+  `SparkParticle.update()` re-rolls its **size every frame** (`size(Random.Float(size * left /
+  lifespan))`, a jitter rather than an interpolation), and `SmokeParticle.update()` uses a
+  **piecewise alpha** (`am = p > 0.8 ? 2 - 2p : p * 0.5`). The *glow* half is separately a documented
+  simplification (a low-alpha circle rather than Java's radial-gradient sprite), and the Sink's own
+  water ripple (`GameScene.ripple()`) has no hook here. Recorded as proposal P14 in `ROADMAP.md`,
+  with the curves quoted in the layer's own header so the reason is not re-derived.
 - **Modal panels are hand-rolled** (`talentPanel`, the item picker's `Graphics` panel,
   `InfoWindow`) with their own open/close state machine, where `Window`/`WindowStack`/`MessageBox`
   exist and are used for the title screen and the journal. SPD's pixel chrome is why they are not

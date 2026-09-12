@@ -1976,7 +1976,8 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       `AnimatedSprite` playing the same `HeroSprite` cloth-tier clips and sharing the monsters'
       `Tweener` motion map, with the file deleted and the death pose held (`playing !== 'die'` guard
       on the loop's return-to-idle). (4) `src/ui/wallDecorations.ts` hand-integrates its particle
-      pool/physics where `ParticleEmitter` is used for the title flame. (5) The talent panel, item
+      pool/physics - **checked 2026-09-12, and deliberately so**: `ParticleEmitter` cannot express
+      Java's per-particle random colour, per-frame size jitter or piecewise alpha (proposal P14). (5) The talent panel, item
       picker and `InfoWindow` hand-roll modality where `Window`/`WindowStack`/`MessageBox` exist
       (SPD's pixel chrome justifies not being a `Window`; the item picker is exactly `MessageBox`'s
       titled-choice shape). (6) Screen shake: Java's 43 `PixelScene.shake(magnitude, duration)` sites
@@ -2199,6 +2200,19 @@ compatibility notes and an API report entry in MWG before this port adopts it; P
       **2026-09-12 update:** this port no longer waits on it - `src/mechanics/cone.ts` is the
       translation, so the proposal is now (a) for other games and (b) a future consolidation, where
       the framework could take the shape and this port could delete its copy.
+
+- [ ] **P14 - Per-particle colour, jitter and curves in `ParticleEmitter`.** The emitter
+      interpolates `scale` and `alpha` linearly between two endpoints and takes one `tint` for the
+      whole emitter, recomputing each particle from its own age. Java's decoration particles need
+      three things that cannot be expressed that way, which is why this port's
+      `ui/wallDecorations.ts` still runs its own pool: `Sink`'s `WaterParticle` rolls a random
+      *colour* per particle (`color(ColorMath.random(0xb6ccc2, 0x3b6653))`), `Torch`'s
+      `SparkParticle.update()` re-rolls its *size* every frame (`size(Random.Float(size * left /
+      lifespan))` - a flicker, not an interpolation), and `SmokeParticle.update()` needs a
+      *piecewise* alpha (`am = p > 0.8 ? 2 - 2p : p * 0.5`). Any one of the three would let a
+      watabou-style effect migrate: a per-particle colour range, an optional per-frame jitter on
+      scale/alpha, or an alpha/scale *curve* (a function of `age/life`) in place of the endpoint
+      pair. The curves and the layer's reasons are quoted in that file's own header.
 
 ### Explicitly out of scope for MWG
 

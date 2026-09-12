@@ -45,6 +45,18 @@ export type WallDecoKind = 'sink' | 'torch' | 'smoke' | 'ore';
  * first 20% of its life then out via `p*0.25` for the rest - the same two-phase alpha curve as
  * `torch`'s sparks, just with the threshold flipped (0.8 vs 0.2) since a torch spark is born
  * bright and a smoke puff is born faint.
+ *
+ * Why this is hand-integrated rather than a `mwg` `ParticleEmitter`, which the title flame does use
+ * (checked against `two-d/render/Particles.d.ts` on the installed 0.7.8): the emitter interpolates
+ * *scale* and *alpha* linearly between a birth and a death value, with one `tint` for the whole
+ * emitter, recomputing each particle's values from its own age every step. Java's three decoration
+ * particles need three things that cannot be expressed that way - a per-particle random **colour**
+ * (`Sink`'s `WaterParticle`: `color(ColorMath.random(0xb6ccc2, 0x3b6653))` at every birth), a
+ * per-frame **jitter** (`Torch`'s `SparkParticle.update()`: `size(Random.Float(size * left /
+ * lifespan))`, re-rolled each frame rather than interpolated), and a **piecewise curve** (the smoke
+ * above). Recorded as proposal P14 in `ROADMAP.md`; until the framework takes one of the three, this
+ * layer keeps its own pool, so the effect stays the effect Java draws rather than a linear
+ * approximation of it.
  */
 export class WallDecorationLayer extends Container {
 	private readonly kind: WallDecoKind;
