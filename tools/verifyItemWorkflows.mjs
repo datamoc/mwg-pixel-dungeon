@@ -79,7 +79,29 @@ try {
 	assert.deepEqual([...recorded], [[1, 2]]);
 	assert.equal(recordMissileUpgrade(recorded, 1, 5).get(1), 5);
 	assert.equal(recorded.get(1), 2);
-	console.log('PASS item-instance separation, enhancement transfer, upgrade policy, appearance restore, and missile dust pickup');
+	// `Unstable.randomEnchants` (`items/weapon/enchantments/Unstable.java`, tag `v3.3.8`): the
+	// eleven enchantments its proc may delegate a swing to, in Java's own array order - the port
+	// picks a delegate from a single draw, so the index each one sits at has to be Java's for that
+	// draw to mean the same thing. Projecting is Java's deliberate omission ("no on-hit effect")
+	// and Unstable never delegates to itself; the check fails both ways, on a missing delegate and
+	// on one Java does not list.
+	compile(join(root, 'src/generated/mwlContent.ts'), 'generated/mwlContent.js');
+	const { gameData } = require('./generated/mwlContent');
+	const tableRows = (id) => {
+		const tables = [];
+		const walk = (node) => {
+			if (node.tag === 'table' && node.attributes?.id === id) tables.push(node);
+			for (const child of node.children ?? []) walk(child);
+		};
+		for (const rootNode of gameData.roots) walk(rootNode);
+		assert.equal(tables.length, 1, `exactly one ${id} table`);
+		return tables[0].children.filter((child) => child.tag === 'row').map((row) => row.attributes.enchant);
+	};
+	assert.deepEqual(tableRows('unstableEnchants'), [
+		'blazing', 'blocking', 'blooming', 'chilling', 'kinetic', 'corrupting', 'elastic',
+		'grim', 'lucky', 'shocking', 'vampiric',
+	], 'Unstable delegates to exactly Java\'s list, in Java\'s order');
+	console.log('PASS item-instance separation, enhancement transfer, upgrade policy, appearance restore, missile dust pickup, and the Unstable delegate list');
 } finally {
 	rmSync(out, { recursive: true, force: true });
 }

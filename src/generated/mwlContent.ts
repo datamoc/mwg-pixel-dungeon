@@ -1448,8 +1448,8 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "unstable-corrupting",
-								"enchant": "corrupting"
+								"id": "unstable-kinetic",
+								"enchant": "kinetic"
 							},
 							"children": [],
 							"location": {
@@ -1462,13 +1462,27 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "unstable-kinetic",
-								"enchant": "kinetic"
+								"id": "unstable-corrupting",
+								"enchant": "corrupting"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
 								"line": 324,
+								"column": 1
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "unstable-elastic",
+								"enchant": "elastic"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
+								"line": 328,
 								"column": 1
 							},
 							"gettext": []
@@ -1482,7 +1496,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
-								"line": 328,
+								"line": 332,
 								"column": 1
 							},
 							"gettext": []
@@ -1496,7 +1510,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
-								"line": 332,
+								"line": 336,
 								"column": 1
 							},
 							"gettext": []
@@ -1510,7 +1524,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
-								"line": 336,
+								"line": 340,
 								"column": 1
 							},
 							"gettext": []
@@ -1524,7 +1538,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\affix-rules.mwl",
-								"line": 340,
+								"line": 344,
 								"column": 1
 							},
 							"gettext": []

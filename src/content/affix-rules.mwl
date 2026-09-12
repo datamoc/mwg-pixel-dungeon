@@ -318,12 +318,20 @@ id=unstable-chilling
 enchant=chilling
 [/row]
 [row]
+id=unstable-kinetic
+enchant=kinetic
+[/row]
+[row]
 id=unstable-corrupting
 enchant=corrupting
 [/row]
+#Unstable.randomEnchants includes Elastic, and the array order below is Java's own - the port
+#picks a delegate with a single draw, so the index each enchantment sits at is what makes that
+#draw mean the same thing here as it does in Java. Projecting is Java's one deliberate omission
+#("no on-hit effect") and Unstable never delegates to itself, so neither is listed.
 [row]
-id=unstable-kinetic
-enchant=kinetic
+id=unstable-elastic
+enchant=elastic
 [/row]
 [row]
 id=unstable-grim

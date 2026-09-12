@@ -491,8 +491,21 @@ Do not add new authored content as object literals or scattered constants in the
       decay x0.75" shorthand had no Java basis - real storage is kill-overkill only
       (`-HP` beyond the swing's conserved bonus, `round(x arcana x berserk-catalyst)`,
       replacing not adding), decay is `2.5%/turn min 0.1` as a float, and the read-back is
-      `ceil`.** Remaining, each still needing its own system first: Corrupting's
-      conversion, Elastic/Projecting's geometry, and Affection/
+      `ceil`.** **Correction 2026-09-12: the "remaining" list that stood here was wrong on all
+      three counts - Corrupting, Elastic and Affection are all ported**, each with its real
+      formula and reachable in play (Corrupting's lethal-hit conversion into a permanent ally,
+      including the `damage >= defender.hp` guard evaluated before the defender's own `damage()`
+      curves; Elastic's `(level+1)/(level+5) x arcana` proc shoving the defender out along the
+      attack line by `round(2 x max(1, chance))`; Affection's `(level+3)/(level+20) x arcana`
+      charm of the attacker). That list's own premise - "each still needs its own system first" -
+      stopped being true once the ally/charm systems landed, and nobody re-read it. The one real
+      gap it was hiding: **Elastic was missing from `Unstable`'s delegate list**, where Java's
+      `randomEnchants` includes it (and orders Kinetic before Corrupting, which the port had
+      swapped). Fixed, and now guarded both ways - the item suite asserts the authored list equals
+      Java's array exactly, and `tools/scratch/unstable-delegates-livecheck.mjs` drives 440 real
+      swings with an Unstable weapon and sees all eleven delegates fire, Elastic included.
+      `Obfuscation` now contributes its Java-scaled stealth to sleeping detection; only the
+      non-sleeping FOV-binary `seesHero` path remains simplified. `polarized`/
       `Obfuscation` now contributes its Java-scaled stealth to sleeping detection; only the
       non-sleeping FOV-binary `seesHero` path remains simplified. `polarized`/
       `sacrificial`/`displacing` gained real proc branches in an earlier pass, alongside the
