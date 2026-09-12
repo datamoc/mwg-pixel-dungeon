@@ -1670,7 +1670,7 @@ export class SewersScene extends Scene2D {
 	}
 
 	/** any monster in MONSTERS, cut from its own real sprite sheet at its own real frame size */
-	private spawnMonster(kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus'): Creature {
+	private spawnMonster(kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus', championEligible = false): Creature {
 		const baseDef = MONSTERS[kind];
 		//Data-driven: was two long ternary chains (a 7-kind stat-override chain and a 10-kind
 		//base-alias chain) - see `DEPTH_SCALED_STATS`/`BASE_KIND_ALIASES` in monsters.ts.
@@ -1768,13 +1768,23 @@ export class SewersScene extends Scene2D {
 			//shallow floors (`instanceof` checks, so Java's own GreatCrab/Bandit subclasses are
 			//covered by the Crab/Thief checks too) - `this.depth` substitutes for `scalingDepth()`
 			//the same way every other depth-scaled formula in this file already does.
-			champion: isAlly ? null : restoring || !isChallengeEnabled('champion_enemies')
+			//Java rolls a champion in exactly one place: `Level.createMob()`, the path that draws
+			//from the floor's mob rotation (`mobsToSpawn`, `MobSpawner.getMobRotation`). Every
+			//other mob in Java is built by direct construction - a quest miniboss, a mimic, a
+			//pylon, a summon, a swarm split, a bag ally - and so is never championed, which is
+			//also why `rollForChampion` needs no NPC/boss test of its own. `championEligible`
+			//carries that distinction here: true only for the roster spawn in `populate()`, this
+			//port's analogue of `createMob()`. Until 2026-09-12 the guard was a hand-written kind
+			//list instead, so a fetidRat/greatCrab/gnollTrickster/pylon/mimic/larva/ripperDemon/
+			//bee/piranha - or any summoned ally - could roll a champion, and only the real
+			//by-depth blocks below held. `rollForChampion`'s own `Random.Int(6)` type draw is
+			//still approximated by a flat 10% roll on the gameplay stream (see PORT_COVERAGE.md).
+			champion: isAlly ? null : restoring || !isChallengeEnabled('champion_enemies') || !championEligible
 				|| ((kind === 'crab' || kind === 'greatCrab') && this.depth <= 3)
 				|| (baseKind === 'thief' && this.depth <= 4)
 				|| (kind === 'guard' && this.depth <= 7)
 				|| (kind === 'bat' && this.depth <= 9)
-				|| kind === 'pylon'
-				? null : (!isNPC && !isBoss && kind !== 'necroSkeleton' && kind !== 'demonSpawner' && kind !== 'sentry' && kind !== 'rotHeart' && kind !== 'rotLasher' && kind !== 'newbornElemental' && Random.chance(0.1) ? Random.element(['blessed', 'blazing', 'giant', 'growing', 'antimagic', 'projecting'] as const)! : null),
+				? null : (Random.chance(0.1) ? Random.element(['blessed', 'blazing', 'giant', 'growing', 'antimagic', 'projecting'] as const)! : null),
 			championPower: 1.19,
 			combo: 0,
 			moving: 0,
@@ -2826,7 +2836,9 @@ export class SewersScene extends Scene2D {
 				if (at.x === this.hero.x && at.y === this.hero.y) continue;
 				if (this.portedMobCells.has(this.level.index(at.x, at.y))) continue;
 				if (this.creatureAt(at.x, at.y)) continue;
-				this.spawnMonster(roster[rotationIndex++ % roster.length]!, at);
+				//The one spawn that is Java's `createMob()`: drawn from the rolled floor roster, and
+				//therefore the only one that may roll a champion.
+				this.spawnMonster(roster[rotationIndex++ % roster.length]!, at, false, undefined, false, undefined, true);
 				break;
 			}
 		}

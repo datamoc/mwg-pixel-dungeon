@@ -951,6 +951,18 @@ Do not add new authored content as object literals or scattered constants in the
       models subclasses partly as MWL aliases and partly as first-class ids, so the flattening is
       explicit), the gate is its own inert flag, and a `verifyCombat` check pins both the table and
       the alias-table invariant. See `PORT_COVERAGE.md`'s new `AscensionChallenge` row.
+      **And a third bug in the same neighbourhood, 2026-09-12: which spawns could roll a champion.**
+      Java calls `ChampionEnemy.rollForChampion` from exactly one place - `Level.createMob()`, the
+      path that draws from the floor's mob rotation - so every directly-constructed mob (a
+      Ghost-quest miniboss, a mimic, a pylon, a summon, a swarm split, an ally) is never
+      championed, which is why `rollForChampion` needs no NPC/boss test of its own. This port
+      gated the roll on a hand-written kind list, so `fetidRat`/`greatCrab`/`gnollTrickster`,
+      `pylon`, `mimic`/`crystalMimic`, `larva`, `ripperDemon`, `bee`, `piranha` and even summoned
+      allies could all roll one. The guard is now a `championEligible` argument, true at exactly
+      one call site (the rotated-roster spawn in `populate()`, this port's `createMob()` analogue),
+      pinned by a `verifyCombat` check that only one such site exists and browser-verified live:
+      300 eligible rat/snake spawns rolled 25/28 champions, while 300 each of fetidRat, mimic,
+      pylon, larva and an allied rat rolled zero.
 - [ ] Implement remaining blob area propagation, gas, and fire terrain (ordinary fire's
       representable terrain/content slice is covered above; gas and unsupported fire cases remain).
 - [x] Port the Necromancer's skeleton heal/Adrenaline/teleport support behavior - previously it

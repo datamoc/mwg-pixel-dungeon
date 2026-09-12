@@ -298,4 +298,15 @@ export function verifyCombat(require, check) {
 		// rule, `!BOSS && !MINIBOSS` in CombinedLethality), so a kind in both would double-apply
 		for (const kind of flagSet('miniboss')) assert.ok(!flagSet('boss').includes(kind), `${kind} is both BOSS and MINIBOSS`);
 	});
+	check('only the floor-roster spawn is champion-eligible, matching Java\'s createMob path', () => {
+		// Java calls ChampionEnemy.rollForChampion from Level.createMob() alone - the path drawing
+		// from the floor's mob rotation - so every other mob (a quest miniboss, a mimic, a pylon, a
+		// summon, an ally) is never championed. This port carries that as the `championEligible`
+		// argument, true at exactly one call site.
+		const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
+		const calls = [...source.matchAll(/this\.spawnMonster\([^;]*?\);/g)].map((match) => match[0]);
+		const rosterCall = calls.filter((call) => call.includes('roster['));
+		assert.equal(rosterCall.length, 1, `expected one rotated-roster spawn, found ${rosterCall.length}`);
+		assert.match(rosterCall[0], /undefined,\s*true\);\s*$/, 'the roster spawn must pass championEligible');
+	});
 }
