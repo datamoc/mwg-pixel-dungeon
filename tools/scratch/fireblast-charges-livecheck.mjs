@@ -98,14 +98,65 @@ const result = await page.evaluate(() => {
 	const diagnostics = { heroClass: s.heroClass, wandType: s.wandType, ammo: s.ammo, wandLevel: s.weaponLevel, max };
 	const full = casts(max, 40);
 	const half = casts(2, 40);
+
+	// ---- the area half: the cone (every creature hit), the fire seeding with its
+	// adjacent-to-caster exception, and the per-charge Cripple
+	for (const c of [...s.creatures]) if (!c.isHero) { c.hp = 0; s.kill(c); }
+	const free = (x, y) => s.level.inside(x, y) && s.level.passable(x, y) && !s.creatureAt(x, y);
+	const run = (() => {
+		const offsets = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+		for (const [dx, dy] of offsets) {
+			const cells = [1, 2, 3].map((n) => ({ x: hero.x + dx * n, y: hero.y + dy * n }));
+			if (cells.every((c) => free(c.x, c.y))) return { cells, dx, dy };
+		}
+		return null;
+	})();
+	let area = run ? null : { skipped: 'no open three-cell run beside the hero on this seed' };
+	if (run) {
+		const [near, , aim] = run.cells;
+		// a second target beside the aim, inside the arc but not on the line (and farther than the
+		// aim, so the port's own "nearest visible enemy" targeting still picks the aim)
+		const beside = [{ x: aim.x + run.dy, y: aim.y + run.dx }, { x: aim.x - run.dy, y: aim.y - run.dx }].find((c) => free(c.x, c.y));
+		// a third behind the hero, farther than the aim and off the cone's axis entirely
+		const behind = [[-run.dx, -run.dy], [run.dy, run.dx], [-run.dy, -run.dx]]
+			.flatMap(([dx, dy]) => [4, 5, 6].map((n) => ({ x: hero.x + dx * n, y: hero.y + dy * n })))
+			.find((c) => free(c.x, c.y));
+		const aimed = s.spawnMonster('rat', aim);
+		const flanked = beside ? s.spawnMonster('snake', beside) : null;
+		const rear = behind ? s.spawnMonster('crab', behind) : null;
+		for (const mob of [aimed, flanked, rear]) if (mob) { mob.maxHp = mob.hp = 100000; }
+		// a full wand spends two charges (ceil(4*0.3)), which is the branch that cripples; the
+		// one-charge case is phase 1's `half` above, since the count follows the *current* charges
+		restock(max);
+		const chargesSpent = s.wandCharges.current;
+		const fireBefore = { near: s.fire.volumeAt(near.x, near.y), aim: s.fire.volumeAt(aim.x, aim.y), total: s.fire.total() };
+		s['useSpecial']();
+		area = {
+			chargesAtCast: chargesSpent,
+			aimedDamaged: aimed.hp < 100000,
+			aimedBurning: aimed.buffs['burning'] !== undefined,
+			aimedCrippled: aimed.buffs['cripple'] !== undefined,
+			flankedDamaged: flanked ? flanked.hp < 100000 : null,
+			flankedBurning: flanked ? flanked.buffs['burning'] !== undefined : null,
+			rearUntouched: rear ? rear.hp === 100000 && rear.buffs['burning'] === undefined : null,
+			fireNearCell: s.fire.volumeAt(near.x, near.y),
+			fireAtAim: s.fire.volumeAt(aim.x, aim.y),
+			fireTotalBefore: fireBefore.total,
+			fireTotalAfter: s.fire.total(),
+			fireBefore,
+		};
+		for (const mob of [aimed, flanked, rear]) if (mob) { mob.hp = 0; s.kill(mob); }
+	}
 	const heroUnharmed = hero.hp === heroHp;
 	s.wandType = 'magicMissile';
 	monster.hp = 0;
 	s.kill(monster);
-	return { max, full, half, heroUnharmed, diagnostics };
+	return { max, full, half, heroUnharmed, diagnostics, area };
 });
 
 console.log('probe results:', JSON.stringify(result, null, 1));
+const area = result.area;
+const areaOk = area !== null && area.skipped === undefined;
 const expect = [
 	['a full wand spends two charges on a Fireblast cast (ceil(4 * 0.3), not one)', result.full.spent.length === 1 && result.full.spent[0] === 2],
 	['and its damage is in Java\'s two-charge range at level 0: 2 to 8', result.full.minDamage >= 2 && result.full.maxDamage <= 8],
@@ -113,6 +164,13 @@ const expect = [
 	['a wand at 2 charges spends exactly one', result.half.spent.length === 1 && result.half.spent[0] === 1],
 	['and its damage stays in the one-charge range: 1 to 2', result.half.minDamage >= 1 && result.half.maxDamage <= 2],
 	['the caster is unharmed by its own wand', result.heroUnharmed === true],
+	['the aimed creature is hit by the cone and set burning', areaOk && area.aimedDamaged === true && area.aimedBurning === true],
+	['a creature flanking it inside the arc is hit and set burning too', areaOk && area.flankedDamaged === true && area.flankedBurning === true],
+	['a creature behind the caster is outside the cone entirely', areaOk && area.rearUntouched === true],
+	['and a two-charge cast cripples what it hits', areaOk && area.aimedCrippled === true],
+	['the cone seeds no fire on the plain cell directly in front of the caster (Java\'s exception)', areaOk && area.fireNearCell === 0],
+	['but the aimed cell itself is lit, one step before the cone\'s rim', areaOk && area.fireAtAim > 0],
+	['and the floor\'s fire volume grew overall', areaOk && area.fireTotalAfter > area.fireTotalBefore],
 ];
 let failed = 0;
 for (const [label, ok] of expect) {

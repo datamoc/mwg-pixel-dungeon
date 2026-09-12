@@ -4900,6 +4900,87 @@ export class SewersScene extends Scene2D {
 	}
 
 	/**
+	 * `WandOfFireblast.onZap()` (checked against tag v3.3.8). Java's order: seed `1 + charges` of
+	 * Fire on every cone cell except the caster's own, holding back only the cells adjacent to the
+	 * caster that are neither flamable nor solid (any heap there burns instead, unlit); open doors
+	 * as the cone crosses them; collect every character hit; then ignite the flamable, unlit cells
+	 * that share a side with a held-back cell and are strictly *closer* to the collision cell -
+	 * Java's own "This prevents short-range casts not igniting barricades or bookshelves"; a cone
+	 * that came out empty ignites the caster's own cell; and each affected character takes
+
+	 * `damageRoll()`, `Burning.reignite`, plus Cripple (2 charges) or Paralysis (3).
+	 *
+	 * The port's differences, all stated: the collision cell is the aimed creature's cell (this port
+	 * aims at creatures, not cells, and an uncursed wand's own `collisionProperties` is `WONT_STOP`,
+	 * so Java's collision cell is the aimed one anyway); NPCs are excluded from the blast, as every
+	 * other area effect here does, where Java's `Actor.findChar` would catch a shopkeeper; the three
+	 * statuses use the port's shared buff durations (Burning 3 turns against Java's 8, Paralysis 3
+	 * against Java's 4, Cripple 4 either way - see the buff-durations row).
+	 */
+	private useFireblastWand(target: Creature, chargesPerCast: number): void {
+		const cone = coneCells({
+			source: { x: this.hero.x, y: this.hero.y },
+			target: { x: target.x, y: target.y },
+			degrees: 30 + 20 * chargesPerCast,
+			maxDistance: 3 + 2 * chargesPerCast,
+			width: this.level.width,
+			height: this.level.height,
+			trace: (from, to) => this.coneRay(from, to),
+		});
+		const heldBack: Step[] = [];
+		const affected: Creature[] = [];
+		for (const cell of cone.cells) {
+			if (cell.x === this.hero.x && cell.y === this.hero.y) continue;
+			if (this.doors.isDoor(cell.x, cell.y) && !this.doors.isOpen(cell.x, cell.y)) this.doors.open(cell.x, cell.y);
+			const adjacentToCaster = Roguelike.chebyshevDistance(cell, this.hero) <= 1;
+			const solid = !this.level.passable(cell.x, cell.y);
+			if (adjacentToCaster && !(this.isFireFlammableTerrain(cell.x, cell.y) || solid)) {
+				heldBack.push(cell);
+				this.burnFireContents(cell.x, cell.y);
+			} else {
+				this.fire.seed(cell.x, cell.y, 1 + chargesPerCast);
+			}
+			const occupant = this.creatureAt(cell.x, cell.y);
+			if (occupant && !occupant.isHero && !occupant.isNPC) affected.push(occupant);
+		}
+		if (cone.cells.length === 0) heldBack.push({ x: this.hero.x, y: this.hero.y });
+		//`Dungeon.level.trueDistance` is euclidean between cell centres, so comparing squared
+		//distances of the cell coordinates is the same ordering.
+		const closeness = (a: Step, b: Step): number => (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
+		for (const cell of heldBack) {
+			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
+				const at = { x: cell.x + dx, y: cell.y + dy };
+				if (!this.level.inside(at.x, at.y)) continue;
+				if (closeness(at, target) >= closeness(cell, target)) continue;
+				if (!this.isFireFlammableTerrain(at.x, at.y)) continue;
+				if (this.fire.volumeAt(at.x, at.y) > 0) continue;
+				this.fire.seed(at.x, at.y, 1 + chargesPerCast);
+			}
+		}
+		const minimum = (1 + this.weaponLevel) * chargesPerCast;
+		const maximum = chargesPerCast === 1 ? 2 + 2 * this.weaponLevel
+			: chargesPerCast === 2 ? 2 * (4 + 2 * this.weaponLevel)
+				: 3 * (6 + 2 * this.weaponLevel);
+		for (const victim of affected) {
+			const damage = Random.normalRange(minimum, maximum);
+			victim.hp -= damage;
+			if (this.fadeMirrorOnDamage(victim, damage)) continue;
+			this.showDamage(victim, damage);
+			victim.sleeping = false;
+			this.sprite(victim).setColorAdd(0.6, 0.7, 1);
+			this.say(t('port.log.wandhits', { target: victim.name, damage }), 'positive');
+			if (this.subclass() === 'warlock') this.wandCharges.refund(1);
+			if (victim.hp <= 0 && !victim.isAlly) {
+				this.kill(victim);
+				continue;
+			}
+			addBuff(victim, 'burning');
+			if (chargesPerCast === 2) addBuff(victim, 'cripple');
+			else if (chargesPerCast === 3) addBuff(victim, 'paralysis');
+		}
+	}
+
+	/**
 	 * `WandOfTransfusion.onZap()` (local SPD `WandOfTransfusion.java`). Against an enemy the
 	 * wand grants the real `5 + level` hero shield and charms living targets; undead instead
 	 * take the real direct damage roll. Against an ally it heals by `round(5% of hero HT) +
@@ -5947,17 +6028,14 @@ export class SewersScene extends Scene2D {
 			} else {
 				//WandOfMagicMissile.onZap calls ch.damage() directly in Java - never a hit
 				//roll. Fireblast and Lightning use their real level-0/level-scaling rolls too.
-				//Fireblast's own damage half now scales with the charges it spent - Java's
-				//`min() = (1+lvl) * chargesPerCast()` and the three-case `max()` (2+2*lvl,
-				//2*(4+2*lvl), 3*(6+2*lvl)) - so a full wand hits for up to 18 at level 0 rather than 2.
-				//It still targets the selected cell rather than Java's whole cone: `src/mechanics/cone.ts`
-				//exists now, but `WandOfFireblast.onZap()`'s area half is a wider routine than the
-				//Regrowth wand's (see PORT_COVERAGE.md's row for the exact steps still owed: fire seeding
-				//with its adjacent-to-caster exception, opening doors, burning heaps, the neighbours-8
-				//ignition toward the collision cell, and the Cripple/Paralysis by charge). Lightning
-				//likewise arcs to visible adjacent foes instead of Java's Ballistica chain.
+				//Fireblast is now Java's whole area routine (`useFireblastWand`: the cone, the fire
+				//seeding with its adjacent-to-caster exception, doors, heaps, the neighbours-8
+				//ignition, and the per-charge damage and statuses). Lightning still arcs to visible
+				//adjacent foes instead of Java's Ballistica chain.
 				if (this.wandType === 'regrowth') {
 					this.useRegrowthWand(target, chargesPerCast);
+				} else if (this.wandType === 'fireblast') {
+					this.useFireblastWand(target, chargesPerCast);
 				} else if (this.wandType === 'transfusion') {
 					this.useTransfusionWand(target);
 				} else {
@@ -5978,14 +6056,6 @@ export class SewersScene extends Scene2D {
 							? Random.normalRange(1 + this.weaponLevel, 3 + 3 * this.weaponLevel)
 						: this.wandType === 'livingEarth'
 							? Random.normalRange(4, 6 + 2 * this.weaponLevel)
-						: this.wandType === 'fireblast'
-						//`WandOfFireblast.min()`/`max()`: `(1+lvl) * chargesPerCast()` up to one of the
-						//three charge-scaled ceilings - 2+2*lvl, 2*(4+2*lvl), 3*(6+2*lvl).
-						? Random.normalRange(
-							(1 + this.weaponLevel) * chargesPerCast,
-							chargesPerCast === 1 ? 2 + 2 * this.weaponLevel
-								: chargesPerCast === 2 ? 2 * (4 + 2 * this.weaponLevel)
-									: 3 * (6 + 2 * this.weaponLevel))
 						: this.wandType === 'lightning'
 							? Random.normalRange(5 + this.weaponLevel, 10 + 5 * this.weaponLevel)
 								: this.wandType === 'prismaticLight'
@@ -6085,7 +6155,6 @@ export class SewersScene extends Scene2D {
 						addBuff(victim, 'chill');
 						victim.buffs.chill = Math.max(victim.buffs.chill ?? 0, (this.level.get(victim.x, victim.y) === WATER ? 4 : 2) + this.weaponLevel);
 					}
-					if (this.wandType === 'fireblast') addBuff(victim, 'burning');
 					if (this.wandType === 'prismaticLight' && Random.int(0, 5 + this.weaponLevel) >= 3) addBuff(victim, 'daze');
 					this.sprite(victim).setColorAdd(0.6, 0.7, 1);
 					if (this.wandType === 'corrosion') this.say(t('port.log.wandcorrosion', { target: victim.name }), 'positive');
