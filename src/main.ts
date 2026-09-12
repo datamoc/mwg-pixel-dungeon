@@ -449,6 +449,16 @@ const SUBCLASS_OPTIONS: Record<ClassId, readonly string[] | undefined> = {
 const ARMOR_OPTIONS = ['warding', 'arcane'] as const;
 
 /**
+ * The scheduler id the hero is saved under. Every other queued actor is a monster the floor state
+ * already indexes (`mob-<index>` into `FloorState.creatures`), but the hero is deliberately not part
+ * of that array - it outlives every floor - so it needs its own key. See `captureActiveFloor` and
+ * `restoreFloor`: these keys exist only for `Roguelike.Scheduler.toJSON`/`restore`, which identify
+ * actors by a caller-assigned id because the scheduler itself holds references, not ids.
+ */
+const HERO_SCHEDULER_ID = 'hero';
+const MOB_SCHEDULER_ID_PREFIX = 'mob-';
+
+/**
  * `PathFinder.CIRCLE8` in Java's own index order: 0 is up-left and 3 is right, so
  * `index - 1`/`index + 1` walk the ring the way `FireAbility.left()`/`right()` do. The port's
  * own neighbour ordering is a different one, so this table is spelled out rather than reused.
@@ -690,6 +700,16 @@ interface FloorState {
 	manualPlants?: [number, string][];
 	creatures: SavedCreature[];
 	schedulerNow: number;
+	/**
+	 * The whole turn queue, `Roguelike.Scheduler.toJSON` - `now`, the `sequence` counter and every
+	 * entry's time/sequence/priority. This is what makes a load resume the *exact* queue rather than
+	 * a re-derived one: `Scheduler.sort` breaks ties on `priority` then `sequence`, and the previous
+	 * shape (a `schedulerNow` plus a per-creature `nextTurn`, re-added in `creatures` order) handed
+	 * every actor a fresh sequence, so two actors tied on time could swap places across a save/load.
+	 * Optional because saves written before it exist: `restoreFloor` falls back to the old per-creature
+	 * delays when it is absent.
+	 */
+	scheduler?: Roguelike.SchedulerSnapshot;
 }
 
 interface SavedCreature {
@@ -833,11 +853,23 @@ export class SewersScene extends Scene2D {
 	private pathfinder!: Roguelike.Pathfinder;
 	private secrets!: Roguelike.Secrets;
 	private scheduler = new Roguelike.Scheduler<Creature>();
+	/** Set by `restoreFloor` when the saved turn queue already holds the hero, consumed once by
+	 * `enterLevel`'s own `scheduler.add(this.hero, 0)` further down - see that call site. */
+	private restoredHeroQueued = false;
 	/** Set by a monster-turn action that costs more than the default 1 (only
 	 * `Necromancer.firstSummon`'s summon so far), read once via `monsterTurnCost` right after
 	 * `takeMonsterTurn` returns, then cleared at the start of the next monster's turn. */
 	private pendingMonsterTurnCost: number | null = null;
-	private simulation = new SceneSimulationAdapter<Creature>({
+	/**
+	 * The scene→simulation bridge, built through `buildSimulation()` rather than inline because
+	 * `Roguelike.Scheduler.restore` hands back a *new* scheduler instance while the adapter holds
+	 * whatever instance it was constructed with - so restoring a floor rebuilds the adapter too
+	 * (see `restoreFloor`).
+	 */
+	private simulation = this.buildSimulation();
+
+	private buildSimulation(): SceneSimulationAdapter<Creature> {
+		return new SceneSimulationAdapter<Creature>({
 		scheduler: this.scheduler,
 		isGameOver: () => this.gameOver,
 		takeMonsterTurn: (actor) => this.takeMonsterTurn(actor),
@@ -871,7 +903,8 @@ export class SewersScene extends Scene2D {
 				case 'starvation-death': this.kill(this.hero, 'hunger'); break;
 			}
 		},
-	});
+		});
+	}
 	private readonly heroActions: HeroActionPorts = {
 		isParalysed: () => !!this.hero.buffs['paralysis'] || !!this.hero.buffs['frost'],
 		beginTurn: () => { this.awaitingInput = false; },
@@ -2005,6 +2038,12 @@ export class SewersScene extends Scene2D {
 			manualPlants: [...this.manualPlants.entries()],
 			creatures,
 			schedulerNow: this.scheduler.now,
+			//The whole queue, not just `now`: see `FloorState.scheduler`'s own doc comment. Keys are
+			//this port's own - `mob-<index>` into the `creatures` array above (the same indexes
+			//`savedIndex`/`skeletonIndex` already use) and a fixed key for the hero, which that array
+			//deliberately excludes because it outlives every floor.
+			scheduler: this.scheduler.toJSON((creature) =>
+				creature.isHero ? HERO_SCHEDULER_ID : `${MOB_SCHEDULER_ID_PREFIX}${savedIndex.get(creature)}`),
 		});
 	}
 
@@ -2077,12 +2116,42 @@ export class SewersScene extends Scene2D {
 				earthGuardianWandLevel: saved.earthGuardianWandLevel, earthGuardianDefense: saved.earthGuardianDefense,
 				speed: saved.hasteTurns ? (saved.hasteBaseSpeed ?? 1) * 2 : undefined,
 			});
-			this.scheduler.add(creature, Math.max(0, (saved.nextTurn ?? state.schedulerNow) - state.schedulerNow));
 			restored.push(creature);
 		}
 		for (let i = 0; i < state.creatures.length; i++) {
 			const skeletonIndex = state.creatures[i].skeletonIndex;
 			if (skeletonIndex !== undefined) restored[i].skeleton = restored[skeletonIndex] ?? null;
+		}
+		//The turn queue itself: `Scheduler.restore` puts back `now`, the `sequence` counter and each
+		//entry's time/sequence/priority, so a load resumes the exact queue instead of re-deriving one.
+		//Actors are looked up by the same keys `captureActiveFloor` wrote - `mob-<index>` into the
+		//array just rebuilt, plus the hero, which that array deliberately excludes. A key that does
+		//not resolve is thrown rather than swallowed: `restore` inserts whatever `actorOf` returns,
+		//and an `undefined` entry would only surface later as a crash inside the turn loop.
+		if (state.scheduler) {
+			const byId = new Map<string, Creature>(restored.map((creature, index) => [`${MOB_SCHEDULER_ID_PREFIX}${index}`, creature]));
+			this.scheduler = Roguelike.Scheduler.restore(state.scheduler, (id) => {
+				if (id === HERO_SCHEDULER_ID) return this.hero;
+				const creature = byId.get(id);
+				if (!creature) throw new Error(`saved turn queue references an unknown actor: ${id}`);
+				return creature;
+			});
+			//The hero is in the restored queue already (with the turn time and sequence it had), so
+			//`enterLevel` must not add it a second time - `Scheduler.add` does not guard duplicates and
+			//a duplicate entry would give the hero two turns per round. Derived from the snapshot rather
+			//than assumed: a queue that somehow holds no hero entry falls back to the plain add below,
+			//which is also what keeps `advanceToInput` able to stop on hero input.
+			this.restoredHeroQueued = state.scheduler.entries.some((entry) => entry.id === HERO_SCHEDULER_ID);
+			//`buildSimulation()` captured the scheduler instance it was built with, and this is a new
+			//one, so the bridge is rebuilt against it.
+			this.simulation = this.buildSimulation();
+		} else {
+			//A save from before the queue was serialised: `schedulerNow` plus each creature's
+			//`nextTurn` still rebuild a working queue, just without the original tie order.
+			for (let index = 0; index < state.creatures.length; index++) {
+				const saved = state.creatures[index];
+				this.scheduler.add(restored[index], Math.max(0, (saved.nextTurn ?? state.schedulerNow) - state.schedulerNow));
+			}
 		}
 		//Rebuild any in-progress Tengu fire cone from its saved beam: the live `MultiTurnBeam`
 		//itself is never serialized, only its `toJSON()` on the creature's `tenguFire`. A save
@@ -2391,7 +2460,10 @@ export class SewersScene extends Scene2D {
 		//removeChildren() above cleared every sprite, including the hero's - it survives
 		//floor transitions, so it goes back in rather than being rebuilt
 		this.creatureLayer.addChild(this.sprite(this.hero));
-		this.scheduler.add(this.hero, 0);
+		//A restored floor's queue already contains the hero, with the exact turn time and sequence it
+		//had when saved (`Scheduler.restore`); adding it again here would queue it twice.
+		if (this.restoredHeroQueued) this.restoredHeroQueued = false;
+		else this.scheduler.add(this.hero, 0);
 		this.placeEntrance(start);
 
 		if (this.hasStairs) this.drawStairsSprite();

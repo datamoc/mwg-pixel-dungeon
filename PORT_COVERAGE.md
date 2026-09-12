@@ -1931,8 +1931,28 @@ Recorded here, not done, each with the framework API that owns it:
   snapshot's `sequence` counter is lost and two actors tied on `nextTurn` can resolve in a different
   order after a load than they would have without saving (the framework's `restore` doc says
   explicitly that it restores "`now` *and the sequence counter* so that ties among actors added
-  afterwards resolve exactly as they would have"). Adopting it means a save-shape change plus a
-  legacy branch, so it wants its own pass with a live save/load round-trip check.
+  afterwards resolve exactly as they would have"). **Adopted the same day - see the next bullet.**
+- **Scheduler persistence now uses `Scheduler.toJSON`/`Scheduler.restore`** (2026-09-12). It used to
+  save only `schedulerNow` plus a per-creature `nextTurn` and re-add actors in `state.creatures`
+  order, which loses the snapshot's `sequence` counter - and since `Scheduler.sort` breaks ties on
+  `time`, then `priority`, then `sequence`, two actors tied on time could come out of a load in a
+  different order than they would have without saving. `FloorState.scheduler` now holds the whole
+  queue (`Roguelike.Scheduler.toJSON`), keyed by ids this port assigns - `mob-<index>` into the
+  same `creatures` array `savedIndex`/`skeletonIndex` already index, plus `hero` for the one actor
+  that array deliberately excludes because it outlives every floor. Restore rebuilds a *new*
+  scheduler through `Scheduler.restore`, so `SceneSimulationAdapter` (which captured the old
+  instance at construction) is now built by `buildSimulation()` and rebuilt there; `enterLevel`'s own
+  `scheduler.add(this.hero, 0)` is skipped only when the restored queue actually holds a hero entry
+  (derived from the snapshot, not assumed - `Scheduler.add` does not guard duplicates, and a queue
+  with no hero would leave `advanceToInput` unable to stop for input). Saves written before the
+  snapshot still load: the legacy branch re-adds actors from `nextTurn`/`schedulerNow` exactly as
+  before. Live-verified (`tools/scratch/scheduler-queue-livecheck.mjs`, 13 assertions): a queue
+  deliberately ordered *against* the creature array (hero, crab, snake, rat at one time) survives two
+  save/load round-trips entry-for-entry with `now` and `sequence` intact; a real `KeyF` search on the
+  loaded game spends the hero's turn (its scheduler time 100 -> 101) and returns to hero input with
+  the hero queued exactly once; and a save with the snapshot stripped still loads and still reaches
+  hero input. This was the audit's "next concrete adoption" and the only item in its list that was a
+  real save/load divergence rather than a capability gap.
 - **The inventory UI is hand-rolled** (`src/ui/inventoryWindow.ts`: slot grid, category tabs,
   20-per-page paging, own `setItems`/`handleAction`), where `ListView`, `IconGrid`, `TabbedList` and
   `ScrollBox` ship paging, masked scrolling, keyboard navigation and pointer selection. See the

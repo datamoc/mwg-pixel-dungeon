@@ -1939,8 +1939,12 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       and re-adds actors in `state.creatures` order, so `SchedulerSnapshot.sequence` is lost and
       actors tied on `nextTurn` can resolve in a different order after a load;
       `Roguelike.Scheduler.toJSON(actorId)`/`Scheduler.restore(snapshot, actorOf)` is the
-      documented pair, and adopting it is a save-shape change plus a legacy branch plus a live
-      save/load round-trip check - the next concrete adoption. (2) The inventory UI
+      documented pair - **done 2026-09-12**: `FloorState.scheduler` now carries the whole queue
+      (keyed `mob-<index>`/`hero`), restore goes through `Scheduler.restore` and rebuilds the
+      simulation adapter against the new instance, `enterLevel` skips its own hero add only when
+      the restored queue holds one, and saves without the snapshot still load; verified live with
+      13 assertions (`tools/scratch/scheduler-queue-livecheck.mjs`) including a real keypress
+      spending the hero's turn after a load. (2) The inventory UI
       (`src/ui/inventoryWindow.ts`) reimplements a slot grid, category tabs, 20-per-page paging and
       masked scrolling that `IconGrid`/`TabbedList`/`ListView`/`ScrollBox` ship - note the port's
       own `PORT_COVERAGE.md` row claiming a `ListView`-based panel was *not* true of this
