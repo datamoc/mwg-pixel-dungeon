@@ -1046,13 +1046,38 @@ Do not add new authored content as object literals or scattered constants in the
       `WindowStack` window (`showChoiceWindow`) with SPD's own labels and costs in all 19
       locales, each entry disabled unless the favor covers it; the harden service sets
       `enchantHardened`/`glyphHardened` on a picked item and replaces the upgrade affix-loss
-      roll with Java's hardening-loss roll. Verified live (10 assertions). Remaining: Java's
-      pickaxe buy-back and `smith` (the latter needs the quest's pre-generated reward pool),
-      plus the missile/seal transfer details this bullet also tracked. The paid `upgrade`
+      roll with Java's hardening-loss roll. Verified live (10 assertions). The paid `upgrade`
       (below +2) and `cash out` are ported as well, so four of Java's six services are live
       and verified (12 assertions). While implementing it, a wrong claim in `main.ts`'s own
       comment was found and corrected: hardening comes from this service, not from
       `StoneOfEnchantment`.
+      **`smith` is now ported too (2026-09-13)**, the fifth of six: `Blacksmith.Quest.generateRewards(useDecks)`'s
+      four tier-3 rewards (two weapons of different classes, one missile, one armor, one shared
+      upgrade-level roll at 30/45/20/5% for +0/+1/+2/+3, one shared enchant/glyph keep-roll) are
+      generated lazily on first open - Java's own fallback shape (`WndSmith`'s
+      `generateRewards(false)`) rather than the deck-drawn set the quest normally pre-generates on
+      spawn, so the deck bookkeeping is a stated simplification, not a silent drop. A flat 2000
+      favor buys whichever of the four the player picks; the other three are discarded, matching
+      `WndSmith.onSelect`. Verified live end-to-end (`tools/scratch/blacksmith-harden-livecheck.mjs`,
+      14/14 assertions): the five-service window renders, the four rewards render as distinct,
+      correctly-named items, taking one charges the flat cost and clears the set, and cash-out
+      (retested in the same pass) still trades favor for gold 1-for-1.
+      **This verification pass surfaced two real, pre-existing bugs, neither introduced by
+      `smith` itself, both fixed here:** (1) `ITEM_KEYS` never merged in a name for any of the
+      fifteen `missile_*` generated-missile identities (`src/content/missiles.mwl`'s
+      `MwlMissileDefinition` carries only combat metadata, no `.name`, unlike the consumable
+      catalogue's items) - the smith's own missile reward was the first live UI path to ever
+      render one of these ids through `itemDisplayName`, and it showed the bare id
+      (`missile_kunai`) instead of a name. Fixed in `src/i18n/spdKeys.ts` by deriving
+      `items.weapon.missiles.<sourceClass>.name` for all fifteen from `MWL_MISSILE_DEFINITIONS`,
+      the same Java `Messages.get` bundle-key convention every other lookup table here already
+      uses. (2) `confirmBlacksmithCashOut`'s payout log line hardcoded the wrong key
+      `items.gold.gold.name` (should be `items.gold.name`, i.e. `ITEM_KEYS.gold`) and so always
+      logged the raw key text instead of "Gold" - invisible until this pass actually looked at
+      the log line in a screenshot rather than only checking the numeric favor/gold state. Fixed
+      to call the same `itemDisplayName('gold', true)` helper every other pickup log site uses.
+      Remaining: Java's pickaxe buy-back (the sixth and last service), plus the missile/seal
+      transfer details this bullet also tracks.
 - [ ] Port Rat King and other missing special NPCs. Rat King is now complete for its core
       exchange (room drops real `Gold(10-25)` CHEST heaps, the king spawns sleeping with
       his own art, wakes with the real yell, awards the crown exchange when worn armor is

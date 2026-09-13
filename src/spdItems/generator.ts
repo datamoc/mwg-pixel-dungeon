@@ -834,3 +834,37 @@ export function cursedGiftPrize(floorSet: number, kind: 'armor' | 'weapon'): Gen
 	}
 	return prize;
 }
+
+/**
+ * `Blacksmith.Quest.generateRewards(useDecks)` (`Blacksmith.java` 370-407): four tier-3 rewards -
+ * two weapons of *different* classes, one missile, one armor - all sharing one upgrade level
+ * (30/45/20/5% for +0/+1/+2/+3) and one enchant roll. Java pre-generates them when the quest
+ * spawns, with `useDecks = true` so they come out of the level's own item decks; this port
+ * generates them lazily on first open, which is Java's own fallback branch (`WndSmith`'s
+ * `generateRewards(false)`), so the deck bookkeeping is stated as not modelled rather than faked.
+ */
+export function blacksmithSmithRewards(): GenItem[] {
+	const first = randomCategory(Cat.WEP_T3);
+	let second = randomCategory(Cat.WEP_T3);
+	while (second.cls === first.cls) second = randomCategory(Cat.WEP_T3);
+	const missile = randomCategory(Cat.MIS_T3);
+	//tier 3's class, from the same tier-indexed list the Ghost's own reward reads
+	const armorClass = GHOST_ARMOR_CLASSES[2] ?? 'MailArmor';
+	//30%:+0, 45%:+1, 20%:+2, 5%:+3 - one roll shared by all four items
+	const itemLevelRoll = SpdRandom.float();
+	const itemLevel = itemLevelRoll < 0.3 ? 0 : itemLevelRoll < 0.75 ? 1 : itemLevelRoll < 0.95 ? 2 : 3;
+	//Java generates a real enchant AND a real glyph before the 30% roll "so the outcome doesn't
+	//affect the number of RNG rolls"; the port's GenItem carries only whether the enchant was
+	//kept, and its concrete affix is rolled when the item itself is created.
+	const weaponEnchantType = SpdRandom.chances(ENCH_TYPE_CHANCES);
+	SpdRandom.int(ENCH_POOL_SIZES[weaponEnchantType < 0 ? 0 : weaponEnchantType]);
+	const armorGlyphType = SpdRandom.chances(ENCH_TYPE_CHANCES);
+	SpdRandom.int(ENCH_POOL_SIZES[armorGlyphType < 0 ? 0 : armorGlyphType]);
+	const keepEnchant = SpdRandom.float() <= 0.3;
+	return [
+		{ ...first, level: itemLevel, cursed: false, hasGoodEnchant: keepEnchant },
+		{ ...second, level: itemLevel, cursed: false, hasGoodEnchant: keepEnchant },
+		{ ...missile, level: itemLevel, cursed: false, hasGoodEnchant: keepEnchant },
+		{ cat: Cat.ARMOR, cls: armorClass, cursed: false, level: itemLevel, quantity: 1, hasGoodEnchant: keepEnchant },
+	];
+}

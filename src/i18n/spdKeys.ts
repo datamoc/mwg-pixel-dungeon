@@ -15,7 +15,7 @@
  * instead: the Cleric (a later version than these `.properties`; the class itself came from
  * tag `v3.3.8`) and Berserk (which has status strings but no `.name`).
  */
-import { MWL_CONSUMABLE_ITEMS, MWL_TRAIT_NODES } from '../mwlContent';
+import { MWL_CONSUMABLE_ITEMS, MWL_MISSILE_DEFINITIONS, MWL_TRAIT_NODES } from '../mwlContent';
 
 /** `actors.mobs.*` - the port's roster against SPD's own class names */
 export const MOB_KEYS: Record<string, string> = {
@@ -212,6 +212,11 @@ const LEGACY_ITEM_KEYS: Record<string, string> = {
 export const ITEM_KEYS: Record<string, string> = {
 	...LEGACY_ITEM_KEYS,
 	...Object.fromEntries(MWL_CONSUMABLE_ITEMS.map((item) => [item.id, item.name])),
+	//`MwlMissileDefinition` carries only combat metadata (see `mwlContent.ts`), no `.name` -
+	//derived here from `sourceClass` the same way Java's own `Messages.get(Class, "name")`
+	//bundle-key convention does, rather than hand-listing the 15 (found missing live: the
+	//Blacksmith's smith reward rendered a bare `missile_kunai` instead of "kunai").
+	...Object.fromEntries(MWL_MISSILE_DEFINITIONS.map((def) => [def.id, `items.weapon.missiles.${def.sourceClass.toLowerCase()}.name`])),
 };
 
 /** `items.rings.*` */

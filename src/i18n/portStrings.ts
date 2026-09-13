@@ -528,6 +528,11 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.blacksmith.cashout.verify': 'Okay so that\'s {favor} gold. I\'m not doin\' any more work for you after dis though!',
 	'port.blacksmith.cashout.yes': 'Give me the gold.',
 	'port.blacksmith.cashout.no': 'Nevermind.',
+	'port.blacksmith.smith': '_Smith ({favor} favor):_ I can try forging a weapon or armor for you from scratch. It\'ll be higher tier and probably upgraded, and you\'ll get some choice over what you get.',
+	'port.blacksmith.smith.verify': 'Alright, I\'ll get the forge warmed up and then you can pick what you want.',
+	'port.blacksmith.smith.yes': 'Okay, warm the forge.',
+	'port.blacksmith.smith.no': 'Nevermind.',
+	'port.blacksmith.smith.prompt': 'Okay, here\'s what I can make. I\'ve already got the forge fired up so choose quickly.',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -1014,6 +1019,11 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 	'port.blacksmith.cashout.verify': 'D\'accord, je te donne {favor} d\'or. Mais je ne ferai plus rien pour toi après ça !',
 	'port.blacksmith.cashout.yes': 'Donnez-moi l\'or.',
 	'port.blacksmith.cashout.no': 'J\'ai changé d\'avis.',
+	'port.blacksmith.smith': '_Forger ({favor} faveur) :_ J\'peux essayer de forger une arme ou une armure pour toi à partir de zéro. Elle sera de qualité supérieure et probablement améliorée, et t\'auras un certain choix sur ce que t\'obtiendras.',
+	'port.blacksmith.smith.verify': 'D\'accord, je vais faire chauffer la forge et tu pourras choisir ce que tu veux.',
+	'port.blacksmith.smith.yes': 'D\'accord, faites chauffer la forge.',
+	'port.blacksmith.smith.no': 'J\'ai changé d\'avis.',
+	'port.blacksmith.smith.prompt': 'D’accord, voila ce que j\'peux te faire. J’ai déjà allumé la forge, alors choisis vite.',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -1490,6 +1500,11 @@ export const PORT_STRINGS_DE: Record<string, string> = {
 	'port.blacksmith.cashout.verify': 'Okay, das gibt {favor} Gold. Danach mach ich aber keine Arbeit mehr für dich!',
 	'port.blacksmith.cashout.yes': 'Gib mir das Gold.',
 	'port.blacksmith.cashout.no': 'Lass gut sein.',
+	'port.blacksmith.smith': '_Schmied ({favor} Gunst):_ Ich kann versuchen, eine neue Waffe oder Rüstung für dich zu schmieden. Es würde eine höherklassige werden und wahrscheinlich auch verbessert, und du hast eine gewisse Auswahl darüber, was genau du möchtest.',
+	'port.blacksmith.smith.verify': 'Alles klar, ich feuere den Schmelzofen an und dann kannst du dir was aussuchen.',
+	'port.blacksmith.smith.yes': 'Feuere an.',
+	'port.blacksmith.smith.no': 'Lass gut sein.',
+	'port.blacksmith.smith.prompt': 'Okay, pass auf, das kann ich machen. Ich hab\' den Schmiedeofen schon angeheizt, also beeile dich mit deiner Entscheidung.',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -1966,6 +1981,11 @@ export const PORT_STRINGS_ES: Record<string, string> = {
 	'port.blacksmith.cashout.verify': 'Bien, eso sería {favor} de oro. ¡Y no haré más herrería para ti después de esto!',
 	'port.blacksmith.cashout.yes': 'Me llevo el oro.',
 	'port.blacksmith.cashout.no': 'Olvídalo.',
+	'port.blacksmith.smith': '_Fabricar ({favor} favor):_ Puedo intentar forjarte un arma o una armadura desde cero. Será de mayor tier y probablemente mejorada, y tendrás alguna elección sobre lo que obtendrás.',
+	'port.blacksmith.smith.verify': 'De acuerdo, encenderé la forja así puedes elegir lo que quieres.',
+	'port.blacksmith.smith.yes': 'Muy bien, házlo.',
+	'port.blacksmith.smith.no': 'Olvídalo.',
+	'port.blacksmith.smith.prompt': 'Bien, esto es lo que puedo hacer. Ya tengo la forja encendida así que elige rápido.',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -2443,6 +2463,11 @@ export const PORT_STRINGS_PT: Record<string, string> = {
 	'port.blacksmith.cashout.verify': 'Certo, isso dá {favor} de ouro. Mas eu não vou mais fazer nenhum trabalho pra você depois disso!',
 	'port.blacksmith.cashout.yes': 'Me dê o ouro.',
 	'port.blacksmith.cashout.no': 'Não, obrigado.',
+	'port.blacksmith.smith': '_Forjar ({favor} favor):_ Eu posso tentar forjar uma arma ou armadura do zero. Ela será de tier alto e provavelmente aprimorada, e você poderá escolher o que vai receber.',
+	'port.blacksmith.smith.verify': 'Está bem, eu vou aquecer a forja e então você pode escolher o que vai querer.',
+	'port.blacksmith.smith.yes': 'Está certo, aqueça a forja.',
+	'port.blacksmith.smith.no': 'Não, obrigado.',
+	'port.blacksmith.smith.prompt': 'Certo, eis o que posso fazer. Eu já aqueci a forja, então escolha logo.',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -2919,6 +2944,11 @@ export const PORT_STRINGS_IT: Record<string, string> = {
 	'port.blacksmith.cashout.verify': 'Ok, quindi è {favor} oro. Però non lavorerò più per te dopo questo!',
 	'port.blacksmith.cashout.yes': 'Dammi l\'oro.',
 	'port.blacksmith.cashout.no': 'Non importa.',
+	'port.blacksmith.smith': '_Fabbro ({favor} favore):_ Posso provare a forgiare un\'arma o un\'armatura per te da zero. Sarà di livello superiore e probabilmente migliorato e avrai una certa scelta su ciò che ottieni.',
+	'port.blacksmith.smith.verify': 'Va bene, riscalderò la fucina e poi potrai scegliere quello che vuoi.',
+	'port.blacksmith.smith.yes': 'Ok, scalda la fucina.',
+	'port.blacksmith.smith.no': 'Non importa',
+	'port.blacksmith.smith.prompt': 'Ok, ecco cosa posso fare. Ho già acceso la fucina, quindi scegli velocemente.',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -3395,6 +3425,11 @@ export const PORT_STRINGS_PL: Record<string, string> = {
 	'port.blacksmith.cashout.verify': 'Dobra, to będzie {favor} złota. Nie będę nic więcej dla ciebie robił, jeśli się na to zdecydujesz!',
 	'port.blacksmith.cashout.yes': 'Daj mi to złoto.',
 	'port.blacksmith.cashout.no': 'Nieważne.',
+	'port.blacksmith.smith': '_Wykucie ({favor} pkt. przysługi):_ Mogę spróbować wykuć tobie zupełnie nową broń lub pancerz. Przedmiot będzie wysokiego kręgu i prawdopodobnie ulepszony. Będziesz miał pewną możliwość wyboru, co dostaniesz.',
+	'port.blacksmith.smith.verify': 'No dobra, rozgrzeję kuźnię i będziesz mógł wybrać sobie to, czego chcesz.',
+	'port.blacksmith.smith.yes': 'Dobra, rozpalaj kuźnię.',
+	'port.blacksmith.smith.no': 'Nieważne.',
+	'port.blacksmith.smith.prompt': 'Dobra, wybieraj, co mam dla ciebie zrobić. Tylko szybko, bo kuźnia już rozgrzana, a ja nie mam całego dnia.',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -3849,6 +3884,11 @@ export const PORT_STRINGS_RU: Record<string, string> = {
 	'port.blacksmith.cashout.verify': 'Итого {favor} золота. Но смотри, потом я тебе уже ничего не должен!',
 	'port.blacksmith.cashout.yes': 'Давай золото.',
 	'port.blacksmith.cashout.no': 'Не надо.',
+	'port.blacksmith.smith': '_Ковка ({favor} уважения):_ Я могу попробовать с нуля выковать для тебя оружие или броню. Такой предмет будет высокого уровня и, скорее всего, улучшенным, а также у тебя будет некий выбор того, что именно хочешь получить.',
+	'port.blacksmith.smith.verify': 'Хорошо, я растоплю кузницу, а там выберешь, что тебе хочется.',
+	'port.blacksmith.smith.yes': 'Растапливай.',
+	'port.blacksmith.smith.no': 'Не надо.',
+	'port.blacksmith.smith.prompt': 'Лады, вот что я могу сделать. Я уже разжег кузницу, так что решай побыстрее.',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -4303,6 +4343,11 @@ export const PORT_STRINGS_TR: Record<string, string> = {
 	'port.blacksmith.cashout.verify': 'Tamam, bu {favor} altın eder. Bundan sonra senin için başka bir iş yapmayacağım!',
 	'port.blacksmith.cashout.yes': 'Altını bana ver.',
 	'port.blacksmith.cashout.no': 'Boş ver.',
+	'port.blacksmith.smith': '_Hamallık ({favor} minnet):_ Senin için sıfırdan bir silah veya zırh üretmeyi deneyebilirim. Daha yüksek kademeli, muhtemelen yükseltilmiş olacak ve ne alacağın konusunda biraz seçim şansın olacak.',
+	'port.blacksmith.smith.verify': 'Pekala, ocağı ısıtayım, sonra istediğini seçersin.',
+	'port.blacksmith.smith.yes': 'Tamam, ocağı ısıt.',
+	'port.blacksmith.smith.no': 'Boşver.',
+	'port.blacksmith.smith.prompt': 'Tamam, işte yapabileceğim şey. Demirhaneyi şimdiden ateşledim o yüzden çabuk seç.',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -4755,6 +4800,11 @@ export const PORT_STRINGS_UK: Record<string, string> = {
 	'port.blacksmith.cashout.verify': 'Добре, ось {favor} золотих. Але знай, на цьому наша угода закінчиться!',
 	'port.blacksmith.cashout.yes': 'Дай мені золото.',
 	'port.blacksmith.cashout.no': 'Не зважай.',
+	'port.blacksmith.smith': '_Кування ({favor} жетонів):_ Можу спробувати викувати зброю чи обладунок для тебе. Цей предмет буде вищого рангу і, либонь, ще й поліпшений, крім того, тобі вирішувати, що саме кувати.',
+	'port.blacksmith.smith.verify': 'Згода, я розтоплю горно, а тоді вже вибереш, що тобі до душі.',
+	'port.blacksmith.smith.yes': 'Добре, розтоплюй.',
+	'port.blacksmith.smith.no': 'Не зважай.',
+	'port.blacksmith.smith.prompt': 'Гаразд, ось що можу для тебе викувати. Я вже розтопив горно, тож обирай хутчіше.',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -5207,6 +5257,11 @@ export const PORT_STRINGS_HU: Record<string, string> = {
 	'port.blacksmith.cashout.verify': 'Oké, ez {favor} aranyat ér. De ezutá\' nem csinálok több munkát neked!',
 	'port.blacksmith.cashout.yes': 'Add ide az aranyat.',
 	'port.blacksmith.cashout.no': 'Nem érdekel.',
+	'port.blacksmith.smith': '_Kovácsolás ({favor} szívesség):_ Megpróbálhatok neked teljesen új fegyvert, vagy páncélt kovácsolni. Magasabb szintű lesz, és valószínűleg fejlesztett, és lesz némi beleszólásod, hogy milyen legyen.',
+	'port.blacksmith.smith.verify': 'Rendben, bemelegítem a kovácsműhelyt, aztán kiválaszthatod, amit akarsz.',
+	'port.blacksmith.smith.yes': 'Oké, melegítsd fel a kovácsműhelyt.',
+	'port.blacksmith.smith.no': 'Nem érdekel.',
+	'port.blacksmith.smith.prompt': 'Jó\'van, én ezeket tudom megcsinálni neked. A kohó már elég forró, úgyhogy válassz gyorsan.',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -5658,6 +5713,11 @@ export const PORT_STRINGS_NL: Record<string, string> = {
 	'port.blacksmith.cashout.verify': 'Oké, dus dat is {favor} goud. Maar daarna doe ik geen werk meer voor je!',
 	'port.blacksmith.cashout.yes': 'Geef me het goud',
 	'port.blacksmith.cashout.no': 'Laat maar zitten.',
+	'port.blacksmith.smith': '_Smid ({favor} gunstpunten):_ Ik kan proberen een wapen of pantser helemaal opnieuw voor je te smeden. Het is van een hoger niveau en waarschijnlijk opgewaardeerd, en je krijgt keuze uit wat je krijgt.',
+	'port.blacksmith.smith.verify': 'Oké, ik zal de smederij opwarmen en dan kun je kiezen wat je wilt.',
+	'port.blacksmith.smith.yes': 'Oké, warm de smederij op.',
+	'port.blacksmith.smith.no': 'Laat maar zitten.',
+	'port.blacksmith.smith.prompt': 'Oké, dit is wat ik kan maken. Ik heb de smederij al warm, dus kies snel.',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -6110,6 +6170,11 @@ export const PORT_STRINGS_IN: Record<string, string> = {
 	'port.blacksmith.cashout.verify': 'Oke jadi itu {favor} emas. Aku tidak akan bekerja lagi untukmu setelah ini!',
 	'port.blacksmith.cashout.yes': 'Berikan aku emasnya',
 	'port.blacksmith.cashout.no': 'Tidak Usah',
+	'port.blacksmith.smith': '_Menempa ({favor} bantuan):_ Aku bisa mencoba menempa senjata atau armor untukmu dari awal. Tingkatnya akan lebih tinggi dan mungkin ditingkatkan, dan kau akan mendapatkan beberapa pilihan atas apa yang kau dapatkan.',
+	'port.blacksmith.smith.verify': 'Baiklah, aku akan memanaskan bengkelnya lalu kau dapat memilih yang kau inginkan.',
+	'port.blacksmith.smith.yes': 'Oke, panaskan bengkelnya.',
+	'port.blacksmith.smith.no': 'Tidak Usah',
+	'port.blacksmith.smith.prompt': 'Oke, inilah yang bisa saya buat. Aku sudah menyalakan bengkelnya jadi pilihlah dengan cepat.',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -6560,6 +6625,11 @@ export const PORT_STRINGS_JA: Record<string, string> = {
 	'port.blacksmith.cashout.verify': 'よし、これで{favor}ゴールドだ。だが、この後は何もしてやれねぇぞ！',
 	'port.blacksmith.cashout.yes': 'お金をください。',
 	'port.blacksmith.cashout.no': 'なんでもないです。',
+	'port.blacksmith.smith': '_鍛冶 (好意度 {favor}):_ お前のために武器や鎧を一から鍛造したい。より高いランクで、おそらく強化されたものになるだろうし、何ができるかもある程度選べるだろう。',
+	'port.blacksmith.smith.verify': 'わかった、炉を温めてくるから、好きなものを選んでくれ。',
+	'port.blacksmith.smith.yes': 'では、炉を温めてください。',
+	'port.blacksmith.smith.no': 'なんでもないです。',
+	'port.blacksmith.smith.prompt': 'よぉし、俺ができることはコレだ。もう鍛冶場に火を入れてあるから、早く選んでくれ。',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -7010,6 +7080,11 @@ export const PORT_STRINGS_CS: Record<string, string> = {
 	'port.blacksmith.cashout.verify': 'Dobře, dělá to {favor} zlatých. Pak už pro tebe ale nehnu ani prstem, jasný?',
 	'port.blacksmith.cashout.yes': 'Dej mi zlato.',
 	'port.blacksmith.cashout.no': 'Zatím ne.',
+	'port.blacksmith.smith': '_Vykování ({favor} přízně):_ Můžu ti zkusit vykovat zbrusu novou zbroj nebo zbraň. Bude vyššího stupně a nejspíš vylepšená, a budeš si moct trochu vybrat, co dostaneš.',
+	'port.blacksmith.smith.verify': 'Dobrá, roztopím výheň a pak si budeš moct vybrat, co chceš.',
+	'port.blacksmith.smith.yes': 'Dobře, roztop výheň.',
+	'port.blacksmith.smith.no': 'Zatím ne.',
+	'port.blacksmith.smith.prompt': 'Dobrá, tohle ti můžu vyrobit. Výheň už je žhavá, takže koukej vybírat rychle.',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -7460,6 +7535,11 @@ export const PORT_STRINGS_VI: Record<string, string> = {
 	'port.blacksmith.cashout.verify': 'Được rồi vậy là {favor} vàng. Nhưng xong là ta không làm thêm việc gì cho ngươi nữa đâu đấy!',
 	'port.blacksmith.cashout.yes': 'Cho tôi số vàng.',
 	'port.blacksmith.cashout.no': 'Thôi.',
+	'port.blacksmith.smith': '_Rèn ({favor} sự hỗ trợ):_ Ta có thể thử tự tay rèn một món vũ khí hay bộ giáp cho ngươi. Nó sẽ có bậc cao và chắc là được nâng cấp, và ngươi sẽ có vài sự lựa chọn về thứ mà ngươi nhận được.',
+	'port.blacksmith.smith.verify': 'Được rồi, ta sẽ làm nóng lò rèn lên rồi ngươi sẽ có thể chọn thứ ngươi muốn.',
+	'port.blacksmith.smith.yes': 'Được, làm nóng lò đi.',
+	'port.blacksmith.smith.no': 'Thôi.',
+	'port.blacksmith.smith.prompt': 'Được rồi, đây là những gì ta có thể làm. Ta đã lên lửa lò rèn rồi nên chọn nhanh lên.',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -7910,6 +7990,11 @@ export const PORT_STRINGS_EL: Record<string, string> = {
 	'port.blacksmith.cashout.verify': 'Καλά, οπότε σου δίνω {favor} χρυσό. Αλλά δε σου κάνω άλλη δουλειά μετά απ\' αυτό!',
 	'port.blacksmith.cashout.yes': 'Δώσε μου τον χρυσό.',
 	'port.blacksmith.cashout.no': 'Άκυρο.',
+	'port.blacksmith.smith': '_Σιδηρουργική ({favor} εύνοια):_ Θα σου φτιάξω ένα νέο όπλο ή πανοπλία από το τίποτα. Θα είναι μεγαλύτερης βαθμίδας, ίσως αναβαθμισμένο και θα έχεις και κάποια επιλογή στο τι παίρνεις.',
+	'port.blacksmith.smith.verify': 'Καλά, θα βάλω τον κλίβανο να ζεστάνει και μετά διάλεξε ό,τι θες.',
+	'port.blacksmith.smith.yes': 'Εντάξει, άναψε τον κλίβανο.',
+	'port.blacksmith.smith.no': 'Άκυρο.',
+	'port.blacksmith.smith.prompt': 'Καλά, κοίτα τι μπορώ να σου φτιάξω. Διάλεξε γρήγορα γιατί τον έχω ανάψει τον κλίβανο.',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -8360,6 +8445,11 @@ export const PORT_STRINGS_KO: Record<string, string> = {
 	'port.blacksmith.cashout.verify': '좋아, 여기 {favor}골드라고. 이제 더 이상 널 위해 일할 필요는 없겠지!',
 	'port.blacksmith.cashout.yes': '가져간다',
 	'port.blacksmith.cashout.no': '필요없다',
+	'port.blacksmith.smith': '_제작 ({favor} 우호도):_ 원한다면 무기나 방어구를 처음부터 만들 수 있어. 결과물은 아마도 강화되어 있을 거고, 상대적으로 높은 티어를 가지게 될 거야. 만들게 되면 뭘 가질 지 정하게 해 줄게.',
+	'port.blacksmith.smith.verify': '좋아, 대장간 준비 시작할 테니 원하는 걸 골라 봐.',
+	'port.blacksmith.smith.yes': '결정한다',
+	'port.blacksmith.smith.no': '필요없다',
+	'port.blacksmith.smith.prompt': '좋아. 여기 내가 만들 수 있는 것들이야. 대장간 가동시켰으니 빨리 고르라고.',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.
@@ -8810,6 +8900,11 @@ export const PORT_STRINGS_ZH: Record<string, string> = {
 	'port.blacksmith.cashout.verify': '行，这是{favor}金币。之后你就别再来找我干活了！',
 	'port.blacksmith.cashout.yes': '给我金币。',
 	'port.blacksmith.cashout.no': '算了。',
+	'port.blacksmith.smith': '_锻造({favor}人情)：_我可以帮你锻造一件武器或护甲。锻造出来的装备不仅高阶还可能带有升级，你还可以挑选一下你想要的装备。',
+	'port.blacksmith.smith.verify': '行，我先把锻炉预热一下，然后你就能挑选你想要的装备了。',
+	'port.blacksmith.smith.yes': '行，预热锻炉吧。',
+	'port.blacksmith.smith.no': '算了。',
+	'port.blacksmith.smith.prompt': '行，这些就是我能锻造的装备了。锻炉已经烧热了，所以你赶紧给我选。',
 	// The Blacksmith's service window (`WndBlacksmith` at tag `v3.3.8`): SPD's own label text
 	// and translations for the two services this port offers, and the two `hardening_gone`
 	// warnings its upgrade path can print. `%d` is the port's `{favor}` token.

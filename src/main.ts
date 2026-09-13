@@ -133,7 +133,7 @@ import { showChallengesWindow, showChoiceWindow, showConfirmWindow, showRankings
 import { Banner } from './ui/banner';
 import { transferEnhancement } from './itemWorkflows';
 import { getCurse } from './itemCurses';
-import { Cat, generatorItemOrder, generatorRandom, ghostQuestReward, randomUsingDefaults, removeArtifactClass, setGeneratorDepth, type GenItem, type StatueLoot } from './spdItems/generator';
+import { Cat, blacksmithSmithRewards, generatorItemOrder, generatorRandom, ghostQuestReward, randomUsingDefaults, removeArtifactClass, setGeneratorDepth, type GenItem, type StatueLoot } from './spdItems/generator';
 import { MWL_MISSILE_BY_CLASS, MWL_PROGRESSION, MWL_QUEST_DEFINITIONS, MWL_SCENARIO_QUESTS, MWL_TURN_CLOCK } from './mwlContent';
 
 function scenarioQuest(id: string) {
@@ -484,6 +484,9 @@ const TENGU_CIRCLE8: ReadonlyArray<readonly [number, number]> = [
 //Weapon.Augment: SPEED/DAMAGE/NONE, chosen when using StoneOfAugmentation on the equipped weapon.
 const AUGMENT_OPTIONS = ['speed', 'damage', 'none'] as const;
 
+/** `WndBlacksmith`'s flat smith price (`Messages.get(this, "smith", 2000)`). */
+const BLACKSMITH_SMITH_COST = 2000;
+
 /** `MagicalFireRoom.EternalFire.evolve()`'s own burn duration: one of the three Java sites that
  * pass a literal instead of `Burning.DURATION` (see `src/content/buff-rules.mwl`). */
 const ETERNAL_FIRE_BURN = 4;
@@ -594,6 +597,7 @@ interface SaveShape {
 	blacksmithFavor?: number;
 	blacksmithHardens?: number;
 	blacksmithUpgrades?: number;
+	blacksmithSmiths?: number;
 	/** `Weapon.enchantHardened`/`Armor.glyphHardened` for the equipped gear */
 	weaponHardened?: boolean;
 	armorHardened?: boolean;
@@ -1159,6 +1163,9 @@ export class SewersScene extends Scene2D {
 	private blacksmithHardens = 0;
 	/** `Blacksmith.Quest.upgrades`, the paid upgrade service's own counter. */
 	private blacksmithUpgrades = 0;
+	/** `Blacksmith.Quest.smiths`, and the pre-generated reward set `WndSmith` shows. */
+	private blacksmithSmiths = 0;
+	private blacksmithSmithRewards: NonNullable<GroundItem['item']>[] | null = null;
 	private blacksmithReforges = 0;
 	private blacksmithReforgeFirst: { id: string; instanceId?: string } | null = null;
 	private impSpawned = false;
@@ -3436,12 +3443,56 @@ export class SewersScene extends Scene2D {
 					onPick: () => this.openBlacksmithUpgrade(),
 				},
 				{
+					label: t('port.blacksmith.smith', { favor: BLACKSMITH_SMITH_COST }),
+					disabled: this.blacksmithFavor < BLACKSMITH_SMITH_COST,
+					onPick: () => this.confirmBlacksmithSmith(),
+				},
+				{
 					label: t('port.blacksmith.cashout'),
 					disabled: this.blacksmithFavor <= 0,
 					onPick: () => this.confirmBlacksmithCashOut(),
 				},
 			],
 		);
+	}
+
+	/** `WndBlacksmith`'s smith flow: a confirm ("warm the forge"), then `WndSmith`'s four
+	 * pre-generated rewards to choose from. */
+	private confirmBlacksmithSmith(): void {
+		if (this.blacksmithFavor < BLACKSMITH_SMITH_COST) return;
+		showConfirmWindow(
+			this.gameWindows,
+			t('actors.mobs.npcs.blacksmith.name'),
+			t('port.blacksmith.smith.verify'),
+			t('port.blacksmith.smith.yes'),
+			t('port.blacksmith.smith.no'),
+			() => this.openBlacksmithSmith(),
+		);
+	}
+
+	private openBlacksmithSmith(): void {
+		if (this.blacksmithFavor < BLACKSMITH_SMITH_COST) return;
+		//Java's own lazy branch (`WndSmith`'s `generateRewards(false)`), see the generator
+		this.blacksmithSmithRewards ??= blacksmithSmithRewards().map((generated) => this.generatedInventoryItem(generated));
+		showChoiceWindow(
+			this.gameWindows,
+			t('actors.mobs.npcs.blacksmith.name'),
+			t('port.blacksmith.smith.prompt'),
+			this.blacksmithSmithRewards.map((reward) => ({
+				label: this.itemDisplayName(reward.id, true, reward.instanceId),
+				onPick: () => this.takeBlacksmithSmith(reward),
+			})),
+		);
+	}
+
+	private takeBlacksmithSmith(reward: NonNullable<GroundItem['item']>): void {
+		if (this.blacksmithFavor < BLACKSMITH_SMITH_COST) return;
+		this.blacksmithFavor -= BLACKSMITH_SMITH_COST;
+		this.blacksmithSmiths++;
+		this.blacksmithSmithRewards = null;
+		this.bag.add({ ...reward, quantity: 1 });
+		this.say(t('port.log.pickup', { item: this.itemDisplayName(reward.id, true, reward.instanceId) }), 'positive');
+		this.refresh();
 	}
 
 	/** `WndBlacksmith`'s `upgradeCost = 1000 + 1000*Blacksmith.Quest.upgrades`. */
@@ -3531,7 +3582,7 @@ export class SewersScene extends Scene2D {
 			() => {
 				this.blacksmithFavor = 0;
 				this.bag.add({ id: 'gold', quantity: favor, identified: true });
-				this.say(t('port.log.pickup', { item: t('items.gold.gold.name') }), 'positive');
+				this.say(t('port.log.pickup', { item: this.itemDisplayName('gold', true) }), 'positive');
 				this.refresh();
 			},
 		);
@@ -12653,6 +12704,7 @@ export class SewersScene extends Scene2D {
 			blacksmithReforges: this.blacksmithReforges,
 			blacksmithHardens: this.blacksmithHardens,
 			blacksmithUpgrades: this.blacksmithUpgrades,
+			blacksmithSmiths: this.blacksmithSmiths,
 			weaponHardened: this.weaponHardened,
 			armorHardened: this.armorHardened,
 			bag: this.bag.items.map((i) => ({ id: i.id, quantity: i.quantity, instanceId: i.instanceId, identified: i.identified, level: i.level, sandBags: (i as typeof i & { sandBags?: number }).sandBags, charges: (i as typeof i & { charges?: number }).charges, affix: i.affix, cursed: i.cursed,
@@ -12874,6 +12926,7 @@ export class SewersScene extends Scene2D {
 		this.blacksmithReforges = s.blacksmithReforges ?? 0;
 		this.blacksmithHardens = s.blacksmithHardens ?? 0;
 		this.blacksmithUpgrades = s.blacksmithUpgrades ?? 0;
+		this.blacksmithSmiths = s.blacksmithSmiths ?? 0;
 		this.weaponHardened = s.weaponHardened ?? false;
 		this.armorHardened = s.armorHardened ?? false;
 		this.equippedRing = s.equippedRing ?? null;

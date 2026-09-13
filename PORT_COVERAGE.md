@@ -515,10 +515,50 @@ below +2) and `cash out` (the whole favor as gold, 1 for 1, behind Java's own
 `cashout_verify` confirm) are ported too**, so the window carries four of Java's six
 services. The upgrade runs the same affix-loss/hardening rolls a scroll does - including
 for an item still in the bag, which needs its own helper because the equipped slots keep
-that state in scene fields rather than in the payload. Still open, and each honestly
-smaller than "the menu": Java's pickaxe buy-back and `smith` (which needs the quest's
-pre-generated reward pool), missile/seal transfer details, and alternative quest reward
-bookkeeping.
+that state in scene fields rather than in the payload.
+
+**`smith` is now ported too (2026-09-13), the fifth of six services.**
+`Blacksmith.Quest.generateRewards(useDecks)` (`Blacksmith.java` 370-407) rolls four tier-3
+rewards - two weapons of *different* classes, one missile, one armor - sharing one upgrade-level
+roll (30/45/20/5% for +0/+1/+2/+3) and one enchant/glyph keep-roll, all burned in Java's own
+order even though the port's `GenItem` only needs whether the enchant was kept, not its concrete
+type. This port generates the set lazily on first open rather than pre-generating it when the
+quest spawns - Java's own fallback branch (`WndSmith`'s `generateRewards(false)`), so the deck
+bookkeeping (`useDecks = true` normally) is a stated simplification, not a silent drop. A flat
+2000 favor buys whichever of the four the player picks (`takeBlacksmithSmith`); the other three
+are discarded and the set is regenerated next time, matching `WndSmith.onSelect`. Verified live
+end-to-end (`tools/scratch/blacksmith-harden-livecheck.mjs`, 14/14 assertions, screenshot-checked):
+the five-service window renders with all five labels and costs, the four rewards render as
+distinct correctly-named items, picking one charges the flat cost, adds the item, and clears the
+cached set, and cash-out (retested in the same pass) still trades the whole favor for gold 1-for-1.
+
+**This verification pass surfaced two real, pre-existing bugs, neither introduced by `smith`
+itself, both fixed here rather than left for later:**
+1. `ITEM_KEYS` never merged in a display name for any of the fifteen `missile_*` generated-missile
+   identities. `MwlMissileDefinition` (`src/mwlContent.ts`) carries only combat metadata (`id`,
+   `sourceClass`, `tier`, `minDamage`, `maxDamage`) with no `.name` field, unlike the consumable
+   catalogue's `[item]` nodes that `MWL_CONSUMABLE_ITEMS` spreads into `ITEM_KEYS` today - the
+   fifteen missile identities from `src/content/missiles.mwl` were simply never spread in anywhere.
+   Nothing had rendered one of these ids through `itemDisplayName` in a live UI path before the
+   smith's own missile reward did, so the gap went unnoticed: the reward showed the bare id
+   (`missile_kunai`) instead of a name. Fixed in `src/i18n/spdKeys.ts` by deriving
+   `items.weapon.missiles.<sourceClass.toLowerCase()>.name` for all fifteen directly from
+   `MWL_MISSILE_DEFINITIONS` - the same Java `Messages.get` bundle-key convention every other
+   lookup table in that file already follows - rather than hand-listing fifteen entries that could
+   drift from the authored catalogue. Verified against `spdMessages.ts`: all fifteen derived keys
+   exist (`bolas`, `fishingspear`, `forcecube`, `heavyboomerang`, `javelin`, `kunai`, `shuriken`,
+   `throwingclub`, `throwinghammer`, `throwingknife`, `throwingspear`, `throwingspike`,
+   `throwingstone`, `tomahawk`, `trident`).
+2. `confirmBlacksmithCashOut`'s payout log line hardcoded the wrong, non-existent key
+   `items.gold.gold.name` (the real key, `ITEM_KEYS.gold`, is `items.gold.name`) instead of calling
+   `itemDisplayName` like every other pickup log site in the file - so cashing out always logged
+   the raw key text ("Vous ramassez : items.gold.gold.name.") instead of "Gold". The numeric
+   favor/gold state was correct, which is why the automated assertions never caught it; only
+   looking at the log line in a screenshot did. Fixed to call the shared
+   `itemDisplayName('gold', true)` helper.
+
+Still open, and each honestly smaller than "the menu": Java's pickaxe buy-back (the sixth and
+last service), missile/seal transfer details, and alternative quest reward bookkeeping.
 
 Two corrections to earlier revisions of this file: this checkout's `DM100.java` has no
 self-destruct blast (its kit is melee plus a lightning zap; the blast belongs to

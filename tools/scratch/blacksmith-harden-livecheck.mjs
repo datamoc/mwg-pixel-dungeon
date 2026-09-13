@@ -136,11 +136,13 @@ const afterUpgrade = await page.evaluate(() => {
 });
 
 // ---- cash out: the whole favor becomes gold, 1 for 1, after the confirm
-const cashOut = await page.evaluate(() => {
+const cashOut = await page.evaluate(async () => {
 	const s = window.__MWG__.currentScene;
 	s['blacksmithFavor'] = 750;
 	const goldBefore = s['bag'].find('gold')?.quantity ?? 0;
 	s['confirmBlacksmithCashOut']();
+	await new Promise((r) => requestAnimationFrame(r));
+	await new Promise((r) => requestAnimationFrame(r));
 	const win = s['gameWindows'].children.filter((c) => c.content).at(-1);
 	const buttons = [];
 	const walk = (node) => {
@@ -161,9 +163,53 @@ await page.evaluate(([x, y]) => {
 	c.dispatchEvent(new MouseEvent('click', { ...opts, buttons: 0 }));
 }, [cashOut.x, cashOut.y]);
 await page.waitForTimeout(400);
+await page.screenshot({ path: path.join(shots, 'cashout.png') });
 const afterCashOut = await page.evaluate(() => {
 	const s = window.__MWG__.currentScene;
 	return { favor: s['blacksmithFavor'], gold: s['bag'].find('gold')?.quantity ?? 0 };
+});
+
+// ---- the smith: four pre-generated rewards, one of them taken for its flat price
+const smith = await page.evaluate(async () => {
+	const s = window.__MWG__.currentScene;
+	s['blacksmithFavor'] = 3000;
+	s['blacksmithSmiths'] = 0;
+	s['openBlacksmithSmith']();
+	await new Promise((r) => requestAnimationFrame(r));
+	await new Promise((r) => requestAnimationFrame(r));
+	const win = s['gameWindows'].children.filter((c) => c.content).at(-1);
+	const buttons = [];
+	const walk = (node) => {
+		if (node.onClick) buttons.push(node);
+		for (const child of node.children ?? []) walk(child);
+	};
+	walk(win.content);
+	const labels = buttons.map((b) => {
+		const label = (b.children ?? []).flatMap((c) => (c.children ?? []).concat(c)).find((c) => typeof c.text === 'string');
+		return label?.text ?? '';
+	});
+	return {
+		options: buttons.length,
+		labels,
+		bagBefore: s['bag'].items.length,
+		x: buttons[0].getBounds().x + buttons[0].getBounds().width / 2,
+		y: buttons[0].getBounds().y + buttons[0].getBounds().height / 2,
+	};
+});
+await page.screenshot({ path: path.join(shots, 'smith.png') });
+await page.evaluate(([x, y]) => {
+	const c = document.querySelector('canvas');
+	const r = c.getBoundingClientRect();
+	const opts = { bubbles: true, cancelable: true, composed: true, clientX: r.x + (x / 1024) * r.width, clientY: r.y + (y / 768) * r.height, pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, buttons: 1 };
+	c.dispatchEvent(new PointerEvent('pointermove', opts));
+	c.dispatchEvent(new PointerEvent('pointerdown', opts));
+	c.dispatchEvent(new PointerEvent('pointerup', { ...opts, buttons: 0 }));
+	c.dispatchEvent(new MouseEvent('click', { ...opts, buttons: 0 }));
+}, [smith.x, smith.y]);
+await page.waitForTimeout(400);
+const afterSmith = await page.evaluate(() => {
+	const s = window.__MWG__.currentScene;
+	return { favor: s['blacksmithFavor'], smiths: s['blacksmithSmiths'], bag: s['bag'].items.length, cleared: s['blacksmithSmithRewards'] === null };
 });
 
 // ---- and the upgrade roll itself: hardened protects the enchant, and the protection wears off
@@ -195,11 +241,11 @@ const rolls = await page.evaluate(() => {
 });
 
 console.log('probe results:', JSON.stringify({
-	opened, afterHarden: { ...afterHarden, name: afterHarden.name }, rolls,
+	opened, afterHarden: { ...afterHarden, name: afterHarden.name }, afterUpgrade, smith, afterSmith, cashOut, afterCashOut, rolls,
 }, null, 1));
 const expect = [
-	['the Blacksmith offers a service window with his four ported services',
-		opened.windowCount === 1 && opened.buttonCount === 4],
+	['the Blacksmith offers a service window with his five ported services',
+		opened.windowCount === 1 && opened.buttonCount === 5],
 	['both enabled at 2000 favor (Java `enable(favor >= cost)`)', opened.disabled.every((d) => d === false)],
 	['choosing Harden opens the real item picker', afterHarden.pickerOpen === true && afterHarden.entries.length > 0],
 	['picking the equipped weapon hardens it (`Weapon.enchantHardened`)', afterHarden.weaponHardened === true],
@@ -207,6 +253,10 @@ const expect = [
 	['the hardened state shows in the item\'s own name', afterHarden.name.includes('hardened') || afterHarden.name.includes('durcie') || afterHarden.name.includes('verhärtet')],
 	['the paid upgrade takes an item below +2 up one level, for its own cost',
 		afterUpgrade.entries.length > 0 && afterUpgrade.weaponLevel === 2 && afterUpgrade.favor === 4000 && afterUpgrade.upgrades === 1],
+	['the smith offers Java\'s four tier-3 rewards to choose from',
+		smith.options === 4 && smith.labels.every((label) => label.length > 0)],
+	['taking one charges the flat 2000, hands it over, and clears the set',
+		afterSmith.favor === 1000 && afterSmith.smiths === 1 && afterSmith.bag === smith.bagBefore + 1 && afterSmith.cleared === true],
 	['cash out asks first, then trades the whole favor for gold 1 for 1',
 		cashOut.confirms === 2 && afterCashOut.favor === 0 && afterCashOut.gold === cashOut.goldBefore + 750],
 	['a hardened item below +6 never loses the enchant or the hardening (`level() >= 6` gate)',
