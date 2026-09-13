@@ -120,6 +120,7 @@ import splashHuntressUrl from './assets/splash_huntress.jpg';
 import splashDuelistUrl from './assets/splash_duelist.jpg';
 import splashClericUrl from './assets/splash_cleric.jpg';
 import { MWL_ASSET_MANIFEST } from './generated/mwlAssets';
+import { MWL_ITEM_ASSET_SOURCES } from './mwlContent';
 
 /**
  * Renderer registration is intentionally kept in TypeScript, but the list of assets that
@@ -128,6 +129,17 @@ import { MWL_ASSET_MANIFEST } from './generated/mwlAssets';
  * matching imported URL here, and the manifest check below makes omissions fail loudly.
  */
 const MWL_ASSET_URLS: Readonly<Record<string, string>> = {
+	'assets/caves_quest.png': cavesQuestUrl,
+	'assets/effects.png': effectsUrl,
+	'assets/halls_special.png': hallsSpecialUrl,
+	'assets/items.png': itemsUrl,
+	'assets/terrain_features.png': terrainFeaturesUrl,
+	'assets/wall_blocking.png': wallBlockingUrl,
+	'assets/water0.png': water0Url,
+	'assets/water1.png': water1Url,
+	'assets/water2.png': water2Url,
+	'assets/water3.png': water3Url,
+	'assets/water4.png': water4Url,
 	'assets/bat.png': batUrl,
 	'assets/bee.png': beeUrl,
 	'assets/blacksmith.png': blacksmithUrl,
@@ -181,6 +193,9 @@ const MWL_ASSET_URLS: Readonly<Record<string, string>> = {
 };
 
 function validateMwlAssetBindings(): void {
+	for (const asset of MWL_ITEM_ASSET_SOURCES.values()) {
+		if (!MWL_ASSET_MANIFEST.includes(asset as typeof MWL_ASSET_MANIFEST[number])) throw new Error(`MWL item asset is absent from manifest: ${asset}`);
+	}
 	const missing = MWL_ASSET_MANIFEST.filter((asset) => !MWL_ASSET_URLS[asset]);
 	if (missing.length > 0) {
 		throw new Error(`MWL assets are not registered with the sprite loader: ${missing.join(', ')}`);
@@ -354,6 +369,11 @@ export interface SpdSprites {
  */
 export async function loadSpdSprites(): Promise<SpdSprites> {
 	validateMwlAssetBindings();
+	const itemAtlasPath = MWL_ITEM_ASSET_SOURCES.get('items');
+	const itemAtlasUrl = itemAtlasPath === undefined
+		? itemsUrl
+		: MWL_ASSET_URLS[itemAtlasPath as keyof typeof MWL_ASSET_URLS];
+	if (!itemAtlasUrl) throw new Error(`MWL item asset is not registered: ${itemAtlasPath}`);
 	const [
 		warrior,
 		mage,
@@ -511,7 +531,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(impUrl),
 		loadImage(spawnerUrl),
 		loadImage(ripperUrl),
-		loadImage(itemsUrl),
+		loadImage(itemAtlasUrl),
 		loadImage(bannersUrl),
 		loadImage(bannerBossSlainUrl),
 		loadImage(bannerGameOverUrl),

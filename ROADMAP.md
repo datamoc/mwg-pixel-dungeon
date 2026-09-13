@@ -109,7 +109,11 @@ Do not add new authored content as object literals or scattered constants in the
       references are now authored in `src/content/monsters.mwl`, validated against `src/assets`,
       and emitted in the generated asset manifest; `images.ts` now consumes a generated,
       typed manifest and validates every MWL sprite reference against the bundler registry at
-      startup. Terrain/UI references remain open. **2026-09-11:** an attempt to close that gap
+      startup. **2026-09-12:** MWG 0.8.1 now permits item `image`/`icon` attributes; shared
+      terrain/effect atlas references are authored in `src/content/asset-references.mwl` and
+      validated through the same manifest registry; `loadSpdSprites()` now resolves the item
+      atlas through the generated `itemAssetSources` table. Remaining item-specific frame metadata and
+      terrain/UI references are still open. **2026-09-11:** an attempt to close that gap
       stalled on a framework schema limit, not on port code - `game.assets` is populated by
       scanning every node attribute whose *name* is an asset attribute (`image`/`file`/`icon`/
       `profile`/`sound`/`*_sound`/`*_image`, see `mwg/dist/mwl/compiler.js` `isAssetAttribute`),
@@ -119,8 +123,8 @@ Do not add new authored content as object literals or scattered constants in the
       the manifest because `apply_to`/`set` are not asset-attribute names. There is no
       game-agnostic node for authoring a terrain/UI asset reference that flows into `game.assets`.
       The dead-end experiment is preserved in `tools/scratch/{terrain-assets,ui-assets,test-asset}.mwl`,
-      and the generic capability is tracked as a framework proposal in §11A below; this item stays
-      open until a released MWG version carries it.
+      and the generic capability is tracked as a framework proposal in §11A below; the old
+      framework blocker is resolved, but this migration remains open until all references move.
 - [ ] Move the port's messages and descriptions to MWL gettext-marked values, generate the
       i18n catalogue, and remove duplicate hand-maintained content strings. The ordered potion
       and scroll appearance tables are now in `src/content/appearances.mwl`; message bodies and
@@ -2155,11 +2159,10 @@ view registry, replacing `Creature.sprite`/object-identity lookups).
       `AnimatedSprite` playing the same `HeroSprite` cloth-tier clips and sharing the monsters'
       `Tweener` motion map, with the file deleted and the death pose held (`playing !== 'die'` guard
       on the loop's return-to-idle). (4) `src/ui/wallDecorations.ts` hand-integrates its particle
-      pool/physics - **checked 2026-09-12, and deliberately so**: `ParticleEmitter` cannot express
-      Java's per-particle random colour, per-frame size jitter or piecewise alpha (proposal P14).
-      **Stale since MWG 0.8.0 (item 323)**, which added `tint` ranges, `ParticleCurve` scale/alpha
-      and `flicker` - the gap this bullet cites is closed upstream, but neither `wallDecorations.ts`
-      nor the title flame has been rewritten onto the new options yet. (5) The talent panel, item
+      pool/physics - **migrated 2026-09-12 on MWG 0.8.1**: `ParticleEmitter` now expresses Java's
+      per-particle random colour, per-frame size jitter and piecewise alpha (proposal P14).
+      MWG 0.8.0 (item 323) added `tint` ranges, `ParticleCurve` scale/alpha
+      and `flicker`; `wallDecorations.ts` now uses one emitter per FOV-gated spot. (5) The talent panel, item
       picker and `InfoWindow` hand-roll modality where `Window`/`WindowStack`/`MessageBox` exist
       (SPD's pixel chrome justifies not being a `Window`; the item picker is exactly `MessageBox`'s
       titled-choice shape) - **narrowed 2026-09-12**: the in-game menu now *is* a real `Window` on a
@@ -2267,7 +2270,8 @@ including the wand/attack/spawn/buff paths), and a full-game load in English and
       single point (the `heightLimit` clamp is still unmodelled - `ParticleEmitter` caps a
       particle's life, not its height). The colour-only sparks stay local (a `ParticleEmitter`
       tints per emitter, not per particle, so two colours need two emitters), and the hand-rolled
-      `WallDecorationLayer`/`WaterEmberLayer` spots are a separate candidate, not converted here.
+      `WallDecorationLayer`/`WaterEmberLayer` spots are now converted; FOV gating and water delay
+      remain port-owned policy.
 - [x] **P1 — Add a renderer-neutral grid targeting controller.** *Shipped in 0.7.7 (item 280).*
       `roguelike.TargetingController` gives a cursor moved by `move(dx, dy)`/`moveTo(cell)`,
       range + line-of-sight legality with an optional `validate` hook, a `preview()` of the shape's
@@ -2384,24 +2388,29 @@ compatibility notes and an API report entry in MWG before this port adopts it; P
       and keeps the rim/inner distinction, all of which the generic drops, so adopting it would be a
       fidelity regression, not a consolidation. New cone attacks belong on the port's translation.
 
-- [ ] **P14 - Per-particle colour, jitter and curves in `ParticleEmitter` - shipped in MWG
-      0.8.0 (item 323), migration deferred to a browser-verified pass.** The emitter
+- [x] **P14 - Per-particle colour, jitter and curves in `ParticleEmitter` - shipped in MWG
+      0.8.0 (item 323), adopted here on MWG 0.8.1.** The emitter
       interpolated `scale` and `alpha` linearly between two endpoints and took one `tint` for the
       whole emitter, recomputing each particle from its own age. Java's decoration particles need
       three things that cannot be expressed that way, which is why this port's
-      `ui/wallDecorations.ts` still runs its own pool: `Sink`'s `WaterParticle` rolls a random
+      `ui/wallDecorations.ts` now uses one pooled emitter per spot: `Sink`'s `WaterParticle` rolls a random
       *colour* per particle (`color(ColorMath.random(0xb6ccc2, 0x3b6653))`), `Torch`'s
       `SparkParticle.update()` re-rolls its *size* every frame (`size(Random.Float(size * left /
       lifespan))` - a flicker, not an interpolation), and `SmokeParticle.update()` needs a
       *piecewise* alpha (`am = p > 0.8 ? 2 - 2p : p * 0.5`). MWG 0.8.0 ships all three halves
       (`tint` ranges drawn per particle, `ParticleCurve` scale/alpha of age, `flicker` scale
       wobble - the doc names a torch spark as its example), so the framework gap is closed. The
-      migration itself is still a redesign, not a swap, and it is not taken here: the layer's
-      per-spot FOV gating (spots emit only while visible, particles die the frame their cell
-      leaves FOV) has no emitter-level equivalent and would need one emitter per spot plus
-      start/stop/clear wiring, and every option changes on-screen pixels, which needs the
-      browser-verification pass this session has no tooling for. The curves and the layer's
-      reasons stay quoted in that file's own header until then.
+      migration itself is now complete (2026-09-12): every spot owns a pooled emitter and
+      per-spot FOV gating is retained by giving every spot its own emitter and wiring
+      `start`/`stop`/`clear`; WaterEmberLayer retains Java's per-cell randomized delay. The
+      torch halo and well ripples remain separate presentation layers because they are not
+      particle pools. **Browser-verified 2026-09-13**
+      (`tools/scratch/wall-decorations-livecheck.mjs`): teleporting the hero next to a real
+      Sewers Sink spot and a real Prison Torch spot (both read from the live
+      `wallDecorations['spots']` array, not guessed coordinates) and screenshotting each shows a
+      rendered blue-green droplet at the sink cell and, at the torch cells, the FOV-gated warm
+      halo lit around both visible sconces - confirming the pooled emitter and the separate glow
+      layer both actually reach the screen, not just the type-checker.
 
 - [x] **P15 - A blocker layer for `Window` - shipped in MWG 0.8.0 (item 324), adopted.**
       Java's `Window` adds a full-screen `PointerArea` *under its chrome* (`Window`'s constructor)

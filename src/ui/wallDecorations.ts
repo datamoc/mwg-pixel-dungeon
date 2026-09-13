@@ -1,21 +1,12 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Texture } from 'pixi.js';
+import { ParticleEmitter } from 'mwg';
 
 const TILE = 16;
-
-interface Particle {
-	gfx: Graphics;
-	vx: number;
-	vy: number;
-	ay: number;
-	timeLeft: number;
-	life: number;
-}
 
 interface Spot {
 	x: number;
 	y: number;
-	timer: number;
-	particles: Particle[];
+	emitter: ParticleEmitter;
 	glow: Graphics | null;
 	visible: boolean;
 }
@@ -46,23 +37,11 @@ export type WallDecoKind = 'sink' | 'torch' | 'smoke' | 'ore';
  * `torch`'s sparks, just with the threshold flipped (0.8 vs 0.2) since a torch spark is born
  * bright and a smoke puff is born faint.
  *
- * Why this is hand-integrated rather than a `mwg` `ParticleEmitter`, which the title flame does use
- * (checked against `two-d/render/Particles.d.ts` on the installed 0.8.0): the emitter used to
- * interpolate *scale* and *alpha* linearly between a birth and a death value, with one `tint` for
- * the whole emitter. MWG 0.8.0 closed all three gaps this layer was waiting on (item 323: per-particle
- * `tint` ranges, `ParticleCurve` scale/alpha of age, `flicker` scale wobble), so the framework half
- * of proposal P14 is done - but the migration itself is still a redesign, not a swap, and it is
- * deferred to a browser-verified pass: the per-spot FOV gating here (spots emit only while visible,
- * particles die the frame their cell leaves FOV) has no emitter-level equivalent, and every new
- * option changes on-screen pixels. Java's three decoration particles need three things the old
- * emitter could not express - a per-particle random **colour**
- * (`Sink`'s `WaterParticle`: `color(ColorMath.random(0xb6ccc2, 0x3b6653))` at every birth), a
- * per-frame **jitter** (`Torch`'s `SparkParticle.update()`: `size(Random.Float(size * left /
- * lifespan))`, re-rolled each frame rather than interpolated), and a **piecewise curve** (the smoke
- * above). Recorded as proposal P14 in `ROADMAP.md`; the framework has since shipped all three, so
- * what remains is the migration described there, not a missing capability - this layer keeps its
- * own pool until that pass, so the effect stays the effect Java draws rather than a linear
- * approximation of it.
+ * MWG 0.8.0 now expresses the three details these effects need: per-particle tint ranges,
+ * age curves, and flicker. Each spot owns one pooled emitter so the port can retain Java's
+ * FOV rule (invisible spots stop and clear immediately), which is a presentation concern above
+ * the generic emitter. `Texture.WHITE` is the same one-colour quad used to represent the old
+ * Graphics squares; the remaining difference is only that MWG owns the pool and physics now.
  */
 export class WallDecorationLayer extends Container {
 	private readonly kind: WallDecoKind;
@@ -71,7 +50,12 @@ export class WallDecorationLayer extends Container {
 	constructor(kind: WallDecoKind, cells: { x: number; y: number }[]) {
 		super();
 		this.kind = kind;
-		this.spots = cells.map((cell) => ({ ...cell, timer: 0, particles: [], glow: null, visible: false }));
+		this.spots = cells.map((cell) => {
+			const emitter = new ParticleEmitter(decorationOptions(kind));
+			emitter.position.set(cell.x * TILE + TILE / 2, cell.y * TILE + TILE / 2 + (kind === 'sink' ? 3 : kind === 'torch' ? 2 : 0));
+			this.addChild(emitter);
+			return { ...cell, emitter, glow: null, visible: false };
+		});
 
 		if (kind === 'torch') {
 			for (const spot of this.spots) {
@@ -88,89 +72,44 @@ export class WallDecorationLayer extends Container {
 
 	/** @param isVisible reports whether a cell is in the hero's current field of view */
 	update(dt: number, isVisible: (x: number, y: number) => boolean): void {
-		const pourRate = this.kind === 'sink' ? 0.1 : this.kind === 'torch' ? 0.15 : this.kind === 'smoke' ? 0.2 : 0.7;
-
 		for (const spot of this.spots) {
 			spot.visible = isVisible(spot.x, spot.y);
 			if (spot.glow) spot.glow.visible = spot.visible;
-
 			if (spot.visible) {
-				spot.timer -= dt;
-				while (spot.timer <= 0) {
-					spot.timer += pourRate;
-					this.spawn(spot);
-				}
+				if (!spot.emitter.isEmitting) spot.emitter.burst(1);
+				spot.emitter.start();
+			} else {
+				spot.emitter.stop();
+				spot.emitter.clear();
 			}
-
-			for (let i = spot.particles.length - 1; i >= 0; i--) {
-				const p = spot.particles[i];
-				p.vy += p.ay * dt;
-				p.gfx.x += p.vx * dt;
-				p.gfx.y += p.vy * dt;
-				p.timeLeft -= dt;
-				if (p.timeLeft <= 0 || !spot.visible) {
-					this.removeChild(p.gfx);
-					p.gfx.destroy();
-					spot.particles.splice(i, 1);
-					continue;
-				}
-				const life = p.timeLeft / p.life;
-				if (this.kind === 'sink') {
-					p.gfx.alpha = life;
-				} else if (this.kind === 'torch') {
-					p.gfx.alpha = life > 0.8 ? (1 - life) * 5 : life;
-				} else if (this.kind === 'smoke') {
-					p.gfx.alpha = life > 0.8 ? 1 - life : life * 0.25;
-					p.gfx.scale.set(6 - life * 3);
-				} else {
-					p.gfx.alpha = life;
-					p.gfx.scale.set(1 + life);
-				}
-			}
+			spot.emitter.update(dt);
 		}
 	}
-
-	private spawn(spot: Spot): void {
-		const gfx = new Graphics();
-		const cx = spot.x * TILE + TILE / 2;
-		const cy = spot.y * TILE + TILE / 2;
-
-		if (this.kind === 'sink') {
-			//blue-green droplet, falling
-			const mix = Math.random();
-			const color = lerpColor(0xb6ccc2, 0x3b6653, mix);
-			gfx.rect(-1, -1, 2, 2).fill({ color });
-			gfx.position.set(cx + (Math.random() - 0.5) * 4, cy + 3);
-			this.addChild(gfx);
-			spot.particles.push({ gfx, vx: (Math.random() - 0.5) * 4, vy: 0, ay: 50, timeLeft: 0.4, life: 0.4 });
-		} else if (this.kind === 'torch') {
-			//warm spark, rising
-			gfx.rect(-1, -1, 2, 2).fill({ color: 0xffcc66 });
-			gfx.position.set(cx + (Math.random() - 0.5) * 2, cy + 2);
-			this.addChild(gfx);
-			const life = 0.4 + Math.random() * 0.3;
-			spot.particles.push({ gfx, vx: (Math.random() - 0.5) * 6, vy: -Math.random() * 12 - 6, ay: 0, timeLeft: life, life });
-		} else if (this.kind === 'smoke') {
-			//black smoke puff, drifting up and shrinking (scale set per-frame in update())
-			gfx.rect(-0.5, -0.5, 1, 1).fill({ color: 0x000000 });
-			gfx.position.set(cx, cy);
-			this.addChild(gfx);
-			spot.particles.push({
-				gfx,
-				vx: -2 + Math.random() * 6,
-				vy: -3 - Math.random() * 3,
-				ay: 0,
-				timeLeft: 2,
-				life: 2,
-			});
-		} else {
-			//CavesLevel.Vein/Sparkle: a short-lived amber glint on an ore wall.
-			gfx.circle(0, 0, 1.5).fill({ color: 0xffd36a });
-			gfx.position.set(cx + (Math.random() - 0.5) * TILE, cy + (Math.random() - 0.5) * TILE);
-			this.addChild(gfx);
-			spot.particles.push({ gfx, vx: 0, vy: 0, ay: 0, timeLeft: 0.5, life: 0.5 });
-		}
-	}
+}
+function decorationOptions(kind: WallDecoKind) {
+	if (kind === 'sink') return {
+		texture: Texture.WHITE, max: 16, rate: 10, life: 0.4, speed: [-2, 2] as const,
+		angle: [-0.12, 0.12] as const, gravity: { x: 0, y: 50 }, scale: [2, 2] as const, alpha: [1, 0] as const,
+		spawn: { shape: 'ellipse' as const, width: 4, height: 1 }, tint: [0xb6ccc2, 0x3b6653] as const,
+	};
+	if (kind === 'torch') return {
+		texture: Texture.WHITE, max: 16, rate: 1 / 0.15, life: [0.4, 0.7] as const,
+		speed: [6, 18] as const, angle: [-Math.PI / 2 - 0.5, -Math.PI / 2 + 0.5] as const,
+		scale: [2, 0] as const, alpha: (t: number) => t < 0.2 ? t * 5 : 1 - t,
+		spawn: { shape: 'ellipse' as const, width: 2, height: 1 }, tint: 0xffcc66,
+		flicker: 0.45,
+	};
+	if (kind === 'smoke') return {
+		texture: Texture.WHITE, max: 12, rate: 5, life: 2, speed: [3, 6] as const,
+		angle: [-Math.PI / 2 - 0.6, -Math.PI / 2 + 0.6] as const, scale: (t: number) => 6 - t * 3,
+		alpha: (t: number) => t < 0.2 ? t * 5 : (1 - t) * 0.25,
+		spawn: { shape: 'rect' as const, width: 1, height: 1 }, tint: 0x000000,
+	};
+	return {
+		texture: Texture.WHITE, max: 8, rate: 1 / 0.7, life: 0.5, speed: 0, angle: 0,
+		scale: [3, 3] as const, alpha: [1, 0] as const,
+		spawn: { shape: 'rect' as const, width: TILE, height: TILE }, tint: 0xffd36a,
+	};
 }
 
 /**
@@ -187,11 +126,21 @@ export class WallDecorationLayer extends Container {
  * this trap is a documented no-op in the real game too, not a simplification on this port's part).
  */
 export class WaterEmberLayer extends Container {
-	private readonly spots: Spot[];
+	private readonly spots: { x: number; y: number; timer: number; emitter: ParticleEmitter; visible: boolean }[];
 
 	constructor(cells: { x: number; y: number }[]) {
 		super();
-		this.spots = cells.map((cell) => ({ ...cell, timer: Math.random() * 2, particles: [], glow: null, visible: false }));
+		this.spots = cells.map((cell) => {
+			const emitter = new ParticleEmitter({
+				texture: Texture.WHITE, max: 4, life: 1, speed: 40, angle: -Math.PI / 2,
+				gravity: { x: 0, y: 80 }, scale: [4, 4],
+				alpha: (t: number) => t < 0.2 ? t * 5 : 1,
+				spawn: { shape: 'rect', width: TILE, height: TILE }, tint: 0xee7722,
+			});
+			emitter.position.set(cell.x * TILE + TILE / 2, cell.y * TILE + TILE / 2);
+			this.addChild(emitter);
+			return { ...cell, timer: Math.random() * 2, emitter, visible: false };
+		});
 	}
 
 	update(dt: number, isVisible: (x: number, y: number) => boolean): void {
@@ -202,39 +151,15 @@ export class WaterEmberLayer extends Container {
 				spot.timer -= dt;
 				if (spot.timer <= 0) {
 					spot.timer = Math.random() * 2;
-					this.spawn(spot);
+					spot.emitter.burst(1);
 				}
+			} else {
+				spot.emitter.clear();
 			}
-
-			for (let i = spot.particles.length - 1; i >= 0; i--) {
-				const p = spot.particles[i];
-				p.vy += p.ay * dt;
-				p.gfx.x += p.vx * dt;
-				p.gfx.y += p.vy * dt;
-				p.timeLeft -= dt;
-				if (p.timeLeft <= 0 || !spot.visible) {
-					this.removeChild(p.gfx);
-					p.gfx.destroy();
-					spot.particles.splice(i, 1);
-					continue;
-				}
-				const life = p.timeLeft / p.life;
-				p.gfx.alpha = life > 0.8 ? (1 - life) * 5 : 1;
-			}
+			spot.emitter.update(dt);
 		}
 	}
-
-	private spawn(spot: Spot): void {
-		const gfx = new Graphics();
-		const cx = spot.x * TILE + Math.random() * TILE;
-		const cy = spot.y * TILE + Math.random() * TILE;
-		gfx.rect(-2, -2, 4, 4).fill({ color: 0xee7722 });
-		gfx.position.set(cx, cy);
-		this.addChild(gfx);
-		spot.particles.push({ gfx, vx: 0, vy: -40, ay: 80, timeLeft: 1, life: 1 });
-	}
 }
-
 /**
  * `WellWater`'s visual ripple: a quiet pair of expanding rings over each active magic well.
  * The Java scene uses its water-surface ripple effect for this presentation; the port keeps
@@ -275,11 +200,3 @@ export class WellRippleLayer extends Container {
 	}
 }
 
-function lerpColor(a: number, b: number, t: number): number {
-	const ar = (a >> 16) & 0xff, ag = (a >> 8) & 0xff, ab = a & 0xff;
-	const br = (b >> 16) & 0xff, bg = (b >> 8) & 0xff, bb = b & 0xff;
-	const r = Math.round(ar + (br - ar) * t);
-	const g = Math.round(ag + (bg - ag) * t);
-	const bl = Math.round(ab + (bb - ab) * t);
-	return (r << 16) | (g << 8) | bl;
-}

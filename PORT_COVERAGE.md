@@ -431,8 +431,11 @@ The MWL compiler now validates those manifest entries against `src/assets` durin
 missing referenced files fail fast instead of producing a partial resource catalogue.
 The renderer still registers its Vite-imported textures directly, but `images.ts` now consumes
 the generated MWL asset manifest through a bundler-facing URL registry and validates every
-manifest entry before loading sprites. Terrain and UI references still use renderer metadata
-directly.
+manifest entry before loading sprites. As of MWG 0.8.1, shared terrain/effect atlas identities
+are authored in `src/content/asset-references.mwl` as generic object asset records and included
+in that manifest. The item atlas is resolved from the generated `itemAssetSources` table during
+sprite loading; per-item image/icon attributes and remaining UI references still need migration,
+while frame cutting remains renderer-owned.
 
 The MWL build now rejects duplicate item, monster, and trait IDs and validates every monster
 roster, boss-transition, and asset reference before emitting generated files. Deterministic
@@ -1843,7 +1846,7 @@ treated as walkable makes the exit reachable on all 8, which is the decisive tes
 tutorial, not a mapping error that walled the stairs off. `searchForSecrets` checks all 8
 neighbours, so the doors are findable and every ported floor is completable.
 
-### mwg usage audit (2026-09-12, against the installed `@datamoc/mw_games` 0.7.8)
+### mwg usage audit (2026-09-12, against the installed `@datamoc/mw_games` 0.8.1)
 
 A pass over how this port uses the *framework*, checked against the installed package's own
 `README.md`, its 277 `.d.ts` files (whose doc comments carry the contracts) and the published
@@ -1998,20 +2001,19 @@ Recorded here, not done, each with the framework API that owns it:
   on spawn; a step plays run and files the tween; sampled mid-tween the sprite sits strictly between
   the two cells and settles exactly on the destination idling; attacking plays attack; and dying
   plays the death clip to its end and *holds* it (`isFinished`, then still `die`).
-- **Wall decoration particles stay hand-integrated, and that is now checked rather than assumed.**
-  `src/ui/wallDecorations.ts` keeps its own pool, timers and per-particle physics where
-  `ParticleEmitter` is used for the title flame - and the audit's own earlier claim that the
-  emitter's knobs "all exist as options" was wrong. Against the installed 0.7.8 the emitter
-  interpolates *scale* and *alpha* linearly between a birth and a death value, with a single `tint`
-  for the whole emitter, recomputing each particle from its own age each step; Java's three
-  decorations need three things that cannot be expressed that way - `Sink`'s `WaterParticle` rolls a
-  random **colour per particle** (`color(ColorMath.random(0xb6ccc2, 0x3b6653))`), `Torch`'s
-  `SparkParticle.update()` re-rolls its **size every frame** (`size(Random.Float(size * left /
-  lifespan))`, a jitter rather than an interpolation), and `SmokeParticle.update()` uses a
-  **piecewise alpha** (`am = p > 0.8 ? 2 - 2p : p * 0.5`). The *glow* half is separately a documented
-  simplification (a low-alpha circle rather than Java's radial-gradient sprite), and the Sink's own
-  water ripple (`GameScene.ripple()`) has no hook here. Recorded as proposal P14 in `ROADMAP.md`,
-  with the curves quoted in the layer's own header so the reason is not re-derived.
+- **Wall decoration particles now use MWG 0.8.1's pooled emitter.** `src/ui/wallDecorations.ts`
+  gives each FOV-gated spot its own emitter, preserving Java's immediate clear when a cell leaves
+  FOV. Sink uses a per-particle blue-green tint range, Torch uses its two-phase fade plus flicker,
+  Smoke uses piecewise scale/alpha curves, and WaterEmberLayer retains Java's per-cell random
+  delay while using the shared emitter for motion and fade. The torch halo remains a documented
+  low-alpha circle instead of Java's radial-gradient Halo, and Sink's water ripple remains
+  unported because this port has no ripple hook. This closes framework proposal P14.
+  **Browser-verified 2026-09-13** (`tools/scratch/wall-decorations-livecheck.mjs`): the hero was
+  teleported beside a real Sink spot (Sewers) and a real Torch spot (Prison), both located by
+  reading the live scene's `wallDecorations['spots']` array rather than assumed coordinates, and
+  screenshotted after letting the pooled emitters run - the sink cell shows a rendered
+  blue-green droplet and both visible torch sconces show their FOV-gated warm halo, confirming
+  the migration actually reaches the screen and not only the type-checker.
 - **Modal panels are hand-rolled** (`talentPanel`, the item picker's `Graphics` panel,
   `InfoWindow`) with their own open/close state machine, where `Window`/`WindowStack`/`MessageBox`
   exist and are used for the title screen, the journal and - since 2026-09-12 - the in-game menu

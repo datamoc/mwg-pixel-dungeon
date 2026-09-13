@@ -22,6 +22,12 @@ export const MWL_CONSUMABLE_ITEMS = MWL_CONTENT.items.filter((item) => item.slot
  */
 const MWL_TABLES = new Map(MWL_CONTENT.tables.map((table) => [table.id, table]));
 
+/** Shared item-art sources are authored as MWL rows; frame coordinates remain renderer data. */
+export const MWL_ITEM_ASSET_SOURCES = new Map(
+	MWL_TABLES.get('itemAssetSources')?.rows.map((row) => [String(row.slot), String(row.image)]) ?? [],
+);
+if (!MWL_ITEM_ASSET_SOURCES.has('items')) throw new Error('MWL item assets are missing the items atlas');
+
 export function MWL_TABLE(id: string): MwlTableDefinition {
 	const table = MWL_TABLES.get(id);
 	if (!table) throw new Error(`MWL table is missing: ${id}`);

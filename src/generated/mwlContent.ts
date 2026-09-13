@@ -3492,6 +3492,199 @@ export const gameData = {
 			},
 			"children": [
 				{
+					"tag": "object",
+					"attributes": {
+						"id": "asset-water0",
+						"name": "water0",
+						"image": "assets/water0.png"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+						"line": 4,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "object",
+					"attributes": {
+						"id": "asset-water1",
+						"name": "water1",
+						"image": "assets/water1.png"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+						"line": 9,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "object",
+					"attributes": {
+						"id": "asset-water2",
+						"name": "water2",
+						"image": "assets/water2.png"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+						"line": 14,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "object",
+					"attributes": {
+						"id": "asset-water3",
+						"name": "water3",
+						"image": "assets/water3.png"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+						"line": 19,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "object",
+					"attributes": {
+						"id": "asset-water4",
+						"name": "water4",
+						"image": "assets/water4.png"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+						"line": 24,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "object",
+					"attributes": {
+						"id": "asset-effects",
+						"name": "effects",
+						"image": "assets/effects.png"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+						"line": 29,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "object",
+					"attributes": {
+						"id": "asset-terrain-features",
+						"name": "terrain-features",
+						"image": "assets/terrain_features.png"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+						"line": 34,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "object",
+					"attributes": {
+						"id": "asset-caves-quest",
+						"name": "caves-quest",
+						"image": "assets/caves_quest.png"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+						"line": 39,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "object",
+					"attributes": {
+						"id": "asset-halls-special",
+						"name": "halls-special",
+						"image": "assets/halls_special.png"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+						"line": 44,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "object",
+					"attributes": {
+						"id": "asset-wall-blocking",
+						"name": "wall-blocking",
+						"image": "assets/wall_blocking.png"
+					},
+					"children": [],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+						"line": 49,
+						"column": 1
+					},
+					"gettext": []
+				},
+				{
+					"tag": "table",
+					"attributes": {
+						"id": "itemAssetSources",
+						"columns": "slot:string|image:string"
+					},
+					"children": [
+						{
+							"tag": "row",
+							"attributes": {
+								"slot": "items",
+								"image": "assets/items.png"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+								"line": 58,
+								"column": 1
+							},
+							"gettext": []
+						}
+					],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+						"line": 55,
+						"column": 1
+					},
+					"gettext": []
+				}
+			],
+			"location": {
+				"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\asset-references.mwl",
+				"line": 1,
+				"column": 1
+			},
+			"gettext": []
+		},
+		{
+			"tag": "game",
+			"attributes": {
+				"schema": "0.1"
+			},
+			"children": [
+				{
 					"tag": "table",
 					"attributes": {
 						"id": "badgeCatalogue",
@@ -16641,11 +16834,13 @@ export const gameData = {
 		"assets/bee.png",
 		"assets/blacksmith.png",
 		"assets/brute.png",
+		"assets/caves_quest.png",
 		"assets/crab.png",
 		"assets/demon.png",
 		"assets/dm100.png",
 		"assets/dm200.png",
 		"assets/dm300.png",
+		"assets/effects.png",
 		"assets/elemental.png",
 		"assets/eye.png",
 		"assets/ghost.png",
@@ -16655,6 +16850,8 @@ export const gameData = {
 		"assets/goo.png",
 		"assets/guard.png",
 		"assets/guardian.png",
+		"assets/halls_special.png",
+		"assets/items.png",
 		"assets/king.png",
 		"assets/larva.png",
 		"assets/mimic.png",
@@ -16681,10 +16878,17 @@ export const gameData = {
 		"assets/succubus.png",
 		"assets/swarm.png",
 		"assets/tengu.png",
+		"assets/terrain_features.png",
 		"assets/thief.png",
+		"assets/wall_blocking.png",
 		"assets/wandmaker.png",
 		"assets/wards.png",
 		"assets/warlock.png",
+		"assets/water0.png",
+		"assets/water1.png",
+		"assets/water2.png",
+		"assets/water3.png",
+		"assets/water4.png",
 		"assets/yog.png",
 		"assets/yog_fists.png"
 	],
