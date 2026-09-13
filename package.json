@@ -19,7 +19,8 @@
     "mwg:check": "node tools/check-mwg-version.mjs"
   },
   "dependencies": {
-    "mwg": "npm:@datamoc/mw_games@^0.8.0",
+    "@datamoc/mw_games": "^0.9.0-alpha",
+    "mwg": "npm:@datamoc/mw_games@^0.9.0-alpha",
     "pixi.js": "^8.20.1"
   },
   "devDependencies": {
