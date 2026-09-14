@@ -35,9 +35,13 @@ try {
 	for (const file of ['simulation/movement', 'simulation/heroTurn', 'simulation/hunger', 'simulation/turns', 'adapters/sceneSimulation',
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
-		'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/tenguAbility', 'simulation/defenderDamageCurves', 'simulation/preparation', 'mechanics/cone']) {
+	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'mechanics/cone', 'dungeonConstants',
+	'simulation/javaBlob', 'simulation/environmentalBlobs',
+	// The five per-domain adapters are thin facades over this shared runtime module.
+	'adapters/gameSimulation']) {
 		compile(new URL(`../src/${file}.ts`, import.meta.url), `${file}.js`);
 	}
+	compile(new URL('../src/simulation/highGrass.ts', import.meta.url), 'simulation/highGrass.js');
 	// The framework half of the harness is the INSTALLED package - the same
 	// `@datamoc/mw_games` build the game itself ships - rather than a sibling checkout of the
 	// framework's sources. The two are different versions in general (the checkout is typically
@@ -65,14 +69,77 @@ try {
 	writeFileSync(join(output, 'node_modules', 'mwg', 'index.js'),
 		`const random = require(${JSON.stringify(join(dist, 'core', 'Random.js'))}); exports.Random = random; exports.Generator = random.Generator;\n`);
 	const require = createRequire(join(output, 'tests.cjs'));
+	// `wands.ts` reads the generated MWL catalogue in the game build. Keep this renderer-free
+	// harness independent of the full content barrel by supplying the same authored table shape;
+	// the MWL compiler/build remains the authoritative validation of the actual generated data.
+	writeFileSync(join(output, 'mwlContent.js'), `exports.MWL_ITEM_FRAMES = ${JSON.stringify({
+		dewdrop: 21, stone: 147, potion: 352, scroll: 304, meat: 432, gold: 18, armor: 176,
+		wand: 208, food: 437, seed: 58, darkGold: 453, dwarfToken: 454, amulet: 61, ring: 224,
+		crystalKey: 57, ironKey: 56, goldenKey: 56, bomb: 80, corpseDust: 465, candle: 466,
+		embers: 467, ankh: 48, stylus: 49, honeypot: 53, alchemize: 237, bag: 480, sandBag: 23,
+	})}; exports.MWL_ITEM_LIMITS = { waterskin: 20 }; exports.MWL_WAND_RANGE_RULES = {
+		default: { base: 6, perLevel: 0 }, disintegration: { base: 6, perLevel: 2 },
+	}; exports.MWL_WAND_CHARGE_RULES = {
+		default: { ratio: 0, min: 1, max: 1 }, fireblast: { ratio: 0.3, min: 1, max: 3 }, regrowth: { ratio: 0.3, min: 1, max: 3 },
+	}; exports.MWL_WAND_DEFINITIONS = ${JSON.stringify([
+		['WandOfMagicMissile', 'magicMissile'], ['WandOfFrost', 'frost'], ['WandOfFireblast', 'fireblast'],
+		['WandOfLightning', 'lightning'], ['WandOfCorrosion', 'corrosion'], ['WandOfCorruption', 'corruption'],
+		['WandOfDisintegration', 'disintegration'], ['WandOfBlastWave', 'blastWave'],
+		['WandOfLivingEarth', 'livingEarth'], ['WandOfPrismaticLight', 'prismaticLight'],
+		['WandOfRegrowth', 'regrowth'], ['WandOfTransfusion', 'transfusion'], ['WandOfWarding', 'warding'],
+	].map(([sourceClass, type], index) => ({ id: 'wand-' + index, sourceClass, type })))};\n`);
 	const { advanceHunger } = require('./simulation/hunger');
 	const { runHungerStep } = require('./adapters/hungerSimulation');
 	const { runMovement } = require('./adapters/movementSimulation');
 	const { resolveAttack } = require('./simulation/attackResolution');
 	const { runAttackResolution } = require('./adapters/attackSimulation');
 	const { stepTenguAbility, tenguTargetAbilityUses, tenguAbilityCost } = require('./simulation/tenguAbility');
+	const { planDisintegration } = require('./simulation/disintegration');
+	const { wandTypeFromSource, wandTargetRange, wandChargesPerCast } = require('./items/wands');
 	const { runUntilHeroInput } = require('./adapters/sceneSimulation');
 	const { SceneSimulationAdapter } = require('./adapters/sceneSimulation');
+	const { trampleHighGrass } = require('./simulation/highGrass');
+	const { evolveJavaBlob } = require('./simulation/javaBlob');
+	const { applyEnvironmentalBlobs } = require('./simulation/environmentalBlobs');
+	check('Huntress furrows high grass before clearing it without drops', () => {
+		assert.deepEqual(trampleHighGrass('high', true), { next: 'furrowed', rollDrops: false });
+		assert.deepEqual(trampleHighGrass('furrowed', true), { next: 'furrowed', rollDrops: false });
+		assert.deepEqual(trampleHighGrass('furrowed', false), { next: 'plain', rollDrops: false });
+		assert.deepEqual(trampleHighGrass('high', false), { next: 'plain', rollDrops: true });
+	});
+	check('Java blob evolution diffuses through four neighbours and loses one volume', () => {
+		const before = new Array(25).fill(0);
+		before[12] = 5;
+		const next = evolveJavaBlob(5, 5, before, () => false);
+		assert.equal(next[12], 4);
+		for (const cell of [7, 11, 13, 17]) assert.equal(next[cell], 1);
+		assert.equal(next[0], 0);
+		const blocked = evolveJavaBlob(5, 5, before, (x, y) => x === 2 && y === 1);
+		assert.equal(blocked[7], 0);
+	});
+	check('StenchGas applies its distinct two-turn paralysis effect', () => {
+		const target = { hp: 10 };
+		const advanced = [];
+		const buffs = [];
+		applyEnvironmentalBlobs({
+			creatures: [], passable: () => true,
+			advance: blob => advanced.push(blob),
+			cellsAbove: blob => blob === 'stenchGas' || blob === 'corrosiveGas' ? [{ x: 1, y: 1 }] : [],
+			creatureAt: () => target,
+			addBuff: (...args) => buffs.push(args),
+			applyCorrosion: (...args) => buffs.push(args),
+			corrosiveStrength: () => 3,
+			toxicDamage: () => 1,
+			isToxicImmune: () => false,
+			applyDamage: () => true,
+		});
+		assert.deepEqual(advanced, ['plantGas', 'plantFreeze', 'toxicGas', 'paralyticGas', 'stenchGas', 'corrosiveGas', 'confusionGas']);
+		assert.deepEqual(buffs, [[target, 'paralysis', 2], [target, 3]]);
+	});
+	const { takeGooTurn } = require('./simulation/gooBoss');
+	const { ratKingP1Summon, planRatKingWave } = require('./simulation/ratKingBoss');
+	const { chooseDM300Ability, dm300VentPath, planDM300Rockfall } = require('./simulation/dm300Boss');
+	const { aimYogDeathGaze } = require('./simulation/yogBoss');
 	const { Scheduler } = require('./scheduler');
 	const talents = require('./talentEffects');
 	const initial = (extra = {}) => ({ hunger: 0, partialDamage: 0, hp: 20, maxHp: 20, ...extra });
@@ -104,8 +171,9 @@ try {
 		assert.deepEqual(runAttackResolution(attacker, untargetable, random), { hit: false, damage: 0 });
 	});
 	check('recent talent effects cover thresholds, class gates, and rank scaling', () => {
-		assert.equal(talents.ironWillReduction(10, 20, 1), 1);
-		assert.equal(talents.ironWillReduction(11, 20, 2), 0);
+		//ironWillReduction was removed (2026-09-14): Iron Will's real effect is a Warrior-only
+		//BrokenSeal shield-cap boost, now read directly as talentRank('iron_will') in
+		//dungeonScene.ts's seal-shield regen tick - see talentEffects.ts's historical note.
 		assert.equal(talents.shieldBatteryGain(3, 2), 2);
 		assert.equal(talents.shieldBatteryGain(0, 2), 0);
 		assert.equal(talents.rejuvenatingStepHeal(4, 4, 19, 20, 2), 1);
@@ -297,6 +365,43 @@ try {
 		assert.equal(ready, 2);
 	});
 	verifyMovement(require, check);
+	check('extracted boss planners preserve deterministic Goo, Rat King, DM-300, and Yog rules', () => {
+		const random = { int: (min) => min, chance: () => true };
+		const hero = { x: 4, y: 4, hp: 20, maxHp: 20 };
+		const goo = { x: 3, y: 4, hp: 100, maxHp: 100, pumped: 0 };
+		const attacks = [];
+		const messages = [];
+		const gooContext = {
+			hero, inWater: () => false, strongerBosses: false,
+			stats: () => ({ accuracy: 10, damage: [2, 4] }),
+			attack: (attacker, defender) => attacks.push({ attacker, defender }),
+			showHeal: () => assert.fail('dry Goo must not heal'), say: (message) => messages.push(message), random,
+			messages: { slam: 'slam', pump: 'pump', pumpMore: 'pump-more' },
+		};
+		takeGooTurn(goo, gooContext); takeGooTurn(goo, gooContext); takeGooTurn(goo, gooContext);
+		assert.equal(goo.pumped, 0);
+		assert.equal(attacks.length, 1);
+		assert.deepEqual(attacks[0].attacker.damage, [6, 12]);
+		assert.equal(attacks[0].attacker.accuracy, 20);
+		assert.deepEqual(messages, ['pump', 'pump-more', 'slam']);
+		assert.deepEqual(planRatKingWave(0, 300, false, random), { adds: ['ghoul'], nextSummonsMade: 1, announcement: 'wave_1' });
+		assert.deepEqual(ratKingP1Summon(8, true, random), 'golem');
+		assert.deepEqual(planRatKingWave(12, 150, true, random), { adds: ['warlock', 'monk', 'ghoul', 'ghoul'], nextSummonsMade: 16, announcement: 'wave_3' });
+		assert.equal(chooseDM300Ability(0, random), 'vent');
+		assert.equal(chooseDM300Ability(2, random), 'rockfall');
+		assert.deepEqual(dm300VentPath({ x: 0, y: 0 }, { x: 3, y: 3 }, (x, y) => !(x === 2 && y === 2)), [{ x: 1, y: 1 }]);
+		const rockfall = planDM300Rockfall({ x: 3, y: 3 }, { x: 0, y: 0 }, 7, 7, () => true, random);
+		assert.deepEqual(rockfall.safe, { x: 2, y: 2 });
+		assert.equal(rockfall.cells.length, 48);
+		const yog = aimYogDeathGaze({ width: 9, height: 9, hero: { x: 4, y: 4 }, yog: { x: 0, y: 0 }, maxHp: 400, hp: 400,
+			neighbours: [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]],
+			index: (x, y) => y * 9 + x, passable: () => true, trace: (from, to) => {
+				const cells = []; let x = from.x, y = from.y;
+				while (x !== to.x || y !== to.y) { cells.push({ x, y }); x += Math.sign(to.x - x); y += Math.sign(to.y - y); }
+				cells.push({ x, y }); return cells;
+			}, random });
+		assert.deepEqual(yog, [40]);
+	});
 	check('tengu ability cadence matches Java targetAbilityUses and catch-up cooldown', () => {
 		// Tengu.targetAbilityUses(): 1 base, +2 per jump, +2 more for jumps 3 and 4.
 		assert.deepEqual([0, 1, 2, 3, 4, 5].map(tenguTargetAbilityUses), [1, 3, 5, 8, 11, 14]);
@@ -340,8 +445,50 @@ try {
 			[2, 2, 2, 1, 1, 1, 1, 0, 0],
 		);
 	});
+	check('disintegration plans the Java range, hit bonus, terrain bonus, and flammable cells', () => {
+		const cells = Array.from({ length: 10 }, () => ({ solid: false, flammable: false, victim: false, eligibleVictim: false }));
+		cells[1].victim = cells[1].eligibleVictim = true;
+		cells[2].solid = true;
+		cells[3].flammable = true;
+		cells[4].victim = cells[4].eligibleVictim = true;
+		cells[5].victim = true; // an NPC/passive target: present, but not an eligible hit
+		const plan = planDisintegration(1, cells);
+		assert.equal(plan.maxDistance, 8);
+		assert.deepEqual(plan.victimCells, [1, 4]);
+		assert.deepEqual(plan.flammableCells, [3]);
+		assert.equal(plan.terrainBonus, 1);
+		assert.equal(plan.effectiveLevel, 3); // wand 1 + one extra hit + one terrain level
+	});
+	check('wand categories centralize identity and category-specific formulas', () => {
+		const classes = [
+			['WandOfMagicMissile', 'magicMissile'], ['WandOfFrost', 'frost'], ['WandOfFireblast', 'fireblast'],
+			['WandOfLightning', 'lightning'], ['WandOfCorrosion', 'corrosion'], ['WandOfCorruption', 'corruption'],
+			['WandOfDisintegration', 'disintegration'], ['WandOfBlastWave', 'blastWave'],
+			['WandOfLivingEarth', 'livingEarth'], ['WandOfPrismaticLight', 'prismaticLight'],
+			['WandOfRegrowth', 'regrowth'], ['WandOfTransfusion', 'transfusion'], ['WandOfWarding', 'warding'],
+		];
+		for (const [source, type] of classes) assert.equal(wandTypeFromSource(source), type);
+		assert.equal(wandTypeFromSource(undefined), null);
+		assert.equal(wandTypeFromSource('WandOfNotARealWand'), null);
+		assert.equal(wandTargetRange('disintegration', 3), 12);
+		assert.equal(wandTargetRange('frost', 9), 6);
+		assert.equal(wandChargesPerCast('fireblast', 4), 2);
+		assert.equal(wandChargesPerCast('magicMissile', 4), 1);
+	});
 	verifyHeroTurn(require, check);
 	verifyCombat(require, check);
+	check('Freezing escalates capped Chill into the shared Frost immobilization', () => {
+		const { applyChillFreeze, BUFF_DURATION } = require('./simulation/buffs');
+		const chilled = applyChillFreeze({ burning: 4 });
+		assert.equal(chilled.frozen, false);
+		assert.equal(chilled.buffs.chill, BUFF_DURATION.chill);
+		assert.equal(chilled.buffs.burning, 4);
+		const frozen = applyChillFreeze({ chill: BUFF_DURATION.chill, paralysis: 1 });
+		assert.equal(frozen.frozen, true);
+		assert.equal(frozen.buffs.chill, undefined);
+		assert.equal(frozen.buffs.frost, BUFF_DURATION.frost);
+		assert.equal(frozen.buffs.paralysis, BUFF_DURATION.frost);
+	});
 	verifyHeroActions(require, check);
 	verifySearch(require, check);
 	verifyCone(require, check);

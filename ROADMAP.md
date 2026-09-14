@@ -1762,6 +1762,17 @@ Do not add new authored content as object literals or scattered constants in the
       until this pass** - now documented in `src/talents.ts` and `PORT_COVERAGE.md`; not
       replaced, since a real Cleric tree needs the Cleric class's own Holy Lantern/spell
       mechanics built first.
+      **2026-09-14: Iron Will's invented flat-damage-reduction stand-in is replaced with the
+      real `BrokenSeal` shield mechanic** it was standing in for - the Warrior's starting armor
+      now carries a persistent seal shield (`armorTier + armorLevel + pointsInTalent(iron_will)`
+      cap, `1/30`-per-turn regen, drained ahead of Blocking/Barrier) instead of a flat damage
+      cut below 50% HP. See `PORT_COVERAGE.md`'s new `BrokenSeal` row for the full citation and
+      what remains unported (the seal as a detachable, re-affixable item, and Runic
+      Transference's glyph-transfer interaction - both real but out of scope for this pass).
+      This also unblocks half of section 4's Blacksmith-reforge gap ("Java floor-drops a
+      consumed armor's seal as a `BrokenSeal` item") in spirit - the seal concept now exists -
+      but not in practice, since that specific gap needs the seal as a *carried, droppable*
+      item, which this pass deliberately did not build.
  - [ ] Implement rune transfer and shared-enchantment behavior. Sniper's `shared_enchantment`
        proc is now live for thrown hits with Java's `Random.Int(3) < points` gate and explicit
        ranged attack provenance; Warden's `durable_tips` still waits on a real TippedDart item.

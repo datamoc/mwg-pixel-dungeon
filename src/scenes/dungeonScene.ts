@@ -121,7 +121,7 @@ import { BadgeBannerLayer } from '../ui/badgeBanner';
 import { SpdToolbar } from '../ui/toolbar';
 import { StatusPane } from '../ui/statusPane';
 import { SpdAudio } from '../audio';
-import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, ironWillReduction, lethalDefenseShield, lethalHasteDuration, LETHAL_HASTE_COOLDOWN, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, shieldBatteryGain, shieldingDewGain, sharedUpgradeArmor, soulSiphonCharge, twinUpgradeArmor, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
+import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalDefenseShield, lethalHasteDuration, LETHAL_HASTE_COOLDOWN, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, shieldBatteryGain, shieldingDewGain, sharedUpgradeArmor, soulSiphonCharge, twinUpgradeArmor, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
 import pixelFontUrl from '../assets/pixel_font.ttf';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth, SpdRandom } from '../spdRng';
 import {
@@ -727,6 +727,9 @@ interface SaveShape {
 	/** Legacy (pre-two-pool saves): Blocking's share used to live inside `heroBarrier`. */
 	blockingShieldLeft?: number;
 	blockingTurnsLeft?: number;
+	sealBarrierState?: { layers: { amount: number; decayPerTick?: number }[] };
+	sealPartialGain?: number;
+	armorSealed?: boolean;
 	stealthTalentTicks?: number;
 	cloakChargeProgress?: number;
 	cloakStealthTurnsToCost?: number;
@@ -1194,6 +1197,20 @@ export class DungeonScene extends Scene2D {
 	private applyingDeferredDamage = false;
 	/** Java Barrier/BrokenSeal-style shielding, consumed before HP and saved with the run. */
 	private heroBarrier = new Actors.Barrier();
+	/** `BrokenSeal.WarriorShield` (`items/BrokenSeal.java`, tag `v3.3.8`): a persistent shield the
+	 * Warrior's starting armor carries, regenerating `1/30` per hero turn (while regen is on) up to
+	 * `armorTier + armorLevel + pointsInTalent(IRON_WILL)` - unlike `heroBarrier` above, this pool
+	 * never decays on its own, only regenerates and drains on hits, so it needs its own `Barrier`
+	 * instance rather than sharing Barrier's proportional-decay pool. Java affixes the seal to a
+	 * specific `Armor` instance and lets the player detach/re-affix it to a different piece
+	 * (`Armor.AC_DETACH`, `BrokenSeal.AC_AFFIX`) with a `RUNIC_TRANSFERENCE`-gated glyph transfer;
+	 * this port tracks only whether the *currently equipped* armor is sealed (`armorSealed`,
+	 * `heroClass === 'warrior'` at creation, cleared on any later `equipArmor` swap since there is
+	 * no detach/re-affix action here) - not ported: seal-as-a-carried-item, re-affixing to a
+	 * different armor, and Runic Transference's glyph-transfer interaction. */
+	private sealBarrier = new Actors.Barrier();
+	private armorSealed = false;
+	private sealPartialGain = 0;
 	/** `WandOfLivingEarth.RockArmor`: stored rock armor and the wand level that set its cap. */
 	private livingEarthArmor = 0;
 	/** `Earthroot.Armor` (`plants/Earthroot.java`, tag `v3.3.8`): a block *pool* of `level` points
@@ -1210,9 +1227,10 @@ export class DungeonScene extends Scene2D {
 	/** Barrier.partialLostShield (`actors/buffs/Barrier.java`): fractional decay accumulator. */
 	private barrierPartialLoss = 0;
 	/** Blocking.BlockBuff's own real shield (`items/weapon/enchantments/Blocking.java`): a separate
-	 * Java `ShieldBuff` from Barrier, so it gets its own pool here too (`shieldUsePriority = 2`
-	 * drains before Barrier's priority-0 pool on incoming damage - `absorbHeroDamage` honors that
-	 * order, which the old single-pool model could not). `setShield()` keeps the higher of the
+	 * Java `ShieldBuff` from Barrier, so it gets its own pool here too, drained before Barrier's in
+	 * `absorbHeroDamage` (see that method's own 2026-09-14 correction: real `ShieldBuff` has no
+	 * priority field at all, this port's fixed order is a stand-in for Java's unspecified
+	 * attachment-order draining, not a reproduction of a real one). `setShield()` keeps the higher of the
 	 * old/new value (never additive) and always resets the fixed 5-turn cliff-edge expiry
 	 * (`BlockBuff.act()`: `left -= 1; left<=0 -> detach()`); the timer here is `blockingTurnsLeft`.
 	 * Deliberate simplifications: the `left` decrement is a flat 1/turn - real Java scales both
@@ -1628,6 +1646,9 @@ export class DungeonScene extends Scene2D {
 		this.barrierPartialLoss = 0;
 		this.blockingBarrier.clear();
 		this.blockingTurnsLeft = 0;
+		this.sealBarrier.clear();
+		this.sealPartialGain = 0;
+		this.armorSealed = false;
 		this.itemPickerOpen = false;
 		this.itemPickerEntries = [];
 		this.itemPickerOnPick = null;
@@ -1657,6 +1678,9 @@ export class DungeonScene extends Scene2D {
 		if (this.heroClass === 'warrior') {
 			this.bag.add({ id: 'potionHealing', quantity: 1, stackable: true, identified: true });
 			this.bag.add({ id: 'scrollRage', quantity: 1, stackable: true, identified: true });
+			//HeroClass.initWarrior(): `belongings.armor.affixSeal(new BrokenSeal())` - the seal is
+			//affixed directly to the starting cloth armor, not carried as a separate item.
+			this.armorSealed = true;
 		} else if (this.heroClass === 'mage') {
 			this.bag.add({ id: 'scrollUpgrade', quantity: 1, stackable: true, identified: true });
 			this.bag.add({ id: 'potionFlame', quantity: 1, stackable: true, identified: true });
@@ -6641,6 +6665,21 @@ export class DungeonScene extends Scene2D {
 						this.barrierPartialLoss = 0;
 					}
 				}
+				//BrokenSeal.WarriorShield.act(): regenerates 1/30 per turn (while regen is on)
+				//toward armTier + armLvl + pointsInTalent(IRON_WILL), never decaying on its own.
+				//Java's real `Regeneration.regenOn()` also gates on a `LockedFloor` boss-arena lock
+				//and on `MiningLevel`; neither is modeled here, so the seal always regens - a stated
+				//simplification, not a silent gap.
+				if (this.armorSealed) {
+					const sealCap = this.armorTier + this.armorLevel + this.talentRank('iron_will');
+					if (this.sealBarrier.total < sealCap) {
+						this.sealPartialGain += 1 / 30;
+						while (this.sealPartialGain >= 1 && this.sealBarrier.total < sealCap) {
+							this.sealBarrier.add(1);
+							this.sealPartialGain -= 1;
+						}
+					} else this.sealPartialGain = 0;
+				}
 				//Viscosity.DeferedDamage.act(): a fresh deferred pool waits one actor turn,
 				//then deals max(1, floor(pool*0.1)) and spends that amount each turn. The
 				//scheduled damage uses the normal shield/HP path but must not be deferred
@@ -11128,15 +11167,23 @@ export class DungeonScene extends Scene2D {
 		//the amount and half-damage rule are retained even though EarthGuardian is not.
 		const livingEarthBlocked = Math.min(this.livingEarthArmor, Math.ceil(viscosityDamage / 2));
 		this.livingEarthArmor -= livingEarthBlocked;
-		//ShieldBuff.processDamage(): higher `shieldUsePriority` drains first - BlockBuff (2)
-		//before Barrier (0) - so Blocking's own pool absorbs ahead of the shared pool.
+		//**Correction, 2026-09-14**: this drain order used to be justified by a
+		//"`ShieldBuff.shieldUsePriority` - BlockBuff (2) before Barrier (0)" comment (also in
+		//PORT_COVERAGE.md's Barrier row) that does not exist in real Java - grepped
+		//`ShieldBuff.java`/`Blocking.java`/`Char.java` directly for "priority" and found zero
+		//matches. Real `Char.damage()` just iterates `buffs(ShieldBuff.class)` in whatever order
+		//those buffs happen to be attached, which Java never guarantees or documents; this port's
+		//own fixed order (seal, then Blocking, then Barrier) is a defensible, consistent stand-in
+		//for that unspecified order, not a reproduction of a real priority field - the seal drains
+		//first here because `HeroClass.initHero()` affixes it before any other buff could exist
+		//for a fresh Warrior, making it the earliest-attached shield in the common case.
 		const afterLivingEarth = Math.max(0, viscosityDamage - livingEarthBlocked);
-		const blockedBlocking = this.blockingBarrier.absorb(afterLivingEarth);
-		const blockedBase = this.heroBarrier.absorb(Math.max(0, afterLivingEarth - blockedBlocking));
-		const blocked = livingEarthBlocked + blockedBlocking + blockedBase;
+		const blockedSeal = this.sealBarrier.absorb(afterLivingEarth);
+		const blockedBlocking = this.blockingBarrier.absorb(Math.max(0, afterLivingEarth - blockedSeal));
+		const blockedBase = this.heroBarrier.absorb(Math.max(0, afterLivingEarth - blockedSeal - blockedBlocking));
+		const blocked = livingEarthBlocked + blockedSeal + blockedBlocking + blockedBase;
 		this.wandCharges.refund(shieldBatteryGain(blocked, this.talentRank('shield_battery')));
-		const remaining = Math.max(0, viscosityDamage - blocked);
-		const reduced = Math.max(0, remaining - ironWillReduction(this.hero.hp, this.hero.maxHp, this.talentRank('iron_will')));
+		const reduced = Math.max(0, viscosityDamage - blocked);
 		if (deathlessFuryTriggers(this.subclass(), this.talentRank('deathless_fury'), this.deathlessFuryUsed, reduced, this.hero.hp)) {
 			this.deathlessFuryUsed = true;
 			this.hero.hp = 1;
@@ -12412,6 +12459,9 @@ export class DungeonScene extends Scene2D {
 			barrierPartialLoss: this.barrierPartialLoss,
 			blockingBarrierState: this.blockingBarrier.toJSON(),
 			blockingTurnsLeft: this.blockingTurnsLeft,
+			sealBarrierState: this.sealBarrier.toJSON(),
+			sealPartialGain: this.sealPartialGain,
+			armorSealed: this.armorSealed,
 			stealthTalentTicks: this.stealthTalentTicks,
 			cloakChargeProgress: this.cloakChargeProgress,
 			cloakStealthTurnsToCost: this.cloakStealthTurnsToCost,
@@ -12501,6 +12551,13 @@ export class DungeonScene extends Scene2D {
 			if (moved > 0) this.blockingBarrier.add(moved);
 		}
 		this.blockingTurnsLeft = s.blockingTurnsLeft ?? 0;
+		this.sealBarrier = s.sealBarrierState
+			? Actors.Barrier.fromJSON(s.sealBarrierState)
+			: new Actors.Barrier();
+		this.sealPartialGain = s.sealPartialGain ?? 0;
+		//Pre-seal saves have no record either way; treat a Warrior's pre-existing run as unsealed
+		//rather than guessing whether the equipped armor is still the original starting piece.
+		this.armorSealed = s.armorSealed ?? false;
 		this.stealthTalentTicks = s.stealthTalentTicks ?? 0;
 		this.cloakChargeProgress = s.cloakChargeProgress ?? 0;
 		this.cloakStealthTurnsToCost = s.cloakStealthTurnsToCost ?? 0;
@@ -14310,6 +14367,7 @@ export class DungeonScene extends Scene2D {
 			get armorTier() { return scene.armorTier; }, set armorTier(value) { scene.armorTier = value; },
 			get armorGlyph() { return scene.armorGlyph; }, set armorGlyph(value) { scene.armorGlyph = value; },
 			get armorHardened() { return scene.armorHardened; }, set armorHardened(value) { scene.armorHardened = value; },
+			get armorSealed() { return scene.armorSealed; }, set armorSealed(value) { scene.armorSealed = value; },
 			get weaponId() { return scene.weaponId; }, set weaponId(value) { scene.weaponId = value; },
 			get weaponInstanceId() { return scene.weaponInstanceId; }, set weaponInstanceId(value) { scene.weaponInstanceId = value; },
 			get weaponLevel() { return scene.weaponLevel; }, set weaponLevel(value) { scene.weaponLevel = value; },

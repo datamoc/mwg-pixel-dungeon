@@ -1,15 +1,15 @@
 import type { ClassId } from './classes';
 
 /** Pure, scene-independent rules for the small talent procs implemented by the port. */
-/** Invented substitute for real Java's `IRON_WILL` (`BrokenSeal.java`, tag `v3.3.8`): a flat
- * `+points` boost to a `BrokenSeal` armor-seal's shield capacity (`3 + 2*armTier + points`),
- * an item this port doesn't have at all. Absent a seal to scale, this instead grants a flat
- * `points` reduction to incoming damage below 50% HP - undocumented until the 2026-09-09
- * hero-progression audit; not rebuilt to the real mechanic here since it needs the seal item
- * (and armor-tier tracking on it) built first. */
-export function ironWillReduction(hp: number, maxHp: number, rank: number): number {
-	return rank > 0 && hp <= maxHp * 0.5 ? rank : 0;
-}
+/** `Talent.IRON_WILL`'s real effect (`BrokenSeal.maxShield()`, tag `v3.3.8`): `+points` added to
+ * the Warrior's seal-shield cap, `armTier + armLvl + points`. This is not a standalone formula
+ * call site any more - `dungeonScene.ts`'s seal-shield regen tick reads `talentRank('iron_will')`
+ * directly into that cap - kept only as the historical note that this port used to carry a flat
+ * damage-reduction stand-in here (`rank` while below 50% HP) instead, invented before the seal
+ * item existed. That stand-in's own citation was also wrong: it claimed the real cap was
+ * `3 + 2*armTier + points`, which does not match `BrokenSeal.java`'s actual `armTier + armLvl +
+ * points` - not just simplified, factually incorrect, caught only once the real item was read
+ * directly rather than re-cited from memory. */
 
 export function shieldBatteryGain(blocked: number, rank: number): number {
 	return blocked > 0 && rank > 0 ? rank : 0;
