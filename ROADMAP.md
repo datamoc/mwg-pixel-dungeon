@@ -1049,7 +1049,19 @@ Do not add new authored content as object literals or scattered constants in the
       instead of still wearing down by `100/usages`. The `augment.delayFactor` and MagicalHolster
       factors remain documented simplifications (missiles are not individually augmentable and
       there is no holster).
-       Remaining: per-missile identity (boomerang return/merge). **Correction 2026-09-12: the
+       Remaining: per-missile identity (boomerang return/merge). **Scoped more precisely,
+       2026-09-14**: this is not a small missing proc. This port's whole ranged-throw model
+       gives each hero class exactly one fixed missile identity for the entire run
+       (`classes.mwl`'s `special_source_class` - only Warrior/ThrowingStone, Rogue/ThrowingKnife,
+       Duelist/ThrowingSpike are ever wieldable); the other twelve generated missile classes
+       (including `HeavyBoomerang`) already have real MWL tier/damage data and can be picked up
+       and sold, but can never become the hero's active thrown weapon at all, so their
+       class-specific procs (Boomerang's circle-back, Bolas' Cripple, Tomahawk's Bleeding, and
+       so on for every non-starting class) are unreachable dead code paths, not merely
+       unimplemented ones. Closing this needs a real "wield any carried missile class" feature
+       (an inventory action changing which class the ammo counter/durability model tracks) built
+       first - a genuine architecture change, not a bounded fix, and out of scope for a single
+       pass. **Correction 2026-09-12: the
        "Sharpshooting's Aim-buff rework (stand-still charging)" this line carried for its own
        pass does not exist in Java** - checked both tags the rest of this port is built
        against: `RingOfSharpshooting.Aim` is an empty `RingBuff` marker in `v3.3.8` *and* in
