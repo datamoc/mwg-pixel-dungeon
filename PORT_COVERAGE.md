@@ -538,6 +538,14 @@ documentation, Notes retains regional lore and quest status, and Items lists pot
 classes with the current known/unknown state. The identification state is **Simplified** because
 this port persists `identified` on carried instances rather than Java's run-wide item-class journal.
 
+**2026-09-14 fix:** the Items tab's scroll list (`journalContent.ts`) was a hand-typed 11-entry
+array missing `scrollTransmutation` - `Catalog.SCROLLS` (`journal/Catalog.java`) is seeded from
+`Generator.Category.SCROLL.classes` (`items/Generator.java` 293-305), the real 12-scroll list
+ending in `ScrollOfTransmutation.class`, which `consumable-aliases.mwl`'s `category: "scroll"`
+rows already author in full. The list now reads `MWL_CONSUMABLE_CLASS_ALIASES` instead of
+duplicating it, so Transmutation - and any future scroll added only to the MWL table - shows up
+without a second edit site.
+
 Ground items adopted from room painters now retain their authored cell only when it is a valid,
 passable non-stair cell; if terrain reduction leaves a key or other queued item inside a wall, the
 port relocates it through the normal valid-cell chooser instead of creating an unreachable pickup.

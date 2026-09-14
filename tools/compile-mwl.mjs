@@ -67,7 +67,7 @@ function validateUniqueIds(nodes, tag) {
 
 const nodes = allNodes(game.roots ?? []);
 const monsterIds = validateUniqueIds(nodes, 'monster');
-validateUniqueIds(nodes, 'item');
+const itemIds = validateUniqueIds(nodes, 'item');
 validateUniqueIds(nodes, 'trait');
 
 function effectSet(traitId, applyTo) {
@@ -138,6 +138,23 @@ function validateLootKindReferences() {
 }
 
 /**
+ * `consumableClassAliases`'s `item` column names a `[item]` id read by `src/mwlContent.ts`'s
+ * `MWL_CONSUMABLE_CLASS_ALIASES` (and, since 2026-09-14, `journalContent.ts`'s scroll catalogue -
+ * the bug that motivated this check: a stale hand-typed list once silently diverged from this very
+ * table). Nothing previously verified that every aliased `item` actually exists as an authored
+ * `[item]` id; a typo or a renamed/removed item here would compile clean and only surface as a
+ * `null`/wrong lookup at runtime, the same missing-reference shape `validateLootKindReferences`
+ * above closes for loot kinds.
+ */
+function validateConsumableAliasReferences() {
+  for (const row of tableRows('consumableClassAliases')) {
+    if (!itemIds.has(String(row.item))) {
+      throw new Error(`MWL consumableClassAliases row for ${row.sourceClass} references unknown item: ${row.item}`);
+    }
+  }
+}
+
+/**
  * The room-rule tables are MWG typed MWL tables now, so their row shape and cell types are
  * validated by the framework at compile time. What remains game-side is the one cross-table
  * invariant MWG cannot see: every row of a chance table must carry exactly one value per class in
@@ -173,6 +190,7 @@ validateBossReferences();
 validateActorReferences();
 validateHookReferences();
 validateLootKindReferences();
+validateConsumableAliasReferences();
 validateRoomRuleTables();
 
 const missingAssets = game.assets.filter((asset) => !fs.existsSync(path.join(root, 'src', asset)));
