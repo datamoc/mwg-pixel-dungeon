@@ -466,6 +466,22 @@ Do not add new authored content as object literals or scattered constants in the
       **2026-09-14:** the existing Stewed Meat and Meat Pie alchemy outputs are now edible,
       using Java's base hunger values; their remaining Food-subclass-only buffs are documented
       as reductions.
+      **2026-09-14:** Chalice of Blood is now a real, reachable artifact (`chalice`), closing
+      the "genuine SPD content, not yet implemented" placeholder `artifacts.mwl`/`PORT_COVERAGE.md`
+      had carried for it since the 2026-09-13 artifact-data audit. `AC_PRICK`'s self-damage/
+      permanent-upgrade formula is exact Java (`NormalIntRange(ceil(3+2.5*level^2),
+      floor(7+3.5*level^2))`, capped at level 10, refusing while cursed/already-capped/AntiMagic),
+      routed through the shared hero-damage boundary so Tenacity/Barrier/RockArmor/Viscosity/
+      AntiMagic still apply; not ported: the hero's own armor subtraction on the self-hit (no bare
+      armor-only roll is exposed to item actions here), Java's death-chance confirmation window,
+      and the passive `chaliceRegen` regen boost (this port has no natural HP-regen system to
+      attach one to - Not ported, not simplified). Also fixed in the same pass: every *other*
+      generated artifact besides the Hourglass used to silently become a Cloak of Shadows
+      (`generatedInventoryItem`/`sourceInventoryItem` had no branch for any third artifact class) -
+      a live Chalice of Blood drop would have rendered and behaved as the wrong artifact entirely;
+      now fixed for Chalice specifically, the same latent gap remains for any future fourth
+      artifact. Browser verification not attempted this pass (build/type-check/item/simulation/mwg
+      suites green).
       **2026-09-14:** Alchemical Catalyst and Arcane Catalyst recipes and direct-use effects
       are now reachable, including their seed/runestone energy-cost split and weighted regular
       potion/scroll result pools; exotic-family behavior remains open.

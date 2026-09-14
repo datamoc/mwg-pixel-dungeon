@@ -494,6 +494,35 @@ via `window.__MWG__.currentScene`: granting a `cloak` now displays "cape des omb
 Cloak of Shadows) and a `hourglass` displays "sablier de gardien du temps" (Timekeeper's
 Hourglass), both matching the real generated catalogue exactly, identified or not.
 
+**Chalice of Blood is now implemented (2026-09-14, `ChaliceOfBlood.java` tag `v3.3.8`), closing
+the `chalice` placeholder above.** `useChalice` (`src/items/artifactActions.ts`) reproduces
+`prick()`'s exact `NormalIntRange(ceil(3 + 2.5*level^2), floor(7 + 3.5*level^2))` self-damage
+formula (authored in `item-rules.mwl`'s `itemEffectValues` table: `chaliceMinDmgBase`/
+`chaliceMinDmgPerLevelSq`/`chaliceMaxDmgBase`/`chaliceMaxDmgPerLevelSq`/`chaliceLevelCap`),
+routed through the shared `absorbHeroDamage` boundary (Tenacity/AntiMagic/Viscosity/RockArmor/
+Barrier) the same way every other hero-inflicted-on-self source does (bomb blast, trap damage),
+either killing the hero (`kill(hero, 'trap')`, the closest existing death-cause bucket - Java's
+own `ondeath` line plays either way) or permanently upgrading the chalice up to `levelCap = 10`.
+Cursed, already-capped, or `MagicImmune` (AntiMagic) chalices refuse the action, matching Java's
+`actions()` gate. **Stated simplifications, not silent gaps:** real Java also subtracts the
+hero's own `drRoll()` (armor) before calling `hero.damage()` - this port's `absorbHeroDamage`
+boundary has no separate bare armor-only roll exposed to a bespoke item action (only
+`applyBlastDamage`'s *monster* branch resolves armor, and that call site's own hero branch
+already skips it too), so the self-hit here is not reduced by armor; real Java's `WndOptions`
+confirmation naming the exact computed death chance has no equivalent window in this port
+(matching every other "use item on self" action here) and pricks immediately; and the passive
+`chaliceRegen` buff (`Item.charge()`, called from Java's natural-regeneration ticks) is
+**Not ported at all** - this port has no natural out-of-combat HP regeneration system for a
+passive artifact bonus to hook into, so Chalice is active-only here. Generation was fixed in the
+same pass: `generatedInventoryItem`/`sourceInventoryItem` (`src/items/generatedItems.ts`,
+`src/items/itemKinds.ts`) used to route every generated artifact other than the Hourglass to
+`cloak` regardless of its real class - a live `ChaliceOfBlood` drop silently became a second Cloak
+of Shadows - now checked for `chaliceofblood` before that fallback. `bonesItemForPickup` (Bones
+remains) is also now symmetric across all three artifact ids (`cloak`/`hourglass`/`chalice`)
+rather than only recognizing `cloak` by id, a related pre-existing hourglass gap fixed in passing.
+Type-check/build and the item/simulation/mwg suites are green; browser verification is owed
+per ROADMAP.md section 10 (not attempted this pass).
+
 The potion and scroll generator decks now live in `src/content/decks.mwl`; `generator.ts` reads
 their class order and default probabilities from the compiled MWL traits and validates matching
 lengths before use. This preserves the Java RNG table data while leaving generator algorithms and
