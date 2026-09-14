@@ -272,7 +272,7 @@ Do not add new authored content as object literals or scattered constants in the
       shops, scripted encounters, victory/death transitions, and save-schema metadata. The five
       fixed boss transitions and victory messages are now authored in
       `src/content/scenario-rules.mwl`; the rest of the scenario flow remains open.
-- [ ] Move authored asset references to MWL and consume its generated asset manifest; retain
+- [x] Move authored asset references to MWL and consume its generated asset manifest; retain
       only renderer registration and runtime loading code in TypeScript. Monster sprite
       references are now authored in `src/content/monsters.mwl`, validated against `src/assets`,
       and emitted in the generated asset manifest; `images.ts` now consumes a generated,
@@ -297,6 +297,30 @@ Do not add new authored content as object literals or scattered constants in the
       The dead-end experiment is preserved in `tools/scratch/{terrain-assets,ui-assets,test-asset}.mwl`,
       and the generic capability is tracked as a framework proposal in §11A below; the old
       framework blocker is resolved, but this migration remains open until all references move.
+      **Audited 2026-09-14: this bullet's remaining scope is smaller, and different in kind, than
+      "migration" suggests.** Comparing `src/assets/` (134 files) against the generated manifest
+      (96 entries) and a full source grep found 37 files with no manifest entry - but 35 of those
+      37 are not referenced anywhere in `src/` *at all*, by any name, not just unauthored ones:
+      `pixel_font.png` (the port uses the scalable `pixel_font.ttf` instead, which *is* imported
+      directly in `main.ts` - fonts are not sprites and are not expected to go through this
+      manifest), `avatars.png`, `undead.png`/`wraith.png`/`spirit_hawk.png` (ally/summon sprites
+      for mechanics this port hasn't built), `ui_talent_button.png`/`ui_talent_icons.png` (a
+      talent-icon UI variant), `ui_radial_menu.png`, `ui_hero_icons.png`, `ui_large_buffs.png`,
+      `caves_boss.png`/`city_boss.png`/`sewer_boss.png` (boss-specific banner art), a second
+      `ui_loading_*.png` set (five files) alongside the `loading_*.png` set already wired up,
+      `item_icons.png` (a second icon sheet alongside the wired-up `items.png`), and several
+      decorative extras (`lotus.png`, `ninja_log.png`, `visual_grid.png`, `weak_floor.png`,
+      `effect_specks.png`, `effect_spell_icons.png`, `ui_arcs1.png`/`ui_arcs2.png`,
+      `ui_banners.png`, `ui_menu_button.png`/`ui_menu_pane.png`, `ui_shadow.png`, `ui_surface.png`,
+      `prison_exit.png`/`prison_quest.png`). The 36th, `banners old.png` (a literal space in the
+      filename), is only named in a code *comment* pointing at the original SPD source, never
+      loaded. None of these are a migration gap - there is nothing yet to migrate a reference
+      *to*, since no code loads them - they are tied to features this port hasn't built (a talent
+      icon UI, a radial context menu, hero avatars, ally sprites, boss-specific chrome). Every
+      asset this port's renderer *does* load already has both a manifest entry and an
+      `images.ts`/`MWL_ASSET_URLS` registration, so the actually-open part of this bullet is
+      "author a reference the moment a new feature starts using one of these files," not a batch
+      of existing references still to move.
 - [ ] Move the port's messages and descriptions to MWL gettext-marked values, generate the
       i18n catalogue, and remove duplicate hand-maintained content strings. The ordered potion
       and scroll appearance tables are now in `src/content/appearances.mwl`; message bodies and
