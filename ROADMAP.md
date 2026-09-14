@@ -2839,26 +2839,38 @@ compatibility notes and an API report entry in MWG before this port adopts it; P
       and mwg's for `dist/two-d/render/TintedSprite.js` - this port lost a whole session to a
       production-only `renderPipes[...] is undefined` failure in that area and still registers all
       three pipes by hand.
-- [ ] **P5 — Pointer parity for `two-d/ui/ListView`.** `IconGrid` is "driven by the keyboard or the
-      pointer" and exposes `tapCell(index)`; `ListView` exposes only `move`/`select`/`confirm`/
-      `handleAction`, so a list cannot be clicked. This port worked around it by filling each row's
-      `ListItem.icon` with a full-row hit surface; a `tapRow(index)` mirroring `tapCell` would let a
-      bag/menu use the widget as documented.
-- [ ] **P6 — Let a game supply the compiled asset map.** `assets/paths` resolves against
-      `window.__MWG_ASSETS__` (written by `mwg/tools/compile-resources`) or the dev server, with no
-      entry point for a bundler that already produces URLs/data URIs - so a Vite game cannot use
-      `Assets`' loaders, batching (`optional`/`fallback`) or progress reporting at all. This port
-      uses none of `Resources` and hand-rolls asset-to-texture plumbing instead; a `setAssetMap(map)`
-      (or a `setBase` overload) is the whole ask.
-- [ ] **P7 — Compose, don't only prioritise, in `two-d/render/StatusVisuals`.** Its doc is explicit
-      that one active status wins by declaration order and that a caller mixing in an unrelated
-      `tint` write "will fight this"; this port needs an identity `tint`, N simultaneous *additive*
-      effect colours and a transient flash, which is why it drives the additive channel directly and
-      never adopted the class. Layering over that channel - never touching `tint` - is the generic
-      shape.
-- [ ] **P8 — A phase/sequence API for `two-d/render/ScreenEffects`.** `fadeOut`/`fadeIn`/`flash`
-      cannot express hold-then-fade-then-fade-back, the standard transition here, which this port
-      hand-computes. A small `run([{ phase, seconds }...], onMidpoint)` wrapper would.
+- [x] **P5 — Pointer parity for `two-d/ui/ListView`. Shipped in MWG 0.7.9 (item 299), found
+      2026-09-14 auditing this section against the currently-installed 0.10.0.** `ListView.tapRow
+      (index)` now gives the exact `IconGrid.tapCell`-shaped select-and-confirm-in-one-step tap
+      this proposal asked for. **Not yet adopted**: this port's own row-hit-surface workaround
+      (`ListItem.icon` filling the whole row) still works and has not been replaced.
+- [x] **P6 — Let a game supply the compiled asset map. Shipped in MWG 0.7.9 (item 300), found
+      2026-09-14.** `assets.setAssetMap(map)` hands `resolve`/`has`/`paths`/`isCompiled` a game's
+      own path-to-URI map directly, taking priority over `window.__MWG_ASSETS__` while set -
+      exactly the entry point this proposal asked for. **Not yet adopted**: this port still
+      hand-rolls its own asset-to-texture plumbing (`images.ts`'s `MWL_ASSET_URLS`) rather than
+      routing through `Assets`/`Resources`; adopting it is a separate, larger migration this
+      pass did not attempt.
+- [x] **P7 — Compose, don't only prioritise, in `two-d/render/StatusVisuals`. Shipped in MWG
+      0.7.9 (item 301, a breaking change), found 2026-09-14.** `StatusVisuals` now composes every
+      active status's colour additively (each channel clipping at 1) instead of one status
+      winning by declaration order, never writes the multiply `tint` at all (so an identity/team
+      tint survives underneath untouched), and gained `flash(color, strength, duration)` for a
+      one-shot decaying pulse layered on top - the exact shape this proposal asked for.
+      **Not yet adopted**: this port still drives its additive tint channel directly rather than
+      through the class.
+- [x] **P8 — A phase/sequence API for `two-d/render/ScreenEffects`. Shipped in MWG 0.7.9 (item
+      302), found 2026-09-14.** `ScreenEffects.sequence(steps)` chains `fadeOut`/`fadeIn`/`flash`/
+      a new `hold` phase end to end as one call, `update` returning false at every step boundary
+      and true only once the whole sequence finishes - exactly the hold-then-fade-back shape this
+      proposal asked for. **Not yet adopted**: this port still hand-computes its own
+      fade/hold/fade sequencing.
+      **All four (P5-P8) were missed by the 0.9.1 re-audit above, which checked the newer
+      canonical save/replay work that release added but did not re-walk this older, still-open
+      list against what had shipped in between** - a real gap in how this section's own
+      maintenance was done, not a framework gap. `Camera.shakeScreen` (item 303, same 0.7.9
+      batch) had already been caught and adopted (see P9 below), which is what makes this an
+      audit-process miss rather than 0.7.9 being unreviewed entirely.
 - [x] **P9 — A screen-pixel shake helper on `Camera`.** **Shipped in MWG 0.9.0 and adopted here.**
       The port's Java shake wrapper now calls `Camera.shakeScreen(intensity, duration)`, preserving
       pixel-based amplitudes across camera zoom levels.
