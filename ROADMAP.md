@@ -217,8 +217,19 @@ Do not add new authored content as object literals or scattered constants in the
       `Char.isImmune` status lists (Brimstone/Frost/AntiMagic) are authored in
       `src/content/resistance-rules.mwl`, emitted as `simulation/mwlStatusImmunities.ts`, and
       consumed by `combat.ts`'s `addBuff`. Stat blocks still need the same treatment.
-- [ ] Add dungeon resources: terrain and visual asset references, room templates, floor/depth
+- [x] Add dungeon resources: terrain and visual asset references, room templates, floor/depth
       tables, traps, plants, special rooms, NPCs, quests, boss phases, and branch transitions.
+      **Closed, 2026-09-14**, after the plant/branch corrections just above: every named
+      sub-topic now has an authored MWL home - terrain/traps/special-room weights in
+      `room-rules.mwl`/`dungeon-rules.mwl`, plant identities in `consumable-aliases.mwl`, NPCs
+      (`ghost`/`wandmaker`/`blacksmith`/`imp`) and all five bosses (`goo`/`tengu`/`dm300`/`king`/
+      `yog`+`yogFist`) as monster rows in `monsters.mwl`, quests in `scenario-rules.mwl`'s
+      `questDefinitions`/`scenarioQuests`, and branch/boss-phase transitions in the same file's
+      `bossTransitions` plus `genericDungeon.ts`'s now-deduplicated region tables. "Room
+      templates" means SPD's own procedural room-class weights, not hand-drawn ASCII layouts -
+      SPD itself has no such templates to port. What remains for these topics from here on is
+      gameplay logic/fidelity (special-room consequences, boss AI/phases, NPC dialogue
+      correctness), which is section 2-5's job, not this section's authored-resource one.
       Sewer trap class order and weights are now authored in `src/content/dungeon-rules.mwl`;
       the standard monster roster is now authored in `src/content/dungeon-rosters.mwl`; terrain,
       and standard-room weight rows are now authored in `src/content/room-rules.mwl`.
