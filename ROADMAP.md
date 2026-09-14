@@ -12,16 +12,49 @@ standalone `mw_games.global.js` build (no bundler needed). Serve the repo root (
 directly, so opening the file via `file://` won't work (see this project's own
 browser-verification workflow for why).
 
-## Release baseline tracking (informational, not an open implementation item)
+See `CLOSED.md` for fully checked-off sections moved out of this file (currently: release
+baseline tracking, browser-verification debt).
 
-- [x] **Shattered Pixel Dungeon v4.0.0 released 2026-09-09.** The upstream release is
-      recorded as a future compatibility baseline; once MWG Pixel Dungeon itself is stable,
-      we will audit and implement the changes introduced by SPD v4.0.0. This is deliberately
-      not an open checkbox in the current parity work, whose source baseline remains the
-      version documented by each `PORT_COVERAGE.md` row. See the
-      [official v4.0.0 release](https://github.com/00-Evan/shattered-pixel-dungeon/releases/tag/v4.0.0),
-      which describes the update as including a major new quest, new art, six enchantments,
-      and additional adjustments.
+## This port's own release plan (news)
+
+Version numbering for *this* project (`package.json`'s `version`, tagged in this repo), not
+the upstream SPD baseline tracked above. See `CLOSED.md` for the roadmap sections already
+fully checked off as of a given release.
+
+- **v0.1 (tagged `0.1.0`/`0.1.1`)** - the first more-or-less playable version: a hero can start
+  a run, descend, fight, loot, and die or win, on top of the `mwg` framework. Release notes for
+  this line should explain what `mwg` (`@datamoc/mw_games`) *is* and why this project depends on
+  it rather than being a from-scratch engine - see this file's own header and `CLAUDE.md`'s
+  "`mwg` dependency" section for the source material: it is a separate, generic, MPL-2.0 game
+  framework the user maintains outside this repo, consumed here as a normal npm dependency, that
+  supplies rendering (PixiJS-based), the MWL authored-data pipeline, UI widgets, actor/roguelike
+  primitives (`Random`, `Roguelike`, `Blob`, `EntityRegistry`, `Scheduler`), and Capacitor/
+  WebView2 packaging - while every SPD-specific number, rule, and asset stays in this GPL-3.0
+  repository (the licensing boundary section above). Not itself a parity milestone; the bar was
+  "playable", not "correct in every detail".
+- **v0.2 (planned, not yet tagged)** - the first version this project calls *complete*: every
+  roadmap section below closed or explicitly marked "Not ported"/"Divergence (deliberate)" with
+  no silent gaps, per the "Definition of done" at the end of this file. Release notes for this
+  line should call out the behavioral differences from vanilla Java SPD a player might actually
+  notice, gathered from `PORT_COVERAGE.md` as they're closed - notable ones so far:
+  - Environmental gas/blob propagation (`Blob.evolve()` - ToxicGas, ConfusionGas, Fire, etc.) now
+    uses Java's exact bounded four-neighbour-average/one-volume-loss rule instead of `mwg`'s more
+    generic diffusion-and-decay model, so gas clouds spread and thin out the way the real game's
+    do rather than approximately.
+  - `Generator.java`'s real tier-3 weapon-deck bug (`WEP_T3.probs` accidentally clones `WEP_T1`'s
+    weights, zeroing the Mace's drop chance and making the tier-1 Whip unreachable) is corrected
+    in this port rather than faithfully reproduced - a **Divergence (deliberate)** per the fidelity
+    policy above, since Java itself won't take the fix.
+  - Tengu's fire-throw and shocker abilities run on their real cadence and damage formulas.
+  - Golems tick their enemy-teleport and wandering self-teleport cooldowns individually and on
+    every turn (matching `Golem.act()`), not on a shared/simplified timer.
+  - Monster AI generally - this line item is intentionally open-ended rather than a fixed claim;
+    track it against section 5 ("Improve monster behavior and loot") as that section closes, and
+    replace this bullet with the specific, checkable differences once they're known rather than a
+    vague "AI improved".
+  This list is a starting point, not exhaustive - extend it as more section-5/7 items close, and
+  prefer pulling exact wording from the relevant `PORT_COVERAGE.md` row over re-describing it here
+  from memory.
 
 ## 0. Move authored game data into MWL resources
 
@@ -2177,99 +2210,10 @@ loot/quest/boss-transition/save-load comparison.
 
 ## 10. Close the browser-verification debt
 
-Several already-implemented sections in `PORT_COVERAGE.md` are documented as
-formula-correct but never actually seen rendering, because the Chrome
-extension was disconnected during the session that built them. Per this
-project's `CLAUDE.md` ("type-checking and a successful build are not evidence
-the feature actually looks/behaves right in-game"), these need a real
-browser pass before they can be treated as done rather than merely built:
-
-- [x] Visually confirm non-English locale rendering (font coverage for
-      non-Latin scripts in particular - a CJK locale is the one most likely
-      to show tofu from a missing glyph; the i18n check only proves keys
-      resolve and interpolate, not that text fits its widget or that a font
-      covers a script). **Confirmed live, 2026-09-09**: switched to Chinese
-      (`zh`) and Korean (`ko`) via `localStorage`'s `spd-on-mwg.language` key
-      and screenshotted the title screen, class-select, in-game HUD/log, the
-      inventory panel, and the talent panel (zoomed 3x on the smallest text)
-      - every translated string rendered with complete, correctly-formed
-      glyphs in both scripts, no tofu/missing-glyph boxes anywhere, no
-      console errors. Untranslated strings (e.g. "Bag", "Talents") fall back
-      to English as expected - a translation-completeness gap tracked
-      separately under section 8's "Translate the port's own strings"
-      bullet, not a font-coverage issue, which is what this item asked about.
-      **Re-confirmed across all 19 locales, 2026-09-12, and the gap it pointed at is now
-      closed**: section 8's port-string translation is complete, and the same pass that added
-      those seven catalogues re-ran the font-coverage check for every locale (not just zh/ko),
-      found no tofu, and verified the two screens differ pixel-wise from English in each. The
-      harness is committed as `tools/scratch/browser-locales.mjs` with its codepoint data in
-      `locale-probe.json`, so the next locale change has a one-command check rather than a
-      from-scratch script; screenshots from this pass are in
-      `_browsercheck/mwgpd_shots_2026-09-12-locales-all/`. Two probe bugs were found and fixed by
-      running it - see `PORT_COVERAGE.md`'s locales section for the U+200B/U+0301 details - and
-      the probe was itself negative-tested with uncovered codepoints so that "no tofu" is not a
-      vacuous claim.
-- [x] Re-confirm the UI/presentation section's widgets in a live session
-      (status pane, bars, floating text, compass, coloured log, boss health
-      bar, badge banner, inventory panel) now that a browser is available
-      again. Status pane/HP bar/depth badge, coloured log (orange/yellow/
-      white/green all observed), boss health bar+chrome+25%-bleed tint, the
-      compass (correctly gated on `hasStairs`, correctly oriented), and the
-      inventory panel (a clean icon grid with quantity badges, not the old
-      degenerate unbounded text-row layout) are all confirmed live via
-      screenshots. Floating damage numbers and the badge-banner pop-in
-      couldn't be caught mid-animation (their round-trip-vs-lifetime timing
-      lost the race against this tooling's screenshot latency), but their
-      triggering logic was confirmed correct via the log line each produces -
-      a tooling limitation, not a finding of anything wrong. See
-      `PORT_COVERAGE.md`'s UI verification section.
-- [x] **Resolved (was: unresolved race theory, now a proven reachable-through-normal-play
-      crash with a fix)**: the `TypeError: Cannot read properties of undefined (reading
-      'frame')` from `spawnMonster` was re-root-caused by reading the crash site instead of
-      the timing evidence - `.frame` is read off `MONSTERS[kind]`, so an undefined `def`
-      means an unknown mob *kind*, not an unloaded sprite. Three painter markers reach the
-      live bridge with no catalogue entry: `alchemyBlob` (LaboratoryRoom's `Blob.seed(pot,
-      Alchemy)`), `eternalFire` (MagicalFireRoom's `Blob.seed(cell, EternalFire)`), and
-      `sentry` (SentryRoom's real beam turret). Any floor containing those rooms crashed on
-      entry - which also explains the flakiness (only some seeds/floors contain them), with
-      no asset race involved at all. Fixed three ways: both blob markers are filtered at the
-      bridge (the pot stays inert scenery; the eternal-fire wall stays unported for now -
-      **correction, 2026-09-09 MWG-utilization audit: the "needs a non-diffusing fire
-      primitive" premise is stale**, `Roguelike.Blob.spread(passable, 0, 1)` (0% shared to
-      neighbours, 100% kept - already exported by the installed `mwg` and already the same
-      `Blob` class this port's `fire`/`toxicGas`/etc. blobs use) is exactly a static,
-      non-spreading, non-decaying blob; porting `eternalFire` through it is now a real,
-      actionable follow-up, not blocked on any missing engine capability), the sentry is
-      fully ported (own `red_sentry.png` art, `20+depth*2` accuracy, infinite evasion,
-      immobile charge-and-fire beam for the real `2+depth/2..4+depth` armor-bypassing damage,
-      sees through invisibility), and `spawnPortedMobs` refuses any future unknown kind with a
-      log line instead of crashing. See `PORT_COVERAGE.md`'s new sentry row. **Live browser
-      confirmation done 2026-09-09** (`chrome-devtools-mcp`, `claude-in-chrome` unavailable
-      this session): spawned a `sentry` mid-run via `window.__MWG__.currentScene.spawnMonster`
-      - no crash, the real `red_sentry.png` art rendered on screen after a `refresh()`.
-- [x] **Live pass on the in-progress 2026-09-11 workstream (done 2026-09-11, without either
-      named browser tool).** Neither `Codex-in-chrome` nor `chrome-devtools-mcp` was connected
-      this session, so the check ran through the globally installed `playwright` driving the
-      full Chromium build over `file://` - the built `dist/index.html` is deliberately
-      server-free, so no port was needed. The scripts live outside this repo, in the usual
-      `_browsercheck/` directory (`mwgpd_browser_smoke.mjs`, `mwgpd_browser_play.mjs`,
-      `mwgpd_browser_ui.mjs`, `mwgpd_browser_probe.mjs`, screenshots in
-      `mwgpd_shots_2026-09-11/`), so nothing untracked was left in `tools/scratch/`. Confirmed
-      with screenshots and zero page/console errors: the title
-      screen; the class-select screen (names and the locked hint now fully translated - see the
-      two fixes below); hero creation; the depth-1 sewer floor with HUD, action bar and a
-      French log; the three-tab journal; the inventory with its four translated filter tabs; and
-      the alchemy recipe picker (`Choisissez une recette (20)` listing `bombe de feu`, `leurre`,
-      `bombe d'engrais` - the authored MWL outputs now resolving through SPD's real keys).
-      **Two real bugs were found only by doing this**, neither catchable by `tsc`, the build or
-      the suites: (1) `CLASSES[id].nameKey` was an invented key for five of six classes, so
-      class select rendered the raw string `Port.name.rogue` - the class keys now use SPD's
-      `actors.hero.heroclass.*`, the unlock hints moved from English literals into the port
-      catalog, and `tools/i18nCheck.ts` now checks `CLASSES`/`CLASS_UNLOCK_HINT` so it cannot
-      recur; (2) closing the journal left `journalWindow` pointing at a spent `mwg/ui` `Window`,
-      so the next `positionInterface` threw `Cannot set properties of null (setting 'x')` and
-      broke the inventory panel that calls it - `closeJournal` now drops the reference. Details
-      in `PORT_COVERAGE.md`'s i18n bullet.
+Fully closed - moved to `CLOSED.md`. Kept as a numbered heading (rather than removed outright)
+because many bullets elsewhere in this file cross-reference "section 10" by number when noting
+that browser verification is still owed for their own item; renumbering everything below to
+close the gap was judged not worth the churn against those existing references.
 
 ## 11. Architecture refactor toward the v3 target
 
@@ -2894,6 +2838,23 @@ reason to move those rules or data across the licensing boundary.
       opened `https://datamoc.github.io/mwg-pixel-dungeon/` directly, the title screen rendered
       correctly (menu buttons, background, title art - showing the pre-existing cropped-logo bug
       documented below, since that fix was made locally this same pass and not yet pushed).
+- [ ] **Track the latest `mwg` release and build every packaging target it supports, not only the
+      GitHub Pages web build.** `npm run mwg:check` (`tools/check-mwg-version.mjs`) already reports
+      the pin/installed/npm-latest triple; this item is the follow-through of actually bumping to
+      the latest compatible release on a regular cadence (per CLAUDE.md's `mwg` dependency section)
+      and re-running the full verification suite each time, rather than only reacting when a bump is
+      needed for a specific feature. Separately, the installed `@datamoc/mw_games` package itself
+      ships Capacitor (Android/iOS) and WebView2 (Windows desktop) packaging support alongside its
+      web target (see the framework's own `package.json` `cap:*` scripts and README); this project
+      currently only builds and ships the one web target (`npm run build` -> `dist/`, deployed to
+      GitHub Pages above). Add the equivalent build targets here: a minified/compressed web bundle
+      (the current `game.js` is an uncompressed ~28MB single chunk per the build warning above -
+      code-splitting/minification tuning belongs here too), an Android build via the framework's
+      Capacitor integration, and a standalone desktop executable via its WebView2 packaging. Each
+      target needs its own build script, its own smoke verification (the existing browser-
+      verification workflow does not cover a packaged app), and a decision on where built artifacts
+      are published (Pages for web; likely GitHub Releases for the Android/desktop binaries, not yet
+      decided). Not started.
 
 ## Definition of done
 
