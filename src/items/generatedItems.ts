@@ -24,7 +24,10 @@ export function generatedInventoryItem(generated: GenItem, context: GeneratedIte
 		const artifactCls = generated.cls.toLowerCase();
 		//Chalice of Blood (checked 2026-09-14): every other generated artifact class still
 		//collapses to 'cloak' (Cloak of Shadows) below, a real, stated gap - see PORT_COVERAGE.md.
-		id = artifactCls.includes('timekeepershourglass') ? 'hourglass' : artifactCls.includes('chaliceofblood') ? 'chalice' : 'cloak';
+		id = artifactCls.includes('timekeepershourglass') ? 'hourglass'
+			: artifactCls.includes('chaliceofblood') ? 'chalice'
+			: artifactCls.includes('capeofthorns') ? 'cape'
+			: 'cloak';
 	}
 	else if (generated.cat === Cat.RING) id = MWL_RING_CLASS_TO_ID.get(cls) ?? (() => { throw new Error(`MWL ring alias is missing generated class: ${cls}`); })();
 	else if (generated.cat === Cat.WAND) id = 'wand';

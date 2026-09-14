@@ -105,6 +105,50 @@ export function useChalice(scene: ArtifactActionContext, instanceId?: string): v
 	chalice.level = level + 1;
 }
 
+/** `CapeOfThorns`/`Thorns.proc()` (tag `v3.3.8`): while inactive (`cooldown == 0`), every hit the
+ * hero takes charges the cape by `damage * (chargePerDamageBase + chargePerDamagePerLevel*level)`;
+ * reaching `chargeCap` resets charge to 0 and starts a `cooldownBase + level`-turn "radiating"
+ * window. While that cooldown is running, a `NormalIntRange(0, damage)` portion of every hit is
+ * deflected (reduced) instead of landing, and the deflected amount both banks as `exp` (upgrading
+ * the cape at `(level+1) * expPerLevelBase`, capped at `levelCap`) and would in real Java also
+ * strike an adjacent attacker for the same amount (`Thorns.proc()`'s `attacker.damage(deflected,
+ * this)`) - **not ported here**: this hook runs from inside `attack()`'s own resolution of that
+ * same attacker's swing, and damaging/potentially killing the attacker mid-call risks the rest of
+ * that large function referencing a creature already removed; scoped out rather than risked, see
+ * `PORT_COVERAGE.md`'s `CapeOfThorns` row. Returns the (possibly reduced) damage to apply. */
+export function applyCapeOfThornsProc(scene: Pick<ArtifactActionContext, 'bag' | 'say'>, damage: number): number {
+	const cape = scene.bag.find('cape') as (typeof scene.bag.items[number] & { charge?: number; cooldown?: number; level?: number; exp?: number }) | undefined;
+	if (!cape || damage <= 0) return damage;
+	const level = cape.level ?? 0;
+	let charge = cape.charge ?? 0;
+	let cooldown = cape.cooldown ?? 0;
+	if (cooldown === 0) {
+		charge += damage * (mwlItemEffectValue('cape', 'chargePerDamageBase') + mwlItemEffectValue('cape', 'chargePerDamagePerLevel') * level);
+		if (charge >= mwlItemEffectValue('cape', 'chargeCap')) {
+			charge = 0;
+			cooldown = mwlItemEffectValue('cape', 'cooldownBase') + level;
+			scene.say(t('items.artifacts.capeofthorns$thorns.radiating'), 'positive');
+		}
+	}
+	let remaining = damage;
+	if (cooldown > 0) {
+		const deflected = Random.normalRange(0, damage);
+		remaining = damage - deflected;
+		let exp = (cape.exp ?? 0) + deflected;
+		const levelCap = mwlItemEffectValue('cape', 'levelCap');
+		const expToLevel = (level + 1) * mwlItemEffectValue('cape', 'expPerLevelBase');
+		if (exp >= expToLevel && level < levelCap) {
+			exp -= expToLevel;
+			cape.level = level + 1;
+			scene.say(t('items.artifacts.capeofthorns$thorns.levelup'), 'positive');
+		}
+		cape.exp = exp;
+	}
+	cape.charge = charge;
+	cape.cooldown = cooldown;
+	return remaining;
+}
+
 /** `King's Crown.WEAR`: the crown is exchanged at the Rat King, not consumed directly. */
 export function useKingsCrown(scene: Pick<ArtifactActionContext, 'say'>): void {
 	scene.say(t('items.kingscrown.desc'));

@@ -176,7 +176,7 @@ try {
 	}
 	assert.equal(MWL_ITEM_GROUND_KIND_ALIASES.weaponReward, 'armor');
 	assert.equal(MWL_ITEM_GROUND_KIND_ALIASES.doubleBomb, 'bomb');
-	assert.equal(Object.keys(MWL_ITEM_GROUND_KIND_ALIASES).length, 22, 'ground-kind alias count');
+	assert.equal(Object.keys(MWL_ITEM_GROUND_KIND_ALIASES).length, 23, 'ground-kind alias count');
 	assert.equal(MWL_ITEM_NAME_KEYS.weaponReward, 'port.name.questweapon');
 	assert.equal(MWL_ITEM_NAME_KEYS.sandBag, 'items.artifacts.timekeepershourglass$sandbag.name');
 	assert.equal(MWL_GROUND_ITEM_NAME_KEYS.bomb, 'items.bombs.bomb.name');

@@ -177,7 +177,7 @@ import { hallsDemonSpawnerFloorFrames } from './regions/halls';
 import { wandChargesPerCast, wandDamageRange, wandTargetRange, wandTypeFromSource, type WandType } from '../items/wands';
 import { useItemById as routeItemAction, type ItemActionContext } from '../items/itemActions';
 import { equipWand as equipInventoryWand, type EquipWandContext } from '../items/equipWand';
-import { useCloak as useArtifactCloak, useHourglass as useArtifactHourglass, useChalice as useArtifactChalice, useKingsCrown as useArtifactKingsCrown, type ArtifactActionContext } from '../items/artifactActions';
+import { useCloak as useArtifactCloak, useHourglass as useArtifactHourglass, useChalice as useArtifactChalice, useKingsCrown as useArtifactKingsCrown, applyCapeOfThornsProc, type ArtifactActionContext } from '../items/artifactActions';
 import { equipRing as equipInventoryRing, equipArmor as equipInventoryArmor, equipWeapon as equipInventoryWeapon, type GearEquipmentContext, type RingEquipmentContext } from '../items/equipment';
 import { itemDisplayName as resolveItemDisplayName, type ItemDisplayContext } from '../items/displayName';
 import { useStoneById as routeStoneAction, type StoneActionContext } from '../items/stoneActions';
@@ -6680,6 +6680,17 @@ export class DungeonScene extends Scene2D {
 						}
 					} else this.sealPartialGain = 0;
 				}
+				//`CapeOfThorns.Thorns.act()`: the radiating cooldown ticks down once per actor turn
+				//(a real scheduled Buff), independent of whether the hero was hit that turn - the
+				//charge-then-trigger and deflection halves live in `applyCapeOfThornsProc`, called
+				//from `attack()` where the incoming damage itself is known.
+				{
+					const cape = this.bag.find('cape') as (typeof this.bag.items[number] & { cooldown?: number }) | undefined;
+					if (cape && (cape.cooldown ?? 0) > 0) {
+						cape.cooldown = (cape.cooldown ?? 0) - 1;
+						if (cape.cooldown === 0) this.say(t('items.artifacts.capeofthorns$thorns.inert'), 'info');
+					}
+				}
 				//Viscosity.DeferedDamage.act(): a fresh deferred pool waits one actor turn,
 				//then deals max(1, floor(pool*0.1)) and spends that amount each turn. The
 				//scheduled damage uses the normal shield/HP path but must not be deferred
@@ -10481,7 +10492,13 @@ export class DungeonScene extends Scene2D {
 		//charge-turn counter (`takeGooTurn`), so `> 0` is Java's `pumpedUp > 0`.
 		if (defender.kind === 'goo' && (defender.pumped ?? 0) > 0) this.shakeScreen(3, 0.2);
 		const preHp = defender.hp;
-		if (defender.isHero) damage = this.absorbHeroDamage(damage);
+		if (defender.isHero) {
+			//`Hero.damage()`: `CapeOfThorns.Thorns.proc()` runs before `super.damage()` (the
+			//`Char.damage()` shield-absorption/Tenacity/AntiMagic chain `absorbHeroDamage` models),
+			//so the cape sees the raw incoming hit, not what shields already reduced it to.
+			damage = applyCapeOfThornsProc({ bag: this.bag, say: this.say.bind(this) }, damage);
+			damage = this.absorbHeroDamage(damage);
+		}
 		//`DwarfKing.damage()` (phase 3) and `RustedFist.damage()` both bank every hit into the same
 		//`Viscosity.DeferedDamage` pool the glyph uses instead of losing HP, paying it out on their
 		//own turns. Checked here, before the linked-add split below, so the King's LifeLink share

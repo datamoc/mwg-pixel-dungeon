@@ -48,6 +48,9 @@ export function sourceInventoryItem(id: string, sourceClass: string | undefined,
 	//other artifact class still collapses to `cloak` (Cloak of Shadows), which used to be true of
 	//Chalice too - a real Java artifact silently rendering and behaving as a different one.
 	if (id.toLowerCase().includes('chaliceofblood')) return { id: 'chalice', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass };
+	//`CapeOfThorns` (tag `v3.3.8`), same reasoning as Chalice directly above: checked before
+	//the generic artifact fallback so it does not silently collapse to Cloak of Shadows.
+	if (id.toLowerCase().includes('capeofthorns')) return { id: 'cape', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass };
 	if (id.split('|', 1)[0]!.toLowerCase() === 'artifact') return { id: 'cloak', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass };
 	if (id.toLowerCase() === 'seed') return { id: 'seed', quantity: 1, identified: true, sourceClass, ...(sourceClass ? { instanceId: `seed:${sourceClass.toLowerCase()}` } : {}) };
 	const concrete = sourceClass ?? id;
@@ -81,6 +84,7 @@ export function sourceInventoryItem(id: string, sourceClass: string | undefined,
 	}
 	if (lower.includes('timekeepershourglass')) return { id: 'hourglass', quantity: 1, identified: false, sandBags: 0, instanceId: newItemInstanceId('hourglass'), sourceClass: concrete };
 	if (lower.includes('chaliceofblood')) return { id: 'chalice', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
+	if (lower.includes('capeofthorns')) return { id: 'cape', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
 	if (lower.includes('artifact')) return { id: 'cloak', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
 	if (lower.includes('wand')) return { id: 'wand', quantity: 1, identified: false, instanceId: newItemInstanceId('wand'), sourceClass: concrete };
 	//`ShopRoom.generateItems()` places concrete weapon/armor classes directly. Preserve their

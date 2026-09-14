@@ -38,6 +38,17 @@
  * Hourglass used to collapse to `cloak` regardless of its real class - a Chalice of Blood picked
  * up in ordinary play silently became a second Cloak of Shadows - now `generatedInventoryItem`/
  * `sourceInventoryItem` route `ChaliceOfBlood` to its own `chalice` id.
+ *
+ * **Cape of Thorns is now implemented too (2026-09-14)**: `dungeonScene.ts`'s `attack()` hooks
+ * `applyCapeOfThornsProc` right where incoming hero damage is finalized, reproducing the real
+ * charge-from-damage-taken -> temporary damage-reduction cycle and its own upgrade/exp curve.
+ * `generatedInventoryItem`/`sourceInventoryItem` route `CapeOfThorns` to its own `cape` id the
+ * same way Chalice was fixed. **Not ported**: the retaliation half (`CapeOfThorns.java`'s
+ * `Thorns.proc()` also deals the deflected amount back to an adjacent attacker) - reproducing it
+ * safely would mean damaging/potentially killing the attacker from inside the middle of
+ * `attack()`'s own resolution of that same attacker's swing, which risks the rest of that
+ * (large, load-bearing) function referencing a creature already removed mid-call; scoped out
+ * rather than risked. See `PORT_COVERAGE.md`'s `CapeOfThorns` row.
  */
 
 import { MWL_ITEM_NODES } from '../mwlContent';

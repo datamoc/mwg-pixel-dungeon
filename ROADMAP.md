@@ -644,6 +644,20 @@ Do not add new authored content as object literals or scattered constants in the
       potion/scroll result pools; exotic-family behavior remains open.
       **2026-09-14:** the existing `WildEnergy` alchemy result is now usable, refunding one
       wand charge and applying Java's 8-turn Recharging effect; artifact recharge remains open.
+      **2026-09-14: Cape of Thorns is now a real, reachable artifact (`cape`), the fourth of
+      the real 13-class roster** (after Cloak of Shadows, Timekeeper's Hourglass, Chalice of
+      Blood) - charges from damage taken while inactive, triggers a temporary deflection
+      ("radiating") window with its own upgrade/exp curve, hooked into `attack()` at the exact
+      point real `Hero.damage()` calls `Thorns.proc()` (before shield absorption, not after -
+      confirmed by reading `Hero.java` directly rather than assuming the more obvious-seeming
+      order). The same `generatedInventoryItem`/`sourceInventoryItem` artifact-collapse bug
+      Chalice's row already flagged as "the same latent gap remains for any future fourth
+      artifact" is now fixed for Cape specifically, closing that prediction; a fifth artifact
+      would reopen it. Not ported: the retaliation half that damages an adjacent attacker back
+      (scoped out as unsafe to add mid-`attack()`-resolution, not a silent drop - see
+      `PORT_COVERAGE.md`'s `CapeOfThorns` row). Nine of the real 13 artifacts remain
+      unimplemented: AlchemistsToolkit, DriedRose, EtherealChains, HornOfPlenty, LloydsBeacon,
+      MasterThievesArmband, SandalsOfNature, TalismanOfForesight, UnstableSpellbook.
       **2026-09-14:** `TelekineticGrab` is now usable through the shared cell-targeting picker;
       it remotely collects the port's ordinary GroundItem payload, while stacked heaps and the
       Java beacon/pickup-delay presentation remain simplified.
