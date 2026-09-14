@@ -2,7 +2,7 @@ import { SpriteSheet } from 'mwg';
 import type { Texture2D } from 'mwg/two-d/render';
 import type { GroundItemKind } from './dungeonConstants';
 import type { SpdSprites } from './images';
-import { MWL_MONSTERS, MWL_SCENARIO_CHAPTERS, MWL_TABLE_ROWS, MWL_TRAIT_NODES } from './mwlContent';
+import { MWL_MONSTERS, MWL_MONSTER_DEPTH_STATS, MWL_SCENARIO_CHAPTERS, MWL_TABLE_ROWS, MWL_TRAIT_NODES } from './mwlContent';
 
 function mwlActorFlagSet(flag: string): Set<AnyMonsterId> {
 	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === 'actorFlags');
@@ -139,74 +139,12 @@ export interface MonsterDef {
  * balance-scaled to 400 from Java's 1000 - its accuracy is Java's `INFINITE_ACCURACY`, so the
  * DeathGaze always lands as it does in Java).
  */
-const MONSTER_VISUALS: Record<AnyMonsterId, Pick<MonsterDef, 'frame' | 'idle'>> = {
-	rat: { frame: [16, 15], idle: 0 },
-	snake: { frame: [12, 11], idle: 0 },
-	gnoll: { frame: [12, 15], idle: 0 },
-	swarm: { frame: [16, 16], idle: 0 },
-	crab: { frame: [16, 16], idle: 0 },
-	slime: { frame: [14, 12], idle: 0 },
-	goo: { frame: [20, 14], idle: 2 },
-	skeleton: { frame: [12, 15], idle: 0 },
-	ward: { frame: [12, 15], idle: 0 },
-	sheep: { frame: [16, 15], idle: 0 },
-	earthGuardian: { frame: [12, 15], idle: 0 },
-	thief: { frame: [12, 13], idle: 0 },
-	dm100: { frame: [16, 14], idle: 0 },
-	guard: { frame: [12, 16], idle: 0 },
-	necromancer: { frame: [16, 16], idle: 0 },
-	tengu: { frame: [14, 16], idle: 0 },
-	fetidRat: { frame: [16, 15], idle: 32 },
-	gnollTrickster: { frame: [12, 15], idle: 21 },
-	greatCrab: { frame: [16, 16], idle: 16 },
-	bat: { frame: [15, 15], idle: 0 },
-	brute: { frame: [12, 16], idle: 0 },
-	shaman: { frame: [12, 15], idle: 0 },
-	spinner: { frame: [16, 16], idle: 0 },
-	dm200: { frame: [21, 18], idle: 0 },
-	dm300: { frame: [25, 22], idle: 0 },
-	necroSkeleton: { frame: [12, 15], idle: 0 },
-	ghost: { frame: [14, 15], idle: 0 },
-	wandmaker: { frame: [12, 14], idle: 0 },
-	shopkeeper: { frame: [14, 14], idle: 1 },
-	blacksmith: { frame: [13, 16], idle: 0 },
-	imp: { frame: [12, 14], idle: 0 },
-	ghoul: { frame: [12, 14], idle: 0 },
-	elemental: { frame: [12, 14], idle: 0 },
-	newbornElemental: { frame: [12, 14], idle: 0 },
-	warlock: { frame: [12, 15], idle: 0 },
-	monk: { frame: [15, 14], idle: 1 },
-	golem: { frame: [17, 19], idle: 0 },
-	succubus: { frame: [12, 15], idle: 0 },
-	eye: { frame: [16, 18], idle: 0 },
-	scorpio: { frame: [17, 17], idle: 0 },
-	king: { frame: [16, 16], idle: 0 },
-	yog: { frame: [20, 19], idle: 0 },
-	yogFist: { frame: [24, 17], idle: 0 },
-	// `LarvaSprite`'s own `TextureFilm(12, 8)`; its idle animation shows frame 4.
-	larva: { frame: [12, 8], idle: 4 },
-	demonSpawner: { frame: [16, 16], idle: 0 },
-	ripperDemon: { frame: [15, 14], idle: 1 },
-	albino: { frame: [16, 15], idle: 16 },
-	causticSlime: { frame: [14, 12], idle: 0 },
-	bandit: { frame: [12, 13], idle: 21 },
-	spectralNecromancer: { frame: [16, 16], idle: 0 },
-	armoredBrute: { frame: [12, 16], idle: 21 },
-	dm201: { frame: [21, 18], idle: 0 },
-	senior: { frame: [15, 14], idle: 18 },
-	acidic: { frame: [17, 17], idle: 15 },
-	mimic: { frame: [16, 16], idle: 3 },
-	crystalMimic: { frame: [16, 16], idle: 3 },
-	piranha: { frame: [12, 16], idle: 0 },
-	bee: { frame: [16, 16], idle: 0 },
-	statue: { frame: [12, 15], idle: 0 },
-	armoredStatue: { frame: [12, 15], idle: 0 },
-	pylon: { frame: [10, 20], idle: 0 },
-	sentry: { frame: [8, 15], idle: 0 },
-	rotHeart: { frame: [16, 16], idle: 0 },
-	rotLasher: { frame: [12, 16], idle: 0 },
-	ratKing: { frame: [16, 17], idle: 0 },
-};
+const MONSTER_VISUALS: Record<AnyMonsterId, Pick<MonsterDef, 'frame' | 'idle'>> = Object.fromEntries(
+	MWL_TABLE_ROWS('monsterSpriteFrames', 'monster').map((row) => [String(row.monster), {
+		frame: [Number(row.frame_width), Number(row.frame_height)] as [number, number],
+		idle: Number(row.idle),
+	}]),
+) as Record<AnyMonsterId, Pick<MonsterDef, 'frame' | 'idle'>>;
 
 function requiredMonsterNumber(value: number | undefined, key: string): number {
 	if (value === undefined) throw new Error(`MWL monster definition is missing ${key}`);
@@ -314,43 +252,34 @@ export const MWL_AI_PROFILES: Readonly<Record<string, string>> = Object.fromEntr
  * chain building `spawnMonster`'s `def`; a lookup keyed by kind reads as the table of formulas
  * it always was. A kind with no entry here spawns at its plain `MONSTERS` stats unmodified.
  */
-export const DEPTH_SCALED_STATS: Partial<Record<AnyMonsterId, (depth: number) => Partial<MonsterDef>>> = {
-	//Mimic.java scales HP/defence/damage from Dungeon.depth at spawn time. CrystalMimic shares
-	//the exact same formula (`extends Mimic`, no override).
-	mimic: (depth) => ({
-		hp: (1 + depth) * 6,
-		accuracy: 6 + depth,
-		evasion: 2 + Math.floor(depth / 2),
-		damage: [1 + depth, 2 + depth * 2],
-		armor: [0, 1 + Math.floor(depth / 2)],
-	}),
-	crystalMimic: (depth) => DEPTH_SCALED_STATS.mimic!(depth),
-	//Piranha.act(): HT=10+depth*5, defense/attack skill=20+depth*2/10+depth*2, EXP=0.
-	piranha: (depth) => ({
-		hp: 10 + depth * 5,
-		accuracy: 20 + depth * 2,
-		evasion: 10 + depth * 2,
-		damage: [depth, 4 + depth * 2],
-		armor: [0, depth],
-	}),
-	//Bee.java: HT=(2+depth)*4, defense/attack skill=9+depth, damage a 1/10-1/4 HT fraction.
-	bee: (depth) => {
-		const hp = (2 + depth) * 4;
-		return {
-			hp,
-			accuracy: 9 + depth,
-			evasion: 9 + depth,
-			damage: [Math.max(1, Math.floor(hp / 10)), Math.max(1, Math.floor(hp / 4))],
-			armor: [0, 0],
-		};
-	},
-	//Statue.java scales HP/defense from depth; damage stays its generated-weapon roll (this
-	//port's shared combat roll stands in, per the base `statue` entry's own comment above).
-	statue: (depth) => ({ hp: 15 + depth * 5, accuracy: 9 + depth, evasion: 4 + depth, damage: [2, 8 + depth], armor: [0, 2 + depth] }),
-	armoredStatue: (depth) => ({ hp: 30 + depth * 10, accuracy: 9 + depth, evasion: 4 + depth, damage: [2, 8 + depth], armor: [0, 4 + depth] }),
-	//SentryRoom$Sentry.attackSkill(): 20 + depth*2 (HP/EXP are the NPC base 1/0 - unaffected).
-	sentry: (depth) => ({ accuracy: 20 + depth * 2 }),
-};
+function scaledStat(base: number | undefined, perDepth: number | undefined, divisor: number | undefined, depth: number, floor = 0): number | undefined {
+	if (base === undefined && perDepth === undefined) return undefined;
+	const numerator = (base ?? 0) + (perDepth ?? 0) * depth;
+	const value = divisor && divisor > 0 ? Math.floor(numerator / divisor) : numerator;
+	return floor > 0 ? Math.max(floor, value) : value;
+}
+
+function depthScaledStats(rule: typeof MWL_MONSTER_DEPTH_STATS[string], depth: number): Partial<MonsterDef> {
+	const hp = scaledStat(rule.hpBase, rule.hpPerDepth, undefined, depth);
+	const accuracy = scaledStat(rule.accuracyBase, rule.accuracyPerDepth, undefined, depth);
+	const evasion = scaledStat(rule.evasionBase, rule.evasionPerDepth, rule.evasionDivisor, depth);
+	const damageMin = scaledStat(rule.damageMinBase, rule.damageMinPerDepth, rule.damageMinDivisor, depth, rule.damageMinFloor);
+	const damageMax = scaledStat(rule.damageMaxBase, rule.damageMaxPerDepth, rule.damageMaxDivisor, depth, rule.damageMaxFloor);
+	const armorMin = scaledStat(rule.armorMinBase, rule.armorMinPerDepth, rule.armorMinDivisor, depth);
+	const armorMax = scaledStat(rule.armorMaxBase, rule.armorMaxPerDepth, rule.armorMaxDivisor, depth);
+	return {
+		...(hp === undefined ? {} : { hp }), ...(accuracy === undefined ? {} : { accuracy }),
+		...(evasion === undefined ? {} : { evasion }),
+		...(damageMin === undefined && damageMax === undefined ? {} : { damage: [damageMin ?? 0, damageMax ?? 0] as [number, number] }),
+		...(armorMin === undefined && armorMax === undefined ? {} : { armor: [armorMin ?? 0, armorMax ?? 0] as [number, number] }),
+	};
+}
+
+/** Depth-scaled actor formulas are authored in `actor-rules.mwl`; this adapter only evaluates
+ * their closed arithmetic shapes. Values are sourced from the corresponding SPD mob classes. */
+export const DEPTH_SCALED_STATS: Partial<Record<AnyMonsterId, (depth: number) => Partial<MonsterDef>>> = Object.fromEntries(
+	Object.entries(MWL_MONSTER_DEPTH_STATS).map(([kind, rule]) => [kind, (depth: number) => depthScaledStats(rule, depth)]),
+) as Partial<Record<AnyMonsterId, (depth: number) => Partial<MonsterDef>>>;
 
 /**
  * Sprite-sheet reuse for kinds with no dedicated asset of their own (a quest miniboss texturing
@@ -363,25 +292,9 @@ export const DEPTH_SCALED_STATS: Partial<Record<AnyMonsterId, (depth: number) =>
  * kind checked against `kind` directly (`sentry`/`ratKing`/`rotHeart`/`rotLasher`) has no
  * `BASE_KIND_ALIASES` entry of its own, so `baseKind` already equals `kind` for each of them.
  */
-export const SPRITE_KIND_OVERRIDE: Partial<Record<MonsterId, keyof SpdSprites>> = {
-	sheep: 'sheep',
-	// `WandOfWarding.WardSprite` has its own six-tier film; it is not a skeleton variant.
-	ward: 'wards',
-	earthGuardian: 'guardian',
-	sentry: 'sentry',
-	ratKing: 'ratking',
-	rotHeart: 'rotHeart',
-	rotLasher: 'rotLasher',
-	fetidRat: 'rat',
-	gnollTrickster: 'gnoll',
-	greatCrab: 'crab',
-	necroSkeleton: 'skeleton',
-	newbornElemental: 'elemental',
-	mimic: 'mimic',
-	piranha: 'piranha',
-	bee: 'bee',
-	statue: 'statue',
-};
+export const SPRITE_KIND_OVERRIDE: Partial<Record<MonsterId, keyof SpdSprites>> = Object.fromEntries(
+	MWL_TABLE_ROWS('monsterSpriteOverrides', 'monster').map((row) => [String(row.monster), String(row.sprite)]),
+) as Partial<Record<MonsterId, keyof SpdSprites>>;
 
 /** Standard mob rotations are authored as typed MWL tables (`monsterRosterByDepth` /
  * `monsterRosterFallback`); this adapter preserves the Java region fallback selection. */
@@ -514,28 +427,15 @@ export const MOB_LOOT: Record<string, { chance: number; kind: GroundItemKind }[]
  * every successful drop this run, on top of the flat `MOB_LOOT` chance above - real Java's own
  * per-kind formula, keyed on how many times `n` this exact drop has already happened. Every kind
  * whose `MOB_LOOT` base chance matches Java's own `lootChance` field gets its decay here.
+ * `mode`/`value` are authored in `limitedDropDecay` (`loot-rules.mwl`): `linear` is `(value-n)/
+ * value` (`Bat.lootChance()` value=7, `Necromancer.lootChance()` value=6, `Swarm.lootChance()`'s
+ * `SWARM_HP` counter value=5), everything else is `(1/value)^n` (`Guard`/`DM200`/`Golem`/
+ * `Shaman.lootChance()` value=3, `Slime.lootChance()`'s `SLIME_WEP` counter value=4,
+ * `Skeleton.lootChance()`'s `SKELE_WEP` counter and `Thief.lootChance()`'s `THEIF_MISC` counter
+ * both value=3). **2026-09-14:** removed this file's own dead `LEGACY_LIMITED_DROP_DECAY` object
+ * literal, which hand-duplicated these same ten formulas and had no remaining reader anywhere -
+ * this comment now carries forward the Java citations it used to hold.
  */
-const LEGACY_LIMITED_DROP_DECAY: Partial<Record<MonsterId, (n: number) => number>> = {
-	//Bat.lootChance(): (7-n)/7
-	bat: (n) => (7 - n) / 7,
-	//Necromancer.lootChance(): (6-n)/6
-	necromancer: (n) => (6 - n) / 6,
-	//Guard.lootChance(): (1/3)^n
-	guard: (n) => Math.pow(1 / 3, n),
-	//DM200.lootChance()/Golem.lootChance()/Shaman.lootChance(): all (1/3)^n too
-	dm200: (n) => Math.pow(1 / 3, n),
-	golem: (n) => Math.pow(1 / 3, n),
-	shaman: (n) => Math.pow(1 / 3, n),
-	//Slime.lootChance(): SLIME_WEP counter, (1/4)^n
-	slime: (n) => Math.pow(1 / 4, n),
-	//Skeleton.lootChance(): SKELE_WEP counter, (1/3)^n
-	skeleton: (n) => Math.pow(1 / 3, n),
-	//Thief.lootChance(): THEIF_MISC counter, (1/3)^n
-	thief: (n) => Math.pow(1 / 3, n),
-	//Swarm.lootChance(): SWARM_HP counter, (5-n)/5
-	swarm: (n) => (5 - n) / 5,
-};
-
 const MWL_LIMITED_DROP_DECAY = Object.fromEntries(MWL_TABLE_ROWS('limitedDropDecay', 'monster').map((row) => {
 	const value = Number(row.value);
 	const mode = String(row.mode);

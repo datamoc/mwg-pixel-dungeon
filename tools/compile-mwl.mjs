@@ -138,6 +138,31 @@ function validateLootKindReferences() {
 }
 
 /**
+ * `itemGroundKindAliases`'s `groundKind` column and `specialItemGroundKinds`'s `groundKind`
+ * column both name a `GroundItemKind` (`src/dungeonConstants.ts`), the same closed union
+ * `validateLootKindReferences` above checks for `monsterLoot`. Unlike `monsterLoot`, these two
+ * tables' readers in `src/mwlContent.ts` hand the raw string straight to `src/items/itemKinds.ts`,
+ * which does a bare `as GroundItemKind` cast at both call sites (`groundKindForItem`'s
+ * `authoredAlias as GroundItemKind` and `portItemKind`'s `authoredGroundKind as GroundItemKind`)
+ * with no runtime check at all - a typo'd `groundKind` here would compile clean under both `tsc`
+ * and `npm run build` and only surface as a live item rendering/behaving as the wrong ground-item
+ * family (or a `GroundItemKind` value nothing else recognizes). Nothing previously verified either
+ * column against the closed kind set.
+ */
+function validateGroundKindAliasReferences() {
+  for (const row of tableRows('itemGroundKindAliases')) {
+    if (!GROUND_ITEM_KINDS.has(String(row.groundKind))) {
+      throw new Error(`MWL itemGroundKindAliases row for ${row.itemId} references unknown ground item kind: ${row.groundKind}`);
+    }
+  }
+  for (const row of tableRows('specialItemGroundKinds')) {
+    if (!GROUND_ITEM_KINDS.has(String(row.groundKind))) {
+      throw new Error(`MWL specialItemGroundKinds row for ${row.sourceClass} references unknown ground item kind: ${row.groundKind}`);
+    }
+  }
+}
+
+/**
  * `consumableClassAliases`'s `item` column names a `[item]` id read by `src/mwlContent.ts`'s
  * `MWL_CONSUMABLE_CLASS_ALIASES` (and, since 2026-09-14, `journalContent.ts`'s scroll catalogue -
  * the bug that motivated this check: a stale hand-typed list once silently diverged from this very
@@ -190,6 +215,7 @@ validateBossReferences();
 validateActorReferences();
 validateHookReferences();
 validateLootKindReferences();
+validateGroundKindAliasReferences();
 validateConsumableAliasReferences();
 validateRoomRuleTables();
 

@@ -1,419 +1,547 @@
-[game]
-schema=0.1
-
-[table]
-id=alchemyEnergy
-columns=kind:string|energy:number
-[row]
-kind=seed
-energy=2
-[/row]
-[row]
-kind=stone
-energy=3
-[/row]
-[row]
-kind=scroll
-energy=6
-[/row]
-[row]
-kind=potion
-energy=6
-[/row]
-[row]
-kind=food
-energy=6
-[/row]
-[/table]
-
-[table]
-id=alchemyRecipes
-columns=id:string|ingredients:list|result:string|resultQuantity:number|energyCost:number
-list_delimiter=,
-[row]
-id=stewedMeat1
-ingredients=meat:1
-result=stewedMeat
-resultQuantity=1
-energyCost=1
-[/row]
-[row]
-id=stewedMeat2
-ingredients=meat:2
-result=stewedMeat
-resultQuantity=2
-energyCost=2
-[/row]
-[row]
-id=stewedMeat3
-ingredients=meat:3
-result=stewedMeat
-resultQuantity=3
-energyCost=2
-[/row]
-[row]
-id=meatPie
-ingredients=pasty:1,food:1,meat:1
-result=meatPie
-resultQuantity=1
-energyCost=6
-[/row]
-[row]
-id=enhanceBombFrost
-ingredients=bomb:1,potionFrost:1
-result=frostBomb
-resultQuantity=1
-energyCost=0
-[/row]
-[row]
-id=enhanceBombWoolly
-ingredients=bomb:1,scrollMirror:1
-result=woollyBomb
-resultQuantity=1
-energyCost=0
-[/row]
-[row]
-id=enhanceBombFire
-ingredients=bomb:1,potionFlame:1
-result=fireBomb
-resultQuantity=1
-energyCost=1
-[/row]
-[row]
-id=enhanceBombNoisemaker
-ingredients=bomb:1,scrollRage:1
-result=noisemaker
-resultQuantity=1
-energyCost=1
-[/row]
-[row]
-id=enhanceBombFlashbang
-ingredients=bomb:1,potionInvis:1
-result=flashbang
-resultQuantity=1
-energyCost=2
-[/row]
-[row]
-id=enhanceBombShock
-ingredients=bomb:1,scrollRecharging:1
-result=shockBomb
-resultQuantity=1
-energyCost=2
-[/row]
-[row]
-id=enhanceBombRegrowth
-ingredients=bomb:1,potionHealing:1
-result=regrowthBomb
-resultQuantity=1
-energyCost=3
-[/row]
-[row]
-id=enhanceBombHoly
-ingredients=bomb:1,scrollCleanse:1
-result=holyBomb
-resultQuantity=1
-energyCost=3
-[/row]
-[row]
-id=enhanceBombArcane
-ingredients=bomb:1,gooBlob:1
-result=arcaneBomb
-resultQuantity=1
-energyCost=6
-[/row]
-[row]
-id=enhanceBombShrapnel
-ingredients=bomb:1,metalShard:1
-result=shrapnelBomb
-resultQuantity=1
-energyCost=6
-[/row]
-[/table]
-
-[table]
-id=alchemyRecipeManifest
-columns=id:string|group:string|javaRecipe:string|recipe:string
-[row]
-id=manifest-liquidMetal
-recipe=liquidMetal
-group=variable
-javaRecipe=LiquidMetal.Recipe
-[/row]
-[row]
-id=manifest-scrollToStone
-recipe=scrollToStone
-group=one
-javaRecipe=Scroll.ScrollToStone
-[/row]
-[row]
-id=manifest-exoticPotion
-recipe=exoticPotion
-group=one
-javaRecipe=ExoticPotion.PotionToExotic
-[/row]
-[row]
-id=manifest-exoticScroll
-recipe=exoticScroll
-group=one
-javaRecipe=ExoticScroll.ScrollToExotic
-[/row]
-[row]
-id=manifest-arcaneResin
-recipe=arcaneResin
-group=one
-javaRecipe=ArcaneResin.Recipe
-[/row]
-[row]
-id=manifest-alchemize
-recipe=alchemize
-group=one
-javaRecipe=Alchemize.Recipe
-[/row]
-[row]
-id=manifest-stewedMeat1
-recipe=stewedMeat1
-group=one
-javaRecipe=StewedMeat.oneMeat
-[/row]
-[row]
-id=manifest-blandfruit
-recipe=blandfruit
-group=two
-javaRecipe=Blandfruit.CookFruit
-[/row]
-[row]
-id=manifest-enhanceBomb
-recipe=enhanceBomb
-group=two
-javaRecipe=Bomb.EnhanceBomb
-[/row]
-[row]
-id=manifest-alchemicalCatalyst
-recipe=alchemicalCatalyst
-group=two
-javaRecipe=AlchemicalCatalyst.Recipe
-[/row]
-[row]
-id=manifest-arcaneCatalyst
-recipe=arcaneCatalyst
-group=two
-javaRecipe=ArcaneCatalyst.Recipe
-[/row]
-[row]
-id=manifest-elixirArcaneArmor
-recipe=elixirArcaneArmor
-group=two
-javaRecipe=ElixirOfArcaneArmor.Recipe
-[/row]
-[row]
-id=manifest-elixirAquaticRejuvenation
-recipe=elixirAquaticRejuvenation
-group=two
-javaRecipe=ElixirOfAquaticRejuvenation.Recipe
-[/row]
-[row]
-id=manifest-elixirDragonsBlood
-recipe=elixirDragonsBlood
-group=two
-javaRecipe=ElixirOfDragonsBlood.Recipe
-[/row]
-[row]
-id=manifest-elixirIcyTouch
-recipe=elixirIcyTouch
-group=two
-javaRecipe=ElixirOfIcyTouch.Recipe
-[/row]
-[row]
-id=manifest-elixirMight
-recipe=elixirMight
-group=two
-javaRecipe=ElixirOfMight.Recipe
-[/row]
-[row]
-id=manifest-elixirHoneyedHealing
-recipe=elixirHoneyedHealing
-group=two
-javaRecipe=ElixirOfHoneyedHealing.Recipe
-[/row]
-[row]
-id=manifest-elixirToxicEssence
-recipe=elixirToxicEssence
-group=two
-javaRecipe=ElixirOfToxicEssence.Recipe
-[/row]
-[row]
-id=manifest-blizzardBrew
-recipe=blizzardBrew
-group=two
-javaRecipe=BlizzardBrew.Recipe
-[/row]
-[row]
-id=manifest-infernalBrew
-recipe=infernalBrew
-group=two
-javaRecipe=InfernalBrew.Recipe
-[/row]
-[row]
-id=manifest-shockingBrew
-recipe=shockingBrew
-group=two
-javaRecipe=ShockingBrew.Recipe
-[/row]
-[row]
-id=manifest-causticBrew
-recipe=causticBrew
-group=two
-javaRecipe=CausticBrew.Recipe
-[/row]
-[row]
-id=manifest-aquaBlast
-recipe=aquaBlast
-group=two
-javaRecipe=AquaBlast.Recipe
-[/row]
-[row]
-id=manifest-beaconOfReturning
-recipe=beaconOfReturning
-group=two
-javaRecipe=BeaconOfReturning.Recipe
-[/row]
-[row]
-id=manifest-curseInfusion
-recipe=curseInfusion
-group=two
-javaRecipe=CurseInfusion.Recipe
-[/row]
-[row]
-id=manifest-featherFall
-recipe=featherFall
-group=two
-javaRecipe=FeatherFall.Recipe
-[/row]
-[row]
-id=manifest-magicalInfusion
-recipe=magicalInfusion
-group=two
-javaRecipe=MagicalInfusion.Recipe
-[/row]
-[row]
-id=manifest-phaseShift
-recipe=phaseShift
-group=two
-javaRecipe=PhaseShift.Recipe
-[/row]
-[row]
-id=manifest-reclaimTrap
-recipe=reclaimTrap
-group=two
-javaRecipe=ReclaimTrap.Recipe
-[/row]
-[row]
-id=manifest-recycle
-recipe=recycle
-group=two
-javaRecipe=Recycle.Recipe
-[/row]
-[row]
-id=manifest-wildEnergy
-recipe=wildEnergy
-group=two
-javaRecipe=WildEnergy.Recipe
-[/row]
-[row]
-id=manifest-telekineticGrab
-recipe=telekineticGrab
-group=two
-javaRecipe=TelekineticGrab.Recipe
-[/row]
-[row]
-id=manifest-summonElemental
-recipe=summonElemental
-group=two
-javaRecipe=SummonElemental.Recipe
-[/row]
-[row]
-id=manifest-stewedMeat2
-recipe=stewedMeat2
-group=two
-javaRecipe=StewedMeat.twoMeat
-[/row]
-[row]
-id=manifest-potionSeed
-recipe=potionSeed
-group=three
-javaRecipe=Potion.SeedToPotion
-[/row]
-[row]
-id=manifest-stewedMeat3
-recipe=stewedMeat3
-group=three
-javaRecipe=StewedMeat.threeMeat
-[/row]
-[row]
-id=manifest-meatPie
-recipe=meatPie
-group=three
-javaRecipe=MeatPie.Recipe
-[/row]
-[row]
-id=manifest-enhanceBombFrost
-recipe=enhanceBombFrost
-group=two
-javaRecipe=Bomb.EnhanceBomb(FrostBomb)
-[/row]
-[row]
-id=manifest-enhanceBombWoolly
-recipe=enhanceBombWoolly
-group=two
-javaRecipe=Bomb.EnhanceBomb(WoollyBomb)
-[/row]
-[row]
-id=manifest-enhanceBombFire
-recipe=enhanceBombFire
-group=two
-javaRecipe=Bomb.EnhanceBomb(Firebomb)
-[/row]
-[row]
-id=manifest-enhanceBombNoisemaker
-recipe=enhanceBombNoisemaker
-group=two
-javaRecipe=Bomb.EnhanceBomb(Noisemaker)
-[/row]
-[row]
-id=manifest-enhanceBombFlashbang
-recipe=enhanceBombFlashbang
-group=two
-javaRecipe=Bomb.EnhanceBomb(Flashbang)
-[/row]
-[row]
-id=manifest-enhanceBombShock
-recipe=enhanceBombShock
-group=two
-javaRecipe=Bomb.EnhanceBomb(ShockBomb)
-[/row]
-[row]
-id=manifest-enhanceBombRegrowth
-recipe=enhanceBombRegrowth
-group=two
-javaRecipe=Bomb.EnhanceBomb(RegrowthBomb)
-[/row]
-[row]
-id=manifest-enhanceBombHoly
-recipe=enhanceBombHoly
-group=two
-javaRecipe=Bomb.EnhanceBomb(HolyBomb)
-[/row]
-[row]
-id=manifest-enhanceBombArcane
-recipe=enhanceBombArcane
-group=two
-javaRecipe=Bomb.EnhanceBomb(ArcaneBomb)
-[/row]
-[row]
-id=manifest-enhanceBombShrapnel
-recipe=enhanceBombShrapnel
-group=two
-javaRecipe=Bomb.EnhanceBomb(ShrapnelBomb)
-[/row]
-[/table]
-[/game]
+[
+  {
+    tag: "game",
+    schema: 0.1,
+    children: [
+      {
+        tag: "table",
+        id: "alchemyEnergy",
+        columns: "kind:string|energy:number",
+        children: [
+          {
+            tag: "row",
+            kind: "seed",
+            energy: 2,
+          },
+          {
+            tag: "row",
+            kind: "stone",
+            energy: 3,
+          },
+          {
+            tag: "row",
+            kind: "scroll",
+            energy: 6,
+          },
+          {
+            tag: "row",
+            kind: "potion",
+            energy: 6,
+          },
+          {
+            tag: "row",
+            kind: "food",
+            energy: 6,
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "alchemyKnownEnergy",
+        columns: "item:string|energy:number",
+        children: [
+          { tag: "row", item: "potionStrength", energy: 10 },
+          { tag: "row", item: "potionExperience", energy: 10 },
+          { tag: "row", item: "scrollUpgrade", energy: 10 },
+          { tag: "row", item: "scrollTransmutation", energy: 10 },
+        ],
+      },
+      {
+        tag: "table",
+        id: "alchemyRecipes",
+        columns: "id:string|ingredients:list|result:string|resultQuantity:number|energyCost:number",
+        list_delimiter: ",",
+        children: [
+          {
+            tag: "row",
+            id: "stewedMeat1",
+            ingredients: "meat:1",
+            result: "stewedMeat",
+            resultQuantity: 1,
+            energyCost: 1,
+          },
+          {
+            tag: "row",
+            id: "stewedMeat2",
+            ingredients: "meat:2",
+            result: "stewedMeat",
+            resultQuantity: 2,
+            energyCost: 2,
+          },
+          {
+            tag: "row",
+            id: "stewedMeat3",
+            ingredients: "meat:3",
+            result: "stewedMeat",
+            resultQuantity: 3,
+            energyCost: 2,
+          },
+          {
+            tag: "row",
+            id: "meatPie",
+            ingredients: "pasty:1,food:1,meat:1",
+            result: "meatPie",
+            resultQuantity: 1,
+            energyCost: 6,
+          },
+          {
+            tag: "row",
+            id: "potionSeed",
+            ingredients: "seed:3",
+            result: "potionHealing",
+            resultQuantity: 1,
+            energyCost: 0,
+          },
+          {
+            tag: "row",
+            id: "scrollToStone",
+            ingredients: "scrollIdentify:1",
+            result: "stoneOfIntuition",
+            resultQuantity: 2,
+            energyCost: 0,
+          },
+          {
+            tag: "row",
+            id: "alchemicalCatalyst",
+            ingredients: "potionHealing:1,seed:1",
+            result: "alchemicalCatalyst",
+            resultQuantity: 1,
+            energyCost: 0,
+          },
+          {
+            tag: "row",
+            id: "arcaneCatalyst",
+            ingredients: "scrollIdentify:1,stoneOfIntuition:1",
+            result: "arcaneCatalyst",
+            resultQuantity: 1,
+            energyCost: 0,
+          },
+          {
+            tag: "row",
+            id: "alchemize",
+            ingredients: "seed:1,stoneOfBlast:1",
+            result: "alchemize",
+            resultQuantity: 8,
+            energyCost: 2,
+          },
+          {
+            tag: "row",
+            id: "enhanceBombFrost",
+            ingredients: "bomb:1,potionFrost:1",
+            result: "frostBomb",
+            resultQuantity: 1,
+            energyCost: 0,
+          },
+          {
+            tag: "row",
+            id: "enhanceBombWoolly",
+            ingredients: "bomb:1,scrollMirror:1",
+            result: "woollyBomb",
+            resultQuantity: 1,
+            energyCost: 0,
+          },
+          {
+            tag: "row",
+            id: "enhanceBombFire",
+            ingredients: "bomb:1,potionFlame:1",
+            result: "fireBomb",
+            resultQuantity: 1,
+            energyCost: 1,
+          },
+          {
+            tag: "row",
+            id: "enhanceBombNoisemaker",
+            ingredients: "bomb:1,scrollRage:1",
+            result: "noisemaker",
+            resultQuantity: 1,
+            energyCost: 1,
+          },
+          {
+            tag: "row",
+            id: "enhanceBombFlashbang",
+            ingredients: "bomb:1,potionInvis:1",
+            result: "flashbang",
+            resultQuantity: 1,
+            energyCost: 2,
+          },
+          {
+            tag: "row",
+            id: "enhanceBombShock",
+            ingredients: "bomb:1,scrollRecharging:1",
+            result: "shockBomb",
+            resultQuantity: 1,
+            energyCost: 2,
+          },
+          {
+            tag: "row",
+            id: "enhanceBombRegrowth",
+            ingredients: "bomb:1,potionHealing:1",
+            result: "regrowthBomb",
+            resultQuantity: 1,
+            energyCost: 3,
+          },
+          {
+            tag: "row",
+            id: "enhanceBombHoly",
+            ingredients: "bomb:1,scrollCleanse:1",
+            result: "holyBomb",
+            resultQuantity: 1,
+            energyCost: 3,
+          },
+          {
+            tag: "row",
+            id: "enhanceBombArcane",
+            ingredients: "bomb:1,gooBlob:1",
+            result: "arcaneBomb",
+            resultQuantity: 1,
+            energyCost: 6,
+          },
+          {
+            tag: "row",
+            id: "enhanceBombShrapnel",
+            ingredients: "bomb:1,metalShard:1",
+            result: "shrapnelBomb",
+            resultQuantity: 1,
+            energyCost: 6,
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "alchemyRecipeManifest",
+        columns: "id:string|group:string|javaRecipe:string|recipe:string",
+        children: [
+          {
+            tag: "row",
+            id: "manifest-liquidMetal",
+            recipe: "liquidMetal",
+            group: "variable",
+            javaRecipe: "LiquidMetal.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-scrollToStone",
+            recipe: "scrollToStone",
+            group: "one",
+            javaRecipe: "Scroll.ScrollToStone",
+          },
+          {
+            tag: "row",
+            id: "manifest-exoticPotion",
+            recipe: "exoticPotion",
+            group: "one",
+            javaRecipe: "ExoticPotion.PotionToExotic",
+          },
+          {
+            tag: "row",
+            id: "manifest-exoticScroll",
+            recipe: "exoticScroll",
+            group: "one",
+            javaRecipe: "ExoticScroll.ScrollToExotic",
+          },
+          {
+            tag: "row",
+            id: "manifest-arcaneResin",
+            recipe: "arcaneResin",
+            group: "one",
+            javaRecipe: "ArcaneResin.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-alchemize",
+            recipe: "alchemize",
+            group: "one",
+            javaRecipe: "Alchemize.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-stewedMeat1",
+            recipe: "stewedMeat1",
+            group: "one",
+            javaRecipe: "StewedMeat.oneMeat",
+          },
+          {
+            tag: "row",
+            id: "manifest-blandfruit",
+            recipe: "blandfruit",
+            group: "two",
+            javaRecipe: "Blandfruit.CookFruit",
+          },
+          {
+            tag: "row",
+            id: "manifest-enhanceBomb",
+            recipe: "enhanceBomb",
+            group: "two",
+            javaRecipe: "Bomb.EnhanceBomb",
+          },
+          {
+            tag: "row",
+            id: "manifest-alchemicalCatalyst",
+            recipe: "alchemicalCatalyst",
+            group: "two",
+            javaRecipe: "AlchemicalCatalyst.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-arcaneCatalyst",
+            recipe: "arcaneCatalyst",
+            group: "two",
+            javaRecipe: "ArcaneCatalyst.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-elixirArcaneArmor",
+            recipe: "elixirArcaneArmor",
+            group: "two",
+            javaRecipe: "ElixirOfArcaneArmor.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-elixirAquaticRejuvenation",
+            recipe: "elixirAquaticRejuvenation",
+            group: "two",
+            javaRecipe: "ElixirOfAquaticRejuvenation.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-elixirDragonsBlood",
+            recipe: "elixirDragonsBlood",
+            group: "two",
+            javaRecipe: "ElixirOfDragonsBlood.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-elixirIcyTouch",
+            recipe: "elixirIcyTouch",
+            group: "two",
+            javaRecipe: "ElixirOfIcyTouch.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-elixirMight",
+            recipe: "elixirMight",
+            group: "two",
+            javaRecipe: "ElixirOfMight.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-elixirHoneyedHealing",
+            recipe: "elixirHoneyedHealing",
+            group: "two",
+            javaRecipe: "ElixirOfHoneyedHealing.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-elixirToxicEssence",
+            recipe: "elixirToxicEssence",
+            group: "two",
+            javaRecipe: "ElixirOfToxicEssence.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-blizzardBrew",
+            recipe: "blizzardBrew",
+            group: "two",
+            javaRecipe: "BlizzardBrew.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-infernalBrew",
+            recipe: "infernalBrew",
+            group: "two",
+            javaRecipe: "InfernalBrew.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-shockingBrew",
+            recipe: "shockingBrew",
+            group: "two",
+            javaRecipe: "ShockingBrew.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-causticBrew",
+            recipe: "causticBrew",
+            group: "two",
+            javaRecipe: "CausticBrew.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-aquaBlast",
+            recipe: "aquaBlast",
+            group: "two",
+            javaRecipe: "AquaBlast.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-beaconOfReturning",
+            recipe: "beaconOfReturning",
+            group: "two",
+            javaRecipe: "BeaconOfReturning.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-curseInfusion",
+            recipe: "curseInfusion",
+            group: "two",
+            javaRecipe: "CurseInfusion.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-featherFall",
+            recipe: "featherFall",
+            group: "two",
+            javaRecipe: "FeatherFall.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-magicalInfusion",
+            recipe: "magicalInfusion",
+            group: "two",
+            javaRecipe: "MagicalInfusion.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-phaseShift",
+            recipe: "phaseShift",
+            group: "two",
+            javaRecipe: "PhaseShift.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-reclaimTrap",
+            recipe: "reclaimTrap",
+            group: "two",
+            javaRecipe: "ReclaimTrap.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-recycle",
+            recipe: "recycle",
+            group: "two",
+            javaRecipe: "Recycle.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-wildEnergy",
+            recipe: "wildEnergy",
+            group: "two",
+            javaRecipe: "WildEnergy.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-telekineticGrab",
+            recipe: "telekineticGrab",
+            group: "two",
+            javaRecipe: "TelekineticGrab.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-summonElemental",
+            recipe: "summonElemental",
+            group: "two",
+            javaRecipe: "SummonElemental.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-stewedMeat2",
+            recipe: "stewedMeat2",
+            group: "two",
+            javaRecipe: "StewedMeat.twoMeat",
+          },
+          {
+            tag: "row",
+            id: "manifest-potionSeed",
+            recipe: "potionSeed",
+            group: "three",
+            javaRecipe: "Potion.SeedToPotion",
+          },
+          {
+            tag: "row",
+            id: "manifest-stewedMeat3",
+            recipe: "stewedMeat3",
+            group: "three",
+            javaRecipe: "StewedMeat.threeMeat",
+          },
+          {
+            tag: "row",
+            id: "manifest-meatPie",
+            recipe: "meatPie",
+            group: "three",
+            javaRecipe: "MeatPie.Recipe",
+          },
+          {
+            tag: "row",
+            id: "manifest-enhanceBombFrost",
+            recipe: "enhanceBombFrost",
+            group: "two",
+            javaRecipe: "Bomb.EnhanceBomb(FrostBomb)",
+          },
+          {
+            tag: "row",
+            id: "manifest-enhanceBombWoolly",
+            recipe: "enhanceBombWoolly",
+            group: "two",
+            javaRecipe: "Bomb.EnhanceBomb(WoollyBomb)",
+          },
+          {
+            tag: "row",
+            id: "manifest-enhanceBombFire",
+            recipe: "enhanceBombFire",
+            group: "two",
+            javaRecipe: "Bomb.EnhanceBomb(Firebomb)",
+          },
+          {
+            tag: "row",
+            id: "manifest-enhanceBombNoisemaker",
+            recipe: "enhanceBombNoisemaker",
+            group: "two",
+            javaRecipe: "Bomb.EnhanceBomb(Noisemaker)",
+          },
+          {
+            tag: "row",
+            id: "manifest-enhanceBombFlashbang",
+            recipe: "enhanceBombFlashbang",
+            group: "two",
+            javaRecipe: "Bomb.EnhanceBomb(Flashbang)",
+          },
+          {
+            tag: "row",
+            id: "manifest-enhanceBombShock",
+            recipe: "enhanceBombShock",
+            group: "two",
+            javaRecipe: "Bomb.EnhanceBomb(ShockBomb)",
+          },
+          {
+            tag: "row",
+            id: "manifest-enhanceBombRegrowth",
+            recipe: "enhanceBombRegrowth",
+            group: "two",
+            javaRecipe: "Bomb.EnhanceBomb(RegrowthBomb)",
+          },
+          {
+            tag: "row",
+            id: "manifest-enhanceBombHoly",
+            recipe: "enhanceBombHoly",
+            group: "two",
+            javaRecipe: "Bomb.EnhanceBomb(HolyBomb)",
+          },
+          {
+            tag: "row",
+            id: "manifest-enhanceBombArcane",
+            recipe: "enhanceBombArcane",
+            group: "two",
+            javaRecipe: "Bomb.EnhanceBomb(ArcaneBomb)",
+          },
+          {
+            tag: "row",
+            id: "manifest-enhanceBombShrapnel",
+            recipe: "enhanceBombShrapnel",
+            group: "two",
+            javaRecipe: "Bomb.EnhanceBomb(ShrapnelBomb)",
+          },
+        ],
+      },
+    ],
+  },
+]

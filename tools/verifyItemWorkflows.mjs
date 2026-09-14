@@ -29,6 +29,14 @@ try {
 	compile(join(root, 'src/items/missiles.ts'), 'items/missiles.js');
 	compile(join(root, 'src/items/itemCurses.ts'), 'items/itemCurses.js');
 	compile(join(root, 'src/items/blacksmith.ts'), 'items/blacksmith.js');
+	// alchemy.ts reads the no_healing challenge toggle for the AlchemicalCatalyst reroll rule via
+	// `isChallengeEnabled`; the real challenges.ts also pulls in the full i18n/message catalogue
+	// (for its display strings), which this narrow harness has no need to load - a tiny stub
+	// standing in for the one function this workflow path actually calls is simpler and more
+	// robust than compiling the real module transitively. This harness never exercises the
+	// challenge toggle itself (no_healing is covered live, not headlessly), so "always disabled"
+	// is a safe stand-in here.
+	writeFileSync(join(out, 'challenges.js'), 'exports.isChallengeEnabled = () => false;\n');
 	compile(join(root, 'src/items/alchemy.ts'), 'items/alchemy.js');
 	compile(join(root, 'src/items/groundPickup.ts'), 'items/groundPickup.js');
 	// The framework side is the installed `@datamoc/mw_games` build the game itself ships,

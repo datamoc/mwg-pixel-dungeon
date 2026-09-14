@@ -78,8 +78,23 @@ Do not add new authored content as object literals or scattered constants in the
       `bombEffects.ts`, `stones.ts`, `wands.ts`/`wandEffects.ts`, `potionEffects.ts`, and
       `scrollEffects.ts` hold the executable behavior. Alchemy energy/recipes and portable
       food recipes are authored in `src/content/alchemy.mwl` and resolved through the MWG
-      crafting transaction (`alchemy.ts`'s `craftAlchemy`); the pot UI, energy resource,
-      catalysts, and exotic recipes beyond that initial set remain open. The ten specialty
+      crafting transaction (`alchemy.ts`'s `craftAlchemy`); the pot UI and energy resource
+      (a real accumulating currency a physical pot stores over time) remain open - this port's
+      "energy" is a per-ingredient value computed from item identity, not a stored pool, so
+      there is no pot state to build a UI around yet.
+      **2026-09-14: catalysts and several exotic recipes are now ported**, closing most of what
+      this row used to call open: `craftAlchemicalCatalyst`/`craftArcaneCatalyst`
+      (`AlchemicalCatalyst.Recipe`/`ArcaneCatalyst.Recipe` - a regular potion/scroll plus a
+      concrete seed or runestone, Java's zero/one energy cost by secondary ingredient, and
+      `randomAlchemicalPotion`/`randomArcaneScroll` reproducing Java's weighted regular-class
+      pools including the `no_healing` challenge's reroll), `craftScrollToStone`
+      (`Scroll.ScrollToStone`, any of the twelve eligible regular scrolls to its matching
+      runestone pair), `craftPotionSeed` (`Potion.SeedToPotion.brew()`, three carried seed units
+      to a regular potion with Java's 1/4 and 1/2 random-result chances for two/three distinct
+      seeds), and `craftAlchemize` (`Alchemize.Recipe`, any seed plus any runestone). See
+      `PORT_COVERAGE.md`'s dedicated rows for each. Exotic/unidentified-class ingredients remain
+      outside the port's item model, and the multi-ingredient alchemy window is still a single
+      recipe picker rather than Java's free-form pot. The ten specialty
       bomb payloads (frost/fire/shrapnel/flashbang/shock/regrowth/arcane/woolly/holy/
       noisemaker) are now implemented in `bombs.ts`/`bombEffects.ts` - no longer open, as an
       earlier revision of this row claimed. Potion and scroll generator decks are now in
@@ -216,7 +231,21 @@ Do not add new authored content as object literals or scattered constants in the
       `itemAffixes.ts`; the per-id proc behavior stays in `main.ts`. The three
       `Char.isImmune` status lists (Brimstone/Frost/AntiMagic) are authored in
       `src/content/resistance-rules.mwl`, emitted as `simulation/mwlStatusImmunities.ts`, and
-      consumed by `combat.ts`'s `addBuff`. Stat blocks still need the same treatment.
+      consumed by `combat.ts`'s `addBuff`.
+      **Correction, 2026-09-14:** the trailing "Stat blocks still need the same treatment" this
+      row used to end on was stale - the shared Hero stat block (starting HP/strength/attack
+      skill/defense skill/evasion/gold, and the level-up increments) was already authored in
+      `actor-rules.mwl`'s own row and its `heroLevelGrowth` companion table by the 2026-09-13 note
+      two paragraphs up; this trailing sentence just never got removed when that landed. Also
+      removed `monsters.ts`'s dead `LEGACY_LIMITED_DROP_DECAY` object literal while auditing this
+      row - it hand-duplicated the same ten Java `lootChance()` decay formulas the authored
+      `limitedDropDecay` table already covers, with no reader left anywhere in the codebase; its
+      Java-citation comments now live on the real `MWL_LIMITED_DROP_DECAY`/`LIMITED_DROP_DECAY`
+      instead of a second, unused copy. Genuinely still open for this bullet: talent formulas
+      (`talents.ts`/`talentEffects.ts` still hold several Java-derived numeric formulas as bare
+      TypeScript rather than authored data), detailed monster AI behavior/special abilities beyond
+      the authored profile assignments, and per-monster elemental resistance/immunity beyond the
+      three hero-facing status-immunity lists already authored.
 - [x] Add dungeon resources: terrain and visual asset references, room templates, floor/depth
       tables, traps, plants, special rooms, NPCs, quests, boss phases, and branch transitions.
       **Closed, 2026-09-14**, after the plant/branch corrections just above: every named
@@ -404,8 +433,20 @@ Do not add new authored content as object literals or scattered constants in the
       `ITEM_SLOTS` list a few lines up in that file is hand-copied rather than imported). Verified the
       check actually fires: a deliberately mistyped `kind` value threw
       `MWL monsterLoot row for snake references unknown ground item kind: not_a_kind` and exited
-      non-zero; reverted, and `npm run check` / `npm run build` are clean on the real data. Broader
-      Java-parity value tests (representative generated-vs-Java values) remain open.
+      non-zero; reverted, and `npm run check` / `npm run build` are clean on the real data.
+      **2026-09-14 (2):** added a second missing-reference check the same way:
+      `validateConsumableAliasReferences()` verifies every `consumableClassAliases.item` names a
+      real authored `[item]` id, closing the gap a stale hand-typed duplicate list (fixed the same
+      day - see the Journal scroll-catalogue fix in `PORT_COVERAGE.md`) had already fallen into
+      once for real. Verified the same way: a deliberately wrong `item` value threw and exited
+      non-zero, then reverted.
+      **2026-09-14 (3):** added a third: `validateGroundKindAliasReferences()` checks
+      `itemGroundKindAliases.groundKind` and `specialItemGroundKinds.groundKind` against the same
+      closed `GroundItemKind` set - `src/items/itemKinds.ts`'s `groundKindForItem`/`portItemKind`
+      both do a bare `as GroundItemKind` cast on these two tables' values with no runtime check at
+      all, so a typo'd `groundKind` would compile clean and only surface as a live item rendering/
+      behaving as the wrong ground-item family. Verified the same way.
+      Broader Java-parity value tests (representative generated-vs-Java values) remain open.
 - [x] Adopt MWG 0.7.2 (2026-09-11): bump the `mwg` pin and use typed MWL tables for the first
       authored tables. The enchant/glyph/Unstable catalogues are now `[table]`/`[row]` data in
       `affix-rules.mwl`, read through a single `MWL_TABLE`/`MWL_TABLE_ROWS` accessor in
