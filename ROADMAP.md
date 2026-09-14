@@ -221,8 +221,25 @@ Do not add new authored content as object literals or scattered constants in the
       tables, traps, plants, special rooms, NPCs, quests, boss phases, and branch transitions.
       Sewer trap class order and weights are now authored in `src/content/dungeon-rules.mwl`;
       the standard monster roster is now authored in `src/content/dungeon-rosters.mwl`; terrain,
-      and standard-room weight rows are now authored in `src/content/room-rules.mwl`; plant, quest,
-      and branch resources remain open. Trap tables for all five regions are now authored in
+      and standard-room weight rows are now authored in `src/content/room-rules.mwl`; branch
+      resources remain open. **Correction, 2026-09-14:** this row's own "plant... resources
+      remain open" claim was stale/wrong - re-checked against the current tree (including
+      pending uncommitted work) and against the real Java `plants/` package
+      (`~/dev/shattered-pixel-dungeon`, all 12 concrete `Plant` subclasses plus `BlandfruitBush`).
+      Plant *gameplay* is now extensively ported: `dungeonScene.ts`'s `triggerPortedPlantAt`/
+      `triggerMobPlantAt` implement all 12 real plants' `activate()` effects (Sungrass healing,
+      Earthroot's real `Armor` block pool, Fadeleaf's teleport-and-detach-Roots, Warden-subclass
+      variants for Blindweed/Stormvine/Icecap/Rotberry, Swiftthistle's time-freeze, etc. - see
+      `PORT_COVERAGE.md`'s `Plant.trigger()` row for the full citation), and the 12-class
+      seed-to-plant identity is already authored data, not hardcoded logic:
+      `consumable-aliases.mwl`'s `category: "scroll"` sibling rows (`category: "seed"`) name
+      every real `Plant` class exactly, which is what the runtime kind switch keys off via a
+      plain `.toLowerCase()` - so there is no separate plant *catalog* table left to author, only
+      the switch's per-effect bodies, which are logic, not authored data, and out of this
+      section-0 bullet's scope. Nothing here needs further section-0 work; genuine remaining
+      plant gaps (monster Health/Earthroot-armor pools, Warden-only branches unmodelled for a
+      few plants, exact actor timing, presentation) are gameplay-fidelity items tracked in
+      `PORT_COVERAGE.md`, not authored-resource ones. Trap tables for all five regions are now authored in
       `src/content/dungeon-rules.mwl`. Regional standard/special room counts are also authored in
       `src/content/room-rules.mwl`; region water/grass patch parameters are also authored in
       `src/content/dungeon-rules.mwl`; the standard-room class order is also authored in
