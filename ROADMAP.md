@@ -241,11 +241,17 @@ Do not add new authored content as object literals or scattered constants in the
       row - it hand-duplicated the same ten Java `lootChance()` decay formulas the authored
       `limitedDropDecay` table already covers, with no reader left anywhere in the codebase; its
       Java-citation comments now live on the real `MWL_LIMITED_DROP_DECAY`/`LIMITED_DROP_DECAY`
-      instead of a second, unused copy. Genuinely still open for this bullet: talent formulas
-      (`talents.ts`/`talentEffects.ts` still hold several Java-derived numeric formulas as bare
-      TypeScript rather than authored data), detailed monster AI behavior/special abilities beyond
-      the authored profile assignments, and per-monster elemental resistance/immunity beyond the
-      three hero-facing status-immunity lists already authored.
+      instead of a second, unused copy.
+      **Correction, 2026-09-14 (2):** the "talent formulas... remain open" clause a few words
+      above was itself miscalibrated against this section's own stated design. Section 0's own
+      intro says MWL is for authored *data*, with formulas staying "explicit executable hooks" in
+      TypeScript - the same split every already-closed row here follows (e.g. the equipment stat
+      rules and buff durations above keep their formula evaluators in TS on purpose). Talent
+      formulas being TypeScript is that same correct end-state, not a gap; the real, extensively
+      audited talent-effect work is section 6's, not this one's. Genuinely still open for *this*
+      bullet: detailed monster AI behavior/special abilities beyond the authored profile
+      assignments, and per-monster elemental resistance/immunity beyond the three hero-facing
+      status-immunity lists already authored.
 - [x] Add dungeon resources: terrain and visual asset references, room templates, floor/depth
       tables, traps, plants, special rooms, NPCs, quests, boss phases, and branch transitions.
       **Closed, 2026-09-14**, after the plant/branch corrections just above: every named
