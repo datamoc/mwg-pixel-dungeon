@@ -13714,6 +13714,7 @@ export class DungeonScene extends Scene2D {
 		const tabs = createJournalTabs({
 			items: this.bag.items,
 			questStatus: (id) => this.quests.status(id),
+			questObjective: (id) => this.quests.currentStage(id)?.description,
 			itemDisplayName: (id, identified) => this.itemDisplayName(id, identified),
 		});
 		this.journalWindow = createJournalWindow(tabs, () => this.closeJournal());

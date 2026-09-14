@@ -326,6 +326,15 @@ Do not add new authored content as object literals or scattered constants in the
       done, not open as the bullet's own summary line implied by omission. Genuinely still open:
       title/start flow, level entry/exit, dialogue, objectives, shops, and scripted-encounter
       authoring, plus the death-screen/non-boss victory text this same audit did not touch.
+      **2026-09-14 (2): closed part of "objectives".** `questDefinitions`'s `description` column
+      (real authored data - each of the four simplified quests' one-line objective) turned out to
+      be dead: `Rpg.QuestDefinition.stages[].description` is `mwg`-carried data the framework
+      "never reads itself" (its own doc comment) - display is entirely this port's job, and
+      nothing ever read it. Wired it into the Journal's existing Notes tab, right under each
+      quest's status line, only while a stage naming one is active; translated into all 19
+      locales as `port.journal.quest.<id>.objective` (kept deliberately short - "slay its
+      tormentor", not a re-statement of the NPC's own name, since that's already on the line
+      above). `i18nCheck` confirms all 19 carry all four (453 port strings, up from 449).
 - [x] Move authored asset references to MWL and consume its generated asset manifest; retain
       only renderer registration and runtime loading code in TypeScript. Monster sprite
       references are now authored in `src/content/monsters.mwl`, validated against `src/assets`,
