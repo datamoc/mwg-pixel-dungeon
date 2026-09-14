@@ -1,5 +1,6 @@
 import { Random, Roguelike } from 'mwg';
 import { SpdJavaRandom, spdScramble } from './spdRng';
+import { mwlPaintRule } from './spdLevelGen/mwlDungeonRules';
 
 export const COLOR = {
 	remembered: 0x2a2a30,
@@ -38,21 +39,22 @@ export function regionForDepth(depth: number): Region {
  * SewerLevel (.30/5, .20/4), PrisonLevel (.30/4, .20/3), CavesLevel (.30/6, .15/3),
  * CityLevel (.30/4, .20/3), HallsLevel (.15/6, .10/3). An earlier revision of this table
  * had Caves wrong (.30/4, .20/3, copied from Prison) - corrected against CavesLevel.java.
+ *
+ * **2026-09-14:** these used to be a second, hand-typed copy of the same five region rows the
+ * real level generator already reads from `src/content/dungeon-rules.mwl`'s `regionPaintRules`
+ * table (`mwlDungeonRules.ts`'s `mwlPaintRule`) - the "Normal" feeling column there is exactly
+ * this fallback's fill value, verified identical for all five regions before switching. Reading
+ * through the same authored table instead closes that duplication and the two paths can no
+ * longer drift apart.
  */
-export const REGION_WATER: Record<Region, { fill: number; smoothing: number }> = {
-	sewers: { fill: 0.3, smoothing: 5 },
-	prison: { fill: 0.3, smoothing: 4 },
-	caves: { fill: 0.3, smoothing: 6 },
-	city: { fill: 0.3, smoothing: 4 },
-	halls: { fill: 0.15, smoothing: 6 },
-};
-export const REGION_GRASS: Record<Region, { fill: number; smoothing: number }> = {
-	sewers: { fill: 0.2, smoothing: 4 },
-	prison: { fill: 0.2, smoothing: 3 },
-	caves: { fill: 0.15, smoothing: 3 },
-	city: { fill: 0.2, smoothing: 3 },
-	halls: { fill: 0.1, smoothing: 3 },
-};
+const regionWaterGrass = (kind: 'water' | 'grass') => Object.fromEntries(
+	(['sewers', 'prison', 'caves', 'city', 'halls'] as const).map((region) => {
+		const rule = mwlPaintRule(region)[kind];
+		return [region, { fill: rule.normal, smoothing: rule.smoothness }];
+	}),
+) as Record<Region, { fill: number; smoothing: number }>;
+export const REGION_WATER: Record<Region, { fill: number; smoothing: number }> = regionWaterGrass('water');
+export const REGION_GRASS: Record<Region, { fill: number; smoothing: number }> = regionWaterGrass('grass');
 
 /**
  * `levels/Patch.java`'s cellular-automaton "lake/patch" generator, translated block for

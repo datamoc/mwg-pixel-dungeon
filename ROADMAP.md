@@ -221,8 +221,20 @@ Do not add new authored content as object literals or scattered constants in the
       tables, traps, plants, special rooms, NPCs, quests, boss phases, and branch transitions.
       Sewer trap class order and weights are now authored in `src/content/dungeon-rules.mwl`;
       the standard monster roster is now authored in `src/content/dungeon-rosters.mwl`; terrain,
-      and standard-room weight rows are now authored in `src/content/room-rules.mwl`; branch
-      resources remain open. **Correction, 2026-09-14:** this row's own "plant... resources
+      and standard-room weight rows are now authored in `src/content/room-rules.mwl`.
+      **Correction, 2026-09-14 (branch transitions):** this row's own "branch resources remain
+      open" claim was also largely stale - the region sequence and its boss-floor transitions
+      were already authored (`bossTransitions`/`scenarioChapters` in `scenario-rules.mwl`); the
+      one genuinely unauthored piece was `genericDungeon.ts`'s `REGION_WATER`/`REGION_GRASS`
+      fallback constants (used only for content outside the verified SPD level generator, per
+      their own comment) duplicating the five region rows `dungeon-rules.mwl`'s
+      `regionPaintRules` table already authors for the real generator - fixed by reading both
+      through the same `mwlPaintRule()` reader instead of a second hand-typed copy, verified
+      value-identical for all five regions before switching. `regionForDepth()`'s five depth
+      cutoffs remain a closed, well-cited TypeScript formula (`Dungeon.java`'s depth switch,
+      quoted in its own comment) rather than a table - consistent with this project's existing
+      convention for small closed formulas (e.g. the equipment stat rules a few rows up).
+      **Correction, 2026-09-14 (plants):** this row's own "plant... resources
       remain open" claim was stale/wrong - re-checked against the current tree (including
       pending uncommitted work) and against the real Java `plants/` package
       (`~/dev/shattered-pixel-dungeon`, all 12 concrete `Plant` subclasses plus `BlandfruitBush`).
