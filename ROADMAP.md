@@ -272,6 +272,25 @@ Do not add new authored content as object literals or scattered constants in the
       shops, scripted encounters, victory/death transitions, and save-schema metadata. The five
       fixed boss transitions and victory messages are now authored in
       `src/content/scenario-rules.mwl`; the rest of the scenario flow remains open.
+      **2026-09-14: found and fixed a real live i18n bug while auditing this bullet.** The five
+      `victory` values were raw English sentences authored directly in the table and passed
+      straight to `say()` at the boss-slain call site (`dungeonScene.ts`) - `say()` never
+      translates its argument, unlike every other call site there, which passes a `t('port.…')`
+      key. Every non-English run has therefore always shown these five boss-victory lines in
+      English, the same silent-failure shape as the 33-line and 6-line `t()`-bypass bugs recorded
+      elsewhere in `PORT_COVERAGE.md`. Fixed the same way: the table's `victory` column now holds
+      `port.log.bossvictory.<region>` keys, translated into all 19 offered locales (using the
+      real per-locale boss names already in `spdMessages.ts` - `actors.mobs.{goo,tengu,dwarfking,
+      yogdzewa}.name` - not re-invented ones), and the call site now reads `t(boss.victory)`.
+      `npm run check`'s `i18n:verify` gate (which requires every locale to carry every English
+      `port.*` key or fail the build) confirms all 19 are present: 449 port strings, up from 444.
+      **Also confirmed 2026-09-14: `mwg/core`'s `SaveSystem` (namespace/version pairs, e.g.
+      `{ namespace: 'spd-mwg', version: 3 }`) already covers this bullet's "save-schema metadata"
+      item** - the main run save is at schema version 3 with documented field-level migrations
+      throughout `dungeonScene.ts` (search `migrat` in that file), so this sub-topic was already
+      done, not open as the bullet's own summary line implied by omission. Genuinely still open:
+      title/start flow, level entry/exit, dialogue, objectives, shops, and scripted-encounter
+      authoring, plus the death-screen/non-boss victory text this same audit did not touch.
 - [x] Move authored asset references to MWL and consume its generated asset manifest; retain
       only renderer registration and runtime loading code in TypeScript. Monster sprite
       references are now authored in `src/content/monsters.mwl`, validated against `src/assets`,

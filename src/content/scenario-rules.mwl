@@ -1,133 +1,165 @@
-[game]
-schema=0.1
-
-[table]
-id=bossTransitions
-columns=depth:number|kind:string|next:string|victory:string
-[row]
-depth=5
-kind=goo
-next=continue
-victory=Goo bursts apart in a spray of ooze. You have slain the Sewers boss!
-[/row]
-[row]
-depth=10
-kind=tengu
-next=continue
-victory=Tengu collapses, his tricks spent at last. You have slain the Prison boss!
-[/row]
-[row]
-depth=15
-kind=dm300
-next=continue
-victory=DM-300 grinds to a halt. You have slain the Caves boss!
-[/row]
-[row]
-depth=20
-kind=king
-next=continue
-victory=The Dwarf King crumbles from his throne. You have slain the City boss!
-[/row]
-[row]
-depth=25
-kind=yog
-next=continue
-victory=Yog-Dzewa dissolves into screaming dark. The Amulet lies before you...
-[/row]
-[/table]
-
-[table]
-id=scenarioChapters
-columns=id:string|firstDepth:number|bossDepth:number|bossKind:string
-[row]
-id=sewers
-firstDepth=1
-bossDepth=5
-bossKind=goo
-[/row]
-[row]
-id=prison
-firstDepth=6
-bossDepth=10
-bossKind=tengu
-[/row]
-[row]
-id=caves
-firstDepth=11
-bossDepth=15
-bossKind=dm300
-[/row]
-[row]
-id=city
-firstDepth=16
-bossDepth=20
-bossKind=king
-[/row]
-[row]
-id=halls
-firstDepth=21
-bossDepth=25
-bossKind=yog
-[/row]
-[/table]
-
-[table]
-id=scenarioQuests
-columns=id:string|depths:list|rollBase:number
-list_delimiter=,
-[row]
-id=ghost
-depths=2,3,4
-rollBase=5
-[/row]
-[row]
-id=wandmaker
-depths=7,8,9
-rollBase=10
-[/row]
-[row]
-id=shopkeeper
-depths=6,11,16,21
-rollBase=0
-[/row]
-[row]
-id=blacksmith
-depths=12,13,14
-rollBase=15
-[/row]
-[row]
-id=imp
-depths=17,18,19
-rollBase=20
-[/row]
-[/table]
-
-[table]
-id=questDefinitions
-columns=id:string|conditionSwitch:string|description:string|quest:string
-[row]
-id=quest-sadGhost
-quest=sadGhost
-conditionSwitch=ghostTargetSlain
-description=Slay the ghost's tormentor.
-[/row]
-[row]
-id=quest-wandmaker
-quest=wandmaker
-conditionSwitch=wandQuestDone
-description=Bring the wandmaker a scroll.
-[/row]
-[row]
-id=quest-blacksmith
-quest=blacksmith
-conditionSwitch=blacksmithDone
-description=Complete the Blacksmith quest.
-[/row]
-[row]
-id=quest-imp
-quest=imp
-conditionSwitch=impDone
-description=Bring dwarf tokens.
-[/row]
-[/table]
-[/game]
+[
+  {
+    tag: "game",
+    schema: 0.1,
+    children: [
+      {
+        tag: "table",
+        id: "bossTransitions",
+        columns: "depth:number|kind:string|next:string|victory:string",
+        children: [
+          {
+            tag: "row",
+            depth: 5,
+            kind: "goo",
+            next: "continue",
+            victory: "port.log.bossvictory.sewers",
+          },
+          {
+            tag: "row",
+            depth: 10,
+            kind: "tengu",
+            next: "continue",
+            victory: "port.log.bossvictory.prison",
+          },
+          {
+            tag: "row",
+            depth: 15,
+            kind: "dm300",
+            next: "continue",
+            victory: "port.log.bossvictory.caves",
+          },
+          {
+            tag: "row",
+            depth: 20,
+            kind: "king",
+            next: "continue",
+            victory: "port.log.bossvictory.city",
+          },
+          {
+            tag: "row",
+            depth: 25,
+            kind: "yog",
+            next: "continue",
+            victory: "port.log.bossvictory.halls",
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "scenarioChapters",
+        columns: "id:string|firstDepth:number|bossDepth:number|bossKind:string",
+        children: [
+          {
+            tag: "row",
+            id: "sewers",
+            firstDepth: 1,
+            bossDepth: 5,
+            bossKind: "goo",
+          },
+          {
+            tag: "row",
+            id: "prison",
+            firstDepth: 6,
+            bossDepth: 10,
+            bossKind: "tengu",
+          },
+          {
+            tag: "row",
+            id: "caves",
+            firstDepth: 11,
+            bossDepth: 15,
+            bossKind: "dm300",
+          },
+          {
+            tag: "row",
+            id: "city",
+            firstDepth: 16,
+            bossDepth: 20,
+            bossKind: "king",
+          },
+          {
+            tag: "row",
+            id: "halls",
+            firstDepth: 21,
+            bossDepth: 25,
+            bossKind: "yog",
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "scenarioQuests",
+        columns: "id:string|depths:list|rollBase:number",
+        list_delimiter: ",",
+        children: [
+          {
+            tag: "row",
+            id: "ghost",
+            depths: "2,3,4",
+            rollBase: 5,
+          },
+          {
+            tag: "row",
+            id: "wandmaker",
+            depths: "7,8,9",
+            rollBase: 10,
+          },
+          {
+            tag: "row",
+            id: "shopkeeper",
+            depths: "6,11,16,21",
+            rollBase: 0,
+          },
+          {
+            tag: "row",
+            id: "blacksmith",
+            depths: "12,13,14",
+            rollBase: 15,
+          },
+          {
+            tag: "row",
+            id: "imp",
+            depths: "17,18,19",
+            rollBase: 20,
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "questDefinitions",
+        columns: "id:string|conditionSwitch:string|description:string|quest:string",
+        children: [
+          {
+            tag: "row",
+            id: "quest-sadGhost",
+            quest: "sadGhost",
+            conditionSwitch: "ghostTargetSlain",
+            description: "Slay the ghost's tormentor.",
+          },
+          {
+            tag: "row",
+            id: "quest-wandmaker",
+            quest: "wandmaker",
+            conditionSwitch: "wandQuestDone",
+            description: "Bring the wandmaker a scroll.",
+          },
+          {
+            tag: "row",
+            id: "quest-blacksmith",
+            quest: "blacksmith",
+            conditionSwitch: "blacksmithDone",
+            description: "Complete the Blacksmith quest.",
+          },
+          {
+            tag: "row",
+            id: "quest-imp",
+            quest: "imp",
+            conditionSwitch: "impDone",
+            description: "Bring dwarf tokens.",
+          },
+        ],
+      },
+    ],
+  },
+]

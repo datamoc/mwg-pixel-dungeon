@@ -11868,7 +11868,12 @@ export class DungeonScene extends Scene2D {
 
 		const boss = creature.kind ? BOSSES[this.depth] : undefined;
 		if (boss && boss.kind === creature.kind) {
-			this.say(boss.victory, 'positive');
+			//`boss.victory` used to be raw English text authored directly in `bossTransitions` -
+			//a real i18n gap, since `say()` never translates its argument (unlike every other
+			//call site here, which passes a `t('port.…')` key). It now authors a message key
+			//(`port.log.bossvictory.<region>`) instead, translated the same way every other
+			//port-invented log line is.
+			this.say(t(boss.victory), 'positive');
 			//`GameScene.bossSlain()`: the BOSS_SLAIN banner plus the BOSS sound, gated on the hero
 			//surviving (`Dungeon.hero.isAlive()`). The banner is stage-level so its 5s hold plays
 			//out over the floor the port enters immediately below, the way Java's plays over the
