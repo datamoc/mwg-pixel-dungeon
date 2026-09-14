@@ -117,6 +117,27 @@ function validateHookReferences() {
 }
 
 /**
+ * `monsterLoot`'s `kind` column names a `GroundItemKind` (`src/dungeonConstants.ts`), which
+ * `monsters.ts`'s `MWL_MOB_LOOT` reads with a bare `as GroundItemKind` cast - a typo'd kind would
+ * previously compile clean and only surface as a wrong/missing dropped item at runtime. This list
+ * is a duplicate of `GROUND_ITEM_KINDS` (this script runs standalone via plain `node`, before
+ * `tsc`, so it cannot import the `.ts` source directly - same reason `ITEM_SLOTS` above is
+ * hand-copied rather than imported); keep both lists in sync when a kind is added or removed.
+ */
+const GROUND_ITEM_KINDS = new Set([
+  'dewdrop', 'stone', 'potion', 'scroll', 'meat', 'gold', 'armor', 'wand', 'food', 'seed',
+  'darkGold', 'dwarfToken', 'amulet', 'ring', 'crystalKey', 'ironKey', 'goldenKey', 'bomb',
+  'corpseDust', 'candle', 'embers', 'ankh', 'stylus', 'honeypot', 'alchemize', 'bag', 'sandBag',
+]);
+function validateLootKindReferences() {
+  for (const row of tableRows('monsterLoot')) {
+    if (!GROUND_ITEM_KINDS.has(String(row.kind))) {
+      throw new Error(`MWL monsterLoot row for ${row.monster} references unknown ground item kind: ${row.kind}`);
+    }
+  }
+}
+
+/**
  * The room-rule tables are MWG typed MWL tables now, so their row shape and cell types are
  * validated by the framework at compile time. What remains game-side is the one cross-table
  * invariant MWG cannot see: every row of a chance table must carry exactly one value per class in
@@ -151,6 +172,7 @@ validateRosterReferences();
 validateBossReferences();
 validateActorReferences();
 validateHookReferences();
+validateLootKindReferences();
 validateRoomRuleTables();
 
 const missingAssets = game.assets.filter((asset) => !fs.existsSync(path.join(root, 'src', asset)));
