@@ -806,10 +806,18 @@ Do not add new authored content as object literals or scattered constants in the
       is exact `changeItem` including exotics/wands/trinkets/missiles/equipped gear, still owed
       with the section-1 item-system completion (those items must exist as distinct ported items
       first), not as a standalone scroll pass.**
-- [ ] Port the remaining enchantments and glyphs, and complete their executable behavior. The
-      16 weapon/armor curse definitions (including the corrected `stench` entry) are now
-      authored in `src/content/curse-rules.mwl` and adapted by `itemCurses.ts`; `Friendly`
-      interaction and the remaining enchantment/glyph behavior remain open. `Repulsion`,
+- [x] Port the remaining enchantments and glyphs, and complete their executable behavior. **Closed,
+      2026-09-14**: re-checked every real class against this bullet's own scope (13 weapon
+      enchants, 13 armor glyphs, 8 weapon curses, 8 armor curses = 42 total) rather than trust
+      the "remain open" framing this line had carried since before most of the work below
+      landed. All 42 have real, live proc logic in `dungeonScene.ts` - the opening sentence's own
+      "`Friendly` interaction... remain open" was stale by the time this bullet's later text
+      already said "`Friendly` is now ported" a few lines down; nobody had gone back to fix the
+      summary once the body caught up. Confirmed the eight armor curses specifically
+      (`antientropy`/`bulk`/`corrosion`/`displacement`/`metabolism`/`multiplicity`/`overgrowth`/
+      `stench`) each have a distinct Arcana-scaled proc branch, not just a data-table entry.
+      The 16 weapon/armor curse definitions (including the corrected `stench` entry) are
+      authored in `src/content/curse-rules.mwl` and adapted by `itemCurses.ts`. `Repulsion`,
       `Brimstone` are now ported (`Brimstone` grants Java's Burning immunity at the shared buff
       boundary), and `Viscosity` now defers incoming damage with its Java-scaled delayed drain.
       `Repulsion` is
@@ -1004,14 +1012,26 @@ Do not add new authored content as object literals or scattered constants in the
       nonexistent `StoneOfDisarming`, so all 12 Java runestone classes are reachable from
       ordinary generation.
  - [ ] Implement complete weapon and armor tiers, transfer formulas, upgrade formulas, curse infusion, and degradation. Upgrade transitions now preserve generated weapon/armor tiers through inventory and equip, and scroll upgrades keep the fixed tier while applying Java's plain +1 level (the no-picker auto-target remains a documented UI simplification); the existing affix-loss rolls/Warlock Degrade are Java-shaped. Blacksmith reforge now has persistent favor, progressive costs, same-category two-item selection, level preservation and one-item consumption. Curse infusion now has a carried-item picker and real curse assignment, but dedicated equipped-slot targeting, temporary bonus reversal on cleanse, hardening, and transfer/seal handling remain. See `PORT_COVERAGE.md`'s upgrade/degrade row.
-- [ ] Implement the remaining charm/knockback/stealth/blink/durability-per-hit
-      subsystems the unported enchants, glyphs, and curses depend on (Kinetic's
-      carried-damage buffer, Blooming's plant seeding, Projecting's
-      line-AoE geometry, and the
-      charm/wand-drain/blink/durability mechanics behind
-      Affection/AntiMagic/Camouflage/Obfuscation/Potential
-      and the matching armor curses) - each needs its own system stood up before
-      the enchant/glyph/curse itself can be anything but a stub.
+- [x] **Correction, 2026-09-14: this bullet's entire premise was stale.** It claimed Kinetic,
+      Blooming, Projecting, Affection, AntiMagic, Camouflage, Obfuscation, and Potential were
+      all still unported stubs, each blocked on a subsystem this port had not built. Checked
+      each directly against the current code and, for Projecting, the real Java source
+      (`Projecting.java`, tag `v3.3.8`): every one is implemented. Kinetic has its real
+      kill-overkill damage-storage rule (`round(x arcana x berserk-catalyst)`, 2.5%/turn decay,
+      `ceil` read-back - see the enchant/glyph/curse bullet above). Blooming is ported (real
+      `(lvl+1)/(lvl+3)` chance, level-scaled plant count). **Projecting turned out to have no
+      "line-AoE geometry" to build at all - that half of the claim was invented**: real
+      `Projecting.proc()` is a no-op; the entire enchant is `Weapon.reachFactor()` (extended
+      melee reach) and `MissileWeapon.throwPos` (extended throw distance), both of which
+      `dungeonScene.ts` already implements (`weaponAffix === 'projecting'`, cited to
+      `Weapon.Projecting.reachFactor()`). Affection (mutual Charm), AntiMagic (the RESISTS list
+      and `drRoll`), Camouflage (grass-trample stealth), Obfuscation (stealth contribution,
+      simplified only on the non-sleeping FOV-binary path - a stated reduction, not a stub),
+      and Potential are each live (`armorGlyph === 'potential'`/`'camouflage'`/etc.). Genuinely
+      nothing in this list needed a new subsystem by the time this was checked; the bullet was
+      simply never revisited after each dependency landed elsewhere. See the enchant/glyph/curse
+      bullet above and `PORT_COVERAGE.md` for each mechanic's own citation and any real,
+      narrower remaining simplification.
 - [ ] Replace simplified missile durability and wand recharge behavior with the Java formulas.
       Wand recharge is now Java-shaped (`10 + 40 * 0.875^missing`, with Recharging's bonus)
       and explicit charge refunds are separated from passive recharge; missile durability,
