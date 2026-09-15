@@ -1,9 +1,22 @@
-/** Port of `levels/rooms/special/CrystalPathRoom.java`. The `center()` do-while, the door
- *  clockwise/counterclockwise geometry, and the loot loop (slot 0's Gold quantity is portable and ported; slots 1-2 are Generator-substream
- *  Gold/Potion/Scroll draws are real (the Gold quantity `IntRange`, and a `randomCategory()`
- *  call per potion/scroll slot for deck bookkeeping); slot 3's `Random.Int(4)` pick among
- *  four concrete, non-Generator items IS fully local/portable and ported as-is) are all
- *  faithfully reproduced. */
+/** Claimed as a port of `levels/rooms/special/CrystalPathRoom.java`, but **found 2026-09-15 not
+ *  to match the real method in either `v3.3.8` or `4.0.0-beta`**: the actual Java `paint()` has
+ *  no `center()`/do-while at all - it's a much simpler `entry.x == left/right` branch that
+ *  divides the room into a fixed sequence of `EmptyRoom` quadrants walking outward from
+ *  whichever wall the entrance sits on (see the two tags above; identical in both). Where this
+ *  invented "quadrant walls meeting at a re-rolled center" design came from isn't clear - it
+ *  predates this correction and doesn't correspond to any real SPD version. **This is a live
+ *  bug, not just a fidelity gap**: `room.center()` is only random when a dimension is even
+ *  (`SpdRandom.int(2)`); for a room with BOTH odd width and odd height, `center()` returns the
+ *  exact same point on every call, and if the room's one door happens to sit on the axis that
+ *  matches that fixed point (which `room.ts`'s real `CrystalPathRoom.canConnect(Point)` fix
+ *  actively forces for a door on the wall carrying the point - see room.ts), the `do...while`
+ *  below never terminates. Reproduced live: seed 123456789, depth 12, a `[21,35,27,43]` room
+ *  (7x9, both odd) with its door at `(24,35)` hangs forever, since `center()` is pinned at
+ *  `(24,39)` and `24 === 24` never stops being true. Bounded defensively below (this project's
+ *  established pattern for other technically-unbounded Java loops, e.g. `buildRoomGraph`'s
+ *  200-attempt cap) rather than left to hang the whole game. Replacing this function with a real
+ *  port of the actual Java quadrant-walk algorithm is tracked in `PORT_COVERAGE.md` and not done
+ *  in this pass. */
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, drawLine, set } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
@@ -39,7 +52,14 @@ export function paintCrystalPathRoom(level: PaintLevel, room: Room, depth: numbe
 	const entrance = room.entranceDoor();
 
 	let center: { x: number; y: number };
-	do { center = room.center(); } while (center.x === entrance.x || center.y === entrance.y);
+	let centerRerolls = 0;
+	do {
+		center = room.center();
+		// Defensive cap - see this file's header comment: an odd-width-and-odd-height room whose
+		// door lands on the fixed-center axis can never satisfy this loop, since `center()` then
+		// returns the same point every call. Not a real Java bound (Java has no such cap, but also
+		// has no equivalent loop at all - see the header comment); this only prevents a hang.
+	} while ((center.x === entrance.x || center.y === entrance.y) && ++centerRerolls < 50);
 
 	drawLine(level, { x: center.x, y: room.top + 1 }, { x: center.x, y: room.bottom - 1 }, Terrain.WALL);
 	drawLine(level, { x: room.left + 1, y: center.y }, { x: room.right - 1, y: center.y }, Terrain.WALL);
