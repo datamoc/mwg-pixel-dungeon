@@ -8,7 +8,7 @@ export function verifyHeroTurn(require, check) {
 		const state = { hp };
 		const effects = { isAlive: () => state.hp > 0 };
 		for (const name of ['advanceClock', 'advanceHunger', 'recoverWandCharge',
-			'recoverTomeCharge', 'recoverArmorCharge', 'tickEndureTracker', 'spreadFire', 'applyBuffDamage', 'updatePreparation', 'spendScheduledTurn', 'runAutomaticTurns']) {
+			'recoverTomeCharge', 'recoverArmorCharge', 'tickEndureTracker', 'tickDoubleJumpTracker', 'spreadFire', 'applyBuffDamage', 'updatePreparation', 'spendScheduledTurn', 'runAutomaticTurns']) {
 			effects[name] = () => { calls.push(name); return false; };
 		}
 		return { calls, state, effects };
@@ -22,13 +22,13 @@ export function verifyHeroTurn(require, check) {
 		const f = fixture();
 		assert.equal(finishHeroTurn(f.effects), 'spent');
 		assert.deepEqual(f.calls, ['advanceClock', 'advanceHunger', 'recoverWandCharge',
-			'recoverTomeCharge', 'recoverArmorCharge', 'tickEndureTracker', 'spreadFire', 'applyBuffDamage', 'updatePreparation', 'spendScheduledTurn', 'runAutomaticTurns']);
+			'recoverTomeCharge', 'recoverArmorCharge', 'tickEndureTracker', 'tickDoubleJumpTracker', 'spreadFire', 'applyBuffDamage', 'updatePreparation', 'spendScheduledTurn', 'runAutomaticTurns']);
 	});
 	check('fatal buff damage prevents scheduler spending and automatic actions', () => {
 		const f = fixture();
 		f.effects.applyBuffDamage = () => { f.state.hp = 0; return true; };
 		assert.equal(finishHeroTurn(f.effects), 'buff-death');
-		assert.deepEqual(f.calls, ['advanceClock', 'advanceHunger', 'recoverWandCharge', 'recoverTomeCharge', 'recoverArmorCharge', 'tickEndureTracker', 'spreadFire']);
+		assert.deepEqual(f.calls, ['advanceClock', 'advanceHunger', 'recoverWandCharge', 'recoverTomeCharge', 'recoverArmorCharge', 'tickEndureTracker', 'tickDoubleJumpTracker', 'spreadFire']);
 	});
 	check('starvation death retains legacy continuation and next-turn dead guard', () => {
 		const f = fixture(1);

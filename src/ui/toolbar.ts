@@ -25,12 +25,17 @@ export class SpdToolbar extends Container {
 	private readonly armorAbilityButton: SpdButton;
 	private readonly rowWidth = 174;
 	private zoom = 2;
-	/** Both contextual buttons stack above the toolbar row, each one 21 units tall in its own
-	 *  coordinates - the interface layout has to clear every button that is actually showing, not
-	 *  just one of them. */
+	/** Both contextual buttons stack above the toolbar row - Preparation at `-19`, the armor
+	 *  ability above it at `-40` - so what the interface layout has to clear is the *highest* visible
+	 *  button's own top edge, not one row per button. Counting a row each would reserve 21 units for
+	 *  a button whose box reaches 40 above the row, and the game log is anchored off this number
+	 *  (`positionInterface`), so the newest lines would land underneath the armor button. */
 	get occupiedHeight(): number {
-		const contextual = (this.preparationButton.visible ? 1 : 0) + (this.armorAbilityButton.visible ? 1 : 0);
-		return (this.extras.visible ? 143 : 26) * this.zoom + contextual * 21 * this.zoom;
+		let contextual = 0;
+		for (const button of [this.preparationButton, this.armorAbilityButton]) {
+			if (button.visible) contextual = Math.max(contextual, -button.y);
+		}
+		return (this.extras.visible ? 143 : 26) * this.zoom + contextual * this.zoom;
 	}
 
 	constructor(itemTextures: Texture[], onAction: (action: string) => void, onLayout: () => void) {

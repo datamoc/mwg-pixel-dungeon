@@ -96,6 +96,16 @@ export function armorAbilityIsPorted(id: string): boolean {
 	return PORTED_ARMOR_ABILITIES.has(id);
 }
 
+/**
+ * Whether an id names something this port knows as an armor ability at all - every authored row,
+ * ported or not, plus `ratmogrify`, which the Rat King grants and which deliberately has no row
+ * (see `PORTED_ARMOR_ABILITIES`' note about its unported talent tree). Used to decide whether a
+ * saved ability id survives a load, so it is deliberately wider than `armorAbilityDef`.
+ */
+export function isKnownArmorAbility(id: string): boolean {
+	return id === 'ratmogrify' || DEFINITIONS.has(id);
+}
+
 /** The real `actors.hero.abilities.<class>.<id>` message key base - `.name`/`.short_desc`/`.desc`
  *  hang off it, and `.prompt` for the targeted ones. These are SPD's own strings (translated in
  *  every offered locale), which is why nothing here needs a `port.*` key. */

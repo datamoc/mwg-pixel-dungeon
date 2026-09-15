@@ -1742,7 +1742,7 @@ fully checked off as of a given release.
       own `WEAR` action opens SPD's real choice panel (`WndChooseAbility`'s semantics) and
       `ClassArmor.upgrade()`'s state changes - charge starting at Java's 50, the ability's four
       rank-4 talents registered, and `Hero.talentPointsAvailable(4)`'s exact point curve (nothing
-      below 21 or without an ability, then `min(level, 31) - 21`) - are all live, with the charge
+      below 21 or without an ability, then `min(level - 20, 10)` - are all live, with the charge
       meter regrowing at `ClassArmor.Charger`'s own `100/500` per tick times the Ring of Energy
       multiplier. **The Warrior's three abilities are ported and browser-verified end to end**
       (`HeroicLeap`'s leap/body-slam/impact-wave/double-jump, `Shockwave`'s cone with the real

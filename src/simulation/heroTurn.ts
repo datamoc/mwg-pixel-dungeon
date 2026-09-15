@@ -10,6 +10,8 @@ export interface HeroTurnEffects {
 	recoverArmorCharge(): void;
 	/** `Hero.act()`'s `endEnduring()` for the Endure armor ability, once per spent turn. */
 	tickEndureTracker(): void;
+	/** `HeroicLeap.DoubleJumpTracker`'s own countdown, once per spent turn. */
+	tickDoubleJumpTracker(): void;
 	spreadFire(): void;
 	/** Tick buffs and apply damage; return true when that damage kills the hero. */
 	applyBuffDamage(): boolean;
@@ -37,6 +39,7 @@ export function finishHeroTurn(effects: HeroTurnEffects): HeroTurnResult {
 	effects.recoverTomeCharge();
 	effects.recoverArmorCharge();
 	effects.tickEndureTracker();
+	effects.tickDoubleJumpTracker();
 	effects.spreadFire();
 	if (effects.applyBuffDamage()) return 'buff-death';
 	effects.updatePreparation();
