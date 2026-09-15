@@ -102,6 +102,7 @@ export interface SavedCreature {
 	weaponLevel?: number;
 	stolen?: string | null;
 	mimicLoot?: string;
+	armbandStolen?: boolean;
 	generation?: number;
 	spawnCooldown?: number;
 	seesHero?: boolean;
@@ -114,7 +115,7 @@ export interface SavedCreature {
 	firstSummon?: boolean;
 	nextTurn: number | null;
 	isAlly?: boolean;
-	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus';
+	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost';
 	sheepTurns?: number;
 	wardTier?: number;
 	wardWandLevel?: number;

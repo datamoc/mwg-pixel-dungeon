@@ -41,6 +41,13 @@
         tag: "trait",
         id: "artifactGeneratorDeck",
         name: "Generator.Category.ARTIFACT",
+        //`Generator.java`'s `ARTIFACT.classes`/`defaultProbs` at tag v2.1.4 - the version this
+        //project's generator decks are cited against (see the surrounding decks' comments) - is
+        //exactly these eleven classes with `CloakOfShadows` at the zero weight. v3.3.8 and
+        //4.0.0-beta list a different thirteen (HolyTome and SkeletonKey in place of nothing here,
+        //both absent from v2.1.4), so this table is not the place to add an artifact the port
+        //models but v2.1.4 does not deal: `CapeOfThorns` and `LloydsBeacon` are both items this
+        //port implements, and neither is in this deck in any version.
         children: [
           {
             tag: "effect",

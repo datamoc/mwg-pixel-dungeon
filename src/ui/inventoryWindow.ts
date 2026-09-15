@@ -7,6 +7,14 @@ import { spdPanel } from './spdPanel';
 import { t } from '../i18n';
 import { runState } from '../runState';
 import { titleIcon } from './titleIcons';
+import { getAllArtifactIds } from '../items/artifacts';
+
+/** Same derived id set `inventoryPanel.ts`'s `ARTIFACT_SLOT_IDS` uses, lower-cased to match
+ * this file's own already-lower-cased `category()` comparison - see that constant's doc
+ * comment for the bug this replaces (the "equipment" tab used to recognize only
+ * `cloak`/`hourglass`/`holytome` by hand, so a carried Chalice/Cape/Toolkit/Beacon never
+ * appeared under the Gear tab, only under Quest). */
+const ARTIFACT_CATEGORY_IDS = new Set(getAllArtifactIds().map((id) => id.toLowerCase()));
 
 export interface InventoryEntry {
 	id: string;
@@ -81,8 +89,12 @@ export class InventoryWindow extends Container2D {
 	private createList(): TabbedList<InventoryEntry> {
 		const category = (item: InventoryEntry): InventoryFilter => {
 			const id = item.id.toLowerCase();
+			//`holytome` is already correctly lower-cased here (the Cleric's equip-slot item is
+			//stored as `holyTome`, and `id` above is already `.toLowerCase()`'d) - the casing looked
+			//inconsistent against `inventoryPanel.ts`'s exact-case `'holyTome'` check, but each file
+			//compares against its own already-established case convention, so neither was a bug.
 			const equipment = id.startsWith('weapon') || id.startsWith('armor') || id.startsWith('ring_')
-				|| id === 'wand' || id === 'cloak' || id === 'hourglass' || id === 'holytome';
+				|| id === 'wand' || ARTIFACT_CATEGORY_IDS.has(id) || id === 'holytome';
 			const consumable = id.startsWith('potion') || id.startsWith('scroll') || id.startsWith('stoneof')
 				|| id.startsWith('seed') || ['food', 'meat', 'chargrilledmeat', 'bomb', 'doublebomb'].includes(id);
 			return equipment ? 'equipment' : consumable ? 'consumables' : 'quest';

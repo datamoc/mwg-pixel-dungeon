@@ -141,7 +141,7 @@ this script.
 ## `mwg` dependency
 
 `mwg` is the real published npm package `@datamoc/mw_games`, aliased to the `mwg` import
-specifier in `package.json` (`"mwg": "npm:@datamoc/mw_games@^0.9.0"`) since every source
+specifier in `package.json` (`"mwg": "npm:@datamoc/mw_games@^0.14.0"`) since every source
 file imports it as `from 'mwg'`. This project consumes it like any other npm dependency now
 — no local checkout, no `file:` link, no per-session drift check. Bump the version pin
 deliberately (and re-run the full verification suite in this `AGENTS.md`) when picking up a

@@ -54,13 +54,22 @@ export class SpdAudio {
 		this.playMusicTracks(['theme_2.ogg', 'theme_1.ogg'], 1);
 	}
 
-	cue(name: string, volume = 0.7): void {
+	/**
+	 * `pitch` is Java's per-playback `Sample.play(id, volume, pitch)` rate, passed through to
+	 * `mwg`'s `Sound.play(gain, pitch)` (its `pitch` parameter landed in MWG 0.12.0 and maps to
+	 * `HTMLAudioElement.playbackRate`). Java varies it per call site rather than per clip, so each
+	 * caller passes its own Java site's value; `1` is Java's own default for the plain
+	 * `play(id)`/`play(id, volume)` overloads. Java's sibling `play(id, leftVolume, rightVolume,
+	 * pitch)` stereo form stays unported - `mwg` documents that a plain `<audio>` element has no
+	 * pan to set, the same call `Positional.audioPan` made.
+	 */
+	cue(name: string, volume = 0.7, pitch = 1): void {
 		let sound = this.cues.get(name);
 		if (!sound) {
 			sound = new Audio.Sound(asset('sounds', `${name}.mp3`), { poolSize: name === 'step' ? 6 : 4, volume });
 			this.cues.set(name, sound);
 		}
-		sound.play();
+		sound.play(1, pitch);
 	}
 
 	update(dt: number): void {

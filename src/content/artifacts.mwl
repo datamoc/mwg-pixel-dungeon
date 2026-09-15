@@ -55,6 +55,123 @@
           },
         ],
       },
+      {
+        tag: "item",
+        id: "artifact_toolkit",
+        name: "items.artifacts.alchemiststoolkit.name",
+        slot: "artifact",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "description",
+            set: "items.artifacts.alchemiststoolkit.desc",
+          },
+        ],
+      },
+      {
+        tag: "item",
+        id: "artifact_rose",
+        name: "items.artifacts.driedrose.name",
+        slot: "artifact",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "description",
+            set: "items.artifacts.driedrose.desc",
+          },
+        ],
+      },
+      {
+        tag: "item",
+        id: "artifact_chains",
+        name: "items.artifacts.etherealchains.name",
+        slot: "artifact",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "description",
+            set: "items.artifacts.etherealchains.desc",
+          },
+        ],
+      },
+      {
+        tag: "item",
+        id: "artifact_horn",
+        name: "items.artifacts.hornofplenty.name",
+        slot: "artifact",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "description",
+            set: "items.artifacts.hornofplenty.desc",
+          },
+        ],
+      },
+      {
+        tag: "item",
+        id: "artifact_beacon",
+        name: "items.artifacts.lloydsbeacon.name",
+        slot: "artifact",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "description",
+            set: "items.artifacts.lloydsbeacon.desc",
+          },
+        ],
+      },
+      {
+        tag: "item",
+        id: "artifact_armband",
+        name: "items.artifacts.masterthievesarmband.name",
+        slot: "artifact",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "description",
+            set: "items.artifacts.masterthievesarmband.desc",
+          },
+        ],
+      },
+      {
+        tag: "item",
+        id: "artifact_sandals",
+        name: "items.artifacts.sandalsofnature.name",
+        slot: "artifact",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "description",
+            set: "items.artifacts.sandalsofnature.desc",
+          },
+        ],
+      },
+      {
+        tag: "item",
+        id: "artifact_talisman",
+        name: "items.artifacts.talismanofforesight.name",
+        slot: "artifact",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "description",
+            set: "items.artifacts.talismanofforesight.desc",
+          },
+        ],
+      },
+      {
+        tag: "item",
+        id: "artifact_spellbook",
+        name: "items.artifacts.unstablespellbook.name",
+        slot: "artifact",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "description",
+            set: "items.artifacts.unstablespellbook.desc",
+          },
+        ],
+      },
     ],
   },
 ]

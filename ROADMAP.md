@@ -13,7 +13,8 @@ directly, so opening the file via `file://` won't work (see this project's own
 browser-verification workflow for why).
 
 See `CLOSED.md` for fully checked-off sections moved out of this file (currently: release
-baseline tracking, browser-verification debt).
+baseline tracking, browser-verification debt, MWL game data, dungeon generation, GitHub Pages
+publishing).
 
 ## This port's own release plan (news)
 
@@ -138,7 +139,12 @@ fully checked off as of a given release.
       are now reachable, including their seed/runestone energy-cost split and weighted regular
       potion/scroll result pools; exotic-family behavior remains open.
       **2026-09-14:** the existing `WildEnergy` alchemy result is now usable, refunding one
-      wand charge and applying Java's 8-turn Recharging effect; artifact recharge remains open.
+      wand charge and applying Java's 8-turn Recharging effect - and **its artifact-recharge half is
+      ported too (2026-09-15)**: `ArtifactRecharge.chargeArtifacts` advances every carried artifact
+      through its own `charge()` override (four turns up front, then eight ticks of one each), with
+      the per-artifact rates and guard sets Java's overrides actually have - including the Toolkit
+      banking while cursed and the Cape having no guard at all. That work also closed the "`Artifact.
+      charge()` has no caller here" notes five artifact rows had been carrying.
       **2026-09-14: Cape of Thorns is now a real, reachable artifact (`cape`), the fourth of
       the real 13-class roster** (after Cloak of Shadows, Timekeeper's Hourglass, Chalice of
       Blood) - charges from damage taken while inactive, triggers a temporary deflection
@@ -153,6 +159,194 @@ fully checked off as of a given release.
       `PORT_COVERAGE.md`'s `CapeOfThorns` row). Nine of the real 13 artifacts remain
       unimplemented: AlchemistsToolkit, DriedRose, EtherealChains, HornOfPlenty, LloydsBeacon,
       MasterThievesArmband, SandalsOfNature, TalismanOfForesight, UnstableSpellbook.
+      **2026-09-15: AlchemistsToolkit is now a real, reachable artifact (`toolkit`), the fifth
+      of the real 13-class roster** (after Cloak of Shadows, Timekeeper's Hourglass, Chalice of
+      Blood, Cape of Thorns) - closing the placeholder that used to stand in for it inside the
+      nine-artifact §1 bundle (a flat 3-energy refund, citing "no hero-XP hook reaches item
+      actions"). That hook now exists: `grantExperience` (the sole place hero XP is granted)
+      feeds the toolkit's own `kitEnergy.gainCharge()` curve on every kill, `percent =
+      exp/maxExp()` scaled by `(2+level)` and the real `RingOfEnergy` energy-ring multiplier;
+      the banked charge is then spent first on any alchemy-pot recipe cost before the carried
+      energy pool, exactly as `AlchemyScene`'s own combine-cost logic does. `AC_BREW` now opens
+      the alchemy pot from anywhere while carried - real Java's action has no adjacency
+      requirement, unlike walking onto the pot tile itself - and `AC_ENERGIZE` (spend 6 energy
+      per level to permanently raise the toolkit, capped at level 10) is exposed as an extra
+      row inside that same picker. Not ported: the equip/unequip-tied warm-up window (this port
+      has no artifact equip slot at all - every carried artifact is always active) and the
+      generic `Artifact.charge()` override; the "energize one level at a time" alternative to
+      spending the maximum affordable is Simplified away for lack of an options-window seam.
+      See `PORT_COVERAGE.md`'s `AlchemistsToolkit` row. Eight of the real 13 artifacts remain
+      unimplemented: DriedRose, EtherealChains, HornOfPlenty, LloydsBeacon,
+      MasterThievesArmband, SandalsOfNature, TalismanOfForesight, UnstableSpellbook.
+      **2026-09-15: LloydsBeacon is now a real, reachable artifact (`beacon`), the sixth of the
+      real 13-class roster** (after Cloak of Shadows, Timekeeper's Hourglass, Chalice of Blood,
+      Cape of Thorns, AlchemistsToolkit) - closing the placeholder that used to stand in for it
+      inside the (now seven-member) §1 bundle. Tapping a carried beacon opens the same generic
+      item-picker seam `openAlchemyRecipes` already uses, with real per-action rows -
+      `AC_ZAP`/`AC_SET`/`AC_RETURN` - gated exactly as Java's own `actions()` gates them (`AC_ZAP`
+      only once charge covers the real 1-or-2-past-depth-20 cost, `AC_RETURN` only once a return
+      point exists). `AC_SET`/`AC_RETURN` reuse the exact floor-transition path
+      `useBeaconOfReturning` (the `BeaconOfReturning` wand effect) already established, but the
+      artifact itself is never consumed - persistent charge and a real per-turn passive recharge
+      (`beaconRecharge.act()`'s own formula) live on the item instead. `AC_ZAP` is aimed through
+      the scene's MWG `TargetingController` seam (`beginAiming`/`confirmAiming`, the same one six
+      runestones and the disintegration wand already use); targeting self or a creature reuses
+      the existing `randomFreeCell`/`moveTo` teleport pair, honoring `IMMOVABLE_KINDS` and boss
+      floors the way Java's own zapper callback does. Simplified: Java's `Ballistica` line-of-
+      sight collision along the aimed path (this port resolves on the exact chosen cell, since
+      `beginAiming` only ever offers clear-LOS cells anyway) and the fixed aim range (Java's zap
+      has no numeric cap at all; this port borrows the same range other aimed utility items use).
+      Not ported: the boss-arena `LockedFloor` lock (this port has no such state anywhere),
+      mob-displacement onto an occupied return cell (refused with the same line the adjacency
+      gate uses), and the options-window presentation itself. See `PORT_COVERAGE.md`'s
+      `LloydsBeacon` row. **Separately fixed this same pass**: the bag UI's dedicated artifact
+      equip-slot icon (`inventoryPanel.ts`) and its "equipment" tab filter (`inventoryWindow.ts`)
+      each hand-listed only `cloak`/`hourglass`/`holyTome` by id, so Chalice/Cape/Toolkit (and now
+      Beacon) rendered in the carried list but never took the dedicated slot or counted as
+      equipment - a real, independently-valuable bug fix, not part of the Beacon feature itself.
+      Both now derive their id set from `getAllArtifactIds()` instead of a third hand-maintained
+      duplicate list.
+      **2026-09-15:** `MasterThievesArmband` is now the seventh real artifact implemented.
+      `AC_STEAL` targets an adjacent hostile through the scene's `beginAiming`/`confirmAiming`
+      seam (`range: 1`, matching Java's `Dungeon.level.adjacent()` check), gated on charge/cursed
+      exactly as `MasterThievesArmband.actions()` requires. A successful target rolls the mob's
+      own loot chance (reusing `kill()`'s Warlock/Scorpio/Succubus special cases and
+      `MOB_LOOT`/`LIMITED_DROP_DECAY` otherwise) scaled by `1 + 0.1*level`, boosted on a surprise
+      hit, and forced to zero once already stolen from (a persisted `armbandStolen` marker
+      standing in for Java's `StolenTracker`) or once the hero outlevels the target by more than
+      2; every attempt applies `daze`+`cripple` for `3 + level/2` turns and grants the artifact
+      its own exp/level curve. Not ported: the attack-animation callback structure (Java resolves
+      the roll from inside the swing animation's completion callback; this port resolves it
+      immediately, matching every other artifact action here). Browser-verified live: charge
+      decremented on use, the target was correctly marked stolen, and both debuffs applied for
+      the right duration. See `PORT_COVERAGE.md`'s `MasterThievesArmband` row.
+      **2026-09-15: HornOfPlenty is now a real, reachable artifact (`horn`), the eighth of the
+      real 13-class roster** (after Cloak of Shadows, Timekeeper's Hourglass, Chalice of Blood,
+      Cape of Thorns, AlchemistsToolkit, LloydsBeacon, MasterThievesArmband) - closing the
+      placeholder that used to stand in for it inside the artifact bundle above (a fabricated
+      "feed one unit, eat one unit" counter whose `feedHornFromBag`/`eatHornCharge` hooks were
+      never actually wired to anything in the scene). Tapping a carried horn opens the same
+      generic item-picker seam `useBeaconArtifact`/`useArmband` already established, with real
+      per-action rows - `AC_EAT`/`AC_SNACK` (available even while cursed, unlike every other
+      artifact action here, matching Java's own asymmetric gate) and `AC_STORE` (blocked while
+      cursed or once the horn hits its level cap). `AC_EAT` spends as many charges as it takes
+      to fill hunger, `AC_SNACK` always spends exactly one, both through the same hunger-
+      restoration seam ordinary food already uses; `AC_STORE` opens a second picker over the
+      carried food stack and banks each food's stored hunger value (plus a bonus for Pasty and
+      MeatPie) toward the horn's own level, exactly as `gainFoodValue()` does. A real passive
+      recharge feeds the horn from every hero XP grant, the same `Hero.earnExp()` hook
+      Toolkit/Armband already use. Not ported: the class meal talents real Java's `doEatEffect()`
+      also triggers on every horn-eat (this port's own food-eating path applies those inline
+      rather than through a shared, reusable hook); the missing Light Cloak charge-multiplier
+      bonus, matching the identical gap already documented for Toolkit/Armband; and the
+      uncooked-Blandfruit store rejection (Not applicable - this port's `blandfruit` item is not
+      itself wired as an eatable/storable food at all). Browser-verified live: the picker's
+      gating was exercised in both directions (charge 0 offers only Store; a cursed horn offers
+      Eat/Snack but never Store), storing a Ration banked exactly one level, granting XP filled
+      the level-1 charge cap exactly, and Eat/Snack each consumed the exact charge count and
+      hunger amount Java's own formula predicts. See `PORT_COVERAGE.md`'s `HornOfPlenty` row.
+      Five of the real 13 artifacts remain unimplemented: DriedRose, EtherealChains,
+      SandalsOfNature, TalismanOfForesight, UnstableSpellbook.
+      **2026-09-15: EtherealChains is now a real, reachable artifact (`chains`), the ninth of
+      the real 13-class roster** (after Cloak of Shadows, Timekeeper's Hourglass, Chalice of
+      Blood, Cape of Thorns, AlchemistsToolkit, LloydsBeacon, MasterThievesArmband,
+      HornOfPlenty) - the last of the artifact bundle above to graduate, replacing a "pull the
+      nearest visible enemy" stand-in with no cell picker at all. `AC_CAST` now opens through
+      the scene's `beginAiming`/`confirmAiming` seam with sight disabled (chains "extend
+      through walls", matching Java's own sight-free cell picker) and a validate hook requiring
+      the aimed cell be explored or visible - this port's `FieldOfView` state standing in for
+      Java's `visited[]`/`mapped[]` arrays, since real Java's picker has no numeric range at all
+      (this port borrows the level's own diagonal span instead). A reachability pre-check
+      (`PathFinder`-style distance map from the target) refuses an unreachable cell exactly as
+      Java's own check does, skipped on a mining-branch floor; a straight line to the target
+      then decides the branch, matching `Ballistica(pos, target, STOP_TARGET)`'s "phases through
+      everything, stops only at the aimed cell" behavior. A creature on that cell gets pulled to
+      the earliest open cell on the path back toward the hero (refusing an immovable kind
+      outright); an empty cell instead pulls the hero there, refusing while rooted, into a solid
+      cell, or with no solid neighbour to grab onto - both cases at a Chebyshev-distance charge
+      cost. A real passive per-turn recharge (below a *soft* level-scaled cap, unlike the other
+      three artifacts' hard caps) and a cursed 1%-per-turn Cripple both run in the scene's shared
+      per-turn buff block, the same shape LloydsBeacon's own passive regen already uses there;
+      combat XP both banks charge (slowed once past the soft cap) and drives the artifact's own
+      leveling, in the one hook real Java's `gainExp` also does both jobs in. Simplified: no
+      `LARGE` creature kind exists in this port, so that clause of the destination search is
+      vacuous (the same simplification `summonSkeleton`'s own push-aside search already states);
+      this port's single `passable` check stands in for Java's `passable || avoid` test, since it
+      has no separate `avoid` array. Not ported: `Talent.onArtifactUsed`/`artifactProc` (no
+      talent hook reaches any artifact action here, an existing gap) and the chains/pushing pull
+      animation (an instant relocation, matching the same convention LloydsBeacon's own zap
+      teleport already established). Browser-verified live: a rat three cells away on a clear
+      line was pulled to the cell adjacent to the hero at the exact predicted charge cost: an
+      empty, reachable cell with a solid neighbour and no creature on the line pulled the hero
+      there instead, again at the exact predicted cost; and a zero-charge cast correctly opened
+      no aiming session at all. See `PORT_COVERAGE.md`'s `EtherealChains` row.
+      **2026-09-15: SandalsOfNature is now a real, reachable artifact (`sandals`), the tenth of
+      the real 13-class roster** (after Cloak of Shadows, Timekeeper's Hourglass, Chalice of
+      Blood, Cape of Thorns, AlchemistsToolkit, LloydsBeacon, MasterThievesArmband, HornOfPlenty,
+      EtherealChains) - replacing a stand-in whose entire body printed the item's own name.
+      Its rules live in a new scene-free `src/items/sandals.ts` (charge economy, the 12-seed
+      `seedChargeReqs` table, the feed/level thresholds, the root gate); the two actions live in
+      the scene because both need its picker and aiming seams. `AC_FEED` runs Java's `WndBag`
+      filter over the carried seeds and levels the footwear at `3 + level()*3` banked seeds;
+      `AC_ROOT` plants the attuned seed on a visible cell within 3 tiles, activating it on that
+      cell's occupant through the port's existing two plant-activation halves, spending the
+      seed's own charge requirement and a turn; and the item renames itself through SPD's real
+      `name_1`/`name_2`/`name_3` ladder (sandales -> chaussures -> bottes -> grèves). **The same
+      pass had to port `HighGrass.trample`'s naturalism-scaled loot rolls** - `Naturalism.charge()`
+      fires from the trample path, and the seed/dew chances are `1/(25-4*level)` / `1/(6-level/2)`,
+      suppressed outright while the footwear is cursed, so the artifact could not be real without
+      them; the same pass also corrected the Nature's Bounty berry roll to Java's own stream
+      position, before the two loot rolls rather than after. Not ported: `artifactProc`'s talent
+      effects (the method reads neither of its numeric arguments at `v3.3.8` - it runs the Priest's
+      GuidingLight detonation, the Cleric's SearingLight and the Huntress's Sunray roll, none of which
+      this port has), an empty-cell root's immediate cell effect, and the root/feed presentation (seed
+      colours, item glow, sounds). See `PORT_COVERAGE.md`'s `SandalsOfNature` row; browser-verified
+      live at 18/18 (`tools/scratch/sandals-livecheck.mjs`), with the picker's two rows
+      screenshotted in French under the item's own level name.
+      **Correction, same pass: the two remaining names in this list were wrong.** `UnstableSpellbook`
+      was never unimplemented - it has a full real implementation in `artifactActions.ts` (charge
+      clock, per-instance scroll queue, `AC_READ`'s weighted draw with its halved-frequency
+      retries, `AC_ADD`'s queue mutation and level-up) and had simply never been given its own
+      `PORT_COVERAGE.md` row, so it read as part of the stand-in bundle; it has one now. And
+      DriedRose/TalismanOfForesight are worse than "unimplemented": both `useRose` and `useTalisman`
+      are **dead branches**, because the scene provides neither of the optional
+      `ArtifactActionContext` hooks they need (`spawnAlly`, `revealNearbyTraps` - neither name
+      appears anywhere else in `src/`), so each prints one log line and does nothing.
+      **2026-09-15: TalismanOfForesight is now a real, reachable artifact (`talisman`), the eleventh
+      of the 13-class roster** - closing the second of those two dead branches. `AC_SCRY` aims
+      anywhere (no line-of-sight requirement) and applies Java's own `maxDist()` truncation along the
+      aim's line inside the confirm handler, then sweeps its `round(200 * 0.92^dist)` cone: mapping
+      unseen ground, uncovering concealed secrets (a disguised door is worth 100 experience, a trap
+      10), marking unseen creatures and heaps as *aware* for `5 + 2*level()` turns so they keep
+      rendering through fog, and awarding the experience that levels it at `100 + 50*level()`. The
+      cost is `3 + dist*1.08` spent on Java's int charge with its two borrow branches; the passive
+      trickles charge each turn and latches one `uneasy` warning when a hidden trap sits in the
+      hero's own sight. Not ported: the external `Artifact.charge(Hero, amount)` boost, the
+      `discoverable[]` gate on mapping (this port's fog has none), `Regeneration.regenOn()` (no
+      `LockedFloor` lock exists here - the same simplification Beacon/Chains already state), and the
+      scan/secret/full-charge samples. The awareness marks are live state rather than Java's
+      hero-attached buffs, so unlike Java's they do not survive a save/load - this port's creatures
+      have no per-creature id to key a saved buff on. See `PORT_COVERAGE.md`'s `TalismanOfForesight`
+      row; browser-verified live at 13/13 (`tools/scratch/talisman-livecheck.mjs`), with the real
+      French `noticed_smth`/`uneasy` lines and a live aim screenshotted.
+      **2026-09-15: DriedRose is now a real, reachable artifact (`rose`), the twelfth and last of
+      the roster** - closing the third and final dead branch. `AC_SUMMON` runs Java's whole ladder
+      (Sad Ghost quest complete, no live ghost, a *full* charge, no curse, no `MagicImmune`) and
+      raises a real allied creature in a free neighbour cell with `GhostHero`'s stats (`20 +
+      8*level()` HP, `hero.lvl + 9` accuracy, `hero.lvl + 4` evasion, `NormalIntRange(0, 5)` damage),
+      emptying the rose, dispelling invisibility, spending a turn. `AC_DIRECT` applies
+      `DirectableAlly.directTocell()` branch for branch - defend a cell, follow the hero, or attack a
+      named enemy - and the passive either heals a live ghost (`HT/500` a turn) or charges the rose
+      (`1/5` a turn, 500 turns), never both. Its `Petal` drops are ported end to end, including
+      Java's own `Random.Long()` substream so a rose can never shift a floor's generation. Not
+      ported: `AC_OUTFIT` and the ghost's whole equipment model (this port has no ally equipment),
+      Java's `UNDEAD`/`INORGANIC` on the ghost (its kind-keyed property sets are shared with the
+      quest NPC), the cursed `Wraith` spawn (no wraith kind here), and the artifact's three-level art
+      ladder. See `PORT_COVERAGE.md`'s `DriedRose` row; browser-verified live at 16/16
+      (`tools/scratch/rose-livecheck.mjs`), with the ghost fighting beside the hero screenshotted.
+      **All thirteen real artifact classes are therefore implemented** - the §1 artifact bucket below
+      has nothing left of its own, and what remains in it is the non-artifact work (weapons, wands,
+      rings, bombs, alchemy, crafting, shop pricing).
       **2026-09-14:** `TelekineticGrab` is now usable through the shared cell-targeting picker;
       it remotely collects the port's ordinary GroundItem payload, while stacked heaps and the
       Java beacon/pickup-delay presentation remain simplified.
@@ -160,7 +354,7 @@ fully checked off as of a given release.
       creature and applying its non-boss paralysis effect; Mob state reset and beckoning remain
       open because the port has no equivalent state machine.
       **2026-09-14:** `SummonElemental` now summons an allied newborn elemental in an adjacent
-      free cell; Java's imbue picker and mature elemental variants remain open.
+      free cell; **Both of those are now ported (2026-09-15)**: the spell offers Java's `AC_IMBUE` alongside the cast (an identified Liquid Flame/Frost/Recharging/Transmutation item is consumed to set the element, persisted on the item), an imbued cast raises a *mature* elemental of that element, and the cast now runs Java's whole `onCast()` - a random free neighbour rather than the first one, a **recall** of an existing summoned elemental instead of a second one, and the newborn's real `AllyNewBornElemental` shape (never fires, not a miniboss), which this port had been getting wrong. See `PORT_COVERAGE.md`'s `SummonElemental` row.
       **2026-09-14:** `ReclaimTrap` now stores and redeploys visible traps, refunds a wand
       charge on reclamation, and persists one-shot trap state; arbitrary reflected trap classes
       remain outside the port's closed trap union.
@@ -200,8 +394,12 @@ fully checked off as of a given release.
       Java's own `MissileWeapon` exclusion for free) needed no new system either. Wealth's
       flat `1.20^level` drop-chance multiplier (`ringWealthMultiplier`, applied to `MOB_LOOT`'s
       roll in `kill`) needed no new system at all, the "blocked" claim was stale; its separate
-      bonus-item generation (`tryForBonusDrop`'s escalating rare-loot tracker) remains unported, a
-      real narrower gap now rather than a total block. Arcana's real scope turned out much
+      bonus-item generation (`tryForBonusDrop`'s escalating rare-loot tracker) is **now ported too
+      (2026-09-15)** - the counters were Java's already, but the payout catalogue was a stand-in
+      (a depth-derived `armorReward`, or a flat potion/scroll/stone/gold pick); it now runs Java's
+      real three-tier consumable table and its four-slot equipment generator, with the tier
+      thresholds, the `(level+1)/2` minimum upgrade level, the `equipBonus` cap and the uncursed
+      handover all exact. See `PORT_COVERAGE.md`'s `tryForBonusDrop` row. Arcana's real scope turned out much
       smaller than first guessed: it's a `1.175^level` proc-*chance* multiplier real Java only
       folds into whichever enchant's own `proc()` explicitly calls `procChanceMultiplier()` -
       **corrected this pass: the old text here claimed curses never call it "by design" - wrong
@@ -506,7 +704,41 @@ fully checked off as of a given release.
       The generator table now also uses the real `StoneOfDetectMagic` class instead of the
       nonexistent `StoneOfDisarming`, so all 12 Java runestone classes are reachable from
       ordinary generation.
- - [ ] Implement complete weapon and armor tiers, transfer formulas, upgrade formulas, curse infusion, and degradation. Upgrade transitions now preserve generated weapon/armor tiers through inventory and equip, and scroll upgrades keep the fixed tier while applying Java's plain +1 level (the no-picker auto-target remains a documented UI simplification); the existing affix-loss rolls/Warlock Degrade are Java-shaped. Blacksmith reforge now has persistent favor, progressive costs, same-category two-item selection, level preservation and one-item consumption. Curse infusion now has a carried-item picker and real curse assignment, but dedicated equipped-slot targeting, temporary bonus reversal on cleanse, hardening, and transfer/seal handling remain. See `PORT_COVERAGE.md`'s upgrade/degrade row.
+ - [x] Implement complete weapon and armor tiers, transfer formulas, upgrade formulas, curse infusion, and degradation. Upgrade transitions now preserve generated weapon/armor tiers through inventory and equip, and scroll upgrades keep the fixed tier while applying Java's plain +1 level (the no-picker auto-target remains a documented UI simplification); the existing affix-loss rolls/Warlock Degrade are Java-shaped. Blacksmith reforge now has persistent favor, progressive costs, same-category two-item selection, level preservation and one-item consumption. Curse infusion now has a carried-item picker and real curse assignment. **Curse-infusion bonus and hardening closed 2026-09-15** (see `PORT_COVERAGE.md`'s row for the evidence): the bonus is now Java's *virtual* `1 + level/6` in `level()` rather than a baked +1 level, so it grows with the item and a cleanse no longer corrupts the real level (browser-verified: 0→1, 3→4, 6→8, 12→15, damage tracking it, and a cleanse leaving the stored level untouched); every affix write goes through `Weapon.enchant()`/`Armor.inscribe()`'s clearing rule, so an upgrade that strips the affix, an Enchantment stone, a transmutation and a cleanse all drop the marker identically; the marker travels with its item through equip/unequip, which it previously did not; and the hardening branch was re-read against `v3.3.8` (the only source that has `enchantHardened`/`glyphHardened` - v2.1.4 predates the Blacksmith's harden service, so a working-tree grep alone reads as "Java has no hardening") and matches it line for line. **The Warrior's seal transfer is ported too** (`Armor.doEquip()`, tag `v3.3.8`): swapping armor now
+      offers to move an affixed seal across through Java's own confirm window, with SPD's v3.3.8 wording
+      spliced per locale (see `PORT_COVERAGE.md`'s seal row for the live evidence), and a cursed incoming
+      armor refuses with the real `cursed_armor` line. `AC_DETACH` is ported as well (2026-09-15): tapping the equipped
+      armor detaches the seal back into the bag with SPD's real `detach_seal` line. **The infusion pickers'
+      candidate sets are Java's now (2026-09-15)**, which closes what this line listed as remaining. Both
+      selectors are predicates, not lists: `MagicalInfusion.usableOnItem` is `item.isUpgradable()` and
+      nothing else, and `CurseInfusion.usableOnItem` is `(item instanceof EquipableItem &&
+      item.isUpgradable()) || item instanceof Wand || item instanceof SpiritBow`. The port had been
+      approximating the first with a hand-list of four bag-id shapes, and the approximation was wrong in a
+      way worth naming: `MissileWeapon extends Weapon` and never overrides `isUpgradable()`, so **a carried
+      missile stack is a real Magical Infusion target in Java** - the port's own uncapped `missileLevel`
+      and scroll-of-upgrade path already act on that - and no hand-list of equipment payloads could offer
+      one. `src/items/itemKinds.ts` now states both predicates in Java's shape (default true, with the
+      non-upgradable side taken from the 42 classes that override `Item.isUpgradable()` false, walked from
+      the whole tree), resolved over the port's ids through the authored `slot` plus the ids it mints for
+      heaps and generated payloads. The one id that needs its payload rather than its name is `'stone'`:
+      a missile stack when its `sourceClass` is an authored missile class, a *runestone* otherwise - both
+      land on that id - so the class decides, exactly as `wieldMissile` validates it. Verified live
+      (`tools/scratch/infusion-picker-livecheck.mjs`, 16/16): a carried missile stack is offered, a
+      generated weapon/armor, wand and ring still are, and the artifact, bomb, seed, potion, scroll and the
+      runestone sharing the stack's bag id are not. **The infusion's presentation is ported too
+      (2026-09-15), which closes this line**: `CurseInfusion.onItemSelected()`'s shadow burst and
+      `CURSED` sample now run before the curse is applied, and `MagicalInfusion`'s `READ` sample on
+      its pick - the first use any of those three bundled clips has had. `burstShadowUp` carries
+      `ShadowParticle.UP`'s real values over MWG's `ParticleEmitter`, with two approximations
+      documented there (Java's velocity rectangle becomes a cone, since the emitter takes polar
+      speed/angle; its life-interpolated tint becomes the birth colour, since `tint` is one colour
+      per particle), and the alpha curve, size, lifespan and cell-wide spawn are Java's exactly.
+      Verified live in `tools/scratch/infusion-picker-livecheck.mjs` (19/19), which now picks a real
+      item so the callback runs: 5 active particles at the hero's cell for the curse, none for the
+      magical infusion, and no page error - which is also the sound check, since a cue naming an
+      unbundled clip throws. What this line does *not* cover, and never did: Java's `MagesStaff` and
+      `SpiritBow` targets, which are not port items at all (the Huntress's bow is class state, not
+      `belongings`), so there is nothing here to target rather than something left undone.
 - [x] **Correction, 2026-09-14: this bullet's entire premise was stale.** It claimed Kinetic,
       Blooming, Projecting, Affection, AntiMagic, Camouflage, Obfuscation, and Potential were
       all still unported stubs, each blocked on a subsystem this port had not built. Checked
@@ -527,7 +759,19 @@ fully checked off as of a given release.
       simply never revisited after each dependency landed elsewhere. See the enchant/glyph/curse
       bullet above and `PORT_COVERAGE.md` for each mechanic's own citation and any real,
       narrower remaining simplification.
-- [ ] Replace simplified missile durability and wand recharge behavior with the Java formulas.
+- [x] Replace simplified missile durability and wand recharge behavior with the Java formulas.
+      **Closed 2026-09-15.** The item's own claim is satisfied: wand recharge is Java's
+      (`10 + 40 * 0.875^missing` with Recharging's bonus, refunds separated from passive
+      recharge) and missile durability/damage/upgrade levels are exact against tag `v3.3.8`,
+      with the last two behavioral gaps inside that scope closed this pass - the ranged accuracy
+      factors (`adjacentAccFactor`, which also corrected a wrong `POINT_BLANK` formula) and
+      `HeavyBoomerang.CircleBack`, both detailed below. What remains is **not** unimplemented
+      Java in this item's scope but three stated reductions, each recorded in
+      `PORT_COVERAGE.md`'s `MissileWeapon` row: ammunition stack **merging** (a fungible ammo
+      counter has no per-stack identity to merge), `augment.delayFactor` and the MagicalHolster
+      multiplier (missiles are not individually augmentable here and there is no holster), and
+      the boomerang's **flight animation** (Java tweens a `MissileSprite` home; this port
+      resolves the return logically with SPD's own pickup line).
       Wand recharge is now Java-shaped (`10 + 40 * 0.875^missing`, with Recharging's bonus)
       and explicit charge refunds are separated from passive recharge; missile durability,
       damage, and upgrade levels are now exact too (per-type `baseUses` 5/5/12 with the
@@ -544,19 +788,41 @@ fully checked off as of a given release.
       instead of still wearing down by `100/usages`. The `augment.delayFactor` and MagicalHolster
       factors remain documented simplifications (missiles are not individually augmentable and
       there is no holster).
-       Remaining: per-missile identity (boomerang return/merge). **Scoped more precisely,
-       2026-09-14**: this is not a small missing proc. This port's whole ranged-throw model
+       **Correction, 2026-09-15: "stack merging" was never missing, and the reason is the model itself.** A picked-up missile heap becomes a bag item with the missile's own id and *no* per-instance id, and `mwg`'s `Inventory.add` merges stackable items whose id and instance id match - so two heaps of the same class already merge into one stack, which is exactly Java's `MissileWeapon` behaviour for the same class. What this port deliberately does *not* carry is a per-stack upgrade level: level and dust identity live in `missileThresholds` (keyed by set+level) and on the wielded ammo, not on the bag stack, so there is no per-stack identity to lose. The line's own earlier framing ("no per-missile stack identity exists") described the model correctly and then drew the wrong conclusion from it.
+       **The per-missile identity gap is closed (2026-09-15)**, and that is what unblocked the
+       boomerang below. **Scoped more precisely,
+       2026-09-14**: this was not a small missing proc. This port's whole ranged-throw model
        gives each hero class exactly one fixed missile identity for the entire run
        (`classes.mwl`'s `special_source_class` - only Warrior/ThrowingStone, Rogue/ThrowingKnife,
        Duelist/ThrowingSpike are ever wieldable); the other twelve generated missile classes
        (including `HeavyBoomerang`) already have real MWL tier/damage data and can be picked up
-       and sold, but can never become the hero's active thrown weapon at all, so their
-       class-specific procs (Boomerang's circle-back, Bolas' Cripple, Tomahawk's Bleeding, and
-       so on for every non-starting class) are unreachable dead code paths, not merely
-       unimplemented ones. Closing this needs a real "wield any carried missile class" feature
-       (an inventory action changing which class the ammo counter/durability model tracks) built
-       first - a genuine architecture change, not a bounded fix, and out of scope for a single
-       pass. **Correction 2026-09-12: the
+       and sold, but could never become the hero's active thrown weapon at all, so their
+       class-specific damage, durability and procs were unreachable dead code paths, not merely
+       unimplemented ones. **Closed 2026-09-15**: `wieldMissile` now switches which class the ammo
+       model tracks (`ammoSourceClass`, persisted with the run, seeded from the hero class's own
+       missile), so everything class-specific follows the wielded item - the damage range and its
+       per-class upgrade rule, the durability `baseUses` (Java's field defaults to 8, with stones
+       and knives at 5, spike/club/hammer 12 and kunai 8 - the port used to derive this from the
+       *hero* class as `duelist ? 12 : 5`, which was wrong for every class's own missile), and the
+       three real `proc()` overrides (`Bolas`' Cripple for `Cripple.DURATION/2`, `Tomahawk`'s
+       `NormalFloat(minBleed, maxBleed)` bleed, `FishingSpear`'s piranha damage floor). The rules
+       **Correction 2026-09-12: the
+       and each class's own override at tag `v3.3.8`, so wielding one no longer throws.
+       **`HeavyBoomerang.CircleBack` is ported too (2026-09-15)**, the last unported missile
+       proc: Java attaches a buff to the hero on a throw (unconditionally on a miss, on a hit only
+       while durability remains) carrying the cell it landed on, the hero's cell at throw time, the
+       depth, and `left = 5`. Five hero turns later it flies home and resolves against whoever is
+       there - picked up if that is still the hero, thrown at them (`hero.shoot`, with `circlingBack`
+       up so the accuracy factor is Java's flat 1.5) if it is anyone else, and merely dropped if the
+       cell is empty - with the countdown stalled on another depth, exactly as
+       `returnDepth == Dungeon.depth` gates it. The port's translation, given a fungible ammo
+       counter: the thrown unit leaves the pile, nothing is left where it landed, and the return
+       gives the unit back, hits the squatter and drops the heap, or drops the heap on an empty
+       cell. Only one pending return exists at a time, matching Java's single per-char buff, and it
+       persists with the run (Java's buff survives saves). Verified live at 18/18
+       (`tools/scratch/boomerang-return-livecheck.mjs`), including the real localized pickup line
+       SPD's own `hero.you_now_have` supplies. Simplified: no flight animation - Java tweens a
+       recycled `MissileSprite` home, this port resolves it with a log line.
        "Sharpshooting's Aim-buff rework (stand-still charging)" this line carried for its own
        pass does not exist in Java** - checked both tags the rest of this port is built
        against: `RingOfSharpshooting.Aim` is an empty `RingBuff` marker in `v3.3.8` *and* in
@@ -574,6 +840,28 @@ fully checked off as of a given release.
        locales. Verified live (`tools/scratch/lastmissile-confirm-livecheck.mjs`, 7
        assertions), including that clicking "Yes" through the real pointer path throws and
        that the three neighbours Java does not warn about stay silent.
+      **The ranged accuracy factors are now ported, and a wrong talent formula with them
+      (2026-09-15).** `MissileWeapon.accuracyFactor` is `Weapon.accuracyFactor * adjacentAccFactor`,
+      and `adjacentAccFactor` is `0.5f` at melee range - `0.5f + 0.25f*pointsInTalent(POINT_BLANK)`
+      for a hero, i.e. 0.75/1.0/1.25 - and `1.5f` at any distance. SPD's own strings state it as
+      "-30%/-10%/+10% at melee range, instead of -50%" plus "+50% accuracy when used at a distance".
+      This port had **neither**: every thrown weapon and the spirit bow rolled at flat accuracy,
+      because `Hero.attackSkill()` folds the factor into the accuracy *stat*
+      (`max(1, round(attackSkill * accuracy * wep.accuracyFactor(target)))`) and the port's `rollHit`
+      took no such input. It is now `rollHit`'s sixth parameter, applied to `acu` before the draw so
+      the rounding matches Java's. **Corrected in the same pass**: `POINT_BLANK` was implemented as a
+      `1 + 0.2*rank` *damage* multiplier at `distance <= 2`, in the spirit-bow path alone. Java never
+      applies this talent to damage - it appears exactly once in the whole codebase, inside
+      `adjacentAccFactor`, as accuracy - and its range test is `adjacent` (Chebyshev 1), not `<= 2`,
+      so distance 2 was gaining a bonus Java gives nothing and distance 1 was mistuned. Both ranged
+      paths (throw and spirit bow) now pass the factor; no ported monster throws missiles, so Java's
+      `Statue.attackSkill`/`MirrorImage` readers of the same method have no port-side caller.
+      Browser-verified live on the built game: a real throw passes 0.5 at Chebyshev 1, 1.5 at
+      distance 2 and 3, 1.25 with Point Blank 3 adjacent, and 0.5 diagonally (Chebyshev adjacency);
+      over 600 real throws each, a 10-accuracy hero against a 5-evasion rat lands 0.528 adjacent and
+      0.822 at distance, against Java's predicted 0.5 and 0.833. `SpiritArrow.accuracyFactor`'s
+      Sniper + DAMAGE-augment clause (`Float.POSITIVE_INFINITY`, an unconditional hit) stays
+      unported - there is no bow augment system to read.
 - [x] Implement identification appearance randomization. Potion and scroll appearances are
       shuffled once per seeded run, pre-drawn without disturbing later gameplay RNG, and
       persisted through save/load.
@@ -584,11 +872,31 @@ fully checked off as of a given release.
       (G key, newest sale first), and generated FOR_SALE stands are priced and no longer
       free loot. `ShopRoom` geometry and generic selling are now live: generated weapon/armor
       stock becomes concrete level-0 inventory payloads with preserved Java tiers, and the
-      picker sells any positively-valued supported item one unit at a time. Remaining: full
-      generated stock as priced live goods (darts/spells/bags still need distinct item systems).
-      Priced stands can now be bought directly by stepping onto them;
-      the Java trade window is still simplified. See `PORT_COVERAGE.md`'s
-      `Shopkeeper` + pricing rows.
+      picker sells any positively-valued supported item one unit at a time. **The Java trade
+      window's selling half is now its real rule (2026-09-15)**, which replaces that one-unit
+      stand-in: Java builds one of two windows from `item.quantity() == 1 || (item instanceof
+      MissileWeapon && item.isUpgradable())` (`WndTradeItem.java` 78-131) - a single `sell` button
+      for that case, otherwise `sell_1` at `priceAll / item.quantity()` beside `sell_all` at
+      `priceAll` (the whole stack). `sellFood` now decides which applies and hands the scene a
+      rendered option list, so the rule stays headless-testable and the labels are SPD's own
+      `windows.wndtradeitem.sell`/`sell_1`/`sell_all` (already shipped in all 19 locales). Verified
+      live (`tools/scratch/sell-window-livecheck.mjs`, 11/11): a stack offers both buttons and sells
+      nothing on the pick alone, a lone item and an upgradable missile stack each get one button,
+      and clicking "Sell all" through the real pointer path empties the stack, pays the total and
+      shelves it as a single buyback entry. Still simplified: Java's `WndTradeItem` is a window with
+      an item-info body this port has no equivalent for, the `extraThrownLeft` warning needs a
+      per-stack counter the ammo model lacks, and the buying half keeps its step-onto-the-stand
+      shortcut. **The shop shelf itself is now `ShopRoom.generateItems()`'s real stock, not a
+      simplified table (2026-09-15)**: `planShopStock` (`src/items/shopStock.ts`), wired through
+      `shopStockFor`, generates the tier-matched weapon/missile pair, the depth's concrete armor, an
+      alchemize stack, the fixed healing potion and three scrolls, four more random potion/scroll
+      draws, two rations, the bomb/doubleBomb/honeypot roll, a stone of augmentation, hourglass
+      sandbags, and the rare wand/ring/artifact-or-stylus slot, in Java's own order and off the real
+      RNG (including the shuffle's own isolated substream) - superseding `scenario-rules.mwl`'s
+      `shopShelfStock` table. Remaining: the four items this port has no class for at all (Torches,
+      TippedDarts, the Ankh, and Java's `ChooseBag` pick) stay absent rather than substituted, and
+      darts/spells/bags more broadly still need their own item systems. See `PORT_COVERAGE.md`'s
+      `Shopkeeper` + pricing rows and its "Shop shelf stock is authored data too" entry.
 - [x] Implement Timekeeper's Hourglass sand-bag state and its level-generation effects. The
       identified/uncursed inventory state now follows Java's depth-specific shop percentages,
       sand bags upgrade and persist on the hourglass, and concrete item identities survive the
@@ -630,7 +938,28 @@ fully checked off as of a given release.
       10. The Shocker actor now persists for three Tengu turns, rolls Java's initial parity, and
       alternates its diagonal/cardinal pulses with the real `2 + scalingDepth()` damage; its
       persistent `ShockerBlob`/Lightning presentation is intentionally collapsed to direct logical
-      pulses, and the separate phase-2 arena geometry remains).
+      pulses, and the separate phase-2 arena geometry remains). **Found while porting the
+      boomerang's return (2026-09-15): the arena layout carries a second obligation.** Java's
+      `clearEntities(safeArea)` - called by both layout transitions, `clearEntities(tenguCell)` in
+      `FIGHT_START` and `clearEntities(pauseSafeArea)` in `FIGHT_PAUSE` - cancels any pending
+      `HeavyBoomerang.CircleBack` whose return cell falls outside the safe area and hands the
+      boomerang back (`HeavyBoomerang.java` 338-343). So `setMapArena()` must be ported together
+      with that clause, or a boomerang thrown during phase 1 flies home onto the rebuilt arena map;
+      the port's own map swap (the mining branch, which changes the map at the same depth) already
+      does this and is live-verified. **What the layout port still needs resolved first, recorded so
+      the next pass starts from it rather than re-reading the whole state machine:** `progress()`'s
+      cases are one per *transition*, not per phase - `START` sets up the fight and moves to
+      `FIGHT_START`; the `case FIGHT_START:` block (which runs `setMapPause()`) is the half-health
+      crossing, and the `case FIGHT_ARENA:` block (which runs `setMapEnd()` and kills Tengu) is the
+      death transition - so `setMapArena()` belongs to `FIGHT_PAUSE`, i.e. the same half-health
+      moment this port already latches `tenguPhase = 'arena'` on. The unresolved part is the hero's
+      position: `clearEntities` only touches heaps, `CircleBack` buffs and mobs (**not** the hero),
+      and neither `FIGHT_START` nor `FIGHT_PAUSE` moves him, yet phase 1 is fought in `tenguCell`
+      (rows 23-32) while `setMapArena()` leaves only the (3,1)-(18,16) ellipse walkable. Java must
+      therefore rely on something outside these two blocks to put the hero on arena floor
+      (`pauseSafeArea` (9,2)-(12,12) is entirely inside the ellipse, which is suggestive, but
+      nothing read so far actually moves him there) - resolve that before writing the repaint, or
+      the port will drop the hero in a wall.
 - [ ] Port Caves/DM-300's full pylon, gate, energy field, and supercharge scripts (pylon
       proximity sealing, sequential threshold supercharges, pylon activation, boss
       invulnerability, x2 speed, and supercharge loss on pylon death are live; the
@@ -668,10 +997,34 @@ fully checked off as of a given release.
       reopening is deliberately **not** ported and is recorded as such rather than faked: this
       port descends the moment the boss dies and has no ascent path at all, so a reopened gate
       could never be seen - and Java's own reason for it (walk back out through the arena) is the
-      same flow the port's immediate descent replaces. Remaining: the port's arena layout is still
-      a hand-approximation of Java's build order (so the patch's RNG stream position is
-      deterministic but not Java's exact draw index), and targeting refinements plus presentation
-      remain).
+      same flow the port's immediate descent replaces. **The arena layout's build order is now
+      Java's, and two wrong claims here are corrected (2026-09-15):** the gate is painted first, in
+      Java's own position, *before* the ellipse and the water/trap patch. That order is
+      load-bearing for a geometric reason - `gate` is `Rect(14,13,19,14)` and a 24-wide ellipse's
+      top row is exactly six cells wide starting at column 14, so Java's ellipse lands precisely on
+      the gate's bottom row, leaving only row 13 as `CUSTOM_DECO` and rolling water and traps
+      across row 14 like any other arena cell. The port used to re-paint all six of those cells
+      `SIGN` *after* the loop, which erased the water the roll had put there and inflated
+      `activatePylon()`'s energy cell set from Java's 108 to 111 (measured at seed 42; the field
+      seeds on INACTIVE_TRAP/WATER/CUSTOM_DECO from row 13 down). What the ordering change did
+      **not** do is move the RNG stream, and the earlier claim here that it did is wrong: `Patch.
+      generate` plus the `Random.Int` trap loop consume the same 489 draws either way, because the
+      ellipse clears row 14 before the loop runs in both orders. **`buildEntrance()` and
+      `buildCorners()` are now ported too (2026-09-15)**: each is one `Random.oneOf` over four
+      stamps - 8x8 `entranceVariants`, 10x10 `cornerVariants` - mirrored into all four quadrants by
+      a cursor walk whose four cursors each move in a different direction (`NW`/`SW` increment,
+      `NE`/`SE` decrement, which is what makes the copies meet mid-row). The 656 stamp tiles are
+      generated from the Java source (`tools/scratch/gen-caves-stamps.mjs`) rather than
+      transcribed, and all eight variants are checked in `tools/verifyVault.mjs` against an
+      independent transcription of the cursor arithmetic; the two draws now sit in Java's own
+      stream position, after the patch loop and before the chasm/entrance fills. Browser-verified
+      live at depth 15. **What still leaves the port's total draw index short of Java's is the
+      `CavesPainter` pass**, which runs after these builders and rolls its own decoration
+      (`decorate()`/`generateGold()`); the entrance's own EMPTY/EMPTY_SP/STATUE/EXIT fills remain
+      hand-matched to Java's `Painter.fill` rects (the builders paint the decorative band, the
+      rects the corridor), and the gate's `CustomTilemap` dressing (`CityEntrance`,
+      `EntranceOverhang`, `ArenaVisuals`) has no equivalent here, so the gate renders as plain
+      floor. Targeting refinements plus presentation remain.)
 - [ ] Port City/Dwarf King's throne and Imp-shop scripts (the full 1/2/3 phase machine
       is now live: P1 hunt with exact summon/ability cooldowns and LINK/TELE-lite, P2
       immobile shield with real wave schedule and self-chip, P3 bleed/summons/losing yell
@@ -1161,8 +1514,9 @@ fully checked off as of a given release.
       and decay too (closing the last base-drop gap this line tracked) - see `PORT_COVERAGE.md`'s
       `MOB_LOOT`/`LIMITED_DROP_DECAY` row for each one's exact base chance/decay formula and the
       weapon-as-`'armor'`/`Random.oneOf(RING,ARTIFACT)`-as-`'ring'` stand-ins involved.
-      Stacking heaps, Wealth rings' `tryForBonusDrop()` half, and dm200/golem's real
-      weapon-or-armor 50/50 pick (simplified to always-armor here) remain unmodeled.
+      Stacking heaps and dm200/golem's real weapon-or-armor 50/50 pick (simplified to
+      always-armor here) remain unmodeled - Wealth rings' `tryForBonusDrop()` half, which stood in
+      that list, is now ported (see the rings paragraph in section 1).
 
 ## 6. Complete hero progression
 
@@ -1198,6 +1552,14 @@ fully checked off as of a given release.
       separate per-tier pools**, letting a player freely cross-spend a leftover T1 point into
       T2/T3 - replaced with a real per-tier `talentPoints` array, browser-verified to grant the
       exact real per-tier totals (5/6/8) with T4's unimplemented 10 correctly never granted.
+      **A sixth wrong formula, found 2026-09-15: `POINT_BLANK` was applied as a `1 + 0.2*rank`
+      damage multiplier at `distance <= 2`, in the spirit-bow path alone. It is an accuracy factor
+      and nothing else** - it appears exactly once in Java, inside
+      `MissileWeapon.adjacentAccFactor`, as `0.5f + 0.25f*points` replacing the flat `0.5f`
+      melee-range penalty for thrown weapons and the spirit bow, and Java's range test is `adjacent`
+      (Chebyshev 1), not `<= 2`. It is ported together with the ranged accuracy factors themselves,
+      which this port had also been missing entirely - see section 1's missile entry for the
+      formulas and the live hit-rate verification.
       **Cleric's entire talent tree is Mage's copied verbatim, with zero disclosure anywhere
       until this pass** - now documented in `src/talents.ts` and `PORT_COVERAGE.md`; not
       replaced, since a real Cleric tree needs the Cleric class's own Holy Lantern/spell
@@ -2268,8 +2630,15 @@ compatibility notes and an API report entry in MWG before this port adopts it; P
 - [x] **P5 — Pointer parity for `two-d/ui/ListView`. Shipped in MWG 0.7.9 (item 299), found
       2026-09-14 auditing this section against the currently-installed 0.10.0.** `ListView.tapRow
       (index)` now gives the exact `IconGrid.tapCell`-shaped select-and-confirm-in-one-step tap
-      this proposal asked for. **Not yet adopted**: this port's own row-hit-surface workaround
-      (`ListItem.icon` filling the whole row) still works and has not been replaced.
+      this proposal asked for. **Corrected 2026-09-15**: the previous note here ("this port's own
+      row-hit-surface workaround - `ListItem.icon` filling the whole row - still works and has not
+      been replaced") was checked against the actual source and does not describe anything in this
+      repo - `ListView`/`ListItem` are not imported anywhere in `src/`, so there is no row-hit
+      workaround to retire. This port's only per-cell pointer UI is `IconGrid` (inventory bag,
+      title-screen badges grid), which already had its own tap parity since P2/`IconGrid.tapCell`.
+      `ListView` itself remains unadopted (no text-menu window - dialogue choices, a save-slot
+      list - exists yet to build on it); this line now records that honestly rather than a
+      workaround that was never written.
 - [x] **P6 — Let a game supply the compiled asset map. Shipped in MWG 0.7.9 (item 300), found
       2026-09-14.** `assets.setAssetMap(map)` hands `resolve`/`has`/`paths`/`isCompiled` a game's
       own path-to-URI map directly, taking priority over `window.__MWG_ASSETS__` while set -
@@ -2395,53 +2764,6 @@ SPD appearance tables and identification, fire/embers and well behavior, exact m
 rules, talents and subclasses, quests, room generation, item effects, Java-derived numbers,
 translations, and all SPD art/assets. “Could be represented by a generic primitive” is not a
 reason to move those rules or data across the licensing boundary.
-
-## 12. Publish a playable build on GitHub Pages
-
-- [x] Deploy `dist/` to GitHub Pages so the game is playable at
-      `https://datamoc.github.io/mwg-pixel-dungeon/` without a local checkout. `vite.config.ts`'s
-      `base: './'` (relative asset paths) needed no changes for the project-subpath Pages URL;
-      `tools/emit.mjs`'s built `index.html` (non-module `<script defer>`) loads over `https://`
-      exactly like it does over `file://`. `.github/workflows/deploy.yml` (`npm ci`, `npm run
-      build`, upload `dist/`, deploy; triggers on push to `main` plus `workflow_dispatch`) existed
-      from an earlier pass but had never actually been pushed - this repo was 42 commits ahead of
-      `origin/main` the whole time, so the workflow, and everything else committed since, only
-      existed locally. The user explicitly asked for the deployment this pass (confirmed via
-      `AskUserQuestion` that the project-subpath URL, not a separate root `datamoc.github.io`
-      user-page repo, is what they want), which resolved both open items below at once: pushed
-      main, enabled Pages via `gh api -X POST repos/.../pages -f build_type=workflow` (source:
-      GitHub Actions), and the push-triggered run deployed successfully
-      (`gh run watch` - both `build`/`deploy` jobs green). Verified live over HTTP: the deployed
-      page serves the real built `index.html` (non-module `<script defer src="./game.js">`, not
-      the unbuilt-source fallback) and `game.js` itself returns `200` at its full ~25.6MB build
-      size. **Not verified this pass**: actual in-browser rendering (title screen, class-select,
-      a played floor) - no working browser tool was available this session (`claude-in-chrome`
-      extension not connected, `chrome-devtools-mcp`'s browser unreachable/already running
-      elsewhere), so this is HTTP/asset-shape verification only, honestly short of the real
-      "open it and look" bar the rest of this file holds itself to - owed as a follow-up. Every
-      future push to `main` now deploys automatically (the auto-vs-manual choice both options
-      being kept for was implicitly resolved by asking the user to trigger deployment via a push-
-      based workflow at all). **Live browser confirmation done 2026-09-09** (`chrome-devtools-mcp`):
-      opened `https://datamoc.github.io/mwg-pixel-dungeon/` directly, the title screen rendered
-      correctly (menu buttons, background, title art - showing the pre-existing cropped-logo bug
-      documented below, since that fix was made locally this same pass and not yet pushed).
-- [ ] **Track the latest `mwg` release and build every packaging target it supports, not only the
-      GitHub Pages web build.** `npm run mwg:check` (`tools/check-mwg-version.mjs`) already reports
-      the pin/installed/npm-latest triple; this item is the follow-through of actually bumping to
-      the latest compatible release on a regular cadence (per CLAUDE.md's `mwg` dependency section)
-      and re-running the full verification suite each time, rather than only reacting when a bump is
-      needed for a specific feature. Separately, the installed `@datamoc/mw_games` package itself
-      ships Capacitor (Android/iOS) and WebView2 (Windows desktop) packaging support alongside its
-      web target (see the framework's own `package.json` `cap:*` scripts and README); this project
-      currently only builds and ships the one web target (`npm run build` -> `dist/`, deployed to
-      GitHub Pages above). Add the equivalent build targets here: a minified/compressed web bundle
-      (the current `game.js` is an uncompressed ~28MB single chunk per the build warning above -
-      code-splitting/minification tuning belongs here too), an Android build via the framework's
-      Capacitor integration, and a standalone desktop executable via its WebView2 packaging. Each
-      target needs its own build script, its own smoke verification (the existing browser-
-      verification workflow does not cover a packaged app), and a decision on where built artifacts
-      are published (Pages for web; likely GitHub Releases for the Android/desktop binaries, not yet
-      decided). Not started.
 
 ## Definition of done
 

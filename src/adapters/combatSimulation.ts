@@ -26,8 +26,8 @@ function commitBuffs(target: BuffState, next: BuffState): void {
 
 export function createCombatAdapter(random: SimulationRandom) {
 	return {
-		rollHit(attacker: Combatant, defender: Combatant, magic = false, surprise = false): boolean {
-			return rollHit(combatState(attacker), combatState(defender), random, magic, surprise);
+		rollHit(attacker: Combatant, defender: Combatant, magic = false, surprise = false, accFactor = 1): boolean {
+			return rollHit(combatState(attacker), combatState(defender), random, magic, surprise, accFactor);
 		},
 		rollDamage(attacker: Combatant, defender: Combatant): number {
 			return rollDamage(combatState(attacker), combatState(defender), random);

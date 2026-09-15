@@ -151,6 +151,21 @@ Before calling any non-trivial change complete:
    (`Get-NetTCPConnection -LocalPort <port> | Select-Object -ExpandProperty OwningProcess`
    then `Stop-Process -Id <pid> -Force`).
 
+## Releases
+
+Release artifacts are built **only** on a `v*` tag (`.github/workflows/release.yml`); an ordinary
+push to `main` still just deploys the web build to Pages. `RELEASING.md` is the full account of what
+each artifact is and what each target needs. Two things to know before touching it:
+
+- Every byte of compression comes from `mwg`'s own tooling (`tools/pack-web.mjs` drives
+  `mwg/tools/single-file` and `mwg/tools/compress-dist`) and every archive from the runner's native
+  archiver. Do not add a compressor or a zip/tar writer to this repo.
+- The Android and Windows desktop targets are this repo's own scaffolding
+  (`capacitor.config.json`, `desktop/MwgDesktopHost`), because `mwg`'s *published package* ships
+  none of the Capacitor/WebView2 packaging support its README describes — its own `cap:*` and
+  `desktop:*` scripts point into its repository. The framework-side gap is recorded as P18 in
+  `4MWG/IMPROVEMENT_PROPOSALS.md` (local, uncommitted notes).
+
 ## `index.html`'s "not-built" guard
 
 Both the source page and the built `dist/index.html` load from `file://`, so the guard that
@@ -164,7 +179,7 @@ this script.
 ## `mwg` dependency
 
 `mwg` is the real published npm package `@datamoc/mw_games`, aliased to the `mwg` import
-specifier in `package.json` (`"mwg": "npm:@datamoc/mw_games@^0.9.0"`) since every source
+specifier in `package.json` (`"mwg": "npm:@datamoc/mw_games@^0.14.0"`) since every source
 file imports it as `from 'mwg'`. This project consumes it like any other npm dependency now
 — no local checkout, no `file:` link, no per-session drift check. Bump the version pin
 deliberately (and re-run the full verification suite in this `CLAUDE.md`) when picking up a

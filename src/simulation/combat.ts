@@ -129,9 +129,16 @@ export function accRollMulti(c: Readonly<Combatant>): number {
 	return m;
 }
 
-export function rollHit(attacker: Readonly<Combatant>, defender: Readonly<Combatant>, random: SimulationRandom, magic = false, surprise = false): boolean {
+export function rollHit(attacker: Readonly<Combatant>, defender: Readonly<Combatant>, random: SimulationRandom, magic = false, surprise = false, accFactor = 1): boolean {
 	if (liveStats(defender).evasion >= INFINITE_EVASION) return false;
 	let acu = liveStats(attacker).accuracy;
+	//`Hero.attackSkill()` folds the attacking weapon's `accuracyFactor` into the *stat* -
+	//`max(1, round(attackSkill * accuracy * wep.accuracyFactor(target)))` - before the float draw,
+	//so the factor goes on `acu` here rather than on the roll below. The only callers that pass one
+	//are the ranged paths (see `missiles.ts`'s `missileAdjacentAccFactor`); melee passes nothing and
+	//keeps Java's own `Weapon.accuracyFactor` handling, whose `Wayward` /5 and over-STR divisor are
+	//already applied elsewhere (see `syncHeroFromStats` and the encumbrance branch at the bottom).
+	if (accFactor !== 1) acu = Math.max(1, Math.round(acu * accFactor));
 	// Invisible attackers and sleepers can surprise an unaware target. The previous
 	// port only represented the latter; Invisibility is now a real timed Char state.
 	if (surprise || defender.sleeping || (attacker.buffs['invisibility'] && !defender.isHero)) acu = INFINITE_ACCURACY;

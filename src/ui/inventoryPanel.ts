@@ -3,7 +3,17 @@ import { SPECIALTY_BOMB_IDS } from '../items/itemKinds';
 import { generatorItemOrder } from '../items/generator';
 import { InventoryWindow, type InventoryEntry } from './inventoryWindow';
 import { MWL_CONSUMABLE_DESCRIPTION_KEYS, MWL_EQUIPMENT_DESCRIPTION_KEYS, MWL_ITEM_ACTION_RULES, MWL_ITEM_FRAMES, MWL_ITEM_SPECIFIC_FRAMES, MWL_MISSILE_DESCRIPTION_KEYS } from '../mwlContent';
-import { getArtifact } from '../items/artifacts';
+import { getArtifact, getAllArtifactIds } from '../items/artifacts';
+
+/** Real artifact ids, derived from the same `artifacts.mwl` roster `generatedInventoryItem`'s
+ * generation switch routes to (see `getAllArtifactIds`), plus `holyTome` - a Cleric equip-slot
+ * item, not one of the 13 real SPD artifacts, but occupying the same dedicated slot below.
+ * Previously this only recognized `cloak`/`hourglass`/`holyTome` by hand: a carried Chalice of
+ * Blood, Cape of Thorns, or Alchemist's Toolkit rendered correctly in the carried list but never
+ * took the dedicated artifact equip-slot icon in the bag UI (confirmed by live browser testing) -
+ * fixed here by deriving the set from the one place new artifact ids are already wired, instead
+ * of hand-maintaining a third duplicate list that silently falls out of sync with it. */
+const ARTIFACT_SLOT_IDS = new Set([...getAllArtifactIds(), 'holyTome']);
 
 interface InventoryItem {
 	id: string; quantity?: number; instanceId?: string; level?: number; identified?: boolean;
@@ -64,7 +74,7 @@ export function refreshInventoryPanel(context: InventoryPanelContext): void {
 		.sort((a, b) => generatorItemOrder(a.sourceClass, a.id, a.frame) - generatorItemOrder(b.sourceClass, b.id, b.frame));
 	const armor = context.armorId === 'startingArmor' ? null : entry({ id: context.armorId, instanceId: context.armorInstanceId, quantity: 1, identified: true, level: context.armorLevel });
 	if (armor) armor.action = undefined;
-	const artifact = rows.find(item => item.id === 'cloak' || item.id === 'hourglass' || item.id === 'holyTome') ?? null;
+	const artifact = rows.find(item => ARTIFACT_SLOT_IDS.has(item.id)) ?? null;
 	const weapon: InventoryEntry = { id: 'equippedWeapon', instanceId: context.weaponInstanceId, name: context.weaponName,
 		frame: context.weaponFrame, quantity: 1, identified: true };
 	const ring = context.equippedRing ? entry({ ...context.equippedRing, quantity: 1, identified: true }) : null;

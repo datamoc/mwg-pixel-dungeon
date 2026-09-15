@@ -28,6 +28,9 @@ try {
 	compile(join(root, 'src/items/transmutation.ts'), 'items/transmutation.js');
 	compile(join(root, 'src/items/missiles.ts'), 'items/missiles.js');
 	compile(join(root, 'src/items/itemCurses.ts'), 'items/itemCurses.js');
+	compile(join(root, 'src/items/itemKinds.ts'), 'items/itemKinds.js');
+	compile(join(root, 'src/items/shopPricing.ts'), 'items/shopPricing.js');
+	compile(join(root, 'src/items/shopActions.ts'), 'items/shopActions.js');
 	compile(join(root, 'src/items/blacksmith.ts'), 'items/blacksmith.js');
 	// simulation/buffs.ts is framework-free (its mwg/random import is type-only), so the
 	// monster-immunity gate is unit-tested here directly against the generated table.
@@ -42,8 +45,29 @@ try {
 	// challenge toggle itself (no_healing is covered live, not headlessly), so "always disabled"
 	// is a safe stand-in here.
 	writeFileSync(join(out, 'challenges.js'), 'exports.isChallengeEnabled = () => false;\n');
+	// shopActions.ts calls `t()` for the sell labels, which would pull the whole message catalogue
+	// (all 19 locales) into this narrow tree. The stub keeps the key and its substituted values
+	// visible, so the assertions below prove *which* SPD string each sell button uses and with what
+	// price. The wording itself is the real catalogue's job, and `npm run i18n:verify` already
+	// asserts every `{0}` a key declares is supplied.
+	mkdirSync(join(out, 'i18n'), { recursive: true });
+	writeFileSync(join(out, 'i18n', 'index.js'),
+		'exports.t = (key, params) => key + (params ? "[" + Object.values(params).join(",") + "]" : "");\n');
 	compile(join(root, 'src/items/alchemy.ts'), 'items/alchemy.js');
 	compile(join(root, 'src/items/groundPickup.ts'), 'items/groundPickup.js');
+	// The Sandals of Nature's rules are scene-free (only the authored MWL rows feed them), so the
+	// artifact's charge economy, seed list and root cost are checked here rather than only live.
+	compile(join(root, 'src/items/sandals.ts'), 'items/sandals.js');
+	// The Talisman of Foresight's scry formulas (cone arc, charge cost, exp curve, per-turn trickle)
+	// are scene-free in the same way, so they are pinned here against Java's own numbers.
+	compile(join(root, 'src/items/talisman.ts'), 'items/talisman.js');
+	// The Dried Rose's ghost stats, recharge clock and petal economy are scene-free the same way.
+	compile(join(root, 'src/items/rose.ts'), 'items/rose.js');
+	// The Ring of Wealth's bonus-drop counters and drop catalogue are scene-free in the same way.
+	compile(join(root, 'src/items/shopStock.ts'), 'items/shopStock.js');
+	compile(join(root, 'src/items/wealthDrops.ts'), 'items/wealthDrops.js');
+	// `ArtifactRecharge`'s per-artifact charge table and banking, the same way.
+	compile(join(root, 'src/items/artifactRecharge.ts'), 'items/artifactRecharge.js');
 	// The framework side is the installed `@datamoc/mw_games` build the game itself ships,
 	// shimmed rather than compiled from a sibling checkout of the framework's sources - the two
 	// are different versions in general, so compiling a checkout would test something this port
@@ -66,13 +90,154 @@ try {
 	const require = createRequire(join(out, 'check.cjs'));
 	const { Inventory } = require('./actors/Inventory.js');
 	const { Appearances } = require('./actors/Appearances.js');
-	const { transferEnhancement, upgradeItem } = require('./items/workflows.js');
+	const { transferEnhancement, upgradeItem, reverseCurseInfusion, curseInfusionLevelBonus } = require('./items/workflows.js');
 	const { transmuteItem } = require('./items/transmutation.js');
-	const { missileDamageRange, missilePickupValid, recordMissileUpgrade } = require('./items/missiles.js');
+	const { missileDamageRange, missilePickupValid, recordMissileUpgrade, missileAdjacentAccFactor, missileBaseUses, bolasCrippleTurns, tomahawkBleedRange, BOOMERANG_RETURN_TURNS, BOOMERANG_RETURN_ACC_FACTOR } = require('./items/missiles.js');
 	const { blacksmithTurnInFavor, BLACKSMITH_FAVOR_CAP, BLACKSMITH_QUEST_BOSS_BONUS } = require('./items/blacksmith.js');
+	// `MissileWeapon.baseUses` (tag `v3.3.8`): Java's field defaults to 8, and each class overrides
+	// it. It is a property of the *wielded missile class*, not the hero class - this port used to
+	// derive it as `duelist ? 12 : 5`, which was wrong for every other class's missile.
+	assert.deepEqual(
+		['ThrowingStone', 'ThrowingKnife', 'ThrowingSpike', 'ThrowingSpear', 'Kunai', 'ThrowingClub',
+			'ThrowingHammer', 'Bolas', 'Tomahawk', 'HeavyBoomerang', 'Shuriken', 'ForceCube', 'Javelin',
+			'Trident', 'FishingSpear'].map(missileBaseUses),
+		[5, 5, 12, 8, 8, 12, 12, 5, 5, 5, 5, 5, 8, 8, 8],
+		'per-class baseUses match MissileWeapon.baseUses and its overrides',
+	);
+	// The same authored table now decides what a *wielded* missile deals - damage the port could not
+	// reach at all while only the hero class's own missile was throwable.
+	assert.deepEqual(missileDamageRange('Bolas', 0), [4, 9], "Bolas keeps Java's own min/max overrides");
+	assert.deepEqual(missileDamageRange('Bolas', 3), [4, 9 + 2 * 3], 'Bolas min never scales; max scales (tier-1)*lvl');
+	assert.deepEqual(missileDamageRange('Tomahawk', 0), [6, 16], "Tomahawk keeps Java's round(1.5*tier)/round(4*tier) bases");
+	assert.deepEqual(missileDamageRange('ThrowingKnife', 1), [3, 8], "knives keep Java's 6*tier max base and 2*lvl scaling");
+	assert.deepEqual(missileDamageRange('ThrowingStone', 1), [3, 6], "stones keep Java's 5*tier max base and tier*lvl scaling");
+	assert.deepEqual(missileDamageRange('ForceCube', 3), [13, 40], 'tier-5 min scales lvl and max scales tier*lvl');
+	// `Bolas.proc()` / `Tomahawk.proc()` (tag `v3.3.8`): `Cripple.DURATION/2` and a bleed roll of
+	// `NormalFloat(minBleed(lvl), maxBleed(lvl))` with `minBleed = 3 + lvl/2f`, `maxBleed = 6 + lvl`.
+	assert.equal(bolasCrippleTurns(), 5, 'Bolas cripples for half of Cripple.DURATION (10f)');
+	assert.deepEqual(tomahawkBleedRange(0), [3, 6]);
+	assert.deepEqual(tomahawkBleedRange(6), [6, 12]);
+	// `MissileWeapon.adjacentAccFactor` (tag `v3.3.8`): the ranged accuracy factor carried by every
+	// thrown weapon and the spirit bow - `0.5f` adjacent (a hero gets `0.5 + 0.25*POINT_BLANK`
+	// instead), `1.5f` at any distance. Point Blank is accuracy-only and hero-only.
+	assert.equal(missileAdjacentAccFactor(true, true, 0), 0.5, 'a thrown weapon at melee range is -50% accurate');
+	assert.equal(missileAdjacentAccFactor(true, true, 1), 0.75, 'Point Blank 1 is 0.5 + 0.25*1');
+	assert.equal(missileAdjacentAccFactor(true, true, 3), 1.25, 'Point Blank 3 is 0.5 + 0.25*3, a +10% bonus over baseline');
+	assert.equal(missileAdjacentAccFactor(true, false, 3), 0.5, 'Point Blank is the *hero* talent - a monster throwing at melee range stays at a flat 0.5');
+	assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and the bow always have +50% accuracy at a distance');
+	assert.equal(missileAdjacentAccFactor(false, false, 0), 1.5, 'the +50% at distance is not hero-gated');
+	// `HeavyBoomerang` (tag `v3.3.8`): `CircleBack.setup` sets `left = 5`, and the return flight's
+	// own `hero.shoot` runs with `circlingBack` up, which the class's `adjacentAccFactor` override
+	// turns into a flat 1.5 rather than the melee-range penalty.
+	assert.equal(BOOMERANG_RETURN_TURNS, 5, 'CircleBack counts down from 5 hero turns');
+	assert.equal(BOOMERANG_RETURN_ACC_FACTOR, 1.5, 'the return throw is a flat 1.5, adjacency or not');
 	const { alchemicalCatalystCost, arcaneCatalystCost, canCraftPotionSeed, craftPotionSeed, craftAlchemicalCatalyst, craftArcaneCatalyst } = require('./items/alchemy.js');
+
+	// `Item.isUpgradable()` (tag `v3.3.8`) and the two infusion selectors that read it. Java's
+	// default is true with 42 classes overriding it false, so the assertions below are built from
+	// that false-list rather than from a list of upgradables: an id this port mints that is missing
+	// from the predicate's own false-set shows up here as a wrong `true`.
+	const { isUpgradableItem, isEquipableItem, usableForMagicalInfusion, usableForCurseInfusion } = require('./items/itemKinds.js');
+	const upgradable = (item) => isUpgradableItem(item);
+	// every equipment family, authored and port-minted
+	for (const id of ['weapon_dagger_t1', 'armor_clotharmor_t1_cloth', 'wand_wandfrost_t1', 'missile_bolas',
+		'weaponReward', 'armorReward', 'wand', 'ring_garnet', 'ring_might', 'ring_haste']) {
+		assert.equal(upgradable({ id }), true, `${id} is upgradable`);
+	}
+	// artifacts: `artifacts/Artifact.isUpgradable()` is false, DriedRose and TimekeepersHourglass included
+	for (const id of ['artifact_chalice', 'artifact_rose', 'artifact_hourglass', 'toolkit', 'rose', 'chains',
+		'horn', 'beacon', 'armband', 'sandals', 'talisman', 'spellbook', 'cloak', 'hourglass', 'chalice', 'cape']) {
+		assert.equal(upgradable({ id }), false, `${id} is an artifact and not upgradable`);
+	}
+	// consumables and props, each a Java class that overrides isUpgradable false
+	for (const id of ['potionHealing', 'exoticPotion', 'blizzardBrew', 'elixirMight', 'scrollUpgrade', 'exoticScroll',
+		'seedFirebloom', 'seed', 'stoneOfBlast', 'stoneOfAugmentation', 'food', 'meat', 'pasty', 'bomb', 'doubleBomb',
+		'fireBomb', 'noisemaker', 'flashbang', 'crystalKey', 'ironKey', 'goldenKey', 'gooBlob', 'metalShard',
+		'energyCrystal', 'candle', 'embers', 'corpseDust', 'sandBag', 'alchemize', 'curseInfusion', 'magicalInfusion',
+		'aquaBlast', 'featherFall', 'arcaneCatalyst', 'alchemicalCatalyst']) {
+		assert.equal(upgradable({ id }), false, `${id} is not upgradable`);
+	}
+	// the one ambiguous id: 'stone' is a missile stack *or* a runestone, decided by sourceClass
+	assert.equal(upgradable({ id: 'stone', sourceClass: 'Bolas' }), true, 'a picked-up missile stack is upgradable');
+	assert.equal(upgradable({ id: 'stone', sourceClass: 'StoneOfBlast' }), false, 'a picked-up runestone is not');
+	assert.equal(upgradable({ id: 'stone' }), false, 'a stone with no class is not assumed to be a missile');
+	// `EquipableItem`: Ring/Artifact come in through KindofMisc, Wand does **not**, which is why
+	// `CurseInfusion` needs its explicit wand clause
+	assert.equal(isEquipableItem({ id: 'ring_might' }), true, 'a ring is an EquipableItem');
+	assert.equal(isEquipableItem({ id: 'wand_wandfrost_t1' }), false, 'a wand is not an EquipableItem');
+	assert.equal(isEquipableItem({ id: 'artifact_chalice' }), true, 'an artifact *is* an EquipableItem (and still excluded, below)');
+	// the two selectors: MagicalInfusion takes every upgradable, CurseInfusion takes upgradable
+	// equipables plus wands - which over this port's ids is the same set
+	for (const item of [{ id: 'wand_wandfrost_t1' }, { id: 'weapon_dagger_t1' }, { id: 'ring_might' }, { id: 'stone', sourceClass: 'Bolas' }]) {
+		assert.equal(usableForMagicalInfusion(item), true, `${item.id} is a MagicalInfusion target`);
+		assert.equal(usableForCurseInfusion(item), true, `${item.id} is a CurseInfusion target`);
+	}
+	for (const item of [{ id: 'artifact_chalice' }, { id: 'potionHealing' }, { id: 'scrollUpgrade' }, { id: 'bomb' }]) {
+		assert.equal(usableForMagicalInfusion(item), false, `${item.id} is not a MagicalInfusion target`);
+		assert.equal(usableForCurseInfusion(item), false, `${item.id} is not a CurseInfusion target`);
+	}
+
+	// `WndTradeItem`'s selling half: a lone item gets one button, a real stack gets `sell_1` at
+	// `value/quantity()` beside `sell_all` at `value()` - and an *upgradable missile stack* gets
+	// the single button too, because Java's condition is
+	// `quantity() == 1 || (item instanceof MissileWeapon && item.isUpgradable())`. What this
+	// replaced sold one unit for every item, so a stack of twelve took twelve picks to clear.
+	const { sellFood } = require('./items/shopActions.js');
+	const sellRun = (carried) => {
+		const pickerCalls = [];
+		const choiceCalls = [];
+		const bag = new Inventory();
+		for (const item of carried) bag.add({ stackable: true, identified: true, ...item });
+		const buyback = [];
+		sellFood({
+			heroStats: { base: (key) => (key === 'gold' ? 100 : 0), setBase: () => {} },
+			bag, stock: new Inventory(), buyback, depth: 6,
+			openItemPicker: (title, entries, onPick) => pickerCalls.push({ title, entries, onPick }),
+			itemDisplayName: (id) => id,
+			say: () => {},
+			showSellOptions: (itemName, options, onPick) => choiceCalls.push({ itemName, options, onPick }),
+		});
+		/** pick the only candidate, then hand back the sell window the pick opened */
+		const choose = (entry) => { pickerCalls[0].onPick(entry); return choiceCalls[0]; };
+		return { pickerCalls, choiceCalls, choose, bag, buyback };
+	};
+	// a stack: two options, priced as Java prices them
+	const stack = sellRun([{ id: 'potionHealing', quantity: 5, stackable: true }]);
+	const stackChoice = stack.choose({ id: 'potionHealing', quantity: 1 });
+	assert.equal(stack.pickerCalls.length, 1, 'a sellable stack is offered by the picker');
+	assert.equal(stack.choiceCalls.length, 1, 'picking it opens the sell window');
+	assert.equal(stackChoice.itemName, 'potionHealing', 'the window is titled with the item');
+	assert.equal(stackChoice.options.length, 2, 'a stack offers exactly Sell 1 and Sell all');
+	assert.match(stackChoice.options[0].label, /^windows\.wndtradeitem\.sell_1\[\d+\]$/, "the first button uses SPD's sell_1 string");
+	assert.match(stackChoice.options[1].label, /^windows\.wndtradeitem\.sell_all\[\d+\]$/, "the second uses sell_all");
+	assert.equal(stackChoice.options[0].units, 1);
+	assert.equal(stackChoice.options[1].units, 5, 'Sell all sells the whole stack');
+	// selling one unit really moves one unit and shelves one
+	stackChoice.onPick(1);
+	assert.equal(stack.bag.find('potionHealing')?.quantity ?? 0, 4, 'Sell 1 removes one unit');
+	assert.deepEqual(stack.buyback.map((entry) => entry.quantity), [1], 'and shelves one unit');
+	// and Sell all empties it
+	const all = sellRun([{ id: 'potionHealing', quantity: 5, stackable: true }]);
+	all.choose({ id: 'potionHealing', quantity: 1 }).onPick(5);
+	assert.equal(all.bag.find('potionHealing'), undefined, 'Sell all empties the stack');
+	assert.deepEqual(all.buyback.map((entry) => entry.quantity), [5], 'and shelves the whole stack');
+	// a lone item: one button, SPD's plain sell wording
+	const lone = sellRun([{ id: 'potionHealing', quantity: 1, stackable: true }]);
+	const loneChoice = lone.choose({ id: 'potionHealing', quantity: 1 });
+	assert.equal(loneChoice.options.length, 1, 'a lone item gets a single button');
+	assert.match(loneChoice.options[0].label, /^windows\.wndtradeitem\.sell\[\d+\]$/, "using SPD's plain sell string");
+	loneChoice.onPick(1);
+	assert.equal(lone.bag.find('potionHealing'), undefined, 'which sells it');
+	// an upgradable missile stack takes the same single-button branch as a lone item
+	const missiles = sellRun([{ id: 'stone', quantity: 8, stackable: true, sourceClass: 'Bolas' }]);
+	const missileChoice = missiles.choose({ id: 'stone', quantity: 1 });
+	assert.equal(missileChoice.options.length, 1,
+		"Java's `item instanceof MissileWeapon && item.isUpgradable()` branch sells the stack whole");
+	missileChoice.onPick(8);
+	assert.equal(missiles.bag.find('stone'), undefined, 'the missile stack left the bag');
+	assert.deepEqual(missiles.buyback.map((entry) => entry.quantity), [8], 'whole, in one shelf entry');
 	const { pickupGroundItem } = require('./items/groundPickup.js');
-	const { MWL_CONSUMABLE_DESCRIPTION_KEYS, MWL_MISSILE_DESCRIPTION_KEYS, MWL_GROUND_ITEM_NAME_KEYS, MWL_ITEM_GROUND_KIND_ALIASES, MWL_ITEM_NAME_KEYS, mwlItemEffectValue } = require('./mwlContent.js');
+	const { MWL_CONSUMABLE_DESCRIPTION_KEYS, MWL_MISSILE_DESCRIPTION_KEYS, MWL_MISSILE_NAME_KEYS, MWL_GROUND_ITEM_NAME_KEYS, MWL_ITEM_GROUND_KIND_ALIASES, MWL_ITEM_NAME_KEYS, mwlItemEffectValue } = require('./mwlContent.js');
 	const bag = new Inventory();
 	bag.add({ id: 'sword', quantity: 1, stackable: true, instanceId: 'flame', level: 2, affix: 'blazing' });
 	bag.add({ id: 'sword', quantity: 1, stackable: true, instanceId: 'frost', level: 1, affix: 'chilling' });
@@ -85,6 +250,22 @@ try {
 	assert.equal(target.affix, 'blazing');
 	upgradeItem(target, 1);
 	assert.equal(target.level, 3);
+	// `Weapon.enchant()` (`Weapon.java` 316-321) / `Armor.inscribe()` (`Armor.java` 596-601):
+	// cleansing drops the curse-infusion marker with the curse - and nothing else, because the
+	// bonus Java applies is the *virtual* `1 + level/6` in `level()` (`curseInfusionLevelBonus`),
+	// never a stored level. This assertion used to pin the old "+1 persistent level" model, which
+	// took a real level back off the item on cleanse.
+	const infused = { id: 'sword', quantity: 1, level: 3, affix: 'wayward', cursed: true, curseInfusionBonus: true };
+	assert.equal(reverseCurseInfusion(infused), true);
+	assert.equal(infused.curseInfusionBonus, false);
+	assert.equal(infused.level, 3, 'a cleanse must not change the stored level');
+	const floored = { id: 'sword', quantity: 1, level: 0, curseInfusionBonus: true };
+	assert.equal(reverseCurseInfusion(floored), true);
+	assert.equal(floored.level, 0);
+	// `Weapon.level()`/`Armor.level()`: `level += 1 + level/6` in Java's integer arithmetic, so the
+	// bonus is 1 at +0, 2 from +6 and 3 from +12.
+	assert.deepEqual([0, 1, 3, 5, 6, 11, 12, 18].map(curseInfusionLevelBonus), [1, 2, 4, 6, 8, 13, 15, 22], 'curse-infusion level bonus matches Java');
+	assert.equal(reverseCurseInfusion({ id: 'sword', quantity: 1, level: 2 }), false);
 	const looks = new Appearances({ potion: { kinds: ['a', 'b'], labels: ['red', 'blue'] } });
 	const first = looks.appearanceOf('potion', 'a');
 	const restored = Appearances.fromJSON({ potion: { kinds: ['a', 'b'], labels: ['red', 'blue'] } }, looks.toJSON());
@@ -144,6 +325,10 @@ try {
 	assert.equal(blacksmithTurnInFavor(40, true), 3000);
 	assert.equal(Object.keys(MWL_MISSILE_DESCRIPTION_KEYS).length, 15);
 	assert.equal(MWL_MISSILE_DESCRIPTION_KEYS.missile_forcecube, 'items.weapon.missiles.forcecube.desc');
+	// `HeavyBoomerang`'s return logs Java's real `hero.you_now_have` pickup line, which needs the
+	// missile's display name - the mechanical `missileDefinitions` table has no name column, so it
+	// comes from the authored item node instead.
+	assert.equal(MWL_MISSILE_NAME_KEYS.missile_heavyboomerang, 'items.weapon.missiles.heavyboomerang.name');
 	assert.equal(Object.keys(MWL_CONSUMABLE_DESCRIPTION_KEYS).length, 64);
 	assert.equal(MWL_CONSUMABLE_DESCRIPTION_KEYS.seedStarflower, 'plants.starflower.desc');
 	assert.equal(mwlItemEffectValue('scrollMirror', 'imageCount'), 2);
@@ -181,7 +366,8 @@ try {
 	}
 	assert.equal(MWL_ITEM_GROUND_KIND_ALIASES.weaponReward, 'armor');
 	assert.equal(MWL_ITEM_GROUND_KIND_ALIASES.doubleBomb, 'bomb');
-	assert.equal(Object.keys(MWL_ITEM_GROUND_KIND_ALIASES).length, 23, 'ground-kind alias count');
+	assert.equal(MWL_ITEM_GROUND_KIND_ALIASES.brokenSeal, 'brokenSeal');
+	assert.equal(Object.keys(MWL_ITEM_GROUND_KIND_ALIASES).length, 29, 'ground-kind alias count');
 	assert.equal(MWL_ITEM_NAME_KEYS.weaponReward, 'port.name.questweapon');
 	assert.equal(MWL_ITEM_NAME_KEYS.sandBag, 'items.artifacts.timekeepershourglass$sandbag.name');
 	assert.equal(MWL_GROUND_ITEM_NAME_KEYS.bomb, 'items.bombs.bomb.name');
@@ -224,7 +410,7 @@ try {
 	assert.equal(tableRows('monsterSpriteFrames', 'monster').length, 65, 'all monster sprite frame metadata stays authored in asset-references.mwl');
 	assert.deepEqual(tableRows('specialItemInventoryRules', 'sourceClass'), [
 		'Bomb', 'DoubleBomb', 'CorpseDust', 'CeremonialCandle', 'Embers', 'Ankh', 'Stylus',
-		'Honeypot', 'Alchemize', 'Bag', 'SandBag',
+		'BrokenSeal', 'Honeypot', 'Alchemize', 'Bag', 'SandBag',
 	], 'special inventory identities stay authored in MWL');
 	// ringModifiers.ts derives RING_DEFS from rings.mwl's authored add: level/multiply: BASE^level
 	// effects rather than hand-copying their numbers - this pins the resulting formulas to the
@@ -515,13 +701,76 @@ try {
 		},
 		'buff durations match the authored table',
 	);
-	// Each shop's opening shelf (`scenario-rules.mwl`'s `shopShelfStock`): the simplified
-	// two-potions/two-identifies stock this shop UI trades - authored data, not code.
-	assert.deepEqual(
-		MWL_TABLE_ROWS('shopShelfStock').map((row) => [String(row.item), Number(row.quantity)]),
-		[['potion', 2], ['scrollIdentify', 2]],
-		'shop shelf stock matches the authored scenario table',
-	);
+	// The shop shelf: `ShopRoom.generateItems()` is now a real generator (see
+	// `src/items/shopStock.ts`), so what is checked here is its *decisions* - the tier-matched
+	// weapon and missile, the fixed catalogue, the randomised slots and the rare roll - with the
+	// draws injected rather than taken off the live stream.
+	{
+		const { planShopStock, shopSandBags } = require('./items/shopStock');
+		/** A scripted `ShopStockSources`: the RNG queue is consumed in call order (so each draw can
+		 *  be aimed), and the category/draw sources are fakes that echo back an identifiable marker
+		 *  so assertions can tell which category or draw kind produced a given plan entry. */
+		const scripted = (ints) => {
+			const queue = [...ints];
+			const rng = {
+				int: () => (queue.length ? queue.shift() : 0),
+				intRange: (min) => min,
+				long: () => 1,
+				pushGenerator: () => {},
+				popGenerator: () => {},
+			};
+			return {
+				rng,
+				weaponTier: (tier) => ({ cat: 2, tier }),
+				missileTier: (tier) => ({ cat: 3, tier }),
+				potion: { cat: 4 },
+				scroll: { cat: 5 },
+				wand: { cat: 6 },
+				ring: { cat: 7 },
+				randomCategory: (deck) => ({ cls: `deck-${deck.cat}`, cat: deck.cat, level: 0 }),
+				randomUsingDefaults: (deck) => ({ cls: `deck-${deck.cat}`, cat: deck.cat, level: 0 }),
+				randomArtifact: () => null,
+			};
+		};
+		const ids = (plans) => plans.map((p) => (p.kind === 'item' ? p.id : p.kind === 'sandBag' ? 'sandBag' : p.generated.cls));
+		// `rng.int()` draws happen in this order inside `planShopStock`: the two potion-or-scroll
+		// loop picks, the bomb-slot `Random.Int(4)`, the rare-slot `Random.Int(10)`, then the
+		// post-shuffle draws (which the mock resolves to 0 once the queue is spent - a deterministic
+		// reorder, not a functional draw, so it doesn't affect which items ended up on the shelf).
+		// Every one of Java's fixed entries is on the shelf at depth 6, plus the tier-matched pair.
+		const six = planShopStock(6, null, scripted([0, 0, 0, 0]));
+		const sixIds = ids(six);
+		for (const fixed of ['potionHealing', 'scrollIdentify', 'scrollCleanse', 'scrollMapping',
+			'alchemize', 'food', 'stoneOfAugmentation']) {
+			assert.ok(sixIds.includes(fixed), `depth 6 stocks ${fixed}`);
+		}
+		assert.ok(six.some((p) => p.kind === 'item' && p.id === 'food' && p.quantity === 2), 'two SmallRations');
+		assert.ok(six.some((p) => p.kind === 'item' && p.id === 'armorReward' && p.tier === 2), 'depth 6 stocks tier-2 armor');
+		assert.ok(six.some((p) => p.kind === 'generated' && p.generated.cat === 2), 'the weapon draw is on the shelf');
+		// The rare slot is `Random.Int(10)`: a stylus on 7 of 10, and the three 1-in-10s. The bomb
+		// slot's own draw (index 2) is set to 0/bomb here since it isn't what's under test.
+		assert.ok(ids(planShopStock(6, null, scripted([0, 0, 0, 7]))).includes('stylus'), 'rare roll 7 -> stylus');
+		// The Bomb slot is `Random.Int(4)` over Bomb/DoubleBomb/DoubleBomb/Honeypot.
+		assert.ok(ids(planShopStock(6, null, scripted([0, 0, 0, 0]))).includes('bomb'), 'bomb roll 0 -> bomb');
+		assert.ok(ids(planShopStock(6, null, scripted([0, 0, 1, 0]))).includes('doubleBomb'), 'bomb roll 1 -> doubleBomb');
+		assert.ok(ids(planShopStock(6, null, scripted([0, 0, 3, 0]))).includes('honeypot'), 'bomb roll 3 -> honeypot');
+		// Alchemize is `Random.IntRange(2, 3)`.
+		assert.ok(six.some((p) => p.kind === 'item' && p.id === 'alchemize' && p.quantity >= 2 && p.quantity <= 3));
+		// Deeper shops stock the next tier up, and the deepest three torches' worth is *absent*
+		// (no torch item exists) rather than filled with something else.
+		assert.ok(planShopStock(16, null, scripted([0, 0, 0, 0])).some((p) => p.kind === 'item' && p.id === 'armorReward' && p.tier === 4));
+		assert.ok(planShopStock(21, null, scripted([0, 0, 0, 0])).some((p) => p.kind === 'item' && p.id === 'armorReward' && p.tier === 5));
+		// Sandbags appear only with a carried hourglass, at the depth's own fraction of the missing
+		// ones - and never without it.
+		assert.equal(planShopStock(6, null, scripted([0, 3, 0, 0, 7])).filter((p) => p.kind === 'sandBag').length, 0,
+			'no hourglass means no sandbags');
+		assert.equal(planShopStock(6, 5, scripted([0, 3, 0, 0, 7])).filter((p) => p.kind === 'sandBag').length, 1,
+			'ceil(5 * 0.20) at depth 6');
+		assert.equal(planShopStock(21, 4, scripted([0, 3, 0, 0, 7])).filter((p) => p.kind === 'sandBag').length, 4,
+			'ceil(4 * 0.80) at depth 21');
+		assert.equal(shopSandBags(11, 5), 2);
+		assert.equal(shopSandBags(16, 5), 3);
+	}
 	// Per-monster status immunities (`Char.isImmune()`'s mob half, tag `v3.3.8`): the authored
 	// `monsterStatusImmunities` table rows, plus the live gate's verdicts through the real
 	// `monsterBuffImmune` helper. INORGANIC kinds refuse bleeding/poison, STATIC kinds refuse
@@ -556,7 +805,294 @@ try {
 	assert.equal(monsterBuffImmune('dm300', undefined, 'terror'), false, 'dm300 only resists terror for damage, still takes the buff');
 	assert.equal(monsterBuffImmune('succubus', undefined, 'charm'), true, 'succubus refuses charm');
 	assert.equal(monsterBuffImmune('piranha', undefined, 'burning'), true, 'piranha refuses burning');
-	console.log('PASS item-instance separation, enhancement transfer, upgrade policy, appearance restore, missile dust pickup, the Unstable delegate list, rings.mwl-derived ring formulas, items.mwl-derived weapon/armor tiers, Generator.java deck parity, monster/hero/buff Java parity, and per-monster status immunities');
+	const { sandalsSeedChargeReq, sandalsCanUseSeed, feedSandalsSeed, sandalsRootChargeReq,
+		sandalsNaturalismLevel, applySandalsNaturalismCharge, sandalsChargeCap, sandalsLevelCap } = require('./items/sandals.js');
+	// `SandalsOfNature.seedChargeReqs`'s static block (tag `v3.3.8`), one row per seed class. This
+	// pins the authored MWL table to Java's own numbers: the table drives both the `AC_ROOT` charge
+	// gate and the "is this seed feedable at all" filter, so a drifted row would be a silent
+	// gameplay change rather than a compile error.
+	const sandalsSeedReqs = new Map(MWL_TABLE_ROWS('sandalsSeedReqs', 'seed').map((row) => [row.seed, Number(row.charge)]));
+	assert.deepEqual([...sandalsSeedReqs.entries()].sort(), [
+		['blindweed', 12], ['earthroot', 40], ['fadeleaf', 12], ['firebloom', 20], ['icecap', 20],
+		['mageroyal', 12], ['rotberry', 8], ['sorrowmoss', 20], ['starflower', 40], ['stormvine', 20],
+		['sungrass', 80], ['swiftthistle', 20],
+	].sort(), 'the authored seed-charge table equals Java\'s seedChargeReqs');
+	for (const [seed, charge] of sandalsSeedReqs) assert.equal(sandalsSeedChargeReq(seed), charge, `charge requirement for ${seed}`);
+	assert.equal(sandalsSeedChargeReq('blandfruit'), null, 'an unmapped kind has no requirement');
+	assert.equal(sandalsChargeCap(), 100);
+	assert.equal(sandalsLevelCap(), 3);
+	// Java's `naturalismLevel`: 0 with no artifact, -1 for a cursed pair, `itemLevel()+1` otherwise.
+	assert.equal(sandalsNaturalismLevel(undefined), 0);
+	assert.equal(sandalsNaturalismLevel({ level: 0 }), 1);
+	assert.equal(sandalsNaturalismLevel({ level: 3 }), 4);
+	assert.equal(sandalsNaturalismLevel({ level: 2, cursed: true }), -1);
+	// `ArtifactBuff.isCursed()` is `MagicImmune == null && cursed`, so a cursed pair under AntiMagic
+	// is NOT cursed for `HighGrass.trample`'s purposes and keeps the full loot scaling - while still
+	// gaining no charge, which is the one case where Java's two checks disagree.
+	assert.equal(sandalsNaturalismLevel({ level: 2, cursed: true }, true), 3, 'AntiMagic clears the curse for loot');
+	assert.equal(sandalsNaturalismLevel({ level: 2 }, true), 3);
+	// `Naturalism.charge()`: `(3+level)/6` per trampled grass, banked in whole units at the cap.
+	const grassSandals = { level: 0, charge: 0, partialCharge: 0 };
+	applySandalsNaturalismCharge(grassSandals, 1, false);
+	assert.equal(grassSandals.charge, 0);
+	assert.equal(grassSandals.partialCharge, 0.5, 'half a charge per grass at +0');
+	applySandalsNaturalismCharge(grassSandals, 1, false);
+	assert.equal(grassSandals.charge, 1, 'two tramples bank one whole charge at +0');
+	assert.equal(grassSandals.partialCharge, 0);
+	const maxedSandals = { level: 3, charge: 100, partialCharge: 0 };
+	applySandalsNaturalismCharge(maxedSandals, 1, false);
+	assert.equal(maxedSandals.charge, 100);
+	assert.equal(maxedSandals.partialCharge, 0, 'a full pair banks nothing further');
+	const cursedSandals = { level: 3, charge: 0, partialCharge: 0, cursed: true };
+	applySandalsNaturalismCharge(cursedSandals, 1, false);
+	assert.equal(cursedSandals.charge, 0, 'cursed footwear gains no charge');
+	const immuneSandals = { level: 3, charge: 0, partialCharge: 0 };
+	applySandalsNaturalismCharge(immuneSandals, 1, true);
+	assert.equal(immuneSandals.charge, 0, 'AntiMagic gains no charge');
+	const ringedSandals = { level: 0, charge: 0, partialCharge: 0 };
+	applySandalsNaturalismCharge(ringedSandals, 1.175, false);
+	assert.equal(ringedSandals.partialCharge, 0.5 * 1.175, 'the energy-ring multiplier scales the gain');
+	// `canUseSeed()`: never a kind the footwear already holds; at the level cap, never the attuned
+	// kind either - which is what stops a maxed pair from being fed its own current seed forever.
+	assert.equal(sandalsCanUseSeed({ level: 0, seeds: [] }, 'rotberry'), true);
+	assert.equal(sandalsCanUseSeed({ level: 0, seeds: ['rotberry'] }, 'rotberry'), false);
+	assert.equal(sandalsCanUseSeed({ level: 3, seeds: [], curSeedEffect: 'rotberry' }, 'rotberry'), false);
+	assert.equal(sandalsCanUseSeed({ level: 3, seeds: [], curSeedEffect: 'sungrass' }, 'rotberry'), true);
+	assert.equal(sandalsCanUseSeed({ level: 0, seeds: [] }, 'blandfruit'), false);
+	// `itemSelector.onSelect()`: the third seed at +0 clears the list and levels the artifact.
+	const fedSandals = { level: 0, seeds: [] };
+	assert.equal(feedSandalsSeed(fedSandals, 'rotberry'), false, 'one seed is not enough at +0');
+	assert.equal(feedSandalsSeed(fedSandals, 'firebloom'), false, 'two are not either');
+	assert.equal(feedSandalsSeed(fedSandals, 'icecap'), true, 'the third reaches `3 + level()*3`');
+	assert.equal(fedSandals.level, 1);
+	assert.deepEqual(fedSandals.seeds, [], 'the list empties on the level');
+	assert.equal(fedSandals.curSeedEffect, 'icecap', 'the last fed seed stays attuned');
+	assert.equal(sandalsRootChargeReq(fedSandals), 20, 'the attuned seed sets the root cost');
+	assert.equal(sandalsRootChargeReq({ level: 0, seeds: [] }), null, 'nothing attuned means no root at all');
+	// At the cap the list stops growing, so no further level is reachable however much is fed.
+	const cappedSandals = { level: 3, seeds: [] };
+	for (const seed of sandalsSeedReqs.keys()) {
+		assert.equal(feedSandalsSeed(cappedSandals, seed), false, `no further level once capped (${seed})`);
+	}
+	assert.equal(cappedSandals.level, 3);
+	const { talismanMaxDist, talismanScryAngle, talismanScryCost, talismanApplyScryCost, talismanApplyExp,
+		talismanAwarenessDuration, talismanProcFigure, talismanScryGate, applyTalismanPerTurnCharge,
+		talismanChargeCap, talismanLevelCap } = require('./items/talisman.js');
+	// `TalismanOfForesight` (tag `v3.3.8`): the caps, the `maxDist()` pair of bounds, the
+	// distance-scaled cone angle and its cost, the per-turn trickle and the exp curve.
+	assert.equal(talismanChargeCap(), 100);
+	assert.equal(talismanLevelCap(), 10);
+	assert.equal(talismanScryGate({ charge: 4 }, false), 'low', 'the scry needs 5 charge');
+	assert.equal(talismanScryGate({ charge: 5 }, false), 'ok');
+	assert.equal(talismanScryGate({ charge: 5, cursed: true }, false), 'cursed');
+	assert.equal(talismanScryGate({ charge: 5 }, true), 'missing', 'AntiMagic blocks the action silently');
+	assert.equal(talismanScryGate(undefined, false), 'missing');
+	// `min(5 + 2*level, (charge-3)/1.08)`: the charge bound bites for a low charge, the level bound
+	// for a high one. At +0/100 charge the level bound wins at 5; at +10/5 charge the charge bound
+	// wins at 1.85 (the documented "nearly-empty charge" case).
+	assert.equal(talismanMaxDist(0, 100), 5);
+	assert.equal(talismanMaxDist(10, 100), 25);
+	assert.equal(Math.round(talismanMaxDist(10, 5) * 100) / 100, 1.85);
+	// `round(200 * 0.92^dist)`: 200 degrees point-blank, 184 at one tile, 92 at nine.
+	assert.equal(talismanScryAngle(0), 200);
+	assert.equal(talismanScryAngle(1), 184);
+	assert.equal(talismanScryAngle(9), 94);
+	// The cost is `3 + dist*1.08`, and Java spends it on an *int* charge, truncating: at dist 2 the
+	// cost is 5.16, so a charge of 20 becomes 14 with 0.16 owed back out of `partialCharge`.
+	const scried = { charge: 20, partialCharge: 0.5 };
+	talismanApplyScryCost(scried, 2);
+	assert.equal(scried.charge, 14, 'Java truncates the fractional charge');
+	assert.equal(Math.round(scried.partialCharge * 100) / 100, 0.34);
+	// An over-spend borrows from `partialCharge` and can leave a negative partial on a zero charge,
+	// which is Java's own `while (charge < 0)` branch.
+	const broke = { charge: 3, partialCharge: 0 };
+	talismanApplyScryCost(broke, 0);
+	assert.equal(broke.charge, 0);
+	assert.equal(Math.round(broke.partialCharge * 100) / 100, 0);
+	assert.equal(talismanScryCost(0), 3);
+	assert.equal(Math.round(talismanScryCost(25) * 100) / 100, 30);
+	// `5 + 2*level()` awareness, the `(int)(3 + dist*1.08)` proc figure, and the `100 + 50*level`
+	// exp curve with its level cap.
+	assert.equal(talismanAwarenessDuration(0), 5);
+	assert.equal(talismanAwarenessDuration(5), 15);
+	assert.equal(talismanProcFigure(0), 3);
+	assert.equal(talismanProcFigure(2), 5);
+	const leveling = { level: 0, exp: 99 };
+	assert.equal(talismanApplyExp(leveling, 1), true, '100 exp levels a +0 talisman');
+	assert.equal(leveling.level, 1);
+	assert.equal(leveling.exp, 0, 'the threshold is subtracted, not reset');
+	assert.equal(talismanApplyExp(leveling, 149), false, 'a +1 talisman needs 150');
+	assert.equal(leveling.exp, 149);
+	assert.equal(talismanApplyExp({ level: 10, exp: 100000 }, 0), false, 'the cap holds at +10');
+	// `Foresight.act()`: 0.05 a turn at +0 (2000 turns to full), doubled at +10, and no gain at all
+	// past the cap or under AntiMagic.
+	const charging = { level: 0, charge: 0, partialCharge: 0 };
+	for (let i = 0; i < 20; i++) applyTalismanPerTurnCharge(charging, 1, false, true);
+	assert.equal(charging.charge, 1, '20 turns at +0 = exactly one charge');
+	// Not exactly 0: twenty `float` additions of 0.05 leave a residue of ~1.2e-7, which is Java's own
+	// arithmetic (`partialCharge` is a float there too), not a port artefact.
+	assert.ok(Math.abs(charging.partialCharge) < 1e-6, `float residue stays negligible (${charging.partialCharge})`);
+	const fast = { level: 10, charge: 0, partialCharge: 0 };
+	for (let i = 0; i < 10; i++) applyTalismanPerTurnCharge(fast, 1, false, true);
+	assert.equal(fast.charge, 1, '10 turns at +10 = exactly one charge');
+	const immuneCharge = { level: 0, charge: 0, partialCharge: 0 };
+	applyTalismanPerTurnCharge(immuneCharge, 1, true, true);
+	assert.equal(immuneCharge.partialCharge, 0, 'AntiMagic gains nothing');
+	const pausedCharge = { level: 0, charge: 0, partialCharge: 0 };
+	applyTalismanPerTurnCharge(pausedCharge, 1, false, false);
+	assert.equal(pausedCharge.partialCharge, 0, 'a suppressed regen tick gains nothing');
+	const fullCharge = { level: 0, charge: 100, partialCharge: 0.5 };
+	applyTalismanPerTurnCharge(fullCharge, 1, false, true);
+	assert.equal(fullCharge.partialCharge, 0.5, 'a capped talisman is left entirely alone');
+	const { roseLevelCap, roseChargeCap, roseGhostMaxHp, roseGhostAttackSkill, roseGhostDefenseSkill,
+		roseGhostDamageRange, roseGhostStrength, applyRoseRecharge, roseSummonGate, rosePetalsNeeded,
+		rosePetalDropCap, rosePetalPickup } = require('./items/rose.js');
+	// `DriedRose` (tag `v3.3.8`): the caps and the ghost's whole stat line.
+	assert.equal(roseLevelCap(), 10);
+	assert.equal(roseChargeCap(), 100);
+	assert.equal(roseGhostMaxHp(0), 20, 'a +0 rose raises a 20 HP ghost');
+	assert.equal(roseGhostMaxHp(10), 100);
+	assert.equal(roseGhostAttackSkill(7), 16, 'hero.lvl + 9');
+	assert.equal(roseGhostDefenseSkill(7), 11, 'hero.lvl + 4');
+	assert.deepEqual(roseGhostDamageRange(), [0, 5], 'a bare-handed ghost rolls NormalIntRange(0, 5)');
+	assert.equal(roseGhostStrength(0), 13);
+	assert.equal(roseGhostStrength(9), 17, 'level()/2 is integer division');
+	// The `AC_SUMMON` ladder, in Java's own order.
+	assert.equal(roseSummonGate(undefined, true, false, false), 'missing');
+	assert.equal(roseSummonGate({ charge: 100 }, false, false, false), 'quest', 'the Sad Ghost quest gates it');
+	assert.equal(roseSummonGate({ charge: 100 }, true, true, false), 'spawned', 'one ghost at a time');
+	assert.equal(roseSummonGate({ charge: 99 }, true, false, false), 'no_charge', 'it must be *full*, not just charged');
+	assert.equal(roseSummonGate({ charge: 100, cursed: true }, true, false, false), 'cursed');
+	assert.equal(roseSummonGate({ charge: 100 }, true, false, false), 'ok');
+	assert.equal(roseSummonGate({ charge: 100 }, true, false, true), 'missing', 'AntiMagic blocks it silently');
+	// `roseRecharge.act()` with no ghost: `1/5` a turn, 500 turns to a full charge, and Java's
+	// *strict* `> 1` boundary - exactly 1.0 sits without paying out.
+	const roseCharging = { charge: 0, partialCharge: 0 };
+	for (let i = 0; i < 4; i++) applyRoseRecharge(roseCharging, { ghostAlive: false, ringMultiplier: 1, magicImmune: false, regenOn: true });
+	assert.equal(roseCharging.charge, 0, 'four turns of 0.2 is still under a whole charge');
+	assert.ok(Math.abs(roseCharging.partialCharge - 0.8) < 1e-9);
+	const fifth = applyRoseRecharge(roseCharging, { ghostAlive: false, ringMultiplier: 1, magicImmune: false, regenOn: true });
+	assert.ok(!fifth.charged, 'a boundary of exactly 1.0 does not pay out');
+	for (let i = 0; i < 4; i++) applyRoseRecharge(roseCharging, { ghostAlive: false, ringMultiplier: 1, magicImmune: false, regenOn: true });
+	assert.equal(roseCharging.charge, 1, 'ten turns bank exactly one charge');
+	const roseCapped = { charge: 100, partialCharge: 0 };
+	const cappedTick = applyRoseRecharge(roseCapped, { ghostAlive: false, ringMultiplier: 1, magicImmune: false, regenOn: true });
+	assert.equal(roseCapped.charge, 100, 'a full rose is left alone');
+	assert.ok(!cappedTick.charged, 'and does not re-announce itself');
+	const roseSuppressed = { charge: 0, partialCharge: 0 };
+	applyRoseRecharge(roseSuppressed, { ghostAlive: false, ringMultiplier: 1, magicImmune: true, regenOn: true });
+	applyRoseRecharge(roseSuppressed, { ghostAlive: false, ringMultiplier: 1, magicImmune: false, regenOn: false });
+	applyRoseRecharge({ charge: 0, partialCharge: 0, cursed: true }, { ghostAlive: false, ringMultiplier: 1, magicImmune: false, regenOn: true });
+	assert.equal(roseSuppressed.charge, 0, 'AntiMagic and a paused regen both gain nothing');
+	// With a ghost alive the clock heals *instead*: `HT/500` a turn, and the charge never moves.
+	const roseHealing = { charge: 0, partialCharge: 0 };
+	let healed = 0;
+	for (let i = 0; i < 50; i++) {
+		healed += applyRoseRecharge(roseHealing, { ghostAlive: true, ghostHp: 0, ghostMaxHp: 100, ringMultiplier: 1, magicImmune: false, regenOn: true }).ghostHealed;
+	}
+	// Nine, not ten: Java's healing loop is `while (partialCharge > 1)`, *strictly* greater, so the
+	// tenth point of a 50-tick tenth sits at exactly 1.0 and waits for the 51st - the loop, not the
+	// "heals to full over 500 turns" comment above it, is what this port reproduces.
+	assert.equal(healed, 9, '50 turns heals a 100 HP ghost by 9, the strict boundary holding the tenth');
+	assert.equal(roseHealing.charge, 0, 'and no charge accrues while the ghost lives');
+	const fullGhost = applyRoseRecharge({ charge: 0, partialCharge: 0.5 }, { ghostAlive: true, ghostHp: 100, ghostMaxHp: 100, ringMultiplier: 1, magicImmune: false, regenOn: true });
+	assert.equal(fullGhost.ghostHealed, 0);
+	// `RegularLevel`'s petal drop: `ceil((depth/2 - dropped)/3)`, integer division inside the ceil.
+	assert.equal(rosePetalsNeeded(2, 0), 1, 'depth 2 wants its first petal');
+	assert.equal(rosePetalsNeeded(6, 1), 1, 'depth 6, one dropped: (3-1)/3 rounds up to 1');
+	assert.equal(rosePetalsNeeded(10, 5), 0, 'on schedule means no extra petals');
+	assert.equal(rosePetalsNeeded(12, 0), 2, 'far behind drops two');
+	assert.equal(rosePetalDropCap(), 11);
+	// `DriedRose.Petal.doPickUp()`'s four outcomes.
+	assert.equal(rosePetalPickup(undefined), 'no_rose');
+	assert.equal(rosePetalPickup({ level: 0 }), 'levelup');
+	assert.equal(rosePetalPickup({ level: 9 }), 'maxlevel', 'the tenth petal tops it out');
+	assert.equal(rosePetalPickup({ level: 10 }), 'no_room');
+	const { wealthEquipBonus, wealthConsumableTier, wealthDeathRolls, initialiseWealthTrackers,
+		planWealthDrops } = require('./items/wealthDrops.js');
+	// `RingOfWealth.tryForBonusDrop` (tag `v3.3.8`): the capped equip-bonus loop, the consumable
+	// tier thresholds and the per-kill roll counts.
+	assert.equal(wealthEquipBonus([]), 0);
+	assert.equal(wealthEquipBonus([3]), 3, 'one ring contributes its own level');
+	assert.equal(wealthEquipBonus([3, 5]), 7, 'a higher second ring adds 5 + min(3, 2)');
+	assert.equal(wealthEquipBonus([5, 3]), 7, 'a lower one adds min(3, 2)');
+	assert.equal(wealthEquipBonus([3, 3, 3]), 7, 'the cap keeps a third ring from compounding');
+	// `genConsumableDrop`: "60% chance - 4% per level" low, "30% + 2% per level" mid.
+	assert.equal(wealthConsumableTier(0, 0.5), 1);
+	assert.equal(wealthConsumableTier(0, 0.7), 2);
+	assert.equal(wealthConsumableTier(0, 0.95), 3);
+	assert.equal(wealthConsumableTier(15, 0.5), 2, 'the low tier is gone by +15');
+	assert.equal(wealthConsumableTier(15, 0.7), 3, 'and the high tier has grown to 40%');
+	assert.equal(wealthDeathRolls(true, false), 15);
+	assert.equal(wealthDeathRolls(false, true), 5);
+	assert.equal(wealthDeathRolls(false, false), 1);
+	// A scripted RNG, so the counter arithmetic and the plan sequence are pinned exactly.
+	const scripted = (values) => {
+		const queue = [...values];
+		const rng = {
+			int: () => queue.shift(),
+			float: () => queue.shift(),
+			normalIntRange: () => queue.shift(),
+		};
+		return rng;
+	};
+	const fresh = initialiseWealthTrackers(scripted([7, 6]));
+	assert.deepEqual(fresh, { triesToDrop: 7, dropsToEquip: 6 });
+	// One call with `tries = 8` on a {7, 6} counter: the counter goes to -1, so one consumable pays
+	// out (`dropsToEquip` 6 -> 5) and the counter refills by the drawn 4, landing at 3.
+	// `Random.Float()` 0.5 takes the low tier, whose `Int(4)` of 2 is a potion, and `bonus - 1` = 0.
+	const one = planWealthDrops({ triesToDrop: 7, dropsToEquip: 6 }, 8, 1, 1, scripted([0.5, 2, 4]));
+	assert.deepEqual(one.plans, [{ kind: 'potion' }]);
+	assert.deepEqual(one.trackers, { triesToDrop: 3, dropsToEquip: 5 });
+	// Two payouts from one boss-sized call: the consumable first (`dropsToEquip` still had one left),
+	// then an equipment drop, then the refill lifts the counter out of the loop. The scripted draws
+	// follow Java's own order - `Float()` for the tier, `Int(4)`/`Int(6)`/`Int(4)` down the
+	// high/mid/low chain, then the loop's two `NormalIntRange` draws and the equipment `Int(5)`.
+	const boss = planWealthDrops({ triesToDrop: 1, dropsToEquip: 1 }, 15, 3, 3, scripted([0.95, 0, 0, 2, 4, 3, 8, 12]));
+	// Java nests the doublings (high's `quantity *2` around mid's `quantity *2`), which is four
+	// potions in one stack - the nesting is the mechanic, so the plan keeps it.
+	assert.deepEqual(boss.plans, [
+		{ kind: 'doubled', inner: { kind: 'doubled', inner: { kind: 'potion' } } },
+		{ kind: 'equip', slot: 'ring', level: 2 },
+	], 'a doubly-doubled potion, then the equip payout at equipBonus - 1');
+	assert.deepEqual(boss.trackers, { triesToDrop: 2, dropsToEquip: 8 }, 'the equip counter refilled by the drawn 8');
+	// The mid tier's Bomb case becomes a DoubleBomb when the high tier doubles it, exactly as
+	// Java's `if (i instanceof Bomb) return new Bomb.DoubleBomb();` does.
+	const doubleBomb = planWealthDrops({ triesToDrop: 0, dropsToEquip: 5 }, 1, 1, 1, scripted([0.95, 0, 4, 7]));
+	assert.deepEqual(doubleBomb.plans, [{ kind: 'doubleBomb' }]);
+	assert.deepEqual(doubleBomb.trackers, { triesToDrop: 6, dropsToEquip: 4 });
+	const { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal } = require('./items/artifactRecharge.js');
+	// `ArtifactRecharge.chargeArtifacts()` (tag `v3.3.8`): every artifact's own `charge()` override,
+	// with its rate and its guard set. Java's base `Artifact.charge()` is a no-op, so anything not
+	// in the table must be too.
+	assert.deepEqual(artifactRechargeEffect('talisman'), { kind: 'charge', rate: 2, capZeroesPartial: true, fullLineKey: 'items.artifacts.talismanofforesight.full_charge', guards: 'cursedAndImmune' });
+	assert.deepEqual(artifactRechargeEffect('sandals'), { kind: 'charge', rate: 2, capZeroesPartial: true, guards: 'cursedAndImmune' });
+	assert.deepEqual(artifactRechargeEffect('toolkit'), { kind: 'charge', rate: 0.25, capZeroesPartial: false, guards: 'immuneOnly' });
+	assert.deepEqual(artifactRechargeEffect('cape'), { kind: 'addCharge', rate: 4, procAtCap: true, guards: 'none' });
+	assert.deepEqual(artifactRechargeEffect('chains'), { kind: 'charge', rate: 0.5, capZeroesPartial: false, guards: 'cursedAndImmune' });
+	assert.equal(artifactRechargeEffect('hourglass').kind, 'none', 'the Hourglass never overrides charge()');
+	assert.equal(artifactRechargeEffect('not-an-artifact').kind, 'none');
+	// The bank: whole units onto the integer charge, and the cap's two behaviours (Beacon/Chains/
+	// Toolkit keep the fraction they had banked; everything else zeroes it).
+	const banking = { charge: 0, partialCharge: 0 };
+	assert.equal(bankArtifactCharge(banking, 100, 2, 4, true), false);
+	assert.deepEqual(banking, { charge: 8, partialCharge: 0 });
+	const capped = { charge: 9, partialCharge: 0 };
+	assert.equal(bankArtifactCharge(capped, 10, 2, 4, true), true, 'rate 2 x 4 overflows a cap of 10');
+	assert.deepEqual(capped, { charge: 10, partialCharge: 0 });
+	const keepsFraction = { charge: 9, partialCharge: 0.5 };
+	assert.equal(bankArtifactCharge(keepsFraction, 10, 0.25, 4, false), true);
+	assert.deepEqual(keepsFraction, { charge: 10, partialCharge: 0.5 });
+	// `ChaliceOfBlood.charge()`: `healDelay = (10 - (1.33 + level*0.667))/amount`, `heal = 5/healDelay`,
+	// with Java's `Random.Float() < heal % 1` rounding the fraction up.
+	assert.equal(chaliceRechargeHeal(10, 1, 0.9), 2, 'a +10 chalice heals a flat 2 a turn');
+	assert.equal(chaliceRechargeHeal(10, 1, 0.1), 3, 'and 3 when the fractional roll lands');
+	assert.equal(chaliceRechargeHeal(0, 1, 0.9), 0, 'a +0 chalice usually heals nothing');
+	// `DriedRose.charge()`'s ghost half.
+	assert.equal(roseRechargeGhostHeal(0, 1), 1);
+	assert.equal(roseRechargeGhostHeal(3, 1), 2, '(1 + level/3) * amount');
+	assert.equal(roseRechargeGhostHeal(9, 4), 16);
+	console.log('PASS item-instance separation, enhancement transfer, upgrade policy, appearance restore, missile dust pickup, the Unstable delegate list, rings.mwl-derived ring formulas, items.mwl-derived weapon/armor tiers, Generator.java deck parity, monster/hero/buff Java parity, per-monster status immunities, the Sandals of Nature seed/charge economy, the Talisman of Foresight scry formulas, the Dried Rose ghost/petal economy, the Ring of Wealth bonus-drop counters, the generated shop shelf, and the ArtifactRecharge table');
 } finally {
 	rmSync(out, { recursive: true, force: true });
 }

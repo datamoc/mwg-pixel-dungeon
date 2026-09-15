@@ -2,8 +2,8 @@
 
 Fully checked-off sections of `ROADMAP.md`, moved out here to keep the working roadmap focused
 on open items. A section moves here only when *every* checkbox in it is `- [x]`; a section with
-even one remaining `- [ ]` stays in `ROADMAP.md`. Moved 2026-09-14 (see `ROADMAP.md`'s "This
-port's own release plan (news)" section for the versioning this feeds into).
+even one remaining `- [ ]` stays in `ROADMAP.md`. Sections moved 2026-09-14 and 2026-09-15; see
+`ROADMAP.md`'s "This port's own release plan (news)" section for the versioning this feeds into.
 
 `tools/roadmap-progress.html` only reads `ROADMAP.md`, so items here no longer count toward its
 progress bars - that's intentional: they're done, and the bars should reflect remaining work.
@@ -860,3 +860,61 @@ Do not add new authored content as object literals or scattered constants in the
       entrance-room exclusion wasn't modeled on ported floors, so monsters could spawn directly
       in the first room. Both browser-verified live. See `PORT_COVERAGE.md`.
 
+## 12. Publish a playable build on GitHub Pages (closed 2026-09-15)
+
+- [x] Deploy `dist/` to GitHub Pages so the game is playable at
+      `https://datamoc.github.io/mwg-pixel-dungeon/` without a local checkout. `vite.config.ts`'s
+      `base: './'` (relative asset paths) needed no changes for the project-subpath Pages URL;
+      `tools/emit.mjs`'s built `index.html` (non-module `<script defer>`) loads over `https://`
+      exactly like it does over `file://`. `.github/workflows/deploy.yml` (`npm ci`, `npm run
+      build`, upload `dist/`, deploy; triggers on push to `main` plus `workflow_dispatch`) existed
+      from an earlier pass but had never actually been pushed - this repo was 42 commits ahead of
+      `origin/main` the whole time, so the workflow, and everything else committed since, only
+      existed locally. The user explicitly asked for the deployment this pass (confirmed via
+      `AskUserQuestion` that the project-subpath URL, not a separate root `datamoc.github.io`
+      user-page repo, is what they want), which resolved both open items below at once: pushed
+      main, enabled Pages via `gh api -X POST repos/.../pages -f build_type=workflow` (source:
+      GitHub Actions), and the push-triggered run deployed successfully
+      (`gh run watch` - both `build`/`deploy` jobs green). Verified live over HTTP: the deployed
+      page serves the real built `index.html` (non-module `<script defer src="./game.js">`, not
+      the unbuilt-source fallback) and `game.js` itself returns `200` at its full ~25.6MB build
+      size. **Not verified this pass**: actual in-browser rendering (title screen, class-select,
+      a played floor) - no working browser tool was available this session (`claude-in-chrome`
+      extension not connected, `chrome-devtools-mcp`'s browser unreachable/already running
+      elsewhere), so this is HTTP/asset-shape verification only, honestly short of the real
+      "open it and look" bar the rest of this file holds itself to - owed as a follow-up. Every
+      future push to `main` now deploys automatically (the auto-vs-manual choice both options
+      being kept for was implicitly resolved by asking the user to trigger deployment via a push-
+      based workflow at all). **Live browser confirmation done 2026-09-09** (`chrome-devtools-mcp`):
+      opened `https://datamoc.github.io/mwg-pixel-dungeon/` directly, the title screen rendered
+      correctly (menu buttons, background, title art - showing the pre-existing cropped-logo bug
+      documented below, since that fix was made locally this same pass and not yet pushed).
+- [x] **Track the latest `mwg` release and build every packaging target it supports, not only the
+      GitHub Pages web build.** **Done 2026-09-15, except iOS.** The tracking half is now the
+      `mwg`-usage audit's recurring job (`npm run mwg:check`, `tools/check-mwg-version.mjs`, plus
+      the audit section in `PORT_COVERAGE.md`, which was refreshed against 0.13.0 the same day).
+      The packaging half ships as `RELEASING.md` + `.github/workflows/release.yml`, triggered by a
+      `v*` tag and by nothing else: an ordinary push still only deploys Pages. Artifacts, all built
+      on a tag and attached to the GitHub Release (which answers the "where are they published"
+      question the item left open - Pages for web, Releases for the binaries): the single-file
+      gzipped and brotli pages, a self-host zip carrying `mwg/tools/compress-dist`'s `.gz`/`.br`
+      siblings, a debug-signed Android APK, and a self-contained Windows WebView2 build. Every one
+      of them was produced locally first: the APK with the same `cap add`/`cap sync`/`gradlew
+      assembleDebug` commands the workflow runs (JDK 21 + Android platform 35), and the desktop
+      host published, launched and probed over CDP - `window.__MWG__` live, canvas present, and
+      `localStorage` writable, which is the reason the host maps a virtual host name onto the game
+      folder instead of opening `file://`. **Two findings this item did not anticipate**: the
+      framework's Capacitor/WebView2 scaffolding is *not* in the published package at all (its own
+      `cap:*`/`desktop:*` scripts point into its repository), so this project carries its own
+      WebView2 host - recorded as P18 in `4MWG/IMPROVEMENT_PROPOSALS.md`; and the ~28 MB bundle is
+      not a code-splitting problem, since 11.4 MB of assets on disk become ~15.2 MB of base64
+      (54% of the bundle), so the compression artifacts are the lever, not chunking. Still open:
+      iOS (needs a macOS runner with Xcode and signing), and Play Store publishing (needs a
+      keystore and a signing config the workflow does not yet apply).
+
+> Moved 2026-09-15. Two of this section's own cross-references have since moved on, updated
+> here rather than left reading as live: the audit it cites was refreshed against the installed
+> **0.14.0** the same day (see `PORT_COVERAGE.md`'s sixth pass), and **P18 is now closed** -
+> 0.14.0 documented the consumer packaging recipe the proposal asked for, including every
+> gotcha this item listed. The finding underneath still stands, which is why this repo carries
+> its own host: the framework's scaffolding is still not in its published `files` list.

@@ -12,7 +12,7 @@ assumed. **Updated 2026-09-07, same day**: `mw_games@0.4.1` published mid-sessio
 dependency" section) and turned out to ship most of the plan's previously-assumed core
 primitives for real - see below.
 
-**Current dependency re-check: 2026-09-13, installed `@datamoc/mw_games`/`mwg` 0.9.0.**
+**Current dependency re-check: 2026-09-15, installed `@datamoc/mw_games`/`mwg` 0.13.0.**
 The version-specific headings and dated notes below preserve the historical decisions that led
 to this target, but the current adoption status is: `EntityId` is used as a type, the port has
 runtime-routed search, hunger, movement, hero-action and attack-resolution adapters, and the

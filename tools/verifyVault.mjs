@@ -28,7 +28,7 @@ function compile(source, destination) {
 
 try {
 	writeFileSync(join(output, 'package.json'), '{"type":"commonjs"}');
-	for (const file of ['spdRng', 'spdLevelGen/paintLevel', 'spdLevelGen/vaultVisuals']) {
+	for (const file of ['spdRng', 'spdLevelGen/paintLevel', 'spdLevelGen/vaultVisuals', 'spdLevelGen/spdPatch', 'spdLevelGen/bossLevels']) {
 		compile(new URL(`../src/${file}.ts`, import.meta.url), `${file}.js`);
 	}
 	// `paintLevel`'s only import of `room` is its `Room` type, erased at compile time - the
@@ -131,6 +131,48 @@ try {
 		assert.equal(blocked.has(cell(8, 20)), false, 'and so does the shaft');
 		assert.equal(blocked.has(cell(8, 12)), false, 'and the Amulet\'s own cell');
 	});
+
+	// `CavesBossLevel.buildEntrance()`/`buildCorners()`'s mirrored stamps: one of four picked per
+	// group by `Random.oneOf`, written into all four quadrants by four cursors that each move in a
+	// different direction. Every variant is driven against a fresh level and compared against an
+	// independent transcription of Java's cursor arithmetic, so a corrupted stamp string or a
+	// cursor written the wrong way fails here rather than in a map no one diffs.
+	const { ENTRANCE_STAMPS, CORNER_STAMPS, buildEntranceStamps, buildCornerStamps } = require('./spdLevelGen/bossLevels');
+	const STAMP_TERRAIN = { '.': undefined, '#': Terrain.WALL, '_': Terrain.EMPTY, ',': Terrain.EMPTY_SP };
+	check('the eight stamp tables are the right size', () => {
+		assert.equal(ENTRANCE_STAMPS.length, 4);
+		assert.equal(CORNER_STAMPS.length, 4);
+		for (const stamp of ENTRANCE_STAMPS) assert.equal(stamp.length, 64, 'an entrance stamp must be 8 rows of 8');
+		for (const stamp of CORNER_STAMPS) assert.equal(stamp.length, 100, 'a corner stamp must be 10 rows of 10');
+	});
+	for (const [group, stamps, size, anchor, apply] of [
+		['entrance', ENTRANCE_STAMPS, 8, (w) => {
+			const entrance = 16 + 25 * w;
+			return { nw: entrance - 7 - 7 * w, ne: entrance + 7 - 7 * w, se: entrance + 7 + 7 * w, sw: entrance - 7 + 7 * w };
+		}, buildEntranceStamps],
+		['corner', CORNER_STAMPS, 10, (w) => ({ nw: 2 + 11 * w, ne: 30 + 11 * w, se: 30 + 39 * w, sw: 2 + 39 * w }), buildCornerStamps],
+	]) {
+		stamps.forEach((stamp, index) => check(`${group}${index + 1} mirrors into all four quadrants`, () => {
+			const w = 33;
+			const level = new PaintLevel(w, 42, Terrain.CHASM);
+			apply(level, stamp);
+			const cursors = anchor(w);
+			const expected = new Map();
+			let { nw, ne, se, sw } = cursors;
+			for (let i = 0; i < stamp.length; i++) {
+				if (i % size === 0 && i !== 0) {
+					nw += w - size; ne += w + size; se -= w - size; sw -= w + size;
+				}
+				const terrain = STAMP_TERRAIN[stamp[i]];
+				if (terrain !== undefined) for (const cell of [nw, ne, se, sw]) expected.set(cell, terrain);
+				nw++; ne--; sw++; se--;
+			}
+			const wrong = [...expected].filter(([cell, terrain]) => level.map[cell] !== terrain);
+			assert.equal(wrong.length, 0, wrong.slice(0, 1).map(([cell, terrain]) => `cell ${cell} holds ${level.map[cell]} not ${terrain}`).join(''));
+			const stray = [...level.map].filter((terrain, cell) => terrain !== Terrain.CHASM && !expected.has(cell)).length;
+			assert.equal(stray, 0, `${stray} cells outside the stamp were written`);
+		}));
+	}
 
 	console.log(`${passed} vault checks passed.`);
 } catch (error) {

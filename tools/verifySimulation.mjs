@@ -37,6 +37,11 @@ try {
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'mechanics/cone', 'dungeonConstants',
 	'simulation/javaBlob', 'simulation/environmentalBlobs',
+	// `dungeonConstants` and `items/wands` read the MWL item tables, so the harness compiles the
+	// real adapter and the real generated catalogue instead of a hand-copied stub of them - a stub
+	// is how the old, hand-listed framework set above drifted once already, and how the item-frame
+	// table silently lost a ground kind the moment the game's union grew one.
+	'generated/mwlContent', 'mwlContent',
 	// The five per-domain adapters are thin facades over this shared runtime module.
 	'adapters/gameSimulation']) {
 		compile(new URL(`../src/${file}.ts`, import.meta.url), `${file}.js`);
@@ -63,31 +68,16 @@ try {
 	shim(join('node_modules', 'mwg', 'roguelike', 'Scheduler.js'), join(dist, 'roguelike', 'Scheduler.js'));
 	shim(join('node_modules', 'mwg', 'core', 'Random.js'), join(dist, 'core', 'Random.js'));
 	shim(join('node_modules', 'mwg', 'simulation', 'index.js'), join(dist, 'simulation', 'index.js'));
+	// `src/mwlContent.ts` reads the generated catalogue through the framework's own
+	// `contentCatalog`, so the harness needs that one entry point too - shimmed from the installed
+	// package, exactly like the rest of the framework half.
+	shim(join('node_modules', 'mwg', 'mwl', 'index.js'), join(dist, 'mwl', 'index.js'));
 	// The adapters take only `Random`/`Generator` from the barrel, so nothing rendering-side is
 	// pulled in; the real namespace module is re-exported under the barrel's own names.
 	mkdirSync(join(output, 'node_modules', 'mwg'), { recursive: true });
 	writeFileSync(join(output, 'node_modules', 'mwg', 'index.js'),
 		`const random = require(${JSON.stringify(join(dist, 'core', 'Random.js'))}); exports.Random = random; exports.Generator = random.Generator;\n`);
 	const require = createRequire(join(output, 'tests.cjs'));
-	// `wands.ts` reads the generated MWL catalogue in the game build. Keep this renderer-free
-	// harness independent of the full content barrel by supplying the same authored table shape;
-	// the MWL compiler/build remains the authoritative validation of the actual generated data.
-	writeFileSync(join(output, 'mwlContent.js'), `exports.MWL_ITEM_FRAMES = ${JSON.stringify({
-		dewdrop: 21, stone: 147, potion: 352, scroll: 304, meat: 432, gold: 18, armor: 176,
-		wand: 208, food: 437, seed: 58, darkGold: 453, dwarfToken: 454, amulet: 61, ring: 224,
-		crystalKey: 57, ironKey: 56, goldenKey: 56, bomb: 80, corpseDust: 465, candle: 466,
-		embers: 467, ankh: 48, stylus: 49, honeypot: 53, alchemize: 237, bag: 480, sandBag: 23,
-	})}; exports.MWL_ITEM_LIMITS = { waterskin: 20 }; exports.MWL_WAND_RANGE_RULES = {
-		default: { base: 6, perLevel: 0 }, disintegration: { base: 6, perLevel: 2 },
-	}; exports.MWL_WAND_CHARGE_RULES = {
-		default: { ratio: 0, min: 1, max: 1 }, fireblast: { ratio: 0.3, min: 1, max: 3 }, regrowth: { ratio: 0.3, min: 1, max: 3 },
-	}; exports.MWL_WAND_DEFINITIONS = ${JSON.stringify([
-		['WandOfMagicMissile', 'magicMissile'], ['WandOfFrost', 'frost'], ['WandOfFireblast', 'fireblast'],
-		['WandOfLightning', 'lightning'], ['WandOfCorrosion', 'corrosion'], ['WandOfCorruption', 'corruption'],
-		['WandOfDisintegration', 'disintegration'], ['WandOfBlastWave', 'blastWave'],
-		['WandOfLivingEarth', 'livingEarth'], ['WandOfPrismaticLight', 'prismaticLight'],
-		['WandOfRegrowth', 'regrowth'], ['WandOfTransfusion', 'transfusion'], ['WandOfWarding', 'warding'],
-	].map(([sourceClass, type], index) => ({ id: 'wand-' + index, sourceClass, type })))};\n`);
 	const { advanceHunger } = require('./simulation/hunger');
 	const { runHungerStep } = require('./adapters/hungerSimulation');
 	const { runMovement } = require('./adapters/movementSimulation');
@@ -101,11 +91,33 @@ try {
 	const { trampleHighGrass } = require('./simulation/highGrass');
 	const { evolveJavaBlob } = require('./simulation/javaBlob');
 	const { applyEnvironmentalBlobs } = require('./simulation/environmentalBlobs');
+	// The four coefficients `HighGrass.trample` reads, as the port's MWL rows carry them.
+	const grassRules = { seedChanceBase: 25, seedChancePerLevel: 4, dewChanceBase: 6, dewChanceLevelDivisor: 2 };
 	check('Huntress furrows high grass before clearing it without drops', () => {
-		assert.deepEqual(trampleHighGrass('high', true), { next: 'furrowed', rollDrops: false });
-		assert.deepEqual(trampleHighGrass('furrowed', true), { next: 'furrowed', rollDrops: false });
-		assert.deepEqual(trampleHighGrass('furrowed', false), { next: 'plain', rollDrops: false });
-		assert.deepEqual(trampleHighGrass('high', false), { next: 'plain', rollDrops: true });
+		assert.deepEqual(trampleHighGrass('high', true, grassRules), { next: 'furrowed', rollDrops: false, drops: null });
+		assert.deepEqual(trampleHighGrass('furrowed', true, grassRules), { next: 'furrowed', rollDrops: false, drops: null });
+		assert.deepEqual(trampleHighGrass('furrowed', false, grassRules), { next: 'plain', rollDrops: false, drops: null });
+		assert.deepEqual(trampleHighGrass('high', false, grassRules), {
+			next: 'plain', rollDrops: true, drops: { seedChance: 1 / 25, dewChance: 1 / 6 },
+		});
+	});
+	check('grass loot scales with Sandals of Nature, and a cursed pair suppresses it', () => {
+		// Java's own table: seed `1/(25 - 4*naturalismLevel)`, dew `1/(6 - naturalismLevel/2)`.
+		// naturalismLevel is `itemLevel()+1`, so the artifact's 0..3 levels give 1..4.
+		for (const [level, seedDenominator, dewDenominator] of [[1, 21, 5.5], [2, 17, 5], [3, 13, 4.5], [4, 9, 4]]) {
+			const { drops } = trampleHighGrass('high', false, grassRules, { naturalismLevel: level });
+			assert.equal(drops.seedChance, 1 / seedDenominator, `seed chance at naturalismLevel ${level}`);
+			assert.equal(drops.dewChance, 1 / dewDenominator, `dew chance at naturalismLevel ${level}`);
+		}
+		// Cursed footwear: Java sets `naturalismLevel = -1` and skips the whole drop block, while
+		// still returning through its ordinary trample path.
+		assert.deepEqual(trampleHighGrass('high', false, grassRules, { naturalismLevel: -1 }), {
+			next: 'plain', rollDrops: true, drops: null,
+		});
+		// A GRASS-feeling floor halves the dew chance and nothing else.
+		const grassy = trampleHighGrass('high', false, grassRules, { naturalismLevel: 2, grassFeeling: true });
+		assert.equal(grassy.drops.seedChance, 1 / 17);
+		assert.equal(grassy.drops.dewChance, 1 / 10);
 	});
 	check('Java blob evolution diffuses through four neighbours and loses one volume', () => {
 		const before = new Array(25).fill(0);

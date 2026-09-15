@@ -133,7 +133,7 @@ function validateHookReferences() {
 const GROUND_ITEM_KINDS = new Set([
   'dewdrop', 'stone', 'potion', 'scroll', 'meat', 'gold', 'armor', 'wand', 'food', 'seed',
   'darkGold', 'dwarfToken', 'amulet', 'ring', 'crystalKey', 'ironKey', 'goldenKey', 'bomb',
-  'corpseDust', 'candle', 'embers', 'ankh', 'stylus', 'honeypot', 'alchemize', 'bag', 'sandBag',
+  'corpseDust', 'candle', 'embers', 'ankh', 'stylus', 'brokenSeal', 'honeypot', 'alchemize', 'bag', 'sandBag',
 ]);
 function validateLootKindReferences() {
   for (const row of tableRows('monsterLoot')) {
@@ -216,17 +216,7 @@ function validateRoomRuleTables() {
   }
 }
 
-function validateShopShelfStock() {
-  for (const row of tableRows('shopShelfStock')) {
-    if (!String(row.item ?? '').trim()) throw new Error('MWL shopShelfStock has a row with no item');
-    if (!Number.isInteger(Number(row.quantity)) || Number(row.quantity) <= 0) {
-      throw new Error(`MWL shopShelfStock has an invalid quantity for ${row.item}`);
-    }
-  }
-}
-
 validateRosterReferences();
-validateShopShelfStock();
 validateBossReferences();
 validateActorReferences();
 validateHookReferences();

@@ -124,6 +124,9 @@ export const TRAP_KINDS: TrapKind[] = ['toxic', 'burning', 'poisonDart', 'grim',
 
 export type GroundItemKind =
 	| 'dewdrop'
+	// `DriedRose.Petal`: dropped by the floor generator itself rather than by a bag item, so it is
+	// a ground kind with no inventory counterpart (the same shape as `dewdrop`).
+	| 'petal'
 	| 'stone'
 	| 'potion'
 	| 'scroll'
@@ -146,15 +149,16 @@ export type GroundItemKind =
 	| 'embers'
 	| 'ankh'
 	| 'stylus'
+	| 'brokenSeal'
 	| 'honeypot'
 	| 'alchemize'
 	| 'bag'
 	| 'sandBag';
 
 export const GROUND_ITEM_KINDS: readonly GroundItemKind[] = [
-	'dewdrop', 'stone', 'potion', 'scroll', 'meat', 'gold', 'armor', 'wand', 'food', 'seed',
+	'dewdrop', 'petal', 'stone', 'potion', 'scroll', 'meat', 'gold', 'armor', 'wand', 'food', 'seed',
 	'darkGold', 'dwarfToken', 'amulet', 'ring', 'crystalKey', 'ironKey', 'goldenKey', 'bomb',
-	'corpseDust', 'candle', 'embers', 'ankh', 'stylus', 'honeypot', 'alchemize', 'bag', 'sandBag',
+	'corpseDust', 'candle', 'embers', 'ankh', 'stylus', 'brokenSeal', 'honeypot', 'alchemize', 'bag', 'sandBag',
 ];
 
 /** `ItemSpriteSheet` frame metadata is authored in MWL; this adapter validates the closed

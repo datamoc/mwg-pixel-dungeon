@@ -51,6 +51,7 @@
           { tag: "row", item: "embers", nameKey: "items.quest.embers.name" },
           { tag: "row", item: "ankh", nameKey: "items.ankh.name" },
           { tag: "row", item: "stylus", nameKey: "items.stylus.name" },
+          { tag: "row", item: "brokenSeal", nameKey: "items.brokenseal.name" },
           { tag: "row", item: "honeypot", nameKey: "items.honeypot.name" },
           { tag: "row", item: "bag", nameKey: "items.bags.bag.name" },
           { tag: "row", item: "sandBag", nameKey: "items.artifacts.timekeepershourglass$sandbag.name" },
@@ -68,6 +69,7 @@
           { tag: "row", sourceClass: "Embers", groundKind: "embers" },
           { tag: "row", sourceClass: "Ankh", groundKind: "ankh" },
           { tag: "row", sourceClass: "Stylus", groundKind: "stylus" },
+          { tag: "row", sourceClass: "BrokenSeal", groundKind: "brokenSeal" },
           { tag: "row", sourceClass: "Honeypot", groundKind: "honeypot" },
           { tag: "row", sourceClass: "Alchemize", groundKind: "alchemize" },
           { tag: "row", sourceClass: "Bag", groundKind: "bag" },
@@ -80,6 +82,7 @@
         columns: "groundKind:string|nameKey:string",
         children: [
           { tag: "row", groundKind: "dewdrop", nameKey: "items.dewdrop.name" },
+          { tag: "row", groundKind: "petal", nameKey: "items.artifacts.driedrose$petal.name" },
           { tag: "row", groundKind: "stone", nameKey: "items.weapon.missiles.throwingstone.name" },
           { tag: "row", groundKind: "potion", nameKey: "port.name.potion" },
           { tag: "row", groundKind: "scroll", nameKey: "port.name.scroll" },
@@ -102,6 +105,7 @@
           { tag: "row", groundKind: "embers", nameKey: "items.quest.embers.name" },
           { tag: "row", groundKind: "ankh", nameKey: "items.ankh.name" },
           { tag: "row", groundKind: "stylus", nameKey: "items.stylus.name" },
+          { tag: "row", groundKind: "brokenSeal", nameKey: "items.brokenseal.name" },
           { tag: "row", groundKind: "honeypot", nameKey: "items.honeypot.name" },
           { tag: "row", groundKind: "alchemize", nameKey: "items.spells.alchemize.name" },
           { tag: "row", groundKind: "bag", nameKey: "items.bags.bag.name" },
@@ -125,9 +129,15 @@
           { tag: "row", item: "hourglass", actionKey: "items.artifacts.timekeepershourglass.ac_activate", capitalize: true },
           { tag: "row", item: "cloak", actionKey: "items.artifacts.cloakofshadows.ac_stealth", capitalize: true },
           { tag: "row", item: "chalice", actionKey: "items.artifacts.chaliceofblood.ac_prick", capitalize: true },
+          { tag: "row", item: "toolkit", actionKey: "items.artifacts.alchemiststoolkit.ac_brew", capitalize: true },
+          { tag: "row", item: "beacon", actionKey: "items.artifacts.lloydsbeacon.ac_zap", capitalize: true },
+          { tag: "row", item: "armband", actionKey: "items.artifacts.masterthievesarmband.ac_steal", capitalize: true },
+          { tag: "row", item: "horn", actionKey: "items.artifacts.hornofplenty.ac_snack", capitalize: true },
+          { tag: "row", item: "chains", actionKey: "items.artifacts.etherealchains.ac_cast", capitalize: true },
           { tag: "row", item: "stoneOfAugmentation", actionKey: "port.ui.augment.title", capitalize: false },
           { tag: "row", item: "stone", actionKey: "items.stones.inventorystone.ac_use", capitalize: false },
           { tag: "row", item: "stylus", actionKey: "items.stylus.ac_inscribe", capitalize: false },
+          { tag: "row", item: "brokenSeal", actionKey: "items.brokenseal.ac_affix", capitalize: true },
           { tag: "row", item: "kingsCrown", actionKey: "items.kingscrown.ac_wear", capitalize: false },
           { tag: "row", item: "candle", actionKey: "port.ui.candle.place", capitalize: false },
           { tag: "row", item: "ring", actionKey: "items.equipableitem.ac_equip", capitalize: true },
@@ -160,6 +170,7 @@
           { tag: "row", sourceClass: "Embers", itemId: "embers", identified: true, cursed: false },
           { tag: "row", sourceClass: "Ankh", itemId: "ankh", identified: true, cursed: false },
           { tag: "row", sourceClass: "Stylus", itemId: "stylus", identified: true, cursed: false },
+          { tag: "row", sourceClass: "BrokenSeal", itemId: "brokenSeal", identified: true, cursed: false },
           { tag: "row", sourceClass: "Honeypot", itemId: "honeypot", identified: true, cursed: false },
           { tag: "row", sourceClass: "Alchemize", itemId: "alchemize", identified: true, cursed: false },
           { tag: "row", sourceClass: "Bag", itemId: "bag", identified: true, cursed: false },
@@ -200,6 +211,11 @@
           { tag: "row", itemId: "cloak", groundKind: "wand" },
           { tag: "row", itemId: "chalice", groundKind: "wand" },
           { tag: "row", itemId: "cape", groundKind: "wand" },
+          { tag: "row", itemId: "toolkit", groundKind: "wand" },
+          { tag: "row", itemId: "beacon", groundKind: "wand" },
+          { tag: "row", itemId: "armband", groundKind: "wand" },
+          { tag: "row", itemId: "horn", groundKind: "wand" },
+          { tag: "row", itemId: "chains", groundKind: "wand" },
           { tag: "row", itemId: "wand", groundKind: "wand" },
           { tag: "row", itemId: "bomb", groundKind: "bomb" },
           { tag: "row", itemId: "doubleBomb", groundKind: "bomb" },
@@ -208,6 +224,7 @@
           { tag: "row", itemId: "embers", groundKind: "embers" },
           { tag: "row", itemId: "ankh", groundKind: "ankh" },
           { tag: "row", itemId: "stylus", groundKind: "stylus" },
+          { tag: "row", itemId: "brokenSeal", groundKind: "brokenSeal" },
           { tag: "row", itemId: "honeypot", groundKind: "honeypot" },
           { tag: "row", itemId: "chargrilledMeat", groundKind: "meat" },
           { tag: "row", itemId: "alchemize", groundKind: "alchemize" },
@@ -230,6 +247,8 @@
           { tag: "row", kind: "wand", frame: 208 },
           { tag: "row", kind: "food", frame: 437 },
           { tag: "row", kind: "seed", frame: 58 },
+          // `ItemSpriteSheet.PETAL` (`UNCOLLECTIBLE` 35 + 4): the Dried Rose's own drop.
+          { tag: "row", kind: "petal", frame: 39 },
           { tag: "row", kind: "darkGold", frame: 453 },
           { tag: "row", kind: "dwarfToken", frame: 454 },
           { tag: "row", kind: "amulet", frame: 61 },
@@ -243,6 +262,8 @@
           { tag: "row", kind: "embers", frame: 467 },
           { tag: "row", kind: "ankh", frame: 48 },
           { tag: "row", kind: "stylus", frame: 49 },
+          // `ItemSpriteSheet.SEAL = MISC_CONSUMABLE + 2` (tag `v3.3.8`): stylus is +1 at 49.
+          { tag: "row", kind: "brokenSeal", frame: 50 },
           { tag: "row", kind: "honeypot", frame: 53 },
           { tag: "row", kind: "alchemize", frame: 237 },
           { tag: "row", kind: "bag", frame: 480 },
@@ -264,6 +285,9 @@
         columns: "item:string|frame:number",
         children: [
           { tag: "row", item: "clothArmor", frame: 176 },
+          // `ItemSpriteSheet.ARTIFACT_ROSE1` (257 + 20). Java swaps to ROSE2/ROSE3 at +4 and +9;
+          // this table is one static frame per item, so the three-level art ladder is Not ported.
+          { tag: "row", item: "rose", frame: 277 },
           { tag: "row", item: "armor", frame: 176 },
           { tag: "row", item: "armorReward", frame: 176 },
           { tag: "row", item: "weaponReward", frame: 96 },
@@ -277,6 +301,11 @@
           { tag: "row", item: "hourglass", frame: 240 },
           { tag: "row", item: "chalice", frame: 240 },
           { tag: "row", item: "cape", frame: 240 },
+          { tag: "row", item: "toolkit", frame: 240 },
+          { tag: "row", item: "beacon", frame: 240 },
+          { tag: "row", item: "armband", frame: 240 },
+          { tag: "row", item: "horn", frame: 240 },
+          { tag: "row", item: "chains", frame: 240 },
           { tag: "row", item: "spiritBow", frame: 144 },
           { tag: "row", item: "wand", frame: 208 },
           { tag: "row", item: "holyTome", frame: 246 },
@@ -323,6 +352,10 @@
           { tag: "row", id: "hourglassMaxChargeBase", item: "hourglass", effect: "maxChargeBase", value: 5 },
           { tag: "row", id: "hourglassMaxChargePerLevel", item: "hourglass", effect: "maxChargePerLevel", value: 1 },
           { tag: "row", id: "hourglassMaxChargeLevelCap", item: "hourglass", effect: "maxChargeLevelCap", value: 5 },
+          // `TimekeepersHourglass.sandBags`' cap: the shop's own sandbag replenishment is written as a
+          // fraction of `5 - sandBags` (`ShopRoom.generateItems()`, tag v3.3.8), so this is the same 5
+          // that bounds the artifact's charge levels.
+          { tag: "row", id: "hourglassSandBagCap", item: "hourglass", effect: "sandBagCap", value: 5 },
           { tag: "row", id: "hourglassTurnsPerCharge", item: "hourglass", effect: "turnsPerCharge", value: 2 },
           { tag: "row", id: "hourglassTurnsToCost", item: "hourglass", effect: "turnsToCost", value: 2 },
           { tag: "row", id: "cloakInitialChargeBase", item: "cloak", effect: "initialChargeBase", value: 3 },
@@ -339,6 +372,185 @@
           { tag: "row", id: "capeChargePerDamagePerLevel", item: "cape", effect: "chargePerDamagePerLevel", value: 0.05 },
           { tag: "row", id: "capeCooldownBase", item: "cape", effect: "cooldownBase", value: 10 },
           { tag: "row", id: "capeExpPerLevelBase", item: "cape", effect: "expPerLevelBase", value: 5 },
+          { tag: "row", id: "toolkitLevelCap", item: "toolkit", effect: "levelCap", value: 10 },
+          { tag: "row", id: "toolkitEnergizeCost", item: "toolkit", effect: "energizeCost", value: 6 },
+          { tag: "row", id: "beaconLevelCap", item: "beacon", effect: "levelCap", value: 3 },
+          { tag: "row", id: "beaconChargeCapBase", item: "beacon", effect: "chargeCapBase", value: 3 },
+          { tag: "row", id: "beaconChargeCapPerLevel", item: "beacon", effect: "chargeCapPerLevel", value: 1 },
+          { tag: "row", id: "beaconZapCostBase", item: "beacon", effect: "zapCostBase", value: 1 },
+          { tag: "row", id: "beaconZapCostHighDepth", item: "beacon", effect: "zapCostHighDepth", value: 2 },
+          { tag: "row", id: "beaconZapCostDepthThreshold", item: "beacon", effect: "zapCostDepthThreshold", value: 20 },
+          // Real Java's `Ballistica`-aimed zap has no fixed numeric range at all - it flies until it
+          // hits a wall or a creature. This port's `beginAiming` needs a concrete cap, so it borrows
+          // the same range already used for the other aimed utility items (`stoneTargetRange`) rather
+          // than inventing a bespoke number - a stated simplification, see `PORT_COVERAGE.md`.
+          { tag: "row", id: "beaconZapRange", item: "beacon", effect: "zapRange", value: 8 },
+          { tag: "row", id: "beaconRechargeBase", item: "beacon", effect: "rechargeBase", value: 100 },
+          { tag: "row", id: "beaconRechargeCapWeight", item: "beacon", effect: "rechargeCapWeight", value: 10 },
+          { tag: "row", id: "armbandLevelCap", item: "armband", effect: "levelCap", value: 10 },
+          { tag: "row", id: "armbandChargeCapBase", item: "armband", effect: "chargeCapBase", value: 5 },
+          { tag: "row", id: "armbandChargeGainBase", item: "armband", effect: "chargeGainBase", value: 3 },
+          { tag: "row", id: "armbandLootMultiplierBase", item: "armband", effect: "lootMultiplierBase", value: 1 },
+          { tag: "row", id: "armbandLootMultiplierPerLevel", item: "armband", effect: "lootMultiplierPerLevel", value: 0.1 },
+          { tag: "row", id: "armbandSurpriseLootBonus", item: "armband", effect: "surpriseLootBonus", value: 0.5 },
+          { tag: "row", id: "armbandDebuffDurationBase", item: "armband", effect: "debuffDurationBase", value: 3 },
+          { tag: "row", id: "armbandSurpriseDebuffBonus", item: "armband", effect: "surpriseDebuffBonus", value: 2 },
+          { tag: "row", id: "armbandMaxLvlLootCutoff", item: "armband", effect: "maxLvlLootCutoff", value: 2 },
+          { tag: "row", id: "armbandExpPerUse", item: "armband", effect: "expPerUse", value: 3 },
+          { tag: "row", id: "armbandSurpriseExpBonus", item: "armband", effect: "surpriseExpBonus", value: 2 },
+          { tag: "row", id: "armbandExpToLevelBase", item: "armband", effect: "expToLevelBase", value: 10 },
+          { tag: "row", id: "armbandExpToLevelPerLevel", item: "armband", effect: "expToLevelPerLevel", value: 3.33 },
+          { tag: "row", id: "hornLevelCap", item: "horn", effect: "levelCap", value: 10 },
+          { tag: "row", id: "hornChargeCapBase", item: "horn", effect: "chargeCapBase", value: 5 },
+          { tag: "row", id: "hornChargeGainBase", item: "horn", effect: "chargeGainBase", value: 0.25 },
+          { tag: "row", id: "hornChargeGainPerLevel", item: "horn", effect: "chargeGainPerLevel", value: 0.125 },
+          // `Hunger.STARVING/5` (tag `v3.3.8`): both the per-charge satiety unit `doEatEffect`
+          // spends and the divisor `hornRecharge.gainCharge` uses to convert its hunger-scaled
+          // `chargeGain` into whole charges.
+          { tag: "row", id: "hornSatietyDivisor", item: "horn", effect: "satietyDivisor", value: 5 },
+          // `HornOfPlenty.gainFoodValue()`: Pasty/PhantomMeat are worth `Hunger.HUNGRY/2` extra,
+          // MeatPie worth a full extra `Hunger.HUNGRY` - fractions of `HUNGRY` applied on top of
+          // each food's own stored hunger value (`MWL_CONSUMABLE_STATS`, this port's stand-in for
+          // `Food.energy`). This port has no PhantomMeat item, so only Pasty gets the 0.5 bonus.
+          { tag: "row", id: "hornPastyBonusFraction", item: "horn", effect: "pastyBonusFraction", value: 0.5 },
+          { tag: "row", id: "hornMeatPieBonusFraction", item: "horn", effect: "meatPieBonusFraction", value: 1 },
+          { tag: "row", id: "chainsLevelCap", item: "chains", effect: "levelCap", value: 5 },
+          // `EtherealChains`'s own `chargeTarget = 5 + level()*2` (tag `v3.3.8`): a *soft* cap
+          // both `chainsRecharge.act()`'s passive regen and `gainExp()`'s combat-XP charge gain
+          // read - unlike the other four artifacts' hard `chargeCap`, charge can still climb
+          // past this via combat XP, just more slowly (see `applyChainsGainExp`'s doc comment).
+          { tag: "row", id: "chainsChargeCapBase", item: "chains", effect: "chargeCapBase", value: 5 },
+          { tag: "row", id: "chainsChargeCapPerLevel", item: "chains", effect: "chargeCapPerLevel", value: 2 },
+          // `chainsRecharge.act()`: `partialCharge += 1/(40 - (chargeTarget-charge)*2)` every
+          // actor turn while not cursed and below the soft cap - the closer to full, the slower
+          // the last charge fills, the same shape as `LloydsBeacon`'s own passive regen.
+          { tag: "row", id: "chainsRechargeBase", item: "chains", effect: "rechargeBase", value: 40 },
+          { tag: "row", id: "chainsRechargeCapWeight", item: "chains", effect: "rechargeCapWeight", value: 2 },
+          // `chainsRecharge.act()`'s cursed branch: `Random.Int(100)==0` (1% per turn) applies a
+          // 10-turn Cripple instead of regenerating charge.
+          { tag: "row", id: "chainsCursedCrippleDuration", item: "chains", effect: "cursedCrippleDuration", value: 10 },
+          { tag: "row", id: "chainsExpToLevelBase", item: "chains", effect: "expToLevelBase", value: 100 },
+          { tag: "row", id: "chainsExpToLevelPerLevel", item: "chains", effect: "expToLevelPerLevel", value: 100 },
+          { tag: "row", id: "chainsGainExpChargeScale", item: "chains", effect: "gainExpChargeScale", value: 6 },
+          // Real Java's `GameScene.selectCell(caster)` has no fixed range at all - any tile the
+          // hero has ever visited or mapped is a legal target, gated only by reachability
+          // (`PathFinder.buildDistanceMap`). This port's `beginAiming` needs a finite range, so
+          // `useChains` passes the level's own diagonal span instead of a game-balance number -
+          // effectively unbounded on any single floor, the same "borrow an existing seam's
+          // number" simplification `beaconZapRange` already states for a different reason.
+          // `SandalsOfNature` (tag `v3.3.8`): the artifact's own constructor block - `levelCap = 3`,
+          // `charge = 0`, `chargeCap = 100`.
+          { tag: "row", id: "sandalsLevelCap", item: "sandals", effect: "levelCap", value: 3 },
+          { tag: "row", id: "sandalsChargeCap", item: "sandals", effect: "chargeCap", value: 100 },
+          // `Naturalism.charge()`: `chargeGain = (3f + level())/6f` per trampled high grass, scaled
+          // by `RingOfEnergy.artifactChargeMultiplier`. 0.5 charge per grass at +0, 1.0 at +3.
+          { tag: "row", id: "sandalsChargeGainBase", item: "sandals", effect: "chargeGainBase", value: 3 },
+          { tag: "row", id: "sandalsChargeGainDivisor", item: "sandals", effect: "chargeGainDivisor", value: 6 },
+          // `itemSelector.onSelect()`: feeding a seed upgrades the artifact once the *carried* seed
+          // list reaches `3 + level()*3` entries (`seeds.clear(); upgrade()`), and the list only
+          // grows while `level() < 3` (so the third level is the cap in practice too).
+          { tag: "row", id: "sandalsFeedThresholdBase", item: "sandals", effect: "feedThresholdBase", value: 3 },
+          { tag: "row", id: "sandalsFeedThresholdPerLevel", item: "sandals", effect: "feedThresholdPerLevel", value: 3 },
+          // `SandalsOfNature.cellSelector.onSelect()`: "briefly root into the ground and produce
+          // that plant's effect anywhere in a 3 tile radius" - `Dungeon.level.distance(pos, cell) > 3`
+          // refuses, as does `!heroFOV[cell]` (this port's `FieldOfView.isVisible`).
+          { tag: "row", id: "sandalsRootRange", item: "sandals", effect: "rootRange", value: 3 },
+          // `HighGrass.trample()`'s two naturalism-scaled loot rolls, which the same pass as the
+          // artifact had to implement: seed `1/(25f - naturalismLevel*4f)` (1/25 at no sandals,
+          // 1/9 at +3) and dew `1/(6f - naturalismLevel/2f)` (1/6 to 1/4).
+          { tag: "row", id: "sandalsSeedChanceBase", item: "sandals", effect: "seedChanceBase", value: 25 },
+          { tag: "row", id: "sandalsSeedChancePerLevel", item: "sandals", effect: "seedChancePerLevel", value: 4 },
+          { tag: "row", id: "sandalsDewChanceBase", item: "sandals", effect: "dewChanceBase", value: 6 },
+          { tag: "row", id: "sandalsDewChanceLevelDivisor", item: "sandals", effect: "dewChanceLevelDivisor", value: 2 },
+          // `TalismanOfForesight` (tag `v3.3.8`): the constructor block (`chargeCap = 100`,
+          // `levelCap = 10`) and the `AC_SCRY` gate's own floor (`charge < 5` refuses).
+          { tag: "row", id: "talismanChargeCap", item: "talisman", effect: "chargeCap", value: 100 },
+          { tag: "row", id: "talismanLevelCap", item: "talisman", effect: "levelCap", value: 10 },
+          { tag: "row", id: "talismanScryMinCharge", item: "talisman", effect: "scryMinCharge", value: 5 },
+          // `maxDist()`: `min(5 + 2*level(), (charge-3)/1.08f)` - a level ceiling and a
+          // charge-proportional floor, deliberately not the same number twice.
+          { tag: "row", id: "talismanMaxDistBase", item: "talisman", effect: "maxDistBase", value: 5 },
+          { tag: "row", id: "talismanMaxDistPerLevel", item: "talisman", effect: "maxDistPerLevel", value: 2 },
+          { tag: "row", id: "talismanMaxDistChargeOffset", item: "talisman", effect: "maxDistChargeOffset", value: 3 },
+          { tag: "row", id: "talismanMaxDistChargeDivisor", item: "talisman", effect: "maxDistChargeDivisor", value: 1.08 },
+          // `scry.onSelect()`'s cone: `round(200 * 0.92^dist)` degrees, and `3 + dist*1.08` spent
+          // from the charge (the same `*1.08` factor as `maxDist`, which is why the two are easy
+          // to confuse).
+          { tag: "row", id: "talismanAngleBase", item: "talisman", effect: "angleBase", value: 200 },
+          { tag: "row", id: "talismanAngleDecay", item: "talisman", effect: "angleDecay", value: 0.92 },
+          { tag: "row", id: "talismanScryCostBase", item: "talisman", effect: "scryCostBase", value: 3 },
+          { tag: "row", id: "talismanScryCostPerTile", item: "talisman", effect: "scryCostPerTile", value: 1.08 },
+          // `Foresight.act()`: `chargeGain = 0.05f + level()*0.005f` per turn ("fully charges in
+          // 2000 turns at +0, scaling to 1000 turns at +10"), scaled by the energy-ring
+          // multiplier; and `checkAwareness()`'s `Buff.append(..., 5 + 2*level())` durations.
+          { tag: "row", id: "talismanChargeGainBase", item: "talisman", effect: "chargeGainBase", value: 0.05 },
+          { tag: "row", id: "talismanChargeGainPerLevel", item: "talisman", effect: "chargeGainPerLevel", value: 0.005 },
+          { tag: "row", id: "talismanAwarenessBase", item: "talisman", effect: "awarenessBase", value: 5 },
+          { tag: "row", id: "talismanAwarenessPerLevel", item: "talisman", effect: "awarenessPerLevel", value: 2 },
+          // `artifactProc(ch, visiblyUpgraded(), (int)(3 + dist*1.08f))` - the figure Java passes
+          // to a static method that reads neither of its two numeric arguments; see the sandals
+          // seed-requirement table's own note above for what `artifactProc` really does.
+          { tag: "row", id: "talismanProcBase", item: "talisman", effect: "procBase", value: 3 },
+          { tag: "row", id: "talismanProcPerTile", item: "talisman", effect: "procPerTile", value: 1.08 },
+          // `exp >= 100 + 50*level()` levels the artifact, and the scry's own awards: a mapped
+          // cell is 1, an unseen creature or heap 10, a `SECRET_TRAP` 10 and a `SECRET_DOOR` 100.
+          { tag: "row", id: "talismanExpToLevelBase", item: "talisman", effect: "expToLevelBase", value: 100 },
+          { tag: "row", id: "talismanExpToLevelPerLevel", item: "talisman", effect: "expToLevelPerLevel", value: 50 },
+          { tag: "row", id: "talismanExpMappedCell", item: "talisman", effect: "expMappedCell", value: 1 },
+          { tag: "row", id: "talismanExpUnseen", item: "talisman", effect: "expUnseen", value: 10 },
+          { tag: "row", id: "talismanExpSecretTrap", item: "talisman", effect: "expSecretTrap", value: 10 },
+          { tag: "row", id: "talismanExpSecretDoor", item: "talisman", effect: "expSecretDoor", value: 100 },
+          // `DriedRose` (tag `v3.3.8`): constructor (`levelCap = 10`, and unlike every other
+          // artifact here `charge = chargeCap = 100` - the rose starts full).
+          { tag: "row", id: "roseLevelCap", item: "rose", effect: "levelCap", value: 10 },
+          { tag: "row", id: "roseChargeCap", item: "rose", effect: "chargeCap", value: 100 },
+          // `GhostHero.updateRose()`: `HT = 20 + 8*rose.level()` - the ghost's whole durability
+          // curve, and what each petal buys (the 0.7.x changelog's own "8 per petal, from 4").
+          { tag: "row", id: "roseGhostHpBase", item: "rose", effect: "ghostHpBase", value: 20 },
+          { tag: "row", id: "roseGhostHpPerLevel", item: "rose", effect: "ghostHpPerLevel", value: 8 },
+          // `GhostHero.attackSkill()` ("same accuracy as the hero") and `updateRose()`'s
+          // `defenseSkill` ("same dodge as the hero").
+          { tag: "row", id: "roseGhostAttackSkillOffset", item: "rose", effect: "ghostAttackSkillOffset", value: 9 },
+          { tag: "row", id: "roseGhostDefenseSkillOffset", item: "rose", effect: "ghostDefenseSkillOffset", value: 4 },
+          // `GhostHero.damageRoll()` with no weapon: `Random.NormalIntRange(0, 5)`. Java's weapon
+          // branch needs an ally-equipment model this port has none of, so this pair is the only
+          // damage the ghost ever deals here.
+          { tag: "row", id: "roseGhostDamageMin", item: "rose", effect: "ghostDamageMin", value: 0 },
+          { tag: "row", id: "roseGhostDamageMax", item: "rose", effect: "ghostDamageMax", value: 5 },
+          // `DriedRose.ghostStrength()`: `13 + level()/2`, integer division.
+          { tag: "row", id: "roseGhostStrengthBase", item: "rose", effect: "ghostStrengthBase", value: 13 },
+          { tag: "row", id: "roseGhostStrengthLevelDivisor", item: "rose", effect: "ghostStrengthLevelDivisor", value: 2 },
+          // `roseRecharge.act()`: `(ghost.HT / 500f)` per turn heals a live ghost to full over 500
+          // turns, and `1/5f` per turn fills the 100-point charge over 500 turns when there is none.
+          { tag: "row", id: "roseGhostHealTurns", item: "rose", effect: "ghostHealTurns", value: 500 },
+          { tag: "row", id: "roseRechargePerTurn", item: "rose", effect: "rechargePerTurn", value: 0.2 },
+          // `RegularLevel.java`'s petal drop: "the player may miss a single petal and still max
+          // their rose" - a hard stop at 11 petals dropped per run.
+          { tag: "row", id: "rosePetalDropCap", item: "rose", effect: "petalDropCap", value: 11 },
+          // `RingOfWealth.tryForBonusDrop` (tag `v3.3.8`): the two hero-level counters (`tries` is
+          // decremented per drop attempt, `dropsToEquip` refills itself on every equipment payout),
+          // the consumable tier thresholds ("60% chance - 4% per level" / "30% + 2% per level"), and
+          // the per-kill roll counts (a boss dies into 15, a miniboss into 5, everything else 1).
+          { tag: "row", id: "wealthTriesToDropMax", item: "wealth", effect: "triesToDropMax", value: 20 },
+          { tag: "row", id: "wealthDropsToEquipMin", item: "wealth", effect: "dropsToEquipMin", value: 5 },
+          { tag: "row", id: "wealthDropsToEquipMax", item: "wealth", effect: "dropsToEquipMax", value: 10 },
+          { tag: "row", id: "wealthLowTierBase", item: "wealth", effect: "lowTierBase", value: 0.6 },
+          { tag: "row", id: "wealthLowTierPerLevel", item: "wealth", effect: "lowTierPerLevel", value: 0.04 },
+          { tag: "row", id: "wealthMidTierBase", item: "wealth", effect: "midTierBase", value: 0.9 },
+          { tag: "row", id: "wealthMidTierPerLevel", item: "wealth", effect: "midTierPerLevel", value: 0.02 },
+          { tag: "row", id: "wealthBossRolls", item: "wealth", effect: "bossRolls", value: 15 },
+          { tag: "row", id: "wealthMinibossRolls", item: "wealth", effect: "minibossRolls", value: 5 },
+          // `ArtifactRecharge` (`actors/buffs/ArtifactRecharge.java`, tag `v3.3.8`): `DURATION` is
+          // 30, and `WildEnergy` extends it by 8 with `ignoreHornOfPlenty = false` (so the horn is
+          // charged too). Its `act()` also hands each artifact `chargeAmount = min(1, left)`.
+          { tag: "row", id: "artifactRechargeDuration", item: "artifactRecharge", effect: "duration", value: 30 },
+          { tag: "row", id: "artifactRechargeWildEnergyTurns", item: "artifactRecharge", effect: "wildEnergyTurns", value: 8 },
+          // `ChaliceOfBlood.charge()`: `healDelay = (10 - (1.33 + level*0.667)) / amount`, then
+          // `heal = 5 / healDelay` - "effectively 0.5/1/1.5/2/2.5 HP per turn at +0/+6/+8/+9/+10".
+          { tag: "row", id: "chaliceRechargeBase", item: "chalice", effect: "rechargeBase", value: 10 },
+          { tag: "row", id: "chaliceRechargeLevelBase", item: "chalice", effect: "rechargeLevelBase", value: 1.33 },
+          { tag: "row", id: "chaliceRechargeLevelScale", item: "chalice", effect: "rechargeLevelScale", value: 0.667 },
+          { tag: "row", id: "chaliceRechargeHealTurns", item: "chalice", effect: "rechargeHealTurns", value: 5 },
           { tag: "row", id: "wardingEnergyBase", item: "wandWarding", effect: "energyBase", value: 2 },
           { tag: "row", id: "wardingEnergyPerLevel", item: "wandWarding", effect: "energyPerLevel", value: 1 },
           { tag: "row", id: "wardingSpawnHpBase", item: "wandWarding", effect: "spawnHpBase", value: 10 },
@@ -368,6 +580,32 @@
           { tag: "row", id: "transfusionHealingPerLevel", item: "wandTransfusion", effect: "healingPerLevel", value: 3 },
           { tag: "row", id: "transfusionShieldBase", item: "wandTransfusion", effect: "shieldBase", value: 5 },
           { tag: "row", id: "transfusionShieldPerLevel", item: "wandTransfusion", effect: "shieldPerLevel", value: 1 },
+        ],
+      },
+      {
+        tag: "table",
+        id: "sandalsSeedReqs",
+        columns: "seed:string|charge:number",
+        children: [
+          // `SandalsOfNature.seedChargeReqs` (tag `v3.3.8`), keyed by this port's own plant-kind
+          // spelling (`seedPlantKind()`'s normalized class name) rather than Java's
+          // `Class<? extends Plant.Seed>` - the port's seeds are one generic `'seed'` id carrying a
+          // `sourceClass`, so the concrete class name is what survives. One role here: the
+          // `AC_ROOT` charge gate. Java also hands the same number to `Artifact.artifactProc` on a
+          // successful root, but runs three talent-driven effects and nothing else at `v3.3.8` - the Priest subclass detonates an Illuminated target for `5 + hero.lvl`, the Cleric's SearingLight marks it, and the Huntress's Sunray rolls `1 + 2*points`/20 for Blindness - so its own `artifLevel`/`chargesUsed` parameters are read by nothing. This port has none of those three talents (no `GuidingLight`/`SearingLight`/`Sunray`), which is why it does not call it - so
+          // the gate is the only real consumer of these values in this port.
+          { tag: "row", seed: "rotberry", charge: 8 },
+          { tag: "row", seed: "firebloom", charge: 20 },
+          { tag: "row", seed: "swiftthistle", charge: 20 },
+          { tag: "row", seed: "sungrass", charge: 80 },
+          { tag: "row", seed: "icecap", charge: 20 },
+          { tag: "row", seed: "stormvine", charge: 20 },
+          { tag: "row", seed: "sorrowmoss", charge: 20 },
+          { tag: "row", seed: "mageroyal", charge: 12 },
+          { tag: "row", seed: "earthroot", charge: 40 },
+          { tag: "row", seed: "starflower", charge: 40 },
+          { tag: "row", seed: "fadeleaf", charge: 12 },
+          { tag: "row", seed: "blindweed", charge: 12 },
         ],
       },
       {

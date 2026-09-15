@@ -1,6 +1,7 @@
 import { Actors } from 'mwg';
 import { t } from '../i18n/index';
 import { buybackPrice, getSellPrice, getShopPrice } from './shopPricing';
+import { isMissileStack, isUpgradableItem } from './itemKinds';
 
 export interface ShopEntry {
 	id: string; quantity: number; instanceId?: string; identified?: boolean; tier?: number;
@@ -16,6 +17,17 @@ export interface ShopActionsContext {
 	readonly openItemPicker: (title: string, entries: ShopEntry[], onPick: (entry: ShopEntry) => void) => void;
 	readonly itemDisplayName: (id: string, identified: boolean) => string;
 	readonly say: (message: string, level?: 'positive' | 'negative' | 'warning') => void;
+	/**
+	 * `WndTradeItem`'s selling buttons, which are the whole reason it is a *window* and not a
+	 * single action: a lone item gets one button, a stack gets a choice of one or all. The scene
+	 * owns the window and only renders it - which quantities exist, and SPD's `sell`/`sell_1`/
+	 * `sell_all` labels with their prices, are decided here so this stays headless-testable.
+	 */
+	readonly showSellOptions: (
+		itemName: string,
+		options: readonly { units: number; label: string }[],
+		onPick: (units: number) => void,
+	) => void;
 }
 
 export function shopPrice(id: 'potion' | 'scrollIdentify', depth: number): number {
@@ -35,6 +47,24 @@ export function buyFromShop(id: 'potion' | 'scrollIdentify', context: ShopAction
 	} else context.say(t('port.log.cannotafford', { item: name, price }), 'negative');
 }
 
+/**
+ * `WndTradeItem`'s *selling* half: pick a carried item, then sell one unit or the whole stack.
+ *
+ * Java builds two different windows from one rule (`WndTradeItem.java` 78-131): when
+ * `item.quantity() == 1 || (item instanceof MissileWeapon && item.isUpgradable())` it shows a
+ * single `sell` button that sells the item outright, and otherwise a `sell_1` button at
+ * `priceAll / item.quantity()` beside a `sell_all` at `priceAll` (= `item.value()`, the *stack*
+ * total - this port's `getSellPrice` third argument is the same quantity-aware total). So a lone
+ * item has no quantity to choose and an upgradable missile stack deliberately does not get the
+ * choice either: Java sells those whole, one button.
+ *
+ * What this replaces sold exactly one unit for every item, which silently made a stack of twelve
+ * potions take twelve picks to clear and gave no way to sell it in one action.
+ *
+ * Not modelled: the `extraThrownLeft` warning above the button (`WndUpgrade.thrown_dust`), which
+ * needs Java's per-stack extra-thrown counter - this port's ammo has no such state (see the
+ * `MissileWeapon` rows in `PORT_COVERAGE.md`).
+ */
 export function sellFood(context: ShopActionsContext): void {
 	const candidates = (context.bag.items as ShopEntry[]).filter((item) =>
 		item.quantity > 0 && getSellPrice(item.id, context.depth, 1, item.identified ?? true, item) > 0
@@ -48,13 +78,27 @@ export function sellFood(context: ShopActionsContext): void {
 		const item = (context.bag.items as ShopEntry[]).find((entry) => entry.id === pick.id
 			&& (entry.instanceId ?? undefined) === (pick.instanceId ?? undefined) && entry.quantity > 0);
 		if (!item) return;
-		const price = getSellPrice(item.id, context.depth, 1, item.identified ?? true, item);
-		if (price <= 0) return;
-		context.bag.remove(item.id, 1, item.instanceId);
-		context.heroStats.setBase('gold', context.heroStats.base('gold') + price);
-		context.buyback.push({ ...item, quantity: 1 });
-		while (context.buyback.length > 3) context.buyback.shift();
-		context.say(t('port.log.solditem', { item: context.itemDisplayName(item.id, item.identified ?? true), price }), 'positive');
+		const sell = (units: number): void => {
+			//Re-priced here rather than carried in from the button, so the gold paid is always the
+			//stack's real value for the units actually leaving the bag.
+			const price = getSellPrice(item.id, context.depth, units, item.identified ?? true, item);
+			if (price <= 0) return;
+			context.bag.remove(item.id, units, item.instanceId);
+			context.heroStats.setBase('gold', context.heroStats.base('gold') + price);
+			context.buyback.push({ ...item, quantity: units });
+			while (context.buyback.length > 3) context.buyback.shift();
+			context.say(t('port.log.solditem', { item: context.itemDisplayName(item.id, item.identified ?? true), price }), 'positive');
+		};
+		//`priceAll` is the whole stack's total (`item.value()`), so the per-unit label is Java's own
+		//integer division of it.
+		const allPrice = getSellPrice(item.id, context.depth, item.quantity, item.identified ?? true, item);
+		const options = item.quantity === 1 || (isMissileStack(item) && isUpgradableItem(item))
+			? [{ units: item.quantity, label: t('windows.wndtradeitem.sell', { 0: allPrice }) }]
+			: [
+				{ units: 1, label: t('windows.wndtradeitem.sell_1', { 0: Math.floor(allPrice / item.quantity) }) },
+				{ units: item.quantity, label: t('windows.wndtradeitem.sell_all', { 0: allPrice }) },
+			];
+		context.showSellOptions(context.itemDisplayName(item.id, item.identified ?? true), options, sell);
 	});
 }
 

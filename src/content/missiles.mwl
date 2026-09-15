@@ -111,7 +111,12 @@
       {
         tag: "table",
         id: "missileDefinitions",
-        columns: "id:string|sourceClass:string|tier:number|minDamage:number|maxDamage:number",
+        //`MissileWeapon.baseUses` (tag v3.3.8): the field defaults to 8 and each class
+        //overrides it - ThrowingStone/Knife 5, ThrowingSpike/Club/Hammer 12, Kunai 8,
+        //Bolas/Tomahawk/Boomerang/Shuriken/ForceCube 5, and Spear/Javelin/Trident/
+        //FishingSpear left at the default. This port used to derive it from the hero
+        //class (`duelist ? 12 : 5`), which was wrong for every other class's missile.
+        columns: "id:string|sourceClass:string|tier:number|minDamage:number|maxDamage:number|baseUses:number",
         children: [
           {
             tag: "row",
@@ -120,6 +125,7 @@
             tier: 1,
             minDamage: 2,
             maxDamage: 5,
+            baseUses: 5,
           },
           {
             tag: "row",
@@ -128,6 +134,7 @@
             tier: 1,
             minDamage: 2,
             maxDamage: 6,
+            baseUses: 5,
           },
           {
             tag: "row",
@@ -136,6 +143,7 @@
             tier: 1,
             minDamage: 2,
             maxDamage: 5,
+            baseUses: 12,
           },
           {
             tag: "row",
@@ -144,6 +152,7 @@
             tier: 2,
             minDamage: 4,
             maxDamage: 10,
+            baseUses: 8,
           },
           {
             tag: "row",
@@ -151,7 +160,8 @@
             sourceClass: "ThrowingClub",
             tier: 2,
             minDamage: 4,
-            maxDamage: 10,
+            maxDamage: 8,
+            baseUses: 12,
           },
           {
             tag: "row",
@@ -159,7 +169,8 @@
             sourceClass: "Shuriken",
             tier: 2,
             minDamage: 4,
-            maxDamage: 10,
+            maxDamage: 8,
+            baseUses: 5,
           },
           {
             tag: "row",
@@ -168,6 +179,7 @@
             tier: 3,
             minDamage: 6,
             maxDamage: 15,
+            baseUses: 8,
           },
           {
             tag: "row",
@@ -175,15 +187,17 @@
             sourceClass: "Kunai",
             tier: 3,
             minDamage: 6,
-            maxDamage: 15,
+            maxDamage: 12,
+            baseUses: 8,
           },
           {
             tag: "row",
             id: "missile_bolas",
             sourceClass: "Bolas",
             tier: 3,
-            minDamage: 6,
-            maxDamage: 15,
+            minDamage: 4,
+            maxDamage: 9,
+            baseUses: 5,
           },
           {
             tag: "row",
@@ -192,14 +206,16 @@
             tier: 4,
             minDamage: 8,
             maxDamage: 20,
+            baseUses: 8,
           },
           {
             tag: "row",
             id: "missile_tomahawk",
             sourceClass: "Tomahawk",
             tier: 4,
-            minDamage: 8,
-            maxDamage: 20,
+            minDamage: 6,
+            maxDamage: 16,
+            baseUses: 5,
           },
           {
             tag: "row",
@@ -207,7 +223,8 @@
             sourceClass: "HeavyBoomerang",
             tier: 4,
             minDamage: 8,
-            maxDamage: 20,
+            maxDamage: 16,
+            baseUses: 5,
           },
           {
             tag: "row",
@@ -216,6 +233,7 @@
             tier: 5,
             minDamage: 10,
             maxDamage: 25,
+            baseUses: 8,
           },
           {
             tag: "row",
@@ -223,7 +241,8 @@
             sourceClass: "ThrowingHammer",
             tier: 5,
             minDamage: 10,
-            maxDamage: 25,
+            maxDamage: 20,
+            baseUses: 12,
           },
           {
             tag: "row",
@@ -232,17 +251,41 @@
             tier: 5,
             minDamage: 10,
             maxDamage: 25,
+            baseUses: 5,
           },
         ],
       },
       {
         tag: "table",
         id: "missileUpgradeRules",
+        //`MissileWeapon.min(int lvl)`/`max(int lvl)` at tag v3.3.8 - the version this port's
+        //missile module cites: base `min = 2*tier + lvl` and `max = 5*tier + tier*lvl`, each
+        //overridden by the classes that rebalance themselves - ThrowingKnife `max = 6*tier +
+        //(tier == 1 ? 2*lvl : tier*lvl)`, Bolas `min = 2*(tier-1) + 0*lvl` and
+        //`max = 3*tier + (tier-1)*lvl`, Tomahawk `min = round(1.5*tier) + lvl` and
+        //`max = round(4*tier) + (tier-1)*lvl`, HeavyBoomerang `max = 4*tier + (tier-1)*lvl`,
+        //Shuriken `max = 4*tier + (tier == 1 ? 2*lvl : tier*lvl)`, Kunai/ThrowingClub
+        //`max = 4*tier + tier*lvl`, ThrowingHammer `max = 4*tier + tier*lvl`. Both tables below are
+        //derived from those formulas, so `minDamage + minPerLevel*lvl` is `min(lvl)` exactly. Before
+        //2026-09-15 the rules table carried only the three starting missiles, so the twelve other
+        //classes could not be thrown at all (nothing else read their damage).
         columns: "sourceClass:string|minPerLevel:number|maxPerLevel:number",
         children: [
           { tag: "row", sourceClass: "ThrowingStone", minPerLevel: 1, maxPerLevel: 1 },
           { tag: "row", sourceClass: "ThrowingKnife", minPerLevel: 1, maxPerLevel: 2 },
           { tag: "row", sourceClass: "ThrowingSpike", minPerLevel: 1, maxPerLevel: 1 },
+          { tag: "row", sourceClass: "FishingSpear", minPerLevel: 1, maxPerLevel: 2 },
+          { tag: "row", sourceClass: "ThrowingClub", minPerLevel: 1, maxPerLevel: 2 },
+          { tag: "row", sourceClass: "Shuriken", minPerLevel: 1, maxPerLevel: 2 },
+          { tag: "row", sourceClass: "ThrowingSpear", minPerLevel: 1, maxPerLevel: 3 },
+          { tag: "row", sourceClass: "Kunai", minPerLevel: 1, maxPerLevel: 3 },
+          { tag: "row", sourceClass: "Bolas", minPerLevel: 0, maxPerLevel: 2 },
+          { tag: "row", sourceClass: "Javelin", minPerLevel: 1, maxPerLevel: 4 },
+          { tag: "row", sourceClass: "Tomahawk", minPerLevel: 1, maxPerLevel: 3 },
+          { tag: "row", sourceClass: "HeavyBoomerang", minPerLevel: 1, maxPerLevel: 3 },
+          { tag: "row", sourceClass: "Trident", minPerLevel: 1, maxPerLevel: 5 },
+          { tag: "row", sourceClass: "ThrowingHammer", minPerLevel: 1, maxPerLevel: 5 },
+          { tag: "row", sourceClass: "ForceCube", minPerLevel: 1, maxPerLevel: 5 },
         ],
       },
       {

@@ -1,4 +1,5 @@
 import { MWL_CONSUMABLE_CLASS_TO_ID, MWL_MISSILE_BY_CLASS, MWL_RING_CLASS_TO_ID, mwlItemEffectValue, mwlItemNeedsInstance } from '../mwlContent';
+import { setupSpellbookScrolls } from './artifactActions';
 import { ENCHANT_TABLE, GLYPH_TABLE } from './itemAffixes';
 import { rollGeneratedAffix } from './itemKinds';
 import { stonePortId } from './transmutation';
@@ -22,11 +23,20 @@ export function generatedInventoryItem(generated: GenItem, context: GeneratedIte
 	else if (generated.cat === Cat.ARMOR) id = 'armorReward';
 	else if (generated.cat === Cat.ARTIFACT) {
 		const artifactCls = generated.cls.toLowerCase();
-		//Chalice of Blood (checked 2026-09-14): every other generated artifact class still
-		//collapses to 'cloak' (Cloak of Shadows) below, a real, stated gap - see PORT_COVERAGE.md.
+		//All 13 real artifact classes now route to distinct ids (the old cloak-collapse
+		//gap is closed); unknown future classes still fall back to 'cloak' with a warning.
 		id = artifactCls.includes('timekeepershourglass') ? 'hourglass'
 			: artifactCls.includes('chaliceofblood') ? 'chalice'
 			: artifactCls.includes('capeofthorns') ? 'cape'
+			: artifactCls.includes('alchemiststoolkit') ? 'toolkit'
+			: artifactCls.includes('driedrose') ? 'rose'
+			: artifactCls.includes('etherealchains') ? 'chains'
+			: artifactCls.includes('hornofplenty') ? 'horn'
+			: artifactCls.includes('lloydsbeacon') ? 'beacon'
+			: artifactCls.includes('masterthievesarmband') ? 'armband'
+			: artifactCls.includes('sandalsofnature') ? 'sandals'
+			: artifactCls.includes('talismanofforesight') ? 'talisman'
+			: artifactCls.includes('unstablespellbook') ? 'spellbook'
 			: 'cloak';
 	}
 	else if (generated.cat === Cat.RING) id = MWL_RING_CLASS_TO_ID.get(cls) ?? (() => { throw new Error(`MWL ring alias is missing generated class: ${cls}`); })();
@@ -51,6 +61,10 @@ export function generatedInventoryItem(generated: GenItem, context: GeneratedIte
 		id, quantity: generated.quantity, level: generated.level,
 		...(tier === undefined ? {} : { tier }),
 		...(id === 'cloak' ? { charges: Math.min((generated.level ?? 0) + mwlItemEffectValue('cloak', 'initialChargeBase'), mwlItemEffectValue('cloak', 'initialChargeCap')) } : {}),
+		//`UnstableSpellbook()`/`setupScrolls()` (tag `v3.3.8`): the per-instance shuffled scroll
+		//queue is built once, here, at construction - see `setupSpellbookScrolls`'s own doc
+		//comment in `artifactActions.ts` for the exact algorithm.
+		...(id === 'spellbook' ? { scrolls: setupSpellbookScrolls() } : {}),
 		cursed: generated.cursed, affix, identified: false, sourceClass: generated.cls,
 		instanceId: seedInstanceId ?? (mwlItemNeedsInstance(id) ? context.newItemInstanceId(id) : undefined),
 	};

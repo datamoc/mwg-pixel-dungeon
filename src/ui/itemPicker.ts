@@ -7,6 +7,9 @@ export interface ItemPickerEntry {
 	instanceId?: string;
 	identified?: boolean;
 	quantity: number;
+	/** Appended after the name - the shop's rows use it for their price (SPD's own
+	 *  `windows.wndtradeitem.buy`), the way Java's trade window prints a price per item. */
+	note?: string;
 }
 
 export interface ItemPickerContext {
@@ -33,7 +36,9 @@ export function renderItemPicker({ panel, width, title, entries, displayName, on
 	entries.forEach((entry, index) => {
 		const row = Math.floor(index / cols);
 		const col = index % cols;
-		const label = displayName(entry.id, entry.identified ?? false, entry.instanceId) + (entry.quantity > 1 ? ` x${entry.quantity}` : '');
+		const label = displayName(entry.id, entry.identified ?? false, entry.instanceId)
+			+ (entry.quantity > 1 ? ` x${entry.quantity}` : '')
+			+ (entry.note ? ` ${entry.note}` : '');
 		const button = new Button({ width: columnWidth - 8, height: rowHeight, text: label, onClick: () => onPick(index) });
 		button.position.set(8 + col * columnWidth, 34 + row * (rowHeight + 4));
 		button.eventMode = 'static';

@@ -49,17 +49,130 @@ function prisonBoss(): BossFloorData {
  */
 export const CAVES_BOSS_ARENA = { left: 5, top: 14, right: 28, bottom: 37 } as const;
 
+/**
+ * `CavesBossLevel`'s semi-randomised entrance and corner stamps (tag `v3.3.8`): four 8x8
+ * `entranceVariants`, four 10x10 `cornerVariants`, one of each picked by `Random.oneOf` and then
+ * mirrored into all four quadrants around the anchor point.
+ *
+ * Encoded flat, one character per tile - `.` is Java's `n` (leave the tile alone), `#` is `WALL`,
+ * `_` is `EMPTY`, `,` is `EMPTY_SP`. Generated from the Java source by
+ * `tools/scratch/gen-caves-stamps.mjs` rather than transcribed: the eight stamps are 656 tiles
+ * between them, and a single wrong tile is invisible until someone compares two maps cell by
+ * cell. The width of a stamp's rows is `ENTRANCE_STAMP_WIDTH`/`CORNER_STAMP_WIDTH` below.
+ */
+const ENTRANCE_STAMP_WIDTH = 8;
+const CORNER_STAMP_WIDTH = 10;
+export const ENTRANCE_STAMPS = [
+	'....................#_##...##_##..##____..___##_..##_#__..##____',   // entrance1
+	'.....................___...#_##_..._____.._#_##_.._#_#__..______',   // entrance2
+	'...........................##_##...##_##..._____...##_#_...##___',   // entrance3
+	'..............._......#_.....##_....###_...####_..####__._______',   // entrance4
+] as const;
+export const CORNER_STAMPS = [
+	'###########,,,___####,,,##__###,,,###__##_######_.#_#####...#__###....##__#.....###__.....####......', // corner1
+	'###########,,,#######,,,_____##,,,####__##_######_##_####...##_###....##_##.....##__#.....###__.....', // corner2
+	'###########,,,#######,,,____###,,,###_####_####_#.##_####__.##_###....##____....#####_....####......', // corner3
+	'###########,,,#######,,,___####,,,##_#####_###_##.##_###__..##_____...#####_....#####.....####......', // corner4
+] as const;
+
+const STAMP_TERRAIN: Readonly<Record<string, number | undefined>> = {
+	'.': undefined,
+	'#': Terrain.WALL,
+	'_': Terrain.EMPTY,
+	',': Terrain.EMPTY_SP,
+};
+
+/**
+ * `CavesBossLevel.buildEntrance()`/`buildCorners()`'s stamp walk, verbatim - including the part
+ * that looks like a mistake and is not one. Each of the four cursors is written in a different
+ * direction: `NW`/`SW` increment (their half of the row is written left to right) while `NE`/`SE`
+ * decrement, so the four mirrored copies meet in the middle of every row. The row advance is the
+ * same `width - size`/`width + size` pair Java uses, applied *before* a row's eight or ten writes,
+ * which works out to the cursors descending one row per pass. Cell indices are deliberately raw
+ * (no bounds clamping) because Java's are too - a stamp reaching past an edge wraps into the
+ * neighbouring row in Java exactly as it does here, and clamping would silently part the two maps.
+ */
+function stampTiles(level: PaintLevel, stamp: string, size: number, cursors: { nw: number; ne: number; se: number; sw: number }): void {
+	const w = level.w;
+	for (let i = 0; i < stamp.length; i++) {
+		if (i % size === 0 && i !== 0) {
+			cursors.nw += w - size;
+			cursors.ne += w + size;
+			cursors.se -= w - size;
+			cursors.sw -= w + size;
+		}
+		const terrain = STAMP_TERRAIN[stamp[i]!];
+		if (terrain !== undefined) {
+			level.map[cursors.nw] = terrain;
+			level.map[cursors.ne] = terrain;
+			level.map[cursors.se] = terrain;
+			level.map[cursors.sw] = terrain;
+		}
+		cursors.nw++; cursors.ne--; cursors.sw++; cursors.se--;
+	}
+}
+
+/** `buildEntrance()`: anchor is the entrance cell `16 + 25*width`, cursors 7 columns either side
+ * of it on the row above, expanding outwards as they descend. */
+export function buildEntranceStamps(level: PaintLevel, stamp: string): void {
+	const entrance = 16 + 25 * level.w;
+	stampTiles(level, stamp, ENTRANCE_STAMP_WIDTH, {
+		nw: entrance - 7 - 7 * level.w,
+		ne: entrance + 7 - 7 * level.w,
+		se: entrance + 7 + 7 * level.w,
+		sw: entrance - 7 + 7 * level.w,
+	});
+}
+
+/** `buildCorners()`: the four hardcoded (2,11)/(30,11)/(2,39)/(30,39) corners. */
+export function buildCornerStamps(level: PaintLevel, stamp: string): void {
+	stampTiles(level, stamp, CORNER_STAMP_WIDTH, {
+		nw: 2 + 11 * level.w,
+		ne: 30 + 11 * level.w,
+		se: 30 + 39 * level.w,
+		sw: 2 + 39 * level.w,
+	});
+}
+
 function cavesBoss(strongerBosses: boolean): BossFloorData {
 	// CavesBossLevel: WIDTH=33, HEIGHT=42, mainArena=(5,14)-(28,37).
 	const level = new PaintLevel(33, 42, Terrain.CHASM);
+	//`CavesBossLevel.build()`'s very first paint is `Painter.fill(this, gate, Terrain.CUSTOM_DECO)`,
+	//*before* the arena ellipse and the water/trap patch. The ordering is load-bearing, and the
+	//reason is geometric: `gate` is `Rect(14,13,19,14)`, and `Painter.fillEllipse`'s top row for a
+	//24-wide ellipse is six cells wide (`radW` 12, `rowY -11.5` -> `rowW 2*sqrt(144-132.25)` = 6.86
+	//-> rounded to 6), starting at `x + (24-6)/2` = `5+9` = column 14. So Java's ellipse lands
+	//*exactly* on the gate's bottom row (cols 14-19 of row 14) and clears it to plain arena floor.
+	//The gate therefore keeps only row 13 as `CUSTOM_DECO`; row 14 becomes ordinary floor, and the
+	//patch loop below rolls water and traps across it like any other arena cell.
+	//
+	//This port used to paint the gate *after* the loop instead. That did **not** move the RNG
+	//stream: whichever order the two fills run in, the ellipse has already cleared row 14 to `EMPTY`
+	//before the loop begins, so the loop's cell set - and the 489 `SpdRandom.int` draws that patch
+	//generation and the trap rolls together consume at seed 42 - are identical both ways. What the
+	//old order changed was the loop's *results*: the six gate cells were force-painted `SIGN`
+	//afterwards, erasing the water the loop had placed on them (3 of the 6 at seed 42). That
+	//mattered beyond looks - `activatePylon()` seeds `PylonEnergy` on `INACTIVE_TRAP`/`WATER`/
+	//`CUSTOM_DECO` cells from `mainArena.top - 1` (row 13) down, so all six counted as energy cells
+	//instead of the three the roll had actually made, inflating the pylon field's cell set from
+	//Java's 108 to 111.
+	//
+	//`SIGN` is this port's stand-in for Java's `CUSTOM_DECO` here. It plays both of that tile's
+	//roles - it is the tile `dm300Supercharge()`'s energy seed keys on, mirroring Java's
+	//`CUSTOM_DECO` clause, and it renders as plain floor (`gameBridge.ts`'s `SIGN -> 'floor'`), so
+	//painting it a row earlier changes nothing visually: row 14 ends up `EMPTY`, which maps to
+	//`floor` as well. Java's gate is dressed by the `CityEntrance`/`ArenaVisuals` `CustomTilemap`s
+	//painted over the whole entrance region, which this port has no equivalent for - see
+	//PORT_COVERAGE.md.
+	fillRect(level, 14, 13, 19, 14, Terrain.SIGN);
 	fillEllipse(level, CAVES_BOSS_ARENA.left, CAVES_BOSS_ARENA.top, 24, 24, Terrain.EMPTY);
 	// `CavesBossLevel.build()`: after the arena ellipse, scatter water and sprung traps across it
 	// with the real `Patch.generate(width, height-14, 0.15f, 2, true)` and one
 	// `Random.Int(challenge ? 4 : 8) == 0` roll per eligible EMPTY cell. These are exactly the
 	// cells `activatePylon()`'s `PylonEnergy` seed later energizes (WATER/INACTIVE_TRAP/SIGN), so
-	// without them DM-300's pylon mechanic has no terrain to work on at all. The port's wider
-	// arena layout is still a hand-approximation of Java's build order, so the RNG stream position
-	// here is deterministic but not Java's exact draw index.
+	// without them DM-300's pylon mechanic has no terrain to work on at all. The loop starts at row
+	// 14, matching Java's own `for (i = 14*width(); ...)` - so the gate's row-13 `SIGN` cells are
+	// outside it and only the ellipse's cells roll, in Java's cell order.
 	const patch = spdPatchGenerate(level.w, level.h - 14, 0.15, 2, true);
 	const patchOffset = 14 * level.w;
 	const trapBound = strongerBosses ? 4 : 8;
@@ -68,6 +181,15 @@ function cavesBoss(strongerBosses: boolean): BossFloorData {
 		if (patch[i - patchOffset]) level.map[i] = Terrain.WATER;
 		else if (SpdRandom.int(trapBound) === 0) level.map[i] = Terrain.INACTIVE_TRAP;
 	}
+	//`CavesBossLevel.build()`'s next calls are `buildEntrance()` and `buildCorners()` (lines 137-138
+	//at tag `v3.3.8`), each one `Random.oneOf` over its four stamps - so this is where the port's
+	//stream catches up with Java's for those two draws, before the chasm/entrance fills below
+	//(Java's line 140 is `new CavesPainter().paint(this, null)`, which the port does not run; see
+	//PORT_COVERAGE.md). The entrance stamp's own `Painter.set(this, entrance, Terrain.ENTRANCE)`
+	//runs *inside* `buildEntrance()`, which is why the port's explicit `set(..., ENTRANCE)` below
+	//still wins over a stamp that happens to cover that cell.
+	buildEntranceStamps(level, SpdRandom.element(ENTRANCE_STAMPS as unknown as string[]));
+	buildCornerStamps(level, SpdRandom.element(CORNER_STAMPS as unknown as string[]));
 	fillRect(level, 14, 3, 18, 12, Terrain.EMPTY);
 	fillRect(level, 15, 2, 17, 4, Terrain.EMPTY_SP);
 	fillRect(level, 15, 5, 17, 5, Terrain.STATUE);
@@ -75,7 +197,6 @@ function cavesBoss(strongerBosses: boolean): BossFloorData {
 	fillRect(level, 15, 9, 17, 9, Terrain.STATUE);
 	fillRect(level, 16, 5, 16, 10, Terrain.EMPTY_SP);
 	fillRect(level, 15, 0, 17, 2, Terrain.EXIT);
-	fillRect(level, 14, 13, 19, 14, Terrain.SIGN);
 	set(level, 16, 25, Terrain.ENTRANCE);
 	// Java's four neutral Pylon actors occupy these cells. Their actor payload is preserved
 	// separately from terrain so the live bridge can restore the dedicated pylon sprite and

@@ -60,7 +60,14 @@ export interface Creature extends Combatant {
 	/** Java-aligned friendly combatant (MirrorImage and future directable allies). */
 	isAlly?: boolean;
 	/** Friendly summon subtype; sheep are neutral, short-lived and non-combatant. */
-	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus';
+	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost';
+	/** `DirectableAlly.defendingPos`/`enemy`: the Dried Rose's `AC_DIRECT` order. An ordered
+	 *  attack target wins over the nearest hostile, and an ordered defend cell replaces the hero
+	 *  as the ally's fallback destination - see `takeAllyTurn`'s ghost branch. Neither is
+	 *  persisted: Java saves them on the ally, which this port cannot do without a per-creature
+	 *  id, so a save/load drops a standing order (the ghost simply follows the hero again). */
+	ghostDefendCell?: { x: number; y: number };
+	ghostTargetChar?: Creature;
 	sheepTurns?: number;
 	/** `WandOfWarding.Ward`'s persistent tier, wand level, and zap count. */
 	wardTier?: number;
@@ -108,6 +115,12 @@ export interface Creature extends Combatant {
 	stolen?: string | null;
 	/** Mimic.java's generated bonus item, carried until the mimic dies. */
 	mimicLoot?: string;
+	/** `MasterThievesArmband.StolenTracker` (tag `v3.3.8`): a one-shot marker set the first time
+	 * this creature is targeted by `AC_STEAL`, win or lose - real Java's `CounterBuff` tracks a
+	 * 0/1 count so a second steal attempt against the same mob can never roll loot again, only
+	 * still apply the disorient debuff. This port keeps the same "ever attempted" semantics as a
+	 * plain boolean, since the count only ever gates on `> 0`. */
+	armbandStolen?: boolean;
 	/** CrystalMimic's neutral chest has revealed itself but may not have stolen yet. */
 	mimicRevealed?: boolean;
 	/** Java Haste duration after a CrystalMimic reveal, measured in its own turns. */

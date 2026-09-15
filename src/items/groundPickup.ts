@@ -23,6 +23,9 @@ export interface GroundPickupContext {
 	showStatus(message: string): void;
 	/** Return false when Java's `Dewdrop.consumeDew(..., force=false)` refuses the pickup. */
 	collectDewdrop(force: boolean): boolean;
+	/** `DriedRose.Petal.doPickUp()`: with no rose the pickup is *refused* and the petal stays on
+	 *  the floor; at the rose's level cap it is consumed and wasted; otherwise it levels the rose. */
+	collectPetal(): 'no_rose' | 'no_room' | 'levelup' | 'maxlevel';
 	/** Java forces a one-drop heal on entrance, exit, and unlocked-exit terrain. */
 	forceDewdropPickup?(item: GroundItem): boolean;
 	addSand(item: ItemPayload): void;
@@ -93,6 +96,16 @@ export function pickupGroundItem(context: GroundPickupContext): void {
 		&& !context.missilePickupValid(item.missileSet, item.missileLevel ?? 0)) {
 		context.playSound('stone');
 		context.say(context.messages.missileDust, 'negative');
+		context.removeGround();
+		return;
+	}
+
+	if (item.kind === 'petal') {
+		// `DriedRose.Petal.doPickUp()` refuses the pickup entirely with no rose (`no_rose`), which is
+		// why this branch sits above the generic `removeGround()` - the petal has to stay on the floor.
+		if (context.collectPetal() === 'no_rose') return;
+		// Java plays the DEWDROP sample for a petal, so that is the cue here too.
+		context.playSound('dewdrop');
 		context.removeGround();
 		return;
 	}

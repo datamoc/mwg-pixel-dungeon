@@ -19,13 +19,22 @@
     "i18n:check": "node tools/i18n-extract.mjs --check",
     "i18n:verify": "esbuild tools/i18nCheck.ts --bundle --platform=node --format=esm --outfile=tools/scratch/i18nCheck.mjs && node tools/scratch/i18nCheck.mjs",
     "assets": "node tools/extract-spd-assets.mjs",
-    "mwg:check": "node tools/check-mwg-version.mjs"
+    "mwg:check": "node tools/check-mwg-version.mjs",
+    "release:web": "node tools/pack-web.mjs",
+    "release:desktop": "node tools/pack-desktop.mjs",
+    "android:add": "npx cap add android",
+    "android:version": "node tools/stamp-android-version.mjs",
+    "android:sync": "npx cap sync android",
+    "android:apk": "cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
-    "mwg": "npm:@datamoc/mw_games@^0.13.0",
+    "mwg": "npm:@datamoc/mw_games@^0.14.0",
     "pixi.js": "^8.20.1"
   },
   "devDependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/cli": "^7.6.9",
+    "@capacitor/core": "^7.6.9",
     "typescript": "^5.9.2",
     "vite": "^7.1.3"
   },

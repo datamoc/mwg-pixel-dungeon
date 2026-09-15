@@ -417,4 +417,33 @@ export function verifyCombat(require, check) {
 		assert.deepEqual([1, 2, 3, 4].map((n) => prep.preparationLevelByNumber(n).damageBonus), [0.1, 0.2, 0.35, 0.5]);
 		assert.deepEqual([1, 3, 5, 9].map((t) => prep.preparationLevel(t).level), [1, 2, 3, 4]);
 	});
+	// `MissileWeapon.accuracyFactor` = `Weapon.accuracyFactor * adjacentAccFactor`, and
+	// `Hero.attackSkill()` folds it into the *stat*: `max(1, round(attackSkill * accuracy * factor))`.
+	// `Random.Float(max)` is `Float() * max` (verified against mwg's own `float(min, max)`), so a
+	// 1.5 factor on a 10-accuracy attacker must be indistinguishable - draw for draw, and bit for
+	// bit in the stream - from an accuracy-15 attacker with no factor. That equivalence is the
+	// whole point of `rollHit`'s sixth parameter; a roll-side multiply would not reproduce it.
+	check('the ranged accuracy factor scales the accuracy stat exactly as Hero.attackSkill does', () => {
+		const defender = base({ buffs: {} });
+		const attacker = base({ accuracy: 10 });
+		const run = (seed, a, factor) => {
+			const generator = Random.push(seed);
+			try {
+				return { hit: rollHit(a, defender, Random, false, false, factor), rng: generator.getState() };
+			} finally { Random.pop(); }
+		};
+		let flips = 0;
+		for (const seed of [1, 2, 3, 7, 42, 99, 1234, 31337]) {
+			assert.deepEqual(run(seed, attacker, 1.5), run(seed, base({ accuracy: 15 }), 1),
+				`seed ${seed}: +50% accuracy is the 1.5x stat, consuming the same stream`);
+			assert.deepEqual(run(seed, attacker, 0.5), run(seed, base({ accuracy: 5 }), 1),
+				`seed ${seed}: -50% accuracy is the 0.5x stat, consuming the same stream`);
+			// and the factor genuinely changes outcomes, not just the stat object
+			if (run(seed, attacker, 1).hit !== run(seed, attacker, 1.5).hit) flips++;
+		}
+		assert.ok(flips > 0, 'the +50% ranged factor must flip at least one of these rolls to a hit');
+		// `Math.max(1, round(...))`: the factor can never drive a live attacker below 1 accuracy
+		assert.deepEqual(run(5, base({ accuracy: 1 }), 0.5), run(5, base({ accuracy: 1 }), 1),
+			'a factor that would round accuracy below 1 is floored back to 1, as Hero.attackSkill does');
+	});
 }

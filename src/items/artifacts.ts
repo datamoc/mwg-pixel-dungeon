@@ -49,6 +49,45 @@
  * `attack()`'s own resolution of that same attacker's swing, which risks the rest of that
  * (large, load-bearing) function referencing a creature already removed mid-call; scoped out
  * rather than risked. See `PORT_COVERAGE.md`'s `CapeOfThorns` row.
+ *
+ * **AlchemistsToolkit is now implemented too (2026-09-15)**: unlike the other four artifacts
+ * above, this one already had *routing* wired (its own `toolkit` id, never collapsing to
+ * `cloak`) but only a placeholder action (spend carried alchemy energy for a flat instant
+ * refund, with a stated "no hero-XP hook reaches item actions" excuse). That excuse is now
+ * fixed: `dungeonScene.ts`'s `grantExperience` feeds `applyToolkitGainCharge` on every kill's
+ * XP grant, exactly where real Java's `Hero.earnExp()` calls `kitEnergy.gainCharge()`, banking
+ * charge the toolkit then spends first on any alchemy-pot recipe cost
+ * (`consumeToolkitEnergy`, `AlchemyScene`'s own combine-cost logic). `AC_BREW` opens the same
+ * alchemy picker `Terrain.ALCHEMY` already does, from anywhere - matching real Java, which has
+ * no adjacency requirement for this particular action. `AC_ENERGIZE` (spend 6 carried alchemy
+ * energy per level to permanently raise the toolkit) is exposed as an extra row inside that
+ * same picker rather than a second button, since there is no other seam this port has for the
+ * energy pool that action spends. **Not ported**: the equip/unequip-tied `warmUpDelay` window
+ * (this port has no artifact equip slot at all - every carried artifact is always active, so
+ * there is no equip event to gate), the generic `Artifact.charge(Hero, float)` override (no
+ * caller in this port reaches it), and the "energize just one level" alternative to spending
+ * the maximum affordable at once (no options-window seam at this call site). See
+ * `PORT_COVERAGE.md`'s `AlchemistsToolkit` row.
+ *
+ * **LloydsBeacon is now implemented too (2026-09-15)**: `dungeonScene.ts`'s
+ * `useBeaconArtifact` opens the same generic item-picker seam `openAlchemyRecipes` already
+ * uses, offering `AC_ZAP` (only once `charge` covers `Dungeon.depth > 20 ? 2 : 1`), `AC_SET`
+ * (always), and `AC_RETURN` (only once a return point is set) exactly as real Java's own
+ * per-artifact action list does. `AC_ZAP` is aimed through the scene's MWG
+ * `TargetingController` seam (`beginAiming`/`confirmAiming`, the same one six runestones and
+ * the disintegration wand use) rather than Java's own `Ballistica`-resolved bolt; targeting
+ * self reuses `ScrollOfTeleportation`'s own random-cell teleport, targeting a creature reuses
+ * the free-cell search `Displacing`'s proc already uses, honoring `IMMOVABLE_KINDS`
+ * (`tele_fail`) and boss floors (`no_tele`) the same way Java's zapper callback does.
+ * `AC_SET`/`AC_RETURN` reuse the exact same floor-transition path `useBeaconOfReturning`
+ * (the wand effect) already established, but never consume the item - persistent charge and
+ * a passive per-turn recharge (`beaconRecharge.act()`'s own formula) live on the artifact
+ * instead. **Not ported**: Java's `Ballistica` line-of-sight collision along the aimed path
+ * (a nearer wall or creature can intercept the bolt before the chosen cell - this port
+ * resolves on the exact chosen cell, since `beginAiming` only offers clear-LOS cells anyway),
+ * the options window naming each action, and the `regenOn()` LockedFloor/MiningLevel gate on
+ * the passive recharge (already an established simplification - see the Broken Seal shield's
+ * own regen in `dungeonScene.ts`). See `PORT_COVERAGE.md`'s `LloydsBeacon` row.
  */
 
 import { MWL_ITEM_NODES } from '../mwlContent';

@@ -165,15 +165,6 @@
       // assortment, section 1's shop-pricing remainder). `potion` is the runtime generic
       // id the shop sells (no single catalogue entry), so rows are intentionally not
       // validated against the item catalogue - only shape-checked at compile time.
-      {
-        tag: "table",
-        id: "shopShelfStock",
-        columns: "item:string|quantity:number",
-        children: [
-          { tag: "row", item: "potion", quantity: 2 },
-          { tag: "row", item: "scrollIdentify", quantity: 2 },
-        ],
-      },
     ],
   },
 ]

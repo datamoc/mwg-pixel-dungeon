@@ -12,6 +12,22 @@ const MWL_CONTENT = contentCatalog(gameData);
 export const MWL_RING_ITEMS = MWL_CONTENT.items;
 export const MWL_MONSTERS = MWL_CONTENT.monsters;
 export const MWL_CONSUMABLE_ITEMS = MWL_CONTENT.items.filter((item) => item.slot === 'consumable');
+/**
+ * The authored item catalogue's `id` to `slot`. Java has no such table - an item's kind *is* its
+ * class - so this is the port's single statement of it, for the rules that have to answer "what
+ * kind of item is this?" from a bag id. `slot` is one of `weapon`, `armor`, `wand`, `ring`,
+ * `missile`, `artifact`, `consumable`, and every authored item node carries one (checked: 228
+ * nodes, no gaps). A bag id that is *not* in here was minted by the port rather than authored -
+ * a generated weapon/armor payload, a picked-up heap, a quest prop - so those are resolved by
+ * `src/items/itemKinds.ts` instead, which is where the minting lives.
+ *
+ * Built from the nodes that declare a slot, so the type stays `string` rather than
+ * `string | undefined`: an item node without one is simply absent here, which lands the caller on
+ * its own default rather than on a bogus `'undefined'` slot.
+ */
+export const MWL_ITEM_SLOTS: ReadonlyMap<string, string> = new Map(
+	MWL_CONTENT.items.flatMap((item) => (item.slot === undefined ? [] : [[item.id, item.slot] as const])),
+);
 
 /**
  * MWG 0.7.2 typed MWL tables: `[table] columns=...` with `[row]` children. The framework validates
@@ -259,6 +275,8 @@ export interface MwlMissileDefinition {
 	readonly tier: number;
 	readonly minDamage: number;
 	readonly maxDamage: number;
+	/** `MissileWeapon.baseUses` (tag `v3.3.8`): durability uses before the `1.5^level` scaling. */
+	readonly baseUses: number;
 }
 
 /** Missile classes are content data too; the combat adapter decides how much of this
@@ -270,6 +288,7 @@ function parseMissileDefinitions(): readonly MwlMissileDefinition[] {
 		tier: Number(row.tier),
 		minDamage: Number(row.minDamage),
 		maxDamage: Number(row.maxDamage),
+		baseUses: Number(row.baseUses),
 	}));
 }
 
@@ -277,6 +296,15 @@ export const MWL_MISSILE_DEFINITIONS = parseMissileDefinitions();
 export const MWL_MISSILE_BY_CLASS = new Map(MWL_MISSILE_DEFINITIONS.map((definition) => [definition.sourceClass, definition]));
 export const MWL_MISSILE_DESCRIPTION_KEYS: Readonly<Record<string, string>> = Object.fromEntries(
 	MWL_TABLE_ROWS('missileDescriptionKeys', 'id').map((row) => [String(row.item), String(row.descriptionKey)]),
+);
+/**
+ * `missileDefinitions` (the mechanical table) carries damage/uses but no display name - the name
+ * lives on each missile's own `item` node in `missiles.mwl`. The boomerang's return logs Java's
+ * real `hero.you_now_have` line, which needs that name, so this maps id to name key off the
+ * authored item nodes rather than duplicating the strings into the table.
+ */
+export const MWL_MISSILE_NAME_KEYS: Readonly<Record<string, string>> = Object.fromEntries(
+	MWL_CONTENT.items.filter((item) => item.slot === 'missile').map((item) => [item.id, item.name]),
 );
 export interface MwlMissileUpgradeRule {
 	readonly minPerLevel: number;
@@ -404,18 +432,6 @@ function parseScenarioQuests(): readonly MwlScenarioQuest[] {
 }
 
 export const MWL_SCENARIO_QUESTS = parseScenarioQuests();
-
-export interface MwlShopShelfEntry {
-	readonly item: string;
-	readonly quantity: number;
-}
-
-/** Each shop's opening shelf stock, authored in `scenario-rules.mwl` (runtime ids, so the
- * compile check is shape-only rather than catalogue membership). */
-export const MWL_SHOP_SHELF_STOCK: readonly MwlShopShelfEntry[] = MWL_TABLE_ROWS('shopShelfStock').map((row) => ({
-	item: String(row.item),
-	quantity: Number(row.quantity),
-}));
 
 export interface MwlQuestDefinition {
 	readonly id: string;

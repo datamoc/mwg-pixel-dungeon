@@ -1,11 +1,114 @@
 import { Actors } from 'mwg';
 import type { GroundItem } from '../combat';
 import type { GroundItemKind } from '../dungeonConstants';
-import { MWL_CONSUMABLE_CLASS_TO_ID, MWL_ITEM_CATEGORIES, MWL_ITEM_GROUND_KIND_ALIASES, MWL_MISSILE_BY_CLASS, MWL_RING_CLASS_TO_ID, MWL_SPECIAL_ITEM_GROUND_KINDS, MWL_SPECIAL_ITEM_INVENTORY_BY_CLASS } from '../mwlContent';
+import { MWL_CONSUMABLE_CLASS_TO_ID, MWL_ITEM_CATEGORIES, MWL_ITEM_GROUND_KIND_ALIASES, MWL_ITEM_SLOTS, MWL_MISSILE_BY_CLASS, MWL_RING_CLASS_TO_ID, MWL_SPECIAL_ITEM_GROUND_KINDS, MWL_SPECIAL_ITEM_INVENTORY_BY_CLASS } from '../mwlContent';
 import { WEAPON_TIER_BY_CLASS, ARMOR_TIER_BY_CLASS } from './catalog';
 export const SPECIALTY_BOMB_IDS = new Set(
 	[...MWL_ITEM_CATEGORIES].filter(([, category]) => category === 'specialtyBomb').map(([id]) => id),
 );
+
+/** A carried item as the infusion predicates below see it: its bag id, plus the `sourceClass` a
+ * picked-up heap or a generated payload keeps (see `sourceInventoryItem`). */
+export interface CarriedItem { id: string; sourceClass?: string }
+
+/** Bag ids the port mints for **artifacts** (`sourceInventoryItem`'s per-class collapse). Java:
+ * `artifacts/Artifact.isUpgradable()` returns false, and DriedRose/TimekeepersHourglass - the two
+ * artifacts that do have levels - override it false as well, so every artifact is excluded. */
+const ARTIFACT_IDS = new Set([
+	'toolkit', 'rose', 'chains', 'horn', 'beacon', 'armband', 'sandals', 'talisman', 'spellbook',
+	'cloak', 'hourglass', 'chalice', 'cape',
+]);
+
+/** Bag ids the port mints for non-upgradable **consumables and props**, each mapping onto a Java
+ * class that overrides `isUpgradable()` false: Bomb/DoubleBomb/SPECIALTY_BOMB_IDS (`Bomb`),
+ * `food`/`meat` (`Food`), `potion` (`Potion`, which brews and elixirs extend), `scroll`
+ * (`Scroll`), `seed` (`Plant$Seed`), the three keys (`Key`), `gooBlob`/`metalShard`
+ * (`quest/GooBlob`, `quest/MetalShard`), `energyCrystal` (`EnergyCrystal`), `candle`
+ * (`quest/CeremonialCandle`), `embers` (`quest/Embers`), `corpseDust` (`quest/CorpseDust`),
+ * `sandBag` (a Timekeeper's Hourglass part, not an item of its own), and `alchemize` - one of the
+ * port's spell ids, `Alchemize extends Spell`, which is false like every other spell. */
+const NON_UPGRADABLE_MINTED_IDS = new Set([
+	'bomb', 'doubleBomb', 'food', 'meat', 'potion', 'scroll', 'seed',
+	'crystalKey', 'ironKey', 'goldenKey', 'gooBlob', 'metalShard', 'energyCrystal',
+	'candle', 'embers', 'corpseDust', 'sandBag', 'alchemize',
+	...SPECIALTY_BOMB_IDS,
+]);
+
+/** A picked-up missile stack: Java's `ThrowingStone`/`Bolas`/... are `MissileWeapon`s, which
+ * extend `Weapon` and never override `isUpgradable()`, so a carried stack is a real upgrade
+ * target - the same conclusion `missiles.mwl`'s uncapped `missileLevel` and the scroll-of-upgrade
+ * path already act on. The bag id `'stone'` is ambiguous by design (`sourceInventoryItem` gives a
+ * missile heap *and* a runestone that id), so the class decides: exactly the test `wieldMissile`
+ * validates with. */
+export function isMissileStack(item: CarriedItem): boolean {
+	return item.sourceClass !== undefined && MWL_MISSILE_BY_CLASS.has(item.sourceClass);
+}
+
+/**
+ * `Item.isUpgradable()` (tag `v3.3.8`), and the whole of `MagicalInfusion`'s selector:
+ * `usableOnItem(item) { return item.isUpgradable(); }` - no type test at all.
+ *
+ * Java's default is **true** - `Item.isUpgradable()` returns true and exactly 42 classes override
+ * it false. The list was walked from the whole tree rather than sampled, because a class missed
+ * here silently *widens* the selector this port is matching:
+ *   Amulet, Ankh, ArcaneResin, Dewdrop, EnergyCrystal, Gold, Honeypot, KingsCrown, LiquidMetal,
+ *   Stylus, TengusMask, Torch, Waterskin; `artifacts/Artifact` (so DriedRose and
+ *   TimekeepersHourglass with it); `bags/Bag`; `bombs/Bomb`; `food/Food`; `journal/DocumentPage`,
+ *   `journal/Guidebook`; `keys/Key`; `potions/Potion`; the eight `quest/*`; `remains/RemainsItem`;
+ *   `scrolls/Scroll`; `spells/Spell`; `stones/Runestone`; `trinkets/Trinket`,
+ *   `trinkets/TrinketCatalyst`; `weapon/SpiritBow`; `weapon/missiles/darts/Dart`; and
+ *   `plants/Plant$Seed` (which lives outside `items/`, where a first pass missed it).
+ * Everything else is upgradable, so this keeps Java's default-true shape rather than listing what
+ * *is* upgradable: the port's upgradable ids are open-ended (authored equipment nodes, the
+ * generated `weaponReward`/`armorReward`/`wand` payloads, the `ring_garnet`/`ring_*` runtime ring
+ * ids), while its non-upgradable ones all descend from that 42-class list.
+ *
+ * The one id that needs its payload and not just its name is `'stone'`, above.
+ */
+export function isUpgradableItem(item: CarriedItem): boolean {
+	const slot = MWL_ITEM_SLOTS.get(item.id);
+	if (slot !== undefined) return slot !== 'artifact' && slot !== 'consumable';
+	if (item.id === 'stone') return isMissileStack(item);
+	if (ARTIFACT_IDS.has(item.id) || NON_UPGRADABLE_MINTED_IDS.has(item.id)) return false;
+	return true;
+}
+
+/**
+ * `EquipableItem` (tag `v3.3.8`), the other half of `CurseInfusion`'s selector:
+ * `(item instanceof EquipableItem && item.isUpgradable()) || item instanceof Wand || item
+ * instanceof SpiritBow`.
+ *
+ * The interface is implemented through `KindOfWeapon` (so Weapon and every MissileWeapon),
+ * `KindofMisc` (so **Ring and Artifact**, which is why an artifact answers true here and is still
+ * excluded from `CurseInfusion` - by the `&& isUpgradable()` half, not by this), and by Armor.
+ * It is **not** implemented by `Wand`, which extends `Item` directly - which is exactly why Java's
+ * predicate needs its explicit `|| item instanceof Wand` clause even though a wand *is* upgradable.
+ * `SpiritBow` is a `Weapon` whose `isUpgradable()` is false and which Java adds back explicitly;
+ * this port has no bow *item* (the Huntress's bow is class state, not `belongings`), so that clause
+ * has nothing to match here and is recorded rather than modeled.
+ */
+export function isEquipableItem(item: CarriedItem): boolean {
+	const slot = MWL_ITEM_SLOTS.get(item.id);
+	if (slot !== undefined) return slot !== 'wand' && slot !== 'consumable';
+	if (item.id === 'stone') return isMissileStack(item);
+	// the port-minted artifact ids are EquipableItem too; only the consumable/prop ids are not
+	return !NON_UPGRADABLE_MINTED_IDS.has(item.id);
+}
+
+/** `MagicalInfusion.usableOnItem`: every upgradable carried item, no type test. */
+export function usableForMagicalInfusion(item: CarriedItem): boolean {
+	return isUpgradableItem(item);
+}
+
+/** `CurseInfusion.usableOnItem`: an upgradable equipable, or a wand or the spirit bow. Over this
+ * port's id vocabulary that resolves to the same set as above - the port's artifacts are all
+ * non-upgradable, so the `&& isUpgradable()` half excludes them here too, and the two explicit
+ * clauses add nothing (no bow item exists; wands are already upgradable). Stated separately
+ * anyway: the two Java methods are separate, and a future port item could part them. */
+export function usableForCurseInfusion(item: CarriedItem): boolean {
+	if (MWL_ITEM_SLOTS.get(item.id) === 'wand') return true;
+	return isEquipableItem(item) && isUpgradableItem(item);
+}
 
 /** Rolls an affix from `table` when eligible, `undefined` otherwise - `generatedInventoryItem`'s
  * cursed/hasGoodEnchant gates decide eligibility. MWG 0.7.2's `rollAffix` `curse` option does the
@@ -51,6 +154,21 @@ export function sourceInventoryItem(id: string, sourceClass: string | undefined,
 	//`CapeOfThorns` (tag `v3.3.8`), same reasoning as Chalice directly above: checked before
 	//the generic artifact fallback so it does not silently collapse to Cloak of Shadows.
 	if (id.toLowerCase().includes('capeofthorns')) return { id: 'cape', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass };
+	const artifactIdByClass = (cls: string): string | undefined => {
+		const lower = cls.toLowerCase();
+		if (lower.includes('alchemiststoolkit')) return 'toolkit';
+		if (lower.includes('driedrose')) return 'rose';
+		if (lower.includes('etherealchains')) return 'chains';
+		if (lower.includes('hornofplenty')) return 'horn';
+		if (lower.includes('lloydsbeacon')) return 'beacon';
+		if (lower.includes('masterthievesarmband')) return 'armband';
+		if (lower.includes('sandalsofnature')) return 'sandals';
+		if (lower.includes('talismanofforesight')) return 'talisman';
+		if (lower.includes('unstablespellbook')) return 'spellbook';
+		return undefined;
+	};
+	const namedArtifact = artifactIdByClass(id);
+	if (namedArtifact) return { id: namedArtifact, quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass };
 	if (id.split('|', 1)[0]!.toLowerCase() === 'artifact') return { id: 'cloak', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass };
 	if (id.toLowerCase() === 'seed') return { id: 'seed', quantity: 1, identified: true, sourceClass, ...(sourceClass ? { instanceId: `seed:${sourceClass.toLowerCase()}` } : {}) };
 	const concrete = sourceClass ?? id;
@@ -85,6 +203,15 @@ export function sourceInventoryItem(id: string, sourceClass: string | undefined,
 	if (lower.includes('timekeepershourglass')) return { id: 'hourglass', quantity: 1, identified: false, sandBags: 0, instanceId: newItemInstanceId('hourglass'), sourceClass: concrete };
 	if (lower.includes('chaliceofblood')) return { id: 'chalice', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
 	if (lower.includes('capeofthorns')) return { id: 'cape', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
+	if (lower.includes('alchemiststoolkit')) return { id: 'toolkit', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
+	if (lower.includes('driedrose')) return { id: 'rose', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
+	if (lower.includes('etherealchains')) return { id: 'chains', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
+	if (lower.includes('hornofplenty')) return { id: 'horn', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
+	if (lower.includes('lloydsbeacon')) return { id: 'beacon', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
+	if (lower.includes('masterthievesarmband')) return { id: 'armband', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
+	if (lower.includes('sandalsofnature')) return { id: 'sandals', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
+	if (lower.includes('talismanofforesight')) return { id: 'talisman', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
+	if (lower.includes('unstablespellbook')) return { id: 'spellbook', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
 	if (lower.includes('artifact')) return { id: 'cloak', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
 	if (lower.includes('wand')) return { id: 'wand', quantity: 1, identified: false, instanceId: newItemInstanceId('wand'), sourceClass: concrete };
 	//`ShopRoom.generateItems()` places concrete weapon/armor classes directly. Preserve their
