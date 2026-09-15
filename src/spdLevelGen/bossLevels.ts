@@ -26,9 +26,10 @@ function fillRect(level: PaintLevel, left: number, top: number, right: number, b
 	fillXY(level, left, top, right - left + 1, bottom - top + 1, terrain);
 }
 
-function prisonBoss(): BossFloorData {
-	// PrisonBossLevel: setSize(32,32), with the start rooms and Tengu's lower cell.
-	const level = new PaintLevel(32, 32);
+/** `PrisonBossLevel.setMapStart()` (`v3.3.8`): the entrance room, hallway, four start cells, and
+ *  Tengu's own lower cell behind a locked door. Shared by `setMapPause()`/`setMapEnd()`, which
+ *  both repaint over this same base the way their Java originals call `setMapStart()` first. */
+function paintPrisonBossStart(level: PaintLevel): void {
 	fillRect(level, 0, 0, 31, 31, Terrain.WALL);
 	fillRect(level, 8, 2, 13, 8, Terrain.EMPTY);
 	fillRect(level, 9, 7, 12, 24, Terrain.EMPTY);
@@ -40,8 +41,104 @@ function prisonBoss(): BossFloorData {
 	set(level, 10, 4, Terrain.ENTRANCE);
 	set(level, 10, 23, Terrain.LOCKED_DOOR);
 	for (const [x, y] of [[10, 2], [7, 9], [13, 9], [7, 15], [13, 15], [8, 23], [12, 23]]) set(level, x, y, Terrain.WALL_DECO);
+}
+
+function prisonBoss(): BossFloorData {
+	// PrisonBossLevel: setSize(32,32), with the start rooms and Tengu's lower cell.
+	const level = new PaintLevel(32, 32);
+	paintPrisonBossStart(level);
 	return { paint: level, rooms: [room(6, 23, 15, 31)], feeling: null };
 }
+
+/**
+ * `PrisonBossLevel.setMapPause()` (`v3.3.8`), the `FIGHT_START -> FIGHT_PAUSE` transition (the
+ * half-health crossing): the same start map, but Tengu's locked door is now a plain `DOOR`, one of
+ * the four start cells is partly opened up, and the entrance is walled off with a fresh door one
+ * cell further in - matching Java's own `Painter.set`/`Painter.fill` calls exactly, in the same
+ * order. **The hero's own position is never touched by this transition or the next one** - see
+ * this file's own citation of `progress()`/`cleanMapState()` in `ROADMAP.md`'s Tengu bullet: real
+ * Java relies on the fight (Tengu hunting the hero from his cell toward the entrance) having
+ * already drifted into the region `setMapArena()` below carves out, rather than relocating anyone.
+ */
+export function prisonBossPause(): BossFloorData {
+	const level = new PaintLevel(32, 32);
+	paintPrisonBossStart(level);
+	set(level, 10, 23, Terrain.DOOR);
+	// startCells[1] = (11,9)-(16,16): Painter.fill(startCells[1].left, .top+3, 1, 7, EMPTY) and
+	// Painter.fill(startCells[1].left+2, .top+2, 3, 10, EMPTY).
+	fillRect(level, 11, 12, 11, 18, Terrain.EMPTY);
+	fillRect(level, 13, 11, 15, 20, Terrain.EMPTY);
+	fillRect(level, 8, 2, 13, 8, Terrain.WALL);
+	set(level, 9 + 1, 7, Terrain.EMPTY);
+	set(level, 9 + 1, 8, Terrain.DOOR);
+	return { paint: level, rooms: [room(6, 23, 15, 31)], feeling: null };
+}
+
+/** `(3,1)-(18,16)`: `PrisonBossLevel.arena`, the ellipse `setMapArena()` carves the whole map
+ *  down to for the `FIGHT_PAUSE -> FIGHT_ARENA` transition. */
+export const PRISON_ARENA = { left: 3, top: 1, right: 18, bottom: 16 } as const;
+
+/**
+ * `PrisonBossLevel.setMapArena()`: walls the entire 32x32 map, then carves `PRISON_ARENA`'s
+ * ellipse back to `EMPTY` - Java's own `Painter.fillEllipse(this, arena, 1, EMPTY)`. Nothing
+ * outside the ellipse is walkable after this transition, which is exactly why the hero's own
+ * position matters (see `prisonBossPause()`'s citation) - anyone left outside it is walled in,
+ * matching Java's own accepted failure mode rather than a bug this port introduced.
+ */
+export function prisonBossArena(): BossFloorData {
+	const level = new PaintLevel(32, 32);
+	fillRect(level, 0, 0, 31, 31, Terrain.WALL);
+	// `Painter.fillEllipse(this, arena, 1, EMPTY)`: margin 1 on a (16,16) rect -> (4,2), 14x14.
+	fillEllipse(level, PRISON_ARENA.left + 1, PRISON_ARENA.top + 1, 14, 14, Terrain.EMPTY);
+	return { paint: level, rooms: [room(PRISON_ARENA.left, PRISON_ARENA.top, PRISON_ARENA.right, PRISON_ARENA.bottom)], feeling: null };
+}
+
+/**
+ * `PrisonBossLevel.setMapEnd()`, Tengu's death transition: the start map again (so the entrance/
+ * hallway/cells return), Tengu's own door unlocked, and `endMap` - a fixed 14-wide x 23-row tile
+ * block encoding the chasm/exit room - pasted starting at `endStart = (11, 9)` (`startHallway.left
+ * +2, .top+2`), one row of 14 cells at a time down to the last map row. Java's `IronKey`-heap
+ * cleanup and the two `CustomTilemap` exit-visual overlays are presentation/item-side, not paint.
+ */
+export function prisonBossEnd(): BossFloorData {
+	const level = new PaintLevel(32, 32);
+	paintPrisonBossStart(level);
+	set(level, 10, 23, Terrain.DOOR);
+	let cell = 11 + 9 * 32;
+	for (let row = 0; row < PRISON_END_MAP.length / 14; row++) {
+		for (let col = 0; col < 14; col++) level.map[cell + col] = PRISON_END_MAP[row * 14 + col]!;
+		cell += 32;
+	}
+	return { paint: level, rooms: [room(6, 23, 15, 31)], feeling: null };
+}
+
+const EW = Terrain.WALL, ED = Terrain.WALL_DECO, Ee = Terrain.EMPTY, EE = Terrain.EXIT, EC = Terrain.CHASM;
+/** `PrisonBossLevel.endMap` (`v3.3.8`), transcribed row for row - 23 rows of 14 columns. */
+const PRISON_END_MAP: readonly number[] = [
+	EW, EW, ED, EW, EW, EW, EW, EW, EW, EW, EW, EW, EW, EW,
+	EW, Ee, Ee, Ee, EW, EW, EW, EW, EW, EW, EW, EW, EW, EW,
+	EW, Ee, Ee, Ee, Ee, Ee, Ee, Ee, Ee, EW, EW, EW, EW, EW,
+	Ee, Ee, Ee, Ee, Ee, Ee, Ee, Ee, Ee, Ee, Ee, Ee, EW, EW,
+	Ee, Ee, Ee, Ee, Ee, Ee, Ee, Ee, Ee, Ee, Ee, Ee, Ee, EW,
+	Ee, Ee, Ee, EC, EC, EC, EC, EC, EC, EC, EC, Ee, Ee, EW,
+	Ee, EW, EC, EC, EC, EC, EC, EC, EC, EC, EC, EE, EE, EW,
+	Ee, Ee, Ee, EC, EC, EC, EC, EC, EC, EC, EC, EE, EE, EW,
+	Ee, Ee, Ee, Ee, Ee, EC, EC, EC, EC, EC, EC, EE, EE, EW,
+	Ee, Ee, Ee, Ee, Ee, Ee, Ee, EW, EW, EW, EC, EC, EC, EW,
+	EW, Ee, Ee, Ee, Ee, Ee, EW, EW, EW, EW, EC, EC, EC, EW,
+	EW, Ee, Ee, Ee, Ee, EW, EW, EW, EW, EW, EW, EC, EC, EW,
+	EW, EW, EW, EW, EW, EW, EW, EW, EW, EW, EW, EC, EC, EW,
+	EW, EW, EW, EW, EW, EW, EW, EW, EW, EW, EW, EC, EC, EW,
+	EW, ED, EW, EW, EW, EW, EW, EW, EW, EW, EW, EC, EC, EW,
+	Ee, Ee, Ee, EW, EW, EW, EW, EW, EW, EW, EW, EC, EC, EW,
+	Ee, Ee, Ee, EW, EW, EW, EW, EW, EW, EW, EW, EC, EC, EW,
+	Ee, Ee, Ee, EW, EW, EW, EW, EW, EW, EW, EW, EC, EC, EW,
+	Ee, Ee, Ee, EW, EW, EW, EW, EW, EW, EW, EW, EC, EC, EW,
+	Ee, Ee, Ee, EW, EW, EW, EW, EW, EW, EW, EW, EC, EC, EW,
+	Ee, Ee, Ee, EW, EW, EW, EW, EW, EW, EW, EW, EC, EC, EW,
+	Ee, Ee, Ee, EW, EW, EW, EW, EW, EW, EW, EW, EC, EC, EW,
+	EW, EW, EW, EW, EW, EW, EW, EW, EW, EW, EW, EC, EC, EW,
+];
 
 /**
  * `CavesBossLevel.mainArena` (5,14)-(28,37). `seal()` spawns DM-300 at a random open point inside

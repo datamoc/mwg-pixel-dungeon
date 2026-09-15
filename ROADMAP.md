@@ -981,6 +981,36 @@ fully checked off as of a given release.
       once the repaint lands (deliberately retreat toward `tenguCell` past the half-health
       threshold and confirm the port matches Java's own failure mode rather than silently
       teleporting to safety, which would be the actual divergence).
+      **The three transition paints are now ported and unit-tested (2026-09-15), unblocked by the
+      above.** `src/spdLevelGen/bossLevels.ts` gained `prisonBossPause()`/`prisonBossArena()`/
+      `prisonBossEnd()`, each a faithful `PaintLevel` port of `setMapPause()`/`setMapArena()`/
+      `setMapEnd()` (`PrisonBossLevel.java`, tag `v3.3.8`): the existing `prisonBoss()` START
+      layout was factored into a shared `paintPrisonBossStart()` helper so `setMapPause`/`setMapEnd`
+      can build on it exactly as their Java originals call `setMapStart()` first, `setMapArena()`'s
+      whole-map wall-then-ellipse-carve reuses this file's existing `fillEllipse` helper (already
+      established for the Caves/City boss arenas), and `setMapEnd()`'s 14x23 `endMap` tile block is
+      transcribed row for row and pasted at Java's own `(11,9)` start cell with Java's own
+      column/row stride. Verified by four new `tools/verifyVault.mjs` checks (now 19 vault checks):
+      the pause map's door/seal/crack cells, the arena ellipse's inside/outside boundary (every
+      `EMPTY` cell provably falls inside the `(3,1)-(18,16)` rect), the end map's unlocked door plus
+      a sampled chasm/exit/wall-deco cell each, and that `generateBossFloor(10)` is untouched
+      (still the locked START map on ordinary floor entry). `tsc`/`build`/all suites green.
+      **What remains, and it is not small**: these are pure data functions, not yet called from
+      anywhere live. `dungeonScene.ts`'s `tenguPhase` state machine (around its `'cell'`/`'arena'`
+      flag flip, cited in its own comment as *not* rebuilding the map into Java's separate ellipse)
+      still runs the whole fight over the single existing Tengu-cell arena. Wiring these paints in
+      needs a genuinely new scene operation this codebase has never done before: reshaping
+      `this.level`'s live terrain *mid-visit*, without going through the existing "enter a floor"
+      pipeline the mining-branch map-swap precedent uses (that precedent re-runs the whole
+      floor-entry path as if arriving fresh; Tengu's transitions must happen quietly, without a
+      floor-transition animation, while the fight and the hero's own position carry over exactly
+      where they are - see the "port-side implication" above). That means figuring out and touching
+      whatever this scene's tilemap/minimap/FOV invalidation actually requires when live terrain
+      changes out from under an ongoing visit - unexplored and risky enough that it deserves its own
+      dedicated pass with real browser verification (teleport to depth 10 via
+      `window.__MWG__.currentScene`, force Tengu's HP across both thresholds, confirm the map
+      actually changes and nothing - hero included - ends up embedded in a wall), not a
+      same-session follow-on to the paint functions above.
 - [ ] Port Caves/DM-300's full pylon, gate, energy field, and supercharge scripts (pylon
       proximity sealing, sequential threshold supercharges, pylon activation, boss
       invulnerability, x2 speed, and supercharge loss on pylon death are live; the

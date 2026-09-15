@@ -174,6 +174,49 @@ try {
 		}));
 	}
 
+	// `PrisonBossLevel`'s three arena-transition paints (`setMapPause`/`setMapArena`/`setMapEnd`,
+	// tag `v3.3.8`): geometry only, unwired into the live scene yet - see `ROADMAP.md`'s Tengu
+	// bullet for what remains (the live map-swap at each HP-threshold transition).
+	const { generateBossFloor, prisonBossPause, prisonBossArena, prisonBossEnd, PRISON_ARENA } = require('./spdLevelGen/bossLevels');
+	check('prisonBossPause opens Tengu\'s cell door, seals the entrance, and cracks startCells[1]', () => {
+		const { paint } = prisonBossPause();
+		const at = (x, y) => paint.map[x + y * 32];
+		assert.equal(at(10, 23), Terrain.DOOR, 'tenguCellDoor is now a plain door, not locked');
+		assert.equal(at(8, 4), Terrain.WALL, 'the entrance room is walled shut');
+		assert.equal(at(10, 7), Terrain.EMPTY, 'one cell short of the hallway\'s own new door');
+		assert.equal(at(10, 8), Terrain.DOOR, 'the hallway\'s fresh door, one cell in from the old entrance');
+		assert.equal(at(11, 15), Terrain.EMPTY, 'startCells[1] cracked open (first fill)');
+		assert.equal(at(14, 15), Terrain.EMPTY, 'startCells[1] cracked open (second fill)');
+	});
+	check('prisonBossArena walls the whole floor but the (3,1)-(18,16) ellipse', () => {
+		const { paint } = prisonBossArena();
+		const at = (x, y) => paint.map[x + y * 32];
+		assert.equal(at(10, 8), Terrain.EMPTY, 'the arena\'s own centre is walkable');
+		assert.equal(at(0, 0), Terrain.WALL, 'far outside the ellipse stays solid');
+		assert.equal(at(10, 23), Terrain.WALL, 'the old tenguCell is walled over entirely');
+		// every EMPTY cell must fall inside PRISON_ARENA's rect (the ellipse is inscribed in it)
+		for (let cell = 0; cell < paint.map.length; cell++) {
+			if (paint.map[cell] !== Terrain.EMPTY) continue;
+			const x = cell % 32, y = Math.floor(cell / 32);
+			assert.ok(x >= PRISON_ARENA.left && x <= PRISON_ARENA.right && y >= PRISON_ARENA.top && y <= PRISON_ARENA.bottom,
+				`empty cell (${x},${y}) falls outside the arena rect`);
+		}
+	});
+	check('prisonBossEnd unlocks the door and pastes the chasm/exit endMap at (11,9)', () => {
+		const { paint } = prisonBossEnd();
+		const at = (x, y) => paint.map[x + y * 32];
+		assert.equal(at(10, 23), Terrain.DOOR, 'tenguCellDoor unlocked for the death transition too');
+		assert.equal(at(10, 4), Terrain.ENTRANCE, 'the entrance returns (setMapStart() runs first)');
+		assert.equal(at(11, 9), Terrain.WALL, 'endMap row 0 starts with two WALL columns');
+		assert.equal(at(13, 9), Terrain.WALL_DECO, 'endMap row 0\'s third column is the WALL_DECO cell');
+		assert.equal(at(14, 14), Terrain.CHASM, 'the chasm pool is present partway down endMap');
+		assert.equal(at(22, 15), Terrain.EXIT, 'the exit stairway sits beside the chasm');
+	});
+	check('the fixed-layout dispatcher still returns the START map for depth 10', () => {
+		const { paint } = generateBossFloor(10);
+		assert.equal(paint.map[10 + 23 * 32], Terrain.LOCKED_DOOR, 'depth entry itself still uses the locked START map');
+	});
+
 	console.log(`${passed} vault checks passed.`);
 } catch (error) {
 	console.error(error);
