@@ -1062,10 +1062,33 @@ fully checked off as of a given release.
       first-draft MT per this file's translation convention) plays on the transition. `tsc`/`build`/
       all suites green. **Still open**: the initial `START -> FIGHT_START` seal-and-spawn trigger
       (this port spawns Tengu on floor entry like every other boss, a pre-existing, separately
-      documented simplification untouched here) and the `FIGHT_ARENA -> WON` death transition
-      (`setMapEnd()`, the hero's reposition, ally/stored-item handling) - the latter is what
-      actually unblocks depth 10's "remove auto-descent" gap this section's earlier bullet
-      measured, and is real, separate scope, not a quick follow-on to this transition.
+      documented simplification untouched here).
+      **The `FIGHT_ARENA -> WON` death transition is now live too (2026-09-15), which closes
+      depth 10's half of the "remove auto-descent" gap this section's earlier bullet measured.**
+      `applyTenguDeathTransition()` runs in place of the shared boss-death `depth++`/`enterLevel()`
+      block (a new `creature.kind === 'tengu'` branch added right before it, returning early so
+      every other boss keeps the existing auto-descend unchanged): it repaints to `prisonBossEnd()`
+      via the same `applyPrisonBossPaint()` primitive `checkTenguArenaRetreat()` uses (factored out
+      to share both call sites), repositions the hero to Java's own `tenguCell.left+4,
+      tenguCell.top+2` = `(10, 25)` cell (two rows past the door - not the door cell itself, a
+      detail worth getting right since it's easy to misread), and finds the `endMap`'s baked `EXIT`
+      tile to set `this.stairs`/`this.hasStairs = true` (both otherwise unconditionally `false` for
+      every boss depth) plus draw the real stairs sprite. Java's ally/stored-item handling on this
+      transition are both correctly no-ops here: no allies ever accompany this fight and nothing is
+      pulled from the bag for it, so there is nothing to preserve. Browser-verified live, fully
+      end-to-end: forced Tengu to 1 HP in the `'arena'` phase, killed it, and confirmed depth stayed
+      at 10 (no auto-descend), the hero landed at `(10,25)`, `hasStairs`/`stairs` were set to the
+      real `(22,15)` exit cell (walkable, with all four neighbours walkable too), and then - the
+      real test - called `takeHeroTurn({x:1,y:0})` (the actual move-resolution method, not a
+      teleport) from one cell away: it correctly advanced to depth 11 and placed the hero on its
+      entrance ladder, exactly like an ordinary staircase. `tsc`/`build`/all suites green.
+      **Depth 10 is therefore a real candidate for the "remove auto-descent" project now** - it has
+      a working seal-equivalent (Tengu already gates on floor entry, a separate simplification) and
+      now a genuine walkable exit; what stops the shared code from simply skipping the tengu branch
+      of `depth++` entirely is that this port's Tengu still spawns instantly on floor entry rather
+      than on the real `case START:` trigger, so there is no "boss floor with the fight not yet
+      started" state to preserve - a narrower, now well-understood follow-on, not the large
+      four-transition project this bullet started as.
 - [ ] Port Caves/DM-300's full pylon, gate, energy field, and supercharge scripts (pylon
       proximity sealing, sequential threshold supercharges, pylon activation, boss
       invulnerability, x2 speed, and supercharge loss on pylon death are live; the

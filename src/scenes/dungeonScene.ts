@@ -134,7 +134,7 @@ import {
 	SPD_TERRAIN_TO_GAME_KIND,
 	type PortedFloor,
 } from '../spdLevelGen/gameBridge';
-import { CAVES_BOSS_ARENA, PRISON_ARENA, prisonBossArena } from '../spdLevelGen/bossLevels';
+import { CAVES_BOSS_ARENA, PRISON_ARENA, prisonBossArena, prisonBossEnd } from '../spdLevelGen/bossLevels';
 import { vaultBlockedCells, vaultCenterVisualFrames, vaultCenterWallFrames, vaultFloorFrames } from '../spdLevelGen/vaultVisuals';
 import { spdPatchGenerate } from '../spdLevelGen/spdPatch';
 import { entranceRoomContext } from '../spdLevelGen/rooms/standard/entranceRoom';
@@ -9364,19 +9364,50 @@ export class DungeonScene extends Scene2D {
 		if (!tengu || tengu.tenguPhase !== 'paused') return;
 		if (this.hero.y > 8) return;
 		const arena = prisonBossArena().paint;
-		for (let cell = 0; cell < arena.map.length; cell++) {
-			const kind = SPD_TERRAIN_TO_GAME_KIND[arena.map[cell]!];
-			if (kind === undefined) throw new Error(`checkTenguArenaRetreat: no mapping for Terrain value ${arena.map[cell]}`);
-			this.level.terrain[cell] = GAME_KIND_CODES[kind];
-		}
-		if (this.portedPaint) this.portedPaint.map.set(arena.map);
-		this.restitchAllTiles();
+		this.applyPrisonBossPaint(arena);
 		//`PrisonBossLevel.progress()`: `(arena.left + arena.width()/2) + width()*(arena.top+2)` -
 		//Java's own integer division, `width()=16` so `16/2=8`.
 		const center = { x: PRISON_ARENA.left + Math.floor((PRISON_ARENA.right - PRISON_ARENA.left + 1) / 2), y: PRISON_ARENA.top + 2 };
 		this.moveTo(tengu, center);
 		tengu.tenguPhase = 'arena';
 		this.say(t('port.log.tenguarena'), 'warning');
+	}
+
+	/** Bulk-writes a Tengu boss-floor `PaintLevel` into the live `this.level.terrain` and
+	 *  `this.portedPaint.map`, then restitches every tile - the shared repaint primitive
+	 *  `checkTenguArenaRetreat()`/`applyTenguDeathTransition()` both need, mirroring the
+	 *  mining-branch precedent's own `toGameTerrain` conversion for a fresh floor entry. */
+	private applyPrisonBossPaint(paint: PaintLevel): void {
+		for (let cell = 0; cell < paint.map.length; cell++) {
+			const kind = SPD_TERRAIN_TO_GAME_KIND[paint.map[cell]!];
+			if (kind === undefined) throw new Error(`applyPrisonBossPaint: no mapping for Terrain value ${paint.map[cell]}`);
+			this.level.terrain[cell] = GAME_KIND_CODES[kind];
+		}
+		if (this.portedPaint) this.portedPaint.map.set(paint.map);
+		this.restitchAllTiles();
+	}
+
+	/**
+	 * `PrisonBossLevel.progress()`'s `case FIGHT_ARENA:` (tag `v3.3.8`), Tengu's real death
+	 * transition: `unseal()`, the hero repositioned to `tenguCell.left+4 + width()*(tenguCell.top+2)`
+	 * = `(10, 25)` (not the door cell - two rows further in, the reopened room `setMapEnd()`
+	 * carves), `setMapEnd()`'s chasm/exit layout, and a real stairway the hero can now walk to
+	 * instead of this port's shared auto-descend. Java also relocates surviving allies and
+	 * drops `storedItems` back into the world; this port has no analogue for either (no allies
+	 * ever accompany a boss fight here, and nothing is pulled out of the bag for this fight), so
+	 * both are correctly no-ops rather than invented behavior. Called in place of the shared
+	 * boss-death `depth++`/`enterLevel()` block - the caller already handled the banner/badge/
+	 * victory-message work common to every boss before reaching here.
+	 */
+	private applyTenguDeathTransition(): void {
+		this.applyPrisonBossPaint(prisonBossEnd().paint);
+		this.moveTo(this.hero, { x: 10, y: 25 });
+		const exitCell = this.portedPaint?.map.indexOf(Terrain.EXIT) ?? -1;
+		if (exitCell >= 0) {
+			this.stairs = { x: exitCell % this.level.width, y: Math.floor(exitCell / this.level.width) };
+			this.hasStairs = true;
+			this.drawStairsSprite();
+		}
 	}
 
 	/** Tengu's per-bracket `jump()`: relocate 5-7 away with the trap burst, capped at 4
@@ -12391,6 +12422,10 @@ export class DungeonScene extends Scene2D {
 			}
 			if (creature.kind === 'yog') {
 				for (const minion of this.creatures.filter((c) => c.kind !== undefined && ['yogFist', 'ripperDemon', 'eye', 'scorpio'].includes(c.kind))) this.kill(minion);
+			}
+			if (creature.kind === 'tengu') {
+				this.applyTenguDeathTransition();
+				return;
 			}
 			this.depth++;
 			this.deepestDepth = Math.max(this.deepestDepth, this.depth);
