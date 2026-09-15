@@ -49,6 +49,14 @@ fully checked off as of a given release.
     affected; the five-weight v2.1.4 table additionally stranded the tier-3 Whip past the end of
     the cloned array. See `PORT_COVERAGE.md`'s Generator row for the version-dependent detail.
   - Tengu's fire-throw and shocker abilities run on their real cadence and damage formulas.
+  - Armor abilities are the real ones where they exist at all: the King's Crown's own `WEAR`
+    action offers the class's real SPD abilities (with their real names and descriptions, in
+    every offered locale), each costs its own real charge out of a meter that regrows at Java's
+    rate and starts at Java's 50, and its four rank-4 tier-4 talents open up with points at
+    Java's own curve. The Warrior's three - Heroic Leap, Shockwave and Endure - are fully
+    implemented, formulas included; the other twelve are not offered at all rather than offered
+    and inert, so a Mage/Rogue/Huntress/Duelist crown tells you nothing has changed yet instead
+    of handing you a dead button.
   - Golems tick their enemy-teleport and wandering self-teleport cooldowns individually and on
     every turn (matching `Golem.act()`), not on a shared/simplified timer.
   - Monster AI generally - this line item is intentionally open-ended rather than a fixed claim;
@@ -1725,7 +1733,35 @@ fully checked off as of a given release.
        proc is now live for thrown hits with Java's `Random.Int(3) < points` gate and explicit
        ranged attack provenance; Warden's `durable_tips` still waits on a real TippedDart item.
 - [ ] Complete subclass and armor-ability effects.
+      **2026-09-16: the armor-ability half is no longer an invented stand-in.** Before this pass
+      tier 4 of the level-21 `Advancement` capstone offered two invented, effect-free ids
+      (`warding`/`arcane`) - a two-point damage tweak and a wand-charge refund, with nothing
+      behind them. It is now the real feature: the authored `armorAbilities` table
+      (`src/content/talent-rules.mwl`) carries all 18 real `HeroClass.armorAbilities()` entries
+      with their `baseChargeUse`, targeting mode and three tier-4 talents each; the King's Crown's
+      own `WEAR` action opens SPD's real choice panel (`WndChooseAbility`'s semantics) and
+      `ClassArmor.upgrade()`'s state changes - charge starting at Java's 50, the ability's four
+      rank-4 talents registered, and `Hero.talentPointsAvailable(4)`'s exact point curve (nothing
+      below 21 or without an ability, then `min(level, 31) - 21`) - are all live, with the charge
+      meter regrowing at `ClassArmor.Charger`'s own `100/500` per tick times the Ring of Energy
+      multiplier. **The Warrior's three abilities are ported and browser-verified end to end**
+      (`HeroicLeap`'s leap/body-slam/impact-wave/double-jump, `Shockwave`'s cone with the real
+      `ConeAOE` clamp, proc promotion and paralysis-or-cripple, and `Endure`'s halving, banking and
+      counter-attack), with their nine tier-4 talents' formulas as pure tested functions in
+      `simulation/warriorAbilities.ts`. **Still open, and deliberately not offered**: the other
+      twelve abilities (Mage/Rogue/Huntress/Duelist) each need a system this port does not have -
+      see `PORT_COVERAGE.md`'s new armor-ability section for the per-ability reason - and the
+      Cleric's three have neither strings nor a spell system here. `armorAbilitiesFor()` offers
+      only what can actually run, so a class with none keeps the crown's old description line
+      instead of an empty choice, and its tier-4 pool stays ungranted (which is Java's own state
+      while `armorAbility == null`). Also Not ported and stated: `ClassArmor` as a distinct item
+      (so no `AC_TRANSFER` and no class-armor sprite tier), and Ratmogrify's three rat talents - it
+      now costs its real 50 charge and its double-turn bug is fixed, but its `TransmogRat` actor
+      does not exist here for them to act through.
 - [ ] Match Java talent timing, identification, recharge, and threshold rules.
+      **Tier-4 threshold timing is now real** (2026-09-16, with the armor abilities above): the
+      tier's window, its `armorAbility == null` gate, and its point curve are Java's
+      `Hero.talentPointsAvailable(4)` rather than the earlier "T4 is never granted" simplification.
  - [ ] Complete class-specific item and ability behavior.
       `SuckerPunchTracker` is now also ported: the Rogue surprise bonus uses Java's
       `Random.IntRange(points, 2)` once per stable enemy, with save/load and death cleanup.

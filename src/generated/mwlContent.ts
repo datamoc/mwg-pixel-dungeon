@@ -29141,6 +29141,277 @@ export const gameData = {
 				{
 					"tag": "table",
 					"attributes": {
+						"id": "armorAbilities",
+						"columns": "id:string|class:string|charge:number|targeting:string|talents:list",
+						"list_delimiter": ","
+					},
+					"children": [
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "heroicleap",
+								"class": "warrior",
+								"charge": "35",
+								"targeting": "cell",
+								"talents": "body_slam,impact_wave,double_jump"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 83,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "shockwave",
+								"class": "warrior",
+								"charge": "35",
+								"targeting": "cell",
+								"talents": "expanding_wave,striking_wave,shock_force"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 91,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "endure",
+								"class": "warrior",
+								"charge": "50",
+								"targeting": "none",
+								"talents": "sustained_retribution,shrug_it_off,even_the_odds"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 99,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "elementalblast",
+								"class": "mage",
+								"charge": "35",
+								"targeting": "none",
+								"talents": "blast_radius,elemental_power,reactive_barrier"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 107,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "warpbeacon",
+								"class": "mage",
+								"charge": "35",
+								"targeting": "beacon",
+								"talents": "telefrag,remote_beacon,longrange_warp"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 115,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "wildmagic",
+								"class": "mage",
+								"charge": "25",
+								"targeting": "cell",
+								"talents": "wild_power,fire_everything,conserved_magic"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 123,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "smokebomb",
+								"class": "rogue",
+								"charge": "50",
+								"targeting": "cell",
+								"talents": "hasty_retreat,body_replacement,shadow_step"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 131,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "deathmark",
+								"class": "rogue",
+								"charge": "25",
+								"targeting": "cell",
+								"talents": "fear_the_reaper,deathly_durability,double_mark"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 139,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "shadowclone",
+								"class": "rogue",
+								"charge": "35",
+								"targeting": "clone",
+								"talents": "shadow_blade,cloned_armor,perfect_copy"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 147,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "spectralblades",
+								"class": "huntress",
+								"charge": "25",
+								"targeting": "cell",
+								"talents": "fan_of_blades,projecting_blades,spirit_blades"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 155,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "naturespower",
+								"class": "huntress",
+								"charge": "35",
+								"targeting": "none",
+								"talents": "growing_power,natures_wrath,wild_momentum"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 163,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "spirithawk",
+								"class": "huntress",
+								"charge": "35",
+								"targeting": "hawk",
+								"talents": "eagle_eye,go_for_the_eyes,swift_spirit"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 171,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "challenge",
+								"class": "duelist",
+								"charge": "35",
+								"targeting": "cell",
+								"talents": "close_the_gap,invigorating_victory,elimination_match"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 179,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "elementalstrike",
+								"class": "duelist",
+								"charge": "25",
+								"targeting": "cell",
+								"talents": "elemental_reach,striking_force,directed_power"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 187,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "feint",
+								"class": "duelist",
+								"charge": "50",
+								"targeting": "cell",
+								"talents": "feigned_retreat,expose_weakness,counter_ability"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 195,
+								"column": 13
+							},
+							"gettext": []
+						}
+					],
+					"location": {
+						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+						"line": 77,
+						"column": 9
+					},
+					"gettext": []
+				},
+				{
+					"tag": "table",
+					"attributes": {
 						"id": "talentClassEntries",
 						"columns": "class:string|tier:number|talents:list",
 						"list_delimiter": ","
@@ -29156,7 +29427,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 83,
+								"line": 211,
 								"column": 13
 							},
 							"gettext": []
@@ -29171,7 +29442,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 89,
+								"line": 217,
 								"column": 13
 							},
 							"gettext": []
@@ -29186,7 +29457,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 95,
+								"line": 223,
 								"column": 13
 							},
 							"gettext": []
@@ -29201,7 +29472,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 101,
+								"line": 229,
 								"column": 13
 							},
 							"gettext": []
@@ -29216,7 +29487,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 107,
+								"line": 235,
 								"column": 13
 							},
 							"gettext": []
@@ -29231,7 +29502,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 113,
+								"line": 241,
 								"column": 13
 							},
 							"gettext": []
@@ -29246,7 +29517,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 119,
+								"line": 247,
 								"column": 13
 							},
 							"gettext": []
@@ -29261,7 +29532,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 125,
+								"line": 253,
 								"column": 13
 							},
 							"gettext": []
@@ -29276,7 +29547,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 131,
+								"line": 259,
 								"column": 13
 							},
 							"gettext": []
@@ -29291,7 +29562,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 137,
+								"line": 265,
 								"column": 13
 							},
 							"gettext": []
@@ -29306,7 +29577,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 143,
+								"line": 271,
 								"column": 13
 							},
 							"gettext": []
@@ -29321,7 +29592,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 149,
+								"line": 277,
 								"column": 13
 							},
 							"gettext": []
@@ -29329,7 +29600,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-						"line": 77,
+						"line": 205,
 						"column": 9
 					},
 					"gettext": []

@@ -5,6 +5,11 @@ export interface HeroTurnEffects {
 	advanceHunger(): void;
 	recoverWandCharge(): void;
 	recoverTomeCharge(): void;
+	/** `ClassArmor.Charger.act()`: armor charge regen, once per spent turn (see the caller's own
+	 * `recoverArmorCharge`, which scales by the action's turn cost the way `advanceClock` does). */
+	recoverArmorCharge(): void;
+	/** `Hero.act()`'s `endEnduring()` for the Endure armor ability, once per spent turn. */
+	tickEndureTracker(): void;
 	spreadFire(): void;
 	/** Tick buffs and apply damage; return true when that damage kills the hero. */
 	applyBuffDamage(): boolean;
@@ -30,6 +35,8 @@ export function finishHeroTurn(effects: HeroTurnEffects): HeroTurnResult {
 	effects.advanceHunger();
 	effects.recoverWandCharge();
 	effects.recoverTomeCharge();
+	effects.recoverArmorCharge();
+	effects.tickEndureTracker();
 	effects.spreadFire();
 	if (effects.applyBuffDamage()) return 'buff-death';
 	effects.updatePreparation();

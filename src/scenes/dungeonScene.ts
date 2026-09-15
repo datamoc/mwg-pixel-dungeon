@@ -101,6 +101,7 @@ import {
 import {
 	t,
 	capitalize,
+	titleCase,
 	initI18n,
 	setLanguage,
 	language,
@@ -152,7 +153,16 @@ import { runState, LANGUAGE_KEY } from '../runState';
 import { recordRun } from '../rankings';
 import { isChallengeEnabled, challenges } from '../challenges';
 import { HUNGRY, STARVING } from '../simulation/hunger';
-import { CLASS_TALENTS, subclassTalentDefinitions, TALENT_TIERS, type TalentDefinition } from '../talents';
+import { CLASS_TALENTS, armorTalentDefinitions, subclassTalentDefinitions, TALENT_TIERS, type TalentDefinition } from '../talents';
+import {
+	ARMOR_CHARGE_MAX, ARMOR_CHARGE_PER_TURN, ARMOR_CHARGE_START,
+	armorAbilitiesFor, armorAbilityDef, armorAbilityKey, armorChargeUse, type ArmorAbilityDef,
+} from '../armorAbilities';
+import {
+	bodySlamDamage, endureBankedDamage, endureDamageTaken, endureEndingBonus,
+	impactWaveStrength, impactWaveVulnerable, shockwaveCone, shockwaveDamage,
+	shockForceParalyses, strikingWaveProcs, type DamageRoll,
+} from '../simulation/warriorAbilities';
 import { CLASSES, CLASS_AMMO, HERO_IDLE_FRAME, type ClassId } from '../classes';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
 import { TitleScene } from '../scenes/titleScene';
@@ -475,10 +485,19 @@ const IMP_QUEST: Rpg.QuestDefinition = {
 };
 
 /**
- * Talent tiers 3+ as an `mwg/actors` Advancement track: tier 3 (level 13) is the subclass
- * branch - both of each class's real HeroSubClass names (the Cleric postdates this checkout's
- * subclasses, so it takes no branch). Tier 4 (level 21) is a two-option armor-ability
- * capstone, with deliberately small MWG-native effects rather than a silent point conversion.
+ * Talent tiers 3+ as an `mwg/actors` Advancement track. Tier 3 (level 13) is the subclass branch -
+ * both of each class's real HeroSubClass names (the Cleric postdates this checkout's subclasses,
+ * so it takes no branch).
+ *
+ * Tier 4 (the armor ability) is deliberately **not** a tier of this track. Real Java does not grant
+ * it at a level: `KingsCrown.WEAR` opens `WndChooseAbility` and `KingsCrown.upgradeArmor()` sets
+ * `hero.armorAbility`, so a hero whose crown is still in the dungeon at level 21 has no ability and
+ * no tier-4 talent points (`Hero.talentPointsAvailable(4)` returns 0 while `armorAbility == null`),
+ * which is a state a level-triggered branch cannot express (`Advancement.choose` also throws for a
+ * tier that has not opened). The chosen ability therefore lives in `this.armorAbility` and the
+ * ability panel is opened by the crown. Saves written before this change recorded an invented
+ * `warding`/`arcane` capstone in tier 1 of this track; those ids are not abilities any more and are
+ * dropped on load (see `loadRun`), with the real choice available again at the next crown.
  */
 const SUBCLASS_TRACK: Actors.AdvancementTrack = {
 	tiers: [
@@ -498,7 +517,6 @@ const SUBCLASS_TRACK: Actors.AdvancementTrack = {
 				{ id: 'monk_sub' },
 			],
 		},
-		{ threshold: 21, kind: 'capstone', options: [{ id: 'warding' }, { id: 'arcane' }] },
 	],
 };
 const SUBCLASS_OPTIONS: Record<ClassId, readonly string[] | undefined> = {
@@ -506,7 +524,6 @@ const SUBCLASS_OPTIONS: Record<ClassId, readonly string[] | undefined> = {
 	rogue: ['assassin', 'freerunner'], huntress: ['sniper', 'warden'],
 	duelist: ['champion', 'monk_sub'], cleric: undefined,
 };
-const ARMOR_OPTIONS = ['warding', 'arcane'] as const;
 
 /**
  * The scheduler id the hero is saved under. Every other queued actor is a monster the floor state
@@ -705,8 +722,8 @@ interface SaveShape {
 	equippedRing?: EquippedRing | null;
 	ringHtBonus?: number;
 	advancement?: { grantedTiers: number; balance: number; choices: [number, string][] };
-	/** Per-tier talent points (T1/T2/T3) - see `talentPoints`'s own comment. */
-	talentPoints?: [number, number, number];
+	/** Per-tier talent points (T1/T2/T3/T4) - see `talentPoints`'s own comment. */
+	talentPoints?: number[];
 	/** Pre-migration single-pool save fields, read only as a one-time fallback in `loadRun`. */
 	skillPoints?: number;
 	skillPointsState?: { points: number };
@@ -725,7 +742,16 @@ interface SaveShape {
 	charmTargets?: [string, string][];
 	charmIgnoreNextHit?: string[];
 	armorGlyph?: string | null;
-	armorAbility?: 'warding' | 'arcane' | 'ratmogrify' | null;
+	armorAbility?: string | null;
+	/** `ClassArmor.charge`. Absent in saves written before the real armor abilities existed. */
+	armorCharge?: number;
+	/** `Endure.EndureTracker`'s own bundled fields plus its flavour countdown. */
+	endureTurns?: number;
+	endureEnduring?: boolean;
+	endureBanked?: number;
+	endureHits?: number;
+	/** `HeroicLeap.DoubleJumpTracker`'s presence. */
+	doubleJumpReady?: boolean;
 	deferredDamage?: number;
 	deferredDamageDelay?: boolean;
 	corrosionTurns?: number;
@@ -893,7 +919,7 @@ export class DungeonScene extends Scene2D {
 	}
 	private readonly heroActions: HeroActionPorts = {
 		isParalysed: () => !!this.hero.buffs['paralysis'] || !!this.hero.buffs['frost'],
-		beginTurn: () => { this.awaitingInput = false; },
+		beginTurn: () => { this.awaitingInput = false; this.settleEndure(); },
 		spendTurn: (turnCost?: number) => { if (this.freeTurnNext) this.freeTurnNext = false; else this.spendHeroTurn(turnCost); },
 		announceParalysis: () => this.say(t('actors.buffs.paralysis.heromsg'), 'negative'),
 		search: () => this.searchForSecrets(),
@@ -906,6 +932,10 @@ export class DungeonScene extends Scene2D {
 			//Preparation's blink: opening its aim costs nothing, and the attack it resolves into
 			//is what spends the turn (Java's own `HeroAction.Attack` from the cell picker).
 			preparation: () => this.usePreparationBlink(),
+			//The armor ability is free to *open* (Java's cell selector) and its own `activate()`
+			//spends the charge and the turn - one turn for Heroic Leap and Shockwave, three for
+			//Endure, and nothing at all when the charge is short or the ability refuses.
+			armorAbility: () => this.useArmorAbility(),
 			talents: () => {
 				this.talentOpen = this.subclassChoiceOpen || this.armorChoiceOpen || this.augmentChoiceOpen || this.itemPickerOpen || !this.talentOpen;
 				this.refreshTalentPanel();
@@ -1092,7 +1122,7 @@ export class DungeonScene extends Scene2D {
 	 * this port has no T4 talents to spend them on (ROADMAP.md section 6), so granting them
 	 * would silently let players over-invest T1-T3 with points real Java only ever lets them
 	 * spend on T4. */
-	private talentPoints: [number, number, number] = [0, 0, 0];
+	private talentPoints: number[] = [0, 0, 0, 0];
 	/** Hero STR (STARTING_STR=10, +1 per Potion of Strength - no per-level gain in Java either) */
 	private heroStr = MWL_HERO_BASE_STATS.strength;
 	/** Hero.java's independent attackSkill/defenseSkill counters. */
@@ -1102,7 +1132,7 @@ export class DungeonScene extends Scene2D {
 	private talentEvasion = 0;
 	/** Java Hero.talents, keyed by the stable Talent enum id. */
 	private talentRanks: Record<string, number> = {};
-	private talentTier = 1 as 1 | 2 | 3;
+	private talentTier = 1 as 1 | 2 | 3 | 4;
 	/** MeleeWeapon tier (1-5) and upgrade level; tier affects damage formula: min = tier+lvl, max = 5*(tier+1)+lvl*(tier+1) */
 	private weaponTier = 1;
 	private weaponLevel = 0;
@@ -1230,8 +1260,27 @@ export class DungeonScene extends Scene2D {
 	/** Explosive curse's separate 100-point fuse, persisted with the equipped weapon. */
 	private weaponCurseDurability = 100;
 	private armorGlyph: string | null = null;
-	/** King's Crown choice; `ratmogrify` is granted by the Rat King rather than level 21. */
-	private armorAbility: 'warding' | 'arcane' | 'ratmogrify' | null = null;
+	/** King's Crown / Rat King choice - any real `ArmorAbility` id, or `ratmogrify`, or null while
+	 * unchosen. `Hero.armorAbility`, the same field `ClassArmor.execute()` reads. */
+	private armorAbility: string | null = null;
+	/** `ClassArmor.charge`: 0-100, regrown per hero turn by `ClassArmor.Charger`. Java keeps this
+	 * on the class-armor *item* (`ClassArmor.upgrade()` turns the worn armor into one and starts it
+	 * at 50); this port has no separate class-armor item type, so the charge lives on the hero and
+	 * is spent by whichever real armor is worn, which is the only armor a crown can be applied to. */
+	private armorCharge = 0;
+	/** `HeroicLeap.DoubleJumpTracker`: true while the hero's *next* leap is the discounted one. */
+	private doubleJumpReady = false;
+	/**
+	 * `Endure.EndureTracker`'s four fields, held on the scene rather than in the buff map because
+	 * this port's buff table is a fixed MWL id list and the tracker's real payload is three numbers
+	 * (a boolean `enduring`, the banked `damageBonus`, and `hitsLeft`) plus its flavour countdown.
+	 * `endureTurns` is the buff's remaining turns, `endureEnduring` its `enduring` flag, and
+	 * `endureBanked`/`endureHits` the stored counter-attack and its remaining strikes.
+	 */
+	private endureTurns = 0;
+	private endureEnduring = false;
+	private endureBanked = 0;
+	private endureHits = 0;
 	/** Weapon augment choice: SPEED/DAMAGE/NONE. Applied once per weapon at upgrade time. */
 	private weaponAugment: 'speed' | 'damage' | 'none' | null = null;
 	/** Kinetic's conserved damage (`ConservedDamage.preservedDamage`) - a float: it decays
@@ -1749,7 +1798,7 @@ export class DungeonScene extends Scene2D {
 		this.physicalBonusAttacks = 0;
 		this.patientStrikeReady = false;
 		this.healingEvasionTurns = 0;
-		this.talentPoints = [0, 0, 0];
+		this.talentPoints = [0, 0, 0, 0];
 		this.progression = new Actors.Progression(SPD_LEVEL_CURVE, { level: 1, experience: 0 });
 		this.gear = new Actors.EquipmentSlots(['weapon', 'armor'], null);
 		this.gear.equip('armor', { modifiers: [] });
@@ -1942,18 +1991,17 @@ export class DungeonScene extends Scene2D {
 
 			//Talent points are intentionally separate from the combat-skill counters. Each
 			//tier's own window (see `talentPoints`'s own comment) grants into that tier's own
-			//bucket only - T4's [21,31) window is not granted at all (no T4 talents exist here).
+			//bucket only. T4's [21,31) window grants only once an armor ability has been chosen,
+			//which is Java's own gate: `Hero.talentPointsAvailable(4)` returns 0 while
+			//`armorAbility == null`, whatever the hero's level.
 			if (level >= TALENT_TIERS[1] && level < TALENT_TIERS[2]) this.talentPoints[0]++;
 			else if (level >= TALENT_TIERS[2] && level < TALENT_TIERS[3]) this.talentPoints[1]++;
 			else if (level >= TALENT_TIERS[3] && level < TALENT_TIERS[4]) this.talentPoints[2]++;
-			//Advancement tiers 3-4 live on the real thresholds (13/21)
+			else if (level >= TALENT_TIERS[4] && this.armorAbility !== null) this.talentPoints[3]++;
+			//Advancement tier 3 (the subclass branch) lives on its own real threshold (13)
 			this.advancement.grant(level);
 			if (SUBCLASS_OPTIONS[this.heroClass] && this.advancement.openTiers(level).includes(0) && !this.subclass()) {
 				this.subclassChoiceOpen = true;
-				this.talentOpen = true;
-			}
-			if (this.advancement.openTiers(level).includes(1) && !this.advancement.choice(1)) {
-				this.armorChoiceOpen = true;
 				this.talentOpen = true;
 			}
 		}
@@ -3426,7 +3474,7 @@ export class DungeonScene extends Scene2D {
 			armorId: this.armorId,
 			hasItem: (id) => this.bag.find(id) !== undefined,
 			removeItem: (id, quantity) => this.bag.remove(id, quantity),
-			setArmorAbility: (ability) => { this.armorAbility = ability; },
+			setArmorAbility: () => { this.grantRatmogrify(); },
 			say: (message, level) => this.say(message, level),
 			messages: {
 				notSleeping: t('actors.mobs.npcs.ratking.not_sleeping'),
@@ -6890,6 +6938,19 @@ export class DungeonScene extends Scene2D {
 				this.wandCharges.advance(baseRate + (this.hero.buffs['recharging'] ? 0.25 : 0));
 			},
 			recoverTomeCharge: () => { this.tomeCharges.advance(1); },
+			//`ClassArmor.Charger.act()`: `100/500` charge per tick, times
+			//`RingOfEnergy.armorChargeMultiplier` (this port's `ringEnergyMultiplier`). `finishHeroTurn`
+			//runs each per-turn effect once and hands the clock the whole cost, so this scales by
+			//`turnCost` itself - a three-turn action like Endure regenerates three ticks, the same
+			//amount Java's Charger actor gains while the hero is busy for that long.
+			recoverArmorCharge: () => {
+				this.armorCharge = Math.min(ARMOR_CHARGE_MAX,
+					this.armorCharge + turnCost * ARMOR_CHARGE_PER_TURN * ringEnergyMultiplier(this.equippedRing, this.hero.magicImmune));
+			},
+			//`Hero.act()`'s `endEnduring()` is deliberately *not* here: it belongs to the start of the
+			//hero's next action, so the endure window survives the turn it is cast on. Only the
+			//tracker's own twelve-turn countdown runs on the clock. See `settleEndure`.
+			tickEndureTracker: () => this.tickEndureDuration(turnCost),
 			//Preparation.act(): the invisibility counter lives in the hero-turn pipeline next to
 			//the other per-turn buff state, and reads the turn cost this action actually spent.
 			updatePreparation: () => this.trackPreparation(turnCost),
@@ -10906,7 +10967,6 @@ export class DungeonScene extends Scene2D {
 			damage = 0;
 		}
 		runState.audio.cue('hit', 0.6);
-		if (defender.isHero && this.advancement.choice(1) === 'warding') damage = Math.max(0, damage - 2);
 		if (attacker.isHero && this.subclass() === 'gladiator') {
 			attacker.combo = (attacker.combo ?? 0) + 1;
 			if (attacker.combo % 3 === 0) {
@@ -10949,6 +11009,12 @@ export class DungeonScene extends Scene2D {
 		//the screen - the tell that the charge is being interrupted. The port's `pumped` is its
 		//charge-turn counter (`takeGooTurn`), so `> 0` is Java's `pumpedUp > 0`.
 		if (defender.kind === 'goo' && (defender.pumped ?? 0) > 0) this.shakeScreen(3, 0.2);
+		//`Char.attack()`'s "friendly endure": the hero's own banked counter-attack adds to each
+		//landed hit until the tracker's `hitsLeft` runs out (`EndureTracker.damageFactor`). Java
+		//adds it before the armor subtraction; this port's `damage` is already net of armor by this
+		//point, so the bonus lands a little harder here than in Java - the same stated placement
+		//difference as the reduction half. See `consumeEndureBonus`.
+		if (attacker === this.hero && this.endureHits > 0 && damage > 0) damage = this.consumeEndureBonus(damage);
 		const preHp = defender.hp;
 		if (defender.isHero) {
 			//`Hero.damage()`: `CapeOfThorns.Thorns.proc()` runs before `super.damage()` (the
@@ -11252,11 +11318,6 @@ export class DungeonScene extends Scene2D {
 		//the per-wand on-hit effects)
 		if (this.subclass() === 'battlemage') this.wandCharges.refund(2 + this.talentRank('mystical_charge'));
 		if (this.subclass() === 'monk_sub' && this.talentRank('combined_energy') > 0) this.tomeCharges.advance(this.talentRank('combined_energy'));
-		if (this.advancement.choice(1) === 'arcane') this.wandCharges.refund(1);
-		if (this.advancement.choice(1) === 'arcane' && defender.hp > 0) {
-			defender.hp -= 2;
-			this.showDamage(defender, 2);
-		}
 		//`Blazing.proc()` (tag v3.3.8): `(level+1)/(level+3) x arcana` - 33% at level 0, 50% at 1,
 		//60% at 2 - and on a proc it reignites an unlit target for `Burning`'s own 8 turns (which
 		//consumes the proc's "power", since `reignite` returns 1 of it) and spends whatever power is
@@ -11588,6 +11649,13 @@ export class DungeonScene extends Scene2D {
 
 	/** Barrier absorbs incoming damage before HP, matching Buff.Barrier's core rule. */
 	private absorbHeroDamage(amount: number, magical = false): number {
+		//`EndureTracker.adjustDamageTaken()` runs at Java's own place in the chain for the sources it
+		//can reach here: `Char.damage()` applies it to the attacker's rolled damage *before* the
+		//armor subtraction, and `Hero.damage()` applies it after armor for non-char sources. This
+		//port has one hero-damage boundary and it sits after armor for both, so the reduction is
+		//slightly kinder to the hero than Java's melee case - stated in `PORT_COVERAGE.md`. It runs
+		//before every shield, which is Java's order in both of its placements.
+		if (amount > 0) amount = this.endureAdjustDamageTaken(amount);
 		//`Earthroot.Armor.absorb()`: the pool blocks `min(damage, (scalingDepth + 5)/2)` of every
 		//hit and detaches once exhausted or once its owner has left the cell it was granted on.
 		//Java runs this in `Char.defenseProc()` - before the armor subtraction and ahead of every
@@ -12745,6 +12813,11 @@ export class DungeonScene extends Scene2D {
 		if (this.actionBar.setPreparationAvailable(this.hero.prepLevel !== undefined)) {
 			this.positionInterface(Game.current.width, Game.current.height);
 		}
+		//The armor-ability button carries the charge percent in its label, so it reports a change
+		//on every percent of regen rather than only when it appears or goes.
+		if (this.actionBar.setArmorAbility(this.armorAbilityLabel())) {
+			this.positionInterface(Game.current.width, Game.current.height);
+		}
 
 		this.refreshHealthBars();
 	}
@@ -12970,6 +13043,12 @@ export class DungeonScene extends Scene2D {
 			charmIgnoreNextHit: [...this.charmIgnoreNextHit],
 			armorGlyph: this.armorGlyph,
 			armorAbility: this.armorAbility,
+			armorCharge: this.armorCharge,
+			endureTurns: this.endureTurns,
+			endureEnduring: this.endureEnduring,
+			endureBanked: this.endureBanked,
+			endureHits: this.endureHits,
+			doubleJumpReady: this.doubleJumpReady,
 			deferredDamage: this.hero.deferredDamage,
 			deferredDamageDelay: this.hero.deferredDamageDelay,
 			corrosionTurns: this.hero.corrosionTurns,
@@ -13077,7 +13156,17 @@ export class DungeonScene extends Scene2D {
 		this.charmTargets = new Map(s.charmTargets ?? []);
 		this.charmIgnoreNextHit = new Set(s.charmIgnoreNextHit ?? []);
 		this.armorGlyph = s.armorGlyph ?? null;
-		this.armorAbility = s.armorAbility ?? null;
+		//A save written before the real armor abilities carries the invented `warding`/`arcane`
+		//capstone (see `SUBCLASS_TRACK`); those ids are not abilities any more, so they are dropped
+		//and the hero can choose a real one at the next King's Crown. `ratmogrify` and every real
+		//ability id survive.
+		this.armorAbility = s.armorAbility && armorAbilityDef(s.armorAbility) ? s.armorAbility : null;
+		this.armorCharge = s.armorCharge ?? (this.armorAbility ? ARMOR_CHARGE_START : 0);
+		this.endureTurns = s.endureTurns ?? 0;
+		this.endureEnduring = s.endureEnduring ?? false;
+		this.endureBanked = s.endureBanked ?? 0;
+		this.endureHits = s.endureHits ?? 0;
+		this.doubleJumpReady = s.doubleJumpReady ?? false;
 		//`Fragile` never existed in real Java (the 8th armor curse is `Stench` - see the
 		//affix-table comment); saves from before the correction carry it here and on bag
 		//items, so both migrate to `stench` on load rather than silently losing their curse.
@@ -13141,7 +13230,9 @@ export class DungeonScene extends Scene2D {
 		this.ringHtBonus = s.ringHtBonus ?? 0;
 		this.advancement = s.advancement ? Actors.Advancement.fromJSON(SUBCLASS_TRACK, s.advancement) : new Actors.Advancement(SUBCLASS_TRACK);
 		this.subclassChoiceOpen = Boolean(SUBCLASS_OPTIONS[this.heroClass] && this.advancement.openTiers(s.level).includes(0) && !this.advancement.choice(0));
-		this.armorChoiceOpen = Boolean(this.advancement.openTiers(s.level).includes(1) && !this.advancement.choice(1));
+		//No armor-ability window is re-opened on load: the choice belongs to the King's Crown
+		//(`KingsCrown.WEAR`), not to a level, so there is nothing pending to restore.
+		this.armorChoiceOpen = false;
 		this.talentOpen = this.subclassChoiceOpen || this.armorChoiceOpen;
 		this.itemPickerOpen = false;
 		this.itemPickerEntries = [];
@@ -13156,7 +13247,10 @@ export class DungeonScene extends Scene2D {
 		//(`skillPointsState.points`/`skillPoints`) - dumped into the T1 bucket as a one-time
 		//migration, since the old save has no record of which tier those leftover points came
 		//from. A save already on the new format just restores its array directly.
-		this.talentPoints = s.talentPoints ?? [s.skillPointsState?.points ?? s.skillPoints ?? 0, 0, 0];
+		this.talentPoints = s.talentPoints ?? [s.skillPointsState?.points ?? s.skillPoints ?? 0, 0, 0, 0];
+		//T4's bucket is new with the real armor abilities: an older save's array is 3 long, and a
+		//save from before those existed has no ability either, so its T4 bucket starts at 0.
+		while (this.talentPoints.length < 4) this.talentPoints.push(0);
 		this.itemSerial = s.itemSerial ?? 0;
 		if (s.bagState && s.bagDefinitions) {
 			this.bag = Actors.Inventory.fromJSON(new Map(s.bagDefinitions), s.bagState);
@@ -13378,14 +13472,20 @@ export class DungeonScene extends Scene2D {
 		}
 		if (this.subclassChoiceOpen || this.armorChoiceOpen || this.augmentChoiceOpen) {
 			const options: readonly string[] = this.augmentChoiceOpen ? AUGMENT_OPTIONS
-				: this.armorChoiceOpen ? ARMOR_OPTIONS : (SUBCLASS_OPTIONS[this.heroClass] ?? []);
+				: this.armorChoiceOpen ? armorAbilitiesFor(this.heroClass) : (SUBCLASS_OPTIONS[this.heroClass] ?? []);
 			//Augment's option text ("Speed (+20% attack speed)") is real Java's own longer wording
 			//(the actual button in `WndAugment` just says "Speed"/"Damage"/"None", with the detail
 			//living in a separate message block above it) - kept as-is since it already existed in
 			//this file before this pass, so it gets one full-width row per option instead of armor/
 			//subclass's existing 2-up column layout, which is too narrow for text this long.
+			//The armor-ability list is full-width for the same reason `WndChooseAbility` uses
+			//full-width buttons: three long names side by side would not fit this panel's width.
+			const rows = this.augmentChoiceOpen || this.armorChoiceOpen;
 			const rowHeight = this.augmentChoiceOpen ? 30 : 38;
-			const panelHeight = this.augmentChoiceOpen ? 34 + options.length * (rowHeight + 4) : 92;
+			//The armor panel carries a description block under its three rows, mirroring
+			//`WndChooseAbility`'s per-ability `short_desc` text.
+			const descriptionHeight = this.armorChoiceOpen ? 46 : 0;
+			const panelHeight = (rows ? 34 + options.length * (rowHeight + 4) : 92) + descriptionHeight;
 			this.talentPanel.addChild(new Graphics().roundRect(0, 0, width, panelHeight, 6)
 				.fill({ color: 0x101116, alpha: 0.98 }).stroke({ width: 2, color: 0xc9a24c }));
 			const title = new Label({
@@ -13395,14 +13495,28 @@ export class DungeonScene extends Scene2D {
 			title.position.set(10, 7);
 			this.talentPanel.addChild(title);
 			const columnWidth = (width - 16) / options.length;
+			const abilityDescription = this.armorChoiceOpen
+				? new Label({ text: t('actors.hero.abilities.armorability.prompt'), size: 6, wrapWidth: width - 20, color: theme().color.textDim })
+				: null;
+			if (abilityDescription) {
+				abilityDescription.position.set(10, 34 + options.length * (rowHeight + 4));
+				this.talentPanel.addChild(abilityDescription);
+			}
 			options.forEach((option, index) => {
-				const key = this.augmentChoiceOpen ? `port.ui.augment.${option}` : this.armorChoiceOpen ? `port.armor.${option}` : `port.subclass.${option}`;
+				//`actors.hero.abilities.<class>.<id>` is SPD's own key namespace, so the ability's
+				//real name and description come translated from the generated catalog.
+				const label = this.armorChoiceOpen
+					? titleCase(t(`${armorAbilityKey(option, this.heroClass)}.name`))
+					: t(this.augmentChoiceOpen ? `port.ui.augment.${option}` : `port.subclass.${option}`);
 				const button = new Button({
-					width: this.augmentChoiceOpen ? width - 16 : columnWidth - 8, height: rowHeight, text: t(key),
+					width: rows ? width - 16 : columnWidth - 8, height: rowHeight, text: label,
 					onClick: () => this.augmentChoiceOpen ? this.chooseAugment(option as (typeof AUGMENT_OPTIONS)[number])
 						: this.armorChoiceOpen ? this.chooseArmorAbility(option) : this.chooseSubclass(option),
 				});
-				button.position.set(this.augmentChoiceOpen ? 8 : 8 + index * columnWidth, this.augmentChoiceOpen ? 34 + index * (rowHeight + 4) : 34);
+				button.on('pointerover', () => {
+					abilityDescription?.setText(t(`${armorAbilityKey(option, this.heroClass)}.short_desc`));
+				});
+				button.position.set(rows ? 8 : 8 + index * columnWidth, rows ? 34 + index * (rowHeight + 4) : 34);
 				button.eventMode = 'static';
 				button.cursor = 'pointer';
 				this.talentPanel.addChild(button);
@@ -13413,19 +13527,29 @@ export class DungeonScene extends Scene2D {
 		const points = this.talentPoints[this.talentTier - 1] ?? 0;
 		const defs: TalentDefinition[] = this.talentTier === 3
 			? subclassTalentDefinitions(this.subclass() ?? '', this.heroClass)
-			: (CLASS_TALENTS[this.heroClass]?.[this.talentTier - 1] ?? []);
+			: this.talentTier === 4
+				? armorTalentDefinitions(this.armorAbility ?? '', this.heroClass)
+				: (CLASS_TALENTS[this.heroClass]?.[this.talentTier - 1] ?? []);
 		const panelHeight = 138;
 		this.talentPanel.addChild(new Graphics().roundRect(0, 0, width, panelHeight, 6)
 			.fill({ color: 0x101116, alpha: 0.96 }).stroke({ width: 2, color: 0x8b7651 }));
 		const title = new Label({ text: `${t('port.action.talents')} · ${t('port.talent.tier', { tier: this.talentTier })} (${points})`, size: 11, bold: true, color: theme().color.textHighlight });
 		title.position.set(8, 6);
 		this.talentPanel.addChild(title);
-		[1, 2, 3].forEach(tier => {
+		[1, 2, 3, 4].forEach(tier => {
 			const tab = new Button({ width: 38, height: 17, text: `T${tier}`, onClick: () => {
-				const unlocked = tier === 1 || (tier === 2 && this.progression.level >= 7) || (tier === 3 && !!this.subclass() && this.progression.level >= 13);
-				if (unlocked) { this.talentTier = tier as 1 | 2 | 3; this.refreshTalentPanel(); }
+				//T4 is Java's armor-ability tier: it opens at level 20 (`tierLevelThresholds[4] - 1`)
+				//and only once an ability has actually been chosen, since `Hero.talentPointsAvailable(4)`
+				//returns 0 while `armorAbility == null`. An ability with no ported talent row (the
+				//Cleric's, and Ratmogrify) has no tab rather than an empty one.
+				const unlocked = tier === 1
+					|| (tier === 2 && this.progression.level >= TALENT_TIERS[2])
+					|| (tier === 3 && !!this.subclass() && this.progression.level >= TALENT_TIERS[3])
+					|| (tier === 4 && this.armorAbility !== null && this.progression.level >= TALENT_TIERS[4] - 1
+						&& armorTalentDefinitions(this.armorAbility, this.heroClass).length > 0);
+				if (unlocked) { this.talentTier = tier as 1 | 2 | 3 | 4; this.refreshTalentPanel(); }
 			} });
-			tab.position.set(width - 122 + (tier - 1) * 40, 4);
+			tab.position.set(width - 162 + (tier - 1) * 40, 4);
 			this.talentPanel.addChild(tab);
 		});
 		const description = new Label({ text: t('port.talent.select'), size: 6, wrapWidth: width - 16, color: theme().color.textDim });
@@ -13546,11 +13670,37 @@ export class DungeonScene extends Scene2D {
 		this.refresh();
 	}
 
+	/**
+	 * `KingsCrown.upgradeArmor()`'s state changes. The armor ability itself becomes the hero's, the
+	 * class armor is created at 50 charge (`ClassArmor.upgrade()`'s `classArmor.charge = 50`), and
+	 * the ability's four T4 talents become spendable (`Talent.initArmorTalents`).
+	 *
+	 * The T4 point pool is granted up to Java's current entitlement rather than only from the next
+	 * level-up, because a crown found on depth 6 grants the whole tree immediately and real Java's
+	 * count is a function of level, not of when the choice happened:
+	 * `Hero.talentPointsAvailable(4)` is `min(level, 31) - 21` once `level >= 21` (1 point at level
+	 * 21 rising to 10 at level 30) and 0 below, and `tierLevelThresholds[4] - 1` (20) is the level
+	 * at which the tier stops being entirely locked. Since tier-4 points are only ever granted while
+	 * `armorAbility != null` (see `gainExperience`), adding the current entitlement here cannot
+	 * double-count for the level-up path. A second crown would grant again, but `KingsCrown` is
+	 * `unique` in Java and this port drops exactly one (the Dwarf King's), and the Rat King's
+	 * exchange consumes that same one, so there is never a second crown to use.
+	 */
+	private grantArmorAbility(ability: string): void {
+		this.armorAbility = ability;
+		this.armorCharge = ARMOR_CHARGE_START;
+		const entitlement = Math.max(0, Math.min(this.progression.level - (TALENT_TIERS[4] - 1), TALENT_TIERS[5] - TALENT_TIERS[4]));
+		this.talentPoints[3] += entitlement;
+		this.say(t('port.log.armorabilitychosen', { ability: titleCase(t(`${armorAbilityKey(ability, this.heroClass)}.name`)) }), 'highlight');
+	}
+
 	private chooseArmorAbility(option: string): void {
-		if (!this.armorChoiceOpen || !ARMOR_OPTIONS.includes(option as (typeof ARMOR_OPTIONS)[number])) return;
-		this.advancement.choose(1, option, this.progression.level);
+		const def = armorAbilityDef(option);
+		if (!this.armorChoiceOpen || !def || def.classId !== this.heroClass) return;
 		this.armorChoiceOpen = false;
-		this.say(t('port.log.armorabilitychosen', { ability: t(`port.armor.${option}`) }), 'highlight');
+		//`upgradeArmor()` detaches the crown as it transforms the armor.
+		this.bag.remove('kingsCrown', 1);
+		this.grantArmorAbility(option);
 		this.refresh();
 	}
 
@@ -15652,6 +15802,336 @@ export class DungeonScene extends Scene2D {
 		applyScrollEffect(randomArcaneScroll(), this.scrollEffectsContext());
 	}
 
+	// ------------------------------------------------------------------ armor abilities
+	// `ClassArmor.execute()`'s `AC_ABILITY` action and the abilities it dispatches to. The data
+	// (which class owns which ability, its real `baseChargeUse`, its targeting mode, its four
+	// tier-4 talents) lives in `src/content/talent-rules.mwl` and `src/armorAbilities.ts`; the
+	// Warrior's arithmetic lives in `src/simulation/warriorAbilities.ts`.
+
+	/** `ArmorAbility.chargeUse(hero)`, plus `HeroicLeap`'s own `DOUBLE_JUMP` discount while its
+	 *  tracker is up. */
+	private armorAbilityCost(def: ArmorAbilityDef): number {
+		return armorChargeUse(def, {
+			heroicEnergyRank: this.talentRank('heroic_energy'),
+			doubleJumpArmed: this.doubleJumpReady,
+			doubleJumpRank: this.talentRank('double_jump'),
+		});
+	}
+
+	/** The ability button's label: SPD's own ability name, with the armor's charge percent - the
+	 *  same information Java shows as the class armor's quickslot status (`ClassArmor.status()`). */
+	private armorAbilityLabel(): string | null {
+		if (!this.armorAbility) return null;
+		const def = armorAbilityDef(this.armorAbility);
+		if (!def) return null;
+		return `${titleCase(t(`${armorAbilityKey(def.id, def.classId)}.name`))} ${Math.floor(this.armorCharge)}%`;
+	}
+
+	/**
+	 * `ClassArmor.execute()`'s `AC_ABILITY` branch: refuse with Java's own `no_ability`/`low_charge`
+	 * message, then either act on the hero's own cell (Java's `targetingPrompt() == null`) or open
+	 * the real cell selector. The charge is only spent once the ability actually runs, which is
+	 * Java's order too - each ability's `activate()` does `armor.charge -= chargeUse(hero)` itself,
+	 * after the cell is known.
+	 */
+	private useArmorAbility(): void {
+		const def = this.armorAbility ? armorAbilityDef(this.armorAbility) : undefined;
+		if (!def) {
+			this.say(t('items.armor.classarmor.no_ability'), 'negative');
+			return;
+		}
+		if (this.armorCharge < this.armorAbilityCost(def)) {
+			this.say(t('items.armor.classarmor.low_charge'), 'negative');
+			return;
+		}
+		if (def.targeting !== 'cell') {
+			this.activateArmorAbility(null);
+			return;
+		}
+		//Java's `GameScene.selectCell` has no range or sight limit (the effects stop at walls
+		//themselves), so the whole map is offered; the hero's own cell is refused because
+		//`Shockwave`'s real `self_target` branch refuses it.
+		this.beginAiming({
+			range: Math.max(this.level.width, this.level.height),
+			requireLineOfSight: false,
+			validate: (cell) => !(cell.x === this.hero.x && cell.y === this.hero.y),
+			onConfirm: (cell) => this.activateArmorAbility(cell),
+		});
+	}
+
+	/** Spends the charge and runs the chosen ability's own `activate()`. `Invisibility.dispel()` is
+	 *  Java's trailing call for every one of them. */
+	private activateArmorAbility(cell: Step | null): void {
+		const id = this.armorAbility;
+		const def = id ? armorAbilityDef(id) : undefined;
+		if (!id || !def) return;
+		const cost = this.armorAbilityCost(def);
+		if (this.armorCharge < cost) {
+			this.say(t('items.armor.classarmor.low_charge'), 'negative');
+			return;
+		}
+		const activated = id === 'heroicleap' ? this.activateHeroicLeap(def, cost, cell)
+			: id === 'shockwave' ? this.activateShockwave(def, cost, cell)
+				: id === 'endure' ? this.activateEndure(def, cost)
+					: false;
+		if (!activated) return;
+		delete this.hero.buffs['invisibility'];
+		this.refresh();
+	}
+
+	/** `Ratmogrify.baseChargeUse` is charged like any other ability's, even though its T4 tree is
+	 *  unported: the charge is real, the talents are not. */
+	private ratmogrifyChargeUse(): number {
+		return armorChargeUse({ id: 'ratmogrify', classId: this.heroClass, baseChargeUse: 50, targeting: 'cell', talents: [] },
+			{ heroicEnergyRank: this.talentRank('heroic_energy') });
+	}
+
+	/**
+	 * `HeroicLeap.activate()` (tag `v3.3.8`): the hero leaps to the aimed cell, stopping at the
+	 * first wall or creature (`Ballistica.STOP_TARGET | STOP_SOLID`), stepping back one cell while
+	 * the landing cell is occupied, then every hostile neighbour takes `BODY_SLAM` damage and, with
+	 * `IMPACT_WAVE`, an aimed blast-wave shove. Java performs the move inside the `sprite.jump()`
+	 * callback; this port's sprite tween is fire-and-forget, so the same sequence runs inline.
+	 */
+	private activateHeroicLeap(def: ArmorAbilityDef, cost: number, cell: Step | null): boolean {
+		if (!cell) return false;
+		//`if (hero.rooted) { PixelScene.shake(1, 1f); return; }` - no charge, no turn.
+		if (this.hero.buffs['roots'] !== undefined) {
+			this.shakeScreen(1, 0.15);
+			return false;
+		}
+		const from = { x: this.hero.x, y: this.hero.y };
+		const path = traceRayToTarget(this.level, from, cell, (x, y) => this.creatureAt(x, y), true);
+		let dest = path.length > 0 ? path[path.length - 1]! : from;
+		//"can't occupy the same cell as another char, so move back one" - Java walks the same path
+		//backwards, and stops as soon as the landing cell is free (or is the hero's own cell).
+		let back = path.length - 2;
+		while (back >= 0 && (dest.x !== from.x || dest.y !== from.y)) {
+			const occupant = this.creatureAt(dest.x, dest.y);
+			if (!occupant || occupant === this.hero) break;
+			dest = path[back]!;
+			back--;
+		}
+		if (this.creatureAt(dest.x, dest.y) && this.creatureAt(dest.x, dest.y) !== this.hero) dest = from;
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		this.moveTo(this.hero, dest);
+		const bodySlam = this.talentRank('body_slam');
+		const impactWave = this.talentRank('impact_wave');
+		const roll: DamageRoll = {
+			normalIntRange: (min, max) => Random.normalRange(min, max),
+			int: (maxExclusive) => Random.int(0, maxExclusive),
+		};
+		for (const [dx, dy] of Roguelike.neighbourOffsets(8) as ReadonlyArray<readonly [number, number]>) {
+			const neighbour = this.creatureAt(this.hero.x + dx, this.hero.y + dy);
+			if (!neighbour || neighbour === this.hero || neighbour.isAlly || neighbour.isNPC) continue;
+			if (bodySlam > 0) {
+				const damage = bodySlamDamage(
+					bodySlam,
+					Random.normalRange(this.hero.armor[0], this.hero.armor[1]),
+					Random.normalRange(neighbour.armor[0], neighbour.armor[1]),
+					roll,
+				);
+				this.applyAbilityDamage(neighbour, damage);
+			}
+			if (impactWave > 0 && neighbour.hp > 0) {
+				//`WandOfBlastWave.throwChar(mob, new Ballistica(mob.pos, mob.pos+i, MAGIC_BOLT),
+				//strength, true, true, this)` - the port's established straight forced-movement
+				//primitive is used for the shove (see `PORT_COVERAGE.md`), strength `1 + points`.
+				const strength = impactWaveStrength(impactWave);
+				for (let push = 0; push < strength; push++) {
+					const next = { x: neighbour.x + dx, y: neighbour.y + dy };
+					if (!this.level.passable(next.x, next.y) || this.creatureAt(next.x, next.y)) break;
+					this.moveTo(neighbour, next);
+				}
+				if (impactWaveVulnerable(impactWave, Random.int(0, 4))) addBuff(neighbour, 'vulnerable', 5);
+			}
+		}
+		this.shakeScreen(2, 0.5);
+		//`DoubleJumpTracker`: a leap armed by the talent consumes its tracker, and re-arms it
+		//otherwise; the tracker is what `chargeUse()` discounts against.
+		this.doubleJumpReady = this.talentRank('double_jump') > 0 && !this.doubleJumpReady;
+		this.actionSpentTurn = true;
+		this.spendHeroTurn(1);
+		return true;
+	}
+
+	/**
+	 * `Shockwave.activate()`: a `ConeAOE` from the aimed direction, `dist = min(aim.dist, 5 +
+	 * EXPANDING_WAVE)` cells and `60 + 15*EXPANDING_WAVE` degrees wide, cast with
+	 * `STOP_SOLID | STOP_TARGET`. Every non-ally caught in it takes `heroDamageIntRange(5+STR-10,
+	 * 10+2*(STR-10))` scaled by `1 + 0.2*SHOCK_FORCE`; a `STRIKING_WAVE` roll promotes the hit into
+	 * a real proc, and a survivor is paralysed or crippled by `SHOCK_FORCE`.
+	 */
+	private activateShockwave(def: ArmorAbilityDef, cost: number, cell: Step | null): boolean {
+		if (!cell || (cell.x === this.hero.x && cell.y === this.hero.y)) return false;
+		//`new Ballistica(hero.pos, target, WONT_STOP)`: a plain straight line, terrain ignored, so
+		//the cone's own rays are what stop at walls.
+		const aimPath = Roguelike.ballistica(this.level, { x: this.hero.x, y: this.hero.y }, cell, { stop: 'none' }).cells;
+		const aim = aimPath[aimPath.length - 1] ?? cell;
+		const expandingWave = this.talentRank('expanding_wave');
+		const aimDistance = Roguelike.chebyshevDistance({ x: this.hero.x, y: this.hero.y }, aim);
+		const { distance, degrees } = shockwaveCone(expandingWave, aimDistance);
+		const cone = coneCells({
+			source: { x: this.hero.x, y: this.hero.y },
+			target: aim,
+			degrees,
+			//`ConeAOE(aim, dist, degrees, params)`'s own clamp: "clamp distance of cone to maxDist
+			//(in true distance, not game distance)". `coneCells` reproduces that clamp, so the
+			//clamped `distance` is what it is given - not the unbounded aim.
+			maxDistance: distance,
+			width: this.level.width,
+			height: this.level.height,
+			trace: (coneFrom, coneTo) => this.coneRay(coneFrom, coneTo, true),
+		});
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		const strikingWave = this.talentRank('striking_wave');
+		const shockForce = this.talentRank('shock_force');
+		const roll: DamageRoll = {
+			normalIntRange: (min, max) => Random.normalRange(min, max),
+			int: (maxExclusive) => Random.int(0, maxExclusive),
+		};
+		//Java's cone is built from the aimed cell out to `dist` cells, so cells beyond the clamped
+		//distance are already excluded by `coneCells`' own `maxDistance` clamp above.
+		for (const coneCell of cone.cells) {
+			const caught = this.creatureAt(coneCell.x, coneCell.y);
+			if (!caught || caught === this.hero || caught.isAlly || caught.isNPC || caught.hp <= 0) continue;
+			//`hero.STR()`, which is the *effective* strength: `this.hero.str` is where `syncHeroFromStats`
+			//folds in the Ring of Might and the Strongman talent, so a +3 ring widens the roll exactly
+			//as it does in Java. `this.heroStr` is only the base and would ignore both. (`Creature.str`
+			//is optional because monsters have no strength; on the hero it is always set.)
+			const effectiveStr = this.hero.str ?? this.heroStr;
+			let damage = shockwaveDamage(effectiveStr, shockForce, Random.normalRange(caught.armor[0], caught.armor[1]), roll);
+			const procs = strikingWaveProcs(strikingWave, Random.int(0, 10));
+			if (procs) {
+				//`damage = hero.attackProc(ch, damage)`: the real attack-proc chain, i.e. this port's
+				//`heroOnHit`, and the Gladiator's combo counter (`Shockwave.java` 130-132).
+				this.heroOnHit(this.hero, caught, damage);
+				if (this.subclass() === 'gladiator') {
+					this.hero.combo = (this.hero.combo ?? 0) + 1;
+					if (this.hero.combo % 3 === 0) damage += 3 + this.talentRank('enhanced_combo');
+				}
+			}
+			this.applyAbilityDamage(caught, damage);
+			if (caught.hp > 0) {
+				if (shockForceParalyses(shockForce, Random.int(0, 4))) addBuff(caught, 'paralysis', 5);
+				else addBuff(caught, 'cripple', 5);
+			}
+		}
+		this.shakeScreen(2, 0.5);
+		this.actionSpentTurn = true;
+		this.spendHeroTurn(1);
+		return true;
+	}
+
+	/**
+	 * `Endure.activate()`: twelve turns of `EndureTracker`, three turns of Gladiator combo time,
+	 * and `hero.spendAndNext(3f)` - the only armor ability that costs more than one turn.
+	 */
+	private activateEndure(def: ArmorAbilityDef, cost: number): boolean {
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		this.endureTurns = 12;
+		this.endureEnduring = true;
+		this.endureBanked = 0;
+		this.endureHits = 0;
+		//`Combo.addTime(3f)` (Endure.java 59-62) extends a live Gladiator combo by three turns.
+		//This port's Gladiator combo is a bare landed-hit counter with no duration to extend
+		//(`Combo.java`'s own `timeLeft` is not modelled anywhere), so there is nothing to add to -
+		//stated as a simplification rather than faked with a counter bump Java does not have.
+		this.actionSpentTurn = true;
+		this.spendHeroTurn(3);
+		this.say(t('actors.hero.abilities.warrior.endure.name'), 'positive');
+		return true;
+	}
+
+	/**
+	 * One armor-ability hit's damage. Mirrors what `attack()` does once its own multiplier chain is
+	 * done - the defender-side `damage()` curves at Java's own point, then shields/HP through the
+	 * port's usual seams - without an attack roll (`ArmorAbility`s call `ch.damage()` directly on
+	 * the values their own formulas produced).
+	 */
+	private applyAbilityDamage(target: Creature, damage: number): number {
+		if (damage <= 0 || target.isNPC) return 0;
+		if (!target.isHero) damage = applyDefenderDamageCurves(target.kind, damage, { beamCharged: target.beamCharged === true });
+		const dealt = target.isHero ? this.absorbHeroDamage(damage) : damage;
+		target.hp -= dealt;
+		if (this.fadeMirrorOnDamage(target, dealt)) return 0;
+		this.showDamage(target, dealt);
+		target.sleeping = false;
+		if (target.hp <= 0) this.kill(target);
+		return dealt;
+	}
+
+	/**
+	 * `EndureTracker.adjustDamageTaken()`, called from the hero's single incoming-damage boundary
+	 * (`absorbHeroDamage`). Java applies this before armor is subtracted for a char attacker and
+	 * after it for other sources; this port has one boundary, so it is post-armor for both - stated
+	 * in `PORT_COVERAGE.md` as the placement difference. The numbers are Java's: half the incoming
+	 * damage, reduced further to 60/68/74/80% by `SHRUG_IT_OFF`, with half the *pre-reduction*
+	 * damage banked for the counter-attack.
+	 */
+	private endureAdjustDamageTaken(damage: number): number {
+		if (!this.endureEnduring) return damage;
+		this.endureBanked += endureBankedDamage(damage);
+		return endureDamageTaken(damage, this.talentRank('shrug_it_off'));
+	}
+
+	/**
+	 * `EndureTracker.damageFactor()`, called once per hero attack: while enduring it does nothing;
+	 * afterwards it adds the banked-per-hit bonus and consumes one of the tracker's hits.
+	 */
+	private consumeEndureBonus(damage: number): number {
+		if (this.endureEnduring || this.endureHits <= 0) return damage;
+		this.endureHits--;
+		if (this.endureHits <= 0) this.endureTurns = 0;
+		return damage + this.endureBanked;
+	}
+
+	/**
+	 * `Hero.act()`'s `endEnduring()`, run at the start of the hero's *next* action: the endure
+	 * window is the casting turn (three ticks for Endure's own `spendAndNext(3f)`) plus however
+	 * long the hero waits, and what was banked in it becomes the counter-attack. Running this at
+	 * the end of the casting turn instead would close the window before a single blow landed.
+	 *
+	 * The banked damage is scaled by `SUSTAINED_RETRIBUTION` (and by `EVEN_THE_ODDS` per hostile
+	 * within distance 2) and then split evenly over `1 + SUSTAINED_RETRIBUTION` hits.
+	 */
+	private settleEndure(): void {
+		if (!this.endureEnduring) return;
+		this.endureEnduring = false;
+		const sustained = this.talentRank('sustained_retribution');
+		const evenTheOdds = this.talentRank('even_the_odds');
+		let nearby = 0;
+		for (const other of this.creatures) {
+			if (other.isHero || other.isNPC || other.isAlly || other.hp <= 0) continue;
+			if (Roguelike.chebyshevDistance(this.hero, other) <= 2) nearby++;
+		}
+		const { perHitBonus, hits } = endureEndingBonus(this.endureBanked, sustained, nearby, evenTheOdds);
+		this.endureBanked = perHitBonus;
+		this.endureHits = hits;
+		if (hits <= 0) this.endureTurns = 0;
+	}
+
+	/** `EndureTracker`'s own twelve-turn flavour countdown, on the actor clock - one tick per turn
+	 *  the hero spends, whatever they spend it on. `settleEndure` is what reads the flag. */
+	private tickEndureDuration(turnCost: number): void {
+		if (this.endureTurns <= 0) return;
+		this.endureTurns = Math.max(0, this.endureTurns - turnCost);
+		if (this.endureTurns === 0) this.endureEnduring = false;
+	}
+
+	/**
+	 * The Rat King's half of `KingsCrown.upgradeArmor(hero, armor, new Ratmogrify())`, reached from
+	 * `RatKing.interact()` with the crown already consumed by the exchange. The charge is the real
+	 * `Ratmogrify.baseChargeUse` of 50; the ability's three real T4 talents (`RATSISTANCE`,
+	 * `RATLOMACY`, `RATFORCEMENTS`, `Ratmogrify.java` 187) act through a `TransmogRat` actor this
+	 * port's six-turn transformation does not have, so no tier-4 pool is granted here - that would
+	 * hand out points with nothing to spend them on. Recorded as Not ported in `PORT_COVERAGE.md`.
+	 */
+	private grantRatmogrify(): void {
+		this.armorAbility = 'ratmogrify';
+		this.armorCharge = ARMOR_CHARGE_START;
+	}
+
 	/** `Ratmogrify.activate` (tag v3.3.8): transform one visible ordinary enemy for six
 	 * turns while preserving its combat stats and disabling its specialised AI. The Java
 	 * implementation uses a cell-targeting window and a separate TransmogRat actor; this
@@ -15667,18 +16147,50 @@ export class DungeonScene extends Scene2D {
 			this.say(t('actors.hero.abilities.ratmogrify.cant_transform'), 'negative');
 			return false;
 		}
+		//`Ratmogrify.chargeUse()` is the real 50, so the ability is not free - this used to cost no
+		//charge at all, since it predates the charge system. The turn is spent by the calling
+		//`attempt` action (`HeroAction.Attack`'s own `spendAndNext`); spending it here as well made
+		//every ratmogrify cost two turns.
+		const cost = this.ratmogrifyChargeUse();
+		if (this.armorCharge < cost) {
+			this.say(t('items.armor.classarmor.low_charge'), 'negative');
+			return false;
+		}
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
 		target.ratmogrifiedTurns = 6;
 		this.say(t('actors.hero.abilities.ratmogrify$transmograt.name', { 0: target.name }), 'positive');
-		this.actionSpentTurn = true;
-		this.spendHeroTurn(1);
 		return true;
 	}
 
-	/** `KingsCrown.WEAR`: the crown is exchanged at the Rat King, not consumed from
-	 * inventory directly. The inventory action therefore gives the same useful hint as
-	 * Java's item description while preserving the one-way NPC transaction. */
+	/**
+	 * `KingsCrown.execute()`'s `AC_WEAR` action (tag `v3.3.8`): worn on the hero's armor, the crown
+	 * opens `WndChooseAbility` over the class's three armor abilities - and with nothing but the
+	 * starting cloth it refuses with Java's own `naked` line. Wearing it consumes the crown and
+	 * transforms the armor in `chooseArmorAbility`/`grantArmorAbility` (the port's
+	 * `upgradeArmor()`); cancelling the choice leaves the crown in the bag, like Java's cancel row.
+	 *
+	 * A class whose abilities are not ported yet keeps this item's earlier behaviour - the real
+	 * `desc` line - rather than opening a choice with nothing in it (see `armorAbilitiesFor`).
+	 */
 	private useKingsCrown(_instanceId?: string): void {
-		useArtifactKingsCrown({ say: this.say.bind(this) });
+		if (armorAbilitiesFor(this.heroClass).length === 0) {
+			useArtifactKingsCrown({ say: this.say.bind(this) });
+			return;
+		}
+		if (!this.hasCrownableArmor()) {
+			this.say(t('items.kingscrown.naked'), 'negative');
+			return;
+		}
+		this.armorChoiceOpen = true;
+		this.talentOpen = true;
+		this.refresh();
+	}
+
+	/** Java's "the crown cannot transform your underwear": the hero's starting cloth armor is not a
+	 * class armor, so it refuses before consuming anything. The Rat King's own exchange uses the
+	 * same rule (`crown_clothes`). */
+	private hasCrownableArmor(): boolean {
+		return this.armorId !== 'clothArmor' && this.armorId !== 'startingArmor';
 	}
 
 	/** `ElixirOfFeatherFall.apply()` (tag `v3.3.8`): consume one alchemical spell and append

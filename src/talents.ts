@@ -4,12 +4,12 @@ import { MWL_TABLE_ROWS, MWL_TRAIT_NODES } from './mwlContent';
 export interface TalentDefinition {
 	id: string;
 	classId: ClassId;
-	tier: 1 | 2 | 3;
-	maxRank: 2 | 3;
+	tier: 1 | 2 | 3 | 4;
+	maxRank: 2 | 3 | 4;
 }
 
 const talentsOf = (row: Readonly<Record<string, unknown>>): string[] =>
-	(Array.isArray(row.talents) ? row.talents.map(String) : []);
+	(Array.isArray(row.talents) ? row.talents.map(String) : []).filter((id) => id.length > 0);
 
 const CLASS_TALENT_ENTRIES = (() => {
 	const entries = new Map<string, string[]>();
@@ -61,3 +61,42 @@ export const SUBCLASS_TALENTS: Record<string, string[]> = Object.fromEntries(SUB
 export function subclassTalentDefinitions(subclass: string, classId: ClassId): TalentDefinition[] {
 	return (SUBCLASS_TALENTS[subclass] ?? []).map(id => ({ id, classId, tier: 3, maxRank: 3 }));
 }
+
+/**
+ * Tier 4 is the armor-ability tier. `HeroClass.armorAbilities()` gives every class three
+ * (`Talent.java`, tag `v3.3.8`: "Heroic Leap T4"/"Shockwave T4"/"Endure T4" and their five
+ * siblings), each an `ArmorAbility` whose own `talents()` returns its three T4 talents followed
+ * by the universal `HEROIC_ENERGY` - `Talent.initArmorTalents()` writes exactly that array into
+ * tier 4. All four are rank-4 talents (`Talent(17, 4)` and friends: the second constructor
+ * argument is `maxPoints`), against tier 3's 3 and tiers 1/2's 2.
+ *
+ * The Cleric's three (`Trinity`/`PowerOfMany`/`AscendedForm`) have no row here on purpose: this
+ * port's Cleric has no HolyTome spell system or Cleric-specific subclass tree to hang them on
+ * (`src/classes.ts` gives it the Mage's tree, documented there), and `spdMessages.ts` carries no
+ * `actors.hero.abilities.cleric.*` strings at all, so there is nothing to name them with. Listed
+ * as "Not ported" in `PORT_COVERAGE.md` rather than silently absent.
+ */
+const ARMOR_ABILITY_ROWS = MWL_TABLE_ROWS('armorAbilities', 'id');
+const ARMOR_ABILITY_TALENT_ENTRIES = new Map(ARMOR_ABILITY_ROWS.map((row) => [String(row.id), talentsOf(row)]));
+
+/** Per-class ability ids in the authored table's own row order, which is
+ *  `HeroClass.armorAbilities()`'s order (`HeroicLeap`, `Shockwave`, `Endure`, ...). */
+export const ARMOR_ABILITIES: Record<ClassId, string[]> = Object.fromEntries(
+	(['warrior', 'mage', 'rogue', 'huntress', 'duelist', 'cleric'] as ClassId[]).map(classId => [
+		classId,
+		ARMOR_ABILITY_ROWS.filter((row) => String(row.class) === classId).map((row) => String(row.id)),
+	]),
+) as Record<ClassId, string[]>;
+
+/** Every ability an `armorAbilities` row covers, i.e. those this port can actually offer. */
+export const ARMOR_ABILITY_TALENTS: ReadonlyMap<string, string[]> = ARMOR_ABILITY_TALENT_ENTRIES;
+
+/** `Talent.initArmorTalents()`: the ability's own three T4 talents plus the universal
+ *  `HEROIC_ENERGY`, all rank-4. An ability with no row yields nothing, which is what keeps an
+ *  unported ability from being silently offered with an empty talent tree. */
+export function armorTalentDefinitions(ability: string, classId: ClassId): TalentDefinition[] {
+	const own = ARMOR_ABILITY_TALENT_ENTRIES.get(ability);
+	if (own === undefined) return [];
+	return [...own, 'heroic_energy'].map(id => ({ id, classId, tier: 4, maxRank: 4 }));
+}
+

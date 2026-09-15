@@ -163,7 +163,12 @@ export function applyCapeOfThornsProc(scene: Pick<ArtifactActionContext, 'bag' |
 	return remaining;
 }
 
-/** `King's Crown.WEAR`: the crown is exchanged at the Rat King, not consumed directly. */
+/** The fallback line for a crown this port cannot yet act on. `KingsCrown.execute()`'s `AC_WEAR`
+ * opens `WndChooseAbility` and transforms the worn armor; `dungeonScene.useKingsCrown` now does
+ * exactly that for a class whose armor abilities are ported (`armorAbilitiesFor`). For a class
+ * whose three are still unported, opening an empty choice would be worse than saying nothing, so
+ * the scene falls back to this: the item's real description, which is what this action did before
+ * the abilities existed. */
 export function useKingsCrown(scene: Pick<ArtifactActionContext, 'say'>): void {
 	scene.say(t('items.kingscrown.desc'));
 }

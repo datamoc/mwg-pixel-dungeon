@@ -20,9 +20,18 @@ export class SpdToolbar extends Container {
 	 * art and a text label is honest where invented art would not be. */
 	private readonly actions = new Container();
 	private readonly preparationButton: SpdButton;
+	/** Java's armor-ability button: the class armor's `AC_ABILITY` action, shown while the hero has
+	 * an ability chosen, carrying its name and charge percent the way `ClassArmor.status()` does. */
+	private readonly armorAbilityButton: SpdButton;
 	private readonly rowWidth = 174;
 	private zoom = 2;
-	get occupiedHeight(): number { return (this.extras.visible ? 143 : 26) * this.zoom + (this.preparationButton.visible ? 21 * this.zoom : 0); }
+	/** Both contextual buttons stack above the toolbar row, each one 21 units tall in its own
+	 *  coordinates - the interface layout has to clear every button that is actually showing, not
+	 *  just one of them. */
+	get occupiedHeight(): number {
+		const contextual = (this.preparationButton.visible ? 1 : 0) + (this.armorAbilityButton.visible ? 1 : 0);
+		return (this.extras.visible ? 143 : 26) * this.zoom + contextual * 21 * this.zoom;
+	}
 
 	constructor(itemTextures: Texture[], onAction: (action: string) => void, onLayout: () => void) {
 		super();
@@ -35,6 +44,13 @@ export class SpdToolbar extends Container {
 		this.preparationButton.position.set(this.rowWidth - 110, -19);
 		this.preparationButton.visible = false;
 		this.actions.addChild(this.preparationButton);
+		this.armorAbilityButton = new SpdButton({ width: 110, height: 19, text: '', onClick: () => onAction('armorAbility') });
+		this.armorAbilityButton.position.set(this.rowWidth - 110, -40);
+		this.armorAbilityButton.visible = false;
+		this.actions.addChild(this.armorAbilityButton);
+		//Both contextual buttons live in one container so `occupiedHeight` moves the interface above
+		//the toolbar once, whichever of them appears.
+		this.actions.visible = false;
 		const sheet = runState.sprites.uiToolbar;
 		const crop = (x: number, y: number, w: number, h: number) => new Texture({ source: sheet.source, frame: new Rectangle(x, y, w, h) });
 		let x = 0;
@@ -88,6 +104,21 @@ export class SpdToolbar extends Container {
 	setPreparationAvailable(available: boolean): boolean {
 		if (this.preparationButton.visible === available) return false;
 		this.preparationButton.visible = available;
+		this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible;
 		return true;
 	}
+
+	/** Sets the armor-ability button's label, or hides it when the hero has no ability chosen. The
+	 * scene owns the chosen ability and its charge; this only reflects them, including the charge
+	 * percent the label carries. Returns whether anything changed, for the same re-layout reason
+	 * `setPreparationAvailable` reports its own. */
+	setArmorAbility(label: string | null): boolean {
+		const changed = this.armorAbilityButton.visible !== (label !== null) || this.armorAbilityLabel !== label;
+		if (label !== null) this.armorAbilityButton.setText(label);
+		this.armorAbilityButton.visible = label !== null;
+		this.armorAbilityLabel = label;
+		this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible;
+		return changed;
+	}
+	private armorAbilityLabel: string | null = null;
 }
