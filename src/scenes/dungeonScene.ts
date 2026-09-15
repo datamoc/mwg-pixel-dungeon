@@ -5804,10 +5804,17 @@ export class DungeonScene extends Scene2D {
 			//immunity gate, so INORGANIC kinds refuse the dart's poison like Java's isImmune.
 			reigniteBuff(monster, 'poison', 8 + Math.round((2 * this.depth) / 3));
 		} else if (kind === 'grim') {
-			const raw = Math.min(Math.round(monster.maxHp * 0.9), Math.round(monster.hp / 2 + monster.maxHp / 4));
-			const damage = Math.max(0, raw - Random.normalRange(monster.armor[0], monster.armor[1]));
-			monster.hp -= damage;
-			this.showDamage(monster, damage);
+			//`GrimTrap` is one of `AntiMagic.RESISTS`' listed source classes (see the hero branch
+			//above) - an AntiMagic champion caught on one takes none of its damage, though the
+			//trap still triggers and spends itself normally (`Char.damage()` only zeroes the
+			//damage itself, matching the shared tail below). This mob-side branch was missing
+			//that gate, unlike its hero-side twin.
+			if (!monster.magicImmune) {
+				const raw = Math.min(Math.round(monster.maxHp * 0.9), Math.round(monster.hp / 2 + monster.maxHp / 4));
+				const damage = Math.max(0, raw - Random.normalRange(monster.armor[0], monster.armor[1]));
+				monster.hp -= damage;
+				this.showDamage(monster, damage);
+			}
 		} else {
 			const damage = Math.max(0, Random.normalRange(5 + this.depth, 10 + 2 * this.depth)
 				- Random.normalRange(monster.armor[0], monster.armor[1]));

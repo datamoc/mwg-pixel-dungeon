@@ -1014,7 +1014,14 @@ Shocking.class)` would zero it.
 **The reachable rest of RESISTS is now closed too, 23 of ~35 entries total.** `GrimTrap`
 (`triggerTrapAt`'s `'grim'` case) now passes `magical: true` to `absorbHeroDamage`, so the hero's
 own AntiMagic glyph gets its real partial `drRoll()` reduction against it - previously silently
-omitted for this one trap kind while every other magical source used the flag correctly. The
+omitted for this one trap kind while every other magical source used the flag correctly.
+**Found and fixed a leftover asymmetry in this same entry, 2026-09-15**: that hero-side gate had
+no equivalent on `triggerMobTrapAt`'s own `'grim'` branch (an ordinary monster - including an
+AntiMagic champion - stepping on a Grim trap), which dealt its full damage unconditionally. An
+AntiMagic champion caught on a Grim trap now takes none of its damage, matching `Char.damage()`'s
+`RESISTS` zero-out; the trap still triggers and spends itself normally either way (Java only
+zeroes the damage assignment, not the trigger itself). `tsc`/`build`/all suites green; no browser
+verification this pass (no live AntiMagic-champion-on-a-Grim-trap encounter staged). The
 shared wand-zap loop (`blastWave`/`disintegration`/`frost`/`lightning`/`livingEarth`/
 `magicMissile`/`prismaticLight`, all seven RESISTS-listed) now skips a `magicImmune` victim's
 damage assignment entirely - `corrosion`/`corruption` are deliberately excluded from that guard
