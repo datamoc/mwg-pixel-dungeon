@@ -65,7 +65,7 @@ export function verifyArmorAbilities(require, check) {
 		assert.deepEqual(armorAbilitiesFor('warrior'), ['heroicleap', 'shockwave', 'endure']);
 		assert.deepEqual(armorAbilitiesFor('rogue'), ['deathmark']);
 		assert.deepEqual(armorAbilitiesFor('huntress'), ['spectralblades']);
-		assert.deepEqual(armorAbilitiesFor('mage'), []);
+		assert.deepEqual(armorAbilitiesFor('mage'), ['warpbeacon']);
 		assert.deepEqual(armorAbilitiesFor('duelist'), []);
 		assert.equal(ARMOR_CHARGE_MAX, 100);
 		assert.equal(ARMOR_CHARGE_START, 50);

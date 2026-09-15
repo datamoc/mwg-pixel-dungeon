@@ -83,7 +83,7 @@ export function armorAbilityDef(id: string): ArmorAbilityDef | undefined {
  * `ElementalStrike` the four blade imbuements; `Feint` a feint buff). See `PORT_COVERAGE.md`'s
  * armor-ability rows.
  */
-const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades']);
+const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades', 'warpbeacon']);
 
 /** The implemented abilities for one class, in `HeroClass.armorAbilities()` order (the authored
  *  table's own row order, which `DEFINITIONS` preserves). */

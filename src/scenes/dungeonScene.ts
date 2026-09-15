@@ -754,6 +754,8 @@ interface SaveShape {
 	doubleJumpTurns?: number;
 	/** `DeathMark.DoubleMarkTracker`'s presence. */
 	doubleMarkArmed?: boolean;
+	/** `WarpBeaconTracker`'s saved cell and the depth/branch it was placed on. */
+	warpBeacon?: { x: number; y: number; depth: number; branch: number } | null;
 	deferredDamage?: number;
 	deferredDamageDelay?: boolean;
 	corrosionTurns?: number;
@@ -1287,6 +1289,12 @@ export class DungeonScene extends Scene2D {
 	 * can save in between.
 	 */
 	private spiritBladesArmed = false;
+	/**
+	 * `WarpBeacon.WarpBeaconTracker`'s `pos`/`depth`/`branch`, saved with the run (`revivePersists`
+	 * in Java, so it survives death too). Java's `branch` is the dungeon's side-branch index; this
+	 * port has exactly one, the Blacksmith's mine, so it is `miningBranchActive` as 0/1.
+	 */
+	private warpBeacon: { x: number; y: number; depth: number; branch: number } | null = null;
 	/**
 	 * `Endure.EndureTracker`'s four fields, held on the scene rather than in the buff map because
 	 * this port's buff table is a fixed MWL id list and the tracker's real payload is three numbers
@@ -13109,6 +13117,7 @@ export class DungeonScene extends Scene2D {
 			endureHits: this.endureHits,
 			doubleJumpTurns: this.doubleJumpTurns,
 			doubleMarkArmed: this.doubleMarkArmed,
+			warpBeacon: this.warpBeacon ? { ...this.warpBeacon } : null,
 			deferredDamage: this.hero.deferredDamage,
 			deferredDamageDelay: this.hero.deferredDamageDelay,
 			corrosionTurns: this.hero.corrosionTurns,
@@ -13228,6 +13237,7 @@ export class DungeonScene extends Scene2D {
 		this.endureHits = s.endureHits ?? 0;
 		this.doubleJumpTurns = s.doubleJumpTurns ?? 0;
 		this.doubleMarkArmed = s.doubleMarkArmed ?? false;
+		this.warpBeacon = s.warpBeacon ? { ...s.warpBeacon } : null;
 		//`Fragile` never existed in real Java (the 8th armor curse is `Stench` - see the
 		//affix-table comment); saves from before the correction carry it here and on bag
 		//items, so both migrate to `stench` on load rather than silently losing their curse.
@@ -15954,7 +15964,7 @@ export class DungeonScene extends Scene2D {
 			this.say(t('items.armor.classarmor.low_charge'), 'negative');
 			return;
 		}
-		if (def.targeting !== 'cell') {
+		if (def.targeting !== 'cell' && !(def.targeting === 'beacon' && this.warpBeacon === null && this.talentRank('remote_beacon') > 0)) {
 			this.activateArmorAbility(null);
 			return;
 		}
@@ -15989,7 +15999,8 @@ export class DungeonScene extends Scene2D {
 				: id === 'endure' ? this.activateEndure(def, cost)
 					: id === 'deathmark' ? this.activateDeathMark(def, cost, cell)
 						: id === 'spectralblades' ? this.activateSpectralBlades(def, cost, cell)
-							: false;
+							: id === 'warpbeacon' ? this.activateWarpBeacon(def, cost, cell)
+								: false;
 		if (!activated) return;
 		delete this.hero.buffs['invisibility'];
 		this.refresh();
@@ -16324,6 +16335,153 @@ export class DungeonScene extends Scene2D {
 		this.spiritBladesArmed = false;
 		this.spendHeroAction(1);
 		return true;
+	}
+
+	/**
+	 * `WarpBeacon` (`WarpBeacon.java`, tag `v3.3.8`), the Mage's second ability. Its two halves have
+	 * deliberately different costs: **placing** the beacon spends a turn and no charge, **recalling**
+	 * to it spends charge and no time. Java's `ClassArmor.execute()` still requires the ability's base
+	 * charge to be available before either, which is why `useArmorAbility` keeps its up-front check.
+	 */
+	private activateWarpBeacon(def: ArmorAbilityDef, cost: number, cell: Step | null): boolean {
+		if (!this.warpBeacon) return this.placeWarpBeacon(cell);
+		return this.openWarpBeaconWindow(def);
+	}
+
+	/**
+	 * The placement half. Java's gates, in its own order: the cell must be mapped or visited (an
+	 * unmapped cell refuses **silently** - Java just `return`s), it must be within
+	 * `4 * REMOTE_BEACON` cells of the hero (so without the talent the only legal spot is the hero's
+	 * own cell), and it must not be a pit, must be passable, and must be reachable from where the
+	 * hero stands.
+	 */
+	private placeWarpBeacon(cell: Step | null): boolean {
+		const target = cell ?? { x: this.hero.x, y: this.hero.y };
+		if (!this.fov.isExplored(target.x, target.y) && !this.fov.isVisible(target.x, target.y)) return false;
+		if (Roguelike.chebyshevDistance(this.hero, target) > 4 * this.talentRank('remote_beacon')) {
+			this.say(t('actors.hero.abilities.mage.warpbeacon.too_far'), 'negative');
+			return false;
+		}
+		const reachable = this.pathfinder.find({ x: this.hero.x, y: this.hero.y }, target).length > 0
+			|| (target.x === this.hero.x && target.y === this.hero.y);
+		if (this.isChasmCell(target.x, target.y) || !this.level.passable(target.x, target.y) || !reachable) {
+			this.say(t('actors.hero.abilities.mage.warpbeacon.invalid_beacon'), 'negative');
+			return false;
+		}
+		this.warpBeacon = { x: target.x, y: target.y, depth: this.depth, branch: this.miningBranchActive ? 1 : 0 };
+		this.say(t('actors.hero.abilities.mage.warpbeacon.name'), 'positive');
+		this.spendHeroAction(1);
+		return true;
+	}
+
+	/** Java's three-row window (`window_tele`/`window_clear`/`window_cancel`), on this port's shared
+	 *  choice window. Opening it is free, and the charge is only spent if the jump is taken. */
+	private openWarpBeaconWindow(def: ArmorAbilityDef): boolean {
+		const beacon = this.warpBeacon;
+		if (!beacon) return false;
+		showChoiceWindow(this.gameWindows, capitalize(t('actors.hero.abilities.mage.warpbeacon.name')),
+			t('actors.hero.abilities.mage.warpbeacon.window_desc', { 0: beacon.depth }), [
+				{ label: t('actors.hero.abilities.mage.warpbeacon.window_tele'), onPick: () => this.warpToBeacon(def, beacon) },
+				{ label: t('actors.hero.abilities.mage.warpbeacon.window_clear'), onPick: () => { this.warpBeacon = null; } },
+				{ label: t('actors.hero.abilities.mage.warpbeacon.window_cancel'), onPick: () => { /* Java's cancel row does nothing */ } },
+			]);
+		return true;
+	}
+
+	/**
+	 * The recall. `LONGRANGE_WARP` is what allows a warp to another depth, and it also discounts
+	 * that warp's charge (`1.833 - 0.333 * points` times the base - Java's own multiplier). Within
+	 * the same depth the hero appears on the beacon cell; if something is standing there,
+	 * `TELEFRAG` lets the hero trade a self-inflicted `min(5 * points, HP + shielding - 1)` (so it
+	 * can never kill) for `heroDamageIntRange(10 * points, 15 * points)` on the occupant, and the
+	 * occupant is then shoved to a random free neighbour by `ScrollOfTeleportation.appear`'s own
+	 * push rule (the *hero* is the one pushed if the occupant is immovable, and with nowhere to go
+	 * the warp refuses with `no_tele`).
+	 */
+	private warpToBeacon(def: ArmorAbilityDef, beacon: { x: number; y: number; depth: number; branch: number }): void {
+		const branch = this.miningBranchActive ? 1 : 0;
+		const crossDepth = beacon.depth !== this.depth || beacon.branch !== branch;
+		const longrange = this.talentRank('longrange_warp');
+		if (crossDepth && longrange === 0) {
+			this.say(t('actors.hero.abilities.mage.warpbeacon.depths'), 'negative');
+			return;
+		}
+		//`Dungeon.interfloorTeleportAllowed()` - Java's `LockedFloor` buff, which bars any inter-floor
+		//teleport while it is up (a boss fight, the ascent). This port does not model that buff, and
+		//its own equivalent of "this floor is locked" is the boss floor itself: descent here is only
+		//ever the boss's death, so a warp out of a live boss fight would be a way to skip it that Java
+		//does not have. Refusing on `BOSSES` is the port's stand-in, stated in `PORT_COVERAGE.md`.
+		if (crossDepth && this.depth in BOSSES) {
+			this.say(t('items.scrolls.scrollofteleportation.no_tele'), 'negative');
+			return;
+		}
+		let cost = this.armorAbilityCost(def);
+		if (crossDepth) cost *= 1.833 - 0.333 * longrange;
+		if (this.armorCharge < cost) {
+			this.say(t('items.armor.classarmor.low_charge'), 'negative');
+			return;
+		}
+		if (!crossDepth) {
+			const occupant = this.creatureAt(beacon.x, beacon.y);
+			if (occupant && occupant !== this.hero) {
+				const telefrag = this.talentRank('telefrag');
+				if (telefrag > 0) {
+					//`Math.min(heroDmg, heroHP-1)`: the self-inflicted half can never kill the hero, and
+					//it is a real hit (armor, shields, Tenacity and the rest apply through the usual
+					//hero-damage boundary).
+					const selfDamage = Math.min(5 * telefrag, this.hero.hp + this.heroBarrier.total - 1);
+					if (selfDamage > 0) {
+						const dealt = this.absorbHeroDamage(selfDamage);
+						this.hero.hp -= dealt;
+						this.showDamage(this.hero, dealt);
+					}
+					this.applyAbilityDamage(occupant, Random.normalRange(10 * telefrag, 15 * telefrag));
+				}
+				//Java pushes the occupant to a random free neighbour from a shuffled candidate list.
+				//An IMMOVABLE occupant (a pylon, say) pushes the *hero* instead, which lands him where
+				//he already stands and refuses the warp when nothing is free - the same outcome this
+				//port's empty-candidate check reaches.
+				if (occupant.hp > 0) {
+					const candidates: Step[] = [];
+					if (!IMMOVABLE_KINDS.has(occupant.kind as MonsterId)) {
+						for (const [dx, dy] of Roguelike.neighbourOffsets(8) as ReadonlyArray<readonly [number, number]>) {
+							const next = { x: beacon.x + dx, y: beacon.y + dy };
+							if (this.level.passable(next.x, next.y) && !this.creatureAt(next.x, next.y)) candidates.push(next);
+						}
+					}
+					if (candidates.length === 0) {
+						this.say(t('items.scrolls.scrollofteleportation.no_tele'), 'negative');
+						return;
+					}
+					this.armorCharge = Math.max(0, this.armorCharge - cost);
+					this.moveTo(occupant, Random.element(candidates) ?? candidates[0]!);
+				} else {
+					this.armorCharge = Math.max(0, this.armorCharge - cost);
+				}
+			} else {
+				this.armorCharge = Math.max(0, this.armorCharge - cost);
+			}
+			delete this.hero.buffs['invisibility'];
+			this.teleportHeroTo(beacon.x, beacon.y);
+		} else {
+			this.armorCharge = Math.max(0, this.armorCharge - cost);
+			delete this.hero.buffs['invisibility'];
+			this.beaconArrival = { x: beacon.x, y: beacon.y };
+			this.miningBranchActive = beacon.branch === 1;
+			this.depth = beacon.depth;
+			this.enterLevel();
+		}
+	}
+
+	/** `ScrollOfTeleportation.appear()`: place the hero on a cell without walking there, then bring
+	 *  the field of view and the fog with him. */
+	private teleportHeroTo(x: number, y: number): void {
+		this.hero.x = x;
+		this.hero.y = y;
+		this.sprite(this.hero).x = x * TILE;
+		this.sprite(this.hero).y = y * TILE;
+		this.fov.update(x, y, this.viewRadius());
+		this.refresh();
 	}
 
 	/**
