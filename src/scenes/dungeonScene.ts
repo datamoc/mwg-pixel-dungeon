@@ -752,6 +752,8 @@ interface SaveShape {
 	endureHits?: number;
 	/** `HeroicLeap.DoubleJumpTracker`'s remaining turns. */
 	doubleJumpTurns?: number;
+	/** `DeathMark.DoubleMarkTracker`'s presence. */
+	doubleMarkArmed?: boolean;
 	deferredDamage?: number;
 	deferredDamageDelay?: boolean;
 	corrosionTurns?: number;
@@ -1273,6 +1275,9 @@ export class DungeonScene extends Scene2D {
 	 *  discounts against. A plain latch would keep the discount forever - a ranked warrior would
 	 *  pay 17.4 instead of 35 charge on every leap after the first, across saves. */
 	private doubleJumpTurns = 0;
+	/** `DeathMark.DoubleMarkTracker`'s presence: true while the hero's next Death Mark is the
+	 *  discounted one (`DeathMark.chargeUse()`'s `0.707^points`, 30/50/65/75% off at rank 1-4). */
+	private doubleMarkArmed = false;
 	/**
 	 * `Endure.EndureTracker`'s four fields, held on the scene rather than in the buff map because
 	 * this port's buff table is a fixed MWL id list and the tracker's real payload is three numbers
@@ -2283,6 +2288,8 @@ export class DungeonScene extends Scene2D {
 				fleeing: creature.fleeing,
 				ratmogrifiedTurns: creature.ratmogrifiedTurns,
 				ratmogrifiedPermanent: creature.ratmogrifiedPermanent,
+				deathMarkTurns: creature.deathMarkTurns,
+				deathMarkInitialHp: creature.deathMarkInitialHp,
 				patrolTarget: creature.patrolTarget ? { ...creature.patrolTarget } : undefined,
 				mimicRevealed: creature.mimicRevealed,
 				hasteTurns: creature.hasteTurns, hasteBaseSpeed: creature.hasteBaseSpeed,
@@ -2412,6 +2419,8 @@ export class DungeonScene extends Scene2D {
 				fleeing: saved.fleeing,
 				ratmogrifiedTurns: saved.ratmogrifiedTurns,
 				ratmogrifiedPermanent: saved.ratmogrifiedPermanent,
+				deathMarkTurns: saved.deathMarkTurns,
+				deathMarkInitialHp: saved.deathMarkInitialHp,
 				patrolTarget: saved.patrolTarget ? { ...saved.patrolTarget } : undefined,
 				mimicRevealed: saved.mimicRevealed ?? Boolean(saved.stolen),
 				hasteTurns: saved.hasteTurns, hasteBaseSpeed: saved.hasteBaseSpeed,
@@ -6417,6 +6426,7 @@ export class DungeonScene extends Scene2D {
 
 	/** Java's Buff.act() boundary for temporary monster speed effects. */
 	private afterMonsterTurn(monster: Creature): void {
+		this.tickDeathMark(monster);
 		if (monster.ratmogrifiedTurns !== undefined && !monster.ratmogrifiedPermanent) {
 			monster.ratmogrifiedTurns--;
 			if (monster.ratmogrifiedTurns <= 0) delete monster.ratmogrifiedTurns;
@@ -12100,6 +12110,17 @@ export class DungeonScene extends Scene2D {
 	private kill(creature: Creature, cause: 'foe' | 'trap' | 'fire' | 'poison' | 'hunger' = 'foe'): void {
 		const index = this.creatures.indexOf(creature);
 		if (index < 0) return;
+		//`Char.isAlive()` is `HP > 0 || deathMarked`, so a marked creature is *not* `die()`d at zero
+		//HP: it keeps acting, and `Char.damage()`'s `HP == 0 && deathMarked` branch runs Fear the
+		//Reaper instead. `tickDeathMark` is what eventually lets it die, when the five turns are up.
+		//`Char.damage()`'s own `if (HP < 0) HP = 0` clamp belongs here rather than at the damage
+		//sites, because this is the only path where a dead creature stays in the game long enough
+		//for a negative HP to be seen (or saved).
+		if ((creature.deathMarkTurns ?? 0) > 0) {
+			if (creature.hp < 0) creature.hp = 0;
+			this.processFearTheReaper(creature);
+			return;
+		}
 		runState.audio.cue('death', 0.65);
 		//`BrightFist`/`DarkFist.damage()`'s death case: Bright prolongs the hero's Blindness for
 		//three times the base duration and Dark detaches the hero's Light (no model here) - both
@@ -13062,6 +13083,7 @@ export class DungeonScene extends Scene2D {
 			endureBanked: this.endureBanked,
 			endureHits: this.endureHits,
 			doubleJumpTurns: this.doubleJumpTurns,
+			doubleMarkArmed: this.doubleMarkArmed,
 			deferredDamage: this.hero.deferredDamage,
 			deferredDamageDelay: this.hero.deferredDamageDelay,
 			corrosionTurns: this.hero.corrosionTurns,
@@ -13180,6 +13202,7 @@ export class DungeonScene extends Scene2D {
 		this.endureBanked = s.endureBanked ?? 0;
 		this.endureHits = s.endureHits ?? 0;
 		this.doubleJumpTurns = s.doubleJumpTurns ?? 0;
+		this.doubleMarkArmed = s.doubleMarkArmed ?? false;
 		//`Fragile` never existed in real Java (the 8th armor curse is `Stench` - see the
 		//affix-table comment); saves from before the correction carry it here and on bag
 		//items, so both migrate to `stench` on load rather than silently losing their curse.
@@ -15875,6 +15898,8 @@ export class DungeonScene extends Scene2D {
 			heroicEnergyRank: this.talentRank('heroic_energy'),
 			doubleJumpArmed: this.doubleJumpTurns > 0,
 			doubleJumpRank: this.talentRank('double_jump'),
+			doubleMarkArmed: this.doubleMarkArmed,
+			doubleMarkRank: this.talentRank('double_mark'),
 		});
 	}
 
@@ -15895,14 +15920,6 @@ export class DungeonScene extends Scene2D {
 	 * after the cell is known.
 	 */
 	private useArmorAbility(): void {
-		//Java's `Hero.act()` runs before the action that spends the turn, so a live Endure window
-		//settles and the hero stops taking input here - the same two things the adapter's own
-		//`beginTurn` does for a move or an item use, which a `free`-branch action never reaches.
-		//Settling *here* rather than after the ability resolves is what keeps Endure's own cast from
-		//closing the window it just opened: in Java the tracker is attached during the action, and
-		//`endEnduring()` only runs at the start of the hero's next one.
-		this.awaitingInput = false;
-		this.settleEndure();
 		const def = this.armorAbility ? armorAbilityDef(this.armorAbility) : undefined;
 		if (!def) {
 			this.say(t('items.armor.classarmor.no_ability'), 'negative');
@@ -15938,10 +15955,15 @@ export class DungeonScene extends Scene2D {
 			this.say(t('items.armor.classarmor.low_charge'), 'negative');
 			return;
 		}
+		//Java's `Hero.act()` runs before the action, and this is the point where the action is
+		//committed (a cancelled aim never reaches here), so a live Endure window settles now - which
+		//is also what keeps Endure's own cast from settling the tracker it is about to attach.
+		this.settleEndure();
 		const activated = id === 'heroicleap' ? this.activateHeroicLeap(def, cost, cell)
 			: id === 'shockwave' ? this.activateShockwave(def, cost, cell)
 				: id === 'endure' ? this.activateEndure(def, cost)
-					: false;
+					: id === 'deathmark' ? this.activateDeathMark(def, cost, cell)
+						: false;
 		if (!activated) return;
 		delete this.hero.buffs['invisibility'];
 		this.refresh();
@@ -16111,6 +16133,85 @@ export class DungeonScene extends Scene2D {
 	}
 
 	/**
+	 * `DeathMark.activate()` (tag `v3.3.8`): mark a visible hostile for five turns. Java spends
+	 * **no turn** here (`hero.next()` - the hero acts again immediately), which is the ability's
+	 * whole point: it is a free setup for the kill that follows.
+	 *
+	 * `DOUBLE_MARK` is a two-sided latch, exactly as Java writes it: while its tracker is armed the
+	 * ability costs `0.707^points` charge, and using it consumes the arm; with the talent ranked and
+	 * no arm, the cast re-arms it for the next one.
+	 */
+	private activateDeathMark(def: ArmorAbilityDef, cost: number, cell: Step | null): boolean {
+		if (!cell) return false;
+		const target = this.creatureAt(cell.x, cell.y);
+		if (!target || !this.fov.isVisible(target.x, target.y)) {
+			this.say(t('actors.hero.abilities.rogue.deathmark.no_target'), 'negative');
+			return false;
+		}
+		if (target.isAlly || target.isNPC) {
+			this.say(t('actors.hero.abilities.rogue.deathmark.ally_target'), 'negative');
+			return false;
+		}
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		//`DeathMarkTracker.DURATION` is 5, and `setInitialHP` keeps the *highest* HP the target has
+		//been marked at (so re-marking a wounded target does not shrink the Deathly Durability
+		//barrier it would pay out).
+		target.deathMarkTurns = 5;
+		target.deathMarkInitialHp = Math.max(target.deathMarkInitialHp ?? 0, target.hp);
+		this.say(t('actors.hero.abilities.rogue.deathmark.name'), 'positive');
+		//Java spends no time at all here (`hero.next()`), so the clock does not advance, the monsters
+		//do not act, and the hero simply acts again - `awaitingInput` is left alone rather than
+		//cleared, which is what keeps the game responsive after a zero-time ability.
+		if (this.doubleMarkArmed) this.doubleMarkArmed = false;
+		else if (this.talentRank('double_mark') > 0) this.doubleMarkArmed = true;
+		return true;
+	}
+
+	/**
+	 * `DeathMark.processFearTheReaper()`, called at the moment a marked creature's HP reaches zero
+	 * (Java runs it from `Char.damage()`'s `HP == 0 && deathMarked` branch, and from the two execute
+	 * paths). The target itself is terrified and crippled; `EVEN_THE_ODDS`-style neighbours are not
+	 * part of this talent, so only `FEAR_THE_REAPER`'s own rank ladder applies: rank 2+ terrifies the
+	 * target too, rank 3+ reaches every hostile within path distance 3, and rank 4 terrifies those
+	 * as well. `Buff.prolong(...).object = hero.id()`'s source id has no field on this port's terror
+	 * buff (it stores a duration only), so the source is not recorded.
+	 */
+	private processFearTheReaper(target: Creature): void {
+		const rank = this.talentRank('fear_the_reaper');
+		if (rank <= 0) return;
+		if (rank >= 2) addBuff(target, 'terror', 5);
+		addBuff(target, 'cripple', 5);
+		if (rank < 3) return;
+		const distances = this.pathfinder.distanceMap({ x: target.x, y: target.y });
+		for (const other of this.creatures) {
+			if (other === target || other.isHero || other.isAlly || other.isNPC || other.hp <= 0) continue;
+			const distance = distances[this.level.index(other.x, other.y)] ?? Number.MAX_SAFE_INTEGER;
+			if (distance > 3) continue;
+			if (rank >= 4) addBuff(other, 'terror', 5);
+			addBuff(other, 'cripple', 5);
+		}
+	}
+
+	/**
+	 * `DeathMarkTracker`'s five-turn countdown and its two exits. Java's tracker is a real buff, so
+	 * its expiry is its `detach()`: a target that is already at zero HP dies there (with
+	 * `DEATHLY_DURABILITY` paying the hero `round(initialHP * 0.125 * points)` as a barrier), and
+	 * one that survived keeps its HP - the mark is not a damage source.
+	 */
+	private tickDeathMark(monster: Creature): void {
+		if ((monster.deathMarkTurns ?? 0) <= 0) return;
+		monster.deathMarkTurns = (monster.deathMarkTurns ?? 0) - 1;
+		if (monster.deathMarkTurns > 0) return;
+		delete monster.deathMarkTurns;
+		const initialHp = monster.deathMarkInitialHp ?? 0;
+		delete monster.deathMarkInitialHp;
+		if (monster.hp > 0) return;
+		const shield = Math.round(initialHp * (0.125 * this.talentRank('deathly_durability')));
+		if (shield > 0) this.grantHeroShield(shield, this.hero.maxHp);
+		this.kill(monster);
+	}
+
+	/**
 	 * One armor-ability hit's damage. Java's abilities call `ch.damage()` directly on the values
 	 * their own formulas produced, so every defender-side rule that lives in `Char.damage()` applies
 	 * - including `YogDzewa.isInvulnerable()` while any fist lives, the fist proximity guard,
@@ -16141,6 +16242,7 @@ export class DungeonScene extends Scene2D {
 	 */
 	private spendHeroAction(turnCost: number): void {
 		this.actionSpentTurn = true;
+		this.awaitingInput = false;
 		if (this.freeTurnNext) {
 			this.freeTurnNext = false;
 			return;

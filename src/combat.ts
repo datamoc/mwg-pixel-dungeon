@@ -37,6 +37,14 @@ export interface Creature extends Combatant {
 	/** Ratmogrify's temporary wrapper: the original kind/stats remain intact while abilities are disabled. */
 	ratmogrifiedTurns?: number;
 	ratmogrifiedPermanent?: boolean;
+	/**
+	 * `DeathMark.DeathMarkTracker`'s two payload fields. Java keeps them on the buff; this port's
+	 * buff map holds durations only, so the mark's countdown and the target's HP when it was first
+	 * marked live here, alongside the other per-creature payloads. `deathMarkTurns > 0` is the
+	 * creature's `deathMarked` flag, i.e. Java's `isAlive()` returning true at zero HP.
+	 */
+	deathMarkTurns?: number;
+	deathMarkInitialHp?: number;
 	/** Viscosity's accumulated deferred damage and its one-turn initial delay. */
 	deferredDamage?: number;
 	deferredDamageDelay?: boolean;

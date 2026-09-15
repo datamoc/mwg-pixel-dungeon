@@ -59,9 +59,11 @@ export function verifyArmorAbilities(require, check) {
 	});
 
 	check('only implemented abilities are offered, and the charge meter is Java\'s', () => {
-		//The Warrior's three are the ported set; a class with none offers nothing, which is what
-		//keeps a choice panel from listing an ability that cannot run.
+		//The Warrior's three and the Rogue's Death Mark are the ported set; a class with none of its
+		//own offers nothing, which is what keeps a choice panel from listing an ability that cannot
+		//run.
 		assert.deepEqual(armorAbilitiesFor('warrior'), ['heroicleap', 'shockwave', 'endure']);
+		assert.deepEqual(armorAbilitiesFor('rogue'), ['deathmark']);
 		assert.deepEqual(armorAbilitiesFor('mage'), []);
 		assert.equal(ARMOR_CHARGE_MAX, 100);
 		assert.equal(ARMOR_CHARGE_START, 50);
@@ -86,6 +88,19 @@ export function verifyArmorAbilities(require, check) {
 		//points the hero has.
 		const shockwave = armorAbilityDef('shockwave');
 		assert.equal(armorChargeUse(shockwave, { heroicEnergyRank: 0, doubleJumpArmed: true, doubleJumpRank: 4 }), 35);
+	});
+
+	check('DeathMark\'s DOUBLE_MARK discount is 0.707^points while the tracker is armed', () => {
+		const mark = armorAbilityDef('deathmark');
+		assert.equal(mark.baseChargeUse, 25);
+		assert.equal(armorChargeUse(mark, { heroicEnergyRank: 0, doubleMarkArmed: false, doubleMarkRank: 4 }), 25);
+		//30/50/65/75% off, and the two overrides are per-ability: a Warrior's leap never takes it.
+		assert.deepEqual([1, 2, 3, 4].map((points) => Math.round(armorChargeUse(mark, { heroicEnergyRank: 0, doubleMarkArmed: true, doubleMarkRank: points }) * 1000) / 1000),
+			[1, 2, 3, 4].map((points) => Math.round(25 * Math.pow(0.707, points) * 1000) / 1000));
+		const leap = armorAbilityDef('heroicleap');
+		assert.equal(armorChargeUse(leap, { heroicEnergyRank: 0, doubleMarkArmed: true, doubleMarkRank: 4 }), 35);
+		//`HEROIC_ENERGY` applies underneath, in Java's own order (`super.chargeUse()` first).
+		assert.equal(armorChargeUse(mark, { heroicEnergyRank: 4, doubleMarkArmed: true, doubleMarkRank: 1 }), 25 * 0.6 * 0.707);
 	});
 
 	check('BODY_SLAM rolls `NormalIntRange(points, 4*points)` plus a quarter of the armor roll per point', () => {

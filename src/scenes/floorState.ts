@@ -139,6 +139,8 @@ export interface SavedCreature {
 	stuckAmmo?: number;
 	ratmogrifiedTurns?: number;
 	ratmogrifiedPermanent?: boolean;
+	deathMarkTurns?: number;
+	deathMarkInitialHp?: number;
 	sentryWarmup?: number;
 	dmAbilityTurns?: number;
 	dmAbilityCd?: number;

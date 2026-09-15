@@ -53,10 +53,10 @@ fully checked off as of a given release.
     action offers the class's real SPD abilities (with their real names and descriptions, in
     every offered locale), each costs its own real charge out of a meter that regrows at Java's
     rate and starts at Java's 50, and its four rank-4 tier-4 talents open up with points at
-    Java's own curve. The Warrior's three - Heroic Leap, Shockwave and Endure - are fully
-    implemented, formulas included; the other twelve are not offered at all rather than offered
-    and inert, so a Mage/Rogue/Huntress/Duelist crown tells you nothing has changed yet instead
-    of handing you a dead button.
+    Java's own curve. The Warrior's three - Heroic Leap, Shockwave and Endure - and the Rogue's
+    Death Mark are fully implemented, formulas included; the other eleven are not offered at all
+    rather than offered and inert, so a Mage/Huntress/Duelist crown (or a Rogue who already has
+    Death Mark) tells you nothing has changed yet instead of handing you a dead button.
   - Golems tick their enemy-teleport and wandering self-teleport cooldowns individually and on
     every turn (matching `Golem.act()`), not on a shared/simplified timer.
   - Monster AI generally - this line item is intentionally open-ended rather than a fixed claim;
@@ -1748,9 +1748,13 @@ fully checked off as of a given release.
       (`HeroicLeap`'s leap/body-slam/impact-wave/double-jump, `Shockwave`'s cone with the real
       `ConeAOE` clamp, proc promotion and paralysis-or-cripple, and `Endure`'s halving, banking and
       counter-attack), with their nine tier-4 talents' formulas as pure tested functions in
-      `simulation/warriorAbilities.ts`. **Still open, and deliberately not offered**: the other
-      twelve abilities (Mage/Rogue/Huntress/Duelist) each need a system this port does not have -
-      see `PORT_COVERAGE.md`'s new armor-ability section for the per-ability reason - and the
+      `simulation/warriorAbilities.ts`. **The Rogue's Death Mark followed (2026-09-16)**: a
+      five-turn mark that keeps its target alive at zero HP until it expires (Java's
+      `isAlive()`/`deathMarked`), `FEAR_THE_REAPER`'s terror-and-cripple ladder, `DEATHLY_DURABILITY`'s
+      barrier, `DOUBLE_MARK`'s two-sided charge latch, and Java's own zero-time cast - browser-verified
+      including the save/load round trip. **Still open, and deliberately not offered**: the other
+      eleven abilities (Mage/Rogue's remaining two/Huntress/Duelist) each need a system this port does
+      not have - see `PORT_COVERAGE.md`'s new armor-ability section for the per-ability reason - and the
       Cleric's three have neither strings nor a spell system here. `armorAbilitiesFor()` offers
       only what can actually run, so a class with none keeps the crown's old description line
       instead of an empty choice, and its tier-4 pool stays ungranted (which is Java's own state
