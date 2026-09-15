@@ -71,7 +71,7 @@ export interface SavedCreature {
 	combo?: number;
 	moving?: number;
 	arenaJumps?: number;
-	tenguPhase?: 'cell' | 'arena';
+	tenguPhase?: 'cell' | 'paused' | 'arena';
 	tenguFire?: { direction: number; beam: Roguelike.MultiTurnBeamSave };
 	tenguAbilityCd?: number;
 	tenguAbilityUses?: number;

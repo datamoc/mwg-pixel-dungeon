@@ -131,9 +131,10 @@ import {
 	miningBranchFloor,
 	resetPortedRun,
 	toGameTerrain,
+	SPD_TERRAIN_TO_GAME_KIND,
 	type PortedFloor,
 } from '../spdLevelGen/gameBridge';
-import { CAVES_BOSS_ARENA } from '../spdLevelGen/bossLevels';
+import { CAVES_BOSS_ARENA, PRISON_ARENA, prisonBossArena } from '../spdLevelGen/bossLevels';
 import { vaultBlockedCells, vaultCenterVisualFrames, vaultCenterWallFrames, vaultFloorFrames } from '../spdLevelGen/vaultVisuals';
 import { spdPatchGenerate } from '../spdLevelGen/spdPatch';
 import { entranceRoomContext } from '../spdLevelGen/rooms/standard/entranceRoom';
@@ -7351,6 +7352,7 @@ export class DungeonScene extends Scene2D {
 			this.pickupGroundItemAt(target.x, target.y);
 			this.checkCavesBossPylonGate();
 			this.checkHallsBossSeal();
+			this.checkTenguArenaRetreat();
 			if (!(this.timeBubbleTurns > 0 && delayedTrap)) this.triggerTrapAt(target.x, target.y);
 			if (this.fallThroughChasm(target.x, target.y)) return;
 			if (this.miningBranchActive && this.miningBranchEntrance
@@ -9331,14 +9333,50 @@ export class DungeonScene extends Scene2D {
 		}
 		if ((tengu.tenguPhase ?? 'cell') === 'cell' && tengu.hp <= Math.floor(tengu.maxHp / 2)) {
 			tengu.hp = Math.floor(tengu.maxHp / 2);
-			tengu.tenguPhase = 'arena';
+			//`PrisonBossLevel.progress()`'s real `case FIGHT_START:` here also runs `setMapPause()`
+			//and removes Tengu from the level entirely until the hero retreats - see
+			//`checkTenguArenaRetreat()` for why this port keeps him fighting through the wait
+			//instead of reproducing that vanish beat. `'paused'` is this port's own name for
+			//Java's `FIGHT_PAUSE` state; the map itself does not change yet.
+			tengu.tenguPhase = 'paused';
 			this.say(t('port.log.tenguinteresting'), 'warning');
-			//Java's `progress()` also rebuilds the map into its separate `arena` region
-			//(`setMapArena()`, rect (3,1)-(18,16) - which is what wipes the phase-1 dart field) and
-			//relocates Tengu to that arena's centre. This port keeps its single Tengu-cell arena,
-			//so those moves have no target geometry and the darts persist; the separate arena
-			//layout is the documented remaining gap.
 		}
+	}
+
+	/**
+	 * `PrisonBossLevel.occupyCell()`'s `case FIGHT_PAUSE:` (tag `v3.3.8`): real Java fires
+	 * `setMapArena()` - walling the whole floor but the (3,1)-(18,16) ellipse - the moment the
+	 * hero's own move lands on `y <= startHallway.top+1` (row 8), re-adding Tengu at the arena's
+	 * centre. This port keeps Tengu alive and fighting through the whole wait instead of Java's
+	 * remove-then-re-add "he's vanished" beat (this port's actor/sprite/health-bar lifecycle has
+	 * no precedent for temporarily pulling a boss out mid-fight and back in with its state
+	 * intact, and getting that wrong risks a broken fight far worse than skipping one cutscene
+	 * beat) - Tengu simply teleports to the arena's centre the instant the repaint lands, the same
+	 * presentation `tenguArenaJump`'s existing teleports already use elsewhere in this fight.
+	 * **Firing this only once the hero has actually retreated is load-bearing, not cosmetic**:
+	 * this port's whole first phase is fought inside `tenguCell` (rows 23-31), entirely outside
+	 * the arena ellipse (rows 1-16) - repainting on the HP threshold alone, without waiting for
+	 * the retreat, would wall the hero into solid rock on every single fight.
+	 */
+	private checkTenguArenaRetreat(): void {
+		if (this.depth !== 10) return;
+		const tengu = this.creatures.find((c) => c.kind === 'tengu' && c.hp > 0);
+		if (!tengu || tengu.tenguPhase !== 'paused') return;
+		if (this.hero.y > 8) return;
+		const arena = prisonBossArena().paint;
+		for (let cell = 0; cell < arena.map.length; cell++) {
+			const kind = SPD_TERRAIN_TO_GAME_KIND[arena.map[cell]!];
+			if (kind === undefined) throw new Error(`checkTenguArenaRetreat: no mapping for Terrain value ${arena.map[cell]}`);
+			this.level.terrain[cell] = GAME_KIND_CODES[kind];
+		}
+		if (this.portedPaint) this.portedPaint.map.set(arena.map);
+		this.restitchAllTiles();
+		//`PrisonBossLevel.progress()`: `(arena.left + arena.width()/2) + width()*(arena.top+2)` -
+		//Java's own integer division, `width()=16` so `16/2=8`.
+		const center = { x: PRISON_ARENA.left + Math.floor((PRISON_ARENA.right - PRISON_ARENA.left + 1) / 2), y: PRISON_ARENA.top + 2 };
+		this.moveTo(tengu, center);
+		tengu.tenguPhase = 'arena';
+		this.say(t('port.log.tenguarena'), 'warning');
 	}
 
 	/** Tengu's per-bracket `jump()`: relocate 5-7 away with the trap burst, capped at 4

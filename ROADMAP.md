@@ -1037,6 +1037,35 @@ fully checked off as of a given release.
       roster twice mid-fight, and the death-transition's own hero reposition/ally/item handling -
       meaningfully more scene-state work than "call `restitchAllTiles()` once", not less. Still a
       dedicated pass, now scoped accurately rather than on the wrong mental model.
+      **The `FIGHT_PAUSE -> FIGHT_ARENA` transition is now live and browser-verified (2026-09-15).**
+      `checkTenguArenaRetreat()` (`src/scenes/dungeonScene.ts`), wired into the same move-resolution
+      hook as the Caves/Halls boss gates (`checkCavesBossPylonGate`/`checkHallsBossSeal`), fires
+      exactly on Java's own `y <= startHallway.top+1` condition: it bulk-writes `this.level.terrain`
+      and `this.portedPaint.map` from `prisonBossArena()`'s paint (the same per-cell
+      `SPD_TERRAIN_TO_GAME_KIND`/`GAME_KIND_CODES` conversion `toGameTerrain` uses internally, since
+      its own type wants a full `PortedFloor` this mid-visit call doesn't have one of), calls
+      `restitchAllTiles()`, and teleports Tengu to Java's own arena-centre formula
+      (`arena.left + width()/2`, `arena.top + 2`). **Deliberately simplified, and documented as
+      such rather than attempted**: this port skips Java's `FIGHT_START` "vanish" beat (removing
+      Tengu from the actor roster during the wait, then re-adding him) - Tengu now transitions
+      `'cell' -> 'paused' -> 'arena'` while staying alive and fighting the entire time, since this
+      codebase's actor/sprite/health-bar lifecycle has no precedent for a temporary mid-fight
+      pull-and-return and getting that wrong risked a broken fight, not just a missed cutscene.
+      Verified live via `window.__MWG__.currentScene` (teleport to depth 10, force the phase and
+      hero position directly): the repaint correctly refuses to fire while the hero is still deep
+      in `tenguCell` (confirming the retreat gate, not the HP threshold, is what's load-bearing -
+      firing unconditionally at the old HP-threshold moment would have walled the hero into solid
+      rock, since this port's whole first phase is fought inside `tenguCell`, entirely outside the
+      arena ellipse), fires correctly once the hero reaches row 8, and a full 32x32 grid sample
+      afterward found every walkable (`FLOOR`) cell - 156 of them - inside the `(3,1)-(18,16)` rect
+      with zero outside it. New `port.log.tenguarena` key (all 19 locales, EN/FR authored, the rest
+      first-draft MT per this file's translation convention) plays on the transition. `tsc`/`build`/
+      all suites green. **Still open**: the initial `START -> FIGHT_START` seal-and-spawn trigger
+      (this port spawns Tengu on floor entry like every other boss, a pre-existing, separately
+      documented simplification untouched here) and the `FIGHT_ARENA -> WON` death transition
+      (`setMapEnd()`, the hero's reposition, ally/stored-item handling) - the latter is what
+      actually unblocks depth 10's "remove auto-descent" gap this section's earlier bullet
+      measured, and is real, separate scope, not a quick follow-on to this transition.
 - [ ] Port Caves/DM-300's full pylon, gate, energy field, and supercharge scripts (pylon
       proximity sealing, sequential threshold supercharges, pylon activation, boss
       invulnerability, x2 speed, and supercharge loss on pylon death are live; the

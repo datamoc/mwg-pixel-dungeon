@@ -91,7 +91,7 @@ export interface Creature extends Combatant {
 	/** `PrisonBossLevel.State` collapse for this port's single arena: `cell` is Java's
 	 * FIGHT_START (the small Tengu cell - warps and dart fills, no abilities), `arena` is
 	 * FIGHT_ARENA (5-7 relocations, abilities, `arenaJumps`). Latched at HP <= HT/2. */
-	tenguPhase?: 'cell' | 'arena';
+	tenguPhase?: 'cell' | 'paused' | 'arena';
 
 	/**
 	 * `Tengu.FireAbility`: the `PathFinder.CIRCLE8` index of the cone's direction and the ring of
