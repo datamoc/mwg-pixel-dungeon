@@ -631,6 +631,17 @@ fully checked off as of a given release.
       generated class ids too; SuspiciousChest and Treasury mimics now retain their held item,
       and Secret Honeypot now preserves the Java Bomb-versus-DoubleBomb result and class id;
       generated bonus, and treasury gold drops on death.
+      **2026-09-15:** `CrystalPathRoom`'s `paint()` was found to not be a port of the real Java
+      method at all - an invented "re-rolled center, clockwise quadrant walk" design that could
+      hang the whole generator (a room with both dimensions odd made the do-while's exit
+      condition permanently false; reproduced live at seed 123456789, depth 12). Rewritten to
+      Java's real four-branch (`entry.x==left/right`, else `entry.y==top/bottom`) six-`EmptyRoom`
+      geometry, the real six `new EmptyRoom()` RNG-burning constructions (previously only four),
+      and the real `Door.Type.REGULAR` entrance (previously wrongly locked with an iron key - the
+      room's own `CRYSTAL_DOOR`s are what actually gate it via the three seeded `CrystalKey`s).
+      Loot picks remain a documented simplification (single `randomCategory()` draws, no
+      exotic-item/duplicate-avoidance system), but the real `Random.Int(2)` branch and shuffle
+      rolls are both honoured. See `PORT_COVERAGE.md`'s special-room row.
 - [x] Port Halls' `DemonSpawnerRoom`: real Java room placement and the `HALLS_SP` custom-floor
       atlas through the live MWG sprite-sheet path; defeated spawners remain absent on revisit.
       **Formatting fix, 2026-09-09**: this bullet was a malformed list item missing its own
