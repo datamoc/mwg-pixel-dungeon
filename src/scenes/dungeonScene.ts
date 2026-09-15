@@ -11033,6 +11033,13 @@ export class DungeonScene extends Scene2D {
 		//`Viscosity.DeferedDamage` pool the glyph uses instead of losing HP, paying it out on their
 		//own turns. Checked here, before the linked-add split below, so the King's LifeLink share
 		//is deferred the same way.
+		//
+		//These are `damage()` overrides and so are source-independent: `applyBlastDamage` carries the
+		//same four guards (Viscosity, DKBarrier, DM-300's barrier, the inactive-pylon refusal) for
+		//bombs and armor abilities, which never come through `attack()`. If one of them changes here,
+		//it changes there too - the two copies exist because this tail also carries attack-only work
+		//(LifeLink, the SoiledFist grass cut, the execute mechanics, Grim) that the shared seam must
+		//not run.
 		if (this.deferMonsterDamage(defender, damage)) return true;
 		//LifeLink (Char.damage): damage to a linked subject splits evenly (ceil) between it
 		//and the King - the King's own share runs through his P2 shield below like any hit.
@@ -14041,6 +14048,10 @@ export class DungeonScene extends Scene2D {
 		}
 		if (c.kind === 'yog' && this.yogShielded(c)) return false;
 		if (c.kind === 'yogFist' && this.guardFist(c)) return false;
+		//`Pylon.isInvulnerable()`: an inactive pylon takes nothing from any source, not just from
+		//`attack()`. Moved here with the `damage()` curves below, so a bomb or an armor ability
+		//cannot damage a dormant pylon the way `Char.damage()` refuses to.
+		if (c.kind === 'pylon' && !c.pylonActive) return false;
 		if (!pierceArmor) damage = Math.max(0, damage - Random.normalRange(c.armor[0], c.armor[1]));
 		//Every defender-side `damage()` override (`Pylon` 14+/15, `Eye` /4 while charging,
 		//`DemonSpawner` 19+/20, `Slime`/`CausticSlime` 4+/5) is part of `Char.damage()`, so it
@@ -14049,6 +14060,23 @@ export class DungeonScene extends Scene2D {
 		//inside `attack()`, which meant a blast or an ability hit a charged pylon or a slime for
 		//far more than Java's curve allows; see `PORT_COVERAGE.md`.
 		damage = applyDefenderDamageCurves(c.kind, damage, { beamCharged: c.beamCharged === true });
+		//`DwarfKing.damage()` (phase 3) and `RustedFist.damage()` bank every hit into the same
+		//`Viscosity.DeferedDamage` pool instead of losing HP - also a `damage()` override, so also
+		//source-independent.
+		if (this.deferMonsterDamage(c, damage)) return false;
+		//DKBarrier: the P2 shield pool absorbs before HP (no per-turn regen here - the
+		//`incShield` half of `DKBarrior.act()` has no modeled trigger to hang it on).
+		if (c.kind === 'king' && (c.kingShield ?? 0) > 0) {
+			const blocked = Math.min(c.kingShield ?? 0, damage);
+			c.kingShield = (c.kingShield ?? 0) - blocked;
+			damage -= blocked;
+		}
+		//DM300.move()/PylonEnergy: Barrier absorbs damage before HP while the boss is charged.
+		if (c.kind === 'dm300' && (c.dmBarrier ?? 0) > 0) {
+			const blocked = Math.min(c.dmBarrier ?? 0, damage);
+			c.dmBarrier = (c.dmBarrier ?? 0) - blocked;
+			damage -= blocked;
+		}
 		const preHp = c.hp;
 		c.hp -= damage;
 		if (c.kind === 'tengu') this.clampTenguBracket(c, preHp);
