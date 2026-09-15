@@ -952,14 +952,35 @@ fully checked off as of a given release.
       `FIGHT_START`; the `case FIGHT_START:` block (which runs `setMapPause()`) is the half-health
       crossing, and the `case FIGHT_ARENA:` block (which runs `setMapEnd()` and kills Tengu) is the
       death transition - so `setMapArena()` belongs to `FIGHT_PAUSE`, i.e. the same half-health
-      moment this port already latches `tenguPhase = 'arena'` on. The unresolved part is the hero's
-      position: `clearEntities` only touches heaps, `CircleBack` buffs and mobs (**not** the hero),
-      and neither `FIGHT_START` nor `FIGHT_PAUSE` moves him, yet phase 1 is fought in `tenguCell`
-      (rows 23-32) while `setMapArena()` leaves only the (3,1)-(18,16) ellipse walkable. Java must
-      therefore rely on something outside these two blocks to put the hero on arena floor
-      (`pauseSafeArea` (9,2)-(12,12) is entirely inside the ellipse, which is suggestive, but
-      nothing read so far actually moves him there) - resolve that before writing the repaint, or
-      the port will drop the hero in a wall.
+      moment this port already latches `tenguPhase = 'arena'` on.
+      **Resolved, 2026-09-15: the hero's position was never actually unresolved - Java genuinely
+      never moves him for this transition, and that is not an oversight.** Re-read `progress()` and
+      `cleanMapState()` in full (both `v3.3.8` and `4.0.0-beta`, identical here): `clearEntities`
+      only touches heaps/`CircleBack`/mobs, `cleanMapState()` only clears flags/blobs/traps and
+      resets the map view, and neither `FIGHT_START` nor `FIGHT_PAUSE` ever assigns
+      `Dungeon.hero.pos` - `Dungeon.hero.pos` is written exactly twice in this whole class, both in
+      `case FIGHT_ARENA:` (the death transition, moving him to `tenguCellDoor`'s cell for the
+      `setMapEnd()` layout). The `FIGHT_START -> FIGHT_PAUSE -> FIGHT_ARENA` transitions instead
+      rely on where the fight has *actually* wandered to by the time each HP threshold crosses:
+      Tengu spawns `HUNTING` from deep inside `tenguCell` (rows 23-32) and paths toward the hero,
+      who entered from `ENTRANCE_POS` at the top of the map (row ~2) and seals the door behind
+      himself in `case START:` - so the fight is a chase that starts at the top and is pulled
+      toward Tengu's nest, not a fixed-room duel. `pauseSafeArea` (9,2)-(12,12) sits entirely
+      inside `setMapArena()`'s (3,1)-(18,16) ellipse for exactly this reason: it is the region
+      immediately around the entrance the hero is expected to still be fighting in (or have been
+      chased back toward) by the time the half-health `FIGHT_PAUSE` crossing fires, not a
+      teleport target. If the hero has instead pushed the fight deep into `tenguCell` when that
+      threshold crosses, real Java has the identical failure mode this port was worried about
+      introducing (walling him into solid rock) - this is a genuine, source-confirmed Java
+      behavior this port should reproduce as-is, not a gap to paper over with an invented
+      relocation. **Port-side implication**: the arena repaint must likewise leave
+      `this.hero`'s position untouched at every one of these three transitions (matching Java's own
+      zero hero-position writes for `FIGHT_START`/`FIGHT_PAUSE`, one for `FIGHT_ARENA`'s
+      `tenguCellDoor` cell), and correctness for the "walled into rock" edge case depends on this
+      port's own level geometry funneling the fight the same way Java's does - worth a live check
+      once the repaint lands (deliberately retreat toward `tenguCell` past the half-health
+      threshold and confirm the port matches Java's own failure mode rather than silently
+      teleporting to safety, which would be the actual divergence).
 - [ ] Port Caves/DM-300's full pylon, gate, energy field, and supercharge scripts (pylon
       proximity sealing, sequential threshold supercharges, pylon activation, boss
       invulnerability, x2 speed, and supercharge loss on pylon death are live; the
@@ -1316,6 +1337,20 @@ fully checked off as of a given release.
       Guard/Bat can't become champions below depths 3/4/7/9, `GreatCrab`/`Bandit` inheriting
       their base kind's exclusion) are now ported too. See `PORT_COVERAGE.md`'s `ChampionEnemy`
       row.
+      **Correction, 2026-09-15: this bullet's own "flat 10%" line above was stale.** The
+      roster-wide `Dungeon.mobsToChampion` budget it names as still-missing was ported in a
+      later pass this bullet's text was never updated to reflect: `src/actors/monsterSpawn.ts`'s
+      `rollForChampion` carries the real float countdown (decrements by 1 on every eligible
+      spawn regardless of outcome, resets to `8 - min(20, scalingDepth()-1)/10` on a successful
+      non-excluded assignment - the interval itself shrinking from 8 to 6 as depth rises from 1
+      to 201+, per `ChampionEnemy.java`'s exact formula), persisted as real per-run scene state
+      (`DungeonScene.mobsToChampion`, saved/restored, `1` on a fresh run matching
+      `Dungeon.java`'s `reset()`). `PORT_COVERAGE.md`'s `ChampionEnemy` row already documents
+      this fix and its own live verification in a later paragraph of the same row; only this
+      `ROADMAP.md` bullet's older "Remaining" wording never caught up. Confirmed live in this
+      checkout (`tools/scratch/champion-roll-livecheck.mjs`/`champion-counter-check.mjs`,
+      already committed) rather than re-verified this pass, since the code, comment history,
+      and coverage row all agree without needing to re-derive it.
       **Found and fixed the same class of bug in the neighbouring multiplier, 2026-09-12**:
       `AscensionChallenge.statModifier`'s per-mob table (Rat 10 down to Scorpio 1.1) was gated on
       `setStrongerBossesEnabled()`, wired in `main.ts` to the *Stronger Bosses* challenge - so

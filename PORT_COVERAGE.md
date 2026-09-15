@@ -1076,6 +1076,30 @@ one of the real six. `tsc`/`build`/all suites green.
 asserts the old ~10%-with-exclusions shape and is annotated with what a future browser pass
 should assert instead (`champions === 37` of 300, no exclusion checks) rather than silently left
 to mislead the next reader.
+**Correction, 2026-09-15: the "fourth correction" immediately above (deleting the by-depth
+exclusion outright, and flattening the interval to a plain reset-to-8) was itself wrong, and the
+code has already moved past it without this row being updated to say so.** `src/actors/
+monsterSpawn.ts`'s current `rollForChampion` (re-checked directly, not from memory of the
+paragraph above) restores both halves that paragraph removed: `championExcluded` still blocks
+Crab/Thief/Guard/Bat below depths 3/4/7/9 (`GreatCrab`/`Bandit` inheriting via `baseKind`,
+matching Java's `instanceof` subclassing), and a successful assignment adds back `8 - min(20,
+scalingDepth()-1)/10` rather than a flat `8` - the real interval shrinking from 8 to 6 as depth
+rises from 1 to 201+, per `ChampionEnemy.java`'s exact formula. The function's own header comment
+already narrates why: a still-earlier pass, the same day as the "fourth correction", had misread
+the mechanic from this checkout's plain working-tree `ChampionEnemy.java` (which sits near
+`v2.1.4`) instead of `git show refs/tags/v3.3.8:...`, and both the exclusion-removal and the
+flat-8 interval were regressions from that misread, caught and reverted before being reported as
+done - `tools/scratch/champion-counter-check.mjs` was written against an interim two-argument
+`rollForChampion(counter, active)` shape from partway through that back-and-forth and is stale
+against the current four-argument signature (`mobsToChampion, challengeActive, excluded,
+depth`); it is not part of `npm run verify` and was not updated this pass, but should not be read
+as describing current behaviour. **Lesson, worth stating plainly since this is the second time
+this exact row has self-corrected a self-correction: when this checkout's local
+shattered-pixel-dungeon working tree and a tagged ref disagree, the tagged ref is authoritative
+for this port's target version - a bare path read without `git show refs/tags/<tag>:<path>` can
+silently return the wrong game version's behaviour.** No new browser verification was run this
+pass; the claim above is sourced from re-reading the current TypeScript directly, which is
+authoritative for "what the code does now" independent of any run history.
 **"No visual treatment exists for any champion type" is now closed too, same day.** `ChampionEnemy
 .fx()`'s real `target.sprite.aura(color)` is a persistent glow-ring primitive this port's
 `TintedSprite` has no equivalent for (only a flat `tint`/`setColorAdd`); `spawnMonster` now
