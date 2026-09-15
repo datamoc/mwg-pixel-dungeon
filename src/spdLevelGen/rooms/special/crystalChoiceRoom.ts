@@ -5,12 +5,12 @@
  * `Room.java`'s real formulas (see room.ts for the canonical versions these mirror). The
  * `Random.Int(2)` room-swap, the `Random.NormalIntRange(3,4)` reward count, and each reward
  * position's retry loop are all local/portable, and `Generator.random(category)`'s own rolls now
- * go through `spdItems/generator.ts`.
+ * go through `items/generator.ts`.
  */
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillXY, set, drawLine } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
-import { Cat, oneOfCategories, randomCategory } from '../../../spdItems/generator';
+import { Cat, oneOfCategories, randomCategory } from '../../../items/generator';
 
 interface Rect { left: number; top: number; right: number; bottom: number; }
 function rw(r: Rect): number { return r.right - r.left + 1; }

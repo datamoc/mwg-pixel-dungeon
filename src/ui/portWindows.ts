@@ -1,4 +1,4 @@
-import { Rectangle, Sprite, Texture } from 'pixi.js';
+import { Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 import { Game, theme, Window, WindowStack } from 'mwg';
 import { t, language, nextLanguage, setLanguage } from '../i18n/index';
 import { runState, LANGUAGE_KEY, APP_VERSION } from '../runState';

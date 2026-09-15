@@ -11,3 +11,7 @@ tools/scratch/dump-*.mjs
 tools/scratch/find-invisible.mjs
 # session-local agent state (worktrees, replays, temp files)
 .qwen/
+# local notes (never committed)
+notes/
+# local proposals for the separate MWG framework repository
+/4MWG/

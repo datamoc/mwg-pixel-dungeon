@@ -15,9 +15,30 @@
  * pickup branch and the upgrade hook stay testable headlessly (see `tools/verifyItemWorkflows.mjs`).
  *
  * Deliberately not reproduced: `extraThrownLeft` (reset on a valid pickup) has no expression in
- * this port's ammo model, and neither do the tracker's other two consumers - LiquidMetal
- * crafting's set-consumed bookkeeping (alchemy brews from fungible bag ids here) and the
- * Shopkeeper's own `pickupValid` read (shop stock never carries missile sets).
+ * this port's ammo model, and neither do the tracker's other three consumers - LiquidMetal
+ * crafting's set-consumed bookkeeping (alchemy brews from fungible bag ids here), the
+ * Shopkeeper's own `pickupValid` read (shop stock never carries missile sets), and the
+ * reforge's set retirement (`WndBlacksmith`'s `levelThresholds.put(setID, MAX_VALUE)` on the
+ * consumed missile - bag stacks carry no set id, and the reforge picker only offers
+ * weapon/armor payloads, so no missile can be the consumed item; see `openBlacksmithReforge`).
+ */
+import { MWL_MISSILE_BY_CLASS, MWL_MISSILE_UPGRADE_RULES } from '../mwlContent';
+
+/** Resolves `MissileWeapon.min()`/`max()` from the authored missile identity and live level. */
+export function missileDamageRange(sourceClass: string, level: number, flatBonus = 0): [number, number] {
+	const definition = MWL_MISSILE_BY_CLASS.get(sourceClass);
+	if (!definition) throw new Error(`MWL missile definition is missing for ${sourceClass}`);
+	const upgrade = MWL_MISSILE_UPGRADE_RULES[sourceClass];
+	if (!upgrade) throw new Error(`MWL missile upgrade rule is missing for ${sourceClass}`);
+	return [
+		definition.minDamage + upgrade.minPerLevel * level + flatBonus,
+		definition.maxDamage + upgrade.maxPerLevel * level + flatBonus,
+	];
+}
+
+/**
+ * `MissileWeapon`'s formulas are sourced from the real SPD classes (tag `v3.3.8`): base min/max
+ * and per-level increments are content metadata; hit resolution and durability remain TS.
  */
 export function missilePickupValid(
 	thresholds: ReadonlyMap<number, number> | undefined,

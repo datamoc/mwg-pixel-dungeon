@@ -7,7 +7,7 @@
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, fillXY, set } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
-import { Cat, generatedGroundKind, oneOfCategories, randomCategory } from '../../../spdItems/generator';
+import { Cat, generatedGroundKind, oneOfCategories, randomCategory } from '../../../items/generator';
 
 interface Rect { left: number; top: number; right: number; bottom: number; }
 function rRandom(r: Rect, m: number): { x: number; y: number } {

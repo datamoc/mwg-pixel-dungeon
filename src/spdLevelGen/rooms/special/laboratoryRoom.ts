@@ -10,7 +10,7 @@
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, set } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
-import { Cat, generatedGroundKind, oneOfCategories, randomCategory } from '../../../spdItems/generator';
+import { Cat, generatedGroundKind, oneOfCategories, randomCategory } from '../../../items/generator';
 
 /**
  * `Document.ALCHEMY_GUIDE`'s page count: 10 (5 "given in sewers" + 5 "given in prison", see

@@ -12,6 +12,23 @@ assumed. **Updated 2026-09-07, same day**: `mw_games@0.4.1` published mid-sessio
 dependency" section) and turned out to ship most of the plan's previously-assumed core
 primitives for real - see below.
 
+**Current dependency re-check: 2026-09-13, installed `@datamoc/mw_games`/`mwg` 0.9.0.**
+The version-specific headings and dated notes below preserve the historical decisions that led
+to this target, but the current adoption status is: `EntityId` is used as a type, the port has
+runtime-routed search, hunger, movement, hero-action and attack-resolution adapters, and the
+stable release's canonical save/replay/lockstep APIs remain unapplied. The adapters use
+serializable command payloads plus short-lived registries where the scene still supplies
+callbacks, and clear their transitional journals after dispatch; a durable unified runtime is
+still required before those newer persistence/replay APIs can be adopted safely.
+
+The renderer-boundary measurement has also moved since the historical `0.7.8` notes below:
+`mwg/two-d/pixi-interop` in `0.9.0` exports the ordinary Pixi values plus
+`TilingSpritePipe`/`NineSliceSpritePipe` and `registerBuiltinPipes()`. All 21 direct
+`pixi.js` imports previously under `src/` now use that facade; `pixi.js` remains a direct
+manifest dependency because it is still the framework's peer backend. `main.ts` retains the
+explicit pipe registration as a startup safety belt, not because the port needs a renderer
+primitive that `mwg` cannot name.
+
 ## What exists in `mwg@0.5.0` (the pinned version; reviewed at 0.4.1, re-checked at 0.4.2 and 0.5.0)
 
 - **`core.EntityRegistry`/`EntityId`** (new in 0.4.1, `core/Entity.ts`): exactly the plan's

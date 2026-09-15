@@ -1,4 +1,4 @@
-import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Container, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 import { Bar, Label, NinePatch } from 'mwg';
 import { SPD_TITLE_COLOR } from './spdTheme';
 

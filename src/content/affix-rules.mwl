@@ -1,354 +1,412 @@
-[game]
-schema=0.1
-
-[table]
-id=weaponEnchants
-columns=id:string|trigger:string|weight:number|curse:boolean|description:string
-[row]
-id=blazing
-trigger=strike
-weight=3
-curse=false
-description=Ignites the victim
-[/row]
-[row]
-id=chilling
-trigger=strike
-weight=3
-curse=false
-description=Chills the victim
-[/row]
-[row]
-id=shocking
-trigger=strike
-weight=3
-curse=false
-description=+2 damage
-[/row]
-[row]
-id=vampiric
-trigger=strike
-weight=2
-curse=false
-description=Heals 1 on a hit
-[/row]
-[row]
-id=grim
-trigger=strike
-weight=2
-curse=false
-description=Chance of bonus damage against a weakened foe
-[/row]
-[row]
-id=lucky
-trigger=strike
-weight=2
-curse=false
-description=Chance of bonus loot on a kill
-[/row]
-[row]
-id=blocking
-trigger=strike
-weight=2
-curse=false
-description=Chance to grant a shield on a landed hit
-[/row]
-[row]
-id=kinetic
-trigger=strike
-weight=2
-curse=false
-description=Stores part of damage for the next hit
-[/row]
-[row]
-id=corrupting
-trigger=strike
-weight=2
-curse=false
-description=Lethal hits can convert the victim into an ally
-[/row]
-[row]
-id=elastic
-trigger=strike
-weight=2
-curse=false
-description=Chance to knock the victim backward
-[/row]
-[row]
-id=projecting
-trigger=strike
-weight=2
-curse=false
-description=Extends melee reach
-[/row]
-[row]
-id=blooming
-trigger=strike
-weight=2
-curse=false
-description=Chance to plant grass where you strike
-[/row]
-[row]
-id=unstable
-trigger=strike
-weight=2
-curse=false
-description=A random enchantment effect on every hit
-[/row]
-[row]
-id=wayward
-trigger=strike
-weight=1
-curse=true
-description=Cursed: -3 accuracy
-[/row]
-[row]
-id=annoying
-trigger=strike
-weight=1
-curse=true
-description=Cursed: chance to alert every monster on the floor
-[/row]
-[row]
-id=dazzling
-trigger=strike
-weight=1
-curse=true
-description=Cursed: chance to blind everyone nearby, including you
-[/row]
-[row]
-id=explosive
-trigger=strike
-weight=1
-curse=true
-description=Cursed: eventually detonates on its wielder
-[/row]
-[row]
-id=polarized
-trigger=strike
-weight=1
-curse=true
-description=Cursed: every other hit is amplified, the rest whiff entirely
-[/row]
-[row]
-id=sacrificial
-trigger=strike
-weight=1
-curse=true
-description=Cursed: chance to wound its wielder
-[/row]
-[row]
-id=displacing
-trigger=strike
-weight=1
-curse=true
-description=Cursed: chance to teleport the struck target away
-[/row]
-[/table]
-
-[table]
-id=armorGlyphs
-columns=id:string|trigger:string|weight:number|curse:boolean|description:string
-[row]
-id=stone
-trigger=defend
-weight=3
-curse=false
-description=+2 armor
-[/row]
-[row]
-id=thorns
-trigger=defend
-weight=3
-curse=false
-description=Reflects 2
-[/row]
-[row]
-id=flow
-trigger=passive
-weight=3
-curse=false
-description=Moves faster in water
-[/row]
-[row]
-id=entanglement
-trigger=defend
-weight=2
-curse=false
-description=Chance to root an attacker
-[/row]
-[row]
-id=swiftness
-trigger=passive
-weight=3
-curse=false
-description=Faster movement when safe (20% speed increase)
-[/row]
-[row]
-id=potential
-trigger=defend
-weight=3
-curse=false
-description=Chance to recharge wands when hit
-[/row]
-[row]
-id=repulsion
-trigger=defend
-weight=2
-curse=false
-description=Chance to knock an adjacent attacker backward
-[/row]
-[row]
-id=brimstone
-trigger=defend
-weight=2
-curse=false
-description=Immune to burning
-[/row]
-[row]
-id=viscosity
-trigger=defend
-weight=3
-curse=false
-description=Defers part of incoming damage
-[/row]
-[row]
-id=affection
-trigger=defend
-weight=1
-curse=false
-description=Charms an attacker
-[/row]
-[row]
-id=antimagic
-trigger=defend
-weight=1
-curse=false
-description=Reduces magical damage
-[/row]
-[row]
-id=obfuscation
-trigger=passive
-weight=3
-curse=false
-description=Makes the wearer harder to detect
-[/row]
-[row]
-id=camouflage
-trigger=passive
-weight=2
-curse=false
-description=Trampling grass turns you invisible
-[/row]
-[row]
-id=stench
-trigger=defend
-weight=1
-curse=true
-description=Cursed: chance to release toxic gas when hit
-[/row]
-[row]
-id=antientropy
-trigger=defend
-weight=1
-curse=true
-description=Cursed: chance to drain a wand charge
-[/row]
-[row]
-id=bulk
-trigger=passive
-weight=1
-curse=true
-description=Cursed: slower through doorways
-[/row]
-[row]
-id=corrosion
-trigger=defend
-weight=1
-curse=true
-description=Cursed: chance to corrode a weapon or armor level
-[/row]
-[row]
-id=displacement
-trigger=defend
-weight=1
-curse=true
-description=Cursed: chance to teleport its wearer away
-[/row]
-[row]
-id=metabolism
-trigger=defend
-weight=1
-curse=true
-description=Cursed: consumes extra hunger
-[/row]
-[row]
-id=multiplicity
-trigger=defend
-weight=1
-curse=true
-description=Cursed: chance to summon a spectral copy of the attacker
-[/row]
-[row]
-id=overgrowth
-trigger=defend
-weight=1
-curse=true
-description=Cursed: chance to root its wearer in grass
-[/row]
-[/table]
-
-[table]
-id=unstableEnchants
-columns=id:string|enchant:string
-[row]
-id=unstable-blazing
-enchant=blazing
-[/row]
-[row]
-id=unstable-blocking
-enchant=blocking
-[/row]
-[row]
-id=unstable-blooming
-enchant=blooming
-[/row]
-[row]
-id=unstable-chilling
-enchant=chilling
-[/row]
-[row]
-id=unstable-kinetic
-enchant=kinetic
-[/row]
-[row]
-id=unstable-corrupting
-enchant=corrupting
-[/row]
-#Unstable.randomEnchants includes Elastic, and the array order below is Java's own - the port
-#picks a delegate with a single draw, so the index each enchantment sits at is what makes that
-#draw mean the same thing here as it does in Java. Projecting is Java's one deliberate omission
-#("no on-hit effect") and Unstable never delegates to itself, so neither is listed.
-[row]
-id=unstable-elastic
-enchant=elastic
-[/row]
-[row]
-id=unstable-grim
-enchant=grim
-[/row]
-[row]
-id=unstable-lucky
-enchant=lucky
-[/row]
-[row]
-id=unstable-shocking
-enchant=shocking
-[/row]
-[row]
-id=unstable-vampiric
-enchant=vampiric
-[/row]
-[/table]
-
-[/game]
+[
+  {
+    tag: "game",
+    schema: 0.1,
+    children: [
+      {
+        tag: "table",
+        id: "weaponEnchants",
+        columns: "id:string|trigger:string|weight:number|curse:boolean|description:string",
+        children: [
+          {
+            tag: "row",
+            id: "blazing",
+            trigger: "strike",
+            weight: 3,
+            curse: "false",
+            description: "Ignites the victim",
+          },
+          {
+            tag: "row",
+            id: "chilling",
+            trigger: "strike",
+            weight: 3,
+            curse: "false",
+            description: "Chills the victim",
+          },
+          {
+            tag: "row",
+            id: "shocking",
+            trigger: "strike",
+            weight: 3,
+            curse: "false",
+            description: "+2 damage",
+          },
+          {
+            tag: "row",
+            id: "vampiric",
+            trigger: "strike",
+            weight: 2,
+            curse: "false",
+            description: "Heals 1 on a hit",
+          },
+          {
+            tag: "row",
+            id: "grim",
+            trigger: "strike",
+            weight: 2,
+            curse: "false",
+            description: "Chance of bonus damage against a weakened foe",
+          },
+          {
+            tag: "row",
+            id: "lucky",
+            trigger: "strike",
+            weight: 2,
+            curse: "false",
+            description: "Chance of bonus loot on a kill",
+          },
+          {
+            tag: "row",
+            id: "blocking",
+            trigger: "strike",
+            weight: 2,
+            curse: "false",
+            description: "Chance to grant a shield on a landed hit",
+          },
+          {
+            tag: "row",
+            id: "kinetic",
+            trigger: "strike",
+            weight: 2,
+            curse: "false",
+            description: "Stores part of damage for the next hit",
+          },
+          {
+            tag: "row",
+            id: "corrupting",
+            trigger: "strike",
+            weight: 2,
+            curse: "false",
+            description: "Lethal hits can convert the victim into an ally",
+          },
+          {
+            tag: "row",
+            id: "elastic",
+            trigger: "strike",
+            weight: 2,
+            curse: "false",
+            description: "Chance to knock the victim backward",
+          },
+          {
+            tag: "row",
+            id: "projecting",
+            trigger: "strike",
+            weight: 2,
+            curse: "false",
+            description: "Extends melee reach",
+          },
+          {
+            tag: "row",
+            id: "blooming",
+            trigger: "strike",
+            weight: 2,
+            curse: "false",
+            description: "Chance to plant grass where you strike",
+          },
+          {
+            tag: "row",
+            id: "unstable",
+            trigger: "strike",
+            weight: 2,
+            curse: "false",
+            description: "A random enchantment effect on every hit",
+          },
+          {
+            tag: "row",
+            id: "wayward",
+            trigger: "strike",
+            weight: 1,
+            curse: "true",
+            description: "Cursed: -3 accuracy",
+          },
+          {
+            tag: "row",
+            id: "annoying",
+            trigger: "strike",
+            weight: 1,
+            curse: "true",
+            description: "Cursed: chance to alert every monster on the floor",
+          },
+          {
+            tag: "row",
+            id: "dazzling",
+            trigger: "strike",
+            weight: 1,
+            curse: "true",
+            description: "Cursed: chance to blind everyone nearby, including you",
+          },
+          {
+            tag: "row",
+            id: "explosive",
+            trigger: "strike",
+            weight: 1,
+            curse: "true",
+            description: "Cursed: eventually detonates on its wielder",
+          },
+          {
+            tag: "row",
+            id: "polarized",
+            trigger: "strike",
+            weight: 1,
+            curse: "true",
+            description: "Cursed: every other hit is amplified, the rest whiff entirely",
+          },
+          {
+            tag: "row",
+            id: "sacrificial",
+            trigger: "strike",
+            weight: 1,
+            curse: "true",
+            description: "Cursed: chance to wound its wielder",
+          },
+          {
+            tag: "row",
+            id: "displacing",
+            trigger: "strike",
+            weight: 1,
+            curse: "true",
+            description: "Cursed: chance to teleport the struck target away",
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "armorGlyphs",
+        columns: "id:string|trigger:string|weight:number|curse:boolean|description:string",
+        children: [
+          {
+            tag: "row",
+            id: "stone",
+            trigger: "defend",
+            weight: 3,
+            curse: "false",
+            description: "+2 armor",
+          },
+          {
+            tag: "row",
+            id: "thorns",
+            trigger: "defend",
+            weight: 3,
+            curse: "false",
+            description: "Reflects 2",
+          },
+          {
+            tag: "row",
+            id: "flow",
+            trigger: "passive",
+            weight: 3,
+            curse: "false",
+            description: "Moves faster in water",
+          },
+          {
+            tag: "row",
+            id: "entanglement",
+            trigger: "defend",
+            weight: 2,
+            curse: "false",
+            description: "Chance to root an attacker",
+          },
+          {
+            tag: "row",
+            id: "swiftness",
+            trigger: "passive",
+            weight: 3,
+            curse: "false",
+            description: "Faster movement when safe (20% speed increase)",
+          },
+          {
+            tag: "row",
+            id: "potential",
+            trigger: "defend",
+            weight: 3,
+            curse: "false",
+            description: "Chance to recharge wands when hit",
+          },
+          {
+            tag: "row",
+            id: "repulsion",
+            trigger: "defend",
+            weight: 2,
+            curse: "false",
+            description: "Chance to knock an adjacent attacker backward",
+          },
+          {
+            tag: "row",
+            id: "brimstone",
+            trigger: "defend",
+            weight: 2,
+            curse: "false",
+            description: "Immune to burning",
+          },
+          {
+            tag: "row",
+            id: "viscosity",
+            trigger: "defend",
+            weight: 3,
+            curse: "false",
+            description: "Defers part of incoming damage",
+          },
+          {
+            tag: "row",
+            id: "affection",
+            trigger: "defend",
+            weight: 1,
+            curse: "false",
+            description: "Charms an attacker",
+          },
+          {
+            tag: "row",
+            id: "antimagic",
+            trigger: "defend",
+            weight: 1,
+            curse: "false",
+            description: "Reduces magical damage",
+          },
+          {
+            tag: "row",
+            id: "obfuscation",
+            trigger: "passive",
+            weight: 3,
+            curse: "false",
+            description: "Makes the wearer harder to detect",
+          },
+          {
+            tag: "row",
+            id: "camouflage",
+            trigger: "passive",
+            weight: 2,
+            curse: "false",
+            description: "Trampling grass turns you invisible",
+          },
+          {
+            tag: "row",
+            id: "stench",
+            trigger: "defend",
+            weight: 1,
+            curse: "true",
+            description: "Cursed: chance to release toxic gas when hit",
+          },
+          {
+            tag: "row",
+            id: "antientropy",
+            trigger: "defend",
+            weight: 1,
+            curse: "true",
+            description: "Cursed: chance to drain a wand charge",
+          },
+          {
+            tag: "row",
+            id: "bulk",
+            trigger: "passive",
+            weight: 1,
+            curse: "true",
+            description: "Cursed: slower through doorways",
+          },
+          {
+            tag: "row",
+            id: "corrosion",
+            trigger: "defend",
+            weight: 1,
+            curse: "true",
+            description: "Cursed: chance to corrode a weapon or armor level",
+          },
+          {
+            tag: "row",
+            id: "displacement",
+            trigger: "defend",
+            weight: 1,
+            curse: "true",
+            description: "Cursed: chance to teleport its wearer away",
+          },
+          {
+            tag: "row",
+            id: "metabolism",
+            trigger: "defend",
+            weight: 1,
+            curse: "true",
+            description: "Cursed: consumes extra hunger",
+          },
+          {
+            tag: "row",
+            id: "multiplicity",
+            trigger: "defend",
+            weight: 1,
+            curse: "true",
+            description: "Cursed: chance to summon a spectral copy of the attacker",
+          },
+          {
+            tag: "row",
+            id: "overgrowth",
+            trigger: "defend",
+            weight: 1,
+            curse: "true",
+            description: "Cursed: chance to root its wearer in grass",
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "unstableEnchants",
+        columns: "id:string|enchant:string",
+        children: [
+          {
+            tag: "row",
+            id: "unstable-blazing",
+            enchant: "blazing",
+          },
+          {
+            tag: "row",
+            id: "unstable-blocking",
+            enchant: "blocking",
+          },
+          {
+            tag: "row",
+            id: "unstable-blooming",
+            enchant: "blooming",
+          },
+          {
+            tag: "row",
+            id: "unstable-chilling",
+            enchant: "chilling",
+          },
+          {
+            tag: "row",
+            id: "unstable-kinetic",
+            enchant: "kinetic",
+          },
+          {
+            tag: "row",
+            id: "unstable-corrupting",
+            enchant: "corrupting",
+          },
+          {
+            tag: "row",
+            id: "unstable-elastic",
+            enchant: "elastic",
+          },
+          {
+            tag: "row",
+            id: "unstable-grim",
+            enchant: "grim",
+          },
+          {
+            tag: "row",
+            id: "unstable-lucky",
+            enchant: "lucky",
+          },
+          {
+            tag: "row",
+            id: "unstable-shocking",
+            enchant: "shocking",
+          },
+          {
+            tag: "row",
+            id: "unstable-vampiric",
+            enchant: "vampiric",
+          },
+        ],
+      },
+    ],
+  },
+]

@@ -16,8 +16,8 @@ import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, fillXY } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
 import { mazeGenerate, buildGridDistanceMap } from './maze';
-import { floorSetForPrize, uncursedWeaponOrArmorPrize } from '../../../spdItems/generator';
-import { Cat } from '../../../spdItems/generator';
+import { floorSetForPrize, uncursedWeaponOrArmorPrize } from '../../../items/generator';
+import { Cat } from '../../../items/generator';
 
 export function paintMazeRoom(level: PaintLevel, room: Room): void {
 	fillRoom(level, room, Terrain.WALL);

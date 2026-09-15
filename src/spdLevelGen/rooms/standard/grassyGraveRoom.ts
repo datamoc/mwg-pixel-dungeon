@@ -9,7 +9,7 @@
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
-import { generatorRandom, randomGold } from '../../../spdItems/generator';
+import { generatorRandom, randomGold } from '../../../items/generator';
 
 export function paintGrassyGraveRoom(level: PaintLevel, room: Room): void {
 	fillRoom(level, room, Terrain.WALL);

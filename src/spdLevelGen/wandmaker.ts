@@ -17,7 +17,7 @@
 import { SpdRandom } from '../spdRng';
 import { Room } from './room';
 import { PaintLevel } from './paintLevel';
-import { randomUsingDefaults, Cat } from '../spdItems/generator';
+import { randomUsingDefaults, Cat } from '../items/generator';
 import { ritualSiteState } from './rooms/standard/ritualSiteRoom';
 
 interface WandmakerState {

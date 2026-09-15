@@ -1,7 +1,7 @@
 /**
  * Port of `levels/rooms/special/ShopRoom.java`'s `paint()`/`placeShopkeeper()`/`placeItems()`.
  * The stock itself is rolled much earlier, lazily from `Room.minWidth()` - see
- * `spdItems/shopItems.ts` for why that ordering matters and what it assumes.
+ * `items/shopItems.ts` for why that ordering matters and what it assumes.
  *
  * Two things here draw on the level stream and were both easy to miss:
  *

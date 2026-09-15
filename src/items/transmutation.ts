@@ -1,5 +1,6 @@
 import { Random } from 'mwg';
 import { RING_DEFS, ringDef } from './ringModifiers';
+import { MWL_CONSUMABLE_CLASS_ALIASES } from '../mwlContent';
 
 /**
  * `ScrollOfTransmutation.changeItem()`'s per-category decks, adapted to this port's ids
@@ -20,45 +21,22 @@ const WEP_TIER_CLASSES: string[][] = [
 	['Longsword', 'BattleAxe', 'Flail', 'RunicBlade', 'AssassinsBlade', 'Crossbow', 'Katana'],
 	['Greatsword', 'WarHammer', 'Glaive', 'Greataxe', 'Greatshield', 'Gauntlet', 'WarScythe'],
 ];
-const PORT_ID_BY_POTION_CLASS: Record<string, string> = {
-	PotionOfStrength: 'potionStrength', PotionOfHealing: 'potionHealing', PotionOfMindVision: 'potionMindVision',
-	PotionOfFrost: 'potionFrost', PotionOfLiquidFlame: 'potionFlame', PotionOfToxicGas: 'potionToxicGas',
-	PotionOfHaste: 'potionHaste', PotionOfInvisibility: 'potionInvis', PotionOfLevitation: 'potionLevitation',
-	PotionOfParalyticGas: 'potionParalyticGas', PotionOfPurity: 'potionPurity', PotionOfExperience: 'potionExperience',
-};
+const PORT_ID_BY_POTION_CLASS: Readonly<Record<string, string>> = Object.fromEntries(
+	MWL_CONSUMABLE_CLASS_ALIASES.filter((alias) => alias.category === 'potion').map((alias) => [alias.sourceClass, alias.item]),
+);
 /** Also used outside transmutation (`generatedInventoryItem`'s potion resolution, item-picker decks). */
-export const POTION_CLASS_BY_PORT_ID: Record<string, string> = {
-	potion: 'PotionOfHealing', potionHealing: 'PotionOfHealing', potionStrength: 'PotionOfStrength',
-	potionFlame: 'PotionOfLiquidFlame', potionMindVision: 'PotionOfMindVision', potionInvis: 'PotionOfInvisibility',
-	potionPurity: 'PotionOfPurity', potionLevitation: 'PotionOfLevitation', potionExperience: 'PotionOfExperience',
-	potionToxicGas: 'PotionOfToxicGas', potionParalyticGas: 'PotionOfParalyticGas', potionHaste: 'PotionOfHaste',
-	potionFrost: 'PotionOfFrost',
+export const POTION_CLASS_BY_PORT_ID: Readonly<Record<string, string>> = {
+	potion: 'PotionOfHealing',
+	...Object.fromEntries(MWL_CONSUMABLE_CLASS_ALIASES.filter((alias) => alias.category === 'potion').map((alias) => [alias.item, alias.sourceClass])),
 };
 /** Concrete scroll results - never `scrollTransmutation` itself, never the generic `'scroll'`. */
-const SCROLL_TRANSMUTE_POOL = ['scrollIdentify', 'scrollUpgrade', 'scrollCleanse', 'scrollMirror', 'scrollRecharging',
-	'scrollTeleportation', 'scrollLullaby', 'scrollMapping', 'scrollRage', 'scrollRetribution', 'scrollTerror'];
-const SEED_TRANSMUTE_CLASSES = ['Rotberry', 'Sungrass', 'Fadeleaf', 'Icecap', 'Firebloom', 'Sorrowmoss',
-	'Swiftthistle', 'Blindweed', 'Stormvine', 'Earthroot', 'Mageroyal', 'Starflower'];
-const STONE_TRANSMUTE_CLASSES = ['StoneOfAugmentation', 'StoneOfFear', 'StoneOfDeepSleep', 'StoneOfShock',
-	'StoneOfBlast', 'StoneOfBlink', 'StoneOfClairvoyance', 'StoneOfEnchantment', 'StoneOfIntuition',
-	'StoneOfDetectMagic', 'StoneOfFlock', 'StoneOfAggression'];
+const SCROLL_TRANSMUTE_POOL = MWL_CONSUMABLE_CLASS_ALIASES.filter((alias) => alias.category === 'scroll' && alias.item !== 'scrollTransmutation').map((alias) => alias.item);
+const SEED_TRANSMUTE_CLASSES = MWL_CONSUMABLE_CLASS_ALIASES.filter((alias) => alias.category === 'seed').map((alias) => alias.sourceClass);
+const STONE_CLASS_TO_ID = new Map(MWL_CONSUMABLE_CLASS_ALIASES.filter((alias) => alias.category === 'stone').map((alias) => [alias.sourceClass, alias.item]));
+const STONE_TRANSMUTE_CLASSES = [...STONE_CLASS_TO_ID.keys()];
 /** Also used outside transmutation (`spawnGroundItem`'s floor-loot stone naming). */
 export function stonePortId(stoneClass: string): string {
-	switch (stoneClass) {
-		case 'StoneOfAugmentation': return 'stoneOfAugmentation';
-		case 'StoneOfFear': return 'stoneOfFear';
-		case 'StoneOfDeepSleep': return 'stoneOfDeepSleep';
-		case 'StoneOfShock': return 'stoneOfShock';
-		case 'StoneOfBlast': return 'stoneOfBlast';
-		case 'StoneOfBlink': return 'stoneOfBlink';
-		case 'StoneOfClairvoyance': return 'stoneOfClairvoyance';
-		case 'StoneOfEnchantment': return 'stoneOfEnchantment';
-		case 'StoneOfIntuition': return 'stoneOfIntuition';
-		case 'StoneOfDetectMagic': return 'stoneOfDetectMagic';
-		case 'StoneOfFlock': return 'stoneOfFlock';
-		case 'StoneOfAggression': return 'stoneOfAggression';
-		default: return 'stone';
-	}
+	return STONE_CLASS_TO_ID.get(stoneClass) ?? 'stone';
 }
 
 export interface TransmutableItem {

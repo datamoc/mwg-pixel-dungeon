@@ -1,111 +1,144 @@
-[game]
-schema=0.1
-
-[table]
-id=monsterRosterFallback
-columns=region:string|roster:list
-list_delimiter=,
-[row]
-region=sewers
-roster=skeleton,thief,dm100,dm100,guard,guard,necromancer,necromancer
-[/row]
-[row]
-region=caves
-roster=bat,brute,shaman,shaman,spinner,spinner,dm200,dm200
-[/row]
-[row]
-region=city
-roster=elemental,warlock,warlock,monk,monk,golem,golem,golem
-[/row]
-[row]
-region=halls
-roster=succubus,eye,eye,scorpio,scorpio,scorpio
-[/row]
-[/table]
-
-[table]
-id=monsterRosterByDepth
-columns=depth:number|roster:list
-list_delimiter=,
-[row]
-depth=1
-roster=rat,rat,rat,snake
-[/row]
-[row]
-depth=2
-roster=rat,rat,snake,gnoll,gnoll
-[/row]
-[row]
-depth=3
-roster=rat,snake,gnoll,gnoll,gnoll,swarm,crab
-[/row]
-[row]
-depth=4
-roster=gnoll,swarm,crab,crab,slime,slime
-[/row]
-[row]
-depth=6
-roster=skeleton,skeleton,skeleton,thief,swarm
-[/row]
-[row]
-depth=7
-roster=skeleton,skeleton,skeleton,thief,dm100,guard
-[/row]
-[row]
-depth=8
-roster=skeleton,skeleton,thief,dm100,dm100,guard,guard,necromancer
-[/row]
-[row]
-depth=9
-roster=skeleton,thief,dm100,dm100,guard,guard,necromancer,necromancer
-[/row]
-[row]
-depth=11
-roster=bat,bat,bat,brute,shaman
-[/row]
-[row]
-depth=12
-roster=bat,bat,brute,brute,shaman,spinner
-[/row]
-[row]
-depth=13
-roster=bat,brute,brute,shaman,shaman,spinner,spinner,dm200
-[/row]
-[row]
-depth=14
-roster=bat,brute,shaman,shaman,spinner,spinner,dm200,dm200
-[/row]
-[row]
-depth=16
-roster=ghoul,ghoul,ghoul,elemental,warlock
-[/row]
-[row]
-depth=17
-roster=ghoul,elemental,elemental,warlock,monk
-[/row]
-[row]
-depth=18
-roster=ghoul,elemental,warlock,warlock,monk,monk,golem
-[/row]
-[row]
-depth=19
-roster=elemental,warlock,warlock,monk,monk,golem,golem,golem
-[/row]
-[row]
-depth=21
-roster=succubus,succubus,eye
-[/row]
-[row]
-depth=22
-roster=succubus,eye
-[/row]
-[row]
-depth=23
-roster=succubus,eye,eye,scorpio
-[/row]
-[row]
-depth=24
-roster=succubus,eye,eye,scorpio,scorpio,scorpio
-[/row]
-[/table]
-[/game]
+[
+  {
+    tag: "game",
+    schema: 0.1,
+    children: [
+      {
+        tag: "table",
+        id: "monsterRosterFallback",
+        columns: "region:string|roster:list",
+        list_delimiter: ",",
+        children: [
+          {
+            tag: "row",
+            region: "sewers",
+            roster: "skeleton,thief,dm100,dm100,guard,guard,necromancer,necromancer",
+          },
+          {
+            tag: "row",
+            region: "caves",
+            roster: "bat,brute,shaman,shaman,spinner,spinner,dm200,dm200",
+          },
+          {
+            tag: "row",
+            region: "city",
+            roster: "elemental,warlock,warlock,monk,monk,golem,golem,golem",
+          },
+          {
+            tag: "row",
+            region: "halls",
+            roster: "succubus,eye,eye,scorpio,scorpio,scorpio",
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "monsterRosterByDepth",
+        columns: "depth:number|roster:list",
+        list_delimiter: ",",
+        children: [
+          {
+            tag: "row",
+            depth: 1,
+            roster: "rat,rat,rat,snake",
+          },
+          {
+            tag: "row",
+            depth: 2,
+            roster: "rat,rat,snake,gnoll,gnoll",
+          },
+          {
+            tag: "row",
+            depth: 3,
+            roster: "rat,snake,gnoll,gnoll,gnoll,swarm,crab",
+          },
+          {
+            tag: "row",
+            depth: 4,
+            roster: "gnoll,swarm,crab,crab,slime,slime",
+          },
+          {
+            tag: "row",
+            depth: 6,
+            roster: "skeleton,skeleton,skeleton,thief,swarm",
+          },
+          {
+            tag: "row",
+            depth: 7,
+            roster: "skeleton,skeleton,skeleton,thief,dm100,guard",
+          },
+          {
+            tag: "row",
+            depth: 8,
+            roster: "skeleton,skeleton,thief,dm100,dm100,guard,guard,necromancer",
+          },
+          {
+            tag: "row",
+            depth: 9,
+            roster: "skeleton,thief,dm100,dm100,guard,guard,necromancer,necromancer",
+          },
+          {
+            tag: "row",
+            depth: 11,
+            roster: "bat,bat,bat,brute,shaman",
+          },
+          {
+            tag: "row",
+            depth: 12,
+            roster: "bat,bat,brute,brute,shaman,spinner",
+          },
+          {
+            tag: "row",
+            depth: 13,
+            roster: "bat,brute,brute,shaman,shaman,spinner,spinner,dm200",
+          },
+          {
+            tag: "row",
+            depth: 14,
+            roster: "bat,brute,shaman,shaman,spinner,spinner,dm200,dm200",
+          },
+          {
+            tag: "row",
+            depth: 16,
+            roster: "ghoul,ghoul,ghoul,elemental,warlock",
+          },
+          {
+            tag: "row",
+            depth: 17,
+            roster: "ghoul,elemental,elemental,warlock,monk",
+          },
+          {
+            tag: "row",
+            depth: 18,
+            roster: "ghoul,elemental,warlock,warlock,monk,monk,golem",
+          },
+          {
+            tag: "row",
+            depth: 19,
+            roster: "elemental,warlock,warlock,monk,monk,golem,golem,golem",
+          },
+          {
+            tag: "row",
+            depth: 21,
+            roster: "succubus,succubus,eye",
+          },
+          {
+            tag: "row",
+            depth: 22,
+            roster: "succubus,eye",
+          },
+          {
+            tag: "row",
+            depth: 23,
+            roster: "succubus,eye,eye,scorpio",
+          },
+          {
+            tag: "row",
+            depth: 24,
+            roster: "succubus,eye,eye,scorpio,scorpio,scorpio",
+          },
+        ],
+      },
+    ],
+  },
+]

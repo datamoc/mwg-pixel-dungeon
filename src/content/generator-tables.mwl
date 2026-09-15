@@ -1,28 +1,41 @@
-[game]
-schema=0.1
-[table]
-id=floorSetTierProbs
-columns=index:number|chances:list
-list_delimiter=,
-[row]
-index=0
-chances=0,75,20,4,1
-[/row]
-[row]
-index=1
-chances=0,25,50,20,5
-[/row]
-[row]
-index=2
-chances=0,0,40,50,10
-[/row]
-[row]
-index=3
-chances=0,0,20,40,40
-[/row]
-[row]
-index=4
-chances=0,0,0,20,80
-[/row]
-[/table]
-[/game]
+[
+  {
+    tag: "game",
+    schema: 0.1,
+    children: [
+      {
+        tag: "table",
+        id: "floorSetTierProbs",
+        columns: "index:number|chances:list",
+        list_delimiter: ",",
+        children: [
+          {
+            tag: "row",
+            index: 0,
+            chances: "0,75,20,4,1",
+          },
+          {
+            tag: "row",
+            index: 1,
+            chances: "0,25,50,20,5",
+          },
+          {
+            tag: "row",
+            index: 2,
+            chances: "0,0,40,50,10",
+          },
+          {
+            tag: "row",
+            index: 3,
+            chances: "0,0,20,40,40",
+          },
+          {
+            tag: "row",
+            index: 4,
+            chances: "0,0,0,20,80",
+          },
+        ],
+      },
+    ],
+  },
+]

@@ -53,6 +53,8 @@ export const Terrain = {
 	ALCHEMY: 28,
 	WATER: 29,
 	CRYSTAL_DOOR: 31,
+	REGION_DECO: 33,
+	REGION_DECO_ALT: 34,
 } as const;
 
 /**
@@ -73,6 +75,7 @@ export function isPassableTerrain(terrain: number): boolean { return PASSABLE_TE
 export interface GroundItem { pos: number; kind: string; note?: string; sourceClass?: string; quantity?: number; }
 export interface PlacedMob { pos: number; kind: string; loot?: string; }
 export interface PlacedTrap { kind: string; hidden: boolean; active: boolean; }
+export interface SeededBlob { pos: number; kind: 'toxicGas' | 'toxicGasSeed'; amount: number; }
 export interface Transition { pos: number; type: 'surface' | 'regularEntrance' | 'regularExit' | 'branchExit'; branch?: number; }
 
 /**
@@ -87,6 +90,7 @@ export class PaintLevel {
 	readonly mobs: PlacedMob[] = [];
 	readonly groundItems: GroundItem[] = [];
 	readonly traps = new Map<number, PlacedTrap>();
+	readonly seededBlobs: SeededBlob[] = [];
 	readonly plants: { pos: number; kind: string }[] = [];
 	readonly transitions: Transition[] = [];
 
@@ -143,6 +147,10 @@ export class PaintLevel {
 	}
 	setTrap(kind: string, hidden: boolean, active: boolean, cell: number): void {
 		this.traps.set(cell, { kind, hidden, active });
+	}
+	/** `Blob.seed(cell, 30, ToxicGas.class)` used by `ToxicGasRoom.paint()`. */
+	seedBlob(kind: SeededBlob['kind'], cell: number, amount: number): void {
+		this.seededBlobs.push({ pos: cell, kind, amount });
 	}
 	/**
 	 * `Level.drop()`. A `note` of `'itemToSpawn'` routes to `addItemToSpawn` instead, mirroring

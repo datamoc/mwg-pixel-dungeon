@@ -11,7 +11,7 @@ import cavesQuestUrl from './assets/caves_quest.png';
 // `DemonSpawnerRoom.CustomFloor`'s exact HALLS_SP custom atlas.
 import hallsSpecialUrl from './assets/halls_special.png';
 import wallBlockingUrl from './assets/wall_blocking.png';
-import { Texture } from 'pixi.js';
+import { Texture } from 'mwg/two-d/pixi-interop';
 
 //vite inlines every one of these as a base64 data: URI (assetsInlineLimit is set to
 //Infinity in vite.config.ts) - so loading one is a local decode, never a network fetch,
@@ -129,11 +129,45 @@ import { MWL_ITEM_ASSET_SOURCES } from './mwlContent';
  * matching imported URL here, and the manifest check below makes omissions fail loudly.
  */
 const MWL_ASSET_URLS: Readonly<Record<string, string>> = {
+	'assets/banner_boss_slain.png': bannerBossSlainUrl,
+	'assets/banner_game_over.png': bannerGameOverUrl,
+	'assets/banners.png': bannersUrl,
 	'assets/caves_quest.png': cavesQuestUrl,
+	'assets/cleric.png': clericUrl,
+	'assets/duelist.png': duelistUrl,
+	'assets/effect_fireball.png': effectFireballUrl,
 	'assets/effects.png': effectsUrl,
+	'assets/huntress.png': huntressUrl,
 	'assets/halls_special.png': hallsSpecialUrl,
 	'assets/items.png': itemsUrl,
+	'assets/loading_caves.png': loadingCavesUrl,
+	'assets/loading_city.png': loadingCityUrl,
+	'assets/loading_halls.png': loadingHallsUrl,
+	'assets/loading_prison.png': loadingPrisonUrl,
+	'assets/loading_sewers.png': loadingSewersUrl,
+	'assets/mage.png': mageUrl,
+	'assets/rogue.png': rogueUrl,
+	'assets/splash_cleric.jpg': splashClericUrl,
+	'assets/splash_duelist.jpg': splashDuelistUrl,
+	'assets/splash_huntress.jpg': splashHuntressUrl,
+	'assets/splash_mage.jpg': splashMageUrl,
+	'assets/splash_rogue.jpg': splashRogueUrl,
+	'assets/splash_warrior.jpg': splashWarriorUrl,
 	'assets/terrain_features.png': terrainFeaturesUrl,
+	'assets/tiles_caves.png': cavesUrl,
+	'assets/tiles_city.png': cityUrl,
+	'assets/tiles_halls.png': hallsUrl,
+	'assets/tiles_prison.png': prisonUrl,
+	'assets/tiles_sewers.png': sewersUrl,
+	'assets/ui_arcs_bg.png': uiArcsBgUrl,
+	'assets/ui_arcs_fg.png': uiArcsFgUrl,
+	'assets/ui_badges.png': uiBadgesUrl,
+	'assets/ui_boss_hp.png': uiBossHpUrl,
+	'assets/ui_buffs.png': uiBuffsUrl,
+	'assets/ui_chrome.png': uiChromeUrl,
+	'assets/ui_icons.png': uiIconsUrl,
+	'assets/ui_status_pane.png': uiStatusPaneUrl,
+	'assets/ui_toolbar.png': uiToolbarUrl,
 	'assets/wall_blocking.png': wallBlockingUrl,
 	'assets/water0.png': water0Url,
 	'assets/water1.png': water1Url,
@@ -188,6 +222,7 @@ const MWL_ASSET_URLS: Readonly<Record<string, string>> = {
 	'assets/wandmaker.png': wandmakerUrl,
 	'assets/wards.png': wardsUrl,
 	'assets/warlock.png': warlockUrl,
+	'assets/warrior.png': warriorUrl,
 	'assets/yog.png': yogUrl,
 	'assets/yog_fists.png': fistsUrl,
 };

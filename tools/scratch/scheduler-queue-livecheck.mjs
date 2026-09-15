@@ -89,13 +89,21 @@ const baseline = await page.evaluate(() => {
 	window.__probeKey = key;
 	const before = s.scheduler.toJSON(key);
 	const creatureOrderBefore = s.creatures.map(key);
+	// Keep state outside the scheduler too: this is a floor save/restore probe, not merely a
+	// scheduler serialization probe. The three actors have distinct positions and HP so a
+	// restore that rebuilds only the queue cannot accidentally pass these assertions.
+	const floorStateBefore = {
+		depth: s.depth,
+		hero: { x: hero.x, y: hero.y, hp: hero.hp },
+		mobs: [a, b, c].map((mob) => ({ kind: mob.kind, x: mob.x, y: mob.y, hp: mob.hp, maxHp: mob.maxHp })),
+	};
 
 	s['saveRun']();
 	s['loadRun']();
 	s['saveRun']();
 	s['loadRun']();
 
-	return { now: before.now, sequence: before.sequence, entries: before.entries, queueOrderBefore: before.entries.map((entry) => entry.id), creatureOrderBefore };
+	return { now: before.now, sequence: before.sequence, entries: before.entries, queueOrderBefore: before.entries.map((entry) => entry.id), creatureOrderBefore, floorStateBefore };
 });
 
 await page.waitForTimeout(2600);
@@ -105,6 +113,13 @@ const result = await page.evaluate((before) => {
 	const s = window.__MWG__.currentScene;
 	const key = window.__probeKey;
 	const after = s.scheduler.toJSON(key);
+	const floorStateAfter = {
+		depth: s.depth,
+		hero: { x: s.hero.x, y: s.hero.y, hp: s.hero.hp },
+		mobs: s.creatures.filter((creature) => !creature.isHero)
+			.filter((creature) => ['rat', 'snake', 'crab'].includes(creature.kind))
+			.map((mob) => ({ kind: mob.kind, x: mob.x, y: mob.y, hp: mob.hp, maxHp: mob.maxHp })),
+	};
 
 	const heroTimeBeforeAction = s.scheduler.timeOf(s.hero);
 	const awaitingBeforeAction = s.awaitingInput === true;
@@ -145,6 +160,7 @@ const result = await page.evaluate((before) => {
 		heroEntriesAfterAction: afterAction.entries.filter((entry) => entry.id === 'hero').length,
 		turnStopAfterAction: s.simulation.runTurns(),
 		legacy,
+		floorStateAfter,
 	};
 }, baseline);
 
@@ -161,6 +177,8 @@ const expect = [
 		JSON.stringify(result.queueOrderAfter) === JSON.stringify(before.queueOrderBefore)
 		&& JSON.stringify(result.queueOrderAfter) !== JSON.stringify(result.creatureOrderAfter)],
 	['the hero is queued exactly once', result.heroEntriesAfter === 1],
+	['the first save/load round-trip preserved the floor and actor state',
+		JSON.stringify(result.floorStateAfter) === JSON.stringify(before.floorStateBefore)],
 	['after the interlevel curtain, the loaded game awaits hero input', result.awaitingBeforeAction === true],
 	['a real keypress then spends the hero\'s turn', result.heroTimeAfterAction > result.heroTimeBeforeAction],
 	['and the game comes back to hero input with the hero still queued once',

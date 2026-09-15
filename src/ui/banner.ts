@@ -1,5 +1,5 @@
-import type { Texture } from 'pixi.js';
 import { TintedSprite } from 'mwg';
+import type { Texture2D } from 'mwg/two-d/render';
 import { showBannerState, stepBannerState, type BannerState } from './bannerState';
 
 /**
@@ -30,7 +30,7 @@ export class Banner extends TintedSprite {
 	private fadeTime = 0;
 	private color = 0xffffff;
 
-	constructor(texture: Texture) {
+	constructor(texture: Texture2D) {
 		super(texture);
 		this.anchor.set(0.5, 0.5);
 		this.alpha = 0;

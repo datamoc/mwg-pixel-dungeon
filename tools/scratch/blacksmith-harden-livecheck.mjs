@@ -56,7 +56,96 @@ await tap(62 / 1024, 261 / 768);
 await tap(0.166, 0.921);
 await page.waitForTimeout(5000);
 
-// ---- the service window, opened the way the Blacksmith interaction opens it
+// ---- the real quest turn-in through interactWithBlacksmith() itself, not a direct
+// openBlacksmithWindow() bypass: pickaxe out, then pickaxe+15 darkGold in, then a third talk
+// should now find `status === 'complete'` and actually open the window - this is the exact path
+// a fixed QuestLog off-by-one (advanceStage needed calling twice to reach 'complete', see the
+// code comment at each of the three call sites) used to leave permanently unreachable.
+const questFlow = await page.evaluate(() => {
+	const s = window.__MWG__.currentScene;
+	s['quests']['stageIndex'].delete('blacksmith');
+	for (const id of ['pickaxe', 'darkGold']) {
+		const item = s['bag'].find(id);
+		if (item) s['bag'].remove(id, item.quantity, item.instanceId);
+	}
+	s['blacksmithFavor'] = 0;
+	s['blacksmithAlternative'] = false;
+	const before = s['quests'].status('blacksmith');
+	s['interactWithBlacksmith'](); // available -> active, grants the pickaxe
+	const afterOffer = { status: s['quests'].status('blacksmith'), hasPickaxe: s['bag'].find('pickaxe') !== undefined };
+	s['bag'].add({ id: 'darkGold', quantity: 15, identified: true });
+	s['interactWithBlacksmith'](); // active, condition now met -> should reach 'complete'
+	const afterTurnIn = { status: s['quests'].status('blacksmith'), favor: s['blacksmithFavor'] };
+	const windowsBefore = s['gameWindows'].children.filter((c) => c.content).length;
+	s['interactWithBlacksmith'](); // complete -> should now open the real service window
+	const windowsAfter = s['gameWindows'].children.filter((c) => c.content).length;
+	// close it - the probes below open their own window and assert it is the only one
+	s['gameWindows'].children.filter((c) => c.content).at(-1)?.close();
+	return { before, afterOffer, afterTurnIn, windowsBefore, windowsAfter };
+});
+
+// ---- the turn-in arithmetic itself (`Blacksmith.Quest.complete()`): the DarkGold half
+// is capped at 2000 favor, and a beaten quest-branch boss adds 1000 on top of the cap
+const turnInRules = await page.evaluate(() => {
+	const s = window.__MWG__.currentScene;
+	const reset = () => {
+		s['quests']['stageIndex'].delete('blacksmith');
+		for (const id of ['pickaxe', 'darkGold']) {
+			const item = s['bag'].find(id);
+			if (item) s['bag'].remove(id, item.quantity, item.instanceId);
+		}
+		s['blacksmithFavor'] = 0;
+		s['blacksmithAlternative'] = false;
+		s['blacksmithBossBeaten'] = false;
+		s['blacksmithPickaxeAvailable'] = false;
+		s['blacksmithPickaxeFree'] = false;
+	};
+	reset();
+	s['interactWithBlacksmith']();
+	s['bag'].add({ id: 'darkGold', quantity: 50, identified: true });
+	s['interactWithBlacksmith']();
+	const capped = s['blacksmithFavor'];
+	reset();
+	s['interactWithBlacksmith']();
+	s['bag'].add({ id: 'darkGold', quantity: 15, identified: true });
+	s['blacksmithBossBeaten'] = true;
+	s['interactWithBlacksmith']();
+	const withBonus = s['blacksmithFavor'];
+	s['blacksmithBossBeaten'] = false;
+	return { capped, withBonus };
+});
+
+// ---- the legacy alternative (bat-blood) turn-in: no favor at all, but the buy-back is
+// free - old Java scores a flat `questScores[2] = 3000`, clearing its own `score >= 2500`
+// gate, and this port records that observable half directly on the free flag
+const altPath = await page.evaluate(() => {
+	const s = window.__MWG__.currentScene;
+	s['quests']['stageIndex'].delete('blacksmith');
+	for (const id of ['pickaxe', 'darkGold']) {
+		const item = s['bag'].find(id);
+		if (item) s['bag'].remove(id, item.quantity, item.instanceId);
+	}
+	s['blacksmithFavor'] = 0;
+	s['blacksmithAlternative'] = true;
+	s['blacksmithPickaxeAvailable'] = false;
+	s['blacksmithPickaxeFree'] = false;
+	s['interactWithBlacksmith'](); // available -> active, grants the pickaxe
+	const pick = s['bag'].find('pickaxe');
+	if (pick) pick.affix = 'bloodStained'; // exactly what the Bat-kill branch does
+	s['interactWithBlacksmith'](); // active, bloodied pickaxe -> complete
+	const afterTurnIn = { status: s['quests'].status('blacksmith'), favor: s['blacksmithFavor'], free: s['blacksmithPickaxeFree'], available: s['blacksmithPickaxeAvailable'] };
+	const windowsBefore = s['gameWindows'].children.filter((c) => c.content).length;
+	s['interactWithBlacksmith'](); // complete with no favor but a free buy-back -> window opens
+	const windowsAfter = s['gameWindows'].children.filter((c) => c.content).length;
+	s['gameWindows'].children.filter((c) => c.content).at(-1)?.close();
+	s['buyBlacksmithPickaxe']();
+	const afterBuyback = { favor: s['blacksmithFavor'], available: s['blacksmithPickaxeAvailable'], hasPickaxe: s['bag'].find('pickaxe') !== undefined };
+	s['blacksmithAlternative'] = false;
+	return { afterTurnIn, windowsBefore, windowsAfter, afterBuyback };
+});
+
+// ---- the service window, opened the way this section's own probes drive the rest of the
+// services below (a direct call, not through the interaction above, to isolate each probe)
 const opened = await page.evaluate(() => {
 	const s = window.__MWG__.currentScene;
 	s['blacksmithFavor'] = 2000;
@@ -80,7 +169,7 @@ const opened = await page.evaluate(() => {
 });
 await page.screenshot({ path: path.join(shots, 'services.png') });
 
-// ---- clicking Harden (the second entry) opens the item picker, and picking the equipped weapon
+// ---- clicking Harden (the third entry, after pickaxe and reforge) opens the item picker, and picking the equipped weapon
 // hardens it and charges the favor. The click goes through the real pointer path, as this
 // project's livechecks always do, rather than by firing the handler.
 const hardenTarget = await page.evaluate(() => {
@@ -92,7 +181,7 @@ const hardenTarget = await page.evaluate(() => {
 		for (const child of node.children ?? []) walk(child);
 	};
 	walk(win.content);
-	const bounds = buttons[1].getBounds();
+	const bounds = buttons[2].getBounds();
 	return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
 });
 await page.evaluate(([x, y]) => {
@@ -169,6 +258,16 @@ const afterCashOut = await page.evaluate(() => {
 	return { favor: s['blacksmithFavor'], gold: s['bag'].find('gold')?.quantity ?? 0 };
 });
 
+// ---- Java's `rewardsAvailable()`: cashed out to 0 with only a paid buy-back left, the
+// window stays shut with the done line - the port used to open a useless menu here
+const afterGateShut = await page.evaluate(() => {
+	const s = window.__MWG__.currentScene;
+	const windowsBefore = s['gameWindows'].children.filter((c) => c.content).length;
+	s['interactWithBlacksmith']();
+	const windowsAfter = s['gameWindows'].children.filter((c) => c.content).length;
+	return { windowsBefore, windowsAfter, favor: s['blacksmithFavor'] };
+});
+
 // ---- the smith: four pre-generated rewards, one of them taken for its flat price
 const smith = await page.evaluate(async () => {
 	const s = window.__MWG__.currentScene;
@@ -241,11 +340,28 @@ const rolls = await page.evaluate(() => {
 });
 
 console.log('probe results:', JSON.stringify({
-	opened, afterHarden: { ...afterHarden, name: afterHarden.name }, afterUpgrade, smith, afterSmith, cashOut, afterCashOut, rolls,
+	questFlow, turnInRules, altPath, opened, afterHarden: { ...afterHarden, name: afterHarden.name }, afterUpgrade, smith, afterSmith, cashOut, afterCashOut, afterGateShut, rolls,
 }, null, 1));
 const expect = [
-	['the Blacksmith offers a service window with his five ported services',
-		opened.windowCount === 1 && opened.buttonCount === 5],
+	['the real quest turn-in reaches complete, not stuck one QuestLog stage short',
+		questFlow.before === 'available' && questFlow.afterOffer.status === 'active' && questFlow.afterOffer.hasPickaxe
+		&& questFlow.afterTurnIn.status === 'complete' && questFlow.afterTurnIn.favor === 750],
+	['a third real talk (status now complete) opens the service window itself, not a reminder',
+		questFlow.windowsAfter === questFlow.windowsBefore + 1],
+	['the DarkGold half of favor is capped at 2000 (50 ore would be 2500)',
+		turnInRules.capped === 2000],
+	['a beaten quest-branch boss adds Java\'s 1000 on top of the cap math',
+		turnInRules.withBonus === 1750],
+	['the bat-blood alternative grants no favor but earns the free buy-back',
+		altPath.afterTurnIn.status === 'complete' && altPath.afterTurnIn.favor === 0
+		&& altPath.afterTurnIn.free === true && altPath.afterTurnIn.available === true],
+	['and a favorless-but-free completion still opens the service window',
+		altPath.windowsAfter === altPath.windowsBefore + 1],
+	['whose free buy-back returns the pickaxe for 0 favor and consumes the flag',
+		altPath.afterBuyback.favor === 0 && altPath.afterBuyback.available === false
+		&& altPath.afterBuyback.hasPickaxe === true],
+	['the Blacksmith offers a service window with his six ported services',
+		opened.windowCount === 1 && opened.buttonCount === 6],
 	['both enabled at 2000 favor (Java `enable(favor >= cost)`)', opened.disabled.every((d) => d === false)],
 	['choosing Harden opens the real item picker', afterHarden.pickerOpen === true && afterHarden.entries.length > 0],
 	['picking the equipped weapon hardens it (`Weapon.enchantHardened`)', afterHarden.weaponHardened === true],
@@ -259,6 +375,8 @@ const expect = [
 		afterSmith.favor === 1000 && afterSmith.smiths === 1 && afterSmith.bag === smith.bagBefore + 1 && afterSmith.cleared === true],
 	['cash out asks first, then trades the whole favor for gold 1 for 1',
 		cashOut.confirms === 2 && afterCashOut.favor === 0 && afterCashOut.gold === cashOut.goldBefore + 750],
+	['cashed out to 0 with only a paid buy-back left, the window stays shut',
+		afterGateShut.windowsAfter === afterGateShut.windowsBefore && afterGateShut.favor === 0],
 	['a hardened item below +6 never loses the enchant or the hardening (`level() >= 6` gate)',
 		rolls.hardenedBelowThreshold.affixLost === 0 && rolls.hardenedBelowThreshold.hardeningLost === 0],
 	// Java's rates, not certainties: `Random.Float(10) < 2^(level-6)` is 10% at +6 (100% only at

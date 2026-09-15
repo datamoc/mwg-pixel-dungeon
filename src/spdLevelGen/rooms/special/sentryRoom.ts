@@ -4,15 +4,13 @@
  * odd-dimension rolls from room.ts, so it can burn more than one pair per attempt exactly like
  * Java). `prize()`'s leading `Random.Int(2)` roll is preserved; `Generator.randomWeapon/Armor`'s
  * internals plus the upgrade roll are skipped. `SentryRoom.canConnect()`'s extra "not the exact
- * center" door-placement restriction (an override of the graph-stage `Room.canConnect`) is NOT
- * threaded into `builder.ts`/`room.ts` this pass - a real, if narrow, divergence: Java never lets
- * a door land exactly on the room's parity-even center point, this port doesn't enforce that
- * exclusion yet. Documented in PORT_COVERAGE.md.
+ * center" door-placement restriction is threaded into the graph stage via `room.ts`'s
+ * `canConnectPoint()`.
  */
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, fillXY, set } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
-import { floorSetForPrize, generatedGroundKind, uncursedWeaponOrArmorPrize } from '../../../spdItems/generator';
+import { floorSetForPrize, generatedGroundKind, uncursedWeaponOrArmorPrize } from '../../../items/generator';
 
 export function paintSentryRoom(level: PaintLevel, room: Room): void {
 	fillRoom(level, room, Terrain.WALL);

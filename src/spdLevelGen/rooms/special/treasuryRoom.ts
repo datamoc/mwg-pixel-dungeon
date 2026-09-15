@@ -7,7 +7,7 @@
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, set } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
-import { generatedGroundKind, mimicGeneratePrize } from '../../../spdItems/generator';
+import { generatedGroundKind, mimicGeneratePrize } from '../../../items/generator';
 
 export function paintTreasuryRoom(level: PaintLevel, room: Room, depth: number): void {
 	fillRoom(level, room, Terrain.WALL);

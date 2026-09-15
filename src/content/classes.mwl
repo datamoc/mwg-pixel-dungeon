@@ -1,394 +1,509 @@
-[trait]
-id=warrior
-#SPD names a hero class through `HeroClass`'s own message key (`actors.hero.heroclass.<id>`),
-#which every shipped language carries. The Cleric is the one exception: it postdates this
-#checkout's HeroClass enum, so it keeps a port-owned name.
-name=actors.hero.heroclass.warrior
-[effect]
-apply_to=weapon_key
-set=port.name.wornshortsword
-[/effect]
-[effect]
-apply_to=damage_min
-set=1
-[/effect]
-[effect]
-apply_to=damage_max
-set=10
-[/effect]
-[effect]
-apply_to=speed
-set=1
-[/effect]
-[effect]
-apply_to=accuracy
-set=10
-[/effect]
-[effect]
-apply_to=blurb_key
-set=port.class.warrior.blurb
-[/effect]
-[effect]
-apply_to=unlocked
-set=true
-[/effect]
-[effect]
-apply_to=ammo
-set=true
-[/effect]
-[effect]
-apply_to=badge
-set=null
-[/effect]
-[effect]
-apply_to=unlock_hint
-set=
-[/effect]
-[effect]
-apply_to=special_kind
-set=throw
-[/effect]
-[effect]
-apply_to=special_label_key
-set=items.weapon.missiles.throwingstone.name
-[/effect]
-[effect]
-apply_to=special_ammo
-set=3
-[/effect]
-[effect]
-apply_to=special_damage_min
-set=2
-[/effect]
-[effect]
-apply_to=special_damage_max
-set=5
-[/effect]
-[/trait]
-
-[trait]
-id=mage
-name=actors.hero.heroclass.mage
-[effect]
-apply_to=weapon_key
-set=port.name.magesstaff
-[/effect]
-[effect]
-apply_to=damage_min
-set=1
-[/effect]
-[effect]
-apply_to=damage_max
-set=6
-[/effect]
-[effect]
-apply_to=speed
-set=1
-[/effect]
-[effect]
-apply_to=accuracy
-set=10
-[/effect]
-[effect]
-apply_to=blurb_key
-set=port.class.mage.blurb
-[/effect]
-[effect]
-apply_to=unlocked
-set=false
-[/effect]
-[effect]
-apply_to=ammo
-set=false
-[/effect]
-[effect]
-apply_to=badge
-set=unlock_mage
-[/effect]
-[effect]
-apply_to=unlock_hint
-set=port.class.mage.unlockhint
-[/effect]
-[effect]
-apply_to=special_kind
-set=zap
-[/effect]
-[effect]
-apply_to=special_label_key
-set=items.wands.wandofmagicmissile.name
-[/effect]
-[effect]
-apply_to=special_ammo
-set=null
-[/effect]
-[effect]
-apply_to=special_damage_min
-set=2
-[/effect]
-[effect]
-apply_to=special_damage_max
-set=8
-[/effect]
-[/trait]
-
-[trait]
-id=rogue
-name=actors.hero.heroclass.rogue
-[effect]
-apply_to=weapon_key
-set=port.name.dagger
-[/effect]
-[effect]
-apply_to=damage_min
-set=1
-[/effect]
-#Dagger overrides MeleeWeapon.max to `4*(tier+1) + lvl*(tier+1)` = 8 at tier 1, not the
-#tier-1 base of 10 (same at v2.1.4 and v3.3.8; the 10 here was simply wrong).
-[effect]
-apply_to=damage_max
-set=8
-[/effect]
-[effect]
-apply_to=speed
-set=1
-[/effect]
-[effect]
-apply_to=accuracy
-set=10
-[/effect]
-[effect]
-apply_to=blurb_key
-set=port.class.rogue.blurb
-[/effect]
-[effect]
-apply_to=unlocked
-set=false
-[/effect]
-[effect]
-apply_to=ammo
-set=true
-[/effect]
-[effect]
-apply_to=badge
-set=unlock_rogue
-[/effect]
-[effect]
-apply_to=unlock_hint
-set=port.class.rogue.unlockhint
-[/effect]
-[effect]
-apply_to=special_kind
-set=throw
-[/effect]
-[effect]
-apply_to=special_label_key
-set=items.weapon.missiles.throwingknife.name
-[/effect]
-[effect]
-apply_to=special_ammo
-set=3
-[/effect]
-[effect]
-apply_to=special_damage_min
-set=2
-[/effect]
-[effect]
-apply_to=special_damage_max
-set=6
-[/effect]
-[/trait]
-
-[trait]
-id=huntress
-name=actors.hero.heroclass.huntress
-[effect]
-apply_to=weapon_key
-set=port.name.gloves
-[/effect]
-[effect]
-apply_to=damage_min
-set=1
-[/effect]
-[effect]
-apply_to=damage_max
-set=5
-[/effect]
-[effect]
-apply_to=speed
-set=2
-[/effect]
-[effect]
-apply_to=accuracy
-set=10
-[/effect]
-[effect]
-apply_to=blurb_key
-set=port.class.huntress.blurb
-[/effect]
-[effect]
-apply_to=unlocked
-set=false
-[/effect]
-[effect]
-apply_to=ammo
-set=false
-[/effect]
-[effect]
-apply_to=badge
-set=unlock_huntress
-[/effect]
-[effect]
-apply_to=unlock_hint
-set=port.class.huntress.unlockhint
-[/effect]
-[effect]
-apply_to=special_kind
-set=shoot
-[/effect]
-[effect]
-apply_to=special_label_key
-set=items.weapon.spiritbow.name
-[/effect]
-[effect]
-apply_to=special_ammo
-set=null
-[/effect]
-[effect]
-apply_to=special_damage_min
-set=1
-[/effect]
-[effect]
-apply_to=special_damage_max
-set=6
-[/effect]
-[/trait]
-
-[trait]
-id=duelist
-name=actors.hero.heroclass.duelist
-[effect]
-apply_to=weapon_key
-set=port.name.rapier
-[/effect]
-[effect]
-apply_to=damage_min
-set=1
-[/effect]
-[effect]
-apply_to=damage_max
-set=8
-[/effect]
-[effect]
-apply_to=speed
-set=1
-[/effect]
-[effect]
-apply_to=accuracy
-set=10
-[/effect]
-[effect]
-apply_to=blurb_key
-set=port.class.duelist.blurb
-[/effect]
-[effect]
-apply_to=unlocked
-set=false
-[/effect]
-[effect]
-apply_to=ammo
-set=true
-[/effect]
-[effect]
-apply_to=badge
-set=unlock_duelist
-[/effect]
-[effect]
-apply_to=unlock_hint
-set=port.class.duelist.unlockhint
-[/effect]
-[effect]
-apply_to=special_kind
-set=throw
-[/effect]
-[effect]
-apply_to=special_label_key
-set=items.weapon.missiles.throwingspike.name
-[/effect]
-[effect]
-apply_to=special_ammo
-set=2
-[/effect]
-[effect]
-apply_to=special_damage_min
-set=2
-[/effect]
-[effect]
-apply_to=special_damage_max
-set=5
-[/effect]
-[/trait]
-
-[trait]
-id=cleric
-name=port.name.cleric
-[effect]
-apply_to=weapon_key
-set=port.name.cudgel
-[/effect]
-[effect]
-apply_to=damage_min
-set=1
-[/effect]
-[effect]
-apply_to=damage_max
-set=8
-[/effect]
-[effect]
-apply_to=speed
-set=1
-[/effect]
-[effect]
-apply_to=accuracy
-set=14
-[/effect]
-[effect]
-apply_to=blurb_key
-set=port.class.cleric.blurb
-[/effect]
-[effect]
-apply_to=unlocked
-set=false
-[/effect]
-[effect]
-apply_to=ammo
-set=false
-[/effect]
-[effect]
-apply_to=badge
-set=victory
-[/effect]
-[effect]
-apply_to=unlock_hint
-set=port.class.cleric.unlockhint
-[/effect]
-[effect]
-apply_to=special_kind
-set=none
-[/effect]
-[effect]
-apply_to=special_label_key
-set=
-[/effect]
-[effect]
-apply_to=special_ammo
-set=0
-[/effect]
-[effect]
-apply_to=special_damage_min
-set=0
-[/effect]
-[effect]
-apply_to=special_damage_max
-set=0
-[/effect]
-[/trait]
+[
+  {
+    tag: "trait",
+    id: "warrior",
+    name: "actors.hero.heroclass.warrior",
+    children: [
+      {
+        tag: "effect",
+        apply_to: "weapon_key",
+        set: "port.name.wornshortsword",
+      },
+      {
+        tag: "effect",
+        apply_to: "damage_min",
+        set: 1,
+      },
+      {
+        tag: "effect",
+        apply_to: "damage_max",
+        set: 10,
+      },
+      {
+        tag: "effect",
+        apply_to: "speed",
+        set: 1,
+      },
+      {
+        tag: "effect",
+        apply_to: "accuracy",
+        set: 10,
+      },
+      {
+        tag: "effect",
+        apply_to: "blurb_key",
+        set: "port.class.warrior.blurb",
+      },
+      {
+        tag: "effect",
+        apply_to: "unlocked",
+        set: "true",
+      },
+      {
+        tag: "effect",
+        apply_to: "ammo",
+        set: "true",
+      },
+      {
+        tag: "effect",
+        apply_to: "badge",
+        set: "null",
+      },
+      {
+        tag: "effect",
+        apply_to: "unlock_hint",
+        set: "",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_kind",
+        set: "throw",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_source_class",
+        set: "ThrowingStone",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_label_key",
+        set: "items.weapon.missiles.throwingstone.name",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_ammo",
+        set: 3,
+      },
+      {
+        tag: "effect",
+        apply_to: "special_damage_min",
+        set: 2,
+      },
+      {
+        tag: "effect",
+        apply_to: "special_damage_max",
+        set: 5,
+      },
+    ],
+  },
+  {
+    tag: "trait",
+    id: "mage",
+    name: "actors.hero.heroclass.mage",
+    children: [
+      {
+        tag: "effect",
+        apply_to: "weapon_key",
+        set: "port.name.magesstaff",
+      },
+      {
+        tag: "effect",
+        apply_to: "damage_min",
+        set: 1,
+      },
+      {
+        tag: "effect",
+        apply_to: "damage_max",
+        set: 6,
+      },
+      {
+        tag: "effect",
+        apply_to: "speed",
+        set: 1,
+      },
+      {
+        tag: "effect",
+        apply_to: "accuracy",
+        set: 10,
+      },
+      {
+        tag: "effect",
+        apply_to: "blurb_key",
+        set: "port.class.mage.blurb",
+      },
+      {
+        tag: "effect",
+        apply_to: "unlocked",
+        set: "false",
+      },
+      {
+        tag: "effect",
+        apply_to: "ammo",
+        set: "false",
+      },
+      {
+        tag: "effect",
+        apply_to: "badge",
+        set: "unlock_mage",
+      },
+      {
+        tag: "effect",
+        apply_to: "unlock_hint",
+        set: "port.class.mage.unlockhint",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_kind",
+        set: "zap",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_label_key",
+        set: "items.wands.wandofmagicmissile.name",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_ammo",
+        set: "null",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_damage_min",
+        set: 2,
+      },
+      {
+        tag: "effect",
+        apply_to: "special_damage_max",
+        set: 8,
+      },
+    ],
+  },
+  {
+    tag: "trait",
+    id: "rogue",
+    name: "actors.hero.heroclass.rogue",
+    children: [
+      {
+        tag: "effect",
+        apply_to: "weapon_key",
+        set: "port.name.dagger",
+      },
+      {
+        tag: "effect",
+        apply_to: "damage_min",
+        set: 1,
+      },
+      {
+        tag: "effect",
+        apply_to: "damage_max",
+        set: 8,
+      },
+      {
+        tag: "effect",
+        apply_to: "speed",
+        set: 1,
+      },
+      {
+        tag: "effect",
+        apply_to: "accuracy",
+        set: 10,
+      },
+      {
+        tag: "effect",
+        apply_to: "blurb_key",
+        set: "port.class.rogue.blurb",
+      },
+      {
+        tag: "effect",
+        apply_to: "unlocked",
+        set: "false",
+      },
+      {
+        tag: "effect",
+        apply_to: "ammo",
+        set: "true",
+      },
+      {
+        tag: "effect",
+        apply_to: "badge",
+        set: "unlock_rogue",
+      },
+      {
+        tag: "effect",
+        apply_to: "unlock_hint",
+        set: "port.class.rogue.unlockhint",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_kind",
+        set: "throw",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_source_class",
+        set: "ThrowingKnife",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_label_key",
+        set: "items.weapon.missiles.throwingknife.name",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_ammo",
+        set: 3,
+      },
+      {
+        tag: "effect",
+        apply_to: "special_damage_min",
+        set: 2,
+      },
+      {
+        tag: "effect",
+        apply_to: "special_damage_max",
+        set: 6,
+      },
+    ],
+  },
+  {
+    tag: "trait",
+    id: "huntress",
+    name: "actors.hero.heroclass.huntress",
+    children: [
+      {
+        tag: "effect",
+        apply_to: "weapon_key",
+        set: "port.name.gloves",
+      },
+      {
+        tag: "effect",
+        apply_to: "damage_min",
+        set: 1,
+      },
+      {
+        tag: "effect",
+        apply_to: "damage_max",
+        set: 5,
+      },
+      {
+        tag: "effect",
+        apply_to: "speed",
+        set: 2,
+      },
+      {
+        tag: "effect",
+        apply_to: "accuracy",
+        set: 10,
+      },
+      {
+        tag: "effect",
+        apply_to: "blurb_key",
+        set: "port.class.huntress.blurb",
+      },
+      {
+        tag: "effect",
+        apply_to: "unlocked",
+        set: "false",
+      },
+      {
+        tag: "effect",
+        apply_to: "ammo",
+        set: "false",
+      },
+      {
+        tag: "effect",
+        apply_to: "badge",
+        set: "unlock_huntress",
+      },
+      {
+        tag: "effect",
+        apply_to: "unlock_hint",
+        set: "port.class.huntress.unlockhint",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_kind",
+        set: "shoot",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_label_key",
+        set: "items.weapon.spiritbow.name",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_ammo",
+        set: "null",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_damage_min",
+        set: 1,
+      },
+      {
+        tag: "effect",
+        apply_to: "special_damage_max",
+        set: 6,
+      },
+    ],
+  },
+  {
+    tag: "trait",
+    id: "duelist",
+    name: "actors.hero.heroclass.duelist",
+    children: [
+      {
+        tag: "effect",
+        apply_to: "weapon_key",
+        set: "port.name.rapier",
+      },
+      {
+        tag: "effect",
+        apply_to: "damage_min",
+        set: 1,
+      },
+      {
+        tag: "effect",
+        apply_to: "damage_max",
+        set: 8,
+      },
+      {
+        tag: "effect",
+        apply_to: "speed",
+        set: 1,
+      },
+      {
+        tag: "effect",
+        apply_to: "accuracy",
+        set: 10,
+      },
+      {
+        tag: "effect",
+        apply_to: "blurb_key",
+        set: "port.class.duelist.blurb",
+      },
+      {
+        tag: "effect",
+        apply_to: "unlocked",
+        set: "false",
+      },
+      {
+        tag: "effect",
+        apply_to: "ammo",
+        set: "true",
+      },
+      {
+        tag: "effect",
+        apply_to: "badge",
+        set: "unlock_duelist",
+      },
+      {
+        tag: "effect",
+        apply_to: "unlock_hint",
+        set: "port.class.duelist.unlockhint",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_kind",
+        set: "throw",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_source_class",
+        set: "ThrowingSpike",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_label_key",
+        set: "items.weapon.missiles.throwingspike.name",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_ammo",
+        set: 2,
+      },
+      {
+        tag: "effect",
+        apply_to: "special_damage_min",
+        set: 2,
+      },
+      {
+        tag: "effect",
+        apply_to: "special_damage_max",
+        set: 5,
+      },
+    ],
+  },
+  {
+    tag: "trait",
+    id: "cleric",
+    name: "port.name.cleric",
+    children: [
+      {
+        tag: "effect",
+        apply_to: "weapon_key",
+        set: "port.name.cudgel",
+      },
+      {
+        tag: "effect",
+        apply_to: "damage_min",
+        set: 1,
+      },
+      {
+        tag: "effect",
+        apply_to: "damage_max",
+        set: 8,
+      },
+      {
+        tag: "effect",
+        apply_to: "speed",
+        set: 1,
+      },
+      {
+        tag: "effect",
+        apply_to: "accuracy",
+        set: 14,
+      },
+      {
+        tag: "effect",
+        apply_to: "blurb_key",
+        set: "port.class.cleric.blurb",
+      },
+      {
+        tag: "effect",
+        apply_to: "unlocked",
+        set: "false",
+      },
+      {
+        tag: "effect",
+        apply_to: "ammo",
+        set: "false",
+      },
+      {
+        tag: "effect",
+        apply_to: "badge",
+        set: "victory",
+      },
+      {
+        tag: "effect",
+        apply_to: "unlock_hint",
+        set: "port.class.cleric.unlockhint",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_kind",
+        set: "none",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_label_key",
+        set: "",
+      },
+      {
+        tag: "effect",
+        apply_to: "special_ammo",
+        set: 0,
+      },
+      {
+        tag: "effect",
+        apply_to: "special_damage_min",
+        set: 0,
+      },
+      {
+        tag: "effect",
+        apply_to: "special_damage_max",
+        set: 0,
+      },
+    ],
+  },
+]

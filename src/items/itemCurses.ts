@@ -20,7 +20,7 @@ export interface CurseDef {
 	locks: boolean;
 }
 
-import { MWL_CURSE_DEFINITIONS } from './mwlContent';
+import { MWL_CURSE_DEFINITIONS } from '../mwlContent';
 
 /** The 16 SPD curses are authored in `src/content/curse-rules.mwl`; runtime proc behavior
  * remains in `main.ts`, where it needs access to the live scene and combat state. */

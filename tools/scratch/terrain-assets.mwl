@@ -1,102 +1,106 @@
-[game]
-schema=0.1
-
-[item]
-id=terrainFeatures
-name=Terrain Features
-image=assets/terrain_features.png
-slot=terrain
-[/item]
-
-[item]
-id=tilesSewers
-name=Sewers Tiles
-image=assets/tiles_sewers.png
-slot=terrain
-[/item]
-
-[item]
-id=tilesPrison
-name=Prison Tiles
-image=assets/tiles_prison.png
-slot=terrain
-[/item]
-
-[item]
-id=tilesCaves
-name=Caves Tiles
-image=assets/tiles_caves.png
-slot=terrain
-[/item]
-
-[item]
-id=tilesCity
-name=City Tiles
-image=assets/tiles_city.png
-slot=terrain
-[/item]
-
-[item]
-id=tilesHalls
-name=Halls Tiles
-image=assets/tiles_halls.png
-slot=terrain
-[/item]
-
-[item]
-id=wallBlocking
-name=Wall Blocking Overlay
-image=assets/wall_blocking.png
-slot=terrain
-[/item]
-
-[item]
-id=cavesQuest
-name=Caves Quest Atlas
-image=assets/caves_quest.png
-slot=terrain
-[/item]
-
-[item]
-id=hallsSpecial
-name=Halls Special Atlas
-image=assets/halls_special.png
-slot=terrain
-[/item]
-
-[item]
-id=water0
-name=Water Animation Frame 0
-image=assets/water0.png
-slot=terrain
-[/item]
-
-[item]
-id=water1
-name=Water Animation Frame 1
-image=assets/water1.png
-slot=terrain
-[/item]
-
-[item]
-id=water2
-name=Water Animation Frame 2
-image=assets/water2.png
-slot=terrain
-[/item]
-
-[item]
-id=water3
-name=Water Animation Frame 3
-image=assets/water3.png
-slot=terrain
-[/item]
-
-[item]
-id=water4
-name=Water Animation Frame 4
-image=assets/water4.png
-slot=terrain
-[/item]
-
-[/game]
+[
+  {
+    tag: "game",
+    schema: 0.1,
+    children: [
+      {
+        tag: "item",
+        id: "terrainFeatures",
+        name: "Terrain Features",
+        image: "assets/terrain_features.png",
+        slot: "terrain",
+      },
+      {
+        tag: "item",
+        id: "tilesSewers",
+        name: "Sewers Tiles",
+        image: "assets/tiles_sewers.png",
+        slot: "terrain",
+      },
+      {
+        tag: "item",
+        id: "tilesPrison",
+        name: "Prison Tiles",
+        image: "assets/tiles_prison.png",
+        slot: "terrain",
+      },
+      {
+        tag: "item",
+        id: "tilesCaves",
+        name: "Caves Tiles",
+        image: "assets/tiles_caves.png",
+        slot: "terrain",
+      },
+      {
+        tag: "item",
+        id: "tilesCity",
+        name: "City Tiles",
+        image: "assets/tiles_city.png",
+        slot: "terrain",
+      },
+      {
+        tag: "item",
+        id: "tilesHalls",
+        name: "Halls Tiles",
+        image: "assets/tiles_halls.png",
+        slot: "terrain",
+      },
+      {
+        tag: "item",
+        id: "wallBlocking",
+        name: "Wall Blocking Overlay",
+        image: "assets/wall_blocking.png",
+        slot: "terrain",
+      },
+      {
+        tag: "item",
+        id: "cavesQuest",
+        name: "Caves Quest Atlas",
+        image: "assets/caves_quest.png",
+        slot: "terrain",
+      },
+      {
+        tag: "item",
+        id: "hallsSpecial",
+        name: "Halls Special Atlas",
+        image: "assets/halls_special.png",
+        slot: "terrain",
+      },
+      {
+        tag: "item",
+        id: "water0",
+        name: "Water Animation Frame 0",
+        image: "assets/water0.png",
+        slot: "terrain",
+      },
+      {
+        tag: "item",
+        id: "water1",
+        name: "Water Animation Frame 1",
+        image: "assets/water1.png",
+        slot: "terrain",
+      },
+      {
+        tag: "item",
+        id: "water2",
+        name: "Water Animation Frame 2",
+        image: "assets/water2.png",
+        slot: "terrain",
+      },
+      {
+        tag: "item",
+        id: "water3",
+        name: "Water Animation Frame 3",
+        image: "assets/water3.png",
+        slot: "terrain",
+      },
+      {
+        tag: "item",
+        id: "water4",
+        name: "Water Animation Frame 4",
+        image: "assets/water4.png",
+        slot: "terrain",
+      },
+    ],
+  },
+]

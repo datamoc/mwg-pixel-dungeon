@@ -99,11 +99,28 @@ const sealed = await page.evaluate(async () => {
 	};
 	// and the sealed cell really is unwalkable through the scene's own step rule
 	const stepIntoTerrain = s['canStepOnto'](entrance.x, entrance.y);
-	return { before, after, stepIntoTerrain };
+	// calling the gate again changes nothing - and a full save/load round-trip keeps exactly
+	// one DM-300 with the flag latched and the wall (paint and live map) intact, instead of
+	// re-arming the gate and doubling the boss the way the unpersisted flag used to
+	s['checkCavesBossPylonGate']();
+	const afterRefire = s['creatures'].filter((c) => c.kind === 'dm300' && c.hp > 0).length;
+	s['saveRun']();
+	await sleep(500);
+	s['loadRun']();
+	await sleep(4000);
+	const entrance2 = s['entranceCell'];
+	const reloaded = {
+		sealed: s['cavesBossSealed'],
+		depth: s['depth'],
+		dm300: s['creatures'].filter((c) => c.kind === 'dm300' && c.hp > 0).length,
+		paint: s['portedPaint'].map[cell(entrance2.x, entrance2.y)],
+		passable: s['level'].passable(entrance2.x, entrance2.y),
+	};
+	return { before, after, stepIntoTerrain, afterRefire, reloaded };
 });
 
 console.log('probe results:', JSON.stringify(sealed, null, 1));
-const { before, after } = sealed;
+const { before, after, reloaded } = sealed;
 const expect = [
 	// the live kind for an entrance is the shared FLOOR one (the staircase art comes from the
 	// paint grid), so what "it is an entrance" means here is the paint value plus walkability
@@ -119,6 +136,10 @@ const expect = [
 		after.gold !== null && after.gold.x === before.entrance.x + 1 && after.gold.y === before.entrance.y],
 	['DM-300 was created inside `mainArena`, the way `seal()` does it', after.dm300 !== null && after.dm300.inArena === true],
 	['and the seal is latched, with rocks shaken loose', after.sealed === true && after.shakeRemaining > 0],
+	['calling the gate again spawns no second DM-300', sealed.afterRefire === 1],
+	['and a save/load round-trip keeps one DM-300, the latched flag and the walled entrance',
+		reloaded.sealed === true && reloaded.depth === 15 && reloaded.dm300 === 1
+		&& reloaded.paint === 4 && reloaded.passable === false],
 ];
 let failed = 0;
 for (const [label, ok] of expect) {

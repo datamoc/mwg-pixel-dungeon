@@ -160,6 +160,20 @@
           },
         ],
       },
+      // What each shop's shelf opens with (two unidentified potions, two identifies
+      // - the simplified stock this port's shop UI trades; Java stocks a wider generated
+      // assortment, section 1's shop-pricing remainder). `potion` is the runtime generic
+      // id the shop sells (no single catalogue entry), so rows are intentionally not
+      // validated against the item catalogue - only shape-checked at compile time.
+      {
+        tag: "table",
+        id: "shopShelfStock",
+        columns: "item:string|quantity:number",
+        children: [
+          { tag: "row", item: "potion", quantity: 2 },
+          { tag: "row", item: "scrollIdentify", quantity: 2 },
+        ],
+      },
     ],
   },
 ]

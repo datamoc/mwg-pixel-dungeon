@@ -1,106 +1,127 @@
-[game]
-schema=0.1
-
-[table]
-id=badgeCatalogue
-columns=id:string|counter:string|target:number|description:string|icon:number
-[row]
-id=boss1
-counter=boss_goo
-target=1
-description=Slew Goo
-icon=15
-[/row]
-[row]
-id=boss2
-counter=boss_tengu
-target=1
-description=Slew Tengu
-icon=47
-[/row]
-[row]
-id=boss3
-counter=boss_dm300
-target=1
-description=Slew DM-300
-icon=48
-[/row]
-[row]
-id=boss4
-counter=boss_king
-target=1
-description=Slew the Dwarf King
-icon=78
-[/row]
-[row]
-id=victory
-counter=amulet
-target=1
-description=Escaped with the Amulet
-icon=82
-[/row]
-[row]
-id=unlock_mage
-counter=upgrades_used
-target=1
-description=Used an upgrade scroll
-icon=1
-[/row]
-[row]
-id=unlock_rogue
-counter=surprises
-target=10
-description=10 surprise attacks
-icon=2
-[/row]
-[row]
-id=unlock_huntress
-counter=throws
-target=10
-description=10 thrown attacks
-icon=3
-[/row]
-[row]
-id=unlock_duelist
-counter=weapon_plus2
-target=1
-description=Raised a weapon to +2
-icon=4
-[/row]
-[row]
-id=death_trap
-counter=death_trap
-target=1
-description=Died to a trap
-icon=81
-[/row]
-[row]
-id=death_fire
-counter=death_fire
-target=1
-description=Died to fire
-icon=16
-[/row]
-[row]
-id=death_poison
-counter=death_poison
-target=1
-description=Died to poison
-icon=17
-[/row]
-[row]
-id=death_hunger
-counter=death_hunger
-target=1
-description=Starved to death
-icon=19
-[/row]
-[row]
-id=death_foe
-counter=death_foe
-target=1
-description=Slain by a foe
-icon=104
-[/row]
-[/table]
-[/game]
+[
+  {
+    tag: "game",
+    schema: 0.1,
+    children: [
+      {
+        tag: "table",
+        id: "badgeCatalogue",
+        columns: "id:string|counter:string|target:number|description:string|icon:number",
+        children: [
+          {
+            tag: "row",
+            id: "boss1",
+            counter: "boss_goo",
+            target: 1,
+            description: "Slew Goo",
+            icon: 15,
+          },
+          {
+            tag: "row",
+            id: "boss2",
+            counter: "boss_tengu",
+            target: 1,
+            description: "Slew Tengu",
+            icon: 47,
+          },
+          {
+            tag: "row",
+            id: "boss3",
+            counter: "boss_dm300",
+            target: 1,
+            description: "Slew DM-300",
+            icon: 48,
+          },
+          {
+            tag: "row",
+            id: "boss4",
+            counter: "boss_king",
+            target: 1,
+            description: "Slew the Dwarf King",
+            icon: 78,
+          },
+          {
+            tag: "row",
+            id: "victory",
+            counter: "amulet",
+            target: 1,
+            description: "Escaped with the Amulet",
+            icon: 82,
+          },
+          {
+            tag: "row",
+            id: "unlock_mage",
+            counter: "upgrades_used",
+            target: 1,
+            description: "Used an upgrade scroll",
+            icon: 1,
+          },
+          {
+            tag: "row",
+            id: "unlock_rogue",
+            counter: "surprises",
+            target: 10,
+            description: "10 surprise attacks",
+            icon: 2,
+          },
+          {
+            tag: "row",
+            id: "unlock_huntress",
+            counter: "throws",
+            target: 10,
+            description: "10 thrown attacks",
+            icon: 3,
+          },
+          {
+            tag: "row",
+            id: "unlock_duelist",
+            counter: "weapon_plus2",
+            target: 1,
+            description: "Raised a weapon to +2",
+            icon: 4,
+          },
+          {
+            tag: "row",
+            id: "death_trap",
+            counter: "death_trap",
+            target: 1,
+            description: "Died to a trap",
+            icon: 81,
+          },
+          {
+            tag: "row",
+            id: "death_fire",
+            counter: "death_fire",
+            target: 1,
+            description: "Died to fire",
+            icon: 16,
+          },
+          {
+            tag: "row",
+            id: "death_poison",
+            counter: "death_poison",
+            target: 1,
+            description: "Died to poison",
+            icon: 17,
+          },
+          {
+            tag: "row",
+            id: "death_hunger",
+            counter: "death_hunger",
+            target: 1,
+            description: "Starved to death",
+            icon: 19,
+          },
+          {
+            tag: "row",
+            id: "death_foe",
+            counter: "death_foe",
+            target: 1,
+            description: "Slain by a foe",
+            icon: 104,
+          },
+        ],
+      },
+    ],
+  },
+]

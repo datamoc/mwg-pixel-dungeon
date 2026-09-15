@@ -123,7 +123,7 @@ function initRooms(depth: number, feelingLarge: boolean, feelingSecrets: boolean
 	// `ExitRoom`, `ShopRoom` extends `SpecialRoom`, NOT `StandardRoom`, so it does NOT inherit
 	// the `{ setSizeCat(); }` instance initializer: construction here burns zero RNG. Its stock
 	// (and hence its size) is rolled lazily, on the builder's first `minWidth()` call - see
-	// `Room.shopStock()` and `spdItems/shopItems.ts`.
+	// `Room.shopStock()` and `items/shopItems.ts`.
 	if (shopOnLevel(depth)) {
 		const shop = new Room('shop');
 		shop.shopDepth = depth;
@@ -272,7 +272,7 @@ export function rollLevelFeeling(depth: number): number | null {
 /**
  * `RegularLevel.build()`'s room-graph portion (painting isn't ported this pass). Caller is
  * responsible for the RNG generator push/pop around this call (see `Level.create()`'s sequence
- * in PORT_COVERAGE.md) - this function only consumes calls from whatever generator is current.
+ * in PORT_COVERAGE.md) - this function only consumes calls from whatever item generator is current.
  * Rolls the level feeling itself (see `rollLevelFeeling()`) before building, matching Java's order.
  *
  * Java's outer `do { ... } while (rooms == null)` retry loop is technically uncapped; capped

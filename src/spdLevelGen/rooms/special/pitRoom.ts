@@ -8,7 +8,7 @@
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, set } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
-import { Cat, generatedGroundKind, oneOfCategories, randomCategory } from '../../../spdItems/generator';
+import { Cat, generatedGroundKind, oneOfCategories, randomCategory } from '../../../items/generator';
 
 const MAIN_LOOT_CATEGORY = ['ring', 'artifact', 'weaponOrArmor'];
 

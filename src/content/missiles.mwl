@@ -1,265 +1,357 @@
-[game]
-schema=0.1
-
-[item]
-id=missile_throwingstone
-name=items.weapon.missiles.throwingstone.name
-slot=missile
-stackable=true
-[/item]
-[item]
-id=missile_throwingknife
-name=items.weapon.missiles.throwingknife.name
-slot=missile
-stackable=true
-[/item]
-[item]
-id=missile_throwingspike
-name=items.weapon.missiles.throwingspike.name
-slot=missile
-stackable=true
-[/item]
-[item]
-id=missile_fishingspear
-name=items.weapon.missiles.fishingspear.name
-slot=missile
-stackable=true
-[/item]
-[item]
-id=missile_throwingclub
-name=items.weapon.missiles.throwingclub.name
-slot=missile
-stackable=true
-[/item]
-[item]
-id=missile_shuriken
-name=items.weapon.missiles.shuriken.name
-slot=missile
-stackable=true
-[/item]
-[item]
-id=missile_throwingspear
-name=items.weapon.missiles.throwingspear.name
-slot=missile
-stackable=true
-[/item]
-[item]
-id=missile_kunai
-name=items.weapon.missiles.kunai.name
-slot=missile
-stackable=true
-[/item]
-[item]
-id=missile_bolas
-name=items.weapon.missiles.bolas.name
-slot=missile
-stackable=true
-[/item]
-[item]
-id=missile_javelin
-name=items.weapon.missiles.javelin.name
-slot=missile
-stackable=true
-[/item]
-[item]
-id=missile_tomahawk
-name=items.weapon.missiles.tomahawk.name
-slot=missile
-stackable=true
-[/item]
-[item]
-id=missile_heavyboomerang
-name=items.weapon.missiles.heavyboomerang.name
-slot=missile
-stackable=true
-[/item]
-[item]
-id=missile_trident
-name=items.weapon.missiles.trident.name
-slot=missile
-stackable=true
-[/item]
-[item]
-id=missile_throwinghammer
-name=items.weapon.missiles.throwinghammer.name
-slot=missile
-stackable=true
-[/item]
-[item]
-id=missile_forcecube
-name=items.weapon.missiles.forcecube.name
-slot=missile
-stackable=true
-[/item]
-
-[table]
-id=missileDefinitions
-columns=id:string|sourceClass:string|tier:number|minDamage:number|maxDamage:number
-[row]
-id=missile_throwingstone
-sourceClass=ThrowingStone
-tier=1
-minDamage=2
-maxDamage=5
-[/row]
-[row]
-id=missile_throwingknife
-sourceClass=ThrowingKnife
-tier=1
-minDamage=2
-maxDamage=6
-[/row]
-[row]
-id=missile_throwingspike
-sourceClass=ThrowingSpike
-tier=1
-minDamage=2
-maxDamage=5
-[/row]
-[row]
-id=missile_fishingspear
-sourceClass=FishingSpear
-tier=2
-minDamage=4
-maxDamage=10
-[/row]
-[row]
-id=missile_throwingclub
-sourceClass=ThrowingClub
-tier=2
-minDamage=4
-maxDamage=10
-[/row]
-[row]
-id=missile_shuriken
-sourceClass=Shuriken
-tier=2
-minDamage=4
-maxDamage=10
-[/row]
-[row]
-id=missile_throwingspear
-sourceClass=ThrowingSpear
-tier=3
-minDamage=6
-maxDamage=15
-[/row]
-[row]
-id=missile_kunai
-sourceClass=Kunai
-tier=3
-minDamage=6
-maxDamage=15
-[/row]
-[row]
-id=missile_bolas
-sourceClass=Bolas
-tier=3
-minDamage=6
-maxDamage=15
-[/row]
-[row]
-id=missile_javelin
-sourceClass=Javelin
-tier=4
-minDamage=8
-maxDamage=20
-[/row]
-[row]
-id=missile_tomahawk
-sourceClass=Tomahawk
-tier=4
-minDamage=8
-maxDamage=20
-[/row]
-[row]
-id=missile_heavyboomerang
-sourceClass=HeavyBoomerang
-tier=4
-minDamage=8
-maxDamage=20
-[/row]
-[row]
-id=missile_trident
-sourceClass=Trident
-tier=5
-minDamage=10
-maxDamage=25
-[/row]
-[row]
-id=missile_throwinghammer
-sourceClass=ThrowingHammer
-tier=5
-minDamage=10
-maxDamage=25
-[/row]
-[row]
-id=missile_forcecube
-sourceClass=ForceCube
-tier=5
-minDamage=10
-maxDamage=25
-[/row]
-[/table]
-
-[trait]
-id=missileDeckT1
-name=Generator.Category.MIS_T1
-[effect]
-apply_to=default_probs
-set=3,3,3
-[/effect]
-[effect]
-apply_to=classes
-set=ThrowingStone,ThrowingKnife,ThrowingSpike
-[/effect]
-[/trait]
-[trait]
-id=missileDeckT2
-name=Generator.Category.MIS_T2
-[effect]
-apply_to=default_probs
-set=3,3,3
-[/effect]
-[effect]
-apply_to=classes
-set=FishingSpear,ThrowingClub,Shuriken
-[/effect]
-[/trait]
-[trait]
-id=missileDeckT3
-name=Generator.Category.MIS_T3
-[effect]
-apply_to=default_probs
-set=3,3,3
-[/effect]
-[effect]
-apply_to=classes
-set=ThrowingSpear,Kunai,Bolas
-[/effect]
-[/trait]
-[trait]
-id=missileDeckT4
-name=Generator.Category.MIS_T4
-[effect]
-apply_to=default_probs
-set=3,3,3
-[/effect]
-[effect]
-apply_to=classes
-set=Javelin,Tomahawk,HeavyBoomerang
-[/effect]
-[/trait]
-[trait]
-id=missileDeckT5
-name=Generator.Category.MIS_T5
-[effect]
-apply_to=default_probs
-set=3,3,3
-[/effect]
-[effect]
-apply_to=classes
-set=Trident,ThrowingHammer,ForceCube
-[/effect]
-[/trait]
-[/game]
+[
+  {
+    tag: "game",
+    schema: 0.1,
+    children: [
+      {
+        tag: "item",
+        id: "missile_throwingstone",
+        name: "items.weapon.missiles.throwingstone.name",
+        slot: "missile",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "missile_throwingknife",
+        name: "items.weapon.missiles.throwingknife.name",
+        slot: "missile",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "missile_throwingspike",
+        name: "items.weapon.missiles.throwingspike.name",
+        slot: "missile",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "missile_fishingspear",
+        name: "items.weapon.missiles.fishingspear.name",
+        slot: "missile",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "missile_throwingclub",
+        name: "items.weapon.missiles.throwingclub.name",
+        slot: "missile",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "missile_shuriken",
+        name: "items.weapon.missiles.shuriken.name",
+        slot: "missile",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "missile_throwingspear",
+        name: "items.weapon.missiles.throwingspear.name",
+        slot: "missile",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "missile_kunai",
+        name: "items.weapon.missiles.kunai.name",
+        slot: "missile",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "missile_bolas",
+        name: "items.weapon.missiles.bolas.name",
+        slot: "missile",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "missile_javelin",
+        name: "items.weapon.missiles.javelin.name",
+        slot: "missile",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "missile_tomahawk",
+        name: "items.weapon.missiles.tomahawk.name",
+        slot: "missile",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "missile_heavyboomerang",
+        name: "items.weapon.missiles.heavyboomerang.name",
+        slot: "missile",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "missile_trident",
+        name: "items.weapon.missiles.trident.name",
+        slot: "missile",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "missile_throwinghammer",
+        name: "items.weapon.missiles.throwinghammer.name",
+        slot: "missile",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "missile_forcecube",
+        name: "items.weapon.missiles.forcecube.name",
+        slot: "missile",
+        stackable: true,
+      },
+      {
+        tag: "table",
+        id: "missileDefinitions",
+        columns: "id:string|sourceClass:string|tier:number|minDamage:number|maxDamage:number",
+        children: [
+          {
+            tag: "row",
+            id: "missile_throwingstone",
+            sourceClass: "ThrowingStone",
+            tier: 1,
+            minDamage: 2,
+            maxDamage: 5,
+          },
+          {
+            tag: "row",
+            id: "missile_throwingknife",
+            sourceClass: "ThrowingKnife",
+            tier: 1,
+            minDamage: 2,
+            maxDamage: 6,
+          },
+          {
+            tag: "row",
+            id: "missile_throwingspike",
+            sourceClass: "ThrowingSpike",
+            tier: 1,
+            minDamage: 2,
+            maxDamage: 5,
+          },
+          {
+            tag: "row",
+            id: "missile_fishingspear",
+            sourceClass: "FishingSpear",
+            tier: 2,
+            minDamage: 4,
+            maxDamage: 10,
+          },
+          {
+            tag: "row",
+            id: "missile_throwingclub",
+            sourceClass: "ThrowingClub",
+            tier: 2,
+            minDamage: 4,
+            maxDamage: 10,
+          },
+          {
+            tag: "row",
+            id: "missile_shuriken",
+            sourceClass: "Shuriken",
+            tier: 2,
+            minDamage: 4,
+            maxDamage: 10,
+          },
+          {
+            tag: "row",
+            id: "missile_throwingspear",
+            sourceClass: "ThrowingSpear",
+            tier: 3,
+            minDamage: 6,
+            maxDamage: 15,
+          },
+          {
+            tag: "row",
+            id: "missile_kunai",
+            sourceClass: "Kunai",
+            tier: 3,
+            minDamage: 6,
+            maxDamage: 15,
+          },
+          {
+            tag: "row",
+            id: "missile_bolas",
+            sourceClass: "Bolas",
+            tier: 3,
+            minDamage: 6,
+            maxDamage: 15,
+          },
+          {
+            tag: "row",
+            id: "missile_javelin",
+            sourceClass: "Javelin",
+            tier: 4,
+            minDamage: 8,
+            maxDamage: 20,
+          },
+          {
+            tag: "row",
+            id: "missile_tomahawk",
+            sourceClass: "Tomahawk",
+            tier: 4,
+            minDamage: 8,
+            maxDamage: 20,
+          },
+          {
+            tag: "row",
+            id: "missile_heavyboomerang",
+            sourceClass: "HeavyBoomerang",
+            tier: 4,
+            minDamage: 8,
+            maxDamage: 20,
+          },
+          {
+            tag: "row",
+            id: "missile_trident",
+            sourceClass: "Trident",
+            tier: 5,
+            minDamage: 10,
+            maxDamage: 25,
+          },
+          {
+            tag: "row",
+            id: "missile_throwinghammer",
+            sourceClass: "ThrowingHammer",
+            tier: 5,
+            minDamage: 10,
+            maxDamage: 25,
+          },
+          {
+            tag: "row",
+            id: "missile_forcecube",
+            sourceClass: "ForceCube",
+            tier: 5,
+            minDamage: 10,
+            maxDamage: 25,
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "missileUpgradeRules",
+        columns: "sourceClass:string|minPerLevel:number|maxPerLevel:number",
+        children: [
+          { tag: "row", sourceClass: "ThrowingStone", minPerLevel: 1, maxPerLevel: 1 },
+          { tag: "row", sourceClass: "ThrowingKnife", minPerLevel: 1, maxPerLevel: 2 },
+          { tag: "row", sourceClass: "ThrowingSpike", minPerLevel: 1, maxPerLevel: 1 },
+        ],
+      },
+      {
+        tag: "table",
+        id: "missileDescriptionKeys",
+        columns: "id:string|item:string|descriptionKey:string",
+        children: [
+          { tag: "row", id: "description_missile_throwingstone", descriptionKey: "items.weapon.missiles.throwingstone.desc", item: "missile_throwingstone" },
+          { tag: "row", id: "description_missile_throwingknife", descriptionKey: "items.weapon.missiles.throwingknife.desc", item: "missile_throwingknife" },
+          { tag: "row", id: "description_missile_throwingspike", descriptionKey: "items.weapon.missiles.throwingspike.desc", item: "missile_throwingspike" },
+          { tag: "row", id: "description_missile_fishingspear", descriptionKey: "items.weapon.missiles.fishingspear.desc", item: "missile_fishingspear" },
+          { tag: "row", id: "description_missile_throwingclub", descriptionKey: "items.weapon.missiles.throwingclub.desc", item: "missile_throwingclub" },
+          { tag: "row", id: "description_missile_shuriken", descriptionKey: "items.weapon.missiles.shuriken.desc", item: "missile_shuriken" },
+          { tag: "row", id: "description_missile_throwingspear", descriptionKey: "items.weapon.missiles.throwingspear.desc", item: "missile_throwingspear" },
+          { tag: "row", id: "description_missile_kunai", descriptionKey: "items.weapon.missiles.kunai.desc", item: "missile_kunai" },
+          { tag: "row", id: "description_missile_bolas", descriptionKey: "items.weapon.missiles.bolas.desc", item: "missile_bolas" },
+          { tag: "row", id: "description_missile_javelin", descriptionKey: "items.weapon.missiles.javelin.desc", item: "missile_javelin" },
+          { tag: "row", id: "description_missile_tomahawk", descriptionKey: "items.weapon.missiles.tomahawk.desc", item: "missile_tomahawk" },
+          { tag: "row", id: "description_missile_heavyboomerang", descriptionKey: "items.weapon.missiles.heavyboomerang.desc", item: "missile_heavyboomerang" },
+          { tag: "row", id: "description_missile_trident", descriptionKey: "items.weapon.missiles.trident.desc", item: "missile_trident" },
+          { tag: "row", id: "description_missile_throwinghammer", descriptionKey: "items.weapon.missiles.throwinghammer.desc", item: "missile_throwinghammer" },
+          { tag: "row", id: "description_missile_forcecube", descriptionKey: "items.weapon.missiles.forcecube.desc", item: "missile_forcecube" },
+        ],
+      },
+      {
+        tag: "trait",
+        id: "missileDeckT1",
+        name: "Generator.Category.MIS_T1",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "default_probs",
+            set: "3,3,3",
+          },
+          {
+            tag: "effect",
+            apply_to: "classes",
+            set: "ThrowingStone,ThrowingKnife,ThrowingSpike",
+          },
+        ],
+      },
+      {
+        tag: "trait",
+        id: "missileDeckT2",
+        name: "Generator.Category.MIS_T2",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "default_probs",
+            set: "3,3,3",
+          },
+          {
+            tag: "effect",
+            apply_to: "classes",
+            set: "FishingSpear,ThrowingClub,Shuriken",
+          },
+        ],
+      },
+      {
+        tag: "trait",
+        id: "missileDeckT3",
+        name: "Generator.Category.MIS_T3",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "default_probs",
+            set: "3,3,3",
+          },
+          {
+            tag: "effect",
+            apply_to: "classes",
+            set: "ThrowingSpear,Kunai,Bolas",
+          },
+        ],
+      },
+      {
+        tag: "trait",
+        id: "missileDeckT4",
+        name: "Generator.Category.MIS_T4",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "default_probs",
+            set: "3,3,3",
+          },
+          {
+            tag: "effect",
+            apply_to: "classes",
+            set: "Javelin,Tomahawk,HeavyBoomerang",
+          },
+        ],
+      },
+      {
+        tag: "trait",
+        id: "missileDeckT5",
+        name: "Generator.Category.MIS_T5",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "default_probs",
+            set: "3,3,3",
+          },
+          {
+            tag: "effect",
+            apply_to: "classes",
+            set: "Trident,ThrowingHammer,ForceCube",
+          },
+        ],
+      },
+    ],
+  },
+]

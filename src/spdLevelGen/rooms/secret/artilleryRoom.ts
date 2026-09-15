@@ -3,7 +3,7 @@
  *  keeps its concrete class id through the live bridge. */
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, set } from '../../paintLevel';
-import { randomMissile, floorSetForPrize } from '../../../spdItems/generator';
+import { randomMissile, floorSetForPrize } from '../../../items/generator';
 
 export function paintArtilleryRoom(level: PaintLevel, room: Room): void {
 	fillRoom(level, room, Terrain.WALL);

@@ -1,136 +1,159 @@
-[game]
-schema=0.1
-
-[table]
-id=curseDefinitions
-columns=id:string|type:string|locks:boolean|nameKey:string|descriptionKey:string|curse:string
-[row]
-id=curse-wayward
-curse=wayward
-type=weapon
-locks=true
-nameKey=items.weapon.curses.wayward.name
-descriptionKey=items.weapon.curses.wayward.desc
-[/row]
-[row]
-id=curse-annoying
-curse=annoying
-type=weapon
-locks=true
-nameKey=items.weapon.curses.annoying.name
-descriptionKey=items.weapon.curses.annoying.desc
-[/row]
-[row]
-id=curse-dazzling
-curse=dazzling
-type=weapon
-locks=true
-nameKey=items.weapon.curses.dazzling.name
-descriptionKey=items.weapon.curses.dazzling.desc
-[/row]
-[row]
-id=curse-displacing
-curse=displacing
-type=weapon
-locks=true
-nameKey=items.weapon.curses.displacing.name
-descriptionKey=items.weapon.curses.displacing.desc
-[/row]
-[row]
-id=curse-explosive
-curse=explosive
-type=weapon
-locks=true
-nameKey=items.weapon.curses.explosive.name
-descriptionKey=items.weapon.curses.explosive.desc
-[/row]
-[row]
-id=curse-friendly
-curse=friendly
-type=weapon
-locks=true
-nameKey=items.weapon.curses.friendly.name
-descriptionKey=items.weapon.curses.friendly.desc
-[/row]
-[row]
-id=curse-polarized
-curse=polarized
-type=weapon
-locks=true
-nameKey=items.weapon.curses.polarized.name
-descriptionKey=items.weapon.curses.polarized.desc
-[/row]
-[row]
-id=curse-sacrificial
-curse=sacrificial
-type=weapon
-locks=true
-nameKey=items.weapon.curses.sacrificial.name
-descriptionKey=items.weapon.curses.sacrificial.desc
-[/row]
-[row]
-id=curse-stench
-curse=stench
-type=armor
-locks=true
-nameKey=items.armor.curses.stench.name
-descriptionKey=items.armor.curses.stench.desc
-[/row]
-[row]
-id=curse-antientropy
-curse=antientropy
-type=armor
-locks=true
-nameKey=items.armor.curses.antientropy.name
-descriptionKey=items.armor.curses.antientropy.desc
-[/row]
-[row]
-id=curse-bulk
-curse=bulk
-type=armor
-locks=true
-nameKey=items.armor.curses.bulk.name
-descriptionKey=items.armor.curses.bulk.desc
-[/row]
-[row]
-id=curse-corrosion
-curse=corrosion
-type=armor
-locks=true
-nameKey=items.armor.curses.corrosion.name
-descriptionKey=items.armor.curses.corrosion.desc
-[/row]
-[row]
-id=curse-displacement
-curse=displacement
-type=armor
-locks=true
-nameKey=items.armor.curses.displacement.name
-descriptionKey=items.armor.curses.displacement.desc
-[/row]
-[row]
-id=curse-metabolism
-curse=metabolism
-type=armor
-locks=true
-nameKey=items.armor.curses.metabolism.name
-descriptionKey=items.armor.curses.metabolism.desc
-[/row]
-[row]
-id=curse-multiplicity
-curse=multiplicity
-type=armor
-locks=true
-nameKey=items.armor.curses.multiplicity.name
-descriptionKey=items.armor.curses.multiplicity.desc
-[/row]
-[row]
-id=curse-overgrowth
-curse=overgrowth
-type=armor
-locks=true
-nameKey=items.armor.curses.overgrowth.name
-descriptionKey=items.armor.curses.overgrowth.desc
-[/row]
-[/table]
-[/game]
+[
+  {
+    tag: "game",
+    schema: 0.1,
+    children: [
+      {
+        tag: "table",
+        id: "curseDefinitions",
+        columns: "id:string|type:string|locks:boolean|nameKey:string|descriptionKey:string|curse:string",
+        children: [
+          {
+            tag: "row",
+            id: "curse-wayward",
+            curse: "wayward",
+            type: "weapon",
+            locks: "true",
+            nameKey: "items.weapon.curses.wayward.name",
+            descriptionKey: "items.weapon.curses.wayward.desc",
+          },
+          {
+            tag: "row",
+            id: "curse-annoying",
+            curse: "annoying",
+            type: "weapon",
+            locks: "true",
+            nameKey: "items.weapon.curses.annoying.name",
+            descriptionKey: "items.weapon.curses.annoying.desc",
+          },
+          {
+            tag: "row",
+            id: "curse-dazzling",
+            curse: "dazzling",
+            type: "weapon",
+            locks: "true",
+            nameKey: "items.weapon.curses.dazzling.name",
+            descriptionKey: "items.weapon.curses.dazzling.desc",
+          },
+          {
+            tag: "row",
+            id: "curse-displacing",
+            curse: "displacing",
+            type: "weapon",
+            locks: "true",
+            nameKey: "items.weapon.curses.displacing.name",
+            descriptionKey: "items.weapon.curses.displacing.desc",
+          },
+          {
+            tag: "row",
+            id: "curse-explosive",
+            curse: "explosive",
+            type: "weapon",
+            locks: "true",
+            nameKey: "items.weapon.curses.explosive.name",
+            descriptionKey: "items.weapon.curses.explosive.desc",
+          },
+          {
+            tag: "row",
+            id: "curse-friendly",
+            curse: "friendly",
+            type: "weapon",
+            locks: "true",
+            nameKey: "items.weapon.curses.friendly.name",
+            descriptionKey: "items.weapon.curses.friendly.desc",
+          },
+          {
+            tag: "row",
+            id: "curse-polarized",
+            curse: "polarized",
+            type: "weapon",
+            locks: "true",
+            nameKey: "items.weapon.curses.polarized.name",
+            descriptionKey: "items.weapon.curses.polarized.desc",
+          },
+          {
+            tag: "row",
+            id: "curse-sacrificial",
+            curse: "sacrificial",
+            type: "weapon",
+            locks: "true",
+            nameKey: "items.weapon.curses.sacrificial.name",
+            descriptionKey: "items.weapon.curses.sacrificial.desc",
+          },
+          {
+            tag: "row",
+            id: "curse-stench",
+            curse: "stench",
+            type: "armor",
+            locks: "true",
+            nameKey: "items.armor.curses.stench.name",
+            descriptionKey: "items.armor.curses.stench.desc",
+          },
+          {
+            tag: "row",
+            id: "curse-antientropy",
+            curse: "antientropy",
+            type: "armor",
+            locks: "true",
+            nameKey: "items.armor.curses.antientropy.name",
+            descriptionKey: "items.armor.curses.antientropy.desc",
+          },
+          {
+            tag: "row",
+            id: "curse-bulk",
+            curse: "bulk",
+            type: "armor",
+            locks: "true",
+            nameKey: "items.armor.curses.bulk.name",
+            descriptionKey: "items.armor.curses.bulk.desc",
+          },
+          {
+            tag: "row",
+            id: "curse-corrosion",
+            curse: "corrosion",
+            type: "armor",
+            locks: "true",
+            nameKey: "items.armor.curses.corrosion.name",
+            descriptionKey: "items.armor.curses.corrosion.desc",
+          },
+          {
+            tag: "row",
+            id: "curse-displacement",
+            curse: "displacement",
+            type: "armor",
+            locks: "true",
+            nameKey: "items.armor.curses.displacement.name",
+            descriptionKey: "items.armor.curses.displacement.desc",
+          },
+          {
+            tag: "row",
+            id: "curse-metabolism",
+            curse: "metabolism",
+            type: "armor",
+            locks: "true",
+            nameKey: "items.armor.curses.metabolism.name",
+            descriptionKey: "items.armor.curses.metabolism.desc",
+          },
+          {
+            tag: "row",
+            id: "curse-multiplicity",
+            curse: "multiplicity",
+            type: "armor",
+            locks: "true",
+            nameKey: "items.armor.curses.multiplicity.name",
+            descriptionKey: "items.armor.curses.multiplicity.desc",
+          },
+          {
+            tag: "row",
+            id: "curse-overgrowth",
+            curse: "overgrowth",
+            type: "armor",
+            locks: "true",
+            nameKey: "items.armor.curses.overgrowth.name",
+            descriptionKey: "items.armor.curses.overgrowth.desc",
+          },
+        ],
+      },
+    ],
+  },
+]

@@ -8,7 +8,7 @@
  *  modeled - this port doesn't place mobs during generation. */
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, fillXY, drawLine } from '../../paintLevel';
-import { Cat, randomUsingDefaults } from '../../../spdItems/generator';
+import { Cat, randomUsingDefaults } from '../../../items/generator';
 
 export function paintRunestoneRoom(level: PaintLevel, room: Room): void {
 	fillRoom(level, room, Terrain.WALL);

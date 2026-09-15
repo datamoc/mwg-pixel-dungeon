@@ -7,7 +7,7 @@ import { Room } from './room';
 import { SpdRandom } from '../spdRng';
 import { PaintLevel, Terrain } from './paintLevel';
 import { paintLevel, TrapTable, Feeling } from './regularPainter';
-import { setGeneratorDepth } from '../spdItems/generator';
+import { setGeneratorDepth } from '../items/generator';
 import { MWL_TRAIT_NODES } from '../mwlContent';
 import { mwlPaintRule } from './mwlDungeonRules';
 

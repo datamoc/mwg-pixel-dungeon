@@ -1,7 +1,7 @@
-import { BLOB_SHAPES } from 'mwg';
 import type { Roguelike } from 'mwg';
 import type { GameKindCodes } from './spdLevelGen/gameBridge';
 import type { WallTileKinds } from './spdLevelGen/wallTiles';
+import { MWL_ITEM_FRAMES, MWL_ITEM_LIMITS } from './mwlContent';
 
 export const TILE = 16;
 export const VIEW_RADIUS = 8;
@@ -118,25 +118,9 @@ export const TERRAIN_FRAME = {
 	grass: 2,
 };
 
-/**
- * `DungeonTileSheet.stitchWaterTile`'s own bit order (top=1, right=2, bottom=4, left=8) into
- * SPD's 16 real water tiles, looked up once per `mwg/render` `BLOB_SHAPES` entry rather than
- * per cell - `autotileFrames` wants exactly 47 frames, one per shape, computed up front.
- *
- * A `BLOB_SHAPES` bit means "this neighbour is water too" (it comes from the same
- * `sameTerrain` test the centre cell passed); `stitchWaterTile`'s bits mean the opposite -
- * "this neighbour is dry ground to blend towards" - so each bit is inverted here. A cell
- * boxed in by water on every side gets mask 0, the plain open-water tile; one bordered by
- * ground on every side gets 15, blending on all four edges.
- */
-export const WATER_FRAMES: number[] = BLOB_SHAPES.map((shape) => {
-	const mask = (shape.n ? 0 : 1) | (shape.e ? 0 : 2) | (shape.s ? 0 : 4) | (shape.w ? 0 : 8);
-	return TERRAIN_FRAME.water + mask;
-});
-
 /** Levels.java trap kinds with Dungeon-referenced damage numbers (depth-scaled where Java scales) */
-export type TrapKind = 'toxic' | 'burning' | 'poisonDart' | 'grim' | 'explosive';
-export const TRAP_KINDS: TrapKind[] = ['toxic', 'burning', 'poisonDart', 'grim', 'explosive'];
+export type TrapKind = 'toxic' | 'burning' | 'poisonDart' | 'grim' | 'explosive' | 'confusionGas' | 'corrosionGas';
+export const TRAP_KINDS: TrapKind[] = ['toxic', 'burning', 'poisonDart', 'grim', 'explosive', 'confusionGas', 'corrosionGas'];
 
 export type GroundItemKind =
 	| 'dewdrop'
@@ -167,50 +151,22 @@ export type GroundItemKind =
 	| 'bag'
 	| 'sandBag';
 
-/**
- * `ItemSpriteSheet`'s real 256x512 grid (`xy(x,y) = (x-1) + 16*(y-1)`, matching this sheet's
- * own 16-wide layout): `DEWDROP = UNCOLLECTIBLE+3` where `UNCOLLECTIBLE = xy(3,2)`;
- * `THROWING_STONE = MISSILE_WEP+3` where `MISSILE_WEP = xy(1,10)`; `POTIONS = xy(1,23)` and
- * `SCROLLS = xy(1,20)`, each the first of 16 randomised-appearance variants for an
- * unidentified potion/scroll - this port always shows that first variant rather than
- * randomising per-item the way real unidentified appearances are shuffled per run.
- */
-export const ITEM_FRAME: Record<GroundItemKind, number> = {
-	dewdrop: 21,
-	stone: 147,
-	potion: 352,
-	scroll: 304,
-	meat: 432,
-	gold: 18,
-	armor: 176,
-	wand: 208,
-	food: 437,
-	seed: 58,
-	//DarkGold.ORE, DwarfToken.TOKEN, Amulet.AMULET, first ring appearance (RING_GARNET),
-	//CrystalKey.CRYSTAL_KEY = MISC_CONSUMABLE+9 where MISC_CONSUMABLE = xy(1,4) = 48
-	darkGold: 453,
-	dwarfToken: 454,
-	amulet: 61,
-	ring: 224,
-	crystalKey: 57,
-	ironKey: 56,
-	goldenKey: 56,
-	//BOMB = BOMBS+0 where BOMBS = xy(1,6) = 80 (DBL_BOMB = 81, used for doubleBomb heaps)
-	bomb: 80,
-	//DUST = QUEST+1 where QUEST = xy(1,30) = 464
-	corpseDust: 465,
-	//CANDLE = QUEST+2, EMBER = QUEST+3 (the Wandmaker type-2 ritual props)
-	candle: 466,
-	embers: 467,
-	//`ItemSpriteSheet`'s MISC_CONSUMABLE/SPELLS/BAGS/UNCOLLECTIBLE frames (tag v3.3.8).
-	//The item id selects the exact frame in `spawnGroundItem`, since these six kinds share
-	//different Java sprite families while remaining one ground-kind union for the renderer.
-	ankh: 48,
-	stylus: 49,
-	honeypot: 53,
-	alchemize: 237, // SPELLS = xy(1,15) = 224, ALCHEMIZE = SPELLS + 13
-	bag: 480, // BAGS = xy(1,31)
-	sandBag: 23, // SANDBAG = UNCOLLECTIBLE + 5, UNCOLLECTIBLE = xy(3,2)
-};
-/** `Waterskin.MAX_VOLUME` */
-export const WATERSKIN_MAX = 20;
+export const GROUND_ITEM_KINDS: readonly GroundItemKind[] = [
+	'dewdrop', 'stone', 'potion', 'scroll', 'meat', 'gold', 'armor', 'wand', 'food', 'seed',
+	'darkGold', 'dwarfToken', 'amulet', 'ring', 'crystalKey', 'ironKey', 'goldenKey', 'bomb',
+	'corpseDust', 'candle', 'embers', 'ankh', 'stylus', 'honeypot', 'alchemize', 'bag', 'sandBag',
+];
+
+/** `ItemSpriteSheet` frame metadata is authored in MWL; this adapter validates the closed
+ * ground-kind union and leaves texture loading/rendering to the scene. */
+export const ITEM_FRAME: Record<GroundItemKind, number> = (() => {
+	const frames = {} as Record<GroundItemKind, number>;
+	for (const kind of GROUND_ITEM_KINDS) {
+		const frame = MWL_ITEM_FRAMES[kind];
+		if (frame === undefined) throw new Error(`MWL itemFrames is missing ground kind: ${kind}`);
+		frames[kind] = frame;
+	}
+	return frames;
+})();
+/** `Waterskin.MAX_VOLUME` is item metadata authored in MWL. */
+export const WATERSKIN_MAX = MWL_ITEM_LIMITS.waterskin ?? (() => { throw new Error('MWL itemLimits is missing waterskin'); })();

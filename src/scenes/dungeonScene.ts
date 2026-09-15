@@ -171,7 +171,7 @@ import { transferEnhancement, upgradeItem } from '../items/itemWorkflows';
 import { armorReductionRange, weaponDamageRange } from '../items/catalog';
 import { getArmorCurses, getCurse, getWeaponCurses } from '../items/itemCurses';
 import { Cat, blacksmithSmithRewards, generatorItemOrder, generatorRandom, ghostQuestReward, randomUsingDefaults, removeArtifactClass, setGeneratorDepth, type GenItem, type StatueLoot } from '../items/generator';
-import { MWL_HERO_BASE_STATS, MWL_HERO_LEVEL_GROWTH, MWL_MISSILE_BY_CLASS, MWL_PROGRESSION, MWL_QUEST_DEFINITIONS, MWL_SCENARIO_QUESTS, MWL_TURN_CLOCK, MWL_WAND_WARD_RULES, mwlItemEffectValue } from '../mwlContent';
+import { MWL_HERO_BASE_STATS, MWL_HERO_LEVEL_GROWTH, MWL_MISSILE_BY_CLASS, MWL_PROGRESSION, MWL_QUEST_DEFINITIONS, MWL_SCENARIO_QUESTS, MWL_SHOP_SHELF_STOCK, MWL_TURN_CLOCK, MWL_WAND_WARD_RULES, mwlItemEffectValue } from '../mwlContent';
 import { dungeonRegion } from './regions';
 import { hallsDemonSpawnerFloorFrames } from './regions/halls';
 import { wandChargesPerCast, wandDamageRange, wandTargetRange, wandTypeFromSource, type WandType } from '../items/wands';
@@ -265,7 +265,7 @@ import {
 } from '../combat';
 import { nextEntityId } from '../simulation/entityId';
 import { applyChillFreeze } from '../simulation/buffs';
-import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LIMITED_DROP_DECAY, BASE_KIND_ALIASES, NPC_KINDS, BOSS_KINDS, MINIBOSS_KINDS, UNDEAD_KINDS, isUndeadOrDemonic, IMMOVABLE_KINDS, NEVER_SLEEPS_KINDS, FLYING_KINDS, SPRITE_KIND_OVERRIDE, MWL_AI_PROFILES, type AnyMonsterId, type MonsterId } from '../monsters';
+import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LIMITED_DROP_DECAY, BASE_KIND_ALIASES, NPC_KINDS, BOSS_KINDS, MINIBOSS_KINDS, UNDEAD_KINDS, isUndeadOrDemonic, IMMOVABLE_KINDS, INORGANIC_KINDS, NEVER_SLEEPS_KINDS, FLYING_KINDS, SPRITE_KIND_OVERRIDE, MWL_AI_PROFILES, type AnyMonsterId, type MonsterId } from '../monsters';
 
 /**
  * Shattered Pixel Dungeon, on top of mwg: a title screen, hero-class selection, the Sewers
@@ -3730,12 +3730,15 @@ export class DungeonScene extends Scene2D {
 		});
 	}
 
+	/** Each shop's opening shelf, authored in `scenario-rules.mwl`'s `shopShelfStock`
+	 * (the simplified two-potions/two-identifies stock this shop UI trades). */
 	private shopStockFor(depth: number): Actors.Inventory {
 		let stock = this.shopStocks.get(depth);
 		if (!stock) {
 			stock = new Actors.Inventory();
-			stock.add({ id: 'potion', quantity: 2, stackable: true, identified: true });
-			stock.add({ id: 'scrollIdentify', quantity: 2, stackable: true, identified: true });
+			for (const entry of MWL_SHOP_SHELF_STOCK) {
+				stock.add({ id: entry.item, quantity: entry.quantity, stackable: true, identified: true });
+			}
 			this.shopStocks.set(depth, stock);
 		}
 		return stock;
@@ -5218,8 +5221,14 @@ export class DungeonScene extends Scene2D {
 			toxicDamage: (target) => target.isHero
 				? Math.floor((1 + Math.floor(this.depth / 5)) * ringElementsMultiplier(this.equippedRing, this.hero.magicImmune))
 				: 1 + Math.floor(this.depth / 5),
+			//`Char.Property.IMMOVABLE` immunity to Vertigo (`Char.java`): the daze applied
+			//above is Vertigo's stand-in, so these kinds refuse confusion gas - every other
+			//daze source still lands, since those are not Vertigo.
+			isVertigoImmune: (target) => target.kind !== undefined && IMMOVABLE_KINDS.has(target.kind),
 			isToxicImmune: (target) =>
 				target.kind === 'rotHeart' || target.kind === 'rotLasher'
+				|| (target.kind !== undefined && INORGANIC_KINDS.has(target.kind))
+				|| (target.kind === 'yogFist' && target.yogFistType === 'rusted')
 				|| (target.kind === 'yog' && this.yogShielded(target))
 				|| (target.kind === 'yogFist' && this.guardFist(target)),
 			applyDamage: (target, damage) => {
@@ -5564,8 +5573,9 @@ export class DungeonScene extends Scene2D {
 			const damage = Math.max(0, Random.normalRange(4, 8) - Random.normalRange(monster.armor[0], monster.armor[1]));
 			monster.hp -= damage;
 			this.showDamage(monster, damage);
-			addBuff(monster, 'poison');
-			monster.buffs['poison'] = Math.max(monster.buffs['poison'] ?? 0, 8 + Math.round((2 * this.depth) / 3));
+			//`reigniteBuff` keeps the max-duration semantics and routes through the shared
+			//immunity gate, so INORGANIC kinds refuse the dart's poison like Java's isImmune.
+			reigniteBuff(monster, 'poison', 8 + Math.round((2 * this.depth) / 3));
 		} else if (kind === 'grim') {
 			const raw = Math.min(Math.round(monster.maxHp * 0.9), Math.round(monster.hp / 2 + monster.maxHp / 4));
 			const damage = Math.max(0, raw - Random.normalRange(monster.armor[0], monster.armor[1]));
@@ -7279,8 +7289,8 @@ export class DungeonScene extends Scene2D {
 				addBuff(creature, 'bless');
 				break;
 			case 'sorrowmoss':
-				addBuff(creature, 'poison');
-				creature.buffs.poison = 5 + Math.round(2 * this.depth / 3);
+				//Same max-duration shape through the shared gate: INORGANIC kinds refuse it.
+				reigniteBuff(creature, 'poison', 5 + Math.round(2 * this.depth / 3));
 				break;
 			case 'stormvine':
 				addBuff(creature, 'daze');
@@ -9311,7 +9321,9 @@ export class DungeonScene extends Scene2D {
 		//keep behaving awake via every `?? 1` below.
 		const risen = this.spawnMonster('yog', at);
 		risen.yogPhase = 0;
-		this.say('The dark stirs - Yog-Dzewa is here.');
+		//A raw English literal here once showed English on every locale, the same silent
+		//`say()`-without-`t()` failure the boss-victory lines had - now a port key in all 19.
+		this.say(t('port.log.yogarrives'));
 	}
 
 	/** `SewerBossLevel.seal()` (`SewerBossLevel.java` 177-195): the entrance cell drowns to
@@ -9529,8 +9541,9 @@ export class DungeonScene extends Scene2D {
 					if (this.fadeMirrorOnDamage(target, dmg)) continue;
 					this.showDamage(target, dmg);
 					if (target.hp <= 0) this.kill(target);
-					else if (challenge) target.buffs['paralysis'] = 5;
-					else addBuff(target, 'paralysis');
+					//Same duration through the shared gate, so STATIC kinds (demonSpawner/rotHeart/
+					//pylon/yog) refuse the challenge-mode paralysis like Java's isImmune.
+					else addBuff(target, 'paralysis', challenge ? 5 : undefined);
 				}
 			}
 		}

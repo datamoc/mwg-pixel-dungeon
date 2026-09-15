@@ -7,4 +7,5 @@ export const simulationRandom: SimulationRandom = {
 	normalRange: (min, max) => Random.normalRange(min, max),
 	range: (min, max) => Random.range(min, max),
 	int: (min, max) => Random.int(min, max),
+	chance: (probability) => Random.chance(probability),
 };

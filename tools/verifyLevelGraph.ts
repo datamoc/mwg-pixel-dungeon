@@ -16,8 +16,8 @@ import { resetSpecialRoomRunState } from '../src/spdLevelGen/rooms/special/regis
 import { resetSecretRoomRunState } from '../src/spdLevelGen/rooms/secret/registry.ts';
 import { resetWandmakerRunState } from '../src/spdLevelGen/wandmaker.ts';
 import type { Room } from '../src/spdLevelGen/room.ts';
-import { generatorFullReset } from '../src/spdItems/generator.ts';
-import { resetShopRunState } from '../src/spdItems/shopItems.ts';
+import { generatorFullReset } from '../src/items/generator.ts';
+import { resetShopRunState } from '../src/items/shopItems.ts';
 
 function dumpGraph(seed: bigint, depth: number): string {
 	const floorSeed = spdSeedForDepth(seed, depth, 0);

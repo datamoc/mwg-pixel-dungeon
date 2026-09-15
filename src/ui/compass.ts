@@ -1,4 +1,4 @@
-import { Rectangle, Sprite, Texture } from 'pixi.js';
+import { Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 
 /**
  * The arrow that points at the floor's exit, ported from `ui/Compass.java`.

@@ -3,7 +3,7 @@
  *  constructor's full enchanted weapon (and armor, when armored) - see `randomStatue()`. */
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, fillXY } from '../../paintLevel';
-import { randomStatue } from '../../../spdItems/generator';
+import { randomStatue } from '../../../items/generator';
 
 export function paintStatueRoom(level: PaintLevel, room: Room): void {
 	fillRoom(level, room, Terrain.WALL);

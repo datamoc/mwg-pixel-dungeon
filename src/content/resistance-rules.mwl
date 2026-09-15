@@ -1,28 +1,72 @@
-[game]
-schema=0.1
-
-# Status-effect immunities (`Char.isImmune`), the class lists real Java gates each source on:
-# Brimstone grants fire immunity (`Brimstone.java`, `isImmune(Burning.class)`), AntiMagic grants
-# magic immunity (`AntiMagic.java`'s `RESISTS` list), and Frost grants chill immunity
-# (`Frost.java`, `isImmune(Chill.class)`). This port models the three sources as the
-# `fireImmune`/`magicImmune` flags and the active `frost` buff, then rejects any buff id listed
-# here before it attaches - see `combat.ts`'s `addBuff`. Damage-source resistance (e.g.
-# `RingOfElements.resist()`) is a separate, executable path, not part of this list.
-
-[trait]
-id=statusImmunities
-name=Char.immunities
-[effect]
-apply_to=fire
-set=burning
-[/effect]
-[effect]
-apply_to=magic
-set=charm,weakness,vulnerable,hex,degrade,magicalSleep
-[/effect]
-[effect]
-apply_to=chill
-set=chill
-[/effect]
-[/trait]
-[/game]
+[
+  {
+    tag: "game",
+    schema: 0.1,
+    children: [
+      {
+        tag: "trait",
+        id: "statusImmunities",
+        name: "Char.immunities",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "fire",
+            set: "burning",
+          },
+          {
+            tag: "effect",
+            apply_to: "magic",
+            set: "charm,weakness,vulnerable,hex,degrade,magicalSleep",
+          },
+          {
+            tag: "effect",
+            apply_to: "chill",
+            set: "chill",
+          },
+        ],
+      },
+      // Per-monster status immunities (`Char.isImmune()`'s mob half, tag `v3.3.8`): each row names
+      // the port buff ids Java refuses to attach to that kind. Sources: the INORGANIC property
+      // (bleeding/poison/toxicGas - the blob half is enforced at the toxic-gas site, not here),
+      // the STATIC property (terror/amok/charm/paralysis/frost/chill - Sleep/Slow/Speed/Dread have
+      // no port buff to gate), the ACIDIC property (ooze), FIERY on the burning fist (burning),
+      // plus the instance lists - Succubus (charm), Tengu (roots/terror), Piranha (burning),
+      // DM300's Sleep (no port buff; the drowsy path correctly still lands, since Java's
+      // MagicalSleep is a different class), and the bright fist (frost). `subtype` selects one
+      // yogFistType; empty means every instance of the kind. Damage-source resistances (FIERY/
+      // ELECTRIC/ICY/ACIDIC/Corrosion/Grim/Disintegration halving, `Char.resist()`'s 50%) are the
+      // damage model's job (section 7), not this attachment gate - see PORT_COVERAGE.md.
+      {
+        tag: "table",
+        id: "monsterStatusImmunities",
+        columns: "monster:string|subtype:string|immunities:list",
+        list_delimiter: ",",
+        children: [
+          { tag: "row", monster: "dm100", subtype: "", immunities: "bleeding,poison" },
+          { tag: "row", monster: "dm200", subtype: "", immunities: "bleeding,poison" },
+          { tag: "row", monster: "dm201", subtype: "", immunities: "bleeding,poison" },
+          { tag: "row", monster: "dm300", subtype: "", immunities: "bleeding,poison" },
+          { tag: "row", monster: "golem", subtype: "", immunities: "bleeding,poison" },
+          { tag: "row", monster: "skeleton", subtype: "", immunities: "bleeding,poison" },
+          { tag: "row", monster: "necroSkeleton", subtype: "", immunities: "bleeding,poison" },
+          { tag: "row", monster: "statue", subtype: "", immunities: "bleeding,poison" },
+          { tag: "row", monster: "armoredStatue", subtype: "", immunities: "bleeding,poison" },
+          { tag: "row", monster: "pylon", subtype: "", immunities: "bleeding,poison,terror,amok,charm,paralysis" },
+          { tag: "row", monster: "demonSpawner", subtype: "", immunities: "terror,amok,charm,paralysis" },
+          { tag: "row", monster: "rotHeart", subtype: "", immunities: "terror,amok,charm,paralysis" },
+          { tag: "row", monster: "yog", subtype: "", immunities: "terror,amok,charm,paralysis" },
+          { tag: "row", monster: "goo", subtype: "", immunities: "ooze" },
+          { tag: "row", monster: "acidic", subtype: "", immunities: "ooze" },
+          { tag: "row", monster: "causticSlime", subtype: "", immunities: "ooze" },
+          { tag: "row", monster: "yogFist", subtype: "rotting", immunities: "ooze" },
+          { tag: "row", monster: "yogFist", subtype: "burning", immunities: "burning" },
+          { tag: "row", monster: "yogFist", subtype: "bright", immunities: "frost" },
+          { tag: "row", monster: "yogFist", subtype: "rusted", immunities: "bleeding,poison" },
+          { tag: "row", monster: "succubus", subtype: "", immunities: "charm" },
+          { tag: "row", monster: "tengu", subtype: "", immunities: "roots,terror" },
+          { tag: "row", monster: "piranha", subtype: "", immunities: "burning" },
+        ],
+      },
+    ],
+  },
+]

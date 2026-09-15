@@ -23,7 +23,7 @@
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
-import { generatedGroundKind, generatorRandom, randomArmor } from '../../../spdItems/generator';
+import { generatedGroundKind, generatorRandom, randomArmor } from '../../../items/generator';
 
 export function paintMassGraveRoom(level: PaintLevel, room: Room): void {
 	const entrance = room.entranceDoor();

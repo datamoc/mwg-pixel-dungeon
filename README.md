@@ -43,6 +43,9 @@ npx tsc --noEmit       # type-check
 npm run build           # full build
 npm run test:simulation # combat/turn/buff simulation suite
 npm run test:items      # item workflow suite
+npm run test:lua        # MWG Lua AI compatibility suite
+npm run test:mwg        # MWG SaveSystem/facade compatibility suite
+npm run verify          # all of the above, including the build
 ```
 
 Browser verification (visual, in-game behavior) is a separate manual step - type-checking

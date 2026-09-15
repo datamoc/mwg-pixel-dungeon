@@ -10,7 +10,7 @@
  * real Java values, `kind`-branched.
  */
 import { SpdRandom } from '../spdRng';
-import { generateShopItems } from '../spdItems/shopItems';
+import { generateShopItems } from '../items/shopItems';
 
 export const ALL = 0, LEFT = 1, TOP = 2, RIGHT = 3, BOTTOM = 4;
 export type Direction = typeof ALL | typeof LEFT | typeof TOP | typeof RIGHT | typeof BOTTOM;
@@ -534,17 +534,32 @@ export class Room {
 		if ((this.kind === 'secret' && this.secretKind === 'well') || (this.kind === 'standard' && this.standardKind === 'sewerPipe')) {
 			return (p.x > this.left + 1 && p.x < this.right - 1) || (p.y > this.top + 1 && p.y < this.bottom - 1);
 		}
-		// CrystalPathRoom.canConnect(Point) / SentryRoom.canConnect(Point): refuse the exact
-		// center point on whichever axis has odd width/height. Java calls `center()` separately
-		// in EACH `if` (not once, hoisted) - `center()` itself unconditionally computes both x
-		// and y, rolling `Random.Int(2)` on whichever axis has odd (right-left)/(bottom-top) (the
-		// *even*-width/height axis), independent of which component the caller actually reads. A
-		// hoisted single call here was a real RNG-count bug found via the Phase 2 harness: when
-		// both width and height are even, Java's two `if` guards are both false and `center()` is
-		// never invoked at all (0 rolls), where a hoisted call would always burn 1-2.
-		if (this.kind === 'special' && (this.specialKind === 'crystalPath' || this.specialKind === 'sentry')) {
+		// SentryRoom.canConnect(Point): refuse the exact center point on whichever axis has odd
+		// width/height. Java calls `center()` separately in EACH `if` (not once, hoisted) -
+		// `center()` itself unconditionally computes both x and y, rolling `Random.Int(2)` on
+		// whichever axis has odd (right-left)/(bottom-top) (the *even*-width/height axis),
+		// independent of which component the caller actually reads. A hoisted single call here
+		// was a real RNG-count bug found via the Phase 2 harness: when both width and height are
+		// even, Java's two `if` guards are both false and `center()` is never invoked at all
+		// (0 rolls), where a hoisted call would always burn 1-2.
+		if (this.kind === 'special' && this.specialKind === 'sentry') {
 			if (this.width() % 2 === 1 && p.x === this.center().x) return false;
 			if (this.height() % 2 === 1 && p.y === this.center().y) return false;
+		}
+		// CrystalPathRoom.canConnect(Point): the OPPOSITE rule from Sentry's - a door is only
+		// allowed within the center strip, everywhere else is refused. Java computes the midpoint
+		// directly as `right - (width()-1)/2f` (which reduces to the plain `(left+right)/2f`
+		// average, since `width()-1 == right-left`), never through `center()`, so - unlike
+		// Sentry's check above - this burns no `Random.Int(2)` roll. A previous pass wrongly
+		// folded this into Sentry's "refuse the center" rule, which is both backwards (Java
+		// *requires* the center here, not forbids it) and consumed spurious RNG rolls via
+		// `center()`; found while re-reading `CrystalPathRoom.java`'s real `canConnect(Point)`.
+		if (this.kind === 'special' && this.specialKind === 'crystalPath') {
+			const midX = (this.left + this.right) / 2;
+			const midY = (this.top + this.bottom) / 2;
+			if (Math.abs(p.x - midX) < 1) return true;
+			if (Math.abs(p.y - midY) < 1) return true;
+			return false;
 		}
 		return true;
 	}

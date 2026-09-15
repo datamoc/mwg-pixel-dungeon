@@ -1,4 +1,4 @@
-import { Sprite, Texture } from 'pixi.js';
+import { Sprite, Texture } from 'mwg/two-d/pixi-interop';
 import { fogHalves } from '../spdLevelGen/fog';
 
 /** Java's two fog pixels per tile, rendered once above terrain and characters.

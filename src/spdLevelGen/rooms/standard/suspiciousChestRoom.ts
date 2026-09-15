@@ -9,7 +9,7 @@
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, set } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
-import { generatedGroundKind, mimicGeneratePrize, randomGold } from '../../../spdItems/generator';
+import { generatedGroundKind, mimicGeneratePrize, randomGold } from '../../../items/generator';
 
 export function paintSuspiciousChestRoom(level: PaintLevel, room: Room): void {
 	fillRoom(level, room, Terrain.WALL);

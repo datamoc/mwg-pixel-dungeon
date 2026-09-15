@@ -8,10 +8,13 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run mwl:compile && tsc --noEmit && vite build && node tools/emit.mjs",
+    "verify": "npm run check && npm run test:simulation && npm run test:items && npm run test:lua && npm run test:mwg && npm run build",
     "check": "npm run mwl:compile && tsc --noEmit && npm run i18n:verify",
     "mwl:compile": "node tools/compile-mwl.mjs",
     "test:simulation": "node tools/verifySimulation.mjs && node tools/verifyBanner.mjs && node tools/verifyVault.mjs",
     "test:items": "node tools/verifyItemWorkflows.mjs",
+    "test:lua": "node tools/verifyLua.mjs",
+    "test:mwg": "node tools/verifyMwgCompatibility.mjs",
     "i18n": "node tools/i18n-extract.mjs",
     "i18n:check": "node tools/i18n-extract.mjs --check",
     "i18n:verify": "esbuild tools/i18nCheck.ts --bundle --platform=node --format=esm --outfile=tools/scratch/i18nCheck.mjs && node tools/scratch/i18nCheck.mjs",
@@ -19,8 +22,7 @@
     "mwg:check": "node tools/check-mwg-version.mjs"
   },
   "dependencies": {
-    "@datamoc/mw_games": "^0.9.0-alpha",
-    "mwg": "npm:@datamoc/mw_games@^0.9.0-alpha",
+    "mwg": "npm:@datamoc/mw_games@^0.13.0",
     "pixi.js": "^8.20.1"
   },
   "devDependencies": {

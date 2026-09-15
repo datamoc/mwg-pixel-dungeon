@@ -1,4 +1,4 @@
-import { Container } from 'pixi.js';
+import { Container } from 'mwg/two-d/pixi-interop';
 import { SpdLabel as Label } from './spdLabel';
 import { SPD_STATUS_COLOR } from './spdTheme';
 

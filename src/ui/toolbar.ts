@@ -1,4 +1,4 @@
-import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Container, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 import { Button, Label } from 'mwg';
 import { runState } from '../runState';
 import { t } from '../i18n';

@@ -229,6 +229,15 @@ export function isUndeadOrDemonic(kind: AnyMonsterId | undefined): boolean {
  * "no push if char is immovable" rule - such an occupant is never shoved aside. */
 export const IMMOVABLE_KINDS = mwlActorFlagSet('immovable');
 
+/**
+ * Java's `Char.Property.INORGANIC` members this port spawns (`Char.java`, tag `v3.3.8`),
+ * authored in `actor-rules.mwl`'s `actorFlags` like every other property set: immune to
+ * Bleeding/ToxicGas/Poison. The two buffs are enforced through `monsterStatusImmunities` at the
+ * shared buff boundary; ToxicGas is a blob, so `dungeonScene.ts`'s `isToxicImmune` reads this
+ * set (plus the rusted fist, which carries the property by subtype) directly.
+ */
+export const INORGANIC_KINDS = mwlActorFlagSet('inorganic');
+
 /** Kinds that spawn already awake (real Java `state = PASSIVE`/`WANDERING` from the start,
  * never `SLEEPING`): Ghost-quest mobs (FetidRat/GnollTrickster/GreatCrab, spawned mid-quest
  * with the hero already nearby, not lying in ambush), DemonSpawner/Sentry/RotHeart/RotLasher

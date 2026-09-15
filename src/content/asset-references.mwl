@@ -1,65 +1,210 @@
-[game]
-schema=0.1
-
-# Shared atlas identities used by the terrain and presentation adapters. The renderer owns
-# registration and frame cutting; MWL owns which source files are part of this port's content.
-[object]
-id=asset-water0
-name=water0
-image=assets/water0.png
-[/object]
-[object]
-id=asset-water1
-name=water1
-image=assets/water1.png
-[/object]
-[object]
-id=asset-water2
-name=water2
-image=assets/water2.png
-[/object]
-[object]
-id=asset-water3
-name=water3
-image=assets/water3.png
-[/object]
-[object]
-id=asset-water4
-name=water4
-image=assets/water4.png
-[/object]
-[object]
-id=asset-effects
-name=effects
-image=assets/effects.png
-[/object]
-[object]
-id=asset-terrain-features
-name=terrain-features
-image=assets/terrain_features.png
-[/object]
-[object]
-id=asset-caves-quest
-name=caves-quest
-image=assets/caves_quest.png
-[/object]
-[object]
-id=asset-halls-special
-name=halls-special
-image=assets/halls_special.png
-[/object]
-[object]
-id=asset-wall-blocking
-name=wall-blocking
-image=assets/wall_blocking.png
-[/object]
-
-[table]
-id=itemAssetSources
-columns=slot:string|image:string
-[row]
-slot=items
-image=assets/items.png
-[/row]
-[/table]
-[/game]
+[
+  {
+    tag: "game",
+    schema: 0.1,
+    children: [
+      {
+        tag: "object",
+        id: "asset-water0",
+        name: "water0",
+        image: "assets/water0.png",
+      },
+      {
+        tag: "object",
+        id: "asset-water1",
+        name: "water1",
+        image: "assets/water1.png",
+      },
+      {
+        tag: "object",
+        id: "asset-water2",
+        name: "water2",
+        image: "assets/water2.png",
+      },
+      {
+        tag: "object",
+        id: "asset-water3",
+        name: "water3",
+        image: "assets/water3.png",
+      },
+      {
+        tag: "object",
+        id: "asset-water4",
+        name: "water4",
+        image: "assets/water4.png",
+      },
+      {
+        tag: "object",
+        id: "asset-effects",
+        name: "effects",
+        image: "assets/effects.png",
+      },
+      {
+        tag: "object",
+        id: "asset-terrain-features",
+        name: "terrain-features",
+        image: "assets/terrain_features.png",
+      },
+      {
+        tag: "object",
+        id: "asset-caves-quest",
+        name: "caves-quest",
+        image: "assets/caves_quest.png",
+      },
+      {
+        tag: "object",
+        id: "asset-halls-special",
+        name: "halls-special",
+        image: "assets/halls_special.png",
+      },
+      {
+        tag: "object",
+        id: "asset-wall-blocking",
+        name: "wall-blocking",
+        image: "assets/wall_blocking.png",
+      },
+      { tag: "object", id: "asset-warrior", name: "warrior", image: "assets/warrior.png" },
+      { tag: "object", id: "asset-mage", name: "mage", image: "assets/mage.png" },
+      { tag: "object", id: "asset-rogue", name: "rogue", image: "assets/rogue.png" },
+      { tag: "object", id: "asset-huntress", name: "huntress", image: "assets/huntress.png" },
+      { tag: "object", id: "asset-duelist", name: "duelist", image: "assets/duelist.png" },
+      { tag: "object", id: "asset-cleric", name: "cleric", image: "assets/cleric.png" },
+      { tag: "object", id: "asset-sewers", name: "sewers", image: "assets/tiles_sewers.png" },
+      { tag: "object", id: "asset-prison", name: "prison", image: "assets/tiles_prison.png" },
+      { tag: "object", id: "asset-caves", name: "caves", image: "assets/tiles_caves.png" },
+      { tag: "object", id: "asset-city", name: "city", image: "assets/tiles_city.png" },
+      { tag: "object", id: "asset-halls", name: "halls", image: "assets/tiles_halls.png" },
+      { tag: "object", id: "asset-banners", name: "banners", image: "assets/banners.png" },
+      { tag: "object", id: "asset-banner-boss-slain", name: "banner-boss-slain", image: "assets/banner_boss_slain.png" },
+      { tag: "object", id: "asset-banner-game-over", name: "banner-game-over", image: "assets/banner_game_over.png" },
+      { tag: "object", id: "asset-ui-toolbar", name: "ui-toolbar", image: "assets/ui_toolbar.png" },
+      { tag: "object", id: "asset-ui-chrome", name: "ui-chrome", image: "assets/ui_chrome.png" },
+      { tag: "object", id: "asset-ui-status-pane", name: "ui-status-pane", image: "assets/ui_status_pane.png" },
+      { tag: "object", id: "asset-ui-buffs", name: "ui-buffs", image: "assets/ui_buffs.png" },
+      { tag: "object", id: "asset-ui-icons", name: "ui-icons", image: "assets/ui_icons.png" },
+      { tag: "object", id: "asset-ui-badges", name: "ui-badges", image: "assets/ui_badges.png" },
+      { tag: "object", id: "asset-ui-boss-hp", name: "ui-boss-hp", image: "assets/ui_boss_hp.png" },
+      { tag: "object", id: "asset-ui-arcs-bg", name: "ui-arcs-bg", image: "assets/ui_arcs_bg.png" },
+      { tag: "object", id: "asset-ui-arcs-fg", name: "ui-arcs-fg", image: "assets/ui_arcs_fg.png" },
+      { tag: "object", id: "asset-effect-fireball", name: "effect-fireball", image: "assets/effect_fireball.png" },
+      { tag: "object", id: "asset-loading-sewers", name: "loading-sewers", image: "assets/loading_sewers.png" },
+      { tag: "object", id: "asset-loading-prison", name: "loading-prison", image: "assets/loading_prison.png" },
+      { tag: "object", id: "asset-loading-caves", name: "loading-caves", image: "assets/loading_caves.png" },
+      { tag: "object", id: "asset-loading-city", name: "loading-city", image: "assets/loading_city.png" },
+      { tag: "object", id: "asset-loading-halls", name: "loading-halls", image: "assets/loading_halls.png" },
+      { tag: "object", id: "asset-splash-warrior", name: "splash-warrior", image: "assets/splash_warrior.jpg" },
+      { tag: "object", id: "asset-splash-mage", name: "splash-mage", image: "assets/splash_mage.jpg" },
+      { tag: "object", id: "asset-splash-rogue", name: "splash-rogue", image: "assets/splash_rogue.jpg" },
+      { tag: "object", id: "asset-splash-huntress", name: "splash-huntress", image: "assets/splash_huntress.jpg" },
+      { tag: "object", id: "asset-splash-duelist", name: "splash-duelist", image: "assets/splash_duelist.jpg" },
+      { tag: "object", id: "asset-splash-cleric", name: "splash-cleric", image: "assets/splash_cleric.jpg" },
+      {
+        tag: "table",
+        id: "itemAssetSources",
+        columns: "slot:string|image:string",
+        children: [
+          {
+            tag: "row",
+            slot: "items",
+            image: "assets/items.png",
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "monsterSpriteOverrides",
+        columns: "monster:string|sprite:string",
+        children: [
+          { tag: "row", monster: "sheep", sprite: "sheep" },
+          { tag: "row", monster: "ward", sprite: "wards" },
+          { tag: "row", monster: "earthGuardian", sprite: "guardian" },
+          { tag: "row", monster: "sentry", sprite: "sentry" },
+          { tag: "row", monster: "ratKing", sprite: "ratking" },
+          { tag: "row", monster: "rotHeart", sprite: "rotHeart" },
+          { tag: "row", monster: "rotLasher", sprite: "rotLasher" },
+          { tag: "row", monster: "fetidRat", sprite: "rat" },
+          { tag: "row", monster: "gnollTrickster", sprite: "gnoll" },
+          { tag: "row", monster: "greatCrab", sprite: "crab" },
+          { tag: "row", monster: "necroSkeleton", sprite: "skeleton" },
+          { tag: "row", monster: "newbornElemental", sprite: "elemental" },
+          { tag: "row", monster: "mimic", sprite: "mimic" },
+          { tag: "row", monster: "piranha", sprite: "piranha" },
+          { tag: "row", monster: "bee", sprite: "bee" },
+          { tag: "row", monster: "statue", sprite: "statue" },
+        ],
+      },
+      {
+        tag: "table",
+        id: "monsterSpriteFrames",
+        columns: "monster:string|frame_width:number|frame_height:number|idle:number",
+        children: [
+          { tag: "row", monster: "rat", frame_width: 16, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "snake", frame_width: 12, frame_height: 11, idle: 0 },
+          { tag: "row", monster: "gnoll", frame_width: 12, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "swarm", frame_width: 16, frame_height: 16, idle: 0 },
+          { tag: "row", monster: "crab", frame_width: 16, frame_height: 16, idle: 0 },
+          { tag: "row", monster: "slime", frame_width: 14, frame_height: 12, idle: 0 },
+          { tag: "row", monster: "goo", frame_width: 20, frame_height: 14, idle: 2 },
+          { tag: "row", monster: "skeleton", frame_width: 12, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "ward", frame_width: 12, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "sheep", frame_width: 16, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "earthGuardian", frame_width: 12, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "thief", frame_width: 12, frame_height: 13, idle: 0 },
+          { tag: "row", monster: "dm100", frame_width: 16, frame_height: 14, idle: 0 },
+          { tag: "row", monster: "guard", frame_width: 12, frame_height: 16, idle: 0 },
+          { tag: "row", monster: "necromancer", frame_width: 16, frame_height: 16, idle: 0 },
+          { tag: "row", monster: "tengu", frame_width: 14, frame_height: 16, idle: 0 },
+          { tag: "row", monster: "fetidRat", frame_width: 16, frame_height: 15, idle: 32 },
+          { tag: "row", monster: "gnollTrickster", frame_width: 12, frame_height: 15, idle: 21 },
+          { tag: "row", monster: "greatCrab", frame_width: 16, frame_height: 16, idle: 16 },
+          { tag: "row", monster: "bat", frame_width: 15, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "brute", frame_width: 12, frame_height: 16, idle: 0 },
+          { tag: "row", monster: "shaman", frame_width: 12, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "spinner", frame_width: 16, frame_height: 16, idle: 0 },
+          { tag: "row", monster: "dm200", frame_width: 21, frame_height: 18, idle: 0 },
+          { tag: "row", monster: "dm300", frame_width: 25, frame_height: 22, idle: 0 },
+          { tag: "row", monster: "necroSkeleton", frame_width: 12, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "ghost", frame_width: 14, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "wandmaker", frame_width: 12, frame_height: 14, idle: 0 },
+          { tag: "row", monster: "shopkeeper", frame_width: 14, frame_height: 14, idle: 1 },
+          { tag: "row", monster: "blacksmith", frame_width: 13, frame_height: 16, idle: 0 },
+          { tag: "row", monster: "imp", frame_width: 12, frame_height: 14, idle: 0 },
+          { tag: "row", monster: "ghoul", frame_width: 12, frame_height: 14, idle: 0 },
+          { tag: "row", monster: "elemental", frame_width: 12, frame_height: 14, idle: 0 },
+          { tag: "row", monster: "newbornElemental", frame_width: 12, frame_height: 14, idle: 0 },
+          { tag: "row", monster: "warlock", frame_width: 12, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "monk", frame_width: 15, frame_height: 14, idle: 1 },
+          { tag: "row", monster: "golem", frame_width: 17, frame_height: 19, idle: 0 },
+          { tag: "row", monster: "succubus", frame_width: 12, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "eye", frame_width: 16, frame_height: 18, idle: 0 },
+          { tag: "row", monster: "scorpio", frame_width: 17, frame_height: 17, idle: 0 },
+          { tag: "row", monster: "king", frame_width: 16, frame_height: 16, idle: 0 },
+          { tag: "row", monster: "yog", frame_width: 20, frame_height: 19, idle: 0 },
+          { tag: "row", monster: "yogFist", frame_width: 24, frame_height: 17, idle: 0 },
+          { tag: "row", monster: "larva", frame_width: 12, frame_height: 8, idle: 4 },
+          { tag: "row", monster: "demonSpawner", frame_width: 16, frame_height: 16, idle: 0 },
+          { tag: "row", monster: "ripperDemon", frame_width: 15, frame_height: 14, idle: 1 },
+          { tag: "row", monster: "albino", frame_width: 16, frame_height: 15, idle: 16 },
+          { tag: "row", monster: "causticSlime", frame_width: 14, frame_height: 12, idle: 0 },
+          { tag: "row", monster: "bandit", frame_width: 12, frame_height: 13, idle: 21 },
+          { tag: "row", monster: "spectralNecromancer", frame_width: 16, frame_height: 16, idle: 0 },
+          { tag: "row", monster: "armoredBrute", frame_width: 12, frame_height: 16, idle: 21 },
+          { tag: "row", monster: "dm201", frame_width: 21, frame_height: 18, idle: 0 },
+          { tag: "row", monster: "senior", frame_width: 15, frame_height: 14, idle: 18 },
+          { tag: "row", monster: "acidic", frame_width: 17, frame_height: 17, idle: 15 },
+          { tag: "row", monster: "mimic", frame_width: 16, frame_height: 16, idle: 3 },
+          { tag: "row", monster: "crystalMimic", frame_width: 16, frame_height: 16, idle: 3 },
+          { tag: "row", monster: "piranha", frame_width: 12, frame_height: 16, idle: 0 },
+          { tag: "row", monster: "bee", frame_width: 16, frame_height: 16, idle: 0 },
+          { tag: "row", monster: "statue", frame_width: 12, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "armoredStatue", frame_width: 12, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "pylon", frame_width: 10, frame_height: 20, idle: 0 },
+          { tag: "row", monster: "sentry", frame_width: 8, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "rotHeart", frame_width: 16, frame_height: 16, idle: 0 },
+          { tag: "row", monster: "rotLasher", frame_width: 12, frame_height: 16, idle: 0 },
+          { tag: "row", monster: "ratKing", frame_width: 16, frame_height: 17, idle: 0 },
+        ],
+      },
+    ],
+  },
+]

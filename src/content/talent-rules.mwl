@@ -1,124 +1,158 @@
-[game]
-schema=0.1
-
-[trait]
-id=talentTrees
-name=Hero.talentTrees
- [effect]
-apply_to=tier_thresholds
-set=0,2,7,13,21,31
-[/effect]
-[/trait]
-
-[table]
-id=talentSubclassEntries
-columns=subclass:string|talents:list
-list_delimiter=,
-[row]
-subclass=berserker
-talents=endless_rage,deathless_fury,enraged_catalyst
-[/row]
-[row]
-subclass=gladiator
-talents=cleave,lethal_defense,enhanced_combo
-[/row]
-[row]
-subclass=battlemage
-talents=empowered_strike,mystical_charge,excess_charge
-[/row]
-[row]
-subclass=warlock
-talents=soul_eater,soul_siphon,necromancers_minions
-[/row]
-[row]
-subclass=assassin
-talents=enhanced_lethality,assassins_reach,bounty_hunter
-[/row]
-[row]
-subclass=freerunner
-talents=evasive_armor,projectile_momentum,speedy_stealth
-[/row]
-[row]
-subclass=sniper
-talents=farsight,shared_enchantment,shared_upgrades
-[/row]
-[row]
-subclass=warden
-talents=durable_tips,barkskin,shielding_dew
-[/row]
-[row]
-subclass=champion
-talents=secondary_charge,twin_upgrades,combined_lethality
-[/row]
-[row]
-subclass=monk_sub
-talents=unencumbered_spirit,monastic_vigor,combined_energy
-[/row]
-[/table]
-
-[table]
-id=talentClassEntries
-columns=class:string|tier:number|talents:list
-list_delimiter=,
-[row]
-class=warrior
-tier=1
-talents=hearty_meal,veterans_intuition,test_subject,iron_will
-[/row]
-[row]
-class=warrior
-tier=2
-talents=iron_stomach,restored_willpower,runic_transference,lethal_momentum,improvised_projectiles
-[/row]
-[row]
-class=mage
-tier=1
-talents=empowering_meal,scholars_intuition,tested_hypothesis,backup_barrier
-[/row]
-[row]
-class=mage
-tier=2
-talents=energizing_meal,energizing_upgrade,wand_preservation,arcane_vision,shield_battery
-[/row]
-[row]
-class=rogue
-tier=1
-talents=cached_rations,thiefs_intuition,sucker_punch,protective_shadows
-[/row]
-[row]
-class=rogue
-tier=2
-talents=mystical_meal,mystical_upgrade,wide_search,silent_steps,rogues_foresight
-[/row]
-[row]
-class=huntress
-tier=1
-talents=natures_bounty,survivalists_intuition,followup_strike,natures_aid
-[/row]
-[row]
-class=huntress
-tier=2
-talents=invigorating_meal,restored_nature,rejuvenating_steps,heightened_senses,durable_projectiles
-[/row]
-[row]
-class=duelist
-tier=1
-talents=strengthening_meal,adventurers_intuition,patient_strike,aggressive_barrier
-[/row]
-[row]
-class=duelist
-tier=2
-talents=focused_meal,restored_agility,weapon_recharging,lethal_haste,swift_equip
-[/row]
-[row]
-class=cleric
-tier=1
-talents=empowering_meal,scholars_intuition,tested_hypothesis,backup_barrier
-[/row]
-[row]
-class=cleric
-tier=2
-talents=energizing_meal,energizing_upgrade,wand_preservation,arcane_vision,shield_battery
-[/row]
-[/table]
-[/game]
+[
+  {
+    tag: "game",
+    schema: 0.1,
+    children: [
+      {
+        tag: "trait",
+        id: "talentTrees",
+        name: "Hero.talentTrees",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "tier_thresholds",
+            set: "0,2,7,13,21,31",
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "talentSubclassEntries",
+        columns: "subclass:string|talents:list",
+        list_delimiter: ",",
+        children: [
+          {
+            tag: "row",
+            subclass: "berserker",
+            talents: "endless_rage,deathless_fury,enraged_catalyst",
+          },
+          {
+            tag: "row",
+            subclass: "gladiator",
+            talents: "cleave,lethal_defense,enhanced_combo",
+          },
+          {
+            tag: "row",
+            subclass: "battlemage",
+            talents: "empowered_strike,mystical_charge,excess_charge",
+          },
+          {
+            tag: "row",
+            subclass: "warlock",
+            talents: "soul_eater,soul_siphon,necromancers_minions",
+          },
+          {
+            tag: "row",
+            subclass: "assassin",
+            talents: "enhanced_lethality,assassins_reach,bounty_hunter",
+          },
+          {
+            tag: "row",
+            subclass: "freerunner",
+            talents: "evasive_armor,projectile_momentum,speedy_stealth",
+          },
+          {
+            tag: "row",
+            subclass: "sniper",
+            talents: "farsight,shared_enchantment,shared_upgrades",
+          },
+          {
+            tag: "row",
+            subclass: "warden",
+            talents: "durable_tips,barkskin,shielding_dew",
+          },
+          {
+            tag: "row",
+            subclass: "champion",
+            talents: "secondary_charge,twin_upgrades,combined_lethality",
+          },
+          {
+            tag: "row",
+            subclass: "monk_sub",
+            talents: "unencumbered_spirit,monastic_vigor,combined_energy",
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "talentClassEntries",
+        columns: "class:string|tier:number|talents:list",
+        list_delimiter: ",",
+        children: [
+          {
+            tag: "row",
+            class: "warrior",
+            tier: 1,
+            talents: "hearty_meal,veterans_intuition,test_subject,iron_will",
+          },
+          {
+            tag: "row",
+            class: "warrior",
+            tier: 2,
+            talents: "iron_stomach,restored_willpower,runic_transference,lethal_momentum,improvised_projectiles",
+          },
+          {
+            tag: "row",
+            class: "mage",
+            tier: 1,
+            talents: "empowering_meal,scholars_intuition,tested_hypothesis,backup_barrier",
+          },
+          {
+            tag: "row",
+            class: "mage",
+            tier: 2,
+            talents: "energizing_meal,energizing_upgrade,wand_preservation,arcane_vision,shield_battery",
+          },
+          {
+            tag: "row",
+            class: "rogue",
+            tier: 1,
+            talents: "cached_rations,thiefs_intuition,sucker_punch,protective_shadows",
+          },
+          {
+            tag: "row",
+            class: "rogue",
+            tier: 2,
+            talents: "mystical_meal,mystical_upgrade,wide_search,silent_steps,rogues_foresight",
+          },
+          {
+            tag: "row",
+            class: "huntress",
+            tier: 1,
+            talents: "natures_bounty,survivalists_intuition,followup_strike,natures_aid",
+          },
+          {
+            tag: "row",
+            class: "huntress",
+            tier: 2,
+            talents: "invigorating_meal,restored_nature,rejuvenating_steps,heightened_senses,durable_projectiles",
+          },
+          {
+            tag: "row",
+            class: "duelist",
+            tier: 1,
+            talents: "strengthening_meal,adventurers_intuition,patient_strike,aggressive_barrier",
+          },
+          {
+            tag: "row",
+            class: "duelist",
+            tier: 2,
+            talents: "focused_meal,restored_agility,weapon_recharging,lethal_haste,swift_equip",
+          },
+          {
+            tag: "row",
+            class: "cleric",
+            tier: 1,
+            talents: "empowering_meal,scholars_intuition,tested_hypothesis,backup_barrier",
+          },
+          {
+            tag: "row",
+            class: "cleric",
+            tier: 2,
+            talents: "energizing_meal,energizing_upgrade,wand_preservation,arcane_vision,shield_battery",
+          },
+        ],
+      },
+    ],
+  },
+]

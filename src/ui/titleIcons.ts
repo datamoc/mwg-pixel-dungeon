@@ -1,4 +1,4 @@
-import { Rectangle, Sprite, Texture } from 'pixi.js';
+import { Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 
 /**
  * Title-screen icons cut from `icons.png` (`Icons.java`'s cases): `ENTER`/`RANKINGS`/

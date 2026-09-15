@@ -14,7 +14,7 @@ import type { ClassId } from './classes';
 export const runState: {
 	sprites: SpdSprites;
 	audio: SpdAudio;
-	/** set by ClassSelectScene, read once by SewersScene.create() */
+	/** set by ClassSelectScene, read once by DungeonScene.create() */
 	pendingClass: ClassId;
 } = {
 	sprites: undefined as unknown as SpdSprites,

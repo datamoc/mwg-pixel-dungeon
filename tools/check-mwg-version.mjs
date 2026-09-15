@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const PACKAGE = '@datamoc/mw_games';
+const NETWORK_TIMEOUT_MS = 10_000;
 
 const args = process.argv.slice(2);
 const checkoutIndex = args.indexOf('--checkout');
@@ -69,17 +70,18 @@ function publishedLatest() {
 		return execSync(`npm view ${PACKAGE} version`, {
 			encoding: 'utf8',
 			stdio: ['ignore', 'pipe', 'ignore'],
+			timeout: NETWORK_TIMEOUT_MS,
 		}).trim();
 	} catch {
 		//fall through to the registry
 	}
 	try {
 		return execFileSync(process.execPath, ['-e', `
-			fetch('https://registry.npmjs.org/${PACKAGE.replace('/', '%2f')}/latest')
+			fetch('https://registry.npmjs.org/${PACKAGE.replace('/', '%2f')}/latest', { signal: AbortSignal.timeout(${NETWORK_TIMEOUT_MS}) })
 				.then((r) => r.json())
 				.then((d) => process.stdout.write(String(d.version)))
 				.catch(() => process.exit(1));
-		`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+		`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: NETWORK_TIMEOUT_MS + 1000 }).trim();
 	} catch {
 		return null;
 	}

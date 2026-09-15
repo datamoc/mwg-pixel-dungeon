@@ -4,6 +4,18 @@
 // there and nowhere else), which is the path that draws from the floor's mob rotation; every
 // directly-constructed mob - a quest miniboss, a mimic, a pylon, a summon, an ally - never is.
 // This port used to approximate that with a hand-written kind list, so several of those could roll.
+//
+// STALE, 2026-09-14: the `eligibleRat`/`eligibleSnake` expectations below ("~10%", `champions > 5`
+// of 300) describe the *old*, since-corrected flat-probability roll. The real mechanic
+// (`rollForChampion` in `actors/monsterSpawn.ts`) is a resettable countdown: exactly every 8th
+// eligible spawn is a champion, deterministically, not a per-spawn chance - and there is no
+// mob-type/depth exclusion at all in real Java (`ChampionEnemy.java`/`Level.java`), which this
+// port previously fabricated for Crab/Thief/Guard/Bat. A future browser pass should replace the
+// `champions > 5` checks with an exact `champions === Math.floor(300 / 8) = 37` (each 300-call
+// probe starts its own fresh scene, so `mobsToChampion` starts at 0 -> resets to 8 on the first
+// call each time) and drop any depth/kind-exclusion assumption entirely - see
+// `tools/scratch/champion-counter-check.mjs` for the equivalent headless coverage this pass
+// already added and ran.
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';

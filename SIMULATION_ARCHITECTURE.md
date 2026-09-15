@@ -122,9 +122,8 @@ decisions and movement effect implementations remain scene-owned.
 ## Step 6 - local EntityId and an actor/item view registry
 
 `SPD_ARCHITECTURE_TARGET_V3.md` records a broader target architecture (Command -> State +
-Events, MWG-owned `EntityId`/`EntityRegistry`, full snapshots) that assumes MWG capabilities
-this project's pinned `mwg@0.4.0` does not yet ship. The piece of that target which is *not*
-blocked on an unreleased MWG feature, and is the direct continuation of steps 1-5's own
+Events, MWG-owned `EntityId`/`EntityRegistry`, full snapshots). The piece of that target which
+is directly actionable here, and is the direct continuation of steps 1-5's own
 "Subsequent steps" item 2 ("move rendering objects into a view map keyed by actor ID"), is
 done, in two parts:
 
@@ -155,18 +154,18 @@ text rendering throughout.
 ## Step 7 - first SimulationRuntime adoption (search)
 
 `adapters/searchSimulation.ts` routes the pure `simulation/search.ts` decision
-(`planSearch`, extracted alongside `movement.ts`) through MWG's
-`simulation.SimulationRuntime` with `cost: null` - the rule never touches the scheduler,
-so it runs on an inert local `Scheduler`/`Generator` pair rather than the scene's real
-ones. The caller still owns the effect (discovery, tile restitching, log, guide progress),
-the same "scene executes the selected effect" split as Step 5. Reconciling runtimes with
-the scene's real scheduler/random waits for the first command with a real cost (plan
-section 25: no big-bang).
+(`planSearch`, extracted alongside `movement.ts`) through the shared
+`adapters/gameSimulation.ts` `simulation.SimulationRuntime` with `cost: null` - the rule
+never touches the scheduler, so it runs on an inert local `Scheduler`/`Generator` pair
+rather than the scene's real ones. The caller still owns the effect (discovery, tile
+restitching, log, guide progress), the same "scene executes the selected effect" split as
+Step 5. Reconciling the transitional runtime with the scene's real scheduler/random waits
+for the first command with a real cost (plan section 25: no big-bang).
 
 ## Step 8 - second SimulationRuntime adoption (hunger) + MWG EntityId type
 
-- `adapters/hungerSimulation.ts` wraps the pure `advanceHunger` transition the same way
-(cost `null`, inert local scheduler/random), and `SceneSimulationAdapter.hungerStep()`
+- `adapters/hungerSimulation.ts` wraps the pure `advanceHunger` transition through the
+shared runtime (cost `null`, inert scheduler/random), and `SceneSimulationAdapter.hungerStep()`
 now dispatches through `runHungerStep()` instead of calling `advanceHunger` directly -
 same state committed, same events presented, only the dispatch path changed.
 - `simulation/entityId.ts`'s `EntityId` is MWG's own `core.EntityId` (re-exported, type-only, so
@@ -181,7 +180,7 @@ if an id-keyed lookup is ever needed.
 ## Step 9 - runtime-routed movement planning
 
 `adapters/movementSimulation.ts` now dispatches the existing pure `planMovement` decision
-through MWG's `SimulationRuntime`, and `main.ts` consumes that plan in its existing effect
+through the shared MWG `SimulationRuntime`, and `main.ts` consumes that plan in its existing effect
 pipeline. The scene continues to retain the occupant reference from the lazy query and owns
 all presentation and world mutation. This is intentionally a cost-free command with an inert
 scheduler/random pair, matching the search and hunger adapters; reconciling those with the
@@ -189,19 +188,59 @@ scene's live turn runtime remains part of the later cost-bearing command migrati
 
 ## Step 10 - runtime-routed attack resolution
 
-`adapters/attackSimulation.ts` now dispatches the extracted hit/damage roll pair through MWG's
-`SimulationRuntime`. The command carries the scene's `SimulationRandom`, preserving the existing
-random stream and Java-derived short-circuit (a miss consumes no damage roll); the runtime's
-generator and scheduler remain inert until combat state and turn costs are unified. `main.ts`
+`adapters/attackSimulation.ts` now dispatches the extracted hit/damage roll pair through the
+shared MWG `SimulationRuntime`. The adapter preserves the scene's `SimulationRandom` through a synchronous
+handle registry: MWG 0.9.0 journals commands with `structuredClone`, so callback-bearing random
+sources stay outside the replayable data payload. This preserves the existing random stream and
+Java-derived short-circuit (a miss consumes no damage roll); the runtime's generator and scheduler
+remain inert until combat state and turn costs are unified. `main.ts`
 still owns weapon-affix/talent branches, damage application, death, sprites, audio, and logs.
+
+All five cost-free transitional command facades clear the shared `SimulationRuntime.journal` after
+dispatch. MWG 0.9.0 correctly journals by cloning commands, but these adapters still receive
+live scene callbacks or snapshots and do not yet own durable replay state; retaining those entries
+would both preserve ephemeral handles and grow memory once per action. Durable journal/replay
+support belongs with the later unified runtime, whose commands will be serializable without an
+adapter-local registry.
+
+## Step 11 - one transitional runtime for extracted decisions
+
+`adapters/gameSimulation.ts` is now the single `SimulationRuntime<State, Command, Event, Actor>`
+for the five extracted, cost-free decisions: search, hunger, hero-action classification,
+movement planning, and attack hit/damage resolution. The old adapter modules remain as small
+compatibility facades, so scene call sites and headless tests keep their stable names while
+there is only one runtime rule and one journal to replace when a real cost-bearing command is
+introduced. Callback-bearing worlds and the live random stream remain numeric handles outside
+the structured command, matching MWG's cloneable journal contract; scene mutation and
+presentation remain outside this boundary.
+
+## Optional Lua AI boundary (MWG 0.9.0)
+
+MWG now exposes `mwg/ai/lua`: a Lua 5.3 agent runner with JSON-shaped perception/state,
+versioned state export/import, an instruction budget, and an alpha-beta search adapter. This
+port does not replace SPD's TypeScript monster decisions with opaque scripts: the current
+encounter rules are Java-derived gameplay code and need the scene's richer callbacks, targeting,
+turn costs, and save fields. Lua is therefore a suitable future boundary for extracted,
+renderer-free actor policies or user-authored scenarios, provided an adapter validates each
+action before applying it to the scene.
+
+`tools/verifyLua.mjs` is the compatibility probe for the installed release. It deliberately
+imports Lua only from a Node-side test, so Fengari is not added to the game's production bundle.
+It covers a stateful decision, state round-trip, bounded execution, and Lua-backed alpha-beta
+search. A future gameplay integration should live under `adapters/`, keep the Lua source in
+game-owned content, and persist the returned `AIStateEnvelope` alongside the unified simulation
+snapshot rather than adding a second save format.
 
 ## Verification
 
-Run `npm run check`, `npm run test:simulation`, and `npm run build`. The simulation checks
-compile the actual modules using the installed TypeScript compiler into a temporary
-directory and exercise them without a DOM. Scheduler integration uses the local mwg
-source already required by this project. Also verify the built game in a browser:
+Run `npm run verify`. This includes the type/i18n gate, the simulation and item suites,
+the MWG Lua and SaveSystem/facade compatibility probes, and the production build. The
+simulation checks compile the actual modules using the installed TypeScript compiler into
+a temporary directory and exercise them without a DOM. Scheduler integration uses the
+published MWG package installed by this project. Also verify the built game in a browser:
 ordinary movement/waiting, hunger warnings/damage/death, save/load, and entering a floor.
+The renderer-free suite also pins the currently extracted Goo, Rat King, DM-300, and Yog
+planner decisions; the complete scene-owned attack cycles remain a separate open task.
 
 Step 1 verified on 2026-09-05 with mwg commit
 `f8e0278c232956e4bdd79ab5db372a7247acbdb2`: type checking, 11 simulation checks,

@@ -1,4 +1,4 @@
-import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
+import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'mwg/two-d/pixi-interop';
 
 /** GameScene's scrolling water (-5 texture pixels/sec), below shoreline tiles.
  * Per-cell quads retain the port's visibility tint without exposing unseen water.

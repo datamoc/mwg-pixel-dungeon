@@ -1,4 +1,4 @@
-import { Container, Graphics, Sprite, Texture } from 'pixi.js';
+import { Container, Graphics, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 import { ParticleEmitter, SpriteSheet } from 'mwg';
 
 const FRAME = 32;

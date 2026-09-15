@@ -268,7 +268,7 @@ export function verifyCombat(require, check) {
 		// and every variant the authored alias table knows shares its base kind's value, so the
 		// two representations above cannot drift apart for the variants the port does model
 		const mwl = readFileSync(new URL('../src/content/actor-rules.mwl', import.meta.url), 'utf8');
-		const rows = [...mwl.matchAll(/\[row\]\s*variant=(\w+)\s*base=(\w+)\s*\[\/row\]/g)];
+		const rows = [...mwl.matchAll(/tag:\s*"row"\s*,?\s*variant:\s*"(\w+)"\s*,?\s*base:\s*"(\w+)"/g)];
 		assert.ok(rows.length >= 11, `alias table not parsed (${rows.length} rows)`);
 		for (const [, variant, kind] of rows) {
 			assert.equal(ASCENSION_MOD[variant] ?? 1, ASCENSION_MOD[kind] ?? 1, `${variant} vs base ${kind}`);
@@ -330,7 +330,7 @@ export function verifyCombat(require, check) {
 		// FungalSentry, GnollSapper).
 		const mwl = readFileSync(new URL('../src/content/actor-rules.mwl', import.meta.url), 'utf8');
 		const flagSet = (flag) => {
-			const match = new RegExp(`apply_to=${flag}\\r?\\nset=([^\\r\\n]+)`).exec(mwl);
+			const match = new RegExp(`apply_to:\\s*"${flag}"\\s*,?\\s*\\r?\\n\\s*set:\\s*"([^"\\r\\n]+)"`).exec(mwl);
 			assert.ok(match, `no ${flag} flag effect in actor-rules.mwl`);
 			return match[1].split(',').map((k) => k.trim()).sort();
 		};
@@ -345,7 +345,7 @@ export function verifyCombat(require, check) {
 		// from the floor's mob rotation - so every other mob (a quest miniboss, a mimic, a pylon, a
 		// summon, an ally) is never championed. This port carries that as the `championEligible`
 		// argument, true at exactly one call site.
-		const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
+		const source = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
 		const calls = [...source.matchAll(/this\.spawnMonster\([^;]*?\);/g)].map((match) => match[0]);
 		const rosterCall = calls.filter((call) => call.includes('roster['));
 		assert.equal(rosterCall.length, 1, `expected one rotated-roster spawn, found ${rosterCall.length}`);
@@ -354,7 +354,7 @@ export function verifyCombat(require, check) {
 	check('the authored UNDEAD/DEMONIC flag sets match Java, and RipperDemon carries both', () => {
 		const mwl = readFileSync(new URL('../src/content/actor-rules.mwl', import.meta.url), 'utf8');
 		const flagSet = (flag) => {
-			const match = new RegExp(`apply_to=${flag}\\r?\\nset=([^\\r\\n]+)`).exec(mwl);
+			const match = new RegExp(`apply_to:\\s*"${flag}"\\s*,?\\s*\\r?\\n\\s*set:\\s*"([^"\\r\\n]+)"`).exec(mwl);
 			assert.ok(match, `no ${flag} flag effect in actor-rules.mwl`);
 			return match[1].split(',').map((k) => k.trim()).sort();
 		};

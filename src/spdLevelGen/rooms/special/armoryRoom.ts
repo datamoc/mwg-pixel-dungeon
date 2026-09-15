@@ -1,11 +1,11 @@
 /** Port of `levels/rooms/special/ArmoryRoom.java`. Statue side-roll, item-count roll and the
  *  `prizeCats` category-weight roll are local/portable; the four prize branches
  *  (`new Bomb().random()` / `Generator.randomWeapon` / `randomArmor` / `randomMissile`) now make
- *  their real level-stream draws via `spdItems/generator.ts`. */
+ *  their real level-stream draws via `items/generator.ts`. */
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, set } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
-import { randomArmor, randomBomb, randomMissile, randomWeapon } from '../../../spdItems/generator';
+import { randomArmor, randomBomb, randomMissile, randomWeapon } from '../../../items/generator';
 
 const CATEGORY_NAMES = ['bomb', 'weapon', 'armor', 'missile'];
 

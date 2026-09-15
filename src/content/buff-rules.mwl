@@ -1,162 +1,207 @@
-[game]
-schema=0.1
-
-[trait]
-id=buffDurations
-name=Buff.durations
-[effect]
-apply_to=negative
-set=poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,chill,frost,hex,wayward
-[/effect]
-[/trait]
-
-[table]
-id=buffDurations
-columns=buff:string|duration:number
-[row]
-buff=bless
-duration=30
-[/row]
-[row]
-buff=hex
-duration=30
-[/row]
-[row]
-buff=daze
-duration=5
-[/row]
-[row]
-buff=chill
-duration=10
-[/row]
-[row]
-buff=frost
-duration=10
-[/row]
-[row]
-buff=drowsy
-duration=5
-[/row]
-[row]
-buff=magicalSleep
-duration=0
-[/row]
-[row]
-buff=fury
-duration=9999
-[/row]
-[row]
-buff=berserk
-duration=9999
-[/row]
-[row]
-buff=weakness
-duration=20
-[/row]
-[row]
-buff=vulnerable
-duration=20
-[/row]
-#Burning.DURATION = 8f. Java's own default, applied by `reignite(ch)` - the path every fire cell
-#takes each turn - and by the fire traps, the Fireblast wand, Blazing and the fire elemental's
-#melee. Three of Java's sites deliberately pass 4f instead (the fire elemental's ranged zap,
-#AntiEntropy, and MagicalFireRoom's eternal wall fire); those pass their own duration at the call
-#site rather than through this table.
-[row]
-buff=burning
-duration=8
-[/row]
-[row]
-buff=poison
-duration=6
-[/row]
-[row]
-buff=bleeding
-duration=0
-[/row]
-[row]
-buff=cripple
-duration=4
-[/row]
-[row]
-buff=paralysis
-duration=3
-[/row]
-[row]
-buff=roots
-duration=3
-[/row]
-[row]
-buff=levitation
-duration=20
-[/row]
-[row]
-buff=invisibility
-duration=20
-[/row]
-[row]
-buff=cloak
-duration=9999
-[/row]
-[row]
-buff=focus
-duration=9999
-[/row]
-[row]
-buff=recharging
-duration=30
-[/row]
-[row]
-buff=frostImbue
-duration=15
-[/row]
-[row]
-buff=adrenalineSurge
-duration=200
-[/row]
-[row]
-buff=mindvision
-duration=20
-[/row]
-[row]
-buff=terror
-duration=20
-[/row]
-[row]
-buff=amok
-duration=5
-[/row]
-[row]
-buff=aggression
-duration=20
-[/row]
-[row]
-buff=awareness
-duration=2
-[/row]
-[row]
-buff=haste
-duration=20
-[/row]
-[row]
-buff=degrade
-duration=30
-[/row]
-[row]
-buff=ooze
-duration=20
-[/row]
-[row]
-buff=wayward
-duration=10
-[/row]
-[row]
-buff=charm
-duration=10
-[/row]
-[row]
-buff=lethalHasteCooldown
-duration=100
-[/row]
-[/table]
-[/game]
+[
+  {
+    tag: "game",
+    schema: 0.1,
+    children: [
+      {
+        tag: "trait",
+        id: "buffDurations",
+        name: "Buff.durations",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "negative",
+            set: "poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,chill,frost,hex,wayward",
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "buffDurations",
+        columns: "buff:string|duration:number",
+        children: [
+          {
+            tag: "row",
+            buff: "bless",
+            duration: 30,
+          },
+          {
+            tag: "row",
+            buff: "hex",
+            duration: 30,
+          },
+          {
+            tag: "row",
+            buff: "daze",
+            duration: 5,
+          },
+          {
+            tag: "row",
+            buff: "chill",
+            duration: 10,
+          },
+          {
+            tag: "row",
+            buff: "frost",
+            duration: 10,
+          },
+          {
+            tag: "row",
+            buff: "drowsy",
+            duration: 5,
+          },
+          {
+            tag: "row",
+            buff: "magicalSleep",
+            duration: 0,
+          },
+          {
+            tag: "row",
+            buff: "fury",
+            duration: 9999,
+          },
+          {
+            tag: "row",
+            buff: "berserk",
+            duration: 9999,
+          },
+          {
+            tag: "row",
+            buff: "weakness",
+            duration: 20,
+          },
+          {
+            tag: "row",
+            buff: "vulnerable",
+            duration: 20,
+          },
+          {
+            tag: "row",
+            buff: "burning",
+            duration: 8,
+          },
+          {
+            tag: "row",
+            buff: "poison",
+            duration: 6,
+          },
+          {
+            tag: "row",
+            buff: "bleeding",
+            duration: 0,
+          },
+          {
+            tag: "row",
+            buff: "cripple",
+            duration: 4,
+          },
+          {
+            tag: "row",
+            buff: "paralysis",
+            duration: 3,
+          },
+          {
+            tag: "row",
+            buff: "roots",
+            duration: 3,
+          },
+        {
+            tag: "row",
+            buff: "levitation",
+            duration: 20,
+        },
+        {
+            tag: "row",
+            buff: "featherFall",
+            duration: 50,
+        },
+          {
+            tag: "row",
+            buff: "invisibility",
+            duration: 20,
+          },
+          {
+            tag: "row",
+            buff: "cloak",
+            duration: 9999,
+          },
+          {
+            tag: "row",
+            buff: "focus",
+            duration: 9999,
+          },
+          {
+            tag: "row",
+            buff: "recharging",
+            duration: 30,
+          },
+          {
+            tag: "row",
+            buff: "frostImbue",
+            duration: 15,
+          },
+          {
+            tag: "row",
+            buff: "adrenalineSurge",
+            duration: 200,
+          },
+          {
+            tag: "row",
+            buff: "mindvision",
+            duration: 20,
+          },
+          {
+            tag: "row",
+            buff: "terror",
+            duration: 20,
+          },
+          {
+            tag: "row",
+            buff: "amok",
+            duration: 5,
+          },
+          {
+            tag: "row",
+            buff: "aggression",
+            duration: 20,
+          },
+          {
+            tag: "row",
+            buff: "awareness",
+            duration: 2,
+          },
+          {
+            tag: "row",
+            buff: "haste",
+            duration: 20,
+          },
+          {
+            tag: "row",
+            buff: "degrade",
+            duration: 30,
+          },
+          {
+            tag: "row",
+            buff: "ooze",
+            duration: 20,
+          },
+          {
+            tag: "row",
+            buff: "wayward",
+            duration: 10,
+          },
+          {
+            tag: "row",
+            buff: "charm",
+            duration: 10,
+          },
+          {
+            tag: "row",
+            buff: "lethalHasteCooldown",
+            duration: 100,
+          },
+        ],
+      },
+    ],
+  },
+]

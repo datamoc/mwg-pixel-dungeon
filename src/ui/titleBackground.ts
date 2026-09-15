@@ -1,4 +1,4 @@
-import { Container, FillGradient, Graphics, TilingSprite, type Texture } from 'pixi.js';
+import { Container, FillGradient, Graphics, TilingSprite, type Texture } from 'mwg/two-d/pixi-interop';
 
 /**
  * `Archs.java`'s title-screen background: two vertically-tiled arch textures

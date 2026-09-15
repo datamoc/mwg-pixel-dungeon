@@ -5,7 +5,7 @@ export type ClassId = 'warrior' | 'mage' | 'rogue' | 'huntress' | 'duelist' | 'c
 /**
  * A class's real day-one ranged/thrown action, bound to `T` - see `main.ts`'s file header for
  * why this is each kit's actual starting item rather than an invented talent. `kind` picks how
- * `SewersScene.useSpecial` resolves it: `throw` rolls to hit exactly like a melee swing and
+ * `DungeonScene.useSpecial` resolves it: `throw` rolls to hit exactly like a melee swing and
  * has finite `ammo`; `zap` (the wand) never rolls to hit at all; `shoot` (the bow) always
  * rolls to hit but its damage grows with distance; `none` is an honest no-op.
  */
@@ -17,6 +17,7 @@ export interface SpecialAction {
 	/** null means unlimited (the wand and the bow are not consumable ammo in Java either) */
 	ammo: number | null;
 	damage: [number, number];
+	sourceClass?: string;
 }
 
 /**

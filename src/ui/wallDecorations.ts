@@ -1,4 +1,4 @@
-import { Container, Graphics, Texture } from 'pixi.js';
+import { Container, Graphics, Texture } from 'mwg/two-d/pixi-interop';
 import { ParticleEmitter } from 'mwg';
 
 const TILE = 16;

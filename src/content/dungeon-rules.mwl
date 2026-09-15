@@ -1,105 +1,131 @@
-[game]
-schema=0.1
-
-[trait]
-id=sewerTrapsDepth1
-name=SewerLevel.traps.depth1
-[effect]
-apply_to=classes
-set=wornDart
-[/effect]
-[effect]
-apply_to=chances
-set=1
-[/effect]
-[/trait]
-
-[trait]
-id=sewerTrapsDefault
-name=SewerLevel.traps.default
-[effect]
-apply_to=classes
-set=chilling,shocking,toxic,wornDart,alarm,ooze,confusion,flock,summoning,teleportation,gateway
-[/effect]
-[effect]
-apply_to=chances
-set=4,4,4,4,2,2,1,1,1,1,1
-[/effect]
-[/trait]
-
-[table]
-id=regionTrapTables
-columns=region:string|kinds:list|weights:list
-list_delimiter=,
-[row]
-region=prison
-kinds=chilling,shocking,toxic,burning,poisonDart,alarm,ooze,gripping,confusion,flock,summoning,teleportation,gateway,geyser
-weights=4,4,4,4,4,2,2,2,1,1,1,1,1,1
-[/row]
-[row]
-region=caves
-kinds=burning,poisonDart,frost,storm,corrosion,gripping,rockfall,guardian,confusion,summoning,warping,pitfall,gateway,geyser
-weights=4,4,4,4,4,2,2,2,1,1,1,1,1,1
-[/row]
-[row]
-region=city
-kinds=frost,storm,corrosion,blazing,disintegration,rockfall,flashing,guardian,weakening,disarming,summoning,warping,cursing,pitfall,distortion,gateway,geyser
-weights=4,4,4,4,4,2,2,2,2,1,1,1,1,1,1,1,1
-[/row]
-[row]
-region=halls
-kinds=frost,storm,corrosion,blazing,disintegration,rockfall,flashing,guardian,weakening,disarming,summoning,warping,cursing,grim,pitfall,distortion,gateway,geyser
-weights=4,4,4,4,4,2,2,2,2,1,1,1,1,1,1,1,1,1
-[/row]
-[/table]
-
-[table]
-id=regionPaintRules
-columns=region:string|waterNormal:number|waterFeeling:number|grassNormal:number|grassFeeling:number|waterSmoothness:number|grassSmoothness:number
-[row]
-region=sewers
-waterNormal=0.3
-waterFeeling=0.85
-grassNormal=0.2
-grassFeeling=0.8
-waterSmoothness=5
-grassSmoothness=4
-[/row]
-[row]
-region=prison
-waterNormal=0.3
-waterFeeling=0.9
-grassNormal=0.2
-grassFeeling=0.8
-waterSmoothness=4
-grassSmoothness=3
-[/row]
-[row]
-region=caves
-waterNormal=0.3
-waterFeeling=0.85
-grassNormal=0.15
-grassFeeling=0.65
-waterSmoothness=6
-grassSmoothness=3
-[/row]
-[row]
-region=city
-waterNormal=0.3
-waterFeeling=0.90
-grassNormal=0.2
-grassFeeling=0.8
-waterSmoothness=4
-grassSmoothness=3
-[/row]
-[row]
-region=halls
-waterNormal=0.15
-waterFeeling=0.70
-grassNormal=0.10
-grassFeeling=0.65
-waterSmoothness=6
-grassSmoothness=3
-[/row]
-[/table]
-[/game]
+[
+  {
+    tag: "game",
+    schema: 0.1,
+    children: [
+      {
+        tag: "trait",
+        id: "sewerTrapsDepth1",
+        name: "SewerLevel.traps.depth1",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "classes",
+            set: "wornDart",
+          },
+          {
+            tag: "effect",
+            apply_to: "chances",
+            set: 1,
+          },
+        ],
+      },
+      {
+        tag: "trait",
+        id: "sewerTrapsDefault",
+        name: "SewerLevel.traps.default",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "classes",
+            set: "chilling,shocking,toxic,wornDart,alarm,ooze,confusion,flock,summoning,teleportation,gateway",
+          },
+          {
+            tag: "effect",
+            apply_to: "chances",
+            set: "4,4,4,4,2,2,1,1,1,1,1",
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "regionTrapTables",
+        columns: "region:string|kinds:list|weights:list",
+        list_delimiter: ",",
+        children: [
+          {
+            tag: "row",
+            region: "prison",
+            kinds: "chilling,shocking,toxic,burning,poisonDart,alarm,ooze,gripping,confusion,flock,summoning,teleportation,gateway,geyser",
+            weights: "4,4,4,4,4,2,2,2,1,1,1,1,1,1",
+          },
+          {
+            tag: "row",
+            region: "caves",
+            kinds: "burning,poisonDart,frost,storm,corrosion,gripping,rockfall,guardian,confusion,summoning,warping,pitfall,gateway,geyser",
+            weights: "4,4,4,4,4,2,2,2,1,1,1,1,1,1",
+          },
+          {
+            tag: "row",
+            region: "city",
+            kinds: "frost,storm,corrosion,blazing,disintegration,rockfall,flashing,guardian,weakening,disarming,summoning,warping,cursing,pitfall,distortion,gateway,geyser",
+            weights: "4,4,4,4,4,2,2,2,2,1,1,1,1,1,1,1,1",
+          },
+          {
+            tag: "row",
+            region: "halls",
+            kinds: "frost,storm,corrosion,blazing,disintegration,rockfall,flashing,guardian,weakening,disarming,summoning,warping,cursing,grim,pitfall,distortion,gateway,geyser",
+            weights: "4,4,4,4,4,2,2,2,2,1,1,1,1,1,1,1,1,1",
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "regionPaintRules",
+        columns: "region:string|waterNormal:number|waterFeeling:number|grassNormal:number|grassFeeling:number|waterSmoothness:number|grassSmoothness:number",
+        children: [
+          {
+            tag: "row",
+            region: "sewers",
+            waterNormal: 0.3,
+            waterFeeling: 0.85,
+            grassNormal: 0.2,
+            grassFeeling: 0.8,
+            waterSmoothness: 5,
+            grassSmoothness: 4,
+          },
+          {
+            tag: "row",
+            region: "prison",
+            waterNormal: 0.3,
+            waterFeeling: 0.9,
+            grassNormal: 0.2,
+            grassFeeling: 0.8,
+            waterSmoothness: 4,
+            grassSmoothness: 3,
+          },
+          {
+            tag: "row",
+            region: "caves",
+            waterNormal: 0.3,
+            waterFeeling: 0.85,
+            grassNormal: 0.15,
+            grassFeeling: 0.65,
+            waterSmoothness: 6,
+            grassSmoothness: 3,
+          },
+          {
+            tag: "row",
+            region: "city",
+            waterNormal: 0.3,
+            waterFeeling: 0.90,
+            grassNormal: 0.2,
+            grassFeeling: 0.8,
+            waterSmoothness: 4,
+            grassSmoothness: 3,
+          },
+          {
+            tag: "row",
+            region: "halls",
+            waterNormal: 0.15,
+            waterFeeling: 0.70,
+            grassNormal: 0.10,
+            grassFeeling: 0.65,
+            waterSmoothness: 6,
+            grassSmoothness: 3,
+          },
+        ],
+      },
+    ],
+  },
+]

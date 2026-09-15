@@ -4,12 +4,12 @@
  * `level.findPrizeItem()` DOES draw in Java whenever `itemsToSpawn` is non-empty
  * (`Random.element` over it), and returning an item there skips the Generator branch entirely -
  * so it is wired to the real list here, not stubbed to null. `Generator.random(category)`'s own
- * rolls now go through `spdItems/generator.ts`.
+ * rolls now go through `items/generator.ts`.
  */
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, drawInside, fillXY, set } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
-import { Cat, generatedGroundKind, oneOfCategories, randomCategory } from '../../../spdItems/generator';
+import { Cat, generatedGroundKind, oneOfCategories, randomCategory } from '../../../items/generator';
 
 
 export function paintStudyRoom(level: PaintLevel, room: Room): void {

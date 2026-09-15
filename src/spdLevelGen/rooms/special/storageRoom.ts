@@ -1,12 +1,12 @@
 /** Port of `levels/rooms/special/StorageRoom.java`. The honeypot coin-flip, item-count roll,
  *  position retries, and `prize()`'s leading `Random.Int(3)` roll are local/portable. `prize()`'s
  *  `Generator.random(Random.oneOf(POTION, SCROLL, FOOD, GOLD))` is now reproduced properly via
- *  `spdItems/generator.ts` - the `oneOf` draw and the chosen category's own level-stream draws
+ *  `items/generator.ts` - the `oneOf` draw and the chosen category's own level-stream draws
  *  (zero for POTION/SCROLL/FOOD, a `chances` + `IntRange` for GOLD) were previously skipped. */
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
-import { Cat, generatedGroundKind, oneOfCategories, randomCategory } from '../../../spdItems/generator';
+import { Cat, generatedGroundKind, oneOfCategories, randomCategory } from '../../../items/generator';
 
 export function paintStorageRoom(level: PaintLevel, room: Room): void {
 	fillRoom(level, room, Terrain.WALL);

@@ -27,8 +27,8 @@ import { resetBlacksmithRunState } from '../src/spdLevelGen/blacksmith.ts';
 import { Terrain } from '../src/spdLevelGen/paintLevel.ts';
 import { DoorType } from '../src/spdLevelGen/room.ts';
 import { entranceRoomContext } from '../src/spdLevelGen/rooms/standard/entranceRoom.ts';
-import { generatorFullReset } from '../src/spdItems/generator.ts';
-import { resetShopRunState } from '../src/spdItems/shopItems.ts';
+import { generatorFullReset } from '../src/items/generator.ts';
+import { resetShopRunState } from '../src/items/shopItems.ts';
 
 const CHAR: Record<number, string> = {
 	[Terrain.CHASM]: ' ', [Terrain.EMPTY]: '.', [Terrain.GRASS]: '"', [Terrain.EMPTY_WELL]: 'w',
@@ -59,6 +59,12 @@ function dump(seed: bigint, depth: number): string {
 			: paintHallsLevel(rooms, depth, feeling);
 	} catch (e) {
 		error = (e as Error).message;
+	}
+	if (!error && level && rooms.some(r => r.kind === 'special' && r.specialKind === 'toxicGas')) {
+		const seeds = level.seededBlobs.filter(blob => blob.kind === 'toxicGas');
+		if (seeds.length === 0 || seeds.some(blob => blob.amount !== 30)) {
+			throw new Error(`ToxicGasRoom ambient seeds missing or malformed (${seeds.length})`);
+		}
 	}
 
 	SpdRandom.popGenerator();
@@ -96,7 +102,7 @@ function dump(seed: bigint, depth: number): string {
 
 const seeds = [123456789n, 1n, 42n, 999999999999n, 2n, 7n, 55555n];
 // 1,2,3,4,6,7,8,9,11,12,13,14 - matching LevelGenHarness.java exactly. Depth 6 is now included,
-// since ShopRoom is ported (see spdItems/shopItems.ts). Depths 5/10/15 are still skipped:
+// since ShopRoom is ported (see items/shopItems.ts). Depths 5/10/15 are still skipped:
 // SewerBossLevel/PrisonBossLevel/CavesBossLevel all extend Level, not RegularLevel, so this port
 // does not generate any of them - and none consumes the run-level state the later floors read
 // (secretsForFloor/initForFloor are called only from RegularLevel.initRooms(), and the harness

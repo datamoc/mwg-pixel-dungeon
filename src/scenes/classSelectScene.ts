@@ -1,5 +1,5 @@
 import { SpdLabel as Label } from '../ui/spdLabel';
-import { Container, FillGradient, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Container, FillGradient, Graphics, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 import { Game, Scene2D, theme, Input } from 'mwg';
 import { t, capitalize } from '../i18n/index';
 import type { SpdSprites } from '../images';
@@ -9,7 +9,7 @@ import { loadBadges, classUnlocked } from '../badges';
 import { SpdButton as Button, menuScale } from '../ui/spdButton';
 import { titleIcon } from '../ui/titleIcons';
 import { TitleScene } from './titleScene';
-import { SewersScene } from '../main';
+import { DungeonScene } from './dungeonScene';
 
 // -------------------------------------------------------------- class select
 
@@ -47,7 +47,7 @@ export class ClassSelectScene extends Scene2D {
 			icon: titleIcon(runState.sprites.uiIcons, 'enter', 1), onClick: () => {
 				if (!this.selected) return;
 				runState.pendingClass = this.selected;
-				Game.current.switchScene(SewersScene);
+				Game.current.switchScene(DungeonScene);
 			} });
 		start.visible = false;
 		root.addChild(start);

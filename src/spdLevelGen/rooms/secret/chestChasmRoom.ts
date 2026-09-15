@@ -8,7 +8,7 @@
  *  though they're unconditionally true in this port). */
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, set } from '../../paintLevel';
-import { randomUsingDefaultsAnyCategory } from '../../../spdItems/generator';
+import { randomUsingDefaultsAnyCategory } from '../../../items/generator';
 
 export function paintChestChasmRoom(level: PaintLevel, room: Room, depth: number): void {
 	fillRoom(level, room, Terrain.WALL);

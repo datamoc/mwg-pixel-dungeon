@@ -34,8 +34,8 @@ import { resetSecretRoomRunState } from './rooms/secret/registry';
 import { resetWandmakerRunState } from './wandmaker';
 import { blacksmithQuestUsesBlood, resetBlacksmithRunState } from './blacksmith';
 import { entranceRoomContext } from './rooms/standard/entranceRoom';
-import { generatorFullReset } from '../spdItems/generator';
-import { resetShopRunState } from '../spdItems/shopItems';
+import { generatorFullReset } from '../items/generator';
+import { resetShopRunState } from '../items/shopItems';
 import { generateBossFloor } from './bossLevels';
 import { paintCaveRoom } from './rooms/standard/caveRoom';
 import { paintStandaloneTerrain } from './regularPainter';
@@ -122,7 +122,7 @@ export const SPD_TERRAIN_TO_GAME_KIND: Record<number, GameKindName> = {
 };
 
 /**
- * SPD trap class name -> the five trap behaviours `main.ts` implements (`TRAP_KINDS`).
+ * SPD trap class name -> the seven trap behaviours implemented by the scene (`TRAP_KINDS`).
  *
  * The ported painters place traps by their real Java class names and weights, because that is
  * what `Random.chances`/`avoidsHallways` need; trap *behaviour* was never ported. So each real
@@ -130,9 +130,9 @@ export const SPD_TERRAIN_TO_GAME_KIND: Record<number, GameKindName> = {
  * fall back to `poisonDart` (the most generic "it hurts you" trap) rather than being dropped -
  * a trap that exists in the verified grid should still do something when stepped on.
  *
- * Only `toxic`, `burning`, `poisonDart` and `wornDart` are genuine matches. `chilling`,
- * `shocking`, `alarm`, `ooze`, `gripping`, `confusion`, `flock`, `summoning`, `teleportation`,
- * `gateway`, `geyser`, `frost`, `storm`, `corrosion`, `rockfall`, `guardian`, `warping` and
+ * Only `toxic`, `burning`, `poisonDart`, `wornDart`, `confusion` and `corrosion` are genuine
+ * matches. `chilling`, `shocking`, `alarm`, `ooze`, `gripping`, `flock`, `summoning`,
+ * `teleportation`, `gateway`, `geyser`, `frost`, `storm`, `rockfall`, `guardian`, `warping` and
  * `pitfall` are all stand-ins: their real effects (freezing, chaining lightning, waking the
  * floor, corroding, rooting, confusing, summoning mobs, teleporting, opening a gateway, launching
  * the hero, dropping the hero a floor) need systems this port has none of.
@@ -147,7 +147,7 @@ const TRAP_BEHAVIOUR: Record<string, string> = {
 	alarm: 'poisonDart',
 	ooze: 'toxic',
 	gripping: 'poisonDart',
-	confusion: 'toxic',
+	confusion: 'confusionGas',
 	flock: 'poisonDart',
 	summoning: 'poisonDart',
 	teleportation: 'poisonDart',
@@ -158,7 +158,7 @@ const TRAP_BEHAVIOUR: Record<string, string> = {
 	// Caves' trap table (`CavesLevel.trapClasses()`), the four not already covered above.
 	frost: 'toxic',
 	storm: 'explosive',
-	corrosion: 'toxic',
+	corrosion: 'corrosionGas',
 	rockfall: 'poisonDart',
 	guardian: 'poisonDart',
 	warping: 'poisonDart',

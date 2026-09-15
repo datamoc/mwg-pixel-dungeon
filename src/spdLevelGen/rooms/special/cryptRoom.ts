@@ -7,7 +7,7 @@
  *  this port has no item objects. */
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, set } from '../../paintLevel';
-import { cursedGiftPrize, floorSetForPrize } from '../../../spdItems/generator';
+import { cursedGiftPrize, floorSetForPrize } from '../../../items/generator';
 
 export function paintCryptRoom(level: PaintLevel, room: Room): void {
 	fillRoom(level, room, Terrain.WALL);

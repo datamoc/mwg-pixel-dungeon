@@ -5,7 +5,7 @@
  *  a direct, non-Generator construct (real content). */
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset } from '../../paintLevel';
-import { randomBomb } from '../../../spdItems/generator';
+import { randomBomb } from '../../../items/generator';
 
 function placeItem(level: PaintLevel, room: Room, kind: string, sourceClass?: string): void {
 	let pos: number;

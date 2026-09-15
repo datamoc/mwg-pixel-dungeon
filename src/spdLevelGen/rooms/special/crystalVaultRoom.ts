@@ -7,7 +7,7 @@
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, set } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
-import { Cat, randomCategory } from '../../../spdItems/generator';
+import { Cat, randomCategory } from '../../../items/generator';
 
 /** `PathFinder.CIRCLE8` order; only its length (8) and the `+4 % 8` opposite-pairing matter for
  *  RNG-order fidelity, not the exact compass order. */

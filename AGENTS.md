@@ -80,6 +80,18 @@ Before calling any non-trivial change complete:
 3. Visually verify in a browser — type-checking and a successful build are not evidence the
    feature actually looks/behaves right in-game.
 
+## Committing - prompt, not batched
+
+Commit finished work instead of accumulating it: every closed roadmap bullet, real bug fix,
+or new verification gate gets its own commit with code, MWL/data, generated files, and the
+`PORT_COVERAGE.md`/`ROADMAP.md` updates together (the "same commit" rule above already
+requires that pairing). A days-old, hundred-file tree can neither be reviewed nor bisected,
+and nothing uncommitted reaches `main` - which is also what GitHub Pages deploys from, so
+uncommitted work is undeployed work. Verify first (the three steps above plus the relevant
+suites), then commit in the repo's existing message style (short imperative summary).
+Standing instruction: treat a finished unit of work as commit-ready without being asked
+each time; push/PR only when explicitly requested.
+
 ## Browser verification workflow
 
 `file://` can't run ES modules or fetch, so:
@@ -129,7 +141,7 @@ this script.
 ## `mwg` dependency
 
 `mwg` is the real published npm package `@datamoc/mw_games`, aliased to the `mwg` import
-specifier in `package.json` (`"mwg": "npm:@datamoc/mw_games@^0.7.8"`) since every source
+specifier in `package.json` (`"mwg": "npm:@datamoc/mw_games@^0.9.0"`) since every source
 file imports it as `from 'mwg'`. This project consumes it like any other npm dependency now
 — no local checkout, no `file:` link, no per-session drift check. Bump the version pin
 deliberately (and re-run the full verification suite in this `AGENTS.md`) when picking up a

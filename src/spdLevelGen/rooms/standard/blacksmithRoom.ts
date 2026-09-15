@@ -11,7 +11,7 @@ import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, drawInside, set } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
 import { entranceRoomContext } from './entranceRoom';
-import { Cat, oneOfCategories, randomCategory } from '../../../spdItems/generator';
+import { Cat, oneOfCategories, randomCategory } from '../../../items/generator';
 
 const CATEGORY_NAMES: Record<number, string> = { [Cat.ARMOR]: 'armor', [Cat.WEAPON]: 'weapon', [Cat.MISSILE]: 'missile' };
 

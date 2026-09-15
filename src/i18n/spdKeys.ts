@@ -15,76 +15,17 @@
  * instead: the Cleric (a later version than these `.properties`; the class itself came from
  * tag `v3.3.8`) and Berserk (which has status strings but no `.name`).
  */
-import { MWL_CONSUMABLE_ITEMS, MWL_MISSILE_DEFINITIONS, MWL_TRAIT_NODES } from '../mwlContent';
+import { MWL_CONSUMABLE_ITEMS, MWL_GROUND_ITEM_NAME_KEYS, MWL_ITEM_NAME_KEYS, MWL_MISSILE_DEFINITIONS, MWL_MONSTER_NODES, MWL_RING_ITEMS, MWL_WAND_DEFINITIONS, MWL_TRAIT_NODES } from '../mwlContent';
+import { ARTIFACTS } from '../items/artifacts';
 
-/** `actors.mobs.*` - the port's roster against SPD's own class names */
-export const MOB_KEYS: Record<string, string> = {
-	rat: 'actors.mobs.rat.name',
-	snake: 'actors.mobs.snake.name',
-	gnoll: 'actors.mobs.gnoll.name',
-	swarm: 'actors.mobs.swarm.name',
-	crab: 'actors.mobs.crab.name',
-	slime: 'actors.mobs.slime.name',
-	goo: 'actors.mobs.goo.name',
-	skeleton: 'actors.mobs.skeleton.name',
-	sheep: 'actors.mobs.npcs.sheep.name',
-	ward: 'items.wands.wandofwarding$ward.name_1',
-	earthGuardian: 'items.wands.wandoflivingearth$earthguardian.name',
-	thief: 'actors.mobs.thief.name',
-	dm100: 'actors.mobs.dm100.name',
-	guard: 'actors.mobs.guard.name',
-	necromancer: 'actors.mobs.necromancer.name',
-	tengu: 'actors.mobs.tengu.name',
-	fetidRat: 'actors.mobs.fetidrat.name',
-	gnollTrickster: 'actors.mobs.gnolltrickster.name',
-	greatCrab: 'actors.mobs.greatcrab.name',
-	bat: 'actors.mobs.bat.name',
-	brute: 'actors.mobs.brute.name',
-	shaman: 'actors.mobs.shaman.name',
-	spinner: 'actors.mobs.spinner.name',
-	dm200: 'actors.mobs.dm200.name',
-	dm300: 'actors.mobs.dm300.name',
-	necroSkeleton: 'actors.mobs.necromancer$necroskeleton.name',
-	ghost: 'actors.mobs.npcs.ghost.name',
-	wandmaker: 'actors.mobs.npcs.wandmaker.name',
-	shopkeeper: 'actors.mobs.npcs.shopkeeper.name',
-	blacksmith: 'actors.mobs.npcs.blacksmith.name',
-	imp: 'actors.mobs.npcs.imp.name',
-	ghoul: 'actors.mobs.ghoul.name',
-	//SPD has five elementals; this port models only the fire one
-	elemental: 'actors.mobs.elemental$fireelemental.name',
-	newbornElemental: 'actors.mobs.elemental$newbornfireelemental.name',
-	warlock: 'actors.mobs.warlock.name',
-	monk: 'actors.mobs.monk.name',
-	golem: 'actors.mobs.golem.name',
-	succubus: 'actors.mobs.succubus.name',
-	eye: 'actors.mobs.eye.name',
-	scorpio: 'actors.mobs.scorpio.name',
-	king: 'actors.mobs.dwarfking.name',
-	yog: 'actors.mobs.yogdzewa.name',
-	//SPD has five fists; the port spawns one generic add, named after the rotting one
-	yogFist: 'actors.mobs.yogfist$rottingfist.name',
-	demonSpawner: 'actors.mobs.demonspawner.name',
-	ripperDemon: 'actors.mobs.ripperdemon.name',
-	albino: 'actors.mobs.albino.name',
-	causticSlime: 'actors.mobs.causticslime.name',
-	bandit: 'actors.mobs.bandit.name',
-	spectralNecromancer: 'actors.mobs.spectralnecromancer.name',
-	armoredBrute: 'actors.mobs.armoredbrute.name',
-	dm201: 'actors.mobs.dm201.name',
-	senior: 'actors.mobs.senior.name',
-	acidic: 'actors.mobs.acidic.name',
-	mimic: 'actors.mobs.mimic.name',
-	sentry: 'levels.rooms.special.sentryroom$sentry.name',
-	rotHeart: 'actors.mobs.rotheart.name',
-	rotLasher: 'actors.mobs.rotlasher.name',
-	ratKing: 'actors.mobs.npcs.ratking.name',
-	crystalMimic: 'items.heap.crystal_chest',
-	piranha: 'actors.mobs.piranha.name',
-	bee: 'actors.mobs.bee.name',
-	statue: 'actors.mobs.statue.name',
-	pylon: 'actors.mobs.pylon.name',
-};
+/** `actors.mobs.*` - authored on each `monsters.mwl` node, derived here so the catalogue cannot
+ * drift from the roster. SPD has five elementals; this port models only the fire one, and five
+ * fists; the port spawns one generic add, named after the rotting one - both choices live on
+ * the MWL rows themselves. */
+export const MOB_KEYS: Record<string, string> = Object.fromEntries(
+	MWL_MONSTER_NODES.map((node) => [node.attributes.id, node.attributes.name]),
+);
+
 
 /** `actors.hero.heroclass.*`; the Cleric postdates this checkout's message files */
 export const CLASS_KEYS: Record<string, string> = {
@@ -105,113 +46,19 @@ export const REGION_KEYS: Record<string, string> = {
 	halls: 'journal.document.intros.halls.title',
 };
 
-/** the ground-item kinds this port drops, against SPD's real item names */
-export const GROUND_ITEM_KEYS: Record<string, string> = {
-	dewdrop: 'items.dewdrop.name',
-	stone: 'items.weapon.missiles.throwingstone.name',
-	potion: 'port.name.potion',
-	scroll: 'port.name.scroll',
-	meat: 'items.food.mysterymeat.name',
-	gold: 'items.gold.name',
-	armor: 'items.armor.clotharmor.name',
-	//The ground kind has no class identity at its call sites (a dropped wand keeps it in
-	//`sourceClass`), and an equipped wand reads `WAND_KEYS` instead, so this stays generic
-	//rather than naming every dropped wand the Magic Missile one.
-	wand: 'port.name.wand',
-	food: 'items.food.food.name',
-	seed: 'plants.plant$seed$placeholder.name',
-	darkGold: 'items.quest.darkgold.name',
-	dwarfToken: 'items.quest.dwarftoken.name',
-	kingsCrown: 'items.kingscrown.name',
-	amulet: 'items.amulet.name',
-	ring: 'port.name.ring',
-	crystalKey: 'items.keys.crystalkey.name',
-	goldenKey: 'items.keys.goldenkey.name',
-	bomb: 'items.bombs.bomb.name',
-	corpseDust: 'items.quest.corpsedust.name',
-	//Wandmaker type-2 ritual props (both catalog keys verified present)
-	candle: 'items.quest.ceremonialcandle.name',
-	embers: 'items.quest.embers.name',
-	ankh: 'items.ankh.name',
-	stylus: 'items.stylus.name',
-	honeypot: 'items.honeypot.name',
-	alchemize: 'items.spells.alchemize.name',
-	bag: 'items.bags.bag.name',
-	sandBag: 'items.artifacts.timekeepershourglass$sandbag.name',
-};
+/** Ground-item names are authored in MWL, keyed by the render/interaction family. */
+export const GROUND_ITEM_KEYS: Record<string, string> = { ...MWL_GROUND_ITEM_NAME_KEYS };
 
-/** the bag's item ids, against SPD's real item names */
-const LEGACY_ITEM_KEYS: Record<string, string> = {
-	kingsCrown: 'items.kingscrown.name',
-	clothArmor: 'items.armor.clotharmor.name',
-	armor: 'items.armor.clotharmor.name',
-	armorReward: 'items.armor.clotharmor.name',
-	weaponReward: 'port.name.questweapon',
-	wand: 'port.name.wand',
-	food: 'items.food.food.name',
-	meat: 'items.food.mysterymeat.name',
-	velvetPouch: 'items.bags.velvetpouch.name',
-	waterskin: 'items.waterskin.name',
-	gold: 'items.gold.name',
-	darkGold: 'items.quest.darkgold.name',
-	dwarfToken: 'items.quest.dwarftoken.name',
-	ironKey: 'items.keys.ironkey.name',
-	crystalKey: 'items.keys.crystalkey.name',
-	goldenKey: 'items.keys.goldenkey.name',
-	amulet: 'items.amulet.name',
-	pickaxe: 'items.quest.pickaxe.name',
-	stone: 'items.weapon.missiles.throwingstone.name',
-	knife: 'items.weapon.missiles.throwingknife.name',
-	spike: 'items.weapon.missiles.throwingspike.name',
-	potion: 'port.name.potion',
-	potionHealing: 'items.potions.potionofhealing.name',
-	potionStrength: 'items.potions.potionofstrength.name',
-	potionFlame: 'items.potions.potionofliquidflame.name',
-	potionMindVision: 'items.potions.potionofmindvision.name',
-	potionInvis: 'items.potions.potionofinvisibility.name',
-	potionPurity: 'items.potions.potionofpurity.name',
-	potionLevitation: 'items.potions.potionoflevitation.name',
-	scroll: 'port.name.scroll',
-	scrollIdentify: 'items.scrolls.scrollofidentify.name',
-	scrollUpgrade: 'items.scrolls.scrollofupgrade.name',
-	scrollRage: 'items.scrolls.scrollofrage.name',
-	scrollLullaby: 'items.scrolls.scrolloflullaby.name',
-	scrollMapping: 'items.scrolls.scrollofmagicmapping.name',
-	scrollMirror: 'items.scrolls.scrollofmirrorimage.name',
-	scrollCleanse: 'items.scrolls.scrollofremovecurse.name',
-	scrollRecharging: 'items.scrolls.scrollofrecharging.name',
-	scrollTeleportation: 'items.scrolls.scrollofteleportation.name',
-	scrollTerror: 'items.scrolls.scrollofterror.name',
-	scrollRetribution: 'items.scrolls.scrollofretribution.name',
-	bomb: 'items.bombs.bomb.name',
-	corpseDust: 'items.quest.corpsedust.name',
-	stoneOfAugmentation: 'items.stones.stoneofaugmentation.name',
-	stoneOfFear: 'items.stones.stoneoffear.name',
-	stoneOfDeepSleep: 'items.stones.stoneofdeepsleep.name',
-	stoneOfShock: 'items.stones.stoneofshock.name',
-	stoneOfBlast: 'items.stones.stoneofblast.name',
-	stoneOfBlink: 'items.stones.stoneofblink.name',
-	stoneOfClairvoyance: 'items.stones.stoneofclairvoyance.name',
-	stoneOfEnchantment: 'items.stones.stoneofenchantment.name',
-	stoneOfIntuition: 'items.stones.stoneofintuition.name',
-	//The generated catalog carries no `stoneofdetectmagic` keys at all (it even holds a
-	//phantom `stoneofdisarming` set instead - a catalog-generation gap, not a Java one),
-	//so this one name resolves through the port's own strings, sourced verbatim from Java.
-	stoneOfDetectMagic: 'port.name.stoneofdetectmagic',
-	candle: 'items.quest.ceremonialcandle.name',
-	embers: 'items.quest.embers.name',
-	ankh: 'items.ankh.name',
-	stylus: 'items.stylus.name',
-	honeypot: 'items.honeypot.name',
-	alchemize: 'items.spells.alchemize.name',
-	bag: 'items.bags.bag.name',
-	sandBag: 'items.artifacts.timekeepershourglass$sandbag.name',
-};
-
-/** Consumable names are authored in MWL; retain legacy aliases for runtime-only quest items. */
+/** Consumable names and runtime-only item aliases are authored in MWL. */
 export const ITEM_KEYS: Record<string, string> = {
-	...LEGACY_ITEM_KEYS,
+	...MWL_ITEM_NAME_KEYS,
 	...Object.fromEntries(MWL_CONSUMABLE_ITEMS.map((item) => [item.id, item.name])),
+	//`artifacts.mwl`'s two real, live-implemented artifacts (Cloak of Shadows -> 'cloak',
+	//Timekeeper's Hourglass -> 'hourglass'). Found missing live: `itemDisplayName`'s
+	//`ITEM_KEYS[id] ?? id` fallback meant an identified/unidentified cloak or hourglass rendered
+	//as the bare id text ("cloak"/"hourglass") instead of its real SPD name - neither id had ever
+	//had an entry here at all.
+	...Object.fromEntries(ARTIFACTS.map((artifact) => [artifact.id, artifact.nameKey])),
 	//`MwlMissileDefinition` carries only combat metadata (see `mwlContent.ts`), no `.name` -
 	//derived here from `sourceClass` the same way Java's own `Messages.get(Class, "name")`
 	//bundle-key convention does, rather than hand-listing the 15 (found missing live: the
@@ -219,21 +66,8 @@ export const ITEM_KEYS: Record<string, string> = {
 	...Object.fromEntries(MWL_MISSILE_DEFINITIONS.map((def) => [def.id, `items.weapon.missiles.${def.sourceClass.toLowerCase()}.name`])),
 };
 
-/** `items.rings.*` */
-export const RING_KEYS: Record<string, string> = {
-	accuracy: 'items.rings.ringofaccuracy.name',
-	evasion: 'items.rings.ringofevasion.name',
-	might: 'items.rings.ringofmight.name',
-	tenacity: 'items.rings.ringoftenacity.name',
-	haste: 'items.rings.ringofhaste.name',
-	energy: 'items.rings.ringofenergy.name',
-	wealth: 'items.rings.ringofwealth.name',
-	arcana: 'items.rings.ringofarcana.name',
-	force: 'items.rings.ringofforce.name',
-	sharpshooting: 'items.rings.ringofsharpshooting.name',
-	elements: 'items.rings.ringofelements.name',
-	furor: 'items.rings.ringoffuror.name',
-};
+/** `items.rings.*`, derived from the MWL item catalogue. */
+export const RING_KEYS: Record<string, string> = Object.fromEntries(MWL_RING_ITEMS.map((item) => [item.id.replace(/^ring/, '').toLowerCase(), item.name]));
 
 /**
  * `items/wands/*.java`, by this port's `wandType` id. An identified wand used to fall through to
@@ -242,21 +76,7 @@ export const RING_KEYS: Record<string, string> = {
  * table no longer claims every dropped wand is the Magic Missile one either - those call sites
  * have no class to read.
  */
-export const WAND_KEYS: Record<string, string> = {
-	magicMissile: 'items.wands.wandofmagicmissile.name',
-	frost: 'items.wands.wandoffrost.name',
-	fireblast: 'items.wands.wandoffireblast.name',
-	lightning: 'items.wands.wandoflightning.name',
-	corrosion: 'items.wands.wandofcorrosion.name',
-	corruption: 'items.wands.wandofcorruption.name',
-	disintegration: 'items.wands.wandofdisintegration.name',
-	blastWave: 'items.wands.wandofblastwave.name',
-	livingEarth: 'items.wands.wandoflivingearth.name',
-	prismaticLight: 'items.wands.wandofprismaticlight.name',
-	regrowth: 'items.wands.wandofregrowth.name',
-	transfusion: 'items.wands.wandoftransfusion.name',
-	warding: 'items.wands.wandofwarding.name',
-};
+export const WAND_KEYS: Record<string, string> = Object.fromEntries(MWL_WAND_DEFINITIONS.map((definition) => [definition.type, definition.name]));
 
 /** `actors.buffs.*`; Berserk carries status strings but no `.name` of its own */
 export const BUFF_KEYS: Record<string, string> = {

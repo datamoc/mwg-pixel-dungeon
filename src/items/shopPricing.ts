@@ -17,33 +17,11 @@
  */
 
 /** Per-unit `value()` bodies for the traded ids (quantity folds in at the call). */
-const UNIT_VALUES: Record<string, number> = {
-	//`Potion.value() = 30 x quantity`, all 12 classes alike.
-	potion: 30, potionHealing: 30, potionStrength: 30, potionFlame: 30, potionMindVision: 30,
-	potionInvis: 30, potionPurity: 30, potionLevitation: 30, potionExperience: 30,
-	potionToxicGas: 30, potionParalyticGas: 30, potionHaste: 30, potionFrost: 30,
-	//`Scroll.value() = 30 x quantity`; upgrade/transmutation are 50 once known.
-	scroll: 30, scrollIdentify: 30, scrollRage: 30, scrollLullaby: 30, scrollMapping: 30,
-	scrollMirror: 30, scrollCleanse: 30, scrollRecharging: 30, scrollTeleportation: 30,
-	scrollTerror: 30, scrollRetribution: 30,
-	scrollUpgrade: 50, scrollTransmutation: 50,
-	//`Food.value() = 10 x quantity`, `MysteryMeat.value() = 5 x quantity`,
-	//`Bomb.value() = 15 x quantity`.
-	food: 10, meat: 5, bomb: 15, doubleBomb: 15,
-	frostBomb: 15, woollyBomb: 15, fireBomb: 15, noisemaker: 15, flashbang: 15,
-	shockBomb: 15, regrowthBomb: 15, holyBomb: 15, arcaneBomb: 15, shrapnelBomb: 15,
-	gooBlob: 30, metalShard: 50,
-	//`Runestone.value() = 15 x quantity`, `Plant.Seed.value() = 10 x quantity`,
-	//`TimekeepersHourglass.sandBag.value() = 30` flat.
-	stone: 15, stoneOfAugmentation: 15, stoneOfFear: 15, stoneOfDeepSleep: 15,
-	stoneOfShock: 15, stoneOfBlast: 15, stoneOfBlink: 15, stoneOfClairvoyance: 15,
-	seed: 10, sandBag: 30,
-	//`Ankh.value()`/`Stylus.value()`/`Honeypot.value()` are 50/30/30; `Alchemize.value()` is
-	//`(int)(20 * quantity / OUT_QUANTITY)` with OUT_QUANTITY 8, i.e. 2.5 per unit. This port's
-	//per-unit model keeps 2.5 so a full recipe stack of 8 is worth Java's 20; Java truncates a
-	//single one to 2, which a per-unit table cannot also express.
-	ankh: 50, stylus: 30, honeypot: 30, alchemize: 2.5, bag: 30,
-};
+import { MWL_EQUIPMENT_VALUE_RULES, MWL_ITEM_UNIT_VALUES } from '../mwlContent';
+
+// Java's class-specific value() facts are content metadata; the formulas below are executable
+// shop behavior. Alchemize's 2.5 per-unit approximation is retained in the authored MWL value.
+const UNIT_VALUES = MWL_ITEM_UNIT_VALUES;
 
 /**
  * This port's analogue of `Item.value()`: per-unit value times quantity. Upgrade/
@@ -59,15 +37,17 @@ export function itemValue(itemId: string, quantity = 1, identified = true, meta:
 	}
 	if (meta.seal) return 0;
 	if (itemId === 'weaponReward' || itemId === 'armorReward') {
-		let price = 20 * Math.max(1, meta.tier ?? 1);
-		if (meta.affix && !meta.affix.toLowerCase().includes('curse')) price *= 1.5;
-		if (meta.cursedKnown && (meta.cursed || meta.affix?.toLowerCase().includes('curse'))) price /= 2;
-		if (identified && (meta.level ?? 0) > 0) price *= (meta.level! + 1);
+		const rule = MWL_EQUIPMENT_VALUE_RULES.generatedGear;
+		if (!rule) throw new Error('MWL equipment value rule is missing: generatedGear');
+		let price = rule.basePerTier * Math.max(1, meta.tier ?? 1);
+		if (meta.affix && !meta.affix.toLowerCase().includes('curse')) price *= rule.positiveAffixMultiplier;
+		if (meta.cursedKnown && (meta.cursed || meta.affix?.toLowerCase().includes('curse'))) price *= rule.knownCurseMultiplier;
+		if (identified && (meta.level ?? 0) > 0) price *= (rule.identifiedLevelBase + meta.level!);
 		return Math.max(1, Math.floor(price)) * quantity;
 	}
-	//`Ring.value()`/`Wand.value()` are 75 base (generated shop variants are level-0).
-	if (itemId.startsWith('ring_') || itemId === 'wand') return 75 * quantity;
-	return (UNIT_VALUES[itemId] ?? 0) * quantity;
+	// Ring/Wand ids are runtime-specific, so their family value is the authored fallback.
+	const unitValue = itemId.startsWith('ring_') ? UNIT_VALUES.ring : UNIT_VALUES[itemId];
+	return (unitValue ?? 0) * quantity;
 }
 
 /**

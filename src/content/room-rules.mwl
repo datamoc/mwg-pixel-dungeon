@@ -1,173 +1,218 @@
-[game]
-schema=0.1
-
-[table]
-id=standardRoomChances
-columns=depth:number|chances:list
-list_delimiter=,
-[row]
-depth=1
-chances=10,10,10,5,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,1,0,1,1,0,0
-[/row]
-[row]
-depth=2
-chances=10,10,10,5,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1
-[/row]
-[row]
-depth=5
-chances=10,10,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-[/row]
-[row]
-depth=6
-chances=10,0,0,0,10,10,5,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1
-[/row]
-[row]
-depth=11
-chances=10,0,0,0,0,0,0,10,10,5,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1
-[/row]
-[row]
-depth=16
-chances=10,0,0,0,0,0,0,0,0,0,10,10,5,0,0,0,1,1,1,1,1,1,1,1,1,1
-[/row]
-[row]
-depth=21
-chances=10,0,0,0,0,0,0,0,0,0,0,0,0,10,10,5,1,1,1,1,1,1,1,1,1,1
-[/row]
-[/table]
-
-[table]
-id=regionRoomCounts
-columns=region:string|standardMax:number|standardBase:number|standardWeights:list|specialMax:number|specialBase:number|specialWeights:list
-list_delimiter=,
-[row]
-region=sewers
-standardMax=6
-standardBase=4
-standardWeights=1,3,1
-specialMax=2
-specialBase=1
-specialWeights=1,4
-[/row]
-[row]
-region=prison
-standardMax=6
-standardBase=5
-standardWeights=1,1
-specialMax=3
-specialBase=1
-specialWeights=1,3,1
-[/row]
-[row]
-region=caves
-standardMax=7
-standardBase=6
-standardWeights=2,1
-specialMax=3
-specialBase=2
-specialWeights=4,1
-[/row]
-[row]
-region=city
-standardMax=8
-standardBase=6
-standardWeights=1,3,1
-specialMax=3
-specialBase=2
-specialWeights=2,1
-[/row]
-[row]
-region=halls
-standardMax=9
-standardBase=8
-standardWeights=2,1
-specialMax=3
-specialBase=2
-specialWeights=1,1
-[/row]
-[/table]
-
-[trait]
-id=standardRoomClassOrder
-name=StandardRoom.classOrder
-[effect]
-apply_to=classes
-set=empty,sewerPipe,ring,circleBasin,segmented,pillars,cellBlock,cave,cavesFissure,circlePit,hallway,statues,segmentedLibrary,ruins,chasm,skulls,plants,aquarium,platform,burned,fissure,grassyGrave,striped,study,suspiciousChest,minefield
-[/effect]
-[/trait]
-
-[trait]
-id=specialRoomRules
-name=SpecialRoom.selectionLists
-[effect]
-apply_to=equipSpecials
-set=weakFloor,crypt,pool,armory,sentry,statue,crystalVault,crystalChoice,sacrifice
-[/effect]
-[effect]
-apply_to=consumableSpecials
-set=runestone,garden,library,storage,treasury,magicWell,toxicGas,magicalFire,traps,crystalPath
-[/effect]
-[effect]
-apply_to=crystalKeySpecials
-set=pit,crystalVault,crystalChoice,crystalPath
-[/effect]
-[effect]
-apply_to=potionSpawnRooms
-set=pool,sentry,storage,toxicGas,magicalFire,traps
-[/effect]
-[/trait]
-
-[trait]
-id=connectionRoomChances
-name=ConnectionRoom.chances
-[effect]
-apply_to=classes
-set=tunnel,bridge,perimeter,walkway,ringTunnel,ringBridge
-[/effect]
-[/trait]
-
-[table]
-id=connectionRoomChanceRows
-columns=depth:number|chances:list
-list_delimiter=,
-[row]
-depth=1
-chances=20,1,0,2,2,1
-[/row]
-[row]
-depth=2
-chances=20,1,0,2,2,1
-[/row]
-[row]
-depth=3
-chances=20,1,0,2,2,1
-[/row]
-[row]
-depth=4
-chances=20,1,0,2,2,1
-[/row]
-[row]
-depth=5
-chances=20,0,0,0,0,0
-[/row]
-[row]
-depth=6
-chances=0,0,22,3,0,0
-[/row]
-[row]
-depth=7
-chances=0,0,22,3,0,0
-[/row]
-[row]
-depth=8
-chances=0,0,22,3,0,0
-[/row]
-[row]
-depth=9
-chances=0,0,22,3,0,0
-[/row]
-[row]
-depth=10
-chances=0,0,22,3,0,0
-[/row]
-[/table]
-[/game]
+[
+  {
+    tag: "game",
+    schema: 0.1,
+    children: [
+      {
+        tag: "table",
+        id: "standardRoomChances",
+        columns: "depth:number|chances:list",
+        list_delimiter: ",",
+        children: [
+          {
+            tag: "row",
+            depth: 1,
+            chances: "10,10,10,5,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,1,0,1,1,0,0",
+          },
+          {
+            tag: "row",
+            depth: 2,
+            chances: "10,10,10,5,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1",
+          },
+          {
+            tag: "row",
+            depth: 5,
+            chances: "10,10,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+          },
+          {
+            tag: "row",
+            depth: 6,
+            chances: "10,0,0,0,10,10,5,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1",
+          },
+          {
+            tag: "row",
+            depth: 11,
+            chances: "10,0,0,0,0,0,0,10,10,5,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1",
+          },
+          {
+            tag: "row",
+            depth: 16,
+            chances: "10,0,0,0,0,0,0,0,0,0,10,10,5,0,0,0,1,1,1,1,1,1,1,1,1,1",
+          },
+          {
+            tag: "row",
+            depth: 21,
+            chances: "10,0,0,0,0,0,0,0,0,0,0,0,0,10,10,5,1,1,1,1,1,1,1,1,1,1",
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "regionRoomCounts",
+        columns: "region:string|standardMax:number|standardBase:number|standardWeights:list|specialMax:number|specialBase:number|specialWeights:list",
+        list_delimiter: ",",
+        children: [
+          {
+            tag: "row",
+            region: "sewers",
+            standardMax: 6,
+            standardBase: 4,
+            standardWeights: "1,3,1",
+            specialMax: 2,
+            specialBase: 1,
+            specialWeights: "1,4",
+          },
+          {
+            tag: "row",
+            region: "prison",
+            standardMax: 6,
+            standardBase: 5,
+            standardWeights: "1,1",
+            specialMax: 3,
+            specialBase: 1,
+            specialWeights: "1,3,1",
+          },
+          {
+            tag: "row",
+            region: "caves",
+            standardMax: 7,
+            standardBase: 6,
+            standardWeights: "2,1",
+            specialMax: 3,
+            specialBase: 2,
+            specialWeights: "4,1",
+          },
+          {
+            tag: "row",
+            region: "city",
+            standardMax: 8,
+            standardBase: 6,
+            standardWeights: "1,3,1",
+            specialMax: 3,
+            specialBase: 2,
+            specialWeights: "2,1",
+          },
+          {
+            tag: "row",
+            region: "halls",
+            standardMax: 9,
+            standardBase: 8,
+            standardWeights: "2,1",
+            specialMax: 3,
+            specialBase: 2,
+            specialWeights: "1,1",
+          },
+        ],
+      },
+      {
+        tag: "trait",
+        id: "standardRoomClassOrder",
+        name: "StandardRoom.classOrder",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "classes",
+            set: "empty,sewerPipe,ring,circleBasin,segmented,pillars,cellBlock,cave,cavesFissure,circlePit,hallway,statues,segmentedLibrary,ruins,chasm,skulls,plants,aquarium,platform,burned,fissure,grassyGrave,striped,study,suspiciousChest,minefield",
+          },
+        ],
+      },
+      {
+        tag: "trait",
+        id: "specialRoomRules",
+        name: "SpecialRoom.selectionLists",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "equipSpecials",
+            set: "weakFloor,crypt,pool,armory,sentry,statue,crystalVault,crystalChoice,sacrifice",
+          },
+          {
+            tag: "effect",
+            apply_to: "consumableSpecials",
+            set: "runestone,garden,library,storage,treasury,magicWell,toxicGas,magicalFire,traps,crystalPath",
+          },
+          {
+            tag: "effect",
+            apply_to: "crystalKeySpecials",
+            set: "pit,crystalVault,crystalChoice,crystalPath",
+          },
+          {
+            tag: "effect",
+            apply_to: "potionSpawnRooms",
+            set: "pool,sentry,storage,toxicGas,magicalFire,traps",
+          },
+        ],
+      },
+      {
+        tag: "trait",
+        id: "connectionRoomChances",
+        name: "ConnectionRoom.chances",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "classes",
+            set: "tunnel,bridge,perimeter,walkway,ringTunnel,ringBridge",
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "connectionRoomChanceRows",
+        columns: "depth:number|chances:list",
+        list_delimiter: ",",
+        children: [
+          {
+            tag: "row",
+            depth: 1,
+            chances: "20,1,0,2,2,1",
+          },
+          {
+            tag: "row",
+            depth: 2,
+            chances: "20,1,0,2,2,1",
+          },
+          {
+            tag: "row",
+            depth: 3,
+            chances: "20,1,0,2,2,1",
+          },
+          {
+            tag: "row",
+            depth: 4,
+            chances: "20,1,0,2,2,1",
+          },
+          {
+            tag: "row",
+            depth: 5,
+            chances: "20,0,0,0,0,0",
+          },
+          {
+            tag: "row",
+            depth: 6,
+            chances: "0,0,22,3,0,0",
+          },
+          {
+            tag: "row",
+            depth: 7,
+            chances: "0,0,22,3,0,0",
+          },
+          {
+            tag: "row",
+            depth: 8,
+            chances: "0,0,22,3,0,0",
+          },
+          {
+            tag: "row",
+            depth: 9,
+            chances: "0,0,22,3,0,0",
+          },
+          {
+            tag: "row",
+            depth: 10,
+            chances: "0,0,22,3,0,0",
+          },
+        ],
+      },
+    ],
+  },
+]

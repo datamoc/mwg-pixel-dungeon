@@ -1,5 +1,5 @@
 import { SpdLabel as Label } from '../ui/spdLabel';
-import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Container, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 import { Game, Scene2D, Input, WindowStack } from 'mwg';
 import { t } from '../i18n/index';
 import { titleIcon, type TitleIconName } from '../ui/titleIcons';

@@ -1,5 +1,5 @@
 import { Actors } from 'mwg';
-import { MWL_ARMOR_GLYPHS, MWL_WEAPON_ENCHANTS, MWL_UNSTABLE_DELEGATES } from './mwlContent';
+import { MWL_ARMOR_GLYPHS, MWL_WEAPON_ENCHANTS, MWL_UNSTABLE_DELEGATES } from '../mwlContent';
 
 /**
  * Weapon enchantments and armor glyphs as `mwg/actors` affix tables, authored in

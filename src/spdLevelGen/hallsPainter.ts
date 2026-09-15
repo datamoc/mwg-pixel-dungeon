@@ -16,7 +16,7 @@ import { Room } from './room';
 import { SpdRandom } from '../spdRng';
 import { PaintLevel, Terrain, isPassableTerrain, neighbours8 } from './paintLevel';
 import { paintLevel, TrapTable, Feeling, mergeRooms } from './regularPainter';
-import { setGeneratorDepth } from '../spdItems/generator';
+import { setGeneratorDepth } from '../items/generator';
 import { mwlPaintRule, mwlTrapTable } from './mwlDungeonRules';
 
 /** `RegularLevel.nTraps()`: `Random.NormalIntRange(2, 3 + depth/5)` - `depth/5` is 4 across all

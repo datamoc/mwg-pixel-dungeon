@@ -1,4 +1,5 @@
 import { Actors } from 'mwg';
+import { MWL_RING_ITEMS } from '../mwlContent';
 
 /** The subset of a stored/bag ring's shape these pure multiplier functions need. */
 export interface EquippedRing {
@@ -9,10 +10,47 @@ export interface EquippedRing {
 }
 
 /**
+ * `rings.mwl` authors every ring's formula as `add=level` or `multiply=BASE^level` - the two
+ * shapes this port's rings actually use. Parses one authored effect rather than hand-copying
+ * its number a second time here, and throws on anything else so a future authored shape this
+ * doesn't understand fails loudly instead of silently mismatching Java.
+ */
+function ringFormula(mwlId: string, operation: string | undefined, value: string | undefined): (level: number) => number {
+	if (operation === 'add' && value === 'level') return (level) => level;
+	const power = operation === 'multiply' ? /^([\d.]+)\^level$/.exec(value ?? '') : null;
+	if (power) {
+		const base = Number(power[1]);
+		return (level) => Math.pow(base, level);
+	}
+	throw new Error(`rings.mwl's ${mwlId} effect has an unrecognized formula shape: ${operation}=${value}`);
+}
+
+/**
+ * Looks up `ring${Capitalized(shortKey)}` in `rings.mwl` and parses its one authored effect.
+ * `applyTo` is the authored `apply_to` label (matches `shortKey` for most rings, but Might's is
+ * `strength` and Haste's is `haste` while this port's own internal `stat` for it is `speed` -
+ * three independent vocabularies that happen to coincide most of the time, not by rule).
+ * `mwlId` (`ringHaste`) is `rings.mwl`'s own item-node id, used only to look data up in
+ * `MWL_RING_ITEMS` - it is not the runtime bag-item id (`ring_haste`, authored separately in
+ * `item-rules.mwl`'s `ringClassAliases` and checked everywhere via `id.startsWith('ring_')`).
+ * The two happen to share a lowercase suffix, which is the only reason `RING_KEYS` (keyed by
+ * that shared suffix) can serve both; don't build a bag item id from this function's `mwlId`.
+ */
+function mwlRingFormula(shortKey: string, applyTo: string, stat: string, op: Actors.ModifierOp): { stat: string; op: Actors.ModifierOp; at: (level: number) => number } {
+	const mwlId = 'ring' + shortKey[0]!.toUpperCase() + shortKey.slice(1);
+	const item = MWL_RING_ITEMS.find((candidate) => candidate.id === mwlId);
+	if (!item) throw new Error(`rings.mwl is missing the ${mwlId} item`);
+	const effect = item.effects.find((candidate) => candidate.applyTo === applyTo);
+	if (!effect) throw new Error(`rings.mwl's ${mwlId} item has no effect for ${applyTo}`);
+	return { stat, op, at: ringFormula(mwlId, effect.operation, effect.value) };
+}
+
+/**
  * `RingOfTenacity`'s special-cased entry: `stat` is a marker only, skipped in the
  * `scaledModifiers` loop this table otherwise drives - see `ringTenacityMultiplier`'s own
  * comment for why it can't be a plain `StatBlock` modifier (it depends on live HP, not a
- * static stat).
+ * static stat, so unlike every other ring here its authored `multiply=0.85^(level*missing_hp_fraction)`
+ * has a second free variable `ringFormula` above does not parse; `at` is never actually called).
  * - Accuracy: `RingOfAccuracy.accuracyMultiplier()` = `pow(1.3, bonusLevel)`.
  * - Evasion: `RingOfEvasion.evasionMultiplier()` = `pow(1.125, bonusLevel)`.
  * - Might: `RingOfMight.strengthBonus()` = the bonus level (can be negative when cursed).
@@ -20,28 +58,28 @@ export interface EquippedRing {
 export const RING_DEFS: Record<string, { stat: string; op: Actors.ModifierOp; at: (level: number) => number }> = {
 	//Every `at(level)` below receives Java's *bonus* level, not the ring's own upgrade level -
 	//`ringBonusLevel` is the single translation (see its comment).
-	accuracy: { stat: 'accuracy', op: 'multiply', at: (lvl) => Math.pow(1.3, lvl) },
-	evasion: { stat: 'evasion', op: 'multiply', at: (lvl) => Math.pow(1.125, lvl) },
-	might: { stat: 'strength', op: 'add', at: (lvl) => lvl },
+	accuracy: mwlRingFormula('accuracy', 'accuracy', 'accuracy', 'multiply'),
+	evasion: mwlRingFormula('evasion', 'evasion', 'evasion', 'multiply'),
+	might: mwlRingFormula('might', 'strength', 'strength', 'add'),
 	tenacity: { stat: 'tenacity', op: 'add', at: (lvl) => lvl },
 	//RingOfHaste.speedMultiplier()/RingOfEnergy.wandChargeMultiplier(): both real Java formulas
 	//are `pow(1.175, getBuffedBonus(...))`, applied outside the StatBlock loop below the same way Tenacity is
 	//(`getActionTurnCostMod`/`recoverWandCharge`'s rate read these via `ringDef` directly, since
 	//"faster turns" and "faster wand recharge" aren't `heroStats` entries).
-	haste: { stat: 'speed', op: 'multiply', at: (lvl) => Math.pow(1.175, lvl) },
-	energy: { stat: 'energy', op: 'multiply', at: (lvl) => Math.pow(1.175, lvl) },
+	haste: mwlRingFormula('haste', 'haste', 'speed', 'multiply'),
+	energy: mwlRingFormula('energy', 'energy', 'energy', 'multiply'),
 	//RingOfWealth.dropChanceMultiplier(): real Java formula is `pow(1.20, getBuffedBonus(...))`, read directly
 	//via `ringDef` the same way (`ringWealthMultiplier`, applied to `MOB_LOOT`'s chance in `kill`).
-	wealth: { stat: 'wealth', op: 'multiply', at: (lvl) => Math.pow(1.2, lvl) },
+	wealth: mwlRingFormula('wealth', 'wealth', 'wealth', 'multiply'),
 	//RingOfArcana.enchantPowerMultiplier(): `pow(1.175, getBuffedBonus(...))`, read via `ringArcanaMultiplier`
 	//at Grim/Lucky/Blocking's proc rolls - the only ported procs Java scales by it.
-	arcana: { stat: 'arcana', op: 'multiply', at: (lvl) => Math.pow(1.175, lvl) },
+	arcana: mwlRingFormula('arcana', 'arcana', 'arcana', 'multiply'),
 	//RingOfForce.armedDamageBonus(): the bonus level itself (a plain +0 ring already adds 1), read via `ringForceBonus` at the hero's own
 	//melee-attack site (excluded from ranged/thrown the same way Java excludes MissileWeapon).
-	force: { stat: 'force', op: 'add', at: (lvl) => lvl },
+	force: mwlRingFormula('force', 'force', 'force', 'add'),
 	//RingOfSharpshooting.levelDamageBonus(): the bonus level itself (a plain +0 ring already adds 1), read via `ringSharpshootingBonus` at
 	//the hero's own thrown/SpiritBow damage rolls (the ranged mirror of Force's melee-only bonus).
-	sharpshooting: { stat: 'sharpshooting', op: 'add', at: (lvl) => lvl },
+	sharpshooting: mwlRingFormula('sharpshooting', 'sharpshooting', 'sharpshooting', 'add'),
 	//RingOfElements.resist(): `pow(0.825, bonusLevel)` damage multiplier against elemental
 	//sources (Burning/Chill/Frost/Ooze/Paralysis/Poison/Corrosion/ToxicGas/Electricity +
 	//AntiMagic.RESISTS), read via `ringElementsMultiplier` at the hero's elemental-damage
@@ -50,13 +88,13 @@ export const RING_DEFS: Record<string, { stat: string; op: Actors.ModifierOp; at
 	//shared Class-dispatch - each status/damage site calls `addBuff`/damage directly - so
 	//the same factor is applied at each elemental call site instead. Status *durations*
 	//are not scaled (Java scales damage, not buff length, through this path).
-	elements: { stat: 'elements', op: 'multiply', at: (lvl) => Math.pow(0.825, lvl) },
+	elements: mwlRingFormula('elements', 'elements', 'elements', 'multiply'),
 	//RingOfFuror.attackSpeedMultiplier(): `pow(1.09051, bonusLevel)`, read via
 	//`ringFurorMultiplier` at the hero's own bump-attack turn cost only (real Java's
 	//`Hero.attackDelay()` is a separate cost function from `Char.speed()`; RingOfHaste
 	//feeds `speed()` while Furor feeds `attackDelay()`, so Furor must never speed up
 	//movement - see `getAttackTurnCostMod`).
-	furor: { stat: 'furor', op: 'multiply', at: (lvl) => Math.pow(1.09051, lvl) },
+	furor: mwlRingFormula('furor', 'furor', 'furor', 'multiply'),
 };
 
 /**
@@ -112,14 +150,14 @@ export function ringTenacityMultiplier(ring: EquippedRing | null, hp: number, ma
  * fractional-turn-cost model expresses the same thing as the cost per action scaling down. */
 export function ringHasteMultiplier(ring: EquippedRing | null, magicImmune = false): number {
 	if (!ring || ringDef(ring.id)?.stat !== 'speed') return 1;
-	return Math.pow(1.175, ringBonusLevel(ring, magicImmune));
+	return RING_DEFS.haste!.at(ringBonusLevel(ring, magicImmune));
 }
 
 /** `RingOfEnergy.wandChargeMultiplier()`: `1.175^bonusLevel` (this port doesn't model the
  * Light Reading talent's further multiplier on top, since that talent itself isn't ported). */
 export function ringEnergyMultiplier(ring: EquippedRing | null, magicImmune = false): number {
 	if (!ring || ringDef(ring.id)?.stat !== 'energy') return 1;
-	return Math.pow(1.175, ringBonusLevel(ring, magicImmune));
+	return RING_DEFS.energy!.at(ringBonusLevel(ring, magicImmune));
 }
 
 /** `RingOfArcana.enchantPowerMultiplier()`: `1.175^bonusLevel`. Real Java's
@@ -134,7 +172,7 @@ export function ringEnergyMultiplier(ring: EquippedRing | null, magicImmune = fa
  * a flat passive either (it is a real toggle as of the same pass). */
 export function ringArcanaMultiplier(ring: EquippedRing | null, magicImmune = false): number {
 	if (!ring || ringDef(ring.id)?.stat !== 'arcana') return 1;
-	return Math.pow(1.175, ringBonusLevel(ring, magicImmune));
+	return RING_DEFS.arcana!.at(ringBonusLevel(ring, magicImmune));
 }
 
 /** `RingOfForce.armedDamageBonus()`: the bonus level (a plain +0 ring already adds 1), read at the
@@ -154,7 +192,11 @@ export function ringSharpshootingBonus(ring: EquippedRing | null, magicImmune = 
 
 /** `RingOfSharpshooting.durabilityMultiplier()`: `1.2^getBonus(Aim.class)` (the same bonus level,
  * via Java's non-buffed accessor), read at the thrown-missile
- * `uses` calculation - Java scales `usages` (this port's `uses`) directly by it. */
+ * `uses` calculation - Java scales `usages` (this port's `uses`) directly by it.
+ * Unlike every formula above, this one has no `rings.mwl` authoring at all: `ringSharpshooting`
+ * authors only its `add=level` damage effect (`RingOfSharpshooting.levelDamageBonus()`), not
+ * this second, independent Java formula on the same ring - a real, minor gap in the MWL
+ * catalogue rather than a duplication to remove. */
 export function ringSharpshootingDurabilityMultiplier(ring: EquippedRing | null, magicImmune = false): number {
 	if (!ring || ringDef(ring.id)?.stat !== 'sharpshooting') return 1;
 	return Math.pow(1.2, ringBonusLevel(ring, magicImmune));
@@ -166,7 +208,7 @@ export function ringSharpshootingDurabilityMultiplier(ring: EquippedRing | null,
  * longer it goes unrewarded) is not modeled - this only covers the flat chance multiplier. */
 export function ringWealthMultiplier(ring: EquippedRing | null, magicImmune = false): number {
 	if (!ring || ringDef(ring.id)?.stat !== 'wealth') return 1;
-	return Math.pow(1.2, ringBonusLevel(ring, magicImmune));
+	return RING_DEFS.wealth!.at(ringBonusLevel(ring, magicImmune));
 }
 
 /** `Ring.getBuffedBonus(Wealth.class)`: only a *positive* bonus level enables the separate
@@ -184,7 +226,7 @@ export function ringWealthBonus(ring: EquippedRing | null, magicImmune = false):
  * equipped (or the equipped ring is another type). */
 export function ringElementsMultiplier(ring: EquippedRing | null, magicImmune = false): number {
 	if (!ring || ringDef(ring.id)?.stat !== 'elements') return 1;
-	return Math.pow(0.825, ringBonusLevel(ring, magicImmune));
+	return RING_DEFS.elements!.at(ringBonusLevel(ring, magicImmune));
 }
 
 /** `RingOfFuror.attackSpeedMultiplier()`: `pow(1.09051, bonusLevel)`. Real Java multiplies
@@ -192,5 +234,5 @@ export function ringElementsMultiplier(ring: EquippedRing | null, magicImmune = 
  * the same thing as the attack's turn cost scaling down (see `getAttackTurnCostMod`). */
 export function ringFurorMultiplier(ring: EquippedRing | null, magicImmune = false): number {
 	if (!ring || ringDef(ring.id)?.stat !== 'furor') return 1;
-	return Math.pow(1.09051, ringBonusLevel(ring, magicImmune));
+	return RING_DEFS.furor!.at(ringBonusLevel(ring, magicImmune));
 }

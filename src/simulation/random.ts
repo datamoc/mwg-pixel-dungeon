@@ -6,4 +6,5 @@ export interface SimulationRandom {
 	range(min: number, max: number): number;
 	/** Uniform integer in [min, max), unlike range(). */
 	int(min: number, max: number): number;
+	chance(probability: number): boolean;
 }

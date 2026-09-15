@@ -1,223 +1,274 @@
-[game]
-schema=0.1
-
-[table]
-id=monsterLoot
-columns=monster:string|chance:number|kind:string
-[row]
-monster=snake
-chance=0.25
-kind=seed
-[/row]
-[row]
-monster=rotLasher
-chance=0.75
-kind=seed
-[/row]
-[row]
-monster=gnoll
-chance=0.5
-kind=gold
-[/row]
-[row]
-monster=crab
-chance=0.1666666667
-kind=meat
-[/row]
-[row]
-monster=albino
-chance=1
-kind=meat
-[/row]
-[row]
-monster=causticSlime
-chance=0.5
-kind=meat
-[/row]
-[row]
-monster=bandit
-chance=1
-kind=gold
-[/row]
-[row]
-monster=spectralNecromancer
-chance=0.2
-kind=potion
-[/row]
-[row]
-monster=armoredBrute
-chance=1
-kind=armor
-[/row]
-[row]
-monster=dm201
-chance=0.125
-kind=armor
-[/row]
-[row]
-monster=senior
-chance=1
-kind=food
-[/row]
-[row]
-monster=acidic
-chance=1
-kind=potion
-[/row]
-[row]
-monster=piranha
-chance=1
-kind=meat
-[/row]
-[row]
-monster=dm100
-chance=0.25
-kind=scroll
-[/row]
-[row]
-monster=guard
-chance=0.2
-kind=armor
-[/row]
-[row]
-monster=necromancer
-chance=0.2
-kind=potion
-[/row]
-[row]
-monster=bat
-chance=0.1666666667
-kind=potion
-[/row]
-[row]
-monster=brute
-chance=0.5
-kind=gold
-[/row]
-[row]
-monster=shaman
-chance=0.03
-kind=wand
-[/row]
-[row]
-monster=spinner
-chance=0.125
-kind=meat
-[/row]
-[row]
-monster=dm200
-chance=0.2
-kind=armor
-[/row]
-[row]
-monster=gnollTrickster
-chance=1
-kind=stone
-[/row]
-[row]
-monster=greatCrab
-chance=1
-kind=meat
-[/row]
-[row]
-monster=ghoul
-chance=0.2
-kind=gold
-[/row]
-[row]
-monster=monk
-chance=0.1
-kind=food
-[/row]
-[row]
-monster=golem
-chance=0.2
-kind=armor
-[/row]
-[row]
-monster=eye
-chance=1
-kind=dewdrop
-[/row]
-[row]
-monster=demonSpawner
-chance=1
-kind=potion
-[/row]
-[row]
-monster=slime
-chance=0.2
-kind=armor
-[/row]
-[row]
-monster=skeleton
-chance=0.1666666667
-kind=armor
-[/row]
-[row]
-monster=thief
-chance=0.03
-kind=ring
-[/row]
-[row]
-monster=swarm
-chance=0.1666666667
-kind=potion
-[/row]
-[/table]
-
-[table]
-id=limitedDropDecay
-columns=monster:string|mode:string|value:number
-[row]
-monster=bat
-mode=linear
-value=7
-[/row]
-[row]
-monster=necromancer
-mode=linear
-value=6
-[/row]
-[row]
-monster=guard
-mode=power
-value=3
-[/row]
-[row]
-monster=dm200
-mode=power
-value=3
-[/row]
-[row]
-monster=golem
-mode=power
-value=3
-[/row]
-[row]
-monster=shaman
-mode=power
-value=3
-[/row]
-[row]
-monster=slime
-mode=power
-value=4
-[/row]
-[row]
-monster=skeleton
-mode=power
-value=3
-[/row]
-[row]
-monster=thief
-mode=power
-value=3
-[/row]
-[row]
-monster=swarm
-mode=linear
-value=5
-[/row]
-[/table]
-[/game]
+[
+  {
+    tag: "game",
+    schema: 0.1,
+    children: [
+      {
+        tag: "table",
+        id: "monsterLoot",
+        columns: "monster:string|chance:number|kind:string",
+        children: [
+          {
+            tag: "row",
+            monster: "snake",
+            chance: 0.25,
+            kind: "seed",
+          },
+          {
+            tag: "row",
+            monster: "rotLasher",
+            chance: 0.75,
+            kind: "seed",
+          },
+          {
+            tag: "row",
+            monster: "gnoll",
+            chance: 0.5,
+            kind: "gold",
+          },
+          {
+            tag: "row",
+            monster: "crab",
+            chance: 0.1666666667,
+            kind: "meat",
+          },
+          {
+            tag: "row",
+            monster: "albino",
+            chance: 1,
+            kind: "meat",
+          },
+          {
+            tag: "row",
+            monster: "causticSlime",
+            chance: 0.5,
+            kind: "meat",
+          },
+          {
+            tag: "row",
+            monster: "bandit",
+            chance: 1,
+            kind: "gold",
+          },
+          {
+            tag: "row",
+            monster: "spectralNecromancer",
+            chance: 0.2,
+            kind: "potion",
+          },
+          {
+            tag: "row",
+            monster: "armoredBrute",
+            chance: 1,
+            kind: "armor",
+          },
+          {
+            tag: "row",
+            monster: "dm201",
+            chance: 0.125,
+            kind: "armor",
+          },
+          {
+            tag: "row",
+            monster: "senior",
+            chance: 1,
+            kind: "food",
+          },
+          {
+            tag: "row",
+            monster: "acidic",
+            chance: 1,
+            kind: "potion",
+          },
+          {
+            tag: "row",
+            monster: "piranha",
+            chance: 1,
+            kind: "meat",
+          },
+          {
+            tag: "row",
+            monster: "dm100",
+            chance: 0.25,
+            kind: "scroll",
+          },
+          {
+            tag: "row",
+            monster: "guard",
+            chance: 0.2,
+            kind: "armor",
+          },
+          {
+            tag: "row",
+            monster: "necromancer",
+            chance: 0.2,
+            kind: "potion",
+          },
+          {
+            tag: "row",
+            monster: "bat",
+            chance: 0.1666666667,
+            kind: "potion",
+          },
+          {
+            tag: "row",
+            monster: "brute",
+            chance: 0.5,
+            kind: "gold",
+          },
+          {
+            tag: "row",
+            monster: "shaman",
+            chance: 0.03,
+            kind: "wand",
+          },
+          {
+            tag: "row",
+            monster: "spinner",
+            chance: 0.125,
+            kind: "meat",
+          },
+          {
+            tag: "row",
+            monster: "dm200",
+            chance: 0.2,
+            kind: "armor",
+          },
+          {
+            tag: "row",
+            monster: "gnollTrickster",
+            chance: 1,
+            kind: "stone",
+          },
+          {
+            tag: "row",
+            monster: "greatCrab",
+            chance: 1,
+            kind: "meat",
+          },
+          {
+            tag: "row",
+            monster: "ghoul",
+            chance: 0.2,
+            kind: "gold",
+          },
+          {
+            tag: "row",
+            monster: "monk",
+            chance: 0.1,
+            kind: "food",
+          },
+          {
+            tag: "row",
+            monster: "golem",
+            chance: 0.2,
+            kind: "armor",
+          },
+          {
+            tag: "row",
+            monster: "eye",
+            chance: 1,
+            kind: "dewdrop",
+          },
+          {
+            tag: "row",
+            monster: "demonSpawner",
+            chance: 1,
+            kind: "potion",
+          },
+          {
+            tag: "row",
+            monster: "slime",
+            chance: 0.2,
+            kind: "armor",
+          },
+          {
+            tag: "row",
+            monster: "skeleton",
+            chance: 0.1666666667,
+            kind: "armor",
+          },
+          {
+            tag: "row",
+            monster: "thief",
+            chance: 0.03,
+            kind: "ring",
+          },
+          {
+            tag: "row",
+            monster: "swarm",
+            chance: 0.1666666667,
+            kind: "potion",
+          },
+        ],
+      },
+      {
+        tag: "table",
+        id: "limitedDropDecay",
+        columns: "monster:string|mode:string|value:number",
+        children: [
+          {
+            tag: "row",
+            monster: "bat",
+            mode: "linear",
+            value: 7,
+          },
+          {
+            tag: "row",
+            monster: "necromancer",
+            mode: "linear",
+            value: 6,
+          },
+          {
+            tag: "row",
+            monster: "guard",
+            mode: "power",
+            value: 3,
+          },
+          {
+            tag: "row",
+            monster: "dm200",
+            mode: "power",
+            value: 3,
+          },
+          {
+            tag: "row",
+            monster: "golem",
+            mode: "power",
+            value: 3,
+          },
+          {
+            tag: "row",
+            monster: "shaman",
+            mode: "power",
+            value: 3,
+          },
+          {
+            tag: "row",
+            monster: "slime",
+            mode: "power",
+            value: 4,
+          },
+          {
+            tag: "row",
+            monster: "skeleton",
+            mode: "power",
+            value: 3,
+          },
+          {
+            tag: "row",
+            monster: "thief",
+            mode: "power",
+            value: 3,
+          },
+          {
+            tag: "row",
+            monster: "swarm",
+            mode: "linear",
+            value: 5,
+          },
+        ],
+      },
+    ],
+  },
+]

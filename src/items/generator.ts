@@ -99,6 +99,8 @@ const WAND_DECK = mwlDeck('wandGeneratorDeck');
 const RING_DECK = mwlDeck('ringGeneratorDeck');
 const ARTIFACT_DECK = mwlDeck('artifactGeneratorDeck');
 const FOOD_DECK = mwlDeck('foodGeneratorDeck');
+const SEED_DECK = mwlDeck('seedDeck');
+const ARMOR_DECK = mwlDeck('armorGeneratorDeck');
 
 function mwlMatrix(id: string): number[][] {
 	return MWL_TABLE_ROWS(id).map((row) => (Array.isArray(row.chances) ? row.chances.map(Number) : []));
@@ -164,9 +166,8 @@ const CATS: CatDef[] = [
 		// No `defaultProbs`: `randomArmor()` handles tier selection itself, so `random(ARMOR)`
 		// never reaches the deck branch.
 		name: 'ARMOR', firstProb: 2, secondProb: 1, superKind: 'armor',
-		defaultProbs: null, initialProbs: [1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
-		classes: ['ClothArmor', 'LeatherArmor', 'MailArmor', 'ScaleArmor', 'PlateArmor',
-			'WarriorArmor', 'MageArmor', 'RogueArmor', 'HuntressArmor', 'DuelistArmor'],
+		defaultProbs: null, initialProbs: ARMOR_DECK.probabilities,
+		classes: ARMOR_DECK.classes,
 	},
 	{ name: 'MISSILE', firstProb: 1, secondProb: 2, superKind: 'missile', defaultProbs: null, initialProbs: [], classes: [] },
 	{
@@ -224,10 +225,8 @@ const CATS: CatDef[] = [
 	},
 	{
 		name: 'SEED', firstProb: 1, secondProb: 1, superKind: 'item',
-		defaultProbs: [0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 2],
-		initialProbs: [0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 2],
-		classes: ['Rotberry', 'Sungrass', 'Fadeleaf', 'Icecap', 'Firebloom', 'Sorrowmoss',
-			'Swiftthistle', 'Blindweed', 'Stormvine', 'Earthroot', 'Mageroyal', 'Starflower'],
+		defaultProbs: SEED_DECK.probabilities, initialProbs: [...SEED_DECK.probabilities],
+		classes: SEED_DECK.classes,
 	},
 	{
 		name: 'SCROLL', firstProb: 8, secondProb: 8, superKind: 'item',

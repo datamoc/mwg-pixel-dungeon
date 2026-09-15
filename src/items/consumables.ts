@@ -1,0 +1,115 @@
+import { Random, type Actors } from 'mwg';
+import { cachedRationChance } from '../talentEffects';
+import { isChallengeEnabled } from '../challenges';
+import { t } from '../i18n';
+import type { Creature } from '../combat';
+import type { ClassId } from '../classes';
+import { MWL_CONSUMABLE_STATS, mwlItemEffectValue } from '../mwlContent';
+
+interface BarrierLike {
+	total: number;
+	add(amount: number): void;
+}
+
+export interface ConsumableContext {
+	readonly bag: Actors.Inventory;
+	readonly hero: Creature;
+	readonly heroClass: ClassId;
+	readonly requestedItemId: string | null;
+	readonly requestedItemInstanceId?: string;
+	hunger: number;
+	waterskin: number;
+	ammo: number;
+	freeTurnNext: boolean;
+	 wandBonusDamage: number;
+	physicalBonusDamage: number;
+	physicalBonusAttacks: number;
+	readonly heroBarrier: BarrierLike;
+	readonly talentRank: (id: string) => number;
+	readonly wandCharges: { refund(amount: number): void };
+	showHeal(target: Creature, amount: number): void;
+	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
+	applyPotionEffect(id: string): void;
+}
+
+/** Food.satisfy() and the class talents that react to eating. */
+export function eatFood(scene: ConsumableContext): boolean {
+	const food = scene.requestedItemId
+		? scene.bag.find(scene.requestedItemId, scene.requestedItemInstanceId)
+		: scene.bag.find('food') ?? scene.bag.find('meat');
+	if (!food) {
+		scene.say(t('port.log.nothingtoeat'), 'negative');
+		return false;
+	}
+	scene.bag.remove(food.id, 1);
+	const cached = cachedRationChance(scene.heroClass, scene.talentRank('cached_rations'));
+	if (cached > 0 && Random.chance(cached)) scene.bag.add({ id: food.id, quantity: 1, stackable: true, identified: food.identified });
+	const stats = MWL_CONSUMABLE_STATS[food.id] ?? MWL_CONSUMABLE_STATS.food;
+	if (!stats) throw new Error(`MWL consumable stats are missing food fallback`);
+	const energy = stats.hunger;
+	scene.hunger = Math.max(0, scene.hunger - (isChallengeEnabled('no_food') ? energy / 3 : energy));
+	let heal = stats.heal;
+	if (scene.heroClass === 'warrior') {
+		const pts = scene.talentRank('hearty_meal');
+		if (scene.hero.hp / scene.hero.maxHp < 0.334) heal += 2 + 2 * pts;
+	}
+	if (scene.heroClass === 'mage') scene.wandBonusDamage = Math.max(scene.wandBonusDamage, 2 * scene.talentRank('empowering_meal'));
+	if (scene.heroClass === 'mage' && scene.talentRank('energizing_meal') > 0) scene.wandCharges.refund(scene.talentRank('energizing_meal') === 1 ? 5 : 8);
+	if (scene.heroClass === 'duelist' && scene.talentRank('focused_meal') > 0) scene.ammo += scene.talentRank('focused_meal') === 1 ? 1 : 2;
+	if (scene.heroClass === 'rogue' && scene.talentRank('mystical_meal') > 0) scene.hero.buffs['cloak'] = 9999;
+	if (scene.heroClass === 'huntress' && scene.talentRank('invigorating_meal') > 0) scene.freeTurnNext = true;
+	if (scene.heroClass === 'duelist' && scene.talentRank('strengthening_meal') > 0) {
+		scene.physicalBonusDamage = 3;
+		scene.physicalBonusAttacks = scene.talentRank('strengthening_meal') + 1;
+	}
+	scene.hero.hp = Math.min(scene.hero.maxHp, scene.hero.hp + heal);
+	scene.showHeal(scene.hero, heal);
+	scene.say(food.id === 'meat'
+		? t(heal > 5 ? 'port.log.eatmeathearty' : 'port.log.eatmeat', { heal })
+		: t(heal > 0 ? 'port.log.eathearty' : 'port.log.eat', { heal }), 'positive');
+	return true;
+}
+
+/** Potion selection plus Waterskin.DRINK; concrete potion effects remain scene services. */
+export function quaffPotion(scene: ConsumableContext): boolean {
+	const hurt = scene.hero.hp < scene.hero.maxHp;
+	const ids = scene.requestedItemId === 'waterskin'
+		? []
+		: scene.bag.items.filter((i) => i.id.startsWith('potion') && i.quantity > 0).map((i) => i.id);
+	if (ids.length === 0) {
+		if (scene.waterskin <= 0) {
+			scene.say(t('port.log.nothingtodrink'), 'negative');
+			return false;
+		}
+		const rank = scene.talentRank('shielding_dew');
+		let missingHealthPercent = 1 - scene.hero.hp / scene.hero.maxHp;
+		if (rank > 0) {
+			const maxShield = Math.round(scene.hero.maxHp * 0.2 * rank);
+			const missingShieldPercent = Math.max(0, 1 - scene.heroBarrier.total / Math.max(1, maxShield)) * 0.2 * rank;
+			missingHealthPercent += missingShieldPercent;
+		}
+		const healFraction = mwlItemEffectValue('waterskin', 'healFractionPerDrop');
+		const dropsNeeded = Math.max(1, Math.min(scene.waterskin, Math.ceil(missingHealthPercent / healFraction - 0.01)));
+		const heal = Math.round(scene.hero.maxHp * healFraction * dropsNeeded);
+		const effectiveHeal = Math.min(scene.hero.maxHp - scene.hero.hp, heal);
+		scene.hero.hp += effectiveHeal;
+		if (rank > 0 && heal > effectiveHeal) {
+			const maxShield = Math.round(scene.hero.maxHp * 0.2 * rank);
+			scene.heroBarrier.add(Math.min(heal - effectiveHeal, Math.max(0, maxShield - scene.heroBarrier.total)));
+		}
+		scene.waterskin -= dropsNeeded;
+		scene.say(t('port.log.drinkwaterskin', { heal: effectiveHeal }), 'positive');
+		return true;
+	}
+	let id = scene.requestedItemId && ids.includes(scene.requestedItemId) ? scene.requestedItemId : ids[0];
+	if (!scene.requestedItemId && hurt && ids.includes('potion')) id = 'potion';
+	else if (!scene.requestedItemId && hurt && ids.includes('potionHealing')) id = 'potionHealing';
+	else if (!scene.requestedItemId && ids.includes('potionStrength')) id = 'potionStrength';
+	else if (!scene.requestedItemId && !hurt && (id === 'potion' || id === 'potionHealing') && ids.length === 1) {
+		scene.say(t('port.log.savedraught'));
+		return false;
+	}
+	scene.bag.remove(id, 1, scene.requestedItemInstanceId);
+	scene.applyPotionEffect(id);
+	return true;
+}

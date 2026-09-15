@@ -7,10 +7,11 @@
  * - Armor: min = lvl, max = tier*(2+lvl)
  *
  * This file provides item names, identifiers, and stat multipliers for looking up items
- * by tier and name. Actual damage calculation is in main.ts using syncHeroFromStats().
+ * by tier and name. Actual damage calculation is in DungeonScene's syncHeroFromStats()
+ * (`src/scenes/dungeonScene.ts`).
  */
 
-import { MWL_ITEM_NODES, MWL_RING_ITEMS } from './mwlContent';
+import { MWL_EQUIPMENT_STAT_RULES, MWL_ITEM_NODES, MWL_RING_ITEMS } from '../mwlContent';
 
 export interface ItemDef {
 	id: string;
@@ -95,6 +96,17 @@ const authoredWeapons = authoredEquipment
 
 export const WEAPONS: Record<number, WeaponDef[]> = byTier(authoredWeapons);
 
+function tierByClass<T extends ItemDef>(byTierMap: Record<number, T[]>): Record<string, number> {
+	return Object.fromEntries(Object.entries(byTierMap).flatMap(([tier, defs]) => defs.map((def) => [def.id, Number(tier)])));
+}
+
+/**
+ * Reverse index from a Java class name, lowercased, to its tier - every weapon/armor id in
+ * `items.mwl` is its Java class name lowercased (`WornShortsword` -> `wornshortsword`), so a
+ * caller holding the original-case class name should look it up as `.toLowerCase()`.
+ */
+export const WEAPON_TIER_BY_CLASS: Record<string, number> = tierByClass(WEAPONS);
+
 const authoredArmor = authoredEquipment
 	.filter((node) => node.attributes.slot === 'armor')
 	.map((node): ArmorDef => {
@@ -109,6 +121,7 @@ const authoredArmor = authoredEquipment
 	});
 
 export const ARMOR: Record<number, ArmorDef[]> = byTier(authoredArmor);
+export const ARMOR_TIER_BY_CLASS: Record<string, number> = tierByClass(ARMOR);
 
 const authoredWands = authoredEquipment
 	.filter((node) => node.attributes.slot === 'wand')
@@ -125,28 +138,37 @@ const authoredWands = authoredEquipment
 
 export const WANDS: Record<number, WandDef[]> = byTier(authoredWands);
 
+/** Evaluates only the two authored equipment formula shapes; arbitrary MWL expressions are not
+ * executed. The formulas themselves are content, while this closed evaluator is game logic. */
+function evaluateEquipmentFormula(formula: string, tier: number, level: number): number {
+	if (formula === 'tier+level') return tier + level;
+	if (formula === 'level') return level;
+	if (formula === '5*(tier+1)+level*(tier+1)') return 5 * (tier + 1) + level * (tier + 1);
+	if (formula === 'tier*(2+level)') return tier * (2 + level);
+	throw new Error(`Unknown MWL equipment formula: ${formula}`);
+}
+
+function equipmentStatRange(kind: string, tier: number, level: number): [number, number] {
+	const rule = MWL_EQUIPMENT_STAT_RULES[kind];
+	if (!rule) throw new Error(`MWL equipment stat rule is missing: ${kind}`);
+	return [evaluateEquipmentFormula(rule.minFormula, tier, level), evaluateEquipmentFormula(rule.maxFormula, tier, level)];
+}
+
+export function weaponDamageRange(tier: number, level: number): [number, number] {
+	return equipmentStatRange('weaponDamage', tier, level);
+}
+
+export function armorReductionRange(tier: number, level: number): [number, number] {
+	return equipmentStatRange('armorReduction', tier, level);
+}
+
 
 
 // MWL owns the ring catalogue and effect metadata; SPD-specific formulas remain in
 // ringModifiers.ts/main.ts because MWL intentionally describes content, not Java combat code.
-const RING_NAME_KEYS: Record<string, string> = {
-	ringAccuracy: 'items.rings.ringofaccuracy.name',
-	ringEvasion: 'items.rings.ringofevasion.name',
-	ringMight: 'items.rings.ringofmight.name',
-	ringTenacity: 'items.rings.ringoftenacity.name',
-	ringHaste: 'items.rings.ringofhaste.name',
-	ringEnergy: 'items.rings.ringofenergy.name',
-	ringWealth: 'items.rings.ringofwealth.name',
-	ringArcana: 'items.rings.ringofarcana.name',
-	ringForce: 'items.rings.ringofforce.name',
-	ringSharpshooting: 'items.rings.ringofsharpshooting.name',
-	ringElements: 'items.rings.ringofelements.name',
-	ringFuror: 'items.rings.ringoffuror.name',
-};
-
 export const RINGS: RingDef[] = MWL_RING_ITEMS.map((item) => ({
 	id: item.id,
-	nameKey: RING_NAME_KEYS[item.id] ?? item.name,
+	nameKey: item.name,
 	tier: 1,
 	stat: item.effects[0]?.applyTo ?? 'unknown',
 }));

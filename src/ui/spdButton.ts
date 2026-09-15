@@ -1,4 +1,4 @@
-import { Rectangle, Texture } from 'pixi.js';
+import { Rectangle, Texture } from 'mwg/two-d/pixi-interop';
 import { Button, type ButtonOptions } from 'mwg';
 import { runState } from '../runState';
 

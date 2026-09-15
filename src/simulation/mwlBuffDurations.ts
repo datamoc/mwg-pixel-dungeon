@@ -18,6 +18,7 @@ export const BUFF_DURATION_DATA = {
   "paralysis": 3,
   "roots": 3,
   "levitation": 20,
+  "featherFall": 50,
   "invisibility": 20,
   "cloak": 9999,
   "focus": 9999,

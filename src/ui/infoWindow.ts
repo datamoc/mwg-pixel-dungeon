@@ -1,4 +1,4 @@
-import { Container, Graphics, Rectangle } from 'pixi.js';
+import { Container, Graphics, Rectangle } from 'mwg/two-d/pixi-interop';
 import { SpdLabel as Label } from './spdLabel';
 import { spdPanel } from './spdPanel';
 import { SpdButton } from './spdButton';

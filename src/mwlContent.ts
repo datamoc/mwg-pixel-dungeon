@@ -28,6 +28,179 @@ export const MWL_ITEM_ASSET_SOURCES = new Map(
 );
 if (!MWL_ITEM_ASSET_SOURCES.has('items')) throw new Error('MWL item assets are missing the items atlas');
 
+/** Item value metadata is authored in MWL; pricing formulas and conditional modifiers stay in TS. */
+export const MWL_ITEM_UNIT_VALUES: Readonly<Record<string, number>> = Object.fromEntries(
+	MWL_TABLE_ROWS('itemUnitValues', 'item').map((row) => [String(row.item), Number(row.value)]),
+);
+export interface MwlEquipmentValueRule {
+	readonly basePerTier: number;
+	readonly positiveAffixMultiplier: number;
+	readonly knownCurseMultiplier: number;
+	readonly identifiedLevelBase: number;
+}
+/** Generated-gear price coefficients are content metadata; state-dependent price decisions stay TS. */
+export const MWL_EQUIPMENT_VALUE_RULES: Readonly<Record<string, MwlEquipmentValueRule>> = Object.fromEntries(
+	MWL_TABLE_ROWS('equipmentValueRules', 'kind').map((row) => [String(row.kind), {
+		basePerTier: Number(row.basePerTier), positiveAffixMultiplier: Number(row.positiveAffixMultiplier),
+		knownCurseMultiplier: Number(row.knownCurseMultiplier), identifiedLevelBase: Number(row.identifiedLevelBase),
+	}]),
+);
+if (Object.values(MWL_ITEM_UNIT_VALUES).some((value) => !Number.isFinite(value) || value < 0)) {
+	throw new Error('MWL item unit values must be finite and non-negative');
+}
+
+/** Item categories are authored in MWL; executable behavior consumes these sets by category. */
+export const MWL_ITEM_CATEGORIES: ReadonlyMap<string, string> = new Map(
+	MWL_TABLE_ROWS('itemCategories', 'item').map((row) => [String(row.item), String(row.category)]),
+);
+/** Runtime-only item ids still have player-facing names authored as MWL key mappings. */
+export const MWL_ITEM_NAME_KEYS: Readonly<Record<string, string>> = Object.fromEntries(
+	MWL_TABLE_ROWS('itemNameKeys', 'item').map((row) => [String(row.item), String(row.nameKey)]),
+);
+/** Ground-item names are presentation metadata; the ground-kind selection remains executable. */
+export const MWL_GROUND_ITEM_NAME_KEYS: Readonly<Record<string, string>> = Object.fromEntries(
+	MWL_TABLE_ROWS('groundItemNameKeys', 'groundKind').map((row) => [String(row.groundKind), String(row.nameKey)]),
+);
+export interface MwlItemActionRule {
+	readonly actionKey: string;
+	readonly capitalize: boolean;
+}
+/** Inventory action labels are content/localization metadata; item routing remains in the UI. */
+export const MWL_ITEM_ACTION_RULES: Readonly<Record<string, MwlItemActionRule>> = Object.fromEntries(
+	MWL_TABLE_ROWS('itemActionKeys', 'item').map((row) => [String(row.item), {
+		actionKey: String(row.actionKey), capitalize: row.capitalize === true,
+	}]),
+);
+/** Per-instance identity is item metadata; equip/unequip state remains in TypeScript. */
+export const MWL_ITEM_INSTANCE_RULES: Readonly<Record<string, boolean>> = Object.fromEntries(
+	MWL_TABLE_ROWS('itemInstanceRules', 'item').map((row) => [String(row.item), row.needsInstance === true]),
+);
+export function mwlItemNeedsInstance(item: string): boolean {
+	return MWL_ITEM_INSTANCE_RULES[item] ?? (item.startsWith('ring_') && MWL_ITEM_INSTANCE_RULES.ring === true);
+}
+/** Internal item ids and their ground-item render/interaction family are content aliases. */
+export const MWL_ITEM_GROUND_KIND_ALIASES: Readonly<Record<string, string>> = Object.fromEntries(
+	MWL_TABLE_ROWS('itemGroundKindAliases', 'itemId').map((row) => [String(row.itemId), String(row.groundKind)]),
+);
+/** Ring Java-class aliases and compact runtime ids are authored in MWL. */
+export const MWL_RING_CLASS_TO_ID: ReadonlyMap<string, string> = new Map(
+	MWL_TABLE_ROWS('ringClassAliases', 'sourceClass').map((row) => [String(row.sourceClass), String(row.item)]),
+);
+
+export interface MwlMonsterDepthStatRule {
+	readonly hpBase?: number; readonly hpPerDepth?: number;
+	readonly accuracyBase?: number; readonly accuracyPerDepth?: number;
+	readonly evasionBase?: number; readonly evasionPerDepth?: number; readonly evasionDivisor?: number;
+	readonly damageMinBase?: number; readonly damageMinPerDepth?: number; readonly damageMinDivisor?: number; readonly damageMinFloor?: number;
+	readonly damageMaxBase?: number; readonly damageMaxPerDepth?: number; readonly damageMaxDivisor?: number; readonly damageMaxFloor?: number;
+	readonly armorMinBase?: number; readonly armorMinPerDepth?: number; readonly armorMinDivisor?: number;
+	readonly armorMaxBase?: number; readonly armorMaxPerDepth?: number; readonly armorMaxDivisor?: number;
+}
+
+/** Depth-scaled monster formulas are authored alongside the base actor catalogue. */
+export const MWL_MONSTER_DEPTH_STATS: Readonly<Record<string, MwlMonsterDepthStatRule>> = Object.fromEntries(
+	MWL_TABLE_ROWS('monsterDepthStats', 'monster').map((row) => {
+		const number = (key: string): number | undefined => row[key] === undefined ? undefined : Number(row[key]);
+		return [String(row.monster), {
+			hpBase: number('hp_base'), hpPerDepth: number('hp_per_depth'),
+			accuracyBase: number('accuracy_base'), accuracyPerDepth: number('accuracy_per_depth'),
+			evasionBase: number('evasion_base'), evasionPerDepth: number('evasion_per_depth'), evasionDivisor: number('evasion_divisor'),
+			damageMinBase: number('damage_min_base'), damageMinPerDepth: number('damage_min_per_depth'), damageMinDivisor: number('damage_min_divisor'), damageMinFloor: number('damage_min_floor'),
+			damageMaxBase: number('damage_max_base'), damageMaxPerDepth: number('damage_max_per_depth'), damageMaxDivisor: number('damage_max_divisor'), damageMaxFloor: number('damage_max_floor'),
+			armorMinBase: number('armor_min_base'), armorMinPerDepth: number('armor_min_per_depth'), armorMinDivisor: number('armor_min_divisor'),
+			armorMaxBase: number('armor_max_base'), armorMaxPerDepth: number('armor_max_per_depth'), armorMaxDivisor: number('armor_max_divisor'),
+		}];
+	}),
+);
+
+/** Item atlas coordinates are content metadata; renderer-specific texture loading stays in TS. */
+export const MWL_ITEM_FRAMES: Readonly<Record<string, number>> = Object.fromEntries(
+	MWL_TABLE_ROWS('itemFrames', 'kind').map((row) => [String(row.kind), Number(row.frame)]),
+);
+if (Object.values(MWL_ITEM_FRAMES).some((frame) => !Number.isInteger(frame) || frame < 0)) {
+	throw new Error('MWL item frames must be non-negative integers');
+}
+export const MWL_ITEM_SPECIFIC_FRAMES: Readonly<Record<string, number>> = Object.fromEntries(
+	MWL_TABLE_ROWS('itemSpecificFrames', 'item').map((row) => [String(row.item), Number(row.frame)]),
+);
+if (Object.values(MWL_ITEM_SPECIFIC_FRAMES).some((frame) => !Number.isInteger(frame) || frame < 0)) {
+	throw new Error('MWL item-specific frames must be non-negative integers');
+}
+export interface MwlConsumableStats {
+	readonly hunger: number;
+	readonly heal: number;
+}
+export const MWL_CONSUMABLE_STATS: Readonly<Record<string, MwlConsumableStats>> = Object.fromEntries(
+	MWL_TABLE_ROWS('consumableStats', 'item').map((row) => [String(row.item), {
+		hunger: Number(row.hunger), heal: Number(row.heal),
+	}]),
+);
+/** Small item modifiers are authored in MWL; their application remains executable item logic. */
+export const MWL_ITEM_EFFECT_VALUES: Readonly<Record<string, number>> = Object.fromEntries(
+	MWL_TABLE_ROWS('itemEffectValues', 'id').map((row) => [`${String(row.item)}.${String(row.effect)}`, Number(row.value)]),
+);
+if (Object.values(MWL_ITEM_EFFECT_VALUES).some((value) => !Number.isFinite(value))) {
+	throw new Error('MWL item effect values must be finite numbers');
+}
+export function mwlItemEffectValue(item: string, effect: string): number {
+	const value = MWL_ITEM_EFFECT_VALUES[`${item}.${effect}`];
+	if (value === undefined) throw new Error(`MWL item effect value is missing: ${item}.${effect}`);
+	return value;
+}
+export interface MwlBombRule {
+	readonly chainRadius: number;
+	readonly affectedRadius: number;
+	readonly baseBlast: boolean;
+	readonly piercesArmor: boolean;
+	readonly minBase: number;
+	readonly minPerDepth: number;
+	readonly maxBase: number;
+	readonly maxPerDepth: number;
+}
+export const MWL_BOMB_RULES: Readonly<Record<string, MwlBombRule>> = Object.fromEntries(
+	MWL_TABLE_ROWS('bombRules', 'variant').map((row) => [String(row.variant), {
+		chainRadius: Number(row.chainRadius), affectedRadius: Number(row.affectedRadius),
+		baseBlast: Boolean(row.baseBlast), piercesArmor: Boolean(row.piercesArmor),
+		minBase: Number(row.minBase), minPerDepth: Number(row.minPerDepth), maxBase: Number(row.maxBase), maxPerDepth: Number(row.maxPerDepth),
+	}]),
+);
+for (const [variant, rule] of Object.entries(MWL_BOMB_RULES)) {
+	if (![rule.chainRadius, rule.affectedRadius, rule.minBase, rule.minPerDepth, rule.maxBase, rule.maxPerDepth].every(Number.isFinite)) throw new Error(`MWL bomb rule is not finite: ${variant}`);
+	if (rule.chainRadius < 0 || rule.affectedRadius < 0 || rule.minBase < 0 || rule.maxBase < 0) throw new Error(`MWL bomb rule is negative: ${variant}`);
+}
+export const MWL_ITEM_LIMITS: Readonly<Record<string, number>> = Object.fromEntries(
+	MWL_TABLE_ROWS('itemLimits', 'item').map((row) => [String(row.item), Number(row.value)]),
+);
+export const MWL_CONSUMABLE_DESCRIPTION_KEYS: Readonly<Record<string, string>> = Object.fromEntries(
+	MWL_TABLE_ROWS('consumableDescriptionKeys', 'item').map((row) => [String(row.item), String(row.descriptionKey)]),
+);
+export const MWL_EQUIPMENT_DESCRIPTION_KEYS: Readonly<Record<string, string>> = Object.fromEntries(
+	MWL_TABLE_ROWS('equipmentDescriptionKeys', 'item').map((row) => [String(row.item), String(row.descriptionKey)]),
+);
+
+export interface MwlConsumableClassAlias {
+	readonly sourceClass: string;
+	readonly item: string;
+	readonly category: 'potion' | 'scroll' | 'seed' | 'stone';
+}
+export const MWL_CONSUMABLE_CLASS_ALIASES: readonly MwlConsumableClassAlias[] = MWL_TABLE_ROWS('consumableClassAliases', 'sourceClass').map((row) => {
+	const category = String(row.category);
+	if (category !== 'potion' && category !== 'scroll' && category !== 'seed' && category !== 'stone') throw new Error(`Invalid consumable alias category: ${category}`);
+	return { sourceClass: String(row.sourceClass), item: String(row.item), category };
+});
+export const MWL_CONSUMABLE_CLASS_TO_ID = new Map(MWL_CONSUMABLE_CLASS_ALIASES.map((alias) => [alias.sourceClass, alias.item]));
+
+export interface MwlEquipmentStatRule {
+	readonly minFormula: string;
+	readonly maxFormula: string;
+}
+
+export const MWL_EQUIPMENT_STAT_RULES: Readonly<Record<string, MwlEquipmentStatRule>> = Object.fromEntries(
+	MWL_TABLE_ROWS('equipmentStatRules', 'kind').map((row) => [String(row.kind), {
+		minFormula: String(row.minFormula), maxFormula: String(row.maxFormula),
+	}]),
+);
+
 export function MWL_TABLE(id: string): MwlTableDefinition {
 	const table = MWL_TABLES.get(id);
 	if (!table) throw new Error(`MWL table is missing: ${id}`);
@@ -60,6 +233,25 @@ function allMwlNodes(nodes: readonly MwlRawNode[]): MwlRawNode[] {
 const MWL_NODES = allMwlNodes(MWL_ROOT_NODES);
 export const MWL_ITEM_NODES = MWL_NODES.filter((node) => node.tag === 'item');
 export const MWL_TRAIT_NODES = MWL_NODES.filter((node) => node.tag === 'trait');
+export const MWL_MONSTER_NODES = MWL_NODES.filter((node) => node.tag === 'monster');
+export const MWL_SPECIAL_ITEM_GROUND_KINDS: Readonly<Record<string, string>> = Object.fromEntries(
+	MWL_TABLE_ROWS('specialItemGroundKinds', 'sourceClass').map((row) => [String(row.sourceClass).toLowerCase(), String(row.groundKind)]),
+);
+export interface MwlSpecialItemInventoryRule {
+	readonly sourceClass: string;
+	readonly itemId: string;
+	readonly identified: boolean;
+	readonly cursed: boolean;
+}
+export const MWL_SPECIAL_ITEM_INVENTORY_RULES: readonly MwlSpecialItemInventoryRule[] = MWL_TABLE_ROWS('specialItemInventoryRules', 'sourceClass').map((row) => ({
+	sourceClass: String(row.sourceClass),
+	itemId: String(row.itemId),
+	identified: Boolean(row.identified),
+	cursed: Boolean(row.cursed),
+}));
+export const MWL_SPECIAL_ITEM_INVENTORY_BY_CLASS: ReadonlyMap<string, MwlSpecialItemInventoryRule> = new Map(
+	MWL_SPECIAL_ITEM_INVENTORY_RULES.map((rule) => [rule.sourceClass.toLowerCase(), rule]),
+);
 
 export interface MwlMissileDefinition {
 	readonly id: string;
@@ -83,6 +275,96 @@ function parseMissileDefinitions(): readonly MwlMissileDefinition[] {
 
 export const MWL_MISSILE_DEFINITIONS = parseMissileDefinitions();
 export const MWL_MISSILE_BY_CLASS = new Map(MWL_MISSILE_DEFINITIONS.map((definition) => [definition.sourceClass, definition]));
+export const MWL_MISSILE_DESCRIPTION_KEYS: Readonly<Record<string, string>> = Object.fromEntries(
+	MWL_TABLE_ROWS('missileDescriptionKeys', 'id').map((row) => [String(row.item), String(row.descriptionKey)]),
+);
+export interface MwlMissileUpgradeRule {
+	readonly minPerLevel: number;
+	readonly maxPerLevel: number;
+}
+export const MWL_MISSILE_UPGRADE_RULES: Readonly<Record<string, MwlMissileUpgradeRule>> = Object.fromEntries(
+	MWL_TABLE_ROWS('missileUpgradeRules', 'sourceClass').map((row) => [String(row.sourceClass), {
+		minPerLevel: Number(row.minPerLevel), maxPerLevel: Number(row.maxPerLevel),
+	}]),
+);
+
+export interface MwlWandDefinition {
+	readonly id: string;
+	readonly sourceClass: string;
+	readonly type: string;
+	readonly name: string;
+}
+
+export const MWL_WAND_DEFINITIONS: readonly MwlWandDefinition[] = MWL_TABLE_ROWS('wandDefinitions', 'id').map((row) => ({
+	id: String(row.id), sourceClass: String(row.sourceClass), type: String(row.type), name: String(row.name),
+}));
+export interface MwlWandRangeRule {
+	readonly base: number;
+	readonly perLevel: number;
+}
+export const MWL_WAND_RANGE_RULES: Readonly<Record<string, MwlWandRangeRule>> = Object.fromEntries(
+	MWL_TABLE_ROWS('wandRangeRules', 'type').map((row) => [String(row.type), { base: Number(row.base), perLevel: Number(row.perLevel) }]),
+);
+export interface MwlWandChargeRule {
+	readonly ratio: number;
+	readonly min: number;
+	readonly max: number;
+}
+export const MWL_WAND_CHARGE_RULES: Readonly<Record<string, MwlWandChargeRule>> = Object.fromEntries(
+	MWL_TABLE_ROWS('wandChargeRules', 'type').map((row) => [String(row.type), { ratio: Number(row.ratio), min: Number(row.min), max: Number(row.max) }]),
+);
+export interface MwlWandDamageRule {
+	readonly minBase: number;
+	readonly minPerLevel: number;
+	readonly maxBase: number;
+	readonly maxPerLevel: number;
+}
+export const MWL_WAND_DAMAGE_RULES: Readonly<Record<string, MwlWandDamageRule>> = Object.fromEntries(
+	MWL_TABLE_ROWS('wandDamageRules', 'type').map((row) => [String(row.type), {
+		minBase: Number(row.minBase), minPerLevel: Number(row.minPerLevel),
+		maxBase: Number(row.maxBase), maxPerLevel: Number(row.maxPerLevel),
+	}]),
+);
+export interface MwlWandWardRule {
+	readonly maxHp: number;
+	readonly heal: number;
+	readonly selfDamage: number;
+	readonly zapLimit: number;
+}
+export const MWL_WAND_WARD_RULES: Readonly<Record<number, MwlWandWardRule>> = Object.fromEntries(
+	MWL_TABLE_ROWS('wandWardRules', 'tier').map((row) => [Number(row.tier), {
+		maxHp: Number(row.maxHp), heal: Number(row.heal),
+		selfDamage: Number(row.selfDamage), zapLimit: Number(row.zapLimit),
+	}]),
+);
+export interface MwlWandFireblastRule {
+	readonly degrees: number;
+	readonly distance: number;
+	readonly fireVolume: number;
+	readonly minLevelFactor: number;
+	readonly maxBase: number;
+	readonly maxPerLevel: number;
+}
+export const MWL_WAND_FIREBLAST_RULES: Readonly<Record<number, MwlWandFireblastRule>> = Object.fromEntries(
+	MWL_TABLE_ROWS('wandFireblastRules', 'charges').map((row) => [Number(row.charges), {
+		degrees: Number(row.degrees), distance: Number(row.distance), fireVolume: Number(row.fireVolume),
+		minLevelFactor: Number(row.minLevelFactor), maxBase: Number(row.maxBase), maxPerLevel: Number(row.maxPerLevel),
+	}]),
+);
+export interface MwlWandRegrowthRule {
+	readonly degrees: number;
+	readonly distance: number;
+	readonly rootsPerCharge: number;
+	readonly grassBase: number;
+	readonly grassPerLevel: number;
+	readonly lotusMinCharges: number;
+}
+export const MWL_WAND_REGROWTH_RULES: Readonly<Record<number, MwlWandRegrowthRule>> = Object.fromEntries(
+	MWL_TABLE_ROWS('wandRegrowthRules', 'charges').map((row) => [Number(row.charges), {
+		degrees: Number(row.degrees), distance: Number(row.distance), rootsPerCharge: Number(row.rootsPerCharge),
+		grassBase: Number(row.grassBase), grassPerLevel: Number(row.grassPerLevel), lotusMinCharges: Number(row.lotusMinCharges),
+	}]),
+);
 
 export interface MwlScenarioChapter {
 	readonly id: string;
@@ -122,6 +404,18 @@ function parseScenarioQuests(): readonly MwlScenarioQuest[] {
 }
 
 export const MWL_SCENARIO_QUESTS = parseScenarioQuests();
+
+export interface MwlShopShelfEntry {
+	readonly item: string;
+	readonly quantity: number;
+}
+
+/** Each shop's opening shelf stock, authored in `scenario-rules.mwl` (runtime ids, so the
+ * compile check is shape-only rather than catalogue membership). */
+export const MWL_SHOP_SHELF_STOCK: readonly MwlShopShelfEntry[] = MWL_TABLE_ROWS('shopShelfStock').map((row) => ({
+	item: String(row.item),
+	quantity: Number(row.quantity),
+}));
 
 export interface MwlQuestDefinition {
 	readonly id: string;
@@ -241,7 +535,7 @@ export const MWL_CLASSES = gameData.roots
 				.filter((child) => child.tag === 'effect' && child.attributes.apply_to)
 			.map((child) => {
 				const attributes = child.attributes as Readonly<Record<string, string>>;
-				return [attributes.apply_to, attributes.set ?? attributes.add ?? ''];
+		return [attributes.apply_to, attributes.set ?? attributes.add ?? ''];
 			}),
 		);
 		const number = (key: string): number => Number(requiredClassValue(values, key));
@@ -260,12 +554,46 @@ export const MWL_CLASSES = gameData.roots
 			unlockHint: requiredClassValue(values, 'unlock_hint'),
 			special: {
 				kind: requiredClassValue(values, 'special_kind') as 'throw' | 'zap' | 'shoot' | 'none',
+				sourceClass: values.special_source_class,
 				labelKey: requiredClassValue(values, 'special_label_key'),
 				ammo: ammo === 'null' ? null : Number(ammo),
 				damage: [number('special_damage_min'), number('special_damage_max')] as [number, number],
 			},
 		};
 	});
+
+/** Hero.java's shared starting values (`Hero.initHero` and `Hero` field defaults), authored
+ * alongside the class catalogue so scene initialization and save migration use one source. */
+export interface MwlHeroBaseStats {
+	readonly hp: number;
+	readonly maxHp: number;
+	readonly strength: number;
+	readonly attackSkill: number;
+	readonly defenseSkill: number;
+	readonly baseEvasion: number;
+	readonly baseGold: number;
+}
+export const MWL_HERO_BASE_STATS: MwlHeroBaseStats = (() => {
+	const row = MWL_TABLE_ROWS('heroBaseStats', 'id').find((candidate) => String(candidate.id) === 'spdHero');
+	if (!row) throw new Error('MWL hero base stats are missing');
+	return {
+		hp: Number(row.hp), maxHp: Number(row.max_hp), strength: Number(row.strength),
+		attackSkill: Number(row.attack_skill), defenseSkill: Number(row.defense_skill),
+		baseEvasion: Number(row.base_evasion), baseGold: Number(row.base_gold),
+	};
+})();
+
+/** Hero.java's level-up increments, kept separate from the starting row because the executable
+ * level-up transition applies them once per gained level. */
+export const MWL_HERO_LEVEL_GROWTH = (() => {
+	const row = MWL_TABLE_ROWS('heroLevelGrowth', 'id').find((candidate) => String(candidate.id) === 'spdHeroLevelGrowth');
+	if (!row) throw new Error('MWL hero level growth is missing');
+	return {
+		hpPerLevel: Number(row.hp_per_level),
+		attackSkillPerLevel: Number(row.attack_skill_per_level),
+		defenseSkillPerLevel: Number(row.defense_skill_per_level),
+	};
+})();
 
 export const MWL_TURN_CLOCK = MWL_CONTENT.turnClocks.find((clock) => clock.id === 'spdAdventureClock') ?? {
   id: 'spdAdventureClock',

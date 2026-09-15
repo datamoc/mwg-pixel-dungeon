@@ -8,7 +8,7 @@
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, fillXY, set } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
-import { floorSetForPrize, generatedGroundKind, uncursedWeaponOrArmorPrize } from '../../../spdItems/generator';
+import { floorSetForPrize, generatedGroundKind, uncursedWeaponOrArmorPrize } from '../../../items/generator';
 
 /**
  * `TrapsRoom.prize()`: a 33% `findPrizeItem()` guard (our stub always returns null, so it never

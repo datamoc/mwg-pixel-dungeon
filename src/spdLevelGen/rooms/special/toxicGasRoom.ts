@@ -6,7 +6,7 @@
  *  skeleton's plus one per chest) - made via `randomGold()`. */
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, set } from '../../paintLevel';
-import { randomGold } from '../../../spdItems/generator';
+import { randomGold } from '../../../items/generator';
 
 function getPoints(room: Room): { x: number; y: number }[] {
 	const pts: { x: number; y: number }[] = [];
@@ -21,13 +21,20 @@ export function paintToxicGasRoom(level: PaintLevel, room: Room): void {
 	const c = room.center();
 	set(level, c.x, c.y, Terrain.STATUE);
 
-	// Foliage/ToxicGas ambient seeding: no RNG in Java, not modeled (rendering/blob concern).
+	// `ToxicGasRoom.java` seeds 30 ToxicGas on every EMPTY cell before placing the vents,
+	// explicitly making the room behave as though gas has already been spreading. Keep this
+	// as a generation marker; the live scene materializes it in its existing ToxicGas blob.
+	for (const p of getPoints(room)) {
+		const cell = level.pointToCell(p);
+		if (level.map[cell] === Terrain.EMPTY) level.seedBlob('toxicGas', cell, 30);
+	}
 
 	const traps = Math.min(room.width() - 2, room.height() - 2);
 	for (let i = 0; i < traps; i++) {
 		let cell: number;
 		do { cell = level.pointToCell(room.random(2)); } while (level.map[cell] !== Terrain.EMPTY);
 		level.setTrap('toxicVent', false, false, cell);
+		level.seedBlob('toxicGasSeed', cell, 12);
 		set(level, cell % level.w, Math.floor(cell / level.w), Terrain.INACTIVE_TRAP);
 	}
 

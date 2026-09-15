@@ -1,5 +1,6 @@
 import type { SimulationRandom } from './random';
 import { BUFF_DURATION_DATA, NEGATIVE_BUFF_DATA } from './mwlBuffDurations';
+import { MONSTER_IMMUNITY_DATA } from './mwlMonsterImmunities';
 
 /**
  * Buffs this port models, with Char.java's own hit/damage multipliers (Bless/Hex/Daze scale
@@ -10,12 +11,26 @@ import { BUFF_DURATION_DATA, NEGATIVE_BUFF_DATA } from './mwlBuffDurations';
  * because these multipliers apply to transient dice rolls rather than to named stats a
  * StatBlock resolves.
  */
-export type BuffId = 'bless' | 'hex' | 'daze' | 'chill' | 'frost' | 'drowsy' | 'magicalSleep' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown' | 'wayward';
+export type BuffId = 'bless' | 'hex' | 'daze' | 'chill' | 'frost' | 'drowsy' | 'magicalSleep' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'featherFall' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown' | 'wayward';
 /** The duration catalogue is authored in MWL and emitted as an isolated simulation module. */
 export const BUFF_DURATION: Record<BuffId, number> = (() => {
 	const values = { ...BUFF_DURATION_DATA } as Record<string, number>;
 	return values as Record<BuffId, number>;
 })();
+
+/** `Char.isImmune()`'s mob half, authored in `resistance-rules.mwl`'s `monsterStatusImmunities`
+ * table: whether Java refuses to attach a buff to a monster kind (plus one yogFistType). Pure
+ * data lookup so the item-suite harness can pin it without a scene; `combat.ts`'s `buffBlocked`
+ * is the live gate that calls it. */
+export function monsterBuffImmune(kind: string | undefined, subtype: string | undefined, id: BuffId): boolean {
+	if (kind === undefined) return false;
+	for (const row of MONSTER_IMMUNITY_DATA) {
+		if (row.monster !== kind) continue;
+		if (row.subtype !== '' && row.subtype !== subtype) continue;
+		if ((row.immunities as readonly string[]).includes(id)) return true;
+	}
+	return false;
+}
 
 /** `Buff.buffType.NEGATIVE` for every buff this port grants to a *monster* (checked against
  * each buff's own Java class at tag `v3.3.8`: `Poison`/`Burning`/`Cripple`/`Weakness`/
@@ -58,6 +73,24 @@ export function reigniteBuff(previous: Readonly<BuffState>, id: BuffId, duration
 		return { buffs: previous, event: { type: 'buff-applied', id, fresh: false } };
 	}
 	return applyBuff(previous, id, duration);
+}
+
+/**
+ * Applies one Java `Freezing` impact to a target.  `Freezing.freeze()` adds Chill until
+ * the chill cap is reached; an already-capped Chill instead becomes the explicit Frost
+ * immobilization.  Keeping this transition pure prevents potion, wand, and elemental
+ * callers from disagreeing about whether the impact freezes immediately or on the next hit.
+ */
+export function applyChillFreeze(previous: Readonly<BuffState>): { buffs: BuffState; frozen: boolean } {
+	const existing = previous.chill ?? 0;
+	if (existing >= BUFF_DURATION.chill) {
+		const buffs = { ...previous };
+		delete buffs.chill;
+		buffs.frost = BUFF_DURATION.frost;
+		buffs.paralysis = Math.max(buffs.paralysis ?? 0, BUFF_DURATION.frost);
+		return { buffs, frozen: true };
+	}
+	return { buffs: { ...previous, chill: BUFF_DURATION.chill }, frozen: false };
 }
 
 /**

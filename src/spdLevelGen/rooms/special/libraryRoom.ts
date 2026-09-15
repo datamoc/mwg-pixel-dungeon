@@ -7,7 +7,7 @@
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, fillXY, drawInside } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
-import { Cat, randomCategory } from '../../../spdItems/generator';
+import { Cat, randomCategory } from '../../../items/generator';
 
 export function paintLibraryRoom(level: PaintLevel, room: Room): void {
 	fillRoom(level, room, Terrain.WALL);

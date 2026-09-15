@@ -8,6 +8,7 @@ import type { MultiTurnBeamSave } from 'mwg/roguelike';
 import type { GroundItemKind } from './dungeonConstants';
 import type { Combatant, Step } from './simulation/combatState';
 import type { BuffId } from './simulation/buffs';
+import { monsterBuffImmune } from './simulation/buffs';
 import { nextEntityId } from './simulation/entityId';
 import { createCombatAdapter } from './adapters/combatSimulation';
 import { simulationRandom } from './adapters/mwgRandom';
@@ -39,6 +40,9 @@ export interface Creature extends Combatant {
 	/** Viscosity's accumulated deferred damage and its one-turn initial delay. */
 	deferredDamage?: number;
 	deferredDamageDelay?: boolean;
+	/** `Corrosion`'s remaining actor turns and current increasing damage value. */
+	corrosionTurns?: number;
+	corrosionDamage?: number;
 	/** mwg/roguelike's Scheduler.Actor speed; Huntress's gloves are the one exception at 2 */
 	speed?: number;
 	/** which MONSTERS entry this is, for its sprite and (for Goo) its special turn logic - absent on the hero */
@@ -96,6 +100,8 @@ export interface Creature extends Combatant {
 	tenguAbilityUses?: number;
 	/** Tengu.lastAbility: the id of the previous phase-2 ability, so a repeat is rerolled 9/10. */
 	tenguLastAbility?: number;
+	/** Active logical ShockerAbility actors; Java stores these as buffs on Tengu. */
+	tenguShockers?: { x: number; y: number; ordinals: boolean; turns: number }[];
 	/** MeleeWeapon upgrade level: min/max grow as tier+lvl / 5(tier+1)+lvl(tier+1) */
 	weaponLevel?: number;
 	/** Thief.item: what it stole (dropped again on death); Swarm split generation (EXP=0 past 0) */
@@ -282,7 +288,7 @@ const FIRE_IMMUNITY_BUFFS = new Set<string>(STATUS_IMMUNITIES.fire);
 const MAGIC_IMMUNITY_BUFFS = new Set<string>(STATUS_IMMUNITIES.magic);
 const CHILL_IMMUNITY_BUFFS = new Set<string>(STATUS_IMMUNITIES.chill);
 
-/** The three immunity gates Java applies before a buff can attach, shared by `addBuff` and
+/** The immunity gates Java applies before a buff can attach, shared by `addBuff` and
  * `reigniteBuff` so no caller can route around them. */
 function buffBlocked(c: Creature, id: BuffId): boolean {
 	//Brimstone.java grants Burning immunity through Char.isImmune(), before the
@@ -294,7 +300,11 @@ function buffBlocked(c: Creature, id: BuffId): boolean {
 	//resistance is handled separately by the scene's explicit magical flag.
 	if (MAGIC_IMMUNITY_BUFFS.has(id) && c.magicImmune) return true;
 	//Frost.java declares immunity to Chill: a frozen creature cannot be slowed again.
-	return CHILL_IMMUNITY_BUFFS.has(id) && c.buffs.frost !== undefined;
+	if (CHILL_IMMUNITY_BUFFS.has(id) && c.buffs.frost !== undefined) return true;
+	//`Char.isImmune()`'s mob half (`resistance-rules.mwl`'s `monsterStatusImmunities` table):
+	//per-kind refusals (INORGANIC/STATIC/ACIDIC/FIERY properties plus the instance lists)
+	//that travel with the kind through every caller above, since all of them funnel here.
+	return monsterBuffImmune(c.kind, c.yogFistType, id);
 }
 
 /** `Buff.affect(c, id, duration?)`: set the duration (the table's own unless overridden). */

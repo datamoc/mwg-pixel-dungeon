@@ -7,7 +7,7 @@
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, drawLine, set } from '../../paintLevel';
 import { SpdRandom } from '../../../spdRng';
-import { Cat, randomCategory } from '../../../spdItems/generator';
+import { Cat, randomCategory } from '../../../items/generator';
 
 interface Rect { left: number; top: number; right: number; bottom: number; }
 function rCenter(r: Rect): { x: number; y: number } {

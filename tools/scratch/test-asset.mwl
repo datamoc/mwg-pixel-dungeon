@@ -1,15 +1,19 @@
-[game]
-schema=0.1
-
-[monster]
-id=testAsset1
-image=assets/test.png
-hp=1
-[/monster]
-
-[trait]
-id=testAsset2
-image=assets/test2.png
-[/trait]
-
-[/game]
+[
+  {
+    tag: "game",
+    schema: 0.1,
+    children: [
+      {
+        tag: "monster",
+        id: "testAsset1",
+        image: "assets/test.png",
+        hp: 1,
+      },
+      {
+        tag: "trait",
+        id: "testAsset2",
+        image: "assets/test2.png",
+      },
+    ],
+  },
+]

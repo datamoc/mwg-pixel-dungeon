@@ -1,11 +1,11 @@
 /** Port of `levels/rooms/secret/SecretSummoningRoom.java`. `maxWidth/maxHeight` (8/8) live in
  *  `room.ts`'s `SECRET_ROOM_META`. Entirely deterministic geometry - `SECRET_TRAP` fills every
  *  interior cell, so every one gets a `SummoningTrap`; `Generator.random()`'s skeleton-item draws are
- *  now reproduced (see `spdItems/generator.ts`); its position is the fixed room center (no retry loop in Java
+ *  now reproduced (see `items/generator.ts`); its position is the fixed room center (no retry loop in Java
  *  here, unlike most other secret rooms). */
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, roomPoints } from '../../paintLevel';
-import { generatedGroundKind, generatorRandom } from '../../../spdItems/generator';
+import { generatedGroundKind, generatorRandom } from '../../../items/generator';
 
 export function paintSummoningRoom(level: PaintLevel, room: Room): void {
 	fillRoom(level, room, Terrain.WALL);
