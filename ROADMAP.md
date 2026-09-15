@@ -1006,11 +1006,37 @@ fully checked off as of a given release.
       floor-transition animation, while the fight and the hero's own position carry over exactly
       where they are - see the "port-side implication" above). That means figuring out and touching
       whatever this scene's tilemap/minimap/FOV invalidation actually requires when live terrain
-      changes out from under an ongoing visit - unexplored and risky enough that it deserves its own
-      dedicated pass with real browser verification (teleport to depth 10 via
-      `window.__MWG__.currentScene`, force Tengu's HP across both thresholds, confirm the map
-      actually changes and nothing - hero included - ends up embedded in a wall), not a
-      same-session follow-on to the paint functions above.
+      changes out from under an ongoing visit. The rendering side found its own tool for this,
+      though: `dungeonScene.ts` already has `restitchAllTiles()` ("both layers at once, for the
+      floor-wide reveals where restitching each cell's ring would redo most of the map anyway"),
+      the exact primitive a full arena repaint needs - paired with the mining-branch precedent's
+      own `this.level.terrain.set(toGameTerrain(...))` call for the bulk terrain write itself, both
+      pieces already exist, just never combined for a mid-visit change.
+      **Correction, 2026-09-15, same pass: the "port-side implication" above was itself incomplete
+      - the FIGHT_PAUSE -> FIGHT_ARENA transition is not drift-based at all.** Re-read
+      `PrisonBossLevel.occupyCell()` (`v3.3.8`), which this pass had not yet checked: Java's real
+      trigger for `setMapArena()` is not Tengu's half-HP damage hook (that hook only fires
+      `case FIGHT_START:`, i.e. `setMapPause()`) - it is the **hero stepping onto a cell with
+      `y <= startHallway.top+1` while `state == FIGHT_PAUSE`**, checked on every hero move via
+      `occupyCell()`'s own switch. The real sequence is four steps, not two: (1) the hero walking
+      into `tenguCell` (`y > tenguCell.top`) triggers `case START:` - seal, spawn Tengu,
+      `FIGHT_START`; (2) Tengu's own half-HP damage hook triggers `case FIGHT_START:` -
+      `setMapPause()`, and Tengu is **removed from the level entirely** (`Actor.remove`/
+      `mobs.remove`/`sprite.kill()`) as a dramatic "he's gone" beat, `FIGHT_PAUSE`; (3) the hero
+      retreating back up to near the entrance (`y <= startHallway.top+1`) triggers
+      `case FIGHT_PAUSE:` - `setMapArena()`, and Tengu is **re-added** at the arena's centre,
+      `FIGHT_ARENA`; (4) Tengu's death hook at 0 HP under `FIGHT_ARENA` triggers `setMapEnd()`,
+      the hero's own reposition to `tenguCellDoor`, ally/stored-item handling, `WON`. This is why
+      `pauseSafeArea` sits inside the ellipse: not because combat happens to drift there, but
+      because the *trigger condition itself* only fires once the hero has already retreated into
+      exactly that band - the hero's position is still never written by `progress()` (that part of
+      the original research holds), but it is gated by an explicit move-hook precondition, not left
+      to chance. **Port-side implication, corrected**: implementing this needs a real occupyCell-
+      equivalent check in this port's own move-resolution path (not just the HP-hook this port
+      already has for the cell->arena flag flip), a way to add/remove Tengu from the live actor
+      roster twice mid-fight, and the death-transition's own hero reposition/ally/item handling -
+      meaningfully more scene-state work than "call `restitchAllTiles()` once", not less. Still a
+      dedicated pass, now scoped accurately rather than on the wrong mental model.
 - [ ] Port Caves/DM-300's full pylon, gate, energy field, and supercharge scripts (pylon
       proximity sealing, sequential threshold supercharges, pylon activation, boss
       invulnerability, x2 speed, and supercharge loss on pylon death are live; the
