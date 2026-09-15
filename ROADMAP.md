@@ -1254,13 +1254,16 @@ fully checked off as of a given release.
       (favor, or a free retained pickaxe - a cashed-out run with only a paid buy-back left
       now hears the done line instead of an empty menu). Verified live end-to-end
       (`tools/scratch/blacksmith-harden-livecheck.mjs`, 22/22 assertions).
-      The remaining work in this bullet is the reforge seal/missile transfer pair, and both
-      halves are now precisely documented rather than silently missing: Java floor-drops a
-      consumed armor's seal as a `BrokenSeal` item (`WndBlacksmith.java` 277-281), which needs
-      the seal item and its affix action first (section 1 item work), and retires a consumed
-      missile set in `UpgradedSetTracker` (`levelThresholds.put(setID, MAX_VALUE)`), which needs
-      distinct set ids on bag missile stacks (today's fungible-ammo model has none, and the
-      picker only offers weapon/armor payloads).
+      **Correction, 2026-09-15: the seal half of this bullet's "remaining work" was stale.**
+      Section 1's `BrokenSeal` item/`AC_DETACH`/`AC_AFFIX` work (see this file's item-system
+      section) already closed it: `completeBlacksmithReforge` (`src/scenes/dungeonScene.ts`)
+      checks the discarded armor's `seal` flag and floor-drops a real `brokenSeal` item at the
+      hero's own cell exactly where Java's `WndBlacksmith.java` 277-281 does, rather than the
+      seal vanishing with its host armor. Only the missile half of the pair remains: Java also
+      retires a consumed missile set in `UpgradedSetTracker` (`levelThresholds.put(setID,
+      MAX_VALUE)`), which needs distinct set ids on bag missile stacks - today's fungible-ammo
+      model has none (see section 1's `MissileWeapon` row for why), and the reforge picker only
+      offers weapon/armor payloads in the first place.
 - [ ] Port Rat King and other missing special NPCs. Rat King is now complete for its core
       exchange (room drops real `Gold(10-25)` CHEST heaps, the king spawns sleeping with
       his own art, wakes with the real yell, awards the crown exchange when worn armor is
