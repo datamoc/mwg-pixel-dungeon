@@ -59,12 +59,14 @@ export function verifyArmorAbilities(require, check) {
 	});
 
 	check('only implemented abilities are offered, and the charge meter is Java\'s', () => {
-		//The Warrior's three and the Rogue's Death Mark are the ported set; a class with none of its
-		//own offers nothing, which is what keeps a choice panel from listing an ability that cannot
-		//run.
+		//The Warrior's three, the Rogue's Death Mark and the Huntress's Spectral Blades are the
+		//ported set; a class with none of its own offers nothing, which is what keeps a choice panel
+		//from listing an ability that cannot run.
 		assert.deepEqual(armorAbilitiesFor('warrior'), ['heroicleap', 'shockwave', 'endure']);
 		assert.deepEqual(armorAbilitiesFor('rogue'), ['deathmark']);
+		assert.deepEqual(armorAbilitiesFor('huntress'), ['spectralblades']);
 		assert.deepEqual(armorAbilitiesFor('mage'), []);
+		assert.deepEqual(armorAbilitiesFor('duelist'), []);
 		assert.equal(ARMOR_CHARGE_MAX, 100);
 		assert.equal(ARMOR_CHARGE_START, 50);
 		//`ClassArmor.Charger.act()`: `chargeGain = 100/500f`.

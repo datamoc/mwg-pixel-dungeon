@@ -1279,6 +1279,15 @@ export class DungeonScene extends Scene2D {
 	 *  discounted one (`DeathMark.chargeUse()`'s `0.707^points`, 30/50/65/75% off at rank 1-4). */
 	private doubleMarkArmed = false;
 	/**
+	 * `Talent.SpiritBladesTracker`'s presence: true for the one attack that consumes it. Java arms
+	 * it with `Buff.affect(hero, SpiritBladesTracker.class, 0f)` immediately before a Spectral Blades
+	 * throw, and `Weapon.damageRoll()` reads it for the rank-4 `multi += 0.1f` while
+	 * `Talent.onAttackProc` consumes the proc chance. Deliberately not persisted with the run: Java's
+	 * tracker is a zero-duration buff, so it cannot outlive the attack it was armed for, and nothing
+	 * can save in between.
+	 */
+	private spiritBladesArmed = false;
+	/**
 	 * `Endure.EndureTracker`'s four fields, held on the scene rather than in the buff map because
 	 * this port's buff table is a fixed MWL id list and the tracker's real payload is three numbers
 	 * (a boolean `enduring`, the banked `damageBonus`, and `hitsLeft`) plus its flavour countdown.
@@ -10741,7 +10750,7 @@ export class DungeonScene extends Scene2D {
 	 * Warlock degrades; weapon enchants and Thorns fire; Blazing champions ignite; Swarm
 	 * splits (numbers verbatim); Fury kindles below half HP.
 	 */
-	private attack(attacker: Creature, defender: Creature, accFactor = 1): boolean {
+	private attack(attacker: Creature, defender: Creature, accFactor = 1, damageMultiplier = 1): boolean {
 		if (attacker.isHero) this.cancelHourglassFreeze();
 		faceCharacter(this.sprite(attacker), attacker.x, defender.x);
 		const attackerSprite = this.sprite(attacker);
@@ -10825,7 +10834,14 @@ export class DungeonScene extends Scene2D {
 			return false;
 		}
 
-		const attackRoll = runAttackResolution(attacker, defender, simulationRandom, false, surprise, accFactor);
+		//`Weapon.damageRoll()`'s `multi` chain, the one entry of it this port can model directly: with
+		//`SPIRIT_BLADES` at rank 4 a thrown blade's own attack carries `multi += 0.1f` while the
+		//tracker is armed - a pre-armor multiplier, which is why it goes into `damageMultiplier`
+		//rather than onto the damage afterwards. (Java's other `multi` entries - `Smite`'s +3,
+		//`DirectedPower`'s enchant boost, `STRIKING_WAVE` rank 4's +0.2 - have no tracker in this
+		//port; see the Shockwave row in `PORT_COVERAGE.md`.)
+		if (attacker === this.hero && this.spiritBladesArmed && this.talentRank('spirit_blades') === 4) damageMultiplier *= 1.1;
+		const attackRoll = runAttackResolution(attacker, defender, simulationRandom, false, surprise, accFactor, damageMultiplier);
 		if (!attackRoll.hit) {
 			runState.audio.cue('miss', 0.55);
 			defender.sleeping = false;
@@ -11322,7 +11338,16 @@ export class DungeonScene extends Scene2D {
 			&& Random.int(0, 2) < this.talentRank('shared_enchantment')
 			? this.weaponAffix
 			: null;
-		const affix = attacker.attackMode === 'throw' ? sharedEnchantment : this.unstableDelegated ?? this.weaponAffix;
+		//`Talent.onAttackComplete`'s SpiritBladesTracker consume (`Talent.java` 896-901): while the
+		//blades are armed, a landed hero attack has a `Random.Int(10) < 3*points` chance to re-run the
+		//equipped SpiritBow's own `proc()` - modelled, exactly as Sniper's Shared Enchantment above
+		//already models that same call, by applying the weapon's affix to this hit - and always
+		//clears the tracker. The roll only happens while the tracker is present, which is Java's own
+		//short-circuit.
+		const spiritBladesProc = this.spiritBladesArmed && attacker === this.hero
+			&& Random.int(0, 10) < 3 * this.talentRank('spirit_blades');
+		if (spiritBladesProc) this.spiritBladesArmed = false;
+		const affix = spiritBladesProc ? this.weaponAffix : attacker.attackMode === 'throw' ? sharedEnchantment : this.unstableDelegated ?? this.weaponAffix;
 		//`Char.damage()`'s Kinetic block: a killing blow with the tracker attached stores the
 		//overkill BEYOND this swing's conserved bonus (`-HP - tracker.conservedDamage`),
 		//scaled by `genericProcChanceMultiplier()` (Arcana, plus Berserk's
@@ -15963,7 +15988,8 @@ export class DungeonScene extends Scene2D {
 			: id === 'shockwave' ? this.activateShockwave(def, cost, cell)
 				: id === 'endure' ? this.activateEndure(def, cost)
 					: id === 'deathmark' ? this.activateDeathMark(def, cost, cell)
-						: false;
+						: id === 'spectralblades' ? this.activateSpectralBlades(def, cost, cell)
+							: false;
 		if (!activated) return;
 		delete this.hero.buffs['invisibility'];
 		this.refresh();
@@ -16212,6 +16238,95 @@ export class DungeonScene extends Scene2D {
 	}
 
 	/**
+	 * `SpectralBlades.activate()` (tag `v3.3.8`): throw spirit blades down the aimed line. The
+	 * primary target is the first hostile the ray meets, and `PROJECTING_BLADES` lets that ray pass
+	 * through up to `2 * points` solid cells before giving up. `FAN_OF_BLADES` widens the throw into
+	 * a `30 * points`-degree cone whose extra targets are capped at `points` and pruned to the ones
+	 * nearest the primary - Java's own `while (targets.size() > 1 + points)` loop, which repeatedly
+	 * drops whichever is furthest from the primary target.
+	 *
+	 * Each target is attacked for real (`hero.attack(ch, dmgMulti, 0, accMulti)`), at half damage
+	 * for everything but the primary and at `1 + 0.25*PROJECTING_BLADES` accuracy for all of them,
+	 * so a blade can miss and procs/enchant effects apply as they do in melee. `SPIRIT_BLADES` arms
+	 * a tracker that the hero's next attack consumes.
+	 */
+	private activateSpectralBlades(def: ArmorAbilityDef, cost: number, cell: Step | null): boolean {
+		if (!cell) return false;
+		const hero = this.hero;
+		if (cell.x === hero.x && cell.y === hero.y) {
+			this.say(t('actors.hero.abilities.huntress.spectralblades.name'), 'negative');
+			return false;
+		}
+		const projecting = this.talentRank('projecting_blades');
+		//`new Ballistica(hero.pos, target, WONT_STOP)`: a plain straight line, so wall penetration is
+		//counted by this port's own ray walk rather than by the tracer.
+		const ray = Roguelike.ballistica(this.level, { x: hero.x, y: hero.y }, cell, { stop: 'none' }).cells;
+		const alongRay = (path: Step[], wallPenetration: number): Creature | null => {
+			let remaining = wallPenetration;
+			for (const step of path) {
+				const found = this.creatureAt(step.x, step.y);
+				if (found) {
+					if (found === hero || found.isAlly || found.isNPC) continue;
+					return found;
+				}
+				if (!this.level.passable(step.x, step.y)) {
+					remaining--;
+					if (remaining < 0) return null;
+				}
+			}
+			return null;
+		};
+		const primary = alongRay(ray, 2 * projecting);
+		if (!primary || !this.fov.isVisible(primary.x, primary.y)) {
+			this.say(t('actors.hero.abilities.huntress.spectralblades.no_target'), 'negative');
+			return false;
+		}
+		const targets = new Set<Creature>([primary]);
+		const fanOfBlades = this.talentRank('fan_of_blades');
+		if (fanOfBlades > 0) {
+			const cone = coneCells({
+				source: { x: hero.x, y: hero.y },
+				target: { x: cell.x, y: cell.y },
+				degrees: 30 * fanOfBlades,
+				maxDistance: Infinity,
+				width: this.level.width,
+				height: this.level.height,
+				trace: (from, to) => Roguelike.ballistica(this.level, from, to, { stop: 'none' }).cells.slice(1),
+			});
+			for (const coneCell of cone.cells) {
+				const caught = alongRay(Roguelike.ballistica(this.level, { x: hero.x, y: hero.y }, coneCell, { stop: 'none' }).cells, 2 * projecting);
+				if (caught && this.fov.isVisible(caught.x, caught.y)) targets.add(caught);
+			}
+			//Java keeps the primary plus the `points` extras nearest it, measured in true distance.
+			while (targets.size > 1 + fanOfBlades) {
+				let furthest: Creature | null = null;
+				let furthestDistance = -1;
+				for (const candidate of targets) {
+					if (candidate === primary) continue;
+					const distance = Math.hypot(candidate.x - primary.x, candidate.y - primary.y);
+					if (distance > furthestDistance) {
+						furthestDistance = distance;
+						furthest = candidate;
+					}
+				}
+				if (!furthest) break;
+				targets.delete(furthest);
+			}
+		}
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		for (const target of targets) {
+			//`SpectralBlades` arms `Talent.SpiritBladesTracker` before *each* throw (Java affects it
+			//inside the per-target callback, right before `hero.attack`), and the tracker is consumed
+			//by that attack - so its whole life is one hit, and every blade of a fan gets it.
+			if (this.talentRank('spirit_blades') > 0) this.spiritBladesArmed = true;
+			this.attack(hero, target, 1 + 0.25 * projecting, target === primary ? 1 : 0.5);
+		}
+		this.spiritBladesArmed = false;
+		this.spendHeroAction(1);
+		return true;
+	}
+
+	/**
 	 * One armor-ability hit's damage. Java's abilities call `ch.damage()` directly on the values
 	 * their own formulas produced, so every defender-side rule that lives in `Char.damage()` applies
 	 * - including `YogDzewa.isInvulnerable()` while any fist lives, the fist proximity guard,
@@ -16219,10 +16334,6 @@ export class DungeonScene extends Scene2D {
 	 * seam bombs use (`applyBlastDamage`) rather than a sixth hand-rolled copy of the tail, with
 	 * armor already subtracted by each ability's own formula (`pierceArmor`) and the mirror fade,
 	 * which that seam does not do.
-	 *
-	 * Not covered by that seam, for abilities and bombs alike: `deferMonsterDamage` (Viscosity), the
-	 * Dwarf King's `kingShield`, DM-300's `dmBarrier`, and the inactive-`Pylon` guard, all of which
-	 * currently live only in `attack()`. Stated in `PORT_COVERAGE.md` rather than left implied.
 	 */
 	private applyAbilityDamage(target: Creature, damage: number): void {
 		if (damage <= 0 || target.isNPC) return;

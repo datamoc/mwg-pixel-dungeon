@@ -211,6 +211,19 @@ export function verifyCombat(require, check) {
 		const compiled = require('./simulation/entityId');
 		assert.equal(typeof compiled.nextEntityId, 'function');
 	});
+	check('damageMultiplier is `Char.attack`\'s dmgMulti: it scales the roll, before armor', () => {
+		const { rollDamage } = require('./simulation/combat');
+		const zero = { float: () => 0, normalRange: (min) => min, range: (min) => min, int: (min) => min };
+		const attacker = base({ damage: [10, 10] });
+		const defender = base({ armor: [4, 4] });
+		// `Char.attack`: `dmg = damageRoll() * dmgMulti` sits immediately after the roll and ahead of
+		// the armor subtraction, so at half damage a 10-against-4 hit is `round(5) - 4 = 1`, not
+		// `round(10 - 4) * 0.5 = 3`. Spectral Blades is what needs this (its secondary targets take
+		// half damage); every other caller leaves it at 1.
+		assert.equal(rollDamage(attacker, defender, zero), 6);
+		assert.equal(rollDamage(attacker, defender, zero, 0.5), 1);
+		assert.equal(rollDamage(attacker, defender, zero, 1), 6);
+	});
 	check('ascension modifiers stay inert in-game, match Java\'s table, and follow the alias table', () => {
 		const { accRollMulti, rollDamage, setAscensionActive, ASCENSION_MOD } = require('./simulation/combat');
 		const zero = { float: () => 0, normalRange: (min) => min, range: (min) => min, int: (min) => min };

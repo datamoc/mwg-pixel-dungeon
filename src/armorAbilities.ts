@@ -73,16 +73,17 @@ export function armorAbilityDef(id: string): ArmorAbilityDef | undefined {
  * its armor ability unchosen (and its T4 pool ungranted, which is Java's own behavior while
  * `armorAbility == null`) rather than handing the player a choice that cannot be spent.
  *
- * Ported so far: the Warrior's three and the Rogue's Death Mark. Still to port, each needing its
- * own systems: the Mage's (`ElementalBlast` and `WildMagic` need per-wand blast factors and a
- * wand-randomization pass; `WarpBeacon` needs a beacon actor and window), the Rogue's remaining two
- * (`SmokeBomb` needs the real `Blindness` buff and the `NinjaLog` ally; `ShadowClone` needs an ally
- * actor), the Huntress's (`SpectralBlades` needs the spirit-blade projectile and an attack damage
- * multiplier; `NaturesPower` a growing-power tracker wired into the SpiritBow; `SpiritHawk` an ally
- * actor) and the Duelist's (`Challenge` needs a duel tracker; `ElementalStrike` the four blade
- * imbuements; `Feint` a feint buff). See `PORT_COVERAGE.md`'s armor-ability rows.
+ * Ported so far: the Warrior's three, the Rogue's Death Mark and the Huntress's Spectral Blades.
+ * Still to port, each needing its own systems: the Mage's (`ElementalBlast` and `WildMagic` need
+ * per-wand blast factors and a wand-randomization pass; `WarpBeacon` needs a beacon actor and
+ * window), the Rogue's remaining two (`SmokeBomb` needs the real `Blindness` buff and the
+ * `NinjaLog` ally; `ShadowClone` needs an ally actor), the Huntress's remaining two
+ * (`NaturesPower` a growing-power tracker wired into the SpiritBow and the hero's speed;
+ * `SpiritHawk` an ally actor) and the Duelist's (`Challenge` needs a duel tracker;
+ * `ElementalStrike` the four blade imbuements; `Feint` a feint buff). See `PORT_COVERAGE.md`'s
+ * armor-ability rows.
  */
-const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark']);
+const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades']);
 
 /** The implemented abilities for one class, in `HeroClass.armorAbilities()` order (the authored
  *  table's own row order, which `DEFINITIONS` preserves). */

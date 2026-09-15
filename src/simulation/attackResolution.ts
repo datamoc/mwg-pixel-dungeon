@@ -15,7 +15,8 @@ export interface AttackResolution {
  *
  * `accFactor` is `MissileWeapon.accuracyFactor`'s `adjacentAccFactor`: the ranged paths pass it
  * (a thrown weapon or the spirit bow is -50%/+10%/-50%/+50% accurate by range and Point Blank -
- * see `missiles.ts`), everything else leaves it at 1.
+ * see `missiles.ts`), everything else leaves it at 1. `damageMultiplier` is `Char.attack`'s own
+ * `dmgMulti` (see `rollDamage`), which only the multi-target armor abilities use.
  */
 export function resolveAttack(
 	attacker: Combatant,
@@ -24,7 +25,8 @@ export function resolveAttack(
 	magic = false,
 	surprise = false,
 	accFactor = 1,
+	damageMultiplier = 1,
 ): AttackResolution {
 	const hit = rollHit(attacker, defender, random, magic, surprise, accFactor);
-	return hit ? { hit: true, damage: rollDamage(attacker, defender, random) } : { hit: false, damage: 0 };
+	return hit ? { hit: true, damage: rollDamage(attacker, defender, random, damageMultiplier) } : { hit: false, damage: 0 };
 }

@@ -11,7 +11,7 @@ import type { SimulationRandom } from '../simulation/random';
 interface SpdActor extends Actor { id: string; }
 
 type Command =
-	| { kind: 'attack'; attacker: Combatant; defender: Combatant; randomId: number; magic: boolean; surprise: boolean; accFactor: number }
+	| { kind: 'attack'; attacker: Combatant; defender: Combatant; randomId: number; magic: boolean; surprise: boolean; accFactor: number; damageMultiplier: number }
 	| { kind: 'hunger'; state: HungerState; step?: number }
 	| { kind: 'hero-action'; action: string; paralysed: boolean; turnCostMod: number }
 	| { kind: 'movement'; position: { x: number; y: number }; move: { x: number; y: number }; worldId: number }
@@ -38,7 +38,7 @@ const rule: SimulationRuntimeRule<State, Command, Event, SpdActor> = (_state, co
 		case 'attack': {
 			const random = randomSources.get(command.randomId);
 			if (!random) throw new Error(`attack random source ${command.randomId} is no longer available`);
-			const resolution = resolveAttack(command.attacker, command.defender, random, command.magic, command.surprise, command.accFactor);
+			const resolution = resolveAttack(command.attacker, command.defender, random, command.magic, command.surprise, command.accFactor, command.damageMultiplier);
 			return { state: { last: { type: 'attack-resolution', resolution } }, events: [{ type: 'attack-resolution', resolution }], status: 'ready', cost: null };
 		}
 		case 'hunger': {
@@ -80,11 +80,11 @@ function dispatch(command: Command): Event {
 	}
 }
 
-export function runAttackResolution(attacker: Combatant, defender: Combatant, random: SimulationRandom, magic = false, surprise = false, accFactor = 1): AttackResolution {
+export function runAttackResolution(attacker: Combatant, defender: Combatant, random: SimulationRandom, magic = false, surprise = false, accFactor = 1, damageMultiplier = 1): AttackResolution {
 	const randomId = ++nextHandle;
 	randomSources.set(randomId, random);
 	try {
-		return (dispatch({ kind: 'attack', attacker, defender, randomId, magic, surprise, accFactor }) as { type: 'attack-resolution'; resolution: AttackResolution }).resolution;
+		return (dispatch({ kind: 'attack', attacker, defender, randomId, magic, surprise, accFactor, damageMultiplier }) as { type: 'attack-resolution'; resolution: AttackResolution }).resolution;
 	} finally {
 		randomSources.delete(randomId);
 	}

@@ -167,7 +167,7 @@ export function rollHit(attacker: Readonly<Combatant>, defender: Readonly<Combat
  * ChampionEnemy.Blessed...Blazing x1.25, Weakness x0.67, Vulnerable-taken x1.33, and
  * MeleeWeapon's excess-STR bonus (+Random(0..excess)).
  */
-export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Combatant>, random: SimulationRandom): number {
+export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Combatant>, random: SimulationRandom, damageMultiplier = 1): number {
 	const [min, max] = liveStats(attacker).damage;
 	/** The attacker's own `damageRoll()`: the stat roll, plus `MeleeWeapon.damageRoll`'s excess-STR
 	 * bonus (up to the whole surplus over the requirement). A function rather than an inline
@@ -185,6 +185,12 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 	let dmg = attacker.prepLevel !== undefined
 		? preparationDamageRoll(preparationLevelByNumber(attacker.prepLevel), damageRoll)
 		: damageRoll();
+	//`Char.attack(enemy, dmgMulti, dmgBonus, accMulti)`: `dmgMulti` multiplies the roll immediately,
+	//before every other multiplier and before the armor subtraction (`dmg = dmg*dmgMulti` sits right
+	//after the roll in Java, with `dmgBonus` added next). Its callers here are the abilities that
+	//attack several targets at once - Spectral Blades halves the damage of everything but its
+	//primary target - which is why this is a parameter rather than something read off the attacker.
+	dmg *= damageMultiplier;
 	if (attacker.buffs['berserk']) {
 		const power = 1 - attacker.hp / attacker.maxHp;
 		dmg *= Math.min(1.5, 1 + power / 2);

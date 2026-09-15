@@ -53,10 +53,11 @@ fully checked off as of a given release.
     action offers the class's real SPD abilities (with their real names and descriptions, in
     every offered locale), each costs its own real charge out of a meter that regrows at Java's
     rate and starts at Java's 50, and its four rank-4 tier-4 talents open up with points at
-    Java's own curve. The Warrior's three - Heroic Leap, Shockwave and Endure - and the Rogue's
-    Death Mark are fully implemented, formulas included; the other eleven are not offered at all
-    rather than offered and inert, so a Mage/Huntress/Duelist crown (or a Rogue who already has
-    Death Mark) tells you nothing has changed yet instead of handing you a dead button.
+    Java's own curve. The Warrior's three - Heroic Leap, Shockwave and Endure - the Rogue's
+    Death Mark and the Huntress's Spectral Blades are fully implemented, formulas included; the
+    other ten are not offered at all rather than offered and inert, so a Mage/Duelist crown (or a
+    Rogue or Huntress who already has theirs) tells you nothing has changed yet instead of handing
+    you a dead button.
   - Golems tick their enemy-teleport and wandering self-teleport cooldowns individually and on
     every turn (matching `Golem.act()`), not on a shared/simplified timer.
   - Monster AI generally - this line item is intentionally open-ended rather than a fixed claim;
@@ -1752,10 +1753,13 @@ fully checked off as of a given release.
       five-turn mark that keeps its target alive at zero HP until it expires (Java's
       `isAlive()`/`deathMarked`), `FEAR_THE_REAPER`'s terror-and-cripple ladder, `DEATHLY_DURABILITY`'s
       barrier, `DOUBLE_MARK`'s two-sided charge latch, and Java's own zero-time cast - browser-verified
-      including the save/load round trip. **Still open, and deliberately not offered**: the other
-      eleven abilities (Mage/Rogue's remaining two/Huntress/Duelist) each need a system this port does
-      not have - see `PORT_COVERAGE.md`'s new armor-ability section for the per-ability reason - and the
-      Cleric's three have neither strings nor a spell system here. `armorAbilitiesFor()` offers
+      including the save/load round trip. **The Huntress's Spectral Blades followed**, with `Char.attack`'s
+      `dmgMulti` now a real parameter of the damage roll (so a fan's secondary blades take Java's
+      `round(roll * 0.5) - armor` rather than a post-hoc half), `FAN_OF_BLADES`' cone and its
+      `1 + points` target cap, and `SPIRIT_BLADES`' tracker. **Still open, and deliberately not offered**:
+      the other ten abilities (Mage/Rogue's remaining two/Huntress's remaining two/Duelist) each need a
+      system this port does not have - see `PORT_COVERAGE.md`'s armor-ability section for the per-ability
+      reason - and the Cleric's three have neither strings nor a spell system here. `armorAbilitiesFor()` offers
       only what can actually run, so a class with none keeps the crown's old description line
       instead of an empty choice, and its tier-4 pool stays ungranted (which is Java's own state
       while `armorAbility == null`). Also Not ported and stated: `ClassArmor` as a distinct item
