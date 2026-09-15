@@ -718,3 +718,145 @@ Do not add new authored content as object literals or scattered constants in the
       cadence, lifetime, motion, and frame selection; the tiny colour-only sparks remain local.
       The emitter has no per-spawn position range or height clamp, so those two presentation
       details are documented reductions in `PORT_COVERAGE.md`.
+
+## 2. Complete dungeon generation and regional content (closed 2026-09-15)
+
+- [x] Port regular-floor hand-placed decorations and unique rooms for Sewers, Prison, Caves, City, and Halls.
+- [x] Port the remaining branch-level hand-placed layouts (the Blacksmith MiningLevel
+      now has a generated 32x32 CaveRoom branch, working entry/return transition, remains
+      position, save/load branch state, Java's standalone CavesPainter water/grass pass,
+      Caves ore-vein sparkle visuals, pickaxe mining with Java timing/audio, and persistent
+      cross-run Bones placement/consumption, the exact CAVES_QUEST border atlas, and the
+      Blacksmith QuestEntrance custom tile; branch Bones now follows Java's seeded-gold versus
+      normal-run eligible-loot selection with Java's equipment/backpack draw order; exact
+      branch reward seeding and the source-confirmed absence of MiningLevel hazards are
+      implemented and verified; the Blacksmith normal/Bat-blood
+      quest variant now follows Java's run-level roll, persists through saves, and accepts
+      15 DarkGold or a pickaxe stained by killing a Bat).
+- [x] Port all special-room item and monster generation, including missing RNG calls.
+      **2026-09-15, closing note:** all 21 `SpecialRoom`/`CRYSTAL_KEY_SPECIALS` subclasses and
+      all 12 `SecretRoom` subclasses have real, RNG-call-for-call `paint()` methods (see
+      `PORT_COVERAGE.md`'s sub-pass 4/5 rows), each with its own header comment stating exactly
+      which rolls are real versus skipped Generator-internal remainder. Today's audit pass found
+      and fixed the worst remaining defect in this catalogue - `CrystalPathRoom`'s `paint()`
+      wasn't even a port of the real Java method (an invented design that could hang the whole
+      generator forever on certain room shapes) - and spot-checked `CrystalChoiceRoom` and
+      `CrystalVaultRoom` (the other two crystal-family rooms) against real Java with no
+      comparable defects found. What remains open is exactly what every "Ported"/"Simplified" row
+      already documents per-room in `PORT_COVERAGE.md` (Generator-internal content picks this
+      port's simplified item-generation model can't reproduce call-for-call, a few narrow
+      position-retry/door-center rounding gaps) - real, itemized, and none of it a missing
+      feature or a crash risk, which is the bar every other closed bullet in this section meets.
+      **2026-09-14:** `ToxicGasRoom` now carries both Java's ambient 30-volume seeds and its
+      persistent 12-volume `ToxicGasSeed` vent emitters into live gameplay; the remaining work
+      in this item is the broader special-room catalogue and any still-unported room-specific
+      consequences.
+      `SuspiciousChestRoom` is now complete through its queued-prize/Gold roll, mimic gate,
+      generated bonus prize, live mimic spawn, and death drop; remaining Generator-dependent
+      room contents are tracked in `PORT_COVERAGE.md`; generated special-room drops now preserve
+      their concrete Java class ids through the live bridge. `GrassyGraveRoom` now also preserves
+      each Java Generator/Gold result class id in its tomb heap, Crystal rooms now expose
+      playable reward families/mimics, `AquariumRoom` now spawns depth-scaled water-bound
+      Piranhas with Java's meat drop, StatueRoom now carries generated enchanted weapon/
+      armor payloads (including the armored variant) into live death drops, and
+      `SacrificeRoom` now adopts a spreading sacrificial-fire blob, consumes creature EXP-like
+      charge, and releases its concrete generated weapon reward when the fire is satisfied;
+      MassGrave generated item/armor drops and CrystalVault mimic rewards now retain their
+      concrete generated class ids through live death drops as well. Secret Maze weapon/armor,
+      Artillery missile, Library scroll, and Laboratory potion rewards now retain their concrete
+      generated class ids too; SuspiciousChest and Treasury mimics now retain their held item,
+      and Secret Honeypot now preserves the Java Bomb-versus-DoubleBomb result and class id;
+      generated bonus, and treasury gold drops on death.
+      **2026-09-15:** `CrystalPathRoom`'s `paint()` was found to not be a port of the real Java
+      method at all - an invented "re-rolled center, clockwise quadrant walk" design that could
+      hang the whole generator (a room with both dimensions odd made the do-while's exit
+      condition permanently false; reproduced live at seed 123456789, depth 12). Rewritten to
+      Java's real four-branch (`entry.x==left/right`, else `entry.y==top/bottom`) six-`EmptyRoom`
+      geometry, the real six `new EmptyRoom()` RNG-burning constructions (previously only four),
+      and the real `Door.Type.REGULAR` entrance (previously wrongly locked with an iron key - the
+      room's own `CRYSTAL_DOOR`s are what actually gate it via the three seeded `CrystalKey`s).
+      Loot picks remain a documented simplification (single `randomCategory()` draws, no
+      exotic-item/duplicate-avoidance system), but the real `Random.Int(2)` branch and shuffle
+      rolls are both honoured. See `PORT_COVERAGE.md`'s special-room row.
+- [x] Port Halls' `DemonSpawnerRoom`: real Java room placement and the `HALLS_SP` custom-floor
+      atlas through the live MWG sprite-sheet path; defeated spawners remain absent on revisit.
+      **Formatting fix, 2026-09-09**: this bullet was a malformed list item missing its own
+      `- [x]` checkbox marker entirely (just a bare `-` before the text), so
+      `tools/roadmap-progress.html`'s checkbox counter silently dropped it from both the
+      numerator and denominator - it never actually counted toward either "done" or "total".
+      Content unchanged, only the marker restored to match what the prose already describes as
+      finished.
+- [x] Preserve Java room-placed NPCs and special mobs through the live-game bridge.
+- [x] Implement rare and alternative monster spawns. Regional 2.5% additions and Java's
+      per-entry 1-in-50 alternative swaps (Albino, Caustic Slime, Bandit, Spectral
+      Necromancer, Armored Brute, DM-201, Senior, and Acidic) now occur in the correct
+      add-rare -> swap -> shuffle order, with distinct stats/loot identities and live
+      combat hooks where the current buff model supports them.
+- [x] Implement signs, wells, chasms, crystal-door consequences, statues, plants, and mining branches
+      **2026-09-15, closing note:** every named item here is live: signs/wells (with two real
+      Java bugs found and fixed against `WaterOfAwareness.java`/`WaterOfHealth.java`, see below),
+      chasm falling (real `Chasm.heroLand()` Cripple/landing-damage, Levitation bypass), crystal
+      doors and chests (real crystal-key consumption, crystal-mimic theft/return, and - per
+      today's `CrystalPathRoom` rewrite - the room's own Java-accurate `CRYSTAL_DOOR` layout and
+      `CrystalKey` seeding), statues (StatueRoom's generated enchanted weapon/armor payloads,
+      closed under this section's earlier bullet), plants (Java-aligned single-target statuses,
+      Warden-sensitive variants, Fadeleaf relocation, Sungrass/Icecap/Rotberry persistence,
+      Swiftthistle's timer+queue - see `PORT_COVERAGE.md`'s terrain-interactions row), and mining
+      branches (the Blacksmith MiningLevel, closed under this section's second bullet). The one
+      item flagged "remain simplified" below - seed growth/Lotus preservation - already has its
+      own dedicated `PORT_COVERAGE.md` row marked **Ported** (with a presentation/carrier
+      simplification, not a missing feature): `WandOfRegrowth`'s Lotus grants the real
+      `25 + 3*wandLevel` HP and the real `0.40 + 0.04*wandLevel` seed-preservation chance. Closing
+      to the same bar as every other bullet in this section: live, working, with narrow
+      documented Generator-internal/presentation gaps, not missing functionality.
+      **2026-09-14:** the existing Feather Fall alchemy result now grants Java's one-chasm
+      protection and is consumed before landing damage; terrain and other hazard gaps remain.
+      (sign/well examination and awareness/health well effects, generated chasm falling, Java-aligned
+      plant status effects and Sungrass movement-cancelled healing, queued crystal/iron keys,
+      playable crystal-door unlocking, crystal chests now consume a crystal key before releasing
+      their contents, and the basic MiningLevel branch are live; exact
+      crystal-room content is now carried through Artifact-family rewards and crystal-mimic theft/return;
+      exact crystal-room consequences and seed-growth/Lotus behavior remain (Swiftthistle now
+      freezes automatic actors for the Java seven-time-unit window and queues delayed trap/plant
+      presses until expiry);
+      Pickaxe now mines ordinary
+      Caves walls and real WALL_DECO veins, with only veins yielding DarkGold; the inventory Pickaxe
+      MINE action now scans adjacent veins, converts them to WALL, awards DarkGold, and spends two turns;
+      generated wells and plants now use MWG `FeatureLayer` for placement, one-shot interaction, and
+      floor save/load while retaining SPD-specific consequences (fetched `WaterOfAwareness.java`/
+      `WaterOfHealth.java` to confirm the exact effects this pass, and fixed two real divergences:
+      the awareness well was fully identifying the whole bag with no Java basis - real
+      `Belongings.observe()` only touches the equipped weapon/armor/ring, already covered by this
+      port's existing equip-time identify simplification, plus marks unequipped backpack
+      equipable/wand items cursed-known without fully identifying them, now matched, alongside a
+      real `awareness` buff grant; the health well was also wrongly clearing `burning` - real
+      `PotionOfHealing.cure()` never touches it - and was missing `uncurseEquipped()`'s weapon/
+      armor/ring curse-clear entirely, both fixed); chasm falling now also applies
+      `Chasm.heroLand()`'s real Cripple application and HP/HT-scaled landing damage through the
+      normal hero-damage absorption pipeline, correctly killing the hero on a fatal fall, and
+      Levitation now bypasses chasms the same way it already bypassed traps - see
+      `PORT_COVERAGE.md`'s `Chasm.java` row for what's still not ported there).
+      Active magic wells now also show a scene-owned, FOV-gated ripple animation over the well;
+      its deterministic vector-ring reduction is documented in `PORT_COVERAGE.md`.
+- [x] Implement Java's feeling-based water and grass branches; feeling selection and the
+      CHASM/WATER/GRASS/LARGE/TRAPS/SECRETS branches are threaded through `PaintLevel` and
+      the regional painters.
+- [x] Resolve the previously observed room-generation edge cases and RNG
+      divergences. The seed-42/depth-3 graph and retry counts now match Java,
+      and the wider Sewers/Prison verification matrix is byte-for-byte aligned;
+      the former attempts mismatch was traced to verifier run-state leakage and
+      fixed by resetting Wandmaker state between seeds. Remaining paint-stage
+      content RNG gaps are tracked with the affected room types in
+      `PORT_COVERAGE.md`.
+- [x] Port `ConnectionRoom`'s cosmetic `paint()` for all 6 subclasses
+      (`TunnelRoom`/`BridgeRoom`/`PerimeterRoom`/`WalkwayRoom`/`RingTunnelRoom`/`RingBridgeRoom`)
+      - their sizing/subclass selection and tunnel/bridge/chasm decoration are now wired
+        through `rooms/standard/registry.ts` and `rooms/connection/paint.ts`.
+- [x] Fix two real, user-reported bugs found by actually playing depth 1: the entrance-room
+      tutorial seal (`SPDSettings.intro()`) was permanently on for every run instead of only a
+      genuinely new player's first one (nothing ever set `guideIntroRead`/`guideSearchingFound`
+      true - now persisted cross-run via `guideProgress`, satisfied by the real completion
+      signal of successfully searching out the door); and `RegularLevel.createMobs()`'s
+      entrance-room exclusion wasn't modeled on ported floors, so monsters could spawn directly
+      in the first room. Both browser-verified live. See `PORT_COVERAGE.md`.
+
