@@ -42,6 +42,7 @@ import dm100Url from './assets/dm100.png';
 import guardUrl from './assets/guard.png';
 import necromancerUrl from './assets/necromancer.png';
 import ninjaLogUrl from './assets/ninja_log.png';
+import spiritHawkUrl from './assets/spirit_hawk.png';
 import tenguUrl from './assets/tengu.png';
 import ghostUrl from './assets/ghost.png';
 import batUrl from './assets/bat.png';
@@ -199,6 +200,7 @@ const MWL_ASSET_URLS: Readonly<Record<string, string>> = {
 	'assets/monk.png': monkUrl,
 	'assets/necromancer.png': necromancerUrl,
 	'assets/ninja_log.png': ninjaLogUrl,
+	'assets/spirit_hawk.png': spiritHawkUrl,
 	'assets/piranha.png': piranhaUrl,
 	'assets/pylon.png': pylonUrl,
 	'assets/rat.png': ratUrl,
@@ -260,6 +262,8 @@ export interface SpdSprites {
 	sheep: Texture;
 	/** `SmokeBomb.NinjaLog`'s decoy, from `sprites/ninja_log.png`. */
 	ninjaLog: Texture;
+	/** `SpiritHawk.HawkAlly`'s familiar, from `sprites/spirit_hawk.png`. */
+	spiritHawk: Texture;
 	piranha: Texture;
 	bee: Texture;
 	statue: Texture;
@@ -420,9 +424,14 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		huntress,
 		duelist,
 		cleric,
+		//This list is positional: it must stay in step with the `loadImage(...)` array below,
+		//entry for entry. It did not (sheep/ninjaLog were transposed) and the shipped Smoke Bomb
+		//decoy rendered the sheep sprite for a whole release; `tools/verifyItemWorkflows.mjs`
+		//now pins the two orders together.
 		rat,
-		sheep,
 		ninjaLog,
+		spiritHawk,
+		sheep,
 		piranha,
 		bee,
 		statue,
@@ -520,6 +529,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(clericUrl),
 		loadImage(ratUrl),
 		loadImage(ninjaLogUrl),
+		loadImage(spiritHawkUrl),
 		loadImage(sheepUrl),
 		loadImage(piranhaUrl),
 		loadImage(beeUrl),
@@ -621,6 +631,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		rat: Texture.from(rat),
 		sheep: Texture.from(sheep),
 		ninjaLog: Texture.from(ninjaLog),
+		spiritHawk: Texture.from(spiritHawk),
 		piranha: Texture.from(piranha),
 		bee: Texture.from(bee),
 		statue: Texture.from(statue),

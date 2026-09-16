@@ -117,6 +117,7 @@
         children: [
           { tag: "row", monster: "sheep", sprite: "sheep" },
           { tag: "row", monster: "ninjaLog", sprite: "ninjaLog" },
+          { tag: "row", monster: "spiritHawk", sprite: "spiritHawk" },
           { tag: "row", monster: "ward", sprite: "wards" },
           { tag: "row", monster: "earthGuardian", sprite: "guardian" },
           { tag: "row", monster: "sentry", sprite: "sentry" },
@@ -150,6 +151,7 @@
           { tag: "row", monster: "ward", frame_width: 12, frame_height: 15, idle: 0 },
           { tag: "row", monster: "sheep", frame_width: 16, frame_height: 15, idle: 0 },
           { tag: "row", monster: "ninjaLog", frame_width: 11, frame_height: 12, idle: 0 },
+          { tag: "row", monster: "spiritHawk", frame_width: 15, frame_height: 15, idle: 0 },
           { tag: "row", monster: "earthGuardian", frame_width: 12, frame_height: 15, idle: 0 },
           { tag: "row", monster: "thief", frame_width: 12, frame_height: 13, idle: 0 },
           { tag: "row", monster: "dm100", frame_width: 16, frame_height: 14, idle: 0 },

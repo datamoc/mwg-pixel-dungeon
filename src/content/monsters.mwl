@@ -171,6 +171,25 @@
     image: "assets/ninja_log.png",
   },
   {
+    // `SpiritHawk.HawkAlly` (tag `v3.3.8`): the Huntress's familiar. `HP = HT = 10`,
+    // `attackSkill()`/`defenseSkill()` both 60, `damageRoll()` `NormalIntRange(5, 10)`, and no
+    // `drRoll()` override, so its armor row is zero. It flies, never awards XP, and its lifespan
+    // (100 time units) is tracked at runtime rather than as a stat.
+    tag: "monster",
+    id: "spiritHawk",
+    name: "actors.hero.abilities.huntress.spirithawk$hawkally.name",
+    hp: 10,
+    accuracy: 60,
+    evasion: 60,
+    damage_min: 5,
+    damage_max: 10,
+    armor_min: 0,
+    armor_max: 0,
+    experience: 0,
+    max_level: 0,
+    image: "assets/spirit_hawk.png",
+  },
+  {
     tag: "monster",
     id: "earthGuardian",
     name: "items.wands.wandoflivingearth$earthguardian.name",

@@ -16,6 +16,9 @@ export function verifyArmorAbilities(require, check) {
 		impactWaveStrength, impactWaveVulnerable, shockForceParalyses, shockwaveCone,
 		shockwaveDamage, strikingWaveProcs,
 	} = require('./simulation/warriorAbilities');
+	const {
+		SPIRIT_HAWK_LIFESPAN, goForTheEyesEffect, spiritHawkDodges, spiritHawkSpeed, spiritHawkViewDistance,
+	} = require('./simulation/huntressAbilities');
 
 	//`HeroClass.armorAbilities()`, in its own order.
 	check('every class offers its three real armor abilities, in Java order', () => {
@@ -70,19 +73,52 @@ export function verifyArmorAbilities(require, check) {
 	});
 
 	check('only implemented abilities are offered, and the charge meter is Java\'s', () => {
-		//The Warrior's three, the Rogue's Smoke Bomb and Death Mark, the Huntress's Spectral Blades
-		//and Nature's Power, and the Mage's Warp Beacon are the ported set; a class with none of its
-		//own offers nothing, which is what keeps a choice panel from listing an ability that cannot
-		//run.
+		//The Warrior's three, the Rogue's Smoke Bomb and Death Mark, the Huntress's Spectral Blades,
+		//Nature's Power and Spirit Hawk, and the Mage's Warp Beacon are the ported set; a class with
+		//none of its own offers nothing, which is what keeps a choice panel from listing an ability
+		//that cannot run.
 		assert.deepEqual(armorAbilitiesFor('warrior'), ['heroicleap', 'shockwave', 'endure']);
 		assert.deepEqual(armorAbilitiesFor('rogue'), ['smokebomb', 'deathmark']);
-		assert.deepEqual(armorAbilitiesFor('huntress'), ['spectralblades', 'naturespower']);
+		assert.deepEqual(armorAbilitiesFor('huntress'), ['spectralblades', 'naturespower', 'spirithawk']);
 		assert.deepEqual(armorAbilitiesFor('mage'), ['warpbeacon']);
 		assert.deepEqual(armorAbilitiesFor('duelist'), []);
 		assert.equal(ARMOR_CHARGE_MAX, 100);
 		assert.equal(ARMOR_CHARGE_START, 50);
 		//`ClassArmor.Charger.act()`: `chargeGain = 100/500f`.
 		assert.equal(ARMOR_CHARGE_PER_TURN, 0.2);
+	});
+
+	check('SpiritHawk\'s charge is Java\'s 35, and free while the hawk is already out', () => {
+		const hawk = armorAbilityDef('spirithawk');
+		assert.equal(hawk.baseChargeUse, 35);
+		assert.equal(hawk.targeting, 'hawk');
+		assert.equal(armorChargeUse(hawk, { heroicEnergyRank: 0 }), 35);
+		//`SpiritHawk.chargeUse()` returns a flat 0 while `getHawk() != null`, which is an override
+		//rather than a discount - so HEROIC_ENERGY does not survive it either.
+		assert.equal(armorChargeUse(hawk, { heroicEnergyRank: 0, hawkSummoned: true }), 0);
+		assert.equal(armorChargeUse(hawk, { heroicEnergyRank: 4, hawkSummoned: true }), 0);
+		//And it is that ability's own override: nothing else becomes free.
+		assert.equal(armorChargeUse(armorAbilityDef('warpbeacon'), { heroicEnergyRank: 0, hawkSummoned: true }), 35);
+	});
+
+	check('SpiritHawk\'s speed, sight, dodge pool and lifespan are Java\'s tables', () => {
+		//`baseSpeed = 2f + SWIFT_SPIRIT / 2f`.
+		assert.deepEqual([0, 1, 2, 3, 4].map(spiritHawkSpeed), [2, 2.5, 3, 3.5, 4]);
+		//`viewDistance = GameMath.gate(6, 6 + EAGLE_EYE, 8)`.
+		assert.deepEqual([0, 1, 2, 3, 4].map(spiritHawkViewDistance), [6, 7, 8, 8, 8]);
+		//`defenseSkill()`'s pool: `2 * SWIFT_SPIRIT` outright dodges.
+		assert.deepEqual([0, 1, 2, 3, 4].map(spiritHawkDodges), [0, 2, 4, 6, 8]);
+		assert.equal(SPIRIT_HAWK_LIFESPAN, 100);
+	});
+
+	check('GO_FOR_THE_EYES blinds for Java\'s durations and cripples from rank 3', () => {
+		assert.deepEqual([0, 1, 2, 3, 4].map(goForTheEyesEffect), [
+			{ blindness: 0, cripple: 0 },
+			{ blindness: 2, cripple: 0 },
+			{ blindness: 5, cripple: 0 },
+			{ blindness: 5, cripple: 2 },
+			{ blindness: 5, cripple: 5 },
+		]);
 	});
 
 	check('HEROIC_ENERGY scales charge use by Java\'s own table', () => {

@@ -74,14 +74,14 @@ export function armorAbilityDef(id: string): ArmorAbilityDef | undefined {
  * `armorAbility == null`) rather than handing the player a choice that cannot be spent.
  *
  * Ported so far: the Warrior's three, the Rogue's Death Mark and Smoke Bomb, the Huntress's
- * Spectral Blades and Nature's Power, and the Mage's Warp Beacon. Still to port, each needing its
- * own systems: the Mage's remaining two (`ElementalBlast` and `WildMagic` need per-wand blast
- * factors and a wand-randomization pass), the Rogue's `ShadowClone` (an ally actor), the Huntress's
- * `SpiritHawk` (an ally actor) and the Duelist's (`Challenge` needs a duel tracker;
- * `ElementalStrike` the four blade imbuements; `Feint` a feint buff and its after-image). See
- * `PORT_COVERAGE.md`'s armor-ability rows.
+ * Spectral Blades, Nature's Power and Spirit Hawk, and the Mage's Warp Beacon. Still to port, each
+ * needing its own systems: the Mage's remaining two (`ElementalBlast` and `WildMagic` need per-wand
+ * blast factors and a wand-randomization pass), the Rogue's `ShadowClone` (an ally actor with the
+ * hero's own gear) and the Duelist's (`Challenge` needs a duel tracker; `ElementalStrike` the four
+ * blade imbuements; `Feint` a feint buff and its after-image). See `PORT_COVERAGE.md`'s
+ * armor-ability rows.
  */
-const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades', 'warpbeacon', 'smokebomb', 'naturespower']);
+const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades', 'warpbeacon', 'smokebomb', 'naturespower', 'spirithawk']);
 
 /** The implemented abilities for one class, in `HeroClass.armorAbilities()` order (the authored
  *  table's own row order, which `DEFINITIONS` preserves). */
@@ -132,6 +132,7 @@ export function armorChargeUse(
 		doubleMarkRank?: number;
 		shadowStepArmed?: boolean;
 		shadowStepRank?: number;
+		hawkSummoned?: boolean;
 	},
 ): number {
 	const heroicEnergy = HEROIC_ENERGY_FACTORS[Math.min(4, Math.max(0, options.heroicEnergyRank))] ?? 1;
@@ -146,6 +147,11 @@ export function armorChargeUse(
 	//`SmokeBomb.chargeUse()`: while the hero is invisible, 16/30/41/50% off.
 	if (def.id === 'smokebomb' && options.shadowStepArmed) {
 		chargeUse *= Math.pow(0.84, rank(options.shadowStepRank));
+	}
+	//`SpiritHawk.chargeUse()`: an order to an already-summoned hawk is free. Note this is an
+	//absolute zero, not a discount - it applies with or without `HEROIC_ENERGY`.
+	if (def.id === 'spirithawk' && options.hawkSummoned) {
+		chargeUse = 0;
 	}
 	return chargeUse;
 }

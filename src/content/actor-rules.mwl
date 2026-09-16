@@ -11,7 +11,16 @@
           {
             tag: "effect",
             apply_to: "flying",
-            set: "bat,bee,elemental,newbornElemental,eye,swarm,ghost",
+            set: "bat,bee,elemental,newbornElemental,eye,swarm,ghost,spiritHawk",
+          },
+          {
+            // `BlobImmunity`'s immunities list (`BlobImmunity.java`, tag `v3.3.8`): every
+            // harmful *blob* in the game. Only two ported actors carry it - the spirit hawk
+            // (`SpiritHawk.HawkAlly`) and the piranha (`Piranha`). The port's only
+            // creature-facing blob is fire, so this set is read there.
+            tag: "effect",
+            apply_to: "blobImmune",
+            set: "spiritHawk,piranha",
           },
           {
             tag: "effect",

@@ -163,6 +163,9 @@ import {
 	impactWaveStrength, impactWaveVulnerable, shockwaveCone, shockwaveDamage,
 	shockForceParalyses, strikingWaveProcs, type DamageRoll,
 } from '../simulation/warriorAbilities';
+import {
+	SPIRIT_HAWK_LIFESPAN, goForTheEyesEffect, spiritHawkDodges, spiritHawkSpeed, spiritHawkViewDistance,
+} from '../simulation/huntressAbilities';
 import { CLASSES, CLASS_AMMO, HERO_IDLE_FRAME, type ClassId } from '../classes';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
 import { TitleScene } from '../scenes/titleScene';
@@ -291,7 +294,7 @@ import {
 } from '../combat';
 import { nextEntityId } from '../simulation/entityId';
 import { applyChillFreeze } from '../simulation/buffs';
-import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LIMITED_DROP_DECAY, BASE_KIND_ALIASES, NPC_KINDS, BOSS_KINDS, MINIBOSS_KINDS, UNDEAD_KINDS, isUndeadOrDemonic, IMMOVABLE_KINDS, INORGANIC_KINDS, NEVER_SLEEPS_KINDS, FLYING_KINDS, SPRITE_KIND_OVERRIDE, MWL_AI_PROFILES, type AnyMonsterId, type MonsterId } from '../monsters';
+import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LIMITED_DROP_DECAY, BASE_KIND_ALIASES, NPC_KINDS, BOSS_KINDS, MINIBOSS_KINDS, UNDEAD_KINDS, isUndeadOrDemonic, IMMOVABLE_KINDS, INORGANIC_KINDS, NEVER_SLEEPS_KINDS, FLYING_KINDS, BLOB_IMMUNE_KINDS, SPRITE_KIND_OVERRIDE, MWL_AI_PROFILES, type AnyMonsterId, type MonsterId } from '../monsters';
 
 /**
  * Shattered Pixel Dungeon, on top of mwg: a title screen, hero-class selection, the Sewers
@@ -2055,7 +2058,7 @@ export class DungeonScene extends Scene2D {
 	}
 
 	/** any monster in MONSTERS, cut from its own real sprite sheet at its own real frame size */
-	private spawnMonster(kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog', championEligible = false): Creature {
+	private spawnMonster(kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk', championEligible = false): Creature {
 		const profile = monsterSpawnProfile(kind, this.depth, restoring, isAlly, championEligible, this.mobsToChampion);
 		this.mobsToChampion = profile.mobsToChampion;
 		const { def, adjustedDef, baseKind } = profile;
@@ -2204,6 +2207,9 @@ export class DungeonScene extends Scene2D {
 			sprite.alpha = 0.72;
 			sprite.colorAdd = allyKind === 'sheep' ? 0xdddddd : allyKind === 'earthGuardian' ? 0x997744 : allyKind === 'lotus' ? 0x55aa66 : 0x5577aa;
 		}
+		//`HawkAlly`'s `attacksAutomatically = false` is a property of the class, not of a summoning,
+		//so it is set here and survives a load without being persisted.
+		if (allyKind === 'spiritHawk') monster.attacksAutomatically = false;
 		//Monk.java: enters HUNTING with Focus (one guaranteed dodge, re-earned over ~6 turns)
 		if (kind === 'monk' || kind === 'senior') addBuff(monster, 'focus');
 		this.creatures.push(monster);
@@ -2340,6 +2346,7 @@ export class DungeonScene extends Scene2D {
 				sheepTurns: creature.sheepTurns,
 				wardTier: creature.wardTier, wardWandLevel: creature.wardWandLevel, wardTotalZaps: creature.wardTotalZaps,
 				earthGuardianWandLevel: creature.earthGuardianWandLevel, earthGuardianDefense: creature.earthGuardianDefense,
+				spiritHawkTime: creature.spiritHawkTime, spiritHawkDodges: creature.spiritHawkDodges,
 				nextTurn: this.scheduler.timeOf(creature),
 			});
 		}
@@ -2470,6 +2477,9 @@ export class DungeonScene extends Scene2D {
 				sheepTurns: saved.sheepTurns,
 				wardTier: saved.wardTier, wardWandLevel: saved.wardWandLevel, wardTotalZaps: saved.wardTotalZaps,
 				earthGuardianWandLevel: saved.earthGuardianWandLevel, earthGuardianDefense: saved.earthGuardianDefense,
+				//`HawkAlly.storeInBundle`'s two fields. The ally's standing order is not saved (see
+				//`Creature.allyDefendCell`'s note), but how long the hawk has left is its own state.
+				spiritHawkTime: saved.spiritHawkTime, spiritHawkDodges: saved.spiritHawkDodges,
 				speed: saved.hasteTurns ? (saved.hasteBaseSpeed ?? 1) * 2 : undefined,
 			});
 			restored.push(creature);
@@ -5429,6 +5439,9 @@ export class DungeonScene extends Scene2D {
 			//`Property.FIERY` (every `Elemental`, newborn included): immune to Burning - real
 			//Java refuses the buff in `add()` rather than skipping the grant, same outcome.
 			if (creature.kind === 'elemental' || creature.kind === 'newbornElemental') continue;
+			//`Fire.burn()` gates its ignition on `!ch.isImmune(Fire.class)`, and a creature with
+			//`BlobImmunity` is immune to every harmful blob - so the spirit hawk never catches fire.
+			if (BLOB_IMMUNE_KINDS.has(creature.kind as AnyMonsterId)) continue;
 			if (this.fire.volumeAt(creature.x, creature.y) >= 1) reigniteBuff(creature, 'burning');
 		}
 		//EternalFire.evolve()'s ignition half: any char on a burning wall cell catches fire
@@ -5450,6 +5463,9 @@ export class DungeonScene extends Scene2D {
 			for (const creature of this.creatures) {
 				if (creature.isHero || creature.isNPC || creature.hp <= 0) continue;
 				if (creature.kind === 'elemental' || creature.kind === 'newbornElemental') continue;
+				//`MagicalFireRoom.EternalFire.evolve()` checks `isImmune(EternalFire.class)` the
+				//same way `Fire.burn()` does, and `BlobImmunity` lists `EternalFire` explicitly.
+				if (BLOB_IMMUNE_KINDS.has(creature.kind as AnyMonsterId)) continue;
 				if (this.eternalFire.volumeAt(creature.x, creature.y) >= 1) reigniteBuff(creature, 'burning', ETERNAL_FIRE_BURN);
 			}
 		}
@@ -8437,15 +8453,19 @@ export class DungeonScene extends Scene2D {
 		if (decision.step) this.moveTo(monster, decision.step);
 	}
 
-	/** Basic allied Mob.act(): attack the nearest visible hostile, otherwise stay near the
-	 * hero. This is the shared combat seam required by MirrorImage and future directable allies;
-	 * Java's individual ally subclasses can add richer orders once their own quests are ported. */
+	/** The shared allied-actor turn: `Mob.Wandering`/`Hunting` as every non-special ally here
+	 * runs it, plus `DirectableAlly`'s standing order. Attack the nearest visible hostile,
+	 * otherwise head for the ordered cell, otherwise stay near the hero. */
 	private takeAllyTurn(ally: Creature): void {
 		if (ally.buffs['paralysis'] || ally.buffs['frost']) return;
 		//`SmokeBomb.NinjaLog` never acts: it is an IMMOVABLE decoy whose whole job is to be attacked
 		//(its `defenseSkill()` is what redirects whatever was hunting the hero). Returning here also
 		//keeps the generic ally branch below from walking an immovable log across the floor.
 		if (ally.allyKind === 'ninjaLog') return;
+		if (ally.allyKind === 'spiritHawk') {
+			this.takeSpiritHawkTurn(ally);
+			return;
+		}
 		if (ally.allyKind === 'ward') {
 			this.takeWardTurn(ally);
 			return;
@@ -8487,18 +8507,18 @@ export class DungeonScene extends Scene2D {
 			.sort((a, b) => Roguelike.chebyshevDistance(ally, a) - Roguelike.chebyshevDistance(ally, b));
 		//`DirectableAlly`'s standing order, if this ally has one: an ordered attack target takes
 		//precedence over the nearest hostile, and an ordered defend cell replaces the hero as the
-		//fallback destination. Only the rose's ghost ever carries either field, so both lines below
-		//are inert for every other ally kind. Java's `defendPos` leaves the ally WANDERING with no
-		//target, so a ghost that still *sees* an enemy fights it on the way - which is what the
-		//shared `hostiles` ordering below already does; what the order changes is where it goes when
-		//nothing is in sight, and that it stops there instead of following the hero.
-		const ordered = ally.ghostTargetChar !== undefined && ally.ghostTargetChar.hp > 0 ? ally.ghostTargetChar : undefined;
+		//fallback destination. The rose's ghost and the spirit hawk are the two allies that carry
+		//one, so both lines below are inert for every other ally kind. Java's `defendPos` leaves the
+		//ally WANDERING with no target, so an ally that still *sees* an enemy fights it on the way -
+		//which is what the shared `hostiles` ordering below already does; what the order changes is
+		//where it goes when nothing is in sight, and that it stops there instead of following the hero.
+		const ordered = ally.allyTargetChar !== undefined && ally.allyTargetChar.hp > 0 ? ally.allyTargetChar : undefined;
 		const target = ordered ?? hostiles[0];
 		if (target && Roguelike.chebyshevDistance(ally, target) === 1) {
 			this.attack(ally, target);
 			return;
 		}
-		const defend = ally.allyKind === 'ghost' ? ally.ghostDefendCell : undefined;
+		const defend = ally.allyDefendCell;
 		const destination = target ?? defend ?? this.hero;
 		if (!target && Roguelike.chebyshevDistance(ally, this.hero) <= 2 && !defend) return;
 		if (!target && defend && ally.x === defend.x && ally.y === defend.y) return;
@@ -8522,11 +8542,109 @@ export class DungeonScene extends Scene2D {
 	 * hero's visibility here made a Mirror Image blind to a monster beside it whenever the
 	 * hero was looking away, while also granting it knowledge through walls revealed by a
 	 * mapping effect. This local FOV keeps the existing compact ally orders but gives them the
-	 * correct information boundary. */
-	private visibleAllyHostiles(ally: Creature): Creature[] {
+	 * correct information boundary. `radius` is the ally's own sight range where it has one
+	 * (the spirit hawk's `viewDistance`); the hero's is the fallback. */
+	private visibleAllyHostiles(ally: Creature, radius = this.viewRadius()): Creature[] {
 		const allyFov = new Roguelike.FieldOfView(this.level);
-		allyFov.update(ally.x, ally.y, this.viewRadius());
+		allyFov.update(ally.x, ally.y, radius);
 		return this.creatures.filter((c) => !c.isHero && !c.isNPC && !c.isAlly && c.hp > 0 && allyFov.isVisible(c.x, c.y));
+	}
+
+	/** The spirit hawk's own `viewDistance` for the current talent ranks. */
+	private spiritHawkViewDistance(): number {
+		return spiritHawkViewDistance(this.talentRank('eagle_eye'));
+	}
+
+	/**
+	 * `Level.updateFieldOfView(hero, heroFOV)`'s ally-vision union (tag `v3.3.8`): while updating
+	 * the *hero's* field of view the level also recomputes each of a set of allies' own views and
+	 * ORs them in - the list there is `WandOfWarding.Ward`, `WandOfRegrowth.Lotus`,
+	 * `SpiritHawk.HawkAlly` and `PowerOfMany`'s buff - so a hawk sees for the Huntress exactly as
+	 * the ability's own description promises, and its scouting is what reveals the floor ahead.
+	 *
+	 * Only the hawk is wired here: the port's wards and lotus carry no per-ally view distance of
+	 * their own yet (Java gives a ward 4 cells and a lotus 1), so adding them would be guessing at
+	 * numbers nothing else in this port checks. Recorded in `PORT_COVERAGE.md`.
+	 */
+	private shareAllyVision(): void {
+		const hawk = this.spiritHawk();
+		if (!hawk) return;
+		const allyFov = new Roguelike.FieldOfView(this.level);
+		allyFov.update(hawk.x, hawk.y, this.spiritHawkViewDistance());
+		for (const cell of allyFov.visible) {
+			//`FogOfWar` here reads visibility alone (`lightAt` is unused), and Java's union carries
+			//visibility alone too - so the hawk's cells join both sets without a light entry.
+			this.fov.visible.add(cell);
+			this.fov.explored.add(cell);
+		}
+	}
+
+	/**
+	 * `SpiritHawk.HawkAlly.act()` (tag `v3.3.8`): the hawk's turn. It flies, has `viewDistance`
+	 * cells of sight and `baseSpeed` cells of movement, but `attacksAutomatically = false` - left
+	 * to itself it only follows the hero (or the cell it was directed to) and never picks a fight.
+	 * A hero who re-casts the ability on the hawk gives it a standing order instead, and that
+	 * order is what makes it attack.
+	 *
+	 * Java's `timeRemaining` counts down by the actor time the hawk spends (`spend()`, which is
+	 * `1/speed` per step and a full `TICK` when it has nowhere to go); at zero it dies and
+	 * interrupts the hero. This port spends through the same `pendingMonsterTurnCost` hook the
+	 * rest of the scheduler uses, so a speed-2 hawk genuinely takes two turns per hero turn.
+	 */
+	private takeSpiritHawkTurn(ally: Creature): void {
+		//Java's expiry check opens the turn (`if (timeRemaining <= 0) { die(null); hero.interrupt(); }`),
+		//so the hawk acts right up to the turn that empties its clock and dies on the next one.
+		if ((ally.spiritHawkTime ?? SPIRIT_HAWK_LIFESPAN) <= 0) {
+			this.kill(ally);
+			return;
+		}
+		const speed = spiritHawkSpeed(this.talentRank('swift_spirit'));
+		const ordered = ally.allyTargetChar !== undefined && ally.allyTargetChar.hp > 0 ? ally.allyTargetChar : undefined;
+		//`attacksAutomatically = false`: with no order the hawk has no targets at all, so the
+		//shared `takeAllyTurn` branch's "nearest visible hostile" would be an auto-hunt Java
+		//deliberately denies it. An order is also the only thing that puts the hawk in HUNTING.
+		const hostiles = ordered ? this.visibleAllyHostiles(ally, this.spiritHawkViewDistance()) : [];
+		const target = ordered ?? hostiles[0];
+		const defend = ally.allyDefendCell;
+		const destination = target ?? defend ?? this.hero;
+		//`spend(time)` is the actor time this turn costs the hawk, and `HawkAlly.spend()` takes the
+		//same amount off `timeRemaining`: `1 / speed()` per step, a full `TICK` when it has nowhere
+		//to go. A faster hawk therefore expires in fewer *turns* as well as moving further in each,
+		//which is Java's own behaviour rather than an oversight to correct.
+		let spent = 1;
+		if (target && Roguelike.chebyshevDistance(ally, target) === 1) {
+			if (this.attack(ally, target)) this.applyGoForTheEyes(target);
+			spent = 1 / speed;
+		} else {
+			//Where the hawk would rather be: its ordered target, the ordered cell, or the hero.
+			//It stays put once it has arrived at any of them (Java's `getCloser` returning false
+			//falls through to a full `TICK` of waiting).
+			const shouldMove = target !== undefined
+				? Roguelike.chebyshevDistance(ally, target) > 1
+				: defend !== undefined
+					? ally.x !== defend.x || ally.y !== defend.y
+					: Roguelike.chebyshevDistance(ally, this.hero) > 2;
+			if (shouldMove) {
+				const blocked = new Set(this.creatures.filter((c) => c !== ally && c !== destination)
+					.map((c) => this.level.index(c.x, c.y)));
+				this.eternalFireBlockedInto(blocked);
+				const next = this.pathfinder.find({ x: ally.x, y: ally.y }, { x: destination.x, y: destination.y }, { blocked })[0];
+				if (next) {
+					this.moveTo(ally, next);
+					spent = 1 / speed;
+				}
+			}
+		}
+		ally.spiritHawkTime = (ally.spiritHawkTime ?? SPIRIT_HAWK_LIFESPAN) - spent;
+		this.pendingMonsterTurnCost = spent;
+	}
+
+	/** `HawkAlly.attackProc()`'s `GO_FOR_THE_EYES`: a landed hawk bite blinds the target, and at
+	 *  ranks 3 and 4 also cripples it. Called only for a hit, matching Java's proc. */
+	private applyGoForTheEyes(target: Creature): void {
+		const effect = goForTheEyesEffect(this.talentRank('go_for_the_eyes'));
+		if (effect.blindness > 0) addBuff(target, 'blindness', effect.blindness);
+		if (effect.cripple > 0) addBuff(target, 'cripple', effect.cripple);
 	}
 
 	/** `WandOfLivingEarth.onZap()` creates the guardian once RockArmor reaches its
@@ -10879,6 +10997,17 @@ export class DungeonScene extends Scene2D {
 		//`DirectedPower`'s enchant boost, `STRIKING_WAVE` rank 4's +0.2 - have no tracker in this
 		//port; see the Shockwave row in `PORT_COVERAGE.md`.)
 		if (attacker === this.hero && this.spiritBladesArmed && this.talentRank('spirit_blades') === 4) damageMultiplier *= 1.1;
+		//`SpiritHawk.HawkAlly.defenseSkill()`: with `SWIFT_SPIRIT` ranked the hawk outright dodges
+		//its first `2 * points` attackers (`Char.INFINITE_EVASION`), one dodge per attack. Java
+		//reaches this through `Char.hit()`'s own short-circuit, so the attack simply misses - the
+		//damage and on-hit effects never run - and the miss is presented like any other.
+		if (defender.allyKind === 'spiritHawk' && (defender.spiritHawkDodges ?? 0) > 0) {
+			defender.spiritHawkDodges = (defender.spiritHawkDodges ?? 0) - 1;
+			runState.audio.cue('miss', 0.55);
+			defender.sleeping = false;
+			this.say(t(attacker.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
+			return false;
+		}
 		const attackRoll = runAttackResolution(attacker, defender, simulationRandom, false, surprise, accFactor, damageMultiplier);
 		if (!attackRoll.hit) {
 			runState.audio.cue('miss', 0.55);
@@ -12834,6 +12963,7 @@ export class DungeonScene extends Scene2D {
 
 	private refresh(): void {
 		this.fov.update(this.hero.x, this.hero.y, this.viewRadius());
+		this.shareAllyVision();
 
 		// FogOfWar owns explored shading and half-wall occlusion above every world layer.
 		// Keep water quads disabled while unexplored, but do not darken explored art twice.
@@ -15270,20 +15400,14 @@ export class DungeonScene extends Scene2D {
 		private directRoseGhost(cell: Step, _instanceId?: string): void {
 			const ghost = this.roseGhost;
 			if (!ghost || ghost.hp <= 0) return;
-			const occupied = this.creatureAt(cell.x, cell.y);
-			if (!this.fov.isVisible(cell.x, cell.y) || !occupied
-				|| (occupied !== this.hero && !this.isHostileToAlly(occupied))) {
-				ghost.ghostDefendCell = { x: cell.x, y: cell.y };
-				ghost.ghostTargetChar = undefined;
-				return;
-			}
-			if (occupied === this.hero) {
-				ghost.ghostDefendCell = undefined;
-				ghost.ghostTargetChar = undefined;
-				return;
-			}
-			ghost.ghostDefendCell = undefined;
-			ghost.ghostTargetChar = occupied;
+			//`DriedRose.GhostHero`'s own order lines: one of five random yells per order
+			//(`Random.IntRange(1, 5)`, so 1-5 inclusive).
+			const line = (kind: string): string => `items.artifacts.driedrose$ghosthero.${kind}_${Random.int(1, 6)}`;
+			this.directAlly(ghost, cell, {
+				defend: line('directed_position'),
+				follow: line('directed_follow'),
+				attack: line('directed_attack'),
+			});
 		}
 
 		private talismanItem(instanceId?: string) {
@@ -15964,7 +16088,7 @@ export class DungeonScene extends Scene2D {
 	// Warrior's arithmetic lives in `src/simulation/warriorAbilities.ts`.
 
 	/** `ArmorAbility.chargeUse(hero)`, plus `HeroicLeap`'s own `DOUBLE_JUMP` discount while its
-	 *  tracker is up. */
+	 *  tracker is up and `SpiritHawk`'s own zero while the hawk is already out. */
 	private armorAbilityCost(def: ArmorAbilityDef): number {
 		return armorChargeUse(def, {
 			heroicEnergyRank: this.talentRank('heroic_energy'),
@@ -15974,6 +16098,7 @@ export class DungeonScene extends Scene2D {
 			doubleMarkRank: this.talentRank('double_mark'),
 			shadowStepArmed: this.hero.buffs['invisibility'] !== undefined,
 			shadowStepRank: this.talentRank('shadow_step'),
+			hawkSummoned: this.spiritHawk() !== undefined,
 		});
 	}
 
@@ -16003,17 +16128,30 @@ export class DungeonScene extends Scene2D {
 			this.say(t('items.armor.classarmor.low_charge'), 'negative');
 			return;
 		}
-		if (def.targeting !== 'cell' && !(def.targeting === 'beacon' && this.warpBeacon === null && this.talentRank('remote_beacon') > 0)) {
+		//SpiritHawk's targeting depends on its own state, not the class's: `targetingPrompt()` is
+		//null while no hawk is out (so the summon fires immediately), and non-null once one is (so
+		//the re-cast opens the cell selector and orders the hawk around).
+		const needsCell = def.targeting === 'cell'
+			|| (def.targeting === 'hawk' && this.spiritHawk() !== undefined)
+			|| (def.targeting === 'beacon' && this.warpBeacon === null && this.talentRank('remote_beacon') > 0);
+		if (!needsCell) {
 			this.activateArmorAbility(null);
 			return;
 		}
 		//Java's `GameScene.selectCell` has no range or sight limit (the effects stop at walls
-		//themselves), so the whole map is offered; the hero's own cell is refused because
-		//`Shockwave`'s real `self_target` branch refuses it.
+		//themselves), so the whole map is offered.
+		//
+		//The hero's own cell is refused only where Java refuses it, which is the abilities that
+		//act on a *hostile* target: `Shockwave`'s `self_target` branch (Shockwave.java 72),
+		//`SpectralBlades`' (SpectralBlades.java 63, the same message), and `DeathMark`'s
+		//`ally_target` branch, which refuses every non-enemy cell (DeathMark.java 55). Every other
+		//targeted ability here accepts its own cell in Java, and for the spirit hawk that cell is
+		//outright meaningful: `DirectableAlly.directTocell` reads it as "follow me again".
+		const refusesSelf = def.id === 'shockwave' || def.id === 'spectralblades' || def.id === 'deathmark';
 		this.beginAiming({
 			range: Math.max(this.level.width, this.level.height),
 			requireLineOfSight: false,
-			validate: (cell) => !(cell.x === this.hero.x && cell.y === this.hero.y),
+			validate: (cell) => !refusesSelf || cell.x !== this.hero.x || cell.y !== this.hero.y,
 			onConfirm: (cell) => this.activateArmorAbility(cell),
 		});
 	}
@@ -16041,7 +16179,8 @@ export class DungeonScene extends Scene2D {
 							: id === 'warpbeacon' ? this.activateWarpBeacon(def, cost, cell)
 								: id === 'smokebomb' ? this.activateSmokeBomb(def, cost, cell)
 								: id === 'naturespower' ? this.activateNaturesPower(def, cost)
-									: false;
+									: id === 'spirithawk' ? this.activateSpiritHawk(def, cost, cell)
+										: false;
 		if (!activated) return;
 		this.refresh();
 	}
@@ -16531,6 +16670,91 @@ export class DungeonScene extends Scene2D {
 		this.sprite(this.hero).y = y * TILE;
 		this.fov.update(x, y, this.viewRadius());
 		this.refresh();
+	}
+
+	/**
+	 * `DirectableAlly.directTocell()` (tag `v3.3.8`), the one order both directable allies in this
+	 * port accept: a cell outside the hero's own field of view, an empty cell, or one held by
+	 * anything that is neither the hero nor an enemy all become a *defend* order - "go and stand
+	 * there". The hero's own cell means "follow me again", and an enemy cell means "attack that".
+	 * Each order announces itself through its own messages, which differ per ally: `DriedRose`'s
+	 * ghost yells one of five random lines per order, the spirit hawk a single fixed one.
+	 */
+	private directAlly(ally: Creature, cell: Step, lines: { defend: string; follow: string; attack: string }): void {
+		const occupied = this.creatureAt(cell.x, cell.y);
+		if (!this.fov.isVisible(cell.x, cell.y) || !occupied
+			|| (occupied !== this.hero && !this.isHostileToAlly(occupied))) {
+			ally.allyDefendCell = { x: cell.x, y: cell.y };
+			ally.allyTargetChar = undefined;
+			this.say(t(lines.defend), 'positive');
+			return;
+		}
+		if (occupied === this.hero) {
+			ally.allyDefendCell = undefined;
+			ally.allyTargetChar = undefined;
+			this.say(t(lines.follow), 'positive');
+			return;
+		}
+		ally.allyDefendCell = undefined;
+		ally.allyTargetChar = occupied;
+		this.say(t(lines.attack), 'positive');
+	}
+
+	/**
+	 * `SpiritHawk.activate()` (tag `v3.3.8`). Without a hawk, the Huntress summons one onto a
+	 * random free neighbour (a cell with no character that is passable *or* avoidable - the hawk
+	 * flies, so a chasm is a legal perch) for its 35 charge, and the summon costs a turn. With a
+	 * hawk already in the world the ability becomes an order instead: **no charge at all**
+	 * (`chargeUse()` returns 0 while `getHawk() != null`) and no turn, just the standing order.
+	 *
+	 * `EAGLE_EYE`, `SWIFT_SPIRIT` and the initial `SWIFT_SPIRIT` dodge pool are read at spawn and
+	 * re-read on every one of the hawk's own turns, so a talent taken mid-summon still applies.
+	 */
+	private activateSpiritHawk(def: ArmorAbilityDef, cost: number, cell: Step | null): boolean {
+		const hawk = this.spiritHawk();
+		if (hawk) {
+			//Java's `activate()` returns silently when a hawk exists and no target was chosen; the
+			//port's aim is only ever opened for the direct case, so this is the cancelled one.
+			if (cell) {
+				this.directAlly(hawk, cell, {
+					defend: 'actors.hero.abilities.huntress.spirithawk$hawkally.direct_defend',
+					follow: 'actors.hero.abilities.huntress.spirithawk$hawkally.direct_follow',
+					attack: 'actors.hero.abilities.huntress.spirithawk$hawkally.direct_attack',
+				});
+				this.refresh();
+			}
+			return false;
+		}
+		const spawnPoints: Step[] = [];
+		for (const [dx, dy] of Roguelike.neighbourOffsets(8) as ReadonlyArray<readonly [number, number]>) {
+			const at = { x: this.hero.x + dx, y: this.hero.y + dy };
+			if (!this.level.inside(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
+			//Java's `passable || avoid` - the second half is what lets the hawk perch over a chasm.
+			//This port's terrain has no separate avoid list: a chasm *is* passable here (see
+			//`isChasmCell`, which is how falling is modelled), so one test covers both.
+			if (this.level.passable(at.x, at.y)) spawnPoints.push(at);
+		}
+		if (spawnPoints.length === 0) {
+			this.say(t('actors.hero.abilities.huntress.spirithawk.no_space'), 'negative');
+			return false;
+		}
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		const at = Random.element(spawnPoints)!;
+		const ally = this.spawnMonster('spiritHawk', at, false, undefined, true, 'spiritHawk');
+		ally.sleeping = false;
+		ally.attacksAutomatically = false;
+		ally.spiritHawkTime = SPIRIT_HAWK_LIFESPAN;
+		ally.spiritHawkDodges = spiritHawkDodges(this.talentRank('swift_spirit'));
+		//Java's `Invisibility.dispel()` trails the summon (not the direct branch).
+		delete this.hero.buffs['invisibility'];
+		this.refresh();
+		this.spendHeroAction(1);
+		return true;
+	}
+
+	/** `SpiritHawk.getHawk()`: the living hawk, if one is out. */
+	private spiritHawk(): Creature | undefined {
+		return this.creatures.find((c) => c.allyKind === 'spiritHawk' && c.hp > 0);
 	}
 
 	/**

@@ -1422,6 +1422,48 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
       ]
     }
   },
+  // Hand-added, not generated, for the same reason as `ninjalog` above: `SpiritHawk.HawkSprite`
+  // is a nested class in `abilities/huntress/SpiritHawk.java`, outside the generator's
+  // `actors/mobs/*Sprite.java` glob. Every clip is that class's own, on a `TextureFilm(15, 15)`:
+  // `idle` 6fps `0, 1`; `run` 8fps `0, 1`; `attack` 12fps non-looping `2, 3, 0, 1`; `die` 12fps
+  // non-looping `4, 5, 6` (SpiritHawk.java, tag `v3.3.8`).
+  "spirithawk": {
+    "idle": {
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        0,
+        1
+      ]
+    },
+    "run": {
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        0,
+        1
+      ]
+    },
+    "attack": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        2,
+        3,
+        0,
+        1
+      ]
+    },
+    "die": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        4,
+        5,
+        6
+      ]
+    }
+  },
   "piranha": {
     "idle": {
       "fps": 8,

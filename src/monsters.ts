@@ -29,6 +29,7 @@ export type MonsterId =
 	| 'skeleton'
 	| 'sheep'
 	| 'ninjaLog'
+	| 'spiritHawk'
 	| 'ward'
 	| 'earthGuardian'
 	| 'thief'
@@ -95,6 +96,13 @@ export type AnyMonsterId = MonsterId | MonsterVariantId;
 
 /** Java mob classes whose `Char.flying` flag lets them occupy avoid terrain such as chasms. */
 export const FLYING_KINDS = mwlActorFlagSet('flying');
+
+/**
+ * Mobs carrying `BlobImmunity` (`BlobImmunity.java`, tag `v3.3.8`) - immunity to every harmful
+ * blob in the game, fire included. Of the actors this port spawns only the spirit hawk and the
+ * piranha have it; the port's only creature-facing blob is fire, so that is where the set is read.
+ */
+export const BLOB_IMMUNE_KINDS = mwlActorFlagSet('blobImmune');
 
 /**
  * Every real Sewers monster's own base stats (`actors/mobs/*.java`: `HP = HT`,

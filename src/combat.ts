@@ -65,17 +65,27 @@ export interface Creature extends Combatant {
 	isNPC?: boolean;
 	/** Java Char.flying: Swarm is the currently ported monster that can occupy chasms. */
 	flying?: boolean;
-	/** Java-aligned friendly combatant (MirrorImage and future directable allies). */
+	/** `DirectableAlly.attacksAutomatically`: false for the spirit hawk, which Java keeps from
+	 *  picking its own fights - it only ever attacks a target the hero directed it at. Absent
+	 *  means true, Java's own default. */
+	attacksAutomatically?: boolean;
+	/** Java-aligned friendly combatant (MirrorImage and the directable allies). */
 	isAlly?: boolean;
 	/** Friendly summon subtype; sheep are neutral, short-lived and non-combatant. */
-	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog';
-	/** `DirectableAlly.defendingPos`/`enemy`: the Dried Rose's `AC_DIRECT` order. An ordered
-	 *  attack target wins over the nearest hostile, and an ordered defend cell replaces the hero
-	 *  as the ally's fallback destination - see `takeAllyTurn`'s ghost branch. Neither is
-	 *  persisted: Java saves them on the ally, which this port cannot do without a per-creature
-	 *  id, so a save/load drops a standing order (the ghost simply follows the hero again). */
-	ghostDefendCell?: { x: number; y: number };
-	ghostTargetChar?: Creature;
+	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk';
+	/** `DirectableAlly.defendingPos`/`enemy`: the standing order a hero gives a directable ally
+	 *  (the Dried Rose's `AC_DIRECT` order, and the spirit hawk's re-cast). An ordered attack
+	 *  target wins over the nearest hostile, and an ordered defend cell replaces the hero as the
+	 *  ally's fallback destination - see `takeAllyTurn`'s directable branch. Neither is persisted:
+	 *  Java saves them on the ally, which this port cannot do without a per-creature id, so a
+	 *  save/load drops a standing order (the ally simply follows the hero again). */
+	allyDefendCell?: { x: number; y: number };
+	allyTargetChar?: Creature;
+	/** `SpiritHawk.HawkAlly`'s two instance fields: the `SWIFT_SPIRIT` dodge pool already spent,
+	 *  and its 100-unit lifespan. Java keeps them on the ally rather than in a stat, so they live
+	 *  here too - and, like the two order fields above, are not persisted. */
+	spiritHawkDodges?: number;
+	spiritHawkTime?: number;
 	sheepTurns?: number;
 	/** `WandOfWarding.Ward`'s persistent tier, wand level, and zap count. */
 	wardTier?: number;

@@ -403,11 +403,33 @@ try {
 	assert.deepEqual(tableRows('heroBaseStats', 'id'), ['spdHero'], 'hero base stats stay authored in actor-rules.mwl');
 	assert.deepEqual(tableRows('heroLevelGrowth', 'id'), ['spdHeroLevelGrowth'], 'hero level growth stays authored in actor-rules.mwl');
 	assert.deepEqual(tableRows('monsterSpriteOverrides', 'monster'), [
-		'sheep', 'ninjaLog', 'ward', 'earthGuardian', 'sentry', 'ratKing', 'rotHeart', 'rotLasher',
+		'sheep', 'ninjaLog', 'spiritHawk', 'ward', 'earthGuardian', 'sentry', 'ratKing', 'rotHeart', 'rotLasher',
 		'fetidRat', 'gnollTrickster', 'greatCrab', 'necroSkeleton', 'newbornElemental',
 		'mimic', 'piranha', 'bee', 'statue',
 	], 'monster sprite-source overrides stay authored in asset-references.mwl');
-	assert.equal(tableRows('monsterSpriteFrames', 'monster').length, 66, 'all monster sprite frame metadata stays authored in asset-references.mwl');
+	assert.equal(tableRows('monsterSpriteFrames', 'monster').length, 67, 'all monster sprite frame metadata stays authored in asset-references.mwl');
+	//`loadSpdSprites` reads its textures through two positionally-paired lists: the `const [a, b, ...]`
+	//destructuring and the `Promise.all([loadImage(aUrl), ...])` array. They were transposed once
+	//(`sheep`/`ninjaLog`) and nothing failed - the Smoke Bomb decoy simply rendered the sheep
+	//sprite - so the two orders are pinned together here. Only three names legitimately differ,
+	//because two Java classes share a sheet and one entry is the item atlas itself.
+	{
+		const source = readFileSync(new URL('../src/images.ts', import.meta.url), 'utf8');
+		const destructureStart = source.indexOf('const [');
+		const loadStart = source.indexOf('] = await Promise.all([');
+		const names = source.slice(destructureStart, loadStart)
+			.split('\n').map((line) => line.trim().replace(/,$/, ''))
+			.filter((line) => line && !line.startsWith('//') && line !== 'const [');
+		const loads = source.slice(loadStart, source.indexOf(']);', loadStart))
+			.split('\n').map((line) => (/loadImage\((\w+)\)/.exec(line.trim()) ?? [])[1]).filter(Boolean);
+		const ALIASES = { spawnerUrl: 'demonSpawner', ripperUrl: 'ripperDemon', itemAtlasUrl: 'items' };
+		assert.equal(names.length, loads.length, 'images.ts texture lists are the same length');
+		names.forEach((name, index) => {
+			const url = loads[index];
+			const expected = ALIASES[url] ?? url.replace(/Url$/, '');
+			assert.equal(name, expected, `images.ts texture ${index} is ${name}, loaded from ${url}`);
+		});
+	}
 	assert.deepEqual(tableRows('specialItemInventoryRules', 'sourceClass'), [
 		'Bomb', 'DoubleBomb', 'CorpseDust', 'CeremonialCandle', 'Embers', 'Ankh', 'Stylus',
 		'BrokenSeal', 'Honeypot', 'Alchemize', 'Bag', 'SandBag',
@@ -538,7 +560,7 @@ try {
 	// Monster display names are authored on the nodes (`name` message key) with `MOB_KEYS`
 	// derived in `spdKeys.ts` - including the two kinds that had no key at all (larva,
 	// armoredStatue) and rendered as bare ids. Resolution itself is gated by `i18n:verify`.
-	assert.equal(MWL_MONSTER_NODES.length, 66, 'monster roster size');
+	assert.equal(MWL_MONSTER_NODES.length, 67, 'monster roster size');
 	for (const node of MWL_MONSTER_NODES) assert.ok(node.attributes?.name, `monster has a display-name key: ${node.attributes?.id}`);
 	assert.equal(MWL_MONSTER_NODES.find((node) => node.attributes?.id === 'larva')?.attributes?.name, 'actors.mobs.yogdzewa$larva.name', 'larva name key');
 	assert.equal(MWL_MONSTER_NODES.find((node) => node.attributes?.id === 'armoredStatue')?.attributes?.name, 'actors.mobs.armoredstatue.name', 'armoredStatue name key');

@@ -115,13 +115,17 @@ export interface SavedCreature {
 	firstSummon?: boolean;
 	nextTurn: number | null;
 	isAlly?: boolean;
-	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog';
+	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk';
 	sheepTurns?: number;
 	wardTier?: number;
 	wardWandLevel?: number;
 	wardTotalZaps?: number;
 	earthGuardianWandLevel?: number;
 	earthGuardianDefense?: number;
+	/** `SpiritHawk.HawkAlly.storeInBundle()`'s `time_remaining` and `dodges_used` (this port
+	 *  counts dodges left rather than used, so the two are mirrored). */
+	spiritHawkTime?: number;
+	spiritHawkDodges?: number;
 	hasRaged?: boolean;
 	raged?: boolean;
 	chainUsed?: boolean;
