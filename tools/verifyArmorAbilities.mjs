@@ -58,12 +58,23 @@ export function verifyArmorAbilities(require, check) {
 		}
 	});
 
+	check('SmokeBomb\'s SHADOW_STEP discount is 0.84^points while the hero is invisible', () => {
+		const smoke = armorAbilityDef('smokebomb');
+		assert.equal(smoke.baseChargeUse, 50);
+		assert.equal(armorChargeUse(smoke, { heroicEnergyRank: 0, shadowStepArmed: false, shadowStepRank: 4 }), 50);
+		//16/30/41/50% off at rank 1-4, and the override is SmokeBomb's alone.
+		assert.deepEqual([1, 2, 3, 4].map((points) => Math.round(armorChargeUse(smoke, { heroicEnergyRank: 0, shadowStepArmed: true, shadowStepRank: points }) * 1000) / 1000),
+			[1, 2, 3, 4].map((points) => Math.round(50 * Math.pow(0.84, points) * 1000) / 1000));
+		const mark = armorAbilityDef('deathmark');
+		assert.equal(armorChargeUse(mark, { heroicEnergyRank: 0, shadowStepArmed: true, shadowStepRank: 4 }), 25);
+	});
+
 	check('only implemented abilities are offered, and the charge meter is Java\'s', () => {
 		//The Warrior's three, the Rogue's Death Mark and the Huntress's Spectral Blades are the
 		//ported set; a class with none of its own offers nothing, which is what keeps a choice panel
 		//from listing an ability that cannot run.
 		assert.deepEqual(armorAbilitiesFor('warrior'), ['heroicleap', 'shockwave', 'endure']);
-		assert.deepEqual(armorAbilitiesFor('rogue'), ['deathmark']);
+		assert.deepEqual(armorAbilitiesFor('rogue'), ['smokebomb', 'deathmark']);
 		assert.deepEqual(armorAbilitiesFor('huntress'), ['spectralblades']);
 		assert.deepEqual(armorAbilitiesFor('mage'), ['warpbeacon']);
 		assert.deepEqual(armorAbilitiesFor('duelist'), []);

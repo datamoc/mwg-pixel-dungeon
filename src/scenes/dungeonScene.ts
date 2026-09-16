@@ -2041,7 +2041,7 @@ export class DungeonScene extends Scene2D {
 	}
 
 	/** any monster in MONSTERS, cut from its own real sprite sheet at its own real frame size */
-	private spawnMonster(kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost', championEligible = false): Creature {
+	private spawnMonster(kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog', championEligible = false): Creature {
 		const profile = monsterSpawnProfile(kind, this.depth, restoring, isAlly, championEligible, this.mobsToChampion);
 		this.mobsToChampion = profile.mobsToChampion;
 		const { def, adjustedDef, baseKind } = profile;
@@ -7989,7 +7989,14 @@ export class DungeonScene extends Scene2D {
 		const wasSeen = monster.seesHero === true;
 		const monsterFov = new Roguelike.FieldOfView(this.level);
 		monsterFov.update(monster.x, monster.y, this.viewRadius());
-		monster.seesHero = monsterFov.isVisible(this.hero.x, this.hero.y) && (monster.kind === 'sentry' || !this.hero.buffs['invisibility']);
+		//`Level.updateFieldOfView`: `boolean sighted = c.buff(Blindness.class) == null && ...` - a
+		//blinded creature's field of view is *empty*, not merely reduced, so it cannot acquire the
+		//hero by sight (Smoke Bomb's own blinding, the Blindweed plant, and later Elemental Blast's).
+		//Damage still alerts it: `Char.damage()` sets HUNTING whatever the attacker's state, so the
+		//other `seesHero = true` sites in this file deliberately do not consult this buff.
+		monster.seesHero = monster.buffs['blindness'] === undefined
+			&& monsterFov.isVisible(this.hero.x, this.hero.y)
+			&& (monster.kind === 'sentry' || !this.hero.buffs['invisibility']);
 		//Mob.findEnemy(): a hostile mob may pursue a visible allied Char when the hero is not
 		//currently its enemy. The compact AI still has hero-shaped ranged overrides, so route
 		//this case through ordinary pathing/melee only; that is the documented reduction for
@@ -8416,6 +8423,10 @@ export class DungeonScene extends Scene2D {
 	 * Java's individual ally subclasses can add richer orders once their own quests are ported. */
 	private takeAllyTurn(ally: Creature): void {
 		if (ally.buffs['paralysis'] || ally.buffs['frost']) return;
+		//`SmokeBomb.NinjaLog` never acts: it is an IMMOVABLE decoy whose whole job is to be attacked
+		//(its `defenseSkill()` is what redirects whatever was hunting the hero). Returning here also
+		//keeps the generic ally branch below from walking an immovable log across the floor.
+		if (ally.allyKind === 'ninjaLog') return;
 		if (ally.allyKind === 'ward') {
 			this.takeWardTurn(ally);
 			return;
@@ -15935,6 +15946,8 @@ export class DungeonScene extends Scene2D {
 			doubleJumpRank: this.talentRank('double_jump'),
 			doubleMarkArmed: this.doubleMarkArmed,
 			doubleMarkRank: this.talentRank('double_mark'),
+			shadowStepArmed: this.hero.buffs['invisibility'] !== undefined,
+			shadowStepRank: this.talentRank('shadow_step'),
 		});
 	}
 
@@ -16000,9 +16013,9 @@ export class DungeonScene extends Scene2D {
 					: id === 'deathmark' ? this.activateDeathMark(def, cost, cell)
 						: id === 'spectralblades' ? this.activateSpectralBlades(def, cost, cell)
 							: id === 'warpbeacon' ? this.activateWarpBeacon(def, cost, cell)
-								: false;
+								: id === 'smokebomb' ? this.activateSmokeBomb(def, cost, cell)
+									: false;
 		if (!activated) return;
-		delete this.hero.buffs['invisibility'];
 		this.refresh();
 	}
 
@@ -16074,6 +16087,9 @@ export class DungeonScene extends Scene2D {
 			}
 		}
 		this.shakeScreen(2, 0.5);
+		//`Invisibility.dispel()` (HeroicLeap.java 121), inside the jump callback Java runs after the
+		//landing effects.
+		delete this.hero.buffs['invisibility'];
 		//`DoubleJumpTracker`: Java spends the turn *before* the tracker block, so an armed tracker is
 		//consumed by this leap and a fresh one - when the talent is ranked - starts its three turns
 		//from here rather than being eaten by the cast's own tick.
@@ -16146,6 +16162,8 @@ export class DungeonScene extends Scene2D {
 			}
 		}
 		this.shakeScreen(2, 0.5);
+		//`Invisibility.dispel()` (Shockwave.java 147), in the cast callback after the cone resolves.
+		delete this.hero.buffs['invisibility'];
 		this.spendHeroAction(1);
 		return true;
 	}
@@ -16164,6 +16182,7 @@ export class DungeonScene extends Scene2D {
 		//This port's Gladiator combo is a bare landed-hit counter with no duration to extend
 		//(`Combo.java`'s own `timeLeft` is not modelled anywhere), so there is nothing to add to -
 		//stated as a simplification rather than faked with a counter bump Java does not have.
+		delete this.hero.buffs['invisibility'];
 		this.spendHeroAction(3);
 		this.say(t('actors.hero.abilities.warrior.endure.name'), 'positive');
 		return true;
@@ -16333,6 +16352,9 @@ export class DungeonScene extends Scene2D {
 			this.attack(hero, target, 1 + 0.25 * projecting, target === primary ? 1 : 0.5);
 		}
 		this.spiritBladesArmed = false;
+		//`Invisibility.dispel()` (SpectralBlades.java 120): Java runs it once every blade callback
+		//has resolved, which is this point.
+		delete this.hero.buffs['invisibility'];
 		this.spendHeroAction(1);
 		return true;
 	}
@@ -16482,6 +16504,81 @@ export class DungeonScene extends Scene2D {
 		this.sprite(this.hero).y = y * TILE;
 		this.fov.update(x, y, this.viewRadius());
 		this.refresh();
+	}
+
+	/**
+	 * `SmokeBomb.activate()` (tag `v3.3.8`): vanish in a puff of smoke, up to six cells away *by
+	 * path* and inside the hero's own field of view, onto a cell nothing else occupies. Everyone
+	 * adjacent to the hero is blinded for half `Blindness.DURATION` (5 turns) and dropped out of the
+	 * hunt, which is what makes the escape work: `Level.updateFieldOfView` gives a blinded creature
+	 * an empty field of view, so it cannot re-acquire the hero by sight.
+	 *
+	 * `HASTY_RETREAT` adds `0.67 + points` turns of both Haste and Invisibility; `BODY_REPLACEMENT`
+	 * leaves a `NinjaLog` decoy on the cell the hero left. `SHADOW_STEP` is the reason this ability
+	 * is worth using while already invisible: with it ranked, the charge is `0.84^points` cheaper and
+	 * the escape costs **no time at all** (`hero.next()`), so the hero keeps the turn.
+	 */
+	private activateSmokeBomb(def: ArmorAbilityDef, cost: number, cell: Step | null): boolean {
+		if (!cell) return false;
+		const hero = this.hero;
+		const shadowStepping = this.talentRank('shadow_step') > 0 && hero.buffs['invisibility'] !== undefined;
+		const target = { x: cell.x, y: cell.y };
+		if (target.x !== hero.x || target.y !== hero.y) {
+			if (hero.buffs['roots'] !== undefined) {
+				this.shakeScreen(1, 0.15);
+				return false;
+			}
+		}
+		//Java: `PathFinder.buildDistanceMap(hero.pos, passable|avoid, 6)` then a `distance[target]`
+		//check, an FOV check, and "no char there unless it is the hero's own cell".
+		const distances = this.pathfinder.distanceMap({ x: hero.x, y: hero.y });
+		const pathDistance = distances[this.level.index(target.x, target.y)] ?? Number.MAX_SAFE_INTEGER;
+		const occupied = target.x === hero.x && target.y === hero.y ? null : this.creatureAt(target.x, target.y);
+		if (pathDistance > 6 || !this.fov.isVisible(target.x, target.y) || occupied) {
+			this.say(t('actors.hero.abilities.rogue.smokebomb.fov'), 'negative');
+			return false;
+		}
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		if (!shadowStepping) {
+			for (const other of this.creatures) {
+				if (other.isHero || other.isNPC || other.isAlly || other.hp <= 0) continue;
+				if (Roguelike.chebyshevDistance(other, hero) !== 1) continue;
+				//`Blindness.DURATION / 2f`; Java also flips a HUNTING mob back to WANDERING, which
+				//this port reaches by clearing the sight flag it hunts on.
+				addBuff(other, 'blindness', BUFF_DURATION.blindness / 2);
+				other.seesHero = false;
+			}
+			if (this.talentRank('body_replacement') > 0) this.placeNinjaLog(hero.x, hero.y);
+			const hastyRetreat = this.talentRank('hasty_retreat');
+			if (hastyRetreat > 0) {
+				//Java's own duration is the fractional `0.67f + points` ("effectively 1/2/3/4 turns"
+				//by its own comment); this port's buff map counts whole turns, so it rounds.
+				const turns = Math.round(0.67 + hastyRetreat);
+				hero.buffs['haste'] = Math.max(hero.buffs['haste'] ?? 0, turns);
+				addBuff(hero, 'invisibility', turns);
+			}
+		}
+		this.teleportHeroTo(target.x, target.y);
+		this.say(t('actors.hero.abilities.rogue.smokebomb.name'), 'positive');
+		if (!shadowStepping) this.spendHeroAction(1);
+		return true;
+	}
+
+	/**
+	 * `BODY_REPLACEMENT`'s `NinjaLog`: an immovable ally at the cell the hero just left. It never
+	 * attacks and never acts (`takeAllyTurn` returns for it immediately); what it does is stand
+	 * there with `defenseSkill = 0`, so whatever was hunting the hero swings at the decoy instead -
+	 * which is this port's existing ally-targeting path, since monsters already consider allies.
+	 * Its stats are the talent's own: `HT = 20 * points`, and its `drRoll()` adds
+	 * `NormalIntRange(points, 3 * points)` to the (zero) row armor.
+	 */
+	private placeNinjaLog(x: number, y: number): void {
+		const points = this.talentRank('body_replacement');
+		const log = this.spawnMonster('ninjaLog', { x, y }, false, undefined, true, 'ninjaLog');
+		log.sleeping = false;
+		log.maxHp = 20 * points;
+		log.hp = log.maxHp;
+		log.armor = [points, 3 * points];
 	}
 
 	/**

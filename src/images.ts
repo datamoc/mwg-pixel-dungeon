@@ -41,6 +41,7 @@ import thiefUrl from './assets/thief.png';
 import dm100Url from './assets/dm100.png';
 import guardUrl from './assets/guard.png';
 import necromancerUrl from './assets/necromancer.png';
+import ninjaLogUrl from './assets/ninja_log.png';
 import tenguUrl from './assets/tengu.png';
 import ghostUrl from './assets/ghost.png';
 import batUrl from './assets/bat.png';
@@ -197,6 +198,7 @@ const MWL_ASSET_URLS: Readonly<Record<string, string>> = {
 	'assets/mimic.png': mimicUrl,
 	'assets/monk.png': monkUrl,
 	'assets/necromancer.png': necromancerUrl,
+	'assets/ninja_log.png': ninjaLogUrl,
 	'assets/piranha.png': piranhaUrl,
 	'assets/pylon.png': pylonUrl,
 	'assets/rat.png': ratUrl,
@@ -256,6 +258,8 @@ export interface SpdSprites {
 	cleric: Texture;
 	rat: Texture;
 	sheep: Texture;
+	/** `SmokeBomb.NinjaLog`'s decoy, from `sprites/ninja_log.png`. */
+	ninjaLog: Texture;
 	piranha: Texture;
 	bee: Texture;
 	statue: Texture;
@@ -418,6 +422,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		cleric,
 		rat,
 		sheep,
+		ninjaLog,
 		piranha,
 		bee,
 		statue,
@@ -514,6 +519,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(duelistUrl),
 		loadImage(clericUrl),
 		loadImage(ratUrl),
+		loadImage(ninjaLogUrl),
 		loadImage(sheepUrl),
 		loadImage(piranhaUrl),
 		loadImage(beeUrl),
@@ -614,6 +620,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		cleric: Texture.from(cleric),
 		rat: Texture.from(rat),
 		sheep: Texture.from(sheep),
+		ninjaLog: Texture.from(ninjaLog),
 		piranha: Texture.from(piranha),
 		bee: Texture.from(bee),
 		statue: Texture.from(statue),

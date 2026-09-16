@@ -3,6 +3,7 @@ export const BUFF_DURATION_DATA = {
   "bless": 30,
   "hex": 30,
   "daze": 5,
+  "blindness": 10,
   "chill": 10,
   "frost": 10,
   "drowsy": 5,
@@ -56,5 +57,6 @@ export const NEGATIVE_BUFF_DATA = [
   "chill",
   "frost",
   "hex",
-  "wayward"
+  "wayward",
+  "blindness"
 ] as const;

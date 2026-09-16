@@ -55,6 +55,10 @@
           { tag: "row", monster: "demonSpawner", subtype: "", immunities: "terror,amok,charm,paralysis" },
           { tag: "row", monster: "rotHeart", subtype: "", immunities: "terror,amok,charm,paralysis" },
           { tag: "row", monster: "yog", subtype: "", immunities: "terror,amok,charm,paralysis" },
+          // NinjaLog (Smoke Bomb's BODY_REPLACEMENT decoy) adds Dread/Terror/Amok/Charm/Sleep and
+          // Java's `AllyBuff` to its immunities. Dread and Sleep have no buff id here (sleeping is a
+          // flag, not a buff) and `AllyBuff` has no analogue at all, so the row carries what exists.
+          { tag: "row", monster: "ninjaLog", subtype: "", immunities: "terror,amok,charm" },
           { tag: "row", monster: "goo", subtype: "", immunities: "ooze" },
           { tag: "row", monster: "acidic", subtype: "", immunities: "ooze" },
           { tag: "row", monster: "causticSlime", subtype: "", immunities: "ooze" },

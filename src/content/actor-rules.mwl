@@ -41,7 +41,7 @@
           {
             tag: "effect",
             apply_to: "immovable",
-            set: "dm201,sentry,rotHeart,rotLasher,pylon,demonSpawner,yog,blacksmith",
+            set: "dm201,sentry,rotHeart,rotLasher,pylon,demonSpawner,yog,blacksmith,ninjaLog",
           },
           // Java's `Char.Property.INORGANIC` members this port spawns (`Char.java`, v3.3.8 -
           // Wraith/CrystalGuardian/CrystalSpire are unported; dm201/necroSkeleton/armoredStatue

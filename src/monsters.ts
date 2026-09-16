@@ -28,6 +28,7 @@ export type MonsterId =
 	| 'goo'
 	| 'skeleton'
 	| 'sheep'
+	| 'ninjaLog'
 	| 'ward'
 	| 'earthGuardian'
 	| 'thief'

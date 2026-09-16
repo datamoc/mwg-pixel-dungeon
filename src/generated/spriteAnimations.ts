@@ -1397,6 +1397,31 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
       ]
     }
   },
+  // Hand-added, not generated: `SmokeBomb.NinjaLog` is not an `actors/mobs` sprite class, so
+  // `tools/extract-sprite-animations.py`'s `*Sprite.java` glob over that package never sees it
+  // (`NinjaLogSprite` is a nested class in `abilities/rogue/SmokeBomb.java`). Frames are that
+  // class's own: `idle.frames(frames, 0)` on a 0-speed animation and `die.frames(frames, 1, 2, 3,
+  // 4)` at 12fps. (That generator's own `parents[2]` source path is also stale after this repo
+  // split out of the SPD checkout - a separate, recorded fix, see `PORT_COVERAGE.md`.)
+  "ninjalog": {
+    "idle": {
+      "fps": 1,
+      "loop": true,
+      "frames": [
+        0
+      ]
+    },
+    "die": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  },
   "piranha": {
     "idle": {
       "fps": 8,
@@ -1588,14 +1613,14 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
   },
   "rotlasher": {
     "idle": {
-      "fps": 0,
+      "fps": 1,
       "loop": true,
       "frames": [
         0
       ]
     },
     "run": {
-      "fps": 0,
+      "fps": 1,
       "loop": true,
       "frames": [
         0

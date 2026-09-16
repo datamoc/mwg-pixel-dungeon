@@ -152,6 +152,25 @@
     image: "assets/sheep.png",
   },
   {
+    // `SmokeBomb.NinjaLog` (tag `v3.3.8`): the decoy left behind by BODY_REPLACEMENT. It never
+    // acts and never attacks - it exists to be attacked, redirecting whatever was hunting the hero.
+    // Its real stats are all rank-scaled and set at spawn (`HT = 20 * points`, and its `drRoll()`
+    // is `NormalIntRange(points, 3*points)`); the row carries the rank-1 shape.
+    tag: "monster",
+    id: "ninjaLog",
+    name: "actors.hero.abilities.rogue.smokebomb$ninjalog.name",
+    hp: 20,
+    accuracy: 0,
+    evasion: 0,
+    damage_min: 0,
+    damage_max: 0,
+    armor_min: 0,
+    armor_max: 0,
+    experience: 0,
+    max_level: 0,
+    image: "assets/ninja_log.png",
+  },
+  {
     tag: "monster",
     id: "earthGuardian",
     name: "items.wands.wandoflivingearth$earthguardian.name",

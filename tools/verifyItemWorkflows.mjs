@@ -403,11 +403,11 @@ try {
 	assert.deepEqual(tableRows('heroBaseStats', 'id'), ['spdHero'], 'hero base stats stay authored in actor-rules.mwl');
 	assert.deepEqual(tableRows('heroLevelGrowth', 'id'), ['spdHeroLevelGrowth'], 'hero level growth stays authored in actor-rules.mwl');
 	assert.deepEqual(tableRows('monsterSpriteOverrides', 'monster'), [
-		'sheep', 'ward', 'earthGuardian', 'sentry', 'ratKing', 'rotHeart', 'rotLasher',
+		'sheep', 'ninjaLog', 'ward', 'earthGuardian', 'sentry', 'ratKing', 'rotHeart', 'rotLasher',
 		'fetidRat', 'gnollTrickster', 'greatCrab', 'necroSkeleton', 'newbornElemental',
 		'mimic', 'piranha', 'bee', 'statue',
 	], 'monster sprite-source overrides stay authored in asset-references.mwl');
-	assert.equal(tableRows('monsterSpriteFrames', 'monster').length, 65, 'all monster sprite frame metadata stays authored in asset-references.mwl');
+	assert.equal(tableRows('monsterSpriteFrames', 'monster').length, 66, 'all monster sprite frame metadata stays authored in asset-references.mwl');
 	assert.deepEqual(tableRows('specialItemInventoryRules', 'sourceClass'), [
 		'Bomb', 'DoubleBomb', 'CorpseDust', 'CeremonialCandle', 'Embers', 'Ankh', 'Stylus',
 		'BrokenSeal', 'Honeypot', 'Alchemize', 'Bag', 'SandBag',
@@ -538,7 +538,7 @@ try {
 	// Monster display names are authored on the nodes (`name` message key) with `MOB_KEYS`
 	// derived in `spdKeys.ts` - including the two kinds that had no key at all (larva,
 	// armoredStatue) and rendered as bare ids. Resolution itself is gated by `i18n:verify`.
-	assert.equal(MWL_MONSTER_NODES.length, 65, 'monster roster size');
+	assert.equal(MWL_MONSTER_NODES.length, 66, 'monster roster size');
 	for (const node of MWL_MONSTER_NODES) assert.ok(node.attributes?.name, `monster has a display-name key: ${node.attributes?.id}`);
 	assert.equal(MWL_MONSTER_NODES.find((node) => node.attributes?.id === 'larva')?.attributes?.name, 'actors.mobs.yogdzewa$larva.name', 'larva name key');
 	assert.equal(MWL_MONSTER_NODES.find((node) => node.attributes?.id === 'armoredStatue')?.attributes?.name, 'actors.mobs.armoredstatue.name', 'armoredStatue name key');
@@ -697,7 +697,7 @@ try {
 			paralysis: 3, roots: 3, levitation: 20, featherFall: 50, invisibility: 20, cloak: 9999,
 			focus: 9999, recharging: 30, frostImbue: 15, adrenalineSurge: 200, mindvision: 20,
 			terror: 20, amok: 5, aggression: 20, awareness: 2, haste: 20, degrade: 30, ooze: 20,
-			wayward: 10, charm: 10, lethalHasteCooldown: 100,
+			wayward: 10, charm: 10, lethalHasteCooldown: 100, blindness: 10,
 		},
 		'buff durations match the authored table',
 	);
@@ -784,10 +784,11 @@ try {
 	const immunityByKey = new Map(immunityRows.map((row) => [`${String(row.monster)}:${String(row.subtype ?? '')}`, (Array.isArray(row.immunities) ? row.immunities : []).map(String).sort()]));
 	assert.deepEqual([...immunityByKey.keys()].sort(), [
 		'acidic:', 'armoredStatue:', 'causticSlime:', 'demonSpawner:', 'dm100:', 'dm200:', 'dm201:',
-		'dm300:', 'goo:', 'golem:', 'necroSkeleton:', 'pylon:', 'piranha:', 'rotHeart:', 'skeleton:',
-		'statue:', 'succubus:', 'tengu:', 'yog:', 'yogFist:bright', 'yogFist:burning', 'yogFist:rotting',
-		'yogFist:rusted',
+		'dm300:', 'goo:', 'golem:', 'necroSkeleton:', 'ninjaLog:', 'pylon:', 'piranha:', 'rotHeart:',
+		'skeleton:', 'statue:', 'succubus:', 'tengu:', 'yog:', 'yogFist:bright', 'yogFist:burning',
+		'yogFist:rotting', 'yogFist:rusted',
 	].sort(), 'monster immunity table covers exactly the Java-immune kinds');
+	assert.deepEqual(immunityByKey.get('ninjaLog:'), ['amok', 'charm', 'terror'], 'the NinjaLog decoy refuses terror/amok/charm');
 	assert.deepEqual(immunityByKey.get('pylon:'), ['amok', 'bleeding', 'charm', 'paralysis', 'poison', 'terror'], 'pylon carries INORGANIC + STATIC sets');
 	assert.deepEqual(immunityByKey.get('yogFist:rotting'), ['ooze'], 'rotting fist carries the ACIDIC set');
 	assert.deepEqual(immunityByKey.get('yogFist:rusted'), ['bleeding', 'poison'], 'rusted fist carries the INORGANIC pair');

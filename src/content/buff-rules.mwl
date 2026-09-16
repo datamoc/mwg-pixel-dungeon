@@ -11,7 +11,7 @@
           {
             tag: "effect",
             apply_to: "negative",
-            set: "poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,chill,frost,hex,wayward",
+            set: "poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,chill,frost,hex,wayward,blindness",
           },
         ],
       },
@@ -34,6 +34,13 @@
             tag: "row",
             buff: "daze",
             duration: 5,
+          },
+          {
+            // Blindness.DURATION: a blinded char's field of view is empty (Level.updateFieldOfView's
+            // `sighted` test), so a blinded mob cannot see - or hunt - the hero at all.
+            tag: "row",
+            buff: "blindness",
+            duration: 10,
           },
           {
             tag: "row",

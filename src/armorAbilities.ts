@@ -73,17 +73,16 @@ export function armorAbilityDef(id: string): ArmorAbilityDef | undefined {
  * its armor ability unchosen (and its T4 pool ungranted, which is Java's own behavior while
  * `armorAbility == null`) rather than handing the player a choice that cannot be spent.
  *
- * Ported so far: the Warrior's three, the Rogue's Death Mark and the Huntress's Spectral Blades.
- * Still to port, each needing its own systems: the Mage's (`ElementalBlast` and `WildMagic` need
- * per-wand blast factors and a wand-randomization pass; `WarpBeacon` needs a beacon actor and
- * window), the Rogue's remaining two (`SmokeBomb` needs the real `Blindness` buff and the
- * `NinjaLog` ally; `ShadowClone` needs an ally actor), the Huntress's remaining two
+ * Ported so far: the Warrior's three, the Rogue's Death Mark and Smoke Bomb, the Huntress's
+ * Spectral Blades and the Mage's Warp Beacon. Still to port, each needing its own systems: the
+ * Mage's remaining two (`ElementalBlast` and `WildMagic` need per-wand blast factors and a
+ * wand-randomization pass), the Rogue's `ShadowClone` (an ally actor), the Huntress's remaining two
  * (`NaturesPower` a growing-power tracker wired into the SpiritBow and the hero's speed;
  * `SpiritHawk` an ally actor) and the Duelist's (`Challenge` needs a duel tracker;
- * `ElementalStrike` the four blade imbuements; `Feint` a feint buff). See `PORT_COVERAGE.md`'s
- * armor-ability rows.
+ * `ElementalStrike` the four blade imbuements; `Feint` a feint buff and its after-image). See
+ * `PORT_COVERAGE.md`'s armor-ability rows.
  */
-const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades', 'warpbeacon']);
+const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades', 'warpbeacon', 'smokebomb']);
 
 /** The implemented abilities for one class, in `HeroClass.armorAbilities()` order (the authored
  *  table's own row order, which `DEFINITIONS` preserves). */
@@ -132,6 +131,8 @@ export function armorChargeUse(
 		doubleJumpRank?: number;
 		doubleMarkArmed?: boolean;
 		doubleMarkRank?: number;
+		shadowStepArmed?: boolean;
+		shadowStepRank?: number;
 	},
 ): number {
 	const heroicEnergy = HEROIC_ENERGY_FACTORS[Math.min(4, Math.max(0, options.heroicEnergyRank))] ?? 1;
@@ -142,6 +143,10 @@ export function armorChargeUse(
 	}
 	if (def.id === 'deathmark' && options.doubleMarkArmed) {
 		chargeUse *= Math.pow(0.707, rank(options.doubleMarkRank));
+	}
+	//`SmokeBomb.chargeUse()`: while the hero is invisible, 16/30/41/50% off.
+	if (def.id === 'smokebomb' && options.shadowStepArmed) {
+		chargeUse *= Math.pow(0.84, rank(options.shadowStepRank));
 	}
 	return chargeUse;
 }

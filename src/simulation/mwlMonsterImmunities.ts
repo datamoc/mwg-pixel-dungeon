@@ -115,6 +115,15 @@ export const MONSTER_IMMUNITY_DATA = [
     ]
   },
   {
+    "monster": "ninjaLog",
+    "subtype": "",
+    "immunities": [
+      "terror",
+      "amok",
+      "charm"
+    ]
+  },
+  {
     "monster": "goo",
     "subtype": "",
     "immunities": [
