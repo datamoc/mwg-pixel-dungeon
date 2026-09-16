@@ -12,6 +12,8 @@ export interface HeroTurnEffects {
 	tickEndureTracker(): void;
 	/** `HeroicLeap.DoubleJumpTracker`'s own countdown, once per spent turn. */
 	tickDoubleJumpTracker(): void;
+	/** `NaturesPower.naturesPowerTracker`'s own countdown, once per spent turn. */
+	tickNaturesPowerTracker(): void;
 	spreadFire(): void;
 	/** Tick buffs and apply damage; return true when that damage kills the hero. */
 	applyBuffDamage(): boolean;
@@ -40,6 +42,7 @@ export function finishHeroTurn(effects: HeroTurnEffects): HeroTurnResult {
 	effects.recoverArmorCharge();
 	effects.tickEndureTracker();
 	effects.tickDoubleJumpTracker();
+	effects.tickNaturesPowerTracker();
 	effects.spreadFire();
 	if (effects.applyBuffDamage()) return 'buff-death';
 	effects.updatePreparation();

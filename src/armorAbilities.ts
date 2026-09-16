@@ -74,15 +74,14 @@ export function armorAbilityDef(id: string): ArmorAbilityDef | undefined {
  * `armorAbility == null`) rather than handing the player a choice that cannot be spent.
  *
  * Ported so far: the Warrior's three, the Rogue's Death Mark and Smoke Bomb, the Huntress's
- * Spectral Blades and the Mage's Warp Beacon. Still to port, each needing its own systems: the
- * Mage's remaining two (`ElementalBlast` and `WildMagic` need per-wand blast factors and a
- * wand-randomization pass), the Rogue's `ShadowClone` (an ally actor), the Huntress's remaining two
- * (`NaturesPower` a growing-power tracker wired into the SpiritBow and the hero's speed;
- * `SpiritHawk` an ally actor) and the Duelist's (`Challenge` needs a duel tracker;
+ * Spectral Blades and Nature's Power, and the Mage's Warp Beacon. Still to port, each needing its
+ * own systems: the Mage's remaining two (`ElementalBlast` and `WildMagic` need per-wand blast
+ * factors and a wand-randomization pass), the Rogue's `ShadowClone` (an ally actor), the Huntress's
+ * `SpiritHawk` (an ally actor) and the Duelist's (`Challenge` needs a duel tracker;
  * `ElementalStrike` the four blade imbuements; `Feint` a feint buff and its after-image). See
  * `PORT_COVERAGE.md`'s armor-ability rows.
  */
-const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades', 'warpbeacon', 'smokebomb']);
+const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades', 'warpbeacon', 'smokebomb', 'naturespower']);
 
 /** The implemented abilities for one class, in `HeroClass.armorAbilities()` order (the authored
  *  table's own row order, which `DEFINITIONS` preserves). */

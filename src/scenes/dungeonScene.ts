@@ -499,6 +499,14 @@ const IMP_QUEST: Rpg.QuestDefinition = {
  * `warding`/`arcane` capstone in tier 1 of this track; those ids are not abilities any more and are
  * dropped on load (see `loadRun`), with the real choice available again at the next crown.
  */
+/**
+ * `NaturesPower.naturesPowerTracker`: an eight-turn window (`DURATION = 8`) with at most two
+ * `WILD_MOMENTUM` extensions per cast.
+ */
+const NATURES_POWER_DURATION = 8;
+/** `NaturesPower.harmfulPlants`: the five seeds `NATURES_WRATH` can sprout. */
+const HARMFUL_PLANTS = ['blindweed', 'firebloom', 'icecap', 'sorrowmoss', 'stormvine'] as const;
+
 const SUBCLASS_TRACK: Actors.AdvancementTrack = {
 	tiers: [
 		{
@@ -752,6 +760,9 @@ interface SaveShape {
 	endureHits?: number;
 	/** `HeroicLeap.DoubleJumpTracker`'s remaining turns. */
 	doubleJumpTurns?: number;
+	/** `NaturesPower.naturesPowerTracker`'s remaining turns and leftover extensions. */
+	naturesPowerTurns?: number;
+	naturesPowerExtensions?: number;
 	/** `DeathMark.DoubleMarkTracker`'s presence. */
 	doubleMarkArmed?: boolean;
 	/** `WarpBeaconTracker`'s saved cell and the depth/branch it was placed on. */
@@ -1289,6 +1300,9 @@ export class DungeonScene extends Scene2D {
 	 * can save in between.
 	 */
 	private spiritBladesArmed = false;
+	/** `NaturesPower.naturesPowerTracker`'s remaining turns and its leftover extensions. */
+	private naturesPowerTurns = 0;
+	private naturesPowerExtensions = 0;
 	/**
 	 * `WarpBeacon.WarpBeaconTracker`'s `pos`/`depth`/`branch`, saved with the run (`revivePersists`
 	 * in Java, so it survives death too). Java's `branch` is the dungeon's side-branch index; this
@@ -6139,6 +6153,9 @@ export class DungeonScene extends Scene2D {
 				thrownDamage[0] = Math.max(thrownDamage[0], Math.floor(target.hp / 2));
 			}
 			const hit = this.attack({ ...this.hero, kind: undefined, attackMode: 'throw', damage: thrownDamage }, target, thrownAccFactor);
+			//`SpiritBow.proc()`'s Nature's-Power block runs on the hit, before the missile's own
+			//durability bookkeeping below.
+			if (hit) this.applyNaturesPowerOnHit(target);
 			//`Weapon.proc()` runs on a hit, before the durability bookkeeping below.
 			if (hit) this.applyMissileClassProc(target);
 			//rangedHit(): durability decreases only on a HIT (a miss just drops the missile
@@ -6984,6 +7001,8 @@ export class DungeonScene extends Scene2D {
 			//tracker's own twelve-turn countdown runs on the clock. See `settleEndure`.
 			tickEndureTracker: () => this.tickEndureDuration(turnCost),
 			tickDoubleJumpTracker: () => this.tickDoubleJump(turnCost),
+			//`naturesPowerTracker`'s own eight-turn flavour countdown, on the actor clock.
+			tickNaturesPowerTracker: () => { if (this.naturesPowerTurns > 0) this.naturesPowerTurns = Math.max(0, this.naturesPowerTurns - turnCost); },
 			//Preparation.act(): the invisibility counter lives in the hero-turn pipeline next to
 			//the other per-turn buff state, and reads the turn cost this action actually spent.
 			updatePreparation: () => this.trackPreparation(turnCost),
@@ -13127,6 +13146,8 @@ export class DungeonScene extends Scene2D {
 			endureBanked: this.endureBanked,
 			endureHits: this.endureHits,
 			doubleJumpTurns: this.doubleJumpTurns,
+			naturesPowerTurns: this.naturesPowerTurns,
+			naturesPowerExtensions: this.naturesPowerExtensions,
 			doubleMarkArmed: this.doubleMarkArmed,
 			warpBeacon: this.warpBeacon ? { ...this.warpBeacon } : null,
 			deferredDamage: this.hero.deferredDamage,
@@ -13247,6 +13268,8 @@ export class DungeonScene extends Scene2D {
 		this.endureBanked = s.endureBanked ?? 0;
 		this.endureHits = s.endureHits ?? 0;
 		this.doubleJumpTurns = s.doubleJumpTurns ?? 0;
+		this.naturesPowerTurns = s.naturesPowerTurns ?? 0;
+		this.naturesPowerExtensions = s.naturesPowerExtensions ?? 0;
 		this.doubleMarkArmed = s.doubleMarkArmed ?? false;
 		this.warpBeacon = s.warpBeacon ? { ...s.warpBeacon } : null;
 		//`Fragile` never existed in real Java (the 8th armor curse is `Stench` - see the
@@ -13702,6 +13725,9 @@ export class DungeonScene extends Scene2D {
 		if (this.armorGlyph === 'bulk' && this.doors.isDoor(this.hero.x, this.hero.y)) mod /= 3;
 		//Char.speed()'s real `if (buff(Haste.class)) speed *= 3f` (PotionOfHaste).
 		if (this.hero.buffs['haste']) mod /= 3;
+		//`Hero.speed()`'s Nature's-Power line: `speed *= 2 + 0.25*GROWING_POWER` while the tracker is
+		//up, expressed as the turn-cost divisor this method uses for every other speed effect.
+		mod /= this.naturesPowerSpeedFactor();
 		//Chill.speedFactor(): speed falls by 10% per remaining turn, capped at 50%.
 		if (this.hero.buffs['chill']) mod /= Math.max(0.5, 1 - this.hero.buffs['chill']! * 0.1);
 		//RingOfHaste.speedMultiplier(): a higher Char.speed() means less time per action in
@@ -16014,6 +16040,7 @@ export class DungeonScene extends Scene2D {
 						: id === 'spectralblades' ? this.activateSpectralBlades(def, cost, cell)
 							: id === 'warpbeacon' ? this.activateWarpBeacon(def, cost, cell)
 								: id === 'smokebomb' ? this.activateSmokeBomb(def, cost, cell)
+								: id === 'naturespower' ? this.activateNaturesPower(def, cost)
 									: false;
 		if (!activated) return;
 		this.refresh();
@@ -16579,6 +16606,62 @@ export class DungeonScene extends Scene2D {
 		log.maxHp = 20 * points;
 		log.hp = log.maxHp;
 		log.armor = [points, 3 * points];
+	}
+
+	/**
+	 * `NaturesPower.activate()` (tag `v3.3.8`): eight turns of "nature's power", during which the
+	 * hero moves at `2 + 0.25 * GROWING_POWER` times his normal speed (`Hero.speed()`), his bow
+	 * hits can sprout a harmful plant under whatever they strike (`NATURES_WRATH`), and a kill
+	 * extends the window (`WILD_MOMENTUM`, at most `extensionsLeft = 2` times).
+	 */
+	private activateNaturesPower(def: ArmorAbilityDef, cost: number): boolean {
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		this.naturesPowerTurns = NATURES_POWER_DURATION;
+		this.naturesPowerExtensions = 2;
+		//Nature's Power is one of the two abilities whose Java source does not dispel invisibility
+		//(`NaturesPower.java` 55 does, in fact - so this one does).
+		delete this.hero.buffs['invisibility'];
+		this.say(t('actors.hero.abilities.huntress.naturespower.name'), 'positive');
+		this.spendHeroAction(1);
+		return true;
+	}
+
+	/** `Hero.speed()`: while the power is up the hero is `2 + 0.25*GROWING_POWER` times as fast, and
+	 *  this port's turn cost is the inverse of speed (the same shape Haste and the speed glyphs
+	 *  already use). */
+	private naturesPowerSpeedFactor(): number {
+		if (this.naturesPowerTurns <= 0) return 1;
+		return 2 + 0.25 * this.talentRank('growing_power');
+	}
+
+	/**
+	 * `SpiritBow.proc()`'s Nature's-Power block, run on a landed thrown hit while the power is up:
+	 * `NATURES_WRATH` rolls `Random.Int(12) < points` for a random harmful plant sprouting on the
+	 * target's own cell, and a hit that *killed* the target extends the window once by
+	 * `WILD_MOMENTUM` points (Java allows two extensions per cast, `extensionsLeft = 2`).
+	 *
+	 * The plant goes through this port's existing mob-plant path - placed as a manual plant and
+	 * then `triggerMobPlantAt` - so every harmful plant's non-hero half is the same code a monster
+	 * stepping on one already runs.
+	 */
+	private applyNaturesPowerOnHit(target: Creature): void {
+		if (this.naturesPowerTurns <= 0) return;
+		if (Random.int(0, 12) < this.talentRank('natures_wrath')) {
+			const plant = Random.element(HARMFUL_PLANTS);
+			//Java plants it *under the target* (`plant.pos = defender.pos`), so the creature standing
+			//there is expected, not a conflict - only the terrain has to accept a plant.
+			if (plant && this.level.passable(target.x, target.y) && !this.isChasmCell(target.x, target.y)) {
+				const cell = this.level.index(target.x, target.y);
+				this.manualPlants.set(cell, plant);
+				this.placePortedFeature(cell, plant);
+				this.triggerMobPlantAt(target);
+			}
+		}
+		const wildMomentum = this.talentRank('wild_momentum');
+		if (target.hp <= 0 && wildMomentum > 0 && this.naturesPowerExtensions > 0) {
+			this.naturesPowerTurns += wildMomentum;
+			this.naturesPowerExtensions--;
+		}
 	}
 
 	/**

@@ -54,10 +54,10 @@ fully checked off as of a given release.
     every offered locale), each costs its own real charge out of a meter that regrows at Java's
     rate and starts at Java's 50, and its four rank-4 tier-4 talents open up with points at
     Java's own curve. The Warrior's three - Heroic Leap, Shockwave and Endure - the Rogue's
-    Death Mark and Smoke Bomb, the Huntress's Spectral Blades and the Mage's Warp Beacon are fully
-    implemented, formulas included; the other eight are not offered at all rather than offered and
-    inert, so a Duelist crown (or a class whose own abilities are still unported) tells you nothing
-    has changed yet instead of handing you a dead button.
+    Death Mark and Smoke Bomb, the Huntress's Spectral Blades and Nature's Power, and the Mage's
+    Warp Beacon are fully implemented, formulas included; the other seven are not offered at all
+    rather than offered and inert, so a Duelist crown (or a class whose own abilities are still
+    unported) tells you nothing has changed yet instead of handing you a dead button.
   - Golems tick their enemy-teleport and wandering self-teleport cooldowns individually and on
     every turn (matching `Golem.act()`), not on a shared/simplified timer.
   - Monster AI generally - this line item is intentionally open-ended rather than a fixed claim;
@@ -1762,10 +1762,13 @@ fully checked off as of a given release.
       cross-depth gate and charge multiplier. **The Rogue's Smoke Bomb followed**, bringing the real `Blindness`
       buff (a blinded creature's field of view is empty, per `Level.updateFieldOfView`, so it cannot see or
       hunt), the `NinjaLog` decoy as a real ally creature, `HASTY_RETREAT`, and `SHADOW_STEP`'s free,
-      discounted escape. **Still open, and deliberately not offered**: the other eight abilities
-      (Mage's remaining two/Rogue's `ShadowClone`/Huntress's remaining two/Duelist's three) each need a
-      system this port does not have - see `PORT_COVERAGE.md`'s armor-ability section for the per-ability
-      reason - and the Cleric's three have neither strings nor a spell system here. `armorAbilitiesFor()` offers
+      discounted escape. **The Huntress's Nature's Power followed**, with the real eight-turn window,
+      `GROWING_POWER`'s hero speed, `NATURES_WRATH`'s five harmful plants sprouting under whatever the
+      bow hits, and `WILD_MOMENTUM`'s twice-per-cast extension. **Still open, and deliberately not
+      offered**: the other seven abilities (Mage's two/Rogue's `ShadowClone`/Huntress's `SpiritHawk`/
+      Duelist's three) each need a system this port does not have - see `PORT_COVERAGE.md`'s
+      armor-ability section for the per-ability reason - and the Cleric's three have neither strings
+      nor a spell system here. `armorAbilitiesFor()` offers
       only what can actually run, so a class with none keeps the crown's old description line
       instead of an empty choice, and its tier-4 pool stays ungranted (which is Java's own state
       while `armorAbility == null`). Also Not ported and stated: `ClassArmor` as a distinct item
