@@ -6,9 +6,10 @@
  * module ports their stable geometry and transition cells into the same PaintLevel
  * surface used by regular floors. Boss phase scripts remain scene-owned.
  */
-import { PaintLevel, Terrain, fillEllipse, fillXY, set } from './paintLevel';
+import { PaintLevel, Terrain, fillEllipseRect, fillDiamondRect, fillXY, isPassableTerrain, set } from './paintLevel';
 import type { Room } from './room';
 import { spdPatchGenerate } from './spdPatch';
+import { decorateStandaloneCaves } from './cavesDecorate';
 import { SpdRandom } from '../spdRng';
 
 export interface BossFloorData {
@@ -22,24 +23,97 @@ function room(left: number, top: number, right: number, bottom: number): Room {
 	return r;
 }
 
+/** Inclusive bounds: fills `left..right` x `top..bottom`. Use for Java call sites that pass an
+ *  explicit width/height (`Painter.fill(level, x, y, w, h, terrain)`). */
 function fillRect(level: PaintLevel, left: number, top: number, right: number, bottom: number, terrain: number): void {
 	fillXY(level, left, top, right - left + 1, bottom - top + 1, terrain);
 }
 
+/** `Painter.fill(level, rect, terrain)` - Java's own `Rect` arithmetic, whose `right`/`bottom` are
+ *  **exclusive** edges (`Rect.width()` is `right - left`). So `Rect(5,9,10,16)` fills x 5..9, not
+ *  5..10, and `Rect(6,23,15,32)` fills y 23..31.
+ *
+ *  This distinction is not cosmetic and is not interchangeable with `fillRect` above: mixing the
+ *  two silently shifts a layout by one cell. It cost this floor its entire one-cell hallway spine -
+ *  `PrisonBossLevel.startCells[0]`'s border is `x 5..9`, deliberately clearing the hallway column
+ *  at x=10, and reading it inclusive put a wall there and sealed the entrance room off from the
+ *  rest of the level (see this module's `paintPrisonBossStart`). */
+function fillJavaRect(level: PaintLevel, left: number, top: number, right: number, bottom: number, terrain: number): void {
+	fillXY(level, left, top, right - left, bottom - top, terrain);
+}
+
+/** `Painter.fill(level, rect, margin, terrain)` - Java's inset form: `margin` cells in from every
+ *  edge of an exclusive-bounds `Rect`, so `fillJavaRect` + inset 1 is exactly Java's own
+ *  "fill the room with WALL, then fill its interior with EMPTY" pair. */
+function fillJavaRectInset(level: PaintLevel, left: number, top: number, right: number, bottom: number, margin: number, terrain: number): void {
+	fillXY(level, left + margin, top + margin, (right - left) - margin * 2, (bottom - top) - margin * 2, terrain);
+}
+
+/** `PrisonBossLevel.tenguCell` (`v3.3.8`): Tengu's own lower cell, in Java's own exclusive-bounds
+ *  `Rect` form (`right`/`bottom` are edges, so its interior is x 7..13, y 24..30 - see
+ *  `fillJavaRect`). Exported because the fight's own trigger reads its top edge: `progress()`'s
+ *  `case START:` fires only once the hero's own move lands past `tenguCell.top` - see
+ *  `checkTenguFightStart`. */
+export const PRISON_TENGU_CELL = { left: 6, top: 23, right: 15, bottom: 32 } as const;
+/** `PrisonBossLevel.tenguCellCenter` (`v3.3.8`): where `progress()`'s `case START:` spawns Tengu
+ *  (`pointToCell(tenguCellCenter)`), if nothing is already standing there. */
+export const PRISON_TENGU_CELL_CENTER = { x: 10, y: 27 } as const;
+/** `PrisonBossLevel.tenguCellDoor` (`v3.3.8`): the door the iron key opens and `progress()`
+ *  immediately re-locks behind the hero (`set(pointToCell(tenguCellDoor), Terrain.LOCKED_DOOR)`). */
+export const PRISON_TENGU_CELL_DOOR = { x: 10, y: 23 } as const;
+
+/** `PrisonBossLevel.entranceRoom`/`startHallway` (`v3.3.8`), as Java's own exclusive-bounds
+ *  `Rect`s.  The hallway's interior is a **single column at x=10, y 8..22** - see `fillJavaRect`
+ *  for why that one cell matters. */
+const PRISON_ENTRANCE_ROOM = { left: 8, top: 2, right: 13, bottom: 8 } as const;
+const PRISON_START_HALLWAY = { left: 9, top: 7, right: 12, bottom: 24 } as const;
+/** `PrisonBossLevel.startCells` (`v3.3.8`): the four prison cells flanking the hallway, reached
+ *  through the four `DOOR`s set across the hallway's own walls below. */
+const PRISON_START_CELLS = [[5, 9, 10, 16], [11, 9, 16, 16], [5, 15, 10, 22], [11, 15, 16, 22]] as const;
+
 /** `PrisonBossLevel.setMapStart()` (`v3.3.8`): the entrance room, hallway, four start cells, and
  *  Tengu's own lower cell behind a locked door. Shared by `setMapPause()`/`setMapEnd()`, which
- *  both repaint over this same base the way their Java originals call `setMapStart()` first. */
+ *  both repaint over this same base the way their Java originals call `setMapStart()` first.
+ *
+ *  Transcribed in Java's own statement order, which is load-bearing: the four start cells are
+ *  filled *after* the hallway, so their wall borders overwrite it everywhere except the hallway's
+ *  own interior column at x=10 - the spine that connects the entrance room down to Tengu's door.
+ *  Getting the `Rect`/`Painter.fill` bounds wrong here (see `fillJavaRect`) does not merely
+ *  misplace a wall, it disconnects the level: the hero arrives in the entrance room and can reach
+ *  nothing else on the floor, door or boss included.
+ *
+ *  Not ported: Java's `addCagesToCells()`, which scatters up to 5 `REGION_DECO` cells over the
+ *  start cells from its own `seedCurDepth()` generator. Decoration only (`REGION_DECO` is
+ *  passable, so nothing walks differently), and the port's fixed-layout floors carry no RNG
+ *  stream of their own. */
 function paintPrisonBossStart(level: PaintLevel): void {
-	fillRect(level, 0, 0, 31, 31, Terrain.WALL);
-	fillRect(level, 8, 2, 13, 8, Terrain.EMPTY);
-	fillRect(level, 9, 7, 12, 24, Terrain.EMPTY);
-	for (const [left, top, right, bottom] of [[5, 9, 10, 16], [11, 9, 16, 16], [5, 15, 10, 22], [11, 15, 16, 22]]) {
-		fillRect(level, left, top, right, bottom, Terrain.WALL);
-		fillRect(level, left + 1, top + 1, right - 1, bottom - 1, Terrain.EMPTY);
-	}
-	fillRect(level, 6, 23, 15, 31, Terrain.EMPTY);
+	fillXY(level, 0, 0, 32, 32, Terrain.WALL);
+
+	//Start
+	fillJavaRect(level, PRISON_ENTRANCE_ROOM.left, PRISON_ENTRANCE_ROOM.top, PRISON_ENTRANCE_ROOM.right, PRISON_ENTRANCE_ROOM.bottom, Terrain.WALL);
+	fillJavaRectInset(level, PRISON_ENTRANCE_ROOM.left, PRISON_ENTRANCE_ROOM.top, PRISON_ENTRANCE_ROOM.right, PRISON_ENTRANCE_ROOM.bottom, 1, Terrain.EMPTY);
 	set(level, 10, 4, Terrain.ENTRANCE);
-	set(level, 10, 23, Terrain.LOCKED_DOOR);
+
+	fillJavaRect(level, PRISON_START_HALLWAY.left, PRISON_START_HALLWAY.top, PRISON_START_HALLWAY.right, PRISON_START_HALLWAY.bottom, Terrain.WALL);
+	fillJavaRectInset(level, PRISON_START_HALLWAY.left, PRISON_START_HALLWAY.top, PRISON_START_HALLWAY.right, PRISON_START_HALLWAY.bottom, 1, Terrain.EMPTY);
+
+	set(level, PRISON_START_HALLWAY.left + 1, PRISON_START_HALLWAY.top, Terrain.DOOR);
+
+	for (const [left, top, right, bottom] of PRISON_START_CELLS) {
+		fillJavaRect(level, left, top, right, bottom, Terrain.WALL);
+		fillJavaRectInset(level, left, top, right, bottom, 1, Terrain.EMPTY);
+	}
+
+	//the four doors punched through the hallway's walls into each flanking cell
+	for (const [x, y] of [[PRISON_START_HALLWAY.left, PRISON_START_HALLWAY.top + 5], [PRISON_START_HALLWAY.right - 1, PRISON_START_HALLWAY.top + 5],
+		[PRISON_START_HALLWAY.left, PRISON_START_HALLWAY.top + 11], [PRISON_START_HALLWAY.right - 1, PRISON_START_HALLWAY.top + 11]]) {
+		set(level, x!, y!, Terrain.DOOR);
+	}
+
+	fillJavaRect(level, PRISON_TENGU_CELL.left, PRISON_TENGU_CELL.top, PRISON_TENGU_CELL.right, PRISON_TENGU_CELL.bottom, Terrain.WALL);
+	fillJavaRectInset(level, PRISON_TENGU_CELL.left, PRISON_TENGU_CELL.top, PRISON_TENGU_CELL.right, PRISON_TENGU_CELL.bottom, 1, Terrain.EMPTY);
+	set(level, PRISON_TENGU_CELL_DOOR.x, PRISON_TENGU_CELL_DOOR.y, Terrain.LOCKED_DOOR);
+
 	for (const [x, y] of [[10, 2], [7, 9], [13, 9], [7, 15], [13, 15], [8, 23], [12, 23]]) set(level, x, y, Terrain.WALL_DECO);
 }
 
@@ -88,8 +162,9 @@ export const PRISON_ARENA = { left: 3, top: 1, right: 18, bottom: 16 } as const;
 export function prisonBossArena(): BossFloorData {
 	const level = new PaintLevel(32, 32);
 	fillRect(level, 0, 0, 31, 31, Terrain.WALL);
-	// `Painter.fillEllipse(this, arena, 1, EMPTY)`: margin 1 on a (16,16) rect -> (4,2), 14x14.
-	fillEllipse(level, PRISON_ARENA.left + 1, PRISON_ARENA.top + 1, 14, 14, Terrain.EMPTY);
+	// `Painter.fillEllipse(this, arena, 1, EMPTY)`: `arena` is `Rect(3,1,18,16)` - 15x15 in Java's
+	// exclusive-edge terms - inset by 1, so the ellipse is 13x13 at (4,2), not 14x14.
+	fillEllipseRect(level, PRISON_ARENA.left, PRISON_ARENA.top, PRISON_ARENA.right, PRISON_ARENA.bottom, 1, Terrain.EMPTY);
 	return { paint: level, rooms: [room(PRISON_ARENA.left, PRISON_ARENA.top, PRISON_ARENA.right, PRISON_ARENA.bottom)], feeling: null };
 }
 
@@ -233,36 +308,51 @@ export function buildCornerStamps(level: PaintLevel, stamp: string): void {
 
 function cavesBoss(strongerBosses: boolean): BossFloorData {
 	// CavesBossLevel: WIDTH=33, HEIGHT=42, mainArena=(5,14)-(28,37).
-	const level = new PaintLevel(33, 42, Terrain.CHASM);
-	//`CavesBossLevel.build()`'s very first paint is `Painter.fill(this, gate, Terrain.CUSTOM_DECO)`,
-	//*before* the arena ellipse and the water/trap patch. The ordering is load-bearing, and the
-	//reason is geometric: `gate` is `Rect(14,13,19,14)`, and `Painter.fillEllipse`'s top row for a
-	//24-wide ellipse is six cells wide (`radW` 12, `rowY -11.5` -> `rowW 2*sqrt(144-132.25)` = 6.86
-	//-> rounded to 6), starting at `x + (24-6)/2` = `5+9` = column 14. So Java's ellipse lands
-	//*exactly* on the gate's bottom row (cols 14-19 of row 14) and clears it to plain arena floor.
-	//The gate therefore keeps only row 13 as `CUSTOM_DECO`; row 14 becomes ordinary floor, and the
-	//patch loop below rolls water and traps across it like any other arena cell.
 	//
-	//This port used to paint the gate *after* the loop instead. That did **not** move the RNG
-	//stream: whichever order the two fills run in, the ellipse has already cleared row 14 to `EMPTY`
-	//before the loop begins, so the loop's cell set - and the 489 `SpdRandom.int` draws that patch
-	//generation and the trap rolls together consume at seed 42 - are identical both ways. What the
-	//old order changed was the loop's *results*: the six gate cells were force-painted `SIGN`
-	//afterwards, erasing the water the loop had placed on them (3 of the 6 at seed 42). That
-	//mattered beyond looks - `activatePylon()` seeds `PylonEnergy` on `INACTIVE_TRAP`/`WATER`/
-	//`CUSTOM_DECO` cells from `mainArena.top - 1` (row 13) down, so all six counted as energy cells
-	//instead of the three the roll had actually made, inflating the pylon field's cell set from
-	//Java's 108 to 111.
+	// The base fill is `Terrain.WALL`, as it is for every level whose `feeling` is not CHASM
+	// (`Level.setSize()`'s own `feeling == Feeling.CHASM ? CHASM : WALL`, and no boss level sets a
+	// feeling). This floor used to be built over a CHASM base, which is not the same thing as
+	// Java's own pits: it left 34 walkable cells of the arena and its corridor next to a pit where
+	// Java has solid rock - and since this port lets the hero step into a chasm (`canStepOnto`'s
+	// pit branch), that was a hole out of the boss floor rather than scenery. Java's real pits are
+	// the five explicit strips painted below.
+	const level = new PaintLevel(33, 42, Terrain.WALL);
+	//`CavesBossLevel.build()`'s very first paint is `Painter.fill(this, gate, Terrain.CUSTOM_DECO)`,
+	//*before* the arena ellipse and the water/trap patch. `gate` is `Rect(14,13,19,14)`, an
+	//**exclusive-edge** rect, so that is five cells on row 13 and nothing on row 14; the ellipse
+	//(`mainArena`'s own 23x23, `Rect(5,14,28,37)`, no margin) starts on row 14 and its top row is
+	//seven cells wide (`radW` 11.5, `rowY -11` -> `rowW 2*sqrt(132.25-121)` = 6.71 -> odd width,
+	//`floor(6.71/2)*2+1` = 7) from column `x + (23-7)/2` = `5+8` = 13. The two never overlap.
+	//
+	//**Corrected 2026-09-16: this fill used to be written as the inclusive
+	//`fillRect(14, 13, 19, 14, ...)`, and both of the claims that used to follow from that reading
+	//were wrong.** It painted twelve cells instead of five: row 13 x 14..19 and row 14 x 14..19. The
+	//ellipse then cleared row 14's six, leaving **six** gate cells to Java's five - an extra
+	//`CUSTOM_DECO` at (19,13), which Java leaves to whatever `buildEntrance()` stamped there (this
+	//floor's own stamp leaves rock). `dm300Supercharge()`'s energy seed picked that cell up, so the
+	//pylon field carried one cell Java's does not.
+	//
+	//And the *ordering* of this fill against the patch loop was only ever observable because of the
+	//same misreading: the loop walks rows 14 and down, a correct gate occupies row 13 only, so
+	//gate-first and gate-last produce identical floors - same 463 `SpdRandom.int` draws at seed 42,
+	//same 102 energy cells (re-measured 2026-09-16 with `tools/scratch/probeCavesGate.ts`, whose two
+	//variants now differ only in order). The old reading put gate cells *inside* the loop's range on
+	//row 14, which is what let a gate-last fill erase water the loop had just placed. Java's own
+	//order is kept regardless; it is simply not load-bearing.
 	//
 	//`SIGN` is this port's stand-in for Java's `CUSTOM_DECO` here. It plays both of that tile's
 	//roles - it is the tile `dm300Supercharge()`'s energy seed keys on, mirroring Java's
-	//`CUSTOM_DECO` clause, and it renders as plain floor (`gameBridge.ts`'s `SIGN -> 'floor'`), so
-	//painting it a row earlier changes nothing visually: row 14 ends up `EMPTY`, which maps to
-	//`floor` as well. Java's gate is dressed by the `CityEntrance`/`ArenaVisuals` `CustomTilemap`s
-	//painted over the whole entrance region, which this port has no equivalent for - see
-	//PORT_COVERAGE.md.
-	fillRect(level, 14, 13, 19, 14, Terrain.SIGN);
-	fillEllipse(level, CAVES_BOSS_ARENA.left, CAVES_BOSS_ARENA.top, 24, 24, Terrain.EMPTY);
+	//`CUSTOM_DECO` clause, and it renders as plain floor (`gameBridge.ts`'s `SIGN -> 'floor'`). One
+	//difference remains, and it is deliberate: Java's `CUSTOM_DECO` is `SOLID`, so its gate blocks
+	//the exit corridor until `unseal()` breaks it, while this port's gate is walkable from the
+	//start. Making it solid here would change this floor's walkability, which the port's baked
+	//descent flow does not model (`unseal()` is unported); it is recorded in PORT_COVERAGE.md
+	//instead. The gate's own art is ported either way, whole for as long as this port can show it -
+	//see `cavesBossVisuals.ts`'s `gateIntact`.
+	fillRect(level, 14, 13, 18, 13, Terrain.SIGN);
+	//`Painter.fillEllipse(this, mainArena, Terrain.EMPTY)` - the no-margin overload, so the
+	//ellipse is the rect's own exclusive extent: `Rect(5,14,28,37)` is 23x23, not 24x24.
+	fillEllipseRect(level, CAVES_BOSS_ARENA.left, CAVES_BOSS_ARENA.top, CAVES_BOSS_ARENA.right, CAVES_BOSS_ARENA.bottom, 0, Terrain.EMPTY);
 	// `CavesBossLevel.build()`: after the arena ellipse, scatter water and sprung traps across it
 	// with the real `Patch.generate(width, height-14, 0.15f, 2, true)` and one
 	// `Random.Int(challenge ? 4 : 8) == 0` roll per eligible EMPTY cell. These are exactly the
@@ -281,12 +371,38 @@ function cavesBoss(strongerBosses: boolean): BossFloorData {
 	//`CavesBossLevel.build()`'s next calls are `buildEntrance()` and `buildCorners()` (lines 137-138
 	//at tag `v3.3.8`), each one `Random.oneOf` over its four stamps - so this is where the port's
 	//stream catches up with Java's for those two draws, before the chasm/entrance fills below
-	//(Java's line 140 is `new CavesPainter().paint(this, null)`, which the port does not run; see
-	//PORT_COVERAGE.md). The entrance stamp's own `Painter.set(this, entrance, Terrain.ENTRANCE)`
+	//(Java's line 140 is `new CavesPainter().paint(this, null)`; the port runs it as the
+	//`decorateStandaloneCaves` call above - see PORT_COVERAGE.md's `DM300` row. An earlier note here
+	//called that pass a no-op; it is not, and the item that recorded it as "not ported" has since been
+	//implemented, so this paragraph is history rather than a gap.) The entrance stamp's own `Painter.set(this, entrance, Terrain.ENTRANCE)`
 	//runs *inside* `buildEntrance()`, which is why the port's explicit `set(..., ENTRANCE)` below
 	//still wins over a stamp that happens to cover that cell.
 	buildEntranceStamps(level, SpdRandom.element(ENTRANCE_STAMPS as unknown as string[]));
 	buildCornerStamps(level, SpdRandom.element(CORNER_STAMPS as unknown as string[]));
+	//`CavesBossLevel.build()`'s next call is `new CavesPainter().paint(this, null)` (line 140), which
+	//is **not** a no-op - only `RegularPainter.paint`'s sizing block sits inside its
+	//`if (rooms != null)`, so with a null room list the pass still pushes a substream generator
+	//(`Random.Long()`: exactly one draw off this floor's own stream) and runs
+	//`CavesPainter.decorate`'s two global scans *inside* that substream. The port already owns this
+	//null-room behaviour for `MiningLevel` (`decorateStandaloneCaves`), so the boss floor reuses it.
+	//Position is load-bearing twice over: the scans read the map as it stands *here*, after the arena
+	//patch and the stamps and before the chasm strips below, and the pushed substream is what keeps
+	//their rolls off this floor's stream - the parent only ever pays that single `Long()`.
+	SpdRandom.pushGenerator(SpdRandom.long());
+	decorateStandaloneCaves(level);
+	SpdRandom.popGenerator();
+	//`CavesBossLevel.build()`'s five chasm strips - the floor's only pits, painted over the stamps
+	//in Java's own order (`build()` lines 143-149). The exit corridor is the `fill(14,3,5,10,
+	//EMPTY)` below, which bridges the first strip rather than being cut by it.
+	fillRect(level, 0, 3, 32, 6, Terrain.CHASM);
+	fillRect(level, 6, 7, 26, 7, Terrain.CHASM);
+	fillRect(level, 10, 8, 22, 8, Terrain.CHASM);
+	fillRect(level, 12, 9, 20, 9, Terrain.CHASM);
+	fillRect(level, 13, 10, 19, 10, Terrain.CHASM);
+	//`Painter.fill(this, 9, 3, 1, 6, ...)` / `fill(this, 23, 3, 1, 6, ...)`: the two
+	//`REGION_DECO_ALT` rails flanking the exit corridor, painted after the stamps the same way.
+	fillRect(level, 9, 3, 9, 8, Terrain.REGION_DECO_ALT);
+	fillRect(level, 23, 3, 23, 8, Terrain.REGION_DECO_ALT);
 	fillRect(level, 14, 3, 18, 12, Terrain.EMPTY);
 	fillRect(level, 15, 2, 17, 4, Terrain.EMPTY_SP);
 	fillRect(level, 15, 5, 17, 5, Terrain.STATUE);
@@ -298,8 +414,15 @@ function cavesBoss(strongerBosses: boolean): BossFloorData {
 	// Java's four neutral Pylon actors occupy these cells. Their actor payload is preserved
 	// separately from terrain so the live bridge can restore the dedicated pylon sprite and
 	// activate the pylons when DM-300's gate is triggered.
+	//
+	// The cells themselves are left exactly as the corner stamps painted them - `EMPTY_SP`, since
+	// that is what the stamp data carries there - and that is load-bearing, not incidental:
+	// `ArenaVisuals.updateState()`'s pylon branch is guarded by `map[j] == Terrain.EMPTY_SP`, so the
+	// socket frame (`38`, drawn once the arena is sealed and the pylon has been destroyed) can only
+	// ever appear on an `EMPTY_SP` cell. This port used to force them to `Terrain.EMPTY` here, which
+	// silently made that whole branch unreachable; the wire frames around them still drew, because
+	// those are decided by each *neighbour's* own terrain.
 	for (const [x, y] of [[4, 13], [28, 13], [4, 37], [28, 37]]) {
-		set(level, x, y, Terrain.EMPTY);
 		level.mobs.push({ pos: x + y * level.w, kind: 'pylon' });
 	}
 	// Keep the scene's existing boss spawn convention away from the entrance cell; Java's
@@ -307,38 +430,210 @@ function cavesBoss(strongerBosses: boolean): BossFloorData {
 	return { paint: level, rooms: [room(8, 18, 24, 34)], feeling: null };
 }
 
+/** `CityBossLevel.arena` (`v3.3.8`), in Java's own exclusive-bounds `Rect` form: `(1,25)`-`(13,37)`
+ *  of walkable floor. The King's throne room is the diamond `fillDiamond` carves out of it, and
+ *  the two locked doors sit on its top edge. */
+export const CITY_BOSS_ARENA = { left: 1, top: 25, right: 14, bottom: 38 } as const;
+/** `CityBossLevel.entry`/`end` (`v3.3.8`), exclusive-bounds `Rect`s. */
+export const CITY_BOSS_ENTRY = { left: 1, top: 37, right: 14, bottom: 48 } as const;
+export const CITY_BOSS_END = { left: 0, top: 0, right: 15, bottom: 22 } as const;
+/** `CityBossLevel`'s two seal doors (`v3.3.8`): `bottomDoor = 7 + (arena.bottom-1)*15`,
+ *  `topDoor = 7 + arena.top*15`. The bottom one gates the arena, the top one the exit
+ *  hallway; `seal()` locks the bottom, `unseal()` opens both. */
+export const CITY_BOTTOM_DOOR = { x: 7, y: 37 } as const;
+export const CITY_TOP_DOOR = { x: 7, y: 25 } as const;
+/** `CityBossLevel.throne` (`v3.3.8`): `arena.center()` = (7,31), `CUSTOM_DECO` over the
+ *  `fill(arena, 6, CUSTOM_DECO)` 1x1. `SIGN` is this port's stand-in for `CUSTOM_DECO`
+ *  (same alias as the Caves gate). */
+export const CITY_THRONE = { x: 7, y: 31 } as const;
+/** `CityBossLevel.pedestals` (`v3.3.8`): `(c.x±3, c.y±3)` = (4,28)/(10,28)/(10,34)/(4,34). */
+export const CITY_PEDESTALS = [{ x: 4, y: 28 }, { x: 10, y: 28 }, { x: 10, y: 34 }, { x: 4, y: 34 }] as const;
+/** `CityBossLevel`'s Imp shop rect (`v3.3.8`): `impShop.set(end.left+3, end.top+12,
+ *  end.left+11, end.top+20)` = (3,12)-(11,20). Painted as walls/empty by `ShopRoom`
+ *  only when `spawnShop()` runs at `unseal()`; the base map carries just its pedestal
+ *  and two statues (see `cityBoss()`). Exported so the scene's `unseal()` can paint
+ *  the same rect live. */
+export const CITY_IMP_SHOP = { left: 3, top: 12, right: 11, bottom: 20 } as const;
+/** `CityBossLevel`'s exit cell (`v3.3.8`): `end.left+7 + (end.top+8)*width` = (7,8),
+ *  inside the `EXIT` block. The live `unseal()` points the stairs here. */
+export const CITY_EXIT_CELL = { x: 7, y: 8 } as const;
+/** `CityBossLevel`'s entrance cell (`v3.3.8`): `c.x + (c.y+2)*width` with
+ *  `c = entry.center()` = (7,42), so (7,44). */
+export const CITY_ENTRANCE_CELL = { x: 7, y: 44 } as const;
+
 function cityBoss(): BossFloorData {
-	// CityBossLevel: WIDTH=15, HEIGHT=48, entry=(1,37)-(14,48), arena=(1,25)-(14,38).
-	const level = new PaintLevel(15, 48, Terrain.CHASM);
-	fillRect(level, 1, 37, 13, 47, Terrain.EMPTY);
-	fillRect(level, 2, 38, 12, 46, Terrain.BOOKSHELF);
-	fillRect(level, 4, 42, 10, 46, Terrain.EMPTY);
-	set(level, 7, 44, Terrain.ENTRANCE);
-	fillEllipse(level, 1, 25, 14, 14, Terrain.EMPTY);
-	for (const [x, y] of [[4, 31], [10, 31], [10, 37], [4, 37]]) set(level, x, y, Terrain.PEDESTAL);
-	for (const x of [3, 4, 10, 11]) set(level, x, 32, Terrain.STATUE);
-	set(level, 7, 25, Terrain.LOCKED_DOOR);
+	// `CityBossLevel.build()` (`v3.3.8`), transcribed statement for statement. Base is
+	// `WALL` (`Level.setSize()` fills WALL for every non-CHASM feeling, and no boss
+	// level sets one) - the top `end` block's `fill(end, CHASM)` is what makes the
+	// upper 22 rows a pit, not the base.
+	const level = new PaintLevel(15, 48, Terrain.WALL);
+	//Entrance room: `fill(entry, WALL)`, `fill(entry, 1, BOOKSHELF)`, `fill(entry, 2, EMPTY)`.
+	fillJavaRect(level, CITY_BOSS_ENTRY.left, CITY_BOSS_ENTRY.top, CITY_BOSS_ENTRY.right, CITY_BOSS_ENTRY.bottom, Terrain.WALL);
+	fillJavaRectInset(level, CITY_BOSS_ENTRY.left, CITY_BOSS_ENTRY.top, CITY_BOSS_ENTRY.right, CITY_BOSS_ENTRY.bottom, 1, Terrain.BOOKSHELF);
+	fillJavaRectInset(level, CITY_BOSS_ENTRY.left, CITY_BOSS_ENTRY.top, CITY_BOSS_ENTRY.right, CITY_BOSS_ENTRY.bottom, 2, Terrain.EMPTY);
+	//The two freestanding bookshelf columns and the two REGION_DECO marks.
+	fillRect(level, 4, 40, 4, 44, Terrain.BOOKSHELF);
+	fillRect(level, 10, 40, 10, 44, Terrain.BOOKSHELF);
+	set(level, 6, 38, Terrain.REGION_DECO);
+	set(level, 8, 38, Terrain.REGION_DECO);
+	//`c = entry.center()` = (7,42): three STATUE rows, the EMPTY_SP spine, the DOOR,
+	//and the ENTRANCE two rows below centre.
+	fillRect(level, 6, 40, 8, 40, Terrain.STATUE);
+	fillRect(level, 6, 42, 8, 42, Terrain.STATUE);
+	fillRect(level, 6, 44, 8, 44, Terrain.STATUE);
+	fillRect(level, 7, 38, 7, 43, Terrain.EMPTY_SP);
+	set(level, 7, 37, Terrain.DOOR);
+	set(level, CITY_ENTRANCE_CELL.x, CITY_ENTRANCE_CELL.y, Terrain.ENTRANCE);
+	level.transitions.push({ pos: CITY_ENTRANCE_CELL.y * level.w + CITY_ENTRANCE_CELL.x, type: 'regularEntrance' });
+	//DK's throne room: the diamond, then the EMPTY_SP/CUSTOM_DECO margins, the four
+	//statues across the middle, the four pedestals, and the locked top door.
+	fillDiamondRect(level, CITY_BOSS_ARENA.left, CITY_BOSS_ARENA.top, CITY_BOSS_ARENA.right, CITY_BOSS_ARENA.bottom, 1, Terrain.EMPTY);
+	fillJavaRectInset(level, CITY_BOSS_ARENA.left, CITY_BOSS_ARENA.top, CITY_BOSS_ARENA.right, CITY_BOSS_ARENA.bottom, 5, Terrain.EMPTY_SP);
+	fillJavaRectInset(level, CITY_BOSS_ARENA.left, CITY_BOSS_ARENA.top, CITY_BOSS_ARENA.right, CITY_BOSS_ARENA.bottom, 6, Terrain.SIGN);
+	for (const [x, y] of [[4, 31], [3, 31], [10, 31], [11, 31]]) set(level, x, y, Terrain.STATUE);
+	for (const p of CITY_PEDESTALS) set(level, p.x, p.y, Terrain.PEDESTAL);
+	set(level, CITY_TOP_DOOR.x, CITY_TOP_DOOR.y, Terrain.LOCKED_DOOR);
+	//Exit hallway: the whole `end` block goes CHASM first, then the EMPTY corridor
+	//and its EXIT head, with the transition Java registers on (7,8).
+	fillJavaRect(level, CITY_BOSS_END.left, CITY_BOSS_END.top, CITY_BOSS_END.right, CITY_BOSS_END.bottom, Terrain.CHASM);
 	fillRect(level, 4, 5, 10, 22, Terrain.EMPTY);
 	fillRect(level, 4, 5, 10, 8, Terrain.EXIT);
-	set(level, 7, 13, Terrain.EXIT);
+	level.transitions.push({ pos: CITY_EXIT_CELL.y * level.w + CITY_EXIT_CELL.x, type: 'regularExit' });
+	//The Imp shop's base marks. The room itself stays unpainted until `unseal()`'s
+	//`spawnShop()` - `ImpShopRoom.paint()` is a deliberate no-op that only rolls its
+	//item list - so this is the pedestal, the two statues and the corridor link below
+	//`end`, exactly as `build()` leaves them.
+	set(level, 7, 16, Terrain.PEDESTAL);
+	set(level, 5, 12, Terrain.STATUE);
+	set(level, 9, 12, Terrain.STATUE);
+	fillRect(level, 5, 23, 9, 23, Terrain.EMPTY);
+	fillRect(level, 6, 24, 8, 24, Terrain.EMPTY);
+	//The eight 2x2 WALL pillars Java stamps last ("no deco on these").
+	for (const [x, y] of [[1, 2], [1, 7], [1, 12], [1, 17], [12, 2], [12, 7], [12, 12], [12, 17]]) {
+		fillRect(level, x, y, x + 1, y + 1, Terrain.WALL);
+	}
+	//Not ported, stated: `new CityPainter().paint(this, null)`'s `EMPTY -> EMPTY_DECO`
+	//(1-in-10) / `WALL -> WALL_DECO` scatter - a whole-floor decoration pass with its
+	//own RNG draws, not part of the room geometry above; and the `CustomGroundVisuals`/
+	//`CustomWallVisuals` tilemaps, which are presentation over this same terrain.
 	return { paint: level, rooms: [room(1, 25, 13, 38)], feeling: null };
 }
 
+/** `HallsBossLevel`'s room constants (`v3.3.8`): `WIDTH/2 ± 4`, `ROOM_TOP 8`,
+ *  `ROOM_BOTTOM = ROOM_TOP + 8`. */
+export const HALLS_ROOM = { left: 12, top: 8, right: 20, bottom: 16 } as const;
+/** `HallsBossLevel`'s exit cell (`v3.3.8`): `width/2 + (ROOM_TOP+1)*width` = (16,9).
+ *  `build()` registers the `REGULAR_EXIT` transition here but paints no `EXIT` tile -
+ *  the cell is inside the room's `WALL_DECO` band, and only `unseal()` sets it to
+ *  `EXIT`. */
+export const HALLS_EXIT_CELL = { x: 16, y: 9 } as const;
+/** `HallsBossLevel`'s boss seat (`v3.3.8`): `exitCell + width*3` = (16,12), the cell
+ *  `seal()` spawns Yog on and the first `Patch` pass measures `distance(i, bossPos)`
+ *  from. */
+export const HALLS_BOSS_POS = { x: 16, y: 12 } as const;
+
 function hallsBoss(): BossFloorData {
-	// HallsBossLevel: a 32x32 cross-shaped approach and a central 9x9 boss room.
-	const level = new PaintLevel(32, 32, Terrain.WALL);
-	for (let i = 0; i < 5; i++) {
-		const left = 4 + i * 5;
-		const top = i === 2 ? 2 : i === 1 || i === 3 ? 3 : 4;
-		const bottom = i === 2 ? 24 : i === 1 || i === 3 ? 22 : 20;
-		fillRect(level, left, top, left + 4, bottom, Terrain.EMPTY);
+	// `HallsBossLevel.build()` (`v3.3.8`), transcribed in Java's own order - including
+	// the RNG draws, which are part of the floor's stream even where their product is
+	// scenery. The five approach arms roll their extents (`IntRange` each, ten draws);
+	// the first `Patch.generate(..., 0.20f, 0, true)` scatters `REGION_DECO`/`STATUE`
+	// by `distance(i, bossPos) + Random.Int(5) >= 10`; the 11x11 `EMPTY` ring lands at
+	// (11,7); the second `Patch.generate(..., 0.30f, 3, true)` waters it; a 1-in-4
+	// `EMPTY_DECO` pass follows; then the 9x9 `EMPTY_SP` room, its `WALL_DECO` band
+	// (top two rows plus the two bottom corners - solid, so the walkable room is 9x7),
+	// and the inner 3x4 `EMPTY`; then the exit transition; then the
+	// `REGION_DECO -> REGION_DECO_ALT` coin flip. Java's `build()` returns whether a
+	// path survives from entrance to exit and the level builder retries on false -
+	// this port rebuilds up to 50 times on the same stream rather than failing shut.
+	for (let attempt = 0; attempt < 50; attempt++) {
+		const level = new PaintLevel(32, 32, Terrain.WALL);
+		let entranceCell = -1;
+		for (let i = 0; i < 5; i++) {
+			let top: number;
+			let bottom: number;
+			if (i === 0 || i === 4) {
+				top = SpdRandom.intRange(HALLS_ROOM.top - 1, HALLS_ROOM.top + 3);
+				bottom = SpdRandom.intRange(HALLS_ROOM.bottom + 2, HALLS_ROOM.bottom + 6);
+			} else if (i === 1 || i === 3) {
+				top = SpdRandom.intRange(HALLS_ROOM.top - 5, HALLS_ROOM.top - 1);
+				bottom = SpdRandom.intRange(HALLS_ROOM.bottom + 6, HALLS_ROOM.bottom + 10);
+			} else {
+				top = SpdRandom.intRange(HALLS_ROOM.top - 6, HALLS_ROOM.top - 3);
+				bottom = SpdRandom.intRange(HALLS_ROOM.bottom + 8, HALLS_ROOM.bottom + 12);
+			}
+			//`Painter.fill(this, 4 + i*5, top, 5, bottom - top + 1, EMPTY)`.
+			fillXY(level, 4 + i * 5, top, 5, bottom - top + 1, Terrain.EMPTY);
+			if (i === 2) {
+				entranceCell = (6 + i * 5) + (bottom - 1) * level.w;
+				level.transitions.push({ pos: entranceCell, type: 'regularEntrance' });
+			}
+		}
+		const bossPos = HALLS_BOSS_POS.y * level.w + HALLS_BOSS_POS.x;
+		const bossX = HALLS_BOSS_POS.x, bossY = HALLS_BOSS_POS.y;
+		let patch = spdPatchGenerate(level.w, level.h, 0.20, 0, true);
+		for (let i = 0; i < level.map.length; i++) {
+			if (level.map[i] === Terrain.EMPTY && patch[i]) {
+				const dx = Math.abs((i % level.w) - bossX), dy = Math.abs(Math.floor(i / level.w) - bossY);
+				level.map[i] = Math.max(dx, dy) + SpdRandom.int(5) >= 10 ? Terrain.REGION_DECO : Terrain.STATUE;
+			}
+		}
+		level.map[entranceCell] = Terrain.ENTRANCE;
+		//`Painter.fill(this, ROOM_LEFT-1, ROOM_TOP-1, 11, 11, EMPTY)`: the 11x11 ring
+		//at (11,7) - the approach arms' random ends stop outside it, this is what
+		//guarantees they join the room.
+		fillXY(level, HALLS_ROOM.left - 1, HALLS_ROOM.top - 1, 11, 11, Terrain.EMPTY);
+		patch = spdPatchGenerate(level.w, level.h, 0.30, 3, true);
+		for (let i = 0; i < level.map.length; i++) {
+			if ((level.map[i] === Terrain.EMPTY || level.map[i] === Terrain.STATUE || level.map[i] === Terrain.REGION_DECO) && patch[i]) {
+				level.map[i] = Terrain.WATER;
+			}
+		}
+		for (let i = 0; i < level.map.length; i++) {
+			if (level.map[i] === Terrain.EMPTY && SpdRandom.int(4) === 0) level.map[i] = Terrain.EMPTY_DECO;
+		}
+		fillXY(level, HALLS_ROOM.left, HALLS_ROOM.top, 9, 9, Terrain.EMPTY_SP);
+		fillXY(level, HALLS_ROOM.left, HALLS_ROOM.top, 9, 2, Terrain.WALL_DECO);
+		fillXY(level, HALLS_ROOM.left, HALLS_ROOM.bottom - 1, 2, 2, Terrain.WALL_DECO);
+		fillXY(level, HALLS_ROOM.right - 1, HALLS_ROOM.bottom - 1, 2, 2, Terrain.WALL_DECO);
+		fillXY(level, HALLS_ROOM.left + 3, HALLS_ROOM.top + 2, 3, 4, Terrain.EMPTY);
+		const exitCell = HALLS_EXIT_CELL.y * level.w + HALLS_EXIT_CELL.x;
+		level.transitions.push({ pos: exitCell, type: 'regularExit' });
+		for (let i = 0; i < level.map.length; i++) {
+			if (level.map[i] === Terrain.REGION_DECO && SpdRandom.int(2) === 0) level.map[i] = Terrain.REGION_DECO_ALT;
+		}
+		if (hallsPathExists(level, entranceCell, exitCell)) return { paint: level, rooms: [room(12, 8, 20, 16)], feeling: null };
 	}
-	fillRect(level, 12, 8, 20, 16, Terrain.EMPTY_SP);
-	fillRect(level, 15, 10, 17, 13, Terrain.EMPTY);
-	set(level, 16, 16, Terrain.ENTRANCE);
-	set(level, 16, 9, Terrain.EXIT);
-	for (const [x, y] of [[12, 8], [13, 8], [19, 8], [20, 8], [12, 15], [13, 15], [19, 15], [20, 15]]) set(level, x, y, Terrain.WALL_DECO);
+	//Unreachable in practice (Java's own retry converges the same way); the last
+	//attempt's map is still a complete transcription, just possibly disconnected.
+	const level = new PaintLevel(32, 32, Terrain.WALL);
+	fillXY(level, HALLS_ROOM.left, HALLS_ROOM.top, 9, 9, Terrain.EMPTY_SP);
 	return { paint: level, rooms: [room(12, 8, 20, 16)], feeling: null };
+}
+
+/** `HallsBossLevel.build()`'s return: a `PathFinder.getStep(entrance, exit, passable)`
+ *  over `passable[]` built from `Terrain.flags & PASSABLE`. Four-way steps here read
+ *  the same membership this port's `isPassableTerrain` carries. */
+function hallsPathExists(level: PaintLevel, from: number, to: number): boolean {
+	const w = level.w, h = level.map.length / w;
+	const seen = new Uint8Array(level.map.length);
+	const queue = [from];
+	seen[from] = 1;
+	while (queue.length) {
+		const cell = queue.pop()!;
+		if (cell === to) return true;
+		const x = cell % w, y = Math.floor(cell / w);
+		for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]] as const) {
+			const nx = x + dx, ny = y + dy;
+			if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+			const n = ny * w + nx;
+			if (seen[n]) continue;
+			const t = level.map[n];
+			if (!isPassableTerrain(t) && n !== to) continue;
+			seen[n] = 1;
+			queue.push(n);
+		}
+	}
+	return false;
 }
 
 function lastLevel(): BossFloorData {
