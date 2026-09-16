@@ -1764,11 +1764,19 @@ fully checked off as of a given release.
       hunt), the `NinjaLog` decoy as a real ally creature, `HASTY_RETREAT`, and `SHADOW_STEP`'s free,
       discounted escape. **The Huntress's Nature's Power followed**, with the real eight-turn window,
       `GROWING_POWER`'s hero speed, `NATURES_WRATH`'s five harmful plants sprouting under whatever the
-      bow hits, and `WILD_MOMENTUM`'s twice-per-cast extension. **Still open, and deliberately not
-      offered**: the other seven abilities (Mage's two/Rogue's `ShadowClone`/Huntress's `SpiritHawk`/
-      Duelist's three) each need a system this port does not have - see `PORT_COVERAGE.md`'s
-      armor-ability section for the per-ability reason - and the Cleric's three have neither strings
-      nor a spell system here. `armorAbilitiesFor()` offers
+      bow hits, and `WILD_MOMENTUM`'s twice-per-cast extension. **The Huntress's Spirit Hawk and the
+      Duelist's Feint followed** (the "still open" list two lines below had gone stale claiming both
+      were not - `SpiritHawk` was already ported by the time it was written): Spirit Hawk brings a real
+      summoned-ally hawk with `SWIFT_SPIRIT`'s dodge pool, `GO_FOR_THE_EYES`'s blind/cripple and
+      `HEROIC_ENERGY`'s zero-cost re-order while one is already out; Feint brings the `AfterImage` decoy
+      (an attack against it is intercepted before the hit roll and never actually resolves, since Java's
+      `defenseSkill()` side effect fires on every attempt regardless of hit or miss), `FeintConfusion`'s
+      wasted attacker turn, and `FEIGNED_RETREAT`/`EXPOSE_WEAKNESS`'s Haste/Vulnerable+Weakness -
+      `COUNTER_ABILITY`'s tracker arms but has no consumer (no melee weapon-ability charge system exists
+      here yet). **Still open, and deliberately not offered**: the remaining five abilities (Mage's
+      two/Rogue's `ShadowClone`/Duelist's other two) each need a system this port does not have - see
+      `PORT_COVERAGE.md`'s armor-ability section for the per-ability reason - and the Cleric's three
+      have neither strings nor a spell system here. `armorAbilitiesFor()` offers
       only what can actually run, so a class with none keeps the crown's old description line
       instead of an empty choice, and its tier-4 pool stays ungranted (which is Java's own state
       while `armorAbility == null`). Also Not ported and stated: `ClassArmor` as a distinct item

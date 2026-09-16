@@ -19,6 +19,8 @@ export function verifyArmorAbilities(require, check) {
 	const {
 		SPIRIT_HAWK_LIFESPAN, goForTheEyesEffect, spiritHawkDodges, spiritHawkSpeed, spiritHawkViewDistance,
 	} = require('./simulation/huntressAbilities');
+	const { exposeWeaknessDuration, feignedRetreatHaste } = require('./simulation/duelistAbilities');
+	const { BUFF_DURATION } = require('./simulation/buffs');
 
 	//`HeroClass.armorAbilities()`, in its own order.
 	check('every class offers its three real armor abilities, in Java order', () => {
@@ -74,14 +76,14 @@ export function verifyArmorAbilities(require, check) {
 
 	check('only implemented abilities are offered, and the charge meter is Java\'s', () => {
 		//The Warrior's three, the Rogue's Smoke Bomb and Death Mark, the Huntress's Spectral Blades,
-		//Nature's Power and Spirit Hawk, and the Mage's Warp Beacon are the ported set; a class with
-		//none of its own offers nothing, which is what keeps a choice panel from listing an ability
-		//that cannot run.
+		//Nature's Power and Spirit Hawk, the Mage's Warp Beacon, and the Duelist's Feint are the
+		//ported set; a class with none of its own offers nothing, which is what keeps a choice
+		//panel from listing an ability that cannot run.
 		assert.deepEqual(armorAbilitiesFor('warrior'), ['heroicleap', 'shockwave', 'endure']);
 		assert.deepEqual(armorAbilitiesFor('rogue'), ['smokebomb', 'deathmark']);
 		assert.deepEqual(armorAbilitiesFor('huntress'), ['spectralblades', 'naturespower', 'spirithawk']);
 		assert.deepEqual(armorAbilitiesFor('mage'), ['warpbeacon']);
-		assert.deepEqual(armorAbilitiesFor('duelist'), []);
+		assert.deepEqual(armorAbilitiesFor('duelist'), ['feint']);
 		assert.equal(ARMOR_CHARGE_MAX, 100);
 		assert.equal(ARMOR_CHARGE_START, 50);
 		//`ClassArmor.Charger.act()`: `chargeGain = 100/500f`.
@@ -222,5 +224,21 @@ export function verifyArmorAbilities(require, check) {
 		assert.equal(endureEndingBonus(100, 0, 4, 0).perHitBonus, 100);
 		//Nothing banked means the tracker detaches instead of arming a zero bonus.
 		assert.deepEqual(endureEndingBonus(0, 3, 5, 3), { perHitBonus: 0, hits: 0 });
+	});
+
+	check('Feint\'s charge is Java\'s 50, and FEIGNED_RETREAT/EXPOSE_WEAKNESS scale 2 turns per point', () => {
+		const feint = armorAbilityDef('feint');
+		assert.equal(feint.baseChargeUse, 50);
+		assert.equal(feint.targeting, 'cell');
+		assert.deepEqual(feint.talents, ['feigned_retreat', 'expose_weakness', 'counter_ability']);
+		assert.equal(armorChargeUse(feint, { heroicEnergyRank: 0 }), 50);
+		assert.deepEqual([0, 1, 2, 3, 4].map(feignedRetreatHaste), [0, 2, 4, 6, 8]);
+		assert.deepEqual([0, 1, 2, 3, 4].map(exposeWeaknessDuration), [0, 2, 4, 6, 8]);
+		//This port's own `feintConfusion` buff duration (`buff-rules.mwl`) is 2, not Java's bare
+		//1: `advanceBuffs` decrements before the attacker's next-turn skip-turn gate reads it, so
+		//1 would already be gone by the time that gate runs - 2 is what actually survives to be
+		//read once, matching Java's single lost turn.
+		assert.equal(BUFF_DURATION.feintConfusion, 2);
+		assert.equal(BUFF_DURATION.counterAbility, 3);
 	});
 }

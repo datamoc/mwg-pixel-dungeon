@@ -36,7 +36,9 @@ export const BUFF_DURATION_DATA = {
   "ooze": 20,
   "wayward": 10,
   "charm": 10,
-  "lethalHasteCooldown": 100
+  "lethalHasteCooldown": 100,
+  "feintConfusion": 2,
+  "counterAbility": 3
 } as const;
 export const NEGATIVE_BUFF_DATA = [
   "poison",
@@ -58,5 +60,6 @@ export const NEGATIVE_BUFF_DATA = [
   "frost",
   "hex",
   "wayward",
-  "blindness"
+  "blindness",
+  "feintConfusion"
 ] as const;

@@ -166,6 +166,7 @@ import {
 import {
 	SPIRIT_HAWK_LIFESPAN, goForTheEyesEffect, spiritHawkDodges, spiritHawkSpeed, spiritHawkViewDistance,
 } from '../simulation/huntressAbilities';
+import { exposeWeaknessDuration, feignedRetreatHaste } from '../simulation/duelistAbilities';
 import { CLASSES, CLASS_AMMO, HERO_IDLE_FRAME, type ClassId } from '../classes';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
 import { TitleScene } from '../scenes/titleScene';
@@ -2058,7 +2059,7 @@ export class DungeonScene extends Scene2D {
 	}
 
 	/** any monster in MONSTERS, cut from its own real sprite sheet at its own real frame size */
-	private spawnMonster(kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk', championEligible = false): Creature {
+	private spawnMonster(kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'afterImage', championEligible = false): Creature {
 		const profile = monsterSpawnProfile(kind, this.depth, restoring, isAlly, championEligible, this.mobsToChampion);
 		this.mobsToChampion = profile.mobsToChampion;
 		const { def, adjustedDef, baseKind } = profile;
@@ -2246,6 +2247,37 @@ export class DungeonScene extends Scene2D {
 		this.creatureLayer.addChild(sprite);
 		this.spriteFor.set(image.id, sprite);
 		sprite.alpha = 0.72;
+		return image;
+	}
+
+	/** `Feint.AfterImage`: a one-turn decoy left at the cell the hero just blinked out of.
+	 * `AfterImageSprite extends MirrorSprite` (same class-armor film, `alpha(0.6f)`), so this
+	 * shares the mirror image's sprite factory. Unlike a real Mirror Image it never dies - its
+	 * `damage()` is a no-op in Java, and every attack against it is intercepted in `attack()`
+	 * (`defender.allyKind === 'afterImage'`) before any damage roll runs at all - so `hp`/`armor`
+	 * here exist only to satisfy the shared `Creature` shape and are never actually spent.
+	 * `takeAllyTurn`'s own `afterImage` branch destroys it on its first scheduled turn, which is
+	 * this port's equivalent of Java's `actPriority = HERO_PRIO+1` (fades right before the hero's
+	 * own next turn, after every hostile in earshot has had exactly one turn to take the bait). */
+	private spawnAfterImage(at: Step): Creature {
+		const image = this.spawnMonster('rat', at, false, undefined, true);
+		image.name = `${this.hero.name} (image)`;
+		image.hp = 1;
+		image.maxHp = 1;
+		image.sleeping = false;
+		image.seesHero = false;
+		image.allyKind = 'afterImage';
+		const carrier = this.sprite(image);
+		carrier.destroy();
+		const mirrorSheet = heroSheet(runState.sprites[this.heroClass]);
+		const mirrorFrame = Math.max(0, Math.min(5, this.armorTier)) * 21;
+		const sprite = new TintedSprite(mirrorSheet.get(mirrorFrame));
+		placeCharacterArt(sprite);
+		sprite.x = at.x * TILE;
+		sprite.y = at.y * TILE;
+		this.creatureLayer.addChild(sprite);
+		this.spriteFor.set(image.id, sprite);
+		sprite.alpha = 0.6;
 		return image;
 	}
 
@@ -8151,7 +8183,9 @@ export class DungeonScene extends Scene2D {
 				}
 			}
 		}
-		if (monster.buffs['paralysis'] || monster.buffs['frost']) return;
+		//`Mob.act()`: `if (buff(Feint.AfterImage.FeintConfusion.class) != null){ ...; spend(TICK);
+		//return true; }` - wastes the whole turn, same shape as paralysis/frost just above.
+		if (monster.buffs['paralysis'] || monster.buffs['frost'] || monster.buffs['feintConfusion']) return;
 		if (monster.buffs['amok']) {
 			this.takeAmokTurn(monster);
 			return;
@@ -8462,6 +8496,12 @@ export class DungeonScene extends Scene2D {
 		//(its `defenseSkill()` is what redirects whatever was hunting the hero). Returning here also
 		//keeps the generic ally branch below from walking an immovable log across the floor.
 		if (ally.allyKind === 'ninjaLog') return;
+		//`Feint.AfterImage.act()`: `destroy(); sprite.die(); return true;` unconditionally - the
+		//decoy's first scheduled turn is also its last, whether or not anything took the bait.
+		if (ally.allyKind === 'afterImage') {
+			this.kill(ally);
+			return;
+		}
 		if (ally.allyKind === 'spiritHawk') {
 			this.takeSpiritHawkTurn(ally);
 			return;
@@ -10997,6 +11037,38 @@ export class DungeonScene extends Scene2D {
 		//`DirectedPower`'s enchant boost, `STRIKING_WAVE` rank 4's +0.2 - have no tracker in this
 		//port; see the Shockwave row in `PORT_COVERAGE.md`.)
 		if (attacker === this.hero && this.spiritBladesArmed && this.talentRank('spirit_blades') === 4) damageMultiplier *= 1.1;
+		//`Feint.AfterImage.defenseSkill()`: `defenseSkill == 0` in Java means the decoy is never
+		//actually evaded, but the getter's real job is the side effect that runs on *every* call -
+		//i.e. on every attack attempt against it, hit or miss alike, since Java queries
+		//`defenseSkill()` once per attack as part of the to-hit roll itself. This port has no
+		//equivalent getter to piggyback on, so the trigger is placed here instead - ahead of the
+		//real roll, exactly like `SpiritHawk`'s dodge gate just below - which means it always
+		//fires and the roll never runs at all (a documented reduction from "fires on every
+		//attempt, then usually still connects for zero effective damage" to "fires and the
+		//attempt itself never resolves"; the observable result - the decoy is never scratched -
+		//is the same either way). `enemy.clearEnemy()` has no analog: this port's mobs hold no
+		//persistent enemy pointer to drop (target is recomputed from field of view every turn),
+		//so there is nothing to clear.
+		if (defender.allyKind === 'afterImage') {
+			if (!attacker.isHero && !attacker.isAlly && !attacker.isNPC) {
+				addBuff(attacker, 'feintConfusion');
+				const feignedRetreat = this.talentRank('feigned_retreat');
+				if (feignedRetreat > 0) {
+					this.hero.buffs['haste'] = Math.max(this.hero.buffs['haste'] ?? 0, feignedRetreatHaste(feignedRetreat));
+				}
+				const exposeWeakness = this.talentRank('expose_weakness');
+				if (exposeWeakness > 0) {
+					const duration = exposeWeaknessDuration(exposeWeakness);
+					addBuff(attacker, 'vulnerable', Math.max(attacker.buffs['vulnerable'] ?? 0, duration));
+					addBuff(attacker, 'weakness', Math.max(attacker.buffs['weakness'] ?? 0, duration));
+				}
+				if (this.talentRank('counter_ability') > 0) this.hero.buffs['counterAbility'] = BUFF_DURATION.counterAbility;
+			}
+			runState.audio.cue('miss', 0.55);
+			defender.sleeping = false;
+			this.say(t(attacker.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
+			return false;
+		}
 		//`SpiritHawk.HawkAlly.defenseSkill()`: with `SWIFT_SPIRIT` ranked the hawk outright dodges
 		//its first `2 * points` attackers (`Char.INFINITE_EVASION`), one dodge per attack. Java
 		//reaches this through `Char.hit()`'s own short-circuit, so the attack simply misses - the
@@ -16180,7 +16252,8 @@ export class DungeonScene extends Scene2D {
 								: id === 'smokebomb' ? this.activateSmokeBomb(def, cost, cell)
 								: id === 'naturespower' ? this.activateNaturesPower(def, cost)
 									: id === 'spirithawk' ? this.activateSpiritHawk(def, cost, cell)
-										: false;
+										: id === 'feint' ? this.activateFeint(def, cost, cell)
+											: false;
 		if (!activated) return;
 		this.refresh();
 	}
@@ -16755,6 +16828,44 @@ export class DungeonScene extends Scene2D {
 	/** `SpiritHawk.getHawk()`: the living hawk, if one is out. */
 	private spiritHawk(): Creature | undefined {
 		return this.creatures.find((c) => c.allyKind === 'spiritHawk' && c.hp > 0);
+	}
+
+	/**
+	 * `Feint.activate()` (tag `v3.3.8`): dash to an adjacent free cell and leave an `AfterImage`
+	 * decoy on the cell just vacated. Every one of Java's three early-return refusals (not
+	 * adjacent, rooted, solid/occupied) takes no charge and no turn, matching `HeroicLeap`'s own
+	 * rooted refusal above. The decoy drawing hostile attacks needs no extra wiring here: any mob
+	 * that cannot currently see the hero already prefers the nearest visible ally
+	 * (`visibleAllyTarget`, `takeMonsterTurn`), and one already adjacent to it attacks it outright
+	 * (the `adjacentAlly` branch) - the same existing paths `NinjaLog`'s decoy rides. What Java's
+	 * `aggro()` call adds beyond that - forcibly retargeting a mob that still sees the hero onto
+	 * the image instead - has no equivalent here, since this port's AI recomputes its target from
+	 * field of view every turn rather than holding a persistent enemy pointer to redirect; a mob
+	 * still hunting the hero in plain sight keeps hunting the hero. Documented reduction.
+	 */
+	private activateFeint(def: ArmorAbilityDef, cost: number, cell: Step | null): boolean {
+		if (!cell) return false;
+		if (Roguelike.chebyshevDistance(this.hero, cell) !== 1) {
+			this.say(t('actors.hero.abilities.duelist.feint.too_far'), 'negative');
+			return false;
+		}
+		if (this.hero.buffs['roots'] !== undefined) {
+			this.shakeScreen(1, 0.15);
+			this.say(t('actors.hero.abilities.duelist.feint.bad_location'), 'negative');
+			return false;
+		}
+		if (!this.level.passable(cell.x, cell.y) || this.creatureAt(cell.x, cell.y)) {
+			this.say(t('actors.hero.abilities.duelist.feint.bad_location'), 'negative');
+			return false;
+		}
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		const from = { x: this.hero.x, y: this.hero.y };
+		this.teleportHeroTo(cell.x, cell.y);
+		delete this.hero.buffs['invisibility'];
+		this.spawnAfterImage(from);
+		this.say(t('actors.hero.abilities.duelist.feint.name'), 'positive');
+		this.spendHeroAction(1);
+		return true;
 	}
 
 	/**

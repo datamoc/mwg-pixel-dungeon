@@ -72,7 +72,7 @@ export interface Creature extends Combatant {
 	/** Java-aligned friendly combatant (MirrorImage and the directable allies). */
 	isAlly?: boolean;
 	/** Friendly summon subtype; sheep are neutral, short-lived and non-combatant. */
-	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk';
+	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'afterImage';
 	/** `DirectableAlly.defendingPos`/`enemy`: the standing order a hero gives a directable ally
 	 *  (the Dried Rose's `AC_DIRECT` order, and the spirit hawk's re-cast). An ordered attack
 	 *  target wins over the nearest hostile, and an ordered defend cell replaces the hero as the

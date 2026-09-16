@@ -11,7 +11,7 @@
           {
             tag: "effect",
             apply_to: "negative",
-            set: "poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,chill,frost,hex,wayward,blindness",
+            set: "poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,chill,frost,hex,wayward,blindness,feintConfusion",
           },
         ],
       },
@@ -206,6 +206,30 @@
             tag: "row",
             buff: "lethalHasteCooldown",
             duration: 100,
+          },
+          {
+            // `Feint.AfterImage.FeintConfusion` (`Feint.java`, tag `v3.3.8`): a `FlavourBuff`
+            // Java applies for exactly 1 turn (`Buff.affect(enemy, FeintConfusion.class, 1)`),
+            // wasting the whole of the attacker's next turn (`Mob.act()`'s early return while it
+            // is up). This port's `advanceBuffs` decrements *before* the per-turn skip-turn gate
+            // reads the value (see `takeMonsterTurn`'s `paralysis`/`frost` check), so a buff set
+            // to Java's own "1" would already be gone by the time that gate runs on the
+            // attacker's very next turn - 2 is what actually survives to be read once, then
+            // expires the turn after, matching Java's single lost turn.
+            tag: "row",
+            buff: "feintConfusion",
+            duration: 2,
+          },
+          {
+            // `Talent.CounterAbilityTacker`: a bare 3-turn `FlavourBuff` `Feint.activate()` arms
+            // on the hero when `COUNTER_ABILITY` is ranked (`Buff.prolong(hero, ..., 3f)`). Its
+            // only real consumer, `MeleeWeapon.abilityChargeUse()`'s melee weapon-ability charge
+            // discount, has no counterpart in this port (no weapon-ability charge-cost system
+            // exists at all yet) - the tracker is still armed here for fidelity and future reuse,
+            // but nothing currently reads it. See `PORT_COVERAGE.md`'s `Feint` row.
+            tag: "row",
+            buff: "counterAbility",
+            duration: 3,
           },
         ],
       },
