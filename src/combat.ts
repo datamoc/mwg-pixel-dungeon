@@ -45,6 +45,24 @@ export interface Creature extends Combatant {
 	 */
 	deathMarkTurns?: number;
 	deathMarkInitialHp?: number;
+	/**
+	 * `Sungrass.Health` (`plants/Sungrass.java`, tag `v3.3.8`): the gradual-heal pool a
+	 * non-Warden char gains from Sungrass - `boost(HT)` adds max HP to `sungrassLevel`,
+	 * `sungrassPartial` accrues `(40+HT)/150` per own turn, and `sungrassPos` is the grant
+	 * cell the buff ends on leaving. This port's buff map holds durations only, so the pool
+	 * lives here, alongside the other per-creature payloads above.
+	 */
+	sungrassLevel?: number;
+	sungrassPartial?: number;
+	sungrassPos?: number;
+	/**
+	 * `Earthroot.Armor` (`plants/Earthroot.java`, tag `v3.3.8`): the keep-max block pool of
+	 * the char's max HP, absorbing `min(damage, (depth+5)/2)` per landed attack hit and
+	 * ending on leaving `earthrootArmorPos` or exhaustion. Same payload treatment as the
+	 * sungrass pool above.
+	 */
+	earthrootArmorLevel?: number;
+	earthrootArmorPos?: number;
 	/** Viscosity's accumulated deferred damage and its one-turn initial delay. */
 	deferredDamage?: number;
 	deferredDamageDelay?: boolean;

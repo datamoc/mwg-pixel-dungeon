@@ -135,6 +135,13 @@ export interface SavedCreature {
 	spiritHawkDodges?: number;
 	hasRaged?: boolean;
 	raged?: boolean;
+	/** `Sungrass.Health`'s `level`/`partialHeal`/`pos` (`plants/Sungrass.java`, tag `v3.3.8`). */
+	sungrassLevel?: number;
+	sungrassPartial?: number;
+	sungrassPos?: number;
+	/** `Earthroot.Armor`'s `level`/`pos` (`plants/Earthroot.java`, tag `v3.3.8`). */
+	earthrootArmorLevel?: number;
+	earthrootArmorPos?: number;
 	chainUsed?: boolean;
 	ventCooldown?: number;
 	webCooldown?: number;

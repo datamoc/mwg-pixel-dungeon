@@ -194,6 +194,7 @@ import { planTenguConeFront } from '../simulation/tenguBeam';
 import { planFireSpread } from '../simulation/fireSpread';
 import { trampleHighGrass as planHighGrassTrample, type HighGrassState } from '../simulation/highGrass';
 import { applyEnvironmentalBlobs } from '../simulation/environmentalBlobs';
+import { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } from '../simulation/plantPools';
 import { evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
 import { selectRangedTarget } from '../simulation/targeting';
@@ -2551,6 +2552,8 @@ export class DungeonScene extends Scene2D {
 				kingAbilityCd: creature.kingAbilityCd, kingLastAbility: creature.kingLastAbility, kingShield: creature.kingShield,
 				deferredDamage: creature.deferredDamage, deferredDamageDelay: creature.deferredDamageDelay,
 				corrosionTurns: creature.corrosionTurns, corrosionDamage: creature.corrosionDamage,
+				sungrassLevel: creature.sungrassLevel, sungrassPartial: creature.sungrassPartial, sungrassPos: creature.sungrassPos,
+				earthrootArmorLevel: creature.earthrootArmorLevel, earthrootArmorPos: creature.earthrootArmorPos,
 				kingReactionsState: creature.kingReactions?.toJSON(),
 				weaponLevel: creature.weaponLevel, stolen: creature.stolen, mimicLoot: creature.mimicLoot, generation: creature.generation,
 				armbandStolen: creature.armbandStolen,
@@ -2688,6 +2691,8 @@ export class DungeonScene extends Scene2D {
 				kingAbilityCd: saved.kingAbilityCd, kingLastAbility: saved.kingLastAbility, kingShield: saved.kingShield,
 				deferredDamage: saved.deferredDamage, deferredDamageDelay: saved.deferredDamageDelay,
 				corrosionTurns: saved.corrosionTurns, corrosionDamage: saved.corrosionDamage,
+				sungrassLevel: saved.sungrassLevel, sungrassPartial: saved.sungrassPartial, sungrassPos: saved.sungrassPos,
+				earthrootArmorLevel: saved.earthrootArmorLevel, earthrootArmorPos: saved.earthrootArmorPos,
 				kingReactions: saved.kingReactionsState
 					? ReactionTable.fromJSON(this.kingPhaseRules(creature), saved.kingReactionsState)
 					: undefined,
@@ -8467,7 +8472,7 @@ export class DungeonScene extends Scene2D {
 	 * allied chars soft-trigger a revealed plant when they occupy its cell. Fadeleaf keeps its
 	 * teleport behavior; the status/blob effects below reuse this port's existing per-creature
 	 * buff and environmental systems. Earthroot's per-hit armor pool and Sungrass's gradual
-	 * monster Health buff remain reduced to their closest existing representations. */
+	 * monster Health buff are now the real pools, granted in the branches below. */
 	private triggerMobPlantAt(creature: Creature): boolean {
 		if (creature.isHero || creature.isNPC || creature.hp <= 0) return false;
 		const cell = this.level.index(creature.x, creature.y);
@@ -8523,15 +8528,27 @@ export class DungeonScene extends Scene2D {
 			case 'mageroyal':
 				for (const buff of ['poison', 'burning', 'weakness', 'vulnerable', 'cripple', 'daze'] as BuffId[]) delete creature.buffs[buff];
 				break;
-			case 'sungrass':
-				//`Sungrass.Health` heals a mob over time; no mob-specific healing buff exists,
-				//so preserve the outcome (full recovery) at activation rather than inventing
-				//another ticking status with different lifetime semantics.
-				creature.hp = creature.maxHp;
+			case 'sungrass': {
+				//`Sungrass.activate(ch)` for a non-Warden char: `Buff.affect(ch, Health.class)
+				//.boost(ch.HT)` (`plants/Sungrass.java`, tag `v3.3.8`) - an additive gradual-heal
+				//pool, not the instant full recovery this used to grant. The per-turn payout lives
+				//in `takeMonsterTurn`'s sungrass tick; the plant itself is still consumed here.
+				const granted = grantSungrassHealth(
+					creature.sungrassLevel !== undefined
+						? { level: creature.sungrassLevel, partial: creature.sungrassPartial ?? 0 }
+						: undefined,
+					creature.maxHp);
+				creature.sungrassLevel = granted.level;
+				creature.sungrassPartial = granted.partial;
+				creature.sungrassPos = cell;
 				break;
+			}
 			case 'earthroot':
-				//`Earthroot.Armor` needs the shared per-hit pool already used by the hero; the
-				//plant is still consumed and the missing monster pool remains an explicit gap.
+				//`Earthroot.activate(ch)` for a non-Warden char: `Buff.affect(ch, Armor.class)
+				//.level(ch.HT)` (`plants/Earthroot.java`, tag `v3.3.8`) - the same keep-max block
+				//pool the hero uses, absorbing per landed attack hit in `attack()`.
+				creature.earthrootArmorLevel = grantEarthrootArmor(creature.earthrootArmorLevel, creature.maxHp);
+				creature.earthrootArmorPos = cell;
 				break;
 			case 'swiftthistle':
 				//The global bubble is the available representation of Java's actor freeze.
@@ -8819,6 +8836,36 @@ export class DungeonScene extends Scene2D {
 				return;
 			}
 			if (monster.kind === 'tengu') this.tenguBracketJump(monster, preHp);
+		}
+		//`Sungrass.Health.act()` / `Earthroot.Armor.act()` for a mob pool: the sungrass pool
+		//pays out its gradual heal on the owner's own turn (like every other DoT tick above),
+		//and either pool ends when its owner has left the grant cell (both buffs detach on
+		//`target.pos != pos`; the exhaustion half lives in `tickSungrassHealth` and in the
+		//`attack()` absorb hook below).
+		if (monster.sungrassLevel !== undefined || monster.earthrootArmorLevel !== undefined) {
+			const mobCell = this.level.index(monster.x, monster.y);
+			if (monster.sungrassLevel !== undefined) {
+				const ticked = tickSungrassHealth(
+					{ level: monster.sungrassLevel, partial: monster.sungrassPartial ?? 0 },
+					monster.maxHp, monster.maxHp - monster.hp, mobCell !== monster.sungrassPos);
+				if (ticked.pool) {
+					monster.sungrassLevel = ticked.pool.level;
+					monster.sungrassPartial = ticked.pool.partial;
+				} else {
+					delete monster.sungrassLevel;
+					delete monster.sungrassPartial;
+					delete monster.sungrassPos;
+				}
+				if (ticked.healed > 0) {
+					const healedBefore = monster.hp;
+					monster.hp = Math.min(monster.maxHp, monster.hp + ticked.healed);
+					if (monster.hp > healedBefore) this.showHeal(monster, monster.hp - healedBefore);
+				}
+			}
+			if (monster.earthrootArmorLevel !== undefined && mobCell !== monster.earthrootArmorPos) {
+				delete monster.earthrootArmorLevel;
+				delete monster.earthrootArmorPos;
+			}
 		}
 		if (!this.tickCorrosion(monster)) return;
 		//Level.java's per-turn WATER hook: flying Java actors are exempt from the ground-status
@@ -12582,6 +12629,24 @@ export class DungeonScene extends Scene2D {
 		//point, so the bonus lands a little harder here than in Java - the same stated placement
 		//difference as the reduction half. See `consumeEndureBonus`.
 		if (attacker === this.hero && this.endureHits > 0 && damage > 0) damage = this.consumeEndureBonus(damage);
+		//`Char.defenseProc()`'s `Earthroot.Armor` half for a mob defender: the pool absorbs
+		//`min(damage, earthrootBlocking())` of every landed attack hit and detaches on
+		//exhaustion or once its owner has left the grant cell (see `absorbEarthrootArmor`).
+		//Java runs this pre-armor; this port's damage is already net of armor here, so a hit
+		//burns a little less pool than Java's - the same stated placement as the hero's own
+		//`absorbHeroDamage` half. It still runs before the defender damage curves below,
+		//matching Java's absorb-before-`damage()` order, and wand zaps, bombs, DoTs and traps
+		//never reach `attack()`, so they bypass the pool exactly as Java's direct `damage()`
+		//calls bypass `defenseProc()`.
+		if (!defender.isHero && defender.earthrootArmorLevel !== undefined) {
+			const absorbed = absorbEarthrootArmor(defender.earthrootArmorLevel, damage,
+				this.earthrootBlocking(), this.level.index(defender.x, defender.y) !== defender.earthrootArmorPos);
+			if (absorbed.level === null) {
+				delete defender.earthrootArmorLevel;
+				delete defender.earthrootArmorPos;
+			} else defender.earthrootArmorLevel = absorbed.level;
+			damage = absorbed.damage;
+		}
 		const preHp = defender.hp;
 		if (defender.isHero) {
 			//`Hero.damage()`: `CapeOfThorns.Thorns.proc()` runs before `super.damage()` (the

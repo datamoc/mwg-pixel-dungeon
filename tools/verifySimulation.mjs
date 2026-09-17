@@ -37,7 +37,7 @@ try {
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'mechanics/cone', 'dungeonConstants',
-	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith',
+	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools',
 	// `dungeonConstants` and `items/wands` read the MWL item tables, so the harness compiles the
 	// real adapter and the real generated catalogue instead of a hand-copied stub of them - a stub
 	// is how the old, hand-listed framework set above drifted once already, and how the item-frame
@@ -92,6 +92,7 @@ try {
 	const { trampleHighGrass } = require('./simulation/highGrass');
 	const { evolveJavaBlob } = require('./simulation/javaBlob');
 	const { wraithCombatStats, dustSpawnerStep, dustSpawnerCap } = require('./simulation/wraith');
+const { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } = require('./simulation/plantPools');
 	const { applyEnvironmentalBlobs } = require('./simulation/environmentalBlobs');
 	// The four coefficients `HighGrass.trample` reads, as the port's MWL rows carry them.
 	const grassRules = { seedChanceBase: 25, seedChancePerLevel: 4, dewChanceBase: 6, dewChanceLevelDivisor: 2 };
@@ -147,7 +148,35 @@ try {
 		assert.equal(dustSpawnerCap(30, 1), 4, 'with no candidate the bank caps at 2*wraiths');
 		assert.equal(dustSpawnerCap(3, 1), 3);
 	});
-	check('StenchGas applies its distinct two-turn paralysis effect', () => {
+	check('Sungrass.Health boosts additively and pays out (40+HT)/150 per turn', () => {
+	assert.deepEqual(grantSungrassHealth(undefined, 20), { level: 20, partial: 0 });
+	//`boost()` is additive, never keep-max, and keeps the fractional carry.
+	assert.deepEqual(grantSungrassHealth({ level: 5, partial: 0.5 }, 20), { level: 25, partial: 0.5 });
+	//HT 110 accrues exactly 1.0/turn: the first turn banks the carry without healing.
+	assert.deepEqual(tickSungrassHealth({ level: 110, partial: 0 }, 110, 50, false), { pool: { level: 110, partial: 1 }, healed: 0 });
+	//A carry landing exactly on 1.0 heals nothing - Java's gate is a strict `> 1`.
+	const payout = tickSungrassHealth({ level: 110, partial: 1 }, 110, 50, false);
+	assert.deepEqual(payout, { pool: { level: 108, partial: 0 }, healed: 2 });
+	//The HP gain caps at what is missing, but the pool still drains the whole tick.
+	assert.deepEqual(tickSungrassHealth({ level: 110, partial: 1 }, 110, 1, false), { pool: { level: 108, partial: 0 }, healed: 1 });
+	//Exhaustion ends the buff.
+	assert.deepEqual(tickSungrassHealth({ level: 1, partial: 1 }, 110, 50, false), { pool: null, healed: 2 });
+	//Leaving the grant cell ends it with no parting tick.
+	assert.deepEqual(tickSungrassHealth({ level: 110, partial: 1 }, 110, 50, true), { pool: null, healed: 0 });
+});
+check('Earthroot.Armor grants keep-max and absorbs min(damage, blocking) per hit', () => {
+	assert.equal(grantEarthrootArmor(undefined, 20), 20);
+	//`level()` keeps the higher pool, unlike Sungrass's additive boost.
+	assert.equal(grantEarthrootArmor(25, 20), 25);
+	assert.equal(grantEarthrootArmor(10, 20), 20);
+	assert.deepEqual(absorbEarthrootArmor(20, 10, 5, false), { level: 15, damage: 5 });
+	assert.deepEqual(absorbEarthrootArmor(20, 3, 5, false), { level: 17, damage: 0 });
+	//The detaching hit still blocks the full cap, not just the remaining pool.
+	assert.deepEqual(absorbEarthrootArmor(2, 10, 5, false), { level: null, damage: 5 });
+	//A moved owner detaches and takes the hit whole.
+	assert.deepEqual(absorbEarthrootArmor(20, 10, 5, true), { level: null, damage: 10 });
+});
+check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		const target = { hp: 10 };
 		const advanced = [];
 		const buffs = [];
