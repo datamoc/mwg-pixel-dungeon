@@ -197,7 +197,7 @@ import { applyEnvironmentalBlobs } from '../simulation/environmentalBlobs';
 import { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } from '../simulation/plantPools';
 import { plantDropCandidates, plantDropCount } from '../simulation/plantDrops';
 import { teleportCandidates, disarmBubblePresses, type TeleportCell } from '../simulation/teleport';
-import { evolveJavaBlob } from '../simulation/javaBlob';
+import { evolveElectricity, evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
 import { selectRangedTarget } from '../simulation/targeting';
 import { foregroundGrassFrames as buildForegroundGrassFrames, terrainFrameAt as buildTerrainFrameAt, terrainFrames as buildTerrainFrames, wallFrameAt as buildWallFrameAt, wallFrames as buildWallFrames, waterFrames as buildWaterFrames, type DungeonTileFrameContext } from './dungeonTileFrames';
@@ -6115,7 +6115,12 @@ export class DungeonScene extends Scene2D {
 			passable: (x, y) => this.level.passable(x, y),
 			advance: (blob, isSolid) => {
 				const current = (this[blob] as Blob).toJSON().volume;
-				const next = evolveJavaBlob(this.level.width, this.level.height, current, isSolid);
+				//`Electricity.evolve()` overrides the generic diffusion entirely: charge
+				//conducts at full power through connected water, then loses one per cell.
+				const next = blob === 'electricity'
+					? evolveElectricity(this.level.width, this.level.height, current,
+						(x, y) => this.level.terrain[x + y * this.level.width] === WATER)
+					: evolveJavaBlob(this.level.width, this.level.height, current, isSolid);
 				this[blob] = Blob.fromJSON({ width: this.level.width, height: this.level.height, volume: next });
 				if (blob === 'corrosiveGas' && this[blob].total() === 0) this.corrosiveGasStrength = 0;
 			},

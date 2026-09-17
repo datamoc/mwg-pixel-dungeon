@@ -81,8 +81,8 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 	//`Electricity.evolve()` (tag `v3.3.8`): creatures in electrified cells are paralysed
 	//for the cell's charge unless already held, and take the depth-scaled zap on odd
 	//charges (with the real `ondeath` line on a hero kill, via the cause below). Water
-	//conduction has no water map here, so the blob only decays through the shared
-	//evolution (stated); the shocking/storm traps seed it directly.
+	//conduction runs in the volume step itself (`evolveElectricity` in `javaBlob.ts`);
+	//the shocking/storm traps seed it directly.
 	for (const cell of context.cellsAbove('electricity', 0.0001)) {
 		const target = context.creatureAt(cell.x, cell.y);
 		if (!target || target.hp <= 0) continue;

@@ -90,7 +90,7 @@ try {
 	const { runUntilHeroInput } = require('./adapters/sceneSimulation');
 	const { SceneSimulationAdapter } = require('./adapters/sceneSimulation');
 	const { trampleHighGrass } = require('./simulation/highGrass');
-	const { evolveJavaBlob } = require('./simulation/javaBlob');
+	const { evolveElectricity, evolveJavaBlob } = require('./simulation/javaBlob');
 	const { wraithCombatStats, dustSpawnerStep, dustSpawnerCap } = require('./simulation/wraith');
 const { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } = require('./simulation/plantPools');
 const { plantDropCandidates, plantDropCount } = require('./simulation/plantDrops');
@@ -133,6 +133,32 @@ const { teleportCandidates, disarmBubblePresses } = require('./simulation/telepo
 		assert.equal(next[0], 0);
 		const blocked = evolveJavaBlob(5, 5, before, (x, y) => x === 2 && y === 1);
 		assert.equal(blocked[7], 0);
+	});
+	check('Electricity conducts full power through connected water, then loses one volume', () => {
+		//5x5: water is the middle row plus a cell below its centre; the seed sits dry above.
+		const isWater = (x, y) => (y === 2 && x >= 0 && x <= 4) || (x === 2 && y === 3);
+		const before = new Array(25).fill(0);
+		before[7] = 10;
+		const next = evolveElectricity(5, 5, before, isWater);
+		//The dry seed keeps its own charge minus one; every connected water cell
+		//conducts the full 10 first, so all read 9 after the decrement.
+		assert.equal(next[7], 9);
+		for (const cell of [10, 11, 12, 13, 14, 17]) assert.equal(next[cell], 9);
+		//Dry cells off the water stay uncharged, and diagonal water never conducts.
+		assert.equal(next[0], 0);
+		assert.equal(next[6], 0);
+		assert.equal(next[8], 0);
+	});
+	check('Electricity never diffuses into dry cells and dies out by one per turn', () => {
+		const dry = new Array(25).fill(0);
+		dry[12] = 3;
+		const next = evolveElectricity(5, 5, dry, () => false);
+		assert.equal(next[12], 2);
+		for (const cell of [7, 11, 13, 17]) assert.equal(next[cell], 0);
+		const spent = evolveElectricity(5, 5, next, () => false);
+		assert.equal(spent[12], 1);
+		const gone = evolveElectricity(5, 5, spent, () => false);
+		assert.equal(gone[12], 0);
 	});
 	check('Wraith.adjustStats scales accuracy, evasion and damage with the spawn level', () => {
 		assert.deepEqual(wraithCombatStats(0), { accuracy: 10, evasion: 50, damageMin: 1, damageMax: 2 });
