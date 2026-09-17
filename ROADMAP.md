@@ -599,9 +599,10 @@ was judged not worth the churn against those existing references.
       turns invisible, read before the invisibility dispel, and the execute fires only while it is
       up) plus its blink action (a real toolbar action attacking in place or stepping to the cheapest
       free cell beside a visible hostile, refusing an unreachable or rooted case with Java's own
-      message). **Remaining**: specialized ally-aware ranged targeting, STRReq/flail surprise gating,
-      and `Mob`'s wound-instead-of-surprise presentation. See `PORT_COVERAGE.md`'s sleeping/wandering
-      and `Preparation` rows. **Complexity: M.**
+      message). Surprise gating ported 2026-09-17 (thrown/unarmed/STR/flail plus the invisible
+      disjunct, hero-only). **Remaining**: specialized ally-aware ranged targeting, and `Mob`'s
+      wound-instead-of-surprise presentation (both live in `effects/`, not mechanics).
+      See `PORT_COVERAGE.md`'s sleeping/wandering and `Preparation` rows. **Complexity: M.**
 - [x] Implement shield decay. `Barrier.act()`'s real `min(1,shielding/20)`-per-turn proportional
       curve runs every hero turn against the shared `heroBarrier` pool, and `Blocking` owns a
       separate `blockingBarrier` pool with `ShieldBuff.shieldUsePriority = 2` draining before

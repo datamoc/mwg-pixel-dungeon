@@ -32,3 +32,30 @@ export function armorSTRReq(tier: number, level: number): number {
 export function missileSTRReq(tier: number, level: number): number {
 	return weaponSTRReq(tier, level) - 1;
 }
+
+export interface SurpriseGateInput {
+	/** a thrown attack reads the missile, never the melee weapon */
+	thrown: boolean;
+	/** empty hand (weaponId === 'startingWeapon' here) */
+	unarmed: boolean;
+	/** the wielded melee weapon is a flail */
+	flail: boolean;
+	/** Hero.STR() - this port's hero.str, with its ring/talent bonuses */
+	heroStr: number;
+	weaponTier: number;
+	weaponLevel: number;
+}
+
+/**
+ * Hero.canSurpriseAttack() (Hero.java 738-745, tag v3.3.8): thrown weapons
+ * always qualify (MissileWeapon is not a Weapon); an empty hand qualifies too
+ * (null instanceof Weapon is false, which also carries the RingOfForce clause);
+ * otherwise the hero needs the STR for the wielded weapon and must not be swinging
+ * a flail (Flail.java: 'cannot surprise attack'). Char's base returns true.
+ */
+export function canSurpriseAttack(input: SurpriseGateInput): boolean {
+	if (input.thrown || input.unarmed) return true;
+	if (input.heroStr < weaponSTRReq(input.weaponTier, input.weaponLevel)) return false;
+	if (input.flail) return false;
+	return true;
+}

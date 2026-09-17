@@ -1597,7 +1597,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	assert.equal(roseRechargeGhostHeal(0, 1), 1);
 	assert.equal(roseRechargeGhostHeal(3, 1), 2, '(1 + level/3) * amount');
 	assert.equal(roseRechargeGhostHeal(9, 4), 16);
-	const { weaponSTRReq, armorSTRReq, missileSTRReq } = require('./items/strReq.js');
+	const { weaponSTRReq, armorSTRReq, missileSTRReq, canSurpriseAttack } = require('./items/strReq.js');
 	// `Weapon.STRReq`/`Armor.STRReq`/`MissileWeapon.STRReq` (tags `v2.1.4`/`v3.3.8`):
 	// `(8 + tier*2) - (int)(sqrt(8*lvl+1)-1)/2`, decreasing at +1/+3/+6/+10.
 	assert.equal(weaponSTRReq(1, 0), 10);
@@ -1605,6 +1605,15 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	assert.equal(weaponSTRReq(1, 2), 9);
 	assert.equal(weaponSTRReq(1, 3), 8);
 	assert.equal(weaponSTRReq(1, 6), 7);
+	// `Hero.canSurpriseAttack()` (tag `v3.3.8`): thrown and unarmed always qualify,
+	// a swung weapon needs the STR and a non-flail class.
+	assert.equal(canSurpriseAttack({ thrown: true, unarmed: false, flail: true, heroStr: 1, weaponTier: 5, weaponLevel: 0 }), true, 'a thrown dart reads the missile, never the melee flail');
+	assert.equal(canSurpriseAttack({ thrown: false, unarmed: true, flail: false, heroStr: 1, weaponTier: 1, weaponLevel: 0 }), true);
+	assert.equal(canSurpriseAttack({ thrown: false, unarmed: false, flail: false, heroStr: 10, weaponTier: 1, weaponLevel: 0 }), true, '10 STR meets a tier-1 req of exactly 10');
+	assert.equal(canSurpriseAttack({ thrown: false, unarmed: false, flail: false, heroStr: 9, weaponTier: 1, weaponLevel: 0 }), false, '9 STR misses it');
+	assert.equal(canSurpriseAttack({ thrown: false, unarmed: false, flail: true, heroStr: 30, weaponTier: 1, weaponLevel: 0 }), false, 'a flail never surprises');
+	assert.equal(canSurpriseAttack({ thrown: false, unarmed: false, flail: false, heroStr: 17, weaponTier: 5, weaponLevel: 0 }), false, '17 STR misses a tier-5 req of 18');
+	assert.equal(canSurpriseAttack({ thrown: false, unarmed: false, flail: false, heroStr: 18, weaponTier: 5, weaponLevel: 0 }), true);
 	assert.equal(weaponSTRReq(1, 10), 6);
 	assert.equal(weaponSTRReq(5, 0), 18);
 	assert.equal(weaponSTRReq(5, 12), 14);

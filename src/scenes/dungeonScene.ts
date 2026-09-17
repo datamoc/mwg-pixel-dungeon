@@ -224,6 +224,7 @@ import { planWealthDrops, wealthEquipBonus, initialiseWealthTrackers, wealthDeat
 import { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal, artifactRechargeDuration, wildEnergyRechargeTurns, type RechargeGuards } from '../items/artifactRecharge';
 import { equipRing as equipInventoryRing, equipArmor as equipInventoryArmor, equipWeapon as equipInventoryWeapon, type GearEquipmentContext, type RingEquipmentContext } from '../items/equipment';
 import { itemDescription, itemStatsLine, itemDisplayName as resolveItemDisplayName, type ItemDisplayContext } from '../items/displayName';
+import { weaponSTRReq, canSurpriseAttack } from '../items/strReq';
 import { useStoneById as routeStoneAction, type StoneActionContext } from '../items/stoneActions';
 
 function scenarioQuest(id: string) {
@@ -12229,8 +12230,6 @@ export class DungeonScene extends Scene2D {
 		if (attacker === this.hero && this.hero.prepLevel !== undefined && this.talentRank('bounty_hunter') > 0) {
 			this.bountyTrackerArmed = true;
 		}
-		// Invisibility is dispelled by an aggressive action (Invisibility.dispel()).
-		if (attacker.buffs['invisibility']) delete attacker.buffs['invisibility'];
 		//`Sheep` is a neutral NPC in Java: it cannot be damaged or selected as a hostile target.
 		//The port stores it as an ally only so the shared scheduler/render/save path can carry it.
 		if (defender.allyKind === 'sheep') return false;
@@ -12249,13 +12248,25 @@ export class DungeonScene extends Scene2D {
 		// Mob.surprisedBy() is not limited to sleeping enemies: it also succeeds when the
 		// target did not see the hero on its most recent turn. In particular, its FOV is
 		// sampled before a chase step, so striking a snake immediately after it enters a
-		// doorway is a guaranteed hit. `Hero.canSurpriseAttack()`'s flail clause IS modelled:
-		// a flail (`Flail.java`: "cannot surprise attack") never surprises. The STR clause
-		// (`STR() < STRReq(level(), tier)`) always passes here - this port has no per-weapon
-		// STR-requirement system, so every wielded weapon is treated as STR-ok (stated in
-		// `PORT_COVERAGE.md`, not silently dropped).
-		const attackerIsFlail = attacker.isHero
+		// doorway is a guaranteed hit. The attacking half is `Hero.canSurpriseAttack()`
+		// in full: thrown attacks read the missile (a flail in the melee slot no longer
+		// vetoes a thrown surprise), unarmed qualifies, and a swung weapon needs both
+		// the STR (`STR() < STRReq()` fails) and a non-flail class - the STR clause used
+		// to always pass here, before the shop STR line gave this port a real requirement
+		// system to read. Surprise stays hero-only (`surprisedBy` needs the attacker to be
+		// the hero), and invisibility is read before `Invisibility.dispel()`, which Java
+		// runs only after the whole attack resolves.
+		const thrown = attacker.attackMode === 'throw';
+		const attackerIsFlail = attacker.isHero === true && !thrown
 			&& (this.weaponSourceClass ?? this.weaponId).toLowerCase().includes('flail');
+		const gate = canSurpriseAttack({
+			thrown,
+			unarmed: attacker.isHero === true && this.weaponId === 'startingWeapon',
+			flail: attackerIsFlail,
+			heroStr: this.hero.str ?? 0,
+			weaponTier: this.weaponTier,
+			weaponLevel: this.weaponLevel,
+		});
 		//`Crossbow.ChargedShot`: the next fired dart always hits (consumed in the throw
 		//branch below, which also spreads the on-hit effects over the 5x5 area).
 		const chargedShotHit = attacker.attackMode === 'throw' && this.chargedShotArmed;
@@ -12265,8 +12276,10 @@ export class DungeonScene extends Scene2D {
 			&& this.equippedRing?.id !== 'ring_force') {
 			this.disqualifyBossChallenge(defender);
 		}
-		const surprise = !attackerIsFlail
-			&& (defender.sleeping === true || (!defender.isHero && !defender.seesHero));
+		const surprise = attacker.isHero === true && gate
+			&& (defender.sleeping === true || (!defender.isHero && !defender.seesHero) || attacker.buffs['invisibility'] !== undefined);
+		// Invisibility is dispelled by an aggressive action (Invisibility.dispel()).
+		if (attacker.buffs['invisibility']) delete attacker.buffs['invisibility'];
 		//A spinning flail is guaranteed to hit while spinning (`ability_desc`); a charged
 		//shot always hits. Both ride the surprise channel (`INFINITE_ACCURACY` inside
 		//`rollHit`), which is exactly "guaranteed to hit" with no other change.
