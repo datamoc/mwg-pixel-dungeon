@@ -252,7 +252,7 @@ was judged not worth the churn against those existing references.
       weapon or missile in the game was silently mislabeled a plain `'food'` item with no
       enchant/curse, because `generatedInventoryItem` checked `generated.cat === Cat.WEAPON` when the
       real value is always a `WEP_T1..T5` sub-tier cat. See `PORT_COVERAGE.md`.
-- [ ] Finish the Wandmaker's three site quests. All three fetch types (corpse dust, elemental embers,
+- [x] Finish the Wandmaker's three site quests. **Closed 2026-09-17: the dust-curse was the last portable piece** (Wraith kinds, cursed-rose spawn, dust-spawner bank and handover dispel - see `PORT_COVERAGE.md`'s `Wraith` row). What remains is missing-system-only: the zap pose (no animation layer), quest-music/score (neither system exists), the +1 on the offered reward wands (wand power here comes from `weaponLevel`, no per-wand level to hold it), and `intro_cleric` (predates the catalogue). All three fetch types (corpse dust, elemental embers,
       rotberry seed) are live end to end. **The reward and the intro were not what this line claimed
       until 2026-09-16**: it said the reward was real, and it was an invented substitute - the
       interaction handed out a *frost* wand outright (a plain magic-missile staff for a Mage),
