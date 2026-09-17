@@ -11059,7 +11059,7 @@ export class DungeonScene extends Scene2D {
 	 *  the door `ironKey`-locked the way Tengu's own re-lock does - never requiring the
 	 *  key, since `unseal()` re-places it open at the King's death. `Mob.holdAllies`/
 	 *  `restoreAllies` (no intelligent ally persists into this fight),
-	 *  `Statistics.qualifiedForBossChallengeBadge` (Rankings work) and the `CITY_BOSS`
+	 *  `Statistics.qualifiedForBossChallengeBadge` (set live by `checkCityBossSeal` below) and the `CITY_BOSS`
 	 *  music start (already playing from floor entry) are correctly no-ops. Runs on the
 	 *  hero-move path with the other boss gates; Java fires on any cell occupation. */
 	private checkCityBossSeal(): void {
@@ -11152,9 +11152,9 @@ export class DungeonScene extends Scene2D {
 	 * than instantly. Hurt and debuffs already wake here, so the delay is bounded by one
 	 * round in every case.
 	 *
-	 * Unowned halves, each named where it belongs: the `LockedFloor` buff that actually bars
+	 * Unowned halves, each named where it belongs (the boss-challenge-badge flag is NOT one of them: `checkSewerBossSeal` sets it live below - see the `BOSS_CHALLENGE_1..5` coverage row): the `LockedFloor` buff that actually bars
 	 * the way out (boss floors have no stairs here; descent is Goo's death alone), the
-	 * boss-challenge-badge flag (Rankings work), the `SEWERS_BOSS` switch (it already plays
+	 * `SEWERS_BOSS` switch (it already plays
 	 * on boss-floor entry, so there is nothing to switch to), the ripple (no one-shot hook
 	 * in the pooled particle layers), and `unseal()`'s entrance restore (same descent-flow
 	 * reason as every other seal). The drowned cell stays walkable floor-flat water - Java's

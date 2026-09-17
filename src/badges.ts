@@ -3,8 +3,8 @@ import { CLASS_BADGE, type ClassId } from './classes';
 import { MWL_TABLE_ROWS } from './mwlContent';
 
 /**
- * Badges (`Badges.java`) as `mwg/core` Achievements: one boss badge per chapter, victory,
- * four class unlocks, four death causes. Unlock badges follow Java's own triggers where
+ * Badges (`Badges.java`) as `mwg/core` Achievements: one boss badge per chapter, victory, plus
+ * the five weapon-only `BOSS_CHALLENGE_1..5` badges, four class unlocks, four death causes. Unlock badges follow Java's own triggers where
  * this port can observe them (upgrade scroll used, surprise hit landed, special thrown,
  * weapon at +2); the Cleric has no Java unlock (predates it), so first victory opens it -
  * a stated port rule, not a Java one.

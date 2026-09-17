@@ -486,7 +486,7 @@ was judged not worth the churn against those existing references.
 - [ ] Complete class-specific item and ability behavior. `SuckerPunchTracker` is ported (the Rogue
       surprise bonus uses Java's `Random.IntRange(points, 2)` once per stable enemy, with save/load
       and death cleanup). The rest of this line is open. **Complexity: M.**
-- [ ] Port the `BOSS_CHALLENGE` badge set - the weapon-only boss kill. This was recorded for a while
+- [x] Port the `BOSS_CHALLENGE` badge set - the weapon-only boss kill. **Closed 2026-09-17: both halves this line called missing were already live, and only the documentation said otherwise.** The five badge rows exist (`boss_challenge_1..5` in `src/content/badges.mwl` - the "no `BOSS_CHALLENGE` rows" claim was stale, as was the `src/badges.mwl` path, which is really `src/content/badges.mwl`), the flag is set at all five fight starts, the damage-*source* notion the line said was missing is threaded (wand branch, unarmed branch, bomb seam, armor-ability seam, all clearing through `disqualifyBossChallenge`), and the award fires at each boss's death with the flag persisted through save/load. This was recorded for a while
       under section 7's seed/dew item as "the Dwarf King's boss-challenge-badge flag", which it is
       not: it is Java's `Badges.Badge.BOSS_CHALLENGE_1..5`, awarded at a boss's death while
       `Statistics.qualifiedForBossChallengeBadge` is still set. The flag is set true at all five
@@ -495,7 +495,7 @@ was judged not worth the churn against those existing references.
       boss damage that is *not* a plain weapon hit - `DwarfKing.java` 459-467 clears it on an
       unarmed hit without `RingOfForce.fightingUnarmed`, on any `Wand` except `WandOfLightning`, and
       on a `ClericSpell`, with `Goo`/`DM300`/`Pylon`/`Tengu`/`YogDzewa` each carrying their own sites
-      - and read at that boss's death. Two things are missing here: the badge entries themselves
+      - and read at that boss's death. Original text follows (superseded by the close-out above; kept for the rule description). The badge entries themselves
       (this port's `src/badges.mwl` is deliberately its own smaller set - one boss badge per chapter,
       no `BOSS_CHALLENGE` rows), and the clearing half's damage-*source* notion, which this port's
       inline monster-damage paths do not thread today. **Complexity: M** for that second half; the
