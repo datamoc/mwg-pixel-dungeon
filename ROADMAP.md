@@ -712,7 +712,7 @@ sets. `PORT_COVERAGE.md` already does the sixth bullet's classification row by r
 narrative rather than one finished audit pass. Screenshot/animation-timing comparison has real
 infra (pixel-hash probes, per-feature `*-livecheck.mjs` scripts) but only for the things those
 scripts targeted. **Genuinely unstarted**: an actual second, real Java instance to compare against
-(this checkout has no build of the Java game, only its source for reading), fixed-seed RNG-call-order
+(this checkout has no build of the Java game, only its source for reading; toolchain check 2026-09-17: Eclipse Adoptium JDK 21 is installed and the checkout ships its Gradle wrapper plus a `desktop/` module, so a build is plausible but unattempted - no distribution bootstrapped, no headless driver written), fixed-seed RNG-call-order
 comparison, and loot/quest/boss-transition/save-load comparison.
 
 - [ ] Compare both implementations with fixed seeds and identical action traces. **Complexity: XL.**
@@ -803,7 +803,7 @@ one.
       audit tools), and the catalog mechanism is already adopted. Pending is only the message half
       (typed messages at `say()` sites, combat log lines as pilot).
 - [ ] Continue producing the section 22A/22B analysis matrix for the remaining monster/item/buff
-      families before migrating each one's code, per SPD-ADR-010. **Progress 2026-09-16:** the
+      families before migrating each one's code, per SPD-ADR-010. **Progress 2026-09-17:** the third matrix, `MONSTER_ANALYSIS_GNOLL_BRUTE_SHAMAN_TRICKSTER.md`, covers the variant-inheritance case (Gnoll/Brute/ArmoredBrute/Shaman/GnollTrickster; Sapper recorded absent) - its finding is that Brute/ArmoredBrute's per-site kind-ORs are the smallest pilot for the ability-table migration. **Progress 2026-09-16:** the
       second matrix, `MONSTER_ANALYSIS_DM200_DM300_PYLON.md`, covers an ordinary mob, its variant,
       a fixed-floor boss, and its supporting actor; it confirms data aliases and keyed strategies
       rather than Java-style classes. Remaining monster/item/buff families still need the same
