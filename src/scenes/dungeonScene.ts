@@ -196,6 +196,7 @@ import { trampleHighGrass as planHighGrassTrample, type HighGrassState } from '.
 import { applyEnvironmentalBlobs } from '../simulation/environmentalBlobs';
 import { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } from '../simulation/plantPools';
 import { plantDropCandidates, plantDropCount } from '../simulation/plantDrops';
+import { teleportCandidates, disarmBubblePresses, type TeleportCell } from '../simulation/teleport';
 import { evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
 import { selectRangedTarget } from '../simulation/targeting';
@@ -8258,6 +8259,8 @@ export class DungeonScene extends Scene2D {
 				this.deepestDepth = Math.max(this.deepestDepth, this.depth);
 				this.say(this.depth in BOSSES ? t('port.log.descendboss') : t('scenes.gamescene.descend', { 0: this.depth }), 'warning');
 				this.justDescended = true;
+				//`Level.beforeTransition()`: delayed TimeBubble presses disarm on the old floor.
+				this.disarmTimeBubblePresses();
 				this.enterLevel();
 			}
 		} else if (plan.kind === 'wall' && this.canMineCavesWall() && this.mineMiningWall(target.x, target.y)) {
@@ -8526,17 +8529,17 @@ export class DungeonScene extends Scene2D {
 	private triggerMobPlantAt(creature: Creature): boolean {
 		if (creature.isHero || creature.isNPC || creature.hp <= 0) return false;
 		const cell = this.level.index(creature.x, creature.y);
-		const featureKind = this.portedFeatures.kindAt(cell);
 		const index = this.portedPaint?.plants.findIndex((plant) => plant.pos === cell && !plant.kind.startsWith('wellWater:')) ?? -1;
-		const manualKind = this.manualPlants.get(cell);
-		const kind = (featureKind?.startsWith('plant:') ? featureKind.slice('plant:'.length) : index >= 0 ? this.portedPaint!.plants[index]!.kind : manualKind)
-			?.replace(/Seed$/, '').toLowerCase();
+		const kind = this.plantKindAt(cell);
 		if (index >= 0) this.portedPaint!.plants.splice(index, 1);
 		this.manualPlants.delete(cell);
 		if (this.portedFeatures.kindAt(cell)?.startsWith('plant:')) this.portedFeatures.remove(cell);
 		if (!kind) return true;
 		if (kind === 'fadeleaf') {
-			if (creature.kind === 'statue' || creature.kind === 'dm201') return true;
+			//`Fadeleaf.activate()`: Java teleports every non-`IMMOVABLE` mob. The statue is
+		//not immovable in Java (`Statue.java` carries only `INORGANIC`), so the old statue
+		//exclusion teleported too little; the shared set covers DM201 and the rest.
+		if (creature.kind !== undefined && IMMOVABLE_KINDS.has(creature.kind)) return true;
 		//`Fadeleaf.activate()` marks a teleported mob first (`Buff.prolong(ch,
 		//`HazardAssistTracker...)` runs before `teleportChar` in Java).
 		this.markHazardMob(creature);
@@ -8610,7 +8613,9 @@ export class DungeonScene extends Scene2D {
 				break;
 			case 'swiftthistle':
 				//The global bubble is the available representation of Java's actor freeze.
-				this.timeBubbleTurns = Math.max(this.timeBubbleTurns, 7);
+				//`TimeBubble.reset()` overwrites `left = 7` unconditionally - re-triggering
+				//while a bubble runs restarts it, it does not extend it.
+				this.timeBubbleTurns = 7;
 				break;
 		}
 		return true;
@@ -8643,6 +8648,46 @@ export class DungeonScene extends Scene2D {
 			if (this.trapKinds.has(cell)) this.triggerTrapAt(cell % this.level.width, Math.floor(cell / this.level.width));
 			this.portedFeatures.interact(cell, this);
 		}
+	}
+	
+	/** The normalized class of the live plant on a cell (`sungrass`, `rotberry`, ...), or
+	 * `undefined` when none - the same resolution `triggerMobPlantAt` consumes with. */
+	private plantKindAt(cell: number): string | undefined {
+		const featureKind = this.portedFeatures.kindAt(cell);
+		const index = this.portedPaint?.plants.findIndex((plant) => plant.pos === cell && !plant.kind.startsWith('wellWater:')) ?? -1;
+		const manualKind = this.manualPlants.get(cell);
+		if (index < 0 && !manualKind) return undefined;
+		return (featureKind?.startsWith('plant:') ? featureKind.slice('plant:'.length) : index >= 0 ? this.portedPaint!.plants[index]!.kind : manualKind!)
+			.replace(/Seed$/, '').toLowerCase();
+	}
+	
+	/** `Swiftthistle.TimeBubble.disarmPresses()` via `Level.beforeTransition()`: leaving the
+	 * floor with delayed presses disarms them on the old floor instead of carrying stale
+	 * cell indices along - delayed-press plants are uprooted (Rotberry explicitly spared),
+	 * delayed-press traps are spent and revealed. The bubble's remaining turns survive the
+	 * trip, exactly as Java's buff does. Only the stairs transition disarms (Java runs this
+	 * from `Level.transition`, not from chasm falls or branch hops). */
+	private disarmTimeBubblePresses(): void {
+		if (this.timeBubblePresses.size === 0) return;
+		const { uproot, disarm } = disarmBubblePresses(
+			[...this.timeBubblePresses],
+			(cell) => this.plantKindAt(cell),
+			(cell) => this.trapKinds.has(cell),
+		);
+		for (const cell of uproot) {
+			const index = this.portedPaint?.plants.findIndex((plant) => plant.pos === cell && !plant.kind.startsWith('wellWater:')) ?? -1;
+			if (index >= 0) this.portedPaint!.plants.splice(index, 1);
+			this.manualPlants.delete(cell);
+			if (this.portedFeatures.kindAt(cell)?.startsWith('plant:')) this.portedFeatures.remove(cell);
+		}
+		for (const cell of disarm) {
+			this.spentTrapCells.add(cell);
+			const x = cell % this.level.width;
+			const y = Math.floor(cell / this.level.width);
+			if (this.secrets.isSecret(x, y)) this.secrets.discover(x, y);
+		}
+		this.timeBubblePresses.clear();
+		this.featuresMap?.setLayerData('features', this.featureFrames());
 	}
 
 	/** Java chasms are traversable only by falling; monster pathfinding still sees them as solid.
@@ -12186,11 +12231,28 @@ export class DungeonScene extends Scene2D {
 	}
 
 	private randomFreeCell(exclude: Step): Step | undefined {
-		const candidates: Step[] = [];
-		for (let y = 1; y < this.level.height - 1; y++) for (let x = 1; x < this.level.width - 1; x++) {
-			if ((x !== exclude.x || y !== exclude.y) && this.level.passable(x, y) && !this.creatureAt(x, y)) candidates.push({ x, y });
+		//`ScrollOfTeleportation.teleportChar` (`items/scrolls/ScrollOfTeleportation.java`, tag
+		//`v3.3.8`) lands on `Level.randomRespawnCell`: passable, unoccupied, outside the
+		//hero's FOV, with secret cells re-rolled (up to 20 tries before `no_tele`). The port
+		//collects the accepted set instead of probing with a cap, so it never fails spuriously
+		//where Java can return -1. Chasms read passable in this port's level (the hero can
+		//fall in), so they need the explicit refusal Java's own `passable[]` gives it.
+		//LARGE chars needing `openSpace` stay unmodeled (no open-space concept here), as does
+		//`teleportPreferringUnseen`'s unseen-room preference for the scroll itself.
+		const cells: TeleportCell[] = [];
+		for (let y = 1; y < this.level.height - 1; y++) {
+			for (let x = 1; x < this.level.width - 1; x++) {
+				cells.push({
+					x, y,
+					passable: this.level.passable(x, y),
+					occupied: (x === exclude.x && y === exclude.y) || this.creatureAt(x, y) !== undefined,
+					visible: this.fov.isVisible(x, y),
+					secret: this.secrets.isSecret(x, y),
+					chasm: this.isChasmCell(x, y),
+				});
+			}
 		}
-		return Random.element(candidates) ?? undefined;
+		return Random.element(teleportCandidates(cells)) ?? undefined;
 	}
 
 	/** `Level.randomDestination(Mob)`: Java samples any passable cell, while the port also
@@ -19636,6 +19698,12 @@ export class DungeonScene extends Scene2D {
 					const destination = this.randomFreeCell(creature);
 					if (destination) {
 						this.moveTo(creature, destination);
+						//`PhaseShift.affectTarget`: a teleported mob is beckoned back to wandering
+						//(`HUNTING -> WANDERING` plus a random destination) before the paralysis lands.
+						if (!creature.isHero) {
+							creature.seesHero = false;
+							creature.patrolTarget = this.randomPatrolDestination(creature);
+						}
 						if (!BOSS_KINDS.has(creature.kind as AnyMonsterId)
 							&& !MINIBOSS_KINDS.has(creature.kind as AnyMonsterId)) addBuff(creature, 'paralysis');
 					}

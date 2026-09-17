@@ -37,7 +37,7 @@ try {
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'mechanics/cone', 'dungeonConstants',
-	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops',
+	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/teleport',
 	// `dungeonConstants` and `items/wands` read the MWL item tables, so the harness compiles the
 	// real adapter and the real generated catalogue instead of a hand-copied stub of them - a stub
 	// is how the old, hand-listed framework set above drifted once already, and how the item-frame
@@ -94,6 +94,7 @@ try {
 	const { wraithCombatStats, dustSpawnerStep, dustSpawnerCap } = require('./simulation/wraith');
 const { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } = require('./simulation/plantPools');
 const { plantDropCandidates, plantDropCount } = require('./simulation/plantDrops');
+const { teleportCandidates, disarmBubblePresses } = require('./simulation/teleport');
 	const { applyEnvironmentalBlobs } = require('./simulation/environmentalBlobs');
 	// The four coefficients `HighGrass.trample` reads, as the port's MWL rows carry them.
 	const grassRules = { seedChanceBase: 25, seedChancePerLevel: 4, dewChanceBase: 6, dewChanceLevelDivisor: 2 };
@@ -219,6 +220,24 @@ check('HazardAssistTracker lasts 50 turns toward a 10-kill badge', () => {
 	assert.equal(badgeRow.counter, 'hazard_assists');
 	assert.equal(badgeRow.target, 10);
 	assert.equal(badgeRow.icon, 64);
+});
+check('Teleport lands passable, unoccupied, unseen, non-secret and out of pits', () => {
+	const open = { passable: true, occupied: false, visible: false, secret: false, chasm: false };
+	assert.deepEqual(teleportCandidates([
+		{ x: 0, y: 0, ...open },
+		{ x: 1, y: 0, ...open, passable: false },
+		{ x: 2, y: 0, ...open, occupied: true },
+		{ x: 3, y: 0, ...open, visible: true },
+		{ x: 4, y: 0, ...open, secret: true },
+		{ x: 5, y: 0, ...open, chasm: true },
+	]), [{ x: 0, y: 0 }]);
+});
+check('TimeBubble disarm uproots presses but spares Rotberry', () => {
+	assert.deepEqual(
+		disarmBubblePresses([3, 7, 9], (cell) => (cell === 3 ? 'rotberry' : cell === 7 ? 'firebloom' : undefined), (cell) => cell === 7 || cell === 9),
+		{ uproot: [7], disarm: [7, 9] },
+	);
+	assert.deepEqual(disarmBubblePresses([], () => undefined, () => false), { uproot: [], disarm: [] });
 });
 check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		const target = { hp: 10 };
