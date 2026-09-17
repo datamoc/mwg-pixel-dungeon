@@ -11311,6 +11311,11 @@ export class DungeonScene extends Scene2D {
 	/** A live Tengu cone: MWG's `MultiTurnBeam` with the game-supplied `fronts` resolver above. The
 	 * beam owns the per-turn traversal and its own save; `onCell` seeds the port's fire field, which
 	 * is what actually burns creatures, so no damage callback is involved. */
+	//Divergence (deliberate): the Java `Tengu.FireAbility.FireBlob.evolve()` decrements
+	//and ignites creatures but never calls `Level.destroy()` and never spreads, so the
+	//cone leaves grass and doors standing where ordinary fire would reduce them to
+	//embers. This port seeds ordinary fire instead, so the cone burns terrain exactly
+	//like the rest - see `tools/scratch/FLAMABLE-INVENTORY.md` item 1.
 	private buildTenguBeam(from: { x: number; y: number }, direction: number): Roguelike.MultiTurnBeam {
 		return new Roguelike.MultiTurnBeam({
 			level: this.level,
@@ -12178,14 +12183,16 @@ export class DungeonScene extends Scene2D {
 			for (const point of Roguelike.traceLine(yog, to)) {
 				const creature = this.creatureAt(point.x, point.y);
 				if (creature && creature !== yog) affected.add(creature);
-				//`YogDzewa.act()` runs `Dungeon.level.destroy(p)` on every flamable path cell -
-				//Java's FLAMABLE flag covers GRASS/HIGH_GRASS (including the furrows a Soiled fist
-				//or a Regrowth wand leaves) and both door states - rewriting the tile to EMBERS.
-				//This port's live terrain has no EMBERS id, so a burned cell becomes plain FLOOR,
-				//whose flags (passable, not flamable) match EMBERS' own.
-				if ([GRASS, HIGH_GRASS, DOOR, DOOR_CLOSED].includes(this.level.get(point.x, point.y))) {
-					this.level.set(point.x, point.y, FLOOR);
-				}
+			//`YogDzewa.act()` runs `Dungeon.level.destroy(p)` on every flamable path cell -
+			//The FLAMABLE flag covers grass, furrows, both door states and barricades,
+			//rewriting the tile to EMBERS. Unlike the shared fire path, `destroy()` touches
+			//no heap contents, so the beam uses the flammability gate but not `burnFireTerrain`.
+			if (this.isFireFlammableTerrain(point.x, point.y)) {
+				const cell = this.level.index(point.x, point.y);
+				if (this.portedPaint) this.portedPaint.map[cell] = Terrain.EMBERS;
+				this.level.set(point.x, point.y, EMBERS);
+				this.restitchTilesAround(point.x, point.y);
+			}
 			}
 		}
 		this.say(t('port.log.yogbeam'), 'warning');

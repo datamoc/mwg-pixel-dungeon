@@ -1476,8 +1476,8 @@ it by phase - 1 -> 4, then `max(4 - (phase-1), 1)` (3/2/1/1) - applied to both t
 through the port's shared `viewRadius()`. **The beam now burns flamable terrain too** (2026-09-11): `YogDzewa.act()`
 runs `Dungeon.level.destroy(p)` on every flamable cell of each beam path - Java's FLAMABLE flag covers
 GRASS/HIGH_GRASS (including the furrows a Soiled fist or a Regrowth wand leaves, which is what makes this visible in
-the arena) and both door states. Java rewrites the tile to EMBERS; this port's live terrain has no EMBERS id, so a
-burned cell becomes plain FLOOR, whose flags (passable, not flamable) match EMBERS' own. **The Soiled fist's grass is
+the arena) and both door states. Java rewrites the tile to EMBERS; this port's live terrain does have an EMBERS id now, so a
+burned cell becomes EMBERS with paint and restitch (corrected 2026-09-17 - the beam used a hardcoded four-kind list burning to FLOOR with no restitch, and the comment predated the EMBERS bridge). Unlike the shared fire path, `destroy()` touches no heap contents, so the beam uses the flammability gate but not `burnFireTerrain`. **Divergence (deliberate, 2026-09-17): the Tengu cone burns terrain.** The Java `Tengu.FireAbility.FireBlob.evolve()` decrements and ignites creatures but never calls `Level.destroy()` and never spreads, so the cone leaves grass and doors standing where ordinary fire would reduce them to embers. This port seeds ordinary fire instead, so the cone burns terrain exactly like the rest (`tools/scratch/FLAMABLE-INVENTORY.md` item 1). **The Soiled fist's grass is
 now ported too** (2026-09-11): `SoiledFist.act()` grows grass around itself every turn (`Random.chances([0,2,1])`
 furrow rolls that upgrade a plain GRASS neighbour, then plain grass across its 3x3), `SoiledFist.zap()` roots its
 target and grows grass (1-in-5 tall) across the target's 3x3, both gated by `canSpreadGrass()` (more than 4 cells from
