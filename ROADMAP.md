@@ -376,7 +376,7 @@ was judged not worth the churn against those existing references.
 - [ ] Implement exact wandering, hunting, fleeing, and stealth calculations. **Progress 2026-09-16:**
       the retained-target wandering branch is now isolated as `takeWanderingTurn`, including the
       Java target lifetime, passability checks, piranha water restriction, and Golem's unreachable
-      target teleport path; hunting/fleeing/stealth parity remains open. **Complexity: M.**
+      target teleport path; fleeing recovery (`Mob.Fleeing.nowhereToRun()`) is ported since 2026-09-17 - a fleeing mob with no step turns and fights with the real `Mob.rage` line while it sees the hero, else drops back to wandering, unless Terror holds it (Dread has no system here). Hunting/stealth parity remains open. **Complexity: M.**
 - [x] Implement monster-specific AI overrides. **Closed 2026-09-17: the last two "Not modeled" halves were already live (Spinner's persistent 3-cell `Web` blob plus the direct root, DM-200's BFS reachability plus the closing-distance-failed vent retry) - only Golem's charge particles and delayed animation remain, with no particle/animation layer to express them.** **Ported**: Golem's teleport-the-hero-away ability
       (with Java's `canTele` reachability, direct-shot distance roll and `MagicImmune` target gate)
       and its 30-turn self-teleport-to-reposition, Eye's real ranged two-turn DeathGaze (charge turn

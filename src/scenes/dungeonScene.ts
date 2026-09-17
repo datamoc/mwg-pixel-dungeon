@@ -8966,7 +8966,16 @@ export class DungeonScene extends Scene2D {
 			//same literal-kind-check bug found for ArmoredBrute/DM201/Senior/SpectralNecromancer.
 			//Spinner also enters a real FLEEING state (set by its own `attackProc`), so it
 			//backs off on an adjacent turn too instead of biting.
-			else if (monster.fleeing || ((monster.kind === 'thief' || monster.kind === 'bandit') && monster.stolen)) this.stepAway(monster);
+			else if (monster.fleeing || ((monster.kind === 'thief' || monster.kind === 'bandit') && monster.stolen)) {
+				const fx = monster.x, fy = monster.y;
+				this.stepAway(monster);
+				//`Mob.Fleeing` with no step: `nowhereToRun()` below. Only the explicit
+				//fleeing flag recovers here - a stolen-loot thief keeps pressing (its
+				//`fleeBelow` re-flees every visible turn, so clearing the flag is not a
+				//state this port can hold for it; standing still while boxed in is the
+				//same observable).
+				if (monster.fleeing && monster.x === fx && monster.y === fy) this.recoverFleeing(monster);
+			}
 			//Scorpio refuses adjacent kills - it backs off to keep its range (getFurther).
 			//`Acidic extends Scorpio` and shares this unchanged (its own override just adds an
 			//Ooze/corrosion proc, already ported separately via the `causticSlime || acidic`
@@ -9016,6 +9025,9 @@ export class DungeonScene extends Scene2D {
 		);
 
 		if (decision.step) this.moveTo(monster, decision.step);
+		//`Mob.Fleeing.nowhereToRun()` (tag `v3.3.8`): the framework's greedy step-away
+		//has no recovery of its own, so a fleeing mob with no step recovers here.
+		else if (monster.fleeing && decision.state === 'flee') this.recoverFleeing(monster);
 	}
 
 	/** The shared allied-actor turn: `Mob.Wandering`/`Hunting` as every non-special ally here
@@ -10163,6 +10175,21 @@ export class DungeonScene extends Scene2D {
 		//the only real feedback); this port adds one for clarity, so it should at least name the
 		//actual venting creature - previously hardcoded "DM-200" even when DM201 vented.
 		this.say(t('port.log.dm200vent', { who: capitalize(monster.name) }), 'negative');
+	}
+
+	/**
+	 * `Mob.Fleeing.nowhereToRun()` (`Mob.java`, tag `v3.3.8`): enemies turn and fight
+	 * when they have nowhere to run and are not Terror/Dread-afflicted - HUNTING with the
+	 * `Mob.rage` status line while the enemy is seen, WANDERING otherwise. Dread has no
+	 * system here, so Terror alone holds the mob fleeing (stated, not silent). Clearing
+	 * the fleeing flag hands the next turn back to the ordinary hunt/wander dispatch,
+	 * which is this port's standing equivalent of Java's state flip.
+	 */
+	private recoverFleeing(monster: Creature): void {
+		if (monster.buffs['terror'] !== undefined) return;
+		monster.fleeing = false;
+		if (monster.seesHero) this.say(t('actors.mobs.mob.rage'), 'warning');
+		else monster.patrolTarget = undefined;
 	}
 
 	/** GnollTrickster adjacent: never melees - steps further away instead (Hunting.getFurther) */
