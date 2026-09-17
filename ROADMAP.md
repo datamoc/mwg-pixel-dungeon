@@ -109,9 +109,10 @@ upstream SPD baseline (see `CLOSED.md`).
       `Blindness`, which has no seam here) and Transmutation (Simplified) are live, plus the
       `MirrorImage`/`MagicMapping` id-mapping bugs. A real generic item-picker panel
       (`openItemPicker`/`chooseItemPicker`) now serves Transmutation and the three picker-driven
-      runestones. **Remaining**: exact `changeItem` coverage including exotics/wands/trinkets/
-      missiles/equipped gear - owed with section 1's item-system completion, since those items must
-      exist as distinct ported items first. See `PORT_COVERAGE.md`'s updated row.
+      runestones. **Remaining**: exact `changeItem` coverage for exotics/trinkets/equipped gear -
+      owed with section 1's item-system completion, since those items must exist as distinct
+      ported items first (missile/tipped-dart/wand/pickaxe rerolls ported 2026-09-17).
+      See `PORT_COVERAGE.md`'s updated row.
 - [x] Port the remaining enchantments and glyphs, and complete their executable behavior. All 42
       (13 weapon enchants, 13 armor glyphs, 8 weapon curses, 8 armor curses) have real, live proc
       logic; the 16 curse definitions are authored in `src/content/curse-rules.mwl`. Unstable's
@@ -454,8 +455,8 @@ was judged not worth the churn against those existing references.
       replaced by the real `BrokenSeal` shield mechanic. Cleric's entire talent tree is Mage's copied
       verbatim, documented as such in `src/talents.ts`, not replaced - a real tree needs the Cleric's
       own Holy Lantern/spell mechanics first. **Remaining**: everything blocked on systems this port
-      lacks (SoulMark/Wraith for Necromancer's Minions, TippedDart for `durable_tips`, a real Cleric
-      tree). **Methodology note worth keeping**: check `src/generated/spdMessages.ts`'s own real
+      lacks (SoulMark/Wraith for Necromancer's Minions, a real Cleric tree;
+      `durable_tips` dropped off this list 2026-09-17 - tipped darts are live). **Methodology note worth keeping**: check `src/generated/spdMessages.ts`'s own real
       `actors.hero.talent.*` strings before concluding a talent id is invented - an earlier audit
       checked only two Java tags and wrongly declared several real talents fabricated. See
       `PORT_COVERAGE.md`'s talent rows. **Complexity: L.**
