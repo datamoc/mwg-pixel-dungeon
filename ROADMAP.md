@@ -540,11 +540,11 @@ was judged not worth the churn against those existing references.
       non-hero plant activation, and Earthroot's real block *pool* (`HT` points absorbing
       `min(damage, (scalingDepth+5)/2)` per hit, ended by exhaustion or leaving the cell) - which
       also corrected the Entanglement glyph, previously modelled as a cripple lock on the attacker
-      instead of the same pool on the defender. **Remaining**: exact teleport/TimeBubble behavior, full dew collection rules, and Java's
+      instead of the same pool on the defender. **Remaining**: exact teleport/TimeBubble behavior and Java's
       `HazardAssistTracker`/teleport presentation. **Closed 2026-09-17:** Sungrass's monster
       `Health` pool and Earthroot's monster armor pool are now the real Java shapes
       (`simulation/plantPools`, granted in `triggerMobPlantAt`, ticked/absorbed in
-      `takeMonsterTurn`/`attack()`, persisted through save/load). See `PORT_COVERAGE.md`. **Complexity: M.**
+      `takeMonsterTurn`/`attack()`, persisted through save/load), and the full dew-collection rules (triangular Dewcatcher/Seedpod counts, entrance-cell exclusion; heap-stacking stays with the stacking-heaps item). See `PORT_COVERAGE.md`. **Complexity: M.**
 - [x] Implement the remaining Java seed and dew behavior in high grass. **Closed 2026-09-16** once the
       three things it named were each checked rather than carried: the waterskin/dewdrop interaction was
       already ported and exact, the boss-challenge flag was a whole unported badge rule (now its own item

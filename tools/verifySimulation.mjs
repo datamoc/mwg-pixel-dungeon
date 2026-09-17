@@ -37,7 +37,7 @@ try {
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'mechanics/cone', 'dungeonConstants',
-	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools',
+	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops',
 	// `dungeonConstants` and `items/wands` read the MWL item tables, so the harness compiles the
 	// real adapter and the real generated catalogue instead of a hand-copied stub of them - a stub
 	// is how the old, hand-listed framework set above drifted once already, and how the item-frame
@@ -93,6 +93,7 @@ try {
 	const { evolveJavaBlob } = require('./simulation/javaBlob');
 	const { wraithCombatStats, dustSpawnerStep, dustSpawnerCap } = require('./simulation/wraith');
 const { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } = require('./simulation/plantPools');
+const { plantDropCandidates, plantDropCount } = require('./simulation/plantDrops');
 	const { applyEnvironmentalBlobs } = require('./simulation/environmentalBlobs');
 	// The four coefficients `HighGrass.trample` reads, as the port's MWL rows carry them.
 	const grassRules = { seedChanceBase: 25, seedChancePerLevel: 4, dewChanceBase: 6, dewChanceLevelDivisor: 2 };
@@ -175,6 +176,38 @@ check('Earthroot.Armor grants keep-max and absorbs min(damage, blocking) per hit
 	assert.deepEqual(absorbEarthrootArmor(2, 10, 5, false), { level: null, damage: 5 });
 	//A moved owner detaches and takes the hit whole.
 	assert.deepEqual(absorbEarthrootArmor(20, 10, 5, true), { level: null, damage: 10 });
+});
+check('Dewcatcher/Seedpod drops avoid stairs and the entrance on distinct cells', () => {
+	const ring = [];
+	for (let i = 0; i < 8; i++) ring.push({ x: i, y: 0, passable: true, isChasm: false, isStairs: i === 2, isEntrance: i === 5 });
+	assert.deepEqual(plantDropCandidates(ring), [
+		{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 3, y: 0 }, { x: 4, y: 0 }, { x: 6, y: 0 }, { x: 7, y: 0 },
+	]);
+	//Impassable and chasm neighbours are out too, like Java's own passable test.
+	assert.deepEqual(plantDropCandidates([
+		{ x: 0, y: 0, passable: false, isChasm: false, isStairs: false, isEntrance: false },
+		{ x: 1, y: 0, passable: true, isChasm: true, isStairs: false, isEntrance: false },
+		{ x: 2, y: 0, passable: true, isChasm: false, isStairs: false, isEntrance: false },
+	]), [{ x: 2, y: 0 }]);
+});
+check('Dewcatcher/Seedpod counts roll triangular like NormalIntRange', () => {
+	//The roll delegates to the triangular distribution with the same bounds, never the flat one.
+	let seen = null;
+	const stub = { normalRange: (min, max) => { seen = [min, max]; return min; } };
+	assert.equal(plantDropCount(3, 6, stub), 3);
+	assert.deepEqual(seen, [3, 6]);
+	//Shape check against the real distribution: middles outweigh ends ~3:1, uniform would tie.
+	const { Random: SeededRandom } = require('mwg');
+	const draws = 2000;
+	let middle = 0;
+	SeededRandom.withSeed(20260917, () => {
+		for (let i = 0; i < draws; i++) {
+			const v = plantDropCount(3, 6, SeededRandom);
+			assert(v >= 3 && v <= 6, `count ${v} inside [3, 6]`);
+			if (v === 4 || v === 5) middle++;
+		}
+	});
+	assert(middle > 1200, `triangular middle ${middle}/${draws} beats uniform`);
 });
 check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		const target = { hp: 10 };

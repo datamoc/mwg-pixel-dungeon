@@ -195,6 +195,7 @@ import { planFireSpread } from '../simulation/fireSpread';
 import { trampleHighGrass as planHighGrassTrample, type HighGrassState } from '../simulation/highGrass';
 import { applyEnvironmentalBlobs } from '../simulation/environmentalBlobs';
 import { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } from '../simulation/plantPools';
+import { plantDropCandidates, plantDropCount } from '../simulation/plantDrops';
 import { evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
 import { selectRangedTarget } from '../simulation/targeting';
@@ -8303,16 +8304,23 @@ export class DungeonScene extends Scene2D {
 		this.featuresMap?.setLayerData('features', this.featureFrames());
 	}
 
-	/** Plant neighbours use Java's no-replacement `PathFinder.NEIGHBOURS8` pool.
-	 * The live floor model cannot stack heaps, so occupied candidates are simply skipped. */
+	/** Plant neighbours use Java's no-replacement `PathFinder.NEIGHBOURS8` pool
+	 * (`Dewcatcher`/`Seedpod.activate()`, `items/wands/WandOfRegrowth.java`, tag `v3.3.8`):
+	 * distinct passable neighbours minus both stair cells, triangular counts. Java drops
+	 * onto an occupied cell anyway; the live floor model cannot stack heaps, so occupied
+	 * candidates are simply skipped instead - owned by the stacking-heaps item. */
 	private dropPlantNeighbourLoot(x: number, y: number, min: number, max: number, kind: 'dew' | 'seed'): void {
-		const candidates = Roguelike.neighbourOffsets(8)
+		const candidates = plantDropCandidates(Roguelike.neighbourOffsets(8)
 			.map(([dx, dy]) => ({ x: x + dx, y: y + dy }))
-			.filter((at) => this.level.inside(at.x, at.y)
-				&& this.level.passable(at.x, at.y)
-				&& !this.isChasmCell(at.x, at.y)
-				&& !(this.hasStairs && this.stairs && this.stairs.x === at.x && this.stairs.y === at.y));
-		const count = Random.range(min, max);
+			.filter((at) => this.level.inside(at.x, at.y))
+			.map((at) => ({
+				...at,
+				passable: this.level.passable(at.x, at.y),
+				isChasm: this.isChasmCell(at.x, at.y),
+				isStairs: this.hasStairs && this.stairs && this.stairs.x === at.x && this.stairs.y === at.y,
+				isEntrance: this.entranceCell?.x === at.x && this.entranceCell?.y === at.y,
+			})));
+		const count = plantDropCount(min, max, simulationRandom);
 		for (let i = 0; i < count && candidates.length > 0; i++) {
 			const index = Random.int(candidates.length);
 			const at = candidates.splice(index, 1)[0]!;
