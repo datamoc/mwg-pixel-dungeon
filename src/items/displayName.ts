@@ -3,6 +3,7 @@ import { ITEM_KEYS, RING_KEYS, WAND_KEYS, has, t } from '../i18n';
 import { wandTypeFromSource, type WandType } from './wands';
 import { ARMOR_NAME_BY_CLASS, WEAPON_NAME_BY_CLASS } from './catalog';
 import { tippedDartNameKey, missileDamageRange } from './missiles';
+import { armorSTRReq, missileSTRReq, weaponSTRReq } from './strReq';
 import { MWL_CONSUMABLE_DESCRIPTION_KEYS, MWL_EQUIPMENT_DESCRIPTION_KEYS, MWL_MISSILE_BY_CLASS, MWL_MISSILE_DESCRIPTION_KEYS, MWL_MISSILE_NAME_KEYS } from '../mwlContent';
 
 /**
@@ -37,31 +38,51 @@ export function itemDescription(id: string, sourceClass?: string): string | unde
 }
 
 /**
- * `WndInfoItem`'s per-class stats line below the description (`MeleeWeapon.info()`'s damage
- * + STR, `Armor.info()`'s DR, `MissileWeapon` damage, `Wand` charges): damage/DR come from
- * the same tier/level formulas the combat sync reads (`MeleeWeapon` min = tier+level,
- * max = 5(tier+1)+level(tier+1); `Armor` min = level, max = tier(2+level) - see
- * `PORT_COVERAGE.md`'s tier row). Two stated gaps: STR requirements have no system here
- * (no `STRReq` anywhere, same gap as surprise gating), and wand charges have no per-heap
- * state (one shared staff pool), so neither is shown.
+ * `WndInfoItem`'s per-class stats line below the description: Java's real
+ * `stats_known`/`curr_absorb`/`stats` sentences (`MeleeWeapon.info()`, `Armor.info()`,
+ * `MissileWeapon.info()`), with damage/DR from the same tier/level formulas the combat
+ * sync reads and STR from the three functions above. The `too_heavy`/`excess_str`
+ * suffixes compare against `heroStr` when given (Java reads `Dungeon.hero.STR()`).
+ * Stated gaps: the `stats_unknown`/`avg_absorb` unidentified branch is not shown - every
+ * call site treats shop goods as identified, matching what it already assumed; and wand
+ * charges are not shown because Java does not show them either (`WndTradeItem` renders
+ * `item.info()`, and `Wand.info()` is desc + class text - charges live in `status()`,
+ * the quickslot line, which has no equivalent here). See `PORT_COVERAGE.md`'s shop row.
  */
-export function itemStatsLine(id: string, opts: { tier?: number; level?: number; sourceClass?: string } = {}): string | undefined {
+export function itemStatsLine(id: string, opts: { tier?: number; level?: number; sourceClass?: string; heroStr?: number } = {}): string | undefined {
 	const level = opts.level ?? 0;
+	const heavySuffix = (req: number, heavyKey: string, excessKey?: string): string => {
+		if (opts.heroStr === undefined) return '';
+		if (req > opts.heroStr) return ' ' + t(heavyKey);
+		if (excessKey !== undefined && opts.heroStr > req) return ' ' + t(excessKey, { '0': opts.heroStr - req });
+		return '';
+	};
 	if (id === 'weaponReward' || id === 'startingWeapon') {
 		const tier = opts.tier ?? 1;
 		const min = tier + level;
 		const max = 5 * (tier + 1) + level * (tier + 1);
-		return `${min}-${max}`;
+		const req = weaponSTRReq(tier, level);
+		return t('items.weapon.melee.meleeweapon.stats_known', { '0': tier, '1': min, '2': max, '3': req })
+			+ heavySuffix(req, 'items.weapon.weapon.too_heavy', 'items.weapon.weapon.excess_str');
 	}
 	if (id === 'armor' || id === 'armorReward' || id === 'clothArmor' || id === 'startingArmor') {
 		const tier = opts.tier ?? 1;
-		return `${level}-${tier * (2 + level)}`;
+		const drMin = level;
+		const drMax = tier * (2 + level);
+		const req = armorSTRReq(tier, level);
+		return t('items.armor.armor.curr_absorb', { '0': tier, '1': drMin, '2': drMax, '3': req })
+			+ heavySuffix(req, 'items.armor.armor.too_heavy');
 	}
 	const missileClass = opts.sourceClass ? MWL_MISSILE_BY_CLASS.get(opts.sourceClass) : undefined;
 	if (missileClass || id.startsWith('missile_')) {
 		try {
 			const [min, max] = missileDamageRange(opts.sourceClass ?? 'ThrowingStone', level);
-			return `${min}-${max}`;
+			//Vintage note: this catalogue is v2.1.4-derived, where `MissileWeapon.info()`
+			//uses the single `stats` key (the known/unknown split postdates it).
+			const tier = opts.tier ?? 1;
+			const req = missileSTRReq(tier, level);
+			return t('items.weapon.missiles.missileweapon.stats', { '0': tier, '1': min, '2': max, '3': req })
+				+ heavySuffix(req, 'items.weapon.weapon.too_heavy', 'items.weapon.weapon.excess_str');
 		} catch { return undefined; }
 	}
 	return undefined;

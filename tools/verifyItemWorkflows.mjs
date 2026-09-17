@@ -73,6 +73,8 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	compile(join(root, 'src/items/wealthDrops.ts'), 'items/wealthDrops.js');
 	// `ArtifactRecharge`'s per-artifact charge table and banking, the same way.
 	compile(join(root, 'src/items/artifactRecharge.ts'), 'items/artifactRecharge.js');
+	// Strength requirements are pure and scene-free, pinned against Java's numbers below.
+	compile(join(root, 'src/items/strReq.ts'), 'items/strReq.js');
 	// The framework side is the installed `@datamoc/mw_games` build the game itself ships,
 	// shimmed rather than compiled from a sibling checkout of the framework's sources - the two
 	// are different versions in general, so compiling a checkout would test something this port
@@ -1511,7 +1513,30 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	assert.equal(roseRechargeGhostHeal(0, 1), 1);
 	assert.equal(roseRechargeGhostHeal(3, 1), 2, '(1 + level/3) * amount');
 	assert.equal(roseRechargeGhostHeal(9, 4), 16);
-	console.log('PASS item-instance separation, enhancement transfer, upgrade policy, appearance restore, missile dust pickup, the Unstable delegate list, rings.mwl-derived ring formulas, items.mwl-derived weapon/armor tiers, Generator.java deck parity, monster/hero/buff Java parity, per-monster status immunities, the Sandals of Nature seed/charge economy, the Talisman of Foresight scry formulas, the Dried Rose ghost/petal economy, the Ring of Wealth bonus-drop counters, the generated shop shelf, and the ArtifactRecharge table');
+	const { weaponSTRReq, armorSTRReq, missileSTRReq } = require('./items/strReq.js');
+	// `Weapon.STRReq`/`Armor.STRReq`/`MissileWeapon.STRReq` (tags `v2.1.4`/`v3.3.8`):
+	// `(8 + tier*2) - (int)(sqrt(8*lvl+1)-1)/2`, decreasing at +1/+3/+6/+10.
+	assert.equal(weaponSTRReq(1, 0), 10);
+	assert.equal(weaponSTRReq(1, 1), 9);
+	assert.equal(weaponSTRReq(1, 2), 9);
+	assert.equal(weaponSTRReq(1, 3), 8);
+	assert.equal(weaponSTRReq(1, 6), 7);
+	assert.equal(weaponSTRReq(1, 10), 6);
+	assert.equal(weaponSTRReq(5, 0), 18);
+	assert.equal(weaponSTRReq(5, 12), 14);
+	assert.equal(weaponSTRReq(1, -3), 10, 'negative levels clamp to 0');
+	assert.equal(armorSTRReq(1, 0), 10);
+	assert.equal(armorSTRReq(2, 6), 9);
+	assert.equal(missileSTRReq(1, 0), 9, 'missiles need 1 less STR than their tier');
+	assert.equal(missileSTRReq(3, 6), 10);
+	// The stats line names Java's real info keys; the wording itself is the catalogue's
+	// job (`npm run i18n:verify`), so this pins the key set the stats line uses, not
+	// the sentences.
+	for (const key of ['items.weapon.melee.meleeweapon.stats_known', 'items.armor.armor.curr_absorb', 'items.weapon.missiles.missileweapon.stats', 'items.weapon.weapon.too_heavy', 'items.weapon.weapon.excess_str', 'items.armor.armor.too_heavy']) {
+		assert.ok(readFileSync(join(root, 'src/items/displayName.ts'), 'utf8').includes(`'${key}'`), `stats line uses ${key}`);
+		assert.ok(readFileSync(join(root, 'src/generated/spdMessages.ts'), 'utf8').includes(`"${key}"`), `${key} exists in the catalogue`);
+	}
+	console.log('PASS item-instance separation, enhancement transfer, upgrade policy, appearance restore, missile dust pickup, the Unstable delegate list, rings.mwl-derived ring formulas, items.mwl-derived weapon/armor tiers, Generator.java deck parity, monster/hero/buff Java parity, per-monster status immunities, the Sandals of Nature seed/charge economy, the Talisman of Foresight scry formulas, the Dried Rose ghost/petal economy, the Ring of Wealth bonus-drop counters, the generated shop shelf, and the ArtifactRecharge table, and weapon/armor/missile STR requirements');
 } finally {
 	rmSync(out, { recursive: true, force: true });
 }

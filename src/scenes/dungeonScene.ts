@@ -4529,13 +4529,13 @@ export class DungeonScene extends Scene2D {
 	}
 
 	/** `WndTradeItem extends WndInfoItem` body for a shelf or stand good: the item's description
-	 * plus its per-class stats line (`itemStatsLine` - damage/DR; STR/wand charges unmodelled),
+	 * plus its per-class stats line (`itemStatsLine` - damage/DR with Java's real STR sentences),
 	 * `undefined` when the id has neither. The stand-purchase window builds the same body inline;
 	 * that verified-live path is deliberately untouched, and this is its twin for the shelf. */
 	private tradeItemBody(item: { id: string; sourceClass?: string; tier?: number; level?: number }): string | undefined {
 		const parts = [
 			itemDescription(item.id, item.sourceClass),
-			itemStatsLine(item.id, { tier: item.tier, level: item.level, sourceClass: item.sourceClass }),
+			itemStatsLine(item.id, { tier: item.tier, level: item.level, sourceClass: item.sourceClass, heroStr: this.hero.str }),
 		].filter((part): part is string => part !== undefined);
 		return parts.length > 0 ? parts.join('\n') : undefined;
 	}
@@ -4761,9 +4761,9 @@ export class DungeonScene extends Scene2D {
 			], () => { buy(); this.pickupGroundItemAt(x, y); }, item.item ? [
 				itemDescription(item.item.id, item.item.sourceClass),
 				//`WndTradeItem extends WndInfoItem`: the body is the item's description plus its
-				//per-class stats line (damage/DR above - STR/wand charges unmodelled, see
-				//`itemStatsLine`).
-				itemStatsLine(item.item.id, { tier: item.item.tier, level: item.item.level, sourceClass: item.item.sourceClass }),
+				//per-class stats line (damage/DR with Java's real STR sentences - wand charges
+				//are not shown because Java does not show them either, see `itemStatsLine`).
+				itemStatsLine(item.item.id, { tier: item.item.tier, level: item.item.level, sourceClass: item.item.sourceClass, heroStr: this.hero.str }),
 			].filter((part): part is string => part !== undefined).join('\n') : undefined),
 			itemName: (id, identified, instanceId) => this.itemDisplayName(id, identified, instanceId),
 			missilePickupValid: (setId, level) => missilePickupValid(this.missileThresholds, setId, level),

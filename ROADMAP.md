@@ -189,7 +189,7 @@ upstream SPD baseline (see `CLOSED.md`).
 - [x] Implement identification appearance randomization. Potion and scroll appearances are shuffled
       once per seeded run, pre-drawn without disturbing later gameplay RNG, and persisted through
       save/load.
-- [ ] Implement full shop pricing, buyback shelves, and wealth modifiers. Pricing, shelf stock, the
+- [x] Implement full shop pricing, buyback shelves, and wealth modifiers. **Closed 2026-09-17: the last two named halves are done - the stats line now carries Java's real STR sentences (`weaponSTRReq`/`armorSTRReq`/`missileSTRReq` in `src/items/strReq.ts` with the `too_heavy`/`excess_str` suffixes, pinned in `test:items`), and the "wand charges" half turned out not to exist in Java (`WndTradeItem` renders `item.info()`, which carries no charges - they live in `status()`), so it is recorded as a non-gap rather than built.** Pricing, shelf stock, the
       buyback shelf, and the real trade window's sell-button rules are all in place (see
       `PORT_COVERAGE.md`'s `Shopkeeper` + pricing rows). **The buying half no longer charges on a
       step (2026-09-16)**: this port used to spend the hero's gold the instant they set foot on a
@@ -206,7 +206,7 @@ upstream SPD baseline (see `CLOSED.md`).
       `descriptionKey` tables first (which is what gives a generated-gear heap its gear's own text),
       then the SPD catalogue's `items.<class>.desc`; the keeper's shelf rows open the same body in their own
       detail window above the buy row (browser-verified live, `keeper-shelf-detail-livecheck.mjs`, 4/4).
-      Remaining: STR requirements and wand charges on the stats line (no STRReq system, no per-heap wand
+      Remaining before the close-out (now done, see above): STR requirements and wand charges on the stats line (no STRReq system, no per-heap wand
       state, so those two halves stay unshown); the `extraThrownLeft` sell warning, which IS live for upgraded
       missile stacks holding extra throws.
       The Ankh is fully stocked and functional (one per shop, the BLESS action, the blessed revive, and the
