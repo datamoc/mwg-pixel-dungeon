@@ -44,7 +44,11 @@ export function takeGooTurn(goo: Creature, context: GooBossContext): void {
 	}
 	const enraged = goo.hp * 2 <= goo.maxHp;
 	if (context.random.chance(enraged ? 0.5 : 0.2)) {
-		goo.pumped = 1;
+		//`doAttack()`'s else branch: on the bosses challenge the pump jumps straight to 2
+		//(`pumpedUp += 2`), so the slam lands after one charge turn, not two. Java also
+		//spends a gated turn cost here (`gate(attackDelay, ceil(enemy.cooldown), 3x)`) that
+		//this port's uniform 1-turn boss turns do not reproduce - stated timing simplification.
+		goo.pumped = context.strongerBosses ? 2 : 1;
 		context.say(context.messages.pump, 'warning');
 		return;
 	}

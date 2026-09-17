@@ -34,6 +34,9 @@ export interface BombEffectsContext {
 	readonly clampTenguBracket: (target: Creature, previousHp: number) => void;
 	readonly yogDamageHook: (target: Creature, previousHp: number) => void;
 	readonly tenguBracketJump: (target: Creature, previousHp: number) => void;
+	/** Clears `Statistics.qualifiedForBossChallengeBadge` when a bomb hurts a boss: a bomb is
+	 * never a plain weapon hit. Optional so headless callers keep working. */
+	readonly onNonWeaponBossDamage?: (target: Creature) => void;
 }
 
 function applyBlastDamage(target: Creature, amount: number, pierceArmor: boolean, context: BombEffectsContext): boolean {
@@ -50,6 +53,7 @@ function applyBlastDamage(target: Creature, amount: number, pierceArmor: boolean
 	}
 	if (target.kind === 'yog' && context.yogShielded(target)) return false;
 	if (target.kind === 'yogFist' && context.guardFist(target)) return false;
+	context.onNonWeaponBossDamage?.(target);
 	let damage = amount;
 	if (!pierceArmor) damage = Math.max(0, damage - Random.normalRange(target.armor[0], target.armor[1]));
 	const previousHp = target.hp;

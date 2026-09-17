@@ -7,13 +7,21 @@
  * (merging every still-unconnected room-neighbour pair into `Terrain.CHASM`) is new: it's the
  * only place in this port that calls `regularPainter.ts`'s exported `mergeRooms` a second time,
  * after `paintDoorsForDepth`'s own merge-into-`EMPTY` pass already ran once.
+ *
+ * `decorate()`'s two global scans live in `cavesDecorate.ts`, which is import-light; this module
+ * calls them through `decorateStandaloneCaves` after its own room loops, and re-exports that
+ * function for `gameBridge.ts`'s `MiningLevel` path - so the regular floors, the boss floor and the
+ * mining branch all run one implementation of the scans rather than three copies.
  */
 import { Room } from './room';
 import { SpdRandom } from '../spdRng';
 import { PaintLevel, Terrain } from './paintLevel';
 import { paintLevel, TrapTable, Feeling, mergeRooms } from './regularPainter';
 import { setGeneratorDepth } from '../items/generator';
+import { decorateStandaloneCaves } from './cavesDecorate';
 import { mwlPaintRule, mwlTrapTable } from './mwlDungeonRules';
+
+export { decorateStandaloneCaves };
 
 /** `RegularLevel.nTraps()`: `Random.NormalIntRange(2, 3 + depth/5)` - `depth/5` is 2 across all
  *  of Caves (11-14), giving range (2, 5), against Sewers' (2,3) and Prison's (2,4). */
@@ -27,21 +35,6 @@ function nTraps(depth: number): number {
 function trapTable(): TrapTable {
 	return mwlTrapTable('caves');
 }
-
-/**
- * `DungeonTileSheet.floorTile(tile)`: `tile == WATER || directVisuals.get(tile, CHASM) < CHASM`.
- * `directVisuals` only maps GROUND-block visuals (all well below `CHASM`'s tile-sheet index), so
- * this reduces to the exact terrain set present in that map, read off its static initializer
- * (`DungeonTileSheet.java`) rather than approximated - notably NOT `HIGH_GRASS` (only in
- * `directFlatVisuals`, so it's excluded; `floorTile` is about the "3D" visual, not the flat one).
- */
-const FLOOR_TILE = new Set<number>([
-	Terrain.EMPTY, Terrain.GRASS, Terrain.EMPTY_WELL, Terrain.ENTRANCE, Terrain.EXIT,
-	Terrain.EMBERS, Terrain.PEDESTAL, Terrain.EMPTY_SP, Terrain.SECRET_TRAP, Terrain.TRAP,
-	Terrain.INACTIVE_TRAP, Terrain.EMPTY_DECO, Terrain.WELL, Terrain.WATER,
-	// LOCKED_EXIT/UNLOCKED_EXIT are also in the real map, but neither is reachable on the regular
-	// (non-boss) floors this port generates.
-]);
 
 /** `CavesPainter.decorate()`. */
 function decorate(level: PaintLevel, rooms: Room[]): void {
@@ -94,46 +87,10 @@ function decorate(level: PaintLevel, rooms: Room[]): void {
 		}
 	}
 
-	for (let i = w + 1; i < l - w; i++) {
-		if (map[i] === Terrain.EMPTY) {
-			let n = 0;
-			if (map[i + 1] === Terrain.WALL) n++;
-			if (map[i - 1] === Terrain.WALL) n++;
-			if (map[i + w] === Terrain.WALL) n++;
-			if (map[i - w] === Terrain.WALL) n++;
-			if (SpdRandom.int(6) <= n) map[i] = Terrain.EMPTY_DECO;
-		}
-	}
-
-	for (let i = 0; i < l - w; i++) {
-		if (map[i] === Terrain.WALL && FLOOR_TILE.has(map[i + w]) && SpdRandom.int(4) === 0) {
-			map[i] = Terrain.WALL_DECO;
-		}
-	}
-}
-
-/** `CavesPainter.decorate()` when `RegularPainter.paint(level, null)` is used by
- * `MiningLevel`: the room list is intentionally empty, so only the two global decoration
- * scans run after water and grass. Keeping this separate prevents the branch from inventing
- * room-neighbour merges while still producing real empty-deco and mineable ore veins. */
-export function decorateStandaloneCaves(level: PaintLevel): void {
-	const map = level.map;
-	const w = level.w;
-	const l = level.w * level.h;
-	for (let i = w + 1; i < l - w; i++) {
-		if (map[i] !== Terrain.EMPTY) continue;
-		let n = 0;
-		if (map[i + 1] === Terrain.WALL) n++;
-		if (map[i - 1] === Terrain.WALL) n++;
-		if (map[i + w] === Terrain.WALL) n++;
-		if (map[i - w] === Terrain.WALL) n++;
-		if (SpdRandom.int(6) <= n) map[i] = Terrain.EMPTY_DECO;
-	}
-	for (let i = 0; i < l - w; i++) {
-		if (map[i] === Terrain.WALL && FLOOR_TILE.has(map[i + w]) && SpdRandom.int(4) === 0) {
-			map[i] = Terrain.WALL_DECO;
-		}
-	}
+	// the two global scans, shared verbatim with the boss floor's null-room call - one implementation
+	// of each, so a floor that runs `decorate` through `RegularPainter` and one that runs it directly
+	// cannot drift apart
+	decorateStandaloneCaves(level);
 }
 
 /** `CavesLevel.painter()`: `.setWater(WATER ? 0.85 : 0.30, 6).setGrass(GRASS ? 0.65 : 0.15, 3)`. */

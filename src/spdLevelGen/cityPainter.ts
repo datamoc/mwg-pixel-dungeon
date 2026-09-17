@@ -9,6 +9,7 @@ import { PaintLevel, Terrain } from './paintLevel';
 import { paintLevel, TrapTable, Feeling } from './regularPainter';
 import { setGeneratorDepth } from '../items/generator';
 import { mwlPaintRule, mwlTrapTable } from './mwlDungeonRules';
+import { decorateCityBasis } from './cityDecorate';
 
 /** `RegularLevel.nTraps()`: `Random.NormalIntRange(2, 3 + depth/5)` - CityLevel doesn't override it. */
 function nTraps(depth: number): number {
@@ -21,31 +22,9 @@ function trapTable(): TrapTable {
 	return mwlTrapTable('city');
 }
 
-/**
- * `DungeonTileSheet.wallStitcheable`, narrowed to the terrain values this port models (WALL,
- * WALL_DECO, SECRET_DOOR, LOCKED_EXIT, BOOKSHELF) - `UNLOCKED_EXIT` and off-map `NULL_TILE` are
- * both real members of Java's list but neither is reachable here: this port has no unlocked-exit
- * terrain state (see PORT_COVERAGE.md), and `decorate()` only ever reads `map[i+w]` for
- * `i < w*(h-1)`, which is always in-bounds.
- */
-function wallStitcheable(terrain: number): boolean {
-	return terrain === Terrain.WALL || terrain === Terrain.WALL_DECO || terrain === Terrain.SECRET_DOOR
-		|| terrain === Terrain.LOCKED_EXIT || terrain === Terrain.BOOKSHELF;
-}
-
-/** `CityPainter.decorate()`. */
+/** `CityPainter.decorate()`: one implementation, shared with the boss floor - see `cityDecorate.ts`. */
 function decorate(level: PaintLevel, _rooms: Room[], depth: number): void {
-	const map = level.map;
-	const w = level.w;
-	const l = level.w * level.h;
-
-	for (let i = 0; i < l - w; i++) {
-		if (map[i] === Terrain.EMPTY && SpdRandom.int(10) === 0) {
-			map[i] = Terrain.EMPTY_DECO;
-		} else if (map[i] === Terrain.WALL && !wallStitcheable(map[i + w]) && SpdRandom.int(21 - depth) === 0) {
-			map[i] = Terrain.WALL_DECO;
-		}
-	}
+	decorateCityBasis(level, depth);
 }
 
 /**

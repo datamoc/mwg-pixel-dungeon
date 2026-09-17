@@ -15,7 +15,7 @@
  * `extract()`, which moves this room to the end of the returned list for exactly that reason).
  */
 import { Room, DoorType } from '../../room';
-import { PaintLevel, Terrain, fillRoom, fillXY, set } from '../../paintLevel';
+import { PaintLevel, Terrain, fillRoom, fillXY, set, fillDiamond } from '../../paintLevel';
 import { fillPerimeterPaths } from '../connection/paint';
 import { SpdRandom } from '../../../spdRng';
 import type { StandardRoomKind } from '../../room';
@@ -44,15 +44,6 @@ export function randomGooBossKind(): StandardRoomKind {
  */
 function fillDiamondRoom(level: PaintLevel, room: Room, m: number, value: number): void {
 	fillDiamond(level, room.left + m, room.top + m, room.width() - m * 2, room.height() - m * 2, value);
-}
-function fillDiamond(level: PaintLevel, x: number, y: number, w: number, h: number, value: number): void {
-	let diamondWidth = w - (h - 2 - (h % 2));
-	diamondWidth = Math.max(diamondWidth, w % 2 === 0 ? 2 : 3);
-	for (let i = 0; i <= h; i++) {
-		fillXY(level, x + Math.floor((w - diamondWidth) / 2), y + i, diamondWidth, h - 2 * i, value);
-		diamondWidth += 2;
-		if (diamondWidth > w) break;
-	}
 }
 
 export function paintGooDiamondRoom(level: PaintLevel, room: Room): void {

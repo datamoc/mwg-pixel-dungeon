@@ -61,7 +61,8 @@ export type GameKindCodes = Record<GameKindName, number>;
 
 /**
  * Every `Terrain.java` value the ported painters can emit, mapped to the nearest kind this port
- * renders. Passability is preserved in every case; behaviour is not always, and the losses are:
+ * renders. Passability follows Java's `flags[]` table in every case (including the corrected
+ * `REGION_DECO`/`REGION_DECO_ALT` below); behaviour is not always, and the losses are:
  *
  * - `CHASM` -> `floor`. The raw grid remains CHASM for the pit atlas frame, while the coarse
  *   collision kind stays open so FOV and hero movement match Java; `main.ts` consumes entry
@@ -79,6 +80,16 @@ export type GameKindCodes = Record<GameKindName, number>;
  * - `EMBERS` -> `embers`, a distinct passable live kind so fire burnout can preserve Java's
  *   terrain state. `EMPTY_SP`, `EMPTY_DECO`, `INACTIVE_TRAP` -> `floor`; those are cosmetic in
  *   Java too (an `INACTIVE_TRAP` is a sprung one), so they lose only their distinct sprite.
+ * - `REGION_DECO`/`REGION_DECO_ALT` -> `wall`. **Corrected 2026-09-16: an earlier revision
+ *   of this line mapped both to `floor` as "walkable decorative floor variants" - Java's
+ *   `Terrain.java` gives both `flags[STATUE]` (`REGION_DECO_ALT` via `STATUE_SP`), i.e. SOLID,
+ *   so prison cages, the Caves exit-corridor rails, the Halls scatter and the City marks all
+ *   block movement. They were simply absent from this table until 2026-09-16, which is why the
+ *   boss layouts that paint them could not be transcribed: painting one crashed level entry
+ *   with `toGameTerrain: no mapping for Terrain value 34`. They lose their distinct sprite
+ *   the same way `EMPTY_DECO` does, and their examine text (`region_deco_name`/`_desc`, per
+ *   region) is unaddressable - those keys postdate this port's generated catalogue, so the
+ *   cells examine as plain wall (same catalogue-gap class as HallsLevel's `exit_desc`).
  * - `FURROWED_GRASS` -> `highGrass`; the raw grid preserves the exact Java value while the
  *   coarse kind retains passability and the existing tall-grass presentation.
  * - `CRYSTAL_DOOR` -> `doorClosed`, and it is registered as locked by the queued
@@ -110,6 +121,8 @@ export const SPD_TERRAIN_TO_GAME_KIND: Record<number, GameKindName> = {
 	[Terrain.TRAP]: 'trap',
 	[Terrain.INACTIVE_TRAP]: 'floor',
 	[Terrain.EMPTY_DECO]: 'floor',
+	[Terrain.REGION_DECO]: 'wall',
+	[Terrain.REGION_DECO_ALT]: 'wall',
 	[Terrain.LOCKED_EXIT]: 'wall',
 	[Terrain.SIGN]: 'floor',
 	[Terrain.WELL]: 'floor',
@@ -277,7 +290,10 @@ function generateFloor(seed: bigint, depth: number, strongerBosses: boolean) {
 		// restored for the next floor in `portedFloor`'s loop (no draws are consumed otherwise).
 		SpdRandom.pushGenerator(spdSeedForDepth(seed, depth, 0));
 		try {
-			return generateBossFloor(depth, strongerBosses);
+			//The run seed rides along for `addCagesToCells()`: depth 10's cage scatter runs
+			//on its own `seedCurDepth()` substream (see `paintPrisonCages`), which needs the
+			//run seed Java's `Dungeon.seedCurDepth()` derives from - not the floor seed above.
+			return generateBossFloor(depth, strongerBosses, seed);
 		} finally {
 			SpdRandom.popGenerator();
 		}

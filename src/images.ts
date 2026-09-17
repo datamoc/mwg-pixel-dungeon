@@ -10,6 +10,9 @@ import terrainFeaturesUrl from './assets/terrain_features.png';
 import cavesQuestUrl from './assets/caves_quest.png';
 // `DemonSpawnerRoom.CustomFloor`'s exact HALLS_SP custom atlas.
 import hallsSpecialUrl from './assets/halls_special.png';
+import cavesBossUrl from './assets/caves_boss.png';
+import cityBossUrl from './assets/city_boss.png';
+import prisonQuestUrl from './assets/prison_quest.png';
 import wallBlockingUrl from './assets/wall_blocking.png';
 import { Texture } from 'mwg/two-d/pixi-interop';
 
@@ -141,6 +144,9 @@ const MWL_ASSET_URLS: Readonly<Record<string, string>> = {
 	'assets/effects.png': effectsUrl,
 	'assets/huntress.png': huntressUrl,
 	'assets/halls_special.png': hallsSpecialUrl,
+	'assets/caves_boss.png': cavesBossUrl,
+	'assets/city_boss.png': cityBossUrl,
+	'assets/prison_quest.png': prisonQuestUrl,
 	'assets/items.png': itemsUrl,
 	'assets/loading_caves.png': loadingCavesUrl,
 	'assets/loading_city.png': loadingCityUrl,
@@ -337,6 +343,10 @@ export interface SpdSprites {
 	terrainFeatures: Texture;
 	cavesQuest: Texture;
 	hallsSpecial: Texture;
+	cavesBoss: Texture;
+	/** `Assets.Environment.CITY_BOSS` - `CityBossLevel`'s `CustomGroundVisuals`/`CustomWallVisuals` atlas. */
+	cityBoss: Texture;
+	prisonQuest: Texture;
 	wallBlocking: Texture;
 	water0: Texture;
 	water1: Texture;
@@ -494,6 +504,9 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		terrainFeatures,
 		cavesQuest,
 		hallsSpecial,
+		cavesBoss,
+		cityBoss,
+		prisonQuest,
 		wallBlocking,
 		water0,
 		water1,
@@ -593,6 +606,9 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(terrainFeaturesUrl),
 		loadImage(cavesQuestUrl),
 		loadImage(hallsSpecialUrl),
+		loadImage(cavesBossUrl),
+		loadImage(cityBossUrl),
+		loadImage(prisonQuestUrl),
 		loadImage(wallBlockingUrl),
 		loadImage(water0Url),
 		loadImage(water1Url),
@@ -695,6 +711,9 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		terrainFeatures: Texture.from(terrainFeatures),
 		cavesQuest: Texture.from(cavesQuest),
 		hallsSpecial: Texture.from(hallsSpecial),
+		cavesBoss: Texture.from(cavesBoss),
+		cityBoss: Texture.from(cityBoss),
+		prisonQuest: Texture.from(prisonQuest),
 		wallBlocking: Texture.from(wallBlocking),
 		water0: Texture.from(water0),
 		water1: Texture.from(water1),

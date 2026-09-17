@@ -10,7 +10,8 @@ import { PaintLevel, Terrain, fillEllipseRect, fillDiamondRect, fillXY, isPassab
 import type { Room } from './room';
 import { spdPatchGenerate } from './spdPatch';
 import { decorateStandaloneCaves } from './cavesDecorate';
-import { SpdRandom } from '../spdRng';
+import { decorateStandaloneCityBoss } from './cityDecorate';
+import { SpdRandom, spdSeedForDepth } from '../spdRng';
 
 export interface BossFloorData {
 	paint: PaintLevel;
@@ -82,11 +83,10 @@ const PRISON_START_CELLS = [[5, 9, 10, 16], [11, 9, 16, 16], [5, 15, 10, 22], [1
  *  misplace a wall, it disconnects the level: the hero arrives in the entrance room and can reach
  *  nothing else on the floor, door or boss included.
  *
- *  Not ported: Java's `addCagesToCells()`, which scatters up to 5 `REGION_DECO` cells over the
- *  start cells from its own `seedCurDepth()` generator. Decoration only (`REGION_DECO` is
- *  passable, so nothing walks differently), and the port's fixed-layout floors carry no RNG
- *  stream of their own. */
-function paintPrisonBossStart(level: PaintLevel): void {
+ *  `addCagesToCells()` runs last here (and again at the end of each transition repaint -
+ *  see `paintPrisonCages`); pass `runSeed` to spend Java's own draws, or nothing for the
+ *  uncaged map. */
+function paintPrisonBossStart(level: PaintLevel, runSeed?: bigint): void {
 	fillXY(level, 0, 0, 32, 32, Terrain.WALL);
 
 	//Start
@@ -115,12 +115,45 @@ function paintPrisonBossStart(level: PaintLevel): void {
 	set(level, PRISON_TENGU_CELL_DOOR.x, PRISON_TENGU_CELL_DOOR.y, Terrain.LOCKED_DOOR);
 
 	for (const [x, y] of [[10, 2], [7, 9], [13, 9], [7, 15], [13, 15], [8, 23], [12, 23]]) set(level, x, y, Terrain.WALL_DECO);
+
+	if (runSeed !== undefined) paintPrisonCages(level, runSeed);
 }
 
-function prisonBoss(): BossFloorData {
+/**
+ * `PrisonBossLevel.addCagesToCells()` (`v3.3.8`): up to 5 `REGION_DECO` cage cells over the
+ * start cells, each pick a random start cell's interior (`Int(4)`, then
+ * `IntRange(left+1, right-2)`/`IntRange(top+1, bottom-2)`) kept only when a 4-neighbour is
+ * `WALL`. Runs at the end of `setMapStart()`, `setMapPause()` and `setMapEnd()` alike -
+ * each on a fresh `pushGenerator(seedCurDepth())`, so every repaint rolls the same five
+ * picks (validity is re-checked against that repaint's own map).
+ *
+ * `spdSeedForDepth(runSeed, 10, 0)` *is* Java's `seedCurDepth()` (see `spdRng.ts`), pushed
+ * the same way, with the same bit-matching LCG underneath and the same call order - so
+ * these are Java's own cells, not an approximation. Callers that cannot name a run seed
+ * (harness spot-checks) pass none and get the uncaged map.
+ */
+export function paintPrisonCages(level: PaintLevel, runSeed: bigint): void {
+	SpdRandom.pushGenerator(spdSeedForDepth(runSeed, 10, 0));
+	try {
+		for (let i = 0; i < 5; i++) {
+			const cell = PRISON_START_CELLS[SpdRandom.int(PRISON_START_CELLS.length)]!;
+			const x = SpdRandom.intRange(cell[0] + 1, cell[2] - 2);
+			const y = SpdRandom.intRange(cell[1] + 1, cell[3] - 2);
+			const w = level.w;
+			if (level.map[(y - 1) * w + x] === Terrain.WALL || level.map[(y + 1) * w + x] === Terrain.WALL
+				|| level.map[y * w + x - 1] === Terrain.WALL || level.map[y * w + x + 1] === Terrain.WALL) {
+				level.map[y * w + x] = Terrain.REGION_DECO;
+			}
+		}
+	} finally {
+		SpdRandom.popGenerator();
+	}
+}
+
+function prisonBoss(runSeed?: bigint): BossFloorData {
 	// PrisonBossLevel: setSize(32,32), with the start rooms and Tengu's lower cell.
 	const level = new PaintLevel(32, 32);
-	paintPrisonBossStart(level);
+	paintPrisonBossStart(level, runSeed);
 	return { paint: level, rooms: [room(6, 23, 15, 31)], feeling: null };
 }
 
@@ -134,9 +167,9 @@ function prisonBoss(): BossFloorData {
  * Java relies on the fight (Tengu hunting the hero from his cell toward the entrance) having
  * already drifted into the region `setMapArena()` below carves out, rather than relocating anyone.
  */
-export function prisonBossPause(): BossFloorData {
+export function prisonBossPause(runSeed?: bigint): BossFloorData {
 	const level = new PaintLevel(32, 32);
-	paintPrisonBossStart(level);
+	paintPrisonBossStart(level, runSeed);
 	set(level, 10, 23, Terrain.DOOR);
 	// startCells[1] = (11,9)-(16,16): Painter.fill(startCells[1].left, .top+3, 1, 7, EMPTY) and
 	// Painter.fill(startCells[1].left+2, .top+2, 3, 10, EMPTY).
@@ -145,6 +178,7 @@ export function prisonBossPause(): BossFloorData {
 	fillRect(level, 8, 2, 13, 8, Terrain.WALL);
 	set(level, 9 + 1, 7, Terrain.EMPTY);
 	set(level, 9 + 1, 8, Terrain.DOOR);
+	if (runSeed !== undefined) paintPrisonCages(level, runSeed);
 	return { paint: level, rooms: [room(6, 23, 15, 31)], feeling: null };
 }
 
@@ -175,15 +209,16 @@ export function prisonBossArena(): BossFloorData {
  * +2, .top+2`), one row of 14 cells at a time down to the last map row. Java's `IronKey`-heap
  * cleanup and the two `CustomTilemap` exit-visual overlays are presentation/item-side, not paint.
  */
-export function prisonBossEnd(): BossFloorData {
+export function prisonBossEnd(runSeed?: bigint): BossFloorData {
 	const level = new PaintLevel(32, 32);
-	paintPrisonBossStart(level);
+	paintPrisonBossStart(level, runSeed);
 	set(level, 10, 23, Terrain.DOOR);
 	let cell = 11 + 9 * 32;
 	for (let row = 0; row < PRISON_END_MAP.length / 14; row++) {
 		for (let col = 0; col < 14; col++) level.map[cell + col] = PRISON_END_MAP[row * 14 + col]!;
 		cell += 32;
 	}
+	if (runSeed !== undefined) paintPrisonCages(level, runSeed);
 	return { paint: level, rooms: [room(6, 23, 15, 31)], feeling: null };
 }
 
@@ -220,6 +255,11 @@ const PRISON_END_MAP: readonly number[] = [
  * it, and `activatePylon()` bands the energy field from `top - 1` down; `main.ts` needs both.
  */
 export const CAVES_BOSS_ARENA = { left: 5, top: 14, right: 28, bottom: 37 } as const;
+/** `CavesBossLevel`'s transition cells (`v3.3.8`): `exitCell = 16 + 2*width` = (16,2),
+ *  inside the `EXIT` block, and `buildEntrance()`'s `16 + 25*width` = (16,25).
+ *  `unseal()` restores the entrance and breaks the gate; the exit is live from `build()`. */
+export const CAVES_EXIT_CELL = { x: 16, y: 2 } as const;
+export const CAVES_ENTRANCE_CELL = { x: 16, y: 25 } as const;
 
 /**
  * `CavesBossLevel`'s semi-randomised entrance and corner stamps (tag `v3.3.8`): four 8x8
@@ -508,14 +548,16 @@ function cityBoss(): BossFloorData {
 	set(level, 9, 12, Terrain.STATUE);
 	fillRect(level, 5, 23, 9, 23, Terrain.EMPTY);
 	fillRect(level, 6, 24, 8, 24, Terrain.EMPTY);
+	//`ImpShopRoom.paint()` is a deliberate no-op (it only rolls its item list), then
+	//`new CityPainter().paint(this, null)` runs the scatter pass at Java's own position -
+	//after the shop marks, before the pillars below (which overwrite with plain WALL).
+	decorateStandaloneCityBoss(level, 20);
 	//The eight 2x2 WALL pillars Java stamps last ("no deco on these").
 	for (const [x, y] of [[1, 2], [1, 7], [1, 12], [1, 17], [12, 2], [12, 7], [12, 12], [12, 17]]) {
 		fillRect(level, x, y, x + 1, y + 1, Terrain.WALL);
 	}
-	//Not ported, stated: `new CityPainter().paint(this, null)`'s `EMPTY -> EMPTY_DECO`
-	//(1-in-10) / `WALL -> WALL_DECO` scatter - a whole-floor decoration pass with its
-	//own RNG draws, not part of the room geometry above; and the `CustomGroundVisuals`/
-	//`CustomWallVisuals` tilemaps, which are presentation over this same terrain.
+	//Not ported, stated: the `CustomGroundVisuals`/`CustomWallVisuals` tilemaps, which
+	//are presentation over this same terrain.
 	return { paint: level, rooms: [room(1, 25, 13, 38)], feeling: null };
 }
 
@@ -670,9 +712,9 @@ function lastLevel(): BossFloorData {
 	return { paint: level, rooms: [room(mid - 1, 10, mid + 1, 62)], feeling: null };
 }
 
-export function generateBossFloor(depth: number, strongerBosses = false): BossFloorData {
-		switch (depth) {
-		case 10: return prisonBoss();
+export function generateBossFloor(depth: number, strongerBosses = false, runSeed?: bigint): BossFloorData {
+	switch (depth) {
+	case 10: return prisonBoss(runSeed);
 		case 15: return cavesBoss(strongerBosses);
 		case 20: return cityBoss();
 		case 25: return hallsBoss();

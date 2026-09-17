@@ -1,7 +1,7 @@
 // Scratch probe (not part of the suite): confirms the Caves boss gate's paint order and its
 // effect on the arena's water/trap cells and on the pylon-energy cell set.
 //   npx esbuild tools/scratch/probeCavesGate.ts --bundle --platform=node --format=esm --outfile=tools/scratch/probeCavesGate.mjs && node tools/scratch/probeCavesGate.mjs
-import { PaintLevel, Terrain, fillEllipse, fillXY } from '../../src/spdLevelGen/paintLevel';
+import { PaintLevel, Terrain, fillEllipseRect, fillXY } from '../../src/spdLevelGen/paintLevel';
 import { spdPatchGenerate } from '../../src/spdLevelGen/spdPatch';
 import { SpdRandom } from '../../src/spdRng';
 
@@ -33,10 +33,15 @@ function build(order: 'gateFirst' | 'gateLast'): PaintLevel {
 	SpdRandom.pushGenerator(42n);
 	draws = 0;
 	const level = new PaintLevel(33, 42, Terrain.CHASM);
-	if (order === 'gateFirst') fillRect(level, 14, 13, 19, 14, Terrain.SIGN);
-	fillEllipse(level, 5, 14, 24, 24, Terrain.EMPTY);
+	// Java's own `gate` rect, `Rect(14,13,19,14)`, in this module's inclusive `fillRect` form: five
+	// cells on row 13. (It used to be written `14, 13, 19, 14` - the rect read inclusively - which
+	// painted twelve, left six after the ellipse cleared row 14, and put one extra `CUSTOM_DECO`
+	// cell into every energy count below.)
+	if (order === 'gateFirst') fillRect(level, 14, 13, 18, 13, Terrain.SIGN);
+	// `Painter.fillEllipse(this, mainArena, EMPTY)` - `mainArena` is `Rect(5,14,28,37)`, i.e. 23x23.
+	fillEllipseRect(level, 5, 14, 28, 37, 0, Terrain.EMPTY);
 	body(level, false);
-	if (order === 'gateLast') fillRect(level, 14, 13, 19, 14, Terrain.SIGN);
+	if (order === 'gateLast') fillRect(level, 14, 13, 18, 13, Terrain.SIGN);
 	return level;
 }
 
@@ -63,13 +68,13 @@ for (const order of ['gateFirst', 'gateLast'] as const) {
 	console.log(`  row 13 cols 14-23   : ${row(13)}`);
 	console.log(`  row 14 cols 14-23   : ${row(14)}`);
 	const cells = energyCells(level);
-	const gate = cells.filter((c) => Math.floor(c / level.w) === 14 && c % level.w >= 14 && c % level.w <= 19).length;
-	console.log(`  energy cells total  : ${cells.length} (of which row-14 gate cols 14-19: ${gate})`);
+	const gate = cells.filter((c) => Math.floor(c / level.w) === 13 && c % level.w >= 14 && c % level.w <= 18).length;
+	console.log(`  energy cells total  : ${cells.length} (of which the gate's own five cells: ${gate})`);
 }
 
 // Is the ellipse's top row exactly the gate's bottom row?
 SpdRandom.pushGenerator(42n);
 const probe = new PaintLevel(33, 42, Terrain.CHASM);
-fillEllipse(probe, 5, 14, 24, 24, Terrain.EMPTY);
+fillEllipseRect(probe, 5, 14, 28, 37, 0, Terrain.EMPTY);
 const topRow = Array.from({ length: 10 }, (_, k) => (probe.map[14 + k + 14 * 33] === Terrain.EMPTY ? '#' : '.')).join('');
 console.log(`ellipse top-row coverage, cols 14-23: ${topRow}`);

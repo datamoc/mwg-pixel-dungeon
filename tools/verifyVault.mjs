@@ -32,7 +32,7 @@ function compile(source, destination) {
 
 try {
 	writeFileSync(join(output, 'package.json'), '{"type":"commonjs"}');
-	for (const file of ['spdRng', 'spdLevelGen/paintLevel', 'spdLevelGen/vaultVisuals', 'spdLevelGen/spdPatch', 'spdLevelGen/wallTiles', 'spdLevelGen/visualWalls', 'spdLevelGen/customTilemapLayer', 'spdLevelGen/cavesBossVisuals', 'spdLevelGen/hallsBossVisuals', 'spdLevelGen/ritualMarkerVisuals', 'spdLevelGen/cavesDecorate', 'spdLevelGen/bossLevels']) {
+	for (const file of ['spdRng', 'spdLevelGen/paintLevel', 'spdLevelGen/vaultVisuals', 'spdLevelGen/spdPatch', 'spdLevelGen/wallTiles', 'spdLevelGen/visualWalls', 'spdLevelGen/customTilemapLayer', 'spdLevelGen/cavesBossVisuals', 'spdLevelGen/cityBossVisuals', 'spdLevelGen/hallsBossVisuals', 'spdLevelGen/ritualMarkerVisuals', 'spdLevelGen/cavesDecorate', 'spdLevelGen/cityDecorate', 'spdLevelGen/bossLevels']) {
 		compile(new URL(`../src/${file}.ts`, import.meta.url), `${file}.js`);
 	}
 	// `paintLevel`'s only import of `room` is its `Room` type, erased at compile time - the
@@ -51,6 +51,8 @@ try {
 	const { CAVES_GATE, CAVES_PYLON_POSITIONS, cavesArenaDescKey, cavesArenaFrames,
 		cavesArenaLayer, cavesArenaNameKey, cityEntranceFrames, entranceOverhangFrames } =
 		require('./spdLevelGen/cavesBossVisuals');
+	const { CITY_BOSS_WIDTH, CITY_BOSS_HEIGHT, cityGroundDescKey, cityGroundLayer, cityGroundNameKey, cityWallLayer } =
+		require('./spdLevelGen/cityBossVisuals');
 
 	const WIDTH = 16;
 	const HEIGHT = 64;
@@ -250,7 +252,11 @@ try {
 	// assertion above still green. This check is that guard.
 	const passable = new Set([Terrain.EMPTY, Terrain.GRASS, Terrain.EMPTY_WELL, Terrain.WATER, Terrain.DOOR,
 		Terrain.ENTRANCE, Terrain.EXIT, Terrain.EMBERS, Terrain.PEDESTAL, Terrain.EMPTY_SP, Terrain.HIGH_GRASS,
-		Terrain.SECRET_TRAP, Terrain.INACTIVE_TRAP, Terrain.EMPTY_DECO, Terrain.SIGN, Terrain.REGION_DECO, Terrain.REGION_DECO_ALT]);
+		Terrain.SECRET_TRAP, Terrain.INACTIVE_TRAP, Terrain.EMPTY_DECO, Terrain.SIGN]);
+	//`REGION_DECO`/`REGION_DECO_ALT` are deliberately absent: Java flags both `STATUE` (SOLID),
+	//so prison cages, the Caves rails and the Halls scatter block movement - the flood models
+	//the live `gameBridge.ts` mapping, not the paint values. This makes the prison checks
+	//stronger, not weaker: five solid cages must still leave every start cell reachable.
 	const flood = (paint, from) => {
 		const width = paint.w, height = paint.map.length / width;
 		const seen = new Set();
@@ -284,6 +290,64 @@ try {
 		assert.equal(paint.map[10 + 23 * 32], Terrain.LOCKED_DOOR, 'Tengu\'s door is the locked one');
 		assert.ok(!walkable(seen, paint, 10, PRISON_TENGU_CELL.top + 1),
 			'and the cell behind it is sealed until that door is unlocked, as Java intends');
+	});
+	// `PrisonBossLevel.addCagesToCells()` (tag `v3.3.8`): five picks off the floor's own
+	// `seedCurDepth()` substream - a random start cell's interior, kept only beside a wall -
+	// run at the end of the start, pause and end repaints alike (each on a fresh push of the
+	// same seed, so every repaint rolls the same five picks). Recomputed here from Java's
+	// own arguments rather than read back from the implementation: the draws, the ranges
+	// and the wall-neighbour validity gate are all re-derived, and the substream seed is
+	// `spdSeedForDepth` (this port's `Dungeon.seedCurDepth()`), so a wrong seed, a wrong
+	// order or a missing push/pop fails here.
+	check('the prison start/pause/end maps scatter Java\'s five cage cells', () => {
+		const { SpdRandom, spdSeedForDepth } = require('./spdRng');
+		const seed = 123456789n;
+		const cells = [[5, 9, 10, 16], [11, 9, 16, 16], [5, 15, 10, 22], [11, 15, 16, 22]];
+		SpdRandom.pushGenerator(spdSeedForDepth(seed, 10, 0));
+		const picks = [];
+		try {
+			for (let i = 0; i < 5; i++) {
+				const room = cells[SpdRandom.int(4)];
+				picks.push([
+					SpdRandom.intRange(room[0] + 1, room[2] - 2),
+					SpdRandom.intRange(room[1] + 1, room[3] - 2),
+				]);
+			}
+		} finally {
+			SpdRandom.popGenerator();
+		}
+		const pickSet = new Set(picks.map(([x, y]) => y * 32 + x));
+		const wallBeside = (map, x, y) =>
+			map[(y - 1) * 32 + x] === Terrain.WALL || map[(y + 1) * 32 + x] === Terrain.WALL
+			|| map[y * 32 + x - 1] === Terrain.WALL || map[y * 32 + x + 1] === Terrain.WALL;
+		const decoCells = (paint) => {
+			const out = new Set();
+			for (let cell = 0; cell < paint.map.length; cell++) {
+				if (paint.map[cell] === Terrain.REGION_DECO) out.add(cell);
+			}
+			return out;
+		};
+		//the uncaged base map paints no REGION_DECO at all, so every deco cell is a cage
+		const base = generateBossFloor(10).paint;
+		assert.equal(decoCells(base).size, 0, 'the uncaged map carries no deco');
+		//start map: exactly the wall-beside picks
+		const start = generateBossFloor(10, false, seed).paint;
+		const startExpected = new Set([...pickSet].filter((cell) => {
+			const x = cell % 32, y = Math.floor(cell / 32);
+			return wallBeside(base.map, x, y);
+		}));
+		assert.deepEqual([...decoCells(start)].sort((a, b) => a - b), [...startExpected].sort((a, b) => a - b),
+			'the start map cages exactly the wall-beside picks');
+		//pause and end re-roll the same five picks onto their own modified maps: every cage
+		//they carry is one of the picks, and every pick valid on their map is caged
+		for (const [name, floor] of [['pause', prisonBossPause(seed)], ['end', prisonBossEnd(seed)]]) {
+			const deco = decoCells(floor.paint);
+			for (const cell of deco) assert.ok(pickSet.has(cell), `${name} cage ${cell} is not one of the five picks`);
+			for (const cell of pickSet) {
+				const x = cell % 32, y = Math.floor(cell / 32);
+				if (wallBeside(floor.paint.map, x, y)) assert.ok(deco.has(cell), `${name} misses valid pick (${x},${y})`);
+			}
+		}
 	});
 	// Each arena is one `Painter` shape call on a `Rect`, and every one of them is a place the
 	// exclusive-`right`/`bottom` reading can silently cost or add a ring of cells: the ellipse's
@@ -380,7 +444,9 @@ try {
 		//entrance room: WALL ring, BOOKSHELF lining, EMPTY heart
 		assert.equal(at(1, 37), Terrain.WALL, 'the entry rect starts with a WALL ring');
 		assert.equal(at(2, 38), Terrain.BOOKSHELF, 'one cell in is the BOOKSHELF lining');
-		assert.equal(at(3, 39), Terrain.EMPTY, 'two cells in is the EMPTY heart');
+		//two cells in is the EMPTY heart - or its EMPTY_DECO conversion, which the
+		//`CityPainter` scatter pass legitimately rolls (1-in-10) after the room fills
+		assert.ok(at(3, 39) === Terrain.EMPTY || at(3, 39) === Terrain.EMPTY_DECO, 'two cells in is the EMPTY heart');
 		assert.equal(at(4, 40), Terrain.BOOKSHELF, 'the freestanding west column');
 		assert.equal(at(10, 44), Terrain.BOOKSHELF, 'and the east one');
 		assert.equal(at(6, 38), Terrain.REGION_DECO, 'the west deco mark');
@@ -436,7 +502,109 @@ try {
 		assert.ok(entranceY >= 23 && entranceY <= 27, `at the rolled arm end (y=${entranceY})`);
 		assert.ok(paint.transitions.some((t) => t.pos === entrances[0] && t.type === 'regularEntrance'),
 			'with its own REGULAR_ENTRANCE transition');
-		assert.equal(at(11, 7), Terrain.EMPTY, 'the 11x11 EMPTY ring joins the arms to the room');
+		//the 11x11 EMPTY ring lands after the scatter pass, so no STATUE/REGION_DECO from
+		//the arms survives inside its rect - only EMPTY, its WATER/EMPTY_DECO conversions,
+		//and the room fills stamped over it. (Pinning one cell's exact terrain would be
+		//wrong: the water/deco passes legitimately convert ring cells.)
+		for (let y = 7; y <= 17; y++) for (let x = 11; x <= 21; x++) {
+			assert.ok([Terrain.EMPTY, Terrain.WATER, Terrain.EMPTY_DECO, Terrain.EMPTY_SP, Terrain.WALL_DECO].includes(at(x, y)),
+				`ring cell (${x},${y}) is ${at(x, y)}, not a scatter leftover`);
+		}
+	});
+
+	// `new CityPainter().paint(this, null)`'s scatter pass runs on the boss floor too
+	// (see `cityDecorate.ts`): the counts below are its own output at seed 42, a
+	// regression pin in the strict sense - removing the call takes both to zero and
+	// fails here. `WALL_DECO` is seed-independent (`Random.Int(21-20)` is `Int(1)`),
+	// `EMPTY_DECO` is the 1-in-10 roll over the floor's EMPTY cells.
+	check('the `CityPainter` null-room pass scatters the throne floor\'s deco', () => {
+		const { SpdRandom } = require('./spdRng');
+		SpdRandom.pushGenerator(42n);
+		let paint;
+		try {
+			paint = generateBossFloor(20).paint;
+		} finally {
+			SpdRandom.popGenerator();
+		}
+		const histogram = new Map();
+		for (const terrain of paint.map) histogram.set(terrain, (histogram.get(terrain) ?? 0) + 1);
+		assert.equal(histogram.get(Terrain.EMPTY_DECO), 26, 'the EMPTY -> EMPTY_DECO scatter');
+		assert.equal(histogram.get(Terrain.WALL_DECO), 12, 'and the WALL -> WALL_DECO scatter');
+	});
+
+	// `CityBossLevel`'s two custom tilemaps (`cityBossVisuals.ts`, `city_boss.png`): the
+	// exit-hall stairs run, the throne's three carpet rows, the pedestals, skull piles
+	// and pillar dressing on the ground layer; pillar tops, skull tops and the stairs'
+	// shadow on the wall layer - plus the three named branches (skull piles, throne,
+	// summoning pedestals). Recomputed from Java's own arithmetic: the stairs run starts
+	// at the first `EXIT` cell ((4,5), so rows 5..11) and the shadow four rows above it,
+	// the throne rows are the `13/14/15*8+1..3` runs over the `EMPTY_SP` margin, and the
+	// `data[++i]` cursor pairs are asserted as pairs. The whole floor runs at seed 42 so
+	// the `CityPainter` scatter underneath is fixed too.
+	check('`CustomGroundVisuals`/`CustomWallVisuals` dress the throne floor from Java\'s tables', () => {
+		const { SpdRandom } = require('./spdRng');
+		SpdRandom.pushGenerator(42n);
+		let paint;
+		try {
+			paint = generateBossFloor(20).paint;
+		} finally {
+			SpdRandom.popGenerator();
+		}
+		assert.equal(paint.w, CITY_BOSS_WIDTH);
+		assert.equal(paint.map.length, CITY_BOSS_WIDTH * CITY_BOSS_HEIGHT);
+		const ground = cityGroundLayer(paint.w, paint.map.length / paint.w, paint.map);
+		const walls = cityWallLayer(paint.w, paint.map.length / paint.w, paint.map);
+		const gat = (x, y) => ground[y * paint.w + x];
+		const wat = (x, y) => walls[y * paint.w + x];
+		//the stairs run: 7 rows of 7 at (4,5), frames (i+4)*8+j
+		for (let i = 0; i < 7; i++) {
+			assert.deepEqual([0, 1, 2, 3, 4, 5, 6].map((j) => gat(4 + j, 5 + i)),
+				[0, 1, 2, 3, 4, 5, 6].map((j) => (i + 4) * 8 + j), `stairs row ${i}`);
+		}
+		//the throne's three carpet rows over the EMPTY_SP margin
+		assert.deepEqual([6, 7, 8].map((x) => gat(x, 30)), [105, 106, 107], 'throne top row');
+		assert.deepEqual([6, 7, 8].map((x) => gat(x, 31)), [113, 114, 115], 'throne mid row');
+		assert.deepEqual([6, 7, 8].map((x) => gat(x, 32)), [121, 122, 123], 'throne bottom row');
+		//pedestals: the four summoning spokes plus the imp's own
+		for (const [x, y] of [[4, 28], [10, 28], [10, 34], [4, 34]]) {
+			assert.equal(gat(x, y), 13 * 8 + 4, `summoning pedestal (${x},${y})`);
+		}
+		assert.equal(gat(7, 16), 12 * 8 + 5, "the imp's pedestal");
+		//skull piles above, left-facing statues below
+		assert.equal(gat(5, 12), 15 * 8 + 5, 'a skull pile');
+		assert.equal(gat(8, 40), 15 * 8 + 4, 'a left-facing statue');
+		assert.equal(wat(5, 11), 14 * 8 + 5, 'its skull top on the wall layer');
+		//a pillar pair on each layer (the (1,2) block stands over chasm)
+		assert.deepEqual([gat(1, 2), gat(2, 2)], [13 * 8 + 6, 13 * 8 + 7], 'pillar base');
+		assert.deepEqual([wat(1, 2), wat(2, 2)], [13 * 8 + 6, 13 * 8 + 7], 'pillar top');
+		//the stairs' shadow: 8 rows at (4,1), first four i*8+0/1/2 then (i-4)*8+3/4/5
+		for (let i = 0; i < 8; i++) {
+			const row = [0, 1, 2, 3, 4, 5, 6, 7].map((j) => wat(4 + j, 1 + i));
+			const want = i < 4
+				? [i * 8 + 0, i * 8 + 1, i * 8 + 1, i * 8 + 1, i * 8 + 1, i * 8 + 1, i * 8 + 1, i * 8 + 2]
+				: [(i - 4) * 8 + 3, (i - 4) * 8 + 4, (i - 4) * 8 + 4, (i - 4) * 8 + 4, (i - 4) * 8 + 4, (i - 4) * 8 + 4, (i - 4) * 8 + 4, (i - 4) * 8 + 5];
+			assert.deepEqual(row, want, `shadow row ${i}`);
+		}
+		//the three named branches answer their own strings, exactly where frames draw
+		const nameAt = (x, y) => cityGroundNameKey(paint.map, ground, paint.w, y * paint.w + x);
+		const descAt = (x, y) => cityGroundDescKey(paint.map, ground, paint.w, y * paint.w + x);
+		assert.equal(nameAt(5, 12), 'levels.hallslevel.statue_name');
+		assert.equal(descAt(5, 12), 'levels.hallslevel.statue_desc');
+		assert.equal(nameAt(7, 31), 'levels.citybosslevel.throne_name');
+		assert.equal(descAt(7, 31), 'levels.citybosslevel.throne_desc');
+		assert.equal(nameAt(4, 28), 'levels.citybosslevel.summoning_name');
+		assert.equal(descAt(4, 28), 'levels.citybosslevel.summoning_desc');
+		//...and nothing names itself where the layer draws nothing (Java's `image()` gate)
+		let namedButBlank = 0;
+		for (let cell = 0; cell < ground.length; cell++) {
+			if (nameAt(cell % paint.w, Math.floor(cell / paint.w)) !== undefined && ground[cell] === NULL_TILE) namedButBlank++;
+		}
+		assert.equal(namedButBlank, 0, `${namedButBlank} cells name themselves where nothing is drawn`);
+		//upper EMPTY_DECO suppresses the description like Java's `""` (floor name, no desc)
+		const deco = ground.map((frame, cell) => ({ frame, cell }))
+			.find(({ frame, cell }) => frame !== NULL_TILE && paint.map[cell] === Terrain.EMPTY_DECO && cell < paint.w * 22);
+		assert.ok(deco, 'the seed-42 floor has a dressed upper deco cell to check');
+		assert.equal(descAt(deco.cell % paint.w, Math.floor(deco.cell / paint.w)), '');
 	});
 
 	// --- `CavesBossLevel`'s three custom tilemaps (see `cavesBossVisuals.ts`) -------------------

@@ -25,7 +25,7 @@
           {
             tag: "effect",
             apply_to: "npc",
-            set: "ghost,wandmaker,shopkeeper,blacksmith,imp,ratKing",
+            set: "ghost,wandmaker,shopkeeper,blacksmith,imp,ratKing,impShopkeeper",
           },
           {
             tag: "effect",

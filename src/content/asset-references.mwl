@@ -58,6 +58,33 @@
         image: "assets/halls_special.png",
       },
       {
+        // `RitualSiteRoom.RitualMarker` (`Assets.Environment.PRISON_QUEST`) - the 3x3 marker
+        // stamped over the elemental-embers quest site, a 4-column atlas of 16px tiles.
+        tag: "object",
+        id: "asset-prison-quest",
+        name: "prison-quest",
+        image: "assets/prison_quest.png",
+      },
+      {
+        // `Assets.Environment.CAVES_BOSS`: `CavesBossLevel`'s three `CustomTilemap`s (the gate's
+        // `CityEntrance`/`EntranceOverhang` dressing and `ArenaVisuals`' wires) draw from this
+        // 8x8-of-16px atlas rather than the region tileset.
+        tag: "object",
+        id: "asset-caves-boss",
+        name: "caves-boss",
+        image: "assets/caves_boss.png",
+      },
+      {
+        // `Assets.Environment.CITY_BOSS`: `CityBossLevel`'s `CustomGroundVisuals`/
+        // `CustomWallVisuals` - the exit-hall stairs, pillar dressing, skull piles, ground
+        // stitching, throne carpets and the stairs' shadow - draw from this 8-wide atlas
+        // rather than the City tileset.
+        tag: "object",
+        id: "asset-city-boss",
+        name: "city-boss",
+        image: "assets/city_boss.png",
+      },
+      {
         tag: "object",
         id: "asset-wall-blocking",
         name: "wall-blocking",
@@ -125,6 +152,7 @@
           { tag: "row", monster: "rotHeart", sprite: "rotHeart" },
           { tag: "row", monster: "rotLasher", sprite: "rotLasher" },
           { tag: "row", monster: "fetidRat", sprite: "rat" },
+          { tag: "row", monster: "impShopkeeper", sprite: "imp" },
           { tag: "row", monster: "gnollTrickster", sprite: "gnoll" },
           { tag: "row", monster: "greatCrab", sprite: "crab" },
           { tag: "row", monster: "necroSkeleton", sprite: "skeleton" },
@@ -171,6 +199,7 @@
           { tag: "row", monster: "ghost", frame_width: 14, frame_height: 15, idle: 0 },
           { tag: "row", monster: "wandmaker", frame_width: 12, frame_height: 14, idle: 0 },
           { tag: "row", monster: "shopkeeper", frame_width: 14, frame_height: 14, idle: 1 },
+          { tag: "row", monster: "impShopkeeper", frame_width: 12, frame_height: 14, idle: 0 },
           { tag: "row", monster: "blacksmith", frame_width: 13, frame_height: 16, idle: 0 },
           { tag: "row", monster: "imp", frame_width: 12, frame_height: 14, idle: 0 },
           { tag: "row", monster: "ghoul", frame_width: 12, frame_height: 14, idle: 0 },

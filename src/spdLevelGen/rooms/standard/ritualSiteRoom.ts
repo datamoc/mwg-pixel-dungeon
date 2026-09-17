@@ -27,7 +27,9 @@ export function paintRitualSiteRoom(level: PaintLevel, room: Room): void {
 	fillRoom(level, room, Terrain.WALL);
 	fillRoomInset(level, room, 1, Terrain.EMPTY);
 
-	// `RitualMarker` is a CustomTilemap (visual only, no RNG, not modeled beyond the tiles).
+	// `RitualMarker` is a CustomTilemap: visual only and RNG-free, so it costs this painter
+	// nothing - the scene builds its 3x3 from the `ritualSiteState.ritualPos` set below (see
+	// `ritualMarkerVisuals.ts`).
 	const c = room.center();
 
 	fillXY(level, c.x - 1, c.y - 1, 3, 3, Terrain.EMPTY_DECO);

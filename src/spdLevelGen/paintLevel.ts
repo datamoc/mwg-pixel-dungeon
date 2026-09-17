@@ -244,6 +244,31 @@ export function fillEllipse(level: PaintLevel, x: number, y: number, w: number, 
 export function fillEllipseRoom(level: PaintLevel, room: Room, m: number, value: number): void {
 	fillEllipse(level, room.left + m, room.top + m, room.width() - m * 2, room.height() - m * 2, value);
 }
+/** `Painter.fillEllipse(Level, Rect, int m, int value)` for a plain `Rect`, whose `right`/`bottom`
+ *  are exclusive edges. A `Room` argument resolves `width()` to its own +1-inclusive override
+ *  instead, which is why `fillEllipseRoom` above exists separately - the two differ by one cell
+ *  per axis and are not interchangeable. */
+export function fillEllipseRect(level: PaintLevel, left: number, top: number, right: number, bottom: number, m: number, value: number): void {
+	fillEllipse(level, left + m, top + m, (right - left) - m * 2, (bottom - top) - m * 2, value);
+}
+
+/** `Painter.fillDiamond(Level, int x, int y, int w, int h, int value)`: the end width is `w`, each
+ *  row is two cells wider than the one above and two rows shorter, and the first row's width is
+ *  `w` minus the total growth, floored at 2 (even `w`) or 3 (odd). */
+export function fillDiamond(level: PaintLevel, x: number, y: number, w: number, h: number, value: number): void {
+	let diamondWidth = w - (h - 2 - (h % 2));
+	diamondWidth = Math.max(diamondWidth, w % 2 === 0 ? 2 : 3);
+	for (let i = 0; i <= h; i++) {
+		fillXY(level, x + Math.floor((w - diamondWidth) / 2), y + i, diamondWidth, h - 2 * i, value);
+		diamondWidth += 2;
+		if (diamondWidth > w) break;
+	}
+}
+/** `Painter.fillDiamond(Level, Rect, int m, int value)` for a plain `Rect` - same exclusive-edge
+ *  caveat as `fillEllipseRect` above. */
+export function fillDiamondRect(level: PaintLevel, left: number, top: number, right: number, bottom: number, m: number, value: number): void {
+	fillDiamond(level, left + m, top + m, (right - left) - m * 2, (bottom - top) - m * 2, value);
+}
 
 /** `Painter.drawInside`: walks `n` cells inward from `from` (a door on the room's edge). */
 export function drawInside(level: PaintLevel, room: Room, from: { x: number; y: number }, n: number, value: number): { x: number; y: number } {
