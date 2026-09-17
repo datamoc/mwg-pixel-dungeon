@@ -89,8 +89,8 @@ upstream SPD baseline (see `CLOSED.md`).
       (all 30 `MeleeWeapon.ability()` overrides with real magnitudes, Java's exact `Charger`
       economy - uniform 1-charge costs, level-based cap, time accrual, partial-first spends,
       post-use `COUNTER_ABILITY` refunds - and Java's setup turn costs, sneak and the charged
-      shot free - no missile weapon has an ability at all. Remaining: auto-target, for the damage
-      strikes (they pick the nearest visible enemy; sneak's blink aims through the `TargetingController` since 2026-09-17);
+      shot free - no missile weapon has an ability at all. **Closed 2026-09-17:** damage-strike auto-target (see below).
+      Strikes aim through the `TargetingController` (confirm latches `abilityAimTarget` and re-enters `useWeaponAbility`; cancelling spends nothing), replacing the nearest-visible-enemy auto-pick.
       `VARIED_CHARGE` (no such talent here) and brawler's stance (no such buff); the stale
       ability/talent desc text (catalogue refresh, not mechanics); the alchemy pot's ingredient choice is live (recipe picker plus follow-up ingredient/unit pickers over the bag - the slot-window chrome stays simplified); and the
       shop-stock items that used to have no item class here at all (Torches, Tipped Darts, the Ankh,

@@ -1776,6 +1776,8 @@ export class DungeonScene extends Scene2D {
 	/** Target latched by the thrown-weapon cell picker. The confirmed callback re-enters
 	 * `useSpecial`, keeping ammo, warning, hit, and durability resolution in one path. */
 	private specialTarget: Creature | null = null;
+	/** Latched weapon-ability strike target: `beginAiming` confirms it and re-enters `useWeaponAbility`, exactly like `specialTarget` above. Transient aim state, never persisted. */
+	private abilityAimTarget: Creature | null = null;
 	/** Cell latched by the bomb's map picker; cleared before the item-domain resolver runs. */
 	private bombTarget: Step | null = null;
 	/** The aim cursor highlight, drawn in world space so it tracks cells under the camera. */
@@ -19554,7 +19556,39 @@ export class DungeonScene extends Scene2D {
 			default: {
 				//Damage strikes run through the next attack's own modifiers: force the hit
 				//(every strike desc guarantees it), multiply damage, and stage the riders.
-				const target = this.nearestVisibleEnemy(def.kind === 'spike' ? 6 : 2);
+				//Java opens a cell selector for the target (`cleaveAbility(hero, target, ...)`
+				//takes the chosen cell); this routes through the same `TargetingController`
+				//seam the throw and sneak already use: confirm latches `abilityAimTarget`
+				//and re-enters, so the resolution below still owns every mutation and turn
+				//cost. Cancelling spends nothing - Java's `beforeAbilityUsed` (the charge
+				//spend) runs after validation, inside the attack callback, so the spend
+				//stays below. Allies cannot be struck, matching melee; the two
+				//catalogue-postdating refusal keys speak through the controller's own
+				//line, as with sneak.
+				const range = def.kind === 'spike' ? 6 : 2;
+				const validTarget = (candidate: Creature): boolean => !candidate.isHero && !candidate.isNPC
+					&& !candidate.isAlly && candidate.hp > 0 && this.fov.isVisible(candidate.x, candidate.y)
+					&& Roguelike.canTarget(this.level, this.hero, candidate, { range });
+				if (!this.abilityAimTarget) {
+					if (!this.creatures.some(validTarget)) {
+						this.say(t('port.log.noweapontarget'), 'negative');
+						return;
+					}
+					this.beginAiming({
+						range,
+						validate: (cell) => {
+							const candidate = this.creatureAt(cell.x, cell.y);
+							return !!candidate && validTarget(candidate);
+						},
+						onConfirm: (cell) => {
+							this.abilityAimTarget = this.creatureAt(cell.x, cell.y);
+							this.useWeaponAbility();
+						},
+					});
+					return;
+				}
+				const target = this.abilityAimTarget;
+				this.abilityAimTarget = null;
 				if (!target) {
 					this.say(t('port.log.noweapontarget'), 'negative');
 					return;
