@@ -37,7 +37,7 @@ try {
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'mechanics/cone', 'dungeonConstants',
-	'simulation/javaBlob', 'simulation/environmentalBlobs',
+	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith',
 	// `dungeonConstants` and `items/wands` read the MWL item tables, so the harness compiles the
 	// real adapter and the real generated catalogue instead of a hand-copied stub of them - a stub
 	// is how the old, hand-listed framework set above drifted once already, and how the item-frame
@@ -91,6 +91,7 @@ try {
 	const { SceneSimulationAdapter } = require('./adapters/sceneSimulation');
 	const { trampleHighGrass } = require('./simulation/highGrass');
 	const { evolveJavaBlob } = require('./simulation/javaBlob');
+	const { wraithCombatStats, dustSpawnerStep, dustSpawnerCap } = require('./simulation/wraith');
 	const { applyEnvironmentalBlobs } = require('./simulation/environmentalBlobs');
 	// The four coefficients `HighGrass.trample` reads, as the port's MWL rows carry them.
 	const grassRules = { seedChanceBase: 25, seedChancePerLevel: 4, dewChanceBase: 6, dewChanceLevelDivisor: 2 };
@@ -129,6 +130,22 @@ try {
 		assert.equal(next[0], 0);
 		const blocked = evolveJavaBlob(5, 5, before, (x, y) => x === 2 && y === 1);
 		assert.equal(blocked[7], 0);
+	});
+	check('Wraith.adjustStats scales accuracy, evasion and damage with the spawn level', () => {
+		assert.deepEqual(wraithCombatStats(0), { accuracy: 10, evasion: 50, damageMin: 1, damageMax: 2 });
+		assert.deepEqual(wraithCombatStats(1), { accuracy: 11, evasion: 55, damageMin: 1, damageMax: 3 });
+		//The +1 runs after Java's integer division: level 2 already rolls 2-4.
+		assert.deepEqual(wraithCombatStats(2), { accuracy: 12, evasion: 60, damageMin: 2, damageMax: 4 });
+		assert.deepEqual(wraithCombatStats(9), { accuracy: 19, evasion: 95, damageMin: 5, damageMax: 11 });
+	});
+	check('CorpseDust spawner banks one power per tick toward min(49, wraiths^2)', () => {
+		assert.deepEqual(dustSpawnerStep(0, 0), { power: 0, spawn: true, cost: 1 });
+		assert.deepEqual(dustSpawnerStep(0, 1), { power: 1, spawn: false, cost: 4 });
+		assert.deepEqual(dustSpawnerStep(3, 1), { power: 0, spawn: true, cost: 4 });
+		assert.deepEqual(dustSpawnerStep(48, 7), { power: 0, spawn: true, cost: 49 });
+		assert.deepEqual(dustSpawnerStep(0, 8), { power: 1, spawn: false, cost: 49 });
+		assert.equal(dustSpawnerCap(30, 1), 4, 'with no candidate the bank caps at 2*wraiths');
+		assert.equal(dustSpawnerCap(3, 1), 3);
 	});
 	check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		const target = { hp: 10 };

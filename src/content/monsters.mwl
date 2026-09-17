@@ -1057,4 +1057,43 @@
     max_level: 0,
     image: "assets/ratking.png",
   },
+  {
+    tag: "monster",
+    id: "wraith",
+    name: "actors.mobs.wraith.name",
+    // `Wraith.java` (tag `v3.3.8`): `HP = HT = 1`, `EXP = 0`, `maxLvl = -2`.
+    // Accuracy/evasion/damage scale with `adjustStats(scalingDepth)` - `10 + level`,
+    // `(10 + level) * 5`, `NormalIntRange(1 + level/2, 2 + level)` - applied at spawn
+    // by the scene (the closed depth-table shapes cannot express `1 + level/2`, whose
+    // integer division runs before the +1). The row holds the level-0 values.
+    hp: 1,
+    accuracy: 10,
+    evasion: 50,
+    damage_min: 1,
+    damage_max: 2,
+    armor_min: 0,
+    armor_max: 0,
+    experience: 0,
+    max_level: -2,
+    image: "assets/wraith.png",
+  },
+  {
+    tag: "monster",
+    id: "dustWraith",
+    // `CorpseDust.DustWraith extends Wraith` with only an attack counter (for the quest-
+    // score penalty, which has no system here) overridden - stats are the base wraith's.
+    // Real Java ships no name/desc strings for it at all (it renders `!!!NO TEXT FOUND!!!`);
+    // this row reuses the base wraith name rather than reproducing that.
+    name: "actors.mobs.wraith.name",
+    hp: 1,
+    accuracy: 10,
+    evasion: 50,
+    damage_min: 1,
+    damage_max: 2,
+    armor_min: 0,
+    armor_max: 0,
+    experience: 0,
+    max_level: -2,
+    image: "assets/wraith.png",
+  },
 ]

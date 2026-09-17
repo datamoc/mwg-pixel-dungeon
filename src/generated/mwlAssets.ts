@@ -99,6 +99,7 @@ export const MWL_ASSET_MANIFEST = [
 	"assets/water2.png",
 	"assets/water3.png",
 	"assets/water4.png",
+	"assets/wraith.png",
 	"assets/yog.png",
 	"assets/yog_fists.png"
 ] as const;

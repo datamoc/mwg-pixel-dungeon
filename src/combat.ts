@@ -107,6 +107,8 @@ export interface Creature extends Combatant {
 	/** Necromancer.firstSummon: true until this necromancer has ever summoned once - its real
 	 * `spend(firstSummon ? TICK : 2*TICK)` only costs double from its second summon onward. */
 	firstSummon?: boolean;
+	/** `Wraith.level`, set by `adjustStats()` at spawn and persisted (`storeInBundle`). */
+	wraithLevel?: number;
 	/** Tengu.arenaJumps: how many times it has relocated this fight */
 	arenaJumps?: number;
 	/** `PrisonBossLevel.State` collapse for this port's single arena: `cell` is Java's

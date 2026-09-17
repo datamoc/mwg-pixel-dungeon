@@ -48,6 +48,7 @@ import ninjaLogUrl from './assets/ninja_log.png';
 import spiritHawkUrl from './assets/spirit_hawk.png';
 import tenguUrl from './assets/tengu.png';
 import ghostUrl from './assets/ghost.png';
+import wraithUrl from './assets/wraith.png';
 import batUrl from './assets/bat.png';
 import bruteUrl from './assets/brute.png';
 import shamanUrl from './assets/shaman.png';
@@ -194,6 +195,7 @@ const MWL_ASSET_URLS: Readonly<Record<string, string>> = {
 	'assets/elemental.png': elementalUrl,
 	'assets/eye.png': eyeUrl,
 	'assets/ghost.png': ghostUrl,
+	'assets/wraith.png': wraithUrl,
 	'assets/ghoul.png': ghoulUrl,
 	'assets/gnoll.png': gnollUrl,
 	'assets/golem.png': golemUrl,
@@ -288,6 +290,7 @@ export interface SpdSprites {
 	necromancer: Texture;
 	tengu: Texture;
 	ghost: Texture;
+	wraith: Texture;
 	bat: Texture;
 	brute: Texture;
 	shaman: Texture;
@@ -460,6 +463,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		necromancer,
 		tengu,
 		ghost,
+		wraith,
 		bat,
 		brute,
 		shaman,
@@ -562,6 +566,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(necromancerUrl),
 		loadImage(tenguUrl),
 		loadImage(ghostUrl),
+		loadImage(wraithUrl),
 		loadImage(batUrl),
 		loadImage(bruteUrl),
 		loadImage(shamanUrl),
@@ -666,6 +671,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		necromancer: Texture.from(necromancer),
 		tengu: Texture.from(tengu),
 		ghost: Texture.from(ghost),
+		wraith: Texture.from(wraith),
 		bat: Texture.from(bat),
 		brute: Texture.from(brute),
 		shaman: Texture.from(shaman),

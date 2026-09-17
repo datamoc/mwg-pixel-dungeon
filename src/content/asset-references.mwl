@@ -169,6 +169,8 @@
         columns: "monster:string|frame_width:number|frame_height:number|idle:number",
         children: [
           { tag: "row", monster: "rat", frame_width: 16, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "wraith", frame_width: 14, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "dustWraith", frame_width: 14, frame_height: 15, idle: 0 },
           { tag: "row", monster: "snake", frame_width: 12, frame_height: 11, idle: 0 },
           { tag: "row", monster: "gnoll", frame_width: 12, frame_height: 15, idle: 0 },
           { tag: "row", monster: "swarm", frame_width: 16, frame_height: 16, idle: 0 },

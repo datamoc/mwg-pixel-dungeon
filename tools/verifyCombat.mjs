@@ -373,9 +373,10 @@ export function verifyCombat(require, check) {
 		};
 		// Java's `Property.UNDEAD` declarations at tag v3.3.8 (DwarfKing/Ghoul/Guard/Monk/
 		// Necromancer/RipperDemon/Skeleton/Thief/Warlock/Wraith), subclasses folded onto this
-		// port's own ids; Wraith is the one Java class in that list the port does not spawn
+		// port's own ids, `DustWraith` inheriting the base wraith's membership the way Java's
+		// `extends` does.
 		assert.deepEqual(flagSet('undead'),
-			['bandit', 'ghoul', 'guard', 'king', 'monk', 'necroSkeleton', 'necromancer', 'ripperDemon', 'senior', 'skeleton', 'spectralNecromancer', 'thief', 'warlock']);
+			['bandit', 'dustWraith', 'ghoul', 'guard', 'king', 'monk', 'necroSkeleton', 'necromancer', 'ripperDemon', 'senior', 'skeleton', 'spectralNecromancer', 'thief', 'warlock', 'wraith']);
 		// Java's `Property.DEMONIC` declarations (DemonSpawner/Eye/FetidRat/Goo/Mimic/RipperDemon/
 		// Scorpio/Succubus/YogDzewa/YogFist), with CrystalMimic and Acidic inheriting
 		assert.deepEqual(flagSet('demonic'),

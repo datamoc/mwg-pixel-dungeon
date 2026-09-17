@@ -43,6 +43,7 @@ import { runAttackResolution } from '../adapters/attackSimulation';
 import { simulationRandom } from '../adapters/mwgRandom';
 import { simulationRoguelike } from '../adapters/mwgRoguelike';
 import { MOVES } from '../simulation/heroActions';
+import { wraithCombatStats, dustSpawnerStep, dustSpawnerCap } from '../simulation/wraith';
 import { runHeroTurn } from '../adapters/gameSimulation';
 import { takeGooTurn as runGooTurn } from '../simulation/gooBoss';
 import { planRatKingWave, ratKingP1Summon, type RatKingAddKind } from '../simulation/ratKingBoss';
@@ -702,6 +703,7 @@ interface SaveShape {
 	 * not Java's `SecureRandom` long). Absent on pre-rule saves. */
 	ammoSetId?: string;
 	missileThresholds?: [string, number][];
+	dustSpawnPower?: number;
 	/** `HeavyBoomerang.CircleBack`'s in-flight return, if one is pending - see the field's own
 	 * comment. Java's buff survives saves (`revivePersists`), so a boomerang thrown before a save
 	 * still flies home after the load. Absent on saves with nothing in flight. */
@@ -1186,6 +1188,8 @@ export class DungeonScene extends Scene2D {
 	 */
 	private boomerangReturn: { fromX: number; fromY: number; returnX: number; returnY: number; left: number; level: number; setId: string; depth: number } | null = null;
 	private missileThresholds = new Map<string, number>();
+	/** `CorpseDust.DustGhostSpawner.spawnPower`, carried while the dust is (tag `v3.3.8`). */
+	private dustSpawnPower = 0;
 	/** The wielded stack's own wear, `MissileWeapon.durability` (100-point scale); the pile and the
 	 * bag stack it came from are the same stack, so this is what travels when it is stashed back
 	 * (see `wieldMissile`). A projectile breaks only at 0. */
@@ -1945,6 +1949,7 @@ export class DungeonScene extends Scene2D {
 		//`belongings.weapon`), so it needs a set of its own - not the old fixed `1`.
 		this.ammoSetId = this.newMissileSetId();
 		this.missileThresholds = new Map();
+		this.dustSpawnPower = 0;
 		this.enterLevel();
 
 		const def = CLASSES[this.heroClass];
@@ -2566,6 +2571,7 @@ export class DungeonScene extends Scene2D {
 				stuckAmmo: creature.stuckAmmo, sentryWarmup: creature.sentryWarmup,
 				dmAbilityTurns: creature.dmAbilityTurns, dmAbilityCd: creature.dmAbilityCd, dmLastAbility: creature.dmLastAbility,
 				dmSupercharged: creature.dmSupercharged, dmPylonsActivated: creature.dmPylonsActivated, dmBarrier: creature.dmBarrier,
+				wraithLevel: creature.wraithLevel,
 				skeletonIndex: creature.skeleton ? savedIndex.get(creature.skeleton) : undefined,
 				firstSummon: creature.firstSummon,
 				impShopkeeperGreeted: creature.impShopkeeperGreeted,
@@ -2704,6 +2710,7 @@ export class DungeonScene extends Scene2D {
 				stuckAmmo: saved.stuckAmmo, sentryWarmup: saved.sentryWarmup,
 				dmAbilityTurns: saved.dmAbilityTurns, dmAbilityCd: saved.dmAbilityCd, dmLastAbility: saved.dmLastAbility,
 				dmSupercharged: saved.dmSupercharged ?? false, dmPylonsActivated: saved.dmPylonsActivated ?? 0, dmBarrier: saved.dmBarrier ?? 0,
+				wraithLevel: saved.wraithLevel,
 				firstSummon: saved.firstSummon ?? true,
 				impShopkeeperGreeted: saved.impShopkeeperGreeted ?? false,
 				isAlly: saved.isAlly,
@@ -4389,6 +4396,12 @@ export class DungeonScene extends Scene2D {
 		const item = this.wandmakerQuestItem();
 		if (!item) return;
 		this.bag.remove(item.id, 1, item.instanceId);
+		if (item.id === 'corpseDust') {
+			//`DustGhostSpawner.dispel()` on handover: every DustWraith dies with the curse
+			//(the music fade has no layer here; the score penalties no system).
+			for (const wraith of this.creatures.filter((c) => c.kind === 'dustWraith' && c.hp > 0)) this.kill(wraith);
+			this.dustSpawnPower = 0;
+		}
 		//`RewardWindow.selectReward()`: the reward is identified and picked up. This port's wand is
 		//one bag id whose *type* is the class (`wandTypeFromSource`), the same shape `equipWand`
 		//uses when a wand is picked up off the floor.
@@ -4748,6 +4761,9 @@ export class DungeonScene extends Scene2D {
 	private pickupGroundItemAt(x: number, y: number): void {
 		const item = this.groundItemAt(x, y);
 		if (!item) return;
+		//`CorpseDust.doPickUp()`: the chill line on first pickup (the spawner bank it arms is
+		//just `dustSpawnPower`, which the per-turn block reads).
+		const hadDust = this.bag.find('corpseDust') !== undefined;
 		pickupGroundItemWorkflow({
 			item,
 			depth: this.depth,
@@ -4837,6 +4853,7 @@ export class DungeonScene extends Scene2D {
 				cannotAfford: (item, price) => t('port.log.cannotafford', { item, price }), buy: (item, price) => t('port.log.buy', { item, price }), missileDust: t('port.log.missiledust'), noHourglassSand: t('port.log.nohourglasssand'), snuffFuse: t('items.bombs.bomb.snuff_fuse'), freeDoubleBomb: '1+1 free!', pickup: (item) => t('port.log.pickup', { item }), pickupGold: (amount) => t('port.log.pickupgold', { amount }), recoverStone: t('port.log.recoverstone'), pickUpRing: (item) => t('port.log.pickupring', { item }),
 			},
 		});
+		if (!hadDust && this.bag.find('corpseDust')) this.say(t('items.quest.corpsedust.chill'), 'negative');
 	}
 
 	private eatFood(): boolean {
@@ -7866,9 +7883,39 @@ export class DungeonScene extends Scene2D {
 							this.showHeal(ghost, outcome.ghostHealed);
 						}
 						if (outcome.charged) this.say(t('items.artifacts.driedrose.charged'), 'positive');
+						//`DriedRose`'s cursed branch (tag `v3.3.8`): a cursed rose never charges -
+						//`applyRoseRecharge` already returns early on `cursed` - and instead rolls
+						//1/100 per turn for a wraith in a free neighbouring cell (the CURSED sound
+						//has no audio layer here). `Random.int(100)` is Java's `Random.Int(100)`.
 					}
 				}
-				//`HeavyBoomerang.CircleBack.act()` (tag `v3.3.8`): the return flight's own countdown,
+			//`CorpseDust.DustGhostSpawner.act()` (tag `v3.3.8`): while the dust is carried, bank
+			//one spawn power per hero turn toward `min(49, wraiths*wraiths)` (`wraiths` counts the
+			//wraith being summoned: 1 + live DustWraiths), then spend it on a DustWraith in hero
+			//FOV, on a free cell farther than `round(viewDistance/3)` (Chebyshev - Java's
+			//`Level.distance` is `max(|dx|,|dy|)`). Losing the dust zeroes the bank (the buff
+			//re-checks the bag every tick). The quest-score penalties and the music fade have no
+			//systems here; the CURSED sound has no audio layer.
+			if (this.bag.find('corpseDust')) {
+				const dustWraiths = this.creatures.filter((c) => c.kind === 'dustWraith' && c.hp > 0).length;
+				const step = dustSpawnerStep(this.dustSpawnPower, dustWraiths);
+				this.dustSpawnPower = step.power;
+				if (step.spawn) {
+					const minDist = Math.round(this.viewRadius() / 3);
+					const candidates: { x: number; y: number }[] = [];
+					for (let cy = 0; cy < this.level.height; cy++) {
+						for (let cx = 0; cx < this.level.width; cx++) {
+							if (!this.fov.isVisible(cx, cy) || !this.level.passable(cx, cy) || this.creatureAt(cx, cy)) continue;
+							if (Roguelike.chebyshevDistance({ x: cx, y: cy }, this.hero) <= minDist) continue;
+							candidates.push({ x: cx, y: cy });
+						}
+					}
+					const at = Random.element(candidates);
+					if (at) this.spawnWraithAt('dustWraith', at.x, at.y);
+					else this.dustSpawnPower = dustSpawnerCap(this.dustSpawnPower + step.cost, dustWraiths);
+				}
+			} else if (this.dustSpawnPower !== 0) this.dustSpawnPower = 0;
+			//`HeavyBoomerang.CircleBack.act()` (tag `v3.3.8`): the return flight's own countdown,
 			//which only advances while the hero is still on the depth it was thrown from.
 			this.tickBoomerangReturn();
 			//Viscosity.DeferedDamage.act(): a fresh deferred pool waits one actor turn,
@@ -9969,6 +10016,43 @@ export class DungeonScene extends Scene2D {
 			this.say(t('port.log.degrade'), 'negative');
 		}
 		if (target.hp <= 0) this.kill(target);
+	}
+
+	/**
+	 * `Wraith.spawnAt()` (`actors/mobs/Wraith.java`, tag `v3.3.8`): materialize a wraith at
+	 * the cell, falling back to a random free NEIGHBOURS8 cell when the cell itself is taken,
+	 * else nothing. Stats come from `adjustStats(scalingDepth())` - this port's `depth`
+	 * substitutes for `scalingDepth()` the way every other depth-scaled formula here does -
+	 * and the wraith arrives HUNTING (`seesHero`, awake) with Java's 2-turn materialization
+	 * delay (`SPAWN_DELAY`). The fade-in/particles have no layer here (stated, the same skip
+	 * every mid-run summon carries); the exotic `TormentedSpirit` 1/100 roll is not rolled -
+	 * every caller here passes an explicit class, and all four generic callers (haunted heaps,
+	 * `DistortionTrap`, the Cleric spell, soul-marked deaths) belong to unported systems.
+	 */
+	private spawnWraithAt(kind: 'wraith' | 'dustWraith', x: number, y: number): Creature | null {
+		let at: { x: number; y: number } | null = null;
+		if (this.level.passable(x, y) && !this.creatureAt(x, y)) at = { x, y };
+		else {
+			const candidates: { x: number; y: number }[] = [];
+			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
+				const cell = { x: x + dx, y: y + dy };
+				if (this.level.passable(cell.x, cell.y) && !this.creatureAt(cell.x, cell.y)) candidates.push(cell);
+			}
+			at = Random.element(candidates) ?? null;
+		}
+		if (!at) return null;
+		const wraith = this.spawnMonster(kind, at);
+		const stats = wraithCombatStats(this.depth);
+		wraith.wraithLevel = this.depth;
+		wraith.accuracy = stats.accuracy;
+		wraith.evasion = stats.evasion;
+		wraith.damage = [stats.damageMin, stats.damageMax];
+		wraith.hp = wraith.maxHp = 1;
+		wraith.sleeping = false;
+		wraith.seesHero = true;
+		this.scheduler.remove(wraith);
+		this.scheduler.add(wraith, 2);
+		return wraith;
 	}
 
 	/** Necromancer.summonMinion (`Necromancer.java`): a NecroSkeleton beside the hero.
@@ -14510,6 +14594,7 @@ export class DungeonScene extends Scene2D {
 			missileLevel: this.missileLevel,
 			ammoSetId: this.ammoSetId,
 			missileThresholds: [...this.missileThresholds],
+			dustSpawnPower: this.dustSpawnPower,
 			frostWand: this.frostWand,
 			wandType: this.wandType,
 			ghostSpawned: this.ghostSpawned,
@@ -14810,6 +14895,7 @@ export class DungeonScene extends Scene2D {
 		//or a numeric key would never match a string lookup and the dust rule would silently stop.
 		this.ammoSetId = s.ammoSetId === undefined ? '' : String(s.ammoSetId);
 		this.missileThresholds = new Map((s.missileThresholds ?? []).map(([setId, level]) => [String(setId), level]));
+		this.dustSpawnPower = s.dustSpawnPower ?? 0;
 		this.frostWand = s.frostWand;
 		this.wandType = s.wandType ?? (this.frostWand ? 'frost' : 'magicMissile');
 		this.ghostSpawned = s.ghostSpawned;

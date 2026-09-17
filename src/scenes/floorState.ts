@@ -117,6 +117,8 @@ export interface SavedCreature {
 	hasteBaseSpeed?: number;
 	skeletonIndex?: number;
 	firstSummon?: boolean;
+	/** `Wraith.level` (`Wraith.java`, tag `v3.3.8`), set by `adjustStats()` at spawn. */
+	wraithLevel?: number;
 	impShopkeeperGreeted?: boolean;
 	nextTurn: number | null;
 	isAlly?: boolean;

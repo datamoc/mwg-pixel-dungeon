@@ -640,7 +640,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		'fetidRat', 'impShopkeeper', 'gnollTrickster', 'greatCrab', 'necroSkeleton', 'newbornElemental',
 		'mimic', 'piranha', 'bee', 'statue',
 	], 'monster sprite-source overrides stay authored in asset-references.mwl');
-	assert.equal(tableRows('monsterSpriteFrames', 'monster').length, 68, 'all monster sprite frame metadata stays authored in asset-references.mwl');
+	assert.equal(tableRows('monsterSpriteFrames', 'monster').length, 70, 'all monster sprite frame metadata stays authored in asset-references.mwl');
 	//`loadSpdSprites` reads its textures through two positionally-paired lists: the `const [a, b, ...]`
 	//destructuring and the `Promise.all([loadImage(aUrl), ...])` array. They were transposed once
 	//(`sheep`/`ninjaLog`) and nothing failed - the Smoke Bomb decoy simply rendered the sheep
@@ -806,7 +806,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	// Monster display names are authored on the nodes (`name` message key) with `MOB_KEYS`
 	// derived in `spdKeys.ts` - including the two kinds that had no key at all (larva,
 	// armoredStatue) and rendered as bare ids. Resolution itself is gated by `i18n:verify`.
-	assert.equal(MWL_MONSTER_NODES.length, 68, 'monster roster size');
+	assert.equal(MWL_MONSTER_NODES.length, 70, 'monster roster size');
 	for (const node of MWL_MONSTER_NODES) assert.ok(node.attributes?.name, `monster has a display-name key: ${node.attributes?.id}`);
 	assert.equal(MWL_MONSTER_NODES.find((node) => node.attributes?.id === 'larva')?.attributes?.name, 'actors.mobs.yogdzewa$larva.name', 'larva name key');
 	assert.equal(MWL_MONSTER_NODES.find((node) => node.attributes?.id === 'armoredStatue')?.attributes?.name, 'actors.mobs.armoredstatue.name', 'armoredStatue name key');
@@ -884,6 +884,10 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		// Non-challenge HP (Java splits 80 challenged / 50 otherwise; this port has no
 		// challenges); damage/exp never land - no melee path and maxLvl -2 zeroes experience.
 		pylon: [50, 0, 0, 0, 0, 0, 0, 0, -2],
+		// `Wraith.java` level-0 values (`HP = 1`, `EXP = 0`, `maxLvl = -2`, `10 + 0` accuracy,
+		// `(10 + 0) * 5` evasion, `1 + 0/2 .. 2 + 0` damage); `DustWraith` inherits them all.
+		wraith: [1, 10, 50, 1, 2, 0, 0, 0, -2],
+		dustWraith: [1, 10, 50, 1, 2, 0, 0, 0, -2],
 		rotHeart: [80, 0, 0, 0, 0, 0, 5, 4, 29],
 		rotLasher: [80, 25, 0, 10, 20, 0, 8, 1, 29],
 	};

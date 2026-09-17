@@ -292,9 +292,7 @@ was judged not worth the churn against those existing references.
 
       Still open: the zap *pose* (Java's `sprite.zap()`/`zap()` pair - the visible bolt itself is
       covered, `elementalRangedTurn` fires `spawnProjectile`); no quest-music swap or score
-      accounting (neither system exists); and the dust quest's wraith-curse variant, which
-      needs a Wraith mob plus `CorpseDust`'s per-turn spawn-power tracker and score penalties
-      - the one real blocker, and not small. **Corrected in the same pass**: "regular fire
+      accounting (neither system exists). **The dust quest's wraith-curse variant is ported (2026-09-17)**: the `Wraith`/`DustWraith` kinds carry Java's real stats and arrival rules, a cursed rose rolls the 1/100 adjacent spawn, and carrying the dust runs the real `DustGhostSpawner` bank (FOV/distance-gated spawns, handover dispel) - the score penalties stay out with the rest of the missing score system. See `PORT_COVERAGE.md`'s `Wraith` row. **Corrected in the same pass**: "regular fire
       elementals lacking the subtype split" was stale - `elementalType` carries all four kits
       with Java's selection, effects and loot (see `PORT_COVERAGE.md`'s Elemental row).
       **Complexity: S.** Narrow presentation/flavor gaps plus the one mob-blocked curse.

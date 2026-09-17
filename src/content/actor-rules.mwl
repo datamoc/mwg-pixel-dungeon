@@ -11,7 +11,7 @@
           {
             tag: "effect",
             apply_to: "flying",
-            set: "bat,bee,elemental,newbornElemental,eye,swarm,ghost,spiritHawk",
+            set: "bat,bee,elemental,newbornElemental,eye,swarm,ghost,spiritHawk,wraith,dustWraith",
           },
           {
             // `BlobImmunity`'s immunities list (`BlobImmunity.java`, tag `v3.3.8`): every
@@ -40,7 +40,7 @@
           {
             tag: "effect",
             apply_to: "undead",
-            set: "king,ghoul,guard,monk,senior,necromancer,spectralNecromancer,ripperDemon,skeleton,necroSkeleton,thief,bandit,warlock",
+            set: "king,ghoul,guard,monk,senior,necromancer,spectralNecromancer,ripperDemon,skeleton,necroSkeleton,thief,bandit,warlock,wraith,dustWraith",
           },
           {
             tag: "effect",
@@ -59,12 +59,12 @@
           {
             tag: "effect",
             apply_to: "inorganic",
-            set: "dm100,dm200,dm201,dm300,golem,skeleton,necroSkeleton,statue,armoredStatue,pylon",
+            set: "dm100,dm200,dm201,dm300,golem,skeleton,necroSkeleton,statue,armoredStatue,pylon,wraith,dustWraith",
           },
           {
             tag: "effect",
             apply_to: "never_sleeps",
-            set: "fetidRat,gnollTrickster,greatCrab,demonSpawner,sentry,rotHeart,rotLasher,newbornElemental,pylon",
+            set: "fetidRat,gnollTrickster,greatCrab,demonSpawner,sentry,rotHeart,rotLasher,newbornElemental,pylon,wraith,dustWraith",
           },
         ],
       },
@@ -122,6 +122,11 @@
             tag: "row",
             variant: "armoredStatue",
             base: "statue",
+          },
+          {
+            tag: "row",
+            variant: "dustWraith",
+            base: "wraith",
           },
           {
             tag: "row",

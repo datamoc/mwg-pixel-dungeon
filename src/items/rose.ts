@@ -96,9 +96,9 @@ export interface RoseRechargeResult {
  *   full 100 points, with the same strict `> 1` boundary and the same "reaching the cap zeroes
  *   the partial" ending.
  *
- * The cursed/`MagicImmune` guards wrap both halves, and Java's cursed branch (a 1%-per-turn
- * `Wraith` spawn) has no equivalent here - this port has no wraith mob kind - so it is simply
- * absent rather than faked. Recorded in `PORT_COVERAGE.md`.
+ * The cursed/`MagicImmune` guards wrap both halves. Java's cursed branch (a 1%-per-turn
+ * `Wraith` spawn beside the hero) runs scene-side, next to this call - it needs the live
+ * level and scheduler, which this pure function never sees.
  */
 export function applyRoseRecharge(item: RoseItem, input: RoseRechargeInput): RoseRechargeResult {
 	const result: RoseRechargeResult = { ghostHealed: 0, charged: false };

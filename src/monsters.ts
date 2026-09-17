@@ -78,7 +78,8 @@ export type MonsterId =
 	| 'rotHeart'
 	| 'rotLasher'
 	| 'newbornElemental'
-	| 'ratKing';
+	| 'ratKing'
+	| 'wraith';
 
 // Bestiary.swapMobAlts() variants. They deliberately remain distinct ids even when this
 // checkout has no separate texture sheet for the variant: their Java stats/loot identity and
@@ -91,7 +92,8 @@ export type MonsterVariantId =
 	| 'armoredBrute'
 	| 'dm201'
 	| 'senior'
-	| 'acidic';
+	| 'acidic'
+	| 'dustWraith';
 
 export type AnyMonsterId = MonsterId | MonsterVariantId;
 
@@ -215,7 +217,7 @@ export const MINIBOSS_KINDS = mwlActorFlagSet('miniboss');
 /** Java's `Char.Property.UNDEAD`: `DwarfKing`/`Ghoul`/`Guard`/`Monk`/`Necromancer`/`RipperDemon`/
  * `Skeleton`/`Thief`/`Warlock`/`Wraith` at tag `v3.3.8`, with each subclass inheriting it
  * (`NecroSkeleton`, `SpectralNecromancer`, `Bandit`, `Senior`) - so every ported member is here by
- * its own id. `Wraith` is the one Java class in the list this port does not spawn.
+ * its own id. `Wraith`/`DustWraith` spawn through the scene's wraith spawner.
  * `WandOfTransfusion` is the site that reads it alone (undead are harmed rather than charmed). */
 export const UNDEAD_KINDS = mwlActorFlagSet('undead');
 
