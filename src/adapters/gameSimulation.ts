@@ -7,11 +7,20 @@ import { planHeroAction, type HeroActionPlan } from '../simulation/heroActions';
 import { planMovement, type MovementPlan, type MovementWorld } from '../simulation/movement';
 import { planSearch, type SearchOutcome, type SearchWorld } from '../simulation/search';
 import type { SimulationRandom } from '../simulation/random';
+import { finishHeroTurn, type HeroTurnEffects, type HeroTurnResult } from '../simulation/heroTurn';
 
 interface SpdActor extends Actor { id: string; }
 
+export interface MonsterTurnEffects {
+	act(): void;
+	afterAct?(): void;
+	cost?(): number;
+}
+
 type Command =
 	| { kind: 'attack'; attacker: Combatant; defender: Combatant; randomId: number; magic: boolean; surprise: boolean; accFactor: number; damageMultiplier: number }
+	| { kind: 'hero-turn'; effectsId: number; turnCost: number }
+	| { kind: 'monster-turn'; effectsId: number }
 	| { kind: 'hunger'; state: HungerState; step?: number }
 	| { kind: 'hero-action'; action: string; paralysed: boolean; turnCostMod: number }
 	| { kind: 'movement'; position: { x: number; y: number }; move: { x: number; y: number }; worldId: number }
@@ -19,6 +28,8 @@ type Command =
 
 type Event =
 	| { type: 'attack-resolution'; resolution: AttackResolution }
+	| { type: 'hero-turn-result'; result: HeroTurnResult }
+	| { type: 'monster-turn-result'; cost: number }
 	| { type: 'hunger-transition'; state: HungerState; events: HungerEvent[] }
 	| { type: 'hero-action-plan'; plan: HeroActionPlan }
 	| { type: 'movement-plan'; plan: MovementPlan }
@@ -30,6 +41,8 @@ interface State { last: Event | null; }
 // outside the command payload: they are live scene views, not replayable game state.
 let nextHandle = 0;
 const randomSources = new Map<number, SimulationRandom>();
+const heroTurnEffects = new Map<number, HeroTurnEffects>();
+const monsterTurnEffects = new Map<number, MonsterTurnEffects>();
 const movementWorlds = new Map<number, MovementWorld>();
 const searchWorlds = new Map<number, SearchWorld>();
 
@@ -40,6 +53,20 @@ const rule: SimulationRuntimeRule<State, Command, Event, SpdActor> = (_state, co
 			if (!random) throw new Error(`attack random source ${command.randomId} is no longer available`);
 			const resolution = resolveAttack(command.attacker, command.defender, random, command.magic, command.surprise, command.accFactor, command.damageMultiplier);
 			return { state: { last: { type: 'attack-resolution', resolution } }, events: [{ type: 'attack-resolution', resolution }], status: 'ready', cost: null };
+		}
+		case 'hero-turn': {
+			const effects = heroTurnEffects.get(command.effectsId);
+			if (!effects) throw new Error(`hero turn effects ${command.effectsId} are no longer available`);
+			const result = finishHeroTurn(effects);
+			return { state: { last: { type: 'hero-turn-result', result } }, events: [{ type: 'hero-turn-result', result }], status: 'ready', cost: command.turnCost };
+		}
+		case 'monster-turn': {
+			const effects = monsterTurnEffects.get(command.effectsId);
+			if (!effects) throw new Error(`monster turn effects ${command.effectsId} are no longer available`);
+			effects.act();
+			effects.afterAct?.();
+			const cost = effects.cost?.() ?? 1;
+			return { state: { last: { type: 'monster-turn-result', cost } }, events: [{ type: 'monster-turn-result', cost }], status: 'ready', cost };
 		}
 		case 'hunger': {
 			const result = advanceHunger(command.state, command.step);
@@ -87,6 +114,33 @@ export function runAttackResolution(attacker: Combatant, defender: Combatant, ra
 		return (dispatch({ kind: 'attack', attacker, defender, randomId, magic, surprise, accFactor, damageMultiplier }) as { type: 'attack-resolution'; resolution: AttackResolution }).resolution;
 	} finally {
 		randomSources.delete(randomId);
+	}
+}
+
+/** Route the extracted hero-turn sequence through the same runtime as the other decisions.
+ * The effects object is a live scene binding, so only its numeric handle enters MWG's cloned
+ * command journal; presentation and persistence remain scene-owned until the full snapshot
+ * boundary is introduced. */
+export function runHeroTurn(effects: HeroTurnEffects, turnCost = 1): HeroTurnResult {
+	const effectsId = ++nextHandle;
+	heroTurnEffects.set(effectsId, effects);
+	try {
+		return (dispatch({ kind: 'hero-turn', effectsId, turnCost }) as { type: 'hero-turn-result'; result: HeroTurnResult }).result;
+	} finally {
+		heroTurnEffects.delete(effectsId);
+	}
+}
+
+/** Route a scheduled monster action through the shared runtime while keeping live scene hooks
+ * outside MWG's cloneable command payload. The returned cost is read immediately after the
+ * action, preserving special actors such as Necromancer's variable-cost summon. */
+export function runMonsterTurn(effects: MonsterTurnEffects): number {
+	const effectsId = ++nextHandle;
+	monsterTurnEffects.set(effectsId, effects);
+	try {
+		return (dispatch({ kind: 'monster-turn', effectsId }) as { type: 'monster-turn-result'; cost: number }).cost;
+	} finally {
+		monsterTurnEffects.delete(effectsId);
 	}
 }
 

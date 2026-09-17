@@ -196,7 +196,26 @@ Java-derived short-circuit (a miss consumes no damage roll); the runtime's gener
 remain inert until combat state and turn costs are unified. `main.ts`
 still owns weapon-affix/talent branches, damage application, death, sprites, audio, and logs.
 
-All five cost-free transitional command facades clear the shared `SimulationRuntime.journal` after
+Hero-turn orchestration is now routed through the same runtime: `runHeroTurn` dispatches a numeric
+command containing the turn cost and a handle to the live `HeroTurnEffects` binding. The runtime
+invokes the already-extracted `finishHeroTurn` sequence and returns its result; the scene still
+owns scheduler mutation, rendering, and persistence. This is the first cost-bearing command
+boundary, but the cost is reported rather than applied by MWG's generic scheduler because the
+scene's time-bubble and actor-removal rules still live in the effect callbacks. Moving cost
+application into the runtime belongs to the later serializable snapshot step.
+
+Automatic monster turns now use the same boundary: `runUntilHeroInput()` dispatches a
+`monster-turn` command through `runMonsterTurn`, whose live binding performs the actor action,
+the post-action hook, and the immediate variable-cost read. `advanceToInput` remains the owner
+of queue advancement and spends that returned cost exactly once; this preserves actor-removal and
+special summon timing while removing the direct scene callback from the scheduler adapter.
+
+The scene's retained-target wandering branch is also isolated as `takeWanderingTurn`, keeping
+the Java `Mob.target` lifetime and the Golem/Piranha exceptions in one strategy boundary. It
+still uses live scene terrain and pathfinder state; hunting, fleeing, and stealth decisions remain
+the next gameplay-facing AI work rather than being hidden behind the generic runtime.
+
+The transitional command facades clear the shared `SimulationRuntime.journal` after
 dispatch. MWG 0.9.0 correctly journals by cloning commands, but these adapters still receive
 live scene callbacks or snapshots and do not yet own durable replay state; retaining those entries
 would both preserve ephemeral handles and grow memory once per action. Durable journal/replay
@@ -207,7 +226,8 @@ adapter-local registry.
 
 `adapters/gameSimulation.ts` is now the single `SimulationRuntime<State, Command, Event, Actor>`
 for the five extracted, cost-free decisions: search, hunger, hero-action classification,
-movement planning, and attack hit/damage resolution. The old adapter modules remain as small
+movement planning, and attack hit/damage resolution, plus the transitional hero-turn command.
+The old adapter modules remain as small
 compatibility facades, so scene call sites and headless tests keep their stable names while
 there is only one runtime rule and one journal to replace when a real cost-bearing command is
 introduced. Callback-bearing worlds and the live random stream remain numeric handles outside

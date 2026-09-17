@@ -3,6 +3,7 @@ import { advanceToInput } from 'mwg/simulation';
 import type { HungerEvent, HungerState } from '../simulation/hunger';
 import type { TurnActor, TurnPorts, TurnStop } from '../simulation/turns';
 import { runHungerStep } from './hungerSimulation';
+import { runMonsterTurn } from './gameSimulation';
 
 /** Translate MWG's game-neutral runner outcomes to this port's existing turn contract. */
 export function runUntilHeroInput<A extends TurnActor>(ports: TurnPorts<A>): TurnStop {
@@ -11,9 +12,11 @@ export function runUntilHeroInput<A extends TurnActor>(ports: TurnPorts<A>): Tur
 		finished: () => ports.isGameOver(),
 		needsInput: (actor) => !!actor.isHero,
 		act: (actor) => {
-			ports.takeMonsterTurn(actor);
-			ports.afterMonsterTurn?.(actor);
-			return ports.monsterTurnCost?.(actor) ?? 1;
+			return runMonsterTurn({
+				act: () => ports.takeMonsterTurn(actor),
+				afterAct: () => ports.afterMonsterTurn?.(actor),
+				cost: () => ports.monsterTurnCost?.(actor) ?? 1,
+			});
 		},
 	}, 1000);
 	switch (result.status) {

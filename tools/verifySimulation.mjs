@@ -146,7 +146,7 @@ try {
 			isToxicImmune: () => false,
 			applyDamage: () => true,
 		});
-		assert.deepEqual(advanced, ['plantGas', 'plantFreeze', 'toxicGas', 'paralyticGas', 'stenchGas', 'corrosiveGas', 'confusionGas']);
+		assert.deepEqual(advanced, ['plantGas', 'plantFreeze', 'toxicGas', 'paralyticGas', 'stenchGas', 'corrosiveGas', 'confusionGas', 'web']);
 		assert.deepEqual(buffs, [[target, 'paralysis', 2], [target, 3]]);
 	});
 	const { takeGooTurn } = require('./simulation/gooBoss');

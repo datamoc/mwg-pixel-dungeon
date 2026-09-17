@@ -1,6 +1,6 @@
 import type { Creature, Step } from '../combat';
 
-export type EnvironmentalBlob = 'plantGas' | 'plantFreeze' | 'toxicGas' | 'paralyticGas' | 'stenchGas' | 'corrosiveGas' | 'confusionGas';
+export type EnvironmentalBlob = 'plantGas' | 'plantFreeze' | 'toxicGas' | 'paralyticGas' | 'stenchGas' | 'corrosiveGas' | 'confusionGas' | 'web';
 
 // `StenchGas.evolve()` uses `Paralysis.DURATION / 5`; this port's authored Java duration is 10.
 const STENCH_PARALYSIS_DURATION = 2;
@@ -11,7 +11,7 @@ export interface EnvironmentalBlobsContext {
 	advance: (blob: EnvironmentalBlob, isSolid: (x: number, y: number) => boolean) => void;
 	cellsAbove: (blob: EnvironmentalBlob, threshold: number) => readonly Step[];
 	creatureAt: (x: number, y: number) => Creature | null;
-	addBuff: (target: Creature, id: 'poison' | 'paralysis' | 'ooze' | 'daze', duration?: number) => void;
+	addBuff: (target: Creature, id: 'poison' | 'paralysis' | 'ooze' | 'daze' | 'roots', duration?: number) => void;
 	applyCorrosion: (target: Creature, strength: number) => void;
 	corrosiveStrength: () => number;
 	toxicDamage: (target: Creature) => number;
@@ -34,6 +34,7 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 	context.advance('stenchGas', isSolid);
 	context.advance('corrosiveGas', isSolid);
 	context.advance('confusionGas', isSolid);
+	context.advance('web', isSolid);
 	for (const cell of context.cellsAbove('plantGas', 1)) {
 		const target = context.creatureAt(cell.x, cell.y);
 		if (target) context.addBuff(target, 'poison');
@@ -64,5 +65,12 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 		// ConfusionGas.prolongs Vertigo for 2 turns; daze is this port's movement-confusion stand-in.
 		if (!target || context.isVertigoImmune?.(target)) continue;
 		context.addBuff(target, 'daze', 2);
+	}
+	//`Web` terrain (`Spinner`'s ranged web, tag `v3.3.8`): Java seeds a persistent 3-cell web
+	//blob rather than a direct debuff. Standing in web roots the creature; the scene seeds the
+	//blob in the spinner handler and this applies the root each turn.
+	for (const cell of context.cellsAbove('web', 0.0001)) {
+		const target = context.creatureAt(cell.x, cell.y);
+		if (target) context.addBuff(target, 'roots', 2);
 	}
 }
