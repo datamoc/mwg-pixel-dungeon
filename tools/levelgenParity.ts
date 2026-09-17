@@ -74,6 +74,13 @@ function main(): void {
 	const tsOut: string[] = [];
 	const seeds = [...new Set(java.map((b) => b.seed))];
 	let matched = 0;
+	// Depths 1-2 are excluded from the parity count by design: Java drops the
+	// guidebook pages with an intentionally UNSEEDED generator (`pushGenerator()` with
+	// no seed - "so meta progression doesn't affect levelgen"), and the heap then
+	// shifts `paintGrass`'s seeded draws, so even Java-vs-Java is not reproducible
+	// there (see `rooms/standard/entranceRoom.ts`). They still print for eyeballing.
+	let stableMatched = 0;
+	let stableTotal = 0;
 	for (const seed of seeds) {
 		resetPortedRun();
 		for (let depth = 1; depth <= 9; depth++) {
@@ -83,12 +90,13 @@ function main(): void {
 			if (writeTs) {
 				tsOut.push(`seed=${seed} depth=${depth} rooms=${floor.rooms.length} feeling=${floor.feeling ?? 'NONE'} size=${floor.width}x${floor.height}`);
 				tsOut.push(`  room rects: ${floor.rooms.map((r) => `${r.left},${r.top},${r.right},${r.bottom}`).sort().join(' ')}`);
+				tsOut.push(`  room labels: ${floor.rooms.map((r) => r.label).sort().join(',')}`);
 				for (let y = 0; y < floor.height; y++) {
 					let row = '  ';
 					for (let x = 0; x < floor.width; x++) {
 						row += CHAR_BY_TERRAIN[floor.paint.map[x + y * floor.width]!] ?? '?';
 					}
-					tsOut.push(row);
+					tsOut.push(row.replace(/\s+$/, ''));
 				}
 				tsOut.push('');
 			}
@@ -112,7 +120,9 @@ function main(): void {
 					const t = floor.paint.map[x + y * floor.width]!;
 					row += CHAR_BY_TERRAIN[t] ?? '?';
 				}
-				rows.push(row);
+				// The Java dump rtrims every row (`trimLineEndings`), so the
+				// comparison trims too - trailing chasm is not a difference.
+				rows.push(row.replace(/\s+$/, ''));
 			}
 			let cells = 0;
 			const samples: string[] = [];
@@ -120,23 +130,26 @@ function main(): void {
 				const a = rows[y] ?? '';
 				const b = block.map[y] ?? '';
 				for (let x = 0; x < Math.max(a.length, b.length); x++) {
-					if ((a[x] ?? '') !== (b[x] ?? '')) {
-						cells++;
-						if (samples.length < 5) samples.push(`(${x},${y}) ts=${a[x] ?? '∅'}(${floor.paint.map[x + y * floor.width] ?? '∅'}) java=${b[x] ?? '∅'}`);
-					}
+				// Either side rtrims trailing chasm, so a missing cell is chasm, not a diff.
+				if ((a[x] ?? ' ') !== (b[x] ?? ' ')) {
+					cells++;
+					if (samples.length < 5) samples.push(`(${x},${y}) ts=${a[x] ?? '∅'}(${floor.paint.map[x + y * floor.width] ?? '∅'}) java=${b[x] ?? '∅'}`);
 				}
+			}
 			}
 			if (cells > 0) diffs.push(`map ${cells} cells differ, e.g. ${samples.join(' ')}`);
 			if (rows.some((r) => r.includes('?'))) diffs.push('ts map contains unmapped (?) terrain ids');
 			if (diffs.length === 0) {
 				matched++;
+				if (depth >= 3) stableMatched++;
 				console.log(`seed=${seed} depth=${depth}: PARITY`);
 			} else {
-				console.log(`seed=${seed} depth=${depth}: DIFF ${diffs.join(' | ')}`);
+				console.log(`seed=${seed} depth=${depth}: ${depth < 3 ? 'UNSTABLE' : 'DIFF'} ${diffs.join(' | ')}`);
 			}
+			if (depth >= 3) stableTotal++;
 		}
 	}
-	console.log(`levelgen parity: ${matched}/${java.length} blocks identical`);
+	console.log(`levelgen parity: ${matched}/${java.length} blocks identical (${stableMatched}/${stableTotal} on depths 3+, the deterministic set)`);
 	if (writeTs) {
 		writeFileSync(writeTs, tsOut.join('\n') + '\n');
 		console.log(`wrote ${writeTs}`);

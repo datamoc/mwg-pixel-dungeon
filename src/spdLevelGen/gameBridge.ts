@@ -232,7 +232,7 @@ export interface PortedFloor {
 	height: number;
 	/** cell -> `main.ts` terrain code, already mapped */
 	terrain: Uint8Array;
-	rooms: { left: number; top: number; right: number; bottom: number }[];
+	rooms: { left: number; top: number; right: number; bottom: number; label: string }[];
 	/** the real `ENTRANCE` tile - where the hero arrives */
 	entrance: { x: number; y: number } | null;
 	/** the real `EXIT` tile, or null on a floor that has none */
@@ -381,6 +381,13 @@ export function resetPortedRun(): void {
 
 // **** PaintLevel -> PortedFloor ****
 
+/** Parity-probe label (`kind:subkind`, e.g. `special:sentry`): the shipped game reads
+ * only the rects, but the Java-vs-TS differential needs the kinds to say *which* room
+ * diverged. Pure string projection, no gameplay effect. */
+function roomLabel(room: Room): string {
+	return `${room.kind}:${room.standardKind ?? room.specialKind ?? room.secretKind ?? room.connectionKind ?? 'plain'}`;
+}
+
 function extract(paint: PaintLevel, rooms: Room[], feeling: number | null): PortedFloor {
 	const { w, h, map } = paint;
 	const terrain = new Uint8Array(w * h);
@@ -460,7 +467,7 @@ function extract(paint: PaintLevel, rooms: Room[], feeling: number | null): Port
 		width: w,
 		height: h,
 		terrain,
-		rooms: orderedRooms.map(r => ({ left: r.left, top: r.top, right: r.right, bottom: r.bottom })),
+		rooms: orderedRooms.map(r => ({ left: r.left, top: r.top, right: r.right, bottom: r.bottom, label: roomLabel(r) })),
 		entrance,
 		exit,
 		branchExits,

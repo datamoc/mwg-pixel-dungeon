@@ -720,13 +720,16 @@ scripts targeted. **Triage 2026-09-17:** the Java side is real and runnable afte
 SPD checkout's `desktop:runHarness` task (Temurin JDK 21, offline Gradle build green) dumps 36
 reference blocks (4 seeds x depths 1-9: room graph plus paint maps), and `npm run parity:levelgen`
 diffs this port's own generator against them (`tools/levelgenParity.ts`, standalone - it needs the
-Java checkout, so it stays out of `verify`). First run: 26/36 blocks fully identical (feelings,
-exact room-rect sets, painted maps); the 10 diffs are all localized - every depth-5 Goo arena
-(71-111 cells of decoration fill), seed1/depth1 sewers (169), seed999999999999/depth9 halls (207),
-dominated by water/grass/floor and wall-deco/empty-deco swaps (same rolls landing on different
-cells - a paint-phase stream shift, not new probabilities), plus one structural outlier,
-seed42/depth8 (different dims, disjoint rects, same room count and feeling - Java drew
-`SecretHoneypotRoom`+`SentryRoom` there). Still genuinely unstarted: fixed-seed RNG-call-order
+Java checkout, so it stays out of `verify`). Settled result: 22/28 on depths 3+ fully identical
+(feelings, exact room-rect sets, painted maps); the 6 diffs are all localized - every depth-5 Goo
+arena (71-111 cells of decoration fill), seed999999999999/depth9 halls (207), dominated by
+water/grass/floor and wall-deco/empty-deco swaps, plus one structural outlier, seed42/depth8
+(different dims, disjoint rects - but the same room-kind multiset, so selection matches and only
+placement/sizing diverges). Depths 1-2 print as UNSTABLE and stay out of the count: Java drops
+the guidebook pages with an intentionally unseeded generator, so even Java-vs-Java is not
+reproducible there (the heap shifts `paintGrass` draws). Probe details: TS room-kind labels ride
+on `PortedFloor.rooms` for kind-level triage, and both sides rtrim trailing chasm before the
+cell compare. Still genuinely unstarted: fixed-seed RNG-call-order
 comparison beyond levelgen, and loot/quest/boss-transition/save-load comparison.
 
 - [ ] Compare both implementations with fixed seeds and identical action traces. **Complexity: XL.**
