@@ -297,7 +297,7 @@ was judged not worth the churn against those existing references.
       elementals lacking the subtype split" was stale - `elementalType` carries all four kits
       with Java's selection, effects and loot (see `PORT_COVERAGE.md`'s Elemental row).
       **Complexity: S.** Narrow presentation/flavor gaps plus the one mob-blocked curse.
-- [ ] Port the Troll Blacksmith's last remaining gap. All six services and the real turn-in favor
+- [x] Port the Troll Blacksmith's last remaining gap. **Closed 2026-09-17: the missile half was already live (per-stack upgrade, consumed-set retirement, asserted in the item suite) - only the wand stays withheld, as a stated silent-no-op exclusion shared with the Upgrade service.** All six services and the real turn-in favor
       bookkeeping are live and browser-verified. **The Upgrade service now uses Java's own
       predicate (2026-09-16)**: `WndBlacksmith.WndUpgrade.itemSelectable` is `isUpgradable() &&
       isIdentified() && !cursed && level() < 2`, with no type test at all, where the picker here had
@@ -306,7 +306,7 @@ was judged not worth the churn against those existing references.
       (`tools/scratch/blacksmith-upgrade-livecheck.mjs`, 6/6). Two classes stay excluded on top of
       Java's predicate because their upgrade would be a *silent no-op* in this port's model, not
       because Java disagrees: a carried missile stack (no per-stack level) and a wand (power comes
-      from `weaponLevel`, so a level on the wand item is read by nothing) - both asserted in the item
+      from `weaponLevel`, so a level on the wand item is read by nothing) - both asserted in the item suite
       **The reforge is now Java's own (2026-09-16).** `WndBlacksmith.WndReforge` needs two picks of the
       same *class* (`item1.getClass() != item2.getClass()`) that are not the same entry, and the
       picker here used to pair by bag id - which, since every generated weapon is the id
@@ -319,7 +319,7 @@ was judged not worth the churn against those existing references.
       used to announce the armor's level) but names the item actually reforged, in all 19 locales.
       Browser-verified live (`tools/scratch/blacksmith-reforge-livecheck.mjs`, 7/7: a +1 and a +3
       shortsword reforge into +4 with the other consumed and the favor charged, while a handaxe, a
-      ring and a missile stack stay untouched). **Still open: the missile half**, on two model
+      ring and a missile stack stay untouched - that livecheck predates missiles being offered, like the upgrade one above). **The missile half is live since 2026-09-16; what follows is the original blocker analysis, kept for the record**, on two model
       prerequisites rather than on its selector:
       it pairs items by bag id, and every wand in this port shares the single minted id `wand`, so
       widening it as it stands would let two *different* wand classes merge (Java tests
@@ -335,7 +335,7 @@ was judged not worth the churn against those existing references.
       on its own terms, not as a Blacksmith tweak. See `PORT_COVERAGE.md`'s Blacksmith rows.
       **Complexity: M** for that reason: it is an ammo-model change, not a picker change, and it
       would touch wielding, pickup and dust together.
-- [ ] Give carried missile stacks their own level, set id and durability, reversing the fungible-ammo
+- [x] Give carried missile stacks their own level, set id and durability, reversing the fungible-ammo
       simplification. **Complexity: M.** Java keeps all three on the *stack* (`MissileWeapon.setID` is
       a per-stack `SecureRandom` long, `durability` starts at 100, and `upgrade()` resets it, refills
       `defaultQuantity()` and records `levelThresholds.put(setID, trueLevel()+1)`), and gates stack
@@ -346,8 +346,8 @@ was judged not worth the churn against those existing references.
       `durability`/`maxDurability`, and an `instanceId` that gates merging and travels with `take()`),
       so the identity can be `missile:<setId>:<level>`; what is missing is a `bagSources` slot for the
       set id on load, and the read/write plumbing in `wieldMissile`, `recoverStone`, the dust path and
-      the throw. Note `upgradeItem` already *writes* a missile stack's `level` (via MagicalInfusion)
-      that nothing reads back. Closing this also unblocks the Blacksmith reforge's missile half above,
+      the throw. **Closed 2026-09-17 - every prerequisite named here is live since 2026-09-16** (`wieldMissile` adopts the whole stack with its level/set/wear, heaps persist the set/level, the dust rule and the throw read them back, `missileSet`/`tippedSeed` persist through the `bagSources` side channel, `extraThrownLeft` is modelled). Note `upgradeItem` already *writes* a missile stack's `level` (via MagicalInfusion)
+      that nothing reads back. This unblocked the Blacksmith reforge's missile half above,
       and the shop's `extraThrownLeft` warning.
 - [ ] Port Rat King and other missing special NPCs. Rat King is complete for its core exchange (room
       drops real `Gold(10-25)` CHEST heaps, the king spawns sleeping with his own art, wakes with the
