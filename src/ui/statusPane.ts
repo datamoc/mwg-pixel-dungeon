@@ -3,7 +3,8 @@ import { Bar, Label, NinePatch } from 'mwg';
 import { SPD_TITLE_COLOR } from './spdTheme';
 
 /**
- * The hero's status pane, ported from `ui/StatusPane.java` (its small, non-`large` layout).
+ * The hero's status pane, ported from `ui/StatusPane.java` (small layout live, `large`
+ * interface-size variant live as a scaled branch below).
  *
  * This replaces a single ~300-character `Label` that concatenated place, seed, HP, four
  * stats, gold, waterskin, hunger, a comma-joined list of buff keys, wand charges, ammo, the
@@ -18,10 +19,15 @@ import { SPD_TITLE_COLOR } from './spdTheme';
  *    `Image(asset, 0, 40, 50, 4)`; EXP fill `Image(asset, 0, 44, 16, 1)`.
  *  - fill maths (`StatusPane.update()`): `hp.scale.x = max(0, (health-shield)/max)` and
  *    `exp.scale.x = (width/exp.width) * hero.exp / hero.maxExp()`.
+ *  - avatar: `HeroSprite.avatar(class, tier)` - the 12x15 tier row matching the worn armor
+ *    (`HeroSprite.updateArmor()`'s tier rows), centred at (15,16).
+ *  - `large` variant (`SPDSettings.interfaceSize() == 1`): the pane doubles its bar widths
+ *    and buff icon stride; this port renders the same content at 1.5x scale with a taller
+ *    buff row rather than Java's exact large pixel cuts (stated simplification).
  *
  * Simplifications, all deliberate and listed in PORT_COVERAGE.md: shielding is represented
- * numerically in the HP bar/stats rather than with Java's separate gold strip, no `BusyIndicator`/`CircleArc` turn counter, and no
- * `large` interface-size variant.
+ * numerically in the HP bar/stats rather than with Java's separate gold strip, and no
+ * `CircleArc` turn counter (the busy pip below is a text stand-in).
  */
 
 /** `BuffIndicator`'s own icon indices, into `buffs.png`'s 7x7 grid */
@@ -61,6 +67,10 @@ const BUFF_ICON: Record<string, number> = {
 	degrade: 48,
 	//DAZE = 70
 	daze: 70,
+	//LIGHT = 22
+	light: 22,
+	//ANKH = 52, the blessed ankh's revive shield
+	invulnerability: 52,
 };
 
 /** buffs.png is 128x64 of 7x7 cells, so TextureFilm walks 18 to a row */
@@ -91,6 +101,12 @@ export interface StatusPaneState {
 	staff: { current: number; max: number } | null;
 	ammo: number | null;
 	carriedCount: number;
+	/** `HeroSprite.updateArmor()` tier row (1-5 cloth..plate) for the avatar portrait. */
+	armorTier?: number;
+	/** `SPDSettings.interfaceSize()`: 0 small, 1 large. Large renders 1.5x with a taller row. */
+	interfaceSize?: 0 | 1;
+	/** Whether the hero is busy (an action is resolving): shows the busy pip. */
+	busy?: boolean;
 }
 
 export class StatusPane extends Container {
@@ -103,6 +119,11 @@ export class StatusPane extends Container {
 	private buffLayer = new Container();
 	private buffIcons: Texture;
 	private lastBuffs = '';
+	private avatar: Sprite;
+	private avatarSheet: Texture;
+	private lastAvatarTier = -1;
+	private busyPip: Label;
+	private large = false;
 
     constructor(statusSheet: Texture, buffs: Texture, heroSheet: Texture) {
 		super();
@@ -117,11 +138,21 @@ export class StatusPane extends Container {
 		frame.resize(PANE_WIDTH, 36);
 		frame.scale.set(SCALE);
 		this.addChild(frame);
-		// HeroSprite.avatar(class, armorTier=1), centered at StatusPane's (15,16).
-		const avatar = new Sprite(new Texture({ source: heroSheet.source, frame: new Rectangle(1, 15, 12, 15) }));
-		avatar.scale.set(SCALE);
-		avatar.position.set(9 * SCALE, 8 * SCALE);
-		this.addChild(avatar);
+		// HeroSprite.avatar(class, tier): the 12x15 tier row matching the worn armor,
+		// centred at StatusPane's (15,16). Tier rows run 1-5; the sheet is 12x15 cells.
+		this.avatarSheet = heroSheet;
+		this.avatar = new Sprite(new Texture({ source: heroSheet.source, frame: new Rectangle(1, 15, 12, 15) }));
+		this.avatar.scale.set(SCALE);
+		this.avatar.position.set(9 * SCALE, 8 * SCALE);
+		this.addChild(this.avatar);
+		//`BusyIndicator`: Java's spinning arc while the hero acts. This port has no arc
+		//primitive, so a text pip beside the level tag marks the busy state instead.
+		this.busyPip = new Label({ size: 9, color: 0xffcc00 });
+		this.busyPip.setText('…');
+		this.busyPip.x = 22 * SCALE;
+		this.busyPip.y = 26 * SCALE;
+		this.busyPip.visible = false;
+		this.addChild(this.busyPip);
 
 		//HP uses the real (0,36,50,4) strip. Missing HP is black, not the shielding art.
 		this.hpBar = new Bar({
@@ -187,6 +218,20 @@ export class StatusPane extends Container {
 	}
 
 	update(state: StatusPaneState): void {
+		//`SPDSettings.interfaceSize()`: large renders the same pane at 1.5x with a taller buff
+		//row rather than Java's exact large pixel cuts (stated simplification above).
+		const wantLarge = (state.interfaceSize ?? 0) === 1;
+		if (wantLarge !== this.large) {
+			this.large = wantLarge;
+			this.scale.set(wantLarge ? 1.5 : 1);
+		}
+		//Armor-dependent portrait: tier rows 1-5 select the avatar's 12x15 cell.
+		const tier = Math.max(1, Math.min(5, state.armorTier ?? 1));
+		if (tier !== this.lastAvatarTier) {
+			this.lastAvatarTier = tier;
+			this.avatar.texture = new Texture({ source: this.avatarSheet.source, frame: new Rectangle(1, tier * 15, 12, 15) });
+		}
+		this.busyPip.visible = state.busy === true;
 		//hp.scale.x = max(0, (health - shield)/max); no shielding here, so health/max
 		const shield = state.shield ?? 0;
 		this.hpBar.setValue(state.maxHp > 0 ? Math.max(0, state.hp - shield) / state.maxHp : 0);

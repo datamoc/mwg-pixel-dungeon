@@ -40,6 +40,7 @@ export interface ShopStockSources {
 	missileTier(tier: number): unknown;
 	readonly potion: unknown;
 	readonly scroll: unknown;
+	readonly seed: unknown;
 	readonly wand: unknown;
 	readonly ring: unknown;
 	/** `Generator.random(cat)`. */
@@ -57,7 +58,9 @@ export type ShopStockPlan =
 	/** A fixed item by runtime id. */
 	| { kind: 'item'; id: string; quantity: number; identify: boolean; tier?: number; level?: number }
 	/** A `TimekeepersHourglass.sandBag` - the caller owns the hourglass it belongs to. */
-	| { kind: 'sandBag' };
+	| { kind: 'sandBag' }
+	/** A `TippedDart.randomTipped(2)` stack of two, tipped with the drawn seed's class. */
+	| { kind: 'tippedDart'; seedClass: string; quantity: number; identify: boolean };
 
 /** Java's four shopkeeper depths and the `Armor` tier each stocks (Leather 2 .. Plate 5). */
 const ARMOR_TIER: Readonly<Record<number, number>> = { 6: 2, 11: 3, 16: 4, 20: 5, 21: 5 };
@@ -95,17 +98,17 @@ export function shopSandBags(depth: number, missing: number): number {
  * identified uncursed one to stock for - Java's own `hourglass != null && hourglass.isIdentified()
  * && !hourglass.cursed` gate.
  *
- * **Four of Java's entries have no item to name here and are absent rather than substituted**: the
- * three `Torch`es on the two deepest shops (this port has no torch item), the `TippedDart` stack
- * (no dart class and no tip system - the port's missiles are the thrown-weapon classes only), the
- * `Ankh` (a resurrection consumable tied to the death path), and the `ChooseBag` pick (no bag
- * system exists at all). Each is recorded in `PORT_COVERAGE.md` rather than filled with something
- * that is not what the shelf sells.
+ * `bagId` is the `ChooseBag()` pick the caller already made (`chooseShopBag` in
+ * `items/bags.ts`), or `null` when every bag flag is dropped - Java's own null return, stocked
+ * as no bag rather than substituted. Omitted (not null) means the caller has no bag state at
+ * all, which stocks no bag either and keeps the headless harness's older three-argument calls
+ * exactly where they were.
  */
 export function planShopStock(
 	depth: number,
 	hourglassMissingBags: number | null,
 	sources: ShopStockSources,
+	bagId?: string | null,
 ): ShopStockPlan[] {
 	const { rng } = sources;
 	const plans: ShopStockPlan[] = [];
@@ -126,7 +129,31 @@ export function planShopStock(
 	//own tier.
 	plans.push({ kind: 'item', id: 'armorReward', quantity: 1, identify: true, tier: armorTierFor(depth) });
 
+	//`ShopRoom.generateItems()`'s depth-20/21 branch adds three `new Torch()` after the
+	//PlateArmor - the branch this port keys as armor tier 5, so the gate rides that mapping
+	//rather than re-listing the depths. Three one-unit plans, not one plan of three: Java
+	//stocks three separate heaps, which its end-of-method shuffle then orders.
+	if (armorTierFor(depth) === 5) {
+		for (let i = 0; i < 3; i++) plans.push({ kind: 'item', id: 'torch', quantity: 1, identify: true });
+	}
+
+	/**
+	 * `TippedDart.randomTipped(2)`:
+	 *     do { s = randomUsingDefaults(SEED); } while (!types.containsKey(s.getClass()));
+	 * The loop **always exits on its first pass**, so this is exactly one draw batch, not a
+	 * variable retry: `TippedDart.types` has an entry for all 12 `Plant.Seed` classes
+	 * (TippedDart.java:198-209), and the only seed that could miss - none do - is moot anyway
+	 * since `SEED.defaultProbs[0] = 0` makes Rotberry unreachable. Verified by comparing both
+	 * lists class for class.
+	 */
+	plans.push({ kind: 'tippedDart', seedClass: sources.randomUsingDefaults(sources.seed).cls, quantity: 2, identify: true });
+
 	plans.push({ kind: 'item', id: 'alchemize', quantity: rng.intRange(2, 3), identify: true });
+
+	//`Bag bag = ChooseBag(Dungeon.hero.belongings); if (bag != null) itemsToSpawn.add(bag);` -
+	//Java's position is here, between the alchemize stack and the healing potion. The pick
+	//itself (and the flag drop that comes with it) belongs to the caller - see `bags.ts`.
+	if (bagId) plans.push({ kind: 'item', id: bagId, quantity: 1, identify: true });
 
 	plans.push({ kind: 'item', id: 'potionHealing', quantity: 1, identify: true });
 	plans.push({ kind: 'generated', generated: sources.randomUsingDefaults(sources.potion), identify: true });
@@ -152,6 +179,11 @@ export function planShopStock(
 	}
 
 	plans.push({ kind: 'item', id: 'stoneOfAugmentation', quantity: 1, identify: true });
+
+	//`ShopRoom.generateItems()` adds one `new Ankh()` in the shared tail every depth takes,
+	//right beside the augmentation stone above - unblessed, like Java's (`blessed` only comes
+	//from the BLESS action).
+	plans.push({ kind: 'item', id: 'ankh', quantity: 1, identify: true });
 
 	if (hourglassMissingBags !== null && hourglassMissingBags > 0) {
 		for (let i = 0; i < shopSandBags(depth, hourglassMissingBags); i++) plans.push({ kind: 'sandBag' });

@@ -1,5 +1,6 @@
 import { Random } from 'mwg';
 import type { GroundItem } from '../combat';
+import { missileStackFields } from './missiles';
 
 type ItemPayload = NonNullable<GroundItem['item']>;
 type GroundKind = GroundItem['kind'];
@@ -14,7 +15,13 @@ export interface GroundPickupContext {
 	setGold(amount: number): void;
 	shopPrice(item: ItemPayload): number;
 	itemName(id: string, identified: boolean, instanceId?: string): string;
-	missilePickupValid(setId: number, level: number): boolean;
+	/** `WndTradeItem`'s Buy button. Java never charges for a FOR_SALE heap on the spot: stepping
+	 *  onto one (or picking it up) shows the window, whose single `buy` button is disabled while
+	 *  the price exceeds the hero's gold, and only pressing it pays. The scene opens that window
+	 *  and calls `buy` from the button's own callback, then re-runs the pickup - which now finds a
+	 *  paid-for heap and takes it. A cancel simply never calls `buy`, so nothing is spent. */
+	offerPurchase(name: string, price: number, buy: () => void): void;
+	missilePickupValid(setId: string, level: number): boolean;
 	removeGround(): void;
 	playSound(kind: GroundKind): void;
 	addItem(item: ItemPayload, stackable?: boolean): void;
@@ -84,12 +91,19 @@ export function pickupGroundItem(context: GroundPickupContext): void {
 		if (price > 0) {
 			const name = context.itemName(item.item.id, item.item.identified ?? false, item.item.instanceId);
 			if (context.gold < price) {
+				//Java *disables* the Buy button in this case; the line is this port's equivalent
+				//notice, which it already had.
 				context.say(context.messages.cannotAfford(name, price), 'negative');
 				return;
 			}
-			context.setGold(context.gold - price);
-			item.forSale = false;
-			context.say(context.messages.buy(name, price), 'positive');
+			//The purchase itself stays here, so the window only decides *whether* it happens.
+			//The pickup stops at this point and resumes from the scene's confirmed path.
+			context.offerPurchase(name, price, () => {
+				context.setGold(context.gold - price);
+				item.forSale = false;
+				context.say(context.messages.buy(name, price), 'positive');
+			});
+			return;
 		}
 	}
 	if (item.kind === 'stone' && item.missileSet !== undefined
@@ -132,6 +146,19 @@ export function pickupGroundItem(context: GroundPickupContext): void {
 	if (item.kind === 'crystalKey') return context.pickupCrystalKey();
 	const id = item.kind === 'potion' ? 'potion'
 		: item.kind === 'scroll' ? Random.chance(0.25) ? 'scrollUpgrade' : 'scrollIdentify' : item.kind;
+	//A scattered missile heap carries the set and level it was thrown at, and those have to
+	//survive the pickup or the identity this heap belongs to is lost (see `src/missiles.ts`).
+	//Java's heap *is* the stack; this port's heaps carry no class, so a heap picked up here
+	//joins its own set at its own level and keeps the pile's class when it is next wielded.
+	//A tipped heap additionally carries its seed, which makes the picked-up stack a real
+	//`TippedDart` rather than an unknown-tipped pile.
+	if (id === 'stone' && item.missileSet !== undefined) {
+		context.addItem({ id, quantity: 1, identified: false,
+			...(item.tippedSeed !== undefined ? { sourceClass: 'TippedDart', tippedSeed: item.tippedSeed } : {}),
+			...missileStackFields(item.missileSet, item.missileLevel ?? 0, item.tippedSeed) }, true);
+		context.say(context.messages.pickup(context.itemName(id, false)), 'positive');
+		return;
+	}
 	context.addItem({ id, quantity: 1, identified: false }, true);
 	context.say(context.messages.pickup(context.itemName(id, false)), 'positive');
 }

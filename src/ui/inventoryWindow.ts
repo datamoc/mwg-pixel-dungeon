@@ -31,15 +31,43 @@ export interface InventoryEntry {
 	sourceClass?: string;
 }
 
-type InventoryFilter = 'all' | 'consumables' | 'equipment' | 'quest';
+type InventoryFilter = 'all' | 'consumables' | 'equipment' | 'quest'
+	| 'pouch_seed' | 'holder_scroll' | 'bag_potion' | 'holster_wand' | 'pouch_stone';
+
+/**
+ * Java's `Bag.canHold()` per sub-bag (`SeedPouch` holds seeds, `ScrollHolder` scrolls,
+ * `PotionBag` potions, `MagicalHolster` wands, `VelvetPouch` runestones). The id tests are
+ * this port's compact-id shapes for those families.
+ */
+export function subBagFor(item: { id: string }): string | null {
+	const id = item.id.toLowerCase();
+	if (id.startsWith('seed')) return 'pouch_seed';
+	if (id.startsWith('scroll')) return 'holder_scroll';
+	if (id.startsWith('potion')) return 'bag_potion';
+	if (id === 'wand') return 'holster_wand';
+	if (id.startsWith('stoneof')) return 'pouch_stone';
+	return null;
+}
+
+const SUB_BAG_LABEL: Record<string, string> = {
+	pouch_seed: 'port.ui.bag.seedpouch',
+	holder_scroll: 'port.ui.bag.scrollholder',
+	bag_potion: 'port.ui.bag.potionbag',
+	holster_wand: 'port.ui.bag.holster',
+	pouch_stone: 'port.ui.bag.velvetpouch',
+};
 
 /** Shared `items.png` sheet for the row icons above; built lazily so module load never touches
  * sprite state, and shared so `icon()` reuses cached frame textures across redraws. */
 let itemsSheet: SpriteSheet | null = null;
 
 /** WndBag/InventorySlot: 5 columns, 28px cells, 1px gutters, 14px title.
- * The root bag has Java-shaped category tabs and pages; actual sub-bag ownership is not
- * invented because this port's compact item payload has no container relationship yet.
+ * The root bag has Java-shaped category tabs and pages; the five sub-bags
+ * (`SeedPouch`/`ScrollHolder`/`PotionBag`/`MagicalHolster`/`VelvetPouch`) are live as
+ * filtered bag views over the same compact payload - each item's `subBagFor` test is
+ * Java's own `Bag.canHold()` shape (seeds, scrolls, potions, wands, runestones), so the
+ * pouch tabs show exactly what Java's pouches would hold. Moving items between bags has
+ * no expression (the bag has no capacity limit here, so there is nothing to move for).
  * WndUseItem shows the actions actually implemented here.
  */
 export class InventoryWindow extends Container2D {
@@ -103,8 +131,18 @@ export class InventoryWindow extends Container2D {
 			tabs: [
 				{ id: 'all', label: t('port.ui.bag.all') }, { id: 'consumables', label: t('port.ui.bag.use') },
 				{ id: 'equipment', label: t('port.ui.bag.gear') }, { id: 'quest', label: t('port.ui.bag.quest') },
+				{ id: 'pouch_seed', label: t('port.ui.bag.seedpouch') }, { id: 'holder_scroll', label: t('port.ui.bag.scrollholder') },
+				{ id: 'bag_potion', label: t('port.ui.bag.potionbag') }, { id: 'holster_wand', label: t('port.ui.bag.holster') },
+				{ id: 'pouch_stone', label: t('port.ui.bag.velvetpouch') },
 			],
-			rowsFor: (tab) => tab === 'all' ? this.carried : this.carried.filter((item) => category(item) === tab),
+			rowsFor: (tab) => {
+				if (tab === 'all') return this.carried;
+				if (tab === 'pouch_seed' || tab === 'holder_scroll' || tab === 'bag_potion'
+					|| tab === 'holster_wand' || tab === 'pouch_stone') {
+					return this.carried.filter((item) => subBagFor(item) === tab);
+				}
+				return this.carried.filter((item) => category(item) === tab);
+			},
 			pageSize: 20,
 			label: (item) => item.name,
 		});
@@ -156,7 +194,9 @@ export class InventoryWindow extends Container2D {
 		while (this.entries.length < 25) this.entries.push(null);
 		//SPD v3.3.8's `WndBag` pages by `Bag` subclass rather than by filter, so these four
 		//compact categories are this port's own labels (and its own category tests in
-		//`filteredCarried`) - translated, not hardcoded English.
+		//`filteredCarried`) - translated, not hardcoded English. The second row is Java's
+		//own five sub-bags (`SeedPouch`/`ScrollHolder`/`PotionBag`/`MagicalHolster`/
+		//`VelvetPouch`), filtered by `subBagFor` above.
 		const filters: [InventoryFilter, string][] = [
 			['all', t('port.ui.bag.all')], ['consumables', t('port.ui.bag.use')],
 			['equipment', t('port.ui.bag.gear')], ['quest', t('port.ui.bag.quest')],
@@ -168,6 +208,13 @@ export class InventoryWindow extends Container2D {
 			tab.position.set(5 + index * 37, 20);
 			this.panel.addChild(tab);
 		});
+		(['pouch_seed', 'holder_scroll', 'bag_potion', 'holster_wand', 'pouch_stone'] as const).forEach((filter, index) => {
+			const tab = new SpdButton({ width: 28, height: 14, text: t(SUB_BAG_LABEL[filter]), onClick: () => {
+				this.list.selectTab(filter); this.draw();
+			} });
+			tab.position.set(5 + index * 30, 38);
+			this.panel.addChild(tab);
+		});
 		this.grid = new IconGrid({
 			width: 145, height: 145, columns: 5, cellSize: 29,
 			items: this.entries.map((item, index) => ({
@@ -177,7 +224,7 @@ export class InventoryWindow extends Container2D {
 			onHighlight: (cell) => { const item = cell.value as InventoryEntry | null; if (item) this.selection = this.entries.indexOf(item); },
 			onSelect: (cell) => { const item = cell.value as InventoryEntry | null; if (item) { this.selection = this.entries.indexOf(item); this.showItem(item); } },
 		});
-		this.grid.position.set(5, 40);
+		this.grid.position.set(5, 55);
 		this.panel.addChild(this.grid);
 		const close = new SpdButton({ width: 20, height: 17, icon: titleIcon(runState.sprites.uiIcons, 'exit', 1), onClick: this.close });
 		close.position.set(130, 204); this.panel.addChild(close);
@@ -205,6 +252,11 @@ export class InventoryWindow extends Container2D {
 		const name = new Label({ text: item.name, size: 8, color: 0xffff44, wrapWidth: 102 }); name.position.set(28, 9); this.detail.addChild(name);
 		const stats = new Label({ text: `${item.quantity > 1 ? `${item.quantity}×  ` : ''}${item.identified !== false && item.level ? `+${item.level}` : ''}`, size: 7 });
 		stats.position.set(9, 35); this.detail.addChild(stats);
+		const bag = subBagFor(item);
+		if (bag) {
+			const bagLabel = new Label({ text: t(SUB_BAG_LABEL[bag]), size: 6, color: 0x9999ff });
+			bagLabel.position.set(9, 44); this.detail.addChild(bagLabel);
+		}
 		if (item.description) {
 			const description = new Label({ text: item.description, size: 6, wrapWidth: 122, color: 0xd0d0c0 });
 			description.position.set(9, 46); this.detail.addChild(description);

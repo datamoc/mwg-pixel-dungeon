@@ -2,6 +2,7 @@ import { Actors } from 'mwg';
 import type { GroundItem } from '../combat';
 import type { GroundItemKind } from '../dungeonConstants';
 import { MWL_CONSUMABLE_CLASS_TO_ID, MWL_ITEM_CATEGORIES, MWL_ITEM_GROUND_KIND_ALIASES, MWL_ITEM_SLOTS, MWL_MISSILE_BY_CLASS, MWL_RING_CLASS_TO_ID, MWL_SPECIAL_ITEM_GROUND_KINDS, MWL_SPECIAL_ITEM_INVENTORY_BY_CLASS } from '../mwlContent';
+import { missileStackFields } from './missiles';
 import { WEAPON_TIER_BY_CLASS, ARMOR_TIER_BY_CLASS } from './catalog';
 export const SPECIALTY_BOMB_IDS = new Set(
 	[...MWL_ITEM_CATEGORIES].filter(([, category]) => category === 'specialtyBomb').map(([id]) => id),
@@ -31,6 +32,8 @@ const NON_UPGRADABLE_MINTED_IDS = new Set([
 	'bomb', 'doubleBomb', 'food', 'meat', 'potion', 'scroll', 'seed',
 	'crystalKey', 'ironKey', 'goldenKey', 'gooBlob', 'metalShard', 'energyCrystal',
 	'candle', 'embers', 'corpseDust', 'sandBag', 'alchemize',
+	//`bags/Bag.isUpgradable()` is false: the velvet pouch and the three shop bags.
+	'velvetPouch', 'scrollHolder', 'potionBandolier', 'magicalHolster',
 	...SPECIALTY_BOMB_IDS,
 ]);
 
@@ -173,6 +176,13 @@ export function sourceInventoryItem(id: string, sourceClass: string | undefined,
 	if (id.toLowerCase() === 'seed') return { id: 'seed', quantity: 1, identified: true, sourceClass, ...(sourceClass ? { instanceId: `seed:${sourceClass.toLowerCase()}` } : {}) };
 	const concrete = sourceClass ?? id;
 	const lower = concrete.toLowerCase();
+	//A carried missile stack carries its own identity - its own set id and level - rather than
+	//being fungible class ammo (see `src/missiles.ts`'s header). Minted here, at the one place a
+	//floor's missile payloads are built, so two stacks of the same class dropped separately never
+	//merge into one pile. Every non-missile class gets `{}` - the explicit missile branch below is
+	//the only one that can see a missile class, since the `'stone'` branches further down catch
+	//runestones, which share that bag id.
+	const missileFields = MWL_MISSILE_BY_CLASS.has(concrete) ? missileStackFields(newItemInstanceId('missile'), 0) : {};
 	const authoredSpecial = MWL_SPECIAL_ITEM_INVENTORY_BY_CLASS.get(lower);
 	if (authoredSpecial) return { id: authoredSpecial.itemId, quantity: 1, identified: authoredSpecial.identified, ...(authoredSpecial.cursed ? { cursed: true } : {}), sourceClass: authoredSpecial.sourceClass };
 	const consumableAlias = MWL_CONSUMABLE_CLASS_TO_ID.get(concrete);
@@ -185,6 +195,7 @@ export function sourceInventoryItem(id: string, sourceClass: string | undefined,
 		identified: true,
 		tier: missile.tier,
 		sourceClass: missile.sourceClass,
+		...missileFields,
 	};
 	if (lower.includes('gold')) return { id: 'gold', quantity: 1, identified: true, sourceClass: concrete };
 	//same short-id rename `generatedInventoryItem` needs for these two (see its comment).

@@ -63,7 +63,8 @@ export const ITEM_KEYS: Record<string, string> = {
 	//derived here from `sourceClass` the same way Java's own `Messages.get(Class, "name")`
 	//bundle-key convention does, rather than hand-listing the 15 (found missing live: the
 	//Blacksmith's smith reward rendered a bare `missile_kunai` instead of "kunai").
-	...Object.fromEntries(MWL_MISSILE_DEFINITIONS.map((def) => [def.id, `items.weapon.missiles.${def.sourceClass.toLowerCase()}.name`])),
+	//`TippedDart` is the exception: its name lives under `darts.dart`, not `tippeddart`.
+	...Object.fromEntries(MWL_MISSILE_DEFINITIONS.map((def) => [def.id, def.sourceClass === 'TippedDart' ? 'items.weapon.missiles.darts.dart.name' : `items.weapon.missiles.${def.sourceClass.toLowerCase()}.name`])),
 };
 
 /** `items.rings.*`, derived from the MWL item catalogue. */

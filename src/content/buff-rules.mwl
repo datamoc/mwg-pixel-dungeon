@@ -208,6 +208,17 @@
             duration: 100,
           },
           {
+            tag: "row",
+            buff: "light",
+            duration: 250,
+          },
+          {
+            tag: "row",
+            // `Invulnerability.DURATION` (the blessed ankh's revive shield, tag `v3.3.8`).
+            buff: "invulnerability",
+            duration: 3,
+          },
+          {
             // `Feint.AfterImage.FeintConfusion` (`Feint.java`, tag `v3.3.8`): a `FlavourBuff`
             // Java applies for exactly 1 turn (`Buff.affect(enemy, FeintConfusion.class, 1)`),
             // wasting the whole of the attacker's next turn (`Mob.act()`'s early return while it
@@ -224,9 +235,9 @@
             // `Talent.CounterAbilityTacker`: a bare 3-turn `FlavourBuff` `Feint.activate()` arms
             // on the hero when `COUNTER_ABILITY` is ranked (`Buff.prolong(hero, ..., 3f)`). Its
             // only real consumer, `MeleeWeapon.abilityChargeUse()`'s melee weapon-ability charge
-            // discount, has no counterpart in this port (no weapon-ability charge-cost system
-            // exists at all yet) - the tracker is still armed here for fidelity and future reuse,
-            // but nothing currently reads it. See `PORT_COVERAGE.md`'s `Feint` row.
+            // discount, is `useWeaponAbility`'s `weaponAbilityCost` gate: an armed tracker lowers
+            // the spend by the ranked 0.5/1/1.5/2 and is consumed with it. See
+            // `PORT_COVERAGE.md`'s `Feint` row.
             tag: "row",
             buff: "counterAbility",
             duration: 3,

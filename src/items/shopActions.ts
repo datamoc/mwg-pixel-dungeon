@@ -2,6 +2,7 @@ import { Actors } from 'mwg';
 import { t } from '../i18n/index';
 import { buybackPrice, getSellPrice, getShopPrice } from './shopPricing';
 import { isMissileStack, isUpgradableItem } from './itemKinds';
+import { missileExtraThrownLeft } from './missiles';
 
 export interface ShopEntry {
 	id: string; quantity: number; instanceId?: string; identified?: boolean; tier?: number;
@@ -61,9 +62,9 @@ export function buyFromShop(id: 'potion' | 'scrollIdentify', context: ShopAction
  * What this replaces sold exactly one unit for every item, which silently made a stack of twelve
  * potions take twelve picks to clear and gave no way to sell it in one action.
  *
- * Not modelled: the `extraThrownLeft` warning above the button (`WndUpgrade.thrown_dust`), which
- * needs Java's per-stack extra-thrown counter - this port's ammo has no such state (see the
- * `MissileWeapon` rows in `PORT_COVERAGE.md`).
+ * `WndTradeItem.thrown_dust` IS modelled: an upgradable missile stack holding more than the
+ * default refill (`missileExtraThrownLeft`) warns above the button, since selling it would
+ * throw away the extra throws Java's own warning names.
  */
 export function sellFood(context: ShopActionsContext): void {
 	const candidates = (context.bag.items as ShopEntry[]).filter((item) =>
@@ -92,6 +93,11 @@ export function sellFood(context: ShopActionsContext): void {
 		//`priceAll` is the whole stack's total (`item.value()`), so the per-unit label is Java's own
 		//integer division of it.
 		const allPrice = getSellPrice(item.id, context.depth, item.quantity, item.identified ?? true, item);
+		//Java's `thrown_dust` line above the sell button for an upgraded missile stack that still
+		//holds extra throws (`MissileWeapon.extraThrownLeft`).
+		if (isMissileStack(item) && missileExtraThrownLeft(item.quantity, item.level ?? 0)) {
+			context.say(t('port.log.throwndust'), 'warning');
+		}
 		const options = item.quantity === 1 || (isMissileStack(item) && isUpgradableItem(item))
 			? [{ units: item.quantity, label: t('windows.wndtradeitem.sell', { 0: allPrice }) }]
 			: [

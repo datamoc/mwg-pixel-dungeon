@@ -32,6 +32,9 @@
           { tag: "row", item: "weaponReward", nameKey: "port.name.questweapon" },
           { tag: "row", item: "wand", nameKey: "port.name.wand" },
           { tag: "row", item: "velvetPouch", nameKey: "items.bags.velvetpouch.name" },
+          { tag: "row", item: "scrollHolder", nameKey: "items.bags.scrollholder.name" },
+          { tag: "row", item: "potionBandolier", nameKey: "items.bags.potionbandolier.name" },
+          { tag: "row", item: "magicalHolster", nameKey: "items.bags.magicalholster.name" },
           { tag: "row", item: "waterskin", nameKey: "items.waterskin.name" },
           { tag: "row", item: "gold", nameKey: "items.gold.name" },
           { tag: "row", item: "darkGold", nameKey: "items.quest.darkgold.name" },
@@ -55,9 +58,9 @@
           { tag: "row", item: "honeypot", nameKey: "items.honeypot.name" },
           { tag: "row", item: "bag", nameKey: "items.bags.bag.name" },
           { tag: "row", item: "sandBag", nameKey: "items.artifacts.timekeepershourglass$sandbag.name" },
-        ],
-      },
-      {
+      ],
+    },
+    {
         tag: "table",
         id: "specialItemGroundKinds",
         columns: "sourceClass:string|groundKind:string",
@@ -74,6 +77,7 @@
           { tag: "row", sourceClass: "Alchemize", groundKind: "alchemize" },
           { tag: "row", sourceClass: "Bag", groundKind: "bag" },
           { tag: "row", sourceClass: "SandBag", groundKind: "sandBag" },
+          { tag: "row", sourceClass: "Torch", groundKind: "torch" },
         ],
       },
       {
@@ -110,6 +114,7 @@
           { tag: "row", groundKind: "alchemize", nameKey: "items.spells.alchemize.name" },
           { tag: "row", groundKind: "bag", nameKey: "items.bags.bag.name" },
           { tag: "row", groundKind: "sandBag", nameKey: "items.artifacts.timekeepershourglass$sandbag.name" },
+          { tag: "row", groundKind: "torch", nameKey: "items.torch.name" },
         ],
       },
       {
@@ -140,6 +145,8 @@
           { tag: "row", item: "brokenSeal", actionKey: "items.brokenseal.ac_affix", capitalize: true },
           { tag: "row", item: "kingsCrown", actionKey: "items.kingscrown.ac_wear", capitalize: false },
           { tag: "row", item: "candle", actionKey: "port.ui.candle.place", capitalize: false },
+          { tag: "row", item: "torch", actionKey: "items.torch.ac_light", capitalize: true },
+          { tag: "row", item: "ankh", actionKey: "items.ankh.ac_bless", capitalize: true },
           { tag: "row", item: "ring", actionKey: "items.equipableitem.ac_equip", capitalize: true },
           { tag: "row", item: "armor", actionKey: "items.equipableitem.ac_equip", capitalize: true },
           { tag: "row", item: "armorReward", actionKey: "items.equipableitem.ac_equip", capitalize: true },
@@ -175,6 +182,7 @@
           { tag: "row", sourceClass: "Alchemize", itemId: "alchemize", identified: true, cursed: false },
           { tag: "row", sourceClass: "Bag", itemId: "bag", identified: true, cursed: false },
           { tag: "row", sourceClass: "SandBag", itemId: "sandBag", identified: true, cursed: false },
+          { tag: "row", sourceClass: "Torch", itemId: "torch", identified: true, cursed: false },
         ],
       },
       {
@@ -230,6 +238,7 @@
           { tag: "row", itemId: "alchemize", groundKind: "alchemize" },
           { tag: "row", itemId: "bag", groundKind: "bag" },
           { tag: "row", itemId: "sandBag", groundKind: "sandBag" },
+          { tag: "row", itemId: "torch", groundKind: "torch" },
         ],
       },
       {
@@ -268,6 +277,9 @@
           { tag: "row", kind: "alchemize", frame: 237 },
           { tag: "row", kind: "bag", frame: 480 },
           { tag: "row", kind: "sandBag", frame: 23 },
+          // `ItemSpriteSheet.TORCH = MISC_CONSUMABLE + 3` (tag `v3.3.8`); MISC_CONSUMABLE is 48
+          // (ankh 48, stylus 49 per the rows above), so 51 - not 480, which is the bag's frame.
+          { tag: "row", kind: "torch", frame: 51 },
         ],
       },
       {
@@ -315,6 +327,7 @@
           { tag: "row", item: "amulet", frame: 61 },
           { tag: "row", item: "bomb", frame: 80 },
           { tag: "row", item: "corpseDust", frame: 465 },
+          { tag: "row", item: "torch", frame: 51 },
         ],
       },
       {

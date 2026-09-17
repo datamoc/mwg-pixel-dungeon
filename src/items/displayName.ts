@@ -1,6 +1,71 @@
 import { Actors } from 'mwg';
-import { ITEM_KEYS, RING_KEYS, WAND_KEYS, t } from '../i18n';
-import type { WandType } from './wands';
+import { ITEM_KEYS, RING_KEYS, WAND_KEYS, has, t } from '../i18n';
+import { wandTypeFromSource, type WandType } from './wands';
+import { ARMOR_NAME_BY_CLASS, WEAPON_NAME_BY_CLASS } from './catalog';
+import { tippedDartNameKey, missileDamageRange } from './missiles';
+import { MWL_CONSUMABLE_DESCRIPTION_KEYS, MWL_EQUIPMENT_DESCRIPTION_KEYS, MWL_MISSILE_BY_CLASS, MWL_MISSILE_DESCRIPTION_KEYS, MWL_MISSILE_NAME_KEYS } from '../mwlContent';
+
+/**
+ * `Item.desc()` for a bag id: the flavour text Java's item-info window prints as its body.
+ *
+ * Resolution order: the MWL tables' own `descriptionKey`s (authored per consumable, equipment and
+ * missile row), then the SPD catalogue at the same class path as the name - the `ITEM_KEYS` name key
+ * with its `.name` tail swapped for `.desc`, so a name and its description can never resolve to
+ * different classes. Some artifact names are *level-indexed* (`name_1`/`name_2`): those are skipped
+ * on purpose, since the matching `desc` keys do not exist.
+ *
+ * `sourceClass` is what the port's *heap* ids carry instead of a class of their own: a shop's
+ * generated weapon is stored as `weaponReward` with `sourceClass: 'shortsword'`, and the MWL tables
+ * (like Java's own `Messages.get(Weapon.class, ...)`) are keyed by the class. So it is tried first
+ * when given, which is what lets a generated-gear heap show the gear's own description.
+ *
+ * `undefined` when nothing has one for the id (a picker's synthetic action id, say). Callers then
+ * show no body rather than the key.
+ */
+export function itemDescription(id: string, sourceClass?: string): string | undefined {
+	const resolve = (candidate: string | undefined): string | undefined => {
+		if (!candidate) return undefined;
+		const authored = MWL_CONSUMABLE_DESCRIPTION_KEYS[candidate]
+			?? MWL_EQUIPMENT_DESCRIPTION_KEYS[candidate] ?? MWL_MISSILE_DESCRIPTION_KEYS[candidate];
+		if (authored) return has(authored) ? t(authored) : undefined;
+		const nameKey = ITEM_KEYS[candidate];
+		if (!nameKey || !nameKey.endsWith('.name')) return undefined;
+		const key = `${nameKey.slice(0, -'.name'.length)}.desc`;
+		return has(key) ? t(key) : undefined;
+	};
+	return resolve(sourceClass) ?? resolve(id);
+}
+
+/**
+ * `WndInfoItem`'s per-class stats line below the description (`MeleeWeapon.info()`'s damage
+ * + STR, `Armor.info()`'s DR, `MissileWeapon` damage, `Wand` charges): damage/DR come from
+ * the same tier/level formulas the combat sync reads (`MeleeWeapon` min = tier+level,
+ * max = 5(tier+1)+level(tier+1); `Armor` min = level, max = tier(2+level) - see
+ * `PORT_COVERAGE.md`'s tier row). Two stated gaps: STR requirements have no system here
+ * (no `STRReq` anywhere, same gap as surprise gating), and wand charges have no per-heap
+ * state (one shared staff pool), so neither is shown.
+ */
+export function itemStatsLine(id: string, opts: { tier?: number; level?: number; sourceClass?: string } = {}): string | undefined {
+	const level = opts.level ?? 0;
+	if (id === 'weaponReward' || id === 'startingWeapon') {
+		const tier = opts.tier ?? 1;
+		const min = tier + level;
+		const max = 5 * (tier + 1) + level * (tier + 1);
+		return `${min}-${max}`;
+	}
+	if (id === 'armor' || id === 'armorReward' || id === 'clothArmor' || id === 'startingArmor') {
+		const tier = opts.tier ?? 1;
+		return `${level}-${tier * (2 + level)}`;
+	}
+	const missileClass = opts.sourceClass ? MWL_MISSILE_BY_CLASS.get(opts.sourceClass) : undefined;
+	if (missileClass || id.startsWith('missile_')) {
+		try {
+			const [min, max] = missileDamageRange(opts.sourceClass ?? 'ThrowingStone', level);
+			return `${min}-${max}`;
+		} catch { return undefined; }
+	}
+	return undefined;
+}
 
 export interface ItemDisplayContext {
 	readonly bag: Actors.Inventory;
@@ -35,6 +100,13 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 	//`SummonElemental`'s two actions (`AC_CAST` is Java's generic spell label, `AC_IMBUE` its own).
 	if (id === 'summonElemental' && instanceId === 'summonElemental-cast') return t('items.spells.spell.ac_cast');
 	if (id === 'summonElemental' && instanceId === 'summonElemental-imbue') return t('items.spells.summonelemental.ac_imbue');
+	//`WndWandmaker`'s two reward rows: both carry the real `wand` id (so the icon and frame render)
+	//and name the *class* they offer, which is the whole point of the window - the same synthetic-id
+	//convention the artifact action rows above use. `scene.wandType` cannot answer for them: it is
+	//the hero's current wand, not the wand being offered.
+	if (id === 'wand' && instanceId?.startsWith('wand-reward:')) {
+		return t(WAND_KEYS[wandTypeFromSource(instanceId.slice('wand-reward:'.length)) ?? 'magicMissile']);
+	}
 	if (id.startsWith('ring_')) {
 		if (!identified) return t('port.name.ring');
 		const ring = scene.bag.find(id, instanceId);
@@ -43,7 +115,16 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 	}
 	if (identified) {
 		const item = scene.bag.find(id, instanceId);
-		if (id === 'wand') return t(WAND_KEYS[scene.wandType] ?? WAND_KEYS.magicMissile);
+		//`sourceClass` is the port's own minted-id payload field (`InventoryItem` does not declare it)
+		const sourceClass = (item as (typeof item | undefined) & { sourceClass?: string })?.sourceClass;
+		//A carried wand names its *own* class: `scene.wandType` is the hero's wielded wand, so every
+		//other wand in the bag used to be labelled as the equipped one. `sourceClass` is the Java
+		//class the port minted the entry from (`WandOfFireblast`), which the same `WAND_KEYS` lookup
+		//the `wand-reward:<Class>` rows already use can turn into the real name.
+		if (id === 'wand') {
+			const ownType = sourceClass ? wandTypeFromSource(sourceClass) : undefined;
+			return t(WAND_KEYS[ownType ?? scene.wandType] ?? WAND_KEYS.magicMissile);
+		}
 		//`SandalsOfNature.name()` (tag `v3.3.8`): the artifact renames itself as it grows, from
 		//`name` ("sandals of nature") at +0 to `name_1`/`name_2`/`name_3` - "shoes", "boots" and
 		//"greaves of nature". Java indexes the +1/+2/+3 keys off `level()` and falls back to the
@@ -55,13 +136,34 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 		const affix = item?.affix ? ` (${t(`port.affix.${item.affix}`)})` : '';
 		const weapon = ['weaponReward', 'startingWeapon'].includes(id);
 		const armor = ['armor', 'armorReward', 'clothArmor', 'startingArmor'].includes(id);
+		//Ammo stacks share the minted id `stone` whatever they throw, so the same minted-id problem
+		//applies: a stack of throwing knives read as "throwing stones". The class is the payload's
+		//`sourceClass`, which `MWL_MISSILE_BY_CLASS` turns into the authored missile node whose own
+		//name key is the real one (the same lookup the boomerang's pickup line already uses).
+		const missileClass = sourceClass ? MWL_MISSILE_BY_CLASS.get(sourceClass) : undefined;
+		//A tipped dart names its own tip (`TippedDart` + seed → the dart class's own name key,
+		//e.g. `items.weapon.missiles.darts.rotdart.name`), not the generic dart node.
+		if (sourceClass === 'TippedDart') {
+			const tipped = (item as (typeof item | undefined) & { tippedSeed?: string })?.tippedSeed;
+			return t(tippedDartNameKey(tipped));
+		}
+		if (missileClass) return t(MWL_MISSILE_NAME_KEYS[missileClass.id] ?? ITEM_KEYS[id] ?? id);
+		//A minted payload names its *class*, not its id: every generated weapon is `weaponReward`
+		//and every generated armor `armorReward`, and those two nodes' own name key is the generic
+		//"quest weapon"/"quest armor" (`item-rules.mwl`, port strings) - so before this, every
+		//procedurally-generated weapon in the game read as "quest weapon". The class comes from
+		//`sourceClass`, which is the Java class name lowercased (`WEAPON_NAME_BY_CLASS`'s own key).
+		const classKey = sourceClass
+			? (weapon ? WEAPON_NAME_BY_CLASS[sourceClass.toLowerCase()]
+				: armor ? ARMOR_NAME_BY_CLASS[sourceClass.toLowerCase()] : undefined)
+			: undefined;
 		const hardenedFlag = (item as (typeof item | undefined) & { hardened?: boolean })?.hardened;
 		const isEquipped = (slotId: string, slotInstanceId: string | undefined): boolean =>
 			id === slotId && (instanceId === undefined ? slotInstanceId === undefined : instanceId === slotInstanceId);
 		const hardened = weapon ? (hardenedFlag ?? (isEquipped(scene.weaponId, scene.weaponInstanceId) ? scene.weaponHardened : false))
 			: armor ? (hardenedFlag ?? (isEquipped(scene.armorId, scene.armorInstanceId) ? scene.armorHardened : false)) : false;
 		const hardenedNote = hardened ? ` ${t(weapon ? 'port.item.hardened.weapon' : 'port.item.hardened.armor')}` : '';
-		return `${t(ITEM_KEYS[id] ?? id)}${affix}${hardenedNote}`;
+		return `${t(classKey ?? ITEM_KEYS[id] ?? id)}${affix}${hardenedNote}`;
 	}
 	if (id.startsWith('potion')) return t(scene.appearances.appearanceOf('potion', id));
 	if (id.startsWith('scroll')) return t(scene.appearances.appearanceOf('scroll', id));

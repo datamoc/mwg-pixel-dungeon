@@ -27,6 +27,8 @@ export interface ItemActionContext {
 	wieldMissile(id: string, instanceId?: string): void;
 	useStoneById(id: string, instanceId?: string): void;
 	useCandle(instanceId?: string): void;
+	useTorch(instanceId?: string): void;
+	useAnkh(instanceId?: string): void;
 	useBomb(id: string, instanceId?: string): void;
 	useStylus(instanceId?: string): void;
 	useBrokenSeal(instanceId?: string): void;
@@ -77,6 +79,8 @@ export function useItemById(scene: ItemActionContext, id: string, instanceId?: s
 		else if (id.startsWith('missile_')) scene.wieldMissile(id, instanceId);
 		else if (id.startsWith('stoneOf')) scene.useStoneById(id, instanceId);
 		else if (id === 'candle') scene.useCandle(instanceId);
+		else if (id === 'torch') scene.useTorch(instanceId);
+		else if (id === 'ankh') scene.useAnkh(instanceId);
 		else if (id === 'bomb' || SPECIALTY_BOMB_IDS.has(id)) scene.useBomb(id, instanceId);
 		else if (id === 'stylus') scene.useStylus(instanceId);
 		else if (id === 'brokenSeal') scene.useBrokenSeal(instanceId);

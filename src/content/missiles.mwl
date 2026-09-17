@@ -109,6 +109,13 @@
         stackable: true,
       },
       {
+        tag: "item",
+        id: "missile_tippeddart",
+        name: "items.weapon.missiles.darts.dart.name",
+        slot: "missile",
+        stackable: true,
+      },
+      {
         tag: "table",
         id: "missileDefinitions",
         //`MissileWeapon.baseUses` (tag v3.3.8): the field defaults to 8 and each class
@@ -253,6 +260,18 @@
             maxDamage: 25,
             baseUses: 5,
           },
+          //`TippedDart` (`items/weapon/missiles/darts/TippedDart.java`): the one dart class,
+          //tipped per seed (see `src/items/missiles.ts`'s tip table). Damage simplified to the
+          //tier-2 line - Java's exact dart damage is not reproduced (stated, not silent).
+          {
+            tag: "row",
+            id: "missile_tippeddart",
+            sourceClass: "TippedDart",
+            tier: 2,
+            minDamage: 3,
+            maxDamage: 9,
+            baseUses: 8,
+          },
         ],
       },
       {
@@ -286,6 +305,7 @@
           { tag: "row", sourceClass: "Trident", minPerLevel: 1, maxPerLevel: 5 },
           { tag: "row", sourceClass: "ThrowingHammer", minPerLevel: 1, maxPerLevel: 5 },
           { tag: "row", sourceClass: "ForceCube", minPerLevel: 1, maxPerLevel: 5 },
+          { tag: "row", sourceClass: "TippedDart", minPerLevel: 1, maxPerLevel: 2 },
         ],
       },
       {
@@ -308,6 +328,7 @@
           { tag: "row", id: "description_missile_trident", descriptionKey: "items.weapon.missiles.trident.desc", item: "missile_trident" },
           { tag: "row", id: "description_missile_throwinghammer", descriptionKey: "items.weapon.missiles.throwinghammer.desc", item: "missile_throwinghammer" },
           { tag: "row", id: "description_missile_forcecube", descriptionKey: "items.weapon.missiles.forcecube.desc", item: "missile_forcecube" },
+          { tag: "row", id: "description_missile_tippeddart", descriptionKey: "items.weapon.missiles.darts.dart.desc", item: "missile_tippeddart" },
         ],
       },
       {

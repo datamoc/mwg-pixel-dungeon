@@ -12,6 +12,9 @@ export interface HeroTurnEffects {
 	tickEndureTracker(): void;
 	/** `HeroicLeap.DoubleJumpTracker`'s own countdown, once per spent turn. */
 	tickDoubleJumpTracker(): void;
+	/** `MeleeWeapon` ability windows (spin, re-cleave, guard, stances, charged shot) and the
+	 * weapon-charge refill, once per spent turn. */
+	tickWeaponAbility(): void;
 	/** `NaturesPower.naturesPowerTracker`'s own countdown, once per spent turn. */
 	tickNaturesPowerTracker(): void;
 	spreadFire(): void;
@@ -42,6 +45,7 @@ export function finishHeroTurn(effects: HeroTurnEffects): HeroTurnResult {
 	effects.recoverArmorCharge();
 	effects.tickEndureTracker();
 	effects.tickDoubleJumpTracker();
+	effects.tickWeaponAbility();
 	effects.tickNaturesPowerTracker();
 	effects.spreadFire();
 	if (effects.applyBuffDamage()) return 'buff-death';

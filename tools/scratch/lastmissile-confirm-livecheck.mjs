@@ -86,6 +86,11 @@ const prepare = async ({ ammo, missileLevel, durability }) => page.evaluate(({ a
 	for (const creature of s['creatures']) if (!creature.isHero && !creature.isNPC) { creature.hp = 0; }
 	const target = s['spawnMonster']('rat', { x: hero.x + 2, y: hero.y });
 	target.hp = target.maxHp = 500;
+	// `MissileWeapon.doThrow()`'s own cell picker resolves the target *before* the pre-throw warning
+	// runs (the port latches it in `specialTarget` and re-enters `useSpecial`), so a bare
+	// `useSpecial()` opens the targeting cursor and never reaches the warning. This livecheck used to
+	// rely on the old auto-nearest-enemy targeting and went stale when the cursor landed.
+	s['specialTarget'] = target;
 	s['fov'].update(hero.x, hero.y, 8);
 	s['refresh']();
 	return { ammo: s['ammo'], durability: s['ammoDurability'], cost: s['missileDurabilityCost'](), target: target.id };

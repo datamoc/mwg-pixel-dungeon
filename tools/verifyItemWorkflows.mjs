@@ -29,6 +29,11 @@ try {
 	compile(join(root, 'src/items/missiles.ts'), 'items/missiles.js');
 	compile(join(root, 'src/items/itemCurses.ts'), 'items/itemCurses.js');
 	compile(join(root, 'src/items/itemKinds.ts'), 'items/itemKinds.js');
+// `ChooseBag()`'s pick and the bag `canHold` gates - scene-free, tested below.
+compile(join(root, 'src/items/bags.ts'), 'items/bags.js');
+compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
+	compile(join(root, 'src/items/resurrect.ts'), 'items/resurrect.js');
+	compile(join(root, 'src/items/itemActions.ts'), 'items/itemActions.js');
 	compile(join(root, 'src/items/shopPricing.ts'), 'items/shopPricing.js');
 	compile(join(root, 'src/items/shopActions.ts'), 'items/shopActions.js');
 	compile(join(root, 'src/items/blacksmith.ts'), 'items/blacksmith.js');
@@ -131,7 +136,7 @@ try {
 	// turns into a flat 1.5 rather than the melee-range penalty.
 	assert.equal(BOOMERANG_RETURN_TURNS, 5, 'CircleBack counts down from 5 hero turns');
 	assert.equal(BOOMERANG_RETURN_ACC_FACTOR, 1.5, 'the return throw is a flat 1.5, adjacency or not');
-	const { alchemicalCatalystCost, arcaneCatalystCost, canCraftPotionSeed, craftPotionSeed, craftAlchemicalCatalyst, craftArcaneCatalyst } = require('./items/alchemy.js');
+	const { alchemicalCatalystCost, arcaneCatalystCost, canCraftPotionSeed, craftPotionSeed, craftAlchemicalCatalyst, craftArcaneCatalyst, craftScrollToStone, craftAlchemize } = require('./items/alchemy.js');
 
 	// `Item.isUpgradable()` (tag `v3.3.8`) and the two infusion selectors that read it. Java's
 	// default is true with 42 classes overriding it false, so the assertions below are built from
@@ -153,8 +158,10 @@ try {
 	for (const id of ['potionHealing', 'exoticPotion', 'blizzardBrew', 'elixirMight', 'scrollUpgrade', 'exoticScroll',
 		'seedFirebloom', 'seed', 'stoneOfBlast', 'stoneOfAugmentation', 'food', 'meat', 'pasty', 'bomb', 'doubleBomb',
 		'fireBomb', 'noisemaker', 'flashbang', 'crystalKey', 'ironKey', 'goldenKey', 'gooBlob', 'metalShard',
-		'energyCrystal', 'candle', 'embers', 'corpseDust', 'sandBag', 'alchemize', 'curseInfusion', 'magicalInfusion',
-		'aquaBlast', 'featherFall', 'arcaneCatalyst', 'alchemicalCatalyst']) {
+		'energyCrystal', 'candle', 'embers', 'corpseDust', 'sandBag', 'alchemize', 'torch', 'curseInfusion', 'magicalInfusion',
+		'aquaBlast', 'featherFall', 'arcaneCatalyst', 'alchemicalCatalyst',
+		//`bags/Bag.isUpgradable()` is false: the starting pouch and the three shop bags.
+		'velvetPouch', 'scrollHolder', 'potionBandolier', 'magicalHolster']) {
 		assert.equal(upgradable({ id }), false, `${id} is not upgradable`);
 	}
 	// the one ambiguous id: 'stone' is a missile stack *or* a runestone, decided by sourceClass
@@ -172,7 +179,8 @@ try {
 		assert.equal(usableForMagicalInfusion(item), true, `${item.id} is a MagicalInfusion target`);
 		assert.equal(usableForCurseInfusion(item), true, `${item.id} is a CurseInfusion target`);
 	}
-	for (const item of [{ id: 'artifact_chalice' }, { id: 'potionHealing' }, { id: 'scrollUpgrade' }, { id: 'bomb' }]) {
+	for (const item of [{ id: 'artifact_chalice' }, { id: 'potionHealing' }, { id: 'scrollUpgrade' }, { id: 'bomb' },
+		{ id: 'velvetPouch' }, { id: 'scrollHolder' }, { id: 'potionBandolier' }, { id: 'magicalHolster' }]) {
 		assert.equal(usableForMagicalInfusion(item), false, `${item.id} is not a MagicalInfusion target`);
 		assert.equal(usableForCurseInfusion(item), false, `${item.id} is not a CurseInfusion target`);
 	}
@@ -287,6 +295,73 @@ try {
 	const recorded = recordMissileUpgrade(new Map(), 1, 2);
 	assert.deepEqual([...recorded], [[1, 2]]);
 	assert.equal(recordMissileUpgrade(recorded, 1, 5).get(1), 5);
+
+	// A carried missile stack's own identity (2026-09-16; see `src/missiles.ts`'s header). The
+	// framework's merge key is `(id, instanceId)` and every missile class shares a bag id, so the
+	// identity has to carry both the set and the level - which is exactly `MissileWeapon.isSimilar`
+	// (`trueLevel() == trueLevel() && getClass() == getClass() && setID == setID`).
+	const { missileStackId, missileStackFields, MISSILE_MAX_DURABILITY } = require('./items/missiles.js');
+	assert.equal(MISSILE_MAX_DURABILITY, 100, "Java's `MissileWeapon.MAX_DURABILITY`");
+	assert.equal(missileStackId('m-1', 0), 'm-1:0', 'the identity is "<set>:<level>"');
+	const fields = missileStackFields('m-7', 2);
+	assert.deepEqual(fields, { missileSet: 'm-7', instanceId: 'm-7:2', level: 2, durability: 100, maxDurability: 100 },
+		'a freshly minted stack carries its set, its own level and full wear');
+
+	/** What `bag.add` does to a stack carrying this identity - the *only* merge decision the port
+	 * makes, and therefore the one that has to reproduce `isSimilar`. */
+	const merged = (a, b) => {
+		const bag = new Inventory();
+		bag.add({ id: 'stone', quantity: 1, stackable: true, identified: true, ...a });
+		bag.add({ id: 'stone', quantity: 1, stackable: true, identified: true, ...b });
+		return bag.items.map((item) => `${item.instanceId ?? '-'}x${item.quantity}`);
+	};
+	// same class, same set, same level -> one pile, the way Java merges them
+	assert.deepEqual(merged(missileStackFields('m-1', 0), missileStackFields('m-1', 0)), ['m-1:0x2'],
+		'one set at one level is a single stack');
+	// an upgraded stack of that set no longer merges with its un-upgraded twin (`trueLevel()` differs)
+	assert.deepEqual(merged(missileStackFields('m-1', 0), missileStackFields('m-1', 1)), ['m-1:0x1', 'm-1:1x1'],
+		'a level-differing stack of the same set stays its own stack');
+	// two separately-minted stacks of one class never merge, whatever their levels (`setID` differs)
+	assert.deepEqual(merged(missileStackFields('m-1', 0), missileStackFields('m-2', 0)), ['m-1:0x1', 'm-2:0x1'],
+		'two sets never merge, even at the same level and class');
+
+	// The two places a floor's missile payloads are minted both go through that identity, so two
+	// stacks of one class dropped separately arrive as two stacks rather than one fungible pile.
+	const { sourceInventoryItem } = require('./items/itemKinds.js');
+	let minted = 0;
+	const instanceId = (kind) => `${kind}-seed-${minted++}`;
+	const knife = sourceInventoryItem('missile', 'ThrowingKnife', instanceId);
+	const knife2 = sourceInventoryItem('missile', 'ThrowingKnife', instanceId);
+	assert.equal(knife.id, 'missile_throwingknife', 'the stack keeps the authored bag id for its class');
+	assert.equal(knife.missileSet, 'missile-seed-0', 'a floor missile payload is minted with its own set');
+	assert.equal(knife.instanceId, 'missile-seed-0:0', 'and its identity names that set and level');
+	assert.equal(knife.durability, 100, 'and starts unworn');
+	assert.notEqual(knife2.missileSet, knife.missileSet, 'a second stack of the same class gets its own set');
+	assert.deepEqual(merged(knife, knife2), ['missile-seed-0:0x1', 'missile-seed-1:0x1'],
+		'so two same-class stacks never collapse into one pile');
+	// a runestone shares the `stone` bag id and must not be given a missile identity
+	const runestone = sourceInventoryItem('missile', 'StoneOfBlast', instanceId);
+	assert.equal(runestone.missileSet, undefined, 'a runestone payload carries no missile set');
+	assert.equal(runestone.durability, undefined, 'and no missile wear');
+
+	// A scattered heap's set and level survive the pickup as the stack they belong to - Java's heap
+	// *is* the stack, and this port's heaps carry no class, so this is what is left of it.
+	const picked = new Inventory();
+	pickupGroundItem({
+		item: { id: 'g1', kind: 'stone', x: 0, y: 0, missileLevel: 3, missileSet: 'm-9' },
+		depth: 6, heroClass: 'mage', gold: 0,
+		hasItem: () => false, removeItem: () => {}, setGold: () => {}, shopPrice: () => 0,
+		itemName: (id) => id, offerPurchase: () => {}, missilePickupValid: () => true,
+		removeGround: () => {}, playSound: () => {}, addItem: (item, stackable) => picked.add(stackable ? { ...item, stackable: true } : item),
+		identify: () => {}, say: () => {}, showStatus: () => {}, collectDewdrop: () => true,
+		collectPetal: () => 'levelup', addSand: () => {}, addEnergy: () => {}, addLooseGold: () => {},
+		recoverStone: () => {}, pickupArmor: () => {}, pickupWand: () => {}, pickupAmulet: () => {},
+		pickupRing: () => {}, pickupCrystalKey: () => {}, addSimpleGroundKind: () => {},
+		messages: { pickup: (name) => name, missileDust: 'dust' },
+	});
+	assert.equal(picked.items.length, 1);
+	assert.equal(picked.items[0].missileSet, 'm-9', 'the picked heap keeps the set it was thrown at');
+	assert.equal(picked.items[0].instanceId, 'm-9:3', 'and the identity its level belongs to');
 	// `Potion.SeedToPotion`: generic seed payloads retain their concrete source class in the
 	// stack key, and one distinct source maps deterministically to its regular potion.
 	const seedBag = new Inventory();
@@ -310,6 +385,37 @@ try {
 	assert.equal(arcaneCatalystCost(arcaneBag), 0);
 	assert.equal(craftArcaneCatalyst(arcaneBag), true);
 	assert.ok(arcaneBag.find('arcaneCatalyst'));
+	// Explicit ingredient selection for the category recipes: chosen units brew, and a bad
+	// selection (wrong count, a non-ingredient, an uncovered unit, the same unit twice)
+	// fails whole with nothing consumed.
+	const selectBag = new Inventory();
+	selectBag.add({ id: 'seedSungrass', quantity: 3, stackable: true, identified: true });
+	assert.deepEqual(craftPotionSeed(selectBag, [{ id: 'seedSungrass' }, { id: 'seedSungrass' }]), undefined, 'two units cannot brew');
+	assert.equal(selectBag.items[0].quantity, 3, '...and nothing is consumed');
+	assert.deepEqual(craftPotionSeed(selectBag, [{ id: 'potionHealing' }, { id: 'seedSungrass' }, { id: 'seedSungrass' }]), undefined, 'a non-seed fails the selection');
+	assert.equal(selectBag.items[0].quantity, 3, '...still nothing consumed');
+	assert.deepEqual(craftPotionSeed(selectBag, [{ id: 'seedSungrass' }, { id: 'seedSungrass' }, { id: 'seedSungrass' }]), { id: 'potionHealing', identified: true }, 'three chosen sungrass brew healing');
+	assert.equal(selectBag.items.length, 0, 'the chosen units are consumed');
+	const selectScroll = new Inventory();
+	selectScroll.add({ id: 'scrollRage', quantity: 1, stackable: true });
+	assert.equal(craftScrollToStone(selectScroll, { id: 'potionHealing' }), false, 'a non-scroll cannot transmute');
+	assert.equal(selectScroll.items[0].quantity, 1, '...unconsumed');
+	assert.equal(craftScrollToStone(selectScroll, { id: 'scrollRage' }), true, 'the chosen rage scroll transmutes');
+	assert.equal(selectScroll.find('stoneOfAggression')?.quantity, 2, 'into two aggression stones');
+	assert.equal(selectScroll.find('scrollRage'), undefined, 'and the chosen scroll is consumed');
+	const selectAlchemize = new Inventory();
+	selectAlchemize.add({ id: 'seedFirebloom', quantity: 1, stackable: true });
+	selectAlchemize.add({ id: 'stoneOfBlast', quantity: 1, stackable: true });
+	assert.equal(craftAlchemize(selectAlchemize, { seed: { id: 'seedFirebloom' }, stone: { id: 'potionFlame' } }), false, 'a non-stone cannot brew alchemize');
+	assert.equal(craftAlchemize(selectAlchemize, { seed: { id: 'seedFirebloom' }, stone: { id: 'stoneOfBlast' } }), true, 'the chosen pair brews');
+	assert.equal(selectAlchemize.find('alchemize')?.quantity, 8, 'eight alchemize');
+	const selectCatalyst = new Inventory();
+	selectCatalyst.add({ id: 'potionFrost', quantity: 1, stackable: true });
+	selectCatalyst.add({ id: 'stoneOfBlast', quantity: 1, stackable: true });
+	assert.equal(alchemicalCatalystCost(selectCatalyst, { primary: { id: 'potionFrost' }, secondary: { id: 'potionFrost' } }), undefined, 'the same unit cannot pair with itself');
+	assert.equal(alchemicalCatalystCost(selectCatalyst, { primary: { id: 'potionFrost' }, secondary: { id: 'stoneOfBlast' } }), 1, 'a runestone secondary costs one energy');
+	assert.equal(craftAlchemicalCatalyst(selectCatalyst, { primary: { id: 'potionFrost' }, secondary: { id: 'stoneOfBlast' } }), true, 'the chosen pair catalyzes');
+	assert.ok(selectCatalyst.find('alchemicalCatalyst'));
 	assert.deepEqual(missileDamageRange('ThrowingStone', 0), [2, 5]);
 	assert.deepEqual(missileDamageRange('ThrowingStone', 3), [5, 8]);
 	assert.deepEqual(missileDamageRange('ThrowingKnife', 3, 2), [7, 14]);
@@ -323,8 +429,58 @@ try {
 	assert.equal(blacksmithTurnInFavor(99, false), 2000);
 	assert.equal(blacksmithTurnInFavor(15, true), 1750);
 	assert.equal(blacksmithTurnInFavor(40, true), 3000);
-	assert.equal(Object.keys(MWL_MISSILE_DESCRIPTION_KEYS).length, 15);
+	// `WndBlacksmith.WndUpgrade`'s `itemSelectable`: `isUpgradable() && isIdentified() && !cursed &&
+	// level() < 2`. The one exclusion below is this port's own - a real Java target whose upgrade
+	// would be a silent no-op here (a wand's level is read by nothing; wands run off `weaponLevel`) -
+	// so it is asserted explicitly rather than left to the shared predicate. A carried missile stack
+	// used to be excluded on the same grounds and is offered now that stacks carry their own level.
+	const { selectBlacksmithUpgradeItems } = require('./items/blacksmith.js');
+	const upgradeCandidates = (items) => selectBlacksmithUpgradeItems(items, new Set()).map((item) => item.id);
+	assert.deepEqual(
+		upgradeCandidates([
+			{ id: 'weaponReward', quantity: 1, identified: true, level: 1 },
+			{ id: 'armorReward', quantity: 1, identified: true, level: 0 },
+			{ id: 'ring_garnet', quantity: 1, identified: true, level: 1 },
+			{ id: 'wand', quantity: 1, identified: true, sourceClass: 'WandOfFireblast', level: 0 },
+			{ id: 'stone', quantity: 5, identified: true, sourceClass: 'ThrowingKnife', level: 0 },
+			{ id: 'stone', quantity: 1, identified: true, sourceClass: 'StoneOfBlast' },
+			{ id: 'potionHealing', quantity: 1, identified: true },
+			{ id: 'ring_garnet', quantity: 1, identified: true, level: 2 },
+			{ id: 'armorReward', quantity: 1, identified: true, level: 1, cursed: true },
+			{ id: 'weaponReward', quantity: 1, identified: false, level: 1 },
+			{ id: 'hourglass', quantity: 1, identified: true, level: 1 },
+		]),
+		['weaponReward', 'armorReward', 'ring_garnet', 'stone'],
+		'Java\'s upgrade selector, minus the one wand this port cannot upgrade meaningfully',
+	);
+	// `WndBlacksmith.WndReforge`'s own selector and pair rule. Java's `itemSelectable` is the *same*
+	// predicate as the upgrade window's (identified, uncursed, upgradable, no level cap), so this now
+	// offers rings too - and the pair rule is the class test the old bag-id pairing got wrong, which
+	// is what let a handaxe be reforged with a shortsword here.
+	const { blacksmithItemClass, blacksmithReforgePairValid, selectBlacksmithReforgeItems } = require('./items/blacksmith.js');
+	const reforgeCandidates = (items) => selectBlacksmithReforgeItems(items).map((item) => `${item.id}:${item.sourceClass ?? ''}`);
+	const shortsword = { id: 'weaponReward', quantity: 1, identified: true, level: 1, sourceClass: 'Shortsword', instanceId: 'w1' };
+	const handaxe = { id: 'weaponReward', quantity: 1, identified: true, level: 2, sourceClass: 'Handaxe', instanceId: 'w2' };
+	const otherSword = { id: 'weaponReward', quantity: 1, identified: true, level: 0, sourceClass: 'Shortsword', instanceId: 'w3' };
+	const garnet = { id: 'ring_garnet', quantity: 1, identified: true, level: 1 };
+	const wand = { id: 'wand', quantity: 1, identified: true, level: 0, sourceClass: 'WandOfFireblast' };
+	const reforgeMissiles = { id: 'stone', quantity: 5, identified: true, sourceClass: 'ThrowingKnife', level: 0 };
+	const potion = { id: 'potionHealing', quantity: 1, identified: true };
+	assert.deepEqual(
+		reforgeCandidates([shortsword, garnet, wand, reforgeMissiles, potion]),
+		['weaponReward:Shortsword', 'ring_garnet:', 'stone:ThrowingKnife'],
+		"Java's reforge predicate, including carried missile stacks; only the wand remains model-blocked",
+	);
+	assert.equal(blacksmithItemClass(shortsword), 'Shortsword', 'the class, not the minted bag id');
+	assert.equal(blacksmithItemClass(garnet), 'ring_garnet', 'ids that name their own class fall back to it');
+	assert.equal(blacksmithReforgePairValid(shortsword, otherSword), true, 'same class, different entry');
+	assert.equal(blacksmithReforgePairValid(shortsword, handaxe), false, 'two different weapon classes never pair');
+	assert.equal(blacksmithReforgePairValid(shortsword, shortsword), false, 'nor does an item pair with itself');
+	assert.equal(blacksmithReforgePairValid(garnet, { id: 'ring_garnet', quantity: 1, identified: true, level: 1 }), true);
+	assert.equal(blacksmithReforgePairValid(garnet, shortsword), false, 'a ring never pairs with a weapon');
+	assert.equal(Object.keys(MWL_MISSILE_DESCRIPTION_KEYS).length, 16);
 	assert.equal(MWL_MISSILE_DESCRIPTION_KEYS.missile_forcecube, 'items.weapon.missiles.forcecube.desc');
+	assert.equal(MWL_MISSILE_DESCRIPTION_KEYS.missile_tippeddart, 'items.weapon.missiles.darts.dart.desc');
 	// `HeavyBoomerang`'s return logs Java's real `hero.you_now_have` pickup line, which needs the
 	// missile's display name - the mechanical `missileDefinitions` table has no name column, so it
 	// comes from the authored item node instead.
@@ -367,7 +523,7 @@ try {
 	assert.equal(MWL_ITEM_GROUND_KIND_ALIASES.weaponReward, 'armor');
 	assert.equal(MWL_ITEM_GROUND_KIND_ALIASES.doubleBomb, 'bomb');
 	assert.equal(MWL_ITEM_GROUND_KIND_ALIASES.brokenSeal, 'brokenSeal');
-	assert.equal(Object.keys(MWL_ITEM_GROUND_KIND_ALIASES).length, 29, 'ground-kind alias count');
+	assert.equal(Object.keys(MWL_ITEM_GROUND_KIND_ALIASES).length, 30, 'ground-kind alias count (torch has its alias row)');
 	assert.equal(MWL_ITEM_NAME_KEYS.weaponReward, 'port.name.questweapon');
 	assert.equal(MWL_ITEM_NAME_KEYS.sandBag, 'items.artifacts.timekeepershourglass$sandbag.name');
 	assert.equal(MWL_GROUND_ITEM_NAME_KEYS.bomb, 'items.bombs.bomb.name');
@@ -404,10 +560,10 @@ try {
 	assert.deepEqual(tableRows('heroLevelGrowth', 'id'), ['spdHeroLevelGrowth'], 'hero level growth stays authored in actor-rules.mwl');
 	assert.deepEqual(tableRows('monsterSpriteOverrides', 'monster'), [
 		'sheep', 'ninjaLog', 'spiritHawk', 'ward', 'earthGuardian', 'sentry', 'ratKing', 'rotHeart', 'rotLasher',
-		'fetidRat', 'gnollTrickster', 'greatCrab', 'necroSkeleton', 'newbornElemental',
+		'fetidRat', 'impShopkeeper', 'gnollTrickster', 'greatCrab', 'necroSkeleton', 'newbornElemental',
 		'mimic', 'piranha', 'bee', 'statue',
 	], 'monster sprite-source overrides stay authored in asset-references.mwl');
-	assert.equal(tableRows('monsterSpriteFrames', 'monster').length, 67, 'all monster sprite frame metadata stays authored in asset-references.mwl');
+	assert.equal(tableRows('monsterSpriteFrames', 'monster').length, 68, 'all monster sprite frame metadata stays authored in asset-references.mwl');
 	//`loadSpdSprites` reads its textures through two positionally-paired lists: the `const [a, b, ...]`
 	//destructuring and the `Promise.all([loadImage(aUrl), ...])` array. They were transposed once
 	//(`sheep`/`ninjaLog`) and nothing failed - the Smoke Bomb decoy simply rendered the sheep
@@ -432,7 +588,7 @@ try {
 	}
 	assert.deepEqual(tableRows('specialItemInventoryRules', 'sourceClass'), [
 		'Bomb', 'DoubleBomb', 'CorpseDust', 'CeremonialCandle', 'Embers', 'Ankh', 'Stylus',
-		'BrokenSeal', 'Honeypot', 'Alchemize', 'Bag', 'SandBag',
+		'BrokenSeal', 'Honeypot', 'Alchemize', 'Bag', 'SandBag', 'Torch',
 	], 'special inventory identities stay authored in MWL');
 	// ringModifiers.ts derives RING_DEFS from rings.mwl's authored add: level/multiply: BASE^level
 	// effects rather than hand-copying their numbers - this pins the resulting formulas to the
@@ -465,6 +621,19 @@ try {
 		greatsword: 5, warhammer: 5, glaive: 5, greataxe: 5, greatshield: 5, gauntlet: 5, warscythe: 5,
 	};
 	for (const [id, tier] of Object.entries(expectedWeaponTiers)) assert.equal(WEAPON_TIER_BY_CLASS[id], tier, `weapon ${id}`);
+	// The same index's *name* half, which is what a minted payload id needs: one id (`weaponReward`,
+	// `armorReward`, the ammo `stone`) covers every class, and its own node's name key is generic, so
+	// before this resolution every generated weapon read as "quest weapon", a carried wand as the
+	// *wielded* one, and a stack of throwing knives as a stack of stones.
+	const { ARMOR_NAME_BY_CLASS, WEAPON_NAME_BY_CLASS } = require('./items/catalog.js');
+	assert.equal(WEAPON_NAME_BY_CLASS.shortsword, 'items.weapon.melee.shortsword.name');
+	assert.equal(WEAPON_NAME_BY_CLASS.handaxe, 'items.weapon.melee.handaxe.name');
+	assert.equal(ARMOR_NAME_BY_CLASS.leatherarmor, 'items.armor.leatherarmor.name');
+	// (a *wand*'s name resolves through `WAND_KEYS` by class instead - see `itemDisplayName` -
+	// because a wand's authored node and its Java class are spelled differently: `wand_wandfirebolt_t1`
+	// carries `items.wands.wandoffireblast.name`.)
+	assert.equal(WEAPON_NAME_BY_CLASS.wornshortsword, 'items.weapon.melee.wornshortsword.name');
+	assert.equal(WEAPON_NAME_BY_CLASS.nonexistentclass, undefined, 'an unknown class has no name key');
 	assert.equal(Object.keys(WEAPON_TIER_BY_CLASS).length, Object.keys(expectedWeaponTiers).length, 'weapon tier count');
 	const expectedArmorTiers = { clotharmor: 1, leatherarmor: 2, mailarmor: 3, scalearmor: 4, platearmor: 5 };
 	for (const [id, tier] of Object.entries(expectedArmorTiers)) assert.equal(ARMOR_TIER_BY_CLASS[id], tier, `armor ${id}`);
@@ -560,7 +729,7 @@ try {
 	// Monster display names are authored on the nodes (`name` message key) with `MOB_KEYS`
 	// derived in `spdKeys.ts` - including the two kinds that had no key at all (larva,
 	// armoredStatue) and rendered as bare ids. Resolution itself is gated by `i18n:verify`.
-	assert.equal(MWL_MONSTER_NODES.length, 67, 'monster roster size');
+	assert.equal(MWL_MONSTER_NODES.length, 68, 'monster roster size');
 	for (const node of MWL_MONSTER_NODES) assert.ok(node.attributes?.name, `monster has a display-name key: ${node.attributes?.id}`);
 	assert.equal(MWL_MONSTER_NODES.find((node) => node.attributes?.id === 'larva')?.attributes?.name, 'actors.mobs.yogdzewa$larva.name', 'larva name key');
 	assert.equal(MWL_MONSTER_NODES.find((node) => node.attributes?.id === 'armoredStatue')?.attributes?.name, 'actors.mobs.armoredstatue.name', 'armoredStatue name key');
@@ -704,12 +873,17 @@ try {
 	// verbatim here (Bless/Hex 30, Daze 5, Chill/Frost 10, Drowsy 5, Weakness/Vulnerable 20,
 	// Burning 8, Levitation 20, FeatherFall 50, Invisibility 20, Recharging 30, AdrenalineSurge
 	// 200, MindVision 20, Terror 20, Amok 5 via ScrollOfRage, Aggression 20, Awareness 2, Haste
-	// 20, Degrade 30, Ooze 20, Wayward 10, Charm 10 - all tag `v3.3.8`). The rest are the
+	// 20, Degrade 30, Ooze 20, Wayward 10, Charm 10, Light 250, Invulnerability 3 - all tag `v3.3.8`). The rest are the
 	// port's own documented conventions, not Java values: cripple 4 / paralysis 3 / roots 3 each
 	// equal a real Java application site (see PORT_COVERAGE.md's BUFF_DURATION row), poison 6
 	// and bleeding 0 have no Java DURATION to match, magicalSleep 0 lasts until woken,
 	// fury/berserk/cloak/focus 9999 are state markers, frostImbue 15 and lethalHasteCooldown 100
-	// are port-side cooldowns (see simulation/buffs.ts). Pinning the whole table so drift fails.
+	// are port-side cooldowns (see simulation/buffs.ts). Two more differ from their Java
+	// `affect()` argument for the same reason cripple/paralysis/roots do - a real Java
+	// application site, adjusted to this port's decrement-before-read tick order: feintConfusion
+	// 2 (Java applies `FeintConfusion` for 1 turn; the port's `advanceBuffs` decrements before
+	// the skip-turn gate reads it) and counterAbility 3 (`Talent.CounterAbilityTacker`'s own 3),
+	// both authored in buff-rules.mwl with their citations. Pinning the whole table so drift fails.
 	const buffRows = MWL_TABLE_ROWS('buffDurations', 'buff');
 	assert.deepEqual(
 		Object.fromEntries(buffRows.map((row) => [String(row.buff), Number(row.duration)])),
@@ -719,7 +893,8 @@ try {
 			paralysis: 3, roots: 3, levitation: 20, featherFall: 50, invisibility: 20, cloak: 9999,
 			focus: 9999, recharging: 30, frostImbue: 15, adrenalineSurge: 200, mindvision: 20,
 			terror: 20, amok: 5, aggression: 20, awareness: 2, haste: 20, degrade: 30, ooze: 20,
-			wayward: 10, charm: 10, lethalHasteCooldown: 100, blindness: 10,
+			wayward: 10, charm: 10, lethalHasteCooldown: 100, blindness: 10, light: 250, invulnerability: 3,
+			feintConfusion: 2, counterAbility: 3,
 		},
 		'buff durations match the authored table',
 	);
@@ -747,6 +922,7 @@ try {
 				missileTier: (tier) => ({ cat: 3, tier }),
 				potion: { cat: 4 },
 				scroll: { cat: 5 },
+				seed: { cat: 8 },
 				wand: { cat: 6 },
 				ring: { cat: 7 },
 				randomCategory: (deck) => ({ cls: `deck-${deck.cat}`, cat: deck.cat, level: 0 }),
@@ -754,7 +930,7 @@ try {
 				randomArtifact: () => null,
 			};
 		};
-		const ids = (plans) => plans.map((p) => (p.kind === 'item' ? p.id : p.kind === 'sandBag' ? 'sandBag' : p.generated.cls));
+		const ids = (plans) => plans.map((p) => (p.kind === 'item' ? p.id : p.kind === 'sandBag' ? 'sandBag' : p.kind === 'tippedDart' ? `tippedDart:${p.seedClass}` : p.generated.cls));
 		// `rng.int()` draws happen in this order inside `planShopStock`: the two potion-or-scroll
 		// loop picks, the bomb-slot `Random.Int(4)`, the rare-slot `Random.Int(10)`, then the
 		// post-shuffle draws (which the mock resolves to 0 once the queue is spent - a deterministic
@@ -769,6 +945,7 @@ try {
 		assert.ok(six.some((p) => p.kind === 'item' && p.id === 'food' && p.quantity === 2), 'two SmallRations');
 		assert.ok(six.some((p) => p.kind === 'item' && p.id === 'armorReward' && p.tier === 2), 'depth 6 stocks tier-2 armor');
 		assert.ok(six.some((p) => p.kind === 'generated' && p.generated.cat === 2), 'the weapon draw is on the shelf');
+		assert.ok(six.some((p) => p.kind === 'tippedDart' && p.quantity === 2), 'a stack of two tipped darts is on the shelf');
 		// The rare slot is `Random.Int(10)`: a stylus on 7 of 10, and the three 1-in-10s. The bomb
 		// slot's own draw (index 2) is set to 0/bomb here since it isn't what's under test.
 		assert.ok(ids(planShopStock(6, null, scripted([0, 0, 0, 7]))).includes('stylus'), 'rare roll 7 -> stylus');
@@ -778,10 +955,26 @@ try {
 		assert.ok(ids(planShopStock(6, null, scripted([0, 0, 3, 0]))).includes('honeypot'), 'bomb roll 3 -> honeypot');
 		// Alchemize is `Random.IntRange(2, 3)`.
 		assert.ok(six.some((p) => p.kind === 'item' && p.id === 'alchemize' && p.quantity >= 2 && p.quantity <= 3));
-		// Deeper shops stock the next tier up, and the deepest three torches' worth is *absent*
-		// (no torch item exists) rather than filled with something else.
+				// Deeper shops stock the next tier up. The TippedDart stack, the depth-20/21 torches,
+		// the Ankh and now the `ChooseBag` pick are all stocked - no Java entry is absent.
+		// The torches are three separate one-unit identified heaps, Java's own `ShopRoom`
+		// depth-20/21 branch, at the real `Torch.value()` unit price of 8.
 		assert.ok(planShopStock(16, null, scripted([0, 0, 0, 0])).some((p) => p.kind === 'item' && p.id === 'armorReward' && p.tier === 4));
 		assert.ok(planShopStock(21, null, scripted([0, 0, 0, 0])).some((p) => p.kind === 'item' && p.id === 'armorReward' && p.tier === 5));
+		const torchesAt = (depth) => planShopStock(depth, null, scripted([0, 0, 0, 0]))
+			.filter((p) => p.kind === 'item' && p.id === 'torch');
+		for (const depth of [6, 11, 16]) assert.equal(torchesAt(depth).length, 0, `no torches on a depth-${depth} shelf`);
+		for (const depth of [20, 21]) {
+			const torches = torchesAt(depth);
+			assert.equal(torches.length, 3, `three torches on a depth-${depth} shelf`);
+			for (const torch of torches) assert.deepEqual([torch.quantity, torch.identify], [1, true], 'each torch is its own identified heap');
+		}
+		assert.equal(require('./items/shopPricing.js').itemValue('torch', 3), 24, 'torch value() is 8 per unit');
+		assert.equal(require('./items/shopPricing.js').getShopPrice('torch', 21), 200, 'depth-21 shelf price is 8 x5 wealth bracket');
+		// `ShopRoom.generateItems()` stocks one `new Ankh()` in the shared tail every depth takes.
+		assert.equal(planShopStock(6, null, scripted([0, 0, 0, 0])).filter((p) => p.kind === 'item' && p.id === 'ankh').length, 1, 'every shop stocks one ankh');
+		assert.equal(require('./items/shopPricing.js').itemValue('ankh', 1), 50, 'ankh value() is 50 per unit');
+		assert.equal(require('./items/shopPricing.js').getShopPrice('ankh', 6), 500, 'depth-6 shelf price is 50 x2 wealth bracket');
 		// Sandbags appear only with a carried hourglass, at the depth's own fraction of the missing
 		// ones - and never without it.
 		assert.equal(planShopStock(6, null, scripted([0, 3, 0, 0, 7])).filter((p) => p.kind === 'sandBag').length, 0,
@@ -792,6 +985,165 @@ try {
 			'ceil(4 * 0.80) at depth 21');
 		assert.equal(shopSandBags(11, 5), 2);
 		assert.equal(shopSandBags(16, 5), 3);
+
+		// The `ChooseBag` pick rides the fourth argument: omitted (the older three-argument
+		// calls above) stocks no bag, while a pick is stocked as one identified heap in
+		// Java's own position - after the alchemize stack, before the healing potion.
+		assert.ok(!ids(planShopStock(6, null, scripted([0, 0, 0, 0]))).some((id) => id.endsWith('Holder') || id.endsWith('Bandolier') || id.endsWith('Holster') || id === 'velvetPouch'),
+			'no bag state means no bag on the shelf');
+		const bagShelf = ids(planShopStock(6, null, scripted([0, 0, 0, 0]), 'scrollHolder'));
+		assert.ok(bagShelf.indexOf('scrollHolder') > bagShelf.indexOf('alchemize')
+			&& bagShelf.indexOf('scrollHolder') < bagShelf.indexOf('potionHealing'),
+			'the bag sits between the alchemize stack and the healing potion');
+		const bagPlan = planShopStock(6, null, scripted([0, 0, 0, 0]), 'magicalHolster')
+			.find((p) => p.kind === 'item' && p.id === 'magicalHolster');
+		assert.deepEqual([bagPlan.quantity, bagPlan.identify], [1, true], 'the bag is one identified heap');
+		// The four bag `value()` bodies, and a shelf price off one of them.
+		assert.equal(require('./items/shopPricing.js').itemValue('velvetPouch', 1), 30, 'pouch value() is 30');
+		assert.equal(require('./items/shopPricing.js').itemValue('scrollHolder', 1), 40, 'holder value() is 40');
+		assert.equal(require('./items/shopPricing.js').itemValue('potionBandolier', 1), 40, 'bandolier value() is 40');
+		assert.equal(require('./items/shopPricing.js').itemValue('magicalHolster', 1), 60, 'holster value() is 60');
+		assert.equal(require('./items/shopPricing.js').getShopPrice('scrollHolder', 6), 400, 'depth-6 shelf price is 40 x2 wealth bracket');
+	}
+	// `ShopRoom.ChooseBag()` (`items/bags.ts`): the highest scorer among the not-yet-dropped
+	// bags - base weight (velvet 1, the rest 0) plus one per holdable backpack entry - with
+	// `null` once every flag is dropped. Ties go to the earlier bag id (Java's own tie-break
+	// is JVM `HashMap` order and is not reproducible even in principle).
+	{
+		const { chooseShopBag, bagCanHold, BAG_VALUES, isBagId } = require('./items/bags.js');
+		assert.deepEqual(BAG_VALUES, {
+			velvetPouch: 30, scrollHolder: 40, potionBandolier: 40, magicalHolster: 60,
+		}, 'bag values match the four value() bodies');
+		for (const id of ['velvetPouch', 'scrollHolder', 'potionBandolier', 'magicalHolster']) {
+			assert.equal(isBagId(id), true, id + ' is a bag id');
+		}
+		assert.equal(isBagId('bag'), false, 'the generic ground-kind bag is not a shop bag');
+		assert.equal(chooseShopBag([], []), 'velvetPouch', 'an empty field still offers velvet on its base weight');
+		assert.equal(chooseShopBag(['velvetPouch'], []), 'scrollHolder', 'ties break to the earlier bag id');
+		assert.equal(chooseShopBag(['velvetPouch', 'scrollHolder', 'potionBandolier', 'magicalHolster'], []), null,
+			'every flag dropped means no bag');
+		assert.equal(chooseShopBag([], [{ id: 'seed' }]), 'velvetPouch', 'a seed scores the pouch');
+		assert.equal(chooseShopBag(['velvetPouch'], [{ id: 'scrollIdentify' }, { id: 'scrollUpgrade' }]), 'scrollHolder',
+			'scrolls score the holder once velvet is gone');
+		assert.equal(chooseShopBag(['velvetPouch', 'scrollHolder'], [{ id: 'potionHealing' }]), 'potionBandolier',
+			'a potion scores the bandolier');
+		assert.equal(chooseShopBag(['velvetPouch', 'scrollHolder', 'potionBandolier'], [{ id: 'wand' }]), 'magicalHolster',
+			'a wand scores the holster');
+		// The shared `stone` id is disambiguated by class, the same test `wieldMissile` uses.
+		assert.equal(chooseShopBag([], [{ id: 'stone', sourceClass: 'StoneOfBlast' }]), 'velvetPouch',
+			'a runestone stone scores the pouch');
+		assert.equal(chooseShopBag(['velvetPouch', 'scrollHolder', 'potionBandolier'], [{ id: 'stone', sourceClass: 'Bolas' }]), 'magicalHolster',
+			'a missile stone scores the holster');
+		// `canHold` spot checks: the honeypot is an `Item`, not a `Bomb`, so the holster
+		// refuses it; the spell, the waterskin and the goo shard each land in their own bag.
+		assert.equal(bagCanHold('magicalHolster', { id: 'honeypot' }), false, 'the holster refuses the honeypot');
+		assert.equal(bagCanHold('magicalHolster', { id: 'doubleBomb' }), true, 'the holster takes a double bomb');
+		assert.equal(bagCanHold('scrollHolder', { id: 'alchemize' }), true, 'the holder takes the spell');
+		assert.equal(bagCanHold('potionBandolier', { id: 'waterskin' }), true, 'the bandolier takes the waterskin');
+		assert.equal(bagCanHold('velvetPouch', { id: 'gooBlob' }), true, 'the pouch takes the goo shard');
+		assert.equal(bagCanHold('velvetPouch', { id: 'wand' }), false, 'the pouch refuses a wand');
+	}
+	// `MeleeWeapon.ability()` per-weapon table and charge math (`src/items/weaponAbilities.ts`):
+	// all 30 real melee classes resolve with desc-verified kinds and costs, the lookup ignores
+	// case and falls back to the bag id, the port-minted stand-ins resolve to nothing, the
+	// `COUNTER_ABILITY` discount is 0.5/rank clamped to ranks 0-4, discounted costs floor at
+	// zero, and the flail spin bonus is +33%/spin capped at 3 spins.
+	{
+		const { weaponAbilityFor, weaponAbilityCost, counterAbilityDiscount, spinDamageMultiplier } = require('./items/weaponAbilities.js');
+		const abilityKinds = {
+			AssassinsBlade: ['sneak', 2], Dirk: ['sneak', 2], Dagger: ['sneak', 2],
+			BattleAxe: ['heavyBlow', 2], HandAxe: ['heavyBlow', 2], Mace: ['heavyBlow', 2], WarHammer: ['heavyBlow', 2],
+			Greatsword: ['cleave', 0], Longsword: ['cleave', 0], Sword: ['cleave', 0], Shortsword: ['cleave', 0], WornShortsword: ['cleave', 0],
+			Flail: ['spin', 2], Greatshield: ['guard', 0], RoundShield: ['guard', 0],
+			Gauntlet: ['comboStrike', 0], Sai: ['comboStrike', 0], Gloves: ['comboStrike', 0],
+			Glaive: ['spike', 0], Spear: ['spike', 0], Katana: ['lunge', 0], Rapier: ['lunge', 0],
+			Sickle: ['harvest', 2], WarScythe: ['harvest', 2], Scimitar: ['swordDance', 2],
+			Quarterstaff: ['defensiveStance', 2], Greataxe: ['retribution', 0], Crossbow: ['chargedShot', 0],
+			RunicBlade: ['runicSlash', 0], Whip: ['lash', 0],
+		};
+		assert.equal(Object.keys(abilityKinds).length, 30, 'all 30 real melee classes have an ability');
+		for (const [cls, [kind, cost]] of Object.entries(abilityKinds)) {
+			const def = weaponAbilityFor(cls, 'weaponReward');
+			assert.equal(def?.kind, kind, `${cls} ability is ${kind}`);
+			assert.equal(def?.cost, cost, `${cls} ability costs ${cost}`);
+		}
+		assert.equal(weaponAbilityFor('SHORTSWORD', 'weaponReward')?.kind, 'cleave', 'lookup ignores case');
+		assert.equal(weaponAbilityFor(undefined, 'dagger')?.kind, 'sneak', 'bag id answers when no class is carried');
+		assert.equal(weaponAbilityFor(undefined, 'startingWeapon'), null, 'the starting stand-in has no ability');
+		assert.equal(weaponAbilityFor(undefined, 'weaponReward'), null, 'the generated stand-in has no ability');
+		assert.equal(weaponAbilityFor('PotionOfHealing', 'potionHealing'), null, 'non-weapons have no ability');
+		assert.equal(weaponAbilityFor('Shortsword', 'weaponReward')?.damageBonus, 30, 'cleave magnitudes ride along');
+		assert.equal(weaponAbilityFor('Rapier', 'weaponReward')?.damageBonus, 67, 'rapier lunge is +67');
+		assert.equal(weaponAbilityFor('RunicBlade', 'weaponReward')?.damageBonus, 300, 'runic slash is +300%');
+		assert.equal(weaponAbilityFor('Dagger', 'weaponReward')?.buffTurns, 10, 'dagger sneak is 10 turns');
+		assert.deepEqual([0, 1, 2, 3, 4].map(counterAbilityDiscount), [0, 0.5, 1, 1.5, 2], 'discount is 0.5 per rank');
+		assert.equal(counterAbilityDiscount(9), 2, 'discount clamps at rank 4');
+		assert.equal(counterAbilityDiscount(-1), 0, 'discount clamps at rank 0');
+		assert.equal(weaponAbilityCost(2, 0, false), 2, 'no tracker means full cost');
+		assert.equal(weaponAbilityCost(2, 4, true), 0, 'rank 4 zeroes a 2-charge ability');
+		assert.equal(weaponAbilityCost(2, 1, true), 1.5, 'rank 1 shaves half a charge');
+		assert.equal(weaponAbilityCost(0, 4, true), 0, 'free abilities stay free');
+		for (const [spins, mult] of [[0, 1], [1, 1.33], [2, 1.66], [3, 1.99]]) {
+			assert.ok(Math.abs(spinDamageMultiplier(spins) - mult) < 1e-9, `spin x${spins} multiplies ${mult}`);
+		}
+		assert.ok(Math.abs(spinDamageMultiplier(9) - 1.99) < 1e-9, 'spin caps at 3');	}
+	// `Torch` (tag `v3.3.8`): single-category registration. The torch is a stackable
+	// consumable-slot item (`consumables.mwl`, like `Alchemize`) plus the special-item
+	// mappings its Java source class needs - and nothing else: its name is single-sourced
+	// from the consumable node (no second `itemNameKeys` row), it is not food
+	// (`consumableStats` is `Food.energy`), and its description resolves through the
+	// name-key fallback rather than a redundant `consumableDescriptionKeys` row. Both
+	// sprite frames are `ItemSpriteSheet.TORCH = MISC_CONSUMABLE + 3 = 51`.
+	{
+		const { MWL_TABLE_ROWS: torchRows, MWL_CONSUMABLE_ITEMS: torchConsumables } = require('./mwlContent.js');
+		const hasRow = (table, key, value) => torchRows(table, key).some((row) => String(row[key]) === value);
+		assert.ok(torchConsumables.some((item) => item.id === 'torch'), 'torch has its consumables.mwl node');
+		assert.equal(hasRow('itemNameKeys', 'item', 'torch'), false, 'torch name is single-sourced, not duplicated in itemNameKeys');
+		assert.equal(hasRow('consumableStats', 'item', 'torch'), false, 'torch is not food');
+		assert.equal(hasRow('consumableDescriptionKeys', 'item', 'torch'), false, 'torch desc resolves via the name-key fallback');
+		assert.equal(hasRow('groundItemNameKeys', 'groundKind', 'torch'), true, 'ground torch has a name key');
+		assert.equal(hasRow('specialItemGroundKinds', 'sourceClass', 'Torch'), true, 'Torch source class maps to the torch ground kind');
+		assert.equal(hasRow('specialItemInventoryRules', 'sourceClass', 'Torch'), true, 'Torch source class maps to the torch item id');
+		assert.equal(hasRow('itemGroundKindAliases', 'itemId', 'torch'), true, 'torch item id maps to the torch ground kind');
+		const frameOf = (table, key, match) => torchRows(table, key).find((row) => String(row[key]) === match)?.frame;
+		assert.equal(Number(frameOf('itemFrames', 'kind', 'torch')), 51, 'ground torch uses ItemSpriteSheet.TORCH');
+		assert.equal(Number(frameOf('itemSpecificFrames', 'item', 'torch')), 51, 'inventory torch uses ItemSpriteSheet.TORCH');
+		assert.equal(torchRows('itemActionKeys', 'item').find((row) => String(row.item) === 'torch')?.actionKey,
+			'items.torch.ac_light', 'torch keeps its LIGHT action');
+		assert.equal(require('./simulation/mwlBuffDurations.js').BUFF_DURATION_DATA.light, 250, 'Light lasts Light.DURATION');
+		const torchCalls = [];
+		const torchScene = { awaitingInput: true, setRequestedItem: () => {}, useTorch: (instanceId) => torchCalls.push(instanceId) };
+		require('./items/itemActions.js').useItemById(torchScene, 'torch', 'torch:abc');
+		assert.deepEqual(torchCalls, ['torch:abc'], 'the LIGHT action routes to useTorch');
+		require('./items/itemActions.js').useItemById({ ...torchScene, awaitingInput: false }, 'torch');
+		const ankhCalls = [];
+		require('./items/itemActions.js').useItemById({ awaitingInput: true, setRequestedItem: () => {}, useAnkh: (instanceId) => ankhCalls.push(instanceId) }, 'ankh', 'ankh:abc');
+		assert.deepEqual(ankhCalls, ['ankh:abc'], 'the BLESS action routes to useAnkh');
+		assert.equal(torchRows('itemActionKeys', 'item').find((row) => String(row.item) === 'ankh')?.actionKey,
+			'items.ankh.ac_bless', 'ankh keeps its BLESS action');
+		// `WndResurrect`: two keeps survive (matched by id plus instance), everything else -
+		// including other ankhs - is lost; the selector admits everything but ankhs and bags.
+		const resurrectRules = require('./items/resurrect.js');
+		assert.equal(resurrectRules.isResurrectKeepCandidate({ id: 'potionHealing', quantity: 1 }), true, 'ordinary goods are keepable');
+		assert.equal(resurrectRules.isResurrectKeepCandidate({ id: 'ankh', quantity: 1 }), false, 'ankhs are not keepable');
+		for (const id of ['velvetPouch', 'scrollHolder', 'potionBandolier', 'magicalHolster']) {
+		assert.equal(resurrectRules.isResurrectKeepCandidate({ id, quantity: 1 }), false, `${id} is not keepable`);
+	}
+		assert.equal(resurrectRules.isResurrectKeepCandidate({ id: 'food', quantity: 0 }), false, 'empty stacks are not keepable');
+		const split = resurrectRules.partitionResurrectKeeps([
+			{ id: 'weaponReward', instanceId: 'w:1', quantity: 1 },
+			{ id: 'armorReward', instanceId: 'a:1', quantity: 1 },
+			{ id: 'ankh', quantity: 1 },
+			{ id: 'food', quantity: 2 },
+		], { id: 'weaponReward', instanceId: 'w:1' }, { id: 'armorReward', instanceId: 'a:1' });
+		assert.deepEqual(split.kept.map((item) => item.id), ['weaponReward', 'armorReward'], 'only the two keeps survive');
+		assert.deepEqual(split.lost.map((item) => item.id), ['ankh', 'food'], 'the spare ankh and the rest are lost');
+		const sameId = resurrectRules.partitionResurrectKeeps([
+			{ id: 'potion', quantity: 1 },
+			{ id: 'potion', quantity: 3 },
+		], { id: 'potion' }, { id: 'food' });
+		assert.equal(sameId.kept.length, 2, 'instance-less same-id stacks both survive');
+		assert.deepEqual(torchCalls, ['torch:abc'], 'no item action fires outside input');
 	}
 	// Per-monster status immunities (`Char.isImmune()`'s mob half, tag `v3.3.8`): the authored
 	// `monsterStatusImmunities` table rows, plus the live gate's verdicts through the real

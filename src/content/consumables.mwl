@@ -717,6 +717,13 @@
         slot: "consumable",
         stackable: true,
       },
+      {
+        tag: "item",
+        id: "torch",
+        name: "items.torch.name",
+        slot: "consumable",
+        stackable: true,
+      },
     ],
   },
 ]

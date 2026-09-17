@@ -68,6 +68,52 @@ export function alchemyRecipe(id: string): AlchemyRecipe | undefined {
 	return ALCHEMY_RECIPES.find((recipe) => recipe.id === id);
 }
 
+/** One explicitly chosen carried unit - Java's alchemy window adds specific items, while the
+ * recipe picker only names the recipe, so category recipes resolve these after a follow-up pick. */
+export interface AlchemyUnitRef {
+	readonly id: string;
+	readonly instanceId?: string;
+}
+
+/** A primary plus a secondary unit (catalysts, alchemize): two distinct carried units. */
+export interface AlchemyPairSelection {
+	readonly primary: AlchemyUnitRef;
+	readonly secondary: AlchemyUnitRef;
+}
+
+function unitKey(ref: { id: string; instanceId?: string }): string {
+	return `${ref.id}${ref.instanceId ?? ''}`;
+}
+
+/**
+ * All-or-nothing resolution of explicitly chosen units: every ref must match a carried stack
+ * with an uncovered unit that still passes `eligible` (the bag cannot have changed under a
+ * synchronous picker chain, but the check keeps the transaction honest and headless-testable).
+ * Failure resolves to `undefined` and consumes nothing - the same shape as MWG's `craft()`.
+ */
+function takeChosenUnits(
+	inventory: Inventory,
+	refs: readonly AlchemyUnitRef[],
+	eligible: (item: { id: string; instanceId?: string; quantity: number }) => boolean,
+): AlchemyUnitRef[] | undefined {
+	const remaining = new Map<string, number>();
+	for (const item of inventory.items) {
+		if (item.quantity > 0 && eligible(item)) {
+			const key = unitKey(item);
+			remaining.set(key, (remaining.get(key) ?? 0) + item.quantity);
+		}
+	}
+	const resolved: AlchemyUnitRef[] = [];
+	for (const ref of refs) {
+		const key = unitKey(ref);
+		const left = remaining.get(key) ?? 0;
+		if (left <= 0) return undefined;
+		remaining.set(key, left - 1);
+		resolved.push({ id: ref.id, instanceId: ref.instanceId });
+	}
+	return resolved;
+}
+
 /**
  * The authored energy table is keyed by SPD's *kind* (seed/stone/scroll/potion/food), but this
  * port carries concrete consumable ids in the bag (`potionHealing`, `seedRotberry`...) and only
@@ -113,10 +159,16 @@ export function craftAlchemy(inventory: Inventory, id: string): boolean {
 
 /** `Alchemize.Recipe` accepts category instances rather than one concrete seed/runestone.
  * Keep that wildcard transaction at the item boundary because MWG's generic `craft()`
- * intentionally matches exact ids. */
-export function craftAlchemize(inventory: Inventory): boolean {
-	const seed = inventory.items.find((item) => item.quantity > 0 && item.id.startsWith('seed'));
-	const stone = inventory.items.find((item) => item.quantity > 0 && item.id.startsWith('stoneOf'));
+ * intentionally matches exact ids. An explicit selection names the two units (the seed and
+ * runestone predicates are disjoint, so the two resolutions can never collide); without one
+ * the first carried units brew, as before. */
+export function craftAlchemize(inventory: Inventory, selected?: { seed: AlchemyUnitRef; stone: AlchemyUnitRef }): boolean {
+	const seed = selected
+		? takeChosenUnits(inventory, [selected.seed], (item) => item.id.startsWith('seed'))?.[0]
+		: inventory.items.find((item) => item.quantity > 0 && item.id.startsWith('seed'));
+	const stone = selected
+		? takeChosenUnits(inventory, [selected.stone], (item) => item.id.startsWith('stoneOf'))?.[0]
+		: inventory.items.find((item) => item.quantity > 0 && item.id.startsWith('stoneOf'));
 	if (!seed || !stone) return false;
 	inventory.remove(seed.id, 1, seed.instanceId);
 	inventory.remove(stone.id, 1, stone.instanceId);
@@ -127,15 +179,17 @@ export function craftAlchemize(inventory: Inventory): boolean {
 /** `Scroll.ScrollToStone` maps one of the twelve eligible regular scroll classes to two
  * matching runestones. The authored recipe uses `scrollIdentify` only as a catalogue-valid
  * representative; this transaction selects the concrete scroll class at runtime. */
-const SCROLL_TO_STONE: Readonly<Record<string, string>> = {
+export const SCROLL_TO_STONE: Readonly<Record<string, string>> = {
 	scrollIdentify: 'stoneOfIntuition', scrollLullaby: 'stoneOfDeepSleep', scrollMapping: 'stoneOfClairvoyance',
 	scrollMirror: 'stoneOfFlock', scrollRetribution: 'stoneOfBlast', scrollRage: 'stoneOfAggression',
 	scrollRecharging: 'stoneOfShock', scrollCleanse: 'stoneOfDetectMagic', scrollTeleportation: 'stoneOfBlink',
 	scrollTerror: 'stoneOfFear', scrollTransmutation: 'stoneOfAugmentation', scrollUpgrade: 'stoneOfEnchantment',
 };
 
-export function craftScrollToStone(inventory: Inventory): boolean {
-	const scroll = inventory.items.find((item) => item.quantity > 0 && SCROLL_TO_STONE[item.id]);
+export function craftScrollToStone(inventory: Inventory, selected?: AlchemyUnitRef): boolean {
+	const scroll = selected
+		? takeChosenUnits(inventory, [selected], (item) => SCROLL_TO_STONE[item.id] !== undefined)?.[0]
+		: inventory.items.find((item) => item.quantity > 0 && SCROLL_TO_STONE[item.id]);
 	if (!scroll) return false;
 	inventory.remove(scroll.id, 1, scroll.instanceId);
 	inventory.add({ id: SCROLL_TO_STONE[scroll.id]!, quantity: 2, stackable: true });
@@ -159,19 +213,35 @@ const SCROLL_CATALYST_POOL = [
 	'scrollTeleportation', 'scrollTerror', 'scrollTerror', 'scrollTransmutation',
 ];
 
-function isSeedOrRunestone(item: { id: string; quantity: number }): boolean {
+export function isSeedOrRunestone(item: { id: string; quantity: number }): boolean {
 	return item.quantity > 0 && (item.id === 'seed' || item.id.startsWith('stoneOf'));
 }
 
-function catalystIngredients(inventory: Inventory, kind: 'potion' | 'scroll'): [{ id: string; instanceId?: string }, { id: string; instanceId?: string }] | undefined {
-	const source = inventory.items.find((item) => item.quantity > 0 && item.id.startsWith(kind));
-	const secondary = inventory.items.find((item) => isSeedOrRunestone(item) && item.id !== source?.id);
-	if (!source || !secondary) return undefined;
-	return [{ id: source.id, instanceId: source.instanceId }, { id: secondary.id, instanceId: secondary.instanceId }];
+/** The secondary must be a different carried unit than the primary (Java adds two distinct
+ * items; the legacy first-eligible path below keys that on the id, this one on the unit). */
+function catalystIngredients(
+	inventory: Inventory,
+	kind: 'potion' | 'scroll',
+	selected?: AlchemyPairSelection,
+): [{ id: string; instanceId?: string }, { id: string; instanceId?: string }] | undefined {
+	if (!selected) {
+		const source = inventory.items.find((item) => item.quantity > 0 && item.id.startsWith(kind));
+		const secondary = inventory.items.find((item) => isSeedOrRunestone(item) && item.id !== source?.id);
+		if (!source || !secondary) return undefined;
+		return [{ id: source.id, instanceId: source.instanceId }, { id: secondary.id, instanceId: secondary.instanceId }];
+	}
+	const primary = takeChosenUnits(inventory, [selected.primary], (item) => item.id.startsWith(kind))?.[0];
+	const secondary = takeChosenUnits(
+		inventory,
+		[selected.secondary],
+		(item) => isSeedOrRunestone(item) && `${item.id}${item.instanceId ?? ''}` !== `${primary?.id ?? ''}${primary?.instanceId ?? ''}`,
+	)?.[0];
+	if (!primary || !secondary) return undefined;
+	return [{ id: primary.id, instanceId: primary.instanceId }, { id: secondary.id, instanceId: secondary.instanceId }];
 }
 
-export function alchemicalCatalystCost(inventory: Inventory): number | undefined {
-	const ingredients = catalystIngredients(inventory, 'potion');
+export function alchemicalCatalystCost(inventory: Inventory, selected?: AlchemyPairSelection): number | undefined {
+	const ingredients = catalystIngredients(inventory, 'potion', selected);
 	if (!ingredients) return undefined;
 	return ingredients[1].id.startsWith('stoneOf') ? 1 : 0;
 }
@@ -180,16 +250,16 @@ export function canCraftAlchemicalCatalyst(inventory: Inventory): boolean {
 	return alchemicalCatalystCost(inventory) !== undefined;
 }
 
-export function craftAlchemicalCatalyst(inventory: Inventory): boolean {
-	const ingredients = catalystIngredients(inventory, 'potion');
+export function craftAlchemicalCatalyst(inventory: Inventory, selected?: AlchemyPairSelection): boolean {
+	const ingredients = catalystIngredients(inventory, 'potion', selected);
 	if (!ingredients) return false;
 	for (const ingredient of ingredients) inventory.remove(ingredient.id, 1, ingredient.instanceId);
 	inventory.add({ id: 'alchemicalCatalyst', quantity: 1, stackable: true, identified: true });
 	return true;
 }
 
-export function arcaneCatalystCost(inventory: Inventory): number | undefined {
-	const ingredients = catalystIngredients(inventory, 'scroll');
+export function arcaneCatalystCost(inventory: Inventory, selected?: AlchemyPairSelection): number | undefined {
+	const ingredients = catalystIngredients(inventory, 'scroll', selected);
 	if (!ingredients) return undefined;
 	return ingredients[1].id === 'seed' ? 1 : 0;
 }
@@ -198,8 +268,8 @@ export function canCraftArcaneCatalyst(inventory: Inventory): boolean {
 	return arcaneCatalystCost(inventory) !== undefined;
 }
 
-export function craftArcaneCatalyst(inventory: Inventory): boolean {
-	const ingredients = catalystIngredients(inventory, 'scroll');
+export function craftArcaneCatalyst(inventory: Inventory, selected?: AlchemyPairSelection): boolean {
+	const ingredients = catalystIngredients(inventory, 'scroll', selected);
 	if (!ingredients) return false;
 	for (const ingredient of ingredients) inventory.remove(ingredient.id, 1, ingredient.instanceId);
 	inventory.add({ id: 'arcaneCatalyst', quantity: 1, stackable: true, identified: true });
@@ -237,11 +307,25 @@ const SEED_TO_POTION: Readonly<Record<string, string>> = {
 	seedStormvine: 'potionLevitation', seedSungrass: 'potionHealing', seedSwiftthistle: 'potionHaste',
 };
 
-function seedPotionId(item: { id: string; sourceClass?: string }): string | undefined {
+export function seedPotionId(item: { id: string; sourceClass?: string }): string | undefined {
 	if (SEED_TO_POTION[item.id]) return SEED_TO_POTION[item.id];
 	if (item.id !== 'seed') return undefined;
 	const source = (item.sourceClass ?? '').replace(/\$seed$/i, '').replace(/\.seed$/i, '').split('.').pop() ?? '';
 	return SEED_TO_POTION[`seed${source.charAt(0).toUpperCase()}${source.slice(1).toLowerCase()}`];
+}
+
+function selectedSeedUnits(inventory: Inventory, selected: readonly AlchemyUnitRef[]): { id: string; instanceId?: string; potionId: string }[] {
+	if (selected.length !== 3) return [];
+	const refs = takeChosenUnits(inventory, selected, (item) => seedPotionId(item as typeof item & { sourceClass?: string }) !== undefined);
+	if (!refs) return [];
+	const units: { id: string; instanceId?: string; potionId: string }[] = [];
+	for (const ref of refs) {
+		const stack = inventory.items.find((item) => `${item.id}${item.instanceId ?? ''}` === `${ref.id}${ref.instanceId ?? ''}`);
+		const potionId = seedPotionId({ id: ref.id, sourceClass: (stack as { sourceClass?: string } | undefined)?.sourceClass });
+		if (!potionId) return [];
+		units.push({ id: ref.id, instanceId: ref.instanceId, potionId });
+	}
+	return units;
 }
 
 function seedUnits(inventory: Inventory): { id: string; instanceId?: string; potionId: string }[] {
@@ -267,8 +351,11 @@ export interface CraftedPotionSeed {
 	readonly identified: boolean;
 }
 
-export function craftPotionSeed(inventory: Inventory): CraftedPotionSeed | undefined {
-	const units = seedUnits(inventory);
+/** Exactly three seed units, explicitly chosen: Java's window adds any three units, so the
+ * selection is validated whole (wrong count, a non-seed, or an uncovered unit all fail with
+ * nothing consumed) and anything else falls back to the first three eligible units. */
+export function craftPotionSeed(inventory: Inventory, selection?: readonly AlchemyUnitRef[]): CraftedPotionSeed | undefined {
+	const units = selection ? selectedSeedUnits(inventory, selection) : seedUnits(inventory);
 	if (units.length < 3) return undefined;
 	for (const unit of units) inventory.remove(unit.id, 1, unit.instanceId);
 	const distinct = new Set(units.map((unit) => unit.potionId)).size;

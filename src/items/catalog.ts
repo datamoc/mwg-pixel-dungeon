@@ -107,6 +107,15 @@ function tierByClass<T extends ItemDef>(byTierMap: Record<number, T[]>): Record<
  */
 export const WEAPON_TIER_BY_CLASS: Record<string, number> = tierByClass(WEAPONS);
 
+/** The same reverse index, to each class's own `name` key. A *minted* payload id cannot name itself
+ *  - `weaponReward`/`armorReward` are one id for every class, and their own node's name key is the
+ *  generic "quest weapon"/"quest armor" (see `item-rules.mwl`) - so `itemDisplayName` resolves the
+ *  class name from `sourceClass` through these instead. */
+function nameByClass<T extends ItemDef>(byTierMap: Record<number, T[]>): Record<string, string> {
+	return Object.fromEntries(Object.entries(byTierMap).flatMap(([tier, defs]) => defs.map((def) => [def.id, def.nameKey])));
+}
+export const WEAPON_NAME_BY_CLASS: Record<string, string> = nameByClass(WEAPONS);
+
 const authoredArmor = authoredEquipment
 	.filter((node) => node.attributes.slot === 'armor')
 	.map((node): ArmorDef => {
@@ -122,6 +131,7 @@ const authoredArmor = authoredEquipment
 
 export const ARMOR: Record<number, ArmorDef[]> = byTier(authoredArmor);
 export const ARMOR_TIER_BY_CLASS: Record<string, number> = tierByClass(ARMOR);
+export const ARMOR_NAME_BY_CLASS: Record<string, string> = nameByClass(ARMOR);
 
 const authoredWands = authoredEquipment
 	.filter((node) => node.attributes.slot === 'wand')

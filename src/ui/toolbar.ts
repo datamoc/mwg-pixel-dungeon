@@ -8,7 +8,20 @@ import { titleIcon } from './titleIcons';
 /** Toolbar.java GROUP layout and original toolbar.png frames.
  * Fixed item actions substitute for assignable quickslots; extra port verbs live
  * in the expandable menu. They all use the same game action handler as keyboard input.
+ *
+ * `QuickslotButton` (Java's assignable slots) is live as four small slots above the row:
+ * each shows the assigned item's icon (or an empty frame) and uses it on tap, through the
+ * scene's `quickslot0..3` actions. Assignment is automatic - the most recently used
+ * consumable fills its family's slot - since this port has no drag-to-slot gesture; the
+ * model (assigned id + instance, persisted per run) is Java's own shape.
  */
+export interface QuickslotState {
+	id: string;
+	instanceId?: string;
+	frame: number;
+	quantity: number;
+}
+
 export class SpdToolbar extends Container {
 	private readonly extras = new Container();
 	private readonly hint = new Label({ size: 8 });
@@ -23,16 +36,18 @@ export class SpdToolbar extends Container {
 	/** Java's armor-ability button: the class armor's `AC_ABILITY` action, shown while the hero has
 	 * an ability chosen, carrying its name and charge percent the way `ClassArmor.status()` does. */
 	private readonly armorAbilityButton: SpdButton;
+	private readonly quickslots: SpdButton[] = [];
 	private readonly rowWidth = 174;
 	private zoom = 2;
 	/** Both contextual buttons stack above the toolbar row - Preparation at `-19`, the armor
-	 *  ability above it at `-40` - so what the interface layout has to clear is the *highest* visible
-	 *  button's own top edge, not one row per button. Counting a row each would reserve 21 units for
-	 *  a button whose box reaches 40 above the row, and the game log is anchored off this number
-	 *  (`positionInterface`), so the newest lines would land underneath the armor button. */
+	 *  ability above it at `-40`, quickslots at `-62` - so what the interface layout has to
+	 *  clear is the *highest* visible button's own top edge, not one row per button. Counting
+	 *  a row each would reserve 21 units for a button whose box reaches 40 above the row, and
+	 *  the game log is anchored off this number (`positionInterface`), so the newest lines
+	 *  would land underneath the armor button. */
 	get occupiedHeight(): number {
 		let contextual = 0;
-		for (const button of [this.preparationButton, this.armorAbilityButton]) {
+		for (const button of [this.preparationButton, this.armorAbilityButton, ...this.quickslots]) {
 			if (button.visible) contextual = Math.max(contextual, -button.y);
 		}
 		return (this.extras.visible ? 143 : 26) * this.zoom + contextual * this.zoom;
@@ -84,7 +99,15 @@ export class SpdToolbar extends Container {
 		add('inventory', 'port.action.bag', 0, 24, 26, new Sprite(crop(160, 0, 16, 16)));
 		add('search', 'port.action.search', 44, 20, 26, new Sprite(crop(192, 0, 16, 16)));
 		add('wait', 'port.action.wait', 24, 20, 26, new Sprite(crop(176, 0, 16, 16)));
-		const extraActions = [['examine', 'port.action.examine'], ['upgrade', 'port.action.upgrade'], ['talents', 'port.action.talents'], ['journal', 'windows.wndkeybindings.journal'], ['gameMenu', 'windows.wndkeybindings.menu'], ['save', 'port.action.save'], ['load', 'port.action.load']];
+		//Java's four `QuickslotButton`s sit above the row; each uses its assigned item on tap.
+		for (let slot = 0; slot < 4; slot++) {
+			const button = new SpdButton({ width: 22, height: 22, text: `Q${slot + 1}`, onClick: () => onAction(`quickslot${slot}`) });
+			button.position.set(this.rowWidth - 110 + slot * 24, -62);
+			button.visible = false;
+			this.actions.addChild(button);
+			this.quickslots.push(button);
+		}
+		const extraActions = [['examine', 'port.action.examine'], ['upgrade', 'port.action.upgrade'], ['talents', 'port.action.talents'], ['weaponAbility', 'port.action.ability'], ['journal', 'windows.wndkeybindings.journal'], ['gameMenu', 'windows.wndkeybindings.menu'], ['save', 'port.action.save'], ['load', 'port.action.load']];
 		extraActions.forEach(([action, key], i) => {
 			const button = new SpdButton({ width: 100, height: 21, text: t(key), onClick: () => {
 				this.extras.visible = false;
@@ -121,9 +144,28 @@ export class SpdToolbar extends Container {
 		const changed = this.armorAbilityButton.visible !== (label !== null) || this.armorAbilityLabel !== label;
 		if (label !== null) this.armorAbilityButton.setText(label);
 		this.armorAbilityButton.visible = label !== null;
-		this.armorAbilityLabel = label;
-		this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible;
+		this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible
+			|| this.quickslots.some((button) => button.visible);
 		return changed;
 	}
 	private armorAbilityLabel: string | null = null;
+
+	/** Reflects the scene's four quickslot assignments. Returns whether layout must move. */
+	setQuickslots(slots: readonly (QuickslotState | null)[]): boolean {
+		let changed = false;
+		for (let i = 0; i < 4; i++) {
+			const state = slots[i] ?? null;
+			const button = this.quickslots[i];
+			if (!button) continue;
+			const visible = state !== null && state.quantity > 0;
+			const label = state ? `${state.id.slice(0, 4)}${state.quantity > 1 ? `×${state.quantity}` : ''}` : `Q${i + 1}`;
+			if (button.visible !== visible) { button.visible = visible; changed = true; }
+			button.setText(label);
+		}
+		if (changed) {
+			this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible
+				|| this.quickslots.some((button) => button.visible);
+		}
+		return changed;
+	}
 }

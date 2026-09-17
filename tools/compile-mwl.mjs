@@ -133,7 +133,7 @@ function validateHookReferences() {
 const GROUND_ITEM_KINDS = new Set([
   'dewdrop', 'stone', 'potion', 'scroll', 'meat', 'gold', 'armor', 'wand', 'food', 'seed',
   'darkGold', 'dwarfToken', 'amulet', 'ring', 'crystalKey', 'ironKey', 'goldenKey', 'bomb',
-  'corpseDust', 'candle', 'embers', 'ankh', 'stylus', 'brokenSeal', 'honeypot', 'alchemize', 'bag', 'sandBag',
+  'corpseDust', 'candle', 'embers', 'ankh', 'stylus', 'brokenSeal', 'honeypot', 'alchemize', 'bag', 'sandBag', 'torch',
 ]);
 function validateLootKindReferences() {
   for (const row of tableRows('monsterLoot')) {

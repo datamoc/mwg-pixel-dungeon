@@ -8,19 +8,35 @@
  * `trueLevel()` must reach the recorded threshold, or the stack crumbles to dust (ITEM sound,
  * `pickupDelay` spent, the `dust` warning, quantity zeroed) instead of merging.
  *
- * This port's missiles are fungible class ammo (`main.ts`'s `ammo`/`missileLevel`), not distinct
- * stacks, so sets are small sequential ids minted by the scene (no RNG draw at all, unlike Java's
- * `SecureRandom`): the wielded pile's own set, fresh sets for scattered/missed heaps. The scene
- * owns the counter and the threshold map; these two functions are the pure rule it calls, so the
- * pickup branch and the upgrade hook stay testable headlessly (see `tools/verifyItemWorkflows.mjs`).
+ * **Carried stacks carry their own identity (2026-09-16), reversing this port's earlier fungible
+ * model.** A bag entry for a missile is `{ id: 'missile_<class>' (tipped darts: `tippedSeed`
+ * naming the seed), sourceClass, level, durability, maxDurability, missileSet, instanceId }`,
+ * and the wielded pile (`ammo`/`missileLevel`/`ammoSetId`/`ammoDurability` in the scene) is simply the stack the hero is currently holding -
+ * Java's `Hero.belongings.weapon`. Wielding moves the *whole* stack into the pile and stashes
+ * whatever was in the pile back into the bag under its own identity, which is Java's swap
+ * (`belongings.weapon = w` with the old weapon returned to the backpack).
  *
- * Deliberately not reproduced: `extraThrownLeft` (reset on a valid pickup) has no expression in
- * this port's ammo model, and neither do the tracker's other three consumers - LiquidMetal
- * crafting's set-consumed bookkeeping (alchemy brews from fungible bag ids here), the
- * Shopkeeper's own `pickupValid` read (shop stock never carries missile sets), and the
- * reforge's set retirement (`WndBlacksmith`'s `levelThresholds.put(setID, MAX_VALUE)` on the
- * consumed missile - bag stacks carry no set id, and the reforge picker only offers
- * weapon/armor payloads, so no missile can be the consumed item; see `openBlacksmithReforge`).
+ * The identity has to do double duty, because that is the only way to reproduce
+ * `MissileWeapon.isSimilar` (`trueLevel() == item.trueLevel() && getClass() == item.getClass() &&
+ * setID == item.setID`) through a framework whose merge key is `(id, instanceId)`:
+ * `missileStackId(setId, level)` is `"<setId>:<level>"`, so two stacks merge only when both
+ * their set and their level agree. Tipped darts additionally carry `tippedSeed`, which joins
+ * the merge key the same way Java's dart class + seed does. Two separately-minted stacks
+ * always differ, since a set id is drawn from the scene's own per-instance counter
+ * (`newItemInstanceId('missile')`, run-seed + serial - the same source every other instance id in
+ * this port comes from, and stable across save/load). Java draws a random `SecureRandom().nextLong()`
+ * instead; the port draws no RNG at all, which is the same deliberate divergence the seed stacks
+ * already make (see `generatedInventoryItem`'s `seed:<class>` key).
+ *
+ * The scene owns the counter and the threshold map; the functions below are the pure rules it
+ * calls, so the pickup branch and the upgrade hook stay testable headlessly (see
+ * `tools/verifyItemWorkflows.mjs`).
+ *
+ * Deliberately not reproduced: LiquidMetal crafting's set-consumed bookkeeping (alchemy
+ * brews from fungible bag ids here) and the Shopkeeper's own `pickupValid` read (shop stock
+ * never carries missile sets). `extraThrownLeft` IS modelled: a carried stack records whether
+ * it holds more than Java's `defaultQuantity()` refill, reset on a valid pickup and on every
+ * upgrade, and the shop's sell window warns on it (`WndTradeItem.thrown_dust`).
  */
 import { MWL_MISSILE_BY_CLASS, MWL_MISSILE_UPGRADE_RULES } from '../mwlContent';
 
@@ -72,6 +88,48 @@ export const BOOMERANG_RETURN_TURNS = 5;
 export const BOOMERANG_RETURN_ACC_FACTOR = 1.5;
 
 /**
+ * `TippedDart.types` (`items/weapon/missiles/darts/TippedDart.java:198-209`, tag `v3.3.8`):
+ * all 12 `Plant.Seed` classes tip a dart, each with its own dart class. The seed side is the
+ * carried `seed:<class>` payload's class (lower-cased); the dart side is the catalogue key
+ * suffix under `items.weapon.missiles.darts.*` (each desc names its own seed compound, which
+ * is what pins this mapping). `Dart` itself (the plain untipped dart) has no entry here:
+ * this port stocks and throws only tipped darts, matching what the shop sells.
+ */
+export const TIPPED_DART_BY_SEED: Readonly<Record<string, string>> = {
+	blindweed: 'blindingdart',
+	firebloom: 'incendiarydart',
+	icecap: 'chillingdart',
+	sorrowmoss: 'poisondart',
+	earthroot: 'paralyticdart',
+	fadeleaf: 'displacingdart',
+	rotberry: 'rotdart',
+	starflower: 'holydart',
+	stormvine: 'shockingdart',
+	sungrass: 'healingdart',
+	mageroyal: 'cleansingdart',
+	swiftthistle: 'adrenalinedart',
+};
+
+/** Catalogue key suffix for a tipped stack's own name (`items.weapon.missiles.darts.*`). */
+export function tippedDartNameKey(seedClass: string | undefined): string {
+	const dart = (seedClass ?? '').toLowerCase();
+	const tip = TIPPED_DART_BY_SEED[dart];
+	return `items.weapon.missiles.darts.${tip ?? 'dart'}.name`;
+}
+
+/**
+ * `TippedDart.durabilityPerUse()` with `Talent.DURABLE_TIPS`: the use cost is divided by
+ * `1 + points` (2x/3x/4x total durability at ranks 1-3) while a Warden throws tipped darts.
+ * `Rotberry`'s rot dart is exempt - its desc states its durability cannot be boosted - and
+ * it lasts longer than other darts outright (double uses here, a stated simplification of
+ * whatever Java's own longer life is).
+ */
+export function tippedDartUseDivisor(seedClass: string | undefined, wardenTipsRank: number, isWarden: boolean): number {
+	if ((seedClass ?? '').toLowerCase() === 'rotberry') return 1;
+	return isWarden ? 1 + Math.max(0, wardenTipsRank) : 1;
+}
+
+/**
  * `MissileWeapon.adjacentAccFactor(owner, target)` (tag `v3.3.8`): the ranged accuracy factor every
  * thrown weapon and the spirit bow carry, and the *only* thing `Talent.POINT_BLANK` does in Java.
  *
@@ -100,8 +158,8 @@ export function missileAdjacentAccFactor(adjacent: boolean, ownerIsHero: boolean
  * and per-level increments are content metadata; hit resolution and durability remain TS.
  */
 export function missilePickupValid(
-	thresholds: ReadonlyMap<number, number> | undefined,
-	setId: number | undefined,
+	thresholds: ReadonlyMap<string, number> | undefined,
+	setId: string | undefined,
 	level: number,
 ): boolean {
 	if (thresholds === undefined || setId === undefined) return true;
@@ -112,11 +170,66 @@ export function missilePickupValid(
 
 /** Java's `upgrade()` recording: `levelThresholds[setID] = trueLevel()+1`, immutably. */
 export function recordMissileUpgrade(
-	thresholds: ReadonlyMap<number, number>,
-	setId: number,
+	thresholds: ReadonlyMap<string, number>,
+	setId: string,
 	level: number,
-): Map<number, number> {
+): Map<string, number> {
 	const next = new Map(thresholds);
 	next.set(setId, level);
 	return next;
+}
+
+/** `MissileWeapon.MAX_DURABILITY` (tag `v3.3.8`): the 100-point wear scale `ammoDurability` and
+ * every carried stack's `durability` are measured on. */
+export const MISSILE_MAX_DURABILITY = 100;
+
+/**
+ * `MissileWeapon.defaultQuantity()` (tag `v3.3.8`): the stack size `upgrade()` refills the stack
+ * to - **3**, for every authored missile. The only other overrides in the tree are the spirit bow's
+ * arrows and the `Dart` family; darts now exist here (`TippedDart`) and share the default 3,
+ * which is Java's own value for them unless its override says otherwise (stated simplification -
+ * see the `missiles.mwl` row).
+ *
+ * Java *assigns* it (`quantity = defaultQuantity()`), which also **shrinks** a bigger stack: a
+ * stack of twelve upgraded becomes three. That is a straight loss to the player for no modelled
+ * reason, so this port raises the stack to three instead of resetting it - a deliberate divergence,
+ * recorded in `PORT_COVERAGE.md`'s `MissileWeapon` row.
+ */
+export const MISSILE_DEFAULT_QUANTITY = 3;
+
+/**
+ * The identity of a carried missile stack: `"<setId>:<level>"`, used as the bag entry's
+ * `instanceId`. Both halves are needed - the set alone would let an upgraded stack merge back
+ * into the un-upgraded one it came from, and the level alone would let two different sets merge
+ * (see the module header for why the framework's `(id, instanceId)` merge key needs both).
+ * Tipped darts append their seed (`"<setId>:<level>:<seed>"`): two tips of one set and level
+ * must not merge, the same way Java's dart class keeps them apart.
+ */
+export function missileStackId(setId: string, level: number, tippedSeed?: string): string {
+	return tippedSeed === undefined ? `${setId}:${level}` : `${setId}:${level}:${tippedSeed.toLowerCase()}`;
+}
+
+/** A freshly minted carried missile stack's own fields, ready to spread into a payload: the set
+ * and identity above, its own level, and full durability. `setId` comes from the scene's instance
+ * counter (`newItemInstanceId('missile')`) so it is unique per stack and survives a save. */
+export function missileStackFields(setId: string, level: number, tippedSeed?: string): {
+	missileSet: string; instanceId: string; level: number; durability: number; maxDurability: number;
+} {
+	return {
+		missileSet: setId,
+		instanceId: missileStackId(setId, level, tippedSeed),
+		level,
+		durability: MISSILE_MAX_DURABILITY,
+		maxDurability: MISSILE_MAX_DURABILITY,
+	};
+}
+
+/**
+ * `MissileWeapon.extraThrownLeft` (`WndTradeItem`'s `thrown_dust` warning, tag `v3.3.8`).
+ * Java sets it when an upgraded stack holds more than `defaultQuantity()` refills leave behind;
+ * this port recomputes it as `quantity > MISSILE_DEFAULT_QUANTITY` on a stack whose level is
+ * above 0. Reset on every valid pickup and every upgrade (see `missileStackFields` callers).
+ */
+export function missileExtraThrownLeft(quantity: number, level: number): boolean {
+	return level > 0 && quantity > MISSILE_DEFAULT_QUANTITY;
 }

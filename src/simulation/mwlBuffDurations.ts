@@ -37,6 +37,8 @@ export const BUFF_DURATION_DATA = {
   "wayward": 10,
   "charm": 10,
   "lethalHasteCooldown": 100,
+  "light": 250,
+  "invulnerability": 3,
   "feintConfusion": 2,
   "counterAbility": 3
 } as const;

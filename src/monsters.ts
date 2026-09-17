@@ -50,6 +50,7 @@ export type MonsterId =
 	| 'ghost'
 	| 'wandmaker'
 	| 'shopkeeper'
+	| 'impShopkeeper'
 	| 'blacksmith'
 	| 'imp'
 	| 'ghoul'

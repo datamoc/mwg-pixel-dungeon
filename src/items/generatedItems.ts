@@ -1,4 +1,5 @@
 import { MWL_CONSUMABLE_CLASS_TO_ID, MWL_MISSILE_BY_CLASS, MWL_RING_CLASS_TO_ID, mwlItemEffectValue, mwlItemNeedsInstance } from '../mwlContent';
+import { missileStackFields } from './missiles';
 import { setupSpellbookScrolls } from './artifactActions';
 import { ENCHANT_TABLE, GLYPH_TABLE } from './itemAffixes';
 import { rollGeneratedAffix } from './itemKinds';
@@ -57,6 +58,12 @@ export function generatedInventoryItem(generated: GenItem, context: GeneratedIte
 	// the generic `seed` id alone would merge Sungrass and Rotberry and make alchemy unable to
 	// recover which potion each seed represents.
 	const seedInstanceId = id === 'seed' ? `seed:${generated.cls.toLowerCase()}` : undefined;
+	//A generated missile stack carries its own set id and level, exactly like a floor-looted one
+	//(see `src/missiles.ts`'s header) - without this, every generated missile of a class would
+	//merge into one fungible pile, which is the simplification this identity reverses.
+	const missileFields = MWL_MISSILE_BY_CLASS.has(generated.cls)
+		? missileStackFields(context.newItemInstanceId('missile'), generated.level ?? 0)
+		: {};
 	return {
 		id, quantity: generated.quantity, level: generated.level,
 		...(tier === undefined ? {} : { tier }),
@@ -67,5 +74,7 @@ export function generatedInventoryItem(generated: GenItem, context: GeneratedIte
 		...(id === 'spellbook' ? { scrolls: setupSpellbookScrolls() } : {}),
 		cursed: generated.cursed, affix, identified: false, sourceClass: generated.cls,
 		instanceId: seedInstanceId ?? (mwlItemNeedsInstance(id) ? context.newItemInstanceId(id) : undefined),
+		//last, so a missile stack's own identity wins over the generic per-instance id above
+		...missileFields,
 	};
 }

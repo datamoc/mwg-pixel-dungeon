@@ -481,6 +481,25 @@
     image: "assets/shopkeeper.png",
   },
   {
+    // `ImpShopkeeper.java`: a `Shopkeeper` subclass with `ImpSprite`, standing on the Imp
+    // shop's pedestal once `CityBossLevel.unseal()` spawns it. Same unkillable stand-in
+    // stats as every other NPC here; the trade window and flee behavior are the
+    // shopkeeper's, the greeting yell is its own (see `checkImpShopkeeperGreeting`).
+    tag: "monster",
+    id: "impShopkeeper",
+    name: "actors.mobs.npcs.impshopkeeper.name",
+    hp: 999999,
+    accuracy: 0,
+    evasion: 999999,
+    damage_min: 0,
+    damage_max: 0,
+    armor_min: 0,
+    armor_max: 0,
+    experience: 0,
+    max_level: 0,
+    image: "assets/demon.png",
+  },
+  {
     tag: "monster",
     id: "blacksmith",
     name: "actors.mobs.npcs.blacksmith.name",

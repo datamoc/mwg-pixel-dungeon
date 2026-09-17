@@ -51,11 +51,8 @@ export const CLASS_TALENTS: Record<ClassId, TalentDefinition[][]> = Object.fromE
  *   ranged attack mode now reuses only that enchantment branch for the talent roll, while
  *   melee-only hero bonuses remain gated out.
  * - `durable_tips`: `use /= (1 + points)` on `TippedDart.durabilityPerUse()` (2x/3x/4x total
- *   durability at rank 1/2/3) - but this port has no `TippedDart` item at all (no
- *   poison/fire/etc-tipped dart type exists), and Huntress/Warden's own special ability is
- *   the SpiritBow (`'shoot'`), never a `'throw'` action in `useSpecial` - there is no dart-
- *   throwing code path to attach this multiplier to. Needs the tipped-dart item type built
- *   first, not a formula change. */
+ *   durability at rank 1/2/3) - live in `missileDurabilityCost()` via `tippedDartUseDivisor`
+ *   (rot darts exempt, per their desc), now that the `TippedDart` item exists. */
 export const SUBCLASS_TALENTS: Record<string, string[]> = Object.fromEntries(SUBCLASS_TALENT_ENTRIES);
 
 export function subclassTalentDefinitions(subclass: string, classId: ClassId): TalentDefinition[] {

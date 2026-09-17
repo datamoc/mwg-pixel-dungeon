@@ -33,13 +33,15 @@ export interface FloorState {
 	corrosiveGasStrength?: number;
 	/** `ConfusionGas` volume field. */
 	confusionGas?: FireState;
+	/** `Web` volume field: Spinner webs decay 1/turn without diffusing. */
+	web?: FireState;
 	eternalFire?: FireState;
 	sacrificialFire?: FireState;
 	sacrificialFireCharge?: number;
 	sacrificialFireCell?: number;
 	sacrificialFirePrize?: GroundItem['item'];
 	portedFeatures?: { cells: [number, string][] };
-	groundItems: { kind: GroundItemKind; x: number; y: number; item?: GroundItem['item']; chest?: 'normal' | 'locked' | 'crystal'; forSale?: boolean; missileLevel?: number; missileSet?: number }[];
+	groundItems: { kind: GroundItemKind; x: number; y: number; item?: GroundItem['item']; chest?: 'normal' | 'locked' | 'crystal'; forSale?: boolean; missileLevel?: number; missileSet?: string; tippedSeed?: string }[];
 	fallingRocks?: { cells: { x: number; y: number }[]; turns: number }[];
 	cavesBossEnergyCells?: number[];
 	manualPlants?: [number, string][];
@@ -113,6 +115,7 @@ export interface SavedCreature {
 	hasteBaseSpeed?: number;
 	skeletonIndex?: number;
 	firstSummon?: boolean;
+	impShopkeeperGreeted?: boolean;
 	nextTurn: number | null;
 	isAlly?: boolean;
 	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'afterImage';

@@ -94,7 +94,10 @@ export interface Creature extends Combatant {
 	/** `WandOfLivingEarth.EarthGuardian`'s persistent wand level and hero-derived defense. */
 	earthGuardianWandLevel?: number;
 	earthGuardianDefense?: number;
-	npcKind?: 'ghost' | 'wandmaker' | 'shopkeeper' | 'blacksmith' | 'imp' | 'ratKing';
+	npcKind?: 'ghost' | 'wandmaker' | 'shopkeeper' | 'blacksmith' | 'imp' | 'ratKing' | 'impShopkeeper';
+	/** `ImpShopkeeper.seenBefore`: the first-sight greeting yell fires once. Persisted like
+	 *  every other creature flag below (see `captureActiveFloor`). */
+	impShopkeeperGreeted?: boolean;
 	/** GnollTrickster.combo: attacks escalate the longer it keeps hitting */
 	combo?: number;
 	/** GreatCrab.moving: only really advances every 3rd turn */
@@ -257,10 +260,17 @@ export interface GroundItem extends Step {
 	 * other heap - including pre-rule saves, which therefore stay always-valid pickups.
 	 */
 	missileLevel?: number;
-	missileSet?: number;
+	missileSet?: string;
+	/** A scattered tipped-dart heap's tip seed (`TippedDart` only) - same side channel as the set. */
+	tippedSeed?: string;
 	/** Concrete inventory payload; absent only for legacy scripted/cosmetic drops. */
 	item?: { id: string; quantity: number; level?: number; tier?: number; sandBags?: number; charges?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; instanceId?: string; sourceClass?: string;
 		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean;
+		/** A carried missile stack's own set id (see `src/missiles.ts`) - the legend half of its
+		 * `instanceId`, on the payload because that is what a picked-up heap carries into the bag. */
+		missileSet?: string;
+		/** A tipped dart stack's seed (`TippedDart` only) - same side channel as the set id. */
+		tippedSeed?: string;
 		/** `Bomb.Fuse`: lit bombs count down 2 hero turns on the ground, then detonate. */
 		fuseTurns?: number;
 		/** `Noisemaker.NoisemakerFuse`: after its fuse burns out the bomb arms instead of

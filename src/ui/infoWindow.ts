@@ -1,18 +1,20 @@
-import { Container, Graphics, Rectangle } from 'mwg/two-d/pixi-interop';
+import { Rectangle } from 'mwg/two-d/pixi-interop';
+import { Window } from 'mwg';
 import { SpdLabel as Label } from './spdLabel';
 import { spdPanel } from './spdPanel';
 import { SpdButton } from './spdButton';
 import { t } from '../i18n';
 
 /** WndHero/WndInfo-style modal with a native-pixel chrome border and stat rows. */
-export class InfoWindow extends Container {
-	private dim = new Graphics();
-	private panel = new Container();
+export class InfoWindow extends Window {
+	private panel = this.content;
 	private panelHeight = 100;
-	constructor() { super(); this.visible = false; this.addChild(this.dim, this.panel); this.dim.eventMode = 'static'; this.dim.on('pointerdown', () => { this.visible = false; }); }
+	constructor() { super({ width: 182, height: 132, anchor: 'center', blocker: true }); }
 	show(title: string, rows: [string, string][], width: number, height: number): void {
 		this.panel.removeChildren().forEach(c => c.destroy({ children: true }));
 		this.panelHeight = 44 + rows.length * 13;
+		this.setTitle(title);
+		this.resize(182, this.panelHeight + 32);
 		this.panel.eventMode = 'static';
 		this.panel.hitArea = new Rectangle(0, 0, 166, this.panelHeight);
 		this.panel.addChild(spdPanel(166, this.panelHeight));
@@ -22,13 +24,11 @@ export class InfoWindow extends Container {
 			const amount = new Label({ text: value, size: 7, color: 0xffff44 }); amount.anchor.set(1, 0); amount.position.set(158, label.y);
 			this.panel.addChild(label, amount);
 		});
-		const close = new SpdButton({ width: 150, height: 16, text: t('port.window.close'), onClick: () => { this.visible = false; } });
+		const close = new SpdButton({ width: 150, height: 16, text: t('port.window.close'), onClick: () => this.close() });
 		close.position.set(8, this.panelHeight - 21); this.panel.addChild(close);
-		this.visible = true; this.layout(width, height);
+		this.place(width, height);
 	}
 	layout(width: number, height: number): void {
-		const zoom = Math.max(1, Math.min(3, Math.floor(Math.min((width - 16) / 166, (height - 16) / this.panelHeight))));
-		this.dim.clear().rect(0, 0, width, height).fill({ color: 0x000000, alpha: 0.5 });
-		this.panel.scale.set(zoom); this.panel.position.set(Math.floor((width - 166 * zoom) / 2), Math.floor((height - this.panelHeight * zoom) / 2));
+		this.place(width, height);
 	}
 }
