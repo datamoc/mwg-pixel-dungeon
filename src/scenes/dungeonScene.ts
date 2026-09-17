@@ -2566,6 +2566,7 @@ export class DungeonScene extends Scene2D {
 				deathMarkTurns: creature.deathMarkTurns,
 				deathMarkInitialHp: creature.deathMarkInitialHp,
 				patrolTarget: creature.patrolTarget ? { ...creature.patrolTarget } : undefined,
+				lastSeen: creature.lastSeen ? { ...creature.lastSeen } : undefined,
 				mimicRevealed: creature.mimicRevealed,
 				hasteTurns: creature.hasteTurns, hasteBaseSpeed: creature.hasteBaseSpeed,
 				hasRaged: creature.hasRaged, raged: creature.raged, chainUsed: creature.chainUsed,
@@ -2707,6 +2708,7 @@ export class DungeonScene extends Scene2D {
 				deathMarkTurns: saved.deathMarkTurns,
 				deathMarkInitialHp: saved.deathMarkInitialHp,
 				patrolTarget: saved.patrolTarget ? { ...saved.patrolTarget } : undefined,
+				lastSeen: saved.lastSeen ? { ...saved.lastSeen } : undefined,
 				mimicRevealed: saved.mimicRevealed ?? Boolean(saved.stolen),
 				hasteTurns: saved.hasteTurns, hasteBaseSpeed: saved.hasteBaseSpeed,
 				hasRaged: saved.hasRaged, raged: saved.raged, chainUsed: saved.chainUsed,
@@ -8893,7 +8895,10 @@ export class DungeonScene extends Scene2D {
 		//(Mob.java, tag v3.3.8). The port has no separate WANDERING state, so the persisted
 		//`seesHero` edge is the equivalent just-alerted marker; a failed roll holds the mob
 		//in place for this turn, while an already-aware mob continues its normal hunt.
-		if (monster.seesHero && !wasSeen && monster.kind !== 'sentry') {
+		//A mob that is already hunting (`lastSeen` set) re-acquires without a roll - Java
+		//only rolls on the WANDERING-state transition; HUNTING mobs just refresh their target.
+		//A mob that gave up (`lastSeen` cleared) rolls again, like a first acquisition.
+		if (monster.seesHero && !wasSeen && monster.lastSeen === undefined && monster.kind !== 'sentry') {
 			const detectionDistance = Roguelike.chebyshevDistance(monster, this.hero);
 			const detectionRange = detectionDistance / 2 + this.heroStealth();
 			if (detectionRange >= 1 && Random.float(detectionRange) >= 1) {
@@ -9696,9 +9701,50 @@ export class DungeonScene extends Scene2D {
 	 * the live pathfinder and terrain queries together, while the caller remains responsible for
 	 * the subsequent ranged/hostile fallback.
 	 */
+	/** Blocked cells for unscripted monster steps: every other creature plus eternal-fire
+	 * cells, with piranhas additionally confined to water. Patrol destinations keep the
+	 * hero steppable (their validity already excluded occupied cells); last-known pursuit
+	 * blocks every creature including the hero (a mob cannot step onto its target's cell,
+	 * matching Java's `getCloser` failing on occupation). */
+	private wanderBlocked(monster: Creature, blockHeroCell: boolean): Set<number> {
+		const blocked = new Set(
+			this.creatures.filter((c) => c !== monster && (blockHeroCell || c !== this.hero))
+				.map((c) => this.level.index(c.x, c.y)),
+		);
+		this.eternalFireBlockedInto(blocked);
+		if (monster.kind === 'piranha') {
+			const heroCell = this.level.index(this.hero.x, this.hero.y);
+			for (let cell = 0; cell < this.level.cellCount; cell++) {
+				if (this.level.terrain[cell] !== WATER && (blockHeroCell || cell !== heroCell)) blocked.add(cell);
+			}
+		}
+		return blocked;
+	}
+	
 	private takeWanderingTurn(monster: Creature): boolean {
 		if (monster.seesHero || monster.kind === 'dm201'
-			|| Roguelike.chebyshevDistance(monster, this.hero) === 1) return false;
+			|| Roguelike.chebyshevDistance(monster, this.hero) === 1) {
+			//`Mob.Hunting`: the target refreshes to the enemy's cell every turn it is seen.
+			if (monster.seesHero) monster.lastSeen = { x: this.hero.x, y: this.hero.y };
+			return false;
+		}
+		//`Mob.Hunting` with an unseen enemy paths to the last cell where it saw the hero;
+		//reaching it unseen, or finding it unreachable, gives up to wandering - `showLost`
+		//has no presentation here, so the turn is simply spent. Fleeing mobs never pursue
+		//(Fleeing is its own state in Java).
+		if (monster.lastSeen && !monster.fleeing) {
+			if (monster.x !== monster.lastSeen.x || monster.y !== monster.lastSeen.y) {
+				const next = this.pathfinder.find(
+					{ x: monster.x, y: monster.y }, monster.lastSeen, { blocked: this.wanderBlocked(monster, true) },
+				)[0];
+				if (next) {
+					this.moveTo(monster, next);
+					return true;
+				}
+			}
+			monster.lastSeen = undefined;
+			return true;
+		}
 		const target = monster.patrolTarget;
 		const targetValid = target
 			&& this.level.inside(target.x, target.y)
@@ -9712,17 +9758,8 @@ export class DungeonScene extends Scene2D {
 			monster.patrolTarget = undefined;
 			return true;
 		}
-		const patrolBlocked = new Set(
-			this.creatures.filter((c) => c !== monster && c !== this.hero).map((c) => this.level.index(c.x, c.y))
-		);
-		this.eternalFireBlockedInto(patrolBlocked);
-		if (monster.kind === 'piranha') {
-			for (let cell = 0; cell < this.level.cellCount; cell++) {
-				if (this.level.terrain[cell] !== WATER && cell !== this.level.index(this.hero.x, this.hero.y)) patrolBlocked.add(cell);
-			}
-		}
 		const next = this.pathfinder.find(
-			{ x: monster.x, y: monster.y }, monster.patrolTarget, { blocked: patrolBlocked }
+			{ x: monster.x, y: monster.y }, monster.patrolTarget, { blocked: this.wanderBlocked(monster, false) }
 		)[0];
 		if (next) this.moveTo(monster, next);
 		else if (monster.kind === 'golem' && this.depth !== 20
@@ -10201,6 +10238,7 @@ export class DungeonScene extends Scene2D {
 		wraith.hp = wraith.maxHp = 1;
 		wraith.sleeping = false;
 		wraith.seesHero = true;
+		wraith.lastSeen = { x: this.hero.x, y: this.hero.y };
 		this.scheduler.remove(wraith);
 		this.scheduler.add(wraith, 2);
 		return wraith;
@@ -13225,7 +13263,10 @@ export class DungeonScene extends Scene2D {
 		//presentation and the 13 flavour lines remain UI gaps.
 		if (affix === 'annoying' && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
 			for (const creature of this.creatures) {
-				if (!creature.isHero && !creature.isNPC && creature.hp > 0) creature.seesHero = true;
+				if (!creature.isHero && !creature.isNPC && creature.hp > 0) {
+					creature.seesHero = true;
+					creature.lastSeen = { x: this.hero.x, y: this.hero.y };
+				}
 			}
 			delete this.hero.buffs.invisibility;
 		}
@@ -14481,6 +14522,7 @@ export class DungeonScene extends Scene2D {
 		const minion = this.spawnMonster(kind, at);
 		minion.sleeping = false;
 		minion.seesHero = true;
+		minion.lastSeen = { x: this.hero.x, y: this.hero.y };
 		return true;
 	}
 
@@ -16223,6 +16265,7 @@ export class DungeonScene extends Scene2D {
 			if (c.isHero || c.isNPC) continue;
 			c.sleeping = false;
 			c.seesHero = true;
+			c.lastSeen = { x: this.hero.x, y: this.hero.y };
 		}
 	}
 

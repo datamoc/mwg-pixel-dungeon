@@ -112,6 +112,8 @@ export interface SavedCreature {
 	seesHero?: boolean;
 	fleeing?: boolean;
 	patrolTarget?: { x: number; y: number };
+	/** Java Mob.target while hunting: the last cell where the mob saw the hero. */
+	lastSeen?: { x: number; y: number };
 	mimicRevealed?: boolean;
 	hasteTurns?: number;
 	hasteBaseSpeed?: number;
