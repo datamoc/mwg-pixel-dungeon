@@ -34,10 +34,10 @@ export const CLASS_TALENTS: Record<ClassId, TalentDefinition[][]> = Object.fromE
 
 /** T3 nodes are the two Java HeroSubClass branches already exposed by Advancement.
  *
- * `durable_tips` (Warden) remains listed here as a real talent-tree entry but has no
- * effect yet because this port has no TippedDart item. `shared_enchantment` (Sniper) is
- * now wired in `main.ts`'s thrown-hit path with its real proc gate; it is kept in this
- * comment only to document the remaining dart gap, not as an unimplemented talent.
+ * `durable_tips` (Warden) is live in `missileDurabilityCost()` via `tippedDartUseDivisor`
+ * (rot darts exempt, per their desc). `shared_enchantment` (Sniper) is
+ * now wired in the thrown-hit path with its real proc gate (both live, both documented
+ * with their exact formulas below).
  * The distinction was found in the 2026-09-09 hero-progression audit
  * (matches ROADMAP.md section 6's own "Implement rune transfer and shared-enchantment
  * behavior" line). The two entries were checked against `MissileWeapon.java`/`TippedDart.java`

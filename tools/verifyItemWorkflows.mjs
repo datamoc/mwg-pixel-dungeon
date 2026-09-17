@@ -99,7 +99,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	const { Appearances } = require('./actors/Appearances.js');
 	const { transferEnhancement, upgradeItem, reverseCurseInfusion, curseInfusionLevelBonus } = require('./items/workflows.js');
 	const { transmuteItem } = require('./items/transmutation.js');
-	const { missileDamageRange, missilePickupValid, recordMissileUpgrade, missileAdjacentAccFactor, missileBaseUses, bolasCrippleTurns, tomahawkBleedRange, BOOMERANG_RETURN_TURNS, BOOMERANG_RETURN_ACC_FACTOR } = require('./items/missiles.js');
+	const { missileDamageRange, missilePickupValid, recordMissileUpgrade, missileAdjacentAccFactor, missileBaseUses, bolasCrippleTurns, tomahawkBleedRange, BOOMERANG_RETURN_TURNS, BOOMERANG_RETURN_ACC_FACTOR, tippedDartUseDivisor } = require('./items/missiles.js');
 	const { blacksmithTurnInFavor, BLACKSMITH_FAVOR_CAP, BLACKSMITH_QUEST_BOSS_BONUS } = require('./items/blacksmith.js');
 	// `MissileWeapon.baseUses` (tag `v3.3.8`): Java's field defaults to 8, and each class overrides
 	// it. It is a property of the *wielded missile class*, not the hero class - this port used to
@@ -131,6 +131,13 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	assert.equal(missileAdjacentAccFactor(true, true, 1), 0.75, 'Point Blank 1 is 0.5 + 0.25*1');
 	assert.equal(missileAdjacentAccFactor(true, true, 3), 1.25, 'Point Blank 3 is 0.5 + 0.25*3, a +10% bonus over baseline');
 	assert.equal(missileAdjacentAccFactor(true, false, 3), 0.5, 'Point Blank is the *hero* talent - a monster throwing at melee range stays at a flat 0.5');
+	// `TippedDart.durabilityPerUse()` with `Talent.DURABLE_TIPS` (tag `v3.3.8`):
+	// `use /= (1 + points)` while a Warden throws tipped darts (2x/3x/4x total durability).
+	assert.equal(tippedDartUseDivisor('firebloom', 1, true), 2, 'Warden rank 1 doubles tipped-dart durability');
+	assert.equal(tippedDartUseDivisor('firebloom', 3, true), 4, 'Warden rank 3 quadruples it');
+	assert.equal(tippedDartUseDivisor('firebloom', 0, true), 1, 'unranked Warden throws at full cost');
+	assert.equal(tippedDartUseDivisor('firebloom', 3, false), 1, 'a non-Warden gets no divisor');
+	assert.equal(tippedDartUseDivisor('rotberry', 3, true), 1, 'rot darts are exempt per their desc');
 	assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and the bow always have +50% accuracy at a distance');
 	assert.equal(missileAdjacentAccFactor(false, false, 0), 1.5, 'the +50% at distance is not hero-gated');
 	// `HeavyBoomerang` (tag `v3.3.8`): `CircleBack.setup` sets `left = 5`, and the return flight's

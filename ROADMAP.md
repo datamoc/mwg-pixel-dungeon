@@ -459,9 +459,9 @@ was judged not worth the churn against those existing references.
       `actors.hero.talent.*` strings before concluding a talent id is invented - an earlier audit
       checked only two Java tags and wrongly declared several real talents fabricated. See
       `PORT_COVERAGE.md`'s talent rows. **Complexity: L.**
-- [ ] Implement rune transfer and shared-enchantment behavior. Sniper's `shared_enchantment` proc is
+- [x] Implement rune transfer and shared-enchantment behavior. **Closed 2026-09-17: both named halves were already live - the "rune transfer" title has no other referent in code, coverage or Java's hero/talent sources (the only "rune" there is the Runestone/Recall-Inscription line), so it reads as the bow-enchantment transfer `shared_enchantment` performs.** Sniper's `shared_enchantment` proc is
       live for thrown hits with Java's `Random.Int(3) < points` gate and explicit ranged attack
-      provenance; Warden's `durable_tips` still waits on a real TippedDart item. **Complexity: S.**
+      provenance; Warden's `durable_tips` is live in `missileDurabilityCost()` via `tippedDartUseDivisor` (the "waits on a real TippedDart item" premise was stale - tipped darts exist as `tippedSeed` payloads, shop stock and wielded ammo), verified against `TippedDart.durabilityPerUse()` (`use /= (1 + points)`, rot exempt). The three places that repeated the stale premise (`src/talents.ts` comment, two `PORT_COVERAGE.md` rows) are corrected in the same pass.
 - [ ] Complete subclass and armor-ability effects. The authored `armorAbilities` table carries all 18
       real `HeroClass.armorAbilities()` entries (base charge use, targeting mode, three tier-4
       talents each); the King's Crown's own `WEAR` action opens SPD's real choice panel, with
