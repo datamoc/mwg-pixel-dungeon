@@ -415,16 +415,16 @@ was judged not worth the churn against those existing references.
       blob-DoT rows. **Complexity: M.**
 - [x] Port the Necromancer's skeleton heal/Adrenaline/teleport support behavior, plus `firstSummon`'s
       variable tick cost (browser-verified end-to-end through the real scheduler: a second summon
-      advanced its turn by exactly 2 versus 1 for the first). **Remaining**: the teleport destination
-      is any free neighbour of the hero rather than Java's closest-and-in-sight pick. See
+      advanced its turn by exactly 2 versus 1 for the first). **Correction 2026-09-17: nothing remains open here** - the teleport destination this line called 'any free neighbour' already picks Java's closest-and-in-sight cell (Euclidean, NEIGHBOURS8 tie order; the branch comment says so in past tense). The teleport destination
+      is Java's closest-and-in-sight pick. See
       `PORT_COVERAGE.md`.
 - [x] Port DM-200's hunting/venting override. Vents toxic gas along a line to the hero from range
       with the real distance-scaled odds, seed amounts and 30-turn cooldown. Browser-verified live.
-      **Not modeled**: the BFS-around-terrain reachability check and the closing-distance-failed vent
-      retry. See `PORT_COVERAGE.md`.
+      **Correction 2026-09-17**: the BFS-around-terrain reachability check and the closing-distance-failed vent retry this line called not modeled are both ported (`dm200CanVent`, `dm200HuntingTurn`).
+      See `PORT_COVERAGE.md`.
 - [x] Port Spinner's ranged web ability. Roots the hero directly on a clear ranged shot, gated by the
-      real 10-turn cooldown. Real Java instead predicts movement direction and seeds a persistent
-      3-cell `Web` terrain blob rather than a direct debuff - not modeled. Browser-verified live.
+      real 10-turn cooldown. **Correction 2026-09-17**: the persistent 3-cell `Web` terrain blob is ported - only movement-direction prediction is still not modeled. Real Java predicts movement direction and seeds
+      a persistent 3-cell `Web` terrain blob alongside the direct root (the root is the impact, the blob the aftermath). Browser-verified live.
 - [ ] Implement exact Tengu, DM-300, and other boss attack cycles. **Complexity: M.**
 - [x] Port rare monster variants' unique behaviors. Found and fixed a whole class of bug: a variant
       never inheriting its base kind's special mechanic because a check tested the literal `kind`
