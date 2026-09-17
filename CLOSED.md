@@ -2,7 +2,8 @@
 
 Fully checked-off sections of `ROADMAP.md`, moved out here to keep the working roadmap focused
 on open items. A section moves here only when *every* checkbox in it is `- [x]`; a section with
-even one remaining `- [ ]` stays in `ROADMAP.md`. Sections moved 2026-09-14 and 2026-09-15; see
+even one remaining `- [ ]` stays in `ROADMAP.md`. Sections moved 2026-09-14, 2026-09-15 and
+2026-09-16; see
 `ROADMAP.md`'s "This port's own release plan (news)" section for the versioning this feeds into.
 
 `tools/roadmap-progress.html` only reads `ROADMAP.md`, so items here no longer count toward its
@@ -918,3 +919,196 @@ Do not add new authored content as object literals or scattered constants in the
 > 0.14.0 documented the consumer packaging recipe the proposal asked for, including every
 > gotcha this item listed. The finding underneath still stands, which is why this repo carries
 > its own host: the framework's scaffolding is still not in its published `files` list.
+
+## 3. Port every boss level and boss script (closed 2026-09-16)
+
+Moved here from `ROADMAP.md` with all 15 checkboxes checked. Original body follows unchanged:
+
+- [x] Port the fixed Prison boss-floor layout at depth 10. **Correction, 2026-09-16: this was
+      ticked while the layout was in fact unwalkable.** Java's `Painter.fill(level, rect, ...)`
+      takes exclusive `right`/`bottom` edges, but this floor's rects were transcribed through an
+      inclusive helper - so `startCells[0]`'s border covered x=10 instead of stopping at x=9, and
+      deleted the level's entire one-cell hallway spine. The hero arrived in the entrance room and
+      could reach nothing else on the floor: not the start cells, not Tengu's door, not the boss.
+      Fixed by transcribing `setMapStart()` in Java's own exclusive-bounds form (the module's
+      `fillJavaRect`/`fillJavaRectInset`), which also restored the four doors between the hallway
+      and the flanking cells, the entrance room's own door, and the cell's real interior. Caught by
+      a flood fill from the arrival cell, which is now pinned in `tools/verifyVault.mjs` (per-cell
+      assertions had all stayed green over the broken map). Not ported, stated:
+      `addCagesToCells()`'s 5 `REGION_DECO` cells - decoration only, and this floor carries no RNG
+      stream of its own. See `PORT_COVERAGE.md`'s `PrisonBossLevel` row.
+- [x] Finish re-reading the other three fixed boss layouts against Java's own fills. **The arena
+      shapes are done** (2026-09-16): all three were being read inclusively, and two were the wrong
+      *kind* of shape. Java's `fillEllipse(rect, m)` is the rect's exclusive extent inset by `m`,
+      so the Caves arena is 23x23 and Tengu's is 13x13, not the 24x24/14x14 the port passed; and
+      `CityBossLevel` carves the King's throne room with `fillDiamond`, not `fillEllipse` - a
+      45-degree square whose corners are wall, 81 cells against the ellipse's ~154. Fixed through
+      new `fillEllipseRect`/`fillDiamondRect` helpers, verified live
+      (`tools/scratch/city-arena-livecheck.mjs`, 6/6: the live floor's walkable set *is* the
+      diamond, its bounding corners are chasm, and the King still spawns and acts over it) and
+      pinned in `verifyVault.mjs` against a blank map recomputed from Java's own arguments. That
+      also turned up a real gap in `gameBridge.ts`: `REGION_DECO`/`REGION_DECO_ALT` had no
+      `toGameTerrain` mapping at all, so the Caves' exit-corridor rails crashed level entry with
+      `no mapping for Terrain value 34` the moment they were painted - both now map to `floor`, and
+       the Caves rails are painted. **Closed 2026-09-16 including the decoration-only tail:**
+       the City's entrance room now paints Java's outer `WALL` ring, insets, two `BOOKSHELF`
+       columns, two `REGION_DECO` marks, three `STATUE` rows, `EMPTY_SP` spine, door and
+       entrance, and its arena paints the `fill(arena, 5, EMPTY_SP)`/`fill(arena, 6,
+       CUSTOM_DECO)` margins with statues and pedestals at Java's cells;
+       `new CityPainter().paint(this, null)`'s scatter runs at Java's position via
+       `cityDecorate.ts` (26 `EMPTY_DECO` / 12 `WALL_DECO` at seed 42, pinned in
+       `verifyVault.mjs`); the Halls arms roll Java's own `IntRange`s with all ten draws,
+       the three whole-floor passes run in order, and the room has Java's 11x11 `EMPTY`
+       ring, 26-cell `WALL_DECO` band (walkable 9x7) and inner `EMPTY`, with Java's own
+       rebuild-on-disconnect. **The tail**: `CustomGroundVisuals`/`CustomWallVisuals` are
+       transcribed into `cityBossVisuals.ts` (`city_boss.png` was vendored but never loaded)
+       with two scene layers and the three examine branches, pinned in `verifyVault.mjs`
+       (stairs run, throne rows, pedestals, skull piles, pillar pairs, shadow rows,
+       name-implies-drawn); and Prison's `addCagesToCells()` scatters Java's own five cells
+       off the `seedCurDepth()` substream (`spdSeedForDepth` *is* that seed, same scramble,
+       same call order - so these are Java's cells, not an approximation), re-rolled onto
+       each transition repaint the way the three Java call sites do, and pinned the same way.
+       Nothing open on this line.
+- [x] Port the fixed Caves/DM-300 boss-floor layout at depth 15. **Correction, 2026-09-16: this
+      floor's *base* terrain was wrong, and it was a hole out of the boss arena, not a look.** Java
+      fills every level whose `feeling` is not CHASM with `WALL` (`Level.setSize()`, and no boss
+      level sets a feeling), so the Caves arena is floor carved out of solid rock with the five
+      explicit chasm strips of `build()` as its only pits. This port built the whole floor over a
+      CHASM base instead, which left **34 walkable cells of the arena and its entrance corridor
+      next to a pit** where Java has wall (452 stray pits in total) - and since this port lets the
+      hero step into a chasm (`canStepOnto`'s pit branch), the hero could fall out of the boss
+      floor mid-fight. Fixed by the `WALL` base plus Java's own five strips painted in its own
+      order, which also brings the pit count from 584 to Java's 132. Pinned in `verifyVault.mjs`
+      (no pit outside Java's strips, no walkable cell bordering one - both proven load-bearing by
+      restoring the old base and watching them fail). **Found with it: the pickaxe gate was a depth
+      range, not Java's condition.** `Hero.java` 1913 mines only where
+      `Dungeon.level instanceof MiningLevel` - the mining *branch* - while this port allowed it on
+      every Caves depth 11-15, so the hero could tunnel through ordinary Caves floors and through
+      this arena's own walls. Now gated on `miningBranchActive`, that `instanceof`'s exact
+      equivalent here, with the pickaxe requirement kept; browser-verified live
+      (`tools/scratch/caves-mining-gate-livecheck.mjs`, 5/5: closed on a real depth-11 floor with a
+      real pickaxe and a real wall step that leaves the wall standing, open inside the branch where
+      the same wall comes down, and closed again on leaving). See `PORT_COVERAGE.md`'s Caves rows.
+- [x] Port the fixed City boss-floor layout at depth 20.
+- [x] Port the fixed Halls/Yog boss-floor layout at depth 25.
+- [x] Port the fixed final vault/endgame layout at depth 26.
+- [x] Port Prison/Tengu's real `START -> FIGHT_START` trigger, **and the `FIGHT_START` repaint it
+      turned out to depend on**. Tengu is now not a live actor at all until the hero's own move
+      lands past his locked door (`progress()`'s `case START:`, fired from `occupyCell`), spawned at
+      Java's `tenguCellCenter` (10,27) with the real free-neighbour fallback and the abandon-and-retry
+      when there is none; the door the iron key just opened is re-locked behind him, and
+      `populate()` no longer spawns him on entry. That re-lock only works because the two later
+      transitions reopen the door - so `enterTenguPauseMap()` now wires `setMapPause()` at the
+      half-health beat (the one map repaint this file previously claimed was done while
+      `prisonBossPause()` was called from nowhere), and the death transition re-places it for
+      `setMapEnd()`'s own walkable exit. Browser-verified on the built game with 15 assertions
+      (`tools/scratch/tengu-start-livecheck.mjs`): the hero *walks* from the arrival cell down the
+      hallway, spends a real iron key on the door, steps in and Tengu appears, and each of the three
+      transitions leaves its own destination reachable. See `PORT_COVERAGE.md`'s Tengu rows.
+      Still open, all previously-stated simplifications of this fight rather than new gaps: Java's
+      remove-then-re-add "he's vanished" beat during the pause, `clearEntities`' heap/mob/plant
+      destruction and `cleanMapState()`'s blob/trap clearing at each repaint (the dart traps are
+      deliberately kept), `seal()`'s own `LockedFloor` buff, the `BOSS_CHALLENGE` badge (tracked as its
+      own item in section 6 - it is not a stray flag, it is a whole unported badge rule), and the
+      wool/PUFF/music presentation.
+- [x] Port the remaining Caves/DM-300 arena decoration. **Done 2026-09-16**: the gate's
+      `CustomTilemap` dressing (`CityEntrance`, `EntranceOverhang`, `ArenaVisuals`) is now ported, so
+      the entrance region and the arena's wiring render as they do in Java instead of as bare tiles -
+      the sheet they draw from (`caves_boss.png`) was not even loaded before. Written up in
+      `PORT_COVERAGE.md`'s own `CavesBossLevel`'s three custom tilemaps` row; the pass also found and
+      fixed four real bugs on the way (two integer-division readings in the ported frame tables, the
+      pylon cells being force-painted `EMPTY`, which made `updateState()`'s whole pylon branch dead,
+      and the gate rect read inclusively - six gate cells where Java has five, which put one extra
+      cell into `activatePylon()`'s energy set). **The `CavesPainter` claim this line used to carry
+      was wrong twice over and is now corrected, not deleted:** there *is* a decoration pass to
+      reproduce - see the item directly below - and the entrance's EMPTY/EMPTY_SP/STATUE/EXIT fills
+      are not hand-matched rects but Java's own `Painter.fill` calls from `build()` transcribed one
+      for one. What remains of this item's *subject* is deliberate and recorded: Java's gate is solid
+      `CUSTOM_DECO` and blocks the exit corridor until `unseal()` breaks it, while this port's is
+      walkable from the start (`SIGN` -> floor) - kept even now that `unseal()` is ported (see the
+      auto-descent item below), since solidity would need a per-cell SOLID channel this port has
+      no form of. The gate's broken frames (`32..36`) appear at `unseal()` through the arena-visuals
+      re-map.
+- [x] Port `CavesPainter.decorate()`'s boss-floor pass, which decides this floor's floor-deco and ore
+      veins. **Done 2026-09-16.** It is two whole-level scans (an `EMPTY` cell with a wall neighbour
+      becomes `EMPTY_DECO` on `Random.Int(6) <= n`; `generateGold` paints `WALL_DECO` on
+      `Random.Int(4) == 0` above a floor tile) and they run even with a null room list, so
+      `CavesBossLevel.build()`'s `new CavesPainter().paint(this, null)` was never the no-op an earlier
+      note here called it: the port was one *parent-stream* draw short of Java from that point on
+      (`Random.pushGenerator(Random.Long())`, whose substream the scans then draw from). The floor now
+      runs it at Java's own position - after the entrance/corner stamps, before the chasm strips, which
+      is where the scans must read the map - reusing `decorateStandaloneCaves`, the same function
+      `MiningLevel` already ran, which `cavesPainter.ts`'s regular-floor `decorate()` now calls too
+      rather than keeping a second copy (so one implementation serves the regular floors, the boss
+      floor and the mining branch; the light `cavesDecorate.ts` exists so a fixed-layout floor does not
+      have to pull in the room-graph pipeline to reach it). Measured at seed 42: 95 `EMPTY_DECO` and
+      13 `WALL_DECO` cells, with the pylon mechanic's own terrain untouched (132 pits, 40 water, 36
+      traps, 5 gate cells, 81 energized cells). Pinned in `verifyVault.mjs` as a regression pin, so
+      dropping the call fails the suite.
+- [x] Port City/Dwarf King's throne geometry and Imp shop. **Done 2026-09-16, with the
+  blocking `unseal()` landed in the same pass.** The full 1/2/3-phase fight script was already
+  live and browser-verified (exact summon/ability cooldowns, the P2 shield/wave schedule, the P3
+  viscosity-deferred damage, the Crown drop). The throne room is now `CityBossLevel.build()`
+  statement for statement (entrance room, diamond with margins, statues, pedestals, exit
+  hallway, Imp shop base marks, pillars, `CityPainter` scatter - see the re-reading item
+  above), the `seal()` half locks the bottom door behind the hero on approach
+  (`checkCityBossSeal`, persisted like the other seals), and `applyKingDeathUnseal()` unlocks
+  both doors and spawns the shop when `Imp.Quest.isCompleted()`. **Stated simplifications:**
+  the `CustomGroundVisuals`/`CustomWallVisuals` tilemaps stay unported (presentation over the
+  same terrain).
+- [x] Port the last few Halls/Yog details. **Done 2026-09-16, with the one blocked clause moved to
+      where its blocker lives.** The flame/shadow arena visuals - `HallsBossLevel`'s
+      `CenterPieceVisuals`/`CenterPieceWalls`, two fixed 9x8 blocks of `halls_special.png` art over
+      the arena, one on each side of the wall layer - are now ported (`hallsBossVisuals.ts` and two
+       scene layers, pinned by a `verifyVault.mjs` check and browser-verified live); `unseal()`'s own
+       portal/archway variant is transcribed with them and is swapped in live by
+       `applyYogDeathUnseal()`. Phase-0 dormancy was **already live and is now documented as such** rather
+      than listed as missing: `takeYogTurn`'s phase-0 branch owns Yog's whole turn, keeps it
+      invulnerable, notices only once `fov.isVisible` covers it, and then yells, sets phase 1 and
+      rolls fresh cooldowns - Java's `Dungeon.observe()`/`notice()` pair, whose boss-bar half has no
+      UI here and whose music Java starts on the notice while this port starts it on floor entry.
+      **The clause this item used to carry was mis-worded twice**: it is not a "Light artifact" and
+      not a zap-weakening - Java's `YogDzewa.updateVisibility()` shrinks the *hero's* sight to Yog's
+      own arena radius (`4 - (phase-1)`, floored at 1, and 2 under the Darkness challenge) and
+      exempts a hero holding the **`Light` buff**, which in SPD comes from a **Torch** - an item
+      class this port has no form of at all, so the exemption cannot be exercised yet. It now sits in
+      section 1's missing-item-classes item, next to Torches themselves; the shrink itself, and the
+      two-phase DeathGaze, are live and browser-verified - see `PORT_COVERAGE.md`'s Yog rows.
+- [x] Port final-vault Amulet placement at Java's `AMULET_POS` (depth 26, x=8, y=12).
+- [x] Port final-vault endgame-specific terrain, custom visuals, and compass behavior.
+      `src/spdLevelGen/vaultVisuals.ts` plus a scene layer transcribe `CustomFloor.create()` statement
+      for statement (cursor arithmetic, candle cluster, `tileVariance`/`amuletObtained` variants, the
+      two `CenterPiece` stamps), the `EMPTY_DECO` scatter sits at its exact stream position in
+      `lastLevel()`, and `create()`'s solid override is real via a new `SOLID` terrain kind - which
+      also fixed the hero arriving on `(9,56)` instead of Java's transition cell `(8,54)`.
+      `verifyVault.mjs` pins the transcription and `tools/scratch/vault-livecheck.mjs` proves it
+      live. **Not ported, stated**: Java's `discoverable = false`/`visited = true` pre-seeding for
+      the entrance rows, which this port's terrain-derived fog has no per-cell channel for.
+- [x] Stop dungeon music on entry to the final vault, matching `LastLevel.playLevelMusic()`.
+      `SpdAudio.vaultMusic`/`winMusic` play `THEME_FINALE` on loop until the Amulet is taken, then
+      swap in the title pair (`THEME_2`/`THEME_1`, the reverse of `TitleScene`'s order);
+      `theme_finale.ogg` is copied byte-for-byte out of the tag.
+- [x] Remove the auto-descent and implement real victory transitions. **Done 2026-09-16:**
+  Java never auto-descends, and now neither does this port - no boss death advances the depth
+  directly any more. Each level's own `unseal()` runs at its boss's death and reopens a real,
+  walkable exit: `applyGooDeathUnseal()` restores the drowned entrance, `applyDM300DeathUnseal()`
+  restores the walled entrance, breaks the gate's five cells, clears the pylon energy and
+  re-maps the arena visuals to the broken frames, `applyKingDeathUnseal()` unlocks both arena
+  doors and spawns the Imp shop when the quest is complete, `applyYogDeathUnseal()` restores
+  the entrance, sets the `EXIT` tile and swaps the centre pieces to their portal/archway
+  variant, and Tengu's `setMapEnd()` transition already worked this way. Each opens
+  `hasStairs`/`stairs` at Java's own exit cell, so the hero walks out through the ordinary
+  stairs path (which is also what persists the unsealed floor); the unsealed set is
+  run-persisted with paint writes re-applied and stairs repaired after `restoreFloor`.
+  Measured per floor (`tools/scratch/boss-reachability.mjs`, a flood fill from entrance to
+  exit): depths 5, 10, 15 and 25 each have their seal ported and a real reachable exit once
+  their fight ends - depth 10's own exit was only *really* reachable after the 2026-09-16
+  layout fix above, since the flood fill reaches it now from the cell `setMapEnd()` puts the
+  hero back in (pinned in `verifyVault.mjs`); depth 20's exit is reachable once
+  `CityBossLevel.unseal()` unlocks its doors, which now happens live. Note the tool only
+  measures depths whose own map carries an EXIT tile, so depth 10's entrance-to-exit half is
+  covered by the pinned flood-fill checks rather than by it. **Stated simplifications:**
+  the `LockedFloor` buff (the stairs gate on the boss's death instead), presentation-only
+  halves (particles, music fades), and the King's Crown still granted to the bag rather than
+  dropped (it has no ground-pickup path, unlike the Amulet, which the vault's own entry now
+  spawns, guarded against re-entry minting a second).
