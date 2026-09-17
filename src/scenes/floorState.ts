@@ -153,6 +153,11 @@ export interface SavedCreature {
 	golemSelfTeleCooldown?: number;
 	beamCharged?: boolean;
 	beamCooldown?: number;
+	/** `RipperDemon`'s bundled `leap_pos`/`leap_cd`/`last_enemy_pos` (here as steps). */
+	leapTarget?: { x: number; y: number } | null;
+	leapCooldown?: number;
+	leapLastEnemy?: { x: number; y: number };
+	leapPrevEnemy?: { x: number; y: number };
 	pylonActive?: boolean;
 	pylonTargetNeighbor?: number;
 	rangedCooldown?: number;

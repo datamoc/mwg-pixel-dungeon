@@ -964,6 +964,20 @@ export const gameData = {
 								"column": 13
 							},
 							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"monster": "ripperDemon",
+								"profile": "ripperDemon"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
+								"line": 279,
+								"column": 13
+							},
+							"gettext": []
 						}
 					],
 					"location": {
@@ -984,12 +998,12 @@ export const gameData = {
 							"tag": "effect",
 							"attributes": {
 								"apply_to": "ai_profiles",
-								"set": "dm100,shaman,necromancer,tengu,dm300,yog,warlock,elemental,newbornElemental,yogFist,scorpio,guard,dm200,dm201,spinner,golem,eye,gnollTrickster,greatCrab"
+								"set": "dm100,shaman,necromancer,tengu,dm300,yog,warlock,elemental,newbornElemental,yogFist,scorpio,guard,dm200,dm201,spinner,golem,eye,gnollTrickster,greatCrab,ripperDemon"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
-								"line": 286,
+								"line": 291,
 								"column": 13
 							},
 							"gettext": []
@@ -997,7 +1011,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\actor-rules.mwl",
-						"line": 281,
+						"line": 286,
 						"column": 9
 					},
 					"gettext": []

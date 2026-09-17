@@ -210,6 +210,15 @@ export interface Creature extends Combatant {
 	/** `Eye.beamCharged`/`beamCooldown`: DeathGaze's two-turn charge-then-fire cycle. */
 	beamCharged?: boolean;
 	beamCooldown?: number;
+	/** `RipperDemon.leapPos`/`leapCooldown`/`lastEnemyPos`: the two-turn telegraphed pounce.
+	 * `leapTarget` is the armed landing cell (null/undefined = no leap pending);
+	 * `leapLastEnemy`/`leapPrevEnemy` are the hero's cell on the previous two turns, rotated
+	 * by the pre-turn hook so the trigger can tell a moved enemy (cut off at the far side)
+	 * from a stationary one (aimed at directly). */
+	leapTarget?: { x: number; y: number } | null;
+	leapCooldown?: number;
+	leapLastEnemy?: { x: number; y: number };
+	leapPrevEnemy?: { x: number; y: number };
 	/** `Elemental.rangedCooldown` (3-5 turns) and `NewbornFireElemental.targetingPos`: the
 	 * telegraphed fireball's charge state. Only the newborn uses the targeted cell. */
 	rangedCooldown?: number;

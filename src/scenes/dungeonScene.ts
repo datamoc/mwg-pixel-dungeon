@@ -202,6 +202,7 @@ import { teleportAppearPlan } from '../simulation/teleportAppear';
 import { evolveElectricity, evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
 import { selectRangedTarget } from '../simulation/targeting';
+import { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLeapCooldown } from '../simulation/ripperLeap';
 import { foregroundGrassFrames as buildForegroundGrassFrames, terrainFrameAt as buildTerrainFrameAt, terrainFrames as buildTerrainFrames, wallFrameAt as buildWallFrameAt, wallFrames as buildWallFrames, waterFrames as buildWaterFrames, type DungeonTileFrameContext } from './dungeonTileFrames';
 import { Banner } from '../ui/banner';
 import { showDefeatPanel as showDefeatPanelUi, showVictoryPanel as showVictoryPanelUi } from '../ui/endPanels';
@@ -2607,6 +2608,9 @@ export class DungeonScene extends Scene2D {
 				ventCooldown: creature.ventCooldown, webCooldown: creature.webCooldown, golemTeleCooldown: creature.golemTeleCooldown,
 				golemSelfTeleCooldown: creature.golemSelfTeleCooldown,
 				beamCharged: creature.beamCharged, beamCooldown: creature.beamCooldown, armoredRageTicks: creature.armoredRageTicks,
+				leapTarget: creature.leapTarget ? { ...creature.leapTarget } : undefined, leapCooldown: creature.leapCooldown,
+				leapLastEnemy: creature.leapLastEnemy ? { ...creature.leapLastEnemy } : undefined,
+				leapPrevEnemy: creature.leapPrevEnemy ? { ...creature.leapPrevEnemy } : undefined,
 				pylonActive: creature.pylonActive, pylonTargetNeighbor: creature.pylonTargetNeighbor,
 				rangedCooldown: creature.rangedCooldown, newbornTarget: creature.newbornTarget ? { ...creature.newbornTarget } : undefined,
 				stuckAmmo: creature.stuckAmmo, sentryWarmup: creature.sentryWarmup,
@@ -2750,6 +2754,9 @@ export class DungeonScene extends Scene2D {
 				ventCooldown: saved.ventCooldown, webCooldown: saved.webCooldown, golemTeleCooldown: saved.golemTeleCooldown,
 				golemSelfTeleCooldown: saved.golemSelfTeleCooldown,
 				beamCharged: saved.beamCharged, beamCooldown: saved.beamCooldown, armoredRageTicks: saved.armoredRageTicks,
+				leapTarget: saved.leapTarget ? { ...saved.leapTarget } : undefined, leapCooldown: saved.leapCooldown,
+				leapLastEnemy: saved.leapLastEnemy ? { ...saved.leapLastEnemy } : undefined,
+				leapPrevEnemy: saved.leapPrevEnemy ? { ...saved.leapPrevEnemy } : undefined,
 				pylonActive: saved.pylonActive, pylonTargetNeighbor: saved.pylonTargetNeighbor,
 				rangedCooldown: saved.rangedCooldown, newbornTarget: saved.newbornTarget ? { ...saved.newbornTarget } : undefined,
 				stuckAmmo: saved.stuckAmmo, sentryWarmup: saved.sentryWarmup,
@@ -9702,10 +9709,25 @@ export class DungeonScene extends Scene2D {
 			// adjacent melee turns; a non-hunting elemental leaves it untouched.
 			if (monster.seesHero) monster.rangedCooldown = (monster.rangedCooldown ?? 3) - 1;
 		},
+		ripperDemon: (monster) => {
+			//`RipperDemon.act()`: `if (paralysed <= 0) leapCooldown--`, then the enemy-cell
+			//tracking every other hook here skips - Java records `enemy.pos` (falling back to
+			//the hero's cell with no enemy) on every act except the wandering-to-hunting
+			//transition turn, so the pre-turn rotation below matches its steady state; the
+			//single skipped transition turn is not reproduced (see `takeRipperLeapTrigger`).
+			//The hook runs ahead of the paralysis gate below, hence the explicit check -
+			//golem/DM200 decrement unconditionally because their Java does not gate.
+			if (monster.buffs['paralysis'] === undefined && monster.buffs['frost'] === undefined) {
+				monster.leapCooldown = (monster.leapCooldown ?? 0) - 1;
+			}
+			monster.leapPrevEnemy = monster.leapLastEnemy;
+			monster.leapLastEnemy = { x: this.hero.x, y: this.hero.y };
+		},
 	};
 
 	private readonly specialMonsterTurnOverrides: Record<string, (monster: Creature) => boolean> = {
 		pylon: (monster) => { this.takePylonTurn(monster); return true; },
+		ripperDemon: (monster) => this.executeRipperLeap(monster),
 	};
 	/** Whole-turn passive actors checked after hostile mobs have had the chance to attack an
 	 * adjacent friendly summon, preserving the old ordering in `takeMonsterTurn`. */
@@ -10005,6 +10027,7 @@ export class DungeonScene extends Scene2D {
 			monster.moving = 0;
 			return false;
 		},
+		ripperDemon: (monster, distance) => this.takeRipperLeapTrigger(monster, distance),
 	};
 
 	/** `Golem.canTele(target)` from `Golem.java` (tag v3.3.8): the zap may route around
@@ -10217,7 +10240,133 @@ export class DungeonScene extends Scene2D {
 		if (victim.hp <= 0) this.kill(victim);
 	}
 
-	private eyeBeamTurn(monster: Creature): boolean {
+	/** `RipperDemon.Hunting.act()`'s leap trigger (`RipperDemon.java`, tag `v3.3.8`): off
+ * cooldown, enemy in FOV, unrooted and at least 3 cells away, the ripper arms its landing
+ * cell instead of moving. The landing prediction (far side of a moved enemy, direct aim
+ * otherwise) and the gate live in `simulation/ripperLeap`; the ray fallback below -
+ * aim near the hero, then directly at them - is Java's own two-try sequence. Costs one
+ * turn (`pendingMonsterTurnCost`): Java spends `gate(TICK, enemy.cooldown(), 3*TICK)`,
+ * scaled by the victim's own speed, but the port hero always acts on whole turns, so the
+ * 1-3 tick window collapses to the base tick (stated, not silent). The warning line is
+ * Java's real `leap` message; the red `TargetedCell` marker and `leapPrep` crouch have no
+ * cell-overlay primitive here, so the log line stands in for all three (the same skip the
+ * eye charge and sentry warmup already document). `Dungeon.hero.interrupt()` has no
+ * analogue either - hero turns are synchronous, there is no channel to cancel.
+ * The single wandering-to-hunting transition turn Java skips its enemy-cell update
+ * on is not reproduced: the pre-turn hook rotates every turn, which matches Java's steady
+ * state on all other turns. */
+private takeRipperLeapTrigger(monster: Creature, distance: number): boolean {
+	if (!canRipperLeap({
+		cooldown: monster.leapCooldown ?? 0,
+		seesHero: monster.seesHero === true,
+		rooted: monster.buffs['roots'] !== undefined,
+		distance,
+	})) return false;
+	let aim = predictRipperLeapTarget(this.hero, monster.leapPrevEnemy);
+	let landing = this.traceRipperLeap(monster, aim);
+	if ((!landing || landing.x !== aim.x || landing.y !== aim.y)
+		&& (aim.x !== this.hero.x || aim.y !== this.hero.y)) {
+		aim = { x: this.hero.x, y: this.hero.y };
+		landing = this.traceRipperLeap(monster, aim);
+	}
+	if (!landing || landing.x !== aim.x || landing.y !== aim.y) return false;
+	monster.leapTarget = { ...aim };
+	this.pendingMonsterTurnCost = 1;
+	if (this.fov.isVisible(monster.x, monster.y) || this.fov.isVisible(aim.x, aim.y)) {
+		this.say(t('port.log.ripperleap'), 'negative');
+	}
+	return true;
+}
+
+/** The leap ray's collision cell: MWG stops before impassable cells where Java's
+ * `STOP_SOLID` ray only stops at solid ones, so a leap across a chasm truncates at its
+ * edge here instead of clearing it (stated - the only terrain divergence; walls and
+ * closed doors stop both). The stopping cell is retained, matching `collisionPos`. */
+private traceRipperLeap(monster: Creature, aim: Step): Step | null {
+	const cells = traceRayToTarget(this.level, monster, aim, (x, y) => this.creatureAt(x, y));
+	return cells.length > 0 ? cells[cells.length - 1]! : null;
+}
+
+/** `RipperDemon.Hunting.act()`'s leap execution: the armed landing fires on the next
+ * turn even adjacent (it precedes the attack branch, which is why this lives in the
+ * whole-turn overrides rather than the ranged table). The cooldown resets to
+ * `NormalIntRange(2, 4)` first - even when rooted or boxed in, exactly like Java - a
+ * newly-rooted ripper stands down, the ray re-traces from the live position, and an
+ * occupied landing bounces to the nearest free neighbour or aborts. The pounce hits
+ * only hero/ally victims (the port's hero-only combat model: a leap onto another mob
+ * still bounces, but there is no mob-vs-mob damage here, matching every other ranged
+ * override's documented reduction). Java's sprite jump and push-aside have no motion
+ * primitive here, so the relocation is instant; the hit itself resolves through the
+ * shared attack choke below. */
+private executeRipperLeap(monster: Creature): boolean {
+	const target = monster.leapTarget;
+	if (!target) return false;
+	if (monster.buffs['paralysis'] !== undefined || monster.buffs['frost'] !== undefined
+		|| monster.buffs['feintConfusion'] !== undefined || monster.sleeping === true
+		|| monster.buffs['terror'] !== undefined || monster.fleeing) return false;
+	monster.leapCooldown = ripperLeapCooldown(simulationRandom);
+	if (monster.buffs['roots'] !== undefined) {
+		monster.leapTarget = null;
+		return true;
+	}
+	const landing = this.traceRipperLeap(monster, target);
+	if (!landing) {
+		monster.leapTarget = null;
+		return true;
+	}
+	const victim = this.creatureAt(landing.x, landing.y);
+	let end: Step = landing;
+	if (victim && victim !== monster && victim.hp > 0) {
+		const bounce = chooseRipperBounceEnd(monster, landing, (cell) =>
+			this.level.passable(cell.x, cell.y) && !this.creatureAt(cell.x, cell.y));
+		if (!bounce) {
+			monster.leapTarget = null;
+			return true;
+		}
+		end = bounce;
+	}
+	faceCharacter(this.sprite(monster), monster.x, end.x);
+	this.moveTo(monster, end);
+	monster.leapTarget = null;
+	if (victim && victim !== monster && victim.hp > 0 && (victim.isHero || victim.isAlly)) {
+		this.resolveRipperPounce(monster, victim);
+	}
+	return true;
+}
+
+/** The pounce impact: `hit(this, leapVictim, INFINITE_ACCURACY, false)` through the
+ * shared resolver (`force` is its infinite-accuracy channel, `magic = false` keeps the
+ * melee armor path Java's `attack()` applies), presented like any landed melee hit,
+ * then `Bleeding` at 0.75x a *fresh* damage roll - not the dealt damage - via the
+ * shared keep-strongest setter. A miss (only reachable through infinite-evasion
+ * carriers) reads the dodge line, as Java's `showStatus` + miss sound does. */
+private resolveRipperPounce(monster: Creature, victim: Creature): void {
+	const roll = runAttackResolution(monster, victim, simulationRandom, false, true, 1, 1);
+	const subject = capitalize(monster.name);
+	const object = victim.isHero ? t('port.log.object.you') : victim.name;
+	if (!roll.hit) {
+		runState.audio.cue('miss', 0.55);
+		victim.sleeping = false;
+		this.say(t(victim.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
+		return;
+	}
+	const damage = victim.isHero ? this.absorbHeroDamage(roll.damage) : roll.damage;
+	victim.hp -= damage;
+	this.showDamage(victim, damage);
+	victim.sleeping = false;
+	this.sprite(victim).setColorAdd(1, 1, 1);
+	runState.audio.cue('hit', 0.6);
+	this.say(
+		t('port.log.hit', { subject, verb: t('port.log.verb.hit'), object, damage }),
+		victim.isHero ? 'negative' : 'info',
+	);
+	const [min, max] = liveStats(monster).damage;
+	setBleeding(victim, 0.75 * Random.normalRange(min, max));
+	this.mobOnHit(monster, victim, damage);
+	if (victim.hp <= 0) this.kill(victim);
+}
+
+private eyeBeamTurn(monster: Creature): boolean {
 		if ((monster.beamCooldown ?? 0) > 0) monster.beamCooldown = (monster.beamCooldown ?? 0) - 1;
 		if (monster.beamCharged) {
 			monster.beamCharged = false;

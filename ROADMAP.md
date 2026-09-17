@@ -382,7 +382,7 @@ was judged not worth the churn against those existing references.
       costs 2 and takes quarter damage; the fire turn is a magic hit roll for 30-50 bypassing armor),
       DM-200's venting override, Spinner's ranged web, the Necromancer's skeleton support (heal
       `HT/5`, one-time Adrenaline, teleport-back) and `firstSummon`'s variable tick cost via the new
-      `monsterTurnCost` hook. **Not modeled**: Golem's charge particles and delayed animation;
+      `monsterTurnCost` hook, and RipperDemon's two-turn telegraphed leap (far-side landing prediction, re-traced pounce with an infinite-accuracy hit plus 0.75x `Bleeding`, 2-4 cooldown, instant relocation, the warning log line standing in for the red cell marker and crouch). **Not modeled**: Golem's charge particles and delayed animation;
       Spinner's real persistent 3-cell `Web` terrain blob is ported (the direct root is the impact, the blob the aftermath);
       Golem's charge particles and delayed animation have no particle/animation layer here. See
       `PORT_COVERAGE.md`. **Complexity: M** for what remains.
@@ -808,7 +808,7 @@ one.
       audit tools), and the catalog mechanism is already adopted. Pending is only the message half
       (typed messages at `say()` sites, combat log lines as pilot).
 - [ ] Continue producing the section 22A/22B analysis matrix for the remaining monster/item/buff
-      families before migrating each one's code, per SPD-ADR-010. **Progress 2026-09-17:** the third matrix, `MONSTER_ANALYSIS_GNOLL_BRUTE_SHAMAN_TRICKSTER.md`, covers the variant-inheritance case (Gnoll/Brute/ArmoredBrute/Shaman/GnollTrickster; Sapper recorded absent) - and the fourth matrix, `MONSTER_ANALYSIS_GHOUL_MONK_WARLOCK_GOLEM.md`, covers the Dwarf court: four single-kind abilities (the easiest table-migration shape), a second Monk/`senior` OR-chain pilot, and the King-court spawn-flag gap (`BOSS_MINION`, partner severing) - and the fifth matrix, `MONSTER_ANALYSIS_SUCCUBUS_EYE_SCORPIO_RIPPER.md`, covers the Halls demons: three finished single-kind kits plus the Ripper leap, unported (the first stateful movement-ability pilot) - its finding is that Brute/ArmoredBrute's per-site kind-ORs are the smallest pilot for the ability-table migration. **Progress 2026-09-16:** the
+      families before migrating each one's code, per SPD-ADR-010. **Progress 2026-09-17:** the third matrix, `MONSTER_ANALYSIS_GNOLL_BRUTE_SHAMAN_TRICKSTER.md`, covers the variant-inheritance case (Gnoll/Brute/ArmoredBrute/Shaman/GnollTrickster; Sapper recorded absent) - and the fourth matrix, `MONSTER_ANALYSIS_GHOUL_MONK_WARLOCK_GOLEM.md`, covers the Dwarf court: four single-kind abilities (the easiest table-migration shape), a second Monk/`senior` OR-chain pilot, and the King-court spawn-flag gap (`BOSS_MINION`, partner severing) - and the fifth matrix, `MONSTER_ANALYSIS_SUCCUBUS_EYE_SCORPIO_RIPPER.md`, covers the Halls demons: three finished single-kind kits plus the Ripper leap - ported 2026-09-17 as the first stateful movement-ability pilot (see the AI-overrides line above and its `PORT_COVERAGE.md` row) - its finding is that Brute/ArmoredBrute's per-site kind-ORs are the smallest pilot for the ability-table migration. **Progress 2026-09-16:** the
       second matrix, `MONSTER_ANALYSIS_DM200_DM300_PYLON.md`, covers an ordinary mob, its variant,
       a fixed-floor boss, and its supporting actor; it confirms data aliases and keyed strategies
       rather than Java-style classes. Remaining monster/item/buff families still need the same

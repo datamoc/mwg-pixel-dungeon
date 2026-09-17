@@ -275,6 +275,11 @@
             monster: "greatCrab",
             profile: "greatCrab",
           },
+          {
+            tag: "row",
+            monster: "ripperDemon",
+            profile: "ripperDemon",
+          },
         ],
       },
       {
@@ -285,7 +290,7 @@
           {
             tag: "effect",
             apply_to: "ai_profiles",
-            set: "dm100,shaman,necromancer,tengu,dm300,yog,warlock,elemental,newbornElemental,yogFist,scorpio,guard,dm200,dm201,spinner,golem,eye,gnollTrickster,greatCrab",
+            set: "dm100,shaman,necromancer,tengu,dm300,yog,warlock,elemental,newbornElemental,yogFist,scorpio,guard,dm200,dm201,spinner,golem,eye,gnollTrickster,greatCrab,ripperDemon",
           },
         ],
       },
