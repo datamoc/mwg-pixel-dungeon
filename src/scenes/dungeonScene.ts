@@ -11969,8 +11969,14 @@ export class DungeonScene extends Scene2D {
 			return;
 		}
 		if (phase === 3) {
-			const adds = [...this.kingAdds].filter((add) => add.hp > 0);
-			if (adds.length < 4) this.summonKingAdd(king, this.kingP1Summon(king.kingSummonsMade ?? 1, challenge));
+			//`DwarfKing.act()` gates P3 reinforcement on fewer than 4 *pending* arrivals
+			//(`buffs(Summoning.class).size() < 4`), not live servants - with this port's
+			//instant spawns the pipeline is always empty, so P3 reinforces every turn with
+			//no live cap, and every success advances the rotation below (which the old
+			//live-count gate left frozen on one kind).
+			if (this.summonKingAdd(king, this.kingP1Summon(king.kingSummonsMade ?? 1, challenge))) {
+				king.kingSummonsMade = (king.kingSummonsMade ?? 1) + 1;
+			}
 		}
 		const distance = Roguelike.chebyshevDistance(king, this.hero);
 		if (distance <= 1) {
