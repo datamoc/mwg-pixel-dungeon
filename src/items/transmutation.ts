@@ -1,6 +1,7 @@
 import { Random } from 'mwg';
 import { RING_DEFS, ringDef } from './ringModifiers';
-import { MWL_CONSUMABLE_CLASS_ALIASES } from '../mwlContent';
+import { MWL_CONSUMABLE_CLASS_ALIASES, MWL_MISSILE_DEFINITIONS, MWL_WAND_DEFINITIONS } from '../mwlContent';
+import { MISSILE_MAX_DURABILITY, TIPPED_DART_BY_SEED, missileStackId } from './missiles';
 
 /**
  * `ScrollOfTransmutation.changeItem()`'s per-category decks, adapted to this port's ids
@@ -21,6 +22,33 @@ const WEP_TIER_CLASSES: string[][] = [
 	['Longsword', 'BattleAxe', 'Flail', 'RunicBlade', 'AssassinsBlade', 'Crossbow', 'Katana'],
 	['Greatsword', 'WarHammer', 'Glaive', 'Greataxe', 'Greatshield', 'Gauntlet', 'WarScythe'],
 ];
+/**
+ * `Generator`'s real `MIS_T1..T5` class lists (`Generator.java`, tag `v3.3.8`), read off
+ * the authored `missiles.mwl` rows instead of hardcoded, so the deck cannot drift from
+ * the catalogue. `Dart` has no row (this port stocks only tipped darts, matching what
+ * the shop sells) and `TippedDart` transmutes through its own tip table below, never here.
+ */
+function missileTierClasses(tier: number): string[] {
+	return MWL_MISSILE_DEFINITIONS.filter((def) => def.tier === tier && def.sourceClass !== 'TippedDart').map((def) => def.sourceClass);
+}
+/** Wand classes from the authored MWL definitions (13 real `items/wands/*.java` classes). */
+const WAND_TRANSMUTE_CLASSES: string[] = MWL_WAND_DEFINITIONS.map((def) => def.sourceClass);
+/** `wands.ts`' executable type for a wand class, for the wielded-wand picker entry. */
+export function wandTypeForTransmute(sourceClass: string): string | undefined {
+	return MWL_WAND_DEFINITIONS.find((def) => def.sourceClass.toLowerCase() === sourceClass.toLowerCase())?.type;
+}
+/** Wand class for an executable type (the wielded wand's `wandType` back to a class). */
+export function wandClassForType(type: string): string | undefined {
+	return MWL_WAND_DEFINITIONS.find((def) => def.type === type)?.sourceClass;
+}
+/** Bag id for a missile class (`ThrowingKnife` -> `missile_throwingknife`). */
+export function missileIdForClass(sourceClass: string): string {
+	return `missile_${sourceClass.toLowerCase()}`;
+}
+/** Missile tier for a class, from the authored rows (0 when unknown). */
+export function missileTierForClass(sourceClass: string): number {
+	return MWL_MISSILE_DEFINITIONS.find((def) => def.sourceClass === sourceClass)?.tier ?? 0;
+}
 const PORT_ID_BY_POTION_CLASS: Readonly<Record<string, string>> = Object.fromEntries(
 	MWL_CONSUMABLE_CLASS_ALIASES.filter((alias) => alias.category === 'potion').map((alias) => [alias.sourceClass, alias.item]),
 );
@@ -48,6 +76,13 @@ export interface TransmutableItem {
 	affix?: string;
 	cursed?: boolean;
 	sourceClass?: string;
+	/** Tipped-dart tip seed (`TippedDart` stacks only). */
+	tippedSeed?: string;
+	/** Missile wear on the shared 100-point scale (carried/wielded stacks). */
+	durability?: number;
+	maxDurability?: number;
+	/** The stack's `MissileWeapon.setID` lineage (a new set is minted on reroll). */
+	missileSet?: string;
 }
 
 export interface TransmutedItem extends TransmutableItem {
@@ -79,6 +114,15 @@ export function isTransmutableForScroll(item: { id: string; sourceClass?: string
 	if (id === 'seed') return true;
 	if (id === 'stone' || id.startsWith('stoneOf')) return true;
 	if (id === 'cloak') return true;
+	//`changeTippedDart`/`changeWeapon`'s missile half: every carried `missile_*` stack,
+	//tipped or not (real Java takes all missiles except the plain `Dart`, which has no
+	//port id at all). Carried wands with a class transmute through `changeWand`; the
+	//classless shared `wand` entry does not (the wielded wand is a scene-side entry).
+	//`pickaxe` is a tier-2 melee weapon in real Java, eligible everywhere except the
+	//mining branch - the scene filters the branch, this helper does not know it.
+	if (id.startsWith('missile_')) return true;
+	if (id === 'wand') return item.sourceClass !== undefined && item.sourceClass !== '';
+	if (id === 'pickaxe') return true;
 	return false;
 }
 
@@ -90,14 +134,16 @@ export function isTransmutableForScroll(item: { id: string; sourceClass?: string
  * `enchantment`/`augment`/`curseInfusionBonus` carry-over; this port's model only has
  * the shared `affix` string to carry), and consumes exactly one unit of a stackable
  * target (returned with `quantity: 1` so it merges into an existing stack the same
- * way Java's `result.collect()` does). Simplifications: regular<->exotic scroll/potion
- * flips collapse to a random different regular type (no exotic classes exist here);
- * `changeStaff`/`changeTippedDart` have no expression (excluded at eligibility);
- * `changeArtifact`'s different-artifact reroll collapses to Java's own
- * no-artifacts-left fallback (a random ring at +0/+1/+2 by visible upgrades - here a
- * flat +0, since the `cloak` stand-in carries no upgrade level); wand/trinket rerolls
- * don't exist (see eligibility). Returns `undefined` only defensively (a one-entry
- * deck), in which case the caller keeps the scroll, mirroring the `result == null` path.
+ * way Java's `result.collect()` does - except non-tipped missiles, where Java detaches
+ * the whole stack and the result keeps its quantity). Simplifications: regular<->exotic
+ * scroll/potion flips collapse to a random different regular type (no exotic classes
+ * exist here); `changeStaff` has no expression (excluded at eligibility - the staff keeps
+ * its item and only re-imbues, which a tier-only model cannot do); `changeArtifact`'s
+ * different-artifact reroll collapses to Java's own no-artifacts-left fallback (a random
+ * ring at +0/+1/+2 by visible upgrades - here a flat +0, since the `cloak` stand-in
+ * carries no upgrade level); trinket rerolls don't exist (no trinket items here).
+ * Returns `undefined` only defensively (a one-entry deck), in which case the caller
+ * keeps the scroll, mirroring the `result == null` path.
  */
 export function transmuteItem(target: TransmutableItem, newItemInstanceId: (kind: string) => string): TransmutedItem | undefined {
 	if (target.id === 'weaponReward') {
@@ -142,6 +188,43 @@ export function transmuteItem(target: TransmutableItem, newItemInstanceId: (kind
 		const pool = Object.keys(RING_DEFS);
 		if (pool.length === 0) return undefined;
 		return { id: `ring_${Random.element(pool)!}`, quantity: 1, instanceId: newItemInstanceId('ring'), identified: target.identified, level: target.level, cursed: target.cursed };
+	}
+	if (target.id === 'missile_tippeddart') {
+		//`changeTippedDart`: a different tip as one fresh unit (`randomTipped(1)` - level
+		//0, full wear, its own new set).
+		const current = (target.tippedSeed ?? '').toLowerCase();
+		const pool = Object.keys(TIPPED_DART_BY_SEED).filter((seed) => seed !== current);
+		if (pool.length === 0) return undefined;
+		const seed = Random.element(pool)!;
+		const set = newItemInstanceId('missile');
+		return { id: 'missile_tippeddart', quantity: 1, stackable: true, identified: target.identified, sourceClass: 'TippedDart', tippedSeed: seed, level: 0, durability: MISSILE_MAX_DURABILITY, maxDurability: MISSILE_MAX_DURABILITY, missileSet: set, instanceId: missileStackId(set, 0, seed) };
+	}
+	if (target.id.startsWith('missile_')) {
+		//`changeWeapon`'s missile half: a different class in the same `misTiers` tier,
+		//keeping level, quantity and wear on the shared 100-point scale; the old set is
+		//destroyed (the scene records the `UpgradedSetTracker` threshold from the swap).
+		const current = target.sourceClass ?? '';
+		const pool = missileTierClasses(missileTierForClass(current)).filter((c) => c !== current);
+		if (pool.length === 0) return undefined;
+		const picked = Random.element(pool)!;
+		const set = newItemInstanceId('missile');
+		const level = target.level ?? 0;
+		return { id: missileIdForClass(picked), quantity: target.quantity, stackable: true, identified: target.identified, sourceClass: picked, level, durability: target.durability, maxDurability: target.maxDurability, missileSet: set, instanceId: missileStackId(set, level) };
+	}
+	if (target.id === 'wand' && target.sourceClass) {
+		//`changeWand`: a different class. Carried spares carry no level or charges here
+		//(wand power and charges are scene-level state), so only the class changes.
+		const current = target.sourceClass.toLowerCase();
+		const pool = WAND_TRANSMUTE_CLASSES.filter((c) => c.toLowerCase() !== current);
+		if (pool.length === 0) return undefined;
+		return { id: 'wand', quantity: 1, stackable: true, identified: target.identified, sourceClass: Random.element(pool)! };
+	}
+	if (target.id === 'pickaxe') {
+		//The pickaxe is a tier-2 melee weapon (`Pickaxe.java`); outside the mining branch
+		//it rerolls into a real tier-2 weapon like any other (`changeWeapon`).
+		const pool = (WEP_TIER_CLASSES[1] ?? []).filter((c) => c !== 'MagesStaff');
+		if (pool.length === 0) return undefined;
+		return { id: 'weaponReward', quantity: 1, instanceId: newItemInstanceId('weapon'), identified: target.identified, level: 0, sourceClass: Random.element(pool)! };
 	}
 	return undefined;
 }

@@ -98,8 +98,8 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	const { Inventory } = require('./actors/Inventory.js');
 	const { Appearances } = require('./actors/Appearances.js');
 	const { transferEnhancement, upgradeItem, reverseCurseInfusion, curseInfusionLevelBonus } = require('./items/workflows.js');
-	const { transmuteItem } = require('./items/transmutation.js');
-	const { missileDamageRange, missilePickupValid, recordMissileUpgrade, missileAdjacentAccFactor, missileBaseUses, bolasCrippleTurns, tomahawkBleedRange, BOOMERANG_RETURN_TURNS, BOOMERANG_RETURN_ACC_FACTOR, tippedDartUseDivisor } = require('./items/missiles.js');
+	const { transmuteItem, isTransmutableForScroll, missileTierForClass } = require('./items/transmutation.js');
+	const { missileDamageRange, missilePickupValid, recordMissileUpgrade, missileAdjacentAccFactor, missileBaseUses, bolasCrippleTurns, tomahawkBleedRange, BOOMERANG_RETURN_TURNS, BOOMERANG_RETURN_ACC_FACTOR, tippedDartUseDivisor, TIPPED_DART_BY_SEED } = require('./items/missiles.js');
 	const { blacksmithTurnInFavor, BLACKSMITH_FAVOR_CAP, BLACKSMITH_QUEST_BOSS_BONUS } = require('./items/blacksmith.js');
 	// `MissileWeapon.baseUses` (tag `v3.3.8`): Java's field defaults to 8, and each class overrides
 	// it. It is a property of the *wielded missile class*, not the hero class - this port used to
@@ -326,6 +326,38 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	const ring = transmuteItem({ id: 'ring_might', quantity: 1, identified: true, level: 4, cursed: false }, (kind) => `test-${kind}`);
 	assert.ok(ring);
 	assert.equal(ring.level, 4);
+	// `ScrollOfTransmutation.changeWeapon()`'s missile half, `changeTippedDart` and `changeWand`
+	// (tag `v3.3.8`): carried missiles, tipped darts, classed wands and the pickaxe transmute.
+	assert.equal(isTransmutableForScroll({ id: 'missile_bolas' }), true);
+	assert.equal(isTransmutableForScroll({ id: 'missile_tippeddart' }), true);
+	assert.equal(isTransmutableForScroll({ id: 'wand', sourceClass: 'WandOfFireblast' }), true);
+	assert.equal(isTransmutableForScroll({ id: 'wand' }), false, 'the classless shared wand entry has no class to change');
+	assert.equal(isTransmutableForScroll({ id: 'pickaxe' }), true);
+	const bolas = transmuteItem({ id: 'missile_bolas', quantity: 7, stackable: true, identified: true, sourceClass: 'Bolas', level: 3, durability: 50, maxDurability: 100, missileSet: 'm-1', instanceId: 'm-1:3' }, (kind) => `test-${kind}`);
+	assert.ok(bolas);
+	assert.notEqual(bolas.sourceClass, 'Bolas', 'a missile rerolls to a different class in its tier');
+	assert.equal(missileTierForClass(bolas.sourceClass), 3, 'the new class stays in the old tier');
+	assert.equal(bolas.quantity, 7, 'Java detaches the whole stack and the result keeps its quantity');
+	assert.equal(bolas.level, 3);
+	assert.equal(bolas.durability, 50, 'wear carries over on the shared 100-point scale');
+	assert.ok(bolas.missileSet && bolas.missileSet !== 'm-1', 'the reroll mints a new set');
+	const dart = transmuteItem({ id: 'missile_tippeddart', quantity: 5, stackable: true, identified: true, sourceClass: 'TippedDart', tippedSeed: 'firebloom', level: 2, durability: 40, maxDurability: 100, missileSet: 'm-2', instanceId: 'm-2:2' }, (kind) => `test-${kind}`);
+	assert.ok(dart);
+	assert.equal(dart.id, 'missile_tippeddart');
+	assert.notEqual(dart.tippedSeed, 'firebloom', '`changeTippedDart` picks a different tip');
+	assert.ok(dart.tippedSeed && TIPPED_DART_BY_SEED[dart.tippedSeed] !== undefined, 'the new tip is a real seed');
+	assert.equal(dart.quantity, 1, 'a tipped reroll is one fresh unit (`randomTipped(1)`)');
+	assert.equal(dart.level, 0);
+	assert.equal(dart.durability, 100, 'a fresh dart has full wear');
+	const transmuteWand = transmuteItem({ id: 'wand', quantity: 1, stackable: true, identified: true, sourceClass: 'WandOfFireblast' }, (kind) => `test-${kind}`);
+	assert.ok(transmuteWand);
+	assert.equal(transmuteWand.id, 'wand');
+	assert.notEqual((transmuteWand.sourceClass ?? '').toLowerCase(), 'wandoffireblast', '`changeWand` picks a different class');
+	const pick = transmuteItem({ id: 'pickaxe', quantity: 1, identified: true }, (kind) => `test-${kind}`);
+	assert.ok(pick);
+	assert.equal(pick.id, 'weaponReward', 'the tier-2 pickaxe rerolls like any tier-2 weapon');
+	assert.equal(pick.level, 0);
+	assert.notEqual(pick.sourceClass, 'MagesStaff');
 	// `MissileWeapon.UpgradedSetTracker.pickupValid`: no tracker, no entry, or a level at/above
 	// the recorded threshold merges; anything below the threshold crumbles to dust instead.
 	assert.equal(missilePickupValid(undefined, 1, 0), true);

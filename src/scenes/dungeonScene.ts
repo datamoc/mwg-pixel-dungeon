@@ -5047,12 +5047,21 @@ export class DungeonScene extends Scene2D {
 	 * quantity > 1`): a `scrollTransmutation` stack of 2+ is eligible, since reading
 	 * consumes one and leaves one to transmute.
 	 */
+	/**
+	 * `ScrollOfTransmutation.usableOnItem()`: every bag item `isTransmutableForScroll` admits,
+	 * except the pickaxe on the mining branch (`!(item instanceof Pickaxe && Dungeon.level
+	 * instanceof MiningLevel)` - the pickaxe is a tier-2 `MeleeWeapon` everywhere else).
+	 */
+	private transmuteEligible(i: { id: string; quantity: number; instanceId?: string }): boolean {
+		return isTransmutableForScroll(i) && !(i.id === 'pickaxe' && this.miningBranchActive);
+	}
+
 	private transmuteCandidates(): { id: string; quantity: number; instanceId?: string; identified?: boolean; level?: number; affix?: string; cursed?: boolean; sourceClass?: string }[] {
 		const items = this.bag.items as { id: string; quantity: number; instanceId?: string; identified?: boolean; level?: number; affix?: string; cursed?: boolean; sourceClass?: string }[];
 		const candidates = items.filter(
 			(i) =>
 				i.quantity > 0 &&
-				(isTransmutableForScroll(i) || (i.id === 'scrollTransmutation' && i.quantity > 1))
+				(this.transmuteEligible(i) || (i.id === 'scrollTransmutation' && i.quantity > 1))
 		);
 		if (this.equippedRing) candidates.push({ ...this.equippedRing, quantity: 1, identified: true });
 		return candidates;
@@ -5072,7 +5081,7 @@ export class DungeonScene extends Scene2D {
 				i.quantity > 0 &&
 				i.id === pick.id &&
 				(i.instanceId ?? undefined) === (pick.instanceId ?? undefined) &&
-				(isTransmutableForScroll(i) || (i.id === 'scrollTransmutation' && i.quantity > 1))
+				(this.transmuteEligible(i) || (i.id === 'scrollTransmutation' && i.quantity > 1))
 		);
 		const equipped = !live && this.equippedRing
 			&& this.equippedRing.id === pick.id
@@ -5090,8 +5099,15 @@ export class DungeonScene extends Scene2D {
 		}
 		this.bag.remove('scrollTransmutation', 1, scrollInstanceId);
 		if (live) {
-			this.bag.remove(live.id, 1, live.instanceId);
+			//`changeWeapon`'s missile half detaches the WHOLE stack (`detachAll`) while the
+			//result keeps its quantity - removing one unit here would duplicate the rest.
+			this.bag.remove(live.id, live.id.startsWith('missile_') ? live.quantity : 1, live.instanceId);
 			this.bag.add(result);
+			//The reroll mints a new `MissileWeapon.setID`; its level is what the
+			//`UpgradedSetTracker` threshold map records (see `transmuteItem`).
+			if (result.missileSet !== undefined) {
+				this.missileThresholds = recordMissileUpgrade(this.missileThresholds, result.missileSet, result.level ?? 0);
+			}
 		} else {
 			//Equipped rings are not bag entries: replace the live slot in place, then
 			//recompute Might's max-HP contribution exactly as equipRing does. Other ring
