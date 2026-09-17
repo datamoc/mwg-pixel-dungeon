@@ -808,7 +808,7 @@ one.
       a fixed-floor boss, and its supporting actor; it confirms data aliases and keyed strategies
       rather than Java-style classes. Remaining monster/item/buff families still need the same
       treatment. **Complexity: M.**
-- [ ] **MWG-utilization audit**: checked whether this port reimplements functionality `mwg` already
+- [x] **MWG-utilization audit**: checked whether this port reimplements functionality `mwg` already
       exports. Well-utilized overall, no action needed on `Roguelike.Pathfinder`/`Blob`/
       `Actors.rollLoot`/`Charges`, the `EntityId` re-export, the Java-bit-matching LCG RNG
       (`spdRng.ts`, correctly not using mwg's xoshiro) or `ui/floatingText.ts` (a justified sibling,
@@ -817,8 +817,8 @@ one.
       stale `eternalFire` claim, and `summonSkeleton`'s push-aside (where the audit's own suggested
       `knockbackPath` fix would have been wrong - Java's rule is an 8-neighbour search maximizing
       `trueDistance`, needing no framework primitive at all). No UI-widget/i18n-catalog/scheduler/
-      FOV/geometry reimplementation found elsewhere. The audit itself is complete; only a re-run on a
-      future `mwg` bump is outstanding. See `PORT_COVERAGE.md`'s mwg-usage section.
+      FOV/geometry reimplementation found elsewhere. **Closed 2026-09-17:** the outstanding re-run already happened - the audit was refreshed against installed 0.14.0 on 2026-09-15, and `npm run mwg:check` confirms no newer release exists today (pin, installed and published latest all 0.14.0).
+      See `PORT_COVERAGE.md`'s mwg-usage section.
 - [x] Re-check `mwg`'s exports on every version bump for the plan's remaining assumed primitives
       (raw 2D primitive re-exports, the Semantic Messaging shape). Re-checked at 0.4.2, 0.5.0 and
       0.5.1; `Types2D` arrived but remains type-only, so Phase 0's exit criterion still cannot be
