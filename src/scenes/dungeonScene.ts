@@ -11672,19 +11672,32 @@ export class DungeonScene extends Scene2D {
 	 * granularity, stated).
 	 */
 	private takeDM300Turn(dm300: Creature): void {
-		if ((dm300.dmAbilityTurns ?? -1) < 0) dm300.dmAbilityTurns = 0;
-		else dm300.dmAbilityTurns = (dm300.dmAbilityTurns ?? 0) + 1;
 		const maxCooldown = isChallengeEnabled('stronger_bosses') ? 7 : 9;
+		//`DM300.act()` runs its whole ability clock only while not supercharged: the turn
+		//counter freezes during the charge, and no ability fires. The first cooldown is
+		//Java's own construction roll (`NormalIntRange(5, MAX)`), drawn here once when the
+		//counter starts rather than defaulting flat every turn.
+		const supercharged = dm300.dmSupercharged === true;
+		if (!supercharged) {
+			if ((dm300.dmAbilityTurns ?? -1) < 0) {
+				dm300.dmAbilityTurns = 0;
+				if (dm300.dmAbilityCd === undefined) dm300.dmAbilityCd = Random.normalRange(5, maxCooldown);
+			} else dm300.dmAbilityTurns = (dm300.dmAbilityTurns ?? 0) + 1;
+		}
 		const blocked = new Set(
 			this.creatures.filter((c) => c !== dm300 && c !== this.hero).map((c) => this.level.index(c.x, c.y))
 		);
 		//`DM300.java` 185-189: adjacent, or a step towards the hero exists.
 		const canReach = Roguelike.chebyshevDistance(dm300, this.hero) <= 1
 			|| this.pathfinder.find({ x: dm300.x, y: dm300.y }, { x: this.hero.x, y: this.hero.y }, { blocked }).length > 0;
-		if (dm300.seesHero && !canReach && (dm300.dmAbilityTurns ?? 0) >= 5) {
+		if (!supercharged && dm300.seesHero && !canReach && (dm300.dmAbilityTurns ?? 0) >= 5) {
 			//`DM300.java` 202-234, "more aggressive ability usage when DM can't reach its target": the
 			//gas cone is cast with `STOP_SOLID` only (`Float.POSITIVE_INFINITY` range, 30 degrees), and
-			//a cone that misses falls through to rocks.
+			//a cone that misses falls through to rocks - unless the hero is already stunned, where
+			//Java fires nothing and, crucially, does NOT reset the counter. A failed attempt (like
+			//a fired one at range, which spends no turn) falls through below: first to the
+			//normal-branch roll, then to movement. Can't-reach implies distance > 1, since
+			//adjacency counts as reachable, so a fired ability here never spends the turn.
 			const aim = coneCells({
 				source: { x: dm300.x, y: dm300.y },
 				target: { x: this.hero.x, y: this.hero.y },
@@ -11695,17 +11708,17 @@ export class DungeonScene extends Scene2D {
 				trace: (from, to) => this.coneRay(from, to, false),
 			});
 			const inCone = aim.cells.some((cell) => cell.x === this.hero.x && cell.y === this.hero.y);
-			dm300.dmAbilityTurns = 0;
 			if (inCone) {
 				dm300.dmLastAbility = 1;
+				dm300.dmAbilityTurns = 0;
 				this.dm300VentGas(dm300);
 			} else if (this.hero.buffs['paralysis'] === undefined) {
 				dm300.dmLastAbility = 2;
+				dm300.dmAbilityTurns = 0;
 				this.dm300Rockfall(dm300);
 			}
-			return;
 		}
-		if (dm300.seesHero && (dm300.dmAbilityTurns ?? 0) > (dm300.dmAbilityCd ?? 5)) {
+		if (!supercharged && dm300.seesHero && (dm300.dmAbilityTurns ?? 0) > (dm300.dmAbilityCd ?? 5)) {
 			const last = dm300.dmLastAbility ?? 0;
 			const pick = chooseDM300Ability(last as 0 | 1 | 2, simulationRandom) === 'vent' ? 1 : 2;
 			dm300.dmLastAbility = pick;
@@ -11713,7 +11726,9 @@ export class DungeonScene extends Scene2D {
 			dm300.dmAbilityCd = Random.normalRange(5, maxCooldown);
 			if (pick === 1) this.dm300VentGas(dm300);
 			else this.dm300Rockfall(dm300);
-			return;
+			//Java spends the turn on an adjacent ability (`spend(TICK)`) and nothing at all at
+			//range, where the ability is free and the turn continues into movement below.
+			if (Roguelike.chebyshevDistance(dm300, this.hero) <= 1) return;
 		}
 		const distance = Roguelike.chebyshevDistance(dm300, this.hero);
 		if (distance <= 1) {
@@ -13588,6 +13603,9 @@ export class DungeonScene extends Scene2D {
 		const dm300 = this.creatures.find((creature) => creature.kind === 'dm300' && creature.hp > 0);
 		if (!dm300) return;
 		dm300.dmSupercharged = false;
+		//`DM300.loseSupercharge()`: clamp the ability counter so the boss cannot fire the
+		//very turn the charge ends (`Math.min(turnsSinceLastAbility, MIN_COOLDOWN-3)`).
+		if ((dm300.dmAbilityTurns ?? -1) >= 0) dm300.dmAbilityTurns = Math.min(dm300.dmAbilityTurns ?? 0, 2);
 		const remaining = this.creatures.filter((creature) => creature.kind === 'pylon' && creature.hp > 0).length;
 		const finalPylons = isChallengeEnabled('stronger_bosses') ? 1 : 2;
 		if (remaining > finalPylons) this.cavesBossEnergyCells.clear();

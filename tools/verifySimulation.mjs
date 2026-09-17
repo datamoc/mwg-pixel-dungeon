@@ -584,6 +584,12 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.deepEqual(planRatKingWave(12, 150, true, random), { adds: ['warlock', 'monk', 'ghoul', 'ghoul'], nextSummonsMade: 16, announcement: 'wave_3' });
 		assert.equal(chooseDM300Ability(0, random), 'vent');
 		assert.equal(chooseDM300Ability(2, random), 'rockfall');
+		// Java's weighted repeat rule, pinned exactly: fresh is 50/50, a repeat lands
+		// only on the 1-in-4 roll, a switch on the other three.
+		const cycle = (last, rolls) => { let i = 0; return rolls.map(() => chooseDM300Ability(last, { int: () => rolls[i++] })); };
+		assert.deepEqual(cycle(0, [0, 1]), ['vent', 'rockfall']);
+		assert.deepEqual(cycle(1, [0, 1, 2, 3]), ['vent', 'rockfall', 'rockfall', 'rockfall']);
+		assert.deepEqual(cycle(2, [0, 1, 2, 3]), ['rockfall', 'vent', 'vent', 'vent']);
 		assert.deepEqual(dm300VentPath({ x: 0, y: 0 }, { x: 3, y: 3 }, (x, y) => !(x === 2 && y === 2)), [{ x: 1, y: 1 }]);
 		const rockfall = planDM300Rockfall({ x: 3, y: 3 }, { x: 0, y: 0 }, 7, 7, () => true, random);
 		assert.deepEqual(rockfall.safe, { x: 2, y: 2 });

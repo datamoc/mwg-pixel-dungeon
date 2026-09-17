@@ -5,7 +5,7 @@ import type { SimulationRandom } from './random';
 export type DM300Ability = 'vent' | 'rockfall';
 
 /** `DM300.java`'s weighted repeat rule: a fresh cycle is even, then repeats its last choice
- * only rarely (1/5), while switching is the usual outcome. */
+ * at 1/4 only, while switching is the usual outcome. */
 export function chooseDM300Ability(last: 0 | 1 | 2, random: SimulationRandom): DM300Ability {
 	if (last === 0) return random.int(0, 2) === 0 ? 'vent' : 'rockfall';
 	if (last === 1) return random.int(0, 4) === 0 ? 'vent' : 'rockfall';

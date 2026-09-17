@@ -1294,8 +1294,8 @@ Verified live (`tools/scratch/dm300-barrier-livecheck.mjs`, 5/5): no Barrier on 
 energized water, `30 + (HT-HP)/10` on the same wire cell once the field is cleared (`eliminatePylon`'s own clear is
 what makes it un-energized in Java too), and none while the boss is not hunting. Simplified: Java's water diffusion is
 collapsed because the fixed floor already records its water/wire cells, and exact locked-floor timing/energy visuals
-remain; the `INORGANIC` clause of the can't-reach branch (the hero is never inorganic), adjacent-only turn spend (full
-turn here), and GAS sound/travel-interrupt presentation remain. **2026-09-12: the can't-reach branch is ported.**
+remain; the `INORGANIC` clause of the can't-reach branch (the hero is never inorganic)
+and GAS sound/travel-interrupt presentation remain. **2026-09-12: the can't-reach branch is ported.**
 `DM300.java` 202-234 gives DM-300 "more aggressive ability usage when it can't reach its target": while the hero is
 unreachable (adjacent, or a step towards them exists - Java's `findStep`, here the port's own `pathfinder.find`) and
 `turnsSinceLastAbility >= MIN_COOLDOWN` (5, deliberately *not* the rotation's `> abilityCooldown`), a 30-degree,
@@ -1306,8 +1306,7 @@ keys on. Browser-verified live (`tools/scratch/dm300-gas-cone-livecheck.mjs`, 8 
 pathfinder stubbed so reachability can be tested independently of the terrain: a *reachable* hero past the cooldown
 uses the rotation and re-rolls the cooldown; an unreachable one with a clear aim line is gassed through the cone with
 no re-roll; an unreachable one whose line is walled is rockfalled instead, also with no re-roll; an already-paralysed
-unreachable hero gets neither; and under `MIN_COOLDOWN` neither fires. Still unportable here: Java's `INORGANIC`
-clause (the hero is never inorganic) and its adjacent-only turn spend. **Updated 2026-09-11:** the arena now generates
+unreachable hero gets neither; and under `MIN_COOLDOWN` neither fires. Still unportable here: Java's `INORGANIC` clause (the hero is never inorganic). **Updated 2026-09-11:** the arena now generates
 its real `Patch.generate(width, height-14, 0.15f, 2, true)` water scatter and `Random.Int(challenge ? 4 : 8)`
 inactive-trap scatter on the per-floor seeded stream, instead of a bare empty ellipse - without that terrain
 `PylonEnergy` had no cells to seed, so the whole pylon mechanic was inert. `PylonEnergy` is now seeded where Java
@@ -1399,7 +1398,7 @@ restitches the tile and plays the rock burst's shake and `rocks` cue. Verified l
 (`tools/scratch/caves-seal-livecheck.mjs`, 9 assertions - the 7 this row carried was stale). **`unseal()` is now ported too (2026-09-16)**, closing the auto-descent gap on this floor: `applyDM300DeathUnseal()` restores the entrance, breaks the gate's five `SIGN` cells to `EMPTY`, clears the pylon energy and re-maps the arena visuals (which is what reaches the broken `32..36` frames - `gateIntact` now reads the live paint instead of a hardcoded `true`), then opens the exit stairs at Java's own (16,2). Unowned: the `BlastParticle` bursts, the music fade and `Dungeon.observe()`. **Save-safe since 2026-09-14:** the spent flag now persists in the run save (it used to reset on every
 `enterLevel`, re-arming the gate after each load and doubling DM-300 next to the persisted one), the walled entrance
 is re-applied to regenerated paint on load, and the spawn is skipped whenever a live DM-300 already exists - so
-pre-flag saves adopt the sealed state instead of doubling the boss. |
+pre-flag saves adopt the sealed state instead of doubling the boss. **Corrected 2026-09-17, DM300's own turn cycle (audited against `DM300.act()` line by line): five gaps, all in `takeDM300Turn`.** (1) Abilities fired while supercharged - Java wraps the whole ability clock in `if (!supercharged)`; the counter now freezes and no branch fires during the charge. (2) No `loseSupercharge` clamp - Java floors the counter at `MIN_COOLDOWN-3` so the boss cannot fire the turn the charge ends; now `min(turns, 2)`. (3) Ranged abilities spent the turn - Java spends (`spend(TICK)`) only when adjacent; a ranged vent/rockfall now falls through into movement, and the can't-reach branch (always at range, since adjacency counts as reachable) does too. (4) The can't-reach branch reset the counter even when nothing fired (paralysed hero plus missed cone) - Java resets only on a fired ability and a failed attempt falls through to the normal-branch roll; now matched. (5) The first cooldown defaulted flat 5 - Java rolls `NormalIntRange(5, MAX)` at construction; now rolled once when the counter starts. The weighted repeat rule (50/50 fresh, 1/4 repeat) is pinned by new deterministic `verifySimulation` checks; its doc comment's 1/5 is corrected. |
 | `CavesBossLevel`'s three custom tilemaps: `CityEntrance`, `EntranceOverhang`, `ArenaVisuals` (`caves_boss.png`;
 `CityEntrance.create()`, `EntranceOverhang.create()`, `ArenaVisuals.create()`/`updateState()`/`name()`/`desc()`) |
 `src/spdLevelGen/cavesBossVisuals.ts`, the two `cavesBossTiles`/`cavesBossWalls` layers in `enterLevel`,
