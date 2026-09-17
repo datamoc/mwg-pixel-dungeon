@@ -30,6 +30,7 @@ export interface StoneContext {
 	}) => void;
 	readonly openAugmentChoice: () => void;
 	readonly moveHero: (target: Step) => void;
+	readonly playTeleportAppear: (from: Step, to: Step, entity: Creature) => void;
 	readonly revealClairvoyance: (center: Step, distance: number) => void;
 	readonly creatures: Creature[];
 	readonly depth: number;
@@ -154,7 +155,9 @@ export function useStoneOfBlink(scene: StoneContext, instanceId?: string): void 
 		onConfirm: (target) => {
 			scene.bag.remove('stoneOfBlink', 1, instanceId);
 			delete scene.hero.buffs['roots'];
+			const blinkFrom = { x: scene.hero.x, y: scene.hero.y };
 			scene.moveHero(target);
+			scene.playTeleportAppear(blinkFrom, target, scene.hero);
 			scene.say(t('items.scrolls.scrollofteleportation.tele'), 'positive');
 		},
 	});

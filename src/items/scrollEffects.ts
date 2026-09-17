@@ -20,6 +20,7 @@ export interface ScrollEffectsContext {
 	readonly spawnMirrorImage: (at: Step) => void;
 	readonly randomFreeCell: (exclude: Step) => Step | undefined;
 	readonly moveTo: (creature: Creature, to: Step) => void;
+	readonly playTeleportAppear: (from: Step, to: Step, entity: Creature) => void;
 	readonly restitchAllTiles: () => void;
 	readonly showDamage: (target: Creature, amount: number) => void;
 	readonly kill: (target: Creature) => void;
@@ -70,7 +71,9 @@ export function applyScrollEffect(id: string, context: ScrollEffectsContext): bo
 		delete hero.buffs['roots'];
 		const destination = context.randomFreeCell(hero);
 		if (destination) {
+			const teleportFrom = { x: hero.x, y: hero.y };
 			context.moveTo(hero, destination);
+			context.playTeleportAppear(teleportFrom, destination, hero);
 			context.say(t('items.scrolls.scrollofteleportation.tele'), 'positive');
 		} else context.say(t('items.scrolls.scrollofteleportation.no_tele'), 'negative');
 		return true;

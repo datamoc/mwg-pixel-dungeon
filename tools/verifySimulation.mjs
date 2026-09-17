@@ -37,7 +37,7 @@ try {
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'mechanics/cone', 'dungeonConstants',
-	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/teleport', 'simulation/timeBubble',
+	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble',
 	// `dungeonConstants` and `items/wands` read the MWL item tables, so the harness compiles the
 	// real adapter and the real generated catalogue instead of a hand-copied stub of them - a stub
 	// is how the old, hand-listed framework set above drifted once already, and how the item-frame
@@ -95,6 +95,7 @@ try {
 const { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } = require('./simulation/plantPools');
 const { plantDropCandidates, plantDropCount } = require('./simulation/plantDrops');
 const { teleportCandidates, disarmBubblePresses } = require('./simulation/teleport');
+const { teleportAppearPlan } = require('./simulation/teleportAppear');
 const { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } = require('./simulation/timeBubble');
 	const { applyEnvironmentalBlobs } = require('./simulation/environmentalBlobs');
 	// The four coefficients `HighGrass.trample` reads, as the port's MWL rows carry them.
@@ -277,6 +278,16 @@ check('Teleport lands passable, unoccupied, unseen, non-secret and out of pits',
 		{ x: 4, y: 0, ...open, secret: true },
 		{ x: 5, y: 0, ...open, chasm: true },
 	]), [{ x: 0, y: 0 }]);
+});
+check('Teleport appear plays visibility-gated sound, bursts and fade', () => {
+	assert.deepEqual(teleportAppearPlan(true, false, true, false),
+		{ sound: true, burstFrom: false, fade: true, burstTo: true });
+	assert.deepEqual(teleportAppearPlan(true, true, false, false),
+		{ sound: true, burstFrom: true, fade: true, burstTo: true });
+	assert.deepEqual(teleportAppearPlan(false, false, false, false),
+		{ sound: false, burstFrom: false, fade: true, burstTo: false });
+	assert.deepEqual(teleportAppearPlan(true, true, false, true),
+		{ sound: true, burstFrom: true, fade: false, burstTo: true });
 });
 check('TimeBubble disarm uproots presses but spares Rotberry', () => {
 	assert.deepEqual(

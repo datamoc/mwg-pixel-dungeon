@@ -198,6 +198,7 @@ import { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEar
 import { plantDropCandidates, plantDropCount } from '../simulation/plantDrops';
 import { teleportCandidates, disarmBubblePresses, type TeleportCell } from '../simulation/teleport';
 import { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } from '../simulation/timeBubble';
+import { teleportAppearPlan } from '../simulation/teleportAppear';
 import { evolveElectricity, evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
 import { selectRangedTarget } from '../simulation/targeting';
@@ -1824,6 +1825,9 @@ export class DungeonScene extends Scene2D {
 	/** One-shot particle bursts (currently only the curse infusion's shadow motes), ticked and
 	 * destroyed by `updateEffectBursts` - the same self-removing-list shape `projectiles` uses. */
 	private effectBursts: { emitter: ParticleEmitter; remaining: number }[] = [];
+	/** Pending `ScrollOfTeleportation.appear` alpha fades (`AlphaTweener(ch.sprite, 1,
+	 * 0.4f)`): transient visual state like `effectBursts`, never persisted. */
+	private teleportFades: { sprite: TintedSprite; remaining: number; total: number }[] = [];
 
 	/** how much to shrink each pop-up, for a layer living in world space under a zoomed camera */
 	private readonly floaterTextScale = 1 / 3;
@@ -2840,6 +2844,7 @@ export class DungeonScene extends Scene2D {
 		// keeping their references would leave the update ticking destroyed emitters
 		for (const burst of this.effectBursts) burst.emitter.destroy();
 		this.effectBursts = [];
+		this.teleportFades = [];
 		//health bars are per-creature and every non-hero creature is about to be dropped
 		for (const bar of this.healthBars.values()) bar.destroy();
 		this.healthBars.clear();
@@ -5062,6 +5067,7 @@ export class DungeonScene extends Scene2D {
 			spawnMirrorImage: (at) => this.spawnMirrorImage(at),
 			randomFreeCell: (exclude) => this.randomFreeCell(exclude),
 			moveTo: (creature, to) => this.moveTo(creature, to),
+			playTeleportAppear: (from, to, entity) => this.playTeleportAppear(from, to, entity),
 			restitchAllTiles: () => this.restitchAllTiles(),
 			showDamage: (target, amount) => this.showDamage(target, amount),
 			kill: (target) => this.kill(target),
@@ -8451,7 +8457,11 @@ export class DungeonScene extends Scene2D {
 				//floor-return transition this port does not have.
 				delete this.hero.buffs['roots'];
 				const fadeDestination = this.randomFreeCell(this.hero);
-				if (fadeDestination) this.moveTo(this.hero, fadeDestination);
+				if (fadeDestination) {
+					const fadeFrom = { x: this.hero.x, y: this.hero.y };
+					this.moveTo(this.hero, fadeDestination);
+					this.playTeleportAppear(fadeFrom, fadeDestination, this.hero);
+				}
 				this.say(t('port.log.fadeleafteleport'), 'positive');
 				break;
 			}
@@ -8559,12 +8569,15 @@ export class DungeonScene extends Scene2D {
 		this.markHazardMob(creature);
 			const destination = this.randomFreeCell(creature);
 			if (!destination) return true;
-			//ScrollOfTeleportation.teleportChar() moves the mob immediately; the port has no
-			//separate teleport animation, so update the same logical position used by movement.
+			//`ScrollOfTeleportation.teleportChar()` moves the mob immediately, with the shared
+			//`ScrollOfTeleportation.appear` presentation as well, leaving only the logical
+		//position update direct (no `moveTo`, so no cell-press side effects).
+			const mobFadeFrom = { x: creature.x, y: creature.y };
 			creature.x = destination.x;
 			creature.y = destination.y;
 			const sprite = this.sprite(creature);
 			sprite.position.set(destination.x * TILE, destination.y * TILE);
+			this.playTeleportAppear(mobFadeFrom, destination, creature);
 			return true;
 		}
 		//The remaining branches are the non-hero half of each Plant.activate(Char). Java's
@@ -9930,7 +9943,9 @@ export class DungeonScene extends Scene2D {
 				if (fromGolem > bestDistance) { bestDistance = fromGolem; best = at; }
 			}
 			if (!best) return false;
+			const golemTeleFrom = { x: this.hero.x, y: this.hero.y };
 			this.moveTo(this.hero, best);
+			this.playTeleportAppear(golemTeleFrom, best, this.hero);
 			monster.golemTeleCooldown = 20;
 			this.say(t('port.log.golemteleport'), 'negative');
 			return true;
@@ -10041,7 +10056,9 @@ export class DungeonScene extends Scene2D {
 				}
 			}
 			if (at) {
+				const skelTeleFrom = { x: skel.x, y: skel.y };
 				this.moveTo(skel, at);
+				this.playTeleportAppear(skelTeleFrom, at, skel);
 				this.say(t('port.log.necroteleport'), 'warning');
 				return true;
 			}
@@ -12717,14 +12734,20 @@ export class DungeonScene extends Scene2D {
 		//next monster-turn FOV recompute (`seesHero`) naturally loses track once far enough away.
 		if (attacker === this.hero && this.weaponAffix === 'displacing' && !defender.isNPC && Random.chance((1 / 12) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
 			const destination = this.randomFreeCell(defender);
-			if (destination) this.moveTo(defender, destination);
+			if (destination) {
+				const displaceFrom = { x: defender.x, y: defender.y };
+				this.moveTo(defender, destination);
+				this.playTeleportAppear(displaceFrom, destination, defender);
+			}
 		}
 		//Displacement.proc(): a 1-in-20 x arcana armor-curse proc teleports the defender
 		//and replaces the incoming hit with zero damage.
 		if (defender.isHero && this.armorGlyph === 'displacement' && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
+			const armorDisplaceFrom = { x: defender.x, y: defender.y };
 			const destination = this.randomFreeCell(defender);
 			if (destination) {
 				this.moveTo(defender, destination);
+				this.playTeleportAppear(armorDisplaceFrom, destination, defender);
 				defender.sleeping = false;
 				this.say(t('port.log.armordisplace'), 'warning');
 				return false;
@@ -17717,7 +17740,9 @@ export class DungeonScene extends Scene2D {
 				delete this.hero.buffs['roots'];
 				const destination = this.randomFreeCell(this.hero);
 				if (destination) {
+					const heroZapFrom = { x: this.hero.x, y: this.hero.y };
 					this.moveTo(this.hero, destination);
+					this.playTeleportAppear(heroZapFrom, destination, this.hero);
 					this.say(t('items.scrolls.scrollofteleportation.tele'), 'positive');
 				} else this.say(t('items.scrolls.scrollofteleportation.no_tele'), 'negative');
 				return;
@@ -17730,7 +17755,9 @@ export class DungeonScene extends Scene2D {
 				return;
 			}
 			const destination = this.randomFreeCell(creature);
+			const creatureZapFrom = { x: creature.x, y: creature.y };
 			if (!destination) { this.say(t('items.scrolls.scrollofteleportation.no_tele'), 'negative'); return; }
+			this.playTeleportAppear(creatureZapFrom, destination, creature);
 			this.moveTo(creature, destination);
 		}
 
@@ -17984,7 +18011,67 @@ export class DungeonScene extends Scene2D {
 			}
 		}
 
-		private burstShadowUp(cell: Step): void {
+	/**
+	 * `ScrollOfTeleportation.appear`'s white `Speck.LIGHT` burst (`Speck.java`, tag
+	 * `v3.3.8`): lifespan 1, no tint, no velocity (a static sparkle), spinning at
+	 * `angularSpeed = 90` degrees per second, with `update()` driving both the scale
+	 * and the alpha (`am = scale`) along `p < 0.2 ? p*5 : (1-p)*1.25` - a snap up,
+	 * then a shrink-out. Java staggers its 3 particles over 0.2s
+	 * (`start(factory, 0.2f, 3)`); this port bursts all 3 at once, the same
+	 * simplification every other burst here already makes.
+	 */
+	private burstTeleportLight(cell: Step): void {
+		const lightCurve = (t: number): number => (t < 0.2 ? t * 5 : (1 - t) * 1.25);
+		const emitter = new ParticleEmitter({
+			texture: Texture.WHITE,
+			max: 3,
+			rate: 0,
+			life: 1,
+			speed: 0,
+			spin: Math.PI / 2,
+			scale: lightCurve,
+			alpha: lightCurve,
+			spawn: { shape: 'rect', width: TILE, height: TILE },
+		});
+		emitter.position.set(cell.x * TILE, cell.y * TILE);
+		this.effectLayer.addChild(emitter);
+		emitter.burst(3);
+		this.effectBursts.push({ emitter, remaining: 1 });
+	}
+
+	/**
+	 * `ScrollOfTeleportation.appear(ch, pos)` presentation (`items/scrolls/
+	 * ScrollOfTeleportation.java`, tag `v3.3.8`), shared by every random teleport
+	 * in the game - the scroll, Fadeleaf, the Displacing/Displacement curses,
+	 * Lloyd's Beacon's zap, Blink, Golem's enemy teleport and the Necromancer's
+	 * skeleton recall all funnel through this one Java method for their visuals.
+	 * The TELEPORT sample plays when either endpoint is in the hero's FOV; the old
+	 * cell bursts only for a visible non-hero departure; the sprite fades 0 to 1
+	 * over 0.4s (`AlphaTweener`) unless the traveller is invisible; the new cell
+	 * bursts when visible, or always for the hero (whose own arrival is followed).
+	 * The camera-follow release (`Camera.panFollow`) has no counterpart - this
+	 * port's camera never follows a non-hero creature.
+	 */
+	private playTeleportAppear(from: Step, to: Step, entity: Creature): void {
+		const plan = teleportAppearPlan(
+			this.fov.isVisible(from.x, from.y),
+			this.fov.isVisible(to.x, to.y),
+			entity.isHero ?? false,
+			entity.buffs['invisibility'] !== undefined,
+		);
+		if (plan.sound) runState.audio.cue('teleport', 0.7);
+		if (plan.burstFrom) this.burstTeleportLight(from);
+		if (plan.fade) {
+			const sprite = this.spriteFor.get(entity.id);
+			if (sprite) {
+				sprite.alpha = 0;
+				this.teleportFades.push({ sprite, remaining: 0.4, total: 0.4 });
+			}
+		}
+		if (plan.burstTo) this.burstTeleportLight(to);
+	}
+
+	private burstShadowUp(cell: Step): void {
 			const emitter = new ParticleEmitter({
 				texture: Texture.WHITE,
 				max: 5,
@@ -18003,7 +18090,20 @@ export class DungeonScene extends Scene2D {
 			this.effectBursts.push({ emitter, remaining: 1 });
 		}
 
-		private updateEffectBursts(dt: number): void {
+	private updateTeleportFades(dt: number): void {
+		for (let i = this.teleportFades.length - 1; i >= 0; i--) {
+			const fade = this.teleportFades[i]!;
+			fade.remaining -= dt;
+			if (fade.remaining > 0) {
+				fade.sprite.alpha = 1 - fade.remaining / fade.total;
+				continue;
+			}
+			fade.sprite.alpha = 1;
+			this.teleportFades.splice(i, 1);
+		}
+	}
+
+	private updateEffectBursts(dt: number): void {
 			for (let i = this.effectBursts.length - 1; i >= 0; i--) {
 				const burst = this.effectBursts[i]!;
 				burst.remaining -= dt;
@@ -18252,6 +18352,7 @@ export class DungeonScene extends Scene2D {
 			beginAiming: this.beginAiming.bind(this),
 			openAugmentChoice: () => { this.augmentChoiceOpen = true; this.talentOpen = true; this.refreshTalentPanel(); },
 			moveHero: (target) => this.moveTo(this.hero, target),
+			playTeleportAppear: (from, to, entity) => this.playTeleportAppear(from, to, entity),
 			revealClairvoyance: (center, distance) => {
 				for (let y = Math.max(0, center.y - distance); y <= Math.min(this.level.height - 1, center.y + distance); y++) {
 					for (let x = Math.max(0, center.x - distance); x <= Math.min(this.level.width - 1, center.x + distance); x++) {
@@ -19754,7 +19855,9 @@ export class DungeonScene extends Scene2D {
 				else {
 					const destination = this.randomFreeCell(creature);
 					if (destination) {
+						const phaseShiftFrom = { x: creature.x, y: creature.y };
 						this.moveTo(creature, destination);
+						this.playTeleportAppear(phaseShiftFrom, destination, creature);
 						//`PhaseShift.affectTarget`: a teleported mob is beckoned back to wandering
 						//(`HUNTING -> WANDERING` plus a random destination) before the paralysis lands.
 						if (!creature.isHero) {
@@ -20449,6 +20552,7 @@ export class DungeonScene extends Scene2D {
 
 		this.floaters.update(dt);
 		this.updateEffectBursts(dt);
+		this.updateTeleportFades(dt);
 
 		//Compass.java recomputes its angle whenever the camera scrolls, against the camera's
 		//own centre - so it follows the view rather than the hero, and keeps pointing while
