@@ -21,6 +21,15 @@
 
 // HUMAN: English source copy for strings invented by this port.
 export const PORT_STRINGS_EN: Record<string, string> = {
+	//SPD v2.1.4 keys absent from v3.3.8, moved under port.* with SPD's own translations (2026-09-17).
+	'port.log.dm300rocks': 'DM-300 slams the ground, loosening rocks from the ceiling!',
+	'port.log.dm300vent': 'DM-300 fires a jet of toxic exhaust!',
+	'port.ui.pickaxemine': 'MINE',
+	'port.log.pickaxenovein': 'There is no dark gold vein near you to mine.',
+	'port.ui.signname': 'Sign',
+	'port.ui.signdesc': "You can't read the text from here.",
+	'port.ui.journalnotes': 'Notes',
+	'port.ui.titlebadges': 'Badges',
 	'port.name.questweapon': 'quest weapon',
 	'port.name.wand': 'wand',
 	//`triggerPlant`/misc scene log lines found hardcoded in English with no t() call at all
@@ -605,6 +614,14 @@ export const PORT_STRINGS_EN: Record<string, string> = {
  */
 // HUMAN: French translation reviewed by the project owner.
 export const PORT_STRINGS_FR: Record<string, string> = {
+	'port.log.dm300rocks': 'Le DM-300 frappe violemment le sol, déstabilisant les rochers au plafond !',
+	'port.log.dm300vent': 'Le DM-300 projette du gaz toxique !',
+	'port.ui.pickaxemine': 'MINER',
+	'port.log.pickaxenovein': 'Il n’y a pas de filon d’or sombre à miner à votre portée.',
+	'port.ui.signname': 'Panneau',
+	'port.ui.signdesc': 'Vous ne pouvez lire le texte d’ici.',
+	'port.ui.journalnotes': 'Notes',
+	'port.ui.titlebadges': 'Badges',
 	'port.name.questweapon': 'arme de quête',
 	'port.name.wand': 'baguette',
 	//voir la section EN pour le contexte : lignes de log codées en dur trouvées sans t() du tout
@@ -1143,6 +1160,14 @@ export const PORT_STRINGS_FR: Record<string, string> = {
  */
 
 export const PORT_STRINGS_DE: Record<string, string> = {
+	'port.log.dm300rocks': 'Der DM-300 schlägt auf den Boden, so dass sich Steine von der Decke lösen!',
+	'port.log.dm300vent': 'Der DM-300 schießt einen Strahl aus toxischen Abgasen!',
+	'port.ui.pickaxemine': 'SCHÜRFEN',
+	'port.log.pickaxenovein': 'Es befindet sich kein Dunkelgold in der Nähe, welches du abbauen könntest.',
+	'port.ui.signname': 'Schild',
+	'port.ui.signdesc': 'Du kannst den Text von hier aus nicht lesen.',
+	'port.ui.journalnotes': 'Notizen',
+	'port.ui.titlebadges': 'Abzeichen',
 	'port.name.questweapon': 'Questwaffe',
 	'port.name.wand': 'Zauberstab',
 	'port.log.mineabandonedquiet': 'Die verlassene Mine liegt still.',
@@ -1669,6 +1694,14 @@ export const PORT_STRINGS_DE: Record<string, string> = {
  */
 
 export const PORT_STRINGS_ES: Record<string, string> = {
+	'port.log.dm300rocks': '¡DM-300 golpea el suelo, desprendiendo rocas del techo!',
+	'port.log.dm300vent': '¡DM-300 dispara un chorro de gas tóxico!',
+	'port.ui.pickaxemine': 'MINAR',
+	'port.log.pickaxenovein': 'No hay ninguna veta de oro oscuro cerca que minar.',
+	'port.ui.signname': 'Señal',
+	'port.ui.signdesc': 'No puedes leer el texto desde aquí.',
+	'port.ui.journalnotes': 'Notas',
+	'port.ui.titlebadges': 'Medallas',
 	'port.name.questweapon': 'arma de misión',
 	'port.name.wand': 'varita',
 	'port.log.mineabandonedquiet': 'La mina abandonada está en silencio.',
@@ -2196,6 +2229,14 @@ export const PORT_STRINGS_ES: Record<string, string> = {
  */
 
 export const PORT_STRINGS_PT: Record<string, string> = {
+	'port.log.dm300rocks': 'O DM-300 bate no chão, soltando pedras do teto!',
+	'port.log.dm300vent': 'DM-300 dispara um jato de escape tóxico!',
+	'port.ui.pickaxemine': 'GARIMPAR',
+	'port.log.pickaxenovein': 'Não há nenhum veio de ouro escuro para você minerar.',
+	'port.ui.signname': 'Placa',
+	'port.ui.signdesc': 'Você não consegue ler a placa daqui.',
+	'port.ui.journalnotes': 'Anotações',
+	'port.ui.titlebadges': 'Emblemas',
 	'port.name.questweapon': 'arma de missão',
 	'port.name.wand': 'varinha',
 	'port.log.mineabandonedquiet': 'A mina abandonada está silenciosa.',
@@ -2722,6 +2763,14 @@ export const PORT_STRINGS_PT: Record<string, string> = {
  */
 
 export const PORT_STRINGS_IT: Record<string, string> = {
+	'port.log.dm300rocks': 'DM-300 percuote il terreno, dissestando le rocce del soffitto!',
+	'port.log.dm300vent': 'DM-300 scarica un getto di gas tossico!',
+	'port.ui.pickaxemine': 'ESTRAI',
+	'port.log.pickaxenovein': 'Vicino a te non c’è nessuna vena di oro oscuro da minare.',
+	'port.ui.signname': 'Cartello',
+	'port.ui.signdesc': 'Non riesci a leggere da qui.',
+	'port.ui.journalnotes': 'Appunti',
+	'port.ui.titlebadges': 'Trofei',
 	'port.name.questweapon': 'arma della missione',
 	'port.name.wand': 'bacchetta',
 	'port.log.mineabandonedquiet': 'La miniera abbandonata è silenziosa.',
@@ -3248,6 +3297,14 @@ export const PORT_STRINGS_IT: Record<string, string> = {
  */
 
 export const PORT_STRINGS_PL: Record<string, string> = {
+	'port.log.dm300rocks': 'DM-300 uderza w ziemię, odrywając głazy od sklepienia!',
+	'port.log.dm300vent': 'DM-300 wydmuchuje chmurę toksycznych spalin!',
+	'port.ui.pickaxemine': 'KOP',
+	'port.log.pickaxenovein': 'W pobliżu nie ma żadnej żyły ciemnego złota do wydobycia.',
+	'port.ui.signname': 'Znak',
+	'port.ui.signdesc': 'Nie możesz stąd odczytać tekstu.',
+	'port.ui.journalnotes': 'Notatki',
+	'port.ui.titlebadges': 'Odznaki',
 	'port.name.questweapon': 'broń zadaniowa',
 	'port.name.wand': 'różdżka',
 	'port.log.mineabandonedquiet': 'Opuszczona kopalnia jest cicha.',
@@ -3776,6 +3833,14 @@ export const PORT_STRINGS_PL: Record<string, string> = {
  */
 
 export const PORT_STRINGS_RU: Record<string, string> = {
+	'port.log.dm300rocks': 'DM-300 наносит удары по полу, с потолка сыпятся камни!',
+	'port.log.dm300vent': 'DM-300 совершает выброс токсичных выхлопных газов!',
+	'port.ui.pickaxemine': 'ДОБЫТЬ',
+	'port.log.pickaxenovein': 'Рядом нет жил тёмного золота.',
+	'port.ui.signname': 'Знак',
+	'port.ui.signdesc': 'Вы не можете разобрать, что там написано, с этого расстояния.',
+	'port.ui.journalnotes': 'Заметки',
+	'port.ui.titlebadges': 'Медали',
 	'port.name.questweapon': 'оружие задания',
 	'port.name.wand': 'жезл',
 	'port.log.mineabandonedquiet': 'Заброшенная шахта тиха.',
@@ -4280,6 +4345,14 @@ export const PORT_STRINGS_RU: Record<string, string> = {
  */
 
 export const PORT_STRINGS_TR: Record<string, string> = {
+	'port.log.dm300rocks': 'DM-300 yere vurdu, tavandan taşlar düşüyor!',
+	'port.log.dm300vent': 'DM-300 zehirli gaz püskürtüyor!',
+	'port.ui.pickaxemine': 'KAZ',
+	'port.log.pickaxenovein': 'Yakınlarda kazabileceğin kara altın cevheri yok.',
+	'port.ui.signname': 'Tabela',
+	'port.ui.signdesc': 'Yazıyı buradan okuyamıyorsun.',
+	'port.ui.journalnotes': 'Notlar',
+	'port.ui.titlebadges': 'Rozetler',
 	'port.name.questweapon': 'görev silahı',
 	'port.name.wand': 'asa',
 	'port.log.mineabandonedquiet': 'Terk edilmiş maden sessiz.',
@@ -4784,6 +4857,14 @@ export const PORT_STRINGS_TR: Record<string, string> = {
  */
 
 export const PORT_STRINGS_UK: Record<string, string> = {
+	'port.log.dm300rocks': 'ЗМ-300 гримає по землі, струшуючи каміння зі стелі!',
+	'port.log.dm300vent': 'ЗМ-300 вистрілює струменем токсичних випарів.',
+	'port.ui.pickaxemine': 'КОПАТИ',
+	'port.log.pickaxenovein': 'Поруч з вами немає темної золотої жили.',
+	'port.ui.signname': 'Знак',
+	'port.ui.signdesc': 'Ви не можете прочитати текст звідси.',
+	'port.ui.journalnotes': 'Нотатки',
+	'port.ui.titlebadges': 'Відзнаки',
 	'port.name.questweapon': 'зброя завдання',
 	'port.name.wand': 'жезл',
 	'port.log.mineabandonedquiet': 'Покинута шахта тиха.',
@@ -5286,6 +5367,14 @@ export const PORT_STRINGS_UK: Record<string, string> = {
  */
 
 export const PORT_STRINGS_HU: Record<string, string> = {
+	'port.log.dm300rocks': 'A DM-300 a földre csap, a tetőről sziklákat indítva!',
+	'port.log.dm300vent': 'A DM-300 mérgező levegőt fúj!',
+	'port.ui.pickaxemine': 'BÁNYÁSZOM',
+	'port.log.pickaxenovein': 'Nincs a közeledben kibányászható sötét aranyérc.',
+	'port.ui.signname': 'Jelzőtábla',
+	'port.ui.signdesc': 'Nem tudod elolvasni a szöveget innen.',
+	'port.ui.journalnotes': 'Jegyzetek',
+	'port.ui.titlebadges': 'Medálok',
 	'port.name.questweapon': 'küldetésfegyver',
 	'port.name.wand': 'varázspálca',
 	'port.log.mineabandonedquiet': 'Az elhagyott bánya csendes.',
@@ -5787,6 +5876,14 @@ export const PORT_STRINGS_HU: Record<string, string> = {
  */
 
 export const PORT_STRINGS_NL: Record<string, string> = {
+	'port.log.dm300rocks': 'DM-300 bonkt op de grond waardoor stenen los komen van het plafond!',
+	'port.log.dm300vent': 'DM-300 vuurt een straal van giftige uitlaatgassen af!',
+	'port.ui.pickaxemine': 'DELF',
+	'port.log.pickaxenovein': 'Er is geen donkere gouden ader bij jou in de buurt om te delven.',
+	'port.ui.signname': 'Bordje',
+	'port.ui.signdesc': 'Je kunt de tekst van hieruit niet lezen.',
+	'port.ui.journalnotes': 'Notities',
+	'port.ui.titlebadges': 'Insignes',
 	'port.name.questweapon': 'queestewapen',
 	'port.name.wand': 'toverstaf',
 	'port.log.mineabandonedquiet': 'De verlaten mijn is stil.',
@@ -6289,6 +6386,14 @@ export const PORT_STRINGS_NL: Record<string, string> = {
  */
 
 export const PORT_STRINGS_IN: Record<string, string> = {
+	'port.log.dm300rocks': 'DM-300 tanah memukul, mengguncangkan batu-batu dari langit-langit!',
+	'port.log.dm300vent': 'DM-300 menembakkan semburan gas buangan beracun!',
+	'port.ui.pickaxemine': 'MENAMBANG',
+	'port.log.pickaxenovein': 'Tidak ada urat emas gelap di dekat Anda untuk ditambang.',
+	'port.ui.signname': 'Masuk',
+	'port.ui.signdesc': 'Anda tidak bisa membaca teks ini dari sini.',
+	'port.ui.journalnotes': 'Catatan',
+	'port.ui.titlebadges': 'Lencana',
 	'port.name.questweapon': 'senjata misi',
 	'port.name.wand': 'tongkat sihir',
 	'port.log.mineabandonedquiet': 'Tambang yang ditinggalkan itu sunyi.',
@@ -6789,6 +6894,14 @@ export const PORT_STRINGS_IN: Record<string, string> = {
  */
 
 export const PORT_STRINGS_JA: Record<string, string> = {
+	'port.log.dm300rocks': 'DM-300が地面を叩き、天井から岩が振り落とされる!',
+	'port.log.dm300vent': 'DM-300は有毒な排気ガスを噴出する!',
+	'port.ui.pickaxemine': '採掘',
+	'port.log.pickaxenovein': '近くに採掘可能なダークゴールドの鉱脈はない。',
+	'port.ui.signname': '看板',
+	'port.ui.signdesc': 'ここからは文面を読み取れない。',
+	'port.ui.journalnotes': 'メモ',
+	'port.ui.titlebadges': 'バッジ',
 	'port.name.questweapon': 'クエスト武器',
 	'port.name.wand': '杖',
 	'port.log.mineabandonedquiet': '廃坑は静まり返っている。',
@@ -7289,6 +7402,14 @@ export const PORT_STRINGS_JA: Record<string, string> = {
  */
 
 export const PORT_STRINGS_CS: Record<string, string> = {
+	'port.log.dm300rocks': 'DM-300 buší do země a uvolňuje kameny ze stropu!',
+	'port.log.dm300vent': 'DM-300 vystřelí proud jedovatých výfukových plynů!',
+	'port.ui.pickaxemine': 'TĚŽBA',
+	'port.log.pickaxenovein': 'V okolí není žádná žíla temného zlata k těžbě.',
+	'port.ui.signname': 'Cedule',
+	'port.ui.signdesc': 'Odsud nemůžete text přečíst.',
+	'port.ui.journalnotes': 'Poznámky',
+	'port.ui.titlebadges': 'Odznaky',
 	'port.name.questweapon': 'úkolová zbraň',
 	'port.name.wand': 'hůlka',
 	'port.log.mineabandonedquiet': 'Opuštěný důl je tichý.',
@@ -7789,6 +7910,14 @@ export const PORT_STRINGS_CS: Record<string, string> = {
  */
 
 export const PORT_STRINGS_VI: Record<string, string> = {
+	'port.log.dm300rocks': 'DM-300 đập xuống đất, làm đá rơi khỏi trần!',
+	'port.log.dm300vent': 'DM-300 bắn ra một luồng khí thải độc hại!',
+	'port.ui.pickaxemine': 'KHÁI THÁC',
+	'port.log.pickaxenovein': 'Không có mạch vàng đen nào gần bạn để khai thác.',
+	'port.ui.signname': 'Đăng nhập',
+	'port.ui.signdesc': 'Bạn không thể đọc văn bản từ đây.',
+	'port.ui.journalnotes': 'Ghi chú',
+	'port.ui.titlebadges': 'Huy chương',
 	'port.name.questweapon': 'vũ khí nhiệm vụ',
 	'port.name.wand': 'đũa phép',
 	'port.log.mineabandonedquiet': 'Khu mỏ bỏ hoang thật yên tĩnh.',
@@ -8289,6 +8418,14 @@ export const PORT_STRINGS_VI: Record<string, string> = {
  */
 
 export const PORT_STRINGS_EL: Record<string, string> = {
+	'port.log.dm300rocks': 'Το DM-300 χτυπά το έδαφος, τραντάζοντας βράχους από το ταβάνι!',
+	'port.log.dm300vent': 'Το DM-300 εκτοξεύει ένα πίδακα τοξικών αναθυμιάσεων!',
+	'port.ui.pickaxemine': 'ΕΞΟΡΥΞΗ',
+	'port.log.pickaxenovein': 'Δεν υπάρχει κοντά σου φλέβα σκούρου χρυσού για εξόρυξη.',
+	'port.ui.signname': 'Σύνδεση',
+	'port.ui.signdesc': 'Δεν μπορείτε να διαβάσετε το κείμενο από εδώ.',
+	'port.ui.journalnotes': 'Σημειώσεις',
+	'port.ui.titlebadges': 'Παράσημα',
 	'port.name.questweapon': 'όπλο αποστολής',
 	'port.name.wand': 'ραβδί',
 	'port.log.mineabandonedquiet': 'Το εγκαταλελειμμένο ορυχείο είναι ήσυχο.',
@@ -8789,6 +8926,14 @@ export const PORT_STRINGS_EL: Record<string, string> = {
  */
 
 export const PORT_STRINGS_KO: Record<string, string> = {
+	'port.log.dm300rocks': 'DM-300이 땅을 내리쳐 천장에서 바위를 흔들어 떨어뜨립니다!',
+	'port.log.dm300vent': 'DM-300이 독성 배기가스를 분출합니다!',
+	'port.ui.pickaxemine': '채굴',
+	'port.log.pickaxenovein': '가까이에 채굴할 수 있는 검은 금광맥이 없습니다.',
+	'port.ui.signname': '로그인',
+	'port.ui.signdesc': '여기서는 텍스트를 읽을 수 없습니다.',
+	'port.ui.journalnotes': '노트',
+	'port.ui.titlebadges': '배지',
 	'port.name.questweapon': '퀘스트 무기',
 	'port.name.wand': '마법 막대',
 	'port.log.mineabandonedquiet': '버려진 광산은 고요하다.',
@@ -9289,6 +9434,14 @@ export const PORT_STRINGS_KO: Record<string, string> = {
  */
 
 export const PORT_STRINGS_ZH: Record<string, string> = {
+	'port.log.dm300rocks': 'DM-300猛击地面，将岩石从天花板上震落!',
+	'port.log.dm300vent': 'DM-300喷出一股有毒废气!',
+	'port.ui.pickaxemine': '挖矿',
+	'port.log.pickaxenovein': '附近没有可以开采的暗金矿脉。',
+	'port.ui.signname': '登录',
+	'port.ui.signdesc': '你无法从这里读出文字。',
+	'port.ui.journalnotes': '笔记',
+	'port.ui.titlebadges': '徽章',
 	'port.name.questweapon': '任务武器',
 	'port.name.wand': '法杖',
 	'port.log.mineabandonedquiet': '废弃的矿坑一片寂静。',

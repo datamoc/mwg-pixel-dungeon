@@ -79,7 +79,9 @@ export class TitleScene extends Scene2D {
 		makeButton(t('scenes.titlescene.news'), () => info(t('port.window.news.title'), t('port.window.news.body')), 'news');
 		//a language change rebuilds the interface, and this scene is where it is rebuilt from
 		makeButton(t('scenes.titlescene.settings'), () => showSettingsWindow(this.windows, () => Game.current.switchScene(TitleScene)), 'prefs');
-		makeButton(t('scenes.titlescene.badges'), () => showBadgesWindow(this.windows), 'badges');
+		//SPD's titlescene.badges key was removed by v3.3.8, so the button reads the port
+		//catalog instead (SPD's own v2.1.4 translations, all 19 locales) - see PORT_COVERAGE.md.
+		makeButton(t('port.ui.titlebadges'), () => showBadgesWindow(this.windows), 'badges');
 		makeButton(
 			t('scenes.titlescene.changes'),
 			() => info(t('port.window.changes.title'), t('port.window.changes.body', { version: APP_VERSION })),

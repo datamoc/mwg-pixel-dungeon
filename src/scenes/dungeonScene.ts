@@ -6427,8 +6427,8 @@ export class DungeonScene extends Scene2D {
 			name = t('levels.level.floor_name');
 			desc = examineSpDesc(region);
 		} else if (raw === Terrain.SIGN) {
-			name = t('levels.level.sign_name');
-			desc = t('levels.level.sign_desc');
+			name = t('port.ui.signname');
+			desc = t('port.ui.signdesc');
 		} else if (raw === Terrain.ALCHEMY) {
 			//`AlchemyPot.onOperate()` opens the recipe window in Java. This port has no
 			//separate cell-targeting interaction, so examining the pot is its direct action
@@ -11752,7 +11752,7 @@ export class DungeonScene extends Scene2D {
 				if (this.level.inside(nx, ny) && this.level.passable(nx, ny)) this.toxicGas.seed(nx, ny, around);
 			}
 		}
-		this.say(t('actors.mobs.dm300.vent'), 'warning');
+		this.say(t('port.log.dm300vent'), 'warning');
 	}
 
 	/** DM300 rockfall: a 7x7 centred on the hero minus one safe neighbour (solid cells
@@ -11776,7 +11776,7 @@ export class DungeonScene extends Scene2D {
 		//`DM300.java` 655: the ROCKS ability shakes hardest of anything in the game (5, a full
 		//second) as it slams - scheduled here, on the turn the volley is called down.
 		this.shakeScreen(5, 1);
-		this.say(t('actors.mobs.dm300.rocks'), 'warning');
+		this.say(t('port.log.dm300rocks'), 'warning');
 	}
 
 	/** `FallingRockBuff` landing: damage + brief paralysis on every cell, DM-300 excluded
@@ -17855,8 +17855,10 @@ export class DungeonScene extends Scene2D {
 				.map(([dx, dy]) => ({ x: this.hero.x + dx, y: this.hero.y + dy }))
 				.filter((cell) => this.level.passable(cell.x, cell.y)
 					&& !this.isChasmCell(cell.x, cell.y) && !this.creatureAt(cell.x, cell.y));
+			// Java reuses the hawk's line here (Messages.get(SpiritHawk.class, no_space)
+			// in SummonElemental.java), so this is SPD's own key, not a port invention.
 			if (spawnPoints.length === 0) {
-				this.say(t('actors.hero.abilities.spirithawk.no_space'), 'negative');
+				this.say(t('actors.hero.abilities.huntress.spirithawk.no_space'), 'negative');
 				return;
 			}
 			const at = spawnPoints[Random.int(0, spawnPoints.length - 1)]!;
@@ -18857,8 +18859,12 @@ export class DungeonScene extends Scene2D {
 	private activateDeathMark(def: ArmorAbilityDef, cost: number, cell: Step | null): boolean {
 		if (!cell) return false;
 		const target = this.creatureAt(cell.x, cell.y);
+		// Divergence (deliberate): Java calls Messages.get(this, no_target) here, but no
+		// deathmark.no_target key exists in any properties file (checked v2.1.4 and
+		// v3.3.8), so Java renders its missing-key text. This port uses SPD's own
+		// generic armorability.no_target instead of reproducing that.
 		if (!target || !this.fov.isVisible(target.x, target.y)) {
-			this.say(t('actors.hero.abilities.rogue.deathmark.no_target'), 'negative');
+			this.say(t('actors.hero.abilities.armorability.no_target'), 'negative');
 			return false;
 		}
 		if (target.isAlly || target.isNPC) {
@@ -18964,8 +18970,12 @@ export class DungeonScene extends Scene2D {
 			return null;
 		};
 		const primary = alongRay(ray, 2 * projecting);
+		// Divergence (deliberate): Java calls Messages.get(this, no_target) here, but no
+		// spectralblades.no_target key exists in any properties file (checked v2.1.4 and
+		// v3.3.8), so Java renders its missing-key text. This port uses SPD's own
+		// generic armorability.no_target instead of reproducing that.
 		if (!primary || !this.fov.isVisible(primary.x, primary.y)) {
-			this.say(t('actors.hero.abilities.huntress.spectralblades.no_target'), 'negative');
+			this.say(t('actors.hero.abilities.armorability.no_target'), 'negative');
 			return false;
 		}
 		const targets = new Set<Creature>([primary]);
@@ -19944,7 +19954,8 @@ export class DungeonScene extends Scene2D {
 		//and leaves the timer running for the same hooks to be handed `min(1, left)` on later turns.
 		this.applyArtifactRecharge(4);
 		this.artifactRechargeTurns = Math.max(this.artifactRechargeTurns, wildEnergyRechargeTurns());
-		this.say(t('items.spells.wildenergy.light'), 'positive');
+		// Java logs nothing on this cast (WildEnergy.affectTarget is sound and sprite only);
+		// the recharge buff and the refunded wand charge are the feedback, so no line here either.
 		this.actionSpentTurn = true;
 		this.spendHeroTurn(1);
 	}
@@ -20104,11 +20115,10 @@ export class DungeonScene extends Scene2D {
 			item.id.startsWith('potion') || item.id.startsWith('scroll') || item.id === 'seed'
 			|| item.id === 'stone' || item.id.startsWith('stoneOf')
 		));
-		if (candidates.length === 0) {
-			this.say(t('items.spells.recycle.no_target'), 'negative');
-			return;
-		}
-		this.openItemPicker(t('items.spells.recycle.prompt'), candidates, (pick) => {
+		// Java opens the picker regardless (InventorySpell has no empty-case message, its
+		// WndBag simply shows no rows); an empty candidate list opens and cancels the same
+		// way, consuming nothing, so no early-out message exists here either.
+		this.openItemPicker(t('items.spells.recycle.inv_title'), candidates, (pick) => {
 			const source = (this.bag.items as Recyclable[]).find((item) => item.quantity > 0
 				&& item.id === pick.id && (item.instanceId ?? undefined) === (pick.instanceId ?? undefined));
 			if (!source) return;
@@ -20315,7 +20325,7 @@ export class DungeonScene extends Scene2D {
 	 * spend two turns, turn it into ordinary WALL, and auto-pick up one DarkGold. */
 	private mineWithPickaxe(): void {
 		if (!this.canMineCavesWall() || !this.portedPaint) {
-			this.say(t('items.quest.pickaxe.no_vein'), 'negative');
+			this.say(t('port.log.pickaxenovein'), 'negative');
 			return;
 		}
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
@@ -20331,7 +20341,7 @@ export class DungeonScene extends Scene2D {
 			this.spendHeroTurn(2);
 			return;
 		}
-		this.say(t('items.quest.pickaxe.no_vein'), 'negative');
+		this.say(t('port.log.pickaxenovein'), 'negative');
 	}
 
 	/** One ring slot for this MWG UI; the ring's real level curve is applied below. */

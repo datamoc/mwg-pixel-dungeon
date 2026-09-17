@@ -690,14 +690,19 @@ was judged not worth the churn against those existing references.
       recur silently. **Remaining, and the only reason this box is unticked**: the locale *set* is
       SPD `v2.1.4`'s 19, so `be`/`eo`/`sv`/`zh-hant` are offered by neither `LANGUAGES` nor
       `tools/i18n-extract.mjs`. Closing that means regenerating `spdMessages.ts` from `v3.3.8`, which
-      is not a strings-only change: eight keys the port references
-      (`actors.mobs.dm300.rocks`/`.vent`, `items.quest.pickaxe.ac_mine`/`.no_vein`,
-      `levels.level.sign_desc`/`.sign_name`, `scenes.titlescene.badges`, `windows.wndjournal.notes`)
-      exist in the v2.1.4-derived catalog and do not exist at `v3.3.8`, so the extractor's
-      transactional audit refuses the regeneration until each is re-pointed or moved under `port.*`.
-      The reverse gap exists too: `levels.hallslevel.exit_desc` (addressed by section 3's city
-      visuals) exists at `v3.3.8` but not in this catalogue, so the port answers the City's own
-      exit desc there until the regen lands. See `PORT_COVERAGE.md`. **Complexity: M.**
+      is not a strings-only change - or was not: **the eight removed keys are closed
+      2026-09-17**. All eight (`actors.mobs.dm300.rocks`/`.vent`,
+      `items.quest.pickaxe.ac_mine`/`.no_vein`, `levels.level.sign_desc`/`.sign_name`,
+      `scenes.titlescene.badges`, `windows.wndjournal.notes`) now live under `port.*` with
+      SPD's own translations in all 19 locales, every call site (both DM300 lines, both
+      pickaxe lines, the MWL action row, both sign lines, all three journal tab lines, the
+      title-screen badges button) is re-pointed, and the old names are referenced nowhere.
+      The same pass cleared six more source keys that resolved in no catalog at all (the
+      real huntress `spirithawk.no_space`, the real recycle `inv_title` with an open-always
+      picker, the generic `armorability.no_target` for both abilities - see
+      `PORT_COVERAGE.md`), so the transactional audit is green again.
+      The reverse gap exists too: `levels.hallslevel.exit_desc` (addressed by the section 3 city
+      visuals) exists at `v3.3.8` but not in this catalogue, so the port answers with the City exit desc there until the regen lands. See `PORT_COVERAGE.md`. **Complexity: M.**
 
 ## 9. Build the Java-vs-TypeScript parity harness
 

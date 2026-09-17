@@ -130,7 +130,7 @@
           { tag: "row", item: "chargrilledMeat", actionKey: "items.food.food.ac_eat", capitalize: true },
           { tag: "row", item: "waterskin", actionKey: "items.waterskin.ac_drink", capitalize: true },
           { tag: "row", item: "seed", actionKey: "plants.plant$seed.ac_plant", capitalize: true },
-          { tag: "row", item: "pickaxe", actionKey: "items.quest.pickaxe.ac_mine", capitalize: true },
+          { tag: "row", item: "pickaxe", actionKey: "port.ui.pickaxemine", capitalize: true },
           { tag: "row", item: "hourglass", actionKey: "items.artifacts.timekeepershourglass.ac_activate", capitalize: true },
           { tag: "row", item: "cloak", actionKey: "items.artifacts.cloakofshadows.ac_stealth", capitalize: true },
           { tag: "row", item: "chalice", actionKey: "items.artifacts.chaliceofblood.ac_prick", capitalize: true },

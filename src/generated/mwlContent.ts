@@ -13598,7 +13598,7 @@ export const gameData = {
 							"tag": "row",
 							"attributes": {
 								"item": "pickaxe",
-								"actionKey": "items.quest.pickaxe.ac_mine",
+								"actionKey": "port.ui.pickaxemine",
 								"capitalize": "true"
 							},
 							"children": [],

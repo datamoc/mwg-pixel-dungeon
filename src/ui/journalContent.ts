@@ -28,7 +28,7 @@ export function createJournalTabs(context: JournalContentContext): JournalTab[] 
 		['blacksmith', 'windows.wndblacksmith.title'], ['imp', 'windows.wndimp.title'],
 	] as const;
 	const notesPages: JournalPage[] = [{
-		title: t('windows.wndjournal.notes'),
+		title: t('port.ui.journalnotes'),
 		body: quests.map(([id, key]) => {
 			const line = t('port.journal.queststatus', { quest: t(key), status: t(`port.journal.${context.questStatus(id)}`) });
 			const objectiveKey = context.questObjective(id);
@@ -49,7 +49,7 @@ export function createJournalTabs(context: JournalContentContext): JournalTab[] 
 	}];
 	return [
 		{ label: t('port.ui.journal.guide'), pages: guidePages },
-		{ label: t('windows.wndjournal.notes'), pages: [...regionPages, ...notesPages] },
+		{ label: t('port.ui.journalnotes'), pages: [...regionPages, ...notesPages] },
 		{ label: t('port.ui.journal.items'), pages: itemPages },
 	];
 }
