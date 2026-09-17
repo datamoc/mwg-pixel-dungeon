@@ -8889,7 +8889,12 @@ export class DungeonScene extends Scene2D {
 				const decision = Roguelike.decideMonsterAI(this.level, this.pathfinder, monster, monster.hp / monster.maxHp, this.hero, {
 					sightRadius: this.viewRadius(), fleeBelow: 0, blocked,
 				});
-				if (decision.step) this.moveTo(monster, decision.step);
+				if (decision.step) {
+					this.moveTo(monster, decision.step);
+					//`Goo.getCloser()`/`getFurther()`: any step discharges a pump-up in progress,
+					//then the move proceeds as normal.
+					if (monster.kind === 'goo' && (monster.pumped ?? 0) > 0) monster.pumped = 0;
+				}
 			}
 			return;
 		}
@@ -12366,6 +12371,9 @@ export class DungeonScene extends Scene2D {
 	 * already carrying explicitly.
 	 */
 	private takeGooTurn(goo: Creature): void {
+		//`Goo.act()` clears a charge held outside HUNTING; a Goo that cannot see the
+		//hero is not on the hunt, so a blind Goo drops the pump here.
+		if (!goo.seesHero && (goo.pumped ?? 0) > 0) goo.pumped = 0;
 		this.checkSewerBossSeal();
 		runGooTurn(goo, {
 			hero: this.hero,
