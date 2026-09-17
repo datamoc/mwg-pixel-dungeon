@@ -424,7 +424,7 @@ was judged not worth the churn against those existing references.
 - [x] Port Spinner's ranged web ability. Roots the hero directly on a clear ranged shot, gated by the
       real 10-turn cooldown. **Correction 2026-09-17**: the persistent 3-cell `Web` terrain blob is ported - only movement-direction prediction is still not modeled. Real Java predicts movement direction and seeds
       a persistent 3-cell `Web` terrain blob alongside the direct root (the root is the impact, the blob the aftermath). Browser-verified live.
-- [ ] Implement exact Tengu, DM-300, and other boss attack cycles. **Complexity: M.**
+- [ ] Implement exact Tengu, DM-300, and other boss attack cycles. **Status 2026-09-17:** all five cycles audited turn-by-turn against Java and corrected - DM300 (supercharge freeze/clamp/gate, free ranged abilities, no reset on failed attempts, rolled first cooldown), Tengu (no-chase wait rule), Dwarf King (unbounded P3 reinforcement), Goo (pump discharge on steps and blindness), Yog (beams under fists, fire-then-aim, summon burst, phase-5 clamp, map-wide aim, fire dispel); see the per-boss `PORT_COVERAGE.md` rows. **Remaining:** Yog P5 bleed, the gated aim-turn cost and hero interrupt, King throne geometry - all recorded in their rows. **Complexity: M.**
 - [x] Port rare monster variants' unique behaviors. Found and fixed a whole class of bug: a variant
       never inheriting its base kind's special mechanic because a check tested the literal `kind`
       string instead of the family relationship Java's class extension implies - `ArmoredBrute`
