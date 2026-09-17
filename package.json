@@ -18,6 +18,7 @@
     "i18n": "node tools/i18n-extract.mjs",
     "i18n:check": "node tools/i18n-extract.mjs --check",
     "i18n:verify": "esbuild tools/i18nCheck.ts --bundle --platform=node --format=esm --outfile=tools/scratch/i18nCheck.mjs && node tools/scratch/i18nCheck.mjs",
+    "parity:levelgen": "esbuild tools/levelgenParity.ts --bundle --platform=node --format=esm --outfile=tools/scratch/levelgenParity.mjs && node tools/scratch/levelgenParity.mjs",
     "assets": "node tools/extract-spd-assets.mjs",
     "mwg:check": "node tools/check-mwg-version.mjs",
     "release:web": "node tools/pack-web.mjs",
