@@ -377,15 +377,15 @@ was judged not worth the churn against those existing references.
       the retained-target wandering branch is now isolated as `takeWanderingTurn`, including the
       Java target lifetime, passability checks, piranha water restriction, and Golem's unreachable
       target teleport path; hunting/fleeing/stealth parity remains open. **Complexity: M.**
-- [ ] Implement monster-specific AI overrides. **Ported**: Golem's teleport-the-hero-away ability
+- [x] Implement monster-specific AI overrides. **Closed 2026-09-17: the last two "Not modeled" halves were already live (Spinner's persistent 3-cell `Web` blob plus the direct root, DM-200's BFS reachability plus the closing-distance-failed vent retry) - only Golem's charge particles and delayed animation remain, with no particle/animation layer to express them.** **Ported**: Golem's teleport-the-hero-away ability
       (with Java's `canTele` reachability, direct-shot distance roll and `MagicImmune` target gate)
       and its 30-turn self-teleport-to-reposition, Eye's real ranged two-turn DeathGaze (charge turn
       costs 2 and takes quarter damage; the fire turn is a magic hit roll for 30-50 bypassing armor),
       DM-200's venting override, Spinner's ranged web, the Necromancer's skeleton support (heal
       `HT/5`, one-time Adrenaline, teleport-back) and `firstSummon`'s variable tick cost via the new
       `monsterTurnCost` hook. **Not modeled**: Golem's charge particles and delayed animation;
-      Spinner's real persistent 3-cell `Web` terrain blob (this port roots the hero directly);
-      DM-200's BFS-around-terrain reachability and its closing-distance-failed vent retry. See
+      Spinner's real persistent 3-cell `Web` terrain blob is ported (the direct root is the impact, the blob the aftermath);
+      Golem's charge particles and delayed animation have no particle/animation layer here. See
       `PORT_COVERAGE.md`. **Complexity: M** for what remains.
 - [x] Implement ally-vs-monster combat. `Creature.isAlly` is persisted and scheduled; MirrorImage
       summons are real 1-HP allied actors copying the hero's combat stats, ally turns use an
