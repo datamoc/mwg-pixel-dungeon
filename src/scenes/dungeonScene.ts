@@ -14018,12 +14018,16 @@ export class DungeonScene extends Scene2D {
 				//Dungeon.LimitedDrops: Bat/Necromancer/Guard each scale their own lootChance()
 				//down further by how many times this exact drop has already happened this run -
 				//`(7-n)/7`, `(6-n)/6`, `(1/3)^n` respectively, real Java's own per-kind formulas.
-				const decay = LIMITED_DROP_DECAY[creature.kind as MonsterId];
-				const chance = (decay ? entry.chance * decay(this.limitedDrops[creature.kind as MonsterId] ?? 0) : entry.chance)
+				//DM201 inherits `DM200.lootChance()` wholesale (`DM201.java` overrides only
+				//`rollToDropLoot`, for the MetalShard bonus) - including the *shared*
+				//`DM200_EQUIP` counter - so it reads dm200's decay and counter, not its own.
+				const counterKind = creature.kind === 'dm201' ? 'dm200' : creature.kind;
+				const decay = LIMITED_DROP_DECAY[counterKind as MonsterId];
+				const chance = (decay ? entry.chance * decay(this.limitedDrops[counterKind as MonsterId] ?? 0) : entry.chance)
 					* (ringWealthMultiplier(this.equippedRing, this.hero.magicImmune) + this.bountyHunterLootBonus());
 				const drop = Actors.rollLoot({ entries: [{ id: entry.kind, weight: 1 }], chance });
 				if (drop) {
-					if (decay) this.limitedDrops[creature.kind as MonsterId] = (this.limitedDrops[creature.kind as MonsterId] ?? 0) + 1;
+					if (decay) this.limitedDrops[counterKind as MonsterId] = (this.limitedDrops[counterKind as MonsterId] ?? 0) + 1;
 					this.spawnGroundItem(entry.kind, creature.x, creature.y);
 					this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS[entry.kind]) }));
 					break;

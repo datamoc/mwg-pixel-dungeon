@@ -65,7 +65,10 @@
           {
             tag: "row",
             monster: "dm201",
-            chance: 0.125,
+            // `DM200.lootChance()` inherited: base 0.2 with the *shared* `DM200_EQUIP`
+            // counter (see `kill()`), not a flat 0.125 of its own. The `MetalShard`
+            // bonus drop in the same override has no item here.
+            chance: 0.2,
             kind: "armor",
           },
           {

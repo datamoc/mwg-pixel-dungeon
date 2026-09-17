@@ -892,6 +892,14 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		rotLasher: [80, 25, 0, 10, 20, 0, 8, 1, 29],
 	};
 	const mwlMonsterById = new Map(MWL_MONSTERS.map((monster) => [String(monster.id), monster]));
+	// `DM200`/`Golem` roll equipment at a real 0.2 base (`lootChance = 0.2f`), and `DM201`
+	// inherits `DM200.lootChance()` wholesale - same 0.2 base, same shared `DM200_EQUIP`
+	// counter (the counter sharing itself lives in `kill()`, next to the decay read).
+	const lootByMonster = new Map(MWL_TABLE_ROWS('monsterLoot', 'monster').map((row) => [String(row.monster), row]));
+	for (const [kind, chance] of [['dm200', 0.2], ['dm201', 0.2], ['golem', 0.2]]) {
+		assert.equal(Number(lootByMonster.get(kind).chance), chance, kind + ' equipment base chance');
+		assert.equal(String(lootByMonster.get(kind).kind), 'armor', kind + ' weapon-or-armor folds to armor');
+	}
 	for (const [id, expected] of Object.entries(EXPECTED_MONSTER_STATS)) {
 		const monster = mwlMonsterById.get(id);
 		assert.ok(monster, `MWL monster is present: ${id}`);
