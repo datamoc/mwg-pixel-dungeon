@@ -35,6 +35,8 @@ export interface FloorState {
 	confusionGas?: FireState;
 	/** `Web` volume field: Spinner webs decay 1/turn without diffusing. */
 	web?: FireState;
+	/** `Electricity` volume field: Shocking/Storm traps seed it over `WATER` cells. */
+	electricity?: FireState;
 	eternalFire?: FireState;
 	sacrificialFire?: FireState;
 	sacrificialFireCharge?: number;

@@ -1,6 +1,6 @@
 import type { Creature, Step } from '../combat';
 
-export type EnvironmentalBlob = 'plantGas' | 'plantFreeze' | 'toxicGas' | 'paralyticGas' | 'stenchGas' | 'corrosiveGas' | 'confusionGas' | 'web';
+export type EnvironmentalBlob = 'plantGas' | 'plantFreeze' | 'toxicGas' | 'paralyticGas' | 'stenchGas' | 'corrosiveGas' | 'confusionGas' | 'web' | 'electricity';
 
 // `StenchGas.evolve()` uses `Paralysis.DURATION / 5`; this port's authored Java duration is 10.
 const STENCH_PARALYSIS_DURATION = 2;
@@ -21,7 +21,11 @@ export interface EnvironmentalBlobsContext {
 	 *  light, fists, plants) still lands, since those are not Vertigo. Optional so headless
 	 *  callers keep working. */
 	isVertigoImmune?: (target: Creature) => boolean;
-	applyDamage: (target: Creature, damage: number) => boolean;
+	applyDamage: (target: Creature, damage: number, cause?: 'poison' | 'electricity') => boolean;
+	/** Cell charge of a blob volume (mirrors `Blob.volumeAt`); needed for electricity's odd-charge damage. */
+	amountAt: (blob: EnvironmentalBlob, x: number, y: number) => number;
+	/** `Electricity.evolve()`'s depth-scaled zap, `round(Random.Float(2 + scalingDepth/5))`, injected like `toxicDamage`. */
+	electricDamage: (target: Creature) => number;
 }
 
 /** Advances environmental blobs and applies their distinct SPD effects. */
@@ -35,6 +39,7 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 	context.advance('corrosiveGas', isSolid);
 	context.advance('confusionGas', isSolid);
 	context.advance('web', isSolid);
+	context.advance('electricity', isSolid);
 	for (const cell of context.cellsAbove('plantGas', 1)) {
 		const target = context.creatureAt(cell.x, cell.y);
 		if (target) context.addBuff(target, 'poison');
@@ -72,5 +77,17 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 	for (const cell of context.cellsAbove('web', 0.0001)) {
 		const target = context.creatureAt(cell.x, cell.y);
 		if (target) context.addBuff(target, 'roots', 2);
+	}
+	//`Electricity.evolve()` (tag `v3.3.8`): creatures in electrified cells are paralysed
+	//for the cell's charge unless already held, and take the depth-scaled zap on odd
+	//charges (with the real `ondeath` line on a hero kill, via the cause below). Water
+	//conduction has no water map here, so the blob only decays through the shared
+	//evolution (stated); the shocking/storm traps seed it directly.
+	for (const cell of context.cellsAbove('electricity', 0.0001)) {
+		const target = context.creatureAt(cell.x, cell.y);
+		if (!target || target.hp <= 0) continue;
+		const charge = context.amountAt('electricity', cell.x, cell.y);
+		if (target.buffs?.['paralysis'] === undefined) context.addBuff(target, 'paralysis', charge);
+		if (charge % 2 === 1 && !context.applyDamage(target, context.electricDamage(target), 'electricity')) return;
 	}
 }

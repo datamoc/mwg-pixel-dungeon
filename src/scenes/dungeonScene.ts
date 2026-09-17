@@ -1562,6 +1562,8 @@ export class DungeonScene extends Scene2D {
 	/** Spinner web volume; persisted with the floor while the actor's web cooldown remains on the
 	 * creature. The current port only needs the field for save compatibility. */
 	private web!: Blob;
+	/** `Electricity` terrain (shocking/storm traps, tag `v3.3.8`) - seeded by the trap branches, applied by `environmentalBlobs`. */
+	private electricity!: Blob;
 	/** MagicalFireRoom.EternalFire (`levels/rooms/special/MagicalFireRoom.java`): a permanent,
 	 * non-spreading, non-decaying fire wall. Unlike every other blob here it is never
 	 * `spread()`ed - seeded once at 1 per wall cell (Java's own `Blob.seed(cell, 1,
@@ -2595,6 +2597,7 @@ export class DungeonScene extends Scene2D {
 			corrosiveGasStrength: this.corrosiveGasStrength,
 			confusionGas: this.confusionGas.toJSON(),
 			web: this.web.toJSON(),
+			electricity: this.electricity.toJSON(),
 			portedFeatures: this.portedFeatures.toJSON(),
 			ritualPos: this.ritualPos,
 			ritualCandles: [...this.ritualCandles],
@@ -2639,6 +2642,7 @@ export class DungeonScene extends Scene2D {
 		this.corrosiveGasStrength = state.corrosiveGasStrength ?? 0;
 		this.confusionGas = state.confusionGas ? Blob.fromJSON(state.confusionGas) : new Blob(this.level.width, this.level.height);
 		this.web = state.web ? Blob.fromJSON(state.web) : new Blob(this.level.width, this.level.height);
+		this.electricity = state.electricity ? Blob.fromJSON(state.electricity) : new Blob(this.level.width, this.level.height);
 		this.manualPlants = new Map(state.manualPlants ?? []);
 		this.furrowedGrass = new Set(state.furrowedGrass ?? []);
 		this.fallingRocks = (state.fallingRocks ?? []).map((v) => ({ cells: v.cells.map((c) => ({ ...c })), turns: v.turns }));
@@ -2943,6 +2947,7 @@ export class DungeonScene extends Scene2D {
 		this.corrosiveGasStrength = 0;
 		this.confusionGas = new Blob(this.level.width, this.level.height);
 		this.web = new Blob(this.level.width, this.level.height);
+		this.electricity = new Blob(this.level.width, this.level.height);
 		this.eternalFire = new Blob(this.level.width, this.level.height);
 		this.ritualPos = -1;
 		this.ritualCandles = [false, false, false, false];
@@ -3404,7 +3409,7 @@ export class DungeonScene extends Scene2D {
 			if (trap || this.trapKinds.has(cell)) {
 				if (this.secrets.isSecret(x, y)) return -1;
 				const spent = this.spentTrapCells.has(cell);
-				const fallback = ({ toxic: 35, burning: 1, poisonDart: 83, grim: 103, explosive: 65, confusionGas: 36, corrosionGas: 39 } as const)[this.trapKinds.get(cell) ?? 'poisonDart'];
+				const fallback = ({ toxic: 35, burning: 1, poisonDart: 83, grim: 103, explosive: 65, confusionGas: 36, corrosionGas: 39, shockingTrap: 2, stormTrap: 50 } as const)[this.trapKinds.get(cell) ?? 'poisonDart'];
 				const frame = trap ? TRAP_VISUALS[trap.kind[0].toUpperCase() + trap.kind.slice(1)] ?? fallback : fallback;
 				return spent || trap?.active === false ? Math.floor(frame / 16) * 16 + 8 : frame;
 			}
@@ -6072,6 +6077,8 @@ export class DungeonScene extends Scene2D {
 				if (blob === 'corrosiveGas' && this[blob].total() === 0) this.corrosiveGasStrength = 0;
 			},
 			cellsAbove: (blob, threshold) => (this[blob] as Blob).cellsAbove(threshold),
+			amountAt: (blob, x, y) => (this[blob] as Blob).volumeAt(x, y),
+			electricDamage: () => Math.round(Random.float(2 + this.depth / 5)),
 			creatureAt: (x, y) => this.creatureAt(x, y),
 			addBuff: (target, id, duration) => addBuff(target, id, duration),
 			applyCorrosion: (target, strength) => {
@@ -6092,13 +6099,18 @@ export class DungeonScene extends Scene2D {
 				|| (target.kind === 'yogFist' && target.yogFistType === 'rusted')
 				|| (target.kind === 'yog' && this.yogShielded(target))
 				|| (target.kind === 'yogFist' && this.guardFist(target)),
-			applyDamage: (target, damage) => {
+			applyDamage: (target, damage, cause = 'poison') => {
 				if (target.isHero) {
 					const blocked = this.absorbHeroDamage(damage);
 					this.hero.hp -= blocked;
 					this.showDamage(this.hero, damage);
 					if (this.hero.hp <= 0) {
-						this.kill(this.hero, 'poison');
+						//Electric kills have no death-badge bucket here (the port's four death
+						//causes predate the blob), so they land in the default 'foe' bucket -
+						//but the player-facing line is Java's own `ondeath`, said here like the
+						//ooze/bomb kill sites do.
+						this.kill(this.hero, cause === 'electricity' ? 'foe' : 'poison');
+						if (cause === 'electricity') this.say(t('actors.blobs.electricity.ondeath'), 'negative');
 						return false;
 					}
 					return true;
@@ -6438,7 +6450,25 @@ export class DungeonScene extends Scene2D {
 			this.hero.hp -= damage;
 			this.showDamage(this.hero, damage);
 			this.say(t('port.log.trap.grim', { damage }), 'negative');
-		} else {
+		} else if (kind === 'shockingTrap') {
+				//ShockingTrap.activate() (tag `v3.3.8`): seeds Electricity 10 on every
+				//non-solid NEIGHBOURS9 cell. The LIGHTNING sound has no layer here, and the
+				//mob-marking tracker feeds only the score screen (no system here) - both stated.
+				for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
+					const nx = x + dx, ny = y + dy;
+					if (this.level.passable(nx, ny)) this.electricity.seed(nx, ny, 10);
+				}
+			} else if (kind === 'stormTrap') {
+				//StormTrap.activate(): a distance-2 flood seeding Electricity 20 (same
+				//stated skips as above).
+				const stormDistances = this.pathfinder.distanceMap({ x, y });
+				for (let floodY = 0; floodY < this.level.height; floodY++) {
+					for (let floodX = 0; floodX < this.level.width; floodX++) {
+						const stormSteps = stormDistances[this.level.index(floodX, floodY)] ?? -1;
+						if (stormSteps >= 0 && stormSteps <= 2 && this.level.passable(floodX, floodY)) this.electricity.seed(floodX, floodY, 20);
+					}
+				}
+			} else {
 			let damage = Math.max(0, Random.normalRange(5 + this.depth, 10 + 2 * this.depth));
 			damage = this.absorbHeroDamage(damage);
 			this.hero.hp -= damage;
@@ -6492,6 +6522,19 @@ export class DungeonScene extends Scene2D {
 				const damage = Math.max(0, raw - Random.normalRange(monster.armor[0], monster.armor[1]));
 				monster.hp -= damage;
 				this.showDamage(monster, damage);
+			}
+		} else if (kind === 'shockingTrap') {
+			for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
+				const nx = monster.x + dx, ny = monster.y + dy;
+				if (this.level.passable(nx, ny)) this.electricity.seed(nx, ny, 10);
+			}
+		} else if (kind === 'stormTrap') {
+			const mobStormDistances = this.pathfinder.distanceMap({ x: monster.x, y: monster.y });
+			for (let mobFloodY = 0; mobFloodY < this.level.height; mobFloodY++) {
+				for (let mobFloodX = 0; mobFloodX < this.level.width; mobFloodX++) {
+					const mobStormSteps = mobStormDistances[this.level.index(mobFloodX, mobFloodY)] ?? -1;
+					if (mobStormSteps >= 0 && mobStormSteps <= 2 && this.level.passable(mobFloodX, mobFloodY)) this.electricity.seed(mobFloodX, mobFloodY, 20);
+				}
 			}
 		} else {
 			const damage = Math.max(0, Random.normalRange(5 + this.depth, 10 + 2 * this.depth)

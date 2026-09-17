@@ -409,8 +409,8 @@ was judged not worth the churn against those existing references.
       standing in it, `Burning.DURATION` 8 with Java's depth-scaled damage roll, `reignite` vs
       `affect` at the buff boundary), and environmental gas/plant fields use a Java-shaped
       `Blob.evolve()` step. CorrosionTrap and ConfusionTrap seed their real gas volumes. Hero
-      backpack item-burning is live for the port's concrete scroll and meat payloads. **Remaining**:
-      the rest of the blob/gas catalogue and the gas blobs' own effects, the unsupported fire cases,
+      backpack item-burning is live for the port's concrete scroll and meat payloads. **Remaining, triaged producer-by-producer 2026-09-17**:
+      every missing blob is missing its producer, not its effect table - `SmokeScreen` (no smoke bomb item, no ShroudingFog exotic, no ChaoticCenser trinket), `Inferno`/`Blizzard` (no brews, no censer), `Electricity` (**closed 2026-09-17**: ShockingTrap/StormTrap seed Java's real volumes into a persisted blob with the paralyse-by-charge plus odd-charge depth-scaled zap; still no ShockingBrew, ElementalStrike/Blast unoffered; the pylon/Tengu zaps use it as a damage cause only, which the zap path already models), `StormCloud` (no StormClouds exotic, no censer; the Tengu-arena grid belongs to the boss-cycles item), `Foliage` (regrowth grows grass through its charge rules, no blob needed), `VaultFlameTraps` (vault quest unported). Non-gaps: `GooWarn` is unused in Java's own source; `Alchemy`/`WaterOfAwareness`/`WaterOfHealth`/`WellWater` are window flows here by design. Still open as stated: the gas blobs' own effects beyond what's live, the unsupported fire cases,
       and exact blob actor priorities/presentation. See `PORT_COVERAGE.md`'s `BUFF_DURATION` and
       blob-DoT rows. **Complexity: M.**
 - [x] Port the Necromancer's skeleton heal/Adrenaline/teleport support behavior, plus `firstSummon`'s
@@ -504,7 +504,7 @@ was judged not worth the churn against those existing references.
 ## 7. Replace simplified terrain and status mechanics
 
 - [x] Implement area-of-effect traps instead of single-target approximations. Explosive traps apply
-      Java's reduced off-center blast damage to nearby creatures, and toxic and fire traps seed the
+      Java's reduced off-center blast damage to nearby creatures, and toxic, fire, shocking and storm traps seed the
       live area effects. **Remaining**: exact Java projectile presentation, terrain destruction, and
       cadence.
 - [x] Implement chasm falling and traversal. `isChasmCell`/`fallThroughChasm` model the terrain;

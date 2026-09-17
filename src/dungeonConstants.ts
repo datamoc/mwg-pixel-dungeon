@@ -119,8 +119,8 @@ export const TERRAIN_FRAME = {
 };
 
 /** Levels.java trap kinds with Dungeon-referenced damage numbers (depth-scaled where Java scales) */
-export type TrapKind = 'toxic' | 'burning' | 'poisonDart' | 'grim' | 'explosive' | 'confusionGas' | 'corrosionGas';
-export const TRAP_KINDS: TrapKind[] = ['toxic', 'burning', 'poisonDart', 'grim', 'explosive', 'confusionGas', 'corrosionGas'];
+export type TrapKind = 'toxic' | 'burning' | 'poisonDart' | 'grim' | 'explosive' | 'confusionGas' | 'corrosionGas' | 'shockingTrap' | 'stormTrap';
+export const TRAP_KINDS: TrapKind[] = ['toxic', 'burning', 'poisonDart', 'grim', 'explosive', 'confusionGas', 'corrosionGas', 'shockingTrap', 'stormTrap'];
 
 export type GroundItemKind =
 	| 'dewdrop'
