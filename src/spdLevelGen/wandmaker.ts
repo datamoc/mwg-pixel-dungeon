@@ -26,9 +26,14 @@ interface WandmakerState {
 	type: number;
 	spawned: boolean;
 	questRoomSpawned: boolean;
+	/** `Wandmaker.Quest.wand1`/`wand2`'s classes, in that order: the two wands `WndWandmaker`
+	 *  offers as the reward. Rolled during level generation (see `spawnWandmaker`) and consumed
+	 *  much later, when the hero turns the quest in - so they are run-level state like `type`,
+	 *  and persisted with it. */
+	wands: [string, string] | null;
 }
 
-const state: WandmakerState = { type: 0, spawned: false, questRoomSpawned: false };
+const state: WandmakerState = { type: 0, spawned: false, questRoomSpawned: false, wands: null };
 
 /** Live-game read of the run's quest type (0 while undecided). The NPC dialogue and
  * turn-in key off this, not the room shape - persisted scene-side (see SaveShape). */
@@ -41,12 +46,25 @@ export function setWandmakerQuestType(type: number): void {
 	state.type = type;
 }
 
+/** `Wandmaker.Quest.wand1`/`wand2`'s classes - the reward `WndWandmaker` offers. Null until the
+ *  quest floor is generated (and on a save from before they were recorded, which the caller
+ *  treats as "fall back to the reminder" rather than inventing a wand). */
+export function wandmakerQuestWands(): [string, string] | null {
+	return state.wands;
+}
+
+/** Restore the persisted pair (save/load across floors, where levelgen never reruns). */
+export function setWandmakerQuestWands(wands: [string, string] | null): void {
+	state.wands = wands;
+}
+
 /** `Wandmaker.Quest.reset()` - plus `questRoomSpawned`, which Java leaves alone in `reset()`
  *  but which is always false at run start anyway. Consumes no RNG. */
 export function resetWandmakerRunState(): void {
 	state.type = 0;
 	state.spawned = false;
 	state.questRoomSpawned = false;
+	state.wands = null;
 	ritualSiteState.ritualPos = -1;
 }
 
@@ -140,6 +158,10 @@ export function spawnWandmaker(level: PaintLevel, room: Room): void {
 		wand2 = randomUsingDefaults(Cat.WAND);
 	}
 	wandUpgrade();
+
+	//The classes are the reward `WndWandmaker` offers, so they outlive this function: Java keeps
+	//them on `Quest.wand1`/`wand2` and the hero picks one when turning the quest in.
+	state.wands = [wand1.cls, wand2.cls];
 }
 
 /** `Wand.upgrade()`'s one RNG draw. `super.upgrade()` (`Item.upgrade()`) is a plain `level++`,

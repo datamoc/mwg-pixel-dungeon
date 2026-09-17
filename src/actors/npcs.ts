@@ -43,13 +43,31 @@ export function interactWithGhost(context: GhostInteractionContext): void {
 }
 
 export interface WandmakerInteractionContext {
-	status: 'available' | 'complete' | 'active'; type: number; heroClass: string;
+	status: 'available' | 'complete' | 'active'; type: number;
 	hasItem(id: string): boolean; rotberrySeedInstance(): string | undefined;
-	removeItem(id: string, instanceId?: string): void; startQuest(): void; advanceQuest(): void;
-	giveWand(frost: boolean): void; say(message: string): void;
+	startQuest(): void; advanceQuest(): void;
+	/** `WndWandmaker`: the scene opens the real two-wand reward window. The quest item is
+	 *  detached by that window's own confirm, not here - Java's `selectReward` is the only
+	 *  place it is spent, so cancelling leaves it in the bag (and the two offered wands are
+	 *  the ones this floor already generated). */
+	offerReward(): void;
+	say(message: string): void;
 	messages: { intro: string[]; offer: string; done: string; remind: string; reminderDust: string; reminderEmber: string; reminderBerry: string };
 }
-/** `Wandmaker.interact()`'s quest and fetch-item routing. */
+/**
+ * `Wandmaker.interact()`'s quest and fetch-item routing.
+ *
+ * The intro is Java's own two-message shape: `msg1` is the class's own `intro_<class>` line
+ * followed by `intro_1`, `msg2` the type's `intro_dust`/`intro_ember`/`intro_berry` followed by
+ * `intro_2` - shown as two successive windows. The class line was missing here until 2026-09-16,
+ * even though the generated catalogue has carried `intro_warrior`/`intro_rogue`/`intro_mage`/
+ * `intro_huntress`/`intro_duelist` all along; the caller composes `messages.intro` in Java's own
+ * order, so the class line is simply its first entry.
+ *
+ * Holding the item routes to `offerReward` rather than granting anything directly: Java shows
+ * `WndWandmaker`, whose two buttons are the floor's own `Quest.wand1`/`wand2`, and only its
+ * confirm spends the item (`selectReward`). See `offerReward`'s own doc comment.
+ */
 export function interactWithWandmaker(context: WandmakerInteractionContext): void {
 	if (context.status === 'available') {
 		context.startQuest(); context.advanceQuest();
@@ -58,22 +76,17 @@ export function interactWithWandmaker(context: WandmakerInteractionContext): voi
 		return;
 	}
 	if (context.status === 'complete') return context.say(context.messages.done);
-	if (context.type === 1) {
-		if (!context.hasItem('corpseDust')) return context.say(context.messages.reminderDust);
-		context.removeItem('corpseDust');
-	} else if (context.type === 3) {
-		const instanceId = context.rotberrySeedInstance();
-		if (!instanceId) return context.say(context.messages.reminderBerry);
-		context.removeItem('seed', instanceId);
-	} else if (context.type === 2) {
-		if (!context.hasItem('embers')) return context.say(context.messages.reminderEmber);
-		context.removeItem('embers');
-	} else {
-		const scroll = ['scroll', 'scrollIdentify', 'scrollUpgrade'].find((id) => context.hasItem(id));
-		if (!scroll) return context.say(context.messages.remind);
-		context.removeItem(scroll);
+	const held = context.type === 1 ? (context.hasItem('corpseDust') ? 'dust' : null)
+		: context.type === 3 ? (context.rotberrySeedInstance() !== undefined ? 'berry' : null)
+			: context.type === 2 ? (context.hasItem('embers') ? 'ember' : null)
+				: (['scroll', 'scrollIdentify', 'scrollUpgrade'].find((id) => context.hasItem(id)) ? 'scroll' : null);
+	if (held === null) {
+		if (context.type === 1) return context.say(context.messages.reminderDust);
+		if (context.type === 3) return context.say(context.messages.reminderBerry);
+		if (context.type === 2) return context.say(context.messages.reminderEmber);
+		return context.say(context.messages.remind);
 	}
-	context.giveWand(context.heroClass !== 'mage');
+	context.offerReward();
 }
 
 export interface ImpInteractionContext {
