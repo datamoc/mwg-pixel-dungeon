@@ -1043,29 +1043,29 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		assert.equal(bagCanHold('velvetPouch', { id: 'gooBlob' }), true, 'the pouch takes the goo shard');
 		assert.equal(bagCanHold('velvetPouch', { id: 'wand' }), false, 'the pouch refuses a wand');
 	}
-	// `MeleeWeapon.ability()` per-weapon table and charge math (`src/items/weaponAbilities.ts`):
-	// all 30 real melee classes resolve with desc-verified kinds and costs, the lookup ignores
-	// case and falls back to the bag id, the port-minted stand-ins resolve to nothing, the
-	// `COUNTER_ABILITY` discount is 0.5/rank clamped to ranks 0-4, discounted costs floor at
-	// zero, and the flail spin bonus is +33%/spin capped at 3 spins.
+	// `MeleeWeapon.ability()` per-weapon table and `Charger` economy
+	// (`src/items/weaponAbilities.ts`, tag `v3.3.8`): all 30 real melee classes resolve with
+	// desc-verified kinds, the lookup ignores case and falls back to the bag id, the
+	// port-minted stand-ins resolve to nothing, every ability costs exactly 1 charge (free
+	// only inside the cleave/spin windows), the cap follows the hero level, accrual is
+	// `Charger.act()`'s time rate, spends go partial-first behind the `charges + partial`
+	// gate, and `COUNTER_ABILITY` refunds `rank*0.375` after the spend.
 	{
-		const { weaponAbilityFor, weaponAbilityCost, counterAbilityDiscount, spinDamageMultiplier } = require('./items/weaponAbilities.js');
+		const { weaponAbilityFor, weaponAbilityChargeCost, weaponChargeCap, accrueWeaponCharge, spendWeaponCharge, gainWeaponCharge, counterAbilityRefund, spinDamageMultiplier } = require('./items/weaponAbilities.js');
 		const abilityKinds = {
-			AssassinsBlade: ['sneak', 2], Dirk: ['sneak', 2], Dagger: ['sneak', 2],
-			BattleAxe: ['heavyBlow', 2], HandAxe: ['heavyBlow', 2], Mace: ['heavyBlow', 2], WarHammer: ['heavyBlow', 2],
-			Greatsword: ['cleave', 0], Longsword: ['cleave', 0], Sword: ['cleave', 0], Shortsword: ['cleave', 0], WornShortsword: ['cleave', 0],
-			Flail: ['spin', 2], Greatshield: ['guard', 0], RoundShield: ['guard', 0],
-			Gauntlet: ['comboStrike', 0], Sai: ['comboStrike', 0], Gloves: ['comboStrike', 0],
-			Glaive: ['spike', 0], Spear: ['spike', 0], Katana: ['lunge', 0], Rapier: ['lunge', 0],
-			Sickle: ['harvest', 2], WarScythe: ['harvest', 2], Scimitar: ['swordDance', 2],
-			Quarterstaff: ['defensiveStance', 2], Greataxe: ['retribution', 0], Crossbow: ['chargedShot', 0],
-			RunicBlade: ['runicSlash', 0], Whip: ['lash', 0],
+			AssassinsBlade: 'sneak', Dirk: 'sneak', Dagger: 'sneak',
+			BattleAxe: 'heavyBlow', HandAxe: 'heavyBlow', Mace: 'heavyBlow', WarHammer: 'heavyBlow',
+			Greatsword: 'cleave', Longsword: 'cleave', Sword: 'cleave', Shortsword: 'cleave', WornShortsword: 'cleave',
+			Flail: 'spin', Greatshield: 'guard', RoundShield: 'guard',
+			Gauntlet: 'comboStrike', Sai: 'comboStrike', Gloves: 'comboStrike',
+			Glaive: 'spike', Spear: 'spike', Katana: 'lunge', Rapier: 'lunge',
+			Sickle: 'harvest', WarScythe: 'harvest', Scimitar: 'swordDance',
+			Quarterstaff: 'defensiveStance', Greataxe: 'retribution', Crossbow: 'chargedShot',
+			RunicBlade: 'runicSlash', Whip: 'lash',
 		};
 		assert.equal(Object.keys(abilityKinds).length, 30, 'all 30 real melee classes have an ability');
-		for (const [cls, [kind, cost]] of Object.entries(abilityKinds)) {
-			const def = weaponAbilityFor(cls, 'weaponReward');
-			assert.equal(def?.kind, kind, `${cls} ability is ${kind}`);
-			assert.equal(def?.cost, cost, `${cls} ability costs ${cost}`);
+		for (const [cls, kind] of Object.entries(abilityKinds)) {
+			assert.equal(weaponAbilityFor(cls, 'weaponReward')?.kind, kind, `${cls} ability is ${kind}`);
 		}
 		assert.equal(weaponAbilityFor('SHORTSWORD', 'weaponReward')?.kind, 'cleave', 'lookup ignores case');
 		assert.equal(weaponAbilityFor(undefined, 'dagger')?.kind, 'sneak', 'bag id answers when no class is carried');
@@ -1075,14 +1075,58 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		assert.equal(weaponAbilityFor('Shortsword', 'weaponReward')?.damageBonus, 30, 'cleave magnitudes ride along');
 		assert.equal(weaponAbilityFor('Rapier', 'weaponReward')?.damageBonus, 67, 'rapier lunge is +67');
 		assert.equal(weaponAbilityFor('RunicBlade', 'weaponReward')?.damageBonus, 300, 'runic slash is +300%');
-		assert.equal(weaponAbilityFor('Dagger', 'weaponReward')?.buffTurns, 10, 'dagger sneak is 10 turns');
-		assert.deepEqual([0, 1, 2, 3, 4].map(counterAbilityDiscount), [0, 0.5, 1, 1.5, 2], 'discount is 0.5 per rank');
-		assert.equal(counterAbilityDiscount(9), 2, 'discount clamps at rank 4');
-		assert.equal(counterAbilityDiscount(-1), 0, 'discount clamps at rank 0');
-		assert.equal(weaponAbilityCost(2, 0, false), 2, 'no tracker means full cost');
-		assert.equal(weaponAbilityCost(2, 4, true), 0, 'rank 4 zeroes a 2-charge ability');
-		assert.equal(weaponAbilityCost(2, 1, true), 1.5, 'rank 1 shaves half a charge');
-		assert.equal(weaponAbilityCost(0, 4, true), 0, 'free abilities stay free');
+		assert.equal(weaponAbilityFor('Dagger', 'weaponReward')?.buffTurns, undefined, 'sneak duration is computed, not tabled');
+		// `baseChargeUse`: 1 everywhere, 0 only in the two free windows.
+		for (const kind of ['sneak', 'heavyBlow', 'guard', 'comboStrike', 'spike', 'lunge', 'harvest', 'swordDance', 'defensiveStance', 'retribution', 'chargedShot', 'runicSlash', 'lash']) {
+			assert.equal(weaponAbilityChargeCost(kind, { cleaveFree: false, spinning: false }), 1, `${kind} costs 1`);
+		}
+		assert.equal(weaponAbilityChargeCost('cleave', { cleaveFree: false, spinning: false }), 1, 'first cleave costs 1');
+		assert.equal(weaponAbilityChargeCost('cleave', { cleaveFree: true, spinning: false }), 0, 're-cleave is free');
+		assert.equal(weaponAbilityChargeCost('spin', { cleaveFree: false, spinning: false }), 1, 'first spin costs 1');
+		assert.equal(weaponAbilityChargeCost('spin', { cleaveFree: false, spinning: true }), 0, 'mid-spin spins are free');
+		assert.equal(weaponAbilityChargeCost('guard', { cleaveFree: true, spinning: true }), 1, 'foreign windows change nothing');
+		// `chargeCap()`: 2+(lvl-1)/3 capped at 8, champion 4+(lvl-1)/3 capped at 10.
+		assert.deepEqual([1, 2, 4, 7, 19, 20, 30].map((lvl) => weaponChargeCap(lvl, false)), [2, 2, 3, 4, 8, 8, 8], 'non-champion cap curve');
+		assert.deepEqual([1, 4, 19, 22, 30].map((lvl) => weaponChargeCap(lvl, true)), [4, 5, 10, 10, 10], 'champion cap curve');
+		// `Charger.act()`: 1/(60-1.5*(cap-charges)) per turn, so 1/57 at cap 2 from empty.
+		const baseOpts = { cap: 2, champion: false, weaponRechargingRank: 0, recharging: false, artifactRecharge: false };
+		let st = accrueWeaponCharge({ charges: 0, partial: 0 }, baseOpts);
+		assert.ok(Math.abs(st.partial - 1 / 57) < 1e-12, 'base accrual is 1/57 per turn at cap 2');
+		assert.equal(st.charges, 0, 'no whole charge banked yet');
+		st = accrueWeaponCharge({ charges: 1, partial: 0 }, baseOpts);
+		assert.ok(Math.abs(st.partial - 1 / 58.5) < 1e-12, 'near-cap accrual slows to 1/58.5');
+		st = accrueWeaponCharge({ charges: 0, partial: 0 }, { ...baseOpts, champion: true });
+		assert.ok(Math.abs(st.partial - 1.5 / 57) < 1e-12, 'champion accrues 1.5x');
+		st = accrueWeaponCharge({ charges: 0, partial: 0 }, { ...baseOpts, weaponRechargingRank: 1, recharging: true });
+		assert.ok(Math.abs(st.partial - (1 / 57 + 1 / 15)) < 1e-12, 'recharging adds 1/15 at rank 1');
+		st = accrueWeaponCharge({ charges: 0, partial: 0 }, { ...baseOpts, weaponRechargingRank: 2, recharging: true });
+		assert.ok(Math.abs(st.partial - (1 / 57 + 1 / 10)) < 1e-12, 'recharging adds 1/10 at rank 2');
+		st = accrueWeaponCharge({ charges: 0, partial: 0 }, { ...baseOpts, artifactRecharge: true });
+		assert.ok(Math.abs(st.partial - (1 / 57 + 1 / 20)) < 1e-12, 'artifact recharge adds 1/20 even unranked');
+		st = accrueWeaponCharge({ charges: 0, partial: 0.99 }, baseOpts);
+		assert.equal(st.charges, 1, 'crossing 1 banks one charge');
+		assert.ok(Math.abs(st.partial - (0.99 + 1 / 57 - 1)) < 1e-12, 'the remainder carries over');
+		st = accrueWeaponCharge({ charges: 2, partial: 0.4 }, baseOpts);
+		assert.deepEqual([st.charges, st.partial], [2, 0], 'at cap the fraction is dropped, not banked');
+		st = accrueWeaponCharge({ charges: 0, partial: 0.03 }, baseOpts, 2);
+		assert.ok(Math.abs(st.partial - (0.03 + 2 / 57)) < 1e-12, 'multi-turn ticks scale the gain');
+		// `beforeAbilityUsed` / `execute`: partial-first spend behind the float gate.
+		assert.equal(spendWeaponCharge({ charges: 0, partial: 0.9 }, 1), null, '0.9 total cannot pay 1');
+		assert.deepEqual(spendWeaponCharge({ charges: 2, partial: 0.5 }, 1), { charges: 1, partial: 0.5 }, 'the borrow comes out of whole charges');
+		assert.deepEqual(spendWeaponCharge({ charges: 1, partial: 0 }, 1), { charges: 0, partial: 0 }, 'exact whole spend');
+		assert.deepEqual(spendWeaponCharge({ charges: 0, partial: 1 }, 1), { charges: 0, partial: 0 }, 'exact partial spend');
+		assert.deepEqual(spendWeaponCharge({ charges: 3, partial: 0.2 }, 0), { charges: 3, partial: 0.2 }, 'free windows spend nothing');
+		// `gainCharge`: banks whole charges, drops the remainder at the cap.
+		st = gainWeaponCharge({ charges: 1, partial: 0.2 }, 0.375, 8);
+		assert.equal(st.charges, 1, 'refund banks no whole charge yet');
+		assert.ok(Math.abs(st.partial - 0.575) < 1e-12, 'refund lands in the fraction');
+		st = gainWeaponCharge({ charges: 1, partial: 0.8 }, 0.5, 8);
+		assert.equal(st.charges, 2, 'overflow banks one charge');
+		assert.ok(Math.abs(st.partial - 0.3) < 1e-12, 'overflow leaves the remainder');
+		assert.deepEqual(gainWeaponCharge({ charges: 7, partial: 0.9 }, 1.5, 8), { charges: 8, partial: 0 }, 'the cap keeps whole charges, drops the rest');
+		assert.deepEqual(gainWeaponCharge({ charges: 8, partial: 0 }, 1.5, 8), { charges: 8, partial: 0 }, 'full meter ignores refunds');
+		assert.deepEqual([0, 1, 2, 3, 4].map(counterAbilityRefund), [0, 0.375, 0.75, 1.125, 1.5], 'refund is rank*0.375');
+		assert.equal(counterAbilityRefund(9), 1.5, 'refund clamps at rank 4');
 		for (const [spins, mult] of [[0, 1], [1, 1.33], [2, 1.66], [3, 1.99]]) {
 			assert.ok(Math.abs(spinDamageMultiplier(spins) - mult) < 1e-9, `spin x${spins} multiplies ${mult}`);
 		}

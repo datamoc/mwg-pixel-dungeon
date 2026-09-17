@@ -86,9 +86,13 @@ upstream SPD baseline (see `CLOSED.md`).
 - [ ] Port all remaining weapons, wands, rings, artifacts, bombs, alchemy, and crafting.
       Already done: all 13 real artifact classes, all 12 ring types, all 13 wand classes, and
       generic weapon/armor tiers/upgrades/curses/degradation, and the Duelist T-key weapon abilities
-      (all 30 `MeleeWeapon.ability()` overrides with real costs/magnitudes, the charge meter, and the
-      `COUNTER_ABILITY` discount - no missile weapon has an ability at all. Remaining: the ability
-      simplifications (charge accrual, auto-target, setup turn costs); the alchemy pot's ingredient choice (one picker per unit on the five category recipes - the slot-window chrome stays simplified); and the
+      (all 30 `MeleeWeapon.ability()` overrides with real magnitudes, Java's exact `Charger`
+      economy - uniform 1-charge costs, level-based cap, time accrual, partial-first spends,
+      post-use `COUNTER_ABILITY` refunds - and Java's setup turn costs, sneak and the charged
+      shot free - no missile weapon has an ability at all. Remaining: auto-target (damage
+      strikes pick the nearest visible enemy, sneak's blink has nothing to pick with);
+      `VARIED_CHARGE` (no such talent here) and brawler's stance (no such buff); the stale
+      ability/talent desc text (catalogue refresh, not mechanics); the alchemy pot's ingredient choice (one picker per unit on the five category recipes - the slot-window chrome stays simplified); and the
       shop-stock items that used to have no item class here at all (Torches, Tipped Darts, the Ankh,
       Java's `ChooseBag` pick) - all four now exist as real items: the bags as ownable, priced,
       tradable goods with the real pick (their container behavior stays with the inventory-windows line). **The Torch carries one more thing beyond itself:** SPD's

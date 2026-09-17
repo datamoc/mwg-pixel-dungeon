@@ -234,9 +234,8 @@
           {
             // `Talent.CounterAbilityTacker`: a bare 3-turn `FlavourBuff` `Feint.activate()` arms
             // on the hero when `COUNTER_ABILITY` is ranked (`Buff.prolong(hero, ..., 3f)`). Its
-            // only real consumer, `MeleeWeapon.abilityChargeUse()`'s melee weapon-ability charge
-            // discount, is `useWeaponAbility`'s `weaponAbilityCost` gate: an armed tracker lowers
-            // the spend by the ranked 0.5/1/1.5/2 and is consumed with it. See
+            // only real consumer is `afterAbilityUsed`'s post-spend refund (`gainCharge` of
+            // `rank*0.375`, tracker detached with it) - a refund, not a discount. See
             // `PORT_COVERAGE.md`'s `Feint` row.
             tag: "row",
             buff: "counterAbility",

@@ -1,8 +1,11 @@
-// Throwaway (tools/scratch): Duelist T-key weapon abilities - sneak spends 2 charges for
-// invisibility, the flail spins to 3 with free re-spins and a warn at the cap, a cleave kill
-// refunds the next cleave free within 5 turns, heavy blow dazes 5, the armed COUNTER_ABILITY
-// tracker discounts a rank-4 sneak to free and is consumed, and landed melee AND thrown-copy
-// hits both feed combo strike's recent-hit window.
+// Throwaway (tools/scratch): Duelist T-key weapon abilities under the Java-exact
+// `Charger` economy - every ability costs 1 charge spent partial-first, sneak grants
+// (2+weaponLevel)-1 invisibility free, the flail's first spin costs 1 with free re-spins
+// to 3, a cleave kill refunds the next cleave free, heavy blow costs 1 even on surprise
+// (surprise gates the bonus only) and dazes 5, the armed COUNTER_ABILITY tracker refunds
+// rank*0.375 after the spend and is consumed, the charged shot readies free, and landed
+// melee AND thrown-copy hits both feed combo strike's recent-hit window (but no charge -
+// accrual is time-only).
 //
 // Run after `npm run build`:  node tools/scratch/weapon-ability-livecheck.mjs
 import { createRequire } from 'node:module';
@@ -53,7 +56,10 @@ const result = await page.evaluate(async () => {
 	const s = window.__MWG__.currentScene;
 	const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 	const out = {};
-	const setWeapon = (cls) => { s['weaponSourceClass'] = cls; s['weaponCharge'] = 10; };
+	const setWeapon = (cls) => { s['weaponSourceClass'] = cls; s['weaponCharge'] = 10; s['weaponPartialCharge'] = 0; };
+	const spendCalls = [];
+	const origSpend = s['spendHeroAction'].bind(s);
+	s['spendHeroAction'] = (c) => { spendCalls.push(c); return origSpend(c); };
 	const spawnAwakeRat = (hp) => {
 		const h = s['hero'];
 		const cell = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]
@@ -66,14 +72,15 @@ const result = await page.evaluate(async () => {
 		return foe;
 	};
 
-	// Sneak: 2 charges for invisibility, no target needed.
+	// Sneak: 1 charge, (2+weaponLevel)-1 invisibility, no turn spent.
 	setWeapon('Dagger');
+	s['weaponLevel'] = 0;
+	spendCalls.length = 0;
 	s['useWeaponAbility']();
 	await sleep(300);
-	out.sneakCharge = s['weaponCharge'];
-	out.sneakInvis = s['hero'].buffs['invisibility'] ?? 0;
+	out.sneak = [s['weaponCharge'], s['hero'].buffs['invisibility'] ?? 0, spendCalls.length];
 
-	// Spin: first spin costs, re-spins are free to 3, the fourth warns.
+	// Spin: first spin costs 1, re-spins are free to 3, the fourth warns.
 	setWeapon('Flail');
 	s['useWeaponAbility'](); await sleep(200);
 	out.spin1 = [s['spinSpins'], s['weaponCharge']];
@@ -85,12 +92,12 @@ const result = await page.evaluate(async () => {
 	out.spin4 = [s['spinSpins'], s['weaponCharge']];
 	s['spinSpins'] = 0; s['spinTurns'] = 0;
 
-	// Cleave kill refunds the next cleave free.
+	// Cleave: first cast costs 1, a kill refunds the next one free.
 	setWeapon('Shortsword');
 	const foeA = spawnAwakeRat(1);
 	s['useWeaponAbility'](); await sleep(300);
 	// cleaveFreeTurns reads 4, not 5: the kill arms 5, then the ability's own spent turn
-	// ticks it once - same spent-turn coupling as the daze below. Charge stays capped.
+	// ticks it once.
 	out.cleaveKill = [foeA.hp <= 0, s['cleaveFreeTurns'] > 0, s['weaponCharge']];
 	const foeB = spawnAwakeRat(200);
 	const chargeBeforeFree = s['weaponCharge'];
@@ -99,22 +106,38 @@ const result = await page.evaluate(async () => {
 	out.cleaveFree = [s['weaponCharge'] === chargeBeforeFree, foeB.hp < hpBeforeFree];
 	s['kill'](foeB); await sleep(200);
 
-	// Heavy blow dazes 5 on an aware target (full cost, no surprise discount).
+	// Heavy blow on an aware target: costs 1 (surprise gates the bonus, never the cost),
+	// dazes, and lands without accruing anything back.
 	setWeapon('Mace');
 	const foeC = spawnAwakeRat(200);
 	s['useWeaponAbility'](); await sleep(300);
-	// Charge 9, not 8: the strike costs 2, then lands - and a landed melee strike accrues
-	// a charge itself, so a landed 2-cost ability nets -1. Daze reads 4+: applied at 5,
-	// then the ability's own spent turn ticks it once.
+	// Daze reads 4+: applied at 5, then the ability's own spent turn ticks it once.
 	out.heavy = [s['weaponCharge'], foeC.buffs['daze'] ?? 0];
 	s['kill'](foeC); await sleep(200);
 
-	// COUNTER_ABILITY at rank 4 makes a 2-charge sneak free and consumes the tracker.
+	// COUNTER_ABILITY at rank 4: sneak spends 1, then refunds 1.5 and consumes the tracker.
 	setWeapon('Dagger');
+	s['weaponCharge'] = 1; s['weaponPartialCharge'] = 0;
 	s['talentRanks']['counter_ability'] = 4;
 	s['hero'].buffs['counterAbility'] = 3;
 	s['useWeaponAbility'](); await sleep(300);
-	out.counter = [s['weaponCharge'], s['hero'].buffs['counterAbility']];
+	out.counter = [s['weaponCharge'], s['weaponPartialCharge'], s['hero'].buffs['counterAbility']];
+	s['talentRanks']['counter_ability'] = 0;
+
+	// Charged shot readies free: 1 charge, no turn spent.
+	setWeapon('Crossbow');
+	spendCalls.length = 0;
+	s['useWeaponAbility'](); await sleep(300);
+	out.shot = [s['weaponCharge'], s['chargedShotArmed'], spendCalls.length];
+	s['chargedShotArmed'] = false;
+
+	// Time accrual through the scene tick: 0.99 banks one charge, over-cap drops.
+	s['weaponCharge'] = 0; s['weaponPartialCharge'] = 0.99;
+	s['tickWeaponAbility'](1); await sleep(200);
+	out.accrue = [s['weaponCharge'], s['weaponPartialCharge']];
+	s['weaponCharge'] = 5; s['weaponPartialCharge'] = 0.3;
+	s['tickWeaponAbility'](1); await sleep(200);
+	out.accrueCap = [s['weaponCharge'], s['weaponPartialCharge']];
 
 	// Combo window: landed melee hits and thrown-copy hits both count.
 	s['recentHitClocks'] = [];
@@ -142,16 +165,18 @@ await page.screenshot({ path: 'tools/scratch/weapon-ability-live.png' });
 await browser.close();
 
 const checks = [
-	['sneak spends 2 charges', result.sneakCharge === 8],
-	['sneak grants invisibility', result.sneakInvis > 0],
-	['first spin costs 2', JSON.stringify(result.spin1) === JSON.stringify([1, 8])],
-	['re-spin is free', JSON.stringify(result.spin2) === JSON.stringify([2, 8])],
-	['spin caps at 3', JSON.stringify(result.spin3) === JSON.stringify([3, 8])],
-	['fourth spin warns, spends nothing', JSON.stringify(result.spin4) === JSON.stringify([3, 8])],
-	['cleave kill refunds free turns at no cost', JSON.stringify(result.cleaveKill) === JSON.stringify([true, true, 10])],
+	['sneak costs 1, grants 1 invisibility, spends no turn', JSON.stringify(result.sneak) === JSON.stringify([9, 1, 0])],
+	['first spin costs 1', JSON.stringify(result.spin1) === JSON.stringify([1, 9])],
+	['re-spin is free', JSON.stringify(result.spin2) === JSON.stringify([2, 9])],
+	['spin caps at 3', JSON.stringify(result.spin3) === JSON.stringify([3, 9])],
+	['fourth spin warns, spends nothing', JSON.stringify(result.spin4) === JSON.stringify([3, 9])],
+	['cleave kill costs 1 and refunds free turns', result.cleaveKill[0] === true && result.cleaveKill[1] === true && result.cleaveKill[2] === 9],
 	['free recast costs nothing and lands', JSON.stringify(result.cleaveFree) === JSON.stringify([true, true])],
-	['heavy blow nets -1 (cost 2, landed strike accrues 1) and dazes', result.heavy[0] === 9 && result.heavy[1] >= 4],
-	['rank-4 counter makes sneak free and is consumed', JSON.stringify(result.counter) === JSON.stringify([10, undefined])],
+	['heavy blow costs 1 with no accrual payback and dazes', result.heavy[0] === 9 && result.heavy[1] >= 4],
+	['rank-4 counter refunds 1.5 and is consumed', result.counter[0] === 1 && result.counter[1] === 0.5 && result.counter[2] === undefined],
+	['charged shot readies for 1 charge, no turn', JSON.stringify(result.shot) === JSON.stringify([9, true, 0])],
+	['scene tick banks the crossing fraction', result.accrue[0] === 1 && Math.abs(result.accrue[1] - (0.99 + 1 / 57 - 1)) < 1e-9],
+	['over-cap tick drops the fraction', JSON.stringify(result.accrueCap) === JSON.stringify([5, 0])],
 	['landed melee hits feed the combo window', result.comboMelee[0] >= 2 && result.comboMelee[1] >= 2],
 	['a landed thrown-copy hit feeds it too', result.comboThrown[0] >= 1 && result.comboThrown[1] >= 1],
 	['no console errors', problems.length === 0],

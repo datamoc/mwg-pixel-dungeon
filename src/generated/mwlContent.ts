@@ -6768,7 +6768,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-								"line": 241,
+								"line": 240,
 								"column": 13
 							},
 							"gettext": []

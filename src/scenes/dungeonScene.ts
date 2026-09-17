@@ -28,7 +28,7 @@ import { chooseShopBag, isBagId, type BagId } from '../items/bags';
 import { isResurrectKeepCandidate, partitionResurrectKeeps } from '../items/resurrect';
 import { pickupGroundItem as pickupGroundItemWorkflow } from '../items/groundPickup';
 import { reforgeDiscardedMissileSet, blacksmithHardenCost as itemBlacksmithHardenCost, blacksmithReforgeCost as itemBlacksmithReforgeCost, blacksmithReforgePairValid, blacksmithUpgradeCost as itemBlacksmithUpgradeCost, blacksmithTurnInFavor, BLACKSMITH_FREE_PICKAXE_FAVOR, rollCarriedAffixLoss, selectBlacksmithHardenItems, selectBlacksmithReforgeItems, selectBlacksmithUpgradeItems, type BlacksmithItem } from '../items/blacksmith';
-import { counterAbilityDiscount, spinDamageMultiplier, weaponAbilityCost, weaponAbilityFor, WEAPON_ABILITY_MAX_CHARGE } from '../items/weaponAbilities';
+import { accrueWeaponCharge, counterAbilityRefund, gainWeaponCharge, spinDamageMultiplier, spendWeaponCharge, weaponAbilityChargeCost, weaponAbilityFor, weaponChargeCap } from '../items/weaponAbilities';
 import { useStoneOfFlock as useItemStoneOfFlock, useStoneOfAggression as useItemStoneOfAggression, useStoneOfAugmentation as useItemStoneOfAugmentation, useStoneOfFear as useItemStoneOfFear, useStoneOfDeepSleep as useItemStoneOfDeepSleep, useStoneOfBlink as useItemStoneOfBlink, useStoneOfClairvoyance as useItemStoneOfClairvoyance, useStoneOfShock as useItemStoneOfShock, useStoneOfBlast as useItemStoneOfBlast, useStoneOfEnchantment as useItemStoneOfEnchantment, useStoneOfDetectMagic as useItemStoneOfDetectMagic, useStoneOfIntuition as useItemStoneOfIntuition, type StoneContext, type StonePickerEntry } from '../items/stones';
 import { runSearch } from '../adapters/searchSimulation';
 import { runMovement } from '../adapters/movementSimulation';
@@ -742,6 +742,7 @@ interface SaveShape {
 	interfaceSize?: 0 | 1;
 	quickslots?: ({ id: string; instanceId?: string } | null)[];
 	weaponCharge?: number;
+	weaponPartialCharge?: number;
 	spinSpins?: number;
 	spinTurns?: number;
 	cleaveFreeTurns?: number;
@@ -1635,15 +1636,16 @@ export class DungeonScene extends Scene2D {
 	 */
 	private quickslots: ({ id: string; instanceId?: string } | null)[] = [null, null, null, null];
 	/**
-	 * `MeleeWeapon` T-key ability state (`src/items/weaponAbilities.ts`): the charge meter
-	 * (caps at `WEAPON_ABILITY_MAX_CHARGE`, refills over time and per landed hit - Java's
-	 * exact accrual simplified, costs real), the flail spin count/turns, the free re-cleave
-	 * window, guard/sword-dance/defensive-stance turns, the armed charged shot, the pending
-	 * next-attack modifiers (force hit, damage multiplier, daze/bleed/knockback/runic), the
-	 * last ability-attack kind (for cleave's kill refund), and the hero action clock behind
-	 * combo strike's 5-turn window.
+	 * `MeleeWeapon.Charger` T-key ability state (`src/items/weaponAbilities.ts`): whole charges
+	 * plus the fractional `partialCharge`, starting at Java's own 2 (the cap is the hero's
+	 * level via `weaponChargeCap`, accruing over time per `Charger.act`), the flail spin
+	 * count/turns, the free re-cleave window, guard/sword-dance/defensive-stance turns,
+	 * the armed charged shot, the pending next-attack modifiers (force hit, damage
+	 * multiplier, daze/bleed/knockback/runic), and the hero action clock behind combo
+	 * strike's 5-turn window.
 	 */
-	private weaponCharge = 0;
+	private weaponCharge = 2;
+	private weaponPartialCharge = 0;
 	private spinSpins = 0;
 	private spinTurns = 0;
 	private cleaveFreeTurns = 0;
@@ -14463,6 +14465,7 @@ export class DungeonScene extends Scene2D {
 			interfaceSize: this.interfaceSize,
 			quickslots: this.quickslots.map((slot) => slot ? { ...slot } : null),
 			weaponCharge: this.weaponCharge,
+			weaponPartialCharge: this.weaponPartialCharge,
 			spinSpins: this.spinSpins,
 			spinTurns: this.spinTurns,
 			cleaveFreeTurns: this.cleaveFreeTurns,
@@ -14768,7 +14771,8 @@ export class DungeonScene extends Scene2D {
 		this.interfaceSize = ((s as { interfaceSize?: number }).interfaceSize === 1 ? 1 : 0);
 		this.quickslots = ((s as { quickslots?: ({ id: string; instanceId?: string } | null)[] }).quickslots ?? [null, null, null, null]).slice(0, 4);
 		while (this.quickslots.length < 4) this.quickslots.push(null);
-		this.weaponCharge = (s as { weaponCharge?: number }).weaponCharge ?? 0;
+		this.weaponCharge = (s as { weaponCharge?: number }).weaponCharge ?? 2;
+		this.weaponPartialCharge = (s as { weaponPartialCharge?: number }).weaponPartialCharge ?? 0;
 		this.spinSpins = (s as { spinSpins?: number }).spinSpins ?? 0;
 		this.spinTurns = (s as { spinTurns?: number }).spinTurns ?? 0;
 		this.cleaveFreeTurns = (s as { cleaveFreeTurns?: number }).cleaveFreeTurns ?? 0;
@@ -18774,13 +18778,10 @@ export class DungeonScene extends Scene2D {
 		if (roll.hit && attacker.isHero) {
 			//Combo strike's window counts melee AND thrown hits (`ability_desc`: "melee or
 			//thrown weapons" - the throw path reaches this same choke point on a hero copy,
-			//which is why this keys on `isHero` rather than the hero reference); the charge
-			//meter accrues per landed melee hit only (exact Java accrual simplified - see
-			//`weaponAbilities.ts`).
+			//which is why this keys on `isHero` rather than the hero reference). Landed hits
+			//feed no charge: Java's `Charger` accrues over time only (`Charger.act()`),
+			//never per hit - see `tickWeaponAbility`.
 			this.recentHitClocks.push(this.heroActionClock);
-			if (attacker === this.hero && attacker.attackMode !== 'throw') {
-				this.weaponCharge = Math.min(WEAPON_ABILITY_MAX_CHARGE, this.weaponCharge + 1);
-			}
 		}
 		if (attacker === this.hero) {
 			//The swing is spent either way; a spinning flail's charge is spent with it too.
@@ -18795,13 +18796,14 @@ export class DungeonScene extends Scene2D {
 	}
 
 	/**
-	 * The Duelist's T-key weapon ability (`MeleeWeapon.ability()` overrides, tag `v3.3.8`):
-	 * spends the wielded weapon's charges (discounted by `COUNTER_ABILITY` while its tracker
-	 * is up) and runs the ability's effect against the nearest visible enemy - this port's
-	 * auto-target convention where Java opens a cell selector. Costs and magnitudes are each
-	 * weapon's own `ability_desc` (see `weaponAbilities.ts`); timed setup abilities spend one
-	 * turn except the two descs that state otherwise (`Sword Dance`, `Defensive Stance` take
-	 * no time - a stated simplification that every other ability costs one turn).
+	 * The Duelist's T-key weapon ability (`MeleeWeapon` overrides, tag `v3.3.8`): spends 1
+	 * charge from the `Charger` meter (partial-first, gated on `charges + partial >= cost`)
+	 * and runs the ability's effect against the nearest visible enemy - this port's
+	 * auto-target convention where Java opens a cell selector. Magnitudes are each weapon's
+	 * own `ability_desc` (see `weaponAbilities.ts`); sneak and the charged shot are free
+	 * (`hero.next()`), guard and spin cost the turn, and damage strikes ride their own
+	 * attack's turn. An armed `COUNTER_ABILITY` tracker refunds `rank*0.375` after the
+	 * spend (`afterAbilityUsed`) instead of discounting it.
 	 */
 	private useWeaponAbility(): void {
 		const def = weaponAbilityFor(this.weaponSourceClass, this.weaponId);
@@ -18809,37 +18811,41 @@ export class DungeonScene extends Scene2D {
 			this.say(t('port.log.noweaponability'));
 			return;
 		}
+		//Java's `baseChargeUse`: 1 for every ability, 0 only inside the flail's spin and
+		//the swords' free re-cleave windows. Surprise gates heavy blow's *bonus* only
+		//(`Mace.heavyBlowAbility`), never its cost. The counter state is read for the
+		//post-spend refund below (`afterAbilityUsed`).
 		const counterArmed = this.hero.buffs['counterAbility'] !== undefined;
 		const counterRank = this.talentRank('counter_ability');
-		//Heavy Blow is free on a surprise (`ability_desc`: "costs 2 charges unless it
-		//surprises the enemy"); cleave re-casts free within 5 turns of a cleave kill.
-		const surpriseTarget = this.nearestVisibleEnemy(6);
-		const surprised = surpriseTarget !== null
-			&& (surpriseTarget.sleeping === true || !surpriseTarget.seesHero);
-		let cost = def.cost;
-		if (def.kind === 'heavyBlow' && surprised) cost = 0;
-		if (def.kind === 'cleave' && this.cleaveFreeTurns > 0) cost = 0;
-		cost = weaponAbilityCost(cost, counterRank, counterArmed);
-		if (this.weaponCharge < cost) {
+		const cost = weaponAbilityChargeCost(def.kind, {
+			cleaveFree: this.cleaveFreeTurns > 0,
+			spinning: this.spinSpins > 0,
+		});
+		if (!spendWeaponCharge({ charges: this.weaponCharge, partial: this.weaponPartialCharge }, cost)) {
 			this.say(t('port.log.lowweaponcharge'));
 			return;
 		}
-		if (counterArmed) delete this.hero.buffs['counterAbility'];
 		switch (def.kind) {
 			case 'sneak': {
-				this.weaponCharge -= cost;
-				addBuff(this.hero, 'invisibility', def.buffTurns ?? 6);
+				//`Dagger.sneakAbility`: `invisTurns = 2+buffedLvl()`, applied as
+				//`prolong(Invisibility, invisTurns-1)` (never shortens an existing
+				//cloak); the blink itself needs Java's cell selector, which has no
+				//expression here (stated in PORT_COVERAGE). Free (`hero.next()`).
+				this.takeAbilityCharge(cost);
+				this.refundCounterAbility(counterArmed, counterRank);
+				reigniteBuff(this.hero, 'invisibility', 1 + this.weaponLevel);
 				this.say(t('port.log.weaponsneak'), 'positive');
-				this.spendHeroAction(1);
 				return;
 			}
 			case 'spin': {
-				//Starting to spin costs 2; further spins are free but take the turn, to 3.
-				if (this.spinSpins === 0) this.weaponCharge -= cost;
+				//Java checks the 3-spin cap before `beforeAbilityUsed`: a refused spin
+				//spends nothing. The first spin costs 1, further spins are free.
 				if (this.spinSpins >= (def.maxSpins ?? 3)) {
 					this.say(t('items.weapon.melee.flail.spin_warn'), 'negative');
 					return;
 				}
+				this.takeAbilityCharge(cost);
+				this.refundCounterAbility(counterArmed, counterRank);
 				this.spinSpins += 1;
 				this.spinTurns = 3;
 				this.say(t('port.log.weaponspin', { spins: this.spinSpins }), 'positive');
@@ -18847,30 +18853,34 @@ export class DungeonScene extends Scene2D {
 				return;
 			}
 			case 'guard': {
-				this.weaponCharge -= cost;
+				this.takeAbilityCharge(cost);
+				this.refundCounterAbility(counterArmed, counterRank);
 				this.guardTurns = def.buffTurns ?? 6;
 				this.say(t('port.log.weaponguard'), 'positive');
 				this.spendHeroAction(1);
 				return;
 			}
 			case 'swordDance': {
-				this.weaponCharge -= cost;
+				this.takeAbilityCharge(cost);
+				this.refundCounterAbility(counterArmed, counterRank);
 				this.swordDanceTurns = def.buffTurns ?? 5;
 				this.say(t('port.log.sworddance'), 'positive');
 				return;
 			}
 			case 'defensiveStance': {
-				this.weaponCharge -= cost;
+				this.takeAbilityCharge(cost);
+				this.refundCounterAbility(counterArmed, counterRank);
 				this.defensiveStanceTurns = def.buffTurns ?? 5;
 				this.syncHeroFromStats();
 				this.say(t('port.log.defensivestance'), 'positive');
 				return;
 			}
 			case 'chargedShot': {
-				this.weaponCharge -= cost;
+				//Readying the shot is free (`hero.next()` in `Crossbow`).
+				this.takeAbilityCharge(cost);
+				this.refundCounterAbility(counterArmed, counterRank);
 				this.chargedShotArmed = true;
 				this.say(t('port.log.chargedshot'), 'positive');
-				this.spendHeroAction(1);
 				return;
 			}
 			default: {
@@ -18889,7 +18899,8 @@ export class DungeonScene extends Scene2D {
 					this.say(t('port.log.spiketoorange'), 'negative');
 					return;
 				}
-				this.weaponCharge -= cost;
+				this.takeAbilityCharge(cost);
+				this.refundCounterAbility(counterArmed, counterRank);
 				this.abilityForceHit = true;
 				this.abilityDamageMult = 1 + (def.damageBonus ?? 0) / 100;
 				this.lastAbilityAttack = def.kind;
@@ -18920,6 +18931,30 @@ export class DungeonScene extends Scene2D {
 		if (kind === 'cleave') this.cleaveFreeTurns = 5;
 	}
 
+	/** Applies `beforeAbilityUsed`'s partial-first spend. The gate in `useWeaponAbility`
+	 * already refused unaffordable costs, so this always succeeds. */
+	private takeAbilityCharge(cost: number): void {
+		const spent = spendWeaponCharge({ charges: this.weaponCharge, partial: this.weaponPartialCharge }, cost);
+		if (spent) {
+			this.weaponCharge = spent.charges;
+			this.weaponPartialCharge = spent.partial;
+		}
+	}
+
+	/** `afterAbilityUsed`'s `COUNTER_ABILITY` half: refund `rank*0.375` and detach. */
+	private refundCounterAbility(armed: boolean, rank: number): void {
+		if (!armed) return;
+		const cap = this.weaponChargeCapNow();
+		const gained = gainWeaponCharge(
+			{ charges: this.weaponCharge, partial: this.weaponPartialCharge },
+			counterAbilityRefund(rank),
+			cap,
+		);
+		this.weaponCharge = gained.charges;
+		this.weaponPartialCharge = gained.partial;
+		delete this.hero.buffs['counterAbility'];
+	}
+
 	/** `Whip.LashAbility`: the same normal attack against every other enemy in range. */
 	private lashOthers(primary: Creature): void {
 		for (const other of this.creatures.filter((c) => c !== primary && !c.isHero && !c.isNPC && c.hp > 0
@@ -18940,9 +18975,9 @@ export class DungeonScene extends Scene2D {
 
 	/**
 	 * Ticks the weapon-ability windows once per spent hero turn: spin, re-cleave, guard,
-	 * both stances decay; the charge meter refills over time (the Duelist's "recharges
-	 * over time" line - the exact Java rate simplified to one charge per ten turns, see
-	 * `weaponAbilities.ts`); combo strike's window reads the action clock, not a counter.
+	 * both stances decay; the charge meter accrues over the turn per `Charger.act()`
+	 * (see `accrueWeaponCharge`); combo strike's window reads the action clock, not a
+	 * counter.
 	 */
 	private tickWeaponAbility(turnCost: number): void {
 		this.heroActionClock += turnCost;
@@ -18954,14 +18989,26 @@ export class DungeonScene extends Scene2D {
 		this.swordDanceTurns = Math.max(0, this.swordDanceTurns - turnCost);
 		this.defensiveStanceTurns = Math.max(0, this.defensiveStanceTurns - turnCost);
 		if (hadStance && this.defensiveStanceTurns <= 0) this.syncHeroFromStats();
-		this.weaponChargeAccrue += turnCost;
-		while (this.weaponChargeAccrue >= 10) {
-			this.weaponChargeAccrue -= 10;
-			this.weaponCharge = Math.min(WEAPON_ABILITY_MAX_CHARGE, this.weaponCharge + 1);
-		}
+		//`Charger.act()` accrue over the spent turn (scaled by its cost, the same
+		//convention the armor-Charger port uses for multi-turn actions).
+		const accrued = accrueWeaponCharge(
+			{ charges: this.weaponCharge, partial: this.weaponPartialCharge },
+			{
+				cap: this.weaponChargeCapNow(),
+				champion: this.subclass() === 'champion',
+				weaponRechargingRank: this.talentRank('weapon_recharging'),
+				recharging: this.hero.buffs['recharging'] !== undefined,
+				artifactRecharge: this.artifactRechargeTurns > 0,
+			},
+			turnCost,
+		);
+		this.weaponCharge = accrued.charges;
+		this.weaponPartialCharge = accrued.partial;
 		this.recentHitClocks = this.recentHitClocks.filter((clock) => this.heroActionClock - clock <= 5);
 	}
-	private weaponChargeAccrue = 0;
+	private weaponChargeCapNow(): number {
+		return weaponChargeCap(this.progression.level, this.subclass() === 'champion');
+	}
 
 	/**
 	 * The adapter's own spend path (`heroActions.spendTurn`), for the armor abilities. They are
