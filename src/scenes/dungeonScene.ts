@@ -10724,8 +10724,11 @@ export class DungeonScene extends Scene2D {
 		if (tengu.hp <= 0) return;
 		//Tengu.Hunting.act() (tag v3.3.8): `if (canUseAbility()) return useAbility();`
 		//sits before `doAttack`, so an ability owns that turn instead of being an extra
-		//action on top of a swing, and handleUnreachableTarget() checks it the same way.
-		//The port therefore checks it before both the ranged-dart and melee branches.
+		//action on top of a swing. When Tengu cannot attack he tries an ability even unseen
+		//and otherwise waits out the turn (`spend(TICK); return true`) - the override never
+		//moves, chases, or calls the base unreachable-target handling, so repositioning comes
+		//only from bracket jumps. The port therefore checks the ability before both the
+		//ranged-dart and melee branches, and waits below when neither can fire.
 		if (this.tenguFireAbilityIfReady(tengu)) return;
 		const distance = Roguelike.chebyshevDistance(tengu, this.hero);
 		if (distance > 1) {
@@ -10733,16 +10736,8 @@ export class DungeonScene extends Scene2D {
 				this.say(t('port.log.tengudart'), 'negative');
 				this.attack({ ...tengu, kind: undefined, accuracy: 20 }, this.hero);
 				this.spawnProjectile(tengu, this.hero);
-			} else {
-				const blocked = new Set(
-					this.creatures.filter((c) => c !== tengu && c !== this.hero).map((c) => this.level.index(c.x, c.y))
-				);
-				const decision = Roguelike.decideMonsterAI(this.level, this.pathfinder, tengu, tengu.hp / tengu.maxHp, this.hero, {
-					sightRadius: this.viewRadius(),
-					blocked,
-				});
-				if (decision.step) this.moveTo(tengu, decision.step);
 			}
+			//else: Java waits here (see above) - no chase step, the turn simply ends.
 		} else {
 			this.attack(tengu, this.hero);
 		}
