@@ -37,7 +37,7 @@ try {
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'mechanics/cone', 'dungeonConstants',
-	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble',
+	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting',
 	// `dungeonConstants` and `items/wands` read the MWL item tables, so the harness compiles the
 	// real adapter and the real generated catalogue instead of a hand-copied stub of them - a stub
 	// is how the old, hand-listed framework set above drifted once already, and how the item-frame
@@ -96,6 +96,7 @@ const { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEart
 const { plantDropCandidates, plantDropCount } = require('./simulation/plantDrops');
 const { teleportCandidates, disarmBubblePresses } = require('./simulation/teleport');
 const { teleportAppearPlan } = require('./simulation/teleportAppear');
+const { selectRangedTarget } = require('./simulation/targeting');
 const { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } = require('./simulation/timeBubble');
 	const { applyEnvironmentalBlobs } = require('./simulation/environmentalBlobs');
 	// The four coefficients `HighGrass.trample` reads, as the port's MWL rows carry them.
@@ -267,6 +268,21 @@ check('HazardAssistTracker lasts 50 turns toward a 10-kill badge', () => {
 	assert.equal(badgeRow.counter, 'hazard_assists');
 	assert.equal(badgeRow.target, 10);
 	assert.equal(badgeRow.icon, 64);
+});
+check('Ranged targeting picks the nearest visible hero or ally, never the invisible', () => {
+	const roguelike = {
+		canTarget: () => true,
+		chebyshevDistance: (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)),
+	};
+	const monster = { x: 0, y: 0, buffs: {} };
+	const hero = { x: 5, y: 0, hp: 10, isHero: true, buffs: {} };
+	const ally = { x: 2, y: 0, hp: 10, isAlly: true, buffs: {} };
+	assert.equal(selectRangedTarget({}, monster, hero, [ally], 8, roguelike), ally);
+	const nearHero = { ...hero, x: 1 };
+	assert.equal(selectRangedTarget({}, monster, nearHero, [ally], 8, roguelike), nearHero);
+	assert.equal(selectRangedTarget({}, monster, { ...hero, buffs: { invisibility: 3 } }, [ally], 8, roguelike), ally);
+	assert.equal(selectRangedTarget({}, monster, { ...hero, buffs: { invisibility: 3 } }, [{ ...ally, buffs: { invisibility: 3 } }], 8, roguelike), null);
+	assert.equal(selectRangedTarget({}, monster, hero, [{ ...ally, hp: 0 }], 8, roguelike), hero);
 });
 check('Teleport lands passable, unoccupied, unseen, non-secret and out of pits', () => {
 	const open = { passable: true, occupied: false, visible: false, secret: false, chasm: false };

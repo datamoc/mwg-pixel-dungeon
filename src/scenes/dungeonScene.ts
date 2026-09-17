@@ -926,6 +926,28 @@ function wardTexture(texture: Texture, tier: number): Texture {
 	return wardSheet(texture).get(Math.max(1, Math.min(6, tier)) - 1);
 }
 
+/**
+ * `Effects.get()`'s `WOUND`/`EXCLAMATION` frames (`Effects.java`, tag `v3.3.8`):
+ * the red slash (`uvRect(16, 8, 32, 16)`, tinted `hardlight(1, 0, 0)` at runtime)
+ * and the `!` (`uvRect(0, 16, 6, 25)`), cut with `SpriteSheet.rect` exactly like
+ * the ward frames above - `effects.png` is not a regular grid.
+ */
+const EFFECT_MARK_RECTS = [
+{ x: 16, y: 8, width: 16, height: 8 },
+{ x: 0, y: 16, width: 6, height: 9 },
+] as const;
+
+const effectMarkSheets = new WeakMap<Texture, SpriteSheet>();
+
+function effectMarkSheet(texture: Texture): SpriteSheet {
+	const cached = effectMarkSheets.get(texture);
+	if (cached) return cached;
+	const sheet = SpriteSheet.fromTexture(texture);
+	EFFECT_MARK_RECTS.forEach((rect, index) => sheet.rect(index, rect.x, rect.y, rect.width, rect.height));
+	effectMarkSheets.set(texture, sheet);
+	return sheet;
+}
+
 export class DungeonScene extends Scene2D {
 	private terrainSheet!: SpriteSheet;
 	private heroClass!: ClassId;
@@ -1828,6 +1850,8 @@ export class DungeonScene extends Scene2D {
 	/** Pending `ScrollOfTeleportation.appear` alpha fades (`AlphaTweener(ch.sprite, 1,
 	 * 0.4f)`): transient visual state like `effectBursts`, never persisted. */
 	private teleportFades: { sprite: TintedSprite; remaining: number; total: number }[] = [];
+	/** Pending `Wound.hit`/`Surprise.hit` overlays: transient visual state like `effectBursts`, never persisted. */
+	private surpriseMarks: { sprite: TintedSprite; remaining: number; total: number; wound: boolean }[] = [];
 
 	/** how much to shrink each pop-up, for a layer living in world space under a zoomed camera */
 	private readonly floaterTextScale = 1 / 3;
@@ -2845,6 +2869,8 @@ export class DungeonScene extends Scene2D {
 		for (const burst of this.effectBursts) burst.emitter.destroy();
 		this.effectBursts = [];
 		this.teleportFades = [];
+		for (const mark of this.surpriseMarks) mark.sprite.destroy();
+		this.surpriseMarks = [];
 		//health bars are per-creature and every non-hero creature is about to be dropped
 		for (const bar of this.healthBars.values()) bar.destroy();
 		this.healthBars.clear();
@@ -12996,6 +13022,12 @@ export class DungeonScene extends Scene2D {
 		}
 		if (defender.kind === 'statue') defender.sleeping = false;
 		this.showDamage(defender, damage);
+		//`Mob.defenseProc()` surprise presentation (`Mob.java`, tag `v3.3.8`): a
+		//surprise hit plays `HIT_STRONG` and shows the red `Wound` slash when the
+		//hero attacked with Preparation up, the `!` `Surprise` mark otherwise.
+		if (surprise && attacker.isHero === true && !defender.isHero && !defender.isNPC) {
+			this.showSurpriseMark(defender, attacker.prepLevel !== undefined);
+		}
 		if (defender.kind === 'demonSpawner') {
 			defender.spawnCooldown = Math.max((defender.spawnCooldown ?? 60) - damage, -20);
 		}
@@ -18020,6 +18052,45 @@ export class DungeonScene extends Scene2D {
 	 * (`start(factory, 0.2f, 3)`); this port bursts all 3 at once, the same
 	 * simplification every other burst here already makes.
 	 */
+	/**
+	 * `Wound.hit`/`Surprise.hit` (`effects/Wound.java`, `effects/Surprise.java`,
+	 * tag `v3.3.8`): a 1-second overlay centered on the struck char - the red
+	 * slash for a prepared strike (`hardlight(1, 0, 0)`, `alpha = sqrt(p)`,
+	 * `scale.x = 1 + p`), the `!` otherwise (`scale.y = 1 + p`, `scale.x =
+	 * 1 + p/4`). Java centers on the sprite; this port centers on the cell,
+	 * the same footprint at this scale. The `HIT_STRONG` sample plays here too;
+	 * Java's 0.125s delay for SpiritArrow/Dart (`playDelayed`) has no seam in
+	 * this port's cue system, so it plays at once like every other cue.
+	 */
+	private showSurpriseMark(defender: Creature, prepared: boolean): void {
+		runState.audio.cue('hit_strong', 0.6);
+		const sprite = new TintedSprite(effectMarkSheet(runState.sprites.effects).get(prepared ? 0 : 1));
+		if (prepared) sprite.tint = 0xff0000;
+		sprite.anchor.set(0.5, 0.5);
+		sprite.position.set((defender.x + 0.5) * TILE, (defender.y + 0.5) * TILE);
+		this.effectLayer.addChild(sprite);
+		this.surpriseMarks.push({ sprite, remaining: 1, total: 1, wound: prepared });
+	}
+
+	private updateSurpriseMarks(dt: number): void {
+		for (let i = this.surpriseMarks.length - 1; i >= 0; i--) {
+			const mark = this.surpriseMarks[i]!;
+			mark.remaining -= dt;
+			if (mark.remaining <= 0) {
+				mark.sprite.destroy();
+				this.surpriseMarks.splice(i, 1);
+				continue;
+			}
+			const p = mark.remaining / mark.total;
+			mark.sprite.alpha = Math.sqrt(p);
+			if (mark.wound) mark.sprite.scale.x = 1 + p;
+			else {
+				mark.sprite.scale.y = 1 + p;
+				mark.sprite.scale.x = 1 + p / 4;
+			}
+		}
+	}
+
 	private burstTeleportLight(cell: Step): void {
 		const lightCurve = (t: number): number => (t < 0.2 ? t * 5 : (1 - t) * 1.25);
 		const emitter = new ParticleEmitter({
@@ -20553,6 +20624,7 @@ export class DungeonScene extends Scene2D {
 		this.floaters.update(dt);
 		this.updateEffectBursts(dt);
 		this.updateTeleportFades(dt);
+		this.updateSurpriseMarks(dt);
 
 		//Compass.java recomputes its angle whenever the camera scrolls, against the camera's
 		//own centre - so it follows the view rather than the hero, and keeps pointing while
