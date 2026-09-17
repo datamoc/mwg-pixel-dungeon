@@ -241,6 +241,15 @@
             buff: "counterAbility",
             duration: 3,
           },
+          {
+            // `Trap.HazardAssistTracker` (`levels/traps/Trap.java`, tag `v3.3.8`): a bare
+            // `FlavourBuff` with `DURATION = 50f`, prolonged onto mobs by hazards (plants,
+            // traps, the caves-boss wires) and read only by `Mob.die()` for the assist badge.
+            // Neutral like every other `FlavourBuff` here, so it never wakes a sleeper.
+            tag: "row",
+            buff: "hazardAssist",
+            duration: 50,
+          },
         ],
       },
     ],

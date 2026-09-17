@@ -209,6 +209,17 @@ check('Dewcatcher/Seedpod counts roll triangular like NormalIntRange', () => {
 	});
 	assert(middle > 1200, `triangular middle ${middle}/${draws} beats uniform`);
 });
+check('HazardAssistTracker lasts 50 turns toward a 10-kill badge', () => {
+	const { MWL_TABLE_ROWS } = require('./mwlContent');
+	const durationRow = MWL_TABLE_ROWS('buffDurations', 'buff').find((row) => row.buff === 'hazardAssist');
+	assert.equal(durationRow.duration, 50);
+	const { BUFF_DURATION } = require('./simulation/buffs');
+	assert.equal(BUFF_DURATION.hazardAssist, 50);
+	const badgeRow = MWL_TABLE_ROWS('badgeCatalogue', 'id').find((row) => row.id === 'enemy_hazards');
+	assert.equal(badgeRow.counter, 'hazard_assists');
+	assert.equal(badgeRow.target, 10);
+	assert.equal(badgeRow.icon, 64);
+});
 check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		const target = { hp: 10 };
 		const advanced = [];

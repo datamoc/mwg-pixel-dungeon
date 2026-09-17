@@ -6492,20 +6492,24 @@ export class DungeonScene extends Scene2D {
 			this.say(t('port.log.trap.grim', { damage }), 'negative');
 		} else if (kind === 'shockingTrap') {
 				//ShockingTrap.activate() (tag `v3.3.8`): seeds Electricity 10 on every
-				//non-solid NEIGHBOURS9 cell. The LIGHTNING sound has no layer here, and the
-				//mob-marking tracker feeds only the score screen (no system here) - both stated.
+				//non-solid NEIGHBOURS9 cell. The LIGHTNING sound has no layer here (stated); the
+				//mob-marking tracker feeds the hazard-assists badge through `markHazardArea`.
 				for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
 					const nx = x + dx, ny = y + dy;
 					if (this.level.passable(nx, ny)) this.electricity.seed(nx, ny, 10);
 				}
 			} else if (kind === 'stormTrap') {
-				//StormTrap.activate(): a distance-2 flood seeding Electricity 20 (same
-				//stated skips as above).
+				//StormTrap.activate(): a distance-2 flood seeding Electricity 20 and marking the
+				//flood's mobs like Java (same sound skip as above).
 				const stormDistances = this.pathfinder.distanceMap({ x, y });
 				for (let floodY = 0; floodY < this.level.height; floodY++) {
 					for (let floodX = 0; floodX < this.level.width; floodX++) {
 						const stormSteps = stormDistances[this.level.index(floodX, floodY)] ?? -1;
 						if (stormSteps >= 0 && stormSteps <= 2 && this.level.passable(floodX, floodY)) this.electricity.seed(floodX, floodY, 20);
+						if (stormSteps >= 0 && stormSteps <= 2) {
+							const stormMob = this.creatureAt(floodX, floodY);
+							if (stormMob) this.markHazardMob(stormMob);
+						}
 					}
 				}
 			} else {
@@ -6517,6 +6521,9 @@ export class DungeonScene extends Scene2D {
 			this.applyTrapBlast(x, y);
 			this.say(t('port.log.trap.explosive', { damage }), 'negative');
 		}
+		//A hero-stepped trap marks nearby mobs exactly like a mob-stepped one - Grim and
+		//PoisonDart only ever mark their aimed target (here, the hero), so they mark nothing.
+		if (kind !== 'grim' && kind !== 'poisonDart' && kind !== 'stormTrap') this.markHazardArea(x, y);
 		this.sprite(this.hero).setColorAdd(1, 0.2, 0.2);
 		if (this.hero.hp <= 0) this.kill(this.hero, kind === 'burning' || kind === 'explosive' ? 'fire' : 'trap');
 		this.spentTrapCells.add(this.level.index(x, y));
@@ -6574,6 +6581,10 @@ export class DungeonScene extends Scene2D {
 				for (let mobFloodX = 0; mobFloodX < this.level.width; mobFloodX++) {
 					const mobStormSteps = mobStormDistances[this.level.index(mobFloodX, mobFloodY)] ?? -1;
 					if (mobStormSteps >= 0 && mobStormSteps <= 2 && this.level.passable(mobFloodX, mobFloodY)) this.electricity.seed(mobFloodX, mobFloodY, 20);
+					if (mobStormSteps >= 0 && mobStormSteps <= 2) {
+						const floodMob = this.creatureAt(mobFloodX, mobFloodY);
+						if (floodMob) this.markHazardMob(floodMob);
+					}
 				}
 			}
 		} else {
@@ -6584,6 +6595,11 @@ export class DungeonScene extends Scene2D {
 			this.fire.seed(monster.x, monster.y, 3);
 			this.applyTrapBlast(monster.x, monster.y);
 		}
+		//Every trap kind modelled for mobs is a Java `HazardAssistTracker` producer:
+		//gas/burning/explosive/shocking mark NEIGHBOURS9, StormTrap marked its distance-2
+		//flood cell-by-cell above, Grim/PoisonDart only ever aim at one target.
+		if (kind === 'grim' || kind === 'poisonDart') this.markHazardMob(monster);
+		else if (kind !== 'stormTrap') this.markHazardArea(monster.x, monster.y);
 		monster.sleeping = false;
 		this.spentTrapCells.add(cell);
 		if (monster.hp <= 0) this.kill(monster, kind === 'burning' || kind === 'explosive' ? 'fire' : 'trap');
@@ -8412,8 +8428,8 @@ export class DungeonScene extends Scene2D {
 				//places the char) - this plant is the canonical escape from entanglement, so without
 				//the detach it silently did nothing for a rooted hero, whose `moveTo` refuses
 				//outright. The same helper the teleportation scroll uses gives the replacement cell.
-				//Not modelled: Java teleports a *Mob* the same way (with a `HazardAssistTracker`),
-				//since plant activation here is hero-only, and a *Warden* with inter-floor
+				//Mob teleports run through `triggerMobPlantAt`'s fadeleaf branch (with the
+				//tracker); a *Warden* with inter-floor
 				//teleporting allowed is sent one depth back instead of moving within the level - a
 				//floor-return transition this port does not have.
 				delete this.hero.buffs['roots'];
@@ -8481,6 +8497,32 @@ export class DungeonScene extends Scene2D {
 	 * teleport behavior; the status/blob effects below reuse this port's existing per-creature
 	 * buff and environmental systems. Earthroot's per-hit armor pool and Sungrass's gradual
 	 * monster Health buff are now the real pools, granted in the branches below. */
+	/** `Trap.HazardAssistTracker` (`levels/traps/Trap.java`, tag `v3.3.8`): the 50-turn
+	 * `FlavourBuff` hazards prolong onto mobs (`Buff.prolong` is keep-max, which is what
+	 * `reigniteBuff` with the table duration does). `Mob.die()` counts a marked *enemy*
+	 * toward `Statistics.hazardAssistedKills` and the `ENEMY_HAZARDS` badge; the count fires
+	 * in `kill()`. Every producer this port models marks through here - plants and the
+	 * caves-boss wires mark their single victim, traps mark their whole blast/gas area
+	 * through `markHazardArea` (Grim/PoisonDart only ever aim at one target, so they mark
+	 * just the stepper). Traps this port does not model stay unmarked - see
+	 * `PORT_COVERAGE.md`. */
+	private markHazardMob(creature: Creature): void {
+		//Java marks `instanceof Mob` (the hero excluded, allies included but never counted -
+		//`die()` requires enemy alignment, mirrored by the kill-side gate).
+		if (creature.isHero || creature.hp <= 0) return;
+		reigniteBuff(creature, 'hazardAssist');
+	}
+	
+	/** The area half of `markHazardMob`, for traps whose Java `activate()` loops
+	 * `PathFinder.NEIGHBOURS9` (gas, burning, explosive, shocking). StormTrap marks its
+	 * distance-2 flood cell-by-cell instead, Grim/PoisonDart only their aimed target. */
+	private markHazardArea(x: number, y: number): void {
+		for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
+			const target = this.creatureAt(x + dx, y + dy);
+			if (target) this.markHazardMob(target);
+		}
+	}
+	
 	private triggerMobPlantAt(creature: Creature): boolean {
 		if (creature.isHero || creature.isNPC || creature.hp <= 0) return false;
 		const cell = this.level.index(creature.x, creature.y);
@@ -8495,6 +8537,9 @@ export class DungeonScene extends Scene2D {
 		if (!kind) return true;
 		if (kind === 'fadeleaf') {
 			if (creature.kind === 'statue' || creature.kind === 'dm201') return true;
+		//`Fadeleaf.activate()` marks a teleported mob first (`Buff.prolong(ch,
+		//`HazardAssistTracker...)` runs before `teleportChar` in Java).
+		this.markHazardMob(creature);
 			const destination = this.randomFreeCell(creature);
 			if (!destination) return true;
 			//ScrollOfTeleportation.teleportChar() moves the mob immediately; the port has no
@@ -8513,9 +8558,11 @@ export class DungeonScene extends Scene2D {
 				addBuff(creature, 'cripple');
 				creature.seesHero = false;
 				creature.patrolTarget = this.randomPatrolDestination(creature);
+			this.markHazardMob(creature);
 				break;
 			case 'firebloom':
 				this.fire.seed(creature.x, creature.y, 2);
+			this.markHazardMob(creature);
 				break;
 			case 'rotberry':
 				this.plantGas.seed(creature.x, creature.y, 100);
@@ -8526,12 +8573,15 @@ export class DungeonScene extends Scene2D {
 			case 'sorrowmoss':
 				//Same max-duration shape through the shared gate: INORGANIC kinds refuse it.
 				reigniteBuff(creature, 'poison', 5 + Math.round(2 * this.depth / 3));
+			this.markHazardMob(creature);
 				break;
 			case 'stormvine':
 				addBuff(creature, 'daze');
+				this.markHazardMob(creature);
 				break;
 			case 'icecap':
 				this.plantFreeze.seed(creature.x, creature.y, 2);
+			this.markHazardMob(creature);
 				break;
 			case 'mageroyal':
 				for (const buff of ['poison', 'burning', 'weakness', 'vulnerable', 'cripple', 'daze'] as BuffId[]) delete creature.buffs[buff];
@@ -11410,6 +11460,8 @@ export class DungeonScene extends Scene2D {
 		for (const target of targets) {
 			if (target.hp <= 0 || target.flying || target.kind === 'dm300') continue;
 			if (!this.cavesBossEnergyCells.has(this.level.index(target.x, target.y))) continue;
+			//`CavesBossLevel.PylonEnergy.evolve()` prolongs the tracker onto mob victims.
+			if (!target.isHero) this.markHazardMob(target);
 			const damage = Random.normalRange(6, 12);
 			const dealt = target.isHero ? this.absorbHeroDamage(damage) : damage;
 			target.hp -= dealt;
@@ -14185,6 +14237,11 @@ export class DungeonScene extends Scene2D {
 			this.say(t('port.log.dropstoken', { who: capitalize(creature.name) }));
 		}
 
+		//`Mob.die()`: an enemy dying while marked by `Trap.HazardAssistTracker` counts
+		//toward `Statistics.hazardAssistedKills` and the `ENEMY_HAZARDS` badge (10 assists).
+		if (!creature.isHero && !creature.isAlly && !creature.isNPC && creature.buffs['hazardAssist'] !== undefined) {
+			this.awardBadge('hazard_assists');
+		}
 		const boss = creature.kind ? BOSSES[this.depth] : undefined;
 		if (boss && boss.kind === creature.kind) {
 			//`boss.victory` used to be raw English text authored directly in `bossTransitions` -

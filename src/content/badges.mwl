@@ -90,6 +90,14 @@
           },
           {
             tag: "row",
+            id: "enemy_hazards",
+            counter: "hazard_assists",
+            target: 10,
+            description: "10 hazard-assisted kills",
+            icon: 64,
+          },
+          {
+            tag: "row",
             id: "unlock_mage",
             counter: "upgrades_used",
             target: 1,

@@ -40,7 +40,8 @@ export const BUFF_DURATION_DATA = {
   "light": 250,
   "invulnerability": 3,
   "feintConfusion": 2,
-  "counterAbility": 3
+  "counterAbility": 3,
+  "hazardAssist": 50
 } as const;
 export const NEGATIVE_BUFF_DATA = [
   "poison",

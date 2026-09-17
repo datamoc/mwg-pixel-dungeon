@@ -6037,6 +6037,23 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
+								"id": "enemy_hazards",
+								"counter": "hazard_assists",
+								"target": "10",
+								"description": "10 hazard-assisted kills",
+								"icon": "64"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 92,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
 								"id": "unlock_mage",
 								"counter": "upgrades_used",
 								"target": "1",
@@ -6046,7 +6063,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 92,
+								"line": 100,
 								"column": 13
 							},
 							"gettext": []
@@ -6063,7 +6080,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 100,
+								"line": 108,
 								"column": 13
 							},
 							"gettext": []
@@ -6080,7 +6097,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 108,
+								"line": 116,
 								"column": 13
 							},
 							"gettext": []
@@ -6097,7 +6114,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 116,
+								"line": 124,
 								"column": 13
 							},
 							"gettext": []
@@ -6114,7 +6131,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 124,
+								"line": 132,
 								"column": 13
 							},
 							"gettext": []
@@ -6131,7 +6148,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 132,
+								"line": 140,
 								"column": 13
 							},
 							"gettext": []
@@ -6148,7 +6165,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 140,
+								"line": 148,
 								"column": 13
 							},
 							"gettext": []
@@ -6165,7 +6182,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 148,
+								"line": 156,
 								"column": 13
 							},
 							"gettext": []
@@ -6182,7 +6199,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 156,
+								"line": 164,
 								"column": 13
 							},
 							"gettext": []
@@ -6815,6 +6832,20 @@ export const gameData = {
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
 								"line": 240,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"buff": "hazardAssist",
+								"duration": "50"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 249,
 								"column": 13
 							},
 							"gettext": []
