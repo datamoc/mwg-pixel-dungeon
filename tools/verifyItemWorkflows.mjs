@@ -93,7 +93,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	//The workflow module imports only actors and Random from the package, so provide a tiny local barrel.
 	mkdirSync(join(out, 'node_modules/mwg'), { recursive: true });
 	writeFileSync(join(out, 'node_modules/mwg/index.js'),
-		`exports.Actors = require(${JSON.stringify(join(dist, 'actors', 'index.js'))}); exports.Random = require(${JSON.stringify(join(dist, 'core', 'Random.js'))});\n`);
+		`exports.Actors = require(${JSON.stringify(join(dist, 'actors', 'index.js'))}); exports.Random = require(${JSON.stringify(join(dist, 'core', 'Random.js'))}); exports.Roguelike = require(${JSON.stringify(join(dist, 'roguelike', 'index.js'))});\n`);
 	const require = createRequire(join(out, 'check.cjs'));
 	const { Inventory } = require('./actors/Inventory.js');
 	const { Appearances } = require('./actors/Appearances.js');
@@ -138,6 +138,42 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	assert.equal(tippedDartUseDivisor('firebloom', 0, true), 1, 'unranked Warden throws at full cost');
 	assert.equal(tippedDartUseDivisor('firebloom', 3, false), 1, 'a non-Warden gets no divisor');
 	assert.equal(tippedDartUseDivisor('rotberry', 3, true), 1, 'rot darts are exempt per their desc');
+	compile(join(root, 'src/items/candles.ts'), 'items/candles.js');
+	const { candleRitualSlots, placeCandleAtSlot } = require('./items/candles.js');
+	// `CeremonialCandle.checkCandles()` slots: the four cardinal neighbours of ritualPos.
+	assert.deepEqual(candleRitualSlots(117, 32), [{ x: 21, y: 2 }, { x: 22, y: 3 }, { x: 21, y: 4 }, { x: 20, y: 3 }]);
+	{
+		// Aimed placement consumes one candle onto the validated slot; the fourth
+		// completes the ritual (slots cleared, newborn elemental spawned at ritualPos).
+		let carried = 4;
+		const said = [];
+		let spawnedAt = null;
+		const scene = {
+			bag: { find: () => (carried > 0 ? {} : undefined), remove: () => { carried--; } },
+			ritualPos: 117,
+			level: { width: 32, height: 32, passable: () => true },
+			hero: { x: 0, y: 0 },
+			ritualCandles: [false, false, false, false],
+			isChasmCell: () => false,
+			creatureAt: () => null,
+			spawnNewbornElemental: (at) => { spawnedAt = at; return {}; },
+			say: (line) => { said.push(line); },
+		};
+		placeCandleAtSlot(scene, 0);
+		assert.equal(carried, 3);
+		assert.deepEqual(scene.ritualCandles, [true, false, false, false]);
+		placeCandleAtSlot(scene, 0);
+		assert.equal(carried, 3, 'an already-filled slot consumes nothing');
+		placeCandleAtSlot(scene, 9);
+		assert.equal(carried, 3, 'an out-of-range slot consumes nothing');
+		placeCandleAtSlot(scene, 1);
+		placeCandleAtSlot(scene, 2);
+		placeCandleAtSlot(scene, 3);
+		assert.equal(carried, 0);
+		assert.deepEqual(scene.ritualCandles, [false, false, false, false], 'completion clears the placements first');
+		assert.deepEqual(spawnedAt, { x: 21, y: 3 }, 'elemental rises at ritualPos when free');
+		assert.ok(said.some((line) => String(line).includes('port.log.ritualfire')), 'completion says the ritual line');
+	}
 	assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and the bow always have +50% accuracy at a distance');
 	assert.equal(missileAdjacentAccFactor(false, false, 0), 1.5, 'the +50% at distance is not hero-gated');
 	// `HeavyBoomerang` (tag `v3.3.8`): `CircleBack.setup` sets `left = 5`, and the return flight's
@@ -1543,7 +1579,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		assert.ok(readFileSync(join(root, 'src/items/displayName.ts'), 'utf8').includes(`'${key}'`), `stats line uses ${key}`);
 		assert.ok(readFileSync(join(root, 'src/generated/spdMessages.ts'), 'utf8').includes(`"${key}"`), `${key} exists in the catalogue`);
 	}
-	console.log('PASS item-instance separation, enhancement transfer, upgrade policy, appearance restore, missile dust pickup, the Unstable delegate list, rings.mwl-derived ring formulas, items.mwl-derived weapon/armor tiers, Generator.java deck parity, monster/hero/buff Java parity, per-monster status immunities, the Sandals of Nature seed/charge economy, the Talisman of Foresight scry formulas, the Dried Rose ghost/petal economy, the Ring of Wealth bonus-drop counters, the generated shop shelf, and the ArtifactRecharge table, and weapon/armor/missile STR requirements');
+	console.log('PASS item-instance separation, enhancement transfer, upgrade policy, appearance restore, missile dust pickup, the Unstable delegate list, rings.mwl-derived ring formulas, items.mwl-derived weapon/armor tiers, Generator.java deck parity, monster/hero/buff Java parity, per-monster status immunities, the Sandals of Nature seed/charge economy, the Talisman of Foresight scry formulas, the Dried Rose ghost/petal economy, the Ring of Wealth bonus-drop counters, the generated shop shelf, and the ArtifactRecharge table, and weapon/armor/missile STR requirements, and ceremonial-candle aimed placement');
 } finally {
 	rmSync(out, { recursive: true, force: true });
 }

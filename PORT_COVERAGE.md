@@ -1594,7 +1594,7 @@ Rotberry seeds already drop from grass, so types 1 and 3 turn in their real fetc
 for the existing wand reward. **Type 2 (elemental embers) is now real too, checked against tag `v3.3.8`
 (`Wandmaker.java`, `RitualSiteRoom.java`, `CeremonialCandle.java`, `Elemental.java`)**: the four queued candles spawn
 as real pickups (previously vanishing on the null `portItemKind` branch, the same bug class as bombs/dust); a Place
-action sets them into the ritual center's 4 cardinal slots from the bag (no aimed throw/drop UI exists - the stated
+action aims them onto the ritual center's 4 cardinal slots through the `TargetingController` (2026-09-17: `CeremonialCandle`'s `defaultAction = AC_THROW`, six-cell convention, only empty slots validate, confirm spends the throw's turn; pinned in `test:items`) - the stated
 shape change, same family as the combat stones' auto-target); all four lit fires the real ritual (placements burned, a
 `NewbornFireElemental` rises HUNTING at the center or a free neighbour, with the real `3-5` opening cooldown); the
 newborn fights with the real kit (HP 60, acc 15, eva 12, `[10,12]` melee with no fiery on-hit, telegraphed 3x3
@@ -1604,8 +1604,8 @@ embers for the existing wand reward. Shared elemental rules closed in the same p
 kinds, at the fire/eternal-fire ignite sites) and Frost/Chill `harmfulBuffs` harm (`HT/2..HT*3/5` direct instead of
 the 4-damage daze stand-in - the ritual room's own dropped Frost potion is the implied counter). Ritual state
 (`ritualPos` + 4 slots) is captured from levelgen at the live bridge and persisted per floor, since the module-level
-paint state goes stale on revisits and mining-branch floors. Stated gaps: heap/pickup/throw intermediaries for candles
-(bag-direct instead); **the `TargetedCell` telegraph and the charge's own cost are now ported (2026-09-16)** - a red
+paint state goes stale on revisits and mining-branch floors. Stated gaps: heap/pickup intermediaries for candles (the throw placement above is ported;
+bag-direct to the slot instead); **the `TargetedCell` telegraph and the charge's own cost are now ported (2026-09-16)** - a red
 3x3 over the cells the fireball will cover (Java's `addToBack(new TargetedCell(cell, 0xFF0000))` per non-solid
 square), and Java's `GameMath.gate(attackDelay(), ceil(hero.cooldown()), 3*attackDelay())` through
 `pendingMonsterTurnCost`; **and the cooldown now ticks on every hunting turn, adjacent melee turns included**

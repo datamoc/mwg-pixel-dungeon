@@ -286,10 +286,10 @@ was judged not worth the churn against those existing references.
       has had fractional monster turn costs for a while), and the cooldown ticking on *every* hunting
       turn rather than only the non-adjacent ones. Browser-verified live
       (`tools/scratch/newborn-telegraph-livecheck.mjs`, 6/6).
-      **Remaining, re-checked 2026-09-16**: the heap/pickup/throw intermediaries this port
-      collapses into a bag-direct action (candles need aimed placement on the ritual cell -
-      the `TargetingController` seam exists for runestones and wands but was not extended
-      here); the zap *pose* (Java's `sprite.zap()`/`zap()` pair - the visible bolt itself is
+      **Remaining, re-checked 2026-09-16 (candle aim closed 2026-09-17)**: the heap/pickup intermediaries this port
+      collapses into a bag-direct action (candles aim through the `TargetingController` - only empty ritual slots validate, confirm spends the throw's turn; the heap/pickup halves stay collapsed).
+
+      Still open: the zap *pose* (Java's `sprite.zap()`/`zap()` pair - the visible bolt itself is
       covered, `elementalRangedTurn` fires `spawnProjectile`); no quest-music swap or score
       accounting (neither system exists); and the dust quest's wraith-curse variant, which
       needs a Wraith mob plus `CorpseDust`'s per-turn spawn-power tracker and score penalties
