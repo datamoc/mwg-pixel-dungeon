@@ -18829,8 +18829,8 @@ export class DungeonScene extends Scene2D {
 	/**
 	 * The Duelist's T-key weapon ability (`MeleeWeapon` overrides, tag `v3.3.8`): spends 1
 	 * charge from the `Charger` meter (partial-first, gated on `charges + partial >= cost`)
-	 * and runs the ability's effect against the nearest visible enemy - this port's
-	 * auto-target convention where Java opens a cell selector. Magnitudes are each weapon's
+	 * and runs the ability's effect - damage strikes auto-target the nearest visible enemy,
+	 * while sneak aims through the `TargetingController` like Java's cell selector. Magnitudes are each weapon's
 	 * own `ability_desc` (see `weaponAbilities.ts`); sneak and the charged shot are free
 	 * (`hero.next()`), guard and spin cost the turn, and damage strikes ride their own
 	 * attack's turn. An armed `COUNTER_ABILITY` tracker refunds `rank*0.375` after the
@@ -18858,14 +18858,41 @@ export class DungeonScene extends Scene2D {
 		}
 		switch (def.kind) {
 			case 'sneak': {
-				//`Dagger.sneakAbility`: `invisTurns = 2+buffedLvl()`, applied as
-				//`prolong(Invisibility, invisTurns-1)` (never shortens an existing
-				//cloak); the blink itself needs Java's cell selector, which has no
-				//expression here (stated in PORT_COVERAGE). Free (`hero.next()`).
-				this.takeAbilityCharge(cost);
-				this.refundCounterAbility(counterArmed, counterRank);
-				reigniteBuff(this.hero, 'invisibility', 1 + this.weaponLevel);
-				this.say(t('port.log.weaponsneak'), 'positive');
+				//`Dagger.sneakAbility(hero, target, maxDist, invisTurns, wep)` (tag `v3.3.8`,
+				//blade 3 / dirk 4 / dagger 5 in each weapon's own call): the aimed cell must
+				//be within `maxDist` path-steps, in `heroFOV`, unoccupied, with the hero
+				//unrooted - else the `ability_target_range`/`ability_occupied` warnings.
+				//Those two keys postdate this port's catalogue, so the controller's own
+				//refusal line speaks for them (stated, not silent). The charge spends only
+				//on a legal confirm (`beforeAbilityUsed` runs after validation in Java too);
+				//cancelling is free. Free (`hero.next()`). Nuance: the flood is the port's
+				//passable-only map where Java floods `passable|avoid`, so a path that only
+				//exists through avoid cells reads one step shorter here.
+				const maxDist = def.blinkRange ?? 5;
+				this.beginAiming({
+					range: maxDist,
+					validate: (cell) => {
+						if (this.hero.buffs['roots'] !== undefined) return false;
+						//MWG's flood marks unreachable cells -1 where Java uses MAX_VALUE,
+						//so the bound must exclude negatives explicitly.
+						const distances = this.pathfinder.distanceMap({ x: this.hero.x, y: this.hero.y });
+						const pathDistance = distances[this.level.index(cell.x, cell.y)] ?? -1;
+						return pathDistance >= 0 && pathDistance <= maxDist
+							&& this.fov.isVisible(cell.x, cell.y)
+							&& this.creatureAt(cell.x, cell.y) === null;
+					},
+					onConfirm: (cell) => {
+						this.takeAbilityCharge(cost);
+						this.refundCounterAbility(counterArmed, counterRank);
+						//`invisTurns = 2+buffedLvl()`, applied as `prolong(Invisibility,
+						//invisTurns-1)` (never shortens an existing cloak).
+						reigniteBuff(this.hero, 'invisibility', 1 + this.weaponLevel);
+						//Java teleports then observes, updates the fog and re-checks visible
+						//mobs; `teleportHeroTo` moves the sprite and brings FOV/fog with it.
+						this.teleportHeroTo(cell.x, cell.y);
+						this.say(t('port.log.weaponsneak'), 'positive');
+					},
+				});
 				return;
 			}
 			case 'spin': {

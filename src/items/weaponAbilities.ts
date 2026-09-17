@@ -116,6 +116,8 @@ export interface WeaponAbilityDef {
 	buffTurns?: number;
 	/** Spin count cap (flail only). */
 	maxSpins?: number;
+	/** Blink range in tiles (sneak only: blade 3 / dirk 4 / dagger 5, from each weapon's `sneakAbility` call). */
+	blinkRange?: number;
 }
 
 /**
@@ -123,8 +125,8 @@ export interface WeaponAbilityDef {
  * `sourceClass` payload generated weapons carry); magnitudes are each weapon's own
  * `ability_desc` (the shipped descs' "costs 2 charges" lines predate v3.3.8 and are wrong -
  * every cost here is Java's `baseChargeUse`, uniformly 1):
- * - sneak (blink ranges 3/4/5 tiles for blade/dirk/dagger, `(2+level)-1` turns invis; the
- *   blink itself has no expression - no cell targeting here - stated in PORT_COVERAGE)
+ * - sneak (blink ranges 3/4/5 tiles for blade/dirk/dagger, `(2+level)-1` turns invis; aimed
+ *   through the `TargetingController` since 2026-09-17, free like Java's instant)
  * - heavy blow (`battleaxe` +35 / `handaxe` +45 / `mace` +40 / `warhammer` +30, +daze 5;
  *   surprise gates the bonus only, never the cost)
  * - cleave (`greatsword` +20 / `longsword` +23 / `sword` +27 / `shortsword` +30 /
@@ -144,9 +146,9 @@ export interface WeaponAbilityDef {
  * - lash (`whip`: normal attack vs all in range, closest guaranteed)
  */
 const ABILITIES: Record<string, WeaponAbilityDef> = {
-	assassinsblade: { kind: 'sneak' },
-	dirk: { kind: 'sneak' },
-	dagger: { kind: 'sneak' },
+	assassinsblade: { kind: 'sneak', blinkRange: 3 },
+	dirk: { kind: 'sneak', blinkRange: 4 },
+	dagger: { kind: 'sneak', blinkRange: 5 },
 	battleaxe: { kind: 'heavyBlow', damageBonus: 35 },
 	handaxe: { kind: 'heavyBlow', damageBonus: 45 },
 	mace: { kind: 'heavyBlow', damageBonus: 40 },

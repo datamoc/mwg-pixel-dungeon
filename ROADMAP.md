@@ -89,16 +89,16 @@ upstream SPD baseline (see `CLOSED.md`).
       (all 30 `MeleeWeapon.ability()` overrides with real magnitudes, Java's exact `Charger`
       economy - uniform 1-charge costs, level-based cap, time accrual, partial-first spends,
       post-use `COUNTER_ABILITY` refunds - and Java's setup turn costs, sneak and the charged
-      shot free - no missile weapon has an ability at all. Remaining: auto-target (damage
-      strikes pick the nearest visible enemy, sneak's blink has nothing to pick with);
+      shot free - no missile weapon has an ability at all. Remaining: auto-target, for the damage
+      strikes (they pick the nearest visible enemy; sneak's blink aims through the `TargetingController` since 2026-09-17);
       `VARIED_CHARGE` (no such talent here) and brawler's stance (no such buff); the stale
-      ability/talent desc text (catalogue refresh, not mechanics); the alchemy pot's ingredient choice (one picker per unit on the five category recipes - the slot-window chrome stays simplified); and the
+      ability/talent desc text (catalogue refresh, not mechanics); the alchemy pot's ingredient choice is live (recipe picker plus follow-up ingredient/unit pickers over the bag - the slot-window chrome stays simplified); and the
       shop-stock items that used to have no item class here at all (Torches, Tipped Darts, the Ankh,
       Java's `ChooseBag` pick) - all four now exist as real items: the bags as ownable, priced,
       tradable goods with the real pick (their container behavior stays with the inventory-windows line). **The Torch carries one more thing beyond itself:** SPD's
       `Light` buff, which `YogDzewa.updateVisibility()` checks before shrinking the hero's view
-      distance to the arena's own radius - so that fight's dim-arena rule is half-implemented here
-      (the shrink is live) and its `Light` exemption lands with the item. **Complexity: L.** The weapon-ability system was the one
+      distance to the arena's own radius - so that fight's dim-arena rule is fully implemented here
+      (the shrink is live) and its `Light` exemption is live (`useTorch` lights the buff; the Yog view-radius rule skips the shrink while lit). **Complexity: L.** The weapon-ability system was the one
       cross-cutting piece and is now live (see PORT_COVERAGE.md's ability row); what remains here is narrow gaps.
 - [x] Port the remaining potions. All 12 generator potion classes now have their own branch
       (Levitation, ToxicGas, ParalyticGas, Haste, Frost, and the `LiquidFlame`/`Invisibility`

@@ -1094,7 +1094,8 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	// port-minted stand-ins resolve to nothing, every ability costs exactly 1 charge (free
 	// only inside the cleave/spin windows), the cap follows the hero level, accrual is
 	// `Charger.act()`'s time rate, spends go partial-first behind the `charges + partial`
-	// gate, and `COUNTER_ABILITY` refunds `rank*0.375` after the spend.
+	// gate, and `COUNTER_ABILITY` refunds `rank*0.375` after the spend; sneak's blink
+	// range is 3/4/5 tiles by weapon (the aim itself runs through the scene's TargetingController).
 	{
 		const { weaponAbilityFor, weaponAbilityChargeCost, weaponChargeCap, accrueWeaponCharge, spendWeaponCharge, gainWeaponCharge, counterAbilityRefund, spinDamageMultiplier } = require('./items/weaponAbilities.js');
 		const abilityKinds = {
@@ -1117,6 +1118,10 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		assert.equal(weaponAbilityFor(undefined, 'startingWeapon'), null, 'the starting stand-in has no ability');
 		assert.equal(weaponAbilityFor(undefined, 'weaponReward'), null, 'the generated stand-in has no ability');
 		assert.equal(weaponAbilityFor('PotionOfHealing', 'potionHealing'), null, 'non-weapons have no ability');
+		// `Dagger.sneakAbility(hero, target, maxDist, ...)` per-weapon ranges (tag `v3.3.8`).
+		assert.equal(weaponAbilityFor('AssassinsBlade', 'weaponReward')?.blinkRange, 3, 'blade blinks 3');
+		assert.equal(weaponAbilityFor('Dirk', 'weaponReward')?.blinkRange, 4, 'dirk blinks 4');
+		assert.equal(weaponAbilityFor('Dagger', 'weaponReward')?.blinkRange, 5, 'dagger blinks 5');
 		assert.equal(weaponAbilityFor('Shortsword', 'weaponReward')?.damageBonus, 30, 'cleave magnitudes ride along');
 		assert.equal(weaponAbilityFor('Rapier', 'weaponReward')?.damageBonus, 67, 'rapier lunge is +67');
 		assert.equal(weaponAbilityFor('RunicBlade', 'weaponReward')?.damageBonus, 300, 'runic slash is +300%');
