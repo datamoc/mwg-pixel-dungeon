@@ -353,19 +353,19 @@ was judged not worth the churn against those existing references.
       drops real `Gold(10-25)` CHEST heaps, the king spawns sleeping with his own art, wakes with the
       real yell, awards the crown exchange when worn armor is present, and grants the six-turn
       Ratmogrify ability); `MirrorImage` and `Sheep` are live through the ally/combat system.
-      Genuinely remaining: `PrismaticImage`, `VaultSentry` and `DirectableAlly`, none of which
+      Genuinely remaining: `PrismaticImage` and `VaultSentry`, neither of which
       exist in this port at all. **Triaged 2026-09-16, each blocked on its own system, none on
       NPC code**: `PrismaticImage` is summoned by the exotic Scroll of Prismatic Image (section
       1 - exotic scrolls are unported); `VaultSentry` is the scanning sentry of the Halls vault
       quest rooms (`rooms/quest/vault/*`, crystal-key questline - the whole quest is unported);
-      `DirectableAlly` is the shared defend/target/direct-orders base whose live consumers here
-      would be the ShadowClone armor ability (deliberately unoffered, section 6) and the Cleric's
-      PowerOfMany (no Cleric spell system) - and orders need the cell-targeting UI section 8
-      does not have. The ported allies (hawk, ghost, mirror image, sheep) run through `allyKind`
-      without it. **Done in the same pass: `ImpShopkeeper`** - a real kind with imp art, the
+      `DirectableAlly` drops off the list (2026-09-17): the hawk's orders - its only live consumer -
+      are already live (`allyTargetChar`/`allyDefendCell`, re-cast cell selector, `directTocell`'s
+      'follow me again'); ShadowClone stays deliberately unoffered and PowerOfMany needs Cleric spells.
+      The ported allies (hawk, ghost, mirror image, sheep) run through `allyKind`
+      without the base. **Done in the same pass: `ImpShopkeeper`** - a real kind with imp art, the
       shopkeeper's trade window and flee behavior, its own first-sight greeting yell (the
       `greetings_ascent` variant stays out: no AscensionChallenge here), spawned by section 3's
-      `unseal()`. See `PORT_COVERAGE.md`'s Shopkeeper row. **Complexity: M** for the three that
+      `unseal()`. See `PORT_COVERAGE.md`'s Shopkeeper row. **Complexity: M** for the two that
       remain, each inherited from its blocker.
 
 ## 5. Improve monster behavior and loot
