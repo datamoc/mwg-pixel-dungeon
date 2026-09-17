@@ -12,6 +12,7 @@ import { verifyHeroActions } from './verifyHeroActions.mjs';
 import { verifySearch } from './verifySearch.mjs';
 import { verifyCone } from './verifyCone.mjs';
 import { verifyRipperLeap } from './verifyRipperLeap.mjs';
+import { verifySuccubusBlink } from './verifySuccubusBlink.mjs';
 import { verifyArmorAbilities } from './verifyArmorAbilities.mjs';
 
 // Compile the actual implementation into a private temporary CommonJS tree. Type-only
@@ -38,7 +39,7 @@ try {
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'mechanics/cone', 'dungeonConstants',
-	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap',
+	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink',
 	// `dungeonConstants` and `items/wands` read the MWL item tables, so the harness compiles the
 	// real adapter and the real generated catalogue instead of a hand-copied stub of them - a stub
 	// is how the old, hand-listed framework set above drifted once already, and how the item-frame
@@ -695,6 +696,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	verifySearch(require, check);
 	verifyCone(require, check);
 	verifyRipperLeap(require, check);
+	verifySuccubusBlink(require, check);
 	verifyArmorAbilities(require, check);
 	console.log(`${passed} simulation checks passed.`);
 } finally {

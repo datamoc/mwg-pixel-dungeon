@@ -219,6 +219,8 @@ export interface Creature extends Combatant {
 	leapCooldown?: number;
 	leapLastEnemy?: { x: number; y: number };
 	leapPrevEnemy?: { x: number; y: number };
+	/** `Succubus.blinkCooldown`: turns until she may blink to the hero again (4-6 reset). */
+	blinkCooldown?: number;
 	/** `Elemental.rangedCooldown` (3-5 turns) and `NewbornFireElemental.targetingPos`: the
 	 * telegraphed fireball's charge state. Only the newborn uses the targeted cell. */
 	rangedCooldown?: number;

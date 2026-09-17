@@ -53,6 +53,8 @@ already single-kind and table-shaped.
 telegraph-and-pounce Hunting override) - the migration's first stateful movement ability.
 - **One open question for a later pass, not this one:** whether Succubus blink plus
 Barrier-overflow feed are worth their fields before the table migration.
+**Update 2026-09-17:** blink is now ported (see its `PORT_COVERAGE.md` row); the
+Barrier-overflow feed stays open - the port still has no generic ally Barrier pool.
 
 **Update 2026-09-17:** the Ripper pilot above is now ported (`simulation/ripperLeap.ts` +
 `takeRipperLeapTrigger`/`executeRipperLeap`/`resolveRipperPounce`, leap state on `Creature`

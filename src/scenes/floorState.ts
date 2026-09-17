@@ -153,6 +153,8 @@ export interface SavedCreature {
 	golemSelfTeleCooldown?: number;
 	beamCharged?: boolean;
 	beamCooldown?: number;
+	/** `Succubus`' bundled `blink_cd`. */
+	blinkCooldown?: number;
 	/** `RipperDemon`'s bundled `leap_pos`/`leap_cd`/`last_enemy_pos` (here as steps). */
 	leapTarget?: { x: number; y: number } | null;
 	leapCooldown?: number;

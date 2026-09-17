@@ -382,7 +382,7 @@ was judged not worth the churn against those existing references.
       costs 2 and takes quarter damage; the fire turn is a magic hit roll for 30-50 bypassing armor),
       DM-200's venting override, Spinner's ranged web, the Necromancer's skeleton support (heal
       `HT/5`, one-time Adrenaline, teleport-back) and `firstSummon`'s variable tick cost via the new
-      `monsterTurnCost` hook, and RipperDemon's two-turn telegraphed leap (far-side landing prediction, re-traced pounce with an infinite-accuracy hit plus 0.75x `Bleeding`, 2-4 cooldown, instant relocation, the warning log line standing in for the red cell marker and crouch). **Not modeled**: Golem's charge particles and delayed animation;
+      `monsterTurnCost` hook, RipperDemon's two-turn telegraphed leap (far-side landing prediction, re-traced pounce with an infinite-accuracy hit plus 0.75x `Bleeding`, 2-4 cooldown, instant relocation, the warning log line standing in for the red cell marker and crouch), and the Succubus hunting blink (teleport to a seen hero 3+ cells away off a 4-6 cooldown, free, ordinary-approach turns ticking it down). **Not modeled**: Golem's charge particles and delayed animation;
       Spinner's real persistent 3-cell `Web` terrain blob is ported (the direct root is the impact, the blob the aftermath);
       Golem's charge particles and delayed animation have no particle/animation layer here. See
       `PORT_COVERAGE.md`. **Complexity: M** for what remains.

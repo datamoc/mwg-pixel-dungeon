@@ -203,6 +203,7 @@ import { evolveElectricity, evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
 import { selectRangedTarget } from '../simulation/targeting';
 import { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLeapCooldown } from '../simulation/ripperLeap';
+import { shouldSuccubusBlink, chooseSuccubusBlinkCell, succubusBlinkCooldown } from '../simulation/succubusBlink';
 import { foregroundGrassFrames as buildForegroundGrassFrames, terrainFrameAt as buildTerrainFrameAt, terrainFrames as buildTerrainFrames, wallFrameAt as buildWallFrameAt, wallFrames as buildWallFrames, waterFrames as buildWaterFrames, type DungeonTileFrameContext } from './dungeonTileFrames';
 import { Banner } from '../ui/banner';
 import { showDefeatPanel as showDefeatPanelUi, showVictoryPanel as showVictoryPanelUi } from '../ui/endPanels';
@@ -2607,7 +2608,7 @@ export class DungeonScene extends Scene2D {
 				hasRaged: creature.hasRaged, raged: creature.raged, chainUsed: creature.chainUsed,
 				ventCooldown: creature.ventCooldown, webCooldown: creature.webCooldown, golemTeleCooldown: creature.golemTeleCooldown,
 				golemSelfTeleCooldown: creature.golemSelfTeleCooldown,
-				beamCharged: creature.beamCharged, beamCooldown: creature.beamCooldown, armoredRageTicks: creature.armoredRageTicks,
+				beamCharged: creature.beamCharged, beamCooldown: creature.beamCooldown, armoredRageTicks: creature.armoredRageTicks, blinkCooldown: creature.blinkCooldown,
 				leapTarget: creature.leapTarget ? { ...creature.leapTarget } : undefined, leapCooldown: creature.leapCooldown,
 				leapLastEnemy: creature.leapLastEnemy ? { ...creature.leapLastEnemy } : undefined,
 				leapPrevEnemy: creature.leapPrevEnemy ? { ...creature.leapPrevEnemy } : undefined,
@@ -2753,7 +2754,7 @@ export class DungeonScene extends Scene2D {
 				hasRaged: saved.hasRaged, raged: saved.raged, chainUsed: saved.chainUsed,
 				ventCooldown: saved.ventCooldown, webCooldown: saved.webCooldown, golemTeleCooldown: saved.golemTeleCooldown,
 				golemSelfTeleCooldown: saved.golemSelfTeleCooldown,
-				beamCharged: saved.beamCharged, beamCooldown: saved.beamCooldown, armoredRageTicks: saved.armoredRageTicks,
+				beamCharged: saved.beamCharged, beamCooldown: saved.beamCooldown, armoredRageTicks: saved.armoredRageTicks, blinkCooldown: saved.blinkCooldown,
 				leapTarget: saved.leapTarget ? { ...saved.leapTarget } : undefined, leapCooldown: saved.leapCooldown,
 				leapLastEnemy: saved.leapLastEnemy ? { ...saved.leapLastEnemy } : undefined,
 				leapPrevEnemy: saved.leapPrevEnemy ? { ...saved.leapPrevEnemy } : undefined,
@@ -9327,6 +9328,9 @@ export class DungeonScene extends Scene2D {
 		//for a non-adjacent monster, matching where each original branch used to sit.
 		const rangedOverride = monster.kind ? this.validatedRangedAiProfiles[monster.kind] : undefined;
 		if (rangedOverride && rangedOverride(monster, distance)) return;
+	//`Succubus.getCloser()`: the blink preempts the shared step below (a fleeing
+	//succubus never reaches `Hunting.getCloser`, hence the gate beside the kind).
+	if (monster.kind === 'succubus' && !monster.fleeing && this.trySuccubusBlink(monster, distance)) return;
 		const blocked = new Set(
 			this.creatures.filter((c) => c !== monster && c !== this.hero).map((c) => this.level.index(c.x, c.y))
 		);
@@ -10255,6 +10259,48 @@ export class DungeonScene extends Scene2D {
  * The single wandering-to-hunting transition turn Java skips its enemy-cell update
  * on is not reproduced: the pre-turn hook rotates every turn, which matches Java's steady
  * state on all other turns. */
+/** `Succubus.getCloser()` (`Succubus.java`, tag `v3.3.8`): while hunting, a succubus
+ * that sees the hero more than 2 cells away, off cooldown and unrooted blinks to them
+ * instead of stepping. Returns true when the turn is consumed (a blink, attempted or
+ * landed, never falls through to the shared mover); false takes the ordinary approach
+ * and ticks the cooldown down - Java decrements only in that else branch, never on
+ * adjacent-attack, wandering or blink-attempt turns, which is why the tick lives here
+ * rather than in a pre-turn hook. A failed blink wastes the turn (`getCloser` false ->
+ * `spend(TICK)`); a landed one is free (`spend(-1/speed())` nets against the act's own
+ * spend, hence the zero turn cost - zero is an established scheduler cost, what the
+ * TimeBubble owner pays every turn). Relocation reuses the golem teleport's
+ * move-plus-`playTeleportAppear` pair; Java's own `ScrollOfTeleportation.appear` sound
+ * and particles arrive through that same presentation helper, and blink carries no log
+ * line on either side. Two map halves have no port-side primitive: the `avoid`-cell
+ * reroute (no avoid map exists here) and the `LARGE` open-space check (she is not
+ * large). The landing additionally requires a passable cell where Java only reroutes
+ * off `avoid` - her FOV gate makes a wall landing unreachable in practice (opaque walls
+ * block the sight the attempt needs), so the guard only ever fires where Java would
+ * have embedded her; stated, not silent. Like every other mover here the aim is the
+ * hero even when charmed (the port's hero-directed movement model, not a new choice). */
+private trySuccubusBlink(monster: Creature, distance: number): boolean {
+	if (!shouldSuccubusBlink({
+		cooldown: monster.blinkCooldown ?? 0,
+		seesHero: monster.seesHero === true,
+		rooted: monster.buffs['roots'] !== undefined,
+		fleeing: monster.fleeing === true,
+		distance,
+	})) {
+		monster.blinkCooldown = (monster.blinkCooldown ?? 0) - 1;
+		return false;
+	}
+	const ray = traceRayToTarget(this.level, monster, this.hero, (x, y) => this.creatureAt(x, y));
+	const landing = chooseSuccubusBlinkCell(ray, (cell) =>
+		this.level.passable(cell.x, cell.y) && !this.creatureAt(cell.x, cell.y), simulationRandom);
+	monster.blinkCooldown = succubusBlinkCooldown(simulationRandom);
+	if (!landing) return true;
+	const from = { x: monster.x, y: monster.y };
+	this.moveTo(monster, landing);
+	this.playTeleportAppear(from, landing, monster);
+	this.pendingMonsterTurnCost = 0;
+	return true;
+}
+
 private takeRipperLeapTrigger(monster: Creature, distance: number): boolean {
 	if (!canRipperLeap({
 		cooldown: monster.leapCooldown ?? 0,
