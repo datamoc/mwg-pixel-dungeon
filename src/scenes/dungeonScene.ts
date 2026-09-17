@@ -12081,11 +12081,12 @@ export class DungeonScene extends Scene2D {
 	}
 
 	/**
-	 * Yog-Dzewa through BossPhases: each crossed HP gate tears open another fist (Java's
-	 * gates sit at HT-300*phase with several fist types; here three fists cycle their
-	 * ranged debuffs). While any fist lives the fists fight and Yog holds its beams; fistless, it
-	 * beams over line-of-sight. Regular minion summons are driven by the separate summon
-	 * cooldown below; the fistless-P5 bleed remains unmodeled.
+	 * Yog-Dzewa: each crossed HP gate tears open another fist (Java gates sit at
+	 * HT-300*phase; the damage hook below scales them to this fight). Fists make Yog
+	 * untouchable (`isInvulnerable` - see `yogShielded`) but do NOT hold its beams:
+	 * Java aims and fires DeathGaze every turn regardless of fists, and keeps
+	 * summoning regulars on a catch-up float cooldown; the fistless-P5 bleed remains
+	 * unmodeled.
 	 */
 	private takeYogTurn(yog: Creature): void {
 		//`YogDzewa.act()`'s phase-0 dormancy: risen but unseeing, Yog spends each turn idle
@@ -12103,20 +12104,21 @@ export class DungeonScene extends Scene2D {
 			}
 			return;
 		}
-		//YogDzewa.act(): regular Larva/Ripper/Eye/Scorpio summons continue while fists
-		//are alive; fists only suppress the death-ray. The real actor uses a catch-up
-		//float cooldown, while this port keeps one summon per monster turn.
+		//Phase gates ride the damage hook (`yogDamageHook`), never the turn; the P5
+		//clamp below is Java's end-of-turn leftover cap, applied every turn here.
 		const phase = yog.yogPhase ?? 1;
 		yog.yogSummonCd = (yog.yogSummonCd ?? Random.normalRange(10, 15)) - 1;
 		if (phase === 5) yog.yogSummonCd = Math.min(yog.yogSummonCd, 3);
-		if (yog.yogSummonCd <= 0 && this.summonYogMinion(yog)) {
-			yog.yogSummonCd = Math.max(5, Random.normalRange(10, 15) - Math.max(0, phase - 1));
+		//`YogDzewa.act()` summons in a `while (summonCooldown <= 0)` loop, so a deep
+		//debt (phase 5 opens at -15) bursts several minions in one turn; there is no
+		//floor on the re-roll, and a live fist stretches it by `MIN_SUMMON_CD - phase + 1`.
+		while (yog.yogSummonCd <= 0) {
+			if (!this.summonYogMinion(yog)) break;
+			yog.yogSummonCd += Random.normalRange(10, 15) - Math.max(0, phase - 1);
+			if (this.creatures.some((c) => c.kind === 'yogFist' && c.hp > 0)) {
+				yog.yogSummonCd += 10 - Math.max(0, phase - 1);
+			}
 		}
-		//Fists gate the beam (`isInvulnerable` while any lives - see `yogShielded`); a
-		//fistless Yog beams over line-of-sight. Fist spawns, HP-gate floors, and phase
-		//advancement all ride the damage hook (`yogDamageHook`), never the turn.
-		const fists = this.creatures.filter((c) => c.kind === 'yogFist' && c.hp > 0);
-		if (fists.length > 0) return;
 
 		//`YogDzewa.act()` runs DeathGaze in two phases: the aiming turn only paints
 		//`targetedCells`, and a later turn fires a beam along each painted cell's path. A rooted hero
@@ -12127,12 +12129,15 @@ export class DungeonScene extends Scene2D {
 			if (this.hero.buffs.roots) return;
 			this.fireYogDeathGaze(yog, targeted);
 			yog.yogTargeted = [];
-			return;
 		}
 		yog.yogBeamCd = (yog.yogBeamCd ?? Random.normalRange(10, 15)) - 1;
-		if (yog.yogBeamCd > 0 || !Roguelike.canTarget(this.level, yog, this.hero, { range: 8 })) return;
-		yog.yogTargeted = this.aimYogDeathGaze(yog);
-		yog.yogBeamCd = Math.max(2, Random.normalRange(10, 15) - Math.max(0, (yog.yogPhase ?? 1) - 1));
+		//`YogDzewa.act()` aims with no range or line gate (map-wide `WONT_STOP` rays),
+		//and clamps a leftover cooldown to 2 on entering the final phase.
+		if (phase === 5 && yog.yogBeamCd > 2) yog.yogBeamCd = 2;
+		if (yog.yogBeamCd <= 0) {
+			yog.yogTargeted = this.aimYogDeathGaze(yog);
+			yog.yogBeamCd = Math.max(2, Random.normalRange(10, 15) - Math.max(0, (yog.yogPhase ?? 1) - 1));
+		}
 	}
 
 	/** `YogDzewa.act()`'s aiming half: `beams = 1 + (HT - HP)/400` target cells, one per beam - the
@@ -12163,6 +12168,9 @@ export class DungeonScene extends Scene2D {
 	 * along each path (`Dungeon.level.destroy`), which this port now does too - see the burn in
 	 * the path walk below. */
 	private fireYogDeathGaze(yog: Creature, targeted: readonly number[]): void {
+		//`YogDzewa.act()` dispels invisibility on every firing turn, before the hit rolls,
+		//whether or not anything stands in the beams - same as the Eye's own gaze here.
+		delete this.hero.buffs['invisibility'];
 		const stronger = isChallengeEnabled('stronger_bosses');
 		const affected = new Set<Creature>();
 		for (const cell of targeted) {
