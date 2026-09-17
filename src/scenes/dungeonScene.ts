@@ -10191,12 +10191,49 @@ export class DungeonScene extends Scene2D {
 	 * same as every other bolt here (see `zapHero`'s note) - then a 4-6 turn cooldown. Kept
 	 * separate from `zapHero` because Java's beam is `NormalIntRange` while that helper takes
 	 * a per-mob range pair, and because the beam has its own two-turn state machine. */
+	/**
+	 * `Eye.deathGaze()`'s per-victim hit for a non-hero char (`Eye.java`, tag
+	 * `v3.3.8`): the `hit(this, ch, true)` roll happens in the caller; here the
+	 * `NormalIntRange(30, 50)` damage lands with the `StoneOfAggression`
+	 * half-damage rule (same shape as `rollDamage`'s branch in
+	 * `simulation/combat.ts`: half for a marked boss/miniboss from a
+	 * same-alignment attacker, half again for Yog-Dzewa) and kills. Flammable-
+	 * terrain destruction has no primitive at any mob site (same stated gap as
+	 * the bomb sites).
+	 */
+	private resolveEyeBeamMobHit(monster: Creature, victim: Creature): void {
+		let dmg = Math.max(0, Random.normalRange(30, 50));
+		if (victim.buffs['aggression'] && (victim.boss || victim.miniboss) && !monster.isHero && !monster.isAlly) {
+			dmg *= 0.5;
+			if (victim.kind === 'yog') dmg *= 0.5;
+		}
+		victim.hp -= dmg;
+		this.showDamage(victim, dmg);
+		if (victim.hp <= 0) this.kill(victim);
+	}
+
 	private eyeBeamTurn(monster: Creature): boolean {
 		if ((monster.beamCooldown ?? 0) > 0) monster.beamCooldown = (monster.beamCooldown ?? 0) - 1;
 		if (monster.beamCharged) {
 			monster.beamCharged = false;
 			monster.beamCooldown = 4 + Random.int(3);
-			if (Roguelike.canTarget(this.level, monster, this.hero, { range: 8 })) {
+			delete monster.buffs['invisibility'];
+			//`Eye.deathGaze()` (`Eye.java`, tag `v3.3.8`): the beam strikes every
+			//char along its line (`beam.subPath(1, beam.dist)`), not just the hero
+			//it aimed at - hero, ally or enemy alike, each with the real magic hit
+			//roll. Non-hero victims resolve inline and `continue`; the hero's own
+			//body below is untouched. Like Java (which fires the stored beam
+			//unconditionally once charged), there is no fire-time range/LOS
+			//recheck - only the charge itself required `canTarget`.
+			for (const cell of Roguelike.traceLine(monster, this.hero).slice(1)) {
+				const victim = cell.x === this.hero.x && cell.y === this.hero.y
+					? this.hero
+					: this.creatureAt(cell.x, cell.y);
+				if (!victim || victim === monster || victim.hp <= 0) continue;
+				if (!victim.isHero) {
+					if (rollHit(monster, victim, true)) this.resolveEyeBeamMobHit(monster, victim);
+					continue;
+				}
 				if (!rollHit(monster, this.hero, true)) {
 					this.say(t('port.log.eyegazemisses'), 'negative');
 				} else {

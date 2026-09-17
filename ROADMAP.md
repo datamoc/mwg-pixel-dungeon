@@ -372,10 +372,10 @@ was judged not worth the churn against those existing references.
 - [x] Fix `Brute`'s enrage. Was a stateless below-half-HP damage boost that never granted Java's
       real one-time near-death revival; now a genuine `hasRaged`-gated revival with the real
       `HT/2+4` shield and flat 4/turn decay. Browser-verified live. See `PORT_COVERAGE.md`.
-- [ ] Implement exact wandering, hunting, fleeing, and stealth calculations. **Progress 2026-09-16:**
+- [x] Implement exact wandering, hunting, fleeing, and stealth calculations. **Progress 2026-09-16:**
       the retained-target wandering branch is now isolated as `takeWanderingTurn`, including the
       Java target lifetime, passability checks, piranha water restriction, and Golem's unreachable
-      target teleport path; fleeing recovery (`Mob.Fleeing.nowhereToRun()`) is ported since 2026-09-17 - a fleeing mob with no step turns and fights with the real `Mob.rage` line while it sees the hero, else drops back to wandering, unless Terror holds it (Dread has no system here). **Hunting parity ported 2026-09-17**: `Creature.lastSeen` is Java's hunting `Mob.target` - refreshed while the hero is seen, pursued when sight is lost (give up on arrival/unreachable), persisted through save/load, no re-roll on re-acquire while hunting, fleeing excluded; mass-alert sources set it so their mobs hunt. Stealth/invisibility gating stays as ported on the line below. **Complexity: M.**
+      target teleport path; fleeing recovery (`Mob.Fleeing.nowhereToRun()`) is ported since 2026-09-17 - a fleeing mob with no step turns and fights with the real `Mob.rage` line while it sees the hero, else drops back to wandering, unless Terror holds it (Dread has no system here). **Hunting parity ported 2026-09-17**: `Creature.lastSeen` is Java's hunting `Mob.target` - refreshed while the hero is seen, pursued when sight is lost (give up on arrival/unreachable), persisted through save/load, no re-roll on re-acquire while hunting, fleeing excluded; mass-alert sources set it so their mobs hunt. Stealth/invisibility gating lives on the section-7 line, now fully closed (wound/surprise presentation, ranged invisibility gate, Eye beam migration).
 - [x] Implement monster-specific AI overrides. **Closed 2026-09-17: the last two "Not modeled" halves were already live (Spinner's persistent 3-cell `Web` blob plus the direct root, DM-200's BFS reachability plus the closing-distance-failed vent retry) - only Golem's charge particles and delayed animation remain, with no particle/animation layer to express them.** **Ported**: Golem's teleport-the-hero-away ability
       (with Java's `canTele` reachability, direct-shot distance roll and `MagicImmune` target gate)
       and its 30-turn self-teleport-to-reposition, Eye's real ranged two-turn DeathGaze (charge turn
@@ -589,7 +589,7 @@ was judged not worth the churn against those existing references.
       accrual and crossing-into-STARVING 1-damage hit, replacing the former flat "every 10 turns"
       guess). Java has no attack-delay/accuracy penalty while merely hungry beyond the log line, so
       there is no further penalty to match there.
-- [ ] Match stealth, invisibility, surprise, and attack-delay systems exactly. Ported: sleeping
+- [x] Match stealth, invisibility, surprise, and attack-delay systems exactly. Ported: sleeping
       wake-ups roll the real `1/(distance+stealth)` detection gated on the mob's own sight, with
       Silent Steps and levitation as their real never-wake immunities; the negative-buff wake (any
       real negative-type buff wakes a sleeping monster unconditionally, no roll, even out of sight);
@@ -601,8 +601,8 @@ was judged not worth the churn against those existing references.
       free cell beside a visible hostile, refusing an unreachable or rooted case with Java's own
       message). Surprise gating ported 2026-09-17 (thrown/unarmed/STR/flail plus the invisible
       disjunct, hero-only). **Closed 2026-09-17:** `Mob`'s wound-instead-of-surprise presentation
-      wound-instead-of-surprise presentation (`Mob.defenseProc` - `HIT_STRONG` plus the red `Wound` slash with Preparation up, the `!` otherwise) and the ranged invisibility gate (`selectRangedTarget` skips invisible hero/allies, pinned in `verifySimulation.mjs`). **Remaining**: boss-specific ranged target migration.
-      See `PORT_COVERAGE.md`'s sleeping/wandering and `Preparation` rows. **Complexity: M.**
+      wound-instead-of-surprise presentation (`Mob.defenseProc` - `HIT_STRONG` plus the red `Wound` slash with Preparation up, the `!` otherwise) and the ranged invisibility gate (`selectRangedTarget` skips invisible hero/allies, pinned in `verifySimulation.mjs`). **Closed 2026-09-17:** boss-specific ranged target migration - the Eye's `deathGaze` strikes every char on its beam (hero, ally or enemy) with the per-victim hit roll and 30-50 damage plus the `Aggression` rule, instead of the hero-only simplification; the Warlock-zap `Aggression` site stays unreachable-by-design (documented on the Aggression row).
+      See `PORT_COVERAGE.md`'s sleeping/wandering and `Preparation` rows.
 - [x] Implement shield decay. `Barrier.act()`'s real `min(1,shielding/20)`-per-turn proportional
       curve runs every hero turn against the shared `heroBarrier` pool, and `Blocking` owns a
       separate `blockingBarrier` pool with `ShieldBuff.shieldUsePriority = 2` draining before
