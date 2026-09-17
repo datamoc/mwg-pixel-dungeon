@@ -197,6 +197,7 @@ import { applyEnvironmentalBlobs } from '../simulation/environmentalBlobs';
 import { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } from '../simulation/plantPools';
 import { plantDropCandidates, plantDropCount } from '../simulation/plantDrops';
 import { teleportCandidates, disarmBubblePresses, type TeleportCell } from '../simulation/teleport';
+import { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } from '../simulation/timeBubble';
 import { evolveElectricity, evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
 import { selectRangedTarget } from '../simulation/targeting';
@@ -969,8 +970,10 @@ export class DungeonScene extends Scene2D {
 		isGameOver: () => this.gameOver,
 		takeMonsterTurn: (actor) => this.takeMonsterTurn(actor),
 		afterMonsterTurn: (actor) => this.afterMonsterTurn(actor),
-			monsterTurnCost: (monster) => monster.kind === 'dm300' && monster.dmSupercharged
-				? 0.5 : (this.pendingMonsterTurnCost ?? 1),
+			//A TimeBubble owner absorbs its own spends (`Char.spendConstant`) and costs 0
+			//scheduler clock, so it acts again immediately; everyone else pays the base.
+			monsterTurnCost: (monster) => timeBubbleTurnCost(monster.timeBubbleTurns,
+				monster.kind === 'dm300' && monster.dmSupercharged ? 0.5 : (this.pendingMonsterTurnCost ?? 1)),
 		awaitHeroInput: () => {
 			if (this.resurrectPending) return;
 			this.awaitingInput = true;
@@ -2567,6 +2570,7 @@ export class DungeonScene extends Scene2D {
 				deathMarkInitialHp: creature.deathMarkInitialHp,
 				patrolTarget: creature.patrolTarget ? { ...creature.patrolTarget } : undefined,
 				lastSeen: creature.lastSeen ? { ...creature.lastSeen } : undefined,
+				timeBubbleTurns: creature.timeBubbleTurns,
 				mimicRevealed: creature.mimicRevealed,
 				hasteTurns: creature.hasteTurns, hasteBaseSpeed: creature.hasteBaseSpeed,
 				hasRaged: creature.hasRaged, raged: creature.raged, chainUsed: creature.chainUsed,
@@ -2709,6 +2713,7 @@ export class DungeonScene extends Scene2D {
 				deathMarkInitialHp: saved.deathMarkInitialHp,
 				patrolTarget: saved.patrolTarget ? { ...saved.patrolTarget } : undefined,
 				lastSeen: saved.lastSeen ? { ...saved.lastSeen } : undefined,
+				timeBubbleTurns: saved.timeBubbleTurns,
 				mimicRevealed: saved.mimicRevealed ?? Boolean(saved.stolen),
 				hasteTurns: saved.hasteTurns, hasteBaseSpeed: saved.hasteBaseSpeed,
 				hasRaged: saved.hasRaged, raged: saved.raged, chainUsed: saved.chainUsed,
@@ -7195,6 +7200,8 @@ export class DungeonScene extends Scene2D {
 	/** Java's Buff.act() boundary for temporary monster speed effects. */
 	private afterMonsterTurn(monster: Creature): void {
 		this.tickDeathMark(monster);
+		//One absorbed own-turn for a TimeBubble owner, read by `monsterTurnCost` above.
+		monster.timeBubbleTurns = spendTimeBubbleTurn(monster.timeBubbleTurns);
 		if (monster.ratmogrifiedTurns !== undefined && !monster.ratmogrifiedPermanent) {
 			monster.ratmogrifiedTurns--;
 			if (monster.ratmogrifiedTurns <= 0) delete monster.ratmogrifiedTurns;
@@ -8619,10 +8626,12 @@ export class DungeonScene extends Scene2D {
 				creature.earthrootArmorPos = cell;
 				break;
 			case 'swiftthistle':
-				//The global bubble is the available representation of Java's actor freeze.
-				//`TimeBubble.reset()` overwrites `left = 7` unconditionally - re-triggering
-				//while a bubble runs restarts it, it does not extend it.
-				this.timeBubbleTurns = 7;
+				//Per-char ownership (`Buff.affect(ch, TimeBubble.class)`): the mob banks its own
+				//seven rapid turns through the cost hook above - the global freeze is the hero's
+				//bubble only. The mob's detach fires nothing: delayed presses only ever land
+				//in the hero's bubble (`Level.pressCell` reads the hero's buff).
+				//`TimeBubble.reset()` overwrites unconditionally - re-triggering restarts it.
+				creature.timeBubbleTurns = TIME_BUBBLE_TURNS;
 				break;
 		}
 		return true;

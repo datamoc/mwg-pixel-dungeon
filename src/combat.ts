@@ -40,6 +40,13 @@ export interface Creature extends Combatant {
 	 * (`Mob.Hunting`), instead of patrolling immediately.
 	 */
 	lastSeen?: { x: number; y: number };
+	/**
+	 * Java's per-char `Swiftthistle.TimeBubble`: the owner's own spends absorb into
+	 * this counter (`Char.spendConstant`) instead of advancing its scheduler clock,
+	 * so it acts repeatedly while everything else waits. Delayed presses still
+	 * belong to the hero's bubble only (`Level.pressCell` reads the hero's buff).
+	 */
+	timeBubbleTurns?: number;
 	/** Ratmogrify's temporary wrapper: the original kind/stats remain intact while abilities are disabled. */
 	ratmogrifiedTurns?: number;
 	ratmogrifiedPermanent?: boolean;

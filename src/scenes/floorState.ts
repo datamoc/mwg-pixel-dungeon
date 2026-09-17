@@ -114,6 +114,8 @@ export interface SavedCreature {
 	patrolTarget?: { x: number; y: number };
 	/** Java Mob.target while hunting: the last cell where the mob saw the hero. */
 	lastSeen?: { x: number; y: number };
+	/** Java's per-char `Swiftthistle.TimeBubble` turn counter. */
+	timeBubbleTurns?: number;
 	mimicRevealed?: boolean;
 	hasteTurns?: number;
 	hasteBaseSpeed?: number;

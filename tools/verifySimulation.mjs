@@ -37,7 +37,7 @@ try {
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'mechanics/cone', 'dungeonConstants',
-	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/teleport',
+	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/teleport', 'simulation/timeBubble',
 	// `dungeonConstants` and `items/wands` read the MWL item tables, so the harness compiles the
 	// real adapter and the real generated catalogue instead of a hand-copied stub of them - a stub
 	// is how the old, hand-listed framework set above drifted once already, and how the item-frame
@@ -95,6 +95,7 @@ try {
 const { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } = require('./simulation/plantPools');
 const { plantDropCandidates, plantDropCount } = require('./simulation/plantDrops');
 const { teleportCandidates, disarmBubblePresses } = require('./simulation/teleport');
+const { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } = require('./simulation/timeBubble');
 	const { applyEnvironmentalBlobs } = require('./simulation/environmentalBlobs');
 	// The four coefficients `HighGrass.trample` reads, as the port's MWL rows carry them.
 	const grassRules = { seedChanceBase: 25, seedChancePerLevel: 4, dewChanceBase: 6, dewChanceLevelDivisor: 2 };
@@ -148,6 +149,25 @@ const { teleportCandidates, disarmBubblePresses } = require('./simulation/telepo
 		assert.equal(next[0], 0);
 		assert.equal(next[6], 0);
 		assert.equal(next[8], 0);
+	});
+	check('TimeBubble ownership absorbs the owner\'s own clock and clears after seven turns', () => {
+		assert.equal(TIME_BUBBLE_TURNS, 7);
+		//A bubble owner costs 0 scheduler clock; everyone else pays the base cost.
+		assert.equal(timeBubbleTurnCost(7, 1), 0);
+		assert.equal(timeBubbleTurnCost(1, 1), 0);
+		assert.equal(timeBubbleTurnCost(undefined, 1), 1);
+		assert.equal(timeBubbleTurnCost(0, 2.5), 2.5);
+		//Each own-turn spends one bubble turn; the last spend clears the bubble.
+		assert.equal(spendTimeBubbleTurn(7), 6);
+		assert.equal(spendTimeBubbleTurn(2), 1);
+		assert.equal(spendTimeBubbleTurn(1), undefined);
+		assert.equal(spendTimeBubbleTurn(undefined), undefined);
+		//Seven absorbed spends end exactly where the eighth would overdraw.
+		let turns = TIME_BUBBLE_TURNS;
+		let acts = 0;
+		while (turns !== undefined) { assert.equal(timeBubbleTurnCost(turns, 1), 0); turns = spendTimeBubbleTurn(turns); acts++; }
+		assert.equal(acts, 7);
+		assert.equal(timeBubbleTurnCost(turns, 1), 1);
 	});
 	check('Electricity never diffuses into dry cells and dies out by one per turn', () => {
 		const dry = new Array(25).fill(0);
