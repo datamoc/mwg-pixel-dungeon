@@ -3,6 +3,8 @@ import { CharacterEffects } from '../ui/characterEffects';
 import { FogOfWar } from '../ui/fogOfWar';
 import { wallBlockingFrame } from '../spdLevelGen/wallBlocking';
 import { InfoWindow } from '../ui/infoWindow';
+import { buffInfo } from '../ui/buffInfo';
+import { showBuffInfoWindow } from '../ui/buffInfoWindow';
 import { WaterSurface } from '../ui/waterSurface';
 import { InventoryWindow } from '../ui/inventoryWindow';
 import { refreshInventoryPanel as refreshInventoryPanelView, type InventoryPanelContext } from '../ui/inventoryPanel';
@@ -1773,6 +1775,7 @@ export class DungeonScene extends Scene2D {
 	private journalOpen = false;
 	private talentPanel!: Container;
 	private talentWindow?: Window;
+	private buffInfoOpen?: Window;
 	private talentOpen = false;
 	private subclassChoiceOpen = false;
 	private armorChoiceOpen = false;
@@ -15769,7 +15772,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 	private buildInterface(): void {
 		//StatusPane sits top-left, where GameScene.java puts it
-		this.statusPane = new StatusPane(runState.sprites.uiStatusPane, runState.sprites.uiBuffs, runState.sprites[this.heroClass]);
+		this.statusPane = new StatusPane(runState.sprites.uiStatusPane, runState.sprites.uiBuffs, runState.sprites[this.heroClass], (buff) => this.showBuffInfo(buff));
 		this.statusPane.x = 0;
 		this.statusPane.y = 0;
 		this.stage.addChild(this.statusPane);
@@ -15902,6 +15905,19 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.banner = banner;
 		banner.position.set(Game.current.width / 2, Game.current.height / 2);
 		this.stage.addChild(banner);
+	}
+
+	/** `BuffIndicator` click -> `WndInfoBuff`: shows the clicked icon's real name/description. */
+	private showBuffInfo(buff: string): void {
+		if (this.buffInfoOpen && !this.buffInfoOpen.closed) this.buffInfoOpen.close();
+		const turns = buff === 'hungry' || buff === 'starving' ? undefined : this.hero.buffs[buff as BuffId];
+		const info = buffInfo(buff as BuffId | 'hungry' | 'starving', turns);
+		if (!info) return;
+		const window = showBuffInfoWindow(info);
+		this.buffInfoOpen = window;
+		window.onClose.add(() => { if (this.buffInfoOpen === window) this.buffInfoOpen = undefined; });
+		window.place(Game.current.width, Game.current.height);
+		this.gameWindows.push(window);
 	}
 
 	/** Small explicit talent window: earned points are assigned to accuracy or evasion. */

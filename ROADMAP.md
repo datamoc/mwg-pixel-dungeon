@@ -581,7 +581,20 @@ below to close the gap was judged not worth the churn against those existing ref
       ascent - the port only distinguishes normal from slow.
 - [ ] Implement large interface-size layouts. **Complexity: M.**
 - [ ] Port the hero information window, busy indicator, talent animations, and quick slots.
-      **Complexity: M.**
+      **Progress 2026-09-18**: three of the four named things turn out to already be live once
+      checked individually, leaving one real gap. Quick slots were already live (`toolbar.ts`'s
+      auto-assigned `Q1..Q4` buttons over the scene's `quickslot0..3` actions) - the line's own
+      wording was stale. The busy indicator is a stated, deliberate text-stand-in (`statusPane.ts`'s
+      `busyPip`, no `CircleArc` primitive here) rather than an unstarted port. `WndHero`'s own
+      shell (Stats/Talents/Buffs tabs) does not exist as one window, but each tab's *function*
+      does: the avatar's flat stat popup, the toolbar's talent-spend window, and - newly ported
+      this pass - `WndInfoBuff`'s click-to-info on every status-pane buff icon (`ui/buffInfo.ts`,
+      `ui/buffInfoWindow.ts`), with the real name/description and the `{0}` turns-remaining
+      substitution, browser-verified live in French. See `PORT_COVERAGE.md`'s `WndInfoBuff` and
+      `StatusPane` rows. **What remains, and the only reason this box is unticked**: talent-point-
+      available blinking (`StatusPane.talentBlink`) has no signal here at all - nothing tells the
+      player they have an unspent point without opening the talent window to check. **Complexity: S**
+      for what remains.
 - [ ] Complete sprite/effect animations. (Split 2026-09-18: the armor-dependent hero
       portrait half is closed - `statusPane.ts` now draws `HeroSprite.avatar()`'s exact rule,
       the class sheet's own `(1, tier*15, 12, 15)` cell under Java's 0..6 clamp, with tiers

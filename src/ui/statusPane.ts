@@ -27,7 +27,9 @@ import { SPD_TITLE_COLOR } from './spdTheme';
  *
  * Simplifications, all deliberate and listed in PORT_COVERAGE.md: shielding is represented
  * numerically in the HP bar/stats rather than with Java's separate gold strip, and no
- * `CircleArc` turn counter (the busy pip below is a text stand-in).
+ * `CircleArc` turn counter (the busy pip below is a text stand-in). `BuffIndicator`'s own
+ * click-to-`WndInfoBuff` is ported (`onBuffClick`, resolved through `ui/buffInfo.ts`) rather
+ * than left decorative.
  */
 
 /** `BuffIndicator`'s own icon indices, into `buffs.png`'s 7x7 grid */
@@ -124,10 +126,12 @@ export class StatusPane extends Container {
 	private lastAvatarTier = -1;
 	private busyPip: Label;
 	private large = false;
+	private onBuffClick?: (buff: string) => void;
 
-    constructor(statusSheet: Texture, buffs: Texture, heroSheet: Texture) {
+    constructor(statusSheet: Texture, buffs: Texture, heroSheet: Texture, onBuffClick?: (buff: string) => void) {
 		super();
 		this.buffIcons = buffs;
+		this.onBuffClick = onBuffClick;
 
 		//NinePatch(asset, 0, 0, 128, 36, 85, 0, 45, 0): stretches horizontally only
 		const frameTexture = new Texture({
@@ -295,6 +299,14 @@ export class StatusPane extends Container {
 			if (buff === 'focus') icon.tint = 0x40ff80;
 			icon.x = x;
 			icon.scale.set(SCALE);
+			//`WndInfoBuff`: Java opens the buff's own info window on click. `onBuffClick` reads
+			//the current turns-remaining value itself (this array only carries ids), so no
+			//value needs to travel through the icon.
+			if (this.onBuffClick) {
+				icon.eventMode = 'static';
+				icon.cursor = 'pointer';
+				icon.on('pointertap', (event) => { event.stopPropagation(); this.onBuffClick?.(buff); });
+			}
 			this.buffLayer.addChild(icon);
 			x += (BUFF_SIZE + 1) * SCALE;
 		}
