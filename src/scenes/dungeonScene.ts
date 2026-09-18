@@ -15173,6 +15173,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			armorTier: this.armorTier,
 			interfaceSize: this.interfaceSize,
 			busy: !this.awaitingInput && !this.gameOver,
+			talentPointsAvailable: this.talentPoints.some((points) => points > 0),
 		});
 		this.refreshInventoryPanel();
 		this.refreshTalentPanel();

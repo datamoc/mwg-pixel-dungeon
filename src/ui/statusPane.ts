@@ -1,4 +1,4 @@
-import { Container, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
+import { Container, Graphics, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 import { Bar, Label, NinePatch } from 'mwg';
 import { SPD_TITLE_COLOR } from './spdTheme';
 
@@ -109,6 +109,9 @@ export interface StatusPaneState {
 	interfaceSize?: 0 | 1;
 	/** Whether the hero is busy (an action is resolving): shows the busy pip. */
 	busy?: boolean;
+	/** `StatusPane.talentBlink`'s real trigger - some unlocked tier still has an unspent
+	 * point - simplified to a static corner dot rather than an animated avatar-tint pulse. */
+	talentPointsAvailable?: boolean;
 }
 
 export class StatusPane extends Container {
@@ -125,6 +128,7 @@ export class StatusPane extends Container {
 	private avatarSheet: Texture;
 	private lastAvatarTier = -1;
 	private busyPip: Label;
+	private talentDot: Graphics;
 	private large = false;
 	private onBuffClick?: (buff: string) => void;
 
@@ -149,6 +153,20 @@ export class StatusPane extends Container {
 		this.avatar.scale.set(SCALE);
 		this.avatar.position.set(9 * SCALE, 8 * SCALE);
 		this.addChild(this.avatar);
+		//`StatusPane.talentBlink`: Java tints the whole avatar yellow with a cosine pulse
+		//(`Math.abs(cos(talentBlink*FLASH_RATE))/2f` alpha) for 10s after a talent point becomes
+		//available, and again on floor entry while any is still unspent, clearing early once the
+		//WndHero talent tab is opened regardless of whether the point was spent. This port has
+		//no avatar-tint layer for any state yet (`warningColors`' low-HP pulse isn't ported
+		//either), so a static corner dot stands in rather than an animated tint, and it tracks
+		//the real unspent-points state directly instead of Java's expiring timer - it stays lit
+		//exactly while a point is actually unspent, including across saves, which is a small
+		//deliberate improvement over a cosmetic clock that can go dark on an unspent point once
+		//10 real-time seconds pass. See `PORT_COVERAGE.md`.
+		this.talentDot = new Graphics().circle(0, 0, 2).fill({ color: 0xffee00 });
+		this.talentDot.position.set(20 * SCALE, 9 * SCALE);
+		this.talentDot.visible = false;
+		this.addChild(this.talentDot);
 		//`BusyIndicator`: Java's spinning arc while the hero acts. This port has no arc
 		//primitive, so a text pip beside the level tag marks the busy state instead.
 		this.busyPip = new Label({ size: 9, color: 0xffcc00 });
@@ -241,6 +259,7 @@ export class StatusPane extends Container {
 			this.avatar.texture = new Texture({ source: this.avatarSheet.source, frame: new Rectangle(1, tier * 15, 12, 15) });
 		}
 		this.busyPip.visible = state.busy === true;
+		this.talentDot.visible = state.talentPointsAvailable === true;
 		//hp.scale.x = max(0, (health - shield)/max); no shielding here, so health/max
 		const shield = state.shield ?? 0;
 		this.hpBar.setValue(state.maxHp > 0 ? Math.max(0, state.hp - shield) / state.maxHp : 0);
