@@ -8,12 +8,30 @@ const U64 = (1n << 64n) - 1n;
 function u64(value: bigint): bigint { return value & U64; }
 
 /** java.util.Random, plus SPD's MX3 seed scramble and Dungeon.seedForDepth(). */
+// RNG-call-order parity facility for `tools/levelgenParity.ts` (Sec 9): while a log array
+// is installed, every raw next() draw appends a `bits:value` line - the same shape Java's
+// TracingRandom writes. Off (null) by default: one extra branch per draw, no allocation.
+// The stack-window attribution below exists to bisect a divergence to its call sites.
+let traceDrawLog: string[] | null = null;
+export function setTraceDrawLog(v: string[] | null): void { traceDrawLog = v; traceDrawCount = 0; }
+let traceDrawCount = 0;
+export let traceStackWindow: [number, number] | null = null;
+export function setTraceStackWindow(w: [number, number] | null): void { traceStackWindow = w; }
+export const traceStacks: string[] = [];
 export class SpdJavaRandom {
 	private state: bigint;
 	constructor(seed: bigint) { this.state = (seed ^ 0x5deece66dn) & ((1n << 48n) - 1n); }
 	private next(bits: number): number {
 		this.state = (this.state * 0x5deece66dn + 0xbn) & ((1n << 48n) - 1n);
-		return Number(this.state >> BigInt(48 - bits));
+		const result = Number(this.state >> BigInt(48 - bits));
+		if (traceDrawLog !== null) {
+			traceDrawLog.push(`${bits}:${result}`);
+			if (traceStackWindow !== null && traceDrawCount >= traceStackWindow[0] && traceDrawCount <= traceStackWindow[1]) {
+				traceStacks.push(`#${traceDrawCount} ${bits}:${result} :: ${(new Error().stack ?? '').split('\n').slice(2, 9).join(' <- ')}`);
+			}
+			traceDrawCount++;
+		}
+		return result;
 	}
 	nextFloat(): number { return this.next(24) / 0x1000000; }
 	/**

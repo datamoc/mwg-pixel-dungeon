@@ -7,12 +7,24 @@
  * exits 0 with a report even when blocks differ, so a first run can record the gap
  * shape before anything is fixed. Promoting any subset to a hard gate is a later step.
  *
+ * With `--write-ts-traces <dir>`, each floor's raw RNG draws are also captured (via
+ * `spdRng`'s trace facility, armed around `portedFloor` exactly the way the harness
+ * arms its own around the floor push/pop) into `levelgen_trace_<seed>_<depth>.txt`.
+ * With `--java-traces <dir>`, those are sequence-diffed against the harness's own
+ * per-floor traces (regenerated with `:desktop:runHarness -Dlevelgen.trace=true`),
+ * which verifies RNG *call order*, not just identical outputs: the first divergence
+ * pinpoints the exact draw where the two implementations part ways. Depths 1-2 are
+ * skipped in the trace diff by design (Java's unseeded guidebook generator makes
+ * even Java-vs-Java irreproducible there).
+ *
  * Run with `npm run parity:levelgen -- --java-dump <path>` (defaults to the harness
  * task's output next to the Java checkout when `--spd-root` points at it). Regenerate
  * the Java side with `:desktop:runHarness` in the SPD checkout first.
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { portedFloor, resetPortedRun } from '../src/spdLevelGen/gameBridge';
+import { setTraceDrawLog } from '../src/spdRng';
 
 interface JavaBlock {
 	seed: string;
@@ -74,6 +86,15 @@ function main(): void {
 	const writeTs = writeArg >= 0 && process.argv[writeArg + 1] && !process.argv[writeArg + 1]!.startsWith('--')
 		? process.argv[writeArg + 1]!
 		: null;
+	const tsTraceArg = process.argv.indexOf('--write-ts-traces');
+	const tsTraceDir = tsTraceArg >= 0 && process.argv[tsTraceArg + 1] && !process.argv[tsTraceArg + 1]!.startsWith('--')
+		? process.argv[tsTraceArg + 1]!
+		: null;
+	const javaTraceArg = process.argv.indexOf('--java-traces');
+	const javaTraceDir = javaTraceArg >= 0 && process.argv[javaTraceArg + 1] && !process.argv[javaTraceArg + 1]!.startsWith('--')
+		? process.argv[javaTraceArg + 1]!
+		: null;
+	if (tsTraceDir) mkdirSync(tsTraceDir, { recursive: true });
 	const tsOut: string[] = [];
 	const seeds = [...new Set(java.map((b) => b.seed))];
 	let matched = 0;
@@ -89,7 +110,36 @@ function main(): void {
 		for (let depth = 1; depth <= 9; depth++) {
 			const block = java.find((b) => b.seed === seed && b.depth === depth);
 			if (!block) { console.log(`seed=${seed} depth=${depth}: NO JAVA BLOCK`); continue; }
+			// The trace window mirrors the harness's own arming exactly: everything the
+			// floor push/pop rides on, and nothing of the run-level setup before it.
+			const traceLog: string[] = [];
+			if (tsTraceDir) setTraceDrawLog(traceLog);
 			const floor = portedFloor(BigInt(seed), depth);
+			if (tsTraceDir) {
+				setTraceDrawLog(null);
+				writeFileSync(join(tsTraceDir, `levelgen_trace_${seed}_${depth}.txt`), traceLog.join('\n') + '\n');
+			}
+			if (javaTraceDir) {
+				const traceName = `levelgen_trace_${seed}_${depth}.txt`;
+				if (depth < 3) {
+					console.log(`seed=${seed} depth=${depth}: TRACE-SKIP (depths 1-2 carry Java's unseeded guidebook draws)`);
+				} else if (!existsSync(join(javaTraceDir, traceName))) {
+					console.log(`seed=${seed} depth=${depth}: TRACE-MISSING (no ${traceName}; regen with -Dlevelgen.trace=true)`);
+				} else {
+					const javaTrace = readFileSync(join(javaTraceDir, traceName), 'utf8').split('\n').filter((l) => l.trim() !== '');
+					let firstDiff = -1;
+					const common = Math.min(javaTrace.length, traceLog.length);
+					for (let i = 0; i < common; i++) {
+						if (javaTrace[i] !== traceLog[i]) { firstDiff = i; break; }
+					}
+					if (firstDiff < 0 && javaTrace.length !== traceLog.length) firstDiff = common;
+					if (firstDiff < 0) {
+						console.log(`seed=${seed} depth=${depth}: TRACE-IDENTICAL (${traceLog.length} draws)`);
+					} else {
+						console.log(`seed=${seed} depth=${depth}: TRACE-DIFF at draw ${firstDiff} (java ${javaTrace.length} draws, ts ${traceLog.length}) java=${javaTrace[firstDiff] ?? '∅'} ts=${traceLog[firstDiff] ?? '∅'}`);
+					}
+				}
+			}
 			if (writeTs) {
 				tsOut.push(`seed=${seed} depth=${depth} rooms=${floor.rooms.length} feeling=${floor.feeling ?? 'NONE'} size=${floor.width}x${floor.height}`);
 				tsOut.push(`  room rects: ${floor.rooms.map((r) => `${r.left},${r.top},${r.right},${r.bottom}`).sort().join(' ')}`);

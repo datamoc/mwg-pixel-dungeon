@@ -758,6 +758,12 @@ interface SaveShape {
 	cleaveFreeTurns?: number;
 	guardTurns?: number;
 	swordDanceTurns?: number;
+	/** `Talent.CombinedLethalityAbilityTracker` - see the field's own comment. */
+	clAbilityWeaponClass?: string | null;
+	clAbilityWeaponInstanceId?: string;
+	clAbilityTurns?: number;
+	/** `Talent.CombinedLethalityTriggerTracker` - see the field's own comment. */
+	clTriggerTurns?: number;
 	defensiveStanceTurns?: number;
 	chargedShotArmed?: boolean;
 	heroActionClock?: number;
@@ -1706,6 +1712,20 @@ export class DungeonScene extends Scene2D {
 	private abilityKnockbackNext = false;
 	private abilityRunicNext = false;
 	private lastAbilityAttack: string | null = null;
+	/** `Talent.CombinedLethalityAbilityTracker`: the weapon the last ability was used
+	 * with (class + instance id), and its remaining duration (Java's `hero.cooldown()`).
+	 * `MeleeWeapon.proc()`'s CL half arms the trigger tracker below when a normal melee
+	 * hit lands with a *different* weapon than the one stored here. Duration is 1 turn:
+	 * the tracker is set after the ability's `spendHeroAction` tick, so it survives the
+	 * end-of-turn tick and is active for the next turn's proc, then expires. */
+	private clAbilityWeaponClass: string | null = null;
+	private clAbilityWeaponInstanceId: string | undefined = undefined;
+	private clAbilityTurns = 0;
+	/** `Talent.CombinedLethalityTriggerTracker`: armed for 5f by `proc()` when the
+	 * ability tracker holds a different weapon. The execute tail consumes it one-shot
+	 * (Java's `combinedLethality.detach()` at `Char.java` 469, unconditionally inside
+	 * the `if (combinedLethality != null)` block - whether or not the KO fired). */
+	private clTriggerTurns = 0;
 	private heroActionClock = 0;
 	private recentHitClocks: number[] = [];
 	/**
@@ -15329,6 +15349,10 @@ private eyeBeamTurn(monster: Creature): boolean {
 			swordDanceTurns: this.swordDanceTurns,
 			defensiveStanceTurns: this.defensiveStanceTurns,
 			chargedShotArmed: this.chargedShotArmed,
+			clAbilityWeaponClass: this.clAbilityWeaponClass,
+			clAbilityWeaponInstanceId: this.clAbilityWeaponInstanceId,
+			clAbilityTurns: this.clAbilityTurns,
+			clTriggerTurns: this.clTriggerTurns,
 			heroActionClock: this.heroActionClock,
 			recentHitClocks: [...this.recentHitClocks],
 			blacksmithPickaxeAvailable: this.blacksmithPickaxeAvailable,
@@ -15637,6 +15661,10 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.swordDanceTurns = (s as { swordDanceTurns?: number }).swordDanceTurns ?? 0;
 		this.defensiveStanceTurns = (s as { defensiveStanceTurns?: number }).defensiveStanceTurns ?? 0;
 		this.chargedShotArmed = (s as { chargedShotArmed?: boolean }).chargedShotArmed ?? false;
+		this.clAbilityWeaponClass = (s as { clAbilityWeaponClass?: string | null }).clAbilityWeaponClass ?? null;
+		this.clAbilityWeaponInstanceId = (s as { clAbilityWeaponInstanceId?: string }).clAbilityWeaponInstanceId ?? undefined;
+		this.clAbilityTurns = (s as { clAbilityTurns?: number }).clAbilityTurns ?? 0;
+		this.clTriggerTurns = (s as { clTriggerTurns?: number }).clTriggerTurns ?? 0;
 		this.heroActionClock = (s as { heroActionClock?: number }).heroActionClock ?? 0;
 		this.recentHitClocks = (s as { recentHitClocks?: number[] }).recentHitClocks ?? [];
 		this.blacksmithPickaxeAvailable = s.blacksmithPickaxeAvailable ?? false;
@@ -20071,6 +20099,14 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.swordDanceTurns = Math.max(0, this.swordDanceTurns - turnCost);
 		this.defensiveStanceTurns = Math.max(0, this.defensiveStanceTurns - turnCost);
 		if (hadStance && this.defensiveStanceTurns <= 0) this.syncHeroFromStats();
+		//CombinedLethality trackers: the ability tracker detaches when its duration
+		//hits zero (Java's FlavourBuff expiry); the trigger is a 5f countdown that the
+		//execute tail normally consumes one-shot, but ticks down if it survives the hit.
+		if (this.clAbilityTurns > 0) {
+			this.clAbilityTurns = Math.max(0, this.clAbilityTurns - turnCost);
+			if (this.clAbilityTurns <= 0) { this.clAbilityWeaponClass = null; this.clAbilityWeaponInstanceId = undefined; }
+		}
+		if (this.clTriggerTurns > 0) this.clTriggerTurns = Math.max(0, this.clTriggerTurns - turnCost);
 		//`Charger.act()` accrue over the spent turn (scaled by its cost, the same
 		//convention the armor-Charger port uses for multi-turn actions).
 		const accrued = accrueWeaponCharge(

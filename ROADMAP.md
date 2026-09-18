@@ -24,7 +24,7 @@ drops that item from the totals, so keep both forms intact.
 
 See `CLOSED.md` for fully checked-off sections moved out of this file (release baseline tracking,
 browser-verification debt, MWL game data, dungeon generation, GitHub Pages publishing, boss
-levels).
+levels, terrain/status mechanics, and build/toolchain decisions).
 
 ## This port's own release plan (news)
 
@@ -518,115 +518,9 @@ was judged not worth the churn against those existing references.
 
 ## 7. Replace simplified terrain and status mechanics
 
-- [x] Implement area-of-effect traps instead of single-target approximations. Explosive traps apply
-      Java's reduced off-center blast damage to nearby creatures, and toxic, fire, shocking and storm traps seed the
-      live area effects. **Remaining**: exact Java projectile presentation, terrain destruction, and
-      cadence.
-- [x] Implement chasm falling and traversal. `isChasmCell`/`fallThroughChasm` model the terrain;
-      `Chasm.heroLand()`'s real Cripple + HP/HT-scaled landing damage and the Levitation bypass are
-      ported. **Remaining**: source-specific Bleeding death badges/blood visuals, the feather-fall
-      item, landing sound/camera shake. See `PORT_COVERAGE.md`'s `Chasm.java` row.
-- [x] Implement water and terrain hazards. **Closed 2026-09-16 by auditing Java's own terrain table
-      against this port rather than repeating "other hazards remain"**: `Terrain.java`'s flags carry
-      exactly three behaviour classes - `PIT` (chasm), `LIQUID` (water) and `AVOID` - and each is
-      accounted for. Water: `Level.java`'s per-turn hook (a non-flying char standing in `WATER`
-      extinguishes `Burning`, matching `Burning.act()`) is ported for hero and monsters alike,
-      collapsed to an immediate extinguish once the turn's DoT tick has landed rather than
-      reproducing the exact one-turn-late timing; Ooze's own water interaction is ported too
-      (CausticSlime/Acidic/FetidRat/Corrosion feed a real `ooze` buff instead of the shared `poison`,
-      and standing water washes it off). Chasm: `Chasm.heroLand()`'s Cripple + HP/HT-scaled landing
-      damage and the Levitation bypass (section 7's own chasm item). `AVOID` is **deliberately
-      collapsed into `passable`** and that is the one real simplification here, now stated rather
-      than implied: Java's `avoid[]` marks cells you may enter or path over without being ordinary
-      floor (chasm, `TRAP`, `WELL`), and every one of its readers is either a `passable || avoid`
-      test (`Char.java` 1256, `Hero.java` 1782, `WellWater.java` 89, `Dungeon.java` 1038,
-      `Preparation.java` 288/293) or the flying exception to one (`Combo.java` 500's
-      `flying && avoid`, which is exactly how a flyer crosses a chasm) - so a game that already
-      treats those cells as enterable answers every one of them the same way, which this port does
-      (`canStepOnto`'s pit branch, traps walkable). The one place it shows is `WELL`, which Java keeps non-passable and this port maps
-      to plain floor (its own stated simplification, see `gameBridge.ts`'s mapping table). Also
-      still unported, and tracked with the mining work rather than here: `MINE_CRYSTAL` and
-      `MINE_BOULDER`, the two terrain kinds Java's pickaxe accepts alongside `WALL`/`WALL_DECO` -
-      this port has no equivalent of either (see `canMineCavesWall`'s own comment). See
-      `PORT_COVERAGE.md`.
-- [x] Complete plant growth and plant interactions. Live: one-shot regional plant activation,
-      Java-aligned single-target statuses, Sungrass healing-over-time, Warden-sensitive variants,
-      Icecap/Rotberry blob diffusion, Dewcatcher's 3-6 distinct dewdrops, Seedpod's 2-4 generated
-      seeds, Lotus seed preservation, Fadeleaf freeing a rooted hero (and teleporting movable mobs),
-      non-hero plant activation, and Earthroot's real block *pool* (`HT` points absorbing
-      `min(damage, (scalingDepth+5)/2)` per hit, ended by exhaustion or leaving the cell) - which
-      also corrected the Entanglement glyph, previously modelled as a cripple lock on the attacker
-      instead of the same pool on the defender. **Closed 2026-09-17:** teleport presentation - `ScrollOfTeleportation.appear`'s own visuals (TELEPORT sample when either endpoint is seen, `Speck.LIGHT` bursts at a visible non-hero departure and at the arrival when seen or hero, sprite 0-to-1 fade over 0.4s unless invisible) play through a shared `playTeleportAppear` at every random-teleport site (scroll, Fadeleaf hero/mob, Displacing/Displacement, Beacon zap, Blink, Golem, necromancer recall, PhaseShift), with the gating pinned in `verifySimulation.mjs` (`simulation/teleportAppear`); the stagger (3 particles over 0.2s) collapses to one burst and the camera-follow release has no counterpart. **Closed 2026-09-17:** TimeBubble per-char ownership - a mob stepping on Swiftthistle banks its own seven rapid turns (`Creature.timeBubbleTurns`, zero-cost through `monsterTurnCost`, ticked in `afterMonsterTurn`, persisted through save/load) instead of freezing the hero's world; the hero's global bubble and its delayed presses are untouched, and the mob's detach fires nothing since presses only ever land in the hero's bubble. **Closed 2026-09-17:** Sungrass's monster
-      `Health` pool and Earthroot's monster armor pool are now the real Java shapes
-      (`simulation/plantPools`, granted in `triggerMobPlantAt`, ticked/absorbed in
-      `takeMonsterTurn`/`attack()`, persisted through save/load), and the full dew-collection rules (triangular Dewcatcher/Seedpod counts, entrance-cell exclusion; heap-stacking stays with the stacking-heaps item), the `HazardAssistTracker` system (50-turn mob mark from every modelled hazard producer, 10-assist badge), and exact teleport destinations (respawn-cell FOV/secret/pit constraints on the shared search, `IMMOVABLE_KINDS` mob gate, PhaseShift wander-beckon, TimeBubble disarm-on-transition). See `PORT_COVERAGE.md`.
-- [x] Implement the remaining Java seed and dew behavior in high grass. **Closed 2026-09-16** once the
-      three things it named were each checked rather than carried: the waterskin/dewdrop interaction was
-      already ported and exact, the boss-challenge flag was a whole unported badge rule (now its own item
-      in section 6), and the furrowed visual was reachable-but-collapsed and now draws its own art. The
-      one genuine remainder, Java's `fx` bolt animation for the growth cone, is the *wand's* presentation
-      rather than seed/dew behaviour and is tracked with the wand's own row in `PORT_COVERAGE.md`.
-      Original text follows. Live: real seed payloads and
-      planting, `WandOfRegrowth`'s charge-scaled regional growth over Java's own `ConeAOE`
-      (`src/mechanics/cone.ts`, a line-for-line translation), Lotus spawn/expiry/preservation, and
-      Huntress furrowed state persisting across floor saves. **Corrected 2026-09-16: two of the three
-      things this line listed were not gaps in *this* item, and one was not a gap at all.** The
-      waterskin/dewdrop interaction is ported and exact (verified against `Dewdrop.doPickUp`/
-      `Waterskin.execute(AC_DRINK)`: the drop goes into the flask while it has room, `dropsNeeded` is
-      `missingHealthPercent/0.05` with the same `ceil(x - 0.01)` and `gate(1, …, volume)` clamp, the
-      `SHIELDING_DEW` top-up makes the same shield `min`-trimmed heal split, and only the
-      `VialOfBlood.delayBurstHealing()` clause is missing - that item does not exist here). The
-      "Dwarf King's boss-challenge-badge flag" is not a grass gap at all: it is the whole
-      **`BOSS_CHALLENGE` badge**, whose real rule is a *weapon-only* boss kill - `qualifiedForBossChallengeBadge`
-      is set true at all five boss fights' starts (`CavesBossLevel`/`CityBossLevel`/`HallsBossLevel`/
-      `PrisonBossLevel`/`SewerBossLevel`'s own `progress()`/`seal()`), cleared when the hero deals
-      any damage that is not a plain weapon hit (each boss's `damage()` override: `DwarfKing.java`
-      459-467 clears on unarmed-without-`RingOfForce`, on any `Wand` except `WandOfLightning`, and on
-      a `ClericSpell`; `Goo`/`DM300`/`Pylon`/`Tengu`/`YogDzewa` have their own sites), and awarded at
-      that boss's death - so it belongs with the badges, not here, and it is a real piece of work
-      rather than a flag: this port's badge catalogue is its own smaller set (one boss badge per
-      chapter, `src/badges.mwl`) with no `BOSS_CHALLENGE_1..5` in it, and clearing the flag needs a
-      damage-*source* notion at every boss's damage sites, which this port's inline monster-damage
-      paths do not thread today. What actually remains here is Java's `fx` animation for the wand's
-      growth. **The furrowed visual is no longer simplified (2026-09-16)**: this line claimed the
-      two states shared one frame, and `foregroundGrassFrame` shows they did not - it already
-      returns Java's own cuts (`152`/`156` for `FURROWED_GRASS` against `151`/`155` for
-      `HIGH_GRASS`), but nothing could reach the furrowed pair, because the renderer's terrain value
-      collapsed both kinds onto the high-grass constant before consulting the raw grid. The live
-      `visualTerrainAt` now answers `30` for a furrowed cell from the state the floor already
-      persists, so a Huntress's trampled grass draws its own art; pinned two ways
-      (`verifyVault.mjs` recomputes the four frame numbers, and
-      `tools/scratch/furrowed-grass-livecheck.mjs` reads the live value, 3/3). What stays coarse,
-      and is the stated remainder here: the *flat* ground layer still renders both kinds with one
-      frame (`terrainFrameAt` returns the shared grass frame, where Java's
-      `FLAT_FURROWED_GRASS` is its own cut) - only the raised/foreground overlay distinguishes
-      them. **Complexity: S.**
-- [x] Match hunger and starvation damage exactly (`Hunger.act()`'s real `partialDamage` fractional
-      accrual and crossing-into-STARVING 1-damage hit, replacing the former flat "every 10 turns"
-      guess). Java has no attack-delay/accuracy penalty while merely hungry beyond the log line, so
-      there is no further penalty to match there.
-- [x] Match stealth, invisibility, surprise, and attack-delay systems exactly. Ported: sleeping
-      wake-ups roll the real `1/(distance+stealth)` detection gated on the mob's own sight, with
-      Silent Steps and levitation as their real never-wake immunities; the negative-buff wake (any
-      real negative-type buff wakes a sleeping monster unconditionally, no roll, even out of sight);
-      the WANDERING notice roll; persistent random-destination patrol state including save/load and
-      piranhas' water restriction; and the whole invisibility half - `Preparation` is a real state
-      (the attack's damage roll is replaced by the best of 1-3 rolls plus 10/20/35/50% at 1/3/5/9
-      turns invisible, read before the invisibility dispel, and the execute fires only while it is
-      up) plus its blink action (a real toolbar action attacking in place or stepping to the cheapest
-      free cell beside a visible hostile, refusing an unreachable or rooted case with Java's own
-      message). Surprise gating ported 2026-09-17 (thrown/unarmed/STR/flail plus the invisible
-      disjunct, hero-only). **Closed 2026-09-17:** `Mob`'s wound-instead-of-surprise presentation
-      wound-instead-of-surprise presentation (`Mob.defenseProc` - `HIT_STRONG` plus the red `Wound` slash with Preparation up, the `!` otherwise) and the ranged invisibility gate (`selectRangedTarget` skips invisible hero/allies, pinned in `verifySimulation.mjs`). **Closed 2026-09-17:** boss-specific ranged target migration - the Eye's `deathGaze` strikes every char on its beam (hero, ally or enemy) with the per-victim hit roll and 30-50 damage plus the `Aggression` rule, instead of the hero-only simplification; the Warlock-zap `Aggression` site stays unreachable-by-design (documented on the Aggression row).
-      See `PORT_COVERAGE.md`'s sleeping/wandering and `Preparation` rows.
-- [x] Implement shield decay. `Barrier.act()`'s real `min(1,shielding/20)`-per-turn proportional
-      curve runs every hero turn against the shared `heroBarrier` pool, and `Blocking` owns a
-      separate `blockingBarrier` pool with `ShieldBuff.shieldUsePriority = 2` draining before
-      `heroBarrier`'s priority-0 pool in `absorbHeroDamage`, exempt from the proportional accrual,
-      with max-semantics and an always-reset 5-turn timer (plus a load-time carve-out migration for
-      pre-two-pool saves). **Remaining**: `HoldFast.buffDecayFactor()` scaling of both clocks and the
-      `ProvokedAngerTracker` a fully-broken shield grants (both need the section 6 talent systems),
-      and Healing-over-time beyond Sungrass.
+Fully closed - moved to `CLOSED.md`. Kept as a numbered heading (rather than removed outright)
+because other bullets in this file cross-reference "section 7" by number; renumbering everything
+below to close the gap was judged not worth the churn against those existing references.
 
 ## 8. Complete UI and input parity
 
@@ -1131,8 +1025,9 @@ rules or data across the licensing boundary.
 
 ## 12. Build and toolchain
 
-- [x] Check Rollup code-splitting (`build.rollupOptions.output.manualChunks`, https://rollupjs.org/configuration-options/#output-manualchunks). **Closed 2026-09-18 as a deliberate non-adoption**: the 28 MB `game.js` is 57% inlined base64 assets (192 `data:` URIs), which must ship regardless, so `manualChunks` changes the file count rather than the total bytes - while breaking the single classic-`<script>` `file://` model (one entry tag rewritten by `tools/emit.mjs`, no loader, no fetch) for zero local-load benefit. The >500 kB warning is accepted and recorded in `vite.config.ts`'s own comment.
-- [x] Check MWL "native" compiler usage. **Closed 2026-09-18: already on the recommended path, nothing to adopt.** `tools/compile-mwl.mjs` drives the framework's own `mwg/mwl` library (`compileSources`, `validateCatalog`, `contentCatalog`, deterministic `compileAndEmitSources`), and its game-owned extras (cross-table validators, the four extra emitted modules in `ARTIFACT_PATHS`) are exactly what `mwg/tools/mwl.mjs`'s own doc comment prescribes over the CLI's intentionally-closed `build` (standard three artifacts only): a game's own small script against the public library API *is* the extension point, and this port already is that script.
+Fully closed - moved to `CLOSED.md`. Kept as a numbered heading (rather than removed outright)
+because this is the last numbered roadmap section and preserves its section identity in release
+notes and cross-references.
 
 ## Definition of done
 
