@@ -486,10 +486,21 @@ was judged not worth the churn against those existing references.
 - [ ] Match Java talent timing, identification, recharge, and threshold rules. Tier-4 threshold
       timing is now real (the tier's window, its `armorAbility == null` gate and its point curve are
       Java's `Hero.talentPointsAvailable(4)` rather than the earlier "T4 is never granted"
-      simplification). The rest of this line is open. **Complexity: M.**
+      simplification), and Test Subject/Tested Hypothesis now proc on every identify event
+      through one shared helper (2026-09-18). Java's `onTalentUpgraded` rank-2 identify of
+      *equipped* gear is deliberately not reproduced - equipped fields carry no identified
+      flag here, so it has no observable target (see the spend site's comment). The rest of
+      this line is open. **Complexity: M.**
 - [ ] Complete class-specific item and ability behavior. `SuckerPunchTracker` is ported (the Rogue
       surprise bonus uses Java's `Random.IntRange(points, 2)` once per stable enemy, with save/load
-      and death cleanup). The rest of this line is open. **Complexity: M.**
+      and death cleanup). **Closed 2026-09-18, two halves**: Nature's Power now speeds the bow
+      itself (`SpiritBow.speedMultiplier()`'s `+= (8 + GROWING_POWER)/24` as a bow-shot-only
+      turn-cost divisor), and the bow branch's leftover `1 + 0.2*rank` Point Blank *damage*
+      bonus is deleted while gaining the real accuracy factor (Point Blank is accuracy-only
+      in Java - the 2026-09-15 correction had fixed the throw path but missed the bow).
+      `SpiritArrow`'s infinite-accuracy clause stays unported as a correct-by-construction
+      non-gap (it needs a bow augment plus a sniper special, neither of which exists here).
+      The rest of this line is open. **Complexity: M.**
 - [x] Port the `BOSS_CHALLENGE` badge set - the weapon-only boss kill. **Closed 2026-09-17: both halves this line called missing were already live, and only the documentation said otherwise.** The five badge rows exist (`boss_challenge_1..5` in `src/content/badges.mwl` - the "no `BOSS_CHALLENGE` rows" claim was stale, as was the `src/badges.mwl` path, which is really `src/content/badges.mwl`), the flag is set at all five fight starts, the damage-*source* notion the line said was missing is threaded (wand branch, unarmed branch, bomb seam, armor-ability seam, all clearing through `disqualifyBossChallenge`), and the award fires at each boss's death with the flag persisted through save/load. This was recorded for a while
       under section 7's seed/dew item as "the Dwarf King's boss-challenge-badge flag", which it is
       not: it is Java's `Badges.Badge.BOSS_CHALLENGE_1..5`, awarded at a boss's death while

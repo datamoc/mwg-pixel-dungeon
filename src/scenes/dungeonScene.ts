@@ -1032,7 +1032,15 @@ export class DungeonScene extends Scene2D {
 	private readonly heroActions: HeroActionPorts = {
 		isParalysed: () => !!this.hero.buffs['paralysis'] || !!this.hero.buffs['frost'],
 		beginTurn: () => { this.awaitingInput = false; this.settleEndure(); },
-		spendTurn: (turnCost?: number) => { if (this.freeTurnNext) this.freeTurnNext = false; else this.spendHeroTurn(turnCost); },
+		spendTurn: (turnCost?: number) => {
+			//A Nature's-Powered bow shot stashes its own speed divisor (see `useSpecial`'s
+			//bow branch): it divides this spend only, then clears - including on a free
+			//turn, so a banked divisor can never leak into a later action's cost.
+			const bowDivisor = this.pendingBowNpDivisor;
+			this.pendingBowNpDivisor = null;
+			if (this.freeTurnNext) this.freeTurnNext = false;
+			else this.spendHeroTurn(bowDivisor !== null ? (turnCost ?? 1) / bowDivisor : turnCost);
+		},
 		announceParalysis: () => this.say(t('actors.buffs.paralysis.heromsg'), 'negative'),
 		search: () => this.searchForSecrets(),
 		attempts: {
@@ -1778,6 +1786,9 @@ export class DungeonScene extends Scene2D {
 	/** Target latched by the thrown-weapon cell picker. The confirmed callback re-enters
 	 * `useSpecial`, keeping ammo, warning, hit, and durability resolution in one path. */
 	private specialTarget: Creature | null = null;
+	/** One-shot Nature's-Power bow-speed divisor, set by `useSpecial`'s bow branch and
+	 * consumed by the `spendTurn` port above. Transient aim state, never persisted. */
+	private pendingBowNpDivisor: number | null = null;
 	/** Latched weapon-ability strike target: `beginAiming` confirms it and re-enters `useWeaponAbility`, exactly like `specialTarget` above. Transient aim state, never persisted. */
 	private abilityAimTarget: Creature | null = null;
 	/** Cell latched by the bomb's map picker; cleared before the item-domain resolver runs. */
@@ -7193,8 +7204,26 @@ export class DungeonScene extends Scene2D {
 			}
 		} else {
 			//SpiritBow.damageRoll: a normal hit roll, but the base damage is scaled by
-			//distance (min(3, 1.2 * 1.125^(distance-1))) before armor is subtracted
-			if (!rollHit(this.hero, target)) {
+			//distance (min(3, 1.2 * 1.125^(distance-1))) before armor is subtracted.
+			//`MissileWeapon.accuracyFactor()` covers the bow too - `SpiritBow` inherits it,
+			//so the adjacent `0.5 + 0.25*POINT_BLANK` / distance `1.5` factor applies here
+			//(the sniperSpecial + DAMAGE-augment infinite clause has no bow-augment system
+			//to read, so the plain factor always applies). Point Blank is accuracy-only in
+			//Java: the `1 + 0.2*rank` damage bonus this branch used to add at close range
+			//never existed (it appears exactly once in Java, in `adjacentAccFactor`).
+			//`SpiritBow.speedMultiplier()` while Nature's Power is up (tag `v3.3.8`): the bow
+			//gains `(8 + GROWING_POWER)/24` speed additively. Turn costs spend through the
+			//shared `spendTurn` port below, so the shot stashes its divisor for that port to
+			//consume - sniper specials are exempt in Java, but none exist here, so no gate.
+			if (this.naturesPowerTurns > 0) {
+				this.pendingBowNpDivisor = 1 + (8 + this.talentRank('growing_power')) / 24;
+			}
+			const bowAccFactor = missileAdjacentAccFactor(
+				Roguelike.chebyshevDistance(this.hero, target) === 1,
+				true,
+				this.talentRank('point_blank'),
+			);
+			if (!rollHit(this.hero, target, false, false, bowAccFactor)) {
 				this.say(t('port.log.arrowmisses', { target: target.name }), 'negative');
 			} else {
 				const distance = Roguelike.chebyshevDistance(this.hero, target);
@@ -7205,9 +7234,8 @@ export class DungeonScene extends Scene2D {
 				const sharpshooting = ringSharpshootingBonus(this.equippedRing, this.hero.magicImmune);
 				const base = Random.normalRange(special.damage[0] + sharpshooting, special.damage[1] + 2 * sharpshooting);
 				const dr = Random.normalRange(target.armor[0], target.armor[1]);
-				const closeBonus = this.talentRank('point_blank') > 0 && distance <= 2 ? 1 + 0.2 * this.talentRank('point_blank') : 1;
 				const momentum = projectileMomentumBonus(this.subclass(), this.talentRank('projectile_momentum'), this.projectileMomentumReady);
-				const damage = Math.max(0, Math.round(base * multiplier * (this.subclass() === 'sniper' ? 1.15 : 1) * closeBonus) - dr) + momentum;
+				const damage = Math.max(0, Math.round(base * multiplier * (this.subclass() === 'sniper' ? 1.15 : 1)) - dr) + momentum;
 				this.projectileMomentumReady = false;
 				target.hp -= damage;
 				this.showDamage(target, damage);
@@ -15981,6 +16009,13 @@ private eyeBeamTurn(monster: Creature): boolean {
 				if (rank < def.maxRank && this.talentPoints[tierIndex] > 0) {
 					this.talentPoints[tierIndex]--;
 					this.talentRanks[def.id] = rank + 1;
+					//`Talent.onTalentUpgraded()`'s rank-2 intuition identify (tag `v3.3.8`)
+					//has no observable target here and is deliberately not reproduced: it
+					//identifies the *equipped* armor/rings/weapon, but equipped fields in
+					//this model carry no identified flag (bag items do) and are always
+					//fully populated - swapped-out gear even returns `identified: true`.
+					//The incoming piece is still identified at equip time (see
+					//`items/equipment.ts`), which is the only identify with a target.
 					this.syncHeroFromStats();
 					this.say(t('port.log.talentspent', { stat: t(`actors.hero.talent.${def.id}.title`) }), 'positive');
 					this.refresh();
