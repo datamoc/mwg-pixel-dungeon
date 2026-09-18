@@ -13240,16 +13240,19 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//tests the target's HP against `AttackLevel.KOThreshold()`'s table, indexed by the level
 		//reached (1/3/5/9 turns invisible) and the `enhanced_lethality` rank, with a strict `<`
 		//and one fifth of the threshold for a `BOSS`/`MINIBOSS`. `CombinedLethality` (`543-545`)
-		//excludes those two properties outright and uses `<= 0.4*points/3`. What the two mechanics
-		//still read differently from Java: the test here is the *predicted* post-hit HP
-		//(`defender.hp - damage`, pre-shield) rather than the HP `damage()` actually left, so a
-		//shielded defender can be executed a little earlier than Java would; and
+		//excludes those two properties outright and uses `<= 0.4*points/3`. Both mechanics test
+		//the HP the hit actually leaves: every reduction above (curves, shields, pools, the
+		//grass cut) lands in `damage` before this point, so `defender.hp - damage` is what the
+		//`defender.hp -= damage` below writes - there is no pre-shield prediction here. Both
+		//also require the hit to have left the target alive (`predictedHp > 0`, Java's own
+		//`enemy.isAlive()` check after `damage()` returned): a hit that already kills reports
+		//the kill below, not an execution. What remains unmodelled is only
 		//`CombinedLethality`'s own arming gate (the attacking weapon must have changed since the
-		//tracker was set) is not modelled. See `PORT_COVERAGE.md`'s `attack()`-tail ordering row.
+		//tracker was set). See `PORT_COVERAGE.md`'s `attack()`-tail ordering row.
 		const predictedHp = defender.hp - damage;
 		const combinedThreshold = defender.boss === true || defender.miniboss === true
 			? 0 : 0.4 * this.talentRank('combined_lethality') / 3;
-		const combinedLethality = combinedThreshold > 0 && predictedHp <= defender.maxHp * combinedThreshold;
+		const combinedLethality = combinedThreshold > 0 && predictedHp > 0 && predictedHp <= defender.maxHp * combinedThreshold;
 		const assassinLethality = attacker.prepLevel !== undefined && predictedHp > 0 && preparationCanKo(
 			predictedHp, defender.maxHp, attacker.prepLevel,
 			this.subclass() === 'assassin' ? this.talentRank('enhanced_lethality') : 0,

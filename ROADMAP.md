@@ -812,9 +812,11 @@ one.
       called once at Java's point - which fixed a real ordering bug and surfaced three more ordering
       deviations in `Char.attack()`, all now closed (Corrupting's pre-curve guard, both execute
       mechanics after the curves and shield pools, and the boss/miniboss half-damage branch with a
-      real `miniboss` actor property). **Still approximated**: the execute test uses the predicted
-      post-hit HP rather than the HP `damage()` actually leaves (so a shielded defender can be
-      executed slightly early), and `CombinedLethality`'s weapon-changed arming gate is unmodelled.
+      real `miniboss` actor property). **Still approximated (narrowed 2026-09-18)**: only
+      `CombinedLethality`'s weapon-changed arming gate is unmodelled. The "predicted HP" half
+      was a misreading - every reduction lands in `damage` before the test, so the tested
+      value is what the HP write leaves - and both execute halves now carry Java's
+      `enemy.isAlive()` guard, so a killing blow no longer also reports an execution.
       **Complexity: L.**
 - [x] Compare `mwg/i18n` against the plan's section 22C "Semantic Messaging" shape before committing
       to SPD-ADR-012. It matches (`SemanticMessage`/`MessageChannel`/`MessageFormatter`/
