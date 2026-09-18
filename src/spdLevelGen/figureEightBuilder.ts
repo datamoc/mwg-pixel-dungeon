@@ -54,7 +54,8 @@ export class FigureEightBuilder extends RegularBuilder {
 	private randomBranchAngle = (r: Room): number => {
 		const center = this.firstLoop.includes(r) ? this.firstLoopCenter : this.secondLoopCenter;
 		if (center === null) return SpdRandom.floatRange(0, 360);
-		let toCenter = angleBetweenPoints({ x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2 }, center!);
+		// Java measures from a `float` PointF (`(left+right)/2f`) - narrow here.
+		let toCenter = angleBetweenPoints({ x: Math.fround((r.left + r.right) / 2), y: Math.fround((r.top + r.bottom) / 2) }, center!);
 		if (toCenter < 0) toCenter = Math.fround(toCenter + 360);
 
 		let currAngle = SpdRandom.floatRange(0, 360);

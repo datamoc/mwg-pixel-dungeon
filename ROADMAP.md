@@ -720,12 +720,14 @@ scripts targeted. **Triage 2026-09-17:** the Java side is real and runnable afte
 SPD checkout's `desktop:runHarness` task (Temurin JDK 21, offline Gradle build green) dumps 36
 reference blocks (4 seeds x depths 1-9: room graph plus paint maps), and `npm run parity:levelgen`
 diffs this port's own generator against them (`tools/levelgenParity.ts`, standalone - it needs the
-Java checkout, so it stays out of `verify`). Settled result: 22/28 on depths 3+ fully identical
-(feelings, exact room-rect sets, painted maps); the 6 diffs are all localized - every depth-5 Goo
-arena (71-111 cells of decoration fill), seed999999999999/depth9 halls (207), dominated by
-water/grass/floor and wall-deco/empty-deco swaps, plus one structural outlier, seed42/depth8
+Java checkout, so it stays out of `verify`). Settled result: 26/28 on depths 3+ fully identical
+(feelings, exact room-rect sets, painted maps); the 2 remaining diffs are seed999999999999/depth9
+(207 cells, water/grass/door/trap cascade with matching graph - first divergence is grass at row 2,
+then door picks at rows 7/18/22) plus one structural outlier, seed42/depth8
 (different dims, disjoint rects - but the same room-kind multiset, so selection matches and only
-placement/sizing diverges). Depths 1-2 print as UNSTABLE and stay out of the count: Java drops
+placement/sizing diverges). Fixed since the 22/28 count: all four depth-5 Goo arenas (arena
+`center()` spawn draws, `GooBossRoom.canMerge() == false`, Diamond/Walled `canPlaceWater() ==
+false` - see PORT_COVERAGE.md). Depths 1-2 print as UNSTABLE and stay out of the count: Java drops
 the guidebook pages with an intentionally unseeded generator, so even Java-vs-Java is not
 reproducible there (the heap shifts `paintGrass` draws). Probe details: TS room-kind labels ride
 on `PortedFloor.rooms` for kind-level triage, and both sides rtrim trailing chasm before the

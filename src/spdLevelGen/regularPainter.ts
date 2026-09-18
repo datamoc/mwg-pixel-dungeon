@@ -108,6 +108,12 @@ const SOLID = new Set<number>([
 	Terrain.LOCKED_EXIT, Terrain.SIGN, Terrain.STATUE, Terrain.STATUE_SP, Terrain.ALCHEMY,
 ]);
 function canMergeAt(level: PaintLevel, room: Room, p: { x: number; y: number }, mergeTerrain: number): boolean {
+	// `GooBossRoom.canMerge()` is unconditional `false` - the arena never merges, so its
+	// doors are always written. Missing this merged the arena into neighbours wherever the
+	// shared border allowed it (found via the depth-5 parity probe: Java keeps a door on the
+	// arena/Empty seam that this port swallowed, shifting every later paint draw).
+	if (room.standardKind === 'gooDiamond' || room.standardKind === 'gooWalled'
+		|| room.standardKind === 'gooThinPillars' || room.standardKind === 'gooThickPillars') return false;
 	if (room.kind === 'entrance' || (room.kind === 'standard' && (room.standardKind === 'sewerPipe' || room.standardKind === 'hallway'))) return false;
 	if (room.kind !== 'standard' && room.kind !== 'exit') return false; // special/shop/secret/connection stand-ins: Room.canMerge() base is false
 	const cell = level.pointToCell(room.pointInside(p, 1));
@@ -401,7 +407,8 @@ export function paintStandaloneTerrain(
 
 /**
  * `Room.canPlaceWater`/`canPlaceGrass` overrides among the 14 reachable classes: only
- * `SewerPipeRoom` (`canPlaceWater` always false) and `BurnedRoom` (`canPlaceWater`/
+ * `SewerPipeRoom` (`canPlaceWater` always false), `DiamondGooRoom`/`WalledGooRoom`
+ * (`canPlaceWater` always false) and `BurnedRoom` (`canPlaceWater`/
  * `canPlaceGrass` both false inside its scorched patch - `PatchRoom.patch`/`xyToPatchCoords`)
  * differ from the base `Room` (`true` everywhere inside the room rect). `BurnedRoom`'s patch
  * array isn't threaded out of its own paint module this pass, so its water/grass exclusion is
@@ -411,6 +418,11 @@ export function paintStandaloneTerrain(
  */
 function canPlaceWaterAt(r: Room, x: number, y: number): boolean {
 	if (r.kind === 'standard' && r.standardKind === 'sewerPipe') return false;
+	// `DiamondGooRoom`/`WalledGooRoom.canPlaceWater()` are unconditional `false` (their
+	// EMPTY interiors stay dry; only their painted water bands hold water). The pillar
+	// variants need no override - their interiors paint solid WATER, leaving no EMPTY
+	// candidate cells. Found via the depth-5 parity probe (seed 1's Walled arena filled).
+	if (r.kind === 'standard' && (r.standardKind === 'gooDiamond' || r.standardKind === 'gooWalled')) return false;
 	if (r.kind === 'standard' && r.standardKind === 'burned') return outsidePatch(r, x, y);
 	// SecretRunestoneRoom.canPlaceWater() always false (its EMPTY_SP reading nook must stay dry).
 	if (r.kind === 'secret' && r.secretKind === 'runestone') return false;

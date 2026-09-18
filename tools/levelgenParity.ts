@@ -36,7 +36,10 @@ function parseJavaDump(text: string): JavaBlock[] {
 		rawBlocks[bi] = rawLines.join('\n');
 	}
 	for (const raw of rawBlocks) {
-		const lines = raw.split('\n');
+		// `DIAG ` lines are Java-harness graph triage detail (builder class, placement-order
+		// room list) - stripped before the head/kinds/rects/map parse below; used for manual
+		// same-kinds/different-layout diffs, never for automated comparison.
+		const lines = raw.split('\n').filter((l) => !l.startsWith('DIAG '));
 		const head = lines[0]!.match(/seed=(\S+) depth=(\d+) attempts=(\d+) feelingRoll=(-?\d+) feeling=(\S+) rooms=(\d+) traps=(\d+)/);
 		if (!head) throw new Error(`unparseable block head: ${lines[0]}`);
 		const kinds = lines[1]!.replace(/^room kinds:\s*/, '').split(/,\s*/);

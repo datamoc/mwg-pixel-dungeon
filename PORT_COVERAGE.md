@@ -2456,6 +2456,58 @@ stalled for several passes.
    `new Gold().random()`, as the argument expression in both branches. The port had gold first,
    so each draw fed the other's decision.
 
+### Depth-5 Goo-arena pass: deterministic parity 22/28 to 26/28
+
+The section-9 probe (`npm run parity:levelgen`, 4 seeds x depths 1-9) had all four depth-5
+blocks red with matching room graphs - same rects, same attempts - but 71-111 shifted
+interior-decoration cells each. Three source-confirmed fixes, all in the boss-arena paint path:
+
+1. **All four Goo arena variants skipped their boss-spawn `center()` draws.** Every Java
+   variant ends `paint()` with `boss.pos = level.pointToCell(center())` (`DiamondGooRoom:65,
+   `WalledGooRoom:63`, `ThinPillarsGooRoom:~66`, `ThickPillarsGooRoom:55`), and `center()`
+   burns `Random.Int(2)` per odd axis. The mob itself stays `main.ts`'s job, but the draws
+   burn mid-paint-stream via `burnGooSpawnDraws()` - skipping them shifted every water/grass/
+   deco roll after the arena. The module comment's old "zero `Random.*` calls" claim was
+   wrong and now says so.
+2. **`GooBossRoom.canMerge()` (unconditional `false`) was missing.** `canMergeAt()` treated
+   the arena as an ordinary standard room, so it merged into neighbours wherever the shared
+   border allowed - swallowing doors Java writes (seed 42's arena/Empty seam door at x19) and
+   shifting every later paint draw. Grepped all `canMerge` overrides to check for siblings:
+   `EntranceRoom`/`SewerPipeRoom`/`HallwayRoom` (false) and `RuinsRoom` (true) were already
+   handled, `BridgeRoom`/`WalkwayRoom`/`RingBridgeRoom` only merge into CHASM (this flow merges
+   EMPTY, so the standing never-merge is correct for them), and the `StandardRoom` interior
+   check matches.
+3. **`DiamondGooRoom`/`WalledGooRoom.canPlaceWater()` (unconditional `false`) was missing.**
+   Their EMPTY interiors filled with Patch water Java never offers (seed 1's Walled arena grew
+   a 3-wide water blob). The pillar variants need no override - their interiors paint solid
+   WATER, leaving no EMPTY candidate. The `canPlaceWaterAt` doc comment's override list now
+   names them so it cannot go stale again.
+
+Result: all four depth-5 blocks are MAP EXACT MATCHES (123456789: 81 cells to 0, 42: 111 to 0,
+999999999999: 80 to 0, 1: 71 to 0 across the two fixes). Two deterministic diffs remain:
+seed42/depth8 (graph-stage: same 17-room kind multiset, disjoint rects, attempts 1 both sides -
+RNG core, initRooms, setupRooms, LoopBuilder, placeRoom, findFreeSpace, connect and all
+sizeCatProbs verified matching by reading; root cause still open) and
+seed999999999999/depth9 (207 cells, matching graph, first divergence grass at row 2, then door
+picks at rows 7/18/22 - RotGarden/Crypt/ToxicGas/Honeypot/Segmented/CellBlock paints all
+verified draw-faithful by reading; still open).
+
+Two RNG-arithmetic fidelity fixes banked along the way (no parity movement, kept as genuine
+correctness): `SpdRandom.normalIntRange` now mirrors Java's float op-for-op
+(`min + (int)((Float() + Float()) * (max - min + 1) / 2f)`, frounding the sum and product,
+truncating like the `(int)` cast - the double-precision version could sit across an integer
+boundary from Java's value and flip a `setSize()` dimension); and `placeRoom`/
+`angleBetweenRooms`/`angleBetweenPoints`/both builders' `randomBranchAngle` now narrow their
+`PointF` midpoints to `float` like Java's `(left+right)/2f` construction instead of carrying
+double precision into `b` and the branch angles.
+
+Triage tooling: the Java harness dump grew placement-order `DIAG` lines (builder class plus
+`class:sizeCat:rect` per room - post-paint-shuffle order, since `RegularPainter.paint()`
+shuffles in place before painting) and `tools/levelgenParity.ts` strips them before comparing,
+so old and new dumps both parse. They confirmed seed42/depth8's builder (Loop both sides),
+all-NORMAL sizeCats, and attempts 1 both sides - which is why that block's cause is still open
+rather than misattributed.
+
 ### A verification-tooling bug worth knowing about
 
 `tools/scratch/cmp.mjs` was itself wrong for `Feeling.CHASM` floors, in two ways, and its numbers

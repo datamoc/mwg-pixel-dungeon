@@ -72,8 +72,10 @@ const A = 180 / Math.PI;
 
 /** Angle in degrees made by the centerpoints of 2 rooms, 0 being straight up. */
 export function angleBetweenRooms(from: Room, to: Room): number {
-	const fromCenter = { x: (from.left + from.right) / 2, y: (from.top + from.bottom) / 2 };
-	const toCenter = { x: (to.left + to.right) / 2, y: (to.top + to.bottom) / 2 };
+	// Java builds `float` PointFs (`(left+right)/2f`) before measuring - the centers
+	// narrow here, not inside `angleBetweenPoints` (whose params arrive already float).
+	const fromCenter = { x: Math.fround((from.left + from.right) / 2), y: Math.fround((from.top + from.bottom) / 2) };
+	const toCenter = { x: Math.fround((to.left + to.right) / 2), y: Math.fround((to.top + to.bottom) / 2) };
 	return angleBetweenPoints(fromCenter, toCenter);
 }
 
@@ -83,7 +85,8 @@ export function angleBetweenRooms(from: Room, to: Room): number {
  * following `-= 180f` is itself float arithmetic on an already-float value - both need `fround`.
  */
 export function angleBetweenPoints(from: { x: number; y: number }, to: { x: number; y: number }): number {
-	const m = (to.y - from.y) / (to.x - from.x);
+	// Java's `(to.y-from.y)/(to.x-from.x)` divides two `float` differences - narrow each.
+	const m = Math.fround(Math.fround(to.y - from.y) / Math.fround(to.x - from.x));
 	let angle = Math.fround(A * (Math.atan(m) + Math.PI / 2.0));
 	if (from.x > to.x) angle = Math.fround(angle - 180);
 	return angle;
@@ -113,7 +116,10 @@ export function placeRoom(collision: Room[], prev: Room, next: Room, angleDeg: n
 	let angle = Math.fround(angleDeg % 360);
 	if (angle < 0) angle = Math.fround(angle + 360);
 
-	const prevCenter = { x: (prev.left + prev.right) / 2, y: (prev.top + prev.bottom) / 2 };
+	// Java's `prevCenter` is a `PointF`: both components narrow to `float` here, and the
+	// extra double-precision bits this carried before shifted `b` (and hence `start` and
+	// every room placed downstream) whenever a midpoint sum was not float-exact.
+	const prevCenter = { x: Math.fround((prev.left + prev.right) / 2), y: Math.fround((prev.top + prev.bottom) / 2) };
 
 	const m = Math.tan(angle / A + Math.PI / 2.0);
 	const b = prevCenter.y - m * prevCenter.x;

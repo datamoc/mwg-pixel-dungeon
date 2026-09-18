@@ -108,8 +108,16 @@ export class SpdRandom {
 	static int(max: number): number { return max > 0 ? this.top().nextInt(max) : 0; }
 	static intRange0(min: number, max: number): number { return min + this.int(max - min); }
 	static intRange(min: number, max: number): number { return min + this.int(max - min + 1); }
+	/**
+	 * Random.NormalIntRange: min + (int)((Float() + Float()) * (max - min + 1) / 2f) -
+	 * every op is float in Java, then a truncating (int) cast. The double-precision
+	 * version this replaced could land on the other side of an integer boundary from
+	 * Java’s float-rounded value, flipping a setSize() dimension by one.
+	 */
 	static normalIntRange(min: number, max: number): number {
-		return min + Math.floor((this.float() + this.float()) * (max - min + 1) / 2);
+		const sum = Math.fround(this.float() + this.float());
+		const scaled = Math.fround(sum * (max - min + 1));
+		return min + Math.trunc(scaled / 2);
 	}
 	static long(): bigint { return this.top().nextLong(); }
 

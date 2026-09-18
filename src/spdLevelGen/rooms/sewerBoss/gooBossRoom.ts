@@ -1,10 +1,13 @@
 /**
  * Port of `levels/rooms/sewerboss/GooBossRoom.java` and its 4 concrete subclasses
  * (`DiamondGooRoom`/`WalledGooRoom`/`ThinPillarsGooRoom`/`ThickPillarsGooRoom.java`). Every
- * `paint()` here is pure geometry - zero `Random.*` calls, confirmed by reading all four Java
- * files - so the only RNG this room type contributes to the graph stage is its `StandardRoom`
- * instance-initializer `setSizeCat()` roll (via `STANDARD_ROOM_META`'s `sizeCatProbs: [0,1,0]`,
- * forcing LARGE) and `randomGooBossKind()`'s own `Random.Int(4)` pick below.
+ * `paint()` here is pure geometry EXCEPT the boss-spawn `center()` call each Java variant
+ * ends with (`boss.pos = level.pointToCell(center())`, burning `Random.Int(2)` per odd axis).
+ * The mob itself is still `main.ts`'s job (below), but the draws burn here via
+ * `burnGooSpawnDraws()` - skipping them desynced all four depth-5 probe blocks. The other
+ * RNG this room type contributes is its `StandardRoom` instance-initializer `setSizeCat()`
+ * roll (via `STANDARD_ROOM_META`'s `sizeCatProbs: [0,1,0]`, forcing LARGE) and
+ * `randomGooBossKind()`'s own `Random.Int(4)` pick below.
  *
  * `GooBossRoom.setupGooNest()`'s `GooNest` custom tilemap (a purely decorative floor texture
  * under the boss) is NOT ported - it has no gameplay effect and this port has no equivalent
@@ -46,6 +49,17 @@ function fillDiamondRoom(level: PaintLevel, room: Room, m: number, value: number
 	fillDiamond(level, room.left + m, room.top + m, room.width() - m * 2, room.height() - m * 2, value);
 }
 
+/**
+ * `boss.pos = level.pointToCell(center())`: every Goo arena variant ends `paint()` by
+ * spawning the boss at the room's (possibly jittered) center, and `center()` burns
+ * `Random.Int(2)` per odd axis. The mob itself is `main.ts`'s job (module comment), but
+ * these draws sit mid-paint-stream and must burn here - skipping them desynced all four
+ * depth-5 probe blocks' water/grass/deco. Found via the Java-vs-TS parity probe.
+ */
+function burnGooSpawnDraws(room: Room): void {
+	room.center();
+}
+
 export function paintGooDiamondRoom(level: PaintLevel, room: Room): void {
 	fillRoom(level, room, Terrain.WALL);
 	fillDiamondRoom(level, room, 1, Terrain.EMPTY);
@@ -68,6 +82,7 @@ export function paintGooDiamondRoom(level: PaintLevel, room: Room): void {
 
 	fillXY(level, room.left + Math.floor(room.width() / 2) - 1, room.top + Math.floor(room.height() / 2) - 2, 2 + (room.width() % 2), 4 + (room.height() % 2), Terrain.WATER);
 	fillXY(level, room.left + Math.floor(room.width() / 2) - 2, room.top + Math.floor(room.height() / 2) - 1, 4 + (room.width() % 2), 2 + (room.height() % 2), Terrain.WATER);
+	burnGooSpawnDraws(room);
 }
 
 export function paintGooWalledRoom(level: PaintLevel, room: Room): void {
@@ -97,6 +112,7 @@ export function paintGooWalledRoom(level: PaintLevel, room: Room): void {
 
 	fillXY(level, room.left + Math.floor(room.width() / 2) - 1, room.top + Math.floor(room.height() / 2) - 2, 2 + (room.width() % 2), 4 + (room.height() % 2), Terrain.WATER);
 	fillXY(level, room.left + Math.floor(room.width() / 2) - 2, room.top + Math.floor(room.height() / 2) - 1, 4 + (room.width() % 2), 2 + (room.height() % 2), Terrain.WATER);
+	burnGooSpawnDraws(room);
 }
 
 export function paintGooThinPillarsRoom(level: PaintLevel, room: Room): void {
@@ -128,6 +144,7 @@ export function paintGooThinPillarsRoom(level: PaintLevel, room: Room): void {
 		if (!door) continue;
 		door.set(DoorType.REGULAR);
 	}
+	burnGooSpawnDraws(room);
 }
 
 export function paintGooThickPillarsRoom(level: PaintLevel, room: Room): void {
@@ -148,4 +165,5 @@ export function paintGooThickPillarsRoom(level: PaintLevel, room: Room): void {
 		if (!door) continue;
 		door.set(DoorType.REGULAR);
 	}
+	burnGooSpawnDraws(room);
 }
