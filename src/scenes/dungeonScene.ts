@@ -145,7 +145,7 @@ import {
 	SPD_TERRAIN_TO_GAME_KIND,
 	type PortedFloor,
 } from '../spdLevelGen/gameBridge';
-import { CAVES_BOSS_ARENA, CAVES_EXIT_CELL, CITY_BOTTOM_DOOR, CITY_EXIT_CELL, CITY_IMP_SHOP, CITY_TOP_DOOR, HALLS_EXIT_CELL, PRISON_ARENA, PRISON_TENGU_CELL, PRISON_TENGU_CELL_CENTER, PRISON_TENGU_CELL_DOOR, prisonBossArena, prisonBossEnd, prisonBossPause } from '../spdLevelGen/bossLevels';
+import { CAVES_BOSS_ARENA, CAVES_EXIT_CELL, CITY_BOTTOM_DOOR, CITY_EXIT_CELL, CITY_IMP_SHOP, CITY_THRONE, CITY_TOP_DOOR, HALLS_EXIT_CELL, PRISON_ARENA, PRISON_TENGU_CELL, PRISON_TENGU_CELL_CENTER, PRISON_TENGU_CELL_DOOR, prisonBossArena, prisonBossEnd, prisonBossPause } from '../spdLevelGen/bossLevels';
 import { hallsCenterPieceLayer, hallsCenterWallLayer } from '../spdLevelGen/hallsBossVisuals';
 import { cityGroundDescKey, cityGroundLayer, cityGroundNameKey, cityWallLayer } from '../spdLevelGen/cityBossVisuals';
 import { RITUAL_MARKER_DESC_KEY, RITUAL_MARKER_NAME_KEY, insideRitualMarker, ritualMarkerLayer } from '../spdLevelGen/ritualMarkerVisuals';
@@ -1817,6 +1817,11 @@ export class DungeonScene extends Scene2D {
 	private currentBoss: Creature | null = null;
 	/** `BossHealthBar.bleed`: true once the tracked boss drops under 25% HP */
 	private bossBleeding = false;
+	/** `BossHealthBar.bleed(true)` latched at a phase transition (King P3, Yog P5 - see
+	 * `kingPhaseRules` and `kill`'s fist branch): Java latches the flag rather than deriving
+	 * it from the HP fraction, so a shielded King or a fresh P5 Yog bleeds immediately.
+	 * Reset whenever the tracked boss changes or dies. */
+	private bossBleedLatched = false;
 	private badgeBanner!: BadgeBannerLayer;
 	/** Item selected from the inventory panel; consumed by the next matching action. */
 	private requestedItemId: string | null = null;
@@ -2782,6 +2787,11 @@ export class DungeonScene extends Scene2D {
 			const skeletonIndex = state.creatures[i].skeletonIndex;
 			if (skeletonIndex !== undefined) restored[i].skeleton = restored[skeletonIndex] ?? null;
 		}
+		//`BossHealthBar.bleed(true)` is transition-latched, not HP-derived: a save loaded
+		//into King P3 or Yog P5 re-latches from the persisted phase (see `bossBleedLatched`).
+		this.bossBleedLatched = restored.some((creature) =>
+			(creature.kind === 'king' && (creature.kingPhase ?? 1) === 3)
+			|| (creature.kind === 'yog' && (creature.yogPhase ?? 1) === 5));
 		//The turn queue itself: `Scheduler.restore` puts back `now`, the `sequence` counter and each
 		//entry's time/sequence/priority, so a load resumes the exact queue instead of re-deriving one.
 		//Actors are looked up by the same keys `captureActiveFloor` wrote - `mob-<index>` into the
@@ -12053,8 +12063,10 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * full-HP shield and escalating ghoul/monk/warlock/golem waves that chip him as they land
 	 * (`KingDamager` HT/12, HT/18 on the challenge); at shield 0, P3 bleeds (the bar's own
 	 * 25% tint covers it), summons while fewer than 4 adds stand, and yells once under 20 HP.
-	 * Not modeled: throne geometry (he stands his ground instead of teleporting to it), the
-	 * LloydsBeacon upgrade (this port has no beacon artifact), and presentation
+	 * P1->P2 teleports him onto `CITY_THRONE` with the shared appear presentation (Java's own
+	 * `ScrollOfTeleportation.appear(this, CityBossLevel.throne)`); the `IMMOVABLE` pin itself
+	 * stays immobile-by-return (no per-instance seam - see the rule below).
+	 * Not modeled: the LloydsBeacon upgrade (this port has no beacon artifact), and presentation
 	 * (particles/sounds). P3 now defers every incoming hit into Viscosity's pool instead of HP
 	 * (`deferMonsterDamage`/`tickMonsterDeferredDamage`). The King's Crown drop is granted on his death (see `kill`'s king
 	 * branch) - it enters the bag directly because the port moves to the next floor at that same
@@ -12125,6 +12137,25 @@ private eyeBeamTurn(monster: Creature): boolean {
 					king.kingPhase = 2;
 					king.kingSummonsMade = 0;
 					king.kingShield = king.maxHp;
+					//`DwarfKing.damage()`'s P1->P2 branch teleports the King onto
+					//`CityBossLevel.throne` (`ScrollOfTeleportation.appear(this, ...)` before the
+					//`Property.IMMOVABLE` pin, tag `v3.3.8`); the throne cell here is `CITY_THRONE`
+					//(`arena.center()`), and the appear presentation arrives through the shared
+					//`playTeleportAppear`. Per-instance IMMOVABLE has no seam (`IMMOVABLE_KINDS`
+					//is a kind-level MWL set), so the pin itself stays the existing
+					//immobile-by-return in `takeKingTurn`, which likewise ends at P3 when the
+					//phase falls through to movement again.
+					const throne = { x: CITY_THRONE.x, y: CITY_THRONE.y };
+					const throneFrom = { x: king.x, y: king.y };
+					const throneOccupant = this.creatureAt(throne.x, throne.y);
+					const throneSpot = throneOccupant && throneOccupant !== king
+						? this.freeCellNear(throne)
+						: throne;
+					if (throneSpot) {
+						king.x = throneSpot.x;
+						king.y = throneSpot.y;
+						this.playTeleportAppear(throneFrom, throneSpot, king);
+					}
 					for (const add of [...this.kingAdds]) if (add.hp > 0) this.kill(add);
 					this.kingLinkedAdds.clear();
 					this.say(t('port.log.kingphase2'), 'warning');
@@ -12137,6 +12168,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 				action: () => {
 					king.kingPhase = 3;
 					king.kingSummonsMade = 1;
+					//`DwarfKing.damage()` calls `BossHealthBar.bleed(true)` on entering phase 3
+					//(tag `v3.3.8`) - see `bossBleedLatched`.
+					this.bossBleedLatched = true;
 					this.say(t('actors.mobs.dwarfking.enraged', { '0': t(CLASS_KEYS[this.heroClass]) }), 'warning');
 				},
 				once: true,
@@ -12285,8 +12319,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * HT-300*phase; the damage hook below scales them to this fight). Fists make Yog
 	 * untouchable (`isInvulnerable` - see `yogShielded`) but do NOT hold its beams:
 	 * Java aims and fires DeathGaze every turn regardless of fists, and keeps
-	 * summoning regulars on a catch-up float cooldown; the fistless-P5 bleed remains
-	 * unmodeled.
+	 * summoning regulars on a catch-up float cooldown. The fistless-P5 bleed is Java's
+	 * own `BossHealthBar.bleed(true)` in `processFistDeath` - a bar flag, not damage over
+	 * time - and it arrives through `bossBleedLatched` (see `kill`'s fist branch).
 	 */
 	private takeYogTurn(yog: Creature): void {
 		//`YogDzewa.act()`'s phase-0 dormancy: risen but unseeing, Yog spends each turn idle
@@ -12337,6 +12372,12 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (yog.yogBeamCd <= 0) {
 			yog.yogTargeted = this.aimYogDeathGaze(yog);
 			yog.yogBeamCd = Math.max(2, Random.normalRange(10, 15) - Math.max(0, (yog.yogPhase ?? 1) - 1));
+			//`YogDzewa.act()` spends `GameMath.gate(TICK, ceil(hero.cooldown()), 3*TICK)` on the
+			//aiming turn and calls `Dungeon.hero.interrupt()` (tag `v3.3.8`) - the same gated
+			//expression the newborn telegraph uses through `pendingMonsterTurnCost`, and the same
+			//drop-the-auto-travel stand-in the talisman site uses for the interrupt.
+			this.pendingMonsterTurnCost = Math.min(3, Math.max(1, Math.ceil(this.getAttackTurnCostMod())));
+			this.travelTarget = null;
 		}
 	}
 
@@ -14667,14 +14708,15 @@ private eyeBeamTurn(monster: Creature): boolean {
 			}
 		}
 		//YogDzewa.processFistDeath(): the last fist's death at phase 4 opens phase 5 (hope
-		//yell, minion burst, bleed). The burst needs larva/ripper mobs this port doesn't
-		//have, so only the yell fires here; bleed rides the bar's own 25% tint and the
-		//cadence is already every turn.
+		//yell, a -15 minion-burst debt that `takeYogTurn`'s summon loop spends down over the
+		//following turns, and `BossHealthBar.bleed(true)` - a bar flag, latched here, not
+		//damage over time).
 		if (creature.kind === 'yogFist') {
 			const yog = this.creatures.find((c) => c.kind === 'yog' && c.hp > 0);
 			if (yog && (yog.yogPhase ?? 1) === 4 && !this.creatures.some((c) => c.kind === 'yogFist' && c.hp > 0)) {
 				yog.yogPhase = 5;
 				yog.yogSummonCd = -15;
+				this.bossBleedLatched = true;
 				this.say(t('actors.mobs.yogdzewa.hope'), 'warning');
 			}
 		}
@@ -15097,6 +15139,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 */
 	private refreshHealthBars(): void {
 		const boss = this.creatures.find((creature) => creature.kind && BOSSES[this.depth]?.kind === creature.kind);
+		if ((boss ?? null) !== this.currentBoss) this.bossBleedLatched = false;
 		this.currentBoss = boss ?? null;
 		if (boss && boss.hp > 0) {
 			this.bossChrome.visible = true;
@@ -15105,9 +15148,11 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.bossNameLabel.text = `${Math.max(0, boss.hp)}/${boss.maxHp}`;
 			const fraction = boss.hp / boss.maxHp;
 			this.bossHealthBar.setValue(Math.max(0, fraction));
-			//`BossHealthBar.bleed`: a one-shot colour swap when HP crosses 25%, not a
-			//continuous flash - Java's own `update()` only re-tints on the boolean's *edge*
-			const bleeding = fraction < 0.25;
+		//`BossHealthBar.bleed`: a one-shot colour swap when HP crosses 25%, not a
+		//continuous flash - Java's own `update()` only re-tints on the boolean's *edge*.
+		//`bossBleedLatched` ORs in the transition-latched `bleed(true)` (King P3, Yog P5),
+		//which Java sets regardless of the HP fraction.
+		const bleeding = fraction < 0.25 || this.bossBleedLatched;
 			if (bleeding !== this.bossBleeding) {
 				this.bossBleeding = bleeding;
 				this.bossHealthBar.setColor(bleeding ? 0xff7777 : 0xffffff);
@@ -15118,6 +15163,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.bossHealthBar.visible = false;
 			this.bossNameLabel.visible = false;
 			this.bossBleeding = false;
+			this.bossBleedLatched = false;
 		}
 		for (const creature of this.creatures) {
 			const hurt = creature.hp < creature.maxHp && creature.hp > 0;
