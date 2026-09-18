@@ -12787,7 +12787,16 @@ private eyeBeamTurn(monster: Creature): boolean {
 		}
 		if (moved) this.triggerMobTrapAt(creature);
 		if (creature.hp <= 0) return;
-		if (moved && this.triggerMobPlantAt(creature)) return;
+		//`triggerMobPlantAt` returns `true` for almost every branch it takes (including the
+		//"no plant here after all" case), but only `fadeleaf` actually relocates the creature
+		//(and manually places its sprite at the teleport destination). The other branches
+		//(grass, Sorrowmoss, Firebloom, ...) leave the creature genuinely standing at `to`, so
+		//returning on every truthy result used to skip the tween below for them too - the
+		//sprite never slid to its new tile and sat one step behind the creature's real
+		//position permanently (found from a live report: a snake's sprite three tiles from
+		//where it was actually standing, close enough to land a real hit that looked like it
+		//came from nowhere). Only skip when the creature's position no longer matches `to`.
+		if (moved && this.triggerMobPlantAt(creature) && (creature.x !== to.x || creature.y !== to.y)) return;
 		if (this.level.get(to.x, to.y) === WATER) this.waterSurface?.ripple(to.x, to.y);
 		if (creature.isHero) {
 			const heal = rejuvenatingStepHeal(this.level.get(to.x, to.y), GRASS, this.hero.hp, this.hero.maxHp, this.talentRank('rejuvenating_steps'));

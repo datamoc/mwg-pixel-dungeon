@@ -2576,6 +2576,37 @@ byte-identical revert, until the daemon re-reads the unchanged cached script), s
 to live in `LevelGenHarness.java` (an ordinary `javac` recompile, unaffected) rather than the
 build script.
 
+### Monster sprites silently stopped tracking their own logical position (2026-09-18)
+
+Found from a live player report: a monster attacked from what looked like empty floor several
+tiles away, with a screenshot showing a rat apparently standing on a wall/bridge tile above the
+room it was actually in. Live diagnostics (`window.__MWG__.currentScene` dumping each creature's
+`x`/`y` against its sprite's actual pixel position) confirmed it precisely: a snake logically
+adjacent to the hero (able to land the hit the player saw) had its sprite drawn three tiles away.
+
+Root cause, in `moveTo` (`src/scenes/dungeonScene.ts`): `if (moved && this.triggerMobPlantAt(creature)) return;`
+skips the sprite-tween code below it whenever `triggerMobPlantAt` returns `true` - and that
+function returns `true` on **every single call for every non-hero, non-NPC, living creature**,
+plant or no plant (`if (!kind) return true;` when there is none, and every switch branch for
+every real plant kind falls through to the same `return true` at the function's end). Only its
+`fadeleaf` branch actually needs the caller to skip anything (it manually teleports the creature
+and places its sprite at the destination itself); every other outcome - including "there was no
+plant at all" - left the creature's logical `x`/`y` updated immediately while its sprite stayed
+frozen at wherever it was one turn behind, silently, forever, since nothing ever corrected it on
+a later step (each subsequent move re-triggers the same early return). This affected essentially
+every wandering, hunting or fleeing monster's on-screen position to some degree - the ones a
+player is watching move across several tiles the most, which is exactly the pattern the report
+matched.
+
+Fixed by checking whether the creature actually ended up somewhere other than `to` (which is true
+only for the `fadeleaf` teleport) rather than treating any truthy return as "something happened,
+skip the visual move": `if (moved && this.triggerMobPlantAt(creature) && (creature.x !== to.x || creature.y !== to.y)) return;`.
+Browser-verified live: forcing a rat one tile over showed its sprite's pixel position land
+exactly on the new tile (`480,416` for the move to `(30,26)` at `TILE=16`) where it would
+previously never have moved from its spawn tile at all, since `triggerMobPlantAt` returning
+`true` unconditionally for every step meant the tween never ran for any monster, ever, not only
+near plants. See `moveTo`'s own comment.
+
 ### A verification-tooling bug worth knowing about
 
 `tools/scratch/cmp.mjs` was itself wrong for `Feeling.CHASM` floors, in two ways, and its numbers
