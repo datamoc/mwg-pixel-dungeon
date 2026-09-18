@@ -138,8 +138,8 @@ export class StatusPane extends Container {
 		frame.resize(PANE_WIDTH, 36);
 		frame.scale.set(SCALE);
 		this.addChild(frame);
-		// HeroSprite.avatar(class, tier): the 12x15 tier row matching the worn armor,
-		// centred at StatusPane's (15,16). Tier rows run 1-5; the sheet is 12x15 cells.
+		// HeroSprite.avatar(class, tier): the 12x15 tier-row cell matching the worn armor
+		// (rows 0-6, see `update`'s own note), centred at StatusPane's (15,16).
 		this.avatarSheet = heroSheet;
 		this.avatar = new Sprite(new Texture({ source: heroSheet.source, frame: new Rectangle(1, 15, 12, 15) }));
 		this.avatar.scale.set(SCALE);
@@ -225,8 +225,13 @@ export class StatusPane extends Container {
 			this.large = wantLarge;
 			this.scale.set(wantLarge ? 1.5 : 1);
 		}
-		//Armor-dependent portrait: tier rows 1-5 select the avatar's 12x15 cell.
-		const tier = Math.max(1, Math.min(5, state.armorTier ?? 1));
+		//Armor-dependent portrait: `HeroSprite.avatar(class, tier)` is the 12x15 cell of the
+		//worn-tier row on the hero's own class sheet - `Hero.tier()` 0 (no armor) through 6
+		//(`ClassArmor`), `new Rectangle(1, tier*15, 12, 15)`. Both ends are unreachable here
+		//(armor is never unequipped to nothing, class armor is not a ported item), but the
+		//rule itself is Java's exact 0..6 clamp. The `HeroDisguise` class-swap branch has no
+		//source here either (its only producer is the unported `CursedWand` random effect).
+		const tier = Math.max(0, Math.min(6, state.armorTier ?? 1));
 		if (tier !== this.lastAvatarTier) {
 			this.lastAvatarTier = tier;
 			this.avatar.texture = new Texture({ source: this.avatarSheet.source, frame: new Rectangle(1, tier * 15, 12, 15) });

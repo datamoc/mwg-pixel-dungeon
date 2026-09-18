@@ -673,7 +673,11 @@ was judged not worth the churn against those existing references.
 - [ ] Implement large interface-size layouts. **Complexity: M.**
 - [ ] Port the hero information window, busy indicator, talent animations, and quick slots.
       **Complexity: M.**
-- [ ] Support armor-dependent hero portraits and complete sprite/effect animations.
+- [ ] Complete sprite/effect animations. (Split 2026-09-18: the armor-dependent hero
+      portrait half is closed - `statusPane.ts` now draws `HeroSprite.avatar()`'s exact rule,
+      the class sheet's own `(1, tier*15, 12, 15)` cell under Java's 0..6 clamp, with tiers
+      0/6 and the `HeroDisguise` swap recorded unreachable rather than missing. What remains
+      here is the animation half, which has no renderer seam.)
       **Complexity: M.**
 - [x] Audit every static `t('port.*')` call site against `portStrings.ts`'s EN/FR tables. A script
       walk found 45 keys missing from EN and 47 from FR - all fixed (window titles, victory/defeat
