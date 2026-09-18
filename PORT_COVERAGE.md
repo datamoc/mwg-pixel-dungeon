@@ -1923,6 +1923,24 @@ harness's own sequential-depth loop) changes the picture substantially:
   favor of re-testing with sequential depth order before drawing conclusions about which
   seed/depth combos actually diverge.
 
+**One of the flagged `createBranches` failure/retry-bookkeeping candidates above is now
+confirmed and fixed (2026-09-18), found via the section-9 RNG-trace divergence-index work**:
+`RegularBuilder.createBranches()` was a real `void` where Java's is `boolean` -
+`failedBranchAttempts` (incremented on either of the two failure branches inside the method)
+and its `> 100` give-up threshold did not exist at all in this port, so there was no way for
+this method to ever signal failure and no way for `LoopBuilder`/`FigureEightBuilder.build()` to
+return `null` and let `buildRoomGraph`'s existing 200-attempt retry loop reroll the whole room
+graph the way Java's outer loop does - the retry machinery was already there and already
+correctly wired to a `null` builder result, just never reachable from this one path. Fixed by
+giving `createBranches` Java's real `boolean` return and threshold, and both builders now check
+it. **Verified not to be the root cause of either still-open seed/depth diff** (seed42/depth8,
+seed999999999999/depth9 - traced via `setTraceStackWindow` to their exact divergence draw
+indices, 321 and 22626 respectively, both inside `createBranches`'s per-branch retry loop but at
+points where `failedBranchAttempts` never approaches 100 for either seed) - `attempts` stays 1
+on both sides before and after this fix for every currently-tested seed/depth, so the fix is a
+real, independent correctness gap closed rather than a fix for the two open diffs, which remain
+open with their exact divergence points now on record for whoever picks this up next.
+
 **Sub-pass 8/9 (follow-up): three more real, source-confirmed bugs, found via call-by-call trace
 diffing against the harness (temporary `BuilderTrace`/`trace()` logging added to both sides,
 compared line-by-line for `seed=123456789 depth=1`'s single-room `connectingRooms` mismatch, then

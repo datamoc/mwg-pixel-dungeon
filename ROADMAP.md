@@ -681,9 +681,16 @@ RNG bug - see `PORT_COVERAGE.md`), and `generateFloor()` was genuinely burning `
 twice per floor (a redundant pure re-derivation, harmless to shared state but doubling the
 trace). With both fixed, all 26 matching-output floors on depths 3+ are now confirmed
 `TRACE-IDENTICAL` - true RNG-call-order equality, not just coincidentally-matching final maps -
-and the two still-open floors have exact divergence draw indices (seed42/depth8 at draw 321,
-seed999999999999/depth9 at draw 22626, both inside `paintMazeConnection`'s maze-growing loop)
-ready for a future pass to narrow further. Still genuinely unstarted: RNG-call-order comparison
+and the two still-open floors have exact divergence draw indices: seed42/depth8 at draw 321,
+inside `RegularBuilder.createBranches`'s per-branch retry loop (`LoopBuilder.randomBranchAngle`
+on the TS side at that exact position; Java is a `bits=31` `Random.element` draw there instead,
+meaning an actual different-shaped call, not just a different value); seed999999999999/depth9
+at draw 22626, inside `paintMazeConnection`'s maze-growing loop. Chasing the first index closed
+a real, separately-documented suspect from an earlier audit pass: `createBranches` was a `void`
+where Java's is `boolean` (`failedBranchAttempts > 100` gives up and lets the caller's builder
+return `null`, retrying the whole room graph) - fixed, though confirmed *not* the cause of
+either open diff (`failedBranchAttempts` never approaches 100 for these two seeds), so both
+remain open for a future pass. Still genuinely unstarted: RNG-call-order comparison
 beyond levelgen, and loot/quest/boss-transition/save-load comparison.
 
 - [ ] Compare both implementations with fixed seeds and identical action traces. **Complexity: XL.**

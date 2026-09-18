@@ -69,12 +69,24 @@ export class RegularBuilder {
 		}
 	}
 
-	/** Places `roomsToBranch` into branches off `branchable`. The three arrays may overlap. */
-	createBranches(rooms: Room[], branchable: Room[], roomsToBranch: Room[], connChances: number[], depth: number, randomBranchAngle: (r: Room) => number): void {
+	/**
+	 * Places `roomsToBranch` into branches off `branchable`. The three arrays may overlap.
+	 *
+	 * Returns `false` (`RegularBuilder.createBranches`'s real signature - this port's own
+	 * `void` was a real gap, found via the section-9 RNG-call-order trace tool) once
+	 * `failedBranchAttempts` passes 100, matching Java's give-up threshold. Without it, a
+	 * pathological branch-placement failure had no way to abandon this attempt and let the
+	 * outer `buildRoomGraph` retry loop reroll the whole room graph - `LoopBuilder`/
+	 * `FigureEightBuilder.build()` must return `null` on a `false` here, same as Java's
+	 * `if (!createBranches(...)) return null;`.
+	 */
+	createBranches(rooms: Room[], branchable: Room[], roomsToBranch: Room[], connChances: number[], depth: number, randomBranchAngle: (r: Room) => number): boolean {
 		let i = 0;
 		let connectionChances = connChances.slice();
+		let failedBranchAttempts = 0;
 
 		while (i < roomsToBranch.length) {
+			if (failedBranchAttempts > 100) return false;
 			const r = roomsToBranch[i];
 			const connectingRoomsThisBranch: Room[] = [];
 
@@ -121,6 +133,7 @@ export class RegularBuilder {
 			}
 
 			if (failed || connectingRoomsThisBranch.length !== connectingRooms) {
+				failedBranchAttempts++;
 				continue;
 			}
 
@@ -138,6 +151,8 @@ export class RegularBuilder {
 					const idx = rooms.indexOf(t);
 					if (idx !== -1) rooms.splice(idx, 1);
 				}
+				connectingRoomsThisBranch.length = 0;
+				failedBranchAttempts++;
 				continue;
 			}
 
@@ -154,5 +169,7 @@ export class RegularBuilder {
 
 			i++;
 		}
+
+		return true;
 	}
 }

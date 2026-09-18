@@ -130,7 +130,7 @@ export class LoopBuilder extends RegularBuilder {
 		const branchable = loop.slice();
 		const roomsToBranch = [...this.multiConnections, ...this.singleConnections];
 		this.weightRooms(branchable);
-		this.createBranches(rooms, branchable, roomsToBranch, this.branchTunnelChances, depth, this.randomBranchAngle);
+		if (!this.createBranches(rooms, branchable, roomsToBranch, this.branchTunnelChances, depth, this.randomBranchAngle)) return null;
 
 		findNeighbours(rooms);
 
