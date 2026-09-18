@@ -41,8 +41,13 @@ export default defineConfig({
 		outDir: 'dist',
 		rollupOptions: { output: { format: 'iife', entryFileNames: 'game.js' } },
 		cssCodeSplit: false,
-		//every sprite/tileset PNG is inlined as a base64 data: URI rather than a separate
-		//file - the built page has to run from file://, which blocks fetch() entirely
+		//No `manualChunks` code-splitting (ROADMAP section 12, closed 2026-09-18): the 28 MB
+		//`game.js` is 57% inlined base64 assets (192 `data:` URIs), which must ship regardless,
+		//so splitting changes the file count, not the total bytes - while breaking the single
+		//classic-`<script>` `file://` model (one entry tag rewritten by `tools/emit.mjs`, no
+		//loader, no fetch) for zero local-load benefit. The >500 kB warning is accepted.
+		//Every sprite/tileset PNG is inlined as a base64 data: URI rather than a separate
+		//file - the built page has to run from file://, which blocks fetch() entirely.
 		assetsInlineLimit: Number.MAX_SAFE_INTEGER,
 	},
 });
