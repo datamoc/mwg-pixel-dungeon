@@ -448,15 +448,20 @@ was judged not worth the churn against those existing references.
       corrected against the real source (Lethal Haste, Weapon Recharging, Farsight, Arcane Vision,
       `POINT_BLANK` - an accuracy factor and nothing else, applied inside `adjacentAccFactor` - and,
       in the 2026-09-09 audit, Hearty Meal, Sucker Punch, Aggressive Barrier and the per-tier
-      talent-point pools, which had wrongly been one shared pool). Test Subject/Tested Hypothesis/
-      Swift Equip are genuine talents. `Iron Will`'s invented flat-damage-reduction stand-in is
+      talent-point pools, which had wrongly been one shared pool). Test Subject/Tested
+      Hypothesis are port-original talents, kept deliberately (see `PORT_COVERAGE.md`'s talent
+      row: absent from `Talent.java` and the `actors` strings at `v3.3.8`/`v4.0.0`/master);
+      Swift Equip is genuine. `Iron Will`'s invented flat-damage-reduction stand-in is
       replaced by the real `BrokenSeal` shield mechanic. Cleric's entire talent tree is Mage's copied
       verbatim, documented as such in `src/talents.ts`, not replaced - a real tree needs the Cleric's
       own Holy Lantern/spell mechanics first. **Remaining**: everything blocked on systems this port
       lacks (SoulMark/Wraith for Necromancer's Minions, a real Cleric tree;
-      `durable_tips` dropped off this list 2026-09-17 - tipped darts are live). **Methodology note worth keeping**: check `src/generated/spdMessages.ts`'s own real
+      `durable_tips` dropped off this list 2026-09-17 - tipped darts are live). **Methodology note worth keeping, amended 2026-09-18**: check `src/generated/spdMessages.ts`'s own real
       `actors.hero.talent.*` strings before concluding a talent id is invented - an earlier audit
-      checked only two Java tags and wrongly declared several real talents fabricated. See
+      checked only two Java tags and wrongly declared several real talents fabricated - but catalogue
+      presence alone does not prove upstream existence either: Test Subject/Tested Hypothesis ship
+      full catalogue text in all 19 locales yet exist in no checkable Java source, so the final
+      check is always the Java code/tags themselves. See
       `PORT_COVERAGE.md`'s talent rows. **Complexity: L.**
 - [x] Implement rune transfer and shared-enchantment behavior. **Closed 2026-09-17: both named halves were already live - the "rune transfer" title has no other referent in code, coverage or Java's hero/talent sources (the only "rune" there is the Runestone/Recall-Inscription line), so it reads as the bow-enchantment transfer `shared_enchantment` performs.** Sniper's `shared_enchantment` proc is
       live for thrown hits with Java's `Random.Int(3) < points` gate and explicit ranged attack
@@ -466,7 +471,7 @@ was judged not worth the churn against those existing references.
       talents each); the King's Crown's own `WEAR` action opens SPD's real choice panel, with
       `ClassArmor.upgrade()`'s state changes (charge starting at Java's 50, the four rank-4 talents
       registered, `Hero.talentPointsAvailable(4)`'s exact curve) and the charge meter regrowing at
-      `ClassArmor.Charger`'s `100/500` per tick times the Ring of Energy multiplier. **Seven
+      `ClassArmor.Charger`'s `100/500` per tick times the Ring of Energy multiplier. **Ten
       abilities are fully ported, formulas included, and browser-verified**: the Warrior's Heroic
       Leap/Shockwave/Endure, the Rogue's Death Mark and Smoke Bomb, the Huntress's Spectral Blades/
       Nature's Power/Spirit Hawk, the Mage's Warp Beacon, the Duelist's Feint. **Still open, and
@@ -697,6 +702,11 @@ was judged not worth the churn against those existing references.
       SPD's own translations in all 19 locales, every call site (both DM300 lines, both
       pickaxe lines, the MWL action row, both sign lines, all three journal tab lines, the
       title-screen badges button) is re-pointed, and the old names are referenced nowhere.
+      That same regen must also preserve the two port-original talent string sets
+      (`actors.hero.talent.test_subject.*`, `actors.hero.talent.tested_hypothesis.*` - see
+      the talent row: no SPD source has them, so a source-faithful regen would silently drop
+      both talents' names and descriptions in all 19 locales; carry them explicitly, ideally
+      migrated to `port.*` keys).
       The same pass cleared six more source keys that resolved in no catalog at all (the
       real huntress `spirithawk.no_space`, the real recycle `inv_title` with an open-always
       picker, the generic `armorability.no_target` for both abilities - see
