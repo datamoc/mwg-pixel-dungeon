@@ -9,7 +9,7 @@ export interface EquipWandContext {
 	frostWand: boolean;
 	wandCharges: Actors.Charges;
 	talentRank(id: string): number;
-	/** `Talent.TEST_SUBJECT`/`TESTED_HYPOTHESIS` on any newly-identified item. */
+	/** Test Subject / Tested Hypothesis on any newly-identified item (see the row). */
 	procIdentifyTalents(): void;
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
 }

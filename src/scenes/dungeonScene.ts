@@ -20768,13 +20768,17 @@ private eyeBeamTurn(monster: Creature): boolean {
 	}
 
 	/**
-	 * `Talent.TEST_SUBJECT`/`TESTED_HYPOTHESIS` (`Talent.java`): "whenever" the Warrior/Mage
-	 * identifies an item - any identify event, not just the scroll. Every identify site
-	 * (the scroll below, the intuition rank-2 equips in `items/equipment.ts` and
-	 * `items/equipWand.ts`) routes through here; each site guards on the item being newly
-	 * identified, since Java's `Item.identify()` no-ops on an already-known item. Banked on
-	 * a full pool the advance is discarded - MWG's `Charges` drops progress at cap - so a
-	 * wand-equip identify (whose pool just reset full) runs the helper but banks nothing.
+	 * `test_subject`/`tested_hypothesis` on any identify event, not just the scroll. Every
+	 * identify site (the scroll below, the intuition rank-2 equips in `items/equipment.ts`
+	 * and `items/equipWand.ts`) routes through here; each site guards on the item being
+	 * newly identified. PROVENANCE FLAG (2026-09-18): no upstream source for either talent
+	 * could be found - absent from `Talent.java` and the `actors` strings at tags `v3.3.8`
+	 * and `v4.0.0` and on master - so the "real Java talent" claim the coverage row used to
+	 * carry is withdrawn pending a decision (see the row). The shared-helper shape stands
+	 * regardless: whatever their source, all of this port's identify events behave alike.
+	 * Banked on a full pool the advance is discarded - MWG's `Charges` drops progress at
+	 * cap - so a wand-equip identify (whose pool just reset full) runs the helper but
+	 * banks nothing.
 	 */
 	private procIdentifyTalents(): void {
 		//Real `test_subject`: "+1: heals 2 HP on identify, +2: heals 3 HP" - `heal + 1`.

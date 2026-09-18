@@ -12,7 +12,7 @@ export interface RingEquipmentContext {
 	equippedRing: EquippedRing | null;
 	ringHtBonus: number;
 	talentRank(id: string): number;
-	/** `Talent.TEST_SUBJECT`/`TESTED_HYPOTHESIS` on any newly-identified item. */
+	/** Test Subject / Tested Hypothesis on any newly-identified item (see the row). */
 	procIdentifyTalents(): void;
 	itemDisplayName(id: string, identified: boolean, instanceId?: string): string;
 	syncHeroFromStats(): void;
@@ -75,7 +75,7 @@ export interface GearEquipmentContext {
 	setWeaponAffix(affix: string | null): void;
 	setArmorGlyph(glyph: string | null): void;
 	talentRank(id: string): number;
-	/** `Talent.TEST_SUBJECT`/`TESTED_HYPOTHESIS` on any newly-identified item. */
+	/** Test Subject / Tested Hypothesis on any newly-identified item (see the row). */
 	procIdentifyTalents(): void;
 	syncHeroFromStats(): void;
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
