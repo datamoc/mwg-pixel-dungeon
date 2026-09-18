@@ -887,6 +887,9 @@ interface SaveShape {
 	physicalBonusDamage?: number;
 	physicalBonusAttacks?: number;
 	patientStrikeReady?: boolean;
+	holdFastX?: number | null;
+	holdFastY?: number | null;
+	preciseAssaultReady?: boolean;
 	healingEvasionTurns?: number;
 	sungrassHealing?: number;
 	sungrassPartial?: number;
@@ -1568,6 +1571,20 @@ export class DungeonScene extends Scene2D {
 	private physicalBonusDamage = 0;
 	private physicalBonusAttacks = 0;
 	private patientStrikeReady = false;
+	/** `Talent.HOLD_FAST`'s `HoldFast.pos`: the cell the hero was standing on when they last
+	 * waited, granting `NormalIntRange(0, 2*points)` bonus armor while they stay put -
+	 * `HoldFast.act()` detaches it the instant `target.pos` no longer matches, which this port
+	 * models by simply comparing against the hero's *current* position rather than tracking a
+	 * live buff object; the one gap this leaves is a hero who waits, walks away, then walks
+	 * back onto the exact same cell without waiting again - Java's buff would already have
+	 * detached, this port's check re-lights it. Null while inactive (never waited, or moved). */
+	private holdFastX: number | null = null;
+	private holdFastY: number | null = null;
+	/** `Talent.PreciseAssaultTracker`: armed by `armPreciseAssault()`, consumed by the next
+	 * normal attack's accuracy roll. Simplified to a plain flag rather than Java's own
+	 * `hero.cooldown()+4f`-turn expiry (a Duelist's next attack is almost always well inside
+	 * that window regardless), matching this port's existing `patientStrikeReady` precedent. */
+	private preciseAssaultReady = false;
 	private healingEvasionTurns = 0;
 	/** Sungrass' Java Health buff: healing is gradual and ends when the hero moves. */
 	private sungrassHealing = 0;
@@ -1579,6 +1596,11 @@ export class DungeonScene extends Scene2D {
 	private freeTurnNext = false;
 	private followupTarget: Creature | null = null;
 	private followupDamage = 0;
+	/** `Talent.DeadlyFollowupTracker`: marked by a thrown hit, consumed by the next melee hit
+	 * on the *same* target for `round(dmg * (1 + 0.08*points))`. Java also excludes
+	 * `SpiritBow.SpiritArrow` throws from marking it - structurally unreachable here, since
+	 * the Duelist (the only class with this talent) has no SpiritBow. */
+	private deadlyFollowupTarget: Creature | null = null;
 	private projectileMomentumReady = false;
 	/** worn ring {id, level} or null; ring modifiers live on heroStats under source 'ring' */
 	private equippedRing: EquippedRing | null = null;
@@ -2221,6 +2243,15 @@ export class DungeonScene extends Scene2D {
 				const reduction = armorReductionRange(this.armorTier, effArmor);
 				return [reduction[0] + (bark > 0 ? 1 : 0), reduction[1] + bark];
 			})();
+		//`Talent.HOLD_FAST`: `HoldFast.armorBonus()` is Java's own separate
+		//`NormalIntRange(0, 2*points)` roll, summed onto the armor roll's *result* rather than
+		//widening its range - folded into `hero.armor[1]` here instead (this port's one shared
+		//`normalRange(armor[0], armor[1])` call has no seam for a second independent roll),
+		//matching the precedent `bark` already sets two lines up. Only min is left alone since
+		//Java's own roll floors at 0.
+		if (this.holdFastX === this.hero.x && this.holdFastY === this.hero.y) {
+			this.hero.armor = [this.hero.armor[0], this.hero.armor[1] + 2 * this.talentRank('hold_fast')];
+		}
 		const subclass = this.subclass();
 		if (subclass === 'champion') this.hero.damage = [this.hero.damage[0] + 1, this.hero.damage[1] + 1];
 		if (subclass === 'warden' && this.level && this.level.get(this.hero.x, this.hero.y) === HIGH_GRASS) {
@@ -7029,6 +7060,7 @@ export class DungeonScene extends Scene2D {
 				}
 			}
 			if (this.heroClass === 'huntress' && this.talentRank('followup_strike') > 0) { this.followupTarget = target; this.followupDamage = this.talentRank('followup_strike') === 1 ? 2 : 3; }
+			if (this.talentRank('deadly_followup') > 0) this.deadlyFollowupTarget = target;
 		} else if (special.kind === 'zap') {
 			const fullyCharged = this.wandCharges.current === this.wandCharges.max;
 			const lastCharge = this.wandCharges.current === 1;
@@ -8341,6 +8373,7 @@ export class DungeonScene extends Scene2D {
 		});
 		if (plan.kind === 'wait') {
 			if (this.talentRank('patient_strike') > 0) this.patientStrikeReady = true;
+			if (this.talentRank('hold_fast') > 0) { this.holdFastX = this.hero.x; this.holdFastY = this.hero.y; }
 			this.say(t('port.log.wait'));
 			return;
 		}
@@ -8430,6 +8463,7 @@ export class DungeonScene extends Scene2D {
 			}
 			this.say(t('port.log.wellreveals'), 'positive');
 		} else {
+			const healed = this.hero.maxHp - this.hero.hp;
 			this.hero.hp = this.hero.maxHp;
 			//PotionOfHealing.cure(): clears Poison/Cripple/Weakness/Vulnerable/Bleeding/Blindness/
 			//Drowsy/Slow/Vertigo - notably not Burning, which the previous list here wrongly
@@ -8441,6 +8475,15 @@ export class DungeonScene extends Scene2D {
 			if (getCurse(this.armorGlyph ?? '')) this.armorGlyph = null;
 			if (this.equippedRing?.cursed) this.equippedRing.cursed = false;
 			this.hunger = Math.max(this.hunger, 300);
+			//`WaterOfHealth.affectHero()`'s own presentation - found missing from a live player
+			//report ("no red crosses"): Java plays `hero.sprite.showStatusWithIcon(POSITIVE, HT,
+			//HEALING)` (the floating heal amount) and `emitter().start(Speck.factory(HEALING),
+			//0.4f, 4)` (a burst of red-cross specks) on top of it. This port has no sprite
+			//particle-emitter layer at all (see `PORT_COVERAGE.md`), so the burst becomes one red
+			//`+` floater beside the usual green amount - a stated substitution, not a missing
+			//effect, following the same "text stands in for an icon" precedent as the busy pip.
+			this.showHeal(this.hero, healed);
+			this.showStatus(this.hero, '+', SPD_STATUS_COLOR.negative);
 			this.say(t('port.log.wellheals'), 'positive');
 		}
 		this.portedWellWater.delete(cell);
@@ -13125,6 +13168,15 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.followupTarget = null;
 			this.followupDamage = 0;
 		}
+		//`Talent.DEADLY_FOLLOWUP`: last in Java's own `onAttackProc` chain, multiplying the
+		//whole accumulated damage rather than adding to it. `attacker === this.hero` already
+		//excludes a thrown hit here (the throw path attacks with a spread copy of `this.hero`,
+		//never the live reference), matching Java's own `attackingWeapon() instanceof
+		//MissileWeapon` exclusion for free.
+		if (attacker === this.hero && this.deadlyFollowupTarget === defender) {
+			damage = Math.round(damage * (1 + 0.08 * this.talentRank('deadly_followup')));
+			this.deadlyFollowupTarget = null;
+		}
 		//Polarized.proc(): real chance is a flat 1/2 - on success it amplifies to 1.5x, on
 		//failure it zeroes the hit outright (a coin-flip between "hits hard" and "whiffs"),
 		//reproduced exactly since it needs no subsystem beyond the damage value itself.
@@ -15449,6 +15501,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 			physicalBonusDamage: this.physicalBonusDamage,
 			physicalBonusAttacks: this.physicalBonusAttacks,
 			patientStrikeReady: this.patientStrikeReady,
+			holdFastX: this.holdFastX,
+			holdFastY: this.holdFastY,
+			preciseAssaultReady: this.preciseAssaultReady,
 			healingEvasionTurns: this.healingEvasionTurns,
 			sungrassHealing: this.sungrassHealing,
 			sungrassPartial: this.sungrassPartial,
@@ -15555,6 +15610,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.physicalBonusDamage = s.physicalBonusDamage ?? 0;
 		this.physicalBonusAttacks = s.physicalBonusAttacks ?? 0;
 		this.patientStrikeReady = s.patientStrikeReady ?? false;
+		this.holdFastX = s.holdFastX ?? null;
+		this.holdFastY = s.holdFastY ?? null;
+		this.preciseAssaultReady = s.preciseAssaultReady ?? false;
 		this.healingEvasionTurns = s.healingEvasionTurns ?? 0;
 		this.sungrassHealing = s.sungrassHealing ?? 0;
 		this.sungrassPartial = s.sungrassPartial ?? 0;
@@ -19850,6 +19908,14 @@ private eyeBeamTurn(monster: Creature): boolean {
 				mult *= spinDamageMultiplier(this.spinSpins);
 			}
 			if (this.swordDanceTurns > 0) acc *= 1.25;
+			//`Talent.PRECISE_ASSAULT`: 2^points ACC on the first normal attack after a weapon
+			//ability, consumed once. Java carves out a "do nothing" branch while a Flail spin
+			//is active (the tracker survives untouched until spin ends) rather than treating
+			//a spin swing as the consuming hit.
+			if (this.preciseAssaultReady && this.spinSpins <= 0) {
+				acc *= 2 ** this.talentRank('precise_assault');
+				this.preciseAssaultReady = false;
+			}
 		}
 		const roll = runAttackResolution(attacker, defender, simulationRandom, false, force, acc, mult);
 		if (roll.hit && attacker.isHero) {
@@ -19930,6 +19996,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 					onConfirm: (cell) => {
 						this.takeAbilityCharge(cost);
 						this.refundCounterAbility(counterArmed, counterRank);
+						this.armPreciseAssault();
 						//`invisTurns = 2+buffedLvl()`, applied as `prolong(Invisibility,
 						//invisTurns-1)` (never shortens an existing cloak).
 						reigniteBuff(this.hero, 'invisibility', 1 + this.weaponLevel);
@@ -19950,6 +20017,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 				}
 				this.takeAbilityCharge(cost);
 				this.refundCounterAbility(counterArmed, counterRank);
+				this.armPreciseAssault();
 				this.spinSpins += 1;
 				this.spinTurns = 3;
 				this.say(t('port.log.weaponspin', { spins: this.spinSpins }), 'positive');
@@ -19959,6 +20027,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			case 'guard': {
 				this.takeAbilityCharge(cost);
 				this.refundCounterAbility(counterArmed, counterRank);
+				this.armPreciseAssault();
 				this.guardTurns = def.buffTurns ?? 6;
 				this.say(t('port.log.weaponguard'), 'positive');
 				this.spendHeroAction(1);
@@ -19967,6 +20036,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			case 'swordDance': {
 				this.takeAbilityCharge(cost);
 				this.refundCounterAbility(counterArmed, counterRank);
+				this.armPreciseAssault();
 				this.swordDanceTurns = def.buffTurns ?? 5;
 				this.say(t('port.log.sworddance'), 'positive');
 				return;
@@ -19974,6 +20044,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			case 'defensiveStance': {
 				this.takeAbilityCharge(cost);
 				this.refundCounterAbility(counterArmed, counterRank);
+				this.armPreciseAssault();
 				this.defensiveStanceTurns = def.buffTurns ?? 5;
 				this.syncHeroFromStats();
 				this.say(t('port.log.defensivestance'), 'positive');
@@ -19983,6 +20054,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 				//Readying the shot is free (`hero.next()` in `Crossbow`).
 				this.takeAbilityCharge(cost);
 				this.refundCounterAbility(counterArmed, counterRank);
+				this.armPreciseAssault();
 				this.chargedShotArmed = true;
 				this.say(t('port.log.chargedshot'), 'positive');
 				return;
@@ -20054,6 +20126,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 				}
 				if (def.kind === 'lunge') this.stepToward(target);
 				this.attack(this.hero, target);
+				//`afterAbilityUsed` runs after the strike, not before - see `armPreciseAssault`'s
+				//own comment for why that ordering alone keeps this strike from boosting itself.
+				this.armPreciseAssault();
 				if (target.hp <= 0) this.onAbilityKill(def.kind);
 				if (def.kind === 'lash') this.lashOthers(target);
 				this.spendHeroAction(1);
@@ -20089,6 +20164,18 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.weaponCharge = gained.charges;
 		this.weaponPartialCharge = gained.partial;
 		delete this.hero.buffs['counterAbility'];
+	}
+
+	/** `afterAbilityUsed`'s `Talent.PRECISE_ASSAULT` half: arms `PreciseAssaultTracker` so the
+	 * hero's *next* normal attack gets `2^points` accuracy (`MeleeWeapon.accuracyFactor()`) -
+	 * consumed in `resolveHeroAbilityAttack`. Callers for a damage-strike ability must invoke
+	 * this *after* that strike's own `attack()` call resolves (matching Java's real
+	 * `afterAbilityUsed` position, at the end of the attack callback): the tracker does not
+	 * exist yet during the strike that arms it, so there is no separate "not this weapon"
+	 * guard to reproduce here - simple call-order does the same job. Every other ability kind
+	 * never attacks on its own, so calling this alongside `refundCounterAbility` is safe. */
+	private armPreciseAssault(): void {
+		if (this.talentRank('precise_assault') > 0) this.preciseAssaultReady = true;
 	}
 
 	/** `Whip.LashAbility`: the same normal attack against every other enemy in range. */

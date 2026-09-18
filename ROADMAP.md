@@ -454,9 +454,24 @@ was judged not worth the churn against those existing references.
       Swift Equip is genuine. `Iron Will`'s invented flat-damage-reduction stand-in is
       replaced by the real `BrokenSeal` shield mechanic. Cleric's entire talent tree is Mage's copied
       verbatim, documented as such in `src/talents.ts`, not replaced - a real tree needs the Cleric's
-      own Holy Lantern/spell mechanics first. **Remaining**: everything blocked on systems this port
-      lacks (SoulMark/Wraith for Necromancer's Minions, a real Cleric tree;
-      `durable_tips` dropped off this list 2026-09-17 - tipped darts are live). **Methodology note worth keeping, amended 2026-09-18**: check `src/generated/spdMessages.ts`'s own real
+      own Holy Lantern/spell mechanics first. **Progress 2026-09-18: a whole missing talent class
+      found and half-closed.** Every class's real tier-3 pool is Java's own fixed class-wide pair
+      (`initClassTalents`) *plus* the chosen subclass's three (`initSubclassTalents`, a separate
+      call writing into the same map) - this port's table carried only the subclass three for
+      all 10 subclasses, silently dropping 10 real talents (`HOLD_FAST`/`STRONGMAN`,
+      `EMPOWERING_SCROLLS`/`ALLY_WARP`, `ENHANCED_RINGS`/`LIGHT_CLOAK`, `POINT_BLANK`/`SEER_SHOT`,
+      `PRECISE_ASSAULT`/`DEADLY_FOLLOWUP`). All 10 are now in the table; `STRONGMAN` and
+      `POINT_BLANK` needed no other code (their formulas were already written and simply
+      unreachable - the same "ported ahead of the table row" pattern found three times over),
+      and `HOLD_FAST`/`PRECISE_ASSAULT`/`DEADLY_FOLLOWUP` are newly wired. See
+      `PORT_COVERAGE.md`'s dedicated row for the exact formulas and the browser verification.
+      **Remaining**: `ENHANCED_RINGS`, `LIGHT_CLOAK`, `EMPOWERING_SCROLLS`, `ALLY_WARP` and
+      `SEER_SHOT` each need a mechanic this port doesn't have yet (a ring-effective-level buff,
+      a Cloak-of-Shadows charge-rate hook usable unequipped, a wand-zap level bonus, an
+      ally-swap-at-range interact, and empty-cell map-reveal targeting), plus everything already
+      blocked on systems this port lacks (SoulMark/Wraith for Necromancer's Minions, a real
+      Cleric tree; `durable_tips` dropped off this list 2026-09-17 - tipped darts are live).
+      **Methodology note worth keeping, amended 2026-09-18**: check `src/generated/spdMessages.ts`'s own real
       `actors.hero.talent.*` strings before concluding a talent id is invented - an earlier audit
       checked only two Java tags and wrongly declared several real talents fabricated - but catalogue
       presence alone does not prove upstream existence either: Test Subject/Tested Hypothesis ship

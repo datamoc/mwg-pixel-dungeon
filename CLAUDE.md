@@ -146,6 +146,30 @@ Before calling any non-trivial change complete:
    directly (e.g. `scene['generatedInventoryItem'](fakeGenItem)`,
    `scene['equipWeapon'](id, instanceId)`) to exercise and statistically verify game logic
    (roll distributions, gating) without manually playing to the exact state that triggers it.
+   A ready-made diagnostic built this way, worth reusing rather than re-deriving: dumping each
+   creature's logical grid position against its actual rendered sprite position, which is how
+   the `moveTo` sprite-desync bug (`PORT_COVERAGE.md`, 2026-09-18) was confirmed from a live
+   player report before any code was read:
+   ```js
+   (() => {
+     const s = window.__MWG__.currentScene;
+     const TILE = 16;
+     return s['creatures'].map(c => {
+       const sprite = s['spriteFor'].get(c.id);
+       return {
+         kind: c.kind,
+         hp: c.hp,
+         logicalX: c.x, logicalY: c.y,
+         spriteTileX: sprite ? sprite.x / TILE : null,
+         spriteTileY: sprite ? sprite.y / TILE : null,
+         spriteVisible: sprite ? sprite.visible : null,
+       };
+     });
+   })()
+   ```
+   A mismatch between `logicalX/Y` and `spriteTileX/Y` for a creature that should be visible
+   means the render layer has drifted from the game-logic layer - check `moveTo`'s early-return
+   branches first, since that is exactly what was wrong here.
 6. Screenshot and zoom to visually confirm the actual pixels, not just absence of errors.
 7. Clean up afterward: close the browser tabs, and stop the test HTTP server via its PID
    (`Get-NetTCPConnection -LocalPort <port> | Select-Object -ExpandProperty OwningProcess`

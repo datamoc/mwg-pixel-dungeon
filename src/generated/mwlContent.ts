@@ -29917,7 +29917,7 @@ export const gameData = {
 							"tag": "row",
 							"attributes": {
 								"subclass": "berserker",
-								"talents": "endless_rage,deathless_fury,enraged_catalyst"
+								"talents": "hold_fast,strongman,endless_rage,deathless_fury,enraged_catalyst"
 							},
 							"children": [],
 							"location": {
@@ -29931,7 +29931,7 @@ export const gameData = {
 							"tag": "row",
 							"attributes": {
 								"subclass": "gladiator",
-								"talents": "cleave,lethal_defense,enhanced_combo"
+								"talents": "hold_fast,strongman,cleave,lethal_defense,enhanced_combo"
 							},
 							"children": [],
 							"location": {
@@ -29945,7 +29945,7 @@ export const gameData = {
 							"tag": "row",
 							"attributes": {
 								"subclass": "battlemage",
-								"talents": "empowered_strike,mystical_charge,excess_charge"
+								"talents": "empowering_scrolls,ally_warp,empowered_strike,mystical_charge,excess_charge"
 							},
 							"children": [],
 							"location": {
@@ -29959,7 +29959,7 @@ export const gameData = {
 							"tag": "row",
 							"attributes": {
 								"subclass": "warlock",
-								"talents": "soul_eater,soul_siphon,necromancers_minions"
+								"talents": "empowering_scrolls,ally_warp,soul_eater,soul_siphon,necromancers_minions"
 							},
 							"children": [],
 							"location": {
@@ -29973,7 +29973,7 @@ export const gameData = {
 							"tag": "row",
 							"attributes": {
 								"subclass": "assassin",
-								"talents": "enhanced_lethality,assassins_reach,bounty_hunter"
+								"talents": "enhanced_rings,light_cloak,enhanced_lethality,assassins_reach,bounty_hunter"
 							},
 							"children": [],
 							"location": {
@@ -29987,7 +29987,7 @@ export const gameData = {
 							"tag": "row",
 							"attributes": {
 								"subclass": "freerunner",
-								"talents": "evasive_armor,projectile_momentum,speedy_stealth"
+								"talents": "enhanced_rings,light_cloak,evasive_armor,projectile_momentum,speedy_stealth"
 							},
 							"children": [],
 							"location": {
@@ -30001,7 +30001,7 @@ export const gameData = {
 							"tag": "row",
 							"attributes": {
 								"subclass": "sniper",
-								"talents": "farsight,shared_enchantment,shared_upgrades"
+								"talents": "point_blank,seer_shot,farsight,shared_enchantment,shared_upgrades"
 							},
 							"children": [],
 							"location": {
@@ -30015,7 +30015,7 @@ export const gameData = {
 							"tag": "row",
 							"attributes": {
 								"subclass": "warden",
-								"talents": "durable_tips,barkskin,shielding_dew"
+								"talents": "point_blank,seer_shot,durable_tips,barkskin,shielding_dew"
 							},
 							"children": [],
 							"location": {
@@ -30029,7 +30029,7 @@ export const gameData = {
 							"tag": "row",
 							"attributes": {
 								"subclass": "champion",
-								"talents": "secondary_charge,twin_upgrades,combined_lethality"
+								"talents": "precise_assault,deadly_followup,secondary_charge,twin_upgrades,combined_lethality"
 							},
 							"children": [],
 							"location": {
@@ -30043,7 +30043,7 @@ export const gameData = {
 							"tag": "row",
 							"attributes": {
 								"subclass": "monk_sub",
-								"talents": "unencumbered_spirit,monastic_vigor,combined_energy"
+								"talents": "precise_assault,deadly_followup,unencumbered_spirit,monastic_vigor,combined_energy"
 							},
 							"children": [],
 							"location": {
