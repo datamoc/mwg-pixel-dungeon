@@ -5051,29 +5051,11 @@ export class DungeonScene extends Scene2D {
 				//They are real, named talents in the version of SPD this checkout's generated
 				//message catalog was actually built from (`actors.hero.talent.test_subject`/
 				//`tested_hypothesis`, real English text still in `src/generated/spdMessages.ts`),
-				//simply absent from the two older tags checked. Real `test_subject`: "+1: heals
-				//2 HP on identify, +2: heals 3 HP" - exactly what `heal + 1` below already does
-				//(rank 1 -> 2, rank 2 -> 3), no fix needed. Real `tested_hypothesis`: "+1: gains
-				//2 turns of wand recharging on identify, +2: gains 3 turns" - two bugs were here.
-				//First, `Charges.refund(N)` grants N whole charges outright, drastically stronger
-				//than "N turns of recharging" (`recoverWandCharge`'s own `turnsToCharge` runs
-				//10-50 real turns per charge). Second, simply switching to `Charges.advance(N)`
-				//is not right either: `Charges.advance`'s argument is progress *units* toward one
-				//charge, not real game turns, and this port's `wandCharges` uses `regenRate: 1`
-				//(one progress unit fills a charge) while `recoverWandCharge` banks only a small
-				//fraction of a unit per real turn (`ringEnergyMultiplier / turnsToCharge`, ~0.02-
-				//0.1) - so `advance(N)` still grants ~N whole charges, the same overshoot as
-				//`refund`. The correct amount is what N real turns of the *current* passive
-				//regen rate would have produced: that same per-turn fraction, scaled by N.
+				//simply absent from the two older tags checked. Both amounts live in
+				//`procIdentifyTalents`, which every identify site shares (see its own comment).
 				const heal = this.heroClass === 'warrior' ? this.talentRank('test_subject') : 0;
 				const charge = this.heroClass === 'mage' ? this.talentRank('tested_hypothesis') : 0;
-				if (heal > 0) { this.hero.hp = Math.min(this.hero.maxHp, this.hero.hp + heal + 1); this.showHeal(this.hero, heal + 1); }
-				if (charge > 0) {
-					const missing = this.wandCharges.max - this.wandCharges.current;
-					const turnsToCharge = 10 + 40 * Math.pow(0.875, Math.max(0, missing));
-					const perTurnRate = ringEnergyMultiplier(this.equippedRing, this.hero.magicImmune) / turnsToCharge;
-					this.wandCharges.advance(perTurnRate * (charge + 1));
-				}
+				if (heal > 0 || charge > 0) this.procIdentifyTalents();
 				//The old secret-revealing radius here invoked `arcaneVisionRadius()` - removed
 				//outright: real Arcane Vision (Mage T2, `Wand.wandProc()`) marks the ZAPPED
 				//target with `CharAwareness` for `5+5*points` turns, and has no identify/read
@@ -20639,6 +20621,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			get equippedRing() { return scene.equippedRing; }, set equippedRing(value) { scene.equippedRing = value; },
 			get ringHtBonus() { return scene.ringHtBonus; }, set ringHtBonus(value) { scene.ringHtBonus = value; },
 			talentRank: this.talentRank.bind(this), itemDisplayName: this.itemDisplayName.bind(this),
+			procIdentifyTalents: this.procIdentifyTalents.bind(this),
 			syncHeroFromStats: this.syncHeroFromStats.bind(this), say: this.say.bind(this),
 		};
 	}
@@ -20683,6 +20666,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			setWeaponAffix: this.setWeaponAffix.bind(this),
 			setArmorGlyph: this.setArmorGlyph.bind(this),
 			talentRank: this.talentRank.bind(this), syncHeroFromStats: this.syncHeroFromStats.bind(this), say: this.say.bind(this),
+			procIdentifyTalents: this.procIdentifyTalents.bind(this),
 		};
 	}
 
@@ -20702,6 +20686,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			get wandCharges() { return thisScene.wandCharges; },
 			set wandCharges(value) { thisScene.wandCharges = value; },
 			talentRank: this.talentRank.bind(this), say: this.say.bind(this),
+			procIdentifyTalents: this.procIdentifyTalents.bind(this),
 		};
 	}
 
@@ -20777,6 +20762,35 @@ private eyeBeamTurn(monster: Creature): boolean {
 	/** health gained, in `CharSprite.POSITIVE` */
 	private showHeal(creature: Creature, amount: number): void {
 		if (amount > 0) this.showStatus(creature, String(amount), SPD_STATUS_COLOR.positive);
+	}
+
+	/**
+	 * `Talent.TEST_SUBJECT`/`TESTED_HYPOTHESIS` (`Talent.java`): "whenever" the Warrior/Mage
+	 * identifies an item - any identify event, not just the scroll. Every identify site
+	 * (the scroll below, the intuition rank-2 equips in `items/equipment.ts` and
+	 * `items/equipWand.ts`) routes through here; each site guards on the item being newly
+	 * identified, since Java's `Item.identify()` no-ops on an already-known item. Banked on
+	 * a full pool the advance is discarded - MWG's `Charges` drops progress at cap - so a
+	 * wand-equip identify (whose pool just reset full) runs the helper but banks nothing.
+	 */
+	private procIdentifyTalents(): void {
+		//Real `test_subject`: "+1: heals 2 HP on identify, +2: heals 3 HP" - `heal + 1`.
+		//Real `tested_hypothesis`: "+1: gains 2 turns of wand recharging, +2: 3 turns" -
+		//`Charges.refund(N)` would grant N whole charges outright, drastically stronger than
+		//N turns of recharging (`recoverWandCharge`'s own `turnsToCharge` runs 10-50 real
+		//turns per charge); `Charges.advance(N)` is no better, since its argument is progress
+		//*units* toward one charge while this port's `wandCharges` uses `regenRate: 1`. The
+		//correct amount is what N real turns of the *current* passive regen rate would have
+		//produced: that same per-turn fraction, scaled by N.
+		const heal = this.heroClass === 'warrior' ? this.talentRank('test_subject') : 0;
+		const charge = this.heroClass === 'mage' ? this.talentRank('tested_hypothesis') : 0;
+		if (heal > 0) { this.hero.hp = Math.min(this.hero.maxHp, this.hero.hp + heal + 1); this.showHeal(this.hero, heal + 1); }
+		if (charge > 0) {
+			const missing = this.wandCharges.max - this.wandCharges.current;
+			const turnsToCharge = 10 + 40 * Math.pow(0.875, Math.max(0, missing));
+			const perTurnRate = ringEnergyMultiplier(this.equippedRing, this.hero.magicImmune) / turnsToCharge;
+			this.wandCharges.advance(perTurnRate * (charge + 1));
+		}
 	}
 
 	/**

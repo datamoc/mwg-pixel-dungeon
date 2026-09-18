@@ -12,6 +12,8 @@ export interface RingEquipmentContext {
 	equippedRing: EquippedRing | null;
 	ringHtBonus: number;
 	talentRank(id: string): number;
+	/** `Talent.TEST_SUBJECT`/`TESTED_HYPOTHESIS` on any newly-identified item. */
+	procIdentifyTalents(): void;
 	itemDisplayName(id: string, identified: boolean, instanceId?: string): string;
 	syncHeroFromStats(): void;
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
@@ -24,7 +26,11 @@ export function equipRing(scene: RingEquipmentContext, id: string, instanceId?: 
 	const level = item.level ?? 0;
 	//Rank 1 Thief's Intuition only reveals the type in Java. This port has no separate type-known
 	//flag, so only rank 2's full identification is represented.
-	if (scene.heroClass === 'rogue' && scene.talentRank('thiefs_intuition') >= 2) Actors.identify(item);
+	if (scene.heroClass === 'rogue' && scene.talentRank('thiefs_intuition') >= 2) {
+		const newlyIdentified = !item.identified;
+		Actors.identify(item);
+		if (newlyIdentified) scene.procIdentifyTalents();
+	}
 	if (scene.equippedRing?.cursed && scene.equippedRing.id !== id) {
 		scene.say(t('port.log.ringcursed'), 'negative');
 		return;
@@ -69,6 +75,8 @@ export interface GearEquipmentContext {
 	setWeaponAffix(affix: string | null): void;
 	setArmorGlyph(glyph: string | null): void;
 	talentRank(id: string): number;
+	/** `Talent.TEST_SUBJECT`/`TESTED_HYPOTHESIS` on any newly-identified item. */
+	procIdentifyTalents(): void;
 	syncHeroFromStats(): void;
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
 }
@@ -82,7 +90,11 @@ export function equipArmor(scene: GearEquipmentContext, id: string, instanceId?:
 	}
 	if ((scene.heroClass === 'duelist' && scene.talentRank('adventurers_intuition') >= 2)
 		|| (scene.heroClass === 'warrior' && scene.talentRank('veterans_intuition') >= 2)
-		|| (scene.heroClass === 'huntress' && scene.talentRank('survivalists_intuition') >= 2)) Actors.identify(item);
+		|| (scene.heroClass === 'huntress' && scene.talentRank('survivalists_intuition') >= 2)) {
+		const newlyIdentified = !item.identified;
+		Actors.identify(item);
+		if (newlyIdentified) scene.procIdentifyTalents();
+	}
 	if (scene.armorId === 'clothArmor' && scene.armorInstanceId) scene.bag.remove(scene.armorId, 1, scene.armorInstanceId);
 	else if (scene.armorId !== 'startingArmor') {
 		const previous = { id: scene.armorId, quantity: 1, instanceId: scene.armorInstanceId, identified: true, level: scene.armorLevel, tier: scene.armorTier };
@@ -124,7 +136,11 @@ export function equipWeapon(scene: GearEquipmentContext, id: string, instanceId?
 	}
 	if ((scene.heroClass === 'duelist' && scene.talentRank('adventurers_intuition') >= 2)
 		|| (scene.heroClass === 'warrior' && scene.talentRank('veterans_intuition') >= 2)
-		|| (scene.heroClass === 'huntress' && scene.talentRank('survivalists_intuition') >= 2)) Actors.identify(item);
+		|| (scene.heroClass === 'huntress' && scene.talentRank('survivalists_intuition') >= 2)) {
+		const newlyIdentified = !item.identified;
+		Actors.identify(item);
+		if (newlyIdentified) scene.procIdentifyTalents();
+	}
 	if (scene.weaponId !== 'startingWeapon') {
 		const previous = { id: scene.weaponId, quantity: 1, instanceId: scene.weaponInstanceId, identified: true, level: scene.weaponLevel, tier: scene.weaponTier, affix: scene.weaponAffix ?? undefined, curseInfusionBonus: scene.weaponCurseInfusionBonus };
 		const returned = { id: scene.weaponId, quantity: 1, instanceId: scene.weaponInstanceId, identified: true, tier: scene.weaponTier, affix: undefined as string | undefined, curseInfusionBonus: false };
