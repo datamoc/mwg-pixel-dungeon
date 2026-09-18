@@ -299,8 +299,15 @@ function generateFloor(seed: bigint, depth: number, strongerBosses: boolean) {
 		}
 	}
 	entranceRoomContext.depth = depth;
-	entranceRoomContext.branchSeed = spdSeedForDepth(seed, depth, 0);
-	SpdRandom.pushGenerator(spdSeedForDepth(seed, depth, 0));
+	//`spdSeedForDepth` is a pure re-derivation (its own fresh `SpdJavaRandom`, no shared
+	//state), so calling it twice here used to cost nothing observable in the *output* -
+	//but it doubled the burned draws relative to Java's single `Dungeon.seedForDepth()`
+	//call, found via the section 9 RNG-call-order trace tool once its sign-formatting bug
+	//was fixed (see `spdRng.ts`'s `next()`): the extra 18 draws (9 redundant `nextLong()`
+	//calls at depth's own lookAhead) were silently doubling this exact spot in every trace.
+	const floorSeed = spdSeedForDepth(seed, depth, 0);
+	entranceRoomContext.branchSeed = floorSeed;
+	SpdRandom.pushGenerator(floorSeed);
 	try {
 		const { rooms, feeling } = buildRoomGraph(depth, seed);
 		const paint = depth === 5 ? paintSewerBossLevel(rooms, depth)

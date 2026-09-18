@@ -673,8 +673,18 @@ false` - see PORT_COVERAGE.md). Depths 1-2 print as UNSTABLE and stay out of the
 the guidebook pages with an intentionally unseeded generator, so even Java-vs-Java is not
 reproducible there (the heap shifts `paintGrass` draws). Probe details: TS room-kind labels ride
 on `PortedFloor.rooms` for kind-level triage, and both sides rtrim trailing chasm before the
-cell compare. Still genuinely unstarted: fixed-seed RNG-call-order
-comparison beyond levelgen, and loot/quest/boss-transition/save-load comparison.
+cell compare. **Progress 2026-09-18**: RNG-call-order comparison (bullet 2 below) is no longer
+unstarted for levelgen - it was wired but silently broken, reporting a false divergence at
+draw 0 on *every* floor including the 26 that already had matching output. Two real bugs fixed:
+the trace log's own text was wrong for every 32-bit draw (signed-vs-unsigned formatting, not an
+RNG bug - see `PORT_COVERAGE.md`), and `generateFloor()` was genuinely burning `spdSeedForDepth`
+twice per floor (a redundant pure re-derivation, harmless to shared state but doubling the
+trace). With both fixed, all 26 matching-output floors on depths 3+ are now confirmed
+`TRACE-IDENTICAL` - true RNG-call-order equality, not just coincidentally-matching final maps -
+and the two still-open floors have exact divergence draw indices (seed42/depth8 at draw 321,
+seed999999999999/depth9 at draw 22626, both inside `paintMazeConnection`'s maze-growing loop)
+ready for a future pass to narrow further. Still genuinely unstarted: RNG-call-order comparison
+beyond levelgen, and loot/quest/boss-transition/save-load comparison.
 
 - [ ] Compare both implementations with fixed seeds and identical action traces. **Complexity: XL.**
 - [ ] Verify RNG call order for level, item, monster, and quest generation. **Complexity: L.**

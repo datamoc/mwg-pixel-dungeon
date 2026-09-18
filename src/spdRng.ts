@@ -25,9 +25,15 @@ export class SpdJavaRandom {
 		this.state = (this.state * 0x5deece66dn + 0xbn) & ((1n << 48n) - 1n);
 		const result = Number(this.state >> BigInt(48 - bits));
 		if (traceDrawLog !== null) {
-			traceDrawLog.push(`${bits}:${result}`);
+			//Java's `next(bits)` returns a signed `int`, so a `bits===32` draw whose top bit
+			//is set prints negative (`StringBuilder.append(int)`'s ordinary decimal form) -
+			//see `Random.java`'s `TracingRandom.next()`. `result` here stays the unsigned
+			//0..2^32-1 magnitude `nextLong()` needs (it does its own signed conversion), so
+			//only the logged text is adjusted, matching Java's int cast for comparison.
+			const traced = bits === 32 && result >= 0x80000000 ? result - 0x100000000 : result;
+			traceDrawLog.push(`${bits}:${traced}`);
 			if (traceStackWindow !== null && traceDrawCount >= traceStackWindow[0] && traceDrawCount <= traceStackWindow[1]) {
-				traceStacks.push(`#${traceDrawCount} ${bits}:${result} :: ${(new Error().stack ?? '').split('\n').slice(2, 9).join(' <- ')}`);
+				traceStacks.push(`#${traceDrawCount} ${bits}:${traced} :: ${(new Error().stack ?? '').split('\n').slice(2, 9).join(' <- ')}`);
 			}
 			traceDrawCount++;
 		}

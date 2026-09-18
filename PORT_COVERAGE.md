@@ -2516,6 +2516,48 @@ so old and new dumps both parse. They confirmed seed42/depth8's builder (Loop bo
 all-NORMAL sizeCats, and attempts 1 both sides - which is why that block's cause is still open
 rather than misattributed.
 
+### RNG-call-order tracing: a false-diff bug and a real double-draw, both fixed (2026-09-18)
+
+The section-9 trace facility (`spdRng.ts`'s `setTraceDrawLog`, diffed against
+`-Dlevelgen.trace=true`'s Java dump by `tools/levelgenParity.ts --java-traces`) had never
+actually verified anything past the very first draw of *every* floor, on either side of the
+`26/28` split - it reported `TRACE-DIFF at draw 0` even for the 26 floors whose final maps
+already matched exactly, which meant nobody had looked past that point before.
+
+1. **The log's own text was wrong for every `bits===32` draw, matching output despite it.**
+   Java's `TracingRandom.next()` logs `int r = super.next(bits)` through `StringBuilder.append(int)`
+   - an ordinary signed decimal, negative when the top bit is set. This port's `next()` logged
+   the raw unsigned 0..2^32-1 magnitude instead (correct for the actual RNG *value* - `nextLong()`
+   does its own signed hi/lo conversion on that magnitude - but wrong for the *text*). Every
+   `nextLong()` call (bits=32) printed a positive number where Java's would be negative, so the
+   comparison flagged a difference at the first such draw on every floor that has one, real
+   divergence or not. Fixed by converting only the logged text (`traced = result - 2**32` when
+   `result >= 2**31`), leaving the returned value untouched. See `spdRng.ts`'s `next()`.
+2. **`generateFloor()` called `spdSeedForDepth(seed, depth, 0)` twice with identical arguments**
+   - once to populate `entranceRoomContext.branchSeed`, once again immediately after for
+   `SpdRandom.pushGenerator()` - each call burning `depth+1` fresh `nextLong()` draws (2 draws
+   each) on its own private `SpdJavaRandom`. Harmless to the *shared* generator stack (the
+   function is a pure, self-contained re-derivation, so the redundant call touches no state
+   anything else reads) and therefore invisible to every existing output-parity check, but it
+   doubled this exact spot in the trace log relative to Java's single `Dungeon.seedForDepth()`
+   call - which explains why fixing bullet 1 alone still left every floor diverging shortly
+   after draw 0. Fixed by computing the seed once and reusing it for both.
+
+With both fixed, every floor that already had output `PARITY` on depths 3+ now also reports
+`TRACE-IDENTICAL` - real RNG-call-order equality across the whole floor, not merely a matching
+final map - and the two genuinely still-open floors now have exact divergence draw indices
+instead of only cell diffs: **seed42/depth8** first parts ways at draw 321 (java `bits=31`
+vs. ts `bits=32` at that position - a real extra/missing draw, not a value mismatch) and
+**seed999999999999/depth9** at draw 22626, both landing inside `paintMazeConnection`'s
+`growMaze`/`decideDirection` loop per a stack-window trace, not yet narrowed further. The
+harness side gained an env-var fallback for `-Dlevelgen.trace` too (`LEVELGEN_TRACE=true`):
+`desktop/build.gradle`'s `runHarness` task does not forward `-D` system properties to the
+forked JVM, and - found the hard way - this local Gradle 8.1.1 install cannot recompile *any*
+edited `build.gradle` under JDK 21 (`Unsupported class file major version 65` even for a
+byte-identical revert, until the daemon re-reads the unchanged cached script), so the fix has
+to live in `LevelGenHarness.java` (an ordinary `javac` recompile, unaffected) rather than the
+build script.
+
 ### A verification-tooling bug worth knowing about
 
 `tools/scratch/cmp.mjs` was itself wrong for `Feeling.CHASM` floors, in two ways, and its numbers
