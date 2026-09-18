@@ -623,7 +623,11 @@ was judged not worth the churn against those existing references.
       per-item descriptions, resolved through `inventoryPanel.ts`'s MWL description tables, each a
       real authored Java `.desc` key) and item-use (activation for food/potions/scrolls/rings/armor/
       wands) are both already done. The four bags (VelvetPouch/ScrollHolder/PotionBandolier/MagicalHolster)
-      now exist as ownable, named, priced, sellable goods with the real shop pick - what stays open is their container behavior (contents, `grabItems` on pickup, capacity, an open action), not their existence. See `PORT_COVERAGE.md`'s bag row.
+      now exist as ownable, named, priced, unsellable goods with the real shop pick (resale
+      refused per `Shopkeeper.canSell`'s `unique` rule, 2026-09-18) - and three container-half
+      stat effects are live in the same pass (the Holster's recharge/durability factors off
+      ownership, the full `validateAllBagsBought` badge set). What stays open is the structural
+      container behavior (contents, `grabItems` on pickup, capacity, an open action), not their existence. See `PORT_COVERAGE.md`'s bag row.
       **Complexity: M.**
 - [x] Implement click-to-travel (`repeated movement`) - a player-reported bug: clicking a distant
       tile previously only produced a single step. Now queues the target and walks the real

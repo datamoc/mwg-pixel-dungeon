@@ -288,6 +288,16 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		"Java's `item instanceof MissileWeapon && item.isUpgradable()` branch sells the stack whole");
 	missileChoice.onPick(8);
 	assert.equal(missiles.bag.find('stone'), undefined, 'the missile stack left the bag');
+	// `Shopkeeper.canSell()`: `unique && !stackable` is refused - bags are `unique`
+	// (`Bag.java`), so a priced bag is still never a sell candidate. The price assertion
+	// first proves the exclusion does the work (the holder is worth 40), not pricelessness.
+	{
+		const { getSellPrice } = require('./items/shopPricing.js');
+		assert.ok(getSellPrice('scrollHolder', 6, 1, true, { id: 'scrollHolder', quantity: 1 }) > 0,
+			'the holder has a real sell price');
+		const bags = sellRun([{ id: 'scrollHolder', quantity: 1 }]);
+		assert.equal(bags.pickerCalls.length, 0, 'a bag is never offered by the sell picker');
+	}
 	assert.deepEqual(missiles.buyback.map((entry) => entry.quantity), [8], 'whole, in one shelf entry');
 	const { pickupGroundItem } = require('./items/groundPickup.js');
 	const { MWL_CONSUMABLE_DESCRIPTION_KEYS, MWL_MISSILE_DESCRIPTION_KEYS, MWL_MISSILE_NAME_KEYS, MWL_GROUND_ITEM_NAME_KEYS, MWL_ITEM_GROUND_KIND_ALIASES, MWL_ITEM_NAME_KEYS, mwlItemEffectValue } = require('./mwlContent.js');
@@ -1099,7 +1109,9 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	// `null` once every flag is dropped. Ties go to the earlier bag id (Java's own tie-break
 	// is JVM `HashMap` order and is not reproducible even in principle).
 	{
-		const { chooseShopBag, bagCanHold, BAG_VALUES, isBagId } = require('./items/bags.js');
+		const { chooseShopBag, bagCanHold, BAG_VALUES, isBagId, ownsBag,
+			HOLSTER_RECHARGE_BASE, NORMAL_RECHARGE_BASE, HOLSTER_DURABILITY_FACTOR,
+			BAG_BADGE, ALL_BAGS_BADGE } = require('./items/bags.js');
 		assert.deepEqual(BAG_VALUES, {
 			velvetPouch: 30, scrollHolder: 40, potionBandolier: 40, magicalHolster: 60,
 		}, 'bag values match the four value() bodies');
@@ -1131,6 +1143,19 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		assert.equal(bagCanHold('potionBandolier', { id: 'waterskin' }), true, 'the bandolier takes the waterskin');
 		assert.equal(bagCanHold('velvetPouch', { id: 'gooBlob' }), true, 'the pouch takes the goo shard');
 		assert.equal(bagCanHold('velvetPouch', { id: 'wand' }), false, 'the pouch refuses a wand');
+		// The holster's stat halves (`MagicalHolster.java`, tag `v3.3.8`): 0.85 recharge base
+		// against the normal 0.875 (`Wand.java:804`), 1.2x missile-use durability.
+		assert.equal(HOLSTER_RECHARGE_BASE, 0.85, 'holster recharge base is 0.85');
+		assert.equal(NORMAL_RECHARGE_BASE, 0.875, 'normal recharge base is 0.875');
+		assert.equal(HOLSTER_DURABILITY_FACTOR, 1.2, 'holster durability factor is 1.2x');
+		assert.equal(ownsBag([{ id: 'scrollHolder' }], 'scrollHolder'), true, 'ownership reads the flat bag');
+		assert.equal(ownsBag([{ id: 'scrollHolder' }], 'magicalHolster'), false, 'a missing bag is not owned');
+		// `Badges.validateAllBagsBought` (`Badges.java`): one badge per bag plus the meta set.
+		assert.deepEqual(BAG_BADGE, {
+			velvetPouch: 'bag_velvet', scrollHolder: 'bag_holder',
+			potionBandolier: 'bag_bandolier', magicalHolster: 'bag_holster',
+		}, 'per-bag badge counters match the four bags');
+		assert.equal(ALL_BAGS_BADGE, 'bags_all', 'the meta badge counter is bags_all');
 	}
 	// `MeleeWeapon.ability()` per-weapon table and `Charger` economy
 	// (`src/items/weaponAbilities.ts`, tag `v3.3.8`): all 30 real melee classes resolve with

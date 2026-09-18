@@ -833,10 +833,18 @@ Verified by the suite's bag block (pick/scoring/tie/exhaustion/`stone` disambigu
 position, values, shelf price) and live (`tools/scratch/bag-shop-livecheck.mjs`, 14/14: velvet
 starts dropped, the depth-6 shelf stocks the scroll holder the starting kit's scrolls vote for, the
 flag drops exactly once, the shelf note reads the real 400g price, the picker-to-detail-to-buy path
-pays it and moves the holder into the bag, and an exhausted flag field stocks no bag) - the
-hourglass-in-hand shop visit is still owed. **Not ported**: the container half - contents arrays,
-`grabItems` on pickup, capacity enforcement, `AC_OPEN`/`WndQuickBag` - which has no expression in
-this port's flat bag model (a bought bag is a named, priced, sellable item), and the three shop
+pays it and moves the holder into the bag, and an exhausted flag field stocks no bag) -
+the hourglass-in-hand shop visit is still owed. **Three container-half stat effects are now
+live (2026-09-18, all checked against tag `v3.3.8`)**: the Magical Holster's `0.85`
+recharge base (normal `0.875`) and `1.2x` missile-use durability, read off holster ownership
+(Java gates on the item sitting *inside* the holster; the flat bag keeps no per-item location,
+and every owned wand/missile would sit in the one holster anyway); the `Shopkeeper.canSell`
+refusal (`unique && !stackable` - bought bags can no longer be sold back); and the
+`validateAllBagsBought` badge set (four per-bag badges plus `ALL_BAGS_BOUGHT` at Java's own
+cell 67, firing on every acquisition including the free starting velvet, exactly like
+`HeroClass.initHero()`'s `collect()`). **Still not ported**: contents arrays, `grabItems`
+on pickup, capacity enforcement, `AC_OPEN`/`WndQuickBag` - which has no expression in this
+port's flat bag model (a bought bag is a named, priced, unsellable item), and the three shop
 bags' own `ItemSpriteSheet` frames, whose indices were not re-read this pass, so they render the
 frame-0 fallback until they are.
 

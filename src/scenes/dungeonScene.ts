@@ -24,7 +24,7 @@ import { buyFromShop, buybackFromShop, sellFood, shopPrice as itemShopPrice, sho
 import { generatedInventoryItem as createGeneratedInventoryItem } from '../items/generatedItems';
 import { placeGroundItems as placeGeneratedGroundItems } from '../items/groundPlacement';
 import { planShopStock } from '../items/shopStock';
-import { chooseShopBag, isBagId, type BagId } from '../items/bags';
+import { chooseShopBag, isBagId, ownsBag, HOLSTER_RECHARGE_BASE, NORMAL_RECHARGE_BASE, HOLSTER_DURABILITY_FACTOR, BAG_BADGE, ALL_BAGS_BADGE, BAG_IDS, type BagId } from '../items/bags';
 import { isResurrectKeepCandidate, partitionResurrectKeeps } from '../items/resurrect';
 import { pickupGroundItem as pickupGroundItemWorkflow } from '../items/groundPickup';
 import { reforgeDiscardedMissileSet, blacksmithHardenCost as itemBlacksmithHardenCost, blacksmithReforgeCost as itemBlacksmithReforgeCost, blacksmithReforgePairValid, blacksmithUpgradeCost as itemBlacksmithUpgradeCost, blacksmithTurnInFavor, BLACKSMITH_FREE_PICKAXE_FAVOR, rollCarriedAffixLoss, selectBlacksmithHardenItems, selectBlacksmithReforgeItems, selectBlacksmithUpgradeItems, type BlacksmithItem } from '../items/blacksmith';
@@ -2087,6 +2087,7 @@ export class DungeonScene extends Scene2D {
 		this.bag.add({ id: 'clothArmor', quantity: 1, instanceId: this.armorInstanceId, identified: true, level: 0 });
 		this.bag.add({ id: 'food', quantity: 1, stackable: true, identified: true });
 		this.bag.add({ id: 'velvetPouch', quantity: 1, identified: true });
+		this.noteBagAcquired('velvetPouch');
 		//`HeroClass.initHero()` drops `LimitedDrops.VELVET_POUCH` unconditionally, for every
 		//class - the starting pouch is never offered back by a later shop's `ChooseBag()`.
 		this.droppedBags = ['velvetPouch'];
@@ -4646,6 +4647,7 @@ export class DungeonScene extends Scene2D {
 		const name = this.itemDisplayName(pick.id, true, pick.instanceId);
 		if (Actors.buy(this.heroStats, stock, this.bag, pick.id, 1, { currency: 'gold', prices })) {
 			this.say(t('port.log.buy', { item: name, price }), 'positive');
+			this.noteBagAcquired(pick.id);
 		} else this.say(t('port.log.cannotafford', { item: name, price }), 'negative');
 	}
 
@@ -4860,7 +4862,10 @@ export class DungeonScene extends Scene2D {
 				this.spriteFor.delete(item.id);
 			},
 			playSound: (kind) => runState.audio.cue(kind === 'gold' ? 'gold' : kind === 'dewdrop' ? 'dewdrop' : 'item', 0.6),
-			addItem: (payload, stackable = false) => this.bag.add(stackable ? { ...payload, stackable: true } : payload),
+			addItem: (payload, stackable = false) => {
+				this.bag.add(stackable ? { ...payload, stackable: true } : payload);
+				this.noteBagAcquired(payload.id);
+			},
 			identify: (payload) => Actors.identify(payload),
 			say: (message, level) => this.say(message, level),
 			showStatus: (message) => { if (language().code === 'en') this.showStatus(this.hero, message, SPD_STATUS_COLOR.neutral); },
@@ -6722,10 +6727,14 @@ export class DungeonScene extends Scene2D {
 		//`v3.3.8`): the use cost is divided by `1 + points` while a Warden throws tipped darts
 		//(2x/3x/4x durability); rot darts are exempt and last longer outright (see
 		//`tippedDartUseDivisor`). Any other wielded class keeps the ordinary formula below.
+		//Both scale by `MagicalHolster.HOLSTER_DURABILITY_FACTOR` while the holster is owned
+		//(Java multiplies the use count `1.2x` while the stack sits inside it - see `bags.ts`).
+		const holsterFactor = this.ownsBag('magicalHolster') ? HOLSTER_DURABILITY_FACTOR : 1;
 		if (this.ammoSourceClass === 'TippedDart') {
 			const baseUses = missileBaseUses('TippedDart') * (this.ammoTippedSeed?.toLowerCase() === 'rotberry' ? 2 : 1);
 			const divisor = tippedDartUseDivisor(this.ammoTippedSeed, this.talentRank('durable_tips'), this.subclass() === 'warden');
 			const uses = Math.round(baseUses * Math.pow(1.5, this.missileLevel) / divisor
+				* holsterFactor
 				* ringSharpshootingDurabilityMultiplier(this.equippedRing, this.hero.magicImmune));
 			if (uses >= 100) return 0;
 			return 100 / Math.max(1, uses) + 0.001;
@@ -6734,9 +6743,27 @@ export class DungeonScene extends Scene2D {
 		const durable = this.talentRank('durable_projectiles');
 		const uses = Math.round(baseUses * Math.pow(1.5, this.missileLevel)
 			* (durable > 0 ? 1.25 + 0.25 * durable : 1)
+			* holsterFactor
 			* ringSharpshootingDurabilityMultiplier(this.equippedRing, this.hero.magicImmune));
 		if (uses >= 100) return 0;
 		return 100 / Math.max(1, uses) + 0.001;
+	}
+
+	/** `Bag` ownership over the flat inventory (see `ownsBag` in `bags.ts`). */
+	private ownsBag(id: BagId): boolean {
+		return ownsBag(this.bag.items, id);
+	}
+
+	/**
+	 * `Badges.validateAllBagsBought()`: the per-bag badge on acquisition, plus the meta
+	 * badge once all four are owned. Called everywhere a bag can enter the inventory -
+	 * run start (the free velvet), ground pickup (including shop-stand purchases, which
+	 * re-enter the pickup path), and keeper-shelf buys.
+	 */
+	private noteBagAcquired(id: string): void {
+		if (!isBagId(id)) return;
+		this.awardBadge(BAG_BADGE[id]);
+		if (BAG_IDS.every((bag) => this.ownsBag(bag))) this.awardBadge(ALL_BAGS_BADGE);
 	}
 
 	/**
@@ -7767,7 +7794,10 @@ export class DungeonScene extends Scene2D {
 			// 30-second flavour buff is active; Charges.advance() is this port's tick primitive.
 			recoverWandCharge: () => {
 				const missing = this.wandCharges.max - this.wandCharges.current;
-				const turnsToCharge = 10 + 40 * Math.pow(0.875, Math.max(0, missing));
+				//`MagicalHolster.HOLSTER_SCALE_FACTOR`: wands charge off `0.85` while the
+				//holster is owned instead of the normal `0.875` (see `bags.ts`).
+				const rechargeBase = this.ownsBag('magicalHolster') ? HOLSTER_RECHARGE_BASE : NORMAL_RECHARGE_BASE;
+				const turnsToCharge = 10 + 40 * Math.pow(rechargeBase, Math.max(0, missing));
 				//RingOfEnergy.wandChargeMultiplier(): 1.175^level, applied straight onto the base rate.
 				const baseRate = ringEnergyMultiplier(this.equippedRing, this.hero.magicImmune) / turnsToCharge;
 				//Charger.recharge(): Recharging's CHARGE_BUFF_BONUS is a flat `+0.25 * remainder()`
@@ -20794,7 +20824,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (heal > 0) { this.hero.hp = Math.min(this.hero.maxHp, this.hero.hp + heal + 1); this.showHeal(this.hero, heal + 1); }
 		if (charge > 0) {
 			const missing = this.wandCharges.max - this.wandCharges.current;
-			const turnsToCharge = 10 + 40 * Math.pow(0.875, Math.max(0, missing));
+			const rechargeBase = this.ownsBag('magicalHolster') ? HOLSTER_RECHARGE_BASE : NORMAL_RECHARGE_BASE;
+			const turnsToCharge = 10 + 40 * Math.pow(rechargeBase, Math.max(0, missing));
 			const perTurnRate = ringEnergyMultiplier(this.equippedRing, this.hero.magicImmune) / turnsToCharge;
 			this.wandCharges.advance(perTurnRate * (charge + 1));
 		}

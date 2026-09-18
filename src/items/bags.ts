@@ -21,11 +21,15 @@ import { SPECIALTY_BOMB_IDS, isMissileStack, type CarriedItem } from './itemKind
  *
  * What this module ports is the shelf half: the pick (`chooseShopBag`), the values, and
  * the `canHold` gates as a bag-id predicate over the port's own ids (used for scoring,
- * and later for anything that needs to know what goes where). The container half -
- * contents arrays, `grabItems` on pickup, capacity enforcement, `WndQuickBag` - has no
- * expression in this port's flat bag model and stays open (see PORT_COVERAGE.md's bag
- * row and ROADMAP.md's inventory-windows line). A bought bag is therefore a named,
- * priced, sellable item, exactly as far as the flat model reaches.
+ * and later for anything that needs to know what goes where). Of the container half,
+ * three pieces are now live too (2026-09-18): the Magical Holster's stat effects (wand
+ * recharge and missile durability, read off holster *ownership* - the flat bag keeps no
+ * per-item location, and every owned wand/missile would sit in the one holster anyway),
+ * the `Shopkeeper.canSell` resale refusal (`unique && !stackable`), and the
+ * `validateAllBagsBought` badge set. What stays open: contents arrays, `grabItems` on
+ * pickup, capacity enforcement, `WndQuickBag` (see PORT_COVERAGE.md's bag row and
+ * ROADMAP.md's inventory-windows line). A bought bag is therefore a named, priced,
+ * unsellable item, exactly as far as the flat model reaches.
  */
 export type BagId = 'velvetPouch' | 'scrollHolder' | 'potionBandolier' | 'magicalHolster';
 
@@ -56,6 +60,34 @@ export const BAG_CAPACITY = 19;
 export function isBagId(id: string): id is BagId {
 	return (BAG_IDS as readonly string[]).includes(id);
 }
+
+/** `Bag.ownsBag` over the flat inventory: a bag is owned while its item sits in the bag. */
+export function ownsBag(items: readonly { readonly id: string }[], id: BagId): boolean {
+	return items.some((item) => item.id === id);
+}
+
+/**
+ * `MagicalHolster.HOLSTER_SCALE_FACTOR` (`0.85f`) against the normal wand factor (`0.875f`,
+ * `Wand.java:804`), and `HOLSTER_DURABILITY_FACTOR` (`1.2f`, applied to the use count inside
+ * `MissileWeapon.durabilityPerUse`). Both fire while the item sits *inside* the holster in
+ * Java; here they fire while the holster is owned (see the module note).
+ */
+export const HOLSTER_RECHARGE_BASE = 0.85;
+export const NORMAL_RECHARGE_BASE = 0.875;
+export const HOLSTER_DURABILITY_FACTOR = 1.2;
+
+/**
+ * `Badges.java`'s bag set (`validateAllBagsBought`): one badge per bag plus the meta badge.
+ * Counter names follow this port's lowercase badge convention; the meta badge keeps Java's
+ * own `badges.png` cell 67.
+ */
+export const BAG_BADGE: Readonly<Record<BagId, string>> = {
+	velvetPouch: 'bag_velvet',
+	scrollHolder: 'bag_holder',
+	potionBandolier: 'bag_bandolier',
+	magicalHolster: 'bag_holster',
+};
+export const ALL_BAGS_BADGE = 'bags_all';
 
 /**
  * The `canHold()` gates of the four bag classes, stated over the port's bag ids.

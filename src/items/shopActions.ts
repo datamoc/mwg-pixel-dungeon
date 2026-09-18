@@ -1,6 +1,7 @@
 import { Actors } from 'mwg';
 import { t } from '../i18n/index';
 import { buybackPrice, getSellPrice, getShopPrice } from './shopPricing';
+import { isBagId } from './bags';
 import { isMissileStack, isUpgradableItem } from './itemKinds';
 import { missileExtraThrownLeft } from './missiles';
 
@@ -70,6 +71,9 @@ export function sellFood(context: ShopActionsContext): void {
 	const candidates = (context.bag.items as ShopEntry[]).filter((item) =>
 		item.quantity > 0 && getSellPrice(item.id, context.depth, 1, item.identified ?? true, item) > 0
 		&& !(item.cursed && (item.id === 'weaponReward' || item.id === 'armorReward' || item.id.startsWith('ring_')))
+		//`Shopkeeper.canSell()`: `unique && !stackable` is refused - every bag is `unique`
+		//(`Bag.java`), so bought bags can never be sold back.
+		&& !isBagId(item.id)
 	);
 	if (candidates.length === 0) {
 		context.say(t('port.log.nofoodtosell'));

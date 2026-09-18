@@ -6068,6 +6068,91 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
+								"id": "bag_velvet",
+								"counter": "bag_velvet",
+								"target": "1",
+								"description": "Owned the Velvet Pouch",
+								"icon": "60"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 100,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "bag_holder",
+								"counter": "bag_holder",
+								"target": "1",
+								"description": "Owned the Scroll Holder",
+								"icon": "61"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 108,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "bag_bandolier",
+								"counter": "bag_bandolier",
+								"target": "1",
+								"description": "Owned the Potion Bandolier",
+								"icon": "62"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 116,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "bag_holster",
+								"counter": "bag_holster",
+								"target": "1",
+								"description": "Owned the Magical Holster",
+								"icon": "63"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 124,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "bags_all",
+								"counter": "bags_all",
+								"target": "1",
+								"description": "Owned all four bags",
+								"icon": "67"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 132,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
 								"id": "unlock_mage",
 								"counter": "upgrades_used",
 								"target": "1",
@@ -6077,7 +6162,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 100,
+								"line": 140,
 								"column": 13
 							},
 							"gettext": []
@@ -6094,7 +6179,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 108,
+								"line": 148,
 								"column": 13
 							},
 							"gettext": []
@@ -6111,7 +6196,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 116,
+								"line": 156,
 								"column": 13
 							},
 							"gettext": []
@@ -6128,7 +6213,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 124,
+								"line": 164,
 								"column": 13
 							},
 							"gettext": []
@@ -6145,7 +6230,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 132,
+								"line": 172,
 								"column": 13
 							},
 							"gettext": []
@@ -6162,7 +6247,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 140,
+								"line": 180,
 								"column": 13
 							},
 							"gettext": []
@@ -6179,7 +6264,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 148,
+								"line": 188,
 								"column": 13
 							},
 							"gettext": []
@@ -6196,7 +6281,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 156,
+								"line": 196,
 								"column": 13
 							},
 							"gettext": []
@@ -6213,7 +6298,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 164,
+								"line": 204,
 								"column": 13
 							},
 							"gettext": []
