@@ -1,5 +1,5 @@
 import { Audio } from 'mwg';
-import { isMusicMuted, isSfxMuted, setMusicMuted as persistMusicMuted, setSfxMuted as persistSfxMuted } from './settings';
+import { isMusicMuted, isSfxMuted, setMusicMuted as persistMusicMuted, setSfxMuted as persistSfxMuted, musicVolume, sfxVolume, setMusicVolume as persistMusicVolume, setSfxVolume as persistSfxVolume, volumeCurve, playMusicInBackground } from './settings';
 
 /**
  * SPD's original OGG/MP3 assets, bundled as data URLs so the exported game still works from
@@ -21,8 +21,13 @@ function asset(folder: 'music' | 'sounds', name: string): string {
 
 export type AudioRegion = 'sewers' | 'prison' | 'caves' | 'city' | 'halls';
 
+const MUSIC_BASE_VOLUME = 0.42;
+
 export class SpdAudio {
-	private readonly music = new Audio.Music({ volume: 0.42 });
+	/** This port's full-volume music level - Java plays `Music` at device volume, this port
+	 * at a fixed base the volume slider scales quadratically (`volumeCurve`), so 10 keeps
+	 * today's level exactly. */
+	private readonly music = new Audio.Music({ volume: MUSIC_BASE_VOLUME * volumeCurve(musicVolume()) });
 	private readonly cues = new Map<string, Audio.Sound>();
 	private currentTrack: string | null = null;
 	private musicOff = isMusicMuted();
@@ -73,7 +78,11 @@ export class SpdAudio {
 	 * `sfxOff`, and a stopped-while-muted track has nothing suspended to resume.
 	 */
 	suspend(): void {
-		this.music.suspend();
+		// `SPDSettings.musicBackground()`: Java's `Game` foreground check only pauses the
+		// music when background play is off - with it on, the track keeps playing under
+		// the hidden tab. One-shots always park. `resume` is safe either way: `mwg`
+		// only resumes what suspension parked.
+		if (!playMusicInBackground()) this.music.suspend();
 		this.cues.forEach((sound) => sound.suspend());
 	}
 
@@ -131,7 +140,31 @@ export class SpdAudio {
 			sound = new Audio.Sound(asset('sounds', `${name}.mp3`), { poolSize: name === 'step' ? 6 : 4, volume });
 			this.cues.set(name, sound);
 		}
-		sound.play(1, pitch);
+		// Ready-made sfx path - Java's `Sample.play(id, volume)` multiplies the call-site
+		// volume by the master `SPDSettings.volume()` curve, so playback (not the cached
+		// base) carries the slider: default 10 leaves every existing level untouched.
+		sound.play(volumeCurve(sfxVolume()), pitch);
+	}
+
+	/**
+	 * `SPDSettings.musicVol(value)`: persists the 0-10 slider and rebases live music gain.
+	 * `mwg` only reads `Music.volume` at fade/(un)duck time, so the current track is
+	 * re-glided onto the new base via `unduck` - a no-op when nothing is playing, and
+	 * nothing in this port holds a real duck (nothing calls `duck()`), so no duck state
+	 * is disturbed.
+	 */
+	setMusicVolume(volume: number): void {
+		persistMusicVolume(volume);
+		this.music.volume = MUSIC_BASE_VOLUME * volumeCurve(volume);
+		this.music.unduck(0.25);
+	}
+
+	/**
+	 * `SPDSettings.soundFxVol(value)`: persists the 0-10 slider; one-shots pick it up on
+	 * their next `cue` playback, so there is no live gain to touch here.
+	 */
+	setSfxVolume(volume: number): void {
+		persistSfxVolume(volume);
 	}
 
 	update(dt: number): void {

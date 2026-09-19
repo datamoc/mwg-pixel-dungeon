@@ -711,9 +711,17 @@ below to close the gap was judged not worth the churn against those existing ref
   backed by `SPDSettings`' own `music`/`soundfx` persisted flags (`src/settings.ts`) gating
   the single `SpdAudio` choke point every cue and track already funnels through. Muting
   music stops it at once; unmuting replays the standing request (a deliberate improvement -
-  Java waits for the next scene to start something). **Stated simplifications**: the 0-10
-  volume sliders, brightness, and the remaining `WndSettings` tabs stay unported. See
-  `PORT_COVERAGE.md`'s audio row. **Complexity: S.**
+  Java waits for the next scene to start something). **Extended 2026-09-19 (Java-line
+  settings pass):** the 0-10 volume sliders (`music_vol`/`sfx_vol`, Java's quadratic
+  curve, live music re-glide + per-playback sfx scaling), the `music_bg` background-play
+  toggle (conditional music suspend), `DisplayTab` brightness (Java's `FOG_COLORS` alphas,
+  live fog re-render) and screen-shake steppers (0..4 multiplier, default 2 - correcting
+  the "default 1" the coverage file previously claimed), and the `UITab` vibration toggle
+  (persisted, model-only), all as `- value +` steppers / `✓` toggles under Java's own
+  labels (no slider widget in this port). All values re-checked against Java
+  (`SPDSettings.java`/`FogOfWar.java`/`PixelScene.java`, tag `v3.3.7`). **Still unported**:
+  the Keys/Data tabs and grid/follow behavior. See `PORT_COVERAGE.md`'s audio row.
+  **Complexity: S.**
 - [x] Manage the dungeon camera zoom. **Closed 2026-09-19 (added with the item itself - no
   roadmap line covered `SPDSettings.zoom()`):** the persisted integer offset (Java's own
   `zoom` key, default 0) drives the dungeon camera as `3 + offset`, adjustable with Java's

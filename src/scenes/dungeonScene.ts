@@ -135,7 +135,7 @@ import { BadgeBannerLayer } from '../ui/badgeBanner';
 import { SpdToolbar } from '../ui/toolbar';
 import { StatusPane } from '../ui/statusPane';
 import { SpdAudio } from '../audio';
-import { onZoomChanged, setZoomOffset, zoomForOffset, zoomOffset } from '../settings';
+import { onBrightnessChanged, onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../settings';
 import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, empoweringScrollsCharges, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalDefenseShield, lethalHasteDuration, LETHAL_HASTE_COOLDOWN, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, shieldingDewGain, sharedUpgradeArmor, soulSiphonCharge, twinUpgradeArmor, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
 import pixelFontUrl from '../assets/pixel_font.ttf';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth, SpdRandom } from '../spdRng';
@@ -1613,8 +1613,13 @@ export class DungeonScene extends Scene2D {
 	/** Sungrass' Java Health buff: healing is gradual and ends when the hero moves. */
 	private sungrassHealing = 0;
 	private sungrassPartial = 0;
-	/** `Healing` buff's `healingLeft` (`PotionOfHealing.heal()`): HP still owed by a HoT heal. */
+	/** `Healing` buff's `healingLeft` (`PotionOfHealing.heal()`): HP still owed by a HoT heal,
+	 * with `setHeal`'s property-wise-maximum companions (`percentHealPerTick`,
+	 * `flatHealPerTick`): the potion brings 0.25/0, a Warden sungrass brings 0/1, and each
+	 * survives the other. All three persist through save/load. */
 	private healingLeft = 0;
+	private healingPercent = 0;
+	private healingFlat = 0;
 	private sungrassPos = -1;
 	private deathlessFuryUsed = false;
 	private freeTurnNext = false;
@@ -2054,6 +2059,9 @@ export class DungeonScene extends Scene2D {
 		//`SPDSettings.zoom()`: a settings change mid-run re-zooms the live camera, so the
 		//dungeon does not need a scene rebuild to honour it.
 		this.onDestroy.add(onZoomChanged(() => this.applyZoom()));
+		//`SPDSettings.brightness()`: a settings change mid-run re-renders fog live, same
+		//as the zoom subscription above - `FogOfWar.refresh` already re-reads the level.
+		this.onDestroy.add(onBrightnessChanged(() => this.refresh()));
 		this.stage.addChild(this.camera.world);
 		this.itemsSheet = SpriteSheet.fromTexture(runState.sprites.items, 16, 16);
 
@@ -5097,10 +5105,16 @@ export class DungeonScene extends Scene2D {
 	 */
 	private readonly potionEffects = createPotionEffects(this.potionEffectsContext());
 
-	/** `PotionOfHealing.cure()`: the curable debuffs this port models, shared by the potion and by
-	 * `RegrowthBomb`, which calls the same `cure()`/`heal()` pair. */
+	/** `PotionOfHealing.cure()`: the curable debuffs this port models, shared by the potion, by
+	 * `RegrowthBomb` (which calls the same `cure()`/`heal()` pair), by Mageroyal (whose whole
+	 * effect is `cure()`), by the health well (`WaterOfHealth.affectHero()` calls `cure()` first)
+	 * and by the blessed-ankh revive. Java detaches Poison/Cripple/Weakness/Vulnerable/Bleeding/
+	 * Blindness/Drowsy/Slow/Vertigo, never Burning: Slow has no model here, and Java's own Daze
+	 * is a different buff (accuracy ×0.5, `Daze.DURATION` 5 - this port's `daze` table value is
+	 * exact), so the `daze` this port grants as a Blindness/Vertigo stand-in is deliberately
+	 * NOT cleared, matching Java not clearing Daze. */
 	private cureHeroBuffs(): void {
-		for (const b of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'drowsy'] as BuffId[]) delete this.hero.buffs[b];
+		for (const b of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'drowsy', 'blindness'] as BuffId[]) delete this.hero.buffs[b];
 	}
 
 	private applyPotionHealing(): void {
@@ -5121,9 +5135,12 @@ export class DungeonScene extends Scene2D {
 			//PotionOfHealing.heal(): `Buff.affect(ch, Healing.class).setHeal((int)(0.8*HT+14), 0.25, 0)`
 			//- a gradual heal-over-time, not an instant full heal (see the applyBuffDamage tick
 			//in spendHeroTurn). `setHeal` only replaces `healingLeft` if the new amount is bigger,
-			//so quaffing a second potion mid-heal doesn't stack additively on top of the first.
+			//so quaffing a second potion mid-heal doesn't stack additively on top of the first -
+			//and it takes the property-wise maximum, so a Warden sungrass's flat 1/turn survives
+			//a later potion (and vice versa) exactly as Java's `Math.max` on each field does.
 			const amount = Math.round(0.8 * this.hero.maxHp + 14);
 			if (amount > this.healingLeft) this.healingLeft = amount;
+			this.healingPercent = Math.max(this.healingPercent, 0.25);
 			const willpower = this.talentRank('restored_willpower');
 			if (willpower > 0) this.grantHeroShield(Math.round(this.hero.maxHp * (willpower === 1 ? 0.67 : 1)), this.hero.maxHp);
 			if (this.talentRank('restored_agility') > 0) { this.healingEvasionTurns = 1; this.syncHeroFromStats(); }
@@ -7872,15 +7889,18 @@ export class DungeonScene extends Scene2D {
 	 * sites across the game. The Java body is a thin wrapper - `magnitude *= SPDSettings.screenShake()`
 	 * then `Camera.main.shake(magnitude, duration)`. MWG now also exposes `shakeScreen`, which accepts
 	 * screen pixels and performs the active-camera conversion; use it here because Java's magnitude
-	 * is explicitly measured in screen pixels, not world units. This wrapper still omits Java's
-	 * optional screen-shake preference: this port has no setting, and Java's default is 1.
+	 * is explicitly measured in screen pixels, not world units. Java's
+	 * `SPDSettings.screenShake()` 0-4 multiplier (`PixelScene.shake`) applies here, so 0
+	 * disables shake outright and the default 2 doubles it - the old fixed-gain behavior
+	 * is exactly what 1 would give, not the default.
 	 *
 	 * Wired at every site whose Java feature this port has ported; the rest are listed in
 	 * `PORT_COVERAGE.md` with the reason each cannot be reached yet (mostly hero abilities and two
 	 * monsters that are not ported at all).
 	 */
 	private shakeScreen(magnitude: number, duration: number): void {
-		this.camera.shakeScreen(magnitude, duration);
+		const scaled = magnitude * screenShake();
+		if (scaled > 0) this.camera.shakeScreen(scaled, duration);
 	}
 
 	/** `WandOfLightning.arc()` (`WandOfLightning.java`, tag `v3.3.8`): recursively
@@ -8316,9 +8336,11 @@ export class DungeonScene extends Scene2D {
 				//instant full heal - 25% of whatever's left per turn (floored at 1, capped at
 				//what's left), fully replacing the port's former "quaff = instantly full HP"
 				//stand-in. `setHeal`'s real semantics: a fresh potion only replaces `healingLeft`
-				//if its amount is bigger, it never stacks additively on top of an in-progress heal.
+				//if its amount is bigger, it never stacks additively on top of the first - and
+				//each rate property combines by maximum, so a Warden sungrass (`setHeal(HT,0,1)`)
+				//keeps its flat 1/turn through a later potion's 25% and vice versa.
 				if (this.healingLeft > 0) {
-					const tick = Math.min(this.healingLeft, Math.max(1, Math.round(this.healingLeft * 0.25)));
+					const tick = Math.min(this.healingLeft, Math.max(1, Math.round(this.healingLeft * this.healingPercent) + this.healingFlat));
 					if (this.hero.hp < this.hero.maxHp) {
 						const before = this.hero.hp;
 						this.hero.hp = Math.min(this.hero.maxHp, this.hero.hp + tick);
@@ -16044,6 +16066,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.sungrassHealing = s.sungrassHealing ?? 0;
 		this.sungrassPartial = s.sungrassPartial ?? 0;
 		this.healingLeft = s.healingLeft ?? 0;
+		this.healingPercent = s.healingPercent ?? 0;
+		this.healingFlat = s.healingFlat ?? 0;
 		this.sungrassPos = s.sungrassPos ?? -1;
 		this.deathlessFuryUsed = s.deathlessFuryUsed ?? false;
 		this.weaponLevel = s.weaponLevel;

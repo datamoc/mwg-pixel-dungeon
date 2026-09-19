@@ -5,10 +5,12 @@ import { dirname, join } from 'node:path';
 import { createRequire } from 'node:module';
 import ts from 'typescript';
 
-// `SPDSettings`' persisted audio/display half (`src/settings.ts`), proved against the Java
-// source it was transcribed from: the `music`/`soundfx`/`zoom` key strings, the enabled
-// defaults, the fixed zoom gate standing in for Java's screen-derived min/max, and the
-// subscriber fan-out the dungeon camera relies on. Same house pattern as
+// `SPDSettings`' persisted audio/display/UI half (`src/settings.ts`), proved against the
+// Java source it was transcribed from: the `music`/`soundfx`/`zoom`/`music_vol`/
+// `sfx_vol`/`brightness`/`screen_shake`/`music_bg`/`vibration`/`visual_grid`/
+// `camera_follow` key strings, the enabled defaults, the fixed zoom gate standing in for Java's
+// screen-derived min/max, the 0-10 volume curve, the brightness fog alphas, and the
+// subscriber fan-out the dungeon camera and fog rely on. Same house pattern as
 // `verifyVault.mjs`: compile the real module into a private CommonJS tree (this one has no
 // imports at all, so no shims) so this needs no DOM, Pixi or `mwg`.
 const output = mkdtempSync(join(tmpdir(), 'spd-settings-'));
@@ -108,6 +110,97 @@ try {
 		stop();
 		settings.setZoomOffset(-1);
 		assert.deepEqual(heard, [2, 3]);
+	});
+
+	check('volume sliders default to 10 and gate 0..10', () => {
+		const store = freshStore();
+		settings.setSettingsStore(store);
+		assert.equal(settings.musicVolume(), 10);
+		assert.equal(settings.sfxVolume(), 10);
+		settings.setMusicVolume(99);
+		settings.setSfxVolume(-99);
+		assert.equal(settings.musicVolume(), 10);
+		assert.equal(settings.sfxVolume(), 0);
+		assert.equal(store.dump().get('music_vol'), '10');
+		assert.equal(store.dump().get('sfx_vol'), '0');
+		store.setItem('music_vol', 'banana');
+		assert.equal(settings.musicVolume(), 10);
+	});
+
+	check('volume curve is quadratic: 0 silent, 10 full, 5 quarter', () => {
+		assert.equal(settings.volumeCurve(0), 0);
+		assert.equal(settings.volumeCurve(10), 1);
+		assert.equal(settings.volumeCurve(5), 0.25);
+	});
+
+	check('brightness defaults to 0, gates -1..1, and selects the fog alpha', () => {
+		const store = freshStore();
+		settings.setSettingsStore(store);
+		assert.equal(settings.brightness(), 0);
+		settings.setBrightness(99);
+		assert.equal(settings.brightness(), 1);
+		settings.setBrightness(-99);
+		assert.equal(settings.brightness(), -1);
+		assert.equal(store.dump().get('brightness'), '-1');
+		store.setItem('brightness', 'banana');
+		assert.equal(settings.brightness(), 0);
+		assert.equal(settings.brightnessFogAlpha(-1), 204);
+		assert.equal(settings.brightnessFogAlpha(0), 153);
+		assert.equal(settings.brightnessFogAlpha(1), 85);
+	});
+
+	check('brightness subscribers hear the gated value, unsubscribes go quiet', () => {
+		settings.setSettingsStore(freshStore());
+		const heard = [];
+		const stop = settings.onBrightnessChanged((value) => heard.push(value));
+		settings.setBrightness(1);
+		settings.setBrightness(50);
+		stop();
+		settings.setBrightness(-1);
+		assert.deepEqual(heard, [1, 1]);
+	});
+
+	check('screen shake defaults to 2 and gates 0..4', () => {
+		const store = freshStore();
+		settings.setSettingsStore(store);
+		assert.equal(settings.screenShake(), 2);
+		settings.setScreenShake(99);
+		assert.equal(settings.screenShake(), 4);
+		settings.setScreenShake(-1);
+		assert.equal(settings.screenShake(), 0);
+		assert.equal(store.dump().get('screen_shake'), '0');
+	});
+
+	check('background music and vibration default on, anything but false stays on', () => {
+		const store = freshStore();
+		settings.setSettingsStore(store);
+		assert.equal(settings.playMusicInBackground(), true);
+		assert.equal(settings.vibration(), true);
+		settings.setPlayMusicInBackground(false);
+		settings.setVibration(false);
+		assert.equal(settings.playMusicInBackground(), false);
+		assert.equal(settings.vibration(), false);
+		assert.equal(store.dump().get('music_bg'), 'false');
+		assert.equal(store.dump().get('vibration'), 'false');
+		store.setItem('music_bg', 'yes-please');
+		assert.equal(settings.playMusicInBackground(), true);
+	});
+
+	check('grid and camera-follow persist with Java defaults and gates', () => {
+		const store = freshStore();
+		settings.setSettingsStore(store);
+		assert.equal(settings.visualGrid(), 0);
+		assert.equal(settings.cameraFollow(), 4);
+		settings.setVisualGrid(99);
+		settings.setCameraFollow(99);
+		assert.equal(settings.visualGrid(), 2);
+		assert.equal(settings.cameraFollow(), 4);
+		settings.setVisualGrid(-99);
+		settings.setCameraFollow(-99);
+		assert.equal(settings.visualGrid(), -1);
+		assert.equal(settings.cameraFollow(), 1);
+		assert.equal(store.dump().get('visual_grid'), '-1');
+		assert.equal(store.dump().get('camera_follow'), '1');
 	});
 
 	console.log(`\nAll ${passed} display-settings checks passed.`);

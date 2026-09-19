@@ -1,4 +1,5 @@
 import { Sprite, Texture } from 'mwg/two-d/pixi-interop';
+import { brightness, brightnessFogAlpha } from '../settings';
 import { fogHalves } from '../spdLevelGen/fog';
 
 /** Java's two fog pixels per tile, rendered once above terrain and characters.
@@ -21,7 +22,11 @@ export class FogOfWar extends Sprite {
 		this.eventMode = 'none';
 	}
 	refresh(terrain: (x: number, y: number) => number, state: (x: number, y: number) => number): void {
-		const colors = [[0, 0, 0, 0], [0, 0, 0, 153], [25, 51, 102, 153], [0, 0, 0, 255]];
+			// `FogOfWar.updateVisibility` re-reads `SPDSettings.brightness()` on every render,
+	// so the explored shade follows the slider without a cached copy: the level maps
+	// to Java's `FOG_COLORS` visited-row alpha via `brightnessFogAlpha` (0 keeps 153).
+	const shade = brightnessFogAlpha(brightness());
+	const colors = [[0, 0, 0, 0], [0, 0, 0, shade], [25, 51, 102, shade], [0, 0, 0, 255]];
 		for (let y = 0; y < this.rows; y++) for (let x = 0; x < this.columns; x++) {
 			const halves = fogHalves(x, y, this.columns, this.rows, terrain, state);
 			for (let half = 0; half < 2; half++) for (let row = 0; row < 2; row++) {

@@ -6,7 +6,7 @@ import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
 import { CHALLENGES, challenges, challengeDescription, challengeLabel, toggleChallenge } from '../challenges';
 import { rankings } from '../rankings';
 import { applySpdDirection, SPD_TITLE_COLOR } from './spdTheme';
-import { isMusicMuted, isSfxMuted, setZoomOffset, zoomOffset } from '../settings';
+import { brightness, isMusicMuted, isSfxMuted, musicVolume, playMusicInBackground, screenShake, setBrightness, setPlayMusicInBackground, setScreenShake, setVibration, setZoomOffset, sfxVolume, vibration, zoomOffset } from '../settings';
 import { SpdButton as Button, menuScale } from './spdButton';
 import { SpdLabel as Label } from './spdLabel';
 import { titleIcon } from './titleIcons';
@@ -109,11 +109,14 @@ export function showChoiceWindow(
 }
 
 /**
- * Settings: language, challenges, audio mutes and zoom - `WndSettings`' own four concerns
- * minus the ones with no seam here (the 0-10 volume sliders, brightness, and its other
- * tabs are unported; see `PORT_COVERAGE.md`). Section headers use `Window.TITLE_COLOR`
- * like Java's `AudioTab` title (`title.hardlight(TITLE_COLOR)`), and the mute rows reuse
- * the challenges window's own `✓ `-prefix convention rather than Java's checkboxes.
+ * Settings: language, challenges, audio and display - `WndSettings`' `AudioTab` mutes plus
+ * its 0-10 volume sliders, `DisplayTab` brightness and screen-shake steppers, and the
+ * `UITab` vibration toggle, all under real Java labels. Java's sliders are `- value +`
+ * steppers in the zoom row's port-original chrome (this port has no slider widget), and
+ * the single window co-locates Java's tabs, so vibration sits in the display section.
+ * Section headers use `Window.TITLE_COLOR` like Java's `AudioTab` title
+ * (`title.hardlight(TITLE_COLOR)`), and the toggle rows reuse the challenges window's
+ * own `✓ `-prefix convention rather than Java's checkboxes.
  *
  * A language change rebuilds the whole interface, which the title screen does by switching to
  * itself; `onLanguageChanged` is what a caller wants to happen instead - the title passes its own
@@ -169,8 +172,29 @@ export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () =
 	challengeButton.position.set(0, y);
 	window.content.addChild(challengeButton);
 	y += 26;
-	//`WndSettings$AudioTab`: its title plus the two mute rows (Java pairs each with a
-	//0-10 volume slider, which stays unported - muting is the only persisted control).
+	//`WndSettings$AudioTab` sliders have no slider widget in this port, so each is a
+	//`- value +` stepper in the zoom row's chrome below, under its real Java label.
+	const stepperRow = (label: string, value: string, onDec: () => void, onInc: () => void): void => {
+		const step = 40;
+		const caption = new Label({ text: label, size: 7, color: theme().color.textDim });
+		caption.position.set(0, y);
+		window.content.addChild(caption);
+		y += caption.height + 2;
+		const dec = new Button({ width: step, height: 22, text: '-', onClick: () => { onDec(); reopen(); } });
+		dec.position.set(0, y);
+		window.content.addChild(dec);
+		const inc = new Button({ width: step, height: 22, text: '+', onClick: () => { onInc(); reopen(); } });
+		inc.position.set(window.contentWidth - step, y);
+		window.content.addChild(inc);
+		const current = new Label({
+			text: value, size: 8, wrapWidth: window.contentWidth - step * 2 - 8,
+			align: 'center', color: theme().color.text,
+		});
+		current.position.set(step + 4, y + 11 - current.height / 2);
+		window.content.addChild(current);
+		y += 26;
+	};
+	//`WndSettings$AudioTab`: its title, the two mute rows, and each mute's 0-10 slider.
 	const audioTitle = new Label({ text: t('windows.wndsettings$audiotab.title'), size: 7, color: SPD_TITLE_COLOR });
 	audioTitle.position.set(0, y);
 	window.content.addChild(audioTitle);
@@ -187,6 +211,9 @@ export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () =
 	musicButton.position.set(0, y);
 	window.content.addChild(musicButton);
 	y += 26;
+	stepperRow(t('windows.wndsettings$audiotab.music_vol'), String(musicVolume()),
+		() => runState.audio.setMusicVolume(musicVolume() - 1),
+		() => runState.audio.setMusicVolume(musicVolume() + 1));
 	const sfxButton = new Button({
 		width: window.contentWidth,
 		height: 22,
@@ -198,6 +225,23 @@ export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () =
 	});
 	sfxButton.position.set(0, y);
 	window.content.addChild(sfxButton);
+	y += 26;
+	stepperRow(t('windows.wndsettings$audiotab.sfx_vol'), String(sfxVolume()),
+		() => runState.audio.setSfxVolume(sfxVolume() - 1),
+		() => runState.audio.setSfxVolume(sfxVolume() + 1));
+	//`WndSettings$AudioTab.musicBackground()`: the background-play checkbox, same `✓`
+	//chrome as the mutes - `SpdAudio.suspend` reads it live on every page hide.
+	const musicBgButton = new Button({
+		width: window.contentWidth,
+		height: 22,
+		text: `${playMusicInBackground() ? '✓ ' : ''}${t('windows.wndsettings$audiotab.music_bg')}`,
+		onClick: () => {
+			setPlayMusicInBackground(!playMusicInBackground());
+			reopen();
+		},
+	});
+	musicBgButton.position.set(0, y);
+	window.content.addChild(musicBgButton);
 	y += 26;
 	//Zoom management: Java has no settings row for this (desktop zooms with `+`/`-`,
 	//mobile with pinch, both writing the same `SPDSettings.zoom()` offset this persists),
@@ -239,6 +283,29 @@ export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () =
 	});
 	zoomLevel.position.set(zoomStep + 4, y + 11 - zoomLevel.height / 2);
 	window.content.addChild(zoomLevel);
+	y += 26;
+	//`WndSettings$DisplayTab`: brightness (-1..1) and screen shake (0..4) steppers - the
+	//fog and `shakeScreen` seams read the levels live, so stepping re-renders in place.
+	stepperRow(t('windows.wndsettings$displaytab.brightness'), String(brightness()),
+		() => setBrightness(brightness() - 1),
+		() => setBrightness(brightness() + 1));
+	stepperRow(t('windows.wndsettings$displaytab.screenshake'), String(screenShake()),
+		() => setScreenShake(screenShake() - 1),
+		() => setScreenShake(screenShake() + 1));
+	//`WndSettings$UITab.vibration()`: Java's UI tab has no seam in this single-window
+	//port, so its toggle lives here - model-only for now (no haptics seam), like the
+	//persisted-only grid/follow settings.
+	const vibrationButton = new Button({
+		width: window.contentWidth,
+		height: 22,
+		text: `${vibration() ? '✓ ' : ''}${t('windows.wndsettings$uitab.vibration')}`,
+		onClick: () => {
+			setVibration(!vibration());
+			reopen();
+		},
+	});
+	vibrationButton.position.set(0, y);
+	window.content.addChild(vibrationButton);
 	y += 26;
 	const close = new Button({ width: window.contentWidth, height: 18, text: t('port.window.close'), onClick: () => window.close() });
 	close.position.set(0, y);
