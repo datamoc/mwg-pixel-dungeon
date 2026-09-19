@@ -1849,6 +1849,40 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	meal = mealScene('huntress', { invigorating_meal: 2 });
 	applyMealEatenEffects(meal, 0);
 	assert.equal(meal.freeTurnNext, true, 'invigorating meal grants the free turn');
+	// The alchemy-pot window flow moved to `items/alchemy.ts` (file-size refactor,
+	// behavior-identical): drive it headlessly through a scripted picker context.
+	// `potionSeed` exercises the whole chain - recipe list, three chained unit picks,
+	// the craft tail, energy spend and the crafted announcement.
+	const { openAlchemyRecipes: openFlowRecipes } = require('./items/alchemy.js');
+	const flowBag = new Inventory();
+	flowBag.add({ id: 'seedFirebloom', quantity: 3, stackable: true });
+	const flowSaid = [];
+	let flowRefreshes = 0;
+	const flowScene = {
+		bag: flowBag,
+		alchemyEnergy: 100,
+		say: (line, level) => { flowSaid.push({ line, level }); },
+		openItemPicker: (title, entries, onPick) => {
+			const seedRow = entries.find((e) => e.instanceId === 'potionSeed') ?? entries[0];
+			onPick({ id: seedRow.id, instanceId: seedRow.instanceId });
+		},
+		itemDisplayName: (id) => id,
+		refreshInventoryPanel: () => { flowRefreshes++; },
+	};
+	openFlowRecipes(flowScene);
+	const seedCost = alchemyRecipe('potionSeed').energyCost;
+	assert.equal(flowBag.find('seedFirebloom'), undefined, 'the three picked seeds are consumed');
+	assert.equal(flowBag.find('potionFlame')?.quantity, 1, 'three firebloom seeds brew one flame potion');
+	assert.equal(flowScene.alchemyEnergy, 100 - seedCost, 'the recipe cost leaves the energy pool');
+	assert.ok(flowSaid.some((s) => s.line.startsWith('port.log.alchemy.crafted')), 'the brew is announced');
+	assert.equal(flowRefreshes, 1, 'the panel refreshes once');
+	const brokeScene = { ...flowScene, bag: new Inventory(), alchemyEnergy: 0 };
+	let brokePicks = 0;
+	brokeScene.openItemPicker = () => { brokePicks++; };
+	brokeScene.say = (line, level) => { flowSaid.push({ line, level }); };
+	openFlowRecipes(brokeScene);
+	assert.equal(brokePicks, 0, 'no recipes, no picker');
+	assert.ok(flowSaid.some((s) => s.line === 'port.log.alchemy.noingredients'), 'the empty pot says so');
 	// `PotionOfShroudingFog.shatter()` (tag `v3.3.8`) through the quaff registry: 180
 	// SmokeScreen on every open neighbour, the center taking 180 plus 180 per wall.
 	compile(join(root, 'src/dungeonConstants.ts'), 'dungeonConstants.js');

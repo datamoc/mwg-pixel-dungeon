@@ -1,6 +1,7 @@
 import { Random } from 'mwg';
 import { craft, type Recipe } from 'mwg/actors';
 import type { Inventory } from 'mwg/actors';
+import { t } from '../i18n';
 import { MWL_ITEM_NODES, MWL_TABLE_ROWS } from '../mwlContent';
 import { isChallengeEnabled } from '../challenges';
 
@@ -445,4 +446,185 @@ export function craftPotionSeed(inventory: Inventory, selection?: readonly Alche
 	if (!selected) return undefined;
 	const result = random ? Random.element(Object.values(SEED_TO_POTION)) : selected.potionId;
 	return result ? { id: result, identified: distinct === 1 } : undefined;
+}
+
+/**
+ * The alchemy-pot window flow, moved out of `scenes/dungeonScene.ts` (file-size refactor:
+ * one domain per commit, no behavior change). The scene keeps only a thin adapter that
+ * builds the context; everything below reads the bag and the energy pool through it,
+ * the same vehicle as the potion/bomb effect contexts.
+ */
+export interface AlchemyFlowContext {
+	readonly bag: Inventory;
+	alchemyEnergy: number;
+	readonly say: (line: string, level?: 'info' | 'positive' | 'negative' | 'warning') => void;
+	readonly openItemPicker: (
+		title: string,
+		entries: { id: string; instanceId?: string; identified?: boolean; quantity: number; note?: string }[],
+		onPick: (entry: { id: string; instanceId?: string }) => void,
+	) => void;
+	readonly itemDisplayName: (id: string, identified: boolean) => string;
+	readonly refreshInventoryPanel: () => void;
+}
+
+/** One explicitly picked carried unit (potionSeed: three seeds; scroll/stone/exotic: one
+ *  unit; alchemize/catalysts: a pair) - Java's alchemy window adds specific items, while
+ *  the recipe picker only names the recipe, so category recipes resolve these after a
+ *  follow-up pick. */
+export type AlchemyIngredientSelection =
+	| { kind: 'seeds'; units: AlchemyUnitRef[] }
+	| { kind: 'scroll'; unit: AlchemyUnitRef }
+	| { kind: 'alchemize'; seed: AlchemyUnitRef; stone: AlchemyUnitRef }
+	| { kind: 'pair'; primary: AlchemyUnitRef; secondary: AlchemyUnitRef };
+
+// Java's alchemy window adds specific carried units; the recipe row only names the
+// recipe, so these five category recipes pause here for one ingredient picker per unit
+// and finish through completeAlchemyRecipe below. Closing any picker aborts the brew
+// with nothing consumed, the way walking away from the pot does. Returns true when it
+// takes over, false for exact-id recipes (which fall through to the plain picker path).
+export function startAlchemyIngredientPick(scene: AlchemyFlowContext, recipe: AlchemyRecipe): boolean {
+	const chooseTitle = t('port.ui.alchemy.choose');
+	if (recipe.id === 'potionSeed') {
+		pickAlchemyUnits(scene, chooseTitle, (item) => seedPotionId(item) !== undefined, 3, [], (selected) => completeAlchemyRecipe(scene, recipe, { kind: 'seeds', units: selected }));
+		return true;
+	}
+	if (recipe.id === 'scrollToStone') {
+		pickAlchemyUnits(scene, chooseTitle, (item) => SCROLL_TO_STONE[item.id] !== undefined, 1, [], (selected) => completeAlchemyRecipe(scene, recipe, { kind: 'scroll', unit: selected[0]! }));
+		return true;
+	}
+	if (recipe.id === 'scrollToExotic') {
+		pickAlchemyUnits(scene, chooseTitle, (item) => scrollExoticResult(item.id) !== undefined, 1, [], (selected) => completeAlchemyRecipe(scene, recipe, { kind: 'scroll', unit: selected[0]! }));
+		return true;
+	}
+	if (recipe.id === 'potionToExotic') {
+		pickAlchemyUnits(scene, chooseTitle, (item) => potionExoticResult(item.id) !== undefined, 1, [], (selected) => completeAlchemyRecipe(scene, recipe, { kind: 'scroll', unit: selected[0]! }));
+		return true;
+	}
+	if (recipe.id === 'alchemize') {
+		pickAlchemyUnits(scene, chooseTitle, (item) => item.id.startsWith('seed'), 1, [], (seeds) => {
+			pickAlchemyUnits(scene, chooseTitle, (item) => item.id.startsWith('stoneOf'), 1, [], (stones) => completeAlchemyRecipe(scene, recipe, { kind: 'alchemize', seed: seeds[0]!, stone: stones[0]! }));
+		});
+		return true;
+	}
+	if (recipe.id === 'alchemicalCatalyst' || recipe.id === 'arcaneCatalyst') {
+		const primaryKind = recipe.id === 'alchemicalCatalyst' ? 'potion' : 'scroll';
+		pickAlchemyUnits(scene, chooseTitle, (item) => item.id.startsWith(primaryKind), 1, [], (primaries) => {
+			const primary = primaries[0]!;
+			pickAlchemyUnits(scene, chooseTitle, (item) => isSeedOrRunestone(item) && item.id + (item.instanceId ?? '') !== primary.id + (primary.instanceId ?? ''), 1, [], (secondaries) => completeAlchemyRecipe(scene, recipe, { kind: 'pair', primary, secondary: secondaries[0]! }));
+		});
+		return true;
+	}
+	return false;
+}
+
+// One ingredient picker per unit: rows are the eligible carried stacks with an uncovered
+// unit left, and each pick chains the next until count units are chosen.
+export function pickAlchemyUnits(
+	scene: AlchemyFlowContext,
+	title: string,
+	eligible: (item: { id: string; instanceId?: string; quantity: number }) => boolean,
+	count: number,
+	chosen: AlchemyUnitRef[],
+	done: (chosen: AlchemyUnitRef[]) => void,
+): void {
+	const uncovered = (item: { id: string; instanceId?: string }) => chosen.filter((unit) => unit.id === item.id && (unit.instanceId ?? undefined) === (item.instanceId ?? undefined)).length;
+	const rows = scene.bag.items.filter((item) => item.quantity > 0 && eligible(item) && uncovered(item) < item.quantity);
+	if (rows.length === 0) {
+		scene.say(t('port.log.alchemy.unavailable'), 'negative');
+		return;
+	}
+	scene.openItemPicker(title, rows.map((item) => ({ id: item.id, instanceId: item.instanceId, identified: item.identified, quantity: item.quantity })), (pick) => {
+		const target = scene.bag.items.find((item) => item.quantity > 0 && item.id === pick.id && (item.instanceId ?? undefined) === (pick.instanceId ?? undefined) && eligible(item) && uncovered(item) < item.quantity);
+		if (!target) {
+			scene.say(t('port.log.alchemy.unavailable'), 'negative');
+			return;
+		}
+		const next = [...chosen, { id: target.id, instanceId: target.instanceId }];
+		if (next.length >= count) done(next);
+		else pickAlchemyUnits(scene, title, eligible, count, next, done);
+	});
+}
+
+// The shared craft tail for recipes whose ingredients were just picked (and, through the
+// plain picker path above, only those - exact-id recipes never reach here). Energy is
+// re-checked against the picked units, the selection-aware transaction brews, and the
+// result is announced exactly like the plain path.
+export function completeAlchemyRecipe(scene: AlchemyFlowContext, recipe: AlchemyRecipe, selected: AlchemyIngredientSelection): void {
+	const dynamicCost = recipe.id === 'alchemicalCatalyst' ? alchemicalCatalystCost(scene.bag, selected.kind === 'pair' ? selected : undefined) : recipe.id === 'arcaneCatalyst' ? arcaneCatalystCost(scene.bag, selected.kind === 'pair' ? selected : undefined) : undefined;
+	const recipeCost = dynamicCost ?? recipe.energyCost;
+	if (recipeCost > scene.alchemyEnergy) {
+		scene.say(t('port.log.alchemy.unavailable'), 'negative');
+		return;
+	}
+	let craftedResult: ReturnType<typeof craftPotionSeed>;
+	let crafted: boolean;
+	if (recipe.id === 'potionSeed') {
+		craftedResult = craftPotionSeed(scene.bag, selected.kind === 'seeds' ? selected.units : undefined);
+		crafted = craftedResult !== undefined;
+		if (craftedResult) scene.bag.add({ id: craftedResult.id, quantity: 1, stackable: true, identified: craftedResult.identified });
+	} else if (recipe.id === 'scrollToStone') crafted = craftScrollToStone(scene.bag, selected.kind === 'scroll' ? selected.unit : undefined);
+	else if (recipe.id === 'scrollToExotic') crafted = craftScrollToExotic(scene.bag, selected.kind === 'scroll' ? selected.unit : undefined);
+	else if (recipe.id === 'potionToExotic') crafted = craftPotionToExotic(scene.bag, selected.kind === 'scroll' ? selected.unit : undefined);
+	else if (recipe.id === 'alchemicalCatalyst') crafted = craftAlchemicalCatalyst(scene.bag, selected.kind === 'pair' ? selected : undefined);
+	else if (recipe.id === 'arcaneCatalyst') crafted = craftArcaneCatalyst(scene.bag, selected.kind === 'pair' ? selected : undefined);
+	else if (recipe.id === 'alchemize') crafted = craftAlchemize(scene.bag, selected.kind === 'alchemize' ? { seed: selected.seed, stone: selected.stone } : undefined);
+	else crafted = craftAlchemy(scene.bag, recipe.id);
+	if (!crafted) {
+		scene.say(t('port.log.alchemy.unavailable'), 'negative');
+		return;
+	}
+	scene.alchemyEnergy -= recipeCost;
+	const resultId = craftedResult?.id ?? recipe.result.id;
+	const resultIdentified = craftedResult?.identified ?? true;
+	scene.say(t('port.log.alchemy.crafted', { item: scene.itemDisplayName(resultId, resultIdentified) }), 'positive');
+	scene.refreshInventoryPanel();
+}
+
+export function openAlchemyRecipes(scene: AlchemyFlowContext): void {
+	const recipes = ALCHEMY_RECIPES.filter((recipe) => recipe.energyCost <= scene.alchemyEnergy && (
+		recipe.id === 'potionSeed' ? canCraftPotionSeed(scene.bag) : recipe.id === 'scrollToStone' ? canCraftScrollToStone(scene.bag) : recipe.id === 'scrollToExotic' ? canCraftScrollToExotic(scene.bag) : recipe.id === 'potionToExotic' ? canCraftPotionToExotic(scene.bag) : recipe.id === 'alchemize'
+			? scene.bag.items.some((item) => item.quantity > 0 && item.id.startsWith('seed'))
+				&& scene.bag.items.some((item) => item.quantity > 0 && item.id.startsWith('stoneOf'))
+			: recipe.id === 'alchemicalCatalyst' ? (alchemicalCatalystCost(scene.bag) ?? Infinity) <= scene.alchemyEnergy
+			: recipe.id === 'arcaneCatalyst' ? (arcaneCatalystCost(scene.bag) ?? Infinity) <= scene.alchemyEnergy
+			: recipe.ingredients.every((ingredient) => {
+				const item = scene.bag.find(ingredient.id);
+				return (item?.quantity ?? 0) >= ingredient.quantity;
+			})
+	));
+	if (recipes.length === 0) {
+		scene.say(t('port.log.alchemy.noingredients'), 'negative');
+		return;
+	}
+	scene.openItemPicker(
+		`${t('port.ui.alchemy.title')} [${scene.alchemyEnergy}]`,
+		recipes.map((recipe) => ({ id: recipe.result.id, instanceId: recipe.id, identified: true, quantity: recipe.result.quantity })),
+		(entry) => {
+			const recipe = ALCHEMY_RECIPES.find((candidate) => candidate.id === entry.instanceId);
+		if (recipe && startAlchemyIngredientPick(scene, recipe)) return;
+			const dynamicCost = recipe?.id === 'alchemicalCatalyst' ? alchemicalCatalystCost(scene.bag) : recipe?.id === 'arcaneCatalyst' ? arcaneCatalystCost(scene.bag) : undefined;
+			const recipeCost = dynamicCost ?? recipe?.energyCost ?? Infinity;
+			if (!recipe || recipeCost > scene.alchemyEnergy) {
+				scene.say(t('port.log.alchemy.unavailable'), 'negative');
+				return;
+			}
+			const potionSeed = recipe?.id === 'potionSeed' ? craftPotionSeed(scene.bag) : undefined;
+			const craftedResult = recipe?.id === 'potionSeed' ? potionSeed : undefined;
+			if (craftedResult) scene.bag.add({ id: craftedResult.id, quantity: 1, stackable: true, identified: craftedResult.identified });
+			const crafted = recipe?.id === 'potionSeed' ? craftedResult !== undefined : recipe?.id === 'scrollToStone' ? craftScrollToStone(scene.bag)
+				: recipe?.id === 'scrollToExotic' ? craftScrollToExotic(scene.bag)
+				: recipe?.id === 'potionToExotic' ? craftPotionToExotic(scene.bag)
+				: recipe?.id === 'alchemicalCatalyst' ? craftAlchemicalCatalyst(scene.bag) : recipe?.id === 'arcaneCatalyst' ? craftArcaneCatalyst(scene.bag)
+				: recipe?.id === 'alchemize' ? craftAlchemize(scene.bag) : recipe ? craftAlchemy(scene.bag, recipe.id) : false;
+			if (!crafted) {
+				scene.say(t('port.log.alchemy.unavailable'), 'negative');
+				return;
+			}
+			scene.alchemyEnergy -= recipeCost;
+			const resultId = craftedResult?.id ?? recipe.result.id;
+			const resultIdentified = craftedResult?.identified ?? true;
+			scene.say(t('port.log.alchemy.crafted', { item: scene.itemDisplayName(resultId, resultIdentified) }), 'positive');
+			scene.refreshInventoryPanel();
+		},
+	);
 }

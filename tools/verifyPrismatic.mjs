@@ -74,8 +74,7 @@ export function verifyPrismatic(require, check) {
 			'prismaticFade: saved.prismaticFade',
 			'prismaticGuardHp: this.hero.prismaticGuardHp ?? null',
 			'grantPrismaticGuard: (hp)',
-			'scrollExoticResult(item.id) !== undefined',
-			'craftScrollToExotic(this.bag)',
+			'openAlchemyRecipes(this.alchemyFlowContext())',
 		]) assert.ok(source.includes(site), `the scene must still contain: ${site}`);
 		const statusPane = readFileSync(new URL('../src/ui/statusPane.ts', import.meta.url), 'utf8');
 		assert.match(statusPane, /prismaticGuard: 20/, 'the guard icon is BuffIndicator.ARMOR');
@@ -85,6 +84,11 @@ export function verifyPrismatic(require, check) {
 		assert.ok(buffInfo.includes("prismaticGuard: 'actors.buffs.prismaticguard'"), 'the guard info maps to its catalogue key');
 		const alchemy = readFileSync(new URL('../src/items/alchemy.ts', import.meta.url), 'utf8');
 		assert.ok(alchemy.includes("scrollMirror: 'scrollPrismatic'"), 'the MirrorImage -> PrismaticImage brew pair exists');
+		// The alchemy-pot window flow moved from the scene to `items/alchemy.ts`
+		// (file-size refactor, behavior-identical): its two exotic call sites are
+		// pinned here now, against the moved module instead of the scene.
+		assert.ok(alchemy.includes('scrollExoticResult(item.id) !== undefined'), 'the exotic picker eligibility moved with the flow');
+		assert.ok(alchemy.includes('craftScrollToExotic(scene.bag)'), 'the exotic craft moved with the flow');
 		const transmute = readFileSync(new URL('../src/items/transmutation.ts', import.meta.url), 'utf8');
 		assert.ok(transmute.includes("if (target.id === 'scrollPrismatic')"), 'the exotic transmutes to its regular counterpart');
 	});

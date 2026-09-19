@@ -1045,7 +1045,16 @@ one.
       behind `items/itemActions.ts`'s router, blob fields/ticking next to `environmentalBlobs.ts`,
       aim/targeting helpers next to `simulation/targeting.ts` - one domain per commit, suites green
       at each step, no behavior change (each move is covered by the existing verify suites plus a
-      before/after `tsc` + build). **Complexity: L.**
+      before/after `tsc` + build). **First extraction 2026-09-19**: the alchemy-pot window flow
+      (`startAlchemyIngredientPick`/`pickAlchemyUnits`/`completeAlchemyRecipe`/`openAlchemyRecipes`
+      plus the `AlchemyIngredientSelection` type) moved verbatim to `items/alchemy.ts` behind a new
+      `AlchemyFlowContext` (bag, energy get/set, say, picker, display name, panel refresh) - the
+      scene keeps one 17-line builder; net −139 lines in `dungeonScene.ts` (23,622 after),
+      `alchemy.ts` 448 to 630.
+      The move's own suites: `tsc` + build clean, the item/simulation suites green (two relocated
+      source pins in `verifyPrismatic.mjs` now assert against the moved module), plus a new
+      headless drive of the moved flow through a scripted picker (seed brew end to end, empty-pot
+      refusal). **Complexity: L.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that
