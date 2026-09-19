@@ -32,7 +32,7 @@ export interface InventoryEntry {
 	sourceClass?: string;
 }
 
-type InventoryFilter = 'all' | 'consumables' | 'equipment' | 'quest'
+export type InventoryFilter = 'all' | 'consumables' | 'equipment' | 'quest'
 	| 'pouch_seed' | 'holder_scroll' | 'bag_potion' | 'holster_wand' | 'pouch_stone';
 
 /**
@@ -101,6 +101,16 @@ export class InventoryWindow extends Container2D {
 		this.width_ = layout.windowWidth;
 		this.height_ = layout.windowHeight;
 		if (this.entries.length > 0) this.draw();
+	}
+
+	/**
+	 * The bag open action (`bags.ts`'s `bagTab`): show the window on the bag's own
+	 * filtered tab. Same two calls as tapping a tab button, so the open path and the
+	 * manual path can never disagree about what a tab shows.
+	 */
+	openOnTab(filter: InventoryFilter): void {
+		this.list.selectTab(filter);
+		this.draw();
 	}
 
 	constructor(private use: (id: string, instanceId?: string) => void, private close: () => void) {

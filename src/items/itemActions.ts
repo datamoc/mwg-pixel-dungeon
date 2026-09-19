@@ -1,4 +1,5 @@
 import { SPECIALTY_BOMB_IDS } from './itemKinds';
+import { isBagId, type BagId } from './bags';
 
 /** Scene services exposed to the item-action router. Item classification and routing belong to
  * the item domain; the scene remains responsible for turn state and effect implementations. */
@@ -46,6 +47,7 @@ export interface ItemActionContext {
 	useBeaconOfReturning(instanceId?: string): void;
 	useAlchemicalCatalyst(instanceId?: string): void;
 	useArcaneCatalyst(instanceId?: string): void;
+	openBag(bag: BagId): void;
 }
 
 export function useItemById(scene: ItemActionContext, id: string, instanceId?: string): void {
@@ -98,6 +100,7 @@ export function useItemById(scene: ItemActionContext, id: string, instanceId?: s
 		else if (id === 'beaconOfReturning') scene.useBeaconOfReturning(instanceId);
 		else if (id === 'alchemicalCatalyst') scene.useAlchemicalCatalyst(instanceId);
 		else if (id === 'arcaneCatalyst') scene.useArcaneCatalyst(instanceId);
+		else if (isBagId(id)) scene.openBag(id);
 	} finally {
 		scene.setRequestedItem(null);
 	}

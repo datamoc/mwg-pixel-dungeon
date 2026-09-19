@@ -1,4 +1,5 @@
 import { SPECIALTY_BOMB_IDS, isMissileStack, type CarriedItem } from './itemKinds';
+import type { InventoryFilter } from '../ui/inventoryWindow';
 
 /**
  * The four `items/bags/*` classes (`Bag.java` + subclasses, tag `v3.3.8`) as ownable
@@ -26,8 +27,10 @@ import { SPECIALTY_BOMB_IDS, isMissileStack, type CarriedItem } from './itemKind
  * recharge and missile durability, read off holster *ownership* - the flat bag keeps no
  * per-item location, and every owned wand/missile would sit in the one holster anyway),
  * the `Shopkeeper.canSell` resale refusal (`unique && !stackable`), and the
- * `validateAllBagsBought` badge set. What stays open: contents arrays, `grabItems` on
- * pickup, capacity enforcement, `WndQuickBag` (see PORT_COVERAGE.md's bag row and
+ * `validateAllBagsBought` badge set, and - since this pass - the open action: using a
+ * bag opens the bag window on its own filtered tab (`bagTab`), the flat bag's stand-in
+ * for per-bag contents views. What stays open: contents arrays, `grabItems` on
+ * pickup, capacity enforcement (see PORT_COVERAGE.md's bag row and
  * ROADMAP.md's inventory-windows line). A bought bag is therefore a named, priced,
  * unsellable item, exactly as far as the flat model reaches.
  */
@@ -120,6 +123,24 @@ export function bagCanHold(bag: BagId, item: CarriedItem): boolean {
 			return item.id === 'wand' || item.id === 'knife' || item.id === 'spike'
 				|| isMissileStack(item) || item.id === 'bomb' || item.id === 'doubleBomb'
 				|| SPECIALTY_BOMB_IDS.has(item.id);
+	}
+}
+
+/**
+ * The open half of the container behavior: using a bag shows its contents. The flat bag
+ * keeps no per-bag contents arrays, but the bag window's filtered pouch tabs already ARE
+ * the per-bag contents views (`subBagFor` routes every item into exactly one of them),
+ * so opening a bag selects its tab. Three mappings are exact; the velvet pouch opens the
+ * runestone tab because that tab carries the velvet name (`SUB_BAG_LABEL.pouch_stone`),
+ * while seeds live one tap away on the port-invented seed tab - a stated consequence of
+ * the already-documented tab split, not a new gap.
+ */
+export function bagTab(bag: BagId): InventoryFilter {
+	switch (bag) {
+		case 'velvetPouch': return 'pouch_stone';
+		case 'scrollHolder': return 'holder_scroll';
+		case 'potionBandolier': return 'bag_potion';
+		case 'magicalHolster': return 'holster_wand';
 	}
 }
 

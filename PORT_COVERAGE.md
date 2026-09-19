@@ -842,11 +842,7 @@ and every owned wand/missile would sit in the one holster anyway); the `Shopkeep
 refusal (`unique && !stackable` - bought bags can no longer be sold back); and the
 `validateAllBagsBought` badge set (four per-bag badges plus `ALL_BAGS_BOUGHT` at Java's own
 cell 67, firing on every acquisition including the free starting velvet, exactly like
-`HeroClass.initHero()`'s `collect()`). **Still not ported**: contents arrays, `grabItems`
-on pickup, capacity enforcement, `AC_OPEN`/`WndQuickBag` - which has no expression in this
-port's flat bag model (a bought bag is a named, priced, unsellable item), and the three shop
-bags' own `ItemSpriteSheet` frames, whose indices were not re-read this pass, so they render the
-frame-0 fallback until they are.
+`HeroClass.initHero()`'s `collect()`). **Ported 2026-09-19: the open action** - using a bag opens the bag window on its own filtered tab (`bags.ts`'s `bagTab`, routed through the item-action table, free like any window open); three mappings are exact and velvet opens the velvet-named runestone tab with seeds one tap away. **Still not ported**: contents arrays, `grabItems` on pickup, capacity enforcement - which have no expression in this port's flat bag model (a bought bag is a named, priced, unsellable item), and the three shop bags' own `ItemSpriteSheet` frames, whose indices were not re-read this pass, so they render the frame-0 fallback until they are.
 
 Found and fixed auditing the scenario bullet the same pass: Yog's arrival line was a raw English
 `say()` literal, showing English on all 19 locales like the boss-victory lines once did. It is

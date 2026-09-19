@@ -1157,6 +1157,16 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		}, 'per-bag badge counters match the four bags');
 		assert.equal(ALL_BAGS_BADGE, 'bags_all', 'the meta badge counter is bags_all');
 	}
+	// The bag open action (`items/bags.ts`'s `bagTab`): using a bag opens the bag window
+	// on its own filtered tab. Three mappings are exact; velvet opens the runestone tab
+	// because that tab carries the velvet name, with seeds one tap away.
+	{
+		const { bagTab } = require('./items/bags.js');
+		assert.equal(bagTab('scrollHolder'), 'holder_scroll', 'the holder opens its scroll tab');
+		assert.equal(bagTab('potionBandolier'), 'bag_potion', 'the bandolier opens its potion tab');
+		assert.equal(bagTab('magicalHolster'), 'holster_wand', 'the holster opens its wand tab');
+		assert.equal(bagTab('velvetPouch'), 'pouch_stone', 'the pouch opens the velvet-named tab');
+	}
 	// `MeleeWeapon.ability()` per-weapon table and `Charger` economy
 	// (`src/items/weaponAbilities.ts`, tag `v3.3.8`): all 30 real melee classes resolve with
 	// desc-verified kinds, the lookup ignores case and falls back to the bag id, the

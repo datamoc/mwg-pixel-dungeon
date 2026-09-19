@@ -26,7 +26,7 @@ import { buyFromShop, buybackFromShop, sellFood, shopPrice as itemShopPrice, sho
 import { generatedInventoryItem as createGeneratedInventoryItem } from '../items/generatedItems';
 import { placeGroundItems as placeGeneratedGroundItems } from '../items/groundPlacement';
 import { planShopStock } from '../items/shopStock';
-import { chooseShopBag, isBagId, ownsBag, HOLSTER_RECHARGE_BASE, NORMAL_RECHARGE_BASE, HOLSTER_DURABILITY_FACTOR, BAG_BADGE, ALL_BAGS_BADGE, BAG_IDS, type BagId } from '../items/bags';
+import { bagTab, chooseShopBag, isBagId, ownsBag, HOLSTER_RECHARGE_BASE, NORMAL_RECHARGE_BASE, HOLSTER_DURABILITY_FACTOR, BAG_BADGE, ALL_BAGS_BADGE, BAG_IDS, type BagId } from '../items/bags';
 import { isResurrectKeepCandidate, partitionResurrectKeeps } from '../items/resurrect';
 import { pickupGroundItem as pickupGroundItemWorkflow } from '../items/groundPickup';
 import { reforgeDiscardedMissileSet, blacksmithHardenCost as itemBlacksmithHardenCost, blacksmithReforgeCost as itemBlacksmithReforgeCost, blacksmithReforgePairValid, blacksmithUpgradeCost as itemBlacksmithUpgradeCost, blacksmithTurnInFavor, BLACKSMITH_FREE_PICKAXE_FAVOR, rollCarriedAffixLoss, selectBlacksmithHardenItems, selectBlacksmithReforgeItems, selectBlacksmithUpgradeItems, type BlacksmithItem } from '../items/blacksmith';
@@ -17476,7 +17476,20 @@ private eyeBeamTurn(monster: Creature): boolean {
 			useBeaconOfReturning: this.useBeaconOfReturning.bind(this),
 			useAlchemicalCatalyst: this.useAlchemicalCatalyst.bind(this),
 			useArcaneCatalyst: this.useArcaneCatalyst.bind(this),
+			openBag: this.openBag.bind(this),
 		};
+	}
+
+	/**
+	 * Using a bag shows its contents: the flat bag keeps no per-bag contents arrays,
+	 * but the window's filtered pouch tabs already are the per-bag views, so the bag
+	 * opens on its own tab (`bags.ts`'s `bagTab`). Free - opening a bag spends no turn
+	 * in Java either.
+	 */
+	private openBag(bag: BagId): void {
+		this.inventoryOpen = true;
+		this.inventoryPanel.openOnTab(bagTab(bag));
+		this.refreshInventoryPanel();
 	}
 
 
