@@ -13,6 +13,7 @@ export function verifyArmorAbilities(require, check) {
 	const { ARMOR_ABILITIES } = require('./talents');
 	const { armorAbilityDef, armorAbilitiesFor, armorAbilityKey, armorChargeUse, ARMOR_CHARGE_PER_TURN, ARMOR_CHARGE_MAX, ARMOR_CHARGE_START } = require('./armorAbilities');
 	const { armorTalentDefinitions } = require('./talents');
+	const { RATSISTANCE_BASE, ratsistanceFactor } = require('./simulation/ratmogrify');
 	const {
 		bodySlamDamage, endureBankedDamage, endureDamageTaken, endureEndingBonus,
 		impactWaveStrength, impactWaveVulnerable, shockForceParalyses, shockwaveCone,
@@ -71,6 +72,23 @@ export function verifyArmorAbilities(require, check) {
 		//The row feeds the tier-4 window for every hero: three rat talents plus HEROIC_ENERGY.
 		assert.deepEqual(armorTalentDefinitions('ratmogrify', 'mage').map((d) => d.id),
 			['ratsistance', 'ratlomacy', 'ratforcements', 'heroic_energy']);
+	});
+
+	check('RATSISTANCE scales a transformed non-ally\'s damage by 0.9^points', () => {
+		//`Ratmogrify.TransmogRat.damageRoll()`: `damage *= Math.pow(0.9f, points)` for a
+		//non-allied rat, skipped entirely without the talent (which is 0.9^0 = 1).
+		assert.equal(RATSISTANCE_BASE, 0.9);
+		const r4 = (v) => Math.round(v * 10000) / 10000;
+		assert.deepEqual([0, 1, 2, 3, 4].map((p) => r4(ratsistanceFactor(p))),
+			[0, 1, 2, 3, 4].map((p) => r4(Math.pow(0.9, p))));
+		//dungeonScene.ts cannot load in this harness (Pixi), so the dispatch is pinned
+		//at source level: the factor folds into the attack multiplier exactly when the
+		//attacker is a transformed non-ally, reading the hero's own talent rank.
+		const source = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		assert.match(source, /!attacker\.isAlly && attacker\.ratmogrifiedTurns !== undefined/,
+			'permanent allies must keep full damage, like Java\'s allied rats');
+		assert.match(source, /mult \*= ratsistanceFactor\(this\.talentRank\('ratsistance'\)\)/,
+			'the transformed attacker\'s multiplier must read RATSISTANCE');
 	});
 
 	check('each ability owns exactly its three tier-4 talents', () => {

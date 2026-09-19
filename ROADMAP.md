@@ -550,9 +550,10 @@ was judged not worth the churn against those existing references.
       "staff-imbue system"/"wand-randomization pass" phrasing this line carried before. The
       Cleric's three have neither strings nor a spell system here.
       **Also not ported, and stated**: `ClassArmor` as a distinct item (no `AC_TRANSFER`, no
-      class-armor sprite tier), and `RATSISTANCE`'s damage factor (Ratmogrify has its own
-      `class: "any"` row since 2026-09-19, so the tier-4 tab opens and `RATLOMACY`/`RATFORCEMENTS`
-      run; only `RATSISTANCE` still needs the missing `TransmogRat` actor's damage path). See
+      class-armor sprite tier). Ratmogrify is fully ported since 2026-09-19 (its own
+      `class: "any"` row opens the tier-4 tab and `RATLOMACY`/`RATFORCEMENTS`
+      run, and `RATSISTANCE`'s `0.9^points` factor rides the attack multiplier with a stated
+      rounding note). See
       `PORT_COVERAGE.md`'s armor-ability section for the per-ability reason. **Complexity: L.**
 - [x] Match Java talent timing, identification, recharge, and threshold rules. Tier-4 threshold
       timing is now real (the tier's window, its `armorAbility == null` gate and its point curve are

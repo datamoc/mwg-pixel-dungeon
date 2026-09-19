@@ -186,6 +186,7 @@ import {
 } from '../simulation/huntressAbilities';
 import { exposeWeaknessDuration, feignedRetreatHaste, combinedLethalityTest, closeTheGapRange, invigoratingVictoryHeal, elementalStrikeCone, elementalPowerMulti, directedPowerBoost, elementalBlockingShield, elementalVampiricHeal, elementalSacrificialSelf, elementalBlobAmount, elementalBloomingBudget, elementalFurrowStep, elementalBaseDamage, elementalKineticSplash, elementalRootsDuration, elementalKnockback, elementalLuckyChance, elementalProjectingSplash, elementalCorruptingChance, elementalGrimChance, elementalCurseChance, elementalAnnoyingChance, elementalSacrificialOther, elementalStrikeResisted, type ElementalStrikeDamageSource } from '../simulation/duelistAbilities';
 import { shadowCloneAccuracy, shadowCloneArmorShare, shadowCloneBladeShare, shadowCloneEvasion, shadowCloneHp } from '../simulation/rogueAbilities';
+import { ratsistanceFactor } from '../simulation/ratmogrify';
 import { PRISMATIC_FADE_TURNS, PRISMATIC_HATCH_RANGE, prismaticGuardMaxHp, prismaticImageStats, prismaticSpawnCell } from '../simulation/prismatic';
 import { CLASSES, CLASS_AMMO, HERO_IDLE_FRAME, type ClassId } from '../classes';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
@@ -22205,6 +22206,15 @@ private eyeBeamTurn(monster: Creature): boolean {
 		let acc = accFactor;
 		let mult = damageMultiplier;
 		let boost = 0;
+		//`TransmogRat.damageRoll()` (tag `v3.3.8`): a transformed non-ally deals
+		//`damage *= 0.9^RATSISTANCE`. It rides the attack's damage multiplier rather than the
+		//roll itself (Java truncates the transformed roll to int first; this port's float
+		//pipeline rounds once at the end, so a `.5` boundary can differ by 1 - the same
+		//standing simplification every other multiplier here already carries). Permanent
+		//allies are excluded by the `isAlly` gate, matching Java's `!allied` check.
+		if (!attacker.isHero && !attacker.isAlly && attacker.ratmogrifiedTurns !== undefined) {
+			mult *= ratsistanceFactor(this.talentRank('ratsistance'));
+		}
 		if (attacker === this.hero) {
 			if (this.abilityForceHit) force = true;
 			if (this.abilityDamageMult !== 1) mult *= this.abilityDamageMult;
