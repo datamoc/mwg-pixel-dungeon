@@ -17163,6 +17163,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			guardFist: (target) => this.guardFist(target),
 			clampTenguBracket: (target, previousHp) => this.clampTenguBracket(target, previousHp),
 			yogDamageHook: (target, previousHp) => this.yogDamageHook(target, previousHp),
+			kingDamageHook: (target) => this.kingDamageHook(target),
 			tenguBracketJump: (target, previousHp) => this.tenguBracketJump(target, previousHp),
 			onNonWeaponBossDamage: (target) => this.disqualifyBossChallenge(target),
 		};

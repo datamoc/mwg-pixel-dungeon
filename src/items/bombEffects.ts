@@ -1,5 +1,5 @@
 import { Random, Roguelike } from 'mwg';
-import { addBuff, BUFF_DURATION, type Creature, type GroundItem, type Step } from '../combat';
+import { absorbShield, addBuff, BUFF_DURATION, type Creature, type GroundItem, type Step } from '../combat';
 import { isUndeadOrDemonic } from '../monsters';
 import { MWL_BOMB_RULES, mwlItemEffectValue } from '../mwlContent';
 import { SPECIALTY_BOMB_IDS } from './itemKinds';
@@ -33,6 +33,7 @@ export interface BombEffectsContext {
 	readonly guardFist: (target: Creature) => boolean;
 	readonly clampTenguBracket: (target: Creature, previousHp: number) => void;
 	readonly yogDamageHook: (target: Creature, previousHp: number) => void;
+	readonly kingDamageHook: (target: Creature) => void;
 	readonly tenguBracketJump: (target: Creature, previousHp: number) => void;
 	/** Clears `Statistics.qualifiedForBossChallengeBadge` when a bomb hurts a boss: a bomb is
 	 * never a plain weapon hit. Optional so headless callers keep working. */
@@ -55,11 +56,28 @@ function applyBlastDamage(target: Creature, amount: number, pierceArmor: boolean
 	if (target.kind === 'yogFist' && context.guardFist(target)) return false;
 	context.onNonWeaponBossDamage?.(target);
 	let damage = amount;
+	//DKBarrier absorbs on every `Char.damage()` path - the same `absorbShield` block
+	//as the attack tail. The live bomb seam ran without it (like the trap/blob/DoT
+	//seams before their own fix), so bursting a P2 King bled HP through a full
+	//shield. Found by the 18th monster-analysis matrix (bombs).
+	if (target.kind === 'king' && (target.kingShield ?? 0) > 0) {
+		const absorbed = absorbShield(target.kingShield ?? 0, damage);
+		target.kingShield = absorbed.shield;
+		damage = absorbed.damage;
+	}
 	if (!pierceArmor) damage = Math.max(0, damage - Random.normalRange(target.armor[0], target.armor[1]));
 	const previousHp = target.hp;
 	target.hp -= damage;
 	if (target.kind === 'tengu') context.clampTenguBracket(target, previousHp);
 	if (target.kind === 'yog' && target.hp > 0) context.yogDamageHook(target, previousHp);
+	//Phase transitions ride the damage event (`DwarfKing.damage()`), with the P1
+	//`- taken/8` accel first - same order as the attack tail.
+	if (target.kind === 'king' && target.hp > 0 && (target.kingPhase ?? 1) === 1) {
+		const taken = Math.max(0, previousHp - target.hp);
+		target.kingSummonCd = (target.kingSummonCd ?? 0) - taken / 8;
+		target.kingAbilityCd = (target.kingAbilityCd ?? 0) - taken / 8;
+	}
+	if (target.kind === 'king' && target.hp > 0) context.kingDamageHook(target);
 	context.showDamage(target, damage);
 	target.sleeping = false;
 	if (target.hp <= 0) context.kill(target, 'fire');
