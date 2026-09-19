@@ -36,6 +36,7 @@ export const BUFF_DURATION_DATA = {
   "degrade": 30,
   "ooze": 20,
   "wayward": 10,
+  "soulmark": 10,
   "charm": 10,
   "lethalHasteCooldown": 100,
   "light": 250,
@@ -46,7 +47,8 @@ export const BUFF_DURATION_DATA = {
   "spectatorFreeze": 10,
   "duelParticipant": 10,
   "eliminationMatch": 3,
-  "luckyTracker": 9999
+  "luckyTracker": 9999,
+  "prismaticGuard": 9999
 } as const;
 export const NEGATIVE_BUFF_DATA = [
   "poison",
@@ -69,5 +71,6 @@ export const NEGATIVE_BUFF_DATA = [
   "hex",
   "wayward",
   "blindness",
-  "feintConfusion"
+  "feintConfusion",
+  "soulmark"
 ] as const;

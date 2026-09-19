@@ -53,6 +53,11 @@ const ICON_TEXT_KIND: Partial<Record<BuffId | 'hungry' | 'starving', 'flavour' |
 	//this port's poison value ticks down as remaining turns - same integer-countdown shape,
 	//different quantity underneath (stated in `PORT_COVERAGE.md`).
 	poison: 'left',
+	//`PrismaticGuard.iconTextDisplay()` is `(int)HP` with no +1; the state builder feeds
+	//the guard pool (not a duration) as this buff's `turns`, so the same shape holds.
+	//The depletion fade (`1 - HP/maxHP`) has no expression: the overlay only sees one
+	//number, and the HP text is the more informative half (stated in PORT_COVERAGE.md).
+	prismaticGuard: 'left',
 };
 
 /**

@@ -200,6 +200,47 @@ export function canCraftScrollToStone(inventory: Inventory): boolean {
 	return inventory.items.some((item) => item.quantity > 0 && SCROLL_TO_STONE[item.id]);
 }
 
+/**
+ * `ExoticScroll.regToExo` (tag `v3.3.8`): all twelve regular scroll classes map
+ * to an exotic, brewed one scroll at a time for 6 energy (`ScrollToExotic`).
+ * Only the MirrorImage -> PrismaticImage pair exists as a port item; the other
+ * eleven values name Java classes with no port id, so they stay out of this
+ * table until their exotics are ported (each addition lights up automatically
+ * below, since eligibility is "mapped value is a real MWL item"). The full
+ * Java table for the record: Upgrade->Enchantment, Identify->Divination,
+ * RemoveCurse->AntiMagic, MirrorImage->PrismaticImage, Recharging->
+ * MysticalEnergy, Teleportation->Passage, Lullaby->SirensSong, MagicMapping->
+ * Foresight, Rage->Challenge, Retribution->PsionicBlast, Terror->Dread,
+ * Transmutation->Metamorphosis.
+ */
+export const SCROLL_TO_EXOTIC: Readonly<Record<string, string>> = {
+	scrollMirror: 'scrollPrismatic',
+};
+
+export function scrollExoticResult(scrollId: string): string | undefined {
+	return SCROLL_TO_EXOTIC[scrollId];
+}
+
+export function craftScrollToExotic(inventory: Inventory, selected?: AlchemyUnitRef): boolean {
+	const unit = selected
+		? takeChosenUnits(inventory, [selected], (item) => SCROLL_TO_EXOTIC[item.id] !== undefined)?.[0]
+		: inventory.items.find((item) => item.quantity > 0 && SCROLL_TO_EXOTIC[item.id]);
+	if (!unit) return false;
+	const stack = inventory.items.find((item) => item.id === unit.id && (item.instanceId ?? undefined) === (unit.instanceId ?? undefined));
+	//`ExoticScroll.isKnown()`: an exotic is known exactly when its regular counterpart
+	//is, so the brewed scroll inherits the consumed scroll's identified state. Later
+	//identification does not propagate between the two families, which the
+	//per-instance identified model cannot express (stated in PORT_COVERAGE.md).
+	const identified = stack?.identified ?? false;
+	inventory.remove(unit.id, 1, unit.instanceId);
+	inventory.add({ id: SCROLL_TO_EXOTIC[unit.id]!, quantity: 1, stackable: true, identified });
+	return true;
+}
+
+export function canCraftScrollToExotic(inventory: Inventory): boolean {
+	return inventory.items.some((item) => item.quantity > 0 && SCROLL_TO_EXOTIC[item.id]);
+}
+
 const POTION_CATALYST_POOL = [
 	'potionHealing', 'potionHealing', 'potionHealing', 'potionMindVision', 'potionMindVision', 'potionFrost',
 	'potionFrost', 'potionFlame', 'potionFlame', 'potionToxicGas', 'potionToxicGas', 'potionHaste',

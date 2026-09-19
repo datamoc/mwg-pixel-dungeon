@@ -167,6 +167,13 @@ export function transmuteItem(target: TransmutableItem, newItemInstanceId: (kind
 		return { id: Random.element(pool)!, quantity: 1, stackable: true, identified: target.identified };
 	}
 	if (target.id.startsWith('scroll')) {
+		//`changeScroll` (same file): an exotic flips to its own regular counterpart
+		//(`ExoticScroll.exoToReg`), not to a random scroll - with one exotic pair
+		//ported that is `scrollPrismatic` -> `scrollMirror`, identified state
+		//carried like every other branch. Regular inputs keep the port's
+		//random-regular simplification (stated above), which a fuller exotic
+		//roster will narrow pair by pair.
+		if (target.id === 'scrollPrismatic') return { id: 'scrollMirror', quantity: 1, stackable: true, identified: target.identified };
 		const pool = SCROLL_TRANSMUTE_POOL.filter((id) => id !== target.id);
 		if (pool.length === 0) return undefined;
 		return { id: Random.element(pool)!, quantity: 1, stackable: true, identified: target.identified };

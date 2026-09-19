@@ -106,7 +106,23 @@ export interface Creature extends Combatant {
 	/** Java-aligned friendly combatant (MirrorImage and the directable allies). */
 	isAlly?: boolean;
 	/** Friendly summon subtype; sheep are neutral, short-lived and non-combatant. */
-	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'afterImage' | 'shadowClone';
+	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'afterImage' | 'shadowClone' | 'prismatic';
+	/**
+	 * `PrismaticGuard`'s HP pool (`actors/buffs/PrismaticGuard.java`, tag `v3.3.8`):
+	 * the latent image's health, capped at `prismaticGuardMaxHp(hero level)`. Present
+	 * means the guard is active; the `prismaticGuard` buff-map entry alongside it is
+	 * only the status-pane icon (re-armed every hero turn, Java's `spend(TICK)`
+	 * persistence). The guard absorbs nothing - it hatches into the image, it is
+	 * not a shield. Persisted through save/load like the other pools above.
+	 */
+	prismaticGuardHp?: number;
+	/**
+	 * `PrismaticImage`'s post-death fade (`deathTimer`, same source): a non-chasm
+	 * killing blow sets 0 HP plus this 5-turn countdown instead of destroying the
+	 * actor. Healing above 0 clears it (the next image turn resets); reaching 0
+	 * destroys it. Chasm deaths skip the fade entirely. Persisted with the ally.
+	 */
+	prismaticFade?: number;
 	/** `DirectableAlly.defendingPos`/`enemy`: the standing order a hero gives a directable ally
 	 *  (the Dried Rose's `AC_DIRECT` order, and the spirit hawk's re-cast). An ordered attack
 	 *  target wins over the nearest hostile, and an ordered defend cell replaces the hero as the

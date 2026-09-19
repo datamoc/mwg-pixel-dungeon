@@ -32,6 +32,7 @@ const BUFF_MESSAGE_KEY: Partial<Record<BuffId, string>> = {
 	daze: 'actors.buffs.daze',
 	light: 'actors.buffs.light',
 	invulnerability: 'actors.buffs.ankhinvulnerability',
+	prismaticGuard: 'actors.buffs.prismaticguard',
 };
 
 /**
@@ -65,11 +66,17 @@ function hungerInfo(state: 'hungry' | 'starving'): BuffInfo {
  * the caller rather than the click doing nothing).
  *
  * @param turns the buff's remaining value (`hero.buffs[id]`) - Java's own `{0}` substitution.
+ * @param maxHp only for `prismaticGuard`: Java's `desc` takes `{0}` = current HP and
+ * `{1}` = max HP, and the buff-map value here is the pool, not a duration, so the cap
+ * arrives separately (the scene feeds `prismaticGuardMaxHp`).
  */
-export function buffInfo(id: BuffId | 'hungry' | 'starving', turns: number | undefined): BuffInfo | null {
+export function buffInfo(id: BuffId | 'hungry' | 'starving', turns: number | undefined, maxHp?: number): BuffInfo | null {
 	if (id === 'hungry' || id === 'starving') return hungerInfo(id);
 	const key = BUFF_MESSAGE_KEY[id];
 	if (!key) return null;
+	if (id === 'prismaticGuard') {
+		return { name: titleCase(t(`${key}.name`)), desc: t(`${key}.desc`, { 0: Math.max(0, Math.trunc(turns ?? 0)), 1: Math.max(0, Math.trunc(maxHp ?? 0)) }) };
+	}
 	const desc = NO_TURNS_PARAM.has(id) ? t(`${key}.desc`) : t(`${key}.desc`, { 0: Math.max(0, turns ?? 0) });
 	return { name: titleCase(t(`${key}.name`)), desc };
 }

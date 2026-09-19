@@ -78,6 +78,8 @@ const BUFF_ICON: Record<string, number> = {
 	light: 22,
 	//ANKH = 52, the blessed ankh's revive shield
 	invulnerability: 52,
+	//ARMOR = 20, the PrismaticGuard shield-that-isn't (it hatches, it absorbs nothing)
+	prismaticGuard: 20,
 };
 
 /** buffs.png is 128x64 of 7x7 cells, so TextureFilm walks 18 to a row */

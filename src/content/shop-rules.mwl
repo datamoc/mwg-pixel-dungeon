@@ -35,6 +35,8 @@
           { tag: "row", item: "scrollLullaby", value: 30 },
           { tag: "row", item: "scrollMapping", value: 30 },
           { tag: "row", item: "scrollMirror", value: 30 },
+          //`ExoticScroll.value()`: 30 gold over the regular counterpart (30 + 30).
+          { tag: "row", item: "scrollPrismatic", value: 60 },
           { tag: "row", item: "scrollCleanse", value: 30 },
           { tag: "row", item: "scrollRecharging", value: 30 },
           { tag: "row", item: "scrollTeleportation", value: 30 },

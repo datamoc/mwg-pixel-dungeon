@@ -117,6 +117,13 @@
       },
       {
         tag: "item",
+        id: "scrollPrismatic",
+        name: "items.scrolls.exotic.scrollofprismaticimage.name",
+        slot: "consumable",
+        stackable: true,
+      },
+      {
+        tag: "item",
         id: "scrollRecharging",
         name: "items.scrolls.scrollofrecharging.name",
         slot: "consumable",

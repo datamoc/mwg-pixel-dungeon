@@ -365,18 +365,16 @@ was judged not worth the churn against those existing references.
       drops real `Gold(10-25)` CHEST heaps, the king spawns sleeping with his own art, wakes with the
       real yell, awards the crown exchange when worn armor is present, and grants the six-turn
       Ratmogrify ability); `MirrorImage` and `Sheep` are live through the ally/combat system.
-      Genuinely remaining: `PrismaticImage` and `VaultSentry`, neither of which
-      exist in this port at all. **Triaged 2026-09-16, each blocked on its own system, none on
-      NPC code**: `PrismaticImage` is summoned by the exotic Scroll of Prismatic Image (section
-      1 - exotic scrolls are unported); `VaultSentry` is the scanning sentry of the Halls vault
-      quest rooms (`rooms/quest/vault/*`, crystal-key questline - the whole quest is unported);
+      Closed 2026-09-19: `PrismaticImage` (exotic scroll brewed from one `scrollMirror`; guard/image chain live - see PORT_COVERAGE.md). Genuinely remaining: only `VaultSentry`, which does not exist in this port at all.
+      **Triaged 2026-09-16, blocked on its own system, not on NPC code**:
+      `VaultSentry` is the scanning sentry of the Halls vault quest rooms (`rooms/quest/vault/*`, crystal-key questline - the whole quest is unported);
       `DirectableAlly` drops off the list (2026-09-17): the hawk's orders - its only live consumer -
       are already live (`allyTargetChar`/`allyDefendCell`, re-cast cell selector, `directTocell`'s
       'follow me again'); PowerOfMany needs Cleric spells. **Correction, 2026-09-19: ShadowClone
       is no longer unoffered** - the 20th matrix (`MONSTER_ANALYSIS_SHADOWCLONE.md`) ported it as
       a real `allyKind`, summoned and directed through this same shared ally system; see section
       6's armor-ability row.
-      The ported allies (hawk, ghost, mirror image, sheep, shadow clone) run through `allyKind`
+      The ported allies (hawk, ghost, mirror image, sheep, shadow clone, prismatic image) run through `allyKind`
       without the base. **Done in the same pass: `ImpShopkeeper`** - a real kind with imp art, the
       shopkeeper's trade window and flee behavior, its own first-sight greeting yell (the
       `greetings_ascent` variant stays out: no AscensionChallenge here), spawned by section 3's

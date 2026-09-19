@@ -181,7 +181,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	// turns into a flat 1.5 rather than the melee-range penalty.
 	assert.equal(BOOMERANG_RETURN_TURNS, 5, 'CircleBack counts down from 5 hero turns');
 	assert.equal(BOOMERANG_RETURN_ACC_FACTOR, 1.5, 'the return throw is a flat 1.5, adjacency or not');
-	const { alchemicalCatalystCost, arcaneCatalystCost, canCraftPotionSeed, craftPotionSeed, craftAlchemicalCatalyst, craftArcaneCatalyst, craftScrollToStone, craftAlchemize } = require('./items/alchemy.js');
+	const { alchemicalCatalystCost, arcaneCatalystCost, canCraftPotionSeed, craftPotionSeed, craftAlchemicalCatalyst, craftArcaneCatalyst, craftScrollToStone, craftAlchemize, craftScrollToExotic, canCraftScrollToExotic, scrollExoticResult, alchemyRecipe, alchemyEnergyFor } = require('./items/alchemy.js');
 
 	// `Item.isUpgradable()` (tag `v3.3.8`) and the two infusion selectors that read it. Java's
 	// default is true with 42 classes overriding it false, so the assertions below are built from
@@ -509,6 +509,33 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	assert.equal(craftScrollToStone(selectScroll, { id: 'scrollRage' }), true, 'the chosen rage scroll transmutes');
 	assert.equal(selectScroll.find('stoneOfAggression')?.quantity, 2, 'into two aggression stones');
 	assert.equal(selectScroll.find('scrollRage'), undefined, 'and the chosen scroll is consumed');
+	// `ExoticScroll.ScrollToExotic` (tag `v3.3.8`): one regular scroll, cost 6, into its
+	// exotic - only the MirrorImage -> PrismaticImage pair exists here so far.
+	assert.equal(scrollExoticResult('scrollMirror'), 'scrollPrismatic');
+	assert.equal(scrollExoticResult('scrollRage'), undefined, 'unported exotics map to nothing');
+	const exoticBag = new Inventory();
+	exoticBag.add({ id: 'scrollMirror', quantity: 1, stackable: true, identified: true });
+	exoticBag.add({ id: 'scrollRage', quantity: 1, stackable: true });
+	assert.equal(canCraftScrollToExotic(exoticBag), true, 'a carried mirror scroll offers the brew');
+	assert.equal(alchemyRecipe('scrollToExotic')?.energyCost, 6, 'the MWL recipe carries Java\'s cost');
+	assert.equal(alchemyEnergyFor('scrollPrismatic', false), 12, 'exotic energy is regular + 6');
+	assert.equal(craftScrollToExotic(exoticBag, { id: 'scrollRage' }), false, 'a rage scroll cannot brew');
+	assert.equal(exoticBag.find('scrollRage')?.quantity, 1, '...unconsumed');
+	assert.equal(craftScrollToExotic(exoticBag), true, 'the mirror scroll brews');
+	assert.deepEqual(
+		{ id: exoticBag.find('scrollPrismatic')?.id, identified: exoticBag.find('scrollPrismatic')?.identified },
+		{ id: 'scrollPrismatic', identified: true },
+		'the brewed exotic inherits the consumed scroll\'s identified state (ExoticScroll.isKnown)',
+	);
+	assert.equal(exoticBag.find('scrollMirror'), undefined, 'and the mirror scroll is consumed');
+	// `changeScroll`: an exotic flips to its own regular counterpart (`exoToReg`).
+	assert.equal(isTransmutableForScroll({ id: 'scrollPrismatic' }), true, 'exotics are transmutable like regulars');
+	const flipped = transmuteItem({ id: 'scrollPrismatic', quantity: 1, stackable: true, identified: false }, (kind) => `test-${kind}`);
+	assert.deepEqual(
+		{ id: flipped?.id, identified: flipped?.identified, quantity: flipped?.quantity },
+		{ id: 'scrollMirror', identified: false, quantity: 1 },
+		'the prismatic scroll flips to its mirror counterpart, identified state carried',
+	);
 	const selectAlchemize = new Inventory();
 	selectAlchemize.add({ id: 'seedFirebloom', quantity: 1, stackable: true });
 	selectAlchemize.add({ id: 'stoneOfBlast', quantity: 1, stackable: true });
@@ -591,7 +618,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	// missile's display name - the mechanical `missileDefinitions` table has no name column, so it
 	// comes from the authored item node instead.
 	assert.equal(MWL_MISSILE_NAME_KEYS.missile_heavyboomerang, 'items.weapon.missiles.heavyboomerang.name');
-	assert.equal(Object.keys(MWL_CONSUMABLE_DESCRIPTION_KEYS).length, 64);
+	assert.equal(Object.keys(MWL_CONSUMABLE_DESCRIPTION_KEYS).length, 65);
 	assert.equal(MWL_CONSUMABLE_DESCRIPTION_KEYS.seedStarflower, 'plants.starflower.desc');
 	assert.equal(mwlItemEffectValue('scrollMirror', 'imageCount'), 2);
 	assert.equal(mwlItemEffectValue('scrollRetribution', 'maxPower'), 4);
@@ -1040,6 +1067,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 			wayward: 10, soulmark: 10, charm: 10, lethalHasteCooldown: 100, blindness: 10, light: 250, invulnerability: 3,
 			feintConfusion: 2, counterAbility: 3, hazardAssist: 50,
 			spectatorFreeze: 10, duelParticipant: 10, eliminationMatch: 3, luckyTracker: 9999,
+			prismaticGuard: 9999,
 		},
 		'buff durations match the authored table',
 	);

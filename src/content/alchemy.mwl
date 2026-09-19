@@ -24,6 +24,12 @@
             energy: 6,
           },
           {
+            //`ExoticScroll.energyVal()`: 6 over the regular counterpart (6 + 6).
+            tag: "row",
+            kind: "scrollPrismatic",
+            energy: 12,
+          },
+          {
             tag: "row",
             kind: "potion",
             energy: 6,
@@ -99,6 +105,19 @@
             result: "stoneOfIntuition",
             resultQuantity: 2,
             energyCost: 0,
+          },
+          {
+            //`ExoticScroll.ScrollToExotic`: one regular scroll, cost 6. The authored
+            //ingredients name `scrollMirror` only as a catalogue-valid representative
+            //(the `Scroll.ScrollToStone` pattern above); the runtime transaction
+            //(`craftScrollToExotic`) resolves the concrete scroll class, and only the
+            //ported MirrorImage -> PrismaticImage pair is mapped there so far.
+            tag: "row",
+            id: "scrollToExotic",
+            ingredients: "scrollMirror:1",
+            result: "scrollPrismatic",
+            resultQuantity: 1,
+            energyCost: 6,
           },
           {
             tag: "row",
@@ -224,6 +243,13 @@
             recipe: "scrollToStone",
             group: "one",
             javaRecipe: "Scroll.ScrollToStone",
+          },
+          {
+            tag: "row",
+            id: "manifest-scrollToExotic",
+            recipe: "scrollToExotic",
+            group: "one",
+            javaRecipe: "ExoticScroll.ScrollToExotic",
           },
           {
             tag: "row",

@@ -648,6 +648,7 @@
           { tag: "row", item: "scrollIdentify", descriptionKey: "items.scrolls.scrollofidentify.desc" },
           { tag: "row", item: "scrollCleanse", descriptionKey: "items.scrolls.scrollofremovecurse.desc" },
           { tag: "row", item: "scrollMirror", descriptionKey: "items.scrolls.scrollofmirrorimage.desc" },
+          { tag: "row", item: "scrollPrismatic", descriptionKey: "items.scrolls.exotic.scrollofprismaticimage.desc" },
           { tag: "row", item: "scrollRecharging", descriptionKey: "items.scrolls.scrollofrecharging.desc" },
           { tag: "row", item: "scrollTeleportation", descriptionKey: "items.scrolls.scrollofteleportation.desc" },
           { tag: "row", item: "scrollLullaby", descriptionKey: "items.scrolls.scrolloflullaby.desc" },

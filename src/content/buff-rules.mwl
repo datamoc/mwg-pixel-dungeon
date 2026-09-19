@@ -11,7 +11,7 @@
           {
             tag: "effect",
             apply_to: "negative",
-            set: "poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,chill,frost,hex,wayward,blindness,feintConfusion",
+            set: "poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,chill,frost,hex,wayward,blindness,feintConfusion,soulmark",
           },
         ],
       },
@@ -213,6 +213,15 @@
             duration: 10,
           },
           {
+            // `SoulMark.DURATION` (`actors/buffs/SoulMark.java`, tag `v3.3.8`):
+            // a NEGATIVE FlavourBuff; `Wand.wandProc()` prolongs `10 + wand
+            // level` on a successful Warlock roll, passing its own duration
+            // at the call site rather than reading this table.
+            tag: "row",
+            buff: "soulmark",
+            duration: 10,
+          },
+          {
             tag: "row",
             buff: "charm",
             duration: 10,
@@ -296,6 +305,18 @@
             // that use it), never rendered and never announced.
             tag: "row",
             buff: "luckyTracker",
+            duration: 9999,
+          },
+          {
+            // `PrismaticGuard` (`actors/buffs/PrismaticGuard.java`, tag `v3.3.8`): the
+            // buff never expires on its own clock - it detaches when the image hatches
+            // (`set(image)` converts an image back the same way). 9999 is the
+            // catalogue's effectively-permanent stand-in (the cloak/focus precedent);
+            // the scene re-arms it every hero turn regardless, Java's `spend(TICK)`
+            // persistence. The value is never rendered: the status pane reads the
+            // guard pool, not this duration.
+            tag: "row",
+            buff: "prismaticGuard",
             duration: 9999,
           },
         ],

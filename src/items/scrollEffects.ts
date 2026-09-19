@@ -2,6 +2,7 @@ import { Roguelike } from 'mwg';
 import { addBuff, type Creature, type Step } from '../combat';
 import { t } from '../i18n/index';
 import { mwlItemEffectValue } from '../mwlContent';
+import { prismaticGuardMaxHp } from '../simulation/prismatic';
 
 /**
  * Scroll effects are item-domain rules. The scene supplies only world services
@@ -23,8 +24,13 @@ export interface ScrollEffectsContext {
 	readonly playTeleportAppear: (from: Step, to: Step, entity: Creature) => void;
 	readonly restitchAllTiles: () => void;
 	readonly showDamage: (target: Creature, amount: number) => void;
+	readonly showHeal: (target: Creature, amount: number) => void;
 	readonly kill: (target: Creature) => void;
 	readonly say: (message: string, level?: 'positive' | 'negative' | 'warning') => void;
+	/** The hero's level for `PrismaticGuard.maxHP`; the scene's progression level. */
+	readonly heroLevel: number;
+	/** Set (or reset) the latent guard pool; the buff-map icon is re-armed with it. */
+	readonly grantPrismaticGuard: (hp: number) => void;
 }
 
 export function applyScrollEffect(id: string, context: ScrollEffectsContext): boolean {
@@ -110,6 +116,35 @@ export function applyScrollEffect(id: string, context: ScrollEffectsContext): bo
 		}
 		addBuff(hero, 'weakness');
 		context.say(t('items.scrolls.scrollofretribution.blast'), 'warning');
+		return true;
+	}
+	if (id === 'scrollPrismatic') {
+		//`ScrollOfPrismaticImage.doRead()` (tag `v3.3.8`): heal every live image to
+		//its HT with the floating heal readout, else grant the latent guard at full
+		//charge. Java's middle branch (a stasis ally that is an image) has no system
+		//here - no Cleric spells, so no stasis ally can ever be an image. Java logs
+		//no line on this read (READ sample plus read animation only); the buff icon
+		//and the hatched image are the feedback, so this port logs none either.
+		//Re-reading with a live image heals rather than stacking guards, exactly
+		//like Java's `found` check; re-reading with only a guard active resets its
+		//pool to full (`Buff.affect` on the existing buff, then `set(maxHP)`).
+		let found = false;
+		for (const creature of creatures) {
+			//A fading image sits at 0 HP but is still a live mob (`isActive()` while
+			//`deathTimer > 0`), and Java heals it back to full - the scroll is the
+			//rescue for a fading image. Anything at 0 HP without a fade counter is
+			//unreachable (death removes it), so the fade check doubles as the guard.
+			if (!creature.isAlly || creature.allyKind !== 'prismatic') continue;
+			if (creature.hp <= 0 && creature.prismaticFade === undefined) continue;
+			found = true;
+			if (creature.hp < creature.maxHp) {
+				const restored = creature.maxHp - creature.hp;
+				creature.hp = creature.maxHp;
+				delete creature.prismaticFade;
+				context.showHeal(creature, restored);
+			} else delete creature.prismaticFade;
+		}
+		if (!found) context.grantPrismaticGuard(prismaticGuardMaxHp(context.heroLevel));
 		return true;
 	}
 	return false;

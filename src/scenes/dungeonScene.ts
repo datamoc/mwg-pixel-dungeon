@@ -34,7 +34,7 @@ import { abilityFlatBoost, accrueWeaponCharge, counterAbilityRefund, gainWeaponC
 import { useStoneOfFlock as useItemStoneOfFlock, useStoneOfAggression as useItemStoneOfAggression, useStoneOfAugmentation as useItemStoneOfAugmentation, useStoneOfFear as useItemStoneOfFear, useStoneOfDeepSleep as useItemStoneOfDeepSleep, useStoneOfBlink as useItemStoneOfBlink, useStoneOfClairvoyance as useItemStoneOfClairvoyance, useStoneOfShock as useItemStoneOfShock, useStoneOfBlast as useItemStoneOfBlast, useStoneOfEnchantment as useItemStoneOfEnchantment, useStoneOfDetectMagic as useItemStoneOfDetectMagic, useStoneOfIntuition as useItemStoneOfIntuition, type StoneContext, type StonePickerEntry } from '../items/stones';
 import { runSearch } from '../adapters/searchSimulation';
 import { runMovement } from '../adapters/movementSimulation';
-import { ALCHEMY_RECIPES, alchemicalCatalystCost, alchemyEnergyFor, arcaneCatalystCost, canCraftPotionSeed, canCraftScrollToStone, craftAlchemy, craftAlchemize, craftAlchemicalCatalyst, craftArcaneCatalyst, craftPotionSeed, craftScrollToStone, isSeedOrRunestone, randomAlchemicalPotion, randomArcaneScroll, SCROLL_TO_STONE, seedPotionId } from '../items/alchemy';
+import { ALCHEMY_RECIPES, alchemicalCatalystCost, alchemyEnergyFor, arcaneCatalystCost, canCraftPotionSeed, canCraftScrollToExotic, canCraftScrollToStone, craftAlchemy, craftAlchemize, craftAlchemicalCatalyst, craftArcaneCatalyst, craftPotionSeed, craftScrollToExotic, craftScrollToStone, isSeedOrRunestone, randomAlchemicalPotion, randomArcaneScroll, scrollExoticResult, SCROLL_TO_STONE, seedPotionId } from '../items/alchemy';
 import type { AlchemyPairSelection, AlchemyRecipe, AlchemyUnitRef } from '../items/alchemy';
 type AlchemyIngredientSelection =
 	| { kind: 'seeds'; units: AlchemyUnitRef[] }
@@ -186,6 +186,7 @@ import {
 } from '../simulation/huntressAbilities';
 import { exposeWeaknessDuration, feignedRetreatHaste, combinedLethalityTest, closeTheGapRange, invigoratingVictoryHeal, elementalStrikeCone, elementalPowerMulti, directedPowerBoost, elementalBlockingShield, elementalVampiricHeal, elementalSacrificialSelf, elementalBlobAmount, elementalBloomingBudget, elementalFurrowStep, elementalBaseDamage, elementalKineticSplash, elementalRootsDuration, elementalKnockback, elementalLuckyChance, elementalProjectingSplash, elementalCorruptingChance, elementalGrimChance, elementalCurseChance, elementalAnnoyingChance, elementalSacrificialOther, elementalStrikeResisted, type ElementalStrikeDamageSource } from '../simulation/duelistAbilities';
 import { shadowCloneAccuracy, shadowCloneArmorShare, shadowCloneBladeShare, shadowCloneEvasion, shadowCloneHp } from '../simulation/rogueAbilities';
+import { PRISMATIC_FADE_TURNS, PRISMATIC_HATCH_RANGE, prismaticGuardMaxHp, prismaticImageStats, prismaticSpawnCell } from '../simulation/prismatic';
 import { CLASSES, CLASS_AMMO, HERO_IDLE_FRAME, type ClassId } from '../classes';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
 import { TitleScene } from '../scenes/titleScene';
@@ -682,9 +683,12 @@ const APPEARANCE_TABLES: Record<string, Actors.AppearanceTable> = {
 		//ordinary floor generation (`sourceInventoryItem`'s `ScrollOf* -> 'scroll'+Name` rename
 		//already produces this exact id), not something newly introduced. `labels` duplicates
 		//its first rune name onto the synthetic 'scroll' placeholder rather than inventing a
-		//13th fake SPD rune name Java doesn't have.
-		kinds: ['scroll', 'scrollIdentify', 'scrollUpgrade', 'scrollRage', 'scrollLullaby', 'scrollMapping', 'scrollMirror', 'scrollCleanse', 'scrollRecharging', 'scrollTeleportation', 'scrollTerror', 'scrollRetribution', 'scrollTransmutation'],
-		labels: [...SCROLL_APPEARANCE_KEYS.slice(0, 12), SCROLL_APPEARANCE_KEYS[0]] as string[],
+		//13th fake SPD rune name Java doesn't have. `scrollPrismatic` shares `scrollMirror`'s
+		//rune label, exactly like Java's `ExoticScroll.reset()` (`image = regular + 16`,
+		//same `handler.label`) - the exotic is distinguishable by its identified name,
+		//not by a new rune.
+		kinds: ['scroll', 'scrollIdentify', 'scrollUpgrade', 'scrollRage', 'scrollLullaby', 'scrollMapping', 'scrollMirror', 'scrollCleanse', 'scrollRecharging', 'scrollTeleportation', 'scrollTerror', 'scrollRetribution', 'scrollTransmutation', 'scrollPrismatic'],
+		labels: [...SCROLL_APPEARANCE_KEYS.slice(0, 12), SCROLL_APPEARANCE_KEYS[0], SCROLL_APPEARANCE_KEYS[6]] as string[],
 	},
 };
 
@@ -882,6 +886,8 @@ interface SaveShape {
 	deferredDamageDelay?: boolean;
 	corrosionTurns?: number;
 	corrosionDamage?: number;
+	/** `PrismaticGuard`'s HP pool (null when no guard is owed). */
+	prismaticGuardHp?: number | null;
 	kineticStored?: number;
 	elementalFurrow?: number;
 	timeBubbleTurns?: number;
@@ -2474,7 +2480,7 @@ export class DungeonScene extends Scene2D {
 	}
 
 	/** any monster in MONSTERS, cut from its own real sprite sheet at its own real frame size */
-	private spawnMonster(kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'afterImage' | 'shadowClone', championEligible = false): Creature {
+	private spawnMonster(kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'afterImage' | 'shadowClone' | 'prismatic', championEligible = false): Creature {
 		const profile = monsterSpawnProfile(kind, this.depth, restoring, isAlly, championEligible, this.mobsToChampion);
 		this.mobsToChampion = profile.mobsToChampion;
 		const { def, adjustedDef, baseKind } = profile;
@@ -2700,6 +2706,58 @@ export class DungeonScene extends Scene2D {
 	/** `Sheep.initialize(8)` gives a neutral, invulnerable NPC a lifespan of roughly eight
 	 * actor turns. The actor now uses Java's dedicated `SheepSprite` film; only its neutral
 	 * scheduling and expiration remain represented through the shared ally path. */
+	/** `PrismaticImage.duplicate()`: the exotic scroll's guard hatches into this - a weaker
+	 * hero clone (`HT = PrismaticGuard.maxHP`, current HP = the guard pool leftovers)
+	 * that keeps the hero's armor film like a mirror image (Java's `PrismaticSprite`
+	 * is the hero sheet plus an armor tier, which is exactly this factory). Immune
+	 * to ToxicGas, CorrosiveGas and Burning (`fireImmune` covers the last; the two
+	 * gases and `AllyBuff` ride the blob/buff paths below - see `tickPrismaticGuard`
+	 * and PORT_COVERAGE.md). `actPriority = MOB_PRIO + 1` has no expression: no ally
+	 * carries a scheduler priority here, so the image queues like every other ally.
+	 * `intelligentAlly` is the shared ally AI below, which already fights and follows.
+	 */
+	private spawnPrismaticImage(at: Step, hp: number): Creature {
+		const image = this.spawnMonster('rat', at, false, undefined, true, 'prismatic');
+		image.name = t('actors.mobs.npcs.prismaticimage.name');
+		image.maxHp = prismaticGuardMaxHp(this.progression.level);
+		image.hp = Math.max(1, Math.min(image.maxHp, Math.trunc(hp)));
+		image.fireImmune = true;
+		image.sleeping = false;
+		image.seesHero = true;
+		this.syncPrismaticImage(image);
+		const carrier = this.sprite(image);
+		carrier.destroy();
+		const mirrorSheet = heroSheet(runState.sprites[this.heroClass]);
+		const mirrorFrame = Math.max(0, Math.min(5, this.armorTier)) * 21;
+		const sprite = new TintedSprite(mirrorSheet.get(mirrorFrame));
+		placeCharacterArt(sprite);
+		sprite.x = at.x * TILE;
+		sprite.y = at.y * TILE;
+		this.creatureLayer.addChild(sprite);
+		this.spriteFor.set(image.id, sprite);
+		sprite.alpha = 0.72;
+		return image;
+	}
+
+	/** Re-reads the image's hero-derived combat stats (`duplicate()` binds the hero for
+	 * life; every formula below reads it live). Runs at spawn and on each image turn,
+	 * the hawk/shadow-clone precedent for live-scaling summons. The armor's own
+	 * `evasionFactor`/`proc`/glyph-maximum hooks have no expression in this port's
+	 * armor model (flat DR tuple, hero-side-only glyph path), so evasion reads the
+	 * ring-scaled value and DR copies the hero's tuple - both stated in PORT_COVERAGE.
+	 */
+	private syncPrismaticImage(image: Creature): void {
+		const level = this.progression.level;
+		const ring = this.effectiveRing();
+		const accBonus = ring?.id === 'ring_accuracy' ? ringBonusLevel(ring, this.hero.magicImmune) : 0;
+		const evBonus = ring?.id === 'ring_evasion' ? ringBonusLevel(ring, this.hero.magicImmune) : 0;
+		const stats = prismaticImageStats(level, Math.pow(1.3, accBonus), Math.pow(1.125, evBonus));
+		image.accuracy = stats.accuracy;
+		image.evasion = stats.evasion;
+		image.damage = [stats.damageMin, stats.damageMax];
+		image.armor = [...this.hero.armor] as [number, number];
+	}
+
 	private spawnSheep(at: Step): Creature {
 		const sheep = this.spawnMonster('sheep', at, false, undefined, true, 'sheep');
 		sheep.name = t(MOB_KEYS.sheep);
@@ -2804,6 +2862,7 @@ export class DungeonScene extends Scene2D {
 				impShopkeeperGreeted: creature.impShopkeeperGreeted,
 				isAlly: creature.isAlly,
 				allyKind: creature.allyKind,
+				prismaticFade: creature.prismaticFade,
 				sheepTurns: creature.sheepTurns,
 				wardTier: creature.wardTier, wardWandLevel: creature.wardWandLevel, wardTotalZaps: creature.wardTotalZaps,
 				earthGuardianWandLevel: creature.earthGuardianWandLevel, earthGuardianDefense: creature.earthGuardianDefense,
@@ -2952,6 +3011,7 @@ export class DungeonScene extends Scene2D {
 				impShopkeeperGreeted: saved.impShopkeeperGreeted ?? false,
 				isAlly: saved.isAlly,
 				allyKind: saved.allyKind,
+				prismaticFade: saved.prismaticFade,
 				sheepTurns: saved.sheepTurns,
 				wardTier: saved.wardTier, wardWandLevel: saved.wardWandLevel, wardTotalZaps: saved.wardTotalZaps,
 				earthGuardianWandLevel: saved.earthGuardianWandLevel, earthGuardianDefense: saved.earthGuardianDefense,
@@ -5340,8 +5400,14 @@ export class DungeonScene extends Scene2D {
 			playTeleportAppear: (from, to, entity) => this.playTeleportAppear(from, to, entity),
 			restitchAllTiles: () => this.restitchAllTiles(),
 			showDamage: (target, amount) => this.showDamage(target, amount),
+			showHeal: (target, amount) => this.showHeal(target, amount),
 			kill: (target) => this.kill(target),
 			say: (message, level) => this.say(message, level),
+			heroLevel: this.progression.level,
+			grantPrismaticGuard: (hp) => {
+				this.hero.prismaticGuardHp = hp;
+				addBuff(this.hero, 'prismaticGuard', 9999);
+			},
 		};
 	}
 
@@ -6427,6 +6493,8 @@ export class DungeonScene extends Scene2D {
 			applyCorrosion: (target, strength) => {
 				//Same `BlobImmunity` decoy cover as `isToxicImmune` just above.
 				if (target.allyKind === 'afterImage') return;
+				//`PrismaticImage` is immune to `CorrosiveGas` (tag `v3.3.8`).
+				if (target.allyKind === 'prismatic') return;
 				target.corrosionTurns = Math.max(target.corrosionTurns ?? 0, 2);
 				target.corrosionDamage = Math.max(target.corrosionDamage ?? 0, strength);
 			},
@@ -6444,6 +6512,9 @@ export class DungeonScene extends Scene2D {
 				//the buff half in `buffBlocked`, the kind-keyed sets cannot see it (it spawns
 				//as a rat), so the decoy is named here alongside them.
 				|| target.allyKind === 'afterImage'
+				//`PrismaticImage` is immune to `ToxicGas` (same source); Burning is
+				//covered by its `fireImmune` flag on the fire paths, like Brimstone.
+				|| target.allyKind === 'prismatic'
 				|| (target.kind !== undefined && INORGANIC_KINDS.has(target.kind))
 				|| (target.kind === 'yogFist' && target.yogFistType === 'rusted')
 				|| (target.kind === 'yog' && this.yogShielded(target))
@@ -7440,6 +7511,10 @@ export class DungeonScene extends Scene2D {
 						const dealt = victim.isHero ? this.absorbHeroDamage(damage, true) : damage;
 						victim.hp -= dealt;
 						if (this.fadeMirrorOnDamage(victim, damage)) continue;
+						//Allies are never `kill()`ed on this seam (`!victim.isAlly` below),
+						//so a lethally-zapped image must enter its fade here, not at the
+						//kill backstop - otherwise it would linger at 0 HP and keep acting.
+						if (this.enterPrismaticFade(victim, dealt)) continue;
 						this.showDamage(victim, dealt);
 						victim.sleeping = false;
 					}
@@ -8476,6 +8551,10 @@ export class DungeonScene extends Scene2D {
 				//side runs from `takeMonsterTurn`, right after its own tick, for the same
 				//reason: Java buffs act independently of the char's action gates).
 				this.tickDuelParticipant(this.hero);
+				//`PrismaticGuard.act()`'s regen-plus-hatch turn, folded into the hero-turn
+				//pipeline like every other hero buff (it spends TICKs, not hero actions),
+				//scaled by the spent cost the way the armor charger above is.
+				this.tickPrismaticGuard(turnCost);
 				if (wasDrowsy && this.hero.buffs['drowsy'] === undefined && this.hero.hp < this.hero.maxHp) {
 					//Drowsy.act() attaches MagicalSleep; a full-health reader takes Java's
 					//"too healthy" path and is not put to sleep.
@@ -9983,6 +10062,19 @@ export class DungeonScene extends Scene2D {
 		//`ShadowClone.ShadowAlly` has no turn of its own beyond the shared ally below,
 		//but its gear-scaling stats are re-read on each of its turns (the hawk precedent).
 		if (ally.allyKind === 'shadowClone') this.syncShadowClone(ally);
+		//`PrismaticImage.act()`'s death fade: at 0 HP the image spends its turns counting
+		//down (`deathTimer`), still targetable and healable - healing above 0 HP clears
+		//the fade on this same turn, exactly like Java's `act()` reset branch. While
+		//fading it neither moves nor fights (Java spends the tick fading).
+		if (ally.allyKind === 'prismatic' && ally.prismaticFade !== undefined) {
+			if (ally.hp > 0) delete ally.prismaticFade;
+			else {
+				ally.prismaticFade -= 1;
+				if (ally.prismaticFade <= 0) this.kill(ally);
+			}
+			return;
+		}
+		if (ally.allyKind === 'prismatic') this.syncPrismaticImage(ally);
 		const hostiles = this.visibleAllyHostiles(ally)
 			.sort((a, b) => Roguelike.chebyshevDistance(ally, a) - Roguelike.chebyshevDistance(ally, b));
 		//`DirectableAlly`'s standing order, if this ally has one: an ordered attack target takes
@@ -9994,6 +10086,21 @@ export class DungeonScene extends Scene2D {
 		//where it goes when nothing is in sight, and that it stops there instead of following the hero.
 		const ordered = ally.allyTargetChar !== undefined && ally.allyTargetChar.hp > 0 ? ally.allyTargetChar : undefined;
 		const target = ordered ?? hostiles[0];
+		//`PrismaticImage.Wandering.act()`: with no enemy in sight the image rejoins its
+		//master - the guard pool is set to the image's current HP (`set(image)`), the
+		//actor is destroyed with the teleport effect, and no guard spawns while one is
+		//already owed (there is only ever one pool; hatching spends it). The shared
+		//follow-the-hero fallback below never runs for this kind.
+		if (ally.allyKind === 'prismatic' && !target && !ordered && !ally.allyDefendCell) {
+			this.hero.prismaticGuardHp = ally.hp;
+			addBuff(this.hero, 'prismaticGuard', 9999);
+			this.destroyAlly(ally);
+			return;
+		}
+		//`PrismaticImage.attackProc()`'s `aggro()` has no equivalent, the documented
+		//`activateFeint` reduction: this port's AI retargets from FOV every turn, so a
+		//mob that cannot see the hero already comes for the visible image through the
+		//shared paths, and there is no persistent enemy pointer to redirect.
 		if (target && Roguelike.chebyshevDistance(ally, target) === 1) {
 			this.attack(ally, target);
 			return;
@@ -10007,6 +10114,96 @@ export class DungeonScene extends Scene2D {
 		this.eternalFireBlockedInto(blocked);
 		const next = this.pathfinder.find({ x: ally.x, y: ally.y }, { x: destination.x, y: destination.y }, { blocked })[0];
 		if (next) this.moveTo(ally, next);
+	}
+
+	/** Silent ally teardown for `PrismaticImage.Wandering`'s return-to-guard (no death,
+	 * no loot, no log line - Java `destroy()`s plus a teleport effect; the effect has
+	 * no seam here, stated in PORT_COVERAGE.md). */
+	private destroyAlly(ally: Creature): void {
+		this.scheduler.remove(ally);
+		this.creatures.splice(this.creatures.indexOf(ally), 1);
+		this.sprite(ally).destroy();
+		this.spriteFor.delete(ally.id);
+	}
+
+	/** `PrismaticImage.die()`'s non-chasm branch: the killing blow starts the 5-turn
+	 * healable fade (`deathTimer = 5` plus the PARALYSED sprite state, which this
+	 * port's fade branch in `takeAllyTurn` already honors) instead of destroying the
+	 * actor. Runs at the same damage boundary as the mirror fade below, *before*
+	 * any death bookkeeping - and only for combat damage through `attack()`: chasm
+	 * falls and other direct `kill()` paths stay real deaths, exactly like Java's
+	 * `cause == Chasm.class` carve-out. */
+	private enterPrismaticFade(target: Creature, damage: number): boolean {
+		if (!target.isAlly || target.allyKind !== 'prismatic' || damage <= 0) return false;
+		if (target.prismaticFade !== undefined || target.hp > 0) return false;
+		target.hp = 0;
+		target.prismaticFade = PRISMATIC_FADE_TURNS;
+		this.showDamage(target, damage);
+		return true;
+	}
+
+	/** `PrismaticGuard.act()` (`actors/buffs/PrismaticGuard.java`, tag `v3.3.8`): regen
+	 * plus the hatch check, once per spent turn. The `PowerOfMany` turns have no
+	 * system here (no Cleric spells), so that half is always zero. Hatching spends
+	 * the pool (Java `detach()`s); a hatch with no free neighbour keeps the guard,
+	 * exactly like Java's `bestPos == -1` spend path.
+	 */
+	private tickPrismaticGuard(turns: number): void {
+		if (this.hero.prismaticGuardHp === undefined) {
+			delete this.hero.buffs['prismaticGuard'];
+			return;
+		}
+		const max = prismaticGuardMaxHp(this.progression.level);
+		const steps = Math.max(1, Math.round(turns));
+		for (let n = 0; n < steps; n++) {
+			//`HP += 0.1f` while hurt and `Regeneration.regenOn()`: the boss-arena
+			//and mining gates ride the established "regen always on" simplification
+			//stated at the seal/book ticks above, so the guard always regens here.
+			const pool = Math.min(max, (this.hero.prismaticGuardHp ?? 0) + 0.1);
+			this.hero.prismaticGuardHp = pool;
+			addBuff(this.hero, 'prismaticGuard', 9999);
+			if (this.hatchPrismaticImage(pool)) return;
+			if (this.hero.prismaticGuardHp === undefined) return;
+		}
+	}
+
+	/** The hatch half of the guard turn: returns true when an image spawned (the
+	 * pool is spent). Closest live visible enemy first, Java's three state
+	 * exclusions as this port's proxies (sleeping; unalerted wanderers via
+	 * `seesHero`/`lastSeen`/fleeing - the hunting row's own alerted notion;
+	 * `invulnerability` for `isInvulnerable(PrismaticImage.class)`), hatching
+	 * inside Chebyshev 5, into the free passable non-chasm neighbour closest
+	 * (Euclidean, Java's `trueDistance`) to that enemy. Mind-vision-only enemies
+	 * are NOT excluded: the hero FOV carries potion reveals indistinguishably
+	 * (stated in PORT_COVERAGE.md).
+	 */
+	private hatchPrismaticImage(pool: number): boolean {
+		let closest: Creature | undefined;
+		let best = Infinity;
+		for (const c of this.creatures) {
+			if (c.isHero || c.isNPC || c.isAlly || c.hp <= 0) continue;
+			if (!this.fov.isVisible(c.x, c.y)) continue;
+			if (c.sleeping || c.buffs['invulnerability'] !== undefined) continue;
+			if (!c.seesHero && c.lastSeen === undefined && !c.fleeing) continue;
+			const d = Roguelike.chebyshevDistance(this.hero, c);
+			if (d < best) { best = d; closest = c; }
+		}
+		if (!closest || best >= PRISMATIC_HATCH_RANGE) return false;
+		//`PathFinder.NEIGHBOURS8` order (top-left row first), so Euclidean ties keep
+		//Java's pick under the strict `<` comparison in `prismaticSpawnCell`.
+		const neighbours: ReadonlyArray<readonly [number, number]> = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
+		const candidates: { x: number; y: number; distance: number }[] = [];
+		for (const [dx, dy] of neighbours) {
+			const x = this.hero.x + dx, y = this.hero.y + dy;
+			if (!this.level.passable(x, y) || this.isChasmCell(x, y) || this.creatureAt(x, y)) continue;
+			candidates.push({ x, y, distance: Math.hypot(x - closest.x, y - closest.y) });
+		}
+		const at = prismaticSpawnCell(candidates);
+		if (!at) return false;
+		this.spawnPrismaticImage(at, Math.floor(pool));
+		delete this.hero.prismaticGuardHp;
+		delete this.hero.buffs['prismaticGuard'];
+		return true;
 	}
 
 	/** `MirrorImage.damage()`: a mirror has no durability and fades on the first positive
@@ -14164,6 +14361,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (this.fadeMirrorOnDamage(defender, damage)) {
 			return true;
 		}
+		if (this.enterPrismaticFade(defender, damage)) {
+			return true;
+		}
 		//`Grim.proc()`/`Char.damage()` + `GrimTracker` (tag v3.3.8): the enchant arms
 		//after the hit, then rolls against `(0.5 + .05*buffedWeaponLevel) * Arcana`
 		//scaled by the square of the defender's missing-HP fraction. A successful roll
@@ -15356,6 +15556,21 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.processFearTheReaper(creature);
 			return;
 		}
+		//`PrismaticImage.die()`'s non-chasm branch as a backstop for every lethal seam
+		//that funnels through here (blasts, traps, abilities, DoTs): a fading-capable
+		//image at 0 HP starts its 5-turn fade instead of dying. The hit's own damage
+		//number was already shown by the calling seam; `attack()` and the zap loop
+		//intercept earlier with the floater because their post-kill flow assumes the
+		//target is gone (XP/loot) or never kills allies at all. Chasm deaths bypass:
+		//no mob-chasm kill path exists in this port (chasms only move the hero down),
+		//so any future one must tear the actor down directly (`destroyAlly`), exactly
+		//like Java's `cause == Chasm.class` carve-out.
+		if (!creature.isHero && creature.isAlly && creature.allyKind === 'prismatic'
+			&& creature.hp <= 0 && creature.prismaticFade === undefined) {
+			creature.hp = 0;
+			creature.prismaticFade = PRISMATIC_FADE_TURNS;
+			return;
+		}
 		if (creature.isHero && this.resurrectPending) return;
 	if (creature.isHero && this.reviveWithBlessedAnkh()) return;
 	if (creature.isHero && this.openResurrectWindow()) return;
@@ -16241,7 +16456,10 @@ private eyeBeamTurn(monster: Creature): boolean {
 			waterskin: this.waterskin,
 			waterskinMax: WATERSKIN_MAX,
 			hunger: this.hunger >= 450 ? 'starving' : this.hunger >= 300 ? 'hungry' : 'none',
-			buffs: Object.entries(this.hero.buffs).map(([id, turns]) => ({ id: id as BuffId, turns })),
+			//The guard's buff-map value is a re-armed sentinel, not a duration: the
+			//status pane (icon text, info window) reads the pool instead, which is
+			//what Java's `iconTextDisplay()`/`desc()` show (`(int)HP`, `{0}/{1}`).
+			buffs: Object.entries(this.hero.buffs).map(([id, turns]) => ({ id: id as BuffId, turns: id === 'prismaticGuard' ? Math.floor(this.hero.prismaticGuardHp ?? 0) : turns })),
 			staff: this.heroClass === 'mage' ? { current: this.wandCharges.current, max: this.wandCharges.max } : null,
 			ammo: CLASS_AMMO.has(this.heroClass) ? this.ammo : null,
 			carriedCount,
@@ -16553,6 +16771,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			deferredDamageDelay: this.hero.deferredDamageDelay,
 			corrosionTurns: this.hero.corrosionTurns,
 			corrosionDamage: this.hero.corrosionDamage,
+			prismaticGuardHp: this.hero.prismaticGuardHp ?? null,
 			kineticStored: this.kineticStored,
 			elementalFurrow: this.elementalFurrow,
 			timeBubbleTurns: this.timeBubbleTurns,
@@ -16868,6 +17087,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.hero.deferredDamageDelay = s.deferredDamageDelay ?? false;
 		this.hero.corrosionTurns = s.corrosionTurns;
 		this.hero.corrosionDamage = s.corrosionDamage;
+		this.hero.prismaticGuardHp = s.prismaticGuardHp ?? undefined;
+		if (this.hero.prismaticGuardHp === undefined) delete this.hero.buffs['prismaticGuard'];
 		this.syncHeroFromStats();
 		this.enterLevel();
 		this.say(t('port.log.loaded', { depth: s.depth, level: s.level }), 'highlight');
@@ -17014,8 +17235,11 @@ private eyeBeamTurn(monster: Creature): boolean {
 	/** `BuffIndicator` click -> `WndInfoBuff`: shows the clicked icon's real name/description. */
 	private showBuffInfo(buff: string): void {
 		if (this.buffInfoOpen && !this.buffInfoOpen.closed) this.buffInfoOpen.close();
-		const turns = buff === 'hungry' || buff === 'starving' ? undefined : this.hero.buffs[buff as BuffId];
-		const info = buffInfo(buff as BuffId | 'hungry' | 'starving', turns);
+		const turns = buff === 'hungry' || buff === 'starving' ? undefined
+			: buff === 'prismaticGuard' ? Math.floor(this.hero.prismaticGuardHp ?? 0)
+			: this.hero.buffs[buff as BuffId];
+		const info = buffInfo(buff as BuffId | 'hungry' | 'starving', turns,
+			buff === 'prismaticGuard' ? prismaticGuardMaxHp(this.progression.level) : undefined);
 		if (!info) return;
 		const window = showBuffInfoWindow(info);
 		this.buffInfoOpen = window;
@@ -17446,6 +17670,10 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.pickAlchemyUnits(chooseTitle, (item) => SCROLL_TO_STONE[item.id] !== undefined, 1, [], (selected) => this.completeAlchemyRecipe(recipe, { kind: 'scroll', unit: selected[0]! }));
 			return true;
 		}
+		if (recipe.id === 'scrollToExotic') {
+			this.pickAlchemyUnits(chooseTitle, (item) => scrollExoticResult(item.id) !== undefined, 1, [], (selected) => this.completeAlchemyRecipe(recipe, { kind: 'scroll', unit: selected[0]! }));
+			return true;
+		}
 		if (recipe.id === 'alchemize') {
 			this.pickAlchemyUnits(chooseTitle, (item) => item.id.startsWith('seed'), 1, [], (seeds) => {
 				this.pickAlchemyUnits(chooseTitle, (item) => item.id.startsWith('stoneOf'), 1, [], (stones) => this.completeAlchemyRecipe(recipe, { kind: 'alchemize', seed: seeds[0]!, stone: stones[0]! }));
@@ -17508,6 +17736,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			crafted = craftedResult !== undefined;
 			if (craftedResult) this.bag.add({ id: craftedResult.id, quantity: 1, stackable: true, identified: craftedResult.identified });
 		} else if (recipe.id === 'scrollToStone') crafted = craftScrollToStone(this.bag, selected.kind === 'scroll' ? selected.unit : undefined);
+		else if (recipe.id === 'scrollToExotic') crafted = craftScrollToExotic(this.bag, selected.kind === 'scroll' ? selected.unit : undefined);
 		else if (recipe.id === 'alchemicalCatalyst') crafted = craftAlchemicalCatalyst(this.bag, selected.kind === 'pair' ? selected : undefined);
 		else if (recipe.id === 'arcaneCatalyst') crafted = craftArcaneCatalyst(this.bag, selected.kind === 'pair' ? selected : undefined);
 		else if (recipe.id === 'alchemize') crafted = craftAlchemize(this.bag, selected.kind === 'alchemize' ? { seed: selected.seed, stone: selected.stone } : undefined);
@@ -17524,7 +17753,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 	}
 	private openAlchemyRecipes(): void {
 		const recipes = ALCHEMY_RECIPES.filter((recipe) => recipe.energyCost <= this.alchemyEnergy && (
-			recipe.id === 'potionSeed' ? canCraftPotionSeed(this.bag) : recipe.id === 'scrollToStone' ? canCraftScrollToStone(this.bag) : recipe.id === 'alchemize'
+			recipe.id === 'potionSeed' ? canCraftPotionSeed(this.bag) : recipe.id === 'scrollToStone' ? canCraftScrollToStone(this.bag) : recipe.id === 'scrollToExotic' ? canCraftScrollToExotic(this.bag) : recipe.id === 'alchemize'
 				? this.bag.items.some((item) => item.quantity > 0 && item.id.startsWith('seed'))
 					&& this.bag.items.some((item) => item.quantity > 0 && item.id.startsWith('stoneOf'))
 				: recipe.id === 'alchemicalCatalyst' ? (alchemicalCatalystCost(this.bag) ?? Infinity) <= this.alchemyEnergy
@@ -17554,6 +17783,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 				const craftedResult = recipe?.id === 'potionSeed' ? potionSeed : undefined;
 				if (craftedResult) this.bag.add({ id: craftedResult.id, quantity: 1, stackable: true, identified: craftedResult.identified });
 				const crafted = recipe?.id === 'potionSeed' ? craftedResult !== undefined : recipe?.id === 'scrollToStone' ? craftScrollToStone(this.bag)
+					: recipe?.id === 'scrollToExotic' ? craftScrollToExotic(this.bag)
 					: recipe?.id === 'alchemicalCatalyst' ? craftAlchemicalCatalyst(this.bag) : recipe?.id === 'arcaneCatalyst' ? craftArcaneCatalyst(this.bag)
 					: recipe?.id === 'alchemize' ? craftAlchemize(this.bag) : recipe ? craftAlchemy(this.bag, recipe.id) : false;
 				if (!crafted) {
