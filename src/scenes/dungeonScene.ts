@@ -213,7 +213,7 @@ import { Banner } from '../ui/banner';
 import { showDefeatPanel as showDefeatPanelUi, showVictoryPanel as showVictoryPanelUi } from '../ui/endPanels';
 import { createItemPickerWindow } from '../ui/itemPicker';
 import { curseInfusionLevelBonus, reverseCurseInfusion, transferEnhancement, upgradeItem } from '../items/itemWorkflows';
-import { armorReductionRange, weaponDamageRange } from '../items/catalog';
+import { armorReductionRange, weaponDamageRange, WEAPON_NAME_BY_CLASS } from '../items/catalog';
 import { getArmorCurses, getCurse, getWeaponCurses } from '../items/itemCurses';
 import { Cat, blacksmithSmithRewards, generatorItemOrder, generatorRandom, ghostQuestReward, randomUsingDefaults, randomCategory, randomWeapon, randomArmor, randomArtifact, randomGold, removeArtifactClass, setGeneratorDepth, type GenItem, type StatueLoot } from '../items/generator';
 import { MWL_CONSUMABLE_STATS, MWL_HERO_BASE_STATS, MWL_HERO_LEVEL_GROWTH, MWL_MISSILE_BY_CLASS, MWL_MISSILE_NAME_KEYS, MWL_PROGRESSION, MWL_QUEST_DEFINITIONS, MWL_SCENARIO_QUESTS, MWL_TURN_CLOCK, MWL_WAND_WARD_RULES, mwlItemEffectValue } from '../mwlContent';
@@ -18302,7 +18302,16 @@ private eyeBeamTurn(monster: Creature): boolean {
 			armorInstanceId: this.armorInstanceId,
 			armorLevel: this.armorLevel,
 			weaponInstanceId: this.weaponInstanceId,
-			weaponName: t(CLASSES[this.heroClass].weaponKey),
+			//`WEAPON_NAME_BY_CLASS` names the hero's real equipped class once it stops being the
+			//starting weapon (`equipWeapon`'s `scene.weaponSourceClass = id`) - this used to stay
+			//on the class's own starting-weapon key forever, so the bag slot for a hero already
+			//wielding a found longsword still read "worn shortsword". `weaponFrame` stays the
+			//per-class icon unchanged (a stated simplification, not this fix's scope: this port
+			//has no per-weapon-class sprite frame data - `weaponReward`'s own bag-item frame is
+			//uniformly 96 regardless of `sourceClass` too, see `item-rules.mwl`).
+			weaponName: this.weaponSourceClass !== undefined && this.weaponSourceClass !== 'startingWeapon'
+				? t(WEAPON_NAME_BY_CLASS[this.weaponSourceClass.toLowerCase()] ?? CLASSES[this.heroClass].weaponKey)
+				: t(CLASSES[this.heroClass].weaponKey),
 			weaponFrame,
 			equippedRing: this.equippedRing,
 			gold: this.heroStats.base('gold'),
