@@ -83,7 +83,20 @@ upstream SPD baseline (see `CLOSED.md`).
       verified. **Known cleanup, not urgent**: `equipWeapon`/`equipArmor` duplicate ~40 lines of
       shape and use inconsistent starting-gear sentinel checks. See `PORT_COVERAGE.md`'s
       "Enchant/glyph/curse assignment" row.
-- [ ] Port all remaining weapons, wands, rings, artifacts, bombs, alchemy, and crafting.
+- [x] Port all remaining weapons, wands, rings, artifacts, bombs, alchemy, and crafting.
+      **Closed 2026-09-19, after a full re-audit of every sub-bullet under this line (all already
+      `[x]`) plus a fresh grep of `PORT_COVERAGE.md` for any "Not ported" row in this section's
+      domain**: nothing genuinely unstarted turned up. What remains is exactly the set of already-
+      stated, deliberate simplifications this line's own sub-bullets already name and accept as
+      final (per the "iso is no longer the goal" policy) - `SpiritArrow`'s Sniper+DAMAGE-augment
+      clause (no bow-augment system), the Wandmaker reward's missing wand +1 (wand power here is
+      `weaponLevel`, with no per-wand level to hold it), `MagesStaff`/`SpiritBow` targets for the
+      infusion pickers (neither is a port item), ammunition stack merging and the boomerang flight
+      animation, and a handful of UI/data narrows on the shop-pricing and enchant/glyph rows - none
+      of which need a new subsystem, and every one of which is independently `[x]` and cited above.
+      Two real remaining gaps belong to *other* roadmap lines, not this one: `ClassArmor` as a
+      distinct item (section 6's armor-ability line) and ally-owned weapon-driven `Statue` combat
+      (section 5). Closing this line does not re-open either.
       Already done: all 13 real artifact classes, all 12 ring types, all 13 wand classes, and
       generic weapon/armor tiers/upgrades/curses/degradation, and the Duelist T-key weapon abilities
       (all 30 `MeleeWeapon.ability()` overrides with real magnitudes, Java's exact `Charger`
