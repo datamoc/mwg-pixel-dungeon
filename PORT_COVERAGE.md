@@ -670,8 +670,8 @@ liquid flame, 12 energy), `BlizzardBrew` (one frost, 8), `ShockingBrew` (one par
 and `CausticBrew` (one toxic gas plus one goo blob, 1) - Java's own inputs and costs from
 `items/potions/brews/*.java` (tag `v3.3.8`). Every brew carries Java's `value()` (60) and
 `energyVal()` (12) in MWL and its real atlas cell (400-403). **Thrown and shattering:**
-`useBrew` aims through the bomb's picker (passable non-chasm, six cells) and `shatterBrewAt`
-resolves all four shatters - Shocking seeds `Electricity` 20 over the radius-3 flood,
+`useBrewFlow`/`shatterBrewFlow` in `simulation/brews.ts` (the file-size refactor's fifteenth extraction, 2026-09-19, behavior-identical - the scene keeps the one-line `useBrew` adapter the router calls plus a builder over its bag/aim/floor/blob/turn seams) aim through the bomb's picker (passable non-chasm, six cells) and
+resolve all four shatters - Shocking seeds `Electricity` 20 over the radius-3 flood,
 Caustic lays `Ooze` on every non-NPC creature in the same flood (the table's 20 matching
 `Ooze.DURATION`; NPCs stay out per the area-effect convention), and Infernal/Blizzard seed
 their blobs (120 per open NEIGHBOURS8 cell, 120 plus 120 per solid neighbour onto the

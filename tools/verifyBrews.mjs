@@ -181,4 +181,80 @@ export function verifyBrews(require, check) {
 		assert.equal(chills, 2, 'the double freeze lands two chill steps');
 		assert.equal(fireClears, 1, 'fire is cleared on the cell');
 	});
+	// The moved throw/aim/shatter flow (`BrewFlowContext`, the file-size refactor's
+	// fifteenth extraction): driven headlessly with a stub floor and scripted aim.
+	const { useBrewFlow } = require('./simulation/brews');
+	function brewDrive(overrides = {}) {
+		const bag = overrides.bag ?? { shockingBrew: 1, causticBrew: 1, infernalBrew: 1, blizzardBrew: 1 };
+		const seeds = [];
+		const oozed = [];
+		const flags = { turns: 0, aim: null, pending: overrides.pending ?? null };
+		const creatures = overrides.creatures ?? {};
+		const ctx = {
+			levelSize: { width: 9, height: 9, ...overrides.levelSize },
+			hasBrew: (id) => (bag[id] ?? 0) > 0,
+			consumeBrew: (id) => { bag[id]--; },
+			beginAim: (opts) => { flags.aim = opts; },
+			canTargetCell: () => true,
+			isSolid: () => false,
+			get pendingTarget() { return flags.pending; },
+			set pendingTarget(cell) { flags.pending = cell; },
+			creatureAt: (x, y) => creatures[`${x},${y}`] ?? null,
+			afflictOoze: (creature) => { oozed.push(creature); },
+			seedBlob: (kind, x, y, volume) => { seeds.push([kind, x, y, volume]); },
+			spendTurn: () => { flags.turns++; },
+			...overrides.ctx,
+		};
+		return { ctx, bag, seeds, oozed, flags };
+	}
+	check('the moved throw flow aims once, then shatters on confirm', () => {
+		const d = brewDrive({ levelSize: { width: 7, height: 7 } });
+		useBrewFlow(d.ctx, 'shockingBrew');
+		assert.ok(d.flags.aim && d.flags.aim.range === 6, 'unaimed throws open the bomb-range aimer');
+		assert.equal(d.bag.shockingBrew, 1, 'aiming consumes nothing');
+		assert.equal(d.flags.aim.validate({ x: 3, y: 3 }), true, 'the validate delegates to the floor');
+		d.flags.aim.onConfirm({ x: 3, y: 3 });
+		assert.equal(d.bag.shockingBrew, 0, 'the shatter detaches one brew');
+		assert.equal(d.flags.pending, null, 'the pending cell clears');
+		assert.equal(d.seeds.length, 49, 'the whole radius-3 flood seeds');
+		assert.ok(d.seeds.every(([kind, , , volume]) => kind === 'electricity' && volume === 20),
+			'electricity 20 everywhere');
+		assert.deepEqual(d.seeds[0].slice(1, 3), [3, 3], 'the center seeds first');
+		assert.equal(d.flags.turns, 1, 'the throw spends the turn');
+	});
+	check('unknown and missing brews never reach the aimer', () => {
+		const d = brewDrive({ bag: {} });
+		useBrewFlow(d.ctx, 'shockingBrew');
+		useBrewFlow(d.ctx, 'potionOfHealing');
+		assert.equal(d.flags.aim, null, 'no brew, no aim; unknown id, no aim');
+		assert.equal(d.flags.turns, 0, 'and no turn spent');
+	});
+	check('a pending aim skips the picker and shatters at once', () => {
+		const d = brewDrive({ pending: { x: 4, y: 4 } });
+		useBrewFlow(d.ctx, 'blizzardBrew');
+		assert.equal(d.flags.aim, null, 'no second aim');
+		assert.ok(d.seeds.length === 9 && d.seeds.every(([kind]) => kind === 'blizzard'),
+			'all eight neighbours plus the center seed blizzard');
+	});
+	check('Caustic oozes every non-NPC in the flood and seeds nothing', () => {
+		const rat = { isNPC: false };
+		const d = brewDrive({ creatures: { '4,4': rat, '5,4': { isNPC: true } }, pending: { x: 4, y: 4 } });
+		useBrewFlow(d.ctx, 'causticBrew');
+		assert.deepEqual(d.oozed, [rat], 'the rat oozes, the NPC is spared');
+		assert.equal(d.seeds.length, 0, 'Caustic seeds nothing');
+		assert.equal(d.bag.causticBrew, 0, 'one brew detached');
+	});
+	check('Infernal piles the blocked share onto the center at 120 a cell', () => {
+		const d = brewDrive({
+			pending: { x: 4, y: 4 },
+			ctx: { isSolid: (x, y) => x === 5 && y === 4 },
+		});
+		useBrewFlow(d.ctx, 'infernalBrew');
+		assert.equal(d.seeds.length, 8, 'seven neighbours plus the center');
+		assert.ok(d.seeds.every(([kind]) => kind === 'inferno'), 'all into the inferno blob');
+		const center = d.seeds.find(([, x, y]) => x === 4 && y === 4);
+		assert.equal(center[3], 240, 'one wall piles 120 onto the center');
+		assert.ok(d.seeds.filter((s) => s !== center).every(([, , , volume]) => volume === 120),
+			'open neighbours take 120 each');
+	});
 }

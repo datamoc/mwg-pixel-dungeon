@@ -1221,7 +1221,21 @@ one.
       relocate vs cross-depth travel, blocked/occupied/walled anchors). The move caught one
       inverted reading in review - the zap costs 2 *past* depth 20, not above it - fixed in the
       module comment and the drive before committing.
-      **Complexity: L.**
+      **Complexity: L.** **Fifteenth extraction 2026-09-19**: the brew throw/aim/shatter pair
+      (`useBrew`'s pending-aim re-entry, `shatterBrewAt`'s four shatters) joined
+      `simulation/brews.ts` behind a `BrewFlowContext` (bag has/consume, aimer with the
+      passable-non-chasm validate, floor size, solid test, pending-aim cell, creature views,
+      ooze affliction, per-blob seeding, turn); the scene keeps the one-line `useBrew` adapter
+      the router calls plus a builder, and drops its eight-name brews import for the flow pair.
+      Net −27 lines in `dungeonScene.ts` (22,797 after), `brews.ts` 98 to 186. Suites: `tsc`
+      clean with no fix-ups (`Step` is exactly `{x, y}`, the aimer already takes a validate),
+      simulation suite green at 165 checks with a new headless drive of the moved flow in
+      `verifyBrews.mjs` (aim-then-shatter with the 49-cell electricity-20 flood, unknown/missing
+      brews never aiming, pending aims shattering at once, Caustic oozing non-NPCs only,
+      Infernal piling the blocked share onto the center). The move fixed two stale "no blob to
+      seed" claims in passing - both blobs have been modeled and seeded since the follow-up, so
+      the module header now says so and the moved comment carries the corrected shape.
+      **Complexity: S.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

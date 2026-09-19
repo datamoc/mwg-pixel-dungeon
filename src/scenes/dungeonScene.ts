@@ -200,7 +200,7 @@ import { burnFireContents as burnFireContentsEffect } from '../items/fireContent
 import { selectRangedTarget } from '../simulation/targeting';
 import { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLeapCooldown } from '../simulation/ripperLeap';
 import { shouldSuccubusBlink, chooseSuccubusBlinkCell, succubusBlinkCooldown } from '../simulation/succubusBlink';
-import { brewNeighbourSeedPlan, brewShatterCells, BLIZZARD_BREW_VOLUME, CAUSTIC_BREW_RADIUS, INFERNO_BREW_VOLUME, SHOCKING_BREW_RADIUS, SHOCKING_BREW_VOLUME, THROWABLE_BREW_IDS } from '../simulation/brews';
+import { useBrewFlow, type BrewFlowContext } from '../simulation/brews';
 import { foregroundGrassFrames as buildForegroundGrassFrames, terrainFrameAt as buildTerrainFrameAt, terrainFrames as buildTerrainFrames, wallFrameAt as buildWallFrameAt, wallFrames as buildWallFrames, waterFrames as buildWaterFrames, type DungeonTileFrameContext } from './dungeonTileFrames';
 import { Banner } from '../ui/banner';
 import { showDefeatPanel as showDefeatPanelUi, showVictoryPanel as showVictoryPanelUi } from '../ui/endPanels';
@@ -17652,63 +17652,36 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.spendHeroTurn(1);
 	}
 
-	/** `Brew.doThrow()` + the default `AC_THROW`: brews cannot be drunk (`actions()`
-	 * drops `AC_DRINK`) and are always known (`isKnown()` true). Aim gate and range are
-	 * the bomb's (passable, non-chasm, six cells); Java flies the full PROJECTILE line.
-	 * Only the brews whose shatter this port can resolve are offered (see
-	 * `THROWABLE_BREW_IDS`); Infernal/Blizzard have no blob to seed yet. */
 	private useBrew(brewId: string, instanceId?: string): void {
-		if (!THROWABLE_BREW_IDS.has(brewId) || !this.bag.find(brewId, instanceId)) return;
-		if (!this.brewTarget) {
-			this.beginAiming({
-				range: 6,
-				validate: (cell) => this.level.passable(cell.x, cell.y) && !this.isChasmCell(cell.x, cell.y),
-				onConfirm: (cell) => {
-					this.brewTarget = cell;
-					this.useBrew(brewId, instanceId);
-				},
-			});
-			return;
-		}
-		const target = this.brewTarget;
-		this.brewTarget = null;
-		this.shatterBrewAt(brewId, target, instanceId);
+		useBrewFlow(this.brewFlowContext(), brewId, instanceId);
 	}
 
-	/** `ShockingBrew.shatter()` / `CausticBrew.shatter()` / `InfernalBrew.shatter()` /
-	 * `BlizzardBrew.shatter()`: one brew detaches and breaks at the aimed cell. Shocking
-	 * seeds electricity 20 over the radius-3 flood; Caustic lays `Ooze` (duration 20, the
-	 * table value matching `Ooze.DURATION`) on every non-NPC creature in the same flood -
-	 * NPCs stay out of every area effect here, the way the fireblast cone already
-	 * documents. Infernal/Blizzard seed 120 per open NEIGHBOURS8 cell with 120 plus 120
-	 * per solid neighbour onto the center. Java's splash particles and shatter sounds
-	 * have no seam here, and Java logs nothing either way. Spends the turn. */
-	private shatterBrewAt(brewId: string, at: Step, instanceId?: string): void {
-		this.bag.remove(brewId, 1, instanceId);
-		if (brewId === 'infernalBrew' || brewId === 'blizzardBrew') {
-			const blob = brewId === 'infernalBrew' ? this.inferno : this.blizzard;
-			const plan = brewNeighbourSeedPlan(
-				(x, y) => !this.level.inside(x, y) || !this.level.passable(x, y),
-				at.x, at.y, brewId === 'infernalBrew' ? INFERNO_BREW_VOLUME : BLIZZARD_BREW_VOLUME);
-			for (const seed of plan.seeds) blob.seed(seed.x, seed.y, seed.volume);
-			blob.seed(at.x, at.y, plan.centerVolume);
-			this.actionSpentTurn = true;
-			this.spendHeroTurn(1);
-			return;
-		}
-		const radius = brewId === 'causticBrew' ? CAUSTIC_BREW_RADIUS : SHOCKING_BREW_RADIUS;
-		const flood = brewShatterCells(this.level.width, this.level.height,
-			(x, y) => !this.level.inside(x, y) || !this.level.passable(x, y), at.x, at.y, radius);
-		if (brewId === 'causticBrew') {
-			for (const cell of flood) {
-				const target = this.creatureAt(cell.x, cell.y);
-				if (target && !target.isNPC) addBuff(target, 'ooze');
-			}
-		} else {
-			for (const cell of flood) this.electricity.seed(cell.x, cell.y, SHOCKING_BREW_VOLUME);
-		}
-		this.actionSpentTurn = true;
-		this.spendHeroTurn(1);
+	/**
+	 * The brew throw/aim/shatter flow lives in `simulation/brews.ts` behind
+	 * `BrewFlowContext` - the file-size refactor's fifteenth extraction, behavior-identical.
+	 * Blob seeding, the ooze affliction and the pending-aim cell stay scene-side; the
+	 * module only decides them.
+	 */
+	private brewFlowContext(): BrewFlowContext {
+		const scene = this;
+		return {
+			get levelSize() { return { width: scene.level.width, height: scene.level.height }; },
+			get pendingTarget() { return scene.brewTarget; },
+			set pendingTarget(cell) { scene.brewTarget = cell; },
+			hasBrew: (brewId, instanceId) => scene.bag.find(brewId, instanceId) !== undefined,
+			consumeBrew: (brewId, instanceId) => { scene.bag.remove(brewId, 1, instanceId); },
+			beginAim: (opts) => scene.beginAiming(opts),
+			canTargetCell: (x, y) => scene.level.passable(x, y) && !scene.isChasmCell(x, y),
+			isSolid: (x, y) => !scene.level.inside(x, y) || !scene.level.passable(x, y),
+			creatureAt: (x, y) => scene.creatureAt(x, y),
+			afflictOoze: (creature) => { addBuff(creature as Creature, 'ooze'); },
+			seedBlob: (kind, x, y, volume) => {
+				if (kind === 'inferno') scene.inferno.seed(x, y, volume);
+				else if (kind === 'blizzard') scene.blizzard.seed(x, y, volume);
+				else scene.electricity.seed(x, y, volume);
+			},
+			spendTurn: () => { scene.actionSpentTurn = true; scene.spendHeroTurn(1); },
+		};
 	}
 
 	private removeGroundItem(g: GroundItem): void {
