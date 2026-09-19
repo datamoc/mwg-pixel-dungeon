@@ -1701,9 +1701,17 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	// The stats line names Java's real info keys; the wording itself is the catalogue's
 	// job (`npm run i18n:verify`), so this pins the key set the stats line uses, not
 	// the sentences.
-	//Missile stats use the real v3.3.8 split key (`stats_known`, alongside `stats_unknown`),
-	//not the old unified `stats` - `MissileWeapon.info()` names both explicitly.
-	for (const key of ['items.weapon.melee.meleeweapon.stats_known', 'items.armor.armor.curr_absorb', 'items.weapon.missiles.missileweapon.stats_known', 'items.weapon.weapon.too_heavy', 'items.weapon.weapon.excess_str', 'items.armor.armor.too_heavy']) {
+	//**Correction, 2026-09-19**: an earlier pass here (commit fca31cf) pinned
+	//`missileweapon.stats_known` on the premise that tag v3.3.8's real `MissileWeapon.info()`
+	//splits known/unknown - true of that tag, but not of the checkout `tools/i18n-extract.mjs`
+	//actually regenerates the catalogue from (a live, divergent branch that still carries the
+	//older unified `stats` key; see that tool's own header comment). The test file's change
+	//landed without displayName.ts's matching change, and without confirming the catalogue
+	//would ever carry `stats_known` at all - so this assertion has failed unconditionally since
+	//that commit. Restored to the key both displayName.ts and the current catalogue actually
+	//agree on; see PORT_COVERAGE.md's levelgen section for why blindly regenerating from
+	//v3.3.8 to chase `stats_known` is not safe (it regresses unrelated levelgen parity).
+	for (const key of ['items.weapon.melee.meleeweapon.stats_known', 'items.armor.armor.curr_absorb', 'items.weapon.missiles.missileweapon.stats', 'items.weapon.weapon.too_heavy', 'items.weapon.weapon.excess_str', 'items.armor.armor.too_heavy']) {
 		assert.ok(readFileSync(join(root, 'src/items/displayName.ts'), 'utf8').includes(`'${key}'`), `stats line uses ${key}`);
 		assert.ok(readFileSync(join(root, 'src/generated/spdMessages.ts'), 'utf8').includes(`"${key}"`), `${key} exists in the catalogue`);
 	}

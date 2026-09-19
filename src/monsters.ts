@@ -360,80 +360,14 @@ export const BOSSES: Record<number, { kind: MonsterId; victory: string; next: 'c
  * Mob.java loot, simplified to ground-item kinds this port can actually drop: every entry is
  * {chance, kind} rolled once on death via the same "roll whether anything drops, then what"
  * shape as mwg/actors' rollLoot (a single-entry table each, so the call below passes a
- * one-entry LootTable rather than reimplementing the roll).
+ * one-entry LootTable rather than reimplementing the roll). The real, live table is
+ * `MWL_MOB_LOOT` below, authored in `content/loot-rules.mwl` - a hand-written predecessor of
+ * this same table (`LEGACY_MOB_LOOT`) sat here unreferenced for a while after that migration
+ * (confirmed 2026-09-19: zero call sites anywhere in the repo), its own values already stale
+ * against the MWL table's later corrections (`causticSlime`'s invented 0.5 meat, `dm201`'s
+ * un-derived flat 0.125 - both fixed in the real table's own row comments) - deleted rather
+ * than kept as a second, silently-diverging source of truth for the same 31 monsters.
  */
-const LEGACY_MOB_LOOT: Record<string, { chance: number; kind: GroundItemKind }[]> = {
-	//Sewers base loot, found missing entirely while auditing every real spawnable kind
-	//against MOB_LOOT: Snake.loot = Generator.Category.SEED (0.25), Gnoll.loot = Gold.class
-	//(0.5), Crab.loot = MysteryMeat.class (0.167, ~1/6) - Rat and Goo have no `loot` field in
-	//Java at all, correctly no entry here.
-	snake: [{ chance: 0.25, kind: 'seed' }],
-	//RotLasher.loot = Generator.Category.SEED at 0.75.
-	rotLasher: [{ chance: 0.75, kind: 'seed' }],
-	gnoll: [{ chance: 0.5, kind: 'gold' }],
-	crab: [{ chance: 1 / 6, kind: 'meat' }],
-	// Alternative mobs inherit their base loot table unless Java replaces it with a
-	// guaranteed special item; these entries make the inheritance explicit to callers.
-	albino: [{ chance: 1, kind: 'meat' }],
-	causticSlime: [{ chance: 0.5, kind: 'meat' }],
-	bandit: [{ chance: 1, kind: 'gold' }],
-	spectralNecromancer: [{ chance: 0.2, kind: 'potion' }],
-	armoredBrute: [{ chance: 1, kind: 'armor' }],
-	dm201: [{ chance: 0.125, kind: 'armor' }],
-	senior: [{ chance: 1, kind: 'food' }],
-	acidic: [{ chance: 1, kind: 'potion' }],
-	piranha: [{ chance: 1, kind: 'meat' }],
-	dm100: [{ chance: 0.25, kind: 'scroll' }],
-	guard: [{ chance: 0.2, kind: 'armor' }],
-	necromancer: [{ chance: 0.2, kind: 'potion' }],
-	bat: [{ chance: 1 / 6, kind: 'potion' }],
-	brute: [{ chance: 0.5, kind: 'gold' }],
-	shaman: [{ chance: 0.03, kind: 'wand' }],
-	spinner: [{ chance: 0.125, kind: 'meat' }],
-	//DM200.lootChance() base is really 0.2 (this port previously had 0.125, an unconfirmed
-	//guess with no derivation from Java's actual field); Java also picks weapon-or-armor 50/50
-	//(`Random.oneOf(WEAPON,ARMOR)`), simplified here to always 'armor' - not newly introduced,
-	//tracked in `PORT_COVERAGE.md`'s `MOB_LOOT`/`LIMITED_DROP_DECAY` row.
-	dm200: [{ chance: 0.2, kind: 'armor' }],
-	//GnollTrickster.createLoot: MISSILE at half quantity, always - a stone here
-	gnollTrickster: [{ chance: 1, kind: 'stone' }],
-	//GreatCrab: 2x MysteryMeat, always - one lands on the cell, the second beside it (or the
-	//bag when crowded); heaps stack in Java, single-item cells here do not
-	greatCrab: [{ chance: 1, kind: 'meat' }],
-	//City/Halls loot: Ghoul gold 0.2, Monk food ~0.083 (rounded to 0.1), Golem armor
-	//0.2 (Java's real base - the previous 0.125 here was the same unconfirmed-guess bug as
-	//DM200's above, weapon-or-armor also simplified to always 'armor'), Eye dewdrop 1.0.
-	//Warlock/Scorpio's 0.5 potion drops and Succubus's 0.33 scroll drop are all handled
-	//outside this table entirely (see `kill()`'s own dedicated branches) since their real
-	//Java loot each excludes specific classes this port's generic 'potion'/'scroll' MOB_LOOT
-	//kinds can't express (drinking/reading the generic id always resolves to one of exactly
-	//the classes each of these three is required to avoid).
-	ghoul: [{ chance: 0.2, kind: 'gold' }],
-	monk: [{ chance: 0.1, kind: 'food' }],
-	golem: [{ chance: 0.2, kind: 'armor' }],
-	eye: [{ chance: 1, kind: 'dewdrop' }],
-	//DemonSpawner: `loot = PotionOfHealing.class; lootChance = 1f;` - a real, guaranteed drop,
-	//simplified like every other potion-class loot here to the shared generic 'potion' kind
-	//rather than a specific PotionOfHealing sprite/effect.
-	demonSpawner: [{ chance: 1, kind: 'potion' }],
-	//Slime.lootChance() base 0.2, drops a random WEP_T2 melee weapon - this port has no
-	//weapon-specific ground-item kind (see `portItemKind`'s own `weapon -> 'armor'` fold), so
-	//it reuses the same weapon-as-'armor' stand-in dm200/golem already use above.
-	slime: [{ chance: 1 / 5, kind: 'armor' }],
-	//Skeleton.lootChance() base 0.1667 (~1/6), `loot = Generator.Category.WEAPON` (any tier,
-	//not just T2 like Slime) - same weapon-as-'armor' stand-in.
-	skeleton: [{ chance: 1 / 6, kind: 'armor' }],
-	//Thief.lootChance() base 0.03, `loot = Random.oneOf(RING, ARTIFACT)` - collapsed to the
-	//single 'ring' kind (this port's `portItemKind` already folds Artifact into the shared
-	//'wand' kind, which would make Thief's drop indistinguishable from a real wand pickup;
-	//'ring' stays a closer, still-distinct stand-in for "rare misc treasure").
-	thief: [{ chance: 0.03, kind: 'ring' }],
-	//Swarm.lootChance(): `1/(6*(generation+1)) * (5-SWARM_HP.count)/5`,
-	//`loot = PotionOfHealing.class`. `generation` is persisted and incremented by
-	//`swarmSplit()` so split descendants receive Java's reduced loot chance.
-	swarm: [{ chance: 1 / 6, kind: 'potion' }],
-};
-
 const MWL_MOB_LOOT: Array<[string, { chance: number; kind: GroundItemKind }[]]> = MWL_TABLE_ROWS('monsterLoot', 'monster').map((row) => [
 	String(row.monster),
 	[{ chance: Number(row.chance), kind: String(row.kind) as GroundItemKind }],
