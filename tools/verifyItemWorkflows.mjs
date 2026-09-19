@@ -80,6 +80,7 @@ compile(join(root, 'src/dungeonConstants.ts'), 'dungeonConstants.js');
 compile(join(root, 'src/items/beacon.ts'), 'items/beacon.js');
 compile(join(root, 'src/items/spells.ts'), 'items/spells.js');
 compile(join(root, 'src/items/honeypot.ts'), 'items/honeypot.js');
+compile(join(root, 'src/items/bombs.ts'), 'items/bombs.js');
 //`spells.js` upgrades through `itemWorkflows.js` by its real name, while the suite otherwise
 //only compiles that module as `workflows.js` (line 26) - recompiling it here under its own
 //name is the same idempotent write.
@@ -2694,6 +2695,41 @@ function potDrive(overrides = {}) {
 	const preset = potDrive({ pending: { x: 5, y: 5 } });
 	assert.equal(preset.flags.aim, null, 'a pending aim shatters at once');
 	assert.deepEqual(preset.flags.bees, [{ at: { x: 5, y: 5 }, holderId: null }], 'breaking where aimed');
+}
+// The moved bomb aim (`aimBombFlow`, the file-size refactor's twenty-fourth extraction):
+// missing bombs never aim; confirms hand the pending cell to the detonate half.
+const { aimBombFlow } = require('./items/bombs.js');
+function bombAimDrive(overrides = {}) {
+	const flags = { aim: null, detonated: [], pending: overrides.pending ?? null };
+	const ctx = {
+		hasBomb: () => overrides.hasBomb ?? true,
+		beginAim: (opts) => { flags.aim = opts; },
+		canTargetCell: () => true,
+		aimRange: () => overrides.range ?? 6,
+		get pendingTarget() { return flags.pending; },
+		set pendingTarget(cell) { flags.pending = cell; },
+		detonateAt: (target, bombId, instanceId) => { flags.detonated.push({ target, bombId, instanceId }); },
+		...overrides.ctx,
+	};
+	aimBombFlow(ctx, overrides.bombId, overrides.instanceId);
+	return { ctx, flags };
+}
+{
+	const missing = bombAimDrive({ hasBomb: false });
+	assert.equal(missing.flags.aim, null, 'no bomb, no aim');
+	assert.deepEqual(missing.flags.detonated, [], 'and no detonation');
+	const d = bombAimDrive({ range: 7 });
+	assert.equal(d.flags.aim.range, 7, 'the range comes from the MWL seam');
+	assert.equal(d.flags.aim.validate({ x: 5, y: 5 }), true, 'the validate delegates to the floor');
+	d.flags.aim.onConfirm({ x: 5, y: 5 });
+	assert.equal(d.flags.pending, null, 'the pending cell clears');
+	assert.deepEqual(d.flags.detonated, [{ target: { x: 5, y: 5 }, bombId: 'bomb', instanceId: undefined }], 'defaults detonate the plain bomb');
+	const fiery = bombAimDrive({ bombId: 'fireBomb', instanceId: 'f1' });
+	fiery.flags.aim.onConfirm({ x: 3, y: 3 });
+	assert.deepEqual(fiery.flags.detonated, [{ target: { x: 3, y: 3 }, bombId: 'fireBomb', instanceId: 'f1' }], 'ids and instances pass through');
+	const preset = bombAimDrive({ pending: { x: 5, y: 5 } });
+	assert.equal(preset.flags.aim, null, 'a pending aim detonates at once');
+	assert.deepEqual(preset.flags.detonated, [{ target: { x: 5, y: 5 }, bombId: 'bomb', instanceId: undefined }], 'at the pending cell');
 }
 // The moved stylus/alchemize pickers (the file-size refactor's twenty-third extraction):
 // driven headlessly with live-object bags, the real armor predicate and energy table.

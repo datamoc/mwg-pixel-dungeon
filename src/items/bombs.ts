@@ -15,6 +15,44 @@ export interface BombContext {
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
 }
 
+/**
+ * The bomb throw-aim flow, moved out of the scene behind this context - the file-size
+ * refactor's twenty-fourth extraction, behavior-identical, with the scene keeping one
+ * builder plus the `useBomb` adapter the item-use router calls. The detonate half
+ * (`useBomb` below) already lived here; the aimer and the pending-aim cell join it, and
+ * the scene's own `bombContext`/detonate call stays scene-side behind `detonateAt`.
+ */
+export interface BombAimContext {
+	hasBomb(bombId: string, instanceId?: string): boolean;
+	beginAim(opts: { range: number; validate: (cell: { x: number; y: number }) => boolean; onConfirm: (cell: { x: number; y: number }) => void }): void;
+	canTargetCell(x: number, y: number): boolean;
+	aimRange(): number;
+	get pendingTarget(): { x: number; y: number } | null;
+	set pendingTarget(cell: { x: number; y: number } | null);
+	detonateAt(target: { x: number; y: number }, bombId: string, instanceId?: string): void;
+}
+
+/** The bomb's map-picker half: same aim gate and thrown range as the brews and the pot
+ * (passable, non-chasm; the MWL target range). A confirmed aim re-enters here with the
+ * cell pending, so the detonate half below resolves at once. */
+export function aimBombFlow(ctx: BombAimContext, bombId = 'bomb', instanceId?: string): void {
+	if (!ctx.hasBomb(bombId, instanceId)) return;
+	if (!ctx.pendingTarget) {
+		ctx.beginAim({
+			range: ctx.aimRange(),
+			validate: (cell) => ctx.canTargetCell(cell.x, cell.y),
+			onConfirm: (cell) => {
+				ctx.pendingTarget = cell;
+				aimBombFlow(ctx, bombId, instanceId);
+			},
+		});
+		return;
+	}
+	const target = ctx.pendingTarget;
+	ctx.pendingTarget = null;
+	ctx.detonateAt(target, bombId, instanceId);
+}
+
 /** Bomb.execute(AC_LIGHTTHROW): validate, consume, and place a lit bomb heap. */
 export function useBomb(scene: BombContext, bombId = 'bomb', instanceId?: string): void {
 	const bomb = scene.bag.find(bombId, instanceId);

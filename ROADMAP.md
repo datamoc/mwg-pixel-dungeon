@@ -1360,7 +1360,17 @@ one.
       predicate wrongly admits, same trap as the infusion drive - fixed with the suite-pinned
       real ids (`warriorarmor`, `potionHealing`); and four redundant second invocations the
       factory already runs were deleted before committing.
-      **Complexity: M.**
+      **Complexity: M.** **Twenty-fourth extraction 2026-09-19**: the bomb throw-aim half
+      (`useBomb`'s pending-target re-entry, the MWL range, the passable-non-chasm validate)
+      joined `items/bombs.ts` as `aimBombFlow` behind a `BombAimContext` (bomb gate, aimer,
+      range, pending-aim cell, detonate callback into the scene's existing `bombContext`
+      call); the detonate half already lived there. The scene keeps the one-line adapter the
+      router calls plus a builder. Net +4 lines in `dungeonScene.ts` (22,761 after) - the
+      builder costs what the tiny body saved - `bombs.ts` 68 to 106. Suites: `tsc` clean with
+      no fix-ups, item suite green with a new headless drive (missing bombs never aim, the
+      range comes from the seam, confirms clear pending and hand target/id/instance to the
+      detonate half, pending aims detonate at once). No review bugs this slice.
+      **Complexity: XS.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

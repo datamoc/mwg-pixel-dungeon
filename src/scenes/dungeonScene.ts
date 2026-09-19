@@ -20,7 +20,7 @@ import { selectScrollId } from '../items/scrolls';
 import { applyScrollEffect, type ScrollEffectsContext } from '../items/scrollEffects';
 import { createPotionEffects } from '../items/potionEffects';
 import { candleRitualSlots, placeCandleAtSlot, type CandleContext } from '../items/candles';
-import { throwTenguBomb, useBomb as useItemBomb, type BombContext } from '../items/bombs';
+import { throwTenguBomb, useBomb as useItemBomb, aimBombFlow, type BombContext, type BombAimContext } from '../items/bombs';
 import { detonateBomb, type BombEffectsContext } from '../items/bombEffects';
 import { buyFromShop, buybackFromShop, sellFood, shopPrice as itemShopPrice, shopSellPrice as itemShopSellPrice, type ShopActionsContext } from '../items/shopActions';
 import { generatedInventoryItem as createGeneratedInventoryItem } from '../items/generatedItems';
@@ -17583,21 +17583,25 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * explosion use this same path; per-bomb payload effects remain explicitly tracked in
 	 * `PORT_COVERAGE.md` until each Java subclass has a matching status/terrain seam. */
 	private useBomb(bombId = 'bomb', instanceId?: string): void {
-		if (!this.bag.find(bombId, instanceId)) return;
-		if (!this.bombTarget) {
-			this.beginAiming({
-				range: mwlItemEffectValue('bombs', 'targetRange'),
-				validate: (cell) => this.level.passable(cell.x, cell.y) && !this.isChasmCell(cell.x, cell.y),
-				onConfirm: (cell) => {
-					this.bombTarget = cell;
-					this.useBomb(bombId, instanceId);
-				},
-			});
-			return;
-		}
-		const target = this.bombTarget;
-		this.bombTarget = null;
-		useItemBomb(this.bombContext(target), bombId, instanceId);
+		aimBombFlow(this.bombAimContext(), bombId, instanceId);
+	}
+
+	/**
+	 * The bomb throw-aim flow lives in `items/bombs.ts` behind `BombAimContext` - the
+	 * file-size refactor's twenty-fourth extraction, behavior-identical. The detonate
+	 * half already lived there; only the aimer joins it.
+	 */
+	private bombAimContext(): BombAimContext {
+		const scene = this;
+		return {
+			hasBomb: (bombId, instanceId) => scene.bag.find(bombId, instanceId) !== undefined,
+			beginAim: (opts) => scene.beginAiming(opts),
+			canTargetCell: (x, y) => scene.level.passable(x, y) && !scene.isChasmCell(x, y),
+			aimRange: () => mwlItemEffectValue('bombs', 'targetRange'),
+			get pendingTarget() { return scene.bombTarget; },
+			set pendingTarget(cell) { scene.bombTarget = cell; },
+			detonateAt: (target, bombId, instanceId) => { useItemBomb(scene.bombContext(target), bombId, instanceId); },
+		};
 	}
 
 	/** `Honeypot.execute()`'s SHATTER and THROW in one port action: aiming at the hero's own
