@@ -65,6 +65,11 @@ async function main(): Promise<void> {
 		canvas: document.getElementById('game') as HTMLCanvasElement,
 		// Java clears the scene to black, including space outside the dungeon map.
 		background: 0x000000,
+		//mwg 0.15.0 item 365: the loop auto-pauses on page hide by default, and this rig
+		//extends that to the audio - suspend parks music/cues mid-flight, resume restarts
+		//them, the player's own mute settings untouched. `runState.audio` is built above,
+		//so it is available here; its `suspend`/`resume` are the `AudioSuspendRig` pair.
+		audio: runState.audio,
 		//
 		//`extensions` is mwg's escape hatch for extensions the *game* defines, and the framework's
 		//own contract (`mwg/two-d/Game.d.ts`: "TintedSprite ... registers its own colour-transform

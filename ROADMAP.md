@@ -891,7 +891,7 @@ one.
       `knockbackPath` fix would have been wrong - Java's rule is an 8-neighbour search maximizing
       `trueDistance`, needing no framework primitive at all). No UI-widget/i18n-catalog/scheduler/
       FOV/geometry reimplementation found elsewhere. **Closed 2026-09-17:** the outstanding re-run already happened - the audit was refreshed against installed 0.14.0 on 2026-09-15, and `npm run mwg:check` confirms no newer release exists today (pin, installed and published latest all 0.14.0).
-      See `PORT_COVERAGE.md`'s mwg-usage section.
+      See `PORT_COVERAGE.md`'s mwg-usage section. **Progress 2026-09-19:** bumped to 0.15.0 (purely additive - table references, persisted settings + screen, auto-pause/mute, quality scaling, ducking, `Meter`, `SpriteGroup`; `npm run mwg:check` confirms pin/installed/latest all 0.15.0). Adopted: `tableReferences` replaces the hand-copied ground-kind set in `tools/compile-mwl.mjs` (negative-probed), and `SpdAudio` gains the `AudioSuspendRig` pair wired into `new Game({ audio })` for auto-mute on hide. Deferred with reasons: Settings/SettingsScreen (own settings UI + persisted settings), QualityScaler/`SpriteGroup` (need visual verification), ducking/`Meter` (no call-site need). One silent removal found along the way: `InventoryItem.sourceClass` (0.14) is gone with no changelog note - its one writer rides a cast now.
 - [x] Re-check `mwg`'s exports on every version bump for the plan's remaining assumed primitives
       (raw 2D primitive re-exports, the Semantic Messaging shape). Re-checked at 0.4.2, 0.5.0 and
       0.5.1; `Types2D` arrived but remains type-only, so Phase 0's exit criterion still cannot be

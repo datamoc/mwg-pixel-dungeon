@@ -3169,7 +3169,7 @@ treated as walkable makes the exit reachable on all 8, which is the decisive tes
 tutorial, not a mapping error that walled the stairs off. `searchForSecrets` checks all 8
 neighbours, so the doors are findable and every ported floor is completable.
 
-### mwg usage audit (2026-09-12 baseline, refreshed against installed 0.14.0 on 2026-09-15)
+### mwg usage audit (2026-09-12 baseline, refreshed against installed 0.14.0 on 2026-09-15, refreshed against installed 0.15.0 on 2026-09-19)
 
 A pass over how this port uses the *framework*, checked against the installed package's own
 `README.md`, its 277 `.d.ts` files (whose doc comments carry the contracts) and the published
@@ -3473,7 +3473,15 @@ Inapplicable to this game: `3d`, `board`, `battle`, `ai` - and `two-d/stage`, wh
 too until the 2026-09-15 pass below showed the *text* half of it is a real adoption path even though
 the interpreter half is not. **Refreshed the same day against 0.13.0**: `audio` now includes
 `Sound.play`'s `pitch`; the `roguelike` and `core` areas no pass had ever named are listed above;
-and the "25 files import `pixi.js`" finding below is corrected there too.
+and the "25 files import `pixi.js`" finding below is corrected there too. **Refreshed 2026-09-19
+against 0.15.0**: adopted `MwlTableReference.tableReferences` (replaces the hand-copied
+ground-kind set in `tools/compile-mwl.mjs`) and the `AudioSuspendRig` pair (`SpdAudio.suspend`/
+`resume`, wired into `new Game({ audio })` for auto-mute on hide). Deliberately not adopted from
+0.15.0, with reasons: `core.Settings`/`two-d/ui.SettingsScreen` (the port owns its settings UI
+and persisted settings), `QualityScaler`/`SpriteGroup.isOnScreen` (behavior-affecting, need
+browser verification), `Music.duck` (no dialogue/menu call site needs it), `two-d/ui.Meter`
+(no discrete-meter UI need). One silent removal noted for the framework's changelog:
+`InventoryItem.sourceClass` (0.14) is gone in 0.15.0 - its one writer rides a cast now.
 
 **Reconciling the two sub-audits' remaining claims**, after the notifications landed formally
 everything they reported was re-checked against the workspace, and the items not already dispositioned

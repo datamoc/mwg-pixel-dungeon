@@ -66,6 +66,23 @@ export class SpdAudio {
 		if (muted) this.cues.forEach((sound) => sound.stopAll());
 	}
 
+	/**
+	 * The `AudioSuspendRig` half of mwg 0.15.0's auto-pause on page hide (`Game` item 365):
+	 * suspend parks the music mid-track and freezes cue playback; resume restarts them where
+	 * they paused. Muted stays muted throughout - suspend/resume never touch `musicOff`/
+	 * `sfxOff`, and a stopped-while-muted track has nothing suspended to resume.
+	 */
+	suspend(): void {
+		this.music.suspend();
+		this.cues.forEach((sound) => sound.suspend());
+	}
+
+	/** Counterpart to `suspend` above; only resumes what suspension parked. */
+	resume(): void {
+		this.music.resume();
+		this.cues.forEach((sound) => sound.resume());
+	}
+
 	/** Browser autoplay rules defer audible playback until this runs in a player gesture. */
 	startTitle(): void {
 		this.playMusicTracks(['theme_1.ogg', 'theme_2.ogg'], 0);
