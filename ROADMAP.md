@@ -444,7 +444,7 @@ was judged not worth the churn against those existing references.
 
 ## 6. Complete hero progression
 
-- [ ] Implement exact formulas for the remaining talents. Six wrong-shaped stand-ins have been
+- [x] Implement exact formulas for the remaining talents. Six wrong-shaped stand-ins have been
       corrected against the real source (Lethal Haste, Weapon Recharging, Farsight, Arcane Vision,
       `POINT_BLANK` - an accuracy factor and nothing else, applied inside `adjacentAccFactor` - and,
       in the 2026-09-09 audit, Hearty Meal, Sucker Punch, Aggressive Barrier and the per-tier
