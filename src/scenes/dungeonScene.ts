@@ -5033,10 +5033,11 @@ export class DungeonScene extends Scene2D {
 					this.syncHeroFromStats();
 					this.say(t('port.log.weaponupgraded', { level: this.weaponLevel, min: this.hero.damage[0], max: this.hero.damage[1] }), 'positive');
 				} else {
-					//`InventoryItem.sourceClass` is gone in mwg 0.15.0 (present in 0.14, no
-					//removal note in its changelog), so this port-owned extra rides the same
-					//cast the readers already use - runtime shape unchanged, still saved via
-					//`bagSources` and read back with `as { sourceClass?: string }`.
+					//`sourceClass` was never an `InventoryItem` field (the 0.14.0 and 0.15.0
+					//artifacts are identical here: `category`, no `sourceClass`) - it is
+					//port-owned data, so it rides the same cast the readers already use.
+					//Runtime shape unchanged, still saved via `bagSources` and read back
+					//with `as { sourceClass?: string }`.
 					const stashedWeapon = { id: 'weaponReward', quantity: 1, instanceId: this.newItemInstanceId('weapon'), identified: true, level: this.weaponLevel };
 					(stashedWeapon as { sourceClass?: string }).sourceClass = this.weaponId;
 					this.bag.add(stashedWeapon);
