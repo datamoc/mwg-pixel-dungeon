@@ -47,11 +47,98 @@ export function verifyBrews(require, check) {
 		assert.equal(oneWall.seeds.length, 7);
 		assert.equal(oneWall.centerVolume, 240);
 	});
-	check('only the brews with a modeled shatter are throwable', () => {
+	check('all four brews are throwable now that every shatter resolves', () => {
 		const { THROWABLE_BREW_IDS } = require('./simulation/brews');
-		assert.ok(THROWABLE_BREW_IDS.has('shockingBrew'));
-		assert.ok(THROWABLE_BREW_IDS.has('causticBrew'));
-		assert.ok(!THROWABLE_BREW_IDS.has('infernalBrew'), 'no Inferno blob exists yet');
-		assert.ok(!THROWABLE_BREW_IDS.has('blizzardBrew'), 'no Blizzard blob exists yet');
+		for (const id of ['shockingBrew', 'causticBrew', 'infernalBrew', 'blizzardBrew']) {
+			assert.ok(THROWABLE_BREW_IDS.has(id), `${id} throws`);
+		}
+	});
+	check('inferno reignites, destroys flamable ground, and spreads fire next door', () => {
+		// `Inferno.evolve()` (tag `v3.3.8`): live cells burn chars, eat flamable terrain,
+		// and seed `Fire` 4 on flamable 4-neighbours without fire.
+		const { applyEnvironmentalBlobs } = require('./simulation/environmentalBlobs');
+		const target = { hp: 10 };
+		const calls = [];
+		applyEnvironmentalBlobs({
+			creatures: [], passable: () => true,
+			advance: () => {},
+			cellsAbove: (blob) => blob === 'inferno' ? [{ x: 1, y: 1 }] : [],
+			amountAt: () => 0,
+			creatureAt: (x, y) => x === 1 && y === 1 ? target : null,
+			addBuff: () => {},
+			applyCorrosion: () => {},
+			corrosiveStrength: () => 0,
+			toxicDamage: () => 0,
+			isToxicImmune: () => false,
+			applyDamage: () => true,
+			electricDamage: () => 0,
+			reigniteBurning: (t) => calls.push(['burn', t === target]),
+			clearCell: (blob, x, y) => calls.push(['clear', blob, x, y]),
+			clearFireCell: (x, y) => calls.push(['clearFire', x, y]),
+			fireAmountAt: () => 0,
+			seedFireCell: (x, y, volume) => calls.push(['seedFire', x, y, volume]),
+			isFlammableCell: () => true,
+			destroyFlammableCell: (x, y) => calls.push(['destroy', x, y]),
+		});
+		assert.ok(calls.some(([op]) => op === 'burn'), 'the occupant reignites');
+		assert.ok(calls.some((call) => call[0] === 'destroy'), 'flamable ground is destroyed');
+		assert.equal(calls.filter(([op]) => op === 'seedFire').length, 4, 'all four neighbours catch Fire 4');
+		assert.ok(calls.every((call) => call[0] !== 'seedFire' || call[3] === 4));
+	});
+	check('inferno and blizzard annihilate each other instead of burning or chilling', () => {
+		const { applyEnvironmentalBlobs } = require('./simulation/environmentalBlobs');
+		const cleared = [];
+		const chills = [];
+		applyEnvironmentalBlobs({
+			creatures: [], passable: () => true,
+			advance: () => {},
+			cellsAbove: (blob) => blob === 'inferno' || blob === 'blizzard' ? [{ x: 2, y: 2 }] : [],
+			amountAt: () => 1,
+			creatureAt: () => ({ hp: 10 }),
+			addBuff: () => {},
+			applyCorrosion: () => {},
+			corrosiveStrength: () => 0,
+			toxicDamage: () => 0,
+			isToxicImmune: () => false,
+			applyDamage: () => true,
+			electricDamage: () => 0,
+			reigniteBurning: () => chills.push('burn'),
+			applyChill: () => chills.push('chill'),
+			clearCell: (blob, x, y) => cleared.push([blob, x, y]),
+			clearFireCell: () => {},
+			fireAmountAt: () => 0,
+			seedFireCell: () => {},
+			isFlammableCell: () => false,
+			destroyFlammableCell: () => {},
+		});
+		assert.ok(cleared.some(([blob]) => blob === 'inferno'), 'inferno clears');
+		assert.ok(cleared.some(([blob]) => blob === 'blizzard'), 'blizzard clears');
+		assert.equal(chills.length, 0, 'neither burns nor chills on a shared cell');
+	});
+	check('a lone blizzard cell chills twice and clears fire', () => {
+		// `Blizzard.evolve()` runs `Freezing.freeze(cell)` twice per live cell.
+		const { applyEnvironmentalBlobs } = require('./simulation/environmentalBlobs');
+		const target = { hp: 10 };
+		let chills = 0;
+		let fireClears = 0;
+		applyEnvironmentalBlobs({
+			creatures: [], passable: () => true,
+			advance: () => {},
+			cellsAbove: (blob) => blob === 'blizzard' ? [{ x: 3, y: 3 }] : [],
+			amountAt: () => 0,
+			creatureAt: () => target,
+			addBuff: () => {},
+			applyCorrosion: () => {},
+			corrosiveStrength: () => 0,
+			toxicDamage: () => 0,
+			isToxicImmune: () => false,
+			applyDamage: () => true,
+			electricDamage: () => 0,
+			applyChill: (t) => { if (t === target) chills++; },
+			clearCell: () => {},
+			clearFireCell: () => { fireClears++; },
+		});
+		assert.equal(chills, 2, 'the double freeze lands two chill steps');
+		assert.equal(fireClears, 1, 'fire is cleared on the cell');
 	});
 }

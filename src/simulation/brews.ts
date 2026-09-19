@@ -87,9 +87,7 @@ export const BLIZZARD_BREW_VOLUME = 120;
 
 /**
  * Brews are always known (`Brew.isKnown()` returns true) and throw-only
- * (`actions()` drops `AC_DRINK`, `defaultAction()` is `AC_THROW`). Only the two whose
- * shatter this port can resolve are throwable here so far: Shocking (electricity) and
- * Caustic (ooze). Infernal and Blizzard name their real Java effect in
- * `PORT_COVERAGE.md` but have no blob to seed yet.
+ * (`actions()` drops `AC_DRINK`, `defaultAction()` is `AC_THROW`). All four shatters
+ * resolve: Shocking (electricity), Caustic (ooze), Infernal and Blizzard (their blobs).
  */
-export const THROWABLE_BREW_IDS = new Set(['shockingBrew', 'causticBrew']);
+export const THROWABLE_BREW_IDS = new Set(['shockingBrew', 'causticBrew', 'infernalBrew', 'blizzardBrew']);

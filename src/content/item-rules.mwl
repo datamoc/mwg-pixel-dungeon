@@ -132,6 +132,8 @@
           { tag: "row", item: "bomb", actionKey: "items.bombs.bomb.ac_lightthrow", capitalize: true },
           { tag: "row", item: "shockingBrew", actionKey: "items.item.ac_throw", capitalize: true },
           { tag: "row", item: "causticBrew", actionKey: "items.item.ac_throw", capitalize: true },
+          { tag: "row", item: "infernalBrew", actionKey: "items.item.ac_throw", capitalize: true },
+          { tag: "row", item: "blizzardBrew", actionKey: "items.item.ac_throw", capitalize: true },
           { tag: "row", item: "food", actionKey: "items.food.food.ac_eat", capitalize: true },
           { tag: "row", item: "meat", actionKey: "items.food.food.ac_eat", capitalize: true },
           { tag: "row", item: "chargrilledMeat", actionKey: "items.food.food.ac_eat", capitalize: true },

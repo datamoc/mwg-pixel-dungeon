@@ -1,6 +1,6 @@
 import type { Creature, Step } from '../combat';
 
-export type EnvironmentalBlob = 'plantGas' | 'plantFreeze' | 'toxicGas' | 'paralyticGas' | 'stenchGas' | 'corrosiveGas' | 'confusionGas' | 'web' | 'electricity' | 'smokeScreen';
+export type EnvironmentalBlob = 'plantGas' | 'plantFreeze' | 'toxicGas' | 'paralyticGas' | 'stenchGas' | 'corrosiveGas' | 'confusionGas' | 'web' | 'electricity' | 'smokeScreen' | 'inferno' | 'blizzard';
 
 // `StenchGas.evolve()` uses `Paralysis.DURATION / 5`; this port's authored Java duration is 10.
 const STENCH_PARALYSIS_DURATION = 2;
@@ -26,6 +26,22 @@ export interface EnvironmentalBlobsContext {
 	amountAt: (blob: EnvironmentalBlob, x: number, y: number) => number;
 	/** `Electricity.evolve()`'s depth-scaled zap, `round(Random.Float(2 + scalingDepth/5))`, injected like `toxicDamage`. */
 	electricDamage: (target: Creature) => number;
+	/** `Fire.burn(cell)` on inferno occupants: reignite Burning (optional so headless
+	 * callers that never seed inferno keep working). */
+	reigniteBurning?: (target: Creature) => void;
+	/** One `Freezing.freeze(cell)` step (the shared chill-then-Frost primitive); blizzard
+	 * calls it twice per cell, like Java. Optional for the same reason. */
+	applyChill?: (target: Creature) => void;
+	/** Per-cell blob clearing for the inferno/blizzard mutual annihilation (and their
+	 * clearing of `Freezing`/`plantFreeze` cells). Optional for the same reason. */
+	clearCell?: (blob: EnvironmentalBlob, x: number, y: number) => void;
+	/** Per-cell `Fire` reads/clears plus seeding, for inferno's fire interplay. */
+	clearFireCell?: (x: number, y: number) => void;
+	fireAmountAt?: (x: number, y: number) => number;
+	seedFireCell?: (x: number, y: number, volume: number) => void;
+	/** Flamable-terrain destruction under inferno (`Level.destroy`). */
+	isFlammableCell?: (x: number, y: number) => boolean;
+	destroyFlammableCell?: (x: number, y: number) => void;
 }
 
 /** Advances environmental blobs and applies their distinct SPD effects. */
@@ -44,6 +60,44 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 	//here so the cloud spreads and thins; its sight-blocking lives in the scene's
 	//`pruneSmokeFromSight`, mirroring `Level.updateFieldOfView`.
 	context.advance('smokeScreen', isSolid);
+	context.advance('inferno', isSolid);
+	context.advance('blizzard', isSolid);
+	//`Inferno.evolve()` (tag `v3.3.8`): every live cell clears `Fire` and `Freezing`
+	//there; meeting `Blizzard` annihilates both instead of burning; otherwise chars
+	//reignite (`Fire.burn`) and flamable terrain is destroyed. Flamable 4-neighbours
+	//with no fire catch `Fire` 4. Loop order (inferno before blizzard) is arbitrary -
+	//Java runs them as separate blob actors.
+	for (const cell of context.cellsAbove('inferno', 0.0001)) {
+		context.clearFireCell?.(cell.x, cell.y);
+		context.clearCell?.('plantFreeze', cell.x, cell.y);
+		if (context.amountAt('blizzard', cell.x, cell.y) > 0) {
+			context.clearCell?.('blizzard', cell.x, cell.y);
+			context.clearCell?.('inferno', cell.x, cell.y);
+			continue;
+		}
+		const target = context.creatureAt(cell.x, cell.y);
+		if (target) context.reigniteBurning?.(target);
+		if (context.isFlammableCell?.(cell.x, cell.y)) context.destroyFlammableCell?.(cell.x, cell.y);
+		for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+			const x = cell.x + dx, y = cell.y + dy;
+			if (context.isFlammableCell?.(x, y) && (context.fireAmountAt?.(x, y) ?? 0) <= 0) {
+				context.seedFireCell?.(x, y, 4);
+			}
+		}
+	}
+	//`Blizzard.evolve()`: the mirror half - clears `Fire` and `Freezing`, annihilates
+	//with `Inferno`, otherwise runs `Freezing.freeze(cell)` twice (two chill steps here).
+	for (const cell of context.cellsAbove('blizzard', 0.0001)) {
+		context.clearFireCell?.(cell.x, cell.y);
+		context.clearCell?.('plantFreeze', cell.x, cell.y);
+		if (context.amountAt('inferno', cell.x, cell.y) > 0) {
+			context.clearCell?.('inferno', cell.x, cell.y);
+			context.clearCell?.('blizzard', cell.x, cell.y);
+			continue;
+		}
+		const target = context.creatureAt(cell.x, cell.y);
+		if (target) { context.applyChill?.(target); context.applyChill?.(target); }
+	}
 	for (const cell of context.cellsAbove('plantGas', 1)) {
 		const target = context.creatureAt(cell.x, cell.y);
 		if (target) context.addBuff(target, 'poison');

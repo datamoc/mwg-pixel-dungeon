@@ -338,7 +338,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 			isToxicImmune: () => false,
 			applyDamage: () => true,
 		});
-		assert.deepEqual(advanced, ['plantGas', 'plantFreeze', 'toxicGas', 'paralyticGas', 'stenchGas', 'corrosiveGas', 'confusionGas', 'web', 'electricity', 'smokeScreen']);
+		assert.deepEqual(advanced, ['plantGas', 'plantFreeze', 'toxicGas', 'paralyticGas', 'stenchGas', 'corrosiveGas', 'confusionGas', 'web', 'electricity', 'smokeScreen', 'inferno', 'blizzard']);
 		assert.deepEqual(buffs, [[target, 'paralysis', 2], [target, 3]]);
 	});
 	const { takeGooTurn } = require('./simulation/gooBoss');

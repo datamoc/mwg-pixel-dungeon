@@ -210,7 +210,7 @@ import { burnFireContents as burnFireContentsEffect } from '../items/fireContent
 import { selectRangedTarget } from '../simulation/targeting';
 import { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLeapCooldown } from '../simulation/ripperLeap';
 import { shouldSuccubusBlink, chooseSuccubusBlinkCell, succubusBlinkCooldown } from '../simulation/succubusBlink';
-import { brewShatterCells, CAUSTIC_BREW_RADIUS, SHOCKING_BREW_RADIUS, SHOCKING_BREW_VOLUME, THROWABLE_BREW_IDS } from '../simulation/brews';
+import { brewNeighbourSeedPlan, brewShatterCells, BLIZZARD_BREW_VOLUME, CAUSTIC_BREW_RADIUS, INFERNO_BREW_VOLUME, SHOCKING_BREW_RADIUS, SHOCKING_BREW_VOLUME, THROWABLE_BREW_IDS } from '../simulation/brews';
 import { foregroundGrassFrames as buildForegroundGrassFrames, terrainFrameAt as buildTerrainFrameAt, terrainFrames as buildTerrainFrames, wallFrameAt as buildWallFrameAt, wallFrames as buildWallFrames, waterFrames as buildWaterFrames, type DungeonTileFrameContext } from './dungeonTileFrames';
 import { Banner } from '../ui/banner';
 import { showDefeatPanel as showDefeatPanelUi, showVictoryPanel as showVictoryPanelUi } from '../ui/endPanels';
@@ -1727,6 +1727,12 @@ export class DungeonScene extends Scene2D {
 	 * (`Level.updateFieldOfView`), applied by `pruneSmokeFromSight`. Like every gas here
 	 * it advances through the shared `evolveJavaBlob` diffusion. */
 	private smokeScreen!: Blob;
+	/** `Inferno`/`Blizzard` (`actors/blobs/Inferno.java`/`Blizzard.java`, tag `v3.3.8`) -
+	 * seeded by the matching brews; their `evolve()` halves run in `environmentalBlobs`
+	 * (burning reignite + terrain destruction + adjacent fire for inferno, double chill
+	 * for blizzard, mutual annihilation either way). */
+	private inferno!: Blob;
+	private blizzard!: Blob;
 	/** MagicalFireRoom.EternalFire (`levels/rooms/special/MagicalFireRoom.java`): a permanent,
 	 * non-spreading, non-decaying fire wall. Unlike every other blob here it is never
 	 * `spread()`ed - seeded once at 1 per wall cell (Java's own `Blob.seed(cell, 1,
@@ -2899,6 +2905,8 @@ export class DungeonScene extends Scene2D {
 			web: this.web.toJSON(),
 			electricity: this.electricity.toJSON(),
 			smokeScreen: this.smokeScreen.toJSON(),
+			inferno: this.inferno.toJSON(),
+			blizzard: this.blizzard.toJSON(),
 			portedFeatures: this.portedFeatures.toJSON(),
 			ritualPos: this.ritualPos,
 			ritualCandles: [...this.ritualCandles],
@@ -2945,6 +2953,8 @@ export class DungeonScene extends Scene2D {
 		this.web = state.web ? Blob.fromJSON(state.web) : new Blob(this.level.width, this.level.height);
 		this.electricity = state.electricity ? Blob.fromJSON(state.electricity) : new Blob(this.level.width, this.level.height);
 		this.smokeScreen = state.smokeScreen ? Blob.fromJSON(state.smokeScreen) : new Blob(this.level.width, this.level.height);
+		this.inferno = state.inferno ? Blob.fromJSON(state.inferno) : new Blob(this.level.width, this.level.height);
+		this.blizzard = state.blizzard ? Blob.fromJSON(state.blizzard) : new Blob(this.level.width, this.level.height);
 		this.manualPlants = new Map(state.manualPlants ?? []);
 		this.furrowedGrass = new Set(state.furrowedGrass ?? []);
 		this.fallingRocks = (state.fallingRocks ?? []).map((v) => ({ cells: v.cells.map((c) => ({ ...c })), turns: v.turns }));
@@ -3274,6 +3284,8 @@ export class DungeonScene extends Scene2D {
 		this.web = new Blob(this.level.width, this.level.height);
 		this.electricity = new Blob(this.level.width, this.level.height);
 		this.smokeScreen = new Blob(this.level.width, this.level.height);
+		this.inferno = new Blob(this.level.width, this.level.height);
+		this.blizzard = new Blob(this.level.width, this.level.height);
 		this.eternalFire = new Blob(this.level.width, this.level.height);
 		this.ritualPos = -1;
 		this.ritualCandles = [false, false, false, false];
@@ -6501,6 +6513,17 @@ export class DungeonScene extends Scene2D {
 			},
 			creatureAt: (x, y) => this.creatureAt(x, y),
 			addBuff: (target, id, duration) => addBuff(target, id, duration),
+			//`Inferno`/`Blizzard.evolve()` provisions (tag `v3.3.8`): reignited Burning,
+			//double chill steps, mutual annihilation (plus `Freezing`/`plantFreeze`), and
+			//inferno's flamable-terrain destruction with adjacent `Fire` 4 seeding.
+			reigniteBurning: (target) => reigniteBuff(target, 'burning'),
+			applyChill: (target) => { target.buffs = applyChillFreeze(target.buffs).buffs; },
+			clearCell: (blob, x, y) => (this[blob] as Blob).clear(x, y),
+			clearFireCell: (x, y) => this.fire.clear(x, y),
+			fireAmountAt: (x, y) => this.fire.volumeAt(x, y),
+			seedFireCell: (x, y, volume) => this.fire.seed(x, y, volume),
+			isFlammableCell: (x, y) => this.isFireFlammableTerrain(x, y),
+			destroyFlammableCell: (x, y) => this.destroyBombTerrain(x, y),
 			applyCorrosion: (target, strength) => {
 				//Same `BlobImmunity` decoy cover as `isToxicImmune` just above.
 				if (target.allyKind === 'afterImage') return;
@@ -18145,14 +18168,27 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.shatterBrewAt(brewId, target, instanceId);
 	}
 
-	/** `ShockingBrew.shatter()` / `CausticBrew.shatter()`: one brew detaches and breaks
-	 * at the aimed cell. Shocking seeds electricity 20 over the radius-3 flood; Caustic
-	 * lays `Ooze` (duration 20, the table value matching `Ooze.DURATION`) on every
-	 * non-NPC creature in the same flood - NPCs stay out of every area effect here, the
-	 * way the fireblast cone already documents. Java's splash particles and shatter
-	 * sounds have no seam here, and Java logs nothing either way. Spends the turn. */
+	/** `ShockingBrew.shatter()` / `CausticBrew.shatter()` / `InfernalBrew.shatter()` /
+	 * `BlizzardBrew.shatter()`: one brew detaches and breaks at the aimed cell. Shocking
+	 * seeds electricity 20 over the radius-3 flood; Caustic lays `Ooze` (duration 20, the
+	 * table value matching `Ooze.DURATION`) on every non-NPC creature in the same flood -
+	 * NPCs stay out of every area effect here, the way the fireblast cone already
+	 * documents. Infernal/Blizzard seed 120 per open NEIGHBOURS8 cell with 120 plus 120
+	 * per solid neighbour onto the center. Java's splash particles and shatter sounds
+	 * have no seam here, and Java logs nothing either way. Spends the turn. */
 	private shatterBrewAt(brewId: string, at: Step, instanceId?: string): void {
 		this.bag.remove(brewId, 1, instanceId);
+		if (brewId === 'infernalBrew' || brewId === 'blizzardBrew') {
+			const blob = brewId === 'infernalBrew' ? this.inferno : this.blizzard;
+			const plan = brewNeighbourSeedPlan(
+				(x, y) => !this.level.inside(x, y) || !this.level.passable(x, y),
+				at.x, at.y, brewId === 'infernalBrew' ? INFERNO_BREW_VOLUME : BLIZZARD_BREW_VOLUME);
+			for (const seed of plan.seeds) blob.seed(seed.x, seed.y, seed.volume);
+			blob.seed(at.x, at.y, plan.centerVolume);
+			this.actionSpentTurn = true;
+			this.spendHeroTurn(1);
+			return;
+		}
 		const radius = brewId === 'causticBrew' ? CAUSTIC_BREW_RADIUS : SHOCKING_BREW_RADIUS;
 		const flood = brewShatterCells(this.level.width, this.level.height,
 			(x, y) => !this.level.inside(x, y) || !this.level.passable(x, y), at.x, at.y, radius);

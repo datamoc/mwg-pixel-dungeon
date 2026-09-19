@@ -39,6 +39,9 @@ export interface FloorState {
 	electricity?: FireState;
 	/** `SmokeScreen` volume field: smoke-bomb blasts seed it over the distance-2 flood. */
 	smokeScreen?: FireState;
+	/** `Inferno`/`Blizzard` volume fields: the matching brews seed them. */
+	inferno?: FireState;
+	blizzard?: FireState;
 	eternalFire?: FireState;
 	sacrificialFire?: FireState;
 	sacrificialFireCharge?: number;

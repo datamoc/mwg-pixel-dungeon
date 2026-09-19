@@ -670,13 +670,18 @@ and `CausticBrew` (one toxic gas plus one goo blob, 1) - Java's own inputs and c
 `items/potions/brews/*.java` (tag `v3.3.8`). Every brew carries Java's `value()` (60) and
 `energyVal()` (12) in MWL and its real atlas cell (400-403). **Thrown and shattering:**
 `useBrew` aims through the bomb's picker (passable non-chasm, six cells) and `shatterBrewAt`
-resolves the two modeled shatters - Shocking seeds `Electricity` 20 over the radius-3 flood,
+resolves all four shatters - Shocking seeds `Electricity` 20 over the radius-3 flood,
 Caustic lays `Ooze` on every non-NPC creature in the same flood (the table's 20 matching
-`Ooze.DURATION`; NPCs stay out per the area-effect convention). Infernal/Blizzard are brewed
-but not throwable yet: their `Inferno`/`Blizzard` blobs (120 per open NEIGHBOURS8 cell, 120
-plus 120 per solid neighbour onto the center) have no port model, and the throw is withheld
-rather than consumed for nothing. Pinned in `test:simulation` (`tools/verifyBrews.mjs`: flood
-shape, volumes, throwable set) and `test:items` (all four recipes, a brewed shocking brew,
+`Ooze.DURATION`; NPCs stay out per the area-effect convention), and Infernal/Blizzard seed
+their blobs (120 per open NEIGHBOURS8 cell, 120 plus 120 per solid neighbour onto the
+center). **2026-09-19 follow-up: both blobs are modeled.** `Inferno.evolve()` clears `Fire`
+and `Freezing`/`plantFreeze` on live cells, annihilates with `Blizzard` instead of burning,
+reignites occupants (`Fire.burn`), destroys flamable terrain, and seeds `Fire` 4 on flamable
+4-neighbours without fire; `Blizzard.evolve()` mirrors the clears and annihilation and runs
+`Freezing.freeze(cell)` twice (two shared chill-then-Frost steps - the water 5-vs-3 nuance
+stays unmodeled, like the frost-potion path). Pinned in `test:simulation`
+(`tools/verifyBrews.mjs`: flood shape, volumes, throwable set, inferno burn/destroy/spread,
+annihilation, double chill) and `test:items` (all four recipes, a brewed shocking brew,
 scrap energy, all four values). Type-check/build/check/item/simulation suites green; browser
 verification owed per ROADMAP.md section 10.
 
