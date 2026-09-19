@@ -1330,6 +1330,18 @@ one.
       coverage row both said the four-turn pulse was unmodeled for want of a recharge clock,
       but `ArtifactRecharge` ported the next day and the body always banked it - both now say
       so, with the row pointing at the correction.
+      **Complexity: S.** **Twenty-second extraction 2026-09-19**: the honeypot throw/shatter
+      pair (`useHoneypot`'s pending-aim re-entry, `shatterHoneypotAt`'s owner-neighbour-free
+      break) moved to the new `items/honeypot.ts` behind a `HoneypotFlowContext` (pot
+      has/consume, aimer with the passable-non-chasm validate, pending-aim cell, occupant
+      view, spawn-free test, bee release with holder, turn); the scene keeps the one-line
+      adapter the router calls plus a builder. Net −8 lines in `dungeonScene.ts` (22,763
+      after), new `honeypot.ts` 75 lines. Suites: `tsc` clean with no fix-ups, item suite
+      green with a new headless drive (missing pots never aim, empties break ownerless with
+      pot and turn spent, occupants sidestep the bee to a free cardinal with the holder set,
+      NPCs pin no holder, no free cell keeps the pot and spends nothing, pending aims break
+      at once). The drive caught one fixture bug in review - the NPC case freed only the
+      occupied cell, but any occupant forces the cardinal scan - fixed by freeing a cardinal.
       **Complexity: S.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`

@@ -201,6 +201,7 @@ import { selectRangedTarget } from '../simulation/targeting';
 import { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLeapCooldown } from '../simulation/ripperLeap';
 import { shouldSuccubusBlink, chooseSuccubusBlinkCell, succubusBlinkCooldown } from '../simulation/succubusBlink';
 import { useBrewFlow, type BrewFlowContext } from '../simulation/brews';
+import { useHoneypotFlow, type HoneypotFlowContext } from '../items/honeypot';
 import { foregroundGrassFrames as buildForegroundGrassFrames, terrainFrameAt as buildTerrainFrameAt, terrainFrames as buildTerrainFrames, wallFrameAt as buildWallFrameAt, wallFrames as buildWallFrames, waterFrames as buildWaterFrames, type DungeonTileFrameContext } from './dungeonTileFrames';
 import { Banner } from '../ui/banner';
 import { showDefeatPanel as showDefeatPanelUi, showVictoryPanel as showVictoryPanelUi } from '../ui/endPanels';
@@ -17611,46 +17612,37 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * fly over a pit and land intact there, which this aim path refuses outright instead.
 	 * Throw range follows the thrown-weapon convention (6); Java flies the full PROJECTILE line. */
 	private useHoneypot(instanceId?: string): void {
-		if (!this.bag.find('honeypot', instanceId)) return;
-		if (!this.honeypotTarget) {
-			this.beginAiming({
-				range: 6,
-				validate: (cell) => this.level.passable(cell.x, cell.y) && !this.isChasmCell(cell.x, cell.y),
-				onConfirm: (cell) => {
-					this.honeypotTarget = cell;
-					this.useHoneypot(instanceId);
-				},
-			});
-			return;
-		}
-		const target = this.honeypotTarget;
-		this.honeypotTarget = null;
-		this.shatterHoneypotAt(target, instanceId);
+		useHoneypotFlow(this.honeypotContext(), instanceId);
 	}
 
-	/** `Honeypot.shatter(owner, pos)`: detach one pot, break it at the cell (or a free
-	 * cardinal neighbour when occupied - the ShatteredPot item Java drops is unmodeled, so
-	 * nothing lands), and release the bee with `setPotInfo`. No free cell means no bee and
-	 * the pot stays, exactly like Java returning the pot itself. Silent either way - Java
-	 * logs nothing on the shatter. Spends the hero's turn like both Java actions. */
-	private shatterHoneypotAt(at: Step, instanceId?: string): void {
-		//`shatter`'s owner is whoever stands on the landing cell (the bee's first suspect);
-		//an empty cell breaks ownerless (`setPotInfo(pos, null)` - no holder, a ground pot).
-		const occupant = this.creatureAt(at.x, at.y);
-		const cands = occupant ? Roguelike.neighbourOffsets(4).map(([dx, dy]) => ({ x: at.x + dx, y: at.y + dy })) : [at];
-		const free = cands.find((cell) => this.level.inside(cell.x, cell.y)
-			&& (this.level.passable(cell.x, cell.y) || this.isChasmCell(cell.x, cell.y))
-			&& !this.creatureAt(cell.x, cell.y));
-		if (!free) return;
-		this.bag.remove('honeypot', 1, instanceId);
-		const bee = this.spawnMonster('bee', free);
-		bee.sleeping = false;
-		bee.seesHero = false;
-		bee.lastSeen = undefined;
-		bee.potPos = { ...free };
-		if (occupant && !occupant.isNPC) bee.potHolderId = occupant.id;
-		this.actionSpentTurn = true;
-		this.spendHeroTurn(1);
+	/**
+	 * The honeypot throw/shatter flow lives in `items/honeypot.ts` behind
+	 * `HoneypotFlowContext` - the file-size refactor's twenty-second extraction,
+	 * behavior-identical.
+	 */
+	private honeypotContext(): HoneypotFlowContext {
+		const scene = this;
+		return {
+			hasPot: (instanceId) => scene.bag.find('honeypot', instanceId) !== undefined,
+			consumePot: (instanceId) => { scene.bag.remove('honeypot', 1, instanceId); },
+			beginAim: (opts) => scene.beginAiming(opts),
+			canTargetCell: (x, y) => scene.level.passable(x, y) && !scene.isChasmCell(x, y),
+			get pendingTarget() { return scene.honeypotTarget; },
+			set pendingTarget(cell) { scene.honeypotTarget = cell; },
+			occupantAt: (x, y) => scene.creatureAt(x, y),
+			isSpawnFree: (x, y) => scene.level.inside(x, y)
+				&& (scene.level.passable(x, y) || scene.isChasmCell(x, y))
+				&& !scene.creatureAt(x, y),
+			releaseBee: (at, holderId) => {
+				const bee = scene.spawnMonster('bee', at);
+				bee.sleeping = false;
+				bee.seesHero = false;
+				bee.lastSeen = undefined;
+				bee.potPos = { ...at };
+				if (holderId !== null) bee.potHolderId = holderId;
+			},
+			spendTurn: () => { scene.actionSpentTurn = true; scene.spendHeroTurn(1); },
+		};
 	}
 
 	private useBrew(brewId: string, instanceId?: string): void {

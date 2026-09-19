@@ -79,6 +79,7 @@ compile(join(root, 'src/dungeonConstants.ts'), 'dungeonConstants.js');
 	compile(join(root, 'src/items/rose.ts'), 'items/rose.js');
 compile(join(root, 'src/items/beacon.ts'), 'items/beacon.js');
 compile(join(root, 'src/items/spells.ts'), 'items/spells.js');
+compile(join(root, 'src/items/honeypot.ts'), 'items/honeypot.js');
 //`spells.js` upgrades through `itemWorkflows.js` by its real name, while the suite otherwise
 //only compiles that module as `workflows.js` (line 26) - recompiling it here under its own
 //name is the same idempotent write.
@@ -2638,6 +2639,61 @@ function infusionDrive(kind, overrides = {}, pickIndex = 0) {
 	assert.equal(wild.log.length, 0, 'Java logs nothing on the cast');
 	assert.deepEqual(wild.flags.consumed, ['wildEnergy'], 'consuming the spell');
 	assert.equal(wild.flags.turns, 1, 'and spending the turn');
+}
+// The moved honeypot throw (`useHoneypotFlow`, the file-size refactor's twenty-second
+// extraction): missing pots never aim; confirms break at the cell, or at a free cardinal
+// neighbour with the occupant as suspect; no free cell keeps the pot.
+const { useHoneypotFlow } = require('./items/honeypot.js');
+function potDrive(overrides = {}) {
+	const flags = { aim: null, consumed: 0, bees: [], turns: 0, pending: overrides.pending ?? null };
+	const creatures = overrides.creatures ?? {};
+	const freeCells = overrides.freeCells;
+	const ctx = {
+		hasPot: () => overrides.hasPot ?? true,
+		consumePot: () => { flags.consumed++; },
+		beginAim: (opts) => { flags.aim = opts; },
+		canTargetCell: () => true,
+		get pendingTarget() { return flags.pending; },
+		set pendingTarget(cell) { flags.pending = cell; },
+		occupantAt: (x, y) => creatures[`${x},${y}`] ?? null,
+		isSpawnFree: (x, y) => freeCells ? freeCells.has(`${x},${y}`) : true,
+		releaseBee: (at, holderId) => { flags.bees.push({ at, holderId }); },
+		spendTurn: () => { flags.turns++; },
+		...overrides.ctx,
+	};
+	useHoneypotFlow(ctx);
+	return { ctx, flags };
+}
+{
+	const missing = potDrive({ hasPot: false });
+	assert.equal(missing.flags.aim, null, 'no pot, no aim');
+	assert.equal(missing.flags.turns, 0, 'and no turn');
+	const d = potDrive();
+	useHoneypotFlow(d.ctx);
+	assert.equal(d.flags.aim.range, 6, 'the throw aims at six cells');
+	assert.equal(d.flags.aim.validate({ x: 5, y: 5 }), true, 'the validate delegates to the floor');
+	d.flags.aim.onConfirm({ x: 5, y: 5 });
+	assert.equal(d.flags.pending, null, 'the pending cell clears');
+	assert.deepEqual(d.flags.bees, [{ at: { x: 5, y: 5 }, holderId: null }], 'empty cells break ownerless');
+	assert.equal(d.flags.consumed, 1, 'detaching one pot');
+	assert.equal(d.flags.turns, 1, 'and spending the turn');
+	const held = potDrive({ creatures: { '5,5': { id: 'r1' } }, freeCells: new Set(['6,5']) });
+	useHoneypotFlow(held.ctx);
+	held.flags.aim.onConfirm({ x: 5, y: 5 });
+	assert.deepEqual(held.flags.bees, [{ at: { x: 6, y: 5 }, holderId: 'r1' }], 'the bee sidesteps, suspecting the rat');
+	const npc = potDrive({ creatures: { '5,5': { id: 'g1', isNPC: true } }, freeCells: new Set(['6,5']) });
+	useHoneypotFlow(npc.ctx);
+	npc.flags.aim.onConfirm({ x: 5, y: 5 });
+	assert.deepEqual(npc.flags.bees, [{ at: { x: 6, y: 5 }, holderId: null }], 'NPC occupants pin no holder');
+	const stuck = potDrive({ creatures: { '5,5': { id: 'r1' } }, freeCells: new Set() });
+	useHoneypotFlow(stuck.ctx);
+	stuck.flags.aim.onConfirm({ x: 5, y: 5 });
+	assert.deepEqual(stuck.flags.bees, [], 'no free cell means no bee');
+	assert.equal(stuck.flags.consumed, 0, 'and the pot stays');
+	assert.equal(stuck.flags.turns, 0, 'spending nothing');
+	const preset = potDrive({ pending: { x: 5, y: 5 } });
+	assert.equal(preset.flags.aim, null, 'a pending aim shatters at once');
+	assert.deepEqual(preset.flags.bees, [{ at: { x: 5, y: 5 }, holderId: null }], 'breaking where aimed');
 }
 }
 }
