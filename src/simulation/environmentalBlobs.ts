@@ -102,9 +102,13 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 		const target = context.creatureAt(cell.x, cell.y);
 		if (target) context.addBuff(target, 'poison');
 	}
+	//`Freezing.evolve()` (tag `v3.3.8`): live cells clear `Fire` and chill occupants
+	//(the shared chill-then-Frost step - this loop used to grant raw paralysis, which
+	//neither Java nor the icecap comments claiming chill-then-Frost ever did).
 	for (const cell of context.cellsAbove('plantFreeze', 0.5)) {
+		context.clearFireCell?.(cell.x, cell.y);
 		const target = context.creatureAt(cell.x, cell.y);
-		if (target) context.addBuff(target, 'paralysis');
+		if (target) context.applyChill?.(target);
 	}
 	for (const cell of context.cellsAbove('toxicGas', 0.0001)) {
 		const target = context.creatureAt(cell.x, cell.y);

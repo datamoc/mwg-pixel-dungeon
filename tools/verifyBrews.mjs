@@ -115,6 +115,34 @@ export function verifyBrews(require, check) {
 		assert.ok(cleared.some(([blob]) => blob === 'blizzard'), 'blizzard clears');
 		assert.equal(chills.length, 0, 'neither burns nor chills on a shared cell');
 	});
+	check('plantFreeze chills (never paralyses) and clears fire, like Freezing', () => {
+		// Regression: the loop granted raw paralysis while the icecap comments promised
+		// the shared chill-then-Frost step.
+		const { applyEnvironmentalBlobs } = require('./simulation/environmentalBlobs');
+		const target = { hp: 10 };
+		let chills = 0;
+		let fires = 0;
+		const buffs = [];
+		applyEnvironmentalBlobs({
+			creatures: [], passable: () => true,
+			advance: () => {},
+			cellsAbove: (blob) => blob === 'plantFreeze' ? [{ x: 4, y: 4 }] : [],
+			amountAt: () => 0,
+			creatureAt: () => target,
+			addBuff: (...args) => buffs.push(args),
+			applyCorrosion: () => {},
+			corrosiveStrength: () => 0,
+			toxicDamage: () => 0,
+			isToxicImmune: () => false,
+			applyDamage: () => true,
+			electricDamage: () => 0,
+			applyChill: (t) => { if (t === target) chills++; },
+			clearFireCell: () => { fires++; },
+		});
+		assert.equal(chills, 1, 'one chill step per turn');
+		assert.equal(fires, 1, 'fire is cleared on the cell');
+		assert.ok(buffs.every(([, id]) => id !== 'paralysis'), 'no paralysis from freezing');
+	});
 	check('a lone blizzard cell chills twice and clears fire', () => {
 		// `Blizzard.evolve()` runs `Freezing.freeze(cell)` twice per live cell.
 		const { applyEnvironmentalBlobs } = require('./simulation/environmentalBlobs');
