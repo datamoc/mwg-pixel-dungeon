@@ -156,7 +156,7 @@ compile(join(root, 'src/items/itemWorkflows.ts'), 'items/itemWorkflows.js');
 	assert.equal(tippedDartUseDivisor('firebloom', 3, false), 1, 'a non-Warden gets no divisor');
 	assert.equal(tippedDartUseDivisor('rotberry', 3, true), 1, 'rot darts are exempt per their desc');
 	compile(join(root, 'src/items/candles.ts'), 'items/candles.js');
-	const { candleRitualSlots, placeCandleAtSlot } = require('./items/candles.js');
+	const { candleRitualSlots, placeCandleAtSlot, aimCandleFlow } = require('./items/candles.js');
 	// `CeremonialCandle.checkCandles()` slots: the four cardinal neighbours of ritualPos.
 	assert.deepEqual(candleRitualSlots(117, 32), [{ x: 21, y: 2 }, { x: 22, y: 3 }, { x: 21, y: 4 }, { x: 20, y: 3 }]);
 	{
@@ -191,7 +191,43 @@ compile(join(root, 'src/items/itemWorkflows.ts'), 'items/itemWorkflows.js');
 		assert.deepEqual(spawnedAt, { x: 21, y: 3 }, 'elemental rises at ritualPos when free');
 		assert.ok(said.some((line) => String(line).includes('port.log.ritualfire')), 'completion says the ritual line');
 	}
-	assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and the bow always have +50% accuracy at a distance');
+	{
+	// The moved aim half (`aimCandleFlow`, the file-size refactor's twenty-fifth
+	// extraction): no candle or no ritual never aims; confirms place validated slots.
+	let aimed = null;
+	const placed = [];
+	let turns = 0;
+	const said = [];
+	const free = [true, false, true, true];
+	const ctx = {
+		hasCandle: () => true,
+		ritualPos: 117,
+		levelWidth: 32,
+		isSlotFree: (slot) => free[slot],
+		beginAim: (opts) => { aimed = opts; },
+		placeCandle: (slot, instanceId) => { placed.push([slot, instanceId]); },
+		spendTurn: () => { turns++; },
+		say: (line, level) => { said.push(`${level}:${line}`); },
+		t: (key) => key,
+	};
+	aimCandleFlow(ctx, 'c1');
+	assert.equal(aimed.range, 6, 'the throw aims at six cells');
+	assert.equal(aimed.validate({ x: 21, y: 2 }), true, 'an empty slot validates');
+	assert.equal(aimed.validate({ x: 22, y: 3 }), false, 'a filled slot does not');
+	assert.equal(aimed.validate({ x: 0, y: 0 }), false, 'a non-slot does not');
+	aimed.onConfirm({ x: 21, y: 2 });
+	assert.deepEqual(placed, [[0, 'c1']], 'confirms place the validated slot');
+	assert.equal(turns, 1, 'and spend the throw turn');
+	let aimed2 = null;
+	aimCandleFlow({ ...ctx, hasCandle: () => false, beginAim: (opts) => { aimed2 = opts; } });
+	assert.equal(aimed2, null, 'no candle, no aim');
+	let aimed3 = 'unset';
+	const said3 = [];
+	aimCandleFlow({ ...ctx, ritualPos: -1, beginAim: (opts) => { aimed3 = opts; }, say: (line) => { said3.push(line); } });
+	assert.equal(aimed3, 'unset', 'no ritual, no aim');
+	assert.ok(said3.some((line) => String(line).includes('candleneeded')), 'just the needed line');
+}
+assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and the bow always have +50% accuracy at a distance');
 	assert.equal(missileAdjacentAccFactor(false, false, 0), 1.5, 'the +50% at distance is not hero-gated');
 	// `HeavyBoomerang` (tag `v3.3.8`): `CircleBack.setup` sets `left = 5`, and the return flight's
 	// own `hero.shoot` runs with `circlingBack` up, which the class's `adjacentAccFactor` override

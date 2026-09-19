@@ -1687,7 +1687,7 @@ Rotberry seeds already drop from grass, so types 1 and 3 turn in their real fetc
 for the existing wand reward. **Type 2 (elemental embers) is now real too, checked against tag `v3.3.8`
 (`Wandmaker.java`, `RitualSiteRoom.java`, `CeremonialCandle.java`, `Elemental.java`)**: the four queued candles spawn
 as real pickups (previously vanishing on the null `portItemKind` branch, the same bug class as bombs/dust); a Place
-action aims them onto the ritual center's 4 cardinal slots through the `TargetingController` (2026-09-17: `CeremonialCandle`'s `defaultAction = AC_THROW`, six-cell convention, only empty slots validate, confirm spends the throw's turn; pinned in `test:items`) - the stated
+action aims them onto the ritual center's 4 cardinal slots through the `TargetingController` (2026-09-17: `CeremonialCandle`'s `defaultAction = AC_THROW`, six-cell convention, only empty slots validate, confirm spends the throw's turn; pinned in `test:items` - the aim half moved to `aimCandleFlow` in `src/items/candles.ts` on 2026-09-19 as the file-size refactor's twenty-fifth extraction, behavior-identical, the scene keeping the one-line `useCandle` adapter plus a builder) - the stated
 shape change, same family as the combat stones' auto-target); all four lit fires the real ritual (placements burned, a
 `NewbornFireElemental` rises HUNTING at the center or a free neighbour, with the real `3-5` opening cooldown); the
 newborn fights with the real kit (HP 60, acc 15, eva 12, `[10,12]` melee with no fiery on-hit, telegraphed 3x3

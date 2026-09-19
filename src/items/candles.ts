@@ -28,6 +28,50 @@ export function candleRitualSlots(ritualPos: number, width: number): Step[] {
 }
 
 /**
+ * The candle throw-aim flow, moved out of the scene behind this context - the file-size
+ * refactor's twenty-fifth extraction, behavior-identical, with the scene keeping one
+ * builder plus the `useCandle` adapter the item-use router calls. The place half below
+ * already lived here; only the aimer joins it, and the scene's own `candleContext`
+ * place call stays scene-side behind `placeCandle`.
+ */
+export interface CandleAimContext {
+	hasCandle(instanceId?: string): boolean;
+	readonly ritualPos: number;
+	readonly levelWidth: number;
+	isSlotFree(slot: number): boolean;
+	beginAim(opts: { range: number; validate: (cell: { x: number; y: number }) => boolean; onConfirm: (cell: { x: number; y: number }) => void }): void;
+	placeCandle(slot: number, instanceId?: string): void;
+	spendTurn(): void;
+	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
+	t(key: string, params?: Record<string, string | number>): string;
+}
+
+/** The candle's map-picker half: no candle-specific range in Java, so the established
+ * six-cell ranged-action convention like the other throws; only an empty ritual slot
+ * validates. Confirming spends the throw's turn like every other aimed throw. */
+export function aimCandleFlow(ctx: CandleAimContext, instanceId?: string): void {
+	if (!ctx.hasCandle(instanceId)) return;
+	if (ctx.ritualPos < 0) {
+		ctx.say(ctx.t('port.log.candleneeded'), 'negative');
+		return;
+	}
+	ctx.beginAim({
+		range: 6,
+		validate: (cell) => {
+			const slot = candleRitualSlots(ctx.ritualPos, ctx.levelWidth)
+				.findIndex((s) => s.x === cell.x && s.y === cell.y);
+			return slot >= 0 && ctx.isSlotFree(slot);
+		},
+		onConfirm: (cell) => {
+			const slot = candleRitualSlots(ctx.ritualPos, ctx.levelWidth)
+				.findIndex((s) => s.x === cell.x && s.y === cell.y);
+			ctx.placeCandle(slot, instanceId);
+			ctx.spendTurn();
+		},
+	});
+}
+
+/**
  * Place one carried candle onto an empty ritual slot. `CeremonialCandle`'s
  * `defaultAction = AC_THROW` throws the candle, so the scene aims this through the
  * `TargetingController` and only calls here for a validated slot - the old stand-on-the-

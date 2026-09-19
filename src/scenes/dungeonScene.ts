@@ -19,7 +19,7 @@ import { eatFood as eatConsumableFood, quaffPotion as quaffConsumablePotion, app
 import { selectScrollId } from '../items/scrolls';
 import { applyScrollEffect, type ScrollEffectsContext } from '../items/scrollEffects';
 import { createPotionEffects } from '../items/potionEffects';
-import { candleRitualSlots, placeCandleAtSlot, type CandleContext } from '../items/candles';
+import { placeCandleAtSlot, aimCandleFlow, type CandleContext, type CandleAimContext } from '../items/candles';
 import { throwTenguBomb, useBomb as useItemBomb, aimBombFlow, type BombContext, type BombAimContext } from '../items/bombs';
 import { detonateBomb, type BombEffectsContext } from '../items/bombEffects';
 import { buyFromShop, buybackFromShop, sellFood, shopPrice as itemShopPrice, shopSellPrice as itemShopSellPrice, type ShopActionsContext } from '../items/shopActions';
@@ -18094,29 +18094,27 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * the candle travels bag-direct to the slot, with no droppable heap and no pickup.
 	 */
 	private useCandle(instanceId?: string): void {
-		if (!this.bag.find('candle', instanceId)) return;
-		if (this.ritualPos < 0) {
-			this.say(t('port.log.candleneeded'), 'negative');
-			return;
-		}
-		this.beginAiming({
-			//Java throws with CellSelector and no candle-specific range; the port's
-			//renderer-neutral targeting contract requires a finite range, so this uses
-			//the established six-cell ranged-action convention like the other throws.
-			range: 6,
-			validate: (cell) => {
-				const slot = candleRitualSlots(this.ritualPos, this.level.width)
-					.findIndex((s) => s.x === cell.x && s.y === cell.y);
-				return slot >= 0 && !this.ritualCandles[slot];
-			},
-			onConfirm: (cell) => {
-				const slot = candleRitualSlots(this.ritualPos, this.level.width)
-					.findIndex((s) => s.x === cell.x && s.y === cell.y);
-				placeCandleAtSlot(this.candleContext(), slot, instanceId);
-				this.actionSpentTurn = true;
-				this.spendHeroTurn(1);
-			},
-		});
+		aimCandleFlow(this.candleAimContext(), instanceId);
+	}
+
+	/**
+	 * The candle throw-aim flow lives in `items/candles.ts` behind `CandleAimContext` -
+	 * the file-size refactor's twenty-fifth extraction, behavior-identical. The place
+	 * half already lived there; only the aimer joins it.
+	 */
+	private candleAimContext(): CandleAimContext {
+		const scene = this;
+		return {
+			hasCandle: (instanceId) => scene.bag.find('candle', instanceId) !== undefined,
+			get ritualPos() { return scene.ritualPos; },
+			get levelWidth() { return scene.level.width; },
+			isSlotFree: (slot) => !scene.ritualCandles[slot],
+			beginAim: (opts) => scene.beginAiming(opts),
+			placeCandle: (slot, instanceId) => { placeCandleAtSlot(scene.candleContext(), slot, instanceId); },
+			spendTurn: () => { scene.actionSpentTurn = true; scene.spendHeroTurn(1); },
+			say: scene.say.bind(scene),
+			t,
+		};
 	}
 
 	/** `StoneOfDetectMagic.onItemSelected()`: reveal a picked equipable/wand's curse state and

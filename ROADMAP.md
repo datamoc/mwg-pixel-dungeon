@@ -1370,6 +1370,17 @@ one.
       no fix-ups, item suite green with a new headless drive (missing bombs never aim, the
       range comes from the seam, confirms clear pending and hand target/id/instance to the
       detonate half, pending aims detonate at once). No review bugs this slice.
+      **Complexity: XS.** **Twenty-fifth extraction 2026-09-19**: the candle throw-aim half
+      (`useCandle`'s ritual gate, slot validate, place-plus-turn confirm) joined
+      `items/candles.ts` as `aimCandleFlow` behind a `CandleAimContext` (candle gate, ritual
+      pos/width, slot-free test, aimer, place callback into the scene's existing
+      `candleContext` call, turn); the place half already lived there. The scene keeps the
+      one-line adapter the router calls plus a builder, and drops the now-unused
+      `candleRitualSlots` import (the geometry lives in the module now). Net −2 lines in
+      `dungeonScene.ts` (22,759 after), `candles.ts` 61 to 105. Suites: `tsc` clean with no
+      fix-ups, item suite green with a new headless drive next to the existing place checks
+      (no candle/no ritual never aim, empty slots validate while filled and non-slots refuse,
+      confirms place the validated slot and spend the turn). No review bugs this slice.
       **Complexity: XS.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
