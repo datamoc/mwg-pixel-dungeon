@@ -109,7 +109,9 @@ export function isTransmutableForScroll(item: { id: string; sourceClass?: string
 	const id = item.id;
 	if (id === 'weaponReward') return item.sourceClass !== 'MagesStaff';
 	if (id.startsWith('ring_')) return ringDef(id) !== undefined;
-	if (id.startsWith('potion')) return item.id in POTION_CLASS_BY_PORT_ID;
+	//Ported exotics flip to their regular counterpart in `transmuteItem` below rather
+	//than joining the random deck, so they are transmutable without a class alias.
+	if (id.startsWith('potion')) return item.id in POTION_CLASS_BY_PORT_ID || item.id === 'potionShrouding';
 	if (id.startsWith('scroll')) return id !== 'scrollTransmutation';
 	if (id === 'seed') return true;
 	if (id === 'stone' || id.startsWith('stoneOf')) return true;
@@ -161,6 +163,10 @@ export function transmuteItem(target: TransmutableItem, newItemInstanceId: (kind
 		return { id: `ring_${Random.element(pool)!}`, quantity: 1, instanceId: newItemInstanceId('ring'), identified: target.identified, level: target.level, cursed: target.cursed };
 	}
 	if (target.id.startsWith('potion')) {
+		//`changePotion` (same file): an exotic flips to its own regular counterpart
+		//(`ExoticPotion.exoToReg`) - with one exotic pair ported that is
+		//`potionShrouding` -> `potionInvis`, mirroring the scroll branch below.
+		if (target.id === 'potionShrouding') return { id: 'potionInvis', quantity: 1, stackable: true, identified: target.identified };
 		const current = POTION_CLASS_BY_PORT_ID[target.id];
 		const pool = Object.values(PORT_ID_BY_POTION_CLASS).filter((id) => POTION_CLASS_BY_PORT_ID[id] !== current);
 		if (pool.length === 0) return undefined;

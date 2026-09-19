@@ -241,6 +241,46 @@ export function canCraftScrollToExotic(inventory: Inventory): boolean {
 	return inventory.items.some((item) => item.quantity > 0 && SCROLL_TO_EXOTIC[item.id]);
 }
 
+/**
+ * `ExoticPotion.regToExo` (tag `v3.3.8`): all twelve regular potion classes map
+ * to an exotic, brewed one potion at a time for 4 energy (`PotionToExotic`).
+ * Only the Invisibility -> ShroudingFog pair exists as a port item; the other
+ * eleven values name Java classes with no port id, so they stay out of this
+ * table until their exotics are ported (each addition lights up automatically
+ * below, since eligibility is "mapped value is a real MWL item"). The full
+ * Java table for the record: Strength->Mastery, Healing->Shielding,
+ * MindVision->MagicalSight, Frost->SnapFreeze, LiquidFlame->DragonsBreath,
+ * ToxicGas->CorrosiveGas, Haste->Stamina, Invisibility->ShroudingFog,
+ * Levitation->StormClouds, ParalyticGas->EarthenArmor, Purity->Cleansing,
+ * Experience->DivineInspiration.
+ */
+export const POTION_TO_EXOTIC: Readonly<Record<string, string>> = {
+	potionInvis: 'potionShrouding',
+};
+
+export function potionExoticResult(potionId: string): string | undefined {
+	return POTION_TO_EXOTIC[potionId];
+}
+
+export function craftPotionToExotic(inventory: Inventory, selected?: AlchemyUnitRef): boolean {
+	const unit = selected
+		? takeChosenUnits(inventory, [selected], (item) => POTION_TO_EXOTIC[item.id] !== undefined)?.[0]
+		: inventory.items.find((item) => item.quantity > 0 && POTION_TO_EXOTIC[item.id]);
+	if (!unit) return false;
+	const stack = inventory.items.find((item) => item.id === unit.id && (item.instanceId ?? undefined) === (unit.instanceId ?? undefined));
+	//`ExoticPotion.isKnown()`: an exotic is known exactly when its regular counterpart
+	//is, so the brewed potion inherits the consumed potion's identified state - the
+	//same inheritance the scroll half documents in `PORT_COVERAGE.md`.
+	const identified = stack?.identified ?? false;
+	inventory.remove(unit.id, 1, unit.instanceId);
+	inventory.add({ id: POTION_TO_EXOTIC[unit.id]!, quantity: 1, stackable: true, identified });
+	return true;
+}
+
+export function canCraftPotionToExotic(inventory: Inventory): boolean {
+	return inventory.items.some((item) => item.quantity > 0 && POTION_TO_EXOTIC[item.id]);
+}
+
 const POTION_CATALYST_POOL = [
 	'potionHealing', 'potionHealing', 'potionHealing', 'potionMindVision', 'potionMindVision', 'potionFrost',
 	'potionFrost', 'potionFlame', 'potionFlame', 'potionToxicGas', 'potionToxicGas', 'potionHaste',

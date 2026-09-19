@@ -47,6 +47,18 @@ export function verifyBrews(require, check) {
 		assert.equal(oneWall.seeds.length, 7);
 		assert.equal(oneWall.centerVolume, 240);
 	});
+	check('ShroudingFog seeds SmokeScreen 180 a cell with the same center pile-up', () => {
+		// `PotionOfShroudingFog.shatter()` (tag `v3.3.8`): 180 per open NEIGHBOURS8
+		// cell, the center taking 180 plus 180 per solid neighbour.
+		const { brewNeighbourSeedPlan, SHROUDING_FOG_VOLUME } = require('./simulation/brews');
+		assert.equal(SHROUDING_FOG_VOLUME, 180);
+		const open = brewNeighbourSeedPlan(() => false, 4, 4, SHROUDING_FOG_VOLUME);
+		assert.equal(open.seeds.length, 8);
+		assert.equal(open.centerVolume, 180);
+		const walled = brewNeighbourSeedPlan((x, y) => x === 5 && y === 4, 4, 4, SHROUDING_FOG_VOLUME);
+		assert.equal(walled.seeds.length, 7);
+		assert.equal(walled.centerVolume, 360);
+	});
 	check('all four brews are throwable now that every shatter resolves', () => {
 		const { THROWABLE_BREW_IDS } = require('./simulation/brews');
 		for (const id of ['shockingBrew', 'causticBrew', 'infernalBrew', 'blizzardBrew']) {

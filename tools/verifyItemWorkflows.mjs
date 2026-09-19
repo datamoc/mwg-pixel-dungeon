@@ -181,7 +181,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	// turns into a flat 1.5 rather than the melee-range penalty.
 	assert.equal(BOOMERANG_RETURN_TURNS, 5, 'CircleBack counts down from 5 hero turns');
 	assert.equal(BOOMERANG_RETURN_ACC_FACTOR, 1.5, 'the return throw is a flat 1.5, adjacency or not');
-	const { alchemicalCatalystCost, arcaneCatalystCost, canCraftPotionSeed, craftPotionSeed, craftAlchemicalCatalyst, craftArcaneCatalyst, craftAlchemy, craftScrollToStone, craftAlchemize, craftScrollToExotic, canCraftScrollToExotic, scrollExoticResult, alchemyRecipe, alchemyEnergyFor } = require('./items/alchemy.js');
+	const { alchemicalCatalystCost, arcaneCatalystCost, canCraftPotionSeed, craftPotionSeed, craftAlchemicalCatalyst, craftArcaneCatalyst, craftAlchemy, craftScrollToStone, craftAlchemize, craftScrollToExotic, canCraftScrollToExotic, scrollExoticResult, craftPotionToExotic, canCraftPotionToExotic, potionExoticResult, alchemyRecipe, alchemyEnergyFor } = require('./items/alchemy.js');
 
 	// `Item.isUpgradable()` (tag `v3.3.8`) and the two infusion selectors that read it. Java's
 	// default is true with 42 classes overriding it false, so the assertions below are built from
@@ -536,6 +536,33 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		{ id: 'scrollMirror', identified: false, quantity: 1 },
 		'the prismatic scroll flips to its mirror counterpart, identified state carried',
 	);
+	// `ExoticPotion.PotionToExotic` (tag `v3.3.8`): one regular potion, cost 4, into its
+	// exotic - only the Invisibility -> ShroudingFog pair exists here so far.
+	assert.equal(potionExoticResult('potionInvis'), 'potionShrouding');
+	assert.equal(potionExoticResult('potionHealing'), undefined, 'unported exotics map to nothing');
+	const fogBag = new Inventory();
+	fogBag.add({ id: 'potionInvis', quantity: 1, stackable: true, identified: true });
+	fogBag.add({ id: 'potionHealing', quantity: 1, stackable: true });
+	assert.equal(canCraftPotionToExotic(fogBag), true, 'a carried invisibility potion offers the brew');
+	assert.equal(alchemyRecipe('potionToExotic')?.energyCost, 4, 'the MWL recipe carries Java\'s cost');
+	assert.equal(alchemyEnergyFor('potionShrouding', false), 10, 'exotic energy is regular + 4');
+	assert.equal(craftPotionToExotic(fogBag, { id: 'potionHealing' }), false, 'a healing potion cannot brew');
+	assert.equal(fogBag.find('potionHealing')?.quantity, 1, '...unconsumed');
+	assert.equal(craftPotionToExotic(fogBag), true, 'the invisibility potion brews');
+	assert.deepEqual(
+		{ id: fogBag.find('potionShrouding')?.id, identified: fogBag.find('potionShrouding')?.identified },
+		{ id: 'potionShrouding', identified: true },
+		'the brewed exotic inherits the consumed potion\'s identified state (ExoticPotion.isKnown)',
+	);
+	assert.equal(fogBag.find('potionInvis'), undefined, 'and the invisibility potion is consumed');
+	// `changePotion`: an exotic flips to its own regular counterpart (`exoToReg`).
+	assert.equal(isTransmutableForScroll({ id: 'potionShrouding' }), true, 'exotics are transmutable like regulars');
+	const flippedFog = transmuteItem({ id: 'potionShrouding', quantity: 1, stackable: true, identified: false }, (kind) => `test-${kind}`);
+	assert.deepEqual(
+		{ id: flippedFog?.id, identified: flippedFog?.identified, quantity: flippedFog?.quantity },
+		{ id: 'potionInvis', identified: false, quantity: 1 },
+		'the shrouding potion flips to its invisibility counterpart, identified state carried',
+	);
 	const selectAlchemize = new Inventory();
 	selectAlchemize.add({ id: 'seedFirebloom', quantity: 1, stackable: true });
 	selectAlchemize.add({ id: 'stoneOfBlast', quantity: 1, stackable: true });
@@ -650,7 +677,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	// missile's display name - the mechanical `missileDefinitions` table has no name column, so it
 	// comes from the authored item node instead.
 	assert.equal(MWL_MISSILE_NAME_KEYS.missile_heavyboomerang, 'items.weapon.missiles.heavyboomerang.name');
-	assert.equal(Object.keys(MWL_CONSUMABLE_DESCRIPTION_KEYS).length, 65);
+	assert.equal(Object.keys(MWL_CONSUMABLE_DESCRIPTION_KEYS).length, 66);
 	assert.equal(MWL_CONSUMABLE_DESCRIPTION_KEYS.seedStarflower, 'plants.starflower.desc');
 	assert.equal(mwlItemEffectValue('scrollMirror', 'imageCount'), 2);
 	assert.equal(mwlItemEffectValue('scrollRetribution', 'maxPower'), 4);
@@ -1822,6 +1849,30 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	meal = mealScene('huntress', { invigorating_meal: 2 });
 	applyMealEatenEffects(meal, 0);
 	assert.equal(meal.freeTurnNext, true, 'invigorating meal grants the free turn');
+	// `PotionOfShroudingFog.shatter()` (tag `v3.3.8`) through the quaff registry: 180
+	// SmokeScreen on every open neighbour, the center taking 180 plus 180 per wall.
+	compile(join(root, 'src/dungeonConstants.ts'), 'dungeonConstants.js');
+	compile(join(root, 'src/simulation/brews.ts'), 'simulation/brews.js');
+	compile(join(root, 'src/items/potionEffects.ts'), 'items/potionEffects.js');
+	const { createPotionEffects } = require('./items/potionEffects.js');
+	const smoked = [];
+	const fogScene = {
+		hero: { x: 2, y: 2 },
+		creatures: [],
+		level: { width: 5, inside: (x, y) => x >= 0 && y >= 0 && x < 5 && y < 5, passable: () => true, get: () => 1 },
+		seedSmoke: (x, y, volume) => { smoked.push({ x, y, volume }); },
+		say: () => {},
+	};
+	createPotionEffects(fogScene).potionShrouding();
+	assert.equal(smoked.length, 9, 'eight neighbours plus the center');
+	assert.ok(smoked.every((s) => s.volume === 180), 'every seed is Java\'s 180');
+	assert.ok(smoked.some((s) => s.x === 2 && s.y === 2), 'the center seeds too');
+	const walledScene = { ...fogScene, level: { ...fogScene.level, get: (x, y) => (x === 3 && y === 2 ? 0 : 1) } };
+	const walled = [];
+	walledScene.seedSmoke = (x, y, volume) => { walled.push({ x, y, volume }); };
+	createPotionEffects(walledScene).potionShrouding();
+	assert.equal(walled.length, 8, 'the walled neighbour seeds nothing');
+	assert.equal(walled.find((s) => s.x === 2 && s.y === 2)?.volume, 360, 'its share piles onto the center');
 	const { weaponSTRReq, armorSTRReq, missileSTRReq, canSurpriseAttack } = require('./items/strReq.js');
 	// `Weapon.STRReq`/`Armor.STRReq`/`MissileWeapon.STRReq` (tags `v2.1.4`/`v3.3.8`):
 	// `(8 + tier*2) - (int)(sqrt(8*lvl+1)-1)/2`, decreasing at +1/+3/+6/+10.

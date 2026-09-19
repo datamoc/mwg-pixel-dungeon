@@ -34,7 +34,7 @@ import { abilityFlatBoost, accrueWeaponCharge, counterAbilityRefund, gainWeaponC
 import { useStoneOfFlock as useItemStoneOfFlock, useStoneOfAggression as useItemStoneOfAggression, useStoneOfAugmentation as useItemStoneOfAugmentation, useStoneOfFear as useItemStoneOfFear, useStoneOfDeepSleep as useItemStoneOfDeepSleep, useStoneOfBlink as useItemStoneOfBlink, useStoneOfClairvoyance as useItemStoneOfClairvoyance, useStoneOfShock as useItemStoneOfShock, useStoneOfBlast as useItemStoneOfBlast, useStoneOfEnchantment as useItemStoneOfEnchantment, useStoneOfDetectMagic as useItemStoneOfDetectMagic, useStoneOfIntuition as useItemStoneOfIntuition, type StoneContext, type StonePickerEntry } from '../items/stones';
 import { runSearch } from '../adapters/searchSimulation';
 import { runMovement } from '../adapters/movementSimulation';
-import { ALCHEMY_RECIPES, alchemicalCatalystCost, alchemyEnergyFor, arcaneCatalystCost, canCraftPotionSeed, canCraftScrollToExotic, canCraftScrollToStone, craftAlchemy, craftAlchemize, craftAlchemicalCatalyst, craftArcaneCatalyst, craftPotionSeed, craftScrollToExotic, craftScrollToStone, isSeedOrRunestone, randomAlchemicalPotion, randomArcaneScroll, scrollExoticResult, SCROLL_TO_STONE, seedPotionId } from '../items/alchemy';
+import { ALCHEMY_RECIPES, alchemicalCatalystCost, alchemyEnergyFor, arcaneCatalystCost, canCraftPotionSeed, canCraftPotionToExotic, canCraftScrollToExotic, canCraftScrollToStone, craftAlchemy, craftAlchemize, craftAlchemicalCatalyst, craftArcaneCatalyst, craftPotionSeed, craftPotionToExotic, craftScrollToExotic, craftScrollToStone, isSeedOrRunestone, potionExoticResult, randomAlchemicalPotion, randomArcaneScroll, scrollExoticResult, SCROLL_TO_STONE, seedPotionId } from '../items/alchemy';
 import type { AlchemyPairSelection, AlchemyRecipe, AlchemyUnitRef } from '../items/alchemy';
 type AlchemyIngredientSelection =
 	| { kind: 'seeds'; units: AlchemyUnitRef[] }
@@ -17775,6 +17775,10 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.pickAlchemyUnits(chooseTitle, (item) => scrollExoticResult(item.id) !== undefined, 1, [], (selected) => this.completeAlchemyRecipe(recipe, { kind: 'scroll', unit: selected[0]! }));
 			return true;
 		}
+		if (recipe.id === 'potionToExotic') {
+			this.pickAlchemyUnits(chooseTitle, (item) => potionExoticResult(item.id) !== undefined, 1, [], (selected) => this.completeAlchemyRecipe(recipe, { kind: 'scroll', unit: selected[0]! }));
+			return true;
+		}
 		if (recipe.id === 'alchemize') {
 			this.pickAlchemyUnits(chooseTitle, (item) => item.id.startsWith('seed'), 1, [], (seeds) => {
 				this.pickAlchemyUnits(chooseTitle, (item) => item.id.startsWith('stoneOf'), 1, [], (stones) => this.completeAlchemyRecipe(recipe, { kind: 'alchemize', seed: seeds[0]!, stone: stones[0]! }));
@@ -17838,6 +17842,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			if (craftedResult) this.bag.add({ id: craftedResult.id, quantity: 1, stackable: true, identified: craftedResult.identified });
 		} else if (recipe.id === 'scrollToStone') crafted = craftScrollToStone(this.bag, selected.kind === 'scroll' ? selected.unit : undefined);
 		else if (recipe.id === 'scrollToExotic') crafted = craftScrollToExotic(this.bag, selected.kind === 'scroll' ? selected.unit : undefined);
+		else if (recipe.id === 'potionToExotic') crafted = craftPotionToExotic(this.bag, selected.kind === 'scroll' ? selected.unit : undefined);
 		else if (recipe.id === 'alchemicalCatalyst') crafted = craftAlchemicalCatalyst(this.bag, selected.kind === 'pair' ? selected : undefined);
 		else if (recipe.id === 'arcaneCatalyst') crafted = craftArcaneCatalyst(this.bag, selected.kind === 'pair' ? selected : undefined);
 		else if (recipe.id === 'alchemize') crafted = craftAlchemize(this.bag, selected.kind === 'alchemize' ? { seed: selected.seed, stone: selected.stone } : undefined);
@@ -17854,7 +17859,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 	}
 	private openAlchemyRecipes(): void {
 		const recipes = ALCHEMY_RECIPES.filter((recipe) => recipe.energyCost <= this.alchemyEnergy && (
-			recipe.id === 'potionSeed' ? canCraftPotionSeed(this.bag) : recipe.id === 'scrollToStone' ? canCraftScrollToStone(this.bag) : recipe.id === 'scrollToExotic' ? canCraftScrollToExotic(this.bag) : recipe.id === 'alchemize'
+			recipe.id === 'potionSeed' ? canCraftPotionSeed(this.bag) : recipe.id === 'scrollToStone' ? canCraftScrollToStone(this.bag) : recipe.id === 'scrollToExotic' ? canCraftScrollToExotic(this.bag) : recipe.id === 'potionToExotic' ? canCraftPotionToExotic(this.bag) : recipe.id === 'alchemize'
 				? this.bag.items.some((item) => item.quantity > 0 && item.id.startsWith('seed'))
 					&& this.bag.items.some((item) => item.quantity > 0 && item.id.startsWith('stoneOf'))
 				: recipe.id === 'alchemicalCatalyst' ? (alchemicalCatalystCost(this.bag) ?? Infinity) <= this.alchemyEnergy
@@ -17885,6 +17890,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 				if (craftedResult) this.bag.add({ id: craftedResult.id, quantity: 1, stackable: true, identified: craftedResult.identified });
 				const crafted = recipe?.id === 'potionSeed' ? craftedResult !== undefined : recipe?.id === 'scrollToStone' ? craftScrollToStone(this.bag)
 					: recipe?.id === 'scrollToExotic' ? craftScrollToExotic(this.bag)
+					: recipe?.id === 'potionToExotic' ? craftPotionToExotic(this.bag)
 					: recipe?.id === 'alchemicalCatalyst' ? craftAlchemicalCatalyst(this.bag) : recipe?.id === 'arcaneCatalyst' ? craftArcaneCatalyst(this.bag)
 					: recipe?.id === 'alchemize' ? craftAlchemize(this.bag) : recipe ? craftAlchemy(this.bag, recipe.id) : false;
 				if (!crafted) {
@@ -20492,6 +20498,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			clearFire: (x: number, y: number) => scene.fire.clear(x, y),
 			seedToxicGas: (x: number, y: number, volume: number) => scene.toxicGas.seed(x, y, volume),
 			seedParalyticGas: (x: number, y: number, volume: number) => scene.paralyticGas.seed(x, y, volume),
+			seedSmoke: (x: number, y: number, volume: number) => scene.smokeScreen.seed(x, y, volume),
 			eternalFireVolumeAt: (x: number, y: number) => scene.eternalFire.volumeAt(x, y),
 			clearEternalFire: () => { scene.eternalFire = new Blob(scene.level.width, scene.level.height); },
 			showDamage: this.showDamage.bind(this),

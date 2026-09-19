@@ -22,6 +22,8 @@
           { tag: "row", item: "potionFlame", value: 30 },
           { tag: "row", item: "potionMindVision", value: 30 },
           { tag: "row", item: "potionInvis", value: 30 },
+          //`ExoticPotion.value()`: 20 gold over the regular counterpart (30 + 20).
+          { tag: "row", item: "potionShrouding", value: 50 },
           { tag: "row", item: "potionPurity", value: 30 },
           { tag: "row", item: "potionLevitation", value: 30 },
           { tag: "row", item: "potionExperience", value: 30 },

@@ -35,6 +35,12 @@
             energy: 6,
           },
           {
+            //`ExoticPotion.energyVal()`: 4 over the regular counterpart (6 + 4).
+            tag: "row",
+            kind: "potionShrouding",
+            energy: 10,
+          },
+          {
             tag: "row",
             kind: "food",
             energy: 6,
@@ -140,6 +146,19 @@
             result: "scrollPrismatic",
             resultQuantity: 1,
             energyCost: 6,
+          },
+          {
+            //`ExoticPotion.PotionToExotic`: one regular potion, cost 4. The authored
+            //ingredients name `potionInvis` only as a catalogue-valid representative
+            //(the `Scroll.ScrollToStone` pattern above); the runtime transaction
+            //(`craftPotionToExotic`) resolves the concrete potion class, and only the
+            //ported Invisibility -> ShroudingFog pair is mapped there so far.
+            tag: "row",
+            id: "potionToExotic",
+            ingredients: "potionInvis:1",
+            result: "potionShrouding",
+            resultQuantity: 1,
+            energyCost: 4,
           },
           {
             tag: "row",
@@ -312,6 +331,13 @@
             recipe: "scrollToExotic",
             group: "one",
             javaRecipe: "ExoticScroll.ScrollToExotic",
+          },
+          {
+            tag: "row",
+            id: "manifest-potionToExotic",
+            recipe: "potionToExotic",
+            group: "one",
+            javaRecipe: "ExoticPotion.PotionToExotic",
           },
           {
             tag: "row",

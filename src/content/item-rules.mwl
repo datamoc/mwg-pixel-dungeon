@@ -649,6 +649,7 @@
           { tag: "row", item: "potionToxicGas", descriptionKey: "items.potions.potionoftoxicgas.desc" },
           { tag: "row", item: "potionHaste", descriptionKey: "items.potions.potionofhaste.desc" },
           { tag: "row", item: "potionInvis", descriptionKey: "items.potions.potionofinvisibility.desc" },
+          { tag: "row", item: "potionShrouding", descriptionKey: "items.potions.exotic.potionofshroudingfog.desc" },
           { tag: "row", item: "potionLevitation", descriptionKey: "items.potions.potionoflevitation.desc" },
           { tag: "row", item: "potionParalyticGas", descriptionKey: "items.potions.potionofparalyticgas.desc" },
           { tag: "row", item: "potionPurity", descriptionKey: "items.potions.potionofpurity.desc" },

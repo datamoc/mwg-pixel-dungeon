@@ -4959,7 +4959,7 @@ tile art, so the closing fog is the feedback. Names live under `port.name.smokeb
 `port.desc.smokebomb` carrying SPD's own `v3.3.8` words in all 19 `PORT_STRINGS` locales
 (byte-audited against the tag), because the generated catalogue still predates the swap and
 has no `smokebomb` keys - they flip to `items.bombs.smokebomb.*` when it is re-extracted.
-Stated gaps, not silent: the `ShroudingFog` exotic and the ChaoticCenser trinket stay open.
+Stated gaps, not silent: the ChaoticCenser trinket stays open (no trinket system here). **2026-09-19 follow-up: the `ShroudingFog` exotic is ported too** - `potionShrouding` brewed from one `potionInvis` for 4 energy (`PotionToExotic`, value regular + 20 = 50, energy regular + 4 = 10, identified-state inheritance per `ExoticPotion.isKnown`), quaffing shatters Java's 180-per-cell NEIGHBOURS8 ring with the center top-up into the persisted `SmokeScreen` blob (`Potion.apply()`'s own default is `shatter(hero.pos)`; Java logs nothing on the shatter, so neither does this). Transmutation flips it back to `potionInvis` (`exoToReg`) without joining the random deck.
 **2026-09-19 follow-up: the flashbang rework is ported too.** The daze is gone; every char in
 the flood takes a fresh `NormalIntRange(4 + depth/2, 6 + depth)` quartered as `Electricity`
 damage (armor-piercing, like Java's raw `damage()` call) plus a `Paralysis` prolong, with no

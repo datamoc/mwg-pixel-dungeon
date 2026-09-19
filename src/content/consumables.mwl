@@ -61,6 +61,13 @@
       },
       {
         tag: "item",
+        id: "potionShrouding",
+        name: "items.potions.exotic.potionofshroudingfog.name",
+        slot: "consumable",
+        stackable: true,
+      },
+      {
+        tag: "item",
         id: "potionLevitation",
         name: "items.potions.potionoflevitation.name",
         slot: "consumable",

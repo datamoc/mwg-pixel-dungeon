@@ -1,6 +1,7 @@
 import { Roguelike } from 'mwg';
 import { addBuff, type Creature } from '../combat';
 import { applyChillFreeze } from '../simulation/buffs';
+import { brewNeighbourSeedPlan, SHROUDING_FOG_VOLUME } from '../simulation/brews';
 import { WALL } from '../dungeonConstants';
 import { t } from '../i18n';
 import { mwlItemEffectValue } from '../mwlContent';
@@ -22,6 +23,7 @@ export interface PotionEffectsContext {
 	readonly clearFire: (x: number, y: number) => void;
 	readonly seedToxicGas: (x: number, y: number, volume: number) => void;
 	readonly seedParalyticGas: (x: number, y: number, volume: number) => void;
+	readonly seedSmoke: (x: number, y: number, volume: number) => void;
 	readonly eternalFireVolumeAt: (x: number, y: number) => number;
 	readonly clearEternalFire: () => void;
 	readonly showDamage: (target: Creature, amount: number) => void;
@@ -122,5 +124,18 @@ export function createPotionEffects(scene: PotionEffectsContext): Record<string,
 			scene.say(t('port.log.quafffrost'), 'positive');
 		},
 		potionPurity: () => scene.applyPotionPurity(),
+		//`PotionOfShroudingFog.shatter()` (tag `v3.3.8`): 180 `SmokeScreen` on every
+		//open NEIGHBOURS8 cell, the center taking 180 plus 180 per solid neighbour.
+		//`Potion.apply()`'s default body is `shatter(hero.pos)`, so quaffing is the
+		//shatter at the hero's feet - no cell picker exists here, and none is needed.
+		//Java logs nothing on the shatter (neither do this port's brews), so neither
+		//does this: the fog itself is the feedback.
+		potionShrouding: () => {
+			const plan = brewNeighbourSeedPlan(
+				(x, y) => !scene.level.inside(x, y) || scene.level.get(x, y) === WALL,
+				scene.hero.x, scene.hero.y, SHROUDING_FOG_VOLUME);
+			for (const seed of plan.seeds) scene.seedSmoke(seed.x, seed.y, seed.volume);
+			scene.seedSmoke(scene.hero.x, scene.hero.y, plan.centerVolume);
+		},
 	};
 }

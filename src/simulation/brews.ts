@@ -85,6 +85,11 @@ export function brewNeighbourSeedPlan(
 export const INFERNO_BREW_VOLUME = 120;
 export const BLIZZARD_BREW_VOLUME = 120;
 
+/** `PotionOfShroudingFog.shatter()`: 180 per open NEIGHBOURS8 cell; the center takes
+ * 180 plus 180 per solid neighbour - the same `brewNeighbourSeedPlan` shape as the two
+ * brews above, seeding `SmokeScreen` instead of Inferno/Blizzard. */
+export const SHROUDING_FOG_VOLUME = 180;
+
 /**
  * Brews are always known (`Brew.isKnown()` returns true) and throw-only
  * (`actions()` drops `AC_DRINK`, `defaultAction()` is `AC_THROW`). All four shatters
