@@ -67,6 +67,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	// The Talisman of Foresight's scry formulas (cone arc, charge cost, exp curve, per-turn trickle)
 	// are scene-free in the same way, so they are pinned here against Java's own numbers.
 	compile(join(root, 'src/items/talisman.ts'), 'items/talisman.js');
+compile(join(root, 'src/items/chains.ts'), 'items/chains.js');
 compile(join(root, 'src/mechanics/cone.ts'), 'mechanics/cone.js');
 //`talisman.js` reads `WALL` off `dungeonConstants.js`, which the suite otherwise only compiles
 //much later (line ~2110) - recompiling it here is the same idempotent write.
@@ -1810,6 +1811,84 @@ function sandalsDrive(overrides = {}, pickScript = []) {
 	fresh.ctx.aimOpts.onConfirm({ x: 50, y: 50 });
 	assert.ok(fresh.log.some((l) => l.includes('out_of_range')), 'a far cell refuses');
 	assert.ok(!fresh.log.some((l) => l.startsWith('plant:')), 'refused roots plant nothing');
+// The moved chains flow (`ChainsFlowContext`, the file-size refactor's tenth extraction):
+// driven headlessly on a stub 10x10 level with a scripted aimer.
+const { useChainsFlow } = require('./items/chains.js');
+function chainsDrive(overrides = {}, pickCell = { x: 4, y: 0 }) {
+	const log = [];
+	const flags = { turns: 0, uncloaked: false, rings: 0, shaken: false, heroAt: { x: 0, y: 0 } };
+	const chains = { level: 0, charge: 10, ...overrides.chains };
+	const creatures = overrides.creatures ?? { '4,0': { x: 4, y: 0, kind: 'rat' } };
+	const ctx = {
+		magicImmune: false,
+		heroPos: { x: 0, y: 0 },
+		levelSize: { width: 10, height: 10 },
+		heroRooted: false,
+		chainsOf: () => chains,
+		beginAim: (opts) => { log.push(`aim:${opts.range}`); ctx.aimOpts = opts; },
+		isCellExploredOrVisible: () => true,
+		isCellPassable: (x, y) => x < 9 && y < 9,
+		isImmovableKind: (kind) => kind === 'statue',
+		reachableFromHero: () => true,
+		traceTo: (x, y) => {
+			const cells = [];
+			const dx = Math.sign(x), dy = Math.sign(y);
+			let cx = 0, cy = 0;
+			while (cx !== x) { cx += dx; cells.push({ x: cx, y: cy }); }
+			while (cy !== y) { cy += dy; cells.push({ x: cx, y: cy }); }
+			return cells;
+		},
+		creatureAt: (x, y) => creatures[`${x},${y}`] ?? null,
+		moveHeroTo: (cell) => { flags.heroAt = { ...cell }; },
+		pullEnemyTo: (enemy, dest) => { log.push(`pull:${enemy.x},${enemy.y}->${dest.x},${dest.y}`); },
+		shake: () => { flags.shaken = true; },
+		armEnhancedRings: () => { flags.rings++; },
+		dispelInvisibility: () => { flags.uncloaked = true; },
+		spendTurn: () => { flags.turns++; },
+		say: (line, level) => { log.push(`say:${level}:${line}`); },
+		t: (key) => key,
+		...overrides.ctx,
+	};
+	useChainsFlow(ctx);
+	if (ctx.aimOpts) ctx.aimOpts.onConfirm(pickCell);
+	return { ctx, log, chains, flags };
+}
+// Enemy pull: the first free path cell takes the victim, costing its distance in charge.
+{
+	const d = chainsDrive();
+	assert.equal(d.log[0], 'aim:10', `the aimer opens over the whole floor, got ${d.log[0]}`);
+	assert.ok(d.log.includes('pull:4,0->2,0'), `the rat slides to the first free cell, got ${d.log}`);
+	assert.equal(d.chains.charge, 8, 'a 2-distance pull pays 2 charge');
+	assert.ok(d.flags.turns === 1 && d.flags.uncloaked && d.flags.rings === 1, 'one turn, uncloaked, rings armed');
+}
+// Self-grab: a cell beside the east wall pulls the hero himself there for its distance.
+{
+	const d = chainsDrive({ creatures: {} }, { x: 8, y: 8 });
+	assert.ok(d.flags.heroAt.x === 8 && d.flags.heroAt.y === 8, 'the hero lands on the grabbed cell');
+	assert.equal(d.chains.charge, 2, 'an 8-distance grab pays 8 charge');
+	assert.equal(d.flags.turns, 1);
+}
+// Refusals: rooted shakes, walls and grab-less cells refuse, short charge refuses, statues
+// cannot be pulled, the unreachable cannot be reached, and the gates never aim.
+{
+	const rooted = chainsDrive({ ctx: { heroRooted: true } }, { x: 8, y: 8 });
+	assert.ok(rooted.flags.shaken && rooted.log.some((l) => l.includes('rooted')), 'roots shake and refuse');
+	const wall = chainsDrive({ creatures: {} }, { x: 9, y: 9 });
+	assert.ok(wall.log.some((l) => l.includes('inside_wall')), 'walls refuse');
+	const bare = chainsDrive({ creatures: {} }, { x: 2, y: 2 });
+	assert.ok(bare.log.some((l) => l.includes('nothing_to_grab')), 'open ground has nothing to grab');
+	const poor = chainsDrive({ chains: { charge: 1 }, creatures: {} }, { x: 8, y: 8 });
+	assert.ok(poor.log.some((l) => l.includes('no_charge')), 'short charge refuses');
+	assert.equal(poor.flags.turns, 0, 'refusals spend nothing');
+	const statue = chainsDrive({ creatures: { '4,0': { x: 4, y: 0, kind: 'statue' } } });
+	assert.ok(statue.log.some((l) => l.includes('cant_pull')), 'statues cannot be pulled');
+	const far = chainsDrive({ ctx: { reachableFromHero: () => false } });
+	assert.ok(far.log.some((l) => l.includes('cant_reach')), 'the unreachable refuses');
+	const cursed = chainsDrive({ chains: { charge: 10, cursed: true } });
+	assert.ok(cursed.log.some((l) => l.includes('cursed')), 'cursed reports');
+	const immune = chainsDrive({ ctx: { magicImmune: true } });
+	assert.ok(!immune.log.some((l) => l.startsWith('aim:')), 'AntiMagic opens nothing');
+}
 }
 	const { talismanMaxDist, talismanScryAngle, talismanScryCost, talismanApplyScryCost, talismanApplyExp,
 		talismanAwarenessDuration, talismanProcFigure, talismanScryGate, applyTalismanPerTurnCharge,

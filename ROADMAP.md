@@ -1155,7 +1155,18 @@ one.
       full creature+heap cover marks 5-turn awareness everywhere with the exact leveled
       remainder; own-cell/cursed/low-charge/AntiMagic refusals; the warning fires once per run
       and resets) - which needed one new harness compile line (`mechanics/cone.ts`) plus an
-      earlier recompile of `dungeonConstants.js` for its `WALL`.
+      earlier recompile of `dungeonConstants.js` for its `WALL`. **Tenth extraction 2026-09-19**:
+      the Ethereal Chains' grab/pull flow (`useChains`'s aimer, `confirmChains`'s reachability
+      split, the enemy pull and the self-grab) moved to the new `items/chains.ts` behind a
+      `ChainsFlowContext` (chains lookup, aimer, explored/passable/immovable/reachability/trace
+      seams, creature lookup, hero/enemy movement, shake, rings, invisibility, turn, say, `t`);
+      the scene keeps the one-line `useChains` adapter the router calls, `chainsItem` for the
+      builder, plus the builder. Net −42 lines in `dungeonScene.ts` (23,069 after). Suites: `tsc`
+      clean after one real catch (the immovable set is keyed by `AnyMonsterId`, so the gate
+      takes that type via an erased import), item suite green with a new headless drive of the
+      moved flow on a stub 10x10 level (enemy pull to the first free cell for its distance,
+      self-grab beside a wall, rooted/wall/grabless/short-charge/statue/unreachable refusals
+      spending nothing, cursed/AntiMagic gates).
       **Complexity: L.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`

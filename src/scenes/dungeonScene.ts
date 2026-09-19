@@ -228,6 +228,7 @@ import { useCloak as useArtifactCloak, useHourglass as useArtifactHourglass, use
 //live in their own module (scene-free, so `verifyItemWorkflows` can drive them the way it
 //drives `shopPricing`/`missiles`); the scene only builds the flow context.
 import { sandalsNaturalismLevel, applySandalsNaturalismCharge, useSandalsFlow, type SandalsFlowContext, type SandalsItem } from '../items/sandals';
+import { useChainsFlow, type ChainsFlowContext } from '../items/chains';
 import { applyTalismanPerTurnCharge, useTalismanFlow, checkTalismanAwarenessFlow, type TalismanFlowContext, type TalismanItem } from '../items/talisman';
 import { roseSummonGate, roseGhostMaxHp, roseGhostAttackSkill, roseGhostDefenseSkill, roseGhostDamageRange, applyRoseRecharge, type RoseItem } from '../items/rose';
 import { rosePetalsNeeded, rosePetalDropCap, rosePetalPickup, roseChargeCap, roseLevelCap } from '../items/rose';
@@ -18447,17 +18448,44 @@ private eyeBeamTurn(monster: Creature): boolean {
 		}
 
 		private useChains(instanceId?: string): void {
-			const chains = this.chainsItem(instanceId);
-			if (!chains || this.hero.magicImmune) return;
-			if (chains.cursed) { this.say(t('items.artifacts.etherealchains.cursed'), 'negative'); return; }
-			if ((chains.charge ?? 0) < 1) { this.say(t('items.artifacts.etherealchains.no_charge'), 'negative'); return; }
-			this.beginAiming({
-				range: Math.max(this.level.width, this.level.height),
-				requireLineOfSight: false,
-				validate: (cell) => this.fov.isExplored(cell.x, cell.y) || this.fov.isVisible(cell.x, cell.y),
-				onConfirm: (cell) => this.confirmChains(cell, instanceId),
-			});
-			this.say(t('items.artifacts.etherealchains.prompt'), 'positive');
+			useChainsFlow(this.chainsFlowContext(), instanceId);
+		}
+
+		/**
+		 * The Ethereal Chains' grab/pull flow lives in `items/chains.ts` behind
+		 * `ChainsFlowContext` - the file-size refactor's tenth extraction, behavior-identical.
+		 */
+		private chainsFlowContext(): ChainsFlowContext {
+			const scene = this;
+			return {
+				get magicImmune() { return scene.hero.magicImmune === true; },
+				get heroPos() { return { x: scene.hero.x, y: scene.hero.y }; },
+				get levelSize() { return { width: scene.level.width, height: scene.level.height }; },
+				get heroRooted() { return (scene.hero.buffs['roots'] ?? 0) > 0; },
+				chainsOf: (instanceId?: string) => scene.chainsItem(instanceId),
+				beginAim: (opts) => scene.beginAiming(opts),
+				isCellExploredOrVisible: (x, y) => scene.fov.isExplored(x, y) || scene.fov.isVisible(x, y),
+				isCellPassable: (x, y) => scene.level.passable(x, y),
+				isImmovableKind: (kind) => kind !== undefined && IMMOVABLE_KINDS.has(kind),
+				reachableFromHero: (x, y) => {
+					if (scene.miningBranchActive) return true;
+					const distances = scene.pathfinder.distanceMap({ x, y });
+					return (distances[scene.level.index(scene.hero.x, scene.hero.y)] ?? -1) >= 0;
+				},
+				traceTo: (x, y) => Roguelike.traceLine({ x: scene.hero.x, y: scene.hero.y }, { x, y }),
+				creatureAt: (x, y) => scene.creatureAt(x, y),
+				moveHeroTo: (cell) => {
+					scene.moveTo(scene.hero, cell);
+					scene.fov.update(cell.x, cell.y, scene.viewRadius());
+				},
+				pullEnemyTo: (enemy, destination) => { scene.moveTo(enemy as Creature, destination); },
+				shake: () => { scene.shakeScreen(1, 1); },
+				armEnhancedRings: () => { scene.armEnhancedRingsFromArtifact(); },
+				dispelInvisibility: () => { delete scene.hero.buffs['invisibility']; },
+				spendTurn: () => { scene.actionSpentTurn = true; scene.spendHeroTurn(1); },
+				say: scene.say.bind(scene),
+				t,
+			};
 		}
 
 		private useHorn(instanceId?: string): void {
@@ -18849,76 +18877,6 @@ private eyeBeamTurn(monster: Creature): boolean {
 		private chainsItem(instanceId?: string) {
 			return this.bag.find('chains', instanceId) as (typeof this.bag.items[number]
 				& { level?: number; charge?: number; partialCharge?: number; exp?: number; cursed?: boolean }) | undefined;
-		}
-
-		private chainEnemy(chains: NonNullable<ReturnType<DungeonScene['chainsItem']>>, path: readonly Step[], enemy: Creature): void {
-			if (enemy.kind !== undefined && IMMOVABLE_KINDS.has(enemy.kind)) {
-				this.say(t('items.artifacts.etherealchains.cant_pull'), 'negative');
-				return;
-			}
-			let destination: Step | null = null;
-			for (let i = 1; i < path.length - 1; i++) {
-				const cell = path[i];
-				if (this.level.passable(cell.x, cell.y) && !this.creatureAt(cell.x, cell.y)) {
-					destination = cell;
-					break;
-				}
-			}
-			if (!destination) { this.say(t('items.artifacts.etherealchains.does_nothing'), 'negative'); return; }
-			const chargeUse = Roguelike.chebyshevDistance(enemy, destination);
-			if (chargeUse > (chains.charge ?? 0)) { this.say(t('items.artifacts.etherealchains.no_charge'), 'negative'); return; }
-			chains.charge = Math.max(0, (chains.charge ?? 0) - chargeUse);
-			if (this.hero.buffs['invisibility']) delete this.hero.buffs['invisibility'];
-			this.moveTo(enemy, destination);
-			//`EtherealChains.chainEnemy` (tag `v3.3.8`): the pull lands inside the chains'
-			//animation callback with `Talent.onArtifactUsed(hero)` and `hero.spendAndNext(1f)`
-			//- the turn and the EnhancedRings arming were both missing here (failures return
-			//free in Java too, and do here, so only this success path spends).
-			this.armEnhancedRingsFromArtifact();
-			this.actionSpentTurn = true;
-			this.spendHeroTurn(1);
-		}
-
-		private chainLocation(chains: NonNullable<ReturnType<DungeonScene['chainsItem']>>, target: Step): void {
-			if (this.hero.buffs['roots']) {
-				this.shakeScreen(1, 1);
-				this.say(t('items.artifacts.etherealchains.rooted'), 'negative');
-				return;
-			}
-			if (!this.level.passable(target.x, target.y)) {
-				this.say(t('items.artifacts.etherealchains.inside_wall'), 'negative');
-				return;
-			}
-			const solidNearby = Roguelike.neighbourOffsets(8).some(([dx, dy]) => !this.level.passable(target.x + dx, target.y + dy));
-			if (!solidNearby) { this.say(t('items.artifacts.etherealchains.nothing_to_grab'), 'negative'); return; }
-			const chargeUse = Roguelike.chebyshevDistance(this.hero, target);
-			if (chargeUse > (chains.charge ?? 0)) { this.say(t('items.artifacts.etherealchains.no_charge'), 'negative'); return; }
-			chains.charge = Math.max(0, (chains.charge ?? 0) - chargeUse);
-			if (this.hero.buffs['invisibility']) delete this.hero.buffs['invisibility'];
-			this.moveTo(this.hero, target);
-			this.fov.update(target.x, target.y, this.viewRadius());
-			//`EtherealChains.chainLocation` (tag `v3.3.8`): same success tail as the enemy
-			//pull - `Talent.onArtifactUsed(hero)` then `hero.spendAndNext(1f)` - both missing
-			//here for the same reason; rooted/wall/grab/charge failures stay free in Java too.
-			this.armEnhancedRingsFromArtifact();
-			this.actionSpentTurn = true;
-			this.spendHeroTurn(1);
-		}
-
-		private confirmChains(target: Step, instanceId?: string): void {
-			const chains = this.chainsItem(instanceId);
-			if (!chains) return;
-			if (!this.miningBranchActive) {
-				const distances = this.pathfinder.distanceMap({ x: target.x, y: target.y });
-				if ((distances[this.level.index(this.hero.x, this.hero.y)] ?? -1) < 0) {
-					this.say(t('items.artifacts.etherealchains.cant_reach'), 'negative');
-					return;
-				}
-			}
-			const path = Roguelike.traceLine({ x: this.hero.x, y: this.hero.y }, target);
-			const enemy = this.creatureAt(target.x, target.y);
-			if (enemy && !enemy.isHero) this.chainEnemy(chains, path, enemy);
-			else this.chainLocation(chains, target);
 		}
 
 		private armbandItem(instanceId?: string) {
