@@ -101,6 +101,10 @@ async function main(): Promise<void> {
 	Input.bind('buyback', ['KeyG']);
 	Input.bind('save', ['KeyO']);
 	Input.bind('load', ['KeyP']);
+	//Java's `SPDAction.ZOOM_IN`/`ZOOM_OUT` (`PLUS`/`EQUALS` and `MINUS`, tag `v3.3.8`) -
+	//numpad twins included, which Java leaves to the platform but browsers report separately.
+	Input.bind('zoomIn', ['Equal', 'NumpadAdd']);
+	Input.bind('zoomOut', ['Minus', 'NumpadSubtract']);
 	//No `menu` binding on purpose: SPD opens `WndGame` from the back key (`SPDAction.BACK` -
 	//Escape/Backspace, which is MWG's own `cancel` action), and only when nothing else consumed
 	//it - see `onAction`. Binding that same key to MWG's `menu` action instead would both clobber

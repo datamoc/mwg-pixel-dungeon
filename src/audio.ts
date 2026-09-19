@@ -1,4 +1,5 @@
 import { Audio } from 'mwg';
+import { isMusicMuted, isSfxMuted, setMusicMuted as persistMusicMuted, setSfxMuted as persistSfxMuted } from './settings';
 
 /**
  * SPD's original OGG/MP3 assets, bundled as data URLs so the exported game still works from
@@ -24,6 +25,46 @@ export class SpdAudio {
 	private readonly music = new Audio.Music({ volume: 0.42 });
 	private readonly cues = new Map<string, Audio.Sound>();
 	private currentTrack: string | null = null;
+	private musicOff = isMusicMuted();
+	private sfxOff = isSfxMuted();
+	/** The last music request, so unmuting resumes what should be playing - Java's
+	 * `SPDSettings.music(true)` only re-enables future playback, but leaving a freshly
+	 * unmuted game silent until the next region change reads as broken, so this replays.
+	 * Deliberate improvement, recorded in `PORT_COVERAGE.md`. */
+	private lastMusic: { tracks: string[]; fade: number } | null = null;
+
+	isMusicMuted(): boolean {
+		return this.musicOff;
+	}
+
+	/**
+	 * `SPDSettings.music(value)`: `Music.INSTANCE.enable(value)` stops the music when
+	 * muted and persists the flag; unmuting additionally replays the last request (see
+	 * `lastMusic`), where Java waits for the next scene to start something.
+	 */
+	setMusicMuted(muted: boolean): void {
+		persistMusicMuted(muted);
+		this.musicOff = muted;
+		if (muted) {
+			this.currentTrack = null;
+			this.music.stop(1);
+		} else if (this.lastMusic) {
+			this.currentTrack = null;
+			this.playMusicTracks(this.lastMusic.tracks, this.lastMusic.fade);
+		}
+	}
+
+	isSfxMuted(): boolean {
+		return this.sfxOff;
+	}
+
+	/** `SPDSettings.soundFx(value)`: persists the flag and gates `cue()`; muting also
+	 * silences already-playing one-shots via each cached pool's `stopAll()`. */
+	setSfxMuted(muted: boolean): void {
+		persistSfxMuted(muted);
+		this.sfxOff = muted;
+		if (muted) this.cues.forEach((sound) => sound.stopAll());
+	}
 
 	/** Browser autoplay rules defer audible playback until this runs in a player gesture. */
 	startTitle(): void {
@@ -41,8 +82,11 @@ export class SpdAudio {
 	 * first - the vault was silent even with the prize still on the floor. */
 	vaultMusic(amuletObtained: boolean): void {
 		if (amuletObtained) {
+			//Java's `Music.end()`: silence that unmuting must not resurrect, so the
+			//standing replay request goes with it.
+			this.lastMusic = null;
 			this.currentTrack = null;
-			this.music.stop(1);
+			if (!this.musicOff) this.music.stop(1);
 		} else {
 			this.playMusic('theme_finale.ogg', 1);
 		}
@@ -64,6 +108,7 @@ export class SpdAudio {
 	 * pan to set, the same call `Positional.audioPan` made.
 	 */
 	cue(name: string, volume = 0.7, pitch = 1): void {
+		if (this.sfxOff) return;
 		let sound = this.cues.get(name);
 		if (!sound) {
 			sound = new Audio.Sound(asset('sounds', `${name}.mp3`), { poolSize: name === 'step' ? 6 : 4, volume });
@@ -77,17 +122,19 @@ export class SpdAudio {
 	}
 
 	private playMusic(track: string, fade: number): void {
+		this.lastMusic = { tracks: [track], fade };
 		if (this.currentTrack === track) return;
 		this.currentTrack = track;
-		this.music.play(asset('music', track), fade);
+		if (!this.musicOff) this.music.play(asset('music', track), fade);
 	}
 
 	/** `Music.playTracks` mirrors SPD's non-looping `playTracks`: normal regions alternate
 	 * their two ambient tracks rather than looping the shorter first one indefinitely. */
 	private playMusicTracks(tracks: readonly string[], fade: number): void {
+		this.lastMusic = { tracks: [...tracks], fade };
 		const key = tracks.join('|');
 		if (this.currentTrack === key) return;
 		this.currentTrack = key;
-		this.music.playTracks(tracks.map(track => asset('music', track)), fade);
+		if (!this.musicOff) this.music.playTracks(tracks.map(track => asset('music', track)), fade);
 	}
 }

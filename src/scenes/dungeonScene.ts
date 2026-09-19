@@ -135,6 +135,7 @@ import { BadgeBannerLayer } from '../ui/badgeBanner';
 import { SpdToolbar } from '../ui/toolbar';
 import { StatusPane } from '../ui/statusPane';
 import { SpdAudio } from '../audio';
+import { onZoomChanged, setZoomOffset, zoomForOffset, zoomOffset } from '../settings';
 import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, empoweringScrollsCharges, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalDefenseShield, lethalHasteDuration, LETHAL_HASTE_COOLDOWN, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, shieldingDewGain, sharedUpgradeArmor, soulSiphonCharge, twinUpgradeArmor, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
 import pixelFontUrl from '../assets/pixel_font.ttf';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth, SpdRandom } from '../spdRng';
@@ -2040,7 +2041,10 @@ export class DungeonScene extends Scene2D {
 		dotCtx.fillRect(0, 0, 4, 4);
 		this.dotTexture = Texture.from(canvas);
 
-		this.camera = new Camera({ zoom: 3, deadzone: 0.25 });
+		this.camera = new Camera({ zoom: zoomForOffset(zoomOffset()), deadzone: 0.25 });
+		//`SPDSettings.zoom()`: a settings change mid-run re-zooms the live camera, so the
+		//dungeon does not need a scene rebuild to honour it.
+		this.onDestroy.add(onZoomChanged(() => this.applyZoom()));
 		this.stage.addChild(this.camera.world);
 		this.itemsSheet = SpriteSheet.fromTexture(runState.sprites.items, 16, 16);
 
@@ -7452,6 +7456,13 @@ export class DungeonScene extends Scene2D {
 			if (action === 'cancel' || action === 'confirm') this.closeJournal();
 			return true;
 		}
+		//Java's `SPDAction.ZOOM_IN`/`ZOOM_OUT` (`PLUS`/`EQUALS`/`MINUS`): a free camera
+		//action that spends no turn, so it sits ahead of the hero-state gate - zooming
+		//while dead or mid-animation is harmless, exactly as Java's pinch zoom is.
+		if (action === 'zoomIn' || action === 'zoomOut') {
+			setZoomOffset(zoomOffset() + (action === 'zoomIn' ? 1 : -1));
+			return true;
+		}
 		if (this.gameOver || !this.awaitingInput) {
 			//Java's `GameScene.onBackPressed` is independent of the hero's state, and a dead hero is
 			//exactly who `WndGame`'s Start/Rankings entries exist for. A turn still in flight is the
@@ -7527,6 +7538,16 @@ export class DungeonScene extends Scene2D {
 	 * nothing) - the port's own stand-ins for those (`ui/journalWindow.ts`, the aim, the inventory
 	 * and talent-choice overlays, the transition curtain) are all covered here or above.
 	 */
+	/**
+	 * Applies the persisted zoom offset to the live camera - Java's
+	 * `Camera.main.zoom(gate(minZoom, defaultZoom + SPDSettings.zoom(), maxZoom))` at
+	 * `GameScene.create()`, except this also runs on every settings change (see the
+	 * `onZoomChanged` subscription at camera creation) rather than only at create time.
+	 */
+	private applyZoom(): void {
+		this.camera.zoom = zoomForOffset(zoomOffset());
+	}
+
 	private menuCanOpen(): boolean {
 		if (this.interlevel) return false;
 		if (this.gameWindows.blocksWorld) return false;

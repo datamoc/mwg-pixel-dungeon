@@ -691,6 +691,26 @@ below to close the gap was judged not worth the churn against those existing ref
       `PORT_COVERAGE.md`), so the transactional audit is green again.
       The reverse gap exists too: `levels.hallslevel.exit_desc` (addressed by the section 3 city
       visuals) exists at `v3.3.8` but not in this catalogue, so the port answers with the City exit desc there until the regen lands. See `PORT_COVERAGE.md`. **Complexity: M.**
+- [x] Port the audio-settings mutes. **Closed 2026-09-19 (added with the item itself - no
+  roadmap line covered `WndSettings`' audio tab):** the settings window grew Java's real
+  `AudioTab` title plus its two mute rows (`music_mute`/`sfx_mute`, SPD's own strings in
+  every locale, `Window.TITLE_COLOR` headers like Java's `title.hardlight(TITLE_COLOR)`),
+  backed by `SPDSettings`' own `music`/`soundfx` persisted flags (`src/settings.ts`) gating
+  the single `SpdAudio` choke point every cue and track already funnels through. Muting
+  music stops it at once; unmuting replays the standing request (a deliberate improvement -
+  Java waits for the next scene to start something). **Stated simplifications**: the 0-10
+  volume sliders, brightness, and the remaining `WndSettings` tabs stay unported. See
+  `PORT_COVERAGE.md`'s audio row. **Complexity: S.**
+- [x] Manage the dungeon camera zoom. **Closed 2026-09-19 (added with the item itself - no
+  roadmap line covered `SPDSettings.zoom()`):** the persisted integer offset (Java's own
+  `zoom` key, default 0) drives the dungeon camera as `3 + offset`, adjustable with Java's
+  own `+`/`-` keys (numpad twins included) and a port-original `- level +` row under the
+  settings window's real `DisplayTab` title - Java has no settings row for zoom (desktop
+  zooms with keys, mobile with pinch), so that row's chrome is new while the preference
+  underneath is ported. A mid-run change re-zooms the live camera through a subscriber,
+  no scene rebuild. **Stated simplifications**: the offset gate is a fixed `[-2, +3]`
+  (Java's is screen-derived around a density-derived default), and pinch-to-zoom stays
+  unported. See `PORT_COVERAGE.md`'s camera row. **Complexity: S.**
 
 ## 9. Build the Java-vs-TypeScript parity harness
 

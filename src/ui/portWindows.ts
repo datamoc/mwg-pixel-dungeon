@@ -5,7 +5,8 @@ import { runState, LANGUAGE_KEY, APP_VERSION } from '../runState';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
 import { CHALLENGES, challenges, challengeDescription, challengeLabel, toggleChallenge } from '../challenges';
 import { rankings } from '../rankings';
-import { applySpdDirection } from './spdTheme';
+import { applySpdDirection, SPD_TITLE_COLOR } from './spdTheme';
+import { isMusicMuted, isSfxMuted, setZoomOffset, zoomOffset } from '../settings';
 import { SpdButton as Button, menuScale } from './spdButton';
 import { SpdLabel as Label } from './spdLabel';
 import { titleIcon } from './titleIcons';
@@ -108,8 +109,11 @@ export function showChoiceWindow(
 }
 
 /**
- * Settings: the port's real settings are the language and the challenge set (`WndSettings`' music,
- * sound and brightness have no seam here, and its other tabs are unported).
+ * Settings: language, challenges, audio mutes and zoom - `WndSettings`' own four concerns
+ * minus the ones with no seam here (the 0-10 volume sliders, brightness, and its other
+ * tabs are unported; see `PORT_COVERAGE.md`). Section headers use `Window.TITLE_COLOR`
+ * like Java's `AudioTab` title (`title.hardlight(TITLE_COLOR)`), and the mute rows reuse
+ * the challenges window's own `✓ `-prefix convention rather than Java's checkboxes.
  *
  * A language change rebuilds the whole interface, which the title screen does by switching to
  * itself; `onLanguageChanged` is what a caller wants to happen instead - the title passes its own
@@ -118,9 +122,19 @@ export function showChoiceWindow(
  */
 export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () => void): void {
 	const width = windowWidth(180);
-	const window = new Window({ width, height: 136, title: t('port.window.settings.title'), anchor: 'center', blocker: true });
+	const window = new Window({ width, height: 100, title: t('port.window.settings.title'), anchor: 'center', blocker: true });
+	//Size the frame to what is actually inside it (the rankings window's pattern) - the old
+	//fixed `136` only ever fit the three rows this window started with.
+	const chrome = window.height - window.contentHeight;
+	const reopen = (): void => {
+		window.close();
+		showSettingsWindow(windows, onLanguageChanged);
+	};
+	let y = 0;
 	const versionLabel = new Label({ text: t('port.window.settings.version', { version: APP_VERSION }), size: 7, color: theme().color.textDim });
+	versionLabel.position.set(0, y);
 	window.content.addChild(versionLabel);
+	y += versionLabel.height + 8;
 	const languageButton = new Button({
 		width: window.contentWidth,
 		height: 22,
@@ -140,8 +154,9 @@ export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () =
 			onLanguageChanged();
 		},
 	});
-	languageButton.position.set(0, versionLabel.height + 8);
+	languageButton.position.set(0, y);
 	window.content.addChild(languageButton);
+	y += 26;
 	const challengeButton = new Button({
 		width: window.contentWidth,
 		height: 22,
@@ -151,11 +166,85 @@ export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () =
 			showChallengesWindow(windows);
 		},
 	});
-	challengeButton.position.set(0, languageButton.y + 26);
+	challengeButton.position.set(0, y);
 	window.content.addChild(challengeButton);
+	y += 26;
+	//`WndSettings$AudioTab`: its title plus the two mute rows (Java pairs each with a
+	//0-10 volume slider, which stays unported - muting is the only persisted control).
+	const audioTitle = new Label({ text: t('windows.wndsettings$audiotab.title'), size: 7, color: SPD_TITLE_COLOR });
+	audioTitle.position.set(0, y);
+	window.content.addChild(audioTitle);
+	y += audioTitle.height + 4;
+	const musicButton = new Button({
+		width: window.contentWidth,
+		height: 22,
+		text: `${runState.audio.isMusicMuted() ? '✓ ' : ''}${t('windows.wndsettings$audiotab.music_mute')}`,
+		onClick: () => {
+			runState.audio.setMusicMuted(!runState.audio.isMusicMuted());
+			reopen();
+		},
+	});
+	musicButton.position.set(0, y);
+	window.content.addChild(musicButton);
+	y += 26;
+	const sfxButton = new Button({
+		width: window.contentWidth,
+		height: 22,
+		text: `${runState.audio.isSfxMuted() ? '✓ ' : ''}${t('windows.wndsettings$audiotab.sfx_mute')}`,
+		onClick: () => {
+			runState.audio.setSfxMuted(!runState.audio.isSfxMuted());
+			reopen();
+		},
+	});
+	sfxButton.position.set(0, y);
+	window.content.addChild(sfxButton);
+	y += 26;
+	//Zoom management: Java has no settings row for this (desktop zooms with `+`/`-`,
+	//mobile with pinch, both writing the same `SPDSettings.zoom()` offset this persists),
+	//so the `- level +` row is port-original chrome over the ported preference.
+	const displayTitle = new Label({ text: t('windows.wndsettings$displaytab.title'), size: 7, color: SPD_TITLE_COLOR });
+	displayTitle.position.set(0, y);
+	window.content.addChild(displayTitle);
+	y += displayTitle.height + 4;
+	const zoomStep = 40;
+	const zoomOut = new Button({
+		width: zoomStep,
+		height: 22,
+		text: '-',
+		onClick: () => {
+			setZoomOffset(zoomOffset() - 1);
+			reopen();
+		},
+	});
+	zoomOut.position.set(0, y);
+	window.content.addChild(zoomOut);
+	const zoomIn = new Button({
+		width: zoomStep,
+		height: 22,
+		text: '+',
+		onClick: () => {
+			setZoomOffset(zoomOffset() + 1);
+			reopen();
+		},
+	});
+	zoomIn.position.set(window.contentWidth - zoomStep, y);
+	window.content.addChild(zoomIn);
+	const offset = zoomOffset();
+	const zoomLevel = new Label({
+		text: offset === 0 ? '0' : `${offset > 0 ? '+' : '-'}${Math.abs(offset)}`,
+		size: 8,
+		wrapWidth: window.contentWidth - zoomStep * 2 - 8,
+		align: 'center',
+		color: theme().color.text,
+	});
+	zoomLevel.position.set(zoomStep + 4, y + 11 - zoomLevel.height / 2);
+	window.content.addChild(zoomLevel);
+	y += 26;
 	const close = new Button({ width: window.contentWidth, height: 18, text: t('port.window.close'), onClick: () => window.close() });
-	close.position.set(0, challengeButton.y + 30);
+	close.position.set(0, y);
 	window.content.addChild(close);
+	y += 18;
+	window.resize(width, chrome + y + 8);
 	windows.push(window);
 }
 
