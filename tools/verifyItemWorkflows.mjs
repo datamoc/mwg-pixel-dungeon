@@ -69,6 +69,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	compile(join(root, 'src/items/talisman.ts'), 'items/talisman.js');
 compile(join(root, 'src/items/chains.ts'), 'items/chains.js');
 compile(join(root, 'src/items/horn.ts'), 'items/horn.js');
+compile(join(root, 'src/items/armband.ts'), 'items/armband.js');
 compile(join(root, 'src/simulation/hunger.ts'), 'simulation/hunger.js');
 compile(join(root, 'src/mechanics/cone.ts'), 'mechanics/cone.js');
 //`talisman.js` reads `WALL` off `dungeonConstants.js`, which the suite otherwise only compiles
@@ -1957,6 +1958,83 @@ function hornDrive(overrides = {}, pickScript = [0]) {
 	assert.ok(!immune.log.some((l) => l.startsWith('picker:')), 'AntiMagic opens nothing');
 	const cursed = hornDrive({ horn: { charge: 10, cursed: true } });
 	assert.ok(cursed.log[0].endsWith('horn-eat,horn-snack'), `cursed loses only store, got ${cursed.log[0]}`);
+// The moved armband flow (`ArmbandFlowContext`, the file-size refactor's twelfth extraction):
+// driven headlessly with a scripted aimer and stub loot tables.
+const { useArmbandFlow, armbandLootChance, armbandLootPick } = require('./items/armband.js');
+function armbandDrive(overrides = {}, confirmCell = { x: 1, y: 0 }) {
+	const log = [];
+	const spawns = [];
+	const buffs = [];
+	const armband = { level: 0, charge: 10, exp: 0, ...overrides.armband };
+	const victim = overrides.victim !== undefined ? overrides.victim : { x: 1, y: 0, kind: 'rat', seesHero: false };
+	const drops = { ...overrides.drops };
+	const ctx = {
+		armbandOf: () => armband,
+		beginAim: (opts) => { log.push(`aim:${opts.range}`); ctx.aimOpts = opts; },
+		creatureAt: (x, y) => (victim && x === victim.x && y === victim.y ? victim : null),
+		lootMultiplier: () => 1,
+		heroLevel: () => 1,
+		mobLoot: (kind) => [{ chance: 2, kind: 'gold' }].filter(() => kind === victim?.kind),
+		lootDecay: () => undefined,
+		monsterMaxLvl: () => 10,
+		limitedDropCount: () => 0,
+		bumpLimitedDrop: (kind) => { drops[kind] = (drops[kind] ?? 0) + 1; },
+		spawnLoot: (kind, x, y, item) => { spawns.push({ kind, x, y, item }); },
+		groundKindName: (kind) => kind,
+		addCreatureBuff: (creature, id, duration) => { buffs.push([id, duration]); },
+		dispelInvisibility: () => { log.push('uncloak'); },
+		say: (line, level) => { log.push(`say:${level}:${line}`); },
+		t: (key) => key,
+		...overrides.ctx,
+	};
+	useArmbandFlow(ctx);
+	if (ctx.aimOpts) ctx.aimOpts.onConfirm(confirmCell);
+	return { ctx, log, spawns, buffs, armband, victim, drops };
+}
+// A surprised steal at double charge chance always lands: the drop spawns, the victim is
+// marked and dazed, the charge pays, and 3+2 exp banks short of the 10-exp level.
+{
+	const d = armbandDrive();
+	assert.equal(d.log[0], 'aim:1', `the aimer opens at melee range, got ${d.log[0]}`);
+	assert.deepEqual(d.spawns, [{ kind: 'gold', x: 1, y: 0, item: undefined }], 'the loot spawns under the victim');
+	assert.equal(d.victim.armbandStolen, true, 'the victim is marked stolen');
+	assert.deepEqual(d.buffs, [['daze', 5], ['cripple', 5]], 'surprise stretches the debuffs to 5');
+	assert.equal(d.armband.charge, 9, 'the steal costs one charge');
+	assert.equal(d.armband.exp, 5, '3 base plus the 2 surprise bonus');
+	assert.equal(d.armband.level ?? 0, 0, '5 exp stays below the 10-exp level');
+	assert.ok(d.log.some((l) => l.includes('stole_item')), 'the theft is announced');
+}
+// A robbed victim, an overleveled hero, and an empty cell all refuse the loot - but the
+// mark, the debuffs and the charge still apply, exactly like the success path.
+{
+	const robbed = armbandDrive({ victim: { x: 1, y: 0, kind: 'rat', seesHero: false, armbandStolen: true } });
+	assert.ok(robbed.log.some((l) => l.includes('no_steal')), 'the robbed yield no loot');
+	assert.equal(robbed.armband.charge, 9, '...yet the attempt still costs a charge');
+	assert.deepEqual(robbed.buffs, [['daze', 5], ['cripple', 5]], '...and still dazes');
+	const high = armbandDrive({ ctx: { heroLevel: () => 99 } });
+	assert.ok(high.log.some((l) => l.includes('no_steal')), 'the overleveled find nothing worth taking');
+	const empty = armbandDrive({ victim: null }, { x: 1, y: 0 });
+	assert.ok(empty.log.some((l) => l.includes('no_target')), 'thin air refuses');
+}
+// Gates: cursed and uncharged never aim. The loot tables pick their own shapes.
+{
+	const cursed = armbandDrive({ armband: { charge: 10, cursed: true } });
+	assert.ok(cursed.log.some((l) => l.includes('cursed')), 'cursed reports');
+	const flat = armbandDrive({ armband: { charge: 0 } });
+	assert.ok(flat.log.some((l) => l.includes('no_charge')), 'uncharged reports');
+	const shape = armbandDrive();
+	assert.equal(armbandLootChance(shape.ctx, 'warlock'), 0.5, 'warlocks steal at half');
+	assert.equal(armbandLootChance(shape.ctx, 'rat'), 2, 'the stub table passes through');
+	assert.equal(armbandLootChance(shape.ctx, 'ghost'), 0, 'unknown kinds steal nothing');
+	assert.equal(armbandLootChance(shape.ctx, undefined), 0, 'kindless steals nothing');
+	const warlockDrop = armbandLootPick(shape.ctx, 'warlock');
+	assert.equal(warlockDrop?.kind, 'potion', 'warlocks brew potions');
+	assert.ok(warlockDrop?.item && !warlockDrop.item.identified, 'unidentified, as Java leaves them');
+	const scorpioDrop = armbandLootPick(shape.ctx, 'scorpio');
+	assert.equal(scorpioDrop?.kind, 'potion');
+	const succubusDrop = armbandLootPick(shape.ctx, 'succubus');
+	assert.equal(succubusDrop?.kind, 'scroll', 'succubi carry scrolls');
+}
 }
 }
 }

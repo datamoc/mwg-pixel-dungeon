@@ -1178,6 +1178,19 @@ one.
       authored 90 a charge with the meal firing over 3 turns, one-charge snack, a meat pie
       banking four levels with the bonus, empty-capped/AntiMagic refusals, cursed losing only
       the store row) - which needed one new harness compile line (`simulation/hunger.ts`).
+      **Twelfth extraction 2026-09-19**: the Master Thieves' Armband's steal flow (`useArmband`'s
+      melee aimer, the target gate, the loot-chance and loot-pick tables, the steal confirm)
+      moved to the new `items/armband.ts` behind an `ArmbandFlowContext` (armband lookup, aimer,
+      creature lookup, wealth multiplier, hero level, loot tables/decay/max-levels as data
+      callbacks - the catalogue is too heavy for the item harness - limited-drop counters,
+      loot spawn, kind names, creature buffs, invisibility, say, `t`); the scene keeps the
+      one-line `useArmband` adapter the router calls, `armbandItem` for the builder, plus the
+      builder. Net −77 lines in `dungeonScene.ts` (22,935 after). Suites: `tsc` clean after
+      keying the builder's catalogue lookups by `MonsterId`, item suite green with a new
+      headless drive of the moved flow (a surprised steal lands its stub drop with 5-turn
+      debuffs, 9 charge left and 3+2 exp short of the 10-exp level; robbed/overleveled/empty
+      refusals still mark, daze and pay; cursed/uncharged gates; the warlock/scorpio/succubus
+      pick shapes).
       **Complexity: L.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`

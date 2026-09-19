@@ -230,6 +230,7 @@ import { useCloak as useArtifactCloak, useHourglass as useArtifactHourglass, use
 import { sandalsNaturalismLevel, applySandalsNaturalismCharge, useSandalsFlow, type SandalsFlowContext, type SandalsItem } from '../items/sandals';
 import { useChainsFlow, type ChainsFlowContext } from '../items/chains';
 import { hornChargeCap, useHornFlow, type HornFlowContext } from '../items/horn';
+import { useArmbandFlow, type ArmbandFlowContext } from '../items/armband';
 import { applyTalismanPerTurnCharge, useTalismanFlow, checkTalismanAwarenessFlow, type TalismanFlowContext, type TalismanItem } from '../items/talisman';
 import { roseSummonGate, roseGhostMaxHp, roseGhostAttackSkill, roseGhostDefenseSkill, roseGhostDamageRange, applyRoseRecharge, type RoseItem } from '../items/rose';
 import { rosePetalsNeeded, rosePetalDropCap, rosePetalPickup, roseChargeCap, roseLevelCap } from '../items/rose';
@@ -18549,16 +18550,33 @@ private eyeBeamTurn(monster: Creature): boolean {
 		}
 
 		private useArmband(instanceId?: string): void {
-			const armband = this.armbandItem(instanceId);
-			if (!armband) return;
-			if (armband.cursed) { this.say(t('items.artifacts.masterthievesarmband.cursed'), 'negative'); return; }
-			if ((armband.charge ?? 0) < 1) { this.say(t('items.artifacts.masterthievesarmband.no_charge'), 'negative'); return; }
-			this.beginAiming({
-				range: 1,
-				validate: (cell) => this.armbandStealTarget(cell) !== null,
-				onConfirm: (cell) => this.confirmArmbandSteal(cell, instanceId),
-			});
-			this.say(t('items.artifacts.masterthievesarmband.prompt'), 'positive');
+			useArmbandFlow(this.armbandFlowContext(), instanceId);
+		}
+
+		/**
+		 * The Master Thieves' Armband's steal flow lives in `items/armband.ts` behind
+		 * `ArmbandFlowContext` - the file-size refactor's twelfth extraction, behavior-identical.
+		 */
+		private armbandFlowContext(): ArmbandFlowContext {
+			const scene = this;
+			return {
+				armbandOf: (instanceId?: string) => scene.armbandItem(instanceId),
+				beginAim: (opts) => scene.beginAiming(opts),
+				creatureAt: (x, y) => scene.creatureAt(x, y),
+				lootMultiplier: () => ringWealthMultiplier(scene.effectiveRing(), scene.hero.magicImmune) + scene.bountyHunterLootBonus(),
+				heroLevel: () => scene.progression.level,
+				mobLoot: (kind) => MOB_LOOT[kind as MonsterId] ?? [],
+				lootDecay: (kind) => LIMITED_DROP_DECAY[kind as MonsterId],
+				monsterMaxLvl: (kind) => MONSTERS[kind as MonsterId]?.maxLvl ?? 0,
+				limitedDropCount: (kind) => scene.limitedDrops[kind as MonsterId] ?? 0,
+				bumpLimitedDrop: (kind) => { scene.limitedDrops[kind as MonsterId] = (scene.limitedDrops[kind as MonsterId] ?? 0) + 1; },
+				spawnLoot: (kind, x, y, item) => { scene.spawnGroundItem(kind, x, y, item); },
+				groundKindName: (kind) => t(GROUND_ITEM_KEYS[kind]),
+				addCreatureBuff: (creature, id, duration) => { addBuff(creature as Creature, id as BuffId, duration); },
+				dispelInvisibility: () => { delete scene.hero.buffs['invisibility']; },
+				say: scene.say.bind(scene),
+				t,
+			};
 		}
 
 		private useSandals(instanceId?: string): void {
@@ -18903,101 +18921,6 @@ private eyeBeamTurn(monster: Creature): boolean {
 		private armbandItem(instanceId?: string) {
 			return this.bag.find('armband', instanceId) as (typeof this.bag.items[number]
 				& { level?: number; charge?: number; partialCharge?: number; exp?: number; cursed?: boolean }) | undefined;
-		}
-
-		private armbandStealTarget(cell: Step): Creature | null {
-			const creature = this.creatureAt(cell.x, cell.y);
-			if (!creature || creature.isHero || creature.isNPC || creature.isAlly) return null;
-			return creature;
-		}
-
-		private armbandLootChance(creature: Creature): number {
-			if (!creature.kind) return 0;
-			const multiplier = ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune) + this.bountyHunterLootBonus();
-			if (creature.kind === 'warlock') return 0.5 * multiplier;
-			if (creature.kind === 'scorpio') return 0.5 * multiplier;
-			if (creature.kind === 'succubus') return 0.33 * multiplier;
-			const entry = (MOB_LOOT[creature.kind] ?? [])[0];
-			if (!entry) return 0;
-			const decay = LIMITED_DROP_DECAY[creature.kind as MonsterId];
-			const chance = decay ? entry.chance * decay(this.limitedDrops[creature.kind as MonsterId] ?? 0) : entry.chance;
-			return chance * multiplier;
-		}
-
-		private armbandLootPick(creature: Creature): { kind: GroundItemKind; item?: GroundItem['item'] } | null {
-			if (!creature.kind) return null;
-			if (creature.kind === 'warlock') {
-				const warlockHp = this.limitedDrops.warlock ?? 0;
-				if (Random.int(3) === 0 && Random.int(8) > warlockHp) {
-					this.limitedDrops.warlock = warlockHp + 1;
-					return { kind: 'potion', item: { id: 'potionHealing', quantity: 1, identified: false } };
-				}
-				const nonHealing = ['potionStrength', 'potionFlame', 'potionMindVision', 'potionInvis', 'potionPurity', 'potionExperience', 'potionLevitation'] as const;
-				return { kind: 'potion', item: { id: Random.element(nonHealing)!, quantity: 1, identified: false } };
-			}
-			if (creature.kind === 'scorpio') {
-				const eligible = ['potionFlame', 'potionMindVision', 'potionInvis', 'potionPurity', 'potionExperience', 'potionLevitation'] as const;
-				return { kind: 'potion', item: { id: Random.element(eligible)!, quantity: 1, identified: false } };
-			}
-			if (creature.kind === 'succubus') {
-				const eligible = ['scrollCleanse', 'scrollMirror', 'scrollRecharging', 'scrollTeleportation', 'scrollLullaby', 'scrollMapping', 'scrollRage', 'scrollRetribution', 'scrollTerror', 'scrollTransmutation'] as const;
-				return { kind: 'scroll', item: { id: Random.element(eligible)!, quantity: 1, identified: false } };
-			}
-			const entry = (MOB_LOOT[creature.kind] ?? [])[0];
-			if (!entry) return null;
-			const decay = LIMITED_DROP_DECAY[creature.kind as MonsterId];
-			if (decay) this.limitedDrops[creature.kind as MonsterId] = (this.limitedDrops[creature.kind as MonsterId] ?? 0) + 1;
-			return { kind: entry.kind };
-		}
-
-		private confirmArmbandSteal(target: Step, instanceId?: string): void {
-			const armband = this.armbandItem(instanceId);
-			if (!armband) return;
-			const creature = this.armbandStealTarget(target);
-			if (!creature) { this.say(t('items.artifacts.masterthievesarmband.no_target'), 'negative'); return; }
-			const level = armband.level ?? 0;
-			//`Mob.surprisedBy()`'s own condition, already established at this exact combat call
-			//site's own `surprise` local (see `attack()`, a few thousand lines up in this file).
-			const surprised = creature.sleeping === true || (!creature.isHero && !creature.seesHero);
-			let lootMultiplier = mwlItemEffectValue('armband', 'lootMultiplierBase') + mwlItemEffectValue('armband', 'lootMultiplierPerLevel') * level;
-			let debuffDuration = mwlItemEffectValue('armband', 'debuffDurationBase') + Math.floor(level / 2);
-			let exp = mwlItemEffectValue('armband', 'expPerUse');
-			if (this.hero.buffs['invisibility']) delete this.hero.buffs['invisibility'];
-			if (surprised) {
-				lootMultiplier += mwlItemEffectValue('armband', 'surpriseLootBonus');
-				debuffDuration += mwlItemEffectValue('armband', 'surpriseDebuffBonus');
-				exp += mwlItemEffectValue('armband', 'surpriseExpBonus');
-			}
-			const maxLvl = creature.kind ? (MONSTERS[creature.kind]?.maxLvl ?? 0) : 0;
-			const alreadyStolen = creature.armbandStolen === true;
-			const lootChance = alreadyStolen || this.progression.level > maxLvl + mwlItemEffectValue('armband', 'maxLvlLootCutoff')
-				? 0
-				: this.armbandLootChance(creature) * lootMultiplier;
-			if (lootChance <= 0) {
-				this.say(t('items.artifacts.masterthievesarmband.no_steal'), 'negative');
-			} else if (Random.chance(lootChance)) {
-				const drop = this.armbandLootPick(creature);
-				if (drop) {
-					this.spawnGroundItem(drop.kind, creature.x, creature.y, drop.item);
-					this.say(t('items.artifacts.masterthievesarmband.stole_item', { 0: t(GROUND_ITEM_KEYS[drop.kind]) }), 'positive');
-				} else {
-					this.say(t('items.artifacts.masterthievesarmband.failed_steal'), 'negative');
-				}
-			} else {
-				this.say(t('items.artifacts.masterthievesarmband.failed_steal'), 'negative');
-			}
-			creature.armbandStolen = true;
-			addBuff(creature, 'daze', debuffDuration);
-			addBuff(creature, 'cripple', debuffDuration);
-			armband.charge = Math.max(0, (armband.charge ?? 0) - 1);
-			const levelCap = mwlItemEffectValue('armband', 'levelCap');
-			armband.exp = (armband.exp ?? 0) + exp;
-			while ((armband.level ?? 0) < levelCap
-				&& (armband.exp ?? 0) >= mwlItemEffectValue('armband', 'expToLevelBase') + Math.round(mwlItemEffectValue('armband', 'expToLevelPerLevel') * (armband.level ?? 0))) {
-				armband.exp = (armband.exp ?? 0) - (mwlItemEffectValue('armband', 'expToLevelBase') + Math.round(mwlItemEffectValue('armband', 'expToLevelPerLevel') * (armband.level ?? 0)));
-				armband.level = (armband.level ?? 0) + 1;
-				this.say(t('items.artifacts.masterthievesarmband.level_up'), 'positive');
-			}
 		}
 
 		private beaconArtifactItem(instanceId?: string) {
