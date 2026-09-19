@@ -51,7 +51,8 @@ if (!spdRoot || spdRoot.startsWith('--')) {
 const messages = join(spdRoot, 'core', 'src', 'main', 'assets', 'messages');
 /**
  * `--spd-root` is the user's live checkout on whatever branch it happens to sit on - which
- * carries real, already-ported post-`v3.3.8` content (`items.potions.alchemicalcatalyst.name`,
+ * is *older* than `v3.3.8` (pre-`v2.5.3` bomb family) and carries pre-`v3.3.8` keys `v3.3.8`
+ * dropped or renamed (`items.potions.alchemicalcatalyst.name`,
  * `items.bombs.flashbang.name`/`shockbomb.name`, `items.spells.aquablast.name`) but has
  * *dropped* four locales `v3.3.8` still ships (`be`/`eo`/`sv`/`zh-hant` - see
  * `src/i18n/languages.ts`). Those four are read from a second, optional root instead:

@@ -2,6 +2,7 @@ import { Random, Roguelike } from 'mwg';
 import { absorbShield, addBuff, BUFF_DURATION, type Creature, type GroundItem, type Step } from '../combat';
 import { isUndeadOrDemonic } from '../monsters';
 import { MWL_BOMB_RULES, mwlItemEffectValue } from '../mwlContent';
+import { smokeBombSeedPlan } from '../simulation/smoke';
 import { SPECIALTY_BOMB_IDS } from './itemKinds';
 
 export interface BombEffectsContext {
@@ -10,7 +11,7 @@ export interface BombEffectsContext {
 	readonly groundItems: GroundItem[];
 	readonly depth: number;
 	readonly progressionLevel: number;
-	readonly level: { inside(x: number, y: number): boolean; passable(x: number, y: number): boolean };
+	readonly level: { width: number; height: number; inside(x: number, y: number): boolean; passable(x: number, y: number): boolean };
 	readonly isFlammableTerrain: (x: number, y: number) => boolean;
 	readonly burnFlammableTerrain: (x: number, y: number) => void;
 	readonly creatureAt: (x: number, y: number) => Creature | null;
@@ -19,6 +20,7 @@ export interface BombEffectsContext {
 	readonly explodeGroundItem: (ground: GroundItem, chained: Set<string>) => boolean;
 	readonly spawnSheep: (at: Step) => void;
 	readonly seedFire: (x: number, y: number, duration: number) => void;
+	readonly seedSmoke: (x: number, y: number, volume: number) => void;
 	readonly plantBloomingGrass: (x: number, y: number) => void;
 	readonly cureHeroBuffs: () => void;
 	readonly noHealing: boolean;
@@ -141,7 +143,16 @@ export function detonateBomb(ground: GroundItem, chained: Set<string>, context: 
 		for (let y = at.y - radius; y <= at.y + radius; y++) for (let x = at.x - radius; x <= at.x + radius; x++) if (context.level.inside(x, y) && context.level.passable(x, y) && Roguelike.chebyshevDistance(at, { x, y }) <= radius) context.seedFire(x, y, duration);
 	}
 	else if (payload === 'flashbang') for (const target of affected) addBuff(target, 'daze');
-	else if (payload === 'shockBomb') for (const target of affected) addBuff(target, 'paralysis');
+	else if (payload === 'smokeBomb') {
+		//`SmokeBomb.explode()`'s smoke half: 40 per distance-2 flood cell, the unplaced
+		//share of the 1000-volume budget piled onto the center. The blast above is the
+		//shared `super.explode()`; the pre-v3.3.8 electric ShockBomb this id replaced
+		//(arcs + paralysis, no smoke at all) is gone with it - see `PORT_COVERAGE.md`.
+		const plan = smokeBombSeedPlan(context.level.width, context.level.height,
+			(x, y) => !context.level.inside(x, y) || !context.level.passable(x, y), at.x, at.y);
+		for (const seed of plan.seeds) context.seedSmoke(seed.x, seed.y, seed.volume);
+		if (plan.centerVolume > 0) context.seedSmoke(at.x, at.y, plan.centerVolume);
+	}
 	else if (payload === 'regrowthBomb') {
 		context.cureHeroBuffs();
 		if (context.noHealing) {

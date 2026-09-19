@@ -198,18 +198,22 @@
             energyCost: 1,
           },
           {
+            //`Bomb.EnhanceBomb` (tag `v3.3.8`): recharging brews a flashbang, cost 2.
+            //The port previously brewed it from invisibility, matching a pre-v3.3.8 tree.
             tag: "row",
             id: "enhanceBombFlashbang",
-            ingredients: "bomb:1,potionInvis:1",
+            ingredients: "bomb:1,scrollRecharging:1",
             result: "flashbang",
             resultQuantity: 1,
             energyCost: 2,
           },
           {
+            //`Bomb.EnhanceBomb` (tag `v3.3.8`): invisibility brews a smoke bomb, cost 2.
+            //This replaces the port's ShockBomb, a pre-v3.3.8 class Java dropped.
             tag: "row",
-            id: "enhanceBombShock",
-            ingredients: "bomb:1,scrollRecharging:1",
-            result: "shockBomb",
+            id: "enhanceBombSmoke",
+            ingredients: "bomb:1,potionInvis:1",
+            result: "smokeBomb",
             resultQuantity: 1,
             energyCost: 2,
           },
@@ -591,10 +595,10 @@
           },
           {
             tag: "row",
-            id: "manifest-enhanceBombShock",
-            recipe: "enhanceBombShock",
+            id: "manifest-enhanceBombSmoke",
+            recipe: "enhanceBombSmoke",
             group: "two",
-            javaRecipe: "Bomb.EnhanceBomb(ShockBomb)",
+            javaRecipe: "Bomb.EnhanceBomb(SmokeBomb)",
           },
           {
             tag: "row",

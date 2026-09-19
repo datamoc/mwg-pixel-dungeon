@@ -1722,6 +1722,11 @@ export class DungeonScene extends Scene2D {
 	private web!: Blob;
 	/** `Electricity` terrain (shocking/storm traps, tag `v3.3.8`) - seeded by the trap branches, applied by `environmentalBlobs`. */
 	private electricity!: Blob;
+	/** `SmokeScreen` (`actors/blobs/SmokeScreen.java`, tag `v3.3.8`) - seeded by smoke-bomb
+	 * blasts; it spreads like a base blob and its only game effect is sight-blocking
+	 * (`Level.updateFieldOfView`), applied by `pruneSmokeFromSight`. Like every gas here
+	 * it advances through the shared `evolveJavaBlob` diffusion. */
+	private smokeScreen!: Blob;
 	/** MagicalFireRoom.EternalFire (`levels/rooms/special/MagicalFireRoom.java`): a permanent,
 	 * non-spreading, non-decaying fire wall. Unlike every other blob here it is never
 	 * `spread()`ed - seeded once at 1 per wall cell (Java's own `Blob.seed(cell, 1,
@@ -2893,6 +2898,7 @@ export class DungeonScene extends Scene2D {
 			confusionGas: this.confusionGas.toJSON(),
 			web: this.web.toJSON(),
 			electricity: this.electricity.toJSON(),
+			smokeScreen: this.smokeScreen.toJSON(),
 			portedFeatures: this.portedFeatures.toJSON(),
 			ritualPos: this.ritualPos,
 			ritualCandles: [...this.ritualCandles],
@@ -2938,6 +2944,7 @@ export class DungeonScene extends Scene2D {
 		this.confusionGas = state.confusionGas ? Blob.fromJSON(state.confusionGas) : new Blob(this.level.width, this.level.height);
 		this.web = state.web ? Blob.fromJSON(state.web) : new Blob(this.level.width, this.level.height);
 		this.electricity = state.electricity ? Blob.fromJSON(state.electricity) : new Blob(this.level.width, this.level.height);
+		this.smokeScreen = state.smokeScreen ? Blob.fromJSON(state.smokeScreen) : new Blob(this.level.width, this.level.height);
 		this.manualPlants = new Map(state.manualPlants ?? []);
 		this.furrowedGrass = new Set(state.furrowedGrass ?? []);
 		this.fallingRocks = (state.fallingRocks ?? []).map((v) => ({ cells: v.cells.map((c) => ({ ...c })), turns: v.turns }));
@@ -3266,6 +3273,7 @@ export class DungeonScene extends Scene2D {
 		this.confusionGas = new Blob(this.level.width, this.level.height);
 		this.web = new Blob(this.level.width, this.level.height);
 		this.electricity = new Blob(this.level.width, this.level.height);
+		this.smokeScreen = new Blob(this.level.width, this.level.height);
 		this.eternalFire = new Blob(this.level.width, this.level.height);
 		this.ritualPos = -1;
 		this.ritualCandles = [false, false, false, false];
@@ -9545,13 +9553,15 @@ export class DungeonScene extends Scene2D {
 		//other `seesHero = true` sites in this file deliberately do not consult this buff.
 		monster.seesHero = monster.buffs['blindness'] === undefined
 			&& monsterFov.isVisible(this.hero.x, this.hero.y)
+			&& !this.smokeBlocksSight(monster.x, monster.y, this.hero.x, this.hero.y)
 			&& (monster.kind === 'sentry' || !this.hero.buffs['invisibility']);
 		//Mob.findEnemy(): a hostile mob may pursue a visible allied Char when the hero is not
 		//currently its enemy. The compact AI still has hero-shaped ranged overrides, so route
 		//this case through ordinary pathing/melee only; that is the documented reduction for
 		//special attacks against allies, while MirrorImage can now be reached and attacked.
 		const visibleAllyTarget = this.creatures
-			.filter((c) => c.isAlly && c.allyKind !== 'sheep' && c.hp > 0 && monsterFov.isVisible(c.x, c.y))
+			.filter((c) => c.isAlly && c.allyKind !== 'sheep' && c.hp > 0 && monsterFov.isVisible(c.x, c.y)
+				&& !this.smokeBlocksSight(monster.x, monster.y, c.x, c.y))
 			.sort((a, b) => Roguelike.chebyshevDistance(monster, a) - Roguelike.chebyshevDistance(monster, b))[0];
 		if (!monster.seesHero && visibleAllyTarget) {
 			if (Roguelike.chebyshevDistance(monster, visibleAllyTarget) === 1) this.attack(monster, visibleAllyTarget);
@@ -10943,7 +10953,8 @@ export class DungeonScene extends Scene2D {
 			for (const [dx, dy] of order) {
 				const cell = { x: this.hero.x + dx, y: this.hero.y + dy };
 				if (!this.level.inside(cell.x, cell.y) || !this.level.passable(cell.x, cell.y)
-					|| this.creatureAt(cell.x, cell.y) || !necroFov.isVisible(cell.x, cell.y)) continue;
+					|| this.creatureAt(cell.x, cell.y) || !necroFov.isVisible(cell.x, cell.y)
+					|| this.smokeBlocksSight(monster.x, monster.y, cell.x, cell.y)) continue;
 				const distance = Math.hypot(cell.x - monster.x, cell.y - monster.y);
 				if (distance < best) {
 					best = distance;
@@ -13505,6 +13516,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (!this.stairs) return;
 		const fov = new Roguelike.FieldOfView(this.level);
 		fov.update(this.hero.x, this.hero.y, this.viewRadius());
+		//The fist must land outside the hero's *smoke-aware* sight, like `refresh()`'s own.
+		this.pruneSmokeFromSight(fov, this.hero.x, this.hero.y);
 		for (let attempt = 0; attempt < 200; attempt++) {
 			const at = { x: Random.int(this.level.width), y: Random.int(this.level.height) };
 			if (!this.level.passable(at.x, at.y) || this.isChasmCell(at.x, at.y)) continue;
@@ -16421,9 +16434,39 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 	// -------------------------------------------------------------- drawing
 
+	/** `Level.updateFieldOfView`'s smoke clause (tag `v3.3.8`): a gaze is blocked when a
+	 * `SmokeScreen` cell (`cur > 0`) lies strictly between viewer and target - the smoky
+	 * endpoints themselves stay visible, the way shadowcasting keeps its blocking cells
+	 * lit. The ray is MWG's Bresenham `traceLine`, an approximation of Java's
+	 * `ShadowCaster` that only ever removes visibility, never adds it. Callers decide
+	 * WHO it applies to: Java blocks every char's sight except allies and the gnoll
+	 * geomancer ("allies and specific enemies can see through shrouding fog"). */
+	private smokeBlocksSight(ax: number, ay: number, bx: number, by: number): boolean {
+		if (this.smokeScreen.total() <= 0) return false;
+		for (const cell of Roguelike.traceLine({ x: ax, y: ay }, { x: bx, y: by })) {
+			if ((cell.x === ax && cell.y === ay) || (cell.x === bx && cell.y === by)) continue;
+			if (this.smokeScreen.volumeAt(cell.x, cell.y) > 0) return true;
+		}
+		return false;
+	}
+
+	/** Drops the smoke-hidden cells from a computed sight set - the hero's merged sight
+	 * (own FOV plus the hawk-shared cells; Java has no sharing, so the merged set is
+	 * pruned as one) and the fist-teleport search's own. */
+	private pruneSmokeFromSight(fov: Roguelike.FieldOfView, hx: number, hy: number): void {
+		if (this.smokeScreen.total() <= 0) return;
+		for (const index of [...fov.visible]) {
+			const x = index % this.level.width, y = Math.floor(index / this.level.width);
+			if ((x !== hx || y !== hy) && this.smokeBlocksSight(hx, hy, x, y)) {
+				fov.visible.delete(index);
+			}
+		}
+	}
+
 	private refresh(): void {
 		this.fov.update(this.hero.x, this.hero.y, this.viewRadius());
 		this.shareAllyVision();
+		this.pruneSmokeFromSight(this.fov, this.hero.x, this.hero.y);
 
 		// FogOfWar owns explored shading and half-wall occlusion above every world layer.
 		// Keep water quads disabled while unexplored, but do not darken explored art twice.
@@ -18246,6 +18289,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			removeGroundItem: (ground) => this.removeGroundItem(ground),
 			spawnSheep: (at) => this.spawnSheep(at),
 			seedFire: (x, y, duration) => this.fire.seed(x, y, duration),
+			seedSmoke: (x, y, volume) => this.smokeScreen.seed(x, y, volume),
 			plantBloomingGrass: (x, y) => this.plantBloomingGrass(x, y),
 			cureHeroBuffs: () => this.cureHeroBuffs(),
 			noHealing: isChallengeEnabled('no_healing'),

@@ -58,7 +58,7 @@
           { tag: "row", item: "fireBomb", value: 15 },
           { tag: "row", item: "noisemaker", value: 15 },
           { tag: "row", item: "flashbang", value: 15 },
-          { tag: "row", item: "shockBomb", value: 15 },
+          { tag: "row", item: "smokeBomb", value: 60 },
           { tag: "row", item: "regrowthBomb", value: 15 },
           { tag: "row", item: "holyBomb", value: 15 },
           { tag: "row", item: "arcaneBomb", value: 15 },

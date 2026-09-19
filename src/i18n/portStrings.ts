@@ -21,6 +21,10 @@
 
 // HUMAN: English source copy for strings invented by this port.
 export const PORT_STRINGS_EN: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': 'smoke bomb',
+	'port.desc.smokebomb': 'This bomb has been modified to spew a thick cloud of gas at the same time as exploding. It will deal _%1$d-%2$d damage_ and spread shrouding fog within 2 tiles.',
 	//SPD v2.1.4 keys absent from v3.3.8, moved under port.* with SPD's own translations (2026-09-17).
 	'port.log.dm300rocks': 'DM-300 slams the ground, loosening rocks from the ceiling!',
 	'port.log.dm300vent': 'DM-300 fires a jet of toxic exhaust!',
@@ -616,6 +620,10 @@ export const PORT_STRINGS_EN: Record<string, string> = {
  */
 // HUMAN: French translation reviewed by the project owner.
 export const PORT_STRINGS_FR: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': 'bombe fumigène',
+	'port.desc.smokebomb': 'Cette bombe a été modifiée pour libérer un nuage de gaz pendant l\'explosion. Elle inflige _%1$d-%2$d dégâts_ et libère un nuage opaque sur les 2 cases autour.',
 	'port.log.dm300rocks': 'Le DM-300 frappe violemment le sol, déstabilisant les rochers au plafond !',
 	'port.log.dm300vent': 'Le DM-300 projette du gaz toxique !',
 	'port.ui.pickaxemine': 'MINER',
@@ -1164,6 +1172,10 @@ export const PORT_STRINGS_FR: Record<string, string> = {
  */
 
 export const PORT_STRINGS_DE: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': 'Rauchbombe',
+	'port.desc.smokebomb': 'Diese Bombe wurde so verändert, dass sie eine dicke Wolke Gas ausstößt, sobald sie explodiert. Sie wird _%1$d-%2$d Schadenspunkte_ verursachen und im Umkreis von 2 Feldern dichte Nebelschwaden verteilen.',
 	'port.log.dm300rocks': 'Der DM-300 schlägt auf den Boden, so dass sich Steine von der Decke lösen!',
 	'port.log.dm300vent': 'Der DM-300 schießt einen Strahl aus toxischen Abgasen!',
 	'port.ui.pickaxemine': 'SCHÜRFEN',
@@ -1700,6 +1712,10 @@ export const PORT_STRINGS_DE: Record<string, string> = {
  */
 
 export const PORT_STRINGS_ES: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': 'bomba de humo',
+	'port.desc.smokebomb': 'Esta bomba ha sido modificada para producir una densa nube de gas al mismo tiempo que explota. Causará _%1$d-%2$d de daño_ y esparce niebla envolvente en un radio de 2 casillas.',
 	'port.log.dm300rocks': '¡DM-300 golpea el suelo, desprendiendo rocas del techo!',
 	'port.log.dm300vent': '¡DM-300 dispara un chorro de gas tóxico!',
 	'port.ui.pickaxemine': 'MINAR',
@@ -2237,6 +2253,10 @@ export const PORT_STRINGS_ES: Record<string, string> = {
  */
 
 export const PORT_STRINGS_PT: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': 'Bomba de fumaça',
+	'port.desc.smokebomb': 'Esta bomba foi modificada para expelir uma espessa nuvem de gás ao mesmo tempo em que explode. Ela causará _%1$d-%2$d de dano_ e espalhará névoa dentro de 2 quadrados.',
 	'port.log.dm300rocks': 'O DM-300 bate no chão, soltando pedras do teto!',
 	'port.log.dm300vent': 'DM-300 dispara um jato de escape tóxico!',
 	'port.ui.pickaxemine': 'GARIMPAR',
@@ -2773,6 +2793,10 @@ export const PORT_STRINGS_PT: Record<string, string> = {
  */
 
 export const PORT_STRINGS_IT: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': 'bomba fumogena',
+	'port.desc.smokebomb': 'Questa bomba è stata modificata per emettere una densa nube di gas nello stesso momento in cui esplode. Infliggerà _%1$d-%2$d danni_ e diffonderà la nebbia avvolgente entro 2 caselle.',
 	'port.log.dm300rocks': 'DM-300 percuote il terreno, dissestando le rocce del soffitto!',
 	'port.log.dm300vent': 'DM-300 scarica un getto di gas tossico!',
 	'port.ui.pickaxemine': 'ESTRAI',
@@ -3309,6 +3333,10 @@ export const PORT_STRINGS_IT: Record<string, string> = {
  */
 
 export const PORT_STRINGS_PL: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': 'bomba dymna',
+	'port.desc.smokebomb': 'Ta bomba została zmodyfikowana, by w momencie wybuchu wyrzucić z siebie gęstą chmurę gazu. Bomba zada _%1$d-%2$d obrażeń_ i pokryje okrywającą mgłą obszar w zasięgu dwóch pól.',
 	'port.log.dm300rocks': 'DM-300 uderza w ziemię, odrywając głazy od sklepienia!',
 	'port.log.dm300vent': 'DM-300 wydmuchuje chmurę toksycznych spalin!',
 	'port.ui.pickaxemine': 'KOP',
@@ -3847,6 +3875,10 @@ export const PORT_STRINGS_PL: Record<string, string> = {
  */
 
 export const PORT_STRINGS_RU: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': 'дымовая бомба',
+	'port.desc.smokebomb': 'Эта бомба была модифицирована таким образом, чтобы при взрыве высвобождать облако газа. Она нанесет _%1$d-%2$dурона_ и распространит окутывающий туман в радиусе 2 клеток от точки взрыва.',
 	'port.log.dm300rocks': 'DM-300 наносит удары по полу, с потолка сыпятся камни!',
 	'port.log.dm300vent': 'DM-300 совершает выброс токсичных выхлопных газов!',
 	'port.ui.pickaxemine': 'ДОБЫТЬ',
@@ -4361,6 +4393,10 @@ export const PORT_STRINGS_RU: Record<string, string> = {
  */
 
 export const PORT_STRINGS_TR: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': 'Sis bombası',
+	'port.desc.smokebomb': 'Bu bomba patladığı anda aynı zamanda yoğun bir gaz bulutu püskürtecek şekilde modifiye edilmiş. _%1$d-%2$d hasar_ verecek ve bu gaz iki karo yayılacak',
 	'port.log.dm300rocks': 'DM-300 yere vurdu, tavandan taşlar düşüyor!',
 	'port.log.dm300vent': 'DM-300 zehirli gaz püskürtüyor!',
 	'port.ui.pickaxemine': 'KAZ',
@@ -4875,6 +4911,10 @@ export const PORT_STRINGS_TR: Record<string, string> = {
  */
 
 export const PORT_STRINGS_UK: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': 'димова бомба',
+	'port.desc.smokebomb': 'Ця бомба була модифікована, щоб викидати густу хмару газу одночасно з вибухом. Це завдасть _%1$d-%2$d шкоди_ і поширює огортаючий туман у межах 2 плиток.',
 	'port.log.dm300rocks': 'ЗМ-300 гримає по землі, струшуючи каміння зі стелі!',
 	'port.log.dm300vent': 'ЗМ-300 вистрілює струменем токсичних випарів.',
 	'port.ui.pickaxemine': 'КОПАТИ',
@@ -5387,6 +5427,10 @@ export const PORT_STRINGS_UK: Record<string, string> = {
  */
 
 export const PORT_STRINGS_HU: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': 'füstbomba',
+	'port.desc.smokebomb': 'Ezt a bombát úgy módosították, hogy a robbanással egyidejűleg sűrű gázfelhőt bocsásson ki. Ez a bomba 2 mezőn belül _%1$d-%2$d sebzést_ okoz, és homályos ködbe burkolja ezt a területet.',
 	'port.log.dm300rocks': 'A DM-300 a földre csap, a tetőről sziklákat indítva!',
 	'port.log.dm300vent': 'A DM-300 mérgező levegőt fúj!',
 	'port.ui.pickaxemine': 'BÁNYÁSZOM',
@@ -5898,6 +5942,10 @@ export const PORT_STRINGS_HU: Record<string, string> = {
  */
 
 export const PORT_STRINGS_NL: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': 'rookbom',
+	'port.desc.smokebomb': 'Deze bom is aangepast om een dikke gaswolk uit te spuwen en tegelijkertijd te exploderen. Hij zal _%1$d-%2$d schade_ aanrichten en verhullende mist verspreiden binnen 2 tegels.',
 	'port.log.dm300rocks': 'DM-300 bonkt op de grond waardoor stenen los komen van het plafond!',
 	'port.log.dm300vent': 'DM-300 vuurt een straal van giftige uitlaatgassen af!',
 	'port.ui.pickaxemine': 'DELF',
@@ -6410,6 +6458,10 @@ export const PORT_STRINGS_NL: Record<string, string> = {
  */
 
 export const PORT_STRINGS_IN: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': 'bom asap',
+	'port.desc.smokebomb': 'Bom ini telah dimodifikasi untuk memuntahkan awan gas tebal bersamaan dengan ledakannya. Bom ini akan menimbulkan _%1$d-%2$d damage_ dan menyebarkan kabut tebal dalam radius 2 petak.',
 	'port.log.dm300rocks': 'DM-300 tanah memukul, mengguncangkan batu-batu dari langit-langit!',
 	'port.log.dm300vent': 'DM-300 menembakkan semburan gas buangan beracun!',
 	'port.ui.pickaxemine': 'MENAMBANG',
@@ -6920,6 +6972,10 @@ export const PORT_STRINGS_IN: Record<string, string> = {
  */
 
 export const PORT_STRINGS_JA: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': '発煙弾',
+	'port.desc.smokebomb': 'この改造された爆弾は、爆発と同時に厚い雲のようなガスを噴き出すようだ。_%1$dから%2$dのダメージ_ を与え、2タイルの範囲内に視界を遮る霧が発生する。',
 	'port.log.dm300rocks': 'DM-300が地面を叩き、天井から岩が振り落とされる!',
 	'port.log.dm300vent': 'DM-300は有毒な排気ガスを噴出する!',
 	'port.ui.pickaxemine': '採掘',
@@ -7430,6 +7486,10 @@ export const PORT_STRINGS_JA: Record<string, string> = {
  */
 
 export const PORT_STRINGS_CS: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': 'Dýmovnice',
+	'port.desc.smokebomb': 'Tato bomba byla upravena tak, aby spolu s výbuchem vypustila oblak hustého dýmu. Výbuchem způsobí _%1$d-%2$d poškození_ a vytvoří do vzdálenosti 2 políček oblak zahalující mlhy.',
 	'port.log.dm300rocks': 'DM-300 buší do země a uvolňuje kameny ze stropu!',
 	'port.log.dm300vent': 'DM-300 vystřelí proud jedovatých výfukových plynů!',
 	'port.ui.pickaxemine': 'TĚŽBA',
@@ -7940,6 +8000,10 @@ export const PORT_STRINGS_CS: Record<string, string> = {
  */
 
 export const PORT_STRINGS_VI: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': 'bom khói',
+	'port.desc.smokebomb': 'Quả bom này đã chỉnh sửa để phun ra một đám khí dày cùng lúc nó nổ. Nó sẽ gây _%1$d-%2$d sát thương_ và phát tán sương mù che phủ trong phạm vi 2 ô.',
 	'port.log.dm300rocks': 'DM-300 đập xuống đất, làm đá rơi khỏi trần!',
 	'port.log.dm300vent': 'DM-300 bắn ra một luồng khí thải độc hại!',
 	'port.ui.pickaxemine': 'KHÁI THÁC',
@@ -8450,6 +8514,10 @@ export const PORT_STRINGS_VI: Record<string, string> = {
  */
 
 export const PORT_STRINGS_EL: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': 'βόμβα καπνού',
+	'port.desc.smokebomb': 'Αυτή η βόμβα έχει τροποποιηθεί για να ξεχύνει ένα πυκνό νέφος καπνού παράλληλα με την έκρηξη. Θα προκαλέσει _%1$d-%2$d ζημιά_ και θα απλώσει παχιά ομίχλη σε ακτίνα 2 τετραγώνων.',
 	'port.log.dm300rocks': 'Το DM-300 χτυπά το έδαφος, τραντάζοντας βράχους από το ταβάνι!',
 	'port.log.dm300vent': 'Το DM-300 εκτοξεύει ένα πίδακα τοξικών αναθυμιάσεων!',
 	'port.ui.pickaxemine': 'ΕΞΟΡΥΞΗ',
@@ -8960,6 +9028,10 @@ export const PORT_STRINGS_EL: Record<string, string> = {
  */
 
 export const PORT_STRINGS_KO: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': '연막탄',
+	'port.desc.smokebomb': '폭발이 발생함과 동시에 두꺼운 가스 구름을 살포하도록 개조된 폭탄입니다. 폭탄이 폭발하면 주변 2타일 이내에 있는 모든 대상에게 _%1$d-%2$d_의 피해를 입히고, 동시에 범위 내의 모든 지역을 짙은 안개로 뒤덮습니다.',
 	'port.log.dm300rocks': 'DM-300이 땅을 내리쳐 천장에서 바위를 흔들어 떨어뜨립니다!',
 	'port.log.dm300vent': 'DM-300이 독성 배기가스를 분출합니다!',
 	'port.ui.pickaxemine': '채굴',
@@ -9470,6 +9542,10 @@ export const PORT_STRINGS_KO: Record<string, string> = {
  */
 
 export const PORT_STRINGS_ZH: Record<string, string> = {
+	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
+	'port.name.smokebomb': '烟雾弹',
+	'port.desc.smokebomb': '这枚改造过的炸弹会在爆炸时释放出一阵浓厚的气体烟云。炸弹会在2格范围内造成_%1$d~%2$d点伤害_并释放暗夜迷雾。',
 	'port.log.dm300rocks': 'DM-300猛击地面，将岩石从天花板上震落!',
 	'port.log.dm300vent': 'DM-300喷出一股有毒废气!',
 	'port.ui.pickaxemine': '挖矿',

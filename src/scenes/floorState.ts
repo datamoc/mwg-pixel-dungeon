@@ -37,6 +37,8 @@ export interface FloorState {
 	web?: FireState;
 	/** `Electricity` volume field: Shocking/Storm traps seed it over `WATER` cells. */
 	electricity?: FireState;
+	/** `SmokeScreen` volume field: smoke-bomb blasts seed it over the distance-2 flood. */
+	smokeScreen?: FireState;
 	eternalFire?: FireState;
 	sacrificialFire?: FireState;
 	sacrificialFireCharge?: number;

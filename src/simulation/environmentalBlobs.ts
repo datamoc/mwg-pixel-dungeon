@@ -1,6 +1,6 @@
 import type { Creature, Step } from '../combat';
 
-export type EnvironmentalBlob = 'plantGas' | 'plantFreeze' | 'toxicGas' | 'paralyticGas' | 'stenchGas' | 'corrosiveGas' | 'confusionGas' | 'web' | 'electricity';
+export type EnvironmentalBlob = 'plantGas' | 'plantFreeze' | 'toxicGas' | 'paralyticGas' | 'stenchGas' | 'corrosiveGas' | 'confusionGas' | 'web' | 'electricity' | 'smokeScreen';
 
 // `StenchGas.evolve()` uses `Paralysis.DURATION / 5`; this port's authored Java duration is 10.
 const STENCH_PARALYSIS_DURATION = 2;
@@ -40,6 +40,10 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 	context.advance('confusionGas', isSolid);
 	context.advance('web', isSolid);
 	context.advance('electricity', isSolid);
+	//`SmokeScreen` has no `evolve()` override and no per-turn effect - it only advances
+	//here so the cloud spreads and thins; its sight-blocking lives in the scene's
+	//`pruneSmokeFromSight`, mirroring `Level.updateFieldOfView`.
+	context.advance('smokeScreen', isSolid);
 	for (const cell of context.cellsAbove('plantGas', 1)) {
 		const target = context.creatureAt(cell.x, cell.y);
 		if (target) context.addBuff(target, 'poison');

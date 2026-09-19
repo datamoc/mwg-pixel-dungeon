@@ -561,6 +561,19 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	// `Brew.energyVal()` is 12 a unit, like the brewed exotic scroll.
 	assert.equal(alchemyEnergyFor('shockingBrew', true), 12, 'a scrapped shocking brew yields 12 energy');
 	assert.equal(alchemyEnergyFor('causticBrew', true), 12, 'a scrapped caustic brew yields 12 energy');
+	// `Bomb.EnhanceBomb` (tag `v3.3.8`): invisibility brews a smoke bomb and recharging
+	// a flashbang, 2 energy each - the port's old invisibility-flashbang /
+	// recharging-shockbomb pairing matched a pre-v3.3.8 tree whose ShockBomb Java dropped.
+	assert.deepEqual(alchemyRecipe('enhanceBombSmoke')?.ingredients, [{ id: 'bomb', quantity: 1 }, { id: 'potionInvis', quantity: 1 }]);
+	assert.equal(alchemyRecipe('enhanceBombSmoke')?.result.id, 'smokeBomb');
+	assert.equal(alchemyRecipe('enhanceBombSmoke')?.energyCost, 2);
+	assert.deepEqual(alchemyRecipe('enhanceBombFlashbang')?.ingredients, [{ id: 'bomb', quantity: 1 }, { id: 'scrollRecharging', quantity: 1 }]);
+	assert.equal(alchemyRecipe('enhanceBombShock'), undefined, 'the ShockBomb recipe is gone with its class');
+	const smokeBag = new Inventory();
+	smokeBag.add({ id: 'bomb', quantity: 1, stackable: true });
+	smokeBag.add({ id: 'potionInvis', quantity: 1, stackable: true });
+	assert.equal(craftAlchemy(smokeBag, 'enhanceBombSmoke'), true, 'a bomb and an invisibility brew smoke');
+	assert.equal(smokeBag.find('smokeBomb')?.quantity, 1, 'one smoke bomb');
 	const selectCatalyst = new Inventory();
 	selectCatalyst.add({ id: 'potionFrost', quantity: 1, stackable: true });
 	selectCatalyst.add({ id: 'stoneOfBlast', quantity: 1, stackable: true });
@@ -1170,6 +1183,8 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	for (const brew of ['infernalBrew', 'blizzardBrew', 'shockingBrew', 'causticBrew']) {
 		assert.equal(require('./items/shopPricing.js').itemValue(brew, 1), 60, `${brew} value() is 60 per unit`);
 	}
+	// `SmokeBomb.value()` is 60 a unit (`quantity * (20 + 40)`).
+	assert.equal(require('./items/shopPricing.js').itemValue('smokeBomb', 1), 60, 'smokeBomb value() is 60 per unit');
 		assert.equal(require('./items/shopPricing.js').getShopPrice('ankh', 6), 500, 'depth-6 shelf price is 50 x2 wealth bracket');
 		// Sandbags appear only with a carried hourglass, at the depth's own fraction of the missing
 		// ones - and never without it.

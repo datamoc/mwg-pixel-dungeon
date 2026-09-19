@@ -661,6 +661,9 @@ simultaneous multi-slot window with its recipe preview and cook button stays sim
 persisted, fed by EnergyCrystal pickups, and consumed by recipe costs. Seed-to-potion brewing,
 scroll-to-stone, alchemize and both catalysts are executable with chosen or first-eligible units;
 exotic/elixir item families (no port items exist to brew them with) and the slot-window chrome remain open.
+A related pre-`v3.3.8` leftover stays open, untouched by this slice: the port still brews and
+casts `AlchemicalCatalyst` and `AquaBlast`, whose classes `v3.3.8` removed (verified absent at
+both `v3.3.8` and `4.0.0-beta`) - retiring or re-homing them is its own slice.
 **The four regular brews are now executable recipes (2026-09-19):** `InfernalBrew` (one
 liquid flame, 12 energy), `BlizzardBrew` (one frost, 8), `ShockingBrew` (one paralytic gas, 10)
 and `CausticBrew` (one toxic gas plus one goo blob, 1) - Java's own inputs and costs from
@@ -4286,13 +4289,13 @@ Separately, the locale *set* was SPD `v2.1.4`'s 18 non-English locales rather th
 the eight-key migration above closed that half. **Closed 2026-09-19, the other half**: a further
 provenance wrinkle turned up when actually running the regen - the *live* checkout (this port's
 normal `--spd-root`, on its own current branch, not a tag) is not `v3.3.8` at all; it carries
-real post-`v3.3.8` content this port already ships (`items.potions.alchemicalcatalyst.name`,
+pre-`v3.3.8` content this port still ships that `v3.3.8` dropped or renamed - **2026-09-19 correction, the direction first recorded here was backwards: the live tree is *older* than `v3.3.8`** (its Java still has `ShockBomb`, deleted upstream in `v2.5.3`, and no `SmokeBomb`) - (`items.potions.alchemicalcatalyst.name`,
 `items.bombs.flashbang.name`/`.shockbomb.name`, `items.spells.aquablast.name`) that a literal
 `v3.3.8` checkout does not have, while having dropped `be`/`eo`/`sv`/`zh-hant`'s files entirely
 (present at `v3.3.8`, absent from the live branch). Neither checkout alone can serve the full
 key set, so `tools/i18n-extract.mjs` now takes a second, optional `--legacy-spd-root`: the
-primary root stays the live checkout (preserving the newer content everything else already
-depends on), and only those four locales are read from a `v3.3.8` worktree via the new root.
+primary root stays the live checkout (preserving the dropped pre-`v3.3.8` content everything else already
+depends on), and only those four locales are read from a `v3.3.8` worktree via the new root (whose "legacy" name is now backwards too, but renaming it is not worth the churn). Conversely `v3.3.8` added keys the live tree lacks (`smokebomb`, `flashbangbomb`) - those arrive via `port.*` housing until a re-extraction, never from either root today.
 Unset, they simply ship empty and fall back to English - no regression to the offline, zero-arg
 case. `LANGUAGES` gained the four with `Languages.java`'s real `v3.3.8` statuses (`be`
 `X_UNFINISH`, `eo` `O_COMPLETE`, `sv`/`zh-hant` `__UNREVIEW`), and `detectLanguage` gained
@@ -4928,3 +4931,31 @@ pool is now enforced, but its scrap/add UI and blast particles/sound remain open
 MetalShard identities are authored, their Java value/energy metadata is represented, and
 Goo/DM-300 now drop 2/3/4 materials with the real 60/30/10 distribution. The port's
 one-item-per-cell placement is a documented heap simplification.
+
+**2026-09-19 correction: ShockBomb out, SmokeBomb in.** The ten pairs above matched the live
+checkout's Java tree, which predates `v2.5.3` ("buffed all alchemy bombs" deleted
+`ShockBomb.java`; `4.0.0-beta` still has no ShockBomb). At tag `v3.3.8` the map reads
+invisibility -> `SmokeBomb` and recharging -> `FlashBangBomb`, both cost 2, and the recipes now
+match that: `enhanceBombSmoke` (bomb + invisibility) and `enhanceBombFlashbang` (bomb +
+recharging). The `smokeBomb` id replaces `shockBomb` everywhere (item, specialty category,
+`value()` 60 = `quantity * (20 + 40)`); a save carrying the old id still loads (bag payloads
+are id-tolerant) but the fossil no longer brews, throws, or detonates. Its blast is the shared
+`super.explode()` plus `SmokeScreen` 40 per distance-2 flood cell with the unplaced share of
+the 1000-volume budget piled onto the center (`smokeBombSeedPlan`, center never seeded but
+still billed - pinned in `test:simulation`). The fog itself is a persisted blob advancing
+through the shared diffusion, and its whole game effect is sight: `pruneSmokeFromSight` /
+`smokeBlocksSight` mirror `Level.updateFieldOfView` (smoke strictly between viewer and target
+blocks; smoky endpoints stay visible) for the hero's merged sight, ordinary-mob `seesHero`
+and ally-target queries, the necromancer's skeleton placement, and the fist-teleport search -
+allies keep their unpruned `allyFov` exactly as Java exempts them (no geomancer kind exists
+to exempt). The ray is MWG's Bresenham `traceLine`, an approximation of Java's `ShadowCaster`
+that only ever removes visibility, never adds it; like every gas here the cloud itself has no
+tile art, so the closing fog is the feedback. Names live under `port.name.smokebomb` /
+`port.desc.smokebomb` carrying SPD's own `v3.3.8` words in all 19 `PORT_STRINGS` locales
+(byte-audited against the tag), because the generated catalogue still predates the swap and
+has no `smokebomb` keys - they flip to `items.bombs.smokebomb.*` when it is re-extracted.
+Stated gaps, not silent: `FlashBangBomb`'s own `v3.3.8` rework (electric 25% bonus + 10-turn
+paralysis over the same flood, no LOS gate - the port's daze still models the pre-`v3.3.8`
+blinder) stays open, as do the `ShroudingFog` exotic and the ChaoticCenser trinket.
+Type-check/check/build/item/simulation suites green; browser verification owed per ROADMAP.md
+section 10.

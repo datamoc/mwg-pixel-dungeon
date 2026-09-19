@@ -460,8 +460,8 @@
       },
       {
         tag: "item",
-        id: "shockBomb",
-        name: "items.bombs.shockbomb.name",
+        id: "smokeBomb",
+        name: "port.name.smokebomb",
         slot: "consumable",
         stackable: true,
       },

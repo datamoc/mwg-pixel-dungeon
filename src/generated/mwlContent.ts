@@ -2416,7 +2416,7 @@ export const gameData = {
 							"tag": "row",
 							"attributes": {
 								"id": "enhanceBombFlashbang",
-								"ingredients": "bomb:1,potionInvis:1",
+								"ingredients": "bomb:1,scrollRecharging:1",
 								"result": "flashbang",
 								"resultQuantity": "1",
 								"energyCost": "2"
@@ -2424,7 +2424,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 201,
+								"line": 203,
 								"column": 13
 							},
 							"gettext": []
@@ -2432,16 +2432,16 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "enhanceBombShock",
-								"ingredients": "bomb:1,scrollRecharging:1",
-								"result": "shockBomb",
+								"id": "enhanceBombSmoke",
+								"ingredients": "bomb:1,potionInvis:1",
+								"result": "smokeBomb",
 								"resultQuantity": "1",
 								"energyCost": "2"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 209,
+								"line": 213,
 								"column": 13
 							},
 							"gettext": []
@@ -2458,7 +2458,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 217,
+								"line": 221,
 								"column": 13
 							},
 							"gettext": []
@@ -2475,7 +2475,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 225,
+								"line": 229,
 								"column": 13
 							},
 							"gettext": []
@@ -2492,7 +2492,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 233,
+								"line": 237,
 								"column": 13
 							},
 							"gettext": []
@@ -2509,7 +2509,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 241,
+								"line": 245,
 								"column": 13
 							},
 							"gettext": []
@@ -2526,7 +2526,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 250,
+								"line": 254,
 								"column": 13
 							},
 							"gettext": []
@@ -2543,7 +2543,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 259,
+								"line": 263,
 								"column": 13
 							},
 							"gettext": []
@@ -2560,7 +2560,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 268,
+								"line": 272,
 								"column": 13
 							},
 							"gettext": []
@@ -2577,7 +2577,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 277,
+								"line": 281,
 								"column": 13
 							},
 							"gettext": []
@@ -2608,7 +2608,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 292,
+								"line": 296,
 								"column": 13
 							},
 							"gettext": []
@@ -2624,7 +2624,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 299,
+								"line": 303,
 								"column": 13
 							},
 							"gettext": []
@@ -2640,7 +2640,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 306,
+								"line": 310,
 								"column": 13
 							},
 							"gettext": []
@@ -2656,7 +2656,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 313,
+								"line": 317,
 								"column": 13
 							},
 							"gettext": []
@@ -2672,7 +2672,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 320,
+								"line": 324,
 								"column": 13
 							},
 							"gettext": []
@@ -2688,7 +2688,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 327,
+								"line": 331,
 								"column": 13
 							},
 							"gettext": []
@@ -2704,7 +2704,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 334,
+								"line": 338,
 								"column": 13
 							},
 							"gettext": []
@@ -2720,7 +2720,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 341,
+								"line": 345,
 								"column": 13
 							},
 							"gettext": []
@@ -2736,7 +2736,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 348,
+								"line": 352,
 								"column": 13
 							},
 							"gettext": []
@@ -2752,7 +2752,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 355,
+								"line": 359,
 								"column": 13
 							},
 							"gettext": []
@@ -2768,7 +2768,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 362,
+								"line": 366,
 								"column": 13
 							},
 							"gettext": []
@@ -2784,7 +2784,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 369,
+								"line": 373,
 								"column": 13
 							},
 							"gettext": []
@@ -2800,7 +2800,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 376,
+								"line": 380,
 								"column": 13
 							},
 							"gettext": []
@@ -2816,7 +2816,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 383,
+								"line": 387,
 								"column": 13
 							},
 							"gettext": []
@@ -2832,7 +2832,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 390,
+								"line": 394,
 								"column": 13
 							},
 							"gettext": []
@@ -2848,7 +2848,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 397,
+								"line": 401,
 								"column": 13
 							},
 							"gettext": []
@@ -2864,7 +2864,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 404,
+								"line": 408,
 								"column": 13
 							},
 							"gettext": []
@@ -2880,7 +2880,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 411,
+								"line": 415,
 								"column": 13
 							},
 							"gettext": []
@@ -2896,7 +2896,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 418,
+								"line": 422,
 								"column": 13
 							},
 							"gettext": []
@@ -2912,7 +2912,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 425,
+								"line": 429,
 								"column": 13
 							},
 							"gettext": []
@@ -2928,7 +2928,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 432,
+								"line": 436,
 								"column": 13
 							},
 							"gettext": []
@@ -2944,7 +2944,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 439,
+								"line": 443,
 								"column": 13
 							},
 							"gettext": []
@@ -2960,7 +2960,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 446,
+								"line": 450,
 								"column": 13
 							},
 							"gettext": []
@@ -2976,7 +2976,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 453,
+								"line": 457,
 								"column": 13
 							},
 							"gettext": []
@@ -2992,7 +2992,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 460,
+								"line": 464,
 								"column": 13
 							},
 							"gettext": []
@@ -3008,7 +3008,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 467,
+								"line": 471,
 								"column": 13
 							},
 							"gettext": []
@@ -3024,7 +3024,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 474,
+								"line": 478,
 								"column": 13
 							},
 							"gettext": []
@@ -3040,7 +3040,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 481,
+								"line": 485,
 								"column": 13
 							},
 							"gettext": []
@@ -3056,7 +3056,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 488,
+								"line": 492,
 								"column": 13
 							},
 							"gettext": []
@@ -3072,7 +3072,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 495,
+								"line": 499,
 								"column": 13
 							},
 							"gettext": []
@@ -3088,7 +3088,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 502,
+								"line": 506,
 								"column": 13
 							},
 							"gettext": []
@@ -3104,7 +3104,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 509,
+								"line": 513,
 								"column": 13
 							},
 							"gettext": []
@@ -3120,7 +3120,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 516,
+								"line": 520,
 								"column": 13
 							},
 							"gettext": []
@@ -3136,7 +3136,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 523,
+								"line": 527,
 								"column": 13
 							},
 							"gettext": []
@@ -3152,7 +3152,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 530,
+								"line": 534,
 								"column": 13
 							},
 							"gettext": []
@@ -3168,7 +3168,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 537,
+								"line": 541,
 								"column": 13
 							},
 							"gettext": []
@@ -3184,7 +3184,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 544,
+								"line": 548,
 								"column": 13
 							},
 							"gettext": []
@@ -3200,7 +3200,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 551,
+								"line": 555,
 								"column": 13
 							},
 							"gettext": []
@@ -3216,7 +3216,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 558,
+								"line": 562,
 								"column": 13
 							},
 							"gettext": []
@@ -3232,7 +3232,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 565,
+								"line": 569,
 								"column": 13
 							},
 							"gettext": []
@@ -3248,7 +3248,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 572,
+								"line": 576,
 								"column": 13
 							},
 							"gettext": []
@@ -3264,7 +3264,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 579,
+								"line": 583,
 								"column": 13
 							},
 							"gettext": []
@@ -3280,7 +3280,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 586,
+								"line": 590,
 								"column": 13
 							},
 							"gettext": []
@@ -3288,15 +3288,15 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"id": "manifest-enhanceBombShock",
-								"recipe": "enhanceBombShock",
+								"id": "manifest-enhanceBombSmoke",
+								"recipe": "enhanceBombSmoke",
 								"group": "two",
-								"javaRecipe": "Bomb.EnhanceBomb(ShockBomb)"
+								"javaRecipe": "Bomb.EnhanceBomb(SmokeBomb)"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 593,
+								"line": 597,
 								"column": 13
 							},
 							"gettext": []
@@ -3312,7 +3312,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 600,
+								"line": 604,
 								"column": 13
 							},
 							"gettext": []
@@ -3328,7 +3328,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 607,
+								"line": 611,
 								"column": 13
 							},
 							"gettext": []
@@ -3344,7 +3344,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 614,
+								"line": 618,
 								"column": 13
 							},
 							"gettext": []
@@ -3360,7 +3360,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-								"line": 621,
+								"line": 625,
 								"column": 13
 							},
 							"gettext": []
@@ -3368,7 +3368,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\alchemy.mwl",
-						"line": 287,
+						"line": 291,
 						"column": 9
 					},
 					"gettext": []
@@ -10424,8 +10424,8 @@ export const gameData = {
 				{
 					"tag": "item",
 					"attributes": {
-						"id": "shockBomb",
-						"name": "items.bombs.shockbomb.name",
+						"id": "smokeBomb",
+						"name": "port.name.smokebomb",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -12667,7 +12667,7 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"item": "shockBomb",
+								"item": "smokeBomb",
 								"category": "specialtyBomb"
 							},
 							"children": [],
@@ -19986,8 +19986,8 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"item": "shockBomb",
-								"descriptionKey": "items.bombs.shockbomb.desc"
+								"item": "smokeBomb",
+								"descriptionKey": "port.desc.smokebomb"
 							},
 							"children": [],
 							"location": {
@@ -29855,8 +29855,8 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
-								"item": "shockBomb",
-								"value": "15"
+								"item": "smokeBomb",
+								"value": "60"
 							},
 							"children": [],
 							"location": {
