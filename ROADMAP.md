@@ -1054,7 +1054,17 @@ one.
       The move's own suites: `tsc` + build clean, the item/simulation suites green (two relocated
       source pins in `verifyPrismatic.mjs` now assert against the moved module), plus a new
       headless drive of the moved flow through a scripted picker (seed brew end to end, empty-pot
-      refusal). **Complexity: L.**
+      refusal). **Second extraction 2026-09-19**: the transmutation-scroll window flow
+      (`transmuteEligible`/`transmuteCandidates`/`completeTransmutation` plus the read
+      branch as `startTransmutationPick`) moved verbatim to `items/transmutation.ts`
+      behind a new `TransmuteFlowContext` (bag, heroClass, mining flag, hero vitals,
+      talent/instance/sync/say/picker callbacks, get/set accessors for the equipped
+      ring, Might bonus, missile thresholds and empowered zaps); the scene keeps one
+      builder and a one-line branch (net −70 lines in `dungeonScene.ts`, 23,552 after).
+      Suites: `tsc` clean (one real catch - `Creature`'s
+      optional `magicImmune` needed an optional context field), item/simulation suites
+      green, plus a new headless drive of the moved flow (reroll + scroll consumption +
+      mage zap-arming, empty-list and stale-pick refusals). **Complexity: L.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

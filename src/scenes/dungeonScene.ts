@@ -71,8 +71,8 @@ import { ENCHANT_TABLE, GLYPH_TABLE, UNSTABLE_DELEGATES } from '../items/itemAff
 import {
 	POTION_CLASS_BY_PORT_ID,
 	stonePortId,
-	isTransmutableForScroll,
-	transmuteItem,
+	startTransmutationPick,
+	type TransmuteFlowContext,
 } from '../items/transmutation';
 import {
 	examineWaterName,
@@ -5361,36 +5361,9 @@ export class DungeonScene extends Scene2D {
 			this.say(t('port.log.scrollisforgear'));
 			return false;
 		}
-		if (id === 'scrollTransmutation') {
-			//ScrollOfTransmutation.doRead()/onItemSelected()/changeItem() (checked against
-			//tag `v3.3.8`): rerolls one eligible item into a different item of the same
-			//category, preserving upgrades/enchantments/curse state, and consumes the scroll.
-			//The target comes from the real picker now (`InventoryScroll.itemSelector` via
-			//`openItemPicker`, titled with the real `inv_title` key) - the old first-eligible
-			//auto-target is gone, along with its upgrade/identify-scroll deprioritization
-			//hack (unneeded once the player chooses). Reading spends the turn either way;
-			//a cancel or an empty eligible list consumes nothing (Java's `result == null`
-			//path collects `curItem` back), logging the real `nothing` key. The
-			//identifiedByUse/already-detached cancel nuance has no expression here - this
-			//port only ever consumes the scroll inside `completeTransmutation`. Equipped rings
-			//are replaced in their live slot there; equipped weapons and armor remain outside
-			//the picker because their concrete class identity is not yet retained by the scene. See
-			//`transmuteCandidates`/`transmuteItem` for the per-category rules and
-			//`PORT_COVERAGE.md`.
-			const candidates = this.transmuteCandidates();
-			if (candidates.length === 0) {
-				this.say(t('items.scrolls.scrolloftransmutation.nothing'), 'negative');
-				return false;
-			}
-			//The inventory callback runs after useItemById clears the transient selection;
-			//capture the exact scroll instance now so a stack/duplicate cannot be consumed
-			//from the wrong entry when the picker closes.
-			const scrollInstanceId = this.requestedItemInstanceId;
-			this.openItemPicker(t('items.scrolls.scrolloftransmutation.inv_title'), candidates, (entry) =>
-				this.completeTransmutation(entry, scrollInstanceId)
-			);
-			return true;
-		}
+		//Transmutation targeting and reroll live in `items/transmutation.ts` behind
+		//`TransmuteFlowContext` (file-size refactor) - see `startTransmutationPick`.
+		if (id === 'scrollTransmutation') return startTransmutationPick(this.transmuteFlowContext(), this.requestedItemInstanceId);
 		this.bag.remove(id, 1, this.requestedItemInstanceId);
 		if (armEmpowered) this.empoweredZaps = empoweringScrollsCharges(this.talentRank('empowering_scrolls'));
 		if (id === 'scrollIdentify') {
@@ -5460,104 +5433,31 @@ export class DungeonScene extends Scene2D {
 		};
 	}
 
-	/**
-	 * Picker-eligible entries for the transmutation scroll, in bag order, followed by the
-	 * currently equipped ring when present. Java's item selector includes equipped gear;
-	 * the ring case is represented as a synthetic picker entry because equipped rings live
-	 * in the scene slot rather than in the bag.
-	 * Self-targeting
-	 * the read scroll itself follows real Java (`usableOnItem`: `item != this ||
-	 * quantity > 1`): a `scrollTransmutation` stack of 2+ is eligible, since reading
-	 * consumes one and leaves one to transmute.
+	/** The transmutation-scroll window flow (candidates, reroll, Might-ring slot swap)
+	 *  lives in `items/transmutation.ts` behind `TransmuteFlowContext` - the file-size
+	 *  refactor's second extraction, behavior-identical. The scene only builds the
+	 *  context here.
 	 */
-	/**
-	 * `ScrollOfTransmutation.usableOnItem()`: every bag item `isTransmutableForScroll` admits,
-	 * except the pickaxe on the mining branch (`!(item instanceof Pickaxe && Dungeon.level
-	 * instanceof MiningLevel)` - the pickaxe is a tier-2 `MeleeWeapon` everywhere else).
-	 */
-	private transmuteEligible(i: { id: string; quantity: number; instanceId?: string }): boolean {
-		return isTransmutableForScroll(i) && !(i.id === 'pickaxe' && this.miningBranchActive);
-	}
-
-	private transmuteCandidates(): { id: string; quantity: number; instanceId?: string; identified?: boolean; level?: number; affix?: string; cursed?: boolean; sourceClass?: string }[] {
-		const items = this.bag.items as { id: string; quantity: number; instanceId?: string; identified?: boolean; level?: number; affix?: string; cursed?: boolean; sourceClass?: string }[];
-		const candidates = items.filter(
-			(i) =>
-				i.quantity > 0 &&
-				(this.transmuteEligible(i) || (i.id === 'scrollTransmutation' && i.quantity > 1))
-		);
-		if (this.equippedRing) candidates.push({ ...this.equippedRing, quantity: 1, identified: true });
-		return candidates;
-	}
-
-	/**
-	 * `ScrollOfTransmutation.onItemSelected()`: reroll the picked entry, consuming the read
-	 * scroll only on a real result (Java's `result == null` path collects `curItem` back).
-	 * The picked snapshot is re-validated against the live bag first (Java's own FIXME
-	 * safety check on `curItem`); a stale pick consumes nothing. A self-pick (the read
-	 * scroll's own stack, eligible only at quantity 2+) consumes two units total - one for
-	 * the read, one as the transmuted target - matching Java's detach-then-detach order.
-	 */
-	private completeTransmutation(pick: { id: string; instanceId?: string }, scrollInstanceId?: string): void {
-		const live = (this.bag.items as { id: string; quantity: number; instanceId?: string; identified?: boolean; level?: number; affix?: string; cursed?: boolean; sourceClass?: string }[]).find(
-			(i) =>
-				i.quantity > 0 &&
-				i.id === pick.id &&
-				(i.instanceId ?? undefined) === (pick.instanceId ?? undefined) &&
-				(this.transmuteEligible(i) || (i.id === 'scrollTransmutation' && i.quantity > 1))
-		);
-		const equipped = !live && this.equippedRing
-			&& this.equippedRing.id === pick.id
-			&& (this.equippedRing.instanceId ?? undefined) === (pick.instanceId ?? undefined)
-			? { ...this.equippedRing, quantity: 1, identified: true }
-			: undefined;
-		if (!live && !equipped) {
-			this.say(t('items.scrolls.scrolloftransmutation.nothing'), 'negative');
-			return;
-		}
-		const result = transmuteItem(live ?? equipped!, (kind) => this.newItemInstanceId(kind));
-		if (!result) {
-			this.say(t('items.scrolls.scrolloftransmutation.nothing'), 'negative');
-			return;
-		}
-		this.bag.remove('scrollTransmutation', 1, scrollInstanceId);
-		//`Talent.EMPOWERING_SCROLLS` arms on a successful transmutation read too (see
-		//`readScroll`): the scroll is only consumed here, so this is the exact point.
-		if (this.heroClass === 'mage' && this.talentRank('empowering_scrolls') > 0) {
-			this.empoweredZaps = empoweringScrollsCharges(this.talentRank('empowering_scrolls'));
-		}
-		if (live) {
-			//`changeWeapon`'s missile half detaches the WHOLE stack (`detachAll`) while the
-			//result keeps its quantity - removing one unit here would duplicate the rest.
-			this.bag.remove(live.id, live.id.startsWith('missile_') ? live.quantity : 1, live.instanceId);
-			this.bag.add(result);
-			//The reroll mints a new `MissileWeapon.setID`; its level is what the
-			//`UpgradedSetTracker` threshold map records (see `transmuteItem`).
-			if (result.missileSet !== undefined) {
-				this.missileThresholds = recordMissileUpgrade(this.missileThresholds, result.missileSet, result.level ?? 0);
-			}
-		} else {
-			//Equipped rings are not bag entries: replace the live slot in place, then
-			//recompute Might's max-HP contribution exactly as equipRing does. Other ring
-			//effects are read from the slot by syncHeroFromStats.
-			this.equippedRing = {
-				id: result.id,
-				level: result.level ?? 0,
-				cursed: result.cursed,
-				instanceId: result.instanceId,
-			};
-			const baseMaxHp = this.hero.maxHp - this.ringHtBonus;
-			const newRingHtBonus = ringDef(result.id)?.stat === 'strength'
-				? Math.round(baseMaxHp * (Math.pow(1.035, ringMightBonus({ id: result.id, level: result.level ?? 0, cursed: result.cursed }, this.hero.magicImmune)) - 1))
-				: 0;
-			if (newRingHtBonus !== this.ringHtBonus) {
-				this.hero.maxHp = baseMaxHp + newRingHtBonus;
-				this.hero.hp += newRingHtBonus - this.ringHtBonus;
-				this.ringHtBonus = newRingHtBonus;
-			}
-			this.syncHeroFromStats();
-		}
-		this.say(t('items.scrolls.scrolloftransmutation.morph'), 'positive');
+	private transmuteFlowContext(): TransmuteFlowContext {
+		const scene = this;
+		return {
+			bag: scene.bag,
+			heroClass: scene.heroClass,
+			miningBranchActive: scene.miningBranchActive,
+			hero: scene.hero,
+			talentRank: (id) => scene.talentRank(id),
+			newItemInstanceId: (kind) => scene.newItemInstanceId(kind),
+			syncHeroFromStats: scene.syncHeroFromStats.bind(scene),
+			say: scene.say.bind(scene),
+			openItemPicker: (title, entries, onPick) => scene.openItemPicker(title, entries, onPick),
+			get equippedRing() { return scene.equippedRing; },
+			set equippedRing(ring: EquippedRing | null) { scene.equippedRing = ring; },
+			get ringHtBonus() { return scene.ringHtBonus; },
+			set ringHtBonus(bonus: number) { scene.ringHtBonus = bonus; },
+			get missileThresholds() { return scene.missileThresholds; },
+			set missileThresholds(thresholds: Map<string, number>) { scene.missileThresholds = thresholds; },
+			set empoweredZaps(zaps: number) { scene.empoweredZaps = zaps; },
+		};
 	}
 
 	/**

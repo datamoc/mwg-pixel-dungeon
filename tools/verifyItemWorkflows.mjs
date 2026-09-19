@@ -26,6 +26,7 @@ try {
 	compile(join(root, 'src/items/itemWorkflows.ts'), 'items/workflows.js');
 	compile(join(root, 'src/items/ringModifiers.ts'), 'items/ringModifiers.js');
 	compile(join(root, 'src/items/transmutation.ts'), 'items/transmutation.js');
+	compile(join(root, 'src/talentEffects.ts'), 'talentEffects.js');
 	compile(join(root, 'src/items/missiles.ts'), 'items/missiles.js');
 	compile(join(root, 'src/items/itemCurses.ts'), 'items/itemCurses.js');
 	compile(join(root, 'src/items/itemKinds.ts'), 'items/itemKinds.js');
@@ -593,6 +594,46 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		{ id: 'scrollMirror', identified: false, quantity: 1 },
 		'the prismatic scroll flips to its mirror counterpart, identified state carried',
 	);
+	// The transmutation-scroll window flow moved to `items/transmutation.ts` (file-size
+	// refactor, behavior-identical): drive it headlessly through a scripted picker - the
+	// picked potion rerolls, the read scroll is consumed, and a mage with EMPOWERING_SCROLLS
+	// arms zaps on the successful read; empties and stale picks consume nothing.
+	{
+		const { startTransmutationPick, completeTransmutation, transmuteCandidates } = require('./items/transmutation.js');
+		const { empoweringScrollsCharges } = require('./talentEffects.js');
+		const transmuteBag = new Inventory();
+		transmuteBag.add({ id: 'potionHealing', quantity: 1, stackable: true, identified: true });
+		transmuteBag.add({ id: 'scrollTransmutation', quantity: 1, stackable: true, identified: true });
+		const transmuteSaid = [];
+		let transmutePicks = 0;
+		const transmuteScene = {
+			bag: transmuteBag, heroClass: 'mage', miningBranchActive: false,
+			hero: { maxHp: 100, hp: 100, magicImmune: false },
+			talentRank: (id) => (id === 'empowering_scrolls' ? 2 : 0),
+			newItemInstanceId: (kind) => `test-${kind}-0`,
+			syncHeroFromStats: () => {}, say: (line, level) => { transmuteSaid.push({ line, level }); },
+			openItemPicker: (title, entries, onPick) => { transmutePicks++; onPick({ id: entries[0].id, instanceId: entries[0].instanceId }); },
+			equippedRing: null, ringHtBonus: 0, missileThresholds: new Map(), empoweredZaps: 0,
+		};
+		assert.equal(transmuteCandidates(transmuteScene).length, 1, 'the lone healing potion is the only candidate (one transmutation scroll cannot target itself)');
+		assert.equal(startTransmutationPick(transmuteScene), true, 'the picker takes over');
+		assert.equal(transmutePicks, 1, '...exactly once');
+		assert.equal(transmuteBag.find('scrollTransmutation'), undefined, 'the read scroll is consumed');
+		assert.equal(transmuteBag.find('potionHealing'), undefined, '...and the picked potion is gone');
+		assert.equal(transmuteBag.items.filter((i) => i.id.startsWith('potion')).length, 1, '...rerolled into one potion');
+		assert.equal(transmuteScene.empoweredZaps, empoweringScrollsCharges(2), 'a mage with EMPOWERING_SCROLLS arms zaps on success');
+		assert.ok(transmuteSaid.some((s) => s.line === 'items.scrolls.scrolloftransmutation.morph'), 'the reroll is announced');
+		const emptyBag = new Inventory();
+		emptyBag.add({ id: 'scrollTransmutation', quantity: 1, stackable: true, identified: true });
+		const emptyScene = { ...transmuteScene, bag: emptyBag };
+		let emptyPicks = 0;
+		emptyScene.openItemPicker = () => { emptyPicks++; };
+		assert.equal(startTransmutationPick(emptyScene), false, 'no candidates, no picker');
+		assert.equal(emptyPicks, 0, '...the picker never opens');
+		assert.equal(emptyBag.find('scrollTransmutation')?.quantity, 1, '...and the scroll is kept');
+		completeTransmutation(transmuteScene, { id: 'noSuchItem' });
+		assert.equal(transmuteBag.items.length, 1, 'a stale pick consumes nothing');
+	}
 	// `ExoticPotion.PotionToExotic` (tag `v3.3.8`): one regular potion, cost 4, into its
 	// exotic - only the Invisibility -> ShroudingFog pair exists here so far.
 	assert.equal(potionExoticResult('potionInvis'), 'potionShrouding');

@@ -1,7 +1,11 @@
 import { Random } from 'mwg';
-import { RING_DEFS, ringDef } from './ringModifiers';
+import type { Inventory } from 'mwg/actors';
+import type { ClassId } from '../classes';
+import { t } from '../i18n';
+import { empoweringScrollsCharges } from '../talentEffects';
+import { RING_DEFS, ringDef, ringMightBonus, type EquippedRing } from './ringModifiers';
 import { MWL_CONSUMABLE_CLASS_ALIASES, MWL_MISSILE_DEFINITIONS, MWL_WAND_DEFINITIONS } from '../mwlContent';
-import { MISSILE_MAX_DURABILITY, TIPPED_DART_BY_SEED, missileStackId } from './missiles';
+import { MISSILE_MAX_DURABILITY, TIPPED_DART_BY_SEED, missileStackId, recordMissileUpgrade } from './missiles';
 
 /**
  * `ScrollOfTransmutation.changeItem()`'s per-category decks, adapted to this port's ids
@@ -240,4 +244,171 @@ export function transmuteItem(target: TransmutableItem, newItemInstanceId: (kind
 		return { id: 'weaponReward', quantity: 1, instanceId: newItemInstanceId('weapon'), identified: target.identified, level: 0, sourceClass: Random.element(pool)! };
 	}
 	return undefined;
+}
+
+/**
+ * The transmutation-scroll window flow, moved out of `scenes/dungeonScene.ts` (file-size
+ * refactor: second extraction, no behavior change). The scene keeps only a thin adapter
+ * that builds the context; everything below reads the bag and hero state through it, the
+ * same vehicle as the alchemy flow.
+ */
+export interface TransmuteCandidate {
+	readonly id: string;
+	readonly quantity: number;
+	readonly instanceId?: string;
+	readonly identified?: boolean;
+	readonly level?: number;
+	readonly affix?: string;
+	readonly cursed?: boolean;
+	readonly sourceClass?: string;
+}
+
+export interface TransmuteHero {
+	maxHp: number;
+	hp: number;
+	readonly magicImmune?: boolean;
+}
+
+export interface TransmuteFlowContext {
+	readonly bag: Inventory;
+	readonly heroClass: ClassId;
+	readonly miningBranchActive: boolean;
+	readonly hero: TransmuteHero;
+	readonly talentRank: (id: string) => number;
+	readonly newItemInstanceId: (kind: string) => string;
+	readonly syncHeroFromStats: () => void;
+	readonly say: (line: string, level?: 'info' | 'positive' | 'negative' | 'warning') => void;
+	readonly openItemPicker: (
+		title: string,
+		entries: TransmuteCandidate[],
+		onPick: (entry: { id: string; instanceId?: string }) => void,
+	) => void;
+	get equippedRing(): EquippedRing | null;
+	set equippedRing(ring: EquippedRing | null);
+	get ringHtBonus(): number;
+	set ringHtBonus(bonus: number);
+	get missileThresholds(): Map<string, number>;
+	set missileThresholds(thresholds: Map<string, number>);
+	set empoweredZaps(zaps: number);
+}
+
+/**
+ * Picker-eligible entries for the transmutation scroll, in bag order, followed by the
+ * currently equipped ring when present. Java's item selector includes equipped gear;
+ * the ring case is represented as a synthetic picker entry because equipped rings live
+ * in the scene slot rather than in the bag. Self-targeting
+ * the read scroll itself follows real Java (`usableOnItem`: `item != this ||
+ * quantity > 1`): a `scrollTransmutation` stack of 2+ is eligible, since reading
+ * consumes one and leaves one to transmute.
+ */
+/**
+ * `ScrollOfTransmutation.usableOnItem()`: every bag item `isTransmutableForScroll` admits,
+ * except the pickaxe on the mining branch (`!(item instanceof Pickaxe && Dungeon.level
+ * instanceof MiningLevel)` - the pickaxe is a tier-2 `MeleeWeapon` everywhere else).
+ */
+export function transmuteEligible(scene: TransmuteFlowContext, i: { id: string; quantity: number; instanceId?: string }): boolean {
+	return isTransmutableForScroll(i) && !(i.id === 'pickaxe' && scene.miningBranchActive);
+}
+
+export function transmuteCandidates(scene: TransmuteFlowContext): TransmuteCandidate[] {
+	const items = scene.bag.items as TransmuteCandidate[];
+	const candidates = items.filter(
+		(i) =>
+			i.quantity > 0 &&
+			(transmuteEligible(scene, i) || (i.id === 'scrollTransmutation' && i.quantity > 1))
+	);
+	if (scene.equippedRing) candidates.push({ ...scene.equippedRing, quantity: 1, identified: true });
+	return candidates;
+}
+
+/**
+ * `ScrollOfTransmutation.onItemSelected()`: reroll the picked entry, consuming the read
+ * scroll only on a real result (Java's `result == null` path collects `curItem` back).
+ * The picked snapshot is re-validated against the live bag first (Java's own FIXME
+ * safety check on `curItem`); a stale pick consumes nothing. A self-pick (the read
+ * scroll's own stack, eligible only at quantity 2+) consumes two units total - one for
+ * the read, one as the transmuted target - matching Java's detach-then-detach order.
+ */
+export function completeTransmutation(scene: TransmuteFlowContext, pick: { id: string; instanceId?: string }, scrollInstanceId?: string): void {
+	const live = (scene.bag.items as TransmuteCandidate[]).find(
+		(i) =>
+			i.quantity > 0 &&
+			i.id === pick.id &&
+			(i.instanceId ?? undefined) === (pick.instanceId ?? undefined) &&
+			(transmuteEligible(scene, i) || (i.id === 'scrollTransmutation' && i.quantity > 1))
+	);
+	const equipped = !live && scene.equippedRing
+		&& scene.equippedRing.id === pick.id
+		&& (scene.equippedRing.instanceId ?? undefined) === (pick.instanceId ?? undefined)
+		? { ...scene.equippedRing, quantity: 1, identified: true }
+		: undefined;
+	if (!live && !equipped) {
+		scene.say(t('items.scrolls.scrolloftransmutation.nothing'), 'negative');
+		return;
+	}
+	const result = transmuteItem(live ?? equipped!, (kind) => scene.newItemInstanceId(kind));
+	if (!result) {
+		scene.say(t('items.scrolls.scrolloftransmutation.nothing'), 'negative');
+		return;
+	}
+	scene.bag.remove('scrollTransmutation', 1, scrollInstanceId);
+	//`Talent.EMPOWERING_SCROLLS` arms on a successful transmutation read too (see
+	//`readScroll`): the scroll is only consumed here, so this is the exact point.
+	if (scene.heroClass === 'mage' && scene.talentRank('empowering_scrolls') > 0) {
+		scene.empoweredZaps = empoweringScrollsCharges(scene.talentRank('empowering_scrolls'));
+	}
+	if (live) {
+		//`changeWeapon`'s missile half detaches the WHOLE stack (`detachAll`) while the
+		//result keeps its quantity - removing one unit here would duplicate the rest.
+		scene.bag.remove(live.id, live.id.startsWith('missile_') ? live.quantity : 1, live.instanceId);
+		scene.bag.add(result);
+		//The reroll mints a new `MissileWeapon.setID`; its level is what the
+		//`UpgradedSetTracker` threshold map records (see `transmuteItem`).
+		if (result.missileSet !== undefined) {
+			scene.missileThresholds = recordMissileUpgrade(scene.missileThresholds, result.missileSet, result.level ?? 0);
+		}
+	} else {
+		//Equipped rings are not bag entries: replace the live slot in place, then
+		//recompute Might's max-HP contribution exactly as equipRing does. Other ring
+		//effects are read from the slot by syncHeroFromStats.
+		scene.equippedRing = {
+			id: result.id,
+			level: result.level ?? 0,
+			cursed: result.cursed,
+			instanceId: result.instanceId,
+		};
+		const baseMaxHp = scene.hero.maxHp - scene.ringHtBonus;
+		const newRingHtBonus = ringDef(result.id)?.stat === 'strength'
+			? Math.round(baseMaxHp * (Math.pow(1.035, ringMightBonus({ id: result.id, level: result.level ?? 0, cursed: result.cursed }, scene.hero.magicImmune)) - 1))
+			: 0;
+		if (newRingHtBonus !== scene.ringHtBonus) {
+			scene.hero.maxHp = baseMaxHp + newRingHtBonus;
+			scene.hero.hp += newRingHtBonus - scene.ringHtBonus;
+			scene.ringHtBonus = newRingHtBonus;
+		}
+		scene.syncHeroFromStats();
+	}
+	scene.say(t('items.scrolls.scrolloftransmutation.morph'), 'positive');
+}
+
+/**
+ * The transmutation branch of the scroll-read flow: the target comes from the real
+ * picker (`InventoryScroll.itemSelector` via `openItemPicker`, titled with the real
+ * `inv_title` key). Reading spends the turn either way; a cancel or an empty eligible
+ * list consumes nothing (Java's `result == null` path collects `curItem` back),
+ * logging the real `nothing` key. Returns true when the picker takes over.
+ */
+export function startTransmutationPick(scene: TransmuteFlowContext, scrollInstanceId?: string): boolean {
+	const candidates = transmuteCandidates(scene);
+	if (candidates.length === 0) {
+		scene.say(t('items.scrolls.scrolloftransmutation.nothing'), 'negative');
+		return false;
+	}
+	//The inventory callback runs after useItemById clears the transient selection;
+	//the exact scroll instance arrives as a parameter so a stack/duplicate cannot be
+	//consumed from the wrong entry when the picker closes.
+	scene.openItemPicker(t('items.scrolls.scrolloftransmutation.inv_title'), candidates, (entry) =>
+		completeTransmutation(scene, entry, scrollInstanceId)
+	);
+	return true;
 }
