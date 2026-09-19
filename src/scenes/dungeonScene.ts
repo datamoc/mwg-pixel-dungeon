@@ -208,7 +208,14 @@ import { MWL_CONSUMABLE_STATS, MWL_HERO_BASE_STATS, MWL_HERO_LEVEL_GROWTH, MWL_M
 import { dungeonRegion } from './regions';
 import { hallsDemonSpawnerFloorFrames } from './regions/halls';
 import { wandChargesPerCast, wandDamageRange, wandTargetRange, wandTypeFromSource, type WandType } from '../items/wands';
-import { useItemById as routeItemAction, type ItemActionContext } from '../items/itemActions';
+import {
+	useItemById as routeItemAction,
+	assignQuickslot as assignFamilyQuickslot,
+	readQuickslotStates,
+	useQuickslot as useQuickslotEntry,
+	type ItemActionContext,
+	type QuickslotContext,
+} from '../items/itemActions';
 import { equipWand as equipInventoryWand, type EquipWandContext } from '../items/equipWand';
 import { useCloak as useArtifactCloak, useHourglass as useArtifactHourglass, useChalice as useArtifactChalice, useKingsCrown as useArtifactKingsCrown, useToolkit as useArtifactToolkit, useSpellbook as useArtifactSpellbook,
 	applyCapeOfThornsProc, applyToolkitGainCharge, applyArmbandGainCharge, applyHornGainCharge, applyChainsGainExp, consumeToolkitEnergy, toolkitAvailableEnergy, energizeToolkit, setupSpellbookScrolls, randomSpellbookScroll, spellbookChargeCap, addScrollToSpellbook, type ArtifactActionContext, type SpellbookItem } from '../items/artifactActions';
@@ -20121,44 +20128,27 @@ private eyeBeamTurn(monster: Creature): boolean {
 		return `${titleCase(t(`${armorAbilityKey(def.id, def.classId)}.name`))} ${Math.floor(this.armorCharge)}%`;
 	}
 
-	/** The toolbar's four quickslot states: the assigned item's live quantity (or nothing when
-	 * the assignment left the bag - the slot clears itself on the next refresh). */
+	/** The toolbar's four quickslot states - the decision lives in `items/itemActions.ts`
+	 * next to the item-use router they feed; the scene only binds its slot array, bag
+	 * and use path. */
 	private quickslotStates(): ({ id: string; instanceId?: string; frame: number; quantity: number } | null)[] {
-		return [0, 1, 2, 3].map((slot) => {
-			const assigned = this.quickslots[slot];
-			if (!assigned) return null;
-			const held = this.bag.find(assigned.id, assigned.instanceId);
-			if (!held || held.quantity <= 0) {
-				this.quickslots[slot] = null;
-				return null;
-			}
-			return { id: assigned.id, instanceId: held.instanceId, frame: 0, quantity: held.quantity };
-		});
+		return readQuickslotStates(this.quickslotContext());
 	}
 
-	/** Assigns a used consumable to its family's quickslot (potions 0, scrolls 1, food 2, bombs
-	 * and stones 3), so the slot always mirrors the most recently used item of that family. */
 	private assignQuickslot(id: string, instanceId?: string): void {
-		const lower = id.toLowerCase();
-		const slot = lower.startsWith('potion') ? 0
-			: lower.startsWith('scroll') ? 1
-			: lower === 'food' || lower === 'meat' || lower === 'chargrilledmeat' ? 2
-			: lower === 'bomb' || lower === 'doublebomb' || lower.startsWith('stoneof') ? 3
-			: -1;
-		if (slot < 0) return;
-		this.quickslots[slot] = { id, instanceId };
+		assignFamilyQuickslot(this.quickslotContext(), id, instanceId);
 	}
 
-	/** Uses a quickslot's assigned item through the ordinary item-use path. */
 	private useQuickslot(slot: number): void {
-		const assigned = this.quickslots[slot];
-		if (!assigned) return;
-		const held = this.bag.find(assigned.id, assigned.instanceId);
-		if (!held || held.quantity <= 0) {
-			this.quickslots[slot] = null;
-			return;
-		}
-		this.useItemById(assigned.id, assigned.instanceId);
+		useQuickslotEntry(this.quickslotContext(), slot);
+	}
+
+	private quickslotContext(): QuickslotContext {
+		return {
+			slots: this.quickslots,
+			findHeld: (id, instanceId) => this.bag.find(id, instanceId),
+			useItem: (id, instanceId) => this.useItemById(id, instanceId),
+		};
 	}
 
 	/**

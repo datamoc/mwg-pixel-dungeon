@@ -1105,7 +1105,17 @@ one.
       immovable refusal before the mark, rotberry's unmarked gas, mageroyal keeping
       burning, the silent unknown-kind no-op), and the mob-half earthroot shake pin
       relocated to the moved module. The plant-trigger domain is now fully out of
-      the scene. **Complexity: L.**
+      the scene. **Sixth extraction 2026-09-19**: the toolbar quickslot trio
+      (`quickslotStates`/`assignQuickslot`/`useQuickslot`) moved into
+      `items/itemActions.ts` next to the item-use router they feed - a
+      `QuickslotContext` (live slot array mutated in place, bag lookup, use path)
+      plus the pure `quickslotFamilySlot` mapping; the scene keeps one-line
+      adapters and a 7-line builder. Net −10 lines in `dungeonScene.ts` (23,224
+      after) - small, but it completes the "item-use paths behind the router" half
+      of this line. Suites: `tsc` clean first try, item suite green with a new
+      quickslot pin (family mapping, assign-mirrors-use, refresh reporting the
+      held quantity under the held instance, stale-slot cleanup on refresh and on
+      use, familyless ids assigning nothing). **Complexity: L.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

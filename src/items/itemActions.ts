@@ -52,6 +52,74 @@ export interface ItemActionContext {
 	openBag(bag: BagId): void;
 }
 
+/** One toolbar quickslot assignment: the item id plus its bag instance. The scene owns
+ * the four-slot array; this module only reads and writes entries through the context. */
+export interface QuickslotEntry {
+	id: string;
+	instanceId?: string;
+}
+
+/** A quickslot's live toolbar state: the assignment plus its current bag quantity. */
+export interface QuickslotState extends QuickslotEntry {
+	frame: number;
+	quantity: number;
+}
+
+/** Scene services behind the quickslot trio: the live slot array (mutated in place),
+ * the bag lookup, and the ordinary item-use path a slot fires through. */
+export interface QuickslotContext {
+	slots: (QuickslotEntry | null)[];
+	findHeld: (id: string, instanceId?: string) => { instanceId?: string; quantity: number } | undefined;
+	useItem: (id: string, instanceId?: string) => void;
+}
+
+/** The toolbar family an item id belongs to (potions 0, scrolls 1, food 2, bombs and
+ * stones 3), or -1 when the id has no quickslot family. Pure, so the mapping itself
+ * is testable without a scene. */
+export function quickslotFamilySlot(id: string): number {
+	const lower = id.toLowerCase();
+	return lower.startsWith('potion') ? 0
+		: lower.startsWith('scroll') ? 1
+		: lower === 'food' || lower === 'meat' || lower === 'chargrilledmeat' ? 2
+		: lower === 'bomb' || lower === 'doublebomb' || lower.startsWith('stoneof') ? 3
+		: -1;
+}
+
+/** The toolbar's four quickslot states: the assigned item's live quantity (or nothing when
+ * the assignment left the bag - the slot clears itself on the next refresh). */
+export function readQuickslotStates(ctx: QuickslotContext): (QuickslotState | null)[] {
+	return [0, 1, 2, 3].map((slot) => {
+		const assigned = ctx.slots[slot];
+		if (!assigned) return null;
+		const held = ctx.findHeld(assigned.id, assigned.instanceId);
+		if (!held || held.quantity <= 0) {
+			ctx.slots[slot] = null;
+			return null;
+		}
+		return { id: assigned.id, instanceId: held.instanceId, frame: 0, quantity: held.quantity };
+	});
+}
+
+/** Assigns a used consumable to its family's quickslot, so the slot always mirrors the
+ * most recently used item of that family. */
+export function assignQuickslot(ctx: QuickslotContext, id: string, instanceId?: string): void {
+	const slot = quickslotFamilySlot(id);
+	if (slot < 0) return;
+	ctx.slots[slot] = { id, instanceId };
+}
+
+/** Uses a quickslot's assigned item through the ordinary item-use path. */
+export function useQuickslot(ctx: QuickslotContext, slot: number): void {
+	const assigned = ctx.slots[slot];
+	if (!assigned) return;
+	const held = ctx.findHeld(assigned.id, assigned.instanceId);
+	if (!held || held.quantity <= 0) {
+		ctx.slots[slot] = null;
+		return;
+	}
+	ctx.useItem(assigned.id, assigned.instanceId);
+}
+
 export function useItemById(scene: ItemActionContext, id: string, instanceId?: string): void {
 	if (!scene.awaitingInput) return;
 	scene.setRequestedItem(id, instanceId);

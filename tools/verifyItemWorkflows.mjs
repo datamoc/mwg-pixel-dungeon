@@ -1550,6 +1550,49 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		const ankhCalls = [];
 		require('./items/itemActions.js').useItemById({ awaitingInput: true, setRequestedItem: () => {}, useAnkh: (instanceId) => ankhCalls.push(instanceId) }, 'ankh', 'ankh:abc');
 		assert.deepEqual(ankhCalls, ['ankh:abc'], 'the BLESS action routes to useAnkh');
+		// The toolbar quickslot trio moved next to the router in the file-size refactor
+		// (sixth extraction): family mapping, live-quantity refresh with stale-slot
+		// cleanup, and use-through to the ordinary item-use path.
+		const quickslotActions = require('./items/itemActions.js');
+		assert.equal(quickslotActions.quickslotFamilySlot('potionHealing'), 0, 'potions fill slot 0');
+		assert.equal(quickslotActions.quickslotFamilySlot('scrollUpgrade'), 1, 'scrolls fill slot 1');
+		assert.equal(quickslotActions.quickslotFamilySlot('meat'), 2, 'meats share the food slot');
+		assert.equal(quickslotActions.quickslotFamilySlot('stoneOfBlink'), 3, 'stones share the bomb slot');
+		assert.equal(quickslotActions.quickslotFamilySlot('wand'), -1, 'wands have no quickslot family');
+		assert.equal(quickslotActions.quickslotFamilySlot('seed'), -1, 'seeds have no quickslot family');
+		function driveQuickslots(held) {
+			const used = [];
+			const ctx = {
+				slots: [null, null, null, null],
+				findHeld: (id) => held[id],
+				useItem: (id, instanceId) => { used.push([id, instanceId]); },
+			};
+			return { ctx, used };
+		}
+		let q = driveQuickslots({});
+		quickslotActions.assignQuickslot(q.ctx, 'potionHealing', 'p:1');
+		assert.deepEqual(q.ctx.slots[0], { id: 'potionHealing', instanceId: 'p:1' }, 'assign mirrors the used item');
+		quickslotActions.assignQuickslot(q.ctx, 'wand', 'w:1');
+		assert.deepEqual(q.ctx.slots, [{ id: 'potionHealing', instanceId: 'p:1' }, null, null, null], 'familyless ids assign nothing');
+		q = driveQuickslots({ potionHealing: { instanceId: 'p:1', quantity: 2 } });
+		q.ctx.slots[0] = { id: 'potionHealing', instanceId: 'p:9' };
+		assert.deepEqual(quickslotActions.readQuickslotStates(q.ctx),
+			[{ id: 'potionHealing', instanceId: 'p:1', frame: 0, quantity: 2 }, null, null, null],
+			'refresh reports the held quantity under the held instance');
+		q = driveQuickslots({});
+		q.ctx.slots[1] = { id: 'scrollIdentify', instanceId: 's:1' };
+		assert.deepEqual(quickslotActions.readQuickslotStates(q.ctx), [null, null, null, null], 'a departed assignment clears on refresh');
+		assert.equal(q.ctx.slots[1], null);
+		q = driveQuickslots({ bomb: { instanceId: 'b:1', quantity: 1 } });
+		q.ctx.slots[3] = { id: 'bomb', instanceId: 'b:1' };
+		quickslotActions.useQuickslot(q.ctx, 3);
+		assert.deepEqual(q.used, [['bomb', 'b:1']], 'use fires the assigned id through the use path');
+		q = driveQuickslots({});
+		q.ctx.slots[3] = { id: 'bomb', instanceId: 'b:1' };
+		quickslotActions.useQuickslot(q.ctx, 3);
+		assert.deepEqual(q.used, [], 'a stale slot uses nothing');
+		assert.equal(q.ctx.slots[3], null, 'and clears itself');
+		quickslotActions.useQuickslot(q.ctx, 0);
 		assert.equal(torchRows('itemActionKeys', 'item').find((row) => String(row.item) === 'ankh')?.actionKey,
 			'items.ankh.ac_bless', 'ankh keeps its BLESS action');
 		// `WndResurrect`: two keeps survive (matched by id plus instance), everything else -
