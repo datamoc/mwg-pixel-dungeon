@@ -20,10 +20,13 @@ import { SPD_STATUS_COLOR } from './spdTheme';
  *    line count exceeds the limit, so one long message costs as much room as the several
  *    short ones it is worth.
  *
- * `MAX_LINES` is 3, or 5 when `SPDSettings.interfaceSize() > 0`. This port has no interface
- * size setting, so it takes the larger 5 - the value the old log already showed.
+ * `MAX_LINES` is 3, or 5 when `SPDSettings.interfaceSize() > 0`. This port now has that same
+ * toggle (`dungeonScene.ts`'s `interfaceSize`, the `toggleInterfaceSize` action) - it starts
+ * at the small default and is pushed in via `setInterfaceSize()` whenever the toggle fires or
+ * a save loads, rather than a permanently-large stand-in.
  */
-const MAX_LINES = 5;
+const MAX_LINES_SMALL = 3;
+const MAX_LINES_LARGE = 5;
 
 export type LogLevel = 'info' | 'positive' | 'negative' | 'warning' | 'highlight';
 
@@ -44,11 +47,19 @@ interface Block {
 export class GameLog extends Container {
 	private blocks: Block[] = [];
 	private wrapWidth: number;
+	private maxLines = MAX_LINES_SMALL;
 
 	constructor(wrapWidth: number) {
 		super();
 		this.wrapWidth = wrapWidth;
 		this.scale.set(2);
+	}
+
+	/** `SPDSettings.interfaceSize()`: large keeps 5 lines of history instead of 3. */
+	setInterfaceSize(size: 0 | 1): void {
+		this.maxLines = size === 1 ? MAX_LINES_LARGE : MAX_LINES_SMALL;
+		this.trim();
+		this.layout();
 	}
 
 	add(text: string, level: LogLevel = 'info'): void {
@@ -78,7 +89,7 @@ export class GameLog extends Container {
 		for (;;) {
 			let lines = 0;
 			for (const block of this.blocks) lines += this.linesOf(block);
-			if (lines <= MAX_LINES || this.blocks.length <= 1) break;
+			if (lines <= this.maxLines || this.blocks.length <= 1) break;
 			const oldest = this.blocks.shift();
 			oldest?.label.destroy();
 		}

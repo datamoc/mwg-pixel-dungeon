@@ -23,7 +23,10 @@ import { SPD_TITLE_COLOR } from './spdTheme';
  *    (`HeroSprite.updateArmor()`'s tier rows), centred at (15,16).
  *  - `large` variant (`SPDSettings.interfaceSize() == 1`): the pane doubles its bar widths
  *    and buff icon stride; this port renders the same content at 1.5x scale with a taller
- *    buff row rather than Java's exact large pixel cuts (stated simplification).
+ *    buff row rather than Java's exact large pixel cuts (stated simplification). The buff
+ *    icons themselves do switch to Java's real separate `BUFFS_LARGE` 16x16 sheet though
+ *    (`BuffIcon`'s `large ? BUFFS_LARGE : BUFFS_SMALL`), not just a stretched copy of the
+ *    small one.
  *
  * Simplifications, all deliberate and listed in PORT_COVERAGE.md: shielding is represented
  * numerically in the HP bar/stats rather than with Java's separate gold strip, and no
@@ -76,8 +79,11 @@ const BUFF_ICON: Record<string, number> = {
 };
 
 /** buffs.png is 128x64 of 7x7 cells, so TextureFilm walks 18 to a row */
-const BUFF_SIZE = 7;
-const BUFF_COLUMNS = 18;
+const BUFF_SIZE_SMALL = 7;
+const BUFF_COLUMNS_SMALL = 18;
+/** large_buffs.png is 256x128 of 16x16 cells, so TextureFilm walks 16 to a row */
+const BUFF_SIZE_LARGE = 16;
+const BUFF_COLUMNS_LARGE = 16;
 
 const SCALE = 2;
 const PANE_WIDTH = 128;
@@ -122,7 +128,8 @@ export class StatusPane extends Container {
 	private placeText: Label;
 	private statsText: Label;
 	private buffLayer = new Container();
-	private buffIcons: Texture;
+	private buffIconsSmall: Texture;
+	private buffIconsLarge: Texture;
 	private lastBuffs = '';
 	private avatar: Sprite;
 	private avatarSheet: Texture;
@@ -132,9 +139,10 @@ export class StatusPane extends Container {
 	private large = false;
 	private onBuffClick?: (buff: string) => void;
 
-    constructor(statusSheet: Texture, buffs: Texture, heroSheet: Texture, onBuffClick?: (buff: string) => void) {
+    constructor(statusSheet: Texture, buffs: Texture, buffsLarge: Texture, heroSheet: Texture, onBuffClick?: (buff: string) => void) {
 		super();
-		this.buffIcons = buffs;
+		this.buffIconsSmall = buffs;
+		this.buffIconsLarge = buffsLarge;
 		this.onBuffClick = onBuffClick;
 
 		//NinePatch(asset, 0, 0, 128, 36, 85, 0, 45, 0): stretches horizontally only
@@ -246,6 +254,9 @@ export class StatusPane extends Container {
 		if (wantLarge !== this.large) {
 			this.large = wantLarge;
 			this.scale.set(wantLarge ? 1.5 : 1);
+			//force layoutBuffs to rebuild with the other sheet even if the buff set itself
+			//did not change across this toggle
+			this.lastBuffs = '';
 		}
 		//Armor-dependent portrait: `HeroSprite.avatar(class, tier)` is the 12x15 cell of the
 		//worn-tier row on the hero's own class sheet - `Hero.tier()` 0 (no armor) through 6
@@ -299,18 +310,21 @@ export class StatusPane extends Container {
 		this.lastBuffs = key;
 		this.buffLayer.removeChildren().forEach((child) => child.destroy());
 
+		const buffIcons = this.large ? this.buffIconsLarge : this.buffIconsSmall;
+		const buffSize = this.large ? BUFF_SIZE_LARGE : BUFF_SIZE_SMALL;
+		const buffColumns = this.large ? BUFF_COLUMNS_LARGE : BUFF_COLUMNS_SMALL;
 		let x = 0;
 		for (const buff of buffs) {
 			const index = BUFF_ICON[buff];
 			if (index === undefined) continue;
 			const icon = new Sprite(
 				new Texture({
-					source: this.buffIcons.source,
+					source: buffIcons.source,
 					frame: new Rectangle(
-						(index % BUFF_COLUMNS) * BUFF_SIZE,
-						Math.floor(index / BUFF_COLUMNS) * BUFF_SIZE,
-						BUFF_SIZE,
-						BUFF_SIZE
+						(index % buffColumns) * buffSize,
+						Math.floor(index / buffColumns) * buffSize,
+						buffSize,
+						buffSize
 					),
 				})
 			);
@@ -327,7 +341,7 @@ export class StatusPane extends Container {
 				icon.on('pointertap', (event) => { event.stopPropagation(); this.onBuffClick?.(buff); });
 			}
 			this.buffLayer.addChild(icon);
-			x += (BUFF_SIZE + 1) * SCALE;
+			x += (buffSize + 1) * SCALE;
 		}
 	}
 }

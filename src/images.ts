@@ -102,6 +102,9 @@ import uiToolbarUrl from './assets/ui_toolbar.png';
 import uiChromeUrl from './assets/ui_chrome.png';
 import uiStatusPaneUrl from './assets/ui_status_pane.png';
 import uiBuffsUrl from './assets/ui_buffs.png';
+//`SPDSettings.interfaceSize()`'s large variant: `BuffIcon`'s own `Assets.Interfaces.BUFFS_LARGE`,
+//a separate 256x128 16x16-cell sheet (not a scaled-up copy of ui_buffs.png's 7x7 cells)
+import uiLargeBuffsUrl from './assets/ui_large_buffs.png';
 import uiIconsUrl from './assets/ui_icons.png';
 import uiBadgesUrl from './assets/ui_badges.png';
 import uiBossHpUrl from './assets/ui_boss_hp.png';
@@ -175,6 +178,7 @@ const MWL_ASSET_URLS: Readonly<Record<string, string>> = {
 	'assets/ui_buffs.png': uiBuffsUrl,
 	'assets/ui_chrome.png': uiChromeUrl,
 	'assets/ui_icons.png': uiIconsUrl,
+	'assets/ui_large_buffs.png': uiLargeBuffsUrl,
 	'assets/ui_status_pane.png': uiStatusPaneUrl,
 	'assets/ui_toolbar.png': uiToolbarUrl,
 	'assets/wall_blocking.png': wallBlockingUrl,
@@ -361,6 +365,8 @@ export interface SpdSprites {
 	uiStatusPane: Texture;
 	/** `interfaces/buffs.png` - 7x7 buff icons, indexed by `BuffIndicator`'s constants */
 	uiBuffs: Texture;
+	/** `interfaces/large_buffs.png` - the same icons at 16x16, used when `interfaceSize` is large */
+	uiLargeBuffs: Texture;
 	/** `interfaces/icons.png` - assorted UI icons, incl. `Icons.COMPASS` at (16,72,7,5) */
 	uiIcons: Texture;
 	/** `interfaces/badges.png` - `Badges.Badge.image`-indexed 16x16 grid, 8 cols x 16 rows */
@@ -405,8 +411,10 @@ export interface SpdSprites {
  * from them in `src/ui/` using the numbers SPD's own UI classes use (`Chrome.Type.WINDOW`'s
  * `NinePatch(0,0,20,20,6)`, `StatusPane`'s small-layout bar rects, `BuffIcon`'s 7x7
  * `TextureFilm`, `Icons.COMPASS`'s `uvRectBySize(16,72,7,5)`, `Archs`' scrolling tiles,
- * `Fireball`'s glow/flare/flame quadrants) - see the comments there. `large_buffs.png` is not
- * copied: this port has no large interface size.
+ * `Fireball`'s glow/flare/flame quadrants) - see the comments there. `large_buffs.png` (renamed
+ * `ui_large_buffs.png` here) is copied too and wired into `StatusPane`'s large-interface-size
+ * buff row (`BuffIcon`'s real `Assets.Interfaces.BUFFS_LARGE`, a 16x16-cell sheet distinct from
+ * the small one, not a scaled copy of it).
  *
  * `items.png` is `ItemSpriteSheet`'s real 256x512 sheet, one 16x16 cell per item id
  * (`ItemSpriteSheet.xy(x,y)`/`assignItemRect`). Java tightens each cell to a sub-rect smaller
@@ -520,6 +528,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		uiChrome,
 		uiStatusPane,
 		uiBuffs,
+		uiLargeBuffs,
 		uiIcons,
 		uiBadges,
 		uiBossHp,
@@ -623,6 +632,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(uiChromeUrl),
 		loadImage(uiStatusPaneUrl),
 		loadImage(uiBuffsUrl),
+		loadImage(uiLargeBuffsUrl),
 		loadImage(uiIconsUrl),
 		loadImage(uiBadgesUrl),
 		loadImage(uiBossHpUrl),
@@ -729,6 +739,7 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		uiChrome: Texture.from(uiChrome),
 		uiStatusPane: Texture.from(uiStatusPane),
 		uiBuffs: Texture.from(uiBuffs),
+		uiLargeBuffs: Texture.from(uiLargeBuffs),
 		uiIcons: Texture.from(uiIcons),
 		uiBadges: Texture.from(uiBadges),
 		uiBossHp: Texture.from(uiBossHp),

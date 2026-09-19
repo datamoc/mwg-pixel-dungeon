@@ -7502,6 +7502,7 @@ export class DungeonScene extends Scene2D {
 		//no turn is spent, matching Java's settings change.
 		if (action === 'toggleInterfaceSize') {
 			this.interfaceSize = this.interfaceSize === 1 ? 0 : 1;
+			this.gameLog.setInterfaceSize(this.interfaceSize);
 			this.refresh();
 			this.say(t(this.interfaceSize === 1 ? 'port.log.largeui' : 'port.log.smallui'));
 			return true;
@@ -15935,7 +15936,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 	private buildInterface(): void {
 		//StatusPane sits top-left, where GameScene.java puts it
-		this.statusPane = new StatusPane(runState.sprites.uiStatusPane, runState.sprites.uiBuffs, runState.sprites[this.heroClass], (buff) => this.showBuffInfo(buff));
+		this.statusPane = new StatusPane(runState.sprites.uiStatusPane, runState.sprites.uiBuffs, runState.sprites.uiLargeBuffs, runState.sprites[this.heroClass], (buff) => this.showBuffInfo(buff));
 		this.statusPane.x = 0;
 		this.statusPane.y = 0;
 		this.stage.addChild(this.statusPane);
@@ -15961,6 +15962,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 		this.gameLog = new GameLog(320);
 		this.gameLog.x = 8;
+		this.gameLog.setInterfaceSize(this.interfaceSize);
 		this.stage.addChild(this.gameLog);
 
 		//see announceBuff's comment: the live scene is what turns a landed buff into text
