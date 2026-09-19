@@ -773,7 +773,11 @@ own selection algorithm was checked against it too and found to not match tag `v
 `SecretRoom.createRoom()`, but implementing that literal algorithm regressed the whole suite
 26/28 -> 13/28 (depths 3+), proving this port's actual levelgen RNG reference is not `v3.3.8` for
 that call and the existing "min of 4 rolls" shape - despite its uncited comment - is the
-empirically correct one; left unchanged. See `PORT_COVERAGE.md`'s matching note. Chasing the
+empirically correct one; left unchanged. seed999999999999/depth9 carries the same signature
+(short exactly 3 draws overall, same as seed42/depth8) despite diverging in different code
+(`paintMazeConnection`'s `growMaze`, algorithm and door-order both checked and matching) -
+circumstantial support that both floors share one cause (which room is secret) rather than two
+separate bugs. See `PORT_COVERAGE.md`'s matching note. Chasing the
 first index closed
 a real, separately-documented suspect from an earlier audit pass: `createBranches` was a `void`
 where Java's is `boolean` (`failedBranchAttempts > 100` gives up and lets the caller's builder

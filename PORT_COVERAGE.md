@@ -2641,7 +2641,23 @@ this specific `roomsToBranch` slot is `'secret'` in Java but not in this port fo
 despite every draw up to that point being byte-identical - is still open, and is a *content*
 question (which room this port classifies as secret) rather than an algorithm question, so the next
 attempt should compare `secretsForFloor(8)`'s and each room's assigned `kind` directly against a
-traced Java run, not the RNG shape of `createSecretRoom` itself. The
+traced Java run, not the RNG shape of `createSecretRoom` itself.
+
+**The other open floor carries the same signature.** seed999999999999/depth9's trace is 22864
+draws total on this port's side against Java's 22867 - short by exactly three, the identical
+deficit as seed42/depth8, even though the two floors diverge in different code
+(`RegularBuilder.createBranches` there, `paintMazeConnection`'s `growMaze` here) and the
+divergence itself does not cleanly resync afterward the way seed42/depth8's does (this floor's
+gap sits near the trace's own tail, so there is little room left to resync into). `growMaze`'s
+own algorithm is checked byte-for-byte against `Maze.java` (both `generate`/`decideDirection`/
+`checkValidMove`) and matches exactly, and door-iteration order (`Room.connected`, a real
+`LinkedHashMap` in Java, a real insertion-ordered `Map` here) is confirmed to match too - so this
+is not a second bug, but circumstantial support for one shared cause: a `MazeConnectionRoom` is
+created specifically to connect a `SecretRoom` (`createBranches`'s own `r.kind === 'secret' ?
+createConnectionRoom(depth, true) : ...` branch), so a floor that disagrees with Java about
+*which* room is secret would also disagree, downstream, about which room gets a maze-shaped
+connection and what that connection's door layout is by the time `paintMazeConnection` runs -
+exactly the same content question as the other floor's, not a second algorithm to hunt for. The
 harness side gained an env-var fallback for `-Dlevelgen.trace` too (`LEVELGEN_TRACE=true`):
 `desktop/build.gradle`'s `runHarness` task does not forward `-D` system properties to the
 forked JVM, and - found the hard way - this local Gradle 8.1.1 install cannot recompile *any*
