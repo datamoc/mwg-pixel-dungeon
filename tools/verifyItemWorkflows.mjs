@@ -81,6 +81,7 @@ compile(join(root, 'src/items/beacon.ts'), 'items/beacon.js');
 compile(join(root, 'src/items/spells.ts'), 'items/spells.js');
 compile(join(root, 'src/items/honeypot.ts'), 'items/honeypot.js');
 compile(join(root, 'src/items/bombs.ts'), 'items/bombs.js');
+compile(join(root, 'src/items/selfUse.ts'), 'items/selfUse.js');
 //`spells.js` upgrades through `itemWorkflows.js` by its real name, while the suite otherwise
 //only compiles that module as `workflows.js` (line 26) - recompiling it here under its own
 //name is the same idempotent write.
@@ -2766,6 +2767,55 @@ function bombAimDrive(overrides = {}) {
 	const preset = bombAimDrive({ pending: { x: 5, y: 5 } });
 	assert.equal(preset.flags.aim, null, 'a pending aim detonates at once');
 	assert.deepEqual(preset.flags.detonated, [{ target: { x: 5, y: 5 }, bombId: 'bomb', instanceId: undefined }], 'at the pending cell');
+}
+// The moved ankh/torch uses (`useAnkhFlow`/`useTorchFlow`, the file-size refactor's
+// twenty-sixth extraction): missing items do nothing; gates refuse spending nothing.
+const { useAnkhFlow, useTorchFlow } = require('./items/selfUse.js');
+const { WATERSKIN_MAX } = require('./dungeonConstants.js');
+{
+	const missing = { findAnkh: () => null, waterskin: WATERSKIN_MAX, drainWaterskin: () => { throw new Error('must not drain'); }, spendTurn: () => { throw new Error('must not spend'); }, say: () => { throw new Error('must not say'); }, t: (key) => key };
+	useAnkhFlow(missing);
+	assert.ok(true, 'no ankh, no effect');
+	let skin = WATERSKIN_MAX;
+	let turns = 0;
+	const said = [];
+	const ankh = { blessed: false };
+	const ctx = {
+		findAnkh: () => ankh,
+		get waterskin() { return skin; },
+		drainWaterskin: () => { skin = 0; },
+		spendTurn: () => { turns++; },
+		say: (line, level) => { said.push(`${level}:${line}`); },
+		t: (key) => key,
+	};
+	useAnkhFlow(ctx);
+	assert.equal(ankh.blessed, true, 'a full skin blesses the ankh');
+	assert.equal(skin, 0, 'and drains');
+	assert.ok(said.some((l) => l.includes('items.ankh.bless')), 'with the bless line');
+	assert.equal(turns, 1, 'spending the turn');
+	const low = { ...ctx, get waterskin() { return WATERSKIN_MAX - 1; } };
+	let lowTurns = 0;
+	useAnkhFlow({ ...low, spendTurn: () => { lowTurns++; } });
+	assert.ok(lowTurns === 0, 'a short skin spends nothing');
+	assert.ok(said.some((l) => l.includes('ankhneedsfull')), 'with the needsfull line');
+	assert.ok(ankh.blessed, 'leaving the blessed flag alone');
+}
+{
+	let carried = 1;
+	let lit = 0;
+	let turns = 0;
+	const ctx = {
+		hasTorch: () => carried > 0,
+		consumeTorch: () => { carried--; },
+		grantLight: () => { lit++; },
+		spendTurn: () => { turns++; },
+	};
+	useTorchFlow(ctx);
+	assert.equal(carried, 0, 'the torch is consumed');
+	assert.equal(lit, 1, 'light granted');
+	assert.equal(turns, 1, 'the turn spent');
+	useTorchFlow(ctx);
+	assert.equal(turns, 1, 'no torch, no second cast');
 }
 // The moved stylus/alchemize pickers (the file-size refactor's twenty-third extraction):
 // driven headlessly with live-object bags, the real armor predicate and energy table.

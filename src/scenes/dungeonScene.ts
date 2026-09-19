@@ -202,6 +202,7 @@ import { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLe
 import { shouldSuccubusBlink, chooseSuccubusBlinkCell, succubusBlinkCooldown } from '../simulation/succubusBlink';
 import { useBrewFlow, type BrewFlowContext } from '../simulation/brews';
 import { useHoneypotFlow, type HoneypotFlowContext } from '../items/honeypot';
+import { useAnkhFlow, useTorchFlow, type AnkhContext, type TorchContext } from '../items/selfUse';
 import { foregroundGrassFrames as buildForegroundGrassFrames, terrainFrameAt as buildTerrainFrameAt, terrainFrames as buildTerrainFrames, wallFrameAt as buildWallFrameAt, wallFrames as buildWallFrames, waterFrames as buildWaterFrames, type DungeonTileFrameContext } from './dungeonTileFrames';
 import { Banner } from '../ui/banner';
 import { showDefeatPanel as showDefeatPanelUi, showVictoryPanel as showVictoryPanelUi } from '../ui/endPanels';
@@ -18036,17 +18037,23 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * re-runs the same rite (the flag is idempotent) rather than growing a second state. Java's
 	 * DRINK sample and speck burst have no seam here (see PORT_COVERAGE.md's ankh row). */
 	private useAnkh(instanceId?: string): void {
-		const item = this.bag.find('ankh', instanceId);
-		if (!item) return;
-		if (this.waterskin < WATERSKIN_MAX) {
-			this.say(t('port.log.ankhneedsfull'), 'negative');
-			return;
-		}
-		(item as typeof item & { blessed?: boolean }).blessed = true;
-		this.waterskin = 0;
-		this.say(t('items.ankh.bless'), 'positive');
-		this.actionSpentTurn = true;
-		this.spendHeroTurn(1);
+		useAnkhFlow(this.ankhContext(), instanceId);
+	}
+
+	/**
+	 * The ankh-bless flow lives in `items/selfUse.ts` behind `AnkhContext` - the
+	 * file-size refactor's twenty-sixth extraction (with Torch below), behavior-identical.
+	 */
+	private ankhContext(): AnkhContext {
+		const scene = this;
+		return {
+			findAnkh: (instanceId) => scene.bag.find('ankh', instanceId) ?? null,
+			get waterskin() { return scene.waterskin; },
+			drainWaterskin: () => { scene.waterskin = 0; },
+			spendTurn: () => { scene.actionSpentTurn = true; scene.spendHeroTurn(1); },
+			say: scene.say.bind(scene),
+			t,
+		};
 	}
 
 	/** `Hero.die()`'s blessed-ankh branch (tag `v3.3.8`): Java looks for ankhs first, preferring
@@ -18076,12 +18083,21 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * of those (see PORT_COVERAGE.md's torch row), so the buff icon and the sight change are
 	 * the whole observable effect. Java logs no message either, so neither does this. */
 	private useTorch(instanceId?: string): void {
-		const item = this.bag.find('torch', instanceId);
-		if (!item) return;
-		this.bag.remove('torch', 1, instanceId);
-		addBuff(this.hero, 'light');
-		this.actionSpentTurn = true;
-		this.spendHeroTurn(1);
+		useTorchFlow(this.torchContext(), instanceId);
+	}
+
+	/**
+	 * The torch-light flow lives in `items/selfUse.ts` behind `TorchContext` - the
+	 * file-size refactor's twenty-sixth extraction (with Ankh above), behavior-identical.
+	 */
+	private torchContext(): TorchContext {
+		const scene = this;
+		return {
+			hasTorch: (instanceId) => scene.bag.find('torch', instanceId) !== undefined,
+			consumeTorch: (instanceId) => { scene.bag.remove('torch', 1, instanceId); },
+			grantLight: () => { addBuff(scene.hero, 'light'); },
+			spendTurn: () => { scene.actionSpentTurn = true; scene.spendHeroTurn(1); },
+		};
 	}
 
 	/**

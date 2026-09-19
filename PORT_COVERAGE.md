@@ -1590,7 +1590,7 @@ Still unported, stated: the `ShadowParticle` bursts and the `THEME_FINALE` music
 now ported.** (1) It is not a "Dark zap" and not `Light.weaken(50)`: `YogDzewa.updateVisibility()` shrinks the
 *hero's* own sight to the arena's radius (`4 - (phase-1)`, floored at 1, and 2 under the Darkness challenge) and skips
 that when the hero holds the **`Light` buff** - which in SPD comes from a **Torch**, now a real item
-here (`useTorch`: one torch for the 250-turn buff, spending the turn, icon `BuffIndicator.LIGHT = 22`), so the
+here (`useTorch`: one torch for the 250-turn buff, spending the turn, icon `BuffIndicator.LIGHT = 22` - the self-use half lives in `useTorchFlow` in `src/items/selfUse.ts` since 2026-09-19, the file-size refactor's twenty-sixth extraction, behavior-identical, the scene keeping the one-line `useTorch` adapter plus a `torchContext()` builder), so the
 exemption is live too (`viewRadius()` skips the shrink while lit and floors sight at `Light.DISTANCE` 6, which is what pierces Darkness's 2). Stated simplifications: no BURNING sample, flame burst, operate animation, or Catalog use count (this port has no seam for any of them); the shared sight radius means monsters see at the hero's lit radius too. (2) Phase-0 dormancy was never missing: `takeYogTurn`'s phase-0 branch owns Yog's whole turn, keeps
 it invulnerable, and notices only once `fov.isVisible` covers it, then yells, sets phase 1 and rolls fresh cooldowns -
 Java's `Dungeon.observe()`/`notice()` pair, whose boss-bar half has no UI here and whose music Java starts on the
@@ -1750,8 +1750,8 @@ total price, clears the sale flag, and transfers the item to the bag. **Shop sto
 six non-Generator goods that were previously dropped silently**: Ankh, Stylus, Honeypot, Alchemize, shop bags, and
 SandBag each gets its Java item id, message key, sprite frame, and exact base value (Ankh 50, Stylus/Honeypot 30,
 Alchemize 2.5 per unit - `20/8`, corrected from a wrong 5 in the 2026-09-11 Alchemize pass - bag 30, SandBag 30).
-The Ankh's BLESS action and blessed revive are now live: a full waterskin blesses the ankh (spending the turn,
-`items.ankh.bless`), the flag persists through save/load, one unblessed ankh per shop is stocked, and dying with a
+The Ankh's BLESS action and blessed revive are now live: a full waterskin blesses the ankh (spending the turn, `items.ankh.bless`; the bless half moved to `useAnkhFlow` in `src/items/selfUse.ts` on 2026-09-19 as the file-size refactor's twenty-sixth extraction, behavior-identical, the scene keeping the one-line `useAnkh` adapter plus an `ankhContext()` builder),
+the flag persists through save/load, one unblessed ankh per shop is stocked, and dying with a
 blessed ankh revives on the spot at quarter health, cured per `PotionOfHealing.cure()`, shielded 3 turns
 (`Invulnerability.DURATION`, icon `BuffIndicator.ANKH = 52`, damage negated in `absorbHeroDamage`), consuming the
 ankh - browser-verified live (`tools/scratch/ankh-bless-revive-livecheck.mjs`, 5/5). Stated simplifications: no DRINK

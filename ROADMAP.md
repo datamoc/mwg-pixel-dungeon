@@ -1381,6 +1381,17 @@ one.
       fix-ups, item suite green with a new headless drive next to the existing place checks
       (no candle/no ritual never aim, empty slots validate while filled and non-slots refuse,
       confirms place the validated slot and spend the turn). No review bugs this slice.
+      **Complexity: XS.** **Twenty-sixth extraction 2026-09-19**: the ankh-bless and
+      torch-light self uses (`useAnkh`'s full-skin gate plus bless-and-drain, `useTorch`'s
+      consume-plus-light) moved to a new `items/selfUse.ts` as `useAnkhFlow`/`useTorchFlow`
+      behind `AnkhContext` (ankh gate, waterskin level, drain, turn, say, `t`) and
+      `TorchContext` (torch gate, consume, grant-light, turn). The scene keeps the one-line
+      adapters the router calls plus `ankhContext()`/`torchContext()` builders. Net +16 lines
+      in `dungeonScene.ts` (22,775 after) - the two builders cost more than the small bodies
+      saved - `selfUse.ts` 70 new. Suites: `tsc` clean with no fix-ups, item suite green with
+      a new headless drive (missing ankh/torch never act, a full skin blesses plus drains with
+      the bless line and a turn, a short skin spends nothing with the needsfull line, a torch
+      consumes, lights and spends the turn once). No review bugs this slice.
       **Complexity: XS.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
