@@ -224,10 +224,10 @@ import {
 import { equipWand as equipInventoryWand, type EquipWandContext } from '../items/equipWand';
 import { useCloak as useArtifactCloak, useHourglass as useArtifactHourglass, useChalice as useArtifactChalice, useKingsCrown as useArtifactKingsCrown, useToolkit as useArtifactToolkit, useSpellbook as useArtifactSpellbook,
 	applyCapeOfThornsProc, applyToolkitGainCharge, applyArmbandGainCharge, applyHornGainCharge, applyChainsGainExp, consumeToolkitEnergy, toolkitAvailableEnergy, energizeToolkit, setupSpellbookScrolls, randomSpellbookScroll, spellbookChargeCap, addScrollToSpellbook, type ArtifactActionContext, type SpellbookItem } from '../items/artifactActions';
-//The Sandals of Nature's own rules live in their own module (scene-free, so `verifyItemWorkflows`
-//can drive them the way it drives `shopPricing`/`missiles`); the scene owns this artifact's
-//actions because both of them need its aiming and picker seams.
-import { sandalsCanUseSeed, sandalsRootChargeReq, sandalsNaturalismLevel, applySandalsNaturalismCharge, feedSandalsSeed, type SandalsItem } from '../items/sandals';
+//The Sandals of Nature's own rules - and the feed/root window flow behind `SandalsFlowContext` -
+//live in their own module (scene-free, so `verifyItemWorkflows` can drive them the way it
+//drives `shopPricing`/`missiles`); the scene only builds the flow context.
+import { sandalsNaturalismLevel, applySandalsNaturalismCharge, useSandalsFlow, type SandalsFlowContext, type SandalsItem } from '../items/sandals';
 import { talismanScryGate, talismanMaxDist, talismanScryAngle, talismanAwarenessDuration, talismanApplyExp, talismanApplyScryCost, applyTalismanPerTurnCharge, type TalismanItem } from '../items/talisman';
 import { roseSummonGate, roseGhostMaxHp, roseGhostAttackSkill, roseGhostDefenseSkill, roseGhostDamageRange, applyRoseRecharge, type RoseItem } from '../items/rose';
 import { rosePetalsNeeded, rosePetalDropCap, rosePetalPickup, roseChargeCap, roseLevelCap } from '../items/rose';
@@ -18513,26 +18513,44 @@ private eyeBeamTurn(monster: Creature): boolean {
 		}
 
 		private useSandals(instanceId?: string): void {
-			const sandals = this.sandalsItem(instanceId);
-			if (!sandals || this.hero.magicImmune) return;
-			const feedEntry = 'sandals-feed', rootEntry = 'sandals-root';
-			const req = sandalsRootChargeReq(sandals);
-			const canFeed = !sandals.cursed;
-			const canRoot = !sandals.cursed && req !== null && (sandals.charge ?? 0) >= req;
-			const entries = [
-				...(canFeed ? [{ id: 'sandals', instanceId: feedEntry, identified: true, quantity: 1 }] : []),
-				...(canRoot ? [{ id: 'sandals', instanceId: rootEntry, identified: true, quantity: 1 }] : []),
-			];
-			if (entries.length === 0) {
-				this.say(t(req === null
-					? 'items.artifacts.sandalsofnature.no_effect'
-					: 'items.artifacts.sandalsofnature.low_charge'), 'negative');
-				return;
-			}
-			this.openItemPicker(t('items.artifacts.sandalsofnature.name'), entries, (entry) => {
-				if (entry.instanceId === feedEntry) this.openSandalsSeedPicker(instanceId);
-				else if (entry.instanceId === rootEntry) this.beginSandalsRoot(instanceId);
-			});
+			useSandalsFlow(this.sandalsFlowContext(), instanceId);
+		}
+
+		/**
+		 * The Sandals of Nature's window flow lives in `items/sandals.ts` behind
+		 * `SandalsFlowContext` - the file-size refactor's eighth extraction, behavior-identical.
+		 */
+		private sandalsFlowContext(): SandalsFlowContext {
+			const scene = this;
+			return {
+				get magicImmune() { return scene.hero.magicImmune === true; },
+				get heroPos() { return { x: scene.hero.x, y: scene.hero.y }; },
+				sandalsOf: (instanceId?: string) => scene.sandalsItem(instanceId),
+				seedKind: (sourceClass?: string) => scene.seedPlantKind(sourceClass),
+				carriedSeeds: () => scene.bag.items
+					.filter((item) => item.id === 'seed')
+					.map((item) => ({ instanceId: item.instanceId, quantity: item.quantity, sourceClass: (item as typeof item & { sourceClass?: string }).sourceClass })),
+				findSeed: (instanceId?: string) => {
+					const seed = scene.bag.find('seed', instanceId);
+					return seed ? { instanceId: seed.instanceId, quantity: seed.quantity, sourceClass: (seed as typeof seed & { sourceClass?: string }).sourceClass } : undefined;
+				},
+				consumeSeed: (instanceId?: string) => { scene.bag.remove('seed', 1, instanceId); },
+				openPicker: (title, entries, onPick) => scene.openItemPicker(title, entries, onPick),
+				beginAim: (opts) => scene.beginAiming(opts),
+				isCellVisible: (x, y) => scene.fov.isVisible(x, y),
+				plantRootSeed: (cell, kind) => {
+					const index = scene.level.index(cell.x, cell.y);
+					scene.manualPlants.set(index, kind);
+					scene.placePortedFeature(index, kind);
+					const occupant = scene.creatureAt(cell.x, cell.y);
+					if (occupant && !occupant.isHero) scene.triggerMobPlantAt(occupant);
+					else if (occupant) scene.triggerPortedPlantAt(cell.x, cell.y);
+				},
+				dispelInvisibility: () => { delete scene.hero.buffs['invisibility']; },
+				spendTurn: () => { scene.actionSpentTurn = true; scene.spendHeroTurn(1); },
+				say: scene.say.bind(scene),
+				t,
+			};
 		}
 
 		private useTalisman(instanceId?: string): void {
@@ -18794,71 +18812,6 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 		private sandalsItem(instanceId?: string) {
 			return this.bag.find('sandals', instanceId) as (typeof this.bag.items[number] & SandalsItem) | undefined;
-		}
-
-		private openSandalsSeedPicker(instanceId?: string): void {
-			const sandals = this.sandalsItem(instanceId);
-			if (!sandals) return;
-			const entries = this.bag.items
-				.filter((item) => item.quantity > 0 && item.id === 'seed' && sandalsCanUseSeed(sandals, this.seedPlantKind((item as typeof item & { sourceClass?: string }).sourceClass)))
-				.map((item) => ({ id: item.id, instanceId: item.instanceId, identified: true, quantity: 1 }));
-			this.openItemPicker(t('items.artifacts.sandalsofnature.prompt'), entries, (pick) => this.feedSandalsSeedPick(pick, instanceId));
-		}
-
-		private feedSandalsSeedPick(pick: { id: string; instanceId?: string }, instanceId?: string): void {
-			const sandals = this.sandalsItem(instanceId);
-			if (!sandals) return;
-			const seed = this.bag.find('seed', pick.instanceId);
-			if (!seed || seed.quantity <= 0) return;
-			const kind = this.seedPlantKind((seed as typeof seed & { sourceClass?: string }).sourceClass);
-			if (!kind || !sandalsCanUseSeed(sandals, kind)) return;
-			this.bag.remove('seed', 1, seed.instanceId);
-			const leveled = feedSandalsSeed(sandals, kind);
-			this.say(leveled ? t('items.artifacts.sandalsofnature.levelup') : t('items.artifacts.sandalsofnature.absorb_seed'), 'positive');
-			this.actionSpentTurn = true;
-			this.spendHeroTurn(1);
-		}
-
-		private beginSandalsRoot(instanceId?: string): void {
-			const sandals = this.sandalsItem(instanceId);
-			if (!sandals) return;
-			if (!sandals.curSeedEffect) { this.say(t('items.artifacts.sandalsofnature.no_effect'), 'negative'); return; }
-			const req = sandalsRootChargeReq(sandals);
-			if (req === null || (sandals.charge ?? 0) < req) { this.say(t('items.artifacts.sandalsofnature.low_charge'), 'negative'); return; }
-			this.beginAiming({
-				range: mwlItemEffectValue('sandals', 'rootRange'),
-				validate: (cell) => this.fov.isVisible(cell.x, cell.y),
-				onConfirm: (cell) => this.confirmSandalsRoot(cell, instanceId),
-			});
-			this.say(t('items.artifacts.sandalsofnature.prompt_target'), 'positive');
-		}
-
-		private confirmSandalsRoot(cell: Step, instanceId?: string): void {
-			const sandals = this.sandalsItem(instanceId);
-			if (!sandals) return;
-			const kind = sandals.curSeedEffect;
-			const req = sandalsRootChargeReq(sandals);
-			if (!kind || req === null || (sandals.charge ?? 0) < req) return;
-			if (!this.fov.isVisible(cell.x, cell.y)
-				|| Roguelike.chebyshevDistance(cell, { x: this.hero.x, y: this.hero.y }) > mwlItemEffectValue('sandals', 'rootRange')) {
-				this.say(t('items.artifacts.sandalsofnature.out_of_range'), 'warning');
-				return;
-			}
-			const index = this.level.index(cell.x, cell.y);
-			this.manualPlants.set(index, kind);
-			this.placePortedFeature(index, kind);
-			const occupant = this.creatureAt(cell.x, cell.y);
-			if (occupant && !occupant.isHero) this.triggerMobPlantAt(occupant);
-			else if (occupant) this.triggerPortedPlantAt(cell.x, cell.y);
-			sandals.charge = Math.max(0, (sandals.charge ?? 0) - req);
-			delete this.hero.buffs['invisibility'];
-			//Java logs nothing at all here - a successful root is conveyed by the plant's own sprite,
-			//its leaf burst and the planting sound, none of which this port has a seam for (the same
-			//"no per-effect audio" gap `trampleHighGrass`/Camouflage already document). It therefore
-			//reuses the port's own planting line, with SPD's real plant name for the kind.
-			this.say(t('port.log.plantseed', { kind: t(`plants.${kind}.name`) }), 'positive');
-			this.actionSpentTurn = true;
-			this.spendHeroTurn(1);
 		}
 
 		private chainsItem(instanceId?: string) {

@@ -1133,7 +1133,16 @@ one.
       prize), sim suite green at 160 checks with a new sacrificial drive (statue/
       mimic/piranha/swarm/kindless costs, spread gating, outside-volume refusal,
       partial payment banking nothing, prize-cell decode, stepper fallback). The
-      reward key moves 1-to-1 with the code (`ctx.t`, extractor-matched).
+      reward key moves 1-to-1 with the code (`ctx.t`, extractor-matched). **Eighth extraction
+      2026-09-19**: the Sandals of Nature's window flow (`useSandals`'s feed/root choice rows,
+      the seed picker, root aiming plus confirm) moved to `items/sandals.ts` behind a new
+      `SandalsFlowContext` (sandals/seed lookup, picker, aimer, plant-plus-trigger seam, turn,
+      say, `t`); the scene keeps the one-line `useSandals` adapter the item-use router calls,
+      `sandalsItem` for the grass paths, plus a builder. Net −47 lines in `dungeonScene.ts`
+      (23,201 after), `sandals.ts` 141 to 264. Suites: `tsc` clean first try, item suite green
+      with a new headless drive of the moved flow through scripted pickers (feed consumes and
+      attunes, root aims at the authored range 3 and pays firebloom's own 20, AntiMagic opens
+      nothing, cursed-plus-uncharged reports low charge, far cells refuse without planting).
       **Complexity: L.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`

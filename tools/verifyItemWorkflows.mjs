@@ -1740,6 +1740,73 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 		assert.equal(feedSandalsSeed(cappedSandals, seed), false, `no further level once capped (${seed})`);
 	}
 	assert.equal(cappedSandals.level, 3);
+// The moved window flow (`SandalsFlowContext`, the file-size refactor's eighth extraction):
+// driven headlessly through scripted pickers, with the scene seams stubbed.
+const { useSandalsFlow } = require('./items/sandals.js');
+function sandalsDrive(overrides = {}, pickScript = []) {
+	const log = [];
+	const sandals = { level: 0, seeds: [], charge: 100, curSeedEffect: 'firebloom', ...overrides.sandals };
+	const seeds = overrides.seeds ?? [{ instanceId: 'seed:1', quantity: 1, sourceClass: 'Firebloom' }];
+	const picks = [...pickScript];
+	const ctx = {
+		magicImmune: false,
+		heroPos: { x: 5, y: 5 },
+		sandalsOf: () => sandals,
+		seedKind: (sourceClass) => (sourceClass ? sourceClass.toLowerCase() : null),
+		carriedSeeds: () => seeds,
+		findSeed: (instanceId) => seeds.find((s) => (s.instanceId ?? undefined) === (instanceId ?? undefined)),
+		consumeSeed: (instanceId) => { const s = seeds.find((x) => (x.instanceId ?? undefined) === (instanceId ?? undefined)); if (s) s.quantity -= 1; },
+		openPicker: (title, entries, onPick) => { log.push(`picker:${title}:${entries.map((e) => e.instanceId ?? e.id).join(',')}`); const want = picks.shift(); onPick(entries[want ?? 0]); },
+		beginAim: (opts) => { log.push(`aim:${opts.range}`); ctx.aimOpts = opts; },
+		isCellVisible: () => true,
+		plantRootSeed: (cell, kind) => { log.push(`plant:${cell.x},${cell.y}:${kind}`); },
+		dispelInvisibility: () => { log.push('uncloak'); },
+		spendTurn: () => { log.push('turn'); },
+		say: (line, level) => { log.push(`say:${level}:${line}`); },
+		t: (key, params) => (params ? `${key}?${Object.values(params).join(',')}` : key),
+		...overrides.ctx,
+	};
+	return { ctx, log, sandals, seeds };
+}
+// Feed path: the choice picker offers feed+root, the scripted feed pick opens the seed picker,
+// and confirming consumes the seed, attunes it and spends the turn.
+{
+	const { ctx, log, sandals, seeds } = sandalsDrive({}, [0, 0]);
+	useSandalsFlow(ctx);
+	assert.ok(log[0].startsWith('picker:items.artifacts.sandalsofnature.name:sandals-feed,sandals-root'), `choice rows, got ${log[0]}`);
+	assert.ok(log[1].startsWith('picker:items.artifacts.sandalsofnature.prompt:seed:1'), `seed row, got ${log[1]}`);
+	assert.equal(seeds[0].quantity, 0, 'the fed seed is consumed');
+	assert.equal(sandals.curSeedEffect, 'firebloom', 'the fed kind stays attuned');
+	assert.ok(log.includes('turn'), 'feeding spends the turn');
+}
+// Root path: the scripted root pick arms the aimer, and confirming a visible in-range cell
+// plants the attuned kind, pays its charge, uncloaks and spends the turn.
+{
+	const { ctx, log, sandals } = sandalsDrive({}, [1]);
+	useSandalsFlow(ctx);
+	assert.ok(log[0].endsWith('sandals-feed,sandals-root'), `root offered, got ${log[0]}`);
+	assert.equal(log[1], 'aim:3', `root aims at the authored range, got ${log[1]}`);
+	ctx.aimOpts.onConfirm({ x: 6, y: 5 });
+	assert.ok(log.includes('plant:6,5:firebloom'), 'the attuned kind plants');
+	assert.equal(sandals.charge, 80, 'firebloom pays its own 20 charge');
+	assert.ok(log.includes('uncloak'), 'rooting dispels invisibility');
+	assert.ok(log.filter((l) => l === 'turn').length === 1, 'one turn for the whole root');
+}
+// Refusals: AntiMagic never opens the picker; a cursed pair with no root reports low charge;
+// an out-of-range confirm warns and plants nothing.
+{
+	const immune = sandalsDrive({ ctx: { magicImmune: true } }, [0]);
+	useSandalsFlow(immune.ctx);
+	assert.ok(!immune.log.some((l) => l.startsWith('picker:')), 'AntiMagic opens nothing');
+	const cursed = sandalsDrive({ sandals: { level: 0, seeds: [], charge: 0, curSeedEffect: 'firebloom', cursed: true } }, []);
+	useSandalsFlow(cursed.ctx);
+	assert.ok(cursed.log.some((l) => l.includes('low_charge')), `cursed+uncharged reports low charge, got ${cursed.log}`);
+	const fresh = sandalsDrive({}, [1]);
+	useSandalsFlow(fresh.ctx);
+	fresh.ctx.aimOpts.onConfirm({ x: 50, y: 50 });
+	assert.ok(fresh.log.some((l) => l.includes('out_of_range')), 'a far cell refuses');
+	assert.ok(!fresh.log.some((l) => l.startsWith('plant:')), 'refused roots plant nothing');
+}
 	const { talismanMaxDist, talismanScryAngle, talismanScryCost, talismanApplyScryCost, talismanApplyExp,
 		talismanAwarenessDuration, talismanProcFigure, talismanScryGate, applyTalismanPerTurnCharge,
 		talismanChargeCap, talismanLevelCap } = require('./items/talisman.js');

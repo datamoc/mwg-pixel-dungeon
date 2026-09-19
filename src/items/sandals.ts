@@ -3,10 +3,14 @@
  * game - the same reason `items/shopPricing.ts` and `items/missiles.ts` exist. Every formula
  * here is `SandalsOfNature.java` (tag `v3.3.8`) plus the two coefficients `HighGrass.trample`
  * reads off the same artifact; the scene owns the aiming, the pickers and the turn cost.
+ * The window flow itself (`useSandals`'s feed/root choice, the seed picker, root aiming and
+ * confirm) lives here too, behind `SandalsFlowContext` - the file-size refactor's eighth
+ * extraction, behavior-identical.
  *
  * The artifact's own state is the Java pair `charge` (an int) and `partialCharge` (the float
  * build-up toward the next whole charge), plus the fed-seed list and the currently attuned seed.
  */
+import { Roguelike } from 'mwg';
 import { mwlItemEffectValue, MWL_TABLE_ROWS } from '../mwlContent';
 
 export type SandalsItem = {
@@ -137,4 +141,123 @@ export function feedSandalsSeed(sandals: SandalsItem, kind: string): boolean {
 export function sandalsRootChargeReq(sandals: SandalsItem): number | null {
 	if (!sandals.curSeedEffect) return null;
 	return sandalsSeedChargeReq(sandals.curSeedEffect);
+}
+
+/** A carried seed as the feed picker sees it: the generic `'seed'` id plus its plant class. */
+export interface SandalsSeedEntry {
+	instanceId?: string;
+	quantity: number;
+	sourceClass?: string;
+}
+
+/**
+ * The Sandals of Nature's window flow (`useSandals`'s feed/root picker, the seed picker, the
+ * root aimer), moved out of the scene behind this context the way the alchemy and transmutation
+ * flows moved before it - behavior-identical, with the scene keeping one builder plus the
+ * `useSandals` adapter the item-use router calls. The `t` field is deliberately named `t`
+ * (bound to the real one) so the `t('...')` key audits keep matching these call sites.
+ */
+export interface SandalsFlowContext {
+	readonly magicImmune: boolean;
+	readonly heroPos: { x: number; y: number };
+	sandalsOf(instanceId?: string): SandalsItem | undefined;
+	seedKind(sourceClass?: string): string | null;
+	carriedSeeds(): SandalsSeedEntry[];
+	findSeed(instanceId?: string): SandalsSeedEntry | undefined;
+	consumeSeed(instanceId?: string): void;
+	openPicker(title: string, entries: { id: string; instanceId?: string; identified: boolean; quantity: number }[], onPick: (entry: { id: string; instanceId?: string }) => void): void;
+	beginAim(opts: { range: number; validate: (cell: { x: number; y: number }) => boolean; onConfirm: (cell: { x: number; y: number }) => void }): void;
+	isCellVisible(x: number, y: number): boolean;
+	plantRootSeed(cell: { x: number; y: number }, kind: string): void;
+	dispelInvisibility(): void;
+	spendTurn(): void;
+	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
+	t(key: string, params?: Record<string, string | number>): string;
+}
+
+/** `SandalsOfNature.actions()`'s feed/root choice rows (`sandals-feed`/`sandals-root`
+ *  synthetic instance ids, the same trick the beacon/horn rows use). */
+export function useSandalsFlow(ctx: SandalsFlowContext, instanceId?: string): void {
+	const sandals = ctx.sandalsOf(instanceId);
+	if (!sandals || ctx.magicImmune) return;
+	const feedEntry = 'sandals-feed', rootEntry = 'sandals-root';
+	const req = sandalsRootChargeReq(sandals);
+	const canFeed = !sandals.cursed;
+	const canRoot = !sandals.cursed && req !== null && (sandals.charge ?? 0) >= req;
+	const entries = [
+		...(canFeed ? [{ id: 'sandals', instanceId: feedEntry, identified: true, quantity: 1 }] : []),
+		...(canRoot ? [{ id: 'sandals', instanceId: rootEntry, identified: true, quantity: 1 }] : []),
+	];
+	if (entries.length === 0) {
+		ctx.say(ctx.t(req === null
+			? 'items.artifacts.sandalsofnature.no_effect'
+			: 'items.artifacts.sandalsofnature.low_charge'), 'negative');
+		return;
+	}
+	ctx.openPicker(ctx.t('items.artifacts.sandalsofnature.name'), entries, (entry) => {
+		if (entry.instanceId === feedEntry) openSandalsSeedPickerFlow(ctx, instanceId);
+		else if (entry.instanceId === rootEntry) beginSandalsRootFlow(ctx, instanceId);
+	});
+}
+
+/** The feed seed picker: only seeds the footwear can still use (`canUseSeed`). */
+export function openSandalsSeedPickerFlow(ctx: SandalsFlowContext, instanceId?: string): void {
+	const sandals = ctx.sandalsOf(instanceId);
+	if (!sandals) return;
+	const entries = ctx.carriedSeeds()
+		.filter((item) => item.quantity > 0 && sandalsCanUseSeed(sandals, ctx.seedKind(item.sourceClass)))
+		.map((item) => ({ id: 'seed', instanceId: item.instanceId, identified: true, quantity: 1 }));
+	ctx.openPicker(ctx.t('items.artifacts.sandalsofnature.prompt'), entries, (pick) => feedSandalsSeedPickFlow(ctx, pick, instanceId));
+}
+
+/** `SandalsOfNature.itemSelector.onSelect()`: consume the seed, feed it, spend the turn. */
+export function feedSandalsSeedPickFlow(ctx: SandalsFlowContext, pick: { id: string; instanceId?: string }, instanceId?: string): void {
+	const sandals = ctx.sandalsOf(instanceId);
+	if (!sandals) return;
+	const seed = ctx.findSeed(pick.instanceId);
+	if (!seed || seed.quantity <= 0) return;
+	const kind = ctx.seedKind(seed.sourceClass);
+	if (!kind || !sandalsCanUseSeed(sandals, kind)) return;
+	ctx.consumeSeed(seed.instanceId);
+	const leveled = feedSandalsSeed(sandals, kind);
+	ctx.say(leveled ? ctx.t('items.artifacts.sandalsofnature.levelup') : ctx.t('items.artifacts.sandalsofnature.absorb_seed'), 'positive');
+	ctx.spendTurn();
+}
+
+/** `AC_ROOT`'s aim: only a visible cell, confirmed through `confirmSandalsRootFlow`. */
+export function beginSandalsRootFlow(ctx: SandalsFlowContext, instanceId?: string): void {
+	const sandals = ctx.sandalsOf(instanceId);
+	if (!sandals) return;
+	if (!sandals.curSeedEffect) { ctx.say(ctx.t('items.artifacts.sandalsofnature.no_effect'), 'negative'); return; }
+	const req = sandalsRootChargeReq(sandals);
+	if (req === null || (sandals.charge ?? 0) < req) { ctx.say(ctx.t('items.artifacts.sandalsofnature.low_charge'), 'negative'); return; }
+	ctx.beginAim({
+		range: mwlItemEffectValue('sandals', 'rootRange'),
+		validate: (cell) => ctx.isCellVisible(cell.x, cell.y),
+		onConfirm: (cell) => confirmSandalsRootFlow(ctx, cell, instanceId),
+	});
+	ctx.say(ctx.t('items.artifacts.sandalsofnature.prompt_target'), 'positive');
+}
+
+/** `AC_ROOT` on confirm: re-check effect, charge and range, plant, trigger, pay, uncloak. */
+export function confirmSandalsRootFlow(ctx: SandalsFlowContext, cell: { x: number; y: number }, instanceId?: string): void {
+	const sandals = ctx.sandalsOf(instanceId);
+	if (!sandals) return;
+	const kind = sandals.curSeedEffect;
+	const req = sandalsRootChargeReq(sandals);
+	if (!kind || req === null || (sandals.charge ?? 0) < req) return;
+	if (!ctx.isCellVisible(cell.x, cell.y)
+		|| Roguelike.chebyshevDistance(cell, ctx.heroPos) > mwlItemEffectValue('sandals', 'rootRange')) {
+		ctx.say(ctx.t('items.artifacts.sandalsofnature.out_of_range'), 'warning');
+		return;
+	}
+	ctx.plantRootSeed(cell, kind);
+	sandals.charge = Math.max(0, (sandals.charge ?? 0) - req);
+	ctx.dispelInvisibility();
+	//Java logs nothing at all here - a successful root is conveyed by the plant's own sprite,
+	//its leaf burst and the planting sound, none of which this port has a seam for (the same
+	//"no per-effect audio" gap `trampleHighGrass`/Camouflage already document). It therefore
+	//reuses the port's own planting line, with SPD's real plant name for the kind.
+	ctx.say(ctx.t('port.log.plantseed', { kind: ctx.t(`plants.${kind}.name`) }), 'positive');
+	ctx.spendTurn();
 }
