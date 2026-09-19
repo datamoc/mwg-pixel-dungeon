@@ -14415,6 +14415,25 @@ private eyeBeamTurn(monster: Creature): boolean {
 			addBuff(defender, 'ooze');
 			if (attacker.kind === 'acidic') addBuff(defender, 'cripple');
 		}
+		//RotLasher.attackProc() (RotLasher.java, tag v3.3.8): every landed hit cripples
+		//for 2 turns (`Buff.affect(enemy, Cripple.class, 2f)` - unconditional, like the
+		//caustic proc above, not damage-gated like Albino's).
+		if (attacker.kind === 'rotLasher') {
+			addBuff(defender, 'cripple', 2);
+		}
+		//RotHeart.defenseProc() (RotHeart.java, tag v3.3.8): a struck heart seeds ToxicGas
+		//at its own cell with volume `5 + 3 * openNearby`, where openness counts non-solid
+		//8-neighbours - fewer gas in enclosed spaces. Passable stands in for non-solid
+		//here (same substitution the split gate uses for free cells). Only hits routed
+		//through mobOnHit (melee, monster projectiles) seed gas - wand and bomb hits on
+		//the heart bypass it, a recorded residual of Java's source-independent defenseProc.
+		if (defender.kind === 'rotHeart') {
+			let openNearby = 0;
+			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
+				if (this.level.passable(defender.x + dx, defender.y + dy)) openNearby++;
+			}
+			this.toxicGas.seed(defender.x, defender.y, 5 + 3 * openNearby);
+		}
 		if (attacker.kind === 'fetidRat' && Random.chance(1 / 3)) {
 			addBuff(defender, 'ooze');
 			this.say(t(defender.isHero ? 'port.log.oozedhero' : 'port.log.oozed', { who: capitalize(defender.name) }), 'negative');
@@ -15002,6 +15021,14 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (creature.kind === 'rotHeart') {
 			for (const other of [...this.creatures]) {
 				if (other.kind === 'rotLasher' && other.hp > 0) this.kill(other);
+			}
+			//RotHeart.die() (RotHeart.java, tag v3.3.8) also drops a Rotberry.Seed at its
+			//cell - but only on a real die(): Burning destroys the heart through destroy(),
+			//skipping death processing entirely (no seed, and none of the +2000 quest score
+			//either - the score itself stays unmodeled, this port tracks no quest-score
+			//table). The kill cause carries the distinction (`fire` for the burn path).
+			if (cause !== 'fire') {
+				this.spawnGroundItem('seed', creature.x, creature.y, sourceInventoryItem('seed', 'Rotberry', (kind) => this.newItemInstanceId(kind)));
 			}
 		}
 		//YogDzewa.processFistDeath(): the last fist's death at phase 4 opens phase 5 (hope

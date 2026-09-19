@@ -1036,8 +1036,10 @@
     evasion: 0,
     damage_min: 10,
     damage_max: 20,
+    // No `drRoll` override in RotLasher.java (tag v3.3.8) - flat 0, not the 8 this
+    // row used to carry.
     armor_min: 0,
-    armor_max: 8,
+    armor_max: 0,
     experience: 1,
     max_level: 29,
     image: "assets/rot_lasher.png",

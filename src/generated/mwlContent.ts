@@ -26899,7 +26899,7 @@ export const gameData = {
 				"damage_min": "10",
 				"damage_max": "20",
 				"armor_min": "0",
-				"armor_max": "8",
+				"armor_max": "0",
 				"experience": "1",
 				"max_level": "29",
 				"image": "assets/rot_lasher.png"
@@ -26931,7 +26931,7 @@ export const gameData = {
 			"children": [],
 			"location": {
 				"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
-				"line": 1046,
+				"line": 1048,
 				"column": 5
 			},
 			"gettext": []
@@ -26955,7 +26955,7 @@ export const gameData = {
 			"children": [],
 			"location": {
 				"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
-				"line": 1061,
+				"line": 1063,
 				"column": 5
 			},
 			"gettext": []
@@ -26979,7 +26979,7 @@ export const gameData = {
 			"children": [],
 			"location": {
 				"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\monsters.mwl",
-				"line": 1081,
+				"line": 1083,
 				"column": 5
 			},
 			"gettext": []
