@@ -29,6 +29,11 @@
           { tag: "row", item: "potionParalyticGas", value: 30 },
           { tag: "row", item: "potionHaste", value: 30 },
           { tag: "row", item: "potionFrost", value: 30 },
+          //`Brew.value()`: every brew is worth 60 a unit.
+          { tag: "row", item: "infernalBrew", value: 60 },
+          { tag: "row", item: "blizzardBrew", value: 60 },
+          { tag: "row", item: "shockingBrew", value: 60 },
+          { tag: "row", item: "causticBrew", value: 60 },
           { tag: "row", item: "scroll", value: 30 },
           { tag: "row", item: "scrollIdentify", value: 30 },
           { tag: "row", item: "scrollRage", value: 30 },

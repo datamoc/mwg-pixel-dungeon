@@ -423,7 +423,7 @@ was judged not worth the churn against those existing references.
       `affect` at the buff boundary), and environmental gas/plant fields use a Java-shaped
       `Blob.evolve()` step. CorrosionTrap and ConfusionTrap seed their real gas volumes. Hero
       backpack item-burning is live for the port's concrete scroll and meat payloads. **Remaining, triaged producer-by-producer 2026-09-17**:
-      every missing blob is missing its producer, not its effect table - `SmokeScreen` (no smoke bomb item, no ShroudingFog exotic, no ChaoticCenser trinket), `Inferno`/`Blizzard` (no brews, no censer), `Electricity` (**closed 2026-09-17**: ShockingTrap/StormTrap seed Java's real volumes into a persisted blob with the paralyse-by-charge plus odd-charge depth-scaled zap; still no ShockingBrew, ElementalStrike/Blast unoffered, no heap wand-charging (no per-heap wand charge state here); the pylon/Tengu zaps use it as a damage cause only, which the zap path already models; **conduction ported 2026-09-17** (`evolveElectricity`: full-power spread through connected water, minus one per cell, no diffusion), `StormCloud` (no StormClouds exotic, no censer; the Tengu-arena grid belongs to the boss-cycles item), `Foliage` (regrowth grows grass through its charge rules, no blob needed), `VaultFlameTraps` (vault quest unported). Non-gaps: `GooWarn` is unused in Java's own source; `Alchemy`/`WaterOfAwareness`/`WaterOfHealth`/`WellWater` are window flows here by design. Still open as stated: the gas blobs' own effects beyond what's live, the unsupported fire cases,
+      every missing blob is missing its producer, not its effect table - `SmokeScreen` (no smoke bomb item, no ShroudingFog exotic, no ChaoticCenser trinket), `Inferno`/`Blizzard` (brews craftable but not throwable - no blob model - plus no censer), `Electricity` (**closed 2026-09-17**: ShockingTrap/StormTrap seed Java's real volumes into a persisted blob with the paralyse-by-charge plus odd-charge depth-scaled zap; **ShockingBrew closed 2026-09-19** (craftable, thrown, seeds Java's 20 over the radius-3 flood) and CausticBrew afflicts Ooze over the same flood; ElementalStrike/Blast unoffered, no heap wand-charging (no per-heap wand charge state here); the pylon/Tengu zaps use it as a damage cause only, which the zap path already models; **conduction ported 2026-09-17** (`evolveElectricity`: full-power spread through connected water, minus one per cell, no diffusion), `StormCloud` (no StormClouds exotic, no censer; the Tengu-arena grid belongs to the boss-cycles item), `Foliage` (regrowth grows grass through its charge rules, no blob needed), `VaultFlameTraps` (vault quest unported). Non-gaps: `GooWarn` is unused in Java's own source; `Alchemy`/`WaterOfAwareness`/`WaterOfHealth`/`WellWater` are window flows here by design. Still open as stated: the gas blobs' own effects beyond what's live, the unsupported fire cases,
       and exact blob actor priorities/presentation. See `PORT_COVERAGE.md`'s `BUFF_DURATION` and
       blob-DoT rows. **Complexity: M.**
 - [x] Port the Necromancer's skeleton heal/Adrenaline/teleport support behavior, plus `firstSummon`'s
@@ -1032,6 +1032,18 @@ one.
       is SPD-specific game logic, which the licensing boundary forbids putting in `mwg`. Recorded as
       a possible upstream proposal (a generic `keyedDispatch<K, Args>` utility, or documentation of
       the pattern) for the user to raise in the framework's own repo.
+- [ ] **File-size refactor: keep every hand-written source file human-readable.**
+      `src/scenes/dungeonScene.ts` is ~23,600 lines and still growing with every ported system -
+      past the point where any reader can hold its structure, review a diff touching it, or find
+      the one seam a change needs without a search tool. Objective: no hand-written `.ts` file
+      over ~2,000 lines (generated files under `src/generated/` excluded), enforced by a line-count
+      gate in `npm run check` so the budget holds as new systems land. Vehicle is the extraction
+      pattern already established in this section (pure rule modules under `src/simulation/` and
+      `src/items/` plus thin scene adapters): carve `dungeonScene.ts` per domain - item-use paths
+      behind `items/itemActions.ts`'s router, blob fields/ticking next to `environmentalBlobs.ts`,
+      aim/targeting helpers next to `simulation/targeting.ts` - one domain per commit, suites green
+      at each step, no behavior change (each move is covered by the existing verify suites plus a
+      before/after `tsc` + build). **Complexity: L.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

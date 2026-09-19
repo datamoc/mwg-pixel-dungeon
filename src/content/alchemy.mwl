@@ -39,6 +39,28 @@
             kind: "food",
             energy: 6,
           },
+          {
+            //`Brew.energyVal()`: every brew scraps for 12 (AquaBrew scales by
+            //quantity over its 8-unit recipe, which has no port recipe yet).
+            tag: "row",
+            kind: "infernalBrew",
+            energy: 12,
+          },
+          {
+            tag: "row",
+            kind: "blizzardBrew",
+            energy: 12,
+          },
+          {
+            tag: "row",
+            kind: "shockingBrew",
+            energy: 12,
+          },
+          {
+            tag: "row",
+            kind: "causticBrew",
+            energy: 12,
+          },
         ],
       },
       {
@@ -222,6 +244,42 @@
             result: "shrapnelBomb",
             resultQuantity: 1,
             energyCost: 6,
+          },
+          {
+            //`InfernalBrew.Recipe`: one liquid flame, cost 12, one brew.
+            tag: "row",
+            id: "infernalBrew",
+            ingredients: "potionFlame:1",
+            result: "infernalBrew",
+            resultQuantity: 1,
+            energyCost: 12,
+          },
+          {
+            //`BlizzardBrew.Recipe`: one frost, cost 8, one brew.
+            tag: "row",
+            id: "blizzardBrew",
+            ingredients: "potionFrost:1",
+            result: "blizzardBrew",
+            resultQuantity: 1,
+            energyCost: 8,
+          },
+          {
+            //`ShockingBrew.Recipe`: one paralytic gas, cost 10, one brew.
+            tag: "row",
+            id: "shockingBrew",
+            ingredients: "potionParalyticGas:1",
+            result: "shockingBrew",
+            resultQuantity: 1,
+            energyCost: 10,
+          },
+          {
+            //`CausticBrew.Recipe`: one toxic gas plus one goo blob, cost 1, one brew.
+            tag: "row",
+            id: "causticBrew",
+            ingredients: "potionToxicGas:1,gooBlob:1",
+            result: "causticBrew",
+            resultQuantity: 1,
+            energyCost: 1,
           },
         ],
       },

@@ -210,6 +210,7 @@ import { burnFireContents as burnFireContentsEffect } from '../items/fireContent
 import { selectRangedTarget } from '../simulation/targeting';
 import { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLeapCooldown } from '../simulation/ripperLeap';
 import { shouldSuccubusBlink, chooseSuccubusBlinkCell, succubusBlinkCooldown } from '../simulation/succubusBlink';
+import { brewShatterCells, CAUSTIC_BREW_RADIUS, SHOCKING_BREW_RADIUS, SHOCKING_BREW_VOLUME, THROWABLE_BREW_IDS } from '../simulation/brews';
 import { foregroundGrassFrames as buildForegroundGrassFrames, terrainFrameAt as buildTerrainFrameAt, terrainFrames as buildTerrainFrames, wallFrameAt as buildWallFrameAt, wallFrames as buildWallFrames, waterFrames as buildWaterFrames, type DungeonTileFrameContext } from './dungeonTileFrames';
 import { Banner } from '../ui/banner';
 import { showDefeatPanel as showDefeatPanelUi, showVictoryPanel as showVictoryPanelUi } from '../ui/endPanels';
@@ -1933,6 +1934,8 @@ export class DungeonScene extends Scene2D {
 	private bombTarget: Step | null = null;
 	/** Cell latched by the honeypot's map picker; cleared before the shatter runs. */
 	private honeypotTarget: Step | null = null;
+	/** Cell latched by a brew's map picker; cleared before the shatter runs. */
+	private brewTarget: Step | null = null;
 	/** The aim cursor highlight, drawn in world space so it tracks cells under the camera. */
 	private aimOverlay: Graphics | null = null;
 	/** `NewbornFireElemental`'s `TargetedCell` telegraph: the red 3x3 its fireball will cover. */
@@ -18076,6 +18079,52 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.spendHeroTurn(1);
 	}
 
+	/** `Brew.doThrow()` + the default `AC_THROW`: brews cannot be drunk (`actions()`
+	 * drops `AC_DRINK`) and are always known (`isKnown()` true). Aim gate and range are
+	 * the bomb's (passable, non-chasm, six cells); Java flies the full PROJECTILE line.
+	 * Only the brews whose shatter this port can resolve are offered (see
+	 * `THROWABLE_BREW_IDS`); Infernal/Blizzard have no blob to seed yet. */
+	private useBrew(brewId: string, instanceId?: string): void {
+		if (!THROWABLE_BREW_IDS.has(brewId) || !this.bag.find(brewId, instanceId)) return;
+		if (!this.brewTarget) {
+			this.beginAiming({
+				range: 6,
+				validate: (cell) => this.level.passable(cell.x, cell.y) && !this.isChasmCell(cell.x, cell.y),
+				onConfirm: (cell) => {
+					this.brewTarget = cell;
+					this.useBrew(brewId, instanceId);
+				},
+			});
+			return;
+		}
+		const target = this.brewTarget;
+		this.brewTarget = null;
+		this.shatterBrewAt(brewId, target, instanceId);
+	}
+
+	/** `ShockingBrew.shatter()` / `CausticBrew.shatter()`: one brew detaches and breaks
+	 * at the aimed cell. Shocking seeds electricity 20 over the radius-3 flood; Caustic
+	 * lays `Ooze` (duration 20, the table value matching `Ooze.DURATION`) on every
+	 * non-NPC creature in the same flood - NPCs stay out of every area effect here, the
+	 * way the fireblast cone already documents. Java's splash particles and shatter
+	 * sounds have no seam here, and Java logs nothing either way. Spends the turn. */
+	private shatterBrewAt(brewId: string, at: Step, instanceId?: string): void {
+		this.bag.remove(brewId, 1, instanceId);
+		const radius = brewId === 'causticBrew' ? CAUSTIC_BREW_RADIUS : SHOCKING_BREW_RADIUS;
+		const flood = brewShatterCells(this.level.width, this.level.height,
+			(x, y) => !this.level.inside(x, y) || !this.level.passable(x, y), at.x, at.y, radius);
+		if (brewId === 'causticBrew') {
+			for (const cell of flood) {
+				const target = this.creatureAt(cell.x, cell.y);
+				if (target && !target.isNPC) addBuff(target, 'ooze');
+			}
+		} else {
+			for (const cell of flood) this.electricity.seed(cell.x, cell.y, SHOCKING_BREW_VOLUME);
+		}
+		this.actionSpentTurn = true;
+		this.spendHeroTurn(1);
+	}
+
 	private removeGroundItem(g: GroundItem): void {
 		this.groundItems.splice(this.groundItems.indexOf(g), 1);
 		this.sprite(g).destroy();
@@ -18744,7 +18793,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			useStoneById: this.useStoneById.bind(this), useCandle: this.useCandle.bind(this),
 			useTorch: this.useTorch.bind(this),
 			useAnkh: this.useAnkh.bind(this),
-			useBomb: this.useBomb.bind(this), useHoneypot: this.useHoneypot.bind(this), useStylus: this.useStylus.bind(this),
+			useBomb: this.useBomb.bind(this), useHoneypot: this.useHoneypot.bind(this), useBrew: this.useBrew.bind(this), useStylus: this.useStylus.bind(this),
 			useBrokenSeal: this.useBrokenSeal.bind(this),
 			useAlchemize: this.useAlchemize.bind(this), useKingsCrown: this.useKingsCrown.bind(this),
 			useFeatherFall: this.useFeatherFall.bind(this),

@@ -660,7 +660,22 @@ any recipe reference without an authored item identity. The alchemy-pot interact
 simultaneous multi-slot window with its recipe preview and cook button stays simplified. The carried energy pool is now
 persisted, fed by EnergyCrystal pickups, and consumed by recipe costs. Seed-to-potion brewing,
 scroll-to-stone, alchemize and both catalysts are executable with chosen or first-eligible units;
-exotic/brew/elixir item families (no port items exist to brew them with) and the slot-window chrome remain open.
+exotic/elixir item families (no port items exist to brew them with) and the slot-window chrome remain open.
+**The four regular brews are now executable recipes (2026-09-19):** `InfernalBrew` (one
+liquid flame, 12 energy), `BlizzardBrew` (one frost, 8), `ShockingBrew` (one paralytic gas, 10)
+and `CausticBrew` (one toxic gas plus one goo blob, 1) - Java's own inputs and costs from
+`items/potions/brews/*.java` (tag `v3.3.8`). Every brew carries Java's `value()` (60) and
+`energyVal()` (12) in MWL and its real atlas cell (400-403). **Thrown and shattering:**
+`useBrew` aims through the bomb's picker (passable non-chasm, six cells) and `shatterBrewAt`
+resolves the two modeled shatters - Shocking seeds `Electricity` 20 over the radius-3 flood,
+Caustic lays `Ooze` on every non-NPC creature in the same flood (the table's 20 matching
+`Ooze.DURATION`; NPCs stay out per the area-effect convention). Infernal/Blizzard are brewed
+but not throwable yet: their `Inferno`/`Blizzard` blobs (120 per open NEIGHBOURS8 cell, 120
+plus 120 per solid neighbour onto the center) have no port model, and the throw is withheld
+rather than consumed for nothing. Pinned in `test:simulation` (`tools/verifyBrews.mjs`: flood
+shape, volumes, throwable set) and `test:items` (all four recipes, a brewed shocking brew,
+scrap energy, all four values). Type-check/build/check/item/simulation suites green; browser
+verification owed per ROADMAP.md section 10.
 
 The `Alchemize` spell's **cast** is now ported (`useAlchemize`, dispatched from `useItemById`):
 casting it opens the shared item picker over the bag and scraps one unit of the chosen consumable
@@ -672,7 +687,7 @@ scroll/potion/food 6), with `alchemyEnergyFor` reducing a concrete port id (`pot
 identified; the four known-item override values are authored in `alchemyKnownEnergy` rather
 than a TypeScript set). Stated reductions: Java's window also offers a sell branch and an "energize all"
 button, both folded into the single picker action, and the per-class values for outputs this port
-cannot yet obtain (brews/elixirs 12, exotic potions +4/+6, `GooBlob`/`MetalShard` 3) are not
+cannot yet obtain (elixirs 12, exotic potions +4/+6, `GooBlob`/`MetalShard` 3) are not
 authored. **Its recipe is now executable through a category-aware transaction**: `Alchemize.Recipe`
 takes *any* `Plant.Seed` plus *any* `Runestone`, so `craftAlchemize` selects one carried item from
 each category and produces Java's eight-unit output. The generic exact-id transaction remains in

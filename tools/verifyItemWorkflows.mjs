@@ -181,7 +181,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	// turns into a flat 1.5 rather than the melee-range penalty.
 	assert.equal(BOOMERANG_RETURN_TURNS, 5, 'CircleBack counts down from 5 hero turns');
 	assert.equal(BOOMERANG_RETURN_ACC_FACTOR, 1.5, 'the return throw is a flat 1.5, adjacency or not');
-	const { alchemicalCatalystCost, arcaneCatalystCost, canCraftPotionSeed, craftPotionSeed, craftAlchemicalCatalyst, craftArcaneCatalyst, craftScrollToStone, craftAlchemize, craftScrollToExotic, canCraftScrollToExotic, scrollExoticResult, alchemyRecipe, alchemyEnergyFor } = require('./items/alchemy.js');
+	const { alchemicalCatalystCost, arcaneCatalystCost, canCraftPotionSeed, craftPotionSeed, craftAlchemicalCatalyst, craftArcaneCatalyst, craftAlchemy, craftScrollToStone, craftAlchemize, craftScrollToExotic, canCraftScrollToExotic, scrollExoticResult, alchemyRecipe, alchemyEnergyFor } = require('./items/alchemy.js');
 
 	// `Item.isUpgradable()` (tag `v3.3.8`) and the two infusion selectors that read it. Java's
 	// default is true with 42 classes overriding it false, so the assertions below are built from
@@ -542,6 +542,25 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	assert.equal(craftAlchemize(selectAlchemize, { seed: { id: 'seedFirebloom' }, stone: { id: 'potionFlame' } }), false, 'a non-stone cannot brew alchemize');
 	assert.equal(craftAlchemize(selectAlchemize, { seed: { id: 'seedFirebloom' }, stone: { id: 'stoneOfBlast' } }), true, 'the chosen pair brews');
 	assert.equal(selectAlchemize.find('alchemize')?.quantity, 8, 'eight alchemize');
+	// Brew recipes (tag `v3.3.8`): one input potion (plus a goo blob for caustic),
+	// Java's own energy costs, one brew out.
+	assert.deepEqual(alchemyRecipe('shockingBrew')?.ingredients, [{ id: 'potionParalyticGas', quantity: 1 }]);
+	assert.equal(alchemyRecipe('shockingBrew')?.energyCost, 10);
+	assert.deepEqual(alchemyRecipe('infernalBrew')?.ingredients, [{ id: 'potionFlame', quantity: 1 }]);
+	assert.equal(alchemyRecipe('infernalBrew')?.energyCost, 12);
+	assert.deepEqual(alchemyRecipe('blizzardBrew')?.ingredients, [{ id: 'potionFrost', quantity: 1 }]);
+	assert.equal(alchemyRecipe('blizzardBrew')?.energyCost, 8);
+	assert.deepEqual(alchemyRecipe('causticBrew')?.ingredients, [{ id: 'potionToxicGas', quantity: 1 }, { id: 'gooBlob', quantity: 1 }]);
+	assert.equal(alchemyRecipe('causticBrew')?.energyCost, 1);
+	const brewBag = new Inventory();
+	brewBag.add({ id: 'potionParalyticGas', quantity: 1, stackable: true });
+	assert.equal(craftAlchemy(brewBag, 'shockingBrew'), true, 'a paralytic gas brews');
+	assert.equal(brewBag.find('shockingBrew')?.quantity, 1, 'one shocking brew');
+	assert.equal(brewBag.find('potionParalyticGas'), undefined, 'and the gas is consumed');
+	assert.equal(craftAlchemy(brewBag, 'shockingBrew'), false, 'no gas left means no second brew');
+	// `Brew.energyVal()` is 12 a unit, like the brewed exotic scroll.
+	assert.equal(alchemyEnergyFor('shockingBrew', true), 12, 'a scrapped shocking brew yields 12 energy');
+	assert.equal(alchemyEnergyFor('causticBrew', true), 12, 'a scrapped caustic brew yields 12 energy');
 	const selectCatalyst = new Inventory();
 	selectCatalyst.add({ id: 'potionFrost', quantity: 1, stackable: true });
 	selectCatalyst.add({ id: 'stoneOfBlast', quantity: 1, stackable: true });
@@ -1147,6 +1166,10 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		// `ShopRoom.generateItems()` stocks one `new Ankh()` in the shared tail every depth takes.
 		assert.equal(planShopStock(6, null, scripted([0, 0, 0, 0])).filter((p) => p.kind === 'item' && p.id === 'ankh').length, 1, 'every shop stocks one ankh');
 		assert.equal(require('./items/shopPricing.js').itemValue('ankh', 1), 50, 'ankh value() is 50 per unit');
+	// `Brew.value()` is 60 a unit for every brew.
+	for (const brew of ['infernalBrew', 'blizzardBrew', 'shockingBrew', 'causticBrew']) {
+		assert.equal(require('./items/shopPricing.js').itemValue(brew, 1), 60, `${brew} value() is 60 per unit`);
+	}
 		assert.equal(require('./items/shopPricing.js').getShopPrice('ankh', 6), 500, 'depth-6 shelf price is 50 x2 wealth bracket');
 		// Sandbags appear only with a carried hourglass, at the depth's own fraction of the missing
 		// ones - and never without it.
