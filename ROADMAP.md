@@ -705,7 +705,7 @@ below to close the gap was judged not worth the churn against those existing ref
       the 33 `this.say('English', ...)` calls that skip `t()` entirely and so are invisible to a
       literal-key audit. **Note for future work**: the audit script only catches literal
       `t('port.…')` arguments; dynamic template keys need a manual check.
-- [ ] Translate the port's own strings into every Java locale. All 19 offered locales carry a
+- [x] Translate the port's own strings into every Java locale. All 19 offered locales carry a
       complete `port.*` catalogue and all were verified live in a real browser per locale (locale
       active, every non-ASCII codepoint drawing a real glyph rather than tofu, both screens
       differing from English). Every catalogue is a machine draft marked `MT`/`unreviewed` in its own
@@ -732,9 +732,26 @@ below to close the gap was judged not worth the churn against those existing ref
       real huntress `spirithawk.no_space`, the real recycle `inv_title` with an open-always
       picker, the generic `armorability.no_target` for both abilities - see
       `PORT_COVERAGE.md`), so the transactional audit is green again.
-      `tools/i18nCheck.ts` no longer asserts the regen-only locales: `zh-Hant-HK` falls back to `zh` and `eo` stays absent until the v3.3.8 regen ships them (`de` stands in as the differs-from-English witness) - the checks now pin the documented gap instead of failing on it.
       The reverse gap exists too: `levels.hallslevel.exit_desc` (addressed by the section 3 city
-      visuals) exists at `v3.3.8` but not in this catalogue, so the port answers with the City exit desc there until the regen lands. See `PORT_COVERAGE.md`. **Complexity: M.**
+      visuals) exists at `v3.3.8` but not in this catalogue, so the port answers with the City exit desc there until the regen lands.
+      **Closed 2026-09-19: the locale set is now the real 22.** `be`/`eo`/`sv`/`zh-hant` are
+      offered by `LANGUAGES` with `Languages.java`'s real `v3.3.8` statuses (`be` unfinished,
+      `eo` complete, `sv`/`zh-hant` unreviewed), and `tools/i18n-extract.mjs` ships them via a
+      second, optional `--legacy-spd-root` pointed at a `v3.3.8` checkout - the live checkout's
+      own current branch carries real post-`v3.3.8` content (`alchemicalcatalyst`, `flashbang`/
+      `shockbomb`, `aquablast`) but has dropped these four locale files entirely, so a single
+      `--spd-root` cannot serve both; the primary root stays the live checkout (preserving that
+      newer content) and only these four locales fall back to the legacy one. Left unset,
+      `--legacy-spd-root` degrades gracefully - those four locales simply ship empty and fall
+      back to English, so the tool still works offline with zero args changed from before.
+      `detectLanguage` also gained Java's own `Languages.matchLocale` special case: a bare `zh`
+      primary subtag always resolved to Simplified before, so a `Hant` script subtag anywhere in
+      the preference now routes to `zh-hant` first, matching `locale.toString().contains("Hant")`.
+      Browser-verified live for all four (title screen + Settings window, real non-ASCII glyphs
+      throughout, Settings' still-untranslated `port.*` strings honestly falling back to English
+      per the stated port-strings gap). `i18nCheck`'s two placeholder assertions for this gap
+      (`zh-Hant-HK falls back to zh`, `eo stays absent`) are updated to their real, now-passing
+      expectations. See `PORT_COVERAGE.md`'s i18n row. **Complexity: M.**
 - [x] Port the audio-settings mutes. **Closed 2026-09-19 (added with the item itself - no
   roadmap line covered `WndSettings`' audio tab):** the settings window grew Java's real
   `AudioTab` title plus its two mute rows (`music_mute`/`sfx_mute`, SPD's own strings in
@@ -953,7 +970,7 @@ one.
       second matrix, `MONSTER_ANALYSIS_DM200_DM300_PYLON.md`, covers an ordinary mob, its variant,
       a fixed-floor boss, and its supporting actor; it confirms data aliases and keyed strategies
       rather than Java-style classes. Remaining monster/item/buff families still need the same
-      treatment. **Progress 2026-09-19:** the twenty-fifth matrix, `MONSTER_ANALYSIS_WARRIOR_ABILITIES.md`, audited all three Warrior armor abilities against tag `v3.3.8` - fixing Endure's `damageBonus` int semantics (per-hit banking truncation, truncating ending scales, integer split, post-split-zero detach, all pinned in `test:simulation`) and Heroic Leap's gated shove/`Int(4)` (both now unconditional per neighbouring non-ally; corpses stay put) - and verifying Shockwave unchanged, with striking-proc attackProc reassignment, StrikingWaveTracker accuracy, Vulnerable prolong-vs-set, the NPC-immunity convention, and the hero-armor composition recorded open. **Progress 2026-09-19:** the twenty-sixth matrix, `MONSTER_ANALYSIS_RINGS.md`, re-verified all twelve ring formulas against tag `v3.3.8` with every reader traced to live combat - fixing the two sites that never applied theirs (electricity-blob hero zap and corrosion-DoT hero tick now scale by `ringElementsMultiplier`, pinned in `test:simulation` via the new `tools/verifyRings.mjs`) - and recording the single-ring-slot simplification, the unreachable Force unarmed override, and the unowed freezing-trap/chill gates. **Complexity: M.**
+      treatment. **Progress 2026-09-19:** the twenty-fifth matrix, `MONSTER_ANALYSIS_WARRIOR_ABILITIES.md`, audited all three Warrior armor abilities against tag `v3.3.8` - fixing Endure's `damageBonus` int semantics (per-hit banking truncation, truncating ending scales, integer split, post-split-zero detach, all pinned in `test:simulation`) and Heroic Leap's gated shove/`Int(4)` (both now unconditional per neighbouring non-ally; corpses stay put) - and verifying Shockwave unchanged, with striking-proc attackProc reassignment, StrikingWaveTracker accuracy, Vulnerable prolong-vs-set, the NPC-immunity convention, and the hero-armor composition recorded open. **Progress 2026-09-19:** the twenty-sixth matrix, `MONSTER_ANALYSIS_RINGS.md`, re-verified all twelve ring formulas against tag `v3.3.8` with every reader traced to live combat - fixing the two sites that never applied theirs (electricity-blob hero zap and corrosion-DoT hero tick now scale by `ringElementsMultiplier`, pinned in `test:simulation` via the new `tools/verifyRings.mjs`) - and recording the single-ring-slot simplification, the unreachable Force unarmed override, and the unowed freezing-trap/chill gates. **Progress 2026-09-19:** the twenty-seventh matrix, `MONSTER_ANALYSIS_HUNTRESS_ABILITIES.md`, audited all three Huntress armor abilities against tag `v3.3.8` - removing the port-invented rank-4 `x1.1` Spirit-Blades damage (Java's `+0.1` is an unreachable proc-chance term) and running the bow nature-proc on consumed tracker rolls during blade attacks, both pinned in `test:simulation` - and verifying Nature's Power and the SpiritHawk ally unchanged, with flat ability turn costs, hawk-expiry interrupt, and the clamped hawk sight recorded open. **Progress 2026-09-19:** the twenty-eighth matrix, `MONSTER_ANALYSIS_ROGUE_ABILITIES.md`, audited SmokeBomb and DeathMark against tag `v3.3.8` - fixing re-mark window stacking, the bankable DoubleMark discount (now a same-round latch, dropped on clock advance and on load), NinjaLog retirement, and the log's missing INORGANIC half, all pinned in the suites - with the corrupted-ally barrier corner recorded open. **Complexity: M.**
 - [x] **MWG-utilization audit**: checked whether this port reimplements functionality `mwg` already
       exports. Well-utilized overall, no action needed on `Roguelike.Pathfinder`/`Blob`/
       `Actors.rollLoot`/`Charges`, the `EntityId` re-export, the Java-bit-matching LCG RNG

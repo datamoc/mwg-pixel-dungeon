@@ -8070,6 +8070,11 @@ export class DungeonScene extends Scene2D {
 			isAlive: () => this.hero.hp > 0,
 			advanceClock: () => {
 				this.clock.advance(turnCost * (MWL_TURN_CLOCK.tick ?? 1));
+				//`DeathMark.DoubleMarkTracker` is a 0.01-duration latch (`Buff.affect(hero, ...,
+				//0.01f)`): it expires at the next buff-act, so only a same-round chained mark -
+				//never anything that advances the clock - can spend the discount. Banking it
+				//across turns was a port invention; any real time passing drops it here.
+				this.doubleMarkArmed = false;
 				//`ConservedDamage.act()`: `preservedDamage -= max(preserved*0.025, 0.1)`,
 				//detaching at zero - previously a flat `*0.75` floor, a guess with no Java
 				//basis, and the store rule below used to add half of every hit instead of
@@ -13405,13 +13410,12 @@ private eyeBeamTurn(monster: Creature): boolean {
 			return false;
 		}
 
-		//`Weapon.damageRoll()`'s `multi` chain, the one entry of it this port can model directly: with
-		//`SPIRIT_BLADES` at rank 4 a thrown blade's own attack carries `multi += 0.1f` while the
-		//tracker is armed - a pre-armor multiplier, which is why it goes into `damageMultiplier`
-		//rather than onto the damage afterwards. (Java's other `multi` entries - `Smite`'s +3,
-		//`DirectedPower`'s enchant boost, `STRIKING_WAVE` rank 4's +0.2 - have no tracker in this
-		//port; see the Shockwave row in `PORT_COVERAGE.md`.)
-		if (attacker === this.hero && this.spiritBladesArmed && this.talentRank('spirit_blades') === 4) damageMultiplier *= 1.1;
+		//No `SPIRIT_BLADES` damage line here: Java's rank-4 `multi += 0.1f` lives in
+		//`Weapon.Enchantment.genericProcChanceMultiplier()` - an enchant *proc-chance* term,
+		//not damage - and it is unreachable in practice: at rank 4 the tracker's own
+		//`Random.Int(10) < 12` roll always consumes it inside `Talent.onAttackProc` before
+		//`wep.proc()` (and its chance rolls) ever runs. What stood here was a port-invented
+		//`x1.1` damage bonus with no Java basis, found in the 27th matrix audit.
 		//`Feint.AfterImage.defenseSkill()`: `defenseSkill == 0` in Java means the decoy is never
 		//actually evaded, but the getter's real job is the side effect that runs on *every* call -
 		//i.e. on every attack attempt against it, hit or miss alike, since Java queries
@@ -14076,15 +14080,18 @@ private eyeBeamTurn(monster: Creature): boolean {
 			&& Random.int(0, 2) < this.talentRank('shared_enchantment')
 			? this.weaponAffix
 			: null;
-		//`Talent.onAttackComplete`'s SpiritBladesTracker consume (`Talent.java` 896-901): while the
-		//blades are armed, a landed hero attack has a `Random.Int(10) < 3*points` chance to re-run the
-		//equipped SpiritBow's own `proc()` - modelled, exactly as Sniper's Shared Enchantment above
-		//already models that same call, by applying the weapon's affix to this hit - and always
-		//clears the tracker. The roll only happens while the tracker is present, which is Java's own
-		//short-circuit.
+		//`Talent.onAttackProc`'s SpiritBladesTracker consume (`Talent.java` 896-901): while the
+		//tracker is armed, a landed hero attack rolls `Random.Int(10) < 3*points` for the
+		//equipped SpiritBow's own `proc()` - the nature block (plant roll + kill-extend), which
+		//runs here for real - and detaches the tracker on a success only. A failed roll leaves
+		//it armed for the remaining blades, matching Java (whose detach sits inside the roll's
+		//branch, not after it). The melee affix below is the same attack's separate `wep.proc`.
 		const spiritBladesProc = this.spiritBladesArmed && attacker === this.hero
 			&& Random.int(0, 10) < 3 * this.talentRank('spirit_blades');
-		if (spiritBladesProc) this.spiritBladesArmed = false;
+		if (spiritBladesProc) {
+			this.spiritBladesArmed = false;
+			this.applyNaturesPowerOnHit(defender);
+		}
 		const affix = spiritBladesProc ? this.weaponAffix : attacker.attackMode === 'throw' ? sharedEnchantment : this.unstableDelegated ?? this.weaponAffix;
 		//`Char.damage()`'s Kinetic block: a killing blow with the tracker attached stores the
 		//overkill BEYOND this swing's conserved bonus (`-HP - tracker.conservedDamage`),
@@ -16232,7 +16239,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.doubleJumpTurns = s.doubleJumpTurns ?? 0;
 		this.naturesPowerTurns = s.naturesPowerTurns ?? 0;
 		this.naturesPowerExtensions = s.naturesPowerExtensions ?? 0;
-		this.doubleMarkArmed = s.doubleMarkArmed ?? false;
+		//Java's 0.01-duration latch never survives a save/load round trip (it acts out
+		//immediately on restore), so an armed latch in an old save is dropped, not honored.
+		this.doubleMarkArmed = false;
 		this.warpBeacon = s.warpBeacon ? { ...s.warpBeacon } : null;
 		//`Fragile` never existed in real Java (the 8th armor curse is `Stench` - see the
 		//affix-table comment); saves from before the correction carry it here and on bag
@@ -20304,10 +20313,12 @@ private eyeBeamTurn(monster: Creature): boolean {
 			return false;
 		}
 		this.armorCharge = Math.max(0, this.armorCharge - cost);
-		//`DeathMarkTracker.DURATION` is 5, and `setInitialHP` keeps the *highest* HP the target has
-		//been marked at (so re-marking a wounded target does not shrink the Deathly Durability
-		//barrier it would pay out).
-		target.deathMarkTurns = 5;
+		//`DeathMarkTracker.DURATION` is 5, and `Buff.affect(ch, DeathMarkTracker.class,
+		//DURATION)` *spends* (additive) on an existing tracker rather than postponing it - so
+		//re-marking extends the window instead of refreshing it. `setInitialHP` keeps the
+		//*highest* HP the target has been marked at (so re-marking a wounded target does not
+		//shrink the Deathly Durability barrier it would pay out).
+		target.deathMarkTurns = (target.deathMarkTurns ?? 0) + 5;
 		target.deathMarkInitialHp = Math.max(target.deathMarkInitialHp ?? 0, target.hp);
 		this.say(t('actors.hero.abilities.rogue.deathmark.name'), 'positive');
 		//Java spends no time at all here (`hero.next()`), so the clock does not advance, the monsters
@@ -20445,8 +20456,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.armorCharge = Math.max(0, this.armorCharge - cost);
 		for (const target of targets) {
 			//`SpectralBlades` arms `Talent.SpiritBladesTracker` before *each* throw (Java affects it
-			//inside the per-target callback, right before `hero.attack`), and the tracker is consumed
-			//by that attack - so its whole life is one hit, and every blade of a fan gets it.
+			//inside the per-target callback, right before `hero.attack`), and a successful roll
+			//consumes it - so every blade of a fan gets its own chance, failed rolls leave it
+			//armed for the remaining blades, and the turn-end clear matches Java's buff-act expiry.
 			if (this.talentRank('spirit_blades') > 0) this.spiritBladesArmed = true;
 			this.attack(hero, target, 1 + 0.25 * projecting, target === primary ? 1 : 0.5);
 		}
@@ -21108,6 +21120,11 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * `NormalIntRange(points, 3 * points)` to the (zero) row armor.
 	 */
 	private placeNinjaLog(x: number, y: number): void {
+		//Java kills every existing log first, so only ever one decoy stands. `kill()` is
+		//ally-safe (no XP/loot/hooks for allies), so this is just the retirement.
+		for (const other of [...this.creatures]) {
+			if (other.allyKind === 'ninjaLog') this.kill(other);
+		}
 		const points = this.talentRank('body_replacement');
 		const log = this.spawnMonster('ninjaLog', { x, y }, false, undefined, true, 'ninjaLog');
 		log.sleeping = false;

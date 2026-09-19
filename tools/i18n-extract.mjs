@@ -1,8 +1,11 @@
 /**
  * Builds `src/generated/spdMessages.ts` from SPD's own `.properties` translation files.
  *
- * SPD ships 171 property files - 9 domains x English plus 18 locales, ~3,750 base keys - and
- * this port now ships every one of them. Everything here is inlined into `game.js` (the built
+ * SPD ships 171 property files from the live checkout's own branch - 9 domains x English plus
+ * 18 locales, ~3,750 base keys - plus 4 more locales (`be`/`eo`/`sv`/`zh-hant`, 36 more files)
+ * that only exist at tag `v3.3.8`, read from a second, optional `--legacy-spd-root` (see
+ * below). This port now ships every one of them (22 locales total - see
+ * `src/i18n/languages.ts`). Everything here is inlined into `game.js` (the built
  * page runs from `file://`, where `fetch` is unavailable, so a locale cannot be loaded on
  * demand and *every* language ships in the bundle). That makes the complete corpus materially
  * larger, but guarantees that implementing a Java screen never leaves its original text absent
@@ -46,6 +49,20 @@ if (!spdRoot || spdRoot.startsWith('--')) {
 	process.exit(1);
 }
 const messages = join(spdRoot, 'core', 'src', 'main', 'assets', 'messages');
+/**
+ * `--spd-root` is the user's live checkout on whatever branch it happens to sit on - which
+ * carries real, already-ported post-`v3.3.8` content (`items.potions.alchemicalcatalyst.name`,
+ * `items.bombs.flashbang.name`/`shockbomb.name`, `items.spells.aquablast.name`) but has
+ * *dropped* four locales `v3.3.8` still ships (`be`/`eo`/`sv`/`zh-hant` - see
+ * `src/i18n/languages.ts`). Those four are read from a second, optional root instead:
+ * `--legacy-spd-root`/`SPD_LEGACY_SOURCE_ROOT`, pointed at a `v3.3.8` checkout (a
+ * `git worktree add --detach <dir> v3.3.8` of the same repo works). Left unset, those four
+ * locales simply ship with zero entries and fall back to English everywhere, the same as any
+ * other missing-domain gap below.
+ */
+const legacyRootArgument = process.argv.indexOf('--legacy-spd-root');
+const legacySpdRoot = legacyRootArgument >= 0 ? process.argv[legacyRootArgument + 1] : process.env.SPD_LEGACY_SOURCE_ROOT;
+const legacyMessages = legacySpdRoot ? join(legacySpdRoot, 'core', 'src', 'main', 'assets', 'messages') : undefined;
 const checkOnly = process.argv.includes('--check');
 
 /** the 9 domains `Messages.java`'s `prop_files` loads, in its own order */
@@ -56,7 +73,11 @@ const DOMAINS = ['actors', 'items', 'journal', 'levels', 'misc', 'plants', 'scen
  * files; BCP-47 calls it `id`, which is the mapping `src/i18n/languages.ts` carries for
  * `Intl.PluralRules` - here we only need the filename suffix.
  */
-const LOCALES = ['zh', 'ko', 'ru', 'es', 'de', 'fr', 'pt', 'pl', 'it', 'tr', 'ja', 'uk', 'cs', 'in', 'nl', 'hu', 'vi', 'el'];
+const LOCALES = ['zh', 'ko', 'ru', 'es', 'de', 'fr', 'pt', 'pl', 'it', 'tr', 'ja', 'uk', 'cs', 'in', 'nl', 'hu', 'vi', 'el',
+	//`v3.3.8`'s four locales beyond the live checkout's current 18 - see the header comment above
+	'be', 'eo', 'sv', 'zh-hant'];
+/** the four locales read from `legacyMessages` above, not `messages` */
+const LEGACY_ONLY_LOCALES = new Set(['be', 'eo', 'sv', 'zh-hant']);
 
 /** the shape every SPD message key takes: dotted identifiers, `$` for a Java inner class */
 const KEY_SHAPE = /^[A-Za-z0-9_$]+(?:\.[A-Za-z0-9_$]+)+$/;
@@ -176,12 +197,16 @@ async function referencedKeys() {
 }
 
 async function readLocale(suffix) {
+	const root = LEGACY_ONLY_LOCALES.has(suffix) ? legacyMessages : messages;
 	const merged = new Map();
+	//no `--legacy-spd-root` given: this locale ships empty and falls back to English throughout,
+	//the same as any other missing-domain gap below
+	if (!root) return merged;
 	for (const domain of DOMAINS) {
 		const name = suffix === '' ? `${domain}.properties` : `${domain}_${suffix}.properties`;
 		let text;
 		try {
-			text = await readFile(join(messages, domain, name), 'utf8');
+			text = await readFile(join(root, domain, name), 'utf8');
 		} catch {
 			//a domain may simply not be translated for a locale; the base fills in at runtime
 			continue;

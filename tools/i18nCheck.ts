@@ -186,12 +186,12 @@ for (const language of LANGUAGES) {
 }
 
 // 6. language detection: a regional tag finds its language, an unknown one falls back to
-//    English, and SPD's `in` is reachable from BCP-47's `id`. Known gap (ROADMAP sec 8):
-//    this catalogue is SPD v2.1.4's 19 locales, so `be`/`eo`/`sv`/`zh-hant` are not offered;
-//    `zh-Hant-HK` therefore resolves to `zh` until the v3.3.8 regen lands.
+//    English, and SPD's `in` is reachable from BCP-47's `id`. Closed 2026-09-19 (ROADMAP sec 8):
+//    the v3.3.8 regen landed, so `be`/`eo`/`sv`/`zh-hant` are offered now, and `zh-Hant-HK`
+//    resolves to the real `zh-hant` entry via `detectLanguage`'s `Hant`-script special case.
 check("pt-BR detects pt", detectLanguage(['pt-BR']).code === 'pt');
 check('zh-Hans-CN detects zh', detectLanguage(['zh-Hans-CN']).code === 'zh');
-check('zh-Hant-HK falls back to zh until zh-hant ships', detectLanguage(['zh-Hant-HK']).code === 'zh');
+check('zh-Hant-HK detects zh-hant', detectLanguage(['zh-Hant-HK']).code === 'zh-hant');
 check('id detects SPD\'s in', detectLanguage(['id']).code === 'in');
 check('an untranslated language falls back to English', detectLanguage(['sw', 'mt']).code === 'en');
 check('preference order is honoured', detectLanguage(['sw', 'fr', 'de']).code === 'fr');
@@ -201,7 +201,7 @@ check('preference order is honoured', detectLanguage(['sw', 'fr', 'de']).code ==
 // until the v3.3.8 regen; `de` stands in as the differs-from-English witness alongside `fr`.
 check('fr differs from en for the rat', SPD_MESSAGES.fr['actors.mobs.rat.name'] !== SPD_MESSAGES.en['actors.mobs.rat.name']);
 check('de differs from en for the rat', SPD_MESSAGES.de['actors.mobs.rat.name'] !== SPD_MESSAGES.en['actors.mobs.rat.name']);
-check('eo stays absent until the locale regen', SPD_MESSAGES['eo'] === undefined);
+check('eo differs from en for the rat', SPD_MESSAGES['eo']?.['actors.mobs.rat.name'] !== SPD_MESSAGES.en['actors.mobs.rat.name']);
 check('ja is non-latin', /[^\x00-ɏ]/.test(SPD_MESSAGES.ja['actors.mobs.rat.name'] ?? ''));
 
 // 8. `convertPlaceholders` is exercised by generation for the complete corpus. Do not try to

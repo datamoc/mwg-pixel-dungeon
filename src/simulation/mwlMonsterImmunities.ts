@@ -120,7 +120,9 @@ export const MONSTER_IMMUNITY_DATA = [
     "immunities": [
       "terror",
       "amok",
-      "charm"
+      "charm",
+      "bleeding",
+      "poison"
     ]
   },
   {

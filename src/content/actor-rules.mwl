@@ -75,7 +75,7 @@
           {
             tag: "effect",
             apply_to: "inorganic",
-            set: "dm100,dm200,dm201,dm300,golem,skeleton,necroSkeleton,statue,armoredStatue,pylon,wraith,dustWraith",
+            set: "dm100,dm200,dm201,dm300,golem,skeleton,necroSkeleton,statue,armoredStatue,pylon,wraith,dustWraith,ninjaLog",
           },
           {
             tag: "effect",

@@ -1370,7 +1370,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		'skeleton:', 'statue:', 'succubus:', 'tengu:', 'yog:', 'yogFist:bright', 'yogFist:burning',
 		'yogFist:rotting', 'yogFist:rusted',
 	].sort(), 'monster immunity table covers exactly the Java-immune kinds');
-	assert.deepEqual(immunityByKey.get('ninjaLog:'), ['amok', 'charm', 'terror'], 'the NinjaLog decoy refuses terror/amok/charm');
+	assert.deepEqual(immunityByKey.get('ninjaLog:'), ['amok', 'bleeding', 'charm', 'poison', 'terror'], 'the NinjaLog decoy refuses terror/amok/charm plus the INORGANIC pair');
 	assert.deepEqual(immunityByKey.get('pylon:'), ['amok', 'bleeding', 'charm', 'paralysis', 'poison', 'terror'], 'pylon carries INORGANIC + STATIC sets');
 	assert.deepEqual(immunityByKey.get('yogFist:rotting'), ['ooze'], 'rotting fist carries the ACIDIC set');
 	assert.deepEqual(immunityByKey.get('yogFist:rusted'), ['bleeding', 'poison'], 'rusted fist carries the INORGANIC pair');

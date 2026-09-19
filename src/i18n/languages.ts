@@ -18,10 +18,17 @@
  * were `ko`/`fr`/`ja`/`uk`/`nl` (marked below their real `complete`), `ru`/`it`/`in` (above
  * their real `unreviewed`) and `el` (above its real `unfinished`); `zh`'s native name is
  * `简体中文` (SPD's `CHI_SMPL`) and `in`'s is `indonesia`, not the French `indonésien` that had
- * stood in. **Known gap:** this list is SPD `v2.1.4`'s 19 (18 non-English), which is also what
- * `tools/i18n-extract.mjs`'s `LOCALES` ships; `v3.3.8` additionally has `be`/`eo`/`sv`/`zh-hant`
- * (all >= 80%, so omitting them is a scoping choice here, not an SPD completeness fact), so the
- * picker is missing four locales SPD later added - see ROADMAP.md section 8.
+ * stood in.
+ *
+ * **Closed 2026-09-19: the four `v3.3.8` locales beyond the live checkout's 18 are offered now**
+ * (`be`/`eo`/`sv`/`zh-hant`, values from `Languages.java` at tag `v3.3.8`: `be` is `X_UNFINISH`,
+ * `eo` is `O_COMPLETE`, `sv` and `zh-hant` (`CHI_TRAD`) are both `__UNREVIEW`). Their SPD-side
+ * `.properties` catalogs ship in the generated bundle, read from a second `--legacy-spd-root`
+ * pointed at a `v3.3.8` checkout (see `tools/i18n-extract.mjs`'s header comment and `LOCALES`);
+ * the live checkout's own current branch has dropped these four files entirely, which is why a
+ * second root is needed rather than just adding them to the primary one. The port's own `port.*`
+ * strings have no catalogs for them yet, so port prose falls back to English there - stated, not
+ * silent (see `PORT_COVERAGE.md`'s i18n row).
  */
 
 export type LanguageStatus = 'complete' | 'unreviewed' | 'unfinished';
@@ -57,6 +64,10 @@ export const LANGUAGES: readonly Language[] = [
 	{ code: 'hu', tag: 'hu', nativeName: 'magyar', status: 'complete' },
 	{ code: 'vi', tag: 'vi', nativeName: 'tiếng việt', status: 'complete' },
 	{ code: 'el', tag: 'el', nativeName: 'ελληνικά', status: 'unfinished' },
+	{ code: 'be', tag: 'be', nativeName: 'беларуская', status: 'unfinished' },
+	{ code: 'eo', tag: 'eo', nativeName: 'esperanto', status: 'complete' },
+	{ code: 'sv', tag: 'sv', nativeName: 'svenska', status: 'unreviewed' },
+	{ code: 'zh-hant', tag: 'zh-Hant', nativeName: '繁體中文', status: 'unreviewed' },
 ];
 
 export function languageByCode(code: string): Language | undefined {
@@ -70,11 +81,19 @@ export function languageByCode(code: string): Language | undefined {
  * translation wins. Each entry is matched on its primary subtag, so `pt-BR` finds `pt` and
  * `zh-Hans-CN` finds `zh` - SPD has one catalog per language, not per region. Indonesian is
  * matched on both spellings, since a browser reports BCP-47's `id` while SPD's file is `in`.
+ * Traditional Chinese is `Languages.matchLocale`'s one special case (tag `v3.3.8`): a bare `zh`
+ * primary subtag would otherwise always resolve to Simplified (the first `zh`-coded entry) since
+ * both share it, so a `Hant` script subtag anywhere in the preference routes to `zh-hant` first,
+ * exactly like `Languages.matchLocale(Locale)`'s own `locale.toString().contains("Hant")` check.
  *
  * Falls back to English, which is the one language guaranteed complete.
  */
 export function detectLanguage(preferences: readonly string[]): Language {
 	for (const preference of preferences) {
+		if (/hant/i.test(preference)) {
+			const traditional = LANGUAGES.find((language) => language.code === 'zh-hant');
+			if (traditional) return traditional;
+		}
 		const primary = preference.toLowerCase().split('-')[0];
 		const match = LANGUAGES.find((language) => language.code === primary || language.tag === primary);
 		if (match) return match;

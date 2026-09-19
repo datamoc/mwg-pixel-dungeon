@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 /**
- * The armor-ability data table and the Warrior's formulas, pinned against the real Java source
+ * The armor-ability data table and each class's ability formulas, pinned against the real Java source
  * (tag `v3.3.8`): `HeroClass.armorAbilities()`, `Talent.java`'s tier-4 blocks,
  * `ArmorAbility.chargeUse()`, and each Warrior ability's own `activate()`.
  *
@@ -437,6 +438,28 @@ export function verifyArmorAbilities(require, check) {
 		assert.equal(elementalStrikeResisted('grim', false), false);
 	});
 
+	check('DeathMark re-marks stack, DoubleMark expires with the round, one NinjaLog stands', () => {
+		//`DeathMark.activate()` (tag `v3.3.8`): `Buff.affect()` *spends* (additive) on an
+		//existing tracker, so re-marking extends the window instead of refreshing it; the
+		//`DoubleMarkTracker` is a 0.01-duration latch, so any clock advance - and any
+		//save/load round trip - drops it, leaving same-round chaining as the only way to
+		//spend the discount; and a new `NinjaLog` kills every existing one first.
+		//dungeonScene.ts cannot load in this harness (Pixi), so this pins all three at
+		//source level, the way the Spirit-Blades check above does.
+		const source = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		assert.match(source, /target\.deathMarkTurns = \(target\.deathMarkTurns \?\? 0\) \+ 5/,
+			're-marking must extend the window, not reset it to 5');
+		const clock = /advanceClock: \(\) => \{([\s\S]*?)\n\t\t\t\},/.exec(source);
+		assert.ok(clock, 'spendHeroTurn still advances through advanceClock');
+		assert.match(clock[1], /doubleMarkArmed = false/,
+			'any clock advance must drop the DoubleMark latch');
+		assert.doesNotMatch(source, /doubleMarkArmed = s\.doubleMarkArmed/,
+			'the latch must not survive a save/load round trip');
+		const log = /private placeNinjaLog\([^)]*\)[^{]*\{([\s\S]*?)\n\t\}/.exec(source);
+		assert.ok(log, 'placeNinjaLog still exists');
+		assert.match(log[1], /allyKind === 'ninjaLog'/,
+			'a new decoy must retire the existing ones first');
+	});
 	check('CombinedLethality tests only on a weapon-changed hero melee swing, executing at `0.4*points/3`', () => {
 		//`Char.java` 541-561: the tracker's weapon must differ from the attacking weapon
 		//(`!=` instance identity), the attacker must be the hero, and the attacking weapon
@@ -463,5 +486,23 @@ export function verifyArmorAbilities(require, check) {
 		assert.deepEqual(live({ targetIsAlly: true, predictedHp: 1 }), { tests: true, executes: false });
 		assert.deepEqual(live({ targetIsBossOrMiniboss: true, predictedHp: 1 }), { tests: true, executes: false });
 		assert.deepEqual(live({ predictedHp: 0 }), { tests: true, executes: false });
+	});
+	check('a consumed Spirit Blades tracker runs the bow nature-proc, never bonus damage', () => {
+		//`Talent.onAttackProc` (Talent.java 896-901, tag `v3.3.8`): with the tracker armed a
+		//landed hero attack rolls `Int(10) < 3*SPIRIT_BLADES` for `bow.proc()` - the SpiritBow
+		//nature block (plant roll + kill-extend) - detaching the tracker on a success.
+		//dungeonScene.ts cannot load in this harness (Pixi), so this pins the two call-site
+		//halves at source level: the consume branch must reach `applyNaturesPowerOnHit`, and
+		//the old `x1.1` damage stand-in (Java's `+0.1` lives in
+		//`Enchantment.genericProcChanceMultiplier`, a proc-chance term - and is unreachable
+		//anyway, since a rank-4 `Int(10) < 12` roll always consumes the tracker before
+		//`wep.proc` runs) must be gone.
+		const source = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const consume = /const spiritBladesProc = [\s\S]*?;\n([\s\S]*?)\n\t\tconst affix/.exec(source);
+		assert.ok(consume, 'the tracker-consume block still exists');
+		assert.match(consume[1], /applyNaturesPowerOnHit\(defender\)/,
+			'a consumed tracker must run the bow nature-proc');
+		assert.doesNotMatch(source, /damageMultiplier \*= 1\.1/,
+			'the invented x1.1 spirit-blades damage bonus must be gone');
 	});
 }
