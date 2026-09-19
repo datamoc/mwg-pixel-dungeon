@@ -761,10 +761,20 @@ twice per floor (a redundant pure re-derivation, harmless to shared state but do
 trace). With both fixed, all 26 matching-output floors on depths 3+ are now confirmed
 `TRACE-IDENTICAL` - true RNG-call-order equality, not just coincidentally-matching final maps -
 and the two still-open floors have exact divergence draw indices: seed42/depth8 at draw 321,
-inside `RegularBuilder.createBranches`'s per-branch retry loop (`LoopBuilder.randomBranchAngle`
-on the TS side at that exact position; Java is a `bits=31` `Random.element` draw there instead,
-meaning an actual different-shaped call, not just a different value); seed999999999999/depth9
-at draw 22626, inside `paintMazeConnection`'s maze-growing loop. Chasing the first index closed
+inside `RegularBuilder.createBranches`'s per-branch retry loop (Java takes three consecutive
+extra `bits=31` draws there that this port does not, then both sides resync perfectly for the
+rest of the floor); seed999999999999/depth9
+at draw 22626, inside `paintMazeConnection`'s maze-growing loop. **Narrowed 2026-09-19, a dead
+end recorded so it is not re-walked**: the seed42/depth8 gap traces to `createBranches`'s
+SecretRoom-vs-ConnectionRoom retry guard needing `roomsToBranch[i]` to be a real secret room at
+that index in Java but not in this port for this seed/depth, despite byte-identical draws up to
+that point - a content (which room is secret) question, not an algorithm one. `createSecretRoom`'s
+own selection algorithm was checked against it too and found to not match tag `v3.3.8`'s real
+`SecretRoom.createRoom()`, but implementing that literal algorithm regressed the whole suite
+26/28 -> 13/28 (depths 3+), proving this port's actual levelgen RNG reference is not `v3.3.8` for
+that call and the existing "min of 4 rolls" shape - despite its uncited comment - is the
+empirically correct one; left unchanged. See `PORT_COVERAGE.md`'s matching note. Chasing the
+first index closed
 a real, separately-documented suspect from an earlier audit pass: `createBranches` was a `void`
 where Java's is `boolean` (`failedBranchAttempts > 100` gives up and lets the caller's builder
 return `null`, retrying the whole room graph) - fixed, though confirmed *not* the cause of

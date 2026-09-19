@@ -2611,9 +2611,37 @@ With both fixed, every floor that already had output `PARITY` on depths 3+ now a
 `TRACE-IDENTICAL` - real RNG-call-order equality across the whole floor, not merely a matching
 final map - and the two genuinely still-open floors now have exact divergence draw indices
 instead of only cell diffs: **seed42/depth8** first parts ways at draw 321 (java `bits=31`
-vs. ts `bits=32` at that position - a real extra/missing draw, not a value mismatch) and
-**seed999999999999/depth9** at draw 22626, both landing inside `paintMazeConnection`'s
-`growMaze`/`decideDirection` loop per a stack-window trace, not yet narrowed further. The
+vs. ts `bits=24` at that position - a real extra/missing draw, not a value mismatch - correcting
+this row's earlier `bits=32` misreading of the same log line) and **seed999999999999/depth9** at
+draw 22626, both landing inside `paintMazeConnection`'s `growMaze`/`decideDirection` loop per a
+stack-window trace.
+
+**Narrowed further, 2026-09-19 - a dead end, recorded so it is not re-walked.** At seed42/depth8's
+draw 321 the two traces are otherwise byte-identical: Java takes three consecutive extra `bits=31`
+draws (`Random.Int`-shaped) that this port's trace does not, then both sides resync perfectly for
+every remaining draw of the floor (confirmed by diffing the surrounding ~20 lines of both traces
+directly) - an isolated three-draw gap, not a cascading desync. Three raw `Int` draws in a row is
+exactly `createBranches`'s `do { curr = Random.element(branchable) } while (r instanceof SecretRoom
+&& curr instanceof ConnectionRoom)` retrying twice before accepting, which requires `r` to actually
+be a `SecretRoom` at that `roomsToBranch` index - a real hypothesis, checked directly by
+instrumenting the port's own `r.kind`/`curr.kind` at every guard evaluation for this exact seed/
+depth: **the port's room at that index is not `'secret'` there**, so the guard's do-while body runs
+its accepting pass once and never loops, which is the missing-draws shape observed. Chasing *why*
+led to `rooms/secret/registry.ts`'s `createSecretRoom()`, whose own doc comment ("min of 4
+independent `Random.Int` draws, take the lowest") does not match tag `v3.3.8`'s real
+`SecretRoom.createRoom()` (`Random.chances(new float[]{6, 3, 1})` clamped to the queue size) -
+a real, confirmed mismatch against that tag's source text. **But implementing the literal `v3.3.8`
+algorithm regresses the whole suite (26/28 matching floors on depths 3+ down to 13/28)**, which
+means whatever checkout this port's levelgen RNG shapes are actually pinned to is not `v3.3.8` for
+this call (the same live-checkout-vs-`v3.3.8` provenance split found independently the same day in
+the i18n catalogue - see `ROADMAP.md` section 8's translation item) - and the existing "min of 4"
+implementation, despite its comment citing no real source, is the one that is *empirically* correct
+against this port's actual RNG-parity baseline. Left unchanged. The real remaining question - why
+this specific `roomsToBranch` slot is `'secret'` in Java but not in this port for this seed/depth,
+despite every draw up to that point being byte-identical - is still open, and is a *content*
+question (which room this port classifies as secret) rather than an algorithm question, so the next
+attempt should compare `secretsForFloor(8)`'s and each room's assigned `kind` directly against a
+traced Java run, not the RNG shape of `createSecretRoom` itself. The
 harness side gained an env-var fallback for `-Dlevelgen.trace` too (`LEVELGEN_TRACE=true`):
 `desktop/build.gradle`'s `runHarness` task does not forward `-D` system properties to the
 forked JVM, and - found the hard way - this local Gradle 8.1.1 install cannot recompile *any*
