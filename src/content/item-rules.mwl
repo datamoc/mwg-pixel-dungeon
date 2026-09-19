@@ -352,8 +352,7 @@
           { tag: "row", id: "potionFlameFireVolume", item: "potionFlame", effect: "fireVolume", value: 2 },
           { tag: "row", id: "potionToxicGasGasVolume", item: "potionToxicGas", effect: "gasVolume", value: 1000 },
           { tag: "row", id: "potionParalyticGasGasVolume", item: "potionParalyticGas", effect: "gasVolume", value: 1000 },
-          { tag: "row", id: "potionInvisDurationBase", item: "potionInvis", effect: "durationBase", value: 20 },
-          { tag: "row", id: "potionInvisDurationPerTalent", item: "potionInvis", effect: "durationPerTalent", value: 5 },
+
           { tag: "row", id: "potionFrostTargetRadius", item: "potionFrost", effect: "targetRadius", value: 1 },
           { tag: "row", id: "fireBombFireRadius", item: "fireBomb", effect: "fireRadius", value: 2 },
           { tag: "row", id: "fireBombFireDuration", item: "fireBomb", effect: "fireDuration", value: 2 },
@@ -569,8 +568,6 @@
           { tag: "row", id: "wardingSpawnHpBase", item: "wandWarding", effect: "spawnHpBase", value: 10 },
           { tag: "row", id: "wardingSpawnHpPerLevel", item: "wandWarding", effect: "spawnHpPerLevel", value: 2 },
           { tag: "row", id: "potionFrostRadius", item: "potionFrost", effect: "radius", value: 2 },
-          { tag: "row", id: "potionFrostScaldMinFraction", item: "potionFrost", effect: "scaldMinFraction", value: 0.5 },
-          { tag: "row", id: "potionFrostScaldMaxFraction", item: "potionFrost", effect: "scaldMaxFraction", value: 0.6 },
           { tag: "row", id: "scrollMirrorImageCount", item: "scrollMirror", effect: "imageCount", value: 2 },
           { tag: "row", id: "scrollRetributionMaxPower", item: "scrollRetribution", effect: "maxPower", value: 4 },
           { tag: "row", id: "scrollRetributionPowerPerMissingHp", item: "scrollRetribution", effect: "powerPerMissingHp", value: 4.45 },

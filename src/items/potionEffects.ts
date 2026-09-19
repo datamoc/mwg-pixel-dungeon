@@ -1,4 +1,4 @@
-import { Random, Roguelike } from 'mwg';
+import { Roguelike } from 'mwg';
 import { addBuff, type Creature } from '../combat';
 import { applyChillFreeze } from '../simulation/buffs';
 import { WALL } from '../dungeonConstants';
@@ -58,9 +58,13 @@ export function createPotionEffects(scene: PotionEffectsContext): Record<string,
 			scene.say(t(scene.creatures.some((c) => !c.isHero && !c.isNPC) ? 'port.log.mindvisionmobs' : 'port.log.mindvisionnone'), 'positive');
 		},
 		potionInvis: () => {
+			//`PotionOfInvisibility.apply()` (tag `v3.3.8`) only prolongs `Invisibility`
+			//(20 turns) - the freerunner duration extension that stood here was
+			//invented: real `SPEEDY_STEALTH` lives in `Momentum.java` (momentum while
+			//already invisible), and this port has no Momentum system for it to act
+			//through. Removed; the talent does nothing until Momentum exists.
+			//Found by the 15th monster-analysis matrix (potions).
 			addBuff(scene.hero, 'invisibility');
-			if (scene.subclass() === 'freerunner' && scene.talentRank('speedy_stealth') > 0) scene.hero.buffs['invisibility'] = mwlItemEffectValue('potionInvis', 'durationBase')
-				+ mwlItemEffectValue('potionInvis', 'durationPerTalent') * scene.talentRank('speedy_stealth');
 			scene.say(t('port.log.invisible'), 'positive');
 		},
 		potionExperience: () => {
@@ -105,15 +109,12 @@ export function createPotionEffects(scene: PotionEffectsContext): Record<string,
 			const targets = scene.creatures.filter((creature) => creature.hp > 0
 				&& Roguelike.chebyshevDistance(creature, scene.hero) <= mwlItemEffectValue('potionFrost', 'targetRadius')
 				&& scene.level.passable(creature.x, creature.y));
+			//No Java source deals direct frost damage to elementals: `PotionOfFrost.shatter()`
+			//only seeds `Freezing` blobs (tag `v3.3.8`), and `Freezing` itself only chills.
+			//The maxHp-fraction scald that stood here was invented - and hit frost
+			//elementals with frost besides. Removed; the chill below is what remains.
+			//Found by the 15th monster-analysis matrix (potions).
 			for (const target of targets) {
-				if (target.kind === 'elemental' || target.kind === 'newbornElemental') {
-					const scald = Random.normalRange(
-						Math.floor(target.maxHp * mwlItemEffectValue('potionFrost', 'scaldMinFraction')),
-						Math.floor(target.maxHp * mwlItemEffectValue('potionFrost', 'scaldMaxFraction')),
-					);
-					target.hp -= scald;
-					scene.showDamage(target, scald);
-				}
 				delete target.buffs['burning'];
 				target.buffs = applyChillFreeze(target.buffs).buffs;
 				if (target.hp <= 0) scene.kill(target);
