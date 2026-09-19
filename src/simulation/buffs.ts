@@ -109,6 +109,17 @@ export function applyChillFreeze(previous: Readonly<BuffState>): { buffs: BuffSt
  * this port's own invention and made fire strictly weaker than Java's at every depth.
  * Damage is returned for the caller to apply, without mutating HP or the input buff map.
  */
+/**
+ * `ShieldBuff.processDamage()` pool half (tag v3.3.8), shared by every `Char.damage()`
+ * seam: the pool absorbs first, HP takes the rest. Pure so the suite pins it once
+ * instead of once per seam. Added as the maintained collateral for the DKBarrier multi-seam
+ * fix (13th matrix residual).
+ */
+export function absorbShield(shield: number, damage: number): { shield: number; damage: number } {
+	const blocked = Math.min(shield, damage);
+	return { shield: shield - blocked, damage: damage - blocked };
+}
+
 export function advanceBuffs(previous: Readonly<BuffState>, random: SimulationRandom, scalingDepth = 0): { buffs: BuffState; damage: number } {
 	const buffs = { ...previous };
 	let damage = 0;

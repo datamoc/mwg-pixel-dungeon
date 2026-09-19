@@ -5,7 +5,7 @@ import ts from 'typescript';
 // Called by verifySimulation.mjs after compiling actual production modules into its temp tree.
 export function verifyCombat(require, check) {
 	const { rollHit, rollDamage, liveStats } = require('./simulation/combat');
-	const { applyBuff, advanceBuffs, reigniteBuff, BUFF_DURATION } = require('./simulation/buffs');
+	const { applyBuff, advanceBuffs, reigniteBuff, absorbShield, BUFF_DURATION } = require('./simulation/buffs');
 	const record = process.env.RECORD_FIXTURES === '1';
 	const facade = require('./combat');
 	const { Random } = require('mwg');
@@ -134,6 +134,14 @@ export function verifyCombat(require, check) {
 		assert.equal(applyBuff(original, 'poison').event.fresh, true);
 		assert.equal(applyBuff({ poison: 0 }, 'poison').event.fresh, false);
 		assert.equal(applyBuff({ poison: undefined }, 'poison').event.fresh, true);
+	});
+	check('shield pools absorb before HP on every damage seam', () => {
+		//`ShieldBuff.processDamage()`: the pool takes first, HP takes the rest. One
+		//pure helper serves the attack tail, the blast seam, traps, blobs and DoT
+		//alike (DKBarrier multi-seam fix, 13th matrix residual).
+		assert.deepEqual(absorbShield(300, 20), { shield: 280, damage: 0 });
+		assert.deepEqual(absorbShield(10, 25), { shield: 0, damage: 15 });
+		assert.deepEqual(absorbShield(0, 25), { shield: 0, damage: 25 });
 	});
 	check('undefined buffs neither tick nor draw; zero-duration buffs still damage then expire', () => {
 		const original = freeze({ roots: undefined, burning: 0 });

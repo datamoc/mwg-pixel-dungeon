@@ -322,6 +322,7 @@ import {
 	tickBuffs,
 	NEGATIVE_BUFFS,
 	BUFF_DURATION,
+	absorbShield,
 	type Step,
 	type Creature,
 	type GroundItem,
@@ -6335,13 +6336,21 @@ export class DungeonScene extends Scene2D {
 					}
 					return true;
 				}
+				//DKBarrier absorbs on every `Char.damage()` path - same block as the
+				//attack tail (see the trap-blast seam's own copy).
+				if (target.kind === 'king' && (target.kingShield ?? 0) > 0) {
+					const absorbed = absorbShield(target.kingShield ?? 0, damage);
+					target.kingShield = absorbed.shield;
+					damage = absorbed.damage;
+				}
 				const preHp = target.hp;
 				target.hp -= damage;
 				if (this.fadeMirrorOnDamage(target, damage)) return true;
 				if (target.kind === 'yog' && target.hp > 0) this.yogDamageHook(target, preHp);
 				if (target.kind === 'king' && target.hp > 0 && (target.kingPhase ?? 1) === 1) {
-					target.kingSummonCd = (target.kingSummonCd ?? 0) - damage / 8;
-					target.kingAbilityCd = (target.kingAbilityCd ?? 0) - damage / 8;
+					const taken = Math.max(0, preHp - target.hp);
+					target.kingSummonCd = (target.kingSummonCd ?? 0) - taken / 8;
+					target.kingAbilityCd = (target.kingAbilityCd ?? 0) - taken / 8;
 				}
 				if (target.kind === 'king' && target.hp > 0) this.kingDamageHook(target);
 				this.showDamage(target, damage);
@@ -6800,9 +6809,23 @@ export class DungeonScene extends Scene2D {
 			let damage = Math.max(0, Random.normalRange(5 + this.depth, 10 + 2 * this.depth));
 			if (dx !== 0 || dy !== 0) damage = Math.round(damage * 0.67);
 			damage = Math.max(0, damage - Random.normalRange(target.armor[0], target.armor[1]));
+			//DKBarrier absorbs on every `Char.damage()` path (`ShieldBuff.processDamage`
+			//in Java), not just attacks and bomb blasts - the same block as the attack
+			//tail. Found as a residual of the 13th monster-analysis matrix.
+			if (target.kind === 'king' && (target.kingShield ?? 0) > 0) {
+				const absorbed = absorbShield(target.kingShield ?? 0, damage);
+				target.kingShield = absorbed.shield;
+				damage = absorbed.damage;
+			}
 			const preHp = target.hp;
 			target.hp -= damage;
 			if (target.kind === 'yog' && target.hp > 0) this.yogDamageHook(target, preHp);
+			if (target.kind === 'king' && target.hp > 0 && (target.kingPhase ?? 1) === 1) {
+				const taken = Math.max(0, preHp - target.hp);
+				target.kingSummonCd = (target.kingSummonCd ?? 0) - taken / 8;
+				target.kingAbilityCd = (target.kingAbilityCd ?? 0) - taken / 8;
+			}
+			if (target.kind === 'king' && target.hp > 0) this.kingDamageHook(target);
 			this.showDamage(target, damage);
 			target.sleeping = false;
 			if (target.hp <= 0) this.kill(target, 'fire');
@@ -9233,7 +9256,14 @@ export class DungeonScene extends Scene2D {
 		//with another DoT also running the burning share cannot be split out - a stated reduction.
 		const soiledBurningOnly = monster.kind === 'yogFist' && monster.yogFistType === 'soiled'
 			&& monster.buffs['burning'] !== undefined && monster.buffs['poison'] === undefined && monster.buffs['bleeding'] === undefined;
-		const dotDealt = soiledBurningOnly ? 0 : dot;
+		let dotDealt = soiledBurningOnly ? 0 : dot;
+		//DKBarrier absorbs on every `Char.damage()` path - same block as the attack
+		//tail (see the trap-blast seam's own copy).
+		if (monster.kind === 'king' && (monster.kingShield ?? 0) > 0) {
+			const absorbed = absorbShield(monster.kingShield ?? 0, dotDealt);
+			monster.kingShield = absorbed.shield;
+			dotDealt = absorbed.damage;
+		}
 		if (monsterWasDrowsy && monster.buffs['drowsy'] === undefined) {
 			//Drowsy.act() attaches MagicalSleep after five turns; monsters have a native
 			//sleeping state here, so this transition needs no second buff.
@@ -13516,9 +13546,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//DKBarrier: the P2 shield pool absorbs before HP (no per-turn regen here - the
 		//`incShield` half of `DKBarrior.act()` has no modeled trigger to hang it on).
 		if (defender.kind === 'king' && (defender.kingShield ?? 0) > 0) {
-			const blocked = Math.min(defender.kingShield ?? 0, damage);
-			defender.kingShield = (defender.kingShield ?? 0) - blocked;
-			damage -= blocked;
+			const absorbed = absorbShield(defender.kingShield ?? 0, damage);
+			defender.kingShield = absorbed.shield;
+			damage = absorbed.damage;
 		}
 		//DM300.move()/PylonEnergy: Barrier absorbs damage before HP while the boss is
 		//charged. This is a compact boss-local pool; the generic hero Barrier path cannot
@@ -17043,9 +17073,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//DKBarrier: the P2 shield pool absorbs before HP (no per-turn regen here - the
 		//`incShield` half of `DKBarrior.act()` has no modeled trigger to hang it on).
 		if (c.kind === 'king' && (c.kingShield ?? 0) > 0) {
-			const blocked = Math.min(c.kingShield ?? 0, damage);
-			c.kingShield = (c.kingShield ?? 0) - blocked;
-			damage -= blocked;
+			const absorbed = absorbShield(c.kingShield ?? 0, damage);
+			c.kingShield = absorbed.shield;
+			damage = absorbed.damage;
 		}
 		//DM300.move()/PylonEnergy: Barrier absorbs damage before HP while the boss is charged.
 		if (c.kind === 'dm300' && (c.dmBarrier ?? 0) > 0) {
