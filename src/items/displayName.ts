@@ -1,7 +1,7 @@
 import { Actors } from 'mwg';
 import { ITEM_KEYS, RING_KEYS, WAND_KEYS, has, t } from '../i18n';
 import { wandTypeFromSource, type WandType } from './wands';
-import { ARMOR_NAME_BY_CLASS, WEAPON_NAME_BY_CLASS } from './catalog';
+import { ARMOR_NAME_BY_CLASS, WEAPON_NAME_BY_CLASS, isClassArmorId } from './catalog';
 import { tippedDartNameKey, missileDamageRange } from './missiles';
 import { armorSTRReq, missileSTRReq, weaponSTRReq } from './strReq';
 import { MWL_CONSUMABLE_DESCRIPTION_KEYS, MWL_EQUIPMENT_DESCRIPTION_KEYS, MWL_MISSILE_BY_CLASS, MWL_MISSILE_DESCRIPTION_KEYS, MWL_MISSILE_NAME_KEYS } from '../mwlContent';
@@ -65,7 +65,7 @@ export function itemStatsLine(id: string, opts: { tier?: number; level?: number;
 		return t('items.weapon.melee.meleeweapon.stats_known', { '0': tier, '1': min, '2': max, '3': req })
 			+ heavySuffix(req, 'items.weapon.weapon.too_heavy', 'items.weapon.weapon.excess_str');
 	}
-	if (id === 'armor' || id === 'armorReward' || id === 'clothArmor' || id === 'startingArmor') {
+	if (id === 'armor' || id === 'armorReward' || id === 'clothArmor' || id === 'startingArmor' || isClassArmorId(id)) {
 		const tier = opts.tier ?? 1;
 		const drMin = level;
 		const drMax = tier * (2 + level);
@@ -156,7 +156,7 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 		}
 		const affix = item?.affix ? ` (${t(`port.affix.${item.affix}`)})` : '';
 		const weapon = ['weaponReward', 'startingWeapon'].includes(id);
-		const armor = ['armor', 'armorReward', 'clothArmor', 'startingArmor'].includes(id);
+		const armor = ['armor', 'armorReward', 'clothArmor', 'startingArmor'].includes(id) || isClassArmorId(id);
 		//Ammo stacks share the minted id `stone` whatever they throw, so the same minted-id problem
 		//applies: a stack of throwing knives read as "throwing stones". The class is the payload's
 		//`sourceClass`, which `MWL_MISSILE_BY_CLASS` turns into the authored missile node whose own

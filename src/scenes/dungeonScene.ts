@@ -206,7 +206,7 @@ import { Banner } from '../ui/banner';
 import { showDefeatPanel as showDefeatPanelUi, showVictoryPanel as showVictoryPanelUi } from '../ui/endPanels';
 import { createItemPickerWindow } from '../ui/itemPicker';
 import { curseInfusionLevelBonus, reverseCurseInfusion, transferEnhancement, upgradeItem } from '../items/itemWorkflows';
-import { armorReductionRange, weaponDamageRange, WEAPON_NAME_BY_CLASS } from '../items/catalog';
+import { armorReductionRange, weaponDamageRange, WEAPON_NAME_BY_CLASS, CLASS_ARMOR_ID_BY_CLASS, isClassArmorId } from '../items/catalog';
 import { getArmorCurses, getCurse, getWeaponCurses } from '../items/itemCurses';
 import { Cat, blacksmithSmithRewards, generatorItemOrder, generatorRandom, ghostQuestReward, randomUsingDefaults, randomCategory, randomWeapon, randomArmor, randomArtifact, randomGold, removeArtifactClass, setGeneratorDepth, type GenItem, type StatueLoot } from '../items/generator';
 import { MWL_CONSUMABLE_STATS, MWL_HERO_BASE_STATS, MWL_HERO_LEVEL_GROWTH, MWL_MISSILE_BY_CLASS, MWL_MISSILE_NAME_KEYS, MWL_PROGRESSION, MWL_QUEST_DEFINITIONS, MWL_SCENARIO_QUESTS, MWL_TURN_CLOCK, MWL_WAND_WARD_RULES, mwlItemEffectValue } from '../mwlContent';
@@ -8724,7 +8724,7 @@ export class DungeonScene extends Scene2D {
 			//the water blob spreading onto a *ground* item heap over time, which this port's
 			//one-shot touch-the-well interaction doesn't model. Also grants the `awareness` buff.
 			for (const item of this.bag.items) {
-				if (item.id === 'clothArmor' || item.id === 'armor' || item.id === 'armorReward'
+				if (item.id === 'clothArmor' || item.id === 'armor' || item.id === 'armorReward' || isClassArmorId(item.id)
 					|| item.id === 'weaponReward' || item.id === 'wand' || item.id.startsWith('ring_')) {
 					(item as typeof item & { cursedKnown?: boolean }).cursedKnown = true;
 				}
@@ -15960,7 +15960,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		// the port that explicitly opt out; keeping the list class-based also handles a generated
 		// item whose playable family is only a stand-in (weaponReward/armorReward/cloak).
 		const never = [
-			'clotharmor', 'warriorarmor', 'magearmor', 'roguearmor', 'huntressarmor', 'duelistarmor',
+			'clotharmor', 'warriorarmor', 'magearmor', 'roguearmor', 'huntressarmor', 'duelistarmor', 'clericarmor',
 			'berry', 'brokenseal', 'spiritbow', 'cloakofshadows', 'pickaxe',
 			'dagger', 'gloves', 'magesstaff', 'rapier', 'throwingstone', 'throwingknife', 'throwingspike',
 			//`Bomb` never sets `bones = true` (`Item.bones` defaults false), so neither form
@@ -16770,7 +16770,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		} else {
 			this.bag = new Actors.Inventory();
 			for (const item of s.bag) {
-				const instanceId = item.instanceId ?? (item.id === 'clothArmor' || item.id === 'armor' || item.id === 'armorReward' || item.id === 'weaponReward' || item.id.startsWith('ring_') ? this.newItemInstanceId(item.id) : undefined);
+				const instanceId = item.instanceId ?? (item.id === 'clothArmor' || item.id === 'armor' || item.id === 'armorReward' || isClassArmorId(item.id) || item.id === 'weaponReward' || item.id.startsWith('ring_') ? this.newItemInstanceId(item.id) : undefined);
 				this.bag.add({ ...item, instanceId, stackable: true });
 				if (instanceId && s.itemSerial === undefined) this.itemSerial++;
 			}
@@ -16780,7 +16780,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//Phantom weapon Swiftness (see the weaponAffix migration above): `swiftness` is only
 			//a real id on armor, so a non-armor bag item carrying it is pre-correction residue.
 			if ((item as { affix?: string }).affix === 'swiftness'
-				&& item.id !== 'clothArmor' && item.id !== 'armor' && item.id !== 'armorReward') delete (item as { affix?: string }).affix;
+				&& item.id !== 'clothArmor' && item.id !== 'armor' && item.id !== 'armorReward' && !isClassArmorId(item.id)) delete (item as { affix?: string }).affix;
 		}
 		this.armorInstanceId ??= this.bag.find(this.armorId)?.instanceId;
 		this.gameState = new Rpg.GameState();
@@ -17286,6 +17286,22 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * port drops exactly one (the Dwarf King's), and the Rat King's exchange consumes that same one,
 	 * so there is never a second crown to use.
 	 */
+	/**
+	 * `ClassArmor.upgrade()`'s item half (`ClassArmor.java` 97-137, via `KingsCrown.upgradeArmor()`
+	 * swapping the worn piece for it): the worn armor becomes the hero's per-class subclass,
+	 * keeping its tier, level, glyph, curse and infusion state - those all ride this port's
+	 * unchanged scalars, and `upgrade()`'s `identify()` is the `armorIdentified = true` below.
+	 * `augment` has no armor model here and `masteryPotionBonus` is not applied (`strReq.ts`),
+	 * so those two transfers have nothing to attach to. The seal transfers only for the Warrior
+	 * (`upgrade()` affixes it inside the `WARRIOR` case alone); every other class loses it here,
+	 * the way Java's detach of the old armor destroys it.
+	 */
+	private wearClassArmor(): void {
+		this.armorId = CLASS_ARMOR_ID_BY_CLASS[this.heroClass] ?? this.armorId;
+		this.armorIdentified = true;
+		if (this.heroClass !== 'warrior') this.armorSealed = false;
+	}
+
 	private grantArmorAbility(ability: string): void {
 		this.armorAbility = ability;
 		this.armorCharge = ARMOR_CHARGE_START;
@@ -17308,6 +17324,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.armorChoiceOpen = false;
 		//`upgradeArmor()` detaches the crown as it transforms the armor.
 		this.bag.remove('kingsCrown', 1);
+		this.wearClassArmor();
 		this.grantArmorAbility(option);
 		this.refresh();
 	}
@@ -17412,7 +17429,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 	private useStylus(instanceId?: string): void {
 		type Armor = { id: string; instanceId?: string; quantity: number; identified?: boolean; cursed?: boolean; affix?: string };
 		const candidates = (this.bag.items as Armor[]).filter((item) =>
-			item.quantity > 0 && (item.id === 'armor' || item.id === 'armorReward' || item.id === 'clothArmor'));
+			item.quantity > 0 && (item.id === 'armor' || item.id === 'armorReward' || item.id === 'clothArmor' || isClassArmorId(item.id)));
 		if (candidates.length === 0) {
 			this.say(t('items.stylus.identify'), 'negative');
 			return;
@@ -18320,7 +18337,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//`Armor.AC_DETACH` (`Armor.java` 190-198): Java lists this action on the *equipped* armor's
 		//own window, and tapping an already-equipped armor is a no-op here otherwise - `equipArmor`
 		//returns the moment the instance matches the equipped one - so that is the seam it uses.
-		if (this.armorSealed && (id === 'armor' || id === 'armorReward' || id === 'clothArmor')
+		if (this.armorSealed && (id === 'armor' || id === 'armorReward' || id === 'clothArmor' || isClassArmorId(id))
 			&& instanceId !== undefined && instanceId === this.armorInstanceId) {
 			this.detachSeal();
 			return;
@@ -22251,6 +22268,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 	private grantRatmogrify(): void {
 		this.armorAbility = 'ratmogrify';
 		this.armorCharge = ARMOR_CHARGE_START;
+		//The Rat King spends the same crown Java's `upgradeArmor(hero, armor, new Ratmogrify())`
+		//does, so the worn armor becomes the class armor here too, not just the ability.
+		this.wearClassArmor();
 	}
 
 	/** `Ratmogrify.activate` (tag v3.3.8): transform one visible ordinary enemy for six

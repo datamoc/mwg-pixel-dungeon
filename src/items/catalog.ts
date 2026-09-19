@@ -133,6 +133,27 @@ export const ARMOR: Record<number, ArmorDef[]> = byTier(authoredArmor);
 export const ARMOR_TIER_BY_CLASS: Record<string, number> = tierByClass(ARMOR);
 export const ARMOR_NAME_BY_CLASS: Record<string, string> = nameByClass(ARMOR);
 
+/**
+ * `ClassArmor`'s per-class subclasses as this port's worn-armor ids: Java mints a real item
+ * per hero class (`WarriorArmor`, `MageArmor`, `RogueArmor`, `HuntressArmor`, `DuelistArmor`,
+ * plus `ClericArmor` in tag `v3.3.8` - `ClassArmor.java`, and the bones list already excludes
+ * the first five by these same lowercased names), so the crown transform swaps the worn id to
+ * the hero's own rather than keeping the pre-crown class. Every id is `${heroClass}armor`.
+ */
+export const CLASS_ARMOR_ID_BY_CLASS: Record<string, string> = {
+	warrior: 'warriorarmor',
+	mage: 'magearmor',
+	rogue: 'roguearmor',
+	huntress: 'huntressarmor',
+	duelist: 'duelistarmor',
+	cleric: 'clericarmor',
+};
+
+/** Whether a worn/bag armor id is one of the six class armors (never the tiered loot classes). */
+export function isClassArmorId(id: string): boolean {
+	return Object.values(CLASS_ARMOR_ID_BY_CLASS).includes(id);
+}
+
 const authoredWands = authoredEquipment
 	.filter((node) => node.attributes.slot === 'wand')
 	.map((node): WandDef => {

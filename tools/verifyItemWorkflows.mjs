@@ -941,6 +941,20 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	const expectedArmorTiers = { clotharmor: 1, leatherarmor: 2, mailarmor: 3, scalearmor: 4, platearmor: 5 };
 	for (const [id, tier] of Object.entries(expectedArmorTiers)) assert.equal(ARMOR_TIER_BY_CLASS[id], tier, `armor ${id}`);
 	assert.equal(Object.keys(ARMOR_TIER_BY_CLASS).length, Object.keys(expectedArmorTiers).length, 'armor tier count');
+// `ClassArmor`'s six per-class subclasses (`ClassArmor.java`, plus tag-`v3.3.8`'s `ClericArmor`):
+// the crown/rat-king transform swaps the worn id to the hero's own, so every one needs a
+// catalogue id here and armor treatment in the flows that switch on armor ids.
+const { CLASS_ARMOR_ID_BY_CLASS, isClassArmorId } = require('./items/catalog.js');
+assert.deepEqual(CLASS_ARMOR_ID_BY_CLASS, {
+	warrior: 'warriorarmor', mage: 'magearmor', rogue: 'roguearmor',
+	huntress: 'huntressarmor', duelist: 'duelistarmor', cleric: 'clericarmor',
+});
+for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isClassArmorId(id), `${id} is class armor`);
+for (const id of ['clothArmor', 'platearmor', 'armorReward', 'armor']) assert.ok(!isClassArmorId(id), `${id} is not class armor`);
+// A swapped-out class armor hardens like any armor (`isBlacksmithGear`); the upgrade/reforge
+// pickers take it through the shared `isUpgradableItem` predicate, which needs no id list.
+const { isBlacksmithGear } = require('./items/blacksmith.js');
+for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithGear({ id, quantity: 1 }), `${id} hardens`);
 	// `Generator.java`'s static deck tables (tag `v2.1.4`, the baseline these MWL decks
 	// reproduce): every tier/category's class order and starting weights are authored data, so
 	// a typo'd class or weight would compile clean and only surface as wrong loot at runtime -

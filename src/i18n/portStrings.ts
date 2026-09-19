@@ -40,6 +40,11 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.ui.titlebadges': 'Badges',
 	'port.name.questweapon': 'quest weapon',
 	'port.name.wand': 'wand',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': 'hero\'s vestments',
+	'port.items.armor.clericarmor.desc': 'While wearing this mixture of cloth and plate, the Cleric can perform a special ability.',
 	//`triggerPlant`/misc scene log lines found hardcoded in English with no t() call at all
 	//across an entire pass - a real, pre-existing i18n gap this project's own audit convention exists to catch
 	'port.log.mineabandonedquiet': 'The abandoned mine is quiet.',
@@ -642,6 +647,11 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 	'port.ui.titlebadges': 'Badges',
 	'port.name.questweapon': 'arme de quête',
 	'port.name.wand': 'baguette',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': 'veste de héros',
+	'port.items.armor.clericarmor.desc': 'Quand iel porte cet assemblage de tissus et de plaques, le Clerc peut utiliser une capacité spéciale.',
 	//voir la section EN pour le contexte : lignes de log codées en dur trouvées sans t() du tout
 	'port.log.mineabandonedquiet': 'La mine abandonnée est silencieuse.',
 	'port.log.crystalchestlocked': 'Le coffre de cristal est verrouillé.',
@@ -1198,6 +1208,11 @@ export const PORT_STRINGS_DE: Record<string, string> = {
 	'port.ui.titlebadges': 'Abzeichen',
 	'port.name.questweapon': 'Questwaffe',
 	'port.name.wand': 'Zauberstab',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': 'Kleidung des Helden',
+	'port.items.armor.clericarmor.desc': 'Während der Kleriker diese Mischung aus Stoff und Stahl trägt, kann er eine Spezialfähigkeit einsetzen.',
 	'port.log.mineabandonedquiet': 'Die verlassene Mine liegt still.',
 	'port.log.crystalchestlocked': 'Die Kristalltruhe ist verschlossen.',
 	'port.log.unlockcrystalchest': 'Du schließt die Kristalltruhe auf.',
@@ -1742,6 +1757,11 @@ export const PORT_STRINGS_ES: Record<string, string> = {
 	'port.ui.titlebadges': 'Medallas',
 	'port.name.questweapon': 'arma de misión',
 	'port.name.wand': 'varita',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': 'vestiduras de clérigo',
+	'port.items.armor.clericarmor.desc': 'Mientras lleve esta combinación de tela y lámina, el Clérigo puede realizar una habilidad especial.',
 	'port.log.mineabandonedquiet': 'La mina abandonada está en silencio.',
 	'port.log.crystalchestlocked': 'El cofre de cristal está cerrado.',
 	'port.log.unlockcrystalchest': 'Abres el cofre de cristal.',
@@ -2287,6 +2307,11 @@ export const PORT_STRINGS_PT: Record<string, string> = {
 	'port.ui.titlebadges': 'Emblemas',
 	'port.name.questweapon': 'arma de missão',
 	'port.name.wand': 'varinha',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': 'Vestimenta do herói',
+	'port.items.armor.clericarmor.desc': 'Enquanto estiver usando esta mistura de pano e placa, o Clérigo pode realizar uma habilidade especial.',
 	'port.log.mineabandonedquiet': 'A mina abandonada está silenciosa.',
 	'port.log.crystalchestlocked': 'O baú de cristal está trancado.',
 	'port.log.unlockcrystalchest': 'Você destranca o baú de cristal.',
@@ -2831,6 +2856,11 @@ export const PORT_STRINGS_IT: Record<string, string> = {
 	'port.ui.titlebadges': 'Trofei',
 	'port.name.questweapon': 'arma della missione',
 	'port.name.wand': 'bacchetta',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': 'Paramenti dell\'eroe',
+	'port.items.armor.clericarmor.desc': 'Mentre indossa questa combinazione di vesti e piastre, il Chierico può eseguire un\'abilità speciale.',
 	'port.log.mineabandonedquiet': 'La miniera abbandonata è silenziosa.',
 	'port.log.crystalchestlocked': 'Il forziere di cristallo è chiuso a chiave.',
 	'port.log.unlockcrystalchest': 'Sblocchi il forziere di cristallo.',
@@ -3375,6 +3405,11 @@ export const PORT_STRINGS_PL: Record<string, string> = {
 	'port.ui.titlebadges': 'Odznaki',
 	'port.name.questweapon': 'broń zadaniowa',
 	'port.name.wand': 'różdżka',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': 'święte szaty bohatera',
+	'port.items.armor.clericarmor.desc': 'Nosząc to połączenie zbroi płytowej i tkaniny, Kleryk może użyć specjalnej umiejętności.',
 	'port.log.mineabandonedquiet': 'Opuszczona kopalnia jest cicha.',
 	'port.log.crystalchestlocked': 'Kryształowa skrzynia jest zamknięta.',
 	'port.log.unlockcrystalchest': 'Otwierasz kryształową skrzynię.',
@@ -3921,6 +3956,11 @@ export const PORT_STRINGS_RU: Record<string, string> = {
 	'port.ui.titlebadges': 'Медали',
 	'port.name.questweapon': 'оружие задания',
 	'port.name.wand': 'жезл',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': 'облачение героя',
+	'port.items.armor.clericarmor.desc': 'Носив эту смесь ткани и доспехов, Клирик может использовать особую способность.',
 	'port.log.mineabandonedquiet': 'Заброшенная шахта тиха.',
 	'port.log.crystalchestlocked': 'Кристальный сундук заперт.',
 	'port.log.unlockcrystalchest': 'Вы открываете кристальный сундук.',
@@ -4443,6 +4483,11 @@ export const PORT_STRINGS_TR: Record<string, string> = {
 	'port.ui.titlebadges': 'Rozetler',
 	'port.name.questweapon': 'görev silahı',
 	'port.name.wand': 'asa',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': 'kahramanın cübbesi',
+	'port.items.armor.clericarmor.desc': 'Bu kumaş ve zırh karışımını giyerken, Rahip özel bir yetenek kullanabilir.',
 	'port.log.mineabandonedquiet': 'Terk edilmiş maden sessiz.',
 	'port.log.crystalchestlocked': 'Kristal sandık kilitli.',
 	'port.log.unlockcrystalchest': 'Kristal sandığı açıyorsun.',
@@ -4965,6 +5010,11 @@ export const PORT_STRINGS_UK: Record<string, string> = {
 	'port.ui.titlebadges': 'Відзнаки',
 	'port.name.questweapon': 'зброя завдання',
 	'port.name.wand': 'жезл',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': 'вбрання героя',
+	'port.items.armor.clericarmor.desc': 'Одягнувши цю суміш тканини та пластини, Священник може виконувати особливу здатність.',
 	'port.log.mineabandonedquiet': 'Покинута шахта тиха.',
 	'port.log.crystalchestlocked': 'Кришталева скриня замкнена.',
 	'port.log.unlockcrystalchest': 'Ви відмикаєте кришталеву скриню.',
@@ -5485,6 +5535,11 @@ export const PORT_STRINGS_HU: Record<string, string> = {
 	'port.ui.titlebadges': 'Medálok',
 	'port.name.questweapon': 'küldetésfegyver',
 	'port.name.wand': 'varázspálca',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': 'hősi miseruha',
+	'port.items.armor.clericarmor.desc': 'E ruhából és páncélból összeállított öltözetet viselve a térítő végre tud hajtani egy különleges képességet.',
 	'port.log.mineabandonedquiet': 'Az elhagyott bánya csendes.',
 	'port.log.crystalchestlocked': 'A kristályláda zárva van.',
 	'port.log.unlockcrystalchest': 'Kinyitod a kristályládát.',
@@ -6004,6 +6059,11 @@ export const PORT_STRINGS_NL: Record<string, string> = {
 	'port.ui.titlebadges': 'Insignes',
 	'port.name.questweapon': 'queestewapen',
 	'port.name.wand': 'toverstaf',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': 'heldenparament',
+	'port.items.armor.clericarmor.desc': 'Terwijl de Geestelijke dit mengsel van stof en plaat draagt, kan hij een speciale vaardigheid uitoefenen.',
 	'port.log.mineabandonedquiet': 'De verlaten mijn is stil.',
 	'port.log.crystalchestlocked': 'De kristallen kist is op slot.',
 	'port.log.unlockcrystalchest': 'Je opent de kristallen kist.',
@@ -6524,6 +6584,11 @@ export const PORT_STRINGS_IN: Record<string, string> = {
 	'port.ui.titlebadges': 'Lencana',
 	'port.name.questweapon': 'senjata misi',
 	'port.name.wand': 'tongkat sihir',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': 'pakaian adat pahlawan',
+	'port.items.armor.clericarmor.desc': 'Ketika mengenakan campuran kain dan besi ini, Ulama dapat menggunakan kemampuan spesial.',
 	'port.log.mineabandonedquiet': 'Tambang yang ditinggalkan itu sunyi.',
 	'port.log.crystalchestlocked': 'Peti kristal itu terkunci.',
 	'port.log.unlockcrystalchest': 'Kamu membuka kunci peti kristal.',
@@ -7042,6 +7107,11 @@ export const PORT_STRINGS_JA: Record<string, string> = {
 	'port.ui.titlebadges': 'バッジ',
 	'port.name.questweapon': 'クエスト武器',
 	'port.name.wand': '杖',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': '勇士の法衣',
+	'port.items.armor.clericarmor.desc': 'この僧服と板金鎧を組み合わせた法衣を身に着けている間、聖職者は特別な能力を発揮することができる。',
 	'port.log.mineabandonedquiet': '廃坑は静まり返っている。',
 	'port.log.crystalchestlocked': '水晶の宝箱には鍵がかかっている。',
 	'port.log.unlockcrystalchest': 'あなたは水晶の宝箱の鍵を開けた。',
@@ -7560,6 +7630,11 @@ export const PORT_STRINGS_CS: Record<string, string> = {
 	'port.ui.titlebadges': 'Odznaky',
 	'port.name.questweapon': 'úkolová zbraň',
 	'port.name.wand': 'hůlka',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': 'Klerikovo roucho',
+	'port.items.armor.clericarmor.desc': 'Pokud má na sobě Klerik tuto zbroj z látky a ocelových plátů, může provést speciální schopnost.',
 	'port.log.mineabandonedquiet': 'Opuštěný důl je tichý.',
 	'port.log.crystalchestlocked': 'Krystalová truhla je zamčená.',
 	'port.log.unlockcrystalchest': 'Odemkl jsi krystalovou truhlu.',
@@ -8078,6 +8153,11 @@ export const PORT_STRINGS_VI: Record<string, string> = {
 	'port.ui.titlebadges': 'Huy chương',
 	'port.name.questweapon': 'vũ khí nhiệm vụ',
 	'port.name.wand': 'đũa phép',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': 'phẩm phục của người hùng',
+	'port.items.armor.clericarmor.desc': 'Khi mặc trang phục kết hợp giữa vải và kim loại tấm này, Giáo sĩ có thể thực hiện một kĩ năng đặc biệt.',
 	'port.log.mineabandonedquiet': 'Khu mỏ bỏ hoang thật yên tĩnh.',
 	'port.log.crystalchestlocked': 'Rương pha lê bị khoá.',
 	'port.log.unlockcrystalchest': 'Bạn mở khoá rương pha lê.',
@@ -8596,6 +8676,11 @@ export const PORT_STRINGS_EL: Record<string, string> = {
 	'port.ui.titlebadges': 'Παράσημα',
 	'port.name.questweapon': 'όπλο αποστολής',
 	'port.name.wand': 'ραβδί',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': 'ηρωικά άμφια',
+	'port.items.armor.clericarmor.desc': 'Όσο φορά αυτόν τον συνδυασμό υφάσματος και πανοπλίας, ο Κληρικός μπορεί να εκτελέσει μια ειδική ικανότητα.',
 	'port.log.mineabandonedquiet': 'Το εγκαταλελειμμένο ορυχείο είναι ήσυχο.',
 	'port.log.crystalchestlocked': 'Το κρυστάλλινο σεντούκι είναι κλειδωμένο.',
 	'port.log.unlockcrystalchest': 'Ξεκλειδώνεις το κρυστάλλινο σεντούκι.',
@@ -9114,6 +9199,11 @@ export const PORT_STRINGS_KO: Record<string, string> = {
 	'port.ui.titlebadges': '배지',
 	'port.name.questweapon': '퀘스트 무기',
 	'port.name.wand': '마법 막대',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': '영웅의 의례복',
+	'port.items.armor.clericarmor.desc': '이 천으로 덮인 판금 갑옷을 입은 성직자는 특별한 능력을 사용할 수 있습니다.',
 	'port.log.mineabandonedquiet': '버려진 광산은 고요하다.',
 	'port.log.crystalchestlocked': '수정 보물 상자가 잠겨 있다.',
 	'port.log.unlockcrystalchest': '수정 보물 상자를 열었다.',
@@ -9632,6 +9722,11 @@ export const PORT_STRINGS_ZH: Record<string, string> = {
 	'port.ui.titlebadges': '徽章',
 	'port.name.questweapon': '任务武器',
 	'port.name.wand': '法杖',
+	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
+	//the live checkout the extractor reads, so housed under port.* with SPD's own
+	//translations like the moved keys above - not machine translation.
+	'port.items.armor.clericarmor.name': '英雄祭服',
+	'port.items.armor.clericarmor.desc': '穿着这套内着重甲的祭服时，牧师能够施展一项特殊技能。',
 	'port.log.mineabandonedquiet': '废弃的矿坑一片寂静。',
 	'port.log.crystalchestlocked': '水晶宝箱锁着。',
 	'port.log.unlockcrystalchest': '你打开了水晶宝箱的锁。',

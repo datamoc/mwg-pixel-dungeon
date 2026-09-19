@@ -538,19 +538,23 @@ was judged not worth the churn against those existing references.
       shared root cause, checked directly against both abilities' Java source**: this port's
       hero carries at most one `wand` bag entry at a time (`dungeonScene.ts`'s `wandType: WandType`
       is a single scalar field, `equipWand` always writes the one stackable `id: 'wand'` bag
-      slot) - there is no per-instance multiple-distinct-wands inventory model at all. Both
+      slot) - but per-instance wand *identity* already exists here (`id: 'wand'` entries
+      carry their own `instanceId` plus `sourceClass`, several can coexist, and a carried
+      wand names its own class): what does not exist is per-instance *charges*, a single
+      shared `wandCharges` pool serving the wielded scalar while ground pickups absorb
+      (`wandabsorbed`). Corrected 2026-09-19: identity exists, charges do not. Both
       abilities are built directly on Java's opposite assumption: `MagesStaff.imbueWand()` lets
       the Mage attach *one of several carried wands* to the staff (`WndBag.ItemSelector` picks
       among them), and `WildMagic.activate()` literally fires `hero.belongings.getAllItems(
       Wand.class)` - every distinct wand the hero owns, shuffled, up to 4. Neither is offerable
-      without first giving this port a real multiple-wands-carried model, which is a change with
-      a wide blast radius (Magical Holster's bag row, Wand Preservation, wand recharging and
-      every other place this port's code already assumes exactly one wand) - not scoped to these
+      without first giving each carried wand its own charge pool and recharge, which is a
+      change with a wide blast radius (the single `wand:` save entry, the shared recharge
+      tick, Wand Preservation, Magical Holster's bag row and every refund targeting the one pool) - not scoped to these
       two abilities alone, so this is recorded as the actual blocker rather than the vaguer
       "staff-imbue system"/"wand-randomization pass" phrasing this line carried before. The
       Cleric's three have neither strings nor a spell system here.
-      **Also not ported, and stated**: `ClassArmor` as a distinct item (no `AC_TRANSFER`, no
-      class-armor sprite tier). Ratmogrify is fully ported since 2026-09-19 (its own
+      **2026-09-19**: `ClassArmor` as a distinct item is ported - the crown choice and the Rat
+      King exchange convert the worn armor to the hero's per-class subclass id (named from SPD's own keys, Cleric via `port.*` with tag-`v3.3.8` translations), keeping tier/level/glyph/curse and the Warrior's seal; still open and stated are `AC_TRANSFER` and the class-armor sprite tier. Ratmogrify is fully ported since 2026-09-19 (its own
       `class: "any"` row opens the tier-4 tab and `RATLOMACY`/`RATFORCEMENTS`
       run, and `RATSISTANCE`'s `0.9^points` factor rides the attack multiplier with a stated
       rounding note). See

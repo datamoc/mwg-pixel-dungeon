@@ -65,6 +65,16 @@ export const ITEM_KEYS: Record<string, string> = {
 	//Blacksmith's smith reward rendered a bare `missile_kunai` instead of "kunai").
 	//`TippedDart` is the exception: its name lives under `darts.dart`, not `tippeddart`.
 	...Object.fromEntries(MWL_MISSILE_DEFINITIONS.map((def) => [def.id, def.sourceClass === 'TippedDart' ? 'items.weapon.missiles.darts.dart.name' : `items.weapon.missiles.${def.sourceClass.toLowerCase()}.name`])),
+	//`ClassArmor`'s six per-class subclasses (`ClassArmor.java`): five live in this checkout's
+	//message files under their own `items.armor.<class>armor.name` keys, while `clericarmor`
+	//postdates them and resolves to the `port.items.armor.clericarmor.name` key housed in
+	//`portStrings.ts` with SPD's own tag-`v3.3.8` translations (see its comment there).
+	warriorarmor: 'items.armor.warriorarmor.name',
+	magearmor: 'items.armor.magearmor.name',
+	roguearmor: 'items.armor.roguearmor.name',
+	huntressarmor: 'items.armor.huntressarmor.name',
+	duelistarmor: 'items.armor.duelistarmor.name',
+	clericarmor: 'port.items.armor.clericarmor.name',
 };
 
 /** `items.rings.*`, derived from the MWL item catalogue. */

@@ -1,6 +1,7 @@
 import { Random } from 'mwg';
 import { getCurse } from './itemCurses';
 import { isUpgradableItem } from './itemKinds';
+import { isClassArmorId } from './catalog';
 
 export interface BlacksmithItem {
 	id: string; quantity: number; instanceId?: string; identified?: boolean; cursed?: boolean;
@@ -37,7 +38,7 @@ export function blacksmithHardenCost(hardens: number): number { return 500 + 100
 export function blacksmithReforgeCost(reforges: number): number { return 500 + 1000 * reforges; }
 
 export function isBlacksmithGear(item: BlacksmithItem): boolean {
-	return ['weaponReward', 'armorReward', 'armor'].includes(item.id);
+	return ['weaponReward', 'armorReward', 'armor'].includes(item.id) || isClassArmorId(item.id);
 }
 
 /**

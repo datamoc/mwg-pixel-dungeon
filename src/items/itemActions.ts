@@ -1,4 +1,5 @@
 import { SPECIALTY_BOMB_IDS } from './itemKinds';
+import { isClassArmorId } from './catalog';
 import { isBagId, type BagId } from './bags';
 
 /** Scene services exposed to the item-action router. Item classification and routing belong to
@@ -131,7 +132,7 @@ export function useItemById(scene: ItemActionContext, id: string, instanceId?: s
 		else if (id === 'waterskin' || id.startsWith('potion')) scene.onAction('quaff');
 		else if (id.startsWith('scroll')) scene.onAction(id === 'scrollUpgrade' ? 'upgrade' : 'read');
 		else if (id.startsWith('ring_')) scene.equipRing(id, instanceId);
-		else if (id === 'clothArmor' || id === 'armor' || id === 'armorReward') scene.equipArmor(id, instanceId);
+		else if (id === 'clothArmor' || id === 'armor' || id === 'armorReward' || isClassArmorId(id)) scene.equipArmor(id, instanceId);
 		else if (id === 'weaponReward') scene.equipWeapon(id, instanceId);
 		else if (id === 'wand') scene.equipWand();
 		else if (id === 'pickaxe') scene.mineWithPickaxe();
