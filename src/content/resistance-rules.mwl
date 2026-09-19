@@ -32,7 +32,9 @@
       // no port buff to gate), the ACIDIC property (ooze), FIERY on the burning fist (burning),
       // plus the instance lists - Succubus (charm), Tengu (roots/terror), Piranha (burning),
       // DM300's Sleep (no port buff; the drowsy path correctly still lands, since Java's
-      // MagicalSleep is a different class), and the bright fist (frost). `subtype` selects one
+      // MagicalSleep is a different class). The bright fist carries no row: Java's
+      // BrightFist declares no immunities (its ELECTRIC property only halves lightning
+      // damage, which is the damage model's job, not this gate). `subtype` selects one
       // yogFistType; empty means every instance of the kind. Damage-source resistances (FIERY/
       // ELECTRIC/ICY/ACIDIC/Corrosion/Grim/Disintegration halving, `Char.resist()`'s 50%) are the
       // damage model's job (section 7), not this attachment gate - see PORT_COVERAGE.md.
@@ -66,7 +68,6 @@
           { tag: "row", monster: "causticSlime", subtype: "", immunities: "ooze" },
           { tag: "row", monster: "yogFist", subtype: "rotting", immunities: "ooze" },
           { tag: "row", monster: "yogFist", subtype: "burning", immunities: "burning" },
-          { tag: "row", monster: "yogFist", subtype: "bright", immunities: "frost" },
           { tag: "row", monster: "yogFist", subtype: "rusted", immunities: "bleeding,poison" },
           { tag: "row", monster: "succubus", subtype: "", immunities: "charm" },
           { tag: "row", monster: "tengu", subtype: "", immunities: "roots,terror" },

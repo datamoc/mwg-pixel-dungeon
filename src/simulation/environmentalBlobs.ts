@@ -85,7 +85,10 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 	//the shocking/storm traps seed it directly.
 	for (const cell of context.cellsAbove('electricity', 0.0001)) {
 		const target = context.creatureAt(cell.x, cell.y);
-		if (!target || target.hp <= 0) continue;
+		//`Feint.AfterImage` carries the whole `BlobImmunity` set (tag `v3.3.8`); the
+		//paralysis half is refused by `buffBlocked`, this skips the direct zap (the decoy
+		//spawns as a rat, so the kind-keyed sets cannot see it).
+		if (!target || target.hp <= 0 || target.allyKind === 'afterImage') continue;
 		const charge = context.amountAt('electricity', cell.x, cell.y);
 		if (target.buffs?.['paralysis'] === undefined) context.addBuff(target, 'paralysis', charge);
 		if (charge % 2 === 1 && !context.applyDamage(target, context.electricDamage(target), 'electricity')) return;

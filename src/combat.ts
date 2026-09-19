@@ -13,7 +13,7 @@ import { nextEntityId } from './simulation/entityId';
 import { createCombatAdapter } from './adapters/combatSimulation';
 import { simulationRandom } from './adapters/mwgRandom';
 import { STATUS_IMMUNITIES } from './simulation/mwlStatusImmunities';
-export { INFINITE_ACCURACY, INFINITE_EVASION, ASCENSION_MOD, accRollMulti, setAscensionActive } from './simulation/combat';
+export { INFINITE_ACCURACY, INFINITE_EVASION, ASCENSION_MOD, accRollMulti, setAscensionActive, stoneGlyphReduction, grimTrapDamage, explosiveTrapBounds } from './simulation/combat';
 export { BUFF_DURATION, NEGATIVE_BUFFS, absorbShield, type BuffId } from './simulation/buffs';
 
 const combat = createCombatAdapter(simulationRandom);
@@ -255,6 +255,11 @@ export interface Creature extends Combatant {
 	kingAbilityCd?: number;
 	kingLastAbility?: number;
 	kingShield?: number;
+	kingWaveCd?: number;
+	/** `maxLvl = -2` summons (the King's servants): no XP, no loot. */
+	noExp?: boolean;
+	/** P2-wave King servants carrying `KingDamager` (chip the P2 shield on death). */
+	kingDamager?: boolean;
 	/** Edge-triggered phase-1->2, phase-2->3, and losing-yell rules (`mwg/core`'s
 	 * `ReactionTable`), lazily built per King instance in `takeKingTurn`. Not part of the
 	 * plain `SavedCreature` field list - its own `toJSON()`/`fromJSON()` round-trip is wired
@@ -271,6 +276,12 @@ export interface Creature extends Combatant {
 	yogSummonCd?: number;
 	yogSummonIndex?: number;
 	yogBeamCd?: number;
+	/** `YogFist.rangedCooldown` (a float bundle field, 0 on a fresh fist): the four
+	 * elemental fists (burning/soiled/rotting/rusted) add `NormalFloat(8, 12)` on every
+	 * zap and tick it down 1 per unparalysed turn; bright/dark override the increment
+	 * to a no-op so they zap every ranged turn. While it is above 0 `canAttack` only
+	 * allows melee, so a cooling fist must advance instead of zapping. */
+	fistZapCd?: number;
 	/** `YogDzewa.targetedCells`: cells DeathGaze has painted but not yet fired along (cell indices). */
 	yogTargeted?: number[];
 	/** `YogDzewa.fistSummons`/`challengeSummons`: the remaining per-gate fist identities. The
@@ -278,6 +289,11 @@ export interface Creature extends Combatant {
 	 * counterparts, arranged so two of a pair never open together. */
 	yogFistDeck?: string[];
 	yogChallengeDeck?: string[];
+	/** `Bee`'s pot anchor (`setPotInfo`): where the pot broke, and whose held inventory
+	 * it lives in (creature id; absent for a ground pot, Java's -1). The bee defends the
+	 * pot, not a free hunt - see `takeBeeTurn`. */
+	potPos?: { x: number; y: number };
+	potHolderId?: string;
 }
 
 /** makes a Creature-shaped object with the combat-state fields every spawn needs.
@@ -379,6 +395,10 @@ const CHILL_IMMUNITY_BUFFS = new Set<string>(STATUS_IMMUNITIES.chill);
 /** The immunity gates Java applies before a buff can attach, shared by `addBuff` and
  * `reigniteBuff` so no caller can route around them. */
 function buffBlocked(c: Creature, id: BuffId): boolean {
+	//`Feint.AfterImage.add(Buff)` (tag `v3.3.8`) returns false unconditionally - the decoy
+	//takes no buffs at all. It is spawned on the `rat` kind, so no MWL row can carry this;
+	//the gate lives here, where every buff application funnels through.
+	if (c.allyKind === 'afterImage') return true;
 	//Brimstone.java grants Burning immunity through Char.isImmune(), before the
 	//effect can be attached. Keep this check at the shared buff boundary so fire
 	//from traps, blobs, wands, plants, and enemy attacks all obey it.

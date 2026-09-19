@@ -1,10 +1,10 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import ts from 'typescript';
 
 // Called by verifySimulation.mjs after compiling actual production modules into its temp tree.
 export function verifyCombat(require, check) {
-	const { rollHit, rollDamage, liveStats } = require('./simulation/combat');
+	const { rollHit, rollDamage, liveStats, stoneGlyphReduction, grimTrapDamage, explosiveTrapBounds } = require('./simulation/combat');
 	const { applyBuff, advanceBuffs, reigniteBuff, absorbShield, BUFF_DURATION } = require('./simulation/buffs');
 	const record = process.env.RECORD_FIXTURES === '1';
 	const facade = require('./combat');
@@ -468,5 +468,79 @@ export function verifyCombat(require, check) {
 		// `Math.max(1, round(...))`: the factor can never drive a live attacker below 1 accuracy
 		assert.deepEqual(run(5, base({ accuracy: 1 }), 0.5), run(5, base({ accuracy: 1 }), 1),
 			'a factor that would round accuracy below 1 is floored back to 1, as Hero.attackSkill does');
+	});
+	check('Stone converts dodge chance to damage reduction: ceil(damage x hitChance), clamped [0.25, 1]', () => {
+		// accuracy 10 vs evasion 5: 1 - (5/10)/2 = 0.75 -> (1 + 3x0.75)/4 = 0.8125
+		assert.equal(stoneGlyphReduction(10, 5, 1), 0.8125);
+		// evasion above accuracy: (10/20)/2 = 0.25 -> (1 + 0.75)/4 = 0.4375
+		assert.equal(stoneGlyphReduction(10, 20, 1), 0.4375);
+		// zero evasion dodges nothing: full damage
+		assert.equal(stoneGlyphReduction(10, 0, 1), 1);
+		// the proc multiplier scales evasion first: 5x2 = 10 meets 10 -> 0.5 -> 0.625
+		assert.equal(stoneGlyphReduction(10, 5, 2), 0.625);
+		// a zero accuracy never divides: full damage
+		assert.equal(stoneGlyphReduction(0, 5, 1), 1);
+		// the clamp holds at both ends over a wide sweep
+		for (const [acc, eva, multi] of [[10, 5, 1], [10, 20, 1], [30, 8, 1.175], [12, 40, 2], [100, 1, 1], [1, 100, 1]]) {
+			const factor = stoneGlyphReduction(acc, eva, multi);
+			assert.ok(factor >= 0.25 && factor <= 1, "acc " + acc + " eva " + eva + " multi " + multi + ": " + factor + " inside [0.25, 1]");
+		}
+	});
+	check('YogFist immunities match Java: rotting/ooze, burning/burning, rusted/bleeding+poison, bright/none', () => {
+		// YogFist.java (tag v3.3.8): ACIDIC gives rotting ooze, FIERY gives burning its
+		// burning refusal, INORGANIC gives rusted bleeding+poison, and bright declares no
+		// immunities at all (its ELECTRIC property only halves lightning damage). An earlier
+		// pass carried a bright/frost row that Java has nowhere.
+		const fist = (yogFistType) => ({ kind: 'yogFist', yogFistType, buffs: {} });
+		const refused = (type, id) => {
+			const c = fist(type);
+			facade.addBuff(c, id);
+			return c.buffs[id] === undefined;
+		};
+		assert.ok(refused('rotting', 'ooze'), 'rotting refuses ooze');
+		assert.ok(refused('burning', 'burning'), 'burning refuses burning');
+		assert.ok(refused('rusted', 'bleeding'), 'rusted refuses bleeding');
+		assert.ok(refused('rusted', 'poison'), 'rusted refuses poison');
+		const bright = fist('bright');
+		facade.addBuff(bright, 'frost');
+		assert.equal(bright.buffs.frost, facade.BUFF_DURATION.frost, 'bright accepts frost');
+		// the zap riders' durations are the table's own: Roots 3, Ooze 20, half-Blindness 5
+		assert.equal(facade.BUFF_DURATION.roots, 3, 'soiled zap roots for 3');
+		assert.equal(facade.BUFF_DURATION.ooze, 20, 'rotting contact oozes for 20');
+		assert.equal(facade.BUFF_DURATION.daze, 5, 'bright zap dazes for 5');
+		// structural pins on the scene half, which this harness cannot execute: the
+		// cooldown gate/decrement/increment, the rotting conversion shared by both damage
+		// paths, and the bright-only death daze (dark only detaches Light, unmodeled).
+		const scene = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		assert.ok(scene.includes('fistZapCd ?? 0) > 0) return false'), 'cooling elemental fists step closer');
+		assert.ok(scene.includes("monster.buffs['paralysis'] === undefined && (monster.fistZapCd ?? 0) > 0"),
+			'cooldown ticks down on unparalysed fist turns');
+		assert.ok(scene.includes('fistZapCd: creature.fistZapCd') && scene.includes('fistZapCd: saved.fistZapCd'),
+			'cooldown persists through save/restore');
+		assert.ok(scene.includes('this.rottingBleedConvert(c, damage, false)'),
+			'blast seam converts rotting hits like attack() does');
+		assert.ok(!scene.includes("case 'burning': addBuff(defender, 'burning')"),
+			'no invented burning contact rider');
+		assert.ok(scene.includes("creature.yogFistType === 'bright')"),
+			'death daze is bright-only');
+	});
+	check("Cudgel's 1.4 accuracy lives on the starting weapon, not the Cleric class", () => {
+		// `Cudgel.ACC = 1.40` (Cudgel.java, tag v3.3.8) is a weapon factor applied in
+		// `Hero.attackSkill()` - a Cleric wielding anything else attacks at unmodified
+		// skill. The port has no weapon-item model to hang it on, so the stand-in gates
+		// on the implicit starting cudgel (39th matrix, `MONSTER_ANALYSIS_CLERIC.md`).
+		const scene = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		assert.ok(scene.includes("this.heroClass === 'cleric' && this.weaponId === 'startingWeapon' ? 1.4 : 1"),
+			'cleric accuracy bonus requires the starting cudgel');
+	});
+	check('GrimTrap mixes half max with half current HP, and the stock-bomb blast is 4+d..12+3d with no falloff', () => {
+		// round(HT/2 + HP/2): full-health 100 -> 100 (hero-capped to 90 at the call site)
+		assert.equal(grimTrapDamage(100, 100), 100);
+		// hurt target: round(60/2 + 20/2) = 40, not the old quarter-max mix (25)
+		assert.equal(grimTrapDamage(20, 60), 40);
+		assert.equal(grimTrapDamage(0, 60), 30);
+		// Bomb.explode bounds, depth 1 and 20
+		assert.deepEqual(explosiveTrapBounds(1), [5, 15]);
+		assert.deepEqual(explosiveTrapBounds(20), [24, 72]);
 	});
 }

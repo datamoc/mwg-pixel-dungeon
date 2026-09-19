@@ -227,3 +227,29 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 	return Math.max(0, Math.round(effective));
 }
 
+
+/** `Stone.proc()` (`items/armor/glyphs/Stone.java`, tag `v3.3.8`): the glyph grants no
+ * armor at all - it replays the to-hit math and turns 75% of the dodge chance into
+ * damage reduction, `ceil(damage * hitChance)` with the factor clamped to [0.25, 1].
+ * Pure so the harness can pin Java's numbers headlessly; the scene supplies the live
+ * accuracy/evasion stats (Java replays its own Bless/Hex/Daze/champion/ascension
+ * factor list instead - a stated residual). */
+export function stoneGlyphReduction(accuracy: number, evasion: number, procMulti: number): number {
+	if (!(accuracy > 0)) return 1;
+	const scaled = Math.max(0, evasion) * procMulti;
+	const hitChance = scaled >= accuracy ? accuracy / scaled / 2 : 1 - (scaled / accuracy) / 2;
+	return Math.min(1, Math.max(0.25, (1 + 3 * hitChance) / 4));
+}
+/** `GrimTrap`: instant kill, a mix of current and max HP just like psi blast -
+ * `round(HT/2 + HP/2)`, capped at 90% of max for the hero only (the cap lives
+ * at the call site). Pure for the harness pin. */
+export function grimTrapDamage(hp: number, maxHp: number): number {
+	return Math.round(maxHp / 2 + hp / 2);
+}
+
+/** `Bomb.explode()` (which `ExplosiveTrap` fires verbatim): the blast roll
+ * bounds at the given depth - `NormalIntRange(4+depth, 12+3*depth)` - with no
+ * distance falloff. Pure for the harness pin. */
+export function explosiveTrapBounds(depth: number): [number, number] {
+	return [4 + depth, 12 + 3 * depth];
+}

@@ -707,11 +707,11 @@
     tag: "monster",
     id: "yogFist",
     name: "actors.mobs.yogfist$rottingfist.name",
-    // Deliberately scaled encounter, matching Yog's own 1000->400 HP scaling (see PORT_COVERAGE.md's
-    // Yog row): Java's six fist subclasses share one stat line (YogFist.java, v3.3.8 - HP 300,
-    // accuracy 36, evasion 20, damage 18-36, armor 0-15, EXP 25) and differ only in abilities,
-    // which this port preserves per subclass. `maxLvl = -2` is Java's own, so fists grant no
-    // experience - the old 29 paid 10 EXP per fist, found by the 2026-09-15 audit.
+    // Template stats only: `summonFist` overwrites every number below with Java's own line
+    // (YogFist.java, v3.3.8 - HP 300, accuracy 36, evasion 20, damage 18-36, armor 0-15,
+    // EXP 25, `maxLvl = -2`) and only the abilities differ per subclass. `maxLvl = -2` is
+    // Java's own, so fists grant no experience - the kill gate (`hero.lvl <= maxLvl`) fails
+    // unconditionally, and `experience` here only mirrors Java's EXP number.
     hp: 60,
     accuracy: 20,
     evasion: 10,
@@ -719,7 +719,7 @@
     damage_max: 12,
     armor_min: 0,
     armor_max: 5,
-    experience: 10,
+    experience: 25,
     max_level: -2,
     image: "assets/yog_fists.png",
   },

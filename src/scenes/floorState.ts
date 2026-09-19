@@ -92,12 +92,22 @@ export interface SavedCreature {
 	yogTargeted?: number[];
 	yogFistDeck?: string[];
 	yogChallengeDeck?: string[];
+	/** `Bee.setPotInfo`, persisted like the rest of the per-mob state. */
+	potPos?: { x: number; y: number };
+	potHolderId?: string;
+	/** `YogFist.rangedCooldown`, persisted as a float like Java's own bundle field. */
+	fistZapCd?: number;
 	kingPhase?: number;
 	kingSummonsMade?: number;
 	kingSummonCd?: number;
 	kingAbilityCd?: number;
 	kingLastAbility?: number;
 	kingShield?: number;
+	kingWaveCd?: number;
+	/** `maxLvl = -2` summons (King's servants): no XP, no loot. */
+	noExp?: boolean;
+	/** P2-wave King servants carrying `KingDamager` (chip the P2 shield on death). */
+	kingDamager?: boolean;
 	deferredDamage?: number;
 	deferredDamageDelay?: boolean;
 	corrosionTurns?: number;

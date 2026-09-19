@@ -15,7 +15,7 @@ import { Bar, Blob, FloatingTextStack, Game, ParticleEmitter, Scene2D, Input, Ra
 import { SceneSimulationAdapter } from '../adapters/sceneSimulation';
 import { dispatchHeroAction, type HeroActionPorts } from '../adapters/heroActions';
 import { BOOMERANG_RETURN_ACC_FACTOR, BOOMERANG_RETURN_TURNS, MISSILE_DEFAULT_QUANTITY, MISSILE_MAX_DURABILITY, bolasCrippleTurns, missileAdjacentAccFactor, missileBaseUses, missileDamageRange, missileFlightArt, missilePickupValid, missileStackFields, missileStackId, recordMissileUpgrade, tippedDartUseDivisor, tomahawkBleedRange, type MissileFlightArt } from '../items/missiles';
-import { eatFood as eatConsumableFood, quaffPotion as quaffConsumablePotion, type ConsumableContext } from '../items/consumables';
+import { eatFood as eatConsumableFood, quaffPotion as quaffConsumablePotion, applyMealEatenEffects, type ConsumableContext } from '../items/consumables';
 import { selectScrollId } from '../items/scrolls';
 import { applyScrollEffect, type ScrollEffectsContext } from '../items/scrollEffects';
 import { createPotionEffects } from '../items/potionEffects';
@@ -30,7 +30,7 @@ import { bagTab, chooseShopBag, isBagId, ownsBag, HOLSTER_RECHARGE_BASE, NORMAL_
 import { isResurrectKeepCandidate, partitionResurrectKeeps } from '../items/resurrect';
 import { pickupGroundItem as pickupGroundItemWorkflow } from '../items/groundPickup';
 import { reforgeDiscardedMissileSet, blacksmithHardenCost as itemBlacksmithHardenCost, blacksmithReforgeCost as itemBlacksmithReforgeCost, blacksmithReforgePairValid, blacksmithUpgradeCost as itemBlacksmithUpgradeCost, blacksmithTurnInFavor, BLACKSMITH_FREE_PICKAXE_FAVOR, rollCarriedAffixLoss, selectBlacksmithHardenItems, selectBlacksmithReforgeItems, selectBlacksmithUpgradeItems, type BlacksmithItem } from '../items/blacksmith';
-import { accrueWeaponCharge, counterAbilityRefund, gainWeaponCharge, spinDamageMultiplier, spendWeaponCharge, weaponAbilityChargeCost, weaponAbilityFor, weaponChargeCap } from '../items/weaponAbilities';
+import { abilityFlatBoost, accrueWeaponCharge, counterAbilityRefund, gainWeaponCharge, preciseAssaultAccuracy, spendWeaponCharge, weaponAbilityChargeCost, weaponAbilityFor, weaponChargeCap } from '../items/weaponAbilities';
 import { useStoneOfFlock as useItemStoneOfFlock, useStoneOfAggression as useItemStoneOfAggression, useStoneOfAugmentation as useItemStoneOfAugmentation, useStoneOfFear as useItemStoneOfFear, useStoneOfDeepSleep as useItemStoneOfDeepSleep, useStoneOfBlink as useItemStoneOfBlink, useStoneOfClairvoyance as useItemStoneOfClairvoyance, useStoneOfShock as useItemStoneOfShock, useStoneOfBlast as useItemStoneOfBlast, useStoneOfEnchantment as useItemStoneOfEnchantment, useStoneOfDetectMagic as useItemStoneOfDetectMagic, useStoneOfIntuition as useItemStoneOfIntuition, type StoneContext, type StonePickerEntry } from '../items/stones';
 import { runSearch } from '../adapters/searchSimulation';
 import { runMovement } from '../adapters/movementSimulation';
@@ -48,7 +48,7 @@ import { MOVES } from '../simulation/heroActions';
 import { wraithCombatStats, dustSpawnerStep, dustSpawnerCap } from '../simulation/wraith';
 import { runHeroTurn } from '../adapters/gameSimulation';
 import { takeGooTurn as runGooTurn } from '../simulation/gooBoss';
-import { planRatKingWave, ratKingP1Summon, type RatKingAddKind } from '../simulation/ratKingBoss';
+import { planRatKingWave, ratKingP1Summon, type RatKingAddKind, type RatKingWavePlan } from '../simulation/ratKingBoss';
 import { chooseDM300Ability, dm300VentPath, planDM300Rockfall } from '../simulation/dm300Boss';
 import { aimYogDeathGaze } from '../simulation/yogBoss';
 import { planMonsterPopulation } from '../simulation/levelPopulation';
@@ -319,6 +319,9 @@ import {
 	setAnnounceBuff,
 	addBuff,
 	reigniteBuff,
+	stoneGlyphReduction,
+	grimTrapDamage,
+	explosiveTrapBounds,
 	setBleeding,
 	tickBuffs,
 	NEGATIVE_BUFFS,
@@ -579,6 +582,23 @@ const SUBCLASS_OPTIONS: Record<ClassId, readonly string[] | undefined> = {
 const STARTING_WEAPON_CLASS: Partial<Record<ClassId, string>> = {
 	warrior: 'wornshortsword', mage: 'magesstaff', rogue: 'dagger', huntress: 'gloves', duelist: 'rapier',
 };
+
+/** An ally's persistent identity tint (`spawnMonster`'s own `sprite.colorAdd` set at spawn,
+ * matched by the per-frame hit-flash fade-out below, which must restore *this* baseline rather
+ * than hard-zeroing it - `colorAdd` is shared between the two effects, and a flashed ally used to
+ * lose its tint for good on the very next frame since the fade-out didn't know a baseline existed
+ * (found live: a hit Sheep permanently faded to its unlit art within one frame of spawning). */
+function allyIdentityColorAdd(isAlly: boolean | undefined, allyKind: string | undefined): number {
+	if (!isAlly) return 0;
+	switch (allyKind) {
+		case 'sheep': return 0xdddddd;
+		case 'earthGuardian': return 0x997744;
+		case 'lotus': return 0x55aa66;
+		//`mirror`/`ghost`/`ninjaLog`/`spiritHawk`/`afterImage`/`shadowClone` and any future ally
+		//kind all share this one default, exactly as the original inline ternary did.
+		default: return 0x5577aa;
+	}
+}
 
 /**
  * The scheduler id the hero is saved under. Every other queued actor is a monster the floor state
@@ -1773,8 +1793,8 @@ export class DungeonScene extends Scene2D {
 	 * level via `weaponChargeCap`, accruing over time per `Charger.act`), the flail spin
 	 * count/turns, the free re-cleave window, guard/sword-dance/defensive-stance turns,
 	 * the armed charged shot, the pending next-attack modifiers (force hit, damage
-	 * multiplier, daze/bleed/knockback/runic), and the hero action clock behind combo
-	 * strike's 5-turn window.
+	 * multiplier for harvest's zeroing, flat boost, harvest amount, runic proc bonus,
+	 * daze/knockback), and the hero action clock behind combo strike's 5-turn window.
 	 */
 	private weaponCharge = 2;
 	private weaponPartialCharge = 0;
@@ -1785,12 +1805,21 @@ export class DungeonScene extends Scene2D {
 	private swordDanceTurns = 0;
 	private defensiveStanceTurns = 0;
 	private chargedShotArmed = false;
+	/** Lower-cased compact id of the wielded melee weapon (the same key
+	 * `weaponAbilityFor` maps), for per-weapon Java rules (crossbow procs, the
+	 * dagger-family surprise passive). */
+	private weaponMeleeKey(): string {
+		return (this.weaponSourceClass ?? this.weaponId).toLowerCase();
+	}
 	private abilityForceHit = false;
 	private abilityDamageMult = 1;
+	private abilityDamageBoostNext = 0;
+	private abilityHarvestNext = 0;
+	private abilityRunicBonus = 0;
+	/** `DirectedPowerTracker.enchBoost`: the ElementalStrike tracker's pending proc bonus. */
+	private abilityDirectedBonus = 0;
 	private abilityDazeNext = false;
-	private abilityBleedFracNext = 0;
 	private abilityKnockbackNext = false;
-	private abilityRunicNext = false;
 	private lastAbilityAttack: string | null = null;
 	/** `Talent.CombinedLethalityAbilityTracker`: the weapon the last weapon ability
 	 * was used with (bag id + instance id - Java stores the weapon object and tests
@@ -1895,6 +1924,8 @@ export class DungeonScene extends Scene2D {
 	private abilityAimTarget: Creature | null = null;
 	/** Cell latched by the bomb's map picker; cleared before the item-domain resolver runs. */
 	private bombTarget: Step | null = null;
+	/** Cell latched by the honeypot's map picker; cleared before the shatter runs. */
+	private honeypotTarget: Step | null = null;
 	/** The aim cursor highlight, drawn in world space so it tracks cells under the camera. */
 	private aimOverlay: Graphics | null = null;
 	/** `NewbornFireElemental`'s `TargetedCell` telegraph: the red 3x3 its fireball will cover. */
@@ -2272,12 +2303,21 @@ export class DungeonScene extends Scene2D {
 		//Hero.java increments the raw skills, then applies weapon/armor factors when
 		//attackSkill()/defenseSkill() is queried. Keep those counters separate from
 		//talent points so every level has the real +1/+1 combat-skill growth.
-		this.heroStats.setBase('accuracy', Math.floor(this.heroAttackSkill * (this.heroClass === 'cleric' ? 1.4 : 1)) + this.talentAccuracy);
+		//`Cudgel.ACC = 1.40`: the 40% accuracy bonus lives on the Cleric's starting weapon, not the
+		//class - a Cleric wielding anything else attacks at unmodified skill. There is no weapon-item
+		//model here to hang the factor on, so the stand-in applies while `weaponId` is still the
+		//implicit starting cudgel (`Hero.attackSkill()` rounds `skill * 1.4`, which equals the
+		//floor for this factor - `1.4 * skill` never lands on exactly x.5 for integer skill).
+		this.heroStats.setBase('accuracy', Math.floor(this.heroAttackSkill * (this.heroClass === 'cleric' && this.weaponId === 'startingWeapon' ? 1.4 : 1)) + this.talentAccuracy);
 		this.heroStats.setBase('evasion', this.heroDefenseSkill + this.talentEvasion);
 		this.hero.accuracy = this.heroStats.get('accuracy');
 		this.hero.evasion = this.heroStats.get('evasion') + evasiveArmorBonus(this.subclass(), this.talentRank('evasive_armor'), this.armorLevel) + unencumberedSpiritEvasion(this.subclass(), this.talentRank('unencumbered_spirit'));
 		//`Quarterstaff` defensive stance: triples evasion while up (`ability_desc`).
 		if (this.defensiveStanceTurns > 0) this.hero.evasion *= 3;
+		//Guard (`Hero.defenseSkill`, tag `v3.3.8`): infinite evasion while the tracker
+		//runs - every incoming attack misses, not just the first. The old one-negated-
+		//hit model in `takeHeroDamage` is gone with it.
+		if (this.guardTurns > 0) this.hero.evasion = 1000000;
 		if (this.healingEvasionTurns > 0) this.hero.evasion = this.talentRank('restored_agility') >= 2 ? 1000000 : this.hero.evasion * 4;
 		this.hero.str = this.heroStr + ringMightBonus(this.effectiveRing(), this.hero.magicImmune);
 		if (this.hero.buffs['adrenalineSurge']) this.hero.str += 1;
@@ -2320,10 +2360,12 @@ export class DungeonScene extends Scene2D {
 		if (subclass === 'warden' && this.level && this.level.get(this.hero.x, this.hero.y) === HIGH_GRASS) {
 			this.hero.armor = [this.hero.armor[0] + 2, this.hero.armor[1] + 2];
 		}
-		//passive affix math lives here, next to every other flat stat: Stone +2 armor,
-		//Fragile -2 armor (floored at 0), Flow +2 evasion. Wayward's penalty is deliberately
-		//*not* one of these - see the buff-gated assignment after the ring block below.
-		if (this.armorGlyph === 'stone') this.hero.armor = [this.hero.armor[0] + 2, this.hero.armor[1] + 2];
+		//Passive affix math lives here, next to every other flat stat. Stone used to
+		//be one of these (+2 armor) - it is not: `Stone.proc()` converts dodge
+		//chance into damage reduction on every landed hit (see `attack()`), so no
+		//armor line belongs to it at all. Wayward's penalty is deliberately *not*
+		//one of these either - see the buff-gated assignment after the ring block
+		//below.
 		//ring effects: Might already widened hero.str above; Tenacity's real
 		//`RingOfTenacity.damageMultiplier()` is applied directly to incoming damage in
 		//`absorbHeroDamage` (it scales with current missing HP, so it can't be baked into a
@@ -2579,7 +2621,7 @@ export class DungeonScene extends Scene2D {
 		this.spriteFor.set(monster.id, sprite);
 		if (isAlly) {
 			sprite.alpha = 0.72;
-			sprite.colorAdd = allyKind === 'sheep' ? 0xdddddd : allyKind === 'earthGuardian' ? 0x997744 : allyKind === 'lotus' ? 0x55aa66 : 0x5577aa;
+			sprite.colorAdd = allyIdentityColorAdd(isAlly, allyKind);
 		}
 		//`HawkAlly`'s `attacksAutomatically = false` is a property of the class, not of a summoning,
 		//so it is set here and survives a load without being persisted.
@@ -2719,8 +2761,11 @@ export class DungeonScene extends Scene2D {
 				yogTargeted: creature.yogTargeted ? [...creature.yogTargeted] : undefined,
 				yogFistDeck: creature.yogFistDeck ? [...creature.yogFistDeck] : undefined,
 				yogChallengeDeck: creature.yogChallengeDeck ? [...creature.yogChallengeDeck] : undefined,
+				fistZapCd: creature.fistZapCd,
+				potPos: creature.potPos ? { ...creature.potPos } : undefined, potHolderId: creature.potHolderId,
 				kingPhase: creature.kingPhase, kingSummonsMade: creature.kingSummonsMade, kingSummonCd: creature.kingSummonCd,
 				kingAbilityCd: creature.kingAbilityCd, kingLastAbility: creature.kingLastAbility, kingShield: creature.kingShield,
+				kingWaveCd: creature.kingWaveCd, noExp: creature.noExp, kingDamager: creature.kingDamager,
 				deferredDamage: creature.deferredDamage, deferredDamageDelay: creature.deferredDamageDelay,
 				corrosionTurns: creature.corrosionTurns, corrosionDamage: creature.corrosionDamage,
 				sungrassLevel: creature.sungrassLevel, sungrassPartial: creature.sungrassPartial, sungrassPos: creature.sungrassPos,
@@ -2863,9 +2908,11 @@ export class DungeonScene extends Scene2D {
 				damage: [...saved.damage] as [number, number], armor: [...saved.armor] as [number, number],
 				buffs: Object.fromEntries(saved.buffs), sleeping: saved.sleeping, champion: saved.champion,
 				championPower: saved.championPower, pumped: saved.pumped, gooHealInc: saved.gooHealInc, focusCooldown: saved.focusCooldown, shamanType: saved.shamanType, combo: saved.combo, moving: saved.moving, arenaJumps: saved.arenaJumps, tenguPhase: saved.tenguPhase, tenguAbilityCd: saved.tenguAbilityCd, tenguAbilityUses: saved.tenguAbilityUses, tenguLastAbility: saved.tenguLastAbility, tenguFire: saved.tenguFire, tenguShockers: saved.tenguShockers,
-				yogPhase: saved.yogPhase, yogFistType: saved.yogFistType, elementalType: saved.elementalType, yogSummonCd: saved.yogSummonCd, yogSummonIndex: saved.yogSummonIndex, yogBeamCd: saved.yogBeamCd, yogTargeted: saved.yogTargeted, yogFistDeck: saved.yogFistDeck, yogChallengeDeck: saved.yogChallengeDeck,
+				yogPhase: saved.yogPhase, yogFistType: saved.yogFistType, elementalType: saved.elementalType, yogSummonCd: saved.yogSummonCd, yogSummonIndex: saved.yogSummonIndex, yogBeamCd: saved.yogBeamCd, yogTargeted: saved.yogTargeted, yogFistDeck: saved.yogFistDeck, yogChallengeDeck: saved.yogChallengeDeck, fistZapCd: saved.fistZapCd,
+				potPos: saved.potPos ? { ...saved.potPos } : undefined, potHolderId: saved.potHolderId,
 				kingPhase: saved.kingPhase, kingSummonsMade: saved.kingSummonsMade, kingSummonCd: saved.kingSummonCd,
 				kingAbilityCd: saved.kingAbilityCd, kingLastAbility: saved.kingLastAbility, kingShield: saved.kingShield,
+				kingWaveCd: saved.kingWaveCd, noExp: saved.noExp, kingDamager: saved.kingDamager,
 				deferredDamage: saved.deferredDamage, deferredDamageDelay: saved.deferredDamageDelay,
 				corrosionTurns: saved.corrosionTurns, corrosionDamage: saved.corrosionDamage,
 				sungrassLevel: saved.sungrassLevel, sungrassPartial: saved.sungrassPartial, sungrassPos: saved.sungrassPos,
@@ -5603,7 +5650,7 @@ export class DungeonScene extends Scene2D {
 		//Java also plays its MELD sound when the cell is in FOV; there is no per-effect
 		//audio seam here, so the log line below stands in for that feedback.
 		if (this.armorGlyph === 'camouflage') {
-			const duration = Math.round((3 + this.armorLevel / 2) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune));
+			const duration = Math.round((3 + this.armorLevel / 2) * this.genericProcMultiplier());
 			this.hero.buffs['invisibility'] = Math.max(this.hero.buffs['invisibility'] ?? 0, duration);
 			this.say(t('port.log.camouflage'), 'positive');
 		}
@@ -6377,6 +6424,8 @@ export class DungeonScene extends Scene2D {
 			creatureAt: (x, y) => this.creatureAt(x, y),
 			addBuff: (target, id, duration) => addBuff(target, id, duration),
 			applyCorrosion: (target, strength) => {
+				//Same `BlobImmunity` decoy cover as `isToxicImmune` just above.
+				if (target.allyKind === 'afterImage') return;
 				target.corrosionTurns = Math.max(target.corrosionTurns ?? 0, 2);
 				target.corrosionDamage = Math.max(target.corrosionDamage ?? 0, strength);
 			},
@@ -6390,6 +6439,10 @@ export class DungeonScene extends Scene2D {
 			isVertigoImmune: (target) => target.kind !== undefined && IMMOVABLE_KINDS.has(target.kind),
 			isToxicImmune: (target) =>
 				target.kind === 'rotHeart' || target.kind === 'rotLasher'
+				//`Feint.AfterImage` carries the whole `BlobImmunity` set (tag `v3.3.8`); like
+				//the buff half in `buffBlocked`, the kind-keyed sets cannot see it (it spawns
+				//as a rat), so the decoy is named here alongside them.
+				|| target.allyKind === 'afterImage'
 				|| (target.kind !== undefined && INORGANIC_KINDS.has(target.kind))
 				|| (target.kind === 'yogFist' && target.yogFistType === 'rusted')
 				|| (target.kind === 'yog' && this.yogShielded(target))
@@ -6729,16 +6782,18 @@ export class DungeonScene extends Scene2D {
 			this.corrosiveGasStrength = Math.max(this.corrosiveGasStrength, 1 + Math.floor(this.depth / 4));
 			this.say(t('port.log.trap.toxic'), 'negative');
 		} else if (kind === 'burning') {
-			//RingOfElements.resist(): Burning is in `RESISTS` - the trap's fire damage is
-			//scaled before Barrier absorption (matching `Hero.damage()`'s ordering where
-			//the multiplier applies to the raw hit).
-			let damage = Math.floor(Random.int(2, 5) * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune));
-			damage = this.absorbHeroDamage(damage);
-			this.hero.hp -= damage;
-			this.showDamage(this.hero, damage);
-			addBuff(this.hero, 'burning');
-			this.fire.seed(x, y, 4);
-			this.say(t('port.log.trap.burning', { damage }), 'negative');
+			//`BurningTrap.activate()` (tag `v3.3.8`) seeds Fire 2 on every non-solid
+			//NEIGHBOURS9 cell and deals NO direct damage at all - the flames ignite
+			//whoever stands in them (the fire tick reignites `burning`, which is
+			//also where the catch-fire feedback comes from, so this branch logs
+			//nothing of its own). The old `Int(2,5) x Elements` hit, the instant
+			//burn and the single-cell fire 4 were all invented. Cells use passable
+			//where Java floods `!solid` (stated residual, same as the shock/storm
+			//branches below).
+			for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
+				const nx = x + dx, ny = y + dy;
+				if (this.level.inside(nx, ny) && this.level.passable(nx, ny)) this.fire.seed(nx, ny, 2);
+			}
 		} else if (kind === 'poisonDart') {
 			let damage = Math.max(0, Random.normalRange(4, 8));
 			damage = this.absorbHeroDamage(damage);
@@ -6748,12 +6803,13 @@ export class DungeonScene extends Scene2D {
 			addBuff(this.hero, 'poison');
 			this.hero.buffs['poison'] = 8 + Math.round((2 * this.depth) / 3);
 		} else if (kind === 'grim') {
-			//GrimTrap: half of current HP plus a quarter of max, capped at 90% of max - the cap
-			//is Java's own (never quite lethal on its own), the mix is this port's.
-			//`GrimTrap` is one of `AntiMagic.RESISTS`' listed source classes, so `Hero.damage()`
-			//applies the glyph's `drRoll()` reduction to it like any other magical source - the
-			//`magical: true` flag was previously omitted here, silently skipping that reduction.
-			let damage = Math.min(Math.round(this.hero.maxHp * 0.9), Math.round(this.hero.hp / 2 + this.hero.maxHp / 4));
+			//`GrimTrap`: `round(HT/2 + HP/2)` - half max plus half CURRENT, not half
+			//current plus a quarter max as stood here (a full-HP hero took 75% of max
+			//instead of the capped 90%, a hurt one far less than Java's). The 90%-of-max
+			//cap is Java's own (never quite lethal on its own); `absorbHeroDamage`
+			//subtracts no armor (Java's `damage()` has no DR either) and applies the
+			//AntiMagic `drRoll()` reduction for listed magical sources.
+			let damage = Math.min(Math.round(this.hero.maxHp * 0.9), grimTrapDamage(this.hero.hp, this.hero.maxHp));
 			damage = this.absorbHeroDamage(damage, true);
 			this.hero.hp -= damage;
 			this.showDamage(this.hero, damage);
@@ -6781,11 +6837,15 @@ export class DungeonScene extends Scene2D {
 					}
 				}
 			} else {
-			let damage = Math.max(0, Random.normalRange(5 + this.depth, 10 + 2 * this.depth));
+			//`ExplosiveTrap` fires a verbatim stock `Bomb.explode()`: `4+d..12+3d`
+			//with no falloff and no fire seeding (only the fireBomb payload seeds
+			//fire; the stock bomb destroys flamable terrain instead - unmodeled
+			//here, stated). The old `5+d..10+2d` underdealt past the early depths,
+			//and the fire 3 set the stepper burning for free.
+			let damage = Math.max(0, Random.normalRange(...explosiveTrapBounds(this.depth)));
 			damage = this.absorbHeroDamage(damage);
 			this.hero.hp -= damage;
 			this.showDamage(this.hero, damage);
-			this.fire.seed(x, y, 3);
 			this.applyTrapBlast(x, y);
 			this.say(t('port.log.trap.explosive', { damage }), 'negative');
 		}
@@ -6813,12 +6873,12 @@ export class DungeonScene extends Scene2D {
 			this.corrosiveGas.seed(monster.x, monster.y, 80 + 5 * this.depth);
 			this.corrosiveGasStrength = Math.max(this.corrosiveGasStrength, 1 + Math.floor(this.depth / 4));
 		} else if (kind === 'burning') {
-			const raw = Random.int(2, 5);
-			const damage = Math.max(0, raw - Random.normalRange(monster.armor[0], monster.armor[1]));
-			monster.hp -= damage;
-			this.showDamage(monster, damage);
-			addBuff(monster, 'burning');
-			this.fire.seed(monster.x, monster.y, 4);
+			//Same as the hero branch: Fire 2 on the non-solid NEIGHBOURS9, no direct
+			//damage, no instant burn - the old `Int(2,5)`-minus-armor hit was invented.
+			for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
+				const nx = monster.x + dx, ny = monster.y + dy;
+				if (this.level.inside(nx, ny) && this.level.passable(nx, ny)) this.fire.seed(nx, ny, 2);
+			}
 		} else if (kind === 'poisonDart') {
 			const damage = Math.max(0, Random.normalRange(4, 8) - Random.normalRange(monster.armor[0], monster.armor[1]));
 			monster.hp -= damage;
@@ -6832,9 +6892,11 @@ export class DungeonScene extends Scene2D {
 			//trap still triggers and spends itself normally (`Char.damage()` only zeroes the
 			//damage itself, matching the shared tail below). This mob-side branch was missing
 			//that gate, unlike its hero-side twin.
+			//The mix is `round(HT/2 + HP/2)` with NO armor subtraction - Java's
+			//`damage()` has no DR, so the old `drRoll` cut was invented (and the old
+			//quarter-max mix with it).
 			if (!monster.magicImmune) {
-				const raw = Math.min(Math.round(monster.maxHp * 0.9), Math.round(monster.hp / 2 + monster.maxHp / 4));
-				const damage = Math.max(0, raw - Random.normalRange(monster.armor[0], monster.armor[1]));
+				const damage = grimTrapDamage(monster.hp, monster.maxHp);
 				monster.hp -= damage;
 				this.showDamage(monster, damage);
 			}
@@ -6856,11 +6918,13 @@ export class DungeonScene extends Scene2D {
 				}
 			}
 		} else {
-			const damage = Math.max(0, Random.normalRange(5 + this.depth, 10 + 2 * this.depth)
+			//Same stock-`Bomb.explode()` numbers as the hero branch above
+			//(`4+d..12+3d`, armor-subtracted per Java's own `dmg -= drRoll()`), no
+			//fire seeding.
+			const damage = Math.max(0, Random.normalRange(...explosiveTrapBounds(this.depth))
 				- Random.normalRange(monster.armor[0], monster.armor[1]));
 			monster.hp -= damage;
 			this.showDamage(monster, damage);
-			this.fire.seed(monster.x, monster.y, 3);
 			this.applyTrapBlast(monster.x, monster.y);
 		}
 		//Every trap kind modelled for mobs is a Java `HazardAssistTracker` producer:
@@ -6873,15 +6937,16 @@ export class DungeonScene extends Scene2D {
 		if (monster.hp <= 0) this.kill(monster, kind === 'burning' || kind === 'explosive' ? 'fire' : 'trap');
 	}
 
-	/** `Bomb.explode`: the blast reaches all characters in the 3x3 NEIGHBOURS9 area. */
+	/** `Bomb.explode`: the blast reaches all characters in the 3x3 NEIGHBOURS9 area,
+	 * each for its own `4+d..12+3d` roll with NO distance falloff - Java rolls full
+	 * damage per char. The old 0.67 neighbour cut was invented, as was the range. */
 	private applyTrapBlast(x: number, y: number): void {
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 			const target = this.creatureAt(x + dx, y + dy);
 			if (!target || target.isHero || target.hp <= 0) continue;
 			if (target.kind === 'yog' && this.yogShielded(target)) continue;
 			if (target.kind === 'yogFist' && this.guardFist(target)) continue;
-			let damage = Math.max(0, Random.normalRange(5 + this.depth, 10 + 2 * this.depth));
-			if (dx !== 0 || dy !== 0) damage = Math.round(damage * 0.67);
+			let damage = Math.max(0, Random.normalRange(...explosiveTrapBounds(this.depth)));
 			damage = Math.max(0, damage - Random.normalRange(target.armor[0], target.armor[1]));
 			//DKBarrier absorbs on every `Char.damage()` path (`ShieldBuff.processDamage`
 			//in Java), not just attacks and bomb blasts - the same block as the attack
@@ -7147,6 +7212,15 @@ export class DungeonScene extends Scene2D {
 			const missile = special.sourceClass ? MWL_MISSILE_BY_CLASS.get(special.sourceClass) : undefined;
 			if (!missile) throw new Error(`MWL missile definition is missing for ${this.heroClass}`);
 			const thrownDamage = missileDamageRange(missile.sourceClass, thrownLevel, sharpshooting);
+			//`Dart.processChargedShot()`: an untipped dart fired from a wielded crossbow
+			//with an armed shot deals +4+bow level on both ends (tipped darts are
+			//excluded - `!(this instanceof TippedDart)` - and the bow level is the
+			//crossbow's own). Tipped-ness here is the seed the pile was tipped with.
+			if (this.chargedShotArmed && this.weaponMeleeKey() === 'crossbow' && this.ammoTippedSeed === undefined) {
+				const chargedBonus = 4 + this.degradedLevel(this.weaponLevel);
+				thrownDamage[0] += chargedBonus;
+				thrownDamage[1] += chargedBonus;
+			}
 			//rolls to hit exactly like a melee swing (SPD's MissileWeapon shares Weapon's
 			//accuracy machinery) - only the damage range and the range itself differ.
 			//`MissileWeapon.accuracyFactor()` = `Weapon.accuracyFactor() * adjacentAccFactor()`:
@@ -7486,16 +7560,11 @@ export class DungeonScene extends Scene2D {
 		}
 
 		//MeleeWeapon.useAbility()'s Duelist branch: shield = `1 + 2*points` (3/5), gated on a
-		//flat HP/HT <= 0.5 - not a flat 3 with an invented per-rank threshold (0.4/0.6, no Java
-		//basis at any rank) - found in the 2026-09-09 hero-progression audit. Real Java fires
-		//this on weapon-*ability* use specifically; this port has no separate ability-use action
-		//from the class's own special (`useSpecial` already stands in for Duelist's special
-		//ability the same way it does for every other class), so triggering it here is this
-		//port's existing convention, not a new substitution.
-		{
-			const rank = this.talentRank('aggressive_barrier');
-			if (rank > 0 && this.hero.hp / this.hero.maxHp <= 0.5) this.grantHeroShield(1 + 2 * rank, this.hero.maxHp);
-		}
+		//(Flat HP/HT <= 0.5 - not a flat 3 with an invented per-rank threshold (0.4/0.6,
+		//no Java basis at any rank) - found in the 2026-09-09 hero-progression audit.
+		//`AGGRESSIVE_BARRIER` used to fire here, on the class special, from before this
+		//scene had a real T-key ability path; Java fires it on weapon-ability use
+		//specifically, so it now lives in `takeAbilityCharge` and this block is gone.)
 		//Thrown piles and spirit arrows fly their own item art; wand bolts keep the dot.
 		this.spawnProjectile(this.hero, target,
 			special.kind === 'throw' ? missileFlightArt(this.ammoSourceClass, this.ammoTippedSeed)
@@ -7984,6 +8053,11 @@ export class DungeonScene extends Scene2D {
 			//itself is already excluded above, for the unrelated reason that Java's own arc never
 			//touches it).
 			if (hit === defender || arcDamage <= 0 || hit.magicImmune) continue;
+			//`Shocking.proc()` only zaps `ch.alignment != attacker.alignment` - the arc
+			//catches the wielder's allies geometrically but Java spares them, so the
+			//hero's own allies (hawk, clone, log, mirror, corrupted) are skipped here.
+			//Neutrals (NPCs) are still zapped, exactly as Java's `!=` does to them.
+			if ((hit.isHero || hit.isAlly) && (attacker.isHero || attacker.isAlly)) continue;
 			hit.hp -= arcDamage;
 			this.showDamage(hit, arcDamage);
 			if (hit.hp <= 0) this.kill(hit);
@@ -8535,9 +8609,15 @@ export class DungeonScene extends Scene2D {
 		//`Corrosion` is in `RingOfElements`' RESISTS set (`Char.resist()`, tag `v3.3.8`), so the
 		//hero's tick scales by the ring before Barrier absorption, like the burning/poison ticks.
 		const rawCorrosion = Math.max(1, Math.floor(target.corrosionDamage ?? 1));
+		//`Corrosion.act()` deals its tick through `Char.damage()`, so a rotting fist halves
+		//it first (the ACIDIC property resists Corrosion) and converts the rest to Bleeding
+		//(`RottingFist.damage()`), losing no HP to the tick itself.
+		if (!target.isHero && target.kind === 'yogFist' && target.yogFistType === 'rotting') {
+			setBleeding(target, Math.round(rawCorrosion * 0.5 * 0.6));
+		}
 		const damage = target.isHero
 			? Math.floor(rawCorrosion * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune))
-			: rawCorrosion;
+			: target.kind === 'yogFist' && target.yogFistType === 'rotting' ? 0 : rawCorrosion;
 		if (target.isHero) {
 			const blocked = this.absorbHeroDamage(damage);
 			target.hp -= blocked;
@@ -8589,7 +8669,7 @@ export class DungeonScene extends Scene2D {
 		//for the first occupant and attack it when it lies within the real reach.
 		//Walls and doors stop the scan, preserving ordinary bump movement otherwise.
 		if (this.weaponAffix === 'projecting') {
-			const reach = 1 + Math.round(ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune));
+			const reach = 1 + Math.round(this.genericProcMultiplier());
 			for (let distance = 2; distance <= reach; distance++) {
 				const at = { x: this.hero.x + move.x * distance, y: this.hero.y + move.y * distance };
 				if (!this.level.inside(at.x, at.y)) break;
@@ -9414,8 +9494,29 @@ export class DungeonScene extends Scene2D {
 		//(real Java spends its own separate `4*TICK` actor slot for this; this port folds it
 		//into the monster's ordinary turn instead, since it has no secondary-actor scheduling).
 		if (monster.champion === 'growing') monster.championPower = (monster.championPower ?? 1.19) + 0.01;
+		//`YogFist.act()`: the ranged cooldown ticks down 1 per unparalysed turn while it is
+		//above 0 (`paralysed <= 0 && rangedCooldown > 0`). Bright/dark never accumulate
+		//any (their `incrementRangedCooldown` is a no-op), so the gate below is vacuous
+		//for them, exactly like Java's.
+		if (monster.kind === 'yogFist' && monster.buffs['paralysis'] === undefined && (monster.fistZapCd ?? 0) > 0) {
+			monster.fistZapCd = (monster.fistZapCd ?? 0) - 1;
+		}
+		//`BurningFist.act()`: a burning fist evaporates its own water cell, then 0-2 random
+		//neighbours (`Random.chances([0,1,2])` averages 1.67), and tops fire up to 4 across
+		//its own 3x3 - before `super.act()` in Java, after the cooldown tick here, which is
+		//the same turn either way.
+		if (monster.kind === 'yogFist' && monster.yogFistType === 'burning') this.burningFistAct(monster);
 		//`SoiledFist.act()`: a soiled fist keeps growing grass around itself every turn.
 		if (monster.kind === 'yogFist' && monster.yogFistType === 'soiled') this.soiledFistAct(monster);
+		//`RottingFist.act()`'s water heal: a hurt rotting fist standing in water regains
+		//`HT/50` every turn (6 at 300 HP). The zero-volume toxic seed on the same line only
+		//orders the gas blob's actor clock, which this port's blob has no equivalent of.
+		if (monster.kind === 'yogFist' && monster.yogFistType === 'rotting'
+			&& this.level.get(monster.x, monster.y) === WATER && monster.hp < monster.maxHp) {
+			const healed = Math.min(monster.maxHp - monster.hp, Math.floor(monster.maxHp / 50));
+			monster.hp += healed;
+			this.showHeal(monster, healed);
+		}
 		//DwarfKing P3 banks damage into Viscosity's deferred pool instead of losing HP directly;
 		//pay it out on the King's own turn, exactly like the hero's pool above.
 		if (this.tickMonsterDeferredDamage(monster)) return;
@@ -10194,7 +10295,52 @@ export class DungeonScene extends Scene2D {
 	private readonly specialMonsterTurnOverrides: Record<string, (monster: Creature) => boolean> = {
 		pylon: (monster) => { this.takePylonTurn(monster); return true; },
 		ripperDemon: (monster) => this.executeRipperLeap(monster),
+		bee: (monster) => { this.takeBeeTurn(monster); return true; },
 	};
+
+	/** `Bee.chooseEnemy()` as a whole-turn override: the pot holder first (hero or mob, at any
+	 * range), else the nearest live mob within 3 of the pot, else the hero within 3 of the
+	 * pot. No suspect, no hunt: a random free step, like the generic wander. The bee spawns
+	 * hostile (never an ally), so no alignment flip is needed. Movement hunts through the
+	 * shared AI with the bee's own `viewDistance` 4 (not the hero's 8), and attacks land
+	 * through the ordinary `attack()` - including the depth row's `[HT/10, HT/4]` damage,
+	 * which `liveStats` already rolls bell-curved.
+	 * Not modeled: stung mobs turning on the bee (`attackProc`'s beckon - this port's mobs
+	 * cannot target other mobs, only hero and allies), and the honeyed-charm ally path (no
+	 * honeyed elixir exists to drink). */
+	private takeBeeTurn(bee: Creature): void {
+		let target: Creature | null = null;
+		if (bee.potHolderId !== undefined) {
+			target = bee.potHolderId === this.hero.id && this.hero.hp > 0
+				? this.hero
+				: (this.creatures.find((c) => c.id === bee.potHolderId && c.hp > 0 && !c.isNPC) ?? null);
+		}
+		const pot = bee.potPos;
+		if (!target && pot) {
+			target = this.creatures
+				.filter((c) => !c.isHero && !c.isNPC && !c.isAlly && c.hp > 0
+					&& Roguelike.chebyshevDistance(c, pot) <= 3)
+				.sort((a, b) => Roguelike.chebyshevDistance(bee, a) - Roguelike.chebyshevDistance(bee, b))[0] ?? null;
+			if (!target && this.hero.hp > 0 && Roguelike.chebyshevDistance(this.hero, pot) <= 3) target = this.hero;
+		}
+		if (!target) {
+			const steps = Roguelike.neighbourOffsets(8)
+				.map(([dx, dy]) => ({ x: bee.x + dx, y: bee.y + dy }))
+				.filter((cell) => this.level.inside(cell.x, cell.y) && this.level.passable(cell.x, cell.y)
+					&& !this.creatureAt(cell.x, cell.y));
+			if (steps.length > 0) this.moveTo(bee, steps[Random.int(steps.length)]!);
+			return;
+		}
+		if (Roguelike.chebyshevDistance(bee, target) === 1) {
+			this.attack(bee, target);
+			return;
+		}
+		const blocked = new Set(this.creatures.filter((c) => c !== bee && c !== target).map((c) => this.level.index(c.x, c.y)));
+		const decision = Roguelike.decideMonsterAI(this.level, this.pathfinder, bee, bee.hp / bee.maxHp, target, {
+			sightRadius: 4, fleeBelow: 0, blocked,
+		});
+		if (decision.step) this.moveTo(bee, decision.step);
+	}
 	/** Whole-turn passive actors checked after hostile mobs have had the chance to attack an
 	 * adjacent friendly summon, preserving the old ordering in `takeMonsterTurn`. */
 	private readonly postAllyMonsterTurnOverrides: Record<string, (monster: Creature) => boolean> = {
@@ -12689,7 +12835,19 @@ private eyeBeamTurn(monster: Creature): boolean {
 			}
 		}
 		if (phase === 2) {
-			this.kingWave(king, challenge);
+			//Java paces waves with `spend(3*TICK)` (wave-1 schedule, challenge
+			//wave-2/3a) vs `spend(TICK)` (everything else) - the plan's cadence
+			//counts the King's own turns between batches, same decrement-then-fire
+			//shape as the P1 cooldowns above. The old code waved every turn, so
+			//wave-1 adds arrived up to 3x faster than Java's.
+			king.kingWaveCd = (king.kingWaveCd ?? 0) - 1;
+			if ((king.kingWaveCd ?? 0) <= 0) {
+				const plan = planRatKingWave(king.kingSummonsMade ?? 0, king.kingShield ?? 0, challenge, simulationRandom);
+				if (plan) {
+					this.kingWave(king, plan);
+					king.kingWaveCd = plan.cadence;
+				}
+			}
 			return;
 		}
 		if (phase === 3) {
@@ -12724,14 +12882,21 @@ private eyeBeamTurn(monster: Creature): boolean {
 		return ratKingP1Summon(made, challenge, simulationRandom);
 	}
 
-	/** One royal servant beside the King (neighbour cells only, like the old guard calls);
-	 * tracked for LifeLink subjects, wave counts, and death cleanup. */
-	private summonKingAdd(king: Creature, kind: RatKingAddKind): boolean {
+	/** One royal servant beside the King (neighbour cells only, like the old guard calls;
+	 * Java arrives onto arena pedestals after a 2-3 turn delay with arrival damage -
+	 * stated); tracked for LifeLink subjects, wave counts, and death cleanup.
+	 * `noExp` is Java's `maxLvl = -2` on the arrival (`Summoning.spawnMinion`):
+	 * servants grant no XP and roll no loot, in every phase. */
+	private summonKingAdd(king: Creature, kind: RatKingAddKind, damager = false): boolean {
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 			const at = { x: king.x + dx, y: king.y + dy };
 			if (!this.level.passable(at.x, at.y) || this.isChasmCell(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
 			const add = this.spawnMonster(kind, at);
 			add.sleeping = false;
+			add.noExp = true;
+			//P2-wave arrivals carry `KingDamager` (chip the P2 shield when they die);
+			//P1/P3 servants do not, so the P1->P2 cull below chips nothing.
+			if (damager) add.kingDamager = true;
 			this.kingAdds.add(add);
 			this.say(t('port.log.kingadds'), 'warning');
 			return true;
@@ -12741,9 +12906,11 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 	/** P1 LINK/TELE-lite over the live servants (skeletons are never subjects in Java -
 	 * only ghouls/monks/warlocks/golems, which is all this court ever holds). LINK marks
-	 * the furthest unlinked servant (damage to it splits onto the King - see `attack()`);
-	 * TELE relocates the furthest servant beside the hero with the real yell. First pick
-	 * is 50/50, then 1-in-8 to repeat LINK, 7-in-8 to repeat TELE. */
+	 * the furthest unlinked servant (damage splits across the link - see `attack()`);
+	 * TELE moves the King himself first (past himself away from the hero, else the
+	 * open neighbour furthest from the hero) and then sets the furthest servant
+	 * beside the hero, with the real yell. First pick is 50/50, then 1-in-8 to
+	 * repeat LINK, 7-in-8 to repeat TELE. */
 	private kingAbility(king: Creature): boolean {
 		const subjects = [...this.kingAdds].filter((add) => add.hp > 0
 			&& (add.kind === 'ghoul' || add.kind === 'monk' || add.kind === 'warlock' || add.kind === 'golem'));
@@ -12752,6 +12919,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 		const pick = last === 0 ? (Random.int(0, 2) === 0 ? 1 : 2)
 			: last === 1 ? (Random.int(0, 8) === 0 ? 1 : 2)
 			: (Random.int(0, 8) !== 0 ? 1 : 2);
+		//Java assigns `lastAbility` at pick time, before either attempt - even a
+		//whiffed round retunes the next pick. The old code only recorded successes.
+		king.kingLastAbility = pick;
 		const furthest = (list: Creature[]): Creature | null => {
 			let best: Creature | null = null;
 			let bestDist = -1;
@@ -12764,18 +12934,26 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if ((pick === 1 || subjects.every((s) => this.kingLinkedAdds.has(s)))) {
 			const target = furthest(subjects.filter((s) => !this.kingLinkedAdds.has(s)));
 			if (pick === 1 && target) {
-				king.kingLastAbility = 1;
 				this.kingLinkedAdds.add(target);
-				this.say(t('port.log.kinglink'), 'warning');
+				//Java alternates the two real `lifelink_1`/`lifelink_2` yells on a coin
+				//flip - the invented `port.log.kinglink` line is gone with them.
+				this.say(t(Random.int(0, 2) === 0 ? 'actors.mobs.dwarfking.lifelink_1' : 'actors.mobs.dwarfking.lifelink_2'), 'warning');
 				return true;
 			}
 		}
 		const target = furthest(subjects);
 		if (target) {
-			king.kingLastAbility = 2;
+			//`teleportSubject()`: the KING moves first - the cell past him away from
+			//the hero along the shot line, else the open neighbour furthest from the
+			//hero - and only then is the servant set beside the hero. The old code
+			//teleported the servant alone, leaving the King standing still, and took
+			//any free neighbour instead of a strictly-closer one.
+			this.teleportKingAway(king);
+			const heroDist = Math.hypot(this.hero.x - king.x, this.hero.y - king.y);
 			const spots = Roguelike.neighbourOffsets(8)
 				.map(([dx, dy]) => ({ x: this.hero.x + dx, y: this.hero.y + dy }))
-				.filter((at) => this.level.inside(at.x, at.y) && this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y));
+				.filter((at) => this.level.inside(at.x, at.y) && this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y)
+					&& Math.hypot(at.x - king.x, at.y - king.y) < heroDist);
 			spots.sort((a, b) => Math.hypot(a.x - king.x, a.y - king.y) - Math.hypot(b.x - king.x, b.y - king.y));
 			if (spots[0]) this.moveTo(target, spots[0]);
 			this.say(t(Random.int(0, 2) === 0 ? 'actors.mobs.dwarfking.teleport_1' : 'actors.mobs.dwarfking.teleport_2'), 'warning');
@@ -12784,19 +12962,41 @@ private eyeBeamTurn(monster: Creature): boolean {
 		return false;
 	}
 
-	/** P2 wave schedule (non-challenge counts shown; challenge doubles early waves and adds
-	 * golems): ghouls, then ghouls plus a monk, then the full warlock/monk/ghoul/ghoul
-	 * set - each batch chipping the King's own shield (`KingDamager` HT/12, HT/18 on the
-	 * challenge). Wave yells are real, placed exactly where Java yells them. */
-	private kingWave(king: Creature, challenge: boolean): void {
-		const made = king.kingSummonsMade ?? 0;
-		const shield = king.kingShield ?? 0;
-		const plan = planRatKingWave(made, shield, challenge, simulationRandom);
-		if (!plan) return;
+	/** `teleportSubject()`'s first half: the King steps past himself away from the
+	 * hero down the shot line when that cell is open, else the open neighbour
+	 * furthest from the hero (strictly further - ties stay put). Euclidean stands
+	 * in for `trueDistance`, passable for `!solid`, as elsewhere. */
+	private teleportKingAway(king: Creature): void {
+		const dx = Math.sign(king.x - this.hero.x);
+		const dy = Math.sign(king.y - this.hero.y);
+		const beyond = { x: king.x + dx, y: king.y + dy };
+		if ((dx !== 0 || dy !== 0) && this.level.inside(beyond.x, beyond.y)
+			&& this.level.passable(beyond.x, beyond.y) && !this.creatureAt(beyond.x, beyond.y)) {
+			this.moveTo(king, beyond);
+			return;
+		}
+		let best: { x: number; y: number } | null = null;
+		let bestDist = Math.hypot(king.x - this.hero.x, king.y - this.hero.y);
+		for (const [ox, oy] of Roguelike.neighbourOffsets(8)) {
+			const at = { x: king.x + ox, y: king.y + oy };
+			if (!this.level.inside(at.x, at.y) || !this.level.passable(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
+			const d = Math.hypot(at.x - this.hero.x, at.y - this.hero.y);
+			if (d > bestDist) { bestDist = d; best = at; }
+		}
+		if (best) this.moveTo(king, best);
+	}
+
+	/** P2 wave schedule (counts in `planRatKingWave`): the batches arrive at Java's
+	 * `spend` pacing via the caller's `kingWaveCd`, and the shield damage lands
+	 * per dead add in `kill()` (`KingDamager` HT/12, HT/18 on the challenge) -
+	 * never here. The old code chipped the shield once per wave-turn regardless
+	 * of kills, so P2 ended on a fixed ~12-turn schedule while Java stalls until
+	 * the adds actually die. Wave yells are real, placed exactly where Java
+	 * yells them. */
+	private kingWave(king: Creature, plan: RatKingWavePlan): void {
 		if (plan.announcement) this.say(t(`actors.mobs.dwarfking.${plan.announcement}`), 'warning');
 		king.kingSummonsMade = plan.nextSummonsMade;
-		for (const kind of plan.adds) this.summonKingAdd(king, kind);
-		king.kingShield = Math.max(0, shield - Math.floor(king.maxHp / (challenge ? 18 : 12)));
+		for (const kind of plan.adds) this.summonKingAdd(king, kind, true);
 	}
 
 	/**
@@ -13044,6 +13244,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 				if (!this.level.passable(at.x, at.y) || this.isChasmCell(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
 				const fist = this.spawnMonster('yogFist', at);
 				fist.yogFistType = type as Creature['yogFistType'];
+				fist.fistZapCd = 0;
 				fist.maxHp = fist.hp = 300;
 				fist.accuracy = 36;
 				fist.evasion = 20;
@@ -13091,14 +13292,94 @@ private eyeBeamTurn(monster: Creature): boolean {
 			if (this.creatureAt(at.x, at.y) || fov.isVisible(at.x, at.y)) continue;
 			if (!this.pathfinder.find(at, this.stairs)) continue;
 			this.moveTo(fist, at);
+			//Java drops the fist to `WANDERING` on arrival; losing the hero is this
+			//port's closest state, so the next turn re-acquires instead of instantly
+			//zapping from the new cell.
+			fist.seesHero = false;
 			return;
+		}
+	}
+
+	/** `SoiledFist.damage()`'s grass cut: blows lose `(6-n)/6`, rounded, where n is the
+	 * number of tall-grass cells in the fist's 3x3 (Java counts FURROWED_GRASS or
+	 * HIGH_GRASS; this port's furrows are tall grass). A `damage()` override, so every
+	 * source runs it - `attack()` and the blast seam both call here. */
+	private soiledGrassCut(defender: Creature, damage: number): number {
+		if (defender.kind !== 'yogFist' || defender.yogFistType !== 'soiled') return damage;
+		let grassCells = 0;
+		for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as ReadonlyArray<readonly [number, number]>) {
+			if (this.level.inside(defender.x + dx, defender.y + dy)
+				&& this.level.get(defender.x + dx, defender.y + dy) === HIGH_GRASS) grassCells++;
+		}
+		return grassCells > 0 ? Math.round((damage * (6 - grassCells)) / 6) : damage;
+	}
+
+	/** `RottingFist.damage()`'s conversion: any non-invulnerable hit lands no HP damage
+	 * and instead sets Bleeding to 60% of the blow, rounded (`Bleeding.set` keeps the
+	 * strongest level, like this port's `setBleeding`). Returns the HP damage left over.
+	 * Both callers check the proximity guard first, matching `isInvulnerable`. Bleeding
+	 * itself never reaches either caller (the DoT tick applies directly), and Corrosion
+	 * has its own tick below (the ACIDIC property halves it there first). A hero harvest
+	 * strike is exempt: `Sickle.harvestAbility` pins a `HarvestBleedTracker` on the enemy
+	 * and the conversion skips tracked victims, so the harvest bleed lands instead -
+	 * `abilityHarvestNext` armed on the hero is this port's stand-in for that tracker. */
+	private rottingBleedConvert(defender: Creature, damage: number, harvestArmed: boolean): number {
+		if (defender.kind !== 'yogFist' || defender.yogFistType !== 'rotting' || damage <= 0 || harvestArmed) return damage;
+		setBleeding(defender, Math.round(damage * 0.6));
+		return 0;
+	}
+
+	/** `BrightFist.damage()`/`DarkFist.damage()`'s half-HP edge: the first crossing pins
+	 * HP at half max and warps the fist away; Bright additionally prolongs the hero's
+	 * Blindness 1.5x (15 turns of the table's `daze`), Dark detaches the hero's Light
+	 * instead (no light model here, so nothing lands on that half). The death edges live
+	 * in `kill`, not here. */
+	private brightDarkHalfHp(defender: Creature, preHp: number): void {
+		const type = defender.kind === 'yogFist' ? defender.yogFistType : undefined;
+		if ((type !== 'bright' && type !== 'dark') || defender.hp <= 0) return;
+		if (preHp <= defender.maxHp / 2 || defender.hp > defender.maxHp / 2) return;
+		defender.hp = defender.maxHp / 2;
+		if (type === 'bright') this.hero.buffs['daze'] = Math.max(this.hero.buffs['daze'] ?? 0, 15);
+		this.teleportFistAway(defender);
+	}
+
+	/** `BurningFist.act()`: evaporate the fist's own water cell (steam visuals unmodeled),
+	 * then `Random.chances([0,1,2])` random 8-neighbours evaporated the same way - the roll
+	 * may repeat a cell, so the same uniform pick is made per roll - then top fire up to 4
+	 * on every non-water non-solid cell of the 3x3 (`4 - vol` seeded where `vol < 4`). */
+	private burningFistAct(fist: Creature): void {
+		if (this.level.get(fist.x, fist.y) === WATER) this.level.set(fist.x, fist.y, FLOOR);
+		//`Random.chances([0,1,2])` (1 with 1/3, 2 with 2/3) as one uniform int draw; mwg's
+		//live `Random` has no `chances`, and the seeded `SpdRandom` stream is levelgen's.
+		const evaporated = Random.int(3) === 0 ? 1 : 2;
+		for (let i = 0; i < evaporated; i++) {
+			const [dx, dy] = Roguelike.neighbourOffsets(8)[Random.int(8)]!;
+			if (this.level.inside(fist.x + dx, fist.y + dy) && this.level.get(fist.x + dx, fist.y + dy) === WATER) {
+				this.level.set(fist.x + dx, fist.y + dy, FLOOR);
+			}
+		}
+		this.topUpFistFire(fist);
+	}
+
+	/** The fire top-up `BurningFist.act()` and `BurningFist.zap()` share: `4 - vol` seeded
+	 * on every non-water non-solid 3x3 cell whose fire volume is below 4. Java tests
+	 * `solid`; this port has no separate solid gate, so walkability stands in - a chasm
+	 * cell a real fist would seed (chasm is not solid) is skipped here instead. */
+	private topUpFistFire(at: { x: number; y: number }): void {
+		for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as ReadonlyArray<readonly [number, number]>) {
+			const x = at.x + dx, y = at.y + dy;
+			if (!this.level.inside(x, y) || this.level.get(x, y) === WATER || !this.level.passable(x, y)) continue;
+			const vol = this.fire.volumeAt(x, y);
+			if (vol < 4) this.fire.seed(x, y, 4 - vol);
 		}
 	}
 
 	/** `SoiledFist.act()`: `Random.chances([0,2,1])` furrow rolls (1.33 cells on average) that
 	 * upgrade a plain GRASS neighbour to tall grass, then plain grass across the rest of its 3x3. */
 	private soiledFistAct(fist: Creature): void {
-		const furrows = Random.chance(2 / 3) ? 2 : 1;
+		//`Random.chances([0,2,1])` (1 with 2/3, 2 with 1/3, 1.33 on average) as one uniform
+		//int draw - the old `chance(2/3) ? 2 : 1` had the weights backwards (2 with 2/3).
+		const furrows = Random.int(3) === 0 ? 2 : 1;
 		const cells = [[0, 0], ...Roguelike.neighbourOffsets(8)] as ReadonlyArray<readonly [number, number]>;
 		for (let i = 0; i < furrows; i++) {
 			const [dx, dy] = cells[Random.int(cells.length)]!;
@@ -13367,7 +13648,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//A spinning flail is guaranteed to hit while spinning (`ability_desc`); a charged
 		//shot always hits. Both ride the surprise channel (`INFINITE_ACCURACY` inside
 		//`rollHit`), which is exactly "guaranteed to hit" with no other change.
-		const forceHit = chargedShotHit || (attacker === this.hero && this.spinSpins > 0) || this.abilityForceHit;
+		const forceHit = chargedShotHit || (attacker === this.hero && this.spinSpins > 0) || this.abilityForceHit
+			//`Crossbow.proc`: a melee swing with an armed shot never misses either.
+			|| (attacker === this.hero && attacker.attackMode !== 'throw' && this.chargedShotArmed && this.weaponMeleeKey() === 'crossbow');
 		//Monk Focus: the first attack against a focused monk always misses and spends the
 		//focus (re-earned over ~6 of its own turns via combo in takeMonsterTurn). `Senior
 		//extends Monk` and shares this unchanged - previously excluded here too by the same
@@ -13459,7 +13742,21 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.say(t(attacker.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
 			return false;
 		}
+		//`Dagger`/`Dirk`/`AssassinsBlade` surprise passive (`damageRoll`, tag `v3.3.8`):
+		//a surprised enemy is rolled from `min+round(diff*3/4|2/3|1/2)` to max instead
+		//of min to max (75%/67%/50%). The framework owns the roll over `hero.damage`,
+		//so the range is narrowed around the synchronous resolution and restored after
+		//(melee only - thrown daggers roll missile damage, never this).
+		const daggerSurpriseFrac = attacker === this.hero && attacker.attackMode !== 'throw' && surprise
+			? { dagger: 0.75, dirk: 0.67, assassinsblade: 0.5 }[this.weaponMeleeKey()] ?? 0
+			: 0;
+		const heroDamageBefore = this.hero.damage;
+		if (daggerSurpriseFrac > 0) {
+			const [lo, hi] = this.hero.damage;
+			this.hero.damage = [lo + Math.round((hi - lo) * daggerSurpriseFrac), hi];
+		}
 		const attackRoll = this.resolveHeroAbilityAttack(attacker, defender, surprise || forceHit, accFactor, damageMultiplier);
+		if (daggerSurpriseFrac > 0) this.hero.damage = heroDamageBefore;
 		if (!attackRoll.hit) {
 			runState.audio.cue('miss', 0.55);
 			defender.sleeping = false;
@@ -13581,7 +13878,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//Sacrificial.proc(): Java rolls 1/10 x Arcana, then rolls a second time against
 		//(HP/HT)^2 * HT / 8 and applies Bleeding at max(1, bleedAmt). The first draft
 		//mistakenly used missing HP and a poison stand-in; both were wrong.
-		if (attacker === this.hero && this.weaponAffix === 'sacrificial' && Random.chance((1 / 10) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
+		if (attacker === this.hero && this.weaponAffix === 'sacrificial' && Random.chance((1 / 10) * this.enchantProcMultiplier())) {
 			const bleedAmount = (attacker.hp / attacker.maxHp) ** 2 * attacker.maxHp / 8;
 			if (Random.chance(bleedAmount)) setBleeding(attacker, Math.max(1, bleedAmount));
 		}
@@ -13591,7 +13888,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//uses in place of Java's ScrollOfTeleportation.teleportChar. Java also resets a fleeing
 		//HUNTING mob back to WANDERING; this port has no such explicit state to reset, but the
 		//next monster-turn FOV recompute (`seesHero`) naturally loses track once far enough away.
-		if (attacker === this.hero && this.weaponAffix === 'displacing' && !defender.isNPC && Random.chance((1 / 12) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
+		if (attacker === this.hero && this.weaponAffix === 'displacing' && !defender.isNPC && Random.chance((1 / 12) * this.enchantProcMultiplier())) {
 			const destination = this.randomFreeCell(defender);
 			if (destination) {
 				const displaceFrom = { x: defender.x, y: defender.y };
@@ -13599,9 +13896,18 @@ private eyeBeamTurn(monster: Creature): boolean {
 				this.playTeleportAppear(displaceFrom, destination, defender);
 			}
 		}
+		//`Stone.proc()` (`items/armor/glyphs/Stone.java`, tag `v3.3.8`): the glyph
+		//grants no armor - it replays the to-hit math (attacker accuracy vs the
+		//wearer's evasion) and turns 75% of the dodge chance into damage
+		//reduction, `ceil(damage x hitChance)` clamped to [0.25, 1]. Runs here at
+		//the landed-hit boundary; Java runs it in `defenseProc` pre-armor, the
+		//same stated placement every other defend effect here already carries.
+		if (defender.isHero && this.armorGlyph === 'stone' && damage > 0) {
+			damage = Math.ceil(damage * stoneGlyphReduction(liveStats(attacker).accuracy, this.hero.evasion, this.genericProcMultiplier()));
+		}
 		//Displacement.proc(): a 1-in-20 x arcana armor-curse proc teleports the defender
 		//and replaces the incoming hit with zero damage.
-		if (defender.isHero && this.armorGlyph === 'displacement' && Random.chance((1 / 20) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
+		if (defender.isHero && this.armorGlyph === 'displacement' && Random.chance((1 / 20) * this.genericProcMultiplier())) {
 			const armorDisplaceFrom = { x: defender.x, y: defender.y };
 			const destination = this.randomFreeCell(defender);
 			if (destination) {
@@ -13621,7 +13927,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//without pretending Charm is a global, target-free stun.
 		if (attacker === this.hero && this.weaponAffix === 'friendly') {
 			if (attacker.buffs['charm'] !== undefined && this.charmTargets.get(attacker.id) === defender.id) damage = 0;
-			if (Random.chance((1 / 10) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
+			if (Random.chance((1 / 10) * this.enchantProcMultiplier())) {
 				addBuff(attacker, 'charm');
 				this.charmTargets.set(attacker.id, defender.id);
 				addBuff(defender, 'charm');
@@ -13660,7 +13966,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (attacker === this.hero && (this.weaponAffix === 'corrupting' || this.unstableDelegated === 'corrupting') && damage >= defender.hp
 			&& !defender.isHero && !defender.isNPC && !defender.isAlly && Random.chance(
 			((Math.max(0, this.degradedLevel(this.weaponLevel)) + 5) / (Math.max(0, this.degradedLevel(this.weaponLevel)) + 25))
-				* ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
+				* this.enchantProcMultiplier())) {
 			defender.hp = defender.maxHp;
 			for (const buff of NEGATIVE_BUFFS) delete defender.buffs[buff];
 			defender.isAlly = true;
@@ -13717,23 +14023,49 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//is deferred the same way.
 		//
 		//These are `damage()` overrides and so are source-independent: `applyBlastDamage` carries the
-		//same four guards (Viscosity, DKBarrier, DM-300's barrier, the inactive-pylon refusal) for
-		//bombs and armor abilities, which never come through `attack()`. If one of them changes here,
-		//it changes there too - the two copies exist because this tail also carries attack-only work
-		//(LifeLink, the SoiledFist grass cut, the execute mechanics, Grim) that the shared seam must
-		//not run.
+		//same guards (Viscosity, DKBarrier, DM-300's barrier, the inactive-pylon refusal, plus the
+		//fist overrides - Rotting conversion, Soiled grass cut, Bright/Dark half-HP) for bombs and
+		//armor abilities, which never come through `attack()`. If one of them changes here, it
+		//changes there too - the two copies exist because this tail also carries attack-only work
+		//(LifeLink, the execute mechanics, Grim) that the shared seam must not run.
 		if (this.deferMonsterDamage(defender, damage)) return true;
-		//LifeLink (Char.damage): damage to a linked subject splits evenly (ceil) between it
-		//and the King - the King's own share runs through his P2 shield below like any hit.
-		//A share lethal to the King ends the swing here (boss-death transition owns the rest).
+		//LifeLink (`Char.damage()`): the hit is divided `ceil(dmg / (links+1))` across
+		//every live link partner, and each partner's share lands on it directly -
+		//so damage to a linked subject splits onto the King AND damage to a linked
+		//King splits onto every live subject (the old code halved add damage only,
+		//leaving the King whole no matter how many servants bled for him). A subject
+		//carries exactly one link (the King), hence /2 on this side; the King's
+		//divisor counts his live subjects. Each share runs through the King's P2
+		//shield below like any hit, and the King's P1 cooldowns accelerate off his
+		//own share the way `damage()`'s `taken/8` does (the add-side swing below
+		//never reaches the generic accel block, which measures the ADD's loss).
+		//A share lethal to the King ends the swing here (boss-death transition owns
+		//the rest).
 		if (defender.kind !== 'king' && !defender.isHero) {
 			const linkKing = this.creatures.find((c) => c.kind === 'king' && c.hp > 0 && this.kingLinkedAdds.has(defender));
 			if (linkKing) {
 				const share = Math.ceil(damage / 2);
+				const kingPreHp = linkKing.hp;
 				if (!this.deferMonsterDamage(linkKing, share)) linkKing.hp -= share;
+				if ((linkKing.kingPhase ?? 1) === 1 && linkKing.hp > 0) {
+					const taken = Math.max(0, kingPreHp - linkKing.hp);
+					linkKing.kingSummonCd = (linkKing.kingSummonCd ?? 0) - taken / 8;
+					linkKing.kingAbilityCd = (linkKing.kingAbilityCd ?? 0) - taken / 8;
+				}
 				if (linkKing.hp <= 0) {
 					this.kill(linkKing);
 					return true;
+				}
+				damage = share;
+			}
+		}
+		if (defender.kind === 'king' && defender.hp > 0) {
+			const live = [...this.kingLinkedAdds].filter((s) => s.hp > 0);
+			if (live.length > 0) {
+				const share = Math.ceil(damage / (live.length + 1));
+				for (const subject of live) {
+					subject.hp -= share;
+					if (subject.hp <= 0) this.kill(subject);
 				}
 				damage = share;
 			}
@@ -13753,17 +14085,11 @@ private eyeBeamTurn(monster: Creature): boolean {
 			defender.dmBarrier = (defender.dmBarrier ?? 0) - blocked;
 			damage -= blocked;
 		}
-		//`SoiledFist.damage()`: grass around the fist blunts incoming blows by `(6-n)/6`, where n is
-		//the number of tall-grass cells in its 3x3 (Java counts FURROWED_GRASS or HIGH_GRASS; this
-		//port's furrows are tall grass). Burning itself does no damage to a soiled fist - see the
-		//DoT tick, which skips it.
-		if (defender.kind === 'yogFist' && defender.yogFistType === 'soiled') {
-			let grassCells = 0;
-			for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as ReadonlyArray<readonly [number, number]>) {
-				if (this.level.inside(defender.x + dx, defender.y + dy) && this.level.get(defender.x + dx, defender.y + dy) === HIGH_GRASS) grassCells++;
-			}
-			if (grassCells > 0) damage = Math.round((damage * (6 - grassCells)) / 6);
-		}
+		//`RottingFist.damage()` converts the blow to Bleeding instead of HP damage, and
+		//`SoiledFist.damage()` blunts it by the grass cut (see both helpers). Burning itself
+		//does no damage to a soiled fist - see the DoT tick, which skips it.
+		damage = this.rottingBleedConvert(defender, damage, attacker === this.hero && this.abilityHarvestNext > 0);
+		damage = this.soiledGrassCut(defender, damage);
 		//The execute mechanics are Java's last step in `attack()`: they run after
 		//`enemy.damage()` has applied everything above - the `damage()` overrides (including
 		//`SoiledFist`'s grass reduction just above), the shield pools, and the HP bookkeeping -
@@ -13849,7 +14175,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//so the proc's bonus execute damage must not apply to one either.
 		if (attacker === this.hero && (this.weaponAffix === 'grim' || this.unstableDelegated === 'grim') && defender.hp > 0 && !defender.magicImmune) {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const maxChance = (0.5 + 0.05 * level) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+			const maxChance = (0.5 + 0.05 * level) * this.enchantProcMultiplier();
 			const missingFraction = (defender.maxHp - defender.hp) / defender.maxHp;
 			if (Random.chance(maxChance * missingFraction * missingFraction)) {
 				const extra = Math.round(defender.hp);
@@ -13872,18 +14198,11 @@ private eyeBeamTurn(monster: Creature): boolean {
 			}
 		}
 		if (defender.kind === 'tengu') this.clampTenguBracket(defender, preHp);
-		//`BrightFist`/`DarkFist.damage()`: the first time either drops past half health it pins
-		//there, warps to a random cell the hero cannot see (reachable from the exit), and costs the
-		//hero something - Bright prolongs Blindness (1.5x; 3x on death), Dark detaches the hero's
-		//Light (an artifact this port has no model for). Java's Blindness is a cosmetic screen
-		//darkening (a FlavourBuff with no mechanical effect), so the port keeps its `daze`
-		//stand-in for both feedback paths.
-		if (defender.kind === 'yogFist' && (defender.yogFistType === 'bright' || defender.yogFistType === 'dark')
-			&& defender.hp > 0 && preHp > defender.maxHp / 2 && defender.hp <= defender.maxHp / 2) {
-			defender.hp = defender.maxHp / 2;
-			this.hero.buffs['daze'] = Math.max(this.hero.buffs['daze'] ?? 0, 15);
-			this.teleportFistAway(defender);
-		}
+		//`BrightFist`/`DarkFist.damage()`'s half-HP edge (see `brightDarkHalfHp`): only Bright
+		//costs the hero `daze` here - Dark's price is detaching the hero's Light, which this
+		//port has no model for. Java's Blindness is a cosmetic screen darkening (a FlavourBuff
+		//with no mechanical effect), so the port keeps its `daze` stand-in for Bright's half.
+		this.brightDarkHalfHp(defender, preHp);
 		if (defender.kind === 'yog' && defender.hp > 0) this.yogDamageHook(defender, preHp);
  		// FrostImbue.proc(): a surviving enemy hit receives Chill for two turns. The compact
  		// status model uses the same short-duration movement/turn lock as the closest Chill hook.
@@ -13931,14 +14250,29 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//Weapon-ability riders staged by `useWeaponAbility`: heavy blow dazes 5 turns
 		//(`ability_desc`: "dazes for 5 turns, reducing accuracy and evasion by 50%" - the
 		//port's shared `daze`), harvest bleeds the stated fraction of the dealt damage, and
-		//spike knocks the target back (the port's straight shove; lunge only steps the hero - its descs mention no knockback). Consumed on the hit.
+		//Spike knocks the target back (the port's straight shove; lunge only steps the hero - its descs mention no knockback). Consumed on the hit.
+		//`Crossbow` melee with an armed charged shot knocks back 4 and disarms on the
+		//hit, kill or not (`Crossbow.proc`, tag `v3.3.8` - no alive check there either).
+		if (attacker === this.hero && this.chargedShotArmed && this.weaponMeleeKey() === 'crossbow') {
+			const dx = Math.sign(defender.x - this.hero.x);
+			const dy = Math.sign(defender.y - this.hero.y);
+			for (let step = 0; step < 4; step++) {
+				const next = { x: defender.x + dx, y: defender.y + dy };
+				if ((dx === 0 && dy === 0) || !this.level.passable(next.x, next.y) || this.creatureAt(next.x, next.y)) break;
+				this.moveTo(defender, next);
+			}
+			this.chargedShotArmed = false;
+		}
 		if (attacker === this.hero && defender.hp > 0) {
 			if (this.abilityDazeNext) addBuff(defender, 'daze', 5);
-			//Harvest inflicts bleed equal to the stated fraction of the dealt damage
-			//(`ability_desc`: 100%/80%); the shared `bleeding` buff carries the amount.
-			if (this.abilityBleedFracNext > 0) {
-				const bleed = Math.round(damage * this.abilityBleedFracNext);
-				if (bleed > (defender.buffs['bleeding'] ?? 0)) defender.buffs['bleeding'] = bleed;
+			//Harvest replaces the strike's damage with its flat amount and applies that
+			//same amount as bleeding (`Char.damage` with `HarvestBleedTracker`, tag
+			//`v3.3.8`): `setBleeding` retains the strongest active bleed, matching
+			//`Bleeding.set`. Consumed on the hit (a missed strike keeps it for the next
+			//landed one - see the resolver).
+			if (this.abilityHarvestNext > 0) {
+				setBleeding(defender, this.abilityHarvestNext);
+				this.abilityHarvestNext = 0;
 			}
 			if (this.abilityKnockbackNext) {
 				//`Glaive`/`Spear` spike knockback: the port's established straight shove
@@ -13950,14 +14284,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 					this.moveTo(defender, next);
 				}
 			}
-			if (this.abilityRunicNext && this.weaponAffix && !getCurse(this.weaponAffix)) {
-				this.heroOnHit(this.hero, defender, 0);
-			}
 		}
 		this.abilityDazeNext = false;
-		this.abilityBleedFracNext = 0;
 		this.abilityKnockbackNext = false;
-		this.abilityRunicNext = false;
 		//Charm.recover() spends five turns when the charmed actor reaches its
 		//recorded object; preserve that shortens-on-contact behavior for both
 		//Affection and Friendly charms.
@@ -13978,7 +14307,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (defender.isHero && this.armorGlyph === 'repulsion' && attacker.hp > 0
 			&& Roguelike.chebyshevDistance(attacker, defender) <= 1) {
 			const level = this.degradedLevel(this.armorLevel);
-			const procChance = ((level + 1) / (level + 5)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+			const procChance = ((level + 1) / (level + 5)) * this.genericProcMultiplier();
 			if (Random.chance(procChance)) {
 				const power = Math.round(2 * Math.max(1, procChance));
 				const dx = Math.sign(attacker.x - defender.x);
@@ -14065,6 +14394,43 @@ private eyeBeamTurn(monster: Creature): boolean {
 	}
 
 	/** hero-side on-hit hooks: enchants, subclass effects, counters */
+	/** `Weapon.genericProcChanceMultiplier`'s `RunicSlashTracker` leg (tag `v3.3.8`):
+	 * the slash stages `3+0.5/level`, which the strike's own enchant computation
+	 * consumes exactly once (Java detaches the tracker inside that same call, so a
+	 * second computation never sees it). Every other strike reads plain arcana.
+	 * Kinetic's conserved-damage store keeps its own direct read on purpose: the
+	 * tracker's lifetime across Java's damage-vs-proc ordering is not observable
+	 * here, so the boost belongs to the enchant roll only. */
+	/** `Weapon.Enchantment.genericProcChanceMultiplier()` (tag `v3.3.8`): Arcana's
+	 * `1.175^bonus`, plus `Berserk.enchantFactor()`'s `min(1, power) x 0.15 x
+	 * ENRAGED_CATALYST ranks` while raging (Java's `power` is the rage clock; the
+	 * missing-HP fraction is this port's standing approximation, already used the
+	 * same way by the Kinetic store below). Non-consuming, unlike
+	 * `enchantProcMultiplier` - Java's defend-side procs, reach, stealth and speed
+	 * reads all go through this without detaching the one-shot ability trackers.
+	 * The remaining tracker terms need unmodeled systems (Smite's +3, the Cleric
+	 * spell that arms it) or are recorded residuals (SpiritBlades +0.1 and
+	 * StrikingWave +0.2 at rank 4 - no tracker state for a tenth of proc chance). */
+	private genericProcMultiplier(): number {
+		let multi = ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+		if (this.hero.buffs['berserk'] !== undefined) {
+			const missing = this.hero.maxHp > 0 ? 1 - this.hero.hp / this.hero.maxHp : 0;
+			multi += Math.min(1, missing) * 0.15 * this.talentRank('enraged_catalyst');
+		}
+		return multi;
+	}
+
+	private enchantProcMultiplier(): number {
+		//Java's one-shot trackers are separate buffs that SUM at the next proc
+		//roll (`RunicSlashTracker.boost + DirectedPowerTracker.enchBoost + ...`),
+		//so the two slots add rather than overwrite - and both zero together,
+		//matching the shared detach inside `genericProcChanceMultiplier`.
+		const bonus = this.abilityRunicBonus + this.abilityDirectedBonus;
+		this.abilityRunicBonus = 0;
+		this.abilityDirectedBonus = 0;
+		return this.genericProcMultiplier() + bonus;
+	}
+
 	private heroOnHit(attacker: Creature, defender: Creature, damage: number): void {
 		//Both halves of an Unstable swing resolve the same delegated enchant (see `attack()`).
 		//MissileWeapon has no enchantment of its own. Sniper's Shared Enchantment is the
@@ -14100,10 +14466,11 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//here) and REPLACING the old amount (`setBonus` overwrites; the old code added half
 		//of every landed hit whether it killed or not, capped at 20 - neither has a Java
 		//basis). Fires pre-revival, like Java's HP<0 check ahead of `isAlive()`.
-		if (this.kineticTrackerHit && defender.hp <= 0 && !defender.isHero && !defender.isNPC) {
+		//`Char.damage()`'s Kinetic gate is `HP < 0` (strict - an exact-zero kill stores
+		//nothing) with `alignment == ENEMY`, so allied kills never bank overkill.
+		if (this.kineticTrackerHit && defender.hp < 0 && !defender.isHero && !defender.isNPC && !defender.isAlly) {
 			const overkill = Math.max(0, -defender.hp - this.kineticConservedAdded);
-			const multi = ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune)
-				+ (this.hero.buffs['berserk'] ? Math.min(1, 1 - this.hero.hp / this.hero.maxHp) * 0.15 * this.talentRank('enraged_catalyst') : 0);
+			const multi = this.genericProcMultiplier();
 			const stored = Math.round(overkill * multi);
 			if (stored > 0) this.kineticStored = stored;
 		}
@@ -14120,7 +14487,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//ignite or damage a MagicImmune defender at all (`Char.damage()`'s generic zero-out).
 		if (affix === 'blazing' && !defender.magicImmune) {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const procChance = ((level + 1) / (level + 3)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+			const procChance = ((level + 1) / (level + 3)) * this.enchantProcMultiplier();
 			if (Random.chance(procChance)) {
 				let powerMulti = Math.max(1, procChance);
 				if (defender.buffs['burning'] === undefined) {
@@ -14142,7 +14509,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//entirely (Java's chill slows the target and escalates into frost) and with no roll.
 		if (affix === 'chilling') {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const procChance = ((level + 1) / (level + 4)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+			const procChance = ((level + 1) / (level + 4)) * this.enchantProcMultiplier();
 			if (Random.chance(procChance)) {
 				const powerMulti = Math.max(1, procChance);
 				const existing = defender.buffs['chill'] ?? 0;
@@ -14157,7 +14524,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//chance))` each. What stood here dealt 2 unconditional points to the defender itself, the
 		//one character Java's arc never touches, and hit nobody else.
 		if (affix === 'shocking') {
-			const procChance = (1 / 3) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+			const procChance = (1 / 3) * this.enchantProcMultiplier();
 			if (Random.chance(procChance)) {
 				this.shockingArc(attacker, defender, damage, Math.max(1, procChance));
 			}
@@ -14169,7 +14536,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//roll, no damage scaling and no target check at all.
 		if (affix === 'vampiric') {
 			const missing = attacker.maxHp > 0 ? (attacker.maxHp - attacker.hp) / attacker.maxHp : 0;
-			const healChance = (0.05 + 0.25 * missing) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+			const healChance = (0.05 + 0.25 * missing) * this.enchantProcMultiplier();
 			const neutralTarget = defender.isNPC || defender.isAlly;
 			if (Random.chance(healChance) && !neutralTarget && attacker.hp < attacker.maxHp) {
 				const healAmount = Math.min(
@@ -14190,7 +14557,14 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//swings and instead fired whenever the hero was hit, which is not what `Weapon.Enchantment
 		//.proc(weapon, attacker, defender, damage)` does - it runs on the wielder's attack.
 		if (affix === 'explosive') {
-			this.weaponCurseDurability -= Math.round(Random.range(0, 10) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune));
+			const fuseBefore = this.weaponCurseDurability;
+			this.weaponCurseDurability -= Math.round(Random.range(0, 10) * this.enchantProcMultiplier());
+			//`Explosive.proc()` warns across the 50 and 10 thresholds (`desc_warm` /
+			//`desc_hot`, SPD's own catalogue strings) before the fuse blows. The
+			//status icons and burst particles have no seam here; the log line
+			//carries the warning instead.
+			if (fuseBefore > 50 && this.weaponCurseDurability <= 50) this.say(t('items.weapon.curses.explosive.desc_warm'), 'warning');
+			else if (fuseBefore > 10 && this.weaponCurseDurability <= 10) this.say(t('items.weapon.curses.explosive.desc_hot'), 'warning');
 			if (this.weaponCurseDurability <= 0) {
 				this.weaponCurseDurability += 100;
 				this.curseExplosiveBlast(attacker, defender);
@@ -14205,7 +14579,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//Two things the old branch got wrong: it dazed the hero unconditionally (the hero always sees
 		//*itself*, so its visibility test was vacuously true), and it dispelled the hero's
 		//invisibility - `Invisibility.dispel()` is `Annoying`'s line, not this one's.
-		if (affix === 'dazzling' && Random.chance((1 / 10) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
+		if (affix === 'dazzling' && Random.chance((1 / 10) * this.enchantProcMultiplier())) {
 			if (this.fov.isVisible(defender.x, defender.y)) this.hero.buffs['daze'] = Math.max(this.hero.buffs['daze'] ?? 0, 10);
 			for (const creature of this.creatures) {
 				if (creature.isHero || creature.hp <= 0 || !this.fov.isVisible(creature.x, creature.y)) continue;
@@ -14216,7 +14590,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//toward the attacker and then dispelling invisibility. `seesHero` is this port's
 		//target-acquisition state, the standing stand-in for `beckon`; the crate/scream/sound
 		//presentation and the 13 flavour lines remain UI gaps.
-		if (affix === 'annoying' && Random.chance((1 / 20) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
+		if (affix === 'annoying' && Random.chance((1 / 20) * this.enchantProcMultiplier())) {
 			for (const creature of this.creatures) {
 				if (!creature.isHero && !creature.isNPC && creature.hp > 0) {
 					creature.seesHero = true;
@@ -14231,7 +14605,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//`syncHeroFromStats`), not the affix on its own.
 		if (affix === 'wayward') {
 			if (attacker.buffs['wayward'] !== undefined) delete attacker.buffs['wayward'];
-			else if (Random.chance((1 / 4) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) addBuff(attacker, 'wayward');
+			else if (Random.chance((1 / 4) * this.enchantProcMultiplier())) addBuff(attacker, 'wayward');
 		}
 		//Elastic.proc(): on a successful proc, knock the defender along the part of
 		//the attack trajectory beyond its cell by `round(2 * max(1, chance))` cells.
@@ -14239,7 +14613,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//straight grid shove reproduces the meaningful result without a new actor type.
 		if (affix === 'elastic' && defender.hp > 0 && attacker === this.hero) {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const procChance = ((level + 1) / (level + 5)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+			const procChance = ((level + 1) / (level + 5)) * this.enchantProcMultiplier();
 			if (Random.chance(procChance)) {
 				const dx = Math.sign(defender.x - attacker.x);
 				const dy = Math.sign(defender.y - attacker.y);
@@ -14261,7 +14635,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//a neighbouring cell when the corpse cell already has ordinary loot.
 		if (affix === 'lucky' && defender.hp <= 0) {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const chance = ((level + 4) / (level + 40)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+			const chance = ((level + 4) / (level + 40)) * this.enchantProcMultiplier();
 			if (Random.chance(chance)) {
 				//A five-entry weighted stand-in keeps the one rarity draw (80/20) explicit.
 				const kind = Random.element(['potion', 'scroll', 'stone', 'potion', 'armor'] as const)!;
@@ -14290,7 +14664,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//found using raw `this.weaponLevel` instead in the 2026-09-09 item-system audit
 			//(so a Degrade-hit weapon procced/shielded as if undegraded).
 			const level = this.degradedLevel(this.weaponLevel);
-			const procChance = ((level + 4) / (level + 40)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+			const procChance = ((level + 4) / (level + 40)) * this.enchantProcMultiplier();
 			if (Random.chance(procChance)) {
 				const powerMulti = Math.max(1, procChance);
 				this.grantBlockingShield(Math.round(powerMulti * (2 + level)));
@@ -14307,7 +14681,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (affix === 'blooming') {
 			//Blooming.proc() also reads `weapon.buffedLvl()`, same Degrade fix as Blocking above.
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const procChance = ((level + 1) / (level + 3)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+			const procChance = ((level + 1) / (level + 3)) * this.enchantProcMultiplier();
 			if (Random.chance(procChance)) {
 				let plants = (1 + 0.1 * level) * Math.max(1, procChance);
 				plants = Random.float() < (plants % 1) ? Math.ceil(plants) : Math.floor(plants);
@@ -14448,7 +14822,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 	private heroStealth(): number {
 		if (this.armorGlyph !== 'obfuscation') return 0;
 		const level = Math.max(0, this.degradedLevel(this.armorLevel));
-		return (1 + level / 3) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+		return (1 + level / 3) * this.genericProcMultiplier();
 	}
 
 	/** `Earthroot.Armor.blocking()`: `(Dungeon.scalingDepth() + 5)/2`, integer division. This
@@ -14474,14 +14848,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 		};
 		//`Invulnerability` (the blessed ankh's revive shield): Java negates the damage outright.
 		if (amount > 0 && this.hero.buffs['invulnerability']) return 0;
-		//`Greatshield`/`Roundshield` guard: completely negates the next attack made against
-		//the hero within the window (physical or magical - one damage instance, then spent).
-		//Simplified to the next damage instance rather than the next attack roll (stated).
-		if (amount > 0 && this.guardTurns > 0) {
-			this.guardTurns = 0;
-			this.say(t('port.log.guardblocks'), 'positive');
-			return 0;
-		}
+		//(Guard used to negate one damage instance here; Java's guard is infinite
+		//evasion for the whole window instead, which `syncHeroFromStats` now models -
+		//this block is gone with it. The `guardblocks` line goes unused with it.)
 		//`EndureTracker.adjustDamageTaken()` runs at Java's own place in the chain for the sources it
 		//can reach here: `Char.damage()` applies it to the attacker's rolled damage *before* the
 		//armor subtraction, and `Hero.damage()` applies it after armor for non-char sources. This
@@ -14516,7 +14885,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//callers; physical melee and unclassified environmental damage stay untouched.
 		if (magical && this.armorGlyph === 'antimagic') {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const multiplier = ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+			const multiplier = this.genericProcMultiplier();
 			const reduction = Random.normalRange(Math.round(level * multiplier), Math.round((3 + level * 1.5) * multiplier));
 			scaled = Math.max(0, scaled - reduction);
 		}
@@ -14529,7 +14898,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//boundary covers melee, missiles, wands, traps, and environmental damage.
 		if (!this.applyingDeferredDamage && this.armorGlyph === 'viscosity' && viscosityDamage > 0) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const percent = ((level + 1) / (level + 6)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+			const percent = ((level + 1) / (level + 6)) * this.genericProcMultiplier();
 			const deferred = percent > 1 ? Math.round(viscosityDamage / percent) : Math.ceil(viscosityDamage * percent);
 			if (deferred > 0) {
 				this.hero.deferredDamage = (this.hero.deferredDamage ?? 0) + deferred;
@@ -14612,21 +14981,13 @@ private eyeBeamTurn(monster: Creature): boolean {
 	/** monster-side on-hit hooks (all pre-existing, now grouped) */
 	private mobOnHit(attacker: Creature, defender: Creature, damage: number): void {
 		if (defender.isHero) this.grantHeroShield(lethalDefenseShield(this.subclass(), this.talentRank('lethal_defense')), this.hero.maxHp);
-		//The fist subclasses also carry these effects on melee contact (`onAttackProc` in
-		//their respective Java classes). Shared buffs/blobs are exact where this port has
-		//the primitive; Bright/Dark Blindness/Light are not, while Rusted's own deferred damage
-		//is handled at the damage boundary (`deferMonsterDamage`).
-		if (attacker.kind === 'yogFist' && defender.isHero) {
- 			switch (attacker.yogFistType) {
- 				case 'burning': addBuff(defender, 'burning'); break;
- 				case 'rotting': if (Random.chance(0.5)) addBuff(defender, 'ooze'); break;
- 				//`RustedFist.zap()`: `affect(enemy, Cripple.class, 4f)` - an explicit 4,
- 				//not the table's whole 10, set (not prolonged) exactly like Java's `affect`.
- 				case 'rusted': addBuff(defender, 'cripple', 4); break;
-				case 'soiled': addBuff(defender, 'roots'); break;
-				case 'bright': addBuff(defender, 'daze'); break;
-				case 'dark': addBuff(defender, 'daze'); break;
-			}
+		//`RottingFist.attackProc` is the only fist subclass with a melee-contact effect:
+		//half of all landed melee hits ooze the victim (`Ooze.DURATION` is the table's own
+		//20). The burning/soiled/rusted/bright/dark contact riders this hook used to carry
+		//were invented - Java's other five subclasses have no `attackProc` at all (their
+		//zap riders fire at range, never on contact), so they are gone, not rebuilt.
+		if (attacker.kind === 'yogFist' && attacker.yogFistType === 'rotting' && Random.int(2) === 0) {
+			addBuff(defender, 'ooze');
 		}
 		//Elemental meleeProc() (Elemental.java, tag v3.3.8): preserve the concrete
 		//subtype's contact effect too. Shock's chained 40%-damage arcs are represented by
@@ -14646,36 +15007,47 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//The existing charm target map supplies Java's object payload; direct map
 		//assignment preserves the level-scaled duration that addBuff alone cannot set.
 		if (defender.isHero && this.armorGlyph === 'affection' && attacker.hp > 0
-			&& Random.chance(((Math.max(0, this.degradedLevel(this.armorLevel)) + 3) / (Math.max(0, this.degradedLevel(this.armorLevel)) + 20)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
+			&& Random.chance(((Math.max(0, this.degradedLevel(this.armorLevel)) + 3) / (Math.max(0, this.degradedLevel(this.armorLevel)) + 20)) * this.genericProcMultiplier())) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const chance = ((level + 3) / (level + 20)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+			const chance = ((level + 3) / (level + 20)) * this.genericProcMultiplier();
 			addBuff(attacker, 'charm');
 			attacker.buffs.charm = Math.max(attacker.buffs.charm ?? 0, Math.round(10 * Math.max(1, chance)));
 			this.charmTargets.set(attacker.id, defender.id);
 		}
-		//Metabolism.proc(): 1-in-6 x arcana, consume 10 hunger and heal one HP,
-		//provided the hero is not starving and has room to heal.
-		if (defender.isHero && this.armorGlyph === 'metabolism' && this.hunger < 450 && this.hero.hp < this.hero.maxHp && Random.chance((1 / 6) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
-			this.hunger = Math.max(0, this.hunger - 10);
-			this.hero.hp++;
-			this.showHeal(this.hero, 1);
+		//`Metabolism.proc()` (`items/armor/curses/Metabolism.java`, tag `v3.3.8`):
+		//1-in-6 x arcana, healing `min(STARVING/100, missing HP)` for 10 hunger
+		//each - never while starving, and nothing when already full. What stood
+		//here healed a flat 1 HP for a flat 10 hunger, so a badly-hurt hero got a
+		//fifth of Java's healing for the same price.
+		if (defender.isHero && this.armorGlyph === 'metabolism' && this.hunger < STARVING && this.hero.hp < this.hero.maxHp && Random.chance((1 / 6) * this.genericProcMultiplier())) {
+			const healing = Math.min(Math.floor(STARVING / 100), this.hero.maxHp - this.hero.hp);
+			if (healing > 0) {
+				this.hunger = Math.max(0, this.hunger - healing * 10);
+				this.hero.hp += healing;
+				this.showHeal(this.hero, healing);
+			}
 		}
-		//AntiEntropy.proc(): a 1-in-8 x arcana proc ignites the wearer and freezes the
-		//eight neighboring cells. Daze is the port's timed freeze equivalent.
-		if (defender.isHero && this.armorGlyph === 'antientropy' && Random.chance((1 / 8) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
-			addBuff(this.hero, 'burning');
+		//`AntiEntropy.proc()` (`items/armor/curses/AntiEntropy.java`, tag `v3.3.8`):
+		//a 1-in-8 x arcana proc freezes the eight neighboring cells and reignites
+		//the wearer for 4 - but NOT while standing in water. Daze is the port's
+		//timed freeze equivalent (stated). What stood here burned for the full
+		//table-8 duration with no water gate at all.
+		if (defender.isHero && this.armorGlyph === 'antientropy' && Random.chance((1 / 8) * this.genericProcMultiplier())) {
+			if (this.level.get(this.hero.x, this.hero.y) !== WATER) reigniteBuff(this.hero, 'burning', 4);
 			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 				const nearby = this.creatureAt(this.hero.x + dx, this.hero.y + dy);
 				if (nearby && nearby !== this.hero) addBuff(nearby, 'daze');
 			}
 		}
-		//Corrosion.proc(): a 1-in-10 x arcana proc spreads corrosive ooze across the
-		//eight neighboring cells - a real `ooze` buff now (it used to reuse `poison`).
-		//Duration refreshes rather than stacking via `extend()`; intensity is flat.
-		if (defender.isHero && this.armorGlyph === 'corrosion' && Random.chance((1 / 10) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
+		//`Corrosion.proc()` (`items/armor/curses/Corrosion.java`, tag `v3.3.8`): a
+		//1-in-10 x arcana proc oozes NEIGHBOURS9 - the wearer's own cell included -
+		//at `Ooze.DURATION/2` (10). What stood here skipped the wearer and applied
+		//the table's whole-20 duration.
+		if (defender.isHero && this.armorGlyph === 'corrosion' && Random.chance((1 / 10) * this.genericProcMultiplier())) {
+			addBuff(this.hero, 'ooze', 10);
 			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 				const nearby = this.creatureAt(this.hero.x + dx, this.hero.y + dy);
-				if (nearby) addBuff(nearby, 'ooze');
+				if (nearby && nearby !== this.hero) addBuff(nearby, 'ooze', 10);
 			}
 		}
 		//Multiplicity.proc(): a 1-in-20 proc duplicates the attacker into an available
@@ -14691,7 +15063,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//un-duplicated here), and mirror-image duplication, which has no separate actor type -
 		//which is why Java's hero half is skipped.
 		if (defender.isHero && this.armorGlyph === 'multiplicity' && !attacker.isHero && !attacker.isNPC
-			&& !attacker.boss && !attacker.miniboss && Random.chance((1 / 20) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
+			&& !attacker.boss && !attacker.miniboss && Random.chance((1 / 20) * this.genericProcMultiplier())) {
 			const adjacent = Roguelike.neighbourOffsets(8)
 				.map(([dx, dy]) => ({ x: this.hero.x + dx, y: this.hero.y + dy }))
 				.filter((at) => this.level.passable(at.x, at.y) && !this.isChasmCell(at.x, at.y) && !this.creatureAt(at.x, at.y));
@@ -14705,7 +15077,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//Overgrowth.proc(): a 1-in-20 x arcana proc couches and immediately activates a
 		//random supported seed at the defender's cell. The generator's full seed
 		//weight table is not available, so selection is uniform across supported seeds.
-		if (defender.isHero && this.armorGlyph === 'overgrowth' && Random.chance((1 / 20) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
+		if (defender.isHero && this.armorGlyph === 'overgrowth' && Random.chance((1 / 20) * this.genericProcMultiplier())) {
 			const seed = Random.element(['blindweed', 'earthroot', 'fadeleaf', 'firebloom', 'icecap', 'mageroyal',
 				'rotberry', 'sorrowmoss', 'starflower', 'stormvine', 'sungrass', 'swiftthistle'] as const);
 			if (seed) {
@@ -14718,7 +15090,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//Stench.proc() (Armor.java, tag v3.3.8): 1/8 x arcana chance when hit seeds 250-volume
 		//StenchGas at the wearer's own feet. It is deliberately not ToxicGas: StenchGas prolongs
 		//Paralysis for Paralysis.DURATION/5, and the separate blob now preserves that distinction.
-		if (defender.isHero && this.armorGlyph === 'stench' && Random.chance((1 / 8) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
+		if (defender.isHero && this.armorGlyph === 'stench' && Random.chance((1 / 8) * this.genericProcMultiplier())) {
 			this.stenchGas.seed(this.hero.x, this.hero.y, 250);
 			this.say(t('port.log.stenchcurse'), 'negative');
 		}
@@ -14842,7 +15214,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//scaled with nothing; Java's glyph is a damage-over-time with a real chance.
 		if (defender.isHero && this.armorGlyph === 'thorns' && !attacker.isHero && attacker.hp > 0) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const procChance = ((level + 2) / (level + 12)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+			const procChance = ((level + 2) / (level + 12)) * this.genericProcMultiplier();
 			if (Random.chance(procChance)) {
 				setBleeding(attacker, Math.round((4 + level) * Math.max(1, procChance)));
 				this.say(t('port.log.thorns'), 'positive');
@@ -14855,7 +15227,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//protects its wearer rather than disabling the enemy, and it protects by blocking damage.
 		if (defender.isHero && this.armorGlyph === 'entanglement' && !attacker.isHero) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const procChance = 0.25 * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+			const procChance = 0.25 * this.genericProcMultiplier();
 			if (Random.chance(procChance)) {
 				const pool = Math.round((5 + 2 * level) * Math.max(1, procChance));
 				this.earthrootArmor = {
@@ -14871,7 +15243,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//progress and retains it through save/load, so it is the correct generic seam here.
 		if (defender.isHero && this.armorGlyph === 'potential') {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const procChance = ((level + 1) / (level + 6)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+			const procChance = ((level + 1) / (level + 6)) * this.genericProcMultiplier();
 			if (Random.float() < procChance) {
 				this.wandCharges.advance(Math.max(1, procChance));
 				this.say(t('port.log.potential'), 'positive');
@@ -14987,10 +15359,11 @@ private eyeBeamTurn(monster: Creature): boolean {
 	if (creature.isHero && this.reviveWithBlessedAnkh()) return;
 	if (creature.isHero && this.openResurrectWindow()) return;
 		runState.audio.cue('death', 0.65);
-		//`BrightFist`/`DarkFist.damage()`'s death case: Bright prolongs the hero's Blindness for
-		//three times the base duration and Dark detaches the hero's Light (no model here) - both
-		//use the port's `daze` stand-in.
-		if (creature.kind === 'yogFist' && (creature.yogFistType === 'bright' || creature.yogFistType === 'dark')) {
+		//`BrightFist.damage()`'s death case: the hero's Blindness is prolonged for three times
+		//the base duration (30 turns of the table's `daze`). `DarkFist.damage()`'s death case
+		//only detaches the hero's Light - no model here, so a dying dark fist costs nothing.
+		//The old code dazed for both, which was Dark's half invented.
+		if (creature.kind === 'yogFist' && creature.yogFistType === 'bright') {
 			this.hero.buffs['daze'] = Math.max(this.hero.buffs['daze'] ?? 0, 30);
 		}
 		this.scheduler.remove(creature);
@@ -15114,21 +15487,24 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//actively punishing the talent - removal plus this note, not a quieter stub.
 			const def = MONSTERS[creature.kind];
 			const isClone = creature.kind === 'swarm' && (creature.generation ?? 0) > 0;
-			if (!isClone && this.progression.level <= def.maxLvl) this.grantExperience(def.exp);
+			//`noExp` is a `maxLvl = -2` summon (the King's servants): neither XP nor
+			//loot, in every phase - Java's `hero.lvl <= maxLvl` and `lvl > maxLvl+2`
+			//gates both fail unconditionally at -2.
+			if (!isClone && creature.noExp !== true && this.progression.level <= def.maxLvl) this.grantExperience(def.exp);
 			if (this.subclass() === 'warlock' && this.talentRank('soul_eater') > 0) {
 				const heal = this.talentRank('soul_eater');
 				this.hero.hp = Math.min(this.hero.maxHp, this.hero.hp + heal);
 				this.showHeal(this.hero, heal);
 			}
 			this.wandCharges.refund(soulSiphonCharge(this.subclass(), this.talentRank('soul_siphon')));
-			//Invented substitute for real Java's `VARIED_CHARGE` (`MeleeWeapon.java`, tag
-			//`v3.3.8`): `charger.gainCharge(points/6f)` on weapon-*ability* use (partial wand-
-			//charge gain) - this port has no ability-use action separate from a kill (see
-			//`aggressive_barrier`'s own note on this same gap), so this substitutes extra
-			//missile ammo on kill instead. Undocumented until the 2026-09-09 hero-progression
-			//audit; not rebuilt to the real mechanic here since it needs a wand-charger this
-			//subclass talent could actually feed.
-			if (this.subclass() === 'champion' && this.talentRank('secondary_charge') > 0) this.ammo += this.talentRank('secondary_charge');
+			//(`SECONDARY_CHARGE` - the Champion T3 in this port's newer-tree talent table,
+			//replacing v3.3.8's `VARIED_CHARGE` at the same slot - has no effect here: its
+			//real mechanic scales the *second weapon's* charge meter (`secondChargeCap()`,
+			//50%-67% of primary by rank), and this port has no second weapon, no second
+			//meter, and no dual-wield at all (the same blocker `twin_upgrades` already
+			//records). An earlier pass granted rank-many missile ammo on every kill under
+			//this talent's name; that effect is fiction - nothing in any Java version does
+			//it - so it is gone, not rebuilt. Stated, not silent.)
 		}
 
 		//Mob.rollToDropLoot, simplified to one-item ground drops (no stacking heaps, no Wealth
@@ -15213,7 +15589,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//statue equipment, mimic payloads, stolen returns, embers) and the port-invented
 			//guard key are outside it. MOB_LOOT maxLvl rides the same MWL rows as EXP.
 			const kind = creature.kind;
-			const overleveled = kind !== undefined && (MONSTERS[kind]?.maxLvl ?? 29) < this.progression.level - 2;
+			const overleveled = creature.noExp === true
+				|| (kind !== undefined && (MONSTERS[kind]?.maxLvl ?? 29) < this.progression.level - 2);
 			if (!overleveled && creature.kind === 'elemental') {
 				const elementalType = creature.elementalType ?? 'fire';
 				const elementalLoot = elementalType === 'fire'
@@ -15380,6 +15757,19 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.kill(creature.skeleton);
 		}
 		this.kingLinkedAdds.delete(creature);
+		//`KingDamager.onDetach()`: every P2-wave add carries the King's own HT/12
+		//(HT/18 on the challenge), dealt to him when the add dies - through the
+		//P2 shield like any hit, which is also what ends P2 (see `kingDamageHook`).
+		//The per-add `kingDamager` flag is the buff: P1/P3 servants never carry it,
+		//so the P1->P2 cull below chips nothing. Conversion off the ENEMY alignment
+		//detaches it in Java too - unmodeled here (stated).
+		if (creature.kingDamager === true) {
+			const king = this.creatures.find((c) => c.kind === 'king' && c.hp > 0 && (c.kingPhase ?? 1) === 2);
+			if (king && (king.kingShield ?? 0) > 0) {
+				king.kingShield = Math.max(0, (king.kingShield ?? 0) - Math.floor(king.maxHp / (isChallengeEnabled('stronger_bosses') ? 18 : 12)));
+				this.kingDamageHook(king);
+			}
+		}
 		//RotHeart.die(): every RotLasher on the level dies with it (the same shape as the
 		//necromancer rule above - Java iterates `Dungeon.level.mobs` the same way).
 		if (creature.kind === 'rotHeart') {
@@ -15456,6 +15846,13 @@ private eyeBeamTurn(monster: Creature): boolean {
 				this.awardBadge('boss_king');
 				if (this.qualifiedForBossChallenge) this.awardBadge('boss_challenge_king');
 				for (const add of [...this.kingAdds]) if (add.hp > 0) this.kill(add);
+				//`DwarfKing.die()`: the real `defeated` yell, the Warlock Degrade
+				//cleanse ("mainly for convenience"), and the LloydsBeacon upgrade.
+				//The throne-heap spill has no heap seam to land in (stated).
+				this.say(t('actors.mobs.dwarfking.defeated'), 'warning');
+				delete this.hero.buffs['degrade'];
+				const beacon = this.beaconArtifactItem();
+				if (beacon) beacon.level = (beacon.level ?? 0) + 1;
 				//DwarfKing.java drops a non-upgradable King's Crown as a heap. Granted to the
 				//bag instead: the crown has no ground-pickup path here (unlike the Amulet,
 				//which does), so a dropped crown would sit unpickable on the arena floor.
@@ -15545,42 +15942,86 @@ private eyeBeamTurn(monster: Creature): boolean {
 			for (const plan of plans) this.materialiseWealthDrop(plan, { x: creature.x, y: creature.y });
 		}
 
-	/** The six Yog fist zaps. Real Java uses subclass-specific blobs/debuffs and magic
-	 * damage; this port keeps the existing clear-line zap delivery and maps the effects to
-	 * its shared status/blob primitives. Soiled grass furrows, Rusted's deferred Viscosity
-	 * damage, Bright's Blindness and Dark's Light reduction have no equivalent terrain,
-	 * deferred-damage, vision or light subsystem here and remain documented omissions. */
+	/** The six Yog fist zaps (`YogFist.doAttack`'s ranged branch + each subclass's `zap()`).
+	 * Delivery keeps the port's existing clear-line hook (nearest visible hero/ally within
+	 * 6 - Java's own gate is a sight-limited `MAGIC_BOLT` line with no fixed range, so the
+	 * longer half of that line is a stated residual). The effects map to the shared
+	 * status/blob primitives: Dark's Light weakening has no light subsystem here and stays
+	 * a documented omission, and the zap visuals (`MagicMissile`, steam bursts, leaf
+	 * particles, screen flashes) are presentation only.
+	 *
+	 * `YogFist.canAttack`: while `rangedCooldown` is above 0 only melee is allowed, so a
+	 * cooling elemental fist returns false here and the dispatch steps it closer instead.
+	 * Bright/dark never accumulate cooldown (their `incrementRangedCooldown` is a no-op)
+	 * and zap every ranged turn. The cooldown is added up front by `doAttack`, before the
+	 * subclass zap runs - hence below, on every elemental zap once a target exists,
+	 * hit or miss. */
 	private yogFistRangedTurn(fist: Creature): boolean {
+		const type = fist.yogFistType ?? 'burning';
+		if (type !== 'bright' && type !== 'dark' && (fist.fistZapCd ?? 0) > 0) return false;
 		const target = this.rangedTarget(fist, 6);
 		if (!target) return false;
-		if (!rollHit(fist, target, true)) {
-			this.say(t('port.log.boltmisses', { who: capitalize(fist.name) }), 'negative');
+		//`doAttack` adds the cooldown before the subclass zap runs, so a missed soiled
+		//zap still cools the fist down. `Random.NormalFloat(8, 12)` is two independent
+		//float draws summed, halved, and spread over the range - mwg's live `Random` has
+		//no `normalFloat`, so the same shape is written out (the seeded `SpdRandom`
+		//stream belongs to levelgen, not live combat).
+		if (type !== 'bright' && type !== 'dark') {
+			fist.fistZapCd = (fist.fistZapCd ?? 0) + 8 + ((Random.float() + Random.float()) / 2) * 4;
+		}
+		if (type !== 'bright' && type !== 'dark' && type !== 'soiled') {
+			//Only SoiledFist and BrightFist/DarkFist roll `hit()` on their zaps - and soiled
+			//only for the roots. Every other zap lands unconditionally (magic, never rolled).
+		} else if (!rollHit(fist, target, true)) {
+			if (type !== 'soiled') this.say(t('port.log.boltmisses', { who: capitalize(fist.name) }), 'negative');
+			else this.spreadFistGrass(target, () => Random.int(5) === 0);
 			return true;
 		}
-		const type = fist.yogFistType ?? 'burning';
-		const damage: [number, number] = type === 'rusted' ? [22, 44] : type === 'bright' || type === 'dark' ? [10, 20] : [18, 36];
-		let dealt = Random.normalRange(damage[0], damage[1]);
-		if (target.isHero) dealt = this.absorbHeroDamage(dealt, true);
-		target.hp -= dealt;
-		this.showDamage(target, dealt);
 		this.spawnProjectile(fist, target);
 		switch (type) {
-			case 'burning':
-				this.fire.seed(target.x, target.y, 4);
-				addBuff(target, 'burning');
+			case 'burning': {
+				//`BurningFist.zap()`: a target on water evaporates the cell instead of
+				//igniting (steam visuals unmodeled), otherwise Burning is reignited -
+				//never a fresh overwrite - and fire tops up to 4 across the 3x3. The zap
+				//itself deals no direct damage in Java; the old flat `[18, 36]` bolt plus
+				//single-cell `seed 4` here were both invented.
+				if (this.level.get(target.x, target.y) === WATER) {
+					this.level.set(target.x, target.y, FLOOR);
+				} else {
+					reigniteBuff(target, 'burning');
+				}
+				this.topUpFistFire(target);
 				break;
+			}
 			case 'soiled':
+				//`SoiledFist.zap()`: roots only on a landed `hit()` (3 turns, the table's
+				//own duration), while the grass grows across the 3x3 regardless (1-in-5
+				//tall) - including on a miss, which is why the miss branch above spreads
+				//grass instead of logging. `Invisibility.dispel(this)` needs no model:
+				//this port's monsters never turn invisible.
 				addBuff(target, 'roots');
-				//`SoiledFist.zap()`: roots the target, then grows grass (1-in-5 tall) across its 3x3.
 				this.spreadFistGrass(target, () => Random.int(5) === 0);
 				break;
 			case 'rotting': this.toxicGas.seed(target.x, target.y, 100); break;
  			case 'rusted': addBuff(target, 'cripple', 4); break;
-			case 'bright': addBuff(target, 'daze'); break;
-			case 'dark': addBuff(target, 'daze'); break;
+			case 'bright': case 'dark': {
+				//`BrightFist.zap()` (`LightBeam`) / `DarkFist.zap()` (`DarkBolt`): a rolled
+				//`NormalIntRange(10, 20)` magic hit - the only fist zaps that deal direct
+				//damage - plus Bright's half-duration Blindness (the table's 5-turn `daze`)
+				//or Dark's `Light.weaken(50)` (no light model here). A lethal zap on the
+				//hero validates the enemy-magic death badge in Java; this port's death
+				//causes have no magic bucket (electric kills already land in `foe`), so
+				//both land there too - stated, not silent.
+				let dealt = Random.normalRange(10, 20);
+				if (target.isHero) dealt = this.absorbHeroDamage(dealt, true);
+				target.hp -= dealt;
+				this.showDamage(target, dealt);
+				if (type === 'bright') addBuff(target, 'daze');
+				this.say(t('port.log.bolthits', { who: capitalize(fist.name), damage: dealt }), 'negative');
+				if (target.hp <= 0) this.kill(target);
+				return true;
+			}
 		}
-		this.say(t('port.log.bolthits', { who: capitalize(fist.name), damage: dealt }), 'negative');
-		if (target.hp <= 0) this.kill(target);
 		return true;
 	}
 
@@ -16790,14 +17231,14 @@ private eyeBeamTurn(monster: Creature): boolean {
 	private getActionTurnCostMod(): number {
 		let mod = 1;
 		// Armor.speedFactor()/Swiftness.java (tag v3.3.8): when no hostile actor is
-		// within PathFinder distance 2, speed is multiplied by
+		// within PathFinder distance 3, speed is multiplied by
 		// `(1.2 + 0.04 * buffedLvl) * procChanceMultiplier()`. Turn cost is the
 		// inverse of speed, so apply that multiplier as a divisor here.
 		if (this.armorGlyph === 'swiftness') {
 			const hasNearbyEnemy = this.hasSwiftnessEnemyNearby();
 			if (!hasNearbyEnemy) {
 				const level = Math.max(0, this.degradedLevel(this.armorLevel));
-				mod /= (1.2 + 0.04 * level) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+				mod /= (1.2 + 0.04 * level) * this.genericProcMultiplier();
 			}
 		}
 		// Armor.speedFactor()/Flow.java (tag v3.3.8): Flow multiplies speed by
@@ -16806,11 +17247,15 @@ private eyeBeamTurn(monster: Creature): boolean {
 		// dividing the shared action cost.
 		if (this.armorGlyph === 'flow' && this.level.get(this.hero.x, this.hero.y) === WATER) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			mod /= (2 + 0.5 * level) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+			mod /= (2 + 0.5 * level) * this.genericProcMultiplier();
 		}
-		//Bulk has no proc: Java's Armor.speedFactor makes movement/actions three times
-		//faster while the hero occupies an open or closed doorway.
-		if (this.armorGlyph === 'bulk' && this.doors.isDoor(this.hero.x, this.hero.y)) mod /= 3;
+		//`Bulk.speedBoost()` (`items/armor/curses/Bulk.java`, tag `v3.3.8`): the curse
+		//has no proc - it fires in `Char.speed()` - and it is a REDUCTION: speed
+		//x`(1/3 x Arcana)` in an open or closed doorway ("more of a reduction
+		//really"), so arcana mitigates it upward and it never helps. What stood
+		//here divided the turn cost by a flat 3 - three times FASTER in doorways,
+		//the exact inverse of the curse, with no arcana term at all.
+		if (this.armorGlyph === 'bulk' && this.doors.isDoor(this.hero.x, this.hero.y)) mod /= (1 / 3) * this.genericProcMultiplier();
 		//Char.speed()'s real `if (buff(Haste.class)) speed *= 3f` (PotionOfHaste).
 		if (this.hero.buffs['haste']) mod /= 3;
 		//`Hero.speed()`'s Nature's-Power line: `speed *= 2 + 0.25*GROWING_POWER` while the tracker is
@@ -16824,12 +17269,15 @@ private eyeBeamTurn(monster: Creature): boolean {
 		return mod;
 	}
 
-	/** Java's `PathFinder.buildDistanceMap(hero.pos, passable, 2)` used by
-	 * `Armor.speedFactor()`: eight-way terrain distance, not a raw coordinate radius. */
+	/** Java's `PathFinder.buildDistanceMap(hero.pos, passable, 3)` used by
+	 * `Swiftness.speedBoost()` (`items/armor/glyphs/Swiftness.java`, tag `v3.3.8`):
+	 * eight-way terrain distance, not a raw coordinate radius - an ENEMY-aligned
+	 * creature within 3 path steps suppresses the boost. The old flood stopped at
+	 * 2, so an enemy exactly 3 steps out wrongly left the hero hasted. */
 	private hasSwiftnessEnemyNearby(): boolean {
 		const reachable = new Set<string>([`${this.hero.x},${this.hero.y}`]);
 		let frontier: Step[] = [{ x: this.hero.x, y: this.hero.y }];
-		for (let distance = 0; distance < 2; distance++) {
+		for (let distance = 0; distance < 3; distance++) {
 			const next: Step[] = [];
 			for (const cell of frontier) {
 				for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
@@ -17319,6 +17767,54 @@ private eyeBeamTurn(monster: Creature): boolean {
 		useItemBomb(this.bombContext(target), bombId, instanceId);
 	}
 
+	/** `Honeypot.execute()`'s SHATTER and THROW in one port action: aiming at the hero's own
+	 * cell shatters at the feet (`AC_SHATTER`), any other confirmed cell is the throw landing
+	 * (`onThrow`). The aim gate is the bomb's (passable, non-chasm) - Java would also let a pot
+	 * fly over a pit and land intact there, which this aim path refuses outright instead.
+	 * Throw range follows the thrown-weapon convention (6); Java flies the full PROJECTILE line. */
+	private useHoneypot(instanceId?: string): void {
+		if (!this.bag.find('honeypot', instanceId)) return;
+		if (!this.honeypotTarget) {
+			this.beginAiming({
+				range: 6,
+				validate: (cell) => this.level.passable(cell.x, cell.y) && !this.isChasmCell(cell.x, cell.y),
+				onConfirm: (cell) => {
+					this.honeypotTarget = cell;
+					this.useHoneypot(instanceId);
+				},
+			});
+			return;
+		}
+		const target = this.honeypotTarget;
+		this.honeypotTarget = null;
+		this.shatterHoneypotAt(target, instanceId);
+	}
+
+	/** `Honeypot.shatter(owner, pos)`: detach one pot, break it at the cell (or a free
+	 * cardinal neighbour when occupied - the ShatteredPot item Java drops is unmodeled, so
+	 * nothing lands), and release the bee with `setPotInfo`. No free cell means no bee and
+	 * the pot stays, exactly like Java returning the pot itself. Silent either way - Java
+	 * logs nothing on the shatter. Spends the hero's turn like both Java actions. */
+	private shatterHoneypotAt(at: Step, instanceId?: string): void {
+		//`shatter`'s owner is whoever stands on the landing cell (the bee's first suspect);
+		//an empty cell breaks ownerless (`setPotInfo(pos, null)` - no holder, a ground pot).
+		const occupant = this.creatureAt(at.x, at.y);
+		const cands = occupant ? Roguelike.neighbourOffsets(4).map(([dx, dy]) => ({ x: at.x + dx, y: at.y + dy })) : [at];
+		const free = cands.find((cell) => this.level.inside(cell.x, cell.y)
+			&& (this.level.passable(cell.x, cell.y) || this.isChasmCell(cell.x, cell.y))
+			&& !this.creatureAt(cell.x, cell.y));
+		if (!free) return;
+		this.bag.remove('honeypot', 1, instanceId);
+		const bee = this.spawnMonster('bee', free);
+		bee.sleeping = false;
+		bee.seesHero = false;
+		bee.lastSeen = undefined;
+		bee.potPos = { ...free };
+		if (occupant && !occupant.isNPC) bee.potHolderId = occupant.id;
+		this.actionSpentTurn = true;
+		this.spendHeroTurn(1);
+	}
+
 	private removeGroundItem(g: GroundItem): void {
 		this.groundItems.splice(this.groundItems.indexOf(g), 1);
 		this.sprite(g).destroy();
@@ -17361,6 +17857,10 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//`Viscosity.DeferedDamage` pool instead of losing HP - also a `damage()` override, so also
 		//source-independent.
 		if (this.deferMonsterDamage(c, damage)) return false;
+		//The fist `damage()` overrides are source-independent too, so the blast seam runs the
+		//same pair `attack()` runs (harvest never routes a blast, hence no exemption flag).
+		damage = this.rottingBleedConvert(c, damage, false);
+		damage = this.soiledGrassCut(c, damage);
 		//DKBarrier: the P2 shield pool absorbs before HP (no per-turn regen here - the
 		//`incShield` half of `DKBarrior.act()` has no modeled trigger to hang it on).
 		if (c.kind === 'king' && (c.kingShield ?? 0) > 0) {
@@ -17377,6 +17877,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		const preHp = c.hp;
 		c.hp -= damage;
 		if (c.kind === 'tengu') this.clampTenguBracket(c, preHp);
+		this.brightDarkHalfHp(c, preHp);
 		if (c.kind === 'yog' && c.hp > 0) this.yogDamageHook(c, preHp);
 		if (c.kind === 'king' && c.hp > 0 && (c.kingPhase ?? 1) === 1) {
 			const taken = Math.max(0, preHp - c.hp);
@@ -17901,6 +18402,22 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.journalWindow = undefined;
 	}
 
+	/** `Talent.onArtifactUsed()`'s `ENHANCED_RINGS` leg (tag `v3.3.8`): using an artifact
+	 * grants the worn ring +1 upgrade for 3/6/9 turns (`enhancedRingsTurns`, read by
+	 * `effectiveRing()`). Java arms this inside each artifact's own success path
+	 * (chains pulls, horn meals, cloak fades, rose/sandals/talisman/armband uses,
+	 * toolkit energy spending); the per-artifact sites that report success call this
+	 * directly, while the picker/aim-mediated ones that cannot report back arm it at
+	 * the dispatch point below instead - refusals there still arm, the attempt spent
+	 * the action and the window is too short for the difference to matter. Java's
+	 * other two legs need talents this port has none of (`DIVINE_SENSE`,
+	 * `Talent.CLEANSE`), so they are Not ported - see `PORT_COVERAGE.md`. */
+	private armEnhancedRingsFromArtifact(): void {
+		if (this.heroClass === 'rogue' && this.talentRank('enhanced_rings') > 0) {
+			this.enhancedRingsTurns = enhancedRingsDuration(this.talentRank('enhanced_rings'));
+		}
+	}
+
 	private useItemById(id: string, instanceId?: string): void {
 		//`Armor.AC_DETACH` (`Armor.java` 190-198): Java lists this action on the *equipped* armor's
 		//own window, and tapping an already-equipped armor is a no-op here otherwise - `equipArmor`
@@ -17911,17 +18428,16 @@ private eyeBeamTurn(monster: Creature): boolean {
 			return;
 		}
 		this.assignQuickslot(id, instanceId);
-		//`Talent.ENHANCED_RINGS` (Assassin/Freerunner T3): using an artifact grants the worn
-		//rings +1 upgrade for 3/6/9 turns (`enhancedRingsTurns`, read by `effectiveRing()`).
-		//Armed on the use attempt, the way the picker-based artifacts (rose, horn) also count
-		//a use the moment their window opens - Java arms inside each artifact's own execute
-		//path, which this port's per-artifact methods don't report back through, so the
-		//single dispatch point stands in for all of them. Refusals (cursed, no charge) still
-		//arm: the attempt spent the action, and the 3-9-turn window is too short for the
+		//Armed on the use attempt: Java arms inside each artifact's own execute path,
+		//which the methods behind this dispatch don't report back through, so the single
+		//dispatch point stands in for the ones it routes (cloak/hourglass/chalice - horn,
+		//chains and the rest never reach this condition under their own bag ids; the ones
+		//this pass owns arm at their own success points instead, chains pulls and horn
+		//meals below via `armEnhancedRingsFromArtifact`). Refusals (cursed, no charge) still arm: the
+		//attempt spent the action, and the 3-9-turn window is too short for the
 		//difference to matter - stated, not silent.
-		if (this.heroClass === 'rogue' && this.talentRank('enhanced_rings') > 0
-			&& (id.includes('artifact') || id === 'cloak' || id === 'hourglass' || id === 'chalice')) {
-			this.enhancedRingsTurns = enhancedRingsDuration(this.talentRank('enhanced_rings'));
+		if (id.includes('artifact') || id === 'cloak' || id === 'hourglass' || id === 'chalice') {
+			this.armEnhancedRingsFromArtifact();
 		}
 		routeItemAction(this.itemActionContext(), id, instanceId);
 	}
@@ -17945,7 +18461,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			useStoneById: this.useStoneById.bind(this), useCandle: this.useCandle.bind(this),
 			useTorch: this.useTorch.bind(this),
 			useAnkh: this.useAnkh.bind(this),
-			useBomb: this.useBomb.bind(this), useStylus: this.useStylus.bind(this),
+			useBomb: this.useBomb.bind(this), useHoneypot: this.useHoneypot.bind(this), useStylus: this.useStylus.bind(this),
 			useBrokenSeal: this.useBrokenSeal.bind(this),
 			useAlchemize: this.useAlchemize.bind(this), useKingsCrown: this.useKingsCrown.bind(this),
 			useFeatherFall: this.useFeatherFall.bind(this),
@@ -18454,6 +18970,13 @@ private eyeBeamTurn(monster: Creature): boolean {
 			chains.charge = Math.max(0, (chains.charge ?? 0) - chargeUse);
 			if (this.hero.buffs['invisibility']) delete this.hero.buffs['invisibility'];
 			this.moveTo(enemy, destination);
+			//`EtherealChains.chainEnemy` (tag `v3.3.8`): the pull lands inside the chains'
+			//animation callback with `Talent.onArtifactUsed(hero)` and `hero.spendAndNext(1f)`
+			//- the turn and the EnhancedRings arming were both missing here (failures return
+			//free in Java too, and do here, so only this success path spends).
+			this.armEnhancedRingsFromArtifact();
+			this.actionSpentTurn = true;
+			this.spendHeroTurn(1);
 		}
 
 		private chainLocation(chains: NonNullable<ReturnType<DungeonScene['chainsItem']>>, target: Step): void {
@@ -18474,6 +18997,12 @@ private eyeBeamTurn(monster: Creature): boolean {
 			if (this.hero.buffs['invisibility']) delete this.hero.buffs['invisibility'];
 			this.moveTo(this.hero, target);
 			this.fov.update(target.x, target.y, this.viewRadius());
+			//`EtherealChains.chainLocation` (tag `v3.3.8`): same success tail as the enemy
+			//pull - `Talent.onArtifactUsed(hero)` then `hero.spendAndNext(1f)` - both missing
+			//here for the same reason; rooted/wall/grab/charge failures stay free in Java too.
+			this.armEnhancedRingsFromArtifact();
+			this.actionSpentTurn = true;
+			this.spendHeroTurn(1);
 		}
 
 		private confirmChains(target: Step, instanceId?: string): void {
@@ -18674,6 +19203,25 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.hunger = Math.max(0, this.hunger - satietyPerCharge * chargesToUse);
 			horn.charge = charge - chargesToUse;
 			this.say(t('items.artifacts.hornofplenty.eat'), 'positive');
+			//`HornOfPlenty.doEatEffect` (tag `v3.3.8`): the meal fires `Talent.onFoodEaten`
+			//(the shared `applyMealEatenEffects`, base heal 0 - the horn grants satiety, not
+			//HP) and `Talent.onArtifactUsed`, then spends `Food.TIME_TO_EAT` (3, or 1 with a
+			//fast-eating meal talent). The meal talents and the whole turn were missing here.
+			const hornMealHeal = applyMealEatenEffects(this.consumableContext(), 0);
+			if (hornMealHeal > 0) this.showHeal(this.hero, hornMealHeal);
+			this.armEnhancedRingsFromArtifact();
+			this.actionSpentTurn = true;
+			this.spendHeroTurn(this.hasFastEatingMealTalent() ? 1 : 3);
+		}
+
+		/** `Food.eatingTime()`'s fast-eating gate (tag `v3.3.8`): any of the six meal
+		 * talents drops the meal from `TIME_TO_EAT` (3) to 1. Five exist here
+		 * (`iron_stomach`, `energizing_meal`, `mystical_meal`, `invigorating_meal`,
+		 * `focused_meal`); `ENLIGHTENING_MEAL` has no port talent, so a cleric-adjacent
+		 * build can never hit the fast path - Not ported for that reason. */
+		private hasFastEatingMealTalent(): boolean {
+			return ['iron_stomach', 'energizing_meal', 'mystical_meal', 'invigorating_meal', 'focused_meal']
+				.some((id) => this.talentRank(id) > 0);
 		}
 
 		private storeFoodInHorn(instanceId?: string): void {
@@ -20264,6 +20812,14 @@ private eyeBeamTurn(monster: Creature): boolean {
 			for (const ch of affected) this.applyAbilityDamage(ch, elementalBaseDamage(powerMulti, Random.normalRange(6, 12)), 'strike');
 		}
 		delete this.hero.buffs['invisibility'];
+		//`DirectedPowerTracker` (`ElementalStrike.java`, tag `v3.3.8`): the strike's
+		//`0.30 x targetsHit x points` boost is armed for the NEXT weapon-proc roll
+		//(`genericProcChanceMultiplier` consumes it), alongside this strike's own
+		//imbue use above - armed last so the strike's own attacks cannot consume
+		//it. Overwrites like Java's `affect(...).enchBoost = ...`; stacking with
+		//a pending RunicSlash bonus happens at the consume site, where both slots
+		//sum.
+		this.abilityDirectedBonus = directedBoost;
 		this.spendHeroAction(1);
 		return true;
 	}
@@ -20503,6 +21059,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 		}
 		this.warpBeacon = { x: target.x, y: target.y, depth: this.depth, branch: this.miningBranchActive ? 1 : 0 };
 		this.say(t('actors.hero.abilities.mage.warpbeacon.name'), 'positive');
+		//Java dispels on placement too (`WarpBeacon.java`'s own `Invisibility.dispel()` - this
+		//is not one of the two abilities that skip it), which the recall halves already did.
+		delete this.hero.buffs['invisibility'];
 		this.spendHeroAction(1);
 		return true;
 	}
@@ -21214,29 +21773,36 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 	/**
 	 * `MeleeWeapon` ability modifiers on the hero's next attack (`src/items/weaponAbilities.ts`):
-	 * a pending ability-attack forces the hit and multiplies damage (consumed win or lose - the
-	 * swing is spent either way), a spinning flail forces the hit with `+33%/spin` (consumed on
-	 * the swing), and `Sword Dance` adds its +25% accuracy while up. Ordinary attacks pass
-	 * through untouched.
+	 * a pending ability-attack forces the hit and adds Java's flat `dmgBoost` after the
+	 * roll multiplier (consumed win or lose - the swing is spent either way), a spinning
+	 * flail forces the hit with `spins*(8+2*level)` flat for as long as its tracker runs
+	 * (never consumed by the swing - only expiry clears it), and `Sword Dance` adds its
+	 * x1.5 accuracy while up. Ordinary attacks pass through untouched.
 	 */
 	private resolveHeroAbilityAttack(attacker: Creature, defender: Creature, surprise: boolean, accFactor: number, damageMultiplier: number): { hit: boolean; damage: number } {
 		let force = surprise;
 		let acc = accFactor;
 		let mult = damageMultiplier;
+		let boost = 0;
 		if (attacker === this.hero) {
 			if (this.abilityForceHit) force = true;
 			if (this.abilityDamageMult !== 1) mult *= this.abilityDamageMult;
+			//`Hero.attack(enemy, dmgMulti, dmgBoost, ...)`: the flat boost lands after the
+			//roll multiplier, before armor - the framework owns the roll, so it is added
+			//here on a hit instead of inside it.
+			boost = this.abilityDamageBoostNext;
 			if (this.spinSpins > 0) {
 				force = true;
-				mult *= spinDamageMultiplier(this.spinSpins);
+				boost += this.spinSpins * abilityFlatBoost(8, 2, this.degradedLevel(this.weaponLevel), this.weaponAugment, false);
 			}
-			if (this.swordDanceTurns > 0) acc *= 1.25;
-			//`Talent.PRECISE_ASSAULT`: 2^points ACC on the first normal attack after a weapon
-			//ability, consumed once. Java carves out a "do nothing" branch while a Flail spin
-			//is active (the tracker survives untouched until spin ends) rather than treating
-			//a spin swing as the consuming hit.
+			if (this.swordDanceTurns > 0) acc *= 1.5;
+			//`Talent.PRECISE_ASSAULT` (`Hero.attackSkill`, tag `v3.3.8`): 2x/5x/infinite
+			//at 1/2/3 on the first normal attack after a weapon ability, consumed once.
+			//Java carves out a "do nothing" branch while a Flail spin is active (the
+			//tracker survives untouched until spin ends) rather than treating a spin
+			//swing as the consuming hit.
 			if (this.preciseAssaultReady && this.spinSpins <= 0) {
-				acc *= 2 ** this.talentRank('precise_assault');
+				acc *= preciseAssaultAccuracy(this.talentRank('precise_assault'));
 				this.preciseAssaultReady = false;
 			}
 		}
@@ -21250,15 +21816,17 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.recentHitClocks.push(this.heroActionClock);
 		}
 		if (attacker === this.hero) {
-			//The swing is spent either way; a spinning flail's charge is spent with it too.
+			//The swing's flat boost is spent either way, and so is the force-hit - but a
+			//harvest whose strike misses keeps its bleeding for the next landed hit, exactly
+			//like Java's `HarvestBleedTracker` (afflicted before the attack, converted on
+			//the next `damage()` that runs). Spinning is the other exception: every swing
+			//while the tracker runs stays forced and boosted - only `tickWeaponAbility`'s
+			//expiry clears it.
 			this.abilityForceHit = false;
 			this.abilityDamageMult = 1;
-			if (this.spinSpins > 0) {
-				this.spinSpins = 0;
-				this.spinTurns = 0;
-			}
+			this.abilityDamageBoostNext = 0;
 		}
-		return roll;
+		return { hit: roll.hit, damage: roll.hit ? roll.damage + boost : roll.damage };
 	}
 
 	/**
@@ -21272,9 +21840,22 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * spend (`afterAbilityUsed`) instead of discounting it.
 	 */
 	private useWeaponAbility(): void {
+		//Java's `MeleeWeapon.execute(AC_ABILITY)`: a non-Duelist with an equipped weapon
+		//does nothing at all (no message) - the T-key is dead for every other class.
+		//(The port always has a weapon wielded, so the unequipped/swift-equip branches
+		//are vacuous here.)
+		if (this.heroClass !== 'duelist') return;
 		const def = weaponAbilityFor(this.weaponSourceClass, this.weaponId);
 		if (!def) {
 			this.say(t('port.log.noweaponability'));
+			return;
+		}
+		//Java's `STRReq() > STR` gate (`ability_low_str`) runs before the charge check,
+		//for every ability including the self-cast ones below. That catalogue key
+		//postdates this port's strings, so the fully-translated generic
+		//`ability_cant_use` speaks for it ("can't use that ability right now").
+		if (weaponSTRReq(this.weaponTier, this.weaponLevel) > (this.hero.str ?? 0)) {
+			this.say(t('items.weapon.melee.meleeweapon.ability_cant_use'), 'negative');
 			return;
 		}
 		//Java's `baseChargeUse`: 1 for every ability, 0 only inside the flail's spin and
@@ -21288,7 +21869,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			spinning: this.spinSpins > 0,
 		});
 		if (!spendWeaponCharge({ charges: this.weaponCharge, partial: this.weaponPartialCharge }, cost)) {
-			this.say(t('port.log.lowweaponcharge'));
+			this.say(t('port.log.lowweaponcharge'), 'negative');
 			return;
 		}
 		switch (def.kind) {
@@ -21320,7 +21901,6 @@ private eyeBeamTurn(monster: Creature): boolean {
 						this.takeAbilityCharge(cost);
 						this.refundCounterAbility(counterArmed, counterRank);
 						this.armPreciseAssault();
-				this.armCombinedLethality();
 						this.armCombinedLethality();
 						//`invisTurns = 2+buffedLvl()`, applied as `prolong(Invisibility,
 						//invisTurns-1)` (never shortens an existing cloak).
@@ -21355,7 +21935,10 @@ private eyeBeamTurn(monster: Creature): boolean {
 				this.refundCounterAbility(counterArmed, counterRank);
 				this.armPreciseAssault();
 				this.armCombinedLethality();
-				this.guardTurns = def.buffTurns ?? 6;
+				//`Greatshield`: `3+buffedLvl()`; `RoundShield`: `5+buffedLvl()` - and the
+				//window is infinite evasion (`Hero.defenseSkill`), not one negated hit.
+				this.guardTurns = (this.weaponMeleeKey() === 'roundshield' ? 5 : 3) + this.degradedLevel(this.weaponLevel);
+				this.syncHeroFromStats();
 				this.say(t('port.log.weaponguard'), 'positive');
 				this.spendHeroAction(1);
 				return;
@@ -21365,7 +21948,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 				this.refundCounterAbility(counterArmed, counterRank);
 				this.armPreciseAssault();
 				this.armCombinedLethality();
-				this.swordDanceTurns = def.buffTurns ?? 5;
+				this.swordDanceTurns = 3 + this.degradedLevel(this.weaponLevel);
 				this.say(t('port.log.sworddance'), 'positive');
 				return;
 			}
@@ -21374,13 +21957,18 @@ private eyeBeamTurn(monster: Creature): boolean {
 				this.refundCounterAbility(counterArmed, counterRank);
 				this.armPreciseAssault();
 				this.armCombinedLethality();
-				this.defensiveStanceTurns = def.buffTurns ?? 5;
+				this.defensiveStanceTurns = 3 + this.degradedLevel(this.weaponLevel);
 				this.syncHeroFromStats();
 				this.say(t('port.log.defensivestance'), 'positive');
 				return;
 			}
 			case 'chargedShot': {
-				//Readying the shot is free (`hero.next()` in `Crossbow`).
+				//Readying the shot is free (`hero.next()` in `Crossbow`), and re-readying
+				//while armed is refused (`ability_cant_use`) - the charge is not spent twice.
+				if (this.chargedShotArmed) {
+					this.say(t('items.weapon.melee.meleeweapon.ability_cant_use'), 'negative');
+					return;
+				}
 				this.takeAbilityCharge(cost);
 				this.refundCounterAbility(counterArmed, counterRank);
 				this.armPreciseAssault();
@@ -21391,20 +21979,26 @@ private eyeBeamTurn(monster: Creature): boolean {
 			}
 			default: {
 				//Damage strikes run through the next attack's own modifiers: force the hit
-				//(every strike desc guarantees it), multiply damage, and stage the riders.
-				//Java opens a cell selector for the target (`cleaveAbility(hero, target, ...)`
-				//takes the chosen cell); this routes through the same `TargetingController`
-				//seam the throw and sneak already use: confirm latches `abilityAimTarget`
-				//and re-enters, so the resolution below still owns every mutation and turn
-				//cost. Cancelling spends nothing - Java's `beforeAbilityUsed` (the charge
-				//spend) runs after validation, inside the attack callback, so the spend
-				//stays below. Allies cannot be struck, matching melee; the two
-				//catalogue-postdating refusal keys speak through the controller's own
-				//line, as with sneak.
-				const range = def.kind === 'spike' ? 6 : 2;
+				//(every strike is `INFINITE_ACCURACY`), add Java's flat `dmgBoost`, and
+				//stage the riders. Java opens a cell selector for the target
+				//(`cleaveAbility(hero, target, ...)` takes the chosen cell); this routes
+				//through the same `TargetingController` seam the throw and sneak already
+				//use: confirm latches `abilityAimTarget` and re-enters, so the resolution
+				//below still owns every mutation and turn cost. Cancelling spends nothing
+				//- Java's `beforeAbilityUsed` (the charge spend) runs after validation,
+				//inside the attack callback, so the spend stays below. Allies cannot be
+				//struck, matching melee; the two catalogue-postdating refusal keys speak
+				//through the controller's own line, as with sneak.
+				//Aim reach is Java's `canAttack`: adjacent for reach-1 weapons, 2 for
+				//spear/glaive spike, 3 for the whip's lash (its RCH).
+				const range = def.kind === 'spike' ? 2 : def.kind === 'lash' ? 3 : 1;
 				const validTarget = (candidate: Creature): boolean => !candidate.isHero && !candidate.isNPC
 					&& !candidate.isAlly && candidate.hp > 0 && this.fov.isVisible(candidate.x, candidate.y)
-					&& Roguelike.canTarget(this.level, this.hero, candidate, { range });
+					&& Roguelike.canTarget(this.level, this.hero, candidate, { range })
+					//Lunge is a gap-closer: Java refuses below distance 2 and while rooted
+					//(`ability_target_range` + shake). The aim simply offers no such cell.
+					&& (def.kind !== 'lunge' || (Roguelike.chebyshevDistance(this.hero, candidate) >= 2
+						&& this.hero.buffs['roots'] === undefined));
 				if (!this.abilityAimTarget) {
 					if (!this.creatures.some(validTarget)) {
 						this.say(t('port.log.noweapontarget'), 'negative');
@@ -21440,20 +22034,49 @@ private eyeBeamTurn(monster: Creature): boolean {
 				this.takeAbilityCharge(cost);
 				this.refundCounterAbility(counterArmed, counterRank);
 				this.abilityForceHit = true;
-				this.abilityDamageMult = 1 + (def.damageBonus ?? 0) / 100;
+				this.abilityDamageMult = 1;
 				this.lastAbilityAttack = def.kind;
-				if (def.kind === 'heavyBlow') this.abilityDazeNext = true;
-				if (def.kind === 'harvest') this.abilityBleedFracNext = (def.damageBonus ?? 0) / 100;
+				const effWeaponLevel = this.degradedLevel(this.weaponLevel);
+				const flatBoost = (spec: { base: number; perLevel: number; roundSum: boolean }): number =>
+					abilityFlatBoost(spec.base, spec.perLevel, effWeaponLevel, this.weaponAugment, spec.roundSum);
+				if (def.kind === 'heavyBlow') {
+					//`Mace.heavyBlowAbility`: no bonus damage unless the attack is a
+					//surprise (`dmgBoost = 0`). Surprise here is the port's own test
+					//(sleeping/unseen/invisible, `canSurpriseAttack` gated), the same one
+					//`attack()` uses - daze lands regardless.
+					const gate = canSurpriseAttack({
+						thrown: false,
+						unarmed: false,
+						flail: false,
+						heroStr: this.hero.str ?? 0,
+						weaponTier: this.weaponTier,
+						weaponLevel: this.weaponLevel,
+					});
+					const surprised = gate && (target.sleeping === true || target.seesHero === false
+						|| this.hero.buffs['invisibility'] !== undefined);
+					if (surprised && def.flatBoost) this.abilityDamageBoostNext = flatBoost(def.flatBoost);
+					this.abilityDazeNext = true;
+				} else if (def.kind === 'harvest') {
+					//`Sickle.harvestAbility`: multi 0, the flat amount replaces the damage
+					//and is applied as bleeding with it.
+					if (def.flatBoost) {
+						this.abilityDamageMult = 0;
+						this.abilityHarvestNext = flatBoost(def.flatBoost);
+						this.abilityDamageBoostNext = this.abilityHarvestNext;
+					}
+				} else if (def.flatBoost) {
+					this.abilityDamageBoostNext = flatBoost(def.flatBoost)
+						* (def.kind === 'comboStrike'
+							? this.consumeComboWindow()
+							: 1);
+				}
 				//Spike knocks back (`ability_desc`); lunge only steps the hero forward - neither
 			//lunge desc mentions knockback, so it stages none.
 			if (def.kind === 'spike') this.abilityKnockbackNext = true;
-				if (def.kind === 'runicSlash') this.abilityRunicNext = true;
-				if (def.kind === 'comboStrike') {
-					const recent = this.recentHitClocks.filter((clock) => this.heroActionClock - clock <= 5).length;
-					//`ability_desc`: "+X% damage for each time the Duelist has already successfully
-				//attacked" - no floor: with no recent hit this is a plain guaranteed hit.
-				this.abilityDamageMult = 1 + ((def.damageBonus ?? 0) / 100) * recent;
-				}
+				//Runic slash stages the enchant-proc-chance boost the strike's own hit
+				//consumes (`RunicSlashTracker`); the old double `heroOnHit(0)` re-proc is
+				//gone, and so is the phantom x4 damage (Java's multi is 1, boost 0).
+				if (def.kind === 'runicSlash') this.abilityRunicBonus = 3 + 0.5 * effWeaponLevel;
 				if (def.kind === 'lunge') this.stepToward(target);
 				this.attack(this.hero, target);
 				//`afterAbilityUsed` runs after the strike, not before - see `armPreciseAssault`'s
@@ -21461,8 +22084,15 @@ private eyeBeamTurn(monster: Creature): boolean {
 				this.armPreciseAssault();
 				this.armCombinedLethality();
 				if (target.hp <= 0) this.onAbilityKill(def.kind);
+				//A non-killing cleave ends the free re-cleave window (`CleaveTracker`
+				//detaches on both paths in `Sword.cleaveAbility`).
+				if (def.kind === 'cleave' && target.hp > 0) this.cleaveFreeTurns = 0;
 				if (def.kind === 'lash') this.lashOthers(target);
-				this.spendHeroAction(1);
+				//Killing cleaves and retributions are free (`hero.next()`); every other
+				//strike spends the attack turn.
+				if (!((def.kind === 'cleave' || def.kind === 'retribution') && target.hp <= 0)) {
+					this.spendHeroAction(1);
+				}
 				return;
 			}
 		}
@@ -21481,6 +22111,24 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.weaponCharge = spent.charges;
 			this.weaponPartialCharge = spent.partial;
 		}
+		//`beforeAbilityUsed`'s `AGGRESSIVE_BARRIER` half (`MeleeWeapon.java` 160-164,
+		//tag `v3.3.8`): at half HP or below, using a weapon ability grants 1+2/rank
+		//shield. This used to fire on the class special (`useSpecial`) instead, from
+		//before this scene had a real T-key ability path at all - Java fires it here,
+		//on ability use specifically, so it moved with the path's arrival.
+		const barrierRank = this.talentRank('aggressive_barrier');
+		if (barrierRank > 0 && this.hero.hp / this.hero.maxHp <= 0.5) {
+			this.grantHeroShield(1 + 2 * barrierRank, this.hero.maxHp);
+		}
+	}
+
+	/** `Sai.comboStrikeAbility`: the strike reads the tracker's recent hits, then the
+	 * tracker detaches - firing consumes the window, so back-to-back combos need fresh
+	 * hits. Returns the recent-hit count for the flat `boostPerHit*recentHits`. */
+	private consumeComboWindow(): number {
+		const recent = this.recentHitClocks.filter((clock) => this.heroActionClock - clock <= 5).length;
+		this.recentHitClocks.length = 0;
+		return recent;
 	}
 
 	/** `afterAbilityUsed`'s `COUNTER_ABILITY` half: refund `rank*0.375` and detach. */
@@ -21498,7 +22146,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 	}
 
 	/** `afterAbilityUsed`'s `Talent.PRECISE_ASSAULT` half: arms `PreciseAssaultTracker` so the
-	 * hero's *next* normal attack gets `2^points` accuracy (`MeleeWeapon.accuracyFactor()`) -
+	 * hero's *next* normal attack gets 2x/5x/infinite accuracy at 1/2/3
+	 * (`MeleeWeapon.accuracyFactor()`, via `preciseAssaultAccuracy`) -
 	 * consumed in `resolveHeroAbilityAttack`. Callers for a damage-strike ability must invoke
 	 * this *after* that strike's own `attack()` call resolves (matching Java's real
 	 * `afterAbilityUsed` position, at the end of the attack callback): the tracker does not
@@ -21535,10 +22184,14 @@ private eyeBeamTurn(monster: Creature): boolean {
 		}
 	}
 
-	/** `Whip.LashAbility`: the same normal attack against every other enemy in range. */
+	/** `Whip.lashAbility` (tag `v3.3.8`): the same `hero.attack(ch, 1, 0,
+	 * INFINITE_ACCURACY)` against every enemy `hero.canAttack` reaches - whip RCH 3,
+	 * all guaranteed (not just the closest), no extra damage. The staging resets on
+	 * every swing, so each follow-up re-arms its own force-hit below. */
 	private lashOthers(primary: Creature): void {
 		for (const other of this.creatures.filter((c) => c !== primary && !c.isHero && !c.isNPC && c.hp > 0
-			&& Roguelike.chebyshevDistance(this.hero, c) <= 2 && this.fov.isVisible(c.x, c.y))) {
+			&& Roguelike.chebyshevDistance(this.hero, c) <= 3 && this.fov.isVisible(c.x, c.y))) {
+			this.abilityForceHit = true;
 			this.attack(this.hero, other);
 		}
 	}
@@ -22331,7 +22984,18 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 	/** damage taken, in `CharSprite.NEGATIVE` */
 	private showDamage(creature: Creature, amount: number): void {
-		if (amount > 0) this.showStatus(creature, String(amount), SPD_STATUS_COLOR.negative);
+		if (amount > 0) {
+			this.showStatus(creature, String(amount), SPD_STATUS_COLOR.negative);
+			//`CharSprite.flash()` (tag `v3.3.8`): `Char.attack()` calls this alongside the
+			//blood-burst/damage-number pair (`enemy.sprite.bloodBurstA(...); enemy.sprite.flash();`)
+			//on every landed hit - a brief full-white additive pulse (`ra=ba=ga=1`, decaying over
+			//`FLASH_INTERVAL` = 50ms) this port had a half-built fade-out for (the per-frame
+			//`colorAdd` clear a few screens down, whose own comment already explained the design)
+			//but no trigger anywhere, so no creature ever actually flashed on taking damage. Sets
+			//the same `colorAdd` field that fade-out already clears next frame - one frame's flash
+			//at this port's tick rate, close enough to Java's 50ms without a real timer.
+			this.sprite(creature).colorAdd = 0xffffff;
+		}
 	}
 
 	/** health gained, in `CharSprite.POSITIVE` */
@@ -22587,9 +23251,14 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 		//the hit-flash fades by clearing only the additive term, never the tint - tint is a
 		//creature's identity colour here, and resetColor() would wipe the sprite's own art
-		//back to a flat white square along with the flash
+		//back to a flat white square along with the flash. `colorAdd` doubles as an ally's own
+		//persistent identity tint though (`allyIdentityColorAdd`, set at spawn), so a flashed
+		//ally must fade back to *that* baseline, not to 0 - fixed live (2026-09-19): a hit
+		//Sheep previously lost its tint for good after one frame, since this loop always zeroed
+		//`colorAdd` outright rather than restoring the value the ally was actually spawned with.
 		for (const creature of this.creatures) {
-			if (this.sprite(creature).colorAdd !== 0) this.sprite(creature).colorAdd = 0;
+			const baseline = allyIdentityColorAdd(creature.isAlly, creature.allyKind);
+			if (this.sprite(creature).colorAdd !== baseline) this.sprite(creature).colorAdd = baseline;
 		}
 
 		for (let i = this.projectiles.length - 1; i >= 0; i--) {

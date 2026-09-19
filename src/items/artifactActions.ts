@@ -285,6 +285,12 @@ export function applyArmbandGainCharge(scene: Pick<ArtifactActionContext, 'bag'>
  * `consumeEnergy` has no `cursed`/`AntiMagic` guard of its own - a cursed toolkit still pays
  * out whatever charge it already banked before the curse, so this does not check either. */
 export function consumeToolkitEnergy(scene: Pick<ArtifactActionContext, 'bag'>, cost: number): number {
+	//NOTE (`AlchemistsToolkit.consumeEnergy`, tag `v3.3.8`): real Java calls
+	//`Talent.onArtifactUsed(Dungeon.hero)` on every energy spend - the EnhancedRings
+	//arming in `dungeonScene.armEnhancedRingsFromArtifact`. This function currently has
+	//no live call site (the port's alchemy UI pays brew costs from the carried energy
+	//pool without spending the toolkit's banked charge first), so there is nowhere to
+	//arm yet: the call site that first spends toolkit charge through here must arm it.
 	const toolkit = findArtifact(scene, 'toolkit') as (typeof scene.bag.items[number] & ToolkitItem) | undefined;
 	if (!toolkit) return cost;
 	const charge = toolkit.charge ?? 0;

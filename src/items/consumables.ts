@@ -67,6 +67,34 @@ function applyMysteryMeatEffect(scene: ConsumableContext): void {
 	}
 }
 
+/** `Talent.onFoodEaten()` (tag `v3.3.8`): every class/meal talent that reacts to the
+ * hero being fed - shared by ordinary food (`eatFood` below) and by
+ * `HornOfPlenty.doEatEffect()`, which calls it with the horn as the food source. The
+ * per-talent shapes are the port's own established simplifications (flat bonuses instead
+ * of Java's `WandEmpower`/`Recharging`/`Haste`/`PhysicalEmpower` buffs - see the talent
+ * families that ported each meal talent); what matters here is *when* they fire, and
+ * Java fires all of them for horn meals exactly as for food. Returns the total healing
+ * applied on top of `baseHeal`, so callers can show it; messaging stays with the caller
+ * (food's eat lines vs the horn's own `eat` line). */
+export function applyMealEatenEffects(scene: ConsumableContext, baseHeal: number): number {
+	let heal = baseHeal;
+	if (scene.heroClass === 'warrior') {
+		const pts = scene.talentRank('hearty_meal');
+		if (scene.hero.hp / scene.hero.maxHp < 0.334) heal += 2 + 2 * pts;
+	}
+	if (scene.heroClass === 'mage') scene.wandBonusDamage = Math.max(scene.wandBonusDamage, 2 * scene.talentRank('empowering_meal'));
+	if (scene.heroClass === 'mage' && scene.talentRank('energizing_meal') > 0) scene.wandCharges.refund(scene.talentRank('energizing_meal') === 1 ? 5 : 8);
+	if (scene.heroClass === 'duelist' && scene.talentRank('focused_meal') > 0) scene.ammo += scene.talentRank('focused_meal') === 1 ? 1 : 2;
+	if (scene.heroClass === 'rogue' && scene.talentRank('mystical_meal') > 0) scene.hero.buffs['cloak'] = 9999;
+	if (scene.heroClass === 'huntress' && scene.talentRank('invigorating_meal') > 0) scene.freeTurnNext = true;
+	if (scene.heroClass === 'duelist' && scene.talentRank('strengthening_meal') > 0) {
+		scene.physicalBonusDamage = 3;
+		scene.physicalBonusAttacks = scene.talentRank('strengthening_meal') + 1;
+	}
+	scene.hero.hp = Math.min(scene.hero.maxHp, scene.hero.hp + heal);
+	return heal;
+}
+
 /** Food.satisfy() and the class talents that react to eating. */
 export function eatFood(scene: ConsumableContext): boolean {
 	const food = scene.requestedItemId
@@ -84,21 +112,7 @@ export function eatFood(scene: ConsumableContext): boolean {
 	if (!stats) throw new Error(`MWL consumable stats are missing food fallback`);
 	const energy = stats.hunger;
 	scene.hunger = Math.max(0, scene.hunger - (isChallengeEnabled('no_food') ? energy / 3 : energy));
-	let heal = stats.heal;
-	if (scene.heroClass === 'warrior') {
-		const pts = scene.talentRank('hearty_meal');
-		if (scene.hero.hp / scene.hero.maxHp < 0.334) heal += 2 + 2 * pts;
-	}
-	if (scene.heroClass === 'mage') scene.wandBonusDamage = Math.max(scene.wandBonusDamage, 2 * scene.talentRank('empowering_meal'));
-	if (scene.heroClass === 'mage' && scene.talentRank('energizing_meal') > 0) scene.wandCharges.refund(scene.talentRank('energizing_meal') === 1 ? 5 : 8);
-	if (scene.heroClass === 'duelist' && scene.talentRank('focused_meal') > 0) scene.ammo += scene.talentRank('focused_meal') === 1 ? 1 : 2;
-	if (scene.heroClass === 'rogue' && scene.talentRank('mystical_meal') > 0) scene.hero.buffs['cloak'] = 9999;
-	if (scene.heroClass === 'huntress' && scene.talentRank('invigorating_meal') > 0) scene.freeTurnNext = true;
-	if (scene.heroClass === 'duelist' && scene.talentRank('strengthening_meal') > 0) {
-		scene.physicalBonusDamage = 3;
-		scene.physicalBonusAttacks = scene.talentRank('strengthening_meal') + 1;
-	}
-	scene.hero.hp = Math.min(scene.hero.maxHp, scene.hero.hp + heal);
+	const heal = applyMealEatenEffects(scene, stats.heal);
 	scene.showHeal(scene.hero, heal);
 	scene.say(food.id === 'meat'
 		? t(heal > 5 ? 'port.log.eatmeathearty' : 'port.log.eatmeat', { heal })

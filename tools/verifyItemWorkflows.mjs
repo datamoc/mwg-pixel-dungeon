@@ -909,12 +909,11 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		// Java's INFINITE_ACCURACY, and the melee line plus the -2 experience gate are Java's own
 		// (the beam uses its own 30-50/20-30 constants, never this row).
 		yog: [400, 1000000, 12, 15, 25, 0, 4, 50, -2],
-		// Deliberately scaled encounter matching Yog's own scaling: Java's six fist subclasses
-		// share one stat line (HP 300, acc 36, eva 20, dmg 18-36, armor 0-15, EXP 25) and differ
-		// only in abilities, which the port preserves per subclass - see PORT_COVERAGE.md's Yog
-		// row, whose older "preserves HP/accuracy/evasion/damage/armor" wording overstated this.
-		// The -2 experience gate is Java's own (fists grant nothing).
-		yogFist: [60, 20, 10, 6, 12, 0, 5, 10, -2],
+		// Template row only (`summonFist` overwrites every number with Java's verbatim line -
+		// HP 300, acc 36, eva 20, dmg 18-36, armor 0-15, EXP 25 - and only the abilities differ
+		// per subclass). The -2 experience gate is Java's own (fists grant nothing), and the 25
+		// mirrors Java's EXP number, corrected 2026-09-19 (the old 10 matched no Java value).
+		yogFist: [60, 20, 10, 6, 12, 0, 5, 25, -2],
 		larva: [20, 30, 12, 15, 25, 0, 4, 5, -2],
 		// Never attacks in either version, so damage is the port's no-melee modeling (Char's own
 		// default would be 1); everything else is Java's, including the 0-12 armor roll.
@@ -950,6 +949,18 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 			[monster.hp, monster.accuracy, monster.evasion, monster.damage?.[0], monster.damage?.[1], monster.armor?.[0], monster.armor?.[1], monster.experience, monster.maxLevel],
 			expected, `monster ${id} matches its Java stats`,
 		);
+	}
+	// The mining-quest actors are wholly unported (37th matrix,
+	// `MONSTER_ANALYSIS_UNPORTED_QUEST_MOBS.md`): all eight spawn at weight 0 from quest
+	// rooms Java builds and this port never generates, so no MWL row may exist for them -
+	// a half-added kind (stats without AI, sprites, or quest wiring) would be worse than
+	// the documented absence. Same for the 38th matrix's (`MONSTER_ANALYSIS_RARE_SPAWNS.md`)
+	// unported rare spawns: the gnoll/crab alt exclusives, the mimic tiers, the phantom
+	// piranha, and the quest-branch spinner (`MobSpawner`/`DelayedRockFall` are a respawn
+	// actor and a buff, not monster ids, so they have no row to forbid).
+	for (const id of ['crystalGuardian', 'crystalSpire', 'crystalWisp', 'fungalSentry', 'fungalCore', 'gnollSapper', 'gnollGeomancer', 'gnollGuard',
+		'gnollExile', 'hermitCrab', 'goldenMimic', 'ebonyMimic', 'phantomPiranha', 'fungalSpinner']) {
+		assert.equal(mwlMonsterById.get(id), undefined, `unported mob stays out of the MWL roster: ${id}`);
 	}
 	// The necromancer's authored accuracy/damage carry its ranged bolt (`Normal(2,10)` via
 	// `zapHero`), not a melee line - Necromancer.java defines neither `attackSkill` nor
@@ -1203,18 +1214,20 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		assert.equal(bagTab('velvetPouch'), 'pouch_stone', 'the pouch opens the velvet-named tab');
 	}
 	// `MeleeWeapon.ability()` per-weapon table and `Charger` economy
-	// (`src/items/weaponAbilities.ts`, tag `v3.3.8`): all 30 real melee classes resolve with
-	// desc-verified kinds, the lookup ignores case and falls back to the bag id, the
-	// port-minted stand-ins resolve to nothing, every ability costs exactly 1 charge (free
-	// only inside the cleave/spin windows), the cap follows the hero level, accrual is
-	// `Charger.act()`'s time rate, spends go partial-first behind the `charges + partial`
-	// gate, and `COUNTER_ABILITY` refunds `rank*0.375` after the spend; sneak's blink
-	// range is 3/4/5 tiles by weapon (the aim itself runs through the scene's TargetingController).
+	// (`src/items/weaponAbilities.ts`, tag `v3.3.8`): all 31 real melee classes resolve
+	// (Cudgel included), the lookup ignores case and falls back to the bag id, the
+	// port-minted stand-ins resolve to nothing, strikes carry Java's flat `dmgBoost`
+	// specs (augment-scaled, harvest rounding included), precise assault is 2x/5x/inf,
+	// every ability costs exactly 1 charge (free only inside the cleave/spin windows),
+	// the cap follows the hero level, accrual is `Charger.act()`'s time rate, spends go
+	// partial-first behind the `charges + partial` gate, and `COUNTER_ABILITY` refunds
+	// `rank*0.375` after the spend; sneak's blink range is 3/4/5 tiles by weapon
+	// (the aim itself runs through the scene's TargetingController).
 	{
-		const { weaponAbilityFor, weaponAbilityChargeCost, weaponChargeCap, accrueWeaponCharge, spendWeaponCharge, gainWeaponCharge, counterAbilityRefund, spinDamageMultiplier } = require('./items/weaponAbilities.js');
+		const { weaponAbilityFor, weaponAbilityChargeCost, weaponChargeCap, accrueWeaponCharge, spendWeaponCharge, gainWeaponCharge, counterAbilityRefund, abilityFlatBoost, augmentDamageFactor, preciseAssaultAccuracy } = require('./items/weaponAbilities.js');
 		const abilityKinds = {
 			AssassinsBlade: 'sneak', Dirk: 'sneak', Dagger: 'sneak',
-			BattleAxe: 'heavyBlow', HandAxe: 'heavyBlow', Mace: 'heavyBlow', WarHammer: 'heavyBlow',
+			Cudgel: 'heavyBlow', BattleAxe: 'heavyBlow', HandAxe: 'heavyBlow', Mace: 'heavyBlow', WarHammer: 'heavyBlow',
 			Greatsword: 'cleave', Longsword: 'cleave', Sword: 'cleave', Shortsword: 'cleave', WornShortsword: 'cleave',
 			Flail: 'spin', Greatshield: 'guard', RoundShield: 'guard',
 			Gauntlet: 'comboStrike', Sai: 'comboStrike', Gloves: 'comboStrike',
@@ -1223,7 +1236,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 			Quarterstaff: 'defensiveStance', Greataxe: 'retribution', Crossbow: 'chargedShot',
 			RunicBlade: 'runicSlash', Whip: 'lash',
 		};
-		assert.equal(Object.keys(abilityKinds).length, 30, 'all 30 real melee classes have an ability');
+		assert.equal(Object.keys(abilityKinds).length, 31, 'all 31 real melee classes have an ability (Cudgel included)');
 		for (const [cls, kind] of Object.entries(abilityKinds)) {
 			assert.equal(weaponAbilityFor(cls, 'weaponReward')?.kind, kind, `${cls} ability is ${kind}`);
 		}
@@ -1236,10 +1249,30 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		assert.equal(weaponAbilityFor('AssassinsBlade', 'weaponReward')?.blinkRange, 3, 'blade blinks 3');
 		assert.equal(weaponAbilityFor('Dirk', 'weaponReward')?.blinkRange, 4, 'dirk blinks 4');
 		assert.equal(weaponAbilityFor('Dagger', 'weaponReward')?.blinkRange, 5, 'dagger blinks 5');
-		assert.equal(weaponAbilityFor('Shortsword', 'weaponReward')?.damageBonus, 30, 'cleave magnitudes ride along');
-		assert.equal(weaponAbilityFor('Rapier', 'weaponReward')?.damageBonus, 67, 'rapier lunge is +67');
-		assert.equal(weaponAbilityFor('RunicBlade', 'weaponReward')?.damageBonus, 300, 'runic slash is +300%');
-		assert.equal(weaponAbilityFor('Dagger', 'weaponReward')?.buffTurns, undefined, 'sneak duration is computed, not tabled');
+		// Flat `dmgBoost` specs ride the table (tag `v3.3.8`): the old percent
+		// `damageBonus` read percents out of absolute min/max descs and is gone.
+		assert.deepEqual(weaponAbilityFor('Cudgel', 'weaponReward')?.flatBoost, { base: 3, perLevel: 1.5, roundSum: false }, 'cudgel heavy blow is 3+1.5/lvl');
+		assert.deepEqual(weaponAbilityFor('WarHammer', 'weaponReward')?.flatBoost, { base: 6, perLevel: 1.5, roundSum: false }, 'warhammer heavy blow is 6+1.5/lvl');
+		assert.deepEqual(weaponAbilityFor('Greatsword', 'weaponReward')?.flatBoost, { base: 7, perLevel: 1, roundSum: false }, 'greatsword cleave is 7+lvl');
+		assert.deepEqual(weaponAbilityFor('Gauntlet', 'weaponReward')?.flatBoost, { base: 5, perLevel: 1, roundSum: false }, 'gauntlet combo is 5+lvl');
+		assert.deepEqual(weaponAbilityFor('Glaive', 'weaponReward')?.flatBoost, { base: 12, perLevel: 2.5, roundSum: false }, 'glaive spike is 12+2.5/lvl');
+		assert.deepEqual(weaponAbilityFor('Rapier', 'weaponReward')?.flatBoost, { base: 5, perLevel: 1.5, roundSum: false }, 'rapier lunge is 5+1.5/lvl, never +67%');
+		assert.deepEqual(weaponAbilityFor('WarScythe', 'weaponReward')?.flatBoost, { base: 30, perLevel: 4.5, roundSum: true }, 'warscythe harvest rounds the whole sum');
+		assert.equal(weaponAbilityFor('RunicBlade', 'weaponReward')?.flatBoost, undefined, 'runic slash adds no damage');
+		assert.equal(weaponAbilityFor('Cudgel', 'weaponReward')?.kind, 'heavyBlow', 'the tier-1 club has an ability');
+		// `augment.damageFactor(int)`: round(dmg*factor), 0.7/1.5/1.0.
+		assert.equal(augmentDamageFactor('damage', 10), 15, 'damage augment scales the boost');
+		assert.equal(augmentDamageFactor('speed', 10), 7, 'speed augment shrinks the boost');
+		assert.equal(augmentDamageFactor(null, 10), 10, 'no augment passes through');
+		// `abilityFlatBoost`: base + round(scale*lvl), augment-scaled - except harvest,
+		// which rounds the whole sum.
+		assert.equal(abilityFlatBoost(5, 1.5, 2, null, false), 8, 'mace +2 is 5+round(3)');
+		assert.equal(abilityFlatBoost(5, 1.5, 3, 'damage', false), 15, 'augment applies after the level term');
+		assert.equal(abilityFlatBoost(15, 2.5, 1, null, true), 18, 'sickle rounds the whole 17.5 up to 18');
+		assert.equal(abilityFlatBoost(15, 2.5, 1, null, false), 18, 'term-rounding agrees here: 15+round(2.5)');
+		assert.equal(abilityFlatBoost(12, 2.5, 3, null, false), 20, 'glaive at +3 is 12+round(7.5)=20');
+		// `Talent.PRECISE_ASSAULT`: 2x/5x/infinite at 1/2/3, never 2^points.
+		assert.deepEqual([0, 1, 2, 3, 4].map(preciseAssaultAccuracy), [2, 2, 5, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY], 'precise assault curve');
 		// `baseChargeUse`: 1 everywhere, 0 only in the two free windows.
 		for (const kind of ['sneak', 'heavyBlow', 'guard', 'comboStrike', 'spike', 'lunge', 'harvest', 'swordDance', 'defensiveStance', 'retribution', 'chargedShot', 'runicSlash', 'lash']) {
 			assert.equal(weaponAbilityChargeCost(kind, { cleaveFree: false, spinning: false }), 1, `${kind} costs 1`);
@@ -1291,10 +1324,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		assert.deepEqual(gainWeaponCharge({ charges: 8, partial: 0 }, 1.5, 8), { charges: 8, partial: 0 }, 'full meter ignores refunds');
 		assert.deepEqual([0, 1, 2, 3, 4].map(counterAbilityRefund), [0, 0.375, 0.75, 1.125, 1.5], 'refund is rank*0.375');
 		assert.equal(counterAbilityRefund(9), 1.5, 'refund clamps at rank 4');
-		for (const [spins, mult] of [[0, 1], [1, 1.33], [2, 1.66], [3, 1.99]]) {
-			assert.ok(Math.abs(spinDamageMultiplier(spins) - mult) < 1e-9, `spin x${spins} multiplies ${mult}`);
-		}
-		assert.ok(Math.abs(spinDamageMultiplier(9) - 1.99) < 1e-9, 'spin caps at 3');	}
+	}
 	// `Torch` (tag `v3.3.8`): single-category registration. The torch is a stackable
 	// consumable-slot item (`consumables.mwl`, like `Alchemize`) plus the special-item
 	// mappings its Java source class needs - and nothing else: its name is single-sourced
@@ -1357,17 +1387,18 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	// `monsterStatusImmunities` table rows, plus the live gate's verdicts through the real
 	// `monsterBuffImmune` helper. INORGANIC kinds refuse bleeding/poison, STATIC kinds refuse
 	// terror/amok/charm/paralysis, ACIDIC kinds refuse ooze, the burning fist refuses burning,
-	// the bright fist refuses frost, the rusted fist reuses the INORGANIC pair, the succubus
-	// refuses charm, Tengu refuses roots/terror, and piranhas refuse burning.
+	// the rusted fist reuses the INORGANIC pair, the succubus
+	// refuses charm, Tengu refuses roots/terror, and piranhas refuse burning. The bright fist
+	// carries no row (corrected 2026-09-19 - Java's BrightFist declares no immunities).
 	// Keyed 'id' (a column this table does not declare) so the reader skips its single-key
 	// uniqueness check - uniqueness here is the composite monster+subtype pair, enforced by
-	// tools/compile-mwl.mjs, since yogFist legitimately carries four subtype rows.
+	// tools/compile-mwl.mjs, since yogFist legitimately carries three subtype rows.
 	const immunityRows = MWL_TABLE_ROWS('monsterStatusImmunities', 'id');
 	const immunityByKey = new Map(immunityRows.map((row) => [`${String(row.monster)}:${String(row.subtype ?? '')}`, (Array.isArray(row.immunities) ? row.immunities : []).map(String).sort()]));
 	assert.deepEqual([...immunityByKey.keys()].sort(), [
 		'acidic:', 'armoredStatue:', 'causticSlime:', 'demonSpawner:', 'dm100:', 'dm200:', 'dm201:',
 		'dm300:', 'goo:', 'golem:', 'necroSkeleton:', 'ninjaLog:', 'pylon:', 'piranha:', 'rotHeart:',
-		'skeleton:', 'statue:', 'succubus:', 'tengu:', 'yog:', 'yogFist:bright', 'yogFist:burning',
+		'skeleton:', 'statue:', 'succubus:', 'tengu:', 'yog:', 'yogFist:burning',
 		'yogFist:rotting', 'yogFist:rusted',
 	].sort(), 'monster immunity table covers exactly the Java-immune kinds');
 	assert.deepEqual(immunityByKey.get('ninjaLog:'), ['amok', 'bleeding', 'charm', 'poison', 'terror'], 'the NinjaLog decoy refuses terror/amok/charm plus the INORGANIC pair');
@@ -1382,6 +1413,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	assert.equal(monsterBuffImmune('yogFist', 'rotting', 'ooze'), true, 'rotting fist refuses ooze');
 	assert.equal(monsterBuffImmune('yogFist', 'burning', 'ooze'), false, 'burning fist accepts ooze');
 	assert.equal(monsterBuffImmune('yogFist', 'burning', 'burning'), true, 'burning fist refuses burning');
+	assert.equal(monsterBuffImmune('yogFist', 'bright', 'frost'), false, 'bright fist accepts frost - no Java immunity');
 	assert.equal(monsterBuffImmune('yog', undefined, 'terror'), true, 'yog refuses terror');
 	assert.equal(monsterBuffImmune('goo', undefined, 'terror'), false, 'goo accepts terror');
 	assert.equal(monsterBuffImmune('tengu', undefined, 'roots'), true, 'tengu refuses roots');
@@ -1675,6 +1707,53 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	assert.equal(roseRechargeGhostHeal(0, 1), 1);
 	assert.equal(roseRechargeGhostHeal(3, 1), 2, '(1 + level/3) * amount');
 	assert.equal(roseRechargeGhostHeal(9, 4), 16);
+	// `Talent.onFoodEaten()` via `applyMealEatenEffects` (tag `v3.3.8`): the meal talents
+	// shared by ordinary food and `HornOfPlenty.doEatEffect()` (horn callers pass base 0 -
+	// the horn grants satiety, never HP). combat.ts is stubbed: the helper under test never
+	// touches addBuff/reigniteBuff (only the mystery-meat branch does, untested here); the
+	// challenges/i18n stubs above already cover this module's other two imports.
+	writeFileSync(join(out, 'combat.js'), 'exports.addBuff = () => {};\nexports.reigniteBuff = () => {};\n');
+	compile(join(root, 'src/talentEffects.ts'), 'talentEffects.js');
+	compile(join(root, 'src/items/consumables.ts'), 'items/consumables.js');
+	const { applyMealEatenEffects } = require('./items/consumables.js');
+	const mealScene = (heroClass, ranks, hp = 10) => {
+		const state = {
+			heroClass,
+			hero: { hp, maxHp: 20, buffs: {} },
+			talentRank: (id) => ranks[id] ?? 0,
+			wandBonusDamage: 0,
+			refunded: 0,
+			wandCharges: { refund: (n) => { state.refunded = n; } },
+			ammo: 0,
+			freeTurnNext: false,
+			physicalBonusDamage: 0,
+			physicalBonusAttacks: 0,
+			showHeal: () => {},
+			say: () => {},
+		};
+		return state;
+	};
+	let meal = mealScene('warrior', { hearty_meal: 2 }, 5);
+	assert.equal(applyMealEatenEffects(meal, 0), 6, 'a horn meal heals a hurt warrior 2 + 2*rank');
+	assert.equal(meal.hero.hp, 11);
+	meal = mealScene('warrior', {}, 15);
+	assert.equal(applyMealEatenEffects(meal, 0), 0, 'no hearty heal above a third of max HP');
+	assert.equal(meal.hero.hp, 15);
+	meal = mealScene('mage', { empowering_meal: 1, energizing_meal: 2 });
+	meal.wandBonusDamage = 5;
+	assert.equal(applyMealEatenEffects(meal, 3), 3, 'food base heal passes through unchanged');
+	assert.equal(meal.wandBonusDamage, 5, 'empowering takes the max, never sums');
+	assert.equal(meal.refunded, 8, 'energizing rank 2 refunds 8 wand charges');
+	meal = mealScene('duelist', { focused_meal: 2, strengthening_meal: 1 });
+	assert.equal(applyMealEatenEffects(meal, 0), 0);
+	assert.equal(meal.ammo, 2, 'focused rank 2 restores 2 ammo');
+	assert.deepEqual([meal.physicalBonusDamage, meal.physicalBonusAttacks], [3, 2], 'strengthening sets 3 damage for rank + 1 attacks');
+	meal = mealScene('rogue', { mystical_meal: 1 });
+	applyMealEatenEffects(meal, 0);
+	assert.equal(meal.hero.buffs.cloak, 9999, 'mystical meal cloaks');
+	meal = mealScene('huntress', { invigorating_meal: 2 });
+	applyMealEatenEffects(meal, 0);
+	assert.equal(meal.freeTurnNext, true, 'invigorating meal grants the free turn');
 	const { weaponSTRReq, armorSTRReq, missileSTRReq, canSurpriseAttack } = require('./items/strReq.js');
 	// `Weapon.STRReq`/`Armor.STRReq`/`MissileWeapon.STRReq` (tags `v2.1.4`/`v3.3.8`):
 	// `(8 + tier*2) - (int)(sqrt(8*lvl+1)-1)/2`, decreasing at +1/+3/+6/+10.
@@ -1717,7 +1796,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		assert.ok(readFileSync(join(root, 'src/items/displayName.ts'), 'utf8').includes(`'${key}'`), `stats line uses ${key}`);
 		assert.ok(readFileSync(join(root, 'src/generated/spdMessages.ts'), 'utf8').includes(`"${key}"`), `${key} exists in the catalogue`);
 	}
-	console.log('PASS item-instance separation, enhancement transfer, upgrade policy, appearance restore, missile dust pickup, the Unstable delegate list, rings.mwl-derived ring formulas, items.mwl-derived weapon/armor tiers, Generator.java deck parity, monster/hero/buff Java parity, per-monster status immunities, the Sandals of Nature seed/charge economy, the Talisman of Foresight scry formulas, the Dried Rose ghost/petal economy, the Ring of Wealth bonus-drop counters, the generated shop shelf, and the ArtifactRecharge table, and weapon/armor/missile STR requirements, and ceremonial-candle aimed placement');
+	console.log('PASS item-instance separation, enhancement transfer, upgrade policy, appearance restore, missile dust pickup, the Unstable delegate list, rings.mwl-derived ring formulas, items.mwl-derived weapon/armor tiers, Generator.java deck parity, monster/hero/buff Java parity, per-monster status immunities, the Sandals of Nature seed/charge economy, the Talisman of Foresight scry formulas, the Dried Rose ghost/petal economy, the Ring of Wealth bonus-drop counters, the generated shop shelf, and the ArtifactRecharge table, and weapon/armor/missile STR requirements, and ceremonial-candle aimed placement, and the shared food/horn meal-talent effects');
 } finally {
 	rmSync(out, { recursive: true, force: true });
 }

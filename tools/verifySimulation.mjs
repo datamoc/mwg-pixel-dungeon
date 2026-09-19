@@ -41,6 +41,9 @@ try {
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/mageAbilities', 'simulation/rogueAbilities', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'mechanics/cone', 'dungeonConstants',
 	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink',
+	// `actors/monsterSpawn` (plus its `monsters`/`challenges`/i18n chain) for the spawn-profile
+	// checks: the chaos-elemental roll, the rare-alt table, and the unported-mob absences.
+	'monsters', 'challenges', 'i18n/index', 'i18n/portStrings', 'i18n/languages', 'i18n/spdKeys', 'generated/spdMessages', 'items/artifacts', 'actors/monsterSpawn',
 	// `dungeonConstants` and `items/wands` read the MWL item tables, so the harness compiles the
 	// real adapter and the real generated catalogue instead of a hand-copied stub of them - a stub
 	// is how the old, hand-listed framework set above drifted once already, and how the item-frame
@@ -80,7 +83,7 @@ try {
 	// pulled in; the real namespace module is re-exported under the barrel's own names.
 	mkdirSync(join(output, 'node_modules', 'mwg'), { recursive: true });
 	writeFileSync(join(output, 'node_modules', 'mwg', 'index.js'),
-		`const random = require(${JSON.stringify(join(dist, 'core', 'Random.js'))}); exports.Random = random; exports.Generator = random.Generator;\n`);
+		`const random = require(${JSON.stringify(join(dist, 'core', 'Random.js'))}); exports.Random = random; exports.Generator = random.Generator; exports.I18n = require(${JSON.stringify(join(dist, 'i18n', 'index.js'))});\n`);
 	const require = createRequire(join(output, 'tests.cjs'));
 	const { advanceHunger } = require('./simulation/hunger');
 	const { runHungerStep } = require('./adapters/hungerSimulation');
@@ -607,9 +610,16 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.deepEqual(attacks[0].attacker.damage, [6, 12]);
 		assert.equal(attacks[0].attacker.accuracy, 20);
 		assert.deepEqual(messages, ['pump', 'pump-more', 'slam']);
-		assert.deepEqual(planRatKingWave(0, 300, false, random), { adds: ['ghoul'], nextSummonsMade: 1, announcement: 'wave_1' });
+		assert.deepEqual(planRatKingWave(0, 300, false, random), { adds: ['ghoul'], nextSummonsMade: 1, announcement: 'wave_1', cadence: 3 });
 		assert.deepEqual(ratKingP1Summon(8, true, random), 'golem');
-		assert.deepEqual(planRatKingWave(12, 150, true, random), { adds: ['warlock', 'monk', 'ghoul', 'ghoul'], nextSummonsMade: 16, announcement: 'wave_3' });
+		assert.deepEqual(planRatKingWave(12, 150, true, random), { adds: ['warlock', 'monk', 'ghoul', 'ghoul'], nextSummonsMade: 16, announcement: 'wave_3', cadence: 3 });
+		//34th matrix: the wave-3 yell fires wherever the branch fires (made 8, not
+		//just 12), and every plan carries Java's spend pacing (3 for wave-1
+		//schedules, 1 for the per-turn waves).
+		assert.deepEqual(planRatKingWave(8, 50, false, random), { adds: ['warlock', 'monk', 'ghoul', 'ghoul'], nextSummonsMade: 12, announcement: 'wave_3', cadence: 1 });
+		assert.deepEqual(planRatKingWave(4, 150, false, random), { adds: ['ghoul'], nextSummonsMade: 5, announcement: 'wave_2', cadence: 1 });
+		assert.deepEqual(planRatKingWave(14, 100, true, random), { adds: ['golem', 'golem'], nextSummonsMade: 16, announcement: undefined, cadence: 1 });
+		assert.deepEqual(planRatKingWave(0, 400, true, random), { adds: ['ghoul', 'ghoul'], nextSummonsMade: 2, announcement: 'wave_1', cadence: 3 });
 		assert.equal(chooseDM300Ability(0, random), 'vent');
 		assert.equal(chooseDM300Ability(2, random), 'rockfall');
 		// Java's weighted repeat rule, pinned exactly: fresh is 50/50, a repeat lands
@@ -728,6 +738,45 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	verifyRipperLeap(require, check);
 	verifySuccubusBlink(require, check);
 	verifyArmorAbilities(require, check);
+	check('Elemental.random() deals chaos at 1/50 with the fire/frost/shock split', () => {
+		// `Elemental.random()` (Elemental.java, tag v3.3.8): `Float() < 1/50` chaos, else one
+		// float for fire (<.4)/frost (<.8)/shock. The old `Random.int(0, 50) === 0` rolled over
+		// 51 inclusive values - no sane sample distinguishes 1/51 from 1/50, so the exact draw
+		// shape is pinned structurally while the live distribution gets a wide sanity band over
+		// 20000 spawns (chaos 400, fire/frost 7840 each, shock 3920 - all ±10σ and then some).
+		const { monsterSpawnProfile } = require('./actors/monsterSpawn');
+		const counts = { chaos: 0, fire: 0, frost: 0, shock: 0 };
+		for (let i = 0; i < 20000; i++) {
+			const type = monsterSpawnProfile('elemental', 17, false, false, false, 1).elementalType;
+			assert.ok(type !== undefined, 'every elemental rolls a type');
+			counts[type]++;
+		}
+		assert.ok(counts.chaos >= 200 && counts.chaos <= 700, `chaos spawns: ${counts.chaos}`);
+		for (const kind of ['fire', 'frost']) {
+			assert.ok(counts[kind] >= 7000 && counts[kind] <= 8700, `${kind} spawns: ${counts[kind]}`);
+		}
+		assert.ok(counts.shock >= 3300 && counts.shock <= 4600, `shock spawns: ${counts.shock}`);
+		const spawnSrc = readFileSync(new URL('../src/actors/monsterSpawn.ts', import.meta.url), 'utf8');
+		assert.ok(spawnSrc.includes('Random.float() < 1 / 50'), 'chaos roll is a float draw at 1/50');
+	});
+	check('Bee.spawn() depth scaling matches Java, and the shatter chain is wired', () => {
+		// `Bee.spawn(level)`: HT/HP `(2+level)*4`, evasion `9+level`, accuracy = evasion,
+		// damage `NormalIntRange(HT/10, HT/4)` (Java int division floors). The port's
+		// depth row evaluates the same closed shapes (40th matrix,
+		// `MONSTER_ANALYSIS_HONEYPOT_BEE.md`).
+		const { monsterSpawnProfile } = require('./actors/monsterSpawn');
+		const at = (depth) => monsterSpawnProfile('bee', depth, false, false, false, 1).adjustedDef;
+		assert.deepEqual([at(1).hp, at(1).accuracy, at(1).evasion, at(1).damage], [12, 10, 10, [1, 3]]);
+		assert.deepEqual([at(5).hp, at(5).accuracy, at(5).evasion, at(5).damage], [28, 14, 14, [2, 7]]);
+		assert.deepEqual([at(14).hp, at(14).accuracy, at(14).evasion, at(14).damage], [64, 23, 23, [6, 16]]);
+		// Structural: the item routes to the shatter, the bee hunts through its own
+		// override (never the generic dispatch), and the pot anchor persists.
+		const scene = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const actions = readFileSync(new URL('../src/items/itemActions.ts', import.meta.url), 'utf8');
+		assert.ok(actions.includes("id === 'honeypot') scene.useHoneypot(instanceId)"), 'honeypot routes to the shatter');
+		assert.ok(scene.includes('bee: (monster) => { this.takeBeeTurn(monster); return true; }'), 'bee hunts through its own override');
+		assert.ok(scene.includes('potPos: creature.potPos') && scene.includes('potPos: saved.potPos'), 'pot anchor persists through save/restore');
+	});
 	verifyRings(require, check);
 	console.log(`${passed} simulation checks passed.`);
 } finally {

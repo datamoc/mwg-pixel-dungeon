@@ -38,9 +38,11 @@ export interface MonsterSpawnProfile {
 }
 
 function randomElementalType(): NonNullable<Creature['elementalType']> {
-	//Elemental.random() (Elemental.java, tag v3.3.8): Chaos is a 1/50 roll; otherwise
-	//one float chooses Fire (<.4), Frost (<.8), or Shock.
-	if (Random.int(0, 50) === 0) return 'chaos';
+	//Elemental.random() (Elemental.java, tag v3.3.8): `Random.Float() < 1/50 * RatSkull.exoticChanceMultiplier()`,
+	//then one float for Fire (<.4), Frost (<.8), or Shock. The old `Random.int(0, 50) === 0` rolled over 51
+	//inclusive values (1/51, not 1/50) with the wrong draw shape; the trinket multiplier is its default 1
+	//here (no trinket system - the ParchmentScrap precedent in `src/items/generator.ts`).
+	if (Random.float() < 1 / 50) return 'chaos';
 	const roll = Random.float();
 	return roll < 0.4 ? 'fire' : roll < 0.8 ? 'frost' : 'shock';
 }

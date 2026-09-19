@@ -26430,7 +26430,7 @@ export const gameData = {
 				"damage_max": "12",
 				"armor_min": "0",
 				"armor_max": "5",
-				"experience": "10",
+				"experience": "25",
 				"max_level": "-2",
 				"image": "assets/yog_fists.png"
 			},
@@ -27156,7 +27156,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 45,
+								"line": 47,
 								"column": 13
 							},
 							"gettext": []
@@ -27171,7 +27171,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 46,
+								"line": 48,
 								"column": 13
 							},
 							"gettext": []
@@ -27186,7 +27186,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 47,
+								"line": 49,
 								"column": 13
 							},
 							"gettext": []
@@ -27201,7 +27201,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 48,
+								"line": 50,
 								"column": 13
 							},
 							"gettext": []
@@ -27216,7 +27216,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 49,
+								"line": 51,
 								"column": 13
 							},
 							"gettext": []
@@ -27231,7 +27231,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 50,
+								"line": 52,
 								"column": 13
 							},
 							"gettext": []
@@ -27246,7 +27246,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 51,
+								"line": 53,
 								"column": 13
 							},
 							"gettext": []
@@ -27261,7 +27261,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 52,
+								"line": 54,
 								"column": 13
 							},
 							"gettext": []
@@ -27276,7 +27276,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 53,
+								"line": 55,
 								"column": 13
 							},
 							"gettext": []
@@ -27291,7 +27291,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 54,
+								"line": 56,
 								"column": 13
 							},
 							"gettext": []
@@ -27306,7 +27306,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 55,
+								"line": 57,
 								"column": 13
 							},
 							"gettext": []
@@ -27321,7 +27321,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 56,
+								"line": 58,
 								"column": 13
 							},
 							"gettext": []
@@ -27336,7 +27336,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 57,
+								"line": 59,
 								"column": 13
 							},
 							"gettext": []
@@ -27351,7 +27351,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 63,
+								"line": 65,
 								"column": 13
 							},
 							"gettext": []
@@ -27366,7 +27366,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 64,
+								"line": 66,
 								"column": 13
 							},
 							"gettext": []
@@ -27381,7 +27381,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 65,
+								"line": 67,
 								"column": 13
 							},
 							"gettext": []
@@ -27396,7 +27396,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 66,
+								"line": 68,
 								"column": 13
 							},
 							"gettext": []
@@ -27411,7 +27411,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 67,
+								"line": 69,
 								"column": 13
 							},
 							"gettext": []
@@ -27426,22 +27426,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 68,
-								"column": 13
-							},
-							"gettext": []
-						},
-						{
-							"tag": "row",
-							"attributes": {
-								"monster": "yogFist",
-								"subtype": "bright",
-								"immunities": "frost"
-							},
-							"children": [],
-							"location": {
-								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 69,
+								"line": 70,
 								"column": 13
 							},
 							"gettext": []
@@ -27456,7 +27441,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 70,
+								"line": 71,
 								"column": 13
 							},
 							"gettext": []
@@ -27471,7 +27456,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 71,
+								"line": 72,
 								"column": 13
 							},
 							"gettext": []
@@ -27486,7 +27471,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 72,
+								"line": 73,
 								"column": 13
 							},
 							"gettext": []
@@ -27501,7 +27486,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-								"line": 73,
+								"line": 74,
 								"column": 13
 							},
 							"gettext": []
@@ -27509,7 +27494,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\resistance-rules.mwl",
-						"line": 40,
+						"line": 42,
 						"column": 9
 					},
 					"gettext": []

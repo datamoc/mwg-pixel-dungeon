@@ -162,13 +162,6 @@ export const MONSTER_IMMUNITY_DATA = [
   },
   {
     "monster": "yogFist",
-    "subtype": "bright",
-    "immunities": [
-      "frost"
-    ]
-  },
-  {
-    "monster": "yogFist",
     "subtype": "rusted",
     "immunities": [
       "bleeding",

@@ -460,6 +460,42 @@ export function verifyArmorAbilities(require, check) {
 		assert.match(log[1], /allyKind === 'ninjaLog'/,
 			'a new decoy must retire the existing ones first');
 	});
+	check('the AfterImage decoy takes no buffs and no direct blob damage', () => {
+		//`Feint.AfterImage` (tag `v3.3.8`): `add(Buff)` returns false unconditionally and the
+		//class carries the whole `BlobImmunity` set - the decoy exists to eat one attack, not
+		//to burn, rot, or ride out gas. The buff half is behavioral (the real `addBuff`
+		//through the real facade); the three direct-damage blob sites cannot load here
+		//(scene/Pixi), so they are pinned at source level.
+		const { addBuff } = require('./combat');
+		const image = { kind: 'rat', allyKind: 'afterImage', buffs: {}, magicImmune: false };
+		addBuff(image, 'burning');
+		addBuff(image, 'terror');
+		addBuff(image, 'poison');
+		addBuff(image, 'paralysis');
+		assert.deepEqual(image.buffs, {}, 'no buff sticks to the decoy');
+		const rat = { kind: 'rat', buffs: {}, magicImmune: false };
+		addBuff(rat, 'burning');
+		assert.ok(rat.buffs['burning'] > 0, 'control: the base kind still burns');
+		const source = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		assert.match(source, /isToxicImmune: \(target\) =>[\s\S]{0,500}afterImage/,
+			'toxic gas must skip the decoy');
+		assert.match(source, /applyCorrosion: \(target, strength\) => \{[\s\S]{0,200}afterImage/,
+			'corrosive gas must skip the decoy');
+		const blobs = readFileSync(new URL('../src/simulation/environmentalBlobs.ts', import.meta.url), 'utf8');
+		assert.match(blobs, /cellsAbove\('electricity'[\s\S]{0,600}afterImage/,
+			'the electricity tick must skip the decoy');
+	});
+	check('WarpBeacon placement dispels invisibility like the recall halves', () => {
+		//`WarpBeacon.activate()` (tag `v3.3.8`) calls `Invisibility.dispel()` on placement
+		//as well as on recall - it is not one of the two abilities that skip it.
+		//dungeonScene.ts cannot load in this harness (Pixi), so this pins the placement
+		//half at source level.
+		const source = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const place = /private placeWarpBeacon\([^)]*\)[^{]*\{([\s\S]*?)\n\t\}/.exec(source);
+		assert.ok(place, 'placeWarpBeacon still exists');
+		assert.match(place[1], /delete this\.hero\.buffs\['invisibility'\]/,
+			'placing the beacon must dispel invisibility');
+	});
 	check('CombinedLethality tests only on a weapon-changed hero melee swing, executing at `0.4*points/3`', () => {
 		//`Char.java` 541-561: the tracker's weapon must differ from the attacking weapon
 		//(`!=` instance identity), the attacker must be the hero, and the attacking weapon
