@@ -1314,7 +1314,23 @@ one.
       minted fixture ids the default-true predicate wrongly admits (fixed by using the
       suite-pinned real ids), and a before-level read after the drive already mutated the item
       (fixed by asserting the known +0 start).
-      **Complexity: M.**
+      **Complexity: M.** **Twenty-first extraction 2026-09-19**: the self-buff pair
+      (`useFeatherFall`'s cushion-and-log, `useWildEnergy`'s refund/buff/bank/extend) joined
+      `items/spells.ts` as `useFeatherFallFlow`/`useWildEnergyFlow` behind a `CastBase` plus
+      `FeatherFallContext`/`WildEnergyContext` (spell gate/consume, buff/refund/recharge/timer
+      seams, turn, say); the scene keeps the two one-line adapters the router calls, two
+      builders over a shared `castBase`. The module reads the buff table and the recharge
+      turns directly. Net +19 lines in `dungeonScene.ts` (22,771 after) - two builders and a
+      base for two tiny bodies - `spells.ts` 358 to 419; same payback as the small slices
+      (first headless coverage of both casts). Suites: `tsc` clean with no fix-ups, item suite
+      green with a new headless drive (missing spells do nothing; feather cushions for the
+      table duration with the light line; wild refunds one charge, grants recharging for the
+      table duration, banks exactly 4, extends by exactly the table turns, and logs nothing).
+      The move corrected two stale claims in passing: the scene comment and the WildEnergy
+      coverage row both said the four-turn pulse was unmodeled for want of a recharge clock,
+      but `ArtifactRecharge` ported the next day and the body always banked it - both now say
+      so, with the row pointing at the correction.
+      **Complexity: S.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

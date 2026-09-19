@@ -2310,10 +2310,12 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 }
 // The moved targeted spells (`items/spells.ts`, the file-size refactor's seventeenth
 // extraction): driven headlessly with a stub floor and scripted aim.
-const { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow, useCurseInfusionFlow, useMagicalInfusionFlow } = require('./items/spells.js');
+const { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow, useCurseInfusionFlow, useMagicalInfusionFlow, useFeatherFallFlow, useWildEnergyFlow } = require('./items/spells.js');
+const { BUFF_DURATION } = require('./simulation/buffs.js');
+const { wildEnergyRechargeTurns } = require('./items/artifactRecharge.js');
 function spellDrive(overrides = {}) {
 	const log = [];
-	const flags = { aim: null, grabbed: [], moved: [], teleports: [], calmed: [], paralysed: [], turns: 0, consumed: [], refunds: 0, restitched: 0 };
+	const flags = { aim: null, grabbed: [], moved: [], teleports: [], calmed: [], paralysed: [], turns: 0, consumed: [], refunds: 0, restitched: 0, buffs: {}, recharged: [], extended: [] };
 	const bag = overrides.bag ?? { telekineticGrab: 1, phaseShift: 1, reclaimTrap: 1 };
 	const creatures = overrides.creatures ?? {};
 	const heaps = overrides.heaps ?? {};
@@ -2353,6 +2355,11 @@ function spellDrive(overrides = {}) {
 			trapState.carried = null;
 		},
 		refreshTiles: () => { flags.restitched++; },
+		applyFeatherFall: (duration) => { flags.buffs.featherFall = duration; },
+		refundWandCharge: () => { flags.refunds++; },
+		grantRecharging: (duration) => { flags.buffs.recharging = duration; },
+		rechargeArtifacts: (amount) => { flags.recharged.push(amount); },
+		extendRechargeTurns: (turns) => { flags.extended.push(turns); },
 		...overrides.ctx,
 	};
 	return { ctx, log, flags, bag, trapState };
@@ -2606,6 +2613,31 @@ function infusionDrive(kind, overrides = {}, pickIndex = 0) {
 	const bare = infusionDrive('magic', { items: [{ id: 'potionHealing', quantity: 1, instanceId: 'p1' }] });
 	assert.equal(bare.flags.picker, null, 'no candidates means no picker');
 	assert.ok(bare.log.some((l) => l.includes('nothing') && l.startsWith('say:negative')), 'just the nothing line');
+}
+// The moved self-buffs (`useFeatherFallFlow`/`useWildEnergyFlow`, the file-size refactor's
+// twenty-first extraction): missing spells do nothing; casts consume, buff, refund and
+// recharge, and spend exactly one turn.
+{
+	const missing = spellDrive({ bag: {} });
+	useFeatherFallFlow(missing.ctx);
+	useWildEnergyFlow(missing.ctx);
+	assert.equal(missing.flags.turns, 0, 'no spell, no cast');
+	assert.deepEqual(missing.flags.consumed, [], 'and nothing consumed');
+	const feather = spellDrive({ bag: { featherFall: 1 } });
+	useFeatherFallFlow(feather.ctx);
+	assert.equal(feather.flags.buffs.featherFall, BUFF_DURATION.featherFall, 'the fall is cushioned for the table duration');
+	assert.ok(feather.log.some((l) => l.includes('featherfall.light')), 'with the light line');
+	assert.deepEqual(feather.flags.consumed, ['featherFall'], 'consuming the spell');
+	assert.equal(feather.flags.turns, 1, 'and spending the turn');
+	const wild = spellDrive({ bag: { wildEnergy: 1 } });
+	useWildEnergyFlow(wild.ctx);
+	assert.equal(wild.flags.refunds, 1, 'one wand charge refunded');
+	assert.equal(wild.flags.buffs.recharging, BUFF_DURATION.recharging, 'recharging granted for the table duration');
+	assert.deepEqual(wild.flags.recharged, [4], 'four artifact turns banked at once');
+	assert.deepEqual(wild.flags.extended, [wildEnergyRechargeTurns()], 'the timer extended by the table turns');
+	assert.equal(wild.log.length, 0, 'Java logs nothing on the cast');
+	assert.deepEqual(wild.flags.consumed, ['wildEnergy'], 'consuming the spell');
+	assert.equal(wild.flags.turns, 1, 'and spending the turn');
 }
 }
 }

@@ -235,7 +235,7 @@ import { applyTalismanPerTurnCharge, useTalismanFlow, checkTalismanAwarenessFlow
 import { roseGhostMaxHp, applyRoseRecharge, useRoseFlow, type RoseFlowContext, type RoseItem } from '../items/rose';
 import { rosePetalsNeeded, rosePetalDropCap, rosePetalPickup, roseChargeCap, roseLevelCap } from '../items/rose';
 import { beaconChargeCap, useBeaconFlow, useReturningBeaconFlow, type BeaconFlowContext, type BeaconItem } from '../items/beacon';
-import { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow, useCurseInfusionFlow, useMagicalInfusionFlow, type TargetedSpellAim, type TelekineticGrabContext, type PhaseShiftContext, type ReclaimTrapContext, type RecycleContext, type InfusionBase, type CurseInfusionContext } from '../items/spells';
+import { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow, useCurseInfusionFlow, useMagicalInfusionFlow, useFeatherFallFlow, useWildEnergyFlow, type TargetedSpellAim, type TelekineticGrabContext, type PhaseShiftContext, type ReclaimTrapContext, type RecycleContext, type InfusionBase, type CurseInfusionContext, type CastBase, type FeatherFallContext, type WildEnergyContext } from '../items/spells';
 import { planWealthDrops, wealthEquipBonus, initialiseWealthTrackers, wealthDeathRolls, type WealthDropPlan, type WealthTrackers } from '../items/wealthDrops';
 import { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal, artifactRechargeDuration, wildEnergyRechargeTurns, type RechargeGuards } from '../items/artifactRecharge';
 import { equipRing as equipInventoryRing, equipArmor as equipInventoryArmor, equipWeapon as equipInventoryWeapon, type GearEquipmentContext, type RingEquipmentContext } from '../items/equipment';
@@ -21934,33 +21934,52 @@ private eyeBeamTurn(monster: Creature): boolean {
 	/** `ElixirOfFeatherFall.apply()` (tag `v3.3.8`): consume one alchemical spell and append
 	 * its 50-turn, one-chasm marker. This inventory action spends the hero turn directly. */
 	private useFeatherFall(instanceId?: string): void {
-		const item = this.bag.find('featherFall', instanceId);
-		if (!item) return;
-		this.bag.remove('featherFall', 1, instanceId);
-		this.hero.buffs['featherFall'] = BUFF_DURATION.featherFall;
-		this.say(t('items.spells.featherfall.light'), 'positive');
-		this.actionSpentTurn = true;
-		this.spendHeroTurn(1);
+		useFeatherFallFlow(this.featherFallContext(), instanceId);
 	}
 
-	/** `WildEnergy.affectTarget()` (tag `v3.3.8`): refund one wand charge and grant the
-	 * eight-turn Recharging buff. Java also advances every artifact by four turns; this port
-	 * has no generic artifact-recharge clock, so that presentation/economy half remains absent. */
+	/**
+	 * The FeatherFall self-cast lives in `items/spells.ts` behind `FeatherFallContext` -
+	 * the file-size refactor's twenty-first extraction (with WildEnergy below),
+	 * behavior-identical.
+	 */
+	private featherFallContext(): FeatherFallContext {
+		const scene = this;
+		return {
+			...scene.castBase(),
+			applyFeatherFall: (duration) => { scene.hero.buffs['featherFall'] = duration; },
+		};
+	}
+
 	private useWildEnergy(instanceId?: string): void {
-		const item = this.bag.find('wildEnergy', instanceId);
-		if (!item) return;
-		this.bag.remove('wildEnergy', 1, instanceId);
-		this.wandCharges.refund(1);
-		addBuff(this.hero, 'recharging', BUFF_DURATION.recharging);
-		//`WildEnergy.onCast()`: `ArtifactRecharge.chargeArtifacts(hero, 4f)` immediately, then the
-		//buff is extended by 8 turns - so the cast banks four turns of every artifact hook at once
-		//and leaves the timer running for the same hooks to be handed `min(1, left)` on later turns.
-		this.applyArtifactRecharge(4);
-		this.artifactRechargeTurns = Math.max(this.artifactRechargeTurns, wildEnergyRechargeTurns());
-		// Java logs nothing on this cast (WildEnergy.affectTarget is sound and sprite only);
-		// the recharge buff and the refunded wand charge are the feedback, so no line here either.
-		this.actionSpentTurn = true;
-		this.spendHeroTurn(1);
+		useWildEnergyFlow(this.wildEnergyContext(), instanceId);
+	}
+
+	/**
+	 * The WildEnergy self-cast lives in `items/spells.ts` behind `WildEnergyContext` -
+	 * the file-size refactor's twenty-first extraction (with FeatherFall above),
+	 * behavior-identical.
+	 */
+	private wildEnergyContext(): WildEnergyContext {
+		const scene = this;
+		return {
+			...scene.castBase(),
+			refundWandCharge: () => { scene.wandCharges.refund(1); },
+			grantRecharging: (duration) => { addBuff(scene.hero, 'recharging', duration); },
+			rechargeArtifacts: (amount) => { scene.applyArtifactRecharge(amount); },
+			extendRechargeTurns: (turns) => { scene.artifactRechargeTurns = Math.max(scene.artifactRechargeTurns, turns); },
+		};
+	}
+
+	/** The seams self-cast buff spells share: the carried spell, the turn, the log. */
+	private castBase(): CastBase {
+		const scene = this;
+		return {
+			hasSpell: (id, instanceId) => scene.bag.find(id, instanceId) !== undefined,
+			consumeSpell: (id, instanceId) => { scene.bag.remove(id, 1, instanceId); },
+			spendTurn: () => { scene.actionSpentTurn = true; scene.spendHeroTurn(1); },
+			say: scene.say.bind(scene),
+			t,
+		};
 	}
 
 	/** `TelekineticGrab.affectTarget()` (tag `v3.3.8`): target a heap and pull its contents

@@ -10,9 +10,11 @@
 import { Random } from 'mwg';
 import type { AnyMonsterId } from '../monsters';
 import type { TrapKind } from '../dungeonConstants';
+import { BUFF_DURATION } from '../simulation/buffs';
 import { usableForCurseInfusion, usableForMagicalInfusion } from './itemKinds';
 import { getArmorCurses, getWeaponCurses } from './itemCurses';
 import { upgradeItem } from './itemWorkflows';
+import { wildEnergyRechargeTurns } from './artifactRecharge';
 
 /** The seams every targeted spell shares: the carried spell, the aimer, the turn, the log. */
 export interface TargetedSpellAim {
@@ -127,6 +129,65 @@ export function useRecycleFlow(ctx: RecycleContext, instanceId?: string): void {
 		ctx.say(ctx.t('items.spells.recycle.recycled', { 0: ctx.replacementName(replacement) }), 'positive');
 		ctx.refreshPanels();
 	});
+}
+
+/** The seams self-cast buff spells share: the carried spell, the turn, the log. */
+export interface CastBase {
+	hasSpell(id: string, instanceId?: string): boolean;
+	consumeSpell(id: string, instanceId?: string): void;
+	spendTurn(): void;
+	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
+	t(key: string, params?: Record<string, string | number>): string;
+}
+
+/**
+ * The FeatherFall self-cast, moved out of the scene behind this context the same
+ * way - behavior-identical, with the scene keeping one builder plus the
+ * `useFeatherFall` adapter the item-use router calls.
+ */
+export interface FeatherFallContext extends CastBase {
+	applyFeatherFall(duration: number): void;
+}
+
+/**
+ * The WildEnergy self-cast, moved out of the scene behind this context the same
+ * way - behavior-identical, with the scene keeping one builder plus the
+ * `useWildEnergy` adapter the item-use router calls.
+ */
+export interface WildEnergyContext extends CastBase {
+	refundWandCharge(): void;
+	grantRecharging(duration: number): void;
+	rechargeArtifacts(amount: number): void;
+	extendRechargeTurns(turns: number): void;
+}
+
+/** `FeatherFall`: consume the spell, cushion the hero's falls for the buff table's own
+ *  duration, log the light line, spend the turn. */
+export function useFeatherFallFlow(ctx: FeatherFallContext, instanceId?: string): void {
+	if (!ctx.hasSpell('featherFall', instanceId)) return;
+	ctx.consumeSpell('featherFall', instanceId);
+	ctx.applyFeatherFall(BUFF_DURATION.featherFall);
+	ctx.say(ctx.t('items.spells.featherfall.light'), 'positive');
+	ctx.spendTurn();
+}
+
+/** `WildEnergy.affectTarget()` (tag `v3.3.8`): refund one wand charge, grant the
+ * Recharging buff, bank four turns of every artifact hook at once, and extend the recharge
+ * timer - the scene comment this moves carried a stale "no recharge clock" clause from
+ * before `ArtifactRecharge` was ported; the body it describes always did both halves. */
+export function useWildEnergyFlow(ctx: WildEnergyContext, instanceId?: string): void {
+	if (!ctx.hasSpell('wildEnergy', instanceId)) return;
+	ctx.consumeSpell('wildEnergy', instanceId);
+	ctx.refundWandCharge();
+	ctx.grantRecharging(BUFF_DURATION.recharging);
+	//`WildEnergy.onCast()`: `ArtifactRecharge.chargeArtifacts(hero, 4f)` immediately, then the
+	//buff is extended by 8 turns - so the cast banks four turns of every artifact hook at once
+	//and leaves the timer running for the same hooks to be handed `min(1, left)` on later turns.
+	ctx.rechargeArtifacts(4);
+	ctx.extendRechargeTurns(wildEnergyRechargeTurns());
+	// Java logs nothing on this cast (WildEnergy.affectTarget is sound and sprite only);
+	// the recharge buff and the refunded wand charge are the feedback, so no line here either.
+	ctx.spendTurn();
 }
 
 /** A carried weapon, armor, wand or missile stack an infusion picker can offer. The
