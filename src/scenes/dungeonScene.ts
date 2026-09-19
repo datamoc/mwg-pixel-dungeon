@@ -14386,10 +14386,13 @@ private eyeBeamTurn(monster: Creature): boolean {
 		}
 		//The three weapon curses this file used to resolve here (explosive/dazzling/annoying) now
 		//live in `heroOnHit`, where the attacker is the weapon's own wielder - see the note there.
-		if (attacker.kind === 'albino' && Random.chance(0.5)) {
-			// Albino's Java proc is Bleeding; poison is the available damage-over-time
-			// primitive and is intentionally applied only after a landed hit.
-			addBuff(defender, 'poison');
+		//Albino.attackProc() (Albino.java, tag v3.3.8): half of landed hits dealing
+		//damage>0 apply `Bleeding.set(Random.NormalFloat(2, 3))`. The port's bleeding
+		//primitive (`setBleeding`, max-wins) is the direct equivalent - the `poison`
+		//stand-in this site used to apply is removed. `Random.float(1)` is uniform on
+		//[2, 3), a stated stand-in for Java's bell-curved `NormalFloat(2, 3)`.
+		if (attacker.kind === 'albino' && damage > 0 && Random.chance(0.5)) {
+			setBleeding(defender, 2 + Random.float(1));
 		}
 		if ((attacker.kind === 'causticSlime' || attacker.kind === 'acidic') && Random.chance(attacker.kind === 'acidic' ? 1 : 0.5)) {
 			addBuff(defender, 'ooze');
@@ -14877,7 +14880,12 @@ private eyeBeamTurn(monster: Creature): boolean {
 				//`DM200_EQUIP` counter - so it reads dm200's decay and counter, not its own.
 				const counterKind = creature.kind === 'dm201' ? 'dm200' : creature.kind;
 				const decay = LIMITED_DROP_DECAY[counterKind as MonsterId];
+				//Swarm.lootChance() (Swarm.java, tag v3.3.8): `1/(6*(generation+1))` - the
+				//MWL 1/6 base is the generation-0 value, so split descendants divide by
+				//their own generation+1 here; the `(5-n)/5` LimitedDrops half rides `decay`.
+				const generationDivisor = creature.kind === 'swarm' ? (creature.generation ?? 0) + 1 : 1;
 				const chance = (decay ? entry.chance * decay(this.limitedDrops[counterKind as MonsterId] ?? 0) : entry.chance)
+					/ generationDivisor
 					* (ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune) + this.bountyHunterLootBonus());
 				const drop = Actors.rollLoot({ entries: [{ id: entry.kind, weight: 1 }], chance });
 				if (drop) {
