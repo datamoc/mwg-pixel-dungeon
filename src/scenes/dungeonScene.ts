@@ -9964,12 +9964,12 @@ export class DungeonScene extends Scene2D {
 	/** Whole-turn passive actors checked after hostile mobs have had the chance to attack an
 	 * adjacent friendly summon, preserving the old ordering in `takeMonsterTurn`. */
 	private readonly postAllyMonsterTurnOverrides: Record<string, (monster: Creature) => boolean> = {
-		statue: (monster) => {
-			//Statue.java is PASSIVE and immobile until struck. `sleeping` is the existing
-			//port's compact passive-state flag; the attack path wakes it after damage lands.
-			if (!monster.sleeping && Roguelike.chebyshevDistance(monster, this.hero) === 1) this.attack(monster, this.hero);
-			return true;
-		},
+		statue: (monster) => this.takeStatueTurn(monster),
+		//ArmoredStatue inherits Statue's PASSIVE turn/wake rules unchanged in Java
+		//(`ArmoredStatue extends Statue`, tag v3.3.8 - its own overrides only add the
+		//armor/weapon kit), so it shares the handler rather than falling through to
+		//the generic sleeper path, which would wake it on sight and let it wander.
+		armoredStatue: (monster) => this.takeStatueTurn(monster),
 		piranha: (monster) => {
 			//Piranha.act(): water-bound mobs die immediately when a room effect or movement
 			//places them on land; in water it falls through to the ordinary water-only path.
@@ -9977,6 +9977,20 @@ export class DungeonScene extends Scene2D {
 			return this.level.get(monster.x, monster.y) !== WATER;
 		},
 	};
+
+	/** `Statue`'s PASSIVE turn (`Statue.java`, tag `v3.3.8`): immobile until woken, then
+	 * adjacent-only attacks through this override (the woken-statue chase is a recorded
+	 * simplification, not modeled here). `sleeping` is the port's compact passive-state
+	 * flag: the damage path wakes it after a hit lands, and - matching `Statue.add()`'s
+	 * `NEGATIVE`-buff flip to HUNTING - a debuffed sleeper wakes here, since this override
+	 * returns before the generic sleeping branch that would otherwise do it. */
+	private takeStatueTurn(monster: Creature): boolean {
+		if (monster.sleeping && Object.keys(monster.buffs).some((id) => NEGATIVE_BUFFS.has(id as BuffId))) {
+			monster.sleeping = false;
+		}
+		if (!monster.sleeping && Roguelike.chebyshevDistance(monster, this.hero) === 1) this.attack(monster, this.hero);
+		return true;
+	}
 
 	/** `Pylon.act()`/`Pylon.activate()` (tag `v3.3.8`): inactive pylons are neutral, immovable
 	 * and do not attack. Once the DM-300 gate activates them, each pylon shocks the next neighbour
@@ -13574,7 +13588,10 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (attacker === this.hero && this.hero.buffs['frostImbue'] && defender.hp > 0 && !defender.isHero && !defender.isNPC) {
 			defender.buffs['cripple'] = 2;
 		}
-		if (defender.kind === 'statue') defender.sleeping = false;
+		//Statue.damage() (Statue.java, tag v3.3.8): any damage flips PASSIVE to HUNTING.
+		//ArmoredStatue inherits it unchanged, so both kinds wake here - previously only
+		//`statue` did, leaving a struck armored statue asleep forever.
+		if (defender.kind === 'statue' || defender.kind === 'armoredStatue') defender.sleeping = false;
 		this.showDamage(defender, damage);
 		//`Mob.defenseProc()` surprise presentation (`Mob.java`, tag `v3.3.8`): a
 		//surprise hit plays `HIT_STRONG` and shows the red `Wound` slash when the
