@@ -86,8 +86,9 @@ export const RING_DEFS: Record<string, { stat: string; op: Actors.ModifierOp; at
 	sharpshooting: mwlRingFormula('sharpshooting', 'sharpshooting', 'sharpshooting', 'add'),
 	//RingOfElements.resist(): `pow(0.825, bonusLevel)` damage multiplier against elemental
 	//sources (Burning/Chill/Frost/Ooze/Paralysis/Poison/Corrosion/ToxicGas/Electricity +
-	//AntiMagic.RESISTS), read via `ringElementsMultiplier` at the hero's elemental-damage
-	//sites (burning/poison DoT, toxic-gas blob, burning trap). Real Java applies this in
+	//AntiMagic.RESISTS), read via `ringElementsMultiplier` at every hero elemental-damage
+	//site this port models (burning/poison/corrosion DoT, toxic-gas/electricity blobs,
+	//burning trap, ooze). Real Java applies this in
 	//`Char.resist()`'s single choke point (`damage *= resist(srcClass)`); this port has no
 	//shared Class-dispatch - each status/damage site calls `addBuff`/damage directly - so
 	//the same factor is applied at each elemental call site instead. Status *durations*

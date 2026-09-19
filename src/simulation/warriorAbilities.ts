@@ -82,7 +82,8 @@ export function endureDamageTaken(damage: number, shrugItOffPoints: number): num
 	return damage * 0.5 * Math.pow(0.8, shrugItOffPoints);
 }
 export function endureBankedDamage(damage: number): number {
-	return damage / 2;
+	//`damageBonus` is an `int`, so `damageBonus += damage / 2` truncates toward zero per hit.
+	return Math.trunc(damage / 2);
 }
 
 /**
@@ -98,8 +99,13 @@ export function endureEndingBonus(
 ): { perHitBonus: number; hits: number } {
 	let bonus = bankedDamage;
 	if (bonus <= 0) return { perHitBonus: 0, hits: 0 };
-	bonus *= 1 + 0.15 * sustainedRetributionPoints;
-	bonus *= 1 + nearbyEnemies * 0.05 * evenTheOddsPoints;
+	//`damageBonus` stays an `int` through the whole ending: each `*=` truncates, the
+	//split is integer division, and a post-split zero detaches the tracker (no phantom
+	//hits) instead of arming a zero bonus.
+	bonus = Math.trunc(bonus * (1 + 0.15 * sustainedRetributionPoints));
+	bonus = Math.trunc(bonus * (1 + nearbyEnemies * 0.05 * evenTheOddsPoints));
 	const hits = 1 + sustainedRetributionPoints;
-	return { perHitBonus: bonus / hits, hits };
+	const perHitBonus = Math.trunc(bonus / hits);
+	if (perHitBonus <= 0) return { perHitBonus: 0, hits: 0 };
+	return { perHitBonus, hits };
 }

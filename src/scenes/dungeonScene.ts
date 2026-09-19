@@ -6365,7 +6365,15 @@ export class DungeonScene extends Scene2D {
 			},
 			cellsAbove: (blob, threshold) => (this[blob] as Blob).cellsAbove(threshold),
 			amountAt: (blob, x, y) => (this[blob] as Blob).volumeAt(x, y),
-			electricDamage: () => Math.round(Random.float(2 + this.depth / 5)),
+			//`Electricity` is in `RingOfElements`' RESISTS set (`Char.resist()`, tag `v3.3.8`),
+			//so the hero's zap scales by the ring before Barrier absorption, like the burning
+			//trap below - mobs have no rings, so theirs stays raw.
+			electricDamage: (target) => {
+				const raw = Math.round(Random.float(2 + this.depth / 5));
+				return target.isHero
+					? Math.floor(raw * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune))
+					: raw;
+			},
 			creatureAt: (x, y) => this.creatureAt(x, y),
 			addBuff: (target, id, duration) => addBuff(target, id, duration),
 			applyCorrosion: (target, strength) => {
@@ -8519,7 +8527,12 @@ export class DungeonScene extends Scene2D {
 			delete target.corrosionDamage;
 			return target.hp > 0;
 		}
-		const damage = Math.max(1, Math.floor(target.corrosionDamage ?? 1));
+		//`Corrosion` is in `RingOfElements`' RESISTS set (`Char.resist()`, tag `v3.3.8`), so the
+		//hero's tick scales by the ring before Barrier absorption, like the burning/poison ticks.
+		const rawCorrosion = Math.max(1, Math.floor(target.corrosionDamage ?? 1));
+		const damage = target.isHero
+			? Math.floor(rawCorrosion * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune))
+			: rawCorrosion;
 		if (target.isHero) {
 			const blocked = this.absorbHeroDamage(damage);
 			target.hp -= blocked;
@@ -9204,7 +9217,7 @@ export class DungeonScene extends Scene2D {
 	private consumeFeatherFall(): boolean {
 		if (this.hero.buffs['featherFall'] === undefined) return false;
 		delete this.hero.buffs['featherFall'];
-		this.say(t('items.potions.elixirs.elixiroffeatherfall.light'), 'positive');
+		this.say(t('items.spells.featherfall.light'), 'positive');
 		return true;
 	}
 
@@ -19835,18 +19848,23 @@ private eyeBeamTurn(monster: Creature): boolean {
 				);
 				this.applyAbilityDamage(neighbour, damage);
 			}
-			if (impactWave > 0 && neighbour.hp > 0) {
-				//`WandOfBlastWave.throwChar(mob, new Ballistica(mob.pos, mob.pos+i, MAGIC_BOLT),
-				//strength, true, true, this)` - the port's established straight forced-movement
-				//primitive is used for the shove (see `PORT_COVERAGE.md`), strength `1 + points`.
-				const strength = impactWaveStrength(impactWave);
+			//`WandOfBlastWave.throwChar(mob, new Ballistica(mob.pos, mob.pos+i, MAGIC_BOLT),
+			//strength, true, true, this)` - the port's established straight forced-movement
+			//primitive is used for the shove (see `PORT_COVERAGE.md`), strength `1 + points`
+			//with no talent gate: an untalented leap still shoves one cell. The `Int(4)`
+			//vulnerable roll is likewise drawn unconditionally per neighbouring non-ally -
+			//gating either on talent or survival skips draws Java burns, desyncing the stream
+			//after a killing slam. A corpse itself stays put: Java's post-kill throwChar only
+			//slides an already-removed actor whose loot already dropped, which nothing observes.
+			const strength = impactWaveStrength(impactWave);
+			if (neighbour.hp > 0) {
 				for (let push = 0; push < strength; push++) {
 					const next = { x: neighbour.x + dx, y: neighbour.y + dy };
 					if (!this.level.passable(next.x, next.y) || this.creatureAt(next.x, next.y)) break;
 					this.moveTo(neighbour, next);
 				}
-				if (impactWaveVulnerable(impactWave, Random.int(0, 4))) addBuff(neighbour, 'vulnerable', 5);
 			}
+			if (impactWaveVulnerable(impactWave, Random.int(0, 4)) && neighbour.hp > 0) addBuff(neighbour, 'vulnerable', 5);
 		}
 		this.shakeScreen(2, 0.5);
 		//`Invisibility.dispel()` (HeroicLeap.java 121), inside the jump callback Java runs after the
@@ -21738,7 +21756,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (!item) return;
 		this.bag.remove('featherFall', 1, instanceId);
 		this.hero.buffs['featherFall'] = BUFF_DURATION.featherFall;
-		this.say(t('items.potions.elixirs.elixiroffeatherfall.light'), 'positive');
+		this.say(t('items.spells.featherfall.light'), 'positive');
 		this.actionSpentTurn = true;
 		this.spendHeroTurn(1);
 	}

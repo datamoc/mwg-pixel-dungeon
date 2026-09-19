@@ -14,6 +14,7 @@ import { verifyCone } from './verifyCone.mjs';
 import { verifyRipperLeap } from './verifyRipperLeap.mjs';
 import { verifySuccubusBlink } from './verifySuccubusBlink.mjs';
 import { verifyArmorAbilities } from './verifyArmorAbilities.mjs';
+import { verifyRings } from './verifyRings.mjs';
 
 // Compile the actual implementation into a private temporary CommonJS tree. Type-only
 // mwg imports disappear, so tests never load Pixi, a DOM, or the full framework barrel.
@@ -44,7 +45,7 @@ try {
 	// real adapter and the real generated catalogue instead of a hand-copied stub of them - a stub
 	// is how the old, hand-listed framework set above drifted once already, and how the item-frame
 	// table silently lost a ground kind the moment the game's union grew one.
-	'generated/mwlContent', 'mwlContent',
+	'generated/mwlContent', 'mwlContent', 'items/ringModifiers',
 	// The five per-domain adapters are thin facades over this shared runtime module.
 	'adapters/gameSimulation']) {
 		compile(new URL(`../src/${file}.ts`, import.meta.url), `${file}.js`);
@@ -727,6 +728,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	verifyRipperLeap(require, check);
 	verifySuccubusBlink(require, check);
 	verifyArmorAbilities(require, check);
+	verifyRings(require, check);
 	console.log(`${passed} simulation checks passed.`);
 } finally {
 	// Only the fresh directory returned by mkdtempSync above is removed.

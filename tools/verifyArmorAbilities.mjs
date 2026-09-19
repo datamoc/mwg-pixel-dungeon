@@ -232,6 +232,8 @@ export function verifyArmorAbilities(require, check) {
 		assert.equal(endureDamageTaken(40, 1), 16);
 		assert.equal(endureDamageTaken(40, 4), 20 * Math.pow(0.8, 4));
 		assert.equal(endureBankedDamage(40), 20);
+		//Java's `damageBonus` is an int: `damageBonus += damage/2` truncates per hit.
+		assert.equal(endureBankedDamage(15), 7);
 	});
 
 	check('Endure\'s counter-attack is retribution-scaled, odds-scaled, and split over its hits', () => {
@@ -240,7 +242,12 @@ export function verifyArmorAbilities(require, check) {
 		//+15% per SUSTAINED_RETRIBUTION point, and `1 + points` strikes to spend it over.
 		const sustained = endureEndingBonus(100, 2, 0, 0);
 		assert.equal(sustained.hits, 3);
-		assert.equal(sustained.perHitBonus, (100 * 1.3) / 3);
+		//Java scales and splits with int truncation: 100*1.3=130 (truncated), 130/3=43.
+		assert.equal(sustained.perHitBonus, 43);
+		//Odd banked damage truncates at every step: 7*1.3=9.1->9, split 9/3=3.
+		assert.deepEqual(endureEndingBonus(7, 2, 0, 0), { perHitBonus: 3, hits: 3 });
+		//A split that truncates to zero detaches (no phantom hits): 2*1.45=2.9->2, 2/4=0.
+		assert.deepEqual(endureEndingBonus(2, 3, 0, 0), { perHitBonus: 0, hits: 0 });
 		//EVEN_THE_ODDS adds 5% per nearby hostile per point: four neighbours at rank 2 is +40%.
 		assert.equal(endureEndingBonus(100, 0, 4, 2).perHitBonus, 140);
 		assert.equal(endureEndingBonus(100, 0, 4, 0).perHitBonus, 100);
