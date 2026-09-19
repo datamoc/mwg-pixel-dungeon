@@ -74,3 +74,130 @@ export function combinedLethalityTest(opts: {
 		&& opts.predictedHp > 0 && opts.predictedHp <= opts.targetMaxHp * threshold;
 	return { tests: true, executes };
 }
+
+/**
+ * `ElementalStrike`'s cone (`actors/hero/abilities/duelist/ElementalStrike.java`, tag
+ * `v3.3.8`): `maxDist = 4 + ELEMENTAL_REACH`, `dist = min(aim.dist, maxDist)`, `65 + 10*reach`
+ * degrees, traced with `STOP_SOLID | STOP_TARGET`. The aim itself is `WONT_STOP`, so the
+ * caller passes the plain aim distance and lets the cone clamp it.
+ */
+export function elementalStrikeCone(reachPoints: number, aimDistance: number): { distance: number; degrees: number } {
+	const maxDist = 4 + reachPoints;
+	return { distance: Math.min(aimDistance, maxDist), degrees: 65 + 10 * reachPoints };
+}
+
+/**
+ * `STRIKING_FORCE`'s `powerMulti`: `1 + 0.30*points`, scaling every imbuement amount, blob
+ * volume, grass count, damage roll and proc chance of the strike.
+ */
+export function elementalPowerMulti(strikingForcePoints: number): number {
+	return 1 + 0.30 * strikingForcePoints;
+}
+
+/**
+ * `DIRECTED_POWER`'s pre-attack boost: `0.30 * targetsHit * points`, added to the primary
+ * melee swing's damage multiplier (Java stages it on a one-shot `DirectedPowerTracker`
+ * that `Weapon.procDamage` consumes; the scene passes it straight into the forced hit).
+ * `targetsHit` counts enemies inside the cone, like the pre-attack pass.
+ */
+export function directedPowerBoost(directedPowerPoints: number, targetsHit: number): number {
+	return 0.30 * targetsHit * directedPowerPoints;
+}
+
+/** `Blocking` pre-attack: `round(6*targetsHit*powerMulti)` shield (Java double-rounds,
+ *  which is one round for these positive values). No shield when nothing is caught. */
+export function elementalBlockingShield(targetsHit: number, powerMulti: number): number {
+	if (targetsHit <= 0) return 0;
+	return Math.round(6 * targetsHit * powerMulti);
+}
+
+/** `Vampiric` pre-attack: `round(2.5*targetsHit*powerMulti)`, capped at the missing HP. */
+export function elementalVampiricHeal(targetsHit: number, powerMulti: number, missingHp: number): number {
+	if (targetsHit <= 0) return 0;
+	return Math.min(Math.round(2.5 * targetsHit * powerMulti), Math.max(0, missingHp));
+}
+
+/** `Sacrificial` pre-attack: the hero bleeds for `10*powerMulti`. */
+export function elementalSacrificialSelf(powerMulti: number): number {
+	return 10 * powerMulti;
+}
+
+/** `Blazing`/`Chilling`/`Shocking` per-cell blob volume: `round(8*powerMulti)`. */
+export function elementalBlobAmount(powerMulti: number): number {
+	return Math.round(8 * powerMulti);
+}
+
+/** `Blooming` per-cell grass budget: `round(8*powerMulti)` high-grass placements. */
+export function elementalBloomingBudget(powerMulti: number): number {
+	return Math.round(8 * powerMulti);
+}
+
+/**
+ * `Blooming`'s furrow counter (`ElementalStrikeFurrowCounter`, persists across revive):
+ * past 40 counted uses every placement is furrowed; otherwise a use with no visible
+ * enemies and nothing caught counts 4 (5 uses per hero level) and any other use counts 1
+ * (20 per level). Returns whether placements come out furrowed and the count increment.
+ */
+export function elementalFurrowStep(furrowCount: number, targetsHit: number, enemiesVisible: boolean): { furrowed: boolean; increment: number } {
+	if (furrowCount >= 40) return { furrowed: true, increment: 0 };
+	if (!enemiesVisible && targetsHit === 0) return { furrowed: false, increment: 4 };
+	return { furrowed: false, increment: 1 };
+}
+
+/** The unenchanted strike: `round(powerMulti * heroDamageIntRange(6, 12))` per caught char. */
+export function elementalBaseDamage(powerMulti: number, intRangeRoll: number): number {
+	return Math.round(powerMulti * intRangeRoll);
+}
+
+/** `Kinetic` splash to non-primary targets: `round(stored*0.4*powerMulti)`. */
+export function elementalKineticSplash(storedDamage: number, powerMulti: number): number {
+	return Math.round(storedDamage * 0.4 * powerMulti);
+}
+
+/** `Blooming` root duration on caught chars: `round(6*powerMulti)`. */
+export function elementalRootsDuration(powerMulti: number): number {
+	return Math.round(6 * powerMulti);
+}
+
+/** `Elastic` knockback strength: `round(5*powerMulti)` cells away from the hero. */
+export function elementalKnockback(powerMulti: number): number {
+	return Math.round(5 * powerMulti);
+}
+
+/** `Lucky` drop chance per caught enemy: `0.125*powerMulti`. */
+export function elementalLuckyChance(powerMulti: number): number {
+	return 0.125 * powerMulti;
+}
+
+/** `Projecting` splash to non-primary targets: `round(heroRoll*0.3*powerMulti)`. */
+export function elementalProjectingSplash(heroDamageRoll: number, powerMulti: number): number {
+	return Math.round(heroDamageRoll * 0.3 * powerMulti);
+}
+
+/** `Corrupting` conversion chance: `(0.05 + 0.2*hpMissing)*powerMulti` (5-25%). */
+export function elementalCorruptingChance(hpMissingFrac: number, powerMulti: number): number {
+	return (0.05 + 0.2 * hpMissingFrac) * powerMulti;
+}
+
+/** `Grim` execution chance on non-primary targets: `(0.06 + 0.24*hpMissing)*powerMulti` (6-30%). */
+export function elementalGrimChance(hpMissingFrac: number, powerMulti: number): number {
+	return (0.06 + 0.24 * hpMissingFrac) * powerMulti;
+}
+
+/**
+ * The shared curse proc chance (`Displacing`, `Dazzling`, `Explosive`, `Wayward`,
+ * `Polarized`, `Friendly`): `0.5*powerMulti`. `Annoying` rolls its own `0.2*powerMulti`.
+ */
+export function elementalCurseChance(powerMulti: number): number {
+	return 0.5 * powerMulti;
+}
+
+/** `Annoying` amok chance: `0.2*powerMulti` for 6 turns. */
+export function elementalAnnoyingChance(powerMulti: number): number {
+	return 0.2 * powerMulti;
+}
+
+/** `Sacrificial` bleed on caught chars: `12*powerMulti`. */
+export function elementalSacrificialOther(powerMulti: number): number {
+	return 12 * powerMulti;
+}

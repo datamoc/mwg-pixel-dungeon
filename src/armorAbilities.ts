@@ -76,12 +76,12 @@ export function armorAbilityDef(id: string): ArmorAbilityDef | undefined {
  *
  * Ported so far: the Warrior's three, the Rogue's Death Mark, Smoke Bomb and Shadow
  * Clone, the Huntress's Spectral Blades, Nature's Power and Spirit Hawk, the Mage's Warp
- * Beacon, and the Duelist's Feint and Challenge. Still to port, each needing its own
- * systems: the Mage's remaining two (`ElementalBlast` and `WildMagic` need per-wand blast
- * factors and a wand-randomization pass) and the Duelist's `ElementalStrike` (the four
- * blade imbuements). See `PORT_COVERAGE.md`'s armor-ability rows.
+ * Beacon, and the Duelist's Feint, Challenge and ElementalStrike. Still to port, each
+ * needing its own systems: the Mage's remaining two (`ElementalBlast` and `WildMagic`
+ * need per-wand blast factors and a wand-randomization pass). See `PORT_COVERAGE.md`'s
+ * armor-ability rows.
  */
-const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades', 'warpbeacon', 'smokebomb', 'naturespower', 'spirithawk', 'feint', 'shadowclone', 'challenge']);
+const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades', 'warpbeacon', 'smokebomb', 'naturespower', 'spirithawk', 'feint', 'shadowclone', 'challenge', 'elementalstrike']);
 
 /** The implemented abilities for one class, in `HeroClass.armorAbilities()` order (the authored
  *  table's own row order, which `DEFINITIONS` preserves). */

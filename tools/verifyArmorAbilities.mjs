@@ -19,7 +19,7 @@ export function verifyArmorAbilities(require, check) {
 	const {
 		SPIRIT_HAWK_LIFESPAN, goForTheEyesEffect, spiritHawkDodges, spiritHawkSpeed, spiritHawkViewDistance,
 	} = require('./simulation/huntressAbilities');
-	const { exposeWeaknessDuration, feignedRetreatHaste, closeTheGapRange, eliminationMatchFactor, invigoratingVictoryHeal } = require('./simulation/duelistAbilities');
+	const { exposeWeaknessDuration, feignedRetreatHaste, closeTheGapRange, eliminationMatchFactor, invigoratingVictoryHeal, elementalStrikeCone, elementalPowerMulti, directedPowerBoost, elementalBlockingShield, elementalVampiricHeal, elementalSacrificialSelf, elementalBlobAmount, elementalBloomingBudget, elementalFurrowStep, elementalBaseDamage, elementalKineticSplash, elementalRootsDuration, elementalKnockback, elementalLuckyChance, elementalProjectingSplash, elementalCorruptingChance, elementalGrimChance, elementalCurseChance, elementalAnnoyingChance, elementalSacrificialOther } = require('./simulation/duelistAbilities');
 	const { BUFF_DURATION } = require('./simulation/buffs');
 
 	//`HeroClass.armorAbilities()`, in its own order.
@@ -77,14 +77,14 @@ export function verifyArmorAbilities(require, check) {
 	check('only implemented abilities are offered, and the charge meter is Java\'s', () => {
 		//The Warrior's three, the Rogue's Smoke Bomb, Death Mark and Shadow Clone, the
 		//Huntress's Spectral Blades, Nature's Power and Spirit Hawk, the Mage's Warp Beacon,
-		//and the Duelist's Challenge and Feint are the ported set; a class with none of
-		//its own offers nothing, which is what keeps a choice panel from listing an
-		//ability that cannot run.
+		//and the Duelist's Challenge, Elemental Strike and Feint are the ported set; a
+		//class with none of its own offers nothing, which is what keeps a choice panel
+		//from listing an ability that cannot run.
 		assert.deepEqual(armorAbilitiesFor('warrior'), ['heroicleap', 'shockwave', 'endure']);
 		assert.deepEqual(armorAbilitiesFor('rogue'), ['smokebomb', 'deathmark', 'shadowclone']);
 		assert.deepEqual(armorAbilitiesFor('huntress'), ['spectralblades', 'naturespower', 'spirithawk']);
 		assert.deepEqual(armorAbilitiesFor('mage'), ['warpbeacon']);
-		assert.deepEqual(armorAbilitiesFor('duelist'), ['challenge', 'feint']);
+		assert.deepEqual(armorAbilitiesFor('duelist'), ['challenge', 'elementalstrike', 'feint']);
 		assert.equal(ARMOR_CHARGE_MAX, 100);
 		assert.equal(ARMOR_CHARGE_START, 50);
 		//`ClassArmor.Charger.act()`: `chargeGain = 100/500f`.
@@ -276,6 +276,65 @@ export function verifyArmorAbilities(require, check) {
 		assert.equal(shadowCloneArmorShare(0, 10), 0);
 		assert.equal(shadowCloneArmorShare(3, 10), 4);
 		assert.equal(shadowCloneArmorShare(4, 10), 5);
+	});
+
+	check('ElementalStrike\'s cone, talents and imbuement arithmetic are Java\'s', () => {
+		const strike = armorAbilityDef('elementalstrike');
+		assert.equal(strike.baseChargeUse, 25);
+		assert.equal(strike.targeting, 'cell');
+		assert.deepEqual(strike.talents, ['elemental_reach', 'striking_force', 'directed_power']);
+		assert.equal(armorChargeUse(strike, { heroicEnergyRank: 0 }), 25);
+		//Cone: `maxDist = 4 + reach`, `dist = min(aim, maxDist)`, `65 + 10*reach` degrees.
+		assert.deepEqual(elementalStrikeCone(0, 9), { distance: 4, degrees: 65 });
+		assert.deepEqual(elementalStrikeCone(4, 3), { distance: 3, degrees: 105 });
+		assert.deepEqual(elementalStrikeCone(2, 6), { distance: 6, degrees: 85 });
+		//`STRIKING_FORCE`: `1 + 0.30*points`.
+		const r3 = (v) => Math.round(v * 1000) / 1000;
+		assert.deepEqual([0, 1, 2, 4].map((points) => r3(elementalPowerMulti(points))), [1, 1.3, 1.6, 2.2]);
+		//`DIRECTED_POWER`: `0.30 * targetsHit * points` onto the primary swing.
+		assert.equal(r3(directedPowerBoost(2, 3)), 1.8);
+		assert.equal(directedPowerBoost(0, 3), 0);
+		//Blocking: `round(6*targetsHit*powerMulti)`, nothing when nothing is caught.
+		assert.equal(elementalBlockingShield(0, 1.6), 0);
+		assert.equal(elementalBlockingShield(3, 1), 18);
+		assert.equal(elementalBlockingShield(2, 1.3), 16);
+		//Vampiric: `round(2.5*targetsHit*powerMulti)`, capped at missing HP.
+		assert.equal(elementalVampiricHeal(0, 1.6, 50), 0);
+		assert.equal(elementalVampiricHeal(2, 1, 50), 5);
+		assert.equal(elementalVampiricHeal(4, 2.2, 10), 10);
+		//Sacrificial: hero bleeds `10*powerMulti`, caught chars `12*powerMulti`.
+		assert.equal(r3(elementalSacrificialSelf(1.6)), 16);
+		assert.equal(r3(elementalSacrificialOther(1.6)), 19.2);
+		//Blazing/Chilling/Shocking seed `round(8*powerMulti)`; Blooming budgets the same.
+		assert.equal(elementalBlobAmount(1), 8);
+		assert.equal(elementalBloomingBudget(1.3), 10);
+		//Furrow: 40+ counted uses furrow, empty-field uses count 4, others 1.
+		assert.deepEqual(elementalFurrowStep(40, 0, false), { furrowed: true, increment: 0 });
+		assert.deepEqual(elementalFurrowStep(39, 0, false), { furrowed: false, increment: 4 });
+		assert.deepEqual(elementalFurrowStep(0, 1, false), { furrowed: false, increment: 1 });
+		assert.deepEqual(elementalFurrowStep(0, 0, true), { furrowed: false, increment: 1 });
+		//Plain strike: `round(powerMulti * roll(6, 12))`.
+		assert.equal(elementalBaseDamage(1.3, 9), 12);
+		assert.equal(elementalBaseDamage(1, 6), 6);
+		//Kinetic splash: `round(stored*0.4*powerMulti)`; roots: `round(6*powerMulti)`.
+		assert.equal(elementalKineticSplash(50, 1.3), 26);
+		assert.equal(elementalRootsDuration(1.6), 10);
+		//Elastic shoves `round(5*powerMulti)`; Lucky pays `0.125*powerMulti`.
+		assert.equal(elementalKnockback(1), 5);
+		assert.equal(elementalKnockback(1.3), 7);
+		assert.equal(r3(elementalLuckyChance(2)), 0.25);
+		//Projecting: `round(roll*0.3*powerMulti)`; Corrupting 5-25%, Grim 6-30%.
+		assert.equal(elementalProjectingSplash(20, 1.3), 8);
+		assert.equal(elementalCorruptingChance(0, 1), 0.05);
+		assert.equal(r3(elementalCorruptingChance(1, 1)), 0.25);
+		assert.equal(elementalGrimChance(0, 1), 0.06);
+		assert.equal(r3(elementalGrimChance(0.5, 2)), 0.36);
+		//Shared curse chance `0.5*powerMulti`, Annoying `0.2*powerMulti`.
+		assert.equal(r3(elementalCurseChance(2)), 1);
+		assert.equal(r3(elementalAnnoyingChance(2)), 0.4);
+		//The Lucky tracker caps each mob at one payout (Java's permanent buff; 9999 turns
+		//is the catalogue's effectively-permanent stand-in).
+		assert.equal(BUFF_DURATION.luckyTracker, 9999);
 	});
 
 	check('Feint\'s charge is Java\'s 50, and FEIGNED_RETREAT/EXPOSE_WEAKNESS scale 2 turns per point', () => {

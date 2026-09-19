@@ -183,7 +183,7 @@ import {
 import {
 	SPIRIT_HAWK_LIFESPAN, goForTheEyesEffect, spiritHawkDodges, spiritHawkSpeed, spiritHawkViewDistance,
 } from '../simulation/huntressAbilities';
-import { exposeWeaknessDuration, feignedRetreatHaste, combinedLethalityTest, closeTheGapRange, invigoratingVictoryHeal } from '../simulation/duelistAbilities';
+import { exposeWeaknessDuration, feignedRetreatHaste, combinedLethalityTest, closeTheGapRange, invigoratingVictoryHeal, elementalStrikeCone, elementalPowerMulti, directedPowerBoost, elementalBlockingShield, elementalVampiricHeal, elementalSacrificialSelf, elementalBlobAmount, elementalBloomingBudget, elementalFurrowStep, elementalBaseDamage, elementalKineticSplash, elementalRootsDuration, elementalKnockback, elementalLuckyChance, elementalProjectingSplash, elementalCorruptingChance, elementalGrimChance, elementalCurseChance, elementalAnnoyingChance, elementalSacrificialOther } from '../simulation/duelistAbilities';
 import { shadowCloneAccuracy, shadowCloneArmorShare, shadowCloneBladeShare, shadowCloneEvasion, shadowCloneHp } from '../simulation/rogueAbilities';
 import { CLASSES, CLASS_AMMO, HERO_IDLE_FRAME, type ClassId } from '../classes';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
@@ -855,6 +855,7 @@ interface SaveShape {
 	corrosionTurns?: number;
 	corrosionDamage?: number;
 	kineticStored?: number;
+	elementalFurrow?: number;
 	timeBubbleTurns?: number;
 	timeBubblePresses?: number[];
 	hourglassFreeze?: boolean;
@@ -1488,6 +1489,11 @@ export class DungeonScene extends Scene2D {
 	/** Kinetic's conserved damage (`ConservedDamage.preservedDamage`) - a float: it decays
 	 * 2.5%/turn (min 0.1) and reads back with `ceil`, so no integer rounding here. */
 	private kineticStored = 0;
+	/**
+	 * `ElementalStrike.ElementalStrikeFurrowCounter`: counted Blooming-strike uses toward the
+	 * 40-use furrow threshold (Java's `revivePersists` counter, saved with the run).
+	 */
+	private elementalFurrow = 0;
 	/** `Kinetic.KineticTracker`: attached by every Kinetic (or Unstable-delegated-to-Kinetic)
 	 * proc, even at zero conserved - drives the kill-overkill store, then clears per swing. */
 	private kineticTrackerHit = false;
@@ -15920,6 +15926,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			corrosionTurns: this.hero.corrosionTurns,
 			corrosionDamage: this.hero.corrosionDamage,
 			kineticStored: this.kineticStored,
+			elementalFurrow: this.elementalFurrow,
 			timeBubbleTurns: this.timeBubbleTurns,
 			timeBubblePresses: [...this.timeBubblePresses],
 			hourglassFreeze: this.hourglassFreeze,
@@ -16050,6 +16057,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//items, so both migrate to `stench` on load rather than silently losing their curse.
 		if (this.armorGlyph === 'fragile') this.armorGlyph = 'stench';
 		this.kineticStored = s.kineticStored ?? 0;
+		this.elementalFurrow = s.elementalFurrow ?? 0;
 		this.timeBubbleTurns = s.timeBubbleTurns ?? 0;
 		this.timeBubblePresses = new Set(s.timeBubblePresses ?? []);
 		this.hourglassFreeze = s.hourglassFreeze ?? false;
@@ -19598,7 +19606,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 										: id === 'feint' ? this.activateFeint(def, cost, cell)
 											: id === 'shadowclone' ? this.activateShadowClone(def, cost, cell)
 												: id === 'challenge' ? this.activateChallenge(def, cost, cell)
-													: false;
+													: id === 'elementalstrike' ? this.activateElementalStrike(def, cost, cell)
+														: false;
 		if (!activated) return;
 		this.refresh();
 	}
@@ -19747,6 +19756,317 @@ private eyeBeamTurn(monster: Creature): boolean {
 		}
 		this.shakeScreen(2, 0.5);
 		//`Invisibility.dispel()` (Shockwave.java 147), in the cast callback after the cone resolves.
+		delete this.hero.buffs['invisibility'];
+		this.spendHeroAction(1);
+		return true;
+	}
+
+	/**
+	 * The hero's own `damageRoll()` for `ElementalStrike`'s Projecting splash and Unstable
+	 * delegation (`Weapon.damageRoll`, tag `v3.3.8`): the equipped range plus the excess-STR
+	 * bonus, exactly the computation `simulation/combat.ts`'s `rollDamage` opens with.
+	 */
+	private heroWeaponRoll(): number {
+		const [min, max] = liveStats(this.hero).damage;
+		let roll = Random.normalRange(min, max);
+		const str = this.hero.str ?? 0;
+		const req = this.hero.strReq ?? 0;
+		if (str > req) roll += Random.range(0, str - req);
+		return roll;
+	}
+
+	/**
+	 * `Bomb.ConjuredBomb().explode(cell)` for `ElementalStrike`'s Explosive curse (tag
+	 * `v3.3.8`): the same distance-1 flood through passable-or-flammable cells and the same
+	 * `NormalIntRange(4 + depth, 12 + 3*depth)`-minus-armor damage the Stone-of-Blast port
+	 * already models (a conjured bomb and that stone share the `Bomb` base defaults), hero
+	 * included - a bomb does not discriminate.
+	 */
+	private detonateConjuredBlast(x: number, y: number): void {
+		const cells = [{ x, y }];
+		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
+			const nx = x + dx, ny = y + dy;
+			if (this.level.inside(nx, ny) && (this.level.passable(nx, ny) || this.isFireFlammableTerrain(nx, ny))) cells.push({ x: nx, y: ny });
+		}
+		for (const at of cells) {
+			if (this.isFireFlammableTerrain(at.x, at.y)) this.destroyBombTerrain(at.x, at.y);
+			//The stone-context `explodeGroundItem` closure, inlined: chained bombs go off,
+			//anything less sturdy than armor/wands/rings burns.
+			const ground = this.groundItemAt(at.x, at.y);
+			if (ground !== null) {
+				if (ground.kind === 'bomb' && ground.item) this.detonateGroundBomb(ground, new Set());
+				else if (!['armor', 'wand', 'ring', 'amulet', 'ankh', 'stylus'].includes(ground.kind)) this.removeGroundItem(ground);
+			}
+		}
+		const blast = new Set(cells.map((at) => this.level.index(at.x, at.y)));
+		for (const creature of [...this.creatures]) {
+			if (creature.isNPC || creature.hp <= 0 || !blast.has(this.level.index(creature.x, creature.y))) continue;
+			let damage = Math.max(0, Random.normalRange(4 + this.depth, 12 + 3 * this.depth)
+				- Random.normalRange(creature.armor[0], creature.armor[1]));
+			if (creature.isHero) {
+				damage = this.absorbHeroDamage(damage);
+				creature.hp -= damage;
+				this.showDamage(creature, damage);
+				if (creature.hp <= 0) this.kill(creature);
+			} else {
+				creature.hp -= damage;
+				this.showDamage(creature, damage);
+				creature.sleeping = false;
+				if (creature.hp <= 0) this.kill(creature);
+			}
+		}
+	}
+
+	/**
+	 * `ElementalStrike.activate()` (`actors/hero/abilities/duelist/ElementalStrike.java`, tag
+	 * `v3.3.8`): a `WONT_STOP` aim clamped to `4 + ELEMENTAL_REACH` cells, a `65 + 10*reach`
+	 * degree `STOP_SOLID | STOP_TARGET` cone over it, then the equipped weapon's imbuement -
+	 * one of thirteen enchantments, eight curses, or the plain `6-12` strike - applied to the
+	 * cone's cells, its occupants, and the aimed primary target (a real forced melee hit).
+	 * Curses ride the same branch because in Java `Weapon.Curse extends Enchantment`: a
+	 * curse IS the weapon's enchantment object, so `this.weaponAffix` (which holds either id)
+	 * maps onto Java's `enchantment.getClass()` directly.
+	 *
+	 * Reductions, all stated: the cone visuals/sounds have no seam here (Shockwave's precedent);
+	 * neutrals use this port's standing ability-damage filter (non-ally, non-NPC, living - so a
+	 * neutral NPC the Java cone would catch is spared, as with every other ability); the
+	 * `HUNTING -> WANDERING` calm on Displacing has no mob-state field to write to; the
+	 * Elastic sort runs furthest-first as Java's own comment states (its comparator sorts
+	 * closest-first instead - taken as the bug); colliding shove damage is absent (the
+	 * established stepwise shove); `visibleEnemies()` is mobs with `seesHero`.
+	 */
+	private activateElementalStrike(def: ArmorAbilityDef, cost: number, cell: Step | null): boolean {
+		if (!cell) return false;
+		//`new Ballistica(hero.pos, target, WONT_STOP)`: the aim ignores everything, so the
+		//cone's own `STOP_SOLID | STOP_TARGET` rays are what stop at walls (Shockwave's shape).
+		const aimPath = Roguelike.ballistica(this.level, { x: this.hero.x, y: this.hero.y }, cell, { stop: 'none' }).cells;
+		const aim = aimPath[aimPath.length - 1] ?? cell;
+		const reach = this.talentRank('elemental_reach');
+		const powerMulti = elementalPowerMulti(this.talentRank('striking_force'));
+		const aimDistance = Roguelike.chebyshevDistance({ x: this.hero.x, y: this.hero.y }, aim);
+		const { distance, degrees } = elementalStrikeCone(reach, aimDistance);
+		const cone = coneCells({
+			source: { x: this.hero.x, y: this.hero.y },
+			target: aim,
+			degrees,
+			maxDistance: distance,
+			width: this.level.width,
+			height: this.level.height,
+			trace: (coneFrom, coneTo) => this.coneRay(coneFrom, coneTo, true),
+		});
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		const ench = this.weaponAffix;
+		const coneIndex = new Set(cone.cells.map((at) => this.level.index(at.x, at.y)));
+		const foeInCone = (c: Creature): boolean => !c.isHero && !c.isAlly && !c.isNPC
+			&& c.allyKind !== 'sheep' && c.hp > 0 && coneIndex.has(this.level.index(c.x, c.y));
+		const targetsHit = this.creatures.filter(foeInCone).length;
+		//Pre-attack pass: the DirectedPower boost stages onto the primary swing (Java's
+		//one-shot tracker consumed by `Weapon.procDamage` amounts to exactly this), the
+		//Kinetic copy is read before the swing can disturb it, and Blocking/Vampiric/
+		//Sacrificial resolve before anything else.
+		const directedBoost = directedPowerBoost(this.talentRank('directed_power'), targetsHit);
+		const storedKinetic = this.kineticStored;
+		if (ench === 'blocking') this.grantHeroShield(elementalBlockingShield(targetsHit, powerMulti));
+		else if (ench === 'vampiric') {
+			const heal = elementalVampiricHeal(targetsHit, powerMulti, this.hero.maxHp - this.hero.hp);
+			if (heal > 0) this.hero.hp += heal;
+		} else if (ench === 'sacrificial') setBleeding(this.hero, elementalSacrificialSelf(powerMulti));
+		//The primary target: whoever stands on the aimed cell, unless charmed by her, allied,
+		//or otherwise not a foe. Java gates on `isCharmedBy`/`alignment`/`canAttack`; the port
+		//has no `canAttack` refusals beyond these, so the foe filter is the whole gate.
+		let primary: Creature | null = this.creatureAt(cell.x, cell.y) ?? null;
+		//`hero.attack` refuses its own out-of-range swing (`canAttack`), so the primary
+		//needs melee range - Java's 8-neighbourhood adjacency - even though the cone and its
+		//cell/char passes still resolve when she is not.
+		if (primary !== null && (!foeInCone(primary)
+			|| Roguelike.chebyshevDistance(this.hero, primary) > 1
+			|| (this.hero.buffs['charm'] !== undefined && this.charmTargets.get(this.hero.id) === primary.id))) primary = null;
+		const oldPrimary = primary === null ? null : { x: primary.x, y: primary.y };
+		if (primary !== null) {
+			//`hero.attack(enemy, 1, 0, INFINITE_ACCURACY)`: the established force-hit plus
+			//damage-multiplier channels, reset explicitly afterwards in case an early gate
+			//inside `attack()` returns before its own consume block.
+			this.abilityForceHit = true;
+			this.abilityDamageMult = 1 + directedBoost;
+			this.attack(this.hero, primary);
+			this.abilityForceHit = false;
+			this.abilityDamageMult = 1;
+		}
+		//Per-cell pass over the cone.
+		if (ench === 'blazing' || ench === 'chilling' || ench === 'shocking') {
+			const volume = elementalBlobAmount(powerMulti);
+			for (const at of cone.cells) {
+				if (ench === 'blazing') this.fire.seed(at.x, at.y, volume);
+				else if (ench === 'shocking') this.electricity.seed(at.x, at.y, volume);
+				//No `Freezing` blob exists in this port: its `Freezing.evolve()` halves are the
+				//fire-clearing the frost potion already models plus a chill on the occupants.
+				else this.fire.clear(at.x, at.y);
+			}
+			if (ench === 'chilling') {
+				for (const c of this.creatures) {
+					if (c.hp <= 0 || c.isNPC || c.allyKind === 'sheep' || !coneIndex.has(this.level.index(c.x, c.y))) continue;
+					delete c.buffs['burning'];
+					c.buffs = applyChillFreeze(c.buffs).buffs;
+					if (c.hp <= 0) this.kill(c);
+				}
+			}
+		} else if (ench === 'blooming') {
+			const enemiesVisible = this.creatures.some((c) => foeInCone(c) && c.seesHero);
+			const { furrowed, increment } = elementalFurrowStep(this.elementalFurrow, targetsHit, enemiesVisible);
+			this.elementalFurrow += increment;
+			let budget = elementalBloomingBudget(powerMulti);
+			//`Random.shuffle(cells)`: Fisher-Yates on the port's own gameplay stream.
+			const shuffled = [...cone.cells];
+			for (let i = shuffled.length - 1; i > 0; i--) {
+				const j = Random.int(0, i + 1);
+				[shuffled[i], shuffled[j]] = [shuffled[i]!, shuffled[j]!];
+			}
+			for (const at of shuffled) {
+				//`EMPTY || EMBERS || EMPTY_DECO || GRASS`: the live level folds deco into its
+				//base kind, so `FLOOR || EMBERS || GRASS` is the whole plantable set.
+				const kind = this.level.get(at.x, at.y);
+				if (kind !== FLOOR && kind !== EMBERS && kind !== GRASS) continue;
+				const occupant = this.creatureAt(at.x, at.y);
+				if (occupant !== null && occupant.kind !== undefined && IMMOVABLE_KINDS.has(occupant.kind)) continue;
+				const pos = this.level.index(at.x, at.y);
+				if ((this.portedPaint?.plants.some((plant) => plant.pos === pos) ?? false) || this.manualPlants.has(pos)) continue;
+				if (budget > 0) {
+					this.level.set(at.x, at.y, HIGH_GRASS);
+					if (furrowed) this.furrowedGrass.add(pos);
+					budget--;
+				} else this.level.set(at.x, at.y, GRASS);
+				this.restitchTilesAround(at.x, at.y);
+				this.featuresMap?.setLayerData('features', this.featureFrames());
+			}
+		}
+		//Per-char pass over every non-ally caught in the cone.
+		const affected = this.creatures.filter(foeInCone);
+		if (ench === null || ench === undefined) {
+			for (const ch of affected) this.applyAbilityDamage(ch, elementalBaseDamage(powerMulti, Random.normalRange(6, 12)));
+		} else if (ench === 'kinetic') {
+			if (storedKinetic > 0) {
+				for (const ch of affected) {
+					if (ch !== primary) this.applyAbilityDamage(ch, elementalKineticSplash(storedKinetic, powerMulti));
+				}
+			}
+			//Java only clears the conserved damage when there was no primary target (the
+			//splash spends a copy otherwise, and the swing's own Kinetic proc owns the buff).
+			if (primary === null) this.kineticStored = 0;
+		} else if (ench === 'blooming') {
+			for (const ch of affected) addBuff(ch, 'roots', elementalRootsDuration(powerMulti));
+		} else if (ench === 'elastic') {
+			const knockback = elementalKnockback(powerMulti);
+			const ordered = [...affected].sort((a, b) =>
+				Roguelike.chebyshevDistance(this.hero, b) - Roguelike.chebyshevDistance(this.hero, a));
+			for (const ch of ordered) {
+				if (ch === primary && oldPrimary !== null && (ch.x !== oldPrimary.x || ch.y !== oldPrimary.y)) continue;
+				const dx = Math.sign(ch.x - this.hero.x);
+				const dy = Math.sign(ch.y - this.hero.y);
+				if (dx === 0 && dy === 0) continue;
+				for (let push = 0; push < knockback; push++) {
+					const next = { x: ch.x + dx, y: ch.y + dy };
+					if (!this.level.passable(next.x, next.y) || this.creatureAt(next.x, next.y)) break;
+					this.moveTo(ch, next);
+				}
+			}
+		} else if (ench === 'lucky') {
+			for (const ch of affected) {
+				if (ch.buffs['luckyTracker'] !== undefined) continue;
+				if (Random.chance(elementalLuckyChance(powerMulti))) {
+					//`Lucky.genLoot()` is `RingOfWealth.genConsumableDrop(-5)` (80/20 common/
+					//uncommon); the port drops a plain consumable by the same neighbour search
+					//its kill-proc stand-in uses, and the tracker caps it at one payout per mob.
+					const at = [{ x: ch.x, y: ch.y }, ...Roguelike.neighbourOffsets(8).map(([ox, oy]) => ({ x: ch.x + ox, y: ch.y + oy }))]
+						.find((step) => this.level.inside(step.x, step.y) && this.level.passable(step.x, step.y)
+							&& !this.groundItemAt(step.x, step.y) && !this.creatureAt(step.x, step.y));
+					if (at !== undefined) this.spawnGroundItem(Random.element(['potion', 'scroll', 'stone'] as const)!, at.x, at.y);
+					this.say(t('port.log.lucky'), 'positive');
+					addBuff(ch, 'luckyTracker');
+				}
+			}
+		} else if (ench === 'projecting') {
+			for (const ch of affected) {
+				if (ch !== primary) this.applyAbilityDamage(ch, elementalProjectingSplash(this.heroWeaponRoll(), powerMulti));
+			}
+		} else if (ench === 'unstable') {
+			for (const ch of affected) {
+				if (ch === primary) continue;
+				//`ench.proc(w, hero, ch, w.damageRoll(hero))`: a fresh random enchantment's
+				//own proc with a fresh weapon roll, through the same delegation channel an
+				//Unstable swing uses (Java skips this when unarmed; the port is never unarmed).
+				const delegated = Random.element(UNSTABLE_DELEGATES)!;
+				const previous = this.unstableDelegated;
+				this.unstableDelegated = delegated;
+				this.heroOnHit(this.hero, ch, this.heroWeaponRoll());
+				this.unstableDelegated = previous;
+			}
+		} else if (ench === 'corrupting') {
+			for (const ch of affected) {
+				if (ch === primary || ch.isAlly) continue;
+				if (ch.hp <= 0) continue;
+				const missing = 1 - ch.hp / ch.maxHp;
+				if (Random.chance(elementalCorruptingChance(missing, powerMulti))) {
+					//`Corruption.corruptionHeal` + `AllyBuff.affectAndLoot`: the port's own
+					//wand-of-corruption conversion is the established observable equivalent.
+					ch.isAlly = true;
+					ch.allyKind = 'mirror';
+					ch.hp = ch.maxHp;
+					ch.buffs = {};
+					ch.sleeping = false;
+					ch.seesHero = false;
+				}
+			}
+		} else if (ench === 'grim') {
+			for (const ch of affected) {
+				if (ch === primary) continue;
+				const missing = 1 - ch.hp / ch.maxHp;
+				if (Random.chance(elementalGrimChance(missing, powerMulti))) this.applyAbilityDamage(ch, ch.hp);
+			}
+		} else if (ench === 'annoying') {
+			for (const ch of affected) {
+				if (Random.chance(elementalAnnoyingChance(powerMulti))) addBuff(ch, 'amok', 6);
+			}
+		} else if (ench === 'displacing') {
+			for (const ch of affected) {
+				if (!Random.chance(elementalCurseChance(powerMulti))) continue;
+				const destination = this.randomFreeCell(ch);
+				if (destination === undefined) continue;
+				const from = { x: ch.x, y: ch.y };
+				this.moveTo(ch, destination);
+				this.playTeleportAppear(from, destination, ch);
+			}
+		} else if (ench === 'dazzling') {
+			for (const ch of affected) {
+				if (Random.chance(elementalCurseChance(powerMulti))) addBuff(ch, 'blindness', 6);
+			}
+		} else if (ench === 'explosive') {
+			if (Random.chance(elementalCurseChance(powerMulti))) {
+				const exploding = Random.element(affected) ?? null;
+				if (exploding !== null) this.detonateConjuredBlast(exploding.x, exploding.y);
+			}
+		} else if (ench === 'sacrificial') {
+			for (const ch of affected) setBleeding(ch, elementalSacrificialOther(powerMulti));
+		} else if (ench === 'wayward') {
+			for (const ch of affected) {
+				if (Random.chance(elementalCurseChance(powerMulti))) addBuff(ch, 'hex', 6);
+			}
+		} else if (ench === 'polarized') {
+			for (const ch of affected) {
+				if (Random.chance(elementalCurseChance(powerMulti))) this.applyAbilityDamage(ch, Random.normalRange(24, 36));
+			}
+		} else if (ench === 'friendly') {
+			for (const ch of affected) {
+				if (Random.chance(elementalCurseChance(powerMulti))) {
+					addBuff(ch, 'charm', 6);
+					this.charmTargets.set(ch.id, this.hero.id);
+				}
+			}
+		} else {
+			//Blazing, Chilling, Shocking and Blocking, Vampiric, Lucky-share handled above deal
+			//no per-char damage of their own; any other affix id falls through to the plain
+			//strike rather than fizzling the whole ability.
+			for (const ch of affected) this.applyAbilityDamage(ch, elementalBaseDamage(powerMulti, Random.normalRange(6, 12)));
+		}
 		delete this.hero.buffs['invisibility'];
 		this.spendHeroAction(1);
 		return true;

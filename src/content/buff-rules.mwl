@@ -274,6 +274,15 @@
             buff: "eliminationMatch",
             duration: 3,
           },
+          {
+            // `ElementalStrike.ElementalStrikeLuckyTracker`: Java never detaches it, so a
+            // mob pays out Lucky-strike loot at most once per run. 9999 turns is the
+            // catalogue's effectively-permanent stand-in (same as the other two rows
+            // that use it), never rendered and never announced.
+            tag: "row",
+            buff: "luckyTracker",
+            duration: 9999,
+          },
         ],
       },
     ],

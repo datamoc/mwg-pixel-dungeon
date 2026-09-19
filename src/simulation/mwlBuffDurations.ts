@@ -44,7 +44,8 @@ export const BUFF_DURATION_DATA = {
   "hazardAssist": 50,
   "spectatorFreeze": 10,
   "duelParticipant": 10,
-  "eliminationMatch": 3
+  "eliminationMatch": 3,
+  "luckyTracker": 9999
 } as const;
 export const NEGATIVE_BUFF_DATA = [
   "poison",
