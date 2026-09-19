@@ -132,10 +132,27 @@ function unescapeValue(value) {
  * indices - which translators reorder freely, since word order differs by language. Both
  * forms collapse to positional `{0}`, `{1}`, ... so a caller passes `t(key, {0: name})`
  * regardless of which language is active and where that language puts the token.
- */
+ *
+ * **Bug fixed 2026-09-19, found live via a Duelist weapon's `ability_desc` showing
+ * "+33{0}amage" instead of "+33% damage".** `Messages.get(key)` with no args - most `.desc`/
+ * `.ability_desc` bodies, never run through `String.format` at all in real Java - can and does
+ * carry a bare, un-escaped `%` before ordinary prose (`"+33% damage"`, `%%` is only how authors
+ * escape a literal percent inside a string Java *does* format). The old flag class here included
+ * `' '` (Java's real, legitimate-but-vanishingly-rare "space flag" for positive-number padding),
+ * so "% damage" parsed as `%` + space-flag + the letter `d` as a bogus conversion, swallowing it
+ * and leaving "amage" behind. Checked across the whole generated catalog: this false-positive
+ * pattern (`{n}` immediately followed by a lowercase word fragment) appears hundreds of times,
+ * in every domain and every locale, while a real, intentional space-flag specifier appears
+ * nowhere in this corpus - so the flag is dropped rather than adding per-key format-call
+ * knowledge this script has no way to derive from the properties files alone. `-` (the
+ * left-justify flag) is dropped the same way, for the same reason: Hungarian's percent-suffix
+ * grammar writes a hyphen straight after the sign (`"25%-kal kevesebbet"`, "by 25% less"), which
+ * parsed as `%` + `-`-flag + the letter `k`, corrupting to `"25{0}al kevesebbet"`. Checked the
+ * live corpus for a genuine `%-<digits>` width-padding usage (the one legitimate reason a real
+ * format string would need this flag) and found none anywhere. */
 function convertPlaceholders(value) {
 	let next = 0;
-	return value.replace(/%(?:(\d+)\$)?[-+ 0,(#]*\d*(?:\.\d+)?([a-zA-Z%])/g, (whole, index, conversion) => {
+	return value.replace(/%(?:(\d+)\$)?[+0,(#]*\d*(?:\.\d+)?([a-zA-Z%])/g, (whole, index, conversion) => {
 		if (conversion === '%') return '%';
 		//an explicit index is 1-based in Java; an implicit one consumes the next argument
 		const position = index !== undefined ? Number(index) - 1 : next++;

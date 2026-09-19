@@ -127,6 +127,7 @@ import {
 	WAND_KEYS,
 	POTION_APPEARANCE_KEYS,
 	SCROLL_APPEARANCE_KEYS,
+	has,
 } from '../i18n/index';
 import { applySpdTheme, SPD_STATUS_COLOR } from '../ui/spdTheme';
 import { GameLog, type LogLevel } from '../ui/gameLog';
@@ -18294,6 +18295,11 @@ private eyeBeamTurn(monster: Creature): boolean {
 	}
 	private refreshInventoryPanel(): void {
 		const weaponFrame = { warrior: 96, mage: 101, rogue: 100, huntress: 98, duelist: 99, cleric: 97 }[this.heroClass];
+		const weaponNameKey = this.weaponSourceClass !== undefined && this.weaponSourceClass !== 'startingWeapon'
+			? WEAPON_NAME_BY_CLASS[this.weaponSourceClass.toLowerCase()]
+			: undefined;
+		const weaponDescKey = `${weaponNameKey?.slice(0, -'.name'.length)}.desc`;
+		const weaponAbilityDescKey = `${weaponNameKey?.slice(0, -'.name'.length)}.ability_desc`;
 		const context: InventoryPanelContext = {
 			panel: this.inventoryPanel,
 			open: this.inventoryOpen,
@@ -18309,9 +18315,17 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//per-class icon unchanged (a stated simplification, not this fix's scope: this port
 			//has no per-weapon-class sprite frame data - `weaponReward`'s own bag-item frame is
 			//uniformly 96 regardless of `sourceClass` too, see `item-rules.mwl`).
-			weaponName: this.weaponSourceClass !== undefined && this.weaponSourceClass !== 'startingWeapon'
-				? t(WEAPON_NAME_BY_CLASS[this.weaponSourceClass.toLowerCase()] ?? CLASSES[this.heroClass].weaponKey)
-				: t(CLASSES[this.heroClass].weaponKey),
+			weaponName: weaponNameKey ? t(weaponNameKey) : t(CLASSES[this.heroClass].weaponKey),
+			//`MeleeWeapon.info()` (tag `v3.3.8`): the weapon's own `.desc`, plus - Duelist only,
+			//`!(this instanceof MagesStaff)` (no port item, so never excludes anything here) -
+			//its real `.ability_desc`, the T-key ability text Java shows nowhere else. Both keys
+			//are derived from the same class name `weaponName` above already resolved.
+			weaponDescription: weaponNameKey
+				? [
+					has(weaponDescKey) ? t(weaponDescKey) : undefined,
+					this.heroClass === 'duelist' && has(weaponAbilityDescKey) ? t(weaponAbilityDescKey) : undefined,
+				].filter((part): part is string => part !== undefined).join('\n\n') || undefined
+				: undefined,
 			weaponFrame,
 			equippedRing: this.equippedRing,
 			gold: this.heroStats.base('gold'),

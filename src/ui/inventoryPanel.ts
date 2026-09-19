@@ -30,6 +30,12 @@ export interface InventoryPanelContext {
 	readonly weaponInstanceId?: string;
 	readonly weaponName: string;
 	readonly weaponFrame: number;
+	/** `MeleeWeapon.info()`: the equipped weapon's own flavour text, plus - for a Duelist,
+	 * `!(this instanceof MagesStaff)` - its real `ability_desc` (this port has no MagesStaff
+	 * item, so that half of Java's exclusion never applies here). `undefined` when the weapon's
+	 * class has neither key (e.g. the class default before any real class name is known). See
+	 * `dungeonScene.ts`'s `refreshInventoryPanel` for the resolution. */
+	readonly weaponDescription?: string;
 	readonly equippedRing: InventoryItem | null;
 	readonly gold: number;
 	/** `SPDSettings.interfaceSize()`: large mode gets the wide 10-column bag grid. */
@@ -78,7 +84,7 @@ export function refreshInventoryPanel(context: InventoryPanelContext): void {
 	if (armor) armor.action = undefined;
 	const artifact = rows.find(item => ARTIFACT_SLOT_IDS.has(item.id)) ?? null;
 	const weapon: InventoryEntry = { id: 'equippedWeapon', instanceId: context.weaponInstanceId, name: context.weaponName,
-		frame: context.weaponFrame, quantity: 1, identified: true };
+		frame: context.weaponFrame, quantity: 1, identified: true, description: context.weaponDescription };
 	const ring = context.equippedRing ? entry({ ...context.equippedRing, quantity: 1, identified: true }) : null;
 	if (ring) ring.action = undefined;
 	panel.setWide(context.wide);
