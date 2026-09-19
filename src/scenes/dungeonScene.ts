@@ -6339,6 +6339,11 @@ export class DungeonScene extends Scene2D {
 				target.hp -= damage;
 				if (this.fadeMirrorOnDamage(target, damage)) return true;
 				if (target.kind === 'yog' && target.hp > 0) this.yogDamageHook(target, preHp);
+				if (target.kind === 'king' && target.hp > 0 && (target.kingPhase ?? 1) === 1) {
+					target.kingSummonCd = (target.kingSummonCd ?? 0) - damage / 8;
+					target.kingAbilityCd = (target.kingAbilityCd ?? 0) - damage / 8;
+				}
+				if (target.kind === 'king' && target.hp > 0) this.kingDamageHook(target);
 				this.showDamage(target, damage);
 				if (target.hp <= 0) this.kill(target);
 				return true;
@@ -9021,7 +9026,7 @@ export class DungeonScene extends Scene2D {
 	private consumeFeatherFall(): boolean {
 		if (this.hero.buffs['featherFall'] === undefined) return false;
 		delete this.hero.buffs['featherFall'];
-		this.say(t('items.spells.featherfall.light'), 'positive');
+		this.say(t('items.potions.elixirs.elixiroffeatherfall.light'), 'positive');
 		return true;
 	}
 
@@ -9239,6 +9244,11 @@ export class DungeonScene extends Scene2D {
 			monster.hp -= dotDealt;
 			if (monster.kind === 'tengu') this.clampTenguBracket(monster, preHp);
 			if (monster.kind === 'yog' && monster.hp > 0) this.yogDamageHook(monster, preHp);
+			if (monster.kind === 'king' && monster.hp > 0 && (monster.kingPhase ?? 1) === 1) {
+				monster.kingSummonCd = (monster.kingSummonCd ?? 0) - dotDealt / 8;
+				monster.kingAbilityCd = (monster.kingAbilityCd ?? 0) - dotDealt / 8;
+			}
+			if (monster.kind === 'king' && monster.hp > 0) this.kingDamageHook(monster);
 			this.showDamage(monster, dotDealt);
 			if (monster.hp <= 0) {
 				this.kill(monster);
@@ -12422,6 +12432,22 @@ private eyeBeamTurn(monster: Creature): boolean {
 		];
 	}
 
+	/** `DwarfKing.damage()` runs the P1->P2 and P2->P3 transitions on the damage event
+	 * itself (tag `v3.3.8`), not on the King's next turn: the throne teleport, the
+	 * full-HP shield and the subject cull all land before the hero's next damage source
+	 * (a second swing, a bomb, a DoT tick) can touch the crossed threshold. The table's
+	 * own `once` latch is what makes damage-time firing safe - `takeKingTurn`'s existing
+	 * re-check cannot double-fire. Lethal P1 damage still kills outright: Java's own
+	 * `super.damage()` runs `die()` (via `Char.damage()`'s `HP == 0` branch) before the
+	 * phase branch ever sees the corpse, so the clamp only ever rescues a survivor -
+	 * hence the `hp > 0` guard, matching `clampTenguBracket`'s and `yogDamageHook`'s.
+	 * Found by the 13th monster-analysis matrix (boss transitions). */
+	private kingDamageHook(king: Creature): void {
+		if (king.kind !== 'king' || king.hp <= 0) return;
+		king.kingReactions ??= new ReactionTable<Creature>(this.kingPhaseRules(king));
+		king.kingReactions.check(king);
+	}
+
 	private takeKingTurn(king: Creature): void {
 		const challenge = isChallengeEnabled('stronger_bosses');
 		king.kingReactions ??= new ReactionTable<Creature>(this.kingPhaseRules(king));
@@ -12734,13 +12760,25 @@ private eyeBeamTurn(monster: Creature): boolean {
 		const phase = yog.yogPhase ?? 1;
 		if (phase < 4) {
 			yog.hp = Math.max(yog.hp, yog.maxHp - step * phase);
-			if (yog.hp <= yog.maxHp - step * phase) {
-				yog.yogPhase = phase + 1;
-				this.say(t('actors.mobs.yogdzewa.darkness'), 'negative');
-				this.summonFist(yog);
-			}
 		} else if (phase === 4) {
 			yog.hp = Math.max(yog.hp, step / 3);
+		}
+		//`YogDzewa.damage()` (tag `v3.3.8`): the taken damage is measured AFTER the
+		//clamp above (`int dmgTaken = preHP - HP`), and accelerates both cooldowns
+		//(`-= dmgTaken/10`). Found by the 13th monster-analysis matrix (bosses).
+		const dmgTaken = Math.max(0, preHp - yog.hp);
+		if (dmgTaken > 0) {
+			yog.yogSummonCd = (yog.yogSummonCd ?? Random.normalRange(10, 15)) - dmgTaken / 10;
+			yog.yogBeamCd = (yog.yogBeamCd ?? Random.normalRange(10, 15)) - dmgTaken / 10;
+		}
+		if (phase < 4 && yog.hp <= yog.maxHp - step * phase) {
+			yog.yogPhase = phase + 1;
+			this.say(t('actors.mobs.yogdzewa.darkness'), 'negative');
+			this.summonFist(yog);
+			//A fresh fist buys Yog room: both cooldowns reset to at least 5, exactly
+			//like `addFist()`'s own `if (cooldown < 5) cooldown = 5` pair.
+			if ((yog.yogSummonCd ?? 0) < 5) yog.yogSummonCd = 5;
+			if ((yog.yogBeamCd ?? 0) < 5) yog.yogBeamCd = 5;
 		}
 	}
 
@@ -13708,6 +13746,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 			defender.kingSummonCd = (defender.kingSummonCd ?? 0) - taken / 8;
 			defender.kingAbilityCd = (defender.kingAbilityCd ?? 0) - taken / 8;
 		}
+		//Phase transitions ride the damage event, not the King's next turn (see
+		//`kingDamageHook`): accel first, then the transition, matching Java's order.
+		if (defender.kind === 'king' && defender.hp > 0) this.kingDamageHook(defender);
 		//Tengu bracket jumps resolve after the hit (procs included) but before death.
 		if (defender.kind === 'tengu' && defender.hp > 0) this.tenguBracketJump(defender, preHp);
 
@@ -15111,9 +15152,17 @@ private eyeBeamTurn(monster: Creature): boolean {
 			}
 			if (creature.kind === 'yog') {
 				if (this.qualifiedForBossChallenge) this.awardBadge('boss_challenge_yog');
-				for (const minion of this.creatures.filter((c) => c.kind !== undefined && ['yogFist', 'ripperDemon', 'eye', 'scorpio'].includes(c.kind))) this.kill(minion);
+				//`YogDzewa.die()` kills every summoned minion: Larva, YogRipper, YogEye,
+				//YogScorpio (fists die through their own `YogFist.die()` cascade). The list
+				//used to omit `'larva'`, so larvae outlived their summoner - found by the
+				//13th monster-analysis matrix (bosses).
+				for (const minion of this.creatures.filter((c) => c.kind !== undefined && ['yogFist', 'larva', 'ripperDemon', 'eye', 'scorpio'].includes(c.kind))) this.kill(minion);
 			}
 			if (creature.kind === 'tengu') {
+				//Not ported: `Tengu.die()` drops a `TengusMask` (wear it to choose a
+				//subclass). This port opens the subclass choice on the level-13
+				//advancement instead, and no mask item exists - see PORT_COVERAGE.md.
+				//Recorded by the 13th monster-analysis matrix (bosses).
 				this.applyTenguDeathTransition();
 				return;
 			}
@@ -17008,6 +17057,12 @@ private eyeBeamTurn(monster: Creature): boolean {
 		c.hp -= damage;
 		if (c.kind === 'tengu') this.clampTenguBracket(c, preHp);
 		if (c.kind === 'yog' && c.hp > 0) this.yogDamageHook(c, preHp);
+		if (c.kind === 'king' && c.hp > 0 && (c.kingPhase ?? 1) === 1) {
+			const taken = Math.max(0, preHp - c.hp);
+			c.kingSummonCd = (c.kingSummonCd ?? 0) - taken / 8;
+			c.kingAbilityCd = (c.kingAbilityCd ?? 0) - taken / 8;
+		}
+		if (c.kind === 'king' && c.hp > 0) this.kingDamageHook(c);
 		this.showDamage(c, damage);
 		c.sleeping = false;
 		if (c.hp <= 0) this.kill(c, cause);
@@ -20775,7 +20830,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (!item) return;
 		this.bag.remove('featherFall', 1, instanceId);
 		this.hero.buffs['featherFall'] = BUFF_DURATION.featherFall;
-		this.say(t('items.spells.featherfall.light'), 'positive');
+		this.say(t('items.potions.elixirs.elixiroffeatherfall.light'), 'positive');
 		this.actionSpentTurn = true;
 		this.spendHeroTurn(1);
 	}
