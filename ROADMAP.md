@@ -1064,7 +1064,18 @@ one.
       Suites: `tsc` clean (one real catch - `Creature`'s
       optional `magicImmune` needed an optional context field), item/simulation suites
       green, plus a new headless drive of the moved flow (reroll + scroll consumption +
-      mage zap-arming, empty-list and stale-pick refusals). **Complexity: L.**
+      mage zap-arming, empty-list and stale-pick refusals). **Third extraction 2026-09-19**:
+      `examineTile`'s whole name/description decision (ritual marker, caves-arena and city
+      visuals, stairs, raw ported `Terrain.java` branches, coarse-kind switch) moved
+      to `ui/examineText.ts` as `examineTileOutcome(ctx)` next to its per-region helpers -
+      the scene only precomputes the arena/city key answers (they need its visual contexts)
+      and performs the outcome (`say` vs the alchemy-pot recipe window); net −108 lines in
+      `dungeonScene.ts` (23,444 after), `examineText.ts` 92 to 246. Suites: `tsc` clean,
+      item/simulation suites green (eleven orphaned `examine*` imports and the two ritual
+      key imports deleted from the scene), plus a 16-assertion headless pin of the moved
+      branch table in `verifyItemWorkflows.mjs` (stairs, wall, halls water, locked/crystal
+      doors, grass, floor fallback, raw-beats-coarse, alchemy outcome, well, ritual/arena/
+      city precedence and the empty-desc suppression). **Complexity: L.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

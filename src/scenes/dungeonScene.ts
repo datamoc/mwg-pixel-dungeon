@@ -74,19 +74,7 @@ import {
 	startTransmutationPick,
 	type TransmuteFlowContext,
 } from '../items/transmutation';
-import {
-	examineWaterName,
-	examineGrassName,
-	examineHighGrassName,
-	examineEntranceDesc,
-	examineExitDesc,
-	examineBookshelfDesc,
-	examineEmptyDecoDesc,
-	examineWallDecoDesc,
-	examineStatueName,
-	examineStatueDesc,
-	examineSpDesc,
-} from '../ui/examineText';
+import { examineTileOutcome } from '../ui/examineText';
 import {
 	type EquippedRing,
 	RING_DEFS,
@@ -147,7 +135,7 @@ import {
 import { CAVES_BOSS_ARENA, CAVES_EXIT_CELL, CITY_BOTTOM_DOOR, CITY_EXIT_CELL, CITY_IMP_SHOP, CITY_THRONE, CITY_TOP_DOOR, HALLS_EXIT_CELL, PRISON_ARENA, PRISON_TENGU_CELL, PRISON_TENGU_CELL_CENTER, PRISON_TENGU_CELL_DOOR, prisonBossArena, prisonBossEnd, prisonBossPause } from '../spdLevelGen/bossLevels';
 import { hallsCenterPieceLayer, hallsCenterWallLayer } from '../spdLevelGen/hallsBossVisuals';
 import { cityGroundDescKey, cityGroundLayer, cityGroundNameKey, cityWallLayer } from '../spdLevelGen/cityBossVisuals';
-import { RITUAL_MARKER_DESC_KEY, RITUAL_MARKER_NAME_KEY, insideRitualMarker, ritualMarkerLayer } from '../spdLevelGen/ritualMarkerVisuals';
+import { insideRitualMarker, ritualMarkerLayer } from '../spdLevelGen/ritualMarkerVisuals';
 import { CAVES_GATE, cavesArenaDescKey, cavesArenaLayer, cavesArenaNameKey, cavesEntranceLayer, cavesOverhangLayer, type CavesArenaVisualContext } from '../spdLevelGen/cavesBossVisuals';
 import { vaultBlockedCells, vaultCenterVisualFrames, vaultCenterWallFrames, vaultFloorFrames } from '../spdLevelGen/vaultVisuals';
 import { spdPatchGenerate } from '../spdLevelGen/spdPatch';
@@ -6644,144 +6632,48 @@ export class DungeonScene extends Scene2D {
 		}
 	}
 
-	/**
-	 * `Level.java`'s `tileName`/`tileDesc`, bound to a free "Look" action - Java shows this
-	 * through `GameScene`'s cell-examine long-press, which this port has no pointer/keyboard
-	 * equivalent of, so the action just reports the hero's own cell rather than an arbitrary
-	 * selected one. Every region's own `*Level.java` overrides a different subset of
-	 * `water_name`/`grass_name`/`high_grass_name`(+`_desc`)/`entrance_desc`/`exit_desc` - all
-	 * reachable from `regionForDepth` alone (see the exact per-key region lists below,
-	 * checked directly against each real `*Level.java`), so they work whether or not this
-	 * depth came from `spdLevelGen/`. This port's own eight coarse terrain kinds collapse
-	 * several real `Terrain.java` values together (see `gameBridge.ts`'s
-	 * `SPD_TERRAIN_TO_GAME_KIND`), so `EMPTY_DECO`/`BOOKSHELF`/`ENTRANCE` (and `Sewer`/
-	 * `Prison`'s own overrides for them) are only distinguishable on a ported floor, read
-	 * back from `portedPaint`'s raw grid; `EXIT` does not need that, since `this.stairs` is
-	 * tracked on every depth regardless of generator.
-	 */
+	/** Free "Look" action: the name/description decision lives in `ui/examineText.ts`'s
+	 * `examineTileOutcome` next to its per-region helpers - the scene only precomputes the
+	 * arena/city key answers (they need its visual contexts) and performs the outcome. */
 	private examineTile(x: number, y: number): void {
 		const region = regionForDepth(this.depth);
-		const raw = this.portedPaint?.map[this.portedPaint.w * y + x];
-		let name: string;
-		let desc = '';
-
-		//`RitualSiteRoom`'s marker answers its own name and description for every cell of its own
-		//3x3 (unlike `ArenaVisuals`, with no terrain test at all), so those cells never reach the
-		//terrain branches below.
-		if (insideRitualMarker(this.ritualPos, this.level.width, x, y)) {
-			this.say(`${t(RITUAL_MARKER_NAME_KEY)}. ${t(RITUAL_MARKER_DESC_KEY)}`);
-			return;
-		}
-		//`WndInfoCell.cellName` consults the level's `customTiles` *before* the terrain (and the
-		//window's own description does the same in its constructor), and `ArenaVisuals` answers its
-		//own `wires_*`/`gate_*` names for the cells it draws on. So the wiring and the gate answer as
-		//themselves here instead of as the plain arena floor they are painted on - with Java's own
-		//two exclusions modelled inside `cavesArenaNameKey`/`cavesArenaDescKey`: a `NULL_TILE` cell
-		//(the layer draws nothing there) and a cell within one square of a pylon (`ArenaVisuals`'
-		//`image()` returns null for those, so `WndInfoCell` never reaches the tilemap's name at all).
-		const arenaCell = this.depth === 15 && this.cavesBossTiles ? this.level.index(x, y) : undefined;
-		if (arenaCell !== undefined) {
+		//`WndInfoCell.cellName` consults the level's `customTiles` *before* the terrain -
+		//precomputed here because the arena answer needs the scene's visual context.
+		let arenaName: string | undefined;
+		let arenaDesc: string | undefined;
+		if (this.depth === 15 && this.cavesBossTiles) {
 			const context = this.cavesArenaVisualContext();
-			const visualName = cavesArenaNameKey(context, arenaCell);
-			if (visualName !== undefined) {
-				const visualDesc = cavesArenaDescKey(context, arenaCell);
-				this.say(visualDesc ? `${t(visualName)}. ${t(visualDesc)}` : t(visualName));
-				return;
-			}
+			arenaName = cavesArenaNameKey(context, this.level.index(x, y));
+			if (arenaName !== undefined) arenaDesc = cavesArenaDescKey(context, this.level.index(x, y));
 		}
-		//`CityBossLevel.CustomGroundVisuals.name()`/`desc()` answer the same way: only where
-		//the ground map draws (see `cityBossVisuals.ts`), otherwise the terrain path below
-		//speaks. A named cell composes name + desc; a `""` desc (upper `EMPTY_DECO`) says the
-		//floor name with no description, exactly like Java's suppression.
+		//`CityBossLevel.CustomGroundVisuals.name()`/`desc()` answer only where the ground
+		//map draws - likewise precomputed; the `""`-desc suppression decision is the module's.
+		let cityName: string | undefined;
+		let cityDesc: string | undefined;
 		if (this.depth === 20 && this.portedPaint) {
 			const w = this.level.width;
 			const cell = this.level.index(x, y);
 			const frames = cityGroundLayer(w, this.level.height, this.portedPaint.map);
-			const cityName = cityGroundNameKey(this.portedPaint.map, frames, w, cell);
-			if (cityName !== undefined) {
-				const cityDesc = cityGroundDescKey(this.portedPaint.map, frames, w, cell);
-				this.say(cityDesc ? `${t(cityName)}. ${t(cityDesc)}` : t(cityName));
-				return;
-			}
-			if (cityGroundDescKey(this.portedPaint.map, frames, w, cell) === '') {
-				this.say(t('levels.level.floor_name'));
-				return;
-			}
+			cityName = cityGroundNameKey(this.portedPaint.map, frames, w, cell);
+			cityDesc = cityGroundDescKey(this.portedPaint.map, frames, w, cell);
 		}
-
-		if (this.hasStairs && this.stairs && this.stairs.x === x && this.stairs.y === y) {
-			name = t('levels.level.exit_name');
-			desc = examineExitDesc(region);
-		} else if (raw === Terrain.ENTRANCE) {
-			name = t('levels.level.entrace_name');
-			desc = examineEntranceDesc(region);
-		} else if (raw === Terrain.BOOKSHELF) {
-			name = t('levels.level.bookshelf_name');
-			desc = examineBookshelfDesc(region);
-		} else if (raw === Terrain.EMPTY_DECO) {
-			name = t('levels.level.floor_name');
-			desc = examineEmptyDecoDesc(region);
-		} else if (raw === Terrain.WALL_DECO) {
-			name = t('levels.level.wall_name');
-			desc = examineWallDecoDesc(region);
-		} else if (raw === Terrain.STATUE || raw === Terrain.STATUE_SP) {
-			// `Level.tileName()`'s own STATUE/STATUE_SP case - `statue_name`, not `wall_name`;
-			// `HallsLevel` overrides it (see `examineStatueName`).
-			name = examineStatueName(region);
-			desc = examineStatueDesc(region);
-		} else if (raw === Terrain.EMPTY_SP) {
-			name = t('levels.level.floor_name');
-			desc = examineSpDesc(region);
-		} else if (raw === Terrain.SIGN) {
-			name = t('port.ui.signname');
-			desc = t('port.ui.signdesc');
-		} else if (raw === Terrain.ALCHEMY) {
-			//`AlchemyPot.onOperate()` opens the recipe window in Java. This port has no
-			//separate cell-targeting interaction, so examining the pot is its direct action
-			//surface; the existing generic picker then presents recipes whose ingredients
-			//are currently in the bag.
+		const outcome = examineTileOutcome({
+			region,
+			raw: this.portedPaint?.map[this.portedPaint.w * y + x],
+			inRitualMarker: insideRitualMarker(this.ritualPos, this.level.width, x, y),
+			arenaName,
+			arenaDesc,
+			cityName,
+			cityDesc,
+			atStairs: Boolean(this.hasStairs && this.stairs && this.stairs.x === x && this.stairs.y === y),
+			coarse: this.level.get(x, y),
+			isCrystalDoor: this.crystalDoorCells.has(this.level.index(x, y)),
+		});
+		if (outcome.kind === 'alchemy') {
 			openAlchemyRecipes(this.alchemyFlowContext());
 			return;
-		} else if (raw === Terrain.WELL) {
-			name = t('levels.level.well_name');
-		} else if (raw === Terrain.EMPTY_WELL) {
-			name = t('levels.level.empty_well_name');
-			desc = t('levels.level.empty_well_desc');
-		} else {
-			switch (this.level.get(x, y)) {
-				case WALL:
-					name = t('levels.level.wall_name');
-					break;
-				case WATER:
-					name = examineWaterName(region);
-					desc = region === 'halls' ? t('levels.hallslevel.water_desc') : t('levels.level.water_desc');
-					break;
-				case DOOR:
-					name = t('levels.level.open_door_name');
-					break;
-				case DOOR_CLOSED:
-					if (this.crystalDoorCells.has(this.level.index(x, y))) {
-						name = t('levels.level.crystal_door_name');
-						desc = t('levels.level.crystal_door_desc');
-					} else {
-						name = t('levels.level.locked_door_name');
-						desc = t('levels.level.locked_door_desc');
-					}
-					break;
-				case GRASS:
-					name = examineGrassName(region);
-					break;
-				case HIGH_GRASS:
-					name = examineHighGrassName(region);
-					//high_grass_desc has only one override, CavesLevel's own
-					desc = region === 'caves' ? t('levels.caveslevel.high_grass_desc') : t('levels.level.high_grass_desc');
-					break;
-				default:
-					name = t('levels.level.floor_name');
-			}
 		}
-
-		this.say(desc ? `${name}. ${desc}` : name);
+		this.say(outcome.text);
 	}
 
 	private triggerTrapAt(x: number, y: number): void {

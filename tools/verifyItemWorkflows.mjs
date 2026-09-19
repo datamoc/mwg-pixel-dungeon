@@ -2047,7 +2047,45 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		assert.ok(readFileSync(join(root, 'src/items/displayName.ts'), 'utf8').includes(`'${key}'`), `stats line uses ${key}`);
 		assert.ok(readFileSync(join(root, 'src/generated/spdMessages.ts'), 'utf8').includes(`"${key}"`), `${key} exists in the catalogue`);
 	}
-	console.log('PASS item-instance separation, enhancement transfer, upgrade policy, appearance restore, missile dust pickup, the Unstable delegate list, rings.mwl-derived ring formulas, items.mwl-derived weapon/armor tiers, Generator.java deck parity, monster/hero/buff Java parity, per-monster status immunities, the Sandals of Nature seed/charge economy, the Talisman of Foresight scry formulas, the Dried Rose ghost/petal economy, the Ring of Wealth bonus-drop counters, the generated shop shelf, and the ArtifactRecharge table, and weapon/armor/missile STR requirements, and ceremonial-candle aimed placement, and the shared food/horn meal-talent effects');
+	// `examineTile`'s decision body moved to `ui/examineText.ts` (`examineTileOutcome`)
+	// in the dungeonScene file-size refactor - the scene only precomputes the arena/city
+	// key answers and performs the outcome, so the branch table is pinned here instead
+	// of live. The harness `t()` stub echoes keys, so these assert key selection, not
+	// wording; `npm run i18n:verify` owns the catalogue side.
+	compile(join(root, 'src/spdRng.ts'), 'spdRng.js');
+	compile(join(root, 'src/items/generator.ts'), 'items/generator.js');
+	compile(join(root, 'src/items/shopItems.ts'), 'items/shopItems.js');
+	compile(join(root, 'src/spdLevelGen/room.ts'), 'spdLevelGen/room.js');
+	compile(join(root, 'src/spdLevelGen/paintLevel.ts'), 'spdLevelGen/paintLevel.js');
+	compile(join(root, 'src/spdLevelGen/customTilemapLayer.ts'), 'spdLevelGen/customTilemapLayer.js');
+	compile(join(root, 'src/spdLevelGen/ritualMarkerVisuals.ts'), 'spdLevelGen/ritualMarkerVisuals.js');
+	compile(join(root, 'src/ui/examineText.ts'), 'ui/examineText.js');
+	const { examineTileOutcome } = require('./ui/examineText.js');
+	const { Terrain: javaTerrain } = require('./spdLevelGen/paintLevel.js');
+	const { RITUAL_MARKER_NAME_KEY: ritualName, RITUAL_MARKER_DESC_KEY: ritualDesc } = require('./spdLevelGen/ritualMarkerVisuals.js');
+	const { WALL: wallTile, WATER: waterTile, DOOR_CLOSED: shutDoorTile, GRASS: grassTile } = require('./dungeonConstants.js');
+	const examineBase = {
+		region: 'sewers', raw: undefined, inRitualMarker: false,
+		arenaName: undefined, arenaDesc: undefined, cityName: undefined, cityDesc: undefined,
+		atStairs: false, coarse: 99, isCrystalDoor: false,
+	};
+	assert.equal(examineTileOutcome({ ...examineBase, atStairs: true }).text, 'levels.level.exit_name. levels.level.exit_desc', 'stairs answer the exit name');
+	assert.equal(examineTileOutcome({ ...examineBase, coarse: wallTile }).text, 'levels.level.wall_name', 'a wall names no description');
+	assert.equal(examineTileOutcome({ ...examineBase, region: 'halls', coarse: waterTile }).text, 'levels.hallslevel.water_name. levels.hallslevel.water_desc', 'halls water uses its own override');
+	assert.equal(examineTileOutcome({ ...examineBase, coarse: shutDoorTile }).text, 'levels.level.locked_door_name. levels.level.locked_door_desc', 'a shut door reads locked');
+	assert.equal(examineTileOutcome({ ...examineBase, coarse: shutDoorTile, isCrystalDoor: true }).text, 'levels.level.crystal_door_name. levels.level.crystal_door_desc', 'a crystal door names itself');
+	assert.equal(examineTileOutcome({ ...examineBase, coarse: grassTile }).text, 'levels.level.grass_name', 'sewers grass keeps the base name');
+	assert.equal(examineTileOutcome({ ...examineBase, coarse: 99 }).text, 'levels.level.floor_name', 'an unknown coarse kind falls back to floor');
+	assert.equal(examineTileOutcome({ ...examineBase, raw: javaTerrain.ENTRANCE }).text, 'levels.level.entrace_name. levels.level.entrance_desc', 'raw ported terrain wins over the coarse kind');
+	assert.equal(examineTileOutcome({ ...examineBase, raw: javaTerrain.ALCHEMY }).kind, 'alchemy', 'the pot opens recipes instead of saying a line');
+	assert.equal(examineTileOutcome({ ...examineBase, raw: javaTerrain.WELL }).text, 'levels.level.well_name', 'a well names no description');
+	assert.equal(examineTileOutcome({ ...examineBase, inRitualMarker: true }).text, `${ritualName}. ${ritualDesc}`, 'the ritual marker answers before the terrain');
+	assert.equal(examineTileOutcome({ ...examineBase, arenaName: 'a.b', arenaDesc: 'a.c' }).text, 'a.b. a.c', 'arena visuals answer before the terrain');
+	assert.equal(examineTileOutcome({ ...examineBase, arenaName: 'a.b' }).text, 'a.b', 'an arena name without a desc says just the name');
+	assert.equal(examineTileOutcome({ ...examineBase, cityName: 'c.d', cityDesc: 'c.e' }).text, 'c.d. c.e', 'city ground visuals compose name and desc');
+	assert.equal(examineTileOutcome({ ...examineBase, cityDesc: '' }).text, 'levels.level.floor_name', 'the empty-desc suppression says the floor name');
+	assert.equal(examineTileOutcome({ ...examineBase, cityName: undefined, cityDesc: 'c.e' }).text, 'levels.level.floor_name', 'an undescribed city cell without suppression falls through to the coarse kind');
+	console.log('PASS item-instance separation, enhancement transfer, upgrade policy, appearance restore, missile dust pickup, the Unstable delegate list, rings.mwl-derived ring formulas, items.mwl-derived weapon/armor tiers, Generator.java deck parity, monster/hero/buff Java parity, per-monster status immunities, the Sandals of Nature seed/charge economy, the Talisman of Foresight scry formulas, the Dried Rose ghost/petal economy, the Ring of Wealth bonus-drop counters, the generated shop shelf, and the ArtifactRecharge table, and weapon/armor/missile STR requirements, and ceremonial-candle aimed placement, and the shared food/horn meal-talent effects, and the tile-examine name/description decision');
 } finally {
 	rmSync(out, { recursive: true, force: true });
 }
