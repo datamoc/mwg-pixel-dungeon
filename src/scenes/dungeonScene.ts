@@ -15332,7 +15332,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			waterskin: this.waterskin,
 			waterskinMax: WATERSKIN_MAX,
 			hunger: this.hunger >= 450 ? 'starving' : this.hunger >= 300 ? 'hungry' : 'none',
-			buffs: Object.keys(this.hero.buffs),
+			buffs: Object.entries(this.hero.buffs).map(([id, turns]) => ({ id: id as BuffId, turns })),
 			staff: this.heroClass === 'mage' ? { current: this.wandCharges.current, max: this.wandCharges.max } : null,
 			ammo: CLASS_AMMO.has(this.heroClass) ? this.ammo : null,
 			carriedCount,

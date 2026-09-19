@@ -73,3 +73,4 @@ export function buffInfo(id: BuffId | 'hungry' | 'starving', turns: number | und
 	const desc = NO_TURNS_PARAM.has(id) ? t(`${key}.desc`) : t(`${key}.desc`, { 0: Math.max(0, turns ?? 0) });
 	return { name: titleCase(t(`${key}.name`)), desc };
 }
+

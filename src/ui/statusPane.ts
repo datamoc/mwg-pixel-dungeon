@@ -1,6 +1,8 @@
 import { Container, Graphics, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 import { Bar, Label, NinePatch } from 'mwg';
 import { SPD_TITLE_COLOR } from './spdTheme';
+import { buffIconFade, buffIconText, buffIconTextColor } from './buffOverlays';
+import type { BuffId } from '../simulation/buffs';
 
 /**
  * The hero's status pane, ported from `ui/StatusPane.java` (small layout live, `large`
@@ -105,7 +107,9 @@ export interface StatusPaneState {
 	waterskin: number;
 	waterskinMax: number;
 	hunger: 'none' | 'hungry' | 'starving';
-	buffs: string[];
+	/** The hero's live buffs with their remaining turns (`hero.buffs` entries) - the
+	 * turns feed `BuffButton`'s large-mode text and fade overlays (see `layoutBuffs`). */
+	buffs: { id: BuffId | 'hungry' | 'starving'; turns: number | undefined }[];
 	staff: { current: number; max: number } | null;
 	ammo: number | null;
 	carriedCount: number;
@@ -296,16 +300,23 @@ export class StatusPane extends Container {
 		);
 		this.statsText.setColor(state.hunger === 'starving' ? 0xff8800 : 0xcccccc);
 
-		this.layoutBuffs([...state.buffs, ...(state.hunger === 'none' ? [] : [state.hunger])]);
+		this.layoutBuffs([...state.buffs, ...(state.hunger === 'none' ? [] : [{ id: state.hunger, turns: undefined }])]);
 	}
 
 	/**
 	 * `BuffIndicator` rebuilds its row from the live buff set each update, skipping any buff
 	 * whose `icon()` is `NONE`. Java animates icons in and out with an `AlphaTweener`; this
-	 * rebuilds the row outright, a stated simplification.
+	 * rebuilds the row outright, a stated simplification - which is also why the key carries
+	 * each buff's remaining turns: a ticking countdown re-renders the text below every turn.
+	 *
+	 * Overlays follow `BuffIndicator.BuffButton.updateIcon()`'s two branches: a large icon
+	 * whose buff has an `iconTextDisplay()` countdown gets the bottom-right text (tinted
+	 * `POSITIVE` green / `NEGATIVE` red at 0.7 alpha, halved when wider than the icon);
+	 * every other icon - all small ones, large ones with no text - gets the `iconFadePercent()`
+	 * grey wash growing down from the top as the buff expires.
 	 */
-	private layoutBuffs(buffs: string[]): void {
-		const key = buffs.join(',');
+	private layoutBuffs(buffs: { id: BuffId | 'hungry' | 'starving'; turns: number | undefined }[]): void {
+		const key = buffs.map((buff) => `${buff.id}:${buff.turns ?? ''}`).join(',');
 		if (key === this.lastBuffs) return;
 		this.lastBuffs = key;
 		this.buffLayer.removeChildren().forEach((child) => child.destroy());
@@ -314,7 +325,7 @@ export class StatusPane extends Container {
 		const buffSize = this.large ? BUFF_SIZE_LARGE : BUFF_SIZE_SMALL;
 		const buffColumns = this.large ? BUFF_COLUMNS_LARGE : BUFF_COLUMNS_SMALL;
 		let x = 0;
-		for (const buff of buffs) {
+		for (const { id: buff, turns } of buffs) {
 			const index = BUFF_ICON[buff];
 			if (index === undefined) continue;
 			const icon = new Sprite(
@@ -341,6 +352,38 @@ export class StatusPane extends Container {
 				icon.on('pointertap', (event) => { event.stopPropagation(); this.onBuffClick?.(buff); });
 			}
 			this.buffLayer.addChild(icon);
+			const displayed = buffSize * SCALE;
+			//Both overlays sit above the icon but must never swallow its own click, so
+			//they opt out of hit-testing outright.
+			const text = this.large ? buffIconText(buff, turns) : null;
+			if (text !== null) {
+				const overlay = new Label({ text, size: 7 });
+				overlay.setColor(buffIconTextColor(buff));
+				overlay.alpha = 0.7;
+				overlay.eventMode = 'none';
+				if (overlay.width > displayed) overlay.scale.set(0.5);
+				overlay.x = icon.x + displayed - overlay.width - 1;
+				overlay.y = icon.y + displayed - overlay.height - 2;
+				this.buffLayer.addChild(overlay);
+			} else {
+				//`grey`: Java's `0xCC666666` solid scaled to `(width, fadeHeight)` from the
+				//icon's top, pixel-snapped up below half height and down above it.
+				const fade = buffIconFade(buff, turns);
+				const fadeHeight = fade * buffSize;
+				const snapped = fadeHeight <= 0 ? 0
+					: fadeHeight < buffSize / 2
+						? Math.ceil(SCALE * fadeHeight) / SCALE
+						: Math.floor(SCALE * fadeHeight) / SCALE;
+				if (snapped > 0) {
+					const wash = new Graphics()
+						.rect(0, 0, displayed, snapped * SCALE)
+						.fill({ color: 0x666666, alpha: 0.8 });
+					wash.eventMode = 'none';
+					wash.x = icon.x;
+					wash.y = icon.y;
+					this.buffLayer.addChild(wash);
+				}
+			}
 			x += (buffSize + 1) * SCALE;
 		}
 	}
