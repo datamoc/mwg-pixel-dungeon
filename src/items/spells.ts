@@ -8,6 +8,7 @@
  * seventeenth extraction, behavior-identical.
  */
 import type { AnyMonsterId } from '../monsters';
+import type { TrapKind } from '../dungeonConstants';
 
 /** The seams every targeted spell shares: the carried spell, the aimer, the turn, the log. */
 export interface TargetedSpellAim {
@@ -57,6 +58,42 @@ export interface PhaseShiftContext extends TargetedSpellAim {
 	afflictParalysis(creature: PhaseShiftCreatureView): void;
 }
 
+/** `ReclaimTrap.affectTarget()` and `ReclaimedTrap` (tag `v3.3.8`): first target a visible,
+ * active trap and store its class while recharging the hero's wand; a later cast redeploys
+ * that class as a concealed active trap and consumes the spell. Java's trap reflection and
+ * `reclaimed` flag collapse here to the closed `TrapKind` union. Trap activation itself stays
+ * in `triggerTrapAt`; a persisted spent-cell set prevents a reclaimed/triggered trap from
+ * firing again. Java's lightning/teleport presentation and Bestiary accounting are absent. */
+export function useReclaimTrapFlow(ctx: ReclaimTrapContext, instanceId?: string): void {
+	if (!ctx.hasSpell('reclaimTrap', instanceId)) return;
+	const carrying = ctx.carriedTrap !== null;
+	ctx.beginAim({
+		range: 6,
+		validate: (cell) => ctx.carriedTrap !== null
+			? ctx.canPlaceTrap(cell.x, cell.y)
+			: ctx.trapAt(cell.x, cell.y) !== null,
+		onConfirm: (target) => {
+			if (!carrying) {
+				const kind = ctx.trapAt(target.x, target.y);
+				if (!kind) {
+					ctx.say(ctx.t('items.spells.reclaimtrap.no_trap'), 'negative');
+				} else {
+					ctx.takeTrap(target.x, target.y);
+					ctx.say(ctx.t('port.log.reclaimtrap.stored'), 'positive');
+				}
+			} else {
+				const kind = ctx.carriedTrap;
+				if (!kind) return;
+				ctx.placeTrap(target.x, target.y);
+				ctx.consumeSpell('reclaimTrap', instanceId);
+				ctx.say(ctx.t('port.log.reclaimtrap.placed'), 'positive');
+			}
+			ctx.refreshTiles();
+			ctx.spendTurn();
+		},
+	});
+}
+
 /** `TelekineticGrab.affectTarget()` (tag `v3.3.8`): target a heap and pull its contents
  * into the hero's belongings, with the Java spell's cast cost capped at one turn. Java can
  * hold several items in one ordinary Heap; this port has one GroundItem per cell, so one
@@ -83,6 +120,23 @@ export function useTelekineticGrabFlow(ctx: TelekineticGrabContext, instanceId?:
 			ctx.spendTurn();
 		},
 	});
+}
+
+/**
+ * The ReclaimTrap store/redeploy flow, moved out of the scene behind this context the
+ * same way - behavior-identical, with the scene keeping one builder plus the
+ * `useReclaimTrap` adapter the item-use router calls. The trap layer, the spent-cell
+ * set, the carried class and the tile restitch stay scene-side; this flow only decides
+ * them. The `carrying` snapshot is taken when the aimer opens; the validate re-reads
+ * the live carried class, exactly as the scene code this flow moves did.
+ */
+export interface ReclaimTrapContext extends TargetedSpellAim {
+	readonly carriedTrap: TrapKind | null;
+	trapAt(x: number, y: number): TrapKind | null;
+	canPlaceTrap(x: number, y: number): boolean;
+	takeTrap(x: number, y: number): void;
+	placeTrap(x: number, y: number): void;
+	refreshTiles(): void;
 }
 
 /** `PhaseShift.affectTarget()` (tag `v3.3.8`): teleport the selected character to a

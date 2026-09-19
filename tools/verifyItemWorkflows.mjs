@@ -2306,13 +2306,14 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 }
 // The moved targeted spells (`items/spells.ts`, the file-size refactor's seventeenth
 // extraction): driven headlessly with a stub floor and scripted aim.
-const { useTelekineticGrabFlow, usePhaseShiftFlow } = require('./items/spells.js');
+const { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow } = require('./items/spells.js');
 function spellDrive(overrides = {}) {
 	const log = [];
-	const flags = { aim: null, grabbed: [], moved: [], teleports: [], calmed: [], paralysed: [], turns: 0, consumed: [] };
-	const bag = overrides.bag ?? { telekineticGrab: 1, phaseShift: 1 };
+	const flags = { aim: null, grabbed: [], moved: [], teleports: [], calmed: [], paralysed: [], turns: 0, consumed: [], refunds: 0, restitched: 0 };
+	const bag = overrides.bag ?? { telekineticGrab: 1, phaseShift: 1, reclaimTrap: 1 };
 	const creatures = overrides.creatures ?? {};
 	const heaps = overrides.heaps ?? {};
+	const trapState = { carried: overrides.carried ?? null, traps: { ...overrides.traps }, spent: new Set(overrides.spent ?? []), secrets: new Set(overrides.secretCells ?? []) };
 	const ctx = {
 		hasSpell: (id) => (bag[id] ?? 0) > 0,
 		consumeSpell: (id) => { bag[id]--; flags.consumed.push(id); },
@@ -2329,9 +2330,28 @@ function spellDrive(overrides = {}) {
 		calmCreature: (creature) => { flags.calmed.push(creature); },
 		isBossOrMiniboss: (kind) => kind === 'goo',
 		afflictParalysis: (creature) => { flags.paralysed.push(creature); },
+		get carriedTrap() { return trapState.carried; },
+		trapAt: (x, y) => {
+			const key = `${x},${y}`;
+			if (!(key in trapState.traps) || trapState.spent.has(key) || trapState.secrets.has(key)) return null;
+			return trapState.traps[key];
+		},
+		canPlaceTrap: overrides.placeable ?? (() => true),
+		takeTrap: (x, y) => {
+			const key = `${x},${y}`;
+			trapState.carried = trapState.traps[key] ?? null;
+			trapState.spent.add(key);
+			flags.refunds++;
+		},
+		placeTrap: (x, y) => {
+			trapState.traps[`${x},${y}`] = trapState.carried;
+			trapState.spent.delete(`${x},${y}`);
+			trapState.carried = null;
+		},
+		refreshTiles: () => { flags.restitched++; },
 		...overrides.ctx,
 	};
-	return { ctx, log, flags, bag };
+	return { ctx, log, flags, bag, trapState };
 }
 // TelekineticGrab: missing spells never aim; confirms grab, refuse, or miss, always spending.
 {
@@ -2394,6 +2414,51 @@ function spellDrive(overrides = {}) {
 	stranded.flags.aim.onConfirm({ x: 7, y: 5 });
 	assert.equal(stranded.flags.moved.length, 0, 'no destination moves nothing');
 	assert.deepEqual(stranded.flags.consumed, ['phaseShift'], 'but the cast still costs');
+}
+// ReclaimTrap: store an armed trap (refunding a wand charge, keeping the spell), then
+// redeploy it concealed elsewhere (consuming the spell); refusals spend the turn only.
+{
+	const missing = spellDrive({ bag: {} });
+	useReclaimTrapFlow(missing.ctx);
+	assert.equal(missing.flags.aim, null, 'no spell, no aim');
+	const d = spellDrive({ traps: { '3,3': 'fire' } });
+	useReclaimTrapFlow(d.ctx);
+	assert.equal(d.flags.aim.range, 6, 'storing aims at six cells');
+	assert.equal(d.ctx.carriedTrap, null, 'starting empty-handed');
+	assert.equal(d.flags.aim.validate({ x: 3, y: 3 }), true, 'an armed trap validates');
+	assert.equal(d.flags.aim.validate({ x: 0, y: 0 }), false, 'bare floor does not');
+	d.flags.aim.onConfirm({ x: 3, y: 3 });
+	assert.equal(d.trapState.carried, 'fire', 'the class is stored');
+	assert.ok(d.trapState.spent.has('3,3'), 'the cell is spent');
+	assert.equal(d.flags.refunds, 1, 'a wand charge is refunded');
+	assert.ok(d.log.some((l) => l.includes('stored')), 'with the stored line');
+	assert.deepEqual(d.flags.consumed, [], 'storing keeps the spell');
+	assert.equal(d.flags.restitched, 1, 'tiles restitch');
+	assert.equal(d.flags.turns, 1, 'and the turn is spent');
+	const empty = spellDrive();
+	useReclaimTrapFlow(empty.ctx);
+	empty.flags.aim.onConfirm({ x: 0, y: 0 });
+	assert.ok(empty.log.some((l) => l.includes('no_trap')), 'bare floor refuses');
+	assert.equal(empty.trapState.carried, null, 'storing nothing');
+	const spent = spellDrive({ traps: { '3,3': 'fire' }, spent: ['3,3'] });
+	useReclaimTrapFlow(spent.ctx);
+	assert.equal(spent.flags.aim.validate({ x: 3, y: 3 }), false, 'spent traps do not validate');
+	spent.flags.aim.onConfirm({ x: 3, y: 3 });
+	assert.ok(spent.log.some((l) => l.includes('no_trap')), 'nor confirm');
+	const hidden = spellDrive({ traps: { '3,3': 'fire' }, secretCells: ['3,3'] });
+	useReclaimTrapFlow(hidden.ctx);
+	assert.equal(hidden.flags.aim.validate({ x: 3, y: 3 }), false, 'concealed traps stay hidden');
+	const place = spellDrive({ carried: 'fire' });
+	useReclaimTrapFlow(place.ctx);
+	assert.equal(place.flags.aim.validate({ x: 4, y: 4 }), true, 'carrying validates the floor instead');
+	place.flags.aim.onConfirm({ x: 4, y: 4 });
+	assert.equal(place.trapState.traps['4,4'], 'fire', 'the class redeploys');
+	assert.equal(place.trapState.carried, null, 'hands emptied');
+	assert.deepEqual(place.flags.consumed, ['reclaimTrap'], 'consuming the spell');
+	assert.ok(place.log.some((l) => l.includes('placed')), 'with the placed line');
+	const blocked = spellDrive({ carried: 'fire', placeable: () => false });
+	useReclaimTrapFlow(blocked.ctx);
+	assert.equal(blocked.flags.aim.validate({ x: 4, y: 4 }), false, 'blocked cells do not validate');
 }
 }
 }

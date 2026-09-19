@@ -1266,6 +1266,20 @@ one.
       defaults swallowing the empty-bag override - fixed the same way. The move also corrected
       one seam choice in review: the teleport effect takes the victim view directly
       (`playTeleportOn`, move-then-play preserved) instead of re-looking it up post-move.
+      **Complexity: S.** **Eighteenth extraction 2026-09-19**: `useReclaimTrap`'s store/redeploy
+      flow joined `items/spells.ts` as `useReclaimTrapFlow` on the `TargetedSpellAim` base plus
+      a `ReclaimTrapContext` (live carried class, armed-trap lookup folding the spent/secret
+      gates, placeable test, take/place mutators, tile restitch); the scene keeps the one-line
+      adapter the router calls plus a builder. Net +1 line in `dungeonScene.ts` (22,762 after) -
+      the trap-layer builder costs what the body saved - `spells.ts` 120 to 174; the payback is
+      the same as the seventeenth's (first headless coverage of the flow, base reuse holding).
+      Suites: `tsc` clean with no fix-ups, item suite green with a new headless drive (missing
+      spells never aim, armed traps validate/store with a wand refund while keeping the spell,
+      bare/spent/concealed cells refuse on both validate and confirm, carrying validates the
+      floor instead and redeploys concealed while consuming the spell, blocked cells refuse).
+      Review corrected one invented Java clause in the interface comment before committing, and
+      kept the snapshot-vs-live `carrying` distinction exact (snapshot on confirm, live read on
+      validate, as the moved code did).
       **Complexity: S.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`

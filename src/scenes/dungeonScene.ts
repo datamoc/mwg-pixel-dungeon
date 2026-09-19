@@ -235,7 +235,7 @@ import { applyTalismanPerTurnCharge, useTalismanFlow, checkTalismanAwarenessFlow
 import { roseGhostMaxHp, applyRoseRecharge, useRoseFlow, type RoseFlowContext, type RoseItem } from '../items/rose';
 import { rosePetalsNeeded, rosePetalDropCap, rosePetalPickup, roseChargeCap, roseLevelCap } from '../items/rose';
 import { beaconChargeCap, useBeaconFlow, useReturningBeaconFlow, type BeaconFlowContext, type BeaconItem } from '../items/beacon';
-import { useTelekineticGrabFlow, usePhaseShiftFlow, type TargetedSpellAim, type TelekineticGrabContext, type PhaseShiftContext } from '../items/spells';
+import { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow, type TargetedSpellAim, type TelekineticGrabContext, type PhaseShiftContext, type ReclaimTrapContext } from '../items/spells';
 import { planWealthDrops, wealthEquipBonus, initialiseWealthTrackers, wealthDeathRolls, type WealthDropPlan, type WealthTrackers } from '../items/wealthDrops';
 import { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal, artifactRechargeDuration, wildEnergyRechargeTurns, type RechargeGuards } from '../items/artifactRecharge';
 import { equipRing as equipInventoryRing, equipArmor as equipInventoryArmor, equipWeapon as equipInventoryWeapon, type GearEquipmentContext, type RingEquipmentContext } from '../items/equipment';
@@ -22066,48 +22066,49 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * in `triggerTrapAt`; a persisted spent-cell set prevents a reclaimed/triggered trap from
 	 * firing again. Java's lightning/teleport presentation and Bestiary accounting are absent. */
 	private useReclaimTrap(instanceId?: string): void {
-		if (!this.bag.find('reclaimTrap', instanceId)) return;
-		const carrying = this.reclaimedTrap !== null;
-		this.beginAiming({
-			range: 6,
-			validate: (cell) => {
-				if (this.reclaimedTrap !== null) return this.level.passable(cell.x, cell.y)
-					&& !this.isChasmCell(cell.x, cell.y) && !this.creatureAt(cell.x, cell.y);
-				const index = this.level.index(cell.x, cell.y);
-				return this.trapKinds.has(index) && !this.spentTrapCells.has(index)
-					&& !this.secrets.isSecret(cell.x, cell.y);
+		useReclaimTrapFlow(this.reclaimTrapContext(), instanceId);
+	}
+
+	/**
+	 * The ReclaimTrap store/redeploy flow lives in `items/spells.ts` behind
+	 * `ReclaimTrapContext` - the file-size refactor's eighteenth extraction, behavior-identical.
+	 */
+	private reclaimTrapContext(): ReclaimTrapContext {
+		const scene = this;
+		return {
+			...scene.targetedSpellBase(),
+			get carriedTrap() { return scene.reclaimedTrap; },
+			trapAt: (x, y) => {
+				const index = scene.level.index(x, y);
+				if (!scene.trapKinds.has(index) || scene.spentTrapCells.has(index)
+					|| scene.secrets.isSecret(x, y)) return null;
+				return scene.trapKinds.get(index) ?? null;
 			},
-			onConfirm: (target) => {
-				const index = this.level.index(target.x, target.y);
-				if (!carrying) {
-					const kind = this.trapKinds.get(index);
-					if (!kind || this.spentTrapCells.has(index) || this.secrets.isSecret(target.x, target.y)) {
-						this.say(t('items.spells.reclaimtrap.no_trap'), 'negative');
-					} else {
-						this.reclaimedTrap = kind;
-						this.spentTrapCells.add(index);
-						const trap = this.portedPaint?.traps.get(index);
-						if (trap) trap.active = false;
-						this.wandCharges.refund(1);
-						this.say(t('port.log.reclaimtrap.stored'), 'positive');
-					}
-				} else {
-					const kind = this.reclaimedTrap;
-					if (!kind) return;
-					this.trapKinds.set(index, kind);
-					this.spentTrapCells.delete(index);
-					this.level.set(target.x, target.y, TRAP);
-					if (this.portedPaint) this.portedPaint.traps.set(index, { kind, hidden: true, active: true });
-					this.secrets.conceal(target.x, target.y, FLOOR, TRAP);
-					this.reclaimedTrap = null;
-					this.bag.remove('reclaimTrap', 1, instanceId);
-					this.say(t('port.log.reclaimtrap.placed'), 'positive');
-				}
-				this.restitchAllTiles();
-				this.actionSpentTurn = true;
-				this.spendHeroTurn(1);
+			canPlaceTrap: (x, y) => scene.level.passable(x, y)
+				&& !scene.isChasmCell(x, y) && !scene.creatureAt(x, y),
+			takeTrap: (x, y) => {
+				const index = scene.level.index(x, y);
+				const kind = scene.trapKinds.get(index);
+				if (!kind) return;
+				scene.reclaimedTrap = kind;
+				scene.spentTrapCells.add(index);
+				const trap = scene.portedPaint?.traps.get(index);
+				if (trap) trap.active = false;
+				scene.wandCharges.refund(1);
 			},
-		});
+			placeTrap: (x, y) => {
+				const kind = scene.reclaimedTrap;
+				if (!kind) return;
+				const index = scene.level.index(x, y);
+				scene.trapKinds.set(index, kind);
+				scene.spentTrapCells.delete(index);
+				scene.level.set(x, y, TRAP);
+				if (scene.portedPaint) scene.portedPaint.traps.set(index, { kind, hidden: true, active: true });
+				scene.secrets.conceal(x, y, FLOOR, TRAP);
+				scene.reclaimedTrap = null;
+			},
+			refreshTiles: () => { scene.restitchAllTiles(); },
+		};
 	}
 
 	/** `Recycle.onItemSelected()` (tag `v3.3.8`): replace one carried potion, scroll, seed, or
