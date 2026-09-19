@@ -918,7 +918,8 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		wraith: [1, 10, 50, 1, 2, 0, 0, 0, -2],
 		dustWraith: [1, 10, 50, 1, 2, 0, 0, 0, -2],
 		rotHeart: [80, 0, 0, 0, 0, 0, 5, 4, 29],
-		rotLasher: [80, 25, 0, 10, 20, 0, 8, 1, 29],
+		// Lasher armor is 0 since the tenth matrix (no Java behind the old 8).
+		rotLasher: [80, 25, 0, 10, 20, 0, 0, 1, 29],
 	};
 	const mwlMonsterById = new Map(MWL_MONSTERS.map((monster) => [String(monster.id), monster]));
 	// `DM200`/`Golem` roll equipment at a real 0.2 base (`lootChance = 0.2f`), and `DM201`
