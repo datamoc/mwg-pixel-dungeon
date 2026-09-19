@@ -471,6 +471,23 @@ was judged not worth the churn against those existing references.
       ally-swap-at-range interact, and empty-cell map-reveal targeting), plus everything already
       blocked on systems this port lacks (SoulMark/Wraith for Necromancer's Minions, a real
       Cleric tree; `durable_tips` dropped off this list 2026-09-17 - tipped darts are live).
+      **Progress 2026-09-19: all five named mechanics are now wired, each through the seam this
+      port actually has.** `EMPOWERING_SCROLLS` arms 1/2/3 +3-level zap charges on any scroll
+      read (Mage) and resolves them through `effectiveZapLevel()` (damage, corrosion, chill,
+      blast-wave push, prismatic daze, excess-charge shield, regrowth/fireblast/transfusion
+      helpers, and disintegration's targeting range previewed prospectively); `ENHANCED_RINGS`
+      arms 3/6/9 turns of +1 ring upgrade on any artifact use (Rogue) read through
+      `effectiveRing()` at every formula site; `LIGHT_CLOAK`'s cross-hero 7/13/20% artifact
+      charge bonus is folded exactly into every passive charge gain (its Rogue unequipped-use
+      half is satisfied by construction - a carried cloak is always usable at the full
+      equipped rate, which is the stated divergence from Java's refusal); `ALLY_WARP` swaps
+      the Mage with a bumped non-immovable ally at 2/4/6 range, free like every other ally
+      order; `SEER_SHOT` reveals the landing cell's 3x3 (explored plus a timed
+      creature-visibility layer, vision not search, so no secret discovery) on thrown and bow
+      attacks with the flat 20-turn cooldown. All four new state fields persist through
+      save/load; the five formulas are pinned in `test:simulation`. What stays open here is
+      only what was already systems-blocked (SoulMark/Wraith, the Cleric tree, the
+      `monastic_vigor`/`twin_upgrades` stand-ins needing Monk energy/dual-wield).
       **Methodology note worth keeping, amended 2026-09-18**: check `src/generated/spdMessages.ts`'s own real
       `actors.hero.talent.*` strings before concluding a talent id is invented - an earlier audit
       checked only two Java tags and wrongly declared several real talents fabricated - but catalogue

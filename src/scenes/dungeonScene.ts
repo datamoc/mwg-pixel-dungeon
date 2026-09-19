@@ -135,7 +135,7 @@ import { BadgeBannerLayer } from '../ui/badgeBanner';
 import { SpdToolbar } from '../ui/toolbar';
 import { StatusPane } from '../ui/statusPane';
 import { SpdAudio } from '../audio';
-import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalDefenseShield, lethalHasteDuration, LETHAL_HASTE_COOLDOWN, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, shieldBatteryGain, shieldingDewGain, sharedUpgradeArmor, soulSiphonCharge, twinUpgradeArmor, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
+import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, empoweringScrollsCharges, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalDefenseShield, lethalHasteDuration, LETHAL_HASTE_COOLDOWN, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, shieldingDewGain, sharedUpgradeArmor, soulSiphonCharge, twinUpgradeArmor, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
 import pixelFontUrl from '../assets/pixel_font.ttf';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth, SpdRandom } from '../spdRng';
 import {
@@ -781,6 +781,8 @@ interface SaveShape {
 	/** `Weapon.enchantHardened`/`Armor.glyphHardened` for the equipped gear */
 	weaponHardened?: boolean;
 	armorHardened?: boolean;
+	weaponIdentified?: boolean;
+	armorIdentified?: boolean;
 	blacksmithReforges?: number;
 	limitedDrops?: [MonsterId, number][];
 	droppedBags?: string[];
@@ -877,6 +879,14 @@ interface SaveShape {
 	weaponCurseInfusionBonus?: boolean;
 	armorCurseInfusionBonus?: boolean;
 	stealthTalentTicks?: number;
+	/** `Talent.EMPOWERING_SCROLLS`: armed +3-level zap charges left. */
+	empoweredZaps?: number;
+	/** `Talent.ENHANCED_RINGS`: turns of +1 ring upgrade left. */
+	enhancedRingsTurns?: number;
+	/** `Talent.SEER_SHOT`: cooldown turns left. */
+	seerShotCooldown?: number;
+	/** `Talent.SEER_SHOT`: revealed floor indices with vision turns left (floor-scoped). */
+	seerCells?: [number, number][];
 	cloakChargeProgress?: number;
 	cloakStealthTurnsToCost?: number;
 	natureBerriesDropped?: number;
@@ -1301,6 +1311,11 @@ export class DungeonScene extends Scene2D {
 	 * one, so the enchant is protected until the protection itself wears off (from +6). */
 	private weaponHardened = false;
 	private armorHardened = false;
+	/** Whether the equipped weapon/armor is identified - `Item.identify()` is not implied by
+	 * merely equipping something (see `equipRing`'s `EquippedRing.identified` doc comment).
+	 * Starting gear is always known, hence the `true` default. */
+	private weaponIdentified = true;
+	private armorIdentified = true;
 	/** `Weapon`/`Armor`/`Wand.curseInfusionBonus` for the *equipped* gear: CurseInfusion's marker,
 	 * reversed (with its level) when the curse is cleansed - see `reverseCurseInfusion`. */
 	private weaponCurseInfusionBonus = false;
@@ -1604,6 +1619,24 @@ export class DungeonScene extends Scene2D {
 	private projectileMomentumReady = false;
 	/** worn ring {id, level} or null; ring modifiers live on heroStats under source 'ring' */
 	private equippedRing: EquippedRing | null = null;
+	/**
+	 * `Talent.EMPOWERING_SCROLLS`: remaining wand zaps that read +3 levels, armed by reading
+	 * a scroll (Mage, 1/2/3 charges by rank) and consumed one per zap action. Persisted.
+	 */
+	private empoweredZaps = 0;
+	/**
+	 * `Talent.ENHANCED_RINGS`: remaining turns the worn ring reads one upgrade level higher,
+	 * armed by using an artifact (Rogue, 3/6/9 turns by rank). Ticked on the hero clock,
+	 * persisted. The status-pane icon Java shows for the buff stays unported (presentation).
+	 */
+	private enhancedRingsTurns = 0;
+	/**
+	 * `Talent.SEER_SHOT`: cooldown before the next ground-reveal (flat 20 turns), plus the
+	 * revealed cells with their own remaining vision turns. Ticked on the hero clock,
+	 * persisted per run (cells are floor-indexed, so they clear on descent like the floor).
+	 */
+	private seerShotCooldown = 0;
+	private seerCells = new Map<number, number>();
 	/**
 	 * The extra max HP currently granted by `RingOfMight.HTMultiplier()` (real Java:
 	 * x1.035^lvl on max HP, alongside the already-ported flat +lvl STR). `equipRing` is the
@@ -2216,7 +2249,7 @@ export class DungeonScene extends Scene2D {
 		//`Quarterstaff` defensive stance: triples evasion while up (`ability_desc`).
 		if (this.defensiveStanceTurns > 0) this.hero.evasion *= 3;
 		if (this.healingEvasionTurns > 0) this.hero.evasion = this.talentRank('restored_agility') >= 2 ? 1000000 : this.hero.evasion * 4;
-		this.hero.str = this.heroStr + ringMightBonus(this.equippedRing, this.hero.magicImmune);
+		this.hero.str = this.heroStr + ringMightBonus(this.effectiveRing(), this.hero.magicImmune);
 		if (this.hero.buffs['adrenalineSurge']) this.hero.str += 1;
 		//Strongman is the one always-on T1/T2 talent that changes Hero.STR directly.
 		this.hero.str += Math.floor(this.heroStr * (0.03 + 0.05 * this.talentRank('strongman')));
@@ -2270,7 +2303,7 @@ export class DungeonScene extends Scene2D {
 		this.heroStats.removeModifiersFrom('ring');
 		if (this.equippedRing) {
 			const def = ringDef(this.equippedRing.id);
-			const level = ringBonusLevel(this.equippedRing, this.hero.magicImmune);
+			const level = ringBonusLevel(this.effectiveRing(), this.hero.magicImmune);
 			//Stats applied outside the StatBlock loop (direct damage/turn-cost reads) are
 			//marker-only here: Might (str), Tenacity (incoming-damage curve), Haste/Energy
 			//(turn-cost/wand-rate divisors), Wealth/Arcana/Force/Sharpshooting (kill-loot,
@@ -2315,13 +2348,13 @@ export class DungeonScene extends Scene2D {
 		if (amount > 0) {
 			const currentLevelMaxExp = SPD_LEVEL_CURVE.experienceFor(this.progression.level + 1) - SPD_LEVEL_CURVE.experienceFor(this.progression.level);
 			if (currentLevelMaxExp > 0) {
-				applyToolkitGainCharge({ bag: this.bag }, amount / currentLevelMaxExp, ringEnergyMultiplier(this.equippedRing, this.hero.magicImmune), this.hero.magicImmune === true);
+				applyToolkitGainCharge({ bag: this.bag }, amount / currentLevelMaxExp, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true);
 				//`MasterThievesArmband.Thievery.gainCharge()` (tag `v3.3.8`): the same per-XP-grant
 				//hook as the toolkit call just above - see `applyArmbandGainCharge`'s own doc comment.
-				applyArmbandGainCharge({ bag: this.bag }, amount / currentLevelMaxExp, ringEnergyMultiplier(this.equippedRing, this.hero.magicImmune), this.hero.magicImmune === true);
+				applyArmbandGainCharge({ bag: this.bag }, amount / currentLevelMaxExp, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true);
 				//`HornOfPlenty.hornRecharge.gainCharge()` (tag `v3.3.8`): the same per-XP-grant hook
 				//again - see `applyHornGainCharge`'s own doc comment in `artifactActions.ts`.
-				applyHornGainCharge({ bag: this.bag }, amount / currentLevelMaxExp, ringEnergyMultiplier(this.equippedRing, this.hero.magicImmune), this.hero.magicImmune === true);
+				applyHornGainCharge({ bag: this.bag }, amount / currentLevelMaxExp, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true);
 				//`EtherealChains.chainsRecharge.gainExp()` (tag `v3.3.8`): unlike the three hooks
 				//above, this one also drives the artifact's own leveling (see `applyChainsGainExp`'s
 				//doc comment in `artifactActions.ts` for how its charge/level math differs from theirs).
@@ -2902,6 +2935,9 @@ export class DungeonScene extends Scene2D {
 
 	private enterLevel(): void {
 		this.captureActiveFloor();
+		//`seerCells` are floor indices: a new floor has a different width and cell layout, so
+		//stale entries would reveal the wrong cells. The cooldown is hero state and survives.
+		this.seerCells.clear();
 		//Pixi keeps a per-render-group list of renderables still awaiting a transform update.
 		//A container dropped from the tree without being destroyed can stay on that list, and
 		//updating it then reads `parentRenderGroup` off nothing - "Cannot read properties of
@@ -5075,6 +5111,16 @@ export class DungeonScene extends Scene2D {
 	private readScroll(): boolean {
 		const selectedScroll = selectScrollId({ bag: this.bag, requestedItemId: this.requestedItemId, say: this.say.bind(this) });
 		if (!selectedScroll) return false;
+		//`Talent.EMPOWERING_SCROLLS` (Battlemage/Warlock T3): reading any scroll arms the next
+		//1/2/3 wand zaps at +3 levels (`empoweredZaps`, consumed one per zap in `useSpecial`'s
+		//zap branch). Armed here at selection time rather than at consumption: every branch
+		//below consumes the scroll on a successful read (transmutation inside
+		//`completeTransmutation`, which arms the same way), while a cancelled picker or an
+		//empty eligible list consumes nothing - and arming on a cancelled read would hand out
+		//free charges, so transmutation returns before arming and arms only on success there.
+		//(Identify/effect/cleanse all consume below, so arming here is exact for them.)
+		const armEmpowered = selectedScroll !== 'scrollTransmutation'
+			&& this.heroClass === 'mage' && this.talentRank('empowering_scrolls') > 0;
 		const unidentified = this.bag.items.find((i) => !i.identified && i.quantity > 0);
 		const id = selectedScroll;
 		if (id === 'scrollUpgrade') {
@@ -5112,6 +5158,7 @@ export class DungeonScene extends Scene2D {
 			return true;
 		}
 		this.bag.remove(id, 1, this.requestedItemInstanceId);
+		if (armEmpowered) this.empoweredZaps = empoweringScrollsCharges(this.talentRank('empowering_scrolls'));
 		if (id === 'scrollIdentify') {
 			if (unidentified) {
 				Actors.identify(unidentified);
@@ -5234,6 +5281,11 @@ export class DungeonScene extends Scene2D {
 			return;
 		}
 		this.bag.remove('scrollTransmutation', 1, scrollInstanceId);
+		//`Talent.EMPOWERING_SCROLLS` arms on a successful transmutation read too (see
+		//`readScroll`): the scroll is only consumed here, so this is the exact point.
+		if (this.heroClass === 'mage' && this.talentRank('empowering_scrolls') > 0) {
+			this.empoweredZaps = empoweringScrollsCharges(this.talentRank('empowering_scrolls'));
+		}
 		if (live) {
 			//`changeWeapon`'s missile half detaches the WHOLE stack (`detachAll`) while the
 			//result keeps its quantity - removing one unit here would duplicate the rest.
@@ -5459,7 +5511,7 @@ export class DungeonScene extends Scene2D {
 		//drop rolls, so a trample that rolls nothing still banks its charge. Its own guard is
 		//`cursed || MagicImmune`, which is *not* the guard the drop block uses (`isCursed()`, which
 		//MagicImmune clears) - the two disagree for a cursed pair under AntiMagic, in Java too.
-		applySandalsNaturalismCharge(this.sandalsItem(), ringEnergyMultiplier(this.equippedRing, magicImmune), magicImmune);
+		applySandalsNaturalismCharge(this.sandalsItem(), ringEnergyMultiplier(this.effectiveRing(), magicImmune) * this.lightCloakChargeMultiplier(), magicImmune);
 		if (trample.next === 'furrowed') {
 			this.furrowedGrass.add(cell);
 			// The compact live terrain keeps the high-grass collision/feature code active;
@@ -5474,7 +5526,7 @@ export class DungeonScene extends Scene2D {
 		//Java also plays its MELD sound when the cell is in FOV; there is no per-effect
 		//audio seam here, so the log line below stands in for that feedback.
 		if (this.armorGlyph === 'camouflage') {
-			const duration = Math.round((3 + this.armorLevel / 2) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune));
+			const duration = Math.round((3 + this.armorLevel / 2) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune));
 			this.hero.buffs['invisibility'] = Math.max(this.hero.buffs['invisibility'] ?? 0, duration);
 			this.say(t('port.log.camouflage'), 'positive');
 		}
@@ -5557,7 +5609,7 @@ export class DungeonScene extends Scene2D {
 	 * `20 + 10*charges` degrees, rays cast with `STOP_SOLID | STOP_TARGET` (see `coneCells`).
 	 */
 	private useRegrowthWand(target: Creature, charges: number): void {
-		const level = Math.max(0, this.degradedLevel(this.weaponLevel));
+		const level = Math.max(0, this.degradedLevel(this.effectiveZapLevel()));
 		const limit = this.regrowthChargeLimit();
 		useRegrowthWandEffect({
 			target,
@@ -5618,7 +5670,7 @@ export class DungeonScene extends Scene2D {
 			target,
 			hero: this.hero,
 			charges: chargesPerCast,
-			weaponLevel: this.weaponLevel,
+			weaponLevel: this.effectiveZapLevel(),
 			width: this.level.width,
 			height: this.level.height,
 			traceRay: (from, to) => this.coneRay(from, to),
@@ -5654,7 +5706,7 @@ export class DungeonScene extends Scene2D {
 	 * picker, while the enemy fallback keeps the wand useful before ally combat is present.
 	 */
 	private useTransfusionWand(target: Creature): void {
-		const level = Math.max(0, this.degradedLevel(this.weaponLevel));
+		const level = Math.max(0, this.degradedLevel(this.effectiveZapLevel()));
 		useTransfusionWandEffect({
 			target,
 			hero: this.hero,
@@ -6244,7 +6296,7 @@ export class DungeonScene extends Scene2D {
 			},
 			corrosiveStrength: () => this.corrosiveGasStrength,
 			toxicDamage: (target) => target.isHero
-				? Math.floor((1 + Math.floor(this.depth / 5)) * ringElementsMultiplier(this.equippedRing, this.hero.magicImmune))
+				? Math.floor((1 + Math.floor(this.depth / 5)) * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune))
 				: 1 + Math.floor(this.depth / 5),
 			//`Char.Property.IMMOVABLE` immunity to Vertigo (`Char.java`): the daze applied
 			//above is Vertigo's stand-in, so these kinds refuse confusion gas - every other
@@ -6581,7 +6633,7 @@ export class DungeonScene extends Scene2D {
 			//RingOfElements.resist(): Burning is in `RESISTS` - the trap's fire damage is
 			//scaled before Barrier absorption (matching `Hero.damage()`'s ordering where
 			//the multiplier applies to the raw hit).
-			let damage = Math.floor(Random.int(2, 5) * ringElementsMultiplier(this.equippedRing, this.hero.magicImmune));
+			let damage = Math.floor(Random.int(2, 5) * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune));
 			damage = this.absorbHeroDamage(damage);
 			this.hero.hp -= damage;
 			this.showDamage(this.hero, damage);
@@ -6800,7 +6852,7 @@ export class DungeonScene extends Scene2D {
 			const divisor = tippedDartUseDivisor(this.ammoTippedSeed, this.talentRank('durable_tips'), this.subclass() === 'warden');
 			const uses = Math.round(baseUses * Math.pow(1.5, this.missileLevel) / divisor
 				* holsterFactor
-				* ringSharpshootingDurabilityMultiplier(this.equippedRing, this.hero.magicImmune));
+				* ringSharpshootingDurabilityMultiplier(this.effectiveRing(), this.hero.magicImmune));
 			if (uses >= 100) return 0;
 			return 100 / Math.max(1, uses) + 0.001;
 		}
@@ -6809,7 +6861,7 @@ export class DungeonScene extends Scene2D {
 		const uses = Math.round(baseUses * Math.pow(1.5, this.missileLevel)
 			* (durable > 0 ? 1.25 + 0.25 * durable : 1)
 			* holsterFactor
-			* ringSharpshootingDurabilityMultiplier(this.equippedRing, this.hero.magicImmune));
+			* ringSharpshootingDurabilityMultiplier(this.effectiveRing(), this.hero.magicImmune));
 		if (uses >= 100) return 0;
 		return 100 / Math.max(1, uses) + 0.001;
 	}
@@ -6881,7 +6933,11 @@ export class DungeonScene extends Scene2D {
 			return false;
 		}
 
-		const range = special.kind === 'throw' ? 6 : wandTargetRange(this.wandType, this.weaponLevel);
+			//`Talent.EMPOWERING_SCROLLS` prospectively: an armed charge makes the coming zap read
+			//+3 levels, including disintegration's level-scaled targeting range - the charge is
+			//only consumed once the zap actually fires (see the zap branch), so this previews
+			//the bonus without spending it on a cancelled aim.
+			const range = special.kind === 'throw' ? 6 : wandTargetRange(this.wandType, this.weaponLevel + (this.empoweredZaps > 0 ? EMPOWERING_SCROLLS_BONUS : 0));
 		if (special.kind === 'zap' && this.wandType === 'disintegration') {
 			this.beginAiming({
 				range,
@@ -6974,7 +7030,7 @@ export class DungeonScene extends Scene2D {
 			//`MissileWeapon.min()`/`max()` are authored with the missile identity and its
 			//upgrade increments in MWL; this adapter only applies the live stack level and
 			//Sharpshooting bonus. The hit roll and ammo mutation remain executable behavior.
-			const sharpshooting = ringSharpshootingBonus(this.equippedRing, this.hero.magicImmune);
+			const sharpshooting = ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune);
 			const missile = special.sourceClass ? MWL_MISSILE_BY_CLASS.get(special.sourceClass) : undefined;
 			if (!missile) throw new Error(`MWL missile definition is missing for ${this.heroClass}`);
 			const thrownDamage = missileDamageRange(missile.sourceClass, thrownLevel, sharpshooting);
@@ -7061,10 +7117,18 @@ export class DungeonScene extends Scene2D {
 			}
 			if (this.heroClass === 'huntress' && this.talentRank('followup_strike') > 0) { this.followupTarget = target; this.followupDamage = this.talentRank('followup_strike') === 1 ? 2 : 3; }
 			if (this.talentRank('deadly_followup') > 0) this.deadlyFollowupTarget = target;
+			//`Talent.SEER_SHOT`: the thrown arrow lands at the victim's cell (see `procSeerShot`).
+			this.procSeerShot(target.x, target.y);
 		} else if (special.kind === 'zap') {
 			const fullyCharged = this.wandCharges.current === this.wandCharges.max;
 			const lastCharge = this.wandCharges.current === 1;
 			this.wandCharges.spend(chargesPerCast);
+			//`Talent.EMPOWERING_SCROLLS`: one armed charge per zap action makes this zap read
+			//+3 levels through `effectiveZapLevel()` below (damage, corrosion, statuses, and the
+			//regrowth/fireblast/transfusion/warding helpers). Consumed even when the bolt itself
+			//fizzles (crab parry): the charge paid for a zap, which is what arms it.
+			this.empoweredZapBonus = this.empoweredZaps > 0 ? EMPOWERING_SCROLLS_BONUS : 0;
+			if (this.empoweredZaps > 0) this.empoweredZaps--;
 			const preservation = preservationChance(this.talentRank('wand_preservation'));
 			if (preservation > 0 && Random.chance(preservation)) this.wandCharges.refund(1);
 			if (lastCharge && this.talentRank('backup_barrier') > 0) this.grantHeroShield(this.talentRank('backup_barrier') === 1 ? 3 : 5, this.hero.maxHp);
@@ -7111,8 +7175,8 @@ export class DungeonScene extends Scene2D {
 					//the collision cell and raises the blob strength to 2 + level. The gas now
 					//persists and diffuses through the scene; its intensity is retained separately
 					//because the port's Ooze stand-in has no increasing damage field.
-					this.corrosiveGas.seed(target.x, target.y, 50 + 10 * this.weaponLevel);
-					this.corrosiveGasStrength = Math.max(this.corrosiveGasStrength, 2 + this.weaponLevel);
+					this.corrosiveGas.seed(target.x, target.y, 50 + 10 * this.effectiveZapLevel());
+					this.corrosiveGasStrength = Math.max(this.corrosiveGasStrength, 2 + this.effectiveZapLevel());
 				}
 				for (const victim of zapTargets) {
 					//WandOfLightning.onZap() skips characters sharing the caster's alignment,
@@ -7122,18 +7186,18 @@ export class DungeonScene extends Scene2D {
 					const raw = this.wandType === 'corrosion' || this.wandType === 'corruption'
 						? 0
 						: this.wandType === 'blastWave'
-							? Random.normalRange(...wandDamageRange('blastWave', this.weaponLevel))
+							? Random.normalRange(...wandDamageRange('blastWave', this.effectiveZapLevel()))
 						: this.wandType === 'livingEarth'
-							? Random.normalRange(...wandDamageRange('livingEarth', this.weaponLevel))
+							? Random.normalRange(...wandDamageRange('livingEarth', this.effectiveZapLevel()))
 						: this.wandType === 'lightning'
-							? Random.normalRange(...wandDamageRange('lightning', this.weaponLevel))
+							? Random.normalRange(...wandDamageRange('lightning', this.effectiveZapLevel()))
 								: this.wandType === 'prismaticLight'
-									? Random.normalRange(...wandDamageRange('prismaticLight', this.weaponLevel))
+									? Random.normalRange(...wandDamageRange('prismaticLight', this.effectiveZapLevel()))
 									: this.wandType === 'disintegration'
-										? Random.normalRange(...wandDamageRange('disintegration', this.weaponLevel))
+										? Random.normalRange(...wandDamageRange('disintegration', this.effectiveZapLevel()))
 							: this.wandType === 'frost'
-								? Random.normalRange(...wandDamageRange('frost', this.weaponLevel))
-								: Random.normalRange(...wandDamageRange('magicMissile', this.weaponLevel));
+								? Random.normalRange(...wandDamageRange('frost', this.effectiveZapLevel()))
+								: Random.normalRange(...wandDamageRange('magicMissile', this.effectiveZapLevel()));
 					const frostBlocked = this.wandType === 'frost' && victim.buffs['frost'] !== undefined;
 					let damage = Math.round(raw * lightningMultiplier)
 						+ (this.wandType === 'magicMissile' || this.wandType === 'frost' ? (this.subclass() === 'warlock' ? 2 : 0) : 0)
@@ -7201,7 +7265,7 @@ export class DungeonScene extends Scene2D {
 							guardian.hp = Math.min(guardian.maxHp, guardian.hp + Math.max(0, raw));
 							this.showHeal(guardian, Math.max(0, raw));
 						} else {
-							this.livingEarthWandLevel = Math.max(this.livingEarthWandLevel, this.weaponLevel);
+							this.livingEarthWandLevel = Math.max(this.livingEarthWandLevel, this.effectiveZapLevel());
 							this.livingEarthArmor = Math.min(
 								2 * (8 + 4 * this.livingEarthWandLevel),
 								this.livingEarthArmor + Math.max(0, raw),
@@ -7214,7 +7278,7 @@ export class DungeonScene extends Scene2D {
 						//pushed away from the impact cell by `1 + round(level/2)` cells.
 						//The port's straight forced-movement path keeps the same displacement
 						//result, while terrain pressing and collision damage remain simplified.
-						const strength = 1 + Math.round(this.weaponLevel / 2);
+						const strength = 1 + Math.round(this.effectiveZapLevel() / 2);
 						const dx = Math.sign(victim.x - target.x), dy = Math.sign(victim.y - target.y);
 						for (let push = 0; push < strength; push++) {
 							const next = { x: victim.x + dx, y: victim.y + dy };
@@ -7236,9 +7300,9 @@ export class DungeonScene extends Scene2D {
 					}
 					if (this.frostWand && victim === target && victim.hp > 0 && !frostBlocked) {
 						addBuff(victim, 'chill');
-						victim.buffs.chill = Math.max(victim.buffs.chill ?? 0, (this.level.get(victim.x, victim.y) === WATER ? 4 : 2) + this.weaponLevel);
+						victim.buffs.chill = Math.max(victim.buffs.chill ?? 0, (this.level.get(victim.x, victim.y) === WATER ? 4 : 2) + this.effectiveZapLevel());
 					}
-					if (this.wandType === 'prismaticLight' && Random.int(0, 5 + this.weaponLevel) >= 3) addBuff(victim, 'daze');
+					if (this.wandType === 'prismaticLight' && Random.int(0, 5 + this.effectiveZapLevel()) >= 3) addBuff(victim, 'daze');
 					this.sprite(victim).setColorAdd(0.6, 0.7, 1);
 					if (this.wandType === 'corrosion') this.say(t('port.log.wandcorrosion', { target: victim.name }), 'positive');
 					else if (this.wandType === 'corruption') this.say(t('port.log.wandcorruption', { target: victim.name }), 'positive');
@@ -7247,7 +7311,7 @@ export class DungeonScene extends Scene2D {
 					if (victim.hp <= 0 && !victim.isAlly) this.kill(victim);
 				}
 				}
-				if (fullyCharged && this.talentRank('excess_charge') > 0) this.grantHeroShield(Math.ceil((this.talentRank('excess_charge') * Math.max(1, this.weaponLevel)) / 1.5), this.hero.maxHp);
+				if (fullyCharged && this.talentRank('excess_charge') > 0) this.grantHeroShield(Math.ceil((this.talentRank('excess_charge') * Math.max(1, this.effectiveZapLevel())) / 1.5), this.hero.maxHp);
 				//Arcane Vision (Mage T2, `Wand.wandProc()`): every zap marks its target with
 				//`CharAwareness` for `5+5*points` turns (see through walls). No per-target
 				//awareness primitive exists here, so the existing all-mobs `mindvision` stands
@@ -7256,6 +7320,7 @@ export class DungeonScene extends Scene2D {
 				if (this.heroClass === 'mage' && this.talentRank('arcane_vision') > 0) {
 					this.hero.buffs['mindvision'] = Math.max(this.hero.buffs['mindvision'] ?? 0, arcaneVisionDuration(this.talentRank('arcane_vision')));
 				}
+				this.empoweredZapBonus = 0;
 			}
 		} else {
 			//SpiritBow.damageRoll: a normal hit roll, but the base damage is scaled by
@@ -7286,7 +7351,7 @@ export class DungeonScene extends Scene2D {
 				//SpiritBow.min()/max(): RingOfSharpshooting's bonus is asymmetric here - +bonus on
 				//the low end, +2*bonus on the high end (unlike MissileWeapon's identical +bonus
 				//on both bounds above).
-				const sharpshooting = ringSharpshootingBonus(this.equippedRing, this.hero.magicImmune);
+				const sharpshooting = ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune);
 				const base = Random.normalRange(special.damage[0] + sharpshooting, special.damage[1] + 2 * sharpshooting);
 				const dr = Random.normalRange(target.armor[0], target.armor[1]);
 				const momentum = projectileMomentumBonus(this.subclass(), this.talentRank('projectile_momentum'), this.projectileMomentumReady);
@@ -7297,6 +7362,8 @@ export class DungeonScene extends Scene2D {
 				this.sprite(target).setColorAdd(1, 1, 1);
 				this.say(t('port.log.shoot', { target: target.name, damage }), 'positive');
 				if (this.talentRank('followup_strike') > 0) { this.followupTarget = target; this.followupDamage = this.talentRank('followup_strike') === 1 ? 2 : 3; }
+				//`Talent.SEER_SHOT` procs from bow shots the same way (`procSeerShot`).
+				this.procSeerShot(target.x, target.y);
 				if (target.hp <= 0) {
 					//SpiritBow kills are missile-weapon kills (`cause instanceof Weapon`), so
 					//Lethal Haste triggers here just like at the melee/throw kill site above;
@@ -7882,7 +7949,7 @@ export class DungeonScene extends Scene2D {
 				const rechargeBase = this.ownsBag('magicalHolster') ? HOLSTER_RECHARGE_BASE : NORMAL_RECHARGE_BASE;
 				const turnsToCharge = 10 + 40 * Math.pow(rechargeBase, Math.max(0, missing));
 				//RingOfEnergy.wandChargeMultiplier(): 1.175^level, applied straight onto the base rate.
-				const baseRate = ringEnergyMultiplier(this.equippedRing, this.hero.magicImmune) / turnsToCharge;
+				const baseRate = ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) / turnsToCharge;
 				//Charger.recharge(): Recharging's CHARGE_BUFF_BONUS is a flat `+0.25 * remainder()`
 				//added on top of the base rate, not a 1.25x multiplier on it - at typical missing-
 				//charge counts the base rate is a few percent per turn, so the flat bonus dwarfs it
@@ -7901,7 +7968,7 @@ export class DungeonScene extends Scene2D {
 			//amount Java's Charger actor gains while the hero is busy for that long.
 			recoverArmorCharge: () => {
 				this.armorCharge = Math.min(ARMOR_CHARGE_MAX,
-					this.armorCharge + turnCost * ARMOR_CHARGE_PER_TURN * ringEnergyMultiplier(this.equippedRing, this.hero.magicImmune));
+					this.armorCharge + turnCost * ARMOR_CHARGE_PER_TURN * ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier());
 			},
 			//`Hero.act()`'s `endEnduring()` is deliberately *not* here: it belongs to the start of the
 			//hero's next action, so the endure window survives the turn it is cast on. Only the
@@ -7935,7 +8002,7 @@ export class DungeonScene extends Scene2D {
 							}
 						}
 					} else if (this.cloakStealthTurnsToCost <= 0 && charge < maxCharge) {
-						this.cloakChargeProgress += 1 / Math.max(1, 45 - (maxCharge - charge));
+						this.cloakChargeProgress += this.lightCloakChargeMultiplier() / Math.max(1, 45 - (maxCharge - charge));
 						while (this.cloakChargeProgress >= 1 && cloak.charges !== maxCharge) {
 							cloak.charges = Math.min(maxCharge, (cloak.charges ?? 0) + 1);
 							this.cloakChargeProgress -= 1;
@@ -8004,7 +8071,7 @@ export class DungeonScene extends Scene2D {
 						let charge = Math.min(chargeCap, book.charge ?? chargeCap);
 						if (charge < chargeCap) {
 							let partial = (book.partialCharge ?? 0)
-								+ 1 / (mwlItemEffectValue('spellbook', 'rechargeBase') - (chargeCap - charge) * mwlItemEffectValue('spellbook', 'rechargeCapWeight'));
+								+ this.lightCloakChargeMultiplier() / (mwlItemEffectValue('spellbook', 'rechargeBase') - (chargeCap - charge) * mwlItemEffectValue('spellbook', 'rechargeCapWeight'));
 							while (partial >= 1 && charge < chargeCap) {
 								partial -= 1;
 								charge += 1;
@@ -8027,7 +8094,7 @@ export class DungeonScene extends Scene2D {
 				{
 					const talisman = this.talismanItem();
 					if (talisman) {
-						applyTalismanPerTurnCharge(talisman, ringEnergyMultiplier(this.equippedRing, this.hero.magicImmune), this.hero.magicImmune === true, true);
+						applyTalismanPerTurnCharge(talisman, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true, true);
 						this.checkTalismanAwareness();
 					}
 					for (const [creature, turns] of this.awareCreatures) {
@@ -8053,7 +8120,7 @@ export class DungeonScene extends Scene2D {
 						const outcome = applyRoseRecharge(rose, {
 							ghostAlive: ghost !== null,
 							...(ghost ? { ghostHp: ghost.hp, ghostMaxHp: ghost.maxHp } : {}),
-							ringMultiplier: ringEnergyMultiplier(this.equippedRing, this.hero.magicImmune),
+							ringMultiplier: ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier(),
 							magicImmune: this.hero.magicImmune === true,
 							//No `LockedFloor` boss lock is modelled in this port - see the Beacon/Chains
 							//blocks above for the same stated simplification.
@@ -8176,7 +8243,7 @@ export class DungeonScene extends Scene2D {
 				//they deal through `Char.damage()` is scaled by `0.825^level` in real Java.
 				const wasDrowsy = this.hero.buffs['drowsy'] !== undefined;
 				const wasMagicalSleep = this.hero.buffs['magicalSleep'] !== undefined;
-				const dot = Math.floor(tickBuffs(this.hero, this.depth) * ringElementsMultiplier(this.equippedRing, this.hero.magicImmune));
+				const dot = Math.floor(tickBuffs(this.hero, this.depth) * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune));
 				if (wasDrowsy && this.hero.buffs['drowsy'] === undefined && this.hero.hp < this.hero.maxHp) {
 					//Drowsy.act() attaches MagicalSleep; a full-health reader takes Java's
 					//"too healthy" path and is not put to sleep.
@@ -8224,7 +8291,7 @@ export class DungeonScene extends Scene2D {
 				if (this.hero.buffs['ooze'] !== undefined) {
 					const rawOoze = this.depth > 5 ? 1 + Math.floor(this.depth / 5)
 						: this.depth === 5 ? 1 : Random.chance(0.5) ? 1 : 0;
-					const oozeDot = Math.floor(rawOoze * ringElementsMultiplier(this.equippedRing, this.hero.magicImmune));
+					const oozeDot = Math.floor(rawOoze * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune));
 					if (oozeDot > 0) {
 						const blockedOoze = this.absorbHeroDamage(oozeDot);
 						this.hero.hp -= blockedOoze;
@@ -8273,6 +8340,18 @@ export class DungeonScene extends Scene2D {
 			runAutomaticTurns: () => { if (this.timeBubbleTurns <= 0) this.runTurns(); },
 		});
 		if (this.healingEvasionTurns > 0) { this.healingEvasionTurns--; this.syncHeroFromStats(); }
+		//Talent tracker countdowns, one per hero turn like every other FlavourBuff-duration
+		//state on this clock (`naturesPowerTurns` scales by turn cost inside the runtime; these
+		//are flat Java turn counts - 3/6/9, 20, 5/10/15 - so they tick by exactly one here,
+		//after the runtime call, next to `healingEvasionTurns`).
+		if (this.enhancedRingsTurns > 0) { this.enhancedRingsTurns--; this.syncHeroFromStats(); }
+		if (this.seerShotCooldown > 0) this.seerShotCooldown--;
+		if (this.seerCells.size > 0) {
+			for (const [cell, turns] of this.seerCells) {
+				if (turns <= 1) this.seerCells.delete(cell);
+				else this.seerCells.set(cell, turns - 1);
+			}
+		}
 	}
 
 	/** Hunger.act(): +10 per turn, warnings/1-damage on crossing STARVING, then continuous partialDamage accrual */
@@ -8348,7 +8427,7 @@ export class DungeonScene extends Scene2D {
 		//for the first occupant and attack it when it lies within the real reach.
 		//Walls and doors stop the scan, preserving ordinary bump movement otherwise.
 		if (this.weaponAffix === 'projecting') {
-			const reach = 1 + Math.round(ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune));
+			const reach = 1 + Math.round(ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune));
 			for (let distance = 2; distance <= reach; distance++) {
 				const at = { x: this.hero.x + move.x * distance, y: this.hero.y + move.y * distance };
 				if (!this.level.inside(at.x, at.y)) break;
@@ -8382,6 +8461,7 @@ export class DungeonScene extends Scene2D {
 		if (plan.kind === 'interact') {
 			// Allies occupy a cell like a friendly NPC; interactWithNPC intentionally has no
 			// branch for them, so bumping one cannot turn into friendly fire.
+			if (occupant!.isAlly && !occupant!.isNPC && this.tryAllyWarp(occupant!)) return;
 			this.interactWithNPC(occupant!);
 		}
 		else if (plan.kind === 'attack') this.attack(this.hero, occupant!);
@@ -13111,7 +13191,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//expresses the same way every other hero-only bonus here does: `attacker === this.hero`
 		//is only true for the real bump-attack call site, never `useSpecial`'s throw/shoot/zap
 		//branches (those pass a shallow copy of the hero, not the hero itself).
-		if (attacker === this.hero) damage += ringForceBonus(this.equippedRing, this.hero.magicImmune);
+		if (attacker === this.hero) damage += ringForceBonus(this.effectiveRing(), this.hero.magicImmune);
 		//`Unstable.proc()`/`Kinetic.proc()`: an Unstable weapon delegates every swing to one
 		//`Random.element` draw over `UNSTABLE_DELEGATES` (Java's `Random.oneOf(randomEnchants)`
 		//minus the documented exclusions). The pick is stashed so `heroOnHit`'s post-damage
@@ -13186,7 +13266,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//Sacrificial.proc(): Java rolls 1/10 x Arcana, then rolls a second time against
 		//(HP/HT)^2 * HT / 8 and applies Bleeding at max(1, bleedAmt). The first draft
 		//mistakenly used missing HP and a poison stand-in; both were wrong.
-		if (attacker === this.hero && this.weaponAffix === 'sacrificial' && Random.chance((1 / 10) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
+		if (attacker === this.hero && this.weaponAffix === 'sacrificial' && Random.chance((1 / 10) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
 			const bleedAmount = (attacker.hp / attacker.maxHp) ** 2 * attacker.maxHp / 8;
 			if (Random.chance(bleedAmount)) setBleeding(attacker, Math.max(1, bleedAmount));
 		}
@@ -13196,7 +13276,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//uses in place of Java's ScrollOfTeleportation.teleportChar. Java also resets a fleeing
 		//HUNTING mob back to WANDERING; this port has no such explicit state to reset, but the
 		//next monster-turn FOV recompute (`seesHero`) naturally loses track once far enough away.
-		if (attacker === this.hero && this.weaponAffix === 'displacing' && !defender.isNPC && Random.chance((1 / 12) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
+		if (attacker === this.hero && this.weaponAffix === 'displacing' && !defender.isNPC && Random.chance((1 / 12) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
 			const destination = this.randomFreeCell(defender);
 			if (destination) {
 				const displaceFrom = { x: defender.x, y: defender.y };
@@ -13206,7 +13286,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		}
 		//Displacement.proc(): a 1-in-20 x arcana armor-curse proc teleports the defender
 		//and replaces the incoming hit with zero damage.
-		if (defender.isHero && this.armorGlyph === 'displacement' && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
+		if (defender.isHero && this.armorGlyph === 'displacement' && Random.chance((1 / 20) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
 			const armorDisplaceFrom = { x: defender.x, y: defender.y };
 			const destination = this.randomFreeCell(defender);
 			if (destination) {
@@ -13226,7 +13306,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//without pretending Charm is a global, target-free stun.
 		if (attacker === this.hero && this.weaponAffix === 'friendly') {
 			if (attacker.buffs['charm'] !== undefined && this.charmTargets.get(attacker.id) === defender.id) damage = 0;
-			if (Random.chance((1 / 10) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
+			if (Random.chance((1 / 10) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
 				addBuff(attacker, 'charm');
 				this.charmTargets.set(attacker.id, defender.id);
 				addBuff(defender, 'charm');
@@ -13265,7 +13345,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (attacker === this.hero && (this.weaponAffix === 'corrupting' || this.unstableDelegated === 'corrupting') && damage >= defender.hp
 			&& !defender.isHero && !defender.isNPC && !defender.isAlly && Random.chance(
 			((Math.max(0, this.degradedLevel(this.weaponLevel)) + 5) / (Math.max(0, this.degradedLevel(this.weaponLevel)) + 25))
-				* ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
+				* ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
 			defender.hp = defender.maxHp;
 			for (const buff of NEGATIVE_BUFFS) delete defender.buffs[buff];
 			defender.isAlly = true;
@@ -13420,7 +13500,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//so the proc's bonus execute damage must not apply to one either.
 		if (attacker === this.hero && (this.weaponAffix === 'grim' || this.unstableDelegated === 'grim') && defender.hp > 0 && !defender.magicImmune) {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const maxChance = (0.5 + 0.05 * level) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+			const maxChance = (0.5 + 0.05 * level) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 			const missingFraction = (defender.maxHp - defender.hp) / defender.maxHp;
 			if (Random.chance(maxChance * missingFraction * missingFraction)) {
 				const extra = Math.round(defender.hp);
@@ -13539,7 +13619,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (defender.isHero && this.armorGlyph === 'repulsion' && attacker.hp > 0
 			&& Roguelike.chebyshevDistance(attacker, defender) <= 1) {
 			const level = this.degradedLevel(this.armorLevel);
-			const procChance = ((level + 1) / (level + 5)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+			const procChance = ((level + 1) / (level + 5)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				const power = Math.round(2 * Math.max(1, procChance));
 				const dx = Math.sign(attacker.x - defender.x);
@@ -13657,7 +13737,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//basis). Fires pre-revival, like Java's HP<0 check ahead of `isAlive()`.
 		if (this.kineticTrackerHit && defender.hp <= 0 && !defender.isHero && !defender.isNPC) {
 			const overkill = Math.max(0, -defender.hp - this.kineticConservedAdded);
-			const multi = ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune)
+			const multi = ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune)
 				+ (this.hero.buffs['berserk'] ? Math.min(1, 1 - this.hero.hp / this.hero.maxHp) * 0.15 * this.talentRank('enraged_catalyst') : 0);
 			const stored = Math.round(overkill * multi);
 			if (stored > 0) this.kineticStored = stored;
@@ -13675,7 +13755,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//ignite or damage a MagicImmune defender at all (`Char.damage()`'s generic zero-out).
 		if (affix === 'blazing' && !defender.magicImmune) {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const procChance = ((level + 1) / (level + 3)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+			const procChance = ((level + 1) / (level + 3)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				let powerMulti = Math.max(1, procChance);
 				if (defender.buffs['burning'] === undefined) {
@@ -13697,7 +13777,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//entirely (Java's chill slows the target and escalates into frost) and with no roll.
 		if (affix === 'chilling') {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const procChance = ((level + 1) / (level + 4)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+			const procChance = ((level + 1) / (level + 4)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				const powerMulti = Math.max(1, procChance);
 				const existing = defender.buffs['chill'] ?? 0;
@@ -13712,7 +13792,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//chance))` each. What stood here dealt 2 unconditional points to the defender itself, the
 		//one character Java's arc never touches, and hit nobody else.
 		if (affix === 'shocking') {
-			const procChance = (1 / 3) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+			const procChance = (1 / 3) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				this.shockingArc(attacker, defender, damage, Math.max(1, procChance));
 			}
@@ -13724,7 +13804,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//roll, no damage scaling and no target check at all.
 		if (affix === 'vampiric') {
 			const missing = attacker.maxHp > 0 ? (attacker.maxHp - attacker.hp) / attacker.maxHp : 0;
-			const healChance = (0.05 + 0.25 * missing) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+			const healChance = (0.05 + 0.25 * missing) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 			const neutralTarget = defender.isNPC || defender.isAlly;
 			if (Random.chance(healChance) && !neutralTarget && attacker.hp < attacker.maxHp) {
 				const healAmount = Math.min(
@@ -13745,7 +13825,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//swings and instead fired whenever the hero was hit, which is not what `Weapon.Enchantment
 		//.proc(weapon, attacker, defender, damage)` does - it runs on the wielder's attack.
 		if (affix === 'explosive') {
-			this.weaponCurseDurability -= Math.round(Random.range(0, 10) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune));
+			this.weaponCurseDurability -= Math.round(Random.range(0, 10) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune));
 			if (this.weaponCurseDurability <= 0) {
 				this.weaponCurseDurability += 100;
 				this.curseExplosiveBlast(attacker, defender);
@@ -13760,7 +13840,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//Two things the old branch got wrong: it dazed the hero unconditionally (the hero always sees
 		//*itself*, so its visibility test was vacuously true), and it dispelled the hero's
 		//invisibility - `Invisibility.dispel()` is `Annoying`'s line, not this one's.
-		if (affix === 'dazzling' && Random.chance((1 / 10) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
+		if (affix === 'dazzling' && Random.chance((1 / 10) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
 			if (this.fov.isVisible(defender.x, defender.y)) this.hero.buffs['daze'] = Math.max(this.hero.buffs['daze'] ?? 0, 10);
 			for (const creature of this.creatures) {
 				if (creature.isHero || creature.hp <= 0 || !this.fov.isVisible(creature.x, creature.y)) continue;
@@ -13771,7 +13851,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//toward the attacker and then dispelling invisibility. `seesHero` is this port's
 		//target-acquisition state, the standing stand-in for `beckon`; the crate/scream/sound
 		//presentation and the 13 flavour lines remain UI gaps.
-		if (affix === 'annoying' && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
+		if (affix === 'annoying' && Random.chance((1 / 20) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
 			for (const creature of this.creatures) {
 				if (!creature.isHero && !creature.isNPC && creature.hp > 0) {
 					creature.seesHero = true;
@@ -13786,7 +13866,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//`syncHeroFromStats`), not the affix on its own.
 		if (affix === 'wayward') {
 			if (attacker.buffs['wayward'] !== undefined) delete attacker.buffs['wayward'];
-			else if (Random.chance((1 / 4) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) addBuff(attacker, 'wayward');
+			else if (Random.chance((1 / 4) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) addBuff(attacker, 'wayward');
 		}
 		//Elastic.proc(): on a successful proc, knock the defender along the part of
 		//the attack trajectory beyond its cell by `round(2 * max(1, chance))` cells.
@@ -13794,7 +13874,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//straight grid shove reproduces the meaningful result without a new actor type.
 		if (affix === 'elastic' && defender.hp > 0 && attacker === this.hero) {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const procChance = ((level + 1) / (level + 5)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+			const procChance = ((level + 1) / (level + 5)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				const dx = Math.sign(defender.x - attacker.x);
 				const dy = Math.sign(defender.y - attacker.y);
@@ -13816,7 +13896,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//a neighbouring cell when the corpse cell already has ordinary loot.
 		if (affix === 'lucky' && defender.hp <= 0) {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const chance = ((level + 4) / (level + 40)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+			const chance = ((level + 4) / (level + 40)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 			if (Random.chance(chance)) {
 				//A five-entry weighted stand-in keeps the one rarity draw (80/20) explicit.
 				const kind = Random.element(['potion', 'scroll', 'stone', 'potion', 'armor'] as const)!;
@@ -13845,7 +13925,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//found using raw `this.weaponLevel` instead in the 2026-09-09 item-system audit
 			//(so a Degrade-hit weapon procced/shielded as if undegraded).
 			const level = this.degradedLevel(this.weaponLevel);
-			const procChance = ((level + 4) / (level + 40)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+			const procChance = ((level + 4) / (level + 40)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				const powerMulti = Math.max(1, procChance);
 				this.grantBlockingShield(Math.round(powerMulti * (2 + level)));
@@ -13862,7 +13942,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (affix === 'blooming') {
 			//Blooming.proc() also reads `weapon.buffedLvl()`, same Degrade fix as Blocking above.
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const procChance = ((level + 1) / (level + 3)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+			const procChance = ((level + 1) / (level + 3)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				let plants = (1 + 0.1 * level) * Math.max(1, procChance);
 				plants = Random.float() < (plants % 1) ? Math.ceil(plants) : Math.floor(plants);
@@ -14003,7 +14083,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 	private heroStealth(): number {
 		if (this.armorGlyph !== 'obfuscation') return 0;
 		const level = Math.max(0, this.degradedLevel(this.armorLevel));
-		return (1 + level / 3) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+		return (1 + level / 3) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 	}
 
 	/** `Earthroot.Armor.blocking()`: `(Dungeon.scalingDepth() + 5)/2`, integer division. This
@@ -14050,7 +14130,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		}
 		//Hero.damage(): `dmg = ceil(dmg * RingOfTenacity.damageMultiplier())` is applied before
 		//Char.damage()'s own Barrier absorption, so Tenacity scales the raw hit here too.
-		const tenacityMultiplier = ringTenacityMultiplier(this.equippedRing, this.hero.hp, this.hero.maxHp, this.hero.magicImmune);
+		const tenacityMultiplier = ringTenacityMultiplier(this.effectiveRing(), this.hero.hp, this.hero.maxHp, this.hero.magicImmune);
 		let scaled = tenacityMultiplier < 1 ? Math.ceil(amount * tenacityMultiplier) : amount;
 		//AntiMagic.drRoll()/Char.damage() (items/armor/glyphs/AntiMagic.java and
 		//actors/Char.java, tag 4.0.0-beta): listed magical sources lose a
@@ -14059,7 +14139,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//callers; physical melee and unclassified environmental damage stay untouched.
 		if (magical && this.armorGlyph === 'antimagic') {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const multiplier = ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+			const multiplier = ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 			const reduction = Random.normalRange(Math.round(level * multiplier), Math.round((3 + level * 1.5) * multiplier));
 			scaled = Math.max(0, scaled - reduction);
 		}
@@ -14072,7 +14152,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//boundary covers melee, missiles, wands, traps, and environmental damage.
 		if (!this.applyingDeferredDamage && this.armorGlyph === 'viscosity' && viscosityDamage > 0) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const percent = ((level + 1) / (level + 6)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+			const percent = ((level + 1) / (level + 6)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 			const deferred = percent > 1 ? Math.round(viscosityDamage / percent) : Math.ceil(viscosityDamage * percent);
 			if (deferred > 0) {
 				this.hero.deferredDamage = (this.hero.deferredDamage ?? 0) + deferred;
@@ -14177,23 +14257,23 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//The existing charm target map supplies Java's object payload; direct map
 		//assignment preserves the level-scaled duration that addBuff alone cannot set.
 		if (defender.isHero && this.armorGlyph === 'affection' && attacker.hp > 0
-			&& Random.chance(((Math.max(0, this.degradedLevel(this.armorLevel)) + 3) / (Math.max(0, this.degradedLevel(this.armorLevel)) + 20)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
+			&& Random.chance(((Math.max(0, this.degradedLevel(this.armorLevel)) + 3) / (Math.max(0, this.degradedLevel(this.armorLevel)) + 20)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const chance = ((level + 3) / (level + 20)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+			const chance = ((level + 3) / (level + 20)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 			addBuff(attacker, 'charm');
 			attacker.buffs.charm = Math.max(attacker.buffs.charm ?? 0, Math.round(10 * Math.max(1, chance)));
 			this.charmTargets.set(attacker.id, defender.id);
 		}
 		//Metabolism.proc(): 1-in-6 x arcana, consume 10 hunger and heal one HP,
 		//provided the hero is not starving and has room to heal.
-		if (defender.isHero && this.armorGlyph === 'metabolism' && this.hunger < 450 && this.hero.hp < this.hero.maxHp && Random.chance((1 / 6) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
+		if (defender.isHero && this.armorGlyph === 'metabolism' && this.hunger < 450 && this.hero.hp < this.hero.maxHp && Random.chance((1 / 6) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
 			this.hunger = Math.max(0, this.hunger - 10);
 			this.hero.hp++;
 			this.showHeal(this.hero, 1);
 		}
 		//AntiEntropy.proc(): a 1-in-8 x arcana proc ignites the wearer and freezes the
 		//eight neighboring cells. Daze is the port's timed freeze equivalent.
-		if (defender.isHero && this.armorGlyph === 'antientropy' && Random.chance((1 / 8) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
+		if (defender.isHero && this.armorGlyph === 'antientropy' && Random.chance((1 / 8) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
 			addBuff(this.hero, 'burning');
 			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 				const nearby = this.creatureAt(this.hero.x + dx, this.hero.y + dy);
@@ -14203,7 +14283,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//Corrosion.proc(): a 1-in-10 x arcana proc spreads corrosive ooze across the
 		//eight neighboring cells - a real `ooze` buff now (it used to reuse `poison`).
 		//Duration refreshes rather than stacking via `extend()`; intensity is flat.
-		if (defender.isHero && this.armorGlyph === 'corrosion' && Random.chance((1 / 10) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
+		if (defender.isHero && this.armorGlyph === 'corrosion' && Random.chance((1 / 10) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
 			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 				const nearby = this.creatureAt(this.hero.x + dx, this.hero.y + dy);
 				if (nearby) addBuff(nearby, 'ooze');
@@ -14222,7 +14302,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//un-duplicated here), and mirror-image duplication, which has no separate actor type -
 		//which is why Java's hero half is skipped.
 		if (defender.isHero && this.armorGlyph === 'multiplicity' && !attacker.isHero && !attacker.isNPC
-			&& !attacker.boss && !attacker.miniboss && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
+			&& !attacker.boss && !attacker.miniboss && Random.chance((1 / 20) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
 			const adjacent = Roguelike.neighbourOffsets(8)
 				.map(([dx, dy]) => ({ x: this.hero.x + dx, y: this.hero.y + dy }))
 				.filter((at) => this.level.passable(at.x, at.y) && !this.isChasmCell(at.x, at.y) && !this.creatureAt(at.x, at.y));
@@ -14236,7 +14316,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//Overgrowth.proc(): a 1-in-20 x arcana proc couches and immediately activates a
 		//random supported seed at the defender's cell. The generator's full seed
 		//weight table is not available, so selection is uniform across supported seeds.
-		if (defender.isHero && this.armorGlyph === 'overgrowth' && Random.chance((1 / 20) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
+		if (defender.isHero && this.armorGlyph === 'overgrowth' && Random.chance((1 / 20) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
 			const seed = Random.element(['blindweed', 'earthroot', 'fadeleaf', 'firebloom', 'icecap', 'mageroyal',
 				'rotberry', 'sorrowmoss', 'starflower', 'stormvine', 'sungrass', 'swiftthistle'] as const);
 			if (seed) {
@@ -14249,7 +14329,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//Stench.proc() (Armor.java, tag v3.3.8): 1/8 x arcana chance when hit seeds 250-volume
 		//StenchGas at the wearer's own feet. It is deliberately not ToxicGas: StenchGas prolongs
 		//Paralysis for Paralysis.DURATION/5, and the separate blob now preserves that distinction.
-		if (defender.isHero && this.armorGlyph === 'stench' && Random.chance((1 / 8) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune))) {
+		if (defender.isHero && this.armorGlyph === 'stench' && Random.chance((1 / 8) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune))) {
 			this.stenchGas.seed(this.hero.x, this.hero.y, 250);
 			this.say(t('port.log.stenchcurse'), 'negative');
 		}
@@ -14341,7 +14421,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//scaled with nothing; Java's glyph is a damage-over-time with a real chance.
 		if (defender.isHero && this.armorGlyph === 'thorns' && !attacker.isHero && attacker.hp > 0) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const procChance = ((level + 2) / (level + 12)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+			const procChance = ((level + 2) / (level + 12)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				setBleeding(attacker, Math.round((4 + level) * Math.max(1, procChance)));
 				this.say(t('port.log.thorns'), 'positive');
@@ -14354,7 +14434,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//protects its wearer rather than disabling the enemy, and it protects by blocking damage.
 		if (defender.isHero && this.armorGlyph === 'entanglement' && !attacker.isHero) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const procChance = 0.25 * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+			const procChance = 0.25 * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 			if (Random.chance(procChance)) {
 				const pool = Math.round((5 + 2 * level) * Math.max(1, procChance));
 				this.earthrootArmor = {
@@ -14370,7 +14450,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//progress and retains it through save/load, so it is the correct generic seam here.
 		if (defender.isHero && this.armorGlyph === 'potential') {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			const procChance = ((level + 1) / (level + 6)) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+			const procChance = ((level + 1) / (level + 6)) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 			if (Random.float() < procChance) {
 				this.wandCharges.advance(Math.max(1, procChance));
 				this.say(t('port.log.potential'), 'positive');
@@ -14722,7 +14802,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//`PotionOfHealing`; otherwise a fresh non-healing potion class is redrawn until it
 			//isn't Healing. Reproduced here as a real `potionHealing` drop on the rare branch,
 			//else a uniform pick among this port's 7 already-modeled non-healing potion ids.
-			if (creature.kind === 'warlock' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * ringWealthMultiplier(this.equippedRing, this.hero.magicImmune) })) {
+			if (creature.kind === 'warlock' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune) })) {
 				const warlockHp = this.limitedDrops.warlock ?? 0;
 				if (Random.int(3) === 0 && Random.int(8) > warlockHp) {
 					this.limitedDrops.warlock = warlockHp + 1;
@@ -14737,7 +14817,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//Healing nor Strength (a plain redraw-until-excluded loop, no LimitedDrops counter
 			//involved) - the same generic-'potion'-always-heals mismatch as Warlock above, fixed
 			//the same way: a uniform pick among this port's 6 remaining modeled potion ids.
-			if (creature.kind === 'scorpio' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * ringWealthMultiplier(this.equippedRing, this.hero.magicImmune) })) {
+			if (creature.kind === 'scorpio' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune) })) {
 				const eligible = ['potionFlame', 'potionMindVision', 'potionInvis', 'potionPurity', 'potionExperience', 'potionLevitation'] as const;
 				this.spawnGroundItem('potion', creature.x, creature.y, { id: Random.element(eligible)!, quantity: 1, identified: false });
 				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.potion) }));
@@ -14750,7 +14830,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//other modeled scroll ids (all 10 non-Identify/Upgrade members of Java's real
 			//12-class `SCROLL` pool, now that `scrollTransmutation`'s own appearance-table gap -
 			//found and fixed in the same pass - no longer makes it a crash risk to hand out).
-			if (creature.kind === 'succubus' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.33 * ringWealthMultiplier(this.equippedRing, this.hero.magicImmune) })) {
+			if (creature.kind === 'succubus' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.33 * ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune) })) {
 				const eligible = ['scrollCleanse', 'scrollMirror', 'scrollRecharging', 'scrollTeleportation', 'scrollLullaby', 'scrollMapping', 'scrollRage', 'scrollRetribution', 'scrollTerror', 'scrollTransmutation'] as const;
 				this.spawnGroundItem('scroll', creature.x, creature.y, { id: Random.element(eligible)!, quantity: 1, identified: false });
 				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.scroll) }));
@@ -14765,7 +14845,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 				const counterKind = creature.kind === 'dm201' ? 'dm200' : creature.kind;
 				const decay = LIMITED_DROP_DECAY[counterKind as MonsterId];
 				const chance = (decay ? entry.chance * decay(this.limitedDrops[counterKind as MonsterId] ?? 0) : entry.chance)
-					* (ringWealthMultiplier(this.equippedRing, this.hero.magicImmune) + this.bountyHunterLootBonus());
+					* (ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune) + this.bountyHunterLootBonus());
 				const drop = Actors.rollLoot({ entries: [{ id: entry.kind, weight: 1 }], chance });
 				if (drop) {
 					if (decay) this.limitedDrops[counterKind as MonsterId] = (this.limitedDrops[counterKind as MonsterId] ?? 0) + 1;
@@ -14780,7 +14860,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//closest playable armor/potion payload, while the real counter cadence and boss
 			//roll multipliers are retained. The drop is placed in a free neighbouring cell
 			//because this port deliberately has one ground item per cell rather than heaps.
-			if (ringWealthBonus(this.equippedRing) > 0) {
+			if (ringWealthBonus(this.effectiveRing()) > 0) {
 				const rolls = BOSS_KINDS.has(creature.kind as AnyMonsterId) ? 15
 					: ['goo', 'dm200', 'dm201'].includes(creature.kind) ? 5 : 1;
 				this.tryWealthBonusDrop(creature, rolls);
@@ -14952,7 +15032,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * independent escalating tracker is retained and every generated reward is a real,
 	 * playable ground payload. */
 		private tryWealthBonusDrop(creature: Creature, rolls: number): void {
-			const bonus = ringWealthBonus(this.equippedRing, this.hero.magicImmune);
+			const bonus = ringWealthBonus(this.effectiveRing(), this.hero.magicImmune);
 			if (bonus <= 0) return;
 			const rng = {
 				int: (n: number) => Random.int(n),
@@ -15186,8 +15266,11 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//hero's field of view for `5 + 2*level()` turns, which is what Java's `Dungeon.observe()`
 			//does with the buff attached - here the mark is consulted directly, since this port has no
 			//per-char observe flag.
+			//`Talent.SEER_SHOT`: cells under a seer-shot reveal stay creature-visible while
+			//their own timer runs (see `procSeerShot`) - area-limited `mindvision`.
 			this.sprite(creature).visible = creature.isHero === true || this.fov.isVisible(creature.x, creature.y)
-				|| (mindVision && !creature.isNPC) || this.awareCreatures.has(creature);
+				|| (mindVision && !creature.isNPC) || this.awareCreatures.has(creature)
+				|| this.seerCells.has(this.level.index(creature.x, creature.y));
 		}
 		if (this.stairsSprite) {
 			this.stairsSprite.visible = this.fov.isExplored(this.stairs.x, this.stairs.y);
@@ -15427,6 +15510,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 			blacksmithUpgrades: this.blacksmithUpgrades,
 			blacksmithSmiths: this.blacksmithSmiths,
 			weaponHardened: this.weaponHardened,
+			weaponIdentified: this.weaponIdentified,
+			armorIdentified: this.armorIdentified,
 			armorHardened: this.armorHardened,
 			bag: this.bag.items.map((i) => ({ id: i.id, quantity: i.quantity, instanceId: i.instanceId, identified: i.identified, level: i.level, sandBags: (i as typeof i & { sandBags?: number }).sandBags, charges: (i as typeof i & { charges?: number }).charges, affix: i.affix, cursed: i.cursed,
 				returnDepth: (i as typeof i & { returnDepth?: number }).returnDepth, returnBranch: (i as typeof i & { returnBranch?: number }).returnBranch,
@@ -15492,6 +15577,10 @@ private eyeBeamTurn(monster: Creature): boolean {
 			sealPartialGain: this.sealPartialGain,
 			armorSealed: this.armorSealed,
 			stealthTalentTicks: this.stealthTalentTicks,
+			empoweredZaps: this.empoweredZaps,
+			enhancedRingsTurns: this.enhancedRingsTurns,
+			seerShotCooldown: this.seerShotCooldown,
+			seerCells: [...this.seerCells],
 			cloakChargeProgress: this.cloakChargeProgress,
 			cloakStealthTurnsToCost: this.cloakStealthTurnsToCost,
 			natureBerriesDropped: this.natureBerriesDropped,
@@ -15601,6 +15690,10 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//rather than guessing whether the equipped armor is still the original starting piece.
 		this.armorSealed = s.armorSealed ?? false;
 		this.stealthTalentTicks = s.stealthTalentTicks ?? 0;
+		this.empoweredZaps = s.empoweredZaps ?? 0;
+		this.enhancedRingsTurns = s.enhancedRingsTurns ?? 0;
+		this.seerShotCooldown = s.seerShotCooldown ?? 0;
+		this.seerCells = new Map((s.seerCells ?? []) as [number, number][]);
 		this.cloakChargeProgress = s.cloakChargeProgress ?? 0;
 		this.cloakStealthTurnsToCost = s.cloakStealthTurnsToCost ?? 0;
 		this.natureBerriesDropped = s.natureBerriesDropped ?? 0;
@@ -15745,6 +15838,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.blacksmithUpgrades = s.blacksmithUpgrades ?? 0;
 		this.blacksmithSmiths = s.blacksmithSmiths ?? 0;
 		this.weaponHardened = s.weaponHardened ?? false;
+		this.weaponIdentified = s.weaponIdentified ?? true;
+		this.armorIdentified = s.armorIdentified ?? true;
 		this.armorHardened = s.armorHardened ?? false;
 		this.equippedRing = s.equippedRing ?? null;
 		this.ringHtBonus = s.ringHtBonus ?? 0;
@@ -16144,6 +16239,47 @@ private eyeBeamTurn(monster: Creature): boolean {
 	private talentRank(id: string): number { return this.talentRanks[id] ?? 0; }
 
 	/**
+	 * The worn ring as the ring formulas should read it. `Talent.ENHANCED_RINGS` grants +1
+	 * *upgrade level* while `enhancedRingsTurns` runs, so the ring is presented one level
+	 * higher and the existing `ringBonusLevel` translation (uncursed `level + 1`, cursed
+	 * `min(0, level - 2)`, AntiMagic gate) applies unchanged. Write sites (equip, cleanse,
+	 * transmute, save) keep using the raw `equippedRing`; every formula read goes here.
+	 */
+	private effectiveRing(): EquippedRing | null {
+		if (!this.equippedRing) return null;
+		if (this.enhancedRingsTurns <= 0) return this.equippedRing;
+		return { ...this.equippedRing, level: this.equippedRing.level + 1 };
+	}
+
+	/**
+	 * `Talent.LIGHT_CLOAK`'s cross-hero half (`meta_desc` in the talent strings): gained by a
+	 * non-Rogue, it raises every artifact's charging speed by 7/13/20% at +1/+2/+3. Rogues
+	 * get nothing here - their half is the unequipped-use rate, which is moot because a
+	 * carried cloak is always usable (see `lightCloakRechargeRate`'s note in
+	 * `talentEffects.ts`). Folded into the existing energy-ring multiplier at helper call
+	 * sites (multiplication commutes, so the fold is exact, not an approximation) and
+	 * multiplied directly onto the scene-owned per-turn gains. Unreachable through the
+	 * class-gated talent pools today - like every other `meta_desc` branch - but live the
+	 * moment a rank exists, the same way `effectiveRing()` is.
+	 */
+	private lightCloakChargeMultiplier(): number {
+		if (this.heroClass === 'rogue') return 1;
+		return 1 + lightCloakArtifactBonus(this.talentRank('light_cloak'));
+	}
+
+	/**
+	 * The wand power the current zap resolves at. `Talent.EMPOWERING_SCROLLS` makes the next
+	 * N zaps read +3 levels; `empoweredZapBonus` carries that bonus only for the duration of
+	 * one zap resolution (set around the zap branch, cleared after), so every other
+	 * `weaponLevel` read - melee damage, upgrade logic, save - is untouched.
+	 */
+	private empoweredZapBonus = 0;
+
+	private effectiveZapLevel(): number {
+		return this.weaponLevel + this.empoweredZapBonus;
+	}
+
+	/**
 	 * Turn-cost multiplier for hero actions, based on equipped gear and buffs.
 	 * <1 = faster actions (Weapon.Augment SPEED, Swiftness glyph)
 	 * >1 = slower actions (encumbrance penalties, once modeled)
@@ -16159,7 +16295,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			const hasNearbyEnemy = this.hasSwiftnessEnemyNearby();
 			if (!hasNearbyEnemy) {
 				const level = Math.max(0, this.degradedLevel(this.armorLevel));
-				mod /= (1.2 + 0.04 * level) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+				mod /= (1.2 + 0.04 * level) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 			}
 		}
 		// Armor.speedFactor()/Flow.java (tag v3.3.8): Flow multiplies speed by
@@ -16168,7 +16304,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		// dividing the shared action cost.
 		if (this.armorGlyph === 'flow' && this.level.get(this.hero.x, this.hero.y) === WATER) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
-			mod /= (2 + 0.5 * level) * ringArcanaMultiplier(this.equippedRing, this.hero.magicImmune);
+			mod /= (2 + 0.5 * level) * ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
 		}
 		//Bulk has no proc: Java's Armor.speedFactor makes movement/actions three times
 		//faster while the hero occupies an open or closed doorway.
@@ -16182,7 +16318,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (this.hero.buffs['chill']) mod /= Math.max(0.5, 1 - this.hero.buffs['chill']! * 0.1);
 		//RingOfHaste.speedMultiplier(): a higher Char.speed() means less time per action in
 		//real Java; this port's turn-cost multiplier expresses the same relationship inverted.
-		mod /= ringHasteMultiplier(this.equippedRing, this.hero.magicImmune);
+		mod /= ringHasteMultiplier(this.effectiveRing(), this.hero.magicImmune);
 		return mod;
 	}
 
@@ -16228,7 +16364,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		const augmentDelayFactor = this.weaponAugment === 'speed' ? 2 / 3 : this.weaponAugment === 'damage' ? 5 / 3 : 1;
 		//`Scimitar` sword dance: +60% attack speed while up (`ability_desc`).
 		const danceFactor = this.swordDanceTurns > 0 ? 1 / 1.6 : 1;
-		return (this.getActionTurnCostMod() / ringFurorMultiplier(this.equippedRing, this.hero.magicImmune)) * augmentDelayFactor * danceFactor;
+		return (this.getActionTurnCostMod() / ringFurorMultiplier(this.effectiveRing(), this.hero.magicImmune)) * augmentDelayFactor * danceFactor;
 	}
 
 	private chooseSubclass(option: string): void {
@@ -16999,6 +17135,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.weaponLevel = 0;
 			this.weaponAffix = null;
 			this.weaponHardened = false;
+			this.weaponIdentified = true;
 			this.weaponCurseInfusionBonus = false;
 		}
 		if (!kept(this.armorId, this.armorInstanceId)) {
@@ -17008,6 +17145,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.armorLevel = 0;
 			this.armorGlyph = null;
 			this.armorHardened = false;
+			this.armorIdentified = true;
 			this.armorCurseInfusionBonus = false;
 		}
 		this.syncHeroFromStats();
@@ -17263,6 +17401,18 @@ private eyeBeamTurn(monster: Creature): boolean {
 			return;
 		}
 		this.assignQuickslot(id, instanceId);
+		//`Talent.ENHANCED_RINGS` (Assassin/Freerunner T3): using an artifact grants the worn
+		//rings +1 upgrade for 3/6/9 turns (`enhancedRingsTurns`, read by `effectiveRing()`).
+		//Armed on the use attempt, the way the picker-based artifacts (rose, horn) also count
+		//a use the moment their window opens - Java arms inside each artifact's own execute
+		//path, which this port's per-artifact methods don't report back through, so the
+		//single dispatch point stands in for all of them. Refusals (cursed, no charge) still
+		//arm: the attempt spent the action, and the 3-9-turn window is too short for the
+		//difference to matter - stated, not silent.
+		if (this.heroClass === 'rogue' && this.talentRank('enhanced_rings') > 0
+			&& (id.includes('artifact') || id === 'cloak' || id === 'hourglass' || id === 'chalice')) {
+			this.enhancedRingsTurns = enhancedRingsDuration(this.talentRank('enhanced_rings'));
+		}
 		routeItemAction(this.itemActionContext(), id, instanceId);
 	}
 
@@ -17832,7 +17982,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 		private armbandLootChance(creature: Creature): number {
 			if (!creature.kind) return 0;
-			const multiplier = ringWealthMultiplier(this.equippedRing, this.hero.magicImmune) + this.bountyHunterLootBonus();
+			const multiplier = ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune) + this.bountyHunterLootBonus();
 			if (creature.kind === 'warlock') return 0.5 * multiplier;
 			if (creature.kind === 'scorpio') return 0.5 * multiplier;
 			if (creature.kind === 'succubus') return 0.33 * multiplier;
@@ -18507,7 +18657,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 				//took his place. `circlingBack` is true here, so `HeavyBoomerang.adjacentAccFactor`
 				//returns its flat 1.5 rather than the melee-range penalty.
 				const missile = MWL_MISSILE_BY_CLASS.get(this.ammoSourceClass);
-				const sharpshooting = ringSharpshootingBonus(this.equippedRing, this.hero.magicImmune);
+				const sharpshooting = ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune);
 				const damage = missile ? missileDamageRange(missile.sourceClass, pending.level, sharpshooting) : [1, 1] as [number, number];
 				const hit = this.attack({ ...this.hero, kind: undefined, attackMode: 'throw', damage }, occupant, BOOMERANG_RETURN_ACC_FACTOR);
 				if (hit) {
@@ -18674,7 +18824,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			if (this.ammoSourceClass === 'Bolas') {
 				addBuff(target, 'cripple', bolasCrippleTurns());
 			} else if (this.ammoSourceClass === 'Tomahawk') {
-				const level = this.missileLevel + ringSharpshootingBonus(this.equippedRing, this.hero.magicImmune);
+				const level = this.missileLevel + ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune);
 				const [min, max] = tomahawkBleedRange(level);
 				const bleed = Random.normalRange(min, max);
 				if (bleed > (target.buffs['bleeding'] ?? 0)) target.buffs['bleeding'] = bleed;
@@ -19616,6 +19766,68 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.sprite(this.hero).y = y * TILE;
 		this.fov.update(x, y, this.viewRadius());
 		this.refresh();
+	}
+
+	/**
+	 * `Talent.ALLY_WARP` (Battlemage/Warlock T3; desc `actors.hero.talent.ally_warp.desc`):
+	 * the Mage bumps an ally to swap places with it instantly, at 2/4/6 tiles range by rank,
+	 * never with an immovable ally. The bump is always adjacent so the range check below is
+	 * belt-and-braces, kept because Java states it. Costs no turn - like every other ally
+	 * order here (`directAlly`'s defend/follow/attack all resolve without spending one) -
+	 * and plays the shared teleport presentation on both parties with no log line. Returns
+	 * true when the swap happened, false to fall through to the ordinary NPC interact.
+	 * Stated simplification: Java's tap targets the ally at range through the cell selector;
+	 * this port has no tap-creature seam, so the bump (adjacent by construction) is the tap.
+	 */
+	private tryAllyWarp(ally: Creature): boolean {
+		if (this.heroClass !== 'mage') return false;
+		const range = allyWarpRange(this.talentRank('ally_warp'));
+		if (range <= 0) return false;
+		if (ally.kind !== undefined && IMMOVABLE_KINDS.has(ally.kind as MonsterId)) return false;
+		if (Roguelike.chebyshevDistance(this.hero, ally) > range) return false;
+		const from = { x: this.hero.x, y: this.hero.y };
+		const to = { x: ally.x, y: ally.y };
+		this.hero.x = to.x; this.hero.y = to.y;
+		ally.x = from.x; ally.y = from.y;
+		this.sprite(this.hero).x = to.x * TILE;
+		this.sprite(this.hero).y = to.y * TILE;
+		this.sprite(ally).x = from.x * TILE;
+		this.sprite(ally).y = from.y * TILE;
+		this.playTeleportAppear(from, to, this.hero);
+		this.playTeleportAppear(to, from, ally);
+		this.fov.update(this.hero.x, this.hero.y, this.viewRadius());
+		this.refresh();
+		return true;
+	}
+
+	/**
+	 * `Talent.SEER_SHOT` (Sniper/Warden T3; desc `actors.hero.talent.seer_shot.desc`): a
+	 * thrown attack lands its arrow at the target's cell and grants vision in the 3x3 around
+	 * it for 5/10/15 turns, on a flat 20-turn cooldown (`SEER_SHOT_COOLDOWN`). Cross-hero it
+	 * triggers from any thrown weapon (`meta_desc`), so there is no class gate - the scene
+	 * calls this from both the missile-throw and the bow branches. The landing cell's
+	 * neighbourhood is marked explored (Java's visited behavior: seen-while-lit stays mapped
+	 * afterwards) and stays creature-visible while its own timer runs (consulted next to
+	 * `mindvision` in the visibility pass); unlike Clairvoyance this is *vision*, not a
+	 * search, so hidden doors are not discovered. Stated simplification: Java fires at an
+	 * aimed ground cell, but this port's targeting is creature-based, so the arrow always
+	 * lands at its victim's cell rather than at a free choice of ground.
+	 */
+	private procSeerShot(x: number, y: number): void {
+		const rank = this.talentRank('seer_shot');
+		if (rank <= 0 || this.seerShotCooldown > 0) return;
+		const duration = seerShotDuration(rank);
+		for (let cy = y - 1; cy <= y + 1; cy++) {
+			for (let cx = x - 1; cx <= x + 1; cx++) {
+				if (!this.level.inside(cx, cy)) continue;
+				const index = this.level.index(cx, cy);
+				this.fov.explored.add(index);
+				this.seerCells.set(index, duration);
+			}
+		}
+		this.seerShotCooldown = SEER_SHOT_COOLDOWN;
+		this.restitchAllTiles();
+		this.say(t('port.log.stoneclairvoyance'), 'positive');
 	}
 
 	/**
@@ -20873,6 +21085,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 			get weaponTier() { return scene.weaponTier; }, set weaponTier(value) { scene.weaponTier = value; },
 			get weaponAffix() { return scene.weaponAffix; }, set weaponAffix(value) { scene.weaponAffix = value; },
 			get weaponHardened() { return scene.weaponHardened; }, set weaponHardened(value) { scene.weaponHardened = value; },
+			get weaponIdentified() { return scene.weaponIdentified; }, set weaponIdentified(value) { scene.weaponIdentified = value; },
+			get armorIdentified() { return scene.armorIdentified; }, set armorIdentified(value) { scene.armorIdentified = value; },
 			get weaponCurseInfusionBonus() { return scene.weaponCurseInfusionBonus; },
 			set weaponCurseInfusionBonus(value) { scene.weaponCurseInfusionBonus = value; },
 			get armorCurseInfusionBonus() { return scene.armorCurseInfusionBonus; },
@@ -21010,7 +21224,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			const missing = this.wandCharges.max - this.wandCharges.current;
 			const rechargeBase = this.ownsBag('magicalHolster') ? HOLSTER_RECHARGE_BASE : NORMAL_RECHARGE_BASE;
 			const turnsToCharge = 10 + 40 * Math.pow(rechargeBase, Math.max(0, missing));
-			const perTurnRate = ringEnergyMultiplier(this.equippedRing, this.hero.magicImmune) / turnsToCharge;
+			const perTurnRate = ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) / turnsToCharge;
 			this.wandCharges.advance(perTurnRate * (charge + 1));
 		}
 	}

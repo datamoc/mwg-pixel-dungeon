@@ -146,3 +146,56 @@ export function arcaneVisionDuration(rank: number): number {
 export function necromancerMinionChance(subclass: string | null, rank: number): number {
 	return subclass === 'warlock' ? [0, 0.13, 0.27, 0.4][Math.min(3, rank)] : 0;
 }
+
+/** `Talent.EMPOWERING_SCROLLS` (`Talent.java`, tag `v3.3.8`; desc at
+ * `actors.hero.talent.empowering_scrolls.desc`): when the Mage reads a scroll, his next
+ * 1/2/3 wand zaps get +3 levels. The count is the rank itself; the bonus is flat +3 at
+ * every rank - one charge consumed per zap action, whatever the wand. */
+export const EMPOWERING_SCROLLS_BONUS = 3;
+
+export function empoweringScrollsCharges(rank: number): number {
+	return Math.max(0, Math.min(3, rank));
+}
+
+/** `Talent.ENHANCED_RINGS` (desc `actors.hero.talent.enhanced_rings.desc`): when the
+ * Rogue uses an artifact, his rings gain +1 upgrade for 3/6/9 turns. The bonus is a
+ * whole upgrade level (read through the ring's own bonus translation, so a plain +0
+ * ring reads +2 while it lasts); only the duration scales with rank. */
+export function enhancedRingsDuration(rank: number): number {
+	return 3 * Math.max(0, Math.min(3, rank));
+}
+
+/** `Talent.LIGHT_CLOAK`, Rogue half (desc `actors.hero.talent.light_cloak.desc`): the
+ * Rogue may use the Cloak of Shadows while it is not equipped, recharging at
+ * 25/50/75% of the normal rate. This port has no artifact equip slot - a carried cloak
+ * is always usable, i.e. the talent's use-half is satisfied by construction - so the
+ * rate is what the scene applies to the cloak's recharge progress while the talent is
+ * taken (full rate without it, which is the deliberate divergence: Java refuses the
+ * unequipped use entirely instead of granting it at full rate). */
+export function lightCloakRechargeRate(rank: number): number {
+	return [1, 0.25, 0.5, 0.75][Math.max(0, Math.min(3, rank))]!;
+}
+
+/** `Talent.LIGHT_CLOAK`, cross-hero half (`meta_desc`): gained by a non-Rogue, it
+ * instead raises every artifact's charge speed by 7/13/20% at +1/+2/+3. Read as a
+ * straight multiplier on the scene's per-turn artifact charge gains. */
+export function lightCloakArtifactBonus(rank: number): number {
+	return [0, 0.07, 0.13, 0.2][Math.max(0, Math.min(3, rank))]!;
+}
+
+/** `Talent.ALLY_WARP` (desc `actors.hero.talent.ally_warp.desc`): the Mage taps an ally
+ * to swap places with them at 2/4/6 tiles range (rank 1/2/3), never with an immovable
+ * ally. Pure range; the swap itself is scene movement. */
+export function allyWarpRange(rank: number): number {
+	return 2 * Math.max(0, Math.min(3, rank));
+}
+
+/** `Talent.SEER_SHOT` (desc `actors.hero.talent.seer_shot.desc`): firing at the ground
+ * grants vision in a 3x3 area around the landing cell for 5/10/15 turns, on a flat
+ * 20-turn cooldown. Gained cross-hero it triggers from any thrown weapon
+ * (`meta_desc`) - the scene therefore procs it on both bow shots and missile throws. */
+export const SEER_SHOT_COOLDOWN = 20;
+
+export function seerShotDuration(rank: number): number {
+	return 5 * Math.max(0, Math.min(3, rank));
+}

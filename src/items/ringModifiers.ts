@@ -7,6 +7,10 @@ export interface EquippedRing {
 	level: number;
 	instanceId?: string;
 	cursed?: boolean;
+	/** Whether this ring is identified while worn - Java's Item.identify() is not implied by
+	 * merely equipping something; only Thief's Intuition rank 2 (or an outside identify, e.g.
+	 * a scroll used before equipping) reveals it. See `equipRing`'s own comment. */
+	identified?: boolean;
 }
 
 /**

@@ -427,6 +427,23 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.equal(talents.necromancerMinionChance('warlock', 1), 0.13);
 		assert.equal(talents.necromancerMinionChance('warlock', 3), 0.4);
 		assert.equal(talents.necromancerMinionChance('battlemage', 3), 0);
+		//2026-09-19 pass: the five T3 talents whose formulas were tabled but unwired.
+		assert.equal(talents.EMPOWERING_SCROLLS_BONUS, 3);
+		assert.equal(talents.empoweringScrollsCharges(1), 1);
+		assert.equal(talents.empoweringScrollsCharges(3), 3);
+		assert.equal(talents.empoweringScrollsCharges(0), 0);
+		assert.equal(talents.enhancedRingsDuration(1), 3);
+		assert.equal(talents.enhancedRingsDuration(3), 9);
+		assert.equal(talents.lightCloakRechargeRate(1), 0.25);
+		assert.equal(talents.lightCloakRechargeRate(3), 0.75);
+		assert.equal(talents.lightCloakArtifactBonus(1), 0.07);
+		assert.equal(talents.lightCloakArtifactBonus(2), 0.13);
+		assert.equal(talents.lightCloakArtifactBonus(3), 0.2);
+		assert.equal(talents.allyWarpRange(1), 2);
+		assert.equal(talents.allyWarpRange(3), 6);
+		assert.equal(talents.SEER_SHOT_COOLDOWN, 20);
+		assert.equal(talents.seerShotDuration(1), 5);
+		assert.equal(talents.seerShotDuration(3), 15);
 	});
 
 	check('hunger runtime dispatch matches the direct transition exactly', () => {
