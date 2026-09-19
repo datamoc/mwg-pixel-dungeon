@@ -359,8 +359,11 @@ was judged not worth the churn against those existing references.
       quest rooms (`rooms/quest/vault/*`, crystal-key questline - the whole quest is unported);
       `DirectableAlly` drops off the list (2026-09-17): the hawk's orders - its only live consumer -
       are already live (`allyTargetChar`/`allyDefendCell`, re-cast cell selector, `directTocell`'s
-      'follow me again'); ShadowClone stays deliberately unoffered and PowerOfMany needs Cleric spells.
-      The ported allies (hawk, ghost, mirror image, sheep) run through `allyKind`
+      'follow me again'); PowerOfMany needs Cleric spells. **Correction, 2026-09-19: ShadowClone
+      is no longer unoffered** - the 20th matrix (`MONSTER_ANALYSIS_SHADOWCLONE.md`) ported it as
+      a real `allyKind`, summoned and directed through this same shared ally system; see section
+      6's armor-ability row.
+      The ported allies (hawk, ghost, mirror image, sheep, shadow clone) run through `allyKind`
       without the base. **Done in the same pass: `ImpShopkeeper`** - a real kind with imp art, the
       shopkeeper's trade window and flee behavior, its own first-sight greeting yell (the
       `greetings_ascent` variant stays out: no AscensionChallenge here), spawned by section 3's
