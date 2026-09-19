@@ -61,6 +61,16 @@ export function wandDamageRange(type: WandType, level: number): [number, number]
 	return [rule.minBase + rule.minPerLevel * safeLevel, rule.maxBase + rule.maxPerLevel * safeLevel];
 }
 
+/** `WandOfLivingEarth.damageRoll()`: `NormalIntRange(2, 4 + scalingDepth()/2)` - the
+ * only wand roll that scales with depth instead of wand level, so it cannot live in the
+ * level-parameterized MWL damage table (which carries no livingEarth row). `depth` is the
+ * caller's `this.depth`, the usual `scalingDepth()` stand-in; the division is Java's
+ * integer division. The caller rolls `normalRange` over these bounds like every other
+ * wand (the port's standing NormalIntRange simplification). */
+export function livingEarthZapRange(depth: number): [number, number] {
+	return [2, 4 + Math.floor(Math.max(1, depth) / 2)];
+}
+
 /** Scene services used by the disintegration wand; targeting remains with the scene. */
 export interface DisintegrationWandScene {
 	level: Parameters<typeof Roguelike.ballistica>[0];

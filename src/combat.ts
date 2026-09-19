@@ -383,6 +383,11 @@ function buffBlocked(c: Creature, id: BuffId): boolean {
 	//effect can be attached. Keep this check at the shared buff boundary so fire
 	//from traps, blobs, wands, plants, and enemy attacks all obey it.
 	if (FIRE_IMMUNITY_BUFFS.has(id) && c.fireImmune) return true;
+	//`FireImbue.attachTo()`: the imbued holder detaches Burning on attach and is immune
+	//to it while the imbue lasts (`immunities.add(Burning.class)`). Not expressible in
+	//the data table above (that gates buffs refused *by* fiery creatures, not the
+	//holder immunity an imbue grants), so it lives here at the same shared boundary.
+	if (id === 'burning' && c.buffs.fireImbue !== undefined) return true;
 	//AntiMagic.RESISTS (items/armor/glyphs/AntiMagic.java): these status classes
 	//are magical in Java and are rejected before attachment. Damage-source
 	//resistance is handled separately by the scene's explicit magical flag.

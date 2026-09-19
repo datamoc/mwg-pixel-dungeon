@@ -19,7 +19,8 @@ export function verifyArmorAbilities(require, check) {
 	const {
 		SPIRIT_HAWK_LIFESPAN, goForTheEyesEffect, spiritHawkDodges, spiritHawkSpeed, spiritHawkViewDistance,
 	} = require('./simulation/huntressAbilities');
-	const { exposeWeaknessDuration, feignedRetreatHaste, closeTheGapRange, eliminationMatchFactor, invigoratingVictoryHeal, elementalStrikeCone, elementalPowerMulti, directedPowerBoost, elementalBlockingShield, elementalVampiricHeal, elementalSacrificialSelf, elementalBlobAmount, elementalBloomingBudget, elementalFurrowStep, elementalBaseDamage, elementalKineticSplash, elementalRootsDuration, elementalKnockback, elementalLuckyChance, elementalProjectingSplash, elementalCorruptingChance, elementalGrimChance, elementalCurseChance, elementalAnnoyingChance, elementalSacrificialOther } = require('./simulation/duelistAbilities');
+	const { exposeWeaknessDuration, feignedRetreatHaste, closeTheGapRange, eliminationMatchFactor, invigoratingVictoryHeal, combinedLethalityTest, elementalStrikeCone, elementalPowerMulti, directedPowerBoost, elementalBlockingShield, elementalVampiricHeal, elementalSacrificialSelf, elementalBlobAmount, elementalBloomingBudget, elementalFurrowStep, elementalBaseDamage, elementalKineticSplash, elementalRootsDuration, elementalKnockback, elementalLuckyChance, elementalProjectingSplash, elementalCorruptingChance, elementalGrimChance, elementalCurseChance, elementalAnnoyingChance, elementalSacrificialOther, elementalStrikeResisted } = require('./simulation/duelistAbilities');
+	const { ELEMENTAL_BLAST_DAMAGE_FACTORS, elementalBlastEffectMulti, elementalBlastAoeSize, elementalBlastAim, elementalBlastDamage, elementalBlastUndeadDamage, elementalBlastTransfusionSplit, elementalBlastCorrosion, elementalBlastParalysisDuration, elementalBlastFrostDuration, elementalBlastBlindnessDuration, elementalBlastLightDuration, elementalBlastCharmDuration, elementalBlastAmokDuration, elementalBlastRootsDuration, elementalBlastRechargingDuration, elementalBlastRegrowthChance, elementalBlastKnockback, elementalBlastReactiveShield } = require('./simulation/mageAbilities');
 	const { BUFF_DURATION } = require('./simulation/buffs');
 
 	//`HeroClass.armorAbilities()`, in its own order.
@@ -337,6 +338,67 @@ export function verifyArmorAbilities(require, check) {
 		assert.equal(BUFF_DURATION.luckyTracker, 9999);
 	});
 
+	check('ElementalBlast\'s factors, aim, damage and talent arithmetic are Java\'s', () => {
+		const blast = armorAbilityDef('elementalblast');
+		assert.equal(blast.baseChargeUse, 35);
+		assert.equal(blast.targeting, 'none');
+		assert.deepEqual(blast.talents, ['blast_radius', 'elemental_power', 'reactive_barrier']);
+		assert.equal(armorChargeUse(blast, { heroicEnergyRank: 0 }), 35);
+		//The per-wand damage factors, all thirteen.
+		assert.deepEqual(ELEMENTAL_BLAST_DAMAGE_FACTORS, {
+			magicMissile: 0.5, lightning: 1, disintegration: 1, fireblast: 1, corrosion: 0,
+			blastWave: 0.67, livingEarth: 0.5, frost: 1, prismaticLight: 0.67, warding: 0,
+			transfusion: 0, corruption: 0, regrowth: 0,
+		});
+		//`ELEMENTAL_POWER`: `1 + 0.25*points`; `BLAST_RADIUS`: `4 + points`.
+		const r3 = (v) => Math.round(v * 1000) / 1000;
+		assert.deepEqual([0, 1, 2, 4].map(elementalBlastEffectMulti), [1, 1.25, 1.5, 2]);
+		assert.deepEqual([0, 1, 4].map(elementalBlastAoeSize), [4, 5, 8]);
+		//The aim fires down the roomiest cardinal: wider axis wins, ties go horizontal,
+		//each axis away from its nearer edge.
+		assert.equal(elementalBlastAim(25, 15, 30, 30), 'west');
+		assert.equal(elementalBlastAim(5, 15, 30, 30), 'east');
+		assert.equal(elementalBlastAim(15, 25, 30, 30), 'north');
+		assert.equal(elementalBlastAim(15, 5, 30, 30), 'south');
+		assert.equal(elementalBlastAim(15, 15, 30, 30), 'east');
+		//Damage: `round(roll(15, 25) * multi * factor)`.
+		assert.equal(elementalBlastDamage(20, 1.5, 1), 30);
+		assert.equal(elementalBlastDamage(15, 1, 0.5), 8);
+		assert.equal(elementalBlastDamage(25, 2, 0.67), 34);
+		assert.equal(elementalBlastDamage(20, 1.5, 0), 0);
+		//Transfusion vs undead skips the (zero) factor: `round(roll * multi)`.
+		assert.equal(elementalBlastUndeadDamage(20, 1.5), 30);
+		//Transfusion vs allies/charmed: `round(10*multi)` healing, overflow to Barrier.
+		assert.deepEqual(elementalBlastTransfusionSplit(50, 100, 1), { heal: 10, shield: 0 });
+		assert.deepEqual(elementalBlastTransfusionSplit(95, 100, 1), { heal: 5, shield: 5 });
+		assert.deepEqual(elementalBlastTransfusionSplit(100, 100, 2), { heal: 0, shield: 20 });
+		//Corrosion: fixed 4-turn `set` with `round(6*multi)` damage.
+		assert.deepEqual(elementalBlastCorrosion(1), { duration: 4, damage: 6 });
+		assert.deepEqual(elementalBlastCorrosion(1.5), { duration: 4, damage: 9 });
+		//Buff durations: Paralysis/Blindness/Charm at `multi*5`, Frost at `multi*10`,
+		//Roots at `multi*5`, Recharging at `multi*15`, Amok at `multi*5`.
+		assert.equal(elementalBlastParalysisDuration(1.5), 7.5);
+		assert.equal(elementalBlastFrostDuration(1.5), 15);
+		assert.equal(elementalBlastBlindnessDuration(2), 10);
+		assert.equal(elementalBlastCharmDuration(2), 10);
+		assert.equal(elementalBlastAmokDuration(2), 10);
+		assert.equal(elementalBlastRootsDuration(1.5), 7.5);
+		assert.equal(elementalBlastRechargingDuration(2), 30);
+		//Light: `multi*10` under Darkness, `multi*50` otherwise.
+		assert.equal(elementalBlastLightDuration(1.5, true), 15);
+		assert.equal(elementalBlastLightDuration(1.5, false), 75);
+		//Regrowth grass chance: `0.33*multi`.
+		assert.equal(r3(elementalBlastRegrowthChance(1.5)), 0.495);
+		//Blast Wave shove: `aoeSize + 1 - trunc(dist)`, times multi, truncated.
+		assert.equal(elementalBlastKnockback(4, 2.9, 1), 3);
+		assert.equal(elementalBlastKnockback(6, 2, 1.5), 7);
+		//`REACTIVE_BARRIER`: capped at `4 + points`, `round(capped*2.5*points)` with talent.
+		assert.equal(elementalBlastReactiveShield(10, 2, true), 30);
+		assert.equal(elementalBlastReactiveShield(3, 2, true), 15);
+		assert.equal(elementalBlastReactiveShield(10, 2, false), 0);
+		assert.equal(elementalBlastReactiveShield(0, 4, true), 0);
+	});
+
 	check('Feint\'s charge is Java\'s 50, and FEIGNED_RETREAT/EXPOSE_WEAKNESS scale 2 turns per point', () => {
 		const feint = armorAbilityDef('feint');
 		assert.equal(feint.baseChargeUse, 50);
@@ -351,5 +413,48 @@ export function verifyArmorAbilities(require, check) {
 		//read once, matching Java's single lost turn.
 		assert.equal(BUFF_DURATION.feintConfusion, 2);
 		assert.equal(BUFF_DURATION.counterAbility, 3);
+	});
+
+	check('ElementalStrike zeroes strike/grim damage on magic-immune, never kinetic/projecting/bomb', () => {
+		//`Char.damage()`'s `isImmune(srcClass)` gate against `AntiMagic.RESISTS`: the base
+		//strike and Polarized pass `ElementalStrike.this`, the execute passes `Grim.class`.
+		assert.equal(elementalStrikeResisted('strike', true), true);
+		assert.equal(elementalStrikeResisted('grim', true), true);
+		//Kinetic/Projecting splashes pass their unresisted enchantment, the ConjuredBomb
+		//blast passes the (unresisted base) bomb - all three deal full damage.
+		assert.equal(elementalStrikeResisted('kinetic', true), false);
+		assert.equal(elementalStrikeResisted('projecting', true), false);
+		assert.equal(elementalStrikeResisted('bomb', true), false);
+		//Nothing is resisted without the immunity.
+		assert.equal(elementalStrikeResisted('strike', false), false);
+		assert.equal(elementalStrikeResisted('grim', false), false);
+	});
+
+	check('CombinedLethality tests only on a weapon-changed hero melee swing, executing at `0.4*points/3`', () => {
+		//`Char.java` 541-561: the tracker's weapon must differ from the attacking weapon
+		//(`!=` instance identity), the attacker must be the hero, and the attacking weapon
+		//a `MeleeWeapon`. The tracker detaches one-shot once the gate holds, whether or
+		//not the threshold fired. Bosses and minibosses are excluded outright.
+		const live = (over = {}) => combinedLethalityTest({
+			trackerTurns: 1, storedWeapon: 'sword:1', swingWeapon: 'axe:2',
+			isHeroMelee: true, targetIsAlly: false, targetIsBossOrMiniboss: false,
+			talentPoints: 3, predictedHp: 30, targetMaxHp: 100, ...over,
+		});
+		//Rank 3 is a 0.4 threshold: 30 of 100 executes, 40 of 100 does not (strict `<=`).
+		assert.deepEqual(live(), { tests: true, executes: true });
+		assert.deepEqual(live({ predictedHp: 40 }), { tests: true, executes: true });
+		assert.deepEqual(live({ predictedHp: 41 }), { tests: true, executes: false });
+		//Rank 1 is `0.4/3`: 13 of 100 executes, 14 does not.
+		assert.deepEqual(live({ talentPoints: 1, predictedHp: 13 }), { tests: true, executes: true });
+		assert.deepEqual(live({ talentPoints: 1, predictedHp: 14 }), { tests: true, executes: false });
+		//The arming gate: same weapon instance never tests, whatever the HP.
+		assert.deepEqual(live({ swingWeapon: 'sword:1', predictedHp: 1 }), { tests: false, executes: false });
+		//No live tracker, a throw instead of a melee swing, an ally, a boss, a
+		//miniboss, or a target the hit already killed: no test, or test without execute.
+		assert.deepEqual(live({ trackerTurns: 0, predictedHp: 1 }), { tests: false, executes: false });
+		assert.deepEqual(live({ isHeroMelee: false, predictedHp: 1 }), { tests: false, executes: false });
+		assert.deepEqual(live({ targetIsAlly: true, predictedHp: 1 }), { tests: true, executes: false });
+		assert.deepEqual(live({ targetIsBossOrMiniboss: true, predictedHp: 1 }), { tests: true, executes: false });
+		assert.deepEqual(live({ predictedHp: 0 }), { tests: true, executes: false });
 	});
 }

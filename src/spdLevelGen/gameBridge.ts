@@ -252,6 +252,10 @@ export interface PortedFloor {
 	/** Run-level Blacksmith.Quest.alternative, carried out of the generator for gameplay. */
 	blacksmithAlternative: boolean;
 	feeling: number | null;
+	/** `buildRoomGraph` attempts for this floor (Java's dump header reports the same count) -
+	 * surfaced for the section-9 parity triage: attempts > 1 means attempt 1's graph failed
+	 * to converge and the whole builder re-rolled, which dwarfs any single-draw difference. */
+	attempts?: number;
 	/** the untranslated grid, so callers can inspect what the mapping dropped */
 	paint: PaintLevel;
 }
@@ -262,7 +266,7 @@ interface RunCache {
 	seed: bigint;
 	/** `CavesBossLevel`'s arena water/trap scatter depends on the Stronger Bosses challenge. */
 	strongerBosses: boolean;
-	floors: Map<number, { paint: PaintLevel; rooms: Room[]; feeling: number | null }>;
+	floors: Map<number, { paint: PaintLevel; rooms: Room[]; feeling: number | null; attempts?: number }>;
 }
 
 let run: RunCache | null = null;
@@ -309,14 +313,14 @@ function generateFloor(seed: bigint, depth: number, strongerBosses: boolean) {
 	entranceRoomContext.branchSeed = floorSeed;
 	SpdRandom.pushGenerator(floorSeed);
 	try {
-		const { rooms, feeling } = buildRoomGraph(depth, seed);
+		const { rooms, feeling, attempts } = buildRoomGraph(depth, seed);
 		const paint = depth === 5 ? paintSewerBossLevel(rooms, depth)
 			: depth <= 5 ? paintSewerLevel(rooms, depth, feeling)
 			: depth <= 10 ? paintPrisonLevel(rooms, depth, feeling)
 			: depth <= 14 ? paintCavesLevel(rooms, depth, feeling)
 			: depth <= 19 ? paintCityLevel(rooms, depth, feeling)
 			: paintHallsLevel(rooms, depth, feeling);
-		return { paint, rooms, feeling };
+		return { paint, rooms, feeling, attempts };
 	} finally {
 		SpdRandom.popGenerator();
 	}
@@ -373,7 +377,7 @@ export function portedFloor(seed: bigint, depth: number, strongerBosses = false)
 		if (!run.floors.has(d)) run.floors.set(d, generateFloor(seed, d, strongerBosses));
 	}
 	const floor = run.floors.get(depth)!;
-	return extract(floor.paint, floor.rooms, floor.feeling);
+	return extract(floor.paint, floor.rooms, floor.feeling, floor.attempts);
 }
 
 /** Generates the Blacksmith branch without perturbing the main run-level floor cache. */
@@ -395,7 +399,7 @@ function roomLabel(room: Room): string {
 	return `${room.kind}:${room.standardKind ?? room.specialKind ?? room.secretKind ?? room.connectionKind ?? 'plain'}`;
 }
 
-function extract(paint: PaintLevel, rooms: Room[], feeling: number | null): PortedFloor {
+function extract(paint: PaintLevel, rooms: Room[], feeling: number | null, attempts?: number): PortedFloor {
 	const { w, h, map } = paint;
 	const terrain = new Uint8Array(w * h);
 	let entrance: { x: number; y: number } | null = null;
@@ -487,6 +491,7 @@ function extract(paint: PaintLevel, rooms: Room[], feeling: number | null): Port
 		blacksmithAlternative: blacksmithQuestUsesBlood(),
 		feeling,
 		paint,
+		...(attempts === undefined ? {} : { attempts }),
 	};
 }
 

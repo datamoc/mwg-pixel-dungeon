@@ -54,7 +54,7 @@ import { aimYogDeathGaze } from '../simulation/yogBoss';
 import { planMonsterPopulation } from '../simulation/levelPopulation';
 import { interactWithGhost as runGhostInteraction, interactWithImp as runImpInteraction, interactWithRatKing as runRatKingInteraction, interactWithWandmaker as runWandmakerInteraction } from '../actors/npcs';
 import { preparationBlinkDistance, preparationCanKo, preparationLevel } from '../simulation/preparation';
-import { confirmDisintegrationWand, useDisintegrationWand, type DisintegrationWandScene } from '../items/wands';
+import { confirmDisintegrationWand, livingEarthZapRange, useDisintegrationWand, type DisintegrationWandScene } from '../items/wands';
 import { stepTenguAbility, tenguAbilityCost } from '../simulation/tenguAbility';
 import { applyDefenderDamageCurves } from '../simulation/defenderDamageCurves';
 import {
@@ -183,7 +183,7 @@ import {
 import {
 	SPIRIT_HAWK_LIFESPAN, goForTheEyesEffect, spiritHawkDodges, spiritHawkSpeed, spiritHawkViewDistance,
 } from '../simulation/huntressAbilities';
-import { exposeWeaknessDuration, feignedRetreatHaste, combinedLethalityTest, closeTheGapRange, invigoratingVictoryHeal, elementalStrikeCone, elementalPowerMulti, directedPowerBoost, elementalBlockingShield, elementalVampiricHeal, elementalSacrificialSelf, elementalBlobAmount, elementalBloomingBudget, elementalFurrowStep, elementalBaseDamage, elementalKineticSplash, elementalRootsDuration, elementalKnockback, elementalLuckyChance, elementalProjectingSplash, elementalCorruptingChance, elementalGrimChance, elementalCurseChance, elementalAnnoyingChance, elementalSacrificialOther } from '../simulation/duelistAbilities';
+import { exposeWeaknessDuration, feignedRetreatHaste, combinedLethalityTest, closeTheGapRange, invigoratingVictoryHeal, elementalStrikeCone, elementalPowerMulti, directedPowerBoost, elementalBlockingShield, elementalVampiricHeal, elementalSacrificialSelf, elementalBlobAmount, elementalBloomingBudget, elementalFurrowStep, elementalBaseDamage, elementalKineticSplash, elementalRootsDuration, elementalKnockback, elementalLuckyChance, elementalProjectingSplash, elementalCorruptingChance, elementalGrimChance, elementalCurseChance, elementalAnnoyingChance, elementalSacrificialOther, elementalStrikeResisted, type ElementalStrikeDamageSource } from '../simulation/duelistAbilities';
 import { shadowCloneAccuracy, shadowCloneArmorShare, shadowCloneBladeShare, shadowCloneEvasion, shadowCloneHp } from '../simulation/rogueAbilities';
 import { CLASSES, CLASS_AMMO, HERO_IDLE_FRAME, type ClassId } from '../classes';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
@@ -572,6 +572,13 @@ const SUBCLASS_OPTIONS: Record<ClassId, readonly string[] | undefined> = {
 	rogue: ['assassin', 'freerunner'], huntress: ['sniper', 'warden'],
 	duelist: ['champion', 'monk_sub'], cleric: undefined,
 };
+/** `HeroClass.initHero()`'s real starting `belongings.weapon` class per class (tag `v3.3.8`),
+ * lowercased to match `WEAPON_NAME_BY_CLASS`'s own keys. Cleric has no real weapon system
+ * here yet (its "cudgel" is an invented port-only key with no `WEAPONS` table entry), so it
+ * stays unmapped - see `pickupWeapon`'s own comment for the fallback that gives it. */
+const STARTING_WEAPON_CLASS: Partial<Record<ClassId, string>> = {
+	warrior: 'wornshortsword', mage: 'magesstaff', rogue: 'dagger', huntress: 'gloves', duelist: 'rapier',
+};
 
 /**
  * The scheduler id the hero is saved under. Every other queued actor is a monster the floor state
@@ -905,7 +912,9 @@ interface SaveShape {
 	healingEvasionTurns?: number;
 	sungrassHealing?: number;
 	sungrassPartial?: number;
-	healingLeft?: number;
+ 	healingLeft?: number;
+ 	healingPercent?: number;
+ 	healingFlat?: number;
 	sungrassPos?: number;
 	deathlessFuryUsed?: boolean;
 	/** Timed Char buffs survive a save instead of silently clearing on reload. */
@@ -5041,14 +5050,23 @@ export class DungeonScene extends Scene2D {
 					this.syncHeroFromStats();
 					this.say(t('port.log.weaponupgraded', { level: this.weaponLevel, min: this.hero.damage[0], max: this.hero.damage[1] }), 'positive');
 				} else {
-					//`sourceClass` was never an `InventoryItem` field (the 0.14.0 and 0.15.0
-					//artifacts are identical here: `category`, no `sourceClass`) - it is
-					//port-owned data, so it rides the same cast the readers already use.
-					//Runtime shape unchanged, still saved via `bagSources` and read back
-					//with `as { sourceClass?: string }`.
-					const stashedWeapon = { id: 'weaponReward', quantity: 1, instanceId: this.newItemInstanceId('weapon'), identified: true, level: this.weaponLevel };
-					(stashedWeapon as { sourceClass?: string }).sourceClass = this.weaponId;
-					this.bag.add(stashedWeapon);
+					//Bugfix, live-verified: `this.weaponId` is the literal id `'startingWeapon'`
+					//until the hero equips a real class (same shape `openBlacksmithUpgrade`'s
+					//candidate list already relies on) - not a real weapon class name, and not a
+					//name `itemDisplayName` can resolve on its own either (the equipped-slot UI
+					//bypasses it entirely via `CLASSES[heroClass].weaponKey`). Stashing it as a
+					//bare id rendered as the literal string "startingWeapon"; using it as
+					//`weaponReward`'s `sourceClass` rendered the generic "quest weapon" fallback.
+					//`STARTING_WEAPON_CLASS`'s real Java class per `HeroClass.initHero()` (tag
+					//v3.3.8) fixes both: once resolved, this is the same shape the bones-loot
+					//weapon candidate already uses for a real (non-starting) class id. Cleric's
+					//"cudgel" is this port's own invented weapon key with no matching WEAPONS
+					//table entry (Cleric has no real weapon system here yet) - stays unmapped,
+					//falling back to the pre-existing generic "quest weapon" text rather than a
+					//broken literal id, the same fallback every other unmapped sourceClass gets.
+					const sourceClass = this.weaponId === 'startingWeapon' ? STARTING_WEAPON_CLASS[this.heroClass] : undefined;
+					const id = this.weaponId === 'startingWeapon' ? 'weaponReward' : this.weaponId;
+					this.bag.add({ id, quantity: 1, instanceId: this.newItemInstanceId('weapon'), identified: true, level: this.weaponLevel, ...(sourceClass ? { sourceClass } : {}) });
 					this.say(t('port.log.stashweapon'));
 				}
 			},
@@ -5721,8 +5739,9 @@ export class DungeonScene extends Scene2D {
 	 * aims at creatures, not cells, and an uncursed wand's own `collisionProperties` is `WONT_STOP`,
 	 * so Java's collision cell is the aimed one anyway); NPCs are excluded from the blast, as every
 	 * other area effect here does, where Java's `Actor.findChar` would catch a shopkeeper; the three
-	 * statuses use the port's shared buff durations (Burning 3 turns against Java's 8, Paralysis 3
-	 * against Java's 4, Cripple 4 either way - see the buff-durations row).
+	 * statuses use Java's own durations (Burning reignite 8, Cripple explicit 4, Paralysis
+	 * explicit 4 - see the buff-durations row; the port prolongs Cripple/Paralysis keep-max
+	 * where Java's `affect` spends (adds 4 onto the live clock), a stated divergence).
 	 */
 	private useFireblastWand(target: Creature, chargesPerCast: number): void {
 		useFireblastWandEffect({
@@ -5745,8 +5764,6 @@ export class DungeonScene extends Scene2D {
 			fadeMirrorOnDamage: (victim, damage) => this.fadeMirrorOnDamage(victim, damage),
 			showDamage: (victim, damage) => this.showDamage(victim, damage),
 			setColorAdd: (victim, red, green, blue) => this.sprite(victim).setColorAdd(red, green, blue),
-			refundWandCharge: (amount) => this.wandCharges.refund(amount),
-			isWarlock: () => this.subclass() === 'warlock',
 			kill: (victim) => this.kill(victim),
 			rollDamage: (min, max) => Random.normalRange(min, max),
 			addBuff: (victim, id) => addBuff(victim, id),
@@ -7276,7 +7293,7 @@ export class DungeonScene extends Scene2D {
 						: this.wandType === 'blastWave'
 							? Random.normalRange(...wandDamageRange('blastWave', this.effectiveZapLevel()))
 						: this.wandType === 'livingEarth'
-							? Random.normalRange(...wandDamageRange('livingEarth', this.effectiveZapLevel()))
+							? Random.normalRange(...livingEarthZapRange(this.depth))
 						: this.wandType === 'lightning'
 							? Random.normalRange(...wandDamageRange('lightning', this.effectiveZapLevel()))
 								: this.wandType === 'prismaticLight'
@@ -7288,7 +7305,6 @@ export class DungeonScene extends Scene2D {
 								: Random.normalRange(...wandDamageRange('magicMissile', this.effectiveZapLevel()));
 					const frostBlocked = this.wandType === 'frost' && victim.buffs['frost'] !== undefined;
 					let damage = Math.round(raw * lightningMultiplier)
-						+ (this.wandType === 'magicMissile' || this.wandType === 'frost' ? (this.subclass() === 'warlock' ? 2 : 0) : 0)
 						+ (victim === target ? enragedCatalystBonus(this.subclass(), this.talentRank('enraged_catalyst'), this.hero.hp, this.hero.maxHp) + this.wandBonusDamage : 0);
 					if (this.wandType === 'lightning' && victim === this.hero) damage = Math.round(damage * 0.5);
 					if (this.wandType === 'frost') {
@@ -7395,7 +7411,6 @@ export class DungeonScene extends Scene2D {
 					if (this.wandType === 'corrosion') this.say(t('port.log.wandcorrosion', { target: victim.name }), 'positive');
 					else if (this.wandType === 'corruption') this.say(t('port.log.wandcorruption', { target: victim.name }), 'positive');
 					else this.say(t('port.log.wandhits', { target: victim.name, damage }), 'positive');
-					if (this.subclass() === 'warlock') this.wandCharges.refund(1);
 					if (victim.hp <= 0 && !victim.isAlly) this.kill(victim);
 				}
 				}
@@ -8313,25 +8328,31 @@ export class DungeonScene extends Scene2D {
 					this.blockingTurnsLeft--;
 					if (this.blockingTurnsLeft <= 0) this.blockingBarrier.clear();
 				}
-				if (this.sungrassHealing > 0) {
-					const heroCell = this.level.index(this.hero.x, this.hero.y);
-					if (heroCell !== this.sungrassPos) {
-						this.sungrassHealing = 0;
-						this.sungrassPartial = 0;
-						this.sungrassPos = -1;
-					} else {
-						this.sungrassPartial += (40 + this.hero.maxHp) / 150;
-						const healed = Math.min(this.sungrassHealing, Math.floor(this.sungrassPartial));
-						if (healed > 0) {
-							this.sungrassHealing -= healed;
-							this.sungrassPartial -= healed;
-							const before = this.hero.hp;
-							this.hero.hp = Math.min(this.hero.maxHp, this.hero.hp + healed);
-							if (this.hero.hp > before) this.showHeal(this.hero, this.hero.hp - before);
-						}
-						if (this.sungrassHealing <= 0) this.sungrassPos = -1;
-					}
-				}
+ 				//`Sungrass.Health.act()` for the hero: the same shared tick the mob half runs
+ 				//(`simulation/plantPools.ts`'s `tickSungrassHealth`) - additive-HT pool, strict
+ 				//`> 1` payout gate, the pool draining by the whole tick even at full HP, and no
+ 				//parting tick on leaving the cell. The gate is the buff's existence (an anchored
+ 				//grant cell), not a positive pool: a pool banked at full HP has nothing owed yet
+ 				//but is still live for later damage on the same cell.
+ 				if (this.sungrassPos >= 0) {
+ 					const heroCell = this.level.index(this.hero.x, this.hero.y);
+ 					const ticked = tickSungrassHealth(
+ 						{ level: this.sungrassHealing, partial: this.sungrassPartial },
+ 						this.hero.maxHp, this.hero.maxHp - this.hero.hp, heroCell !== this.sungrassPos);
+ 					if (ticked.pool === null) {
+ 						this.sungrassHealing = 0;
+ 						this.sungrassPartial = 0;
+ 						this.sungrassPos = -1;
+ 					} else {
+ 						this.sungrassHealing = ticked.pool.level;
+ 						this.sungrassPartial = ticked.pool.partial;
+ 						if (ticked.healed > 0) {
+ 							const before = this.hero.hp;
+ 							this.hero.hp = Math.min(this.hero.maxHp, this.hero.hp + ticked.healed);
+ 							if (this.hero.hp > before) this.showHeal(this.hero, this.hero.hp - before);
+ 						}
+ 					}
+ 				}
 				//Healing.act()/healingThisTick(): PotionOfHealing is a heal-over-time, not an
 				//instant full heal - 25% of whatever's left per turn (floored at 1, capped at
 				//what's left), fully replacing the port's former "quaff = instantly full HP"
@@ -8591,12 +8612,12 @@ export class DungeonScene extends Scene2D {
 		else if (plan.kind === 'door') this.bumpDoor(target.x, target.y);
 		else if (plan.kind === 'rooted') this.say(t('actors.buffs.roots.heromsg'), 'negative');
 		else if (plan.kind === 'move') {
-			this.moveTo(this.hero, target);
-			if (this.sungrassHealing > 0 && this.level.index(target.x, target.y) !== this.sungrassPos) {
-				this.sungrassHealing = 0;
-				this.sungrassPartial = 0;
-				this.sungrassPos = -1;
-			}
+ 			this.moveTo(this.hero, target);
+ 			if (this.sungrassPos >= 0 && this.level.index(target.x, target.y) !== this.sungrassPos) {
+ 				this.sungrassHealing = 0;
+ 				this.sungrassPartial = 0;
+ 				this.sungrassPos = -1;
+ 			}
 			this.projectileMomentumReady = this.subclass() === 'freerunner' && this.talentRank('projectile_momentum') > 0;
 			this.trampleHighGrass(target.x, target.y);
 			const targetCell = this.level.index(target.x, target.y);
@@ -8666,12 +8687,12 @@ export class DungeonScene extends Scene2D {
 			}
 			this.say(t('port.log.wellreveals'), 'positive');
 		} else {
-			const healed = this.hero.maxHp - this.hero.hp;
-			this.hero.hp = this.hero.maxHp;
-			//PotionOfHealing.cure(): clears Poison/Cripple/Weakness/Vulnerable/Bleeding/Blindness/
-			//Drowsy/Slow/Vertigo - notably not Burning, which the previous list here wrongly
-			//cleared too (no Java basis; a lit hero stays lit through a health well).
-			for (const buff of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'roots', 'drowsy'] as BuffId[]) delete this.hero.buffs[buff];
+ 			const healed = this.hero.maxHp - this.hero.hp;
+ 			this.hero.hp = this.hero.maxHp;
+ 			//`WaterOfHealth.affectHero()` runs `PotionOfHealing.cure(hero)` first - the shared
+ 			//helper, which is also what fixed the two old deviations here (clearing Burning,
+ 			//which Java never cures, and clearing Roots, which `cure()` never detaches).
+ 			this.cureHeroBuffs();
 			//Belongings.uncurseEquipped(): clears a known curse from the equipped weapon/armor/ring,
 			//the same three-slot clear ScrollOfRemoveCurse's branch above already uses.
 			if (getCurse(this.weaponAffix ?? '')) this.weaponAffix = null;
@@ -8761,21 +8782,40 @@ export class DungeonScene extends Scene2D {
 		if (index >= 0) this.portedPaint!.plants.splice(index, 1);
 		this.manualPlants.delete(cell);
 
-		switch (kind) {
-			case 'sungrass':
-				this.sungrassHealing = Math.max(0, this.hero.maxHp - this.hero.hp);
-				this.sungrassPartial = 0;
-				this.sungrassPos = cell;
-				this.say(t('port.log.sungrassheal'), 'positive');
-				break;
+ 		switch (kind) {
+ 			case 'sungrass':
+ 				if (this.subclass() === 'warden') {
+ 					//`Sungrass.activate(ch)`: a Warden gets `Healing.setHeal(HT, 0, 1)` instead
+ 					//of the Health pool - a flat 1 HP per turn until HT is owed out, combined
+ 					//property-wise with any in-progress potion heal exactly like `setHeal`.
+ 					if (this.hero.maxHp > this.healingLeft) this.healingLeft = this.hero.maxHp;
+ 					this.healingFlat = Math.max(this.healingFlat, 1);
+ 				} else {
+ 					//`Buff.affect(ch, Health.class).boost(ch.HT)`: an *additive* full-HT pool,
+ 					//not the missing-HP snapshot this used to grant - stepping on sungrass at
+ 					//full HP banks the whole pool for later damage, and re-triggering while a
+ 					//pool is active adds rather than overwrites. Same math as the mob half.
+ 					const granted = grantSungrassHealth(
+ 						this.sungrassPos >= 0
+ 							? { level: this.sungrassHealing, partial: this.sungrassPartial }
+ 							: undefined,
+ 						this.hero.maxHp);
+ 					this.sungrassHealing = granted.level;
+ 					this.sungrassPartial = granted.partial;
+ 					this.sungrassPos = cell;
+ 				}
+ 				this.say(t('port.log.sungrassheal'), 'positive');
+ 				break;
 			case 'blandfruit':
 			case 'blandfruitbush':
 				this.spawnGroundItem('food', x, y);
 				this.say(t('port.log.plantfruit'), 'positive');
 				break;
-			case 'starflower':
-				addBuff(this.hero, 'bless');
-				if (this.subclass() === 'warden') addBuff(this.hero, 'recharging');
+ 			case 'starflower':
+ 				//`Starflower.activate(ch)`: `prolong` (keep-max) `Bless.DURATION` for anyone,
+ 				//plus `Recharging.DURATION` for a Warden - both whole-table values.
+ 				reigniteBuff(this.hero, 'bless');
+ 				if (this.subclass() === 'warden') reigniteBuff(this.hero, 'recharging');
 				this.say(t('port.log.starflowerconfidence'), 'positive');
 				break;
 			case 'dewcatcher':
@@ -8795,9 +8835,15 @@ export class DungeonScene extends Scene2D {
 				//unmodelled, as it was before.
 				this.earthrootArmor = { level: this.hero.maxHp, pos: cell };
 				break;
-			case 'blindweed':
-				if (this.subclass() === 'warden') addBuff(this.hero, 'invisibility');
-				else { addBuff(this.hero, 'daze'); addBuff(this.hero, 'cripple'); }
+ 			case 'blindweed':
+ 				//`Blindweed.activate(ch)`: a Warden gets `Invisibility.DURATION/2` (10, not the
+ 				//table's whole 20); everyone else gets `Blindness` + `Cripple`, both prolonged
+ 				//the whole `DURATION` (10 each - the table's cripple is exact now). Blindness
+ 				//itself arrives as the port's `daze` stand-in: the `blindness` id exists but is
+ 				//inert for the hero (no hero-FOV-emptying seam), so a faithful-but-silent buff
+ 				//would be worse than a felt one - see the matrix for the standing seam.
+ 				if (this.subclass() === 'warden') addBuff(this.hero, 'invisibility', 10);
+ 				else { addBuff(this.hero, 'daze'); reigniteBuff(this.hero, 'cripple'); }
 				this.say(this.subclass() === 'warden' ? 'The blindweed shrouds you from sight.' : 'The blindweed clouds your senses.', this.subclass() === 'warden' ? 'positive' : 'negative');
 				break;
 			case 'fadeleaf': {
@@ -8810,62 +8856,97 @@ export class DungeonScene extends Scene2D {
 				//tracker); a *Warden* with inter-floor
 				//teleporting allowed is sent one depth back instead of moving within the level - a
 				//floor-return transition this port does not have.
-				delete this.hero.buffs['roots'];
-				const fadeDestination = this.randomFreeCell(this.hero);
-				if (fadeDestination) {
-					const fadeFrom = { x: this.hero.x, y: this.hero.y };
+ 			delete this.hero.buffs['roots'];
+ 			const fadeDestination = this.randomFreeCell(this.hero);
+ 			if (fadeDestination) {
+ 				//`Fadeleaf.activate(ch)`: `((Hero)ch).curAction = null` - a teleport cancels
+ 				//whatever the hero was doing, including a queued click-to-travel destination.
+ 				this.travelTarget = null;
+ 				const fadeFrom = { x: this.hero.x, y: this.hero.y };
 					this.moveTo(this.hero, fadeDestination);
 					this.playTeleportAppear(fadeFrom, fadeDestination, this.hero);
 				}
 				this.say(t('port.log.fadeleafteleport'), 'positive');
 				break;
 			}
-			case 'mageroyal':
-				for (const buff of ['poison', 'burning', 'weakness', 'vulnerable', 'cripple', 'daze'] as BuffId[]) delete this.hero.buffs[buff];
+ 			case 'mageroyal':
+ 				//`Mageroyal.activate(ch)`: the whole effect is `PotionOfHealing.cure(ch)` - the
+ 				//same nine-buff detach the potion, the well and the ankh share, so it runs the
+ 				//shared helper rather than its own list (which wrongly cleared Burning, which
+ 				//Java never cures, and missed Bleeding/Blindness/Drowsy, which it does). The
+ 				//Warden's `BlobImmunity.DURATION/2f` needs a hero-side blob-immunity seam that
+ 				//does not exist yet - recorded in the matrix, not silently dropped.
+ 				this.cureHeroBuffs();
 				this.say(t('port.log.mageroyalclear'), 'positive');
 				break;
-			case 'icecap':
-				this.plantFreeze.seed(x, y, 2);
-				if (this.subclass() === 'warden') {
-					addBuff(this.hero, 'frostImbue');
-					this.say(t('port.log.icecapfrost'), 'positive');
-				} else {
-					addBuff(this.hero, 'paralysis');
-					this.say(t('port.log.icecapfreeze'), 'negative');
-				}
+ 			case 'icecap':
+ 				//`Icecap.activate(ch)`: NO direct status at all - Java seeds `Freezing` on every
+ 				//non-solid NEIGHBOURS9 cell (the `passable` test is this port's standing
+ 				//non-solid convention, same as ShockingTrap's) and marks every mob in the 3x3.
+ 				//The chill-then-Frost itself arrives through the shared `plantFreeze` blob the
+ 				//way every other Freezing source works here, so the direct paralysis this used
+ 				//to grant is gone. A Warden additionally gets `FrostImbue.DURATION*0.3f` (15).
+ 				for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
+ 					const nx = x + dx, ny = y + dy;
+ 					if (this.level.passable(nx, ny)) this.plantFreeze.seed(nx, ny, 2);
+ 				}
+ 				this.markHazardArea(x, y);
+ 				if (this.subclass() === 'warden') {
+ 					addBuff(this.hero, 'frostImbue');
+ 					this.say(t('port.log.icecapfrost'), 'positive');
+ 				} else {
+ 					this.say(t('port.log.icecapfreeze'), 'negative');
+ 				}
 				break;
-			case 'rotberry':
-				if (this.subclass() === 'warden') {
-					addBuff(this.hero, 'adrenalineSurge');
-					this.syncHeroFromStats();
-					this.say(t('port.log.rotberryadrenaline'), 'positive');
-				} else {
-					this.plantGas.seed(x, y, 100);
-					addBuff(this.hero, 'poison');
-					this.say(t('port.log.rotberrygas'), 'negative');
-				}
-				break;
-			case 'sorrowmoss':
-				addBuff(this.hero, 'poison');
-				this.hero.buffs.poison = 5 + Math.round(2 * this.depth / 3);
+ 			case 'rotberry':
+ 				if (this.subclass() === 'warden') {
+ 					addBuff(this.hero, 'adrenalineSurge');
+ 					this.syncHeroFromStats();
+ 					this.say(t('port.log.rotberryadrenaline'), 'positive');
+ 				} else {
+ 					//`Rotberry.activate(ch)`: the non-Warden half is the ToxicGas seed alone -
+ 					//Java applies no direct poison (the gas poisons whoever stands in it, hero
+ 					//included, through the shared blob path). The extra direct poison this used
+ 					//to grant double-dipped on top of the gas.
+ 					this.plantGas.seed(x, y, 100);
+ 					this.say(t('port.log.rotberrygas'), 'negative');
+ 				}
+ 				break;
+ 			case 'sorrowmoss':
+ 				//`Sorrowmoss.activate(ch)`: `affect(...).set(5 + round(2*scalingDepth/3))` - an
+ 				//unconditional set through the one shared applier, so immunities still refuse
+ 				//it (the old add-then-overwrite forced the buff past the immunity gate).
+ 				addBuff(this.hero, 'poison', 5 + Math.round(2 * this.depth / 3));
 				this.say(t('port.log.sorrowmosspoison'), 'negative');
 				break;
-			case 'firebloom':
-				// Firebloom seeds Java's Fire blob at its cell. Warden FireImbue has no
-				// matching attack-status subsystem yet, but the area consequence is live.
-				this.fire.seed(x, y, 2);
+ 			case 'firebloom':
+ 				// Firebloom seeds Java's Fire blob at its cell. A Warden additionally gets
+ 				// `FireImbue.DURATION*0.3f` (15) - the frost-imbue pair: `proc()` reignites
+ 				// Burning on a 1-in-2, the holder is immune to Burning, and attaching
+ 				// detaches it. Only mobs are marked (Java marks `instanceof Mob`).
+ 				if (this.subclass() === 'warden') {
+ 					delete this.hero.buffs['burning'];
+ 					addBuff(this.hero, 'fireImbue');
+ 				}
+ 				this.fire.seed(x, y, 2);
 				this.say(t('port.log.firebloomignite'), 'negative');
 				break;
-			case 'stormvine':
-				if (this.subclass() === 'warden') addBuff(this.hero, 'levitation');
-				else addBuff(this.hero, 'daze');
+ 			case 'stormvine':
+ 				//`Stormvine.activate(ch)`: a Warden gets `Levitation.DURATION/2` (10, not the
+ 				//table's whole 20); everyone else gets `Vertigo.DURATION` (10) of Vertigo,
+ 				//which arrives as the port's `daze` stand-in at its exact table 5 the way the
+ 				//confusion-gas row already documents.
+ 				if (this.subclass() === 'warden') addBuff(this.hero, 'levitation', 10);
+ 				else addBuff(this.hero, 'daze');
 				this.say(t('port.log.stormvinetwist'), 'negative');
 				break;
-			case 'swiftthistle':
-				// Swiftthistle.TimeBubble freezes other actors for seven hero-time units.
-				// Count those units at the automatic-actor boundary instead of granting a
-				// free hero action, which would incorrectly skip hunger and buffs.
-				this.timeBubbleTurns = 7;
+ 			case 'swiftthistle':
+ 				// Swiftthistle.TimeBubble freezes other actors for seven hero-time units.
+ 				// Count those units at the automatic-actor boundary instead of granting a
+ 				// free hero action, which would incorrectly skip hunger and buffs. A Warden
+ 				// additionally gets `Haste` for 1 turn (`Buff.affect(ch, Haste.class, 1f)`).
+ 				this.timeBubbleTurns = 7;
+ 				if (this.subclass() === 'warden') addBuff(this.hero, 'haste', 1);
 				this.say(t('port.log.swiftthistletime'), 'positive');
 				break;
 			default:
@@ -8895,9 +8976,10 @@ export class DungeonScene extends Scene2D {
 		reigniteBuff(creature, 'hazardAssist');
 	}
 	
-	/** The area half of `markHazardMob`, for traps whose Java `activate()` loops
-	 * `PathFinder.NEIGHBOURS9` (gas, burning, explosive, shocking). StormTrap marks its
-	 * distance-2 flood cell-by-cell instead, Grim/PoisonDart only their aimed target. */
+ 	/** The area half of `markHazardMob`, for Java `activate()`s that loop
+ 	 * `PathFinder.NEIGHBOURS9` and mark every mob in it: the gas/burning/explosive/
+ 	 * shocking traps - and `Icecap`, whose 3x3 Freezing marks the same way. StormTrap marks its
+ 	 * distance-2 flood cell-by-cell instead, Grim/PoisonDart only their aimed target. */
 	private markHazardArea(x: number, y: number): void {
 		for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
 			const target = this.creatureAt(x + dx, y + dy);
@@ -8938,10 +9020,13 @@ export class DungeonScene extends Scene2D {
 		//The remaining branches are the non-hero half of each Plant.activate(Char). Java's
 		//special Warden variants are hero-only; ordinary monsters receive the base effect.
 		switch (kind) {
-			case 'blindweed':
-				addBuff(creature, 'daze');
-				addBuff(creature, 'cripple');
-				creature.seesHero = false;
+ 		case 'blindweed':
+ 				addBuff(creature, 'daze');
+ 				//`Blindweed.activate(ch)`: `prolong` (keep-max) `Blindness.DURATION` and
+ 				//`Cripple.DURATION` - both whole 10s. Blindness itself arrives as the `daze`
+ 				//stand-in (see the hero branch); the cripple keeps Java's prolong shape.
+ 				reigniteBuff(creature, 'cripple');
+ 				creature.seesHero = false;
 				creature.patrolTarget = this.randomPatrolDestination(creature);
 			this.markHazardMob(creature);
 				break;
@@ -8952,24 +9037,36 @@ export class DungeonScene extends Scene2D {
 			case 'rotberry':
 				this.plantGas.seed(creature.x, creature.y, 100);
 				break;
-			case 'starflower':
-				addBuff(creature, 'bless');
-				break;
-			case 'sorrowmoss':
-				//Same max-duration shape through the shared gate: INORGANIC kinds refuse it.
-				reigniteBuff(creature, 'poison', 5 + Math.round(2 * this.depth / 3));
+ 			case 'starflower':
+ 				//`Starflower.activate(ch)`: `prolong` (keep-max) `Bless.DURATION` for any char.
+ 				reigniteBuff(creature, 'bless');
+ 				break;
+ 			case 'sorrowmoss':
+ 				//`Sorrowmoss.activate(ch)`: `affect(...).set(...)` - an unconditional SET of
+ 				//`5 + round(2*scalingDepth/3)`, NOT a prolong: re-stepping while poisoned
+ 				//shortens a longer clock where the old prolong kept it. (`scalingDepth` is
+ 				//`depth` here - no AscensionChallenge exists to raise it to 26.)
+ 				addBuff(creature, 'poison', 5 + Math.round(2 * this.depth / 3));
 			this.markHazardMob(creature);
 				break;
 			case 'stormvine':
 				addBuff(creature, 'daze');
 				this.markHazardMob(creature);
 				break;
-			case 'icecap':
-				this.plantFreeze.seed(creature.x, creature.y, 2);
-			this.markHazardMob(creature);
-				break;
+ 			case 'icecap':
+ 				//Same char-agnostic `Icecap.activate(ch)` as the hero half above: Freezing on
+ 				//every passable NEIGHBOURS9 cell plus the 3x3 mob marking - no direct status.
+ 				for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
+ 					const nx = creature.x + dx, ny = creature.y + dy;
+ 					if (this.level.passable(nx, ny)) this.plantFreeze.seed(nx, ny, 2);
+ 				}
+ 				this.markHazardArea(creature.x, creature.y);
+ 				break;
 			case 'mageroyal':
-				for (const buff of ['poison', 'burning', 'weakness', 'vulnerable', 'cripple', 'daze'] as BuffId[]) delete creature.buffs[buff];
+				//Same `PotionOfHealing.cure(ch)` as the hero half above: detach Poison/
+				//Cripple/Weakness/Vulnerable/Bleeding/Blindness/Drowsy, never Burning -
+				//the old list wrongly cleared Burning and missed the other three.
+				for (const buff of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'drowsy', 'blindness'] as BuffId[]) delete creature.buffs[buff];
 				break;
 			case 'sungrass': {
 				//`Sungrass.activate(ch)` for a non-Warden char: `Buff.affect(ch, Health.class)
@@ -9114,9 +9211,10 @@ export class DungeonScene extends Scene2D {
 	private landFromChasm(): void {
 		if (this.hero.hp <= 0) return;
 		if (this.consumeFeatherFall()) return;
-		//`Chasm.java` 143: the shake comes first, before the Cripple and the damage.
-		this.shakeScreen(4, 1);
-		addBuff(this.hero, 'cripple');
+ 		//`Chasm.java` 143: the shake comes first, before the Cripple and the damage.
+ 		this.shakeScreen(4, 1);
+ 		//`Buff.prolong(hero, Cripple.class, Cripple.DURATION)`: keep-max whole 10.
+ 		reigniteBuff(this.hero, 'cripple');
 		setBleeding(this.hero, Math.round(this.hero.maxHp / (6 + 6 * (this.hero.hp / this.hero.maxHp))));
 		const damage = this.absorbHeroDamage(Math.max(Math.floor(this.hero.hp / 2), Random.normalRange(Math.floor(this.hero.hp / 2), Math.floor(this.hero.maxHp / 4))));
 		this.hero.hp -= damage;
@@ -11142,10 +11240,12 @@ private eyeBeamTurn(monster: Creature): boolean {
 		const dx = Math.sign(this.hero.x - guard.x);
 		const dy = Math.sign(this.hero.y - guard.y);
 		const at = { x: this.hero.x - dx, y: this.hero.y - dy };
-		if ((dx !== 0 || dy !== 0) && this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y)) {
-			this.moveTo(this.hero, at);
-		}
-		addBuff(this.hero, 'cripple');
+ 			if ((dx !== 0 || dy !== 0) && this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y)) {
+ 				this.moveTo(this.hero, at);
+ 			}
+ 			//`Guard.pullEnemy`: `Cripple.prolong(enemy, Cripple.class, 4f)` - an explicit 4,
+		//not the table's whole 10, keep-max exactly like Java's `prolong`.
+			reigniteBuff(this.hero, 'cripple', 4);
 		this.say(t('port.log.chain'), 'negative');
 	}
 
@@ -13768,11 +13868,18 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.teleportFistAway(defender);
 		}
 		if (defender.kind === 'yog' && defender.hp > 0) this.yogDamageHook(defender, preHp);
-		// FrostImbue.proc(): a surviving enemy hit receives Chill for two turns. The compact
-		// status model uses the same short-duration movement/turn lock as the closest Chill hook.
-		if (attacker === this.hero && this.hero.buffs['frostImbue'] && defender.hp > 0 && !defender.isHero && !defender.isNPC) {
-			defender.buffs['cripple'] = 2;
-		}
+ 		// FrostImbue.proc(): a surviving enemy hit receives Chill for two turns. The compact
+ 		// status model uses the same short-duration movement/turn lock as the closest Chill hook.
+ 		if (attacker === this.hero && this.hero.buffs['frostImbue'] && defender.hp > 0 && !defender.isHero && !defender.isNPC) {
+ 			defender.buffs['cripple'] = 2;
+ 		}
+ 		//`FireImbue.proc()` (`actors/buffs/FireImbue.java`, tag `v3.3.8`): a surviving enemy
+ 		//hit reignites Burning on a 1-in-2 (`Buff.affect(enemy, Burning.class).reignite(enemy)`
+ 		//- prolong, never a fresh overwrite - routed through the shared gate like every
+ 		//other fire source, so the holder-immunity and kind refusals still apply).
+ 		if (attacker === this.hero && this.hero.buffs['fireImbue'] && defender.hp > 0 && !defender.isHero && !defender.isNPC) {
+ 			if (Random.int(2) === 0) reigniteBuff(defender, 'burning');
+ 		}
 		//Statue.damage() (Statue.java, tag v3.3.8): any damage flips PASSIVE to HUNTING.
 		//ArmoredStatue inherits it unchanged, so both kinds wake here - previously only
 		//`statue` did, leaving a struck armored statue asleep forever.
@@ -14490,10 +14597,12 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//the primitive; Bright/Dark Blindness/Light are not, while Rusted's own deferred damage
 		//is handled at the damage boundary (`deferMonsterDamage`).
 		if (attacker.kind === 'yogFist' && defender.isHero) {
-			switch (attacker.yogFistType) {
-				case 'burning': addBuff(defender, 'burning'); break;
-				case 'rotting': if (Random.chance(0.5)) addBuff(defender, 'ooze'); break;
-				case 'rusted': addBuff(defender, 'cripple'); break;
+ 			switch (attacker.yogFistType) {
+ 				case 'burning': addBuff(defender, 'burning'); break;
+ 				case 'rotting': if (Random.chance(0.5)) addBuff(defender, 'ooze'); break;
+ 				//`RustedFist.zap()`: `affect(enemy, Cripple.class, 4f)` - an explicit 4,
+ 				//not the table's whole 10, set (not prolonged) exactly like Java's `affect`.
+ 				case 'rusted': addBuff(defender, 'cripple', 4); break;
 				case 'soiled': addBuff(defender, 'roots'); break;
 				case 'bright': addBuff(defender, 'daze'); break;
 				case 'dark': addBuff(defender, 'daze'); break;
@@ -14602,14 +14711,17 @@ private eyeBeamTurn(monster: Creature): boolean {
 		}
 		if ((attacker.kind === 'thief' || attacker.kind === 'bandit') && !attacker.stolen && defender.isHero) {
 			this.thiefSteal(attacker);
-			if (attacker.kind === 'bandit' && attacker.stolen) {
-				// Bandit.java adds blindness, poison and cripple to a successful steal. The
-				// framework buff set has no blindness id, so daze is the blindness stand-in;
-				// poison and cripple are direct status equivalents.
-				addBuff(defender, 'poison');
-				addBuff(defender, 'cripple');
-				addBuff(defender, 'daze');
-			}
+ 			if (attacker.kind === 'bandit' && attacker.stolen) {
+ 				//`Bandit.java` on a successful steal: `prolong(hero, Blindness, DURATION/2)`
+ 				//(5), `affect(hero, Poison).set(IntRange(5, 6))` (a 5-or-6 overwrite, even
+ 				//shortening), and `prolong(hero, Cripple, DURATION/2)` (keep-max 5). Blindness
+ 				//itself arrives as the port's `daze` stand-in: the `blindness` id exists but
+ 				//is inert for the hero (no hero-FOV-emptying seam), so a faithful-but-silent
+ 				//buff would be worse than a felt one - see the blindweed branch.
+ 				addBuff(defender, 'poison', 5 + Random.int(2));
+ 				reigniteBuff(defender, 'cripple', 5);
+ 				addBuff(defender, 'daze');
+ 			}
 		}
 		//The three weapon curses this file used to resolve here (explosive/dazzling/annoying) now
 		//live in `heroOnHit`, where the attacker is the weapon's own wielder - see the note there.
@@ -14696,10 +14808,11 @@ private eyeBeamTurn(monster: Creature): boolean {
 				}
 			}
 		}
-		//Scorpio: 50% cripple on a hit. Acidic's own attackProc() calls super.attackProc() after
-		//adding its Ooze proc, so it still applies this too - previously excluded here.
-		if ((attacker.kind === 'scorpio' || attacker.kind === 'acidic') && Random.chance(0.5)) {
-			addBuff(defender, 'cripple');
+ 		//Scorpio: 50% cripple on a hit. Acidic's own attackProc() calls super.attackProc() after
+ 		//adding its Ooze proc, so it still applies this too - previously excluded here.
+ 		//`Buff.prolong(enemy, Cripple.class, Cripple.DURATION)`: keep-max whole 10.
+ 		if ((attacker.kind === 'scorpio' || attacker.kind === 'acidic') && Random.chance(0.5)) {
+ 			reigniteBuff(defender, 'cripple');
 			this.say(t('port.log.cripple'), 'negative');
 		}
 		//`Thorns.proc()` (tag v3.3.8): an Arcana-scaled `(level+2)/(level+12)` chance - 16.7% at level
@@ -15442,7 +15555,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 				this.spreadFistGrass(target, () => Random.int(5) === 0);
 				break;
 			case 'rotting': this.toxicGas.seed(target.x, target.y, 100); break;
-			case 'rusted': addBuff(target, 'cripple'); break;
+ 			case 'rusted': addBuff(target, 'cripple', 4); break;
 			case 'bright': addBuff(target, 'daze'); break;
 			case 'dark': addBuff(target, 'daze'); break;
 		}
@@ -15951,7 +16064,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 			healingEvasionTurns: this.healingEvasionTurns,
 			sungrassHealing: this.sungrassHealing,
 			sungrassPartial: this.sungrassPartial,
-			healingLeft: this.healingLeft,
+ 			healingLeft: this.healingLeft,
+ 			healingPercent: this.healingPercent,
+ 			healingFlat: this.healingFlat,
 			sungrassPos: this.sungrassPos,
 			deathlessFuryUsed: this.deathlessFuryUsed,
 			alchemyEnergy: this.alchemyEnergy,
@@ -16066,7 +16181,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.sungrassHealing = s.sungrassHealing ?? 0;
 		this.sungrassPartial = s.sungrassPartial ?? 0;
 		this.healingLeft = s.healingLeft ?? 0;
-		this.healingPercent = s.healingPercent ?? 0;
+		//Pre-`healingPercent` saves with an active heal were always on the potion's 25%.
+		this.healingPercent = s.healingPercent ?? (this.healingLeft > 0 ? 0.25 : 0);
 		this.healingFlat = s.healingFlat ?? 0;
 		this.sungrassPos = s.sungrassPos ?? -1;
 		this.deathlessFuryUsed = s.deathlessFuryUsed ?? false;
@@ -17300,10 +17416,11 @@ private eyeBeamTurn(monster: Creature): boolean {
 			plantBloomingGrass: (x, y) => this.plantBloomingGrass(x, y),
 			cureHeroBuffs: () => this.cureHeroBuffs(),
 			noHealing: isChallengeEnabled('no_healing'),
-			healHeroFromRegrowth: () => {
-				const amount = Math.round(0.8 * this.hero.maxHp + 14);
-				if (amount > this.healingLeft) this.healingLeft = amount;
-			},
+ 			healHeroFromRegrowth: () => {
+ 				const amount = Math.round(0.8 * this.hero.maxHp + 14);
+ 				if (amount > this.healingLeft) this.healingLeft = amount;
+ 				this.healingPercent = Math.max(this.healingPercent, 0.25);
+ 			},
 			onBombDeath: () => this.say(t('items.bombs.bomb.ondeath'), 'negative'),
 			onPharmacophobia: () => this.say(t('port.log.pharmacophobia'), 'negative'),
 			absorbHeroDamage: (amount) => this.absorbHeroDamage(amount),
@@ -17560,10 +17677,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 			&& (item as typeof item & { blessed?: boolean }).blessed && (item.quantity ?? 0) > 0);
 		if (!ankh) return false;
 		this.bag.remove('ankh', 1, ankh.instanceId);
-		this.hero.hp = Math.floor(this.hero.maxHp / 4);
-		//`PotionOfHealing.cure()`: poison/cripple/weakness/vulnerable/bleeding/blindness/drowsy
-		//(plus slow/vertigo, which have no model here) - notably not burning, same as Java.
-		for (const id of ['poison', 'cripple', 'weakness', 'vulnerable', 'bleeding', 'blindness', 'drowsy'] as const) delete this.hero.buffs[id];
+ 		this.hero.hp = Math.floor(this.hero.maxHp / 4);
+ 		//`PotionOfHealing.cure()`'s modelled set, shared with the potion, the well and Mageroyal.
+ 		this.cureHeroBuffs();
 		addBuff(this.hero, 'invulnerability');
 		this.say(t('actors.hero.hero.revive'), 'positive');
 		return true;
@@ -19995,11 +20111,11 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//Per-char pass over every non-ally caught in the cone.
 		const affected = this.creatures.filter(foeInCone);
 		if (ench === null || ench === undefined) {
-			for (const ch of affected) this.applyAbilityDamage(ch, elementalBaseDamage(powerMulti, Random.normalRange(6, 12)));
+			for (const ch of affected) this.applyAbilityDamage(ch, elementalBaseDamage(powerMulti, Random.normalRange(6, 12)), 'strike');
 		} else if (ench === 'kinetic') {
 			if (storedKinetic > 0) {
 				for (const ch of affected) {
-					if (ch !== primary) this.applyAbilityDamage(ch, elementalKineticSplash(storedKinetic, powerMulti));
+					if (ch !== primary) this.applyAbilityDamage(ch, elementalKineticSplash(storedKinetic, powerMulti), 'kinetic');
 				}
 			}
 			//Java only clears the conserved damage when there was no primary target (the
@@ -20039,7 +20155,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			}
 		} else if (ench === 'projecting') {
 			for (const ch of affected) {
-				if (ch !== primary) this.applyAbilityDamage(ch, elementalProjectingSplash(this.heroWeaponRoll(), powerMulti));
+				if (ch !== primary) this.applyAbilityDamage(ch, elementalProjectingSplash(this.heroWeaponRoll(), powerMulti), 'projecting');
 			}
 		} else if (ench === 'unstable') {
 			for (const ch of affected) {
@@ -20073,7 +20189,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			for (const ch of affected) {
 				if (ch === primary) continue;
 				const missing = 1 - ch.hp / ch.maxHp;
-				if (Random.chance(elementalGrimChance(missing, powerMulti))) this.applyAbilityDamage(ch, ch.hp);
+				if (Random.chance(elementalGrimChance(missing, powerMulti))) this.applyAbilityDamage(ch, ch.hp, 'grim');
 			}
 		} else if (ench === 'annoying') {
 			for (const ch of affected) {
@@ -20105,7 +20221,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			}
 		} else if (ench === 'polarized') {
 			for (const ch of affected) {
-				if (Random.chance(elementalCurseChance(powerMulti))) this.applyAbilityDamage(ch, Random.normalRange(24, 36));
+				if (Random.chance(elementalCurseChance(powerMulti))) this.applyAbilityDamage(ch, Random.normalRange(24, 36), 'strike');
 			}
 		} else if (ench === 'friendly') {
 			for (const ch of affected) {
@@ -20118,7 +20234,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//Blazing, Chilling, Shocking and Blocking, Vampiric, Lucky-share handled above deal
 			//no per-char damage of their own; any other affix id falls through to the plain
 			//strike rather than fizzling the whole ability.
-			for (const ch of affected) this.applyAbilityDamage(ch, elementalBaseDamage(powerMulti, Random.normalRange(6, 12)));
+			for (const ch of affected) this.applyAbilityDamage(ch, elementalBaseDamage(powerMulti, Random.normalRange(6, 12)), 'strike');
 		}
 		delete this.hero.buffs['invisibility'];
 		this.spendHeroAction(1);
@@ -21047,8 +21163,14 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * armor already subtracted by each ability's own formula (`pierceArmor`) and the mirror fade,
 	 * which that seam does not do.
 	 */
-	private applyAbilityDamage(target: Creature, damage: number): void {
+	private applyAbilityDamage(target: Creature, damage: number, strikeSrc?: ElementalStrikeDamageSource): void {
 		if (damage <= 0 || target.isNPC) return;
+		//`Char.damage()` zeroes a hit whose source class the target resists
+		//(`isImmune(srcClass)`): the Antimagic champion's RESISTS names `ElementalStrike`
+		//and `Grim`, so those two sources deal it nothing - skipped outright like the
+		//wand-zap loop's own `magicImmune` guard. Kinetic/Projecting pass their
+		//unresisted enchantment instead (see `elementalStrikeResisted`).
+		if (strikeSrc !== undefined && elementalStrikeResisted(strikeSrc, target.magicImmune === true)) return;
 		if (this.fadeMirrorOnDamage(target, damage)) return;
 		//Armor-ability damage is never a plain weapon hit: it clears the boss-challenge flag.
 		this.disqualifyBossChallenge(target);

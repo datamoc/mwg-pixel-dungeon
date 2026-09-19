@@ -141,7 +141,7 @@ function main(): void {
 				}
 			}
 			if (writeTs) {
-				tsOut.push(`seed=${seed} depth=${depth} rooms=${floor.rooms.length} feeling=${floor.feeling ?? 'NONE'} size=${floor.width}x${floor.height}`);
+				tsOut.push(`seed=${seed} depth=${depth} rooms=${floor.rooms.length} feeling=${floor.feeling ?? 'NONE'} size=${floor.width}x${floor.height} attempts=${floor.attempts ?? '?'}`);
 				tsOut.push(`  room rects: ${floor.rooms.map((r) => `${r.left},${r.top},${r.right},${r.bottom}`).sort().join(' ')}`);
 				tsOut.push(`  room labels: ${floor.rooms.map((r) => r.label).sort().join(',')}`);
 				for (let y = 0; y < floor.height; y++) {

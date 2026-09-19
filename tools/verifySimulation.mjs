@@ -38,7 +38,7 @@ try {
 	for (const file of ['simulation/movement', 'simulation/heroTurn', 'simulation/hunger', 'simulation/turns', 'adapters/sceneSimulation',
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
-	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/rogueAbilities', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'mechanics/cone', 'dungeonConstants',
+	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/mageAbilities', 'simulation/rogueAbilities', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'mechanics/cone', 'dungeonConstants',
 	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink',
 	// `dungeonConstants` and `items/wands` read the MWL item tables, so the harness compiles the
 	// real adapter and the real generated catalogue instead of a hand-copied stub of them - a stub
@@ -88,7 +88,7 @@ try {
 	const { runAttackResolution } = require('./adapters/attackSimulation');
 	const { stepTenguAbility, tenguTargetAbilityUses, tenguAbilityCost } = require('./simulation/tenguAbility');
 	const { planDisintegration } = require('./simulation/disintegration');
-	const { wandTypeFromSource, wandTargetRange, wandChargesPerCast } = require('./items/wands');
+	const { wandTypeFromSource, wandTargetRange, wandChargesPerCast, livingEarthZapRange } = require('./items/wands');
 	const { runUntilHeroInput } = require('./adapters/sceneSimulation');
 	const { SceneSimulationAdapter } = require('./adapters/sceneSimulation');
 	const { trampleHighGrass } = require('./simulation/highGrass');
@@ -702,6 +702,10 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.equal(wandTargetRange('frost', 9), 6);
 		assert.equal(wandChargesPerCast('fireblast', 4), 2);
 		assert.equal(wandChargesPerCast('magicMissile', 4), 1);
+		//`WandOfLivingEarth.damageRoll()` is depth-scaled, never wand-level-scaled:
+		//`NormalIntRange(2, 4 + scalingDepth()/2)` with Java's integer division.
+		assert.deepEqual([1, 2, 3, 5, 10, 25].map(livingEarthZapRange),
+			[[2, 4], [2, 5], [2, 5], [2, 6], [2, 9], [2, 16]]);
 	});
 	verifyHeroTurn(require, check);
 	verifyCombat(require, check);

@@ -121,6 +121,8 @@
         ],
       },
       {
+        // No livingEarth row: its roll is depth-scaled (`livingEarthZapRange` in
+        // items/wands.ts), which this level-parameterized table cannot express.
         tag: "table",
         id: "wandDamageRules",
         columns: "type:string|minBase:number|minPerLevel:number|maxBase:number|maxPerLevel:number",
@@ -129,7 +131,6 @@
           { tag: "row", type: "frost", minBase: 2, minPerLevel: 1, maxBase: 8, maxPerLevel: 5 },
           { tag: "row", type: "lightning", minBase: 5, minPerLevel: 1, maxBase: 10, maxPerLevel: 5 },
           { tag: "row", type: "blastWave", minBase: 1, minPerLevel: 1, maxBase: 3, maxPerLevel: 3 },
-          { tag: "row", type: "livingEarth", minBase: 4, minPerLevel: 0, maxBase: 6, maxPerLevel: 2 },
           { tag: "row", type: "prismaticLight", minBase: 1, minPerLevel: 1, maxBase: 5, maxPerLevel: 3 },
           { tag: "row", type: "disintegration", minBase: 2, minPerLevel: 1, maxBase: 8, maxPerLevel: 4 },
           { tag: "row", type: "transfusion", minBase: 3, minPerLevel: 1, maxBase: 6, maxPerLevel: 2 },

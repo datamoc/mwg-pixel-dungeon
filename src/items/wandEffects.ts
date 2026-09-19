@@ -158,8 +158,6 @@ export interface FireblastWandContext {
 	fadeMirrorOnDamage: (target: Creature, damage: number) => boolean;
 	showDamage: (target: Creature, damage: number) => void;
 	setColorAdd: (target: Creature, red: number, green: number, blue: number) => void;
-	refundWandCharge: (amount: number) => void;
-	isWarlock: () => boolean;
 	kill: (target: Creature) => void;
 	rollDamage: (min: number, max: number) => number;
 	addBuff: (target: Creature, id: 'burning' | 'cripple' | 'paralysis') => void;
@@ -225,16 +223,16 @@ export function useFireblastWand(context: FireblastWandContext): void {
 		victim.sleeping = false;
 		context.setColorAdd(victim, 0.6, 0.7, 1);
 		context.say(context.message(victim, damage), 'positive');
-		if (context.isWarlock()) context.refundWandCharge(1);
 		if (victim.hp <= 0 && !victim.isAlly) {
 			context.kill(victim);
 			continue;
 		}
-		//Java prolongs all three (`reignite` for Burning, `affect` with 4 for Cripple
-		//and - explicitly, not `Paralysis.DURATION`'s 3 - Paralysis), never
-		//overwriting a longer clock. Found by the 17th monster-analysis matrix.
+		//Burning `reignite`s; Cripple/Paralysis are Java's `affect` with an explicit 4
+		//(not their class DURATIONs). The port prolongs (keep-max) rather than spending:
+		//Java's `affect` adds 4 onto the live clock (`Buff.spend`), so re-zapping a
+		//crippled victim stacks where the port keep-maxes - a stated divergence.
 		context.reigniteBuff(victim, 'burning');
-		if (charges === 2) context.reigniteBuff(victim, 'cripple');
+		if (charges === 2) context.reigniteBuff(victim, 'cripple', 4);
 		else if (charges === 3) context.reigniteBuff(victim, 'paralysis', 4);
 	}
 }

@@ -667,7 +667,9 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		'blazing', 'blocking', 'blooming', 'chilling', 'kinetic', 'corrupting', 'elastic',
 		'grim', 'lucky', 'shocking', 'vampiric',
 	], 'Unstable delegates to exactly Java\'s list, in Java\'s order');
-	assert.equal(tableRows('wandDamageRules').length, 8, 'wand damage rule count');
+	//Seven, not eight: livingEarth has no row by design - its roll is depth-scaled
+	//(`livingEarthZapRange`), which the level-parameterized table cannot express.
+	assert.equal(tableRows('wandDamageRules').length, 7, 'wand damage rule count');
 	assert.equal(tableRows('wandFireblastRules').length, 3, 'Fireblast charge rule count');
 	assert.equal(tableRows('wandRegrowthRules').length, 3, 'Regrowth charge rule count');
 	assert.deepEqual(tableRows('monsterDepthStats', 'monster'), [
@@ -1004,11 +1006,11 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	// Burning 8, Levitation 20, FeatherFall 50, Invisibility 20, Recharging 30, AdrenalineSurge
 	// 200, MindVision 20, Terror 20, Amok 5 via ScrollOfRage, Aggression 20, Awareness 2, Haste
 	// 20, Degrade 30, Ooze 20, Wayward 10, Charm 10, Light 250, Invulnerability 3, HazardAssistTracker 50,
-	// SpectatorFreeze/DuelParticipant 10, EliminationMatchTracker 3 - all tag `v3.3.8`). The rest are the
-	// port's own documented conventions, not Java values: cripple 4 / paralysis 3 / roots 3 each
+	// SpectatorFreeze/DuelParticipant 10, EliminationMatchTracker 3, Cripple 10 (`Cripple.DURATION`; the explicit-4 sites pass their own duration at the call site) - all tag `v3.3.8`). The rest are the
+	// port's own documented conventions, not Java values: paralysis 3 / roots 3 each
 	// equal a real Java application site (see PORT_COVERAGE.md's BUFF_DURATION row), poison 6
 	// and bleeding 0 have no Java DURATION to match, magicalSleep 0 lasts until woken,
-	// fury/berserk/cloak/focus 9999 are state markers, frostImbue 15 and lethalHasteCooldown 100
+	// fury/berserk/cloak/focus 9999 are state markers, frostImbue/fireImbue 15 (each imbue's class DURATION 50, granted at 0.3 by its plant) and lethalHasteCooldown 100
 	// are port-side cooldowns (see simulation/buffs.ts). Two more differ from their Java
 	// `affect()` argument for the same reason cripple/paralysis/roots do - a real Java
 	// application site, adjusted to this port's decrement-before-read tick order: feintConfusion
@@ -1020,9 +1022,9 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		Object.fromEntries(buffRows.map((row) => [String(row.buff), Number(row.duration)])),
 		{
 			bless: 30, hex: 30, daze: 5, chill: 10, frost: 10, drowsy: 5, magicalSleep: 0, fury: 9999,
-			berserk: 9999, weakness: 20, vulnerable: 20, burning: 8, poison: 6, bleeding: 0, cripple: 4,
+			berserk: 9999, weakness: 20, vulnerable: 20, burning: 8, poison: 6, bleeding: 0, cripple: 10,
 			paralysis: 3, roots: 3, levitation: 20, featherFall: 50, invisibility: 20, cloak: 9999,
-			focus: 9999, recharging: 30, frostImbue: 15, adrenalineSurge: 200, mindvision: 20,
+			focus: 9999, recharging: 30, frostImbue: 15, fireImbue: 15, adrenalineSurge: 200, mindvision: 20,
 			terror: 20, amok: 5, aggression: 20, awareness: 2, haste: 20, degrade: 30, ooze: 20,
 			wayward: 10, charm: 10, lethalHasteCooldown: 100, blindness: 10, light: 250, invulnerability: 3,
 			feintConfusion: 2, counterAbility: 3, hazardAssist: 50,

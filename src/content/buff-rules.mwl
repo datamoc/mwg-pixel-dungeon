@@ -98,9 +98,14 @@
             duration: 0,
           },
           {
+            // `Cripple.DURATION` (`actors/buffs/Cripple.java`, tag `v3.3.8`): every
+            // default-duration grant in Java prolongs/affects this whole 10 (chasm,
+            // chains, blindweed, scorpio); the one explicit exception is RustedFist's
+            // `affect(enemy, Cripple.class, 4f)`, which passes its own 4 at both of
+            // this port's call sites rather than reading the table.
             tag: "row",
             buff: "cripple",
-            duration: 4,
+            duration: 10,
           },
           {
             tag: "row",
@@ -145,6 +150,16 @@
           {
             tag: "row",
             buff: "frostImbue",
+            duration: 15,
+          },
+          {
+            // `FireImbue` (`actors/buffs/FireImbue.java`, tag `v3.3.8`): the Warden
+            // firebloom half of the frost-imbue pair above. Same shape: class
+            // `DURATION` 50, the plant grants `0.3f` of it (15 here, like frost),
+            // `proc()` reignites Burning on a 1-in-2, and the holder is immune to
+            // Burning while it lasts (plus Burning detaches when it attaches).
+            tag: "row",
+            buff: "fireImbue",
             duration: 15,
           },
           {

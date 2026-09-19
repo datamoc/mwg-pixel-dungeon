@@ -16,7 +16,7 @@ import { MONSTER_IMMUNITY_DATA } from './mwlMonsterImmunities';
  * creature cannot see - or hunt - the hero (see `dungeonScene`'s monster-perception line), and a
  * blinded hero would see nothing. Duration 10 is `Blindness.DURATION`.
  */
-export type BuffId = 'bless' | 'hex' | 'daze' | 'chill' | 'frost' | 'drowsy' | 'magicalSleep' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'featherFall' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown' | 'wayward' | 'blindness' | 'feintConfusion' | 'counterAbility' | 'light' | 'invulnerability' | 'hazardAssist' | 'spectatorFreeze' | 'duelParticipant' | 'eliminationMatch' | 'luckyTracker';
+export type BuffId = 'bless' | 'hex' | 'daze' | 'chill' | 'frost' | 'drowsy' | 'magicalSleep' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'featherFall' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'fireImbue' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown' | 'wayward' | 'blindness' | 'feintConfusion' | 'counterAbility' | 'light' | 'invulnerability' | 'hazardAssist' | 'spectatorFreeze' | 'duelParticipant' | 'eliminationMatch' | 'luckyTracker';
 /** The duration catalogue is authored in MWL and emitted as an isolated simulation module. */
 export const BUFF_DURATION: Record<BuffId, number> = (() => {
 	const values = { ...BUFF_DURATION_DATA } as Record<string, number>;
@@ -44,8 +44,10 @@ export function monsterBuffImmune(kind: string | undefined, subtype: string | un
  * well" unconditional wake check - a sleeping monster with any of these active wakes
  * immediately, no detection roll needed (e.g. standing in fire/gas already ignites/poisons a
  * sleeping monster elsewhere in this port; it just didn't wake it up before this check
- * existed). `focus`/`cloak`/`frostImbue`/`lethalHasteCooldown` are this port's own invented
- * stand-ins with no real monster-facing negative equivalent, so they're excluded. */
+ * existed). `focus`/`cloak`/`lethalHasteCooldown` are this port's own invented
+ * stand-ins with no real monster-facing negative equivalent, so they're excluded;
+ * `frostImbue`/`fireImbue` are real Java buffs (`FrostImbue.java`/`FireImbue.java`) but
+ * hero-side-only positives, excluded for the same reason. */
 export const NEGATIVE_BUFFS: ReadonlySet<BuffId> = new Set<BuffId>(NEGATIVE_BUFF_DATA as unknown as BuffId[]);
 
 export type BuffState = Partial<Record<BuffId, number>>;

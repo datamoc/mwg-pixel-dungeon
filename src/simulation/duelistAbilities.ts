@@ -201,3 +201,17 @@ export function elementalAnnoyingChance(powerMulti: number): number {
 export function elementalSacrificialOther(powerMulti: number): number {
 	return 12 * powerMulti;
 }
+
+/**
+ * Which ElementalStrike per-char damage sources Java zeroes against an Antimagic
+ * champion (`Char.damage()`'s `isImmune(srcClass)` gate against
+ * `AntiMagic.RESISTS`, tag `v3.3.8`). The base strike and Polarized pass
+ * `ElementalStrike.this`, the execute passes `Grim.class` - all three resisted.
+ * Kinetic/Projecting splashes pass their (unresisted) enchantment as source, and
+ * the ConjuredBomb blast passes the bomb (base `Bomb` is not resisted, only
+ * `ArcaneBomb`/holy damage are) - all three deal full damage.
+ */
+export type ElementalStrikeDamageSource = 'strike' | 'grim' | 'kinetic' | 'projecting' | 'bomb';
+export function elementalStrikeResisted(source: ElementalStrikeDamageSource, targetMagicImmune: boolean): boolean {
+	return targetMagicImmune && (source === 'strike' || source === 'grim');
+}
