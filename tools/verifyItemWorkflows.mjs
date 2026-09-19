@@ -2306,7 +2306,7 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 }
 // The moved targeted spells (`items/spells.ts`, the file-size refactor's seventeenth
 // extraction): driven headlessly with a stub floor and scripted aim.
-const { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow } = require('./items/spells.js');
+const { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow } = require('./items/spells.js');
 function spellDrive(overrides = {}) {
 	const log = [];
 	const flags = { aim: null, grabbed: [], moved: [], teleports: [], calmed: [], paralysed: [], turns: 0, consumed: [], refunds: 0, restitched: 0 };
@@ -2459,6 +2459,58 @@ function spellDrive(overrides = {}) {
 	const blocked = spellDrive({ carried: 'fire', placeable: () => false });
 	useReclaimTrapFlow(blocked.ctx);
 	assert.equal(blocked.flags.aim.validate({ x: 4, y: 4 }), false, 'blocked cells do not validate');
+}
+// Recycle (`useRecycleFlow`, the file-size refactor's nineteenth extraction): the picker
+// offers carried potions/scrolls/seeds/stones only, and a pick redraws its own category.
+function recycleDrive(overrides = {}, pickIndex = 0) {
+	const log = [];
+	const flags = { picker: null, draws: [], swapped: null, refreshed: 0 };
+	const items = overrides.items ?? [
+		{ id: 'potionOfHealing', quantity: 1, instanceId: 'p1' },
+		{ id: 'sword', quantity: 1, instanceId: 'w1' },
+	];
+	const ctx = {
+		hasSpell: () => overrides.hasSpell ?? true,
+		openPicker: (title, entries, onPick) => {
+			flags.picker = { title, entries };
+			if (entries.length > 0) onPick(entries[pickIndex] ?? entries[0]);
+		},
+		recyclables: () => items,
+		findRecyclable: (id, instanceId) => items.find((item) => item.quantity > 0
+			&& item.id === id && (item.instanceId ?? undefined) === (instanceId ?? undefined)) ?? null,
+		drawReplacement: (category, source) => {
+			flags.draws.push({ category, source: source.id });
+			return overrides.replacement ?? { id: 'potionOfFrost', instanceId: 'n1' };
+		},
+		replaceRecycled: (source, replacement) => { flags.swapped = { source: source.id, replacement: replacement.id }; },
+		replacementName: (replacement) => `name:${replacement.id}`,
+		refreshPanels: () => { flags.refreshed++; },
+		say: (line, level) => { log.push(`say:${level}:${line}`); },
+		t: (key, params) => key + (params ? JSON.stringify(params) : ''),
+		...overrides.ctx,
+	};
+	useRecycleFlow(ctx);
+	return { ctx, log, flags, items };
+}
+{
+	const missing = recycleDrive({ hasSpell: false });
+	assert.equal(missing.flags.picker, null, 'no spell, no picker');
+	const d = recycleDrive();
+	assert.deepEqual(d.flags.picker.entries.map((e) => e.id), ['potionOfHealing'], 'only the potion is offered');
+	assert.deepEqual(d.flags.draws, [{ category: 'potion', source: 'potionOfHealing' }], 'redrawn from its own deck');
+	assert.deepEqual(d.flags.swapped, { source: 'potionOfHealing', replacement: 'potionOfFrost' }, 'one unit swaps');
+	assert.ok(d.log.some((l) => l.includes('recycled') && l.includes('name:potionOfFrost')), 'named in the recycled line');
+	assert.equal(d.flags.refreshed, 1, 'panels refresh');
+	for (const [id, category] of [['scrollOfIdentify', 'scroll'], ['seed', 'seed'], ['stoneOfBlink', 'stone'], ['stone', 'stone']]) {
+		const cased = recycleDrive({ items: [{ id, quantity: 2 }] });
+		assert.deepEqual(cased.flags.draws, [{ category, source: id }], `${id} redraws ${category}`);
+	}
+	const empty = recycleDrive({ items: [{ id: 'sword', quantity: 1 }] });
+	assert.deepEqual(empty.flags.picker.entries, [], 'the picker still opens with no rows');
+	assert.deepEqual(empty.flags.draws, [], 'and draws nothing');
+	const stale = recycleDrive({ ctx: { findRecyclable: () => null } });
+	assert.deepEqual(stale.flags.swapped, null, 'a pick that vanishes before confirm swaps nothing');
+	assert.equal(stale.flags.refreshed, 0, 'and refreshes nothing');
 }
 }
 }

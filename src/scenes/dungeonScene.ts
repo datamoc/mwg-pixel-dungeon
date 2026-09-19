@@ -235,7 +235,7 @@ import { applyTalismanPerTurnCharge, useTalismanFlow, checkTalismanAwarenessFlow
 import { roseGhostMaxHp, applyRoseRecharge, useRoseFlow, type RoseFlowContext, type RoseItem } from '../items/rose';
 import { rosePetalsNeeded, rosePetalDropCap, rosePetalPickup, roseChargeCap, roseLevelCap } from '../items/rose';
 import { beaconChargeCap, useBeaconFlow, useReturningBeaconFlow, type BeaconFlowContext, type BeaconItem } from '../items/beacon';
-import { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow, type TargetedSpellAim, type TelekineticGrabContext, type PhaseShiftContext, type ReclaimTrapContext } from '../items/spells';
+import { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow, type TargetedSpellAim, type TelekineticGrabContext, type PhaseShiftContext, type ReclaimTrapContext, type RecycleContext } from '../items/spells';
 import { planWealthDrops, wealthEquipBonus, initialiseWealthTrackers, wealthDeathRolls, type WealthDropPlan, type WealthTrackers } from '../items/wealthDrops';
 import { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal, artifactRechargeDuration, wildEnergyRechargeTurns, type RechargeGuards } from '../items/artifactRecharge';
 import { equipRing as equipInventoryRing, equipArmor as equipInventoryArmor, equipWeapon as equipInventoryWeapon, type GearEquipmentContext, type RingEquipmentContext } from '../items/equipment';
@@ -22119,35 +22119,48 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * conversion. The transmuting particles and collection-vs-floor-drop branch are UI-only in
 	 * this inventory-sized port, whose bag has no capacity limit. */
 	private useRecycle(instanceId?: string): void {
-		if (!this.bag.find('recycle', instanceId)) return;
+		useRecycleFlow(this.recycleContext(), instanceId);
+	}
+
+	/**
+	 * The Recycle pick/redraw flow lives in `items/spells.ts` behind `RecycleContext` -
+	 * the file-size refactor's nineteenth extraction, behavior-identical.
+	 */
+	private recycleContext(): RecycleContext {
+		const scene = this;
 		type Recyclable = { id: string; quantity: number; instanceId?: string; identified?: boolean; sourceClass?: string };
-		const candidates = (this.bag.items as Recyclable[]).filter((item) => item.quantity > 0 && (
-			item.id.startsWith('potion') || item.id.startsWith('scroll') || item.id === 'seed'
-			|| item.id === 'stone' || item.id.startsWith('stoneOf')
-		));
-		// Java opens the picker regardless (InventorySpell has no empty-case message, its
-		// WndBag simply shows no rows); an empty candidate list opens and cancels the same
-		// way, consuming nothing, so no early-out message exists here either.
-		this.openItemPicker(t('items.spells.recycle.inv_title'), candidates, (pick) => {
-			const source = (this.bag.items as Recyclable[]).find((item) => item.quantity > 0
-				&& item.id === pick.id && (item.instanceId ?? undefined) === (pick.instanceId ?? undefined));
-			if (!source) return;
-			const category = source.id.startsWith('potion') ? Cat.POTION
-				: source.id.startsWith('scroll') ? Cat.SCROLL
-				: source.id === 'seed' ? Cat.SEED : Cat.STONE;
-			let generated: GenItem;
-			let replacement: NonNullable<GroundItem['item']>;
-			do {
-				generated = randomUsingDefaults(category);
-				replacement = this.generatedInventoryItem(generated);
-			} while (source.sourceClass !== undefined
-				&& (generated.cls.toLowerCase() === source.sourceClass.toLowerCase() || replacement.id === source.id));
-			this.bag.remove(source.id, 1, source.instanceId);
-			this.bag.remove('recycle', 1, instanceId);
-			this.bag.add({ ...replacement, stackable: true });
-			this.say(t('items.spells.recycle.recycled', { 0: this.itemDisplayName(replacement.id, false, replacement.instanceId) }), 'positive');
-			this.refreshInventoryPanel();
-		});
+		const carried = () => scene.bag.items as Recyclable[];
+		return {
+			hasSpell: (id, instanceId) => scene.bag.find(id, instanceId) !== undefined,
+			openPicker: (title, entries, onPick) => scene.openItemPicker(title, entries, onPick),
+			recyclables: () => carried(),
+			findRecyclable: (id, instanceId) => carried().find((item) => item.quantity > 0
+				&& item.id === id && (item.instanceId ?? undefined) === (instanceId ?? undefined)) ?? null,
+			drawReplacement: (category, source) => {
+				const deck = category === 'potion' ? Cat.POTION
+					: category === 'scroll' ? Cat.SCROLL
+						: category === 'seed' ? Cat.SEED : Cat.STONE;
+				let generated: GenItem;
+				let replacement: NonNullable<GroundItem['item']>;
+				do {
+					generated = randomUsingDefaults(deck);
+					replacement = scene.generatedInventoryItem(generated);
+				} while (source.sourceClass !== undefined
+					&& (generated.cls.toLowerCase() === source.sourceClass.toLowerCase() || replacement.id === source.id));
+				return replacement;
+			},
+			replaceRecycled: (source, replacement, spellInstanceId) => {
+				scene.bag.remove(source.id, 1, source.instanceId);
+				scene.bag.remove('recycle', 1, spellInstanceId);
+				//The flow only ever hands back the object `drawReplacement` above built, which
+				//is the full generated payload narrowed to `RecycledItemView` at the seam.
+				scene.bag.add({ ...(replacement as NonNullable<GroundItem['item']>), stackable: true });
+			},
+			replacementName: (replacement) => scene.itemDisplayName(replacement.id, false, replacement.instanceId),
+			refreshPanels: () => { scene.refreshInventoryPanel(); },
+			say: scene.say.bind(scene),
+			t,
+		};
 	}
 
 	/** `CurseInfusion.onItemSelected()` (tag `v3.3.8`): curse one carried weapon or armor,

@@ -1280,6 +1280,20 @@ one.
       Review corrected one invented Java clause in the interface comment before committing, and
       kept the snapshot-vs-live `carrying` distinction exact (snapshot on confirm, live read on
       validate, as the moved code did).
+      **Complexity: S.** **Nineteenth extraction 2026-09-19**: `useRecycle`'s pick/redraw flow
+      joined `items/spells.ts` as `useRecycleFlow` behind a `RecycleContext` (spell gate, picker,
+      bag scans, category deck draw with the same-class/same-id reroll, remove/add swap, name,
+      panel refresh); the scene keeps the one-line adapter the router calls plus a builder that
+      owns the `Cat` deck mapping and the generator loop. Net +13 lines in `dungeonScene.ts`
+      (22,775 after) - the draw-loop builder costs more than the body saved - `spells.ts` 174 to
+      241; same payback as the last two (first headless coverage of the flow). Suites: `tsc`
+      clean after narrowing the seam cast (the flow hands back the full payload the draw built,
+      narrowed to `RecycledItemView` between - stated at the cast), item suite green with a new
+      headless drive (missing spells never open the picker, only potions/scrolls/seeds/stones
+      are offered, each redraws its own deck, the swap names the replacement and refreshes,
+      empty pickers draw nothing, vanished picks swap nothing). The drive caught one stub bug
+      in review - the drive's `t` dropped params, hiding the substitution the recycled line
+      asserts - fixed by echoing params like the harness's own i18n stub.
       **Complexity: S.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`

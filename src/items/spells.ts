@@ -58,6 +58,73 @@ export interface PhaseShiftContext extends TargetedSpellAim {
 	afflictParalysis(creature: PhaseShiftCreatureView): void;
 }
 
+/** A carried potion, scroll, seed or runestone the recycle picker can offer. */
+export interface RecyclableView {
+	id: string;
+	quantity: number;
+	instanceId?: string | undefined;
+	identified?: boolean | undefined;
+	sourceClass?: string | undefined;
+}
+
+/** The generator's replacement for a recycled item, as the bag stores it. */
+export interface RecycledItemView {
+	id: string;
+	instanceId?: string | undefined;
+}
+
+/** Which generator deck a recycled item redraws from. */
+export type RecycleCategory = 'potion' | 'scroll' | 'seed' | 'stone';
+
+/**
+ * The Recycle pick/redraw flow, moved out of the scene behind this context the same
+ * way - behavior-identical, with the scene keeping one builder plus the `useRecycle`
+ * adapter the item-use router calls. Unlike the targeted spells above this is a picker
+ * flow that spends no turn: the bag scans, the category deck draw (with its
+ * same-class/same-id reroll) and the remove/add swap stay scene-side.
+ */
+export interface RecycleContext {
+	hasSpell(id: string, instanceId?: string): boolean;
+	openPicker(title: string, entries: RecyclableView[], onPick: (entry: { id: string; instanceId?: string }) => void): void;
+	recyclables(): RecyclableView[];
+	findRecyclable(id: string, instanceId?: string): RecyclableView | null;
+	drawReplacement(category: RecycleCategory, source: RecyclableView): RecycledItemView;
+	replaceRecycled(source: RecyclableView, replacement: RecycledItemView, spellInstanceId?: string): void;
+	replacementName(replacement: RecycledItemView): string;
+	refreshPanels(): void;
+	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
+	t(key: string, params?: Record<string, string | number>): string;
+}
+
+/** `Recycle.onItemSelected()` (tag `v3.3.8`): replace one carried potion, scroll, seed, or
+ * runestone with a different default-generated item from the same category. Java also accepts
+ * TippedDart and preserves exotic-vs-regular families; neither has a distinct complete item
+ * model here. The generic picker supplies the inventory selection, and the existing generator
+ * plus `generatedInventoryItem` preserve the category's level-stream generation and payload
+ * conversion. The transmuting particles and collection-vs-floor-drop branch are UI-only in
+ * this inventory-sized port, whose bag has no capacity limit. */
+export function useRecycleFlow(ctx: RecycleContext, instanceId?: string): void {
+	if (!ctx.hasSpell('recycle', instanceId)) return;
+	const candidates = ctx.recyclables().filter((item) => item.quantity > 0 && (
+		item.id.startsWith('potion') || item.id.startsWith('scroll') || item.id === 'seed'
+		|| item.id === 'stone' || item.id.startsWith('stoneOf')
+	));
+	// Java opens the picker regardless (InventorySpell has no empty-case message, its
+	// WndBag simply shows no rows); an empty candidate list opens and cancels the same
+	// way, consuming nothing, so no early-out message exists here either.
+	ctx.openPicker(ctx.t('items.spells.recycle.inv_title'), candidates, (pick) => {
+		const source = ctx.findRecyclable(pick.id, pick.instanceId);
+		if (!source) return;
+		const category: RecycleCategory = source.id.startsWith('potion') ? 'potion'
+			: source.id.startsWith('scroll') ? 'scroll'
+				: source.id === 'seed' ? 'seed' : 'stone';
+		const replacement = ctx.drawReplacement(category, source);
+		ctx.replaceRecycled(source, replacement, instanceId);
+		ctx.say(ctx.t('items.spells.recycle.recycled', { 0: ctx.replacementName(replacement) }), 'positive');
+		ctx.refreshPanels();
+	});
+}
+
 /** `ReclaimTrap.affectTarget()` and `ReclaimedTrap` (tag `v3.3.8`): first target a visible,
  * active trap and store its class while recharging the hero's wand; a later cast redeploys
  * that class as a concealed active trap and consumes the spell. Java's trap reflection and
