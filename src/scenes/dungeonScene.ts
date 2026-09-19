@@ -14434,6 +14434,12 @@ private eyeBeamTurn(monster: Creature): boolean {
 			}
 			this.toxicGas.seed(defender.x, defender.y, 5 + 3 * openNearby);
 		}
+		//FetidRat.defenseProc() (FetidRat.java, tag v3.3.8): a struck rat seeds StenchGas
+		//volume 20 at its own cell, unconditionally - same hook and same wand/bomb residual
+		//as the heart above.
+		if (defender.kind === 'fetidRat') {
+			this.stenchGas.seed(defender.x, defender.y, 20);
+		}
 		if (attacker.kind === 'fetidRat' && Random.chance(1 / 3)) {
 			addBuff(defender, 'ooze');
 			this.say(t(defender.isHero ? 'port.log.oozedhero' : 'port.log.oozed', { who: capitalize(defender.name) }), 'negative');

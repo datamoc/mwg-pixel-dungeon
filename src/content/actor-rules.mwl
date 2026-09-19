@@ -53,7 +53,10 @@
           {
             tag: "effect",
             apply_to: "demonic",
-            set: "demonSpawner,eye,fetidRat,goo,mimic,crystalMimic,ripperDemon,scorpio,acidic,succubus,yog,yogFist",
+            // `YogDzewa$Larva` carries DEMONIC in Java (tag v3.3.8) like every other Yog
+            // spawn; it was missing here, which also hid larvae from the demonic readers
+            // (prismatic-light blind, starflower smite).
+            set: "demonSpawner,eye,fetidRat,goo,mimic,crystalMimic,ripperDemon,scorpio,acidic,succubus,yog,yogFist,larva",
           },
           {
             tag: "effect",
