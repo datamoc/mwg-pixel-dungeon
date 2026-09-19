@@ -394,6 +394,25 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	assert.deepEqual(fields, { missileSet: 'm-7', instanceId: 'm-7:2', level: 2, durability: 100, maxDurability: 100 },
 		'a freshly minted stack carries its set, its own level and full wear');
 
+	// `MissileSprite` flight art (`items/missiles.ts`): every thrown pile flies its own
+	// `ItemSpriteSheet` frame (`MISSILE_WEP` = slot 161, darts at 177), spinning at the
+	// class's `ANGULAR_SPEEDS` rate. Unknown classes keep the dot fallback (null).
+	const { MISSILE_ITEM_FRAMES, TIPPED_DART_FRAMES, missileFlightArt } = require('./items/missiles.js');
+	assert.equal(MISSILE_ITEM_FRAMES.SpiritArrow, 161, 'the spirit arrow is MISSILE_WEP itself');
+	assert.equal(MISSILE_ITEM_FRAMES.ThrowingKnife, 163, 'knives sit at +2');
+	assert.equal(MISSILE_ITEM_FRAMES.HeavyBoomerang, 173, 'the boomerang at +12');
+	assert.equal(MISSILE_ITEM_FRAMES.ForceCube, 176, 'the cube closes the row at +15');
+	assert.equal(TIPPED_DART_FRAMES.blindweed, 189, 'blinding darts are DARTS+12');
+	assert.equal(TIPPED_DART_FRAMES.rotberry, 178, 'rot darts are DARTS+1');
+	assert.equal(Object.keys(TIPPED_DART_FRAMES).length, 12, 'all twelve dart seeds have art');
+	assert.deepEqual(missileFlightArt('ThrowingKnife'), { frame: 163, spin: 0 }, 'knives fly straight');
+	assert.deepEqual(missileFlightArt('HeavyBoomerang'), { frame: 173, spin: 1440 }, 'boomerangs spin');
+	assert.deepEqual(missileFlightArt('Bolas'), { frame: 169, spin: 1440 }, 'bolas spin');
+	assert.deepEqual(missileFlightArt('Shuriken'), { frame: 166, spin: 2160 }, 'shurikens spin fastest');
+	assert.deepEqual(missileFlightArt('TippedDart', 'blindweed'), { frame: 189, spin: 0 }, 'tipped darts fly their own tip art');
+	assert.equal(missileFlightArt('NoSuchClass'), null, 'unknown classes keep the dot fallback');
+	assert.equal(missileFlightArt('TippedDart', 'nosuchseed'), null, 'unknown seeds keep the dot fallback');
+
 	/** What `bag.add` does to a stack carrying this identity - the *only* merge decision the port
 	 * makes, and therefore the one that has to reproduce `isSimilar`. */
 	const merged = (a, b) => {

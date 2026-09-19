@@ -118,6 +118,78 @@ export function tippedDartNameKey(seedClass: string | undefined): string {
 }
 
 /**
+ * `MissileSprite` flies the thrown item's own art (`view(item)` over `ItemSpriteSheet`,
+ * tag `v3.3.8`) - which is what makes the yellow-dot stand-in wrong, not just ugly.
+ * `MISSILE_WEP` is `xy(1, 10)`, slot 161 on this port's byte-identical `items.png`,
+ * with each class at its own offset (`SPIRIT_BOW = +0` through `FORCE_CUBE = +15`), and
+ * the twelve tipped darts sit at `DARTS = xy(1, 11)` = 177 plus their own offsets
+ * (`ROT_DART = +1` through `BLINDING_DART = +12`). Spin is `ANGULAR_SPEEDS`: 0 for
+ * darts/knives/spears (and the spirit arrow), 1440 for boomerang/bolas, 2160 for
+ * shuriken - degrees per second, applied to the sprite's own angle while it flies.
+ */
+export const MISSILE_ITEM_FRAMES: Readonly<Record<string, number>> = {
+	SpiritArrow: 161,
+	ThrowingSpike: 162,
+	ThrowingKnife: 163,
+	ThrowingStone: 164,
+	FishingSpear: 165,
+	Shuriken: 166,
+	ThrowingClub: 167,
+	ThrowingSpear: 168,
+	Bolas: 169,
+	Kunai: 170,
+	Javelin: 171,
+	Tomahawk: 172,
+	HeavyBoomerang: 173,
+	Trident: 174,
+	ThrowingHammer: 175,
+	ForceCube: 176,
+};
+
+/** Tipped-dart flight art by seed class (lower-cased), via `TippedDart.types`'s own
+ * seed-to-dart-class order read against the `DARTS` offsets above. */
+export const TIPPED_DART_FRAMES: Readonly<Record<string, number>> = {
+	rotberry: 178,
+	sungrass: 181,
+	fadeleaf: 188,
+	icecap: 182,
+	firebloom: 179,
+	sorrowmoss: 184,
+	swiftthistle: 180,
+	blindweed: 189,
+	stormvine: 183,
+	earthroot: 186,
+	mageroyal: 185,
+	starflower: 187,
+};
+
+const MISSILE_SPIN: Readonly<Record<string, number>> = {
+	HeavyBoomerang: 1440,
+	Bolas: 1440,
+	Shuriken: 2160,
+};
+
+export interface MissileFlightArt {
+	frame: number;
+	spin: number;
+}
+
+/**
+ * The flight art for a wielded pile: its item frame plus its spin, or `null` when the
+ * class is unknown (the caller keeps the dot fallback rather than crashing on a
+ * missing sprite - an unknown class here is a content bug, not a render one).
+ */
+export function missileFlightArt(sourceClass: string, tippedSeed?: string): MissileFlightArt | null {
+	if (sourceClass === 'TippedDart') {
+		const frame = TIPPED_DART_FRAMES[(tippedSeed ?? '').toLowerCase()];
+		return frame === undefined ? null : { frame, spin: 0 };
+	}
+	const frame = MISSILE_ITEM_FRAMES[sourceClass];
+	if (frame === undefined) return null;
+	return { frame, spin: MISSILE_SPIN[sourceClass] ?? 0 };
+}
+
+/**
  * `TippedDart.durabilityPerUse()` with `Talent.DURABLE_TIPS`: the use cost is divided by
  * `1 + points` (2x/3x/4x total durability at ranks 1-3) while a Warden throws tipped darts.
  * `Rotberry`'s rot dart is exempt - its desc states its durability cannot be boosted - and

@@ -14,7 +14,7 @@ import { Container, FillGradient, Graphics, Rectangle, Sprite, Texture, TilingSp
 import { Bar, Blob, FloatingTextStack, Game, ParticleEmitter, Scene2D, Input, Random, SaveSystem, Achievements, ReactionTable, type ReactionRule } from 'mwg';
 import { SceneSimulationAdapter } from '../adapters/sceneSimulation';
 import { dispatchHeroAction, type HeroActionPorts } from '../adapters/heroActions';
-import { BOOMERANG_RETURN_ACC_FACTOR, BOOMERANG_RETURN_TURNS, MISSILE_DEFAULT_QUANTITY, MISSILE_MAX_DURABILITY, bolasCrippleTurns, missileAdjacentAccFactor, missileBaseUses, missileDamageRange, missilePickupValid, missileStackFields, missileStackId, recordMissileUpgrade, tippedDartUseDivisor, tomahawkBleedRange } from '../items/missiles';
+import { BOOMERANG_RETURN_ACC_FACTOR, BOOMERANG_RETURN_TURNS, MISSILE_DEFAULT_QUANTITY, MISSILE_MAX_DURABILITY, bolasCrippleTurns, missileAdjacentAccFactor, missileBaseUses, missileDamageRange, missileFlightArt, missilePickupValid, missileStackFields, missileStackId, recordMissileUpgrade, tippedDartUseDivisor, tomahawkBleedRange, type MissileFlightArt } from '../items/missiles';
 import { eatFood as eatConsumableFood, quaffPotion as quaffConsumablePotion, type ConsumableContext } from '../items/consumables';
 import { selectScrollId } from '../items/scrolls';
 import { applyScrollEffect, type ScrollEffectsContext } from '../items/scrollEffects';
@@ -1256,8 +1256,10 @@ export class DungeonScene extends Scene2D {
 	 * bag stack it came from are the same stack, so this is what travels when it is stashed back
 	 * (see `wieldMissile`). A projectile breaks only at 0. */
 	private ammoDurability = MISSILE_MAX_DURABILITY;
-	private projectiles: Array<{ flight: Projectile; sprite: TintedSprite }> = [];
-	/** a plain dot for a thrown item or a bolt in flight - there is no real projectile sprite to port for these, just the numbers */
+	private projectiles: Array<{ flight: Projectile; sprite: TintedSprite; spin: number }> = [];
+	/** A thrown item flies its own item sprite (`MissileSprite.view(item)`); anything
+	 * without flight art - wand bolts, monster zaps - keeps the plain dot, which is
+	 * what those effects approximate here rather than a stand-in for a real sprite. */
 	private dotTexture!: Texture;
 
 	/** `Hero.exp`/`lvl` against SPD's real curve - see `SPD_LEVEL_CURVE` */
@@ -7389,13 +7391,20 @@ export class DungeonScene extends Scene2D {
 			const rank = this.talentRank('aggressive_barrier');
 			if (rank > 0 && this.hero.hp / this.hero.maxHp <= 0.5) this.grantHeroShield(1 + 2 * rank, this.hero.maxHp);
 		}
-		this.spawnProjectile(this.hero, target);
+		//Thrown piles and spirit arrows fly their own item art; wand bolts keep the dot.
+		this.spawnProjectile(this.hero, target,
+			special.kind === 'throw' ? missileFlightArt(this.ammoSourceClass, this.ammoTippedSeed)
+			: special.kind === 'shoot' ? missileFlightArt('SpiritArrow')
+			: null);
 		return true;
 	}
 
-	private spawnProjectile(from: Creature, to: Creature): void {
-		const sprite = new TintedSprite(this.dotTexture);
-		sprite.tint = 0xffdd66;
+	private spawnProjectile(from: Creature, to: Creature, art?: MissileFlightArt | null): void {
+		//`MissileSprite.reset()`: `view(item)` flies the thrown item's own art, spinning
+		//at the class's `ANGULAR_SPEEDS` rate (boomerang/bolas/shuriken; everything else
+		//flies straight). No art means the dot fallback - never a tinted item sprite.
+		const sprite = art ? new TintedSprite(this.itemsSheet.get(art.frame)) : new TintedSprite(this.dotTexture);
+		if (!art) sprite.tint = 0xffdd66;
 		this.creatureLayer.addChild(sprite);
 
 		const [fx, fy] = this.worldOf(from);
@@ -7403,6 +7412,7 @@ export class DungeonScene extends Scene2D {
 		this.projectiles.push({
 			flight: new Projectile(sprite, { x: fx, y: fy }, { x: tx, y: ty }, { speed: 300 }),
 			sprite,
+			spin: art?.spin ?? 0,
 		});
 	}
 
@@ -11153,7 +11163,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 			if (Roguelike.canTarget(this.level, tengu, this.hero, { range: 8 })) {
 				this.say(t('port.log.tengudart'), 'negative');
 				this.attack({ ...tengu, kind: undefined, accuracy: 20 }, this.hero);
-				this.spawnProjectile(tengu, this.hero);
+				//Java's `TenguShuriken`: a `MissileSprite` with shuriken art at 2160 spin.
+				this.spawnProjectile(tengu, this.hero, missileFlightArt('Shuriken'));
 			}
 			//else: Java waits here (see above) - no chase step, the turn simply ends.
 		} else {
@@ -21490,6 +21501,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 		for (let i = this.projectiles.length - 1; i >= 0; i--) {
 			const thrown = this.projectiles[i];
+			if (thrown.spin) thrown.sprite.angle = (thrown.sprite.angle + thrown.spin * dt) % 360;
 			if (thrown.flight.update(dt)) {
 				thrown.sprite.destroy();
 				this.projectiles.splice(i, 1);
