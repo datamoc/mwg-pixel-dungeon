@@ -126,7 +126,7 @@ export interface SavedCreature {
 	impShopkeeperGreeted?: boolean;
 	nextTurn: number | null;
 	isAlly?: boolean;
-	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'afterImage';
+	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'afterImage' | 'shadowClone';
 	sheepTurns?: number;
 	wardTier?: number;
 	wardWandLevel?: number;

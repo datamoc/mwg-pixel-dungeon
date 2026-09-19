@@ -75,12 +75,12 @@ export function verifyArmorAbilities(require, check) {
 	});
 
 	check('only implemented abilities are offered, and the charge meter is Java\'s', () => {
-		//The Warrior's three, the Rogue's Smoke Bomb and Death Mark, the Huntress's Spectral Blades,
-		//Nature's Power and Spirit Hawk, the Mage's Warp Beacon, and the Duelist's Feint are the
-		//ported set; a class with none of its own offers nothing, which is what keeps a choice
-		//panel from listing an ability that cannot run.
+		//The Warrior's three, the Rogue's Smoke Bomb, Death Mark and Shadow Clone, the
+		//Huntress's Spectral Blades, Nature's Power and Spirit Hawk, the Mage's Warp Beacon,
+		//and the Duelist's Feint are the ported set; a class with none of its own offers
+		//nothing, which is what keeps a choice panel from listing an ability that cannot run.
 		assert.deepEqual(armorAbilitiesFor('warrior'), ['heroicleap', 'shockwave', 'endure']);
-		assert.deepEqual(armorAbilitiesFor('rogue'), ['smokebomb', 'deathmark']);
+		assert.deepEqual(armorAbilitiesFor('rogue'), ['smokebomb', 'deathmark', 'shadowclone']);
 		assert.deepEqual(armorAbilitiesFor('huntress'), ['spectralblades', 'naturespower', 'spirithawk']);
 		assert.deepEqual(armorAbilitiesFor('mage'), ['warpbeacon']);
 		assert.deepEqual(armorAbilitiesFor('duelist'), ['feint']);
@@ -224,6 +224,37 @@ export function verifyArmorAbilities(require, check) {
 		assert.equal(endureEndingBonus(100, 0, 4, 0).perHitBonus, 100);
 		//Nothing banked means the tracker detaches instead of arming a zero bonus.
 		assert.deepEqual(endureEndingBonus(0, 3, 5, 3), { perHitBonus: 0, hits: 0 });
+	});
+
+	check('ShadowClone\'s charge is Java\'s 35, free while the clone is out, with Java\'s ally stats', () => {
+		const clone = armorAbilityDef('shadowclone');
+		assert.equal(clone.baseChargeUse, 35);
+		assert.equal(clone.targeting, 'clone');
+		assert.deepEqual(clone.talents, ['shadow_blade', 'cloned_armor', 'perfect_copy']);
+		assert.equal(armorChargeUse(clone, { heroicEnergyRank: 0 }), 35);
+		//Directing an existing clone costs nothing, like the hawk's order - and only the clone's.
+		assert.equal(armorChargeUse(clone, { heroicEnergyRank: 0, cloneSummoned: true }), 0);
+		assert.equal(armorChargeUse(clone, { heroicEnergyRank: 4, cloneSummoned: true }), 0);
+		assert.equal(armorChargeUse(armorAbilityDef('smokebomb'), { heroicEnergyRank: 0, cloneSummoned: true }), 50);
+		const { SHADOW_CLONE_HP, shadowCloneHp, shadowCloneAccuracy, shadowCloneEvasion, shadowCloneBladeShare, shadowCloneArmorShare } = require('./simulation/rogueAbilities');
+		assert.equal(SHADOW_CLONE_HP, 80);
+		//`15 + 5*heroLevel`, plus 10% per PERFECT_COPY point: level 10 rank 0 is 80, rank 2 is 93.
+		assert.equal(shadowCloneHp(10, 0), 80);
+		assert.equal(shadowCloneHp(10, 2), 93);
+		assert.equal(shadowCloneHp(1, 4), 88);
+		//`defenseSkill = heroLevel + 4`, `attackSkill = defenseSkill + 5`.
+		assert.equal(shadowCloneAccuracy(1), 10);
+		assert.equal(shadowCloneEvasion(1), 5);
+		assert.equal(shadowCloneAccuracy(10), 19);
+		assert.equal(shadowCloneEvasion(10), 14);
+		//`round(0.08 * points * heroMean / delay)`: 8% of a 15-mean at delay 1, rank 2 is 2.
+		assert.equal(shadowCloneBladeShare(0, 15, 1), 0);
+		assert.equal(shadowCloneBladeShare(2, 15, 1), 2);
+		assert.equal(shadowCloneBladeShare(4, 15, 1), 5);
+		//`round(0.12 * points * armorMean)`: 12% of a 10-mean, rank 3 is 4.
+		assert.equal(shadowCloneArmorShare(0, 10), 0);
+		assert.equal(shadowCloneArmorShare(3, 10), 4);
+		assert.equal(shadowCloneArmorShare(4, 10), 5);
 	});
 
 	check('Feint\'s charge is Java\'s 50, and FEIGNED_RETREAT/EXPOSE_WEAKNESS scale 2 turns per point', () => {

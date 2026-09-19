@@ -184,6 +184,7 @@ import {
 	SPIRIT_HAWK_LIFESPAN, goForTheEyesEffect, spiritHawkDodges, spiritHawkSpeed, spiritHawkViewDistance,
 } from '../simulation/huntressAbilities';
 import { exposeWeaknessDuration, feignedRetreatHaste } from '../simulation/duelistAbilities';
+import { shadowCloneAccuracy, shadowCloneArmorShare, shadowCloneBladeShare, shadowCloneEvasion, shadowCloneHp } from '../simulation/rogueAbilities';
 import { CLASSES, CLASS_AMMO, HERO_IDLE_FRAME, type ClassId } from '../classes';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
 import { TitleScene } from '../scenes/titleScene';
@@ -2408,7 +2409,7 @@ export class DungeonScene extends Scene2D {
 	}
 
 	/** any monster in MONSTERS, cut from its own real sprite sheet at its own real frame size */
-	private spawnMonster(kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'afterImage', championEligible = false): Creature {
+	private spawnMonster(kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'afterImage' | 'shadowClone', championEligible = false): Creature {
 		const profile = monsterSpawnProfile(kind, this.depth, restoring, isAlly, championEligible, this.mobsToChampion);
 		this.mobsToChampion = profile.mobsToChampion;
 		const { def, adjustedDef, baseKind } = profile;
@@ -9694,6 +9695,9 @@ export class DungeonScene extends Scene2D {
 				}
 			}
 		}
+		//`ShadowClone.ShadowAlly` has no turn of its own beyond the shared ally below,
+		//but its gear-scaling stats are re-read on each of its turns (the hawk precedent).
+		if (ally.allyKind === 'shadowClone') this.syncShadowClone(ally);
 		const hostiles = this.visibleAllyHostiles(ally)
 			.sort((a, b) => Roguelike.chebyshevDistance(ally, a) - Roguelike.chebyshevDistance(ally, b));
 		//`DirectableAlly`'s standing order, if this ally has one: an ordered attack target takes
@@ -19380,6 +19384,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			shadowStepArmed: this.hero.buffs['invisibility'] !== undefined,
 			shadowStepRank: this.talentRank('shadow_step'),
 			hawkSummoned: this.spiritHawk() !== undefined,
+			cloneSummoned: this.shadowClone() !== undefined,
 		});
 	}
 
@@ -19454,6 +19459,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//the re-cast opens the cell selector and orders the hawk around).
 		const needsCell = def.targeting === 'cell'
 			|| (def.targeting === 'hawk' && this.spiritHawk() !== undefined)
+			|| (def.targeting === 'clone' && this.shadowClone() !== undefined)
 			|| (def.targeting === 'beacon' && this.warpBeacon === null && this.talentRank('remote_beacon') > 0);
 		if (!needsCell) {
 			this.activateArmorAbility(null);
@@ -19502,7 +19508,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 								: id === 'naturespower' ? this.activateNaturesPower(def, cost)
 									: id === 'spirithawk' ? this.activateSpiritHawk(def, cost, cell)
 										: id === 'feint' ? this.activateFeint(def, cost, cell)
-											: false;
+											: id === 'shadowclone' ? this.activateShadowClone(def, cost, cell)
+												: false;
 		if (!activated) return;
 		this.refresh();
 	}
@@ -20185,6 +20192,111 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.say(t('actors.hero.abilities.duelist.feint.name'), 'positive');
 		this.spendHeroAction(1);
 		return true;
+	}
+
+	/** `ShadowClone.getShadowAlly()`: the living clone, if one is out. */
+	private shadowClone(): Creature | undefined {
+		return this.creatures.find((c) => c.allyKind === 'shadowClone' && c.hp > 0);
+	}
+
+	/**
+	 * `ShadowClone.activate()` (tag `v3.3.8`). Without a clone, the Rogue summons a
+	 * `ShadowAlly` onto a random free `NEIGHBOURS8` cell (`Actor.findChar(p) == null`
+	 * and `passable` - the clone does not fly, so unlike the hawk there is no `avoid`
+	 * half) for the ability's charge, dispelling invisibility and spending the turn.
+	 * With a clone already out the ability becomes a free order instead
+	 * (`chargeUse()` returns 0), directed through the shared `directAlly` orders.
+	 * Java reuses `SpiritHawk`'s `no_space` line when hemmed in, so this does too.
+	 */
+	private activateShadowClone(def: ArmorAbilityDef, cost: number, cell: Step | null): boolean {
+		const clone = this.shadowClone();
+		if (clone) {
+			//Java's `activate()` returns silently when a clone exists and no target was
+			//chosen; the port's aim only ever opens for the direct case.
+			if (cell) {
+				this.directAlly(clone, cell, {
+					defend: 'actors.hero.abilities.rogue.shadowclone$shadowally.direct_defend',
+					follow: 'actors.hero.abilities.rogue.shadowclone$shadowally.direct_follow',
+					attack: 'actors.hero.abilities.rogue.shadowclone$shadowally.direct_attack',
+				});
+				this.refresh();
+			}
+			return false;
+		}
+		const spawnPoints: Step[] = [];
+		for (const [dx, dy] of Roguelike.neighbourOffsets(8) as ReadonlyArray<readonly [number, number]>) {
+			const at = { x: this.hero.x + dx, y: this.hero.y + dy };
+			if (!this.level.inside(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
+			if (this.level.passable(at.x, at.y)) spawnPoints.push(at);
+		}
+		if (spawnPoints.length === 0) {
+			this.say(t('actors.hero.abilities.huntress.spirithawk.no_space'), 'negative');
+			return false;
+		}
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		const at = Random.element(spawnPoints)!;
+		this.spawnShadowClone(at);
+		//Java's `Invisibility.dispel()` trails the summon (not the direct branch).
+		delete this.hero.buffs['invisibility'];
+		this.spendHeroAction(1);
+		return true;
+	}
+
+	/**
+	 * `ShadowClone.ShadowAlly`'s combat chassis (tag `v3.3.8`): `HP = HT = 80` plus
+	 * `PERFECT_COPY`'s `round(0.1 * points * (15 + 5*heroLevel))`, `defenseSkill =
+	 * heroLevel + 4` (the port's accuracy 10 / evasion 5 base is Java's own attack 10 /
+	 * defense 5 scale, so `attackSkill = defenseSkill + 5` and `defenseSkill` land
+	 * directly on `accuracy`/`evasion`), and the `NormalIntRange(10, 20)` damage base.
+	 * The sprite is the hero's own class sheet darkened - this port has no
+	 * `ShadowSprite` art, so the mirror-image factory plus a shadow tint stands in.
+	 */
+	private spawnShadowClone(at: Step): Creature {
+		const hp = shadowCloneHp(this.progression.level, this.talentRank('perfect_copy'));
+		const clone = this.spawnMonster('rat', at, false, undefined, true, 'shadowClone');
+		clone.name = t('actors.hero.abilities.rogue.shadowclone$shadowally.name');
+		clone.hp = hp;
+		clone.maxHp = hp;
+		clone.sleeping = false;
+		clone.seesHero = true;
+		this.syncShadowClone(clone);
+		const carrier = this.sprite(clone);
+		carrier.destroy();
+		const sheet = heroSheet(runState.sprites[this.heroClass]);
+		const frame = Math.max(0, Math.min(5, this.armorTier)) * 21;
+		const sprite = new TintedSprite(sheet.get(frame));
+		placeCharacterArt(sprite);
+		sprite.x = at.x * TILE;
+		sprite.y = at.y * TILE;
+		sprite.tint = 0x555566;
+		sprite.alpha = 0.9;
+		this.creatureLayer.addChild(sprite);
+		this.spriteFor.set(clone.id, sprite);
+		return clone;
+	}
+
+	/**
+	 * Re-reads the clone's gear-scaling stats every one of its own turns (the hawk's
+	 * `takeSpiritHawkTurn` precedent - a talent taken mid-summon still applies):
+	 * `SHADOW_BLADE`'s `round(0.08 * points * heroDamageRoll / attackDelay)` over the
+	 * `10-20` base, and `CLONED_ARMOR`'s `round(0.12 * points * heroDrRoll)` armor.
+	 * Java rolls the hero's damage and DR live per swing/defense; this port reads the
+	 * means of the hero's current ranges once per clone turn (no extra RNG draws) and
+	 * divides by the attack-cost rate, which is this port's expression of
+	 * `attackDelay()`. Not modeled: the `Int(4) < points` weapon-enchantment and
+	 * armor-glyph/proc shares (`attackProc`/`defenseProc`/`glyphLevel`), which need a
+	 * gear-proc call path for non-hero attackers that does not exist here.
+	 */
+	private syncShadowClone(clone: Creature): void {
+		const heroLevel = this.progression.level;
+		clone.accuracy = shadowCloneAccuracy(heroLevel);
+		clone.evasion = shadowCloneEvasion(heroLevel);
+		const heroMean = (this.hero.damage[0] + this.hero.damage[1]) / 2;
+		const bladeShare = Math.max(0, shadowCloneBladeShare(this.talentRank('shadow_blade'), heroMean, this.getAttackTurnCostMod()));
+		clone.damage = [10 + bladeShare, 20 + bladeShare];
+		const heroArmorMean = (this.hero.armor[0] + this.hero.armor[1]) / 2;
+		const armorShare = Math.max(0, shadowCloneArmorShare(this.talentRank('cloned_armor'), heroArmorMean));
+		clone.armor = [armorShare, armorShare];
 	}
 
 	/**
