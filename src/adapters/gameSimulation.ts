@@ -144,7 +144,7 @@ export function runMonsterTurn(effects: MonsterTurnEffects): number {
 	}
 }
 
-export function runHungerStep(state: HungerState, step = 10): { state: HungerState; events: HungerEvent[] } {
+export function runHungerStep(state: HungerState, step = 1): { state: HungerState; events: HungerEvent[] } {
 	const event = dispatch({ kind: 'hunger', state, step }) as { type: 'hunger-transition'; state: HungerState; events: HungerEvent[] };
 	return { state: event.state, events: [...event.events] };
 }

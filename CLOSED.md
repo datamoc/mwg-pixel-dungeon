@@ -1209,7 +1209,15 @@ Moved here from `ROADMAP.md` with all 8 checkboxes checked. Original body follow
 - [x] Match hunger and starvation damage exactly (`Hunger.act()`'s real `partialDamage` fractional
       accrual and crossing-into-STARVING 1-damage hit, replacing the former flat "every 10 turns"
       guess). Java has no attack-delay/accuracy penalty while merely hungry beyond the log line, so
-      there is no further penalty to match there.
+      there is no further penalty to match there. **Correction, 2026-09-19**: the starvation-damage
+      curve above was right, but the hunger *climb rate* underneath it was a real, player-reported
+      bug this line's own text never caught - `rings.mwl`'s `spdAdventureClock` authored
+      `hunger: 10` per turn against Java's real `+1`, making a hero hungry/starving in 30/45 turns
+      instead of the real 300/450 (both thresholds were always correct and unscaled, which is
+      exactly what made the mismatched increment a 10x-faster bug rather than a harmless
+      re-scaling). Fixed to `1`, with matching stale `10` defaults in `dungeonScene.ts`,
+      `sceneSimulation.ts`, `gameSimulation.ts` and `simulation/hunger.ts` itself. See
+      `PORT_COVERAGE.md`'s `Hunger.act()` row.
 - [x] Match stealth, invisibility, surprise, and attack-delay systems exactly. Ported: sleeping
       wake-ups roll the real `1/(distance+stealth)` detection gated on the mob's own sight, with
       Silent Steps and levitation as their real never-wake immunities; the negative-buff wake (any

@@ -7,7 +7,13 @@
         tag: "turn_clock",
         id: "spdAdventureClock",
         tick: 1,
-        hunger: 10,
+        //`Hunger.act()` (tag `v3.3.8`): `level` climbs by `1f/hungerDelay` per hero turn -
+        //effectively +1, not +10. HUNGRY (300) and STARVING (450) are Java's own real
+        //thresholds (unscaled), so the per-turn increment must be unscaled too: this was
+        //authored as 10, making a hero hungry and starving ten times faster than real Java
+        //(30/45 turns instead of 300/450) - a real, player-reported bug, not a deliberate
+        //faster-paced simplification.
+        hunger: 1,
       },
       {
         tag: "item",

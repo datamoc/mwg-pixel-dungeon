@@ -17,12 +17,17 @@ export interface HungerResult {
 	events: HungerEvent[];
 }
 
-const STEP = 10;
+/** `Hunger.act()`'s real `1f/hungerDelay` per turn (hungerDelay defaults to 1) - **not** 10.
+ * Found as a real, player-reported bug (2026-09-19): this was authored as 10 in
+ * `rings.mwl`'s `spdAdventureClock`, making a hero hungry/starving in 30/45 turns instead
+ * of Java's real 300/450 (HUNGRY/STARVING below are Java's own unscaled thresholds, so the
+ * increment has to be unscaled too, or the two drift apart exactly like this). */
+const STEP = 1;
 export const HUNGRY = 300;
 export const STARVING = 450;
 
 /**
- * Ported from `Hunger.act()` (`actors/buffs/Hunger.java`): `level` climbs by `STEP` (10)
+ * Ported from `Hunger.act()` (`actors/buffs/Hunger.java`): `level` climbs by `STEP` (1)
  * per hero turn. Below STARVING, the `onhungry`/`onstarving` log lines fire exactly once -
  * on the turn `newLevel` first crosses each threshold, matching Java's `newLevel >= X &&
  * level < X` guard rather than a persisted "warned" flag (crossing itself is self-gating).

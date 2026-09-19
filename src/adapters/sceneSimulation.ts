@@ -54,7 +54,7 @@ export class SceneSimulationAdapter<A extends TurnActor & { speed?: number }> {
 		return stop;
 	}
 
-	hungerStep(step = 10): void {
+	hungerStep(step = 1): void {
 		//Routed through the hunger SimulationRuntime (see hungerSimulation.ts) rather than
 		//calling advanceHunger directly - same transition, same events, committed and
 		//presented exactly as before; only the dispatch path changed.

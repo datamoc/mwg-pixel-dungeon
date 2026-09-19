@@ -27499,7 +27499,7 @@ export const gameData = {
 					"attributes": {
 						"id": "spdAdventureClock",
 						"tick": "1",
-						"hunger": "10"
+						"hunger": "1"
 					},
 					"children": [],
 					"location": {
@@ -27528,7 +27528,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-								"line": 21,
+								"line": 27,
 								"column": 13
 							},
 							"gettext": []
@@ -27536,7 +27536,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-						"line": 13,
+						"line": 19,
 						"column": 9
 					},
 					"gettext": []
@@ -27560,7 +27560,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-								"line": 36,
+								"line": 42,
 								"column": 13
 							},
 							"gettext": []
@@ -27568,7 +27568,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-						"line": 28,
+						"line": 34,
 						"column": 9
 					},
 					"gettext": []
@@ -27592,7 +27592,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-								"line": 51,
+								"line": 57,
 								"column": 13
 							},
 							"gettext": []
@@ -27600,7 +27600,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-						"line": 43,
+						"line": 49,
 						"column": 9
 					},
 					"gettext": []
@@ -27624,7 +27624,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-								"line": 66,
+								"line": 72,
 								"column": 13
 							},
 							"gettext": []
@@ -27632,7 +27632,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-						"line": 58,
+						"line": 64,
 						"column": 9
 					},
 					"gettext": []
@@ -27656,7 +27656,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-								"line": 81,
+								"line": 87,
 								"column": 13
 							},
 							"gettext": []
@@ -27664,7 +27664,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-						"line": 73,
+						"line": 79,
 						"column": 9
 					},
 					"gettext": []
@@ -27688,7 +27688,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-								"line": 96,
+								"line": 102,
 								"column": 13
 							},
 							"gettext": []
@@ -27696,7 +27696,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-						"line": 88,
+						"line": 94,
 						"column": 9
 					},
 					"gettext": []
@@ -27720,7 +27720,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-								"line": 111,
+								"line": 117,
 								"column": 13
 							},
 							"gettext": []
@@ -27728,7 +27728,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-						"line": 103,
+						"line": 109,
 						"column": 9
 					},
 					"gettext": []
@@ -27752,7 +27752,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-								"line": 126,
+								"line": 132,
 								"column": 13
 							},
 							"gettext": []
@@ -27760,7 +27760,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-						"line": 118,
+						"line": 124,
 						"column": 9
 					},
 					"gettext": []
@@ -27784,7 +27784,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-								"line": 141,
+								"line": 147,
 								"column": 13
 							},
 							"gettext": []
@@ -27792,7 +27792,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-						"line": 133,
+						"line": 139,
 						"column": 9
 					},
 					"gettext": []
@@ -27816,7 +27816,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-								"line": 156,
+								"line": 162,
 								"column": 13
 							},
 							"gettext": []
@@ -27824,7 +27824,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-						"line": 148,
+						"line": 154,
 						"column": 9
 					},
 					"gettext": []
@@ -27848,7 +27848,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-								"line": 171,
+								"line": 177,
 								"column": 13
 							},
 							"gettext": []
@@ -27856,7 +27856,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-						"line": 163,
+						"line": 169,
 						"column": 9
 					},
 					"gettext": []
@@ -27880,7 +27880,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-								"line": 186,
+								"line": 192,
 								"column": 13
 							},
 							"gettext": []
@@ -27888,7 +27888,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\rings.mwl",
-						"line": 178,
+						"line": 184,
 						"column": 9
 					},
 					"gettext": []

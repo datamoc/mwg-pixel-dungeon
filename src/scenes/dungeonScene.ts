@@ -8356,7 +8356,7 @@ export class DungeonScene extends Scene2D {
 
 	/** Hunger.act(): +10 per turn, warnings/1-damage on crossing STARVING, then continuous partialDamage accrual */
 	private hungerStep(): void {
-		this.simulation.hungerStep(MWL_TURN_CLOCK.hunger ?? 10);
+		this.simulation.hungerStep(MWL_TURN_CLOCK.hunger ?? 1);
 		const reduction = ironStomachReduction(this.heroClass, this.talentRank('iron_stomach'));
 		if (reduction > 0) this.hunger = Math.max(0, this.hunger - reduction);
 	}
