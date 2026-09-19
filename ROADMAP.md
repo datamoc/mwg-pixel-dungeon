@@ -1294,7 +1294,27 @@ one.
       empty pickers draw nothing, vanished picks swap nothing). The drive caught one stub bug
       in review - the drive's `t` dropped params, hiding the substitution the recycled line
       asserts - fixed by echoing params like the harness's own i18n stub.
-      **Complexity: S.**
+      **Complexity: S.** **Twentieth extraction 2026-09-19**: the infusion pair
+      (`useCurseInfusion`'s pool draw/curse/marker, `useMagicalInfusion`'s keep-upgrade) joined
+      `items/spells.ts` as `useCurseInfusionFlow`/`useMagicalInfusionFlow` behind an
+      `InfusionBase` plus `CurseInfusionContext` (spell gate/consume, picker, live-bag scans,
+      relabel, burst, name, panels); the scene keeps the two one-line adapters the router
+      calls, a curse builder over a shared `infusionBase`, and drops both bodies, both local
+      `Infusable` types, and the six names the two bodies alone used (both predicates, both
+      curse pools, `upgradeItem`). The
+      module imports the real predicates, pools, `Random`, and `upgradeItem` directly. Net −23
+      lines in `dungeonScene.ts` (22,752 after), `spells.ts` 241 to 358. Suites: `tsc` clean
+      after narrowing one seam cast (the swapped-back payload is the drawn object, stated at
+      the cast - same shape as the recycle seam), item suite green with a new headless drive
+      (missing spells never open pickers, pickers run the real usability rules, curse lands
+      pool affix/level/bonus/relabel/burst/consume, wands curse pool-free, marked picks gain
+      nothing twice, bare lists refuse, vanished picks consume nothing, upgrades land +1 with
+      the enchant kept). The drive caught three review bugs: a sibling-require the harness
+      compiles under another name (fixed by an idempotent recompile with the reason stated),
+      minted fixture ids the default-true predicate wrongly admits (fixed by using the
+      suite-pinned real ids), and a before-level read after the drive already mutated the item
+      (fixed by asserting the known +0 start).
+      **Complexity: M.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

@@ -79,6 +79,10 @@ compile(join(root, 'src/dungeonConstants.ts'), 'dungeonConstants.js');
 	compile(join(root, 'src/items/rose.ts'), 'items/rose.js');
 compile(join(root, 'src/items/beacon.ts'), 'items/beacon.js');
 compile(join(root, 'src/items/spells.ts'), 'items/spells.js');
+//`spells.js` upgrades through `itemWorkflows.js` by its real name, while the suite otherwise
+//only compiles that module as `workflows.js` (line 26) - recompiling it here under its own
+//name is the same idempotent write.
+compile(join(root, 'src/items/itemWorkflows.ts'), 'items/itemWorkflows.js');
 	// The Ring of Wealth's bonus-drop counters and drop catalogue are scene-free in the same way.
 	compile(join(root, 'src/items/shopStock.ts'), 'items/shopStock.js');
 	compile(join(root, 'src/items/wealthDrops.ts'), 'items/wealthDrops.js');
@@ -2306,7 +2310,7 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 }
 // The moved targeted spells (`items/spells.ts`, the file-size refactor's seventeenth
 // extraction): driven headlessly with a stub floor and scripted aim.
-const { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow } = require('./items/spells.js');
+const { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow, useCurseInfusionFlow, useMagicalInfusionFlow } = require('./items/spells.js');
 function spellDrive(overrides = {}) {
 	const log = [];
 	const flags = { aim: null, grabbed: [], moved: [], teleports: [], calmed: [], paralysed: [], turns: 0, consumed: [], refunds: 0, restitched: 0 };
@@ -2511,6 +2515,97 @@ function recycleDrive(overrides = {}, pickIndex = 0) {
 	const stale = recycleDrive({ ctx: { findRecyclable: () => null } });
 	assert.deepEqual(stale.flags.swapped, null, 'a pick that vanishes before confirm swaps nothing');
 	assert.equal(stale.flags.refreshed, 0, 'and refreshes nothing');
+}
+// The moved infusion spells (`useCurseInfusionFlow`/`useMagicalInfusionFlow`, the file-size
+// refactor's twentieth extraction): driven headlessly with a live-object bag, the real
+// predicates, and the real curse pools.
+const { getWeaponCurses, getArmorCurses } = require('./items/itemCurses.js');
+const { usableForCurseInfusion, usableForMagicalInfusion } = require('./items/itemKinds.js');
+function infusionDrive(kind, overrides = {}, pickIndex = 0) {
+	const log = [];
+	const flags = { picker: null, consumed: [], relabelled: [], bursts: 0, refreshed: 0 };
+	const items = overrides.items ?? [
+		{ id: 'weapon_dagger_t1', quantity: 1, instanceId: 's1', level: 0 },
+		{ id: 'armorReward', quantity: 1, instanceId: 'a1', level: 0 },
+		{ id: 'wand', quantity: 1, instanceId: 'w1', level: 0 },
+		{ id: 'potionHealing', quantity: 1, instanceId: 'p1' },
+	];
+	const ctx = {
+		hasSpell: () => overrides.hasSpell ?? true,
+		consumeSpell: (id) => { flags.consumed.push(id); },
+		openPicker: (title, entries, onPick) => {
+			flags.picker = { title, entries };
+			if (entries.length > 0) onPick(entries[pickIndex] ?? entries[0]);
+		},
+		infusables: () => items,
+		findInfusable: (id, instanceId) => items.find((item) => item.quantity > 0
+			&& item.id === id && (item.instanceId ?? undefined) === (instanceId ?? undefined)) ?? null,
+		itemName: (item) => `name:${item.id}`,
+		refreshPanels: () => { flags.refreshed++; },
+		relabelAfterInfusion: (item) => { flags.relabelled.push(item.id); },
+		burstShadowUp: () => { flags.bursts++; },
+		say: (line, level) => { log.push(`say:${level}:${line}`); },
+		t: (key, params) => key + (params ? JSON.stringify(params) : ''),
+		...overrides.ctx,
+	};
+	if (kind === 'curse') useCurseInfusionFlow(ctx);
+	else useMagicalInfusionFlow(ctx);
+	return { ctx, log, flags, items };
+}
+{
+	const missing = infusionDrive('curse', { hasSpell: false });
+	assert.equal(missing.flags.picker, null, 'no spell, no picker');
+	const d = infusionDrive('curse');
+	const expected = d.items.filter((item) => item.quantity > 0 && usableForCurseInfusion(item)).map((e) => e.id);
+	assert.deepEqual(d.flags.picker.entries.map((e) => e.id), expected, 'the picker runs the real usability rule');
+	assert.ok(expected.includes('weapon_dagger_t1'), 'a weapon is infusable');
+	assert.ok(!expected.includes('potionHealing'), 'a potion is not');
+	const picked = d.items.find((item) => item.id === expected[0]);
+	// The drive runs the flow on construction, so `picked` is already mutated here - the
+	// fixture starts at +0, which is what the +1 below is measured from.
+	assert.equal(picked.cursed, true, 'the pick is cursed');
+	if (picked.id !== 'wand') {
+		const pool = (picked.id === 'armorReward' ? getArmorCurses() : getWeaponCurses()).map((c) => c.id);
+		assert.ok(pool.includes(picked.affix), `the affix comes from the ${picked.id === 'armorReward' ? 'armor' : 'weapon'} pool`);
+	}
+	assert.equal(picked.level, 1, 'the one-time marker level lands on the +0 pick');
+	assert.equal(picked.curseInfusionBonus, true, 'and latches');
+	assert.deepEqual(d.flags.relabelled, [picked.id], 'missile stacks relabel');
+	assert.equal(d.flags.bursts, 1, 'the shadow bursts');
+	assert.deepEqual(d.flags.consumed, ['curseInfusion'], 'the spell is consumed');
+	assert.ok(d.log.some((l) => l.includes('curseinfusion') && l.includes(`name:${picked.id}`)), 'named in the curse line');
+	assert.equal(d.flags.refreshed, 1, 'panels refresh');
+	const wand = infusionDrive('curse', { items: [{ id: 'wand', quantity: 1, instanceId: 'w1', level: 0 }] });
+	assert.equal(wand.items[0].cursed, true, 'wands curse with no pool draw');
+	assert.equal(wand.items[0].affix, undefined, 'and no affix');
+	assert.equal(wand.items[0].level, 1, 'but the marker level still lands');
+	const marked = infusionDrive('curse', { items: [{ id: 'weapon_dagger_t1', quantity: 1, instanceId: 's1', level: 2, affix: 'wayward', cursed: true, curseInfusionBonus: true }] });
+	assert.equal(marked.items[0].level, 2, 'an already-marked pick gains no second level');
+	assert.deepEqual(marked.flags.relabelled, [], 'and does not relabel');
+	assert.deepEqual(marked.flags.consumed, ['curseInfusion'], 'but still consumes');
+	const bare = infusionDrive('curse', { items: [{ id: 'potionHealing', quantity: 1, instanceId: 'p1' }] });
+	assert.equal(bare.flags.picker, null, 'no candidates means no picker');
+	assert.ok(bare.log.some((l) => l.includes('curseinfusion') && l.startsWith('say:negative')), 'just the refusal line');
+	const stale = infusionDrive('curse', { ctx: { findInfusable: () => null } });
+	assert.deepEqual(stale.flags.consumed, [], 'a vanished pick consumes nothing');
+}
+{
+	const missing = infusionDrive('magic', { hasSpell: false });
+	assert.equal(missing.flags.picker, null, 'no spell, no picker');
+	const d = infusionDrive('magic');
+	const expected = d.items.filter((item) => item.quantity > 0 && usableForMagicalInfusion(item)).map((e) => e.id);
+	assert.deepEqual(d.flags.picker.entries.map((e) => e.id), expected, 'the picker runs the real upgradability rule');
+	const picked = d.items.find((item) => item.id === expected[0]);
+	assert.equal(picked.level, 1, 'the pick upgrades exactly once from +0');
+	assert.deepEqual(d.flags.consumed, ['magicalInfusion'], 'the spell is consumed');
+	assert.ok(d.log.some((l) => l.includes('magicalinfusion') && l.includes(`name:${picked.id}`)), 'named in the upgrade line');
+	assert.equal(d.flags.refreshed, 1, 'panels refresh');
+	const kept = infusionDrive('magic', { items: [{ id: 'weapon_dagger_t1', quantity: 1, instanceId: 's1', level: 0, affix: 'blazing' }] });
+	assert.equal(kept.items[0].affix, 'blazing', 'the keep policy preserves the enchant');
+	assert.equal(kept.items[0].level, 1, 'while still upgrading');
+	const bare = infusionDrive('magic', { items: [{ id: 'potionHealing', quantity: 1, instanceId: 'p1' }] });
+	assert.equal(bare.flags.picker, null, 'no candidates means no picker');
+	assert.ok(bare.log.some((l) => l.includes('nothing') && l.startsWith('say:negative')), 'just the nothing line');
 }
 }
 }

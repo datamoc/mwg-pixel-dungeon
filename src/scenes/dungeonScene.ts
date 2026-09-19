@@ -66,7 +66,7 @@ import { Label, theme, Button, Window, WindowStack } from 'mwg';
 import { titleIcon, type TitleIconName } from '../ui/titleIcons';
 import { Roguelike, Actors, Rpg, World } from 'mwg';
 import { loadSpdSprites } from '../images';
-import { rollGeneratedAffix, groundKindForItem, portItemKind, sourceInventoryItem, isUpgradableItem, SPECIALTY_BOMB_IDS, usableForCurseInfusion, usableForMagicalInfusion } from '../items/itemKinds';
+import { rollGeneratedAffix, groundKindForItem, portItemKind, sourceInventoryItem, isUpgradableItem, SPECIALTY_BOMB_IDS } from '../items/itemKinds';
 import { ENCHANT_TABLE, GLYPH_TABLE, UNSTABLE_DELEGATES } from '../items/itemAffixes';
 import {
 	POTION_CLASS_BY_PORT_ID,
@@ -205,9 +205,9 @@ import { foregroundGrassFrames as buildForegroundGrassFrames, terrainFrameAt as 
 import { Banner } from '../ui/banner';
 import { showDefeatPanel as showDefeatPanelUi, showVictoryPanel as showVictoryPanelUi } from '../ui/endPanels';
 import { createItemPickerWindow } from '../ui/itemPicker';
-import { curseInfusionLevelBonus, reverseCurseInfusion, transferEnhancement, upgradeItem } from '../items/itemWorkflows';
+import { curseInfusionLevelBonus, reverseCurseInfusion, transferEnhancement } from '../items/itemWorkflows';
 import { armorReductionRange, weaponDamageRange, WEAPON_NAME_BY_CLASS, CLASS_ARMOR_ID_BY_CLASS, isClassArmorId } from '../items/catalog';
-import { getArmorCurses, getCurse, getWeaponCurses } from '../items/itemCurses';
+import { getCurse } from '../items/itemCurses';
 import { Cat, blacksmithSmithRewards, generatorItemOrder, generatorRandom, ghostQuestReward, randomUsingDefaults, randomCategory, randomWeapon, randomArmor, randomArtifact, randomGold, removeArtifactClass, setGeneratorDepth, type GenItem, type StatueLoot } from '../items/generator';
 import { MWL_CONSUMABLE_STATS, MWL_HERO_BASE_STATS, MWL_HERO_LEVEL_GROWTH, MWL_MISSILE_BY_CLASS, MWL_MISSILE_NAME_KEYS, MWL_PROGRESSION, MWL_QUEST_DEFINITIONS, MWL_SCENARIO_QUESTS, MWL_TURN_CLOCK, MWL_WAND_WARD_RULES, mwlItemEffectValue } from '../mwlContent';
 import { dungeonRegion } from './regions';
@@ -235,7 +235,7 @@ import { applyTalismanPerTurnCharge, useTalismanFlow, checkTalismanAwarenessFlow
 import { roseGhostMaxHp, applyRoseRecharge, useRoseFlow, type RoseFlowContext, type RoseItem } from '../items/rose';
 import { rosePetalsNeeded, rosePetalDropCap, rosePetalPickup, roseChargeCap, roseLevelCap } from '../items/rose';
 import { beaconChargeCap, useBeaconFlow, useReturningBeaconFlow, type BeaconFlowContext, type BeaconItem } from '../items/beacon';
-import { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow, type TargetedSpellAim, type TelekineticGrabContext, type PhaseShiftContext, type ReclaimTrapContext, type RecycleContext } from '../items/spells';
+import { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow, useCurseInfusionFlow, useMagicalInfusionFlow, type TargetedSpellAim, type TelekineticGrabContext, type PhaseShiftContext, type ReclaimTrapContext, type RecycleContext, type InfusionBase, type CurseInfusionContext } from '../items/spells';
 import { planWealthDrops, wealthEquipBonus, initialiseWealthTrackers, wealthDeathRolls, type WealthDropPlan, type WealthTrackers } from '../items/wealthDrops';
 import { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal, artifactRechargeDuration, wildEnergyRechargeTurns, type RechargeGuards } from '../items/artifactRecharge';
 import { equipRing as equipInventoryRing, equipArmor as equipInventoryArmor, equipWeapon as equipInventoryWeapon, type GearEquipmentContext, type RingEquipmentContext } from '../items/equipment';
@@ -22172,45 +22172,40 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * cleanse path removes the curse affix but does not yet reverse the level marker. Both
 	 * omissions are recorded in PORT_COVERAGE.md rather than hidden in the action. */
 	private useCurseInfusion(instanceId?: string): void {
-		if (!this.bag.find('curseInfusion', instanceId)) return;
+		useCurseInfusionFlow(this.curseInfusionContext(), instanceId);
+	}
+
+	/**
+	 * The CurseInfusion pick/curse flow lives in `items/spells.ts` behind
+	 * `CurseInfusionContext` - the file-size refactor's twentieth extraction (with
+	 * MagicalInfusion below), behavior-identical.
+	 */
+	private curseInfusionContext(): CurseInfusionContext {
+		const scene = this;
+		return {
+			...scene.infusionBase(),
+			relabelAfterInfusion: (item) => { scene.relabelMissileStack(item); },
+			burstShadowUp: () => { scene.burstShadowUp({ x: scene.hero.x, y: scene.hero.y }); },
+		};
+	}
+
+	/** The seams both infusion pickers share: the carried spell, the picker, the bag. */
+	private infusionBase(): InfusionBase {
+		const scene = this;
 		type Infusable = { id: string; quantity: number; instanceId?: string; affix?: string; cursed?: boolean; level?: number; identified?: boolean; curseInfusionBonus?: boolean };
-		//`CurseInfusion.usableOnItem`: an upgradable equipable, or a wand. The predicate covers the
-		//missile stacks Java's `Weapon` reaches as well - `usableOnItem` is the same rule for both
-		//infusion spells, so both pickers run it rather than hand-rolling the id list.
-		const candidates = (this.bag.items as Infusable[]).filter((item) => item.quantity > 0
-			&& usableForCurseInfusion(item));
-		if (candidates.length === 0) {
-			this.say(t('items.spells.curseinfusion.inv_title'), 'negative');
-			return;
-		}
-		this.openItemPicker(t('items.spells.curseinfusion.inv_title'), candidates, (pick) => {
-			const item = (this.bag.items as Infusable[]).find((candidate) => candidate.quantity > 0
-				&& candidate.id === pick.id && (candidate.instanceId ?? undefined) === (pick.instanceId ?? undefined));
-			if (!item) return;
-			if (item.id === 'wand') {
-				item.cursed = true;
-			} else {
-				const pool = item.id === 'armorReward' ? getArmorCurses() : getWeaponCurses();
-				const available = pool.filter((curse) => curse.id !== item.affix);
-				const curse = Random.element(available.length > 0 ? available : pool) ?? pool[0];
-				if (!curse) return;
-				item.affix = curse.id;
-				item.cursed = true;
-			}
-			if (!item.curseInfusionBonus) {
-				item.curseInfusionBonus = true;
-				item.level = (item.level ?? 0) + 1;
-				//`Item.upgrade()` (not `MissileWeapon.upgrade()`): the infusion's level is the
-				//ordinary one, so the stack is relabelled but its wear and count are left alone.
-				this.relabelMissileStack(item);
-			}
-			this.bag.remove('curseInfusion', 1, instanceId);
-			//`CurseInfusion.onItemSelected()`: five `ShadowParticle.UP` at the hero's own cell.
-			//(Magical Infusion bursts nothing - it only plays READ.)
-			this.burstShadowUp({ x: this.hero.x, y: this.hero.y });
-			this.say(t('port.log.curseinfusion', { item: this.itemDisplayName(item.id, item.identified ?? false, item.instanceId) }), 'negative');
-			this.refreshInventoryPanel();
-		});
+		const carried = () => scene.bag.items as Infusable[];
+		return {
+			hasSpell: (id, instanceId) => scene.bag.find(id, instanceId) !== undefined,
+			consumeSpell: (id, instanceId) => { scene.bag.remove(id, 1, instanceId); },
+			openPicker: (title, entries, onPick) => scene.openItemPicker(title, entries, onPick),
+			infusables: () => carried(),
+			findInfusable: (id, instanceId) => carried().find((item) => item.quantity > 0
+				&& item.id === id && (item.instanceId ?? undefined) === (instanceId ?? undefined)) ?? null,
+			itemName: (item) => scene.itemDisplayName(item.id, item.identified ?? false, item.instanceId),
+			refreshPanels: () => { scene.refreshInventoryPanel(); },
+			say: scene.say.bind(scene),
+			t,
+		};
 	}
 
 	/** `MagicalInfusion.onItemSelected()`/`upgradeItem()` (tag `v3.3.8`): upgrade one
@@ -22222,25 +22217,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * preservation of `curseInfusionBonus` is represented by the payload's ordinary level and
 	 * cursed state; the separate temporary bonus has no independent field here. */
 	private useMagicalInfusion(instanceId?: string): void {
-		if (!this.bag.find('magicalInfusion', instanceId)) return;
-		type Infusable = { id: string; quantity: number; instanceId?: string; level?: number; affix?: string; cursed?: boolean; identified?: boolean };
-		//`MagicalInfusion.usableOnItem` is `isUpgradable()`: any carried upgradable item, which for
-		//this port's vocabulary is the equipable ids plus a missile stack.
-		const candidates = (this.bag.items as Infusable[]).filter((item) => item.quantity > 0
-			&& usableForMagicalInfusion(item));
-		if (candidates.length === 0) {
-			this.say(t('items.scrolls.scrolloftransmutation.nothing'), 'negative');
-			return;
-		}
-		this.openItemPicker(t('items.spells.magicalinfusion.inv_title'), candidates, (pick) => {
-			const item = (this.bag.items as Infusable[]).find((candidate) => candidate.quantity > 0
-				&& candidate.id === pick.id && (candidate.instanceId ?? undefined) === (pick.instanceId ?? undefined));
-			if (!item) return;
-			upgradeItem(item, 1, 'keep');
-			this.bag.remove('magicalInfusion', 1, instanceId);
-			this.say(t('port.log.magicalinfusion', { item: this.itemDisplayName(item.id, item.identified ?? false, item.instanceId) }), 'positive');
-			this.refreshInventoryPanel();
-		});
+		useMagicalInfusionFlow(this.infusionBase(), instanceId);
 	}
 
 	/** `BeaconOfReturning.onCast()`/`setBeacon()`/`returnBeacon()` (tag `v3.3.8`): a

@@ -7,8 +7,12 @@
  * The flows themselves live here too, behind their contexts - the file-size refactor's
  * seventeenth extraction, behavior-identical.
  */
+import { Random } from 'mwg';
 import type { AnyMonsterId } from '../monsters';
 import type { TrapKind } from '../dungeonConstants';
+import { usableForCurseInfusion, usableForMagicalInfusion } from './itemKinds';
+import { getArmorCurses, getWeaponCurses } from './itemCurses';
+import { upgradeItem } from './itemWorkflows';
 
 /** The seams every targeted spell shares: the carried spell, the aimer, the turn, the log. */
 export interface TargetedSpellAim {
@@ -121,6 +125,119 @@ export function useRecycleFlow(ctx: RecycleContext, instanceId?: string): void {
 		const replacement = ctx.drawReplacement(category, source);
 		ctx.replaceRecycled(source, replacement, instanceId);
 		ctx.say(ctx.t('items.spells.recycle.recycled', { 0: ctx.replacementName(replacement) }), 'positive');
+		ctx.refreshPanels();
+	});
+}
+
+/** A carried weapon, armor, wand or missile stack an infusion picker can offer. The
+ *  scene passes the live bag items, so setting fields here sets them on the real gear,
+ *  the way the rose flow stats its ghost. */
+export interface InfusableView {
+	id: string;
+	quantity: number;
+	instanceId?: string | undefined;
+	affix?: string | undefined;
+	cursed?: boolean | undefined;
+	level?: number | undefined;
+	identified?: boolean | undefined;
+	curseInfusionBonus?: boolean | undefined;
+}
+
+/** The seams both infusion pickers share: the carried spell, the picker, the bag. */
+export interface InfusionBase {
+	hasSpell(id: string, instanceId?: string): boolean;
+	consumeSpell(id: string, instanceId?: string): void;
+	openPicker(title: string, entries: InfusableView[], onPick: (entry: { id: string; instanceId?: string }) => void): void;
+	infusables(): InfusableView[];
+	findInfusable(id: string, instanceId?: string): InfusableView | null;
+	itemName(item: InfusableView): string;
+	refreshPanels(): void;
+	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
+	t(key: string, params?: Record<string, string | number>): string;
+}
+
+/**
+ * The CurseInfusion pick/curse flow, moved out of the scene behind this context the
+ * same way - behavior-identical, with the scene keeping one builder plus the
+ * `useCurseInfusion` adapter the item-use router calls. The curse pools, the draw and
+ * the field writes are the module's; the missile-stack relabel and the shadow burst
+ * stay scene-side.
+ */
+export interface CurseInfusionContext extends InfusionBase {
+	relabelAfterInfusion(item: InfusableView): void;
+	burstShadowUp(): void;
+}
+
+/** `MagicalInfusion.onItemSelected()`/`upgradeItem()` (tag `v3.3.8`): upgrade one
+ * carried upgradable item while preserving an existing weapon enchant or armor glyph.
+ * Java's spell opens the full equipment selector, including equipped gear and every
+ * upgradable item type; this port's generic picker exposes carried weapon, armor, wand,
+ * and ring payloads only. The bag item is upgraded through MWG's affix-aware operation,
+ * which keeps the existing affix instead of rolling a new one. Java's wand-specific
+ * preservation of `curseInfusionBonus` is represented by the payload's ordinary level and
+ * cursed state; the separate temporary bonus has no independent field here. */
+export function useMagicalInfusionFlow(ctx: InfusionBase, instanceId?: string): void {
+	if (!ctx.hasSpell('magicalInfusion', instanceId)) return;
+	const candidates = ctx.infusables().filter((item) => item.quantity > 0
+		&& usableForMagicalInfusion(item));
+	if (candidates.length === 0) {
+		ctx.say(ctx.t('items.scrolls.scrolloftransmutation.nothing'), 'negative');
+		return;
+	}
+	ctx.openPicker(ctx.t('items.spells.magicalinfusion.inv_title'), candidates, (pick) => {
+		const item = ctx.findInfusable(pick.id, pick.instanceId);
+		if (!item) return;
+		upgradeItem(item, 1, 'keep');
+		ctx.consumeSpell('magicalInfusion', instanceId);
+		ctx.say(ctx.t('port.log.magicalinfusion', { item: ctx.itemName(item) }), 'positive');
+		ctx.refreshPanels();
+	});
+}
+
+/** `CurseInfusion.onItemSelected()` (tag `v3.3.8`): curse one carried weapon or armor,
+ * replacing its affix with a real negative pool entry, and grant the one-time infusion
+ * upgrade marker. Java's selector also exposes equipped gear and MagesStaff/SpiritBow;
+ * this port's generic picker exposes only carried weapon/armor/wand payloads, and its
+ * upgrade systems have no separate temporary-bonus field, so the marker is represented by
+ * one persistent level. Java removes that bonus when the curse is cleansed; this port's
+ * cleanse path removes the curse affix but does not yet reverse the level marker. Both
+ * omissions are recorded in PORT_COVERAGE.md rather than hidden in the action. */
+export function useCurseInfusionFlow(ctx: CurseInfusionContext, instanceId?: string): void {
+	if (!ctx.hasSpell('curseInfusion', instanceId)) return;
+	//`CurseInfusion.usableOnItem`: an upgradable equipable, or a wand. The predicate covers the
+	//missile stacks Java's `Weapon` reaches as well - `usableOnItem` is the same rule for both
+	//infusion spells, so both pickers run it rather than hand-rolling the id list.
+	const candidates = ctx.infusables().filter((item) => item.quantity > 0
+		&& usableForCurseInfusion(item));
+	if (candidates.length === 0) {
+		ctx.say(ctx.t('items.spells.curseinfusion.inv_title'), 'negative');
+		return;
+	}
+	ctx.openPicker(ctx.t('items.spells.curseinfusion.inv_title'), candidates, (pick) => {
+		const item = ctx.findInfusable(pick.id, pick.instanceId);
+		if (!item) return;
+		if (item.id === 'wand') {
+			item.cursed = true;
+		} else {
+			const pool = item.id === 'armorReward' ? getArmorCurses() : getWeaponCurses();
+			const available = pool.filter((curse) => curse.id !== item.affix);
+			const curse = Random.element(available.length > 0 ? available : pool) ?? pool[0];
+			if (!curse) return;
+			item.affix = curse.id;
+			item.cursed = true;
+		}
+		if (!item.curseInfusionBonus) {
+			item.curseInfusionBonus = true;
+			item.level = (item.level ?? 0) + 1;
+			//`Item.upgrade()` (not `MissileWeapon.upgrade()`): the infusion's level is the
+			//ordinary one, so the stack is relabelled but its wear and count are left alone.
+			ctx.relabelAfterInfusion(item);
+		}
+		ctx.consumeSpell('curseInfusion', instanceId);
+		//`CurseInfusion.onItemSelected()`: five `ShadowParticle.UP` at the hero's own cell.
+		//(Magical Infusion bursts nothing - it only plays READ.)
+		ctx.burstShadowUp();
+		ctx.say(ctx.t('port.log.curseinfusion', { item: ctx.itemName(item) }), 'negative');
 		ctx.refreshPanels();
 	});
 }
