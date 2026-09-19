@@ -98,18 +98,25 @@ export function armorAbilityIsPorted(id: string): boolean {
 
 /**
  * Whether an id names something this port knows as an armor ability at all - every authored row,
- * ported or not, plus `ratmogrify`, which the Rat King grants and which deliberately has no row
- * (see `PORTED_ARMOR_ABILITIES`' note about its unported talent tree). Used to decide whether a
- * saved ability id survives a load, so it is deliberately wider than `armorAbilityDef`.
+ * ported or not. Used to decide whether a saved ability id survives a load, so it is deliberately
+ * wider than `armorAbilityDef`. `ratmogrify` is covered by its own `class: "any"` row (granted by
+ * the Rat King, never offered), not by the `PORTED_ARMOR_ABILITIES` set.
  */
 export function isKnownArmorAbility(id: string): boolean {
-	return id === 'ratmogrify' || DEFINITIONS.has(id);
+	return DEFINITIONS.has(id);
 }
 
-/** The real `actors.hero.abilities.<class>.<id>` message key base - `.name`/`.short_desc`/`.desc`
- *  hang off it, and `.prompt` for the targeted ones. These are SPD's own strings (translated in
- *  every offered locale), which is why nothing here needs a `port.*` key. */
+/** The real message key base - `.name`/`.short_desc`/`.desc` hang off it, and `.prompt` for the
+ *  targeted ones. These are SPD's own strings (translated in every offered locale), which is why
+ *  nothing here needs a `port.*` key.
+ *
+ *  The class segment is real: Java derives the key from the ability class's package
+ *  (`Messages.get` lowercases `actors.hero.abilities.<package>.<Class>`), so the eighteen class
+ *  abilities carry their class (`warrior.heroicleap`) while `Ratmogrify`, which lives directly in
+ *  the `abilities` package, carries none (`actors.hero.abilities.ratmogrify`, tag `v3.3.8`
+ *  `actors.properties:609`). */
 export function armorAbilityKey(id: string, classId: ClassId): string {
+	if (id === 'ratmogrify') return 'actors.hero.abilities.ratmogrify';
 	return `actors.hero.abilities.${classId}.${id}`;
 }
 

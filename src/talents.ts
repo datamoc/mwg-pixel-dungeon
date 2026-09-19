@@ -90,7 +90,9 @@ export const ARMOR_ABILITY_TALENTS: ReadonlyMap<string, string[]> = ARMOR_ABILIT
 
 /** `Talent.initArmorTalents()`: the ability's own three T4 talents plus the universal
  *  `HEROIC_ENERGY`, all rank-4. An ability with no row yields nothing, which is what keeps an
- *  unported ability from being silently offered with an empty talent tree. */
+ *  unported ability from being silently offered with an empty talent tree. Ratmogrify's row
+ *  carries `class: "any"` (the Rat King grants it to any class, bypassing the class-gated
+ *  offering), so it feeds this window for every hero while landing in no class's offer list. */
 export function armorTalentDefinitions(ability: string, classId: ClassId): TalentDefinition[] {
 	const own = ARMOR_ABILITY_TALENT_ENTRIES.get(ability);
 	if (own === undefined) return [];

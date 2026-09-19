@@ -17677,8 +17677,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 	}
 
 	/** Whether the hero's current ability has a tier-4 tree this port can actually spend points in
-	 *  (`Talent.initArmorTalents` registers one for every ability; Ratmogrify's three rat talents
-	 *  are Not ported, so it registers none here - see `armorTalentDefinitions`). */
+	 *  (`Talent.initArmorTalents` registers one for every ability; Ratmogrify's row registers its
+	 *  three rat talents, of which RATLOMACY/RATFORCEMENTS run and RATSISTANCE's damage factor is
+	 *  still open - see `armorTalentDefinitions`). */
 	private hasArmorTalentTree(): boolean {
 		return this.armorAbility !== null && armorTalentDefinitions(this.armorAbility, this.heroClass).length > 0;
 	}
@@ -20763,11 +20764,12 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.refresh();
 	}
 
-	/** `Ratmogrify.baseChargeUse` is charged like any other ability's, even though its T4 tree is
-	 *  unported: the charge is real, the talents are not. */
+	/** `Ratmogrify.baseChargeUse` (50, tag `v3.3.8`) is charged like any other ability's, read
+	 *  off its own `talent-rules.mwl` row so the cost lives in one place. Only RATSISTANCE's
+	 *  damage factor is still open; RATLOMACY/RATFORCEMENTS below already read their ranks. */
 	private ratmogrifyChargeUse(): number {
-		return armorChargeUse({ id: 'ratmogrify', classId: this.heroClass, baseChargeUse: 50, targeting: 'cell', talents: [] },
-			{ heroicEnergyRank: this.talentRank('heroic_energy') });
+		const def = armorAbilityDef('ratmogrify') ?? { id: 'ratmogrify', classId: this.heroClass, baseChargeUse: 50, targeting: 'cell', talents: [] as string[] };
+		return armorChargeUse(def, { heroicEnergyRank: this.talentRank('heroic_energy') });
 	}
 
 	/**
@@ -22774,20 +22776,20 @@ private eyeBeamTurn(monster: Creature): boolean {
 	}
 
 	/** `Ratmogrify.activate` (tag v3.3.8): transform one visible ordinary enemy for six
-	 * turns while preserving its combat stats and disabling its specialised AI. The Java
-	 * implementation uses a cell-targeting window and a separate TransmogRat actor; this
-	 * port's action surface has no targeting window or alternate sprite actor, so it selects
-	 * the nearest visible enemy and keeps the original sprite/kind while the state is active.
+	 * turns while preserving its combat stats and disabling its specialised AI, make a
+	 * transformed enemy a permanent ally (`RATLOMACY`), or spawn ally rats on an empty
+	 * field (`RATFORCEMENTS`). The Java implementation uses a cell-targeting window and a
+	 * separate TransmogRat actor; this port's action surface has no targeting window or
+	 * alternate sprite actor, so it selects the nearest visible enemy and keeps the
+	 * original sprite/kind while the state is active, and reads an empty field (no valid
+	 * enemy) as the self-cast for the rat pack, since there is no cell picker to aim at
+	 * the hero with. All three paths spend the real 50 charge and dispel invisibility.
 	 */
 	private useRatmogrify(): boolean {
 		const target = this.creatures
 			.filter((c) => !c.isHero && !c.isNPC && !c.isAlly && c.hp > 0 && !c.ratmogrifiedPermanent && c.kind !== 'rat'
-				&& !BOSS_KINDS.has(c.kind as MonsterId) && this.fov.isVisible(c.x, c.y))
+				&& !BOSS_KINDS.has(c.kind as MonsterId) && !MINIBOSS_KINDS.has(c.kind as MonsterId) && this.fov.isVisible(c.x, c.y))
 			.sort((a, b) => Roguelike.chebyshevDistance(this.hero, a) - Roguelike.chebyshevDistance(this.hero, b))[0];
-		if (!target) {
-			this.say(t('actors.hero.abilities.ratmogrify.cant_transform'), 'negative');
-			return false;
-		}
 		//`Ratmogrify.chargeUse()` is the real 50, so the ability is not free - this used to cost no
 		//charge at all, since it predates the charge system. The turn is spent by the calling
 		//`attempt` action (`HeroAction.Attack`'s own `spendAndNext`); spending it here as well made
@@ -22797,7 +22799,45 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.say(t('items.armor.classarmor.low_charge'), 'negative');
 			return false;
 		}
+		if (!target) {
+			//`RATFORCEMENTS`: self-cast spawns `points` ally rats on free NEIGHBOURS8 cells.
+			const rats = this.talentRank('ratforcements');
+			if (rats <= 0) {
+				this.say(t('actors.hero.abilities.ratmogrify.cant_transform'), 'negative');
+				return false;
+			}
+			const free: Step[] = [];
+			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
+				const x = this.hero.x + dx, y = this.hero.y + dy;
+				if (this.level.passable(x, y) && !this.creatureAt(x, y)) free.push({ x, y });
+			}
+			Random.shuffle(free);
+			this.armorCharge = Math.max(0, this.armorCharge - cost);
+			delete this.hero.buffs['invisibility'];
+			for (const cell of free.slice(0, rats)) {
+				const rat = this.spawnMonster('rat', cell, false, undefined, true);
+				rat.sleeping = false;
+			}
+			return true;
+		}
+		if (target.ratmogrifiedTurns !== undefined) {
+			//`RATLOMACY`: re-casting on a transformed enemy makes it a permanent ally -
+			//plus `Adrenaline` 2*(points-1) from rank 2 up - and refuses without the talent.
+			const diplomacy = this.talentRank('ratlomacy');
+			if (diplomacy <= 0) {
+				this.say(t('actors.hero.abilities.ratmogrify.cant_transform'), 'negative');
+				return false;
+			}
+			this.armorCharge = Math.max(0, this.armorCharge - cost);
+			delete this.hero.buffs['invisibility'];
+			target.isAlly = true;
+			target.ratmogrifiedPermanent = true;
+			delete target.ratmogrifiedTurns;
+			if (diplomacy > 1) addBuff(target, 'adrenalineSurge', 2 * (diplomacy - 1));
+			return true;
+		}
 		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		delete this.hero.buffs['invisibility'];
 		target.ratmogrifiedTurns = 6;
 		this.say(t('actors.hero.abilities.ratmogrify$transmograt.name', { 0: target.name }), 'positive');
 		return true;

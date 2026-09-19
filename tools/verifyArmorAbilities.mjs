@@ -11,7 +11,8 @@ import { readFileSync } from 'node:fs';
  */
 export function verifyArmorAbilities(require, check) {
 	const { ARMOR_ABILITIES } = require('./talents');
-	const { armorAbilityDef, armorAbilitiesFor, armorChargeUse, ARMOR_CHARGE_PER_TURN, ARMOR_CHARGE_MAX, ARMOR_CHARGE_START } = require('./armorAbilities');
+	const { armorAbilityDef, armorAbilitiesFor, armorAbilityKey, armorChargeUse, ARMOR_CHARGE_PER_TURN, ARMOR_CHARGE_MAX, ARMOR_CHARGE_START } = require('./armorAbilities');
+	const { armorTalentDefinitions } = require('./talents');
 	const {
 		bodySlamDamage, endureBankedDamage, endureDamageTaken, endureEndingBonus,
 		impactWaveStrength, impactWaveVulnerable, shockForceParalyses, shockwaveCone,
@@ -51,6 +52,25 @@ export function verifyArmorAbilities(require, check) {
 			assert.equal(def.baseChargeUse, charge, `${id} charge`);
 			assert.equal(def.targeting, targeting, `${id} targeting`);
 		}
+	});
+
+	check('Ratmogrify has its own row: 50 charge, cell targeting, three rat talents, classless key', () => {
+		//`Ratmogrify.baseChargeUse = 50f`, cell-targeted (`usesTargeting`), granted by the Rat
+		//King to any class - so its row is `class: "any"` and lands in no class's offer list.
+		const rat = armorAbilityDef('ratmogrify');
+		assert.equal(rat.baseChargeUse, 50, 'ratmogrify charge');
+		assert.equal(rat.targeting, 'cell', 'ratmogrify targeting');
+		assert.deepEqual(rat.talents, ['ratsistance', 'ratlomacy', 'ratforcements']);
+		assert.deepEqual(ARMOR_ABILITIES.warrior.includes('ratmogrify'), false);
+		assert.deepEqual(ARMOR_ABILITIES.rogue.includes('ratmogrify'), false);
+		assert.deepEqual(armorAbilitiesFor('rogue').includes('ratmogrify'), false);
+		//Java derives the key from the ability class's package, and Ratmogrify lives directly
+		//in `abilities` - so unlike the eighteen class abilities its key has no class segment.
+		assert.equal(armorAbilityKey('ratmogrify', 'warrior'), 'actors.hero.abilities.ratmogrify');
+		assert.equal(armorAbilityKey('heroicleap', 'warrior'), 'actors.hero.abilities.warrior.heroicleap');
+		//The row feeds the tier-4 window for every hero: three rat talents plus HEROIC_ENERGY.
+		assert.deepEqual(armorTalentDefinitions('ratmogrify', 'mage').map((d) => d.id),
+			['ratsistance', 'ratlomacy', 'ratforcements', 'heroic_energy']);
 	});
 
 	check('each ability owns exactly its three tier-4 talents', () => {

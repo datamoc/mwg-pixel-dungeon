@@ -30757,6 +30757,23 @@ export const gameData = {
 								"column": 13
 							},
 							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "ratmogrify",
+								"class": "any",
+								"charge": "50",
+								"targeting": "cell",
+								"talents": "ratsistance,ratlomacy,ratforcements"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
+								"line": 203,
+								"column": 13
+							},
+							"gettext": []
 						}
 					],
 					"location": {
@@ -30784,7 +30801,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 211,
+								"line": 219,
 								"column": 13
 							},
 							"gettext": []
@@ -30799,7 +30816,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 217,
+								"line": 225,
 								"column": 13
 							},
 							"gettext": []
@@ -30814,7 +30831,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 223,
+								"line": 231,
 								"column": 13
 							},
 							"gettext": []
@@ -30829,7 +30846,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 229,
+								"line": 237,
 								"column": 13
 							},
 							"gettext": []
@@ -30844,7 +30861,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 235,
+								"line": 243,
 								"column": 13
 							},
 							"gettext": []
@@ -30859,7 +30876,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 241,
+								"line": 249,
 								"column": 13
 							},
 							"gettext": []
@@ -30874,7 +30891,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 247,
+								"line": 255,
 								"column": 13
 							},
 							"gettext": []
@@ -30889,7 +30906,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 253,
+								"line": 261,
 								"column": 13
 							},
 							"gettext": []
@@ -30904,7 +30921,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 259,
+								"line": 267,
 								"column": 13
 							},
 							"gettext": []
@@ -30919,7 +30936,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 265,
+								"line": 273,
 								"column": 13
 							},
 							"gettext": []
@@ -30934,7 +30951,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 271,
+								"line": 279,
 								"column": 13
 							},
 							"gettext": []
@@ -30949,7 +30966,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-								"line": 277,
+								"line": 285,
 								"column": 13
 							},
 							"gettext": []
@@ -30957,7 +30974,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\talent-rules.mwl",
-						"line": 205,
+						"line": 213,
 						"column": 9
 					},
 					"gettext": []

@@ -199,6 +199,14 @@
             targeting: "cell",
             talents: "feigned_retreat,expose_weakness,counter_ability",
           },
+          {
+            tag: "row",
+            id: "ratmogrify",
+            class: "any",
+            charge: 50,
+            targeting: "cell",
+            talents: "ratsistance,ratlomacy,ratforcements",
+          },
         ],
       },
       {
