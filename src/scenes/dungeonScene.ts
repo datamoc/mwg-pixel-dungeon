@@ -232,7 +232,7 @@ import { useChainsFlow, type ChainsFlowContext } from '../items/chains';
 import { hornChargeCap, useHornFlow, type HornFlowContext } from '../items/horn';
 import { useArmbandFlow, type ArmbandFlowContext } from '../items/armband';
 import { applyTalismanPerTurnCharge, useTalismanFlow, checkTalismanAwarenessFlow, type TalismanFlowContext, type TalismanItem } from '../items/talisman';
-import { roseSummonGate, roseGhostMaxHp, roseGhostAttackSkill, roseGhostDefenseSkill, roseGhostDamageRange, applyRoseRecharge, type RoseItem } from '../items/rose';
+import { roseGhostMaxHp, applyRoseRecharge, useRoseFlow, type RoseFlowContext, type RoseItem } from '../items/rose';
 import { rosePetalsNeeded, rosePetalDropCap, rosePetalPickup, roseChargeCap, roseLevelCap } from '../items/rose';
 import { planWealthDrops, wealthEquipBonus, initialiseWealthTrackers, wealthDeathRolls, type WealthDropPlan, type WealthTrackers } from '../items/wealthDrops';
 import { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal, artifactRechargeDuration, wildEnergyRechargeTurns, type RechargeGuards } from '../items/artifactRecharge';
@@ -18421,32 +18421,40 @@ private eyeBeamTurn(monster: Creature): boolean {
 		}
 
 		private useRose(instanceId?: string): void {
-			const rose = this.roseItem(instanceId);
-			if (!rose) return;
-			const questComplete = this.quests.status('sadGhost') === 'complete';
-			const ghostAlive = this.roseGhostAlive();
-			const summonEntry = 'rose-summon', directEntry = 'rose-direct';
-			const canSummon = roseSummonGate(rose, questComplete, ghostAlive, this.hero.magicImmune === true) === 'ok';
-			const entries = [
-				...(canSummon ? [{ id: 'rose', instanceId: summonEntry, identified: true, quantity: 1 }] : []),
-				...(ghostAlive ? [{ id: 'rose', instanceId: directEntry, identified: true, quantity: 1 }] : []),
-			];
-			if (entries.length === 0) {
-				//Java reports each refusal with its own line from `execute()`'s ladder; with no action
-				//menu to hide the rows in, this port has to say which one applies. `quest` is the one
-				//Java answers with the item window rather than a log line - the port logs the same real
-				//`desc_no_quest` string, which is what that window shows.
-				const gate = roseSummonGate(rose, questComplete, ghostAlive, this.hero.magicImmune === true);
-				this.say(t(gate === 'quest' ? 'items.artifacts.driedrose.desc_no_quest'
-					: gate === 'spawned' ? 'items.artifacts.driedrose.spawned'
-						: gate === 'cursed' ? 'items.artifacts.driedrose.cursed'
-							: 'items.artifacts.driedrose.no_charge'), 'negative');
-				return;
-			}
-			this.openItemPicker(this.itemDisplayName('rose', true, instanceId), entries, (entry) => {
-				if (entry.instanceId === summonEntry) this.summonRoseGhost(instanceId);
-				else if (entry.instanceId === directEntry) this.beginRoseDirect(instanceId);
-			});
+			useRoseFlow(this.roseFlowContext(), instanceId);
+		}
+
+		/**
+		 * The Dried Rose's summon/direct flow lives in `items/rose.ts` behind
+		 * `RoseFlowContext` - the file-size refactor's thirteenth extraction, behavior-identical.
+		 */
+		private roseFlowContext(): RoseFlowContext {
+			const scene = this;
+			return {
+				get magicImmune() { return scene.hero.magicImmune === true; },
+				get heroPos() { return { x: scene.hero.x, y: scene.hero.y }; },
+				get levelSize() { return { width: scene.level.width, height: scene.level.height }; },
+				get sadGhostComplete() { return scene.quests.status('sadGhost') === 'complete'; },
+				roseOf: (instanceId?: string) => scene.roseItem(instanceId),
+				roseTitle: (instanceId?: string) => scene.itemDisplayName('rose', true, instanceId),
+				openPicker: (title, entries, onPick) => scene.openItemPicker(title, entries, onPick),
+				beginAim: (opts) => scene.beginAiming(opts),
+				isGhostAlive: () => scene.roseGhostAlive(),
+				clearDeadGhost: () => { if (!scene.roseGhostAlive()) scene.roseGhost = null; },
+				isCellFree: (x, y) => scene.level.inside(x, y) && !scene.creatureAt(x, y) && scene.level.passable(x, y),
+				spawnGhostAlly: (at) => scene.spawnMonster('ghost', at, false, undefined, true, 'ghost'),
+				setActiveGhost: (ghost) => { scene.roseGhost = ghost as Creature | null; },
+				activeGhost: () => scene.roseGhost,
+				directAlly: (ghost, cell, lines) => { scene.directAlly(ghost as Creature, cell, lines); },
+				heroLevel: () => scene.progression.level,
+				get roseFirstSummon() { return scene.roseFirstSummon; },
+				set roseFirstSummon(value: boolean) { scene.roseFirstSummon = value; },
+				dispelInvisibility: () => { delete scene.hero.buffs['invisibility']; },
+				refresh: () => scene.refresh(),
+				spendTurn: () => { scene.actionSpentTurn = true; scene.spendHeroTurn(1); },
+				say: scene.say.bind(scene),
+				t,
+			};
 		}
 
 		private useChains(instanceId?: string): void {
@@ -18990,76 +18998,6 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 		private roseGhostAlive(): boolean {
 			return this.roseGhost !== null && this.roseGhost.hp > 0 && !this.roseGhost.isHero;
-		}
-
-		private summonRoseGhost(instanceId?: string): void {
-			const rose = this.roseItem(instanceId);
-			if (!rose) return;
-			if (!this.roseGhostAlive()) this.roseGhost = null;
-			const questComplete = this.quests.status('sadGhost') === 'complete';
-			const gate = roseSummonGate(rose, questComplete, this.roseGhostAlive(), this.hero.magicImmune === true);
-			if (gate !== 'ok') return;
-			//Java's spawn-point scan: `PathFinder.NEIGHBOURS8` around the hero, free and either
-			//`passable` or `avoid`. This port has no separate `avoid` array (the same simplification
-			//`chainLocation` already states), so a single `passable` check stands in for both.
-			const spawnPoints: Step[] = [];
-			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
-				const at = { x: this.hero.x + dx, y: this.hero.y + dy };
-				if (!this.level.inside(at.x, at.y)) continue;
-				if (this.creatureAt(at.x, at.y)) continue;
-				if (!this.level.passable(at.x, at.y)) continue;
-				spawnPoints.push(at);
-			}
-			if (spawnPoints.length === 0) { this.say(t('items.artifacts.driedrose.no_space'), 'negative'); return; }
-			const at = spawnPoints[Random.int(0, spawnPoints.length - 1)]!;
-			const ghost = this.spawnMonster('ghost', at, false, undefined, true, 'ghost');
-			ghost.sleeping = false;
-			//The `ghost` monster row is the Sad Ghost *NPC* (its sprite is the only thing this reuses),
-			//and `spawnMonster` flags NPCs from that row - which would be fatal for an ally here, since
-			//the creature-turn dispatcher checks `isNPC` and returns *before* it ever reaches the ally
-			//branch. Java's `GhostHero` is a `DirectableAlly`, so both flags go.
-			ghost.isNPC = false;
-			ghost.npcKind = undefined;
-			const level = rose.level ?? 0;
-			ghost.maxHp = roseGhostMaxHp(level);
-			ghost.hp = ghost.maxHp;
-			ghost.accuracy = roseGhostAttackSkill(this.progression.level);
-			ghost.evasion = roseGhostDefenseSkill(this.progression.level);
-			ghost.damage = [...roseGhostDamageRange()] as [number, number];
-			ghost.armor = [0, 0];
-			this.roseGhost = ghost;
-			rose.charge = 0;
-			rose.partialCharge = 0;
-			delete this.hero.buffs['invisibility'];
-			this.say(t(this.roseFirstSummon ? 'items.artifacts.driedrose$ghosthero.appeared'
-				: 'items.artifacts.driedrose$ghosthero.hello'), 'positive');
-			this.roseFirstSummon = true;
-			this.refresh();
-			this.actionSpentTurn = true;
-			this.spendHeroTurn(1);
-		}
-
-		private beginRoseDirect(instanceId?: string): void {
-			if (!this.roseGhostAlive()) return;
-			this.beginAiming({
-				range: Math.max(this.level.width, this.level.height),
-				requireLineOfSight: false,
-				onConfirm: (cell) => this.directRoseGhost(cell, instanceId),
-			});
-			this.say(t('items.artifacts.driedrose$ghosthero.direct_prompt'), 'positive');
-		}
-
-		private directRoseGhost(cell: Step, _instanceId?: string): void {
-			const ghost = this.roseGhost;
-			if (!ghost || ghost.hp <= 0) return;
-			//`DriedRose.GhostHero`'s own order lines: one of five random yells per order
-			//(`Random.IntRange(1, 5)`, so 1-5 inclusive).
-			const line = (kind: string): string => `items.artifacts.driedrose$ghosthero.${kind}_${Random.int(1, 6)}`;
-			this.directAlly(ghost, cell, {
-				defend: line('directed_position'),
-				follow: line('directed_follow'),
-				attack: line('directed_attack'),
-			});
 		}
 
 		private talismanItem(instanceId?: string) {

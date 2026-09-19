@@ -1190,7 +1190,20 @@ one.
       headless drive of the moved flow (a surprised steal lands its stub drop with 5-turn
       debuffs, 9 charge left and 3+2 exp short of the 10-exp level; robbed/overleveled/empty
       refusals still mark, daze and pay; cursed/uncharged gates; the warlock/scorpio/succubus
-      pick shapes).
+      pick shapes). **Thirteenth extraction 2026-09-19**: the Dried Rose's summon/direct flow
+      (`useRose`'s summon/direct rows, the neighbour-scan summon, the order aimer) moved to
+      `items/rose.ts` behind a `RoseFlowContext` (rose lookup, title, picker, ghost liveness,
+      dead-ghost clearing, spawn-cell scan, ghost spawn/registration, ally orders, hero level,
+      first-summon latch, invisibility, refresh, turn, say, `t`); the scene keeps the one-line
+      `useRose` adapter the router calls, `roseItem`/`roseGhostAlive` for the recharge/petal/turn
+      paths, plus a builder. Net −62 lines in `dungeonScene.ts` (22,873 after), `rose.ts` 194 to
+      342. Suites: `tsc` clean after diarizing `Creature`'s real shape into the ghost view
+      (optional `sleeping`/`isNPC`/`npcKind`) and remembering both the interface's and the
+      builder's `beginAim`, item suite green with a new headless drive of the moved flow (summon
+      on a free neighbour with the exact level-0 statline, charge paid, scene registered, Java's
+      hello-first/appeared-later greetings, direct orders with numbered yells, quest/charge/room
+      refusals spending nothing, AntiMagic undercharging). The move caught one live omission in
+      review - the scene-field assignment - fixed as a `setActiveGhost` seam before committing.
       **Complexity: L.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`

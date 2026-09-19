@@ -2034,6 +2034,95 @@ function armbandDrive(overrides = {}, confirmCell = { x: 1, y: 0 }) {
 	assert.equal(scorpioDrop?.kind, 'potion');
 	const succubusDrop = armbandLootPick(shape.ctx, 'succubus');
 	assert.equal(succubusDrop?.kind, 'scroll', 'succubi carry scrolls');
+// The moved rose flow (`RoseFlowContext`, the file-size refactor's thirteenth extraction):
+// driven headlessly with a scripted picker and stub floor.
+const { useRoseFlow } = require('./items/rose.js');
+function roseDrive(overrides = {}, pickScript = [0]) {
+	const log = [];
+	const flags = { turns: 0, uncloaked: false, refreshed: false, orders: [], spawnedAt: null, active: null };
+	const rose = { level: 0, charge: 100, ...overrides.rose };
+	let firstSummon = overrides.firstSummon ?? false;
+	const ghost = overrides.ghost !== undefined ? overrides.ghost : null;
+	const free = overrides.free ?? (() => true);
+	const picks = [...pickScript];
+	const ctx = {
+		magicImmune: false,
+		heroPos: { x: 5, y: 5 },
+		levelSize: { width: 10, height: 10 },
+		sadGhostComplete: true,
+		roseOf: () => rose,
+		roseTitle: () => 'rose',
+		openPicker: (title, entries, onPick) => { log.push(`picker:${entries.map((e) => e.instanceId).join(',')}`); onPick(entries[picks.shift() ?? 0]); },
+		isGhostAlive: () => ghost !== null && ghost.hp > 0,
+		clearDeadGhost: () => { log.push('clearDead'); },
+		isCellFree: (x, y) => free(x, y),
+		spawnGhostAlly: (at) => { flags.spawnedAt = { ...at }; return ghost; },
+		setActiveGhost: (g) => { flags.active = g; },
+		activeGhost: () => ghost,
+		directAlly: (g, cell, lines) => { flags.orders.push({ cell: { ...cell }, lines }); },
+		heroLevel: () => 5,
+		get roseFirstSummon() { return firstSummon; },
+		set roseFirstSummon(value) { firstSummon = value; },
+		beginAim: (opts) => { log.push(`aim:${opts.range}`); ctx.aimOpts = opts; },
+		dispelInvisibility: () => { flags.uncloaked = true; },
+		refresh: () => { flags.refreshed = true; },
+		spendTurn: () => { flags.turns++; },
+		say: (line, level) => { log.push(`say:${level}:${line}`); },
+		t: (key) => key,
+		...overrides.ctx,
+	};
+	useRoseFlow(ctx);
+	return { ctx, log, flags, rose, ghost, get firstSummon() { return firstSummon; } };
+}
+// Summon: the picker offers summon alone, the ghost raises on a free neighbour with the
+// level-0 statline, the charge pays, and the greetings follow Java (hello first, appeared on
+// re-summon).
+{
+	const fresh = { sleeping: true, maxHp: 1, hp: 0, accuracy: 0, evasion: 0, damage: [0, 0], armor: [9, 9], isNPC: true, npcKind: 'ghost' };
+	const d = roseDrive({ ghost: fresh });
+	assert.ok(d.log[0].endsWith('rose-summon'), `summon alone, got ${d.log[0]}`);
+	const at = d.flags.spawnedAt;
+	assert.ok(at && Math.abs(at.x - 5) <= 1 && Math.abs(at.y - 5) <= 1 && (at.x !== 5 || at.y !== 5), `a free neighbour, got ${JSON.stringify(at)}`);
+	assert.equal(fresh.sleeping, false, 'the ghost wakes');
+	assert.equal(fresh.isNPC, false, 'and stops being an NPC');
+	assert.equal(fresh.npcKind, undefined, 'with no NPC kind left');
+	assert.deepEqual([fresh.maxHp, fresh.hp, fresh.accuracy, fresh.evasion, fresh.damage, fresh.armor],
+		[20, 20, 14, 9, [0, 5], [0, 0]], 'the level-0 statline');
+	assert.equal(d.flags.active, fresh, 'the scene is told who lives now');
+	assert.equal(d.rose.charge, 0, 'the summon spends the charge');
+	assert.ok(d.log.some((l) => l.includes('ghosthero.hello')), 'first meetings greet, per Java');
+	assert.equal(d.firstSummon, true, 'and latch');
+	assert.ok(d.flags.turns === 1 && d.flags.uncloaked && d.flags.refreshed, 'one turn, uncloaked, refreshed');
+	const fallen = { sleeping: false, maxHp: 20, hp: 0, accuracy: 14, evasion: 9, damage: [0, 5], armor: [0, 0] };
+	const again = roseDrive({ ghost: fallen, firstSummon: true });
+	assert.ok(again.log.some((l) => l.includes('ghosthero.appeared')), 'a re-summoned ghost appears');
+	assert.equal(fallen.hp, 20, 'and rises at full health');
+}
+// Direct: a live ghost adds the order row, and confirming scripts all three yell lines.
+{
+	const ghost = { sleeping: false, maxHp: 20, hp: 20, accuracy: 14, evasion: 9, damage: [0, 5], armor: [0, 0] };
+	const d = roseDrive({ ghost }, [0]);
+	assert.ok(d.log[0].endsWith('rose-direct'), `direct alone while summoned, got ${d.log[0]}`);
+	assert.equal(d.log[1], 'aim:10', 'orders aim over the whole floor');
+	d.ctx.aimOpts.onConfirm({ x: 7, y: 5 });
+	assert.equal(d.flags.orders.length, 1, 'one order issued');
+	const lines = d.flags.orders[0].lines;
+	assert.ok(/^items\.artifacts\.driedrose\$ghosthero\.directed_position_[1-5]$/.test(lines.defend), `a numbered yell, got ${lines.defend}`);
+	assert.ok(lines.follow.includes('directed_follow') && lines.attack.includes('directed_attack'), 'all three orders scripted');
+	assert.deepEqual(d.flags.orders[0].cell, { x: 7, y: 5 });
+}
+// Refusals: no quest, no charge, no room, and AntiMagic each name their own line.
+{
+	const quest = roseDrive({ ctx: { sadGhostComplete: false } });
+	assert.ok(quest.log.some((l) => l.includes('desc_no_quest')), `the quest gate names itself, got ${quest.log}`);
+	const flat = roseDrive({ rose: { level: 0, charge: 50 } });
+	assert.ok(flat.log.some((l) => l.includes('no_charge')), 'half charge refuses');
+	const boxed = roseDrive({ free: () => false });
+	assert.ok(boxed.log.some((l) => l.includes('no_space')), 'no free neighbour refuses');
+	assert.equal(boxed.flags.turns, 0, 'and spends nothing');
+	const immune = roseDrive({ ctx: { magicImmune: true } });
+	assert.ok(immune.log.some((l) => l.includes('no_charge')), 'AntiMagic undercharges like Java');
+}
 }
 }
 }

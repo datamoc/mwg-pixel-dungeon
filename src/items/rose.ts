@@ -7,7 +7,11 @@
  * The artifact is a two-part one: a charge clock that raises a `GhostHero` ally (its `AC_SUMMON`),
  * and a petal economy that levels the rose itself (`upgrade()`). While the ghost lives the clock heals
  * it instead of charging, which is why the two halves share one `partialCharge`.
+ *
+ * The summon/direct flow itself lives here too, behind `RoseFlowContext` - the file-size
+ * refactor's thirteenth extraction, behavior-identical.
  */
+import { Random, Roguelike } from 'mwg';
 import { mwlItemEffectValue } from '../mwlContent';
 
 export type RoseItem = {
@@ -190,4 +194,148 @@ export function rosePetalPickup(item: RoseItem | undefined): RosePetalPickup {
 	if (!item) return 'no_rose';
 	if ((item.level ?? 0) >= roseLevelCap()) return 'no_room';
 	return (item.level ?? 0) + 1 >= roseLevelCap() ? 'maxlevel' : 'levelup';
+}
+
+/** The summoned `GhostHero` as the summon pass sees it (the scene passes the live creature,
+ *  so statting it here stats the real ally, the way the armband flow marks its victim). */
+export interface RoseGhostView {
+	sleeping?: boolean | undefined;
+	maxHp: number;
+	hp: number;
+	accuracy: number;
+	evasion: number;
+	damage: number[];
+	armor: number[];
+	isNPC?: boolean | undefined;
+	npcKind?: string | undefined;
+}
+
+/**
+ * The Dried Rose's summon/direct flow, moved out of the scene behind this context the way the
+ * sandals, talisman, chains, horn and armband flows moved before it - behavior-identical, with
+ * the scene keeping one builder plus the `useRose` adapter the item-use router calls. The `t`
+ * field is deliberately named `t` (bound to the real one) so the `t('...')` key audits keep
+ * matching these call sites.
+ */
+export interface RoseFlowContext {
+	readonly magicImmune: boolean;
+	readonly heroPos: { x: number; y: number };
+	readonly levelSize: { width: number; height: number };
+	readonly sadGhostComplete: boolean;
+	roseOf(instanceId?: string): RoseItem | undefined;
+	roseTitle(instanceId?: string): string;
+	openPicker(title: string, entries: { id: string; instanceId?: string; identified: boolean; quantity: number }[], onPick: (entry: { id: string; instanceId?: string }) => void): void;
+	beginAim(opts: { range: number; requireLineOfSight: boolean; onConfirm: (cell: { x: number; y: number }) => void }): void;
+	isGhostAlive(): boolean;
+	clearDeadGhost(): void;
+	isCellFree(x: number, y: number): boolean;
+	spawnGhostAlly(at: { x: number; y: number }): RoseGhostView;
+	setActiveGhost(ghost: RoseGhostView | null): void;
+	activeGhost(): RoseGhostView | null;
+	directAlly(ghost: RoseGhostView, cell: { x: number; y: number }, lines: { defend: string; follow: string; attack: string }): void;
+	heroLevel(): number;
+	get roseFirstSummon(): boolean;
+	set roseFirstSummon(value: boolean);
+	dispelInvisibility(): void;
+	refresh(): void;
+	spendTurn(): void;
+	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
+	t(key: string, params?: Record<string, string | number>): string;
+}
+
+/** `DriedRose.execute()`'s summon/direct rows (`rose-summon`/`rose-direct` synthetic instance
+ *  ids, the same trick the horn rows use), with Java's per-refusal ladder when both hide. */
+export function useRoseFlow(ctx: RoseFlowContext, instanceId?: string): void {
+	const rose = ctx.roseOf(instanceId);
+	if (!rose) return;
+	const ghostAlive = ctx.isGhostAlive();
+	const summonEntry = 'rose-summon', directEntry = 'rose-direct';
+	const canSummon = roseSummonGate(rose, ctx.sadGhostComplete, ghostAlive, ctx.magicImmune) === 'ok';
+	const entries = [
+		...(canSummon ? [{ id: 'rose', instanceId: summonEntry, identified: true, quantity: 1 }] : []),
+		...(ghostAlive ? [{ id: 'rose', instanceId: directEntry, identified: true, quantity: 1 }] : []),
+	];
+	if (entries.length === 0) {
+		//Java reports each refusal with its own line from `execute()`'s ladder; with no action
+		//menu to hide the rows in, this port has to say which one applies. `quest` is the one
+		//Java answers with the item window rather than a log line - the port logs the same real
+		//`desc_no_quest` string, which is what that window shows.
+		const gate = roseSummonGate(rose, ctx.sadGhostComplete, ghostAlive, ctx.magicImmune);
+		ctx.say(ctx.t(gate === 'quest' ? 'items.artifacts.driedrose.desc_no_quest'
+			: gate === 'spawned' ? 'items.artifacts.driedrose.spawned'
+				: gate === 'cursed' ? 'items.artifacts.driedrose.cursed'
+					: 'items.artifacts.driedrose.no_charge'), 'negative');
+		return;
+	}
+	ctx.openPicker(ctx.roseTitle(instanceId), entries, (entry) => {
+		if (entry.instanceId === summonEntry) summonRoseGhostFlow(ctx, instanceId);
+		else if (entry.instanceId === directEntry) beginRoseDirectFlow(ctx);
+	});
+}
+
+/** `DriedRose`'s summon: scan the 8 neighbours, raise the ghost, stat it, pay, uncloak. */
+export function summonRoseGhostFlow(ctx: RoseFlowContext, instanceId?: string): void {
+	const rose = ctx.roseOf(instanceId);
+	if (!rose) return;
+	ctx.clearDeadGhost();
+	const gate = roseSummonGate(rose, ctx.sadGhostComplete, ctx.isGhostAlive(), ctx.magicImmune);
+	if (gate !== 'ok') return;
+	//Java's spawn-point scan: `PathFinder.NEIGHBOURS8` around the hero, free and either
+	//`passable` or `avoid`. This port has no separate `avoid` array (the same simplification
+	//`chainLocation` already states), so a single `passable` check stands in for both.
+	const spawnPoints: { x: number; y: number }[] = [];
+	for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
+		const at = { x: ctx.heroPos.x + dx, y: ctx.heroPos.y + dy };
+		if (ctx.isCellFree(at.x, at.y)) spawnPoints.push(at);
+	}
+	if (spawnPoints.length === 0) { ctx.say(ctx.t('items.artifacts.driedrose.no_space'), 'negative'); return; }
+	const at = spawnPoints[Random.int(0, spawnPoints.length - 1)]!;
+	const ghost = ctx.spawnGhostAlly(at);
+	ghost.sleeping = false;
+	//The `ghost` monster row is the Sad Ghost *NPC* (its sprite is the only thing this reuses),
+	//and the spawner flags NPCs from that row - which would be fatal for an ally here, since
+	//the creature-turn dispatcher checks `isNPC` and returns *before* it ever reaches the ally
+	//branch. Java's `GhostHero` is a `DirectableAlly`, so both flags go.
+	ghost.isNPC = false;
+	ghost.npcKind = undefined;
+	const level = rose.level ?? 0;
+	ghost.maxHp = roseGhostMaxHp(level);
+	ghost.hp = ghost.maxHp;
+	ghost.accuracy = roseGhostAttackSkill(ctx.heroLevel());
+	ghost.evasion = roseGhostDefenseSkill(ctx.heroLevel());
+	ghost.damage = [...roseGhostDamageRange()];
+	ghost.armor = [0, 0];
+	ctx.setActiveGhost(ghost);
+	rose.charge = 0;
+	rose.partialCharge = 0;
+	ctx.dispelInvisibility();
+	ctx.say(ctx.t(ctx.roseFirstSummon ? 'items.artifacts.driedrose$ghosthero.appeared'
+		: 'items.artifacts.driedrose$ghosthero.hello'), 'positive');
+	ctx.roseFirstSummon = true;
+	ctx.refresh();
+	ctx.spendTurn();
+}
+
+/** The direct row's aimer: only a live ghost can be ordered. */
+export function beginRoseDirectFlow(ctx: RoseFlowContext): void {
+	if (!ctx.isGhostAlive()) return;
+	ctx.beginAim({
+		range: Math.max(ctx.levelSize.width, ctx.levelSize.height),
+		requireLineOfSight: false,
+		onConfirm: (cell) => directRoseGhostFlow(ctx, cell),
+	});
+	ctx.say(ctx.t('items.artifacts.driedrose$ghosthero.direct_prompt'), 'positive');
+}
+
+/** `DriedRose.GhostHero`'s own order lines: one of five random yells per order
+ *  (`Random.IntRange(1, 5)`, so 1-5 inclusive). */
+export function directRoseGhostFlow(ctx: RoseFlowContext, cell: { x: number; y: number }): void {
+	const ghost = ctx.activeGhost();
+	if (!ghost || ghost.hp <= 0) return;
+	const line = (kind: string): string => `items.artifacts.driedrose$ghosthero.${kind}_${Random.int(1, 6)}`;
+	ctx.directAlly(ghost, cell, {
+		defend: line('directed_position'),
+		follow: line('directed_follow'),
+		attack: line('directed_attack'),
+	});
 }
