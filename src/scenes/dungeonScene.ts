@@ -14831,7 +14831,14 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//FireElemental/FrostElemental/ShockElemental/ChaosElemental, tag v3.3.8) each
 			//have a distinct guaranteed-or-chanced loot rule. The shared `elemental` carrier
 			//now retains that subtype, so ordinary kills no longer lose the real drop family.
-			if (creature.kind === 'elemental') {
+			//Mob.rollToDropLoot() (Mob.java, tag v3.3.8): `if (Dungeon.hero.lvl > maxLvl + 2)
+			//return` gates every lootChance roll - and the wealth bonus roll below it, which
+			//sits inside rollToDropLoot past the gate. die() drops (goo/DM300 materials,
+			//statue equipment, mimic payloads, stolen returns, embers) and the port-invented
+			//guard key are outside it. MOB_LOOT maxLvl rides the same MWL rows as EXP.
+			const kind = creature.kind;
+			const overleveled = kind !== undefined && (MONSTERS[kind]?.maxLvl ?? 29) < this.progression.level - 2;
+			if (!overleveled && creature.kind === 'elemental') {
 				const elementalType = creature.elementalType ?? 'fire';
 				const elementalLoot = elementalType === 'fire'
 					? Random.chance(1 / 8) ? { kind: 'potion' as const, item: { id: 'potionFlame', quantity: 1, identified: false, sourceClass: 'PotionOfLiquidFlame' } } : null
@@ -14855,7 +14862,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//`PotionOfHealing`; otherwise a fresh non-healing potion class is redrawn until it
 			//isn't Healing. Reproduced here as a real `potionHealing` drop on the rare branch,
 			//else a uniform pick among this port's 7 already-modeled non-healing potion ids.
-			if (creature.kind === 'warlock' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune) })) {
+			if (!overleveled && creature.kind === 'warlock' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune) })) {
 				const warlockHp = this.limitedDrops.warlock ?? 0;
 				if (Random.int(3) === 0 && Random.int(8) > warlockHp) {
 					this.limitedDrops.warlock = warlockHp + 1;
@@ -14870,7 +14877,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//Healing nor Strength (a plain redraw-until-excluded loop, no LimitedDrops counter
 			//involved) - the same generic-'potion'-always-heals mismatch as Warlock above, fixed
 			//the same way: a uniform pick among this port's 6 remaining modeled potion ids.
-			if (creature.kind === 'scorpio' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune) })) {
+			if (!overleveled && creature.kind === 'scorpio' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune) })) {
 				const eligible = ['potionFlame', 'potionMindVision', 'potionInvis', 'potionPurity', 'potionExperience', 'potionLevitation'] as const;
 				this.spawnGroundItem('potion', creature.x, creature.y, { id: Random.element(eligible)!, quantity: 1, identified: false });
 				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.potion) }));
@@ -14883,19 +14890,27 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//other modeled scroll ids (all 10 non-Identify/Upgrade members of Java's real
 			//12-class `SCROLL` pool, now that `scrollTransmutation`'s own appearance-table gap -
 			//found and fixed in the same pass - no longer makes it a crash risk to hand out).
-			if (creature.kind === 'succubus' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.33 * ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune) })) {
+			if (!overleveled && creature.kind === 'succubus' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.33 * ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune) })) {
 				const eligible = ['scrollCleanse', 'scrollMirror', 'scrollRecharging', 'scrollTeleportation', 'scrollLullaby', 'scrollMapping', 'scrollRage', 'scrollRetribution', 'scrollTerror', 'scrollTransmutation'] as const;
 				this.spawnGroundItem('scroll', creature.x, creature.y, { id: Random.element(eligible)!, quantity: 1, identified: false });
 				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.scroll) }));
 			}
 			for (const entry of MOB_LOOT[creature.kind] ?? []) {
+				//Mob.rollToDropLoot()'s own `maxLvl + 2` gate, sharing `overleveled` above.
+				if (overleveled) break;
 				//Dungeon.LimitedDrops: Bat/Necromancer/Guard each scale their own lootChance()
 				//down further by how many times this exact drop has already happened this run -
 				//`(7-n)/7`, `(6-n)/6`, `(1/3)^n` respectively, real Java's own per-kind formulas.
 				//DM201 inherits `DM200.lootChance()` wholesale (`DM201.java` overrides only
 				//`rollToDropLoot`, for the MetalShard bonus) - including the *shared*
 				//`DM200_EQUIP` counter - so it reads dm200's decay and counter, not its own.
-				const counterKind = creature.kind === 'dm201' ? 'dm200' : creature.kind;
+				//`DM201`/`CausticSlime` share their base kind's LimitedDrops counter
+				//(`DM200_EQUIP`, `SLIME_WEP` - Java keys the counter on the drop, and both
+				//subclasses inherit the base lootChance override unchanged), so both read the
+				//base kind's decay and counter, not their own.
+				const counterKind = creature.kind === 'dm201' ? 'dm200'
+					: creature.kind === 'causticSlime' ? 'slime'
+					: creature.kind;
 				const decay = LIMITED_DROP_DECAY[counterKind as MonsterId];
 				//Swarm.lootChance() (Swarm.java, tag v3.3.8): `1/(6*(generation+1))` - the
 				//MWL 1/6 base is the generation-0 value, so split descendants divide by
@@ -14918,9 +14933,14 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//closest playable armor/potion payload, while the real counter cadence and boss
 			//roll multipliers are retained. The drop is placed in a free neighbouring cell
 			//because this port deliberately has one ground item per cell rather than heaps.
-			if (ringWealthBonus(this.effectiveRing()) > 0) {
+			//Mob.rollToDropLoot()'s own wealth cadence (Mob.java, tag v3.3.8): 15 rolls for
+			//BOSS, 5 for MINIBOSS, 1 otherwise - read off the same property sets every other
+			//boss/miniboss rule here already keys on, not a hand list (which wrongly gave
+			//goo/dm200/dm201 five rolls each while starving real minibosses). Inside the
+			//same `maxLvl + 2` gate: the bonus block sits past it in rollToDropLoot.
+			if (!overleveled && ringWealthBonus(this.effectiveRing()) > 0) {
 				const rolls = BOSS_KINDS.has(creature.kind as AnyMonsterId) ? 15
-					: ['goo', 'dm200', 'dm201'].includes(creature.kind) ? 5 : 1;
+					: MINIBOSS_KINDS.has(creature.kind as AnyMonsterId) ? 5 : 1;
 				this.tryWealthBonusDrop(creature, rolls);
 			}
 			//guards carry the iron key (the locked-door stand-in) one time in three
@@ -14948,7 +14968,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 				this.say(t('port.log.thiefloot'), 'positive');
 				this.heroStats.setBase('gold', this.heroStats.base('gold') + 5);
 			}
-			if (creature.kind === 'greatCrab') {
+			//GreatCrab's 2x meat is a real 1.0 lootChance roll, so the `maxLvl + 2` gate
+			//applies to it like every other loot roll (unlike the recovery/payload drops).
+			if (creature.kind === 'greatCrab' && !overleveled) {
 				for (const [dx, dy] of Roguelike.neighbourOffsets(4)) {
 					const at = { x: creature.x + dx, y: creature.y + dy };
 					if (this.level.passable(at.x, at.y) && !this.groundItemAt(at.x, at.y)) {
@@ -14956,6 +14978,16 @@ private eyeBeamTurn(monster: Creature): boolean {
 						break;
 					}
 				}
+			}
+			//CausticSlime.rollToDropLoot() (CausticSlime.java, tag v3.3.8): past the shared
+			//weapon roll, a GooBlob drops on a free neighbour - inside the same `maxLvl + 2`
+			//gate (the override returns before super.rollToDropLoot() when overleveled).
+			if (creature.kind === 'causticSlime' && !overleveled) {
+				const at = Roguelike.neighbourOffsets(8)
+					.map(([dx, dy]) => ({ x: creature.x + dx, y: creature.y + dy }))
+					.find((cell) => this.level.passable(cell.x, cell.y)
+						&& !this.groundItemAt(cell.x, cell.y) && !this.creatureAt(cell.x, cell.y));
+				if (at) this.spawnGroundItem('food', at.x, at.y, { id: 'gooBlob', quantity: 1, identified: true, sourceClass: 'GooBlob' });
 			}
 		}
 

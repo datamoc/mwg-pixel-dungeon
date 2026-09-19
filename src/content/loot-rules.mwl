@@ -41,8 +41,13 @@
           {
             tag: "row",
             monster: "causticSlime",
-            chance: 0.5,
-            kind: "meat",
+            // Inherits Slime's weapon loot unchanged (`CausticSlime extends Slime` with no
+            // loot override of its own, tag v3.3.8): same tier-2 weapon stand-in at 0.2 with
+            // the *shared* `SLIME_WEP` counter (see the loot site's `causticSlime -> slime`
+            // counter mapping, the same shape as `dm201 -> dm200`). The 0.5 meat this row
+            // used to carry was invented - Java's only extra drop here is the GooBlob below.
+            chance: 0.2,
+            kind: "armor",
           },
           {
             tag: "row",

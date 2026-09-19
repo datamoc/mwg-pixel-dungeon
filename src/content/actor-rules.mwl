@@ -30,12 +30,20 @@
           {
             tag: "effect",
             apply_to: "boss",
-            set: "goo,tengu,dm300,king,yog,yogFist",
+            // `Property.BOSS` holders at tag `v3.3.8` (unported CrystalSpire/FungalCore/
+            // GnollGeomancer omitted): Eye, Warlock and Pylon carry it alongside the
+            // chapter bosses, driving the wealth 15-rolls, execute exclusions, aggression,
+            // multiplicity/ratmogrify exclusion and paralysis immunity downstream.
+            set: "goo,tengu,dm300,king,yog,yogFist,eye,warlock,pylon",
           },
           {
             tag: "effect",
             apply_to: "miniboss",
-            set: "fetidRat,gnollTrickster,greatCrab,demonSpawner,pylon,rotHeart,rotLasher,newbornElemental",
+            // `Property.MINIBOSS` holders at tag `v3.3.8` (unported CrystalGuardian/
+            // FungalSentry/GnollSapper omitted): Elemental, Eye and Warlock were missing,
+            // starving them of the wealth 5-rolls and the shared miniboss rules. Newborn
+            // stays: `NewbornFireElemental` carries MINIBOSS itself in Java.
+            set: "fetidRat,gnollTrickster,greatCrab,demonSpawner,pylon,rotHeart,rotLasher,newbornElemental,elemental,eye,warlock",
           },
           {
             tag: "effect",
