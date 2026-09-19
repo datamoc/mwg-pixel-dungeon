@@ -67,6 +67,10 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	// The Talisman of Foresight's scry formulas (cone arc, charge cost, exp curve, per-turn trickle)
 	// are scene-free in the same way, so they are pinned here against Java's own numbers.
 	compile(join(root, 'src/items/talisman.ts'), 'items/talisman.js');
+compile(join(root, 'src/mechanics/cone.ts'), 'mechanics/cone.js');
+//`talisman.js` reads `WALL` off `dungeonConstants.js`, which the suite otherwise only compiles
+//much later (line ~2110) - recompiling it here is the same idempotent write.
+compile(join(root, 'src/dungeonConstants.ts'), 'dungeonConstants.js');
 	// The Dried Rose's ghost stats, recharge clock and petal economy are scene-free the same way.
 	compile(join(root, 'src/items/rose.ts'), 'items/rose.js');
 	// The Ring of Wealth's bonus-drop counters and drop catalogue are scene-free in the same way.
@@ -1876,6 +1880,104 @@ function sandalsDrive(overrides = {}, pickScript = []) {
 	const fullCharge = { level: 0, charge: 100, partialCharge: 0.5 };
 	applyTalismanPerTurnCharge(fullCharge, 1, false, true);
 	assert.equal(fullCharge.partialCharge, 0.5, 'a capped talisman is left entirely alone');
+// The moved scry flow (`TalismanFlowContext`, the file-size refactor's ninth extraction):
+// driven headlessly on a stub 10x10 level with a scripted aimer.
+const { useTalismanFlow, checkTalismanAwarenessFlow } = require('./items/talisman.js');
+const { WALL } = require('./dungeonConstants.js');
+function talismanDrive(overrides = {}) {
+	const log = [];
+	const explored = new Set();
+	const flags = { travel: false, refreshed: false, turns: 0, uncloaked: false };
+	const talisman = { level: 0, charge: 100, partialCharge: 0, exp: 0, ...overrides.talisman };
+	const ctx = {
+		magicImmune: false,
+		heroPos: { x: 0, y: 0 },
+		levelSize: { width: 10, height: 10 },
+		talismanOf: () => talisman,
+		beginAim: (opts) => { log.push(`aim:${opts.range}`); ctx.aimOpts = opts; },
+		trueDistanceTo: (cell) => Math.hypot(cell.x, cell.y),
+		isCellVisible: () => false,
+		isCellExplored: (x, y) => explored.has(y * 10 + x),
+		markCellExplored: (x, y) => { explored.add(y * 10 + x); },
+		terrainAt: () => WALL + 1,
+		isSecretCell: () => false,
+		discoverSecret: () => false,
+		creatureAt: () => null,
+		markCreatureAware: (c, d) => { log.push(`aware:${d}`); },
+		hasGroundItem: () => false,
+		markHeapAware: (i, d) => { log.push(`heap:${i}:${d}`); },
+		cellIndex: (x, y) => y * 10 + x,
+		insideLevel: (x, y) => x >= 0 && y >= 0 && x < 10 && y < 10,
+		clearTravel: () => { flags.travel = true; },
+		dispelInvisibility: () => { flags.uncloaked = true; },
+		refresh: () => { flags.refreshed = true; },
+		spendTurn: () => { flags.turns++; },
+		say: (line, level) => { log.push(`say:${level}:${line}`); },
+		t: (key) => key,
+		...overrides.ctx,
+	};
+	return { ctx, log, explored, talisman, flags };
+}
+// A 3-tile scry maps its cone at 1 exp a cell (no level on this board), pays the scry cost -
+// `3 + 3*1.08` truncated with the partial books - uncloaks and spends one turn.
+{
+	const d = talismanDrive();
+	useTalismanFlow(d.ctx);
+	assert.equal(d.log[0], 'aim:10', `the aimer opens over the whole floor, got ${d.log[0]}`);
+	assert.equal(d.log[1], 'say:positive:items.artifacts.talismanofforesight.prompt');
+	d.ctx.aimOpts.onConfirm({ x: 3, y: 0 });
+	assert.ok(d.explored.size > 0 && d.explored.size < 100, `the cone maps ground (${d.explored.size})`);
+	assert.equal(d.talisman.exp, d.explored.size, 'one exp per mapped cell');
+	assert.equal(d.talisman.level ?? 0, 0, 'no level on this board');
+	assert.equal(d.talisman.charge, 92, 'a 3-tile scry pays its cost');
+	assert.ok(d.talisman.partialCharge > 0.75 && d.talisman.partialCharge < 0.77, `partial books kept (${d.talisman.partialCharge})`);
+	assert.ok(d.flags.turns === 1 && d.flags.uncloaked && d.flags.refreshed, 'one turn, uncloaked, refreshed');
+}
+// Every cone cell with a creature and a heap marks both (5-turn marks at +0) and banks the
+// unseen bonuses - one artifact level on this board, with the exact remainder.
+{
+	const d = talismanDrive({ ctx: { creatureAt: () => ({}), hasGroundItem: () => true } });
+	useTalismanFlow(d.ctx);
+	d.ctx.aimOpts.onConfirm({ x: 3, y: 0 });
+	const cells = d.explored.size;
+	assert.ok(cells >= 10, `a 156-degree cone covers real ground (${cells})`);
+	assert.equal(d.log.filter((l) => l === 'aware:5').length, cells, 'every cell marks its creature');
+	assert.equal(d.log.filter((l) => l.startsWith('heap:')).length, cells, 'every cell marks its heap');
+	assert.equal(d.talisman.level, 1, 'the unseen bonuses level the artifact');
+	assert.equal(d.talisman.exp, 21 * cells - 100, 'mapped + unseen creature + unseen heap, minus the level');
+	assert.ok(d.log.some((l) => l.includes('levelup')), 'the level is announced');
+}
+// Refusals: aiming at his own cell spends nothing; cursed/low/AntiMagic never reach the aimer.
+{
+	const own = talismanDrive();
+	useTalismanFlow(own.ctx);
+	own.ctx.aimOpts.onConfirm({ x: 0, y: 0 });
+	assert.equal(own.explored.size, 0, 'his own cell scries nothing');
+	assert.equal(own.flags.turns, 0, 'and spends nothing');
+	const cursed = talismanDrive({ talisman: { level: 0, charge: 100, cursed: true } });
+	useTalismanFlow(cursed.ctx);
+	assert.ok(cursed.log.some((l) => l.includes('desc_cursed')), `cursed reports, got ${cursed.log}`);
+	const low = talismanDrive({ talisman: { level: 0, charge: 4 } });
+	useTalismanFlow(low.ctx);
+	assert.ok(low.log.some((l) => l.includes('low_charge')), `uncharged reports, got ${low.log}`);
+	const immune = talismanDrive({ ctx: { magicImmune: true } });
+	useTalismanFlow(immune.ctx);
+	assert.ok(!immune.log.some((l) => l.startsWith('aim:')), 'AntiMagic opens nothing');
+}
+// The trap warning: one uneasy line per run of secrets in sight, then silence; none, reset.
+{
+	const d = talismanDrive({ ctx: { isCellVisible: () => true, isSecretCell: (x, y) => x === 1 && y === 0 } });
+	checkTalismanAwarenessFlow(d.ctx);
+	assert.ok(d.log.some((l) => l.includes('foresight.uneasy')), `the warning fires, got ${d.log}`);
+	assert.equal(d.talisman.warn, true);
+	assert.ok(d.flags.travel, 'the warning interrupts travel');
+	const n = d.log.length;
+	checkTalismanAwarenessFlow(d.ctx);
+	assert.equal(d.log.length, n, 'no repeat while the run continues');
+	const clear = talismanDrive();
+	checkTalismanAwarenessFlow(clear.ctx);
+	assert.equal(clear.talisman.warn ?? false, false, 'no secrets resets the latch');
+}
 	const { roseLevelCap, roseChargeCap, roseGhostMaxHp, roseGhostAttackSkill, roseGhostDefenseSkill,
 		roseGhostDamageRange, roseGhostStrength, applyRoseRecharge, roseSummonGate, rosePetalsNeeded,
 		rosePetalDropCap, rosePetalPickup } = require('./items/rose.js');

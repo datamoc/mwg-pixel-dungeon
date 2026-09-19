@@ -228,7 +228,7 @@ import { useCloak as useArtifactCloak, useHourglass as useArtifactHourglass, use
 //live in their own module (scene-free, so `verifyItemWorkflows` can drive them the way it
 //drives `shopPricing`/`missiles`); the scene only builds the flow context.
 import { sandalsNaturalismLevel, applySandalsNaturalismCharge, useSandalsFlow, type SandalsFlowContext, type SandalsItem } from '../items/sandals';
-import { talismanScryGate, talismanMaxDist, talismanScryAngle, talismanAwarenessDuration, talismanApplyExp, talismanApplyScryCost, applyTalismanPerTurnCharge, type TalismanItem } from '../items/talisman';
+import { applyTalismanPerTurnCharge, useTalismanFlow, checkTalismanAwarenessFlow, type TalismanFlowContext, type TalismanItem } from '../items/talisman';
 import { roseSummonGate, roseGhostMaxHp, roseGhostAttackSkill, roseGhostDefenseSkill, roseGhostDamageRange, applyRoseRecharge, type RoseItem } from '../items/rose';
 import { rosePetalsNeeded, rosePetalDropCap, rosePetalPickup, roseChargeCap, roseLevelCap } from '../items/rose';
 import { planWealthDrops, wealthEquipBonus, initialiseWealthTrackers, wealthDeathRolls, type WealthDropPlan, type WealthTrackers } from '../items/wealthDrops';
@@ -18554,17 +18554,49 @@ private eyeBeamTurn(monster: Creature): boolean {
 		}
 
 		private useTalisman(instanceId?: string): void {
-			const talisman = this.talismanItem(instanceId);
-			const gate = talismanScryGate(talisman, this.hero.magicImmune === true);
-			if (gate === 'missing' || !talisman) return;
-			if (gate === 'cursed') { this.say(t('items.artifacts.talismanofforesight.desc_cursed'), 'negative'); return; }
-			if (gate === 'low') { this.say(t('items.artifacts.talismanofforesight.low_charge'), 'negative'); return; }
-			this.beginAiming({
-				range: Math.max(this.level.width, this.level.height),
-				requireLineOfSight: false,
-				onConfirm: (cell) => this.confirmTalismanScry(cell, instanceId),
-			});
-			this.say(t('items.artifacts.talismanofforesight.prompt'), 'positive');
+			useTalismanFlow(this.talismanFlowContext(), instanceId);
+		}
+
+		private checkTalismanAwareness(): void {
+			checkTalismanAwarenessFlow(this.talismanFlowContext());
+		}
+
+		/**
+		 * The Talisman of Foresight's scry flow lives in `items/talisman.ts` behind
+		 * `TalismanFlowContext` - the file-size refactor's ninth extraction, behavior-identical.
+		 */
+		private talismanFlowContext(): TalismanFlowContext {
+			const scene = this;
+			return {
+				get magicImmune() { return scene.hero.magicImmune === true; },
+				get heroPos() { return { x: scene.hero.x, y: scene.hero.y }; },
+				get levelSize() { return { width: scene.level.width, height: scene.level.height }; },
+				talismanOf: (instanceId?: string) => scene.talismanItem(instanceId),
+				beginAim: (opts) => scene.beginAiming(opts),
+				trueDistanceTo: (cell) => scene.trueDistanceTo(cell),
+				isCellVisible: (x, y) => scene.fov.isVisible(x, y),
+				isCellExplored: (x, y) => scene.fov.isExplored(x, y),
+				markCellExplored: (x, y) => { scene.fov.explored.add(scene.level.index(x, y)); },
+				terrainAt: (x, y) => scene.level.get(x, y),
+				isSecretCell: (x, y) => scene.secrets.isSecret(x, y),
+				discoverSecret: (x, y) => scene.secrets.discover(x, y),
+				creatureAt: (x, y) => scene.creatureAt(x, y),
+				markCreatureAware: (creature, duration) => {
+					scene.awareCreatures.set(creature as Creature, Math.max(scene.awareCreatures.get(creature as Creature) ?? 0, duration));
+				},
+				hasGroundItem: (x, y) => scene.groundItemAt(x, y) != null,
+				markHeapAware: (cellIndex, duration) => {
+					scene.awareHeapCells.set(cellIndex, Math.max(scene.awareHeapCells.get(cellIndex) ?? 0, duration));
+				},
+				cellIndex: (x, y) => scene.level.index(x, y),
+				insideLevel: (x, y) => scene.level.inside(x, y),
+				clearTravel: () => { scene.travelTarget = null; },
+				dispelInvisibility: () => { delete scene.hero.buffs['invisibility']; },
+				refresh: () => scene.refresh(),
+				spendTurn: () => { scene.actionSpentTurn = true; scene.spendHeroTurn(1); },
+				say: scene.say.bind(scene),
+				t,
+			};
 		}
 
 		private useSpellbook(instanceId?: string): void {
@@ -19210,99 +19242,6 @@ private eyeBeamTurn(monster: Creature): boolean {
 			return this.bag.find('talisman', instanceId) as (typeof this.bag.items[number] & TalismanItem) | undefined;
 		}
 
-		private confirmTalismanScry(cell: Step, instanceId?: string): void {
-			const talisman = this.talismanItem(instanceId);
-			if (!talisman) return;
-			if (talismanScryGate(talisman, this.hero.magicImmune === true) !== 'ok') return;
-			//Java: `if (target != null && target != curUser.pos)` - aiming at his own cell does nothing.
-			if (cell.x === this.hero.x && cell.y === this.hero.y) return;
-			//Java's adjacency nudge: `if (Dungeon.level.adjacent(target, curUser.pos)) target += (target
-			//- curUser.pos)`, which pushes a 1-cell aim out to 2 in the same direction. Java does not
-			//bound-check the result; a cell off the map has no cone cells at all there either, so this
-			//refuses the scry instead (and spends nothing, since the cost comes at the end).
-			let target: Step = { x: cell.x, y: cell.y };
-			if (Roguelike.chebyshevDistance(target, { x: this.hero.x, y: this.hero.y }) <= 1) {
-				target = { x: target.x + (target.x - this.hero.x), y: target.y + (target.y - this.hero.y) };
-			}
-			if (!this.level.inside(target.x, target.y)) return;
-			const level = talisman.level ?? 0;
-			const maxDist = talismanMaxDist(level, talisman.charge ?? 0);
-			let distance = this.trueDistanceTo(target);
-			//`if (dist >= 3 && dist > maxDist())`: walk the aim's own ballistic path and keep the last
-			//cell still inside `maxDist()` - Java iterates `trajectory.path` and reassigns `target` per
-			//step, so the *last* cell within range wins, not the first.
-			if (distance >= 3 && distance > maxDist) {
-				for (const step of Roguelike.traceLine({ x: this.hero.x, y: this.hero.y }, target)) {
-					if (this.trueDistanceTo(step) > maxDist) break;
-					target = step;
-				}
-				distance = this.trueDistanceTo(target);
-			}
-			//`new ConeAOE(new Ballistica(pos, target, STOP_TARGET), angle)`: the arc is
-			//`round(200 * 0.92^dist)`, the cone's own radius is unbounded (`ConeAOE`'s two-arg
-			//constructor passes `POSITIVE_INFINITY`), and each ray carries the core's own
-			//`STOP_TARGET`-only params - which stop at neither wall nor creature, i.e. a plain line.
-			const cone = coneCells({
-				source: { x: this.hero.x, y: this.hero.y },
-				target,
-				degrees: talismanScryAngle(distance),
-				maxDistance: Infinity,
-				width: this.level.width,
-				height: this.level.height,
-				trace: (from, to) => Roguelike.traceLine(from, to),
-			});
-			const duration = talismanAwarenessDuration(level);
-			let earnedExp = 0;
-			let noticed = false;
-			for (const coneCell of cone.cells) {
-				const { x, y } = coneCell;
-				//Java's `subPath(1, dist)` starts one cell out, so the hero's own cell is never in the
-				//cone; `traceLine` includes both endpoints, so it is skipped here instead.
-				if (x === this.hero.x && y === this.hero.y) continue;
-				const index = this.level.index(x, y);
-				const wasExplored = this.fov.isExplored(x, y) || this.fov.isVisible(x, y);
-				if (!wasExplored) {
-					//`if (Dungeon.level.discoverable[cell] && !(mapped || visited)) { mapped = true; }`.
-					//This port's fog has no `discoverable` channel - every floor here is discoverable -
-					//and `explored` is its stand-in for both `mapped` and `visited`.
-					this.fov.explored.add(index);
-					earnedExp += mwlItemEffectValue('talisman', 'expMappedCell');
-				}
-				//`if (Dungeon.level.secret[cell])`: a concealed cell is disguised as `WALL` when the
-				//secret is a door and as `FLOOR` when it is a trap (see `Secrets.conceal`'s call sites),
-				//which is also how Java's `oldValue == SECRET_DOOR ? 100 : 10` splits the experience.
-				const concealment = this.level.get(x, y);
-				if (this.secrets.isSecret(x, y) && this.secrets.discover(x, y)) {
-					earnedExp += concealment === WALL
-						? mwlItemEffectValue('talisman', 'expSecretDoor')
-						: mwlItemEffectValue('talisman', 'expSecretTrap');
-					noticed = true;
-				}
-				//A creature the hero cannot see, marked visible for `5 + 2*level()` turns: Java attaches
-				//`CharAwareness` carrying the char's own id, and this port keeps the equivalent as a
-				//countdown consulted by the sprite-visibility gate below.
-				const occupant = this.creatureAt(x, y);
-				if (occupant && !occupant.isHero && (occupant.isAlly || !occupant.isNPC)) {
-					this.awareCreatures.set(occupant, Math.max(this.awareCreatures.get(occupant) ?? 0, duration));
-					if (!this.fov.isVisible(x, y)) earnedExp += mwlItemEffectValue('talisman', 'expUnseen');
-				}
-				//`HeapAwareness`: the same mark for a heap, keyed by cell. Java awards its 10 only for a
-				//heap it has never seen (`!h.seen`); this port's heaps carry no such flag, so the cell's
-				//own pre-scry fog state stands in for it.
-				if (this.groundItemAt(x, y)) {
-					this.awareHeapCells.set(index, Math.max(this.awareHeapCells.get(index) ?? 0, duration));
-					if (!wasExplored) earnedExp += mwlItemEffectValue('talisman', 'expUnseen');
-				}
-			}
-			if (talismanApplyExp(talisman, earnedExp)) this.say(t('items.artifacts.talismanofforesight.levelup'), 'positive');
-			talismanApplyScryCost(talisman, distance);
-			delete this.hero.buffs['invisibility'];
-			void noticed;
-			this.refresh();
-			this.actionSpentTurn = true;
-			this.spendHeroTurn(1);
-		}
-
 		private spellbookItem(instanceId?: string) {
 			return this.bag.find('spellbook', instanceId) as (typeof this.bag.items[number] & SpellbookItem) | undefined;
 		}
@@ -19445,35 +19384,6 @@ private eyeBeamTurn(monster: Creature): boolean {
 				//audio or particle seam, so the spell's own real per-element description line reports it.
 				this.say(t(`items.spells.summonelemental.desc_${type}`), 'positive');
 			});
-		}
-
-	private checkTalismanAwareness(): void {
-			const talisman = this.talismanItem();
-			if (!talisman) return;
-			let somethingFound = false;
-			const radius = 3;
-			const minX = Math.max(0, this.hero.x - radius), maxX = Math.min(this.level.width - 1, this.hero.x + radius);
-			const minY = Math.max(0, this.hero.y - radius), maxY = Math.min(this.level.height - 1, this.hero.y + radius);
-			for (let y = minY; y <= maxY && !somethingFound; y++) {
-				for (let x = minX; x <= maxX; x++) {
-					if (!this.fov.isVisible(x, y)) continue;
-					if (!this.secrets.isSecret(x, y)) continue;
-					if (this.level.get(x, y) === WALL) continue;
-					somethingFound = true;
-					break;
-				}
-			}
-			if (somethingFound && !talisman.cursed && !this.hero.magicImmune) {
-				if (!talisman.warn) {
-					this.say(t('items.artifacts.talismanofforesight$foresight.uneasy'), 'warning');
-					//`((Hero)target).interrupt()`: this port's stand-in for it is dropping the auto-travel
-					//destination, the same thing every other "stop resting/walking" site here does.
-					this.travelTarget = null;
-					talisman.warn = true;
-				}
-			} else {
-				talisman.warn = false;
-			}
 		}
 
 		private materialiseWealthDrop(plan: WealthDropPlan, at: Step): GroundItem | null {

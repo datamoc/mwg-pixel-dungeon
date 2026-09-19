@@ -1143,6 +1143,19 @@ one.
       with a new headless drive of the moved flow through scripted pickers (feed consumes and
       attunes, root aims at the authored range 3 and pays firebloom's own 20, AntiMagic opens
       nothing, cursed-plus-uncharged reports low charge, far cells refuse without planting).
+      **Ninth extraction 2026-09-19**: the Talisman of Foresight's scry flow (`useTalisman`'s
+      aimer, `confirmTalismanScry`'s cone pass, the per-turn trap warning) moved to
+      `items/talisman.ts` behind a new `TalismanFlowContext` (talisman lookup, aimer, distance,
+      fog/secret/terrain seams, creature/heap marks, travel/invisibility/refresh/turn, say,
+      `t`); the scene keeps one-line `useTalisman`/`checkTalismanAwareness` adapters plus a
+      builder. Net −90 lines in `dungeonScene.ts` (23,111 after), `talisman.ts` ~169 to 354.
+      Suites: `tsc` clean (the six moved rule imports deleted from the scene), item suite green
+      with a new headless drive of the moved flow on a stub 10x10 level (a 3-tile scry maps at
+      1 exp a cell with no level, pays exactly 92 charge with the partial books, one turn;
+      full creature+heap cover marks 5-turn awareness everywhere with the exact leveled
+      remainder; own-cell/cursed/low-charge/AntiMagic refusals; the warning fires once per run
+      and resets) - which needed one new harness compile line (`mechanics/cone.ts`) plus an
+      earlier recompile of `dungeonConstants.js` for its `WALL`.
       **Complexity: L.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
