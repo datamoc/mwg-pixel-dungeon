@@ -523,8 +523,21 @@ was judged not worth the churn against those existing references.
       on frozen spectators stays open. **Still open, and deliberately not offered**
       (`armorAbilitiesFor()` offers only what can actually run, so a class with none keeps the
       crown's old description line rather than an empty choice): the remaining two abilities
-      (Mage's two) each need a system this port does not have (`ElementalBlast`'s arithmetic is ported and pinned, but firing needs the staff-imbue system; `WildMagic` needs a wand-randomization pass), and
-      the Cleric's three have neither strings nor a spell system here.
+      (Mage's two) each need a system this port does not have. **Narrowed 2026-09-19 to the real
+      shared root cause, checked directly against both abilities' Java source**: this port's
+      hero carries at most one `wand` bag entry at a time (`dungeonScene.ts`'s `wandType: WandType`
+      is a single scalar field, `equipWand` always writes the one stackable `id: 'wand'` bag
+      slot) - there is no per-instance multiple-distinct-wands inventory model at all. Both
+      abilities are built directly on Java's opposite assumption: `MagesStaff.imbueWand()` lets
+      the Mage attach *one of several carried wands* to the staff (`WndBag.ItemSelector` picks
+      among them), and `WildMagic.activate()` literally fires `hero.belongings.getAllItems(
+      Wand.class)` - every distinct wand the hero owns, shuffled, up to 4. Neither is offerable
+      without first giving this port a real multiple-wands-carried model, which is a change with
+      a wide blast radius (Magical Holster's bag row, Wand Preservation, wand recharging and
+      every other place this port's code already assumes exactly one wand) - not scoped to these
+      two abilities alone, so this is recorded as the actual blocker rather than the vaguer
+      "staff-imbue system"/"wand-randomization pass" phrasing this line carried before. The
+      Cleric's three have neither strings nor a spell system here.
       **Also not ported, and stated**: `ClassArmor` as a distinct item (no `AC_TRANSFER`, no
       class-armor sprite tier), and Ratmogrify's three rat talents (its real 50 charge cost and
       double-turn bug are fixed, but no `TransmogRat` actor exists for them to act through). See
