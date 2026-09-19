@@ -15885,7 +15885,7 @@ export const gameData = {
 							"attributes": {
 								"item": "meat",
 								"hunger": "150",
-								"heal": "5"
+								"heal": "0"
 							},
 							"children": [],
 							"location": {
@@ -15899,7 +15899,7 @@ export const gameData = {
 							"tag": "row",
 							"attributes": {
 								"item": "chargrilledMeat",
-								"hunger": "300",
+								"hunger": "150",
 								"heal": "0"
 							},
 							"children": [],

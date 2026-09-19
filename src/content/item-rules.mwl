@@ -336,8 +336,8 @@
         columns: "item:string|hunger:number|heal:number",
         children: [
           { tag: "row", item: "food", hunger: 300, heal: 0 },
-          { tag: "row", item: "meat", hunger: 150, heal: 5 },
-          { tag: "row", item: "chargrilledMeat", hunger: 300, heal: 0 },
+          { tag: "row", item: "meat", hunger: 150, heal: 0 },
+          { tag: "row", item: "chargrilledMeat", hunger: 150, heal: 0 },
           { tag: "row", item: "stewedMeat", hunger: 150, heal: 0 },
           { tag: "row", item: "meatPie", hunger: 900, heal: 0 },
           { tag: "row", item: "pasty", hunger: 450, heal: 0 },

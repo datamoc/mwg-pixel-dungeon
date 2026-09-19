@@ -601,6 +601,17 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	assert.equal(mwlItemEffectValue('bombs', 'targetRange'), 8);
 	assert.equal(mwlItemEffectValue('waterskin', 'healFractionPerDrop'), 0.05);
 	assert.equal(mwlItemEffectValue('wandTransfusion', 'healingPerLevel'), 3);
+	// `Food.energy` at tag `v3.3.8`: ration `Hunger.HUNGRY` (300), MysteryMeat and
+	// ChargrilledMeat `HUNGRY/2` (150), StewedMeat `HUNGRY/2` (150), MeatPie
+	// `STARVING*2` (900), Pasty `STARVING` (450) - and no Java food heals on eat
+	// (only PhantomMeat, unmodeled here, restores HP), so every heal is 0.
+	{
+		const { MWL_CONSUMABLE_STATS } = require('./mwlContent.js');
+		for (const [id, hunger] of [['food', 300], ['meat', 150], ['chargrilledMeat', 150], ['stewedMeat', 150], ['meatPie', 900], ['pasty', 450]]) {
+			assert.equal(MWL_CONSUMABLE_STATS[id]?.hunger, hunger, `${id} carries Food.energy`);
+			assert.equal(MWL_CONSUMABLE_STATS[id]?.heal, 0, `${id} heals nothing on eat`);
+		}
+	}
 	// Java's Dewdrop.doPickUp removes the heap only after consumeDew accepts it. A full,
 	// fully-healed Waterskin refuses ordinary floor pickups, while the entrance/exit force
 	// path consumes one anyway. Pin the transaction ordering here so a UI refactor cannot

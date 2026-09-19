@@ -1,8 +1,8 @@
 import { Random, type Actors } from 'mwg';
+import { addBuff, reigniteBuff, type Creature } from '../combat';
 import { cachedRationChance } from '../talentEffects';
 import { isChallengeEnabled } from '../challenges';
 import { t } from '../i18n';
-import type { Creature } from '../combat';
 import type { ClassId } from '../classes';
 import { MWL_CONSUMABLE_STATS, mwlItemEffectValue } from '../mwlContent';
 
@@ -32,6 +32,41 @@ export interface ConsumableContext {
 	applyPotionEffect(id: string): void;
 }
 
+/** `MysteryMeat.effect(hero)` (tag `v3.3.8`): `Random.Int(5)` over burning
+ * (`reignite`), roots at `Roots.DURATION*2`, poison `set(HT/5)`, slow, or nothing.
+ * Slow has no speed-factor buff in this port, so that case stays unmodeled (see
+ * `PORT_COVERAGE.md`); the other four run with Java's own durations. The poison seed
+ * `total = 1` is the t=1 tick, which always deals `floor(1/3)+1` - without it the loop
+ * stops one turn late (HT 20 gives clock 4 dealing 6, not clock 3 dealing exactly 4). */
+function applyMysteryMeatEffect(scene: ConsumableContext): void {
+	switch (Random.int(0, 4)) {
+		case 0:
+			reigniteBuff(scene.hero, 'burning', 8);
+			break;
+		case 1:
+			addBuff(scene.hero, 'roots', 10);
+			break;
+		case 2: {
+			// `Poison.set(HT/5)` is a damage pool, not a turn count, while this port's
+			// poison clock deals `floor(t/3)+1` per remaining turn - so take the clock
+			// whose cumulative damage first reaches `HT/5`.
+			const target = scene.hero.maxHp / 5;
+			let clock = 1;
+			let total = 1;
+			while (total < target) {
+				clock++;
+				total += Math.floor(clock / 3) + 1;
+			}
+			addBuff(scene.hero, 'poison', clock);
+			break;
+		}
+		case 3:
+			break;
+		default:
+			break;
+	}
+}
+
 /** Food.satisfy() and the class talents that react to eating. */
 export function eatFood(scene: ConsumableContext): boolean {
 	const food = scene.requestedItemId
@@ -42,6 +77,7 @@ export function eatFood(scene: ConsumableContext): boolean {
 		return false;
 	}
 	scene.bag.remove(food.id, 1);
+	if (food.id === 'meat') applyMysteryMeatEffect(scene);
 	const cached = cachedRationChance(scene.heroClass, scene.talentRank('cached_rations'));
 	if (cached > 0 && Random.chance(cached)) scene.bag.add({ id: food.id, quantity: 1, stackable: true, identified: food.identified });
 	const stats = MWL_CONSUMABLE_STATS[food.id] ?? MWL_CONSUMABLE_STATS.food;
