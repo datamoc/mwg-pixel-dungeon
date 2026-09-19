@@ -183,7 +183,7 @@ import {
 import {
 	SPIRIT_HAWK_LIFESPAN, goForTheEyesEffect, spiritHawkDodges, spiritHawkSpeed, spiritHawkViewDistance,
 } from '../simulation/huntressAbilities';
-import { exposeWeaknessDuration, feignedRetreatHaste } from '../simulation/duelistAbilities';
+import { exposeWeaknessDuration, feignedRetreatHaste, combinedLethalityTest, closeTheGapRange, invigoratingVictoryHeal } from '../simulation/duelistAbilities';
 import { shadowCloneAccuracy, shadowCloneArmorShare, shadowCloneBladeShare, shadowCloneEvasion, shadowCloneHp } from '../simulation/rogueAbilities';
 import { CLASSES, CLASS_AMMO, HERO_IDLE_FRAME, type ClassId } from '../classes';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
@@ -767,8 +767,6 @@ interface SaveShape {
 	clAbilityWeaponClass?: string | null;
 	clAbilityWeaponInstanceId?: string;
 	clAbilityTurns?: number;
-	/** `Talent.CombinedLethalityTriggerTracker` - see the field's own comment. */
-	clTriggerTurns?: number;
 	defensiveStanceTurns?: number;
 	chargedShotArmed?: boolean;
 	heroActionClock?: number;
@@ -1774,20 +1772,21 @@ export class DungeonScene extends Scene2D {
 	private abilityKnockbackNext = false;
 	private abilityRunicNext = false;
 	private lastAbilityAttack: string | null = null;
-	/** `Talent.CombinedLethalityAbilityTracker`: the weapon the last ability was used
-	 * with (class + instance id), and its remaining duration (Java's `hero.cooldown()`).
-	 * `MeleeWeapon.proc()`'s CL half arms the trigger tracker below when a normal melee
-	 * hit lands with a *different* weapon than the one stored here. Duration is 1 turn:
-	 * the tracker is set after the ability's `spendHeroAction` tick, so it survives the
-	 * end-of-turn tick and is active for the next turn's proc, then expires. */
+	/** `Talent.CombinedLethalityAbilityTracker`: the weapon the last weapon ability
+	 * was used with (bag id + instance id - Java stores the weapon object and tests
+	 * `tracker.weapon == this`, i.e. instance identity), and its remaining duration
+	 * (Java's `hero.cooldown()`, one turn: `afterAbilityUsed` sets it, the execute tail
+	 * in `Char.attack()` tests it and detaches it one-shot). Duration is 1 turn: the
+	 * tracker is set after the ability's `spendHeroAction` tick, so it survives the
+	 * end-of-turn tick and is active for the next turn's swing, then expires.
+	 * Correction 2026-09-19: an earlier draft of this port kept a second
+	 * `clTriggerTurns` countdown "armed by `proc()`" - no such buff exists in Java
+	 * (`Talent.java` declares only `CombinedLethalityAbilityTracker`; `Char.java`
+	 * 541-561 tests and detaches that same tracker inline in `attack()`), so the
+	 * second field is deleted and the tail below is the whole mechanic. */
 	private clAbilityWeaponClass: string | null = null;
 	private clAbilityWeaponInstanceId: string | undefined = undefined;
 	private clAbilityTurns = 0;
-	/** `Talent.CombinedLethalityTriggerTracker`: armed for 5f by `proc()` when the
-	 * ability tracker holds a different weapon. The execute tail consumes it one-shot
-	 * (Java's `combinedLethality.detach()` at `Char.java` 469, unconditionally inside
-	 * the `if (combinedLethality != null)` block - whether or not the KO fired). */
-	private clTriggerTurns = 0;
 	private heroActionClock = 0;
 	private recentHitClocks: number[] = [];
 	/**
@@ -2711,6 +2710,7 @@ export class DungeonScene extends Scene2D {
 				ratmogrifiedTurns: creature.ratmogrifiedTurns,
 				ratmogrifiedPermanent: creature.ratmogrifiedPermanent,
 				deathMarkTurns: creature.deathMarkTurns,
+				duelTakenDmg: creature.duelTakenDmg,
 				deathMarkInitialHp: creature.deathMarkInitialHp,
 				patrolTarget: creature.patrolTarget ? { ...creature.patrolTarget } : undefined,
 				lastSeen: creature.lastSeen ? { ...creature.lastSeen } : undefined,
@@ -2857,6 +2857,7 @@ export class DungeonScene extends Scene2D {
 				ratmogrifiedTurns: saved.ratmogrifiedTurns,
 				ratmogrifiedPermanent: saved.ratmogrifiedPermanent,
 				deathMarkTurns: saved.deathMarkTurns,
+				duelTakenDmg: saved.duelTakenDmg,
 				deathMarkInitialHp: saved.deathMarkInitialHp,
 				patrolTarget: saved.patrolTarget ? { ...saved.patrolTarget } : undefined,
 				lastSeen: saved.lastSeen ? { ...saved.lastSeen } : undefined,
@@ -8312,6 +8313,10 @@ export class DungeonScene extends Scene2D {
 				const wasDrowsy = this.hero.buffs['drowsy'] !== undefined;
 				const wasMagicalSleep = this.hero.buffs['magicalSleep'] !== undefined;
 				const dot = Math.floor(tickBuffs(this.hero, this.depth) * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune));
+				//`Challenge.DuelParticipant.act()`'s pairing half for the hero side (mob
+				//side runs from `takeMonsterTurn`, right after its own tick, for the same
+				//reason: Java buffs act independently of the char's action gates).
+				this.tickDuelParticipant(this.hero);
 				if (wasDrowsy && this.hero.buffs['drowsy'] === undefined && this.hero.hp < this.hero.maxHp) {
 					//Drowsy.act() attaches MagicalSleep; a full-health reader takes Java's
 					//"too healthy" path and is not put to sleep.
@@ -9259,7 +9264,15 @@ export class DungeonScene extends Scene2D {
 		//with another DoT also running the burning share cannot be split out - a stated reduction.
 		const soiledBurningOnly = monster.kind === 'yogFist' && monster.yogFistType === 'soiled'
 			&& monster.buffs['burning'] !== undefined && monster.buffs['poison'] === undefined && monster.buffs['bleeding'] === undefined;
-		let dotDealt = soiledBurningOnly ? 0 : dot;
+		//`Char.damage()` negates through `isInvulnerable()`, which a `SpectatorFreeze`
+		//carries - frozen spectators take no DoT damage (the roll is still spent, as
+		//Java's own negated `damage()` call would spend it).
+		let dotDealt = soiledBurningOnly || monster.buffs['spectatorFreeze'] !== undefined ? 0 : dot;
+		//`Challenge.DuelParticipant.act()`'s pairing half for the mob side, checked on
+		//every mob turn right after its own buffs tick (Java buffs act independently of
+		//the char's action gates, so this runs even for a paralyzed duelist). The hero
+		//side runs from `spendHeroTurn`.
+		this.tickDuelParticipant(monster);
 		//DKBarrier absorbs on every `Char.damage()` path - same block as the attack
 		//tail (see the trap-blast seam's own copy).
 		if (monster.kind === 'king' && (monster.kingShield ?? 0) > 0) {
@@ -9367,6 +9380,10 @@ export class DungeonScene extends Scene2D {
 		//`Mob.act()`: `if (buff(Feint.AfterImage.FeintConfusion.class) != null){ ...; spend(TICK);
 		//return true; }` - wastes the whole turn, same shape as paralysis/frost just above.
 		if (monster.buffs['paralysis'] || monster.buffs['frost'] || monster.buffs['feintConfusion']) return;
+		//`Challenge.SpectatorFreeze`: a frozen spectator loses the turn after its own buffs
+		//already ticked above (so the 10-turn clock still runs down). Java pairs this with
+		//`delayChar`; the shared tick-then-skip here is the same observable.
+		if (monster.buffs['spectatorFreeze'] !== undefined) return;
 		if (monster.buffs['amok']) {
 			this.takeAmokTurn(monster);
 			return;
@@ -13289,6 +13306,11 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//ordinary monsters, not only by the already-portable Friendly weapon path.
 		const charmedForTarget = attacker.buffs['charm'] !== undefined && this.charmTargets.get(attacker.id) === defender.id;
 		if (charmedForTarget) damage = 0;
+		//`Char.damage()` negates through `isInvulnerable()`, which a
+		//`Challenge.SpectatorFreeze` carries - frozen spectators take no attack
+		//damage, same zeroing shape as the charm line above. Bomb/trap/blast seams
+		//do not gate on it (stated residual); DoTs are negated at the mob tick.
+		if (defender.buffs['spectatorFreeze'] !== undefined) damage = 0;
 		//No `Pylon` curve here: it is a `damage()` override, so it applies after every multiplier
 		//and proc below, not before them - see `applyDefenderDamageCurves`' own note.
 		//Weapon.Augment: real Java's `Augment` enum (`Weapon.java`, tag `v3.3.8`) trades damage
@@ -13587,20 +13609,48 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//only while the attacker's Preparation buff is up - i.e. only out of invisibility - and
 		//tests the target's HP against `AttackLevel.KOThreshold()`'s table, indexed by the level
 		//reached (1/3/5/9 turns invisible) and the `enhanced_lethality` rank, with a strict `<`
-		//and one fifth of the threshold for a `BOSS`/`MINIBOSS`. `CombinedLethality` (`543-545`)
-		//excludes those two properties outright and uses `<= 0.4*points/3`. Both mechanics test
+		//and one fifth of the threshold for a `BOSS`/`MINIBOSS`. `CombinedLethality`
+		//(`Char.java` 541-561) excludes those two properties outright and uses
+		//`<= 0.4*points/3`. Both mechanics test
 		//the HP the hit actually leaves: every reduction above (curves, shields, pools, the
 		//grass cut) lands in `damage` before this point, so `defender.hp - damage` is what the
 		//`defender.hp -= damage` below writes - there is no pre-shield prediction here. Both
 		//also require the hit to have left the target alive (`predictedHp > 0`, Java's own
 		//`enemy.isAlive()` check after `damage()` returned): a hit that already kills reports
-		//the kill below, not an execution. What remains unmodelled is only
-		//`CombinedLethality`'s own arming gate (the attacking weapon must have changed since the
-		//tracker was set). See `PORT_COVERAGE.md`'s `attack()`-tail ordering row.
+		//the kill below, not an execution.
+		//
+		//`CombinedLethality`'s arming gate is Java's own too (`Char.java` 541-542): the
+		//tracker's weapon must differ from the attacking weapon (`!=`, instance identity),
+		//the attacker must be the hero, and the attacking weapon a `MeleeWeapon`. The port
+		//reads that as: a live tracker, a hero melee swing (never a throw - bow shots and
+		//thrown hits never reach this method anyway), a wielded weapon (never the unarmed
+		//`startingWeapon`), and an instance id (falling back to the bag id) that is not the
+		//stored one. `enemy.alignment != alignment` is the `!defender.isAlly` below (every
+		//hero-targetable creature here is hostile - the ability and throw aimers refuse
+		//allies outright - so the only theoretical miss is Java's NEUTRAL sheep, which
+		//this port spawns as an ally). The tracker detaches unconditionally once the gate
+		//holds, whether or not the threshold fired - Java's `combinedLethality.detach()`.
+		//An executed Brute must not revive (`Char.java` 547-549 detaches `BruteRage`
+		//first): `clExecuted` suppresses this method's own revival branch below.
 		const predictedHp = defender.hp - damage;
-		const combinedThreshold = defender.boss === true || defender.miniboss === true
-			? 0 : 0.4 * this.talentRank('combined_lethality') / 3;
-		const combinedLethality = combinedThreshold > 0 && predictedHp > 0 && predictedHp <= defender.maxHp * combinedThreshold;
+		const clStoredWeapon = this.clAbilityWeaponInstanceId ?? this.clAbilityWeaponClass;
+		const clSwingWeapon = this.weaponInstanceId ?? this.weaponId;
+		//`attackingWeapon() instanceof MeleeWeapon`: a hero melee swing with a wielded
+		//weapon (never a throw - bow shots and thrown hits never reach this method
+		//anyway - and never the unarmed `startingWeapon`).
+		const clResult = combinedLethalityTest({
+			trackerTurns: this.clAbilityTurns,
+			storedWeapon: clStoredWeapon,
+			swingWeapon: clSwingWeapon,
+			isHeroMelee: attacker === this.hero && attacker.attackMode !== 'throw' && this.weaponId !== 'startingWeapon',
+			targetIsAlly: defender.isAlly === true,
+			targetIsBossOrMiniboss: defender.boss === true || defender.miniboss === true,
+			talentPoints: this.talentRank('combined_lethality'),
+			predictedHp,
+			targetMaxHp: defender.maxHp,
+		});
+		const clGate = clResult.tests;
+		const combinedLethality = clResult.executes;
 		const assassinLethality = attacker.prepLevel !== undefined && predictedHp > 0 && preparationCanKo(
 			predictedHp, defender.maxHp, attacker.prepLevel,
 			this.subclass() === 'assassin' ? this.talentRank('enhanced_lethality') : 0,
@@ -13609,6 +13659,12 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (attacker === this.hero && (combinedLethality || assassinLethality)) {
 			damage = defender.hp;
 			this.say(t('port.log.talentexecute'), 'positive');
+		}
+		const clExecuted = attacker === this.hero && combinedLethality;
+		if (clGate) {
+			this.clAbilityTurns = 0;
+			this.clAbilityWeaponClass = null;
+			this.clAbilityWeaponInstanceId = undefined;
 		}
 		defender.hp -= damage;
 		if (this.fadeMirrorOnDamage(defender, damage)) {
@@ -13801,7 +13857,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//spawnable alternative monster kind) never got the revival at all and could simply be
 		//killed outright, the exact bug this port's own `Brute` fix once corrected for the base
 		//kind. `armoredRageTicks` starts the every-3rd-turn decay counter.
-		if (defender.hp <= 0 && (defender.kind === 'brute' || defender.kind === 'armoredBrute') && !defender.hasRaged) {
+		if (defender.hp <= 0 && (defender.kind === 'brute' || defender.kind === 'armoredBrute') && !defender.hasRaged && !clExecuted) {
 			defender.hasRaged = true;
 			defender.raged = true;
 			if (defender.kind === 'armoredBrute') {
@@ -14227,6 +14283,18 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 	/** Barrier absorbs incoming damage before HP, matching Buff.Barrier's core rule. */
 	private absorbHeroDamage(amount: number, magical = false): number {
+		//`Hero.damage()`'s `DuelParticipant.addDamage(effectiveDamage)`: every hero hit
+		//that gets past this boundary feeds the duel ledger with its HP-plus-shield pool
+		//loss (Java's `preHP - postHP`, overkill included since the returned hit is
+		//unclamped). All fifteen hero-HP sites route through here, deferred ticks
+		//included, so this one snapshot covers them all.
+		const hpBefore = this.hero.hp;
+		const shieldBefore = this.heroShieldPoolTotal();
+		const recordDuelDamage = (hpLoss: number): void => {
+			if (this.hero.buffs['duelParticipant'] === undefined) return;
+			const poolLoss = shieldBefore - this.heroShieldPoolTotal() + hpLoss;
+			if (poolLoss > 0) this.hero.duelTakenDmg = (this.hero.duelTakenDmg ?? 0) + poolLoss;
+		};
 		//`Invulnerability` (the blessed ankh's revive shield): Java negates the damage outright.
 		if (amount > 0 && this.hero.buffs['invulnerability']) return 0;
 		//`Greatshield`/`Roundshield` guard: completely negates the next attack made against
@@ -14317,11 +14385,21 @@ private eyeBeamTurn(monster: Creature): boolean {
 		const reduced = Math.max(0, viscosityDamage - blocked);
 		if (deathlessFuryTriggers(this.subclass(), this.talentRank('deathless_fury'), this.deathlessFuryUsed, reduced, this.hero.hp)) {
 			this.deathlessFuryUsed = true;
+			recordDuelDamage(hpBefore - 1);
 			this.hero.hp = 1;
 			addBuff(this.hero, 'berserk');
 			return 0;
 		}
+		recordDuelDamage(reduced);
 		return reduced;
+	}
+
+	/** The hero's damage-soaking pools in one number (`Barrier.total` for each barrier,
+	 * Earthroot's `level`, the Living Earth rock amount) - the `shielding()` half of the
+	 * duel ledger's pool-loss snapshot. */
+	private heroShieldPoolTotal(): number {
+		return this.heroBarrier.total + this.sealBarrier.total + this.blockingBarrier.total
+			+ (this.earthrootArmor?.level ?? 0) + this.livingEarthArmor;
 	}
 
 	/** Blocking.BlockBuff.setShield(): keeps the higher of the current shield and the fresh
@@ -14703,6 +14781,14 @@ private eyeBeamTurn(monster: Creature): boolean {
 	private kill(creature: Creature, cause: 'foe' | 'trap' | 'fire' | 'poison' | 'hunger' = 'foe'): void {
 		const index = this.creatures.indexOf(creature);
 		if (index < 0) return;
+		//`Challenge.DuelParticipant.detach()` on death: a dueling target that dies (or a
+		//hero whose duel dies with her) runs the detach cascade immediately, so the
+		//victory heal and the freeze cleanup cannot wait for the next turn's pairing
+		//check. (Death-marked creatures return below without dying - their duel ends in
+		//`tickDeathMark` instead, once the mark lets them die.)
+		if (creature.buffs['duelParticipant'] !== undefined && (creature.deathMarkTurns ?? 0) <= 0) {
+			this.detachDuel(creature);
+		}
 		//`Char.isAlive()` is `HP > 0 || deathMarked`, so a marked creature is *not* `die()`d at zero
 		//HP: it keeps acting, and `Char.damage()`'s `HP == 0 && deathMarked` branch runs Fear the
 		//Reaper instead. `tickDeathMark` is what eventually lets it die, when the five turns are up.
@@ -15713,7 +15799,6 @@ private eyeBeamTurn(monster: Creature): boolean {
 			clAbilityWeaponClass: this.clAbilityWeaponClass,
 			clAbilityWeaponInstanceId: this.clAbilityWeaponInstanceId,
 			clAbilityTurns: this.clAbilityTurns,
-			clTriggerTurns: this.clTriggerTurns,
 			heroActionClock: this.heroActionClock,
 			recentHitClocks: [...this.recentHitClocks],
 			blacksmithPickaxeAvailable: this.blacksmithPickaxeAvailable,
@@ -16041,7 +16126,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.clAbilityWeaponClass = (s as { clAbilityWeaponClass?: string | null }).clAbilityWeaponClass ?? null;
 		this.clAbilityWeaponInstanceId = (s as { clAbilityWeaponInstanceId?: string }).clAbilityWeaponInstanceId ?? undefined;
 		this.clAbilityTurns = (s as { clAbilityTurns?: number }).clAbilityTurns ?? 0;
-		this.clTriggerTurns = (s as { clTriggerTurns?: number }).clTriggerTurns ?? 0;
+		//Pre-2026-09-19 saves may carry `clTriggerTurns` (the deleted second tracker);
+		//it is ignored, not restored - the single ability tracker above is the whole state.
 		this.heroActionClock = (s as { heroActionClock?: number }).heroActionClock ?? 0;
 		this.recentHitClocks = (s as { recentHitClocks?: number[] }).recentHitClocks ?? [];
 		this.blacksmithPickaxeAvailable = s.blacksmithPickaxeAvailable ?? false;
@@ -19385,6 +19471,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 			shadowStepRank: this.talentRank('shadow_step'),
 			hawkSummoned: this.spiritHawk() !== undefined,
 			cloneSummoned: this.shadowClone() !== undefined,
+			eliminationMatchArmed: this.hero.buffs['eliminationMatch'] !== undefined,
+			eliminationMatchRank: this.talentRank('elimination_match'),
 		});
 	}
 
@@ -19509,7 +19597,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 									: id === 'spirithawk' ? this.activateSpiritHawk(def, cost, cell)
 										: id === 'feint' ? this.activateFeint(def, cost, cell)
 											: id === 'shadowclone' ? this.activateShadowClone(def, cost, cell)
-												: false;
+												: id === 'challenge' ? this.activateChallenge(def, cost, cell)
+													: false;
 		if (!activated) return;
 		this.refresh();
 	}
@@ -20300,6 +20389,152 @@ private eyeBeamTurn(monster: Creature): boolean {
 	}
 
 	/**
+	 * `Challenge.activate()` (tag `v3.3.8`): the Duelist compels a visible enemy into
+	 * a 10-turn duel while every other non-ally, non-NPC char freezes. Refusals carry
+	 * Java's own keys (`no_target` resolves through the shared `armorability` parent,
+	 * exactly as `Messages.get` does in Java). `CLOSE_THE_GAP` blinks toward the target
+	 * within `1 + points` cells along the target-rooted path map, refusing unreachable
+	 * and far targets and shaking when rooted. The duel pair shares `duelParticipant`;
+	 * the target aggros onto the hero. When the target is a boss nothing else freezes
+	 * (Java's `BOSS_MINION` half of that condition is dead code: a boss target always
+	 * satisfies the `BOSS` half, so it can never fire - the observable is "boss duels
+	 * freeze nobody"). Java also `delayChar`s every spectator; with no scheduler-delay
+	 * primitive here, the same 10-turn `spectatorFreeze` action block covers it.
+	 */
+	private activateChallenge(_def: ArmorAbilityDef, cost: number, cell: Step | null): boolean {
+		//A cancelled aim is silent (the feint precedent); an aimed empty, dead or
+		//unseen cell is Java's `no_target` refusal.
+		if (!cell) return false;
+		const target = this.creatureAt(cell.x, cell.y);
+		if (!target || target.hp <= 0 || !this.fov.isVisible(cell.x, cell.y)) {
+			this.say(t('actors.hero.abilities.armorability.no_target'), 'negative');
+			return false;
+		}
+		if (this.hero.buffs['duelParticipant'] !== undefined) {
+			this.say(t('actors.hero.abilities.duelist.challenge.already_dueling'), 'negative');
+			return false;
+		}
+		if (target.isHero || target.isNPC || target.isAlly) {
+			this.say(t('actors.hero.abilities.duelist.challenge.ally_target'), 'negative');
+			return false;
+		}
+		const blocked = new Set<number>();
+		for (const c of this.creatures) {
+			if (!c.isHero && c.hp > 0) blocked.add(c.y * this.level.width + c.x);
+		}
+		const reachMap = this.pathfinder.distanceMap({ x: target.x, y: target.y }, { blocked });
+		const gapPoints = this.talentRank('close_the_gap');
+		const rooted = this.hero.buffs['roots'] !== undefined;
+		let blinkpos = { x: this.hero.x, y: this.hero.y };
+		if (gapPoints > 0 && !rooted) {
+			const blinkrange = closeTheGapRange(gapPoints);
+			const inRange = this.pathfinder.distanceMap({ x: this.hero.x, y: this.hero.y }, { blocked });
+			let best: Step | null = null;
+			for (let i = 0; i < inRange.length; i++) {
+				const d = inRange[i];
+				if (d < 0 || d > blinkrange) continue;
+				const x = i % this.level.width;
+				const y = Math.floor(i / this.level.width);
+				if (!this.level.passable(x, y) || this.creatureAt(x, y)) continue;
+				if (x === target.x && y === target.y) continue;
+				const here = Roguelike.chebyshevDistance({ x, y }, target);
+				const was = best ? Roguelike.chebyshevDistance(best, target) : Number.POSITIVE_INFINITY;
+				if (here > was) continue;
+				if (here === was && best) {
+					const nowTrue = Math.hypot(x - this.hero.x, y - this.hero.y);
+					const bestTrue = Math.hypot(best.x - this.hero.x, best.y - this.hero.y);
+					if (nowTrue >= bestTrue) continue;
+				}
+				best = { x, y };
+			}
+			if (best) blinkpos = best;
+		}
+		const blinkIdx = blinkpos.y * this.level.width + blinkpos.x;
+		if (reachMap[blinkIdx] < 0) {
+			if (rooted) this.shakeScreen(1, 1);
+			this.say(t('actors.hero.abilities.duelist.challenge.unreachable_target'), 'negative');
+			return false;
+		}
+		if (Roguelike.chebyshevDistance(blinkpos, target) > 5) {
+			if (rooted) this.shakeScreen(1, 1);
+			this.say(t('actors.hero.abilities.duelist.challenge.distant_target'), 'negative');
+			return false;
+		}
+		if (blinkpos.x !== this.hero.x || blinkpos.y !== this.hero.y) {
+			this.teleportHeroTo(blinkpos.x, blinkpos.y);
+		}
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		if (!target.boss) {
+			for (const other of this.creatures) {
+				if (other === target || other.isHero || other.isNPC || other.isAlly || other.hp <= 0) continue;
+				addBuff(other, 'spectatorFreeze');
+			}
+		}
+		addBuff(target, 'duelParticipant');
+		addBuff(this.hero, 'duelParticipant');
+		this.hero.duelTakenDmg = 0;
+		target.sleeping = false;
+		target.seesHero = true;
+		target.lastSeen = { x: this.hero.x, y: this.hero.y };
+		delete this.hero.buffs['invisibility'];
+		if (this.hero.buffs['eliminationMatch'] !== undefined) delete this.hero.buffs['eliminationMatch'];
+		this.say(t('actors.hero.abilities.duelist.challenge.name'), 'positive');
+		this.spendHeroAction(1);
+		return true;
+	}
+
+	/**
+	 * `Challenge.DuelParticipant.act()`'s pairing half (tag `v3.3.8`): on each
+	 * participant's own turn, the duel ends when the other duelist is gone, shares
+	 * the hero's side, or is more than 5 tiles away. The 10-turn countdown itself is
+	 * the shared buff clock; expiry lands here as "other already gone" on the slower
+	 * side's next turn, which runs the same detach cascade Java's `left--` runs.
+	 */
+	private tickDuelParticipant(self: Creature): void {
+		if (self.buffs['duelParticipant'] === undefined) {
+			//The 10-turn clock expires silently through the shared buff systems; the
+			//hero's damage ledger marks a duel that still needs its detach cascade
+			//(which is what arms `ELIMINATION_MATCH` on a timed-out duel, exactly as
+			//Java's `left--` detach does).
+			if (self.isHero && self.duelTakenDmg !== undefined) this.detachDuel(self);
+			return;
+		}
+		const selfSide = self.isHero || self.isAlly;
+		const other = [this.hero, ...this.creatures].find((c) => c !== self && c.hp > 0 && c.buffs['duelParticipant'] !== undefined);
+		if (!other || (other.isHero || other.isAlly) === selfSide || Roguelike.chebyshevDistance(self, other) > 5) {
+			this.detachDuel(self);
+		}
+	}
+
+	/**
+	 * `Challenge.DuelParticipant.detach()` (tag `v3.3.8`): a dying or converted duel
+	 * target pays out `INVIGORATING_VICTORY` from the hero's accumulated duel damage;
+	 * a living hero whose own duel ends arms `ELIMINATION_MATCH` for 3 turns. Every
+	 * path clears all spectator freezes and duel buffs scene-wide (Java detaches each
+	 * `SpectatorFreeze` and every other participant - with only one duel possible,
+	 * that is everything) and zeroes the damage ledger.
+	 */
+	private detachDuel(trigger: Creature): void {
+		if (!trigger.isHero) {
+			const points = this.talentRank('invigorating_victory');
+			if ((trigger.hp <= 0 || trigger.isAlly) && points > 0 && this.hero.hp > 0) {
+				const heal = invigoratingVictoryHeal(this.hero.duelTakenDmg ?? 0, points, this.hero.maxHp - this.hero.hp);
+				if (heal > 0) {
+					this.hero.hp += heal;
+					this.showHeal(this.hero, heal);
+				}
+			}
+		} else if (this.hero.hp > 0 && this.talentRank('elimination_match') > 0) {
+			addBuff(this.hero, 'eliminationMatch');
+		}
+		for (const c of [this.hero, ...this.creatures]) {
+			if (c.buffs['spectatorFreeze'] !== undefined) delete c.buffs['spectatorFreeze'];
+			if (c.buffs['duelParticipant'] !== undefined) delete c.buffs['duelParticipant'];
+		}
+		this.hero.duelTakenDmg = undefined;
+	}
+
+	/**
 	 * `SmokeBomb.activate()` (tag `v3.3.8`): vanish in a puff of smoke, up to six cells away *by
 	 * path* and inside the hero's own field of view, onto a cell nothing else occupies. Everyone
 	 * adjacent to the hero is blinded for half `Blindness.DURATION` (5 turns) and dropped out of the
@@ -20555,6 +20790,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 						this.takeAbilityCharge(cost);
 						this.refundCounterAbility(counterArmed, counterRank);
 						this.armPreciseAssault();
+				this.armCombinedLethality();
+						this.armCombinedLethality();
 						//`invisTurns = 2+buffedLvl()`, applied as `prolong(Invisibility,
 						//invisTurns-1)` (never shortens an existing cloak).
 						reigniteBuff(this.hero, 'invisibility', 1 + this.weaponLevel);
@@ -20576,6 +20813,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 				this.takeAbilityCharge(cost);
 				this.refundCounterAbility(counterArmed, counterRank);
 				this.armPreciseAssault();
+				this.armCombinedLethality();
 				this.spinSpins += 1;
 				this.spinTurns = 3;
 				this.say(t('port.log.weaponspin', { spins: this.spinSpins }), 'positive');
@@ -20586,6 +20824,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 				this.takeAbilityCharge(cost);
 				this.refundCounterAbility(counterArmed, counterRank);
 				this.armPreciseAssault();
+				this.armCombinedLethality();
 				this.guardTurns = def.buffTurns ?? 6;
 				this.say(t('port.log.weaponguard'), 'positive');
 				this.spendHeroAction(1);
@@ -20595,6 +20834,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 				this.takeAbilityCharge(cost);
 				this.refundCounterAbility(counterArmed, counterRank);
 				this.armPreciseAssault();
+				this.armCombinedLethality();
 				this.swordDanceTurns = def.buffTurns ?? 5;
 				this.say(t('port.log.sworddance'), 'positive');
 				return;
@@ -20603,6 +20843,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 				this.takeAbilityCharge(cost);
 				this.refundCounterAbility(counterArmed, counterRank);
 				this.armPreciseAssault();
+				this.armCombinedLethality();
 				this.defensiveStanceTurns = def.buffTurns ?? 5;
 				this.syncHeroFromStats();
 				this.say(t('port.log.defensivestance'), 'positive');
@@ -20613,6 +20854,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 				this.takeAbilityCharge(cost);
 				this.refundCounterAbility(counterArmed, counterRank);
 				this.armPreciseAssault();
+				this.armCombinedLethality();
 				this.chargedShotArmed = true;
 				this.say(t('port.log.chargedshot'), 'positive');
 				return;
@@ -20687,6 +20929,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 				//`afterAbilityUsed` runs after the strike, not before - see `armPreciseAssault`'s
 				//own comment for why that ordering alone keeps this strike from boosting itself.
 				this.armPreciseAssault();
+				this.armCombinedLethality();
 				if (target.hp <= 0) this.onAbilityKill(def.kind);
 				if (def.kind === 'lash') this.lashOthers(target);
 				this.spendHeroAction(1);
@@ -20736,6 +20979,32 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (this.talentRank('precise_assault') > 0) this.preciseAssaultReady = true;
 	}
 
+	/** `afterAbilityUsed`'s `Talent.COMBINED_LETHALITY` half (`MeleeWeapon.java` 206-213,
+	 * tag `v3.3.8`): with the talent taken, using a weapon ability stores the attacking
+	 * weapon on the tracker for one turn (`hero.cooldown()`); using an ability with a
+	 * *different* weapon while it is armed only clears it ("we triggered the talent, so
+	 * remove the tracker" - no execute fires there, the execute lives in `attack()`).
+	 * Identity is the weapon object (`tracker.weapon == this`), so the port compares the
+	 * equipped instance id, falling back to the bag id for uninstanced starting gear.
+	 * Called at every `armPreciseAssault` site: for damage strikes that is after the
+	 * strike's own `attack()` (Java's real `afterAbilityUsed` position), so a strike
+	 * with a different weapon tests the *old* tracker first and re-arms after, exactly
+	 * like Java's strike -> `afterAbilityUsed` order. */
+	private armCombinedLethality(): void {
+		if (this.talentRank('combined_lethality') <= 0) return;
+		const key = this.weaponInstanceId ?? this.weaponId;
+		const stored = this.clAbilityWeaponInstanceId ?? this.clAbilityWeaponClass;
+		if (this.clAbilityTurns <= 0 || stored === null || stored === undefined || stored === key) {
+			this.clAbilityWeaponClass = this.weaponId;
+			this.clAbilityWeaponInstanceId = this.weaponInstanceId;
+			this.clAbilityTurns = 1;
+		} else {
+			this.clAbilityTurns = 0;
+			this.clAbilityWeaponClass = null;
+			this.clAbilityWeaponInstanceId = undefined;
+		}
+	}
+
 	/** `Whip.LashAbility`: the same normal attack against every other enemy in range. */
 	private lashOthers(primary: Creature): void {
 		for (const other of this.creatures.filter((c) => c !== primary && !c.isHero && !c.isNPC && c.hp > 0
@@ -20770,14 +21039,13 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.swordDanceTurns = Math.max(0, this.swordDanceTurns - turnCost);
 		this.defensiveStanceTurns = Math.max(0, this.defensiveStanceTurns - turnCost);
 		if (hadStance && this.defensiveStanceTurns <= 0) this.syncHeroFromStats();
-		//CombinedLethality trackers: the ability tracker detaches when its duration
-		//hits zero (Java's FlavourBuff expiry); the trigger is a 5f countdown that the
-		//execute tail normally consumes one-shot, but ticks down if it survives the hit.
+		//`CombinedLethalityAbilityTracker`: detaches when its duration hits zero
+		//(Java's FlavourBuff expiry); the execute tail normally consumes it one-shot,
+		//and it ticks down if it survives the hit.
 		if (this.clAbilityTurns > 0) {
 			this.clAbilityTurns = Math.max(0, this.clAbilityTurns - turnCost);
 			if (this.clAbilityTurns <= 0) { this.clAbilityWeaponClass = null; this.clAbilityWeaponInstanceId = undefined; }
 		}
-		if (this.clTriggerTurns > 0) this.clTriggerTurns = Math.max(0, this.clTriggerTurns - turnCost);
 		//`Charger.act()` accrue over the spent turn (scaled by its cost, the same
 		//convention the armor-Charger port uses for multi-turn actions).
 		const accrued = accrueWeaponCharge(

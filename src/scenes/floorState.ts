@@ -169,6 +169,7 @@ export interface SavedCreature {
 	ratmogrifiedTurns?: number;
 	ratmogrifiedPermanent?: boolean;
 	deathMarkTurns?: number;
+	duelTakenDmg?: number;
 	deathMarkInitialHp?: number;
 	sentryWarmup?: number;
 	dmAbilityTurns?: number;

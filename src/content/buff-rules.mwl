@@ -250,6 +250,30 @@
             buff: "hazardAssist",
             duration: 50,
           },
+          {
+            // `Challenge.SpectatorFreeze` (`Challenge.java`, tag `v3.3.8`): the 10-turn
+            // freeze the duel lays on every other non-ally, non-NPC char. Java also
+            // `delayChar`s each spectator; this port folds that delay into the same
+            // 10-turn action block (`takeMonsterTurn` skips frozen turns post-tick).
+            tag: "row",
+            buff: "spectatorFreeze",
+            duration: 10,
+          },
+          {
+            // `Challenge.DuelParticipant.DURATION`: the duel pair's own 10-turn clock,
+            // ticked by the shared buff systems; the pairing/distance detach lives in
+            // `tickDuelParticipant`, not in the duration.
+            tag: "row",
+            buff: "duelParticipant",
+            duration: 10,
+          },
+          {
+            // `Challenge.EliminationMatchTracker`: the 3-turn re-challenge discount
+            // window Java arms on the hero when a duel ends with her alive.
+            tag: "row",
+            buff: "eliminationMatch",
+            duration: 3,
+          },
         ],
       },
     ],

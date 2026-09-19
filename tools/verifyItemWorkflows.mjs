@@ -1003,7 +1003,8 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	// verbatim here (Bless/Hex 30, Daze 5, Chill/Frost 10, Drowsy 5, Weakness/Vulnerable 20,
 	// Burning 8, Levitation 20, FeatherFall 50, Invisibility 20, Recharging 30, AdrenalineSurge
 	// 200, MindVision 20, Terror 20, Amok 5 via ScrollOfRage, Aggression 20, Awareness 2, Haste
-	// 20, Degrade 30, Ooze 20, Wayward 10, Charm 10, Light 250, Invulnerability 3, HazardAssistTracker 50 - all tag `v3.3.8`). The rest are the
+	// 20, Degrade 30, Ooze 20, Wayward 10, Charm 10, Light 250, Invulnerability 3, HazardAssistTracker 50,
+	// SpectatorFreeze/DuelParticipant 10, EliminationMatchTracker 3 - all tag `v3.3.8`). The rest are the
 	// port's own documented conventions, not Java values: cripple 4 / paralysis 3 / roots 3 each
 	// equal a real Java application site (see PORT_COVERAGE.md's BUFF_DURATION row), poison 6
 	// and bleeding 0 have no Java DURATION to match, magicalSleep 0 lasts until woken,
@@ -1025,6 +1026,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 			terror: 20, amok: 5, aggression: 20, awareness: 2, haste: 20, degrade: 30, ooze: 20,
 			wayward: 10, charm: 10, lethalHasteCooldown: 100, blindness: 10, light: 250, invulnerability: 3,
 			feintConfusion: 2, counterAbility: 3, hazardAssist: 50,
+			spectatorFreeze: 10, duelParticipant: 10, eliminationMatch: 3,
 		},
 		'buff durations match the authored table',
 	);

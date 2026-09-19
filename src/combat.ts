@@ -57,6 +57,9 @@ export interface Creature extends Combatant {
 	 * creature's `deathMarked` flag, i.e. Java's `isAlive()` returning true at zero HP.
 	 */
 	deathMarkTurns?: number;
+	/** `Challenge.DuelParticipant.takenDmg`: the hero's own accumulated duel damage,
+	 * feeding `INVIGORATING_VICTORY`. Lives on the hero; reset when the duel ends. */
+	duelTakenDmg?: number;
 	deathMarkInitialHp?: number;
 	/**
 	 * `Sungrass.Health` (`plants/Sungrass.java`, tag `v3.3.8`): the gradual-heal pool a

@@ -9,6 +9,7 @@
  */
 import type { ClassId } from './classes';
 import { MWL_TABLE_ROWS } from './mwlContent';
+import { eliminationMatchFactor } from './simulation/duelistAbilities';
 
 /**
  * Java's `targetingPrompt()` return value, collapsed to what a caller has to know:
@@ -75,13 +76,12 @@ export function armorAbilityDef(id: string): ArmorAbilityDef | undefined {
  *
  * Ported so far: the Warrior's three, the Rogue's Death Mark, Smoke Bomb and Shadow
  * Clone, the Huntress's Spectral Blades, Nature's Power and Spirit Hawk, the Mage's Warp
- * Beacon, and the Duelist's Feint. Still to port, each needing its own systems: the Mage's
- * remaining two (`ElementalBlast` and `WildMagic` need per-wand blast factors and a
- * wand-randomization pass) and the Duelist's remaining two (`Challenge` needs a duel
- * tracker; `ElementalStrike` the four blade imbuements). See `PORT_COVERAGE.md`'s
- * armor-ability rows.
+ * Beacon, and the Duelist's Feint and Challenge. Still to port, each needing its own
+ * systems: the Mage's remaining two (`ElementalBlast` and `WildMagic` need per-wand blast
+ * factors and a wand-randomization pass) and the Duelist's `ElementalStrike` (the four
+ * blade imbuements). See `PORT_COVERAGE.md`'s armor-ability rows.
  */
-const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades', 'warpbeacon', 'smokebomb', 'naturespower', 'spirithawk', 'feint', 'shadowclone']);
+const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades', 'warpbeacon', 'smokebomb', 'naturespower', 'spirithawk', 'feint', 'shadowclone', 'challenge']);
 
 /** The implemented abilities for one class, in `HeroClass.armorAbilities()` order (the authored
  *  table's own row order, which `DEFINITIONS` preserves). */
@@ -134,6 +134,8 @@ export function armorChargeUse(
 		shadowStepRank?: number;
 		hawkSummoned?: boolean;
 		cloneSummoned?: boolean;
+		eliminationMatchArmed?: boolean;
+		eliminationMatchRank?: number;
 	},
 ): number {
 	const heroicEnergy = HEROIC_ENERGY_FACTORS[Math.min(4, Math.max(0, options.heroicEnergyRank))] ?? 1;
@@ -157,6 +159,11 @@ export function armorChargeUse(
 	//`ShadowClone.chargeUse()`: directing an existing clone is likewise free.
 	if (def.id === 'shadowclone' && options.cloneSummoned) {
 		chargeUse = 0;
+	}
+	//`Challenge.chargeUse()`: `ELIMINATION_MATCH` multiplies by `0.84^points` while its
+	//tracker is up. It stacks with (not instead of) `HEROIC_ENERGY`, which already ran above.
+	if (def.id === 'challenge' && options.eliminationMatchArmed) {
+		chargeUse *= eliminationMatchFactor(options.eliminationMatchRank ?? 0);
 	}
 	return chargeUse;
 }

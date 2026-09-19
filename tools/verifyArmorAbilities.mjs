@@ -19,7 +19,7 @@ export function verifyArmorAbilities(require, check) {
 	const {
 		SPIRIT_HAWK_LIFESPAN, goForTheEyesEffect, spiritHawkDodges, spiritHawkSpeed, spiritHawkViewDistance,
 	} = require('./simulation/huntressAbilities');
-	const { exposeWeaknessDuration, feignedRetreatHaste } = require('./simulation/duelistAbilities');
+	const { exposeWeaknessDuration, feignedRetreatHaste, closeTheGapRange, eliminationMatchFactor, invigoratingVictoryHeal } = require('./simulation/duelistAbilities');
 	const { BUFF_DURATION } = require('./simulation/buffs');
 
 	//`HeroClass.armorAbilities()`, in its own order.
@@ -77,13 +77,14 @@ export function verifyArmorAbilities(require, check) {
 	check('only implemented abilities are offered, and the charge meter is Java\'s', () => {
 		//The Warrior's three, the Rogue's Smoke Bomb, Death Mark and Shadow Clone, the
 		//Huntress's Spectral Blades, Nature's Power and Spirit Hawk, the Mage's Warp Beacon,
-		//and the Duelist's Feint are the ported set; a class with none of its own offers
-		//nothing, which is what keeps a choice panel from listing an ability that cannot run.
+		//and the Duelist's Challenge and Feint are the ported set; a class with none of
+		//its own offers nothing, which is what keeps a choice panel from listing an
+		//ability that cannot run.
 		assert.deepEqual(armorAbilitiesFor('warrior'), ['heroicleap', 'shockwave', 'endure']);
 		assert.deepEqual(armorAbilitiesFor('rogue'), ['smokebomb', 'deathmark', 'shadowclone']);
 		assert.deepEqual(armorAbilitiesFor('huntress'), ['spectralblades', 'naturespower', 'spirithawk']);
 		assert.deepEqual(armorAbilitiesFor('mage'), ['warpbeacon']);
-		assert.deepEqual(armorAbilitiesFor('duelist'), ['feint']);
+		assert.deepEqual(armorAbilitiesFor('duelist'), ['challenge', 'feint']);
 		assert.equal(ARMOR_CHARGE_MAX, 100);
 		assert.equal(ARMOR_CHARGE_START, 50);
 		//`ClassArmor.Charger.act()`: `chargeGain = 100/500f`.
@@ -153,6 +154,26 @@ export function verifyArmorAbilities(require, check) {
 		assert.equal(armorChargeUse(leap, { heroicEnergyRank: 0, doubleMarkArmed: true, doubleMarkRank: 4 }), 35);
 		//`HEROIC_ENERGY` applies underneath, in Java's own order (`super.chargeUse()` first).
 		assert.equal(armorChargeUse(mark, { heroicEnergyRank: 4, doubleMarkArmed: true, doubleMarkRank: 1 }), 25 * 0.6 * 0.707);
+	});
+
+	check('Challenge\'s ELIMINATION_MATCH discount is 0.84^points, and its talent math is Java\'s', () => {
+		const duel = armorAbilityDef('challenge');
+		assert.equal(duel.baseChargeUse, 35);
+		assert.equal(duel.targeting, 'cell');
+		assert.deepEqual(duel.talents, ['close_the_gap', 'invigorating_victory', 'elimination_match']);
+		assert.equal(armorChargeUse(duel, { heroicEnergyRank: 0 }), 35);
+		//16/30/40/50% off at ranks 1-4 (Java's rounded strings), stacking over HEROIC_ENERGY.
+		assert.deepEqual([1, 2, 3, 4].map(eliminationMatchFactor),
+			[1, 2, 3, 4].map((points) => Math.pow(0.84, points)));
+		assert.equal(armorChargeUse(duel, { heroicEnergyRank: 0, eliminationMatchArmed: true, eliminationMatchRank: 2 }), 35 * Math.pow(0.84, 2));
+		assert.equal(armorChargeUse(duel, { heroicEnergyRank: 4, eliminationMatchArmed: true, eliminationMatchRank: 1 }), 35 * 0.6 * 0.84);
+		assert.equal(armorChargeUse(armorAbilityDef('feint'), { heroicEnergyRank: 0, eliminationMatchArmed: true, eliminationMatchRank: 4 }), 50);
+		//`CLOSE_THE_GAP` blinks 1 + points cells.
+		assert.deepEqual([1, 2, 3, 4].map(closeTheGapRange), [2, 3, 4, 5]);
+		//`INVIGORATING_VICTORY`: `round(taken*(1-0.707^points)) + 5*points`, capped at missing HP.
+		assert.equal(invigoratingVictoryHeal(40, 2, 100), 30);
+		assert.equal(invigoratingVictoryHeal(40, 1, 100), 17);
+		assert.equal(invigoratingVictoryHeal(40, 2, 25), 25);
 	});
 
 	check('BODY_SLAM rolls `NormalIntRange(points, 4*points)` plus a quarter of the armor roll per point', () => {
