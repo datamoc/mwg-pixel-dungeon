@@ -78,6 +78,7 @@ compile(join(root, 'src/dungeonConstants.ts'), 'dungeonConstants.js');
 	// The Dried Rose's ghost stats, recharge clock and petal economy are scene-free the same way.
 	compile(join(root, 'src/items/rose.ts'), 'items/rose.js');
 compile(join(root, 'src/items/beacon.ts'), 'items/beacon.js');
+compile(join(root, 'src/items/spells.ts'), 'items/spells.js');
 	// The Ring of Wealth's bonus-drop counters and drop catalogue are scene-free in the same way.
 	compile(join(root, 'src/items/shopStock.ts'), 'items/shopStock.js');
 	compile(join(root, 'src/items/wealthDrops.ts'), 'items/wealthDrops.js');
@@ -2302,6 +2303,97 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 	useReturningBeaconFlow(lost.ctx);
 	assert.ok(lost.log.some((l) => l.includes('preventing')), 'depths outside 1..26 refuse');
 	assert.equal(lost.flags.traveled, null, 'travelling nowhere');
+}
+// The moved targeted spells (`items/spells.ts`, the file-size refactor's seventeenth
+// extraction): driven headlessly with a stub floor and scripted aim.
+const { useTelekineticGrabFlow, usePhaseShiftFlow } = require('./items/spells.js');
+function spellDrive(overrides = {}) {
+	const log = [];
+	const flags = { aim: null, grabbed: [], moved: [], teleports: [], calmed: [], paralysed: [], turns: 0, consumed: [] };
+	const bag = overrides.bag ?? { telekineticGrab: 1, phaseShift: 1 };
+	const creatures = overrides.creatures ?? {};
+	const heaps = overrides.heaps ?? {};
+	const ctx = {
+		hasSpell: (id) => (bag[id] ?? 0) > 0,
+		consumeSpell: (id) => { bag[id]--; flags.consumed.push(id); },
+		beginAim: (opts) => { flags.aim = opts; },
+		spendTurn: () => { flags.turns++; },
+		say: (line, level) => { log.push(`say:${level}:${line}`); },
+		t: (key) => key,
+		groundItemAt: (x, y) => heaps[`${x},${y}`] ?? null,
+		grabGroundItem: (x, y) => { flags.grabbed.push({ x, y }); },
+		creatureAt: (x, y) => creatures[`${x},${y}`] ?? null,
+		randomFreeCellNear: overrides.freeCell ?? (() => ({ x: 1, y: 1 })),
+		moveCreatureTo: (x, y, cell) => { flags.moved.push({ from: { x, y }, to: { ...cell } }); },
+		playTeleportOn: (creature, from, to) => { flags.teleports.push({ creature, from, to }); },
+		calmCreature: (creature) => { flags.calmed.push(creature); },
+		isBossOrMiniboss: (kind) => kind === 'goo',
+		afflictParalysis: (creature) => { flags.paralysed.push(creature); },
+		...overrides.ctx,
+	};
+	return { ctx, log, flags, bag };
+}
+// TelekineticGrab: missing spells never aim; confirms grab, refuse, or miss, always spending.
+{
+	const missing = spellDrive({ bag: {} });
+	useTelekineticGrabFlow(missing.ctx);
+	assert.equal(missing.flags.aim, null, 'no spell, no aim');
+	const d = spellDrive();
+	useTelekineticGrabFlow(d.ctx);
+	assert.equal(d.flags.aim.range, 6, 'the grab aims at six cells');
+	assert.equal(d.flags.aim.validate, undefined, 'with no validate - empties refuse on confirm');
+	d.flags.aim.onConfirm({ x: 3, y: 3 });
+	assert.ok(d.log.some((l) => l.includes('no_target')), 'empty cells refuse');
+	assert.deepEqual(d.flags.consumed, ['telekineticGrab'], '...yet the spell is consumed');
+	assert.equal(d.flags.turns, 1, 'and the turn spent');
+	const heap = spellDrive({ heaps: { '3,3': {} } });
+	useTelekineticGrabFlow(heap.ctx);
+	heap.flags.aim.onConfirm({ x: 3, y: 3 });
+	assert.deepEqual(heap.flags.grabbed, [{ x: 3, y: 3 }], 'ordinary heaps are pulled');
+	const chest = spellDrive({ heaps: { '3,3': { chest: 'normal' } } });
+	useTelekineticGrabFlow(chest.ctx);
+	chest.flags.aim.onConfirm({ x: 3, y: 3 });
+	assert.ok(chest.log.some((l) => l.includes('cant_grab')), 'chests refuse');
+	assert.deepEqual(chest.flags.grabbed, [], 'and stay where they are');
+	const sale = spellDrive({ heaps: { '3,3': { forSale: true } } });
+	useTelekineticGrabFlow(sale.ctx);
+	sale.flags.aim.onConfirm({ x: 3, y: 3 });
+	assert.ok(sale.log.some((l) => l.includes('cant_grab')), 'shop stands refuse too');
+	assert.deepEqual(sale.flags.consumed, ['telekineticGrab'], 'every confirmed path consumes');
+}
+// PhaseShift: victims scatter, calm, and stiffen; bosses stiffen never; empties just cost.
+{
+	const missing = spellDrive({ bag: {} });
+	usePhaseShiftFlow(missing.ctx);
+	assert.equal(missing.flags.aim, null, 'no spell, no aim');
+	const rat = { kind: 'rat' };
+	const d = spellDrive({ creatures: { '7,5': rat } });
+	usePhaseShiftFlow(d.ctx);
+	assert.equal(d.flags.aim.validate({ x: 7, y: 5 }), true, 'the validate needs a creature');
+	assert.equal(d.flags.aim.validate({ x: 0, y: 0 }), false, 'and refuses empty cells');
+	d.flags.aim.onConfirm({ x: 7, y: 5 });
+	assert.deepEqual(d.flags.moved, [{ from: { x: 7, y: 5 }, to: { x: 1, y: 1 } }], 'the victim scatters');
+	assert.equal(d.flags.teleports.length, 1, 'with the effect played');
+	assert.equal(d.flags.teleports[0].creature, rat, 'on the victim itself, after the move');
+	assert.deepEqual(d.flags.calmed, [rat], 'mobs lose the hero');
+	assert.deepEqual(d.flags.paralysed, [rat], 'and stiffen');
+	assert.deepEqual(d.flags.consumed, ['phaseShift'], 'the spell is consumed');
+	const boss = spellDrive({ creatures: { '7,5': { kind: 'goo' } } });
+	usePhaseShiftFlow(boss.ctx);
+	boss.flags.aim.onConfirm({ x: 7, y: 5 });
+	assert.equal(boss.flags.moved.length, 1, 'bosses still scatter');
+	assert.deepEqual(boss.flags.paralysed, [], 'but never stiffen');
+	assert.equal(boss.flags.calmed.length, 1, 'while still losing the hero');
+	const empty = spellDrive();
+	usePhaseShiftFlow(empty.ctx);
+	empty.flags.aim.onConfirm({ x: 0, y: 0 });
+	assert.ok(empty.log.some((l) => l.includes('no_target')), 'confirming past the validate refuses');
+	assert.deepEqual(empty.flags.consumed, ['phaseShift'], '...yet still consumes');
+	const stranded = spellDrive({ creatures: { '7,5': rat }, freeCell: () => undefined });
+	usePhaseShiftFlow(stranded.ctx);
+	stranded.flags.aim.onConfirm({ x: 7, y: 5 });
+	assert.equal(stranded.flags.moved.length, 0, 'no destination moves nothing');
+	assert.deepEqual(stranded.flags.consumed, ['phaseShift'], 'but the cast still costs');
 }
 }
 }

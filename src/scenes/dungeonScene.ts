@@ -235,6 +235,7 @@ import { applyTalismanPerTurnCharge, useTalismanFlow, checkTalismanAwarenessFlow
 import { roseGhostMaxHp, applyRoseRecharge, useRoseFlow, type RoseFlowContext, type RoseItem } from '../items/rose';
 import { rosePetalsNeeded, rosePetalDropCap, rosePetalPickup, roseChargeCap, roseLevelCap } from '../items/rose';
 import { beaconChargeCap, useBeaconFlow, useReturningBeaconFlow, type BeaconFlowContext, type BeaconItem } from '../items/beacon';
+import { useTelekineticGrabFlow, usePhaseShiftFlow, type TargetedSpellAim, type TelekineticGrabContext, type PhaseShiftContext } from '../items/spells';
 import { planWealthDrops, wealthEquipBonus, initialiseWealthTrackers, wealthDeathRolls, type WealthDropPlan, type WealthTrackers } from '../items/wealthDrops';
 import { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal, artifactRechargeDuration, wildEnergyRechargeTurns, type RechargeGuards } from '../items/artifactRecharge';
 import { equipRing as equipInventoryRing, equipArmor as equipInventoryArmor, equipWeapon as equipInventoryWeapon, type GearEquipmentContext, type RingEquipmentContext } from '../items/equipment';
@@ -21970,25 +21971,21 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * ordinary payload conversions (gold, stones, lit bombs, and generated inventory items). The
 	 * beacon projectile and pickup-delay animation are not represented by this scene's UI. */
 	private useTelekineticGrab(instanceId?: string): void {
-		if (!this.bag.find('telekineticGrab', instanceId)) return;
-		this.beginAiming({
-			// Java's CellSelector does not impose a spell-specific distance limit. The port's
-			// renderer-neutral targeting contract requires a finite range; six cells is the
-			// established ranged-item convention used by the other map-targeted actions.
-			range: 6,
-			onConfirm: (target) => {
-				const ground = this.groundItemAt(target.x, target.y);
-				if (!ground) this.say(t('items.spells.telekineticgrab.no_target'), 'negative');
-				else if (ground.chest || ground.forSale) this.say(t('items.spells.telekineticgrab.cant_grab'), 'negative');
-				else this.pickupGroundItemAt(target.x, target.y);
-				// Java's `onSpellused()` consumes the spell after every confirmed path, including
-				// an empty or special heap. The pickup delay is capped at one actor tick there;
-				// this port has whole hero turns, so every confirmed cast spends exactly one.
-				this.bag.remove('telekineticGrab', 1, instanceId);
-				this.actionSpentTurn = true;
-				this.spendHeroTurn(1);
-			},
-		});
+		useTelekineticGrabFlow(this.telekineticGrabContext(), instanceId);
+	}
+
+	/**
+	 * The TelekineticGrab aim/confirm flow lives in `items/spells.ts` behind
+	 * `TelekineticGrabContext` - the file-size refactor's seventeenth extraction (with
+	 * PhaseShift below), behavior-identical.
+	 */
+	private telekineticGrabContext(): TelekineticGrabContext {
+		const scene = this;
+		return {
+			...scene.targetedSpellBase(),
+			groundItemAt: (x, y) => scene.groundItemAt(x, y),
+			grabGroundItem: (x, y) => { scene.pickupGroundItemAt(x, y); },
+		};
 	}
 
 	/** `PhaseShift.affectTarget()` (tag `v3.3.8`): teleport the selected character to a
@@ -21998,36 +21995,46 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * supplies the equivalent loss of the current target. The spell's projectile and teleport
 	 * presentation are not represented by this scene's UI. */
 	private usePhaseShift(instanceId?: string): void {
-		if (!this.bag.find('phaseShift', instanceId)) return;
-		this.beginAiming({
-			//TargetedSpell uses CellSelector without a spell-specific range. The port's finite
-			//targeting controller uses the established six-cell ranged-action convention.
-			range: 6,
-			validate: (cell) => this.creatureAt(cell.x, cell.y) !== null,
-			onConfirm: (target) => {
-				const creature = this.creatureAt(target.x, target.y);
-				if (!creature) this.say(t('items.spells.phaseshift.no_target'), 'negative');
-				else {
-					const destination = this.randomFreeCell(creature);
-					if (destination) {
-						const phaseShiftFrom = { x: creature.x, y: creature.y };
-						this.moveTo(creature, destination);
-						this.playTeleportAppear(phaseShiftFrom, destination, creature);
-						//`PhaseShift.affectTarget`: a teleported mob is beckoned back to wandering
-						//(`HUNTING -> WANDERING` plus a random destination) before the paralysis lands.
-						if (!creature.isHero) {
-							creature.seesHero = false;
-							creature.patrolTarget = this.randomPatrolDestination(creature);
-						}
-						if (!BOSS_KINDS.has(creature.kind as AnyMonsterId)
-							&& !MINIBOSS_KINDS.has(creature.kind as AnyMonsterId)) addBuff(creature, 'paralysis');
-					}
-				}
-				this.bag.remove('phaseShift', 1, instanceId);
-				this.actionSpentTurn = true;
-				this.spendHeroTurn(1);
+		usePhaseShiftFlow(this.phaseShiftContext(), instanceId);
+	}
+
+	/**
+	 * The PhaseShift aim/confirm flow lives in `items/spells.ts` behind
+	 * `PhaseShiftContext` - the file-size refactor's seventeenth extraction (with
+	 * TelekineticGrab above), behavior-identical.
+	 */
+	private phaseShiftContext(): PhaseShiftContext {
+		const scene = this;
+		return {
+			...scene.targetedSpellBase(),
+			creatureAt: (x, y) => scene.creatureAt(x, y),
+			randomFreeCellNear: (x, y) => scene.randomFreeCell({ x, y }),
+			moveCreatureTo: (x, y, cell) => {
+				const creature = scene.creatureAt(x, y);
+				if (creature) scene.moveTo(creature, cell);
 			},
-		});
+			playTeleportOn: (creature, from, to) => { scene.playTeleportAppear(from, to, creature as Creature); },
+			calmCreature: (creature) => {
+				const live = creature as Creature;
+				live.seesHero = false;
+				live.patrolTarget = scene.randomPatrolDestination(live);
+			},
+			isBossOrMiniboss: (kind) => BOSS_KINDS.has(kind as AnyMonsterId) || MINIBOSS_KINDS.has(kind as AnyMonsterId),
+			afflictParalysis: (creature) => { addBuff(creature as Creature, 'paralysis'); },
+		};
+	}
+
+	/** The seams both targeted-spell flows share: the carried spell, the aimer, the turn. */
+	private targetedSpellBase(): TargetedSpellAim {
+		const scene = this;
+		return {
+			hasSpell: (id, instanceId) => scene.bag.find(id, instanceId) !== undefined,
+			consumeSpell: (id, instanceId) => { scene.bag.remove(id, 1, instanceId); },
+			beginAim: (opts) => scene.beginAiming(opts),
+			spendTurn: () => { scene.actionSpentTurn = true; scene.spendHeroTurn(1); },
+			say: scene.say.bind(scene),
+			t,
+		};
 	}
 
 	/** `SummonElemental.onCast()` (tag `v3.3.8`): summon an allied newborn elemental in a

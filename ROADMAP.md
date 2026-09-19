@@ -1248,6 +1248,24 @@ one.
       refusal spending nothing). The drive caught one fixture bug in review - anchored fixtures
       must carry the `returnBranch: 0` the set path always writes, or the branch guard refuses
       them - fixed as a drive normalization with the reason stated.
+      **Complexity: S.** **Seventeenth extraction 2026-09-19**: the targeted-spell pair
+      (`useTelekineticGrab`'s heap aim/confirm, `usePhaseShift`'s victim scatter/calm/paralysis)
+      moved to the new `items/spells.ts` behind `TelekineticGrabContext`/`PhaseShiftContext`
+      sharing a `TargetedSpellAim` base (spell has/consume, aimer, turn, say, `t`); the scene
+      keeps the two one-line adapters the router calls, two builders over a shared
+      `targetedSpellBase`, and drops both bodies plus their comments. Net +7 lines in
+      `dungeonScene.ts` (22,761 after) - the two builders and the shared base cost more than
+      the two small bodies saved - new `spells.ts` 120 lines; the payback is headless coverage
+      where none existed and a reuse base for the next targeted spell. Suites: `tsc` clean
+      with no fix-ups except keying the heap view's `chest` marker as a string (the scene's
+      `GroundItem.chest` is a variant union, only its presence is read), item suite green with
+      a new headless drive of both flows (grab: missing spells never aim, empties/chests/shop
+      stands refuse yet consume; shift: validate needs a creature, victims scatter/calm/stiffen
+      on the victim itself after the move, bosses scatter unstiffened, empties and stranded
+      casts still cost). The drive caught the same factory-merge bug as the brew drive - bag
+      defaults swallowing the empty-bag override - fixed the same way. The move also corrected
+      one seam choice in review: the teleport effect takes the victim view directly
+      (`playTeleportOn`, move-then-play preserved) instead of re-looking it up post-move.
       **Complexity: S.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
