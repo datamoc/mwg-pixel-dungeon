@@ -16,6 +16,7 @@ import { verifySuccubusBlink } from './verifySuccubusBlink.mjs';
 import { verifyArmorAbilities } from './verifyArmorAbilities.mjs';
 import { verifyRings } from './verifyRings.mjs';
 import { verifyPrismatic } from './verifyPrismatic.mjs';
+import { verifyShakes } from './verifyShakes.mjs';
 
 // Compile the actual implementation into a private temporary CommonJS tree. Type-only
 // mwg imports disappear, so tests never load Pixi, a DOM, or the full framework barrel.
@@ -780,6 +781,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	});
 	verifyRings(require, check);
 	verifyPrismatic(require, check);
+	verifyShakes(require, check);
 	console.log(`${passed} simulation checks passed.`);
 } finally {
 	// Only the fresh directory returned by mkdtempSync above is removed.

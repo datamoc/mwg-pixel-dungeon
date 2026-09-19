@@ -7510,6 +7510,9 @@ export class DungeonScene extends Scene2D {
 						if (this.wandType !== 'lightning' && damage > 0) this.disqualifyBossChallenge(victim);
 						const dealt = victim.isHero ? this.absorbHeroDamage(damage, true) : damage;
 						victim.hp -= dealt;
+						//`WandOfLightning.onZap()` (tag `v3.3.8`): the burst shakes
+						//(`2, 0.3f`) for every affected char that is the hero.
+						if (victim.isHero && this.wandType === 'lightning') this.shakeScreen(2, 0.3);
 						if (this.fadeMirrorOnDamage(victim, damage)) continue;
 						//Allies are never `kill()`ed on this seam (`!victim.isAlly` below),
 						//so a lethally-zapped image must enter its fade here, not at the
@@ -8788,7 +8791,11 @@ export class DungeonScene extends Scene2D {
 		}
 		else if (plan.kind === 'attack') this.attack(this.hero, occupant!);
 		else if (plan.kind === 'door') this.bumpDoor(target.x, target.y);
-		else if (plan.kind === 'rooted') this.say(t('actors.buffs.roots.heromsg'), 'negative');
+		//`Hero.actTransition()` 1385 (tag `v3.3.8`): a rooted stair attempt shakes
+		//(`1, 1f`) like the rooted move does (`getCloser` 1771, covered by `moveTo`).
+		//The movement planner refuses before this dispatch, so this branch is the
+		//transition half.
+		else if (plan.kind === 'rooted') { this.shakeScreen(1, 1); this.say(t('actors.buffs.roots.heromsg'), 'negative'); }
 		else if (plan.kind === 'move') {
  			this.moveTo(this.hero, target);
  			if (this.sungrassPos >= 0 && this.level.index(target.x, target.y) !== this.sungrassPos) {
@@ -9012,6 +9019,10 @@ export class DungeonScene extends Scene2D {
 				//per-hit cap and the movement rule. The Warden's `Barkskin` variant stays
 				//unmodelled, as it was before.
 				this.earthrootArmor = { level: this.hero.maxHp, pos: cell };
+				//`Earthroot.activate()` (tag `v3.3.8`): the burst shakes (`1, 0.4f`) when
+				//the plant cell is in the hero's FOV - trivially true for the hero's own
+				//trigger, load-bearing for the mob half below.
+				if (this.fov.isVisible(x, y)) this.shakeScreen(1, 0.4);
 				break;
  			case 'blindweed':
  				//`Blindweed.activate(ch)`: a Warden gets `Invisibility.DURATION/2` (10, not the
@@ -9267,6 +9278,7 @@ export class DungeonScene extends Scene2D {
 				//pool the hero uses, absorbing per landed attack hit in `attack()`.
 				creature.earthrootArmorLevel = grantEarthrootArmor(creature.earthrootArmorLevel, creature.maxHp);
 				creature.earthrootArmorPos = cell;
+				if (this.fov.isVisible(cell % this.level.width, Math.floor(cell / this.level.width))) this.shakeScreen(1, 0.4);
 				break;
 			case 'swiftthistle':
 				//Per-char ownership (`Buff.affect(ch, TimeBubble.class)`): the mob banks its own
@@ -12827,6 +12839,12 @@ private eyeBeamTurn(monster: Creature): boolean {
 			volley.turns--;
 			if (volley.turns > 0) continue;
 			this.fallingRocks.splice(this.fallingRocks.indexOf(volley), 1);
+			//`DelayedRockFall.act()` 68 / `RockfallTrap.trigger()` 117 /
+			//`GnollRockfallTrap.trigger()` 112 (tag `v3.3.8`): the impact shakes
+			//(`3, 0.7f`). One shake per landing volley, not per rock - Java shakes
+			//per falling rock and a 7x7 volley would stack seven of them. The floor
+			//trap kinds themselves are unported (only DM300's volleys fly here).
+			this.shakeScreen(3, 0.7);
 			const challenge = isChallengeEnabled('stronger_bosses');
 			for (const cell of volley.cells) {
 				const target = this.creatureAt(cell.x, cell.y);
@@ -13779,6 +13797,15 @@ private eyeBeamTurn(monster: Creature): boolean {
 		faceCharacter(this.sprite(attacker), attacker.x, defender.x);
 		const attackerSprite = this.sprite(attacker);
 		if (attackerSprite instanceof AnimatedSprite && attackerSprite.has('attack')) attackerSprite.play('attack', true);
+		//`FistSprite.onComplete()` (tag `v3.3.8`): every Yog fist melee attack shakes
+		//(`4, 0.2f`) when the swing completes - placed with the swing, like the anim,
+		//so it fires on misses too. (The `yogfistslam` log nearby is the fist *summon*,
+		//a different event with no Java shake of its own.)
+		if (attacker.kind === 'yogFist') this.shakeScreen(4, 0.2);
+		//`DM300Sprite.slam()` (tag `v3.3.8`): DM300's melee swing shakes (`3, 0.7f`)
+		//with the slam anim, hit or miss. (`DM300.java` 325's *travelling* shake has
+		//no expression: this port's DM300 has no travelling state.)
+		if (attacker.kind === 'dm300') this.shakeScreen(3, 0.7);
 		//`Preparation` must be read *before* this dispel: Java reads it into a local at the top of
 		//`Char.attack()` and only calls `Invisibility.dispel()` after the whole attack returns
 		//(`Hero.java` 2325), so the stealth state still applies to this attack's damage roll and
@@ -15435,6 +15462,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 					level: Math.max(this.earthrootArmor?.level ?? 0, pool),
 					pos: this.level.index(this.hero.x, this.hero.y),
 				};
+				//`Entanglement.proc()` (tag `v3.3.8`): the burst shakes (`1, 0.4f`) when
+				//it lands on the hero - this branch only runs for the hero defender.
+				this.shakeScreen(1, 0.4);
 				this.say(t('port.log.entanglement'), 'positive');
 			}
 		}
@@ -20621,6 +20651,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 	private activateHeroicLeap(def: ArmorAbilityDef, cost: number, cell: Step | null): boolean {
 		if (!cell) return false;
 		//`if (hero.rooted) { PixelScene.shake(1, 1f); return; }` - no charge, no turn.
+		//Deliberate divergence: the refusal feedback shakes (1, 0.15s), not Java's
+		//full second - a 1s shake on a refused tap feels like a hit, and all three
+		//ability refusals (leap, feint, smoke bomb) share the short form.
 		if (this.hero.buffs['roots'] !== undefined) {
 			this.shakeScreen(1, 0.15);
 			return false;
@@ -21596,6 +21629,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 			return false;
 		}
 		if (this.hero.buffs['roots'] !== undefined) {
+			//Short refusal form, shared with the leap/smoke-bomb refusals (see
+			//`activateHeroicLeap`): Java shakes (`Feint.java` 93) a full `(1, 1f)`.
 			this.shakeScreen(1, 0.15);
 			this.say(t('actors.hero.abilities.duelist.feint.bad_location'), 'negative');
 			return false;
@@ -21884,6 +21919,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 		const target = { x: cell.x, y: cell.y };
 		if (target.x !== hero.x || target.y !== hero.y) {
 			if (hero.buffs['roots'] !== undefined) {
+				//Short refusal form, shared with the leap/feint refusals (see
+				//`activateHeroicLeap`): Java shakes (`SmokeBomb.java` 91) a full `(1, 1f)`.
 				this.shakeScreen(1, 0.15);
 				return false;
 			}

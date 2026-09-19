@@ -706,8 +706,8 @@ below to close the gap was judged not worth the churn against those existing ref
       (`allyIdentityColorAdd` - Sheep/EarthGuardian/Lotus/etc., the same `colorAdd` channel) was
       being wiped to 0 on literally the first frame after spawn, before this pass even added the
       flash trigger, since the fade-out never knew a non-zero baseline could be legitimate. Live-
-      verified: a flashed Sheep now fades back to its own tint, not to nothing. **What remains
-      here, genuinely**: particle/screen-shake-class effects beyond floating text and the flash
+      verified: a flashed Sheep now fades back to its own tint, not to nothing. **Closed 2026-09-19, the shake half**: all 41 Java shake sites audited (see PORT_COVERAGE.md) - 8 missing wirings added, the short refusal shakes documented, the rest tied to unported features; pinned by `tools/verifyShakes.mjs`. **What remains
+      here, genuinely**: particle-class effects beyond floating text and the flash
       (spell-cast bursts, wand-zap trails, on-death particle bursts specific to certain monsters) -
       not yet audited monster-by-monster, so still recorded open rather than assumed closed.
       **Complexity: S** for what's left, down from M now that idle/run/attack/die/flash are done.

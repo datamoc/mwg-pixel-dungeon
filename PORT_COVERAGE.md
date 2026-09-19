@@ -3458,34 +3458,39 @@ Recorded here, not done, each with the framework API that owns it:
   Also unmodelled: `FAST_FADE` (0.50 steady, 1.16s total) for descending to an already-seen depth or
   any ascent - the port only distinguishes normal from slow. **Divergence (deliberate) on the
   timing model**, with the two-layer and `FAST_FADE` gaps open as simplifications.
-- **Screen shake: wired (2026-09-12), where its Java feature exists.** Java routes every shake
-  through `PixelScene.shake(magnitude, duration)` - 43 call sites - whose body is just
-  `magnitude *= SPDSettings.screenShake(); Camera.main.shake(magnitude, duration)`. The port now has
-  the same wrapper (the dungeon scene's `shakeScreen`), and since 2026-09-19 it applies Java's
-  0..4 `screenShake()` multiplier too (`SPDSettings.java`, tag `v3.3.7` - **default 2**,
-  correcting the "default 1" this paragraph previously claimed), so 0 disables shake outright;
-  the level persists under Java's `screen_shake` key with a DisplayTab stepper in the settings
-  window. It calls the wrapper at every site whose Java feature is ported: **the chasm landing**
-  (`Chasm.java` 143, `4, 1f` - and this corrected the port's own comment, which had claimed `1, 1f`),
-  **mining a wall or a DarkGold vein** (`Hero.java` 1299/1310, `0.5, 0.5f`, both branches), **DM-100's
-  lightning bolt** (`DM100.java` 107-109, `2, 0.3f`, on the hero-target branch its AI always uses),
-  **DM-300's ROCKS** (`DM300.java` 655, `5, 1f`, where the volley is called down), **the Goo taking
-  damage while pumped up** (`Goo.java` 162-164, `3, 0.2f`, the port's `pumped` charge counter being
-  its `pumpedUp`), and the **rooted-refusal pair** (`Hero.java` 1770-1772 `getCloser` and the blink's
-  `Preparation.java` 308-310, each `1, 1f` - the port's single `moveTo` roots gate covers Java's
-  movement *and* stair-transition refusals, which are two sites in Java because Java checks them
-  separately, and its blink refusal shakes only when the hero is rooted exactly as Java's does).
-  Browser-verified live (`tools/scratch/screen-shake-livecheck.mjs`, 7 assertions): nothing shakes at
-  rest, `dm300Rockfall` starts a magnitude-5/1s shake and still schedules its volley, the running
-  camera jitters within the magnitude and settles back to zero when the duration elapses, and the
-  chasm landing starts its own magnitude-4 shake. **Not wired, because the feature is not ported:**
-  the hero ability shakers (`HeroicLeap` 71/119, `Shockwave` 102, `SmokeBomb` 91, `Feint` 93,
-  `Challenge` 142/148), `Combo.java` 503 and `MonkEnergy.java` 481 (monk/damage-ability paths),
-  `SuperNovaTracker.java` 103 and `GnollGeomancer.java` 438/520/708/710 (neither monster exists
-  here), `CrystalSpire.java` 169/340/378/384 (the Blacksmith quest's crystal spire - that quest's
-  mining/forge mechanics are still the simplified version), `Hero.java` 1177 (opening a
-  TOMB/SKELETON/REMAINS heap - the port's chest kinds are normal/locked/crystal), and `DM300.java`
-  325 (its `travelling` move, which this port does not model).
+- **Screen shake: fully audited against Java's 41 `PixelScene.shake` sites (tag `v3.3.8`), wired everywhere the feature exists
+  (2026-09-19).** Java routes every shake through `PixelScene.shake(magnitude, duration)` - 41 call sites - whose body is just
+  `magnitude *= SPDSettings.screenShake(); Camera.main.shake(magnitude, duration)`. The port has the same wrapper (the dungeon
+  scene's `shakeScreen`), and since 2026-09-19 it applies Java's 0..4 `screenShake()` multiplier too (`SPDSettings.java`, tag
+  `v3.3.7` - **default 2**, correcting the "default 1" this paragraph previously claimed), so 0 disables shake outright; the level
+  persists under Java's `screen_shake` key with a DisplayTab stepper in the settings window. Wired, Java site by Java site: **the
+  chasm landing** (`Chasm.java` 143, `4, 1f` - and this corrected the port's own comment, which had claimed `1, 1f`), **mining a
+  wall or a DarkGold vein** (`Hero.java` 1299/1310, `0.5, 0.5f`, both branches), **DM-100's lightning bolt** (`DM100.java` 107-109,
+  `2, 0.3f`, on the hero-target branch its AI always uses), **DM-300's ROCKS** (`DM300.java` 655, `5, 1f`, where the volley is
+  called down), **the Goo taking damage while pumped up** (`Goo.java` 162-164, `3, 0.2f`, the port's `pumped` charge counter being
+  its `pumpedUp`), **the rooted move and stair-transition refusals** (`Hero.java` 1771 `getCloser` via the `moveTo` roots gate for
+  programmatic moves, and 1385 `actTransition` via the movement planner's `rooted` branch for tapped moves - each `1, 1f`), **the
+  blink refusal** (`Preparation.java` 308-310, `1, 1f`, only when rooted exactly as Java does), **the DM-300 arena seal**
+  (`CavesBossLevel.java` 325, `3, 0.7f`), **the chains pull refusal** (`EtherealChains.java` 221, `1, 1f`), **the leap landing**
+  (`HeroicLeap.java` 119, `2, 0.5f`), **Shockwave** (`Shockwave.java` 102, `2, 0.5f`), **the Challenge unreachable pair**
+  (`Challenge.java` 142/148, each `1, 1f`), **the Earthroot burst, both halves** (`Earthroot.java` 58, `1, 0.4f`, gated on hero FOV
+  exactly as Java's `heroFOV` check), **Entanglement landing on the hero** (`Entanglement.java` 53, `1, 0.4f`), **lightning hitting
+  the hero** (`WandOfLightning.java` 87, `2, 0.3f`), **the Yog fist melee swing** (`FistSprite.java` 143, `4, 0.2f`, with the swing
+  so it fires on misses), **DM-300's melee slam** (`DM300Sprite.java` 111, `3, 0.7f`, same placement), and **the rockfall impact,
+  once per landing volley** (`DelayedRockFall.java` 68 / `RockfallTrap.java` 117 / `GnollRockfallTrap.java` 112, `3, 0.7f` - Java
+  shakes per falling rock; a 7x7 volley would stack seven). Pinned by `tools/verifyShakes.mjs` in `test:simulation` (a deleted shake
+  is invisible to every other suite). Browser-verified live (`tools/scratch/screen-shake-livecheck.mjs`, 7 assertions): nothing
+  shakes at rest, `dm300Rockfall` starts a magnitude-5/1s shake and still schedules its volley, the running camera jitters within
+  the magnitude and settles back to zero when the duration elapses, and the chasm landing starts its own magnitude-4 shake.
+  **Deliberate divergence:** the three ability rooted refusals (`HeroicLeap` 71, `Feint` 93, `SmokeBomb` 91) shake (`1, 0.15s`)
+  instead of Java's full (`1, 1f`) - a 1s shake on a refused tap reads as a hit; all three share the short form and each site says
+  so. **Not wired, because the feature is not ported:** `Hero.java` 1177 (opening a TOMB/SKELETON/REMAINS heap - the port's chest
+  kinds are normal/locked/crystal), `Combo.java` 503 and `MonkEnergy.java` 481 (the gap-closer refusal events are not ported as
+  such), `SuperNovaTracker.java` 103 (ElementalBlast is unported), `Dagger.java` 118 and `Rapier.java` 109 (the sneak/lunge aiming
+  refusals validate silently in the cell controller - no Java-shaped refusal event to hang the shake on), `DM300.java` 325 (its
+  `travelling` move - this port's DM300 has no travelling state), `GnollGeomancer.java` 438/520/708/710 and `CrystalSpire.java`
+  169/340/378/384 (mobs unported), the `DelayedRockFall` spawn and the `RockfallTrap`/`GnollRockfallTrap` kinds (unported - but
+  their impact presentation is covered by the volley shake above).
 - **Boss ability timers** (six independent cooldowns across king/demonSpawner/yog/dm300) are the
   shape `Roguelike.AbilityCycle` provides; the *phase* machines around them are a documented
   correctness divergence from the framework's `BossPhases` (Java has no such half-HP Fury/0.75-0.5-0.25
