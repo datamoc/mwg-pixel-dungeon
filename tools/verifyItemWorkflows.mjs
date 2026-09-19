@@ -2126,11 +2126,15 @@ function roseDrive(overrides = {}, pickScript = [0]) {
 }
 // The moved beacon flow (`BeaconFlowContext`, the file-size refactor's fourteenth extraction):
 // driven headlessly with a scripted picker and stub floor.
-const { useBeaconFlow, beaconChargeCap, beaconZapCost, beaconZapRange, beaconTeleportBlocked, beaconAdjacentEnemy } = require('./items/beacon.js');
+const { useBeaconFlow, useReturningBeaconFlow, beaconChargeCap, beaconZapCost, beaconZapRange, beaconTeleportBlocked, beaconAdjacentEnemy } = require('./items/beacon.js');
 function beaconDrive(overrides = {}, pickScript = [0]) {
 	const log = [];
-	const flags = { aim: null, moved: [], teleports: [], relocated: null, traveled: null, rootsCleared: false, uncloaked: false };
+	const flags = { aim: null, moved: [], teleports: [], relocated: null, traveled: null, rootsCleared: false, uncloaked: false, turns: 0, consumed: false };
 	const beacon = { level: 0, charge: 10, ...overrides.beacon };
+	const spell = overrides.spell !== undefined ? overrides.spell : null;
+	// Every anchored spell went through the set path, which always writes `returnBranch: 0`
+	// (this port has no branches) - fixtures model post-set spells, so they carry it too.
+	if (spell && spell.returnDepth !== undefined && spell.returnBranch === undefined) spell.returnBranch = 0;
 	const creatures = overrides.creatures ?? {};
 	const picks = [...pickScript];
 	const ctx = {
@@ -2155,6 +2159,9 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 		passable: overrides.passable ?? (() => true),
 		relocateHero: (x, y) => { flags.relocated = { x, y }; },
 		travelToDepth: (returnDepth, arrival) => { flags.traveled = { depth: returnDepth, arrival }; },
+		returningBeaconOf: () => spell,
+		consumeReturningBeacon: () => { flags.consumed = true; },
+		spendTurn: () => { flags.turns++; },
 		clearRoots: () => { flags.rootsCleared = true; },
 		dispelInvisibility: () => { flags.uncloaked = true; },
 		say: (line, level) => { log.push(`say:${level}:${line}`); },
@@ -2162,7 +2169,7 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 		...overrides.ctx,
 	};
 	useBeaconFlow(ctx, undefined);
-	return { ctx, log, flags, beacon };
+	return { ctx, log, flags, beacon, spell };
 }
 // Formulas: the cap levels to 10, the zap costs 1 down to depth 20 and 2 deeper.
 {
@@ -2246,6 +2253,55 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 	const heroCtx = { heroPos: { x: 5, y: 5 }, creatureAt: () => null };
 	assert.ok(!beaconAdjacentEnemy(heroCtx), 'empty neighbours pass');
 	assert.ok(beaconAdjacentEnemy({ heroPos: { x: 5, y: 5 }, creatureAt: (x, y) => (x === 6 && y === 5 ? { kind: 'rat' } : null) }), 'a hostile neighbour blocks');
+}
+// BeaconOfReturning (`useReturningBeaconFlow`, the file-size refactor's sixteenth extraction):
+// an unanchored cast anchors, an anchored one travels, refusals spend nothing.
+{
+	const missing = beaconDrive();
+	useReturningBeaconFlow(missing.ctx);
+	assert.equal(missing.flags.turns, 0, 'no spell, no cast');
+	const set = beaconDrive({ spell: {} });
+	useReturningBeaconFlow(set.ctx);
+	assert.deepEqual([set.spell.returnDepth, set.spell.returnBranch, set.spell.returnPos, set.spell.returnX, set.spell.returnY],
+		[5, 0, 55, 5, 5], 'the first cast anchors depth and cell');
+	assert.ok(set.log.some((l) => l.includes('beaconofreturning.set')), 'with the set line');
+	assert.equal(set.flags.turns, 1, 'anchoring spends the turn');
+	assert.equal(set.flags.consumed, false, 'but not the spell');
+	const branched = beaconDrive({ spell: { returnDepth: 5, returnBranch: 1, returnPos: 55 } });
+	useReturningBeaconFlow(branched.ctx);
+	assert.ok(branched.log.some((l) => l.includes('preventing')), 'a foreign branch refuses');
+	assert.equal(branched.flags.turns, 0, 'and spends nothing');
+	const home = beaconDrive({ spell: { returnDepth: 5, returnPos: 22, returnX: 2, returnY: 2 } });
+	useReturningBeaconFlow(home.ctx);
+	assert.deepEqual(home.flags.relocated, { x: 2, y: 2 }, 'same depth steps to the anchor');
+	assert.equal(home.flags.consumed, true, 'consuming the spell');
+	assert.ok(home.log.some((l) => l.includes('beaconreturned')), 'with the return line');
+	assert.equal(home.flags.turns, 1, 'and a spent turn');
+	const stayed = beaconDrive({
+		spell: { returnDepth: 5, returnPos: 22, returnX: 2, returnY: 2 },
+		creatures: { '2,2': { kind: 'rat' } },
+		ctx: { heroPos: { x: 2, y: 2 } },
+	});
+	useReturningBeaconFlow(stayed.ctx);
+	assert.deepEqual(stayed.flags.relocated, { x: 2, y: 2 }, 'the hero never left, so the occupant is himself');
+	const blocked = beaconDrive({
+		spell: { returnDepth: 5, returnPos: 22, returnX: 2, returnY: 2 },
+		creatures: { '2,2': { kind: 'rat' } },
+	});
+	useReturningBeaconFlow(blocked.ctx);
+	assert.ok(blocked.log.some((l) => l.includes('creatures')), 'a stranger on the anchor refuses');
+	assert.equal(blocked.flags.turns, 0, 'spending nothing');
+	const walled = beaconDrive({ spell: { returnDepth: 5, returnPos: 22, returnX: 2, returnY: 2 }, passable: () => false });
+	useReturningBeaconFlow(walled.ctx);
+	assert.ok(walled.log.some((l) => l.includes('no_tele')), 'a blocked anchor refuses');
+	const away = beaconDrive({ spell: { returnDepth: 3, returnPos: 22, returnX: 2, returnY: 2 } });
+	useReturningBeaconFlow(away.ctx);
+	assert.deepEqual(away.flags.traveled, { depth: 3, arrival: { x: 2, y: 2 } }, 'another depth travels');
+	assert.equal(away.flags.consumed, true, 'consuming the spell');
+	const lost = beaconDrive({ spell: { returnDepth: 99, returnPos: 22, returnX: 2, returnY: 2 } });
+	useReturningBeaconFlow(lost.ctx);
+	assert.ok(lost.log.some((l) => l.includes('preventing')), 'depths outside 1..26 refuse');
+	assert.equal(lost.flags.traveled, null, 'travelling nowhere');
 }
 }
 }

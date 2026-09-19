@@ -234,7 +234,7 @@ import { useArmbandFlow, type ArmbandFlowContext } from '../items/armband';
 import { applyTalismanPerTurnCharge, useTalismanFlow, checkTalismanAwarenessFlow, type TalismanFlowContext, type TalismanItem } from '../items/talisman';
 import { roseGhostMaxHp, applyRoseRecharge, useRoseFlow, type RoseFlowContext, type RoseItem } from '../items/rose';
 import { rosePetalsNeeded, rosePetalDropCap, rosePetalPickup, roseChargeCap, roseLevelCap } from '../items/rose';
-import { beaconChargeCap, useBeaconFlow, type BeaconFlowContext, type BeaconItem } from '../items/beacon';
+import { beaconChargeCap, useBeaconFlow, useReturningBeaconFlow, type BeaconFlowContext, type BeaconItem } from '../items/beacon';
 import { planWealthDrops, wealthEquipBonus, initialiseWealthTrackers, wealthDeathRolls, type WealthDropPlan, type WealthTrackers } from '../items/wealthDrops';
 import { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal, artifactRechargeDuration, wildEnergyRechargeTurns, type RechargeGuards } from '../items/artifactRecharge';
 import { equipRing as equipInventoryRing, equipArmor as equipInventoryArmor, equipWeapon as equipInventoryWeapon, type GearEquipmentContext, type RingEquipmentContext } from '../items/equipment';
@@ -18518,8 +18518,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 		/**
 		 * Lloyd's Beacon's zap/set/return flow lives in `items/beacon.ts` behind
-		 * `BeaconFlowContext` - the file-size refactor's fourteenth extraction, behavior-identical.
-		 * The return row's depth travel stays scene-side (`travelToDepth` runs `enterLevel`);
+		 * `BeaconFlowContext` - the file-size refactor's fourteenth extraction, behavior-identical
+		 * (the sixteenth added the single-use `BeaconOfReturning` spell twin on the same seams).
+		 * The return rows' depth travel stays scene-side (`travelToDepth` runs `enterLevel`);
 		 * the module only hands it the anchor.
 		 */
 		private beaconFlowContext(): BeaconFlowContext {
@@ -18569,6 +18570,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 					scene.miningBranchActive = false;
 					scene.enterLevel();
 				},
+				returningBeaconOf: (instanceId?: string) => scene.bag.find('beaconOfReturning', instanceId) as (typeof scene.bag.items[number] & BeaconItem) | undefined,
+				consumeReturningBeacon: (instanceId?: string) => { scene.bag.remove('beaconOfReturning', 1, instanceId); },
+				spendTurn: () => { scene.actionSpentTurn = true; scene.spendHeroTurn(1); },
 				clearRoots: () => { delete scene.hero.buffs['roots']; },
 				dispelInvisibility: () => { delete scene.hero.buffs['invisibility']; },
 				say: scene.say.bind(scene),
@@ -22228,54 +22232,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * the existing floor-state transition path; those presentation and edge-case reductions
 	 * are recorded in PORT_COVERAGE.md. */
 	private useBeaconOfReturning(instanceId?: string): void {
-		type Beacon = { id: string; quantity: number; instanceId?: string; returnDepth?: number; returnBranch?: number; returnPos?: number; returnX?: number; returnY?: number };
-		const beacon = this.bag.find('beaconOfReturning', instanceId) as Beacon | undefined;
-		if (!beacon) return;
-		if (beacon.returnDepth === undefined || beacon.returnDepth < 0 || beacon.returnPos === undefined) {
-			beacon.returnDepth = this.depth;
-			beacon.returnBranch = 0;
-			beacon.returnPos = this.level.index(this.hero.x, this.hero.y);
-			beacon.returnX = this.hero.x;
-			beacon.returnY = this.hero.y;
-			this.say(t('items.spells.beaconofreturning.set'), 'positive');
-			this.actionSpentTurn = true;
-			this.spendHeroTurn(1);
-			return;
-		}
-		if (beacon.returnBranch !== 0) {
-			this.say(t('items.spells.beaconofreturning.preventing'), 'negative');
-			return;
-		}
-		const x = beacon.returnX ?? (beacon.returnPos % this.level.width);
-		const y = beacon.returnY ?? Math.floor(beacon.returnPos / this.level.width);
-		if (beacon.returnDepth === this.depth && this.level.passable(x, y)) {
-			if (this.creatureAt(x, y) && !(x === this.hero.x && y === this.hero.y)) {
-				this.say(t('items.spells.beaconofreturning.creatures'), 'negative');
-				return;
-			}
-			this.hero.x = x;
-			this.hero.y = y;
-			this.sprite(this.hero).x = x * TILE;
-			this.sprite(this.hero).y = y * TILE;
-			this.fov.update(x, y, this.viewRadius());
-			this.bag.remove('beaconOfReturning', 1, instanceId);
-			this.say(t('port.log.beaconreturned'), 'positive');
-		} else if (beacon.returnDepth === this.depth) {
-			this.say(t('items.scrolls.scrollofteleportation.no_tele'), 'negative');
-			return;
-		} else if (beacon.returnDepth >= 1 && beacon.returnDepth <= 26) {
-			this.bag.remove('beaconOfReturning', 1, instanceId);
-			this.beaconArrival = { x, y };
-			this.depth = beacon.returnDepth;
-			this.miningBranchActive = false;
-			this.enterLevel();
-			this.say(t('port.log.beaconreturned'), 'positive');
-		} else {
-			this.say(t('items.spells.beaconofreturning.preventing'), 'negative');
-			return;
-		}
-		this.actionSpentTurn = true;
-		this.spendHeroTurn(1);
+		useReturningBeaconFlow(this.beaconFlowContext(), instanceId);
 	}
 
 	/** `TimekeepersHourglass.timeFreeze`: freeze automatic actors while hero actions are free. */

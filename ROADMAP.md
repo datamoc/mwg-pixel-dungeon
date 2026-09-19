@@ -1235,6 +1235,19 @@ one.
       Infernal piling the blocked share onto the center). The move fixed two stale "no blob to
       seed" claims in passing - both blobs have been modeled and seeded since the follow-up, so
       the module header now says so and the moved comment carries the corrected shape.
+      **Complexity: S.** **Sixteenth extraction 2026-09-19**: the single-use `BeaconOfReturning`
+      spell (`useBeaconOfReturning`'s set-then-travel ladder) joined `items/beacon.ts` as
+      `useReturningBeaconFlow` on the existing `BeaconFlowContext` plus three spell seams
+      (spell lookup, spell consume, turn); the local `Beacon` item type is gone with the move
+      (the flow reads the shared `BeaconItem`), and the scene keeps the one-line adapter the
+      router calls. Net −43 lines in `dungeonScene.ts` (22,754 after), `beacon.ts` 206 to 260.
+      Suites: `tsc` clean with no fix-ups, item suite green with a new headless drive of the
+      moved spell (first cast anchors with the set line and spends the turn but not the spell,
+      foreign branches refuse, same-depth steps consume, the unmoved hero exempts himself,
+      strangers/walls refuse, cross-depth travels consume, depths outside 1..26 refuse - every
+      refusal spending nothing). The drive caught one fixture bug in review - anchored fixtures
+      must carry the `returnBranch: 0` the set path always writes, or the branch guard refuses
+      them - fixed as a drive normalization with the reason stated.
       **Complexity: S.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`

@@ -8,7 +8,8 @@
  * `ScrollOfTeleportation`'s own candidate set), a set that anchors the return point, and a
  * return that either steps the hero across the current floor or travels back to the anchored
  * depth. Both travel blocks refuse while bosses, the mining branch, or the amulet forbid
- * teleports, and while an enemy stands adjacent.
+ * teleports, and while an enemy stands adjacent. The single-use `BeaconOfReturning` spell
+ * twin lives here too (`useReturningBeaconFlow`) - same anchor shape, consumed on travel.
  *
  * The zap/set/return flow itself lives here too, behind `BeaconFlowContext` - the file-size
  * refactor's fourteenth extraction, behavior-identical.
@@ -85,6 +86,9 @@ export interface BeaconFlowContext {
 	passable(x: number, y: number): boolean;
 	relocateHero(x: number, y: number): void;
 	travelToDepth(returnDepth: number, arrival: { x: number; y: number }): void;
+	returningBeaconOf(instanceId?: string): BeaconItem | undefined;
+	consumeReturningBeacon(instanceId?: string): void;
+	spendTurn(): void;
 	clearRoots(): void;
 	dispelInvisibility(): void;
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
@@ -203,4 +207,54 @@ export function returnBeaconFlow(ctx: BeaconFlowContext, instanceId?: string): v
 		ctx.travelToDepth(beacon.returnDepth, { x, y });
 	}
 	ctx.say(ctx.t('port.log.beaconreturned'), 'positive');
+}
+
+/** `BeaconOfReturning.execute()` (tag `v3.3.8`): the single-use spell twin of the artifact's
+ *  set/return pair. Unanchored casts anchor instead of travelling; a non-zero branch
+ *  refuses (this port has no branches, so the anchor always writes 0 and this is a
+ *  defensive re-check); same depth steps to the anchor - passable, and unoccupied
+ *  unless the hero never left it - while another depth in 1..26 travels there; anything
+ *  else refuses. Every finished cast consumes the spell and spends the turn; every
+ *  refusal returns early with its own line and spends nothing. */
+export function useReturningBeaconFlow(ctx: BeaconFlowContext, instanceId?: string): void {
+	const beacon = ctx.returningBeaconOf(instanceId);
+	if (!beacon) return;
+	if (beacon.returnDepth === undefined || beacon.returnDepth < 0 || beacon.returnPos === undefined) {
+		beacon.returnDepth = ctx.depth;
+		beacon.returnBranch = 0;
+		beacon.returnPos = ctx.cellIndex(ctx.heroPos.x, ctx.heroPos.y);
+		beacon.returnX = ctx.heroPos.x;
+		beacon.returnY = ctx.heroPos.y;
+		ctx.say(ctx.t('items.spells.beaconofreturning.set'), 'positive');
+		ctx.spendTurn();
+		return;
+	}
+	if (beacon.returnBranch !== 0) {
+		ctx.say(ctx.t('items.spells.beaconofreturning.preventing'), 'negative');
+		return;
+	}
+	const width = ctx.gridWidth();
+	const x = beacon.returnX ?? (beacon.returnPos % width);
+	const y = beacon.returnY ?? Math.floor(beacon.returnPos / width);
+	if (beacon.returnDepth === ctx.depth && ctx.passable(x, y)) {
+		const occupant = ctx.creatureAt(x, y);
+		if (occupant && !(x === ctx.heroPos.x && y === ctx.heroPos.y)) {
+			ctx.say(ctx.t('items.spells.beaconofreturning.creatures'), 'negative');
+			return;
+		}
+		ctx.relocateHero(x, y);
+		ctx.consumeReturningBeacon(instanceId);
+		ctx.say(ctx.t('port.log.beaconreturned'), 'positive');
+	} else if (beacon.returnDepth === ctx.depth) {
+		ctx.say(ctx.t('items.scrolls.scrollofteleportation.no_tele'), 'negative');
+		return;
+	} else if (beacon.returnDepth >= 1 && beacon.returnDepth <= 26) {
+		ctx.consumeReturningBeacon(instanceId);
+		ctx.travelToDepth(beacon.returnDepth, { x, y });
+		ctx.say(ctx.t('port.log.beaconreturned'), 'positive');
+	} else {
+		ctx.say(ctx.t('items.spells.beaconofreturning.preventing'), 'negative');
+		return;
+	}
+	ctx.spendTurn();
 }
