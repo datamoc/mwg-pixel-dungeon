@@ -455,44 +455,52 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		}
 	});
 	check('hunger transition is immutable and warns once at 300', () => {
+		//STEP is Java's real 1/turn (`Hunger.act()`: `level + 1f/hungerDelay`), not the
+		//old invented 10 - so 290 climbs to 291 silently, and the warning fires at 299.
 		const input = Object.freeze(initial({ hunger: 290 }));
 		const result = advanceHunger(input);
 		assert.equal(input.hunger, 290);
-		assert.equal(result.state.hunger, 300);
-		assert.deepEqual(result.events, [{ type: 'hungry' }]);
-		assert.deepEqual(advanceHunger(result.state).events, []);
+		assert.equal(result.state.hunger, 291);
+		assert.deepEqual(result.events, []);
+		const edge = advanceHunger(initial({ hunger: 299 }));
+		assert.equal(edge.state.hunger, 300);
+		assert.deepEqual(edge.events, [{ type: 'hungry' }]);
+		assert.deepEqual(advanceHunger(edge.state).events, []);
 	});
 	check('crossing 450 fires starving + an immediate 1 damage, matching hero.damage(1,this)', () => {
 		assert.deepEqual(advanceHunger(initial({ hunger: 280 })).events, []);
-		const result = advanceHunger(initial({ hunger: 440, hp: 20 }));
+		assert.deepEqual(advanceHunger(initial({ hunger: 440 })).events, []);
+		const result = advanceHunger(initial({ hunger: 449, hp: 20 }));
 		assert.deepEqual(result.events, [{ type: 'starving' }, { type: 'starvation-damage', damage: 1 }]);
 		assert.equal(result.state.hp, 19);
 		assert.equal(result.state.hunger, 450);
 	});
-	check('once starving, level freezes and partialDamage accrues STEP*HT/1000 per turn (Hunger.act isStarving branch)', () => {
+	check('once starving, level freezes and partialDamage accrues HT/1000 per turn (Hunger.act isStarving branch)', () => {
+		//Java accrues a flat HT/1000 per act with no STEP factor: at HT 20 the strict
+		//`> 1` gate trips on the 50th turn (float accumulation lands just above 1.0).
 		let state = initial({ hunger: 450, hp: 20, maxHp: 20 });
-		for (let i = 0; i < 5; i++) {
+		for (let i = 0; i < 49; i++) {
 			const result = advanceHunger(state);
 			assert.deepEqual(result.events, []);
 			state = result.state;
 		}
 		assert.equal(state.hunger, 450);
 		assert.equal(state.hp, 20);
-		assert.ok(Math.abs(state.partialDamage - 1) < 1e-9);
 		const result = advanceHunger(state);
 		assert.deepEqual(result.events, [{ type: 'starvation-damage', damage: 1 }]);
 		assert.equal(result.state.hp, 19);
-		assert.ok(Math.abs(result.state.partialDamage - 0.2) < 1e-9);
+		assert.ok(Math.abs(result.state.partialDamage) < 1e-9);
 	});
 	check('high max HP can deal multiple damage per turn, and death follows the damage event', () => {
-		const result = advanceHunger(initial({ hunger: 450, hp: 2, maxHp: 250 }));
+		//HT 250 accrues 0.25/turn: a seeded 1.9 crosses 2.0 for double damage.
+		const result = advanceHunger(initial({ hunger: 450, hp: 2, maxHp: 250, partialDamage: 1.9 }));
 		assert.equal(result.state.hp, 0);
 		assert.deepEqual(result.events, [{ type: 'starvation-damage', damage: 2 }, { type: 'starvation-death' }]);
 	});
 	check('feeding remains a caller decision; partialDamage is untouched while not starving', () => {
 		const result = advanceHunger(initial({ hunger: 0, partialDamage: 0.7 }));
 		assert.equal(result.state.partialDamage, 0.7);
-		assert.equal(result.state.hunger, 10);
+		assert.equal(result.state.hunger, 1);
 		assert.deepEqual(result.events, []);
 	});
 	check('no actor runs when empty or already game over', () => {
@@ -565,7 +573,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 			presentHungerEvent: (event) => { assert.equal(state.hp, 0); events.push(event.type); },
 		});
 		adapter.hungerStep();
-		state = initial({ hunger: 440, hp: 1 }); // e.g. state after loading, one turn from crossing into starving
+		state = initial({ hunger: 449, hp: 1 }); // e.g. state after loading, one turn from crossing into starving
 		adapter.hungerStep();
 		assert.deepEqual(events, ['starving', 'starvation-damage', 'starvation-death']);
 		assert.equal(adapter.runTurns(), 'empty');

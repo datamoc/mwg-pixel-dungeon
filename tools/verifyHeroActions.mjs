@@ -73,7 +73,9 @@ export function verifyHeroActions(require, check) {
 		assert.equal(MOVES.right.x, 1);
 	});
 	check('MWG headless runner drives the real action adapter and hunger transition', () => {
-		const initial = { hunger: 280, starveTicks: 0, hungryWarned: false,
+		//Two of the four commands spend a turn at Java's real STEP 1, so the run
+		//starts at 298 to cross the 300 warning inside the scenario.
+		const initial = { hunger: 298, starveTicks: 0, hungryWarned: false,
 			starvingWarned: false, hp: 20, maxHp: 20 };
 		const step = (before, command) => {
 			let state = before;
@@ -89,7 +91,7 @@ export function verifyHeroActions(require, check) {
 		// These are real dispatch/timing rules with fake scene effects, not a full dungeon replay.
 		const result = runScenario({ state: initial, commands: ['examine', 'special', 'wait', 'search'], random: null, step });
 		assert.equal(result.state.hunger, 300);
-		assert.equal(initial.hunger, 280);
+		assert.equal(initial.hunger, 298);
 		assert.equal(result.processedCommands, 4);
 		assert.deepEqual(result.events.filter(e => e?.type === 'hungry'), [{ type: 'hungry' }]);
 	});

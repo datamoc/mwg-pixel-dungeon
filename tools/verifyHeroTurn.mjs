@@ -50,7 +50,8 @@ export function verifyHeroTurn(require, check) {
 	check('starvation death retains legacy continuation and next-turn dead guard', () => {
 		const f = fixture(1);
 		f.effects.advanceHunger = () => {
-			f.state.hp = advanceHunger({ hp: f.state.hp, maxHp: 20, hunger: 450, partialDamage: 0.9 }).state.hp;
+			//HT 20 accrues 0.02/turn: a seeded 0.99 crosses the strict `> 1` gate.
+			f.state.hp = advanceHunger({ hp: f.state.hp, maxHp: 20, hunger: 450, partialDamage: 0.99 }).state.hp;
 		};
 		assert.equal(finishHeroTurn(f.effects), 'spent');
 		assert.equal(f.state.hp, 0);

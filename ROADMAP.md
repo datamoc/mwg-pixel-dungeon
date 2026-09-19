@@ -721,10 +721,10 @@ below to close the gap was judged not worth the churn against those existing ref
 differential harness running both the real Java build and this port side by side against identical
 seeds/traces - and none should be marked `[x]` on the strength of what already exists. What does
 exist, so the gap is the real remaining one rather than a from-scratch build:
-`tools/verify*.mjs` (wired into `test:simulation`, 65+ checks) already pin combat rolls, damage
+`tools/verify*.mjs` (wired into `test:simulation`, 118 simulation + 7 banner + 36 vault + 6 overlay checks as of 2026-09-19) already pin combat rolls, damage
 curves, buff timing and turn-cost/scheduling - but as *values checked against a transcription of the
 Java source*, not against a running Java build, which is the bar "compare both implementations"
-sets. `PORT_COVERAGE.md` already does the sixth bullet's classification row by row, as a running
+sets. **Unblocked 2026-09-19:** the suite aborted at hunger for a day (stale STEP=10 expectations left behind by the STEP 1 fix), hiding every check after it - syncing those expectations un-hid three more stale sets (buff-fixture poison stream, MINIBOSS/BOSS comment-regex + sets, hero-turn/hero-actions hunger math) and, in the miniboss case, a real data bug (Eye/Warlock/plain-Elemental over-looted on boss wealth tiers Java never gives them). The full suite passes for the first time. `PORT_COVERAGE.md` already does the sixth bullet's classification row by row, as a running
 narrative rather than one finished audit pass. Screenshot/animation-timing comparison has real
 infra (pixel-hash probes, per-feature `*-livecheck.mjs` scripts) but only for the things those
 scripts targeted. **Triage 2026-09-17:** the Java side is real and runnable after all - the

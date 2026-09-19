@@ -351,7 +351,7 @@ export function verifyCombat(require, check) {
 		// FungalSentry, GnollSapper).
 		const mwl = readFileSync(new URL('../src/content/actor-rules.mwl', import.meta.url), 'utf8');
 		const flagSet = (flag) => {
-			const match = new RegExp(`apply_to:\\s*"${flag}"\\s*,?\\s*\\r?\\n\\s*set:\\s*"([^"\\r\\n]+)"`).exec(mwl);
+			const match = new RegExp(`apply_to:\\s*"${flag}"[^}]*?set:\\s*"([^"\\r\\n]+)"`).exec(mwl);
 			assert.ok(match, `no ${flag} flag effect in actor-rules.mwl`);
 			return match[1].split(',').map((k) => k.trim()).sort();
 		};
@@ -375,7 +375,7 @@ export function verifyCombat(require, check) {
 	check('the authored UNDEAD/DEMONIC flag sets match Java, and RipperDemon carries both', () => {
 		const mwl = readFileSync(new URL('../src/content/actor-rules.mwl', import.meta.url), 'utf8');
 		const flagSet = (flag) => {
-			const match = new RegExp(`apply_to:\\s*"${flag}"\\s*,?\\s*\\r?\\n\\s*set:\\s*"([^"\\r\\n]+)"`).exec(mwl);
+			const match = new RegExp(`apply_to:\\s*"${flag}"[^}]*?set:\\s*"([^"\\r\\n]+)"`).exec(mwl);
 			assert.ok(match, `no ${flag} flag effect in actor-rules.mwl`);
 			return match[1].split(',').map((k) => k.trim()).sort();
 		};
@@ -387,8 +387,9 @@ export function verifyCombat(require, check) {
 			['bandit', 'dustWraith', 'ghoul', 'guard', 'king', 'monk', 'necroSkeleton', 'necromancer', 'ripperDemon', 'senior', 'skeleton', 'spectralNecromancer', 'thief', 'warlock', 'wraith']);
 		// Java's `Property.DEMONIC` declarations (DemonSpawner/Eye/FetidRat/Goo/Mimic/RipperDemon/
 		// Scorpio/Succubus/YogDzewa/YogFist), with CrystalMimic and Acidic inheriting
+		//11th matrix: larva joined the MWL set.
 		assert.deepEqual(flagSet('demonic'),
-			['acidic', 'crystalMimic', 'demonSpawner', 'eye', 'fetidRat', 'goo', 'mimic', 'ripperDemon', 'scorpio', 'succubus', 'yog', 'yogFist']);
+			['acidic', 'crystalMimic', 'demonSpawner', 'eye', 'fetidRat', 'goo', 'larva', 'mimic', 'ripperDemon', 'scorpio', 'succubus', 'yog', 'yogFist']);
 		// the ripper demon is the one mob Java marks with both, and the union's consumers rely on it
 		assert.ok(flagSet('undead').includes('ripperDemon') && flagSet('demonic').includes('ripperDemon'));
 	});

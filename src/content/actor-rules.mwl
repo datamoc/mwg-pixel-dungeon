@@ -30,20 +30,25 @@
           {
             tag: "effect",
             apply_to: "boss",
-            // `Property.BOSS` holders at tag `v3.3.8` (unported CrystalSpire/FungalCore/
-            // GnollGeomancer omitted): Eye, Warlock and Pylon carry it alongside the
-            // chapter bosses, driving the wealth 15-rolls, execute exclusions, aggression,
-            // multiplicity/ratmogrify exclusion and paralysis immunity downstream.
-            set: "goo,tengu,dm300,king,yog,yogFist,eye,warlock,pylon",
+            // `Property.BOSS` holders at tag `v3.3.8`: the five chapter bosses plus
+            // `YogFist` (all six declare it; `DwarfKing`/`YogDzewa` also declare
+            // `BOSS_MINION` for their servants). Eye, Warlock and Pylon declare no
+            // BOSS property - corrected 2026-09-19, when the suite first ran far
+            // enough to check: an earlier pass had added all three, over-looting
+            // them onto the 15-roll wealth tier.
+            set: "goo,tengu,dm300,king,yog,yogFist",
           },
           {
             tag: "effect",
             apply_to: "miniboss",
             // `Property.MINIBOSS` holders at tag `v3.3.8` (unported CrystalGuardian/
-            // FungalSentry/GnollSapper omitted): Elemental, Eye and Warlock were missing,
-            // starving them of the wealth 5-rolls and the shared miniboss rules. Newborn
-            // stays: `NewbornFireElemental` carries MINIBOSS itself in Java.
-            set: "fetidRat,gnollTrickster,greatCrab,demonSpawner,pylon,rotHeart,rotLasher,newbornElemental,elemental,eye,warlock",
+            // FungalSentry/GnollSapper omitted): only `NewbornFireElemental` carries it
+            // among the elementals, and Eye/Warlock declare neither BOSS nor MINIBOSS -
+            // corrected 2026-09-19, when the suite first ran far enough to check: an
+            // earlier pass had added plain Elemental, Eye and Warlock, over-looting
+            // them onto the 5-roll wealth tier (Java gives all three the ordinary
+            // single roll - `Mob.die()`: 15 for BOSS, 5 for MINIBOSS, else 1).
+            set: "fetidRat,gnollTrickster,greatCrab,demonSpawner,pylon,rotHeart,rotLasher,newbornElemental",
           },
           {
             tag: "effect",
