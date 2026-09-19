@@ -4,6 +4,7 @@ import { IconGrid, TabbedList } from 'mwg/two-d/ui';
 import { SpdLabel as Label } from './spdLabel';
 import { SpdButton } from './spdButton';
 import { spdPanel } from './spdPanel';
+import { bagGridLayout } from './bagLayout';
 import { t } from '../i18n';
 import { runState } from '../runState';
 import { titleIcon } from './titleIcons';
@@ -84,8 +85,23 @@ export class InventoryWindow extends Container2D {
 	private vw = 0;
 	private vh = 0;
 	private chosen: InventoryEntry | null = null;
-	private readonly width_ = 156;
-	private readonly height_ = 226;
+	private wide = false;
+	private width_ = 156;
+	private height_ = 226;
+
+	/**
+	 * `SPDSettings.interfaceSize()`: large mode switches the grid to `InventoryPane`'s
+	 * wide 10-column arrangement (see `bagLayout.ts`) instead of the fixed 5-column one.
+	 * Called on every refresh ahead of `setItems`, so toggling the interface size while
+	 * the bag is open rearranges it in place; redraws only once entries exist.
+	 */
+	setWide(wide: boolean): void {
+		this.wide = wide;
+		const layout = bagGridLayout(wide);
+		this.width_ = layout.windowWidth;
+		this.height_ = layout.windowHeight;
+		if (this.entries.length > 0) this.draw();
+	}
 
 	constructor(private use: (id: string, instanceId?: string) => void, private close: () => void) {
 		super();
@@ -181,17 +197,18 @@ export class InventoryWindow extends Container2D {
 	}
 
 	private draw(): void {
+		const layout = bagGridLayout(this.wide);
 		this.panel.removeChildren().forEach(c => c.destroy({ children: true }));
 		this.panel.addChild(spdPanel(this.width_, this.height_));
 		const title = new Label({ text: t('port.action.bag'), size: 8, color: 0xffff44 });
 		title.position.set(7, 7);
 		const money = new Label({ text: String(this.gold), size: 8, color: 0xffff44 });
-		money.anchor.set(1, 0); money.position.set(130, 7);
-		const coin = this.icon(18); coin.position.set(132, 5);
+		money.anchor.set(1, 0); money.position.set(this.width_ - 26, 7);
+		const coin = this.icon(18); coin.position.set(this.width_ - 24, 5);
 		this.panel.addChild(title, money, coin);
 		const carried = this.filteredCarried();
 		this.entries = [...this.equipment, ...this.list.pageRows];
-		while (this.entries.length < 25) this.entries.push(null);
+		while (this.entries.length < layout.padTotal) this.entries.push(null);
 		//SPD v3.3.8's `WndBag` pages by `Bag` subclass rather than by filter, so these four
 		//compact categories are this port's own labels (and its own category tests in
 		//`filteredCarried`) - translated, not hardcoded English. The second row is Java's
@@ -216,7 +233,7 @@ export class InventoryWindow extends Container2D {
 			this.panel.addChild(tab);
 		});
 		this.grid = new IconGrid({
-			width: 145, height: 145, columns: 5, cellSize: 29,
+			width: layout.gridWidth, height: layout.gridHeight, columns: layout.columns, cellSize: 29,
 			items: this.entries.map((item, index) => ({
 				icon: this.slotIcon(item, index), disabled: !item, quantity: item?.quantity,
 				value: item,
@@ -224,19 +241,19 @@ export class InventoryWindow extends Container2D {
 			onHighlight: (cell) => { const item = cell.value as InventoryEntry | null; if (item) this.selection = this.entries.indexOf(item); },
 			onSelect: (cell) => { const item = cell.value as InventoryEntry | null; if (item) { this.selection = this.entries.indexOf(item); this.showItem(item); } },
 		});
-		this.grid.position.set(5, 55);
+		this.grid.position.set(5, layout.gridY);
 		this.panel.addChild(this.grid);
 		const close = new SpdButton({ width: 20, height: 17, icon: titleIcon(runState.sprites.uiIcons, 'exit', 1), onClick: this.close });
-		close.position.set(130, 204); this.panel.addChild(close);
+		close.position.set(this.width_ - 26, layout.footerY); this.panel.addChild(close);
 		if (carried.length > 20) {
 			const pages = Math.ceil(carried.length / 20);
-			for (const [step, x, text] of [[-1, 6, '<'], [1, 90, '>']] as const) {
+			for (const [step, x, text] of [[-1, 6, '<'], [1, this.width_ - 66, '>']] as const) {
 				const button = new SpdButton({ width: 20, height: 17, text, onClick: () => { this.list.nextPage(step); this.draw(); } });
-				button.position.set(x, 204); this.panel.addChild(button);
+				button.position.set(x, layout.footerY); this.panel.addChild(button);
 			}
-			const count = new Label({ text: `${this.list.page + 1}/${pages}`, size: 7 }); count.position.set(40, 208); this.panel.addChild(count);
+			const count = new Label({ text: `${this.list.page + 1}/${pages}`, size: 7 }); count.position.set(40, layout.footerY + 4); this.panel.addChild(count);
 		} else {
-			const bag = titleIcon(runState.sprites.uiIcons, 'bag', 1); bag.position.set(9, 205); this.panel.addChild(bag);
+			const bag = titleIcon(runState.sprites.uiIcons, 'bag', 1); bag.position.set(9, layout.footerY + 1); this.panel.addChild(bag);
 		}
 		this.layout(this.vw, this.vh);
 	}

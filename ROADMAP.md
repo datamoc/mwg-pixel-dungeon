@@ -617,19 +617,18 @@ below to close the gap was judged not worth the churn against those existing ref
       text with `1 - curtain.alpha`, which Java does not animate at all. Also unmodelled:
       `FAST_FADE` (0.50 steady, a total of 1.16s) for revisiting an already-seen depth or any
       ascent - the port only distinguishes normal from slow.
-- [ ] Implement large interface-size layouts. **Narrowed 2026-09-19**: the toggle
-      (`toggleInterfaceSize`), `StatusPane`'s 1.5x pane/bar scaling, and `GameLog`'s Java-real
-      3-line small / 5-line large split are already live; this pass additionally wired in
-      `ui_large_buffs.png` (extracted but never used before now) so large mode shows Java's own
-      separate 16x16 buff-icon sheet instead of a stretched copy of the small one - browser-verified
-      live, both directions of the toggle. **Progress 2026-09-19: `BuffButton`'s large-mode
-      per-icon overlay is now live too** - the `iconTextDisplay()` countdown bottom-right
-      (FlavourBuff `turns+1`, Burning/Ooze/Poison plain countdown, POSITIVE/NEGATIVE tint,
-      0.7 alpha) plus the `iconFadePercent()` grey wash on every icon without text,
-      each checked class-by-class at `v3.3.8` and pinned headlessly
-      (`tools/verifyBuffOverlays.mjs`, 6 checks). **What's left**: `InventoryPane`'s distinct wide bag
-      layout (this port's bag UI has one fixed arrangement regardless of interface size).
-      See `PORT_COVERAGE.md`'s `SPDSettings.interfaceSize()` row. **Complexity: S** for what remains (down from M).
+- [x] Implement large interface-size layouts. **Closed 2026-09-19:** the toggle
+      (`toggleInterfaceSize`), `StatusPane`'s 1.5x pane/bar scaling, `GameLog`'s Java-real
+      3-line small / 5-line large split, the real `ui_large_buffs.png` icon sheet,
+      `BuffButton`'s per-icon countdown/fade overlays, and - last - `InventoryPane`'s
+      wide bag layout are all live. Large mode switches the bag
+      grid to Java's own 10-column arrangement (5 equipped leading, the 20-item page
+      after, padded to three full rows in a 302-wide window), with the footer and
+      right-edge chrome re-anchored and the narrow 5-column geometry provably unchanged
+      (pinned in `tools/verifyBagLayout.mjs`, including byte-level narrow positions).
+      The window stays this port's own tabbed popup rather than Java's bottom pane -
+      that structural difference is the standing bag-UI simplification, not a gap in
+      this line. See `PORT_COVERAGE.md`'s `SPDSettings.interfaceSize()` row.
 - [x] Port the hero information window, busy indicator, talent animations, and quick slots.
       **Closed 2026-09-18**: all four named things turn out to already be live, or ported in this
       pass, once checked individually. Quick slots were already live (`toolbar.ts`'s auto-assigned

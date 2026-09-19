@@ -32,6 +32,8 @@ export interface InventoryPanelContext {
 	readonly weaponFrame: number;
 	readonly equippedRing: InventoryItem | null;
 	readonly gold: number;
+	/** `SPDSettings.interfaceSize()`: large mode gets the wide 10-column bag grid. */
+	readonly wide: boolean;
 	readonly itemDisplayName: (id: string, identified: boolean, instanceId?: string) => string;
 	readonly itemDescription?: (id: string, identified: boolean) => string | undefined;
 	readonly addToStage: (panel: InventoryWindow) => void;
@@ -79,6 +81,7 @@ export function refreshInventoryPanel(context: InventoryPanelContext): void {
 		frame: context.weaponFrame, quantity: 1, identified: true };
 	const ring = context.equippedRing ? entry({ ...context.equippedRing, quantity: 1, identified: true }) : null;
 	if (ring) ring.action = undefined;
+	panel.setWide(context.wide);
 	panel.setItems([weapon, armor, artifact, null, ring], rows.filter(item => item !== artifact && item.id !== context.armorId), context.gold);
 	context.addToStage(panel);
 	context.positionInterface();

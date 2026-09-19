@@ -17322,6 +17322,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			weaponFrame,
 			equippedRing: this.equippedRing,
 			gold: this.heroStats.base('gold'),
+			wide: this.interfaceSize === 1,
 			itemDisplayName: (id, identified, instanceId) => this.itemDisplayName(id, identified, instanceId),
 			addToStage: (panel) => this.stage.addChild(panel),
 			positionInterface: () => this.positionInterface(Game.current.width, Game.current.height),
