@@ -1,5 +1,6 @@
 import { Random } from 'mwg';
 import type { GroundItem } from '../combat';
+import { type BagPickupStack } from './bags';
 import { missileStackFields } from './missiles';
 
 type ItemPayload = NonNullable<GroundItem['item']>;
@@ -39,12 +40,17 @@ export interface GroundPickupContext {
 	addEnergy(amount: number): void;
 	addLooseGold(amount: number): void;
 	recoverStone(item: GroundItem): void;
-	pickupArmor(): void;
-	pickupWeapon(): void;
-	pickupWand(): void;
-	pickupAmulet(): void;
-	pickupRing(): void;
-	pickupCrystalKey(): void;
+	/** `Item.collect()`'s capacity gate over the flat bag (sub-bag `canHold` + 20/19
+	 *  stack capacities): equipment stacks resolve inside their callbacks, so those gate
+	 *  themselves through this and report back, while id-known paths call it directly.
+	 *  A failed collect is silent in Java - no sound, the heap stays, no turn is spent. */
+	bagFitsPickup(item: BagPickupStack): boolean;
+	pickupArmor(): boolean;
+	pickupWeapon(): boolean;
+	pickupWand(): boolean;
+	pickupAmulet(): boolean;
+	pickupRing(): boolean;
+	pickupCrystalKey(): boolean;
 	addSimpleGroundKind(kind: GroundKind): void;
 	messages: {
 		crystalChestLocked: string;
@@ -134,35 +140,78 @@ export function pickupGroundItem(context: GroundPickupContext): void {
 		context.removeGround();
 		return;
 	}
+	// Equipment stacks resolve inside their callbacks (upgrade-in-place vs stash), so those
+	// gate themselves and report back through pickupEquipment; every other stack is known
+	// here and gates before sound and ground removal. A failed collect is silent in Java -
+	// no sound, the heap stays, no turn is spent.
+	if (item.kind === 'armor') return pickupEquipment(context, item.kind, () => context.pickupArmor());
+	if (item.kind === 'weapon') return pickupEquipment(context, item.kind, () => context.pickupWeapon());
+	if (item.kind === 'wand') return pickupEquipment(context, item.kind, () => context.pickupWand());
+	if (item.kind === 'amulet') return pickupEquipment(context, item.kind, () => context.pickupAmulet());
+	if (item.kind === 'ring') return pickupEquipment(context, item.kind, () => context.pickupRing());
+	if (item.kind === 'crystalKey') return pickupEquipment(context, item.kind, () => context.pickupCrystalKey());
+	const groundId = item.kind === 'potion' ? 'potion'
+		: item.kind === 'scroll' ? Random.chance(0.25) ? 'scrollUpgrade' : 'scrollIdentify' : item.kind;
+	const incoming = incomingPickupStack(context, item, groundId);
+	if (incoming !== null && !context.bagFitsPickup(incoming)) return;
 	context.playSound(item.kind);
 	context.removeGround();
 	if (item.item?.id === 'sandBag') return context.addSand(item.item);
 	if (item.item) return pickupPayload(context, item.item);
 	if (item.kind === 'gold') return context.addLooseGold(Random.range(30 + context.depth * 10, 60 + context.depth * 20));
 	if (item.kind === 'stone' && ['warrior', 'rogue', 'duelist'].includes(context.heroClass)) return context.recoverStone(item);
-	if (item.kind === 'armor') return context.pickupArmor();
-	if (item.kind === 'weapon') return context.pickupWeapon();
-	if (item.kind === 'wand') return context.pickupWand();
-	if (item.kind === 'amulet') return context.pickupAmulet();
-	if (item.kind === 'ring') return context.pickupRing();
-	if (item.kind === 'crystalKey') return context.pickupCrystalKey();
-	const id = item.kind === 'potion' ? 'potion'
-		: item.kind === 'scroll' ? Random.chance(0.25) ? 'scrollUpgrade' : 'scrollIdentify' : item.kind;
 	//A scattered missile heap carries the set and level it was thrown at, and those have to
 	//survive the pickup or the identity this heap belongs to is lost (see `src/missiles.ts`).
 	//Java's heap *is* the stack; this port's heaps carry no class, so a heap picked up here
 	//joins its own set at its own level and keeps the pile's class when it is next wielded.
 	//A tipped heap additionally carries its seed, which makes the picked-up stack a real
 	//`TippedDart` rather than an unknown-tipped pile.
-	if (id === 'stone' && item.missileSet !== undefined) {
-		context.addItem({ id, quantity: 1, identified: false,
+	if (groundId === 'stone' && item.missileSet !== undefined) {
+		context.addItem({ id: groundId, quantity: 1, identified: false,
 			...(item.tippedSeed !== undefined ? { sourceClass: 'TippedDart', tippedSeed: item.tippedSeed } : {}),
 			...missileStackFields(item.missileSet, item.missileLevel ?? 0, item.tippedSeed) }, true);
-		context.say(context.messages.pickup(context.itemName(id, false)), 'positive');
+		context.say(context.messages.pickup(context.itemName(groundId, false)), 'positive');
 		return;
 	}
-	context.addItem({ id, quantity: 1, identified: false }, true);
-	context.say(context.messages.pickup(context.itemName(id, false)), 'positive');
+	context.addItem({ id: groundId, quantity: 1, identified: false }, true);
+	context.say(context.messages.pickup(context.itemName(groundId, false)), 'positive');
+}
+
+/** Equipment stacks resolve inside their callbacks (upgrade-in-place vs stash), so a
+ *  failed gate stays silent with the heap kept; success keeps the old sound + removal. */
+function pickupEquipment(context: GroundPickupContext, kind: GroundKind, pick: () => boolean): void {
+	if (!pick()) return;
+	context.playSound(kind);
+	context.removeGround();
+}
+
+/** The bag stack an id-known heap will add, or null when the heap touches no bag stack
+ *  (gold, energy, hourglass sand, an armed noisemaker, an ammo-counter stone recovery).
+ *  Shapes mirror the add sites below exactly (effective stackable flag included), so the
+ *  gate decides on what `addItem` will actually do. */
+function incomingPickupStack(context: GroundPickupContext, item: GroundItem, groundId: string): BagPickupStack | null {
+	if (item.item !== undefined) {
+		const payload = item.item;
+		if (payload.id === 'sandBag' || payload.id === 'gold' || payload.id === 'energyCrystal') return null;
+		if (payload.id === 'noisemaker' && payload.noisemakerArmed) return null;
+		if (payload.id === 'doubleBomb') return { id: 'bomb', quantity: 2, stackable: true };
+		if (payload.id === 'ironKey' || payload.id === 'goldenKey' || payload.id === 'crystalKey') {
+			return { id: payload.id, quantity: payload.quantity, instanceId: payload.instanceId };
+		}
+		return { id: payload.id, quantity: payload.quantity, stackable: true, instanceId: payload.instanceId };
+	}
+	if (item.kind === 'gold') return null;
+	if (item.kind === 'stone' && item.missileSet !== undefined) {
+		return {
+			id: 'stone', quantity: 1, stackable: true,
+			...(item.tippedSeed !== undefined ? { sourceClass: 'TippedDart' } : {}),
+			instanceId: missileStackFields(item.missileSet, item.missileLevel ?? 0, item.tippedSeed).instanceId,
+		};
+	}
+	if (item.kind === 'stone' && ['warrior', 'rogue', 'duelist'].includes(context.heroClass)) return null;
+	if (item.kind === 'armor' || item.kind === 'weapon' || item.kind === 'wand'
+		|| item.kind === 'amulet' || item.kind === 'ring' || item.kind === 'crystalKey') return null;
+	return { id: groundId, quantity: 1, stackable: true };
 }
 
 function pickupPayload(context: GroundPickupContext, item: ItemPayload): void {

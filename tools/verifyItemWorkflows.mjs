@@ -461,13 +461,70 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		removeGround: () => {}, playSound: () => {}, addItem: (item, stackable) => picked.add(stackable ? { ...item, stackable: true } : item),
 		identify: () => {}, say: () => {}, showStatus: () => {}, collectDewdrop: () => true,
 		collectPetal: () => 'levelup', addSand: () => {}, addEnergy: () => {}, addLooseGold: () => {},
-		recoverStone: () => {}, pickupArmor: () => {}, pickupWand: () => {}, pickupAmulet: () => {},
-		pickupRing: () => {}, pickupCrystalKey: () => {}, addSimpleGroundKind: () => {},
+		recoverStone: () => {}, bagFitsPickup: () => true, pickupArmor: () => true, pickupWeapon: () => true, pickupWand: () => true, pickupAmulet: () => true,
+		pickupRing: () => true, pickupCrystalKey: () => true, addSimpleGroundKind: () => {},
 		messages: { pickup: (name) => name, missileDust: 'dust' },
 	});
 	assert.equal(picked.items.length, 1);
 	assert.equal(picked.items[0].missileSet, 'm-9', 'the picked heap keeps the set it was thrown at');
 	assert.equal(picked.items[0].instanceId, 'm-9:3', 'and the identity its level belongs to');
+// `Item.collect()`'s routing and capacity over the flat bag (tag `v3.3.8`): owned
+// sub-bags take what their gate matches up to 19 stacks, the rest counts toward the
+// backpack's own 20 (sub-bag contents excluded), merges and bag items always fit, and
+// a refused pickup is silent with the heap kept - no sound, no ground removal, no line.
+{
+	const { bagFitsPickup: fits, bagCanHold, BACKPACK_CAPACITY, BAG_CAPACITY } = require('./items/bags.js');
+	assert.equal(BACKPACK_CAPACITY, 20, 'the backpack holds 20 stacks');
+	assert.equal(BAG_CAPACITY, 19, 'each shop bag holds 19');
+	const loose = (n) => Array.from({ length: n }, (_, i) => ({ id: `loose${i}`, quantity: 1, stackable: true }));
+	const potions = (n) => Array.from({ length: n }, (_, i) => ({ id: `potion${i}`, quantity: 1, stackable: true }));
+	assert.equal(fits(loose(20), [], { id: 'loose0', quantity: 1, stackable: true }), true, 'a mergeable stack adds no stack, even overfull');
+	assert.equal(fits(loose(19), [], { id: 'brandNew', quantity: 1, stackable: true }), true, '19 loose stacks still take one more');
+	assert.equal(fits(loose(20), [], { id: 'brandNew', quantity: 1, stackable: true }), false, '20 loose stacks refuse a new one');
+	assert.equal(fits(loose(20), [], { id: 'scrollHolder', quantity: 1 }), true, 'a bag item itself always fits');
+	assert.equal(bagCanHold('scrollHolder', { id: 'scrollHolder' }), false, '...but no sub-bag holds bags');
+	assert.equal(fits([...potions(18), ...loose(20)], ['potionBandolier'], { id: 'potion18', quantity: 1, stackable: true }), true, 'a bag with room takes its kind past a full backpack');
+	assert.equal(fits([...potions(19), ...loose(19)], ['potionBandolier'], { id: 'potion19', quantity: 1, stackable: true }), true, 'overflow past a full bag still lands while the backpack has room');
+	assert.equal(fits([...potions(19), ...loose(20)], ['potionBandolier'], { id: 'potion19', quantity: 1, stackable: true }), false, 'a full bag plus a full backpack refuses');
+	// End to end through the real pickup: refusal keeps the heap silently, merges land.
+	const fullBag = new Inventory();
+	for (let i = 0; i < 20; i++) fullBag.add({ id: `loose${i}`, quantity: 1, stackable: true });
+	let removed = 0;
+	const said = [];
+	const gateScene = {
+		item: { id: 'g2', kind: 'seed', x: 0, y: 0 }, depth: 1, heroClass: 'mage', gold: 0,
+		hasItem: () => false, removeItem: () => {}, setGold: () => {}, shopPrice: () => 0,
+		itemName: (id) => id, offerPurchase: () => {}, missilePickupValid: () => true,
+		removeGround: () => { removed++; }, playSound: () => {},
+		addItem: (item, stackable) => fullBag.add(stackable ? { ...item, stackable: true } : item),
+		bagFitsPickup: (incoming) => fits(fullBag.items, [], incoming),
+		identify: () => {}, say: (line) => { said.push(line); }, showStatus: () => {}, collectDewdrop: () => true,
+		collectPetal: () => 'levelup', addSand: () => {}, addEnergy: () => {}, addLooseGold: () => {},
+		recoverStone: () => {}, pickupArmor: () => true, pickupWeapon: () => true, pickupWand: () => true,
+		pickupAmulet: () => true, pickupRing: () => true, pickupCrystalKey: () => true, addSimpleGroundKind: () => {},
+		messages: { pickup: (name) => name, missileDust: 'dust' },
+	};
+	pickupGroundItem(gateScene);
+	assert.equal(removed, 0, 'refusal removes no ground');
+	assert.equal(said.length, 0, '...and stays silent');
+	assert.equal(fullBag.find('seed'), undefined, '...and adds nothing');
+	fullBag.add({ id: 'seed', quantity: 1, stackable: true });
+	pickupGroundItem(gateScene);
+	assert.equal(fullBag.find('seed')?.quantity, 2, 'a mergeable heap still lands when full');
+// The six equipment callbacks gate themselves scene-side (Pixi, not loadable here),
+// so their wiring is pinned at source level: five gated stash adds plus the always-true
+// victory, and the adapter that reports refusals back to the pickup.
+{
+	const sceneSource = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+	for (const gated of ['armor', 'wand', 'crystalKey']) {
+		assert.ok(sceneSource.includes(`this.bagFitsPickup({ id: '${gated}'`), `the ${gated} stash gates itself`);
+	}
+	assert.ok(sceneSource.includes('this.bagFitsPickup({ id, quantity: 1, instanceId: weaponInstance })'), 'the weapon stash gates itself');
+	assert.ok(sceneSource.includes('this.bagFitsPickup({ id: ringId, quantity: 1, instanceId: ringInstance })'), 'the ring stash gates itself');
+	assert.ok(sceneSource.includes('bagFitsPickup: (incoming) => this.bagFitsPickup(incoming)'), 'the pickup context exposes the gate');
+}
+	assert.equal(removed, 1, '...with sound and removal as usual');
+}
 	// `Potion.SeedToPotion`: generic seed payloads retain their concrete source class in the
 	// stack key, and one distinct source maps deterministically to its regular potion.
 	const seedBag = new Inventory();
@@ -711,9 +768,9 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 			itemName: () => 'Dewdrop', missilePickupValid: () => true, removeGround: () => { removed++; },
 			playSound: () => {}, addItem: () => {}, identify: () => {}, say: () => {}, showStatus: () => {},
 			forceDewdropPickup: () => force,
-			collectDewdrop: () => { collected++; return force; }, addSand: () => {},
+			collectDewdrop: () => { collected++; return force; }, addSand: () => {}, bagFitsPickup: () => true,
 			addEnergy: () => {}, addLooseGold: () => {}, recoverStone: () => {}, pickupArmor: () => {},
-			pickupWand: () => {}, pickupAmulet: () => {}, pickupRing: () => {}, pickupCrystalKey: () => {},
+			pickupArmor: () => true, pickupWeapon: () => true, pickupWand: () => true, pickupAmulet: () => true, pickupRing: () => true, pickupCrystalKey: () => true,
 			addSimpleGroundKind: () => {}, messages: {
 				crystalChestLocked: '', unlockCrystalChest: '', lockedChestNeedsGoldenKey: '', unlockChest: '',
 				cannotAfford: () => '', buy: () => '', missileDust: '', noHourglassSand: '', snuffFuse: '',

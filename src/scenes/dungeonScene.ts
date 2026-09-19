@@ -26,7 +26,7 @@ import { buyFromShop, buybackFromShop, sellFood, shopPrice as itemShopPrice, sho
 import { generatedInventoryItem as createGeneratedInventoryItem } from '../items/generatedItems';
 import { placeGroundItems as placeGeneratedGroundItems } from '../items/groundPlacement';
 import { planShopStock } from '../items/shopStock';
-import { bagTab, chooseShopBag, isBagId, ownsBag, HOLSTER_RECHARGE_BASE, NORMAL_RECHARGE_BASE, HOLSTER_DURABILITY_FACTOR, BAG_BADGE, ALL_BAGS_BADGE, BAG_IDS, type BagId } from '../items/bags';
+import { bagFitsPickup, bagTab, chooseShopBag, isBagId, ownsBag, HOLSTER_RECHARGE_BASE, NORMAL_RECHARGE_BASE, HOLSTER_DURABILITY_FACTOR, BAG_BADGE, ALL_BAGS_BADGE, BAG_IDS, type BagId, type BagPickupStack } from '../items/bags';
 import { isResurrectKeepCandidate, partitionResurrectKeeps } from '../items/resurrect';
 import { pickupGroundItem as pickupGroundItemWorkflow } from '../items/groundPickup';
 import { reforgeDiscardedMissileSet, blacksmithHardenCost as itemBlacksmithHardenCost, blacksmithReforgeCost as itemBlacksmithReforgeCost, blacksmithReforgePairValid, blacksmithUpgradeCost as itemBlacksmithUpgradeCost, blacksmithTurnInFavor, BLACKSMITH_FREE_PICKAXE_FAVOR, rollCarriedAffixLoss, selectBlacksmithHardenItems, selectBlacksmithReforgeItems, selectBlacksmithUpgradeItems, type BlacksmithItem } from '../items/blacksmith';
@@ -5131,6 +5131,7 @@ export class DungeonScene extends Scene2D {
 				this.bag.add(stackable ? { ...payload, stackable: true } : payload);
 				this.noteBagAcquired(payload.id);
 			},
+			bagFitsPickup: (incoming) => this.bagFitsPickup(incoming),
 			identify: (payload) => Actors.identify(payload),
 			say: (message, level) => this.say(message, level),
 			showStatus: (message) => { if (language().code === 'en') this.showStatus(this.hero, message, SPD_STATUS_COLOR.neutral); },
@@ -5163,8 +5164,13 @@ export class DungeonScene extends Scene2D {
 				this.say(t('port.log.recoverstone'), 'positive');
 			},
 			pickupArmor: () => {
-				if (this.armorLevel < 3) { this.armorLevel++; this.syncHeroFromStats(); this.say(t('port.log.weararmor', { level: this.armorLevel }), 'positive'); }
-				else { this.bag.add({ id: 'armor', quantity: 1, instanceId: this.newItemInstanceId('armor'), identified: true }); this.say(t('port.log.stasharmor')); }
+				if (this.armorLevel < 3) { this.armorLevel++; this.syncHeroFromStats(); this.say(t('port.log.weararmor', { level: this.armorLevel }), 'positive'); return true; }
+				//Instance gear is never mergeable, so the stash is always a new stack -
+				//`Item.collect()` fails it once the flat bag is full (silent, heap kept).
+				const armorInstance = this.newItemInstanceId('armor');
+				if (!this.bagFitsPickup({ id: 'armor', quantity: 1, instanceId: armorInstance })) return false;
+				this.bag.add({ id: 'armor', quantity: 1, instanceId: armorInstance, identified: true }); this.say(t('port.log.stasharmor'));
+				return true;
 			},
 			//`Slime`/`Skeleton`/`DM200`/`Golem`.rollToDropLoot()'s WEAPON-category drop, this
 			//port's own "+1 level" simplification mirroring `pickupArmor` exactly (no concrete
@@ -5176,6 +5182,7 @@ export class DungeonScene extends Scene2D {
 					this.weaponLevel++;
 					this.syncHeroFromStats();
 					this.say(t('port.log.weaponupgraded', { level: this.weaponLevel, min: this.hero.damage[0], max: this.hero.damage[1] }), 'positive');
+					return true;
 				} else {
 					//Bugfix, live-verified: `this.weaponId` is the literal id `'startingWeapon'`
 					//until the hero equips a real class (same shape `openBlacksmithUpgrade`'s
@@ -5193,24 +5200,39 @@ export class DungeonScene extends Scene2D {
 					//broken literal id, the same fallback every other unmapped sourceClass gets.
 					const sourceClass = this.weaponId === 'startingWeapon' ? STARTING_WEAPON_CLASS[this.heroClass] : undefined;
 					const id = this.weaponId === 'startingWeapon' ? 'weaponReward' : this.weaponId;
-					this.bag.add({ id, quantity: 1, instanceId: this.newItemInstanceId('weapon'), identified: true, level: this.weaponLevel, ...(sourceClass ? { sourceClass } : {}) });
+					const weaponInstance = this.newItemInstanceId('weapon');
+					if (!this.bagFitsPickup({ id, quantity: 1, instanceId: weaponInstance })) return false;
+					this.bag.add({ id, quantity: 1, instanceId: weaponInstance, identified: true, level: this.weaponLevel, ...(sourceClass ? { sourceClass } : {}) });
 					this.say(t('port.log.stashweapon'));
+					return true;
 				}
 			},
-			pickupWand: () => { this.wandCharges = new Actors.Charges({ max: 4, current: 4, regenRate: 1 }); this.bag.add({ id: 'wand', quantity: 1, stackable: true, identified: true }); this.say(t('port.log.wandabsorbed'), 'positive'); },
+			pickupWand: () => {
+				if (!this.bagFitsPickup({ id: 'wand', quantity: 1, stackable: true })) return false;
+				this.wandCharges = new Actors.Charges({ max: 4, current: 4, regenRate: 1 }); this.bag.add({ id: 'wand', quantity: 1, stackable: true, identified: true }); this.say(t('port.log.wandabsorbed'), 'positive');
+				return true;
+			},
 			pickupAmulet: () => {
 				this.gameState.setSwitch('amuletObtained', true); runState.audio.winMusic();
 				if (this.demonSpawnerFloor) this.demonSpawnerFloor.setLayerData('demonSpawnerFloor', this.demonSpawnerFloorFrames(false));
 				if (this.vaultVisuals) { const layers = this.vaultTileLayers(); this.vaultVisuals.setLayerData('vaultFloor', layers.floor); this.vaultVisuals.setLayerData('vaultCenter', layers.center); this.vaultVisuals.setLayerData('vaultCenterWalls', layers.walls); }
 				this.awardBadge('amulet'); this.say(t('port.log.victory'), 'positive'); this.awaitingInput = false; this.gameOver = true;
-				recordRun({ result: 'won', depth: this.depth, level: this.progression.level, gold: this.heroStats.base('gold') }); this.showVictoryPanel();
+			recordRun({ result: 'won', depth: this.depth, level: this.progression.level, gold: this.heroStats.base('gold') }); this.showVictoryPanel();
+				return true;
 			},
 			pickupRing: () => {
 				const ringId = 'ring_' + Random.element(Object.keys(RING_DEFS))!;
-				this.bag.add({ id: ringId, quantity: 1, instanceId: this.newItemInstanceId('ring'), identified: false, level: Random.chance(0.5) ? 1 : 0 });
+				const ringInstance = this.newItemInstanceId('ring');
+				if (!this.bagFitsPickup({ id: ringId, quantity: 1, instanceId: ringInstance })) return false;
+				this.bag.add({ id: ringId, quantity: 1, instanceId: ringInstance, identified: false, level: Random.chance(0.5) ? 1 : 0 });
 				this.say(t('port.log.pickupring', { item: this.itemDisplayName(ringId, false) }), 'positive');
+				return true;
 			},
-			pickupCrystalKey: () => { this.bag.add({ id: 'crystalKey', quantity: 1, stackable: true, identified: true }); this.say(t('port.log.pickup', { item: t('items.keys.crystalkey.name') }), 'positive'); },
+			pickupCrystalKey: () => {
+				if (!this.bagFitsPickup({ id: 'crystalKey', quantity: 1, stackable: true })) return false;
+				this.bag.add({ id: 'crystalKey', quantity: 1, stackable: true, identified: true }); this.say(t('port.log.pickup', { item: t('items.keys.crystalkey.name') }), 'positive');
+				return true;
+			},
 			addSimpleGroundKind: (kind) => {
 				const id = kind === 'potion' ? 'potion' : kind === 'scroll' ? (Random.chance(0.25) ? 'scrollUpgrade' : 'scrollIdentify') : kind;
 				this.bag.add({ id, quantity: 1, stackable: true, identified: false }); this.say(t('port.log.pickup', { item: this.itemDisplayName(id, false) }), 'positive');
@@ -5221,6 +5243,14 @@ export class DungeonScene extends Scene2D {
 			},
 		});
 		if (!hadDust && this.bag.find('corpseDust')) this.say(t('items.quest.corpsedust.chill'), 'negative');
+	}
+
+	/** `Item.collect()`'s capacity gate over the flat bag: owned sub-bags take what their
+	 *  `canHold` gate matches up to 19 stacks each, the rest counts toward the backpack's
+	 *  own 20 (sub-bag contents excluded, owned bags included), and a mergeable stack or
+	 *  a bag item itself always fits. See `bagFitsPickup` for the full routing. */
+	private bagFitsPickup(incoming: BagPickupStack): boolean {
+		return bagFitsPickup(this.bag.items, BAG_IDS.filter((bag) => ownsBag(this.bag.items, bag)), incoming);
 	}
 
 	private eatFood(): boolean {

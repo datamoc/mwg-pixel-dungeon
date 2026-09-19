@@ -55,9 +55,8 @@ const BAG_BASE_WEIGHT: Readonly<Record<BagId, number>> = {
 	magicalHolster: 0,
 };
 
-/** `Bag.capacity()` 20 is the backpack's own size and has no port expression (the flat bag
- * has no capacity at all); the four shop bags hold 19 each. Kept for the scoring comment
- * below and for the day a container model needs it. */
+/** `Bag.capacity()`: 20 for the backpack itself, 19 for each of the four shop bags. */
+export const BACKPACK_CAPACITY = 20;
 export const BAG_CAPACITY = 19;
 
 export function isBagId(id: string): id is BagId {
@@ -110,6 +109,12 @@ export const ALL_BAGS_BADGE = 'bags_all';
  *   not a `Bomb`.
  */
 export function bagCanHold(bag: BagId, item: CarriedItem): boolean {
+	//A bag item itself is holdable by no sub-bag: Java's subclass gates (`instanceof
+	//Scroll/Potion/...`) reject bags before the base `instanceof Bag` bypass, which
+	//applies to the backpack only. (The port's `scrollHolder` id would otherwise match
+	//the holder's own `startsWith('scroll')` gate.) Bags always fit the flat bag itself;
+	//see `bagFitsPickup`.
+	if (isBagId(item.id)) return false;
 	switch (bag) {
 		case 'velvetPouch':
 			return item.id === 'seed' || item.id === 'gooBlob' || item.id === 'metalShard'
@@ -124,6 +129,49 @@ export function bagCanHold(bag: BagId, item: CarriedItem): boolean {
 				|| isMissileStack(item) || item.id === 'bomb' || item.id === 'doubleBomb'
 				|| SPECIALTY_BOMB_IDS.has(item.id);
 	}
+}
+
+/**
+ * `Item.collect()`'s routing and capacity over the flat bag (tag `v3.3.8`): a collected
+ * stack first tries every owned sub-bag whose `canHold` gate matches (recursively in
+ * Java; one level here, since sub-bags hold no bags), then the backpack itself, and the
+ * pickup fails when nothing takes it. Counts are stacks, not units (`items.size()`),
+ * and a mergeable stack never needs room (`isSimilar` inside a fitting container).
+ *
+ * The flat bag keeps no per-bag contents arrays, so "held by a bag" is derived: a stack
+ * counts toward each owned bag whose gate matches it. Kind gates are disjoint, so a
+ * stack counts at most once - except the backpack tally, which skips everything any
+ * owned bag holds (Java counts `backpack.items` directly, and sub-bag contents live on
+ * the sub-bag, not in the 20). `LostInventory` has no model here, so its `canHold`
+ * gate is vacuous. Bag order is the fixed `BAG_IDS` order: Java walks the backpack's
+ * own bag order, which the flat bag does not have.
+ */
+export interface BagPickupStack extends CarriedItem {
+	readonly quantity: number;
+	readonly stackable?: boolean;
+	readonly instanceId?: string;
+}
+
+export function bagFitsPickup(
+	items: readonly BagPickupStack[],
+	owned: readonly BagId[],
+	incoming: BagPickupStack,
+): boolean {
+	const live = items.filter((item) => item.quantity > 0);
+	//`Bag.canHold`: a bag item itself always fits, like Java's `instanceof Bag`.
+	if (isBagId(incoming.id)) return true;
+	//A mergeable pickup adds no stack. Similarity is the merge `Inventory.add` will
+	//do (same id, both stackable, same instance) - instance gear therefore always
+	//counts as a new stack, the way Java's non-stackable equipment does.
+	if (incoming.stackable === true && live.some((stack) => stack.id === incoming.id
+		&& stack.stackable === true && (stack.instanceId ?? null) === (incoming.instanceId ?? null))) return true;
+	for (const bag of BAG_IDS) {
+		if (!owned.includes(bag) || !bagCanHold(bag, incoming)) continue;
+		if (live.filter((stack) => bagCanHold(bag, stack)).length < BAG_CAPACITY) return true;
+	}
+	const loose = live.filter((stack) => !isBagId(stack.id)
+		&& !BAG_IDS.some((bag) => owned.includes(bag) && bagCanHold(bag, stack)));
+	return loose.length < BACKPACK_CAPACITY;
 }
 
 /**
