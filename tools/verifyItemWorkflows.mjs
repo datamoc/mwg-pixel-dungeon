@@ -1688,7 +1688,9 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	// The stats line names Java's real info keys; the wording itself is the catalogue's
 	// job (`npm run i18n:verify`), so this pins the key set the stats line uses, not
 	// the sentences.
-	for (const key of ['items.weapon.melee.meleeweapon.stats_known', 'items.armor.armor.curr_absorb', 'items.weapon.missiles.missileweapon.stats', 'items.weapon.weapon.too_heavy', 'items.weapon.weapon.excess_str', 'items.armor.armor.too_heavy']) {
+	//Missile stats use the real v3.3.8 split key (`stats_known`, alongside `stats_unknown`),
+	//not the old unified `stats` - `MissileWeapon.info()` names both explicitly.
+	for (const key of ['items.weapon.melee.meleeweapon.stats_known', 'items.armor.armor.curr_absorb', 'items.weapon.missiles.missileweapon.stats_known', 'items.weapon.weapon.too_heavy', 'items.weapon.weapon.excess_str', 'items.armor.armor.too_heavy']) {
 		assert.ok(readFileSync(join(root, 'src/items/displayName.ts'), 'utf8').includes(`'${key}'`), `stats line uses ${key}`);
 		assert.ok(readFileSync(join(root, 'src/generated/spdMessages.ts'), 'utf8').includes(`"${key}"`), `${key} exists in the catalogue`);
 	}
