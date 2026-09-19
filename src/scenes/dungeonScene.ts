@@ -34,7 +34,7 @@ import { abilityFlatBoost, accrueWeaponCharge, counterAbilityRefund, gainWeaponC
 import { useStoneOfFlock as useItemStoneOfFlock, useStoneOfAggression as useItemStoneOfAggression, useStoneOfAugmentation as useItemStoneOfAugmentation, useStoneOfFear as useItemStoneOfFear, useStoneOfDeepSleep as useItemStoneOfDeepSleep, useStoneOfBlink as useItemStoneOfBlink, useStoneOfClairvoyance as useItemStoneOfClairvoyance, useStoneOfShock as useItemStoneOfShock, useStoneOfBlast as useItemStoneOfBlast, useStoneOfEnchantment as useItemStoneOfEnchantment, useStoneOfDetectMagic as useItemStoneOfDetectMagic, useStoneOfIntuition as useItemStoneOfIntuition, type StoneContext, type StonePickerEntry } from '../items/stones';
 import { runSearch } from '../adapters/searchSimulation';
 import { runMovement } from '../adapters/movementSimulation';
-import { ALCHEMY_RECIPES, alchemicalCatalystCost, alchemyEnergyFor, arcaneCatalystCost, canCraftPotionSeed, canCraftPotionToExotic, canCraftScrollToExotic, canCraftScrollToStone, craftAlchemy, craftAlchemize, craftAlchemicalCatalyst, craftArcaneCatalyst, craftPotionSeed, craftPotionToExotic, craftScrollToExotic, craftScrollToStone, isSeedOrRunestone, openAlchemyRecipes, potionExoticResult, randomAlchemicalPotion, randomArcaneScroll, scrollExoticResult, SCROLL_TO_STONE, seedPotionId, type AlchemyFlowContext } from '../items/alchemy';
+import { ALCHEMY_RECIPES, alchemicalCatalystCost, arcaneCatalystCost, canCraftPotionSeed, canCraftPotionToExotic, canCraftScrollToExotic, canCraftScrollToStone, craftAlchemy, craftAlchemize, craftAlchemicalCatalyst, craftArcaneCatalyst, craftPotionSeed, craftPotionToExotic, craftScrollToExotic, craftScrollToStone, isSeedOrRunestone, openAlchemyRecipes, potionExoticResult, randomAlchemicalPotion, randomArcaneScroll, scrollExoticResult, SCROLL_TO_STONE, seedPotionId, type AlchemyFlowContext } from '../items/alchemy';
 import type { AlchemyPairSelection, AlchemyRecipe, AlchemyUnitRef } from '../items/alchemy';
 import { runAttackResolution } from '../adapters/attackSimulation';
 import { simulationRandom } from '../adapters/mwgRandom';
@@ -236,7 +236,7 @@ import { applyTalismanPerTurnCharge, useTalismanFlow, checkTalismanAwarenessFlow
 import { roseGhostMaxHp, applyRoseRecharge, useRoseFlow, type RoseFlowContext, type RoseItem } from '../items/rose';
 import { rosePetalsNeeded, rosePetalDropCap, rosePetalPickup, roseChargeCap, roseLevelCap } from '../items/rose';
 import { beaconChargeCap, useBeaconFlow, useReturningBeaconFlow, type BeaconFlowContext, type BeaconItem } from '../items/beacon';
-import { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow, useCurseInfusionFlow, useMagicalInfusionFlow, useFeatherFallFlow, useWildEnergyFlow, type TargetedSpellAim, type TelekineticGrabContext, type PhaseShiftContext, type ReclaimTrapContext, type RecycleContext, type InfusionBase, type CurseInfusionContext, type CastBase, type FeatherFallContext, type WildEnergyContext } from '../items/spells';
+import { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow, useCurseInfusionFlow, useMagicalInfusionFlow, useFeatherFallFlow, useWildEnergyFlow, useStylusFlow, useAlchemizeFlow, type TargetedSpellAim, type TelekineticGrabContext, type PhaseShiftContext, type ReclaimTrapContext, type RecycleContext, type InfusionBase, type CurseInfusionContext, type CastBase, type FeatherFallContext, type WildEnergyContext, type StylusContext, type AlchemizeContext } from '../items/spells';
 import { planWealthDrops, wealthEquipBonus, initialiseWealthTrackers, wealthDeathRolls, type WealthDropPlan, type WealthTrackers } from '../items/wealthDrops';
 import { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal, artifactRechargeDuration, wildEnergyRechargeTurns, type RechargeGuards } from '../items/artifactRecharge';
 import { equipRing as equipInventoryRing, equipArmor as equipInventoryArmor, equipWeapon as equipInventoryWeapon, type GearEquipmentContext, type RingEquipmentContext } from '../items/equipment';
@@ -17433,63 +17433,57 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * The inscription animation and two-turn busy state have no equivalent UI/timing seam here.
 	 */
 	private useStylus(instanceId?: string): void {
-		type Armor = { id: string; instanceId?: string; quantity: number; identified?: boolean; cursed?: boolean; affix?: string };
-		const candidates = (this.bag.items as Armor[]).filter((item) =>
-			item.quantity > 0 && (item.id === 'armor' || item.id === 'armorReward' || item.id === 'clothArmor' || isClassArmorId(item.id)));
-		if (candidates.length === 0) {
-			this.say(t('items.stylus.identify'), 'negative');
-			return;
-		}
-		this.openItemPicker(t('items.stylus.prompt'), candidates, (pick) => {
-			const armor = (this.bag.items as Armor[]).find((item) => item.quantity > 0
-				&& item.id === pick.id && (item.instanceId ?? undefined) === (pick.instanceId ?? undefined));
-			if (!armor) return;
-			if (!armor.identified) {
-				this.say(t('items.stylus.identify'), 'negative');
-				return;
-			}
-			if (armor.cursed || getCurse(armor.affix ?? '')) {
-				this.say(t('items.stylus.cursed'), 'negative');
-				return;
-			}
-			const glyph = rollGeneratedAffix(GLYPH_TABLE, false, true);
-			if (!glyph) return;
-			this.bag.remove('stylus', 1, instanceId);
-			armor.affix = glyph;
-			this.say(t('items.stylus.inscribed'), 'positive');
-		});
+		useStylusFlow(this.stylusContext(), instanceId);
 	}
 
-	/** `Alchemize`'s in-game cast: `WndAlchemizeItem`/`WndEnergizeItem` scrap one carried
-	 * consumable into its `energyVal()` of alchemical energy and identify the scrapped item.
-	 * Java spends no time for this (`energize()` calls `hero.spend(-hero.cooldown())`), and this
-	 * port reaches the effect without going through `onAction`, so it likewise spends no turn -
-	 * the same shape `useStylus` uses. Java's window also offers a sell branch and an
-	 * "energize all" button; this direct picker grants one unit's energy. Java refuses to scrap
-	 * another Alchemize, and anything whose `energyVal()` is zero. */
+	/**
+	 * The ArcaneStylus inscribe flow lives in `items/spells.ts` behind `StylusContext` -
+	 * the file-size refactor's twenty-third extraction (with Alchemize below),
+	 * behavior-identical.
+	 */
+	private stylusContext(): StylusContext {
+		const scene = this;
+		type Armor = { id: string; instanceId?: string; quantity: number; identified?: boolean; cursed?: boolean; affix?: string };
+		const carried = () => scene.bag.items as Armor[];
+		return {
+			hasStylus: (instanceId) => scene.bag.find('stylus', instanceId) !== undefined,
+			consumeStylus: (instanceId) => { scene.bag.remove('stylus', 1, instanceId); },
+			openPicker: (title, entries, onPick) => scene.openItemPicker(title, entries, onPick),
+			armors: () => [...carried()],
+			findArmor: (id, instanceId) => carried().find((item) => item.quantity > 0
+				&& item.id === id && (item.instanceId ?? undefined) === (instanceId ?? undefined)) ?? null,
+			rollGlyph: () => rollGeneratedAffix(GLYPH_TABLE, false, true) ?? null,
+			say: scene.say.bind(scene),
+			t,
+		};
+	}
+
 	private useAlchemize(instanceId?: string): void {
-		const candidates = this.bag.items.filter((item) => item.quantity > 0
-			&& item.id !== 'alchemize'
-			&& alchemyEnergyFor(item.id, item.identified ?? false) > 0);
-		if (candidates.length === 0) {
-			this.say(t('port.log.alchemize.nothing'), 'negative');
-			return;
-		}
-		this.openItemPicker(t('items.spells.alchemize.prompt'), candidates, (pick) => {
-			const target = this.bag.items.find((item) => item.quantity > 0
-				&& item.id === pick.id && (item.instanceId ?? undefined) === (pick.instanceId ?? undefined));
-			if (!target) return;
-			const energy = alchemyEnergyFor(target.id, target.identified ?? false);
-			if (energy <= 0) return;
-			const name = this.itemDisplayName(target.id, target.identified ?? false, target.instanceId);
-			this.bag.remove(target.id, 1, target.instanceId);
-			this.bag.remove('alchemize', 1, instanceId);
-			this.alchemyEnergy += energy;
-			//`energize()` identifies the item as it is consumed, even though it is gone.
-			target.identified = true;
-			this.say(t('port.log.alchemize.energized', { item: name }), 'positive');
-			this.refreshInventoryPanel();
-		});
+		useAlchemizeFlow(this.alchemizeContext(), instanceId);
+	}
+
+	/**
+	 * The Alchemize energize flow lives in `items/spells.ts` behind `AlchemizeContext` -
+	 * the file-size refactor's twenty-third extraction (with Stylus above),
+	 * behavior-identical.
+	 */
+	private alchemizeContext(): AlchemizeContext {
+		const scene = this;
+		return {
+			hasSpell: (id, instanceId) => scene.bag.find(id, instanceId) !== undefined,
+			consumeSpell: (id, instanceId) => { scene.bag.remove(id, 1, instanceId); },
+			openPicker: (title, entries, onPick) => scene.openItemPicker(title, entries, onPick),
+			energizables: () => [...scene.bag.items],
+			findEnergizable: (id, instanceId) => scene.bag.items.find((item) => item.quantity > 0
+				&& item.id === id && (item.instanceId ?? undefined) === (instanceId ?? undefined)) ?? null,
+			bankEnergy: (amount) => { scene.alchemyEnergy += amount; },
+			consumeTarget: (id, instanceId) => { scene.bag.remove(id, 1, instanceId); },
+			markIdentified: (target) => { target.identified = true; },
+			targetName: (target) => scene.itemDisplayName(target.id, target.identified ?? false, target.instanceId),
+			refreshPanels: () => { scene.refreshInventoryPanel(); },
+			say: scene.say.bind(scene),
+			t,
+		};
 	}
 
 	/** `StoneOfFlock.activate(cell)`: Java fills every reachable non-solid cell within distance

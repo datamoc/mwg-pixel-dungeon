@@ -2311,7 +2311,7 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 }
 // The moved targeted spells (`items/spells.ts`, the file-size refactor's seventeenth
 // extraction): driven headlessly with a stub floor and scripted aim.
-const { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow, useCurseInfusionFlow, useMagicalInfusionFlow, useFeatherFallFlow, useWildEnergyFlow } = require('./items/spells.js');
+const { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow, useCurseInfusionFlow, useMagicalInfusionFlow, useFeatherFallFlow, useWildEnergyFlow, useStylusFlow, useAlchemizeFlow } = require('./items/spells.js');
 const { BUFF_DURATION } = require('./simulation/buffs.js');
 const { wildEnergyRechargeTurns } = require('./items/artifactRecharge.js');
 function spellDrive(overrides = {}) {
@@ -2694,6 +2694,110 @@ function potDrive(overrides = {}) {
 	const preset = potDrive({ pending: { x: 5, y: 5 } });
 	assert.equal(preset.flags.aim, null, 'a pending aim shatters at once');
 	assert.deepEqual(preset.flags.bees, [{ at: { x: 5, y: 5 }, holderId: null }], 'breaking where aimed');
+}
+// The moved stylus/alchemize pickers (the file-size refactor's twenty-third extraction):
+// driven headlessly with live-object bags, the real armor predicate and energy table.
+const { getCurse } = require('./items/itemCurses.js');
+const { alchemyEnergyFor } = require('./items/alchemy.js');
+function stylusDrive(overrides = {}, pickIndex = 0) {
+	const log = [];
+	const flags = { picker: null, consumed: 0 };
+	const armors = overrides.armors ?? [
+		{ id: 'armor', quantity: 1, instanceId: 'a1', identified: true },
+		{ id: 'warriorarmor', quantity: 1, instanceId: 'a2', identified: true },
+		{ id: 'sword', quantity: 1, instanceId: 'w1', identified: true },
+	];
+	const ctx = {
+		hasStylus: () => overrides.hasStylus ?? true,
+		consumeStylus: () => { flags.consumed++; },
+		openPicker: (title, entries, onPick) => {
+			flags.picker = { title, entries };
+			if (entries.length > 0) onPick(entries[pickIndex] ?? entries[0]);
+		},
+		armors: () => armors,
+		findArmor: (id, instanceId) => armors.find((item) => item.quantity > 0
+			&& item.id === id && (item.instanceId ?? undefined) === (instanceId ?? undefined)) ?? null,
+		rollGlyph: overrides.rollGlyph ?? (() => 'glyphA'),
+		say: (line, level) => { log.push(`say:${level}:${line}`); },
+		t: (key, params) => key + (params ? JSON.stringify(params) : ''),
+		...overrides.ctx,
+	};
+	useStylusFlow(ctx);
+	return { ctx, log, flags, armors };
+}
+{
+	const missing = stylusDrive({ hasStylus: false });
+	assert.equal(missing.flags.picker, null, 'no stylus, no picker');
+	const d = stylusDrive();
+	assert.deepEqual(d.flags.picker.entries.map((e) => e.id), ['armor', 'warriorarmor'], 'tiered and class armors offered, swords not');
+	assert.equal(d.armors[0].affix, 'glyphA', 'the pick is inscribed');
+	assert.equal(d.flags.consumed, 1, 'consuming the stylus');
+	assert.ok(d.log.some((l) => l.includes('inscribed')), 'with the inscribed line');
+	const bare = stylusDrive({ armors: [{ id: 'sword', quantity: 1, instanceId: 'w1' }] });
+	assert.equal(bare.flags.picker, null, 'no armor means no picker');
+	assert.ok(bare.log.some((l) => l.includes('stylus.identify') && l.startsWith('say:negative')), 'just the identify line');
+	const blind = stylusDrive({ armors: [{ id: 'armor', quantity: 1, instanceId: 'a1', identified: false }] });
+	assert.ok(blind.log.some((l) => l.includes('stylus.identify')), 'unidentified picks refuse');
+	assert.equal(blind.flags.consumed, 0, 'keeping the stylus');
+	const cursed = stylusDrive({ armors: [{ id: 'armor', quantity: 1, instanceId: 'a1', identified: true, cursed: true }] });
+	assert.ok(cursed.log.some((l) => l.includes('stylus.cursed')), 'cursed picks refuse');
+	const glyphed = stylusDrive({ armors: [{ id: 'armor', quantity: 1, instanceId: 'a1', identified: true, affix: getWeaponCurses()[0].id }] });
+	assert.ok(getCurse(glyphed.armors[0].affix ?? ''), 'the fixture really is curse-affixed');
+	assert.ok(glyphed.log.some((l) => l.includes('stylus.cursed')), 'glyphed picks refuse too');
+	const dry = stylusDrive({ rollGlyph: () => null });
+	assert.equal(dry.flags.consumed, 0, 'a missed roll keeps the stylus');
+	assert.equal(dry.armors[0].affix, undefined, 'and writes nothing');
+}
+function alchemizeDrive(overrides = {}, pickIndex = 0) {
+	const log = [];
+	const flags = { picker: null, banked: 0, removed: [], refreshed: 0 };
+	const items = overrides.items ?? [
+		{ id: 'shockingBrew', quantity: 1, instanceId: 'b1', identified: true },
+		{ id: 'sword', quantity: 1, instanceId: 'w1', identified: true },
+	];
+	const ctx = {
+		hasSpell: () => overrides.hasSpell ?? true,
+		consumeSpell: (id) => { flags.removed.push(id); },
+		openPicker: (title, entries, onPick) => {
+			flags.picker = { title, entries };
+			if (entries.length > 0) onPick(entries[pickIndex] ?? entries[0]);
+		},
+		energizables: () => items,
+		findEnergizable: (id, instanceId) => items.find((item) => item.quantity > 0
+			&& item.id === id && (item.instanceId ?? undefined) === (instanceId ?? undefined)) ?? null,
+		bankEnergy: (amount) => { flags.banked += amount; },
+		consumeTarget: (id, instanceId) => { flags.removed.push(`${id}#${instanceId ?? ''}`); },
+		markIdentified: (target) => { target.identified = true; },
+		targetName: (target) => `name:${target.id}`,
+		refreshPanels: () => { flags.refreshed++; },
+		say: (line, level) => { log.push(`say:${level}:${line}`); },
+		t: (key, params) => key + (params ? JSON.stringify(params) : ''),
+		...overrides.ctx,
+	};
+	useAlchemizeFlow(ctx);
+	return { ctx, log, flags, items };
+}
+{
+	const missing = alchemizeDrive({ hasSpell: false });
+	assert.equal(missing.flags.picker, null, 'no spell, no picker');
+	const d = alchemizeDrive();
+	const expected = d.items.filter((item) => item.quantity > 0 && item.id !== 'alchemize'
+		&& alchemyEnergyFor(item.id, item.identified ?? false) > 0).map((e) => e.id);
+	assert.deepEqual(d.flags.picker.entries.map((e) => e.id), expected, 'the picker runs the real energy table');
+	assert.ok(expected.includes('shockingBrew'), 'a brew is energizable');
+	assert.equal(d.flags.banked, alchemyEnergyFor('shockingBrew', true), 'banking the table value');
+	assert.equal(d.flags.banked, 12, 'twelve, per the suite pin');
+	assert.ok(d.flags.removed.includes('shockingBrew#b1'), 'the brewed unit detached');
+	assert.ok(d.flags.removed.includes('alchemize'), 'and the spell consumed');
+	assert.equal(d.items[0].identified, true, 'the scrapped unit identified');
+	assert.ok(d.log.some((l) => l.includes('energized') && l.includes('name:shockingBrew')), 'named in the energized line');
+	assert.equal(d.flags.refreshed, 1, 'panels refresh');
+	const bare = alchemizeDrive({ items: [{ id: 'alchemize', quantity: 1, instanceId: 's1' }] });
+	assert.equal(bare.flags.picker, null, 'scrapping only itself offers nothing');
+	assert.ok(bare.log.some((l) => l.includes('alchemize.nothing')), 'just the nothing line');
+	const stale = alchemizeDrive({ ctx: { findEnergizable: () => null } });
+	assert.equal(stale.flags.banked, 0, 'a vanished pick banks nothing');
+	assert.equal(stale.flags.refreshed, 0, 'and refreshes nothing');
 }
 }
 }

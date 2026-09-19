@@ -12,9 +12,11 @@ import type { AnyMonsterId } from '../monsters';
 import type { TrapKind } from '../dungeonConstants';
 import { BUFF_DURATION } from '../simulation/buffs';
 import { usableForCurseInfusion, usableForMagicalInfusion } from './itemKinds';
-import { getArmorCurses, getWeaponCurses } from './itemCurses';
+import { getArmorCurses, getCurse, getWeaponCurses } from './itemCurses';
 import { upgradeItem } from './itemWorkflows';
 import { wildEnergyRechargeTurns } from './artifactRecharge';
+import { isClassArmorId } from './catalog';
+import { alchemyEnergyFor } from './alchemy';
 
 /** The seams every targeted spell shares: the carried spell, the aimer, the turn, the log. */
 export interface TargetedSpellAim {
@@ -188,6 +190,130 @@ export function useWildEnergyFlow(ctx: WildEnergyContext, instanceId?: string): 
 	// Java logs nothing on this cast (WildEnergy.affectTarget is sound and sprite only);
 	// the recharge buff and the refunded wand charge are the feedback, so no line here either.
 	ctx.spendTurn();
+}
+
+/** A carried armor the stylus picker can offer. The scene passes the live bag items,
+ *  so writing the glyph here writes it on the real armor. */
+export interface InscribableArmorView {
+	id: string;
+	quantity: number;
+	instanceId?: string | undefined;
+	identified?: boolean | undefined;
+	cursed?: boolean | undefined;
+	affix?: string | undefined;
+}
+
+/**
+ * The ArcaneStylus inscribe flow, moved out of the scene behind this context the same
+ * way - behavior-identical, with the scene keeping one builder plus the `useStylus`
+ * adapter the item-use router calls. The armor scan and the glyph roll stay scene-side
+ * where the tables live; the affix write lands on the live view, the way the beacon and
+ * infusion flows write theirs.
+ */
+export interface StylusContext {
+	hasStylus(instanceId?: string): boolean;
+	consumeStylus(instanceId?: string): void;
+	openPicker(title: string, entries: InscribableArmorView[], onPick: (entry: { id: string; instanceId?: string }) => void): void;
+	armors(): InscribableArmorView[];
+	findArmor(id: string, instanceId?: string): InscribableArmorView | null;
+	rollGlyph(): string | null;
+	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
+	t(key: string, params?: Record<string, string | number>): string;
+}
+
+/** A carried consumable the alchemize picker can offer. */
+export interface EnergizableView {
+	id: string;
+	quantity: number;
+	instanceId?: string | undefined;
+	identified?: boolean | undefined;
+}
+
+/**
+ * The Alchemize energize flow, moved out of the scene behind this context the same
+ * way - behavior-identical, with the scene keeping one builder plus the `useAlchemize`
+ * adapter the item-use router calls. The energy bank, the removals and the panel refresh
+ * stay scene-side; the energy table itself is read here, the way the infusion pickers
+ * read their own tables.
+ */
+export interface AlchemizeContext {
+	hasSpell(id: string, instanceId?: string): boolean;
+	consumeSpell(id: string, instanceId?: string): void;
+	openPicker(title: string, entries: EnergizableView[], onPick: (entry: { id: string; instanceId?: string }) => void): void;
+	energizables(): EnergizableView[];
+	findEnergizable(id: string, instanceId?: string): EnergizableView | null;
+	bankEnergy(amount: number): void;
+	consumeTarget(id: string, instanceId?: string): void;
+	markIdentified(target: EnergizableView): void;
+	targetName(target: EnergizableView): string;
+	refreshPanels(): void;
+	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
+	t(key: string, params?: Record<string, string | number>): string;
+}
+
+/** `ArcaneStylus.onItemSelected()`: inscribe one identified, uncursed, glyphless armor
+ *  with a rolled glyph. Java's selector offers every armor in the bag including equipped;
+ *  this port's generic picker exposes carried payloads only. The roll draws from the same
+ *  glyph table with the same uncursed odds; a miss simply ends the cast with the stylus
+ *  kept, exactly like Java's null-glyph return. */
+export function useStylusFlow(ctx: StylusContext, instanceId?: string): void {
+	if (!ctx.hasStylus(instanceId)) return;
+	const candidates = ctx.armors().filter((item) => item.quantity > 0
+		&& (item.id === 'armor' || item.id === 'armorReward' || item.id === 'clothArmor'
+			|| isClassArmorId(item.id)));
+	if (candidates.length === 0) {
+		ctx.say(ctx.t('items.stylus.identify'), 'negative');
+		return;
+	}
+	ctx.openPicker(ctx.t('items.stylus.prompt'), candidates, (pick) => {
+		const armor = ctx.findArmor(pick.id, pick.instanceId);
+		if (!armor) return;
+		if (!armor.identified) {
+			ctx.say(ctx.t('items.stylus.identify'), 'negative');
+			return;
+		}
+		if (armor.cursed || getCurse(armor.affix ?? '')) {
+			ctx.say(ctx.t('items.stylus.cursed'), 'negative');
+			return;
+		}
+		const glyph = ctx.rollGlyph();
+		if (!glyph) return;
+		ctx.consumeStylus(instanceId);
+		armor.affix = glyph;
+		ctx.say(ctx.t('items.stylus.inscribed'), 'positive');
+	});
+}
+
+/** `Alchemize`'s in-game cast: `WndAlchemizeItem`/`WndEnergizeItem` scrap one carried
+ * consumable into its `energyVal()` of alchemical energy and identify the scrapped item.
+ * Java spends no time for this (`energize()` calls `hero.spend(-hero.cooldown())`), and this
+ * port reaches the effect without going through `onAction`, so it likewise spends no turn -
+ * the same shape `useStylus` uses. Java's window also offers a sell branch and an
+ * "energize all" button; this direct picker grants one unit's energy. Java refuses to scrap
+ * another Alchemize, and anything whose `energyVal()` is zero. */
+export function useAlchemizeFlow(ctx: AlchemizeContext, instanceId?: string): void {
+	if (!ctx.hasSpell('alchemize', instanceId)) return;
+	const candidates = ctx.energizables().filter((item) => item.quantity > 0
+		&& item.id !== 'alchemize'
+		&& alchemyEnergyFor(item.id, item.identified ?? false) > 0);
+	if (candidates.length === 0) {
+		ctx.say(ctx.t('port.log.alchemize.nothing'), 'negative');
+		return;
+	}
+	ctx.openPicker(ctx.t('items.spells.alchemize.prompt'), candidates, (pick) => {
+		const target = ctx.findEnergizable(pick.id, pick.instanceId);
+		if (!target) return;
+		const energy = alchemyEnergyFor(target.id, target.identified ?? false);
+		if (energy <= 0) return;
+		const name = ctx.targetName(target);
+		ctx.consumeTarget(target.id, target.instanceId);
+		ctx.consumeSpell('alchemize', instanceId);
+		ctx.bankEnergy(energy);
+		//`energize()` identifies the item as it is consumed, even though it is gone.
+		ctx.markIdentified(target);
+		ctx.say(ctx.t('port.log.alchemize.energized', { item: name }), 'positive');
+		ctx.refreshPanels();
+	});
 }
 
 /** A carried weapon, armor, wand or missile stack an infusion picker can offer. The

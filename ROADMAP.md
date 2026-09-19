@@ -1342,7 +1342,25 @@ one.
       NPCs pin no holder, no free cell keeps the pot and spends nothing, pending aims break
       at once). The drive caught one fixture bug in review - the NPC case freed only the
       occupied cell, but any occupant forces the cardinal scan - fixed by freeing a cardinal.
-      **Complexity: S.**
+      **Complexity: S.** **Twenty-third extraction 2026-09-19**: the stylus/alchemize picker
+      pair (`useStylus`'s identify/curse gates plus glyph write, `useAlchemize`'s energy
+      filter plus scrap/bank/identify) joined `items/spells.ts` as `useStylusFlow`/
+      `useAlchemizeFlow` behind `StylusContext`/`AlchemizeContext` (carried-spell gates,
+      pickers, live-bag scans, glyph roll, energy bank, name, panels); the scene keeps the
+      two one-line adapters the router calls plus two builders. The module reads the class-
+      armor predicate, the curse lookup, and the energy table directly; only the glyph roll
+      stays scene-side where its table lives. Net −6 lines in `dungeonScene.ts` (22,757
+      after), `spells.ts` 419 to 545. Suites: `tsc` clean after snapshotting the readonly
+      bag at the listing seams, item suite green with two new headless drives (stylus:
+      missing styli never open pickers, tiered and class armors offered with swords excluded,
+      unidentified/cursed/glyphed picks refuse keeping the stylus, missed rolls write nothing;
+      alchemize: missing spells never open pickers, the picker runs the real energy table
+      with the suite-pinned 12 banked, self-scrapping offers nothing, vanished picks bank
+      nothing). The drive caught one fixture bug in review - minted ids the default-true
+      predicate wrongly admits, same trap as the infusion drive - fixed with the suite-pinned
+      real ids (`warriorarmor`, `potionHealing`); and four redundant second invocations the
+      factory already runs were deleted before committing.
+      **Complexity: M.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that
