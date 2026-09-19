@@ -21,6 +21,10 @@
 
 // HUMAN: English source copy for strings invented by this port.
 export const PORT_STRINGS_EN: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': 'flashbang',
+	'port.desc.flashbang': 'This customized bomb will erupt into a blast of light, sound, and electricity when it explodes. Anything within 2 tiles will take _%1$d-%2$d damage_ from the explosion, an additional 25%% damage from the electricity, and be stunned for 10 turns.',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': 'smoke bomb',
@@ -620,6 +624,10 @@ export const PORT_STRINGS_EN: Record<string, string> = {
  */
 // HUMAN: French translation reviewed by the project owner.
 export const PORT_STRINGS_FR: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': 'bombe aveuglante',
+	'port.desc.flashbang': 'Cette bombe modifiée explosera en une rafale de lumière, de son et d’électricité. Tout ce qui se trouve dans un rayon de 2 cases recevra _%1$d-%2$d dégâts_ de l\'explosion, des dégâts électriques supplémentaires de 25%%, et sera paralysé pendant 10 tours.',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': 'bombe fumigène',
@@ -1172,6 +1180,10 @@ export const PORT_STRINGS_FR: Record<string, string> = {
  */
 
 export const PORT_STRINGS_DE: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': 'Blendbombe',
+	'port.desc.flashbang': 'Diese maßgeschneiderte Bombe detoniert in einer Explosion aus Licht, Ton und Elektrizität. Alles im Umkreis von 2 Feldern erleidet _%1$d- %2$d Schaden_ durch die Explosion, zusätzlich 25%% Schaden durch die Elektrizität und wird 10 Züge lang betäubt.',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': 'Rauchbombe',
@@ -1712,6 +1724,10 @@ export const PORT_STRINGS_DE: Record<string, string> = {
  */
 
 export const PORT_STRINGS_ES: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': 'flashbang',
+	'port.desc.flashbang': 'Esta bomba personalizada estallará en una explosión de luz, sonido y electricidad cuando explote. Todo aquello dentro de un radio de 2 casillas recibirá _%1$d-%2$d de daño_ por la explosión, un 25%% de daño adicional por electricidad, y serán paralizados por 10 turnos.',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': 'bomba de humo',
@@ -2253,6 +2269,10 @@ export const PORT_STRINGS_ES: Record<string, string> = {
  */
 
 export const PORT_STRINGS_PT: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': 'bomba de luz',
+	'port.desc.flashbang': 'Esta bomba personalizada irá irromper em um clarão de luz, som e eletricidade quando explodir. Qualquer coisa dentro de 2 quadrados receberá _%1$d-%2$d de dano_ da explosão, um dano adicional de 25%% da eletricidade e ficará atordoado por 10 turnos.',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': 'Bomba de fumaça',
@@ -2793,6 +2813,10 @@ export const PORT_STRINGS_PT: Record<string, string> = {
  */
 
 export const PORT_STRINGS_IT: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': 'granata stordente',
+	'port.desc.flashbang': 'Questa bomba personalizzata esploderà in un\'esplosione di luce, suono ed elettricità quando esplode. Qualunque cosa entro 2 caselle  subirà _%1$d-%2$d danni_ dall\'esplosione, altri 25%% danni dall\'elettricità e rimarrà stordito per 10 turni.',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': 'bomba fumogena',
@@ -3333,6 +3357,10 @@ export const PORT_STRINGS_IT: Record<string, string> = {
  */
 
 export const PORT_STRINGS_PL: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': 'bomba błyskowa',
+	'port.desc.flashbang': 'Ta zmodyfikowana bomba głośno wybuchnie, oślepiając i rażąc prądem. Wszystko w zasięgu dwóch pól zostanie ogłuszone na 10 tur, otrzyma _%1$d-%2$d obrażeń_ od eksplozji oraz dodatkowe 25%% obrażeń od elektryczności.',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': 'bomba dymna',
@@ -3875,6 +3903,10 @@ export const PORT_STRINGS_PL: Record<string, string> = {
  */
 
 export const PORT_STRINGS_RU: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': 'световая граната',
+	'port.desc.flashbang': 'Это бомба была модифицирована таким образом, чтобы при взрыве излучить звуковую вспышку света с электрическим разрядом. Сам взрыв наносит _%1$d-%2$d урона_ всем кто находится в пределах 2 клеток, и дополнительно наносит электричеством 25%% урона, оглушая на 10 ходов.',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': 'дымовая бомба',
@@ -4393,6 +4425,10 @@ export const PORT_STRINGS_RU: Record<string, string> = {
  */
 
 export const PORT_STRINGS_TR: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': 'flaş bombası',
+	'port.desc.flashbang': 'Bu özelleştirilmiş bomba patladığında bir ışık, ses ve elektrik patlamasına dönüşecek. 2 karo içindeki her şey patlamadan _%1$d-%2$d hasar_, elektrikten ek %%25 hasar alır ve 10 tur boyunca sersemler.',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': 'Sis bombası',
@@ -4911,6 +4947,10 @@ export const PORT_STRINGS_TR: Record<string, string> = {
  */
 
 export const PORT_STRINGS_UK: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': 'світлова граната',
+	'port.desc.flashbang': 'Ця налаштована бомба вибухне світлом, звуком і електрикою, коли вибухне. Буде прийнято будь-що в межах 2 плиток отримає _%1$d-%2$d шкоди_ від вибуху ще 25%% шкоди від електрики та буде приголомшеним на 10 ходів.',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': 'димова бомба',
@@ -5427,6 +5467,10 @@ export const PORT_STRINGS_UK: Record<string, string> = {
  */
 
 export const PORT_STRINGS_HU: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': 'villanógránát',
+	'port.desc.flashbang': 'Ezt a bombát úgy módosították, hogy fény, hang és elektromosság törjön ki belőle, amikor felrobban. Bármi, ami 2 mezőn belül van, _%1$d-%2$d sérülést_ szenved a robbanástól, és további 25%% sérülést az elektromosságtól, továbbá 10 körre elkábul.',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': 'füstbomba',
@@ -5942,6 +5986,10 @@ export const PORT_STRINGS_HU: Record<string, string> = {
  */
 
 export const PORT_STRINGS_NL: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': 'flitsbom',
+	'port.desc.flashbang': 'Deze op maat gemaakte bom zal ontploffen in een explosie van licht, geluid en elektriciteit wanneer hij ontploft. Alles binnen 2 tegels zal _%1$d-%2$d schade_ oplopen van de explosie, nog eens 25%% schade door elektriciteit en 10 beurten verdoofd worden.',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': 'rookbom',
@@ -6458,6 +6506,10 @@ export const PORT_STRINGS_NL: Record<string, string> = {
  */
 
 export const PORT_STRINGS_IN: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': 'bom kilat',
+	'port.desc.flashbang': 'Bom yang disesuaikan ini akan meledak menjadi ledakan cahaya, suara, dan listrik saat meledak. Apa pun dalam jarak 2 petak akan menerima _%1$d-%2$d damage_ dari ledakan, tambahan 25%% damage dari listrik, dan akan lumpuh selama 10 giliran.',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': 'bom asap',
@@ -6972,6 +7024,10 @@ export const PORT_STRINGS_IN: Record<string, string> = {
  */
 
 export const PORT_STRINGS_JA: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': '閃光弾',
+	'port.desc.flashbang': 'この改造された爆弾は、爆発すると閃光と音と電撃の爆風を巻き起こす。2タイルの範囲内にいるものは爆発による _%1$dから%2$dのダメージ_ と電撃による25%%の追加ダメージを受け、10ターンの間麻痺する。',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': '発煙弾',
@@ -7486,6 +7542,10 @@ export const PORT_STRINGS_JA: Record<string, string> = {
  */
 
 export const PORT_STRINGS_CS: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': 'Oslepující bomba',
+	'port.desc.flashbang': 'Tato upravená bomba vybuchne v prudkém výšlehu světla, zvuku a elektřiny. Vše v okruhu 2 políček utrpí _%1$d-%2$d poškození_ z výbuchu, navíc 25%% poškození elektřinou a navíc bude omráčeno na 10 kol.',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': 'Dýmovnice',
@@ -8000,6 +8060,10 @@ export const PORT_STRINGS_CS: Record<string, string> = {
  */
 
 export const PORT_STRINGS_VI: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': 'bom choáng',
+	'port.desc.flashbang': 'Quả bom được chế lại này sẽ phóng ra ánh sáng, âm thanh, và điện khi nó phát nổ. Bất cứ thứ gì ở trong vòng 2 ô sẽ nhận _%1$d-%2$d sát thương_ từ vụ nổ, thêm 25%% sát thương từ điện, và bị choáng trong 10 lượt.',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': 'bom khói',
@@ -8514,6 +8578,10 @@ export const PORT_STRINGS_VI: Record<string, string> = {
  */
 
 export const PORT_STRINGS_EL: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': 'βόμβα κρότου λάμψης',
+	'port.desc.flashbang': 'Αυτή η εξατομικευμένη βόμβα θα προκαλέσει μια έκρηξη φωτός, ήχου και ηλεκτροπληξίας. Οτιδήποτε βρίσκεται εντός 2 τετραγώνων θα λάβει _%1$d-%2$d_ ζημιά από την έκρηξη, συν 25%% ζημιά ηλεκτροπληξίας, και θα ακινητοποιηθεί για 10 γύρους.',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': 'βόμβα καπνού',
@@ -9028,6 +9096,10 @@ export const PORT_STRINGS_EL: Record<string, string> = {
  */
 
 export const PORT_STRINGS_KO: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': '섬광탄',
+	'port.desc.flashbang': '이 폭탄은 순간적으로 엄청난 빛과 소리를 뿜어냄과 동시에 전기를 방출하도록 개조되었습니다.  폭탄이 폭발하면 주변 2타일 내에 있는 모든 대상에게 _%1$d-%2$d_의 피해를 입히고, 동시에 전기로부터 25%%의 추가 피해를 받게 만들 것이며, 동시에 10턴 동안  기절시킵니다.',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': '연막탄',
@@ -9542,6 +9614,10 @@ export const PORT_STRINGS_KO: Record<string, string> = {
  */
 
 export const PORT_STRINGS_ZH: Record<string, string> = {
+	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
+	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
+	'port.name.flashbang': '闪光弹',
+	'port.desc.flashbang': '这枚改造过的炸弹在爆炸时会爆发出一阵电闪雷鸣。在2格范围内的所有单位不仅会受到爆炸的_%1$d~%2$d点伤害_和电击的额外25%%伤害，还会被麻痹10回合。',
 	//SPD v3.3.8's own smoke-bomb words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it currently predates the ShockBomb->SmokeBomb swap).
 	'port.name.smokebomb': '烟雾弹',

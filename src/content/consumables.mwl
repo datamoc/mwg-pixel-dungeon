@@ -454,7 +454,7 @@
       {
         tag: "item",
         id: "flashbang",
-        name: "items.bombs.flashbang.name",
+        name: "port.name.flashbang",
         slot: "consumable",
         stackable: true,
       },

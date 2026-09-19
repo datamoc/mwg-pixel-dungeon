@@ -4954,8 +4954,16 @@ tile art, so the closing fog is the feedback. Names live under `port.name.smokeb
 `port.desc.smokebomb` carrying SPD's own `v3.3.8` words in all 19 `PORT_STRINGS` locales
 (byte-audited against the tag), because the generated catalogue still predates the swap and
 has no `smokebomb` keys - they flip to `items.bombs.smokebomb.*` when it is re-extracted.
-Stated gaps, not silent: `FlashBangBomb`'s own `v3.3.8` rework (electric 25% bonus + 10-turn
-paralysis over the same flood, no LOS gate - the port's daze still models the pre-`v3.3.8`
-blinder) stays open, as do the `ShroudingFog` exotic and the ChaoticCenser trinket.
+Stated gaps, not silent: the `ShroudingFog` exotic and the ChaoticCenser trinket stay open.
+**2026-09-19 follow-up: the flashbang rework is ported too.** The daze is gone; every char in
+the flood takes a fresh `NormalIntRange(4 + depth/2, 6 + depth)` quartered as `Electricity`
+damage (armor-piercing, like Java's raw `damage()` call) plus a `Paralysis` prolong, with no
+LOS gate. Two reductions ride along: the prolong lands the port's 3-turn paralysis rather
+than Java's 10 (global buff-table reduction), and the Ring-of-Elements electric resistance
+the blob path models does not reach the bomb adapter. Name/desc move to
+`port.name.flashbang`/`port.desc.flashbang` carrying SPD's own `v3.3.8` `flashbangbomb` words
+in all 19 locales (byte-audited like the smoke keys - the catalogue still ships the
+pre-`v3.3.8` blinder text), and `value()` moves 15 -> 50 (`quantity * (20 + 30)`), pinned in
+`test:items`.
 Type-check/check/build/item/simulation suites green; browser verification owed per ROADMAP.md
 section 10.

@@ -1,5 +1,5 @@
 import { Random, Roguelike } from 'mwg';
-import { absorbShield, addBuff, BUFF_DURATION, type Creature, type GroundItem, type Step } from '../combat';
+import { absorbShield, addBuff, BUFF_DURATION, reigniteBuff, type Creature, type GroundItem, type Step } from '../combat';
 import { isUndeadOrDemonic } from '../monsters';
 import { MWL_BOMB_RULES, mwlItemEffectValue } from '../mwlContent';
 import { smokeBombSeedPlan } from '../simulation/smoke';
@@ -142,7 +142,18 @@ export function detonateBomb(ground: GroundItem, chained: Set<string>, context: 
 		const duration = mwlItemEffectValue('fireBomb', 'fireDuration');
 		for (let y = at.y - radius; y <= at.y + radius; y++) for (let x = at.x - radius; x <= at.x + radius; x++) if (context.level.inside(x, y) && context.level.passable(x, y) && Roguelike.chebyshevDistance(at, { x, y }) <= radius) context.seedFire(x, y, duration);
 	}
-	else if (payload === 'flashbang') for (const target of affected) addBuff(target, 'daze');
+	else if (payload === 'flashbang') for (const target of affected) {
+		//`FlashBangBomb.explode()` (tag `v3.3.8`): the pre-`v3.3.8` blinder (daze here) is
+		//gone - every char in the flood takes a fresh `NormalIntRange(4 + depth/2, 6 +
+		//depth)` quartered as `Electricity` damage plus a `Paralysis` prolong, with no LOS
+		//gate (the old ShockBomb's `Ballistica` check went with it). `Char.damage()` takes
+		//no armor, so the electric hit pierces; the Ring-of-Elements resistance the blob
+		//path models does not reach this adapter (stated gap). The prolong lands the
+		//port's 3-turn paralysis rather than Java's 10 (global buff-table reduction).
+		const electric = Math.round(Random.normalRange(4 + Math.floor(context.depth / 2), 6 + context.depth) / 4);
+		applyBlastDamage(target, electric, true, context);
+		reigniteBuff(target, 'paralysis');
+	}
 	else if (payload === 'smokeBomb') {
 		//`SmokeBomb.explode()`'s smoke half: 40 per distance-2 flood cell, the unplaced
 		//share of the 1000-volume budget piled onto the center. The blast above is the

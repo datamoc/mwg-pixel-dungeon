@@ -10409,7 +10409,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "flashbang",
-						"name": "items.bombs.flashbang.name",
+						"name": "port.name.flashbang",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -19973,7 +19973,7 @@ export const gameData = {
 							"tag": "row",
 							"attributes": {
 								"item": "flashbang",
-								"descriptionKey": "items.bombs.flashbang.desc"
+								"descriptionKey": "port.desc.flashbang"
 							},
 							"children": [],
 							"location": {
@@ -29842,7 +29842,7 @@ export const gameData = {
 							"tag": "row",
 							"attributes": {
 								"item": "flashbang",
-								"value": "15"
+								"value": "50"
 							},
 							"children": [],
 							"location": {

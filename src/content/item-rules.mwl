@@ -698,7 +698,7 @@
           { tag: "row", item: "woollyBomb", descriptionKey: "items.bombs.woollybomb.desc" },
           { tag: "row", item: "fireBomb", descriptionKey: "items.bombs.firebomb.desc" },
           { tag: "row", item: "noisemaker", descriptionKey: "items.bombs.noisemaker.desc" },
-          { tag: "row", item: "flashbang", descriptionKey: "items.bombs.flashbang.desc" },
+          { tag: "row", item: "flashbang", descriptionKey: "port.desc.flashbang" },
           { tag: "row", item: "smokeBomb", descriptionKey: "port.desc.smokebomb" },
           { tag: "row", item: "regrowthBomb", descriptionKey: "items.bombs.regrowthbomb.desc" },
           { tag: "row", item: "holyBomb", descriptionKey: "items.bombs.holybomb.desc" },

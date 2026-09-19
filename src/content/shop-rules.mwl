@@ -57,7 +57,7 @@
           { tag: "row", item: "woollyBomb", value: 15 },
           { tag: "row", item: "fireBomb", value: 15 },
           { tag: "row", item: "noisemaker", value: 15 },
-          { tag: "row", item: "flashbang", value: 15 },
+          { tag: "row", item: "flashbang", value: 50 },
           { tag: "row", item: "smokeBomb", value: 60 },
           { tag: "row", item: "regrowthBomb", value: 15 },
           { tag: "row", item: "holyBomb", value: 15 },

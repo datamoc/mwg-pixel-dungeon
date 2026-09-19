@@ -1185,6 +1185,8 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	}
 	// `SmokeBomb.value()` is 60 a unit (`quantity * (20 + 40)`).
 	assert.equal(require('./items/shopPricing.js').itemValue('smokeBomb', 1), 60, 'smokeBomb value() is 60 per unit');
+	// `FlashBangBomb.value()` is 50 a unit (`quantity * (20 + 30)`).
+	assert.equal(require('./items/shopPricing.js').itemValue('flashbang', 1), 50, 'flashbang value() is 50 per unit');
 		assert.equal(require('./items/shopPricing.js').getShopPrice('ankh', 6), 500, 'depth-6 shelf price is 50 x2 wealth bracket');
 		// Sandbags appear only with a carried hourglass, at the depth's own fraction of the missing
 		// ones - and never without it.
