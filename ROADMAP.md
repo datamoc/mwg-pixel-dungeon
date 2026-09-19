@@ -515,14 +515,20 @@ was judged not worth the churn against those existing references.
       class-armor sprite tier), and Ratmogrify's three rat talents (its real 50 charge cost and
       double-turn bug are fixed, but no `TransmogRat` actor exists for them to act through). See
       `PORT_COVERAGE.md`'s armor-ability section for the per-ability reason. **Complexity: L.**
-- [ ] Match Java talent timing, identification, recharge, and threshold rules. Tier-4 threshold
+- [x] Match Java talent timing, identification, recharge, and threshold rules. Tier-4 threshold
       timing is now real (the tier's window, its `armorAbility == null` gate and its point curve are
       Java's `Hero.talentPointsAvailable(4)` rather than the earlier "T4 is never granted"
       simplification), and Test Subject/Tested Hypothesis now proc on every identify event
-      through one shared helper (2026-09-18). Java's `onTalentUpgraded` rank-2 identify of
-      *equipped* gear is deliberately not reproduced - equipped fields carry no identified
-      flag here, so it has no observable target (see the spend site's comment). The rest of
-      this line is open. **Complexity: M.**
+      through one shared helper (2026-09-18). **Closed 2026-09-19**: Java's `onTalentUpgraded`
+      rank-2 identify of *already-equipped* gear (Veteran's/Thief's/Adventurer's Intuition) is now
+      wired too (`identifyOnTalentUpgraded`), now that equip/unequip tracks a real identified
+      state to change (see the item-system's equip-identify bug fix, same date) - reaching rank 2
+      identifies the currently-worn piece immediately rather than waiting for the next equip, and
+      chains into Test Subject/Tested Hypothesis the same way any other identify does. Rank 1's
+      Thief's Intuition `setKnown()` (ring type known, level/curse still hidden) stays unported -
+      this port's binary `identified` ring model has no separate type-known state. Recharge talents
+      (Weapon Recharging, Wand Preservation, Empowering Scrolls) and the per-tier threshold windows
+      were already exact from earlier passes. See `PORT_COVERAGE.md`'s equip-identify row.
 - [ ] Complete class-specific item and ability behavior. `SuckerPunchTracker` is ported (the Rogue
       surprise bonus uses Java's `Random.IntRange(points, 2)` once per stable enemy, with save/load
       and death cleanup). **Closed 2026-09-18, two halves**: Nature's Power now speeds the bow

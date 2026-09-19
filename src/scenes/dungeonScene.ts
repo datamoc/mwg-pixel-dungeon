@@ -16216,13 +16216,16 @@ private eyeBeamTurn(monster: Creature): boolean {
 				if (rank < def.maxRank && this.talentPoints[tierIndex] > 0) {
 					this.talentPoints[tierIndex]--;
 					this.talentRanks[def.id] = rank + 1;
-					//`Talent.onTalentUpgraded()`'s rank-2 intuition identify (tag `v3.3.8`)
-					//has no observable target here and is deliberately not reproduced: it
-					//identifies the *equipped* armor/rings/weapon, but equipped fields in
-					//this model carry no identified flag (bag items do) and are always
-					//fully populated - swapped-out gear even returns `identified: true`.
-					//The incoming piece is still identified at equip time (see
-					//`items/equipment.ts`), which is the only identify with a target.
+					//`Talent.onTalentUpgraded()`'s rank-2 intuition identify (tag `v3.3.8`):
+					//reaching rank 2 identifies whatever's *already* equipped, not just future
+					//equips - real Java fires this the instant the point is spent. Equipped
+					//gear now carries a real identified flag (`weaponIdentified`/
+					//`armorIdentified`/`EquippedRing.identified`, see `items/equipment.ts`),
+					//so this has an observable target where it used to have none. Rank 1's
+					//Thief's Intuition `setKnown()` (type known, level/curse still hidden)
+					//stays unported - this port's binary `identified` ring model has no
+					//separate type-known state to set.
+					this.identifyOnTalentUpgraded(def.id, rank + 1);
 					this.syncHeroFromStats();
 					this.say(t('port.log.talentspent', { stat: t(`actors.hero.talent.${def.id}.title`) }), 'positive');
 					this.refresh();
@@ -21227,6 +21230,27 @@ private eyeBeamTurn(monster: Creature): boolean {
 			const perTurnRate = ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) / turnsToCharge;
 			this.wandCharges.advance(perTurnRate * (charge + 1));
 		}
+	}
+
+	/** `Talent.onTalentUpgraded()`'s three rank-2 intuition branches: identify whatever's
+	 * already equipped in the relevant slot the instant the point is spent, rather than
+	 * waiting for the next equip to notice. Each is class-gated the same way the equip-time
+	 * check in `items/equipment.ts` already is. */
+	private identifyOnTalentUpgraded(talentId: string, newRank: number): void {
+		if (newRank !== 2) return;
+		let newlyIdentified = false;
+		if (talentId === 'veterans_intuition' && this.heroClass === 'warrior' && !this.armorIdentified) {
+			this.armorIdentified = true;
+			newlyIdentified = true;
+		} else if (talentId === 'thiefs_intuition' && this.heroClass === 'rogue'
+			&& this.equippedRing && !this.equippedRing.identified) {
+			this.equippedRing.identified = true;
+			newlyIdentified = true;
+		} else if (talentId === 'adventurers_intuition' && this.heroClass === 'duelist' && !this.weaponIdentified) {
+			this.weaponIdentified = true;
+			newlyIdentified = true;
+		}
+		if (newlyIdentified) this.procIdentifyTalents();
 	}
 
 	/**
