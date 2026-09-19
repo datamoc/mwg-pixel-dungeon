@@ -186,6 +186,7 @@ import { trampleHighGrass as planHighGrassTrample, type HighGrassState } from '.
 import { applyEnvironmentalBlobs } from '../simulation/environmentalBlobs';
 import { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } from '../simulation/plantPools';
 import { plantDropCandidates, plantDropCount } from '../simulation/plantDrops';
+import { runHeroPlantEffect, type HeroPlantContext } from '../simulation/plantTriggers';
 import { teleportCandidates, disarmBubblePresses, type TeleportCell } from '../simulation/teleport';
 import { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } from '../simulation/timeBubble';
 import { teleportAppearPlan } from '../simulation/teleportAppear';
@@ -8819,181 +8820,48 @@ export class DungeonScene extends Scene2D {
 		if (index >= 0) this.portedPaint!.plants.splice(index, 1);
 		this.manualPlants.delete(cell);
 
- 		switch (kind) {
- 			case 'sungrass':
- 				if (this.subclass() === 'warden') {
- 					//`Sungrass.activate(ch)`: a Warden gets `Healing.setHeal(HT, 0, 1)` instead
- 					//of the Health pool - a flat 1 HP per turn until HT is owed out, combined
- 					//property-wise with any in-progress potion heal exactly like `setHeal`.
- 					if (this.hero.maxHp > this.healingLeft) this.healingLeft = this.hero.maxHp;
- 					this.healingFlat = Math.max(this.healingFlat, 1);
- 				} else {
- 					//`Buff.affect(ch, Health.class).boost(ch.HT)`: an *additive* full-HT pool,
- 					//not the missing-HP snapshot this used to grant - stepping on sungrass at
- 					//full HP banks the whole pool for later damage, and re-triggering while a
- 					//pool is active adds rather than overwrites. Same math as the mob half.
- 					const granted = grantSungrassHealth(
- 						this.sungrassPos >= 0
- 							? { level: this.sungrassHealing, partial: this.sungrassPartial }
- 							: undefined,
- 						this.hero.maxHp);
- 					this.sungrassHealing = granted.level;
- 					this.sungrassPartial = granted.partial;
- 					this.sungrassPos = cell;
- 				}
- 				this.say(t('port.log.sungrassheal'), 'positive');
- 				break;
-			case 'blandfruit':
-			case 'blandfruitbush':
-				this.spawnGroundItem('food', x, y);
-				this.say(t('port.log.plantfruit'), 'positive');
-				break;
- 			case 'starflower':
- 				//`Starflower.activate(ch)`: `prolong` (keep-max) `Bless.DURATION` for anyone,
- 				//plus `Recharging.DURATION` for a Warden - both whole-table values.
- 				reigniteBuff(this.hero, 'bless');
- 				if (this.subclass() === 'warden') reigniteBuff(this.hero, 'recharging');
-				this.say(t('port.log.starflowerconfidence'), 'positive');
-				break;
-			case 'dewcatcher':
-				this.dropPlantNeighbourLoot(x, y, 3, 6, 'dew');
-				this.say(t('port.log.dewcatcherdew'), 'positive');
-				break;
-			case 'seedpod':
-				this.dropPlantNeighbourLoot(x, y, 2, 4, 'seed');
-				this.say(t('port.log.seedpodburst'), 'positive');
-				break;
-			case 'earthroot':
-				//`Earthroot.activate(ch)`: the plain effect is `Buff.affect(ch, Armor.class)
-				//.level(ch.HT)` - a block pool of the character's own maximum HP that blocks
-				//`(scalingDepth + 5)/2` per hit and ends when the character leaves the cell. This
-				//port used to grant a full-strength Barrier shield instead, which ignored both the
-				//per-hit cap and the movement rule. The Warden's `Barkskin` variant stays
-				//unmodelled, as it was before.
-				this.earthrootArmor = { level: this.hero.maxHp, pos: cell };
-				//`Earthroot.activate()` (tag `v3.3.8`): the burst shakes (`1, 0.4f`) when
-				//the plant cell is in the hero's FOV - trivially true for the hero's own
-				//trigger, load-bearing for the mob half below.
-				if (this.fov.isVisible(x, y)) this.shakeScreen(1, 0.4);
-				break;
- 			case 'blindweed':
- 				//`Blindweed.activate(ch)`: a Warden gets `Invisibility.DURATION/2` (10, not the
- 				//table's whole 20); everyone else gets `Blindness` + `Cripple`, both prolonged
- 				//the whole `DURATION` (10 each - the table's cripple is exact now). Blindness
- 				//itself arrives as the port's `daze` stand-in: the `blindness` id exists but is
- 				//inert for the hero (no hero-FOV-emptying seam), so a faithful-but-silent buff
- 				//would be worse than a felt one - see the matrix for the standing seam.
- 				if (this.subclass() === 'warden') addBuff(this.hero, 'invisibility', 10);
- 				else { addBuff(this.hero, 'daze'); reigniteBuff(this.hero, 'cripple'); }
-				this.say(this.subclass() === 'warden' ? 'The blindweed shrouds you from sight.' : 'The blindweed clouds your senses.', this.subclass() === 'warden' ? 'positive' : 'negative');
-				break;
-			case 'fadeleaf': {
-				//`Fadeleaf.activate(ch)`: a Hero is teleported by `ScrollOfTeleportation.teleportChar`,
-				//and that method detaches `Roots` (`Buff.detach(ch, Roots.class)`, right after it
-				//places the char) - this plant is the canonical escape from entanglement, so without
-				//the detach it silently did nothing for a rooted hero, whose `moveTo` refuses
-				//outright. The same helper the teleportation scroll uses gives the replacement cell.
-				//Mob teleports run through `triggerMobPlantAt`'s fadeleaf branch (with the
-				//tracker); a *Warden* with inter-floor
-				//teleporting allowed is sent one depth back instead of moving within the level - a
-				//floor-return transition this port does not have.
- 			delete this.hero.buffs['roots'];
- 			const fadeDestination = this.randomFreeCell(this.hero);
- 			if (fadeDestination) {
- 				//`Fadeleaf.activate(ch)`: `((Hero)ch).curAction = null` - a teleport cancels
- 				//whatever the hero was doing, including a queued click-to-travel destination.
- 				this.travelTarget = null;
- 				const fadeFrom = { x: this.hero.x, y: this.hero.y };
-					this.moveTo(this.hero, fadeDestination);
-					this.playTeleportAppear(fadeFrom, fadeDestination, this.hero);
-				}
-				this.say(t('port.log.fadeleafteleport'), 'positive');
-				break;
-			}
- 			case 'mageroyal':
- 				//`Mageroyal.activate(ch)`: the whole effect is `PotionOfHealing.cure(ch)` - the
- 				//same nine-buff detach the potion, the well and the ankh share, so it runs the
- 				//shared helper rather than its own list (which wrongly cleared Burning, which
- 				//Java never cures, and missed Bleeding/Blindness/Drowsy, which it does). The
- 				//Warden's `BlobImmunity.DURATION/2f` needs a hero-side blob-immunity seam that
- 				//does not exist yet - recorded in the matrix, not silently dropped.
- 				this.cureHeroBuffs();
-				this.say(t('port.log.mageroyalclear'), 'positive');
-				break;
- 			case 'icecap':
- 				//`Icecap.activate(ch)`: NO direct status at all - Java seeds `Freezing` on every
- 				//non-solid NEIGHBOURS9 cell (the `passable` test is this port's standing
- 				//non-solid convention, same as ShockingTrap's) and marks every mob in the 3x3.
- 				//The chill-then-Frost itself arrives through the shared `plantFreeze` blob the
- 				//way every other Freezing source works here, so the direct paralysis this used
- 				//to grant is gone. A Warden additionally gets `FrostImbue.DURATION*0.3f` (15).
- 				for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
- 					const nx = x + dx, ny = y + dy;
- 					if (this.level.passable(nx, ny)) this.plantFreeze.seed(nx, ny, 2);
- 				}
- 				this.markHazardArea(x, y);
- 				if (this.subclass() === 'warden') {
- 					addBuff(this.hero, 'frostImbue');
- 					this.say(t('port.log.icecapfrost'), 'positive');
- 				} else {
- 					this.say(t('port.log.icecapfreeze'), 'negative');
- 				}
-				break;
- 			case 'rotberry':
- 				if (this.subclass() === 'warden') {
- 					addBuff(this.hero, 'adrenalineSurge');
- 					this.syncHeroFromStats();
- 					this.say(t('port.log.rotberryadrenaline'), 'positive');
- 				} else {
- 					//`Rotberry.activate(ch)`: the non-Warden half is the ToxicGas seed alone -
- 					//Java applies no direct poison (the gas poisons whoever stands in it, hero
- 					//included, through the shared blob path). The extra direct poison this used
- 					//to grant double-dipped on top of the gas.
- 					this.plantGas.seed(x, y, 100);
- 					this.say(t('port.log.rotberrygas'), 'negative');
- 				}
- 				break;
- 			case 'sorrowmoss':
- 				//`Sorrowmoss.activate(ch)`: `affect(...).set(5 + round(2*scalingDepth/3))` - an
- 				//unconditional set through the one shared applier, so immunities still refuse
- 				//it (the old add-then-overwrite forced the buff past the immunity gate).
- 				addBuff(this.hero, 'poison', 5 + Math.round(2 * this.depth / 3));
-				this.say(t('port.log.sorrowmosspoison'), 'negative');
-				break;
- 			case 'firebloom':
- 				// Firebloom seeds Java's Fire blob at its cell. A Warden additionally gets
- 				// `FireImbue.DURATION*0.3f` (15) - the frost-imbue pair: `proc()` reignites
- 				// Burning on a 1-in-2, the holder is immune to Burning, and attaching
- 				// detaches it. Only mobs are marked (Java marks `instanceof Mob`).
- 				if (this.subclass() === 'warden') {
- 					delete this.hero.buffs['burning'];
- 					addBuff(this.hero, 'fireImbue');
- 				}
- 				this.fire.seed(x, y, 2);
-				this.say(t('port.log.firebloomignite'), 'negative');
-				break;
- 			case 'stormvine':
- 				//`Stormvine.activate(ch)`: a Warden gets `Levitation.DURATION/2` (10, not the
- 				//table's whole 20); everyone else gets `Vertigo.DURATION` (10) of Vertigo,
- 				//which arrives as the port's `daze` stand-in at its exact table 5 the way the
- 				//confusion-gas row already documents.
- 				if (this.subclass() === 'warden') addBuff(this.hero, 'levitation', 10);
- 				else addBuff(this.hero, 'daze');
-				this.say(t('port.log.stormvinetwist'), 'negative');
-				break;
- 			case 'swiftthistle':
- 				// Swiftthistle.TimeBubble freezes other actors for seven hero-time units.
- 				// Count those units at the automatic-actor boundary instead of granting a
- 				// free hero action, which would incorrectly skip hunger and buffs. A Warden
- 				// additionally gets `Haste` for 1 turn (`Buff.affect(ch, Haste.class, 1f)`).
- 				this.timeBubbleTurns = 7;
- 				if (this.subclass() === 'warden') addBuff(this.hero, 'haste', 1);
-				this.say(t('port.log.swiftthistletime'), 'positive');
-				break;
-			default:
-				this.say(t('port.log.plantwithers'));
-		}
+		runHeroPlantEffect(kind, x, y, cell, this.hero, this.heroPlantContext());
 		this.featuresMap?.setLayerData('features', this.featureFrames());
+	}
+
+	/** Scene services behind `runHeroPlantEffect`: the plant-trigger extraction's hero-half
+	 * context. Buff grants, the cure, blob seeds and `t()` stay shared code; the scene only
+	 * binds its own state, movement and presentation seams. */
+	private heroPlantContext(): HeroPlantContext {
+		return {
+			subclass: () => this.subclass(),
+			depth: this.depth,
+			say: this.say.bind(this),
+			t,
+			neighbour8: Roguelike.neighbourOffsets(8),
+			grantBuff: (target, id, duration) => addBuff(target, id, duration),
+			prolongBuff: (target, id, duration) => reigniteBuff(target, id, duration),
+			cureHero: () => this.cureHeroBuffs(),
+			spawnFood: (x, y) => this.spawnGroundItem('food', x, y),
+			dropLoot: (x, y, min, max, kind) => this.dropPlantNeighbourLoot(x, y, min, max, kind),
+			seedFreeze: (x, y, volume) => this.plantFreeze.seed(x, y, volume),
+			seedGas: (x, y, volume) => this.plantGas.seed(x, y, volume),
+			seedFire: (x, y, volume) => this.fire.seed(x, y, volume),
+			markHazardArea: this.markHazardArea.bind(this),
+			passable: (x, y) => this.level.passable(x, y),
+			isVisible: (x, y) => this.fov.isVisible(x, y),
+			shake: this.shakeScreen.bind(this),
+			setEarthrootArmor: (level, pos) => { this.earthrootArmor = { level, pos }; },
+			setTimeBubble: (turns) => { this.timeBubbleTurns = turns; },
+			syncHero: () => this.syncHeroFromStats(),
+			healingLeft: () => this.healingLeft,
+			setHealingLeft: (value) => { this.healingLeft = value; },
+			healingFlat: () => this.healingFlat,
+			setHealingFlat: (value) => { this.healingFlat = value; },
+			sungrass: () => this.sungrassPos >= 0
+				? { level: this.sungrassHealing, partial: this.sungrassPartial }
+				: undefined,
+			setSungrass: (level, partial, pos) => { this.sungrassHealing = level; this.sungrassPartial = partial; this.sungrassPos = pos; },
+			findTeleportCell: () => this.randomFreeCell(this.hero),
+			cancelTravel: () => { this.travelTarget = null; },
+			moveHero: (to) => this.moveTo(this.hero, to),
+			showTeleport: (from, to) => this.playTeleportAppear(from, to, this.hero),
+		};
 	}
 
 	/** `Plant.trigger()`/the concrete `Plant.activate(Char)` methods (tag `v3.3.8`): mobs and

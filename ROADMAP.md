@@ -1075,7 +1075,25 @@ one.
       key imports deleted from the scene), plus a 16-assertion headless pin of the moved
       branch table in `verifyItemWorkflows.mjs` (stairs, wall, halls water, locked/crystal
       doors, grass, floor fallback, raw-beats-coarse, alchemy outcome, well, ritual/arena/
-      city precedence and the empty-desc suppression). **Complexity: L.**
+      city precedence and the empty-desc suppression). **Fourth extraction 2026-09-19**:
+      `triggerPortedPlantAt`'s 15-branch hero effect switch moved to the new
+      `simulation/plantTriggers.ts` as `runHeroPlantEffect(kind, x, y, cell, hero, ctx)`
+      behind a `HeroPlantContext` (buff grants, cure, blob seeds, healing/sungrass/
+      earthroot/time-bubble state accessors, fadeleaf movement seam, loot, shake,
+      visibility, depth); the scene keeps kind resolution, Lotus preservation, marker
+      removal and the redraw plus a 30-line builder. The context field for text is
+      deliberately named `t` (bound to the real one) so the `t('...')` key audits keep
+      matching these call sites - a 16-vs-16 key-set diff over the move proves nothing
+      was lost. Net −132 lines in `dungeonScene.ts` (23,312 after). Suites: `tsc` clean
+      (two real catches - `subclass()` is `string | null`, `randomFreeCell` may return
+      `undefined`), sim suite green at 158 checks with a new every-branch headless drive
+      (Warden/non-Warden halves, impassable icecap neighbours, fadeleaf with and without
+      a destination, depth-scaled sorrowmoss, the unknown-kind wither), the earthroot
+      shake pin relocated to the moved module, and the simulation sibling-import
+      confinement guard satisfied. The mob half stays for the fifth extraction. Found
+      in the same pass and recorded in `PORT_COVERAGE.md`: Dreamfoil has no seed deck
+      entry, room planting or trigger branch anywhere (Not ported, unreachable).
+      **Complexity: L.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

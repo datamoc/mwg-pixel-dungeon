@@ -44,7 +44,7 @@ try {
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/mageAbilities', 'simulation/rogueAbilities', 'simulation/ratmogrify', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'mechanics/cone', 'dungeonConstants',
-	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/brews', 'simulation/smoke', 'ui/buffOverlays',
+	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/brews', 'simulation/smoke', 'ui/buffOverlays',
 	// `actors/monsterSpawn` (plus its `monsters`/`challenges`/i18n chain) for the spawn-profile
 	// checks: the chaos-elemental roll, the rare-alt table, and the unported-mob absences.
 	'monsters', 'challenges', 'i18n/index', 'i18n/portStrings', 'i18n/languages', 'i18n/spdKeys', 'generated/spdMessages', 'items/artifacts', 'actors/monsterSpawn',
@@ -87,7 +87,7 @@ try {
 	// pulled in; the real namespace module is re-exported under the barrel's own names.
 	mkdirSync(join(output, 'node_modules', 'mwg'), { recursive: true });
 	writeFileSync(join(output, 'node_modules', 'mwg', 'index.js'),
-		`const random = require(${JSON.stringify(join(dist, 'core', 'Random.js'))}); exports.Random = random; exports.Generator = random.Generator; exports.I18n = require(${JSON.stringify(join(dist, 'i18n', 'index.js'))});\n`);
+		`const random = require(${JSON.stringify(join(dist, 'core', 'Random.js'))}); exports.Random = random; exports.Generator = random.Generator; exports.I18n = require(${JSON.stringify(join(dist, 'i18n', 'index.js'))}); exports.Roguelike = require(${JSON.stringify(join(dist, 'roguelike', 'index.js'))});\n`);
 	const require = createRequire(join(output, 'tests.cjs'));
 	const { advanceHunger } = require('./simulation/hunger');
 	const { runHungerStep } = require('./adapters/hungerSimulation');
@@ -104,6 +104,7 @@ try {
 	const { wraithCombatStats, dustSpawnerStep, dustSpawnerCap } = require('./simulation/wraith');
 const { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } = require('./simulation/plantPools');
 const { plantDropCandidates, plantDropCount } = require('./simulation/plantDrops');
+const { runHeroPlantEffect } = require('./simulation/plantTriggers');
 const { teleportCandidates, disarmBubblePresses } = require('./simulation/teleport');
 const { teleportAppearPlan } = require('./simulation/teleportAppear');
 const { selectRangedTarget } = require('./simulation/targeting');
@@ -235,6 +236,156 @@ check('Earthroot.Armor grants keep-max and absorbs min(damage, blocking) per hit
 	assert.deepEqual(absorbEarthrootArmor(2, 10, 5, false), { level: null, damage: 5 });
 	//A moved owner detaches and takes the hit whole.
 	assert.deepEqual(absorbEarthrootArmor(20, 10, 5, true), { level: null, damage: 10 });
+});
+check('the moved hero plant-effect switch fires every branch', () => {
+	//Drive of `runHeroPlantEffect` (the `triggerPortedPlantAt` hero half moved to
+	//`simulation/plantTriggers.ts` in the file-size refactor): a recording fake scene
+	//with key-echo `t` and real `Roguelike` offsets. Effect routing and key selection
+	//are asserted, not wording - except the two blindweed lines, which are hardcoded
+	//literals in the source itself (pre-existing, moved verbatim).
+	function drive(kind, overrides = {}, subclass = 'none') {
+		const { heroBuffs, ...ctxOverrides } = overrides;
+		const hero = { x: 1, y: 2, maxHp: 20, hp: 10, buffs: {} };
+		if (heroBuffs) Object.assign(hero.buffs, heroBuffs);
+		const rec = {
+			said: [], grants: [], prolongs: [], foods: [], loots: [],
+			freezes: [], gases: [], fires: [], hazards: [], shakes: [],
+			armor: null, bubble: null, cured: false, synced: false,
+			healLeft: 0, healFlat: 0, sungrass: null, moved: null,
+			travelCancelled: false, teleports: [],
+		};
+		const ctx = {
+			subclass: () => subclass,
+			depth: 12,
+			say: (line, level) => { rec.said.push({ line, level }); },
+			t: (key) => key,
+			neighbour8: require('mwg').Roguelike.neighbourOffsets(8),
+			grantBuff: (target, id, duration) => { rec.grants.push([id, duration]); target.buffs[id] = duration ?? 0; },
+			prolongBuff: (target, id, duration) => { rec.prolongs.push([id, duration]); target.buffs[id] = duration ?? 0; },
+			cureHero: () => { rec.cured = true; },
+			spawnFood: (x, y) => { rec.foods.push([x, y]); },
+			dropLoot: (x, y, min, max, lootKind) => { rec.loots.push([x, y, min, max, lootKind]); },
+			seedFreeze: (x, y, volume) => { rec.freezes.push([x, y, volume]); },
+			seedGas: (x, y, volume) => { rec.gases.push([x, y, volume]); },
+			seedFire: (x, y, volume) => { rec.fires.push([x, y, volume]); },
+			markHazardArea: (x, y) => { rec.hazards.push([x, y]); },
+			passable: () => true,
+			isVisible: () => true,
+			shake: (intensity, duration) => { rec.shakes.push([intensity, duration]); },
+			setEarthrootArmor: (level, pos) => { rec.armor = [level, pos]; },
+			setTimeBubble: (turns) => { rec.bubble = turns; },
+			syncHero: () => { rec.synced = true; },
+			healingLeft: () => rec.healLeft,
+			setHealingLeft: (value) => { rec.healLeft = value; },
+			healingFlat: () => rec.healFlat,
+			setHealingFlat: (value) => { rec.healFlat = value; },
+			sungrass: () => null,
+			setSungrass: (level, partial, pos) => { rec.sungrass = [level, partial, pos]; },
+			findTeleportCell: () => ({ x: 9, y: 9 }),
+			cancelTravel: () => { rec.travelCancelled = true; },
+			moveHero: (to) => { rec.moved = [to.x, to.y]; hero.x = to.x; hero.y = to.y; },
+			showTeleport: (from, to) => { rec.teleports.push([[from.x, from.y], [to.x, to.y]]); },
+			...ctxOverrides,
+		};
+		runHeroPlantEffect(kind, 3, 4, 7, hero, ctx);
+		return { hero, rec };
+	}
+	//Sungrass banks the whole additive pool for anyone but a Warden.
+	let r = drive('sungrass');
+	assert.deepEqual(r.rec.sungrass, [20, 0, 7]);
+	assert.equal(r.rec.said.length, 1);
+	r = drive('sungrass', {}, 'warden');
+	assert.equal(r.rec.sungrass, null);
+	assert.equal(r.rec.healLeft, 20);
+	assert.equal(r.rec.healFlat, 1);
+	//Blandfruit (and its bush) drops exactly one food.
+	for (const kind of ['blandfruit', 'blandfruitbush']) {
+		r = drive(kind);
+		assert.deepEqual(r.rec.foods, [[3, 4]], kind);
+		assert.equal(r.rec.said.length, 1, kind);
+	}
+	//Starflower blesses anyone, and only a Warden recharges (both prolongs).
+	r = drive('starflower');
+	assert.deepEqual(r.rec.prolongs, [['bless', undefined]]);
+	r = drive('starflower', {}, 'warden');
+	assert.deepEqual(r.rec.prolongs, [['bless', undefined], ['recharging', undefined]]);
+	//Dewcatcher/Seedpod scatter their own loot counts.
+	r = drive('dewcatcher');
+	assert.deepEqual(r.rec.loots, [[3, 4, 3, 6, 'dew']]);
+	r = drive('seedpod');
+	assert.deepEqual(r.rec.loots, [[3, 4, 2, 4, 'seed']]);
+	//Earthroot pools max HP at the cell and shakes when the cell shows.
+	r = drive('earthroot');
+	assert.deepEqual(r.rec.armor, [20, 7]);
+	assert.deepEqual(r.rec.shakes, [[1, 0.4]]);
+	r = drive('earthroot', { isVisible: () => false });
+	assert.deepEqual(r.rec.shakes, []);
+	//Blindweed: a Warden turns invisible, everyone else is dazed and crippled.
+	r = drive('blindweed');
+	assert.deepEqual(r.rec.grants, [['daze', undefined]]);
+	assert.deepEqual(r.rec.prolongs, [['cripple', undefined]]);
+	assert.ok(r.rec.said[0].line.includes('clouds your senses'));
+	r = drive('blindweed', {}, 'warden');
+	assert.deepEqual(r.rec.grants, [['invisibility', 10]]);
+	assert.ok(r.rec.said[0].line.includes('shrouds you from sight'));
+	//Fadeleaf detaches roots and teleports; without a cell it still says the line.
+	r = drive('fadeleaf', { heroBuffs: { roots: 1 } });
+	assert.equal(r.hero.buffs.roots, undefined, 'roots detach on the fadeleaf escape');
+	assert.deepEqual(r.rec.moved, [9, 9]);
+	assert.equal(r.rec.travelCancelled, true);
+	assert.deepEqual(r.rec.teleports, [[[1, 2], [9, 9]]]);
+	r = drive('fadeleaf', { heroBuffs: { roots: 1 }, findTeleportCell: () => null });
+	assert.equal(r.hero.buffs.roots, undefined, 'roots detach even with nowhere to go');
+	assert.equal(r.rec.moved, null);
+	assert.equal(r.rec.said.length, 1, 'the line still says with no destination');
+	//Mageroyal runs the shared cure, nothing else.
+	r = drive('mageroyal');
+	assert.equal(r.rec.cured, true);
+	assert.deepEqual(r.rec.grants, []);
+	//Icecap freezes all nine passable neighbours and marks the 3x3.
+	r = drive('icecap');
+	assert.equal(r.rec.freezes.length, 9);
+	assert.ok(r.rec.freezes.every(([x, y, volume]) => volume === 2));
+	assert.deepEqual(r.rec.hazards, [[3, 4]]);
+	assert.deepEqual(r.rec.grants, []);
+	r = drive('icecap', { passable: (x, y) => x !== 3 || y !== 4 });
+	assert.equal(r.rec.freezes.length, 8, 'impassable neighbours seed nothing');
+	r = drive('icecap', {}, 'warden');
+	assert.deepEqual(r.rec.grants, [['frostImbue', undefined]]);
+	//Rotberry gasses non-Wardens, surges Wardens.
+	r = drive('rotberry');
+	assert.deepEqual(r.rec.gases, [[3, 4, 100]]);
+	assert.equal(r.rec.synced, false);
+	r = drive('rotberry', {}, 'warden');
+	assert.deepEqual(r.rec.gases, []);
+	assert.deepEqual(r.rec.grants, [['adrenalineSurge', undefined]]);
+	assert.equal(r.rec.synced, true);
+	//Sorrowmoss sets the depth-scaled poison: 5 + round(2*12/3) = 13.
+	r = drive('sorrowmoss');
+	assert.deepEqual(r.rec.grants, [['poison', 13]]);
+	//Firebloom always seeds fire; a Warden sheds burning and ignites the imbue.
+	r = drive('firebloom');
+	assert.deepEqual(r.rec.fires, [[3, 4, 2]]);
+	r = drive('firebloom', {}, 'warden');
+	assert.deepEqual(r.hero.buffs.burning, undefined);
+	assert.deepEqual(r.rec.grants, [['fireImbue', undefined]]);
+	//Stormvine levitates a Warden for 10, dazes everyone else.
+	r = drive('stormvine', {}, 'warden');
+	assert.deepEqual(r.rec.grants, [['levitation', 10]]);
+	r = drive('stormvine');
+	assert.deepEqual(r.rec.grants, [['daze', undefined]]);
+	//Swiftthistle banks seven bubble turns, plus one hasted turn for a Warden.
+	r = drive('swiftthistle');
+	assert.equal(r.rec.bubble, 7);
+	assert.deepEqual(r.rec.grants, []);
+	r = drive('swiftthistle', {}, 'warden');
+	assert.deepEqual(r.rec.grants, [['haste', 1]]);
+	//Anything unrecognized withers with no effect at all.
+	r = drive('dreamfoil');
+	assert.deepEqual(r.rec.grants, []);
+	assert.deepEqual(r.rec.fires, []);
+	assert.deepEqual(r.rec.gases, []);
+	assert.equal(r.rec.said.length, 1);
 });
 check('Dewcatcher/Seedpod drops avoid stairs and the entrance on distinct cells', () => {
 	const ring = [];
