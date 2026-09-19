@@ -16,7 +16,6 @@ export function verifyShakes(require, check) {
 			['DM300Sprite.slam (3, 0.7f) on the melee swing', "if (attacker.kind === 'dm300') this.shakeScreen(3, 0.7);"],
 			['Hero 1385 rooted stair refusal (1, 1f)', "else if (plan.kind === 'rooted') { this.shakeScreen(1, 1);"],
 			['DelayedRockFall 68 / RockfallTrap 117 impact (3, 0.7f)', 'this.shakeScreen(3, 0.7);\n\t\t\tconst challenge = isChallengeEnabled'],
-			['Earthroot plant burst, mob half (1, 0.4f)', 'creature.earthrootArmorPos = cell;\n\t\t\t\tif (this.fov.isVisible(cell % this.level.width'],
 			['Entanglement on the hero (1, 0.4f)', '//`Entanglement.proc()` (tag `v3.3.8`)'],
 			['WandOfLightning on the hero (2, 0.3f)', "if (victim.isHero && this.wandType === 'lightning') this.shakeScreen(2, 0.3);"],
 		];
@@ -25,6 +24,7 @@ export function verifyShakes(require, check) {
 		//burst now lives in `simulation/plantTriggers.ts` behind the shake callback.
 		const triggers = readFileSync(new URL('../src/simulation/plantTriggers.ts', import.meta.url), 'utf8');
 		assert.ok(triggers.includes('if (ctx.isVisible(x, y)) ctx.shake(1, 0.4);'), 'Earthroot plant burst, hero half (1, 0.4f) must stay wired');
+		assert.ok(triggers.includes('if (ctx.isVisibleCell(cell)) ctx.shake(1, 0.4);'), 'Earthroot plant burst, mob half (1, 0.4f) must stay wired');
 		// The three short ability-refusal shakes are a documented deliberate
 		// divergence (Java shakes a full second at each); the comments must keep
 		// saying so, or the divergence becomes silent.

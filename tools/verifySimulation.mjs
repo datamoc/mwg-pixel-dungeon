@@ -104,7 +104,8 @@ try {
 	const { wraithCombatStats, dustSpawnerStep, dustSpawnerCap } = require('./simulation/wraith');
 const { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } = require('./simulation/plantPools');
 const { plantDropCandidates, plantDropCount } = require('./simulation/plantDrops');
-const { runHeroPlantEffect } = require('./simulation/plantTriggers');
+const { runHeroPlantEffect, runMobPlantEffect } = require('./simulation/plantTriggers');
+const { TIME_BUBBLE_TURNS: MOB_BUBBLE_TURNS } = require('./simulation/timeBubble');
 const { teleportCandidates, disarmBubblePresses } = require('./simulation/teleport');
 const { teleportAppearPlan } = require('./simulation/teleportAppear');
 const { selectRangedTarget } = require('./simulation/targeting');
@@ -386,6 +387,110 @@ check('the moved hero plant-effect switch fires every branch', () => {
 	assert.deepEqual(r.rec.fires, []);
 	assert.deepEqual(r.rec.gases, []);
 	assert.equal(r.rec.said.length, 1);
+});
+check('the moved mob plant-effect switch fires every branch', () => {
+	//Drive of `runMobPlantEffect` (the `triggerMobPlantAt` half moved to
+	//`simulation/plantTriggers.ts` in the file-size refactor, fifth extraction):
+	//a recording fake scene with real `Roguelike` offsets. Effect routing is
+	//asserted, including the two orderings Java cares about (fadeleaf marks
+	//before teleporting; sorrowmoss sets rather than prolongs).
+	function driveMob(kind, overrides = {}) {
+		const { presetBuffs, ...ctxOverrides } = overrides;
+		const creature = {
+			x: 5, y: 5, kind: 'rat', maxHp: 20, hp: 20, buffs: {}, seesHero: true,
+		};
+		if (presetBuffs) Object.assign(creature.buffs, presetBuffs);
+		const rec = {
+			grants: [], prolongs: [], fires: [], gases: [], freezes: [],
+			hazards: [], areas: [], shakes: [], placed: [], teleports: [], patrols: [],
+		};
+		const ctx = {
+			depth: 12,
+			neighbour8: require('mwg').Roguelike.neighbourOffsets(8),
+			grantBuff: (target, id, duration) => { rec.grants.push([id, duration]); target.buffs[id] = duration ?? 0; },
+			prolongBuff: (target, id, duration) => { rec.prolongs.push([id, duration]); target.buffs[id] = duration ?? 0; },
+			markHazardMob: (target) => { rec.hazards.push(target.kind); },
+			markHazardArea: (x, y) => { rec.areas.push([x, y]); },
+			patrolDestination: () => { rec.patrols.push(1); return { x: 0, y: 0 }; },
+			findTeleportCell: () => ({ x: 8, y: 8 }),
+			placeSprite: (target, x, y) => { rec.placed.push([target.kind, x, y]); },
+			showTeleport: (from, to) => { rec.teleports.push([[from.x, from.y], [to.x, to.y]]); },
+			seedFreeze: (x, y, volume) => { rec.freezes.push([x, y, volume]); },
+			seedGas: (x, y, volume) => { rec.gases.push([x, y, volume]); },
+			seedFire: (x, y, volume) => { rec.fires.push([x, y, volume]); },
+			passable: () => true,
+			isVisibleCell: () => true,
+			shake: (intensity, duration) => { rec.shakes.push([intensity, duration]); },
+			isImmovableKind: () => false,
+			...ctxOverrides,
+		};
+		runMobPlantEffect(kind, 77, creature, ctx);
+		return { creature, rec };
+	}
+	//Blindweed dazes, cripples, blinds to patrol and marks.
+	let m = driveMob('blindweed');
+	assert.deepEqual(m.rec.grants, [['daze', undefined]]);
+	assert.deepEqual(m.rec.prolongs, [['cripple', undefined]]);
+	assert.equal(m.creature.seesHero, false);
+	assert.deepEqual(m.creature.patrolTarget, { x: 0, y: 0 });
+	assert.deepEqual(m.rec.hazards, ['rat']);
+	//Firebloom seeds fire at the stepper and marks; rotberry gasses without marking.
+	m = driveMob('firebloom');
+	assert.deepEqual(m.rec.fires, [[5, 5, 2]]);
+	assert.deepEqual(m.rec.hazards, ['rat']);
+	m = driveMob('rotberry');
+	assert.deepEqual(m.rec.gases, [[5, 5, 100]]);
+	assert.deepEqual(m.rec.hazards, [], 'rotberry never marks its own gas');
+	//Starflower prolongs bless; sorrowmoss SETS the depth-scaled poison and marks.
+	m = driveMob('starflower');
+	assert.deepEqual(m.rec.prolongs, [['bless', undefined]]);
+	m = driveMob('sorrowmoss');
+	assert.deepEqual(m.rec.grants, [['poison', 13]]);
+	assert.deepEqual(m.rec.hazards, ['rat']);
+	//Stormvine dazes and marks.
+	m = driveMob('stormvine');
+	assert.deepEqual(m.rec.grants, [['daze', undefined]]);
+	assert.deepEqual(m.rec.hazards, ['rat']);
+	//Icecap freezes all nine passable neighbours and marks the 3x3, with no status.
+	m = driveMob('icecap');
+	assert.equal(m.rec.freezes.length, 9);
+	assert.ok(m.rec.freezes.every(([x, y, volume]) => volume === 2));
+	assert.deepEqual(m.rec.areas, [[5, 5]]);
+	assert.deepEqual(m.rec.grants, []);
+	//Mageroyal detaches the cure list but never burning.
+	m = driveMob('mageroyal', { presetBuffs: { poison: 3, burning: 4, blindness: 2 } });
+	assert.deepEqual(m.creature.buffs, { burning: 4 }, 'the cure keeps burning burning');
+	//Sungrass banks the additive pool on the stepper; earthroot keep-maxes its armor.
+	m = driveMob('sungrass');
+	assert.equal(m.creature.sungrassLevel, 20);
+	assert.equal(m.creature.sungrassPos, 77);
+	m = driveMob('earthroot');
+	assert.equal(m.creature.earthrootArmorLevel, 20);
+	assert.equal(m.creature.earthrootArmorPos, 77);
+	assert.deepEqual(m.rec.shakes, [[1, 0.4]]);
+	m = driveMob('earthroot', { isVisibleCell: () => false });
+	assert.deepEqual(m.rec.shakes, []);
+	//Swiftthistle banks the mob its own bubble turns, overwriting unconditionally.
+	m = driveMob('swiftthistle');
+	assert.equal(m.creature.timeBubbleTurns, MOB_BUBBLE_TURNS);
+	//Fadeleaf marks first, then teleports body and sprite with presentation.
+	m = driveMob('fadeleaf');
+	assert.deepEqual([m.creature.x, m.creature.y], [8, 8]);
+	assert.deepEqual(m.rec.placed, [['rat', 8, 8]]);
+	assert.deepEqual(m.rec.teleports, [[[5, 5], [8, 8]]]);
+	assert.deepEqual(m.rec.hazards, ['rat'], 'the mark lands before the teleport');
+	//An immovable stepper is refused before the mark; a missing cell keeps the mark.
+	m = driveMob('fadeleaf', { isImmovableKind: () => true });
+	assert.deepEqual([m.creature.x, m.creature.y], [5, 5]);
+	assert.deepEqual(m.rec.hazards, [], 'an unmoved mob is never marked');
+	m = driveMob('fadeleaf', { findTeleportCell: () => null });
+	assert.deepEqual([m.creature.x, m.creature.y], [5, 5]);
+	assert.deepEqual(m.rec.hazards, ['rat']);
+	//A kind with no mob branch is a silent no-op.
+	m = driveMob('dewcatcher');
+	assert.deepEqual(m.rec.grants, []);
+	assert.deepEqual(m.rec.fires, []);
+	assert.deepEqual(m.rec.gases, []);
 });
 check('Dewcatcher/Seedpod drops avoid stairs and the entrance on distinct cells', () => {
 	const ring = [];

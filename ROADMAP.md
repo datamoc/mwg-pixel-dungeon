@@ -1093,7 +1093,19 @@ one.
       confinement guard satisfied. The mob half stays for the fifth extraction. Found
       in the same pass and recorded in `PORT_COVERAGE.md`: Dreamfoil has no seed deck
       entry, room planting or trigger branch anywhere (Not ported, unreachable).
-      **Complexity: L.**
+      **Fifth extraction 2026-09-19**: the mob/allied half (`triggerMobPlantAt`'s
+      fadeleaf block plus its ten-branch switch) joined the same module as
+      `runMobPlantEffect(kind, cell, creature, ctx)` behind a `MobPlantContext`
+      (immovable gate, patrol/teleport destinations, sprite placement, blob seeds,
+      cell-visibility shake gate); the scene keeps guard, kind resolution and marker
+      removal plus a 20-line builder. Net −78 lines in `dungeonScene.ts` (23,234
+      after). Suites: `tsc` clean (one real catch - the immovable set is keyed by
+      `AnyMonsterId`, so the gate takes that type), sim suite green at 159 checks
+      with a new every-branch mob drive (mark-before-teleport fadeleaf ordering,
+      immovable refusal before the mark, rotberry's unmarked gas, mageroyal keeping
+      burning, the silent unknown-kind no-op), and the mob-half earthroot shake pin
+      relocated to the moved module. The plant-trigger domain is now fully out of
+      the scene. **Complexity: L.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

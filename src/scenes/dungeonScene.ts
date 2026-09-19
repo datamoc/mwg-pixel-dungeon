@@ -186,7 +186,7 @@ import { trampleHighGrass as planHighGrassTrample, type HighGrassState } from '.
 import { applyEnvironmentalBlobs } from '../simulation/environmentalBlobs';
 import { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } from '../simulation/plantPools';
 import { plantDropCandidates, plantDropCount } from '../simulation/plantDrops';
-import { runHeroPlantEffect, type HeroPlantContext } from '../simulation/plantTriggers';
+import { runHeroPlantEffect, runMobPlantEffect, type HeroPlantContext, type MobPlantContext } from '../simulation/plantTriggers';
 import { teleportCandidates, disarmBubblePresses, type TeleportCell } from '../simulation/teleport';
 import { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } from '../simulation/timeBubble';
 import { teleportAppearPlan } from '../simulation/teleportAppear';
@@ -8905,111 +8905,33 @@ export class DungeonScene extends Scene2D {
 		this.manualPlants.delete(cell);
 		if (this.portedFeatures.kindAt(cell)?.startsWith('plant:')) this.portedFeatures.remove(cell);
 		if (!kind) return true;
-		if (kind === 'fadeleaf') {
-			//`Fadeleaf.activate()`: Java teleports every non-`IMMOVABLE` mob. The statue is
-		//not immovable in Java (`Statue.java` carries only `INORGANIC`), so the old statue
-		//exclusion teleported too little; the shared set covers DM201 and the rest.
-		if (creature.kind !== undefined && IMMOVABLE_KINDS.has(creature.kind)) return true;
-		//`Fadeleaf.activate()` marks a teleported mob first (`Buff.prolong(ch,
-		//`HazardAssistTracker...)` runs before `teleportChar` in Java).
-		this.markHazardMob(creature);
-			const destination = this.randomFreeCell(creature);
-			if (!destination) return true;
-			//`ScrollOfTeleportation.teleportChar()` moves the mob immediately, with the shared
-			//`ScrollOfTeleportation.appear` presentation as well, leaving only the logical
-		//position update direct (no `moveTo`, so no cell-press side effects).
-			const mobFadeFrom = { x: creature.x, y: creature.y };
-			creature.x = destination.x;
-			creature.y = destination.y;
-			const sprite = this.sprite(creature);
-			sprite.position.set(destination.x * TILE, destination.y * TILE);
-			this.playTeleportAppear(mobFadeFrom, destination, creature);
-			return true;
-		}
-		//The remaining branches are the non-hero half of each Plant.activate(Char). Java's
-		//special Warden variants are hero-only; ordinary monsters receive the base effect.
-		switch (kind) {
- 		case 'blindweed':
- 				addBuff(creature, 'daze');
- 				//`Blindweed.activate(ch)`: `prolong` (keep-max) `Blindness.DURATION` and
- 				//`Cripple.DURATION` - both whole 10s. Blindness itself arrives as the `daze`
- 				//stand-in (see the hero branch); the cripple keeps Java's prolong shape.
- 				reigniteBuff(creature, 'cripple');
- 				creature.seesHero = false;
-				creature.patrolTarget = this.randomPatrolDestination(creature);
-			this.markHazardMob(creature);
-				break;
-			case 'firebloom':
-				this.fire.seed(creature.x, creature.y, 2);
-			this.markHazardMob(creature);
-				break;
-			case 'rotberry':
-				this.plantGas.seed(creature.x, creature.y, 100);
-				break;
- 			case 'starflower':
- 				//`Starflower.activate(ch)`: `prolong` (keep-max) `Bless.DURATION` for any char.
- 				reigniteBuff(creature, 'bless');
- 				break;
- 			case 'sorrowmoss':
- 				//`Sorrowmoss.activate(ch)`: `affect(...).set(...)` - an unconditional SET of
- 				//`5 + round(2*scalingDepth/3)`, NOT a prolong: re-stepping while poisoned
- 				//shortens a longer clock where the old prolong kept it. (`scalingDepth` is
- 				//`depth` here - no AscensionChallenge exists to raise it to 26.)
- 				addBuff(creature, 'poison', 5 + Math.round(2 * this.depth / 3));
-			this.markHazardMob(creature);
-				break;
-			case 'stormvine':
-				addBuff(creature, 'daze');
-				this.markHazardMob(creature);
-				break;
- 			case 'icecap':
- 				//Same char-agnostic `Icecap.activate(ch)` as the hero half above: Freezing on
- 				//every passable NEIGHBOURS9 cell plus the 3x3 mob marking - no direct status.
- 				for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
- 					const nx = creature.x + dx, ny = creature.y + dy;
- 					if (this.level.passable(nx, ny)) this.plantFreeze.seed(nx, ny, 2);
- 				}
- 				this.markHazardArea(creature.x, creature.y);
- 				break;
-			case 'mageroyal':
-				//Same `PotionOfHealing.cure(ch)` as the hero half above: detach Poison/
-				//Cripple/Weakness/Vulnerable/Bleeding/Blindness/Drowsy, never Burning -
-				//the old list wrongly cleared Burning and missed the other three.
-				for (const buff of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'drowsy', 'blindness'] as BuffId[]) delete creature.buffs[buff];
-				break;
-			case 'sungrass': {
-				//`Sungrass.activate(ch)` for a non-Warden char: `Buff.affect(ch, Health.class)
-				//.boost(ch.HT)` (`plants/Sungrass.java`, tag `v3.3.8`) - an additive gradual-heal
-				//pool, not the instant full recovery this used to grant. The per-turn payout lives
-				//in `takeMonsterTurn`'s sungrass tick; the plant itself is still consumed here.
-				const granted = grantSungrassHealth(
-					creature.sungrassLevel !== undefined
-						? { level: creature.sungrassLevel, partial: creature.sungrassPartial ?? 0 }
-						: undefined,
-					creature.maxHp);
-				creature.sungrassLevel = granted.level;
-				creature.sungrassPartial = granted.partial;
-				creature.sungrassPos = cell;
-				break;
-			}
-			case 'earthroot':
-				//`Earthroot.activate(ch)` for a non-Warden char: `Buff.affect(ch, Armor.class)
-				//.level(ch.HT)` (`plants/Earthroot.java`, tag `v3.3.8`) - the same keep-max block
-				//pool the hero uses, absorbing per landed attack hit in `attack()`.
-				creature.earthrootArmorLevel = grantEarthrootArmor(creature.earthrootArmorLevel, creature.maxHp);
-				creature.earthrootArmorPos = cell;
-				if (this.fov.isVisible(cell % this.level.width, Math.floor(cell / this.level.width))) this.shakeScreen(1, 0.4);
-				break;
-			case 'swiftthistle':
-				//Per-char ownership (`Buff.affect(ch, TimeBubble.class)`): the mob banks its own
-				//seven rapid turns through the cost hook above - the global freeze is the hero's
-				//bubble only. The mob's detach fires nothing: delayed presses only ever land
-				//in the hero's bubble (`Level.pressCell` reads the hero's buff).
-				//`TimeBubble.reset()` overwrites unconditionally - re-triggering restarts it.
-				creature.timeBubbleTurns = TIME_BUBBLE_TURNS;
-				break;
-		}
+		runMobPlantEffect(kind, cell, creature, this.mobPlantContext());
 		return true;
+	}
+
+	/** Scene services behind `runMobPlantEffect`: the plant-trigger extraction's mob-half
+	 * context. The immovable gate, patrol/teleport destinations, sprite placement and
+	 * blob seeds stay scene-owned; buff math and the bubble constant are shared code. */
+	private mobPlantContext(): MobPlantContext {
+		return {
+			depth: this.depth,
+			neighbour8: Roguelike.neighbourOffsets(8),
+			grantBuff: (target, id, duration) => addBuff(target, id, duration),
+			prolongBuff: (target, id, duration) => reigniteBuff(target, id, duration),
+			markHazardMob: this.markHazardMob.bind(this),
+			markHazardArea: this.markHazardArea.bind(this),
+			patrolDestination: (creature) => this.randomPatrolDestination(creature),
+			findTeleportCell: (creature) => this.randomFreeCell(creature),
+			placeSprite: (creature, x, y) => { this.sprite(creature).position.set(x * TILE, y * TILE); },
+			showTeleport: (from, to, creature) => this.playTeleportAppear(from, to, creature),
+			seedFreeze: (x, y, volume) => this.plantFreeze.seed(x, y, volume),
+			seedGas: (x, y, volume) => this.plantGas.seed(x, y, volume),
+			seedFire: (x, y, volume) => this.fire.seed(x, y, volume),
+			passable: (x, y) => this.level.passable(x, y),
+			isVisibleCell: (cell) => this.fov.isVisible(cell % this.level.width, Math.floor(cell / this.level.width)),
+			shake: this.shakeScreen.bind(this),
+			isImmovableKind: (kind) => IMMOVABLE_KINDS.has(kind),
+		};
 	}
 
 	/**
