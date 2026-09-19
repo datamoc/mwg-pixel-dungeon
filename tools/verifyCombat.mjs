@@ -107,10 +107,10 @@ export function verifyCombat(require, check) {
 		assert.equal(rollHit(attacker, defender, random), true); // ties land
 		rollDamage(attacker, defender, random);
 		advanceBuffs({ poison: 1, burning: 1 }, random, 0);
-		// the last two are the DoT rolls: poison `int(1, 2)` and Burning's depth-scaled
-		// `NormalIntRange(1, 3 + scalingDepth/4)` - `int(1, 4)` at depth 0
+		// poison draws no RNG - `(int)(left/3)+1`, hence 1 at duration 1 - and Burning's
+		// depth-scaled `NormalIntRange(1, 3 + scalingDepth/4)` is `int(1, 4)` at depth 0
 		assert.deepEqual(calls, [['float', 10], ['float', 5], ['normalRange', 2, 8],
-			['range', 0, 3], ['normalRange', 0, 3], ['int', 1, 2], ['int', 1, 4]]);
+			['range', 0, 3], ['normalRange', 0, 3], ['int', 1, 4]]);
 		calls.length = 0;
 		advanceBuffs({ burning: 1 }, random, 16);
 		assert.deepEqual(calls, [['int', 1, 8]], 'and the bound grows with depth');

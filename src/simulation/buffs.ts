@@ -102,7 +102,7 @@ export function applyChillFreeze(previous: Readonly<BuffState>): { buffs: BuffSt
  * Preserves the old tickBuffs order: damage is rolled before decrement/expiry, including
  * duration 0, and keys with undefined values are skipped. These are per-creature timers;
  * area-fire propagation remains a separate scene system. Existing mwg int calls have
- * exclusive upper bounds: poison is 1 (not the previously documented 1-2).
+ * exclusive upper bounds.
  *
  * `Burning.act()` rolls `NormalIntRange(1, 3 + scalingDepth/4)`, an inclusive range, so the
  * depth-scaled bound is `int(1, 4 + floor(scalingDepth/4))` here. The old fixed `int(1, 3)` was
@@ -116,7 +116,12 @@ export function advanceBuffs(previous: Readonly<BuffState>, random: SimulationRa
 		const left = buffs[id];
 		if (left === undefined) continue;
 		if (id === 'burning') damage += random.int(1, 4 + Math.floor(scalingDepth / 4));
-		if (id === 'poison') damage += random.int(1, 2);
+		//`Poison.act()` (tag v3.3.8): `(int)(left/3)+1` deals off the *remaining*
+		//duration, not a flat roll - a fresh 6-turn poison hits for 3, decaying as the clock
+		//runs down. The old flat `int(1, 2) (exclusive upper bound: always 1) had no Java
+		//behind it and made every poison roughly a third as strong as Java's. Found by the
+		//14th monster-analysis matrix (DoT buffs).
+		if (id === 'poison') damage += Math.floor(left / 3) + 1;
 		//Bleeding.act(): Java redraws the intensity from NormalFloat(level/2, level),
 		//deals round(level), and keeps the new intensity until the next actor turn.
 		if (id === 'magicalSleep') continue;
