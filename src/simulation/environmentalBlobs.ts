@@ -1,4 +1,6 @@
-import type { Creature, Step } from '../combat';
+import type { Creature, GroundItem, Step } from '../combat';
+import type { AnyMonsterId } from '../monsters';
+import type { LogLevel } from '../ui/gameLog';
 
 export type EnvironmentalBlob = 'plantGas' | 'plantFreeze' | 'toxicGas' | 'paralyticGas' | 'stenchGas' | 'corrosiveGas' | 'confusionGas' | 'web' | 'electricity' | 'smokeScreen' | 'inferno' | 'blizzard';
 
@@ -155,4 +157,65 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 		if (target.buffs?.['paralysis'] === undefined) context.addBuff(target, 'paralysis', charge);
 		if (charge % 2 === 1 && !context.applyDamage(target, context.electricDamage(target), 'electricity')) return;
 	}
+}
+
+/** The `SacrificialFire` quest-room blob: only the live volume plus the prize/charge/cell
+ * triple travel here - the room setup, prize generation and save/load stay scene-owned.
+ * The field is deliberately named `t` (bound to the real one) so the `t('...')` key
+ * audits keep seeing the reward line, the same shape `plantTriggers.ts` uses. */
+export interface SacrificialFireContext {
+	prize: () => GroundItem['item'] | undefined;
+	setPrize: (prize: GroundItem['item'] | undefined) => void;
+	charge: () => number;
+	setCharge: (charge: number) => void;
+	cell: () => number;
+	levelWidth: number;
+	depth: number;
+	fire: {
+		spread: (passable: (x: number, y: number) => boolean, intensity: number, decay: number) => void;
+		volumeAt: (x: number, y: number) => number;
+	};
+	resetFire: () => void;
+	passable: (x: number, y: number) => boolean;
+	monsterExp: (kind: AnyMonsterId | undefined) => number;
+	rollRange: (min: number, max: number) => number;
+	spawnReward: (prize: NonNullable<GroundItem['item']>, x: number, y: number) => void;
+	say: (line: string, level?: LogLevel) => void;
+	t: (key: string) => string;
+}
+
+/** SacrificialFire spreads like a floor blob. Java marks actors for two turns; this
+ * compact scene checks the active volume at death, which preserves the meaningful
+ * room rule without adding another persistent combat buff solely for this feature. */
+export function spreadSacrificialFire(ctx: SacrificialFireContext): void {
+	if (!ctx.prize() || ctx.charge() <= 0) return;
+	ctx.fire.spread(ctx.passable, 0.25, 0.9);
+}
+
+export function sacrificeCost(
+	kind: AnyMonsterId | undefined,
+	generation: number | undefined,
+	ctx: SacrificialFireContext,
+): number {
+	let exp = ctx.monsterExp(kind);
+	if (kind === 'statue' || kind === 'mimic') exp = 1 + ctx.depth;
+	else if (kind === 'piranha') exp = 1 + Math.floor(ctx.depth / 2);
+	else if (kind === 'swarm' && (generation ?? 0) > 0) exp = 1;
+	return exp * ctx.rollRange(2, 3);
+}
+
+export function processSacrifice(creature: Creature, ctx: SacrificialFireContext): void {
+	const prize = ctx.prize();
+	if (!prize || ctx.charge() <= 0) return;
+	if (ctx.fire.volumeAt(creature.x, creature.y) <= 0) return;
+	ctx.setCharge(ctx.charge() - sacrificeCost(creature.kind, creature.generation, ctx));
+	if (ctx.charge() > 0) return;
+	const reward = ctx.cell() >= 0
+		? { x: ctx.cell() % ctx.levelWidth, y: Math.floor(ctx.cell() / ctx.levelWidth) }
+		: { x: creature.x, y: creature.y };
+	ctx.spawnReward(prize, reward.x, reward.y);
+	ctx.say(ctx.t('port.log.sacrificialfirereward'), 'positive');
+	ctx.setPrize(undefined);
+	ctx.setCharge(0);
+	ctx.resetFire();
 }

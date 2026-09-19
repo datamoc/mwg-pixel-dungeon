@@ -110,7 +110,7 @@ const { teleportCandidates, disarmBubblePresses } = require('./simulation/telepo
 const { teleportAppearPlan } = require('./simulation/teleportAppear');
 const { selectRangedTarget } = require('./simulation/targeting');
 const { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } = require('./simulation/timeBubble');
-	const { applyEnvironmentalBlobs } = require('./simulation/environmentalBlobs');
+	const { applyEnvironmentalBlobs, spreadSacrificialFire, sacrificeCost, processSacrifice } = require('./simulation/environmentalBlobs');
 	// The four coefficients `HighGrass.trample` reads, as the port's MWL rows carry them.
 	const grassRules = { seedChanceBase: 25, seedChancePerLevel: 4, dewChanceBase: 6, dewChanceLevelDivisor: 2 };
 	check('Huntress furrows high grass before clearing it without drops', () => {
@@ -491,6 +491,80 @@ check('the moved mob plant-effect switch fires every branch', () => {
 	assert.deepEqual(m.rec.grants, []);
 	assert.deepEqual(m.rec.fires, []);
 	assert.deepEqual(m.rec.gases, []);
+});
+check('the moved sacrificial-fire rule spreads, prices and pays out', () => {
+	//Drive of `spreadSacrificialFire`/`sacrificeCost`/`processSacrifice` (moved to
+	//`simulation/environmentalBlobs.ts` in the file-size refactor, seventh
+	//extraction): a recording fake fire blob and prize triple at depth 12.
+	function driveSacrifice(overrides = {}) {
+		const state = {
+			prize: { id: 'armor', quantity: 1 }, charge: 0, cell: 65,
+			spreads: 0, volume: 0, rewards: [], said: [], resets: 0,
+		};
+		const ctx = {
+			prize: () => state.prize,
+			setPrize: (prize) => { state.prize = prize; },
+			charge: () => state.charge,
+			setCharge: (charge) => { state.charge = charge; },
+			cell: () => state.cell,
+			levelWidth: 32,
+			depth: 12,
+			fire: {
+				spread: () => { state.spreads++; },
+				volumeAt: () => state.volume,
+			},
+			resetFire: () => { state.resets++; state.volume = 0; },
+			passable: () => true,
+			monsterExp: () => 3,
+			rollRange: () => 2,
+			spawnReward: (prize, x, y) => { state.rewards.push([prize.id, x, y]); },
+			say: (line, level) => { state.said.push({ line, level }); },
+			t: (key) => key,
+			...overrides,
+		};
+		return { state, ctx };
+	}
+	//Cost math: table exp times the 2-3 roll, with the three Java overrides.
+	let s = driveSacrifice();
+	assert.equal(sacrificeCost('rat', 0, s.ctx), 6, 'a plain mob costs table exp times the roll');
+	assert.equal(sacrificeCost('statue', 0, s.ctx), 26, 'statues cost 1 + depth');
+	assert.equal(sacrificeCost('mimic', 0, s.ctx), 26);
+	assert.equal(sacrificeCost('piranha', 0, s.ctx), 14, 'piranhas cost 1 + half depth');
+	assert.equal(sacrificeCost('swarm', 1, s.ctx), 2, 'split swarms cost a flat 1');
+	assert.equal(sacrificeCost('swarm', 0, s.ctx), 6, 'an unsplit swarm costs the table');
+	assert.equal(sacrificeCost(undefined, 0, s.ctx), 6, 'a kindless death costs the table too');
+	//Spread runs only while a prize is banked and charge remains.
+	s = driveSacrifice();
+	s.state.charge = 10;
+	spreadSacrificialFire(s.ctx);
+	assert.equal(s.state.spreads, 1);
+	s.state.prize = undefined;
+	spreadSacrificialFire(s.ctx);
+	assert.equal(s.state.spreads, 1, 'no prize, no spread');
+	//A death outside the volume pays nothing; a partial payment banks no reward.
+	s = driveSacrifice();
+	s.state.charge = 10;
+	s.state.volume = 0;
+	processSacrifice({ x: 1, y: 2, kind: 'rat', generation: 0 }, s.ctx);
+	assert.equal(s.state.charge, 10, 'outside the fire nothing is owed');
+	s.state.volume = 5;
+	processSacrifice({ x: 1, y: 2, kind: 'rat', generation: 0 }, s.ctx);
+	assert.equal(s.state.charge, 4, 'a 6-cost death on 10 charge leaves 4');
+	assert.deepEqual(s.state.rewards, []);
+	//The paying death drops the prize at the prize cell, says the line, and resets.
+	processSacrifice({ x: 1, y: 2, kind: 'rat', generation: 0 }, s.ctx);
+	assert.deepEqual(s.state.rewards, [['armor', 1, 2]], 'cell 65 on a width-32 floor is (1, 2)');
+	assert.deepEqual(s.state.said, [{ line: 'port.log.sacrificialfirereward', level: 'positive' }]);
+	assert.equal(s.state.prize, undefined);
+	assert.equal(s.state.charge, 0);
+	assert.equal(s.state.resets, 1);
+	//With no prize cell the reward lands on the stepper instead.
+	s = driveSacrifice();
+	s.state.charge = 6;
+	s.state.volume = 5;
+	s.state.cell = -1;
+	processSacrifice({ x: 7, y: 7, kind: 'rat', generation: 0 }, s.ctx);
+	assert.deepEqual(s.state.rewards, [['armor', 7, 7]]);
 });
 check('Dewcatcher/Seedpod drops avoid stairs and the entrance on distinct cells', () => {
 	const ring = [];

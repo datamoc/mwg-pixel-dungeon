@@ -183,7 +183,12 @@ import { traceRayToTarget } from '../mechanics/rays';
 import { planTenguConeFront } from '../simulation/tenguBeam';
 import { planFireSpread } from '../simulation/fireSpread';
 import { trampleHighGrass as planHighGrassTrample, type HighGrassState } from '../simulation/highGrass';
-import { applyEnvironmentalBlobs } from '../simulation/environmentalBlobs';
+import {
+	applyEnvironmentalBlobs,
+	processSacrifice,
+	spreadSacrificialFire,
+	type SacrificialFireContext,
+} from '../simulation/environmentalBlobs';
 import { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } from '../simulation/plantPools';
 import { plantDropCandidates, plantDropCount } from '../simulation/plantDrops';
 import { runHeroPlantEffect, runMobPlantEffect, type HeroPlantContext, type MobPlantContext } from '../simulation/plantTriggers';
@@ -6372,37 +6377,35 @@ export class DungeonScene extends Scene2D {
 		for (const cell of this.eternalFire.cellsAbove(1)) into.add(this.level.index(cell.x, cell.y));
 	}
 
-	/** SacrificialFire spreads like a floor blob. Java marks actors for two turns; this
-	 * compact scene checks the active volume at death, which preserves the meaningful
-	 * room rule without adding another persistent combat buff solely for this feature. */
+	/** The `SacrificialFire` room rule - spread, cost and death processing live in
+	 * `simulation/environmentalBlobs.ts` next to the other blob rules; the scene keeps
+	 * the prize/charge/cell triple, the room setup and the save/load half. */
 	private spreadSacrificialFire(): void {
-		if (!this.sacrificialFirePrize || this.sacrificialFireCharge <= 0) return;
-		this.sacrificialFire.spread((x, y) => this.level.passable(x, y), 0.25, 0.9);
-	}
-
-	private sacrificeCost(creature: Creature): number {
-		const kind = creature.kind;
-		let exp = kind ? MONSTERS[kind].exp : 1;
-		if (kind === 'statue' || kind === 'mimic') exp = 1 + this.depth;
-		else if (kind === 'piranha') exp = 1 + Math.floor(this.depth / 2);
-		else if (kind === 'swarm' && (creature.generation ?? 0) > 0) exp = 1;
-		return exp * Random.range(2, 3);
+		spreadSacrificialFire(this.sacrificialFireContext());
 	}
 
 	private processSacrifice(creature: Creature): void {
-		if (!this.sacrificialFirePrize || this.sacrificialFireCharge <= 0) return;
-		if (this.sacrificialFire.volumeAt(creature.x, creature.y) <= 0) return;
-		this.sacrificialFireCharge -= this.sacrificeCost(creature);
-		if (this.sacrificialFireCharge > 0) return;
-		const cell = this.sacrificialFireCell >= 0
-			? { x: this.sacrificialFireCell % this.level.width, y: Math.floor(this.sacrificialFireCell / this.level.width) }
-			: { x: creature.x, y: creature.y };
-		const kind = groundKindForItem(this.sacrificialFirePrize, 'armor');
-		this.spawnGroundItem(kind, cell.x, cell.y, this.sacrificialFirePrize);
-		this.say(t('port.log.sacrificialfirereward'), 'positive');
-		this.sacrificialFirePrize = undefined;
-		this.sacrificialFireCharge = 0;
-		this.sacrificialFire = new Blob(this.level.width, this.level.height);
+		processSacrifice(creature, this.sacrificialFireContext());
+	}
+
+	private sacrificialFireContext(): SacrificialFireContext {
+		return {
+			prize: () => this.sacrificialFirePrize,
+			setPrize: (prize) => { this.sacrificialFirePrize = prize; },
+			charge: () => this.sacrificialFireCharge,
+			setCharge: (charge) => { this.sacrificialFireCharge = charge; },
+			cell: () => this.sacrificialFireCell,
+			levelWidth: this.level.width,
+			depth: this.depth,
+			fire: this.sacrificialFire,
+			resetFire: () => { this.sacrificialFire = new Blob(this.level.width, this.level.height); },
+			passable: (x, y) => this.level.passable(x, y),
+			monsterExp: (kind) => (kind ? MONSTERS[kind].exp : 1),
+			rollRange: (min, max) => Random.range(min, max),
+			spawnReward: (prize, x, y) => this.spawnGroundItem(groundKindForItem(prize, 'armor'), x, y, prize),
+			say: this.say.bind(this),
+			t,
+		};
 	}
 
 	/** Applies the Java plant blobs to every actor standing in an active cell. */

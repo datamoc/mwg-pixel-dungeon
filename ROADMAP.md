@@ -1115,7 +1115,22 @@ one.
       of this line. Suites: `tsc` clean first try, item suite green with a new
       quickslot pin (family mapping, assign-mirrors-use, refresh reporting the
       held quantity under the held instance, stale-slot cleanup on refresh and on
-      use, familyless ids assigning nothing). **Complexity: L.**
+      use, familyless ids assigning nothing). **Seventh extraction 2026-09-19**: the
+      `SacrificialFire` room rule (`spreadSacrificialFire`/`sacrificeCost`/
+      `processSacrifice`) moved into `simulation/environmentalBlobs.ts` next to the
+      other blob rules - a `SacrificialFireContext` (prize/charge/cell accessors,
+      structural fire volume, reset, passable, exp table, roll, reward spawn, say,
+      `t`); the scene keeps the triple, room setup and save/load plus a 20-line
+      builder. Net +3 lines in `dungeonScene.ts` (23,227 after) - the builder costs
+      more than the 30 moved lines, stated plainly; the value is domain placement
+      (blob ticking now lives in one module) plus first-ever headless coverage of
+      the cost math and payout order. Suites: `tsc` clean (two real catches - the
+      exp table is keyed by `AnyMonsterId`, the reward spawner needs a non-null
+      prize), sim suite green at 160 checks with a new sacrificial drive (statue/
+      mimic/piranha/swarm/kindless costs, spread gating, outside-volume refusal,
+      partial payment banking nothing, prize-cell decode, stepper fallback). The
+      reward key moves 1-to-1 with the code (`ctx.t`, extractor-matched).
+      **Complexity: L.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that
