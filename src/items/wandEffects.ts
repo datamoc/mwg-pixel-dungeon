@@ -18,6 +18,7 @@ export interface TransfusionWandContext {
 	kill: (target: Creature) => void;
 	setCharm: (target: Creature) => void;
 	addBuff: (target: Creature, id: 'charm') => void;
+	reigniteBuff: (target: Creature, id: 'charm', duration?: number) => void;
 	rollDamage: (min: number, max: number) => number;
 	say: (message: string, level?: 'info' | 'positive' | 'negative' | 'warning') => void;
 	message: string;
@@ -26,7 +27,10 @@ export interface TransfusionWandContext {
 /** `WandOfTransfusion.onZap()`: the scene supplies only world effects and presentation. */
 export function useTransfusionWand(context: TransfusionWandContext): void {
 	const { target, hero, level } = context;
-	if (target.isAlly) {
+	//Java heals an ally OR an already-charmed enemy (`ch.buff(Charm) != null`) -
+	//the old `isAlly`-only test re-shielded a charmed target instead of healing it.
+	//Found by the 17th monster-analysis matrix.
+	if (target.isAlly || target.buffs['charm'] !== undefined) {
 		const selfDamage = Math.round(hero.maxHp * mwlItemEffectValue('wandTransfusion', 'selfDamageFraction'));
 		const healing = selfDamage + mwlItemEffectValue('wandTransfusion', 'healingPerLevel') * level;
 		const before = target.hp;
@@ -52,7 +56,9 @@ export function useTransfusionWand(context: TransfusionWandContext): void {
 			context.showDamage(target, damage);
 			if (target.hp <= 0) context.kill(target);
 		} else if (!context.isUndead(target)) {
-			context.addBuff(target, 'charm');
+			//Java charms for `Charm.DURATION/2` (5), not the full 10 - and `affect`
+			//keeps a longer existing charm, so this prolongs rather than sets.
+			context.reigniteBuff(target, 'charm', 5);
 			context.setCharm(target);
 		}
 	}
@@ -87,8 +93,16 @@ export function useWardingWand(context: WardingWandContext): void {
 		if (tier < 6 && energy < energyLimit) {
 			target.wardTier = tier + 1;
 			target.wardWandLevel = Math.max(target.wardWandLevel ?? 0, level);
+			//`Ward.upgrade()` (tag `v3.3.8`) does NOT heal by the `wandHeal` table on
+			//promotion (tiers 1/2 gain nothing at all): 3->4 SETS hp to
+			//`15+(5-totalZaps)*4` (HT 35), 4->5 adds 19 (HT 54), 5->6 adds 30
+			//(HT 84). Only a tier-6 re-zap heals by the table (16). The old code
+			//added the table values on every promotion (9/12/16) - over-setting 3->4
+			//and under-healing 4->5/5->6. Found by the 17th monster-analysis matrix.
 			if (target.wardTier >= 4 && nextWardRule) target.maxHp = nextWardRule.maxHp;
-			target.hp = Math.min(target.maxHp, target.hp + (target.wardTier >= 4 ? nextWardRule?.heal ?? 0 : 0));
+			if (target.wardTier === 4) target.hp = 15 + (5 - (target.wardTotalZaps ?? 0)) * 4;
+			else if (target.wardTier === 5) target.hp += 19;
+			else if (target.wardTier === 6) target.hp += 30;
 			context.setWardTexture(target, target.wardTier);
 			context.placeCharacterArt(target);
 			context.say(context.messages.success, 'positive');
@@ -149,6 +163,7 @@ export interface FireblastWandContext {
 	kill: (target: Creature) => void;
 	rollDamage: (min: number, max: number) => number;
 	addBuff: (target: Creature, id: 'burning' | 'cripple' | 'paralysis') => void;
+	reigniteBuff: (target: Creature, id: 'burning' | 'cripple' | 'paralysis', duration?: number) => void;
 	say: (message: string, level?: 'info' | 'positive' | 'negative' | 'warning') => void;
 	message: (target: Creature, damage: number) => string;
 }
@@ -215,9 +230,12 @@ export function useFireblastWand(context: FireblastWandContext): void {
 			context.kill(victim);
 			continue;
 		}
-		context.addBuff(victim, 'burning');
-		if (charges === 2) context.addBuff(victim, 'cripple');
-		else if (charges === 3) context.addBuff(victim, 'paralysis');
+		//Java prolongs all three (`reignite` for Burning, `affect` with 4 for Cripple
+		//and - explicitly, not `Paralysis.DURATION`'s 3 - Paralysis), never
+		//overwriting a longer clock. Found by the 17th monster-analysis matrix.
+		context.reigniteBuff(victim, 'burning');
+		if (charges === 2) context.reigniteBuff(victim, 'cripple');
+		else if (charges === 3) context.reigniteBuff(victim, 'paralysis', 4);
 	}
 }
 

@@ -5703,6 +5703,7 @@ export class DungeonScene extends Scene2D {
 			kill: (victim) => this.kill(victim),
 			rollDamage: (min, max) => Random.normalRange(min, max),
 			addBuff: (victim, id) => addBuff(victim, id),
+			reigniteBuff: (victim, id, duration) => reigniteBuff(victim, id, duration),
 			say: (message, level) => this.say(message, level),
 			message: (victim, damage) => t('port.log.wandhits', { target: victim.name, damage }),
 		});
@@ -5731,6 +5732,7 @@ export class DungeonScene extends Scene2D {
 			kill: (victim) => this.kill(victim),
 			setCharm: (victim) => this.charmTargets.set(victim.id, this.hero.id),
 			addBuff: (victim, id) => addBuff(victim, id),
+			reigniteBuff: (victim, id, duration) => reigniteBuff(victim, id, duration),
 			rollDamage: (min, max) => Random.normalRange(min, max),
 			say: (message, levelName) => this.say(message, levelName),
 			message: t('port.log.wandtransfusion'),
