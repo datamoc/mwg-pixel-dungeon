@@ -479,9 +479,9 @@ const SPD_LEVEL_CURVE: Actors.GrowthCurve = {
  * milestone that completes the instant `DungeonScene` calls `advanceStage()` right after
  * `start()` (the "you were given this quest" moment); stage 1 is the real objective, gated on the
  * `ghostTargetSlain` `GameState` switch whichever miniboss's death sets; stage 2 is another
- * milestone, completing (and so finishing the quest) the next time the hero talks to the
- * Ghost after stage 1 is done. Reward (flat +2 max HP) is the documented stand-in for
- * Java's generated weapon+armor set - this port has no generated loot to give.
+ * milestone, completing (and so finishing the quest) when the hero picks one of the two
+ * generated reward items out of the turn-in picker - Java's `WndSadGhost` weapon-or-armor
+ * choice, never both, with no max-HP bonus on either side.
  */
 const SAD_GHOST_QUEST: Rpg.QuestDefinition = {
 	id: 'sadGhost',
@@ -4118,10 +4118,6 @@ export class DungeonScene extends Scene2D {
 			remind: () => this.say(t('port.npc.ghost.remind')),
 			turnIn: () => {
 				//the condition stage is done (the miniboss is dead) - this is the turn-in
-				this.quests.advanceStage('sadGhost', this.gameState);
-				const oldMax = this.hero.maxHp;
-				this.hero.maxHp += 2;
-				this.hero.hp += this.hero.maxHp - oldMax;
 				//Ghost.Quest.spawn(): a fixed 50/30/15/5% tier roll (not the generic depth-scaled
 				//randomWeapon/randomArmor this used to call), a shared upgrade level, and a shared 20%
 				//enchant/glyph chance for both items - see `ghostQuestReward()` for the exact formula.
@@ -4131,11 +4127,20 @@ export class DungeonScene extends Scene2D {
 				const armorReward = this.generatedInventoryItem(reward.armor);
 				Actors.identify(weaponReward);
 				Actors.identify(armorReward);
-				//The generator has already rolled the real curse/enchantment/glyph outcome; the compact
-				//inventory payload carries that state through the same equipment workflow as floor drops.
-				this.bag.add(weaponReward);
-				this.bag.add(armorReward);
-				this.say(t('port.npc.ghost.reward'), 'positive');
+				//WndSadGhost: the hero takes the weapon OR the armor - never both, and no
+				//max-HP bonus (the flat +2 this turn-in used to grant was a stand-in from before
+				//the generated pair existed). Cancelling leaves the quest turn-in-ready, so the
+				//next talk re-offers the same pair; the quest completes on pick.
+				this.openItemPicker(
+					t('port.npc.ghost.reward'),
+					[weaponReward, armorReward].map((item) => ({ id: item.id, instanceId: item.instanceId, identified: true, quantity: item.quantity ?? 1 })),
+					(pick) => {
+						const chosen = [weaponReward, armorReward].find((item) => item.instanceId === pick.instanceId) ?? weaponReward;
+						this.bag.add(chosen);
+						this.quests.advanceStage('sadGhost', this.gameState);
+						this.say(t('port.npc.ghost.reward'), 'positive');
+					},
+				);
 			},
 		});
 	}
