@@ -68,6 +68,8 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	// are scene-free in the same way, so they are pinned here against Java's own numbers.
 	compile(join(root, 'src/items/talisman.ts'), 'items/talisman.js');
 compile(join(root, 'src/items/chains.ts'), 'items/chains.js');
+compile(join(root, 'src/items/horn.ts'), 'items/horn.js');
+compile(join(root, 'src/simulation/hunger.ts'), 'simulation/hunger.js');
 compile(join(root, 'src/mechanics/cone.ts'), 'mechanics/cone.js');
 //`talisman.js` reads `WALL` off `dungeonConstants.js`, which the suite otherwise only compiles
 //much later (line ~2110) - recompiling it here is the same idempotent write.
@@ -1888,6 +1890,74 @@ function chainsDrive(overrides = {}, pickCell = { x: 4, y: 0 }) {
 	assert.ok(cursed.log.some((l) => l.includes('cursed')), 'cursed reports');
 	const immune = chainsDrive({ ctx: { magicImmune: true } });
 	assert.ok(!immune.log.some((l) => l.startsWith('aim:')), 'AntiMagic opens nothing');
+// The moved horn flow (`HornFlowContext`, the file-size refactor's eleventh extraction):
+// driven headlessly through scripted pickers, with hunger scripted at 500.
+const { useHornFlow, hornChargeCap, hornSatietyPerCharge } = require('./items/horn.js');
+assert.equal(hornChargeCap({ level: 0 }), 5, 'the horn holds 5 at +0');
+assert.equal(hornChargeCap({ level: 3 }), 6, 'and half a charge per level');
+assert.equal(hornSatietyPerCharge(), 90, 'STARVING over the authored divisor of 5');
+function hornDrive(overrides = {}, pickScript = [0]) {
+	const log = [];
+	let hunger = overrides.hunger ?? 500;
+	const horn = { level: 0, charge: 10, ...overrides.horn };
+	const bag = overrides.bag ?? [{ id: 'meatPie', instanceId: 'food:1', quantity: 1, identified: true }];
+	const flags = { turns: [], healed: 0, rings: 0 };
+	const picks = [...pickScript];
+	const ctx = {
+		magicImmune: false,
+		hornOf: () => horn,
+		openPicker: (title, entries, onPick) => { log.push(`picker:${title}:${entries.map((e) => e.instanceId).join(',')}`); onPick(entries[picks.shift() ?? 0]); },
+		carriedFoods: () => bag.map((item) => ({ ...item })),
+		findFood: (id, instanceId) => bag.find((item) => item.id === id && (item.instanceId ?? undefined) === (instanceId ?? undefined)),
+		consumeFood: (id, instanceId) => { const food = bag.find((item) => item.id === id && (item.instanceId ?? undefined) === (instanceId ?? undefined)); if (food) food.quantity -= 1; },
+		get hunger() { return hunger; },
+		set hunger(value) { hunger = value; },
+		applyMealEaten: () => { log.push('meal'); return 0; },
+		showHeal: (amount) => { flags.healed += amount; },
+		hasFastEating: () => false,
+		armEnhancedRings: () => { flags.rings++; },
+		spendTurn: (cost) => { flags.turns.push(cost); },
+		say: (line, level) => { log.push(`say:${level}:${line}`); },
+		t: (key) => key,
+		...overrides.ctx,
+	};
+	useHornFlow(ctx);
+	return { ctx, log, flags, horn, bag, get hunger() { return hunger; } };
+}
+// Eat: five charges for a 500 hunger pool at 90 a charge, the meal fires, 3 turns.
+// Snack: exactly one charge either way.
+{
+	const eat = hornDrive({}, [0]);
+	assert.ok(eat.log[0].endsWith('horn-eat,horn-snack,horn-store'), `all three rows, got ${eat.log[0]}`);
+	assert.equal(eat.hunger, 50, 'five charges cover 450 hunger');
+	assert.equal(eat.horn.charge, 5, 'the rest stays');
+	assert.ok(eat.log.includes('meal'), 'the meal talents fire');
+	assert.deepEqual(eat.flags.turns, [3], 'a slow meal costs 3');
+	assert.equal(eat.flags.rings, 1);
+	const snack = hornDrive({}, [1]);
+	assert.equal(snack.hunger, 410, 'one charge is 90 hunger');
+	assert.equal(snack.horn.charge, 9);
+	assert.deepEqual(snack.flags.turns, [3]);
+}
+// Store: a meat pie banks 900 plus the full-belly bonus, leveling the horn four times.
+{
+	const store = hornDrive({}, [2, 0]);
+	assert.ok(store.log[1].startsWith('picker:items.artifacts.hornofplenty.prompt:food:1'), `the pie is offered, got ${store.log[1]}`);
+	assert.equal(store.bag[0].quantity, 0, 'the pie is consumed');
+	assert.equal(store.horn.level, 4, '1200 energy is four levels');
+	assert.equal(store.horn.storedFoodEnergy, 0, 'nothing banked past the whole levels');
+	assert.ok(store.log.some((l) => l.includes('levelup')), 'the levels are announced');
+}
+// Refusals: an empty capped horn reports no food; AntiMagic never opens the picker;
+// a cursed horn keeps eat and snack but loses the store row.
+{
+	const empty = hornDrive({ horn: { level: 10, charge: 0 } });
+	assert.ok(empty.log.some((l) => l.includes('no_food')), `empty and capped reports, got ${empty.log}`);
+	const immune = hornDrive({ ctx: { magicImmune: true } });
+	assert.ok(!immune.log.some((l) => l.startsWith('picker:')), 'AntiMagic opens nothing');
+	const cursed = hornDrive({ horn: { charge: 10, cursed: true } });
+	assert.ok(cursed.log[0].endsWith('horn-eat,horn-snack'), `cursed loses only store, got ${cursed.log[0]}`);
+}
 }
 }
 	const { talismanMaxDist, talismanScryAngle, talismanScryCost, talismanApplyScryCost, talismanApplyExp,

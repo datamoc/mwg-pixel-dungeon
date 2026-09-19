@@ -229,6 +229,7 @@ import { useCloak as useArtifactCloak, useHourglass as useArtifactHourglass, use
 //drives `shopPricing`/`missiles`); the scene only builds the flow context.
 import { sandalsNaturalismLevel, applySandalsNaturalismCharge, useSandalsFlow, type SandalsFlowContext, type SandalsItem } from '../items/sandals';
 import { useChainsFlow, type ChainsFlowContext } from '../items/chains';
+import { hornChargeCap, useHornFlow, type HornFlowContext } from '../items/horn';
 import { applyTalismanPerTurnCharge, useTalismanFlow, checkTalismanAwarenessFlow, type TalismanFlowContext, type TalismanItem } from '../items/talisman';
 import { roseSummonGate, roseGhostMaxHp, roseGhostAttackSkill, roseGhostDefenseSkill, roseGhostDamageRange, applyRoseRecharge, type RoseItem } from '../items/rose';
 import { rosePetalsNeeded, rosePetalDropCap, rosePetalPickup, roseChargeCap, roseLevelCap } from '../items/rose';
@@ -18489,23 +18490,43 @@ private eyeBeamTurn(monster: Creature): boolean {
 		}
 
 		private useHorn(instanceId?: string): void {
-			const horn = this.hornItem(instanceId);
-			if (!horn || this.hero.magicImmune) return;
-			const chargeCap = this.hornChargeCap(horn);
-			const charge = Math.min(chargeCap, horn.charge ?? 0);
-			const canStore = !horn.cursed && (horn.level ?? 0) < mwlItemEffectValue('horn', 'levelCap');
-			const eatEntry = 'horn-eat', snackEntry = 'horn-snack', storeEntry = 'horn-store';
-			const entries = [
-				...(charge > 0 ? [{ id: 'horn', instanceId: eatEntry, identified: true, quantity: 1 }] : []),
-				...(charge > 0 ? [{ id: 'horn', instanceId: snackEntry, identified: true, quantity: 1 }] : []),
-				...(canStore ? [{ id: 'horn', instanceId: storeEntry, identified: true, quantity: 1 }] : []),
-			];
-			if (entries.length === 0) { this.say(t('items.artifacts.hornofplenty.no_food'), 'negative'); return; }
-			this.openItemPicker(t('items.artifacts.hornofplenty.name'), entries, (entry) => {
-				if (entry.instanceId === eatEntry) this.eatFromHorn(instanceId, true);
-				else if (entry.instanceId === snackEntry) this.eatFromHorn(instanceId, false);
-				else if (entry.instanceId === storeEntry) this.storeFoodInHorn(instanceId);
-			});
+			useHornFlow(this.hornFlowContext(), instanceId);
+		}
+
+		/**
+		 * The Horn of Plenty's meal flow lives in `items/horn.ts` behind
+		 * `HornFlowContext` - the file-size refactor's eleventh extraction, behavior-identical.
+		 */
+		private hornFlowContext(): HornFlowContext {
+			const scene = this;
+			return {
+				get magicImmune() { return scene.hero.magicImmune === true; },
+				hornOf: (instanceId?: string) => scene.hornItem(instanceId),
+				openPicker: (title, entries, onPick) => scene.openItemPicker(title, entries, onPick),
+				carriedFoods: () => scene.bag.items.map((item) => ({
+					id: item.id, instanceId: item.instanceId, quantity: item.quantity, identified: item.identified ?? false,
+				})),
+				findFood: (id, instanceId) => {
+					const food = scene.bag.find(id, instanceId);
+					return food ? { quantity: food.quantity } : undefined;
+				},
+				consumeFood: (id, instanceId) => { scene.bag.remove(id, 1, instanceId); },
+				get hunger() { return scene.hunger; },
+				set hunger(value: number) { scene.hunger = value; },
+				applyMealEaten: () => applyMealEatenEffects(scene.consumableContext(), 0),
+				showHeal: (amount) => { scene.showHeal(scene.hero, amount); },
+				/** `Food.eatingTime()`'s fast-eating gate (tag `v3.3.8`): any of the six meal
+				 * talents drops the meal from `TIME_TO_EAT` (3) to 1. Five exist here
+				 * (`iron_stomach`, `energizing_meal`, `mystical_meal`, `invigorating_meal`,
+				 * `focused_meal`); `ENLIGHTENING_MEAL` has no port talent, so a cleric-adjacent
+				 * build can never hit the fast path - Not ported for that reason. */
+				hasFastEating: () => ['iron_stomach', 'energizing_meal', 'mystical_meal', 'invigorating_meal', 'focused_meal']
+					.some((id) => scene.talentRank(id) > 0),
+				armEnhancedRings: () => { scene.armEnhancedRingsFromArtifact(); },
+				spendTurn: (cost) => { scene.actionSpentTurn = true; scene.spendHeroTurn(cost); },
+				say: scene.say.bind(scene),
+				t,
+			};
 		}
 
 		private useBeaconArtifact(instanceId?: string): void {
@@ -19040,84 +19061,6 @@ private eyeBeamTurn(monster: Creature): boolean {
 				& { level?: number; charge?: number; partialCharge?: number; cursed?: boolean; storedFoodEnergy?: number }) | undefined;
 		}
 
-		private hornChargeCap(horn: NonNullable<ReturnType<DungeonScene['hornItem']>>): number {
-			return mwlItemEffectValue('horn', 'chargeCapBase') + Math.floor((horn.level ?? 0) / 2);
-		}
-
-		private hornSatietyPerCharge(): number {
-			const base = STARVING / mwlItemEffectValue('horn', 'satietyDivisor');
-			return isChallengeEnabled('no_food') ? base / 3 : base;
-		}
-
-		private eatFromHorn(instanceId: string | undefined, fillToFull: boolean): void {
-			const horn = this.hornItem(instanceId);
-			if (!horn) return;
-			const charge = horn.charge ?? 0;
-			if (charge <= 0) { this.say(t('items.artifacts.hornofplenty.no_food'), 'negative'); return; }
-			const satietyPerCharge = this.hornSatietyPerCharge();
-			const chargesToUse = fillToFull
-				? Math.min(charge, Math.max(1, Math.floor(this.hunger / satietyPerCharge)))
-				: 1;
-			this.hunger = Math.max(0, this.hunger - satietyPerCharge * chargesToUse);
-			horn.charge = charge - chargesToUse;
-			this.say(t('items.artifacts.hornofplenty.eat'), 'positive');
-			//`HornOfPlenty.doEatEffect` (tag `v3.3.8`): the meal fires `Talent.onFoodEaten`
-			//(the shared `applyMealEatenEffects`, base heal 0 - the horn grants satiety, not
-			//HP) and `Talent.onArtifactUsed`, then spends `Food.TIME_TO_EAT` (3, or 1 with a
-			//fast-eating meal talent). The meal talents and the whole turn were missing here.
-			const hornMealHeal = applyMealEatenEffects(this.consumableContext(), 0);
-			if (hornMealHeal > 0) this.showHeal(this.hero, hornMealHeal);
-			this.armEnhancedRingsFromArtifact();
-			this.actionSpentTurn = true;
-			this.spendHeroTurn(this.hasFastEatingMealTalent() ? 1 : 3);
-		}
-
-		/** `Food.eatingTime()`'s fast-eating gate (tag `v3.3.8`): any of the six meal
-		 * talents drops the meal from `TIME_TO_EAT` (3) to 1. Five exist here
-		 * (`iron_stomach`, `energizing_meal`, `mystical_meal`, `invigorating_meal`,
-		 * `focused_meal`); `ENLIGHTENING_MEAL` has no port talent, so a cleric-adjacent
-		 * build can never hit the fast path - Not ported for that reason. */
-		private hasFastEatingMealTalent(): boolean {
-			return ['iron_stomach', 'energizing_meal', 'mystical_meal', 'invigorating_meal', 'focused_meal']
-				.some((id) => this.talentRank(id) > 0);
-		}
-
-		private storeFoodInHorn(instanceId?: string): void {
-			const horn = this.hornItem(instanceId);
-			if (!horn) return;
-			const foodIds = ['food', 'meat', 'chargrilledMeat', 'stewedMeat', 'meatPie', 'pasty'];
-			const candidates = this.bag.items.filter((item) => item.quantity > 0 && foodIds.includes(item.id));
-			if (candidates.length === 0) { this.say(t('port.log.nothingtoeat'), 'negative'); return; }
-			this.openItemPicker(t('items.artifacts.hornofplenty.prompt'), candidates, (pick) => {
-				const horn = this.hornItem(instanceId);
-				if (!horn) return;
-				const food = this.bag.find(pick.id, pick.instanceId);
-				if (!food || food.quantity <= 0) return;
-				const levelCap = mwlItemEffectValue('horn', 'levelCap');
-				const level = horn.level ?? 0;
-				if (level >= levelCap) return;
-				let energy = MWL_CONSUMABLE_STATS[food.id]?.hunger ?? 0;
-				if (food.id === 'pasty') energy += HUNGRY * mwlItemEffectValue('horn', 'pastyBonusFraction');
-				else if (food.id === 'meatPie') energy += HUNGRY * mwlItemEffectValue('horn', 'meatPieBonusFraction');
-				this.bag.remove(food.id, 1, pick.instanceId);
-				let storedFoodEnergy = (horn.storedFoodEnergy ?? 0) + energy;
-				const upgrades = Math.min(Math.floor(storedFoodEnergy / HUNGRY), levelCap - level);
-				if (upgrades > 0) {
-					horn.level = level + upgrades;
-					storedFoodEnergy -= upgrades * HUNGRY;
-					if (horn.level >= levelCap) {
-						storedFoodEnergy = 0;
-						this.say(t('items.artifacts.hornofplenty.maxlevel'), 'positive');
-					} else {
-						this.say(t('items.artifacts.hornofplenty.levelup'), 'positive');
-					}
-				} else {
-					this.say(t('items.artifacts.hornofplenty.feed'), 'positive');
-				}
-				horn.storedFoodEnergy = storedFoodEnergy;
-			});
-		}
-
 		private roseItem(instanceId?: string) {
 			return this.bag.find('rose', instanceId) as (typeof this.bag.items[number] & RoseItem) | undefined;
 		}
@@ -19224,7 +19167,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		private artifactRechargeCap(id: string, level: number, item: typeof this.bag.items[number]): number {
 			switch (id) {
 				case 'cloak': return Math.min(level + 3, 10);
-				case 'horn': return this.hornChargeCap(item as never);
+				case 'horn': return hornChargeCap(item as never);
 				case 'beacon': return this.beaconChargeCap(item as never);
 				case 'armband': return mwlItemEffectValue('armband', 'chargeCapBase') + Math.floor(level / 2);
 				case 'spellbook': return spellbookChargeCap(level);

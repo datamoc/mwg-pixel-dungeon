@@ -1166,7 +1166,18 @@ one.
       takes that type via an erased import), item suite green with a new headless drive of the
       moved flow on a stub 10x10 level (enemy pull to the first free cell for its distance,
       self-grab beside a wall, rooted/wall/grabless/short-charge/statue/unreachable refusals
-      spending nothing, cursed/AntiMagic gates).
+      spending nothing, cursed/AntiMagic gates). **Eleventh extraction 2026-09-19**: the Horn of
+      Plenty's meal flow (`useHorn`'s eat/snack/store rows, the satiety meal, the food store)
+      moved to the new `items/horn.ts` behind a `HornFlowContext` (horn lookup, picker, food
+      lookup, hunger get/set, meal effects, heal display, fast-eating read, rings, turn, say,
+      `t`); the scene keeps the one-line `useHorn` adapter the router calls, `hornItem` for the
+      builder, plus the builder. The pure charge/satiety rules moved with it (`hornChargeCap`,
+      `hornSatietyPerCharge` - the recharge table now calls the module's). Net −57 lines in
+      `dungeonScene.ts` (23,012 after). Suites: `tsc` clean, item suite green with a new headless
+      drive of the moved flow through scripted pickers (five charges for a 500 pool at the
+      authored 90 a charge with the meal firing over 3 turns, one-charge snack, a meat pie
+      banking four levels with the bonus, empty-capped/AntiMagic refusals, cursed losing only
+      the store row) - which needed one new harness compile line (`simulation/hunger.ts`).
       **Complexity: L.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
