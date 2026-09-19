@@ -9,7 +9,7 @@
  * are language-dependent and therefore belong with the text rather than at each call site.
  *
  * Everything ships in the bundle. The built page runs from `file://`, where `fetch` is
- * unavailable, so a language cannot be fetched on demand and all 19 are compiled in - which is
+ * unavailable, so a language cannot be fetched on demand and all 23 are compiled in - which is
  * why `tools/i18n-extract.mjs` ships SPD's complete base corpus rather than a per-screen subset.
  */
 

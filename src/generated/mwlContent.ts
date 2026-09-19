@@ -15121,13 +15121,27 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
+								"kind": "weapon",
+								"frame": "96"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
+								"line": 264,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
 								"kind": "wand",
 								"frame": "208"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 261,
+								"line": 265,
 								"column": 13
 							},
 							"gettext": []
@@ -15141,7 +15155,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 262,
+								"line": 266,
 								"column": 13
 							},
 							"gettext": []
@@ -15155,7 +15169,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 263,
+								"line": 267,
 								"column": 13
 							},
 							"gettext": []
@@ -15169,7 +15183,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 265,
+								"line": 269,
 								"column": 13
 							},
 							"gettext": []
@@ -15183,7 +15197,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 266,
+								"line": 270,
 								"column": 13
 							},
 							"gettext": []
@@ -15197,7 +15211,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 267,
+								"line": 271,
 								"column": 13
 							},
 							"gettext": []
@@ -15211,7 +15225,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 268,
+								"line": 272,
 								"column": 13
 							},
 							"gettext": []
@@ -15225,7 +15239,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 269,
+								"line": 273,
 								"column": 13
 							},
 							"gettext": []
@@ -15239,7 +15253,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 270,
+								"line": 274,
 								"column": 13
 							},
 							"gettext": []
@@ -15253,7 +15267,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 271,
+								"line": 275,
 								"column": 13
 							},
 							"gettext": []
@@ -15267,7 +15281,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 272,
+								"line": 276,
 								"column": 13
 							},
 							"gettext": []
@@ -15281,7 +15295,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 273,
+								"line": 277,
 								"column": 13
 							},
 							"gettext": []
@@ -15295,7 +15309,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 274,
+								"line": 278,
 								"column": 13
 							},
 							"gettext": []
@@ -15309,7 +15323,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 275,
+								"line": 279,
 								"column": 13
 							},
 							"gettext": []
@@ -15323,7 +15337,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 276,
+								"line": 280,
 								"column": 13
 							},
 							"gettext": []
@@ -15337,7 +15351,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 277,
+								"line": 281,
 								"column": 13
 							},
 							"gettext": []
@@ -15351,7 +15365,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 278,
+								"line": 282,
 								"column": 13
 							},
 							"gettext": []
@@ -15365,7 +15379,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 280,
+								"line": 284,
 								"column": 13
 							},
 							"gettext": []
@@ -15379,7 +15393,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 281,
+								"line": 285,
 								"column": 13
 							},
 							"gettext": []
@@ -15393,7 +15407,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 282,
+								"line": 286,
 								"column": 13
 							},
 							"gettext": []
@@ -15407,7 +15421,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 283,
+								"line": 287,
 								"column": 13
 							},
 							"gettext": []
@@ -15421,7 +15435,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 284,
+								"line": 288,
 								"column": 13
 							},
 							"gettext": []
@@ -15435,7 +15449,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 287,
+								"line": 291,
 								"column": 13
 							},
 							"gettext": []
@@ -15465,7 +15479,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 295,
+								"line": 299,
 								"column": 13
 							},
 							"gettext": []
@@ -15480,7 +15494,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 296,
+								"line": 300,
 								"column": 13
 							},
 							"gettext": []
@@ -15488,7 +15502,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-						"line": 291,
+						"line": 295,
 						"column": 9
 					},
 					"gettext": []
@@ -15509,7 +15523,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 304,
+								"line": 308,
 								"column": 13
 							},
 							"gettext": []
@@ -15523,7 +15537,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 307,
+								"line": 311,
 								"column": 13
 							},
 							"gettext": []
@@ -15537,7 +15551,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 308,
+								"line": 312,
 								"column": 13
 							},
 							"gettext": []
@@ -15551,7 +15565,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 309,
+								"line": 313,
 								"column": 13
 							},
 							"gettext": []
@@ -15565,7 +15579,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 310,
+								"line": 314,
 								"column": 13
 							},
 							"gettext": []
@@ -15579,7 +15593,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 311,
+								"line": 315,
 								"column": 13
 							},
 							"gettext": []
@@ -15593,7 +15607,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 312,
+								"line": 316,
 								"column": 13
 							},
 							"gettext": []
@@ -15607,7 +15621,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 313,
+								"line": 317,
 								"column": 13
 							},
 							"gettext": []
@@ -15621,7 +15635,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 314,
+								"line": 318,
 								"column": 13
 							},
 							"gettext": []
@@ -15635,7 +15649,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 315,
+								"line": 319,
 								"column": 13
 							},
 							"gettext": []
@@ -15649,7 +15663,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 316,
+								"line": 320,
 								"column": 13
 							},
 							"gettext": []
@@ -15663,7 +15677,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 317,
+								"line": 321,
 								"column": 13
 							},
 							"gettext": []
@@ -15677,7 +15691,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 318,
+								"line": 322,
 								"column": 13
 							},
 							"gettext": []
@@ -15691,7 +15705,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 319,
+								"line": 323,
 								"column": 13
 							},
 							"gettext": []
@@ -15705,7 +15719,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 320,
+								"line": 324,
 								"column": 13
 							},
 							"gettext": []
@@ -15719,7 +15733,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 321,
+								"line": 325,
 								"column": 13
 							},
 							"gettext": []
@@ -15733,7 +15747,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 322,
+								"line": 326,
 								"column": 13
 							},
 							"gettext": []
@@ -15747,7 +15761,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 323,
+								"line": 327,
 								"column": 13
 							},
 							"gettext": []
@@ -15761,7 +15775,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 324,
+								"line": 328,
 								"column": 13
 							},
 							"gettext": []
@@ -15775,7 +15789,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 325,
+								"line": 329,
 								"column": 13
 							},
 							"gettext": []
@@ -15789,7 +15803,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 326,
+								"line": 330,
 								"column": 13
 							},
 							"gettext": []
@@ -15803,7 +15817,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 327,
+								"line": 331,
 								"column": 13
 							},
 							"gettext": []
@@ -15817,7 +15831,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 328,
+								"line": 332,
 								"column": 13
 							},
 							"gettext": []
@@ -15831,7 +15845,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 329,
+								"line": 333,
 								"column": 13
 							},
 							"gettext": []
@@ -15845,7 +15859,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 330,
+								"line": 334,
 								"column": 13
 							},
 							"gettext": []
@@ -15859,7 +15873,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 331,
+								"line": 335,
 								"column": 13
 							},
 							"gettext": []
@@ -15873,7 +15887,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 332,
+								"line": 336,
 								"column": 13
 							},
 							"gettext": []
@@ -15887,7 +15901,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 333,
+								"line": 337,
 								"column": 13
 							},
 							"gettext": []
@@ -15901,7 +15915,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 334,
+								"line": 338,
 								"column": 13
 							},
 							"gettext": []
@@ -15915,7 +15929,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 335,
+								"line": 339,
 								"column": 13
 							},
 							"gettext": []
@@ -15923,7 +15937,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-						"line": 300,
+						"line": 304,
 						"column": 9
 					},
 					"gettext": []
@@ -15945,7 +15959,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 343,
+								"line": 347,
 								"column": 13
 							},
 							"gettext": []
@@ -15960,7 +15974,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 344,
+								"line": 348,
 								"column": 13
 							},
 							"gettext": []
@@ -15975,7 +15989,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 345,
+								"line": 349,
 								"column": 13
 							},
 							"gettext": []
@@ -15990,7 +16004,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 346,
+								"line": 350,
 								"column": 13
 							},
 							"gettext": []
@@ -16005,7 +16019,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 347,
+								"line": 351,
 								"column": 13
 							},
 							"gettext": []
@@ -16020,7 +16034,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 348,
+								"line": 352,
 								"column": 13
 							},
 							"gettext": []
@@ -16028,7 +16042,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-						"line": 339,
+						"line": 343,
 						"column": 9
 					},
 					"gettext": []
@@ -16051,7 +16065,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 356,
+								"line": 360,
 								"column": 13
 							},
 							"gettext": []
@@ -16067,7 +16081,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 357,
+								"line": 361,
 								"column": 13
 							},
 							"gettext": []
@@ -16083,7 +16097,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 358,
+								"line": 362,
 								"column": 13
 							},
 							"gettext": []
@@ -16099,7 +16113,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 359,
+								"line": 363,
 								"column": 13
 							},
 							"gettext": []
@@ -16115,7 +16129,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 361,
+								"line": 365,
 								"column": 13
 							},
 							"gettext": []
@@ -16131,7 +16145,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 362,
+								"line": 366,
 								"column": 13
 							},
 							"gettext": []
@@ -16147,7 +16161,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 363,
+								"line": 367,
 								"column": 13
 							},
 							"gettext": []
@@ -16163,7 +16177,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 364,
+								"line": 368,
 								"column": 13
 							},
 							"gettext": []
@@ -16179,7 +16193,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 365,
+								"line": 369,
 								"column": 13
 							},
 							"gettext": []
@@ -16195,7 +16209,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 366,
+								"line": 370,
 								"column": 13
 							},
 							"gettext": []
@@ -16211,7 +16225,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 367,
+								"line": 371,
 								"column": 13
 							},
 							"gettext": []
@@ -16227,7 +16241,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 368,
+								"line": 372,
 								"column": 13
 							},
 							"gettext": []
@@ -16243,7 +16257,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 369,
+								"line": 373,
 								"column": 13
 							},
 							"gettext": []
@@ -16259,7 +16273,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 370,
+								"line": 374,
 								"column": 13
 							},
 							"gettext": []
@@ -16275,7 +16289,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 371,
+								"line": 375,
 								"column": 13
 							},
 							"gettext": []
@@ -16291,7 +16305,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 375,
+								"line": 379,
 								"column": 13
 							},
 							"gettext": []
@@ -16307,7 +16321,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 376,
+								"line": 380,
 								"column": 13
 							},
 							"gettext": []
@@ -16323,7 +16337,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 377,
+								"line": 381,
 								"column": 13
 							},
 							"gettext": []
@@ -16339,7 +16353,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 378,
+								"line": 382,
 								"column": 13
 							},
 							"gettext": []
@@ -16355,7 +16369,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 379,
+								"line": 383,
 								"column": 13
 							},
 							"gettext": []
@@ -16371,7 +16385,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 380,
+								"line": 384,
 								"column": 13
 							},
 							"gettext": []
@@ -16387,7 +16401,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 381,
+								"line": 385,
 								"column": 13
 							},
 							"gettext": []
@@ -16403,7 +16417,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 382,
+								"line": 386,
 								"column": 13
 							},
 							"gettext": []
@@ -16419,7 +16433,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 383,
+								"line": 387,
 								"column": 13
 							},
 							"gettext": []
@@ -16435,7 +16449,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 384,
+								"line": 388,
 								"column": 13
 							},
 							"gettext": []
@@ -16451,7 +16465,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 385,
+								"line": 389,
 								"column": 13
 							},
 							"gettext": []
@@ -16467,7 +16481,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 386,
+								"line": 390,
 								"column": 13
 							},
 							"gettext": []
@@ -16483,7 +16497,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 387,
+								"line": 391,
 								"column": 13
 							},
 							"gettext": []
@@ -16499,7 +16513,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 388,
+								"line": 392,
 								"column": 13
 							},
 							"gettext": []
@@ -16515,7 +16529,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 389,
+								"line": 393,
 								"column": 13
 							},
 							"gettext": []
@@ -16531,7 +16545,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 390,
+								"line": 394,
 								"column": 13
 							},
 							"gettext": []
@@ -16547,7 +16561,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 391,
+								"line": 395,
 								"column": 13
 							},
 							"gettext": []
@@ -16563,7 +16577,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 392,
+								"line": 396,
 								"column": 13
 							},
 							"gettext": []
@@ -16579,7 +16593,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 393,
+								"line": 397,
 								"column": 13
 							},
 							"gettext": []
@@ -16595,7 +16609,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 394,
+								"line": 398,
 								"column": 13
 							},
 							"gettext": []
@@ -16611,7 +16625,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 395,
+								"line": 399,
 								"column": 13
 							},
 							"gettext": []
@@ -16627,7 +16641,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 396,
+								"line": 400,
 								"column": 13
 							},
 							"gettext": []
@@ -16643,7 +16657,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 397,
+								"line": 401,
 								"column": 13
 							},
 							"gettext": []
@@ -16659,7 +16673,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 398,
+								"line": 402,
 								"column": 13
 							},
 							"gettext": []
@@ -16675,7 +16689,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 399,
+								"line": 403,
 								"column": 13
 							},
 							"gettext": []
@@ -16691,7 +16705,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 404,
+								"line": 408,
 								"column": 13
 							},
 							"gettext": []
@@ -16707,7 +16721,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 405,
+								"line": 409,
 								"column": 13
 							},
 							"gettext": []
@@ -16723,7 +16737,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 406,
+								"line": 410,
 								"column": 13
 							},
 							"gettext": []
@@ -16739,7 +16753,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 407,
+								"line": 411,
 								"column": 13
 							},
 							"gettext": []
@@ -16755,7 +16769,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 408,
+								"line": 412,
 								"column": 13
 							},
 							"gettext": []
@@ -16771,7 +16785,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 409,
+								"line": 413,
 								"column": 13
 							},
 							"gettext": []
@@ -16787,7 +16801,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 410,
+								"line": 414,
 								"column": 13
 							},
 							"gettext": []
@@ -16803,7 +16817,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 411,
+								"line": 415,
 								"column": 13
 							},
 							"gettext": []
@@ -16819,7 +16833,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 412,
+								"line": 416,
 								"column": 13
 							},
 							"gettext": []
@@ -16835,7 +16849,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 413,
+								"line": 417,
 								"column": 13
 							},
 							"gettext": []
@@ -16851,7 +16865,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 414,
+								"line": 418,
 								"column": 13
 							},
 							"gettext": []
@@ -16867,7 +16881,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 415,
+								"line": 419,
 								"column": 13
 							},
 							"gettext": []
@@ -16883,7 +16897,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 416,
+								"line": 420,
 								"column": 13
 							},
 							"gettext": []
@@ -16899,7 +16913,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 417,
+								"line": 421,
 								"column": 13
 							},
 							"gettext": []
@@ -16915,7 +16929,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 418,
+								"line": 422,
 								"column": 13
 							},
 							"gettext": []
@@ -16931,7 +16945,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 419,
+								"line": 423,
 								"column": 13
 							},
 							"gettext": []
@@ -16947,7 +16961,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 420,
+								"line": 424,
 								"column": 13
 							},
 							"gettext": []
@@ -16963,7 +16977,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 421,
+								"line": 425,
 								"column": 13
 							},
 							"gettext": []
@@ -16979,7 +16993,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 422,
+								"line": 426,
 								"column": 13
 							},
 							"gettext": []
@@ -16995,7 +17009,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 423,
+								"line": 427,
 								"column": 13
 							},
 							"gettext": []
@@ -17011,7 +17025,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 427,
+								"line": 431,
 								"column": 13
 							},
 							"gettext": []
@@ -17027,7 +17041,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 432,
+								"line": 436,
 								"column": 13
 							},
 							"gettext": []
@@ -17043,7 +17057,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 433,
+								"line": 437,
 								"column": 13
 							},
 							"gettext": []
@@ -17059,7 +17073,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 434,
+								"line": 438,
 								"column": 13
 							},
 							"gettext": []
@@ -17075,7 +17089,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 439,
+								"line": 443,
 								"column": 13
 							},
 							"gettext": []
@@ -17091,7 +17105,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 440,
+								"line": 444,
 								"column": 13
 							},
 							"gettext": []
@@ -17107,7 +17121,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 444,
+								"line": 448,
 								"column": 13
 							},
 							"gettext": []
@@ -17123,7 +17137,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 445,
+								"line": 449,
 								"column": 13
 							},
 							"gettext": []
@@ -17139,7 +17153,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 448,
+								"line": 452,
 								"column": 13
 							},
 							"gettext": []
@@ -17155,7 +17169,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 449,
+								"line": 453,
 								"column": 13
 							},
 							"gettext": []
@@ -17171,7 +17185,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 450,
+								"line": 454,
 								"column": 13
 							},
 							"gettext": []
@@ -17187,7 +17201,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 451,
+								"line": 455,
 								"column": 13
 							},
 							"gettext": []
@@ -17203,7 +17217,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 460,
+								"line": 464,
 								"column": 13
 							},
 							"gettext": []
@@ -17219,7 +17233,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 461,
+								"line": 465,
 								"column": 13
 							},
 							"gettext": []
@@ -17235,7 +17249,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 464,
+								"line": 468,
 								"column": 13
 							},
 							"gettext": []
@@ -17251,7 +17265,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 465,
+								"line": 469,
 								"column": 13
 							},
 							"gettext": []
@@ -17267,7 +17281,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 469,
+								"line": 473,
 								"column": 13
 							},
 							"gettext": []
@@ -17283,7 +17297,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 470,
+								"line": 474,
 								"column": 13
 							},
 							"gettext": []
@@ -17299,7 +17313,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 474,
+								"line": 478,
 								"column": 13
 							},
 							"gettext": []
@@ -17315,7 +17329,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 478,
+								"line": 482,
 								"column": 13
 							},
 							"gettext": []
@@ -17331,7 +17345,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 479,
+								"line": 483,
 								"column": 13
 							},
 							"gettext": []
@@ -17347,7 +17361,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 480,
+								"line": 484,
 								"column": 13
 							},
 							"gettext": []
@@ -17363,7 +17377,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 481,
+								"line": 485,
 								"column": 13
 							},
 							"gettext": []
@@ -17379,7 +17393,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 484,
+								"line": 488,
 								"column": 13
 							},
 							"gettext": []
@@ -17395,7 +17409,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 485,
+								"line": 489,
 								"column": 13
 							},
 							"gettext": []
@@ -17411,7 +17425,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 486,
+								"line": 490,
 								"column": 13
 							},
 							"gettext": []
@@ -17427,7 +17441,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 489,
+								"line": 493,
 								"column": 13
 							},
 							"gettext": []
@@ -17443,7 +17457,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 490,
+								"line": 494,
 								"column": 13
 							},
 							"gettext": []
@@ -17459,7 +17473,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 491,
+								"line": 495,
 								"column": 13
 							},
 							"gettext": []
@@ -17475,7 +17489,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 492,
+								"line": 496,
 								"column": 13
 							},
 							"gettext": []
@@ -17491,7 +17505,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 496,
+								"line": 500,
 								"column": 13
 							},
 							"gettext": []
@@ -17507,7 +17521,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 497,
+								"line": 501,
 								"column": 13
 							},
 							"gettext": []
@@ -17523,7 +17537,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 498,
+								"line": 502,
 								"column": 13
 							},
 							"gettext": []
@@ -17539,7 +17553,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 499,
+								"line": 503,
 								"column": 13
 							},
 							"gettext": []
@@ -17555,7 +17569,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 503,
+								"line": 507,
 								"column": 13
 							},
 							"gettext": []
@@ -17571,7 +17585,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 504,
+								"line": 508,
 								"column": 13
 							},
 							"gettext": []
@@ -17587,7 +17601,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 505,
+								"line": 509,
 								"column": 13
 							},
 							"gettext": []
@@ -17603,7 +17617,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 506,
+								"line": 510,
 								"column": 13
 							},
 							"gettext": []
@@ -17619,7 +17633,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 510,
+								"line": 514,
 								"column": 13
 							},
 							"gettext": []
@@ -17635,7 +17649,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 511,
+								"line": 515,
 								"column": 13
 							},
 							"gettext": []
@@ -17651,7 +17665,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 514,
+								"line": 518,
 								"column": 13
 							},
 							"gettext": []
@@ -17667,7 +17681,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 515,
+								"line": 519,
 								"column": 13
 							},
 							"gettext": []
@@ -17683,7 +17697,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 516,
+								"line": 520,
 								"column": 13
 							},
 							"gettext": []
@@ -17699,7 +17713,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 517,
+								"line": 521,
 								"column": 13
 							},
 							"gettext": []
@@ -17715,7 +17729,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 518,
+								"line": 522,
 								"column": 13
 							},
 							"gettext": []
@@ -17731,7 +17745,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 519,
+								"line": 523,
 								"column": 13
 							},
 							"gettext": []
@@ -17747,7 +17761,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 522,
+								"line": 526,
 								"column": 13
 							},
 							"gettext": []
@@ -17763,7 +17777,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 523,
+								"line": 527,
 								"column": 13
 							},
 							"gettext": []
@@ -17779,7 +17793,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 526,
+								"line": 530,
 								"column": 13
 							},
 							"gettext": []
@@ -17795,7 +17809,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 527,
+								"line": 531,
 								"column": 13
 							},
 							"gettext": []
@@ -17811,7 +17825,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 530,
+								"line": 534,
 								"column": 13
 							},
 							"gettext": []
@@ -17827,7 +17841,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 531,
+								"line": 535,
 								"column": 13
 							},
 							"gettext": []
@@ -17843,7 +17857,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 535,
+								"line": 539,
 								"column": 13
 							},
 							"gettext": []
@@ -17859,7 +17873,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 536,
+								"line": 540,
 								"column": 13
 							},
 							"gettext": []
@@ -17875,7 +17889,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 538,
+								"line": 542,
 								"column": 13
 							},
 							"gettext": []
@@ -17891,7 +17905,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 539,
+								"line": 543,
 								"column": 13
 							},
 							"gettext": []
@@ -17907,7 +17921,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 542,
+								"line": 546,
 								"column": 13
 							},
 							"gettext": []
@@ -17923,7 +17937,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 543,
+								"line": 547,
 								"column": 13
 							},
 							"gettext": []
@@ -17939,7 +17953,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 546,
+								"line": 550,
 								"column": 13
 							},
 							"gettext": []
@@ -17955,7 +17969,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 551,
+								"line": 555,
 								"column": 13
 							},
 							"gettext": []
@@ -17971,7 +17985,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 552,
+								"line": 556,
 								"column": 13
 							},
 							"gettext": []
@@ -17987,7 +18001,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 553,
+								"line": 557,
 								"column": 13
 							},
 							"gettext": []
@@ -18003,7 +18017,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 554,
+								"line": 558,
 								"column": 13
 							},
 							"gettext": []
@@ -18019,7 +18033,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 555,
+								"line": 559,
 								"column": 13
 							},
 							"gettext": []
@@ -18035,7 +18049,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 556,
+								"line": 560,
 								"column": 13
 							},
 							"gettext": []
@@ -18051,7 +18065,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 557,
+								"line": 561,
 								"column": 13
 							},
 							"gettext": []
@@ -18067,7 +18081,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 558,
+								"line": 562,
 								"column": 13
 							},
 							"gettext": []
@@ -18083,7 +18097,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 559,
+								"line": 563,
 								"column": 13
 							},
 							"gettext": []
@@ -18099,7 +18113,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 563,
+								"line": 567,
 								"column": 13
 							},
 							"gettext": []
@@ -18115,7 +18129,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 564,
+								"line": 568,
 								"column": 13
 							},
 							"gettext": []
@@ -18131,7 +18145,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 567,
+								"line": 571,
 								"column": 13
 							},
 							"gettext": []
@@ -18147,7 +18161,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 568,
+								"line": 572,
 								"column": 13
 							},
 							"gettext": []
@@ -18163,7 +18177,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 569,
+								"line": 573,
 								"column": 13
 							},
 							"gettext": []
@@ -18179,7 +18193,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 570,
+								"line": 574,
 								"column": 13
 							},
 							"gettext": []
@@ -18195,7 +18209,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 571,
+								"line": 575,
 								"column": 13
 							},
 							"gettext": []
@@ -18211,7 +18225,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 572,
+								"line": 576,
 								"column": 13
 							},
 							"gettext": []
@@ -18227,7 +18241,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 573,
+								"line": 577,
 								"column": 13
 							},
 							"gettext": []
@@ -18243,7 +18257,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 574,
+								"line": 578,
 								"column": 13
 							},
 							"gettext": []
@@ -18259,7 +18273,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 575,
+								"line": 579,
 								"column": 13
 							},
 							"gettext": []
@@ -18275,7 +18289,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 576,
+								"line": 580,
 								"column": 13
 							},
 							"gettext": []
@@ -18291,7 +18305,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 577,
+								"line": 581,
 								"column": 13
 							},
 							"gettext": []
@@ -18307,7 +18321,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 578,
+								"line": 582,
 								"column": 13
 							},
 							"gettext": []
@@ -18323,7 +18337,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 579,
+								"line": 583,
 								"column": 13
 							},
 							"gettext": []
@@ -18339,7 +18353,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 580,
+								"line": 584,
 								"column": 13
 							},
 							"gettext": []
@@ -18355,7 +18369,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 581,
+								"line": 585,
 								"column": 13
 							},
 							"gettext": []
@@ -18371,7 +18385,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 582,
+								"line": 586,
 								"column": 13
 							},
 							"gettext": []
@@ -18387,7 +18401,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 583,
+								"line": 587,
 								"column": 13
 							},
 							"gettext": []
@@ -18403,7 +18417,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 584,
+								"line": 588,
 								"column": 13
 							},
 							"gettext": []
@@ -18419,7 +18433,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 585,
+								"line": 589,
 								"column": 13
 							},
 							"gettext": []
@@ -18435,7 +18449,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 586,
+								"line": 590,
 								"column": 13
 							},
 							"gettext": []
@@ -18451,7 +18465,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 587,
+								"line": 591,
 								"column": 13
 							},
 							"gettext": []
@@ -18467,7 +18481,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 588,
+								"line": 592,
 								"column": 13
 							},
 							"gettext": []
@@ -18483,7 +18497,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 589,
+								"line": 593,
 								"column": 13
 							},
 							"gettext": []
@@ -18499,7 +18513,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 590,
+								"line": 594,
 								"column": 13
 							},
 							"gettext": []
@@ -18515,7 +18529,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 591,
+								"line": 595,
 								"column": 13
 							},
 							"gettext": []
@@ -18531,7 +18545,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 592,
+								"line": 596,
 								"column": 13
 							},
 							"gettext": []
@@ -18547,7 +18561,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 593,
+								"line": 597,
 								"column": 13
 							},
 							"gettext": []
@@ -18563,7 +18577,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 594,
+								"line": 598,
 								"column": 13
 							},
 							"gettext": []
@@ -18579,7 +18593,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 595,
+								"line": 599,
 								"column": 13
 							},
 							"gettext": []
@@ -18595,7 +18609,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 596,
+								"line": 600,
 								"column": 13
 							},
 							"gettext": []
@@ -18611,7 +18625,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 597,
+								"line": 601,
 								"column": 13
 							},
 							"gettext": []
@@ -18619,7 +18633,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-						"line": 352,
+						"line": 356,
 						"column": 9
 					},
 					"gettext": []
@@ -18640,7 +18654,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 612,
+								"line": 616,
 								"column": 13
 							},
 							"gettext": []
@@ -18654,7 +18668,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 613,
+								"line": 617,
 								"column": 13
 							},
 							"gettext": []
@@ -18668,7 +18682,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 614,
+								"line": 618,
 								"column": 13
 							},
 							"gettext": []
@@ -18682,7 +18696,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 615,
+								"line": 619,
 								"column": 13
 							},
 							"gettext": []
@@ -18696,7 +18710,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 616,
+								"line": 620,
 								"column": 13
 							},
 							"gettext": []
@@ -18710,7 +18724,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 617,
+								"line": 621,
 								"column": 13
 							},
 							"gettext": []
@@ -18724,7 +18738,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 618,
+								"line": 622,
 								"column": 13
 							},
 							"gettext": []
@@ -18738,7 +18752,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 619,
+								"line": 623,
 								"column": 13
 							},
 							"gettext": []
@@ -18752,7 +18766,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 620,
+								"line": 624,
 								"column": 13
 							},
 							"gettext": []
@@ -18766,7 +18780,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 621,
+								"line": 625,
 								"column": 13
 							},
 							"gettext": []
@@ -18780,7 +18794,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 622,
+								"line": 626,
 								"column": 13
 							},
 							"gettext": []
@@ -18794,7 +18808,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 623,
+								"line": 627,
 								"column": 13
 							},
 							"gettext": []
@@ -18802,7 +18816,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-						"line": 601,
+						"line": 605,
 						"column": 9
 					},
 					"gettext": []
@@ -18823,7 +18837,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 631,
+								"line": 635,
 								"column": 13
 							},
 							"gettext": []
@@ -18837,7 +18851,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 632,
+								"line": 636,
 								"column": 13
 							},
 							"gettext": []
@@ -18851,7 +18865,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 633,
+								"line": 637,
 								"column": 13
 							},
 							"gettext": []
@@ -18865,7 +18879,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 634,
+								"line": 638,
 								"column": 13
 							},
 							"gettext": []
@@ -18879,7 +18893,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 635,
+								"line": 639,
 								"column": 13
 							},
 							"gettext": []
@@ -18893,7 +18907,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 636,
+								"line": 640,
 								"column": 13
 							},
 							"gettext": []
@@ -18907,7 +18921,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 637,
+								"line": 641,
 								"column": 13
 							},
 							"gettext": []
@@ -18921,7 +18935,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 638,
+								"line": 642,
 								"column": 13
 							},
 							"gettext": []
@@ -18935,7 +18949,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 639,
+								"line": 643,
 								"column": 13
 							},
 							"gettext": []
@@ -18949,7 +18963,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 640,
+								"line": 644,
 								"column": 13
 							},
 							"gettext": []
@@ -18963,7 +18977,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 641,
+								"line": 645,
 								"column": 13
 							},
 							"gettext": []
@@ -18977,7 +18991,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 642,
+								"line": 646,
 								"column": 13
 							},
 							"gettext": []
@@ -18991,7 +19005,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 643,
+								"line": 647,
 								"column": 13
 							},
 							"gettext": []
@@ -19005,7 +19019,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 644,
+								"line": 648,
 								"column": 13
 							},
 							"gettext": []
@@ -19019,7 +19033,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 645,
+								"line": 649,
 								"column": 13
 							},
 							"gettext": []
@@ -19033,7 +19047,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 646,
+								"line": 650,
 								"column": 13
 							},
 							"gettext": []
@@ -19047,7 +19061,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 647,
+								"line": 651,
 								"column": 13
 							},
 							"gettext": []
@@ -19061,7 +19075,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 648,
+								"line": 652,
 								"column": 13
 							},
 							"gettext": []
@@ -19075,7 +19089,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 649,
+								"line": 653,
 								"column": 13
 							},
 							"gettext": []
@@ -19089,7 +19103,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 650,
+								"line": 654,
 								"column": 13
 							},
 							"gettext": []
@@ -19103,7 +19117,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 651,
+								"line": 655,
 								"column": 13
 							},
 							"gettext": []
@@ -19117,7 +19131,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 652,
+								"line": 656,
 								"column": 13
 							},
 							"gettext": []
@@ -19131,7 +19145,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 653,
+								"line": 657,
 								"column": 13
 							},
 							"gettext": []
@@ -19145,7 +19159,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 654,
+								"line": 658,
 								"column": 13
 							},
 							"gettext": []
@@ -19159,7 +19173,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 655,
+								"line": 659,
 								"column": 13
 							},
 							"gettext": []
@@ -19173,7 +19187,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 656,
+								"line": 660,
 								"column": 13
 							},
 							"gettext": []
@@ -19187,7 +19201,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 657,
+								"line": 661,
 								"column": 13
 							},
 							"gettext": []
@@ -19201,7 +19215,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 658,
+								"line": 662,
 								"column": 13
 							},
 							"gettext": []
@@ -19215,7 +19229,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 659,
+								"line": 663,
 								"column": 13
 							},
 							"gettext": []
@@ -19229,7 +19243,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 660,
+								"line": 664,
 								"column": 13
 							},
 							"gettext": []
@@ -19243,7 +19257,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 661,
+								"line": 665,
 								"column": 13
 							},
 							"gettext": []
@@ -19257,7 +19271,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 662,
+								"line": 666,
 								"column": 13
 							},
 							"gettext": []
@@ -19271,7 +19285,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 663,
+								"line": 667,
 								"column": 13
 							},
 							"gettext": []
@@ -19285,7 +19299,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 664,
+								"line": 668,
 								"column": 13
 							},
 							"gettext": []
@@ -19299,7 +19313,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 665,
+								"line": 669,
 								"column": 13
 							},
 							"gettext": []
@@ -19313,7 +19327,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 666,
+								"line": 670,
 								"column": 13
 							},
 							"gettext": []
@@ -19327,7 +19341,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 667,
+								"line": 671,
 								"column": 13
 							},
 							"gettext": []
@@ -19341,7 +19355,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 668,
+								"line": 672,
 								"column": 13
 							},
 							"gettext": []
@@ -19355,7 +19369,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 669,
+								"line": 673,
 								"column": 13
 							},
 							"gettext": []
@@ -19369,7 +19383,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 670,
+								"line": 674,
 								"column": 13
 							},
 							"gettext": []
@@ -19383,7 +19397,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 671,
+								"line": 675,
 								"column": 13
 							},
 							"gettext": []
@@ -19397,7 +19411,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 672,
+								"line": 676,
 								"column": 13
 							},
 							"gettext": []
@@ -19411,7 +19425,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 673,
+								"line": 677,
 								"column": 13
 							},
 							"gettext": []
@@ -19425,7 +19439,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 674,
+								"line": 678,
 								"column": 13
 							},
 							"gettext": []
@@ -19439,7 +19453,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 675,
+								"line": 679,
 								"column": 13
 							},
 							"gettext": []
@@ -19453,7 +19467,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 676,
+								"line": 680,
 								"column": 13
 							},
 							"gettext": []
@@ -19467,7 +19481,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 677,
+								"line": 681,
 								"column": 13
 							},
 							"gettext": []
@@ -19481,7 +19495,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 678,
+								"line": 682,
 								"column": 13
 							},
 							"gettext": []
@@ -19495,7 +19509,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 679,
+								"line": 683,
 								"column": 13
 							},
 							"gettext": []
@@ -19509,7 +19523,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 680,
+								"line": 684,
 								"column": 13
 							},
 							"gettext": []
@@ -19523,7 +19537,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 681,
+								"line": 685,
 								"column": 13
 							},
 							"gettext": []
@@ -19537,7 +19551,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 682,
+								"line": 686,
 								"column": 13
 							},
 							"gettext": []
@@ -19551,7 +19565,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 683,
+								"line": 687,
 								"column": 13
 							},
 							"gettext": []
@@ -19565,7 +19579,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 684,
+								"line": 688,
 								"column": 13
 							},
 							"gettext": []
@@ -19579,7 +19593,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 685,
+								"line": 689,
 								"column": 13
 							},
 							"gettext": []
@@ -19593,7 +19607,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 686,
+								"line": 690,
 								"column": 13
 							},
 							"gettext": []
@@ -19607,7 +19621,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 687,
+								"line": 691,
 								"column": 13
 							},
 							"gettext": []
@@ -19621,7 +19635,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 688,
+								"line": 692,
 								"column": 13
 							},
 							"gettext": []
@@ -19635,7 +19649,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 689,
+								"line": 693,
 								"column": 13
 							},
 							"gettext": []
@@ -19649,7 +19663,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 690,
+								"line": 694,
 								"column": 13
 							},
 							"gettext": []
@@ -19663,7 +19677,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 691,
+								"line": 695,
 								"column": 13
 							},
 							"gettext": []
@@ -19677,7 +19691,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 692,
+								"line": 696,
 								"column": 13
 							},
 							"gettext": []
@@ -19691,7 +19705,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 693,
+								"line": 697,
 								"column": 13
 							},
 							"gettext": []
@@ -19705,7 +19719,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 694,
+								"line": 698,
 								"column": 13
 							},
 							"gettext": []
@@ -19713,7 +19727,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-						"line": 627,
+						"line": 631,
 						"column": 9
 					},
 					"gettext": []
@@ -19734,7 +19748,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 702,
+								"line": 706,
 								"column": 13
 							},
 							"gettext": []
@@ -19748,7 +19762,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 703,
+								"line": 707,
 								"column": 13
 							},
 							"gettext": []
@@ -19762,7 +19776,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 704,
+								"line": 708,
 								"column": 13
 							},
 							"gettext": []
@@ -19776,7 +19790,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 705,
+								"line": 709,
 								"column": 13
 							},
 							"gettext": []
@@ -19790,7 +19804,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 706,
+								"line": 710,
 								"column": 13
 							},
 							"gettext": []
@@ -19804,7 +19818,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 707,
+								"line": 711,
 								"column": 13
 							},
 							"gettext": []
@@ -19818,7 +19832,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 708,
+								"line": 712,
 								"column": 13
 							},
 							"gettext": []
@@ -19832,7 +19846,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 709,
+								"line": 713,
 								"column": 13
 							},
 							"gettext": []
@@ -19846,7 +19860,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 710,
+								"line": 714,
 								"column": 13
 							},
 							"gettext": []
@@ -19860,7 +19874,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 711,
+								"line": 715,
 								"column": 13
 							},
 							"gettext": []
@@ -19874,7 +19888,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 712,
+								"line": 716,
 								"column": 13
 							},
 							"gettext": []
@@ -19888,7 +19902,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 713,
+								"line": 717,
 								"column": 13
 							},
 							"gettext": []
@@ -19902,7 +19916,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 714,
+								"line": 718,
 								"column": 13
 							},
 							"gettext": []
@@ -19916,7 +19930,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 715,
+								"line": 719,
 								"column": 13
 							},
 							"gettext": []
@@ -19930,7 +19944,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 716,
+								"line": 720,
 								"column": 13
 							},
 							"gettext": []
@@ -19944,7 +19958,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 717,
+								"line": 721,
 								"column": 13
 							},
 							"gettext": []
@@ -19958,7 +19972,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 718,
+								"line": 722,
 								"column": 13
 							},
 							"gettext": []
@@ -19972,7 +19986,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 719,
+								"line": 723,
 								"column": 13
 							},
 							"gettext": []
@@ -19986,7 +20000,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 720,
+								"line": 724,
 								"column": 13
 							},
 							"gettext": []
@@ -20000,7 +20014,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 721,
+								"line": 725,
 								"column": 13
 							},
 							"gettext": []
@@ -20014,7 +20028,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 722,
+								"line": 726,
 								"column": 13
 							},
 							"gettext": []
@@ -20028,7 +20042,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 723,
+								"line": 727,
 								"column": 13
 							},
 							"gettext": []
@@ -20042,7 +20056,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 724,
+								"line": 728,
 								"column": 13
 							},
 							"gettext": []
@@ -20056,7 +20070,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 725,
+								"line": 729,
 								"column": 13
 							},
 							"gettext": []
@@ -20070,7 +20084,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 726,
+								"line": 730,
 								"column": 13
 							},
 							"gettext": []
@@ -20084,7 +20098,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 727,
+								"line": 731,
 								"column": 13
 							},
 							"gettext": []
@@ -20098,7 +20112,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 728,
+								"line": 732,
 								"column": 13
 							},
 							"gettext": []
@@ -20112,7 +20126,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 729,
+								"line": 733,
 								"column": 13
 							},
 							"gettext": []
@@ -20126,7 +20140,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 730,
+								"line": 734,
 								"column": 13
 							},
 							"gettext": []
@@ -20140,7 +20154,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 731,
+								"line": 735,
 								"column": 13
 							},
 							"gettext": []
@@ -20154,7 +20168,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 732,
+								"line": 736,
 								"column": 13
 							},
 							"gettext": []
@@ -20168,7 +20182,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 733,
+								"line": 737,
 								"column": 13
 							},
 							"gettext": []
@@ -20182,7 +20196,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 734,
+								"line": 738,
 								"column": 13
 							},
 							"gettext": []
@@ -20196,7 +20210,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 735,
+								"line": 739,
 								"column": 13
 							},
 							"gettext": []
@@ -20210,7 +20224,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 736,
+								"line": 740,
 								"column": 13
 							},
 							"gettext": []
@@ -20224,7 +20238,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 737,
+								"line": 741,
 								"column": 13
 							},
 							"gettext": []
@@ -20238,7 +20252,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 738,
+								"line": 742,
 								"column": 13
 							},
 							"gettext": []
@@ -20252,7 +20266,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 739,
+								"line": 743,
 								"column": 13
 							},
 							"gettext": []
@@ -20266,7 +20280,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 740,
+								"line": 744,
 								"column": 13
 							},
 							"gettext": []
@@ -20280,7 +20294,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 741,
+								"line": 745,
 								"column": 13
 							},
 							"gettext": []
@@ -20294,7 +20308,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 742,
+								"line": 746,
 								"column": 13
 							},
 							"gettext": []
@@ -20308,7 +20322,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 743,
+								"line": 747,
 								"column": 13
 							},
 							"gettext": []
@@ -20322,7 +20336,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 744,
+								"line": 748,
 								"column": 13
 							},
 							"gettext": []
@@ -20336,7 +20350,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 745,
+								"line": 749,
 								"column": 13
 							},
 							"gettext": []
@@ -20350,7 +20364,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 746,
+								"line": 750,
 								"column": 13
 							},
 							"gettext": []
@@ -20364,7 +20378,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 747,
+								"line": 751,
 								"column": 13
 							},
 							"gettext": []
@@ -20378,7 +20392,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 748,
+								"line": 752,
 								"column": 13
 							},
 							"gettext": []
@@ -20386,7 +20400,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-						"line": 698,
+						"line": 702,
 						"column": 9
 					},
 					"gettext": []
@@ -20414,7 +20428,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 756,
+								"line": 760,
 								"column": 13
 							},
 							"gettext": []
@@ -20435,7 +20449,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 757,
+								"line": 761,
 								"column": 13
 							},
 							"gettext": []
@@ -20456,7 +20470,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 758,
+								"line": 762,
 								"column": 13
 							},
 							"gettext": []
@@ -20477,7 +20491,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 759,
+								"line": 763,
 								"column": 13
 							},
 							"gettext": []
@@ -20498,7 +20512,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 760,
+								"line": 764,
 								"column": 13
 							},
 							"gettext": []
@@ -20519,7 +20533,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 761,
+								"line": 765,
 								"column": 13
 							},
 							"gettext": []
@@ -20527,7 +20541,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-						"line": 752,
+						"line": 756,
 						"column": 9
 					},
 					"gettext": []
@@ -20548,7 +20562,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-								"line": 769,
+								"line": 773,
 								"column": 13
 							},
 							"gettext": []
@@ -20556,7 +20570,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\item-rules.mwl",
-						"line": 765,
+						"line": 769,
 						"column": 9
 					},
 					"gettext": []
@@ -23676,7 +23690,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 146,
+								"line": 152,
 								"column": 13
 							},
 							"gettext": []
@@ -23691,7 +23705,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 152,
+								"line": 158,
 								"column": 13
 							},
 							"gettext": []
@@ -23706,7 +23720,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 158,
+								"line": 164,
 								"column": 13
 							},
 							"gettext": []
@@ -23721,7 +23735,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 164,
+								"line": 170,
 								"column": 13
 							},
 							"gettext": []
@@ -23736,7 +23750,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 170,
+								"line": 176,
 								"column": 13
 							},
 							"gettext": []
@@ -23751,7 +23765,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 176,
+								"line": 184,
 								"column": 13
 							},
 							"gettext": []
@@ -23766,7 +23780,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 182,
+								"line": 190,
 								"column": 13
 							},
 							"gettext": []
@@ -23776,12 +23790,12 @@ export const gameData = {
 							"attributes": {
 								"monster": "slime",
 								"chance": "0.2",
-								"kind": "armor"
+								"kind": "weapon"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 188,
+								"line": 196,
 								"column": 13
 							},
 							"gettext": []
@@ -23791,12 +23805,12 @@ export const gameData = {
 							"attributes": {
 								"monster": "skeleton",
 								"chance": "0.1666666667",
-								"kind": "armor"
+								"kind": "weapon"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 194,
+								"line": 206,
 								"column": 13
 							},
 							"gettext": []
@@ -23811,7 +23825,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 200,
+								"line": 214,
 								"column": 13
 							},
 							"gettext": []
@@ -23826,7 +23840,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 206,
+								"line": 220,
 								"column": 13
 							},
 							"gettext": []
@@ -23856,7 +23870,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 219,
+								"line": 233,
 								"column": 13
 							},
 							"gettext": []
@@ -23871,7 +23885,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 225,
+								"line": 239,
 								"column": 13
 							},
 							"gettext": []
@@ -23886,7 +23900,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 231,
+								"line": 245,
 								"column": 13
 							},
 							"gettext": []
@@ -23901,7 +23915,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 237,
+								"line": 251,
 								"column": 13
 							},
 							"gettext": []
@@ -23916,7 +23930,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 243,
+								"line": 257,
 								"column": 13
 							},
 							"gettext": []
@@ -23931,7 +23945,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 249,
+								"line": 263,
 								"column": 13
 							},
 							"gettext": []
@@ -23946,7 +23960,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 255,
+								"line": 269,
 								"column": 13
 							},
 							"gettext": []
@@ -23961,7 +23975,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 261,
+								"line": 275,
 								"column": 13
 							},
 							"gettext": []
@@ -23976,7 +23990,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 267,
+								"line": 281,
 								"column": 13
 							},
 							"gettext": []
@@ -23991,7 +24005,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-								"line": 273,
+								"line": 287,
 								"column": 13
 							},
 							"gettext": []
@@ -23999,7 +24013,7 @@ export const gameData = {
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\loot-rules.mwl",
-						"line": 214,
+						"line": 228,
 						"column": 9
 					},
 					"gettext": []

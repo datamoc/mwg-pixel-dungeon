@@ -31,7 +31,7 @@
     "android:apk": "cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
-    "mwg": "npm:@datamoc/mw_games@^0.14.0",
+    "mwg": "npm:@datamoc/mw_games@^0.15.0",
     "pixi.js": "^8.20.1"
   },
   "devDependencies": {

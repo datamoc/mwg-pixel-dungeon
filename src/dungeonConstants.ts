@@ -133,6 +133,10 @@ export type GroundItemKind =
 	| 'meat'
 	| 'gold'
 	| 'armor'
+	//`Slime`/`Skeleton`/`DM200`/`Golem`'s real `WEAPON`-category drops: this port's own
+	//simplified "+1 level" pickup (`pickupWeapon`, the weapon-side twin of `armor`'s
+	//`pickupArmor`), not a concretely generated item.
+	| 'weapon'
 	| 'wand'
 	| 'food'
 	| 'seed'
@@ -157,7 +161,7 @@ export type GroundItemKind =
 	| 'torch';
 
 export const GROUND_ITEM_KINDS: readonly GroundItemKind[] = [
-	'dewdrop', 'petal', 'stone', 'potion', 'scroll', 'meat', 'gold', 'armor', 'wand', 'food', 'seed',
+	'dewdrop', 'petal', 'stone', 'potion', 'scroll', 'meat', 'gold', 'armor', 'weapon', 'wand', 'food', 'seed',
 	'darkGold', 'dwarfToken', 'amulet', 'ring', 'crystalKey', 'ironKey', 'goldenKey', 'bomb',
 	'corpseDust', 'candle', 'embers', 'ankh', 'stylus', 'brokenSeal', 'honeypot', 'alchemize', 'bag', 'sandBag', 'torch',
 ];

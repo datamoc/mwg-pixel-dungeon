@@ -40,6 +40,7 @@ export interface GroundPickupContext {
 	addLooseGold(amount: number): void;
 	recoverStone(item: GroundItem): void;
 	pickupArmor(): void;
+	pickupWeapon(): void;
 	pickupWand(): void;
 	pickupAmulet(): void;
 	pickupRing(): void;
@@ -140,6 +141,7 @@ export function pickupGroundItem(context: GroundPickupContext): void {
 	if (item.kind === 'gold') return context.addLooseGold(Random.range(30 + context.depth * 10, 60 + context.depth * 20));
 	if (item.kind === 'stone' && ['warrior', 'rogue', 'duelist'].includes(context.heroClass)) return context.recoverStone(item);
 	if (item.kind === 'armor') return context.pickupArmor();
+	if (item.kind === 'weapon') return context.pickupWeapon();
 	if (item.kind === 'wand') return context.pickupWand();
 	if (item.kind === 'amulet') return context.pickupAmulet();
 	if (item.kind === 'ring') return context.pickupRing();

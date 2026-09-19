@@ -93,6 +93,11 @@
           { tag: "row", groundKind: "meat", nameKey: "items.food.mysterymeat.name" },
           { tag: "row", groundKind: "gold", nameKey: "items.gold.name" },
           { tag: "row", groundKind: "armor", nameKey: "items.armor.clotharmor.name" },
+          // `WornShortsword.name` (tag v3.3.8): the generic dropped-weapon stand-in, the
+          // weapon-side twin of `armor`'s ClothArmor stand-in directly above - both drops are
+          // this port's simplified "+1 level" pickup (see `pickupWeapon`/`pickupArmor`), not a
+          // concretely generated item, so neither shows a real generated weapon/armor's name.
+          { tag: "row", groundKind: "weapon", nameKey: "items.weapon.melee.wornshortsword.name" },
           { tag: "row", groundKind: "wand", nameKey: "port.name.wand" },
           { tag: "row", groundKind: "food", nameKey: "items.food.food.name" },
           { tag: "row", groundKind: "seed", nameKey: "plants.plant$seed$placeholder.name" },
@@ -253,6 +258,10 @@
           { tag: "row", kind: "meat", frame: 432 },
           { tag: "row", kind: "gold", frame: 18 },
           { tag: "row", kind: "armor", frame: 176 },
+          // `ItemSpriteSheet.WORN_SHORTSWORD` (`xy(1,7)` = flat index 96, same value the
+          // `weaponReward` bag-item frame below already uses) - the weapon-side twin of
+          // `armor`'s ARMOR_CLOTH stand-in directly above.
+          { tag: "row", kind: "weapon", frame: 96 },
           { tag: "row", kind: "wand", frame: 208 },
           { tag: "row", kind: "food", frame: 437 },
           { tag: "row", kind: "seed", frame: 58 },

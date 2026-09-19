@@ -138,6 +138,12 @@
           },
           {
             tag: "row",
+            // `DM200.java`/`Golem.java` (tag v3.3.8): `loot = Random.oneOf(WEAPON, ARMOR)`,
+            // resolved once at spawn in Java, not re-rolled at death. `kind` here is the
+            // fallback the table format can express (one value per row); `kill()`'s own
+            // MOB_LOOT site rolls `armor` vs `weapon` 50/50 per death instead - a stated,
+            // per-death-not-per-spawn simplification, fixed 2026-09-19 (was always `armor`,
+            // no weapon ground kind existed) - see `PORT_COVERAGE.md`'s MOB_LOOT row.
             monster: "dm200",
             chance: 0.2,
             kind: "armor",
@@ -168,6 +174,8 @@
           },
           {
             tag: "row",
+            // Same `Random.oneOf(WEAPON, ARMOR)` fixed loot type as dm200 above - the 50/50
+            // is rolled per death in `kill()`'s own MOB_LOOT site, not here.
             monster: "golem",
             chance: 0.2,
             kind: "armor",
@@ -186,15 +194,21 @@
           },
           {
             tag: "row",
+            // `Slime.createLoot()` (tag v3.3.8): always a tier-2 melee weapon at level 0,
+            // never armor - `loot`/`Random.oneOf` do not appear anywhere in Slime.java. The
+            // `armor` kind here was wrong (fixed 2026-09-19, alongside adding a real `weapon`
+            // ground kind for this and the row below - see `PORT_COVERAGE.md`'s MOB_LOOT row).
             monster: "slime",
             chance: 0.2,
-            kind: "armor",
+            kind: "weapon",
           },
           {
             tag: "row",
+            // `Skeleton.java` (tag v3.3.8): `loot = Generator.Category.WEAPON` in its
+            // constructor - always a weapon, never armor. Same fix as the row above.
             monster: "skeleton",
             chance: 0.1666666667,
-            kind: "armor",
+            kind: "weapon",
           },
           {
             tag: "row",

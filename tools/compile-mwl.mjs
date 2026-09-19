@@ -45,7 +45,21 @@ const game = compileSources(sources);
  * wrapped-text converter exists here to delete.
  */
 const ITEM_SLOTS = ['artifact', 'consumable', 'weapon', 'armor', 'wand', 'missile', 'ring'];
-const catalogDiagnostics = validateCatalog(game, { slots: ITEM_SLOTS, hooks: [] });
+/**
+ * Cross-table references, declared rather than hand-checked (mwg 0.15.0 item 362):
+ * `monsterLoot.kind` and both alias tables' `groundKind` must name a kind from the
+ * authored `groundItemNameKeys` table. This replaces the hand-copied `GROUND_ITEM_KINDS`
+ * set and its three loops below - a typo'd kind now reports `MWL_TABLE_REFERENCE` with
+ * the table, row and value, and the legal set lives in exactly one place (the MWL
+ * source) instead of two. Empty cells are skipped by the framework check, same as before
+ * (every one of these columns is required in practice, so nothing is silently excused).
+ */
+const TABLE_REFERENCES = [
+  { table: 'monsterLoot', column: 'kind', references: { table: 'groundItemNameKeys', column: 'groundKind' } },
+  { table: 'itemGroundKindAliases', column: 'groundKind', references: { table: 'groundItemNameKeys', column: 'groundKind' } },
+  { table: 'specialItemGroundKinds', column: 'groundKind', references: { table: 'groundItemNameKeys', column: 'groundKind' } },
+];
+const catalogDiagnostics = validateCatalog(game, { slots: ITEM_SLOTS, hooks: [], tableReferences: TABLE_REFERENCES });
 if (catalogDiagnostics.length > 0) {
 	throw new Error(`MWL semantic errors:\n${catalogDiagnostics.map((diagnostic) => `${diagnostic.code}: ${diagnostic.message} (${diagnostic.location?.file}:${diagnostic.location?.line})`).join('\n')}`);
 }
@@ -123,50 +137,13 @@ function validateHookReferences() {
 }
 
 /**
- * `monsterLoot`'s `kind` column names a `GroundItemKind` (`src/dungeonConstants.ts`), which
- * `monsters.ts`'s `MWL_MOB_LOOT` reads with a bare `as GroundItemKind` cast - a typo'd kind would
- * previously compile clean and only surface as a wrong/missing dropped item at runtime. This list
- * is a duplicate of `GROUND_ITEM_KINDS` (this script runs standalone via plain `node`, before
- * `tsc`, so it cannot import the `.ts` source directly - same reason `ITEM_SLOTS` above is
- * hand-copied rather than imported); keep both lists in sync when a kind is added or removed.
+ * `monsterLoot.kind`, `itemGroundKindAliases.groundKind` and `specialItemGroundKinds.groundKind`
+ * used to be checked here against a hand-copied `GROUND_ITEM_KINDS` set (with a keep-in-sync
+ * comment). They are now `TABLE_REFERENCES` declarations above, checked by the framework
+ * against the authored `groundItemNameKeys` table itself - same gate, one source of truth.
+ * (`monsters.ts`'s `MWL_MOB_LOOT` and `itemKinds.ts`'s two `as GroundItemKind` casts are why a
+ * typo here hurts: it compiles clean and only surfaces as a wrong ground-item family live.)
  */
-const GROUND_ITEM_KINDS = new Set([
-  'dewdrop', 'stone', 'potion', 'scroll', 'meat', 'gold', 'armor', 'wand', 'food', 'seed',
-  'darkGold', 'dwarfToken', 'amulet', 'ring', 'crystalKey', 'ironKey', 'goldenKey', 'bomb',
-  'corpseDust', 'candle', 'embers', 'ankh', 'stylus', 'brokenSeal', 'honeypot', 'alchemize', 'bag', 'sandBag', 'torch',
-]);
-function validateLootKindReferences() {
-  for (const row of tableRows('monsterLoot')) {
-    if (!GROUND_ITEM_KINDS.has(String(row.kind))) {
-      throw new Error(`MWL monsterLoot row for ${row.monster} references unknown ground item kind: ${row.kind}`);
-    }
-  }
-}
-
-/**
- * `itemGroundKindAliases`'s `groundKind` column and `specialItemGroundKinds`'s `groundKind`
- * column both name a `GroundItemKind` (`src/dungeonConstants.ts`), the same closed union
- * `validateLootKindReferences` above checks for `monsterLoot`. Unlike `monsterLoot`, these two
- * tables' readers in `src/mwlContent.ts` hand the raw string straight to `src/items/itemKinds.ts`,
- * which does a bare `as GroundItemKind` cast at both call sites (`groundKindForItem`'s
- * `authoredAlias as GroundItemKind` and `portItemKind`'s `authoredGroundKind as GroundItemKind`)
- * with no runtime check at all - a typo'd `groundKind` here would compile clean under both `tsc`
- * and `npm run build` and only surface as a live item rendering/behaving as the wrong ground-item
- * family (or a `GroundItemKind` value nothing else recognizes). Nothing previously verified either
- * column against the closed kind set.
- */
-function validateGroundKindAliasReferences() {
-  for (const row of tableRows('itemGroundKindAliases')) {
-    if (!GROUND_ITEM_KINDS.has(String(row.groundKind))) {
-      throw new Error(`MWL itemGroundKindAliases row for ${row.itemId} references unknown ground item kind: ${row.groundKind}`);
-    }
-  }
-  for (const row of tableRows('specialItemGroundKinds')) {
-    if (!GROUND_ITEM_KINDS.has(String(row.groundKind))) {
-      throw new Error(`MWL specialItemGroundKinds row for ${row.sourceClass} references unknown ground item kind: ${row.groundKind}`);
-    }
-  }
-}
 
 /**
  * `consumableClassAliases`'s `item` column names a `[item]` id read by `src/mwlContent.ts`'s
@@ -220,8 +197,6 @@ validateRosterReferences();
 validateBossReferences();
 validateActorReferences();
 validateHookReferences();
-validateLootKindReferences();
-validateGroundKindAliasReferences();
 validateConsumableAliasReferences();
 validateRoomRuleTables();
 

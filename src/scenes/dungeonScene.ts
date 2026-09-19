@@ -5022,6 +5022,27 @@ export class DungeonScene extends Scene2D {
 				if (this.armorLevel < 3) { this.armorLevel++; this.syncHeroFromStats(); this.say(t('port.log.weararmor', { level: this.armorLevel }), 'positive'); }
 				else { this.bag.add({ id: 'armor', quantity: 1, instanceId: this.newItemInstanceId('armor'), identified: true }); this.say(t('port.log.stasharmor')); }
 			},
+			//`Slime`/`Skeleton`/`DM200`/`Golem`.rollToDropLoot()'s WEAPON-category drop, this
+			//port's own "+1 level" simplification mirroring `pickupArmor` exactly (no concrete
+			//weapon is generated either way) - reusing `port.log.weaponupgraded`, the same
+			//message the blacksmith's own weapon upgrade already uses, since the event is the
+			//same from the hero's perspective (the weapon in hand got stronger).
+			pickupWeapon: () => {
+				if (this.weaponLevel < 3) {
+					this.weaponLevel++;
+					this.syncHeroFromStats();
+					this.say(t('port.log.weaponupgraded', { level: this.weaponLevel, min: this.hero.damage[0], max: this.hero.damage[1] }), 'positive');
+				} else {
+					//`InventoryItem.sourceClass` is gone in mwg 0.15.0 (present in 0.14, no
+					//removal note in its changelog), so this port-owned extra rides the same
+					//cast the readers already use - runtime shape unchanged, still saved via
+					//`bagSources` and read back with `as { sourceClass?: string }`.
+					const stashedWeapon = { id: 'weaponReward', quantity: 1, instanceId: this.newItemInstanceId('weapon'), identified: true, level: this.weaponLevel };
+					(stashedWeapon as { sourceClass?: string }).sourceClass = this.weaponId;
+					this.bag.add(stashedWeapon);
+					this.say(t('port.log.stashweapon'));
+				}
+			},
 			pickupWand: () => { this.wandCharges = new Actors.Charges({ max: 4, current: 4, regenRate: 1 }); this.bag.add({ id: 'wand', quantity: 1, stackable: true, identified: true }); this.say(t('port.log.wandabsorbed'), 'positive'); },
 			pickupAmulet: () => {
 				this.gameState.setSwitch('amuletObtained', true); runState.audio.winMusic();
@@ -15121,8 +15142,15 @@ private eyeBeamTurn(monster: Creature): boolean {
 				const drop = Actors.rollLoot({ entries: [{ id: entry.kind, weight: 1 }], chance });
 				if (drop) {
 					if (decay) this.limitedDrops[counterKind as MonsterId] = (this.limitedDrops[counterKind as MonsterId] ?? 0) + 1;
-					this.spawnGroundItem(entry.kind, creature.x, creature.y);
-					this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS[entry.kind]) }));
+					//`DM200`/`Golem.java` (tag v3.3.8): `loot = Random.oneOf(WEAPON, ARMOR)` -
+					//Java rolls this once at spawn and keeps it fixed; this port rolls it once
+					//per death instead (a per-death, not per-spawn, simplification - stated in
+					//`loot-rules.mwl`'s own row comment) since it tracks no per-instance loot
+					//field. Every other MOB_LOOT `armor` entry keeps its authored kind unchanged.
+					const kind = (creature.kind === 'dm200' || creature.kind === 'golem') && entry.kind === 'armor' && Random.chance(0.5)
+						? 'weapon' : entry.kind;
+					this.spawnGroundItem(kind, creature.x, creature.y);
+					this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS[kind]) }));
 					break;
 				}
 			}

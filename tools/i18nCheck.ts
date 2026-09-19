@@ -189,12 +189,14 @@ for (const language of LANGUAGES) {
 //    English, and SPD's `in` is reachable from BCP-47's `id`
 check("pt-BR detects pt", detectLanguage(['pt-BR']).code === 'pt');
 check('zh-Hans-CN detects zh', detectLanguage(['zh-Hans-CN']).code === 'zh');
+check('zh-Hant-HK detects zh-hant', detectLanguage(['zh-Hant-HK']).code === 'zh-hant');
 check('id detects SPD\'s in', detectLanguage(['id']).code === 'in');
 check('an untranslated language falls back to English', detectLanguage(['sw', 'mt']).code === 'en');
 check('preference order is honoured', detectLanguage(['sw', 'fr', 'de']).code === 'fr');
 
 // 7. the generated catalog really carries other languages, not just English twice
 check('fr differs from en for the rat', SPD_MESSAGES.fr['actors.mobs.rat.name'] !== SPD_MESSAGES.en['actors.mobs.rat.name']);
+check('eo differs from en for the rat', SPD_MESSAGES.eo['actors.mobs.rat.name'] !== SPD_MESSAGES.en['actors.mobs.rat.name']);
 check('ja is non-latin', /[^\x00-ɏ]/.test(SPD_MESSAGES.ja['actors.mobs.rat.name'] ?? ''));
 
 // 8. `convertPlaceholders` is exercised by generation for the complete corpus. Do not try to
