@@ -80,7 +80,11 @@ export function applyScrollEffect(id: string, context: ScrollEffectsContext): bo
 	}
 	if (id === 'scrollTerror') {
 		const affected: Creature[] = [];
-		for (const creature of creatures) if (!creature.isHero && !creature.isNPC && fov.isVisible(creature.x, creature.y)) {
+		//`ScrollOfTerror.doRead()` (tag `v3.3.8`) skips `ALIGNMENT == ALLY` - the rage
+		//branch above already had its `!isAlly` guard, terror was missing it, so a
+		//read scattered the hero's own mirror images and allies. Found by the 16th
+		//monster-analysis matrix (scrolls).
+		for (const creature of creatures) if (!creature.isHero && !creature.isNPC && !creature.isAlly && fov.isVisible(creature.x, creature.y)) {
 			addBuff(creature, 'terror');
 			affected.push(creature);
 		}
