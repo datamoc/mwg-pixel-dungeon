@@ -1204,6 +1204,23 @@ one.
       hello-first/appeared-later greetings, direct orders with numbered yells, quest/charge/room
       refusals spending nothing, AntiMagic undercharging). The move caught one live omission in
       review - the scene-field assignment - fixed as a `setActiveGhost` seam before committing.
+      **Complexity: L.** **Fourteenth extraction 2026-09-19**: Lloyd's Beacon's zap/set/return
+      flow (`useBeaconArtifact`'s three rows, the aimer, the self/other confirms, the set anchor,
+      the same-depth relocate vs cross-depth travel) moved to `items/beacon.ts` behind a
+      `BeaconFlowContext` (beacon lookup, title, picker, aimer, depth, hero cell, cell index,
+      grid width, boss/amulet/mining-branch gates, creature views, immovables, free-cell scatter,
+      hero/creature moves, teleport effects, same-depth relocate, a `travelToDepth` callback that
+      runs `enterLevel` scene-side, roots, invisibility, say, `t`); the scene keeps the one-line
+      `useBeaconArtifact` adapter the router calls, `beaconArtifactItem` (retyped to the new
+      `BeaconItem`), plus a builder, and `artifactRechargeCap`'s beacon case now calls the moved
+      `beaconChargeCap`. Net −49 lines in `dungeonScene.ts` (22,824 after), new `beacon.ts` 206
+      lines. Suites: `tsc` clean after keying the creature view and `isImmovableKind` by
+      `AnyMonsterId` (the chains precedent), item suite green with a new headless drive of the
+      moved flow (row gating by charge/anchor, set anchor with boss/adjacent blocks, self-zap
+      paying/unrooting/scattering, victim scatter with boss/immovable/empty refusals, same-depth
+      relocate vs cross-depth travel, blocked/occupied/walled anchors). The move caught one
+      inverted reading in review - the zap costs 2 *past* depth 20, not above it - fixed in the
+      module comment and the drive before committing.
       **Complexity: L.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`

@@ -234,6 +234,7 @@ import { useArmbandFlow, type ArmbandFlowContext } from '../items/armband';
 import { applyTalismanPerTurnCharge, useTalismanFlow, checkTalismanAwarenessFlow, type TalismanFlowContext, type TalismanItem } from '../items/talisman';
 import { roseGhostMaxHp, applyRoseRecharge, useRoseFlow, type RoseFlowContext, type RoseItem } from '../items/rose';
 import { rosePetalsNeeded, rosePetalDropCap, rosePetalPickup, roseChargeCap, roseLevelCap } from '../items/rose';
+import { beaconChargeCap, useBeaconFlow, type BeaconFlowContext, type BeaconItem } from '../items/beacon';
 import { planWealthDrops, wealthEquipBonus, initialiseWealthTrackers, wealthDeathRolls, type WealthDropPlan, type WealthTrackers } from '../items/wealthDrops';
 import { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal, artifactRechargeDuration, wildEnergyRechargeTurns, type RechargeGuards } from '../items/artifactRecharge';
 import { equipRing as equipInventoryRing, equipArmor as equipInventoryArmor, equipWeapon as equipInventoryWeapon, type GearEquipmentContext, type RingEquipmentContext } from '../items/equipment';
@@ -18539,22 +18540,67 @@ private eyeBeamTurn(monster: Creature): boolean {
 		}
 
 		private useBeaconArtifact(instanceId?: string): void {
-			const beacon = this.beaconArtifactItem(instanceId);
-			if (!beacon) return;
-			const chargeCap = this.beaconChargeCap(beacon);
-			const charge = Math.min(chargeCap, beacon.charge ?? 0);
-			const zapCost = this.depth > mwlItemEffectValue('beacon', 'zapCostDepthThreshold')
-				? mwlItemEffectValue('beacon', 'zapCostHighDepth') : mwlItemEffectValue('beacon', 'zapCostBase');
-			const zapEntry = 'beacon-zap', setEntry = 'beacon-set', returnEntry = 'beacon-return';
-			this.openItemPicker(t('items.artifacts.lloydsbeacon.name'), [
-				...(charge >= zapCost ? [{ id: 'beacon', instanceId: zapEntry, identified: true, quantity: 1 }] : []),
-				{ id: 'beacon', instanceId: setEntry, identified: true, quantity: 1 },
-				...(beacon.returnDepth !== undefined && beacon.returnDepth >= 0 ? [{ id: 'beacon', instanceId: returnEntry, identified: true, quantity: 1 }] : []),
-			], (entry) => {
-				if (entry.instanceId === zapEntry) this.beginBeaconZap(zapCost, instanceId);
-				else if (entry.instanceId === setEntry) this.setBeaconArtifact(instanceId);
-				else if (entry.instanceId === returnEntry) this.returnBeaconArtifact(instanceId);
-			});
+			useBeaconFlow(this.beaconFlowContext(), instanceId);
+		}
+
+		/**
+		 * Lloyd's Beacon's zap/set/return flow lives in `items/beacon.ts` behind
+		 * `BeaconFlowContext` - the file-size refactor's fourteenth extraction, behavior-identical.
+		 * The return row's depth travel stays scene-side (`travelToDepth` runs `enterLevel`);
+		 * the module only hands it the anchor.
+		 */
+		private beaconFlowContext(): BeaconFlowContext {
+			const scene = this;
+			return {
+				get depth() { return scene.depth; },
+				get heroPos() { return { x: scene.hero.x, y: scene.hero.y }; },
+				get miningBranchActive() { return scene.miningBranchActive; },
+				beaconOf: (instanceId?: string) => scene.beaconArtifactItem(instanceId),
+				beaconTitle: () => t('items.artifacts.lloydsbeacon.name'),
+				openPicker: (title, entries, onPick) => scene.openItemPicker(title, entries, onPick),
+				beginAim: (opts) => scene.beginAiming(opts),
+				cellIndex: (x, y) => scene.level.index(x, y),
+				gridWidth: () => scene.level.width,
+				isBossDepth: () => scene.depth in BOSSES,
+				hasAmulet: () => scene.bag.find('amulet') !== undefined,
+				creatureAt: (x, y) => {
+					const creature = scene.creatureAt(x, y);
+					return creature ? { kind: creature.kind, isHero: creature.isHero, isNPC: creature.isNPC, isAlly: creature.isAlly } : null;
+				},
+				isImmovableKind: (kind) => kind !== undefined && IMMOVABLE_KINDS.has(kind),
+				randomFreeCellNear: (x, y) => scene.randomFreeCell({ x, y }),
+				moveHeroTo: (cell) => {
+					scene.moveTo(scene.hero, cell);
+					scene.fov.update(cell.x, cell.y, scene.viewRadius());
+				},
+				playHeroTeleport: (from, to) => { scene.playTeleportAppear(from, to, scene.hero); },
+				playCreatureTeleport: (from, to, x, y) => {
+					const creature = scene.creatureAt(x, y);
+					if (creature) scene.playTeleportAppear(from, to, creature);
+				},
+				moveCreatureTo: (x, y, cell) => {
+					const creature = scene.creatureAt(x, y);
+					if (creature) scene.moveTo(creature, cell);
+				},
+				passable: (x, y) => scene.level.passable(x, y),
+				relocateHero: (x, y) => {
+					scene.hero.x = x;
+					scene.hero.y = y;
+					scene.sprite(scene.hero).x = x * TILE;
+					scene.sprite(scene.hero).y = y * TILE;
+					scene.fov.update(x, y, scene.viewRadius());
+				},
+				travelToDepth: (returnDepth, arrival) => {
+					scene.beaconArrival = arrival;
+					scene.depth = returnDepth;
+					scene.miningBranchActive = false;
+					scene.enterLevel();
+				},
+				clearRoots: () => { delete scene.hero.buffs['roots']; },
+				dispelInvisibility: () => { delete scene.hero.buffs['invisibility']; },
+				say: scene.say.bind(scene),
+				t,
+			};
 		}
 
 		private useArmband(instanceId?: string): void {
@@ -18932,59 +18978,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		}
 
 		private beaconArtifactItem(instanceId?: string) {
-			return this.bag.find('beacon', instanceId) as (typeof this.bag.items[number]
-				& { level?: number; charge?: number; partialCharge?: number; cursed?: boolean;
-					returnDepth?: number; returnBranch?: number; returnPos?: number; returnX?: number; returnY?: number }) | undefined;
-		}
-
-		private beaconChargeCap(beacon: NonNullable<ReturnType<DungeonScene['beaconArtifactItem']>>): number {
-			const level = Math.min(beacon.level ?? 0, mwlItemEffectValue('beacon', 'levelCap'));
-			return mwlItemEffectValue('beacon', 'chargeCapBase') + mwlItemEffectValue('beacon', 'chargeCapPerLevel') * level;
-		}
-
-		private beginBeaconZap(zapCost: number, instanceId?: string): void {
-			this.beginAiming({
-				range: mwlItemEffectValue('beacon', 'zapRange'),
-				onConfirm: (cell) => this.confirmBeaconZap(cell, zapCost, instanceId),
-			});
-			this.say(t('items.artifacts.lloydsbeacon.prompt'), 'positive');
-		}
-
-		private setBeaconArtifact(instanceId?: string): void {
-			const beacon = this.beaconArtifactItem(instanceId);
-			if (!beacon) return;
-			if (this.beaconTeleportBlocked()) { this.say(t('items.artifacts.lloydsbeacon.preventing'), 'negative'); return; }
-			if (this.beaconAdjacentEnemy()) { this.say(t('items.artifacts.lloydsbeacon.creatures'), 'negative'); return; }
-			beacon.returnDepth = this.depth;
-			beacon.returnBranch = 0;
-			beacon.returnPos = this.level.index(this.hero.x, this.hero.y);
-			beacon.returnX = this.hero.x;
-			beacon.returnY = this.hero.y;
-			this.say(t('items.artifacts.lloydsbeacon.return'), 'positive');
-		}
-
-		private returnBeaconArtifact(instanceId?: string): void {
-			const beacon = this.beaconArtifactItem(instanceId);
-			if (!beacon || beacon.returnDepth === undefined || beacon.returnDepth < 0 || beacon.returnPos === undefined) return;
-			if (this.beaconTeleportBlocked()) { this.say(t('items.artifacts.lloydsbeacon.preventing'), 'negative'); return; }
-			if (this.beaconAdjacentEnemy()) { this.say(t('items.artifacts.lloydsbeacon.creatures'), 'negative'); return; }
-			const x = beacon.returnX ?? (beacon.returnPos % this.level.width);
-			const y = beacon.returnY ?? Math.floor(beacon.returnPos / this.level.width);
-			if (beacon.returnDepth === this.depth) {
-				if (!this.level.passable(x, y)) { this.say(t('items.scrolls.scrollofteleportation.no_tele'), 'negative'); return; }
-				if (this.creatureAt(x, y)) { this.say(t('items.artifacts.lloydsbeacon.creatures'), 'negative'); return; }
-				this.hero.x = x;
-				this.hero.y = y;
-				this.sprite(this.hero).x = x * TILE;
-				this.sprite(this.hero).y = y * TILE;
-				this.fov.update(x, y, this.viewRadius());
-			} else {
-				this.beaconArrival = { x, y };
-				this.depth = beacon.returnDepth;
-				this.miningBranchActive = false;
-				this.enterLevel();
-			}
-			this.say(t('port.log.beaconreturned'), 'positive');
+			return this.bag.find('beacon', instanceId) as (typeof this.bag.items[number] & BeaconItem) | undefined;
 		}
 
 		private hornItem(instanceId?: string) {
@@ -19029,54 +19023,12 @@ private eyeBeamTurn(monster: Creature): boolean {
 			switch (id) {
 				case 'cloak': return Math.min(level + 3, 10);
 				case 'horn': return hornChargeCap(item as never);
-				case 'beacon': return this.beaconChargeCap(item as never);
+				case 'beacon': return beaconChargeCap(item as never);
 				case 'armband': return mwlItemEffectValue('armband', 'chargeCapBase') + Math.floor(level / 2);
 				case 'spellbook': return spellbookChargeCap(level);
 				case 'chains': return (mwlItemEffectValue('chains', 'chargeCapBase') + mwlItemEffectValue('chains', 'chargeCapPerLevel') * level) * 2;
 				default: return roseChargeCap();
 			}
-		}
-
-		private confirmBeaconZap(target: Step, zapCost: number, instanceId?: string): void {
-			const beacon = this.beaconArtifactItem(instanceId);
-			if (!beacon) return;
-			beacon.charge = Math.max(0, (beacon.charge ?? 0) - zapCost);
-			if (this.hero.buffs['invisibility']) delete this.hero.buffs['invisibility'];
-			if (target.x === this.hero.x && target.y === this.hero.y) {
-				delete this.hero.buffs['roots'];
-				const destination = this.randomFreeCell(this.hero);
-				if (destination) {
-					const heroZapFrom = { x: this.hero.x, y: this.hero.y };
-					this.moveTo(this.hero, destination);
-					this.playTeleportAppear(heroZapFrom, destination, this.hero);
-					this.say(t('items.scrolls.scrollofteleportation.tele'), 'positive');
-				} else this.say(t('items.scrolls.scrollofteleportation.no_tele'), 'negative');
-				return;
-			}
-			const creature = this.creatureAt(target.x, target.y);
-			if (!creature) return;
-			if (this.depth in BOSSES) { this.say(t('items.scrolls.scrollofteleportation.no_tele'), 'negative'); return; }
-			if (creature.kind !== undefined && IMMOVABLE_KINDS.has(creature.kind)) {
-				this.say(t('items.artifacts.lloydsbeacon.tele_fail'), 'negative');
-				return;
-			}
-			const destination = this.randomFreeCell(creature);
-			const creatureZapFrom = { x: creature.x, y: creature.y };
-			if (!destination) { this.say(t('items.scrolls.scrollofteleportation.no_tele'), 'negative'); return; }
-			this.playTeleportAppear(creatureZapFrom, destination, creature);
-			this.moveTo(creature, destination);
-		}
-
-		private beaconTeleportBlocked(): boolean {
-			return (this.depth in BOSSES) || this.miningBranchActive || this.bag.find('amulet') !== undefined;
-		}
-
-		private beaconAdjacentEnemy(): boolean {
-			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
-				const creature = this.creatureAt(this.hero.x + dx, this.hero.y + dy);
-				if (creature && !creature.isHero && !creature.isNPC && !creature.isAlly) return true;
-			}
-			return false;
 		}
 
 		private isHostileToAlly(creature: Creature): boolean {

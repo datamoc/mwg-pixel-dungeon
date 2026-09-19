@@ -77,6 +77,7 @@ compile(join(root, 'src/mechanics/cone.ts'), 'mechanics/cone.js');
 compile(join(root, 'src/dungeonConstants.ts'), 'dungeonConstants.js');
 	// The Dried Rose's ghost stats, recharge clock and petal economy are scene-free the same way.
 	compile(join(root, 'src/items/rose.ts'), 'items/rose.js');
+compile(join(root, 'src/items/beacon.ts'), 'items/beacon.js');
 	// The Ring of Wealth's bonus-drop counters and drop catalogue are scene-free in the same way.
 	compile(join(root, 'src/items/shopStock.ts'), 'items/shopStock.js');
 	compile(join(root, 'src/items/wealthDrops.ts'), 'items/wealthDrops.js');
@@ -2122,6 +2123,129 @@ function roseDrive(overrides = {}, pickScript = [0]) {
 	assert.equal(boxed.flags.turns, 0, 'and spends nothing');
 	const immune = roseDrive({ ctx: { magicImmune: true } });
 	assert.ok(immune.log.some((l) => l.includes('no_charge')), 'AntiMagic undercharges like Java');
+}
+// The moved beacon flow (`BeaconFlowContext`, the file-size refactor's fourteenth extraction):
+// driven headlessly with a scripted picker and stub floor.
+const { useBeaconFlow, beaconChargeCap, beaconZapCost, beaconZapRange, beaconTeleportBlocked, beaconAdjacentEnemy } = require('./items/beacon.js');
+function beaconDrive(overrides = {}, pickScript = [0]) {
+	const log = [];
+	const flags = { aim: null, moved: [], teleports: [], relocated: null, traveled: null, rootsCleared: false, uncloaked: false };
+	const beacon = { level: 0, charge: 10, ...overrides.beacon };
+	const creatures = overrides.creatures ?? {};
+	const picks = [...pickScript];
+	const ctx = {
+		depth: 5,
+		heroPos: { x: 5, y: 5 },
+		miningBranchActive: false,
+		beaconOf: () => beacon,
+		beaconTitle: () => 'beacon',
+		openPicker: (title, entries, onPick) => { log.push(`picker:${entries.map((e) => e.instanceId).join(',')}`); onPick(entries[picks.shift() ?? 0]); },
+		beginAim: (opts) => { flags.aim = opts; log.push(`aim:${opts.range}`); },
+		cellIndex: (x, y) => y * 10 + x,
+		gridWidth: () => 10,
+		isBossDepth: () => false,
+		hasAmulet: () => false,
+		creatureAt: (x, y) => creatures[`${x},${y}`] ?? null,
+		isImmovableKind: (kind) => kind === 'statue',
+		randomFreeCellNear: overrides.freeCell ?? (() => ({ x: 1, y: 1 })),
+		moveHeroTo: (cell) => { flags.moved.push({ ...cell }); },
+		playHeroTeleport: (from, to) => { flags.teleports.push({ who: 'hero' }); },
+		playCreatureTeleport: (from, to, x, y) => { flags.teleports.push({ who: 'mob', at: { x, y } }); },
+		moveCreatureTo: (x, y, cell) => { flags.moved.push({ from: { x, y }, to: { ...cell } }); },
+		passable: overrides.passable ?? (() => true),
+		relocateHero: (x, y) => { flags.relocated = { x, y }; },
+		travelToDepth: (returnDepth, arrival) => { flags.traveled = { depth: returnDepth, arrival }; },
+		clearRoots: () => { flags.rootsCleared = true; },
+		dispelInvisibility: () => { flags.uncloaked = true; },
+		say: (line, level) => { log.push(`say:${level}:${line}`); },
+		t: (key) => key,
+		...overrides.ctx,
+	};
+	useBeaconFlow(ctx, undefined);
+	return { ctx, log, flags, beacon };
+}
+// Formulas: the cap levels to 10, the zap costs 1 down to depth 20 and 2 deeper.
+{
+	assert.equal(beaconZapCost(5), 1, 'shallow zaps cost 1');
+	assert.equal(beaconZapCost(21), 2, 'past depth 20 they cost 2');
+	assert.equal(beaconChargeCap({ level: 99 }), beaconChargeCap({ level: 10 }), 'the cap levels at 10');
+	assert.ok(beaconZapRange() > 0, 'the zap has a reach');
+}
+// Rows: a charged, unanchored beacon offers zap plus set; a flat one offers set alone.
+{
+	const d = beaconDrive();
+	assert.ok(d.log[0].endsWith('beacon-zap,beacon-set'), `zap plus set, got ${d.log[0]}`);
+	const flat = beaconDrive({ beacon: { level: 0, charge: 0 } });
+	assert.ok(flat.log[0].endsWith('beacon-set') && !flat.log[0].includes('zap'), `set alone when flat, got ${flat.log[0]}`);
+	const anchored = beaconDrive({ beacon: { level: 0, charge: 10, returnDepth: 3, returnPos: 55, returnX: 5, returnY: 5 } });
+	assert.ok(anchored.log[0].endsWith('beacon-zap,beacon-set,beacon-return'), `the anchor adds return, got ${anchored.log[0]}`);
+}
+// Set: picking it anchors depth and cell with the return line; the blocks name themselves.
+{
+	const d = beaconDrive({}, [1]);
+	assert.equal(d.beacon.returnDepth, 5, 'the anchor records the depth');
+	assert.deepEqual([d.beacon.returnX, d.beacon.returnY, d.beacon.returnPos], [5, 5, 55], 'and the hero cell');
+	assert.ok(d.log.some((l) => l.includes('lloydsbeacon.return')), 'with the return line');
+	const boss = beaconDrive({ ctx: { isBossDepth: () => true } }, [1]);
+	assert.ok(boss.log.some((l) => l.includes('preventing')), 'boss depths refuse');
+	assert.equal(boss.beacon.returnDepth, undefined, 'and anchor nothing');
+	const guarded = beaconDrive({ creatures: { '6,5': { kind: 'rat' } } }, [1]);
+	assert.ok(guarded.log.some((l) => l.includes('creatures')), 'an adjacent enemy refuses');
+}
+// Zap: picking it aims, and confirming on the hero pays, unroots, moves, and plays the effect.
+{
+	const d = beaconDrive();
+	assert.ok(d.log[1].startsWith('aim:'), `the zap aims, got ${d.log[1]}`);
+	d.flags.aim.onConfirm({ x: 5, y: 5 });
+	assert.equal(d.beacon.charge, 10 - beaconZapCost(5), 'the confirm pays the price');
+	assert.ok(d.flags.rootsCleared && d.flags.uncloaked, 'self-zaps free roots and uncloak');
+	assert.deepEqual(d.flags.moved, [{ x: 1, y: 1 }], 'the hero scatters');
+	assert.deepEqual(d.flags.teleports, [{ who: 'hero' }], 'with the effect played');
+	assert.ok(d.log.some((l) => l.includes('scrollofteleportation.tele')), 'and the tele line');
+	const stranded = beaconDrive({ freeCell: () => undefined });
+	stranded.flags.aim.onConfirm({ x: 5, y: 5 });
+	assert.ok(stranded.log.some((l) => l.includes('no_tele')), 'no free cell refuses');
+}
+// Zap at others: victims scatter, boss depths and immovables refuse, empties do nothing.
+{
+	const d = beaconDrive({ creatures: { '7,5': { kind: 'rat' } } });
+	d.flags.aim.onConfirm({ x: 7, y: 5 });
+	assert.deepEqual(d.flags.moved, [{ from: { x: 7, y: 5 }, to: { x: 1, y: 1 } }], 'the victim scatters');
+	assert.deepEqual(d.flags.teleports, [{ who: 'mob', at: { x: 7, y: 5 } }], 'with the effect on the victim');
+	const boss = beaconDrive({ creatures: { '7,5': { kind: 'rat' } }, ctx: { isBossDepth: () => true } });
+	boss.flags.aim.onConfirm({ x: 7, y: 5 });
+	assert.ok(boss.log.some((l) => l.includes('no_tele')), 'boss depths refuse the victim half');
+	const statue = beaconDrive({ creatures: { '7,5': { kind: 'statue' } } });
+	statue.flags.aim.onConfirm({ x: 7, y: 5 });
+	assert.ok(statue.log.some((l) => l.includes('tele_fail')), 'immovables refuse');
+	assert.equal(statue.beacon.charge, 10 - beaconZapCost(5), '...but the charge is paid up front');
+	const empty = beaconDrive();
+	empty.flags.aim.onConfirm({ x: 7, y: 5 });
+	assert.equal(empty.flags.moved.length, 0, 'empty cells do nothing');
+}
+// Return: same depth relocates, another depth travels, and blocked anchors refuse both.
+{
+	const home = beaconDrive({ beacon: { level: 0, charge: 10, returnDepth: 5, returnPos: 22, returnX: 2, returnY: 2 } }, [2]);
+	assert.deepEqual(home.flags.relocated, { x: 2, y: 2 }, 'same depth steps to the anchor');
+	assert.ok(home.log.some((l) => l.includes('beaconreturned')), 'with the return line');
+	const away = beaconDrive({ beacon: { level: 0, charge: 10, returnDepth: 3, returnPos: 22, returnX: 2, returnY: 2 } }, [2]);
+	assert.deepEqual(away.flags.traveled, { depth: 3, arrival: { x: 2, y: 2 } }, 'another depth travels');
+	assert.equal(away.flags.relocated, null, 'without stepping');
+	const blocked = beaconDrive(
+		{ beacon: { level: 0, charge: 10, returnDepth: 3, returnPos: 22, returnX: 2, returnY: 2 }, ctx: { hasAmulet: () => true } }, [2]);
+	assert.ok(blocked.log.some((l) => l.includes('preventing')), 'the amulet blocks the return');
+	assert.equal(blocked.flags.traveled, null, 'and nothing travels');
+	const occupied = beaconDrive(
+		{ beacon: { level: 0, charge: 10, returnDepth: 5, returnPos: 22, returnX: 2, returnY: 2 }, creatures: { '2,2': { kind: 'rat' } } }, [2]);
+	assert.ok(occupied.log.some((l) => l.includes('creatures')), 'an occupied anchor refuses');
+	const walled = beaconDrive(
+		{ beacon: { level: 0, charge: 10, returnDepth: 5, returnPos: 22, returnX: 2, returnY: 2 }, passable: () => false }, [2]);
+	assert.ok(walled.log.some((l) => l.includes('no_tele')), 'a blocked anchor refuses');
+	assert.ok(beaconTeleportBlocked({ isBossDepth: () => true, miningBranchActive: false, hasAmulet: () => false }), 'boss depths block');
+	assert.ok(!beaconTeleportBlocked({ isBossDepth: () => false, miningBranchActive: false, hasAmulet: () => false }), 'open floors do not');
+	const heroCtx = { heroPos: { x: 5, y: 5 }, creatureAt: () => null };
+	assert.ok(!beaconAdjacentEnemy(heroCtx), 'empty neighbours pass');
+	assert.ok(beaconAdjacentEnemy({ heroPos: { x: 5, y: 5 }, creatureAt: (x, y) => (x === 6 && y === 5 ? { kind: 'rat' } : null) }), 'a hostile neighbour blocks');
 }
 }
 }
