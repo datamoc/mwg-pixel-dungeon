@@ -1049,7 +1049,25 @@ one.
       behind `items/itemActions.ts`'s router, blob fields/ticking next to `environmentalBlobs.ts`,
       aim/targeting helpers next to `simulation/targeting.ts` - one domain per commit, suites green
       at each step, no behavior change (each move is covered by the existing verify suites plus a
-      before/after `tsc` + build). **First extraction 2026-09-19**: the alchemy-pot window flow
+      before/after `tsc` + build). The promised line-count gate is live since
+      2026-09-20 (`tools/check-file-budget.mjs`, wired into `npm run check`):
+      every hand-written `src/**/*.ts` file must fit 2,000 lines except the
+      entries in `tools/file-budgets.json` (`dungeonScene.ts` at 22,600,
+      `portStrings.ts` at 10,300 - loose headroom over the day's counts, to be
+      lowered in the same commit as each shrink and deleted once a file fits).
+      **Triaged 2026-09-20, the micro-extraction vein is exhausted**: the
+      thirty-fifth through forty-fourth extractions completed every seam-clean
+      micro-unit the scene still held (six targeting queries, five wandering
+      decisions, the vent emission, three consolidations: hunting blocked-set,
+      flee-step, summon-cell) with paired drives and green gates throughout -
+      and netted +8 lines across the ten commits (22,526 to 22,534), because
+      adapters, builders and deviation-note comments cost what small moved
+      bodies save. What remains scene-side is orchestration
+      (turn loop, AI with live pathfinder, rendering, the context builders
+      that must bind scene state) - not movable as behavior-identical
+      micro-slices. Further movement toward the 2,000-line objective belongs
+      to the section-11 runtime-command migration, not to more
+      extractions. **First extraction 2026-09-19**: the alchemy-pot window flow
       (`startAlchemyIngredientPick`/`pickAlchemyUnits`/`completeAlchemyRecipe`/`openAlchemyRecipes`
       plus the `AlchemyIngredientSelection` type) moved verbatim to `items/alchemy.ts` behind a new
       `AlchemyFlowContext` (bag, energy get/set, say, picker, display name, panel refresh) - the
