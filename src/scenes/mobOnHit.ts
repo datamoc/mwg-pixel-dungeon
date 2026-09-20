@@ -3,8 +3,8 @@ import { addBuff, reigniteBuff, setBleeding, type Creature } from '../combat';
 import { WATER } from '../dungeonConstants';
 import { capitalize, t } from '../i18n/index';
 import { BASE_KIND_ALIASES, type AnyMonsterId, type MonsterId } from '../monsters';
-import { STARVING } from './hunger';
-import type { Step } from './combatState';
+import { STARVING } from '../simulation/hunger';
+import type { Step } from '../simulation/combatState';
 import { lethalDefenseShield } from '../talentEffects';
 
 /**

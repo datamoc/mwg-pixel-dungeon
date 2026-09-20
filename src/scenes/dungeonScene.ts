@@ -178,7 +178,7 @@ import { ClassSelectScene } from '../scenes/classSelectScene';
 import { menuScale } from '../ui/spdButton';
 import { drawAimPreview } from '../ui/aimOverlay';
 import { allyIdentityColorAdd, buildMonsterCreature, buildMonsterSprite } from './monsterSpawn';
-import { mobOnHit } from '../simulation/mobOnHit';
+import { mobOnHit } from './mobOnHit';
 import { sharpenUi, tuneWindowStack, windowBaseZoom } from '../ui/windowFit';
 import { applyDM300DeathUnseal, applyGooDeathUnseal, applyKingDeathUnseal, applyYogDeathUnseal, repairBossUnsealStairs, type BossUnsealContext } from './bossUnseal';
 import { openGameMenu as openGameMenuWindow } from '../ui/gameMenu';
