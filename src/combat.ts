@@ -415,6 +415,9 @@ function buffBlocked(c: Creature, id: BuffId): boolean {
 	//takes no buffs at all. It is spawned on the `rat` kind, so no MWL row can carry this;
 	//the gate lives here, where every buff application funnels through.
 	if (c.allyKind === 'afterImage') return true;
+	//`Sheep.add(Buff)` (tag `v3.3.8`) returns false unconditionally - the sheep
+	//takes no buffs at all. Same shared boundary as the decoy above.
+	if (c.allyKind === 'sheep') return true;
 	//Brimstone.java grants Burning immunity through Char.isImmune(), before the
 	//effect can be attached. Keep this check at the shared buff boundary so fire
 	//from traps, blobs, wands, plants, and enemy attacks all obey it.

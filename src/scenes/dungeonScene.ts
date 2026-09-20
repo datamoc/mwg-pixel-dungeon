@@ -170,6 +170,7 @@ import { exposeWeaknessDuration, feignedRetreatHaste, combinedLethalityTest, clo
 import { shadowCloneAccuracy, shadowCloneArmorShare, shadowCloneBladeShare, shadowCloneEvasion, shadowCloneHp } from '../simulation/rogueAbilities';
 import { ratsistanceFactor, useRatmogrifyFlow, type RatmogrifyContext } from '../simulation/ratmogrify';
 import { PRISMATIC_FADE_TURNS, PRISMATIC_HATCH_RANGE, prismaticGuardMaxHp, prismaticImageStats, prismaticSpawnCell } from '../simulation/prismatic';
+import { mirrorImageStats } from '../simulation/mirrorImage';
 import { CLASSES, CLASS_AMMO, HERO_IDLE_FRAME, type ClassId } from '../classes';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
 import { TitleScene } from '../scenes/titleScene';
@@ -332,6 +333,7 @@ import {
 	explosiveTrapBounds,
 	setBleeding,
 	tickBuffs,
+	INFINITE_EVASION,
 	NEGATIVE_BUFFS,
 	BUFF_DURATION,
 	absorbShield,
@@ -2670,13 +2672,15 @@ export class DungeonScene extends Scene2D {
 		image.name = `${this.hero.name} (image)`;
 		image.hp = 1;
 		image.maxHp = 1;
-		image.accuracy = this.hero.accuracy;
-		image.evasion = this.hero.evasion;
-		image.damage = [...this.hero.damage] as [number, number];
-		image.armor = [...this.hero.armor] as [number, number];
+		//`MirrorImage` is immune to ToxicGas, CorrosiveGas, Burning and AllyBuff
+		//(tag `v3.3.8`): the gases ride the blob paths below (see `isToxicImmune`
+		//and `applyCorrosion`), Burning rides this flag through `buffBlocked`
+		//exactly like the prismatic image's own, and AllyBuff has no system here.
+		image.fireImmune = true;
 		image.sleeping = false;
 		image.seesHero = true;
 		image.allyKind = 'mirror';
+		this.syncMirrorImage(image);
 		const carrier = this.sprite(image);
 		carrier.destroy();
 		const mirrorSheet = heroSheet(runState.sprites[this.heroClass]);
@@ -2722,9 +2726,15 @@ export class DungeonScene extends Scene2D {
 		return image;
 	}
 
-	/** `Sheep.initialize(8)` gives a neutral, invulnerable NPC a lifespan of roughly eight
-	 * actor turns. The actor now uses Java's dedicated `SheepSprite` film; only its neutral
-	 * scheduling and expiration remain represented through the shared ally path. */
+	/** `Sheep.initialize(lifespan)` (`Sheep.java`, tag `v3.3.8`): a neutral,
+	 * invulnerable NPC that spends `lifespan + Float(-2, 2)` and destroys itself on
+	 * its next turn - the flock stone passes 8, the woolly bomb passes 20 on a boss
+	 * floor and 200 otherwise. `INFINITE_EVASION` plus the `buffBlocked` sheep gate
+	 * are the `defenseSkill`/`add()` halves; the damage `damage()` no-op halves ride
+	 * the blob/bomb/shocker skips below (melee can never land through infinite
+	 * evasion, and traps only ever target the hero). `Sheep.interact` (the Baa
+	 * lines, the hero's spent turn, the woolly dispel) has no tap-ally seam here.
+	 */
 	/** `PrismaticImage.duplicate()`: the exotic scroll's guard hatches into this - a weaker
 	 * hero clone (`HT = PrismaticGuard.maxHP`, current HP = the guard pool leftovers)
 	 * that keeps the hero's armor film like a mirror image (Java's `PrismaticSprite`
@@ -2758,6 +2768,33 @@ export class DungeonScene extends Scene2D {
 		return image;
 	}
 
+	/** Re-reads a mirror image's hero-derived combat stats (`duplicate()` binds the
+	 * hero for life; every formula below reads it live). Runs at spawn and on each
+	 * image turn - the old spawn-time copy went stale on every weapon swap and
+	 * level-up, and dealt full hero damage where Java deals `(damage+1)/2`.
+	 * Accuracy is Java's `(9 + lvl) * accuracyMultiplier` (truncated); evasion is
+	 * `1 * (base + heroEv) / 2` with `base = 4 + lvl` (truncated, same shape as
+	 * `prismaticImageStats`); damage halves each live bound rounded up (Java
+	 * halves the roll: `ceil(d/2)`); DR copies the hero's tuple. Stated gaps: the
+	 * attacking weapon's `accuracyFactor` (only the cudgel factor is modeled,
+	 * hero-side), the armor's `evasionFactor`, the weapon's `defenseFactor()/2`
+	 * DR half, the weapon `proc()` share, `MirrorInvis` (spawn invisibility
+	 * until the first hit), and the hero's own `attackDelay` (ally turns spend
+	 * the uniform cost here).
+	 */
+	private syncMirrorImage(image: Creature): void {
+		const level = this.progression.level;
+		const ring = this.effectiveRing();
+		const accBonus = ring?.id === 'ring_accuracy' ? ringBonusLevel(ring, this.hero.magicImmune) : 0;
+		const evBonus = ring?.id === 'ring_evasion' ? ringBonusLevel(ring, this.hero.magicImmune) : 0;
+		const stats = mirrorImageStats(level, Math.pow(1.3, accBonus), Math.pow(1.125, evBonus),
+			this.hero.damage[0], this.hero.damage[1]);
+		image.accuracy = stats.accuracy;
+		image.evasion = stats.evasion;
+		image.damage = [stats.damageMin, stats.damageMax];
+		image.armor = [...this.hero.armor] as [number, number];
+	}
+
 	/** Re-reads the image's hero-derived combat stats (`duplicate()` binds the hero for
 	 * life; every formula below reads it live). Runs at spawn and on each image turn,
 	 * the hawk/shadow-clone precedent for live-scaling summons. The armor's own
@@ -2777,11 +2814,14 @@ export class DungeonScene extends Scene2D {
 		image.armor = [...this.hero.armor] as [number, number];
 	}
 
-	private spawnSheep(at: Step): Creature {
+	private spawnSheep(at: Step, lifespan: number): Creature {
 		const sheep = this.spawnMonster('sheep', at, false, undefined, true, 'sheep');
 		sheep.name = t(MOB_KEYS.sheep);
 		sheep.hp = sheep.maxHp = 1;
-		sheep.sheepTurns = Math.max(1, Math.round(Random.float(6, 10)));
+		//`initialize()`: `spend(lifespan + Float(-2, 2))` - the same jitter on the
+		//turn countdown, since a sheep turn here is one scheduler turn there.
+		sheep.sheepTurns = Math.max(1, Math.round(Random.float(lifespan - 2, lifespan + 2)));
+		sheep.evasion = INFINITE_EVASION;
 		sheep.sleeping = false;
 		const sprite = this.sprite(sheep);
 		sprite.alpha = 0.62;
@@ -6309,6 +6349,8 @@ export class DungeonScene extends Scene2D {
 				if (target.allyKind === 'afterImage') return;
 				//`PrismaticImage` is immune to `CorrosiveGas` (tag `v3.3.8`).
 				if (target.allyKind === 'prismatic') return;
+				//`MirrorImage` is immune to `CorrosiveGas` (same source).
+				if (target.allyKind === 'mirror') return;
 				target.corrosionTurns = Math.max(target.corrosionTurns ?? 0, 2);
 				target.corrosionDamage = Math.max(target.corrosionDamage ?? 0, strength);
 			},
@@ -6329,6 +6371,9 @@ export class DungeonScene extends Scene2D {
 				//`PrismaticImage` is immune to `ToxicGas` (same source); Burning is
 				//covered by its `fireImmune` flag on the fire paths, like Brimstone.
 				|| target.allyKind === 'prismatic'
+				//`MirrorImage` is immune to `ToxicGas` (same source); Burning rides
+				//its own new `fireImmune` flag the same way.
+				|| target.allyKind === 'mirror'
 				|| (target.kind !== undefined && INORGANIC_KINDS.has(target.kind))
 				|| (target.kind === 'yogFist' && target.yogFistType === 'rusted')
 				|| (target.kind === 'yog' && this.yogShielded(target))
@@ -6356,6 +6401,10 @@ export class DungeonScene extends Scene2D {
 					target.kingShield = absorbed.shield;
 					damage = absorbed.damage;
 				}
+				//`Sheep.damage()` (tag `v3.3.8`) is a no-op: the sheep takes no
+				//damage from any blob seam (melee can never land through its
+				//infinite evasion, and buffs never attach via `buffBlocked`).
+				if (target.allyKind === 'sheep') return true;
 				const preHp = target.hp;
 				target.hp -= damage;
 				if (this.fadeMirrorOnDamage(target, damage)) return true;
@@ -9521,6 +9570,7 @@ export class DungeonScene extends Scene2D {
 		//`ShadowClone.ShadowAlly` has no turn of its own beyond the shared ally below,
 		//but its gear-scaling stats are re-read on each of its turns (the hawk precedent).
 		if (ally.allyKind === 'shadowClone') this.syncShadowClone(ally);
+		if (ally.allyKind === 'mirror') this.syncMirrorImage(ally);
 		//`PrismaticImage.act()`'s death fade: at 0 HP the image spends its turns counting
 		//down (`deathTimer`), still targetable and healable - healing above 0 HP clears
 		//the fade on this same turn, exactly like Java's `act()` reset branch. While
@@ -11860,6 +11910,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 			for (const [dx, dy] of offsets) {
 				const target = this.creatureAt(shocker.x + dx, shocker.y + dy);
 				if (!target || target === tengu || target.isNPC || target.hp <= 0) continue;
+				//`Sheep.damage()` is a no-op (tag `v3.3.8`) - see the blob seam.
+				if (target.allyKind === 'sheep') continue;
 				const raw = 2 + this.depth;
 				const dealt = target.isHero ? this.absorbHeroDamage(raw, true) : raw;
 				target.hp -= dealt;
@@ -17618,7 +17670,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 			creatureAt: (x, y) => this.creatureAt(x, y),
 			groundItemAt: (x, y) => this.groundItemAt(x, y),
 			removeGroundItem: (ground) => this.removeGroundItem(ground),
-			spawnSheep: (at) => this.spawnSheep(at),
+			//`WoollyBomb`: `sheep.initialize(Dungeon.bossLevel() ? 20 : 200)`.
+			spawnSheep: (at) => this.spawnSheep(at, this.depth in BOSSES ? 20 : 200),
 			seedFire: (x, y, duration) => this.fire.seed(x, y, duration),
 			seedSmoke: (x, y, volume) => this.smokeScreen.seed(x, y, volume),
 			plantBloomingGrass: (x, y) => this.plantBloomingGrass(x, y),
@@ -19431,7 +19484,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 			creatureAt: this.creatureAt.bind(this),
 			nearestVisibleEnemy: this.nearestVisibleEnemy.bind(this),
 			isChasmCell: this.isChasmCell.bind(this),
-			spawnSheep: this.spawnSheep.bind(this),
+			//`StoneOfFlock`: every sheep gets `initialize(8)`.
+			spawnSheep: (at) => this.spawnSheep(at, 8),
 			beginAiming: this.beginAiming.bind(this),
 			openAugmentChoice: () => { this.augmentChoiceOpen = true; this.talentOpen = true; this.refreshTalentPanel(); },
 			moveHero: (target) => this.moveTo(this.hero, target),

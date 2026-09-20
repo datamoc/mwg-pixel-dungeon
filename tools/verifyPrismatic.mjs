@@ -92,4 +92,28 @@ export function verifyPrismatic(require, check) {
 		const transmute = readFileSync(new URL('../src/items/transmutation.ts', import.meta.url), 'utf8');
 		assert.ok(transmute.includes("if (target.id === 'scrollPrismatic')"), 'the exotic transmutes to its regular counterpart');
 	});
+	check('the scene wires the mirror/sheep halves of the ally chain', () => {
+		//42nd matrix (`MirrorImage.java`/`Sheep.java`, tag `v3.3.8`): the mirror
+		//re-syncs its hero-derived stats every turn (no stale spawn copy), the
+		//sheep carries its producer's lifespan and infinite evasion, and both
+		//refuse what Java refuses (mirror: toxic/corrosive gas; sheep: all buffs
+		//plus all blob/bomb/shocker damage).
+		const source = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		for (const site of [
+			'this.syncMirrorImage(image)',
+			"if (ally.allyKind === 'mirror') this.syncMirrorImage(ally)",
+			'private spawnSheep(at: Step, lifespan: number)',
+			'sheep.evasion = INFINITE_EVASION',
+			'spawnSheep: (at) => this.spawnSheep(at, this.depth in BOSSES ? 20 : 200)',
+			'spawnSheep: (at) => this.spawnSheep(at, 8)',
+			"if (target.allyKind === 'mirror') return;",
+			"|| target.allyKind === 'mirror'",
+			"if (target.allyKind === 'sheep') return true;",
+			"if (target.allyKind === 'sheep') continue;",
+		]) assert.ok(source.includes(site), `the scene must still contain: ${site}`);
+		const combat = readFileSync(new URL('../src/combat.ts', import.meta.url), 'utf8');
+		assert.ok(combat.includes("if (c.allyKind === 'sheep') return true;"), 'sheep refuse every buff at the shared boundary');
+		const bombs = readFileSync(new URL('../src/items/bombEffects.ts', import.meta.url), 'utf8');
+		assert.ok(bombs.includes("if (target.allyKind === 'sheep') return false;"), 'bomb blasts pass through sheep');
+	});
 }

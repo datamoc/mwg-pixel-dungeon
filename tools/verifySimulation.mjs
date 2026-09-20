@@ -44,7 +44,7 @@ try {
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/mageAbilities', 'simulation/rogueAbilities', 'simulation/ratmogrify', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'mechanics/cone', 'dungeonConstants',
-	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/brews', 'simulation/smoke', 'ui/buffOverlays',
+	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/brews', 'simulation/smoke', 'ui/buffOverlays',
 	// `actors/monsterSpawn` (plus its `monsters`/`challenges`/i18n chain) for the spawn-profile
 	// checks: the chaos-elemental roll, the rare-alt table, and the unported-mob absences.
 	'monsters', 'challenges', 'i18n/index', 'i18n/portStrings', 'i18n/languages', 'i18n/spdKeys', 'generated/spdMessages', 'items/artifacts', 'actors/monsterSpawn',
@@ -672,6 +672,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.deepEqual(buffs, [[target, 'paralysis', 2], [target, 3]]);
 	});
 	const { takeGooTurn } = require('./simulation/gooBoss');
+	const { mirrorImageStats } = require('./simulation/mirrorImage');
 	const { ratKingP1Summon, planRatKingWave } = require('./simulation/ratKingBoss');
 	const { chooseDM300Ability, dm300VentPath, planDM300Rockfall } = require('./simulation/dm300Boss');
 	const { aimYogDeathGaze } = require('./simulation/yogBoss');
@@ -978,6 +979,19 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 				cells.push({ x, y }); return cells;
 			}, random });
 		assert.deepEqual(yog, [40]);
+	});
+	check('mirror images read Java\'s hero-derived combat stats at half damage', () => {
+		//42nd matrix (`MirrorImage.java`, tag `v3.3.8`): `attackSkill()` is
+		//`(9 + lvl) * accuracyMultiplier`, `defenseSkill()` is
+		//`1 * (baseEvasion + heroEvasion) / 2` with `baseEvasion = 4 + lvl`, and
+		//`damageRoll()` halves the hero roll rounded up (`(damage+1)/2` in
+		//integer math is `ceil(d/2)`). The `(int)` casts truncate.
+		assert.deepEqual(mirrorImageStats(1, 1, 1, 3, 9),
+			{ accuracy: 10, evasion: 5, damageMin: 2, damageMax: 5 });
+		assert.deepEqual(mirrorImageStats(10, 1.3, 1.125, 11, 30),
+			{ accuracy: 24, evasion: 14, damageMin: 6, damageMax: 15 });
+		assert.deepEqual(mirrorImageStats(10, 1, 1, 4, 7),
+			{ accuracy: 19, evasion: 14, damageMin: 2, damageMax: 4 });
 	});
 	check('tengu ability cadence matches Java targetAbilityUses and catch-up cooldown', () => {
 		// Tengu.targetAbilityUses(): 1 base, +2 per jump, +2 more for jumps 3 and 4.
