@@ -1411,6 +1411,25 @@ one.
       identifies, procs and arms for a mage, the nothing-new line, a registry rage read
       waking and arming, the unknown-id fallback cleansing weakness/weapon/ring curses
       but not poison). No review bugs this slice.
+      **Complexity: S.** **Twenty-eighth extraction 2026-09-20**: the `scrollUpgrade`
+      action (`upgradeGear`'s no-scroll refusal, missile catch-up, weapon/armor pick
+      with shared/twin armor bonuses and mage/rogue talent riders, plus the
+      `rollUpgradeAffixLoss` curse/incompatible/hardening branches) moved to
+      `items/scrollEffects.ts` as `upgradeGearFlow` behind an `UpgradeGearContext`
+      (bag, hero, class/subclass/talents, get/set pairs for missile/weapon/armor
+      levels, ammo pile/set/thresholds, wand charges, affix/glyph/hardening flags,
+      scripted `randomInt`/`randomFloat`, say, resync); the scene keeps the one-line
+      `upgradeGear` adapter plus the builder, and `rollUpgradeAffixLoss` survives as a
+      one-line adapter too since the blacksmith upgrade path also calls it - dropping
+      the now-unused `sharedUpgradeArmor`/`twinUpgradeArmor` imports. Net −40 lines in
+      `dungeonScene.ts` (22,694 after), `scrollEffects.ts` 252 to 393. Suites: `tsc`
+      clean after one real catch (`CLASS_AMMO` is a `Set<ClassId>`, so the context
+      carries the class as `ClassId`, not `string`), item suite green with a new
+      scripted-rng drive (refusal, missile catch-up with set mint and threshold,
+      weapon/armor picks with energizing refund and mystical cloak, curse lift/keep,
+      incompatible loss/keep on both slots, hardening floor and loss, empty queues
+      proving the below-floor branches roll nothing). Two drive-setup bugs caught by
+      the suite itself (ammo-class defaults and equal-level ties divert branches).
       **Complexity: S.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`

@@ -84,6 +84,8 @@ compile(join(root, 'src/items/bombs.ts'), 'items/bombs.js');
 compile(join(root, 'src/items/selfUse.ts'), 'items/selfUse.js');
 //`readScrollFlow` pulls `selectScrollId`, the prismatic max-HP table and the real
 //talent/curse helpers; `../combat` stays stubbed (this drive never observes addBuff).
+//`upgradeGearFlow` adds the ammo-class set, which needs only the generated table.
+compile(join(root, 'src/classes.ts'), 'classes.js');
 compile(join(root, 'src/items/scrolls.ts'), 'items/scrolls.js');
 compile(join(root, 'src/simulation/prismatic.ts'), 'simulation/prismatic.js');
 compile(join(root, 'src/items/scrollEffects.ts'), 'items/scrollEffects.js');
@@ -3446,6 +3448,130 @@ function scrollReadDrive(overrides = {}) {
 	assert.equal(ring.cursed, false, 'and the ring curse');
 	assert.equal(fallback.flags.synced, 1, 'resyncing the hero');
 	assert.ok(fallback.said.some((l) => l.includes('port.log.cleanse')), 'with the cleanse line');
+}
+// The `scrollUpgrade` action moved to `items/scrollEffects.ts` as `upgradeGearFlow`
+// (the file-size refactor's twenty-eighth extraction, behavior-identical): the two
+// `Random` rolls arrive scripted on the context, so every affix-loss branch pins
+// exactly - refusal, missile catch-up, weapon/armor picks with their talent riders,
+// curse removal, incompatible loss, and the hardening replacer with its later floor.
+const { upgradeGearFlow } = require('./items/scrollEffects.js');
+const { MISSILE_DEFAULT_QUANTITY } = require('./items/missiles.js');
+function upgradeGearDrive(overrides = {}) {
+	const said = [];
+	const rolls = [...(overrides.rolls ?? [])];
+	const takeRoll = () => {
+		assert.notEqual(rolls.length, 0, 'no roll beyond the scripted queue');
+		return rolls.shift();
+	};
+	const flags = { synced: 0, refunded: null };
+	const state = {
+		//Caught-up piles by default; the missile branch is opted into per case.
+		missileLevel: overrides.missileLevel ?? 99,
+		weaponLevel: overrides.weaponLevel ?? 0,
+		armorLevel: overrides.armorLevel ?? 0,
+		ammo: overrides.ammo ?? 0,
+		durability: 0,
+		ammoSetId: overrides.ammoSetId ?? '',
+		thresholds: new Map(),
+		weaponAffix: overrides.weaponAffix ?? null,
+		armorGlyph: overrides.armorGlyph ?? null,
+		weaponHardened: overrides.weaponHardened ?? false,
+		armorHardened: overrides.armorHardened ?? false,
+	};
+	const hero = { buffs: {}, damage: [1, 2] };
+	const bag = new Inventory();
+	for (const item of overrides.items ?? [{ id: 'scrollUpgrade', quantity: 1, identified: true }]) bag.add(item);
+	const ctx = {
+		bag,
+		hero,
+		heroClass: overrides.heroClass ?? 'warrior',
+		subclass: () => overrides.subclass ?? null,
+		talentRank: (id) => (overrides.ranks ?? {})[id] ?? 0,
+		get missileLevel() { return state.missileLevel; },
+		set missileLevel(v) { state.missileLevel = v; },
+		get weaponLevel() { return state.weaponLevel; },
+		set weaponLevel(v) { state.weaponLevel = v; },
+		get armorLevel() { return state.armorLevel; },
+		set armorLevel(v) { state.armorLevel = v; },
+		get ammo() { return state.ammo; },
+		set ammo(v) { state.ammo = v; },
+		set ammoDurability(v) { state.durability = v; },
+		get ammoSetId() { return state.ammoSetId; },
+		set ammoSetId(v) { state.ammoSetId = v; },
+		newMissileSetId: () => { flags.setsMinted = (flags.setsMinted ?? 0) + 1; return `set${flags.setsMinted}`; },
+		get missileThresholds() { return state.thresholds; },
+		set missileThresholds(v) { state.thresholds = v; },
+		wandCharges: { refund: (n) => { flags.refunded = n; } },
+		get weaponAffix() { return state.weaponAffix; },
+		set weaponAffix(v) { state.weaponAffix = v; },
+		get armorGlyph() { return state.armorGlyph; },
+		set armorGlyph(v) { state.armorGlyph = v; },
+		get weaponHardened() { return state.weaponHardened; },
+		set weaponHardened(v) { state.weaponHardened = v; },
+		get armorHardened() { return state.armorHardened; },
+		set armorHardened(v) { state.armorHardened = v; },
+		randomInt: takeRoll,
+		randomFloat: takeRoll,
+		say: (line, level) => { said.push(`${level}:${line}`); },
+		syncHeroFromStats: () => { flags.synced++; },
+		...overrides.ctx,
+	};
+	const result = upgradeGearFlow(ctx);
+	return { result, ctx, said, flags, state, hero, bag, rolls };
+}
+{
+	const bare = upgradeGearDrive({ items: [] });
+	assert.equal(bare.result, false, 'no upgrade scroll, no upgrade');
+	assert.ok(bare.said.some((l) => l.includes('port.log.noupgrade')), 'saying so');
+	const missiles = upgradeGearDrive({ heroClass: 'warrior', missileLevel: 0, weaponLevel: 2, armorLevel: 2 });
+	assert.equal(missiles.result, true, 'a lagging pile catches up first');
+	assert.equal(missiles.state.missileLevel, 1, 'one level');
+	assert.equal(missiles.state.ammo, MISSILE_DEFAULT_QUANTITY, 'refilled to the default pile');
+	assert.equal(missiles.state.durability, MISSILE_MAX_DURABILITY, 'at full wear');
+	assert.equal(missiles.state.ammoSetId, 'set1', 'minting a set for the empty pile');
+	assert.equal(missiles.state.thresholds.get('set1'), 1, 'recording the threshold');
+	assert.ok(missiles.said.some((l) => l.includes('port.log.missileupgraded')), 'announced');
+	assert.equal(missiles.bag.find('scrollUpgrade')?.quantity ?? 0, 0, 'consuming the scroll');
+	const weapon = upgradeGearDrive({ weaponLevel: 1, armorLevel: 2 });
+	assert.equal(weapon.result, true, 'the lower slot upgrades');
+	assert.equal(weapon.state.weaponLevel, 2, 'weapon +1');
+	assert.equal(weapon.state.armorLevel, 2, 'no shared armor without the talent');
+	assert.deepEqual(weapon.rolls, [], 'no affix, no roll');
+	assert.ok(weapon.said.some((l) => l.includes('port.log.weaponupgraded')), 'announced');
+	const mage = upgradeGearDrive({ heroClass: 'mage', weaponLevel: 0, armorLevel: 0, ranks: { energizing_upgrade: 2 } });
+	assert.equal(mage.flags.refunded, 6, 'rank-2 energizing refunds 6');
+	const cloak = upgradeGearDrive({ heroClass: 'rogue', weaponLevel: 0, armorLevel: 0, ranks: { mystical_upgrade: 1 } });
+	assert.equal(cloak.hero.buffs.cloak, 9999, 'mystical upgrade cloaks');
+	const armor = upgradeGearDrive({ weaponLevel: 3, armorLevel: 1 });
+	assert.equal(armor.state.armorLevel, 2, 'armor +1 when it lags');
+	assert.ok(armor.said.some((l) => l.includes('port.log.armorupgraded')), 'announced');
+	const curseId = scrollCurses()[0].id;
+	const lifted = upgradeGearDrive({ weaponLevel: 0, armorLevel: 0, weaponAffix: curseId, rolls: [0] });
+	assert.equal(lifted.state.weaponAffix, null, 'a 1-in-3 roll lifts the curse');
+	assert.ok(lifted.said.some((l) => l.includes('scrollofupgrade.remove_curse')), 'with the curse line');
+	const kept = upgradeGearDrive({ weaponLevel: 0, armorLevel: 0, weaponAffix: curseId, rolls: [1] });
+	assert.equal(kept.state.weaponAffix, curseId, 'other rolls keep it');
+	const lowGood = upgradeGearDrive({ weaponLevel: 4, armorLevel: 3, armorGlyph: 'glyphA', rolls: [] });
+	assert.equal(lowGood.state.armorGlyph, 'glyphA', 'below +4 no roll runs');
+	assert.deepEqual(lowGood.rolls, [], 'the queue stays full');
+	const lost = upgradeGearDrive({ weaponLevel: 6, armorLevel: 5, armorGlyph: 'glyphA', rolls: [0.0] });
+	assert.equal(lost.state.armorGlyph, null, 'a lost roll takes the glyph');
+	assert.ok(lost.said.some((l) => l.includes('armor.incompatible')), 'with the armor incompatible line');
+	const survived = upgradeGearDrive({ weaponLevel: 6, armorLevel: 5, armorGlyph: 'glyphA', rolls: [9.9] });
+	assert.equal(survived.state.armorGlyph, 'glyphA', 'a high roll keeps it');
+	const wlost = upgradeGearDrive({ weaponLevel: 4, armorLevel: 5, weaponAffix: 'enchantB', rolls: [0.0] });
+	assert.equal(wlost.state.weaponAffix, null, 'a lost roll takes the weapon enchant too');
+	assert.ok(wlost.said.some((l) => l.includes('weapon.incompatible')), 'with the weapon incompatible line');
+	const wkept = upgradeGearDrive({ weaponLevel: 4, armorLevel: 5, weaponAffix: 'enchantB', rolls: [9.9] });
+	assert.equal(wkept.state.weaponAffix, 'enchantB', 'a high roll keeps the weapon enchant');
+	const hardLow = upgradeGearDrive({ weaponLevel: 5, armorLevel: 5, weaponAffix: 'enchantA', weaponHardened: true, rolls: [] });
+	assert.equal(hardLow.state.weaponHardened, true, 'hardening below +6 rolls nothing');
+	assert.deepEqual(hardLow.rolls, [], 'the queue stays full');
+	assert.equal(hardLow.state.weaponAffix, 'enchantA', 'and the enchant is safe');
+	const hardLost = upgradeGearDrive({ weaponLevel: 6, armorLevel: 6, weaponAffix: 'enchantA', weaponHardened: true, rolls: [0.0] });
+	assert.equal(hardLost.state.weaponHardened, false, 'a lost roll takes the hardening');
+	assert.equal(hardLost.state.weaponAffix, 'enchantA', 'instead of the enchant');
+	assert.ok(hardLost.said.some((l) => l.includes('port.log.hardeninggone.weapon')), 'announced');
 }
 	// `PotionOfShroudingFog.shatter()` (tag `v3.3.8`) through the quaff registry: 180
 	// SmokeScreen on every open neighbour, the center taking 180 plus 180 per wall.

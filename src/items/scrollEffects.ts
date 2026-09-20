@@ -1,10 +1,12 @@
 import { Actors, Roguelike } from 'mwg';
+import { CLASS_AMMO, type ClassId } from '../classes';
 import { addBuff, type BuffId, type Creature, type Step } from '../combat';
 import { t } from '../i18n/index';
 import { mwlItemEffectValue } from '../mwlContent';
 import { prismaticGuardMaxHp } from '../simulation/prismatic';
-import { empoweringScrollsCharges } from '../talentEffects';
+import { empoweringScrollsCharges, sharedUpgradeArmor, twinUpgradeArmor } from '../talentEffects';
 import { getCurse } from './itemCurses';
+import { MISSILE_DEFAULT_QUANTITY, MISSILE_MAX_DURABILITY, recordMissileUpgrade } from './missiles';
 import type { EquippedRing } from './ringModifiers';
 import { selectScrollId } from './scrolls';
 
@@ -249,4 +251,143 @@ export function readScrollFlow(context: ReadScrollContext): boolean {
 		context.say(t('port.log.cleanse'), 'positive');
 	}
 	return true;
+}
+
+/**
+ * The `scrollUpgrade` action (`upgradeGear` in the scene, plus its
+ * `rollUpgradeAffixLoss` helper), moved here verbatim as the file-size refactor's
+ * twenty-eighth extraction, behavior-identical - except that the two `Random` rolls
+ * arrive on the context (`randomInt`/`randomFloat`, the scene passing the real ones),
+ * so the headless drive can script them exactly like the suite's other scripted-rng
+ * seams. The scene keeps the one-line adapter plus a builder.
+ */
+export interface UpgradeGearContext {
+	readonly bag: Actors.Inventory;
+	readonly hero: Creature;
+	readonly heroClass: ClassId;
+	readonly subclass: () => string | null;
+	readonly talentRank: (id: string) => number;
+	get missileLevel(): number;
+	set missileLevel(level: number);
+	get weaponLevel(): number;
+	set weaponLevel(level: number);
+	get armorLevel(): number;
+	set armorLevel(level: number);
+	get ammo(): number;
+	set ammo(ammo: number);
+	set ammoDurability(durability: number);
+	get ammoSetId(): string;
+	set ammoSetId(id: string);
+	readonly newMissileSetId: () => string;
+	get missileThresholds(): Map<string, number>;
+	set missileThresholds(thresholds: Map<string, number>);
+	readonly wandCharges: { refund(n: number): void };
+	get weaponAffix(): string | null;
+	set weaponAffix(affix: string | null);
+	get armorGlyph(): string | null;
+	set armorGlyph(glyph: string | null);
+	get weaponHardened(): boolean;
+	set weaponHardened(hardened: boolean);
+	get armorHardened(): boolean;
+	set armorHardened(hardened: boolean);
+	/** Scriptable rolls: `Random.int`/`Random.float` in play, a queue in the suite. */
+	readonly randomInt: (min: number, max: number) => number;
+	readonly randomFloat: (bound: number) => number;
+	readonly say: (message: string, level?: 'positive' | 'negative' | 'warning') => void;
+	readonly syncHeroFromStats: () => void;
+}
+
+export function upgradeGearFlow(context: UpgradeGearContext): boolean {
+	const scroll = context.bag.find('scrollUpgrade');
+	if (!scroll) {
+		context.say(t('port.log.noupgrade'), 'negative');
+		return false;
+	}
+	//The Java item picker can target missiles independently. With no picker, let ammo users
+	//catch missiles up after both equipped items have reached that level; otherwise choose the
+	//lower-level weapon/armor pair below. This preserves a usable missile-upgrade path while
+	//keeping the auto-selection rule deterministic.
+	if (CLASS_AMMO.has(context.heroClass) && context.missileLevel < Math.min(context.weaponLevel, context.armorLevel)) {
+		context.bag.remove('scrollUpgrade', 1);
+		context.missileLevel++;
+		//`MissileWeapon.upgrade()` on the wielded stack: full wear, and the refill to
+		//`defaultQuantity()` - the pile count *is* that stack's quantity here.
+		context.ammo = Math.max(context.ammo, MISSILE_DEFAULT_QUANTITY);
+		context.ammoDurability = MISSILE_MAX_DURABILITY;
+		//`MissileWeapon.upgrade()`: the upgraded stack's set records `trueLevel()+1`, so
+		//heaps of that set scattered before this upgrade crumble on pickup (see below).
+		//An upgraded *stack* owns the set its threshold is recorded under, so an empty pile - which
+		//has no stack yet - mints one now rather than recording a threshold under the empty set.
+		if (!context.ammoSetId) context.ammoSetId = context.newMissileSetId();
+		context.missileThresholds = recordMissileUpgrade(context.missileThresholds, context.ammoSetId, context.missileLevel);
+		context.syncHeroFromStats();
+		context.say(t('port.log.missileupgraded', { level: context.missileLevel }), 'positive');
+	} else if (context.weaponLevel <= context.armorLevel) {
+		//Weapon.upgrade(): fixed class tier, plain +1 level. The missing item picker is
+		//the only reason this port chooses the lower-level equipped item automatically.
+		context.bag.remove('scrollUpgrade', 1);
+		rollUpgradeAffixLoss(context, 'weapon');
+		context.weaponLevel++;
+		const sharedArmor = sharedUpgradeArmor(context.subclass(), context.talentRank('shared_upgrades'), context.armorLevel);
+		const twinArmor = twinUpgradeArmor(context.subclass(), context.talentRank('twin_upgrades'), context.armorLevel);
+		context.armorLevel += Math.max(sharedArmor, twinArmor);
+		if (context.heroClass === 'mage' && context.talentRank('energizing_upgrade') > 0) context.wandCharges.refund(context.talentRank('energizing_upgrade') === 1 ? 4 : 6);
+		if (context.heroClass === 'rogue' && context.talentRank('mystical_upgrade') > 0) context.hero.buffs['cloak'] = 9999;
+		context.syncHeroFromStats();
+		context.say(
+			t('port.log.weaponupgraded', { level: context.weaponLevel, min: context.hero.damage[0], max: context.hero.damage[1] }),
+			'positive'
+		);
+	} else {
+		//Armor.upgrade(): fixed class tier, plain +1 level. This is the lower-level
+		//fallback because the port lacks Java's item-picker modal.
+		context.bag.remove('scrollUpgrade', 1);
+		rollUpgradeAffixLoss(context, 'armor');
+		context.armorLevel++;
+		context.syncHeroFromStats();
+		context.say(t('port.log.armorupgraded', { level: context.armorLevel }), 'positive');
+	}
+	return true;
+}
+
+/** Shared `Weapon.upgrade()`/`Armor.upgrade()` affix-loss roll, keyed on the CURRENT
+ * upgrade level (before the +1 level is applied). `getCurse` distinguishes curse from
+ * good affixes exactly the way `hasCurseEnchant()`/`hasCurseGlyph()` do. */
+export function rollUpgradeAffixLoss(context: UpgradeGearContext, slot: 'weapon' | 'armor'): void {
+	const affix = slot === 'weapon' ? context.weaponAffix : context.armorGlyph;
+	const level = slot === 'weapon' ? context.weaponLevel : context.armorLevel;
+	//`Weapon.upgrade()`/`Armor.upgrade()`'s hardening branch, which comes *before* the affix
+	//rolls and replaces them: while the item is hardened the enchant cannot be lost at all -
+	//what can be lost is the hardening itself, with the same escalating odds but starting one
+	//step later (`level() >= 6 && Random.Float(10) < 2^(level-6)`, against the ordinary
+	//roll's `level() >= 4 && ... 2^(level-4)`). The hardening branch is guarded on the affix
+	//being present in Java too (`else if (glyph != null)`), which the early return covers.
+	if (!affix) return;
+	if (slot === 'weapon' ? context.weaponHardened : context.armorHardened) {
+		if (level >= 6 && context.randomFloat(10) < Math.pow(2, level - 6)) {
+			if (slot === 'weapon') {
+				context.weaponHardened = false;
+				context.say(t('port.log.hardeninggone.weapon'), 'warning');
+			} else {
+				context.armorHardened = false;
+				context.say(t('port.log.hardeninggone.armor'), 'warning');
+			}
+		}
+		return;
+	}
+	if (getCurse(affix)) {
+		if (context.randomInt(0, 3) === 0) {
+			if (slot === 'weapon') context.weaponAffix = null;
+			else context.armorGlyph = null;
+			context.say(t('items.scrolls.scrollofupgrade.remove_curse'), 'positive');
+		}
+	} else if (level >= 4 && context.randomFloat(10) < Math.pow(2, level - 4)) {
+		if (slot === 'weapon') {
+			context.weaponAffix = null;
+			context.say(t('items.weapon.weapon.incompatible'), 'warning');
+		} else {
+			context.armorGlyph = null;
+			context.say(t('items.armor.armor.incompatible'), 'warning');
+		}
+	}
 }

@@ -16,7 +16,7 @@ import { SceneSimulationAdapter } from '../adapters/sceneSimulation';
 import { dispatchHeroAction, type HeroActionPorts } from '../adapters/heroActions';
 import { BOOMERANG_RETURN_ACC_FACTOR, BOOMERANG_RETURN_TURNS, MISSILE_DEFAULT_QUANTITY, MISSILE_MAX_DURABILITY, bolasCrippleTurns, missileAdjacentAccFactor, missileBaseUses, missileDamageRange, missileFlightArt, missilePickupValid, missileStackFields, missileStackId, recordMissileUpgrade, tippedDartUseDivisor, tomahawkBleedRange, type MissileFlightArt } from '../items/missiles';
 import { eatFood as eatConsumableFood, quaffPotion as quaffConsumablePotion, applyMealEatenEffects, type ConsumableContext } from '../items/consumables';
-import { applyScrollEffect, readScrollFlow, type ReadScrollContext, type ScrollEffectsContext } from '../items/scrollEffects';
+import { applyScrollEffect, readScrollFlow, rollUpgradeAffixLoss, upgradeGearFlow, type ReadScrollContext, type ScrollEffectsContext, type UpgradeGearContext } from '../items/scrollEffects';
 import { createPotionEffects } from '../items/potionEffects';
 import { placeCandleAtSlot, aimCandleFlow, type CandleContext, type CandleAimContext } from '../items/candles';
 import { throwTenguBomb, useBomb as useItemBomb, aimBombFlow, type BombContext, type BombAimContext } from '../items/bombs';
@@ -119,7 +119,7 @@ import { SpdToolbar } from '../ui/toolbar';
 import { StatusPane } from '../ui/statusPane';
 import { SpdAudio } from '../audio';
 import { onBrightnessChanged, onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../settings';
-import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalDefenseShield, lethalHasteDuration, LETHAL_HASTE_COOLDOWN, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, shieldingDewGain, sharedUpgradeArmor, soulSiphonCharge, twinUpgradeArmor, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
+import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalDefenseShield, lethalHasteDuration, LETHAL_HASTE_COOLDOWN, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, shieldingDewGain, soulSiphonCharge, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
 import pixelFontUrl from '../assets/pixel_font.ttf';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth, SpdRandom } from '../spdRng';
 import {
@@ -5450,99 +5450,59 @@ export class DungeonScene extends Scene2D {
 	 * the documented simplification. The selected item's fixed tier is preserved and its
 	 * upgrade level advances by one, as in Java.
 	 */
+	/**
+	 * The `scrollUpgrade` action lives in `items/scrollEffects.ts` as `upgradeGearFlow`
+	 * behind `UpgradeGearContext` - the file-size refactor's twenty-eighth extraction,
+	 * behavior-identical (the two `Random` rolls arrive on the context). The scene only
+	 * builds the context here.
+	 */
 	private upgradeGear(): boolean {
-		const scroll = this.bag.find('scrollUpgrade');
-		if (!scroll) {
-			this.say(t('port.log.noupgrade'), 'negative');
-			return false;
-		}
-		//The Java item picker can target missiles independently. With no picker, let ammo users
-		//catch missiles up after both equipped items have reached that level; otherwise choose the
-		//lower-level weapon/armor pair below. This preserves a usable missile-upgrade path while
-		//keeping the auto-selection rule deterministic.
-		if (CLASS_AMMO.has(this.heroClass) && this.missileLevel < Math.min(this.weaponLevel, this.armorLevel)) {
-			this.bag.remove('scrollUpgrade', 1);
-			this.missileLevel++;
-			//`MissileWeapon.upgrade()` on the wielded stack: full wear, and the refill to
-			//`defaultQuantity()` - the pile count *is* that stack's quantity here.
-			this.ammo = Math.max(this.ammo, MISSILE_DEFAULT_QUANTITY);
-			this.ammoDurability = MISSILE_MAX_DURABILITY;
-			//`MissileWeapon.upgrade()`: the upgraded stack's set records `trueLevel()+1`, so
-			//heaps of that set scattered before this upgrade crumble on pickup (see below).
-			//An upgraded *stack* owns the set its threshold is recorded under, so an empty pile - which
-			//has no stack yet - mints one now rather than recording a threshold under the empty set.
-			if (!this.ammoSetId) this.ammoSetId = this.newMissileSetId();
-			this.missileThresholds = recordMissileUpgrade(this.missileThresholds, this.ammoSetId, this.missileLevel);
-			this.syncHeroFromStats();
-			this.say(t('port.log.missileupgraded', { level: this.missileLevel }), 'positive');
-		} else if (this.weaponLevel <= this.armorLevel) {
-			//Weapon.upgrade(): fixed class tier, plain +1 level. The missing item picker is
-			//the only reason this port chooses the lower-level equipped item automatically.
-			this.bag.remove('scrollUpgrade', 1);
-			this.rollUpgradeAffixLoss('weapon');
-			this.weaponLevel++;
-			const sharedArmor = sharedUpgradeArmor(this.subclass(), this.talentRank('shared_upgrades'), this.armorLevel);
-			const twinArmor = twinUpgradeArmor(this.subclass(), this.talentRank('twin_upgrades'), this.armorLevel);
-			this.armorLevel += Math.max(sharedArmor, twinArmor);
-			if (this.heroClass === 'mage' && this.talentRank('energizing_upgrade') > 0) this.wandCharges.refund(this.talentRank('energizing_upgrade') === 1 ? 4 : 6);
-			if (this.heroClass === 'rogue' && this.talentRank('mystical_upgrade') > 0) this.hero.buffs['cloak'] = 9999;
-			this.syncHeroFromStats();
-			this.say(
-				t('port.log.weaponupgraded', { level: this.weaponLevel, min: this.hero.damage[0], max: this.hero.damage[1] }),
-				'positive'
-			);
-		} else {
-			//Armor.upgrade(): fixed class tier, plain +1 level. This is the lower-level
-			//fallback because the port lacks Java's item-picker modal.
-			this.bag.remove('scrollUpgrade', 1);
-			this.rollUpgradeAffixLoss('armor');
-			this.armorLevel++;
-			this.syncHeroFromStats();
-			this.say(t('port.log.armorupgraded', { level: this.armorLevel }), 'positive');
-		}
-		return true;
+		return upgradeGearFlow(this.upgradeGearContext());
+	}
+
+	private upgradeGearContext(): UpgradeGearContext {
+		const scene = this;
+		return {
+			bag: scene.bag,
+			hero: scene.hero,
+			heroClass: scene.heroClass,
+			subclass: () => scene.subclass(),
+			talentRank: (id) => scene.talentRank(id),
+			get missileLevel() { return scene.missileLevel; },
+			set missileLevel(level: number) { scene.missileLevel = level; },
+			get weaponLevel() { return scene.weaponLevel; },
+			set weaponLevel(level: number) { scene.weaponLevel = level; },
+			get armorLevel() { return scene.armorLevel; },
+			set armorLevel(level: number) { scene.armorLevel = level; },
+			get ammo() { return scene.ammo; },
+			set ammo(ammo: number) { scene.ammo = ammo; },
+			set ammoDurability(durability: number) { scene.ammoDurability = durability; },
+			get ammoSetId() { return scene.ammoSetId; },
+			set ammoSetId(id: string) { scene.ammoSetId = id; },
+			newMissileSetId: () => scene.newMissileSetId(),
+			get missileThresholds() { return scene.missileThresholds; },
+			set missileThresholds(thresholds: Map<string, number>) { scene.missileThresholds = thresholds; },
+			wandCharges: scene.wandCharges,
+			get weaponAffix() { return scene.weaponAffix; },
+			set weaponAffix(affix: string | null) { scene.weaponAffix = affix; },
+			get armorGlyph() { return scene.armorGlyph; },
+			set armorGlyph(glyph: string | null) { scene.armorGlyph = glyph; },
+			get weaponHardened() { return scene.weaponHardened; },
+			set weaponHardened(hardened: boolean) { scene.weaponHardened = hardened; },
+			get armorHardened() { return scene.armorHardened; },
+			set armorHardened(hardened: boolean) { scene.armorHardened = hardened; },
+			randomInt: (min, max) => Random.int(min, max),
+			randomFloat: (bound) => Random.float(bound),
+			say: (message, level) => scene.say(message, level),
+			syncHeroFromStats: () => scene.syncHeroFromStats(),
+		};
 	}
 
 	/** Shared `Weapon.upgrade()`/`Armor.upgrade()` affix-loss roll, keyed on the CURRENT
 	 * upgrade level (before the +1 level is applied). `getCurse` distinguishes curse from
 	 * good affixes exactly the way `hasCurseEnchant()`/`hasCurseGlyph()` do. */
 	private rollUpgradeAffixLoss(slot: 'weapon' | 'armor'): void {
-		const affix = slot === 'weapon' ? this.weaponAffix : this.armorGlyph;
-		const level = slot === 'weapon' ? this.weaponLevel : this.armorLevel;
-		//`Weapon.upgrade()`/`Armor.upgrade()`'s hardening branch, which comes *before* the affix
-		//rolls and replaces them: while the item is hardened the enchant cannot be lost at all -
-		//what can be lost is the hardening itself, with the same escalating odds but starting one
-		//step later (`level() >= 6 && Random.Float(10) < 2^(level-6)`, against the ordinary
-		//roll's `level() >= 4 && ... 2^(level-4)`). The hardening branch is guarded on the affix
-		//being present in Java too (`else if (glyph != null)`), which the early return covers.
-		if (!affix) return;
-		if (slot === 'weapon' ? this.weaponHardened : this.armorHardened) {
-			if (level >= 6 && Random.float(10) < Math.pow(2, level - 6)) {
-				if (slot === 'weapon') {
-					this.weaponHardened = false;
-					this.say(t('port.log.hardeninggone.weapon'), 'warning');
-				} else {
-					this.armorHardened = false;
-					this.say(t('port.log.hardeninggone.armor'), 'warning');
-				}
-			}
-			return;
-		}
-		if (getCurse(affix)) {
-			if (Random.int(0, 3) === 0) {
-				if (slot === 'weapon') this.weaponAffix = null;
-				else this.armorGlyph = null;
-				this.say(t('items.scrolls.scrollofupgrade.remove_curse'), 'positive');
-			}
-		} else if (level >= 4 && Random.float(10) < Math.pow(2, level - 4)) {
-			if (slot === 'weapon') {
-				this.weaponAffix = null;
-				this.say(t('items.weapon.weapon.incompatible'), 'warning');
-			} else {
-				this.armorGlyph = null;
-				this.say(t('items.armor.armor.incompatible'), 'warning');
-			}
-		}
+		rollUpgradeAffixLoss(this.upgradeGearContext(), slot);
 	}
 
 	private nearestVisibleEnemy(range: number): Creature | null {
