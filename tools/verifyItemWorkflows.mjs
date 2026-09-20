@@ -1407,6 +1407,11 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 			for (const torch of torches) assert.deepEqual([torch.quantity, torch.identify], [1, true], 'each torch is its own identified heap');
 		}
 		assert.equal(require('./items/shopPricing.js').itemValue('torch', 3), 24, 'torch value() is 8 per unit');
+		//`MissileWeapon.value()` = 5 * tier * quantity: every missile used to price at 0 (a free throwing club on the shelf).
+		assert.equal(require('./items/shopPricing.js').itemValue('missile_throwingclub', 1), 10, 'tier-2 throwing club is worth 10');
+		assert.equal(require('./items/shopPricing.js').itemValue('missile_throwingclub', 3), 30, 'value scales with quantity');
+		assert.equal(require('./items/shopPricing.js').getShopPrice('missile_throwingclub', 6), 100, 'depth-6 shelf price is 10 x5 x2 bracket');
+		assert.equal(require('./items/shopPricing.js').itemValue('missile_throwingclub', 1, true, { level: 2 }), 30, 'a known +2 missile is worth x3');
 		assert.equal(require('./items/shopPricing.js').getShopPrice('torch', 21), 200, 'depth-21 shelf price is 8 x5 wealth bracket');
 		// `ShopRoom.generateItems()` stocks one `new Ankh()` in the shared tail every depth takes.
 		assert.equal(planShopStock(6, null, scripted([0, 0, 0, 0])).filter((p) => p.kind === 'item' && p.id === 'ankh').length, 1, 'every shop stocks one ankh');

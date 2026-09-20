@@ -17,7 +17,9 @@
  */
 
 /** Per-unit `value()` bodies for the traded ids (quantity folds in at the call). */
-import { MWL_EQUIPMENT_VALUE_RULES, MWL_ITEM_UNIT_VALUES } from '../mwlContent';
+import { MWL_EQUIPMENT_VALUE_RULES, MWL_ITEM_UNIT_VALUES, MWL_MISSILE_DEFINITIONS } from '../mwlContent';
+
+const MISSILE_TIER = new Map(MWL_MISSILE_DEFINITIONS.map((definition) => [definition.id, definition.tier]));
 
 // Java's class-specific value() facts are content metadata; the formulas below are executable
 // shop behavior. Alchemize's 2.5 per-unit approximation is retained in the authored MWL value.
@@ -44,6 +46,17 @@ export function itemValue(itemId: string, quantity = 1, identified = true, meta:
 		if (meta.cursedKnown && (meta.cursed || meta.affix?.toLowerCase().includes('curse'))) price *= rule.knownCurseMultiplier;
 		if (identified && (meta.level ?? 0) > 0) price *= (rule.identifiedLevelBase + meta.level!);
 		return Math.max(1, Math.floor(price)) * quantity;
+	}
+	//`MissileWeapon.value()` (tag `v3.3.8`): `5 * tier * quantity`, x1.5 with a good enchant, halved when known cursed,
+	//x(level+1) when the level is known, never below 1. Missing here, every missile priced at 0 - a shop shelf sold a
+	//throwing club for free, and a thrown weapon could not be sold for anything.
+	const missileTier = MISSILE_TIER.get(itemId);
+	if (missileTier !== undefined) {
+		let price = 5 * missileTier * quantity;
+		if (meta.affix && !meta.affix.toLowerCase().includes('curse')) price *= 1.5;
+		if (meta.cursedKnown && (meta.cursed || meta.affix?.toLowerCase().includes('curse'))) price /= 2;
+		if (identified && (meta.level ?? 0) > 0) price *= meta.level! + 1;
+		return Math.max(1, Math.floor(price));
 	}
 	// Ring/Wand ids are runtime-specific, so their family value is the authored fallback.
 	const unitValue = itemId.startsWith('ring_') ? UNIT_VALUES.ring : UNIT_VALUES[itemId];
