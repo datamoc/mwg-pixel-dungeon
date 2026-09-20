@@ -9830,60 +9830,60 @@ export class DungeonScene extends Scene2D {
  * block the sight the attempt needs), so the guard only ever fires where Java would
  * have embedded her; stated, not silent. Like every other mover here the aim is the
  * hero even when charmed (the port's hero-directed movement model, not a new choice). */
-private trySuccubusBlink(monster: Creature, distance: number): boolean {
-	if (!shouldSuccubusBlink({
-		cooldown: monster.blinkCooldown ?? 0,
-		seesHero: monster.seesHero === true,
-		rooted: monster.buffs['roots'] !== undefined,
-		fleeing: monster.fleeing === true,
-		distance,
-	})) {
-		monster.blinkCooldown = (monster.blinkCooldown ?? 0) - 1;
-		return false;
+	trySuccubusBlink(monster: Creature, distance: number): boolean {
+		if (!shouldSuccubusBlink({
+			cooldown: monster.blinkCooldown ?? 0,
+			seesHero: monster.seesHero === true,
+			rooted: monster.buffs['roots'] !== undefined,
+			fleeing: monster.fleeing === true,
+			distance,
+		})) {
+			monster.blinkCooldown = (monster.blinkCooldown ?? 0) - 1;
+			return false;
+		}
+		const ray = traceRayToTarget(this.level, monster, this.hero, (x, y) => this.creatureAt(x, y));
+		const landing = chooseSuccubusBlinkCell(ray, (cell) =>
+			this.level.passable(cell.x, cell.y) && !this.creatureAt(cell.x, cell.y), simulationRandom);
+		monster.blinkCooldown = succubusBlinkCooldown(simulationRandom);
+		if (!landing) return true;
+		const from = { x: monster.x, y: monster.y };
+		this.moveTo(monster, landing);
+		this.playTeleportAppear(from, landing, monster);
+		this.pendingMonsterTurnCost = 0;
+		return true;
 	}
-	const ray = traceRayToTarget(this.level, monster, this.hero, (x, y) => this.creatureAt(x, y));
-	const landing = chooseSuccubusBlinkCell(ray, (cell) =>
-		this.level.passable(cell.x, cell.y) && !this.creatureAt(cell.x, cell.y), simulationRandom);
-	monster.blinkCooldown = succubusBlinkCooldown(simulationRandom);
-	if (!landing) return true;
-	const from = { x: monster.x, y: monster.y };
-	this.moveTo(monster, landing);
-	this.playTeleportAppear(from, landing, monster);
-	this.pendingMonsterTurnCost = 0;
-	return true;
-}
 
-private takeRipperLeapTrigger(monster: Creature, distance: number): boolean {
-	if (!canRipperLeap({
-		cooldown: monster.leapCooldown ?? 0,
-		seesHero: monster.seesHero === true,
-		rooted: monster.buffs['roots'] !== undefined,
-		distance,
-	})) return false;
-	let aim = predictRipperLeapTarget(this.hero, monster.leapPrevEnemy);
-	let landing = this.traceRipperLeap(monster, aim);
-	if ((!landing || landing.x !== aim.x || landing.y !== aim.y)
-		&& (aim.x !== this.hero.x || aim.y !== this.hero.y)) {
-		aim = { x: this.hero.x, y: this.hero.y };
-		landing = this.traceRipperLeap(monster, aim);
+	takeRipperLeapTrigger(monster: Creature, distance: number): boolean {
+		if (!canRipperLeap({
+			cooldown: monster.leapCooldown ?? 0,
+			seesHero: monster.seesHero === true,
+			rooted: monster.buffs['roots'] !== undefined,
+			distance,
+		})) return false;
+		let aim = predictRipperLeapTarget(this.hero, monster.leapPrevEnemy);
+		let landing = this.traceRipperLeap(monster, aim);
+		if ((!landing || landing.x !== aim.x || landing.y !== aim.y)
+			&& (aim.x !== this.hero.x || aim.y !== this.hero.y)) {
+			aim = { x: this.hero.x, y: this.hero.y };
+			landing = this.traceRipperLeap(monster, aim);
+		}
+		if (!landing || landing.x !== aim.x || landing.y !== aim.y) return false;
+		monster.leapTarget = { ...aim };
+		this.pendingMonsterTurnCost = 1;
+		if (this.fov.isVisible(monster.x, monster.y) || this.fov.isVisible(aim.x, aim.y)) {
+			this.say(t('port.log.ripperleap'), 'negative');
+		}
+		return true;
 	}
-	if (!landing || landing.x !== aim.x || landing.y !== aim.y) return false;
-	monster.leapTarget = { ...aim };
-	this.pendingMonsterTurnCost = 1;
-	if (this.fov.isVisible(monster.x, monster.y) || this.fov.isVisible(aim.x, aim.y)) {
-		this.say(t('port.log.ripperleap'), 'negative');
-	}
-	return true;
-}
 
 /** The leap ray's collision cell: MWG stops before impassable cells where Java's
  * `STOP_SOLID` ray only stops at solid ones, so a leap across a chasm truncates at its
  * edge here instead of clearing it (stated - the only terrain divergence; walls and
  * closed doors stop both). The stopping cell is retained, matching `collisionPos`. */
-private traceRipperLeap(monster: Creature, aim: Step): Step | null {
-	const cells = traceRayToTarget(this.level, monster, aim, (x, y) => this.creatureAt(x, y));
-	return cells.length > 0 ? cells[cells.length - 1]! : null;
-}
+	traceRipperLeap(monster: Creature, aim: Step): Step | null {
+		const cells = traceRayToTarget(this.level, monster, aim, (x, y) => this.creatureAt(x, y));
+		return cells.length > 0 ? cells[cells.length - 1]! : null;
+	}
 
 /** `RipperDemon.Hunting.act()`'s leap execution: the armed landing fires on the next
  * turn even adjacent (it precedes the attack branch, which is why this lives in the
@@ -9896,41 +9896,41 @@ private traceRipperLeap(monster: Creature, aim: Step): Step | null {
  * override's documented reduction). Java's sprite jump and push-aside have no motion
  * primitive here, so the relocation is instant; the hit itself resolves through the
  * shared attack choke below. */
-private executeRipperLeap(monster: Creature): boolean {
-	const target = monster.leapTarget;
-	if (!target) return false;
-	if (monster.buffs['paralysis'] !== undefined || monster.buffs['frost'] !== undefined
-		|| monster.buffs['feintConfusion'] !== undefined || monster.sleeping === true
-		|| monster.buffs['terror'] !== undefined || monster.fleeing) return false;
-	monster.leapCooldown = ripperLeapCooldown(simulationRandom);
-	if (monster.buffs['roots'] !== undefined) {
-		monster.leapTarget = null;
-		return true;
-	}
-	const landing = this.traceRipperLeap(monster, target);
-	if (!landing) {
-		monster.leapTarget = null;
-		return true;
-	}
-	const victim = this.creatureAt(landing.x, landing.y);
-	let end: Step = landing;
-	if (victim && victim !== monster && victim.hp > 0) {
-		const bounce = chooseRipperBounceEnd(monster, landing, (cell) =>
-			this.level.passable(cell.x, cell.y) && !this.creatureAt(cell.x, cell.y));
-		if (!bounce) {
+	executeRipperLeap(monster: Creature): boolean {
+		const target = monster.leapTarget;
+		if (!target) return false;
+		if (monster.buffs['paralysis'] !== undefined || monster.buffs['frost'] !== undefined
+			|| monster.buffs['feintConfusion'] !== undefined || monster.sleeping === true
+			|| monster.buffs['terror'] !== undefined || monster.fleeing) return false;
+		monster.leapCooldown = ripperLeapCooldown(simulationRandom);
+		if (monster.buffs['roots'] !== undefined) {
 			monster.leapTarget = null;
 			return true;
 		}
-		end = bounce;
+		const landing = this.traceRipperLeap(monster, target);
+		if (!landing) {
+			monster.leapTarget = null;
+			return true;
+		}
+		const victim = this.creatureAt(landing.x, landing.y);
+		let end: Step = landing;
+		if (victim && victim !== monster && victim.hp > 0) {
+			const bounce = chooseRipperBounceEnd(monster, landing, (cell) =>
+				this.level.passable(cell.x, cell.y) && !this.creatureAt(cell.x, cell.y));
+			if (!bounce) {
+				monster.leapTarget = null;
+				return true;
+			}
+			end = bounce;
+		}
+		faceCharacter(this.sprite(monster), monster.x, end.x);
+		this.moveTo(monster, end);
+		monster.leapTarget = null;
+		if (victim && victim !== monster && victim.hp > 0 && (victim.isHero || victim.isAlly)) {
+			this.resolveRipperPounce(monster, victim);
+		}
+		return true;
 	}
-	faceCharacter(this.sprite(monster), monster.x, end.x);
-	this.moveTo(monster, end);
-	monster.leapTarget = null;
-	if (victim && victim !== monster && victim.hp > 0 && (victim.isHero || victim.isAlly)) {
-		this.resolveRipperPounce(monster, victim);
-	}
-	return true;
-}
 
 /** The pounce impact: `hit(this, leapVictim, INFINITE_ACCURACY, false)` through the
  * shared resolver (`force` is its infinite-accuracy channel, `magic = false` keeps the
@@ -9938,33 +9938,33 @@ private executeRipperLeap(monster: Creature): boolean {
  * then `Bleeding` at 0.75x a *fresh* damage roll - not the dealt damage - via the
  * shared keep-strongest setter. A miss (only reachable through infinite-evasion
  * carriers) reads the dodge line, as Java's `showStatus` + miss sound does. */
-private resolveRipperPounce(monster: Creature, victim: Creature): void {
-	const roll = runAttackResolution(monster, victim, simulationRandom, false, true, 1, 1);
-	const subject = capitalize(monster.name);
-	const object = victim.isHero ? t('port.log.object.you') : victim.name;
-	if (!roll.hit) {
-		runState.audio.cue('miss', 0.55);
+	resolveRipperPounce(monster: Creature, victim: Creature): void {
+		const roll = runAttackResolution(monster, victim, simulationRandom, false, true, 1, 1);
+		const subject = capitalize(monster.name);
+		const object = victim.isHero ? t('port.log.object.you') : victim.name;
+		if (!roll.hit) {
+			runState.audio.cue('miss', 0.55);
+			victim.sleeping = false;
+			this.say(t(victim.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
+			return;
+		}
+		const damage = victim.isHero ? this.absorbHeroDamage(roll.damage) : roll.damage;
+		victim.hp -= damage;
+		this.showDamage(victim, damage);
 		victim.sleeping = false;
-		this.say(t(victim.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
-		return;
+		this.sprite(victim).setColorAdd(1, 1, 1);
+		runState.audio.cue('hit', 0.6);
+		this.say(
+			t('port.log.hit', { subject, verb: t('port.log.verb.hit'), object, damage }),
+			victim.isHero ? 'negative' : 'info',
+		);
+		const [min, max] = liveStats(monster).damage;
+		setBleeding(victim, 0.75 * Random.normalRange(min, max));
+		this.mobOnHit(monster, victim, damage);
+		if (victim.hp <= 0) this.kill(victim);
 	}
-	const damage = victim.isHero ? this.absorbHeroDamage(roll.damage) : roll.damage;
-	victim.hp -= damage;
-	this.showDamage(victim, damage);
-	victim.sleeping = false;
-	this.sprite(victim).setColorAdd(1, 1, 1);
-	runState.audio.cue('hit', 0.6);
-	this.say(
-		t('port.log.hit', { subject, verb: t('port.log.verb.hit'), object, damage }),
-		victim.isHero ? 'negative' : 'info',
-	);
-	const [min, max] = liveStats(monster).damage;
-	setBleeding(victim, 0.75 * Random.normalRange(min, max));
-	this.mobOnHit(monster, victim, damage);
-	if (victim.hp <= 0) this.kill(victim);
-}
 
-private eyeBeamTurn(monster: Creature): boolean {
+	eyeBeamTurn(monster: Creature): boolean {
 		if ((monster.beamCooldown ?? 0) > 0) monster.beamCooldown = (monster.beamCooldown ?? 0) - 1;
 		if (monster.beamCharged) {
 			monster.beamCharged = false;
