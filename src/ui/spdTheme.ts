@@ -1,5 +1,5 @@
 import { Rectangle, Texture } from 'mwg/two-d/pixi-interop';
-import { I18n, setTheme } from 'mwg';
+import { I18n, setTheme, theme } from 'mwg';
 
 /**
  * SPD's look, applied to `mwg/ui`'s theme.
@@ -105,5 +105,5 @@ export function applySpdTheme(chrome: Texture): void {
  * here is LTR - which is exactly why it is wired now rather than discovered later.
  */
 export function applySpdDirection(): void {
-	setTheme({ direction: I18n.direction() });
+	setTheme({ ...theme(), direction: I18n.direction() });
 }
