@@ -15624,6 +15624,10 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (!creature.isHero && !creature.isAlly && !creature.isNPC && creature.buffs['hazardAssist'] !== undefined) {
 			this.awardBadge('hazard_assists');
 		}
+		//`Piranha.die()` (`Piranha.java`, tag `v3.3.8`): every piranha death counts
+		//toward `Statistics.piranhasKilled` and the `PIRANHAS` badge at 6 - any
+		//cause, including beaching (`dieOnLand` funnels through `die` too).
+		if (creature.kind === 'piranha') this.awardBadge('piranhas');
 		const boss = creature.kind ? BOSSES[this.depth] : undefined;
 		if (boss && boss.kind === creature.kind) {
 			//`boss.victory` used to be raw English text authored directly in `bossTransitions` -

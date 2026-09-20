@@ -6286,6 +6286,23 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
+								"id": "piranhas",
+								"counter": "piranhas",
+								"target": "6",
+								"description": "Slew 6 piranhas",
+								"icon": "65"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
+								"line": 100,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
 								"id": "bag_velvet",
 								"counter": "bag_velvet",
 								"target": "1",
@@ -6295,7 +6312,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 100,
+								"line": 108,
 								"column": 13
 							},
 							"gettext": []
@@ -6312,7 +6329,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 108,
+								"line": 116,
 								"column": 13
 							},
 							"gettext": []
@@ -6329,7 +6346,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 116,
+								"line": 124,
 								"column": 13
 							},
 							"gettext": []
@@ -6346,7 +6363,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 124,
+								"line": 132,
 								"column": 13
 							},
 							"gettext": []
@@ -6363,7 +6380,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 132,
+								"line": 140,
 								"column": 13
 							},
 							"gettext": []
@@ -6380,7 +6397,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 140,
+								"line": 148,
 								"column": 13
 							},
 							"gettext": []
@@ -6397,7 +6414,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 148,
+								"line": 156,
 								"column": 13
 							},
 							"gettext": []
@@ -6414,7 +6431,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 156,
+								"line": 164,
 								"column": 13
 							},
 							"gettext": []
@@ -6431,7 +6448,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 164,
+								"line": 172,
 								"column": 13
 							},
 							"gettext": []
@@ -6448,7 +6465,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 172,
+								"line": 180,
 								"column": 13
 							},
 							"gettext": []
@@ -6465,7 +6482,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 180,
+								"line": 188,
 								"column": 13
 							},
 							"gettext": []
@@ -6482,7 +6499,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 188,
+								"line": 196,
 								"column": 13
 							},
 							"gettext": []
@@ -6499,7 +6516,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 196,
+								"line": 204,
 								"column": 13
 							},
 							"gettext": []
@@ -6516,7 +6533,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\badges.mwl",
-								"line": 204,
+								"line": 212,
 								"column": 13
 							},
 							"gettext": []

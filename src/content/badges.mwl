@@ -98,6 +98,14 @@
           },
           {
             tag: "row",
+            id: "piranhas",
+            counter: "piranhas",
+            target: 6,
+            description: "Slew 6 piranhas",
+            icon: 65,
+          },
+          {
+            tag: "row",
             id: "bag_velvet",
             counter: "bag_velvet",
             target: 1,

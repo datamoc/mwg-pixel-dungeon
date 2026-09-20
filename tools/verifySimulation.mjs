@@ -1143,6 +1143,15 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.ok(scene.includes('bee: (monster) => { this.takeBeeTurn(monster); return true; }'), 'bee hunts through its own override');
 		assert.ok(scene.includes('potPos: creature.potPos') && scene.includes('potPos: saved.potPos'), 'pot anchor persists through save/restore');
 	});
+	check('Piranha deaths feed the PIRANHAS badge at six kills', () => {
+		//`Piranha.die()` (tag `v3.3.8`): every death counts, any cause.
+		const badges = readFileSync(new URL('../src/content/badges.mwl', import.meta.url), 'utf8');
+		assert.ok(badges.includes('id: "piranhas"'), 'the piranhas badge row exists');
+		assert.ok(badges.includes('counter: "piranhas"'), 'the row counts piranha kills');
+		const scene = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		assert.ok(scene.includes("if (creature.kind === 'piranha') this.awardBadge('piranhas');"),
+			'every piranha death counts');
+	});
 	check('Fire spreads onto webbed cells without destroying the floor', () => {
 		//`Web.onUpdateCellFlags()` (tag `v3.3.8`) marks webbed cells flammable so
 		//`Fire.evolve()` ignites them; the web decays on its own clock and the
