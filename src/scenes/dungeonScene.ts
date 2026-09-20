@@ -8955,12 +8955,7 @@ export class DungeonScene extends Scene2D {
 				const decision = Roguelike.decideMonsterAI(this.level, this.pathfinder, monster, monster.hp / monster.maxHp, this.hero, {
 					sightRadius: this.viewRadius(), fleeBelow: 0, blocked,
 				});
-				if (decision.step) {
-					this.moveTo(monster, decision.step);
-					//`Goo.getCloser()`/`getFurther()`: any step discharges a pump-up in progress,
-					//then the move proceeds as normal.
-					if (monster.kind === 'goo' && (monster.pumped ?? 0) > 0) monster.pumped = 0;
-				}
+				if (decision.step) this.stepMonster(monster, decision.step);
 			}
 			return;
 		}
@@ -9017,7 +9012,7 @@ export class DungeonScene extends Scene2D {
 					fleeBelow: 0,
 					blocked,
 				});
-				if (decision.step) this.moveTo(monster, decision.step);
+				if (decision.step) this.stepMonster(monster, decision.step);
 			}
 			return;
 		}
@@ -9318,7 +9313,7 @@ export class DungeonScene extends Scene2D {
 			);
 			this.eternalFireBlockedInto(blocked);
 			const decision = Roguelike.decideMonsterAI(this.level, this.pathfinder, monster, monster.hp / monster.maxHp, this.hero, { sightRadius: this.viewRadius(), fleeBelow: 1, blocked });
-			if (decision.step) this.moveTo(monster, decision.step);
+			if (decision.step) this.stepMonster(monster, decision.step);
 			return;
 		}
 		// CrystalMimic remains in FLEEING after revealing itself. Revelation is separate from
@@ -9461,7 +9456,7 @@ export class DungeonScene extends Scene2D {
 			}
 		);
 
-		if (decision.step) this.moveTo(monster, decision.step);
+		if (decision.step) this.stepMonster(monster, decision.step);
 		//`Mob.Fleeing.nowhereToRun()` (tag `v3.3.8`): the framework's greedy step-away
 		//has no recovery of its own, so a fleeing mob with no step recovers here.
 		else if (monster.fleeing && decision.state === 'flee') this.recoverFleeing(monster);
@@ -9883,7 +9878,7 @@ export class DungeonScene extends Scene2D {
 			.map((c) => this.level.index(c.x, c.y)));
 		this.eternalFireBlockedInto(blocked);
 		const next = this.pathfinder.find({ x: monster.x, y: monster.y }, { x: target.x, y: target.y }, { blocked })[0];
-		if (next) this.moveTo(monster, next);
+		if (next) this.stepMonster(monster, next);
 	}
 
 	/** Java's hostile-target query considers the hero and friendly summoned characters. Keep
@@ -9916,7 +9911,7 @@ export class DungeonScene extends Scene2D {
 			.map((c) => this.level.index(c.x, c.y)));
 		this.eternalFireBlockedInto(blocked);
 		const next = this.pathfinder.find({ x: monster.x, y: monster.y }, { x: target.x, y: target.y }, { blocked })[0];
-		if (next) this.moveTo(monster, next);
+		if (next) this.stepMonster(monster, next);
 	}
 
 	/** Whole-turn special actors that must run before target acquisition and the shared AI. */
@@ -10110,7 +10105,7 @@ export class DungeonScene extends Scene2D {
 					{ x: monster.x, y: monster.y }, monster.lastSeen, { blocked: this.wanderBlocked(monster, true) },
 				)[0];
 				if (next) {
-					this.moveTo(monster, next);
+					this.stepMonster(monster, next);
 					return true;
 				}
 			}
@@ -10129,7 +10124,7 @@ export class DungeonScene extends Scene2D {
 		const next = this.pathfinder.find(
 			{ x: monster.x, y: monster.y }, monster.patrolTarget, { blocked: this.wanderBlocked(monster, false) }
 		)[0];
-		if (next) this.moveTo(monster, next);
+		if (next) this.stepMonster(monster, next);
 		else if (monster.kind === 'golem' && this.depth !== 20
 			&& monster.patrolTarget && (monster.golemSelfTeleCooldown ?? 0) <= 0) {
 			//Golem.Wandering.continueWandering(): Java spends 2*TICK charging before teleporting
@@ -11135,14 +11130,14 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//GnollTrickster.getCloser(): "if he's moving, he isn't attacking, reset combo."
 		if (monster.kind === 'gnollTrickster') monster.combo = 0;
 		const best = fleeStepFlow({ x: monster.x, y: monster.y }, this.fleeStepContext());
-		if (best) this.moveTo(monster, best);
+		if (best) this.stepMonster(monster, best);
 	}
 
 	/** CrystalMimic.Fleeing: after revealing/attacking, run to the farthest open neighbour. */
 	private fleeCrystalMimic(monster: Creature): boolean {
 		const best = fleeStepFlow({ x: monster.x, y: monster.y }, this.fleeStepContext());
 		if (best) {
-			this.moveTo(monster, best);
+			this.stepMonster(monster, best);
 			return true;
 		}
 		return false;
@@ -13220,6 +13215,19 @@ private eyeBeamTurn(monster: Creature): boolean {
 			sprite.position.set(fromX + (to.x * TILE - fromX) * progress, fromY + (to.y * TILE - fromY) * progress);
 			if (progress === 1 && sprite instanceof AnimatedSprite && sprite.playing === 'run') sprite.play('idle');
 		});
+	}
+
+	/**
+	 * A voluntary monster step (`Goo.getCloser()`/`getFurther()`, tag `v3.3.8`):
+	 * any step discharges a pump-up in progress - Java clears `pumpedUp` on
+	 * entering either method, before the move itself, so the clear lands even
+	 * when `moveTo` refuses (roots/chasm). Forced relocations (knockback,
+	 * teleports, leaps, blinks) stay on `moveTo` directly - Java never routes
+	 * those through getCloser/getFurther.
+	 */
+	private stepMonster(monster: Creature, to: Step): void {
+		if (monster.kind === 'goo' && (monster.pumped ?? 0) > 0) monster.pumped = 0;
+		this.moveTo(monster, to);
 	}
 
 	/** Mirrors `Preparation`'s own rule onto the hero's combat data: the buff exists exactly while
