@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { readSceneSource } from './sceneSource.mjs';
 
 /**
  * The armor-ability data table and each class's ability formulas, pinned against the real Java source
@@ -84,7 +85,7 @@ export function verifyArmorAbilities(require, check) {
 		//dungeonScene.ts cannot load in this harness (Pixi), so the dispatch is pinned
 		//at source level: the factor folds into the attack multiplier exactly when the
 		//attacker is a transformed non-ally, reading the hero's own talent rank.
-		const source = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const source = readSceneSource();
 		assert.match(source, /!attacker\.isAlly && attacker\.ratmogrifiedTurns !== undefined/,
 			'permanent allies must keep full damage, like Java\'s allied rats');
 		assert.match(source, /mult \*= ratsistanceFactor\(this\.talentRank\('ratsistance'\)\)/,
@@ -484,7 +485,7 @@ export function verifyArmorAbilities(require, check) {
 		//spend the discount; and a new `NinjaLog` kills every existing one first.
 		//dungeonScene.ts cannot load in this harness (Pixi), so this pins all three at
 		//source level, the way the Spirit-Blades check above does.
-		const source = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const source = readSceneSource();
 		assert.match(source, /target\.deathMarkTurns = \(target\.deathMarkTurns \?\? 0\) \+ 5/,
 			're-marking must extend the window, not reset it to 5');
 		const clock = /advanceClock: \(\) => \{([\s\S]*?)\n\t\t\t\},/.exec(source);
@@ -493,7 +494,7 @@ export function verifyArmorAbilities(require, check) {
 			'any clock advance must drop the DoubleMark latch');
 		assert.doesNotMatch(source, /doubleMarkArmed = s\.doubleMarkArmed/,
 			'the latch must not survive a save/load round trip');
-		const log = /private placeNinjaLog\([^)]*\)[^{]*\{([\s\S]*?)\n\t\}/.exec(source);
+		const log = /	placeNinjaLog\(this: DungeonScene[^)]*\)[^{]*\{([\s\S]*?)\n\t\}/.exec(source);
 		assert.ok(log, 'placeNinjaLog still exists');
 		assert.match(log[1], /allyKind === 'ninjaLog'/,
 			'a new decoy must retire the existing ones first');
@@ -514,7 +515,7 @@ export function verifyArmorAbilities(require, check) {
 		const rat = { kind: 'rat', buffs: {}, magicImmune: false };
 		addBuff(rat, 'burning');
 		assert.ok(rat.buffs['burning'] > 0, 'control: the base kind still burns');
-		const source = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const source = readSceneSource();
 		assert.match(source, /isToxicImmune: \(target\) =>[\s\S]{0,500}afterImage/,
 			'toxic gas must skip the decoy');
 		assert.match(source, /applyCorrosion: \(target, strength\) => \{[\s\S]{0,200}afterImage/,
@@ -528,8 +529,8 @@ export function verifyArmorAbilities(require, check) {
 		//as well as on recall - it is not one of the two abilities that skip it.
 		//dungeonScene.ts cannot load in this harness (Pixi), so this pins the placement
 		//half at source level.
-		const source = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
-		const place = /private placeWarpBeacon\([^)]*\)[^{]*\{([\s\S]*?)\n\t\}/.exec(source);
+		const source = readSceneSource();
+		const place = /	placeWarpBeacon\(this: DungeonScene[^)]*\)[^{]*\{([\s\S]*?)\n\t\}/.exec(source);
 		assert.ok(place, 'placeWarpBeacon still exists');
 		assert.match(place[1], /delete this\.hero\.buffs\['invisibility'\]/,
 			'placing the beacon must dispel invisibility');
@@ -571,7 +572,7 @@ export function verifyArmorAbilities(require, check) {
 		//`Enchantment.genericProcChanceMultiplier`, a proc-chance term - and is unreachable
 		//anyway, since a rank-4 `Int(10) < 12` roll always consumes the tracker before
 		//`wep.proc` runs) must be gone.
-		const source = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const source = readSceneSource();
 		const consume = /const spiritBladesProc = [\s\S]*?;\n([\s\S]*?)\n\t\tconst affix/.exec(source);
 		assert.ok(consume, 'the tracker-consume block still exists');
 		assert.match(consume[1], /applyNaturesPowerOnHit\(defender\)/,

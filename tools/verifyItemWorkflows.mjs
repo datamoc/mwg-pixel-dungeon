@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { createRequire } from 'node:module';
 import ts from 'typescript';
+import { readSceneSource } from './sceneSource.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const dist = fileURLToPath(new URL('../node_modules/mwg/dist/', import.meta.url));
@@ -609,7 +610,7 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 // so their wiring is pinned at source level: five gated stash adds plus the always-true
 // victory, and the adapter that reports refusals back to the pickup.
 {
-	const sceneSource = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+	const sceneSource = readSceneSource();
 	for (const gated of ['armor', 'wand', 'crystalKey']) {
 		assert.ok(sceneSource.includes(`this.bagFitsPickup({ id: '${gated}'`), `the ${gated} stash gates itself`);
 	}

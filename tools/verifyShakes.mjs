@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { readSceneSource } from './sceneSource.mjs';
 
 // Called by verifySimulation.mjs. dungeonScene.ts cannot load in this harness
 // (Pixi), so the shake audit pins its call sites at source level, the way
@@ -9,7 +10,7 @@ import { readFileSync } from 'node:fs';
 // (a deleted shake is invisible in every other suite).
 export function verifyShakes(require, check) {
 	check('every ported shake feature shakes at Java\u2019s site', () => {
-		const source = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const source = readSceneSource();
 		const sites = [
 			// [Java site, port call-site fragment]
 			['FistSprite 143 (4, 0.2f) on the melee swing', "if (attacker.kind === 'yogFist') this.shakeScreen(4, 0.2);"],

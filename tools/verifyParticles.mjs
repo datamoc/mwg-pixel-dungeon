@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { readSceneSource } from './sceneSource.mjs';
 
 // Called by verifySimulation.mjs. dungeonScene.ts cannot load in this harness
 // (Pixi), so the death-burst table pins its Java counts behaviorally against
@@ -43,7 +44,7 @@ export function verifyParticles(require, check) {
 		assert.deepEqual(deathBurstsFor('hero', undefined), []);
 	});
 	check('death bursts stay wired to the shared kill path and the ward zap', () => {
-		const source = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const source = readSceneSource();
 		assert.ok(source.includes('this.playDeathBursts(deathBurstsFor(creature.kind, creature.allyKind), creature.x, creature.y);'),
 			'the shared kill path must keep firing the death-burst table');
 		assert.ok(source.includes('this.playDeathBursts(wardZapBursts(), ward.x, ward.y);'),

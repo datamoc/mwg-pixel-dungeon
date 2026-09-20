@@ -20,6 +20,7 @@ import { verifyBrews } from './verifyBrews.mjs';
 import { verifySmoke } from './verifySmoke.mjs';
 import { verifyShakes } from './verifyShakes.mjs';
 import { verifyParticles } from './verifyParticles.mjs';
+import { readSceneSource } from './sceneSource.mjs';
 
 // Compile the actual implementation into a private temporary CommonJS tree. Type-only
 // mwg imports disappear, so tests never load Pixi, a DOM, or the full framework barrel.
@@ -1222,7 +1223,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.deepEqual([at(14).hp, at(14).accuracy, at(14).evasion, at(14).damage], [64, 23, 23, [6, 16]]);
 		// Structural: the item routes to the shatter, the bee hunts through its own
 		// override (never the generic dispatch), and the pot anchor persists.
-		const scene = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const scene = readSceneSource();
 		const actions = readFileSync(new URL('../src/items/itemActions.ts', import.meta.url), 'utf8');
 		assert.ok(actions.includes("id === 'honeypot') scene.useHoneypot(instanceId)"), 'honeypot routes to the shatter');
 		assert.ok(scene.includes('bee: (monster) => { this.takeBeeTurn(monster); return true; }'), 'bee hunts through its own override');
@@ -1233,14 +1234,14 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		const badges = readFileSync(new URL('../src/content/badges.mwl', import.meta.url), 'utf8');
 		assert.ok(badges.includes('id: "piranhas"'), 'the piranhas badge row exists');
 		assert.ok(badges.includes('counter: "piranhas"'), 'the row counts piranha kills');
-		const scene = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const scene = readSceneSource();
 		assert.ok(scene.includes("if (creature.kind === 'piranha') this.awardBadge('piranhas');"),
 			'every piranha death counts');
 	});
 	check('Shock elementals halve lightning-family damage, rounded', () => {
 		//`Char.Property.ELECTRIC` (tag `v3.3.8`): `Char.damage()` halves with
 		//`Math.round` - same rounding the ACIDIC corrosion half uses.
-		const scene = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const scene = readSceneSource();
 		assert.ok(scene.includes("cause === 'electricity' && !target.isHero && target.kind === 'elemental'"),
 			'the blob seam halves electricity for shock elementals');
 		assert.ok(scene.includes("this.wandType === 'lightning' && !victim.isHero && victim.kind === 'elemental'"),
@@ -1284,7 +1285,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		//on infinite evasion, so the shared seams carry the no-op halves.
 		const combat = readFileSync(new URL('../src/combat.ts', import.meta.url), 'utf8');
 		assert.ok(combat.includes("if (c.kind === 'sentry') return true;"), 'sentries refuse buffs');
-		const scene = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const scene = readSceneSource();
 		assert.ok(scene.includes("if (target.kind === 'sentry') return true;"), 'blob seams spare sentries');
 		assert.ok(scene.includes('elemental.evasion = 5 * regionScale;'), 'newborns scale evasion by region');
 		assert.ok(scene.includes('elemental.maxHp = 15 * regionScale;'), 'newborns scale HT by region');
@@ -1293,7 +1294,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		//`Web.onUpdateCellFlags()` (tag `v3.3.8`) marks webbed cells flammable so
 		//`Fire.evolve()` ignites them; the web decays on its own clock and the
 		//floor underneath survives (only the solidity half is unmodeled).
-		const scene = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const scene = readSceneSource();
 		assert.ok(scene.includes('this.isFireFlammableTerrain(x, y) || this.web.volumeAt(x, y) > 0'),
 			'fire spread treats webbed cells as flammable');
 		assert.ok(scene.includes('if (this.web.volumeAt(cell.x, cell.y) > 0) continue;'),

@@ -1,6 +1,7 @@
 ﻿import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import ts from 'typescript';
+import { readSceneSource } from './sceneSource.mjs';
 
 // Called by verifySimulation.mjs after compiling actual production modules into its temp tree.
 export function verifyCombat(require, check) {
@@ -366,7 +367,7 @@ export function verifyCombat(require, check) {
 		// from the floor's mob rotation - so every other mob (a quest miniboss, a mimic, a pylon, a
 		// summon, an ally) is never championed. This port carries that as the `championEligible`
 		// argument, true at exactly one call site.
-		const source = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const source = readSceneSource();
 		const calls = [...source.matchAll(/this\.spawnMonster\([^;]*?\);/g)].map((match) => match[0]);
 		const rosterCall = calls.filter((call) => call.includes('roster['));
 		assert.equal(rosterCall.length, 1, `expected one rotated-roster spawn, found ${rosterCall.length}`);
@@ -511,7 +512,7 @@ export function verifyCombat(require, check) {
 		// structural pins on the scene half, which this harness cannot execute: the
 		// cooldown gate/decrement/increment, the rotting conversion shared by both damage
 		// paths, and the bright-only death daze (dark only detaches Light, unmodeled).
-		const scene = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const scene = readSceneSource();
 		assert.ok(scene.includes('fistZapCd ?? 0) > 0) return false'), 'cooling elemental fists step closer');
 		assert.ok(scene.includes("monster.buffs['paralysis'] === undefined && (monster.fistZapCd ?? 0) > 0"),
 			'cooldown ticks down on unparalysed fist turns');
@@ -529,7 +530,7 @@ export function verifyCombat(require, check) {
 		// `Hero.attackSkill()` - a Cleric wielding anything else attacks at unmodified
 		// skill. The port has no weapon-item model to hang it on, so the stand-in gates
 		// on the implicit starting cudgel (39th matrix, `MONSTER_ANALYSIS_CLERIC.md`).
-		const scene = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const scene = readSceneSource();
 		assert.ok(scene.includes("this.heroClass === 'cleric' && this.weaponId === 'startingWeapon' ? 1.4 : 1"),
 			'cleric accuracy bonus requires the starting cudgel');
 	});

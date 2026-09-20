@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { readSceneSource } from './sceneSource.mjs';
 
 // Called by verifySimulation.mjs after compiling actual production modules into its temp tree.
 export function verifyPrismatic(require, check) {
@@ -64,7 +65,7 @@ export function verifyPrismatic(require, check) {
 		// dungeonScene.ts cannot load in this harness (Pixi), so this pins the
 		// call sites at source level, the way verifyCombat's champion-eligible
 		// spawn check and verifyRings' multiplier checks do.
-		const source = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const source = readSceneSource();
 		for (const site of [
 			'spawnPrismaticImage(at, Math.floor(pool))',
 			'this.tickPrismaticGuard(turnCost)',
@@ -98,11 +99,11 @@ export function verifyPrismatic(require, check) {
 		//sheep carries its producer's lifespan and infinite evasion, and both
 		//refuse what Java refuses (mirror: toxic/corrosive gas; sheep: all buffs
 		//plus all blob/bomb/shocker damage).
-		const source = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		const source = readSceneSource();
 		for (const site of [
 			'this.syncMirrorImage(image)',
 			"if (ally.allyKind === 'mirror') this.syncMirrorImage(ally)",
-			'private spawnSheep(at: Step, lifespan: number)',
+			'spawnSheep(this: DungeonScene, at: Step, lifespan: number)',
 			'sheep.evasion = INFINITE_EVASION',
 			'spawnSheep: (at) => this.spawnSheep(at, this.depth in BOSSES ? 20 : 200)',
 			'spawnSheep: (at) => this.spawnSheep(at, 8)',
