@@ -6423,6 +6423,8 @@ export class DungeonScene extends Scene2D {
 				//damage from any blob seam (melee can never land through its
 				//infinite evasion, and buffs never attach via `buffBlocked`).
 				if (target.allyKind === 'sheep') return true;
+				//`SentryRoom$Sentry.damage()` (tag `v3.3.8`) is likewise a no-op.
+				if (target.kind === 'sentry') return true;
 				const preHp = target.hp;
 				target.hp -= damage;
 				if (this.fadeMirrorOnDamage(target, damage)) return true;
@@ -18954,6 +18956,18 @@ private eyeBeamTurn(monster: Creature): boolean {
 			else {
 				elemental.rangedCooldown = Number.MAX_SAFE_INTEGER;
 				elemental.miniboss = false;
+				//`Elemental.setSummonedALly()` (tag `v3.3.8`): the summoned
+				//newborn scales with the region - `regionScale = max(2, 1 +
+				//floor(scalingDepth/5))`, so sewers and prison share scale 2 and
+				//it climbs 3/4/5 after (damage `5s..5+5s`, attack `5+5s`,
+				//defense `5s`, HT `15s`). The row stays the never-summoned
+				//template; the DR tuple (`0..5`) is already Java's.
+				const regionScale = Math.max(2, 1 + Math.floor(this.depth / 5));
+				elemental.accuracy = 5 + 5 * regionScale;
+				elemental.evasion = 5 * regionScale;
+				elemental.damage = [5 * regionScale, 5 + 5 * regionScale];
+				elemental.maxHp = 15 * regionScale;
+				elemental.hp = elemental.maxHp;
 			}
 			delete this.hero.buffs['invisibility'];
 			this.bag.remove('summonElemental', 1, instanceId);

@@ -48,6 +48,8 @@ export interface BombEffectsContext {
 function applyBlastDamage(target: Creature, amount: number, pierceArmor: boolean, context: BombEffectsContext): boolean {
 	//`Sheep.damage()` (tag `v3.3.8`) is a no-op - the blast passes through sheep.
 	if (target.allyKind === 'sheep') return false;
+	//`SentryRoom$Sentry.damage()` (tag `v3.3.8`) is likewise a no-op.
+	if (target.kind === 'sentry') return false;
 	if (target.isHero) {
 		const damage = context.absorbHeroDamage(amount);
 		context.hero.hp -= damage;

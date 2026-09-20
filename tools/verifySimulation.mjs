@@ -1152,6 +1152,17 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.ok(scene.includes("if (creature.kind === 'piranha') this.awardBadge('piranhas');"),
 			'every piranha death counts');
 	});
+	check('Sentry turrets and sheep refuse buffs and direct damage', () => {
+		//`SentryRoom$Sentry.add()`/`damage()` and `Sheep.add()`/`damage()`
+		//(tag `v3.3.8`): both refuse everything - melee and zaps already fail
+		//on infinite evasion, so the shared seams carry the no-op halves.
+		const combat = readFileSync(new URL('../src/combat.ts', import.meta.url), 'utf8');
+		assert.ok(combat.includes("if (c.kind === 'sentry') return true;"), 'sentries refuse buffs');
+		const scene = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		assert.ok(scene.includes("if (target.kind === 'sentry') return true;"), 'blob seams spare sentries');
+		assert.ok(scene.includes('elemental.evasion = 5 * regionScale;'), 'newborns scale evasion by region');
+		assert.ok(scene.includes('elemental.maxHp = 15 * regionScale;'), 'newborns scale HT by region');
+	});
 	check('Fire spreads onto webbed cells without destroying the floor', () => {
 		//`Web.onUpdateCellFlags()` (tag `v3.3.8`) marks webbed cells flammable so
 		//`Fire.evolve()` ignites them; the web decays on its own clock and the

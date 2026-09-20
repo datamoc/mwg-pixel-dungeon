@@ -418,6 +418,11 @@ function buffBlocked(c: Creature, id: BuffId): boolean {
 	//`Sheep.add(Buff)` (tag `v3.3.8`) returns false unconditionally - the sheep
 	//takes no buffs at all. Same shared boundary as the decoy above.
 	if (c.allyKind === 'sheep') return true;
+	//`SentryRoom$Sentry.add()` (tag `v3.3.8`) likewise returns false - the beam
+	//turret takes no buffs either. Its `damage()` no-op rides the blob/bomb
+	//skips below (melee and zaps already defeat themselves on its infinite
+	//evasion, the same shape as the sheep's).
+	if (c.kind === 'sentry') return true;
 	//Brimstone.java grants Burning immunity through Char.isImmune(), before the
 	//effect can be attached. Keep this check at the shared buff boundary so fire
 	//from traps, blobs, wands, plants, and enemy attacks all obey it.
