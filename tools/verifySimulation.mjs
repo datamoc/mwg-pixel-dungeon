@@ -1143,6 +1143,16 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.ok(scene.includes('bee: (monster) => { this.takeBeeTurn(monster); return true; }'), 'bee hunts through its own override');
 		assert.ok(scene.includes('potPos: creature.potPos') && scene.includes('potPos: saved.potPos'), 'pot anchor persists through save/restore');
 	});
+	check('Fire spreads onto webbed cells without destroying the floor', () => {
+		//`Web.onUpdateCellFlags()` (tag `v3.3.8`) marks webbed cells flammable so
+		//`Fire.evolve()` ignites them; the web decays on its own clock and the
+		//floor underneath survives (only the solidity half is unmodeled).
+		const scene = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		assert.ok(scene.includes('this.isFireFlammableTerrain(x, y) || this.web.volumeAt(x, y) > 0'),
+			'fire spread treats webbed cells as flammable');
+		assert.ok(scene.includes('if (this.web.volumeAt(cell.x, cell.y) > 0) continue;'),
+			'burnt-out webbed cells skip the ember pass');
+	});
 	verifyRings(require, check);
 	verifyPrismatic(require, check);
 	verifyBrews(require, check);

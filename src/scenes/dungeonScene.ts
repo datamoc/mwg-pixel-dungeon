@@ -6191,11 +6191,21 @@ export class DungeonScene extends Scene2D {
 	 * Tengu's separate FireAbility blob deliberately does not use this path. */
 	private spreadFire(): void {
 		const before = this.fire.toJSON().volume;
-		const plan = planFireSpread(this.level.width, this.level.height, before, (x, y) => this.isFireFlammableTerrain(x, y));
+		//`Web.onUpdateCellFlags()` (tag `v3.3.8`) marks webbed cells flammable, so
+		//`Fire.evolve()` ignites them like any flammable terrain - the web itself
+		//decays on its own clock (the `advance('web')` half), the floor underneath
+		//is never destroyed, so webbed cells ignite but skip the ember pass.
+		//Stated gap: the same method also marks them solid, which this port's
+		//static terrain model cannot express - webs root but never bar movement.
+		const plan = planFireSpread(this.level.width, this.level.height, before,
+			(x, y) => this.isFireFlammableTerrain(x, y) || this.web.volumeAt(x, y) > 0);
 		this.fire = Blob.fromJSON({ width: this.level.width, height: this.level.height, volume: plan.next });
 		const { burning, burntOut } = plan;
 		for (const cell of burning) this.burnFireContents(cell.x, cell.y);
-		for (const cell of burntOut) this.burnFireTerrain(cell.x, cell.y);
+		for (const cell of burntOut) {
+			if (this.web.volumeAt(cell.x, cell.y) > 0) continue;
+			this.burnFireTerrain(cell.x, cell.y);
+		}
 		//A burning plant is removed from the features layer, so redraw it when anything burned;
 		//the terrain half restitches its own converted cell, the same as `plantBloomingGrass`
 		//and `trampleHighGrass` do.
