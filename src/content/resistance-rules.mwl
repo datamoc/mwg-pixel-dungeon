@@ -70,7 +70,7 @@
           { tag: "row", monster: "yogFist", subtype: "burning", immunities: "burning" },
           { tag: "row", monster: "yogFist", subtype: "rusted", immunities: "bleeding,poison" },
           { tag: "row", monster: "succubus", subtype: "", immunities: "charm" },
-          { tag: "row", monster: "tengu", subtype: "", immunities: "roots,terror" },
+          { tag: "row", monster: "tengu", subtype: "", immunities: "roots,terror,blindness" },
           { tag: "row", monster: "piranha", subtype: "", immunities: "burning" },
         ],
       },

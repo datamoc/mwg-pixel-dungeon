@@ -180,7 +180,8 @@ export const MONSTER_IMMUNITY_DATA = [
     "subtype": "",
     "immunities": [
       "roots",
-      "terror"
+      "terror",
+      "blindness"
     ]
   },
   {

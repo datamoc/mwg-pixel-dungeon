@@ -27888,7 +27888,7 @@ export const gameData = {
 							"attributes": {
 								"monster": "tengu",
 								"subtype": "",
-								"immunities": "roots,terror"
+								"immunities": "roots,terror,blindness"
 							},
 							"children": [],
 							"location": {

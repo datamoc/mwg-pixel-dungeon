@@ -936,14 +936,18 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 			stats: () => ({ accuracy: 10, damage: [2, 4] }),
 			attack: (attacker, defender) => attacks.push({ attacker, defender }),
 			showHeal: () => assert.fail('dry Goo must not heal'), say: (message) => messages.push(message), random,
+			foulBossChallenge: () => { fouled++; },
 			messages: { slam: 'slam', pump: 'pump', pumpMore: 'pump-more' },
 		};
+		let fouled = 0;
 		takeGooTurn(goo, gooContext); takeGooTurn(goo, gooContext); takeGooTurn(goo, gooContext);
 		assert.equal(goo.pumped, 0);
 		assert.equal(attacks.length, 1);
 		assert.deepEqual(attacks[0].attacker.damage, [6, 12]);
 		assert.equal(attacks[0].attacker.accuracy, 20);
 		assert.deepEqual(messages, ['pump', 'pump-more', 'slam']);
+		//The pumped slam fouls the bosses challenge exactly once per slam.
+		assert.equal(fouled, 1);
 		assert.deepEqual(planRatKingWave(0, 300, false, random), { adds: ['ghoul'], nextSummonsMade: 1, announcement: 'wave_1', cadence: 3 });
 		assert.deepEqual(ratKingP1Summon(8, true, random), 'golem');
 		assert.deepEqual(planRatKingWave(12, 150, true, random), { adds: ['warlock', 'monk', 'ghoul', 'ghoul'], nextSummonsMade: 16, announcement: 'wave_3', cadence: 3 });

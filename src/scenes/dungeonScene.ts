@@ -3093,7 +3093,7 @@ export class DungeonScene extends Scene2D {
 		//the `beam` guard simply drops that cone rather than crashing on it.
 		for (const creature of restored) {
 			if (creature.tenguFire?.beam) {
-				this.tenguBeams.set(creature, this.rebuildTenguBeam(creature.tenguFire.direction, creature.tenguFire.beam));
+				this.tenguBeams.set(creature, this.rebuildTenguBeam(creature.tenguFire.direction, creature.tenguFire.beam, creature));
 			}
 		}
 	}
@@ -8354,9 +8354,15 @@ export class DungeonScene extends Scene2D {
 		if (!target.isHero && target.kind === 'yogFist' && target.yogFistType === 'rotting') {
 			setBleeding(target, Math.round(rawCorrosion * 0.5 * 0.6));
 		}
+		//`Char.Property.ACIDIC` (`Char.java`, tag `v3.3.8`) resists the Corrosion
+		//damage class, halving each tick: Goo, CausticSlime and the acidic mob.
+		//The rotting fist converts instead (handled just above); the Ooze-buff half
+		//of ACIDIC already lives in the immunity table. Found by the 41st matrix.
+		const acidic = !target.isHero && (target.kind === 'goo' || target.kind === 'causticSlime' || target.kind === 'acidic');
 		const damage = target.isHero
 			? Math.floor(rawCorrosion * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune))
-			: target.kind === 'yogFist' && target.yogFistType === 'rotting' ? 0 : rawCorrosion;
+			: target.kind === 'yogFist' && target.yogFistType === 'rotting' ? 0
+			: acidic ? Math.floor(rawCorrosion / 2) : rawCorrosion;
 		if (target.isHero) {
 			const blocked = this.absorbHeroDamage(damage);
 			target.hp -= blocked;
@@ -11719,7 +11725,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (!step) return false;
 		const direction = TENGU_CIRCLE8.findIndex(([dx, dy]) => dx === step.x - tengu.x && dy === step.y - tengu.y);
 		if (direction < 0) return false;
-		const beam = this.buildTenguBeam({ x: tengu.x, y: tengu.y }, direction);
+		const beam = this.buildTenguBeam({ x: tengu.x, y: tengu.y }, direction, tengu);
 		beam.start();
 		this.tenguBeams.set(tengu, beam);
 		tengu.tenguFire = { direction, beam: beam.toJSON() };
@@ -11796,7 +11802,26 @@ private eyeBeamTurn(monster: Creature): boolean {
 	//cone leaves grass and doors standing where ordinary fire would reduce them to
 	//embers. This port seeds ordinary fire instead, so the cone burns terrain exactly
 	//like the rest - see `tools/scratch/FLAMABLE-INVENTORY.md` item 1.
-	private buildTenguBeam(from: { x: number; y: number }, direction: number): Roguelike.MultiTurnBeam {
+	/**
+	 * Java's `FireAbility.FireBlob.evolve()` burns occupants as the front advances -
+	 * Tengu himself immune, the hero fouling the bosses challenge - so the seeded
+	 * cell ignites non-Tengu occupants at seed time, exactly once per cell reached,
+	 * matching Java's per-cell-expiry burn. The ordinary field fire seeded alongside
+	 * keeps burning on later turns (and still burns Tengu himself, where Java's
+	 * blob never does - recorded residual).
+	 */
+	private seedTenguConeCell(tengu: Creature, cell: { x: number; y: number }): void {
+		this.fire.seed(cell.x, cell.y, 2);
+		const occupant = this.creatureAt(cell.x, cell.y);
+		if (!occupant || occupant === tengu || occupant.hp <= 0) return;
+		//Java fouls the hero on the cone cell even when fire-immune (the foul sits
+		//outside the `!isImmune(Fire)` burn guard), so foul before the immunity return.
+		if (occupant.isHero) this.foulBossChallenge();
+		if (occupant.fireImmune) return;
+		reigniteBuff(occupant, 'burning');
+	}
+
+	private buildTenguBeam(from: { x: number; y: number }, direction: number, tengu: Creature): Roguelike.MultiTurnBeam {
 		return new Roguelike.MultiTurnBeam({
 			level: this.level,
 			from,
@@ -11805,19 +11830,19 @@ private eyeBeamTurn(monster: Creature): boolean {
 			blocker: 'none',
 			shape: 'tengu-cone',
 			fronts: (previous, turn) => this.tenguConeFront(direction, previous, turn),
-			onCell: (cell) => this.fire.seed(cell.x, cell.y, 2),
+			onCell: (cell) => this.seedTenguConeCell(tengu, cell),
 		});
 	}
 
 	/** Rebuilds a saved cone (`creature.tenguFire.beam`) into a live `MultiTurnBeam` on load. */
-	private rebuildTenguBeam(direction: number, save: Roguelike.MultiTurnBeamSave): Roguelike.MultiTurnBeam {
+	private rebuildTenguBeam(direction: number, save: Roguelike.MultiTurnBeamSave, tengu: Creature): Roguelike.MultiTurnBeam {
 		return Roguelike.MultiTurnBeam.fromJSON({
 			level: this.level,
 			damage: 0,
 			blocker: 'none',
 			shape: 'tengu-cone',
 			fronts: (previous, turn) => this.tenguConeFront(direction, previous, turn),
-			onCell: (cell) => this.fire.seed(cell.x, cell.y, 2),
+			onCell: (cell) => this.seedTenguConeCell(tengu, cell),
 		}, save);
 	}
 
@@ -11844,6 +11869,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 				const dealt = target.isHero ? this.absorbHeroDamage(raw, true) : raw;
 				target.hp -= dealt;
 				this.showDamage(target, dealt);
+				//`ShockerAbility`'s pulse fouls the bosses challenge when it strikes the
+				//hero (`Tengu.java`, tag `v3.3.8`).
+				if (target.isHero) this.foulBossChallenge();
 				if (target.hp <= 0) this.kill(target);
 			}
 			if (shocker.turns < 3) remaining.push(shocker);
@@ -13080,6 +13108,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			attack: (attacker, defender) => { this.attack(attacker, defender); },
 			showHeal: (target, amount) => this.showHeal(target, amount),
 			say: (message, level) => this.say(message, level),
+			foulBossChallenge: () => this.foulBossChallenge(),
 			random: simulationRandom,
 			messages: { slam: t('port.log.gooslam'), pump: t('port.log.goopump'), pumpMore: t('port.log.goopumpmore') },
 		});
@@ -13651,10 +13680,12 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//inline blocks, and the `Pylon` curve is now in the same place as the rest instead of
 		//above the multiplier chain where it under-reduced every charged-pylon hit.
 		damage = applyDefenderDamageCurves(defender.kind, damage, { beamCharged: defender.beamCharged === true });
-		//`Goo.damage()` (`Goo.java` 162-164): while the Goo is pumped up, every hit it takes shakes
-		//the screen - the tell that the charge is being interrupted. The port's `pumped` is its
-		//charge-turn counter (`takeGooTurn`), so `> 0` is Java's `pumpedUp > 0`.
-		if (defender.kind === 'goo' && (defender.pumped ?? 0) > 0) this.shakeScreen(3, 0.2);
+		//The 41st matrix (Goo/Tengu kits) removed a shake here: it cited
+		//`Goo.damage()` 162-164 for shaking when a pumped Goo is hit, but no such
+		//code exists there - Java's only pump shake is in `Goo.attackProc()`, on a
+		//landed hit while pumped (dead code in practice: `damageRoll()` already
+		//consumed the pump by proc time), and Java never interrupts the charge on
+		//damage. The shake told a lie, so it is gone rather than moved.
 		//`Char.attack()`'s "friendly endure": the hero's own banked counter-attack adds to each
 		//landed hit until the tracker's `hitsLeft` runs out (`EndureTracker.damageFactor`). Java
 		//adds it before the armor subtraction; this port's `damage` is already net of armor by this
@@ -14828,6 +14859,14 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.stenchGas.seed(defender.x, defender.y, 20);
 		}
 		if (attacker.kind === 'fetidRat' && Random.chance(1 / 3)) {
+			addBuff(defender, 'ooze');
+			this.say(t(defender.isHero ? 'port.log.oozedhero' : 'port.log.oozed', { who: capitalize(defender.name) }), 'negative');
+		}
+		//`Goo.attackProc()` (`Goo.java`, tag `v3.3.8`): a third of landed hits
+		//afflict Ooze for its full duration - the same `addBuff` the FetidRat
+		//branch just above uses. The burst is presentation-only; the death-by-ooze
+		//badge has no bucket here (see the death-badge note), so only the buff lands.
+		if (attacker.kind === 'goo' && Random.int(3) === 0) {
 			addBuff(defender, 'ooze');
 			this.say(t(defender.isHero ? 'port.log.oozedhero' : 'port.log.oozed', { who: capitalize(defender.name) }), 'negative');
 		}
@@ -17595,6 +17634,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			kingDamageHook: (target) => this.kingDamageHook(target),
 			tenguBracketJump: (target, previousHp) => this.tenguBracketJump(target, previousHp),
 			onNonWeaponBossDamage: (target) => this.disqualifyBossChallenge(target),
+		onTenguBombHeroHit: () => this.foulBossChallenge(),
 		};
 	}
 
@@ -22330,6 +22370,20 @@ private eyeBeamTurn(monster: Creature): boolean {
 			|| target.kind === 'king' || target.kind === 'yog' || target.kind === 'yogFist') {
 			this.qualifiedForBossChallenge = false;
 		}
+	}
+
+	/**
+	 * The reverse direction of `disqualifyBossChallenge` (which covers the hero's
+	 * non-weapon boss damage): Java clears `Statistics.qualifiedForBossChallengeBadge`
+	 * when a boss itself fouls - Goo's pumped slam and water heal (`Goo.java`, tag
+	 * `v3.3.8`), Tengu's bomb blast and shocker pulses striking the hero
+	 * (`Tengu.java`). Found by the 41st behavior matrix (Goo/Tengu kits), which also
+	 * records what stays open: the `bossScores` ±100/1000 economy has no equivalent
+	 * here (the port's score is depth/level/gold in `rankings.ts`), and Tengu's
+	 * fire-cone foul cannot be attributed (field-fire ticks carry no source).
+	 */
+	private foulBossChallenge(): void {
+		this.qualifiedForBossChallenge = false;
 	}
 
 	/**

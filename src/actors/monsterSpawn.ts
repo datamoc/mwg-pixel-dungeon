@@ -104,11 +104,15 @@ export function monsterSpawnProfile(
 	const baseDef = MONSTERS[kind];
 	const statOverride = DEPTH_SCALED_STATS[kind]?.(depth);
 	const def = statOverride ? { ...baseDef, ...statOverride } : baseDef;
+	//`STRONGER_BOSSES` HP floors (`Goo`/`Tengu.java`, tag `v3.3.8`): 120 and 250.
+	//Found by the 41st matrix - the Tengu floor was missing.
 	const adjustedDef = kind === 'pylon' && isChallengeEnabled('stronger_bosses')
 		? { ...def, hp: 80 }
 		: kind === 'goo' && isChallengeEnabled('stronger_bosses')
 			? { ...def, hp: 120 }
-			: def;
+			: kind === 'tengu' && isChallengeEnabled('stronger_bosses')
+				? { ...def, hp: 250 }
+				: def;
 	const baseKind: MonsterId = BASE_KIND_ALIASES[kind] ?? (kind as MonsterId);
 	const isNPC = NPC_KINDS.has(kind);
 	const isBoss = BOSS_KINDS.has(kind);

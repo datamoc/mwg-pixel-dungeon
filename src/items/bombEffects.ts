@@ -40,6 +40,9 @@ export interface BombEffectsContext {
 	/** Clears `Statistics.qualifiedForBossChallengeBadge` when a bomb hurts a boss: a bomb is
 	 * never a plain weapon hit. Optional so headless callers keep working. */
 	readonly onNonWeaponBossDamage?: (target: Creature) => void;
+	/** Clears the badge when Tengu's own bomb blast catches the hero (`BombAbility.act()`,
+	 * tag `v3.3.8`, fouls on presence in radius, even at zero damage). Optional likewise. */
+	readonly onTenguBombHeroHit?: () => void;
 }
 
 function applyBlastDamage(target: Creature, amount: number, pierceArmor: boolean, context: BombEffectsContext): boolean {
@@ -129,6 +132,12 @@ export function detonateBomb(ground: GroundItem, chained: Set<string>, context: 
 		if (target.isNPC || target.hp <= 0 || !context.level.passable(target.x, target.y) || Roguelike.chebyshevDistance(at, target) > rule.affectedRadius) continue;
 		if (magicalBomb && target.magicImmune) continue;
 		if (applyBlastDamage(target, Math.max(0, Random.normalRange(lo, hi)), false, context)) heroDied = true;
+	}
+	//`BombAbility.act()` fouls the hero on mere presence in the blast, outside the
+	//`dmg > 0` guard - so this presence check ignores the damage roll entirely.
+	if (tengu && context.level.passable(context.hero.x, context.hero.y)
+		&& Roguelike.chebyshevDistance(at, context.hero) <= rule.affectedRadius) {
+		context.onTenguBombHeroHit?.();
 	}
 	const affected = [...context.creatures].filter((target) => !target.isNPC && target.hp > 0 && context.level.passable(target.x, target.y) && Roguelike.chebyshevDistance(at, target) <= rule.affectedRadius);
 	const payload: string = String(variant ?? '');

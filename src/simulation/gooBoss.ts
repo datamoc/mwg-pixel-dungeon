@@ -15,6 +15,9 @@ export interface GooBossContext {
 	readonly messages: {
 		slam: string; pump: string; pumpMore: string;
 	};
+	/** Java clears the bosses-challenge flag when Goo heals in water or lands a
+	 * pumped slam (`Goo.java`, tag `v3.3.8` - found by the 41st matrix). */
+	readonly foulBossChallenge: () => void;
 }
 
 /** Goo's actor turn: healing, pump-up charge turns, and the final amplified slam. */
@@ -25,6 +28,7 @@ export function takeGooTurn(goo: Creature, context: GooBossContext): void {
 		const healed = Math.min(goo.maxHp, goo.hp + healIncrement) - goo.hp;
 		goo.hp += healed;
 		if (healed > 0) context.showHeal(goo, healed);
+		context.foulBossChallenge();
 		if (goo.hp >= goo.maxHp) goo.gooHealInc = 1;
 		else if (context.strongerBosses) goo.gooHealInc = Math.min(3, healIncrement + 1);
 	} else goo.gooHealInc = 1;
@@ -34,6 +38,7 @@ export function takeGooTurn(goo: Creature, context: GooBossContext): void {
 		goo.pumped = 0;
 		const { accuracy, damage } = context.stats(goo);
 		context.say(context.messages.slam, 'warning');
+		context.foulBossChallenge();
 		context.attack({ ...goo, kind: undefined, accuracy: accuracy * 2, damage: [damage[0] * 3, damage[1] * 3] }, context.hero);
 		return;
 	}

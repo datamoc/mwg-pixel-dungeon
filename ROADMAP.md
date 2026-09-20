@@ -592,7 +592,10 @@ was judged not worth the churn against those existing references.
       boss damage that is *not* a plain weapon hit - `DwarfKing.java` 459-467 clears it on an
       unarmed hit without `RingOfForce.fightingUnarmed`, on any `Wand` except `WandOfLightning`, and
       on a `ClericSpell`, with `Goo`/`DM300`/`Pylon`/`Tengu`/`YogDzewa` each carrying their own sites
-      - and read at that boss's death. Original text follows (superseded by the close-out above; kept for the rule description). The badge entries themselves
+      - and read at that boss's death. **Progress 2026-09-20 (41st matrix): the reverse direction is
+      now ported too - `foulBossChallenge()` clears the flag when a boss itself fouls (Goo's water
+      heal and pumped slam, Tengu's bomb blast, fire-cone cell, and shocker pulse on the hero).**
+      Original text follows (superseded by the close-out above; kept for the rule description). The badge entries themselves
       (this port's `src/badges.mwl` is deliberately its own smaller set - one boss badge per chapter,
       no `BOSS_CHALLENGE` rows), and the clearing half's damage-*source* notion, which this port's
       inline monster-damage paths do not thread today. **Complexity: M** for that second half; the
