@@ -112,3 +112,26 @@ export function fleeStep(from: Step, ctx: FleeStepContext): Step | null {
 	}
 	return best;
 }
+
+/** The flee-step reads plus the inside/chasm gates the summon search needs. */
+export interface SummonCellContext extends FleeStepContext {
+	inside: (x: number, y: number) => boolean;
+	isChasm: (x: number, y: number) => boolean;
+}
+
+/**
+ * Closest free cell to the hero among a center plus its neighbours: the shared
+ * core of the EarthGuardian summon placement (which admits the zap target's
+ * own cell) and the Yog-minion summon placement (neighbours only). Moved here
+ * as the file-size refactor's forty-fourth extraction, behavior-identical -
+ * the scene only binds its level, occupants, geometry and hero. Returns
+ * undefined when nothing is free, which is also the callers' refuse signal.
+ */
+export function nearestFreeCell(center: Step, includeCenter: boolean, ctx: SummonCellContext): Step | undefined {
+	const cells = (includeCenter ? [center] : []).concat(
+		ctx.neighbourOffsets.map(([dx, dy]) => ({ x: center.x + dx, y: center.y + dy })),
+	);
+	return cells
+		.filter((at) => ctx.inside(at.x, at.y) && ctx.passable(at.x, at.y) && !ctx.isChasm(at.x, at.y) && !ctx.creatureAt(at.x, at.y))
+		.sort((a, b) => ctx.chebyshev(ctx.hero, a) - ctx.chebyshev(ctx.hero, b))[0];
+}

@@ -1607,6 +1607,18 @@ one.
       sheep/dead/unseen/smoked exclusions and nearest-wins ordering. Sim
       suite green.
       **Complexity: XS.**
+      **Forty-fourth extraction 2026-09-20**: the summon-cell search (free
+      neighbour cells sorted by hero distance) moved to
+      `simulation/wandering.ts` as `nearestFreeCell` behind a
+      `SummonCellContext` (the flee-step reads plus inside/chasm gates, built
+      by spreading `fleeStepContext()`); the EarthGuardian placement (center
+      admitted) and the Yog-minion placement (neighbours only) now share the
+      flow. Net +3 lines in `dungeonScene.ts` (22,534 after);
+      `wandering.ts` 114 to 137. Suites: `tsc` clean first try, item suite
+      green first try with a new drive (nearest-to-hero wins, center
+      admitted/excluded, chasm/occupied/outside refusals, undefined when
+      nothing is free). Sim suite green.
+      **Complexity: XS.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

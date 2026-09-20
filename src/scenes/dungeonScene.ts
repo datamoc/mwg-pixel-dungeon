@@ -198,7 +198,7 @@ import { teleportAppearPlan } from '../simulation/teleportAppear';
 import { evolveElectricity, evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
 import { aggressionTarget as aggressionTargetFlow, amokTarget as amokTargetFlow, beeTarget as beeTargetFlow, findEnemyAlly as findEnemyAllyFlow, nearestVisibleEnemy as nearestVisibleEnemyFlow, selectRangedTarget } from '../simulation/targeting';
-import { fleeStep as fleeStepFlow, isPatrolTargetValid as isPatrolTargetValidFlow, randomPatrolDestination as randomPatrolDestinationFlow, wanderBlocked as wanderBlockedFlow, type FleeStepContext, type WanderingContext } from '../simulation/wandering';
+import { fleeStep as fleeStepFlow, isPatrolTargetValid as isPatrolTargetValidFlow, nearestFreeCell as nearestFreeCellFlow, randomPatrolDestination as randomPatrolDestinationFlow, wanderBlocked as wanderBlockedFlow, type FleeStepContext, type SummonCellContext, type WanderingContext } from '../simulation/wandering';
 import { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLeapCooldown } from '../simulation/ripperLeap';
 import { shouldSuccubusBlink, chooseSuccubusBlinkCell, succubusBlinkCooldown } from '../simulation/succubusBlink';
 import { useBrewFlow, type BrewFlowContext } from '../simulation/brews';
@@ -9787,10 +9787,10 @@ export class DungeonScene extends Scene2D {
 	 * appears in the closest free neighbour of the zap target. */
 	private maybeSummonEarthGuardian(target: Creature): void {
 		if (this.livingEarthArmor < 8 + 4 * this.livingEarthWandLevel) return;
-		const cells = [{ x: target.x, y: target.y }, ...Roguelike.neighbourOffsets(8).map(([dx, dy]) => ({ x: target.x + dx, y: target.y + dy }))]
-			.filter((at) => this.level.inside(at.x, at.y) && this.level.passable(at.x, at.y) && !this.isChasmCell(at.x, at.y) && !this.creatureAt(at.x, at.y))
-			.sort((a, b) => Roguelike.chebyshevDistance(this.hero, a) - Roguelike.chebyshevDistance(this.hero, b));
-		const cell = cells[0];
+		//The summon-cell search lives in `simulation/wandering.ts` as
+		//`nearestFreeCell` - shared with the Yog-minion placement below since the
+		//file-size refactor's forty-fourth extraction, behavior-identical.
+		const cell = nearestFreeCellFlow({ x: target.x, y: target.y }, true, this.summonCellContext());
 		if (!cell) return;
 		const guardian = this.spawnMonster('earthGuardian', cell, false, undefined, true, 'earthGuardian');
 		guardian.earthGuardianWandLevel = this.livingEarthWandLevel;
@@ -11113,6 +11113,14 @@ private eyeBeamTurn(monster: Creature): boolean {
 			neighbourOffsets: Roguelike.neighbourOffsets(8),
 			chebyshev: (a, b) => Roguelike.chebyshevDistance(a, b),
 			hero: { x: this.hero.x, y: this.hero.y },
+		};
+	}
+
+	private summonCellContext(): SummonCellContext {
+		return {
+			...this.fleeStepContext(),
+			inside: (x, y) => this.level.inside(x, y),
+			isChasm: (x, y) => this.isChasmCell(x, y),
 		};
 	}
 
@@ -15719,12 +15727,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		const index = yog.yogSummonIndex ?? 0;
 		const kind = deck[index % deck.length]!;
 		yog.yogSummonIndex = index + 1;
-		const candidates = Roguelike.neighbourOffsets(8)
-			.map(([dx, dy]) => ({ x: yog.x + dx, y: yog.y + dy }))
-			.filter((at) => this.level.inside(at.x, at.y) && this.level.passable(at.x, at.y)
-				&& !this.isChasmCell(at.x, at.y) && !this.creatureAt(at.x, at.y))
-			.sort((a, b) => Roguelike.chebyshevDistance(this.hero, a) - Roguelike.chebyshevDistance(this.hero, b));
-		const at = candidates[0];
+		const at = nearestFreeCellFlow({ x: yog.x, y: yog.y }, false, this.summonCellContext());
 		if (!at) return false;
 		const minion = this.spawnMonster(kind, at);
 		minion.sleeping = false;

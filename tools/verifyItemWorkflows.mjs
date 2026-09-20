@@ -4143,6 +4143,32 @@ const { fleeStep } = require('./simulation/wandering.js');
 	assert.equal(fleeStep({ x: 2, y: 2 }, ctxWith([], [])), null, 'boxed-in stays put');
 	assert.equal(fleeStep({ x: 2, y: 2 }, ctxWith([[1, 1]], [])), null, 'nearer-only stays put');
 }
+// `nearestFreeCell` moved to `simulation/wandering.ts` (the file-size refactor's
+// forty-fourth extraction, behavior-identical, shared by the guardian and Yog
+// summon placements): driven headlessly with scripted terrain - nearest-to-hero
+// wins, center admitted or not per caller, chasm/occupied/outside refusals,
+// undefined when nothing is free.
+const { nearestFreeCell } = require('./simulation/wandering.js');
+{
+	const chebyshev = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+	const offsets = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+	const cellCtx = (open, chasms, occupied) => ({
+		passable: (x, y) => open.some(([ox, oy]) => ox === x && oy === y),
+		creatureAt: (x, y) => (occupied.some(([ox, oy]) => ox === x && oy === y) ? {} : null),
+		neighbourOffsets: offsets,
+		chebyshev,
+		hero: { x: 0, y: 0 },
+		inside: (x, y) => x >= 0 && y >= 0 && x < 5 && y < 5,
+		isChasm: (x, y) => chasms.some(([ox, oy]) => ox === x && oy === y),
+	});
+	assert.deepEqual(nearestFreeCell({ x: 2, y: 2 }, false, cellCtx([[3, 3], [1, 2]], [], [])), { x: 1, y: 2 }, 'nearest-to-hero neighbour wins');
+	assert.deepEqual(nearestFreeCell({ x: 2, y: 2 }, true, cellCtx([[2, 2]], [], [])), { x: 2, y: 2 }, 'admitted center taken when free');
+	assert.deepEqual(nearestFreeCell({ x: 2, y: 2 }, false, cellCtx([[2, 2]], [], [])), undefined, 'excluded center alone is nothing free');
+	assert.deepEqual(nearestFreeCell({ x: 2, y: 2 }, false, cellCtx([[3, 3], [2, 3]], [[3, 3]], [])), { x: 2, y: 3 }, 'chasm skipped for the next');
+	assert.deepEqual(nearestFreeCell({ x: 2, y: 2 }, false, cellCtx([[3, 3], [2, 3]], [], [[2, 3]])), { x: 3, y: 3 }, 'occupied skipped for the next');
+	assert.equal(nearestFreeCell({ x: 2, y: 2 }, false, cellCtx([], [], [])), undefined, 'undefined when nothing is free');
+	assert.equal(nearestFreeCell({ x: 0, y: 0 }, false, cellCtx([[-1, -1]], [], [])), undefined, 'outside cells refused');
+}
 // `findEnemyAlly` moved to `simulation/targeting.ts` (the file-size refactor's
 // forty-third extraction, behavior-identical): driven headlessly with scripted
 // sight and smoke - allies only, sheep/dead/unseen/smoked exclusions,
