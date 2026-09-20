@@ -9430,15 +9430,11 @@ export class DungeonScene extends Scene2D {
 	//`Succubus.getCloser()`: the blink preempts the shared step below (a fleeing
 	//succubus never reaches `Hunting.getCloser`, hence the gate beside the kind).
 	if (monster.kind === 'succubus' && !monster.fleeing && this.trySuccubusBlink(monster, distance)) return;
-		const blocked = new Set(
-			this.creatures.filter((c) => c !== monster && c !== this.hero).map((c) => this.level.index(c.x, c.y))
-		);
-		this.eternalFireBlockedInto(blocked);
-		if (monster.kind === 'piranha') {
-			for (let cell = 0; cell < this.level.cellCount; cell++) {
-				if (this.level.terrain[cell] !== WATER && cell !== this.level.index(this.hero.x, this.hero.y)) blocked.add(cell);
-			}
-		}
+		//The hunting step's blocked set is the same `wanderBlocked(monster, false)` the
+	//wandering branch uses (creatures minus seeker and hero, eternal fire, piranha
+	//water confinement with the hero-cell exception) - shared since the file-size
+	//refactor's thirty-ninth extraction rather than duplicated inline.
+	const blocked = this.wanderBlocked(monster, false);
 
 		const decision = Roguelike.decideMonsterAI(
 			this.level,

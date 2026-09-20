@@ -1551,6 +1551,15 @@ one.
       verdicts, the scripted roll plus the empty-floor undefined). Sim suite
       green.
       **Complexity: S.**
+      **Thirty-ninth extraction 2026-09-20**: the hunting step built its own
+      blocked set inline - line-for-line the `wanderBlocked(monster, false)`
+      shape (creatures minus seeker and hero, eternal fire, piranha water
+      confinement with the hero-cell exception) - now deduped onto the shared
+      helper, behavior-identical. Net -4 lines in `dungeonScene.ts` (22,541
+      after); the thirty-eighth drive already pins both blocked modes, and the
+      sim suite's monster-turn checks cover the hunting path. `tsc` clean,
+      item/sim suites green, build clean.
+      **Complexity: XS.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that
