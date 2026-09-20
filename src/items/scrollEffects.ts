@@ -1,8 +1,12 @@
-import { Roguelike } from 'mwg';
-import { addBuff, type Creature, type Step } from '../combat';
+import { Actors, Roguelike } from 'mwg';
+import { addBuff, type BuffId, type Creature, type Step } from '../combat';
 import { t } from '../i18n/index';
 import { mwlItemEffectValue } from '../mwlContent';
 import { prismaticGuardMaxHp } from '../simulation/prismatic';
+import { empoweringScrollsCharges } from '../talentEffects';
+import { getCurse } from './itemCurses';
+import type { EquippedRing } from './ringModifiers';
+import { selectScrollId } from './scrolls';
 
 /**
  * Scroll effects are item-domain rules. The scene supplies only world services
@@ -148,4 +152,101 @@ export function applyScrollEffect(id: string, context: ScrollEffectsContext): bo
 		return true;
 	}
 	return false;
+}
+
+/**
+ * The scroll-read selection plus dispatch: `readScroll` in the scene, moved here
+ * verbatim as the file-size refactor's twenty-seventh extraction, behavior-identical.
+ * The scene keeps the one-line adapter plus a builder.
+ */
+export interface ReadScrollContext extends ScrollEffectsContext {
+	readonly bag: Actors.Inventory;
+	readonly requestedItemId: string | null;
+	readonly requestedItemInstanceId: string | undefined;
+	readonly heroClass: string;
+	readonly talentRank: (id: string) => number;
+	//Get/set pair (not set-only like TransmuteFlowContext): this builder spreads
+	//scrollEffectsContext(), and a spread literal cannot satisfy a set-only member.
+	get empoweredZaps(): number;
+	set empoweredZaps(zaps: number);
+	readonly itemDisplayName: (id: string, identified: boolean) => string;
+	readonly procIdentifyTalents: () => void;
+	readonly startTransmutationPick: (instanceId: string | undefined) => boolean;
+	get weaponAffix(): string | null;
+	set weaponAffix(affix: string | null);
+	get armorGlyph(): string | null;
+	set armorGlyph(glyph: string | null);
+	/** Live equipped-ring object; the cleanse fallback clears its curse in place. */
+	readonly equippedRing: EquippedRing | null;
+	readonly syncHeroFromStats: () => void;
+}
+
+export function readScrollFlow(context: ReadScrollContext): boolean {
+	const { bag } = context;
+	const selectedScroll = selectScrollId({
+		bag,
+		requestedItemId: context.requestedItemId,
+		say: (line, level) => context.say(line, level === 'info' ? undefined : level),
+	});
+	if (!selectedScroll) return false;
+	//`Talent.EMPOWERING_SCROLLS` (Battlemage/Warlock T3): reading any scroll arms the next
+	//1/2/3 wand zaps at +3 levels (`empoweredZaps`, consumed one per zap in `useSpecial`'s
+	//zap branch). Armed here at selection time rather than at consumption: every branch
+	//below consumes the scroll on a successful read (transmutation inside
+	//`completeTransmutation`, which arms the same way), while a cancelled picker or an
+	//empty eligible list consumes nothing - and arming on a cancelled read would hand out
+	//free charges, so transmutation returns before arming and arms only on success there.
+	//(Identify/effect/cleanse all consume below, so arming here is exact for them.)
+	const armEmpowered = selectedScroll !== 'scrollTransmutation'
+		&& context.heroClass === 'mage' && context.talentRank('empowering_scrolls') > 0;
+	const unidentified = bag.items.find((i) => !i.identified && i.quantity > 0);
+	const id = selectedScroll;
+	if (id === 'scrollUpgrade') {
+		context.say(t('port.log.scrollisforgear'));
+		return false;
+	}
+	//Transmutation targeting and reroll live in `items/transmutation.ts` behind
+	//`TransmuteFlowContext` (file-size refactor) - see `startTransmutationPick`.
+	if (id === 'scrollTransmutation') return context.startTransmutationPick(context.requestedItemInstanceId);
+	bag.remove(id, 1, context.requestedItemInstanceId);
+	if (armEmpowered) context.empoweredZaps = empoweringScrollsCharges(context.talentRank('empowering_scrolls'));
+	if (id === 'scrollIdentify') {
+		if (unidentified) {
+			Actors.identify(unidentified);
+			//**Correction, 2026-09-09 roadmap pass**: a prior audit pass (checking only
+			//Java tags `v3.3.8`/`4.0.0-beta`) wrongly called `test_subject`/`tested_hypothesis`
+			//invented substitutes for the unrelated `PROVOKED_ANGER`/`LINGERING_MAGIC` talents.
+			//They are real, named talents in the version of SPD this checkout's generated
+			//message catalog was actually built from (`actors.hero.talent.test_subject`/
+			//`tested_hypothesis`, real English text still in `src/generated/spdMessages.ts`),
+			//simply absent from the two older tags checked. Both amounts live in
+			//`procIdentifyTalents`, which every identify site shares (see its own comment).
+			const heal = context.heroClass === 'warrior' ? context.talentRank('test_subject') : 0;
+			const charge = context.heroClass === 'mage' ? context.talentRank('tested_hypothesis') : 0;
+			if (heal > 0 || charge > 0) context.procIdentifyTalents();
+			//The old secret-revealing radius here invoked `arcaneVisionRadius()` - removed
+			//outright: real Arcane Vision (Mage T2, `Wand.wandProc()`) marks the ZAPPED
+			//target with `CharAwareness` for `5+5*points` turns, and has no identify/read
+			//interaction at all. Revealing secrets on identify had no Java basis (the same
+			//fabricated-stand-in class as the old Nature's Bounty dew odds). The real
+			//zap-half lives in `useSpecial`'s zap branch now.
+			context.say(t('port.log.identify', { item: context.itemDisplayName(unidentified.id, true) }), 'positive');
+		} else context.say(t('port.log.nothingunidentified'), 'negative');
+	} else if (applyScrollEffect(id, context)) {
+		return true;
+	} else {
+		//ScrollOfRemoveCurse.doRead() is genuinely this branch's effect ('scrollCleanse' hits
+		//it correctly). `ScrollOfTransmutation` has its own transmute branch above, so
+		//this default is only reached by genuinely unknown scroll ids - still Remove
+		//Curse's effect, a deliberate fallback rather than a silent misbehavior.
+		//See `PORT_COVERAGE.md`.
+		for (const b of ['weakness', 'vulnerable', 'hex', 'daze'] as BuffId[]) delete context.hero.buffs[b];
+		for (const item of bag.items) if (item.cursed || getCurse(item.affix ?? '')) Actors.removeAffix(item);
+		if (getCurse(context.weaponAffix ?? '')) context.weaponAffix = null;
+		if (getCurse(context.armorGlyph ?? '')) context.armorGlyph = null;
+		if (context.equippedRing?.cursed) context.equippedRing.cursed = false;
+		context.syncHeroFromStats();
+		context.say(t('port.log.cleanse'), 'positive');
+	}
+	return true;
 }

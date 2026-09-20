@@ -1392,7 +1392,26 @@ one.
       a new headless drive (missing ankh/torch never act, a full skin blesses plus drains with
       the bless line and a turn, a short skin spends nothing with the needsfull line, a torch
       consumes, lights and spends the turn once). No review bugs this slice.
-      **Complexity: XS.**
+      **Complexity: XS.** **Twenty-seventh extraction 2026-09-19**: the scroll-read
+      selection plus dispatch (`readScroll`'s select/priority, upgrade refusal, transmute
+      delegation, identify consume-and-proc, registry dispatch, unknown-id cleanse
+      fallback) moved to `items/scrollEffects.ts` as `readScrollFlow` behind a
+      `ReadScrollContext` extending the existing `ScrollEffectsContext` (bag, requested
+      id/instance, heroClass, talent ranks, empowered-zaps get/set, display name,
+      identify-talent proc, transmute delegate, weapon-affix/armor-glyph get/set, live
+      equipped ring, resync); the scene spreads its existing `scrollEffectsContext()`
+      into the builder and keeps the one-line adapter, dropping the now-unused
+      `selectScrollId`/`empoweringScrollsCharges` imports. Net −41 lines in
+      `dungeonScene.ts` (22,734 after), `scrollEffects.ts` 151 to 252. Suites: `tsc`
+      clean after one real catch (a spread literal cannot satisfy a set-only interface
+      member - TS2322 - so the context carries an empowered-zaps get/set pair with a
+      one-line comment, unlike TransmuteFlowContext's set-only whose literal has no
+      spread), item suite green with a new headless drive (empty-bag and upgrade
+      refusals consume nothing, transmute delegates without arming, identify consumes,
+      identifies, procs and arms for a mage, the nothing-new line, a registry rage read
+      waking and arming, the unknown-id fallback cleansing weakness/weapon/ring curses
+      but not poison). No review bugs this slice.
+      **Complexity: S.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

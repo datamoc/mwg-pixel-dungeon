@@ -16,8 +16,7 @@ import { SceneSimulationAdapter } from '../adapters/sceneSimulation';
 import { dispatchHeroAction, type HeroActionPorts } from '../adapters/heroActions';
 import { BOOMERANG_RETURN_ACC_FACTOR, BOOMERANG_RETURN_TURNS, MISSILE_DEFAULT_QUANTITY, MISSILE_MAX_DURABILITY, bolasCrippleTurns, missileAdjacentAccFactor, missileBaseUses, missileDamageRange, missileFlightArt, missilePickupValid, missileStackFields, missileStackId, recordMissileUpgrade, tippedDartUseDivisor, tomahawkBleedRange, type MissileFlightArt } from '../items/missiles';
 import { eatFood as eatConsumableFood, quaffPotion as quaffConsumablePotion, applyMealEatenEffects, type ConsumableContext } from '../items/consumables';
-import { selectScrollId } from '../items/scrolls';
-import { applyScrollEffect, type ScrollEffectsContext } from '../items/scrollEffects';
+import { applyScrollEffect, readScrollFlow, type ReadScrollContext, type ScrollEffectsContext } from '../items/scrollEffects';
 import { createPotionEffects } from '../items/potionEffects';
 import { placeCandleAtSlot, aimCandleFlow, type CandleContext, type CandleAimContext } from '../items/candles';
 import { throwTenguBomb, useBomb as useItemBomb, aimBombFlow, type BombContext, type BombAimContext } from '../items/bombs';
@@ -120,7 +119,7 @@ import { SpdToolbar } from '../ui/toolbar';
 import { StatusPane } from '../ui/statusPane';
 import { SpdAudio } from '../audio';
 import { onBrightnessChanged, onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../settings';
-import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, empoweringScrollsCharges, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalDefenseShield, lethalHasteDuration, LETHAL_HASTE_COOLDOWN, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, shieldingDewGain, sharedUpgradeArmor, soulSiphonCharge, twinUpgradeArmor, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
+import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalDefenseShield, lethalHasteDuration, LETHAL_HASTE_COOLDOWN, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, shieldingDewGain, sharedUpgradeArmor, soulSiphonCharge, twinUpgradeArmor, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
 import pixelFontUrl from '../assets/pixel_font.ttf';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth, SpdRandom } from '../spdRng';
 import {
@@ -5343,76 +5342,36 @@ export class DungeonScene extends Scene2D {
 	}
 
 	/**
-	 * Reads the best scroll for the moment (identify first while anything is unidentified,
-	 * then rage/lullaby/mapping/mirror/cleanse/upgrade in bag order). ScrollOfRage beckons
-	 * (wakes) everything, Lullaby applies five-turn Drowsy before MagicalSleep, Mapping reveals
-	 * traps (mob-reveal needs the mob layer UI), MirrorImage
-	 * is a 10-turn bless ("your reflections guard you" - no image-actor AI exists to move
-	 * real duplicates), RemoveCurse clears weakness/vulnerability, Upgrade is U's action.
+	 * The scroll-read selection plus dispatch lives in `items/scrollEffects.ts` as
+	 * `readScrollFlow` behind `ReadScrollContext` - the file-size refactor's
+	 * twenty-seventh extraction, behavior-identical. The scene only builds the
+	 * context here.
 	 */
 	private readScroll(): boolean {
-		const selectedScroll = selectScrollId({ bag: this.bag, requestedItemId: this.requestedItemId, say: this.say.bind(this) });
-		if (!selectedScroll) return false;
-		//`Talent.EMPOWERING_SCROLLS` (Battlemage/Warlock T3): reading any scroll arms the next
-		//1/2/3 wand zaps at +3 levels (`empoweredZaps`, consumed one per zap in `useSpecial`'s
-		//zap branch). Armed here at selection time rather than at consumption: every branch
-		//below consumes the scroll on a successful read (transmutation inside
-		//`completeTransmutation`, which arms the same way), while a cancelled picker or an
-		//empty eligible list consumes nothing - and arming on a cancelled read would hand out
-		//free charges, so transmutation returns before arming and arms only on success there.
-		//(Identify/effect/cleanse all consume below, so arming here is exact for them.)
-		const armEmpowered = selectedScroll !== 'scrollTransmutation'
-			&& this.heroClass === 'mage' && this.talentRank('empowering_scrolls') > 0;
-		const unidentified = this.bag.items.find((i) => !i.identified && i.quantity > 0);
-		const id = selectedScroll;
-		if (id === 'scrollUpgrade') {
-			this.say(t('port.log.scrollisforgear'));
-			return false;
-		}
-		//Transmutation targeting and reroll live in `items/transmutation.ts` behind
-		//`TransmuteFlowContext` (file-size refactor) - see `startTransmutationPick`.
-		if (id === 'scrollTransmutation') return startTransmutationPick(this.transmuteFlowContext(), this.requestedItemInstanceId);
-		this.bag.remove(id, 1, this.requestedItemInstanceId);
-		if (armEmpowered) this.empoweredZaps = empoweringScrollsCharges(this.talentRank('empowering_scrolls'));
-		if (id === 'scrollIdentify') {
-			if (unidentified) {
-				Actors.identify(unidentified);
-				//**Correction, 2026-09-09 roadmap pass**: a prior audit pass (checking only
-				//Java tags `v3.3.8`/`4.0.0-beta`) wrongly called `test_subject`/`tested_hypothesis`
-				//invented substitutes for the unrelated `PROVOKED_ANGER`/`LINGERING_MAGIC` talents.
-				//They are real, named talents in the version of SPD this checkout's generated
-				//message catalog was actually built from (`actors.hero.talent.test_subject`/
-				//`tested_hypothesis`, real English text still in `src/generated/spdMessages.ts`),
-				//simply absent from the two older tags checked. Both amounts live in
-				//`procIdentifyTalents`, which every identify site shares (see its own comment).
-				const heal = this.heroClass === 'warrior' ? this.talentRank('test_subject') : 0;
-				const charge = this.heroClass === 'mage' ? this.talentRank('tested_hypothesis') : 0;
-				if (heal > 0 || charge > 0) this.procIdentifyTalents();
-				//The old secret-revealing radius here invoked `arcaneVisionRadius()` - removed
-				//outright: real Arcane Vision (Mage T2, `Wand.wandProc()`) marks the ZAPPED
-				//target with `CharAwareness` for `5+5*points` turns, and has no identify/read
-				//interaction at all. Revealing secrets on identify had no Java basis (the same
-				//fabricated-stand-in class as the old Nature's Bounty dew odds). The real
-				//zap-half lives in `useSpecial`'s zap branch now.
-				this.say(t('port.log.identify', { item: this.itemDisplayName(unidentified.id, true) }), 'positive');
-			} else this.say(t('port.log.nothingunidentified'), 'negative');
-		} else if (applyScrollEffect(id, this.scrollEffectsContext())) {
-			return true;
-		} else {
-			//ScrollOfRemoveCurse.doRead() is genuinely this branch's effect ('scrollCleanse' hits
-			//it correctly). `ScrollOfTransmutation` has its own transmute branch above, so
-			//this default is only reached by genuinely unknown scroll ids - still Remove
-			//Curse's effect, a deliberate fallback rather than a silent misbehavior.
-			//See `PORT_COVERAGE.md`.
-			for (const b of ['weakness', 'vulnerable', 'hex', 'daze'] as BuffId[]) delete this.hero.buffs[b];
-			for (const item of this.bag.items) if (item.cursed || getCurse(item.affix ?? '')) Actors.removeAffix(item);
-			if (getCurse(this.weaponAffix ?? '')) this.weaponAffix = null;
-			if (getCurse(this.armorGlyph ?? '')) this.armorGlyph = null;
-			if (this.equippedRing?.cursed) this.equippedRing.cursed = false;
-			this.syncHeroFromStats();
-			this.say(t('port.log.cleanse'), 'positive');
-		}
-		return true;
+		return readScrollFlow(this.readScrollContext());
+	}
+
+	private readScrollContext(): ReadScrollContext {
+		const scene = this;
+		return {
+			...scene.scrollEffectsContext(),
+			bag: scene.bag,
+			requestedItemId: scene.requestedItemId,
+			requestedItemInstanceId: scene.requestedItemInstanceId,
+			heroClass: scene.heroClass,
+			talentRank: (id) => scene.talentRank(id),
+			get empoweredZaps() { return scene.empoweredZaps; },
+			set empoweredZaps(zaps: number) { scene.empoweredZaps = zaps; },
+			itemDisplayName: (id, identified) => scene.itemDisplayName(id, identified),
+			procIdentifyTalents: () => scene.procIdentifyTalents(),
+			startTransmutationPick: (instanceId) => startTransmutationPick(scene.transmuteFlowContext(), instanceId),
+			get weaponAffix() { return scene.weaponAffix; },
+			set weaponAffix(affix: string | null) { scene.weaponAffix = affix; },
+			get armorGlyph() { return scene.armorGlyph; },
+			set armorGlyph(glyph: string | null) { scene.armorGlyph = glyph; },
+			equippedRing: scene.equippedRing,
+			syncHeroFromStats: () => scene.syncHeroFromStats(),
+		};
 	}
 
 	private scrollEffectsContext(): ScrollEffectsContext {

@@ -82,6 +82,11 @@ compile(join(root, 'src/items/spells.ts'), 'items/spells.js');
 compile(join(root, 'src/items/honeypot.ts'), 'items/honeypot.js');
 compile(join(root, 'src/items/bombs.ts'), 'items/bombs.js');
 compile(join(root, 'src/items/selfUse.ts'), 'items/selfUse.js');
+//`readScrollFlow` pulls `selectScrollId`, the prismatic max-HP table and the real
+//talent/curse helpers; `../combat` stays stubbed (this drive never observes addBuff).
+compile(join(root, 'src/items/scrolls.ts'), 'items/scrolls.js');
+compile(join(root, 'src/simulation/prismatic.ts'), 'simulation/prismatic.js');
+compile(join(root, 'src/items/scrollEffects.ts'), 'items/scrollEffects.js');
 //`spells.js` upgrades through `itemWorkflows.js` by its real name, while the suite otherwise
 //only compiles that module as `workflows.js` (line 26) - recompiling it here under its own
 //name is the same idempotent write.
@@ -3321,6 +3326,127 @@ function talismanDrive(overrides = {}) {
 	openFlowRecipes(brokeScene);
 	assert.equal(brokePicks, 0, 'no recipes, no picker');
 	assert.ok(flowSaid.some((s) => s.line === 'port.log.alchemy.noingredients'), 'the empty pot says so');
+// The scroll-read selection plus dispatch moved to `items/scrollEffects.ts` as
+// `readScrollFlow` (the file-size refactor's twenty-seventh extraction,
+// behavior-identical): driven headlessly with a real Inventory and scripted scene
+// callbacks - selection priority, upgrade refusal, transmute delegation without
+// arming, identify consume-and-proc with mage zap-arming, the nothing-new line,
+// a registry read, and the unknown-id cleanse fallback.
+const { readScrollFlow } = require('./items/scrollEffects.js');
+const { empoweringScrollsCharges } = require('./talentEffects.js');
+const { getWeaponCurses: scrollCurses } = require('./items/itemCurses.js');
+function scrollReadDrive(overrides = {}) {
+	const said = [];
+	const flags = {
+		synced: 0, procIdentify: 0, transmuteCalls: [],
+		empowered: 0, weaponAffix: overrides.weaponAffix ?? null, armorGlyph: null,
+	};
+	const hero = { buffs: { ...(overrides.heroBuffs ?? {}) } };
+	const bag = new Inventory();
+	for (const item of overrides.items ?? []) bag.add(item);
+	const ring = overrides.ring ?? null;
+	const ctx = {
+		hero,
+		creatures: overrides.creatures ?? [],
+		level: { width: 5, height: 5, passable: () => true },
+		fov: { isVisible: () => true, revealAll: () => {} },
+		secrets: { isSecret: () => false, discover: () => {} },
+		isChasmCell: () => false,
+		creatureAt: () => undefined,
+		spawnMirrorImage: () => {},
+		randomFreeCell: () => undefined,
+		moveTo: () => {},
+		playTeleportAppear: () => {},
+		restitchAllTiles: () => {},
+		showDamage: () => {},
+		showHeal: () => {},
+		kill: () => {},
+		say: (line, level) => { said.push(`${level}:${line}`); },
+		heroLevel: 1,
+		grantPrismaticGuard: () => {},
+		bag,
+		requestedItemId: overrides.requestedItemId ?? null,
+		requestedItemInstanceId: undefined,
+		heroClass: overrides.heroClass ?? 'warrior',
+		talentRank: (id) => (overrides.ranks ?? {})[id] ?? 0,
+		get empoweredZaps() { return flags.empowered; },
+		set empoweredZaps(zaps) { flags.empowered = zaps; },
+		itemDisplayName: (id) => id,
+		procIdentifyTalents: () => { flags.procIdentify++; },
+		startTransmutationPick: (instanceId) => { flags.transmuteCalls.push(instanceId); return overrides.transmuteResult ?? true; },
+		get weaponAffix() { return flags.weaponAffix; },
+		set weaponAffix(affix) { flags.weaponAffix = affix; },
+		get armorGlyph() { return flags.armorGlyph; },
+		set armorGlyph(glyph) { flags.armorGlyph = glyph; },
+		equippedRing: ring,
+		syncHeroFromStats: () => { flags.synced++; },
+		...overrides.ctx,
+	};
+	const result = readScrollFlow(ctx);
+	return { result, ctx, said, flags, hero, bag, ring };
+}
+{
+	const empty = scrollReadDrive();
+	assert.equal(empty.result, false, 'no scrolls, no read');
+	assert.ok(empty.said.some((l) => l.includes('port.log.noscroll')), 'saying so');
+	const forge = scrollReadDrive({ items: [{ id: 'scrollUpgrade', quantity: 1, identified: true }] });
+	assert.equal(forge.result, false, 'upgrade reads refuse');
+	assert.ok(forge.said.some((l) => l.includes('port.log.scrollisforgear')), 'pointing at gear');
+	assert.equal(forge.bag.find('scrollUpgrade')?.quantity ?? 0, 1, 'refusing consumes nothing');
+	const transmute = scrollReadDrive({
+		items: [{ id: 'scrollTransmutation', quantity: 1, identified: true }],
+		heroClass: 'mage', ranks: { empowering_scrolls: 2 }, transmuteResult: false,
+	});
+	assert.equal(transmute.result, false, 'the transmute verdict passes through');
+	assert.deepEqual(transmute.flags.transmuteCalls, [undefined], 'delegating with the instance');
+	assert.equal(transmute.flags.empowered, 0, 'delegating arms nothing');
+	assert.equal(transmute.bag.find('scrollTransmutation')?.quantity ?? 0, 1, 'and consumes nothing');
+	const identify = scrollReadDrive({
+		items: [
+			{ id: 'scrollIdentify', quantity: 1, identified: true },
+			{ id: 'scrollRage', quantity: 1 },
+		],
+		ranks: { test_subject: 1 },
+	});
+	assert.equal(identify.result, true, 'identify reads');
+	assert.equal(identify.bag.find('scrollIdentify')?.quantity ?? 0, 0, 'consuming the scroll');
+	assert.equal(identify.bag.find('scrollRage')?.identified, true, 'identifying the unknown');
+	assert.equal(identify.flags.procIdentify, 1, 'proccing the warrior identify talent');
+	assert.equal(identify.flags.empowered, 0, 'a warrior arms no zaps');
+	assert.ok(identify.said.some((l) => l.includes('port.log.identify')), 'with the identify line');
+	const known = scrollReadDrive({
+		items: [{ id: 'scrollIdentify', quantity: 1, identified: true }],
+		requestedItemId: 'scrollIdentify',
+	});
+	assert.equal(known.result, true, 'reading with nothing new still reads');
+	assert.ok(known.said.some((l) => l.includes('port.log.nothingunidentified')), 'saying so');
+	const mob = { isHero: false, isNPC: false, isAlly: false, sleeping: true, seesHero: false, x: 1, y: 1 };
+	const rage = scrollReadDrive({
+		items: [{ id: 'scrollRage', quantity: 1, identified: true }],
+		heroClass: 'mage', ranks: { empowering_scrolls: 2 }, creatures: [mob],
+	});
+	assert.equal(rage.result, true, 'a registry read reads');
+	assert.equal(rage.flags.empowered, empoweringScrollsCharges(2), 'a mage arms zaps on the read');
+	assert.equal(mob.sleeping, false, 'rage wakes');
+	assert.equal(mob.seesHero, true, 'and beckons');
+	assert.ok(rage.said.some((l) => l.includes('port.log.rage')), 'with the rage line');
+	const curseId = scrollCurses()[0].id;
+	const ring = { id: 'ringMight', level: 0, cursed: true };
+	const fallback = scrollReadDrive({
+		items: [
+			{ id: 'scrollMystery', quantity: 1, identified: true },
+			{ id: 'sword', quantity: 1, identified: true, cursed: true },
+		],
+		heroBuffs: { weakness: 3, poison: 2 },
+		weaponAffix: curseId, ring,
+	});
+	assert.equal(fallback.result, true, 'an unknown scroll still reads');
+	assert.deepEqual(fallback.hero.buffs, { poison: 2 }, 'cleansing weakness but not poison');
+	assert.equal(fallback.ctx.weaponAffix, null, 'lifting the weapon curse');
+	assert.equal(ring.cursed, false, 'and the ring curse');
+	assert.equal(fallback.flags.synced, 1, 'resyncing the hero');
+	assert.ok(fallback.said.some((l) => l.includes('port.log.cleanse')), 'with the cleanse line');
+}
 	// `PotionOfShroudingFog.shatter()` (tag `v3.3.8`) through the quaff registry: 180
 	// SmokeScreen on every open neighbour, the center taking 180 plus 180 per wall.
 	compile(join(root, 'src/dungeonConstants.ts'), 'dungeonConstants.js');
