@@ -27,6 +27,7 @@ export const BUFF_DURATION_DATA = {
   "frostImbue": 15,
   "fireImbue": 15,
   "toxicImbue": 15,
+  "blobImmunity": 10,
   "adrenalineSurge": 200,
   "mindvision": 20,
   "terror": 20,

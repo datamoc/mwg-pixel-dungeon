@@ -6214,10 +6214,9 @@ export class DungeonScene extends Scene2D {
 		if (burning.length > 0) this.featuresMap?.setLayerData('features', this.featureFrames());
 		//`Fire.burn(pos)` runs for every burning cell every turn, and what it does to a char is
 		//`Buff.affect(ch, Burning.class).reignite(ch)` - a *prolong*, not a one-shot grant, so
-		//standing in fire keeps a full burn armed and stepping out of it leaves the whole 8 turns
-		//running. This port used to grant the buff once and never refresh it, which made fire a
-		//single short burn however long the target stayed in it.
-		if (this.fire.volumeAt(this.hero.x, this.hero.y) >= 1) {
+		//standing in fire keeps a full burn armed and stepping out leaves the whole 8 turns running;
+		//this port used to grant it once, making fire a single short burn however long the target stayed.
+		if (this.fire.volumeAt(this.hero.x, this.hero.y) >= 1 && this.hero.buffs.blobImmunity === undefined) {
 			const fresh = this.hero.buffs['burning'] === undefined;
 			reigniteBuff(this.hero, 'burning');
 			if (fresh) this.say(t('port.log.firecatches'), 'negative');
@@ -6229,7 +6228,7 @@ export class DungeonScene extends Scene2D {
 			if (creature.kind === 'elemental' || creature.kind === 'newbornElemental') continue;
 			//`Fire.burn()` gates its ignition on `!ch.isImmune(Fire.class)`, and a creature with
 			//`BlobImmunity` is immune to every harmful blob - so the spirit hawk never catches fire.
-			if (BLOB_IMMUNE_KINDS.has(creature.kind as AnyMonsterId)) continue;
+			if (BLOB_IMMUNE_KINDS.has(creature.kind as AnyMonsterId) || creature.buffs.blobImmunity !== undefined) continue;
 			if (this.fire.volumeAt(creature.x, creature.y) >= 1) reigniteBuff(creature, 'burning');
 		}
 		//EternalFire.evolve()'s ignition half: any char on a burning wall cell catches fire
@@ -6243,7 +6242,7 @@ export class DungeonScene extends Scene2D {
 		if (this.eternalFire.total() > 0) {
 			//Java's eternal wall fire is one of the three sites that pass their own duration:
 			//`MagicalFireRoom.EternalFire.evolve()` is `Burning.reignite(ch, 4f)`
-			if (this.eternalFire.volumeAt(this.hero.x, this.hero.y) >= 1) {
+			if (this.eternalFire.volumeAt(this.hero.x, this.hero.y) >= 1 && this.hero.buffs.blobImmunity === undefined) {
 				const fresh = this.hero.buffs['burning'] === undefined;
 				reigniteBuff(this.hero, 'burning', ETERNAL_FIRE_BURN);
 				if (fresh) this.say(t('port.log.firecatches'), 'negative');
@@ -6253,7 +6252,7 @@ export class DungeonScene extends Scene2D {
 				if (creature.kind === 'elemental' || creature.kind === 'newbornElemental') continue;
 				//`MagicalFireRoom.EternalFire.evolve()` checks `isImmune(EternalFire.class)` the
 				//same way `Fire.burn()` does, and `BlobImmunity` lists `EternalFire` explicitly.
-				if (BLOB_IMMUNE_KINDS.has(creature.kind as AnyMonsterId)) continue;
+				if (BLOB_IMMUNE_KINDS.has(creature.kind as AnyMonsterId) || creature.buffs.blobImmunity !== undefined) continue;
 				if (this.eternalFire.volumeAt(creature.x, creature.y) >= 1) reigniteBuff(creature, 'burning', ETERNAL_FIRE_BURN);
 			}
 		}
@@ -6399,6 +6398,7 @@ export class DungeonScene extends Scene2D {
 				|| (target.kind === 'yogFist' && target.yogFistType === 'rusted')
 				|| (target.kind === 'yog' && this.yogShielded(target))
 				|| (target.kind === 'yogFist' && this.guardFist(target)),
+			isBlobImmune: (target) => target.buffs.blobImmunity !== undefined || (target.kind !== undefined && BLOB_IMMUNE_KINDS.has(target.kind as AnyMonsterId)),
 			applyDamage: (target, damage, cause = 'poison') => {
 				if (target.isHero) {
 					const blocked = this.absorbHeroDamage(damage);
@@ -11901,7 +11901,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		//Java fouls the hero on the cone cell even when fire-immune (the foul sits
 		//outside the `!isImmune(Fire)` burn guard), so foul before the immunity return.
 		if (occupant.isHero) this.foulBossChallenge();
-		if (occupant.fireImmune) return;
+		if (occupant.fireImmune || occupant.buffs.blobImmunity !== undefined) return;
 		reigniteBuff(occupant, 'burning');
 	}
 
@@ -16026,7 +16026,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * (own FOV plus the hawk-shared cells; Java has no sharing, so the merged set is
 	 * pruned as one) and the fist-teleport search's own. */
 	private pruneSmokeFromSight(fov: Roguelike.FieldOfView, hx: number, hy: number): void {
-		if (this.smokeScreen.total() <= 0) return;
+		if (this.smokeScreen.total() <= 0 || this.hero.buffs.blobImmunity !== undefined) return;
 		for (const index of [...fov.visible]) {
 			const x = index % this.level.width, y = Math.floor(index / this.level.width);
 			if ((x !== hx || y !== hy) && this.smokeBlocksSight(hx, hy, x, y)) {

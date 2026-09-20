@@ -29,6 +29,8 @@ export interface EnvironmentalBlobsContext {
 	corrosiveStrength: () => number;
 	toxicDamage: (target: Creature) => number;
 	isToxicImmune: (target: Creature) => boolean;
+	/** `BlobImmunity` covers every harmful environmental blob; optional for headless callers. */
+	isBlobImmune?: (target: Creature) => boolean;
 	/** Java's IMMOVABLE immunity to Vertigo: the confusion-gas daze here IS Vertigo's
 	 *  stand-in, so immovable kinds refuse it - while daze from every other source (prismatic
 	 *  light, fists, plants) still lands, since those are not Vertigo. Optional so headless
@@ -89,7 +91,7 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 			continue;
 		}
 		const target = context.creatureAt(cell.x, cell.y);
-		if (target) context.reigniteBurning?.(target);
+		if (target && !context.isBlobImmune?.(target)) context.reigniteBurning?.(target);
 		if (context.isFlammableCell?.(cell.x, cell.y)) context.destroyFlammableCell?.(cell.x, cell.y);
 		for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
 			const x = cell.x + dx, y = cell.y + dy;
@@ -109,11 +111,11 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 			continue;
 		}
 		const target = context.creatureAt(cell.x, cell.y);
-		if (target) { context.applyChill?.(target); context.applyChill?.(target); }
+		if (target && !context.isBlobImmune?.(target)) { context.applyChill?.(target); context.applyChill?.(target); }
 	}
 	for (const cell of context.cellsAbove('plantGas', 1)) {
 		const target = context.creatureAt(cell.x, cell.y);
-		if (target) context.addBuff(target, 'poison');
+		if (target && !context.isBlobImmune?.(target)) context.addBuff(target, 'poison');
 	}
 	//`Freezing.evolve()` (tag `v3.3.8`): live cells clear `Fire` and chill occupants
 	//(the shared chill-then-Frost step - this loop used to grant raw paralysis, which
@@ -121,29 +123,29 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 	for (const cell of context.cellsAbove('plantFreeze', 0.5)) {
 		context.clearFireCell?.(cell.x, cell.y);
 		const target = context.creatureAt(cell.x, cell.y);
-		if (target) context.applyChill?.(target);
+		if (target && !context.isBlobImmune?.(target)) context.applyChill?.(target);
 	}
 	for (const cell of context.cellsAbove('toxicGas', 0.0001)) {
 		const target = context.creatureAt(cell.x, cell.y);
-		if (!target || target.hp <= 0 || context.isToxicImmune(target)) continue;
+		if (!target || target.hp <= 0 || context.isToxicImmune(target) || context.isBlobImmune?.(target)) continue;
 		if (!context.applyDamage(target, context.toxicDamage(target))) return;
 	}
 	for (const cell of context.cellsAbove('paralyticGas', 0.0001)) {
 		const target = context.creatureAt(cell.x, cell.y);
-		if (target) context.addBuff(target, 'paralysis');
+		if (target && !context.isBlobImmune?.(target)) context.addBuff(target, 'paralysis');
 	}
 	for (const cell of context.cellsAbove('stenchGas', 0.0001)) {
 		const target = context.creatureAt(cell.x, cell.y);
-		if (target) context.addBuff(target, 'paralysis', STENCH_PARALYSIS_DURATION);
+		if (target && !context.isBlobImmune?.(target)) context.addBuff(target, 'paralysis', STENCH_PARALYSIS_DURATION);
 	}
 	for (const cell of context.cellsAbove('corrosiveGas', 0.0001)) {
 		const target = context.creatureAt(cell.x, cell.y);
-		if (target) context.applyCorrosion(target, context.corrosiveStrength());
+		if (target && !context.isBlobImmune?.(target)) context.applyCorrosion(target, context.corrosiveStrength());
 	}
 	for (const cell of context.cellsAbove('confusionGas', 0.0001)) {
 		const target = context.creatureAt(cell.x, cell.y);
 		// ConfusionGas.prolongs Vertigo for 2 turns; daze is this port's movement-confusion stand-in.
-		if (!target || context.isVertigoImmune?.(target)) continue;
+		if (!target || context.isVertigoImmune?.(target) || context.isBlobImmune?.(target)) continue;
 		context.addBuff(target, 'daze', 2);
 	}
 	//`Web` terrain (`Spinner`'s ranged web, tag `v3.3.8`): Java seeds a persistent 3-cell web
@@ -154,7 +156,7 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 	//observably the same single rooting, since the web is gone before the next move.
 	for (const cell of context.cellsAbove('web', 0.0001)) {
 		const target = context.creatureAt(cell.x, cell.y);
-		if (!target || target.kind === 'spinner') continue;
+		if (!target || target.kind === 'spinner' || context.isBlobImmune?.(target)) continue;
 		context.clearCell?.('web', cell.x, cell.y);
 		context.addBuff(target, 'roots', 5);
 	}
@@ -168,7 +170,7 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 		//`Feint.AfterImage` carries the whole `BlobImmunity` set (tag `v3.3.8`); the
 		//paralysis half is refused by `buffBlocked`, this skips the direct zap (the decoy
 		//spawns as a rat, so the kind-keyed sets cannot see it).
-		if (!target || target.hp <= 0 || target.allyKind === 'afterImage') continue;
+		if (!target || target.hp <= 0 || target.allyKind === 'afterImage' || context.isBlobImmune?.(target)) continue;
 		const charge = context.amountAt('electricity', cell.x, cell.y);
 		if (target.buffs?.['paralysis'] === undefined) context.addBuff(target, 'paralysis', charge);
 		if (charge % 2 === 1 && !context.applyDamage(target, context.electricDamage(target), 'electricity')) return;

@@ -150,9 +150,9 @@ export function runHeroPlantEffect(
 			//same nine-buff detach the potion, the well and the ankh share, so it runs the
 			//shared helper rather than its own list (which wrongly cleared Burning, which
 			//Java never cures, and missed Bleeding/Blindness/Drowsy, which it does). The
-			//Warden's `BlobImmunity.DURATION/2f` needs a hero-side blob-immunity seam that
-			//does not exist yet - recorded in the matrix, not silently dropped.
+			//Warden's `BlobImmunity.DURATION/2f` is the Java Mageroyal half-duration (10 turns).
 			ctx.cureHero();
+			if (ctx.subclass() === 'warden') ctx.grantBuff(hero, 'blobImmunity');
 			ctx.say(ctx.t('port.log.mageroyalclear'), 'positive');
 			break;
 		case 'icecap':

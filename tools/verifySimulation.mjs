@@ -340,10 +340,12 @@ check('the moved hero plant-effect switch fires every branch', () => {
 	assert.equal(r.hero.buffs.roots, undefined, 'roots detach even with nowhere to go');
 	assert.equal(r.rec.moved, null);
 	assert.equal(r.rec.said.length, 1, 'the line still says with no destination');
-	//Mageroyal runs the shared cure, nothing else.
+	//Mageroyal runs the shared cure; Warden also receives the Java half-duration immunity.
 	r = drive('mageroyal');
 	assert.equal(r.rec.cured, true);
 	assert.deepEqual(r.rec.grants, []);
+	r = drive('mageroyal', {}, 'warden');
+	assert.deepEqual(r.rec.grants, [['blobImmunity', undefined]]);
 	//Icecap freezes all nine passable neighbours and marks the 3x3.
 	r = drive('icecap');
 	assert.equal(r.rec.freezes.length, 9);
@@ -714,6 +716,26 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		});
 		assert.deepEqual(advanced, ['plantGas', 'plantFreeze', 'toxicGas', 'paralyticGas', 'stenchGas', 'corrosiveGas', 'confusionGas', 'web', 'electricity', 'smokeScreen', 'inferno', 'blizzard']);
 		assert.deepEqual(buffs, [[target, 'paralysis', 2], [target, 3]]);
+	});
+	check('Warden BlobImmunity blocks every shared harmful blob effect', () => {
+		const target = { hp: 10, buffs: { blobImmunity: 10 } };
+		const applied = [];
+		const blobs = ['plantGas', 'plantFreeze', 'toxicGas', 'paralyticGas', 'stenchGas', 'corrosiveGas', 'confusionGas', 'web', 'electricity', 'inferno', 'blizzard'];
+		applyEnvironmentalBlobs({
+			creatures: [], passable: () => true, advance: () => {},
+			cellsAbove: (blob) => blobs.includes(blob) ? [{ x: 1, y: 1 }] : [],
+			creatureAt: () => target,
+			addBuff: (...args) => applied.push(['buff', ...args]),
+			applyCorrosion: (...args) => applied.push(['corrosion', ...args]),
+			corrosiveStrength: () => 3, toxicDamage: () => 1, isToxicImmune: () => false,
+			isBlobImmune: (creature) => creature.buffs.blobImmunity !== undefined,
+			applyDamage: (...args) => applied.push(['damage', ...args]) || true,
+			applyChill: (...args) => applied.push(['chill', ...args]),
+			reigniteBurning: (...args) => applied.push(['fire', ...args]),
+			clearCell: () => {},
+			amountAt: () => 0,
+		});
+		assert.deepEqual(applied, []);
 	});
 	check('Webs root once, consume the cell, and let spinners through', () => {
 		//`Level.occupyCell()` (tag `v3.3.8`): stepping on web clears the cell

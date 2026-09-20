@@ -1286,7 +1286,7 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 	// Buff durations (buff-rules.mwl): durations with a Java `DURATION` constant match it
 	// verbatim here (Bless/Hex 30, Daze 5, Chill/Frost 10, Drowsy 5, Weakness/Vulnerable 20,
 	// Burning 8, Levitation 20, FeatherFall 50, Invisibility 20, Recharging 30, AdrenalineSurge
-	// 200, MindVision 20, ToxicImbue 15 (50 * 0.3 from Sorrowmoss), Terror 20, Amok 5 via ScrollOfRage, Aggression 20, Awareness 2, Haste
+	// 200, MindVision 20, ToxicImbue 15 (50 * 0.3 from Sorrowmoss), BlobImmunity 10 (20 * 0.5 from Mageroyal), Terror 20, Amok 5 via ScrollOfRage, Aggression 20, Awareness 2, Haste
 	// 20, Degrade 30, Ooze 20, Wayward 10, Charm 10, Light 250, Invulnerability 3, HazardAssistTracker 50,
 	// SpectatorFreeze/DuelParticipant 10, EliminationMatchTracker 3, Cripple 10 (`Cripple.DURATION`; the explicit-4 sites pass their own duration at the call site) - all tag `v3.3.8`). The rest are the
 	// port's own documented conventions, not Java values: paralysis 3 / roots 3 each
@@ -1306,7 +1306,7 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 			bless: 30, hex: 30, daze: 5, chill: 10, frost: 10, drowsy: 5, magicalSleep: 0, fury: 9999,
 			berserk: 9999, weakness: 20, vulnerable: 20, burning: 8, poison: 6, bleeding: 0, cripple: 10,
 			paralysis: 3, roots: 3, levitation: 20, featherFall: 50, invisibility: 20, cloak: 9999,
-			focus: 9999, recharging: 30, frostImbue: 15, fireImbue: 15, toxicImbue: 15, adrenalineSurge: 200, mindvision: 20,
+			focus: 9999, recharging: 30, frostImbue: 15, fireImbue: 15, toxicImbue: 15, blobImmunity: 10, adrenalineSurge: 200, mindvision: 20,
 			terror: 20, amok: 5, aggression: 20, awareness: 2, haste: 20, degrade: 30, ooze: 20,
 			wayward: 10, soulmark: 10, charm: 10, lethalHasteCooldown: 100, blindness: 10, light: 250, invulnerability: 3,
 			feintConfusion: 2, counterAbility: 3, hazardAssist: 50,

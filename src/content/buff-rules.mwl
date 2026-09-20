@@ -172,6 +172,13 @@
           },
           {
             tag: "row",
+            // `BlobImmunity.DURATION` is 20; Mageroyal grants half of it to Warden.
+            // `BlobImmunity.java`/`Mageroyal.java`, tag `v3.3.8`.
+            buff: "blobImmunity",
+            duration: 10,
+          },
+          {
+            tag: "row",
             buff: "adrenalineSurge",
             duration: 200,
           },
