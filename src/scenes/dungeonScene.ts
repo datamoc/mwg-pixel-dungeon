@@ -177,6 +177,7 @@ import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
 import { TitleScene } from '../scenes/titleScene';
 import { ClassSelectScene } from '../scenes/classSelectScene';
 import { menuScale } from '../ui/spdButton';
+import { drawAimPreview } from '../ui/aimOverlay';
 import { applyDM300DeathUnseal, applyGooDeathUnseal, applyKingDeathUnseal, applyYogDeathUnseal, repairBossUnsealStairs, type BossUnsealContext } from './bossUnseal';
 import { openGameMenu as openGameMenuWindow } from '../ui/gameMenu';
 import { showChoiceWindow, showConfirmWindow } from '../ui/portWindows';
@@ -1906,11 +1907,8 @@ export class DungeonScene extends Scene2D {
 	 * `PORT_COVERAGE.md`).
 	 */
 	private gameWindows = new WindowStack();
-	/**
-	 * `PixelScene.defaultZoom` for windows: the same integer `menuScale` the title scene applies
-	 * to its own `WindowStack`. Every window here is authored at Java's native pixel sizes (6-9 px
-	 * text), so an unscaled stack drew them at 1x - unreadable next to the 2x HUD art.
-	 */
+	/** `PixelScene.defaultZoom` for windows: the title scene's `menuScale`. Windows are authored at native 6-9 px
+	 * text, so an unscaled stack drew them at 1x - unreadable next to the 2x HUD art. */
 	private windowZoom = menuScale(Game.current.width, Game.current.height);
 	/** The logical (pre-zoom) size a window is laid out and placed in. */
 	private windowViewport(): { width: number; height: number } {
@@ -7048,6 +7046,8 @@ export class DungeonScene extends Scene2D {
 			}
 			this.beginAiming({
 				range,
+				initial: this.creatures.filter(validTarget)
+					.sort((a, b) => Roguelike.chebyshevDistance(this.hero, a) - Roguelike.chebyshevDistance(this.hero, b))[0],
 				validate: (cell) => {
 					const candidate = this.creatureAt(cell.x, cell.y);
 					return !!candidate && validTarget(candidate);
@@ -7059,13 +7059,16 @@ export class DungeonScene extends Scene2D {
 			});
 			return false;
 		}
-		if (special.kind === 'throw' && !this.specialTarget) {
-			if (!this.nearestVisibleEnemy(range)) {
+		//`shoot` (SpiritBow) opens the same selector as a throw - it used to auto-pick the nearest, so it could not be retargeted
+		if ((special.kind === 'throw' || special.kind === 'shoot') && !this.specialTarget) {
+			const nearest = this.nearestVisibleEnemy(range);
+			if (!nearest) {
 				this.say(t('port.log.notarget'), 'negative');
 				return false;
 			}
 			this.beginAiming({
 				range,
+				initial: nearest,
 				validate: (cell) => {
 					const candidate = this.creatureAt(cell.x, cell.y);
 					return !!candidate && candidate.hp > 0 && !candidate.isHero && !candidate.isNPC
@@ -7200,14 +7203,17 @@ export class DungeonScene extends Scene2D {
 				} else if (hit && target.hp > 0 && this.heroClass !== 'warrior') {
 					target.stuckAmmo = (target.stuckAmmo ?? 0) + 1;
 				} else {
-					this.spawnGroundItem('stone', target.x, target.y);
-					const heap = this.groundItemAt(target.x, target.y);
+					const dropAt = this.freeCellNear(target) ?? target; //one heap per cell: a landing on an occupied cell used to vanish (Java stacks)
+					this.spawnGroundItem('stone', dropAt.x, dropAt.y);
+					const heap = this.groundItemAt(dropAt.x, dropAt.y);
 					if (heap) {
 						heap.missileLevel = this.missileLevel;
 						heap.missileSet = this.ammoSetId;
 						if (this.ammoTippedSeed !== undefined) heap.tippedSeed = this.ammoTippedSeed;
 					}
 				}
+				//the thrown unit leaves the pile (a boomerang's own return already did); `recoverStone` credits it back on pickup
+				if (carried && this.ammoSourceClass !== 'HeavyBoomerang') { this.ammo = Math.max(0, this.ammo - 1); if (this.ammo === 0) this.ammoDurability = 0; }
 			}
 			if (this.heroClass === 'huntress' && this.talentRank('followup_strike') > 0) { this.followupTarget = target; this.followupDamage = this.talentRank('followup_strike') === 1 ? 2 : 3; }
 			if (this.talentRank('deadly_followup') > 0) this.deadlyFollowupTarget = target;
@@ -7706,6 +7712,8 @@ export class DungeonScene extends Scene2D {
 		shape?: Roguelike.AreaShape;
 		requireLineOfSight?: boolean;
 		validate?: (cell: { x: number; y: number }) => boolean;
+		/** where the cursor starts (Java's cell selector opens on the nearest target, not on the hero) */
+		initial?: { x: number; y: number } | null;
 		onConfirm: (target: { x: number; y: number }, cells: readonly { x: number; y: number }[]) => void;
 	}): void {
 		const controller = new Roguelike.TargetingController(this.level, {
@@ -7715,6 +7723,7 @@ export class DungeonScene extends Scene2D {
 			shape: options.shape ?? { kind: 'single' },
 			...(options.validate ? { validate: options.validate } : {}),
 		});
+		if (options.initial) controller.moveTo(options.initial);
 		this.aiming = { controller, onConfirm: options.onConfirm };
 		this.travelTarget = null;
 		this.refreshAimOverlay();
@@ -7777,18 +7786,9 @@ export class DungeonScene extends Scene2D {
 		return true;
 	}
 
-	/** Redraws the aim preview: every cell the current shape would affect, in world space. */
+	/** Redraws the aim preview (`ui/aimOverlay.ts`); an ended aim leaves the layer empty. */
 	private refreshAimOverlay(): void {
-		const overlay = this.aimOverlay;
-		if (!overlay) return;
-		overlay.clear();
-		const aiming = this.aiming;
-		if (!aiming) return;
-		for (const cell of aiming.controller.preview()) {
-			overlay.rect(cell.x * TILE, cell.y * TILE, TILE, TILE)
-				.fill({ color: 0xffd54a, alpha: 0.28 })
-				.stroke({ width: 1, color: 0xffd54a, alpha: 0.9 });
-		}
+		drawAimPreview(this.aimOverlay, this.aiming ? this.aiming.controller.preview() : [], TILE);
 	}
 
 	/**
