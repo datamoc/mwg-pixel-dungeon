@@ -92,6 +92,8 @@ compile(join(root, 'src/items/scrollEffects.ts'), 'items/scrollEffects.js');
 //The blink family adds `Roguelike` (barrelled) and `../i18n` (stubbed); `../combat`
 //is type-only there, so nothing else new resolves at runtime.
 compile(join(root, 'src/simulation/preparation.ts'), 'simulation/preparation.js');
+//Zero-import like its neighbour: creature views and key-passing say only.
+compile(join(root, 'src/simulation/ratmogrify.ts'), 'simulation/ratmogrify.js');
 //`spells.js` upgrades through `itemWorkflows.js` by its real name, while the suite otherwise
 //only compiles that module as `workflows.js` (line 26) - recompiling it here under its own
 //name is the same idempotent write.
@@ -3817,6 +3819,75 @@ function blinkDrive(overrides = {}) {
 	assert.ok(rooted.said.some((l) => l.includes('actors.buffs.preparation.out_of_reach')), 'rooted refuses too');
 	assert.deepEqual(rooted.shakes, [[1, 1]], 'shaking only when rooted');
 	assert.deepEqual(rooted.flags.attacks, [], 'and never striking');
+}
+// The `Ratmogrify` armor-ability flow moved to `simulation/ratmogrify.ts` (the file-size
+// refactor's thirty-second extraction, behavior-identical): driven headlessly with a
+// scripted charge pool - low-charge refusal, nearest-target selection with the
+// boss/rat/ally exclusions, the transform, ratlomacy permanence with its adrenaline
+// kicker, and the ratforcements self-cast onto free neighbours.
+const { useRatmogrifyFlow } = require('./simulation/ratmogrify.js');
+function ratmogrifyDrive(overrides = {}) {
+	const said = [];
+	const flags = { charge: overrides.armorCharge ?? 100, adrenaline: [], rats: [] };
+	const hero = { x: 0, y: 0, buffs: { ...(overrides.heroBuffs ?? {}) } };
+	const creatures = overrides.creatures ?? [];
+	const ctx = {
+		hero,
+		creatures,
+		fov: { isVisible: overrides.visible ?? (() => true) },
+		level: { passable: overrides.passable ?? (() => true) },
+		creatureAt: (x, y) => [...creatures, hero].find((c) => c.x === x && c.y === y) ?? null,
+		isBossKind: (kind) => (overrides.bosses ?? []).includes(kind),
+		ratmogrifyChargeUse: () => overrides.cost ?? 50,
+		get armorCharge() { return flags.charge; },
+		set armorCharge(v) { flags.charge = v; },
+		talentRank: (id) => (overrides.ranks ?? {})[id] ?? 0,
+		shuffle: (items) => { flags.shuffled = [...items]; },
+		spawnAwakeAllyRat: (cell) => { flags.rats.push({ ...cell }); },
+		grantAdrenaline: (target, turns) => { flags.adrenaline.push({ target, turns }); },
+		say: (key, params, level) => { said.push(`${level}:${key}${params ? JSON.stringify(params) : ''}`); },
+		...overrides.ctx,
+	};
+	const result = useRatmogrifyFlow(ctx);
+	return { result, ctx, said, flags, hero, creatures };
+}
+{
+	const broke = ratmogrifyDrive({ armorCharge: 10 });
+	assert.equal(broke.result, false, 'low charge refuses');
+	assert.ok(broke.said.some((l) => l.includes('items.armor.classarmor.low_charge')), 'saying so');
+	assert.equal(broke.flags.charge, 10, 'spending nothing');
+	const mob = (extra) => ({ x: 3, y: 0, hp: 5, name: 'Gnoll', kind: 'gnoll', ...extra });
+	const picked = ratmogrifyDrive({ creatures: [mob({ x: 5, y: 0 }), mob({})], heroBuffs: { invisibility: 3 } });
+	assert.equal(picked.result, true, 'transforming');
+	assert.equal(picked.creatures[1].ratmogrifiedTurns, 6, 'the nearer target for six turns');
+	assert.equal(picked.creatures[0].ratmogrifiedTurns, undefined, 'leaving the farther one');
+	assert.equal(picked.flags.charge, 50, 'spending the charge');
+	assert.deepEqual(picked.hero.buffs, {}, 'dropping invisibility');
+	assert.ok(picked.said.some((l) => l.includes('transmograt') && l.includes('Gnoll')), 'naming the target');
+	const excluded = ratmogrifyDrive({
+		creatures: [
+			mob({ isAlly: true }), mob({ kind: 'rat', name: 'Rat' }), mob({ kind: 'boss', name: 'Boss' }),
+			mob({ isNPC: true }), mob({ hp: 0 }), mob({ ratmogrifiedPermanent: true }),
+		],
+		bosses: ['boss'],
+	});
+	assert.equal(excluded.result, false, 'every exclusion leaves no target');
+	assert.ok(excluded.said.some((l) => l.includes('cant_transform')), 'with no ratforcements either');
+	const fresh = ratmogrifyDrive({ creatures: [mob({ ratmogrifiedTurns: 3 })], ranks: { ratlomacy: 1 } });
+	assert.equal(fresh.result, true, 'recasting makes a friend');
+	assert.equal(fresh.creatures[0].isAlly, true, 'an ally');
+	assert.equal(fresh.creatures[0].ratmogrifiedPermanent, true, 'permanently');
+	assert.equal(fresh.creatures[0].ratmogrifiedTurns, undefined, 'no longer counting down');
+	assert.deepEqual(fresh.flags.adrenaline, [], 'rank 1 grants no adrenaline');
+	const hyped = ratmogrifyDrive({ creatures: [mob({ ratmogrifiedTurns: 3 })], ranks: { ratlomacy: 3 } });
+	assert.deepEqual(hyped.flags.adrenaline, [{ target: hyped.creatures[0], turns: 4 }], 'rank 3 grants 4 turns');
+	const talentless = ratmogrifyDrive({ creatures: [mob({ ratmogrifiedTurns: 3 })] });
+	assert.equal(talentless.result, false, 'no ratlomacy refuses the recast');
+	assert.equal(talentless.flags.charge, 100, 'spending nothing');
+	const self = ratmogrifyDrive({ ranks: { ratforcements: 2 } });
+	assert.equal(self.result, true, 'self-casting with the talent');
+	assert.deepEqual(self.flags.rats, [{ x: -1, y: -1 }, { x: 0, y: -1 }], 'two rats on the first free neighbours');
+	assert.equal(self.flags.charge, 50, 'spending the charge');
 }
 	const { weaponSTRReq, armorSTRReq, missileSTRReq, canSurpriseAttack } = require('./items/strReq.js');
 	// `Weapon.STRReq`/`Armor.STRReq`/`MissileWeapon.STRReq` (tags `v2.1.4`/`v3.3.8`):

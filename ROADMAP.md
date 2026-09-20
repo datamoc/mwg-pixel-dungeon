@@ -1470,6 +1470,20 @@ one.
       the scene to translate (the brews-module convention). Found in the same pass:
       the coverage row's "screen shake on a rooted refusal" gap never was one - the
       shake is live and now pinned - corrected in place.
+      **Complexity: S.** **Thirty-second extraction 2026-09-20**: the `Ratmogrify`
+      armor-ability flow (nearest-target selection with the boss/rat/ally
+      exclusions, charge gate, transform, ratlomacy permanence with its adrenaline
+      kicker, ratforcements self-cast) moved to `simulation/ratmogrify.ts` as
+      `useRatmogrifyFlow` behind a `RatmogrifyContext` (hero/creature views, fov/
+      level seams, boss predicate, charge cost/getter, scripted shuffle, awake-rat
+      spawn and adrenaline callbacks, key-passing say); the scene keeps the one-line
+      adapter plus a builder. Net −23 lines in `dungeonScene.ts` (22,572 after),
+      `ratmogrify.ts` 17 to 119. Suites: `tsc` clean after one real catch (the
+      scene's optional `Creature.kind` needs an optional view field with an
+      undefined-tolerant boss predicate), item suite green first try with a new
+      drive (refusal, nearest pick, all six exclusions, permanence with and without
+      the kicker, talentless recast refusal, the two-rat self-cast). Sim suite
+      green including the confinement guard.
       **Complexity: S.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`

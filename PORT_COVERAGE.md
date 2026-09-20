@@ -434,7 +434,12 @@ longer the goal, and Java's own bugs and limitations are not reproduced).
   Ratmogrify affects the nearest visible non-boss enemy for six turns and preserves its combat
   stats while routing it through ordinary melee/pathing. The port has no `TransmogRat` actor or
   cell-targeting window, so the original mob sprite remains and those two presentation/targeting
-  details are documented reductions at the call sites in `main.ts`.
+  details are documented reductions at the call sites in `main.ts`. (The whole flow
+  moved to `useRatmogrifyFlow` in `src/simulation/ratmogrify.ts` on 2026-09-20 as the
+  file-size refactor's thirty-second extraction, behavior-identical - zero runtime
+  imports there per the simulation confinement rule, so geometry is inline, message
+  keys stay keys for the scene to translate, and charge/shuffle/spawn/buff arrive as
+  callbacks; the scene keeps the one-line adapter plus a builder.)
 
 ## Simulation extraction (steps 1-5)
 

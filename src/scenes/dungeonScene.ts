@@ -168,7 +168,7 @@ import {
 } from '../simulation/huntressAbilities';
 import { exposeWeaknessDuration, feignedRetreatHaste, combinedLethalityTest, closeTheGapRange, invigoratingVictoryHeal, elementalStrikeCone, elementalPowerMulti, directedPowerBoost, elementalBlockingShield, elementalVampiricHeal, elementalSacrificialSelf, elementalBlobAmount, elementalBloomingBudget, elementalFurrowStep, elementalBaseDamage, elementalKineticSplash, elementalRootsDuration, elementalKnockback, elementalLuckyChance, elementalProjectingSplash, elementalCorruptingChance, elementalGrimChance, elementalCurseChance, elementalAnnoyingChance, elementalSacrificialOther, elementalStrikeResisted, type ElementalStrikeDamageSource } from '../simulation/duelistAbilities';
 import { shadowCloneAccuracy, shadowCloneArmorShare, shadowCloneBladeShare, shadowCloneEvasion, shadowCloneHp } from '../simulation/rogueAbilities';
-import { ratsistanceFactor } from '../simulation/ratmogrify';
+import { ratsistanceFactor, useRatmogrifyFlow, type RatmogrifyContext } from '../simulation/ratmogrify';
 import { PRISMATIC_FADE_TURNS, PRISMATIC_HATCH_RANGE, prismaticGuardMaxHp, prismaticImageStats, prismaticSpawnCell } from '../simulation/prismatic';
 import { CLASSES, CLASS_AMMO, HERO_IDLE_FRAME, type ClassId } from '../classes';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
@@ -21662,62 +21662,39 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * enemy) as the self-cast for the rat pack, since there is no cell picker to aim at
 	 * the hero with. All three paths spend the real 50 charge and dispel invisibility.
 	 */
+	/**
+	 * The `Ratmogrify` armor-ability flow lives in `simulation/ratmogrify.ts` as
+	 * `useRatmogrifyFlow` behind `RatmogrifyContext` - the file-size refactor's
+	 * thirty-second extraction, behavior-identical (zero runtime imports there, per
+	 * the simulation confinement rule). The scene only builds the context here.
+	 */
 	private useRatmogrify(): boolean {
-		const target = this.creatures
-			.filter((c) => !c.isHero && !c.isNPC && !c.isAlly && c.hp > 0 && !c.ratmogrifiedPermanent && c.kind !== 'rat'
-				&& !BOSS_KINDS.has(c.kind as MonsterId) && !MINIBOSS_KINDS.has(c.kind as MonsterId) && this.fov.isVisible(c.x, c.y))
-			.sort((a, b) => Roguelike.chebyshevDistance(this.hero, a) - Roguelike.chebyshevDistance(this.hero, b))[0];
-		//`Ratmogrify.chargeUse()` is the real 50, so the ability is not free - this used to cost no
-		//charge at all, since it predates the charge system. The turn is spent by the calling
-		//`attempt` action (`HeroAction.Attack`'s own `spendAndNext`); spending it here as well made
-		//every ratmogrify cost two turns.
-		const cost = this.ratmogrifyChargeUse();
-		if (this.armorCharge < cost) {
-			this.say(t('items.armor.classarmor.low_charge'), 'negative');
-			return false;
-		}
-		if (!target) {
-			//`RATFORCEMENTS`: self-cast spawns `points` ally rats on free NEIGHBOURS8 cells.
-			const rats = this.talentRank('ratforcements');
-			if (rats <= 0) {
-				this.say(t('actors.hero.abilities.ratmogrify.cant_transform'), 'negative');
-				return false;
-			}
-			const free: Step[] = [];
-			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
-				const x = this.hero.x + dx, y = this.hero.y + dy;
-				if (this.level.passable(x, y) && !this.creatureAt(x, y)) free.push({ x, y });
-			}
-			Random.shuffle(free);
-			this.armorCharge = Math.max(0, this.armorCharge - cost);
-			delete this.hero.buffs['invisibility'];
-			for (const cell of free.slice(0, rats)) {
-				const rat = this.spawnMonster('rat', cell, false, undefined, true);
+		return useRatmogrifyFlow(this.ratmogrifyContext());
+	}
+
+	private ratmogrifyContext(): RatmogrifyContext {
+		const scene = this;
+		return {
+			hero: scene.hero,
+			creatures: scene.creatures,
+			fov: scene.fov,
+			level: scene.level,
+			creatureAt: (x, y) => scene.creatureAt(x, y) ?? undefined,
+			isBossKind: (kind) => kind !== undefined
+				&& (BOSS_KINDS.has(kind as MonsterId) || MINIBOSS_KINDS.has(kind as MonsterId)),
+			ratmogrifyChargeUse: () => scene.ratmogrifyChargeUse(),
+			get armorCharge() { return scene.armorCharge; },
+			set armorCharge(charge: number) { scene.armorCharge = charge; },
+			talentRank: (id) => scene.talentRank(id),
+			shuffle: (items) => Random.shuffle(items),
+			spawnAwakeAllyRat: (cell) => {
+				const rat = scene.spawnMonster('rat', cell, false, undefined, true);
 				rat.sleeping = false;
-			}
-			return true;
-		}
-		if (target.ratmogrifiedTurns !== undefined) {
-			//`RATLOMACY`: re-casting on a transformed enemy makes it a permanent ally -
-			//plus `Adrenaline` 2*(points-1) from rank 2 up - and refuses without the talent.
-			const diplomacy = this.talentRank('ratlomacy');
-			if (diplomacy <= 0) {
-				this.say(t('actors.hero.abilities.ratmogrify.cant_transform'), 'negative');
-				return false;
-			}
-			this.armorCharge = Math.max(0, this.armorCharge - cost);
-			delete this.hero.buffs['invisibility'];
-			target.isAlly = true;
-			target.ratmogrifiedPermanent = true;
-			delete target.ratmogrifiedTurns;
-			if (diplomacy > 1) addBuff(target, 'adrenalineSurge', 2 * (diplomacy - 1));
-			return true;
-		}
-		this.armorCharge = Math.max(0, this.armorCharge - cost);
-		delete this.hero.buffs['invisibility'];
-		target.ratmogrifiedTurns = 6;
-		this.say(t('actors.hero.abilities.ratmogrify$transmograt.name', { 0: target.name }), 'positive');
-		return true;
+			},
+			//The flow hands back one of the scene's own creatures, so the cast is exact.
+			grantAdrenaline: (target, turns) => { addBuff(target as Creature, 'adrenalineSurge', turns); },
+			say: (key, params, level) => scene.say(t(key, params ?? undefined), level),
+		};
 	}
 
 	/**
