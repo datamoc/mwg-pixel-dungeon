@@ -1570,6 +1570,18 @@ one.
       edge, ally inclusion, nearest-wins ordering, visibility-free geometry).
       Sim suite green.
       **Complexity: XS.**
+      **Forty-first extraction 2026-09-20**: `Bee.chooseEnemy()`'s cascade
+      (pot holder first at any range, else nearest live mob within 3 of the
+      pot, else the hero within 3 - including the fall-through when a recorded
+      holder is gone) moved to `simulation/targeting.ts` as `beeTarget` behind
+      the module's own `SimulationRoguelike` seam; the scene keeps the
+      one-line adapter. Net -10 lines in `dungeonScene.ts` (22,531 after);
+      `targeting.ts` 90 to 121. Suites: `tsc` clean first try, item suite
+      green after one real drive-setup catch (the dead-holder case passed a
+      live hero in the folk list while the hero arg was dead - the flow is
+      verbatim, the setup lied), covering holder-first, both fall-throughs,
+      pot-mob, pot-hero, far-pot and potless verdicts. Sim suite green.
+      **Complexity: XS.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

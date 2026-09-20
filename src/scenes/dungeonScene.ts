@@ -197,7 +197,7 @@ import { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } from '../s
 import { teleportAppearPlan } from '../simulation/teleportAppear';
 import { evolveElectricity, evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
-import { aggressionTarget as aggressionTargetFlow, amokTarget as amokTargetFlow, nearestVisibleEnemy as nearestVisibleEnemyFlow, selectRangedTarget } from '../simulation/targeting';
+import { aggressionTarget as aggressionTargetFlow, amokTarget as amokTargetFlow, beeTarget as beeTargetFlow, nearestVisibleEnemy as nearestVisibleEnemyFlow, selectRangedTarget } from '../simulation/targeting';
 import { isPatrolTargetValid as isPatrolTargetValidFlow, randomPatrolDestination as randomPatrolDestinationFlow, wanderBlocked as wanderBlockedFlow, type WanderingContext } from '../simulation/wandering';
 import { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLeapCooldown } from '../simulation/ripperLeap';
 import { shouldSuccubusBlink, chooseSuccubusBlinkCell, succubusBlinkCooldown } from '../simulation/succubusBlink';
@@ -9963,21 +9963,11 @@ export class DungeonScene extends Scene2D {
 	 * Not modeled: stung mobs turning on the bee (`attackProc`'s beckon - this port's mobs
 	 * cannot target other mobs, only hero and allies), and the honeyed-charm ally path (no
 	 * honeyed elixir exists to drink). */
+	//`Bee.chooseEnemy()` lives in `simulation/targeting.ts` as `beeTarget` - the
+	//file-size refactor's forty-first extraction, behavior-identical. The scene
+	//only binds its hero and creatures here.
 	private takeBeeTurn(bee: Creature): void {
-		let target: Creature | null = null;
-		if (bee.potHolderId !== undefined) {
-			target = bee.potHolderId === this.hero.id && this.hero.hp > 0
-				? this.hero
-				: (this.creatures.find((c) => c.id === bee.potHolderId && c.hp > 0 && !c.isNPC) ?? null);
-		}
-		const pot = bee.potPos;
-		if (!target && pot) {
-			target = this.creatures
-				.filter((c) => !c.isHero && !c.isNPC && !c.isAlly && c.hp > 0
-					&& Roguelike.chebyshevDistance(c, pot) <= 3)
-				.sort((a, b) => Roguelike.chebyshevDistance(bee, a) - Roguelike.chebyshevDistance(bee, b))[0] ?? null;
-			if (!target && this.hero.hp > 0 && Roguelike.chebyshevDistance(this.hero, pot) <= 3) target = this.hero;
-		}
+		const target: Creature | null = beeTargetFlow(bee, this.hero, this.creatures, simulationRoguelike);
 		if (!target) {
 			const steps = Roguelike.neighbourOffsets(8)
 				.map(([dx, dy]) => ({ x: bee.x + dx, y: bee.y + dy }))

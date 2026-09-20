@@ -88,3 +88,34 @@ export function amokTarget(
 			.sort((a, b) => roguelike.chebyshevDistance(monster, a) - roguelike.chebyshevDistance(monster, b))[0] ?? null
 	);
 }
+
+/**
+ * `Bee.chooseEnemy()`: the pot holder first (hero or mob, at any range), else
+ * the nearest live mob within 3 of the pot, else the hero within 3 of the pot
+ * - including the fall-through when a recorded holder is gone. Moved here
+ * verbatim from the scene as the file-size refactor's forty-first extraction,
+ * behavior-identical, following this module's own `SimulationRoguelike` seam.
+ * The caller keeps the one-line scene adapter.
+ */
+export function beeTarget(
+	bee: Creature,
+	hero: Creature,
+	creatures: readonly Creature[],
+	roguelike: SimulationRoguelike,
+): Creature | null {
+	let target: Creature | null = null;
+	if (bee.potHolderId !== undefined) {
+		target = bee.potHolderId === hero.id && hero.hp > 0
+			? hero
+			: (creatures.find((c) => c.id === bee.potHolderId && c.hp > 0 && !c.isNPC) ?? null);
+	}
+	const pot = bee.potPos;
+	if (!target && pot) {
+		target = creatures
+			.filter((c) => !c.isHero && !c.isNPC && !c.isAlly && c.hp > 0
+				&& roguelike.chebyshevDistance(c, pot) <= 3)
+			.sort((a, b) => roguelike.chebyshevDistance(bee, a) - roguelike.chebyshevDistance(bee, b))[0] ?? null;
+		if (!target && hero.hp > 0 && roguelike.chebyshevDistance(hero, pot) <= 3) target = hero;
+	}
+	return target;
+}

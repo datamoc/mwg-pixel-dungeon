@@ -4098,6 +4098,29 @@ const { amokTarget } = require('./simulation/targeting.js');
 	assert.equal(hunt([nearFolk]), nearFolk, 'allies count too');
 	assert.equal(hunt([farFolk, nearFolk]), nearFolk, 'nearest wins regardless of order');
 }
+// `beeTarget` moved to `simulation/targeting.ts` (the file-size refactor's
+// forty-first extraction, behavior-identical): driven headlessly with scripted
+// geometry - holder-first at any range, nearest mob near the pot, hero near the
+// pot, and the fall-through when a recorded holder is gone.
+const { beeTarget } = require('./simulation/targeting.js');
+{
+	const geo = {
+		chebyshevDistance: (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)),
+	};
+	const hero = { id: 'hero-1', x: 0, y: 0, hp: 20 };
+	const mob = { id: 'mob-1', x: 5, y: 5, hp: 10 };
+	const folk = [hero, mob];
+	const beeAt = (extra) => ({ id: 'bee-1', x: 5, y: 6, hp: 1, ...extra });
+	assert.equal(beeTarget(beeAt({ potHolderId: 'hero-1', potPos: { x: 5, y: 5 } }), hero, folk, geo), hero, 'living hero holder first');
+	const deadHero = { ...hero, hp: 0 };
+	assert.equal(beeTarget(beeAt({ potHolderId: 'hero-1', potPos: { x: 5, y: 5 } }), deadHero, [deadHero, mob], geo), mob, 'dead hero holder falls through to the pot mob');
+	assert.equal(beeTarget(beeAt({ potHolderId: 'mob-1', potPos: { x: 0, y: 0 } }), hero, folk, geo), mob, 'mob holder at any range');
+	assert.equal(beeTarget(beeAt({ potHolderId: 'gone', potPos: { x: 5, y: 5 } }), hero, folk, geo), mob, 'gone holder falls through to the pot mob');
+	assert.equal(beeTarget(beeAt({ potPos: { x: 5, y: 5 } }), hero, folk, geo), mob, 'nearest mob near the pot');
+	assert.equal(beeTarget(beeAt({ potPos: { x: 0, y: 0 } }), hero, folk, geo), hero, 'hero near the pot when no mob is');
+	assert.equal(beeTarget(beeAt({ potPos: { x: 9, y: 9 } }), hero, folk, geo), null, 'nothing near a far pot');
+	assert.equal(beeTarget(beeAt({}), hero, folk, geo), null, 'no pot and no holder, no target');
+}
 // `emitToxicGasVents` moved to `simulation/environmentalBlobs.ts` (the file-size
 // refactor's thirty-seventh extraction, behavior-identical): driven headlessly with
 // scripted terrain and gas - non-trap/outside cells skipped, re-seed while local
