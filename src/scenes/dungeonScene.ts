@@ -3719,7 +3719,7 @@ export class DungeonScene extends Scene2D {
 				{ offset: 1, color: 'rgba(0,0,0,1)' },
 			],
 		}));
-		const message = new Label({ text: t('scenes.interlevelscene$mode.descend'), size: 9, color: theme().color.text });
+		const message = new Label({ text: t('scenes.interlevelscene$mode.descend'), size: 9 * menuScale(Game.current.width, Game.current.height), color: theme().color.text });
 		message.anchor.set(0.5);
 		message.position.set(Game.current.width / 2, Game.current.height / 2);
 		root.addChild(backdrop, curtain, message);
