@@ -181,7 +181,7 @@ import { coneCells } from '../mechanics/cone';
 import { traceRayToTarget } from '../mechanics/rays';
 import { planTenguConeFront } from '../simulation/tenguBeam';
 import { planFireSpread } from '../simulation/fireSpread';
-import { trampleHighGrass as planHighGrassTrample, type HighGrassState } from '../simulation/highGrass';
+import { applyHighGrassTrample, plantBloomingGrass as plantBloomingGrassFlow, trampleHighGrass as planHighGrassTrample, type HighGrassApplyContext, type HighGrassState } from '../simulation/highGrass';
 import {
 	applyEnvironmentalBlobs,
 	processSacrifice,
@@ -5507,88 +5507,63 @@ export class DungeonScene extends Scene2D {
 	 * `useRegrowthWand`/`triggerPortedPlantAt`; exact target-cell aiming and plant-animation
 	 * presentation remain simplified.
 	 */
+	/**
+	 * `HighGrass.trample()`'s apply half (and the `plantBloomingGrass` sibling below)
+	 * live in `simulation/highGrass.ts` - the file-size refactor's thirty-third
+	 * extraction, behavior-identical (the three rolls arrive scripted on the context).
+	 * The scene only builds the context here.
+	 */
 	private trampleHighGrass(x: number, y: number): void {
-		const cell = this.level.index(x, y);
-		const state: HighGrassState = this.furrowedGrass.has(cell)
-			? 'furrowed'
-			: this.level.get(x, y) === HIGH_GRASS ? 'high' : 'plain';
+		applyHighGrassTrample(this.highGrassContext(), x, y);
+	}
+
+	private highGrassContext(): HighGrassApplyContext {
+		const scene = this;
 		//The four coefficients Java's loot block reads are authored rows (`sandals*Chance*` in
 		//`item-rules.mwl`) rather than inlined here, because the artifact's own actions read the
 		//same numbers - see `simulation/highGrass.ts`'s header for why they are passed in.
-		const magicImmune = this.hero.magicImmune === true;
-		const trample = planHighGrassTrample(state, this.heroClass === 'huntress', {
-			seedChanceBase: mwlItemEffectValue('sandals', 'seedChanceBase'),
-			seedChancePerLevel: mwlItemEffectValue('sandals', 'seedChancePerLevel'),
-			dewChanceBase: mwlItemEffectValue('sandals', 'dewChanceBase'),
-			dewChanceLevelDivisor: mwlItemEffectValue('sandals', 'dewChanceLevelDivisor'),
-		}, {
-			naturalismLevel: sandalsNaturalismLevel(this.sandalsItem(), magicImmune),
-			grassFeeling: this.portedPaint?.feeling === Feeling.GRASS,
-		});
-		if (state === 'plain') return;
-		//`SandalsOfNature.Naturalism.charge()` runs on every trampled high-grass cell, ahead of the
-		//drop rolls, so a trample that rolls nothing still banks its charge. Its own guard is
-		//`cursed || MagicImmune`, which is *not* the guard the drop block uses (`isCursed()`, which
-		//MagicImmune clears) - the two disagree for a cursed pair under AntiMagic, in Java too.
-		applySandalsNaturalismCharge(this.sandalsItem(), ringEnergyMultiplier(this.effectiveRing(), magicImmune) * this.lightCloakChargeMultiplier(), magicImmune);
-		if (trample.next === 'furrowed') {
-			this.furrowedGrass.add(cell);
-			// The compact live terrain keeps the high-grass collision/feature code active;
-			// the separate set carries Java's raw FURROWED_GRASS distinction through saves.
-			return;
-		}
-		this.furrowedGrass.delete(cell);
-
-		this.level.set(x, y, GRASS);
-		//Camouflage.activate(): trampling high grass while wearing the glyph prolongs
-		//Invisibility for round((3 + lvl/2) x arcana) - keep-max, matching Buff.prolong().
-		//Java also plays its MELD sound when the cell is in FOV; there is no per-effect
-		//audio seam here, so the log line below stands in for that feedback.
-		if (this.armorGlyph === 'camouflage') {
-			const duration = Math.round((3 + this.armorLevel / 2) * this.genericProcMultiplier());
-			this.hero.buffs['invisibility'] = Math.max(this.hero.buffs['invisibility'] ?? 0, duration);
-			this.say(t('port.log.camouflage'), 'positive');
-		}
-		if (this.heroClass === 'huntress' && this.talentRank('natures_aid') > 0) this.grantHeroShield(Random.int(0, 3), 2);
-		this.restitchTilesAround(x, y);
-		this.featuresMap?.setLayerData('features', this.featureFrames());
-
-		if (!trample.rollDrops) return;
-		//The berry roll comes *first*, which is where Java draws it - rolling seed then dew then
-		//berry moved the whole stream for a Huntress carrying that talent.
-		const bountyRank = this.talentRank('natures_bounty');
-		if (this.heroClass === 'huntress' && bountyRank > 0) {
-			const berriesAvailable = 2 + 2 * bountyRank - this.natureBerriesDropped;
-			if (berriesAvailable > 0) {
-				let targetFloor = 2 + 2 * bountyRank - berriesAvailable;
-				targetFloor += targetFloor >= 5 ? 3 : 2;
-				const chance = this.depth > targetFloor ? 1 / 10 : this.depth === targetFloor ? 1 / 30 : 1 / 90;
-				if (Random.chance(chance)) {
-					this.natureBerriesDropped++;
-					this.spawnGroundItem('food', x, y);
-				}
-			}
-		}
-		//The two loot rolls, at the naturalism-scaled odds `simulation/highGrass.ts` computed: 1/25
-		//for a seed and 1/6 for a dewdrop with no footwear carried, rising to 1/9 and 1/4 at the
-		//artifact's +3, and `drops === null` (a cursed pair) suppressing both outright.
-		const drops = trample.drops;
-		if (!drops) return;
-		const seedDropped = Random.chance(drops.seedChance);
-		if (seedDropped) {
-			const seed = randomUsingDefaults(Cat.SEED);
-			this.spawnGroundItem('seed', x, y, sourceInventoryItem('seed', seed.cls, (kind) => this.newItemInstanceId(kind)));
-		}
-		if (Random.chance(drops.dewChance)) this.spawnGroundItem('dewdrop', x, y);
-		//HighGrass.trample()'s real Nature's Bounty: NOT a dew-chance boost (that guess was
-		//simply wrong, found auditing it against the real source) - it drops a depth-paced
-		//Berry food item, capped at 2+2*rank total for the whole run (Talent.NatureBerriesDropped,
-		//a CounterBuff that never resets mid-run). `targetFloor` is the depth the schedule wants
-		//the next berry to land on; behind it the odds are generous (1/10), on it modest (1/30),
-		//ahead of it stingy (1/90). This port has no distinct Berry item (a real Ration-strength
-		//pickup, not modeled separately), so it drops the shared generic `'food'` kind instead -
-		//a real, narrower simplification, not the wrong-mechanic bug this replaces. See the roll
-		//itself above, where Java draws it.
+		const magicImmune = scene.hero.magicImmune === true;
+		return {
+			hero: scene.hero,
+			heroClass: scene.heroClass,
+			talentRank: (id) => scene.talentRank(id),
+			furrowedGrass: scene.furrowedGrass,
+			level: scene.level,
+			highGrassTerrain: HIGH_GRASS,
+			grassTerrain: GRASS,
+			naturalismLevel: sandalsNaturalismLevel(scene.sandalsItem(), magicImmune),
+			grassFeeling: scene.portedPaint?.feeling === Feeling.GRASS,
+			lootRules: {
+				seedChanceBase: mwlItemEffectValue('sandals', 'seedChanceBase'),
+				seedChancePerLevel: mwlItemEffectValue('sandals', 'seedChancePerLevel'),
+				dewChanceBase: mwlItemEffectValue('sandals', 'dewChanceBase'),
+				dewChanceLevelDivisor: mwlItemEffectValue('sandals', 'dewChanceLevelDivisor'),
+			},
+			chargeNaturalism: () => {
+				applySandalsNaturalismCharge(scene.sandalsItem(), ringEnergyMultiplier(scene.effectiveRing(), magicImmune) * scene.lightCloakChargeMultiplier(), magicImmune);
+			},
+			camouflageDuration: scene.armorGlyph === 'camouflage'
+				? Math.round((3 + scene.armorLevel / 2) * scene.genericProcMultiplier())
+				: null,
+			grantShield: (amount, cap) => scene.grantHeroShield(amount, cap),
+			afterTerrainChange: (x, y) => {
+				scene.restitchTilesAround(x, y);
+				scene.featuresMap?.setLayerData('features', scene.featureFrames());
+			},
+			depth: scene.depth,
+			get natureBerriesDropped() { return scene.natureBerriesDropped; },
+			set natureBerriesDropped(dropped: number) { scene.natureBerriesDropped = dropped; },
+			rollChance: (p) => Random.chance(p),
+			rollInt: (min, max) => Random.int(min, max),
+			drawSeedClass: () => randomUsingDefaults(Cat.SEED).cls,
+			spawnDrop: (kind, x, y, seedClass) => {
+				if (kind === 'seed') scene.spawnGroundItem('seed', x, y, sourceInventoryItem('seed', seedClass ?? '', (id) => scene.newItemInstanceId(id)));
+				else scene.spawnGroundItem(kind, x, y);
+			},
+			say: (key, level) => scene.say(t(key), level),
+			isBloomGround: (terrain) => terrain === FLOOR || terrain === GRASS,
+			isPlanted: (cell) => (scene.portedPaint?.plants.some((plant) => plant.pos === cell) ?? false) || scene.manualPlants.has(cell),
+		};
 	}
 
 	/**
@@ -5598,15 +5573,7 @@ export class DungeonScene extends Scene2D {
 	 * was planted, so the caller can spend its plant budget.
 	 */
 	private plantBloomingGrass(x: number, y: number): boolean {
-		if (x < 0 || y < 0 || x >= this.level.width || y >= this.level.height) return false;
-		const kind = this.level.get(x, y);
-		if (kind !== FLOOR && kind !== GRASS) return false;
-		const cell = this.level.index(x, y);
-		if ((this.portedPaint?.plants.some((plant) => plant.pos === cell) ?? false) || this.manualPlants.has(cell)) return false;
-		this.level.set(x, y, HIGH_GRASS);
-		this.restitchTilesAround(x, y);
-		this.featuresMap?.setLayerData('features', this.featureFrames());
-		return true;
+		return plantBloomingGrassFlow(this.highGrassContext(), x, y);
 	}
 
 	/**

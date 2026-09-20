@@ -101,3 +101,133 @@ export function trampleHighGrass(
 		},
 	};
 }
+
+/**
+ * `trampleHighGrass`'s apply half (plus the `plantBloomingGrass` sibling below),
+ * moved here verbatim from the scene as the file-size refactor's thirty-third
+ * extraction, behavior-identical. Zero runtime imports (the simulation confinement
+ * rule): terrain ids arrive as values, the three rolls arrive scripted, spawns and
+ * the naturalism charge arrive as callbacks, and message keys stay keys for the
+ * scene to translate. The scene keeps the one-line adapters plus a builder.
+ */
+export interface HighGrassApplyContext {
+	readonly hero: { buffs: { invisibility?: number | undefined } };
+	readonly heroClass: string;
+	readonly talentRank: (id: string) => number;
+	readonly furrowedGrass: Set<number>;
+	readonly level: {
+		readonly width: number;
+		readonly height: number;
+		get(x: number, y: number): number;
+		set(x: number, y: number, terrain: number): void;
+		index(x: number, y: number): number;
+	};
+	readonly highGrassTerrain: number;
+	readonly grassTerrain: number;
+	readonly naturalismLevel: number;
+	readonly grassFeeling: boolean;
+	readonly lootRules: HighGrassLootRules;
+	readonly chargeNaturalism: () => void;
+	/** `null` unless the worn glyph is camouflage, else the computed meld duration. */
+	readonly camouflageDuration: number | null;
+	readonly grantShield: (amount: number, cap: number) => void;
+	readonly afterTerrainChange: (x: number, y: number) => void;
+	readonly depth: number;
+	get natureBerriesDropped(): number;
+	set natureBerriesDropped(dropped: number);
+	/** Scripted rolls: `Random.chance` in play, a queue in the suite. */
+	readonly rollChance: (p: number) => boolean;
+	readonly rollInt: (min: number, max: number) => number;
+	readonly drawSeedClass: () => string;
+	readonly spawnDrop: (kind: 'seed' | 'dewdrop' | 'food', x: number, y: number, seedClass?: string) => void;
+	readonly say: (key: string, level: 'positive' | 'negative') => void;
+	readonly isBloomGround: (terrain: number) => boolean;
+	readonly isPlanted: (cell: number) => boolean;
+}
+
+export function applyHighGrassTrample(context: HighGrassApplyContext, x: number, y: number): void {
+	const cell = context.level.index(x, y);
+	const state: HighGrassState = context.furrowedGrass.has(cell)
+		? 'furrowed'
+		: context.level.get(x, y) === context.highGrassTerrain ? 'high' : 'plain';
+	const trample = trampleHighGrass(state, context.heroClass === 'huntress', context.lootRules, {
+		naturalismLevel: context.naturalismLevel,
+		grassFeeling: context.grassFeeling,
+	});
+	if (state === 'plain') return;
+	//`SandalsOfNature.Naturalism.charge()` runs on every trampled high-grass cell, ahead of the
+	//drop rolls, so a trample that rolls nothing still banks its charge. Its own guard is
+	//`cursed || MagicImmune`, which is *not* the guard the drop block uses (`isCursed()`, which
+	//MagicImmune clears) - the two disagree for a cursed pair under AntiMagic, in Java too.
+	context.chargeNaturalism();
+	if (trample.next === 'furrowed') {
+		context.furrowedGrass.add(cell);
+		// The compact live terrain keeps the high-grass collision/feature code active;
+		// the separate set carries Java's raw FURROWED_GRASS distinction through saves.
+		return;
+	}
+	context.furrowedGrass.delete(cell);
+
+	context.level.set(x, y, context.grassTerrain);
+	//Camouflage.activate(): trampling high grass while wearing the glyph prolongs
+	//Invisibility for round((3 + lvl/2) x arcana) - keep-max, matching Buff.prolong().
+	//Java also plays its MELD sound when the cell is in FOV; there is no per-effect
+	//audio seam here, so the log line below stands in for that feedback.
+	if (context.camouflageDuration !== null) {
+		context.hero.buffs['invisibility'] = Math.max(context.hero.buffs['invisibility'] ?? 0, context.camouflageDuration);
+		context.say('port.log.camouflage', 'positive');
+	}
+	if (context.heroClass === 'huntress' && context.talentRank('natures_aid') > 0) context.grantShield(context.rollInt(0, 3), 2);
+	context.afterTerrainChange(x, y);
+
+	if (!trample.rollDrops) return;
+	//The berry roll comes *first*, which is where Java draws it - rolling seed then dew then
+	//berry moved the whole stream for a Huntress carrying that talent.
+	const bountyRank = context.talentRank('natures_bounty');
+	if (context.heroClass === 'huntress' && bountyRank > 0) {
+		const berriesAvailable = 2 + 2 * bountyRank - context.natureBerriesDropped;
+		if (berriesAvailable > 0) {
+			let targetFloor = 2 + 2 * bountyRank - berriesAvailable;
+			targetFloor += targetFloor >= 5 ? 3 : 2;
+			const chance = context.depth > targetFloor ? 1 / 10 : context.depth === targetFloor ? 1 / 30 : 1 / 90;
+			if (context.rollChance(chance)) {
+				context.natureBerriesDropped++;
+				context.spawnDrop('food', x, y);
+			}
+		}
+	}
+	//The two loot rolls, at the naturalism-scaled odds `trampleHighGrass` computed: 1/25
+	//for a seed and 1/6 for a dewdrop with no footwear carried, rising to 1/9 and 1/4 at the
+	//artifact's +3, and `drops === null` (a cursed pair) suppressing both outright.
+	const drops = trample.drops;
+	if (!drops) return;
+	const seedDropped = context.rollChance(drops.seedChance);
+	if (seedDropped) context.spawnDrop('seed', x, y, context.drawSeedClass());
+	if (context.rollChance(drops.dewChance)) context.spawnDrop('dewdrop', x, y);
+	//HighGrass.trample()'s real Nature's Bounty: NOT a dew-chance boost (that guess was
+	//simply wrong, found auditing it against the real source) - it drops a depth-paced
+	//Berry food item, capped at 2+2*rank total for the whole run (Talent.NatureBerriesDropped,
+	//a CounterBuff that never resets mid-run). `targetFloor` is the depth the schedule wants
+	//the next berry to land on; behind it the odds are generous (1/10), on it modest (1/30),
+	//ahead of it stingy (1/90). This port has no distinct Berry item (a real Ration-strength
+	//pickup, not modeled separately), so it drops the shared generic `'food'` kind instead -
+	//a real, narrower simplification, not the wrong-mechanic bug this replaces. See the roll
+	//itself above, where Java draws it.
+}
+
+/**
+ * `Blooming.plantGrass()`: converts one plantable cell to high grass (see the Blooming
+ * branch in `heroOnHit` for the terrain substitution) unless a grown plant already holds
+ * it, then restitches exactly like `applyHighGrassTrample` does. Returns whether anything
+ * was planted, so the caller can spend its plant budget.
+ */
+export function plantBloomingGrass(context: HighGrassApplyContext, x: number, y: number): boolean {
+	if (x < 0 || y < 0 || x >= context.level.width || y >= context.level.height) return false;
+	const kind = context.level.get(x, y);
+	if (!context.isBloomGround(kind)) return false;
+	const cell = context.level.index(x, y);
+	if (context.isPlanted(cell)) return false;
+	context.level.set(x, y, context.highGrassTerrain);
+	context.afterTerrainChange(x, y);
+	return true;
+}

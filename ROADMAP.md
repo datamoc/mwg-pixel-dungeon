@@ -1484,7 +1484,7 @@ one.
       drive (refusal, nearest pick, all six exclusions, permanence with and without
       the kicker, talentless recast refusal, the two-rat self-cast). Sim suite
       green including the confinement guard.
-      **Complexity: S.**
+      **Complexity: S.** **Thirty-third extraction 2026-09-20**: `trampleHighGrass`'s apply half plus the `plantBloomingGrass` sibling moved to `simulation/highGrass.ts` (where the pure plan already lived) as `applyHighGrassTrample` behind a `HighGrassApplyContext`; the scene keeps the one-line adapters plus a shared builder. Net −33 lines in `dungeonScene.ts` (22,539 after), `highGrass.ts` 103 to 233. Suites: `tsc` clean first try, item suite green first try with a new drive (plain passthrough, furrowing, the clear with camouflage keep-max and exact plan odds, cursed suppression without rolling, scripted seed/dew spawns, all four bloom verdicts). Noted in the drive comment: `natures_aid`'s shield and the berry schedule need a huntress past the furrow branch, which the plan never emits - live but unreachable through this flow, in Java's shape too. **Complexity: S.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

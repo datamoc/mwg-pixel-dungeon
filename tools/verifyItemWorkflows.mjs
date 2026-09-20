@@ -94,6 +94,8 @@ compile(join(root, 'src/items/scrollEffects.ts'), 'items/scrollEffects.js');
 compile(join(root, 'src/simulation/preparation.ts'), 'simulation/preparation.js');
 //Zero-import like its neighbour: creature views and key-passing say only.
 compile(join(root, 'src/simulation/ratmogrify.ts'), 'simulation/ratmogrify.js');
+//The grass apply half is zero-import too: terrain ids as values, scripted rolls.
+compile(join(root, 'src/simulation/highGrass.ts'), 'simulation/highGrass.js');
 //`spells.js` upgrades through `itemWorkflows.js` by its real name, while the suite otherwise
 //only compiles that module as `workflows.js` (line 26) - recompiling it here under its own
 //name is the same idempotent write.
@@ -3888,6 +3890,97 @@ function ratmogrifyDrive(overrides = {}) {
 	assert.equal(self.result, true, 'self-casting with the talent');
 	assert.deepEqual(self.flags.rats, [{ x: -1, y: -1 }, { x: 0, y: -1 }], 'two rats on the first free neighbours');
 	assert.equal(self.flags.charge, 50, 'spending the charge');
+}
+// `trampleHighGrass`'s apply half plus `plantBloomingGrass` moved to
+// `simulation/highGrass.ts` (the file-size refactor's thirty-third extraction,
+// behavior-identical): driven headlessly on a 5x5 fake floor with scripted rolls -
+// plain passthrough, huntress furrowing, the warrior clear with camouflage keep-max,
+// the cursed-pair drop suppression, scripted seed/dew spawns with the exact plan
+// odds, and all four bloom verdicts. (`natures_aid`'s shield and the berry schedule
+// need a huntress past the furrow branch, which the plan never emits - live but
+// unreachable through this flow, in Java's shape too, so no case here.)
+const { applyHighGrassTrample, plantBloomingGrass } = require('./simulation/highGrass.js');
+function grassDrive(overrides = {}) {
+	const said = [];
+	const flags = { charged: 0, shields: [], restitched: [], drops: [], probs: [], berries: overrides.berries ?? 0 };
+	const chanceQueue = [...(overrides.chance ?? [])];
+	const intQueue = [...(overrides.ints ?? [])];
+	const store = new Map(Object.entries(overrides.terrain ?? {}).map(([k, v]) => [Number(k), v]));
+	const W = 5, H = 5;
+	const defaultTerrain = overrides.defaultTerrain ?? 1;
+	const level = {
+		width: W, height: H,
+		get: (x, y) => store.get(y * W + x) ?? defaultTerrain,
+		set: (x, y, v) => { store.set(y * W + x, v); },
+		index: (x, y) => y * W + x,
+	};
+	const hero = { buffs: { ...(overrides.heroBuffs ?? {}) } };
+	const ctx = {
+		hero,
+		heroClass: overrides.heroClass ?? 'warrior',
+		talentRank: (id) => (overrides.ranks ?? {})[id] ?? 0,
+		furrowedGrass: new Set(overrides.furrowed ?? []),
+		level,
+		highGrassTerrain: 7,
+		grassTerrain: 8,
+		naturalismLevel: overrides.naturalism ?? 0,
+		grassFeeling: overrides.grassFeeling ?? false,
+		lootRules: { seedChanceBase: 25, seedChancePerLevel: 4, dewChanceBase: 6, dewChanceLevelDivisor: 2 },
+		chargeNaturalism: () => { flags.charged++; },
+		camouflageDuration: overrides.camouflage ?? null,
+		grantShield: (amount, cap) => { flags.shields.push([amount, cap]); },
+		afterTerrainChange: (x, y) => { flags.restitched.push([x, y]); },
+		depth: overrides.depth ?? 5,
+		get natureBerriesDropped() { return flags.berries; },
+		set natureBerriesDropped(v) { flags.berries = v; },
+		rollChance: (p) => { flags.probs.push(p); return chanceQueue.shift() ?? false; },
+		rollInt: (min, max) => intQueue.shift() ?? min,
+		drawSeedClass: () => 'firebloom',
+		spawnDrop: (kind, x, y, seedClass) => { flags.drops.push({ kind, x, y, seedClass }); },
+		say: (key, level) => { said.push(`${level}:${key}`); },
+		isBloomGround: (terrain) => terrain === 1 || terrain === 8,
+		isPlanted: (cell) => (overrides.planted ?? []).includes(cell),
+		...overrides.ctx,
+	};
+	return { ctx, said, flags, hero, store };
+}
+{
+	const plain = grassDrive({ defaultTerrain: 1 });
+	applyHighGrassTrample(plain.ctx, 2, 2);
+	assert.equal(plain.flags.charged, 0, 'plain grass is not a trample');
+	assert.deepEqual(plain.flags.drops, [], 'dropping nothing');
+	assert.deepEqual(plain.flags.probs, [], 'rolling nothing');
+	const furrow = grassDrive({ defaultTerrain: 7, heroClass: 'huntress' });
+	applyHighGrassTrample(furrow.ctx, 2, 2);
+	assert.ok(furrow.ctx.furrowedGrass.has(2 * 5 + 2), 'the furrow banks');
+	assert.equal(furrow.store.get(2 * 5 + 2) ?? 7, 7, 'leaving the terrain up');
+	assert.equal(furrow.flags.charged, 1, 'charging first');
+	assert.deepEqual(furrow.flags.drops, [], 'with no loot rolls');
+	const clear = grassDrive({ defaultTerrain: 7, heroBuffs: { invisibility: 2 }, camouflage: 5, chance: [false, false] });
+	applyHighGrassTrample(clear.ctx, 2, 2);
+	assert.equal(clear.store.get(2 * 5 + 2), 8, 'cleared to plain grass');
+	assert.equal(clear.hero.buffs.invisibility, 5, 'camouflage keep-maxes');
+	assert.ok(clear.said.some((l) => l.includes('port.log.camouflage')), 'announced');
+	assert.deepEqual(clear.flags.restitched, [[2, 2]], 'restitched');
+	assert.deepEqual(clear.flags.probs, [1 / 25, 1 / 6], 'the plan odds reach the rolls');
+	const cursed = grassDrive({ defaultTerrain: 7, naturalism: -1, chance: [true, true] });
+	applyHighGrassTrample(cursed.ctx, 2, 2);
+	assert.equal(cursed.store.get(2 * 5 + 2), 8, 'still clearing');
+	assert.deepEqual(cursed.flags.drops, [], 'but suppressing both drops');
+	assert.deepEqual(cursed.flags.probs, [], 'without rolling at all');
+	const loot = grassDrive({ defaultTerrain: 7, chance: [true, true] });
+	applyHighGrassTrample(loot.ctx, 2, 2);
+	assert.deepEqual(loot.flags.drops, [
+		{ kind: 'seed', x: 2, y: 2, seedClass: 'firebloom' },
+		{ kind: 'dewdrop', x: 2, y: 2, seedClass: undefined },
+	], 'seed then dew, in Java order');
+	const bloom = grassDrive({ defaultTerrain: 1 });
+	assert.equal(plantBloomingGrass(bloom.ctx, 2, 2), true, 'floor blooms');
+	assert.equal(bloom.store.get(2 * 5 + 2), 7, 'to high grass');
+	assert.deepEqual(bloom.flags.restitched, [[2, 2]], 'restitched like a trample');
+	assert.equal(plantBloomingGrass(bloom.ctx, 9, 9), false, 'out of bounds refuses');
+	assert.equal(plantBloomingGrass(grassDrive({ defaultTerrain: 9 }).ctx, 2, 2), false, 'non-ground refuses');
+	assert.equal(plantBloomingGrass(grassDrive({ defaultTerrain: 1, planted: [2 * 5 + 2] }).ctx, 2, 2), false, 'a grown plant holds its cell');
 }
 	const { weaponSTRReq, armorSTRReq, missileSTRReq, canSurpriseAttack } = require('./items/strReq.js');
 	// `Weapon.STRReq`/`Armor.STRReq`/`MissileWeapon.STRReq` (tags `v2.1.4`/`v3.3.8`):
