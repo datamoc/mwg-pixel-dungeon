@@ -35,6 +35,7 @@ compile(join(root, 'src/items/bags.ts'), 'items/bags.js');
 compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	compile(join(root, 'src/items/resurrect.ts'), 'items/resurrect.js');
 	compile(join(root, 'src/items/itemActions.ts'), 'items/itemActions.js');
+	compile(join(root, 'src/items/equipment.ts'), 'items/equipment.js');
 	compile(join(root, 'src/items/shopPricing.ts'), 'items/shopPricing.js');
 	compile(join(root, 'src/items/shopActions.ts'), 'items/shopActions.js');
 	compile(join(root, 'src/items/blacksmith.ts'), 'items/blacksmith.js');
@@ -136,6 +137,7 @@ compile(join(root, 'src/items/itemWorkflows.ts'), 'items/itemWorkflows.js');
 	const { Inventory } = require('./actors/Inventory.js');
 	const { Appearances } = require('./actors/Appearances.js');
 	const { transferEnhancement, upgradeItem, reverseCurseInfusion, curseInfusionLevelBonus } = require('./items/workflows.js');
+	const { transferClassArmor } = require('./items/equipment.js');
 	const { transmuteItem, isTransmutableForScroll, missileTierForClass } = require('./items/transmutation.js');
 	const { missileDamageRange, missilePickupValid, recordMissileUpgrade, missileAdjacentAccFactor, missileBaseUses, bolasCrippleTurns, tomahawkBleedRange, BOOMERANG_RETURN_TURNS, BOOMERANG_RETURN_ACC_FACTOR, tippedDartUseDivisor, TIPPED_DART_BY_SEED } = require('./items/missiles.js');
 	const { blacksmithTurnInFavor, BLACKSMITH_FAVOR_CAP, BLACKSMITH_QUEST_BOSS_BONUS } = require('./items/blacksmith.js');
@@ -403,6 +405,24 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 	// bonus is 1 at +0, 2 from +6 and 3 from +12.
 	assert.deepEqual([0, 1, 3, 5, 6, 11, 12, 18].map(curseInfusionLevelBonus), [1, 2, 4, 6, 8, 13, 15, 22], 'curse-infusion level bonus matches Java');
 	assert.equal(reverseCurseInfusion({ id: 'sword', quantity: 1, level: 2 }), false);
+	{
+		const target = { id: 'armor', quantity: 1, instanceId: 'new-armor', level: 3, tier: 4, identified: true,
+			affix: 'viscosity', curseInfusionBonus: true, hardened: true };
+		const removed = [];
+		const ctx = {
+			bag: { find: () => target, remove: (...args) => removed.push(args) },
+			state: { armorInstanceId: 'old-armor', armorLevel: 0, armorTier: 2, armorGlyph: null,
+				armorHardened: false, armorIdentified: true, armorCurseInfusionBonus: false, armorSealed: true },
+			readArmor() { return this.state; }, writeArmor: (state) => { ctx.state = state; },
+			syncHeroFromStats: () => { ctx.synced = true; }, say: (line, level) => { ctx.message = [line, level]; }, spendTurn: () => { ctx.spent = true; },
+		};
+		assert.equal(transferClassArmor(ctx, 'armor', 'new-armor'), true);
+		assert.deepEqual(removed, [['armor', 1, 'new-armor']]);
+		assert.deepEqual({ instance: ctx.state.armorInstanceId, level: ctx.state.armorLevel, tier: ctx.state.armorTier, glyph: ctx.state.armorGlyph,
+			hardened: ctx.state.armorHardened, identified: ctx.state.armorIdentified, infusion: ctx.state.armorCurseInfusionBonus, sealed: ctx.state.armorSealed },
+			{ instance: 'new-armor', level: 3, tier: 4, glyph: 'viscosity', hardened: true, identified: true, infusion: true, sealed: true });
+		assert.equal(ctx.synced, true); assert.deepEqual(ctx.message, ['items.armor.classarmor.transfer_complete', 'positive']); assert.equal(ctx.spent, true);
+	}
 	const looks = new Appearances({ potion: { kinds: ['a', 'b'], labels: ['red', 'blue'] } });
 	const first = looks.appearanceOf('potion', 'a');
 	const restored = Appearances.fromJSON({ potion: { kinds: ['a', 'b'], labels: ['red', 'blue'] } }, looks.toJSON());

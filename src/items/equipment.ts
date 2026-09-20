@@ -138,6 +138,46 @@ export function equipArmor(scene: GearEquipmentContext, id: string, instanceId?:
 	scene.offerSealTransfer(outgoingWasSealed, getCurse(item.affix ?? '') !== undefined);
 }
 
+export interface ClassArmorState { armorInstanceId?: string; armorLevel: number; armorTier: number; armorGlyph: string | null; armorHardened: boolean; armorIdentified: boolean; armorCurseInfusionBonus: boolean; armorSealed: boolean }
+export interface ClassArmorTransferContext {
+	readonly bag: Actors.Inventory; readArmor(): ClassArmorState; writeArmor(state: ClassArmorState): void;
+	syncHeroFromStats(): void; say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void; spendTurn(): void;
+}
+
+/** `ClassArmor.execute(AC_TRANSFER)` (`ClassArmor.java`, tag `v3.3.8`): destroy the
+ * class-armor shell while keeping its ability/charge, and put those properties on a
+ * selected armor with that armor's own level, tier, glyph, curse and identification. */
+export function transferClassArmor(scene: ClassArmorTransferContext, id: string, instanceId?: string): boolean {
+	const target = scene.bag.find(id, instanceId);
+	if (!target || target.quantity <= 0) return false;
+	const armor = scene.readArmor();
+	scene.bag.remove(id, 1, target.instanceId);
+	scene.writeArmor({ armorInstanceId: target.instanceId, armorLevel: Math.min(5, target.level ?? 0),
+		armorTier: Math.max(1, Math.min(5, (target as typeof target & { tier?: number }).tier ?? armor.armorTier)),
+		armorGlyph: target.affix ?? null, armorHardened: (target as typeof target & { hardened?: boolean }).hardened ?? false,
+		armorIdentified: target.identified ?? false, armorCurseInfusionBonus: (target as typeof target & { curseInfusionBonus?: boolean }).curseInfusionBonus ?? false,
+		armorSealed: armor.armorSealed || Boolean((target as typeof target & { seal?: boolean }).seal) });
+	scene.syncHeroFromStats();
+	scene.say('items.armor.classarmor.transfer_complete', 'positive');
+	scene.spendTurn();
+	return true;
+}
+
+export interface ClassArmorTransferScene extends ClassArmorState {
+	readonly bag: Actors.Inventory;
+	syncHeroFromStats(): void;
+}
+export type ClassArmorPicker = (title: string, entries: { id: string; instanceId?: string; quantity: number; identified?: boolean }[], onPick: (entry: { id: string; instanceId?: string }) => void, body: string) => void;
+
+/** Inventory-window adapter for `ClassArmor.execute(AC_TRANSFER)`; the picker remains UI-owned. */
+export function openClassArmorTransfer(scene: ClassArmorTransferScene, openPicker: ClassArmorPicker, refresh: () => void, translate: (key: string) => string, say: (line: string, level?: 'info' | 'positive' | 'negative' | 'warning') => void, spendTurn: () => void): void {
+	const entries = scene.bag.items.filter((item) => item.quantity > 0 && (item.id === 'clothArmor' || item.id === 'armor' || item.id === 'armorReward' || item.id.endsWith('armor')))
+		.map((item) => ({ id: item.id, instanceId: item.instanceId, quantity: item.quantity, identified: item.identified }));
+	openPicker(translate('items.armor.classarmor.transfer_title'), entries, (pick) => {
+		if (transferClassArmor({ bag: scene.bag, readArmor: () => scene, writeArmor: (state) => Object.assign(scene, state), syncHeroFromStats: () => scene.syncHeroFromStats(), say: (line, level) => say(translate(line), level), spendTurn }, pick.id, pick.instanceId)) refresh();
+	}, translate('items.armor.classarmor.transfer_desc'));
+}
+
 export function equipWeapon(scene: GearEquipmentContext, id: string, instanceId?: string): void {
 	const item = scene.bag.find(id, instanceId);
 	if (!item || scene.weaponInstanceId === item.instanceId) return;

@@ -554,7 +554,7 @@ was judged not worth the churn against those existing references.
       "staff-imbue system"/"wand-randomization pass" phrasing this line carried before. The
       Cleric's three have neither strings nor a spell system here.
       **2026-09-19**: `ClassArmor` as a distinct item is ported - the crown choice and the Rat
-      King exchange convert the worn armor to the hero's per-class subclass id (named from SPD's own keys, Cleric via `port.*` with tag-`v3.3.8` translations), keeping tier/level/glyph/curse and the Warrior's seal; still open and stated are `AC_TRANSFER` and the class-armor sprite tier. Ratmogrify is fully ported since 2026-09-19 (its own
+      King exchange convert the worn armor to the hero's per-class subclass id (named from SPD's own keys, Cleric via `port.*` with tag-`v3.3.8` translations), keeping tier/level/glyph/curse and the Warrior's seal. **Closed 2026-09-20:** `AC_TRANSFER` now moves the class-armor ability/charge onto a selected armor with Java's target properties and one-turn cost; the compact single-action detail window exposes detach first when sealed, then transfer. Still open is the class-armor sprite tier. Ratmogrify is fully ported since 2026-09-19 (its own
       `class: "any"` row opens the tier-4 tab and `RATLOMACY`/`RATFORCEMENTS`
       run, and `RATSISTANCE`'s `0.9^points` factor rides the attack multiplier with a stated
       rounding note). See

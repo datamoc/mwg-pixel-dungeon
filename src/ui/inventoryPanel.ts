@@ -4,6 +4,7 @@ import { generatorItemOrder } from '../items/generator';
 import { InventoryWindow, type InventoryEntry } from './inventoryWindow';
 import { MWL_CONSUMABLE_DESCRIPTION_KEYS, MWL_EQUIPMENT_DESCRIPTION_KEYS, MWL_ITEM_ACTION_RULES, MWL_ITEM_FRAMES, MWL_ITEM_SPECIFIC_FRAMES, MWL_MISSILE_DESCRIPTION_KEYS } from '../mwlContent';
 import { getArtifact, getAllArtifactIds } from '../items/artifacts';
+import { isClassArmorId } from '../items/catalog';
 
 /** Real artifact ids, derived from the same `artifacts.mwl` roster `generatedInventoryItem`'s
  * generation switch routes to (see `getAllArtifactIds`), plus `holyTome` - a Cleric equip-slot
@@ -27,6 +28,7 @@ export interface InventoryPanelContext {
 	readonly armorId: string;
 	readonly armorInstanceId?: string;
 	readonly armorLevel: number;
+	readonly armorSealed: boolean;
 	readonly weaponInstanceId?: string;
 	readonly weaponName: string;
 	readonly weaponFrame: number;
@@ -81,7 +83,9 @@ export function refreshInventoryPanel(context: InventoryPanelContext): void {
 	const rows = context.items.filter(item => (item.quantity ?? 0) > 0).map(entry)
 		.sort((a, b) => generatorItemOrder(a.sourceClass, a.id, a.frame) - generatorItemOrder(b.sourceClass, b.id, b.frame));
 	const armor = context.armorId === 'startingArmor' ? null : entry({ id: context.armorId, instanceId: context.armorInstanceId, quantity: 1, identified: true, level: context.armorLevel });
-	if (armor) armor.action = undefined;
+	// Java lists both AC_DETACH and AC_TRANSFER; the compact detail window has one action button,
+	// so a sealed class armor exposes detach first, then exposes transfer after the seal is removed.
+	if (armor) armor.action = context.armorSealed ? t('items.armor.armor.detach_seal') : isClassArmorId(context.armorId) ? t('items.armor.classarmor.ac_transfer') : undefined;
 	const artifact = rows.find(item => ARTIFACT_SLOT_IDS.has(item.id)) ?? null;
 	const weapon: InventoryEntry = { id: 'equippedWeapon', instanceId: context.weaponInstanceId, name: context.weaponName,
 		frame: context.weaponFrame, quantity: 1, identified: true, description: context.weaponDescription };

@@ -244,7 +244,7 @@ import { beaconChargeCap, useBeaconFlow, useReturningBeaconFlow, type BeaconFlow
 import { useTelekineticGrabFlow, usePhaseShiftFlow, useReclaimTrapFlow, useRecycleFlow, useCurseInfusionFlow, useMagicalInfusionFlow, useFeatherFallFlow, useWildEnergyFlow, useStylusFlow, useAlchemizeFlow, type TargetedSpellAim, type TelekineticGrabContext, type PhaseShiftContext, type ReclaimTrapContext, type RecycleContext, type InfusionBase, type CurseInfusionContext, type CastBase, type FeatherFallContext, type WildEnergyContext, type StylusContext, type AlchemizeContext } from '../items/spells';
 import { planWealthDrops, wealthEquipBonus, initialiseWealthTrackers, wealthDeathRolls, type WealthDropPlan, type WealthTrackers } from '../items/wealthDrops';
 import { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal, artifactRechargeDuration, wildEnergyRechargeTurns, type RechargeGuards } from '../items/artifactRecharge';
-import { equipRing as equipInventoryRing, equipArmor as equipInventoryArmor, equipWeapon as equipInventoryWeapon, type GearEquipmentContext, type RingEquipmentContext } from '../items/equipment';
+import { equipRing as equipInventoryRing, equipArmor as equipInventoryArmor, equipWeapon as equipInventoryWeapon, openClassArmorTransfer as openInventoryClassArmorTransfer, type GearEquipmentContext, type RingEquipmentContext } from '../items/equipment';
 import { itemDescription, itemStatsLine, itemDisplayName as resolveItemDisplayName, type ItemDisplayContext } from '../items/displayName';
 import { weaponSTRReq, canSurpriseAttack } from '../items/strReq';
 import { useStoneById as routeStoneAction, type StoneActionContext } from '../items/stoneActions';
@@ -18104,9 +18104,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			panel: this.inventoryPanel,
 			open: this.inventoryOpen,
 			items: this.bag.items,
-			armorId: this.armorId,
-			armorInstanceId: this.armorInstanceId,
-			armorLevel: this.armorLevel,
+			armorId: this.armorId, armorInstanceId: this.armorInstanceId, armorLevel: this.armorLevel, armorSealed: this.armorSealed,
 			weaponInstanceId: this.weaponInstanceId,
 			//`WEAPON_NAME_BY_CLASS` names the hero's real equipped class once it stops being the
 			//starting weapon (`equipWeapon`'s `scene.weaponSourceClass = id`) - this used to stay
@@ -18265,12 +18263,13 @@ private eyeBeamTurn(monster: Creature): boolean {
 		routeItemAction(this.itemActionContext(), id, instanceId);
 	}
 
+	private transferClassArmor(): void { openInventoryClassArmorTransfer(this as unknown as Parameters<typeof openInventoryClassArmorTransfer>[0], this.openItemPicker.bind(this), this.refresh.bind(this), t, (line, level) => this.say(line, level), () => { this.actionSpentTurn = true; this.spendHeroTurn(1); }); }
 	private itemActionContext(): ItemActionContext {
 		return {
 			awaitingInput: this.awaitingInput,
 			setRequestedItem: (id, instanceId) => { this.requestedItemId = id; this.requestedItemInstanceId = instanceId; },
 			onAction: this.onAction.bind(this),
-			equipRing: this.equipRing.bind(this), equipArmor: this.equipArmor.bind(this),
+			equipRing: this.equipRing.bind(this), equipArmor: this.equipArmor.bind(this), transferClassArmor: this.transferClassArmor.bind(this),
 			equipWeapon: this.equipWeapon.bind(this), equipWand: this.equipWand.bind(this),
 			mineWithPickaxe: this.mineWithPickaxe.bind(this), plantSeed: this.plantSeed.bind(this),
 			useHourglass: this.useHourglass.bind(this), useCloak: this.useCloak.bind(this),

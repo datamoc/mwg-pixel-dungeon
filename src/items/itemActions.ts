@@ -10,6 +10,7 @@ export interface ItemActionContext {
 	onAction(action: string): boolean;
 	equipRing(id: string, instanceId?: string): void;
 	equipArmor(id: string, instanceId?: string): void;
+	transferClassArmor(id: string, instanceId?: string): void;
 	equipWeapon(id: string, instanceId?: string): void;
 	equipWand(): void;
 	mineWithPickaxe(): void;
@@ -132,7 +133,8 @@ export function useItemById(scene: ItemActionContext, id: string, instanceId?: s
 		else if (id === 'waterskin' || id.startsWith('potion')) scene.onAction('quaff');
 		else if (id.startsWith('scroll')) scene.onAction(id === 'scrollUpgrade' ? 'upgrade' : 'read');
 		else if (id.startsWith('ring_')) scene.equipRing(id, instanceId);
-		else if (id === 'clothArmor' || id === 'armor' || id === 'armorReward' || isClassArmorId(id)) scene.equipArmor(id, instanceId);
+		else if (isClassArmorId(id)) scene.transferClassArmor(id, instanceId);
+		else if (id === 'clothArmor' || id === 'armor' || id === 'armorReward') scene.equipArmor(id, instanceId);
 		else if (id === 'weaponReward') scene.equipWeapon(id, instanceId);
 		else if (id === 'wand') scene.equipWand();
 		else if (id === 'pickaxe') scene.mineWithPickaxe();
