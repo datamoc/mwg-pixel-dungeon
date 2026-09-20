@@ -1,5 +1,6 @@
 import { Roguelike } from 'mwg';
-import { addBuff, type Creature } from '../combat';
+import { isChallengeEnabled } from '../challenges';
+import { addBuff, type BuffId, type Creature } from '../combat';
 import { applyChillFreeze } from '../simulation/buffs';
 import { brewNeighbourSeedPlan, SHROUDING_FOG_VOLUME } from '../simulation/brews';
 import { WALL } from '../dungeonConstants';
@@ -29,15 +30,73 @@ export interface PotionEffectsContext {
 	readonly showDamage: (target: Creature, amount: number) => void;
 	readonly kill: (target: Creature) => void;
 	readonly say: (line: string, level?: 'info' | 'positive' | 'negative' | 'warning') => void;
-	readonly applyPotionHealing: () => void;
-	readonly applyPotionPurity: () => void;
+	get healingLeft(): number;
+	set healingLeft(value: number);
+	get healingPercent(): number;
+	set healingPercent(value: number);
+	set healingEvasionTurns(turns: number);
+	readonly grantHeroShield: (amount: number, cap: number) => void;
+}
+
+/** `PotionOfHealing.cure()`: the curable debuffs this port models, shared by the potion, by
+ * `RegrowthBomb` (which calls the same `cure()`/`heal()` pair), by Mageroyal (whose whole
+ * effect is `cure()`), by the health well (`WaterOfHealth.affectHero()` calls `cure()` first)
+ * and by the blessed-ankh revive. Java detaches Poison/Cripple/Weakness/Vulnerable/Bleeding/
+ * Blindness/Drowsy/Slow/Vertigo, never Burning: Slow has no model here, and Java's own Daze
+ * is a different buff (accuracy ×0.5, `Daze.DURATION` 5 - this port's `daze` table value is
+ * exact), so the `daze` this port grants as a Blindness/Vertigo stand-in is deliberately
+ * NOT cleared, matching Java not clearing Daze. */
+export function cureHeroBuffs(hero: Creature): void {
+	for (const b of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'drowsy', 'blindness'] as BuffId[]) delete hero.buffs[b];
+}
+
+export function applyPotionHealing(context: PotionEffectsContext): void {
+	//PotionOfHealing.apply(): cure() always runs first regardless of the challenge below.
+	//Real cure() also detaches Bleeding/Blindness/Drowsy/Slow/Vertigo. Only Bleeding and
+	//Drowsy exist in this port so far, and both are cleared here. It does NOT touch Burning; that was
+	//a real, unwarranted addition here (2026-09-09 item-system audit) - a healing potion
+	//does not extinguish fire in real Java, removed.
+	cureHeroBuffs(context.hero);
+	if (isChallengeEnabled('no_healing')) {
+		//PotionOfHealing.heal()'s real NO_HEALING branch: no Healing buff at all (so none
+		//of the restored_*-talent triggers below fire either, since they key off the heal
+		//actually happening), instead pharmacophobiaProc() sets a fresh Poison(4+lvl/2) -
+		//found dead alongside the other challenge audits this session.
+		context.hero.buffs['poison'] = 4 + Math.floor(context.progression.level / 2);
+		context.say(t('port.log.pharmacophobia'), 'negative');
+	} else {
+		//PotionOfHealing.heal(): `Buff.affect(ch, Healing.class).setHeal((int)(0.8*HT+14), 0.25, 0)`
+		//- a gradual heal-over-time, not an instant full heal (see the applyBuffDamage tick
+		//in spendHeroTurn). `setHeal` only replaces `healingLeft` if the new amount is bigger,
+		//so quaffing a second potion mid-heal doesn't stack additively on top of the first -
+		//and it takes the property-wise maximum, so a Warden sungrass's flat 1/turn survives
+		//a later potion (and vice versa) exactly as Java's `Math.max` on each field does.
+		const amount = Math.round(0.8 * context.hero.maxHp + 14);
+		if (amount > context.healingLeft) context.healingLeft = amount;
+		context.healingPercent = Math.max(context.healingPercent, 0.25);
+		const willpower = context.talentRank('restored_willpower');
+		if (willpower > 0) context.grantHeroShield(Math.round(context.hero.maxHp * (willpower === 1 ? 0.67 : 1)), context.hero.maxHp);
+		if (context.talentRank('restored_agility') > 0) { context.healingEvasionTurns = 1; context.syncHeroFromStats(); }
+		const nature = context.talentRank('restored_nature');
+		if (nature > 0) for (const enemy of context.creatures.filter(c => !c.isHero && !c.isNPC && Roguelike.chebyshevDistance(context.hero, c) <= 1)) addBuff(enemy, 'roots');
+		context.say(t('port.log.quaffhealing'), 'positive');
+	}
+}
+
+export function applyPotionPurity(hero: Creature, say: PotionEffectsContext['say']): void {
+	//PotionOfPurity.apply() itself only clears poison/burning ('potionPurity' - Java's
+	//`GasCloud`/`Fire` extinguish). Every generated potion id now has its own registry
+	//entry above (PotionOfFrost was the last one missing one), so this is genuinely just
+	//Purity's effect. See `PORT_COVERAGE.md`.
+	for (const b of ['poison', 'burning'] as BuffId[]) delete hero.buffs[b];
+	say(t('port.log.purity'), 'positive');
 }
 
 /** Potion subclasses' effects. Scene-dependent services are injected so this registry remains in the item graph. */
 export function createPotionEffects(scene: PotionEffectsContext): Record<string, () => void> {
 	return {
-		potion: () => scene.applyPotionHealing(),
-		potionHealing: () => scene.applyPotionHealing(),
+		potion: () => applyPotionHealing(scene),
+		potionHealing: () => applyPotionHealing(scene),
 		potionStrength: () => {
 			scene.heroStr += mwlItemEffectValue('potionStrength', 'strengthBonus');
 			scene.syncHeroFromStats();
@@ -123,7 +182,7 @@ export function createPotionEffects(scene: PotionEffectsContext): Record<string,
 			}
 			scene.say(t('port.log.quafffrost'), 'positive');
 		},
-		potionPurity: () => scene.applyPotionPurity(),
+		potionPurity: () => applyPotionPurity(scene.hero, scene.say),
 		//`PotionOfShroudingFog.shatter()` (tag `v3.3.8`): 180 `SmokeScreen` on every
 		//open NEIGHBOURS8 cell, the center taking 180 plus 180 per solid neighbour.
 		//`Potion.apply()`'s default body is `shatter(hero.pos)`, so quaffing is the

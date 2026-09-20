@@ -3597,6 +3597,69 @@ function upgradeGearDrive(overrides = {}) {
 	createPotionEffects(walledScene).potionShrouding();
 	assert.equal(walled.length, 8, 'the walled neighbour seeds nothing');
 	assert.equal(walled.find((s) => s.x === 2 && s.y === 2)?.volume, 360, 'its share piles onto the center');
+// The healing/purity trio moved to `items/potionEffects.ts` (the file-size refactor's
+// twenty-ninth extraction, behavior-identical): the registry calls the module functions
+// directly now. Driven headlessly with a scripted heal pool - the cure list (burning
+// and the daze stand-in deliberately kept), the max-rule pool, the willpower/agility
+// riders, purity's poison-plus-burning clear, and the registry wiring itself.
+// (`combat` is stubbed here, so the restored_nature roots and the stubbed-off
+// no_healing challenge branch stay live-only by construction.)
+const { applyPotionHealing, applyPotionPurity, cureHeroBuffs } = require('./items/potionEffects.js');
+function healingDrive(overrides = {}) {
+	const said = [];
+	const pool = { left: overrides.healingLeft ?? 0, percent: 0, evasion: 0 };
+	const flags = { synced: 0, shield: null };
+	const hero = { hp: 20, maxHp: 20, buffs: { ...(overrides.heroBuffs ?? {}) }, damage: [1, 2] };
+	const ctx = {
+		hero,
+		creatures: overrides.creatures ?? [],
+		progression: { level: overrides.level ?? 1 },
+		talentRank: (id) => (overrides.ranks ?? {})[id] ?? 0,
+		get healingLeft() { return pool.left; },
+		set healingLeft(v) { pool.left = v; },
+		get healingPercent() { return pool.percent; },
+		set healingPercent(v) { pool.percent = v; },
+		set healingEvasionTurns(v) { pool.evasion = v; },
+		grantHeroShield: (amount, cap) => { flags.shield = { amount, cap }; },
+		syncHeroFromStats: () => { flags.synced++; },
+		say: (line, level) => { said.push(`${level}:${line}`); },
+		...overrides.ctx,
+	};
+	return { ctx, said, flags, pool, hero };
+}
+{
+	const cured = { buffs: { poison: 1, bleeding: 1, weakness: 1, vulnerable: 1, cripple: 1, drowsy: 1, blindness: 1, burning: 1, daze: 1 } };
+	cureHeroBuffs(cured);
+	assert.deepEqual(cured.buffs, { burning: 1, daze: 1 }, 'cure clears the seven modeled debuffs, never burning or the daze stand-in');
+	const d = healingDrive({ heroBuffs: { poison: 2 } });
+	applyPotionHealing(d.ctx);
+	assert.deepEqual(d.hero.buffs, {}, 'quaffing cures first');
+	assert.equal(d.pool.left, Math.round(0.8 * 20 + 14), 'banking 0.8*HT+14');
+	assert.equal(d.pool.percent, 0.25, 'at the quarter rate');
+	assert.ok(d.said.some((l) => l.includes('port.log.quaffhealing')), 'announced');
+	const full = healingDrive({ healingLeft: 50 });
+	applyPotionHealing(full.ctx);
+	assert.equal(full.pool.left, 50, 'a bigger running pool is not stacked onto');
+	const will1 = healingDrive({ ranks: { restored_willpower: 1 } });
+	applyPotionHealing(will1.ctx);
+	assert.deepEqual(will1.flags.shield, { amount: Math.round(20 * 0.67), cap: 20 }, 'rank-1 willpower shields two thirds');
+	const will2 = healingDrive({ ranks: { restored_willpower: 2 } });
+	applyPotionHealing(will2.ctx);
+	assert.deepEqual(will2.flags.shield, { amount: 20, cap: 20 }, 'rank-2 shields the whole bar');
+	const agi = healingDrive({ ranks: { restored_agility: 1 } });
+	applyPotionHealing(agi.ctx);
+	assert.equal(agi.pool.evasion, 1, 'agility arms the evasion turn');
+	assert.equal(agi.flags.synced, 1, 'and resyncs');
+	const pure = healingDrive({ heroBuffs: { poison: 2, burning: 1, weakness: 1 } });
+	applyPotionPurity(pure.hero, pure.ctx.say);
+	assert.deepEqual(pure.hero.buffs, { weakness: 1 }, 'purity clears poison and burning only');
+	assert.ok(pure.said.some((l) => l.includes('port.log.purity')), 'announced');
+	const wired = healingDrive();
+	createPotionEffects(wired.ctx).potionHealing();
+	assert.equal(wired.pool.left, Math.round(0.8 * 20 + 14), 'the registry reaches the moved healer');
+	createPotionEffects(wired.ctx).potionPurity();
+	assert.ok(wired.said.some((l) => l.includes('port.log.purity')), 'and the moved purifier');
+}
 	const { weaponSTRReq, armorSTRReq, missileSTRReq, canSurpriseAttack } = require('./items/strReq.js');
 	// `Weapon.STRReq`/`Armor.STRReq`/`MissileWeapon.STRReq` (tags `v2.1.4`/`v3.3.8`):
 	// `(8 + tier*2) - (int)(sqrt(8*lvl+1)-1)/2`, decreasing at +1/+3/+6/+10.

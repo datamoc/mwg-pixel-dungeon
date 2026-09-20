@@ -17,7 +17,7 @@ import { dispatchHeroAction, type HeroActionPorts } from '../adapters/heroAction
 import { BOOMERANG_RETURN_ACC_FACTOR, BOOMERANG_RETURN_TURNS, MISSILE_DEFAULT_QUANTITY, MISSILE_MAX_DURABILITY, bolasCrippleTurns, missileAdjacentAccFactor, missileBaseUses, missileDamageRange, missileFlightArt, missilePickupValid, missileStackFields, missileStackId, recordMissileUpgrade, tippedDartUseDivisor, tomahawkBleedRange, type MissileFlightArt } from '../items/missiles';
 import { eatFood as eatConsumableFood, quaffPotion as quaffConsumablePotion, applyMealEatenEffects, type ConsumableContext } from '../items/consumables';
 import { applyScrollEffect, readScrollFlow, rollUpgradeAffixLoss, upgradeGearFlow, type ReadScrollContext, type ScrollEffectsContext, type UpgradeGearContext } from '../items/scrollEffects';
-import { createPotionEffects } from '../items/potionEffects';
+import { applyPotionPurity, createPotionEffects, cureHeroBuffs } from '../items/potionEffects';
 import { placeCandleAtSlot, aimCandleFlow, type CandleContext, type CandleAimContext } from '../items/candles';
 import { throwTenguBomb, useBomb as useItemBomb, aimBombFlow, type BombContext, type BombAimContext } from '../items/bombs';
 import { detonateBomb, type BombEffectsContext } from '../items/bombEffects';
@@ -5287,58 +5287,19 @@ export class DungeonScene extends Scene2D {
 	 */
 	private readonly potionEffects = createPotionEffects(this.potionEffectsContext());
 
-	/** `PotionOfHealing.cure()`: the curable debuffs this port models, shared by the potion, by
-	 * `RegrowthBomb` (which calls the same `cure()`/`heal()` pair), by Mageroyal (whose whole
-	 * effect is `cure()`), by the health well (`WaterOfHealth.affectHero()` calls `cure()` first)
-	 * and by the blessed-ankh revive. Java detaches Poison/Cripple/Weakness/Vulnerable/Bleeding/
-	 * Blindness/Drowsy/Slow/Vertigo, never Burning: Slow has no model here, and Java's own Daze
-	 * is a different buff (accuracy ×0.5, `Daze.DURATION` 5 - this port's `daze` table value is
-	 * exact), so the `daze` this port grants as a Blindness/Vertigo stand-in is deliberately
-	 * NOT cleared, matching Java not clearing Daze. */
+	/**
+	 * The healing/purity trio lives in `items/potionEffects.ts` (`cureHeroBuffs`,
+	 * `applyPotionHealing`, `applyPotionPurity`) - the file-size refactor's
+	 * twenty-ninth extraction, behavior-identical. The registry calls the module
+	 * functions directly now; the scene keeps these thin adapters for the wells,
+	 * the ankh revive and `quaffPotion`'s own fallback.
+	 */
 	private cureHeroBuffs(): void {
-		for (const b of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'drowsy', 'blindness'] as BuffId[]) delete this.hero.buffs[b];
-	}
-
-	private applyPotionHealing(): void {
-		//PotionOfHealing.apply(): cure() always runs first regardless of the challenge below.
-		//Real cure() also detaches Bleeding/Blindness/Drowsy/Slow/Vertigo. Only Bleeding and
-		//Drowsy exist in this port so far, and both are cleared here. It does NOT touch Burning; that was
-		//a real, unwarranted addition here (2026-09-09 item-system audit) - a healing potion
-		//does not extinguish fire in real Java, removed.
-		this.cureHeroBuffs();
-		if (isChallengeEnabled('no_healing')) {
-			//PotionOfHealing.heal()'s real NO_HEALING branch: no Healing buff at all (so none
-			//of the restored_*-talent triggers below fire either, since they key off the heal
-			//actually happening), instead pharmacophobiaProc() sets a fresh Poison(4+lvl/2) -
-			//found dead alongside the other challenge audits this session.
-			this.hero.buffs['poison'] = 4 + Math.floor(this.progression.level / 2);
-			this.say(t('port.log.pharmacophobia'), 'negative');
-		} else {
-			//PotionOfHealing.heal(): `Buff.affect(ch, Healing.class).setHeal((int)(0.8*HT+14), 0.25, 0)`
-			//- a gradual heal-over-time, not an instant full heal (see the applyBuffDamage tick
-			//in spendHeroTurn). `setHeal` only replaces `healingLeft` if the new amount is bigger,
-			//so quaffing a second potion mid-heal doesn't stack additively on top of the first -
-			//and it takes the property-wise maximum, so a Warden sungrass's flat 1/turn survives
-			//a later potion (and vice versa) exactly as Java's `Math.max` on each field does.
-			const amount = Math.round(0.8 * this.hero.maxHp + 14);
-			if (amount > this.healingLeft) this.healingLeft = amount;
-			this.healingPercent = Math.max(this.healingPercent, 0.25);
-			const willpower = this.talentRank('restored_willpower');
-			if (willpower > 0) this.grantHeroShield(Math.round(this.hero.maxHp * (willpower === 1 ? 0.67 : 1)), this.hero.maxHp);
-			if (this.talentRank('restored_agility') > 0) { this.healingEvasionTurns = 1; this.syncHeroFromStats(); }
-			const nature = this.talentRank('restored_nature');
-			if (nature > 0) for (const enemy of this.creatures.filter(c => !c.isHero && !c.isNPC && Roguelike.chebyshevDistance(this.hero, c) <= 1)) addBuff(enemy, 'roots');
-			this.say(t('port.log.quaffhealing'), 'positive');
-		}
+		cureHeroBuffs(this.hero);
 	}
 
 	private applyPotionPurity(): void {
-		//PotionOfPurity.apply() itself only clears poison/burning ('potionPurity' - Java's
-		//`GasCloud`/`Fire` extinguish). Every generated potion id now has its own registry
-		//entry above (PotionOfFrost was the last one missing one), so this is genuinely just
-		//Purity's effect. See `PORT_COVERAGE.md`.
-		for (const b of ['poison', 'burning'] as BuffId[]) delete this.hero.buffs[b];
-		this.say(t('port.log.purity'), 'positive');
+		applyPotionPurity(this.hero, this.say.bind(this));
 	}
 
 	/**
@@ -19477,8 +19438,12 @@ private eyeBeamTurn(monster: Creature): boolean {
 			showDamage: this.showDamage.bind(this),
 			kill: (target: Creature) => this.kill(target),
 			say: this.say.bind(this),
-			applyPotionHealing: this.applyPotionHealing.bind(this),
-			applyPotionPurity: this.applyPotionPurity.bind(this),
+			get healingLeft() { return scene.healingLeft; },
+			set healingLeft(value: number) { scene.healingLeft = value; },
+			get healingPercent() { return scene.healingPercent; },
+			set healingPercent(value: number) { scene.healingPercent = value; },
+			set healingEvasionTurns(turns: number) { scene.healingEvasionTurns = turns; },
+			grantHeroShield: (amount: number, cap: number) => { scene.grantHeroShield(amount, cap); },
 		};
 	}
 

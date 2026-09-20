@@ -1430,7 +1430,21 @@ one.
       incompatible loss/keep on both slots, hardening floor and loss, empty queues
       proving the below-floor branches roll nothing). Two drive-setup bugs caught by
       the suite itself (ammo-class defaults and equal-level ties divert branches).
-      **Complexity: S.**
+      **Complexity: S.** **Twenty-ninth extraction 2026-09-20**: the healing/purity
+      trio (`cureHeroBuffs`, `applyPotionHealing`, `applyPotionPurity`) moved to
+      `items/potionEffects.ts`, where the quaff registry now calls them directly
+      instead of through scene callbacks; the scene keeps thin `cureHeroBuffs`/
+      `applyPotionPurity` adapters for the wells, the ankh revive and `quaffPotion`'s
+      own fallback (`applyPotionHealing` had no other caller and is gone), and the
+      context trades the two callbacks for heal-pool accessors plus a shield grant.
+      Net −35 lines in `dungeonScene.ts` (22,659 after), `potionEffects.ts` 141 to 200.
+      Suites: `tsc` clean after one real catch (contextually-typed lambda params need
+      explicit types here), item suite green first try with a new drive (the
+      seven-debuff cure keeping burning and the daze stand-in, the max-rule pool, the
+      willpower/agility riders, purity's poison-plus-burning clear, the registry
+      wiring). The stubbed-`addBuff` roots branch and the stubbed-off no_healing
+      branch stay live-only by construction, stated in the drive comment.
+      **Complexity: XS.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that
