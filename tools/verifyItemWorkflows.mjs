@@ -4045,6 +4045,32 @@ const { nearestVisibleEnemy } = require('./simulation/targeting.js');
 	assert.equal(pick([far, near]), near, 'nearest wins regardless of order');
 	assert.equal(pick([far], 3), null, 'range gates the farther one');
 }
+// `aggressionTarget` moved to `simulation/targeting.ts` (the file-size refactor's
+// thirty-sixth extraction, behavior-identical): driven headlessly with scripted
+// geometry - seeker/npc/dead/unbuffed/range exclusions, enemy and ally carriers
+// included, nearest-wins ordering.
+const { aggressionTarget } = require('./simulation/targeting.js');
+{
+	const monster = { x: 0, y: 0 };
+	const geo = {
+		canTarget: (level, origin, target, { range }) =>
+			Math.max(Math.abs(target.x - origin.x), Math.abs(target.y - origin.y)) <= range,
+		chebyshevDistance: (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)),
+	};
+	const carrier = (extra) => ({ hp: 5, buffs: { aggression: 10 }, ...extra });
+	const seek = (creatures) => aggressionTarget(null, monster, creatures, geo);
+	assert.equal(seek([]), null, 'empty floor, no target');
+	assert.equal(seek([monster]), null, 'never the seeker itself');
+	assert.equal(seek([carrier({ isNPC: true, x: 1, y: 0 })]), null, 'never an npc');
+	assert.equal(seek([carrier({ hp: 0, x: 1, y: 0 })]), null, 'never the dead');
+	assert.equal(seek([{ hp: 5, buffs: {}, x: 1, y: 0 }]), null, 'never the unbuffed');
+	assert.equal(seek([carrier({ x: 9, y: 0 })]), null, 'never out of range');
+	const farCarrier = carrier({ x: 4, y: 0 });
+	const nearCarrier = carrier({ x: 1, y: 1, isAlly: true });
+	assert.equal(seek([farCarrier]), farCarrier, 'enemy carriers count');
+	assert.equal(seek([nearCarrier]), nearCarrier, 'ally carriers count too');
+	assert.equal(seek([farCarrier, nearCarrier]), nearCarrier, 'nearest wins regardless of order');
+}
 	const { weaponSTRReq, armorSTRReq, missileSTRReq, canSurpriseAttack } = require('./items/strReq.js');
 	// `Weapon.STRReq`/`Armor.STRReq`/`MissileWeapon.STRReq` (tags `v2.1.4`/`v3.3.8`):
 	// `(8 + tier*2) - (int)(sqrt(8*lvl+1)-1)/2`, decreasing at +1/+3/+6/+10.

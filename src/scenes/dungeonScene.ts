@@ -196,7 +196,7 @@ import { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } from '../s
 import { teleportAppearPlan } from '../simulation/teleportAppear';
 import { evolveElectricity, evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
-import { nearestVisibleEnemy as nearestVisibleEnemyFlow, selectRangedTarget } from '../simulation/targeting';
+import { aggressionTarget as aggressionTargetFlow, nearestVisibleEnemy as nearestVisibleEnemyFlow, selectRangedTarget } from '../simulation/targeting';
 import { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLeapCooldown } from '../simulation/ripperLeap';
 import { shouldSuccubusBlink, chooseSuccubusBlinkCell, succubusBlinkCooldown } from '../simulation/succubusBlink';
 import { useBrewFlow, type BrewFlowContext } from '../simulation/brews';
@@ -9880,11 +9880,13 @@ export class DungeonScene extends Scene2D {
 		return selectRangedTarget(this.level, monster, this.hero, this.creatures, range, simulationRoguelike);
 	}
 
+	/**
+	 * `Mob.chooseEnemy()`'s Aggression priority lives in `simulation/targeting.ts`
+	 * as `aggressionTarget` - the file-size refactor's thirty-sixth extraction,
+	 * behavior-identical. The scene only binds its level and creatures here.
+	 */
 	private aggressionTarget(monster: Creature): Creature | null {
-		return this.creatures
-			.filter((c) => c !== monster && !c.isNPC && c.hp > 0 && c.buffs['aggression']
-				&& Roguelike.canTarget(this.level, monster, c, { range: 8 }))
-			.sort((a, b) => Roguelike.chebyshevDistance(monster, a) - Roguelike.chebyshevDistance(monster, b))[0] ?? null;
+		return aggressionTargetFlow(this.level, monster, this.creatures, simulationRoguelike);
 	}
 
 	/** `Mob.chooseEnemy()` prioritizes a character carrying `Aggression`, even when that

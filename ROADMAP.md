@@ -1507,6 +1507,18 @@ one.
       npc/unseen/out-of-range refusals, nearest-wins ordering, range gating,
       scripted geometry). Sim suite green.
       **Complexity: XS.**
+      **Thirty-sixth extraction 2026-09-20**: `Mob.chooseEnemy()`'s Aggression
+      priority (`aggressionTarget` - nearest in-range `aggression`-buff carrier,
+      even another enemy) moved to `simulation/targeting.ts` beside its two
+      targeting neighbours behind the module's own `SimulationRoguelike` seam;
+      the scene keeps the one-line adapter binding its level and creatures.
+      Net +2 lines in `dungeonScene.ts` (22,536 after) - the moved five-line
+      body cost less than the adapter plus its deviation-note comment;
+      `targeting.ts` 47 to 69. Suites: `tsc` clean first try, item suite green
+      first try with a new drive (seeker/npc/dead/unbuffed/range exclusions,
+      enemy and ally carriers included, nearest-wins ordering). Sim suite
+      green.
+      **Complexity: XS.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

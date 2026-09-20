@@ -45,3 +45,25 @@ export function nearestVisibleEnemy(
 			.sort((a, b) => roguelike.chebyshevDistance(hero, a) - roguelike.chebyshevDistance(hero, b))[0] ?? null
 	);
 }
+
+/**
+ * `Mob.chooseEnemy()`'s Aggression priority: the nearest in-range character
+ * carrying the `aggression` buff, even another enemy. Moved here verbatim from
+ * the scene as the file-size refactor's thirty-sixth extraction,
+ * behavior-identical, following this module's own `SimulationRoguelike` seam -
+ * the scene only binds its level and the real geometry. The caller keeps the
+ * one-line scene adapter.
+ */
+export function aggressionTarget(
+	level: Parameters<SimulationRoguelike['canTarget']>[0],
+	monster: Creature,
+	creatures: readonly Creature[],
+	roguelike: SimulationRoguelike,
+): Creature | null {
+	return (
+		creatures
+			.filter((c) => c !== monster && !c.isNPC && c.hp > 0 && c.buffs['aggression']
+				&& roguelike.canTarget(level, monster, c, { range: 8 }))
+			.sort((a, b) => roguelike.chebyshevDistance(monster, a) - roguelike.chebyshevDistance(monster, b))[0] ?? null
+	);
+}
