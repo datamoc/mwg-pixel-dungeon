@@ -43,8 +43,8 @@ export function createCombatAdapter(random: SimulationRandom) {
 			return result.event;
 		},
 		/** `scalingDepth` is Java's `Dungeon.scalingDepth()` for the depth-scaled DoT rolls. */
-		tickBuffs(c: { buffs: BuffState }, scalingDepth = 0): number {
-			const result = advanceBuffs(c.buffs, random, scalingDepth);
+		tickBuffs(c: { buffs: BuffState; kind?: string }, scalingDepth = 0): number {
+			const result = advanceBuffs(c.buffs, random, scalingDepth, c.kind === 'spinner');
 			commitBuffs(c.buffs, result.buffs);
 			return result.damage;
 		},

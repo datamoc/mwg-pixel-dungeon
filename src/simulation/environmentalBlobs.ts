@@ -136,11 +136,16 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 		context.addBuff(target, 'daze', 2);
 	}
 	//`Web` terrain (`Spinner`'s ranged web, tag `v3.3.8`): Java seeds a persistent 3-cell web
-	//blob rather than a direct debuff. Standing in web roots the creature; the scene seeds the
-	//blob in the spinner handler and this applies the root each turn.
+	//blob rather than a direct debuff. `Level.occupyCell()` (tag `v3.3.8`) consumes the
+	//webbed cell and roots once (`Roots.DURATION` 5) when a creature steps on;
+	//`Web`-immune spinners walk straight through, webs intact. The two-line shape
+	//below is that consume-on-step, evaluated when the blob ticks after the step -
+	//observably the same single rooting, since the web is gone before the next move.
 	for (const cell of context.cellsAbove('web', 0.0001)) {
 		const target = context.creatureAt(cell.x, cell.y);
-		if (target) context.addBuff(target, 'roots', 2);
+		if (!target || target.kind === 'spinner') continue;
+		context.clearCell?.('web', cell.x, cell.y);
+		context.addBuff(target, 'roots', 5);
 	}
 	//`Electricity.evolve()` (tag `v3.3.8`): creatures in electrified cells are paralysed
 	//for the cell's charge unless already held, and take the depth-scaled zap on odd

@@ -122,7 +122,7 @@ export function absorbShield(shield: number, damage: number): { shield: number; 
 	return { shield: shield - blocked, damage: damage - blocked };
 }
 
-export function advanceBuffs(previous: Readonly<BuffState>, random: SimulationRandom, scalingDepth = 0): { buffs: BuffState; damage: number } {
+export function advanceBuffs(previous: Readonly<BuffState>, random: SimulationRandom, scalingDepth = 0, poisonResistant = false): { buffs: BuffState; damage: number } {
 	const buffs = { ...previous };
 	let damage = 0;
 	for (const id of Object.keys(buffs) as BuffId[]) {
@@ -133,8 +133,14 @@ export function advanceBuffs(previous: Readonly<BuffState>, random: SimulationRa
 		//duration, not a flat roll - a fresh 6-turn poison hits for 3, decaying as the clock
 		//runs down. The old flat `int(1, 2) (exclusive upper bound: always 1) had no Java
 		//behind it and made every poison roughly a third as strong as Java's. Found by the
-		//14th monster-analysis matrix (DoT buffs).
-		if (id === 'poison') damage += Math.floor(left / 3) + 1;
+		//14th monster-analysis matrix (DoT buffs). The tick routes through
+		//`Char.damage()`, so a `Poison`-resistant target (the spinner) halves it
+		//with `Math.round` - the same `resist()` shape as every other damage
+		//class, not a shorter duration.
+		if (id === 'poison') {
+			const tick = Math.floor(left / 3) + 1;
+			damage += poisonResistant ? Math.round(tick / 2) : tick;
+		}
 		//Bleeding.act(): Java redraws the intensity from NormalFloat(level/2, level),
 		//deals round(level), and keeps the new intensity until the next actor turn.
 		if (id === 'magicalSleep') continue;

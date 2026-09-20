@@ -714,6 +714,38 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.deepEqual(advanced, ['plantGas', 'plantFreeze', 'toxicGas', 'paralyticGas', 'stenchGas', 'corrosiveGas', 'confusionGas', 'web', 'electricity', 'smokeScreen', 'inferno', 'blizzard']);
 		assert.deepEqual(buffs, [[target, 'paralysis', 2], [target, 3]]);
 	});
+	check('Webs root once, consume the cell, and let spinners through', () => {
+		//`Level.occupyCell()` (tag `v3.3.8`): stepping on web clears the cell
+		//and roots 5; `Web`-immune spinners pass with the web intact.
+		const rooted = [];
+		const cleared = [];
+		const hero = { x: 1, y: 1, hp: 10 };
+		const spider = { x: 2, y: 2, hp: 10, kind: 'spinner' };
+		applyEnvironmentalBlobs({
+			creatures: [], passable: () => true,
+			advance: () => {},
+			cellsAbove: (blob) => blob === 'web' ? [{ x: 1, y: 1 }, { x: 2, y: 2 }] : [],
+			creatureAt: (x, y) => x === 1 && y === 1 ? hero : spider,
+			addBuff: (target, id, duration) => rooted.push([target, id, duration]),
+			clearCell: (blob, x, y) => cleared.push([blob, x, y]),
+			applyCorrosion: () => {},
+			corrosiveStrength: () => 0,
+			toxicDamage: () => 0,
+			isToxicImmune: () => false,
+			applyDamage: () => true,
+		});
+		assert.deepEqual(rooted, [[hero, 'roots', 5]]);
+		assert.deepEqual(cleared, [['web', 1, 1]]);
+	});
+	check('Poison-resistant targets halve each tick, rounded', () => {
+		//The poison tick routes through `Char.damage()`, so `Poison`
+		//resistance (the spinner) halves with `Math.round` - not duration.
+		const { advanceBuffs } = require('./simulation/buffs');
+		const random = { int: (min) => min, float: () => 0, normalRange: (min) => min, range: (min) => min };
+		assert.equal(advanceBuffs({ poison: 6 }, random, 0).damage, 3);
+		assert.equal(advanceBuffs({ poison: 6 }, random, 0, true).damage, 2);
+		assert.equal(advanceBuffs({ poison: 4 }, random, 0, true).damage, 1);
+	});
 	const { takeGooTurn } = require('./simulation/gooBoss');
 	const { mirrorImageStats } = require('./simulation/mirrorImage');
 	const { takeSentryTurn } = require('./simulation/sentryTurn');
