@@ -1560,6 +1560,16 @@ one.
       sim suite's monster-turn checks cover the hunting path. `tsc` clean,
       item/sim suites green, build clean.
       **Complexity: XS.**
+      **Fortieth extraction 2026-09-20**: `Amok.act()`'s target query
+      (`takeAmokTurn`'s nearest living non-NPC within eight cells, no
+      line-of-sight gate) moved to `simulation/targeting.ts` as `amokTarget`
+      behind the module's own `SimulationRoguelike` seam; the scene keeps the
+      one-line adapter. Net 0 lines in `dungeonScene.ts` (22,541 after);
+      `targeting.ts` 69 to 90. Suites: `tsc` clean first try, item suite
+      green first try with a new drive (self/npc/dead/far exclusions, range
+      edge, ally inclusion, nearest-wins ordering, visibility-free geometry).
+      Sim suite green.
+      **Complexity: XS.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

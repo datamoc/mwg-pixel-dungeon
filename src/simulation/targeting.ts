@@ -67,3 +67,24 @@ export function aggressionTarget(
 			.sort((a, b) => roguelike.chebyshevDistance(monster, a) - roguelike.chebyshevDistance(monster, b))[0] ?? null
 	);
 }
+
+/**
+ * `Amok.act()`'s target: the nearest living non-NPC creature within eight
+ * cells, even another hostile or a player-side ally - no line-of-sight gate,
+ * unlike the other two queries in this module. Moved here verbatim from the
+ * scene as the file-size refactor's fortieth extraction, behavior-identical,
+ * following this module's own `SimulationRoguelike` seam. The caller keeps the
+ * one-line scene adapter.
+ */
+export function amokTarget(
+	monster: Creature,
+	creatures: readonly Creature[],
+	roguelike: SimulationRoguelike,
+): Creature | null {
+	return (
+		creatures
+			.filter((c) => c !== monster && !c.isNPC && c.hp > 0
+				&& roguelike.chebyshevDistance(monster, c) <= 8)
+			.sort((a, b) => roguelike.chebyshevDistance(monster, a) - roguelike.chebyshevDistance(monster, b))[0] ?? null
+	);
+}

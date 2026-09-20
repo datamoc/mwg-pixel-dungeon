@@ -4075,6 +4075,29 @@ const { aggressionTarget } = require('./simulation/targeting.js');
 	assert.equal(seek([nearCarrier]), nearCarrier, 'ally carriers count too');
 	assert.equal(seek([farCarrier, nearCarrier]), nearCarrier, 'nearest wins regardless of order');
 }
+// `amokTarget` moved to `simulation/targeting.ts` (the file-size refactor's
+// fortieth extraction, behavior-identical): driven headlessly with scripted
+// geometry - self/npc/dead/far exclusions, no line-of-sight gate (an unseen
+// neighbour counts, unlike the visible-enemy query), nearest-wins ordering.
+const { amokTarget } = require('./simulation/targeting.js');
+{
+	const monster = { x: 0, y: 0 };
+	const geo = {
+		chebyshevDistance: (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)),
+	};
+	const folk = (extra) => ({ hp: 5, ...extra });
+	const hunt = (creatures) => amokTarget(monster, creatures, geo);
+	assert.equal(hunt([]), null, 'empty floor, no target');
+	assert.equal(hunt([monster]), null, 'never the seeker itself');
+	assert.equal(hunt([folk({ x: 1, y: 0, isNPC: true })]), null, 'never an npc');
+	assert.equal(hunt([folk({ x: 1, y: 0, hp: 0 })]), null, 'never the dead');
+	assert.equal(hunt([folk({ x: 9, y: 0 })]), null, 'never beyond eight');
+	const farFolk = folk({ x: 8, y: 0 });
+	const nearFolk = folk({ x: 1, y: 1, isAlly: true });
+	assert.equal(hunt([farFolk]), farFolk, 'edge of range counts');
+	assert.equal(hunt([nearFolk]), nearFolk, 'allies count too');
+	assert.equal(hunt([farFolk, nearFolk]), nearFolk, 'nearest wins regardless of order');
+}
 // `emitToxicGasVents` moved to `simulation/environmentalBlobs.ts` (the file-size
 // refactor's thirty-seventh extraction, behavior-identical): driven headlessly with
 // scripted terrain and gas - non-trap/outside cells skipped, re-seed while local

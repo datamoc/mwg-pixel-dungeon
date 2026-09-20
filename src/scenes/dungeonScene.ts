@@ -197,7 +197,7 @@ import { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } from '../s
 import { teleportAppearPlan } from '../simulation/teleportAppear';
 import { evolveElectricity, evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
-import { aggressionTarget as aggressionTargetFlow, nearestVisibleEnemy as nearestVisibleEnemyFlow, selectRangedTarget } from '../simulation/targeting';
+import { aggressionTarget as aggressionTargetFlow, amokTarget as amokTargetFlow, nearestVisibleEnemy as nearestVisibleEnemyFlow, selectRangedTarget } from '../simulation/targeting';
 import { isPatrolTargetValid as isPatrolTargetValidFlow, randomPatrolDestination as randomPatrolDestinationFlow, wanderBlocked as wanderBlockedFlow, type WanderingContext } from '../simulation/wandering';
 import { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLeapCooldown } from '../simulation/ripperLeap';
 import { shouldSuccubusBlink, chooseSuccubusBlinkCell, succubusBlinkCooldown } from '../simulation/succubusBlink';
@@ -9860,11 +9860,11 @@ export class DungeonScene extends Scene2D {
 	 * mob or a player-side ally. The real Mob state also has an exact aggro/path memory; this
 	 * port's compact turn model expresses the same combat consequence by selecting the nearest
 	 * living non-NPC creature within eight tiles and pathing toward it. */
+	//The Amok target query lives in `simulation/targeting.ts` as `amokTarget` -
+	//the file-size refactor's fortieth extraction, behavior-identical. The scene
+	//only binds its creatures and the real geometry here.
 	private takeAmokTurn(monster: Creature): void {
-		const target = this.creatures
-			.filter((c) => c !== monster && !c.isNPC && c.hp > 0
-				&& Roguelike.chebyshevDistance(monster, c) <= 8)
-			.sort((a, b) => Roguelike.chebyshevDistance(monster, a) - Roguelike.chebyshevDistance(monster, b))[0];
+		const target = amokTargetFlow(monster, this.creatures, simulationRoguelike);
 		if (!target) return;
 		if (Roguelike.chebyshevDistance(monster, target) === 1) {
 			this.attack(monster, target);
