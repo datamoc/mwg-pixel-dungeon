@@ -4121,6 +4121,28 @@ const { beeTarget } = require('./simulation/targeting.js');
 	assert.equal(beeTarget(beeAt({ potPos: { x: 9, y: 9 } }), hero, folk, geo), null, 'nothing near a far pot');
 	assert.equal(beeTarget(beeAt({}), hero, folk, geo), null, 'no pot and no holder, no target');
 }
+// `fleeStep` moved to `simulation/wandering.ts` (the file-size refactor's
+// forty-second extraction, behavior-identical, shared by `stepAway` and
+// `fleeCrystalMimic`): driven headlessly with scripted terrain and occupants -
+// farthest open neighbour wins, occupied/better-or-equal refused, boxed-in
+// stays put.
+const { fleeStep } = require('./simulation/wandering.js');
+{
+	const chebyshev = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+	const offsets = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+	const heroAt = { x: 0, y: 0 };
+	const ctxWith = (open, occupied) => ({
+		passable: (x, y) => open.some(([ox, oy]) => ox === x && oy === y),
+		creatureAt: (x, y) => (occupied.some(([ox, oy]) => ox === x && oy === y) ? {} : null),
+		neighbourOffsets: offsets,
+		chebyshev,
+		hero: heroAt,
+	});
+	assert.deepEqual(fleeStep({ x: 2, y: 2 }, ctxWith([[3, 3], [1, 2]], [])), { x: 3, y: 3 }, 'farthest open neighbour wins, nearer-or-equal refused');
+	assert.deepEqual(fleeStep({ x: 2, y: 2 }, ctxWith([[3, 3], [2, 3]], [[3, 3]])), { x: 2, y: 3 }, 'occupied best falls to the next');
+	assert.equal(fleeStep({ x: 2, y: 2 }, ctxWith([], [])), null, 'boxed-in stays put');
+	assert.equal(fleeStep({ x: 2, y: 2 }, ctxWith([[1, 1]], [])), null, 'nearer-only stays put');
+}
 // `emitToxicGasVents` moved to `simulation/environmentalBlobs.ts` (the file-size
 // refactor's thirty-seventh extraction, behavior-identical): driven headlessly with
 // scripted terrain and gas - non-trap/outside cells skipped, re-seed while local

@@ -78,3 +78,37 @@ export function randomPatrolDestination(isPiranha: boolean, ctx: WanderingContex
 	}
 	return ctx.pickElement(candidates);
 }
+
+export interface FleeStepContext {
+	passable: (x: number, y: number) => boolean;
+	creatureAt: (x: number, y: number) => Creature | null;
+	/** `Roguelike.neighbourOffsets(8)`, passed as data - no runtime imports
+	 * cross the simulation boundary. */
+	neighbourOffsets: readonly (readonly [number, number])[];
+	chebyshev: (a: Step, b: Step) => number;
+	hero: Step;
+}
+
+/**
+ * The farthest open neighbouring cell from the hero (`Hunting.getFurther`
+ * shape): the shared core of `stepAway` (GnollTrickster/Thief/Spinner/Scorpio
+ * retreats) and `fleeCrystalMimic`, which were line-for-line duplicates apart
+ * from their tails. Moved here as the file-size refactor's forty-second
+ * extraction, behavior-identical - the scene only binds its level, occupants,
+ * geometry and hero. Returns null when no neighbour improves, which is also
+ * the callers' stay-put signal.
+ */
+export function fleeStep(from: Step, ctx: FleeStepContext): Step | null {
+	let best: Step | null = null;
+	let bestD = ctx.chebyshev(from, ctx.hero);
+	for (const [dx, dy] of ctx.neighbourOffsets) {
+		const at = { x: from.x + dx, y: from.y + dy };
+		if (!ctx.passable(at.x, at.y) || ctx.creatureAt(at.x, at.y)) continue;
+		const d = ctx.chebyshev(at, ctx.hero);
+		if (d > bestD) {
+			bestD = d;
+			best = at;
+		}
+	}
+	return best;
+}

@@ -1582,6 +1582,19 @@ one.
       verbatim, the setup lied), covering holder-first, both fall-throughs,
       pot-mob, pot-hero, far-pot and potless verdicts. Sim suite green.
       **Complexity: XS.**
+      **Forty-second extraction 2026-09-20**: the farthest-open-neighbour
+      step (`Hunting.getFurther` shape) moved to `simulation/wandering.ts` as
+      `fleeStep` behind a `FleeStepContext` (passable/occupant reads, the
+      offsets as data, Chebyshev plus hero as values); `stepAway` and
+      `fleeCrystalMimic` were line-for-line duplicates apart from their tails
+      and now share the flow, keeping only the combo reset and the boolean
+      report respectively. Net -3 lines in `dungeonScene.ts` (22,528 after);
+      `wandering.ts` 80 to 114. Suites: `tsc` clean first try, item suite
+      green first try with a new drive (farthest-wins with strict-`>` scan
+      order, occupied-best fallback, boxed-in and nearer-only refusals - the
+      first draft expected the wrong winner and the flow's verbatim strictness
+      corrected the setup, not the reverse). Sim suite green.
+      **Complexity: XS.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

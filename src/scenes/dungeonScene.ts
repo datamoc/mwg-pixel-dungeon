@@ -198,7 +198,7 @@ import { teleportAppearPlan } from '../simulation/teleportAppear';
 import { evolveElectricity, evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
 import { aggressionTarget as aggressionTargetFlow, amokTarget as amokTargetFlow, beeTarget as beeTargetFlow, nearestVisibleEnemy as nearestVisibleEnemyFlow, selectRangedTarget } from '../simulation/targeting';
-import { isPatrolTargetValid as isPatrolTargetValidFlow, randomPatrolDestination as randomPatrolDestinationFlow, wanderBlocked as wanderBlockedFlow, type WanderingContext } from '../simulation/wandering';
+import { fleeStep as fleeStepFlow, isPatrolTargetValid as isPatrolTargetValidFlow, randomPatrolDestination as randomPatrolDestinationFlow, wanderBlocked as wanderBlockedFlow, type FleeStepContext, type WanderingContext } from '../simulation/wandering';
 import { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLeapCooldown } from '../simulation/ripperLeap';
 import { shouldSuccubusBlink, chooseSuccubusBlinkCell, succubusBlinkCooldown } from '../simulation/succubusBlink';
 import { useBrewFlow, type BrewFlowContext } from '../simulation/brews';
@@ -11096,37 +11096,34 @@ private eyeBeamTurn(monster: Creature): boolean {
 		else monster.patrolTarget = undefined;
 	}
 
+	/**
+	 * The farthest-open-neighbour step (`Hunting.getFurther` shape) lives in
+	 * `simulation/wandering.ts` as `fleeStep` - the file-size refactor's
+	 * forty-second extraction, behavior-identical. `stepAway` and
+	 * `fleeCrystalMimic` were line-for-line duplicates apart from their tails;
+	 * the scene only binds its level, occupants, geometry and hero below.
+	 */
+	private fleeStepContext(): FleeStepContext {
+		return {
+			passable: (x, y) => this.level.passable(x, y),
+			creatureAt: (x, y) => this.creatureAt(x, y),
+			neighbourOffsets: Roguelike.neighbourOffsets(8),
+			chebyshev: (a, b) => Roguelike.chebyshevDistance(a, b),
+			hero: { x: this.hero.x, y: this.hero.y },
+		};
+	}
+
 	/** GnollTrickster adjacent: never melees - steps further away instead (Hunting.getFurther) */
 	private stepAway(monster: Creature): void {
 		//GnollTrickster.getCloser(): "if he's moving, he isn't attacking, reset combo."
 		if (monster.kind === 'gnollTrickster') monster.combo = 0;
-		let best: Step | null = null;
-		let bestD = Roguelike.chebyshevDistance(monster, this.hero);
-		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
-			const at = { x: monster.x + dx, y: monster.y + dy };
-			if (!this.level.passable(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
-			const d = Roguelike.chebyshevDistance(at, this.hero);
-			if (d > bestD) {
-				bestD = d;
-				best = at;
-			}
-		}
+		const best = fleeStepFlow({ x: monster.x, y: monster.y }, this.fleeStepContext());
 		if (best) this.moveTo(monster, best);
 	}
 
 	/** CrystalMimic.Fleeing: after revealing/attacking, run to the farthest open neighbour. */
 	private fleeCrystalMimic(monster: Creature): boolean {
-		let best: Step | null = null;
-		let bestDistance = Roguelike.chebyshevDistance(monster, this.hero);
-		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
-			const at = { x: monster.x + dx, y: monster.y + dy };
-			if (!this.level.passable(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
-			const distance = Roguelike.chebyshevDistance(at, this.hero);
-			if (distance > bestDistance) {
-				bestDistance = distance;
-				best = at;
-			}
-		}
+		const best = fleeStepFlow({ x: monster.x, y: monster.y }, this.fleeStepContext());
 		if (best) {
 			this.moveTo(monster, best);
 			return true;
