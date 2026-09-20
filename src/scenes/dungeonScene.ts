@@ -9729,8 +9729,13 @@ export class DungeonScene extends Scene2D {
 	 * hero was looking away, while also granting it knowledge through walls revealed by a
 	 * mapping effect. This local FOV keeps the existing compact ally orders but gives them the
 	 * correct information boundary. `radius` is the ally's own sight range where it has one
-	 * (the spirit hawk's `viewDistance`); the hero's is the fallback. */
-	private visibleAllyHostiles(ally: Creature, radius = this.viewRadius()): Creature[] {
+	 * (the spirit hawk's `viewDistance`); the fallback is Java's `Mob.viewDistance` (8),
+	 * not the hero's radius - the hero's shrinks under darkness, Yog's gloom, the
+	 * Halls cap and grows with Farsight, none of which touches an ally's own eyes.
+	 * (The shared hero/monster sight radius elsewhere is a separate, documented
+	 * simplification.)
+	 */
+	private visibleAllyHostiles(ally: Creature, radius = 8): Creature[] {
 		const allyFov = new Roguelike.FieldOfView(this.level);
 		allyFov.update(ally.x, ally.y, radius);
 		return this.creatures.filter((c) => !c.isHero && !c.isNPC && !c.isAlly && c.hp > 0 && allyFov.isVisible(c.x, c.y));
