@@ -37,13 +37,11 @@ export function createItemPickerWindow({ width, title, body, entries, displayNam
 		: null;
 	const bodyHeight = bodyLabel ? Math.ceil(bodyLabel.height) + 6 : 0;
 	const rowsTop = bodyHeight + 6;
-	const window = new Window({
-		width,
-		height: rowsTop + rows * (rowHeight + 4) + (rowHeight + 4) + 12,
-		title,
-		anchor: 'center',
-		blocker: true,
-	});
+	const contentHeight = rowsTop + rows * (rowHeight + 4) + (rowHeight + 4) + 12;
+	const window = new Window({ width, height: contentHeight, title, anchor: 'center', blocker: true });
+	//`Window`'s height is OUTER (its content is inset past the frame and title): sized as the content alone,
+	//the frame ended above the Cancel row. Grow it by the measured inset.
+	window.resize(width, 2 * contentHeight - window.contentHeight);
 	if (bodyLabel) {
 		bodyLabel.position.set(0, 0);
 		window.content.addChild(bodyLabel);
@@ -61,7 +59,7 @@ export function createItemPickerWindow({ width, title, body, entries, displayNam
 		button.cursor = 'pointer';
 		window.content.addChild(button);
 	});
-	const cancel = new Button({ width: window.contentWidth, height: rowHeight, text: t('port.ui.itempicker.cancel'), onClick: () => onPick(-1) });
+	const cancel = new Button({ width: window.contentWidth - 4, height: rowHeight, text: t('port.ui.itempicker.cancel'), onClick: () => onPick(-1) });
 	cancel.position.set(0, rowsTop + rows * (rowHeight + 4));
 	cancel.eventMode = 'static';
 	cancel.cursor = 'pointer';

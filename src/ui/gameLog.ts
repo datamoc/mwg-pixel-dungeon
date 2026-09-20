@@ -70,6 +70,8 @@ export class GameLog extends Container {
 			size: 6,
 			color: LEVEL_COLOR[level],
 			wrapWidth: this.wrapWidth,
+			//drawn at this container's zoom, so rasterise at it too (device ratio x 3) - at 1x the text was magnified and blurry
+			resolution: (globalThis.devicePixelRatio || 1) * this.scale.x,
 		});
 		this.addChild(label);
 		this.blocks.push({ label, level });

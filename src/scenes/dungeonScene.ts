@@ -178,7 +178,7 @@ import { TitleScene } from '../scenes/titleScene';
 import { ClassSelectScene } from '../scenes/classSelectScene';
 import { menuScale } from '../ui/spdButton';
 import { drawAimPreview } from '../ui/aimOverlay';
-import { fitWindowZoom } from '../ui/windowFit';
+import { tuneWindowStack, windowBaseZoom } from '../ui/windowFit';
 import { applyDM300DeathUnseal, applyGooDeathUnseal, applyKingDeathUnseal, applyYogDeathUnseal, repairBossUnsealStairs, type BossUnsealContext } from './bossUnseal';
 import { openGameMenu as openGameMenuWindow } from '../ui/gameMenu';
 import { showChoiceWindow, showConfirmWindow } from '../ui/portWindows';
@@ -1910,7 +1910,7 @@ export class DungeonScene extends Scene2D {
 	private gameWindows = new WindowStack();
 	/** `PixelScene.defaultZoom` for windows: the title scene's `menuScale`. Windows are authored at native 6-9 px
 	 * text, so an unscaled stack drew them at 1x - unreadable next to the 2x HUD art. */
-	private windowZoom = menuScale(Game.current.width, Game.current.height);
+	private windowZoom = windowBaseZoom(Game.current.width, Game.current.height);
 	/** The logical (pre-zoom) size a window is laid out and placed in. */
 	private windowViewport(): { width: number; height: number } {
 		return { width: Game.current.width / this.windowZoom, height: Game.current.height / this.windowZoom };
@@ -22419,7 +22419,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 	override resize(width: number, height: number): void {
 		//the window zoom first: `positionInterface` places the scaled windows in its logical space
-		this.applyWindowZoom(menuScale(width, height));
+		this.applyWindowZoom(windowBaseZoom(width, height));
 		this.camera.setViewport(width, height);
 		if (this.gameLog) {
 			//wrap to the window, leaving room for the margin on both sides, and sit the block
@@ -22452,9 +22452,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 	override update(dt: number): void {
 		runState.audio.update(dt);
-		//step the window zoom down for a top window too tall to fit at the full zoom (`ui/windowFit.ts`)
-		const fit = fitWindowZoom(menuScale(Game.current.width, Game.current.height), this.gameWindows.top?.getLocalBounds().height ?? 0, Game.current.height);
-		if (fit !== this.windowZoom) this.applyWindowZoom(fit);
+		//fit the window zoom to the top window and keep window text crisp (`ui/windowFit.ts`)
+		tuneWindowStack(this.gameWindows, windowBaseZoom(Game.current.width, Game.current.height), this.windowZoom, Game.current.height, (zoom) => this.applyWindowZoom(zoom));
 		//`WndResurrect.onBackPressed()` is empty - the keeps choice cannot be dismissed. Any close
 		//that is not the confirm (picker cancel, outside click, a save loaded mid-window) reopens the
 		//keeps window here, so a dead hero with no window and no game over is unreachable.
