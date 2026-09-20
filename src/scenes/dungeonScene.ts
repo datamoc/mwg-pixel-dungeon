@@ -178,6 +178,7 @@ import { TitleScene } from '../scenes/titleScene';
 import { ClassSelectScene } from '../scenes/classSelectScene';
 import { menuScale } from '../ui/spdButton';
 import { drawAimPreview } from '../ui/aimOverlay';
+import { fitWindowZoom } from '../ui/windowFit';
 import { applyDM300DeathUnseal, applyGooDeathUnseal, applyKingDeathUnseal, applyYogDeathUnseal, repairBossUnsealStairs, type BossUnsealContext } from './bossUnseal';
 import { openGameMenu as openGameMenuWindow } from '../ui/gameMenu';
 import { showChoiceWindow, showConfirmWindow } from '../ui/portWindows';
@@ -1914,6 +1915,7 @@ export class DungeonScene extends Scene2D {
 	private windowViewport(): { width: number; height: number } {
 		return { width: Game.current.width / this.windowZoom, height: Game.current.height / this.windowZoom };
 	}
+	private applyWindowZoom(zoom: number): void { this.windowZoom = zoom; this.gameWindows.scale.set(zoom); this.gameWindows.setViewport(Game.current.width / zoom, Game.current.height / zoom); }
 	private actionBar!: SpdToolbar;
 	private inventoryPanel!: InventoryWindow;
 	private inventoryOpen = false;
@@ -6164,11 +6166,9 @@ export class DungeonScene extends Scene2D {
 	/** bumping a shut door: locked needs the key, otherwise it swings open (costing the turn) */
 	private bumpDoor(x: number, y: number): boolean {
 		if (!this.doors.isDoor(x, y) || this.doors.isOpen(x, y)) return false;
-		//a concealed secret door is a solid wall until searched out (Java's SECRET_DOOR is
-		//impassable and bumping it does nothing). Opening it here would flip `Doors` to open
-		//while the terrain stays WALL, and discovery would then restore DOOR_CLOSED over an
-		//"open" door - a door that can never be opened again, stranding the hero if it is the
-		//only way to the stairs.
+		//a concealed secret door is a solid wall until searched out (Java: SECRET_DOOR is impassable, bumping does nothing).
+		//Opening it flipped `Doors` to open while the terrain stayed WALL; discovery then restored DOOR_CLOSED over an
+		//"open" door - permanently unopenable, and the only way to the stairs on some floors.
 		if (this.secrets.isSecret(x, y)) return false;
 		if (this.doors.isLocked(x, y)) {
 			const keyId = this.crystalDoorCells.has(this.level.index(x, y)) ? 'crystalKey' : 'ironKey';
@@ -16781,8 +16781,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.stage.addChild(this.badgeBanner);
 		//last, so a window is always over the HUD and the badge banner
 		this.stage.addChild(this.gameWindows);
-		this.gameWindows.scale.set(this.windowZoom);
-		this.gameWindows.setViewport(this.windowViewport().width, this.windowViewport().height);
+		this.applyWindowZoom(this.windowZoom);
 		//`bossInfo`'s click -> `WndInfoMob`: no mob-info window exists in this port, so this
 		//logs the same name/HP line the bar already shows, the same "detailed window
 		//simplifies to a log line" pattern `awardBadge` already uses for `BadgeBanner`
@@ -22420,9 +22419,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 	override resize(width: number, height: number): void {
 		//the window zoom first: `positionInterface` places the scaled windows in its logical space
-		this.windowZoom = menuScale(width, height);
-		this.gameWindows.scale.set(this.windowZoom);
-		this.gameWindows.setViewport(width / this.windowZoom, height / this.windowZoom);
+		this.applyWindowZoom(menuScale(width, height));
 		this.camera.setViewport(width, height);
 		if (this.gameLog) {
 			//wrap to the window, leaving room for the margin on both sides, and sit the block
@@ -22455,6 +22452,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 
 	override update(dt: number): void {
 		runState.audio.update(dt);
+		//step the window zoom down for a top window too tall to fit at the full zoom (`ui/windowFit.ts`)
+		const fit = fitWindowZoom(menuScale(Game.current.width, Game.current.height), this.gameWindows.top?.getLocalBounds().height ?? 0, Game.current.height);
+		if (fit !== this.windowZoom) this.applyWindowZoom(fit);
 		//`WndResurrect.onBackPressed()` is empty - the keeps choice cannot be dismissed. Any close
 		//that is not the confirm (picker cancel, outside click, a save loaded mid-window) reopens the
 		//keeps window here, so a dead hero with no window and no game over is unreachable.
