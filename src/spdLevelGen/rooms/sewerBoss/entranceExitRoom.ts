@@ -6,12 +6,10 @@
  * `SewerBossExitRoom.SewerExit`/`SewerExitOverhang` custom tilemaps and
  * `SewerBossEntranceRoom`/`ExitRoom`'s `LevelTransition` rect-widening (`exit.top--` etc, a
  * click/step hitbox tweak) are NOT ported - purely cosmetic, and this port's `Transition` type
- * is a single cell position, not a rect. The exit cell itself paints as `Terrain.LOCKED_EXIT`,
- * which `gameBridge.ts`'s terrain mapping already sends to `'wall'` (permanently impassable) -
- * consistent with `main.ts`'s existing `hasStairs = !(depth in BOSSES)` boss-floor rule, which
- * already means the hero never needs to reach or use this tile: killing the boss auto-advances
- * the depth (see `main.ts`'s `BOSSES[this.depth]` kill handler). No `LevelTransition` is pushed
- * for it, matching that it is functionally decorative in this port.
+ * is a single cell position, not a rect. The exit cell itself paints as `Terrain.LOCKED_EXIT`
+ * (`gameBridge.ts` sends it to `'wall'`, impassable) and no `LevelTransition` is pushed for it: the
+ * scene's `unlockPaintedExit` (`scenes/bossUnseal.ts`) turns that niche into a walkable `EXIT`
+ * stairs cell when Goo dies, the port's stand-in for Java's `LockedFloor`-gated transition rect.
  */
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, fillXY, drawInside } from '../../paintLevel';

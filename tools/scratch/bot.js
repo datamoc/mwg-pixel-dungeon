@@ -21,7 +21,11 @@ B.tick=()=>{if(!B.on)return;const s=window.__MWG__.currentScene;if(!s||!s['hero'
   if(s['depth']!==B.lastDepth){B.lastDepth=s['depth'];B.log.push('depth '+s['depth']+' steps '+B.steps);B.maxDepth=Math.max(B.maxDepth,s['depth']);B.same=0;}
   const pk=h.x+','+h.y+'@'+s['depth']; if(pk===B.lastPos)B.same++; else {B.same=0;B.lastPos=pk;}
   if(B.same===60){B.log.push('NO-PROGRESS d'+s['depth']+' hero '+pk+' stairs '+JSON.stringify(s['stairs'])+' npcs '+s['creatures'].filter(c=>c.isNPC).map(c=>c.kind+'@'+c.x+','+c.y));}
-  const st=s['stairs'],lv=s['level'];let path=bfs(s,{x:h.x,y:h.y},c=>c.x===st.x&&c.y===st.y);
+  const lv=s['level'];let st=s['stairs'];
+  if(!s['hasStairs']){ // boss floor / no stairs yet: hunt the nearest hostile so the fight (and its unseal) can happen
+   const foes=s['creatures'].filter(c=>!c.isHero&&!c.isNPC&&!c.isAlly&&c.hp>0).sort((a,b)=>Math.hypot(a.x-h.x,a.y-h.y)-Math.hypot(b.x-h.x,b.y-h.y));
+   if(foes[0]) st={x:foes[0].x,y:foes[0].y}; }
+  let path=bfs(s,{x:h.x,y:h.y},c=>c.x===st.x&&c.y===st.y);
   if(!path){
    const nearSecret=c=>{for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){if(lv.inside(c.x+dx,c.y+dy)&&s['secrets'].isSecret(c.x+dx,c.y+dy))return true;}return false;};
    if(nearSecret({x:h.x,y:h.y})){s['onAction']('search');B.searches++;B.steps++;return;}

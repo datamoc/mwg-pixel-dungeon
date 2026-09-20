@@ -132,7 +132,7 @@ import {
 	SPD_TERRAIN_TO_GAME_KIND,
 	type PortedFloor,
 } from '../spdLevelGen/gameBridge';
-import { CAVES_BOSS_ARENA, CAVES_EXIT_CELL, CITY_BOTTOM_DOOR, CITY_EXIT_CELL, CITY_IMP_SHOP, CITY_THRONE, CITY_TOP_DOOR, HALLS_EXIT_CELL, PRISON_ARENA, PRISON_TENGU_CELL, PRISON_TENGU_CELL_CENTER, PRISON_TENGU_CELL_DOOR, prisonBossArena, prisonBossEnd, prisonBossPause } from '../spdLevelGen/bossLevels';
+import { CAVES_BOSS_ARENA, CITY_BOTTOM_DOOR, CITY_IMP_SHOP, CITY_THRONE, CITY_TOP_DOOR, HALLS_EXIT_CELL, PRISON_ARENA, PRISON_TENGU_CELL, PRISON_TENGU_CELL_CENTER, PRISON_TENGU_CELL_DOOR, prisonBossArena, prisonBossEnd, prisonBossPause } from '../spdLevelGen/bossLevels';
 import { hallsCenterPieceLayer, hallsCenterWallLayer } from '../spdLevelGen/hallsBossVisuals';
 import { cityGroundDescKey, cityGroundLayer, cityGroundNameKey, cityWallLayer } from '../spdLevelGen/cityBossVisuals';
 import { insideRitualMarker, ritualMarkerLayer } from '../spdLevelGen/ritualMarkerVisuals';
@@ -177,6 +177,7 @@ import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
 import { TitleScene } from '../scenes/titleScene';
 import { ClassSelectScene } from '../scenes/classSelectScene';
 import { menuScale } from '../ui/spdButton';
+import { applyDM300DeathUnseal, applyGooDeathUnseal, applyKingDeathUnseal, applyYogDeathUnseal, repairBossUnsealStairs, type BossUnsealContext } from './bossUnseal';
 import { openGameMenu as openGameMenuWindow } from '../ui/gameMenu';
 import { showChoiceWindow, showConfirmWindow } from '../ui/portWindows';
 import { confirmBlacksmithCashout, confirmBlacksmithSmith, openBlacksmithWindow, type BlacksmithWindowContext } from '../ui/blacksmithWindow';
@@ -3412,7 +3413,7 @@ export class DungeonScene extends Scene2D {
 		// replace its mutable layer before drawing anything, so doors/traps and terrain frames
 		// agree with the state the player left behind.
 		if (savedFloor) this.restoreFloor(savedFloor);
-		this.repairBossUnsealStairs();
+		repairBossUnsealStairs(this.bossUnsealContext());
 		const foresight = this.talentRank('rogues_foresight');
 		if (this.heroClass === 'rogue' && foresight > 0 && Random.chance(foresight === 1 ? 0.5 : 0.75)) {
 			let hasSecret = false;
@@ -11618,132 +11619,38 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (draw) this.drawStairsSprite();
 	}
 
-	/**
-	 * Re-applies the stairs half after a load: `hasStairs`/`stairs` live outside the
-	 * floor capture, so a run reloaded onto an unsealed boss floor would otherwise
-	 * come back with Java's exit underfoot and no way to take it. The paint writes
-	 * are already repaired in `enterLevel`; the terrain and doors come back via
-	 * `restoreFloor`. Runs saved before any `unseal()` existed simply never carry the
-	 * depth in the set, so there is nothing to migrate.
-	 */
-	private repairBossUnsealStairs(): void {
-		if (!this.bossUnsealedDepths.has(this.depth)) return;
-		if (this.depth === 5 || this.depth === 15 || this.depth === 20 || this.depth === 25) {
-			const at = this.depth === 5
-				? this.exitCellFromPaint() ?? undefined
-				: this.depth === 15 ? CAVES_EXIT_CELL : this.depth === 20 ? CITY_EXIT_CELL : HALLS_EXIT_CELL;
-			if (at && this.level.inside(at.x, at.y)) this.openBossExitStairs(at, false);
-		}
-	}
-
-	/** First `EXIT` tile in the regenerated paint, for floors whose exit Java paints
-	 *  at `build()` (the Sewer and Caves boss floors). */
-	private exitCellFromPaint(): Step | null {
-		if (!this.portedPaint) return null;
-		const cell = this.portedPaint.map.indexOf(Terrain.EXIT);
-		return cell >= 0 ? { x: cell % this.level.width, y: Math.floor(cell / this.level.width) } : null;
-	}
-
-	/**
-	 * `SewerBossLevel.unseal()` (tag `v3.3.8`): the drowned entrance is restored to
-	 * `ENTRANCE` and the floor gains its walkable exit. Unowned halves, each named
-	 * where it belongs: the `LockedFloor` buff that actually bars Java's way out
-	 * (this port's exit is the stairs, gated on the boss's death the same way),
-	 * the boss-challenge-badge flag (Rankings work) and the ripple presentation.
-	 */
-	private applyGooDeathUnseal(): void {
-		this.bossUnsealedDepths.add(5);
-		const entrance = this.entranceCell;
-		if (entrance && this.portedPaint) {
-			this.portedPaint.map[this.level.index(entrance.x, entrance.y)] = Terrain.ENTRANCE;
-			this.level.set(entrance.x, entrance.y, FLOOR);
-			this.restitchTilesAround(entrance.x, entrance.y);
-			this.map.setLayerData('terrain', this.terrainFrames());
-			this.map.setLayerData('water', this.waterFrames());
-		}
-		const exit = this.exitCellFromPaint();
-		if (exit) this.openBossExitStairs(exit);
-	}
-
-	/**
-	 * `CavesBossLevel.unseal()` (tag `v3.3.8`): the walled entrance is restored, the
-	 * gate's five `CUSTOM_DECO` cells break to `EMPTY`, the pylon energy clears and
-	 * the arena visuals re-map to the broken frames (`32..36`). `gateIntact` in the
-	 * visual context reads the live paint, so it is whole until exactly here.
-	 * Unowned: the `BlastParticle` bursts, the music fade and `Dungeon.observe()`
-	 * (this port re-observes on every move already).
-	 */
-	private applyDM300DeathUnseal(): void {
-		this.bossUnsealedDepths.add(15);
-		this.cavesBossEnergyCells.clear();
-		const entrance = this.entranceCell;
-		if (entrance && this.portedPaint) {
-			this.portedPaint.map[this.level.index(entrance.x, entrance.y)] = Terrain.ENTRANCE;
-			this.level.set(entrance.x, entrance.y, FLOOR);
-			this.restitchTilesAround(entrance.x, entrance.y);
-		}
-		if (this.portedPaint) {
-			for (let x = CAVES_GATE.left; x < CAVES_GATE.right; x++) {
-				this.portedPaint.map[CAVES_GATE.top * this.level.width + x] = Terrain.EMPTY;
-				this.level.set(x, CAVES_GATE.top, FLOOR);
-				this.restitchTilesAround(x, CAVES_GATE.top);
-			}
-		}
-		this.refreshCavesBossArenaVisuals();
-		this.map.setLayerData('terrain', this.terrainFrames());
-		this.openBossExitStairs(CAVES_EXIT_CELL);
-	}
-
-	/**
-	 * `CityBossLevel.unseal()` (tag `v3.3.8`): both arena doors open and, when the
-	 * Imp quest is complete, the shop spawns in the exit hallway. The keeper is now the
-	 * real `ImpShopkeeper` kind - `Shopkeeper` trade window and flee behavior, `ImpSprite`
-	 * art, and its own first-sight greeting yell - standing on the shop rect's own pedestal
-	 * with a depth-20 shelf from the live shop stock. Unowned: the music fade and
-	 * `Dungeon.observe()` (same standing note as every other unseal here).
-	 */
-	private applyKingDeathUnseal(): void {
-		this.bossUnsealedDepths.add(20);
-		if (this.portedPaint) {
-			this.portedPaint.map[CITY_BOTTOM_DOOR.y * this.level.width + CITY_BOTTOM_DOOR.x] = Terrain.DOOR;
-			this.portedPaint.map[CITY_TOP_DOOR.y * this.level.width + CITY_TOP_DOOR.x] = Terrain.DOOR;
-		}
-		this.doors.place(CITY_BOTTOM_DOOR.x, CITY_BOTTOM_DOOR.y, { open: DOOR, closed: DOOR_CLOSED, startOpen: false });
-		this.doors.place(CITY_TOP_DOOR.x, CITY_TOP_DOOR.y, { open: DOOR, closed: DOOR_CLOSED, startOpen: false });
-		this.restitchTilesAround(CITY_BOTTOM_DOOR.x, CITY_BOTTOM_DOOR.y);
-		this.restitchTilesAround(CITY_TOP_DOOR.x, CITY_TOP_DOOR.y);
-		if (this.quests.status('imp') === 'complete' && !this.creatureAt(CITY_IMP_SHOP.left + 4, CITY_IMP_SHOP.top + 4)) {
-			this.spawnMonster('impShopkeeper', { x: CITY_IMP_SHOP.left + 4, y: CITY_IMP_SHOP.top + 4 });
-			this.shopStockFor(20);
-			this.checkImpShopkeeperGreeting();
-		}
-		this.openBossExitStairs(CITY_EXIT_CELL);
-	}
-
-	/**
-	 * `HallsBossLevel.unseal()` (tag `v3.3.8`): the entrance is restored, the exit
-	 * becomes a real `EXIT` tile, and the centre pieces swap to their portal/archway
-	 * variant. Unowned: the `ShadowParticle` bursts and the `THEME_FINALE` music
-	 * fade (no one-shot particle hook and no music-swap primitive here - the vault
-	 * plays its own theme on entry either way).
-	 */
-	private applyYogDeathUnseal(): void {
-		this.bossUnsealedDepths.add(25);
-		const entrance = this.entranceCell;
-		if (entrance && this.portedPaint) {
-			this.portedPaint.map[this.level.index(entrance.x, entrance.y)] = Terrain.ENTRANCE;
-			this.level.set(entrance.x, entrance.y, FLOOR);
-			this.restitchTilesAround(entrance.x, entrance.y);
-		}
-		if (this.portedPaint) {
-			this.portedPaint.map[HALLS_EXIT_CELL.y * this.level.width + HALLS_EXIT_CELL.x] = Terrain.EXIT;
-			this.level.set(HALLS_EXIT_CELL.x, HALLS_EXIT_CELL.y, FLOOR);
-			this.restitchTilesAround(HALLS_EXIT_CELL.x, HALLS_EXIT_CELL.y);
-		}
-		this.hallsBossCenter?.setLayerData('hallsCenter', hallsCenterPieceLayer(this.level.width, this.level.height, true));
-		this.hallsBossCenterWalls?.setLayerData('hallsCenterWalls', hallsCenterWallLayer(this.level.width, this.level.height, true));
-		this.map.setLayerData('terrain', this.terrainFrames());
-		this.openBossExitStairs(HALLS_EXIT_CELL);
+	/** What `scenes/bossUnseal.ts`'s `unseal()`s need from this scene (the paint, tile layers, doors and stairs sprite are ours). */
+	private bossUnsealContext(): BossUnsealContext {
+		return {
+			depth: this.depth,
+			width: this.level.width,
+			paint: this.portedPaint,
+			entrance: this.entranceCell,
+			inside: (x, y) => this.level.inside(x, y),
+			markUnsealed: (depth) => { this.bossUnsealedDepths.add(depth); },
+			wasUnsealed: (depth) => this.bossUnsealedDepths.has(depth),
+			makeFloor: (x, y) => this.level.set(x, y, FLOOR),
+			restitch: (x, y) => this.restitchTilesAround(x, y),
+			refreshTerrain: () => this.map?.setLayerData('terrain', this.terrainFrames()),
+			refreshWater: () => this.map?.setLayerData('water', this.waterFrames()),
+			placeDoor: (at) => {
+				this.doors.place(at.x, at.y, { open: DOOR, closed: DOOR_CLOSED, startOpen: false });
+				this.restitchTilesAround(at.x, at.y);
+			},
+			openStairs: (at, draw) => this.openBossExitStairs(at, draw),
+			clearCavesEnergy: () => this.cavesBossEnergyCells.clear(),
+			refreshCavesArena: () => this.refreshCavesBossArenaVisuals(),
+			refreshHallsCenter: () => {
+				this.hallsBossCenter?.setLayerData('hallsCenter', hallsCenterPieceLayer(this.level.width, this.level.height, true));
+				this.hallsBossCenterWalls?.setLayerData('hallsCenterWalls', hallsCenterWallLayer(this.level.width, this.level.height, true));
+			},
+			impShopDue: () => this.quests.status('imp') === 'complete' && !this.creatureAt(CITY_IMP_SHOP.left + 4, CITY_IMP_SHOP.top + 4),
+			spawnImpShop: (at) => {
+				this.spawnMonster('impShopkeeper', at);
+				this.shopStockFor(20);
+				this.checkImpShopkeeperGreeting();
+			},
+		};
 	}
 
 	/** Tengu's per-bracket `jump()`: relocate 5-7 away with the trap burst, capped at 4
@@ -15751,19 +15658,19 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//below are this port's `unseal()`s; each opens its own exit stairs in place of
 			//the old shared `depth++`/`enterLevel()`.
 			if (creature.kind === 'goo') {
-				this.applyGooDeathUnseal();
+				applyGooDeathUnseal(this.bossUnsealContext());
 				return;
 			}
 			if (creature.kind === 'dm300') {
-				this.applyDM300DeathUnseal();
+				applyDM300DeathUnseal(this.bossUnsealContext());
 				return;
 			}
 			if (creature.kind === 'king') {
-				this.applyKingDeathUnseal();
+				applyKingDeathUnseal(this.bossUnsealContext());
 				return;
 			}
 			if (creature.kind === 'yog') {
-				this.applyYogDeathUnseal();
+				applyYogDeathUnseal(this.bossUnsealContext());
 				return;
 			}
 			this.depth++;
