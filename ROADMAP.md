@@ -715,11 +715,14 @@ below to close the gap was judged not worth the churn against those existing ref
       (`allyIdentityColorAdd` - Sheep/EarthGuardian/Lotus/etc., the same `colorAdd` channel) was
       being wiped to 0 on literally the first frame after spawn, before this pass even added the
       flash trigger, since the fade-out never knew a non-zero baseline could be legitimate. Live-
-      verified: a flashed Sheep now fades back to its own tint, not to nothing. **Closed 2026-09-19, the shake half**: all 41 Java shake sites audited (see PORT_COVERAGE.md) - 8 missing wirings added, the short refusal shakes documented, the rest tied to unported features; pinned by `tools/verifyShakes.mjs`. **What remains
-      here, genuinely**: particle-class effects beyond floating text and the flash
-      (spell-cast bursts, wand-zap trails, on-death particle bursts specific to certain monsters) -
-      not yet audited monster-by-monster, so still recorded open rather than assumed closed.
-      **Complexity: S** for what's left, down from M now that idle/run/attack/die/flash are done.
+      verified: a flashed Sheep now fades back to its own tint, not to nothing. **Closed 2026-09-19, the shake half**: all 41 Java shake sites audited (see PORT_COVERAGE.md) - 8 missing wirings added, the short refusal shakes documented, the rest tied to unported features; pinned by `tools/verifyShakes.mjs`. **Closed 2026-09-20, the monster-by-monster particle audit**: all 17 Java mob-sprite emitter files inventoried against tag `v3.3.8`, and the six one-shot sites are now live with Java's own counts/colors/samples - DM300 death Blast x100, Pylon death Blast x20, Guard death Shadow x4, Succubus death Heart x6 + Shadow x8, Ghost death Shaft x4 + Light x3 (quest NPC and Rose summon share `GhostSprite`), Ward zap WardParticle x2 + RAY and Ward death x10 - via the `simulation/deathBursts.ts` spec table (forty-seventh extraction), pinned behaviorally by `tools/verifyParticles.mjs`. **What remains
+      here, genuinely**: the twelve continuous `pour` auras (DM300 supercharge sparks, the four
+      elemental auras, Eye charge, FetidRat stench, the four fist auras, Golem teleport, Goo
+      spray + pump-up cells, Lotus leaves, Necromancer/Spectral summoning, PhantomPiranha
+      sparkles, RotHeart cloud - a persistent-emitter layer, not one-shot bursts), the Ward
+      DeathRay beam/attacker-flash/2s death fade, and spell-cast bursts / wand-zap trails
+      outside the monster sprites. See PORT_COVERAGE.md's one-shot-burst row.
+      **Complexity: S** for what's left.
 - [x] Audit every static `t('port.*')` call site against `portStrings.ts`'s EN/FR tables. A script
       walk found 45 keys missing from EN and 47 from FR - all fixed (window titles, victory/defeat
       screens, `port.action.bag`/`port.talent.*`, ~20 combat log lines), plus two French-specific

@@ -11,7 +11,8 @@ import { refreshInventoryPanel as refreshInventoryPanelView, type InventoryPanel
 import { createJournalWindow } from '../ui/journalWindow';
 import { createJournalTabs } from '../ui/journalContent';
 import { Container, FillGradient, Graphics, Rectangle, Sprite, Texture, TilingSprite } from 'mwg/two-d/pixi-interop';
-import { Bar, Blob, FloatingTextStack, Game, ParticleEmitter, Scene2D, Input, Random, SaveSystem, Achievements, ReactionTable, type ReactionRule } from 'mwg';
+import { Bar, Blob, FloatingTextStack, Game, Scene2D, Input, Random, SaveSystem, Achievements, ReactionTable, type ReactionRule } from 'mwg';
+import { spawnDeathBursts, spawnShadowBurst, spawnTeleportBurst, type LiveBurst } from '../ui/effectBursts';
 import { SceneSimulationAdapter } from '../adapters/sceneSimulation';
 import { dispatchHeroAction, type HeroActionPorts } from '../adapters/heroActions';
 import { BOOMERANG_RETURN_ACC_FACTOR, BOOMERANG_RETURN_TURNS, MISSILE_DEFAULT_QUANTITY, MISSILE_MAX_DURABILITY, bolasCrippleTurns, missileAdjacentAccFactor, missileBaseUses, missileDamageRange, missileFlightArt, missilePickupValid, missileStackFields, missileStackId, recordMissileUpgrade, tippedDartUseDivisor, tomahawkBleedRange, type MissileFlightArt } from '../items/missiles';
@@ -201,6 +202,7 @@ import { evolveElectricity, evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
 import { aggressionTarget as aggressionTargetFlow, amokTarget as amokTargetFlow, beeTarget as beeTargetFlow, findEnemyAlly as findEnemyAllyFlow, nearestVisibleEnemy as nearestVisibleEnemyFlow, pursueTarget as pursueTargetFlow, selectRangedTarget } from '../simulation/targeting';
 import { fleeStep as fleeStepFlow, isPatrolTargetValid as isPatrolTargetValidFlow, nearestFreeCell as nearestFreeCellFlow, randomPatrolDestination as randomPatrolDestinationFlow, wanderBlocked as wanderBlockedFlow, type FleeStepContext, type SummonCellContext, type WanderingContext } from '../simulation/wandering';
+import { deathBurstsFor, wardZapBursts, type DeathBurstSpec } from '../simulation/deathBursts';
 import { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLeapCooldown } from '../simulation/ripperLeap';
 import { shouldSuccubusBlink, chooseSuccubusBlinkCell, succubusBlinkCooldown } from '../simulation/succubusBlink';
 import { useBrewFlow, type BrewFlowContext } from '../simulation/brews';
@@ -2028,7 +2030,7 @@ export class DungeonScene extends Scene2D {
 
 	/** One-shot particle bursts (currently only the curse infusion's shadow motes), ticked and
 	 * destroyed by `updateEffectBursts` - the same self-removing-list shape `projectiles` uses. */
-	private effectBursts: { emitter: ParticleEmitter; remaining: number }[] = [];
+	private effectBursts: LiveBurst[] = [];
 	/** Pending `ScrollOfTeleportation.appear` alpha fades (`AlphaTweener(ch.sprite, 1,
 	 * 0.4f)`): transient visual state like `effectBursts`, never persisted. */
 	private teleportFades: { sprite: TintedSprite; remaining: number; total: number }[] = [];
@@ -9933,6 +9935,10 @@ export class DungeonScene extends Scene2D {
 				if (target.hp <= 0) this.kill(target);
 			}
 			ward.wardTotalZaps = (ward.wardTotalZaps ?? 0) + 1;
+			//`WardSprite.zap()`'s own-sprite burst + RAY sample (see
+			//`simulation/deathBursts.ts`); the DeathRay beam and attacker flash
+			//stay recorded-open there.
+			this.playDeathBursts(wardZapBursts(), ward.x, ward.y);
 		}
 		const tier = ward.wardTier ?? 1;
 		if (tier <= 3) {
@@ -15200,6 +15206,12 @@ private eyeBeamTurn(monster: Creature): boolean {
 			//a monster's corpse is handed to the fade loop; the hero keeps its pose in place
 			if (!creature.isHero) this.dyingMonsters.set(deadSprite, { x: creature.x, y: creature.y, fade: 0 });
 		} else if (!creature.isHero) deadSprite.destroy();
+		//Java's one-shot death bursts (`DM300Sprite.onComplete(die)`, `PylonSprite.play(die)`,
+		//`GuardSprite.play(die)`, `SuccubusSprite.die()`, `GhostSprite.die()`,
+		//`WardSprite.die()` - see `simulation/deathBursts.ts`): fired for every death through
+		//this shared path. The table returns [] for kinds with no burst, so the hero and
+		//ordinary monsters need no branch here.
+		this.playDeathBursts(deathBurstsFor(creature.kind, creature.allyKind), creature.x, creature.y);
 		//the hero's sprite outlives `kill()` for the game-over screen (see the `gameOver`
 		//check further down) - every other creature's sprite is either already destroyed above
 		//or now only reachable through `dyingMonsters`, keyed by the sprite object itself, so
@@ -19197,23 +19209,11 @@ private eyeBeamTurn(monster: Creature): boolean {
 		}
 	}
 
+	//Burst constructors live in `ui/effectBursts.ts` (the file-size refactor's
+	//forty-eighth extraction) - this stays a one-line binder for the teleport
+	//plan's two call sites.
 	private burstTeleportLight(cell: Step): void {
-		const lightCurve = (t: number): number => (t < 0.2 ? t * 5 : (1 - t) * 1.25);
-		const emitter = new ParticleEmitter({
-			texture: Texture.WHITE,
-			max: 3,
-			rate: 0,
-			life: 1,
-			speed: 0,
-			spin: Math.PI / 2,
-			scale: lightCurve,
-			alpha: lightCurve,
-			spawn: { shape: 'rect', width: TILE, height: TILE },
-		});
-		emitter.position.set(cell.x * TILE, cell.y * TILE);
-		this.effectLayer.addChild(emitter);
-		emitter.burst(3);
-		this.effectBursts.push({ emitter, remaining: 1 });
+		spawnTeleportBurst(this.effectLayer, this.effectBursts, cell.x, cell.y);
 	}
 
 	/**
@@ -19248,24 +19248,25 @@ private eyeBeamTurn(monster: Creature): boolean {
 		if (plan.burstTo) this.burstTeleportLight(to);
 	}
 
+	//Same binder arrangement as `burstTeleportLight` above: the constructor lives
+	//in `ui/effectBursts.ts`, and this keeps the name the curse-infusion context
+	//calls (five motes at the hero's cell).
 	private burstShadowUp(cell: Step): void {
-			const emitter = new ParticleEmitter({
-				texture: Texture.WHITE,
-				max: 5,
-				rate: 0,
-				life: 1,
-				speed: [32, 48.7] as const,
-				angle: [-Math.PI / 2 - 0.245, -Math.PI / 2 + 0.245] as const,
-				scale: [6, 0] as const,
-				alpha: (t: number) => (t > 0.5 ? (1 - t) * (1 - t) * 4 : t * 2),
-				tint: 0x440044,
-				spawn: { shape: 'rect', width: TILE, height: TILE },
-			});
-			emitter.position.set(cell.x * TILE, cell.y * TILE);
-			this.effectLayer.addChild(emitter);
-			emitter.burst(5);
-			this.effectBursts.push({ emitter, remaining: 1 });
-		}
+		spawnShadowBurst(this.effectLayer, this.effectBursts, cell.x, cell.y, 5);
+	}
+
+	/**
+	 * Plays one-shot monster death/zap bursts from `simulation/deathBursts.ts`
+	 * (the file-size refactor's forty-seventh extraction - the spec table and
+	 * its Java counts/colors live there, the scene only binds the emitter
+	 * layer, the FOV gate and the audio cue). Gated on hero FOV the way the
+	 * teleport bursts are: Java always emits but its camera culls off-screen
+	 * sprites, so an unseen cell bursting here would be a sound from nowhere.
+	 */
+	private playDeathBursts(specs: DeathBurstSpec[], x: number, y: number): void {
+		if (!this.fov.isVisible(x, y)) return;
+		spawnDeathBursts(this.effectLayer, this.effectBursts, specs, x, y, (name) => runState.audio.cue(name, 0.7));
+	}
 
 	private updateTeleportFades(dt: number): void {
 		for (let i = this.teleportFades.length - 1; i >= 0; i--) {
