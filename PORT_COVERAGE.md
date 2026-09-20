@@ -1644,6 +1644,8 @@ closed 2026-09-16 (see the Sewer-boss section's auto-descent note).** `applyTeng
 | `Talent.SUCKER_PUNCH` / `SuckerPunchTracker` | `attack` and `suckerPunchTargets` | Ported: the real `Random.IntRange(points, 2)` surprise bonus is now granted only once per stable enemy id, with tracker state saved and removed when that enemy dies. |
 ## Armor abilities (`items/armor/ClassArmor.java`, `items/KingsCrown.java`, `actors/hero/abilities/**`)
 
+| `HeroSprite.updateArmor()` class-armor tier (`Hero.java:tier()` returns 6 for `ClassArmor`) | `refreshHeroArmorSprite` in `src/scenes/dungeonScene.ts` | **Ported 2026-09-20:** equipment/stat synchronization rebuilds the hero's four animation sequences from the class sheet's tier-6 row while class armor is worn, and restores the copied ordinary armor tier after transfer or another armor equip. This closes the stale sprite-tier note in the ClassArmor row below; the existing status-pane avatar already uses the same 0..6 tier mapping. Browser-verified from the built game: texture rows 15 → 90 → 15, with no page errors. |
+
 The tier-4 armor abilities. Before this pass this whole feature was two invented, effect-free ids
 (`warding`/`arcane`) picked from a level-21 "capstone" branch in the port's own `Advancement` track,
 plus a Ratmogrify that cost no charge and was spent through the class-special action. All real

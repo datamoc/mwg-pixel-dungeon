@@ -2428,10 +2428,11 @@ export class DungeonScene extends Scene2D {
 		this.hero.accuracy = this.weaponAffix === 'wayward' && this.hero.buffs['wayward'] !== undefined
 			? Math.max(1, Math.round(this.heroStats.get('accuracy') / 5))
 			: this.heroStats.get('accuracy');
-		if (subclass === 'freerunner' && !this.creatures.some((c) => !c.isHero && !c.isNPC && Roguelike.chebyshevDistance(this.hero, c) <= 1)) {
-			this.hero.evasion += 2;
-		}
+		if (subclass === 'freerunner' && !this.creatures.some((c) => !c.isHero && !c.isNPC && Roguelike.chebyshevDistance(this.hero, c) <= 1)) { this.hero.evasion += 2; }
+		this.refreshHeroArmorSprite();
 	}
+	/** `HeroSprite.updateArmor()` (tag `v3.3.8`) rebuilds every animation from `Hero.tier()`; Java reports ClassArmor as tier 6 even though its copied combat tier remains ordinary, so this port refreshes the visible row whenever stats sync. */
+	private refreshHeroArmorSprite(): void { const s = this.spriteFor.get(this.hero?.id ?? -1); if (!(s instanceof AnimatedSprite)) return; const base = Math.max(0, Math.min(6, isClassArmorId(this.armorId) ? 6 : this.armorTier)) * 21, sheet = heroSheet(runState.sprites[this.heroClass]), frame = (i: number) => sheet.get(base + i), playing = s.playing; s.add('idle', [0, 0, 0, 1, 0, 0, 1, 1].map(frame), { fps: 1 }).add('run', [2, 3, 4, 5, 6, 7].map(frame), { fps: 20 }).add('attack', [13, 14, 15, 0].map(frame), { fps: 15, loop: false }).add('die', [8, 9, 10, 11, 12, 11].map(frame), { fps: 20, loop: false }).play(playing && s.has(playing) ? playing : 'idle', true); }
 
 	/**
 	 * `Hero.java`'s level-up block: `HT = 20 + 5*(lvl-1)`, `attackSkill++`, `defenseSkill++`
