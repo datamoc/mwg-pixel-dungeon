@@ -339,7 +339,7 @@ import {
 	type BuffId,
 } from '../combat';
 import { nextEntityId } from '../simulation/entityId';
-import { applyChillFreeze } from '../simulation/buffs';
+import { applyChillFreeze, tickMonsterTurnEnd } from '../simulation/buffs';
 import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LIMITED_DROP_DECAY, BASE_KIND_ALIASES, NPC_KINDS, BOSS_KINDS, MINIBOSS_KINDS, UNDEAD_KINDS, isUndeadOrDemonic, IMMOVABLE_KINDS, INORGANIC_KINDS, NEVER_SLEEPS_KINDS, FLYING_KINDS, BLOB_IMMUNE_KINDS, SPRITE_KIND_OVERRIDE, MWL_AI_PROFILES, type AnyMonsterId, type MonsterId } from '../monsters';
 
 /**
@@ -7383,31 +7383,18 @@ export class DungeonScene extends Scene2D {
 		this.simulation.runTurns();
 	}
 
-	/** Java's Buff.act() boundary for temporary monster speed effects. */
+	/**
+	 * Java's Buff.act() boundary for temporary monster speed effects. The buff ticks
+	 * live in `simulation/buffs.ts` as `tickMonsterTurnEnd` - the file-size refactor's
+	 * thirty-fourth extraction, behavior-identical. Death-mark and time-bubble stay
+	 * here: they read scene systems, not buff clocks.
+	 */
 	private afterMonsterTurn(monster: Creature): void {
 		this.tickDeathMark(monster);
 		//One absorbed own-turn for a TimeBubble owner, read by `monsterTurnCost` above.
 		monster.timeBubbleTurns = spendTimeBubbleTurn(monster.timeBubbleTurns);
-		if (monster.ratmogrifiedTurns !== undefined && !monster.ratmogrifiedPermanent) {
-			monster.ratmogrifiedTurns--;
-			if (monster.ratmogrifiedTurns <= 0) delete monster.ratmogrifiedTurns;
-		}
-		if (monster.kind === 'monk' || monster.kind === 'senior') {
-			//Monk.spend(): Focus cooldown loses the action time after every own turn.
-			//Focus is attached by Monk.act() after that action when the mob is hunting.
-			monster.focusCooldown = (monster.focusCooldown ?? 0) - 1;
-			if (!monster.buffs['focus'] && monster.seesHero && (monster.focusCooldown ?? 0) <= 0) {
-				addBuff(monster, 'focus');
-			}
-		}
-		if (monster.hasteTurns) {
-			monster.hasteTurns--;
-			if (monster.hasteTurns <= 0) {
-				monster.speed = monster.hasteBaseSpeed ?? 1;
-				delete monster.hasteTurns;
-				delete monster.hasteBaseSpeed;
-			}
-		}
+		//The flow hands back one of the scene's own monsters, so the cast is exact.
+		tickMonsterTurnEnd(monster, (m) => addBuff(m as Creature, 'focus'));
 	}
 
 	private onAction(action: string): boolean {

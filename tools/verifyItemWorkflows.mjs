@@ -3982,6 +3982,43 @@ function grassDrive(overrides = {}) {
 	assert.equal(plantBloomingGrass(grassDrive({ defaultTerrain: 9 }).ctx, 2, 2), false, 'non-ground refuses');
 	assert.equal(plantBloomingGrass(grassDrive({ defaultTerrain: 1, planted: [2 * 5 + 2] }).ctx, 2, 2), false, 'a grown plant holds its cell');
 }
+// `afterMonsterTurn`'s buff ticks moved to `simulation/buffs.ts` (the file-size
+// refactor's thirty-fourth extraction, behavior-identical): the death-mark tick and
+// the time-bubble spend stay scene-side. Driven headlessly - rat countdown and
+// expiry, monk focus attach with its cooldown, and haste expiry restoring speed.
+const { tickMonsterTurnEnd } = require('./simulation/buffs.js');
+{
+	const focused = [];
+	const tick = (monster) => tickMonsterTurnEnd(monster, (m) => { focused.push(m); });
+	const rat = { kind: 'rat', buffs: {}, ratmogrifiedTurns: 2, speed: 1 };
+	tick(rat);
+	assert.equal(rat.ratmogrifiedTurns, 1, 'the rat clock ticks');
+	tick(rat);
+	assert.equal(rat.ratmogrifiedTurns, undefined, 'expiring at zero');
+	const perm = { kind: 'rat', buffs: {}, ratmogrifiedTurns: 4, ratmogrifiedPermanent: true, speed: 1 };
+	tick(perm);
+	assert.equal(perm.ratmogrifiedTurns, 4, 'permanent allies never count down');
+	const monk = { kind: 'monk', buffs: {}, seesHero: true, speed: 1 };
+	tick(monk);
+	assert.equal(monk.focusCooldown, -1, 'the cooldown loses the turn');
+	assert.deepEqual(focused, [monk], 'a hunting monk focuses');
+	const calm = { kind: 'senior', buffs: { focus: 5 }, seesHero: true, focusCooldown: 0, speed: 1 };
+	tick(calm);
+	assert.equal(calm.focusCooldown, -1, 'cooldown ticks regardless');
+	assert.equal(focused.length, 1, 'an already-focused senior gains nothing');
+	const blind = { kind: 'monk', buffs: {}, seesHero: false, speed: 1 };
+	tick(blind);
+	assert.equal(focused.length, 1, 'an unseeing monk gains nothing');
+	const hasted = { kind: 'bat', buffs: {}, hasteTurns: 1, hasteBaseSpeed: 2, speed: 3 };
+	tick(hasted);
+	assert.equal(hasted.speed, 2, 'haste expiry restores base speed');
+	assert.equal(hasted.hasteTurns, undefined, 'clearing the clock');
+	assert.equal(hasted.hasteBaseSpeed, undefined, 'and its base');
+	const hasting = { kind: 'bat', buffs: {}, hasteTurns: 3, hasteBaseSpeed: 2, speed: 3 };
+	tick(hasting);
+	assert.equal(hasting.hasteTurns, 2, 'ticking otherwise');
+	assert.equal(hasting.speed, 3, 'keeping the haste speed');
+}
 	const { weaponSTRReq, armorSTRReq, missileSTRReq, canSurpriseAttack } = require('./items/strReq.js');
 	// `Weapon.STRReq`/`Armor.STRReq`/`MissileWeapon.STRReq` (tags `v2.1.4`/`v3.3.8`):
 	// `(8 + tier*2) - (int)(sqrt(8*lvl+1)-1)/2`, decreasing at +1/+3/+6/+10.

@@ -150,3 +150,47 @@ export function advanceBuffs(previous: Readonly<BuffState>, random: SimulationRa
 	}
 	return { buffs, damage };
 }
+
+
+/** A monster where the turn-end tick needs one: kind, sight, cooldowns and speeds. */
+export interface TurnEndMonsterView {
+	kind?: string | undefined;
+	buffs: { focus?: number | undefined };
+	seesHero?: boolean | undefined;
+	focusCooldown?: number | undefined;
+	ratmogrifiedTurns?: number | undefined;
+	ratmogrifiedPermanent?: boolean | undefined;
+	hasteTurns?: number | undefined;
+	hasteBaseSpeed?: number | undefined;
+	speed?: number | undefined;
+}
+
+/**
+ * Java's Buff.act() boundary for temporary monster speed effects, moved here verbatim
+ * from the scene's `afterMonsterTurn` as the file-size refactor's thirty-fourth
+ * extraction, behavior-identical (the death-mark tick and the time-bubble spend stay
+ * scene-side; the focus attach arrives as a callback since `addBuff` lives outside
+ * this directory). The scene keeps the one-line tail.
+ */
+export function tickMonsterTurnEnd(monster: TurnEndMonsterView, attachFocus: (monster: TurnEndMonsterView) => void): void {
+	if (monster.ratmogrifiedTurns !== undefined && !monster.ratmogrifiedPermanent) {
+		monster.ratmogrifiedTurns--;
+		if (monster.ratmogrifiedTurns <= 0) delete monster.ratmogrifiedTurns;
+	}
+	if (monster.kind === 'monk' || monster.kind === 'senior') {
+		//Monk.spend(): Focus cooldown loses the action time after every own turn.
+		//Focus is attached by Monk.act() after that action when the mob is hunting.
+		monster.focusCooldown = (monster.focusCooldown ?? 0) - 1;
+		if (!monster.buffs['focus'] && monster.seesHero && (monster.focusCooldown ?? 0) <= 0) {
+			attachFocus(monster);
+		}
+	}
+	if (monster.hasteTurns) {
+		monster.hasteTurns--;
+		if (monster.hasteTurns <= 0) {
+			monster.speed = monster.hasteBaseSpeed ?? 1;
+			delete monster.hasteTurns;
+			delete monster.hasteBaseSpeed;
+		}
+	}
+}
