@@ -1519,6 +1519,19 @@ one.
       enemy and ally carriers included, nearest-wins ordering). Sim suite
       green.
       **Complexity: XS.**
+      **Thirty-seventh extraction 2026-09-20**: `ToxicGasSeed.evolve()`'s vent
+      emission (`emitToxicGasVents` - re-seed ordinary ToxicGas while local gas
+      is at most 9x the vent's retained source) moved to
+      `simulation/environmentalBlobs.ts` behind a `ToxicVentContext` (vent map,
+      width, inside/terrain reads, the TRAP id as a value, gas total/amount/seed
+      callbacks); the scene keeps the one-line adapter. Net +9 lines in
+      `dungeonScene.ts` (22,545 after) - the binding object costs more than the
+      ten-line loop it replaces; `environmentalBlobs.ts` 221 to 252. Suites:
+      `tsc` clean first try, item suite green with a new drive (re-seed under
+      9x, refusal above, always on a gas-free floor, non-trap/outside skips;
+      one stray-brace suite syntax error caught by `node --check` before the
+      run). Sim suite green.
+      **Complexity: XS.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

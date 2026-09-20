@@ -184,6 +184,7 @@ import { planFireSpread } from '../simulation/fireSpread';
 import { applyHighGrassTrample, plantBloomingGrass as plantBloomingGrassFlow, trampleHighGrass as planHighGrassTrample, type HighGrassApplyContext, type HighGrassState } from '../simulation/highGrass';
 import {
 	applyEnvironmentalBlobs,
+	emitToxicGasVents as emitToxicGasVentsFlow,
 	processSacrifice,
 	spreadSacrificialFire,
 	type SacrificialFireContext,
@@ -6379,15 +6380,23 @@ export class DungeonScene extends Scene2D {
 	 * does not call `Blob.evolve()`, so it neither diffuses nor decays. The port has no vent
 	 * particle emitter, but the gameplay emission and its save/load state are preserved.
 	 */
+	/**
+	 * `ToxicGasRoom.ToxicGasSeed.evolve()` vent emission lives in
+	 * `simulation/environmentalBlobs.ts` as `emitToxicGasVents` - the file-size
+	 * refactor's thirty-seventh extraction, behavior-identical. The scene only
+	 * binds its vent map, level and gas blob here.
+	 */
 	private emitToxicGasVents(): void {
-		for (const [cell, amount] of this.toxicGasVents) {
-			const x = cell % this.level.width;
-			const y = Math.floor(cell / this.level.width);
-			if (!this.level.inside(x, y) || this.level.get(x, y) !== TRAP) continue;
-			if (this.toxicGas.total() === 0 || this.toxicGas.volumeAt(x, y) <= 9 * amount) {
-				this.toxicGas.seed(x, y, amount);
-			}
-		}
+		emitToxicGasVentsFlow({
+			vents: this.toxicGasVents,
+			width: this.level.width,
+			inside: (x, y) => this.level.inside(x, y),
+			terrainAt: (x, y) => this.level.get(x, y),
+			trapTerrain: TRAP,
+			gasTotal: () => this.toxicGas.total(),
+			gasAmountAt: (x, y) => this.toxicGas.volumeAt(x, y),
+			seedGas: (x, y, volume) => this.toxicGas.seed(x, y, volume),
+		});
 	}
 	/** `Fire.evolve()` -> `Dungeon.level.destroy(cell)`: convert the flammable terrain this
 	 * port can represent to Java's passable, non-flammable `EMBERS` result. Region decorations

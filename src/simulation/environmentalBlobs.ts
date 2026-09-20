@@ -219,3 +219,34 @@ export function processSacrifice(creature: Creature, ctx: SacrificialFireContext
 	ctx.setCharge(0);
 	ctx.resetFire();
 }
+
+export interface ToxicVentContext {
+	vents: ReadonlyMap<number, number>;
+	width: number;
+	inside: (x: number, y: number) => boolean;
+	terrainAt: (x: number, y: number) => number;
+	/** The TRAP terrain id, passed as a value - no runtime imports cross the
+	 * simulation boundary. */
+	trapTerrain: number;
+	gasTotal: () => number;
+	gasAmountAt: (x: number, y: number) => number;
+	seedGas: (x: number, y: number, volume: number) => void;
+}
+
+/**
+ * `ToxicGasRoom.ToxicGasSeed.evolve()` vent emission: each inactive vent retains
+ * its source volume and re-seeds ordinary ToxicGas while local gas is at most
+ * `9 * amount`. Moved here verbatim from the scene as the file-size refactor's
+ * thirty-seventh extraction, behavior-identical - the scene only binds its vent
+ * map, level and gas blob.
+ */
+export function emitToxicGasVents(ctx: ToxicVentContext): void {
+	for (const [cell, amount] of ctx.vents) {
+		const x = cell % ctx.width;
+		const y = Math.floor(cell / ctx.width);
+		if (!ctx.inside(x, y) || ctx.terrainAt(x, y) !== ctx.trapTerrain) continue;
+		if (ctx.gasTotal() === 0 || ctx.gasAmountAt(x, y) <= 9 * amount) {
+			ctx.seedGas(x, y, amount);
+		}
+	}
+}

@@ -98,6 +98,8 @@ compile(join(root, 'src/simulation/ratmogrify.ts'), 'simulation/ratmogrify.js');
 //Targeting's only runtime seam is the sibling roguelike interface (type-only here).
 compile(join(root, 'src/simulation/highGrass.ts'), 'simulation/highGrass.js');
 compile(join(root, 'src/simulation/targeting.ts'), 'simulation/targeting.js');
+//The blob module is type-only at runtime too (terrain ids as values on contexts).
+compile(join(root, 'src/simulation/environmentalBlobs.ts'), 'simulation/environmentalBlobs.js');
 //`spells.js` upgrades through `itemWorkflows.js` by its real name, while the suite otherwise
 //only compiles that module as `workflows.js` (line 26) - recompiling it here under its own
 //name is the same idempotent write.
@@ -4070,6 +4072,38 @@ const { aggressionTarget } = require('./simulation/targeting.js');
 	assert.equal(seek([farCarrier]), farCarrier, 'enemy carriers count');
 	assert.equal(seek([nearCarrier]), nearCarrier, 'ally carriers count too');
 	assert.equal(seek([farCarrier, nearCarrier]), nearCarrier, 'nearest wins regardless of order');
+}
+// `emitToxicGasVents` moved to `simulation/environmentalBlobs.ts` (the file-size
+// refactor's thirty-seventh extraction, behavior-identical): driven headlessly with
+// scripted terrain and gas - non-trap/outside cells skipped, re-seed while local
+// gas is at most 9x, refusal above that, always when the floor is gas-free.
+const { emitToxicGasVents } = require('./simulation/environmentalBlobs.js');
+{
+	const TRAP_TERRAIN = 7;
+	const seeded = [];
+	const gas = new Map();
+	const ctx = (vents, total) => ({
+		vents,
+		width: 4,
+		inside: (x, y) => x >= 0 && y >= 0 && x < 4 && y < 4,
+		terrainAt: (x, y) => (x === 3 && y === 3 ? 1 : TRAP_TERRAIN),
+		trapTerrain: TRAP_TERRAIN,
+		gasTotal: () => total,
+		gasAmountAt: (x, y) => gas.get(x + y * 4) ?? 0,
+		seedGas: (x, y, volume) => seeded.push([x, y, volume]),
+	});
+	emitToxicGasVents(ctx(new Map([[0, 12]]), 5));
+	assert.deepEqual(seeded, [[0, 0, 12]], 're-seeds a trap vent while under 9x');
+	seeded.length = 0;
+	gas.set(0, 200);
+	emitToxicGasVents(ctx(new Map([[0, 12]]), 5));
+	assert.deepEqual(seeded, [], 'refuses once local gas exceeds 9x');
+	gas.set(0, 200);
+	emitToxicGasVents(ctx(new Map([[0, 12]]), 0));
+	assert.deepEqual(seeded, [[0, 0, 12]], 're-seeds on a gas-free floor regardless');
+	seeded.length = 0;
+	emitToxicGasVents(ctx(new Map([[15, 12], [16, 12]]), 5));
+	assert.deepEqual(seeded, [], 'skips non-trap terrain and outside cells');
 }
 	const { weaponSTRReq, armorSTRReq, missileSTRReq, canSurpriseAttack } = require('./items/strReq.js');
 	// `Weapon.STRReq`/`Armor.STRReq`/`MissileWeapon.STRReq` (tags `v2.1.4`/`v3.3.8`):
