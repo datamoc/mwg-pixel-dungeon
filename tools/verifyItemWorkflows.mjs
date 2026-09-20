@@ -4143,6 +4143,33 @@ const { fleeStep } = require('./simulation/wandering.js');
 	assert.equal(fleeStep({ x: 2, y: 2 }, ctxWith([], [])), null, 'boxed-in stays put');
 	assert.equal(fleeStep({ x: 2, y: 2 }, ctxWith([[1, 1]], [])), null, 'nearer-only stays put');
 }
+// `findEnemyAlly` moved to `simulation/targeting.ts` (the file-size refactor's
+// forty-third extraction, behavior-identical): driven headlessly with scripted
+// sight and smoke - allies only, sheep/dead/unseen/smoked exclusions,
+// nearest-wins ordering.
+const { findEnemyAlly } = require('./simulation/targeting.js');
+{
+	const monster = { x: 0, y: 0 };
+	const geo = {
+		chebyshevDistance: (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)),
+	};
+	const seen = new Set(['1,0', '2,0', '3,0', '1,1']);
+	const smoked = new Set(['3,0']);
+	const ally = (extra) => ({ hp: 5, isAlly: true, ...extra });
+	const stalk = (creatures) => findEnemyAlly(monster, creatures, (x, y) => seen.has(`${x},${y}`),
+		(fx, fy, tx, ty) => smoked.has(`${tx},${ty}`), geo);
+	assert.equal(stalk([]), null, 'empty floor, no target');
+	const near = ally({ x: 1, y: 0 });
+	const far = ally({ x: 2, y: 0 });
+	assert.equal(stalk([far, near]), near, 'nearest wins regardless of order');
+	assert.equal(stalk([{ hp: 5, x: 1, y: 0 }]), null, 'never a non-ally');
+	assert.equal(stalk([ally({ x: 1, y: 0, allyKind: 'sheep' })]), null, 'never a sheep');
+	assert.equal(stalk([ally({ x: 1, y: 0, hp: 0 })]), null, 'never the dead');
+	assert.equal(stalk([ally({ x: 9, y: 9 })]), null, 'never the unseen');
+	assert.equal(stalk([ally({ x: 3, y: 0 })]), null, 'never through smoke');
+	const side = ally({ x: 1, y: 1 });
+	assert.equal(stalk([side]), side, 'off-axis sight counts');
+}
 // `emitToxicGasVents` moved to `simulation/environmentalBlobs.ts` (the file-size
 // refactor's thirty-seventh extraction, behavior-identical): driven headlessly with
 // scripted terrain and gas - non-trap/outside cells skipped, re-seed while local

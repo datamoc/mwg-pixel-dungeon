@@ -119,3 +119,27 @@ export function beeTarget(
 	}
 	return target;
 }
+
+/**
+ * `Mob.findEnemy()`'s ally branch: a hostile mob may pursue a visible allied
+ * character when the hero is not currently its enemy - the nearest living
+ * non-sheep ally in the mob's field of view, outside smoke. Moved here
+ * verbatim from the scene as the file-size refactor's forty-third extraction,
+ * behavior-identical: the FOV and the smoke gate arrive as callbacks, so the
+ * module still takes no runtime imports. The caller keeps the one-line scene
+ * adapter.
+ */
+export function findEnemyAlly(
+	monster: Creature,
+	creatures: readonly Creature[],
+	isVisible: (x: number, y: number) => boolean,
+	smokeBlocked: (fromX: number, fromY: number, toX: number, toY: number) => boolean,
+	roguelike: SimulationRoguelike,
+): Creature | null {
+	return (
+		creatures
+			.filter((c) => c.isAlly && c.allyKind !== 'sheep' && c.hp > 0 && isVisible(c.x, c.y)
+				&& !smokeBlocked(monster.x, monster.y, c.x, c.y))
+			.sort((a, b) => roguelike.chebyshevDistance(monster, a) - roguelike.chebyshevDistance(monster, b))[0] ?? null
+	);
+}

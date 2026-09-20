@@ -1595,6 +1595,18 @@ one.
       first draft expected the wrong winner and the flow's verbatim strictness
       corrected the setup, not the reverse). Sim suite green.
       **Complexity: XS.**
+      **Forty-third extraction 2026-09-20**: `Mob.findEnemy()`'s ally branch
+      (nearest living non-sheep ally in the mob's FOV, outside smoke) moved to
+      `simulation/targeting.ts` as `findEnemyAlly` - the FOV and the smoke
+      gate arrive as callbacks, so the module still takes no runtime imports;
+      the scene keeps the one-line adapter. Net +3 lines in `dungeonScene.ts`
+      (22,531 after); `targeting.ts` 121 to 145. Suites: `tsc` clean first
+      try, item suite green after two placeholder assertions were caught
+      comparing fresh objects by identity instead of the returned element (the
+      flow is verbatim; the setup compared wrong), covering allies-only,
+      sheep/dead/unseen/smoked exclusions and nearest-wins ordering. Sim
+      suite green.
+      **Complexity: XS.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

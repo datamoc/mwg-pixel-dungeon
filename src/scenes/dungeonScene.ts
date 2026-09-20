@@ -197,7 +197,7 @@ import { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } from '../s
 import { teleportAppearPlan } from '../simulation/teleportAppear';
 import { evolveElectricity, evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
-import { aggressionTarget as aggressionTargetFlow, amokTarget as amokTargetFlow, beeTarget as beeTargetFlow, nearestVisibleEnemy as nearestVisibleEnemyFlow, selectRangedTarget } from '../simulation/targeting';
+import { aggressionTarget as aggressionTargetFlow, amokTarget as amokTargetFlow, beeTarget as beeTargetFlow, findEnemyAlly as findEnemyAllyFlow, nearestVisibleEnemy as nearestVisibleEnemyFlow, selectRangedTarget } from '../simulation/targeting';
 import { fleeStep as fleeStepFlow, isPatrolTargetValid as isPatrolTargetValidFlow, randomPatrolDestination as randomPatrolDestinationFlow, wanderBlocked as wanderBlockedFlow, type FleeStepContext, type WanderingContext } from '../simulation/wandering';
 import { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLeapCooldown } from '../simulation/ripperLeap';
 import { shouldSuccubusBlink, chooseSuccubusBlinkCell, succubusBlinkCooldown } from '../simulation/succubusBlink';
@@ -8993,10 +8993,13 @@ export class DungeonScene extends Scene2D {
 		//currently its enemy. The compact AI still has hero-shaped ranged overrides, so route
 		//this case through ordinary pathing/melee only; that is the documented reduction for
 		//special attacks against allies, while MirrorImage can now be reached and attacked.
-		const visibleAllyTarget = this.creatures
-			.filter((c) => c.isAlly && c.allyKind !== 'sheep' && c.hp > 0 && monsterFov.isVisible(c.x, c.y)
-				&& !this.smokeBlocksSight(monster.x, monster.y, c.x, c.y))
-			.sort((a, b) => Roguelike.chebyshevDistance(monster, a) - Roguelike.chebyshevDistance(monster, b))[0];
+		//`Mob.findEnemy()`'s ally branch lives in `simulation/targeting.ts` as
+	//`findEnemyAlly` - the file-size refactor's forty-third extraction,
+	//behavior-identical. The scene only binds the mob's FOV and smoke gate here.
+	const visibleAllyTarget = findEnemyAllyFlow(monster, this.creatures,
+			(x, y) => monsterFov.isVisible(x, y),
+			(fx, fy, tx, ty) => this.smokeBlocksSight(fx, fy, tx, ty),
+			simulationRoguelike);
 		if (!monster.seesHero && visibleAllyTarget) {
 			if (Roguelike.chebyshevDistance(monster, visibleAllyTarget) === 1) this.attack(monster, visibleAllyTarget);
 			else {
