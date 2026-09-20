@@ -42,13 +42,23 @@ export function paintLaboratoryRoom(level: PaintLevel, room: Room, depth: number
 	const n = SpdRandom.normalIntRange(1, 2);
 	for (let i = 0; i < n; i++) {
 		do { pos = level.pointToCell(room.random()); } while (level.map[pos] !== Terrain.EMPTY_SP || level.findHeap(pos) !== undefined);
-		// prize(): `findPrizeItem(Potion.class)` consumes NO RNG (it scans in order), but on a
-		// hit Java skips `Generator.random(Random.oneOf(POTION, STONE))` entirely - including
-		// that oneOf's real draw.
-		if (level.findPrizeItemOfClass('potion') === null) {
+		// prize(): `findPrizeItem(TrinketCatalyst.class)` first, then
+		// `findPrizeItem(PotionOfStrength.class)` - the latter matches ONLY a
+		// Strength potion, not any potion (a coarse 'potion' match here used to
+		// steal whichever specific potion - Levitation/Purity/Frost/etc - an
+		// earlier-painted room had queued, and then dropped a generic 'potion'
+		// in its place, so the queued room's guaranteed potion never spawned).
+		// Neither kind is ever queued in this port's scope (Level.create()'s
+		// base queue isn't modeled), so this virtually always misses and falls
+		// through to the Generator branch - which is Java's common case too.
+		// Both scans consume no RNG; on a hit the actual queued item is kept,
+		// never replaced by a generic placeholder.
+		const found = level.findPrizeItemOfExactKind('trinketCatalyst')
+			?? level.findPrizeItemOfExactKind('potionOfStrength');
+		if (found === null) {
 			level.drop(generatedGroundKind(randomCategory(oneOfCategories([Cat.POTION, Cat.STONE]))), pos);
 		} else {
-			level.drop('potion', pos);
+			level.drop(found, pos);
 		}
 	}
 

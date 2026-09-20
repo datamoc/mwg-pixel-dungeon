@@ -25,12 +25,22 @@ export function paintLibraryRoom(level: PaintLevel, room: Room): void {
 			const scroll = SpdRandom.int(2) === 0 ? 'ScrollOfIdentify' : 'ScrollOfRemoveCurse';
 			level.drop(scroll.toLowerCase(), pos)!.sourceClass = scroll;
 		} else {
-			// prize(): `findPrizeItem(Scroll.class)` consumes no RNG; only on a miss does
-			// `Generator.random(SCROLL)` run (its class pick is on SCROLL's own substream and
-			// `Scroll` inherits `Item.random()`, so it adds no level-stream draws either - but
-			// the deck bookkeeping differs).
-			const generated = level.findPrizeItemOfClass('scroll') === null ? randomCategory(Cat.SCROLL) : undefined;
-			level.drop('scroll', pos)!.sourceClass = generated?.cls ?? 'Scroll';
+			// prize(): `findPrizeItem(TrinketCatalyst.class)` first, then
+			// `findPrizeItem(Scroll.class)` (any scroll - the coarse match is
+			// correct here, unlike Laboratory's Strength-only match). Neither
+			// consumes RNG; only on a double miss does `Generator.random(SCROLL)`
+			// run (its class pick is on SCROLL's own substream and `Scroll`
+			// inherits `Item.random()`, so it adds no level-stream draws either -
+			// but the deck bookkeeping differs). On a hit the actual queued item
+			// is kept, never replaced by a generic placeholder.
+			const found = level.findPrizeItemOfExactKind('trinketCatalyst')
+				?? level.findPrizeItemOfClass('scroll');
+			if (found === null) {
+				const generated = randomCategory(Cat.SCROLL);
+				level.drop('scroll', pos)!.sourceClass = generated?.cls ?? 'Scroll';
+			} else {
+				level.drop(found, pos);
+			}
 		}
 	}
 

@@ -176,9 +176,28 @@ export class PaintLevel {
 	 */
 	findPrizeItem(): string | null {
 		if (this.itemsToSpawn.length === 0) return null;
+		// Java's no-arg overload returns a queued TrinketCatalyst first when one is
+		// present (no RNG), else a random queued item. The catalyst is never queued
+		// in this port's depth scope, so this is usually just the random pick.
+		const catalystIdx = this.itemsToSpawn.findIndex(k => k.toLowerCase() === 'trinketcatalyst');
+		if (catalystIdx >= 0) return this.itemsToSpawn.splice(catalystIdx, 1)[0]!;
 		const item = SpdRandom.element(this.itemsToSpawn);
 		this.itemsToSpawn.splice(this.itemsToSpawn.indexOf(item), 1);
 		return item;
+	}
+	/**
+	 * Exact-kind variant of `findPrizeItem(Class)` for classes that match a single
+	 * concrete item rather than a whole category: Java's
+	 * `findPrizeItem(PotionOfStrength.class)` only matches a Strength potion, NOT
+	 * any potion (and `findPrizeItem(TrinketCatalyst.class)` only matches the
+	 * catalyst). Consumes no RNG, like the class overload. Case-insensitive
+	 * because room painters queue lowercase-first kinds (`potionOfStrength`)
+	 * while the Java class names are capitalized (`PotionOfStrength`).
+	 */
+	findPrizeItemOfExactKind(kind: string): string | null {
+		const idx = this.itemsToSpawn.findIndex(k => k.toLowerCase() === kind.toLowerCase());
+		if (idx < 0) return null;
+		return this.itemsToSpawn.splice(idx, 1)[0]!;
 	}
 	/**
 	 * `Level.findPrizeItem(Class)`. Unlike the no-arg form this consumes NO RNG - it scans in
