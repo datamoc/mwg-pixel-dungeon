@@ -100,6 +100,8 @@ compile(join(root, 'src/simulation/highGrass.ts'), 'simulation/highGrass.js');
 compile(join(root, 'src/simulation/targeting.ts'), 'simulation/targeting.js');
 //The blob module is type-only at runtime too (terrain ids as values on contexts).
 compile(join(root, 'src/simulation/environmentalBlobs.ts'), 'simulation/environmentalBlobs.js');
+//The wandering trio is the same shape: creature views, terrain ids as values, scripted pick.
+compile(join(root, 'src/simulation/wandering.ts'), 'simulation/wandering.js');
 //`spells.js` upgrades through `itemWorkflows.js` by its real name, while the suite otherwise
 //only compiles that module as `workflows.js` (line 26) - recompiling it here under its own
 //name is the same idempotent write.
@@ -4104,6 +4106,55 @@ const { emitToxicGasVents } = require('./simulation/environmentalBlobs.js');
 	seeded.length = 0;
 	emitToxicGasVents(ctx(new Map([[15, 12], [16, 12]]), 5));
 	assert.deepEqual(seeded, [], 'skips non-trap terrain and outside cells');
+}
+// The wandering-decision trio moved to `simulation/wandering.ts` (the file-size
+// refactor's thirty-eighth extraction, behavior-identical): driven headlessly with
+// scripted terrain, occupants and pick - blocked-set membership, patrol-target
+// validity, and the destination roll.
+const { wanderBlocked, isPatrolTargetValid, randomPatrolDestination } = require('./simulation/wandering.js');
+{
+	const W = 4, H = 4;
+	const waterAt = (x, y) => x === 1 && y === 1;
+	const hero = { x: 0, y: 0 };
+	const monster = { x: 2, y: 3, kind: 'rat' };
+	const other = { x: 3, y: 0 };
+	const extraCells = new Set();
+	const ctx = {
+		width: W, height: H, cellCount: W * H,
+		passable: (x, y) => !(x === 3 && y === 3),
+		inside: (x, y) => x >= 0 && y >= 0 && x < W && y < H,
+		terrainAt: (x, y) => (waterAt(x, y) ? 9 : 1),
+		terrainAtCell: (cell) => (waterAt(cell % W, Math.floor(cell / W)) ? 9 : 1),
+		waterTerrain: 9,
+		cellIndex: (x, y) => x + y * W,
+		isChasm: (x, y) => x === 2 && y === 2,
+		creatureAt: (x, y) => [hero, monster, other].find((c) => c.x === x && c.y === y) ?? null,
+		creatures: [hero, monster, other],
+		hero,
+		blockExtraInto: (blocked) => { for (const cell of extraCells) blocked.add(cell); },
+		pickElement: (candidates) => candidates[0],
+	};
+	const roam = wanderBlocked(monster, false, ctx);
+	assert.ok(!roam.has(2 + 3 * W), 'never blocks the seeker itself');
+	assert.ok(roam.has(3 + 0 * W), 'blocks other creatures');
+	assert.ok(!roam.has(0), 'patrol steps keep the hero steppable');
+	assert.ok(wanderBlocked(monster, true, ctx).has(0), 'pursuit blocks the hero cell too');
+	extraCells.add(5);
+	assert.ok(wanderBlocked(monster, false, ctx).has(5), 'folds the extra-fire set in');
+	extraCells.clear();
+	const fish = { x: 1, y: 1, kind: 'piranha' };
+	const pond = wanderBlocked(fish, false, { ...ctx, creatures: [hero, fish] });
+	assert.ok(!pond.has(1 + 1 * W), 'water stays open to piranhas');
+	assert.ok(pond.has(2 + 2 * W), 'dry cells close to piranhas');
+	assert.equal(isPatrolTargetValid({ x: 1, y: 0 }, false, ctx), true, 'open floor stays valid');
+	assert.equal(isPatrolTargetValid({ x: 3, y: 3 }, false, ctx), false, 'impassable refused');
+	assert.equal(isPatrolTargetValid({ x: 2, y: 2 }, false, ctx), false, 'chasm refused');
+	assert.equal(isPatrolTargetValid({ x: 3, y: 0 }, false, ctx), false, 'occupied refused');
+	assert.equal(isPatrolTargetValid({ x: 9, y: 9 }, false, ctx), false, 'outside refused');
+	assert.equal(isPatrolTargetValid({ x: 1, y: 0 }, true, ctx), false, 'dry cells refused to piranhas');
+	assert.equal(isPatrolTargetValid({ x: 1, y: 1 }, true, ctx), true, 'water accepted to piranhas');
+	assert.deepEqual(randomPatrolDestination(false, ctx), { x: 1, y: 1 }, 'rolls the scripted candidate');
+	assert.equal(randomPatrolDestination(false, { ...ctx, passable: () => false }), undefined, 'no candidate stays undefined');
 }
 	const { weaponSTRReq, armorSTRReq, missileSTRReq, canSurpriseAttack } = require('./items/strReq.js');
 	// `Weapon.STRReq`/`Armor.STRReq`/`MissileWeapon.STRReq` (tags `v2.1.4`/`v3.3.8`):

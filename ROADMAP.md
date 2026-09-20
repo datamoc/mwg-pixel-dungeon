@@ -1532,6 +1532,25 @@ one.
       one stray-brace suite syntax error caught by `node --check` before the
       run). Sim suite green.
       **Complexity: XS.**
+      **Thirty-eighth extraction 2026-09-20**: the wandering-decision trio
+      (`wanderBlocked`'s creature/eternal-fire/piranha blocked set,
+      `isPatrolTargetValid`'s retained-destination check,
+      `randomPatrolDestination`'s `Level.randomDestination` sampler) moved to a
+      new `simulation/wandering.ts` behind one `WanderingContext` (dims,
+      passable/inside/terrain reads, the WATER id as a value, chasm/occupant
+      reads, creatures, hero, an eternal-fire fold-in plus the
+      `Random.element` pick as callbacks); the scene keeps one builder plus
+      adapters, and the `takeWanderingTurn` validity branch calls the flow.
+      Net 0 lines in `dungeonScene.ts` (22,545 after) - the builder plus
+      adapters cost what the three moved bodies saved; the gain is domain
+      placement (all wandering decisions in one module, ahead of the hunting/
+      fleeing work the architecture doc names next), not shrinkage.
+      `wandering.ts` is 80 lines new. Suites: `tsc` clean first try, item
+      suite green first try with a new drive (blocked-set membership both
+      modes, extra-fire fold-in, piranha confinement, all seven validity
+      verdicts, the scripted roll plus the empty-floor undefined). Sim suite
+      green.
+      **Complexity: S.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

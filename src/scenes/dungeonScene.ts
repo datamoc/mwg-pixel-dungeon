@@ -198,6 +198,7 @@ import { teleportAppearPlan } from '../simulation/teleportAppear';
 import { evolveElectricity, evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
 import { aggressionTarget as aggressionTargetFlow, nearestVisibleEnemy as nearestVisibleEnemyFlow, selectRangedTarget } from '../simulation/targeting';
+import { isPatrolTargetValid as isPatrolTargetValidFlow, randomPatrolDestination as randomPatrolDestinationFlow, wanderBlocked as wanderBlockedFlow, type WanderingContext } from '../simulation/wandering';
 import { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLeapCooldown } from '../simulation/ripperLeap';
 import { shouldSuccubusBlink, chooseSuccubusBlinkCell, succubusBlinkCooldown } from '../simulation/succubusBlink';
 import { useBrewFlow, type BrewFlowContext } from '../simulation/brews';
@@ -10067,24 +10068,34 @@ export class DungeonScene extends Scene2D {
 	 * the live pathfinder and terrain queries together, while the caller remains responsible for
 	 * the subsequent ranged/hostile fallback.
 	 */
-	/** Blocked cells for unscripted monster steps: every other creature plus eternal-fire
-	 * cells, with piranhas additionally confined to water. Patrol destinations keep the
-	 * hero steppable (their validity already excluded occupied cells); last-known pursuit
-	 * blocks every creature including the hero (a mob cannot step onto its target's cell,
-	 * matching Java's `getCloser` failing on occupation). */
+	/**
+	 * The wandering-decision trio (`wanderBlocked`, `isPatrolTargetValid`,
+	 * `randomPatrolDestination`) lives in `simulation/wandering.ts` - the file-size
+	 * refactor's thirty-eighth extraction, behavior-identical. The scene only
+	 * binds its level, creatures, hero and eternal-fire set in the builder below.
+	 */
+	private wanderingContext(): WanderingContext {
+		return {
+			width: this.level.width,
+			height: this.level.height,
+			cellCount: this.level.cellCount,
+			passable: (x, y) => this.level.passable(x, y),
+			inside: (x, y) => this.level.inside(x, y),
+			terrainAt: (x, y) => this.level.get(x, y),
+			terrainAtCell: (cell) => this.level.terrain[cell],
+			waterTerrain: WATER,
+			cellIndex: (x, y) => this.level.index(x, y),
+			isChasm: (x, y) => this.isChasmCell(x, y),
+			creatureAt: (x, y) => this.creatureAt(x, y),
+			creatures: this.creatures,
+			hero: this.hero,
+			blockExtraInto: (blocked) => this.eternalFireBlockedInto(blocked),
+			pickElement: (candidates) => Random.element(candidates) ?? undefined,
+		};
+	}
+
 	private wanderBlocked(monster: Creature, blockHeroCell: boolean): Set<number> {
-		const blocked = new Set(
-			this.creatures.filter((c) => c !== monster && (blockHeroCell || c !== this.hero))
-				.map((c) => this.level.index(c.x, c.y)),
-		);
-		this.eternalFireBlockedInto(blocked);
-		if (monster.kind === 'piranha') {
-			const heroCell = this.level.index(this.hero.x, this.hero.y);
-			for (let cell = 0; cell < this.level.cellCount; cell++) {
-				if (this.level.terrain[cell] !== WATER && (blockHeroCell || cell !== heroCell)) blocked.add(cell);
-			}
-		}
-		return blocked;
+		return wanderBlockedFlow(monster, blockHeroCell, this.wanderingContext());
 	}
 	
 	private takeWanderingTurn(monster: Creature): boolean {
@@ -10113,11 +10124,7 @@ export class DungeonScene extends Scene2D {
 		}
 		const target = monster.patrolTarget;
 		const targetValid = target
-			&& this.level.inside(target.x, target.y)
-			&& this.level.passable(target.x, target.y)
-			&& !this.isChasmCell(target.x, target.y)
-			&& !this.creatureAt(target.x, target.y)
-			&& (monster.kind !== 'piranha' || this.level.get(target.x, target.y) === WATER);
+			&& isPatrolTargetValidFlow(target, monster.kind === 'piranha', this.wanderingContext());
 		if (!targetValid) monster.patrolTarget = this.randomPatrolDestination(monster);
 		if (!monster.patrolTarget) return true;
 		if (monster.x === monster.patrolTarget.x && monster.y === monster.patrolTarget.y) {
@@ -13113,14 +13120,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 	 * excludes occupied cells so a saved target cannot immediately become an impossible
 	 * destination. Piranhas use their Java water-only movement restriction. */
 	private randomPatrolDestination(monster: Creature): Step | undefined {
-		const candidates: Step[] = [];
-		for (let y = 1; y < this.level.height - 1; y++) for (let x = 1; x < this.level.width - 1; x++) {
-			if (this.level.passable(x, y) && !this.isChasmCell(x, y) && !this.creatureAt(x, y)
-				&& (monster.kind !== 'piranha' || this.level.get(x, y) === WATER)) {
-				candidates.push({ x, y });
-			}
-		}
-		return Random.element(candidates) ?? undefined;
+		return randomPatrolDestinationFlow(monster.kind === 'piranha', this.wanderingContext());
 	}
 
 	private moveTo(creature: Creature, to: Step): void {
