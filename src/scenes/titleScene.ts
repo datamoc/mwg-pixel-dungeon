@@ -130,8 +130,11 @@ export class TitleScene extends Scene2D {
 				[2, 3, 4].forEach((i, col) => rect(i, x + col * (small + 2), y + 20 + gap, small));
 				[5, 6, 7].forEach((i, col) => rect(i, x + col * (small + 2), y + 40 + 2 * gap, small));
 			} else {
-				rect(0, title.x, y, 132); rect(1, title.x, y + 20 + gap, 132);
-				[[2, 5], [3, 6], [4, 7]].forEach((row, r) => row.forEach((i, c) => rect(i, title.x + c * 67, y + (r + 2) * (20 + gap), 65)));
+				//centred on the screen, not on `title.x`: that carries `GROUP_X_OFFSET` (a logo-art alignment), which pushed the
+				//132px button block 7px right - off the edge of any screen narrower than 139 (a 412px phone at 3x is 137 wide)
+				const bx = title.x - GROUP_X_OFFSET;
+				rect(0, bx, y, 132); rect(1, bx, y + 20 + gap, 132);
+				[[2, 5], [3, 6], [4, 7]].forEach((row, r) => row.forEach((i, c) => rect(i, bx + c * 67, y + (r + 2) * (20 + gap), 65)));
 			}
 			version.position.set(w - version.width - 4, h - version.height - 2);
 			this.windows.scale.set(scale);
