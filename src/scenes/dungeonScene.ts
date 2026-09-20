@@ -178,7 +178,7 @@ import { TitleScene } from '../scenes/titleScene';
 import { ClassSelectScene } from '../scenes/classSelectScene';
 import { menuScale } from '../ui/spdButton';
 import { drawAimPreview } from '../ui/aimOverlay';
-import { tuneWindowStack, windowBaseZoom } from '../ui/windowFit';
+import { sharpenUi, tuneWindowStack, windowBaseZoom } from '../ui/windowFit';
 import { applyDM300DeathUnseal, applyGooDeathUnseal, applyKingDeathUnseal, applyYogDeathUnseal, repairBossUnsealStairs, type BossUnsealContext } from './bossUnseal';
 import { openGameMenu as openGameMenuWindow } from '../ui/gameMenu';
 import { showChoiceWindow, showConfirmWindow } from '../ui/portWindows';
@@ -22454,6 +22454,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		runState.audio.update(dt);
 		//fit the window zoom to the top window and keep window text crisp (`ui/windowFit.ts`)
 		tuneWindowStack(this.gameWindows, windowBaseZoom(Game.current.width, Game.current.height), this.windowZoom, Game.current.height, (zoom) => this.applyWindowZoom(zoom));
+		sharpenUi([this.statusPane, this.actionBar, this.inventoryPanel, this.victoryPanel, this.journalWindow, this.gameLog]);
 		//`WndResurrect.onBackPressed()` is empty - the keeps choice cannot be dismissed. Any close
 		//that is not the confirm (picker cancel, outside click, a save loaded mid-window) reopens the
 		//keeps window here, so a dead hero with no window and no game over is unreachable.

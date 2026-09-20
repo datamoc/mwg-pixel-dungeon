@@ -236,7 +236,7 @@ export class InventoryWindow extends Container2D {
 			this.panel.addChild(tab);
 		});
 		(['pouch_seed', 'holder_scroll', 'bag_potion', 'holster_wand', 'pouch_stone'] as const).forEach((filter, index) => {
-			const tab = new SpdButton({ width: 28, height: 14, text: t(SUB_BAG_LABEL[filter]), onClick: () => {
+			const tab = new SpdButton({ width: 28, height: 14, text: t(SUB_BAG_LABEL[filter]), label: { size: 5 }, onClick: () => {
 				this.list.selectTab(filter); this.draw();
 			} });
 			tab.position.set(5 + index * 30, 38);
