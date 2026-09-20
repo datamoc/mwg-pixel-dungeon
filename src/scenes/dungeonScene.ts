@@ -17641,30 +17641,30 @@ export class DungeonScene extends Scene2D {
 			this.armorGlyph = glyph;
 		}
 
-		private sandalsItem(instanceId?: string) {
+		sandalsItem(instanceId?: string) {
 			return this.bag.find('sandals', instanceId) as (typeof this.bag.items[number] & SandalsItem) | undefined;
 		}
 
-		private chainsItem(instanceId?: string) {
+		chainsItem(instanceId?: string) {
 			return this.bag.find('chains', instanceId) as (typeof this.bag.items[number]
 				& { level?: number; charge?: number; partialCharge?: number; exp?: number; cursed?: boolean }) | undefined;
 		}
 
-		private armbandItem(instanceId?: string) {
+		armbandItem(instanceId?: string) {
 			return this.bag.find('armband', instanceId) as (typeof this.bag.items[number]
 				& { level?: number; charge?: number; partialCharge?: number; exp?: number; cursed?: boolean }) | undefined;
 		}
 
-		private beaconArtifactItem(instanceId?: string) {
+		beaconArtifactItem(instanceId?: string) {
 			return this.bag.find('beacon', instanceId) as (typeof this.bag.items[number] & BeaconItem) | undefined;
 		}
 
-		private hornItem(instanceId?: string) {
+		hornItem(instanceId?: string) {
 			return this.bag.find('horn', instanceId) as (typeof this.bag.items[number]
 				& { level?: number; charge?: number; partialCharge?: number; cursed?: boolean; storedFoodEnergy?: number }) | undefined;
 		}
 
-		private roseItem(instanceId?: string) {
+		roseItem(instanceId?: string) {
 			return this.bag.find('rose', instanceId) as (typeof this.bag.items[number] & RoseItem) | undefined;
 		}
 
@@ -17672,11 +17672,11 @@ export class DungeonScene extends Scene2D {
 			return this.roseGhost !== null && this.roseGhost.hp > 0 && !this.roseGhost.isHero;
 		}
 
-		private talismanItem(instanceId?: string) {
+		talismanItem(instanceId?: string) {
 			return this.bag.find('talisman', instanceId) as (typeof this.bag.items[number] & TalismanItem) | undefined;
 		}
 
-		private spellbookItem(instanceId?: string) {
+		spellbookItem(instanceId?: string) {
 			return this.bag.find('spellbook', instanceId) as (typeof this.bag.items[number] & SpellbookItem) | undefined;
 		}
 
@@ -17765,7 +17765,7 @@ export class DungeonScene extends Scene2D {
 			this.spendHeroTurn(1);
 		}
 
-		private summonElementalItem(instanceId?: string) {
+		summonElementalItem(instanceId?: string) {
 			return this.bag.find('summonElemental', instanceId) as (typeof this.bag.items[number] & { imbuedElement?: 'fire' | 'frost' | 'shock' | 'chaos' }) | undefined;
 		}
 
