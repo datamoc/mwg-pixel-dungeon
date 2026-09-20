@@ -3660,6 +3660,51 @@ function healingDrive(overrides = {}) {
 	createPotionEffects(wired.ctx).potionPurity();
 	assert.ok(wired.said.some((l) => l.includes('port.log.purity')), 'and the moved purifier');
 }
+// Dew-drop collection moved to `items/consumables.ts` as `collectDewdrop` (the
+// file-size refactor's thirtieth extraction, behavior-identical): driven headlessly
+// with a scripted skin - top-up, hurt-heal with the warden shield rider, full-and-
+// healthy refusal, and the force flag.
+const { collectDewdrop } = require('./items/consumables.js');
+const { WATERSKIN_MAX: DEW_SKIN_MAX } = require('./dungeonConstants.js');
+function dewDrive(overrides = {}) {
+	const said = [];
+	const heals = [];
+	const state = { skin: overrides.waterskin ?? 0 };
+	const flags = { shield: null };
+	const hero = { hp: overrides.hp ?? 20, maxHp: 20, buffs: {} };
+	const ctx = {
+		hero,
+		get waterskin() { return state.skin; },
+		set waterskin(v) { state.skin = v; },
+		subclass: () => overrides.subclass ?? null,
+		talentRank: (id) => (overrides.ranks ?? {})[id] ?? 0,
+		grantHeroShield: (amount, cap) => { flags.shield = { amount, cap }; },
+		showHeal: (target, amount) => { heals.push(amount); },
+		say: (line, level) => { said.push(`${level}:${line}`); },
+		...overrides.ctx,
+	};
+	const result = collectDewdrop(ctx, overrides.force ?? false);
+	return { result, ctx, said, heals, flags, state, hero };
+}
+{
+	const top = dewDrive({ waterskin: 5 });
+	assert.equal(top.result, true, 'a drop tops up the skin');
+	assert.equal(top.state.skin, 6, 'by exactly one');
+	assert.ok(top.said.some((l) => l.includes('port.log.collectdew')), 'announced');
+	const hurt = dewDrive({ waterskin: DEW_SKIN_MAX, hp: 10 });
+	assert.equal(hurt.result, true, 'a full skin heals instead');
+	assert.equal(hurt.hero.hp, 11, 'one drop of 0.05*HT');
+	assert.deepEqual(hurt.heals, [1], 'shown');
+	assert.deepEqual(hurt.flags.shield, { amount: 0, cap: 20 }, 'no warden talent, no shield');
+	assert.ok(hurt.said.some((l) => l.includes('port.log.dewheals')), 'announced');
+	const warden = dewDrive({ waterskin: DEW_SKIN_MAX, hp: 10, subclass: 'warden', ranks: { shielding_dew: 2 } });
+	assert.deepEqual(warden.flags.shield, { amount: 2, cap: 20 }, 'warden shielding_dew shields its rank');
+	const full = dewDrive({ waterskin: DEW_SKIN_MAX, hp: 20 });
+	assert.equal(full.result, false, 'full and healthy refuses');
+	const forced = dewDrive({ waterskin: DEW_SKIN_MAX, hp: 20, force: true });
+	assert.equal(forced.result, true, 'force heals anyway');
+	assert.deepEqual(forced.heals, [0], 'for zero');
+}
 	const { weaponSTRReq, armorSTRReq, missileSTRReq, canSurpriseAttack } = require('./items/strReq.js');
 	// `Weapon.STRReq`/`Armor.STRReq`/`MissileWeapon.STRReq` (tags `v2.1.4`/`v3.3.8`):
 	// `(8 + tier*2) - (int)(sqrt(8*lvl+1)-1)/2`, decreasing at +1/+3/+6/+10.

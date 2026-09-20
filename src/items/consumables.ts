@@ -1,9 +1,10 @@
 import { Random, type Actors } from 'mwg';
 import { addBuff, reigniteBuff, type Creature } from '../combat';
-import { cachedRationChance } from '../talentEffects';
+import { cachedRationChance, shieldingDewGain } from '../talentEffects';
 import { isChallengeEnabled } from '../challenges';
 import { t } from '../i18n';
 import type { ClassId } from '../classes';
+import { WATERSKIN_MAX } from '../dungeonConstants';
 import { MWL_CONSUMABLE_STATS, mwlItemEffectValue } from '../mwlContent';
 
 interface BarrierLike {
@@ -25,7 +26,9 @@ export interface ConsumableContext {
 	physicalBonusDamage: number;
 	physicalBonusAttacks: number;
 	readonly heroBarrier: BarrierLike;
+	readonly subclass: () => string | null;
 	readonly talentRank: (id: string) => number;
+	readonly grantHeroShield: (amount: number, cap: number) => void;
 	readonly wandCharges: { refund(amount: number): void };
 	showHeal(target: Creature, amount: number): void;
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
@@ -117,6 +120,31 @@ export function eatFood(scene: ConsumableContext): boolean {
 	scene.say(food.id === 'meat'
 		? t(heal > 5 ? 'port.log.eatmeathearty' : 'port.log.eatmeat', { heal })
 		: t(heal > 0 ? 'port.log.eathearty' : 'port.log.eat', { heal }), 'positive');
+	return true;
+}
+
+/**
+ * A dew drop pickup: tops up the `Waterskin` (`WATERSKIN_MAX = 20`, matching
+ * `Waterskin.volume`'s real scale), else converts the drop to a small heal plus the
+ * Warden `shielding_dew` shield. Moved here verbatim from the scene as the file-size
+ * refactor's thirtieth extraction, behavior-identical - the scene keeps the one-line
+ * adapter the ground-pickup context calls.
+ */
+export function collectDewdrop(scene: ConsumableContext, force = false): boolean {
+	if (scene.waterskin < WATERSKIN_MAX) {
+		scene.waterskin++;
+		scene.say(t('port.log.collectdew'), 'positive');
+		return true;
+	}
+
+	const before = scene.hero.hp;
+	const heal = Math.round(scene.hero.maxHp * mwlItemEffectValue('waterskin', 'healFractionPerDrop'));
+	const effectiveHeal = Math.min(scene.hero.maxHp - scene.hero.hp, heal);
+	if (effectiveHeal <= 0 && !force) return false;
+	scene.hero.hp += effectiveHeal;
+	scene.showHeal(scene.hero, scene.hero.hp - before);
+	scene.grantHeroShield(shieldingDewGain(scene.subclass(), scene.talentRank('shielding_dew')), scene.hero.maxHp);
+	scene.say(t('port.log.dewheals', { heal: scene.hero.hp - before }), 'positive');
 	return true;
 }
 

@@ -1444,6 +1444,16 @@ one.
       willpower/agility riders, purity's poison-plus-burning clear, the registry
       wiring). The stubbed-`addBuff` roots branch and the stubbed-off no_healing
       branch stay live-only by construction, stated in the drive comment.
+      **Complexity: XS.** **Thirtieth extraction 2026-09-20**: dew-drop collection
+      (`collectDewdrop`'s skin top-up, full-skin heal with the Warden shielding-dew
+      shield, healthy refusal, force flag) moved to `items/consumables.ts` behind the
+      existing `ConsumableContext` extended with subclass/shield accessors; the scene
+      keeps the one-line adapter the ground-pickup context calls, dropping the
+      now-unused `shieldingDewGain` import. Net −7 lines in `dungeonScene.ts` (22,652
+      after). Suites: `tsc` clean first try, item suite green with a new drive
+      (top-up by one, hurt-heal of one 0.05*HT drop with readout, warden rank-2
+      shielding, refusal, forced zero-heal). One suite-setup catch (an earlier
+      same-name require proved block-scoped, so the drive aliases its own).
       **Complexity: XS.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`

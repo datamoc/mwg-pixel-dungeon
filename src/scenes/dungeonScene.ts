@@ -15,7 +15,7 @@ import { Bar, Blob, FloatingTextStack, Game, ParticleEmitter, Scene2D, Input, Ra
 import { SceneSimulationAdapter } from '../adapters/sceneSimulation';
 import { dispatchHeroAction, type HeroActionPorts } from '../adapters/heroActions';
 import { BOOMERANG_RETURN_ACC_FACTOR, BOOMERANG_RETURN_TURNS, MISSILE_DEFAULT_QUANTITY, MISSILE_MAX_DURABILITY, bolasCrippleTurns, missileAdjacentAccFactor, missileBaseUses, missileDamageRange, missileFlightArt, missilePickupValid, missileStackFields, missileStackId, recordMissileUpgrade, tippedDartUseDivisor, tomahawkBleedRange, type MissileFlightArt } from '../items/missiles';
-import { eatFood as eatConsumableFood, quaffPotion as quaffConsumablePotion, applyMealEatenEffects, type ConsumableContext } from '../items/consumables';
+import { eatFood as eatConsumableFood, quaffPotion as quaffConsumablePotion, applyMealEatenEffects, collectDewdrop as collectConsumableDewdrop, type ConsumableContext } from '../items/consumables';
 import { applyScrollEffect, readScrollFlow, rollUpgradeAffixLoss, upgradeGearFlow, type ReadScrollContext, type ScrollEffectsContext, type UpgradeGearContext } from '../items/scrollEffects';
 import { applyPotionPurity, createPotionEffects, cureHeroBuffs } from '../items/potionEffects';
 import { placeCandleAtSlot, aimCandleFlow, type CandleContext, type CandleAimContext } from '../items/candles';
@@ -119,7 +119,7 @@ import { SpdToolbar } from '../ui/toolbar';
 import { StatusPane } from '../ui/statusPane';
 import { SpdAudio } from '../audio';
 import { onBrightnessChanged, onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../settings';
-import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalDefenseShield, lethalHasteDuration, LETHAL_HASTE_COOLDOWN, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, shieldingDewGain, soulSiphonCharge, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
+import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalDefenseShield, lethalHasteDuration, LETHAL_HASTE_COOLDOWN, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, soulSiphonCharge, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
 import pixelFontUrl from '../assets/pixel_font.ttf';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth, SpdRandom } from '../spdRng';
 import {
@@ -5481,22 +5481,13 @@ export class DungeonScene extends Scene2D {
 	 * (`Dewdrop.consumeDew`). The Warden's Shielding Dew cap and proportional drop calculation
 	 * are shared with the exact Waterskin drink path; Vial of Blood remains unmodeled.
 	 */
+	/**
+	 * Dew-drop collection lives in `items/consumables.ts` as `collectDewdrop` -
+	 * the file-size refactor's thirtieth extraction, behavior-identical. The scene
+	 * only forwards its own consumable context here.
+	 */
 	private collectDewdrop(force = false): boolean {
-		if (this.waterskin < WATERSKIN_MAX) {
-			this.waterskin++;
-			this.say(t('port.log.collectdew'), 'positive');
-			return true;
-		}
-
-		const before = this.hero.hp;
-		const heal = Math.round(this.hero.maxHp * mwlItemEffectValue('waterskin', 'healFractionPerDrop'));
-		const effectiveHeal = Math.min(this.hero.maxHp - this.hero.hp, heal);
-		if (effectiveHeal <= 0 && !force) return false;
-		this.hero.hp += effectiveHeal;
-		this.showHeal(this.hero, this.hero.hp - before);
-		this.grantHeroShield(shieldingDewGain(this.subclass(), this.talentRank('shielding_dew')), this.hero.maxHp);
-		this.say(t('port.log.dewheals', { heal: this.hero.hp - before }), 'positive');
-		return true;
+		return collectConsumableDewdrop(this.consumableContext(), force);
 	}
 
 	/**
@@ -19406,7 +19397,9 @@ private eyeBeamTurn(monster: Creature): boolean {
 			get physicalBonusDamage() { return scene.physicalBonusDamage; }, set physicalBonusDamage(value) { scene.physicalBonusDamage = value; },
 			get physicalBonusAttacks() { return scene.physicalBonusAttacks; }, set physicalBonusAttacks(value) { scene.physicalBonusAttacks = value; },
 			heroBarrier: this.heroBarrier,
+			subclass: this.subclass.bind(this),
 			talentRank: this.talentRank.bind(this),
+			grantHeroShield: (amount: number, cap: number) => { scene.grantHeroShield(amount, cap); },
 			wandCharges: this.wandCharges,
 			showHeal: this.showHeal.bind(this),
 			say: this.say.bind(this),
