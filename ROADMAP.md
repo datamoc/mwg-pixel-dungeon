@@ -1070,7 +1070,7 @@ one.
       that must bind scene state) - not movable as behavior-identical
       micro-slices. Further movement toward the 2,000-line objective belongs
       to the section-11 runtime-command migration, not to more
-      extractions. **First extraction 2026-09-19**: the alchemy-pot window flow
+      extractions - with two later exceptions driven by the file budget itself: the 45th (`takeSentryTurn` -> `simulation/sentryTurn.ts`, whole beam-turret turn with a headless warmup/gaze pin) and the 46th (the shared Amok/Aggression pursuit tail -> `pursueTarget` in `simulation/targeting.ts`, with an adjacency/blocking pin), both behavior-identical with scene adapters, landed 2026-09-20 when behavior ports pushed the scene 7 lines over its 22,700 budget. **First extraction 2026-09-19**: the alchemy-pot window flow
       (`startAlchemyIngredientPick`/`pickAlchemyUnits`/`completeAlchemyRecipe`/`openAlchemyRecipes`
       plus the `AlchemyIngredientSelection` type) moved verbatim to `items/alchemy.ts` behind a new
       `AlchemyFlowContext` (bag, energy get/set, say, picker, display name, panel refresh) - the

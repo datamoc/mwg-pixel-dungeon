@@ -42,6 +42,7 @@ import { MOVES } from '../simulation/heroActions';
 import { wraithCombatStats, dustSpawnerStep, dustSpawnerCap } from '../simulation/wraith';
 import { runHeroTurn } from '../adapters/gameSimulation';
 import { takeGooTurn as runGooTurn } from '../simulation/gooBoss';
+import { takeSentryTurn as takeSentryTurnFlow } from '../simulation/sentryTurn';
 import { planRatKingWave, ratKingP1Summon, type RatKingAddKind, type RatKingWavePlan } from '../simulation/ratKingBoss';
 import { chooseDM300Ability, dm300VentPath, planDM300Rockfall } from '../simulation/dm300Boss';
 import { aimYogDeathGaze } from '../simulation/yogBoss';
@@ -198,7 +199,7 @@ import { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } from '../s
 import { teleportAppearPlan } from '../simulation/teleportAppear';
 import { evolveElectricity, evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
-import { aggressionTarget as aggressionTargetFlow, amokTarget as amokTargetFlow, beeTarget as beeTargetFlow, findEnemyAlly as findEnemyAllyFlow, nearestVisibleEnemy as nearestVisibleEnemyFlow, selectRangedTarget } from '../simulation/targeting';
+import { aggressionTarget as aggressionTargetFlow, amokTarget as amokTargetFlow, beeTarget as beeTargetFlow, findEnemyAlly as findEnemyAllyFlow, nearestVisibleEnemy as nearestVisibleEnemyFlow, pursueTarget as pursueTargetFlow, selectRangedTarget } from '../simulation/targeting';
 import { fleeStep as fleeStepFlow, isPatrolTargetValid as isPatrolTargetValidFlow, nearestFreeCell as nearestFreeCellFlow, randomPatrolDestination as randomPatrolDestinationFlow, wanderBlocked as wanderBlockedFlow, type FleeStepContext, type SummonCellContext, type WanderingContext } from '../simulation/wandering';
 import { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLeapCooldown } from '../simulation/ripperLeap';
 import { shouldSuccubusBlink, chooseSuccubusBlinkCell, succubusBlinkCooldown } from '../simulation/succubusBlink';
@@ -6425,6 +6426,11 @@ export class DungeonScene extends Scene2D {
 				if (target.allyKind === 'sheep') return true;
 				//`SentryRoom$Sentry.damage()` (tag `v3.3.8`) is likewise a no-op.
 				if (target.kind === 'sentry') return true;
+				//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`) resists the
+				//`Electricity` class the same `Math.round` half as ACIDIC above -
+				//only the shock elemental subtype carries the property.
+				if (cause === 'electricity' && !target.isHero && target.kind === 'elemental'
+					&& (target.elementalType ?? 'fire') === 'shock') damage = Math.round(damage / 2);
 				const preHp = target.hp;
 				target.hp -= damage;
 				if (this.fadeMirrorOnDamage(target, damage)) return true;
@@ -7256,6 +7262,14 @@ export class DungeonScene extends Scene2D {
 					let damage = Math.round(raw * lightningMultiplier)
 						+ (victim === target ? enragedCatalystBonus(this.subclass(), this.talentRank('enraged_catalyst'), this.hero.hp, this.hero.maxHp) + this.wandBonusDamage : 0);
 					if (this.wandType === 'lightning' && victim === this.hero) damage = Math.round(damage * 0.5);
+				//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`) resists the
+				//`WandOfLightning` class: `Char.damage()` halves with
+				//`Math.round`, so only the shock elemental subtype takes the half
+				//here. The blob seam carries the `Electricity` class below;
+				//Shocking arcs/darts and the Potential talent have no mob-damage
+				//seam of their own to halve through (stated, not silent).
+				if (this.wandType === 'lightning' && !victim.isHero && victim.kind === 'elemental'
+					&& (victim.elementalType ?? 'fire') === 'shock') damage = Math.round(damage * 0.5);
 					if (this.wandType === 'frost') {
 						//WandOfFrost.onZap() clears Fire at the collision cell. A frozen target
 						//cannot be affected again; otherwise existing Chill reduces this bolt's
@@ -8424,14 +8438,16 @@ export class DungeonScene extends Scene2D {
 			setBleeding(target, Math.round(rawCorrosion * 0.5 * 0.6));
 		}
 		//`Char.Property.ACIDIC` (`Char.java`, tag `v3.3.8`) resists the Corrosion
-		//damage class, halving each tick: Goo, CausticSlime and the acidic mob.
-		//The rotting fist converts instead (handled just above); the Ooze-buff half
-		//of ACIDIC already lives in the immunity table. Found by the 41st matrix.
+		//damage class: `Char.damage()` applies `Math.round(dmg * 0.5)` for a
+		//resisted class, so odd ticks round up (3 -> 2), not down. Goo,
+		//CausticSlime and the acidic mob take that half; the rotting fist
+		//converts instead (handled just above); the Ooze-buff half of ACIDIC
+		//already lives in the immunity table. Found by the 41st matrix.
 		const acidic = !target.isHero && (target.kind === 'goo' || target.kind === 'causticSlime' || target.kind === 'acidic');
 		const damage = target.isHero
 			? Math.floor(rawCorrosion * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune))
 			: target.kind === 'yogFist' && target.yogFistType === 'rotting' ? 0
-			: acidic ? Math.floor(rawCorrosion / 2) : rawCorrosion;
+			: acidic ? Math.round(rawCorrosion / 2) : rawCorrosion;
 		if (target.isHero) {
 			const blocked = this.absorbHeroDamage(damage);
 			target.hp -= blocked;
@@ -9399,41 +9415,32 @@ export class DungeonScene extends Scene2D {
 			}
 		}
 
-		//SentryRoom$Sentry.act(): an immobile beam turret - it never moves or melees, so this
-		//branch owns its whole turn (placed ahead of the adjacent-attack block below, since
-		//even an adjacent hero takes the beam, never a melee swing). The trigger is the
-		//sentry's own field of view over its room, collapsed here to line-of-sight like every
-		//other ranged mob (the EMPTY_SP/room-rect/lost-inventory conditions have no seam
-		//here); invisibility never hides the hero (see the seesHero computation above). The
-		//first sighting charges ~2 turns (`dangerDist/3+0.1` discrete), then it fires EVERY
-		//visible turn (`curChargeDelay` resets to 1), and looking away resets the slow
-		//charge. Shots are the real `NormalIntRange(2+depth/2, 4+depth)` DeathGaze: a magic
-		//hit roll at `20+depth*2` accuracy that bypasses armor entirely, like the Eye branch
-		//below. Not modeled: the Bestiary.setSeen tick, the travel-interrupt pity, and the
-		//charge/zap particles (a port log line stands in for all three).
+		//The sentry's whole turn lives in `simulation/sentryTurn.ts` as
+		//`takeSentryTurn` - the file-size refactor's forty-fifth extraction,
+		//behavior-identical. The scene only binds its callbacks here; the Java
+		//contract (charge, gaze, warmup reset) is documented at the module.
 		if (monster.kind === 'sentry') {
 			//Terror stops the sentry firing on the reader (its only conceivable target)
 			//without moving it - an immobile turret cannot flee, so the generic flee
 			//override above is skipped for this kind instead.
 			if (monster.buffs['terror']) return;
-			if (!monster.seesHero || !Roguelike.canTarget(this.level, monster, this.hero, { range: 8 })) {
-				monster.sentryWarmup = undefined;
-				return;
-			}
-			if ((monster.sentryWarmup ?? 2) > 0) {
-				monster.sentryWarmup = (monster.sentryWarmup ?? 2) - 1;
-				this.say(t('port.log.sentrycharge'), 'negative');
-				return;
-			}
-			if (!rollHit(monster, this.hero, true)) {
-				this.say(t('port.log.sentrymisses'), 'negative');
-			} else {
-				const dmg = this.absorbHeroDamage(Random.normalRange(2 + Math.floor(this.depth / 2), 4 + this.depth));
-				this.hero.hp -= dmg;
-				this.showDamage(this.hero, dmg);
-				this.say(t('port.log.sentrygaze'), 'negative');
-				if (this.hero.hp <= 0) this.kill(this.hero);
-			}
+			takeSentryTurnFlow(monster, this.hero, {
+				depth: this.depth,
+				seesHero: monster.seesHero === true,
+				canTargetHero: () => Roguelike.canTarget(this.level, monster, this.hero, { range: 8 }),
+				warmup: monster.sentryWarmup,
+				setWarmup: (value) => { monster.sentryWarmup = value; },
+				sayCharge: () => this.say(t('port.log.sentrycharge'), 'negative'),
+				sayMiss: () => this.say(t('port.log.sentrymisses'), 'negative'),
+				sayGaze: () => this.say(t('port.log.sentrygaze'), 'negative'),
+				rollHit: (attacker, defender) => rollHit(attacker, defender, true),
+				strikeHero: (min, max) => {
+					const dmg = this.absorbHeroDamage(Random.normalRange(min, max));
+					this.hero.hp -= dmg;
+					this.showDamage(this.hero, dmg);
+					if (this.hero.hp <= 0) this.kill(this.hero);
+				},
+			});
 			return;
 		}
 		//ChampionEnemy.Giant/Projecting.canAttackWithExtraReach() (ChampionEnemy.java,
@@ -9946,15 +9953,22 @@ export class DungeonScene extends Scene2D {
 	private takeAmokTurn(monster: Creature): void {
 		const target = amokTargetFlow(monster, this.creatures, simulationRoguelike);
 		if (!target) return;
-		if (Roguelike.chebyshevDistance(monster, target) === 1) {
-			this.attack(monster, target);
-			return;
-		}
-		const blocked = new Set(this.creatures.filter((c) => c !== monster && c !== target)
-			.map((c) => this.level.index(c.x, c.y)));
-		this.eternalFireBlockedInto(blocked);
-		const next = this.pathfinder.find({ x: monster.x, y: monster.y }, { x: target.x, y: target.y }, { blocked })[0];
-		if (next) this.stepMonster(monster, next);
+		this.pursue(monster, target);
+	}
+
+	/** The shared Amok/Aggression pursuit tail lives in `simulation/targeting.ts`
+	 * as `pursueTarget` - the file-size refactor's forty-sixth extraction,
+	 * behavior-identical. The scene only binds its creatures and geometry here. */
+	private pursue(monster: Creature, target: Creature): void {
+		pursueTargetFlow(monster, target, {
+			creatures: this.creatures,
+			cellIndex: (x, y) => this.level.index(x, y),
+			blockEternalFire: (blocked) => this.eternalFireBlockedInto(blocked),
+			findStep: (from, to, blocked) => this.pathfinder.find(from, to, { blocked })[0],
+			isAdjacent: (a, b) => Roguelike.chebyshevDistance(a, b) === 1,
+			step: (m, s) => this.stepMonster(m, s),
+			strike: (m, t) => { this.attack(m, t); },
+		});
 	}
 
 	/** Java's hostile-target query considers the hero and friendly summoned characters. Keep
@@ -9979,15 +9993,7 @@ export class DungeonScene extends Scene2D {
 	 * character is another enemy. This small shared branch applies that priority to all ordinary
 	 * movement before per-kind ranged overrides, preserving the stone's forced-target effect. */
 	private takeAggressionTurn(monster: Creature, target: Creature): void {
-		if (Roguelike.chebyshevDistance(monster, target) === 1) {
-			this.attack(monster, target);
-			return;
-		}
-		const blocked = new Set(this.creatures.filter((c) => c !== monster && c !== target)
-			.map((c) => this.level.index(c.x, c.y)));
-		this.eternalFireBlockedInto(blocked);
-		const next = this.pathfinder.find({ x: monster.x, y: monster.y }, { x: target.x, y: target.y }, { blocked })[0];
-		if (next) this.stepMonster(monster, next);
+		this.pursue(monster, target);
 	}
 
 	/** Whole-turn special actors that must run before target acquisition and the shared AI. */

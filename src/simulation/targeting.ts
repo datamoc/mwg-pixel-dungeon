@@ -1,4 +1,4 @@
-import type { Creature } from '../combat';
+import type { Creature, Step } from '../combat';
 import type { SimulationRoguelike } from './roguelike';
 
 /**
@@ -145,4 +145,35 @@ export function findEnemyAlly(
 				&& !smokeBlocked(monster.x, monster.y, c.x, c.y))
 			.sort((a, b) => roguelike.chebyshevDistance(monster, a) - roguelike.chebyshevDistance(monster, b))[0] ?? null
 	);
+}
+
+/**
+ * The shared Amok/Aggression pursuit tail: strike when adjacent, otherwise
+ * path one step toward the target around other creatures (the sentry-wall
+ * fire joins the blocked set through the callback, like every other
+ * pathfinder call). `Amok.act()` and the Aggression branch ran this same
+ * tail twice in the scene; it moves here as the file-size refactor's
+ * forty-sixth extraction, behavior-identical - the scene only binds its
+ * creatures, geometry, stepper and striker.
+ */
+export interface PursuitContext {
+	readonly creatures: readonly Creature[];
+	readonly cellIndex: (x: number, y: number) => number;
+	readonly blockEternalFire: (blocked: Set<number>) => void;
+	readonly findStep: (from: Step, to: Step, blocked: Set<number>) => Step | undefined;
+	readonly isAdjacent: (a: { x: number; y: number }, b: { x: number; y: number }) => boolean;
+	readonly step: (monster: Creature, to: Step) => void;
+	readonly strike: (monster: Creature, target: Creature) => void;
+}
+
+export function pursueTarget(monster: Creature, target: Creature, context: PursuitContext): void {
+	if (context.isAdjacent(monster, target)) {
+		context.strike(monster, target);
+		return;
+	}
+	const blocked = new Set(context.creatures.filter((c) => c !== monster && c !== target)
+		.map((c) => context.cellIndex(c.x, c.y)));
+	context.blockEternalFire(blocked);
+	const next = context.findStep({ x: monster.x, y: monster.y }, { x: target.x, y: target.y }, blocked);
+	if (next) context.step(monster, next);
 }

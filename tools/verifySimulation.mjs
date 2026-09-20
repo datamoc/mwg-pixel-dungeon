@@ -44,7 +44,7 @@ try {
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/mageAbilities', 'simulation/rogueAbilities', 'simulation/ratmogrify', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'mechanics/cone', 'dungeonConstants',
-	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/brews', 'simulation/smoke', 'ui/buffOverlays',
+	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/sentryTurn', 'simulation/brews', 'simulation/smoke', 'ui/buffOverlays',
 	// `actors/monsterSpawn` (plus its `monsters`/`challenges`/i18n chain) for the spawn-profile
 	// checks: the chaos-elemental roll, the rare-alt table, and the unported-mob absences.
 	'monsters', 'challenges', 'i18n/index', 'i18n/portStrings', 'i18n/languages', 'i18n/spdKeys', 'generated/spdMessages', 'items/artifacts', 'actors/monsterSpawn',
@@ -108,7 +108,7 @@ const { runHeroPlantEffect, runMobPlantEffect } = require('./simulation/plantTri
 const { TIME_BUBBLE_TURNS: MOB_BUBBLE_TURNS } = require('./simulation/timeBubble');
 const { teleportCandidates, disarmBubblePresses } = require('./simulation/teleport');
 const { teleportAppearPlan } = require('./simulation/teleportAppear');
-const { selectRangedTarget, findEnemyAlly } = require('./simulation/targeting');
+const { selectRangedTarget, findEnemyAlly, pursueTarget } = require('./simulation/targeting');
 const { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } = require('./simulation/timeBubble');
 	const { applyEnvironmentalBlobs, spreadSacrificialFire, sacrificeCost, processSacrifice } = require('./simulation/environmentalBlobs');
 	// The four coefficients `HighGrass.trample` reads, as the port's MWL rows carry them.
@@ -638,6 +638,35 @@ check('Ally pursuit skips sheep and invisible allies', () => {
 	assert.equal(findEnemyAlly(monster, [{ ...visible, buffs: { invisibility: 9999 } }], isVisible, smokeBlocked, roguelike), null);
 	assert.equal(findEnemyAlly(monster, [{ ...visible, allyKind: 'sheep' }], isVisible, smokeBlocked, roguelike), null);
 });
+check('Pursuit strikes adjacent targets and steps around blockers', () => {
+	//46th extraction: the shared Amok/Aggression tail - adjacency strikes,
+	//anything else paths one step with the target and bystanders unblocked.
+	const calls = [];
+	const monster = { x: 0, y: 0 };
+	const target = { x: 1, y: 0 };
+	const context = {
+		creatures: [monster, target, { x: 5, y: 5 }],
+		cellIndex: (x, y) => x + y * 10,
+		blockEternalFire: () => {},
+		findStep: (from, to, blocked) => {
+			assert.ok(!blocked.has(0) && !blocked.has(10), 'monster and target stay walkable');
+			assert.ok(blocked.has(55), 'bystanders block');
+			calls.push(['step', from, to]);
+			return { x: 0, y: 1 };
+		},
+		isAdjacent: (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) === 1,
+		step: (m, to) => calls.push(['moved', to]),
+		strike: (m, t) => calls.push(['strike', t]),
+	};
+	pursueTarget(monster, target, context);
+	assert.deepEqual(calls, [['strike', target]]);
+	calls.length = 0;
+	const farMonster = { x: 0, y: 0 };
+	const farTarget = { x: 3, y: 0 };
+	const farContext = { ...context, creatures: [farMonster, farTarget, { x: 5, y: 5 }] };
+	pursueTarget(farMonster, farTarget, farContext);
+	assert.deepEqual(calls, [['step', { x: 0, y: 0 }, { x: 3, y: 0 }], ['moved', { x: 0, y: 1 }]]);
+});
 check('Teleport lands passable, unoccupied, unseen, non-secret and out of pits', () => {
 	const open = { passable: true, occupied: false, visible: false, secret: false, chasm: false };
 	assert.deepEqual(teleportCandidates([
@@ -687,6 +716,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	});
 	const { takeGooTurn } = require('./simulation/gooBoss');
 	const { mirrorImageStats } = require('./simulation/mirrorImage');
+	const { takeSentryTurn } = require('./simulation/sentryTurn');
 	const { ratKingP1Summon, planRatKingWave } = require('./simulation/ratKingBoss');
 	const { chooseDM300Ability, dm300VentPath, planDM300Rockfall } = require('./simulation/dm300Boss');
 	const { aimYogDeathGaze } = require('./simulation/yogBoss');
@@ -1151,6 +1181,47 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		const scene = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
 		assert.ok(scene.includes("if (creature.kind === 'piranha') this.awardBadge('piranhas');"),
 			'every piranha death counts');
+	});
+	check('Shock elementals halve lightning-family damage, rounded', () => {
+		//`Char.Property.ELECTRIC` (tag `v3.3.8`): `Char.damage()` halves with
+		//`Math.round` - same rounding the ACIDIC corrosion half uses.
+		const scene = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		assert.ok(scene.includes("cause === 'electricity' && !target.isHero && target.kind === 'elemental'"),
+			'the blob seam halves electricity for shock elementals');
+		assert.ok(scene.includes("this.wandType === 'lightning' && !victim.isHero && victim.kind === 'elemental'"),
+			'the lightning wand halves for shock elementals');
+	});
+	check('Sentry turrets charge two turns, then gaze every visible turn', () => {
+		//`SentryRoom$Sentry.act()` (tag `v3.3.8`): ~2-turn charge, fire every
+		//visible turn after, warmup reset when the hero leaves sight.
+		const events = [];
+		let warmup;
+		const base = {
+			depth: 8,
+			seesHero: true,
+			canTargetHero: () => true,
+			get warmup() { return warmup; },
+			setWarmup: (value) => { warmup = value; },
+			sayCharge: () => events.push('charge'),
+			sayMiss: () => events.push('miss'),
+			sayGaze: () => events.push('gaze'),
+			rollHit: () => true,
+			strikeHero: (min, max) => events.push(['strike', min, max]),
+		};
+		const monster = {};
+		const hero = {};
+		takeSentryTurn(monster, hero, base);
+		takeSentryTurn(monster, hero, base);
+		takeSentryTurn(monster, hero, base);
+		assert.deepEqual(events, ['charge', 'charge', ['strike', 6, 12], 'gaze']);
+		assert.equal(warmup, 0);
+		//Losing sight resets the slow charge.
+		takeSentryTurn(monster, hero, { ...base, seesHero: false });
+		assert.equal(warmup, undefined);
+		//A miss says so and never strikes.
+		events.length = 0;
+		takeSentryTurn(monster, hero, { ...base, warmup: 0, rollHit: () => false });
+		assert.deepEqual(events, ['miss']);
 	});
 	check('Sentry turrets and sheep refuse buffs and direct damage', () => {
 		//`SentryRoom$Sentry.add()`/`damage()` and `Sheep.add()`/`damage()`
