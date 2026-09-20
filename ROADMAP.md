@@ -1454,7 +1454,23 @@ one.
       (top-up by one, hurt-heal of one 0.05*HT drop with readout, warden rank-2
       shielding, refusal, forced zero-heal). One suite-setup catch (an earlier
       same-name require proved block-scoped, so the drive aliases its own).
-      **Complexity: XS.**
+      **Complexity: XS.** **Thirty-first extraction 2026-09-20**: `Preparation`'s
+      blink-aim family (`usePreparationBlink` plus the target/reach/destination/
+      confirm helpers) moved to `simulation/preparation.ts` behind a
+      `PreparationBlinkContext` (hero, subclass/talents, aimer, creature/fov/level/
+      flood seams, move/refresh, the strike tail as callbacks); the scene keeps the
+      one-line adapter plus a builder, dropping the now-unused
+      `preparationBlinkDistance` import. Net −57 lines in `dungeonScene.ts` (22,595
+      after), `preparation.ts` 130 to 257. Suites: `tsc` clean first try, item suite
+      green with a new BFS-flood drive (aim ranges, validation, adjacent and blink
+      strikes, both refusals with the rooted-only shake), and the sim suite green -
+      including the sibling-import confinement guard, which forced one real rework:
+      simulation modules take no runtime imports outside their directory, so the
+      moved code inlines its Chebyshev/neighbour math and passes message keys for
+      the scene to translate (the brews-module convention). Found in the same pass:
+      the coverage row's "screen shake on a rooted refusal" gap never was one - the
+      shake is live and now pinned - corrected in place.
+      **Complexity: S.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

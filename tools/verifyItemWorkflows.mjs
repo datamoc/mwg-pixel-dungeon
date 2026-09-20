@@ -89,6 +89,9 @@ compile(join(root, 'src/classes.ts'), 'classes.js');
 compile(join(root, 'src/items/scrolls.ts'), 'items/scrolls.js');
 compile(join(root, 'src/simulation/prismatic.ts'), 'simulation/prismatic.js');
 compile(join(root, 'src/items/scrollEffects.ts'), 'items/scrollEffects.js');
+//The blink family adds `Roguelike` (barrelled) and `../i18n` (stubbed); `../combat`
+//is type-only there, so nothing else new resolves at runtime.
+compile(join(root, 'src/simulation/preparation.ts'), 'simulation/preparation.js');
 //`spells.js` upgrades through `itemWorkflows.js` by its real name, while the suite otherwise
 //only compiles that module as `workflows.js` (line 26) - recompiling it here under its own
 //name is the same idempotent write.
@@ -3704,6 +3707,116 @@ function dewDrive(overrides = {}) {
 	const forced = dewDrive({ waterskin: DEW_SKIN_MAX, hp: 20, force: true });
 	assert.equal(forced.result, true, 'force heals anyway');
 	assert.deepEqual(forced.heals, [0], 'for zero');
+}
+// `Preparation`'s blink-aim family moved to `simulation/preparation.ts` (the file-size
+// refactor's thirty-first extraction, behavior-identical): driven headlessly on a 7x7
+// fake floor with a BFS flood standing in for the pathfinder - aim range per level and
+// reach rank, target validation, adjacent strikes, blink strikes onto the cheapest
+// neighbour, and both refusal halves (unreachable vs rooted, shake only when rooted).
+const { usePreparationBlink, blinkTarget, blinkDestination, confirmPreparationBlink } = require('./simulation/preparation.js');
+function blinkDrive(overrides = {}) {
+	const said = [];
+	const shakes = [];
+	const flags = { aim: null, spent: false, attacks: [], turns: [], refreshed: 0 };
+	const grid = { w: 7, h: 7, walls: overrides.walls ?? [] };
+	const passable = (x, y) => x >= 0 && y >= 0 && x < grid.w && y < grid.h
+		&& !grid.walls.some(([wx, wy]) => wx === x && wy === y);
+	const distanceMap = (from) => {
+		const dist = new Array(grid.w * grid.h).fill(-1);
+		const key = (x, y) => y * grid.w + x;
+		if (!passable(from.x, from.y)) return dist;
+		dist[key(from.x, from.y)] = 0;
+		const queue = [{ x: from.x, y: from.y }];
+		while (queue.length > 0) {
+			const cur = queue.shift();
+			for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+				const x = cur.x + dx, y = cur.y + dy;
+				if (!passable(x, y) || dist[key(x, y)] !== -1) continue;
+				dist[key(x, y)] = dist[key(cur.x, cur.y)] + 1;
+				queue.push({ x, y });
+			}
+		}
+		return dist;
+	};
+	const hero = {
+		x: 1, y: 1, hp: 20, maxHp: 20, buffs: { ...(overrides.heroBuffs ?? {}) },
+		prepLevel: 'prepLevel' in overrides ? overrides.prepLevel : 2, damage: [1, 2],
+	};
+	const creatures = overrides.creatures ?? [];
+	const ctx = {
+		hero,
+		subclass: () => overrides.subclass ?? null,
+		talentRank: (id) => (overrides.ranks ?? {})[id] ?? 0,
+		beginAiming: (opts) => { flags.aim = opts; },
+		creatureAt: (x, y) => [...creatures, hero].find((c) => c.x === x && c.y === y) ?? null,
+		fov: { isVisible: overrides.visible ?? (() => true) },
+		level: {
+			inside: (x, y) => x >= 0 && y >= 0 && x < grid.w && y < grid.h,
+			passable,
+			index: (x, y) => y * grid.w + x,
+		},
+		distanceMap,
+		moveTo: (c, to) => { c.x = to.x; c.y = to.y; },
+		refresh: () => { flags.refreshed++; },
+		set actionSpentTurn(v) { flags.spent = v; },
+		attack: (a, d) => { flags.attacks.push([a, d]); },
+		spendHeroTurn: (cost) => { flags.turns.push(cost); },
+		getAttackTurnCostMod: () => 0.5,
+		shakeScreen: (m, d) => { shakes.push([m, d]); },
+		say: (key, params, level) => { said.push(`${level}:${key}${params ? JSON.stringify(params) : ''}`); },
+		...overrides.ctx,
+	};
+	return { ctx, said, shakes, flags, hero, creatures };
+}
+{
+	const bare = blinkDrive({ prepLevel: undefined });
+	usePreparationBlink(bare.ctx);
+	assert.equal(bare.flags.aim, null, 'no preparation, no picker');
+	assert.deepEqual(bare.said, [], 'and no prompt');
+	const aimed = blinkDrive();
+	usePreparationBlink(aimed.ctx);
+	assert.equal(aimed.flags.aim.range, 3, 'level 2 blinks 2, aiming one further out');
+	assert.ok(aimed.said.some((l) => l.includes('actors.buffs.preparation.prompt') && l.includes('"0":2')), 'with the prompt carrying the distance');
+	const reach = blinkDrive({ subclass: 'assassin', ranks: { assassins_reach: 1 } });
+	usePreparationBlink(reach.ctx);
+	assert.equal(reach.flags.aim.range, 4, 'assassin reach 1 blinks 3');
+	const mob = { x: 2, y: 1, hp: 10, maxHp: 10, buffs: {} };
+	const near = blinkDrive({ creatures: [mob] });
+	usePreparationBlink(near.ctx);
+	assert.equal(near.flags.aim.validate({ x: 2, y: 1 }), true, 'the adjacent hostile validates');
+	assert.equal(near.flags.aim.validate({ x: 5, y: 5 }), false, 'an empty cell does not');
+	const blind = blinkDrive({ creatures: [mob], visible: (x, y) => !(x === 2 && y === 1) });
+	usePreparationBlink(blind.ctx);
+	assert.equal(blind.flags.aim.validate({ x: 2, y: 1 }), false, 'an unseen hostile does not validate');
+	assert.equal(blinkTarget(blind.ctx, { x: 2, y: 1 }), null, 'no target in the dark');
+	const struck = blinkDrive({ creatures: [{ ...mob }] });
+	confirmPreparationBlink(struck.ctx, { x: 2, y: 1 }, 2);
+	assert.equal(struck.flags.attacks.length, 1, 'the adjacent strike lands');
+	assert.equal(struck.flags.attacks[0][1], struck.creatures[0], 'on the target');
+	assert.equal(struck.flags.spent, true, 'spending the turn flag');
+	assert.deepEqual(struck.flags.turns, [0.5], 'and the attack turn cost');
+	assert.deepEqual([struck.hero.x, struck.hero.y], [1, 1], 'without moving');
+	assert.equal(struck.flags.refreshed, 0, 'or refreshing');
+	const far = blinkDrive({ creatures: [{ ...mob, x: 4, y: 1 }] });
+	confirmPreparationBlink(far.ctx, { x: 4, y: 1 }, 2);
+	assert.deepEqual([far.hero.x, far.hero.y], [3, 1], 'blinking onto the cheapest neighbour');
+	assert.equal(far.flags.refreshed, 1, 'refreshing from the new cell');
+	assert.equal(far.flags.attacks.length, 1, 'then striking');
+	const missing = blinkDrive();
+	confirmPreparationBlink(missing.ctx, { x: 4, y: 1 }, 2);
+	assert.ok(missing.said.some((l) => l.includes('actors.buffs.preparation.no_target')), 'no target, no strike');
+	assert.deepEqual(missing.flags.attacks, [], 'never attacking');
+	const ring = [[3, 0], [3, 1], [3, 2], [4, 0], [4, 2], [5, 0], [5, 1], [5, 2]];
+	const boxed = blinkDrive({ creatures: [{ ...mob, x: 4, y: 1 }], walls: ring });
+	confirmPreparationBlink(boxed.ctx, { x: 4, y: 1 }, 2);
+	assert.ok(boxed.said.some((l) => l.includes('actors.buffs.preparation.out_of_reach')), 'walled out');
+	assert.deepEqual(boxed.shakes, [], 'without shaking');
+	assert.deepEqual(boxed.flags.attacks, [], 'and without striking');
+	const rooted = blinkDrive({ creatures: [{ ...mob, x: 4, y: 1 }], heroBuffs: { roots: 1 } });
+	confirmPreparationBlink(rooted.ctx, { x: 4, y: 1 }, 2);
+	assert.ok(rooted.said.some((l) => l.includes('actors.buffs.preparation.out_of_reach')), 'rooted refuses too');
+	assert.deepEqual(rooted.shakes, [[1, 1]], 'shaking only when rooted');
+	assert.deepEqual(rooted.flags.attacks, [], 'and never striking');
 }
 	const { weaponSTRReq, armorSTRReq, missileSTRReq, canSurpriseAttack } = require('./items/strReq.js');
 	// `Weapon.STRReq`/`Armor.STRReq`/`MissileWeapon.STRReq` (tags `v2.1.4`/`v3.3.8`):

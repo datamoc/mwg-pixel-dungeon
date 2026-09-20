@@ -1,3 +1,5 @@
+import type { Creature, Step } from '../combat';
+
 /**
  * `Preparation` (`actors/buffs/Preparation.java`, tag `v3.3.8`) - the Assassin's stealth state, and
  * the tables it drives. Kept pure and here rather than inline in the scene so `verifyCombat` can
@@ -10,10 +12,10 @@
  * exists while invisible, and an attack dispels invisibility, the whole state is per-invisibility
  * rather than permanent.
  *
- * Unmodelled here, recorded rather than faked: `Preparation`'s blink action (`AttackLevel
- * .blinkDistance()` is ported as data below, but the action itself needs a cell picker and a
- * teleport-strike this port does not have), and the `Talent.BOUNTY_HUNTER` loot bonus that reads
- * `attackLevel()` in `Mob.lootChance()`.
+ * Still unmodelled here, recorded rather than faked: the `Talent.BOUNTY_HUNTER` loot bonus that
+ * reads `attackLevel()` in `Mob.lootChance()`. The blink action below used to be in the same
+ * unmodelled state (it needs a cell picker and a teleport-strike); the picker half is ported
+ * now through the scene's `TargetingController`, so the whole aim family lives here.
  */
 
 /** `AttackLevel`: the turns of invisibility each level needs, its damage bonus, and how many
@@ -127,4 +129,129 @@ export function preparationDamageRoll(level: PreparationLevel, roll: () => numbe
 		if (candidate > best) best = candidate;
 	}
 	return Math.round(best * (1 + level.damageBonus));
+}
+
+/**
+ * `Preparation`'s blink-aim family (`usePreparationBlink` in the scene), moved here
+ * verbatim as the file-size refactor's thirty-first extraction, behavior-identical.
+ * The scene keeps the one-line adapter plus a builder; the strike tail (turn flag,
+ * `attack()`, turn spend) arrives as callbacks so this module never learns combat.
+ */
+export interface PreparationBlinkContext {
+	readonly hero: Creature;
+	readonly subclass: () => string | null;
+	readonly talentRank: (id: string) => number;
+	readonly beginAiming: (opts: {
+		range: number;
+		validate: (cell: Step) => boolean;
+		onConfirm: (cell: Step) => void;
+	}) => void;
+	readonly creatureAt: (x: number, y: number) => Creature | null | undefined;
+	readonly fov: { isVisible(x: number, y: number): boolean };
+	readonly level: {
+		inside(x: number, y: number): boolean;
+		passable(x: number, y: number): boolean;
+		index(x: number, y: number): number;
+	};
+	/** MWG's breadth-first flood, `-1` for unreachable - Java's `Integer.MAX_VALUE`. */
+	readonly distanceMap: (from: Step) => ArrayLike<number>;
+	readonly moveTo: (creature: Creature, to: Step) => void;
+	readonly refresh: () => void;
+	set actionSpentTurn(spent: boolean);
+	readonly attack: (attacker: Creature, defender: Creature) => void;
+	readonly spendHeroTurn: (cost: number) => void;
+	readonly getAttackTurnCostMod: () => number;
+	readonly shakeScreen: (magnitude: number, duration: number) => void;
+	//Message keys stay keys here (this directory cannot import the catalog): the scene
+	//translates with `t()`; only the prompt carries a param, Java's `{0: distance}`.
+	readonly say: (key: string, params: { readonly [param: string]: string | number } | null, level: 'positive' | 'negative') => void;
+}
+
+export function usePreparationBlink(context: PreparationBlinkContext): void {
+	const level = context.hero.prepLevel;
+	if (level === undefined) return;
+	const distance = preparationBlinkDistance(level, context.subclass() === 'assassin' ? context.talentRank('assassins_reach') : 0);
+	context.beginAiming({
+		//Java applies the blink distance to the *destination* beside the target, so the
+		//target itself may sit one step further out than that.
+		range: distance + 1,
+		validate: (cell) => blinkTarget(context, cell) !== null
+			&& (canBumpAttack(context, cell) || blinkDestination(context, cell, distance) !== null),
+		onConfirm: (cell) => confirmPreparationBlink(context, cell, distance),
+	});
+	context.say('actors.buffs.preparation.prompt', { 0: distance }, 'positive');
+}
+
+/** Java's `no_target` half of the picker: a visible hostile that is not the hero, an NPC, or
+ * something the hero is charmed by. */
+export function blinkTarget(context: PreparationBlinkContext, cell: Step): Creature | null {
+	const creature = context.creatureAt(cell.x, cell.y);
+	if (!creature || creature.isHero || creature.isNPC || creature.isAlly) return null;
+	if (!context.fov.isVisible(cell.x, cell.y)) return null;
+	return creature;
+}
+
+/** `Dungeon.hero.canAttack(enemy)`'s practical half for this port: melee reach is one cell. */
+export function canBumpAttack(context: PreparationBlinkContext, cell: Step): boolean {
+	return Math.max(Math.abs(cell.x - context.hero.x), Math.abs(cell.y - context.hero.y)) <= 1;
+}
+
+/**
+ * Java's destination search: among the eight cells around the target, the free one with the
+ * smallest path distance from the hero (which must be within `distance`), ties broken by the
+ * closer true distance. `distanceMap` is MWG's breadth-first flood, the same shape as Java's
+ * `PathFinder.buildDistanceMap(hero.pos, passable, range)` - `-1` marks an unreachable cell
+ * where Java uses `Integer.MAX_VALUE`.
+ */
+export function blinkDestination(context: PreparationBlinkContext, cell: Step, distance: number): Step | null {
+	const distances = context.distanceMap({ x: context.hero.x, y: context.hero.y });
+	let best: Step | null = null;
+	let bestSteps = Infinity;
+	let bestTrue = Infinity;
+	//All eight neighbours, one step each - the same `dirLR` walk `PathFinder` uses.
+	for (let dy = -1; dy <= 1; dy++) {
+		for (let dx = -1; dx <= 1; dx++) {
+			if (dx === 0 && dy === 0) continue;
+			const x = cell.x + dx, y = cell.y + dy;
+			if (!context.level.inside(x, y)) continue;
+			if (context.creatureAt(x, y)) continue;
+			if (!context.level.passable(x, y)) continue;
+			const steps = distances[context.level.index(x, y)] ?? -1;
+			if (steps < 0 || steps > distance) continue;
+			const trueDistance = (x - context.hero.x) ** 2 + (y - context.hero.y) ** 2;
+			if (steps < bestSteps || (steps === bestSteps && trueDistance < bestTrue)) {
+				best = { x, y };
+				bestSteps = steps;
+				bestTrue = trueDistance;
+			}
+		}
+	}
+	return best;
+}
+
+/** Resolves the picker's cell for real: attack from where we stand, blink and attack, or
+ * refuse with Java's own message. A rooted hero refuses exactly as Java does. */
+export function confirmPreparationBlink(context: PreparationBlinkContext, cell: Step, distance: number): void {
+	const enemy = blinkTarget(context, cell);
+	if (!enemy) {
+		context.say('actors.buffs.preparation.no_target', null, 'negative');
+		return;
+	}
+	if (!canBumpAttack(context, cell)) {
+		const destination = blinkDestination(context, cell, distance);
+		if (!destination || context.hero.buffs['roots']) {
+			context.say('actors.buffs.preparation.out_of_reach', null, 'negative');
+			//`Preparation.java` 308-310: the refusal shakes only when the hero is *rooted* - the
+			//message is the same for an unreachable cell, the shake is not.
+			if (context.hero.buffs['roots']) context.shakeScreen(1, 1);
+			return;
+		}
+		//Dungeon.observe() + GameScene.updateFog() + checkVisibleMobs(): refresh() re-runs the
+		//hero's own field of view, the fog and the sprite visibility from the new cell.
+		context.moveTo(context.hero, destination);
+		context.refresh();
+	}
+	context.actionSpentTurn = true;
+	context.attack(context.hero, enemy);
+	context.spendHeroTurn(context.getAttackTurnCostMod());
 }

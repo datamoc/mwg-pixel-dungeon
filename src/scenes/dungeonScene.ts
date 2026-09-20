@@ -47,7 +47,7 @@ import { chooseDM300Ability, dm300VentPath, planDM300Rockfall } from '../simulat
 import { aimYogDeathGaze } from '../simulation/yogBoss';
 import { planMonsterPopulation } from '../simulation/levelPopulation';
 import { interactWithGhost as runGhostInteraction, interactWithImp as runImpInteraction, interactWithRatKing as runRatKingInteraction, interactWithWandmaker as runWandmakerInteraction } from '../actors/npcs';
-import { preparationBlinkDistance, preparationCanKo, preparationLevel } from '../simulation/preparation';
+import { preparationCanKo, preparationLevel, usePreparationBlink, type PreparationBlinkContext } from '../simulation/preparation';
 import { confirmDisintegrationWand, livingEarthZapRange, useDisintegrationWand, type DisintegrationWandScene } from '../items/wands';
 import { stepTenguAbility, tenguAbilityCost } from '../simulation/tenguAbility';
 import { applyDefenderDamageCurves } from '../simulation/defenderDamageCurves';
@@ -7710,90 +7710,33 @@ export class DungeonScene extends Scene2D {
 	 * target that is within `AttackLevel.blinkDistance()` of the hero and strikes from there.
 	 * Opening the picker costs nothing - the attack spends the turn, like any other attack.
 	 * Java's message strings are SPD's own keys, already translated in every locale.
+	 * The whole aim family lives in `simulation/preparation.ts` - the file-size refactor's
+	 * thirty-first extraction, behavior-identical. The scene only builds the context here.
 	 */
 	private usePreparationBlink(): void {
-		const level = this.hero.prepLevel;
-		if (level === undefined) return;
-		const distance = preparationBlinkDistance(level, this.subclass() === 'assassin' ? this.talentRank('assassins_reach') : 0);
-		this.beginAiming({
-			//Java applies the blink distance to the *destination* beside the target, so the
-			//target itself may sit one step further out than that.
-			range: distance + 1,
-			validate: (cell) => this.blinkTarget(cell) !== null
-				&& (this.canBumpAttack(cell) || this.blinkDestination(cell, distance) !== null),
-			onConfirm: (cell) => this.confirmPreparationBlink(cell, distance),
-		});
-		this.say(t('actors.buffs.preparation.prompt', { 0: distance }), 'positive');
+		usePreparationBlink(this.preparationBlinkContext());
 	}
 
-	/** Java's `no_target` half of the picker: a visible hostile that is not the hero, an NPC, or
-	 * something the hero is charmed by. */
-	private blinkTarget(cell: Step): Creature | null {
-		const creature = this.creatureAt(cell.x, cell.y);
-		if (!creature || creature.isHero || creature.isNPC || creature.isAlly) return null;
-		if (!this.fov.isVisible(cell.x, cell.y)) return null;
-		return creature;
-	}
-
-	/** `Dungeon.hero.canAttack(enemy)`'s practical half for this port: melee reach is one cell. */
-	private canBumpAttack(cell: Step): boolean {
-		return Roguelike.chebyshevDistance(cell, this.hero) <= 1;
-	}
-
-	/**
-	 * Java's destination search: among the eight cells around the target, the free one with the
-	 * smallest path distance from the hero (which must be within `distance`), ties broken by the
-	 * closer true distance. `distanceMap` is MWG's breadth-first flood, the same shape as Java's
-	 * `PathFinder.buildDistanceMap(hero.pos, passable, range)` - `-1` marks an unreachable cell
-	 * where Java uses `Integer.MAX_VALUE`.
-	 */
-	private blinkDestination(cell: Step, distance: number): Step | null {
-		const distances = this.pathfinder.distanceMap({ x: this.hero.x, y: this.hero.y });
-		let best: Step | null = null;
-		let bestSteps = Infinity;
-		let bestTrue = Infinity;
-		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
-			const x = cell.x + dx, y = cell.y + dy;
-			if (!this.level.inside(x, y)) continue;
-			if (this.creatureAt(x, y)) continue;
-			if (!this.level.passable(x, y)) continue;
-			const steps = distances[this.level.index(x, y)] ?? -1;
-			if (steps < 0 || steps > distance) continue;
-			const trueDistance = (x - this.hero.x) ** 2 + (y - this.hero.y) ** 2;
-			if (steps < bestSteps || (steps === bestSteps && trueDistance < bestTrue)) {
-				best = { x, y };
-				bestSteps = steps;
-				bestTrue = trueDistance;
-			}
-		}
-		return best;
-	}
-
-	/** Resolves the picker's cell for real: attack from where we stand, blink and attack, or
-	 * refuse with Java's own message. A rooted hero refuses exactly as Java does. */
-	private confirmPreparationBlink(cell: Step, distance: number): void {
-		const enemy = this.blinkTarget(cell);
-		if (!enemy) {
-			this.say(t('actors.buffs.preparation.no_target'), 'negative');
-			return;
-		}
-		if (!this.canBumpAttack(cell)) {
-			const destination = this.blinkDestination(cell, distance);
-			if (!destination || this.hero.buffs['roots']) {
-				this.say(t('actors.buffs.preparation.out_of_reach'), 'negative');
-				//`Preparation.java` 308-310: the refusal shakes only when the hero is *rooted* - the
-				//message is the same for an unreachable cell, the shake is not.
-				if (this.hero.buffs['roots']) this.shakeScreen(1, 1);
-				return;
-			}
-			//Dungeon.observe() + GameScene.updateFog() + checkVisibleMobs(): refresh() re-runs the
-			//hero's own field of view, the fog and the sprite visibility from the new cell.
-			this.moveTo(this.hero, destination);
-			this.refresh();
-		}
-		this.actionSpentTurn = true;
-		this.attack(this.hero, enemy);
-		this.spendHeroTurn(this.getAttackTurnCostMod());
+	private preparationBlinkContext(): PreparationBlinkContext {
+		const scene = this;
+		return {
+			hero: scene.hero,
+			subclass: () => scene.subclass(),
+			talentRank: (id) => scene.talentRank(id),
+			beginAiming: (opts) => scene.beginAiming(opts),
+			creatureAt: (x, y) => scene.creatureAt(x, y) ?? undefined,
+			fov: scene.fov,
+			level: scene.level,
+			distanceMap: (from) => scene.pathfinder.distanceMap(from),
+			moveTo: (creature, to) => scene.moveTo(creature, to),
+			refresh: () => scene.refresh(),
+			set actionSpentTurn(spent: boolean) { scene.actionSpentTurn = spent; },
+			attack: (attacker, defender) => scene.attack(attacker, defender),
+			spendHeroTurn: (cost) => scene.spendHeroTurn(cost),
+			getAttackTurnCostMod: () => scene.getAttackTurnCostMod(),
+			shakeScreen: (magnitude, duration) => scene.shakeScreen(magnitude, duration),
+			say: (key, params, level) => scene.say(t(key, params ?? undefined), level),
+		};
 	}
 
 	/**
