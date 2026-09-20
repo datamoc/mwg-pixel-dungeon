@@ -218,20 +218,22 @@ export class StatusPane extends Container {
 		this.expBar.scale.set(PANE_WIDTH / 16 * SCALE, SCALE);
 		this.addChild(this.expBar);
 
-		this.hpText = new Label({ size: 8, color: 0xffffff });
+		//text sizes are Java's native 6-9 px scaled by the same 1.5x-2x the art gets (`SCALE` = 2): at
+		//8/9 px beside 2x art the hp/level/place text was unreadable on a large screen
+		this.hpText = new Label({ size: 12, color: 0xffffff });
 		this.hpText.alpha = 0.85;
 		this.hpText.x = 34 * SCALE;
 		this.hpText.y = 3 * SCALE;
 		this.addChild(this.hpText);
 
 		//the level tag sits in the frame's left-hand plate, where Java draws it at ~27.5,28
-		this.levelText = new Label({ size: 9, color: SPD_TITLE_COLOR, bold: true });
+		this.levelText = new Label({ size: 12, color: SPD_TITLE_COLOR, bold: true });
 		this.levelText.anchor.set(0.5, 0.5);
 		this.levelText.x = 27.5 * SCALE;
 		this.levelText.y = 28 * SCALE;
 		this.addChild(this.levelText);
 
-		this.placeText = new Label({ size: 9, color: SPD_TITLE_COLOR });
+		this.placeText = new Label({ size: 12, color: SPD_TITLE_COLOR });
 		this.placeText.x = 32 * SCALE;
 		this.placeText.y = 21 * SCALE;
 		this.addChild(this.placeText);

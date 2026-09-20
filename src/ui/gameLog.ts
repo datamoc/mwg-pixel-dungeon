@@ -52,7 +52,9 @@ export class GameLog extends Container {
 	constructor(wrapWidth: number) {
 		super();
 		this.wrapWidth = wrapWidth;
-		this.scale.set(2);
+		//Java's log text (size 6) is drawn at the UI zoom (3 on a desktop); 2x left it at 12 px,
+		//too small to read against a large canvas
+		this.scale.set(3);
 	}
 
 	/** `SPDSettings.interfaceSize()`: large keeps 5 lines of history instead of 3. */

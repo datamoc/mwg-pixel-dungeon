@@ -2,6 +2,7 @@ import { Button, Game, Label, theme } from 'mwg';
 import { Container2D, Shape2D } from 'mwg/two-d/render';
 import { t } from '../i18n';
 import { TitleScene } from '../scenes/titleScene';
+import { menuScale } from './spdButton';
 
 export interface EndPanelContext {
 	panel: Container2D;
@@ -10,11 +11,19 @@ export interface EndPanelContext {
 	position: () => void;
 }
 
+/**
+ * The panel is stage-level (not in the scaled `gameWindows` stack) and authored with 8-22 px text,
+ * so on a large canvas its body and button text were unreadable. It takes the PixelScene integer
+ * zoom (`menuScale`), capped at 2 so it stays a panel rather than a wall, and never wider than the
+ * screen: the narrowest layout below is 260 px, so a zoom that would overflow steps down.
+ */
 function preparePanel(panel: Container2D): number {
 	panel.removeChildren().forEach((child) => child.destroy());
 	panel.visible = true;
 	panel.alpha = 1;
-	return Math.min(380, Math.max(260, Game.current.width - 28));
+	const zoom = Math.max(1, Math.min(2, menuScale(Game.current.width, Game.current.height), Math.floor(Game.current.width / 260)));
+	panel.scale.set(zoom);
+	return Math.min(380, Math.max(260, Game.current.width / zoom - 28));
 }
 
 /** Builds the Amulet victory panel. DungeonScene supplies only its panel and current values. */

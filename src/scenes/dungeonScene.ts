@@ -64,7 +64,6 @@ import {
 	registerColorTransform,
 } from 'mwg';
 import { Label, theme, Button, Window, WindowStack } from 'mwg';
-import { titleIcon, type TitleIconName } from '../ui/titleIcons';
 import { Roguelike, Actors, Rpg, World } from 'mwg';
 import { loadSpdSprites } from '../images';
 import { rollGeneratedAffix, groundKindForItem, portItemKind, sourceInventoryItem, isUpgradableItem, SPECIALTY_BOMB_IDS } from '../items/itemKinds';
@@ -153,7 +152,7 @@ import { Feeling } from '../spdLevelGen/regularPainter';
 import { WallDecorationLayer, WaterEmberLayer, WellRippleLayer } from '../ui/wallDecorations';
 import { runState, LANGUAGE_KEY } from '../runState';
 import { recordRun } from '../rankings';
-import { isChallengeEnabled, challenges } from '../challenges';
+import { isChallengeEnabled } from '../challenges';
 import { HUNGRY, STARVING } from '../simulation/hunger';
 import { CLASS_TALENTS, armorTalentDefinitions, subclassTalentDefinitions, TALENT_TIERS, type TalentDefinition } from '../talents';
 import {
@@ -177,7 +176,9 @@ import { CLASSES, CLASS_AMMO, HERO_IDLE_FRAME, type ClassId } from '../classes';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
 import { TitleScene } from '../scenes/titleScene';
 import { ClassSelectScene } from '../scenes/classSelectScene';
-import { showChallengesWindow, showChoiceWindow, showConfirmWindow, showRankingsWindow, showSettingsWindow } from '../ui/portWindows';
+import { menuScale } from '../ui/spdButton';
+import { openGameMenu as openGameMenuWindow } from '../ui/gameMenu';
+import { showChoiceWindow, showConfirmWindow } from '../ui/portWindows';
 import { confirmBlacksmithCashout, confirmBlacksmithSmith, openBlacksmithWindow, type BlacksmithWindowContext } from '../ui/blacksmithWindow';
 import { useFireblastWand as useFireblastWandEffect, useRegrowthWand as useRegrowthWandEffect, useTransfusionWand as useTransfusionWandEffect, useWardingWand as useWardingWandEffect } from '../items/wandEffects';
 import { coneCells } from '../mechanics/cone';
@@ -1904,6 +1905,16 @@ export class DungeonScene extends Scene2D {
 	 * `PORT_COVERAGE.md`).
 	 */
 	private gameWindows = new WindowStack();
+	/**
+	 * `PixelScene.defaultZoom` for windows: the same integer `menuScale` the title scene applies
+	 * to its own `WindowStack`. Every window here is authored at Java's native pixel sizes (6-9 px
+	 * text), so an unscaled stack drew them at 1x - unreadable next to the 2x HUD art.
+	 */
+	private windowZoom = menuScale(Game.current.width, Game.current.height);
+	/** The logical (pre-zoom) size a window is laid out and placed in. */
+	private windowViewport(): { width: number; height: number } {
+		return { width: Game.current.width / this.windowZoom, height: Game.current.height / this.windowZoom };
+	}
 	private actionBar!: SpdToolbar;
 	private inventoryPanel!: InventoryWindow;
 	private inventoryOpen = false;
@@ -4344,14 +4355,26 @@ export class DungeonScene extends Scene2D {
 				//max-HP bonus (the flat +2 this turn-in used to grant was a stand-in from before
 				//the generated pair existed). Cancelling leaves the quest turn-in-ready, so the
 				//next talk re-offers the same pair; the quest completes on pick.
+				const titleKey = this.ghostType === 2 ? 'windows.wndsadghost.gnoll_title' : this.ghostType === 3 ? 'windows.wndsadghost.crab_title' : 'windows.wndsadghost.rat_title';
 				this.openItemPicker(
-					t('port.npc.ghost.reward'),
+					t(titleKey),
 					[weaponReward, armorReward].map((item) => ({ id: item.id, instanceId: item.instanceId, identified: true, quantity: item.quantity ?? 1 })),
 					(pick) => {
 						const chosen = [weaponReward, armorReward].find((item) => item.instanceId === pick.instanceId) ?? weaponReward;
 						this.bag.add(chosen);
 						this.quests.advanceStage('sadGhost', this.gameState);
-						this.say(t('port.npc.ghost.reward'), 'positive');
+						//`WndSadGhost.onSelect()` (tag `v3.3.8`): `Ghost.Quest.complete()`, the ghost's
+						//`farewell` line, then `ghost.die(null)` - the ghost leaves the level. Without
+						//removing it the completed ghost stood where it was forever (a corridor it
+						//stands in becomes impassable: NPCs are bump-to-talk, never swapped).
+						this.say(t('windows.wndsadghost.farewell'), 'positive');
+						const ghost = this.creatures.find((c) => c.kind === 'ghost' && c.isNPC && !c.isAlly);
+						if (ghost) {
+							this.scheduler.remove(ghost);
+							this.creatures.splice(this.creatures.indexOf(ghost), 1);
+							this.sprite(ghost).destroy();
+							this.spriteFor.delete(ghost.id);
+						}
 					},
 				);
 			},
@@ -5722,7 +5745,8 @@ export class DungeonScene extends Scene2D {
 			width: this.level.width,
 			height: this.level.height,
 			traceRay: (from, to) => this.coneRay(from, to),
-			isClosedDoor: (x, y) => this.doors.isDoor(x, y) && !this.doors.isOpen(x, y),
+			//a concealed secret door is not a closed door yet (see `bumpDoor`)
+			isClosedDoor: (x, y) => this.doors.isDoor(x, y) && !this.doors.isOpen(x, y) && !this.secrets.isSecret(x, y),
 			openDoor: (x, y) => this.doors.open(x, y),
 			passable: (x, y) => this.level.passable(x, y),
 			isFlammableTerrain: (x, y) => this.isFireFlammableTerrain(x, y),
@@ -6141,6 +6165,12 @@ export class DungeonScene extends Scene2D {
 	/** bumping a shut door: locked needs the key, otherwise it swings open (costing the turn) */
 	private bumpDoor(x: number, y: number): boolean {
 		if (!this.doors.isDoor(x, y) || this.doors.isOpen(x, y)) return false;
+		//a concealed secret door is a solid wall until searched out (Java's SECRET_DOOR is
+		//impassable and bumping it does nothing). Opening it here would flip `Doors` to open
+		//while the terrain stays WALL, and discovery would then restore DOOR_CLOSED over an
+		//"open" door - a door that can never be opened again, stranding the hero if it is the
+		//only way to the stairs.
+		if (this.secrets.isSecret(x, y)) return false;
 		if (this.doors.isLocked(x, y)) {
 			const keyId = this.crystalDoorCells.has(this.level.index(x, y)) ? 'crystalKey' : 'ironKey';
 			const key = this.bag.find(keyId);
@@ -8521,7 +8551,8 @@ export class DungeonScene extends Scene2D {
 				occupant = this.creatureAt(target.x, target.y);
 				return occupant ? (occupant.isNPC || occupant.isAlly ? 'npc' : 'enemy') : null;
 			},
-			closedDoorAt: (target) => this.doors.isDoor(target.x, target.y) && !this.doors.isOpen(target.x, target.y),
+			closedDoorAt: (target) => this.doors.isDoor(target.x, target.y) && !this.doors.isOpen(target.x, target.y)
+				&& !this.secrets.isSecret(target.x, target.y),
 			isRooted: () => !!this.hero.buffs['roots'],
 			passable: (target) => this.canStepOnto(target.x, target.y)
 				&& this.eternalFire.volumeAt(target.x, target.y) < 1,
@@ -16761,7 +16792,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 				[t('windows.wndhero$statstab.gold'), String(this.heroStats.base('gold'))],
 				[t('windows.wndhero$statstab.depth'), String(this.depth)],
 				[t('windows.wndhero$statstab.dungeon_seed'), this.runSeedLabel],
-			], Game.current.width, Game.current.height);
+			], this.windowViewport().width, this.windowViewport().height);
 			this.gameWindows.push(this.infoPanel);
 		});
 
@@ -16843,6 +16874,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.stage.addChild(this.badgeBanner);
 		//last, so a window is always over the HUD and the badge banner
 		this.stage.addChild(this.gameWindows);
+		this.gameWindows.scale.set(this.windowZoom);
+		this.gameWindows.setViewport(this.windowViewport().width, this.windowViewport().height);
 		//`bossInfo`'s click -> `WndInfoMob`: no mob-info window exists in this port, so this
 		//logs the same name/HP line the bar already shows, the same "detailed window
 		//simplifies to a log line" pattern `awardBadge` already uses for `BadgeBanner`
@@ -16893,7 +16926,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		const window = showBuffInfoWindow(info);
 		this.buffInfoOpen = window;
 		window.onClose.add(() => { if (this.buffInfoOpen === window) this.buffInfoOpen = undefined; });
-		window.place(Game.current.width, Game.current.height);
+		window.place(this.windowViewport().width, this.windowViewport().height);
 		this.gameWindows.push(window);
 	}
 
@@ -16922,7 +16955,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			return;
 		}
 		if (!this.talentWindow || this.talentWindow.closed) return;
-		const width = Math.min(320, Math.max(240, Game.current.width - 24));
+		const width = Math.min(320, Math.max(240, this.windowViewport().width - 24));
 		if (this.subclassChoiceOpen || this.armorChoiceOpen || this.augmentChoiceOpen) {
 			const options: readonly string[] = this.augmentChoiceOpen ? AUGMENT_OPTIONS
 				: this.armorChoiceOpen ? armorAbilitiesFor(this.heroClass) : (SUBCLASS_OPTIONS[this.heroClass] ?? []);
@@ -16987,7 +17020,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 				this.talentPanel.addChild(button);
 			});
 			this.talentWindow.resize(width, panelHeight + 34);
-			this.talentWindow.place(Game.current.width, Game.current.height);
+			this.talentWindow.place(this.windowViewport().width, this.windowViewport().height);
 			if (this.gameWindows.top !== this.talentWindow) this.gameWindows.push(this.talentWindow);
 			return;
 		}
@@ -17049,7 +17082,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.talentPanel.addChild(button);
 		});
 		this.talentWindow.resize(width, panelHeight + 34);
-		this.talentWindow.place(Game.current.width, Game.current.height);
+		this.talentWindow.place(this.windowViewport().width, this.windowViewport().height);
 		if (this.gameWindows.top !== this.talentWindow) this.gameWindows.push(this.talentWindow);
 	}
 
@@ -17279,7 +17312,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 		this.itemPickerBody = body;
 		this.itemPickerEntries = entries;
 		this.itemPickerOnPick = onPick;
-		const width = Math.min(320, Math.max(240, Game.current.width - 24));
+		const width = Math.min(320, Math.max(240, this.windowViewport().width - 24));
 		this.itemPickerWindow = createItemPickerWindow({
 			width,
 			title,
@@ -18137,67 +18170,15 @@ private eyeBeamTurn(monster: Creature): boolean {
 	}
 
 	private openGameMenu(): void {
-		if (!this.gameWindows.isEmpty) return;
-		const width = 120;
-		const buttonHeight = 20;
-		const gap = 2;
-		//each entry carries the icon Java gives it (`Icons.PREFS`, `CHALLENGE_COLOR`, `ENTER`,
-		//`RANKINGS` and `DISPLAY`); `DISPLAY` is two images in Java, chosen by orientation
-		const display: TitleIconName = Game.current.width > Game.current.height ? 'displayLand' : 'displayPort';
-		const entries: { label: string; icon: TitleIconName; onClick: () => void; disabled?: boolean; highlight?: boolean }[] = [];
-		const closeThen = (open: () => void) => () => {
-			menuWindow.close();
-			open();
-		};
-		let menuWindow: Window;
-		entries.push({
-			label: t('windows.wndgame.settings'),
-			icon: 'prefs',
-			//a language change rebuilds the interface; mid-run that means keeping the run and simply
-			//dismissing the menu (`WndSettings` changes language in place)
-			onClick: closeThen(() => showSettingsWindow(this.gameWindows, () => undefined)),
+		openGameMenuWindow({
+			windows: this.gameWindows,
+			gameOver: this.gameOver,
+			canLeave: entranceRoomContext.guideIntroRead,
+			saveRun: () => this.saveRun(),
+			startNewRun: () => Game.current.switchScene(ClassSelectScene),
+			toTitle: () => Game.current.switchScene(TitleScene),
 		});
-		if (challenges().size > 0) {
-			entries.push({ label: t('windows.wndgame.challenges'), icon: 'challenge', onClick: closeThen(() => showChallengesWindow(this.gameWindows)) });
-		}
-		if (this.gameOver) {
-			entries.push({
-				label: t('windows.wndgame.start'),
-				icon: 'enter',
-				//Java tints this one `Window.TITLE_COLOR`, its "highlight"/attention colour
-				highlight: true,
-				onClick: closeThen(() => Game.current.switchScene(ClassSelectScene)),
-			});
-			entries.push({ label: t('windows.wndgame.rankings'), icon: 'rankings', onClick: closeThen(() => showRankingsWindow(this.gameWindows)) });
-		}
-		entries.push({
-			label: t('windows.wndgame.menu'),
-			icon: display,
-			//`SPDSettings.intro()`: a genuinely new player is sealed in until the intro's guide page
-			//closes, so saving and bailing out to the title is not offered yet - see `guideProgress`
-			disabled: !entranceRoomContext.guideIntroRead,
-			onClick: closeThen(() => {
-				this.saveRun();
-				Game.current.switchScene(TitleScene);
-			}),
-		});
-		menuWindow = new Window({ width, height: entries.length * buttonHeight + (entries.length - 1) * gap, anchor: 'center', blocker: true });
-		entries.forEach((entry, index) => {
-			const button = new Button({
-				width,
-				height: buttonHeight,
-				text: entry.label,
-				icon: titleIcon(runState.sprites.uiIcons, entry.icon, 1),
-				disabled: entry.disabled,
-				...(entry.highlight ? { label: { color: theme().color.textHighlight } } : {}),
-				onClick: entry.onClick,
-			});
-			button.position.set(0, index * (buttonHeight + gap));
-			menuWindow.content.addChild(button);
-		});
-		this.gameWindows.push(menuWindow);
 	}
-
 
 	private openJournal(): void {
 		if (this.journalOpen) return;
@@ -22315,7 +22296,8 @@ private eyeBeamTurn(monster: Creature): boolean {
 	}
 
 	private positionInterface(width: number, height: number): void {
-		if (this.infoPanel && !this.infoPanel.closed) this.infoPanel.layout(width, height);
+		//`infoPanel` and `talentWindow` live in the scaled `gameWindows` stack, so they place in its logical space
+		if (this.infoPanel && !this.infoPanel.closed) this.infoPanel.layout(width / this.windowZoom, height / this.windowZoom);
 		if (this.actionBar) {
 			this.actionBar.layout(width, height);
 			if (this.gameLog) this.gameLog.y = height - this.actionBar.occupiedHeight - 8 - this.gameLog.logHeight;
@@ -22328,7 +22310,7 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.journalWindow.x = Math.floor(width / 2);
 			this.journalWindow.y = Math.floor(height / 2);
 		}
-		if (this.talentWindow && !this.talentWindow.closed) this.talentWindow.place(width, height);
+		if (this.talentWindow && !this.talentWindow.closed) this.talentWindow.place(width / this.windowZoom, height / this.windowZoom);
 		if (this.victoryPanel) {
 			this.victoryPanel.x = (width - this.victoryPanel.width) / 2;
 			this.victoryPanel.y = Math.max(80, (height - this.victoryPanel.height) / 2);
@@ -22530,6 +22512,10 @@ private eyeBeamTurn(monster: Creature): boolean {
 	}
 
 	override resize(width: number, height: number): void {
+		//the window zoom first: `positionInterface` places the scaled windows in its logical space
+		this.windowZoom = menuScale(width, height);
+		this.gameWindows.scale.set(this.windowZoom);
+		this.gameWindows.setViewport(width / this.windowZoom, height / this.windowZoom);
 		this.camera.setViewport(width, height);
 		if (this.gameLog) {
 			//wrap to the window, leaving room for the margin on both sides, and sit the block
@@ -22547,7 +22533,6 @@ private eyeBeamTurn(monster: Creature): boolean {
 			this.compass.y = this.statusPane.y + 32;
 		}
 		this.positionInterface(width, height);
-		this.gameWindows.setViewport(width, height);
 	}
 
 	/** Releases the scene-owned generated projectile texture in addition to Scene2D's stage. */
