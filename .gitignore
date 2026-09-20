@@ -1,3 +1,7 @@
+# local garbage drawer: relocated clutter, one-off traces and retired notes.
+# Never committed; moved here instead of deleted so nothing is lost.
+# (tools/scratch/ stays the live scratch area for verify-script artifacts.)
+/garbage/
 node_modules/
 dist/
 tools/scratch/vlp.mjs
