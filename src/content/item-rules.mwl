@@ -305,6 +305,20 @@
         ],
       },
       {
+        tag: "trait",
+        id: "defaultMeleeCombat",
+        name: "MeleeWeapon defaults",
+        children: [
+          // `MeleeWeapon.java`'s own class defaults (tag `v3.3.8`): `ACC = 1`, `DLY = 1`,
+          // `RCH = 1`, and no `defenseFactor` override (0). Read by `weaponCombat()` for a
+          // class with no `weaponCombatRules` row, so the fallback lives in content too.
+          { tag: "effect", apply_to: "accuracy", set: "1" },
+          { tag: "effect", apply_to: "delay", set: "1" },
+          { tag: "effect", apply_to: "reach", set: "1" },
+          { tag: "effect", apply_to: "defense", set: "0" },
+        ],
+      },
+      {
         tag: "table",
         id: "itemSpecificFrames",
         columns: "item:string|frame:number",
@@ -349,6 +363,23 @@
         ],
       },
       {
+        // `ItemSpriteSheet.java` (tag `v3.3.8`): each hero class's starting weapon cell -
+        // `WEP_TIER1 = xy(1, 7)` is flat index 96, plus the class's own offset (WORN_SHORTSWORD
+        // +0, CUDGEL +1, GLOVES +2, RAPIER +3, DAGGER +4, MAGES_STAFF +5). This is the bag icon
+        // for the run-start weapon only; found weapons keep the generic weapon frame above.
+        tag: "table",
+        id: "startingWeaponFrames",
+        columns: "class:string|frame:number",
+        children: [
+          { tag: "row", class: "warrior", frame: 96 },
+          { tag: "row", class: "mage", frame: 101 },
+          { tag: "row", class: "rogue", frame: 100 },
+          { tag: "row", class: "huntress", frame: 98 },
+          { tag: "row", class: "duelist", frame: 99 },
+          { tag: "row", class: "cleric", frame: 97 },
+        ],
+      },
+      {
         tag: "table",
         id: "consumableStats",
         columns: "item:string|hunger:number|heal:number",
@@ -372,6 +403,8 @@
           { tag: "row", id: "potionParalyticGasGasVolume", item: "potionParalyticGas", effect: "gasVolume", value: 1000 },
 
           { tag: "row", id: "potionFrostTargetRadius", item: "potionFrost", effect: "targetRadius", value: 1 },
+          // `TippedDart.java` (tag `v3.3.8`): rot-tipped darts last twice as long outright.
+          { tag: "row", id: "tippedDartRotBaseUsesMultiplier", item: "missile_tippeddart", effect: "rotBaseUsesMultiplier", value: 2 },
           { tag: "row", id: "fireBombFireRadius", item: "fireBomb", effect: "fireRadius", value: 2 },
           { tag: "row", id: "fireBombFireDuration", item: "fireBomb", effect: "fireDuration", value: 2 },
           { tag: "row", id: "regrowthBombBloomRadius", item: "regrowthBomb", effect: "bloomRadius", value: 3 },

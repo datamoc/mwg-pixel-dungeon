@@ -38,7 +38,7 @@
  * it holds more than Java's `defaultQuantity()` refill, reset on a valid pickup and on every
  * upgrade, and the shop's sell window warns on it (`WndTradeItem.thrown_dust`).
  */
-import { MWL_MISSILE_BY_CLASS, MWL_MISSILE_UPGRADE_RULES } from '../mwlContent';
+import { MWL_DEFAULT_MISSILE_BASE_USES, MWL_MISSILE_BY_CLASS, MWL_MISSILE_UPGRADE_RULES } from '../mwlContent';
 
 /** Resolves `MissileWeapon.min()`/`max()` from the authored missile identity and live level. */
 export function missileDamageRange(sourceClass: string, level: number, flatBonus = 0): [number, number] {
@@ -59,6 +59,14 @@ export function missileBaseUses(sourceClass: string): number {
 	const definition = MWL_MISSILE_BY_CLASS.get(sourceClass);
 	if (!definition) throw new Error(`MWL missile definition is missing for ${sourceClass}`);
 	return definition.baseUses;
+}
+
+/** Same, but falling back to Java's own field default (`defaultMissileBaseUses` in
+ * `missiles.mwl`) for a wielded class with no authored row - e.g. an empty pile - instead of
+ * the old hero-class rule (`duelist ? 12 : 5`), which answered the wrong question entirely. */
+export function missileBaseUsesOrDefault(sourceClass: string | undefined | null): number {
+	if (!sourceClass) return MWL_DEFAULT_MISSILE_BASE_USES;
+	return MWL_MISSILE_BY_CLASS.get(sourceClass)?.baseUses ?? MWL_DEFAULT_MISSILE_BASE_USES;
 }
 
 /** `Bolas.proc()` (tag `v3.3.8`): `Buff.prolong(defender, Cripple.class, Cripple.DURATION/2)`,

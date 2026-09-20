@@ -333,6 +333,21 @@
       },
       {
         tag: "trait",
+        id: "defaultMissileBaseUses",
+        name: "MissileWeapon.baseUses default",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "default",
+            // `MissileWeapon.java`'s own field default (tag `v3.3.8`): every class in
+            // `missileDefinitions` overrides it, so this only covers a wielded class with
+            // no authored row - never a real throw, which always names a known class.
+            set: "8",
+          },
+        ],
+      },
+      {
+        tag: "trait",
         id: "missileDeckT1",
         name: "Generator.Category.MIS_T1",
         children: [

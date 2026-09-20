@@ -317,6 +317,30 @@ export const SPRITE_KIND_OVERRIDE: Partial<Record<MonsterId, keyof SpdSprites>> 
 	MWL_TABLE_ROWS('monsterSpriteOverrides', 'monster').map((row) => [String(row.monster), String(row.sprite)]),
 ) as Partial<Record<MonsterId, keyof SpdSprites>>;
 
+export interface YogFistSummonStats {
+	hp: number;
+	accuracy: number;
+	evasion: number;
+	damage: [number, number];
+	armor: [number, number];
+}
+
+/** `YogFist`'s live numbers as applied by the summon (`yogFistSummonStats` in `actor-rules.mwl`;
+ * `monsters.mwl`'s `yogFist` row is only the pre-summon template). Keyed by fist type. */
+export const YOG_FIST_SUMMON_STATS: Readonly<Record<string, YogFistSummonStats>> = Object.fromEntries(
+	MWL_TABLE_ROWS('yogFistSummonStats', 'type').map((row) => [String(row.type), {
+		hp: Number(row.hp),
+		accuracy: Number(row.accuracy),
+		evasion: Number(row.evasion),
+		damage: [Number(row.damage_min), Number(row.damage_max)] as [number, number],
+		armor: [Number(row.armor_min), Number(row.armor_max)] as [number, number],
+	}]),
+);
+if (Object.values(YOG_FIST_SUMMON_STATS).some((stats) =>
+	![stats.hp, stats.accuracy, stats.evasion, ...stats.damage, ...stats.armor].every(Number.isFinite))) {
+	throw new Error('MWL yog fist summon stats must be finite numbers');
+}
+
 /** Standard mob rotations are authored as typed MWL tables (`monsterRosterByDepth` /
  * `monsterRosterFallback`); this adapter preserves the Java region fallback selection. */
 const rosterOf = (row: Readonly<Record<string, unknown>>): MonsterId[] =>

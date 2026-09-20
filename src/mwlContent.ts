@@ -142,6 +142,14 @@ export const MWL_ITEM_SPECIFIC_FRAMES: Readonly<Record<string, number>> = Object
 if (Object.values(MWL_ITEM_SPECIFIC_FRAMES).some((frame) => !Number.isInteger(frame) || frame < 0)) {
 	throw new Error('MWL item-specific frames must be non-negative integers');
 }
+
+/** Each hero class's starting-weapon bag icon (`ItemSpriteSheet` cells, see the MWL comment). */
+export const MWL_STARTING_WEAPON_FRAMES: Readonly<Record<string, number>> = Object.fromEntries(
+	MWL_TABLE_ROWS('startingWeaponFrames', 'class').map((row) => [String(row.class), Number(row.frame)]),
+);
+if (Object.values(MWL_STARTING_WEAPON_FRAMES).some((frame) => !Number.isInteger(frame) || frame < 0)) {
+	throw new Error('MWL starting weapon frames must be non-negative integers');
+}
 export interface MwlConsumableStats {
 	readonly hunger: number;
 	readonly heal: number;
@@ -217,6 +225,23 @@ export const MWL_EQUIPMENT_STAT_RULES: Readonly<Record<string, MwlEquipmentStatR
 	}]),
 );
 
+
+/** Reads one numeric `effect` off a `trait` node, failing loudly when it is absent or NaN. */
+function traitEffectNumber(traitId: string, applyTo: string): number {
+	const trait = MWL_TRAIT_NODES.find((node) => node.attributes.id === traitId);
+	const value = trait?.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === applyTo)?.attributes.set;
+	const number = value === undefined ? NaN : Number(value);
+	if (!Number.isFinite(number)) throw new Error(`MWL trait ${traitId} is missing numeric effect ${applyTo}`);
+	return number;
+}
+
+export interface MwlDefaultMeleeCombat {
+	readonly accuracy: number;
+	readonly delay: number;
+	readonly reach: number;
+	readonly defense: number;
+}
+
 export function MWL_TABLE(id: string): MwlTableDefinition {
 	const table = MWL_TABLES.get(id);
 	if (!table) throw new Error(`MWL table is missing: ${id}`);
@@ -250,6 +275,15 @@ const MWL_NODES = allMwlNodes(MWL_ROOT_NODES);
 export const MWL_ITEM_NODES = MWL_NODES.filter((node) => node.tag === 'item');
 export const MWL_TRAIT_NODES = MWL_NODES.filter((node) => node.tag === 'trait');
 export const MWL_MONSTER_NODES = MWL_NODES.filter((node) => node.tag === 'monster');
+
+/** `MeleeWeapon`'s own class defaults, for a weapon class with no `weaponCombatRules` row.
+ * Initialized here, after `MWL_TRAIT_NODES` above (module evaluation order). */
+export const MWL_DEFAULT_MELEE_COMBAT: MwlDefaultMeleeCombat = {
+	accuracy: traitEffectNumber('defaultMeleeCombat', 'accuracy'),
+	delay: traitEffectNumber('defaultMeleeCombat', 'delay'),
+	reach: traitEffectNumber('defaultMeleeCombat', 'reach'),
+	defense: traitEffectNumber('defaultMeleeCombat', 'defense'),
+};
 export const MWL_SPECIAL_ITEM_GROUND_KINDS: Readonly<Record<string, string>> = Object.fromEntries(
 	MWL_TABLE_ROWS('specialItemGroundKinds', 'sourceClass').map((row) => [String(row.sourceClass).toLowerCase(), String(row.groundKind)]),
 );
@@ -315,6 +349,9 @@ export const MWL_MISSILE_UPGRADE_RULES: Readonly<Record<string, MwlMissileUpgrad
 		minPerLevel: Number(row.minPerLevel), maxPerLevel: Number(row.maxPerLevel),
 	}]),
 );
+
+/** `MissileWeapon`'s own `baseUses` field default, for a wielded class with no authored row. */
+export const MWL_DEFAULT_MISSILE_BASE_USES: number = traitEffectNumber('defaultMissileBaseUses', 'default');
 
 export interface MwlWandDefinition {
 	readonly id: string;

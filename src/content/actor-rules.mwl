@@ -182,6 +182,44 @@
         ],
       },
       {
+        // `Goo.java` (tag `v3.3.8`): `attackSkill`/`defenseSkill`/`damageRoll` all branch on
+        // `HP*2 <= HT` - 10/8/`NormalIntRange(1, 8)` healthy, 15/12/`NormalIntRange(1, 12)`
+        // enraged. Both states live here (not one in `monsters.mwl`) so the live selector
+        // reads MWL either way instead of hardcoding the healthy half.
+        tag: "table",
+        id: "gooStateStats",
+        columns: "monster:string|state:string|accuracy:number|evasion:number|damage_min:number|damage_max:number",
+        children: [
+          { tag: "row", monster: "goo", state: "healthy", accuracy: 10, evasion: 8, damage_min: 1, damage_max: 8 },
+          { tag: "row", monster: "goo", state: "enraged", accuracy: 15, evasion: 12, damage_min: 1, damage_max: 12 },
+        ],
+      },
+      {
+        // `Brute.damageRoll()` while `BruteRage` is active (tag `v3.3.8`): 15-40 instead of
+        // 5-25. `ArmoredBrute` inherits it unchanged. Accuracy/evasion are untouched by the
+        // rage, so this table carries damage only and the reader keeps the stored stats.
+        tag: "table",
+        id: "bruteRageDamage",
+        columns: "monster:string|damage_min:number|damage_max:number",
+        children: [
+          { tag: "row", monster: "brute", damage_min: 15, damage_max: 40 },
+          { tag: "row", monster: "armoredBrute", damage_min: 15, damage_max: 40 },
+        ],
+      },
+      {
+        // `YogFist.java` (tag `v3.3.8`) as applied by the summon: every fist spawns with
+        // `HP = 300`, `attackSkill 36`, `defenseSkill 20`, `damageRoll NormalIntRange(18, 36)`
+        // (`22-44` for the rusted fist) and no `drRoll` override beyond the shared 0-15.
+        // `monsters.mwl`'s `yogFist` row is only the pre-summon template; this is the live line.
+        tag: "table",
+        id: "yogFistSummonStats",
+        columns: "type:string|hp:number|accuracy:number|evasion:number|damage_min:number|damage_max:number|armor_min:number|armor_max:number",
+        children: [
+          { tag: "row", type: "default", hp: 300, accuracy: 36, evasion: 20, damage_min: 18, damage_max: 36, armor_min: 0, armor_max: 15 },
+          { tag: "row", type: "rusted", hp: 300, accuracy: 36, evasion: 20, damage_min: 22, damage_max: 44, armor_min: 0, armor_max: 15 },
+        ],
+      },
+      {
         tag: "table",
         id: "monsterAiProfiles",
         columns: "monster:string|profile:string",

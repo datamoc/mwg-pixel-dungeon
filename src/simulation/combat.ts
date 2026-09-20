@@ -1,5 +1,6 @@
 import type { Combatant } from './combatState';
 import type { SimulationRandom } from './random';
+import { BRUTE_RAGE_DAMAGE, GOO_STATE_STATS } from './mwlMonsterStateStats';
 import { preparationDamageRoll, preparationLevelByNumber } from './preparation';
 
 // Char.java:509-510 - surprise attacks and truly-untargetable defenders short-circuit the
@@ -83,17 +84,23 @@ const ascensionOn = (): boolean => ascensionActive;
  * once). Brute's `raged` flag mirrors Java's real one-time near-death revival (`Brute.java`'s
  * `hasRaged`/`BruteRage` shield) - see `main.ts`'s death-interception and per-turn decay, not a
  * half-HP threshold; other actors return stored fields.
+ *
+ * Both states' numbers are authored in `actor-rules.mwl` (`gooEnrageStats`, `bruteRageDamage`)
+ * and generated into `mwlMonsterStateStats.ts` - this module only selects them, like every
+ * other simulation reader of generated MWL data.
  */
 export function liveStats(c: Readonly<Combatant>): { accuracy: number; evasion: number; damage: [number, number] } {
 	if (c.kind === 'goo') {
-		const enraged = c.hp * 2 <= c.maxHp;
-		return { accuracy: enraged ? 15 : 10, evasion: enraged ? 12 : 8, damage: enraged ? [1, 12] : [1, 8] };
+		const stats = c.hp * 2 <= c.maxHp ? GOO_STATE_STATS.enraged : GOO_STATE_STATS.healthy;
+		return { accuracy: stats.accuracy, evasion: stats.evasion, damage: [stats.damageMin, stats.damageMax] };
 	}
 	//Brute.damageRoll(): 15-40 while BruteRage is active, 5-25 otherwise - real Java only grants
 	//this after the Brute's one-time near-death revival, not below any HP threshold.
 	//ArmoredBrute inherits damageRoll() from Brute unchanged, so the same boost applies to it.
 	if ((c.kind === 'brute' || c.kind === 'armoredBrute') && c.raged) {
-		return { accuracy: c.accuracy, evasion: c.evasion, damage: [15, 40] };
+		const rage = BRUTE_RAGE_DAMAGE[c.kind];
+		if (!rage) throw new Error(`MWL brute rage damage is missing: ${c.kind}`);
+		return { accuracy: c.accuracy, evasion: c.evasion, damage: [rage[0], rage[1]] };
 	}
 	//Tengu.attackSkill: 20 at range, 10 adjacent - resolved by the caller (which knows the
 	//distance), not here; this returns the melee half
