@@ -4,6 +4,17 @@ import type { LogLevel } from '../ui/gameLog';
 
 export type EnvironmentalBlob = 'plantGas' | 'plantFreeze' | 'toxicGas' | 'paralyticGas' | 'stenchGas' | 'corrosiveGas' | 'confusionGas' | 'web' | 'electricity' | 'smokeScreen' | 'inferno' | 'blizzard';
 
+/** `ToxicImbue.act()`'s per-turn gas emission (`ToxicImbue.java`, tag `v3.3.8`). */
+export function emitToxicImbueGas(seedGas: (x: number, y: number, volume: number) => void, passable: (x: number, y: number) => boolean, center: { x: number; y: number }, neighbour8: readonly (readonly [number, number])[]): void {
+	let centerVolume = 6;
+	for (const [dx, dy] of neighbour8) {
+		const x = center.x + dx, y = center.y + dy;
+		if (passable(x, y)) seedGas(x, y, 6);
+		else centerVolume += 6;
+	}
+	seedGas(center.x, center.y, centerVolume);
+}
+
 // `StenchGas.evolve()` uses `Paralysis.DURATION / 5`; this port's authored Java duration is 10.
 const STENCH_PARALYSIS_DURATION = 2;
 

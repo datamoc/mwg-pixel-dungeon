@@ -164,6 +164,14 @@
           },
           {
             tag: "row",
+            // `ToxicImbue.DURATION` is 50; Sorrowmoss grants 30% of it (15).
+            // `ToxicImbue.java`, tag `v3.3.8`, emits 6 ToxicGas per open neighbour
+            // and is immune to both ToxicGas and Poison while active.
+            buff: "toxicImbue",
+            duration: 15,
+          },
+          {
+            tag: "row",
             buff: "adrenalineSurge",
             duration: 200,
           },

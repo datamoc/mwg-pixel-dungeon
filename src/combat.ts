@@ -432,6 +432,10 @@ function buffBlocked(c: Creature, id: BuffId): boolean {
 	//the data table above (that gates buffs refused *by* fiery creatures, not the
 	//holder immunity an imbue grants), so it lives here at the same shared boundary.
 	if (id === 'burning' && c.buffs.fireImbue !== undefined) return true;
+	//`ToxicImbue` (`actors/buffs/ToxicImbue.java`, tag `v3.3.8`) refuses both
+	//Poison and ToxicGas for its holder. The gas half is checked by the blob
+	//reader as well, while this gate prevents poison sources bypassing it.
+	if (id === 'poison' && c.buffs.toxicImbue !== undefined) return true;
 	//AntiMagic.RESISTS (items/armor/glyphs/AntiMagic.java): these status classes
 	//are magical in Java and are rejected before attachment. Damage-source
 	//resistance is handled separately by the scene's explicit magical flag.

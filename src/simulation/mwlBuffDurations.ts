@@ -26,6 +26,7 @@ export const BUFF_DURATION_DATA = {
   "recharging": 30,
   "frostImbue": 15,
   "fireImbue": 15,
+  "toxicImbue": 15,
   "adrenalineSurge": 200,
   "mindvision": 20,
   "terror": 20,

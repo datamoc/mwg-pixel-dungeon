@@ -189,10 +189,16 @@ export function runHeroPlantEffect(
 			}
 			break;
 		case 'sorrowmoss':
-			//`Sorrowmoss.activate(ch)`: `affect(...).set(5 + round(2*scalingDepth/3))` - an
-			//unconditional set through the one shared applier, so immunities still refuse
-			//it (the old add-then-overwrite forced the buff past the immunity gate).
-			ctx.grantBuff(hero, 'poison', 5 + Math.round(2 * ctx.depth / 3));
+			//`Sorrowmoss.activate(ch)` grants Warden `ToxicImbue.DURATION*0.3f`
+			//before its ordinary poison application (`Sorrowmoss.java`, tag `v3.3.8`).
+			//The shared buff gate then refuses that poison, while other classes
+			//receive the real depth-scaled set duration.
+			if (ctx.subclass() === 'warden') {
+				delete hero.buffs.poison;
+				ctx.grantBuff(hero, 'toxicImbue');
+			} else {
+				ctx.grantBuff(hero, 'poison', 5 + Math.round(2 * ctx.depth / 3));
+			}
 			ctx.say(ctx.t('port.log.sorrowmosspoison'), 'negative');
 			break;
 		case 'firebloom':

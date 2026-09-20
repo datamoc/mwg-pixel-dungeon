@@ -582,7 +582,10 @@ was judged not worth the churn against those existing references.
       in Java - the 2026-09-15 correction had fixed the throw path but missed the bow).
       `SpiritArrow`'s infinite-accuracy clause stays unported as a correct-by-construction
       non-gap (it needs a bow augment plus a sniper special, neither of which exists here).
-      The rest of this line is open. **Complexity: M.**
+      **Closed 2026-09-20, one plant half:** Warden Sorrowmoss now grants Java's 15-turn
+      `ToxicImbue`, removes poison, emits the real 6-volume ToxicGas pattern each turn, and is
+      immune to poison and toxic gas through the shared buff/blob gates. The remaining open class
+      effects stay listed in the coverage rows. **Complexity: M.**
 - [x] Port the `BOSS_CHALLENGE` badge set - the weapon-only boss kill. **Closed 2026-09-17: both halves this line called missing were already live, and only the documentation said otherwise.** The five badge rows exist (`boss_challenge_1..5` in `src/content/badges.mwl` - the "no `BOSS_CHALLENGE` rows" claim was stale, as was the `src/badges.mwl` path, which is really `src/content/badges.mwl`), the flag is set at all five fight starts, the damage-*source* notion the line said was missing is threaded (wand branch, unarmed branch, bomb seam, armor-ability seam, all clearing through `disqualifyBossChallenge`), and the award fires at each boss's death with the flag persisted through save/load. This was recorded for a while
       under section 7's seed/dew item as "the Dwarf King's boss-challenge-badge flag", which it is
       not: it is Java's `Badges.Badge.BOSS_CHALLENGE_1..5`, awarded at a boss's death while

@@ -186,10 +186,9 @@ import { planTenguConeFront } from '../simulation/tenguBeam';
 import { planFireSpread } from '../simulation/fireSpread';
 import { applyHighGrassTrample, plantBloomingGrass as plantBloomingGrassFlow, trampleHighGrass as planHighGrassTrample, type HighGrassApplyContext, type HighGrassState } from '../simulation/highGrass';
 import {
-	applyEnvironmentalBlobs,
+	applyEnvironmentalBlobs, emitToxicImbueGas,
 	emitToxicGasVents as emitToxicGasVentsFlow,
-	processSacrifice,
-	spreadSacrificialFire,
+	processSacrifice, spreadSacrificialFire,
 	type SacrificialFireContext,
 } from '../simulation/environmentalBlobs';
 import { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } from '../simulation/plantPools';
@@ -6384,7 +6383,8 @@ export class DungeonScene extends Scene2D {
 			//daze source still lands, since those are not Vertigo.
 			isVertigoImmune: (target) => target.kind !== undefined && IMMOVABLE_KINDS.has(target.kind),
 			isToxicImmune: (target) =>
-				target.kind === 'rotHeart' || target.kind === 'rotLasher'
+				target.buffs.toxicImbue !== undefined
+				|| target.kind === 'rotHeart' || target.kind === 'rotLasher'
 				//`Feint.AfterImage` carries the whole `BlobImmunity` set (tag `v3.3.8`); like
 				//the buff half in `buffBlocked`, the kind-keyed sets cannot see it (it spawns
 				//as a rat), so the decoy is named here alongside them.
@@ -8022,6 +8022,7 @@ export class DungeonScene extends Scene2D {
 			updatePreparation: () => this.trackPreparation(turnCost),
 			spreadFire: () => this.spreadFire(),
 			applyBuffDamage: () => {
+				if (this.hero.buffs.toxicImbue !== undefined) emitToxicImbueGas((x, y, volume) => this.toxicGas.seed(x, y, volume), (x, y) => this.level.passable(x, y), { x: this.hero.x, y: this.hero.y }, Roguelike.neighbourOffsets(8) as readonly (readonly [number, number])[]);
 				//CloakOfShadows.cloakRecharge/cloakStealth.act(): recharge while inactive and
 				//spend one charge every four active turns. The Java fractional actor-clock
 				//remainder is retained here, while the port's bag item supplies persistence.
