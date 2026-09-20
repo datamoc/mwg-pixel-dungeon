@@ -196,7 +196,7 @@ import { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } from '../s
 import { teleportAppearPlan } from '../simulation/teleportAppear';
 import { evolveElectricity, evolveJavaBlob } from '../simulation/javaBlob';
 import { burnFireContents as burnFireContentsEffect } from '../items/fireContent';
-import { selectRangedTarget } from '../simulation/targeting';
+import { nearestVisibleEnemy as nearestVisibleEnemyFlow, selectRangedTarget } from '../simulation/targeting';
 import { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLeapCooldown } from '../simulation/ripperLeap';
 import { shouldSuccubusBlink, chooseSuccubusBlinkCell, succubusBlinkCooldown } from '../simulation/succubusBlink';
 import { useBrewFlow, type BrewFlowContext } from '../simulation/brews';
@@ -5466,12 +5466,20 @@ export class DungeonScene extends Scene2D {
 		rollUpgradeAffixLoss(this.upgradeGearContext(), slot);
 	}
 
+	/**
+	 * The nearest visible, in-range, in-sight hostile lives in
+	 * `simulation/targeting.ts` as `nearestVisibleEnemy` - the file-size refactor's
+	 * thirty-fifth extraction, behavior-identical. The scene only binds its level,
+	 * hero and field of view here.
+	 */
 	private nearestVisibleEnemy(range: number): Creature | null {
-		return (
-			this.creatures
-				.filter((c) => !c.isHero && !c.isNPC && this.fov.isVisible(c.x, c.y))
-				.filter((c) => Roguelike.canTarget(this.level, this.hero, c, { range }))
-				.sort((a, b) => Roguelike.chebyshevDistance(this.hero, a) - Roguelike.chebyshevDistance(this.hero, b))[0] ?? null
+		return nearestVisibleEnemyFlow(
+			this.level,
+			this.hero,
+			this.creatures,
+			(x, y) => this.fov.isVisible(x, y),
+			range,
+			simulationRoguelike,
 		);
 	}
 

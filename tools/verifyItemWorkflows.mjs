@@ -95,7 +95,9 @@ compile(join(root, 'src/simulation/preparation.ts'), 'simulation/preparation.js'
 //Zero-import like its neighbour: creature views and key-passing say only.
 compile(join(root, 'src/simulation/ratmogrify.ts'), 'simulation/ratmogrify.js');
 //The grass apply half is zero-import too: terrain ids as values, scripted rolls.
+//Targeting's only runtime seam is the sibling roguelike interface (type-only here).
 compile(join(root, 'src/simulation/highGrass.ts'), 'simulation/highGrass.js');
+compile(join(root, 'src/simulation/targeting.ts'), 'simulation/targeting.js');
 //`spells.js` upgrades through `itemWorkflows.js` by its real name, while the suite otherwise
 //only compiles that module as `workflows.js` (line 26) - recompiling it here under its own
 //name is the same idempotent write.
@@ -4018,6 +4020,30 @@ const { tickMonsterTurnEnd } = require('./simulation/buffs.js');
 	tick(hasting);
 	assert.equal(hasting.hasteTurns, 2, 'ticking otherwise');
 	assert.equal(hasting.speed, 3, 'keeping the haste speed');
+}
+// `nearestVisibleEnemy` moved to `simulation/targeting.ts` (the file-size refactor's
+// thirty-fifth extraction, behavior-identical): driven headlessly with scripted
+// geometry - hero/npc/blind/range exclusions and nearest-wins ordering.
+const { nearestVisibleEnemy } = require('./simulation/targeting.js');
+{
+	const hero = { x: 0, y: 0 };
+	const geo = {
+		canTarget: (level, origin, target, { range }) =>
+			Math.max(Math.abs(target.x - origin.x), Math.abs(target.y - origin.y)) <= range,
+		chebyshevDistance: (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)),
+	};
+	const seen = (x, y) => !(x === 9 && y === 9);
+	const mob = (extra) => ({ hp: 5, ...extra });
+	const pick = (creatures, range = 6) => nearestVisibleEnemy(null, hero, creatures, seen, range, geo);
+	assert.equal(pick([]), null, 'empty floor, no target');
+	assert.equal(pick([mob({ x: 2, y: 0, isHero: true })]), null, 'never the hero');
+	assert.equal(pick([mob({ x: 2, y: 0, isNPC: true })]), null, 'never an npc');
+	assert.equal(pick([mob({ x: 9, y: 9 })]), null, 'never the unseen');
+	assert.equal(pick([mob({ x: 7, y: 0 })]), null, 'never out of range');
+	const far = mob({ x: 4, y: 0 });
+	const near = mob({ x: 1, y: 1 });
+	assert.equal(pick([far, near]), near, 'nearest wins regardless of order');
+	assert.equal(pick([far], 3), null, 'range gates the farther one');
 }
 	const { weaponSTRReq, armorSTRReq, missileSTRReq, canSurpriseAttack } = require('./items/strReq.js');
 	// `Weapon.STRReq`/`Armor.STRReq`/`MissileWeapon.STRReq` (tags `v2.1.4`/`v3.3.8`):

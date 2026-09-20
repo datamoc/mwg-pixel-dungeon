@@ -1495,6 +1495,18 @@ one.
       try with a new drive (rat tick/expiry/permanence, focus attach/cooldown/
       blindness gates, haste tick/restore). Sim suite green.
       **Complexity: XS.**
+      **Thirty-fifth extraction 2026-09-20**: the class-special throw aim's
+      `nearestVisibleEnemy` helper moved to `simulation/targeting.ts` (where
+      `selectRangedTarget` already lived) as `nearestVisibleEnemy` behind the
+      module's own `SimulationRoguelike` seam - the scene keeps the one-line
+      adapter binding its level, hero, creatures and field of view, and the
+      bomb/stone auto-targets ride that same adapter. Net +8 lines in
+      `dungeonScene.ts` (22,534 after) - the moved five-line body cost less
+      than the adapter plus its deviation-note comment; `targeting.ts` 24 to
+      47. Suites: `tsc` clean, item suite green with a new drive (empty/hero/
+      npc/unseen/out-of-range refusals, nearest-wins ordering, range gating,
+      scripted geometry). Sim suite green.
+      **Complexity: XS.**
 - [x] **`mwg` bumped to 0.5.0**, adopting `core.ReactionTable` for `takeKingTurn`'s three real
       one-way transitions (previously three ad-hoc latch fields), with its `toJSON()`/`fromJSON()`
       wired into the save/restore path. Live-verified all three firing exactly once (including that

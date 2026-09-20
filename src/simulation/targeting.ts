@@ -22,3 +22,26 @@ export function selectRangedTarget(
 			&& roguelike.canTarget(level, monster, target, { range }))
 		.sort((a, b) => roguelike.chebyshevDistance(monster, a) - roguelike.chebyshevDistance(monster, b))[0] ?? null;
 }
+
+/**
+ * The hero's mirror image: the nearest visible, in-range hostile for the class
+ * special's throw aim. Moved here verbatim from the scene as the file-size
+ * refactor's thirty-fifth extraction, behavior-identical, following this module's
+ * own `SimulationRoguelike` seam - the scene only binds its level, hero, field of
+ * view and the real geometry. Callers keep the one-line scene adapter.
+ */
+export function nearestVisibleEnemy(
+	level: Parameters<SimulationRoguelike['canTarget']>[0],
+	hero: Creature,
+	creatures: readonly Creature[],
+	isVisible: (x: number, y: number) => boolean,
+	range: number,
+	roguelike: SimulationRoguelike,
+): Creature | null {
+	return (
+		creatures
+			.filter((c) => !c.isHero && !c.isNPC && isVisible(c.x, c.y))
+			.filter((c) => roguelike.canTarget(level, hero, c, { range }))
+			.sort((a, b) => roguelike.chebyshevDistance(hero, a) - roguelike.chebyshevDistance(hero, b))[0] ?? null
+	);
+}
