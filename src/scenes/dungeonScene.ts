@@ -2680,6 +2680,14 @@ export class DungeonScene extends Scene2D {
 		image.sleeping = false;
 		image.seesHero = true;
 		image.allyKind = 'mirror';
+		//`duplicate()` affects the image with `MirrorInvis` (`Short.MAX_VALUE` -
+		//invisible until the first landed hit). 9999 is the catalogue's
+		//effectively-permanent stand-in (the prismatic-guard precedent); the
+		//detach rides `attack()`'s existing aggressive-action dispel, and the
+		//first swing surprises through `rollHit`'s own invisible-attacker rule.
+		//Stated gap: Java detaches on the landed hit (`attackProc`), this port
+		//on the swing - a missed first swing reveals the image early.
+		addBuff(image, 'invisibility', 9999);
 		this.syncMirrorImage(image);
 		const carrier = this.sprite(image);
 		carrier.destroy();
@@ -9017,6 +9025,7 @@ export class DungeonScene extends Scene2D {
 		// target selection is migrated, but this makes MirrorImage bodies able to intercept
 		// ordinary melee turns instead of being harmless scenery.
 		const adjacentAlly = this.creatures.find((c) => c.isAlly && c.allyKind !== 'sheep' && c.hp > 0
+			&& c.buffs['invisibility'] === undefined
 			&& Roguelike.chebyshevDistance(monster, c) === 1);
 		if (adjacentAlly) {
 			this.attack(monster, adjacentAlly);

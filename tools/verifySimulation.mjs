@@ -108,7 +108,7 @@ const { runHeroPlantEffect, runMobPlantEffect } = require('./simulation/plantTri
 const { TIME_BUBBLE_TURNS: MOB_BUBBLE_TURNS } = require('./simulation/timeBubble');
 const { teleportCandidates, disarmBubblePresses } = require('./simulation/teleport');
 const { teleportAppearPlan } = require('./simulation/teleportAppear');
-const { selectRangedTarget } = require('./simulation/targeting');
+const { selectRangedTarget, findEnemyAlly } = require('./simulation/targeting');
 const { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } = require('./simulation/timeBubble');
 	const { applyEnvironmentalBlobs, spreadSacrificialFire, sacrificeCost, processSacrifice } = require('./simulation/environmentalBlobs');
 	// The four coefficients `HighGrass.trample` reads, as the port's MWL rows carry them.
@@ -623,6 +623,20 @@ check('Ranged targeting picks the nearest visible hero or ally, never the invisi
 	assert.equal(selectRangedTarget({}, monster, { ...hero, buffs: { invisibility: 3 } }, [ally], 8, roguelike), ally);
 	assert.equal(selectRangedTarget({}, monster, { ...hero, buffs: { invisibility: 3 } }, [{ ...ally, buffs: { invisibility: 3 } }], 8, roguelike), null);
 	assert.equal(selectRangedTarget({}, monster, hero, [{ ...ally, hp: 0 }], 8, roguelike), hero);
+});
+check('Ally pursuit skips sheep and invisible allies', () => {
+	//`Mob.act()` only collects candidates with `invisible <= 0` - a MirrorInvis
+	//image cannot be pursued until its first swing dispels it (42nd matrix).
+	const roguelike = {
+		chebyshevDistance: (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)),
+	};
+	const monster = { x: 0, y: 0, buffs: {} };
+	const visible = { x: 2, y: 0, hp: 10, isAlly: true, buffs: {} };
+	const isVisible = () => true;
+	const smokeBlocked = () => false;
+	assert.equal(findEnemyAlly(monster, [visible], isVisible, smokeBlocked, roguelike), visible);
+	assert.equal(findEnemyAlly(monster, [{ ...visible, buffs: { invisibility: 9999 } }], isVisible, smokeBlocked, roguelike), null);
+	assert.equal(findEnemyAlly(monster, [{ ...visible, allyKind: 'sheep' }], isVisible, smokeBlocked, roguelike), null);
 });
 check('Teleport lands passable, unoccupied, unseen, non-secret and out of pits', () => {
 	const open = { passable: true, occupied: false, visible: false, secret: false, chasm: false };
