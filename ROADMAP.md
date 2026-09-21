@@ -869,7 +869,23 @@ beyond levelgen, and loot/quest/boss-transition/save-load comparison.
 
 - [ ] Compare both implementations with fixed seeds and identical action traces. **Complexity: XL.**
 - [ ] Verify RNG call order for level, item, monster, and quest generation. **Complexity: L.**
-- [ ] Verify combat rolls, damage, status effects, and turn timing. **Complexity: M.**
+- [x] Verify combat rolls, damage, status effects, and turn timing. **Complexity: M.**
+      **Closed 2026-09-21:** `tools/verifyCombatRolls.mjs` (wired into `test:simulation`)
+      pins the formula shapes deterministically - stub RNGs stand in for Java's draws
+      (`float(x)` returns scripted unit fractions scaled by the stat, endpoints for the
+      rest), so there is no sampling noise: the two-uniform-rolls hit comparison as an
+      exact 6-call sequence, Bless/Hex/Daze/magic/surprise/encumbrance boundaries
+      (inclusive, as Java), damage endpoints with the armor-roll scratch floor, the full
+      attacker multiplier chain in Java order (fury/weakness/berserk/blazing/growing/
+      aggression/vulnerable/giant/antimagic/excess-STR), Preparation's best-of-N plus
+      rank bonus, status-tick deal/redraw/decrement/expire (including magicalSleep's
+      no-tick skip), and the pure-number helpers. Turn timing: searching cost a 1-turn
+      spend against Java's `TIME_TO_SEARCH = 2f` - fixed in `TURN_COSTS` with cost pins
+      in `tools/verifyHeroActions.mjs`, and the headless harness now ticks hunger
+      per turn (a lone search runs 296 to 298). Stated residual: the live game still
+      hungers once per hero action - the scene binding drops `spendTurn`'s cost and
+      `finishHeroTurn` runs every effect once per action (peer-owned turn-loop file;
+      one-line fix proposed over ACP). See `PORT_COVERAGE.md`'s combat-rolls row.
 - [ ] Verify loot, quest outcomes, boss transitions, and save/load state. **Complexity: L.**
 - [ ] Add screenshot and animation-timing comparisons for visual parity. **Complexity: M.**
 - [ ] Classify every remaining difference as either an implemented Java behavior or an explicitly

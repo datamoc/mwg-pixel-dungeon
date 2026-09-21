@@ -14,7 +14,9 @@ export const TURN_COSTS: Record<string, number> = {
 	wait: 1,         // wait action
 	attack: 1,       // melee attack (part of movement when adjacent)
 	ranged: 1,       // ranged attack attempt (special/eat/quaff/read/upgrade)
-	search: 1,       // search for secrets
+	//`Hero.TIME_TO_SEARCH = 2f` (tag `v3.3.8`): searching spends two turns via
+	//`spendAndNext`, so monsters get twice the turns a 1-cost action would grant.
+	search: 2,       // search for secrets
 };
 
 export type AttemptAction = 'special' | 'eat' | 'quaff' | 'read' | 'upgrade';

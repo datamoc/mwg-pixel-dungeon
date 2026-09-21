@@ -13,6 +13,7 @@ import { verifySearch } from './verifySearch.mjs';
 import { verifyCone } from './verifyCone.mjs';
 import { verifyRipperLeap } from './verifyRipperLeap.mjs';
 import { verifyActorCollision } from './verifyActorCollision.mjs';
+import { verifyCombatRolls } from './verifyCombatRolls.mjs';
 import { verifySuccubusBlink } from './verifySuccubusBlink.mjs';
 import { verifyArmorAbilities } from './verifyArmorAbilities.mjs';
 import { verifyRings } from './verifyRings.mjs';
@@ -1221,6 +1222,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	verifyCone(require, check);
 	verifyRipperLeap(require, check);
 	verifyActorCollision(require, check);
+	verifyCombatRolls(require, check);
 	verifySuccubusBlink(require, check);
 	verifyArmorAbilities(require, check);
 	check('Elemental.random() deals chaos at 1/50 with the fire/frost/shock split', () => {
