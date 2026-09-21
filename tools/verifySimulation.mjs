@@ -12,6 +12,7 @@ import { verifyHeroActions } from './verifyHeroActions.mjs';
 import { verifySearch } from './verifySearch.mjs';
 import { verifyCone } from './verifyCone.mjs';
 import { verifyRipperLeap } from './verifyRipperLeap.mjs';
+import { verifyActorCollision } from './verifyActorCollision.mjs';
 import { verifySuccubusBlink } from './verifySuccubusBlink.mjs';
 import { verifyArmorAbilities } from './verifyArmorAbilities.mjs';
 import { verifyRings } from './verifyRings.mjs';
@@ -22,6 +23,7 @@ import { verifyDoors } from './verifyDoors.mjs';
 import { verifyShakes } from './verifyShakes.mjs';
 import { verifyParticles } from './verifyParticles.mjs';
 import { verifyProjectiles } from './verifyProjectiles.mjs';
+import { verifyClericSpells } from './verifyClericSpells.mjs';
 import { readSceneSource } from './sceneSource.mjs';
 
 // Compile the actual implementation into a private temporary CommonJS tree. Type-only
@@ -48,7 +50,7 @@ try {
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/mwlMonsterStateStats', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/mageAbilities', 'simulation/rogueAbilities', 'simulation/ratmogrify', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'items/missiles', 'mechanics/cone', 'dungeonConstants',
-	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/sentryTurn', 'simulation/brews', 'simulation/smoke', 'simulation/deathBursts', 'ui/buffOverlays',
+	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/sentryTurn', 'simulation/brews', 'simulation/smoke', 'simulation/deathBursts', 'simulation/pourAuras', 'simulation/ringKnow', 'simulation/actorCollision', 'simulation/wandering', 'simulation/zoomStep', 'simulation/chasmJump', 'simulation/spareWands', 'simulation/clericSpells', 'ui/buffOverlays',
 	// `actors/monsterSpawn` (plus its `monsters`/`challenges`/i18n chain) for the spawn-profile
 	// checks: the chaos-elemental roll, the rare-alt table, and the unported-mob absences.
 	'monsters', 'challenges', 'i18n/index', 'i18n/portStrings', 'i18n/languages', 'i18n/spdKeys', 'generated/spdMessages', 'items/artifacts', 'actors/monsterSpawn',
@@ -896,6 +898,24 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.equal(talents.seerShotDuration(1), 5);
 		assert.equal(talents.seerShotDuration(3), 15);
 	});
+	check('cleric tier-3 halves shed, quicken wands, and open their own tab', () => {
+		//Talent.CLEANSE's onArtifactUsed half: rank/10 (10/20/30%).
+		assert.equal(talents.cleanseArtifactChance(1), 0.1);
+		assert.equal(talents.cleanseArtifactChance(2), 0.2);
+		assert.equal(talents.cleanseArtifactChance(3), 0.3);
+		//LIGHT_READING's RingOfEnergy leg: 1+0.2*rank/3 off-Cleric, 1 on-Cleric.
+		assert.equal(talents.lightReadingWandMult('mage', 1), 1 + (0.2 * 1) / 3);
+		assert.equal(talents.lightReadingWandMult('mage', 3), 1 + (0.2 * 3) / 3);
+		assert.equal(talents.lightReadingWandMult('rogue', 0), 1);
+		assert.equal(talents.lightReadingWandMult('cleric', 3), 1);
+		//Only the Cleric authors a class tier-3 row, so only its tab opens at the
+		//level threshold without the subclass Java's talentPointsAvailable(3) needs.
+		const { hasClassTier3Row } = require('./talents');
+		assert.equal(hasClassTier3Row('cleric'), true);
+		for (const cls of ['warrior', 'mage', 'rogue', 'huntress', 'duelist']) {
+			assert.equal(hasClassTier3Row(cls), false);
+		}
+	});
 
 	check('hunger runtime dispatch matches the direct transition exactly', () => {
 		for (const state of [initial({ hunger: 290 }), initial({ hunger: 440, hp: 20 }), initial({ hunger: 450, hp: 20, maxHp: 20 })]) {
@@ -1200,6 +1220,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	verifySearch(require, check);
 	verifyCone(require, check);
 	verifyRipperLeap(require, check);
+	verifyActorCollision(require, check);
 	verifySuccubusBlink(require, check);
 	verifyArmorAbilities(require, check);
 	check('Elemental.random() deals chaos at 1/50 with the fire/frost/shock split', () => {
@@ -1256,7 +1277,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		const scene = readSceneSource();
 		assert.ok(scene.includes("cause === 'electricity' && !target.isHero && target.kind === 'elemental'"),
 			'the blob seam halves electricity for shock elementals');
-		assert.ok(scene.includes("this.wandType === 'lightning' && !victim.isHero && victim.kind === 'elemental'"),
+		assert.ok(scene.includes("wandType === 'lightning' && !victim.isHero && victim.kind === 'elemental'"),
 			'the lightning wand halves for shock elementals');
 	});
 	check('Sentry turrets charge two turns, then gaze every visible turn', () => {
@@ -1331,6 +1352,84 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.ok(/raw === 22\) return 76/.test(frames), 'unlocked exit draws frame 76');
 		assert.ok(!/raw === 22\) return 78/.test(frames), 'unlocked exit no longer draws frame 78');
 	});
+	check('Thief\u2019s Intuition marks ring types known by rank', () => {
+		const { thiefsIntuitionKnownIds } = require('./simulation/ringKnow');
+		//Rank 1: worn rings only.
+		assert.deepEqual(thiefsIntuitionKnownIds(['ring_force', null], ['ring_haste', 'ring_force'], 1), ['ring_force']);
+		assert.deepEqual(thiefsIntuitionKnownIds([null, null], ['ring_haste'], 1), []);
+		//Rank 2: worn plus every carried ring, deduplicated.
+		assert.deepEqual(
+			thiefsIntuitionKnownIds(['ring_force', null], ['ring_haste', 'ring_force'], 2).sort(),
+			['ring_force', 'ring_haste'],
+		);
+	});
+	check('Ctrl+wheel steps the zoom offset down on roll-down, up on roll-up', () => {
+		const { wheelZoomStep } = require('./simulation/zoomStep');
+		assert.equal(wheelZoomStep(120), -1);
+		assert.equal(wheelZoomStep(-120), 1);
+		assert.equal(wheelZoomStep(0), 0);
+		assert.equal(wheelZoomStep(NaN), 0);
+	});
+	check('chasm steps warn unless flying or already confirmed', () => {
+		const { chasmJumpLatched, setChasmJumpLatched, chasmStepNeedsConfirm } = require('./simulation/chasmJump');
+		const scene = {};
+		assert.equal(chasmStepNeedsConfirm(true, false, chasmJumpLatched(scene)), true);
+		assert.equal(chasmStepNeedsConfirm(true, true, false), false);
+		assert.equal(chasmStepNeedsConfirm(false, false, false), false);
+		setChasmJumpLatched(scene, true);
+		assert.equal(chasmJumpLatched(scene), true);
+		assert.equal(chasmStepNeedsConfirm(true, false, chasmJumpLatched(scene)), false);
+		setChasmJumpLatched(scene, false);
+		assert.equal(chasmJumpLatched(scene), false);
+	});
+	check('spare wands arrive full, recharge alone, and feed WildMagic selection', () => {
+		const { spareWandMaxCharges, newSpareWandCharges, rechargeSpareWand, wildMagicShotCost, wildMagicShots, spendWildMagicShot } = require('./simulation/spareWands');
+		assert.equal(spareWandMaxCharges(2, 0), 2);
+		assert.equal(spareWandMaxCharges(3, 0), 3);
+		assert.equal(spareWandMaxCharges(2, 3), 5);
+		assert.equal(spareWandMaxCharges(2, 9), 10);
+		const full = newSpareWandCharges(2);
+		assert.deepEqual([full.cur, full.partial, full.max], [2, 0, 2]);
+		rechargeSpareWand(full, 0.5);
+		assert.deepEqual([full.cur, full.partial], [2, 0], 'progress past a full wand is dropped');
+		const spent = { cur: 0, partial: 0, max: 2 };
+		rechargeSpareWand(spent, 1.5);
+		assert.deepEqual([spent.cur, spent.partial], [1, 0.5]);
+		assert.equal(wildMagicShotCost(0), 0.5);
+		assert.ok(Math.abs(wildMagicShotCost(2) - 0.5 * 0.67 * 0.67) < 1e-9);
+		const identity = (arr) => arr.slice();
+		const zero = () => 0;
+		const states = [{ cur: 2, partial: 0 }, { cur: 0, partial: 0.4 }, { cur: 0, partial: 0 }];
+		assert.deepEqual(wildMagicShots(states, 0, 0, identity, zero), [0, 0], 'only the charged wand is eligible, doubled through the seconds round');
+		const rich = [{ cur: 3, partial: 0 }];
+		assert.deepEqual(wildMagicShots(rich, 0, 0, identity, zero), [0, 0], 'one rich wand fires twice: first plus the seconds round, never thirds at zero FIRE_EVERYTHING');
+		const shot = { cur: 1, partial: 0, max: 2 };
+		spendWildMagicShot(shot, 0.5);
+		assert.deepEqual([shot.cur, shot.partial], [0, 0.5], 'a partial-only cost still borrows the charge it spends through');
+		const borrowed = { cur: 1, partial: 0.2, max: 2 };
+		spendWildMagicShot(borrowed, 0.5);
+		assert.deepEqual([borrowed.cur, borrowed.partial], [0, 0.7], 'the shot borrows a whole charge when partial runs out');
+		const { wildMagicBoostedLevel } = require('./simulation/spareWands');
+		assert.equal(wildMagicBoostedLevel(0, 0, false), 2, 'untalented bonus is +2');
+		assert.equal(wildMagicBoostedLevel(0, 0, true), 2, 'the coin halves away at rank 0');
+		assert.equal(wildMagicBoostedLevel(0, 1, true), 3, 'rank 1 coin lands +3 at the cap');
+		assert.equal(wildMagicBoostedLevel(1, 4, true), 5, 'rank 4 coin lands +4 below its cap of 7');
+		assert.equal(wildMagicBoostedLevel(3, 0, false), 3, 'no boost at or above the cap');
+	});
+	check('the vault branch stays fully absent (VaultSentry + rooms + quest)', () => {
+		//PORT_COVERAGE.md's VaultSentry row: the mob only spawns from the
+		//unported crystal-key VaultLevel branch, so porting it alone would be
+		//dead code. This pins the absence - no spawn kind, room table, or
+		//quest state may mention it - so a half-port fails loudly.
+		//(`crystalVault`/`crystalChoice` rooms are the ported crystal-key queue,
+		//not this branch, so the ban names the sentry and the quest branch only.)
+		for (const file of ['monsters.mwl', 'dungeon-rosters.mwl', 'room-rules.mwl', 'actor-rules.mwl']) {
+			const text = readFileSync(new URL(`../src/content/${file}`, import.meta.url), 'utf8');
+			assert.ok(!/vaultsentry|quest\/vault|vaultlevel/i.test(text), `${file} mentions the vault branch`);
+		}
+		const roster = readFileSync(new URL('../src/monsters.ts', import.meta.url), 'utf8');
+		assert.ok(!/vaultsentry/i.test(roster), 'monsters.ts carries a VaultSentry kind');
+	});
 	verifyRings(require, check);
 	verifyPrismatic(require, check);
 	verifyBrews(require, check);
@@ -1339,6 +1438,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	verifyShakes(require, check);
 	verifyParticles(require, check);
 	verifyProjectiles(require, check);
+	verifyClericSpells(require, check);
 	console.log(`${passed} simulation checks passed.`);
 } finally {
 	// Only the fresh directory returned by mkdtempSync above is removed.

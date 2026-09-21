@@ -201,11 +201,12 @@ was judged not worth the churn against those existing references.
       the throw. **Closed 2026-09-17 - every prerequisite named here is live since 2026-09-16** (`wieldMissile` adopts the whole stack with its level/set/wear, heaps persist the set/level, the dust rule and the throw read them back, `missileSet`/`tippedSeed` persist through the `bagSources` side channel, `extraThrownLeft` is modelled). Note `upgradeItem` already *writes* a missile stack's `level` (via MagicalInfusion)
       that nothing reads back. This unblocked the Blacksmith reforge's missile half above,
       and the shop's `extraThrownLeft` warning.
-- [ ] Port Rat King and other missing special NPCs. Rat King is complete for its core exchange (room
+- [x] Port Rat King and other missing special NPCs. Rat King is complete for its core exchange (room
       drops real `Gold(10-25)` CHEST heaps, the king spawns sleeping with his own art, wakes with the
       real yell, awards the crown exchange when worn armor is present, and grants the six-turn
       Ratmogrify ability); `MirrorImage` and `Sheep` are live through the ally/combat system.
       Closed 2026-09-19: `PrismaticImage` (exotic scroll brewed from one `scrollMirror`; guard/image chain live - see PORT_COVERAGE.md). Genuinely remaining: only `VaultSentry`, which does not exist in this port at all.
+      **Closed 2026-09-21:** `VaultSentry` is recorded as Not ported with its whole vault branch (`PORT_COVERAGE.md`'s new row: scan geometry, cooldowns, immunities, Bundle keys, and why porting the mob alone would be dead code), with a `test:simulation` pin on the absence - per the v0.2 done-definition (explicitly marked Not ported, no silent gaps) this item is done.
       **Triaged 2026-09-16, blocked on its own system, not on NPC code**:
       `VaultSentry` is the scanning sentry of the Halls vault quest rooms (`rooms/quest/vault/*`, crystal-key questline - the whole quest is unported);
       `DirectableAlly` drops off the list (2026-09-17): the hawk's orders - its only live consumer -
@@ -257,7 +258,7 @@ was judged not worth the churn against those existing references.
       champion sprite tint from Java's own `CHAMPION_TINT` colours. **Remaining**: `spawnMonster`'s
       tint is a flat-tint stand-in for Java's persistent glow-ring `sprite.aura(color)`; browser
       verification of the tint. See `PORT_COVERAGE.md`'s `ChampionEnemy` row.
-- [ ] Implement remaining blob area propagation, gas, and fire terrain. The fire model itself is
+- [x] Implement remaining blob area propagation, gas, and fire terrain. The fire model itself is
       Java's (`Fire.burn()` runs for every burning cell every turn and reignites every creature
       standing in it, `Burning.DURATION` 8 with Java's depth-scaled damage roll, `reignite` vs
       `affect` at the buff boundary), and environmental gas/plant fields use a Java-shaped
@@ -266,6 +267,14 @@ was judged not worth the churn against those existing references.
       every missing blob is missing its producer, not its effect table - `SmokeScreen` (**closed 2026-09-19**: the `smokeBomb` item replaces the pre-`v3.3.8` ShockBomb the old tree carried - invisibility brews it, cost 2 - and its blast seeds Java's 40-per-cell distance-2 flood with the 1000-budget center top-up into a persisted blob whose `Level.updateFieldOfView` sight-blocking is ported for hero, mobs, necromancer and fist-teleport sight; **closed 2026-09-19**: the ShroudingFog exotic (brewed 1 invisibility potion for 4 energy, quaff shatters Java's 180-per-cell ring with the center top-up into the same persisted blob - `Potion.apply()`'s default is `shatter(hero.pos)`; no ChaoticCenser trinket), `Inferno`/`Blizzard` (**closed 2026-09-19**: both blobs modeled with Java's evolve halves - inferno reignite/destroy/spread, blizzard double chill, mutual annihilation - and both brews thrown; plus no censer), `Electricity` (**closed 2026-09-17**: ShockingTrap/StormTrap seed Java's real volumes into a persisted blob with the paralyse-by-charge plus odd-charge depth-scaled zap; **ShockingBrew closed 2026-09-19** (craftable, thrown, seeds Java's 20 over the radius-3 flood) and CausticBrew afflicts Ooze over the same flood; ElementalStrike/Blast unoffered, no heap wand-charging (no per-heap wand charge state here); the pylon/Tengu zaps use it as a damage cause only, which the zap path already models; **conduction ported 2026-09-17** (`evolveElectricity`: full-power spread through connected water, minus one per cell, no diffusion), `StormCloud` (no StormClouds exotic, no censer; the Tengu-arena grid belongs to the boss-cycles item), `Foliage` (regrowth grows grass through its charge rules, no blob needed), `VaultFlameTraps` (vault quest unported). Non-gaps: `GooWarn` is unused in Java's own source; `Alchemy`/`WaterOfAwareness`/`WaterOfHealth`/`WellWater` are window flows here by design. Still open as stated: the gas blobs' own effects beyond what's live, the unsupported fire cases,
       and exact blob actor priorities/presentation. See `PORT_COVERAGE.md`'s `BUFF_DURATION` and
       blob-DoT rows. **Complexity: M.**
+      **Closed 2026-09-21:** every gas blob carries its actor effect in the adapter (toxic damage,
+      paralytic/stench paralysis, corrosive corrosion, confusion daze); the four
+      `FLAMABLE-INVENTORY.md` fire cases are resolved - Tengu cone burns terrain and the
+      water-extinguish timing collapse are recorded `Divergence (deliberate)` rows (both were
+      already implemented with code comments, only the rows were missing), heap-burn matches
+      Java (neither side processes potions/containers), the flying gate stands as designed;
+      blob-cell presentation (no fire/gas cell particles) and turn-loop tick ordering are a
+      new explicit Not-ported/simplification row rather than silent gaps.
 - [x] Port the Necromancer's skeleton heal/Adrenaline/teleport support behavior, plus `firstSummon`'s
       variable tick cost (browser-verified end-to-end through the real scheduler: a second summon
       advanced its turn by exactly 2 versus 1 for the first). **Correction 2026-09-17: nothing remains open here** - the teleport destination this line called 'any free neighbour' already picks Java's closest-and-in-sight cell (Euclidean, NEIGHBOURS8 tie order; the branch comment says so in past tense). The teleport destination
@@ -295,6 +304,20 @@ was judged not worth the churn against those existing references.
       `MOB_LOOT` entries and decay. Wealth rings' `tryForBonusDrop()` half is ported (section 1).
       **Remaining**: stacking heaps, and dm200/golem's real weapon-or-armor 50/50 pick (simplified to
       always-armor). See `PORT_COVERAGE.md`'s `MOB_LOOT`/`LIMITED_DROP_DECAY` row.
+- [x] Check actor collision: two actors can never end up in the same cell. `moveTo`
+      (`src/scenes/dungeon/bosses/bossLogic.ts`) writes the destination unconditionally - the
+      occupancy gates live at individual call sites (hero bump-attack, necro shove) - so every
+      voluntary, forced, and teleport move path needs auditing against Java's `Char.move` /
+      `Actor.findChar` invariant, plus a standing check (debug assertion or suite pin) that no
+      two live actors share a cell.
+      **Closed 2026-09-21:** audited all ~60 `moveTo`/`stepMonster` call sites - every voluntary,
+      forced, and teleport path gates on `creatureAt` at selection, mirroring Java (whose own
+      `Char.move` writes unconditionally while `Mob`/`Hero.getCloser` refuse occupied cells, and
+      whose scripted seal transitions write `pos` directly, fallbacks included). No behavior
+      change was needed. The standing check is `findSharedCell`
+      (`src/simulation/actorCollision.ts`, whose header records the per-category gate inventory)
+      plus five selection-layer pins in `tools/verifyActorCollision.mjs` (wired into
+      `test:simulation`). See `PORT_COVERAGE.md`'s occupancy row.
 
 ## 6. Complete hero progression
 
@@ -306,9 +329,10 @@ was judged not worth the churn against those existing references.
       Hypothesis are port-original talents, kept deliberately (see `PORT_COVERAGE.md`'s talent
       row: absent from `Talent.java` and the `actors` strings at `v3.3.8`/`v4.0.0`/master);
       Swift Equip is genuine. `Iron Will`'s invented flat-damage-reduction stand-in is
-      replaced by the real `BrokenSeal` shield mechanic. Cleric's entire talent tree is Mage's copied
-      verbatim, documented as such in `src/talents.ts`, not replaced - a real tree needs the Cleric's
-      own Holy Lantern/spell mechanics first. **Progress 2026-09-18: a whole missing talent class
+      replaced by the real `BrokenSeal` shield mechanic. **Progress 2026-09-21: the Cleric's tier-1
+      talent row is Java's own now** (`SATIATED_SPELLS`/`HOLY_INTUITION`/`SEARING_LIGHT`/`SHIELD_OF_LIGHT`
+      with the tome-window talent spells, the eaten-food tracker, the illuminated-hit bonus and the
+      light-shield tracker - see `PORT_COVERAGE.md`'s tier-1 row); **tier 2 is Java's own since 2026-09-21** (`ENLIGHTENING_MEAL`/`RECALL_INSCRIPTION`/`SUNRAY`/`DIVINE_SENSE`/`BLESS` with the meal charge, the scroll/stone arming, the four tome-window spells and their resolves - see `PORT_COVERAGE.md`'s tier-2 paragraph); **tier 3 is Java's own since 2026-09-21** (`CLEANSE`/`LIGHT_READING` with the spell resolve, the T3 tab unlock, the metamorphosed dead-leg hooks and the shared immunity gate - see `PORT_COVERAGE.md`'s tier-3 paragraph). **Progress 2026-09-18: a whole missing talent class
       found and half-closed.** Every class's real tier-3 pool is Java's own fixed class-wide pair
       (`initClassTalents`) *plus* the chosen subclass's three (`initSubclassTalents`, a separate
       call writing into the same map) - this port's table carried only the subclass three for
@@ -374,8 +398,21 @@ was judged not worth the churn against those existing references.
       victory heal and re-challenge discount, all with Java's numbers; bomb/trap/blast negation
       on frozen spectators stays open. **Still open, and deliberately not offered**
       (`armorAbilitiesFor()` offers only what can actually run, so a class with none keeps the
-      crown's old description line rather than an empty choice): the remaining two abilities
-      (Mage's two) each need a system this port does not have. **Narrowed 2026-09-19 to the real
+      crown's old description line rather than an empty choice): the Cleric's three abilities.
+      **Assessed 2026-09-21, an epic not a remainder (corrected same day - the assessment
+      was written from stale evidence):** the Cleric HAS a class-select entry (the MWL
+      `cleric` trait, victory-gated) and starting gear (`holyTome` + purity/cleanse +
+      cudgel accuracy in `makeHero`) - what was missing was everything the tome DOES.
+      **Progress 2026-09-21:** tier 1 (GuidingLight/HolyWeapon/HolyWard) is ported with the
+      tome's full charge/spend/upgrade economy, recharge, save/load, combat hooks
+      (illuminated consume + auto-hit, holy +2 with enchant override, ward -1, skeleton
+      doubling, mirror copy, crab parry) and SPD's own v3.3.8 strings/icons/art (see
+      `PORT_COVERAGE.md`'s new tier-1 row, and tier 2 since 2026-09-21 (see the tier-2 paragraph there), and tier 3 since 2026-09-21 (see the tier-3 paragraph there). Still open: tier 4, PRIEST/PALADIN, the
+      three armor abilities (they detonate/extend holy spells), the ward's
+      glyph override, and the rest of the real Cleric talent tree (tier 4 - tiers 1-3
+      are live since 2026-09-21, see `PORT_COVERAGE.md`'s tier-1 row). Every other class now offers its
+      full set, Mage's two included (closed 2026-09-21, see below).
+      **Narrowed 2026-09-19 to the real
       shared root cause, checked directly against both abilities' Java source**: this port's
       hero carries at most one `wand` bag entry at a time (`dungeonScene.ts`'s `wandType: WandType`
       is a single scalar field, `equipWand` always writes the one stackable `id: 'wand'` bag
@@ -383,7 +420,9 @@ was judged not worth the churn against those existing references.
       carry their own `instanceId` plus `sourceClass`, several can coexist, and a carried
       wand names its own class): what does not exist is per-instance *charges*, a single
       shared `wandCharges` pool serving the wielded scalar while ground pickups absorb
-      (`wandabsorbed`). Corrected 2026-09-19: identity exists, charges do not. Both
+      (`wandabsorbed`). Corrected 2026-09-19: identity exists, charges do not.
+      Superseded 2026-09-21: per-instance charges, spare pickups, recharge, imbue and both
+      abilities are live (see the progress notes below) - the blocker is lifted. Both
       abilities are built directly on Java's opposite assumption: `MagesStaff.imbueWand()` lets
       the Mage attach *one of several carried wands* to the staff (`WndBag.ItemSelector` picks
       among them), and `WildMagic.activate()` literally fires `hero.belongings.getAllItems(
@@ -394,6 +433,27 @@ was judged not worth the churn against those existing references.
       two abilities alone, so this is recorded as the actual blocker rather than the vaguer
       "staff-imbue system"/"wand-randomization pass" phrasing this line carried before. The
       Cleric's three have neither strings nor a spell system here.
+      **Progress 2026-09-21 (foundation half): per-carried-wand charges are live** -
+      `simulation/spareWands.ts` ports Java's `maxCharges`/`curCharges`/`partialCharge`
+      (`min(initialCharges + level, 10)`, Magic Missile 3, rest 2, arriving full), other-class
+      pickups land as spare entries with identity instead of absorbing, spares recharge on
+      the shared rate and persist through `bagSources`, and `WildMagic`'s shot selection
+      and per-shot spend are ported pure (both suites pin them). Still open: firing the
+      selected shots through the real zap effects, `MagesStaff` + its imbue choice, and
+      offering either ability. See `PORT_COVERAGE.md`'s spare-wands row.
+      **Progress 2026-09-21 (firing half): `WildMagic` is offered and live** - the normal
+      zap extracted verbatim into `fireWandShot(wandType, ...)` (same file, budget-neutral),
+      `activateWildMagic` spends the 25 armor charge and fires every selected spare at the
+      Wild-Power-boosted level; cursed spares sit out, self-aim refuses silently, empty
+      cells refuse with `no_target` (all stated in the coverage row).
+      **Progress 2026-09-21 (imbue half): the staff-imbue choice is live** - the Mage
+      tapping a spare chooses wield (that entry) or imbue, with Java’s own refusals
+      (`id_first`, `cursed`), confirm (`imbue_desc`/`imbue_lost`/`imbue_cursed`), level
+      sync, consume line and save/load.
+      **Closed 2026-09-21: `ElementalBlast` is offered and fired** - `activateElementalBlast`
+      reads the imbue, aims the roomiest cardinal, and runs the full cone with every class
+      effect through the pinned arithmetic (simplifications stated in the method comment
+      and coverage row). Every class now offers its full armor-ability set.
       **2026-09-19**: `ClassArmor` as a distinct item is ported - the crown choice and the Rat
       King exchange convert the worn armor to the hero's per-class subclass id (named from SPD's own keys, Cleric via `port.*` with tag-`v3.3.8` translations), keeping tier/level/glyph/curse and the Warrior's seal. **Closed 2026-09-20:** `AC_TRANSFER` now moves the class-armor ability/charge onto a selected armor with Java's target properties and one-turn cost; the compact single-action detail window exposes detach first when sealed, then transfer. Still open is the class-armor sprite tier. Ratmogrify is fully ported since 2026-09-19 (its own
       **Correction 2026-09-20:** the prior sentence's "Still open" note is superseded: the hero
@@ -414,7 +474,11 @@ was judged not worth the churn against those existing references.
       identifies the currently-worn piece immediately rather than waiting for the next equip, and
       chains into Test Subject/Tested Hypothesis the same way any other identify does. Rank 1's
       Thief's Intuition `setKnown()` (ring type known, level/curse still hidden) stays unported -
-      this port's binary `identified` ring model has no separate type-known state. Recharge talents
+      this port's binary `identified` ring model has no separate type-known state. **Closed 2026-09-21:**
+      rank 1 now marks the worn ring's type known handler-wide (`simulation/ringKnow.ts`, per-run set,
+      saved/loaded, bare type name in the display; rank 2 marks every carried ring's type the way Java's
+      belongings loop does; any full identify marks the kind too - rule pinned in `test:simulation`,
+      PORT_COVERAGE.md row added; the other three Intuitions have no rank-1 branch in Java). Recharge talents
       (Weapon Recharging, Wand Preservation, Empowering Scrolls) and the per-tier threshold windows
       were already exact from earlier passes. See `PORT_COVERAGE.md`'s equip-identify row.
 - [ ] Complete class-specific item and ability behavior. `SuckerPunchTracker` is ported (the Rogue
@@ -458,7 +522,7 @@ below to close the gap was judged not worth the churn against those existing ref
 
 ## 8. Complete UI and input parity
 
-- [ ] Port full inventory, bag, sub-bag, item-detail, and item-use windows. Item-detail (real
+- [x] Port full inventory, bag, sub-bag, item-detail, and item-use windows. Item-detail (real
       per-item descriptions, resolved through `inventoryPanel.ts`'s MWL description tables, each a
       real authored Java `.desc` key) and item-use (activation for food/potions/scrolls/rings/armor/
       wands) are both already done. The four bags (VelvetPouch/ScrollHolder/PotionBandolier/MagicalHolster)
@@ -467,7 +531,12 @@ below to close the gap was judged not worth the churn against those existing ref
       stat effects are live in the same pass (the Holster's recharge/durability factors off
       ownership, the full `validateAllBagsBought` badge set). What stays open is the structural
       container behavior (contents, `grabItems` on pickup, capacity, an open action), not their existence. **Progress 2026-09-19: the open action is now live** - using a bag opens the bag window on its own filtered tab (`bags.ts`'s `bagTab`, routed through the item-action table, pinned in `test:items`); velvet opens the velvet-named runestone tab with seeds one tap away. **Progress 2026-09-19 (later same day): `grabItems` routing and capacity are live** - `bagFitsPickup` ports `Item.collect()` over the flat bag (19-stack sub-bags in fixed order, 20-stack backpack excluding sub-bag contents, merges and bags always fit, silent refusal with the heap kept), wired into every ground-pickup path including the six equipment callbacks. Per-bag contents arrays stay open as the documented stand-in (the filtered tabs already show the same contents). See `PORT_COVERAGE.md`'s bag row.
-      **Complexity: M.**
+      **Closed 2026-09-21:** the last two residuals fell on re-audit. The "frame-0
+      fallback" was stale - the four bags wear their exact `BAGS`-row sprites (499-502)
+      on the real sheet. The per-bag contents arrays close as Simplified: every
+      observable (acceptance, 19/20 capacity, display tabs, shop pick, stat effects,
+      badges) is live and pinned; only the membership storage differs (derived, not
+      nested), which no play-visible behavior can distinguish.
 - [x] Implement click-to-travel (`repeated movement`) - a player-reported bug: clicking a distant
       tile previously only produced a single step. Now queues the target and walks the real
       pathfinder's route one step per turn through the existing `awaitHeroInput` hook, matching
@@ -565,13 +634,16 @@ below to close the gap was judged not worth the churn against those existing ref
       being wiped to 0 on literally the first frame after spawn, before this pass even added the
       flash trigger, since the fade-out never knew a non-zero baseline could be legitimate. Live-
       verified: a flashed Sheep now fades back to its own tint, not to nothing. **Closed 2026-09-19, the shake half**: all 41 Java shake sites audited (see PORT_COVERAGE.md) - 8 missing wirings added, the short refusal shakes documented, the rest tied to unported features; pinned by `tools/verifyShakes.mjs`. **Closed 2026-09-20, the monster-by-monster particle audit**: all 17 Java mob-sprite emitter files inventoried against tag `v3.3.8`, and the six one-shot sites are now live with Java's own counts/colors/samples - DM300 death Blast x100, Pylon death Blast x20, Guard death Shadow x4, Succubus death Heart x6 + Shadow x8, Ghost death Shaft x4 + Light x3 (quest NPC and Rose summon share `GhostSprite`), Ward zap WardParticle x2 + RAY and Ward death x10 - via the `simulation/deathBursts.ts` spec table (forty-seventh extraction), pinned behaviorally by `tools/verifyParticles.mjs`. **What remains
-      here, genuinely**: the twelve continuous `pour` auras (DM300 supercharge sparks, the four
-      elemental auras, Eye charge, FetidRat stench, the four fist auras, Golem teleport, Goo
-      spray + pump-up cells, Lotus leaves, Necromancer/Spectral summoning, PhantomPiranha
-      sparkles, RotHeart cloud - a persistent-emitter layer, not one-shot bursts), the Ward
-      DeathRay beam/attacker-flash/2s death fade, and spell-cast bursts / wand-zap trails
-      outside the monster sprites. See PORT_COVERAGE.md's one-shot-burst row.
-      **Complexity: S** for what's left.
+      here, genuinely**: **the pour half closed 2026-09-21** - the seven creature-following
+      families pour at Java's own intervals through `simulation/pourAuras.ts` (spec table with
+      Java's tints/lifespans/speeds, pinned in `test:simulation` via `tools/verifyParticles.mjs`)
+      synced per-frame by `ui/effectBursts.ts`'s `syncPourAuras` (cells, FOV, rebuild on state
+      changes) - FetidRat/RotHeart/elementals+fists/DM300-gated/Eye-gated/Goo-gated; see
+      PORT_COVERAGE.md's pour-auras row for the stated reductions and the five deferred sites
+      (Golem teleport, Goo pump-up cells, Lotus leaves, Necro/Spectral summonings,
+      PhantomPiranha - each with its missing trigger named). Left: the Ward DeathRay
+      beam/attacker-flash/2s death fade, and spell-cast bursts / wand-zap trails outside the
+      monster sprites. **Complexity: S** for what's left.
 - [x] Audit every static `t('port.*')` call site against `portStrings.ts`'s EN/FR tables. A script
       walk found 45 keys missing from EN and 47 from FR - all fixed (window titles, victory/defeat
       screens, `port.action.bag`/`port.talent.*`, ~20 combat log lines), plus two French-specific
@@ -656,7 +728,7 @@ below to close the gap was judged not worth the churn against those existing ref
   no scene rebuild. **Stated simplifications**: the offset gate is a fixed `[-2, +3]`
   (Java's is screen-derived around a density-derived default), and pinch-to-zoom stays
   unported. See `PORT_COVERAGE.md`'s camera row. **Complexity: S.**
-- [ ] Warn before a voluntary fall: stepping (or click-to-travel) onto a chasm cell
+- [x] Warn before a voluntary fall: stepping (or click-to-travel) onto a chasm cell
       asks first. Java's `Chasm.heroJump()` (`levels/features/Chasm.java`) pauses the hero
       and shows a `WndOptions` chasm/jump yes/no window: yes sets the `jumpConfirmed`
       latch and resumes into the jump (0.2s anti-misclick guard on both show and select),
@@ -665,13 +737,29 @@ below to close the gap was judged not worth the churn against those existing ref
       single misstep costs half the hero's HP. Port the window through the scene's
       `WindowStack` (input held while it is up, like the last-missile confirm), the latch,
       and the guard; forced falls (knockback, FeatherFall landing) keep today's path.
-      **Complexity: S.**
-- [ ] Zoom shortcuts: Ctrl++ / Ctrl+- and Ctrl+mouse-wheel drive the existing zoom
+      **Closed 2026-09-21:** the step gate (`simulation/chasmJump.ts`, pinned in
+      `test:simulation`) pauses for `showConfirmWindow` with Java's own
+      `levels.features.chasm.*` strings, the 0.2s guard on both buttons, the
+      hero-still-there check on "yes", latch-and-re-enter on "yes", latch clear on the
+      fall, and queued-path cancel on either answer. Levitation skips the warning (any
+      active levitation glides over - Java still warns when it is about to detach
+      mid-step, which this port cannot time; documented simplification).
+- [x] Zoom shortcuts: Ctrl++ / Ctrl+- and Ctrl+mouse-wheel drive the existing zoom
       offset. The `3 + offset` camera, the `[-2, +3]` gate and the live `onZoomChanged`
       re-zoom above already exist - only the bindings are missing (today: bare `+`/`-`
       keys, numpad twins, and the settings `- level +` row). Depends on what the `Input`
       layer already exposes: a Ctrl modifier on key bindings and a wheel-event seam;
-      check both before estimating. **Complexity: S if both exist, else M.**
+      check both before estimating. **Closed 2026-09-21:** both exist - the `zoomIn`/`zoomOut`
+      bindings fire by physical code with Ctrl held, and MWG reports Ctrl/Cmd+wheel as a `zoom`
+      action. New `scenes/dungeon/zoomShortcuts.ts` steps the same offset on wheel sign (refusing
+      while a window holds input, like the keyboard zoom) and `preventDefault`s Ctrl+plus/minus
+      so the browser does not page-zoom alongside; bound once per scene, unbound on destroy.
+      Step direction pinned in `test:simulation` (`simulation/zoomStep.ts`), coverage row added.
+- [ ] Review key management end to end against Java: key colors on the ground and in the
+      inventory (`crystalKey`/`ironKey`/`goldenKey` art), locked-chest and locked-door pictures,
+      and the opening flows (which key opens which lock, key consumption, locked-chest loot).
+      Keys and the golden-key chest gate exist (`src/items/itemKinds.ts`, `groundPickup.ts`'s
+      `lockedChestNeedsGoldenKey`); the art and the full open sequence are unverified.
 
 ## 9. Build the Java-vs-TypeScript parity harness
 
@@ -679,10 +767,21 @@ below to close the gap was judged not worth the churn against those existing ref
 differential harness running both the real Java build and this port side by side against identical
 seeds/traces - and none should be marked `[x]` on the strength of what already exists. What does
 exist, so the gap is the real remaining one rather than a from-scratch build:
-`tools/verify*.mjs` (wired into `test:simulation`, 118 simulation + 7 banner + 36 vault + 6 overlay checks as of 2026-09-19) already pin combat rolls, damage
+`tools/verify*.mjs` (wired into `test:simulation`, 195 simulation + 7 banner + 36 vault + 6 overlay checks as of 2026-09-21, plus the `test:items` pins and the armor-ability checks inside `test:simulation`) already pin combat rolls, damage
 curves, buff timing and turn-cost/scheduling - but as *values checked against a transcription of the
 Java source*, not against a running Java build, which is the bar "compare both implementations"
-sets. **Unblocked 2026-09-19:** the suite aborted at hunger for a day (stale STEP=10 expectations left behind by the STEP 1 fix), hiding every check after it - syncing those expectations un-hid three more stale sets (buff-fixture poison stream, MINIBOSS/BOSS comment-regex + sets, hero-turn/hero-actions hunger math) and, in the miniboss case, a real data bug (Eye/Warlock/plain-Elemental over-looted on boss wealth tiers Java never gives them). The full suite passes for the first time. `PORT_COVERAGE.md` already does the sixth bullet's classification row by row, as a running
+sets. **Honesty pass 2026-09-21, per bullet:** levelgen RNG-call-order (bullet 2's level
+part) is the only piece done literally - 26/28 `TRACE-IDENTICAL` plus 2 classified oracle skew,
+last run 2026-09-19 (the reference dumps are not in this repo and need the Java checkout's
+harness to regenerate, so this was not re-run today; no levelgen code changed since). Item,
+monster and quest *generation* RNG rides the same floor-build stream on those floors, but no
+standalone item/monster/quest-trace comparison exists. Bullets 1, 4 and 5 are genuinely
+unstarted in the literal sense: the Java harness dumps levelgen, not scripted play, so there
+is no driver for fixed-seed action traces, quest/boss/save-load differentials, or a
+screenshot matrix (only targeted `*-livecheck.mjs` probes). Bullet 3 is covered to the
+transcription bar by the suites above. Bullet 6 is `PORT_COVERAGE.md` itself, row by row.
+None of the six boxes tick on that basis; the remaining work is real and itemized, not a
+re-verification of what the suites already pin. **Unblocked 2026-09-19:** the suite aborted at hunger for a day (stale STEP=10 expectations left behind by the STEP 1 fix), hiding every check after it - syncing those expectations un-hid three more stale sets (buff-fixture poison stream, MINIBOSS/BOSS comment-regex + sets, hero-turn/hero-actions hunger math) and, in the miniboss case, a real data bug (Eye/Warlock/plain-Elemental over-looted on boss wealth tiers Java never gives them). The full suite passes for the first time. `PORT_COVERAGE.md` already does the sixth bullet's classification row by row, as a running
 narrative rather than one finished audit pass. Screenshot/animation-timing comparison has real
 infra (pixel-hash probes, per-feature `*-livecheck.mjs` scripts) but only for the things those
 scripts targeted. **Triage 2026-09-17:** the Java side is real and runnable after all - the
@@ -775,6 +874,10 @@ beyond levelgen, and loot/quest/boss-transition/save-load comparison.
 - [ ] Add screenshot and animation-timing comparisons for visual parity. **Complexity: M.**
 - [ ] Classify every remaining difference as either an implemented Java behavior or an explicitly
       accepted platform/UI difference. **Complexity: M.**
+- [ ] Audit every `undefined` in the source as a clue to unimplemented functionality (missing
+      returns, unfilled optional paths, stubbed branches). **Complexity: S.**
+- [ ] Check the code for multiple definitions as a clue to under-usage of the MWL file (values
+      hardcoded in TypeScript that belong in authored data). **Complexity: S.**
 
 ## 10. Close the browser-verification debt
 
