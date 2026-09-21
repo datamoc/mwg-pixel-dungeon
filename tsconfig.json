@@ -6,6 +6,7 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "strict": true,
     "noImplicitOverride": true,
+    "noImplicitReturns": true,
     "useDefineForClassFields": false,
     "skipLibCheck": true,
     "isolatedModules": true,

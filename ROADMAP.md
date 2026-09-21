@@ -874,8 +874,15 @@ beyond levelgen, and loot/quest/boss-transition/save-load comparison.
 - [ ] Add screenshot and animation-timing comparisons for visual parity. **Complexity: M.**
 - [ ] Classify every remaining difference as either an implemented Java behavior or an explicitly
       accepted platform/UI difference. **Complexity: M.**
-- [ ] Audit every `undefined` in the source as a clue to unimplemented functionality (missing
+- [x] Audit every `undefined` in the source as a clue to unimplemented functionality (missing
       returns, unfilled optional paths, stubbed branches). **Complexity: S.**
+      **Closed 2026-09-21:** all hits classify clean - nullish/compare idioms, `T | undefined`
+      lookup-or-missing returns, optional context hooks, and documented Java-mirroring no-ops;
+      the only TODO/FIXME lines cite Java's own FIXME guards (already implemented beside each
+      citation), and there are no empty stub bodies or swallowed catches. Two standing gates
+      keep it that way: `noImplicitReturns` in `tsconfig.json` (the probe was already clean, so
+      no missing-return path exists to grandfather) and `tools/audit-undefined.mjs`, wired into
+      `npm run check`, which fails on bare TODO/FIXME markers and empty-message throws.
 - [ ] Check the code for multiple definitions as a clue to under-usage of the MWL file (values
       hardcoded in TypeScript that belong in authored data). **Complexity: S.**
 
