@@ -12,10 +12,19 @@ import type { Creature, Step } from '../combat';
  * exists while invisible, and an attack dispels invisibility, the whole state is per-invisibility
  * rather than permanent.
  *
- * Still unmodelled here, recorded rather than faked: the `Talent.BOUNTY_HUNTER` loot bonus that
- * reads `attackLevel()` in `Mob.lootChance()`. The blink action below used to be in the same
- * unmodelled state (it needs a cell picker and a teleport-strike); the picker half is ported
- * now through the scene's `TargetingController`, so the whole aim family lives here.
+ * The `Talent.BOUNTY_HUNTER` loot bonus that reads `attackLevel()` in `Mob.lootChance()`
+ * is ported, not here but at its call sites (checked against `Mob.java` 929-947 and `Char.java`
+ * 404-412, tag `v3.3.8`): `bountyHunterDropBonus` (`talentEffects.ts`) is Java's own
+ * `0.02 * 2^(attackLevel-1) * points`, armed when a prepared hero attack lands with the talent
+ * (`combatResolution.ts`, mirroring the zero-duration `BountyHunterTracker` affect) and added
+ * into the drop-chance multiplier beside Ring of Wealth (`bossLogic.ts`).
+ * The blink action below used to be in the same unmodelled state (it needs a cell picker and
+ * a teleport-strike); the picker half is ported now through the scene's `TargetingController`,
+ * so the whole aim family lives here.
+ *
+ * Recorded gap, not faked: Java persists `turnsInvis` (`storeInBundle`/`restoreFromBundle`),
+ * while this port's `prepInvisibleTurns` counter is scene state that resets on load - a
+ * reloaded invisible hero restarts at level 1 and re-accumulates, instead of resuming.
  */
 
 /** `AttackLevel`: the turns of invisibility each level needs, its damage bonus, and how many
@@ -183,7 +192,11 @@ export function usePreparationBlink(context: PreparationBlinkContext): void {
 }
 
 /** Java's `no_target` half of the picker: a visible hostile that is not the hero, an NPC, or
- * something the hero is charmed by. */
+ * something the hero is charmed by. One clause is recorded, not reproduced: Java refuses the
+ * specific charmer (`Dungeon.hero.isCharmedBy(enemy)`), but this port's `charm` buff carries no
+ * source, so there is nothing to test the target against - refusing every target while charmed
+ * would over-block (Java still lets a charmed hero blink at anyone else), and allowing the
+ * charmer is the narrower deviation. */
 export function blinkTarget(context: PreparationBlinkContext, cell: Step): Creature | null {
 	const creature = context.creatureAt(cell.x, cell.y);
 	if (!creature || creature.isHero || creature.isNPC || creature.isAlly) return null;

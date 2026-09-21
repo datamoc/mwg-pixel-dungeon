@@ -882,10 +882,10 @@ beyond levelgen, and loot/quest/boss-transition/save-load comparison.
       no-tick skip), and the pure-number helpers. Turn timing: searching cost a 1-turn
       spend against Java's `TIME_TO_SEARCH = 2f` - fixed in `TURN_COSTS` with cost pins
       in `tools/verifyHeroActions.mjs`, and the headless harness now ticks hunger
-      per turn (a lone search runs 296 to 298). Stated residual: the live game still
-      hungers once per hero action - the scene binding drops `spendTurn`'s cost and
-      `finishHeroTurn` runs every effect once per action (peer-owned turn-loop file;
-      one-line fix proposed over ACP). See `PORT_COVERAGE.md`'s combat-rolls row.
+      per turn (a lone search runs 296 to 298). Closed 2026-09-21 by the turn-loop
+      owner, who threaded the cost end to end (`finishHeroTurn(effects, turnCost)`,
+      per-tick scene loops, forwarding pinned in `verifyHeroTurn`) - see
+      `PORT_COVERAGE.md`'s combat-rolls row for the full per-tick inventory.
 - [ ] Verify loot, quest outcomes, boss transitions, and save/load state. **Complexity: L.**
 - [ ] Add screenshot and animation-timing comparisons for visual parity. **Complexity: M.**
 - [ ] Classify every remaining difference as either an implemented Java behavior or an explicitly
