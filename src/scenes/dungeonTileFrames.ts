@@ -18,12 +18,18 @@ export function terrainFrameAt(context: DungeonTileFrameContext, x: number, y: n
 	if (kind === WATER) return -1;
 	const cell = x + y * context.width;
 	const raw = context.visualTerrainAt(x, y);
+	//`DungeonTileSheet` exit visuals (tag `v2.1.4`, which this sheet follows -
+	//`FLAT_WALLS` is `xy(1, 5)` = 64 there, so UNLOCKED_EXIT is 64+12 = 76 and
+	//LOCKED_EXIT is 64+13 = 77; v3.3.8 moved both rows, these numbers are not it).
 	if (raw === 21) return 77;
-	if (raw === 22) return 78;
+	if (raw === 22) return 76;
 	const variance = context.tileVariance[cell] ?? 0;
+	//`commonAltVisuals`/`rareAltVisuals` (tag `v2.1.4`): FLOOR 0 -> 6 (rare 12),
+	//FLOOR_DECO 1 -> 7, GRASS 2 -> 8, EMBERS 3 -> 9, FLOOR_SP 4 -> 10,
+	//RAISED_HIGH_GRASS 149 -> 153, RAISED_FURROWED_GRASS 150 -> 154.
 	const alternate = (frame: number): number => {
 		if (frame === 0 && variance >= 95) return 12;
-		const common: Record<number, number> = { 0: 6, 1: 7, 2: 8, 3: 9, 4: 10, 149: 153 };
+		const common: Record<number, number> = { 0: 6, 1: 7, 2: 8, 3: 9, 4: 10, 149: 153, 150: 154 };
 		return variance >= 50 ? common[frame] ?? frame : frame;
 	};
 	const wall = raisedWallFrame(context.visualTerrainAt, x, y, variance);
@@ -31,6 +37,10 @@ export function terrainFrameAt(context: DungeonTileFrameContext, x: number, y: n
 	if (kind === HIGH_GRASS) return alternate(149);
 	if (kind === GRASS) return alternate(2);
 	const rawTerrain = context.rawTerrainAt(x, y);
+	//Trampled grass keeps the coarse `highGrass` kind (see `gameBridge.ts`), so it
+	//reaches here past the branch above: `DungeonTerrainTilemap` (tag `v2.1.4`)
+	//draws it as RAISED_FURROWED_GRASS with alts, not as plain floor.
+	if (rawTerrain === Terrain.FURROWED_GRASS) return alternate(150);
 	if (rawTerrain !== undefined) {
 		const direct: Record<number, number> = { 3: 19, 7: 16, 8: 17, 9: 3, 11: 20, 14: 4, 20: 1, 21: 77, 24: 18 };
 		if (direct[rawTerrain] !== undefined) return alternate(direct[rawTerrain]);
@@ -48,7 +58,13 @@ export function terrainFrameAt(context: DungeonTileFrameContext, x: number, y: n
 }
 
 export function waterFrames(context: DungeonTileFrameContext): number[] {
-	const dry = new Set<number>([1, 2, 3, 7, 8, 9, 13, 15, 17, 18, 19, 20, 23, 24, 25, 28, 5, 6, 10, 31]);
+	//`DungeonTileSheet.waterStitcheable` (tag `v2.1.4`, which this sheet follows):
+	//EMPTY 1, GRASS 2, EMPTY_WELL 3, ENTRANCE 7, EXIT 8, EMBERS 9, BARRICADE 13,
+	//HIGH_GRASS 15, FURROWED_GRASS 30, SECRET_TRAP 17, TRAP 18, INACTIVE_TRAP 19,
+	//EMPTY_DECO 20, SIGN 23, WELL 24, STATUE 25, ALCHEMY 28, DOOR 5, OPEN_DOOR 6,
+	//LOCKED_DOOR 10, CRYSTAL_DOOR 31. A water cell next to trampled grass missed
+	//its shoreline bit before 30 joined this set.
+	const dry = new Set<number>([1, 2, 3, 7, 8, 9, 13, 15, 17, 18, 19, 20, 23, 24, 25, 28, 30, 5, 6, 10, 31]);
 	const frames: number[] = [];
 	for (let y = 0; y < context.height; y++) for (let x = 0; x < context.width; x++) {
 		if (context.terrainAt(x, y) !== WATER) { frames.push(-1); continue; }

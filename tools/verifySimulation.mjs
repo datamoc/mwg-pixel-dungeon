@@ -18,8 +18,10 @@ import { verifyRings } from './verifyRings.mjs';
 import { verifyPrismatic } from './verifyPrismatic.mjs';
 import { verifyBrews } from './verifyBrews.mjs';
 import { verifySmoke } from './verifySmoke.mjs';
+import { verifyDoors } from './verifyDoors.mjs';
 import { verifyShakes } from './verifyShakes.mjs';
 import { verifyParticles } from './verifyParticles.mjs';
+import { verifyProjectiles } from './verifyProjectiles.mjs';
 import { readSceneSource } from './sceneSource.mjs';
 
 // Compile the actual implementation into a private temporary CommonJS tree. Type-only
@@ -45,7 +47,7 @@ try {
 	for (const file of ['simulation/movement', 'simulation/heroTurn', 'simulation/hunger', 'simulation/turns', 'adapters/sceneSimulation',
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/mwlMonsterStateStats', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
-	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/mageAbilities', 'simulation/rogueAbilities', 'simulation/ratmogrify', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'mechanics/cone', 'dungeonConstants',
+	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/mageAbilities', 'simulation/rogueAbilities', 'simulation/ratmogrify', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'items/missiles', 'mechanics/cone', 'dungeonConstants',
 	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/sentryTurn', 'simulation/brews', 'simulation/smoke', 'simulation/deathBursts', 'ui/buffOverlays',
 	// `actors/monsterSpawn` (plus its `monsters`/`challenges`/i18n chain) for the spawn-profile
 	// checks: the chaos-elemental roll, the rare-alt table, and the unported-mob absences.
@@ -253,12 +255,13 @@ check('the moved hero plant-effect switch fires every branch', () => {
 		const rec = {
 			said: [], grants: [], prolongs: [], foods: [], loots: [],
 			freezes: [], gases: [], fires: [], hazards: [], shakes: [],
-			armor: null, bubble: null, cured: false, synced: false,
+			armor: null, barkskin: null, bubble: null, cured: false, synced: false,
 			healLeft: 0, healFlat: 0, sungrass: null, moved: null,
-			travelCancelled: false, teleports: [],
+			travelCancelled: false, returned: false, teleports: [],
 		};
 		const ctx = {
 			subclass: () => subclass,
+			level: 12,
 			depth: 12,
 			say: (line, level) => { rec.said.push({ line, level }); },
 			t: (key) => key,
@@ -276,6 +279,7 @@ check('the moved hero plant-effect switch fires every branch', () => {
 			isVisible: () => true,
 			shake: (intensity, duration) => { rec.shakes.push([intensity, duration]); },
 			setEarthrootArmor: (level, pos) => { rec.armor = [level, pos]; },
+			setBarkskin: (level, interval) => { rec.barkskin = [level, interval]; },
 			setTimeBubble: (turns) => { rec.bubble = turns; },
 			syncHero: () => { rec.synced = true; },
 			healingLeft: () => rec.healLeft,
@@ -286,6 +290,7 @@ check('the moved hero plant-effect switch fires every branch', () => {
 			setSungrass: (level, partial, pos) => { rec.sungrass = [level, partial, pos]; },
 			findTeleportCell: () => ({ x: 9, y: 9 }),
 			cancelTravel: () => { rec.travelCancelled = true; },
+			returnToPreviousFloor: () => { rec.returned = true; return true; },
 			moveHero: (to) => { rec.moved = [to.x, to.y]; hero.x = to.x; hero.y = to.y; },
 			showTeleport: (from, to) => { rec.teleports.push([[from.x, from.y], [to.x, to.y]]); },
 			...ctxOverrides,
@@ -321,6 +326,9 @@ check('the moved hero plant-effect switch fires every branch', () => {
 	r = drive('earthroot');
 	assert.deepEqual(r.rec.armor, [20, 7]);
 	assert.deepEqual(r.rec.shakes, [[1, 0.4]]);
+	r = drive('earthroot', {}, 'warden');
+	assert.deepEqual(r.rec.barkskin, [17, 5]);
+	assert.equal(r.rec.armor, null);
 	r = drive('earthroot', { isVisible: () => false });
 	assert.deepEqual(r.rec.shakes, []);
 	//Blindweed: a Warden turns invisible, everyone else is dazed and crippled.
@@ -337,6 +345,10 @@ check('the moved hero plant-effect switch fires every branch', () => {
 	assert.deepEqual(r.rec.moved, [9, 9]);
 	assert.equal(r.rec.travelCancelled, true);
 	assert.deepEqual(r.rec.teleports, [[[1, 2], [9, 9]]]);
+	r = drive('fadeleaf', { heroBuffs: { roots: 1 } }, 'warden');
+	assert.equal(r.rec.returned, true);
+	assert.equal(r.rec.moved, null);
+	assert.deepEqual(r.rec.teleports, []);
 	r = drive('fadeleaf', { heroBuffs: { roots: 1 }, findTeleportCell: () => null });
 	assert.equal(r.hero.buffs.roots, undefined, 'roots detach even with nowhere to go');
 	assert.equal(r.rec.moved, null);
@@ -1300,12 +1312,33 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.ok(scene.includes('if (this.web.volumeAt(cell.x, cell.y) > 0) continue;'),
 			'burnt-out webbed cells skip the ember pass');
 	});
+	check('tile frames stitch furrowed grass and exits like v2.1.4 Java', () => {
+		//Art and frame code both follow v2.1.4's DungeonTileSheet layout (checked
+		//pixel-for-pixel and constant-for-constant against the v2.1.4 tag - the
+		//v3.3.8 sheet moved every wall/water row, so v3.3.8 numbers would draw
+		//the wrong art here). Three v2.1.4 facts this pins:
+		//- `waterStitcheable` includes FURROWED_GRASS (Terrain id 30);
+		//- FURROWED_GRASS draws RAISED_FURROWED_GRASS (150, alt 154), not floor;
+		//- UNLOCKED_EXIT draws FLAT_WALLS+12 (76), not 78.
+		const frames = readFileSync(new URL('../src/scenes/dungeonTileFrames.ts', import.meta.url), 'utf8');
+		const dry = /const dry = new Set<number>\(\[([^\]]+)\]\)/.exec(frames);
+		assert.ok(dry, 'waterFrames carries a literal dry set');
+		const ids = dry[1].split(',').map((s) => Number(s.trim())).sort((a, b) => a - b);
+		assert.deepEqual(ids, [1, 2, 3, 5, 6, 7, 8, 9, 10, 13, 15, 17, 18, 19, 20, 23, 24, 25, 28, 30, 31]);
+		assert.ok(/Terrain\.FURROWED_GRASS\) return alternate\(150\)/.test(frames),
+			'furrowed grass renders its own raised frame');
+		assert.ok(frames.includes('150: 154'), 'furrowed alt variant registered');
+		assert.ok(/raw === 22\) return 76/.test(frames), 'unlocked exit draws frame 76');
+		assert.ok(!/raw === 22\) return 78/.test(frames), 'unlocked exit no longer draws frame 78');
+	});
 	verifyRings(require, check);
 	verifyPrismatic(require, check);
 	verifyBrews(require, check);
 	verifySmoke(require, check);
+	verifyDoors(require, check);
 	verifyShakes(require, check);
 	verifyParticles(require, check);
+	verifyProjectiles(require, check);
 	console.log(`${passed} simulation checks passed.`);
 } finally {
 	// Only the fresh directory returned by mkdtempSync above is removed.
