@@ -119,7 +119,7 @@ const { teleportCandidates, disarmBubblePresses } = require('./simulation/telepo
 const { teleportAppearPlan } = require('./simulation/teleportAppear');
 const { selectRangedTarget, findEnemyAlly, pursueTarget } = require('./simulation/targeting');
 	const { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } = require('./simulation/timeBubble');
-	const { wanderBlocked, isPatrolTargetValid, randomPatrolDestination } = require('./simulation/wandering');
+	const { CIRCLE8_OFFSETS, wanderBlocked, isPatrolTargetValid, randomPatrolDestination } = require('./simulation/wandering');
 	const { skeletonBoneExplosionDamage } = require('./simulation/skeletonExplosion');
 	const { applyEnvironmentalBlobs, spreadSacrificialFire, sacrificeCost, processSacrifice } = require('./simulation/environmentalBlobs');
 	check('Skeleton bone explosion subtracts two defender rolls and clamps at zero', () => {
@@ -1522,6 +1522,20 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		const scene = readSceneSource();
 		assert.ok(scene.includes("creature.kind === 'piranha' || creature.kind === 'phantomPiranha'"),
 			'every piranha death counts');
+	});
+	check('Pylon shock cursor follows CIRCLE8 from a random start', () => {
+		//`Pylon.act()` (tag `v3.3.8`): `PathFinder.CIRCLE8` runs clockwise from
+		//north-west, and `targetNeighbor` starts at `Random.Int(8)`.
+		assert.deepEqual(CIRCLE8_OFFSETS, [
+			[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0],
+		]);
+		const scene = readSceneSource();
+		assert.ok(scene.includes('const offsets = CIRCLE8_OFFSETS'),
+			'the pylon shock cursor reads CIRCLE8 order, not the north-first order');
+		//monsterSpawn.ts lives outside the dungeon method groups readSceneSource covers.
+		const spawnSource = readFileSync(new URL('../src/scenes/monsterSpawn.ts', import.meta.url), 'utf8');
+		assert.ok(spawnSource.includes("pylonTargetNeighbor: kind === 'pylon' ? Random.int(0, 8) : undefined"),
+			'the pylon cursor starts at a random 0-7 like Java Random.Int(8)');
 	});
 	check('Piranhas remain confined to water in both wandering helpers', () => {
 		const water = 7;

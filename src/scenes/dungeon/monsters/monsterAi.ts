@@ -25,7 +25,7 @@ import { isChallengeEnabled } from '../../../challenges';
 import { mobOnHit } from '../../mobOnHit';
 import { type BossUnsealContext } from '../../bossUnseal';
 import { aggressionTarget as aggressionTargetFlow, amokTarget as amokTargetFlow, beeTarget as beeTargetFlow, pursueTarget as pursueTargetFlow, selectRangedTarget } from '../../../simulation/targeting';
-import { fleeStep as fleeStepFlow, isPatrolTargetValid as isPatrolTargetValidFlow, wanderBlocked as wanderBlockedFlow, type FleeStepContext, type SummonCellContext, type WanderingContext } from '../../../simulation/wandering';
+import { CIRCLE8_OFFSETS, fleeStep as fleeStepFlow, isPatrolTargetValid as isPatrolTargetValidFlow, wanderBlocked as wanderBlockedFlow, type FleeStepContext, type SummonCellContext, type WanderingContext } from '../../../simulation/wandering';
 import { canRipperLeap, chooseRipperBounceEnd, predictRipperLeapTarget, ripperLeapCooldown } from '../../../simulation/ripperLeap';
 import { chooseSuccubusBlinkCell, shouldSuccubusBlink, succubusBlinkCooldown } from '../../../simulation/succubusBlink';
 import { DOOR, DOOR_CLOSED, FLOOR, GAME_KIND_CODES, SOLID, TILE, WALL, WATER } from '../../../dungeonConstants';
@@ -302,11 +302,13 @@ export const monsterAiMethods = {
 
 	/** `Pylon.act()`/`Pylon.activate()` (tag `v3.3.8`): inactive pylons are neutral, immovable
 	 * and do not attack. Once the DM-300 gate activates them, each pylon shocks the next neighbour
-	 * in its clockwise cursor, with three extra targets under the stronger-bosses challenge. */
+	 * in its clockwise cursor, with three extra targets under the stronger-bosses challenge.
+	 * The cursor reads `CIRCLE8` order (not the framework's north-first order) and starts at
+	 * Java's `Random.Int(8)` (set at spawn; the `?? 0` below only covers older saves). */
 	takePylonTurn(this: DungeonScene, monster: Creature): void {
 		if (!monster.pylonActive) return;
 		const cursor = monster.pylonTargetNeighbor ?? 0;
-		const offsets = Roguelike.neighbourOffsets(8);
+		const offsets = CIRCLE8_OFFSETS;
 		const indices = isChallengeEnabled('stronger_bosses')
 			? [cursor, (cursor + 3) % 8, (cursor + 5) % 8]
 			: [cursor, (cursor + 4) % 8];

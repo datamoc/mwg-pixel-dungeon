@@ -1,5 +1,14 @@
 import type { Creature, Step } from '../combat';
 
+/** `PathFinder.CIRCLE8` as `(dx, dy)` pairs (`watabou.utils.PathFinder`, tag
+ * `v3.3.8`): `{-w-1, -w, -w+1, +1, +w+1, +w, +w-1, -1}`, i.e. clockwise from
+ * north-west. The framework's own 8-neighbour order starts north instead, so
+ * seams indexed by a Java cursor (the Pylon's shock rotation) read this table -
+ * game-specific index tables stay out of `mwg`, per the licensing boundary. */
+export const CIRCLE8_OFFSETS: ReadonlyArray<readonly [number, number]> = [
+	[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0],
+];
+
 export interface WanderingContext {
 	width: number;
 	height: number;
