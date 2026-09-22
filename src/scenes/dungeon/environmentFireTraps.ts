@@ -1072,7 +1072,9 @@ export const environmentFireTrapsMethods = {
 			//double chill steps, mutual annihilation (plus `Freezing`/`plantFreeze`), and
 			//inferno's flamable-terrain destruction with adjacent `Fire` 4 seeding.
 			reigniteBurning: (target) => reigniteBuff(target, 'burning'),
-			applyChill: (target) => { target.buffs = applyChillFreeze(target.buffs).buffs; },
+			//NPCs refuse every buff (`add()` returns false, tag `v3.3.8`) - chill writes
+			//straight onto the buff map, bypassing `buffBlocked`, so the gate lives here.
+			applyChill: (target) => { if (!target.isNPC) target.buffs = applyChillFreeze(target.buffs).buffs; },
 			clearCell: (blob, x, y) => (this[blob] as Blob).clear(x, y),
 			clearFireCell: (x, y) => this.fire.clear(x, y),
 			fireAmountAt: (x, y) => this.fire.volumeAt(x, y),
@@ -1082,6 +1084,9 @@ export const environmentFireTrapsMethods = {
 			applyCorrosion: (target, strength) => {
 				//Same `BlobImmunity` decoy cover as `isToxicImmune` just above.
 				if (target.allyKind === 'afterImage') return;
+				//NPCs refuse every buff (`add()` returns false, tag `v3.3.8`) - corrosion
+				//writes straight onto the creature fields, bypassing `buffBlocked`.
+				if (target.isNPC) return;
 				//`PrismaticImage` is immune to `CorrosiveGas` (tag `v3.3.8`).
 				if (target.allyKind === 'prismatic') return;
 				//`MirrorImage` is immune to `CorrosiveGas` (same source).
@@ -1143,6 +1148,13 @@ export const environmentFireTrapsMethods = {
 				if (target.allyKind === 'sheep') return true;
 				//`SentryRoom$Sentry.damage()` (tag `v3.3.8`) is likewise a no-op.
 				if (target.kind === 'sentry') return true;
+				//Every NPC's `damage(int, Object)` is a no-op - "do nothing" (tag
+				//`v3.3.8`): `RatKing`, `Shopkeeper`, `Ghost`, `Wandmaker`,
+				//`Blacksmith` and `Imp` (plus the `ImpShopkeeper` subclass, which
+				//inherits `Shopkeeper`'s). No blob seam - toxic gas, electricity,
+				//or anything else routed here - can damage an NPC, the same shape
+				//as the sheep/sentry gates just above.
+				if (target.isNPC) return true;
 				//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`) halves Electricity on shock elementals.
 				if (cause === 'electricity' && !target.isHero && target.kind === 'elemental'
 					&& (target.elementalType ?? 'fire') === 'shock') damage = Math.round(damage / 2);

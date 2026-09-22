@@ -292,6 +292,30 @@ export function verifyCombat(require, check) {
 		facade.setBleeding(cleansed, 9);
 		assert.equal(cleansed.buffs.bleeding, 9, 'bleeding lands once immunity lapses');
 	});
+	check('NPCs refuse every buff and take no blob damage, like Java\'s damage()/add() no-ops', () => {
+		//`RatKing`/`Shopkeeper`/`Ghost`/`Wandmaker`/`Blacksmith`/`Imp.damage()` does
+		//nothing and `add()` returns false (tag `v3.3.8`; `ImpShopkeeper` inherits
+		//both from `Shopkeeper`). The port's MWL `npc` actor set carries all seven
+		//ids through the one `isNPC` bit.
+		const npc = base({ isNPC: true });
+		for (const id of ['poison', 'burning', 'paralysis', 'roots', 'chill', 'daze', 'bless', 'haste']) {
+			facade.addBuff(npc, id);
+			assert.equal(npc.buffs[id], undefined, `an NPC must refuse ${id}`);
+		}
+		facade.reigniteBuff(npc, 'burning');
+		assert.equal(npc.buffs.burning, undefined, 'an NPC must refuse reignite too');
+		facade.setBleeding(npc, 9);
+		assert.equal(npc.buffs.bleeding, undefined, 'an NPC must refuse setBleeding too');
+		const mob = base({ isNPC: false });
+		facade.addBuff(mob, 'poison');
+		assert.notEqual(mob.buffs.poison, undefined, 'a non-NPC must still take buffs');
+		assert.ok(trapSource.includes('if (target.isNPC) return true;'),
+			'the blob applyDamage seam must skip NPCs like the sheep/sentry gates');
+		assert.ok(trapSource.includes('if (!target.isNPC) target.buffs = applyChillFreeze'),
+			'the blob chill writer bypasses buffBlocked, so it needs its own NPC gate');
+		assert.ok(trapSource.includes('if (target.isNPC) return;'),
+			'the blob corrosion writer bypasses buffBlocked, so it needs its own NPC gate');
+	});
 	check('setBleeding tracks source only alongside a winning (higher) level, like Bleeding.set()', () => {
 		const bleeder = base();
 		facade.setBleeding(bleeder, 5, 'chasm');

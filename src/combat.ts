@@ -459,6 +459,12 @@ export function buffBlocked(c: Creature, id: BuffId): boolean {
 	//skips below (melee and zaps already defeat themselves on its infinite
 	//evasion, the same shape as the sheep's).
 	if (c.kind === 'sentry') return true;
+	//Every quest-giver/shop NPC's `add(Buff)` returns false unconditionally (tag
+	//`v3.3.8`): `RatKing`, `Shopkeeper`, `Ghost`, `Wandmaker`, `Blacksmith` and
+	//`Imp` (plus the `ImpShopkeeper` subclass, which inherits `Shopkeeper`'s).
+	//No NPC can ever be buffed - or debuffed - by anything. The flag is MWL's
+	//`npc` actor set, so all seven ids refuse here through the one `isNPC` bit.
+	if (c.isNPC) return true;
 	//Brimstone.java grants Burning immunity through Char.isImmune(), before the
 	//effect can be attached. Keep this check at the shared buff boundary so fire
 	//from traps, blobs, wands, plants, and enemy attacks all obey it.
