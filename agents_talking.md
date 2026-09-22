@@ -844,6 +844,18 @@ codex-01 wired the meal-talent flag live (#184, suite 266 green). Corrected my e
 
 **Verified exact, no slice:** ratKingBoss.ts (misnomer: models DwarfKing.java P1/P3 rotation + P2 waves) matches Java line-for-line - P1 %4/%3/%9 rotation, all six wave batches with yell gates, cadences (3 vs 1), made=12 jump, and both De Morgan exhaustion gates. random.int(0,2) 50/50 matches Int(2). Existing coverage row already marks it Ported/audited; this is independent corroboration. The ratKing* naming for Dwarf King mechanics is confusing but a rename would churn the dirty caller - leaving it.
 
+## 2026-09-22 — opencode-01 (ACP open-findings batch: #399/#388/#393/#401 + #390, via ACP_client)
+
+**Coordination:** heartbeated, claimed only `consumables.ts` (#399, released after), avoided codex-01's live Trinity claim (5 scene files) throughout. Posted taking-note #407, completion #425, SoU handoff #426. The tipped-dart work touched `inventoryQuickslot.ts`/`dungeonScene.ts` with no conflicting live claim (checked `locks` first).
+
+**Done, all verified against tag `v3.3.8` Java before touching:** #399 MysteryMeat `int(0,4)`→`int(0,5)` (case 3 slow-unmodeled + case 4 Java no-op share nothing; `consumables.ts`, items pin, coverage). #388 Purity quaff now prolongs `blobImmunity` 20 keep-max with SPD's `protected` line (poison/burning deletion removed as shatter-misattribution; table 10 kept for the Warden half-duration; `port.log.purity` orphaned but kept for locale key-set parity; `potionEffects.ts`, items pins incl. a `doesNotMatch`, coverage). #390-minor frost fire-clear gated to Chebyshev 1 (same files + pin). #393 `phantomMeat` 600→450 + new `blandfruit` 450 MWL rows (`item-rules.mwl`, recompiled `mwlContent.ts`, items pin, coverage; HT/4 heal rides `mealHeal`, untouched). #401 F1 (Cleansing ally-negatives+Cleanse-10 vs enemy positive-strip - the audit's "5" is the potion path's undoubled value, the dart passes `DURATION*2f`) + F2 (Adrenaline 10 / cripple 5) + F3 all seven numbers (holy bless-30 + flat smite, shocking damage-no-status, rot boss-split, poison pool→clock, chilling water/dry, paralysis 5, healing cure+pool with hero max-replace) in `applyTippedDartEffect`, plus items pins and a new coverage row. The dart corrections pushed `inventoryQuickslot.ts` 61 lines over its file budget, so the method moved verbatim to a new `tippedDartEffects.ts` group (the `cursedWandCast` precedent) wired through `dungeonScene.ts` - `check` green again.
+
+**Verified:** `tsc` 0, `check` green, `test:items` green, `test:simulation` 271 green, `build` green. Browser NOT done (no bridge this session).
+
+**NOT taken:** SoU stuck-curse (#365-F1) - needs a persisted stuck bit whose fields/save-load live in codex-01's claimed files; full Java-cited plan posted as #426 instead of a half-build without persistence. Stale requests #6-#9 left for their requesters.
+
+**Committed by the user as 77c39ed** (all eight files, peers untouched - the selective surgery proved unnecessary).
+
 ## 2026-09-22 — opencode-01 (ACP #367 Grim/Lucky slice, via ACP_client)
 
 **Coordination:** `whoami` as `opencode-01`, heartbeated, read inbox + locks (no active claims), claimed `combatResolution.ts grim-vs-boss/statue gate + lucky loot pool`, posted taking-note #385, released after landing (#395). No peer overlap on the claimed scope.
