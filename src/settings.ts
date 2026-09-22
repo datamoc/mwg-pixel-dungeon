@@ -47,6 +47,28 @@ export const SCREEN_SHAKE_KEY = 'screen_shake';
 export const MUSIC_BG_KEY = 'music_bg';
 /** `SPDSettings.KEY_VIBRATION` - long-press haptics, default on (model-only: no seam). */
 export const VIBRATION_KEY = 'vibration';
+/** `SPDSettings.KEY_FULLSCREEN` - fullscreen, default on (hides mobile navbars; here the Fullscreen API). */
+export const FULLSCREEN_KEY = 'fullscreen';
+/** `SPDSettings.KEY_UI_SIZE` (`full_ui`) - 0 mobile, 1 mixed, 2 large. Desktop default 2. */
+export const UI_MODE_KEY = 'full_ui';
+/** `SPDSettings.KEY_SCALE` - interface scale step. Java's range is screen-derived; see below. */
+export const UI_SCALE_KEY = 'scale';
+/** `SPDSettings.KEY_FLIPTAGS` - boss HP / buff indicators below instead of above, default off. */
+export const FLIP_TAGS_KEY = 'flip_tags';
+/** `SPDSettings.KEY_SYSTEMFONT` - system font instead of the pixel font, default off (see below). */
+export const SYSTEM_FONT_KEY = 'system_font';
+/** `SPDSettings.KEY_NEWS` - check the news feed, default on (no feed seam: persistence only). */
+export const NEWS_KEY = 'news';
+/** `SPDSettings.KEY_UPDATES` - check for updates, default on (no updater: persistence only). */
+export const UPDATES_KEY = 'updates';
+/** `SPDSettings.KEY_BETAS` - include beta updates, default off (see below). */
+export const BETAS_KEY = 'betas';
+/** `SPDSettings.KEY_WIFI` - only check on wifi, default on (no checker: persistence only). */
+export const WIFI_KEY = 'wifi';
+/** `SPDSettings.KEY_CONTROLLER_SENS` - controller pointer sensitivity 1-10, default 5. */
+export const CONT_SENS_KEY = 'controller_sens';
+/** `SPDSettings.KEY_MOVE_SENS` - hold-to-move sensitivity 0-4, default 3. */
+export const MOVE_SENS_KEY = 'move_sens';
 
 /** The port's `new Camera({ zoom: 3 })` base - Java's `defaultZoom` is screen-derived,
  * this port's is one fixed value, so the offset gate below is fixed too. */
@@ -277,4 +299,123 @@ export function vibration(): boolean {
 
 export function setVibration(enabled: boolean): void {
 	settingsStore().setItem(VIBRATION_KEY, enabled ? 'true' : 'false');
+}
+
+/** `SPDSettings.fullscreen()` - default on. Applied through the Fullscreen API by the UI layer. */
+export function isFullscreen(): boolean {
+	return settingsStore().getItem(FULLSCREEN_KEY) !== 'false';
+}
+
+export function setFullscreen(enabled: boolean): void {
+	settingsStore().setItem(FULLSCREEN_KEY, enabled ? 'true' : 'false');
+}
+
+/** `SPDSettings.interfaceSize()` - 0 mobile, 1 mixed, 2 large, desktop default 2.
+// No interface-mode seam exists (the small/large toggle is per-run scene state), so
+// persistence only for now. */
+export function uiMode(): number {
+	return gateInt(settingsStore().getItem(UI_MODE_KEY), 2, 0, 2);
+}
+
+export function setUiMode(value: number): void {
+	settingsStore().setItem(UI_MODE_KEY, String(gateInt(String(value), 2, 0, 2)));
+}
+
+/** `SPDSettings.scale()` - interface scale step. Java's slider range is screen-derived
+ * (`ceil(2*density)`..`maxDefaultZoom`); with no UI-scale seam the port gates a fixed
+ * 1..4 instead, default 2. Persistence only for now. */
+export function uiScale(): number {
+	return gateInt(settingsStore().getItem(UI_SCALE_KEY), 2, 1, 4);
+}
+
+export function setUiScale(value: number): void {
+	settingsStore().setItem(UI_SCALE_KEY, String(gateInt(String(value), 2, 1, 4)));
+}
+
+/** `SPDSettings.flipTags()` - default off. No tag-layout seam exists, persistence only. */
+export function flipTags(): boolean {
+	return settingsStore().getItem(FLIP_TAGS_KEY) === 'true';
+}
+
+export function setFlipTags(enabled: boolean): void {
+	settingsStore().setItem(FLIP_TAGS_KEY, enabled ? 'true' : 'false');
+}
+
+/** `SPDSettings.systemFont()` - default off. Java defaults on for CJK locales (its pixel
+ * font lacks those glyphs); this port's font stack already covers CJK through system
+ * fallbacks, and this module takes no i18n dependency, so the default is a constant.
+ * No font-swap seam exists, persistence only. */
+export function systemFont(): boolean {
+	return settingsStore().getItem(SYSTEM_FONT_KEY) === 'true';
+}
+
+export function setSystemFont(enabled: boolean): void {
+	settingsStore().setItem(SYSTEM_FONT_KEY, enabled ? 'true' : 'false');
+}
+
+function persistedFlag(key: string, def: boolean): boolean {
+	const raw = settingsStore().getItem(key);
+	if (raw === null) return def;
+	return raw !== 'false';
+}
+
+function setPersistedFlag(key: string, enabled: boolean): void {
+	settingsStore().setItem(key, enabled ? 'true' : 'false');
+}
+
+/** `SPDSettings.news()` - default on. No news feed exists, persistence only. */
+export function newsEnabled(): boolean {
+	return persistedFlag(NEWS_KEY, true);
+}
+
+export function setNewsEnabled(enabled: boolean): void {
+	setPersistedFlag(NEWS_KEY, enabled);
+}
+
+/** `SPDSettings.updates()` - default on. No updater exists, persistence only. */
+export function updatesEnabled(): boolean {
+	return persistedFlag(UPDATES_KEY, true);
+}
+
+export function setUpdatesEnabled(enabled: boolean): void {
+	setPersistedFlag(UPDATES_KEY, enabled);
+}
+
+/** `SPDSettings.betas()` - Java defaults on for BETA/RC builds; this port's version never
+ * is, so the default is a constant off. No updater exists, persistence only. */
+export function betasEnabled(): boolean {
+	return persistedFlag(BETAS_KEY, false);
+}
+
+export function setBetasEnabled(enabled: boolean): void {
+	setPersistedFlag(BETAS_KEY, enabled);
+}
+
+/** `SPDSettings.WiFi()` - default on. No connectivity checker exists, persistence only. */
+export function wifiOnly(): boolean {
+	return persistedFlag(WIFI_KEY, true);
+}
+
+export function setWifiOnly(enabled: boolean): void {
+	setPersistedFlag(WIFI_KEY, enabled);
+}
+
+/** `SPDSettings.controllerPointerSensitivity()` - default 5, gated 1..10. No controller
+ * seam exists, persistence only. */
+export function controllerSensitivity(): number {
+	return gateInt(settingsStore().getItem(CONT_SENS_KEY), 5, 1, 10);
+}
+
+export function setControllerSensitivity(value: number): void {
+	settingsStore().setItem(CONT_SENS_KEY, String(gateInt(String(value), 5, 1, 10)));
+}
+
+/** `SPDSettings.movementHoldSensitivity()` - default 3, gated 0..4. No hold-to-move seam
+ * exists, persistence only. */
+export function movementSensitivity(): number {
+	return gateInt(settingsStore().getItem(MOVE_SENS_KEY), 3, 0, 4);
+}
+
+export function setMovementSensitivity(value: number): void {
+	settingsStore().setItem(MOVE_SENS_KEY, String(gateInt(String(value), 3, 0, 4)));
 }

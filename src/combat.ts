@@ -8,7 +8,7 @@ import type { MultiTurnBeamSave } from 'mwg/roguelike';
 import type { GroundItemKind } from './dungeonConstants';
 import type { Combatant, Step } from './simulation/combatState';
 import type { BuffId } from './simulation/buffs';
-import { monsterBuffImmune } from './simulation/buffs';
+import { NEGATIVE_BUFFS, monsterBuffImmune } from './simulation/buffs';
 import { nextEntityId } from './simulation/entityId';
 import { createCombatAdapter } from './adapters/combatSimulation';
 import { simulationRandom } from './adapters/mwgRandom';
@@ -32,6 +32,10 @@ export interface Creature extends Combatant {
 	fireImmune?: boolean;
 	/** Derived from AntiMagic; blocks the ported magical status applications. */
 	magicImmune?: boolean;
+	/** `Bleeding.source` (`Bleeding.java`, tag `v3.3.8`): which producer set the currently-active
+	 * bleed, used only for death-consequence branching (see `setBleeding`). Follows the same
+	 * max-wins overwrite as the level itself. */
+	bleedSource?: 'chasm' | 'sacrificial' | 'harvestBleed';
 	/** Java Mob.target: persistent random destination while the mob is wandering. */
 	patrolTarget?: { x: number; y: number };
 	/**
@@ -60,6 +64,20 @@ export interface Creature extends Combatant {
 	/** `Challenge.DuelParticipant.takenDmg`: the hero's own accumulated duel damage,
 	 * feeding `INVIGORATING_VICTORY`. Lives on the hero; reset when the duel ends. */
 	duelTakenDmg?: number;
+	/**
+	 * `ShieldOfLight.ShieldOfLightTracker.object` (`actors/hero/spells/ShieldOfLight.java`,
+	 * tag `v3.3.8`): the enemy id the hero's light-shield answers to. Java keeps it on
+	 * the buff; this port's buff map holds durations only, so it lives here with the
+	 * other per-creature payloads. Meaningful only while `buffs['shieldOfLight']` is up.
+	 */
+	shieldOfLightTarget?: string;
+	/**
+	 * `RecallInscription.UsedItemTracker.item` (`actors/hero/spells/RecallInscription.java`,
+	 * tag `v3.3.8`): the re-castable scroll/stone sourceClass. Java keeps it on the
+	 * buff; this port's buff map holds durations only, so it lives here with the
+	 * other per-creature payloads. Meaningful only while `buffs['recallUsed']` is up.
+	 */
+	recallItemClass?: string;
 	deathMarkInitialHp?: number;
 	/**
 	 * `Sungrass.Health` (`plants/Sungrass.java`, tag `v3.3.8`): the gradual-heal pool a
@@ -79,14 +97,28 @@ export interface Creature extends Combatant {
 	 */
 	earthrootArmorLevel?: number;
 	earthrootArmorPos?: number;
+	/** `Barkskin`'s independent armor roll and actor-time decay state. */
+	barkskinLevel?: number;
+	barkskinInterval?: number;
+	barkskinCooldown?: number;
 	/** Viscosity's accumulated deferred damage and its one-turn initial delay. */
 	deferredDamage?: number;
 	deferredDamageDelay?: boolean;
 	/** `Corrosion`'s remaining actor turns and current increasing damage value. */
 	corrosionTurns?: number;
 	corrosionDamage?: number;
-	/** mwg/roguelike's Scheduler.Actor speed; Huntress's gloves are the one exception at 2 */
+	/** mwg/roguelike's Scheduler.Actor speed: 1 for the hero (a weapon's `DLY` rides the attack cost instead) */
 	speed?: number;
+	/** A statue's weapon `DLY` (`Statue.attackDelay()`): the cost multiplier of one of its swings. */
+	attackDelay?: number;
+	/** A statue's weapon `RCH` (`Statue.canAttack()`): how many cells away it can strike. Absent = 1. */
+	reach?: number;
+	/** A statue's weapon enchantment class (`StatueEnchant`) and the weapon's level, read by `statueEnchantProc`. */
+	statueEnchant?: string;
+	statueLevel?: number;
+	/** `Blocking`'s `BlockBuff` on a statue: the shield pool and the turns left before it lapses. */
+	blockShield?: number;
+	blockTurns?: number;
 	/** which MONSTERS entry this is, for its sprite and (for Goo) its special turn logic - absent on the hero */
 	kind?: AnyMonsterId;
 	/** Goo's pump-up counter: 0 idle, 1 first charge turn, 2 primed to unleash next turn - `Goo.java`'s `pumpedUp` field */
@@ -253,6 +285,8 @@ export interface Creature extends Combatant {
 	/** `SentryRoom$Sentry.curChargeDelay`: turns of charge-up left before the beam starts
 	 * firing every visible turn (undefined = idle, reset whenever the hero leaves sight). */
 	sentryWarmup?: number;
+	/** Initial `SentryRoom$Sentry.initialChargeDelay`, supplied by the painted room. */
+	sentryInitialWarmup?: number;
 	/** Pylon.java's neutral/active alignment and clockwise shock cursor. */
 	pylonActive?: boolean;
 	pylonTargetNeighbor?: number;
@@ -343,7 +377,7 @@ export interface GroundItem extends Step {
 	/** A scattered tipped-dart heap's tip seed (`TippedDart` only) - same side channel as the set. */
 	tippedSeed?: string;
 	/** Concrete inventory payload; absent only for legacy scripted/cosmetic drops. */
-	item?: { id: string; quantity: number; level?: number; tier?: number; sandBags?: number; charges?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; instanceId?: string; sourceClass?: string;
+	item?: { id: string; quantity: number; level?: number; tier?: number; sandBags?: number; charges?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; identified?: boolean; instanceId?: string; sourceClass?: string; depth?: number;
 		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean;
 		/** A carried missile stack's own set id (see `src/missiles.ts`) - the legend half of its
 		 * `instanceId`, on the payload because that is what a picked-up heap carries into the bag. */
@@ -408,9 +442,11 @@ const FIRE_IMMUNITY_BUFFS = new Set<string>(STATUS_IMMUNITIES.fire);
 const MAGIC_IMMUNITY_BUFFS = new Set<string>(STATUS_IMMUNITIES.magic);
 const CHILL_IMMUNITY_BUFFS = new Set<string>(STATUS_IMMUNITIES.chill);
 
-/** The immunity gates Java applies before a buff can attach, shared by `addBuff` and
- * `reigniteBuff` so no caller can route around them. */
-function buffBlocked(c: Creature, id: BuffId): boolean {
+/** The immunity gates Java applies before a buff can attach, shared by `addBuff`,
+ * `reigniteBuff`, and every direct negative-buff write below so no caller can route
+ * around them (`Char.add()` refuses in Java no matter which `affect`/`prolong` path
+ * the application took - the Cleanse clause included). */
+export function buffBlocked(c: Creature, id: BuffId): boolean {
 	//`Feint.AfterImage.add(Buff)` (tag `v3.3.8`) returns false unconditionally - the decoy
 	//takes no buffs at all. It is spawned on the `rat` kind, so no MWL row can carry this;
 	//the gate lives here, where every buff application funnels through.
@@ -442,6 +478,10 @@ function buffBlocked(c: Creature, id: BuffId): boolean {
 	if (MAGIC_IMMUNITY_BUFFS.has(id) && c.magicImmune) return true;
 	//Frost.java declares immunity to Chill: a frozen creature cannot be slowed again.
 	if (CHILL_IMMUNITY_BUFFS.has(id) && c.buffs.frost !== undefined) return true;
+	//`Char.add()`'s cleansing clause (tag `v3.3.8`): while the Cleanse immunity runs,
+	//NEGATIVE applications are refused outright. `AllyBuff`/`LostInventory` have no
+	//port model, so their exclusions are vacuous - stated, not silent.
+	if (c.buffs['cleanseImmunity'] !== undefined && NEGATIVE_BUFFS.has(id)) return true;
 	//`Char.isImmune()`'s mob half (`resistance-rules.mwl`'s `monsterStatusImmunities` table):
 	//per-kind refusals (INORGANIC/STATIC/ACIDIC/FIERY properties plus the instance lists)
 	//that travel with the kind through every caller above, since all of them funnel here.
@@ -464,11 +504,16 @@ export function reigniteBuff(c: Creature, id: BuffId, duration?: number): void {
 	if (event.fresh && announceBuff && ANNOUNCED_BUFFS.has(id)) announceBuff(c, id);
 }
 
-/** `Buff.affect(..., Bleeding).set(level)`: retain the strongest active bleed. */
-export function setBleeding(c: Creature, level: number): void {
+/** `Buff.affect(..., Bleeding).set(level, source)`: retain the strongest active bleed,
+ * updating `source` only alongside a winning level (Java's `set()` writes both fields
+ * inside the same `if (this.level < level)` guard). `source` is used only by the death
+ * consequences `Bleeding.act()` branches on - see `PORT_COVERAGE.md`'s Chasm row. */
+export function setBleeding(c: Creature, level: number, source?: Creature['bleedSource']): void {
+	if (buffBlocked(c, 'bleeding')) return;
 	const current = c.buffs.bleeding ?? 0;
 	if (level > current) {
 		c.buffs.bleeding = level;
+		c.bleedSource = source;
 		if (announceBuff && ANNOUNCED_BUFFS.has('bleeding') && current <= 0) announceBuff(c, 'bleeding');
 	}
 }

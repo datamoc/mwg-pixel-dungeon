@@ -17,6 +17,9 @@ import { SPIRIT_HAWK_LIFESPAN, spiritHawkDodges } from '../../../simulation/hunt
 import { closeTheGapRange, directedPowerBoost, elementalAnnoyingChance, elementalBaseDamage, elementalBlobAmount, elementalBlockingShield, elementalBloomingBudget, elementalCorruptingChance, elementalCurseChance, elementalFurrowStep, elementalGrimChance, elementalKineticSplash, elementalKnockback, elementalLuckyChance, elementalPowerMulti, elementalProjectingSplash, elementalRootsDuration, elementalSacrificialOther, elementalSacrificialSelf, elementalStrikeCone, elementalStrikeResisted, elementalVampiricHeal, invigoratingVictoryHeal, type ElementalStrikeDamageSource } from '../../../simulation/duelistAbilities';
 import { shadowCloneAccuracy, shadowCloneArmorShare, shadowCloneBladeShare, shadowCloneEvasion, shadowCloneHp } from '../../../simulation/rogueAbilities';
 import { showChoiceWindow } from '../../../ui/portWindows';
+import { trinityBodyDuration } from '../../../simulation/clericSpells';
+import { trinityChargeUsePerEffect } from '../../../simulation/clericSpells';
+import { getCurse } from '../../../items/itemCurses';
 import { coneCells } from '../../../mechanics/cone';
 import { traceRayToTarget } from '../../../mechanics/rays';
 import { EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, WATER } from '../../../dungeonConstants';
@@ -107,9 +110,10 @@ export const armorAbilityUseMethods = {
 												: id === 'challenge' ? this.activateChallenge(def, cost, cell)
 													: id === 'elementalstrike' ? this.activateElementalStrike(def, cost, cell)
 														: id === 'wildmagic' ? this.activateWildMagic(def, cost, cell)
-															: id === 'elementalblast' ? this.activateElementalBlast(def, cost)
-																: id === 'ascendedform' ? this.activateAscendedForm(def, cost)
-																: false;
+										: id === 'elementalblast' ? this.activateElementalBlast(def, cost)
+											: id === 'ascendedform' ? this.activateAscendedForm(def, cost)
+												: id === 'trinity' ? this.activateTrinity(def, cost)
+												: false;
 		if (!activated) return;
 		this.refresh();
 	},
@@ -134,6 +138,67 @@ export const armorAbilityUseMethods = {
 		this.say(t('port.log.armorabilitychosen', { ability: t('port.armorability.ascendedform.name') }), 'positive');
 		this.spendHeroAction(1);
 		return true;
+	},
+
+	/**
+	 * `Trinity.activate()` (`actors/hero/abilities/cleric/Trinity.java`, tag `v3.3.8`)
+	 * opens a form selector before spending charge. The three Java form effect dispatchers
+	 * still need their item-specific systems; this port therefore records the selected form
+	 * and BodyForm's authored duration, so the choice is no longer silently discarded. The
+	 * explicit state also gives the eventual effect implementation a stable hand-off point.
+	 */
+	activateTrinity(this: DungeonScene, _def: ArmorAbilityDef, cost: number): boolean {
+		showChoiceWindow(this.gameWindows, 'Cleric Trinity', 'Choose a Trinity form.', [
+			{ label: 'Body Form', onPick: () => this.chooseTrinityBodyEffect(cost) },
+			{ label: 'Mind Form', onPick: () => this.commitTrinityForm('mind', cost) },
+			{ label: 'Spirit Form', onPick: () => this.commitTrinityForm('spirit', cost) },
+		]);
+		return false;
+	},
+
+	/**
+	 * The Java ability only exposes BodyForm after the tome has stored an enchantment/glyph.
+	 * Until the tome's catalog picker is ported, the port offers the currently modeled positive
+	 * weapon/armor affixes as a narrow, honest source of stored effects instead of inventing an
+	 * arbitrary enchantment. Charge is still withheld until the effect is actually chosen.
+	 */
+	chooseTrinityBodyEffect(this: DungeonScene, cost: number): void {
+		const candidates = [this.weaponAffix, this.armorGlyph]
+			.filter((id): id is string => id !== null && id.length > 0 && getCurse(id) === undefined);
+		if (candidates.length === 0) {
+			this.say('Trinity has no available positive enchantment or glyph.', 'warning');
+			return;
+		}
+		showChoiceWindow(this.gameWindows, 'Trinity Body Form', 'Choose the stored body effect.', candidates.map((id) => ({
+			label: id,
+			onPick: () => this.commitTrinityBodyEffect(id, cost),
+		})));
+	},
+
+	commitTrinityBodyEffect(this: DungeonScene, affix: string, baseCost: number): void {
+		const cost = trinityChargeUsePerEffect(baseCost, affix[0]?.toUpperCase() + affix.slice(1), 'body');
+		if (this.armorCharge < cost) {
+			this.say(t('items.armor.classarmor.low_charge'), 'negative');
+			return;
+		}
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		this.trinityBodyAffix = affix;
+		this.trinityForm = 'body';
+		this.trinityTurns = trinityBodyDuration(this.talentRank('body_form'));
+		this.spendHeroAction(1);
+		this.say(`Trinity body form: ${affix}`, 'positive');
+	},
+
+	commitTrinityForm(this: DungeonScene, form: 'body' | 'mind' | 'spirit', cost: number): void {
+		if (this.armorCharge < cost) {
+			this.say(t('items.armor.classarmor.low_charge'), 'negative');
+			return;
+		}
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		this.trinityForm = form;
+		this.trinityTurns = form === 'body' ? trinityBodyDuration(this.talentRank('body_form')) : 1;
+		this.spendHeroAction(1);
+		this.say(`Trinity: ${form} form`, 'positive');
 	},
 
 	/** `Ratmogrify.baseChargeUse` (50, tag `v3.3.8`) is charged like any other ability's, read

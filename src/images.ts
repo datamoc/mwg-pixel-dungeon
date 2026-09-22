@@ -112,6 +112,11 @@ import uiBossHpUrl from './assets/ui_boss_hp.png';
 //and effects/fireball.png
 import uiArcsBgUrl from './assets/ui_arcs_bg.png';
 import uiArcsFgUrl from './assets/ui_arcs_fg.png';
+//v3.3.8's title-screen background layers, byte-for-byte from splashes/title/ (`TitleBackground`)
+import titleArchsUrl from './assets/title_archs.png';
+import titleBackClustersUrl from './assets/title_back_clusters.png';
+import titleMidMixedUrl from './assets/title_mid_mixed.png';
+import titleFrontSmallUrl from './assets/title_front_small.png';
 import effectFireballUrl from './assets/effect_fireball.png';
 //InterlevelScene's regional loading textures, byte-for-byte from interfaces/.
 import loadingSewersUrl from './assets/loading_sewers.png';
@@ -173,6 +178,10 @@ const MWL_ASSET_URLS: Readonly<Record<string, string>> = {
 	'assets/tiles_sewers.png': sewersUrl,
 	'assets/ui_arcs_bg.png': uiArcsBgUrl,
 	'assets/ui_arcs_fg.png': uiArcsFgUrl,
+	'assets/title_archs.png': titleArchsUrl,
+	'assets/title_back_clusters.png': titleBackClustersUrl,
+	'assets/title_mid_mixed.png': titleMidMixedUrl,
+	'assets/title_front_small.png': titleFrontSmallUrl,
 	'assets/ui_badges.png': uiBadgesUrl,
 	'assets/ui_boss_hp.png': uiBossHpUrl,
 	'assets/ui_buffs.png': uiBuffsUrl,
@@ -377,6 +386,14 @@ export interface SpdSprites {
 	uiArcsBg: Texture;
 	/** `interfaces/arcs2.png` - `Archs`' scrolling foreground tile, twice the background's scroll speed */
 	uiArcsFg: Texture;
+	/** `splashes/title/archs.png` - `TitleBackground`'s arch back layer, 333x100 frames in a 3x2 grid (6 used) */
+	titleArchs: Texture;
+	/** `splashes/title/back_clusters.png` - the two cluster layers, 450x250 frames (2) */
+	titleBackClusters: Texture;
+	/** `splashes/title/mid_mixed.png` - the two middle layers, 273x242 frames (first 24 of the 7x4 grid used) */
+	titleMidMixed: Texture;
+	/** `splashes/title/front_small.png` - the far/front small layers, 112x116 frames (first 20 of the 9x4 grid used) */
+	titleFrontSmall: Texture;
 	/** `effects/fireball.png` - `Fireball`'s glow/flare/flame frames, 4 equal 32x32 quadrants */
 	effectFireball: Texture;
 	loadingSewers: Texture;
@@ -414,7 +431,11 @@ export interface SpdSprites {
  * `Fireball`'s glow/flare/flame quadrants) - see the comments there. `large_buffs.png` (renamed
  * `ui_large_buffs.png` here) is copied too and wired into `StatusPane`'s large-interface-size
  * buff row (`BuffIcon`'s real `Assets.Interfaces.BUFFS_LARGE`, a 16x16-cell sheet distinct from
- * the small one, not a scaled copy of it).
+ * the small one, not a scaled copy of it). Both buff sheets are the tag-`v3.3.8` files
+ * byte-for-byte, not this checkout's: the old sheets leave `BuffIndicator` cells 72+
+ * blank, which is where the Cleric buff icons live (`HOLY_WEAPON` 73, `HOLY_ARMOR`
+ * 74, `ILLUMINATED` 81). Every previously-used cell was verified pixel-identical
+ * between the two versions first, so no existing icon moved.
  *
  * `items.png` is `ItemSpriteSheet`'s real 256x512 sheet, one 16x16 cell per item id
  * (`ItemSpriteSheet.xy(x,y)`/`assignItemRect`). Java tightens each cell to a sub-rect smaller
@@ -422,6 +443,13 @@ export interface SpdSprites {
  * within its cell) for a snugger icon; this port draws the full 16x16 cell instead of
  * reproducing that per-item crop table, a real but minor simplification (a little more
  * transparent padding around each icon than SPD itself shows).
+ *
+ * One cell is not this checkout's: the sheet predates the Cleric, so Java's
+ * `ARTIFACT_TOME` (cell 263 at tag `v3.3.8`; 246 there is `ARTIFACT_SPELLBOOK`)
+ * has no cell here. v3.3.8's 16x16 tome pixels were copied into transparent,
+ * unreferenced cell 26 instead (verified empty and unreferenced in `src/` first),
+ * which is the `holyTome` frame in `item-rules.mwl`. The surrounding cells are
+ * untouched, so every other icon still reads the old sheet.
  *
  * `red_sentry.png` is likewise pulled from tag `v3.3.8`
  * (`git show v3.3.8:core/src/main/assets/sprites/red_sentry.png`) - the SentryRoom turret
@@ -534,6 +562,10 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		uiBossHp,
 		uiArcsBg,
 		uiArcsFg,
+		titleArchs,
+		titleBackClusters,
+		titleMidMixed,
+		titleFrontSmall,
 		effectFireball,
 		loadingSewers,
 		loadingPrison,
@@ -638,6 +670,10 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(uiBossHpUrl),
 		loadImage(uiArcsBgUrl),
 		loadImage(uiArcsFgUrl),
+		loadImage(titleArchsUrl),
+		loadImage(titleBackClustersUrl),
+		loadImage(titleMidMixedUrl),
+		loadImage(titleFrontSmallUrl),
 		loadImage(effectFireballUrl),
 		loadImage(loadingSewersUrl),
 		loadImage(loadingPrisonUrl),
@@ -745,6 +781,10 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		uiBossHp: Texture.from(uiBossHp),
 		uiArcsBg: Texture.from(uiArcsBg),
 		uiArcsFg: Texture.from(uiArcsFg),
+		titleArchs: Texture.from(titleArchs),
+		titleBackClusters: Texture.from(titleBackClusters),
+		titleMidMixed: Texture.from(titleMidMixed),
+		titleFrontSmall: Texture.from(titleFrontSmall),
 		effectFireball: Texture.from(effectFireball),
 		loadingSewers: Texture.from(loadingSewers),
 		loadingPrison: Texture.from(loadingPrison),

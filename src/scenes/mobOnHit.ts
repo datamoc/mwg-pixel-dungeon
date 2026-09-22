@@ -14,6 +14,7 @@ import { lethalDefenseShield } from '../talentEffects';
  */
 export interface MobOnHitContext {
 	armorGlyph: string | null;
+	readonly armorGlyphActive: boolean;
 	readonly armorLevel: number;
 	hunger: number;
 	earthrootArmor: { level: number; pos: number } | null;
@@ -42,6 +43,7 @@ export interface MobOnHitContext {
 
 /** monster-side on-hit hooks (all pre-existing, now grouped) */
 export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Creature, damage: number): void {
+	const armorGlyph = (id: string): boolean => ctx.armorGlyphActive && ctx.armorGlyph === id;
 	if (defender.isHero) ctx.grantHeroShield(lethalDefenseShield(ctx.subclass(), ctx.talentRank('lethal_defense')), ctx.hero.maxHp);
 	//`RottingFist.attackProc` is the only fist subclass with a melee-contact effect:
 	//half of all landed melee hits ooze the victim (`Ooze.DURATION` is the table's own
@@ -51,15 +53,14 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	if (attacker.kind === 'yogFist' && attacker.yogFistType === 'rotting' && Random.int(2) === 0) {
 		addBuff(defender, 'ooze');
 	}
-	//Elemental meleeProc() (Elemental.java, tag v3.3.8): preserve the concrete
-	//subtype's contact effect too. Shock's chained 40%-damage arcs are represented by
-	//the existing adjacent-target attack surface; the shared model has no Lightning arc
-	//renderer, while the direct status effects remain observable and deterministic.
-	if (attacker.kind === 'elemental' && defender.isHero) {
+	//Elemental meleeProc() (Elemental.java, tag `v3.3.8`): preserve each concrete subtype's
+	//contact effect. Shock delegates its recursive 40%-damage arc to the scene so the
+	//normal hero-absorption and kill seams still own HP mutation.
+	if (attacker.kind === 'elemental') {
 		switch (attacker.elementalType ?? 'fire') {
 			case 'fire': if (Random.chance(0.5) && ctx.level.get(defender.x, defender.y) !== WATER) addBuff(defender, 'burning'); break;
 			case 'frost': if (Random.chance(1 / 3) || ctx.level.get(defender.x, defender.y) === WATER) addBuff(defender, 'frost'); break;
-			case 'shock': addBuff(defender, 'daze'); break;
+			case 'shock': break;
 			case 'chaos': addBuff(defender, Random.element(['burning', 'chill', 'cripple', 'daze'] as const) ?? 'daze'); break;
 		}
 	}
@@ -68,7 +69,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//(level+3)/(level+20) x Arcana chance, for round(10 x max(1, chance)).
 	//The existing charm target map supplies Java's object payload; direct map
 	//assignment preserves the level-scaled duration that addBuff alone cannot set.
-	if (defender.isHero && ctx.armorGlyph === 'affection' && attacker.hp > 0
+	if (defender.isHero && armorGlyph('affection') && attacker.hp > 0
 		&& Random.chance(((Math.max(0, ctx.degradedLevel(ctx.armorLevel)) + 3) / (Math.max(0, ctx.degradedLevel(ctx.armorLevel)) + 20)) * ctx.genericProcMultiplier())) {
 		const level = Math.max(0, ctx.degradedLevel(ctx.armorLevel));
 		const chance = ((level + 3) / (level + 20)) * ctx.genericProcMultiplier();
@@ -81,7 +82,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//each - never while starving, and nothing when already full. What stood
 	//here healed a flat 1 HP for a flat 10 hunger, so a badly-hurt hero got a
 	//fifth of Java's healing for the same price.
-	if (defender.isHero && ctx.armorGlyph === 'metabolism' && ctx.hunger < STARVING && ctx.hero.hp < ctx.hero.maxHp && Random.chance((1 / 6) * ctx.genericProcMultiplier())) {
+	if (defender.isHero && armorGlyph('metabolism') && ctx.hunger < STARVING && ctx.hero.hp < ctx.hero.maxHp && Random.chance((1 / 6) * ctx.genericProcMultiplier())) {
 		const healing = Math.min(Math.floor(STARVING / 100), ctx.hero.maxHp - ctx.hero.hp);
 		if (healing > 0) {
 			ctx.hunger = Math.max(0, ctx.hunger - healing * 10);
@@ -94,7 +95,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//the wearer for 4 - but NOT while standing in water. Daze is the port's
 	//timed freeze equivalent (stated). What stood here burned for the full
 	//table-8 duration with no water gate at all.
-	if (defender.isHero && ctx.armorGlyph === 'antientropy' && Random.chance((1 / 8) * ctx.genericProcMultiplier())) {
+	if (defender.isHero && armorGlyph('antientropy') && Random.chance((1 / 8) * ctx.genericProcMultiplier())) {
 		if (ctx.level.get(ctx.hero.x, ctx.hero.y) !== WATER) reigniteBuff(ctx.hero, 'burning', 4);
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 			const nearby = ctx.creatureAt(ctx.hero.x + dx, ctx.hero.y + dy);
@@ -105,7 +106,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//1-in-10 x arcana proc oozes NEIGHBOURS9 - the wearer's own cell included -
 	//at `Ooze.DURATION/2` (10). What stood here skipped the wearer and applied
 	//the table's whole-20 duration.
-	if (defender.isHero && ctx.armorGlyph === 'corrosion' && Random.chance((1 / 10) * ctx.genericProcMultiplier())) {
+	if (defender.isHero && armorGlyph('corrosion') && Random.chance((1 / 10) * ctx.genericProcMultiplier())) {
 		addBuff(ctx.hero, 'ooze', 10);
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 			const nearby = ctx.creatureAt(ctx.hero.x + dx, ctx.hero.y + dy);
@@ -124,7 +125,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//modelled: the random-mob substitution itself (an excluded attacker simply goes
 	//un-duplicated here), and mirror-image duplication, which has no separate actor type -
 	//which is why Java's hero half is skipped.
-	if (defender.isHero && ctx.armorGlyph === 'multiplicity' && !attacker.isHero && !attacker.isNPC
+	if (defender.isHero && armorGlyph('multiplicity') && !attacker.isHero && !attacker.isNPC
 		&& !attacker.boss && !attacker.miniboss && Random.chance((1 / 20) * ctx.genericProcMultiplier())) {
 		const adjacent = Roguelike.neighbourOffsets(8)
 			.map(([dx, dy]) => ({ x: ctx.hero.x + dx, y: ctx.hero.y + dy }))
@@ -139,7 +140,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//Overgrowth.proc(): a 1-in-20 x arcana proc couches and immediately activates a
 	//random supported seed at the defender's cell. The generator's full seed
 	//weight table is not available, so selection is uniform across supported seeds.
-	if (defender.isHero && ctx.armorGlyph === 'overgrowth' && Random.chance((1 / 20) * ctx.genericProcMultiplier())) {
+	if (defender.isHero && armorGlyph('overgrowth') && Random.chance((1 / 20) * ctx.genericProcMultiplier())) {
 		const seed = Random.element(['blindweed', 'earthroot', 'fadeleaf', 'firebloom', 'icecap', 'mageroyal',
 			'rotberry', 'sorrowmoss', 'starflower', 'stormvine', 'sungrass', 'swiftthistle'] as const);
 		if (seed) {
@@ -149,11 +150,11 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 			ctx.triggerPortedPlantAt(ctx.hero.x, ctx.hero.y);
 		}
 	}
-	//Stench.proc() (Armor.java, tag v3.3.8): 1/8 x arcana chance when hit seeds 250-volume
-	//StenchGas at the wearer's own feet. It is deliberately not ToxicGas: StenchGas prolongs
-	//Paralysis for Paralysis.DURATION/5, and the separate blob now preserves that distinction.
-	if (defender.isHero && ctx.armorGlyph === 'stench' && Random.chance((1 / 8) * ctx.genericProcMultiplier())) {
-		ctx.stenchGas.seed(ctx.hero.x, ctx.hero.y, 250);
+	//Stench.proc() (Armor.java, tag v3.3.8): 1/8 x arcana chance when hit seeds a
+	//250-volume ToxicGas blob at the wearer's own feet. Java's Stench.java imports
+	//ToxicGas; only FetidRat's defenseProc seeds the distinct StenchGas blob.
+	if (defender.isHero && armorGlyph('stench') && Random.chance((1 / 8) * ctx.genericProcMultiplier())) {
+		ctx.toxicGas.seed(ctx.hero.x, ctx.hero.y, 250);
 		ctx.say(t('port.log.stenchcurse'), 'negative');
 	}
 	if (attacker.kind === 'bat' && damage > 4) {
@@ -282,7 +283,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//`Bleeding` at `round((4 + level) * max(1, chance))`. What stood here was 2 points of
 	//*instant* damage with no roll at all, which fired on every single hit the hero took and
 	//scaled with nothing; Java's glyph is a damage-over-time with a real chance.
-	if (defender.isHero && ctx.armorGlyph === 'thorns' && !attacker.isHero && attacker.hp > 0) {
+	if (defender.isHero && armorGlyph('thorns') && !attacker.isHero && attacker.hp > 0) {
 		const level = Math.max(0, ctx.degradedLevel(ctx.armorLevel));
 		const procChance = ((level + 2) / (level + 12)) * ctx.genericProcMultiplier();
 		if (Random.chance(procChance)) {
@@ -295,7 +296,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//plant grants, at `round((5 + 2 * armorLevel) * max(1, chance))`. This port used to give the
 	//*attacker* a `cripple` movement lock instead, which was wrong twice over: Java's glyph
 	//protects its wearer rather than disabling the enemy, and it protects by blocking damage.
-	if (defender.isHero && ctx.armorGlyph === 'entanglement' && !attacker.isHero) {
+	if (defender.isHero && armorGlyph('entanglement') && !attacker.isHero) {
 		const level = Math.max(0, ctx.degradedLevel(ctx.armorLevel));
 		const procChance = 0.25 * ctx.genericProcMultiplier();
 		if (Random.chance(procChance)) {
@@ -314,7 +315,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//and `belongings.charge(powerMulti)` adds fractional charge progress, with
 	//`powerMulti = max(1, procChance)`. `Charges.advance()` already accepts fractional
 	//progress and retains it through save/load, so it is the correct generic seam here.
-	if (defender.isHero && ctx.armorGlyph === 'potential') {
+	if (defender.isHero && armorGlyph('potential')) {
 		const level = Math.max(0, ctx.degradedLevel(ctx.armorLevel));
 		const procChance = ((level + 1) / (level + 6)) * ctx.genericProcMultiplier();
 		if (Random.float() < procChance) {

@@ -1228,6 +1228,17 @@ export const turnLoopAimingMethods = {
 				this.ascendedTurns = Math.max(0, this.ascendedTurns - turnCost);
 			if (this.ascendedTurns === 0) { this.ascendedBarrier.clear(); this.ascendedSpellCasts = 0; this.ascendedFlashCasts = 0; }
 			},
+			//Trinity's selected form is a temporary activation window. The Java form buffs
+			//also remove themselves on expiry; this state is the port's explicit hand-off
+			//until item-specific body/mind/spirit effects are implemented.
+			tickTrinityForm: () => {
+				if (this.trinityTurns <= 0) return;
+				this.trinityTurns = Math.max(0, this.trinityTurns - turnCost);
+				if (this.trinityTurns === 0) {
+					this.trinityForm = null;
+					this.trinityBodyAffix = null;
+				}
+			},
 			tickWeaponAbility: () => this.tickWeaponAbility(turnCost),
 			//`naturesPowerTracker`'s own eight-turn flavour countdown, on the actor clock.
 			tickNaturesPowerTracker: () => { if (this.naturesPowerTurns > 0) this.naturesPowerTurns = Math.max(0, this.naturesPowerTurns - turnCost); },

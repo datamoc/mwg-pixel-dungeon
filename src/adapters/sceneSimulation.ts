@@ -2,7 +2,7 @@ import type { Roguelike } from 'mwg';
 import { advanceToInput } from 'mwg/simulation';
 import type { HungerEvent, HungerState } from '../simulation/hunger';
 import type { TurnActor, TurnPorts, TurnStop } from '../simulation/turns';
-import { runHungerStep } from './hungerSimulation';
+import { runHungerExertion, runHungerStep } from './hungerSimulation';
 import { runMonsterTurn } from './gameSimulation';
 
 /** Translate MWG's game-neutral runner outcomes to this port's existing turn contract. */
@@ -54,11 +54,17 @@ export class SceneSimulationAdapter<A extends TurnActor & { speed?: number }> {
 		return stop;
 	}
 
-	hungerStep(step = 1): void {
+	hungerStep(step = 1, hungerDelay = 1): void {
 		//Routed through the hunger SimulationRuntime (see hungerSimulation.ts) rather than
 		//calling advanceHunger directly - same transition, same events, committed and
 		//presented exactly as before; only the dispatch path changed.
-		const { state, events } = runHungerStep(this.bindings.readHunger(), step);
+		const { state, events } = runHungerStep(this.bindings.readHunger(), step, hungerDelay);
+		this.bindings.writeHunger(state);
+		for (const event of events) this.bindings.presentHungerEvent(event);
+	}
+
+	exertHunger(amount: number): void {
+		const { state, events } = runHungerExertion(this.bindings.readHunger(), amount);
 		this.bindings.writeHunger(state);
 		for (const event of events) this.bindings.presentHungerEvent(event);
 	}

@@ -14,12 +14,16 @@ export interface HeroActionPorts {
 	move(step: Step): boolean;
 	/** Get turn-cost multiplier from equipment/buffs. Default 1; <1 for faster actions (augment/glyph/ring/haste), >1 for slower. */
 	getTurnCostMod(): number;
+	/** Whether any Java meal-time talent is active for the current hero. */
+	hasMealTalent(): boolean;
 }
 
 /** Execute the pure policy against current scene state, preserving callback order. The plan
  * itself routes through the runtime (`heroActionSimulation.ts`); only the dispatch path changed. */
 export function dispatchHeroAction(action: string, ports: HeroActionPorts): boolean {
-	const plan = runHeroActionPlan(action, ports.isParalysed(), ports.getTurnCostMod());
+	//Keep older/custom action-port bindings valid while the live scene opts into
+	//the meal-talent flag; absent capability means the Java untalented cost.
+	const plan = runHeroActionPlan(action, ports.isParalysed(), ports.getTurnCostMod(), ports.hasMealTalent?.() ?? false);
 	switch (plan.kind) {
 		case 'unknown': return false;
 		case 'free': ports.free[plan.action](); return true;

@@ -34,12 +34,10 @@ import { abilityFlatBoost, accrueWeaponCharge, counterAbilityRefund, gainWeaponC
 import { useStoneOfFlock as useItemStoneOfFlock, useStoneOfAggression as useItemStoneOfAggression, useStoneOfAugmentation as useItemStoneOfAugmentation, useStoneOfFear as useItemStoneOfFear, useStoneOfDeepSleep as useItemStoneOfDeepSleep, useStoneOfBlink as useItemStoneOfBlink, useStoneOfClairvoyance as useItemStoneOfClairvoyance, useStoneOfShock as useItemStoneOfShock, useStoneOfBlast as useItemStoneOfBlast, useStoneOfEnchantment as useItemStoneOfEnchantment, useStoneOfDetectMagic as useItemStoneOfDetectMagic, useStoneOfIntuition as useItemStoneOfIntuition, type StoneContext, type StonePickerEntry } from '../items/stones';
 import { runSearch } from '../adapters/searchSimulation';
 import { runMovement } from '../adapters/movementSimulation';
-import { ALCHEMY_RECIPES, alchemicalCatalystCost, arcaneCatalystCost, canCraftPotionSeed, canCraftPotionToExotic, canCraftScrollToExotic, canCraftScrollToStone, craftAlchemy, craftAlchemize, craftAlchemicalCatalyst, craftArcaneCatalyst, craftPotionSeed, craftPotionToExotic, craftScrollToExotic, craftScrollToStone, isSeedOrRunestone, openAlchemyRecipes, potionExoticResult, randomAlchemicalPotion, randomArcaneScroll, scrollExoticResult, SCROLL_TO_STONE, seedPotionId, type AlchemyFlowContext } from '../items/alchemy';
-import type { AlchemyPairSelection, AlchemyRecipe, AlchemyUnitRef } from '../items/alchemy';
 import { runAttackResolution } from '../adapters/attackSimulation';
 import { simulationRandom } from '../adapters/mwgRandom';
 import { simulationRoguelike } from '../adapters/mwgRoguelike';
-import { MOVES } from '../simulation/heroActions';
+import { MEAL_TALENTS, MOVES } from '../simulation/heroActions';
 import { wraithCombatStats, dustSpawnerStep, dustSpawnerCap } from '../simulation/wraith';
 import { runHeroTurn } from '../adapters/gameSimulation';
 import { takeGooTurn as runGooTurn } from '../simulation/gooBoss';
@@ -118,9 +116,10 @@ import { Compass } from '../ui/compass';
 import { BadgeBannerLayer } from '../ui/badgeBanner';
 import { SpdToolbar } from '../ui/toolbar';
 import { StatusPane } from '../ui/statusPane';
+import { DungeonHud } from '../ui/dungeonHud';
 import { SpdAudio } from '../audio';
 import { onBrightnessChanged, onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../settings';
-import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalHasteDuration, LETHAL_HASTE_COOLDOWN, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, soulSiphonCharge, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
+import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalHasteDuration, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, soulSiphonCharge, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
 import pixelFontUrl from '../assets/pixel_font.ttf';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth, SpdRandom } from '../spdRng';
 import {
@@ -309,19 +308,21 @@ import { nextEntityId } from '../simulation/entityId';
 import { applyChillFreeze, tickMonsterTurnEnd } from '../simulation/buffs';
 import { heroSheet, MONSTERS, mobRosterForDepth, liveStats, BOSSES, MOB_LOOT, LIMITED_DROP_DECAY, NPC_KINDS, BOSS_KINDS, MINIBOSS_KINDS, UNDEAD_KINDS, isUndeadOrDemonic, IMMOVABLE_KINDS, INORGANIC_KINDS, NEVER_SLEEPS_KINDS, FLYING_KINDS, BLOB_IMMUNE_KINDS, MWL_AI_PROFILES, type AnyMonsterId, type MonsterId } from '../monsters';
 import { APPEARANCE_TABLES, AUGMENT_OPTIONS, BLACKSMITH_QUEST, BLACKSMITH_SMITH_COST, ETERNAL_FIRE_BURN, HARMFUL_PLANTS, HERO_SCHEDULER_ID, IMP_QUEST, MOB_SCHEDULER_ID_PREFIX, NATURES_POWER_DURATION, NON_STATBLOCK_RING_STATS, SAD_GHOST_QUEST, SPD_LEVEL_CURVE, STARTING_WEAPON_CLASS, SUBCLASS_OPTIONS, SUBCLASS_TRACK, TENGU_CIRCLE8, WANDMAKER_CLASS_INTROS, WANDMAKER_QUEST, effectMarkSheet, isStatueLoot, scenarioQuest, wardTexture, type BonesShape, type SaveShape } from './dungeon/shared';
-import { part01Methods } from './dungeon/part01';
-import { part02Methods } from './dungeon/part02';
-import { part03Methods } from './dungeon/part03';
-import { part04Methods } from './dungeon/part04';
-import { part05Methods } from './dungeon/part05';
-import { part06Methods } from './dungeon/part06';
-import { part07Methods } from './dungeon/part07';
-import { part08Methods } from './dungeon/part08';
-import { part09Methods } from './dungeon/part09';
-import { part10Methods } from './dungeon/part10';
-import { part11Methods } from './dungeon/part11';
-import { part12Methods } from './dungeon/part12';
-import { part13Methods } from './dungeon/part13';
+import { coreSpawnTilesMethods } from './dungeon/coreSpawnTiles';
+import { npcShopBlacksmithMethods } from './dungeon/npcShopBlacksmith';
+import { environmentFireTrapsMethods } from './dungeon/environmentFireTraps';
+import { turnLoopAimingMethods } from './dungeon/turnLoopAiming';
+import { actorTurnsHazardsMethods } from './dungeon/actorTurnsHazards';
+import { monsterAiMethods } from './dungeon/monsters/monsterAi';
+import { bossLogicMethods } from './dungeon/bosses/bossLogic';
+import { combatResolutionMethods } from './dungeon/combatResolution';
+import { deathSaveRefreshMethods } from './dungeon/deathSaveRefresh';
+import { panelsSingleUseMethods } from './dungeon/panelsSingleUse';
+import { inventoryQuickslotMethods } from './dungeon/hero/inventoryQuickslot';
+import { clericSpellFlowsMethods } from './dungeon/hero/clericSpellFlows';
+import { armorAbilityUseMethods } from './dungeon/hero/armorAbilityUse';
+import { cursedWandCastMethods } from './dungeon/hero/cursedWandCast';
+import { weaponSpellsGearMethods } from './dungeon/hero/weaponSpellsGear';
 
 export class DungeonScene extends Scene2D {
 	terrainSheet!: SpriteSheet;
@@ -350,9 +351,9 @@ export class DungeonScene extends Scene2D {
 	/** Set by `restoreFloor` when the saved turn queue already holds the hero, consumed once by
 	 * `enterLevel`'s own `scheduler.add(this.hero, 0)` further down - see that call site. */
 	restoredHeroQueued = false;
-	/** Set by a monster-turn action that costs more than the default 1 (only
-	 * `Necromancer.firstSummon`'s summon so far), read once via `monsterTurnCost` right after
-	 * `takeMonsterTurn` returns, then cleared at the start of the next monster's turn. */
+	/** A monster-turn cost other than the default 1 (the necromancer's summon, Tengu's abilities, chill,
+	 * ...), read once via `monsterTurnCost` right after `takeMonsterTurn` returns, then cleared at the
+	 * start of the next monster's turn. */
 	pendingMonsterTurnCost: number | null = null;
 	/**
 	 * The scene→simulation bridge, built through `buildSimulation()` rather than inline because
@@ -422,6 +423,10 @@ export class DungeonScene extends Scene2D {
 			return this.justDescended || this.actionSpentTurn;
 		},
 		getTurnCostMod: () => this.getActionTurnCostMod(),
+		//`Food.eatingTime()` (tag `v3.3.8`) checks the six meal talents and
+		// reduces the base 3-turn eat cost to 1. Resolve that scene-owned rank
+		// state at the adapter boundary; the planner remains pure.
+		hasMealTalent: () => MEAL_TALENTS.some((id) => this.talentRank(id) > 0),
 	};
 	actionSpentTurn = false;
 	creatureLayer = new Container();
@@ -443,7 +448,7 @@ export class DungeonScene extends Scene2D {
 	manualPlants = new Map<number, string>();
 	furrowedGrass = new Set<number>();
 	/** Java room painters place quest NPCs/special mobs at fixed cells. */
-	portedMobSpawns: { x: number; y: number; kind: string; loot?: string }[] = [];
+	portedMobSpawns: { x: number; y: number; kind: string; loot?: string; initialWarmup?: number }[] = [];
 	portedMobCells = new Set<number>();
 	portedBranchExitCells = new Set<number>();
 	portedWellWater = new Map<number, 'awareness' | 'health' | 'waterOfAwareness' | 'waterOfHealth'>();
@@ -487,6 +492,10 @@ export class DungeonScene extends Scene2D {
 	spentTrapCells = new Set<number>();
 	/** `ReclaimTrap.ReclaimedTrap`: the visible trap class held by the hero for redeployment. */
 	reclaimedTrap: TrapKind | null = null;
+	/** `GatewayTrap.telePos` per gateway-trap cell (`disarmedByActivation = false`, so the
+	 * trap stays live and the link must outlive the trigger - floor-scoped, like the
+	 * trap map itself). Absent = unlinked (`-1` in Java). */
+	gatewayTelePos = new Map<number, number>();
 	hero!: Creature;
 	depth = 1;
 	/** Pending `BeaconOfReturning` arrival cell, consumed by the next floor rebuild. */
@@ -749,6 +758,17 @@ export class DungeonScene extends Scene2D {
 	 * at 50); this port has no separate class-armor item type, so the charge lives on the hero and
 	 * is spent by whichever real armor is worn, which is the only armor a crown can be applied to. */
 	armorCharge = 0;
+	/** `AscendedForm.AscendBuff` (tag `v3.3.8`): a separate ShieldBuff pool of 30
+	 * lasting 10 actor turns. It is not `heroBarrier`: Java's ShieldBuff does not
+	 * receive Barrier's proportional decay, and merging it would silently make the
+	 * Cleric's armor ability weaker every turn. */
+	ascendedBarrier = new Actors.Barrier();
+	ascendedTurns = 0; ascendedSpellCasts = 0; ascendedFlashCasts = 0;
+	/** Selected Trinity form and its remaining window. Item-specific effects are not yet dispatched. */
+	trinityForm: 'body' | 'mind' | 'spirit' | null = null;
+	trinityTurns = 0;
+	/** Java Trinity.BodyFormBuff's stored enchantment/glyph, represented by this port's affix id. */
+	trinityBodyAffix: string | null = null;
 	/** `HeroicLeap.DoubleJumpTracker`'s remaining turns: Java's `Buff.affect(hero,
 	 *  DoubleJumpTracker.class, 3)` is a three-turn `FlavourBuff`, and it is what `chargeUse()`
 	 *  discounts against. A plain latch would keep the discount forever - a ranked warrior would
@@ -808,6 +828,10 @@ export class DungeonScene extends Scene2D {
 	/** Swiftthistle's TimeBubble: hero actions advance while automatic actors are frozen. */
 	timeBubbleTurns = 0;
 	timeBubblePresses = new Set<number>();
+	/** `Buff.mnemonicExtended`: which of the hero's own current buffs `MnemonicPrayer`
+	 * has already extended once - cleared per id as soon as that buff is no longer on
+	 * the hero (Java's flag lives on the buff instance itself, so it vanishes with it). */
+	mnemonicExtended: BuffId[] = [];
 	/** Timekeeper's Hourglass freeze state; unlike Swiftthistle's bubble it consumes charges. */
 	hourglassFreeze = false;
 	hourglassTurnsToCost = mwlItemEffectValue('hourglass', 'turnsToCost');
@@ -864,7 +888,7 @@ export class DungeonScene extends Scene2D {
 	cloakStealthTurnsToCost = 0;
 	/** `Talent.NatureBerriesDropped`: a whole-run counter capping Nature's Bounty's real berry
 	 * drops at `2+2*rank` total, never reset mid-run (`revivePersists = true` in Java). */
-	natureBerriesDropped = 0;
+	natureBerriesDropped = 0; berryCounter = 0;
 	/** `TalismanOfForesight`'s `CharAwareness`/`HeapAwareness` marks: turns remaining of "the hero
 	 * knows this is there", consulted by the sprite-visibility gates so a scried creature or heap
 	 * keeps rendering outside his field of view. Java attaches these as hero buffs carrying the
@@ -1137,6 +1161,7 @@ export class DungeonScene extends Scene2D {
 
 	gameLog!: GameLog;
 	statusPane!: StatusPane;
+	dungeonHud!: DungeonHud;
 	infoPanel!: InfoWindow;
 	compass!: Compass;
 	hintLabel!: Label;
@@ -1311,6 +1336,8 @@ export class DungeonScene extends Scene2D {
 	travelTarget: Step | null = null;
 	/** HP at the moment travel began, so taking any damage along the way interrupts it. */
 	travelStartHp = 0;
+	/** The hovered route preview for click-to-travel; transient presentation only. */
+	travelOverlay: Graphics | null = null;
 	/** whether the current floor came from spdLevelGen/ rather than generateSpdDungeon - changes
 	 *  what may be assumed about room order and about how much of a room rect is walkable */
 	portedFloorActive = false;
@@ -2248,177 +2275,6 @@ export class DungeonScene extends Scene2D {
 			return this.bag.find('summonElemental', instanceId) as (typeof this.bag.items[number] & { imbuedElement?: 'fire' | 'frost' | 'shock' | 'chaos' }) | undefined;
 		}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	potionEffectsContext() {
-		const scene = this;
-		return {
-			get hero() { return scene.hero; },
-			get creatures() { return scene.creatures; },
-			get level() { return scene.level; },
-			get heroStr() { return scene.heroStr; }, set heroStr(value) { scene.heroStr = value; },
-			get progression() { return scene.progression; },
-			experienceFor: (level: number) => SPD_LEVEL_CURVE.experienceFor(level),
-			get depth() { return scene.depth; },
-			subclass: this.subclass.bind(this),
-			talentRank: this.talentRank.bind(this),
-			syncHeroFromStats: this.syncHeroFromStats.bind(this),
-			grantExperience: this.grantExperience.bind(this),
-			seedFire: (x: number, y: number, volume: number) => scene.fire.seed(x, y, volume),
-			clearFire: (x: number, y: number) => scene.fire.clear(x, y),
-			seedToxicGas: (x: number, y: number, volume: number) => scene.toxicGas.seed(x, y, volume),
-			seedParalyticGas: (x: number, y: number, volume: number) => scene.paralyticGas.seed(x, y, volume),
-			seedSmoke: (x: number, y: number, volume: number) => scene.smokeScreen.seed(x, y, volume),
-			eternalFireVolumeAt: (x: number, y: number) => scene.eternalFire.volumeAt(x, y),
-			clearEternalFire: () => { scene.eternalFire = new Blob(scene.level.width, scene.level.height); },
-			showDamage: this.showDamage.bind(this),
-			kill: (target: Creature) => this.kill(target),
-			say: this.say.bind(this),
-			get healingLeft() { return scene.healingLeft; },
-			set healingLeft(value: number) { scene.healingLeft = value; },
-			get healingPercent() { return scene.healingPercent; },
-			set healingPercent(value: number) { scene.healingPercent = value; },
-			set healingEvasionTurns(turns: number) { scene.healingEvasionTurns = turns; },
-			grantHeroShield: (amount: number, cap: number) => { scene.grantHeroShield(amount, cap); },
-		};
-	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	override resize(width: number, height: number): void {
 		//the window zoom first: `positionInterface` places the scaled windows in its logical space
 		this.applyWindowZoom(windowBaseZoom(width, height));
@@ -2526,7 +2382,7 @@ export class DungeonScene extends Scene2D {
 		//CharacterEffects still receives an exact current-frame list and owns its own entry cleanup.
 		const characterEffects = this.characterEffectCharacters;
 		characterEffects.length = 0;
-		for (const creature of this.creatures) characterEffects.push({ sprite: this.sprite(creature), sleeping: creature.sleeping });
+		for (const creature of this.creatures) characterEffects.push({ sprite: this.sprite(creature), sleeping: creature.sleeping && !(creature.kind === 'mimic' && creature.mimicRevealed === false) /* MimicSprite.hideSleep() */ });
 		for (const sprite of this.dyingMonsters.keys()) characterEffects.push({ sprite });
 		const heroVisual = this.sprite(this.hero);
 		if (this.gameOver && !heroVisual.destroyed) characterEffects.push({ sprite: heroVisual });
@@ -2595,5 +2451,5 @@ export class DungeonScene extends Scene2D {
 
 /** The method groups in `./dungeon/` are typed with `this: DungeonScene` and merged onto the prototype here. */
 type Mixed<T> = { [K in keyof T]: OmitThisParameter<T[K]> };
-export interface DungeonScene extends Mixed<typeof part01Methods>, Mixed<typeof part02Methods>, Mixed<typeof part03Methods>, Mixed<typeof part04Methods>, Mixed<typeof part05Methods>, Mixed<typeof part06Methods>, Mixed<typeof part07Methods>, Mixed<typeof part08Methods>, Mixed<typeof part09Methods>, Mixed<typeof part10Methods>, Mixed<typeof part11Methods>, Mixed<typeof part12Methods>, Mixed<typeof part13Methods> {}
-Object.assign(DungeonScene.prototype, part01Methods, part02Methods, part03Methods, part04Methods, part05Methods, part06Methods, part07Methods, part08Methods, part09Methods, part10Methods, part11Methods, part12Methods, part13Methods);
+export interface DungeonScene extends Mixed<typeof coreSpawnTilesMethods>, Mixed<typeof npcShopBlacksmithMethods>, Mixed<typeof environmentFireTrapsMethods>, Mixed<typeof turnLoopAimingMethods>, Mixed<typeof actorTurnsHazardsMethods>, Mixed<typeof monsterAiMethods>, Mixed<typeof bossLogicMethods>, Mixed<typeof combatResolutionMethods>, Mixed<typeof deathSaveRefreshMethods>, Mixed<typeof panelsSingleUseMethods>, Mixed<typeof inventoryQuickslotMethods>, Mixed<typeof clericSpellFlowsMethods>, Mixed<typeof armorAbilityUseMethods>, Mixed<typeof cursedWandCastMethods>, Mixed<typeof weaponSpellsGearMethods> {}
+Object.assign(DungeonScene.prototype, coreSpawnTilesMethods, npcShopBlacksmithMethods, environmentFireTrapsMethods, turnLoopAimingMethods, actorTurnsHazardsMethods, monsterAiMethods, bossLogicMethods, combatResolutionMethods, deathSaveRefreshMethods, panelsSingleUseMethods, inventoryQuickslotMethods, clericSpellFlowsMethods, armorAbilityUseMethods, cursedWandCastMethods, weaponSpellsGearMethods);

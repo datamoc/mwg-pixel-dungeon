@@ -431,7 +431,8 @@ export const combatResolutionMethods = {
 		//HUNTING mob back to WANDERING; this port has no such explicit state to reset, but the
 		//next monster-turn FOV recompute (`seesHero`) naturally loses track once far enough away.
 		if (attacker === this.hero && this.weaponAffix === 'displacing' && !defender.isNPC
-			&& !IMMOVABLE_KINDS.has(defender.kind) && Random.chance((1 / 12) * this.enchantProcMultiplier())) {
+			&& (defender.kind === undefined || !IMMOVABLE_KINDS.has(defender.kind))
+			&& Random.chance((1 / 12) * this.enchantProcMultiplier())) {
 			const destination = this.randomFreeCell(defender);
 			if (destination) {
 				const displaceFrom = { x: defender.x, y: defender.y };

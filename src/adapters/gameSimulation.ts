@@ -2,10 +2,10 @@ import { Generator } from 'mwg';
 import { Scheduler, SimulationRuntime, type Actor, type SimulationRuntimeRule } from 'mwg/simulation';
 import type { Combatant } from '../simulation/combatState';
 import { resolveAttack, type AttackResolution } from '../simulation/attackResolution';
-import { advanceHunger, type HungerEvent, type HungerState } from '../simulation/hunger';
+import { advanceHunger, exertHunger, type HungerEvent, type HungerState } from '../simulation/hunger';
 import { planHeroAction, type HeroActionPlan } from '../simulation/heroActions';
 import { planMovement, type MovementPlan, type MovementWorld } from '../simulation/movement';
-import { planSearch, type SearchOutcome, type SearchWorld } from '../simulation/search';
+import { planSearch, type SearchOptions, type SearchOutcome, type SearchWorld } from '../simulation/search';
 import type { SimulationRandom } from '../simulation/random';
 import { finishHeroTurn, type HeroTurnEffects, type HeroTurnResult } from '../simulation/heroTurn';
 
@@ -21,10 +21,11 @@ type Command =
 	| { kind: 'attack'; attacker: Combatant; defender: Combatant; randomId: number; magic: boolean; surprise: boolean; accFactor: number; damageMultiplier: number }
 	| { kind: 'hero-turn'; effectsId: number; turnCost: number }
 	| { kind: 'monster-turn'; effectsId: number }
-	| { kind: 'hunger'; state: HungerState; step?: number }
-	| { kind: 'hero-action'; action: string; paralysed: boolean; turnCostMod: number }
+	| { kind: 'hunger'; state: HungerState; step?: number; hungerDelay?: number }
+	| { kind: 'hunger-exertion'; state: HungerState; amount: number }
+	| { kind: 'hero-action'; action: string; paralysed: boolean; turnCostMod: number; hasMealTalent: boolean }
 	| { kind: 'movement'; position: { x: number; y: number }; move: { x: number; y: number }; worldId: number }
-	| { kind: 'search'; position: { x: number; y: number }; radius: number; worldId: number };
+	| { kind: 'search'; position: { x: number; y: number }; radius: number; worldId: number; options?: SearchOptions };
 
 type Event =
 	| { type: 'attack-resolution'; resolution: AttackResolution }
@@ -57,7 +58,7 @@ const rule: SimulationRuntimeRule<State, Command, Event, SpdActor> = (_state, co
 		case 'hero-turn': {
 			const effects = heroTurnEffects.get(command.effectsId);
 			if (!effects) throw new Error(`hero turn effects ${command.effectsId} are no longer available`);
-			const result = finishHeroTurn(effects);
+			const result = finishHeroTurn(effects, command.turnCost);
 			return { state: { last: { type: 'hero-turn-result', result } }, events: [{ type: 'hero-turn-result', result }], status: 'ready', cost: command.turnCost };
 		}
 		case 'monster-turn': {
@@ -69,12 +70,17 @@ const rule: SimulationRuntimeRule<State, Command, Event, SpdActor> = (_state, co
 			return { state: { last: { type: 'monster-turn-result', cost } }, events: [{ type: 'monster-turn-result', cost }], status: 'ready', cost };
 		}
 		case 'hunger': {
-			const result = advanceHunger(command.state, command.step);
+			const result = advanceHunger(command.state, command.step, command.hungerDelay);
+			const event = { type: 'hunger-transition' as const, state: result.state, events: result.events };
+			return { state: { last: event }, events: [event], status: 'ready', cost: null };
+		}
+		case 'hunger-exertion': {
+			const result = exertHunger(command.state, command.amount);
 			const event = { type: 'hunger-transition' as const, state: result.state, events: result.events };
 			return { state: { last: event }, events: [event], status: 'ready', cost: null };
 		}
 		case 'hero-action': {
-			const plan = planHeroAction(command.action, command.paralysed, command.turnCostMod);
+			const plan = planHeroAction(command.action, command.paralysed, command.turnCostMod, command.hasMealTalent);
 			return { state: { last: { type: 'hero-action-plan', plan } }, events: [{ type: 'hero-action-plan', plan }], status: 'ready', cost: null };
 		}
 		case 'movement': {
@@ -86,7 +92,7 @@ const rule: SimulationRuntimeRule<State, Command, Event, SpdActor> = (_state, co
 		case 'search': {
 			const world = searchWorlds.get(command.worldId);
 			if (!world) throw new Error(`search world ${command.worldId} is no longer available`);
-			const outcome = planSearch(command.position, command.radius, world);
+			const outcome = planSearch(command.position, command.radius, world, command.options);
 			return { state: { last: { type: 'search-result', outcome } }, events: [{ type: 'search-result', outcome }], status: 'ready', cost: null };
 		}
 	}
@@ -144,13 +150,18 @@ export function runMonsterTurn(effects: MonsterTurnEffects): number {
 	}
 }
 
-export function runHungerStep(state: HungerState, step = 1): { state: HungerState; events: HungerEvent[] } {
-	const event = dispatch({ kind: 'hunger', state, step }) as { type: 'hunger-transition'; state: HungerState; events: HungerEvent[] };
+export function runHungerStep(state: HungerState, step = 1, hungerDelay = 1): { state: HungerState; events: HungerEvent[] } {
+	const event = dispatch({ kind: 'hunger', state, step, hungerDelay }) as { type: 'hunger-transition'; state: HungerState; events: HungerEvent[] };
 	return { state: event.state, events: [...event.events] };
 }
 
-export function runHeroActionPlan(action: string, paralysed: boolean, turnCostMod = 1): HeroActionPlan {
-	return (dispatch({ kind: 'hero-action', action, paralysed, turnCostMod }) as { type: 'hero-action-plan'; plan: HeroActionPlan }).plan;
+export function runHungerExertion(state: HungerState, amount: number): { state: HungerState; events: HungerEvent[] } {
+	const event = dispatch({ kind: 'hunger-exertion', state, amount }) as { type: 'hunger-transition'; state: HungerState; events: HungerEvent[] };
+	return { state: event.state, events: [...event.events] };
+}
+
+export function runHeroActionPlan(action: string, paralysed: boolean, turnCostMod = 1, hasMealTalent = false): HeroActionPlan {
+	return (dispatch({ kind: 'hero-action', action, paralysed, turnCostMod, hasMealTalent }) as { type: 'hero-action-plan'; plan: HeroActionPlan }).plan;
 }
 
 export function runMovement(position: { x: number; y: number }, move: { x: number; y: number }, world: MovementWorld): MovementPlan {
@@ -163,11 +174,11 @@ export function runMovement(position: { x: number; y: number }, move: { x: numbe
 	}
 }
 
-export function runSearch(position: { x: number; y: number }, radius: number, world: SearchWorld): SearchOutcome {
+export function runSearch(position: { x: number; y: number }, radius: number, world: SearchWorld, options?: SearchOptions): SearchOutcome {
 	const worldId = ++nextHandle;
 	searchWorlds.set(worldId, world);
 	try {
-		return (dispatch({ kind: 'search', position, radius, worldId }) as { type: 'search-result'; outcome: SearchOutcome }).outcome;
+		return (dispatch({ kind: 'search', position, radius, worldId, options }) as { type: 'search-result'; outcome: SearchOutcome }).outcome;
 	} finally {
 		searchWorlds.delete(worldId);
 	}

@@ -1,7 +1,7 @@
 import type { Roguelike } from 'mwg';
 import type { GameKindCodes } from './spdLevelGen/gameBridge';
 import type { WallTileKinds } from './spdLevelGen/wallTiles';
-import { MWL_ITEM_FRAMES, MWL_ITEM_LIMITS } from './mwlContent';
+import { MWL_ITEM_FRAMES, MWL_ITEM_LIMITS, MWL_TRAIT_NODES } from './mwlContent';
 
 export const TILE = 16;
 export const VIEW_RADIUS = 8;
@@ -25,6 +25,14 @@ export const EMBERS = 8;
  * only user today (its pit cells and its sealed entrance chamber).
  */
 export const SOLID = 9;
+
+// `ItemSpriteSheet`'s CONTAINERS row (`xy(1,3)` in tag v3.3.8) supplies the
+// heap pictures for ordinary, locked, and crystal chests. Java selects these
+// while a heap is unopened; using the contained item's frame would reveal the
+// reward before the player unlocks it.
+export const CHEST_FRAME = 36;
+export const LOCKED_CHEST_FRAME = 37;
+export const CRYSTAL_CHEST_FRAME = 38;
 
 //the same nine ids by name, for spdLevelGen/gameBridge.ts - the ported generator speaks real
 //Terrain.java constants and must not hardcode the ids above, so it maps to names and the codes
@@ -119,8 +127,100 @@ export const TERRAIN_FRAME = {
 };
 
 /** Levels.java trap kinds with Dungeon-referenced damage numbers (depth-scaled where Java scales) */
-export type TrapKind = 'toxic' | 'burning' | 'poisonDart' | 'grim' | 'explosive' | 'confusionGas' | 'corrosionGas' | 'shockingTrap' | 'stormTrap';
-export const TRAP_KINDS: TrapKind[] = ['toxic', 'burning', 'poisonDart', 'grim', 'explosive', 'confusionGas', 'corrosionGas', 'shockingTrap', 'stormTrap'];
+export type TrapKind = 'toxic' | 'burning' | 'poisonDart' | 'wornDart' | 'grim' | 'explosive' | 'confusionGas' | 'corrosionGas' | 'shockingTrap' | 'stormTrap' | 'alarm' | 'teleportation' | 'summoning' | 'chilling' | 'ooze' | 'flock' | 'warping' | 'gripping' | 'rockfall' | 'pitfall' | 'frost' | 'geyser' | 'gateway' | 'guardian';
+export const TRAP_KINDS: TrapKind[] = ['toxic', 'burning', 'poisonDart', 'wornDart', 'grim', 'explosive', 'confusionGas', 'corrosionGas', 'shockingTrap', 'stormTrap', 'alarm', 'teleportation', 'summoning', 'chilling', 'ooze', 'flock', 'warping', 'gripping', 'rockfall', 'pitfall', 'frost', 'geyser', 'gateway', 'guardian'];
+
+/**
+ * Java trap class names (the `regionTrapTables`/`sewerTraps*` MWL spellings) this
+ * port models an effect for. Everything else (blazing, disintegration,
+ * flashing, weakening, disarming, cursing, distortion and the rest) drops out of random generation rather
+ * than being padded with invented stand-ins - regions are thinner than Java's,
+ * stated here and in the MWL.
+ */
+const MODELED_TRAP_CLASSES: Readonly<Record<string, TrapKind>> = {
+	toxic: 'toxic',
+	burning: 'burning',
+	poisonDart: 'poisonDart',
+	wornDart: 'wornDart',
+	grim: 'grim',
+	shocking: 'shockingTrap',
+	confusion: 'confusionGas',
+	corrosion: 'corrosionGas',
+	storm: 'stormTrap',
+	alarm: 'alarm',
+	teleportation: 'teleportation',
+	summoning: 'summoning',
+	chilling: 'chilling',
+	ooze: 'ooze',
+	flock: 'flock',
+	warping: 'warping',
+	gripping: 'gripping',
+	rockfall: 'rockfall',
+	pitfall: 'pitfall',
+	frost: 'frost',
+	geyser: 'geyser',
+	gateway: 'gateway',
+	guardian: 'guardian',
+};
+
+/**
+ * The table above routes both spellings: generic floors filter through
+ * modeledTrapTable below, ported floors through routeTrapBehaviour after it,
+ * which strips the painters' full Java class names down to these stems.
+ */
+/**
+ * Route a ported floor's trap record to the scene behaviour through the shared
+ * table above. Room painters register traps under both spellings - the bare
+ * class stem (`burning`, what the region tables use) and the full Java class
+ * name (`burningTrap`, what `TrapsRoom`/`HoardRoom`/`SummoningRoom` painters use)
+ * to `setTrap`) - a trailing `Trap` is stripped before the lookup.
+ * Unknown classes (and `toxicVent`, which is not a trap at all) fall back to
+ * `poisonDart`, the most generic "it hurts you" trap, rather than dropping
+ * the trap from the verified grid. It lives here so the workflow suite can pin
+ * the routing without loading the generator.
+ * (Production caller: gameBridge.ts.)
+ */
+export function routeTrapBehaviour(className: string): TrapKind {
+	const stem = className.endsWith('Trap') ? className.slice(0, -'Trap'.length) : className;
+	return MODELED_TRAP_CLASSES[stem] ?? 'poisonDart';
+}
+
+/**
+ * Keep only the MWL trap-table entries this port models an effect for, weights
+ * intact and order kept (the weighted draw resolves to an index, like Java's
+ * `Random.chances()`).
+ */
+export function modeledTrapTable(classes: readonly string[], chances: readonly number[]): { kinds: TrapKind[]; weights: number[] } {
+	const kinds: TrapKind[] = [];
+	const weights: number[] = [];
+	classes.forEach((cls, i) => {
+		const kind = MODELED_TRAP_CLASSES[cls];
+		const weight = chances[i] ?? 0;
+		if (kind !== undefined && weight > 0) { kinds.push(kind); weights.push(weight); }
+	});
+	return { kinds, weights };
+}
+
+/**
+ * `SewerLevel.trapClasses()`/`trapChances()` from the `sewerTrapsDepth1`/
+ * `sewerTrapsDefault` MWL traits - the same source the ported painters draw from
+ * (`spdLevelGen/sewerPainter.ts`), so generic sewers floors agree with ported ones.
+ */
+export function sewerTrapTable(depth: number): { classes: string[]; chances: number[] } {
+	const id = depth === 1 ? 'sewerTrapsDepth1' : 'sewerTrapsDefault';
+	const node = MWL_TRAIT_NODES.find((candidate) => candidate.attributes.id === id);
+	const value = (key: string): string => {
+		const effect = node?.children.find((child) => child.tag === 'effect' && child.attributes.apply_to === key);
+		if (effect?.attributes.set === undefined) throw new Error(`MWL dungeon rule is missing ${id}.${key}`);
+		return String(effect.attributes.set);
+	};
+	const classes = value('classes').split(',').map((entry) => entry.trim()).filter(Boolean);
+	const chances = value('chances').split(',').map(Number);
+	if (classes.length !== chances.length || chances.some((chance) => !Number.isFinite(chance))) {
+		throw new Error(`MWL dungeon rule ${id} has invalid trap data`);
+	}
+	return { classes, chances };
+}
 
 export type GroundItemKind =
 	| 'dewdrop'

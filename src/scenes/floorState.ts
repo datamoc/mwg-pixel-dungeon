@@ -15,6 +15,8 @@ export interface FloorState {
 	trapKinds: [number, TrapKind][];
 	/** Trap cells already triggered or claimed by ReclaimTrap; inactive traps remain visible. */
 	spentTrapCells?: number[];
+	/** `GatewayTrap.telePos` links: [trap cell, linked cell]. */
+	gatewayTelePos?: [number, number][];
 	secretDoorCells: number[];
 	crystalDoorCells: number[];
 	fire: FireState;
@@ -149,7 +151,7 @@ export interface SavedCreature {
 	wardTotalZaps?: number;
 	earthGuardianWandLevel?: number;
 	earthGuardianDefense?: number;
-	/** `SpiritHawk.HawkAlly.storeInBundle()`'s `time_remaining` and `dodges_used` (this port
+	/** `SpiritHawk.HawkAlly.storeInBundle()`'s 	ime_remaining` and `dodges_used` (this port
 	 *  counts dodges left rather than used, so the two are mirrored). */
 	spiritHawkTime?: number;
 	spiritHawkDodges?: number;
@@ -162,6 +164,9 @@ export interface SavedCreature {
 	/** `Earthroot.Armor`'s `level`/`pos` (`plants/Earthroot.java`, tag `v3.3.8`). */
 	earthrootArmorLevel?: number;
 	earthrootArmorPos?: number;
+	barkskinLevel?: number;
+	barkskinInterval?: number;
+	barkskinCooldown?: number;
 	chainUsed?: boolean;
 	ventCooldown?: number;
 	webCooldown?: number;
@@ -188,6 +193,8 @@ export interface SavedCreature {
 	duelTakenDmg?: number;
 	deathMarkInitialHp?: number;
 	sentryWarmup?: number;
+	/** `SentryRoom$Sentry.initialChargeDelay`, retained when a floor is saved before first sight. */
+	sentryInitialWarmup?: number;
 	dmAbilityTurns?: number;
 	dmAbilityCd?: number;
 	dmLastAbility?: number;

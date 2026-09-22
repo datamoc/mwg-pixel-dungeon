@@ -24,8 +24,8 @@ export function lethalHasteDuration(rank: number): number {
 	return 2 + 2 * rank;
 }
 
-/** `Talent.LethalHasteCooldown`, 100 turns gating the next GreaterHaste grant. */
-export const LETHAL_HASTE_COOLDOWN = 100;
+/** `Talent.LethalHasteCooldown` (tag `v3.3.8`): the 100-turn recast gate
+ * (`BUFF_DURATION['lethalHasteCooldown']`, same value, single-sourced). */
 
 /** `Hero.damageRoll()`'s Weapon Recharging line: `round(dmg*1.025 + 0.025*points)` while the
  * hero holds a Recharging-class buff - a melee damage multiplier, not a charge refund. */
@@ -198,4 +198,21 @@ export const SEER_SHOT_COOLDOWN = 20;
 
 export function seerShotDuration(rank: number): number {
 	return 5 * Math.max(0, Math.min(3, rank));
+}
+
+/** `Talent.CLEANSE`'s `onArtifactUsed` half (tag `v3.3.8`): a non-Cleric who took the
+ * talent sheds every negative buff on artifact use with probability `rank/10`
+ * (`Random.Int(10) < points` - 10/20/30%). `LostInventory` has no port model, so its
+ * exclusion is vacuous; the pink `Flare(6, 32)` fires only when something detached. */
+export function cleanseArtifactChance(rank: number): number {
+	return Math.max(0, Math.min(3, rank)) / 10;
+}
+
+/** `RingOfEnergy.wandChargeMultiplier()`'s `LIGHT_READING` leg (tag `v3.3.8`): a
+ * non-Cleric who took the talent recharges wands `1+0.2*rank/3` faster (7/13/20%).
+ * The tome-charge halves of the same talent need equip slots this port has none of
+ * (stated at `tomeTickRate`), but this leg rides the existing wand clock. */
+export function lightReadingWandMult(heroClass: ClassId, rank: number): number {
+	if (heroClass === 'cleric') return 1;
+	return 1 + 0.2 * Math.max(0, Math.min(3, rank)) / 3;
 }

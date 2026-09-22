@@ -54,14 +54,17 @@ export function buildMonsterSprite(kind: AnyMonsterId, at: Step, profile: Monste
 	const sheet = SpriteSheet.fromTexture(texture, adjustedDef.frame[0], adjustedDef.frame[1]);
 	// WardSprite's frames are variable-width and therefore cannot be represented by the
 	// regular SpriteSheet grid used by ordinary mobs.
-	const sprite = new AnimatedSprite(kind === 'ward' ? wardTexture(texture, 1) : sheet.get(def.idle));
+	//`MimicSprite.hideMimic()`: a hidden mimic shows its chest frames (0 and 1 of the sheet), not its idle
+	//pose - the revealed frame is restored by `syncMimicVisual`.
+	const sprite = new AnimatedSprite(kind === 'ward' ? wardTexture(texture, 1) : sheet.get(kind === 'mimic' ? 0 : def.idle));
 	placeCharacterArt(sprite);
 	// Java's base variants use MWG's player. Shaman/elemental/fist variants and
 	// DM300 supercharge effects still follow the port's reduced gameplay roster.
 	//SPRITE_ANIMATIONS keys off each Java sprite class's own name (SpawnerSprite -> "spawner",
 	//RipperSprite -> "ripper"), not the MonsterId - same reason necroSkeleton/yogFist alias.
 	const clips = SPRITE_ANIMATIONS[
-		kind === 'necroSkeleton' ? 'skeleton'
+		kind === 'phantomPiranha' ? '__no_phantom_clip__'
+		: kind === 'necroSkeleton' ? 'skeleton'
 			: kind === 'yogFist' ? 'fist'
 			: kind === 'demonSpawner' ? 'spawner'
 			: kind === 'ripperDemon' ? 'ripper'
@@ -89,7 +92,8 @@ export function buildMonsterSprite(kind: AnyMonsterId, at: Step, profile: Monste
 export function buildMonsterCreature(kind: AnyMonsterId, at: Step, profile: MonsterProfile, isAlly: boolean, allyKind: AllyKind | undefined, mimicLoot: string | undefined): Creature {
 	const { def, adjustedDef } = profile;
 	return baseCreature({
-		name: t(MOB_KEYS[kind] ?? MOB_KEYS.statue),
+		//a base mimic starts hidden (`Mimic`: NEUTRAL + PASSIVE) and is named for the chest it imitates
+		name: kind === 'mimic' ? t('items.heap.chest') : t(MOB_KEYS[kind] ?? MOB_KEYS.statue),
 		x: at.x,
 		y: at.y,
 		hp: adjustedDef.hp,
@@ -189,6 +193,6 @@ export function buildMonsterCreature(kind: AnyMonsterId, at: Step, profile: Mons
 		pylonTargetNeighbor: kind === 'pylon' ? Random.int(0, 8) : undefined,
 		generation: 0,
 		mimicLoot,
-		mimicRevealed: kind === 'crystalMimic' ? false : undefined,
+		mimicRevealed: kind === 'crystalMimic' || kind === 'mimic' ? false : undefined,
 	});
 }

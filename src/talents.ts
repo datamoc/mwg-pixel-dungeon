@@ -28,9 +28,45 @@ if (TIER_THRESHOLD_TEXT === undefined) throw new Error('MWL talent rule is missi
 export const TALENT_TIERS = TIER_THRESHOLD_TEXT.split(',').map(Number);
 if (TALENT_TIERS.length !== 6 || TALENT_TIERS.some((value) => !Number.isInteger(value) || value < 0)) throw new Error('MWL talent rule has invalid tier thresholds');
 
+/** Class tier 3 exists only where the MWL authors a row (Cleric: CLEANSE/LIGHT_READING,
+ * maxRank 3 each - `Talent.java`, tag `v3.3.8`); every other class resolves `?? []`.
+ * Java merges class and subclass tier-3 talents into one tab (`TalentsPane` reads the
+ * single `talents.get(2)` map), so the panel concatenates both lists (see below). */
+/**
+ * Whether the class authors its own tier-3 row. Java's tier-3 tab needs the
+ * subclass choice first (`Hero.talentPointsAvailable(3)` returns 0 while
+ * `subClass == NONE`); this port banks tier-3 points from level 13 with no
+ * subclass gate, so a class-owned row opens the tab at the level threshold
+ * instead of stranding them until (and unless) the choice is made. The talent
+ * panel reads this (see its own comment there).
+ */
+export function hasClassTier3Row(classId: ClassId): boolean {
+	return (CLASS_TALENTS[classId]?.[2] ?? []).length > 0;
+}
 export const CLASS_TALENTS: Record<ClassId, TalentDefinition[][]> = Object.fromEntries(
-	(['warrior', 'mage', 'rogue', 'huntress', 'duelist', 'cleric'] as ClassId[]).map(classId => [classId, [1, 2].map((tier) => (CLASS_TALENT_ENTRIES.get(`${classId}|${tier}`) ?? []).map(id => ({ id, classId, tier: tier as 1 | 2, maxRank: 2 })))])
+	(['warrior', 'mage', 'rogue', 'huntress', 'duelist', 'cleric'] as ClassId[]).map(classId => [classId, [1, 2, 3].map((tier) => (CLASS_TALENT_ENTRIES.get(`${classId}|${tier}`) ?? []).map(id => ({ id, classId, tier: tier as 1 | 2 | 3, maxRank: tier === 3 ? 3 : 2 })))])
 ) as Record<ClassId, TalentDefinition[][]>;
+/**
+ * Cleric tier-1 ids read their title/desc from `port.talent.*`, not the generated
+ * catalog: the live checkout `tools/i18n-extract.mjs` reads predates the Cleric, so
+ * `actors.hero.talent.satiated_spells.*` and friends exist only at tag `v3.3.8` and
+ * ride port keys carrying SPD's own translations (see `portStrings.ts`). Every other
+ * talent resolves through the catalog as before.
+ */
+const PORT_TALENT_IDS = new Set(['satiated_spells', 'holy_intuition', 'searing_light', 'shield_of_light',
+	'enlightening_meal', 'recall_inscription', 'sunray', 'divine_sense', 'bless',
+	'cleanse', 'light_reading',
+	'holy_lance', 'hallowed_ground', 'mnemonic_prayer',
+	'lay_on_hands', 'aura_of_protection', 'wall_of_light',
+	'divine_intervention', 'judgement', 'flash',
+	'body_form', 'mind_form', 'spirit_form',
+	'beaming_ray', 'life_link', 'stasis']);
+export function talentTitleKey(id: string): string {
+	return PORT_TALENT_IDS.has(id) ? `port.talent.${id}.title` : `actors.hero.talent.${id}.title`;
+}
+export function talentDescKey(id: string): string {
+	return PORT_TALENT_IDS.has(id) ? `port.talent.${id}.desc` : `actors.hero.talent.${id}.desc`;
+}
 
 /** T3 nodes are the two Java HeroSubClass branches already exposed by Advancement.
  *
@@ -67,11 +103,13 @@ export function subclassTalentDefinitions(subclass: string, classId: ClassId): T
  * tier 4. All four are rank-4 talents (`Talent(17, 4)` and friends: the second constructor
  * argument is `maxPoints`), against tier 3's 3 and tiers 1/2's 2.
  *
- * The Cleric's three (`Trinity`/`PowerOfMany`/`AscendedForm`) have no row here on purpose: this
- * port's Cleric has no HolyTome spell system or Cleric-specific subclass tree to hang them on
- * (`src/classes.ts` gives it the Mage's tree, documented there), and `spdMessages.ts` carries no
- * `actors.hero.abilities.cleric.*` strings at all, so there is nothing to name them with. Listed
- * as "Not ported" in `PORT_COVERAGE.md` rather than silently absent.
+ * The Cleric's three (`Trinity`/`PowerOfMany`/`AscendedForm`) carry a row below with Java's own
+ * charge/targeting/talent values (tag `v3.3.8`), kept for citation the same way every other
+ * unported number in this port still comes from the real source. `AscendedForm`'s base shield
+ * window and the common Ascended spell-cast shield/history are live, as are the implemented
+ * Judgement and Flash tome spells; Divine Intervention and the other two abilities remain
+ * excluded from `armorAbilitiesFor()` until their spell/ally systems exist. Listed explicitly in
+ * `PORT_COVERAGE.md` rather than silently absent.
  */
 const ARMOR_ABILITY_ROWS = MWL_TABLE_ROWS('armorAbilities', 'id');
 const ARMOR_ABILITY_TALENT_ENTRIES = new Map(ARMOR_ABILITY_ROWS.map((row) => [String(row.id), talentsOf(row)]));
@@ -98,4 +136,3 @@ export function armorTalentDefinitions(ability: string, classId: ClassId): Talen
 	if (own === undefined) return [];
 	return [...own, 'heroic_energy'].map(id => ({ id, classId, tier: 4, maxRank: 4 }));
 }
-

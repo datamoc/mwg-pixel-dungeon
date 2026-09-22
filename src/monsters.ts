@@ -70,6 +70,7 @@ export type MonsterId =
 	| 'mimic'
 	| 'crystalMimic'
 	| 'piranha'
+	| 'phantomPiranha'
 	| 'bee'
 	| 'statue'
 	| 'armoredStatue'
@@ -99,6 +100,15 @@ export type AnyMonsterId = MonsterId | MonsterVariantId;
 
 /** Java mob classes whose `Char.flying` flag lets them occupy avoid terrain such as chasms. */
 export const FLYING_KINDS = mwlActorFlagSet('flying');
+
+/**
+ * Bodiless creatures that slip through a wooden door without opening it (deliberate divergence,
+ * `PORT_COVERAGE.md`). Java's `Level.occupyCell()` swings a door open under every character that
+ * steps on it, flying or not, ghosts and wraiths included; this port lets the ones with no body to
+ * push it leave it shut, so a bee or a fly (physical, flying) still opens it but a ghost drifts
+ * through. Explicit list rather than an MWL flag: it is a port-side rule, not a Java property.
+ */
+export const IMMATERIAL_KINDS: ReadonlySet<string> = new Set(['ghost', 'wraith', 'dustWraith', 'spectralNecromancer']);
 
 /**
  * Mobs carrying `BlobImmunity` (`BlobImmunity.java`, tag `v3.3.8`) - immunity to every harmful

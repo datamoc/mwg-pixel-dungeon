@@ -76,12 +76,11 @@ export function armorAbilityDef(id: string): ArmorAbilityDef | undefined {
  *
  * Ported so far: the Warrior's three, the Rogue's Death Mark, Smoke Bomb and Shadow
  * Clone, the Huntress's Spectral Blades, Nature's Power and Spirit Hawk, the Mage's Warp
- * Beacon, and the Duelist's Feint, Challenge and ElementalStrike. Still to port, each
- * needing its own systems: the Mage's remaining two (`ElementalBlast` and `WildMagic`
- * need per-wand blast factors and a wand-randomization pass). See `PORT_COVERAGE.md`'s
+ * Beacon, Wild Magic and Elemental Blast, and the Duelist's Feint, Challenge and
+ * ElementalStrike, plus the Cleric's Trinity form selector. Every class offers its full set now. See `PORT_COVERAGE.md`'s
  * armor-ability rows.
  */
-const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades', 'warpbeacon', 'smokebomb', 'naturespower', 'spirithawk', 'feint', 'shadowclone', 'challenge', 'elementalstrike']);
+const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades', 'warpbeacon', 'smokebomb', 'naturespower', 'spirithawk', 'feint', 'shadowclone', 'challenge', 'elementalstrike', 'wildmagic', 'elementalblast', 'ascendedform', 'trinity']);
 
 /** The implemented abilities for one class, in `HeroClass.armorAbilities()` order (the authored
  *  table's own row order, which `DEFINITIONS` preserves). */
@@ -117,6 +116,10 @@ export function isKnownArmorAbility(id: string): boolean {
  *  `actors.properties:609`). */
 export function armorAbilityKey(id: string, classId: ClassId): string {
 	if (id === 'ratmogrify') return 'actors.hero.abilities.ratmogrify';
+	// The v3.3.8 checkout predates the Cleric message bundle used by this port's
+	// extractor. Keep the live Cleric ability on the port catalogue so a missing
+	// upstream translation cannot leak a raw key into the choice window/log.
+	if (id === 'ascendedform') return 'port.armorability.ascendedform';
 	return `actors.hero.abilities.${classId}.${id}`;
 }
 

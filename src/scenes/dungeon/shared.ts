@@ -17,7 +17,7 @@ import { REGION_GRASS, patchGenerate } from '../../genericDungeon';
 import { type BuffId, type Creature, type GroundItem } from '../../combat';
 import { type MonsterId } from '../../monsters';
 //`Level.Feeling`'s own ordinals, for the handful of rules that branch on the floor's feeling -
-//`trampleHighGrass`'s GRASS-feeling dew halving is the newest of them.
+//	rampleHighGrass`'s GRASS-feeling dew halving is the newest of them.
 //The Sandals of Nature's own rules - and the feed/root window flow behind `SandalsFlowContext` -
 //live in their own module (scene-free, so `verifyItemWorkflows` can drive them the way it
 //drives `shopPricing`/`missiles`); the scene only builds the flow context.
@@ -107,7 +107,7 @@ export const WANDMAKER_CLASS_INTROS: Record<string, true> = {
  * `WandOfMagicMissile` (2-8 dmg) never rolls to hit
  * at all - `onZap` calls `ch.damage()` directly in Java - and fires through real Charges (3
  * plus the staff's +1, recharging over turns at a flat rate standing in for
- * `turnsToCharge`). Huntress's `SpiritBow` (1-6 dmg base) is not a
+ * 	urnsToCharge`). Huntress's `SpiritBow` (1-6 dmg base) is not a
  * quickslot item but her actual weapon in Java, and it hits *harder* from farther away
  * (`min(3, 1.2 * 1.125^(distance-1))`, capped at 3x) - reproduced exactly, capped range 6. Cleric's
  * `HolyTome` needs an SP economy this port does not have, so `T` invokes it through slow
@@ -125,11 +125,11 @@ export const WANDMAKER_CLASS_INTROS: Record<string, true> = {
  * (+2 surprise damage), TEST_SUBJECT (identifying heals), and Warrior's HEARTY_MEAL
  * (eating while hurt heals).
  *
- * The Sewers' real "Sad Ghost" side quest is in, in all three `type` forms (`Ghost.java`'s
+ * The Sewers' real "Sad Ghost" side quest is in, in all three 	ype` forms (`Ghost.java`'s
  * `Quest.type == depth-1`: Fetid Rat on 2, Gnoll Trickster on 3, Great Crab on 4, at the
  * real per-depth odds). The
  * Ghost NPC has Java's own spawn roll (`Random.Int(5 - depth) == 0` on depths 2-4,
- * `type = depth-1`), is
+ * 	ype = depth-1`), is
  * undamageable and never fights, and running the actual three-stage quest (offer, kill the
  * miniboss, return) is `mwg/rpg`'s `QuestLog` against a `GameState` switch the miniboss's
  * death sets - not a scene-local flag reimplementing what `QuestLog` already does. The one
@@ -177,7 +177,7 @@ export const WANDMAKER_CLASS_INTROS: Record<string, true> = {
  * `Patch`-based generator as water at its own fill/smoothing (`REGION_GRASS`) and its own real
  * chance of rolling `HIGH_GRASS` instead of plain `GRASS` per cell (`placeGrass`). Stepping
  * onto high grass tramples it to plain grass and rolls its real loot odds
- * (`HighGrass.trample`, `trampleHighGrass`): 1-in-6 for a dew drop, 1-in-25 for a stone -
+ * (`HighGrass.trample`, 	rampleHighGrass`): 1-in-6 for a dew drop, 1-in-25 for a stone -
  * this port has no seed item, so that second roll always yields a stone rather than Java's own
  * stone-or-seed split. Dew drops (and a scattered few stones/potions/scrolls placed at floor
  * generation, standing in for SPD's own `Generator`/`Room` loot system this port does not
@@ -262,7 +262,7 @@ export const IMP_QUEST: Rpg.QuestDefinition = {
  * `hero.armorAbility`, so a hero whose crown is still in the dungeon at level 21 has no ability and
  * no tier-4 talent points (`Hero.talentPointsAvailable(4)` returns 0 while `armorAbility == null`),
  * which is a state a level-triggered branch cannot express (`Advancement.choose` also throws for a
- * tier that has not opened). The chosen ability therefore lives in `this.armorAbility` and the
+ * tier that has not opened). The chosen ability therefore lives in 	his.armorAbility` and the
  * ability panel is opened by the crown. Saves written before this change recorded an invented
  * `warding`/`arcane` capstone in tier 1 of this track; those ids are not abilities any more and are
  * dropped on load (see `loadRun`), with the real choice available again at the next crown.
@@ -298,7 +298,7 @@ export const SUBCLASS_TRACK: Actors.AdvancementTrack = {
 export const SUBCLASS_OPTIONS: Record<ClassId, readonly string[] | undefined> = {
 	warrior: ['berserker', 'gladiator'], mage: ['battlemage', 'warlock'],
 	rogue: ['assassin', 'freerunner'], huntress: ['sniper', 'warden'],
-	duelist: ['champion', 'monk_sub'], cleric: undefined,
+	duelist: ['champion', 'monk_sub'], cleric: ['priest', 'paladin'],
 };
 /** `HeroClass.initHero()`'s real starting `belongings.weapon` class per class (tag `v3.3.8`),
  * lowercased to match `WEAPON_NAME_BY_CLASS`'s own keys. Cleric has no real weapon system
@@ -521,25 +521,29 @@ export interface SaveShape {
 	/** Java Dungeon.LimitedDrops.UPGRADE_SCROLLS count, including suppressed NO_SCROLLS drops. */
 	upgradeScrollDrops?: number;
 	bag: { id: string; quantity: number; instanceId?: string; identified?: boolean; level?: number; sandBags?: number; affix?: string; cursed?: boolean; cursedKnown?: boolean; returnDepth?: number; returnBranch?: number; returnPos?: number; returnX?: number; returnY?: number;
-		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean; hardened?: boolean }[];
+		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean; hardened?: boolean; wandCur?: number; wandPartial?: number; wandMax?: number }[];
 	/** MWG actor inventory save; `bag` remains for loading pre-migration slots. */
 	bagState?: Actors.SavedInventory;
 	bagDefinitions?: [string, Actors.ItemDefinition][];
 		bagSources?: { id: string; instanceId?: string; sandBags?: number; charges?: number; sourceClass?: string; cursedKnown?: boolean; returnDepth?: number; returnBranch?: number; returnPos?: number; returnX?: number; returnY?: number;
-		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean; blessed?: boolean; hardened?: boolean; curseInfusionBonus?: boolean; beaconCharge?: number; beaconPartialCharge?: number;
+		usesLeftToIdentify?: number; availableUsesToIdentify?: number; durability?: number; maxDurability?: number; seal?: boolean; blessed?: boolean; hardened?: boolean; curseInfusionBonus?: boolean; beaconCharge?: number; beaconPartialCharge?: number; wandCur?: number; wandPartial?: number; wandMax?: number; tomeCharge?: number; tomePartialCharge?: number; tomeExp?: number; tomeLevel?: number;
 		/** A carried missile stack's own set id - see `src/missiles.ts`. Its `level`/`durability`/
 		 * `maxDurability` ride `Actors.Inventory.toJSON` itself, so only this needs the side channel. */
 		missileSet?: string;
 		/** A tipped dart stack's seed (`TippedDart` only) - same side channel as the set id. */
 		tippedSeed?: string }[];
+	/** The staff's imbued wand class (`MagesStaff.wandClass()`), defaulting to Magic Missile. */
+	staffImbue?: string;
 	itemSerial?: number;
 	appearances?: { assigned: [string, [string, string][]][] };
 	switches: [string, boolean][];
 	questStages: [string, number][];
 	equippedRing?: EquippedRing | null;
 	ringHtBonus?: number;
+	/** Ring ids whose type (not level/curse) stands revealed - Thief's Intuition or a full identify. */
+	ringTypesKnown?: string[];
 	advancement?: { grantedTiers: number; balance: number; choices: [number, string][] };
-	/** Per-tier talent points (T1/T2/T3/T4) - see `talentPoints`'s own comment. */
+	/** Per-tier talent points (T1/T2/T3/T4) - see 	alentPoints`'s own comment. */
 	talentPoints?: number[];
 	/** Pre-migration single-pool save fields, read only as a one-time fallback in `loadRun`. */
 	skillPoints?: number;
@@ -562,6 +566,15 @@ export interface SaveShape {
 	armorAbility?: string | null;
 	/** `ClassArmor.charge`. Absent in saves written before the real armor abilities existed. */
 	armorCharge?: number;
+	/** `AscendedForm.AscendBuff`: the Cleric's temporary shield and remaining actor turns. */
+	ascendedBarrierState?: { layers: { amount: number; decayPerTick?: number }[] };
+	ascendedTurns?: number;
+	ascendedSpellCasts?: number;
+	ascendedFlashCasts?: number;
+	/** Trinity's selected form/window; effect dispatch remains a documented follow-up. */
+	trinityForm?: 'body' | 'mind' | 'spirit' | null;
+	trinityTurns?: number;
+	trinityBodyAffix?: string | null;
 	/** `Endure.EndureTracker`'s own bundled fields plus its flavour countdown. */
 	endureTurns?: number;
 	endureEnduring?: boolean;
@@ -582,6 +595,10 @@ export interface SaveShape {
 	corrosionDamage?: number;
 	/** `PrismaticGuard`'s HP pool (null when no guard is owed). */
 	prismaticGuardHp?: number | null;
+	/** `ShieldOfLightTracker.object`: the enemy id the light-shield answers to (null when down). */
+	shieldOfLightTarget?: string | null;
+	/** `RecallInscription.UsedItemTracker.item`: the re-castable scroll/stone class (null when down). */
+	recallItemClass?: string | null;
 	kineticStored?: number;
 	elementalFurrow?: number;
 	timeBubbleTurns?: number;
@@ -596,6 +613,9 @@ export interface SaveShape {
 	/** `Earthroot.Armor`'s own pool and the cell it was granted on: the buff saves both in Java. */
 	earthrootArmorLevel?: number;
 	earthrootArmorPos?: number;
+	barkskinLevel?: number;
+	barkskinInterval?: number;
+	barkskinCooldown?: number;
 	regrowthTotalChargesUsed?: number;
 	regrowthChargesOverLimit?: number;
 	barrierPartialLoss?: number;
@@ -620,6 +640,8 @@ export interface SaveShape {
 	cloakChargeProgress?: number;
 	cloakStealthTurnsToCost?: number;
 	natureBerriesDropped?: number;
+	/** `Berry.SeedCounter`: berries eaten since the last random-seed payout. */
+	berryCounter?: number;
 	/** `Burning.burnIncrement`: persisted progress toward the next backpack item-burn roll. */
 	burningIncrement?: number;
 	intuitionTracker?: boolean;
@@ -640,8 +662,15 @@ export interface SaveShape {
 	deathlessFuryUsed?: boolean;
 	/** Timed Char buffs survive a save instead of silently clearing on reload. */
 	buffs?: [BuffId, number][];
+	/** `Preparation.turnsInvis`, persisted separately from the invisibility buff in Java's
+	 * `storeInBundle`/`restoreFromBundle`; the derived `prepLevel` is rebuilt after load. */
+	prepInvisibleTurns?: number;
+	/** `MnemonicPrayer`'s once-ever extension marks (`mnemonicExtended`), same reason. */
+	mnemonicExtended?: BuffId[];
 	/** Mutable state for every floor already entered this run. */
 	floors?: [number, FloorState][];
+	/** Items that fell down a chasm and have not yet landed (`Dungeon.droppedItems`). */
+	fallenItems?: [number, { kind: GroundItemKind; item?: GroundItem['item']; chest?: GroundItem['chest'] }[]][];
 }
 
 export interface BonesShape {

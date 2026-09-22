@@ -26,8 +26,13 @@ export class TitleScene extends Scene2D {
 	private readonly windows = new WindowStack();
 
 	override create(): void {
-		//`Archs.java`'s scrolling background, real `arcs1.png`/`arcs2.png` art
-		this.background = new TitleBackground(runState.sprites.uiArcsBg, runState.sprites.uiArcsFg);
+		//v3.3.8's `TitleBackground.java` parallax, real `splashes/title/*.png` art
+		this.background = new TitleBackground({
+			archs: runState.sprites.titleArchs,
+			backClusters: runState.sprites.titleBackClusters,
+			midMixed: runState.sprites.titleMidMixed,
+			frontSmall: runState.sprites.titleFrontSmall,
+		});
 		this.stage.addChild(this.background);
 
 		//BannerSprites.PIXEL_DUNGEON and PIXEL_DUNGEON_SIGNS: real Java's own
