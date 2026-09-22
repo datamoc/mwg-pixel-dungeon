@@ -1723,7 +1723,13 @@ export const combatResolutionMethods = {
 		//until its stored rock amount is exhausted, before ordinary ShieldBuff layers.
 		//The port has no distinct Buff priority for RockArmor, so it drains first here;
 		//the amount and half-damage rule are retained even though EarthGuardian is not.
-		const livingEarthBlocked = Math.min(this.livingEarthArmor, Math.ceil(viscosityDamage / 2));
+		// `DivineIntervention.DivineShield` (`DivineShield.java`, tag `v3.3.8`) is a
+		// priority-1 ShieldBuff on the hero too, so it must absorb before the port's
+		// ordinary priority-0 pools. The shared helper also clears it when AscendedForm
+		// has expired, matching the buff's zero shielding outside its parent form.
+		const afterDivineShield = absorbCreatureShields(this.hero, viscosityDamage, this.ascendedTurns > 0);
+		const divineShieldBlocked = viscosityDamage - afterDivineShield;
+		const livingEarthBlocked = Math.min(this.livingEarthArmor, Math.ceil(afterDivineShield / 2));
 		this.livingEarthArmor -= livingEarthBlocked;
 		//**Correction, 2026-09-14**: this drain order used to be justified by a
 		//"`ShieldBuff.shieldUsePriority` - BlockBuff (2) before Barrier (0)" comment (also in
@@ -1735,12 +1741,12 @@ export const combatResolutionMethods = {
 		//for that unspecified order, not a reproduction of a real priority field - the seal drains
 		//first here because `HeroClass.initHero()` affixes it before any other buff could exist
 		//for a fresh Warrior, making it the earliest-attached shield in the common case.
-		const afterLivingEarth = Math.max(0, viscosityDamage - livingEarthBlocked);
+		const afterLivingEarth = Math.max(0, afterDivineShield - livingEarthBlocked);
 		const blockedSeal = this.sealBarrier.absorb(afterLivingEarth);
 		const blockedBlocking = this.blockingBarrier.absorb(Math.max(0, afterLivingEarth - blockedSeal));
 		const blockedAscended = this.ascendedBarrier.absorb(Math.max(0, afterLivingEarth - blockedSeal - blockedBlocking));
 		const blockedBase = this.heroBarrier.absorb(Math.max(0, afterLivingEarth - blockedSeal - blockedBlocking - blockedAscended));
-		const blocked = livingEarthBlocked + blockedSeal + blockedBlocking + blockedAscended + blockedBase;
+		const blocked = divineShieldBlocked + livingEarthBlocked + blockedSeal + blockedBlocking + blockedAscended + blockedBase;
 		this.wandCharges.refund(shieldBatteryGain(blocked, this.talentRank('shield_battery')));
 		const reduced = Math.max(0, viscosityDamage - blocked);
 		if (deathlessFuryTriggers(this.subclass(), this.talentRank('deathless_fury'), this.deathlessFuryUsed, reduced, this.hero.hp)) {
@@ -1759,7 +1765,7 @@ export const combatResolutionMethods = {
 	 * duel ledger's pool-loss snapshot. */
 	heroShieldPoolTotal(this: DungeonScene): number {
 		return this.heroBarrier.total + this.sealBarrier.total + this.blockingBarrier.total + this.ascendedBarrier.total
-			+ (this.earthrootArmor?.level ?? 0) + this.livingEarthArmor;
+			+ (this.earthrootArmor?.level ?? 0) + this.livingEarthArmor + (this.hero.divineShield ?? 0);
 	},
 
 	/** Blocking.BlockBuff.setShield(): keeps the higher of the current shield and the fresh
