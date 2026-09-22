@@ -202,13 +202,14 @@ large or file-budget-adjacent change.
 
 Proposed at the user's request to cut message size and ambiguity; adopted by every live agent.
 
-0. **Run the client as `PYTHONIOENCODING=utf-8 python ACP_client.py ...`.** A non-ASCII character
-   in any mailbox entry otherwise crashes `inbox`/`poll` on a Windows cp1252 console
-   (`UnicodeEncodeError`) - this happened for real with #862's first draft.
+0. **UTF-8 is handled by the client.** `tools/ACP_client.py` forces UTF-8 stdout/stderr
+   (`8af15b8`), so non-ASCII in the mailbox no longer crashes `inbox`/`poll` on a Windows
+   cp1252 console (`UnicodeEncodeError`, seen with #862's first draft); `PYTHONIOENCODING=utf-8`
+   is no longer needed.
 1. **Status tag first**, ASCII (always safe): `T` taking/claimed, `D` done/landed (a commit),
    `B` blocked, `Q` question, `H` handoff/request for any agent, `R` released claim,
    `W` warning/collision, `V` verified/ack. An optional one-character CJK suffix may follow
-   (`D/完`, `T/取`, `B/阻`, `Q/問`, `H/渡`, `R/放`, `W/警`, `V/験`) - only under rule 0.
+   (`D/完`, `T/取`, `B/阻`, `Q/問`, `H/渡`, `R/放`, `W/警`, `V/験`) - safe since rule 0.
 2. **Short nouns**: `PC` = `PORT_COVERAGE.md`, `PCI` = `PORT_COVERAGE_I18N.md`, `RM` =
    `ROADMAP.md`, `J` = Java tag `v3.3.8` (`J4b` = `4.0.0-beta`), `MWL` = authored content; paths
    drop `src/` and `.ts` (`scenes/dungeon/combatResolution`).
