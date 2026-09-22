@@ -11,7 +11,7 @@
           {
             tag: "effect",
             apply_to: "negative",
-            set: "poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,chill,frost,hex,wayward,blindness,feintConfusion,soulmark",
+            set: "poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,chill,frost,hex,wayward,blindness,feintConfusion,soulmark,illuminated",
           },
         ],
       },
@@ -146,6 +146,13 @@
             tag: "row",
             buff: "recharging",
             duration: 30,
+          },
+          {
+            // WellFed.reset() normally starts at Hunger.STARVING (450); MeatPie shortens it
+            // to 150 under the NO_FOOD challenge, so the scene overrides this default clock.
+            tag: "row",
+            buff: "wellFed",
+            duration: 450,
           },
           {
             tag: "row",
@@ -333,6 +340,138 @@
             tag: "row",
             buff: "prismaticGuard",
             duration: 9999,
+          },
+          {
+            // `HolyWeapon.HolyWepBuff.DURATION` / `HolyWard.HolyArmBuff.DURATION`
+            // (tag `v3.3.8`): both 50f. `Buff.affect(hero, ..., 50f)` refreshes the
+            // clock on re-cast.
+            tag: "row",
+            buff: "holyWeapon",
+            duration: 50,
+          },
+          {
+            tag: "row",
+            buff: "holyWard",
+            duration: 50,
+          },
+          {
+            // `GuidingLight.Illuminated` is a plain `Buff` with no duration - it never
+            // expires on its own clock, only detaches on the next damaging attack
+            // (`Char.attack()`). 9999 is the catalogue's effectively-permanent
+            // stand-in (the cloak/focus precedent).
+            tag: "row",
+            buff: "illuminated",
+            duration: 9999,
+          },
+          {
+            // `GuidingLight.WasIlluminatedTracker`: a duration-less marker Smite reads
+            // later (Smite itself is not ported yet); same 9999 stand-in.
+            tag: "row",
+            buff: "wasIlluminated",
+            duration: 9999,
+          },
+          {
+            // `Talent.SatiatedSpellsTracker` (`actors/hero/Talent.java`, tag
+            // `v3.3.8`): a plain `Buff` with no clock, armed by eating and detached
+            // by the next spell cast (`ClericSpell.onSpellCast`); same 9999
+            // stand-in as the illuminated pair above.
+            tag: "row",
+            buff: "satiatedSpells",
+            duration: 9999,
+          },
+          {
+            // `ShieldOfLight.ShieldOfLightTracker.DURATION` (tag `v3.3.8`): 5f.
+            // The cast site prolongs 4f instead ("1 turn less as the casting is
+            // instant"), so callers always pass the explicit duration; this is
+            // the class default for anything that does not.
+            tag: "row",
+            buff: "shieldOfLight",
+            duration: 5,
+          },
+          {
+            // `DivineSense.DivineSenseTracker.DURATION` (tag `v3.3.8`): 50f. The
+            // reveal rides the existing all-mobs `mindvision` channel (see the
+            // visibility pass); the 8/12-tile range limit is unported, stated there.
+            tag: "row",
+            buff: "divineSense",
+            duration: 50,
+          },
+          {
+            // `RecallInscription.UsedItemTracker`: a `FlavourBuff` with no fixed
+            // duration - the arming site prolongs 10f at rank 1, 300f at rank 2
+            // (`Talent.onScrollUsed`/`onRunestoneUsed`, tag `v3.3.8`). Rank-1 value
+            // below; callers always pass the explicit duration.
+            tag: "row",
+            buff: "recallUsed",
+            duration: 10,
+          },
+          {
+            // `PotionOfCleansing.Cleanse.DURATION` (tag `v3.3.8`): 5f. The Cleanse
+            // spell prolongs 2*(rank-1) - 0/2/4, "1 less than displayed as spell
+            // is instant" - always explicit, so the table carries the class default.
+            tag: "row",
+            buff: "cleanseImmunity",
+            duration: 5,
+          },
+          {
+            // `Sunray.SunRayUsedTracker`: a duration-less plain-`Buff` marker - each
+            // victim is blinded only once ever (it never detaches on its own; the
+            // `RecentlyBlinded` clock only gates the blind-to-paralyze upgrade).
+            // Same 9999 stand-in.
+            tag: "row",
+            buff: "sunrayUsed",
+            duration: 9999,
+          },
+          {
+            // `Sunray.SunRayRecentlyBlindedTracker`: prolonged `2+2*points` (4 at
+            // rank 1, 6 at rank 2) alongside the Blindness it gates. Rank-1 value
+            // below; the cast site always passes the explicit duration.
+            tag: "row",
+            buff: "sunrayRecent",
+            duration: 4,
+          },
+          {
+            // `HolyLance.LanceCooldown`: the 30-turn recast gate (`FlavourBuff`,
+            // so the generic countdown/fade covers it; the table value is only
+            // ever read by the fade helper).
+            tag: "row",
+            buff: "lanceCooldown",
+            duration: 30,
+          },
+          {
+            // `AuraOfProtection.AuraBuff.DURATION`: the 20-turn protection window
+            // (generic countdown/fade; the cast site always passes it explicitly).
+            tag: "row",
+            buff: "auraProtection",
+            duration: 20,
+          },
+          {
+            // `Smite.SmiteTracker`: a duration-less plain-`FlavourBuff` marker armed
+            // for the one empowered strike (detached right after, like the
+            // `sunrayUsed` marker above it never lives out a turn; the 1 below
+            // only satisfies the table's shape).
+            tag: "row",
+            buff: "smiteTracker",
+            duration: 1,
+          },
+          {
+            // `GuidingLight.GuidingLightPriestCooldown`: the Priest's 50-turn
+            // free-cast gate (`FlavourBuff`, so the generic countdown/fade
+            // covers it; the cast site always passes it explicitly).
+            tag: "row",
+            buff: "guidingPriestCooldown",
+            duration: 50,
+          },
+          {
+            // Port-only marker tracking whether a Wall of Light is currently up
+            // (`WallOfLight`'s terrain has no port model - stated at the resolve
+            // site; this flag stands in for "a wall is active" so the free
+            // early-end recast (`WallOfLight.chargeUse()`) still works). Generic
+            // countdown/fade; the cast site always passes the explicit 20-turn
+            // `WallOfLight` terrain clock.
+            tag: "row",
+            buff: "lightWallActive",
+            duration: 20,
           },
         ],
       },

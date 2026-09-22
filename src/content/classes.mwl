@@ -278,7 +278,7 @@
       {
         tag: "effect",
         apply_to: "speed",
-        set: 2,
+        set: 1,
       },
       {
         tag: "effect",

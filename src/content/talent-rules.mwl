@@ -71,6 +71,22 @@
             subclass: "monk_sub",
             talents: "precise_assault,deadly_followup,unencumbered_spirit,monastic_vigor,combined_energy",
           },
+          {
+            // `Talent.initSubclassTalents()` PRIEST (`actors/hero/Talent.java`,
+            // tag `v3.3.8`): HOLY_LANCE, HALLOWED_GROUND, MNEMONIC_PRAYER - the
+            // class tier-3 pair (CLEANSE/LIGHT_READING) arrives from the class
+            // row, not here; the panel concatenates both like Java's one map.
+            tag: "row",
+            subclass: "priest",
+            talents: "holy_lance,hallowed_ground,mnemonic_prayer",
+          },
+          {
+            // `Talent.initSubclassTalents()` PALADIN (same source): LAY_ON_HANDS,
+            // AURA_OF_PROTECTION, WALL_OF_LIGHT, same class-row note as above.
+            tag: "row",
+            subclass: "paladin",
+            talents: "lay_on_hands,aura_of_protection,wall_of_light",
+          },
         ],
       },
       {
@@ -207,6 +223,30 @@
             targeting: "cell",
             talents: "ratsistance,ratlomacy,ratforcements",
           },
+          {
+            tag: "row",
+            id: "ascendedform",
+            class: "cleric",
+            charge: 50,
+            targeting: "none",
+            talents: "divine_intervention,judgement,flash",
+          },
+          {
+            tag: "row",
+            id: "trinity",
+            class: "cleric",
+            charge: 25,
+            targeting: "none",
+            talents: "body_form,mind_form,spirit_form",
+          },
+          {
+            tag: "row",
+            id: "powerofmany",
+            class: "cleric",
+            charge: 35,
+            targeting: "cell",
+            talents: "beaming_ray,life_link,stasis",
+          },
         ],
       },
       {
@@ -276,16 +316,30 @@
             talents: "focused_meal,restored_agility,weapon_recharging,lethal_haste,swift_equip",
           },
           {
+            // `Talent.initClassTalents()` CLERIC tier 1 (`actors/hero/Talent.java`,
+            // tag `v3.3.8`): SATIATED_SPELLS, HOLY_INTUITION, SEARING_LIGHT,
+            // SHIELD_OF_LIGHT, in this order.
             tag: "row",
             class: "cleric",
             tier: 1,
-            talents: "empowering_meal,scholars_intuition,tested_hypothesis,backup_barrier",
+            talents: "satiated_spells,holy_intuition,searing_light,shield_of_light",
           },
           {
+            // `Talent.initClassTalents()` CLERIC tier 2 (`actors/hero/Talent.java`,
+            // tag `v3.3.8`): ENLIGHTENING_MEAL, RECALL_INSCRIPTION, SUNRAY,
+            // DIVINE_SENSE, BLESS, in this order.
             tag: "row",
             class: "cleric",
             tier: 2,
-            talents: "energizing_meal,energizing_upgrade,wand_preservation,arcane_vision,shield_battery",
+            talents: "enlightening_meal,recall_inscription,sunray,divine_sense,bless",
+          },
+          {
+            // `Talent.initClassTalents()` CLERIC tier 3 (`actors/hero/Talent.java`,
+            // tag `v3.3.8`): CLEANSE, LIGHT_READING, in this order.
+            tag: "row",
+            class: "cleric",
+            tier: 3,
+            talents: "cleanse,light_reading",
           },
         ],
       },

@@ -225,6 +225,21 @@ export const MWL_EQUIPMENT_STAT_RULES: Readonly<Record<string, MwlEquipmentStatR
 	}]),
 );
 
+/** One melee class's combat data, authored per weapon in `item-rules.mwl` (`weaponCombatRules`). */
+export interface MwlWeaponCombatRule {
+	readonly maxFormula: string;
+	readonly accuracy: number;
+	readonly delay: number;
+	readonly reach: number;
+	readonly defenseFormula: string;
+}
+
+export const MWL_WEAPON_COMBAT_RULES: Readonly<Record<string, MwlWeaponCombatRule>> = Object.fromEntries(
+	MWL_TABLE_ROWS('weaponCombatRules', 'weapon').map((row) => [String(row.weapon), {
+		maxFormula: String(row.maxFormula), accuracy: Number(row.accuracy), delay: Number(row.delay),
+		reach: Number(row.reach), defenseFormula: String(row.defenseFormula),
+	}]),
+);
 
 /** Reads one numeric `effect` off a `trait` node, failing loudly when it is absent or NaN. */
 function traitEffectNumber(traitId: string, applyTo: string): number {

@@ -26,6 +26,7 @@
         columns: "item:string|nameKey:string",
         children: [
           { tag: "row", item: "kingsCrown", nameKey: "items.kingscrown.name" },
+          { tag: "row", item: "tengusMask", nameKey: "items.tengusmask.name" },
           { tag: "row", item: "clothArmor", nameKey: "items.armor.clotharmor.name" },
           { tag: "row", item: "armor", nameKey: "items.armor.clotharmor.name" },
           { tag: "row", item: "armorReward", nameKey: "items.armor.clotharmor.name" },
@@ -135,6 +136,10 @@
           { tag: "row", item: "infernalBrew", actionKey: "items.item.ac_throw", capitalize: true },
           { tag: "row", item: "blizzardBrew", actionKey: "items.item.ac_throw", capitalize: true },
           { tag: "row", item: "food", actionKey: "items.food.food.ac_eat", capitalize: true },
+          { tag: "row", item: "smallRation", actionKey: "items.food.food.ac_eat", capitalize: true },
+          { tag: "row", item: "berry", actionKey: "items.food.food.ac_eat", capitalize: true },
+          { tag: "row", item: "supplyRation", actionKey: "items.food.food.ac_eat", capitalize: true },
+          { tag: "row", item: "phantomMeat", actionKey: "items.food.food.ac_eat", capitalize: true },
           { tag: "row", item: "meat", actionKey: "items.food.food.ac_eat", capitalize: true },
           { tag: "row", item: "chargrilledMeat", actionKey: "items.food.food.ac_eat", capitalize: true },
           { tag: "row", item: "waterskin", actionKey: "items.waterskin.ac_drink", capitalize: true },
@@ -148,11 +153,16 @@
           { tag: "row", item: "armband", actionKey: "items.artifacts.masterthievesarmband.ac_steal", capitalize: true },
           { tag: "row", item: "horn", actionKey: "items.artifacts.hornofplenty.ac_snack", capitalize: true },
           { tag: "row", item: "chains", actionKey: "items.artifacts.etherealchains.ac_cast", capitalize: true },
+          // `HolyTome.AC_CAST` ("Cast", `windows.wndclericspells.cast` under the port key -
+          // the live checkout predates the Cleric). The tome is not one of the 13 real
+          // artifacts, so this row is the only `artifacts.mwl`-outside action entry.
+          { tag: "row", item: "holyTome", actionKey: "port.action.cast", capitalize: true },
           { tag: "row", item: "stoneOfAugmentation", actionKey: "port.ui.augment.title", capitalize: false },
           { tag: "row", item: "stone", actionKey: "items.stones.inventorystone.ac_use", capitalize: false },
           { tag: "row", item: "stylus", actionKey: "items.stylus.ac_inscribe", capitalize: false },
           { tag: "row", item: "brokenSeal", actionKey: "items.brokenseal.ac_affix", capitalize: true },
           { tag: "row", item: "kingsCrown", actionKey: "items.kingscrown.ac_wear", capitalize: false },
+          { tag: "row", item: "tengusMask", actionKey: "items.tengusmask.ac_wear", capitalize: false },
           { tag: "row", item: "candle", actionKey: "port.ui.candle.place", capitalize: false },
           { tag: "row", item: "torch", actionKey: "items.torch.ac_light", capitalize: true },
           { tag: "row", item: "ankh", actionKey: "items.ankh.ac_bless", capitalize: true },
@@ -255,12 +265,18 @@
         id: "itemFrames",
         columns: "kind:string|frame:number",
         children: [
-          { tag: "row", kind: "dewdrop", frame: 21 },
+          // Java `DEWDROP` is frame 21, but this copied sheet's exact dewdrop pixels are
+          // at cell 19 (the raw-id cell 21 is unrelated brown art).
+          { tag: "row", kind: "dewdrop", frame: 19 },
           { tag: "row", kind: "stone", frame: 147 },
           { tag: "row", kind: "potion", frame: 352 },
           { tag: "row", kind: "scroll", frame: 304 },
           { tag: "row", kind: "meat", frame: 432 },
-          { tag: "row", kind: "gold", frame: 18 },
+          // `ItemSpriteSheet.GOLD = UNCOLLECTIBLE+0` (tag `v3.3.8`) computes to 18, but this
+          // port's own sheet has the real coin-pile art two cells earlier, at 16 (18 is blank
+          // there) - a live-verified render confirmed a gold ground pile was invisible at 18
+          // and a real coin sprite sits at 16. Wired to the pixel, not the formula.
+          { tag: "row", kind: "gold", frame: 16 },
           { tag: "row", kind: "armor", frame: 176 },
           // `ItemSpriteSheet.WORN_SHORTSWORD` (`xy(1,7)` = flat index 96, same value the
           // `weaponReward` bag-item frame below already uses) - the weapon-side twin of
@@ -269,14 +285,22 @@
           { tag: "row", kind: "wand", frame: 208 },
           { tag: "row", kind: "food", frame: 437 },
           { tag: "row", kind: "seed", frame: 58 },
-          // `ItemSpriteSheet.PETAL` (`UNCOLLECTIBLE` 35 + 4): the Dried Rose's own drop.
-          { tag: "row", kind: "petal", frame: 39 },
+          // `ItemSpriteSheet.PETAL` (`UNCOLLECTIBLE` 18 + 4 = 22, tag `v3.3.8`):
+          // this port's copied sheet places the byte-identical petal cell at 20, while
+          // Java's frame-id cell 22 contains a weapon here (the same sheet-layout drift
+          // already recorded for GOLD). Use the verified petal pixels, not the raw id.
+          { tag: "row", kind: "petal", frame: 20 },
           { tag: "row", kind: "darkGold", frame: 453 },
           { tag: "row", kind: "dwarfToken", frame: 454 },
           { tag: "row", kind: "amulet", frame: 61 },
           { tag: "row", kind: "ring", frame: 224 },
+          // `ItemSpriteSheet.IRON_KEY/GOLDEN_KEY/CRYSTAL_KEY = MISC_CONSUMABLE+7/8/9`
+          // (`MISC_CONSUMABLE = xy(1,4)` = 48, tag `v3.3.8`) = 55/56/57 - `ironKey` was
+          // wired to 56, the golden key's own frame, rendering every found/dropped iron
+          // key as a golden one; all three cells were already byte-identical to the real
+          // v3.3.8 sheet in this port's own `items.png`, so only the wiring needed fixing.
           { tag: "row", kind: "crystalKey", frame: 57 },
-          { tag: "row", kind: "ironKey", frame: 56 },
+          { tag: "row", kind: "ironKey", frame: 55 },
           { tag: "row", kind: "goldenKey", frame: 56 },
           { tag: "row", kind: "bomb", frame: 80 },
           { tag: "row", kind: "corpseDust", frame: 465 },
@@ -289,7 +313,8 @@
           { tag: "row", kind: "honeypot", frame: 53 },
           { tag: "row", kind: "alchemize", frame: 237 },
           { tag: "row", kind: "bag", frame: 480 },
-          { tag: "row", kind: "sandBag", frame: 23 },
+          // Java `SANDBAG` is frame 23; the byte-identical cell in this sheet is 21.
+          { tag: "row", kind: "sandBag", frame: 21 },
           // `ItemSpriteSheet.TORCH = MISC_CONSUMABLE + 3` (tag `v3.3.8`); MISC_CONSUMABLE is 48
           // (ankh 48, stylus 49 per the rows above), so 51 - not 480, which is the bag's frame.
           { tag: "row", kind: "torch", frame: 51 },
@@ -302,6 +327,49 @@
         children: [
           { tag: "row", kind: "weaponDamage", minFormula: "tier+level", maxFormula: "5*(tier+1)+level*(tier+1)" },
           { tag: "row", kind: "armorReduction", minFormula: "level", maxFormula: "tier*(2+level)" },
+        ],
+      },
+      {
+        tag: "table",
+        id: "weaponCombatRules",
+        // One row per melee class in `items.mwl` (31, the same set as `items/weapon/melee/*.java`, tag `v3.3.8`).
+        // `maxFormula` is `MeleeWeapon.max(lvl)` and its per-class overrides (`min(lvl)` is `tier+lvl` for all of
+        // them, see `equipmentStatRules`); `accuracy` is `Weapon.ACC`, `delay` is `Weapon.DLY` (0.5 = two swings a
+        // turn), `reach` is `Weapon.RCH`, `defenseFormula` is `defenseFactor(owner)` (the shields, katana,
+        // quarterstaff, rapier). Formulas use `tier`, `level`, `+ - * /`, parentheses and `round()`.
+        columns: "weapon:string|maxFormula:string|accuracy:number|delay:number|reach:number|defenseFormula:string",
+        children: [
+          { tag: "row", weapon: "wornshortsword", maxFormula: "5*(tier+1)+level*(tier+1)", accuracy: 1, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "magesstaff", maxFormula: "round(3*(tier+1))+level*(tier+1)", accuracy: 1, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "dagger", maxFormula: "4*(tier+1)+level*(tier+1)", accuracy: 1, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "gloves", maxFormula: "round(2.5*(tier+1))+level*round(0.5*(tier+1))", accuracy: 1, delay: 0.5, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "rapier", maxFormula: "4*(tier+1)+level*(tier+1)", accuracy: 1, delay: 1, reach: 1, defenseFormula: "1" },
+          { tag: "row", weapon: "shortsword", maxFormula: "5*(tier+1)+level*(tier+1)", accuracy: 1, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "handaxe", maxFormula: "4*(tier+1)+level*(tier+1)", accuracy: 1.32, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "spear", maxFormula: "round(6.67*(tier+1))+level*round(1.33*(tier+1))", accuracy: 1, delay: 1.5, reach: 2, defenseFormula: "0" },
+          { tag: "row", weapon: "quarterstaff", maxFormula: "4*(tier+1)+level*(tier+1)", accuracy: 1, delay: 1, reach: 1, defenseFormula: "2" },
+          { tag: "row", weapon: "dirk", maxFormula: "4*(tier+1)+level*(tier+1)", accuracy: 1, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "sickle", maxFormula: "round(6.67*(tier+1))+level*(tier+1)", accuracy: 0.68, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "sword", maxFormula: "5*(tier+1)+level*(tier+1)", accuracy: 1, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "mace", maxFormula: "4*(tier+1)+level*(tier+1)", accuracy: 1.28, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "scimitar", maxFormula: "4*(tier+1)+level*(tier+1)", accuracy: 1, delay: 0.8, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "roundshield", maxFormula: "round(3*(tier+1))+level*(tier-1)", accuracy: 1, delay: 1, reach: 1, defenseFormula: "4+level" },
+          { tag: "row", weapon: "sai", maxFormula: "round(2.5*(tier+1))+level*round(0.5*(tier+1))", accuracy: 1, delay: 0.5, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "whip", maxFormula: "5*tier+level*tier", accuracy: 1, delay: 1, reach: 3, defenseFormula: "0" },
+          { tag: "row", weapon: "longsword", maxFormula: "5*(tier+1)+level*(tier+1)", accuracy: 1, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "battleaxe", maxFormula: "4*(tier+1)+level*(tier+1)", accuracy: 1.24, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "flail", maxFormula: "round(7*(tier+1))+level*round(1.6*(tier+1))", accuracy: 0.8, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "runicblade", maxFormula: "5*tier+round(level*(tier+2))", accuracy: 1, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "assassinsblade", maxFormula: "4*(tier+1)+level*(tier+1)", accuracy: 1, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "crossbow", maxFormula: "4*(tier+1)+level*tier", accuracy: 1, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "katana", maxFormula: "4*(tier+1)+level*(tier+1)", accuracy: 1, delay: 1, reach: 1, defenseFormula: "4" },
+          { tag: "row", weapon: "greatsword", maxFormula: "5*(tier+1)+level*(tier+1)", accuracy: 1, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "warhammer", maxFormula: "4*(tier+1)+level*(tier+1)", accuracy: 1.2, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "glaive", maxFormula: "round(6.67*(tier+1))+level*round(1.33*(tier+1))", accuracy: 1, delay: 1.5, reach: 2, defenseFormula: "0" },
+          { tag: "row", weapon: "greataxe", maxFormula: "5*(tier+4)+level*(tier+1)", accuracy: 1, delay: 1, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "greatshield", maxFormula: "round(3*(tier+1))+level*(tier-1)", accuracy: 1, delay: 1, reach: 1, defenseFormula: "6+2*level" },
+          { tag: "row", weapon: "gauntlet", maxFormula: "round(2.5*(tier+1))+level*round(0.5*(tier+1))", accuracy: 1, delay: 0.5, reach: 1, defenseFormula: "0" },
+          { tag: "row", weapon: "warscythe", maxFormula: "round(6.67*(tier+1))+level*(tier+1)", accuracy: 0.8, delay: 1, reach: 1, defenseFormula: "0" },
         ],
       },
       {
@@ -331,11 +399,21 @@
           { tag: "row", item: "armorReward", frame: 176 },
           { tag: "row", item: "weaponReward", frame: 96 },
           { tag: "row", item: "food", frame: 437 },
+          { tag: "row", item: "smallRation", frame: 437 },
+          { tag: "row", item: "berry", frame: 442 },
+          { tag: "row", item: "supplyRation", frame: 444 },
+          { tag: "row", item: "phantomMeat", frame: 445 },
           { tag: "row", item: "meat", frame: 432 },
           { tag: "row", item: "chargrilledMeat", frame: 432 },
           { tag: "row", item: "seed", frame: 58 },
           { tag: "row", item: "waterskin", frame: 480 },
-          { tag: "row", item: "velvetPouch", frame: 482 },
+          // `ItemSpriteSheet.BAGS = xy(1,31)` (flat 497): BACKPACK+1 through HOLSTER+5 -
+          // the four shop bags each wear their own container sprite, not the shared frame 0
+          // they fell back to for lack of a row (velvetPouch's old 482 was a quest-row cell).
+          { tag: "row", item: "velvetPouch", frame: 499 },
+          { tag: "row", item: "scrollHolder", frame: 500 },
+          { tag: "row", item: "potionBandolier", frame: 501 },
+          { tag: "row", item: "magicalHolster", frame: 502 },
           { tag: "row", item: "cloak", frame: 240 },
           { tag: "row", item: "hourglass", frame: 240 },
           { tag: "row", item: "chalice", frame: 240 },
@@ -347,12 +425,23 @@
           { tag: "row", item: "chains", frame: 240 },
           { tag: "row", item: "spiritBow", frame: 144 },
           { tag: "row", item: "wand", frame: 208 },
-          { tag: "row", item: "holyTome", frame: 246 },
+          // Cell 26 holds v3.3.8's real `ARTIFACT_TOME` art (263 there), patched into
+          // this checkout's older sheet at a transparent, unreferenced cell - 246 is
+          // Java's `ARTIFACT_SPELLBOOK`, the wrong book. See `src/images.ts`.
+          { tag: "row", item: "holyTome", frame: 26 },
           { tag: "row", item: "darkGold", frame: 453 },
           { tag: "row", item: "dwarfToken", frame: 454 },
           { tag: "row", item: "kingsCrown", frame: 60 },
+          { tag: "row", item: "tengusMask", frame: 59 },
           { tag: "row", item: "amulet", frame: 61 },
           { tag: "row", item: "bomb", frame: 80 },
+          // `ItemSpriteSheet.IRON_KEY/GOLDEN_KEY/CRYSTAL_KEY = MISC_CONSUMABLE+7/8/9` (48+7/8/9,
+          // tag `v3.3.8`) = 55/56/57 - unlisted here entirely, so a key's bag-slot icon fell
+          // back to frame 0 regardless of kind (the ground-pile icon used the separate
+          // `itemFrames` kind table above, which had its own `ironKey` mis-wiring, now fixed).
+          { tag: "row", item: "ironKey", frame: 55 },
+          { tag: "row", item: "goldenKey", frame: 56 },
+          { tag: "row", item: "crystalKey", frame: 57 },
           //`ItemSpriteSheet.BREWS` (`xy(1, 26)` = 400): infernal/blizzard/shocking/caustic +0..3.
           { tag: "row", item: "infernalBrew", frame: 400 },
           { tag: "row", item: "blizzardBrew", frame: 401 },
@@ -385,6 +474,10 @@
         columns: "item:string|hunger:number|heal:number",
         children: [
           { tag: "row", item: "food", hunger: 300, heal: 0 },
+          { tag: "row", item: "smallRation", hunger: 150, heal: 0 },
+          { tag: "row", item: "berry", hunger: 100, heal: 0 },
+          { tag: "row", item: "supplyRation", hunger: 200, heal: 5 },
+          { tag: "row", item: "phantomMeat", hunger: 600, heal: 0 },
           { tag: "row", item: "meat", hunger: 150, heal: 0 },
           { tag: "row", item: "chargrilledMeat", hunger: 150, heal: 0 },
           { tag: "row", item: "stewedMeat", hunger: 150, heal: 0 },
@@ -437,6 +530,11 @@
           { tag: "row", id: "capeExpPerLevelBase", item: "cape", effect: "expPerLevelBase", value: 5 },
           { tag: "row", id: "toolkitLevelCap", item: "toolkit", effect: "levelCap", value: 10 },
           { tag: "row", id: "toolkitEnergizeCost", item: "toolkit", effect: "energizeCost", value: 6 },
+          // `UnstableSpellbook` (tag `v3.3.8`): the artifact's own instance block -
+          // `levelCap = 10`, `chargeCap = (int)(level*0.6f)+2`.
+          { tag: "row", id: "spellbookLevelCap", item: "spellbook", effect: "levelCap", value: 10 },
+          { tag: "row", id: "spellbookChargeCapBase", item: "spellbook", effect: "chargeCapBase", value: 2 },
+          { tag: "row", id: "spellbookChargeCapPerLevel", item: "spellbook", effect: "chargeCapPerLevel", value: 0.6 },
           { tag: "row", id: "beaconLevelCap", item: "beacon", effect: "levelCap", value: 3 },
           { tag: "row", id: "beaconChargeCapBase", item: "beacon", effect: "chargeCapBase", value: 3 },
           { tag: "row", id: "beaconChargeCapPerLevel", item: "beacon", effect: "chargeCapPerLevel", value: 1 },
@@ -474,7 +572,7 @@
           // `HornOfPlenty.gainFoodValue()`: Pasty/PhantomMeat are worth `Hunger.HUNGRY/2` extra,
           // MeatPie worth a full extra `Hunger.HUNGRY` - fractions of `HUNGRY` applied on top of
           // each food's own stored hunger value (`MWL_CONSUMABLE_STATS`, this port's stand-in for
-          // `Food.energy`). This port has no PhantomMeat item, so only Pasty gets the 0.5 bonus.
+          // `Food.energy`). Pasty and PhantomMeat share the 0.5 bonus row.
           { tag: "row", id: "hornPastyBonusFraction", item: "horn", effect: "pastyBonusFraction", value: 0.5 },
           { tag: "row", id: "hornMeatPieBonusFraction", item: "horn", effect: "meatPieBonusFraction", value: 1 },
           { tag: "row", id: "chainsLevelCap", item: "chains", effect: "levelCap", value: 5 },
@@ -636,6 +734,10 @@
           { tag: "row", id: "stoneBlastMaxBase", item: "runestones", effect: "blastMaxBase", value: 12 },
           { tag: "row", id: "stoneBlastMaxPerDepth", item: "runestones", effect: "blastMaxPerDepth", value: 3 },
           { tag: "row", id: "bombTargetRange", item: "bombs", effect: "targetRange", value: 8 },
+          // `GuidingLight` flies `Ballistica.MAGIC_BOLT` (no fixed Java range); 8 is the
+          // aimed-utility convention every other targeted item here already uses
+          // (`beaconZapRange`, `stoneTargetRange`, `bombTargetRange` above).
+          { tag: "row", id: "tomeGuidingLightRange", item: "tome", effect: "guidingLightRange", value: 8 },
           { tag: "row", id: "waterskinHealFraction", item: "waterskin", effect: "healFractionPerDrop", value: 0.05 },
           { tag: "row", id: "transfusionSelfDamageFraction", item: "wandTransfusion", effect: "selfDamageFraction", value: 0.05 },
           { tag: "row", id: "transfusionHealingPerLevel", item: "wandTransfusion", effect: "healingPerLevel", value: 3 },
@@ -724,6 +826,10 @@
           { tag: "row", item: "stoneOfFear", descriptionKey: "items.stones.stoneoffear.desc" },
           { tag: "row", item: "stoneOfAugmentation", descriptionKey: "items.stones.stoneofaugmentation.desc" },
           { tag: "row", item: "food", descriptionKey: "items.food.food.desc" },
+          { tag: "row", item: "smallRation", descriptionKey: "items.food.food.desc" },
+          { tag: "row", item: "berry", descriptionKey: "items.food.berry.desc" },
+          { tag: "row", item: "supplyRation", descriptionKey: "items.food.food.desc" },
+          { tag: "row", item: "phantomMeat", descriptionKey: "items.food.phantommeat.desc" },
           { tag: "row", item: "meat", descriptionKey: "items.food.mysterymeat.desc" },
           { tag: "row", item: "chargrilledMeat", descriptionKey: "items.food.chargrilledmeat.desc" },
           { tag: "row", item: "stewedMeat", descriptionKey: "items.food.stewedmeat.desc" },

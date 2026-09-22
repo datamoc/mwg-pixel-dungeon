@@ -21,6 +21,115 @@
 
 // HUMAN: English source copy for strings invented by this port.
 export const PORT_STRINGS_EN: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': 'holy weapon',
+	'port.buff.holyweapon.desc': 'The Cleric has imbued their worn weapon with holy energy, temporarily overriding any existing enchantment and causing the weapon to deal an extra 2 magical damage on each attack.\\n\\nTurns Remaining: {0}.',
+	'port.buff.holyward.name': 'holy ward',
+	'port.buff.holyward.desc': 'The Cleric has imbued their worn armor with holy energy, temporarily overriding any existing glyph and causing the armor to block an extra 1 point of damage.\\n\\nTurns Remaining: {0}.',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': 'holy tome',
+	'port.desc.holytome': 'A holy tome that acts as a focus for the Cleric\'s divine magic. Using the tome lets the Cleric cast a variety of magical spells.\\n\\nThe tome will steadily get more powerful as the Cleric uses it, giving the Cleric more maximum charges and slightly increasing the recharging speed.',
+	'port.log.tomelevelup': 'Your tome grows stronger!',
+	'port.log.tomenospell': 'You\'re not able to cast that spell right now.',
+	'port.log.tomecursed': 'You cannot use a cursed tome.',
+	'port.spell.guidinglight.name': 'guiding light',
+	'port.spell.guidinglight.short_desc': 'Deals ranged magic damage and guarantees a hit.',
+	'port.spell.holyweapon.name': 'holy weapon',
+	'port.spell.holyweapon.short_desc': 'Temporarily overrides enchantments to boost damage.',
+	'port.spell.holyward.name': 'holy ward',
+	'port.spell.holyward.short_desc': 'Temporarily overrides glyphs to boost armor blocking.',
+	'port.buff.illuminated.name': 'Illuminated',
+	'port.buff.illuminated.desc': 'This character is glowing as a result of being struck by guiding light. While the glow isn\'t strong enough to brighten the surrounding area, the magical effect will make landing blows on them much easier for the Cleric.',
+	'port.spell.charge_cost': 'Charge cost: {cost}',
+
+	'port.spell.cast_title': 'cast a spell',
+	'port.armorability.ascendedform.name': 'ascended form',
+	'port.armorability.ascendedform.short_desc': 'Gain a 30-point shield for 10 turns.',
+	'port.spell.judgement.name': 'judgement',
+	'port.spell.judgement.short_desc': 'Deals area damage to all visible enemies.',
+	'port.spell.flash.name': 'flash',
+	'port.spell.flash.short_desc': 'Teleport to an empty nearby cell.',
+	// Cleric tier-1 talents + talent spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like the tome block above does).
+	'port.talent.satiated_spells.title': 'Satiated Spells',
+	'port.talent.satiated_spells.desc': '_+1:_ Eating food causes the Cleric to gain _3 shielding_ the next time they cast a spell.\\n\\n_+2:_ Eating food causes the Cleric to gain _5 shielding_ the next time they cast a spell.',
+	'port.talent.holy_intuition.title': 'holy intuition',
+	'port.talent.holy_intuition.desc': '_+1:_ The Cleric can cast _Holy Intuition,_ a spell that reveals whether an item is cursed at the cost of _3 charges._\\n\\n_+2:_ The Cleric can cast _Holy Intuition,_ a spell that reveals whether an item is cursed at the cost of _2 charges._',
+
+	'port.talent.searing_light.title': 'searing light',
+	'port.talent.searing_light.desc': '_+1:_ The Cleric\'s physical attacks on enemies illuminated by _Guiding Light_ deal _+3 damage._\\n\\n_+2:_ The Cleric\'s physical attacks on enemies illuminated by _Guiding Light_ deal _+5 damage._',
+
+	'port.talent.shield_of_light.title': 'shield of light',
+	'port.talent.shield_of_light.desc': '_+1:_ The Cleric can cast _Shield of Light,_ a spell that is cast instantly and grants them _2-4 armor_ against a target for 5 turns at the cost of 1 charge.\\n\\n_+2:_ The Cleric can cast _Shield of Light,_ a spell that is cast instantly and grants them _3-6 armor_ against a target for 5 turns at the cost of 1 charge.',
+
+	'port.spell.holyintuition.name': 'holy intuition',
+	'port.spell.holyintuition.short_desc': 'identifies whether an item is cursed or not.',
+	'port.spell.holyintuition.prompt': 'choose an item',
+	'port.spell.holyintuition.cursed': 'You sense malevolent magic lurking within this item.',
+	'port.spell.holyintuition.uncursed': 'This item is free of malevolent magic.',
+
+	'port.spell.shieldoflight.name': 'shield of light',
+	'port.spell.shieldoflight.short_desc': 'Grants temporary armor against a target.',
+
+	'port.log.clericnotarget': 'There is no target there.',
+
+	'port.buff.satiatedspells.name': 'Shielding Spell',
+	'port.buff.satiatedspells.desc': 'The next spell the Cleric casts will grant them a small amount of shielding.',
+
+	'port.buff.shieldoflight.name': 'shield of light',
+	'port.buff.shieldoflight.desc': 'A thin shield of light is standing between this character and an enemy. It\'s not strong enough to outright block attacks, but will soften them.\\n\\nTurns Remaining: {0}',
+	// Cleric tier-2 talents + talent spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it, like the tier-1 block above. Skipped keys are all
+	// metamorph-only (`meta_desc`, the non-Cleric `refunded` line) or
+	// display-unreachable (the `UsedItemTracker` name/desc has no icon, same as Java).
+	'port.talent.enlightening_meal.title': 'Enlightening Meal',
+	'port.talent.enlightening_meal.desc': '_+1:_ Eating food takes the Cleric 1 turn and grants them _0.67 charges_ on their holy tome.\\n\\n_+2:_ Eating food takes the Cleric 1 turn and grants them _1 charge_ on their holy tome.',
+
+	'port.talent.recall_inscription.title': 'Recall Inscription',
+	'port.talent.recall_inscription.desc': '_+1:_ The Cleric can cast _Recall Inscription,_ a spell that lets them repeat the effect of the last runestone or scroll they used within _10 turns._\\n\\n_+2:_ The Cleric can cast _Recall Inscription,_ a spell that lets them repeat the effect of the last runestone or scroll they used within _300 turns._\\n\\nRecall Inscription cannot be used with scrolls of upgrade. This spell\'s charge cost varies based on which item was used recently: 2 for a runestone, 3 for a scroll, 4 for an exotic scroll. This charge cost is also doubled when used with a scroll of transmutation, or alchemy items that must be crafted using transmutation or upgrade.',
+
+	'port.talent.sunray.title': 'Sunray',
+	'port.talent.sunray.desc': '_+1:_ The Cleric can cast _Sunray,_ a spell that deals _4-8 damage_ and blinds the target for _4 turns,_ at the cost of 1 charge.\\n\\n_+2:_ The Cleric can cast _Sunray,_ a spell that deals _6-12 damage_ and blinds the target for _6 turns,_ at the cost of 1 charge.\\n\\nSunray can only blind each target once, but if the target is already blinded by Sunray then it paralyses instead. Sunray always deals maximum damage to demonic and undead foes.',
+
+	'port.talent.divine_sense.title': 'Divine Sense',
+	'port.talent.divine_sense.desc': '_+1:_ The Cleric can cast _Divine Sense,_ a spell that grants them _8 tiles_ of Mind Vision for 50 turns and takes no time to cast, at the cost of 2 charges.\\n\\n_+2:_ The Cleric can cast _Divine Sense,_ a spell that grants them _12 tiles_ of Mind Vision for 50 turns and takes no time to cast, at the cost of 2 charges.',
+
+	'port.talent.bless.title': 'Bless',
+	'port.talent.bless.desc': '_+1:_ The Cleric can cast _Bless,_ a spell that grants _6 turns of bless and 10 shielding_ when cast on themselves or _10 turns of bless and 10 healing_ when cast on another character, at the cost of 1 charge.\\n\\n_+2:_ The Cleric can cast _Bless,_ a spell that grants _10 turns of bless and 15 shielding_ when cast on themselves or _15 turns of bless and 15 healing_ when cast on another character, at the cost of 1 charge.\\n\\nExcess healing from this spell is converted into shielding.',
+	'port.talent.cleanse.title': 'Cleanse',
+	'port.talent.cleanse.desc': '_+1:_ The Cleric can cast _Cleanse,_ a spell which _removes negative status effects_ from the Cleric and any nearby allies, and grants them _10 shielding,_ at the cost of 2 charges.\\n\\n_+2:_ The Cleric can cast _Cleanse,_ a spell which _grants 3 turns of negative status immunity_ to the Cleric and any nearby allies, and grants them _20 shielding,_ at the cost of 2 charges.\\n\\n_+3:_ The Cleric can cast _Cleanse,_ a spell which _grants 5 turns of negative status immunity_ to the Cleric and any nearby allies, and grants them _30 shielding,_ at the cost of 2 charges.',
+	'port.talent.light_reading.title': 'Light Reading',
+	'port.talent.light_reading.desc': '_+1:_ The Cleric can use their holy tome when it is not equipped, but it recharges at _25% speed_ when unequipped.\\n\\n_+2:_ The Cleric can use their holy tome when it is not equipped, but it recharges at _50% speed_ when unequipped.\\n\\n_+3:_ The Cleric can use their holy tome when it is not equipped, but it recharges at _75% speed_ when unequipped.',
+
+	'port.spell.sunray.name': 'sunray',
+	'port.spell.sunray.short_desc': 'Deals ranged magic damage and blinds a target once.',
+
+	'port.spell.bless.name': 'bless',
+	'port.spell.bless.short_desc': 'Blesses & shields Cleric, blesses & heals others.',
+
+	'port.spell.divinesense.name': 'divine sense',
+	'port.spell.divinesense.short_desc': 'Gain temporary mind vision in a wide range.',
+
+	'port.spell.recallinscription.name': 'recall inscription',
+	'port.spell.recallinscription.short_desc': 'Repeats a recently used runestone or scroll.',
+	'port.spell.cleanse.name': 'cleanse',
+	'port.spell.cleanse.short_desc': 'Clears debuffs and grants shielding.',
+
+	'port.buff.divinesense.name': 'divine sense',
+	'port.buff.divinesense.desc': 'This character is temporarily able to see other nearby creatures with their mind!\\n\\nTurns remaining: {0}.',
+	'port.buff.recallused.name': 'recently used rune',
+	'port.buff.recallused.desc': 'The Cleric has recently used an item that works with the inscribed recall spell. The Cleric can cast the spell to repeat the item\'s effect.\\n\\nItem Used: {0}.\\n\\nTurns Remaining: {1}.',
+	'port.buff.cleanseimmunity.name': 'cleansed',
+	'port.buff.cleanseimmunity.desc': 'This character is temporarily immune to all harmful status effects!\\n\\nTurns remaining: {0}.',
+
+	'port.action.cast': 'Cast',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': 'flashbang',
@@ -633,6 +742,106 @@ export const PORT_STRINGS_EN: Record<string, string> = {
  */
 // HUMAN: French translation reviewed by the project owner.
 export const PORT_STRINGS_FR: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': 'arme sacrée',
+	'port.buff.holyweapon.desc': 'Le Clerc a imprégné son arme avec une énergie sacrée, remplaçant temporairement tout enchantement déjà présent pour ajouter 2 points de dégâts magiques à chaque attaque.\\n\\nTours restants : {0}.',
+	'port.buff.holyward.name': 'protection sacrée',
+	'port.buff.holyward.desc': 'Le Clerc a imprégné son armure avec une énergie sacrée, remplaçant temporairement tout glyphe déjà présent pour augmenter de 1 point les dégâts bloqués par cette armure.\\n\\nTours restants : {0}.',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': 'tome sacré',
+	'port.desc.holytome': 'Un tome sacré utile comme catalyseur pour la magie divine du Clerc. Utiliser le tome permet au Clerc de lancer une grande variété de sorts.\\n\\nLe tome deviendra de plus en plus puissant en étant utilisé, ce qui augmente son nombre de charges maximum et améliore légèrement sa vitesse de recharge.',
+	'port.log.tomelevelup': 'Votre tome se renforce !',
+	'port.log.tomenospell': 'Vous ne pouvez pas lancer ce sort maintenant.',
+	'port.log.tomecursed': 'Vous ne pouvez pas utiliser un tome maudit.',
+	'port.spell.guidinglight.name': 'lumière guidante',
+	'port.spell.guidinglight.short_desc': 'Inflige des dégâts magiques à distante et rend garantie une attaque.',
+
+	'port.spell.holyweapon.name': 'arme sacrée',
+	'port.spell.holyweapon.short_desc': 'Remplace temporairement un enchantement pour augmenter les dégâts.',
+
+	'port.spell.holyward.name': 'protection sacrée',
+	'port.spell.holyward.short_desc': 'Remplace temporairement le glyphe pour améliorer le blocage de l\'armure.',
+
+	'port.buff.illuminated.name': 'Illuminé',
+	'port.buff.illuminated.desc': 'Ce personnage luit après avoir été touché par une lumière guidante. Même si cette lumière n\'est pas assez intense pour éclairer les alentours, elle permet au Clerc de toucher sa cible bien plus facilement.',
+	'port.spell.charge_cost': 'Coût de charges : {cost}',
+
+	'port.spell.cast_title': 'lancer un sort',
+	'port.talent.satiated_spells.title': 'Sorts à satiété',
+	'port.talent.satiated_spells.desc': '_+1 :_ Manger permet au Clerc de gagner _3 protections_ la prochaine fois qu\'iel lance un sort.\\n\\n_+2 :_ Manger permet au Clerc de gagner _5 protections_ la prochaine fois qu\'iel lance un sort.',
+
+	'port.talent.holy_intuition.title': 'intuition sacrée',
+	'port.talent.holy_intuition.desc': '_+1 :_ Le Clerc peut lancer _Intuition Sacrée_, un sort permettant de révéler si un objet est maudit ou non au prix de _3 charges_.\\n\\n_+2 :_ Le Clerc peut lancer _Intuition Sacrée_, un sort permettant de révéler si un objet est maudit ou non au prix de _2 charges_.',
+
+	'port.talent.searing_light.title': 'lumière calcinante',
+	'port.talent.searing_light.desc': '_+1 :_ Les attaques physiques du Clerc sur les ennemis illuminés par _Lumière Guidante_ infligent _+3 dégâts._\\n\\n_+2 :_ Les attaques physiques du Clerc sur les ennemis illuminés par _Lumière Guidante_ infligent _+5 dégâts._',
+
+	'port.talent.shield_of_light.title': 'bouclier de lumière',
+	'port.talent.shield_of_light.desc': '_+1 :_ Le Clerc peut lancer _Bouclier de Lumière_, un sort qui se lance instantanément et qui accorde _2-4 d\'armure_ pendant 5 tours contre une cible au prix de 1 charge.\\n\\n_+2 :_ Le Clerc peut lancer _Bouclier de Lumière_, un sort qui se lance instantanément et qui accorde _3-6 d\'armure_ pendant 5 tours contre une cible au prix de 1 charge.',
+
+	'port.spell.holyintuition.name': 'intuition sacrée',
+	'port.spell.holyintuition.short_desc': 'identifie si un objet est maudit ou non.',
+	'port.spell.holyintuition.prompt': 'choisissez un objet',
+	'port.spell.holyintuition.cursed': 'Vous percevez une aura malveillante provenant de cet objet.',
+	'port.spell.holyintuition.uncursed': 'Cet objet est dépourvu de toute aura malveillante.',
+
+	'port.spell.shieldoflight.name': 'bouclier de lumière',
+	'port.spell.shieldoflight.short_desc': 'Donne une armure temporaire contre un ennemi.',
+
+	'port.log.clericnotarget': 'Il n\'y a pas de cible à cet endroit.',
+
+	'port.buff.satiatedspells.name': 'Sort protecteur',
+	'port.buff.satiatedspells.desc': 'Le prochain sort que le Clerc lancera lui accordera une légère protection.',
+
+	'port.buff.shieldoflight.name': 'bouclier de lumière',
+	'port.buff.shieldoflight.desc': 'Un mince bouclier de lumière se tient entre ce personnage et un ennemi. Il n\'est pas assez puissant pour complètement arrêter les attaques, mais peut les ralentir.\\n\\nTours restants : {0}',
+	'port.talent.enlightening_meal.title': 'Repas Inspirant',
+	'port.talent.enlightening_meal.desc': '_+1 :_ Manger prend un tour au Clerc et confère _0.67 charge_ à son tome sacré.\\n\\n_+2 :_ Manger prend un tour au Clerc et confère _1 charge_ à son tome sacré.',
+
+	'port.talent.recall_inscription.title': 'Rappel d\'inscription',
+	'port.talent.recall_inscription.desc': '_+1 :_ Le Clerc peut lancer _Rappel d\'Inscription_, un sort lui permettant de répéter l\'effet du dernier parchemin ou pierre runique utilisé durant les _10 derniers tours._\\n\\n_+2 :_ Le Clerc peut lancer _Rappel d\'Inscription_, un sort lui permettant de répéter l\'effet du dernier parchemin ou pierre runique utilisé durant les _300 derniers tours._\\n\\nRappel d\'inscription ne peut pas être utilisé avec des parchemins d\'amélioration. Le coût en charges dépend de l\'objet utilisé : 2 pour une pierre runique, 3 pour un parchemin, 4 pour un parchemin exotique. Ce coût est de plus doublé pour un parchemin de transmutation ou les objets alchimiques fabriqués avec des parchemins de transmutation ou d\'amélioration.',
+
+	'port.talent.sunray.title': 'Rayon de Soleil',
+	'port.talent.sunray.desc': '_+1 :_ Le Clerc peut lancer _Rayon de Soleil_, un sort infligeant _4-8 dégâts_ et aveuglant sa cible pendant _4 tours_ au prix de 1 charge.\\n\\n_+2 :_ Le Clerc peut lancer _Rayon de Soleil_, un sort infligeant _6-12 dégâts_ et aveuglant sa cible pendant _6 tours_ au prix de 1 charge.\\n\\nRayon de Soleil ne peut aveugler une cible donnée qu\'une seule fois, mais si la cible est déjà aveuglée par ce sort elle devient paralysée. Rayon de Soleil inflige toujours le maximum de dégâts aux ennemis morts-vivants et aux démons.',
+
+	'port.talent.divine_sense.title': 'Sens Divins',
+	'port.talent.divine_sense.desc': '_+1 :_ Le Clerc peut lancer _Sens Divins_, un sort qui se lance instantanément et lui accorde une vision spirituelle sur _8 cases_ pendant 50 tours, au prix de 2 charges.\\n\\n_+2 :_ Le Clerc peut lancer _Sens Divins_, un sort qui se lance instantanément et lui accorde une vision spirituelle sur _12 cases_ pendant 50 tours, au prix de 2 charges.',
+
+	'port.talent.bless.title': 'Bénédiction',
+	'port.talent.bless.desc': '_+1 :_ Le Clerc peut lancer _Bénédiction_, un sort accordant _6 tours de bénédiction et 10 protections_ quand lancé sur ellui-même ou _10 tours de bénédiction et 10 soins_ quand lancé sur un autre personnage, au prix de 1 charge.\\n\\n_+2 :_ Le Clerc peut lancer _Bénédiction_, un sort accordant _10 tours de bénédiction et 15 protections_ quand lancé sur ellui-même ou _15 tours de bénédiction et 15 soins_ quand lancé sur un autre personnage, au prix de 1 charge.\\n\\nL\'excès de soins de ce sort est convertit en protection.',
+	'port.talent.cleanse.title': 'Purification',
+	'port.talent.cleanse.desc': '_+1 :_ Le Clerc peut lancer _Purification_, un sort qui _retire les effets négatifs_ du Clerc et de ses alliés proches, et leur accorde _10 protections_ au prix de 2 charges.\\n\\n_+2 :_ Le Clerc peut lancer _Purification_, un sort qui _donne 3 tours d\'immunité aux effets négatifs_ au Clerc et à ses alliés proches, et leur accorde _20 protections_ au prix de 2 charges.\\n\\n_+3 :_ Le Clerc peut lancer _Purification_, un sort qui _donne 5 tours d\'immunité aux effets négatifs_ au Clerc et à ses alliés proches, et leur accorde _30 protections_ au prix de 2 charges.',
+	'port.talent.light_reading.title': 'Lecture Légère',
+	'port.talent.light_reading.desc': '_+1 :_ Le Clerc peut utiliser son tome sacré s\'il n\'est pas équipé, mais il se recharge à _25%_ de sa vitesse normale quand il n\'est pas équipé.\\n\\n_+2 :_ Le Clerc peut utiliser son tome sacré s\'il n\'est pas équipé, mais il se recharge à _50%_ de sa vitesse normale quand il n\'est pas équipé.\\n\\n_+3 :_ Le Clerc peut utiliser son tome sacré s\'il n\'est pas équipé, mais il se recharge à _75%_ de sa vitesse normale quand il n\'est pas équipé.',
+
+	'port.spell.sunray.name': 'rayon de soleil',
+	'port.spell.sunray.short_desc': 'Inflige des dégâts magiques à distance et aveugle une seule fois une cible.',
+
+	'port.spell.bless.name': 'bénédiction',
+	'port.spell.bless.short_desc': 'Bénit et protège le Clerc, bénit et soigne les autres.',
+
+	'port.spell.divinesense.name': 'sens divin',
+	'port.spell.divinesense.short_desc': 'Donne temporairement une vision spirituelle dans un large rayon.',
+
+	'port.spell.recallinscription.name': 'rappel d\'inscription',
+	'port.spell.recallinscription.short_desc': 'Répète une pierre runique ou un parchemin récemment utilisé.',
+	'port.spell.cleanse.name': 'purification',
+	'port.spell.cleanse.short_desc': 'Supprime les effets négatifs et donne de la protection.',
+
+	'port.buff.divinesense.name': 'sens divin',
+	'port.buff.divinesense.desc': 'Ce personnage est momentanément capable de voir les autres créatures avec son esprit !\\n\\nTours restants : {0}.',
+	'port.buff.recallused.name': 'rune récemment utilisée',
+	'port.buff.recallused.desc': 'Le Clerc a récemment utilisé un objet qui peut être exploité par le sort de rappel d\'inscription. Le Clerc peut utiliser ce sort pour répliquer l\'effet de l\'objet.\\n\\nObjet utilisé : {0}.\\n\\nTours restants : {1}.',
+	'port.buff.cleanseimmunity.name': 'purifié',
+	'port.buff.cleanseimmunity.desc': 'Ce personnage est temporairement immunisé contre tous les effets de statut néfastes !\\n\\nTours restants : {0}.',
+
+	'port.action.cast': 'Lancer',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': 'bombe aveuglante',
@@ -1198,6 +1407,106 @@ export const PORT_STRINGS_FR: Record<string, string> = {
  */
 
 export const PORT_STRINGS_DE: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': 'heilige Waffe',
+	'port.buff.holyweapon.desc': 'Der Kleriker verleiht der von ihm getragenen Waffe heilige Energie, wodurch jede eventuell vorhandene Verzauberung überschrieben wird und die Waffe zusätzlich 2 magischen Schaden verursacht.\\n\\nVerbleibende Züge: {0}.',
+	'port.buff.holyward.name': 'heilige Wache',
+	'port.buff.holyward.desc': 'Der Kleriker verleiht der von ihm getragenen Rüstung heilige Energie, wodurch jede eventuell vorhandene Glyphe überschrieben wird und die Rüstung einen zusätzlichen Schadenspunkt abblockt.\\n\\nVerbleibende Züge: {0}.',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': 'heiliger Foliant',
+	'port.desc.holytome': 'Ein heiliger Foliant, der als Fokus für die göttliche Magie des Klerikers fungiert. Mithilfe des Folianten kann der Kleriker eine Vielzahl von Zaubersprüchen wirken.\\n\\nWährend der Kleriker den Folianten verwendet, wird dieser mit der Zeit immer mächtiger, wodurch der Kleriker mehr maximale Ladungen erhält und sich die Aufladerate leicht erhöht.',
+	'port.log.tomelevelup': 'Dein Zauberbuch wurde stärker!',
+	'port.log.tomenospell': 'Du kannst diesen Zauber gerade nicht sprechen.',
+	'port.log.tomecursed': 'Du kannst ein verfluchtes Zauberbuch nicht benutzen.',
+	'port.spell.guidinglight.name': 'Leitlicht',
+	'port.spell.guidinglight.short_desc': 'Fügt auf die Entfernung magischen Schaden zu und garantiert einen Treffer.',
+
+	'port.spell.holyweapon.name': 'heilige Waffe',
+	'port.spell.holyweapon.short_desc': 'Überschreibt zeitweilig Verzauberungen, um den Schaden zu erhöhen.',
+
+	'port.spell.holyward.name': 'heilige Wache',
+	'port.spell.holyward.short_desc': 'Überschreibt zeitweilig Glyphen, um die Rüstungsstärke zu erhöhen.',
+
+	'port.buff.illuminated.name': 'Beleuchtet',
+	'port.buff.illuminated.desc': 'Dieser Charakter leuchtet infolge des Treffers durch das Leitlicht. Obwohl das Leuchten nicht stark genug ist, um die Umgebung zu erhellen, macht die magische Wirkung es dem Kleriker wesentlich leichter, ihn zu treffen.',
+	'port.spell.charge_cost': 'Ladungskosten: {cost}',
+
+	'port.spell.cast_title': 'einen Zauber sprechen',
+	'port.talent.satiated_spells.title': 'verstärkte Zauber',
+	'port.talent.satiated_spells.desc': '_+1:_ Durch Essen erhält der Kleriker _3 Abschirmung_, wenn er das nächste Mal einen Zauber wirkt.\\n\\n_+2:_ Durch Essen erhält der Kleriker _5 Abschirmung_, wenn er das nächste Mal einen Zauber wirkt.',
+
+	'port.talent.holy_intuition.title': 'heilige Intuition',
+	'port.talent.holy_intuition.desc': '+1: Der Kleriker kann _Heilige Intuition_ wirken, einen Zauber, der _3 Ladungen_ kostet und enthüllt, ob ein Gegenstand verflucht ist.\\n\\n+2: Der Kleriker kann _Heilige Intuition_ wirken, einen Zauber, der _2 Ladungen_ kostet und enthüllt, ob ein Gegenstand verflucht ist.',
+
+	'port.talent.searing_light.title': 'sengendes Licht',
+	'port.talent.searing_light.desc': '_+1:_ Die physischen Angriffe des Klerikers auf von _Leitlicht_ erleuchtete Gegner verursachen _+3 Schaden._\\n\\n_+2:_ Die physischen Angriffe des Klerikers auf von _Leitlicht_ erleuchtete Gegner verursachen _+5 Schaden._',
+
+	'port.talent.shield_of_light.title': 'Lichtschild',
+	'port.talent.shield_of_light.desc': '_+1:_ Der Kleriker kann _Lichtschild_ wirken, einen Zauber, der sofort wirkt und ihm _2–4 Rüstung_ für 5 Züge gegen ein Ziel gewährt, was 1 Ladung kostet.\\n\\n_+2:_ Der Kleriker kann _Lichtschild_ wirken, einen Zauber, der sofort wirkt und ihm _3–6 Rüstung_ für 5 Züge gegen ein Ziel gewährt, was 1 Ladung kostet.',
+
+	'port.spell.holyintuition.name': 'heilige Intuition',
+	'port.spell.holyintuition.short_desc': 'Bestimmt, ob ein Gegenstand verflucht ist.',
+	'port.spell.holyintuition.prompt': 'wähle einen Gegenstand',
+	'port.spell.holyintuition.cursed': 'Du spürst, dass in diesem Gegenstand bösartige Magie lauert.',
+	'port.spell.holyintuition.uncursed': 'Dieser Gegenstand ist frei von bösartiger Magie.',
+
+	'port.spell.shieldoflight.name': 'Lichtschild',
+	'port.spell.shieldoflight.short_desc': 'Gewährt zeitweilig Rüstungsschutz gegen ein Ziel.',
+
+	'port.log.clericnotarget': 'Es ist kein Ziel da.',
+
+	'port.buff.satiatedspells.name': 'Schutzzauber',
+	'port.buff.satiatedspells.desc': 'Der nächste Zauber, den der Kleriker wirkt, verleiht ihm eine geringe Menge an Abschirmung.',
+
+	'port.buff.shieldoflight.name': 'Lichtschild',
+	'port.buff.shieldoflight.desc': 'Ein feiner Lichtschild steht zwischen diesem Charakter und einem Feind. Er ist nicht stark genug, um Angriffe vollständig abzublocken, wird sie aber abschwächen.\\n\\nVerbleibende Züge: {0}',
+	'port.talent.enlightening_meal.title': 'Erleuchtende Mahlzeit',
+	'port.talent.enlightening_meal.desc': '_+1:_ Das Essen von Nahrung kostet den Kleriker _1 Zug_ und gewährt ihm _0.67 Ladung_ für seinen Heiligen Folianten.\\n\\n_+2:_ Das Essen von Nahrung kostet den Kleriker _1 Zug_ und gewährt ihm _1 Ladung_ für seinen Heiligen Folianten.',
+
+	'port.talent.recall_inscription.title': 'Runen-Echo',
+	'port.talent.recall_inscription.desc': '_+1:_ Der Kleriker kann _Runen-Echo_ wirken, einen Zauber, der den Effekt des letzten Runensteins oder der letzten Schriftrolle, die er in den letzten _10 Zügen_ verwendet hat, repliziert.\\n\\n_+2:_ Der Kleriker kann _Runen-Echo_ wirken, einen Zauber, der den Effekt des letzten Runensteins oder der letzten Schriftrolle, die er in den letzten _300 Zügen_ verwendet hat, repliziert.\\n\\nRunen-Echo kann nicht verwendet werden, um Schriftrollen der Verbesserung zu replizieren. Die Aufladekosten dieses Zaubers variieren je nachdem, welcher Gegenstand zuletzt verwendet wurde: 2 für einen Runenstein, 3 für eine Schriftrolle, 4 für eine exotische Schriftrolle. Diese Aufladekosten verdoppeln sich auch beim Replizieren einer Schriftrolle der Umwandlung oder von Alchemiegegenständen, die mithilfe von Umwandlung oder Verbesserung hergestellt werden müssen.',
+
+	'port.talent.sunray.title': 'Sonnenstrahl',
+	'port.talent.sunray.desc': '_+1:_ Der Kleriker kann _Sonnenstrahl_ wirken, einen Zauber, der 4–8 Schaden verursacht und das Ziel für 4 Züge blendet. Dies kostet 1 Ladung.\\n\\n_+2:_ Der Kleriker kann _Sonnenstrahl_ wirken, einen Zauber, der 6–12 Schaden verursacht und das Ziel für 6 Züge blendet. Dies kostet 1 Ladung.\\n\\nSonnenstrahl kann jedes Ziel nur einmal blenden. Ist das Ziel bereits durch Sonnenstrahl geblendet, wird es gelähmt. Dämonischen und untoten Gegnern fügt Sonnenstrahl stets maximalen Schaden zu.',
+
+	'port.talent.divine_sense.title': 'Göttlicher Sinn',
+	'port.talent.divine_sense.desc': '_+1:_ Der Kleriker kann _Göttlicher Sinn_ wirken, einen Zauber, der ihm 50 Züge lang _8 Felder_ Übersinnliche Wahrnehmung gewährt sofort wirksam ist. Dies kostet 2 Ladungen.\\n\\n_+2:_ Der Kleriker kann _Göttlicher Sinn_ wirken, einen Zauber, der ihm 50 Züge lang _12 Felder_ Übersinnliche Wahrnehmung gewährt und sofort wirksam ist. Dies kostet 2 Ladungen.',
+
+	'port.talent.bless.title': 'Segen',
+	'port.talent.bless.desc': '_+1:_ Der Kleriker kann _Segen_ spenden, einen Zauber, der _6 Züge Segen und 10 Abschirmung_ gewährt, wenn er auf sich selbst gewirkt wird, oder _10 Züge Segen und 10 Heilung_, wenn er auf einen anderen Charakter gewirkt wird. Dies kostet 1 Ladung.\\n\\n_+2:_ Der Kleriker kann _Segen_ spenden, einen Zauber, der _10 Züge Segen und 15 Abschirmung_ gewährt, wenn er auf sich selbst gewirkt wird, oder _15 Züge Segen und 15 Heilung_, wenn er auf einen anderen Charakter gewirkt wird. Dies kostet 1 Ladung.\\n\\nÜberschüssige Heilung durch diesen Zauber wird in Abschirmung umgewandelt.',
+	'port.talent.cleanse.title': 'Läuterung',
+	'port.talent.cleanse.desc': '_+1:_ Der Kleriker kann _Läuterung_ wirken, einen Zauber, der negative Statuseffekte von ihm und seinen Verbündeten in der Nähe entfernt und ihnen _10 Abschirmung_ gewährt. Dies kostet 2 Ladungen.\\n\\n_+2:_ Der Kleriker kann _Läuterung_ wirken, einen Zauber, der ihm und seinen Verbündeten in der Nähe 3 Züge lang Immunität gegen negative Status gewährt und ihnen _20 Abschirmung_ gewährt. Dies kostet 2 Ladungen.\\n\\n_+3:_ Der Kleriker kann _Läuterung_ wirken, einen Zauber, der ihm und seinen Verbündeten in der Nähe 5 Züge lang Immunität gegen negative Status gewährt und ihnen _30 Abschirmung_ gewährt. Dies kostet 2 Ladungen.',
+	'port.talent.light_reading.title': 'Leichte Lektüre',
+	'port.talent.light_reading.desc': '_+1:_ Der Kleriker kann seinen Heiligen Folianten auch verwenden, wenn er nicht ausgerüstet ist. Ist dies der Fall, lädt er sich allerdings nur mit _25% der Geschwindigkeit_ auf.\\n\\n_+2:_ Der Kleriker kann seinen Heiligen Folianten auch verwenden, wenn er nicht ausgerüstet ist. Ist dies der Fall, lädt er sich allerdings nur mit _50% der Geschwindigkeit_ auf.\\n\\n_+3:_ Der Kleriker kann seinen Heiligen Folianten auch verwenden, wenn er nicht ausgerüstet ist. Ist dies der Fall, lädt er sich allerdings nur mit _75% der Geschwindigkeit_ auf.',
+
+	'port.spell.sunray.name': 'Sonnenstrahl',
+	'port.spell.sunray.short_desc': 'Fügt auf Entfernung magischen Schaden zu und blendet das Ziel einmal.',
+
+	'port.spell.bless.name': 'segnen',
+	'port.spell.bless.short_desc': 'Segnet und schirmt den Kleriker ab, segnet und heilt andere.',
+
+	'port.spell.divinesense.name': 'göttlicher Sinn',
+	'port.spell.divinesense.short_desc': 'Erhalte zeitweilig übersinnliche Wahrnehmung in einem weiten Umkreis.',
+
+	'port.spell.recallinscription.name': 'Runen-Echo',
+	'port.spell.recallinscription.short_desc': 'Wiederholt einen kürzlich eingesetzten Runenstein oder Schriftrolle.',
+	'port.spell.cleanse.name': 'reinigen',
+	'port.spell.cleanse.short_desc': 'Hebt Schwächungen auf und gewährt Abschirmung.',
+
+	'port.buff.divinesense.name': 'göttlicher Sinn',
+	'port.buff.divinesense.desc': 'Dieser Charakter ist vorübergehend in der Lage, andere nahe Kreaturen mit seinem Verstand wahrzunehmen!\\n\\nVerbleibende Züge: {0}.',
+	'port.buff.recallused.name': 'kürzlich verwendete Rune',
+	'port.buff.recallused.desc': 'Der Kleriker hat kürzlich einen Gegenstand verwendet, der mit dem Runen-Echo-Zauber funktioniert. Der Kleriker kann diesen Zauber wirken, um den Effekt des Gegenstands zu wiederholen.\\n\\nVerwendeter Gegenstand: {0}.\\n\\nVerbleibende Züge: {1}.',
+	'port.buff.cleanseimmunity.name': 'gereinigt',
+	'port.buff.cleanseimmunity.desc': 'Dieser Charakter ist vorübergehend immun gegen alle schädlichen Effekte!\\n\\nVerbleibende Züge: {0}.',
+
+	'port.action.cast': 'benutzen',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': 'Blendbombe',
@@ -1751,6 +2060,106 @@ export const PORT_STRINGS_DE: Record<string, string> = {
  */
 
 export const PORT_STRINGS_ES: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': 'arma divina',
+	'port.buff.holyweapon.desc': 'El Clérigo ha imbuido su arma equipada con energía sagrada, remplazando temporalmente cualquier encantamiento existente y haciendo que el arma cause 2 puntos de daño mágico adicionales en cada ataque.\\n\\nTurnos restantes:{0}.',
+	'port.buff.holyward.name': 'protección divina',
+	'port.buff.holyward.desc': 'El Clérigo ha imbuido su armadura equipada con energía sagrada, remplazando temporalmente cualquier glifo existente y haciendo que la armadura bloquee 1 punto adicional de daño.\\n\\nTurnos restantes:{0}.',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': 'tomo sagrado',
+	'port.desc.holytome': 'Un tomo sagrado que actúa como el foco de la magia divina del Clérigo. Usar el tomo permite al clérigo conjurar una gran variedad de hechizos mágicos.\\n\\nEl tomo se volverá cada vez más poderoso a medida que el Clérigo lo utilice, lo que le proporcionará más cargas máximas y aumentará ligeramente la velocidad de recarga.',
+	'port.log.tomelevelup': '¡Tu tomo se hace más fuerte!',
+	'port.log.tomenospell': 'No eres capaz de usar ese hechizo ahora.',
+	'port.log.tomecursed': 'No puedes usar un tomo maldito.',
+	'port.spell.guidinglight.name': 'luz guía',
+	'port.spell.guidinglight.short_desc': 'Inflige daño mágico a distancia y garantiza un golpe.',
+
+	'port.spell.holyweapon.name': 'arma divina',
+	'port.spell.holyweapon.short_desc': 'Remplaza encantamientos temporalmente para aumentar el daño.',
+
+	'port.spell.holyward.name': 'protección divina',
+	'port.spell.holyward.short_desc': 'Remplaza glifos temporalmente para aumentar la defensa de la armadura.',
+
+	'port.buff.illuminated.name': 'Iluminado',
+	'port.buff.illuminated.desc': 'Este personaje está brillando como resultado de haber sido impactado por luz guía. Aunque el brillo no es tan fuerte como para iluminar los alrededores, su efecto mágico hará que el Clérigo pueda asestar golpes fácilmente.',
+	'port.spell.charge_cost': 'Coste de carga: {cost}',
+
+	'port.spell.cast_title': 'usar un hechizo',
+	'port.talent.satiated_spells.title': 'Hechizos Saciados',
+	'port.talent.satiated_spells.desc': '_+1:_ Comer hace que el Clérigo gane _3 de blindaje_ la próxima vez que use un hechizo.\\n\\n_+2:_ Comer hace que el Clérigo gane _5 de blindaje_ la próxima vez que use un hechizo.',
+
+	'port.talent.holy_intuition.title': 'intuición divina',
+	'port.talent.holy_intuition.desc': '_+1:_ El Clérigo puede usar _Intuición Divina_, un hechizo que revela si un ítem está maldito a costa de _3 cargas._\\n\\n_+2:_ El Clérigo puede usar _Intuición Divina_, un hechizo que revela si un objeto está maldito a costa de _2 cargas._',
+
+	'port.talent.searing_light.title': 'luz abrasadora',
+	'port.talent.searing_light.desc': '_+1:_  Los ataques físicos del Clérigo a enemigos iluminados por _Luz Guía_ causan _+3 de daño._\\n\\n_+2:_  Los ataques físicos del Clérigo a enemigos iluminados por _Luz Guía_ causan _+5 de daño._',
+
+	'port.talent.shield_of_light.title': 'escudo de luz',
+	'port.talent.shield_of_light.desc': '_+1:_ El Clérigo puede usar _Escudo de Luz_, un hechizo que se usa instantáneamente y le otorga _2-4 de armadura_ contra un objetivo durante 5 turnos a costa de 1 carga.\\n\\n_+2:_ El Clérigo puede usar _Escudo de Luz_, un hechizo que se usa instantáneamente y le otorga _3-6 de armadura_ contra un objetivo durante 5 turnos a costa de 1 carga.',
+
+	'port.spell.holyintuition.name': 'intuición divina',
+	'port.spell.holyintuition.short_desc': 'Identifica si un ítem está maldito o no.',
+	'port.spell.holyintuition.prompt': 'elige un ítem',
+	'port.spell.holyintuition.cursed': 'Sientes magia maligna acechando dentro de este ítem.',
+	'port.spell.holyintuition.uncursed': 'Este ítem está libre de magia maligna.',
+
+	'port.spell.shieldoflight.name': 'escudo de luz',
+	'port.spell.shieldoflight.short_desc': 'Otorga armadura temporal contra un objetivo.',
+
+	'port.log.clericnotarget': 'No hay ningún objetivo allí.',
+
+	'port.buff.satiatedspells.name': 'Hechizo de Protección',
+	'port.buff.satiatedspells.desc': 'El próximo hechizo que el Clérigo use le otorgará una pequeña cantidad de blindaje.',
+
+	'port.buff.shieldoflight.name': 'escudo de luz',
+	'port.buff.shieldoflight.desc': 'Un delgado escudo de luz se interpone entre este personaje y un enemigo. No es lo suficientemente fuerte como para bloquear ataques completamente, pero los mitiga.\\n\\nTurnos restantes: {0}',
+	'port.talent.enlightening_meal.title': 'Comida Esclarecedora',
+	'port.talent.enlightening_meal.desc': '_+1:_ Comer le toma al Clérigo 1 turno y le otorga _0.67 cargas_ de su tomo sagrado.\\n\\n_+2:_ Comer le toma al Clérigo 1 turno y le otorga _1 carga_ de su tomo sagrado.',
+
+	'port.talent.recall_inscription.title': 'inscripción recordada',
+	'port.talent.recall_inscription.desc': '_+1:_ El Clérigo puede usar _Inscripción Recordada_, un hechizo que le permite repetir el efecto de la última piedra rúnica o pergamino que haya usado dentro de _10 turnos._\\n\\n_+2:_ El Clérigo puede usar _Inscripción Recordada_, un hechizo que le permite repetir el efecto de la última piedra rúnica o pergamino que haya usado dentro de _300 turnos._\\n\\nInscripción Recordada no puede ser usada con pergaminos de mejora. El coste de carga de este hechizo varía dependiendo del ítem utilizado recientemente: 2 para una piedra rúnica, 3 para un pergamino, 4 para un pergamino exótico. Dicho coste de carga también se duplica cuando se usa con un pergamino de transmutación o ítems de alquimia creados usando pergaminos de transmutación o mejora.',
+
+	'port.talent.sunray.title': 'Rayo solar',
+	'port.talent.sunray.desc': '_+1:_ El Clérigo puede usar _Rayo Solar_, un hechizo que causa _4-8 de daño_ y ciega al objetivo durante _4 turnos_, a costa de 1 carga.\\n\\n_+2:_ El Clérigo puede usar _Rayo Solar_, un hechizo que causa _6-12 de daño_ y ciega al objetivo durante _6 turnos_, a costa de 1 carga.\\n\\nRayo Solar solo puede cegar a cada objetivo una vez, pero si el objetivo ya está cegado por Rayo Solar, lo paraliza en su lugar. Rayo Solar siempre causa el daño máximo a enemigos demoníacos y no muertos.',
+
+	'port.talent.divine_sense.title': 'sentido divino',
+	'port.talent.divine_sense.desc': '_+1:_ El Clérigo puede usar _Sentido Divino_, un hechizo que le otorga _8 casillas_ de Visión Mental durante 50 turnos y no toma tiempo en usarse, a costa de 2 cargas.\\n\\n_+2:_ El Clérigo puede usar _Sentido Divino_, un hechizo que le otorga _12 casillas_ de Visión Mental durante 50 turnos y no toma tiempo en usarse, a costa de 2 cargas.',
+
+	'port.talent.bless.title': 'bendecir',
+	'port.talent.bless.desc': '_+1:_ El Clérigo puede usar _Bendecir_, un hechizo que otorga _6 turnos de bendición y 10 de blindaje_ cuando lo usa sobre sí mismo o _10 turnos de bendición y 10 de curación_ cuando lo usa sobre otro personaje, a costa de 1 carga.\\n\\n_+2:_ El Clérigo puede usar _Bendecir_, un hechizo que otorga _10 turnos de bendición y 15 de blindaje_ cuando lo usa sobre sí mismo o _15 turnos de bendición y 15 de curación_ cuando lo usa sobre otro personaje, a costa de 1 carga.\\n\\nLa curación excedente de este hechizo se convierte en blindaje.',
+	'port.talent.cleanse.title': 'purificar',
+	'port.talent.cleanse.desc': '_+1:_ El Clérigo puede usar _Purificar_, un hechizo que _elimina los efectos negativos_ del Clérigo y cualquier aliado cercano, y les brinda _10 de blindaje_, a costa de 2 cargas.\\n\\n_+2:_ El Clérigo puede usar _Purificar_, un hechizo que _otorga 3 turnos de inmunidad a efectos negativos_ al Clérigo y cualquier aliado cercano, y les brinda _20 de blindaje_, a costa de 2 cargas.\\n\\n_+3:_ El Clérigo puede usar _Purificar_, un hechizo que _otorga 5 turnos de inmunidad a efectos negativos_ al Clérigo y cualquier aliado cercano, y les brinda _30 de blindaje_, a costa de 2 cargas.',
+	'port.talent.light_reading.title': 'Lectura ligera',
+	'port.talent.light_reading.desc': '_+1:_ El Clérigo puede usar su tomo sagrado cuando no esté equipado, pero se recargará al _25% de velocidad_ si no lo equipa.\\n\\n_+2:_ El Clérigo puede usar su tomo sagrado cuando no esté equipado, pero se recargará al _50% de velocidad_ si no lo equipa.\\n\\n_+3:_ El Clérigo puede usar su tomo sagrado cuando no esté equipado, pero se recargará al _75% de velocidad_ si no lo equipa.',
+
+	'port.spell.sunray.name': 'rayo solar',
+	'port.spell.sunray.short_desc': 'Inflige daño mágico a distancia y ciega a un objetivo una vez.',
+
+	'port.spell.bless.name': 'bendecir',
+	'port.spell.bless.short_desc': 'Bendice y blinda al Clérigo, bendice y cura a otros.',
+
+	'port.spell.divinesense.name': 'sentido divino',
+	'port.spell.divinesense.short_desc': 'Gana visión mental temporal en un amplio rango.',
+
+	'port.spell.recallinscription.name': 'inscripción recordada',
+	'port.spell.recallinscription.short_desc': 'Repite una piedra rúnica o pergamino utilizado recientemente.',
+	'port.spell.cleanse.name': 'purificar',
+	'port.spell.cleanse.short_desc': 'Elimina los efectos negativos y otorga blindaje.',
+
+	'port.buff.divinesense.name': 'sentido divino',
+	'port.buff.divinesense.desc': '¡Este personaje puede ver temporalmente a otras criaturas cercanas con su mente!\\n\\nTurnos restantes: {0}.',
+	'port.buff.recallused.name': 'runa recientemente utilizada',
+	'port.buff.recallused.desc': 'El Clérigo ha utilizado recientemente un ítem que funciona con el hechizo inscripción recordada. Al usar el hechizo se repite el efecto del ítem.\\n\\nÍtem utilizado: {0}.\\n\\nTurnos restantes: {1}.',
+	'port.buff.cleanseimmunity.name': 'purificado',
+	'port.buff.cleanseimmunity.desc': '¡Este personaje es temporalmente inmune a todos los efectos de estado dañinos!\\n\\nTurnos restantes: {0}.',
+
+	'port.action.cast': 'Usar',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': 'flashbang',
@@ -2305,6 +2714,106 @@ export const PORT_STRINGS_ES: Record<string, string> = {
  */
 
 export const PORT_STRINGS_PT: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': 'Arma celestial',
+	'port.buff.holyweapon.desc': 'O Clérigo imbuiu a arma que está empunhando com energia sagrada, temporariamente anulando qualquer encantamento existente e fazendo com que a arma cause 2 de dano mágico extra em cada ataque.\\n\\nTurnos restantes: {0}.',
+	'port.buff.holyward.name': 'proteção sagrada',
+	'port.buff.holyward.desc': 'O Clérigo imbuiu sua armadura com energia sagrada, substituindo temporariamente qualquer glifo existente e fazendo com que a armadura bloqueie 1 ponto extra de dano.\\n\\nTurnos Restantes: {0}.',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': 'Tomo sagrado',
+	'port.desc.holytome': 'Um tomo sagrado que atua como foco para a magia divina do Clérigo. Usar o tomo permite ao Clérigo lançar uma variedade de feitiços mágicos.\\n\\nO tomo ficará cada vez mais poderoso à medida que o Clérigo o usar, dando ao Clérigo mais cargas máximas e aumentando ligeiramente a velocidade de recarga.',
+	'port.log.tomelevelup': 'Seu tomo cresceu em força!',
+	'port.log.tomenospell': 'Você não é capaz de usar este feitiço agora.',
+	'port.log.tomecursed': 'Você não pode usar um tomo amaldiçoado',
+	'port.spell.guidinglight.name': 'Luz guia',
+	'port.spell.guidinglight.short_desc': 'Causa dano mágico a distância e garante o acerto.',
+
+	'port.spell.holyweapon.name': 'Arma celestial',
+	'port.spell.holyweapon.short_desc': 'Sobrescreve temporariamente encantamentos para aumentar o dano.',
+
+	'port.spell.holyward.name': 'armadura sagrada',
+	'port.spell.holyward.short_desc': 'Sobrescreve temporariamente os glifos para aumentar o bloqueio de armadura.',
+
+	'port.buff.illuminated.name': 'Iluminado',
+	'port.buff.illuminated.desc': 'Este personagem está brilhando como resultado de ser atingido pela luz guia. Embora o brilho não seja forte o suficiente para iluminar a área ao redor, o efeito mágico tornará muito mais fácil para o Clérigo acertar golpes nele.',
+	'port.spell.charge_cost': 'Custo de carga: {cost}',
+
+	'port.spell.cast_title': 'Lançar um feitiço',
+	'port.talent.satiated_spells.title': 'Magias Saciadas',
+	'port.talent.satiated_spells.desc': '_+1:_ Comer faz com que o Clérigo ganhe _3 de blindagem_ na próxima vez que lançar uma magia.\\n\\n_+2:_ Comer faz com que o Clérigo ganhe _5 de blindagem_ na próxima vez que lançar uma magia.',
+
+	'port.talent.holy_intuition.title': 'Intuição divina',
+	'port.talent.holy_intuition.desc': '_+1:_ O Clérigo pode lançar _Intuição Divina,_ uma magia que revela se um item está amaldiçoado ao custo de _3 cargas._\\n\\n_+2:_ O Clérigo pode lançar _Intuição Divina,_ um magia que revela se um item está amaldiçoado ao custo de _2 cargas._',
+
+	'port.talent.searing_light.title': 'Luz abrasadora',
+	'port.talent.searing_light.desc': '_+1:_ Os ataques físicos do Clérigo contra inimigos iluminados pela _Luz Guia_ causam _+3 de dano._\\n\\n_+2:_ Os ataques físicos do Clérigo contra inimigos iluminados pela _Luz Guia_ causam _+5 de dano._',
+
+	'port.talent.shield_of_light.title': 'Escudo de luz',
+	'port.talent.shield_of_light.desc': '_+1:_ O Clérigo pode conjurar _Escudo de Luz_, uma magia que é conjurada instantaneamente e concede _2-4 de armadura_ contra um alvo por 5 turnos ao custo de 1 carga.\\n\\n_+2:_ O Clérigo pode conjurar _Escudo de Luz_, uma magia que é conjurada instantaneamente e concede _3-6 de armadura_ contra um alvo por 5 turnos ao custo de 1 carga.',
+
+	'port.spell.holyintuition.name': 'Intuição divina',
+	'port.spell.holyintuition.short_desc': 'identifica se um item é amaldiçoado ou não.',
+	'port.spell.holyintuition.prompt': 'Escolha um item',
+	'port.spell.holyintuition.cursed': 'Você sente magia malévola à espreita dentro deste item.',
+	'port.spell.holyintuition.uncursed': 'Este item está livre de magia malévola.',
+
+	'port.spell.shieldoflight.name': 'Escudo de luz',
+	'port.spell.shieldoflight.short_desc': 'Concede armadura temporária contra um alvo.',
+
+	'port.log.clericnotarget': 'Não há alvo aqui.',
+
+	'port.buff.satiatedspells.name': 'Feitiço de Blindagem',
+	'port.buff.satiatedspells.desc': 'O próximo feitiço que o Clérigo lançar concederá a ele uma pequena quantidade de blindagem.',
+
+	'port.buff.shieldoflight.name': 'Escudo de luz',
+	'port.buff.shieldoflight.desc': 'Um fino escudo de luz está entre este personagem e um inimigo. Não é forte o suficiente para bloquear ataques, mas irá apará-los.\\n\\nTurnos restantes: {0}',
+	'port.talent.enlightening_meal.title': 'Refeição Iluminada',
+	'port.talent.enlightening_meal.desc': '_+1:_ Comer leva 1 turno para o Clérigo e concede _0,67 cargas_ ao seu tomo sagrado.\\n\\n_+2:_ Comer leva 1 turno para o Clérigo e concede _1 carga_ ao seu tomo sagrado.',
+
+	'port.talent.recall_inscription.title': 'Recuperar Inscrição',
+	'port.talent.recall_inscription.desc': '_+1:_ O Clérigo pode lançar _Recuperar Inscrição,_ um feitiço que permite repetir o efeito da última pedra rúnica ou pergaminho que usou em _10 turnos._\\n\\n_+2:_ O Clérigo pode lançar _Recuperar inscrição,_ um feitiço que permite repetir o efeito da última pedra rúnica ou pergaminho que usou em _300 turnos._\\n\\nRecuperar Inscrição não pode ser usado com pergaminhos de aprimoramento. O custo de carga desta magia varia de acordo com o item usado recentemente: 2 para uma pedra rúnica, 3 para um pergaminho, 4 para um pergaminho exótico. Este custo de carga também é duplicado quando usado com um pergaminho de transmutação ou itens de alquimia que precisam de pergaminhos de transmutação ou de aprimoramento para serem criados.',
+
+	'port.talent.sunray.title': 'Raio solar',
+	'port.talent.sunray.desc': '_+1:_ O Clérigo pode conjurar _Raio Solar_, uma magia que causa _4-8 de dano_ e cega o alvo por _4 turnos,_ ao custo de 1 carga.\\n\\n_+2:_ O Clérigo pode conjurar _Raio Solar_, uma magia que causa _6-12 de dano_ e cega o alvo por _6 turnos,_ ao custo de 1 carga.\\n\\nRaio Solar só pode cegar cada alvo uma vez, mas se o alvo já estiver cegado pelo Raio Solar, então será paralisado. Raio Solar sempre causa o máximo de dano a inimigos demoníacos e mortos-vivos.',
+
+	'port.talent.divine_sense.title': 'Sentido divino',
+	'port.talent.divine_sense.desc': '_+1:_ O Clérigo pode conjurar _Sentido Divino_, uma magia que concede a ele _8 espaços_ de Visão Mental por 50 turnos e não leva tempo para lançar, ao custo de 2 cargas.\\n\\n_+2:_ O Clérigo pode conjurar _Sentido Divino_, uma magia que concede a ele _12 espaços_ de Visão Mental por 50 turnos e não leva tempo para lançar, ao custo de 2 cargas.',
+
+	'port.talent.bless.title': 'Benção',
+	'port.talent.bless.desc': '_+1:_ O Clérigo pode lançar _Benção_, um feitiço que concede _6 turnos de bênção e 10 de blindagem_ quando lançado em si mesmo ou _10 turnos de bênção e 10 de cura_ quando lançado em outro personagem, ao custo de 1 carga.\\n\\n_+2:_ O Clérigo pode lançar _Benção_, um feitiço que concede _10 turnos de bênção e 15 de blindagem_ quando lançado em si mesmo ou _15 turnos de bênção e 15 de cura_ quando lançado em outro personagem, ao custo de 1 carga.\\n\\nO excesso de cura deste feitiço é convertido em blindagem.',
+	'port.talent.cleanse.title': 'Purificar',
+	'port.talent.cleanse.desc': '_+1:_ O Clérigo pode lançar _Purificar,_ um feitiço que _remove efeitos de status negativos_ do Clérigo e de quaisquer aliados próximos e concede a eles _10 de blindagem,_ ao custo de 2 cargas.\\n\\n_+2:_ O Clérigo pode lançar _Purificar,_ um feitiço que _concede 3 turnos de imunidade a status negativos_ ao Clérigo e a quaisquer aliados próximos, e concede a eles _20 de blindagem,_ ao custo de 2 cargas.\\n\\n_+3:_ O Clérigo pode lançar _Purificar,_ um feitiço que _concede 5 turnos de imunidade a status negativos_ ao Clérigo e a quaisquer aliados próximos, e concede a eles _30 de blindagem,_ ao custo de 2 cargas.',
+	'port.talent.light_reading.title': 'Leitura da Luz',
+	'port.talent.light_reading.desc': '_+1:_ O Clérigo pode usar seu tomo sagrado quando não estiver equipado, mas ele recarrega a _25% da velocidade_ quando não estiver equipado.\\n\\n_+2:_ O Clérigo pode usar seu tomo sagrado quando não estiver equipado, mas ele recarrega a _50% da velocidade_ quando não estiver equipado.\\n\\n_+3:_ O Clérigo pode usar seu tomo sagrado quando não estiver equipado, mas ele recarrega a _75% da velocidade_ quando não estiver equipado.',
+
+	'port.spell.sunray.name': 'Raio solar',
+	'port.spell.sunray.short_desc': 'Causa dano mágico a distância e cega um alvo uma vez.',
+
+	'port.spell.bless.name': 'Benção',
+	'port.spell.bless.short_desc': 'Abençoa e blinda o Clérigo, abençoa e cura os outros.',
+
+	'port.spell.divinesense.name': 'Sentido divino',
+	'port.spell.divinesense.short_desc': 'Ganha temporariamente visão mental em um amplo alcance.',
+
+	'port.spell.recallinscription.name': 'recuperar inscrição',
+	'port.spell.recallinscription.short_desc': 'Repete uma pedra rúnica ou pergaminho usado recentemente.',
+	'port.spell.cleanse.name': 'Purificar',
+	'port.spell.cleanse.short_desc': 'Remove debuffs e concede blindagem.',
+
+	'port.buff.divinesense.name': 'Sentido divino',
+	'port.buff.divinesense.desc': 'Este personagem é capaz, temporariamente, de ver outras criaturas próximas com a mente!\\n\\nTurnos restantes: {0}.',
+	'port.buff.recallused.name': 'Runa recentemente usada',
+	'port.buff.recallused.desc': 'O Clérigo usou recentemente um item que funciona com o feitiço de recuperar inscrição. O Clérigo pode lançar o feitiço para repetir o efeito do item.\\n\\nItem Utilizado: {0}.\\n\\nTurnos Restantes: {1}.',
+	'port.buff.cleanseimmunity.name': 'purificado',
+	'port.buff.cleanseimmunity.desc': 'Este personagem está temporariamente imune a todos os efeitos de status nocivos!\\n\\nTurnos restantes: {0}.',
+
+	'port.action.cast': 'Lançar',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': 'bomba de luz',
@@ -2858,6 +3367,106 @@ export const PORT_STRINGS_PT: Record<string, string> = {
  */
 
 export const PORT_STRINGS_IT: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': 'arma sacra',
+	'port.buff.holyweapon.desc': 'Il Chierico ha infuso la propria arma equipaggiata con energia sacra, sovrascrivendo temporaneamente qualsiasi incantesimo esistente e facendo sì che l\'arma infligga 2 danni magici aggiuntivi per ogni attacco. \\n\\nTurni rimanenti:{0} .',
+	'port.buff.holyward.name': 'barriera sacra',
+	'port.buff.holyward.desc': 'Il Chierico ha infuso la propria armatura indossata con energia sacra, sovrascrivendo temporaneamente qualsiasi glifo esistente e facendo sì che l\'armatura blocchi 1 punto di danno aggiuntivo.\\n\\nTurni rimanenti: {0}.',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': 'Tomo sacro',
+	'port.desc.holytome': 'Un tomo sacro che funziona da focus per la magia sacra del Chierico. Usare il tomo permette al Chierico di lanciare una varietà di incantesimi.\\n\\nIl tomo cresce in potere progressivamente con l\'utilizzo da parte del Chierico, sbloccando più cariche massime e una maggiore velocità di ricarica di esse.',
+	'port.log.tomelevelup': 'Il tuo tomo diventa più forte!',
+	'port.log.tomenospell': 'Non sei in grado di lanciare quell\'incantesimo al momento.',
+	'port.log.tomecursed': 'Non puoi usare un tomo maledetto.',
+	'port.spell.guidinglight.name': 'luce guida',
+	'port.spell.guidinglight.short_desc': 'Infligge danni magici a distanza e garantisce un colpo.',
+
+	'port.spell.holyweapon.name': 'arma sacra',
+	'port.spell.holyweapon.short_desc': 'Sovrascrive temporaneamente gli incantesimi per potenziare i danni.',
+
+	'port.spell.holyward.name': 'barriera sacra',
+	'port.spell.holyward.short_desc': 'Sovrascrive temporaneamente i glifi per potenziare la capacità di blocco dell\'armatura.',
+
+	'port.buff.illuminated.name': 'Illuminato',
+	'port.buff.illuminated.desc': 'Questo personaggio emana una luce soffusa dopo essere stato colpito da un raggio guida. Anche se il bagliore non è abbastanza intenso da illuminare l\'area circostante, l\'effetto magico renderà molto più facile per il Chierico colpirlo.',
+	'port.spell.charge_cost': 'Costo: {cost}',
+
+	'port.spell.cast_title': 'lancia un incantesimo',
+	'port.talent.satiated_spells.title': 'Incantesimi Finiti',
+	'port.talent.satiated_spells.desc': '_+1_ Mangiare cibo fa si che il Chierico ottiene _3 punti scudo_ la prossima volta che lancia un incantesimo.\\n\\n_+2_ Mangiare cibo fa si che il Chierico ottiene _5 punti scudo_ la prossima volta che lancia un incantesimo.',
+
+	'port.talent.holy_intuition.title': 'santa intuizione',
+	'port.talent.holy_intuition.desc': '_+1_ Il Chierico può lanciare _Intuizione Divina,_ un incantesimo che rivela se un oggetto è maledetto al costo di _3 cariche._\\n\\n_+2_ Il Chierico può lanciare _Intuizione Divina,_ un incantesimo che rivela se un oggetto è maledetto al costo di _2 cariche._',
+
+	'port.talent.searing_light.title': 'luce bruciante',
+	'port.talent.searing_light.desc': '_+1:_ L\'attacco fisico del Chierico sui nemici illuminati da _Luce Guida_ infligge _+3 danni._\\n\\n_+2:_ L\'attacco fisico del Chierico sui nemici illuminati da _Luce Guida_ infligge _+5 danni._',
+
+	'port.talent.shield_of_light.title': 'Scudo di luce',
+	'port.talent.shield_of_light.desc': '_+1:_ Il Chierico può lanciare _Scudo di Luce,_ un incantesimo che viene lanciato istantaneamente e garantisce _2-4 armatura_ contro un bersaglio per 5 turni al costo di 1 carica.\\n\\n_+2:_ Il Chierico può lanciare _Scudo di Luce,_ un incantesimo che viene lanciato istantaneamente e garantisce _3-6 armatura_ contro un bersaglio per 5 turni al costo di 1 carica.',
+
+	'port.spell.holyintuition.name': 'santa intuizione',
+	'port.spell.holyintuition.short_desc': 'identifica se un oggetto è maledetto o meno.',
+	'port.spell.holyintuition.prompt': 'scegli un oggetto',
+	'port.spell.holyintuition.cursed': 'Percepisci la magia malevola in agguato all\'interno di questo oggetto.',
+	'port.spell.holyintuition.uncursed': 'Questo oggetto è privo di magia malevola.',
+
+	'port.spell.shieldoflight.name': 'Scudo di luce',
+	'port.spell.shieldoflight.short_desc': 'Garantisce armatura temporanea contro un bersaglio.',
+
+	'port.log.clericnotarget': 'Non c\'è un bersaglio là.',
+
+	'port.buff.satiatedspells.name': 'Incantesimo Protettivo',
+	'port.buff.satiatedspells.desc': 'Il prossimo incantesimo lanciato dal Chierico gli garantirà una piccola quantità di scudo.',
+
+	'port.buff.shieldoflight.name': 'Scudo di luce',
+	'port.buff.shieldoflight.desc': 'Un sottile scudo di luce si contrappone tra il personaggio e un nemico. Non è abbastanza forte da bloccare completamente gli attacchi, ma li renderà meno duri.\\n\\nTurni Rimanenti: {0}',
+	'port.talent.enlightening_meal.title': 'Pasto Illuminante',
+	'port.talent.enlightening_meal.desc': '_+1:_ Mangiare cibo richiede 1 turno per il Chierico e concede _0.67 cariche_ sul suo tomo sacro.\\n\\n_+2:_ Mangiare cibo richiede 1 turno per il Chierico e concede _1 carica_ sul suo tomo sacro.',
+
+	'port.talent.recall_inscription.title': 'Richiama Inscrizione',
+	'port.talent.recall_inscription.desc': '_+1:_ Il Chierico può lanciare _Richiama Iscrizione,_ un incantesimo che gli permette di ripetere gli effetti dell\'ultima pietra runica o pergamena usata negli ultimi _10 turni._ \\n\\n_+2:_ Il Chierico può lanciare _Richiama Iscrizione,_ un incantesimo che gli permette di ripetere gli effetti dell\'ultima pietra runica o pergamena usata negli ultimi _300 turni._ \\n\\nRichiama Iscrizione non può essere utilizzato con pergamene del miglioramento. Le cariche di questo incantesimo variano in base al tipo di oggetto che è stato usato recentemente: 2 per una pietra runica, 3 per una pergamena, 4 per una pergamena esotica. Il costo in cariche è inoltre raddoppiato quando usato su una pergamena della trasmutazione, oppure su oggetti alchemici creati con trasmutazione o miglioramento.',
+
+	'port.talent.sunray.title': 'Sprazzo',
+	'port.talent.sunray.desc': '_+1:_ Il Chierico può lanciare _Sprazzo,_ un incantesimo che danneggia per _4-8 danni_ e acceca il bersaglio per _4 turni,_ al costo di 1 carica. \\n\\n_+2:_ Il Chierico può lanciare _Sprazzo,_ un incantesimo che danneggia per _6-12 danni_ e acceca il bersaglio per _6 turni,_ al costo di 1 carica. \\n\\nSprazzo può accecare ogni bersaglio solo una volta, ma se il bersaglio è già accecato da Sprazzo allora verrà invece paralizzato. Sprazzo farà sempre il massimo dei danni a nemici demoniaci e non morti.',
+
+	'port.talent.divine_sense.title': 'Senso Divino',
+	'port.talent.divine_sense.desc': '_+1:_ Il Chierico può lanciare _Senso Divino,_ un incantesimo che concede _8 caselle_ di Visione Mentale per 50 turni e può essere lanciato istantaneamente, al costo di 2 cariche.\\n\\n_+2:_ Il Chierico può lanciare _Senso Divino,_ un incantesimo che concede _12 caselle_ di Visione Mentale per 50 turni e può essere lanciato istantaneamente, al costo di 2 cariche.',
+
+	'port.talent.bless.title': 'Benedizione',
+	'port.talent.bless.desc': '_+1:_ Il Chierico può lanciare _Benedizione,_ un incantesimo che conferisce _6 turni di benedizione e 10 di scudo_ quando lanciato su se stesso o _10 turni di benedizione e 10 di cura_ quando lanciato su un\'altra creatura, al costo di 1 carica. \\n\\n_+2:_ Il Chierico può lanciare _Benedizione,_ un incantesimo che conferisce _10 turni di benedizione e 15 di scudo_ quando lanciato su se stesso o _15 turni di benedizione e 15 di cura_ quando lanciato su un\'altra creatura, al costo di 1 carica. \\n\\nLa cura in eccesso di questo incantesimo è convertita in scudo.',
+	'port.talent.cleanse.title': 'Purifica',
+	'port.talent.cleanse.desc': '_+1:_ Il Chierico può lanciare _Purifica,_ un incantesimo che _rimuove effetti negativi_ dal Chierico e alleati vicini, donandogli inoltre _10 punti di scudo,_ al costo di 2 cariche. \\n\\n_+2:_ Il Chierico può lanciare _Purifica,_ un incantesimo che _applica 3 turni di immunità dagli effetti negativi_ al Chierico e agli alleati vicini, donandogli inoltre _20 punti di scudo,_ al costo di 2 cariche. \\n\\n_+3:_ Il Chierico può lanciare _Purifica,_ un incantesimo che _applica 5 turni di immunità dagli effetti negativi_ al Chierico e agli alleati vicini, donandogli inoltre _30 punti di scudo,_ al costo di 2 cariche.',
+	'port.talent.light_reading.title': 'Lettura Veloce',
+	'port.talent.light_reading.desc': '_+1:_ Il Chierico può usare il tomo sacro quando non è equipaggiato, ma si ricarica al _25% della velocità_ quando non equipaggiato. \\n\\n_+2:_ Il Chierico può usare il tomo sacro quando non è equipaggiato, ma si ricarica al _50% della velocità_ quando non equipaggiato. \\n\\n_+3:_ Il Chierico può usare il tomo sacro quando non è equipaggiato, ma si ricarica al _75% della velocità_ quando non equipaggiato.',
+
+	'port.spell.sunray.name': 'Sprazzo',
+	'port.spell.sunray.short_desc': 'Infligge danno magico a distanza e acceca il bersaglio una volta.',
+
+	'port.spell.bless.name': 'benedire',
+	'port.spell.bless.short_desc': 'Benedisce e protegge il Chierico, benedisce e cura gli altri.',
+
+	'port.spell.divinesense.name': 'senso divino',
+	'port.spell.divinesense.short_desc': 'Acquisice temporaneamente una visione mentale con un grande raggio.',
+
+	'port.spell.recallinscription.name': 'Richiama inscrizione',
+	'port.spell.recallinscription.short_desc': 'Ripete l\'effetto di una pietra runica o di una pergamena recentemente utilizzata.',
+	'port.spell.cleanse.name': 'purificare',
+	'port.spell.cleanse.short_desc': 'Cancella i debuff e garantisce la protezione.',
+
+	'port.buff.divinesense.name': 'senso divino',
+	'port.buff.divinesense.desc': 'Questo personaggio è temporaneamente capace di vedere le creature vicine con la sua mente!\\n\\nTurni rimanenti: {0}.',
+	'port.buff.recallused.name': 'runa recentemente utilizzata',
+	'port.buff.recallused.desc': 'Il Chierico ha recentemente usato un oggetto compatibile con l\'incantesimo di richiamo inscrizione. Il Chierico può lanciare l\'incantesimo per replicare l\'effetto dell\'oggetto.\\n\\nOggetto Usato: {0}.\\n\\nTurni Rimanenti: {1}.',
+	'port.buff.cleanseimmunity.name': 'purificato',
+	'port.buff.cleanseimmunity.desc': 'Questo personaggio è temporaneamente immune a tutti gli effetti dannosi!\\n\\nTurni rimanenti: {0}.',
+
+	'port.action.cast': 'Lancia',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': 'granata stordente',
@@ -3411,6 +4020,106 @@ export const PORT_STRINGS_IT: Record<string, string> = {
  */
 
 export const PORT_STRINGS_PL: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': 'święta broń',
+	'port.buff.holyweapon.desc': 'Kleryk napełnił założoną obecnie broń świętą energią, tymczasowo nadpisując wszelkie istniejące zaklęcia i sprawiając, że broń zadaje dodatkowe 2 obrażenia magiczne przy każdym ataku.\\n\\nPozostałe tury efektu: {0}.',
+	'port.buff.holyward.name': 'święta ochrona',
+	'port.buff.holyward.desc': 'Kleryk napełnia noszony przez siebie pancerz świętą mocą, która nadpisuje glify i zwiększa blokowane obrażenia o 1 punkt.\\n\\nPozostałe tury: {0}.',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': 'święta księga',
+	'port.desc.holytome': 'Święta księga, która działa jako centrum boskiej magii Kleryka. Korzystanie z niej pozwala Klerykowi rzucać różne zaklęcia magiczne.\\n\\nKsięga, w miarę używania jej przez Kleryka, staje się coraz potężniejsza. Zwiększa to jej maksymalną ilość ładunków i nieznacznie zwiększa szybkość ładowania.',
+	'port.log.tomelevelup': 'Twoja księga nabiera mocy!',
+	'port.log.tomenospell': 'Nie można teraz rzucić tego zaklęcia.',
+	'port.log.tomecursed': 'Nie można używać przeklętej księgi.',
+	'port.spell.guidinglight.name': 'światło przewodnie',
+	'port.spell.guidinglight.short_desc': 'Zadaje obrażenia magiczne i gwarantuje trafienie.',
+
+	'port.spell.holyweapon.name': 'święta broń',
+	'port.spell.holyweapon.short_desc': 'Tymczasowo nadpisuje zaklęcie broni, by zwiększyć obrażenia.',
+
+	'port.spell.holyward.name': 'święta ochrona',
+	'port.spell.holyward.short_desc': 'Tymczasowo nadpisuje glif, by wzmocnić siłę blokowania zbroi.',
+
+	'port.buff.illuminated.name': 'Rozświetlenie',
+	'port.buff.illuminated.desc': 'Ta postać świeci w wyniku uderzenia przez czar światła przewodniego. Blask nie jest wystarczająco silny, aby rozjaśnić okolicę, natomiast ułatwi on Klerykowi trafienie tej postaci.',
+	'port.spell.charge_cost': 'Liczba używanych ładunków: _{cost}_',
+
+	'port.spell.cast_title': 'rzuć zaklęcie',
+	'port.talent.satiated_spells.title': 'Odżywione Zaklęcia',
+	'port.talent.satiated_spells.desc': '_+1:_ Spożywanie jedzenia sprawi, że Kleryk otrzyma _3 punkty osłony_ przy następnym rzuceniu czaru.\\n\\n_+2:_ Spożywanie jedzenia sprawia, że Kleryk otrzyma _5 punktów osłony_ przy następnym rzuceniu czaru.',
+
+	'port.talent.holy_intuition.title': 'boska intuicja',
+	'port.talent.holy_intuition.desc': '_+1:_ Kleryk może rzucić _boską intuicję_, czar kosztujący _3 ładunki_, który ujawnia, czy przedmiot jest przeklęty.\\n\\n_+2:_ Kleryk może rzucić _boską intuicję_, czar kosztujący _2 ładunki_, który ujawnia, czy przedmiot jest przeklęty.',
+
+	'port.talent.searing_light.title': 'palące światło',
+	'port.talent.searing_light.desc': '_+1:_ Fizyczne ataki Kleryka przeciwko wrogom rozświetlonym zaklęciem _światła przewodniego_ zadają _+3 obrażenia_.\\n_+2:_ Fizyczne ataki Kleryka przeciwko wrogom rozświetlonym zaklęciem _światła przewodniego_ zadają _+5 obrażeń_.',
+
+	'port.talent.shield_of_light.title': 'świetlista tarcza',
+	'port.talent.shield_of_light.desc': '_+1:_ Kleryk może rzucić _świetlistą tarczę_, czar kosztujący 1 ładunek, który jest rzucany natychmiast i zapewnia mu _2-4 pancerza_ przeciwko wybranemu celowi na 5 tur.\\n\\n_+2:_ Kleryk może rzucić _świetlistą tarczę_, czar kosztujący 1 ładunek, który jest rzucany natychmiast i zapewnia mu _3-6 pancerza_ przeciwko wybranemu celowi na 5 tur.',
+
+	'port.spell.holyintuition.name': 'boska intuicja',
+	'port.spell.holyintuition.short_desc': 'Wykrywa czy przedmiot jest przeklęty, czy nie.',
+	'port.spell.holyintuition.prompt': 'wybierz przedmiot',
+	'port.spell.holyintuition.cursed': 'Czujesz złowrogą magię czającą się w tym przedmiocie.',
+	'port.spell.holyintuition.uncursed': 'Ten przedmiot jest wolny od złowrogiej magii.',
+
+	'port.spell.shieldoflight.name': 'świetlista tarcza',
+	'port.spell.shieldoflight.short_desc': 'Zapewnia tymczasową ochronę przeciwko celowi.',
+
+	'port.log.clericnotarget': 'Nie ma tu żadnego celu.',
+
+	'port.buff.satiatedspells.name': 'zaklęcie tarczy',
+	'port.buff.satiatedspells.desc': 'Następne zaklęcie rzucone przez Kleryka zapewni mu odrobinę osłony.',
+
+	'port.buff.shieldoflight.name': 'świetlista tarcza',
+	'port.buff.shieldoflight.desc': 'Cienka tarcza światła oddziela tę postać od wroga. Nie jest wystarczająco silna, aby całkowicie zablokować ataki, ale je osłabi.\\n\\nPozostałe tury efektu: {0}.',
+	'port.talent.enlightening_meal.title': 'Oświecający Posiłek',
+	'port.talent.enlightening_meal.desc': '_+1:_ Spożywanie jedzenia zajmuje Klerykowi 1 turę i zapewnia mu _0,67 ładunku_ świętej księgi.\\n\\n_+2:_ Spożywanie jedzenia zajmuje Klerykowi 1 turę i zapewnia mu _1 ładunek_ świętej księgi.',
+
+	'port.talent.recall_inscription.title': 'Replikacja Runy',
+	'port.talent.recall_inscription.desc': '_+1:_ Kapłan może rzucić _replikację runy_, czar, który pozwala powtórzyć efekt ostatniego użytego kamienia runicznego lub zwoju w ciągu _10 tur_.\\n\\n_+2:_ Kapłan może rzucić _replikację runy_, czar, który pozwala powtórzyć efekt ostatniego użytego kamienia runicznego lub zwoju w ciągu _300 tur_.\\n\\nReplikacja runy nie może być używana ze zwojami ulepszenia. Koszt ładunków księgi tego czaru różni się w zależności od replikowanego przedmiotu: 2 dla kamienia runicznego, 3 dla zwoju lub 4 dla egzotycznego zwoju. Koszt czaru jest dwukrotnie wyższy, gdy jest on używany ze zwojem transmutacji lub przedmiotami alchemicznymi bazującymi na zwojach transmutacji lub ulepszenia.',
+
+	'port.talent.sunray.title': 'Słoneczny Promień',
+	'port.talent.sunray.desc': '_+1:_ Kleryk może rzucić _słoneczny promień_, czar kosztujący 1 ładunek, który zadaje _4-8 obrażeń_ i oślepia cel na _4 tury_.\\n\\n_+2:_ Kleryk może rzucić _słoneczny promień_, czar kosztujący 1 ładunek, który zadaje _6-12 obrażeń_ i oślepia cel na _6 tur_.\\n\\nSłoneczny promień może oślepić dany cel tylko raz. Jeśli cel jest już oślepiony przez ten czar, zostaje on sparaliżowany. Słoneczny promień zawsze zadaje maksymalne obrażenia demonicznym i nieumarłym wrogom.',
+
+	'port.talent.divine_sense.title': 'Boski Zmysł',
+	'port.talent.divine_sense.desc': '_+1:_ Kleryk może natychmiastowo rzucić _boski zmysł_, czar kosztujący 2 ładunki, który zapewnia _8 pól_ wizji umysłów na 50 tur.\\n\\n_+2_ Kleryk może natychmiastowo rzucić _boski zmysł_, czar kosztujący 2 ładunki, który zapewnia _12 pól_ wizji umysłów na 50 tur.',
+
+	'port.talent.bless.title': 'Błogosławieństwo',
+	'port.talent.bless.desc': '_+1:_ Kleryk może rzucić _błogosławieństwo_, kosztujące 1 ładunek, które jest czarem zapewniającym _6 tury błogosławieństwa i 10 osłony_, jeżeli użyje go na sobie lub _10 tur błogosławieństwa i 10 PŻ_, jeżeli użyje go na innej postaci.\\n\\n_+2:_ Kleryk może rzucić _błogosławieństwo_, kosztujące 1 ładunek, które jest czarem zapewniającym _10 tur błogosławieństwa i 15 osłony_, jeżeli użyje go na sobie lub _15 tur błogosławieństwa i 15 PŻ_, jeżeli użyje go na innej postaci.\\n\\nNadmiar leczenia z tego czaru zostanie zamieniony w osłonę.',
+	'port.talent.cleanse.title': 'Oczyszczenie',
+	'port.talent.cleanse.desc': '_+1:_ Kleryk może rzucić _oczyszczenie_, czar kosztujący 2 ładunki, który _usuwa negatywne efekty_ nałożone na Kleryka i pobliskich sojuszników oraz daje im _10 osłony_.\\n\\n_+2:_ Kleryk może rzucić _oczyszczenie_, czar kosztujący 2 ładunki, który daje Klerykowi i pobliskim sojusznikom _3 tury odporności na negatywne efekty_ oraz _20 osłony_.\\n\\n_+3:_ Kleryk może rzucić _oczyszczenie_, czar kosztujący 2 ładunki, który daje Klerykowi i pobliskim sojusznikom _5 tur odporności na negatywne efekty_ oraz _30 osłony_.',
+	'port.talent.light_reading.title': 'Rzut Okiem',
+	'port.talent.light_reading.desc': '_+1:_ Kleryk może używać świętej księgi, gdy nie jest założona, ale wtedy ładuje się ona z _25% prędkości_.\\n\\n_+2:_ Kleryk może używać świętej księgi, gdy nie jest założona, ale wtedy ładuje się ona z _50% prędkości_.\\n\\n_+3:_ Kleryk może używać świętej księgi, gdy nie jest założona, ale wtedy ładuje się ona z _75% prędkości_.',
+
+	'port.spell.sunray.name': 'słoneczny promień',
+	'port.spell.sunray.short_desc': 'Zadaje obrażenia magiczne i jednorazowo oślepia cel.',
+
+	'port.spell.bless.name': 'błogosławieństwo',
+	'port.spell.bless.short_desc': 'Błogosławi i osłania Kleryka lub błogosławi i leczy innych.',
+
+	'port.spell.divinesense.name': 'boski zmysł',
+	'port.spell.divinesense.short_desc': 'Otrzymujesz tymczasową wizję umysłów w dużym zasięgu.',
+
+	'port.spell.recallinscription.name': 'replikacja runy',
+	'port.spell.recallinscription.short_desc': 'Powtarza ostatnio używany kamień runiczny lub zwój.',
+	'port.spell.cleanse.name': 'oczyszczenie',
+	'port.spell.cleanse.short_desc': 'Oczyszcza z negatywnych efektów i zapewnia osłonę.',
+
+	'port.buff.divinesense.name': 'boski zmysł',
+	'port.buff.divinesense.desc': 'Ta postać jest tymczasowo w stanie widzieć inne pobliskie stworzenia swoim umysłem!\\n\\nPozostałe tury efektu: {0}.',
+	'port.buff.recallused.name': 'niedawne użycie runy',
+	'port.buff.recallused.desc': 'Kleryk niedawno użył przedmiotu, który działa z czarem replikacji runy. Kleryk może użyć tego czaru, aby powtórzyć efekt przedmiotu.\\n\\nUżyty przedmiot: {0}.\\n\\nPozostałe tury efektu: {1}.',
+	'port.buff.cleanseimmunity.name': 'oczyszczenie',
+	'port.buff.cleanseimmunity.desc': 'Ta postać jest tymczasowo odporna na wszystkie szkodliwe efekty!\\n\\nPozostałe tury efektu: {0}.',
+
+	'port.action.cast': 'Rzuć zaklęcie',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': 'bomba błyskowa',
@@ -3966,6 +4675,106 @@ export const PORT_STRINGS_PL: Record<string, string> = {
  */
 
 export const PORT_STRINGS_RU: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': 'священное оружие',
+	'port.buff.holyweapon.desc': 'Клирик наполнил своё надетое оружие святой энергией, временно заменив любое существующее зачарование и заставив оружие наносить дополнительный магический урон в размере 2 единиц при каждом атаке.\\n\\nХодов осталось: {0}.',
+	'port.buff.holyward.name': 'священный оберег',
+	'port.buff.holyward.desc': 'Клирик наполнил свою надетую броню святой энергией, временно заменив любую существующую руну и увеличив блокировку урона брони на 1 единицу.\\n\\nХодов осталось: {0}.',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': 'священный том',
+	'port.desc.holytome': 'Священный том, который служит фокусом для божественной магии Клирика. Использование тома позволяет Клирику накладывать различные магические заклинания.\\n\\nТом будет постепенно становиться более мощным по мере его использования, увеличивая максимальное количество зарядов и немного ускоряя восстановление зарядов.',
+	'port.log.tomelevelup': 'Ваш том стал сильнее!',
+	'port.log.tomenospell': 'Вы не можете применить это заклинание прямо сейчас.',
+	'port.log.tomecursed': 'Вы не можете использовать проклятый том.',
+	'port.spell.guidinglight.name': 'путеводный свет',
+	'port.spell.guidinglight.short_desc': 'Наносит магический урон на расстоянии и гарантирует попадание.',
+
+	'port.spell.holyweapon.name': 'священное оружие',
+	'port.spell.holyweapon.short_desc': 'Временно изменяет зачарование чтобы повысить урон оружия',
+
+	'port.spell.holyward.name': 'священный оберег',
+	'port.spell.holyward.short_desc': 'Временно изменяет руну чтобы повысить защиту вашей брони',
+
+	'port.buff.illuminated.name': 'Освещение',
+	'port.buff.illuminated.desc': 'Этот персонаж светится в результате попадания в него путеводного света. Хотя свечение не настолько сильное, чтобы осветить окружающее пространство, магический эффект значительно облегчит клирику нанесение ударов.',
+	'port.spell.charge_cost': 'Стоимость заряда: {cost}',
+
+	'port.spell.cast_title': 'применить заклинание',
+	'port.talent.satiated_spells.title': 'Пресыщающие заклинания',
+	'port.talent.satiated_spells.desc': '_+1:_ Перекус даёт Клирику _3 щита_ при следующем использовании заклинания.\\n\\n_+2:_ Перекус даёт Клирику _5 щита_ при следующем использовании заклинания.',
+
+	'port.talent.holy_intuition.title': 'интуиция святого',
+	'port.talent.holy_intuition.desc': '_+1:_ Клирик может использовать заклинание _Интуиция святого_, которое показывает, проклят ли предмет, за _3 заряда_.\\n\\n_+2:_ Клирик может использовать заклинание _Интуиция святого_, которое показывает, проклят ли предмет, за _2 заряда_.',
+
+	'port.talent.searing_light.title': 'слепящий свет',
+	'port.talent.searing_light.desc': '_+1:_ Физические атаки Клирика по врагам, освещённым _Путеводным Светом_, наносят _+3 урона._\\n\\n_+2:_ Физические атаки Клирика по врагам, освещённым _Путеводным Светом_, наносят _+5 урона._',
+
+	'port.talent.shield_of_light.title': 'щит света',
+	'port.talent.shield_of_light.desc': '_+1:_ Клирик может использовать заклинание _Щит света_, которое накладывается мгновенно и дарует ему _2-4 брони_ против цели на 5 ходов за 1 заряд.\\n\\n_+2:_ Клирик может использовать заклинание _Щит света_, которое накладывается мгновенно и дарует ему _3-6 брони_ против цели на 5 ходов за 1 заряд.',
+
+	'port.spell.holyintuition.name': 'интуиция святого',
+	'port.spell.holyintuition.short_desc': 'Определяет, является ли предмет проклятым или нет.',
+	'port.spell.holyintuition.prompt': 'выберите предмет',
+	'port.spell.holyintuition.cursed': 'Вы чувствуете недобрую магию, таящуюся в этом предмете.',
+	'port.spell.holyintuition.uncursed': 'Этот предмет не проклят.',
+
+	'port.spell.shieldoflight.name': 'Щит света',
+	'port.spell.shieldoflight.short_desc': 'Дарует временную броню против цели.',
+
+	'port.log.clericnotarget': 'Там нет цели.',
+
+	'port.buff.satiatedspells.name': 'Щитовое Заклинание',
+	'port.buff.satiatedspells.desc': 'Следующее заклинание, которое Клирик использует, дарует ему небольшое количество защиты.',
+
+	'port.buff.shieldoflight.name': 'щит света',
+	'port.buff.shieldoflight.desc': 'Тонкий щит света стоит между героем и врагом. Он недостаточно силен, чтобы полностью блокировать атаки, но смягчит их урон.\\n\\nХодов осталось: {0}.',
+	'port.talent.enlightening_meal.title': 'Освещающий обед',
+	'port.talent.enlightening_meal.desc': '_+1:_ Перекус занимает у Клирика 1 ход и дарует ему _0.67 заряда_ к священному тому.\\n\\n_+2:_ Перекус занимает у Клирика 1 ход и дарует ему _1 заряд_ к священному тому.',
+
+	'port.talent.recall_inscription.title': 'Воспоминание начертания',
+	'port.talent.recall_inscription.desc': '_+1:_ Клирик может использовать заклинание _Воспоминание начертания_, которое позволяет повторить эффект последнего использованного рунного камня или свитка в течение _10 ходов._\\n\\n_+2:_ Клирик может использовать заклинание _Воспоминание начертания_, которое позволяет повторить эффект последнего использованного рунного камня или свитка в течение _300 ходов._\\n\\nВоспоминание начертания не может быть использовано со свитками улучшений. Стоимость заряда этого заклинания варьируется в зависимости от того, какой предмет был использован недавно: 2 за рунный камень, 3 за свиток, 4 за особый свиток. Эта стоимость заряда также удваивается при использовании свитка превращения или алхимических предметов, которые были созданы с помощью превращения или улучшения.',
+
+	'port.talent.sunray.title': 'Солнечный луч',
+	'port.talent.sunray.desc': '_+1:_ Клирик может использовать заклинание _Солнечный луч_, которое наносит _4-8 урона_ и ослепляет цель на _4 хода_ за стоимость 1 заряда.\\n\\n_+2:_ Клирик может использовать заклинание _Солнечный луч_, которое наносит _6-12 урона_ и ослепляет цель на _6 ходов_ за стоимость 1 заряда.\\n\\nСолнечный луч может ослепить каждую цель только один раз, но если цель уже ослеплена этим заклинанием, то оно вместо этого парализует. Солнечный луч всегда наносит максимальный урон демоническим и неживым врагам.',
+
+	'port.talent.divine_sense.title': 'Божественное чувство',
+	'port.talent.divine_sense.desc': '_+1:_ Клирик может использовать заклинание _Божественное чувство,_ которое дарует ему Ментальное зрение в радиусе _8 клеток_ на 50 ходов и не требует времени для использования, за стоимость 2 зарядов.\\n\\n_+2:_ Клирик может использовать заклинание _Божественное чувство,_ которое дарует ему Ментальное зрение в радиусе _12 клеток_ на 50 ходов и не требует времени для использования, за стоимость 2 зарядов.',
+
+	'port.talent.bless.title': 'Благословение',
+	'port.talent.bless.desc': '_+1:_ Клирик может использовать заклинание _Благословение_, которое дарует _6 ходов благословения и 10 защиты_ при применении на себя или _10 ходов благословения и 10 исцеления_ при применении на другого персонажа, за стоимость 1 заряда.\\n\\n_+2:_ Клирик может использовать заклинание _Благословение_, которое дарует _10 ходов благословения и 15 защиты_ при применении на себя или _15 ходов благословения и 15 исцеления_ при применении на другого персонажа, за стоимость 1 заряда.\\n\\nИзлишнее исцеление от этого заклинания преобразуется в защиту.',
+	'port.talent.cleanse.title': 'Очищение',
+	'port.talent.cleanse.desc': '_+1:_ Клирик может использовать заклинание _Очищение_, которое накладывается мгновенно, _удаляет негативные эффекты_ с Клирика и всех ближайших союзников и даёт им _10 щита_, за стоимость 2 зарядов.\\n\\n_+2:_ Клирик может использовать заклинание _Очищение_, которое накладывается мгновенно, _даёт 3 хода иммунитета к негативным эффектам_ Клирику и всем ближайшим союзникам и даёт им _20 щита_, за стоимость 2 зарядов.\\n\\n_+3:_ Клирик может использовать заклинание _Очищение_, которое накладывается мгновенно, _даёт 5 ходов иммунитета к негативным эффектам_ Клирику и всем ближайшим союзникам и даёт им _30 защиты_, за стоимость 2 зарядов.',
+	'port.talent.light_reading.title': 'Светлое чтение',
+	'port.talent.light_reading.desc': '_+1:_ Клирик может использовать Священный том, не экипировав его, но будучи неэкипированным он перезаряжается со _скоростью 25%_.\\n\\n_+2:_ Клирик может использовать Священный том, не экипировав его, но будучи неэкипированным он перезаряжается со _скоростью 50%_.\\n\\n_+3:_ Клирик может использовать Священный том, не экипировав его, но будучи неэкипированным он перезаряжается со _скоростью 75%_.',
+
+	'port.spell.sunray.name': 'солнечный луч',
+	'port.spell.sunray.short_desc': 'Наносит дальный магический урон и ослепляет цель один раз.',
+
+	'port.spell.bless.name': 'благоcловление',
+	'port.spell.bless.short_desc': 'Благословляет и даёт щит Клирику или вдохновляет и исцеляет других.',
+
+	'port.spell.divinesense.name': 'божественное чутьё',
+	'port.spell.divinesense.short_desc': 'Временно получает ментальное зрение в большом радиусе.',
+
+	'port.spell.recallinscription.name': 'воспоминание начертания',
+	'port.spell.recallinscription.short_desc': 'Повторяет эффект недавно использованного рунного камня или свитка.',
+	'port.spell.cleanse.name': 'очищение',
+	'port.spell.cleanse.short_desc': 'Снимает негативные эффекты и дарует щит.',
+
+	'port.buff.divinesense.name': 'божественное чутьё',
+	'port.buff.divinesense.desc': 'Этот персонаж способен временно видеть других существ поблизости с помощью своего разума!\\n\\nХодов осталось: {0}.',
+	'port.buff.recallused.name': 'недавно использованная руна',
+	'port.buff.recallused.desc': 'Клирик недавно использовал предмет, который работает с заклинанием воспоминания начертания. Клирик может использовать заклинание, чтобы повторить эффект предмета.\\n\\nИспользованный предмет: {0}.\\n\\nОсталось ходов: {1}.',
+	'port.buff.cleanseimmunity.name': 'очищенные',
+	'port.buff.cleanseimmunity.desc': 'Этот персонаж имеет временный иммунитет против любых вредных эффектов!\\n\\nХодов осталось: {0}.',
+
+	'port.action.cast': 'Применить',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': 'световая граната',
@@ -4497,6 +5306,106 @@ export const PORT_STRINGS_RU: Record<string, string> = {
  */
 
 export const PORT_STRINGS_TR: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': 'kutsal silah',
+	'port.buff.holyweapon.desc': 'Ruhban giydiği silahı kutsal enerjiyle doldurarak mevcut büyüleri geçici olarak geçersiz kılar ve silahın her saldırıda fazladan 2 büyü hasarı vermesini sağlar.\\n\\nKalan hamle sayısı: {0}.',
+	'port.buff.holyward.name': 'kutsal korunma',
+	'port.buff.holyward.desc': 'Rahip, giydiği zırhı kutsal enerjiyle kuşatarak mevcut sembolleri geçici olarak geçersiz kılar ve zırhın 1 ekstra hasar engellemesine neden olur.\\n\\nKalan hamle sayısı: {0}.',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': 'kutsal kitap',
+	'port.desc.holytome': 'Rahibin ilahi büyüsüne odaklanmasını sağlayan kutsal bir kitaptır. Bu kitabı kullanmak, Rahibin çeşitli büyüler yapmasına olanak tanır. \\n\\nKitap, Rahip tarafından kullanıldıkça giderek güçlenecek; bu da Rahibin sahip olabileceği en yüksek dolum sayısını artıracak ve yeniden dolma hızını biraz yükseltecektir.',
+	'port.log.tomelevelup': 'Kitabın güçlendi!',
+	'port.log.tomenospell': 'Şu anda bu büyüyü kullanamıyorsun.',
+	'port.log.tomecursed': 'Lanetli bir kitabı kullanamazsın.',
+	'port.spell.guidinglight.name': 'kılavuz ışık',
+	'port.spell.guidinglight.short_desc': 'Menzilli büyü hasarı verir ve isabeti garantiler.',
+
+	'port.spell.holyweapon.name': 'kutsal silah',
+	'port.spell.holyweapon.short_desc': 'Hasarı artırmak için büyüleri geçici olarak geçersiz kılar.',
+
+	'port.spell.holyward.name': 'kutsal korunma',
+	'port.spell.holyward.short_desc': 'Geçici olarak sembollerini geçersiz kılarak zırh engellemesini artırır.',
+
+	'port.buff.illuminated.name': 'Aydınlanmış',
+	'port.buff.illuminated.desc': 'Bu karakter, kılavuz ışık tarafından vurulmasının sonucu olarak parlıyor. Parıltı etrafı aydınlatacak kadar güçlü olmasa da, büyülü etki onlara darbe indirmeyi Rahip için çok daha kolay hale getirecektir.',
+	'port.spell.charge_cost': 'Şarj maliyeti: {cost}',
+
+	'port.spell.cast_title': 'büyü yap',
+	'port.talent.satiated_spells.title': 'Doymuş Büyüler',
+	'port.talent.satiated_spells.desc': '_+1:_ Yemek yemek, Ruhban\'ın bir sonraki büyü yapışında _3 kalkan_ kazanmasına neden olur.\\n\\n_+2:_ Yemek yemek, Ruhban\'ın bir sonraki büyü yapışında _5 kalkan_ kazanmasına neden olur.',
+
+	'port.talent.holy_intuition.title': 'kutsal sezgi',
+	'port.talent.holy_intuition.desc': '_+1:_ Ruhban, bir eşyanın lanetli olup olmadığını ortaya çıkaran bir büyü olan _Kutsal Sezgi_\'yi _3 şarj_ karşılığında yapabilir.\\n\\n_+2:_ Ruhban, bir eşyanın lanetli olup olmadığını ortaya çıkaran bir büyü olan _Kutsal Sezgi_\'yi _2 şarj_ karşılığında yapabilir.',
+
+	'port.talent.searing_light.title': 'yakan ışık',
+	'port.talent.searing_light.desc': '_+1:_ Ruhbanın _Kılavuz Işık_ tarafından aydınlatılan düşmanlara yaptığı fiziksel saldırılar _+3 hasar verir._\\n\\n_+2:_ Ruhbanın _Kılavuz Işık_ tarafından aydınlatılan düşmanlara yaptığı fiziksel saldırılar _+5 hasar verir._',
+
+	'port.talent.shield_of_light.title': 'ışık kalkanı',
+	'port.talent.shield_of_light.desc': '_+1:_ Ruhban, anında yapılan ve 1 şarj karşılığında 5 tur boyunca bir hedefe karşı _2-4 zırh_ sağlayan bir büyü olan _Işık Kalkanı_\'nı yapabilir.\\n\\n_+2:_ Ruhban, anında yapılan ve 1 şarj karşılığında 5 tur boyunca bir hedefe karşı _3-6 zırh_ kazandıran bir büyü olan _Işık Kalkanı_\'nı yapabilir.',
+
+	'port.spell.holyintuition.name': 'kutsal sezgi',
+	'port.spell.holyintuition.short_desc': 'Bir nesnenin lanetli olup olmadığını belirler.',
+	'port.spell.holyintuition.prompt': 'bir nesne seçin',
+	'port.spell.holyintuition.cursed': 'Bu nesnenin içinde kötü niyetli bir büyünün gizlendiğini hissediyorsun.',
+	'port.spell.holyintuition.uncursed': 'Bu nesne kötü niyetli büyüden arındırılmıştır.',
+
+	'port.spell.shieldoflight.name': 'ışık kalkanı',
+	'port.spell.shieldoflight.short_desc': 'Bir hedefe karşı geçici zırh sağlar.',
+
+	'port.log.clericnotarget': 'Orada hedef falan yok.',
+
+	'port.buff.satiatedspells.name': 'Kalkanlama Büyüsü',
+	'port.buff.satiatedspells.desc': 'Ruhban\'ın yapacağı bir sonraki büyü ona küçük bir miktar kalkan sağlar.',
+
+	'port.buff.shieldoflight.name': 'ışık kalkanı',
+	'port.buff.shieldoflight.desc': 'Bu karakter ile düşman arasında ince bir ışık kalkanı durur. Saldırıları tamamen engelleyecek kadar güçlü değildir, ancak onları yumuşatır.\\n\\nKalan hamle sayısı: {0}',
+	'port.talent.enlightening_meal.title': 'Aydınlatıcı Yemek',
+	'port.talent.enlightening_meal.desc': '_+1:_ Yemek yemek Ruhban\'ın 1 turunu alır ve kutsal kitabına _0.67 şarj_ verir.\\n\\n_+2:_ Yemek yemek Ruhban\'ın 1 turunu alır ve kutsal kitabına _1 şarj_ verir.',
+
+	'port.talent.recall_inscription.title': 'Yazıtı Tekrar Et',
+	'port.talent.recall_inscription.desc': '_+1:_ Ruhban, _10 tur_ içinde kullandıkları son rüntaşı veya parşömenin etkisini tekrarlamalarını sağlayan bir büyü olan _Yazıtı Tekrar Et_ büyüsünü yapabilir.\\n\\n\\n+2: Ruhban, _300 tur_ içinde kullandığı son rüntaşı veya parşömenin etkisini tekrarlamasını sağlayan bir büyü olan _Yazıtı Tekrar Et_ büyüsünü yapabilir.\\n\\nYazıtı Tekrar Çağır yükseltme parşömenleri ile kullanılamaz. Bu büyünün şarj maliyeti, en son hangi öğenin kullanıldığına bağlı olarak değişir: bir rün taşı için 2, bir parşömen için 3, bir egzotik parşömen için 4. Ayrıca, dönüşüm parşömeni veya dönüşüm ya da yükseltme kullanılarak üretilmesi gereken simya eşyaları çoğaltıldığında, bu şarj maliyeti iki katına çıkar.',
+
+	'port.talent.sunray.title': 'Güneş Işını',
+	'port.talent.sunray.desc': '_+1:_ Ruhban, 1 şarj karşılığında _4-8 hasar_ veren ve hedefi _4 tur_ boyunca kör eden bir büyü olan _Güneş Işınını_ yapabilir.\\n\\n_+2:_ Ruhban, 1 şarj karşılığında, _6-12 hasar_ veren ve hedefi _6 tur_ boyunca kör eden bir büyü olan _Güneş Işınını_ yapabilir.\\n\\nGüneş Işını her hedefi yalnızca bir kez kör edebilir, ancak hedef zaten Güneş Işını tarafından kör edilmişse, onun yerine felç eder. Güneş Işını şeytani ve ölümsüz düşmanlara her zaman en yüksek hasarı verir.',
+
+	'port.talent.divine_sense.title': 'İlahi Duyu',
+	'port.talent.divine_sense.desc': '_+1:_ Ruhban, 50 tur boyunca _8 karo_ Zihin Görüşü sağlayan ve yapılması zaman almayan bir büyü olan _İlahi Duyu_\'yu 2 şarj karşılığında yapabilir.\\n\\n_+2:_ Ruhban, 50 tur boyunca _12 karo_ Zihin Görüşü sağlayan ve yapılması zaman almayan bir büyü olan _İlahi Duyu_\'yu 2 şarj karşılığında yapabilir.',
+
+	'port.talent.bless.title': 'Kutsa',
+	'port.talent.bless.desc': '_+1:_ Ruhban, kendisine yapıldığında _6 tur kutsama ve 10 kalkan_ ya da başka bir karaktere yapıldığında _10 tur kutsama ve 10 iyileştirme_ sağlayan _Kutsama_ büyüsünü 1 şarj karşılığında yapabilir.\\n\\n_+2:_ Ruhban, kendisine yapıldığında _10 tur kutsama ve 15 kalkan_ ya da başka bir karaktere yapıldığında _15 tur kutsama ve 15 iyileştirme_ sağlayan _Kutsama_ büyüsünü 1 şarj karşılığında yapabilir.\\n\\nBu büyüden elde edilen fazla iyileştirme kalkan olarak dönüştürülür.',
+	'port.talent.cleanse.title': 'Arındır',
+	'port.talent.cleanse.desc': '_+1:_ Rahip, _Arındır_ büyüsünü yapabilir. Bu büyü, Rahip ve yakındaki müttefikler üzerindeki _olumsuz etkileri kaldırır_ ve onlara _10 birim kalkan_ sağlar. 2 yük harcar.\\n\\n_+2:_ Rahip, _Arındır_ büyüsünü yapabilir. Bu büyü, Rahip ve yakındaki müttefiklere _3 tur boyunca olumsuz etkilere bağışıklık kazandırı_r ve _20 birim kalkan_ sağlar. 2 yük harcar.\\n\\n_+3:_ Rahip, _Arındır_ büyüsünü yapabilir. Bu büyü, Rahip ve yakındaki müttefiklere _5 tur boyunca olumsuz etkilere bağışıklık kazandırır_ ve _30 birim kalkan_ sağlar. 2 yük harcar.',
+	'port.talent.light_reading.title': 'Hafif Okuma',
+	'port.talent.light_reading.desc': '_+1:_ Ruhban, kutsal kitabını kuşanmadığında kullanabilir, ancak kuşanmadığında _%25 hızda_ yeniden şarj olur.\\n\\n_+2:_ Ruhban kutsal kitabını kuşanmadığında kullanabilir, ancak kuşanmadığında _%50 hızda_ şarj olur.\\n\\n_+3:_ Ruhban kutsal kitabını kuşanmadığında kullanabilir, ancak kuşanmadığında _%75 hızda_ şarj olur.',
+
+	'port.spell.sunray.name': 'güneş ışını',
+	'port.spell.sunray.short_desc': 'Menzilli büyü hasarı verir ve hedefi bir kez kör eder.',
+
+	'port.spell.bless.name': 'kutsa',
+	'port.spell.bless.short_desc': 'Papazı kutsar ve korur, diğerlerini kutsar ve iyileştirir.',
+
+	'port.spell.divinesense.name': 'ilahi duyu',
+	'port.spell.divinesense.short_desc': 'Geniş bir menzilde geçici zihin görüşü kazanın.',
+
+	'port.spell.recallinscription.name': 'yazıtı tekrar et',
+	'port.spell.recallinscription.short_desc': 'Son kullanılan bir rün taşını veya parşömeni yineler.',
+	'port.spell.cleanse.name': 'arındır',
+	'port.spell.cleanse.short_desc': 'Zayıflatıcıları temizler ve kalkan sağlar.',
+
+	'port.buff.divinesense.name': 'ilahi duyu',
+	'port.buff.divinesense.desc': 'Bu karakter geçici olarak yakındaki diğer yaratıkları zihniyle görebilir!\\n\\nKalan hamle sayısı: {0}.',
+	'port.buff.recallused.name': 'son kullanılan rün',
+	'port.buff.recallused.desc': 'Ruhban kısa süre önce yazıtı tekrar et büyüsü ile çalışan bir eşya kullanmıştır. Ruhban eşyanın etkisini tekrarlamak için büyü yapabilir.\\n\\nKullanılan eşya: {0}.\\n\\nKalan hamle sayısı: {1}.',
+	'port.buff.cleanseimmunity.name': 'arınmış',
+	'port.buff.cleanseimmunity.desc': 'Bu karakter tüm zararlı durum etkilerine karşı birkaç tur bağışıktır!\\n\\nKalan tur: {0}.',
+
+	'port.action.cast': 'Kullan',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': 'flaş bombası',
@@ -5028,6 +5937,106 @@ export const PORT_STRINGS_TR: Record<string, string> = {
  */
 
 export const PORT_STRINGS_UK: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': 'свята зброя',
+	'port.buff.holyweapon.desc': 'Священник наділив свою зброю священною енергією, тимчасово перекривши будь-які існуючі на ній чари, натомість наносячи додаткові 2 магічні шкоди з кожною атакою.\\n\\nХодів залишилось: {0}.',
+	'port.buff.holyward.name': 'священний захист',
+	'port.buff.holyward.desc': 'Священник наділив свої обладунки священною енергією, тимчасово перекривши будь-яку існуючу руну та збільшивши блокування шкоди на 1.\\n\\nХодів залишилось: {0}.',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': 'священний фоліант',
+	'port.desc.holytome': 'Священний фоліант, який слугує фокусом для божественної магії священника. Використання фоліанту дозволяє священнику накладати різноманітні магічні заклинання.\\n\\nПо мірі використання фоліанту буде ставати все потужнішим, даючи священнику більше максимальних зарядів і дещо збільшуючи швидкість перезарядки.',
+	'port.log.tomelevelup': 'Ваш фоліант стає сильнішим!',
+	'port.log.tomenospell': 'Зараз ти не можеш накласти це закляття.',
+	'port.log.tomecursed': 'Ви не можете використовувати проклятий фоліант.',
+	'port.spell.guidinglight.name': 'спрямоване світло',
+	'port.spell.guidinglight.short_desc': 'Завдає дальньої магічної шкоди та гарантовано влучає.',
+
+	'port.spell.holyweapon.name': 'свята зброя',
+	'port.spell.holyweapon.short_desc': 'Тимчасово замінює собою чари, щоб збільшити шкоду.',
+
+	'port.spell.holyward.name': 'священний захист',
+	'port.spell.holyward.short_desc': 'Тимчасово замінює собою руну, щоб збільшити захист обладунків.',
+
+	'port.buff.illuminated.name': 'Сяючий',
+	'port.buff.illuminated.desc': 'Цей герой сяє, коли на нього потрапляє спрямоване світло. Хоча світіння недостатньо сильне, щоб освітити навколишню місцевість, магічний ефект значно полегшить священнику приземлення ударів по них.',
+	'port.spell.charge_cost': 'Вартість заряду: {cost}',
+
+	'port.spell.cast_title': 'накласти закляття',
+	'port.talent.satiated_spells.title': 'Заклинання насичення',
+	'port.talent.satiated_spells.desc': '_+1:_ Вживання їжі призводить до того, що священник отримує _3 захисту_ при наступному використанні заклинання.\\n\\n_+2:_ Вживання їжі призводить до того, що священник отримує _5 захисту_ при наступному використанні заклинання.',
+
+	'port.talent.holy_intuition.title': 'свята інтуїція',
+	'port.talent.holy_intuition.desc': '_+1:_ Священник може накласти заклинання _свята інтуїція_, яке показує, чи є предмет проклятим, за _3 заряди._\\n\\n_+2:_ Священник може накласти заклинання _свята інтуїція_, яке показує, чи є предмет проклятим, за _2 заряди._',
+
+	'port.talent.searing_light.title': 'пекуче світло',
+	'port.talent.searing_light.desc': '_+1:_ Фізичні атаки священника по ворогах, освітлених _спрямованим світлом_, наносять _+3 шкоди._\\n\\n_+2:_ Фізичні атаки священника по ворогах, освітлених _спрямованим світлом_, наносять _+5 шкоди._',
+
+	'port.talent.shield_of_light.title': 'щит світла',
+	'port.talent.shield_of_light.desc': '_+1:_ Священник може застосувати заклинання _світловий щит_, яке діє миттєво і надає йому _2-4 одиниці захисту_ від цілі на 5 ходів за 1 заряд.\\n\\n_+2:_ Священник може застосувати заклинання _світловий щит_, яке діє миттєво і надає йому _3-6 одиниць захисту_ від цілі на 5 ходів за 1 заряд.',
+
+	'port.spell.holyintuition.name': 'свята інтуїція',
+	'port.spell.holyintuition.short_desc': 'визначає, чи є предмет проклятим, чи ні.',
+	'port.spell.holyintuition.prompt': 'оберіть предмет',
+	'port.spell.holyintuition.cursed': 'Ви відчуваєте зловісну магію, що ховається в цьому предметі.',
+	'port.spell.holyintuition.uncursed': 'Цей предмет вільний від злих чарів.',
+
+	'port.spell.shieldoflight.name': 'щит світла',
+	'port.spell.shieldoflight.short_desc': 'Надає тимчасовий обладунок проти цілі.',
+
+	'port.log.clericnotarget': 'Там немає цілі.',
+
+	'port.buff.satiatedspells.name': 'Заклинання захисту',
+	'port.buff.satiatedspells.desc': 'Наступне заклинання, яке накладе священник, надасть йому невеликий захист.',
+
+	'port.buff.shieldoflight.name': 'щит світла',
+	'port.buff.shieldoflight.desc': 'Між цим персонажем і ворогом стоїть тонкий світловий щит. Він недостатньо сильний, щоб повністю блокувати атаки, але пом\'якшує їх.\\n\\nХодів залишилося: {0}',
+	'port.talent.enlightening_meal.title': 'Просвітницька трапеза',
+	'port.talent.enlightening_meal.desc': '_+1:_ Перекус займає у священника 1 хід і дає їм _0.67 заряда_ для їх святого фоліанту.\\n\\n_+2:_ Перекус займає у священника 1 хід і дає їм _1 заряд_ для їх святого фоліанту.',
+
+	'port.talent.recall_inscription.title': 'Нарис спогаду',
+	'port.talent.recall_inscription.desc': '_+1:_ Священник може використати заклинання _нарис спогаду_, яке дозволяє повторити ефект останнього використаного рунічного каменя або сувою протягом _10 ходів._\\n\\n_+2:_ Священник може використати заклинання _нарис спогаду_, яке дозволяє повторити ефект останнього використаного рунічного каменя або сувою протягом _300 ходів._\\n\\nНарис спогаду не можна використовувати з сувоями покращення. Вартість цього заклинання залежить від того, який предмет використовувався останнім: 2 для рунічного каменя, 3 для сувою, 4 для екзотичного сувою. Вартість заклинання подвоюється, якщо воно використовується з сувоєм перетворення або алхімічними предметами, які повинні бути створені за допомогою перетворення або покращення.',
+
+	'port.talent.sunray.title': 'Сонячний промінь',
+	'port.talent.sunray.desc': '_+1_ Священник може використати заклинання _сонячний промінь_, яке завдає _4-8 шкоди_ і засліплює ціль на _4 ходи_, за 1 заряд.\\n\\n_+2_ Священник може використати заклинання _сонячний промінь_, яке завдає _6-12 шкоди_ і засліплює ціль на _6 ходів_, за 1 заряд.\\n\\nСонячний промінь може засліпити кожну ціль лише один раз, але якщо ціль вже засліплена сонячним променем, то він паралізує її. Сонячний промінь завжди завдає максимальної шкоди демонічним ворогам і нечисті.',
+
+	'port.talent.divine_sense.title': 'Божественне передчуття',
+	'port.talent.divine_sense.desc': '_+1:_ Священник може застосувати заклинання _божественне передчуття_, яке дає йому _8 плиток_ ментального зору на 50 ходів і не займає багато часу для зачарування, за 2 заряди.\\n\\n_+2:_ Священник може застосувати заклинання _божественне передчуття_, яке дає йому _12 плиток_ ментального зору на 50 ходів і не займає багато часу для зачарування, за 2 заряди.',
+
+	'port.talent.bless.title': 'Благословення',
+	'port.talent.bless.desc': '_+1:_ Священник може накласти заклинання _благословення_, яке дає _6 ходів благословення і 10 захисту_, якщо накласти його на себе, або _10 ходів благословення і 10 зцілення_, якщо накласти його на іншого персонажа, за 1 заряд.\\n\\n_+2:_ Священник може накласти заклинання _благословення_, яке дає _10 ходів благословення і 15 захисту_, якщо накласти його на себе, або _15 ходів благословення і 15 зцілення_, якщо накласти його на іншого персонажа, за 1 заряд.\\n\\nНадлишок зцілення від цього заклинання перетворюється на захист.',
+	'port.talent.cleanse.title': 'Очищення',
+	'port.talent.cleanse.desc': '_+1:_ Священник може застосувати заклинання _очищення_, яке _знімає статус негативних ефектів_ з священника і всіх союзників, що знаходяться поруч, а також надає їм _10 захисту_ за 2 заряди.\\n\\n_+2:_ Священник може застосувати заклинання _очищення_, яке _надає 3 ходи імунітету до негативного статусу_ священнику і всім союзникам, що знаходяться поруч, а також надає їм _20 захисту_ за 2 заряди.\\n\\n_+3:_ Священник може застосувати заклинання _очищення_, яке _надає 5 ходів імунітету до негативного статусу_ священнику і всім союзникам, що знаходяться поруч, а також надає їм _30 захисту_ за 2 заряди.',
+	'port.talent.light_reading.title': 'Легке читання',
+	'port.talent.light_reading.desc': '_+1:_ Священник може використовувати священний фоліант, коли він не споряджений, але він перезаряджається з _25% швидкістю_ коли не споряджений.\\n\\n_+2:_ Священник може використовувати священний фоліант, коли він не споряджений, але він перезаряджається з _50% швидкістю_ коли не споряджений.\\n\\n_+3:_ Священник може використовувати священний фоліант, коли він не споряджений, але він перезаряджається з _75% швидкістю_ коли не споряджений.',
+
+	'port.spell.sunray.name': 'сонячний промінь',
+	'port.spell.sunray.short_desc': 'Завдає дальньої магічної шкоди і засліплює ціль на один раз.',
+
+	'port.spell.bless.name': 'благословення',
+	'port.spell.bless.short_desc': 'Благословляє і захищає священника, благословляє і зцілює інших',
+
+	'port.spell.divinesense.name': 'божественного передчуття',
+	'port.spell.divinesense.short_desc': 'Отримайте тимчасовий ментальний зір в ширшому діапазоні.',
+
+	'port.spell.recallinscription.name': 'нарис спогаду',
+	'port.spell.recallinscription.short_desc': 'Повторює нещодавно використаний рунічний камінь або сувій.',
+	'port.spell.cleanse.name': 'очистити',
+	'port.spell.cleanse.short_desc': 'Очищає негативні ефекти та надає захист.',
+
+	'port.buff.divinesense.name': 'божественного передчуття',
+	'port.buff.divinesense.desc': 'Цей персонаж тимчасово може бачити інших істот, що знаходяться поблизу, силою свого розуму!\\n\\nХодів залишилося: {0}.',
+	'port.buff.recallused.name': 'нещодавно використана руна',
+	'port.buff.recallused.desc': 'Нещодавно священник використав предмет, який працює з вписаним заклинанням відкликання. Священник може застосувати заклинання, щоб повторити ефект предмета.\\n\\nВикористаний предмет: {0}.\\n\\nЗалишилося ходів: {1}.',
+	'port.buff.cleanseimmunity.name': 'очищений',
+	'port.buff.cleanseimmunity.desc': 'Цей персонаж тимчасово невразливий до всіх шкідливих ефектів статусу!\\n\\nЗалишилося ходів: {0}.',
+
+	'port.action.cast': 'Заклинання',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': 'світлова граната',
@@ -5557,6 +6566,106 @@ export const PORT_STRINGS_UK: Record<string, string> = {
  */
 
 export const PORT_STRINGS_HU: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': 'szent fegyver',
+	'port.buff.holyweapon.desc': 'A térítő szent energiát vezetett a viselt fegyverébe, ami átmenetileg felülírta a meglévő bűvöleteket, és ezáltal a fegyver további 2 mágikus sebzést okoz minden támadás alkalmával.\\n\\nHátralévő körök: {0}.',
+	'port.buff.holyward.name': 'szent oltalom',
+	'port.buff.holyward.desc': 'A térítő szent energiát vezetett a viselt páncéljába, ami átmenetileg felülírta a meglévő varázsjeleket, és 1-gyel több sérülés kivédését teszi lehetővé.\\n\\nHátralévő körök: {0}.',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': 'szentkönyv',
+	'port.desc.holytome': 'Egy szent könyv, amely segít összpontosítani a térítő isteni mágiáját. A térítő változatos varázsigéket tud elmondani a szentkönyv segítségével.\\n\\nA szentkönyv folyamatosan egyre erősebb lesz, ahogy a térítő használja, és megnő a maximális töltése, illetve a feltöltődési sebessége.',
+	'port.log.tomelevelup': 'A szentkönyved erősebb lett!',
+	'port.log.tomenospell': 'Jelenleg nem mondhatod el ezt a varázsigét.',
+	'port.log.tomecursed': 'Megátkozott szentkönyvet nem tudsz használni.',
+	'port.spell.guidinglight.name': 'vezérfény',
+	'port.spell.guidinglight.short_desc': 'Távolsági mágikus sebzést okoz, és garantált találatot segít elő.',
+
+	'port.spell.holyweapon.name': 'szent fegyver',
+	'port.spell.holyweapon.short_desc': 'Átmenetileg felülírja a bűvöleteket, hogy megnövelje a sebzést.',
+
+	'port.spell.holyward.name': 'szent oltalom',
+	'port.spell.holyward.short_desc': 'Átmenetileg felülírja a varázsjeleket, hogy megnövelje a páncél által nyújtott védelmet.',
+
+	'port.buff.illuminated.name': 'Megvilágított',
+	'port.buff.illuminated.desc': 'Ez a karakter fénylik, mivel vezérfény találta el. A fény ugyan nem olyan erős, hogy megvilágítsa a környező területet, de a mágikus hatása miatt sokkal könnyebben eltalálja őt a térítő.',
+	'port.spell.charge_cost': '{cost} töltésbe kerül',
+
+	'port.spell.cast_title': 'varázsige mondása',
+	'port.talent.satiated_spells.title': 'Laktató varázsigék',
+	'port.talent.satiated_spells.desc': '_+1:_ Miután a térítő evett, a következő varázsige elmondásakor _3 védőburkot_ kap.\\n\\n_+2:_ Miután a térítő evett, a következő varázsige elmondásakor _5 védőburkot_ kap.',
+
+	'port.talent.holy_intuition.title': 'szent megérzés',
+	'port.talent.holy_intuition.desc': '_+1:_ A térítő elmondhatja a _szent megérzés_ varázsigéjét, amely _3 töltés_ árán felfedi, ha egy tárgy átkozott.\\n\\n_+2:_ A térítő elmondhatja a _szent megérzés_ varázsigéjét, amely _2 töltés_ árán felfedi, ha egy tárgy átkozott.',
+
+	'port.talent.searing_light.title': 'perzselő fény',
+	'port.talent.searing_light.desc': '_+1:_ A térítő fizikai támadásai a _vezérfény_ által megvilágított ellenségek ellen _+3 sebzést_ okoznak.\\n\\n_+2:_ A térítő fizikai támadásai a _vezérfény_ által megvilágított ellenségek ellen _+5 sebzést_ okoznak.',
+
+	'port.talent.shield_of_light.title': 'fénypajzs',
+	'port.talent.shield_of_light.desc': '_+1:_ A térítő elmondhatja a _fénypajzs_ varázsigét, amelynek nincs időigénye, és _2-4 páncélzatot_ biztosít egy ellenséggel szemben 5 körig 1 töltés árán.\\n\\n_+2:_ A térítő elmondhatja a _fénypajzs_ varázsigét, amelynek nincs időigénye, és _3-6 páncélzatot_ biztosít egy ellenséggel szemben 5 körig 1 töltés árán.',
+
+	'port.spell.holyintuition.name': 'szent megérzés',
+	'port.spell.holyintuition.short_desc': 'Azonosítja, hogy a tárgy átkozott-e vagy sem.',
+	'port.spell.holyintuition.prompt': 'válassz valamit',
+	'port.spell.holyintuition.cursed': 'Rosszindulatú mágiát érzel megbújni ebben a tárgyban.',
+	'port.spell.holyintuition.uncursed': 'Ez a tárgy rosszindulatú mágiától mentes.',
+
+	'port.spell.shieldoflight.name': 'fénypajzs',
+	'port.spell.shieldoflight.short_desc': 'Ideiglenes páncélzatot biztosít egy célponttal szemben.',
+
+	'port.log.clericnotarget': 'Itt nincs célpont.',
+
+	'port.buff.satiatedspells.name': 'Védőburok-varázsige',
+	'port.buff.satiatedspells.desc': 'A következő varázsige, amelyet a térítő elmond, egy kis védőburkot fog biztosítani neki.',
+
+	'port.buff.shieldoflight.name': 'fénypajzs',
+	'port.buff.shieldoflight.desc': 'Vékony fénypajzs feszül e karakter és egy ellenség között. Nem olyan erős, hogy teljesen kivédje a támadásokat, de le tudja gyengíteni azokat.\\n\\nHátralévő körök: {0}',
+	'port.talent.enlightening_meal.title': 'Megvilágosodás étke',
+	'port.talent.enlightening_meal.desc': '_+1:_ Az étel elfogyasztása 1 körig tart a térítőnek, és _0,67 töltést_ ad a szentkönyvének.\\n\\n_+2:_ Az étel elfogyasztása 1 körig tart a térítőnek, és _1 töltést_ ad a szentkönyvének.',
+
+	'port.talent.recall_inscription.title': 'Jelismétlés',
+	'port.talent.recall_inscription.desc': '_+1:_ A térítő elmondhatja a _jelismétlés_ varázsigéjét, amely lehetővé teszi számára, hogy megismételje az elmúlt _10 körben_ utoljára használt rúnakő vagy tekercs hatását.\\n\\n_+2:_ A térítő elmondhatja a _jelismétlés_ varázsigéjét, amely lehetővé teszi számára, hogy megismételje az elmúlt _300 körben_ utoljára használt rúnakő vagy tekercs hatását.\\n\\nA jelismétlés varázsige nem használható a fejlesztéstekercshez. E varázsige eltérő mennyiségű töltésbe kerül, attól függően, hogy milyen tárgyat használtál utoljára: rúnakő esetén 2, tekercs esetén 3, egzotikus tekercs esetén 4. A töltésfelhasználása kétszer akkora, ha átváltoztatótekercs vagy olyan alkímiával előállítható tárgy hatását másolja, amelynek az elkészítéséhez átváltoztató- vagy fejlesztéstekercsre van szükség.',
+
+	'port.talent.sunray.title': 'Napsugár',
+	'port.talent.sunray.desc': '_+1:_ A térítő elmondhatja a _napsugár_ varázsigét, amely _4-8 sebzést_ okoz, és _4 körig_ elvakítja a célpontot, 1 töltés árán.\\n\\n_+2:_ A térítő elmondhatja a _napsugár_ varázsigét, amely _6-12 sebzést_ okoz, és _6 körig_ elvakítja a célpontot, 1 töltés árán.\\n\\nA napsugár varázsigéje minden célpontot csak egyszer képes elvakítani, de ha már a napsugár által el van vakítva a célpont, akkor viszont lebénítja. A napsugár varázsige mindig a legmagasabb sebzést okozza a démoni és élőhalott célpontoknak.',
+
+	'port.talent.divine_sense.title': 'Isteni sugallat',
+	'port.talent.divine_sense.desc': '_+1:_ A térítő elmondhatja az _isteni sugallat_ varázsigét, amely 50 körig _8 mező_ hatósugarú belső látást biztosít neki, 2 töltés árán, és nem vesz igénybe időt az elmondása.\\n\\n_+2:_ A térítő elmondhatja az _isteni sugallat_ varázsigét, amely 50 körig _12 mező_ hatósugarú belső látást biztosít neki, 2 töltés árán, és nem vesz igénybe időt az elmondása.',
+
+	'port.talent.bless.title': 'Áldás',
+	'port.talent.bless.desc': '_+1:_ A térítő elmondhatja az _áldás_ varázsigét, amely _6 körig áldást és 10 védőburkot_ biztosít számára, amikor önmagán használja, vagy _10 körig áldást és 10 életpontos gyógyítást_ ad egy másik karakternek, 1 töltés árán.\\n\\n_+2:_ A térítő elmondhatja az _áldás_ varázsigét, amely _10 körig áldást és 15 védőburkot_ biztosít számára, amikor önmagán használja, vagy _15 körig áldást és 15 életpontos gyógyítást_ ad egy másik karakternek, 1 töltés árán.\\n\\nA hiányzó életerőn felüli pontok védőburokká alakulnak.',
+	'port.talent.cleanse.title': 'Megtisztítás',
+	'port.talent.cleanse.desc': '_+1:_ A térítő elmondhatja a _megtisztítás_ varázsigét, _eltávolítja a káros hatásokat_ a térítőről és a közelében lévő szövetségesekről, _10 védőburkot_ biztosít neki, 2 töltés árán.\\n\\n_+2:_ A térítő elmondhatja a _megtisztítás_ varázsigét, _3 körig tartó immunitást biztosít a káros hatások ellen_ a térítőnek és a közelében lévő szövetségeseknek, _20 védőburkot_ biztosít neki, 2 töltés árán.\\n\\n_+3:_  A térítő elmondhatja a _megtisztítás_ varázsigét, _5 körig tartó immunitást biztosít a káros hatások ellen_ a térítőnek és a közelében lévő szövetségeseknek, _30 védőburkot_ biztosít neki, 2 töltés árán.',
+	'port.talent.light_reading.title': 'Könnyű olvasmány',
+	'port.talent.light_reading.desc': '_+1:_ Akkor is használhatja a térítő a szentkönyvét, amikor az nincs is kéznél, de ilyenkor csak _25%-os sebességgel_ töltődik újra.\\n\\n_+2:_ Akkor is használhatja a térítő a szentkönyvét, amikor az nincs is kéznél, de ilyenkor csak _50%-os sebességgel_ töltődik újra.\\n\\n_+3:_ Akkor is használhatja a térítő a szentkönyvét, amikor az nincs is kéznél, de ilyenkor csak _75%-os sebességgel_ töltődik újra.',
+
+	'port.spell.sunray.name': 'napsugár',
+	'port.spell.sunray.short_desc': 'Távolsági mágikus sebzést okoz, és egy alkalommal elvakítja a célpontot.',
+
+	'port.spell.bless.name': 'áldás',
+	'port.spell.bless.short_desc': 'Megáldja és védőburkot ad a térítőnek, vagy megáld és gyógyít másokat.',
+
+	'port.spell.divinesense.name': 'isteni sugallat',
+	'port.spell.divinesense.short_desc': 'Átmenetileg nagy hatósugarú belső látásod lesz.',
+
+	'port.spell.recallinscription.name': 'jelismétlés',
+	'port.spell.recallinscription.short_desc': 'Megismétli egy közelmúltban használt rúnakő vagy tekercs hatását.',
+	'port.spell.cleanse.name': 'megtisztítás',
+	'port.spell.cleanse.short_desc': 'Megtisztít a negatív hatásoktól, és védőburkot ad.',
+
+	'port.buff.divinesense.name': 'isteni sugallat',
+	'port.buff.divinesense.desc': 'Ez a karakter átmenetileg képes lett a közelében lévő lényeket érzékelni az elméjével!\\n\\nHátralévő körök: {0}.',
+	'port.buff.recallused.name': 'utoljára használt rúna',
+	'port.buff.recallused.desc': 'A térítő a közelmúltban olyan tárgyat használt, amely a jelismétlés varázsige követelményeinek megfelel. A térítő elmondhatja a varázsigét, hogy megismételje a tárgy hatását.\\n\\nA tárgy, amelyet használt: {0}.\\n\\nHátralévő körök: {1}.',
+	'port.buff.cleanseimmunity.name': 'megtisztítva',
+	'port.buff.cleanseimmunity.desc': 'Ez a karakter átmenetileg immunis minden káros állapothatásra!\\n\\nHátralévő körök: {0}.',
+
+	'port.action.cast': 'Elmond',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': 'villanógránát',
@@ -6085,6 +7194,106 @@ export const PORT_STRINGS_HU: Record<string, string> = {
  */
 
 export const PORT_STRINGS_NL: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': 'heilig wapen',
+	'port.buff.holyweapon.desc': 'De Geestelijke heeft zijn wapen dat hij momenteel gebruikt doordrenkt met heilige energie, waardoor tijdelijk alle bestaande betoveringen worden overschreven en het wapen bij elke aanval 2 extra magische schade aanricht.\\n\\nResterende beurten: {0}.',
+	'port.buff.holyward.name': 'heilige bescherming',
+	'port.buff.holyward.desc': 'De Geestelijke heeft zijn versleten harnas doordrenkt met heilige energie, waardoor tijdelijk alle bestaande symbolen worden overschreven en het harnas 1 extra punt schade blokkeert.\\n\\nResterende beurten: {0}.',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': 'heilig boek',
+	'port.desc.holytome': 'Een heilig boek dat fungeert als focus voor de goddelijke magie van de Geestelijke. Door het boek te gebruiken, kan de Geestelijke verschillende magische spreuken uitspreken.\\n\\nHet boek zal gestaag krachtiger worden naarmate de Geestelijke het gebruikt, waardoor de Geestelijke meer maximale ladingen krijgt en de oplaadsnelheid iets toeneemt.',
+	'port.log.tomelevelup': 'Je boek wordt sterker!',
+	'port.log.tomenospell': 'Je kunt die spreuk nu niet uitspreken.',
+	'port.log.tomecursed': 'Je kunt geen vervloekt boek gebruiken.',
+	'port.spell.guidinglight.name': 'leidend licht',
+	'port.spell.guidinglight.short_desc': 'Brengt magische schade toe op afstand en garandeert een treffer.',
+
+	'port.spell.holyweapon.name': 'heilig wapen',
+	'port.spell.holyweapon.short_desc': 'Heft tijdelijk betoveringen op om schade te verhogen.',
+
+	'port.spell.holyward.name': 'heilige bescherming',
+	'port.spell.holyward.short_desc': 'Heft tijdelijk symbolen op om de harnas blokkering te versterken.',
+
+	'port.buff.illuminated.name': 'Verlicht',
+	'port.buff.illuminated.desc': 'Dit personage gloeit doordat het geraakt is door leidend licht. Hoewel de gloed niet sterk genoeg is om de omgeving te verlichten, zal het magische effect het voor de Geestelijke veel gemakkelijker maken om ze te raken.',
+	'port.spell.charge_cost': 'Oplaadkosten: {cost}',
+
+	'port.spell.cast_title': 'spreek een spreuk uit',
+	'port.talent.satiated_spells.title': 'Verzadigde spreuken',
+	'port.talent.satiated_spells.desc': '_+1:_ Het eten van voedsel zorgt ervoor dat de Geestelijke _3 bescherming_ krijgt de volgende keer dat hij een spreuk uitspreekt.\\n\\n_+2:_ Het eten van voedsel zorgt ervoor dat de Geestelijke _5 bescherming_ krijgt de volgende keer dat hij een spreuk uitspreekt.',
+
+	'port.talent.holy_intuition.title': 'heilige intuïtie',
+	'port.talent.holy_intuition.desc': '_+1:_ De Geestelijke kan _Heilige Intuïtie_ uitspreken, een spreuk die onthult of een item vervloekt is tegen de kosten van _3 ladingen._\\n\\n_+2:_ De Geestelijke kan _Heilige Intuïtie_ uitspreken, een spreuk die onthult of een item vervloekt is tegen de kosten van _2 ladingen._',
+
+	'port.talent.searing_light.title': 'schroeiend licht',
+	'port.talent.searing_light.desc': '_+1:_ De fysieke aanvallen van de Geestelijke op vijanden die verlicht worden door _Leidend Licht_ veroorzaken _+3 schade._ \\n\\n_+2:_ De fysieke aanvallen van de Geestelijke op vijanden die verlicht worden door _Leidend Licht_ veroorzaken _+5 schade._',
+
+	'port.talent.shield_of_light.title': 'schild van licht',
+	'port.talent.shield_of_light.desc': '_+1:_ De Geestelijke kan _Schild van Licht_ uitspreken, een spreuk die onmiddellijk wordt uitgesproken en hem _2-4 bescherming_ verleent tegen een doelwit gedurende 5 beurten ten koste van 1 lading.\\n\\n_+2:_ De Geestelijke kan _Schild van Licht_ uitspreken, een spreuk die onmiddellijk wordt uitgesproken en hem _3-6 bescherming_ verleent tegen een doelwit gedurende 5 beurten ten koste van 1 lading.',
+
+	'port.spell.holyintuition.name': 'heilige intuïtie',
+	'port.spell.holyintuition.short_desc': 'geeft aan of een voorwerp vervloekt is of niet.',
+	'port.spell.holyintuition.prompt': 'kies een voorwerp',
+	'port.spell.holyintuition.cursed': 'Je voelt een kwaadaardige magie schuilen in dit item.',
+	'port.spell.holyintuition.uncursed': 'Dit voorwerp is vrij van kwaadaardige magie.',
+
+	'port.spell.shieldoflight.name': 'schild van licht',
+	'port.spell.shieldoflight.short_desc': 'Geeft tijdelijke bepantsering tegen een doelwit.',
+
+	'port.log.clericnotarget': 'Er is daar geen doel.',
+
+	'port.buff.satiatedspells.name': 'Afschermende spreuk',
+	'port.buff.satiatedspells.desc': 'De volgende spreuk die de Geestelijke uitspreekt, zal hem een kleine hoeveelheid bescherming geven.',
+
+	'port.buff.shieldoflight.name': 'schild van licht',
+	'port.buff.shieldoflight.desc': 'Een dun schild van licht staat tussen dit personage en een vijand. Het is niet sterk genoeg om aanvallen volledig te blokkeren, maar het zal ze verzachten.\\n\\nResterende beurten: {0}',
+	'port.talent.enlightening_meal.title': 'Verzadigde maaltijd',
+	'port.talent.enlightening_meal.desc': '_+1:_ Het eten van voedsel kost de Geestelijke 1 beurt en geeft hem _0,67 ladingen_ op zijn heilige boek.\\n\\n_+2:_ Het eten van voedsel kost de Geestelijke 1 beurt en geeft hem _1 lading_ op zijn heilige boek.',
+
+	'port.talent.recall_inscription.title': 'Inscriptie Herinneren',
+	'port.talent.recall_inscription.desc': '_+1:_ De Geestelijke kan _Inscriptie Herinneren_ uitspreken, een spreuk waarmee ze het effect van de laatste runensteen of rol die ze gebruikten binnen _10 beurten_ kunnen herhalen.\\n\\n_+2:_ De Geestelijke kan _Inscriptie Herinneren_ uitspreken, een spreuk waarmee ze het effect van de laatste runensteen of rol die ze gebruikten binnen _300 beurten_ kunnen herhalen.\\n\\nInscriptie Herinneren kan niet worden gebruikt om rollen van opwaardering te repliceren. De kosten voor deze spreuk variëren afhankelijk van welk item recentelijk is gebruikt: 2 voor een runensteen, 3 voor een rol, 4 voor een exotische rol. Deze kosten wordt verdubbeld bij het lezen van een rol van transmutatie, of alchemie-items gebruikt die met transmutatie of opwaardering rollen moeten worden vervaardigd.',
+
+	'port.talent.sunray.title': 'Zonnestraal',
+	'port.talent.sunray.desc': '_+1:_ De Geestelijke kan _Zonnestraal_ uitspreken, een spreuk die _4-8 schade_ aanricht en het doelwit _4 beurten verblindt,_ ten koste van 1 lading.\\n\\n_+2:_ De Geestelijke kan _Zonnestraal_ uitspreken, een spreuk die _6-12 schade_ aanricht en het doelwit _6 beurten verblindt,_ ten koste van 1 lading.\\n\\nZonnestraal kan elk doelwit maar één keer verblinden, maar als het doelwit al verblind is door Zonnestraal, verlamt het in plaats daarvan. Zonnestraal brengt altijd maximale schade toe aan demonische en ondode vijanden.',
+
+	'port.talent.divine_sense.title': 'Goddelijk Gevoel',
+	'port.talent.divine_sense.desc': '_+1:_ De Geestelijke kan _Goddelijk Gevoel_ uitspreken, een spreuk die hem _8 tegels_ geestvisie geeft gedurende 50 beurten en geen beurt kost om uit te spreken, ten koste van 2 ladingen.\\n\\n_+2:_ De Geestelijke kan _Goddelijk Gevoel_ uitspreken, een spreuk die hem _12 tegels_ geestvisie geeft gedurende 50 beurten en geen beurt kost om uit te spreken, ten koste van 2 ladingen.',
+
+	'port.talent.bless.title': 'Zegen',
+	'port.talent.bless.desc': '_+1:_ De Geestelijke kan _Zegen_ uitspreken, een spreuk die _6 beurten Zegen en 10 bescherming_ oplevert als hij op zichzelf wordt uitgeoefend, of _10 beurten Zegen en 10 bescherming_ als hij op een ander personage wordt uitgesproken, ten koste van 1 lading.\\n\\n_+2:_ De Geestelijke kan _Zegen_ uitspreken, een spreuk die _10 beurten Zegen en 15 bescherming_ oplevert als hij op zichzelf wordt uitgeoefend, of _15 beurten Zegen en 15 bescherming_ als hij op een ander personage wordt uitgesproken, ten koste van 1 lading.\\n\\nOvertollige genezing van deze spreuk wordt omgezet in bescherming.',
+	'port.talent.cleanse.title': 'Reinig',
+	'port.talent.cleanse.desc': '_+1:_ De Geestelijke kan _Reinig_ uitspreken, een spreuk die _negatieve statuseffecten verwijdert_ van de Geestelijke en eventuele bondgenoten in de buurt, en hen _10 bescherming verleent,_ ten koste van 2 ladingen.\\n\\n_+2:_ De Geestelijke kan _Reinig_ uitspreken, een spreuk die _3 beurten negatieve status immuniteit_ geeft aan de Geestelijke en eventuele bondgenoten in de buurt, en hen _20 bescherming verleent,_ ten koste van 2 ladingen.\\n\\n_+3:_ De Geestelijke kan _Reinig_ uitspreken, een spreuk die _5 beurten negatieve status immuniteit_ geeft aan de Geestelijke en eventuele bondgenoten in de buurt, en hen _30 bescherming verleent,_ ten koste van 2 ladingen',
+	'port.talent.light_reading.title': 'Licht Lezen',
+	'port.talent.light_reading.desc': '_+1:_ De Geestelijke kan zijn heilig boek gebruiken als het niet is uitgerust, maar het laadt op met _25% snelheid_ als het niet is uitgerust.\\n\\n_+2:_ De Geestelijke kan zijn heilig boek gebruiken als het niet is uitgerust, maar het laadt op met _50% snelheid_ als het niet is uitgerust.\\n\\n_+3:_ De Geestelijke kan zijn heilig boek gebruiken als het niet is uitgerust, maar het laadt op met _75% snelheid_ als het niet is uitgerust.',
+
+	'port.spell.sunray.name': 'zonnestraal',
+	'port.spell.sunray.short_desc': 'Brengt magische schade toe op afstand en verblindt een doelwit één keer.',
+
+	'port.spell.bless.name': 'zegen',
+	'port.spell.bless.short_desc': 'Zegent en maakt een schild voor de Geestelijke, zegent en geneest anderen.',
+
+	'port.spell.divinesense.name': 'goddelijk gevoel',
+	'port.spell.divinesense.short_desc': 'Krijg tijdelijk geestvisie in een breed bereik.',
+
+	'port.spell.recallinscription.name': 'inscriptie herinneren',
+	'port.spell.recallinscription.short_desc': 'Herhaalt een onlangs gebruikte runensteen of rol.',
+	'port.spell.cleanse.name': 'reinig',
+	'port.spell.cleanse.short_desc': 'Verwijdert negatieve effecten en biedt bescherming.',
+
+	'port.buff.divinesense.name': 'goddelijk gevoel',
+	'port.buff.divinesense.desc': 'Dit personage kan tijdelijk andere wezens in de buurt zien met zijn geest!\\n\\nResterende beurten: {0}.',
+	'port.buff.recallused.name': 'onlangs gebruikte rune',
+	'port.buff.recallused.desc': 'De Geestelijke heeft onlangs een voorwerp gebruikt dat werkt met de ingeschreven herinneringsspreuk. De Geestelijke kan de spreuk uitspreken om het effect van het item te herhalen.\\n\\nGebruikt artikel: {0}\\n\\nResterende beurten: {1}.',
+	'port.buff.cleanseimmunity.name': 'gereinigd',
+	'port.buff.cleanseimmunity.desc': 'Dit personage is tijdelijk immuun voor alle schadelijke statuseffecten!\\n\\nResterende beurten: {0}.',
+
+	'port.action.cast': 'Uitspreken',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': 'flitsbom',
@@ -6614,6 +7823,106 @@ export const PORT_STRINGS_NL: Record<string, string> = {
  */
 
 export const PORT_STRINGS_IN: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': 'senjata suci',
+	'port.buff.holyweapon.desc': 'Ulama telah memberikan energi suci pada senjata usang mereka, yang untuk sementara akan menggantikan semua enchantment yang ada dan menyebabkan senjata tersebut memberikan 2 poin damage magis ekstra pada setiap serangan.\\n\\nGiliran tersisa: {0}.',
+	'port.buff.holyward.name': 'ward suci',
+	'port.buff.holyward.desc': 'Ulama telah memberikan energi suci pada armor usang mereka, yang untuk sementara akan menggantikan semua glyph yang ada dan menyebabkan armor tersebut memblokir 1 poin damage tambahan.\\n\\nGiliran tersisa: {0}.',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': 'kitab suci',
+	'port.desc.holytome': 'Kitab suci yang berfungsi sebagai pusat sihir suci milik Ulama. Dengan menggunakan kitab suci, Ulama dapat mengeluarkan berbagai mantra sihir. Kitab suci akan semakin kuat seiring Ulama menggunakannya, sehingga Ulama memperoleh lebih banyak daya maksimum dan sedikit meningkatkan kecepatan pengisian ulang.',
+	'port.log.tomelevelup': 'kitab mu menjadi lebih kuat',
+	'port.log.tomenospell': 'Kamu tidak dapat menggunakan mantra itu sekarang',
+	'port.log.tomecursed': 'Kamu tidak bisa menggunakan kitab yang terkutuk',
+	'port.spell.guidinglight.name': 'cahaya penuntun',
+	'port.spell.guidinglight.short_desc': 'Memberikan jarak damage magis dan dijamin kena.',
+
+	'port.spell.holyweapon.name': 'senjata suci',
+	'port.spell.holyweapon.short_desc': 'Menggantikan enchantment untuk sementara guna meningkatkan damage.',
+
+	'port.spell.holyward.name': 'ward suci',
+	'port.spell.holyward.short_desc': 'Menggantikan glyph untuk sementara guna meningkatkan pemblokiran armor.',
+
+	'port.buff.illuminated.name': 'Diterangi Cahaya',
+	'port.buff.illuminated.desc': 'Karakter ini bersinar karena terkena cahaya pemandu. Meskipun cahayanya tidak cukup kuat untuk menerangi area di sekitarnya, efek magisnya akan membuat serangan terhadap mereka menjadi lebih mudah bagi Ulama.',
+	'port.spell.charge_cost': 'Biaya daya: {cost}',
+
+	'port.spell.cast_title': 'baca mantra',
+	'port.talent.satiated_spells.title': 'Mantra Pemuas',
+	'port.talent.satiated_spells.desc': '_+1:_ Memakan makanan menyebabkan Ulama memperoleh _3 perisai_ berikutnya saat mereka merapal mantra.\\n\\n_+2:_ Memakan makanan menyebabkan Ulama memperoleh _5 perisai_ berikutnya saat mereka merapal mantra.',
+
+	'port.talent.holy_intuition.title': 'intuisi suci',
+	'port.talent.holy_intuition.desc': '_+1:_ Ulama dapat mengeluarkan _Intuisi Suci,_ mantra yang mengungkapkan apakah suatu barang dikutuk dengan biaya _3 daya._\\n\\n_+2:_ Ulama dapat mengeluarkan _Intuisi Suci,_ mantra yang mengungkapkan apakah suatu barang dikutuk dengan biaya _2 daya._',
+
+	'port.talent.searing_light.title': 'Cahaya Pembakar',
+	'port.talent.searing_light.desc': '_+1:_ Serangan fisik Ulama terhadap musuh yang diterangi oleh _Cahaya Pemandu_ memberikan _+3 damage._\\n\\n_+2:_ Serangan fisik Ulama terhadap musuh yang diterangi oleh _Cahaya Pemandu_ memberikan _+5 damage._',
+
+	'port.talent.shield_of_light.title': 'perisai cahaya',
+	'port.talent.shield_of_light.desc': '_+1:_ Ulama dapat mengeluarkan _Perisai Cahaya,_ mantra yang dikeluarkan secara instan dan memberi mereka _2-4 armor_ terhadap target selama 5 giliran dengan biaya 1 daya.\\n\\n_+2:_ Ulama dapat mengeluarkan _Perisai Cahaya,_ mantra yang dikeluarkan secara instan dan memberi mereka _3-6 armor_ terhadap target selama 5 giliran dengan biaya 1 daya.',
+
+	'port.spell.holyintuition.name': 'intuisi suci',
+	'port.spell.holyintuition.short_desc': 'mengidentifikasi apakah sebuah item terkena kutukan atau tidak.',
+	'port.spell.holyintuition.prompt': 'pilih sebuah item',
+	'port.spell.holyintuition.cursed': 'Kamu merasakan sihir jahat pada item ini.',
+	'port.spell.holyintuition.uncursed': 'Item ini bebas dari sihir jahat.',
+
+	'port.spell.shieldoflight.name': 'perisai cahaya',
+	'port.spell.shieldoflight.short_desc': 'Memberi perlindungan sementara kepada target.',
+
+	'port.log.clericnotarget': 'Tidak ada musuh di sana.',
+
+	'port.buff.satiatedspells.name': 'Mantra Pelindung',
+	'port.buff.satiatedspells.desc': 'Mantra Ulama berikutnya akan memberi mereka sedikit perisai.',
+
+	'port.buff.shieldoflight.name': 'perisai cahaya',
+	'port.buff.shieldoflight.desc': 'Perisai cahaya tipis berdiri di antara karakter ini dan musuh. Perisai itu tidak cukup kuat untuk memblokir serangan secara langsung, tetapi akan melemahkannya.\\n\\nGiliran Tersisa: {0}',
+	'port.talent.enlightening_meal.title': 'Makanan yang Mencerahkan',
+	'port.talent.enlightening_meal.desc': '_+1:_ Memakan makanan akan memberikan 1 giliran kepada Ulama dan memberi mereka _0,67 daya_ pada kitab suci mereka.\\n\\n_+2:_ Memakan makanan akan memberikan 1 giliran kepada Ulama dan memberi mereka _1 daya_ pada kitab suci mereka.',
+
+	'port.talent.recall_inscription.title': 'Pemanggil Kembali Prasasti',
+	'port.talent.recall_inscription.desc': '_+1:_ Ulama dapat mengeluarkan _Pemanggil Kembali Prasasti,_ mantra yang memungkinkan mereka mengulang efek dari batu kuno atau gulungan terakhir yang mereka gunakan dalam _10 giliran._\\n\\n_+2:_ Ulama dapat mengeluarkan _Pemanggil Kembali Prasasti,_ mantra yang memungkinkan mereka mengulang efek dari batu kuno atau gulungan terakhir yang mereka gunakan dalam _300 giliran._\\n\\nPemanggil Kembali Prasasti tidak dapat digunakan dengan gulungan peningkatan. Daya mantra ini bervariasi berdasarkan item mana yang baru saja digunakan: 2 untuk batu kuno, 3 untuk gulungan, 4 untuk gulungan eksotis. Biaya daya ini juga berlipat ganda saat digunakan dengan gulungan pengubah, atau item racikan yang harus dibuat menggunakan pengubah atau peningkatan.',
+
+	'port.talent.sunray.title': 'Sinar Mentari',
+	'port.talent.sunray.desc': '_+1:_ Ulama dapat mengeluarkan _Sinar Mentari,_ mantra yang memberikan _4-8 damage_ dan membutakan target selama _4 giliran,_ dengan biaya 1 daya.\\n\\n_+2:_ Ulama dapat mengeluarkan _Sinar Mentari,_ mantra yang memberikan _6-12 damage_ dan membutakan target selama _6 giliran,_ dengan biaya 1 daya.\\n\\nSinar Mentari hanya dapat membutakan setiap target satu kali, tetapi jika target sudah dibutakan oleh Sinar Mentari maka ia akan lumpuh sebagai gantinya. Sinar Mentari selalu memberikan damage maksimum pada musuh iblis dan mayat hidup.',
+
+	'port.talent.divine_sense.title': 'Indera Ilahi',
+	'port.talent.divine_sense.desc': '_+1:_ Ulama dapat mengeluarkan _Indera Ilahi,_ mantra yang memberi mereka _8 petak_ Penglihatan Pikiran selama 50 giliran dan tidak menghabiskan waktu untuk dirapalkan, dengan biaya 2 daya.\\n\\n_+2:_ Ulama dapat mengeluarkan _Indera Ilahi,_ mantra yang memberi mereka _12 petak_ Penglihatan Pikiran selama 50 giliran dan tidak menghabiskan waktu untuk dirapalkan, dengan biaya 2 daya.',
+
+	'port.talent.bless.title': 'Berkat',
+	'port.talent.bless.desc': '_+1:_ Ulama dapat mengeluarkan _Berkat,_ mantra yang memberikan _6 giliran berkat dan 10 perisai_ saat dikeluarkan pada diri mereka sendiri atau _10 giliran berkat dan 10 penyembuhan_ saat dikeluarkan pada karakter lain, dengan biaya 1 daya.\\n\\n_+2:_ Ulama dapat mengeluarkan _Berkat,_ mantra yang memberikan _10 giliran berkat dan 15 perisai_ saat dikeluarkan pada diri mereka sendiri atau _15 giliran berkat dan 15 penyembuhan_ saat dikeluarkan pada karakter lain, dengan biaya 1 daya.\\n\\nKelebihan penyembuhan dari mantra ini diubah menjadi perisai.',
+	'port.talent.cleanse.title': 'Pembersih',
+	'port.talent.cleanse.desc': '_+1:_ Ulama dapat mengeluarkan _Pembersih,_ mantra yang _menghilangkan efek negatif_ dari Ulama dan sekutu terdekat, dan memberi mereka _10 perisai,_ dengan biaya 2 daya.\\n\\n_+2:_ Ulama dapat mengeluarkan _Pembersih,_ mantra yang _memberikan 3 giliran kekebalan efek negatif_ kepada Ulama dan sekutu terdekat, dan memberi mereka _20 perisai,_ dengan biaya 2 daya.\\n\\n_+3:_ Ulama dapat mengeluarkan _Pembersih,_ mantra yang _memberikan 5 giliran kekebalan efek negatif_ kepada Ulama dan sekutu terdekat, dan memberi mereka _30 perisai,_ dengan biaya 2 daya.',
+	'port.talent.light_reading.title': 'Bacaan Ringan',
+	'port.talent.light_reading.desc': '_+1:_ Ulama dapat menggunakan kitab suci mereka saat tidak dipakai, tetapi terisi ulang pada _kecepatan 25%_ saat tidak dipakai.\\n\\n_+2:_ Ulama dapat menggunakan kitab suci mereka saat tidak dipakai, tetapi terisi ulang pada _kecepatan 50%_ saat tidak dipakai.\\n\\n_+3:_ Ulama dapat menggunakan kitab suci mereka saat tidak dipakai, tetapi terisi ulang pada _kecepatan 75%_ saat tidak dipakai.',
+
+	'port.spell.sunray.name': 'sinar mentari',
+	'port.spell.sunray.short_desc': 'Memberikan damage sihir jarak jauh dan membutakan target sekali.',
+
+	'port.spell.bless.name': 'berkat',
+	'port.spell.bless.short_desc': 'Memberkati dan melindungi Ulama, memberkati dan menyembuhkan orang lain.',
+
+	'port.spell.divinesense.name': 'indera ilahi',
+	'port.spell.divinesense.short_desc': 'Mendapat penglihatan pikiran sementara dalam jangkauan luas.',
+
+	'port.spell.recallinscription.name': 'pemanggil kembali prasasti',
+	'port.spell.recallinscription.short_desc': 'Mengulang batu kuno atau gulungan yang baru saja digunakan.',
+	'port.spell.cleanse.name': 'menyucikan',
+	'port.spell.cleanse.short_desc': 'Bersihkan debuff dan memberi perisai',
+
+	'port.buff.divinesense.name': 'indera ilahi',
+	'port.buff.divinesense.desc': 'Karakter ini untuk sementara dapat melihat makhluk lain di dekatnya dengan pikirannya!\\n\\ngiliran tersisa: {0}.',
+	'port.buff.recallused.name': 'Penggunaan sihir kuno saat ini.',
+	'port.buff.recallused.desc': 'Ulama baru saja menggunakan item yang berfungsi dengan mantra pemanggilan kembali yang tertulis. Ulama dapat mengucapkan mantra untuk mengulang efek item tersebut.\\n\\nItem yang Dipakai: {0}.\\n\\nGiliran Tersisa: {1}.',
+	'port.buff.cleanseimmunity.name': 'dibersihkan',
+	'port.buff.cleanseimmunity.desc': 'Karakter ini untuk sementara kebal terhadap semua status efek berbahaya!\\n\\nGiliran tersisa: {0}',
+
+	'port.action.cast': 'Mantra',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': 'bom kilat',
@@ -7141,6 +8450,106 @@ export const PORT_STRINGS_IN: Record<string, string> = {
  */
 
 export const PORT_STRINGS_JA: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': '聖なる武器',
+	'port.buff.holyweapon.desc': '聖職者は装備中の武器に聖なるエネルギーを込め、既存のエンチャントを一時的に無効化し、その武器は各攻撃に追加で2の魔法ダメージを与える。\\n\\n残り: {0}ターン',
+	'port.buff.holyward.name': '聖なる守り',
+	'port.buff.holyward.desc': '聖職者は装備中の鎧に聖なるエネルギーを込め、既存の刻印を一時的に無効化し、鎧の防御力を1ポイント上昇させる。\\n\\n残り: {0}ターン',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': '聖典',
+	'port.desc.holytome': '聖職者の神聖な魔法の源として用いられる聖なる書物だ。この書物を使うことで、聖職者はさまざまな魔法の呪文を唱えることができる。\\n\\n聖典は聖職者が使用するにつれて着実に強力になり、聖職者の最大充填量を増やし、充填速度をわずかに上昇させる。',
+	'port.log.tomelevelup': '聖典はより強力になった！',
+	'port.log.tomenospell': '今はその呪文を唱えることができない。',
+	'port.log.tomecursed': '呪われた聖典は使用することはできない。',
+	'port.spell.guidinglight.name': '導きの光',
+	'port.spell.guidinglight.short_desc': '遠距離から魔法ダメージを与え、確実に命中する。',
+
+	'port.spell.holyweapon.name': '聖なる武器',
+	'port.spell.holyweapon.short_desc': '一時的にエンチャントを上書きし、ダメージを増加させる。',
+
+	'port.spell.holyward.name': '聖なる守り',
+	'port.spell.holyward.short_desc': '鎧の刻印を鎧の防御力を強化する刻印で一時的に上書きする。',
+
+	'port.buff.illuminated.name': '照明',
+	'port.buff.illuminated.desc': 'このキャラクターは導きの光に撃たれた結果、光り輝いている。この光は周囲を明るくするほど強くないが、魔法の効果によって聖職者は打撃を当てやすくなる。',
+	'port.spell.charge_cost': '充填消費量: {cost}',
+
+	'port.spell.cast_title': '呪文の詠唱',
+	'port.talent.satiated_spells.title': '満足の呪文',
+	'port.talent.satiated_spells.desc': '_+1:_ 食ベ物を食べると、聖職者は次に呪文を唱える際に_3のシールド_を得る。\\n\\n_+2:_ 食ベ物を食べると、聖職者は次に呪文を唱える際に_5のシールド_を得る。',
+
+	'port.talent.holy_intuition.title': '聖なる直感',
+	'port.talent.holy_intuition.desc': '_+1:_ 聖職者はアイテムが呪われているかどうかを明らかにする_聖なる直感_を_3の充填消費量で_唱えることができるようになる。\\n\\n_+2:_ 聖職者はアイテムが呪われているかどうかを明らかにする_聖なる直感_を_2の充填消費量で_唱えることができるようになる。',
+
+	'port.talent.searing_light.title': '烈光',
+	'port.talent.searing_light.desc': '_+1:_ _導きの光_で照らされた敵に対する聖職者の物理攻撃は_ダメージが3上昇する。_\\n\\n_+2:_ _導きの光_で照らされた敵に対する聖職者の物理攻撃は_ダメージが5上昇する。_',
+
+	'port.talent.shield_of_light.title': '光の盾',
+	'port.talent.shield_of_light.desc': '_+1:_ 聖職者は即座に唱えられ、5ターンの間、充填を1消費して対象の攻撃に対して_2から4のダメージを防ぐ鎧_を与える_光の盾_の呪文を唱えることができるようになる。\\n\\n_+2:_ 聖職者は即座に唱えられ、5ターンの間、充填を1消費して対象の攻撃に対して_3から6のダメージを防ぐ鎧_を与える_光の盾_の呪文を唱えることができるようになる。',
+
+	'port.spell.holyintuition.name': '聖なる直感',
+	'port.spell.holyintuition.short_desc': 'アイテムが呪われているかどうかを識別する。',
+	'port.spell.holyintuition.prompt': 'アイテムを選択',
+	'port.spell.holyintuition.cursed': 'このアイテムに潜む邪悪な魔法を感知した。',
+	'port.spell.holyintuition.uncursed': 'このアイテムには邪悪な魔法は使われていないようだ。',
+
+	'port.spell.shieldoflight.name': '光の盾',
+	'port.spell.shieldoflight.short_desc': '対象の攻撃に対して一時的な鎧を得る。',
+
+	'port.log.clericnotarget': 'そこに対象はいない。',
+
+	'port.buff.satiatedspells.name': '防護呪文',
+	'port.buff.satiatedspells.desc': '聖職者が次に唱える呪文は、彼に少量のシールドを与える。',
+
+	'port.buff.shieldoflight.name': '光の盾',
+	'port.buff.shieldoflight.desc': 'このキャラクターと敵の間には薄い光の盾が立てられている。攻撃を完全に防ぐほど強靭ではないが、和らげることはできる。\\n\\n残り: {0}ターン',
+	'port.talent.enlightening_meal.title': '啓蒙的な食事',
+	'port.talent.enlightening_meal.desc': '_+1:_ 食事を1ターンで行い、聖典の充填量が_0.67回復_する。\\n\\n_+2:_ 食事を1ターンで行い、聖典の充填量が_1回復_する。',
+
+	'port.talent.recall_inscription.title': '碑文想起',
+	'port.talent.recall_inscription.desc': '_+1:_ 聖職者は_10ターン以内_で最後に使用したルーンストーンか巻物の効果を再び使用できる_碑文想起_の呪文を唱えることができるようになる。\\n\\n_+1:_ 聖職者は_300ターン以内_で最後に使用したルーンストーンか巻物の効果を再び使用できる_碑文想起_の呪文を唱えることができるようになる。\\n\\n碑文想起は強化の巻物に対しては使えない。この呪文の充填消費量は最近使用したアイテムによって異なる：ルーンストーンは2、巻物は3、奇抜な巻物は4。変成の巻物や、強化の巻物・変成の巻物を材料にして作られた錬金術のアイテムを複製する場合、充填消費量は2倍になる。',
+
+	'port.talent.sunray.title': '陽光',
+	'port.talent.sunray.desc': '_+1:_ 聖職者は充填消費量 1で_4から8のダメージ_を与え、_4ターンの間_対象を盲目にする_陽光_の呪文を唱えることができるようになる。\\n\\n_+2:_ 聖職者は充填消費量 1で_6から12のダメージ_を与え、_6ターンの間_対象を盲目にする_陽光_の呪文を唱えることができるようになる。\\n\\n陽光は各対象を1度だけ盲目にできるが、対象がすでに陽光によって盲目になっている場合、代わりに麻痺させる。陽光は悪魔や不死の敵には常に最大ダメージを与える。',
+
+	'port.talent.divine_sense.title': '聖なる感知',
+	'port.talent.divine_sense.desc': '_+1:_ 聖職者は50ターンの間、充填消費量2で_8タイル_の天眼を与える_聖なる感知_の呪文を即座に唱えることができるようになる。\\n\\n_+2:_ 聖職者は50ターンの間、充填消費量2で_12タイル_の天眼を与える_聖なる感知_の呪文を即座に唱えることができるようになる。',
+
+	'port.talent.bless.title': '祝福',
+	'port.talent.bless.desc': '_+1:_ 聖職者は充填消費量1で、自身に唱えた場合は_6ターンの祝福と10のシールド_を、他のキャラクターに唱えた場合は_10ターンの祝福と10HPの回復_を与える_祝福_の呪文を唱えることができるようになる。\\n\\n_+2:_ 聖職者は充填消費量1で、自身に唱えた場合は_10ターンの祝福と15のシールド_を、他のキャラクターに唱えた場合は_15ターンの祝福と15HPの回復_を与える_祝福_の呪文を唱えることができるようになる。\\n\\nこの呪文による回復の超過分はシールドに変換される。',
+	'port.talent.cleanse.title': '浄化',
+	'port.talent.cleanse.desc': '_+1:_ 聖職者は_浄化_の呪文を唱えることができるようになり、充填消費量2で聖職者とその近くにいる味方に_状態異常を除去_し、_10のシールド_を与える。\\n\\n_+2:_ 聖職者は_浄化_の呪文を唱えることができるようになり、充填消費量2で聖職者とその近くにいる味方に_3ターンの間状態異常に対する免疫_を与え、_20のシールド_を与える。\\n\\n_+3:_ 聖職者は_浄化_の呪文を唱えることができるようになり、充填消費量2で聖職者とその近くにいる味方に_5ターンの間状態異常に対する免疫_を与え、_30のシールド_を与える。',
+	'port.talent.light_reading.title': '軽快な読書',
+	'port.talent.light_reading.desc': '_+1:_ 聖職者は聖典を装備していないときでも使うことができるが、装備していない場合の充填速度は_25%_になる。\\n\\n_+2:_ 聖職者は聖典を装備していないときでも使うことができるが、装備していない場合の充填速度は_50%_になる。\\n\\n_+3:_ 聖職者は聖典を装備していないときでも使うことができるが、装備していない場合の充填速度は_75%_になる。',
+
+	'port.spell.sunray.name': '陽光',
+	'port.spell.sunray.short_desc': '対象に遠距離から魔法ダメージを与え、一度だけ盲目にする。',
+
+	'port.spell.bless.name': '祝福',
+	'port.spell.bless.short_desc': '聖職者に祝福とシールド、他者に祝福と回復を与える。',
+
+	'port.spell.divinesense.name': '聖なる感知',
+	'port.spell.divinesense.short_desc': '一時的に広範囲の天眼を得る。',
+
+	'port.spell.recallinscription.name': '碑文想起',
+	'port.spell.recallinscription.short_desc': '最近使用したルーンストーンや巻物の効果を再び使用する。',
+	'port.spell.cleanse.name': '浄化',
+	'port.spell.cleanse.short_desc': '状態異常を解除し、シールドを与える。',
+
+	'port.buff.divinesense.name': '聖なる感知',
+	'port.buff.divinesense.desc': 'このキャラクターは一時的に付近の他の生物を心で見ることができる！\\n\\n残り: {0}ターン',
+	'port.buff.recallused.name': '最近使用したルーン文字',
+	'port.buff.recallused.desc': '聖職者は最近、碑文想起の呪文と連動するアイテムを使用した。聖職者はその呪文を唱えてアイテムの効果を再び使用することができる。\\n\\n使用したアイテム:  {0}\\n\\n残り: {1}ターン',
+	'port.buff.cleanseimmunity.name': '浄化',
+	'port.buff.cleanseimmunity.desc': 'このキャラクターは、一時的に全ての有害な状態異常を受けなくなる！\\n\\n残り: {0}ターン',
+
+	'port.action.cast': '詠唱',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': '閃光弾',
@@ -7668,6 +9077,106 @@ export const PORT_STRINGS_JA: Record<string, string> = {
  */
 
 export const PORT_STRINGS_CS: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': 'Svěcená zbraň',
+	'port.buff.holyweapon.desc': 'Klerik naplnil svou zbraň posvátným očarováním, čímž dočasně přepsal její jiná očarování a způsobil, že zbraň každým svým zásahem způsobí nepřátelům navíc 2 body magického pooškození.\\n\\nZbývá tahů: {0}.',
+	'port.buff.holyward.name': 'Svěcená zbroj',
+	'port.buff.holyward.desc': 'Klerik naplnil svou zbroj runou světla, dočasně přepisujíc jiné runy a poskytujíc této zbroji o 1 vyšší hodnotu blokování.\\n\\nZbývá tahů: {0}.',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': 'Svatá kniha',
+	'port.desc.holytome': 'Svatá kniha, která je ohniskem Klerikovy božské magie. Použitím knihy může Klerik seslat řadu různých magických efektů.\\n\\nKniha bude sílit s tím, jak ji Klerik bude používat, čímž získá vyšší maximum nabití a zvýší se její rychlost dobíjení.',
+	'port.log.tomelevelup': 'Tvá kniha nabývá na síle!',
+	'port.log.tomenospell': 'Toto kouzlo nyní nemůžeš seslat.',
+	'port.log.tomecursed': 'Nemůžeš použít prokletou knihu.',
+	'port.spell.guidinglight.name': 'Naváděcí světlo',
+	'port.spell.guidinglight.short_desc': 'Způsobí magické zranění na dálku a zaručí zásah.',
+
+	'port.spell.holyweapon.name': 'Svěcená zbraň',
+	'port.spell.holyweapon.short_desc': 'Dočasně přepíše očarování na zbrani pro zvýšení jejího poškození.',
+
+	'port.spell.holyward.name': 'Svěcená zbroj',
+	'port.spell.holyward.short_desc': 'Dočasně přepíše runu na zbroji pro zvýšení jejího blokování.',
+
+	'port.buff.illuminated.name': 'Osvětlení',
+	'port.buff.illuminated.desc': 'Tato postava je osvětlena zásahem naváděcího světla. Ačkoliv zář není dost jasná, aby osvětlila okolní terén, tento efekt pomůže Klerikovi zasadit ránu mnohem snáz.',
+	'port.spell.charge_cost': 'Stojí nabití: {cost}',
+
+	'port.spell.cast_title': 'Seslat kouzlo',
+	'port.talent.satiated_spells.title': 'Nasycená kouzla',
+	'port.talent.satiated_spells.desc': '_+1:_ Jídlo poskytne Klerikovi _3 body dodatečné ochrany_, když příště sešle kouzlo.\\n\\n_+2:_ Jídlo poskytne Klerikovi _5 bodů dodatečné ochrany_, když příště sešle kouzlo.',
+
+	'port.talent.holy_intuition.title': 'Svatá intuice',
+	'port.talent.holy_intuition.desc': '_+1:_ Klerik může seslat _Svatou intuici_, kouzlo, které odhalí, zda předmět je či není prokletý, za cenu _3 nabití_.\\n\\n_+2:_ Klerik může seslat _Svatou intuici_, kouzlo, které odhalí, zda předmět je či není prokletý, za cenu _2 nabití_.',
+
+	'port.talent.searing_light.title': 'Spalující světlo',
+	'port.talent.searing_light.desc': '_+1:_ Klerikovy fyzické útoky proti nepřátelům osvětleným Naváděcím světlem způsobí _+3 poškození_.\\n\\n_+2:_ Klerikovy fyzické útoky proti nepřátelům osvětleným Naváděcím světlem způsobí _+5 poškození_.',
+
+	'port.talent.shield_of_light.title': 'Štít světla',
+	'port.talent.shield_of_light.desc': '_+1:_ Klerik může seslat _Štít světla_, okamžité kouzlo, které mu poskytne navíc _2-4 blokování_ proti jednomu nepříteli na 5 tahů, za cenu 1 nabití.\\n\\n_+2:_ Klerik může seslat _Štít světla_, okamžité kouzlo, které mu poskytne navíc _3-6 blokování_ proti jednomu nepříteli na 5 tahů, za cenu 1 nabití.',
+
+	'port.spell.holyintuition.name': 'Svatá intuice',
+	'port.spell.holyintuition.short_desc': 'Identifikuje, zda je předmět prokletý nebo ne.',
+	'port.spell.holyintuition.prompt': 'Vyber předmět',
+	'port.spell.holyintuition.cursed': 'Cítíš z tohoto předmětu unikat zlou magii.',
+	'port.spell.holyintuition.uncursed': 'Z předmětu neuniká žádná zlá magie.',
+
+	'port.spell.shieldoflight.name': 'Štít světla',
+	'port.spell.shieldoflight.short_desc': 'Získá dočasně zvýšenou zbroj proti cíli.',
+
+	'port.log.clericnotarget': 'Tam není žadný cíl.',
+
+	'port.buff.satiatedspells.name': 'Ochraňující kouzlo',
+	'port.buff.satiatedspells.desc': 'Příští Klerikovo kouzlo mu poskytne malé množství dodatečné ochrany.',
+
+	'port.buff.shieldoflight.name': 'Štít světla',
+	'port.buff.shieldoflight.desc': 'Tenký štít tvořený světlem stojí mezi touto postavou a jejím nepřítelem. Není dost silný k dokonalému blokování ran, ale dokáže je utlumit.\\n\\nZbývá tahů: {0}',
+	'port.talent.enlightening_meal.title': 'Osvícené jídlo',
+	'port.talent.enlightening_meal.desc': '_+1:_ Najezení se trvá Klerikovi 1 tah a poskytne mu _0.67 nabití_ jeho svaté knihy.\\n\\n_+2:_ Najezení se trvá Klerikovi 1 tah a poskytne mu _1 nabití_ jeho svaté knihy.',
+
+	'port.talent.recall_inscription.title': 'Obnovení runy',
+	'port.talent.recall_inscription.desc': '_+1:_ Klerik může seslat _Obnovení runy_, kouzlo, které zopakuje účinek posledního runového kamene nebo svitku použitého během _10 tahů._\\n\\n_+2:_ Klerik může seslat _Obnovení runy_, kouzlo, které zopakuje účinek posledního runového kamene nebo svitku použitého během _300 tahů._\\n\\nObnovení runy nelze použít na svitky vylepšení. Cena nabití tohoto kouzla se odvíjí od toho, jaký byl poslední použitý předmět k obnově: 2 pro runový kámen, 3 pro svitek a 4 pro vzácný svitek. Tato cena je dvojnásobná při opakování svitku proměny, nebo alchymických produktů svitků proměny nebo vylepšení.',
+
+	'port.talent.sunray.title': 'Sluneční paprsek',
+	'port.talent.sunray.desc': '_+1:_ Klerik může seslat _Sluneční paprsek_, kouzlo, které způsobí _4-8 poškození_ a oslepí cíl na _4 tahy_, za cenu 1 nabití.\\n\\n_+2:_ Klerik může seslat _Sluneční paprsek_, kouzlo, které způsobí _6-12 poškození_ a oslepí cíl na _6 tahů_, za cenu 1 nabití.\\n\\nSluneční paprsek může každý cíl oslepit kouze jednou, ovšem je-li seslán na již oslepený cíl, namísto toho je paralyzuje. Sluneční paprsek způsobí vždy nejvyšší možné poškození nemrtvým a démonům.',
+
+	'port.talent.divine_sense.title': 'Nadpozemský smysl',
+	'port.talent.divine_sense.desc': '_+1:_ Klerik může seslat _Nadpozemský smysl_, okamžité kouzlo, které mu poskytne na 50 tahů vidění mysli na vzdálenost _8 políček_, za cenu 2 nabití.\\n\\n_+2:_ Klerik může seslat _Nadpozemský smysl_, okamžité kouzlo, které mu poskytne na 50 tahů vidění mysli na vzdálenost _12 políček_, za cenu 2 nabití.',
+
+	'port.talent.bless.title': 'Požehnání',
+	'port.talent.bless.desc': '_+1:_ Klerik může seslat _Požehnání_, kouzlo, které mu poskytne _6 tahů požehnání a 10 bodů dodatečné ochrany_ při seslání na sebe nebo _10 tahů požehnání a 10 bodů léčení_ při seslání na jinou postavu, za cenu 1 nabití.\\n\\n_+2:_ Klerik může seslat _Požehnání_, kouzlo, které mu poskytne _10 tahů požehnání a 15 bodů dodatečné ochrany_ při seslání na sebe nebo _15 tahů požehnání a 15 bodů léčení_ při seslání na jinou postavu, za cenu 1 nabití.\\n\\nPřebytečné léčení je převedeno na dodatečnou ochranu.',
+	'port.talent.cleanse.title': 'Očištění',
+	'port.talent.cleanse.desc': '_+1:_ Klerik může seslat _Očištění_, kouzlo, které _odstraní všechny negativní efekty_ z Klerika a jeho spojenců v dosahu, a poskytne jiim _10 bodů dodatečné ochrany_, za cenu 2 nabití.\\n\\n_+2:_ Klerik může seslat _Očištění_, kouzlo, které _poskytne 3 tahy imunity před škodlivými efekty_ Klerikovi a jeho spojencům v dosahu, a poskytne jiim _20 bodů dodatečné ochrany_, za cenu 2 nabití.\\n\\n_+3:_ Klerik může seslat _Očištění_, kouzlo, které _poskytne 5 tahů imunity před škodlivými efekty_ Klerikovi a jeho spojencům v dosahu, a poskytne jiim _30 bodů dodatečné ochrany_, za cenu 2 nabití.',
+	'port.talent.light_reading.title': 'Lehká četba',
+	'port.talent.light_reading.desc': '_+1:_ Klerik může používat svou svatou knihu, i když jí není vybaven, ovšem pak se nabíjí jen s _25% rychlostí_.\\n\\n_+2:_ Klerik může používat svou svatou knihu, i když jí není vybaven, ovšem pak se nabíjí jen s _50% rychlostí_.\\n\\n_+3:_ Klerik může používat svou svatou knihu, i když jí není vybaven, ovšem pak se nabíjí jen s _75% rychlostí_.',
+
+	'port.spell.sunray.name': 'Sluneční paprsek',
+	'port.spell.sunray.short_desc': 'Způsobí magické poškození na dálku a jednou cíl oslepí.',
+
+	'port.spell.bless.name': 'Požehnání',
+	'port.spell.bless.short_desc': 'Požehná & ochrání Klerika, požehná & vyléčí ostatní.',
+
+	'port.spell.divinesense.name': 'Nadpozemský smysl',
+	'port.spell.divinesense.short_desc': 'Poskytne dočasný efekt vidění mysli v širokém okruhu.',
+
+	'port.spell.recallinscription.name': 'Obnovení písma',
+	'port.spell.recallinscription.short_desc': 'Zopakuje účinek nedávno použitého runového kamene nebo svitku',
+	'port.spell.cleanse.name': 'Očištění',
+	'port.spell.cleanse.short_desc': 'Očistí negativní efekty a poskytne ochranu.',
+
+	'port.buff.divinesense.name': 'Nadpozemský smysl',
+	'port.buff.divinesense.desc': 'Tato postava dokáže dočasně vidět okolní stvoření svou myslí!\\n\\nZbývá tahů: {0}.',
+	'port.buff.recallused.name': 'Nedávno použitá runa',
+	'port.buff.recallused.desc': 'Klerik nedávno použil předmět, který lze použít k seslání kouzla Obnovení runy. Klerik může toto kouzlo použít pro zopakování jeho účinku.\\n\\nPoužitý předmět: {0}.\\n\\nZbývá tahů: {1}.',
+	'port.buff.cleanseimmunity.name': 'Očištěn',
+	'port.buff.cleanseimmunity.desc': 'Tato postava je dočasně imunní vůči všem škodlivým efektům!\\n\\nZbývá tahů: {0}.',
+
+	'port.action.cast': 'Seslání',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': 'Oslepující bomba',
@@ -8195,6 +9704,106 @@ export const PORT_STRINGS_CS: Record<string, string> = {
  */
 
 export const PORT_STRINGS_VI: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': 'vũ khí thần thánh',
+	'port.buff.holyweapon.desc': 'Giáo sĩ đã truyền năng lượng thánh vào vũ khí đang sử dụng, tạm thời đè lên bất cứ phù phép hiện có nào và khiến vũ khí gây thêm 2 sát thương phép thuật với mỗi đòn tấn công.\\n\\nLượt còn lại: {0}.',
+	'port.buff.holyward.name': 'phòng vệ thánh',
+	'port.buff.holyward.desc': 'Giáo sĩ đã truyền năng lượng thánh vào áo giáp đang mặc, tạm thời đè lên bất cứ ký tự hiện có nào và khiến áo giáp chặn thêm 1 sát thương.\\n\\nLượt còn lại: {0}.',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': 'cuốn sách thánh',
+	'port.desc.holytome': 'Một cuốn sách thánh được dùng như điểm tập trung cho phép thuật thần thánh của Giáo sĩ. Sử dụng cuốn sách cho phép Giáo sĩ thực hiện nhiều loại thần chú phép thuật khác nhau. \\n\\nCuốn sách sẽ dần trở nên mạnh hơn khi Giáo sĩ sử dụng nó, tăng cho Giáo sĩ thêm năng lượng tối đa và tăng nhẹ tốc độ hồi năng.',
+	'port.log.tomelevelup': 'Cuốn sách của bạn trở nên mạnh hơn!',
+	'port.log.tomenospell': 'Bạn chưa thể sử dụng thần chú đó lúc này.',
+	'port.log.tomecursed': 'Bạn không thể sử dụng một cuốn sách bị nguyền rủa.',
+	'port.spell.guidinglight.name': 'ánh sáng dẫn đường',
+	'port.spell.guidinglight.short_desc': 'Gây sát thương phép thuật từ xa và chắc chắn sẽ trúng.',
+
+	'port.spell.holyweapon.name': 'vũ khí thần thánh',
+	'port.spell.holyweapon.short_desc': 'Tạm thời đè lên các phù phép để tăng sát thương.',
+
+	'port.spell.holyward.name': 'phòng vệ thánh',
+	'port.spell.holyward.short_desc': 'Tạm thời đè lên các ký tự để tăng khả năng chặn sát thương của áo giáp.',
+
+	'port.buff.illuminated.name': 'được chiếu sáng',
+	'port.buff.illuminated.desc': 'Nhân vật này đang phát sáng do bị trúng phải ánh sáng dẫn dường. Dù ánh sáng phát ra không đủ mạnh để chiếu sáng khu vực xung quanh, hiệu ứng phép thuật này sẽ khiến việc nhắm các đòn tấn công vào chúng dễ dàng hơn nhiều cho Giáo sĩ.',
+	'port.spell.charge_cost': 'Chi phí năng lượng: {cost}',
+
+	'port.spell.cast_title': 'sử dụng thần chú',
+	'port.talent.satiated_spells.title': 'Thần chú no đủ',
+	'port.talent.satiated_spells.desc': '_+1:_ Ăn thức ăn giúp Giáo sĩ nhận được _3 khiên chắn_ vào lần tiếp theo anh sử dụng một thần chú.\\n\\n_+2:_ Ăn thức ăn giúp Giáo sĩ nhận được _5 khiên chắn_ vào lần tiếp theo anh sử dụng một thần chú.',
+
+	'port.talent.holy_intuition.title': 'trực giác thánh',
+	'port.talent.holy_intuition.desc': '_+1:_ Giáo sĩ có thể sử dụng _Trực giác thánh,_ một thần chú giúp tiết lộ một vật phẩm có bị nguyền rủa hay không với chi phí _3 năng lượng._\\n\\n_+2:_ Giáo sĩ có thể sử dụng _Trực giác thánh,_ một thần chú giúp tiết lộ một vật phẩm có bị nguyền rủa hay không với chi phí _2 năng lượng._',
+
+	'port.talent.searing_light.title': 'ánh sáng thiêu đốt',
+	'port.talent.searing_light.desc': '_+1:_ Các đòn tấn công vật lý của Giáo sĩ lên kẻ địch bị chiếu sáng bởi _Ánh sáng dẫn đường_ gây _+3 sát thương._\\n\\n_+2:_ Các đòn tấn công vật lý của Giáo sĩ lên kẻ địch bị chiếu sáng bởi _Ánh sáng dẫn đường_ gây _+5 sát thương._',
+
+	'port.talent.shield_of_light.title': 'khiên ánh sáng',
+	'port.talent.shield_of_light.desc': '_+1:_ Giáo sĩ có thể sử dụng _Khiên ánh sáng_, một thần chú được thực hiện tức thì và trao cho anh ấy thêm _2-4 giáp_ đối với một mục tiêu trong 5 lượt với chi phí 1 năng lượng.\\n\\n_+2:_ Giáo sĩ có thể sử dụng _Khiên ánh sáng_, một thần chú được thực hiện tức thì và trao cho anh ấy thêm _3-6 giáp_ đối với một mục tiêu trong 5 lượt với chi phí 1 năng lượng.',
+
+	'port.spell.holyintuition.name': 'trực giác thánh',
+	'port.spell.holyintuition.short_desc': 'thẩm định xem một vật phẩm có bị nguyền hay không.',
+	'port.spell.holyintuition.prompt': 'chọn một vật phẩm',
+	'port.spell.holyintuition.cursed': 'Bạn cảm nhận được phép thuật hắc ám ẩn nấp trong vật phẩm này.',
+	'port.spell.holyintuition.uncursed': 'Vật phẩm này không có phép thuật hắc ám.',
+
+	'port.spell.shieldoflight.name': 'khiên ánh sáng',
+	'port.spell.shieldoflight.short_desc': 'Tạm thời tăng áo giáp đối với một mục tiêu.',
+
+	'port.log.clericnotarget': 'Không có mục tiêu nào ở đó.',
+
+	'port.buff.satiatedspells.name': 'Thần chú khiên chắn',
+	'port.buff.satiatedspells.desc': 'Thần chú tiếp theo Giáo sĩ sử dụng sẽ trao cho anh ấy một lượng khiên chắn nhỏ.',
+
+	'port.buff.shieldoflight.name': 'khiên ánh sáng',
+	'port.buff.shieldoflight.desc': 'Một khiên chắn mỏng bằng ánh sáng đang nằm giữa nhân vật này và một kẻ địch. Nó không đủ mạnh để chặn hoàn toàn các đòn tấn công, nhưng sẽ làm yếu chúng đi.\\n\\nLượt còn lại: {0}',
+	'port.talent.enlightening_meal.title': 'Bữa ăn khai sáng',
+	'port.talent.enlightening_meal.desc': '_+1:_ Ăn thức ăn khiến Giáo sĩ tốn 1 lượt và cho anh ấy _0.67 năng lượng_ vào cuốn sách thánh của anh.\\n\\n_+2:_ Ăn thức ăn khiến Giáo sĩ tốn 1 lượt và cho anh ấy _1 năng lượng_ vào cuốn sách thánh của anh.',
+
+	'port.talent.recall_inscription.title': 'Nhớ lại chữ viết',
+	'port.talent.recall_inscription.desc': '_+1:_ Giáo sĩ có thể sử dụng _Nhớ lại chữ viết,_ một thần chú cho phép anh lặp lại hiệu ứng của hòn đá rune hoặc cuộn giấy gần đây nhất anh đã sử dụng trong vòng _10 lượt_ trước đó.\\n\\n_+2:_ Giáo sĩ có thể sử dụng _Nhớ lại chữ viết,_ một thần chú cho phép anh lặp lại hiệu ứng của hòn đá rune hoặc cuộn giấy gần đây nhất anh đã sử dụng trong vòng _300 lượt_ trước đó.\\n\\nNhớ lại chữ viết không thể được sử dụng với cuộn giấy nâng cấp. Chi phí năng lượng của thần chú này phụ thuộc vào vật phẩm nào đã được sử dụng gần đây: 2 với một viên đá rune, 3 với một cuộn giấy, 4 với một cuộn giấy kì lạ. Chi phí năng lượng này cũng tăng gấp đôi khi được sử dụng với một cuộn giấy biến đổi, hoặc các vật phẩm giả kim cần được chế tạo bằng cuộn giấy biển đổi hoặc nâng cấp.',
+
+	'port.talent.sunray.title': 'Tia mặt trời',
+	'port.talent.sunray.desc': '_+1:_ Giáo sĩ có thể sử dụng _Tia mặt trời,_ một thần chú gây _4-8 sát thương_ và làm mù kẻ địch trong _4 lượt,_ với chi phí 1 năng lượng.\\n\\n_+2:_ Giáo sĩ có thể sử dụng _Tia mặt trời,_ một thần chú gây _6-12 sát thương_ và làm mù kẻ địch trong _6 lượt,_ với chi phí 1 năng lượng.\\n\\nTia mặt trời chỉ có thể làm mù mỗi mục tiêu một lần, nhưng nếu mục tiêu đang bị mù bởi Tia mặt trời, nó sẽ gây tê liệt. Tia mặt trời luôn luôn gây sát thương tối đa cho các kẻ địch quỷ và xác sống.',
+
+	'port.talent.divine_sense.title': 'Giác quan thần thánh',
+	'port.talent.divine_sense.desc': '_+1:_ Giáo sĩ có thể sử dung _Giác quan thánh,_ một thần chú trao cho anh ấy Tâm nhãn trong _8 ô_ trong 50 lượt và không mất thời gian để thực hiện, với chi phí 2 năng lượng.\\n\\n_+2:_ Giáo sĩ có thể sử dung _Giác quan thánh,_ một thần chú trao cho anh ấy Tâm nhãn trong _12 ô_ trong 50 lượt và không mất thời gian để thực hiện, với chi phí 2 năng lượng.',
+
+	'port.talent.bless.title': 'Ban phước',
+	'port.talent.bless.desc': '_+1:_ Giáo sĩ có thể sử dụng _Ban phước,_ một thần chú có thể trao _6 lượt ban phước và 10 khiên chắn_ khi được sử dụng lên bản thân hoặc _10 lượt ban phước và 10 sinh lực_ khi được sử dụng lên một nhân vật khác, với chi phí 1 năng lượng.\\n\\n_+2:_ Giáo sĩ có thể sử dụng _Ban phước,_ một thần chú có thể trao _10 lượt ban phước và 15 khiên chắn_ khi được sử dụng lên bản thân hoặc _15 lượt ban phước và 15 sinh lực_ khi được sử dụng lên một nhân vật khác, với chi phí 1 năng lượng.\\n\\nSinh lực thừa từ thần chú này sẽ được chuyển thành khiên chắn.',
+	'port.talent.cleanse.title': 'Thanh tẩy',
+	'port.talent.cleanse.desc': '_+1:_ Giáo sĩ có thể sử dụng _Thanh tẩy,_ một thần chú giúp _loại bỏ các hiệu ứng có hại_ khỏi Giáo sĩ và bất cứ đồng minh nào ở gần, và trao cho họ _10 khiên chắn,_ với chi phí 2 năng lượng.\\n\\n_+2:_ Giáo sĩ có thể sử dụng _Thanh tẩy,_ một thần chú giúp _trao 3 lượt miễn nhiễm hiệu ứng có hại_ cho Giáo sĩ và bất cứ đồng minh nào ở gần, và trao cho họ _20 khiên chắn,_ với chi phí 2 năng lượng.\\n\\n_+3:_ Giáo sĩ có thể sử dụng _Thanh tẩy,_ một thần chú giúp _trao 5 lượt miễn nhiễm hiệu ứng có hại_ cho Giáo sĩ và bất cứ đồng minh nào ở gần, và trao cho họ _30 khiên chắn,_ với chi phí 2 năng lượng.',
+	'port.talent.light_reading.title': 'Đọc nhẹ',
+	'port.talent.light_reading.desc': '_+1:_ Giáo sĩ có thể sử dụng cuốn sách thánh của mình khi nó không được trang bị, nhưng nó sẽ hồi năng lượng với _25% tốc độ_ khi không được trang bị.\\n\\n_+2:_ Giáo sĩ có thể sử dụng cuốn sách thánh của mình khi nó không được trang bị, nhưng nó sẽ hồi năng lượng với _50% tốc độ_ khi không được trang bị.\\n\\n_+3:_ Giáo sĩ có thể sử dụng cuốn sách thánh của mình khi nó không được trang bị, nhưng nó sẽ hồi năng lượng với _75% tốc độ_ khi không được trang bị.',
+
+	'port.spell.sunray.name': 'tia mặt trời',
+	'port.spell.sunray.short_desc': 'Gây sát thương phép thuật từ xa và làm mù một mục tiêu một lần.',
+
+	'port.spell.bless.name': 'ban phước',
+	'port.spell.bless.short_desc': 'Ban phước và tạo khiên chắn cho Giáo sĩ, ban phước và hồi phục những đối tượng khác.',
+
+	'port.spell.divinesense.name': 'giác quan thần thánh',
+	'port.spell.divinesense.short_desc': 'Nhận được tâm nhãn tạm thời trong một phạm vi rộng.',
+
+	'port.spell.recallinscription.name': 'nhớ lại chữ viết',
+	'port.spell.recallinscription.short_desc': 'Lặp lại một đá rune hoặc cuộn giấy mới được sử dụng gần đây.',
+	'port.spell.cleanse.name': 'thanh tẩy',
+	'port.spell.cleanse.short_desc': 'Xóa bỏ các hiệu ứng có hại và trao khiên chắn.',
+
+	'port.buff.divinesense.name': 'giác quan thần thánh',
+	'port.buff.divinesense.desc': 'Nhân vật này tạm thời có thể nhìn thấy các sinh vật khác ở gần bằng tâm trí của mình!\\n\\nLượt còn lại: {0}.',
+	'port.buff.recallused.name': 'chữ rune được sử dụng gần đây',
+	'port.buff.recallused.desc': 'Giáo sĩ đã sử dụng một vật phẩm tương thích với thần chú nhớ lại chữ viết gần đây. Giáo sĩ có thể sử dụng thần chú này để lặp lại hiệu ứng của vật phẩm đó.\\n\\nVật phẩm đã sử dụng: {0}.\\n\\nLượt còn lại: {1}.',
+	'port.buff.cleanseimmunity.name': 'đã thanh tẩy',
+	'port.buff.cleanseimmunity.desc': 'Nhân vật này tạm thời không bị ảnh hưởng bởi tất cả hiệu ứng trạng thái bất lợi!\\n\\nLượt còn lại: {0}.',
+
+	'port.action.cast': 'Sử dụng',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': 'bom choáng',
@@ -8722,6 +10331,106 @@ export const PORT_STRINGS_VI: Record<string, string> = {
  */
 
 export const PORT_STRINGS_EL: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': 'ιερό όπλο',
+	'port.buff.holyweapon.desc': 'Ο Κληρικός έχει εμποτίσει το όπλο του με ιερή ενέργεια, ακυρώνοντας προσωρινά την υπάρχουσα μαγική ενίσχυση και κάνοντάς το να προκαλεί 2 επιπλέον πόντους μαγικής ζημιάς.\\n\\nΓύροι που απομένουν: {0}.',
+	'port.buff.holyward.name': 'ιερός φρουρός',
+	'port.buff.holyward.desc': 'Ο Κληρικός έχει εμποτίσει την πανοπλία του με ιερή ενέργεια, ακυρώνοντας προσωρινά τον υπάρχοντα γλύφο και κάνοντάς τη να αποκρούει 1 επιπλέον πόντο ζημιάς.\\n\\nΓύροι που απομένουν: {0}.',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': 'ιερός τόμος',
+	'port.desc.holytome': 'Ένας ιερός τόμος που λειτουργεί ως η συγκέντρωση της θεϊκής μαγείας του Κληρικού. Ο τόμος επιτρέπει στον Κληρικό να εκτελέσει ποικίλα μαγικά ξόρκια.\\n\\nΟ τόμος θα γίνεται σταθερά ισχυρότερος όσο χρησιμοποιείται, αυξάνοντας το μέγιστο φορτίο του καθώς και αμυδρά την ταχύτητα επαναφόρτισής του.',
+	'port.log.tomelevelup': 'Ο τόμος σου δυναμώνει!',
+	'port.log.tomenospell': 'Δεν μπορείς να εκτελέσεις αυτό το ξόρκι τώρα.',
+	'port.log.tomecursed': 'Δεν μπορείς να χρησιμοποιήσεις έναν καταραμένο τόμο.',
+	'port.spell.guidinglight.name': 'καθοδηγητικό φως',
+	'port.spell.guidinglight.short_desc': 'Προκαλεί μαγική ζημιά απόστασης και διασφαλίζει το επόμενο χτύπημα.',
+
+	'port.spell.holyweapon.name': 'ιερό όπλο',
+	'port.spell.holyweapon.short_desc': 'Παρακάμπτει προσωρινά τη μαγική ενίσχυση του όπλου για να αυξήσει τη ζημιά.',
+
+	'port.spell.holyward.name': 'ιερός φρουρός',
+	'port.spell.holyward.short_desc': 'Παρακάμπτει προσωρινά τον γλύφο για να αυξήσει την απόκρουση της πανοπλίας.',
+
+	'port.buff.illuminated.name': 'Φωτισμός',
+	'port.buff.illuminated.desc': 'Αυτός ο χαρακτήρας φωτίζει καθώς χτυπήθηκε με το καθοδηγητικό φως. Ενώ η λάμψη αυτή δεν είναι αρκετά δυνατή ώστε να φωτίσει την γύρω περιοχή, η μαγική επίδραση θα το κάνει πολύ πιο εύκολο για τον Κληρικό να πετύχει τα χτυπήματα εναντίον του.',
+	'port.spell.charge_cost': 'Κόστος φορτίου: {cost}',
+
+	'port.spell.cast_title': 'Εκτέλεση ξορκιού',
+	'port.talent.satiated_spells.title': 'Σιτισμένα ξόρκια',
+	'port.talent.satiated_spells.desc': '_+1:_ Η κατανάλωση τροφής κάνει τον Κληρικό να λάβει _3 ασπίδα προστασίας_ την επόμενη φορά που θα εκτελέσει ξόρκι.\\n\\n_+2:_ Η κατανάλωση τροφής κάνει τον Κληρικό να λάβει _5 ασπίδα προστασίας_ την επόμενη φορά που θα εκτελέσει ξόρκι.',
+
+	'port.talent.holy_intuition.title': 'ιερή διαίσθηση',
+	'port.talent.holy_intuition.desc': '_+1:_ Ο Κληρικός μπορεί να εκτελέσει την _Ιερή διαίσθηση,_ ένα ξόρκι που αποκαλύπτει αν ένα εφόδιο είναι καταραμένο με κόστος _3 φορτίου._\\n\\n_+2:_ Ο Κληρικός μπορεί να εκτελέσει την _Ιερή διαίσθηση,_ ένα ξόρκι που αποκαλύπτει αν ένα εφόδιο είναι καταραμένο με κόστος _2 φορτίου._',
+
+	'port.talent.searing_light.title': 'καυστικό φως',
+	'port.talent.searing_light.desc': '_+1:_ Οι φυσιολογικές επιθέσεις του Κληρικού  εναντίον εχθρών με _Καθοδηγητικό φως_ προκαλούν _+3 ζημιά._\\n\\n_+2:_ Οι φυσιολογικές επιθέσεις του Κληρικού εναντίον εχθρών με _Καθοδηγητικό φως_ προκαλούν _+5 ζημιά._',
+
+	'port.talent.shield_of_light.title': 'ασπίδα φωτός',
+	'port.talent.shield_of_light.desc': '_+1:_ Ο Κληρικός μπορεί να εκτελέσει το ξόρκι _Ασπίδα φωτός,_ ένα ξόρκι που εκτελείται άμεσα και του δίνει _2-4 πανοπλία_ εναντίον ενός συγκεκριμένου στόχου για 4 γύρους με κόστος 1 φορτίου.\\n\\n_+2:_ Ο Κληρικός μπορεί να εκτελέσει το ξόρκι _Ασπίδα φωτός,_ ένα ξόρκι που εκτελείται άμεσα και του δίνει _3-6 πανοπλία_ εναντίον ενός συγκεκριμένου στόχου για 5 γύρους με κόστος 1 φορτίου.',
+
+	'port.spell.holyintuition.name': 'ιερή διαίσθηση',
+	'port.spell.holyintuition.short_desc': 'Διαπιστώνει αν ένα εφόδιο είναι καταραμένο ή όχι.',
+	'port.spell.holyintuition.prompt': 'Επίλεξε ένα αντικείμενο',
+	'port.spell.holyintuition.cursed': 'Νιώθεις μια διαβολική μαγεία να ελλοχεύει στο εφόδιο.',
+	'port.spell.holyintuition.uncursed': 'Αυτό το εφόδιο είναι απαλλαγμένο από διαβολική μαγεία.',
+
+	'port.spell.shieldoflight.name': 'ασπίδα φωτός',
+	'port.spell.shieldoflight.short_desc': 'Παρέχει προσωρινή πανοπλία εναντίον ενός στόχου.',
+
+	'port.log.clericnotarget': 'Δεν υπάρχει στόχος εκεί.',
+
+	'port.buff.satiatedspells.name': 'Προστατευτικό ξόρκι',
+	'port.buff.satiatedspells.desc': 'Το επόμενο ξόρκι του Κληρικού θα του παράσχει λίγη ασπίδα.',
+
+	'port.buff.shieldoflight.name': 'ασπίδα φωτός',
+	'port.buff.shieldoflight.desc': 'Μια λεπτή ασπίδα φωτός υψώνεται ανάμεσα σε αυτόν τον χαρακτήρα και έναν εχθρό. Δεν είναι αρκετά ισχυρή να αποκρούει εντελώς τις επιθέσεις, αλλά τις ελαφραίνει.\\n\\nΓύροι που απομένουν: {0}.',
+	'port.talent.enlightening_meal.title': 'Διαφωτιστικό γεύμα',
+	'port.talent.enlightening_meal.desc': '_+1:_ Η κατανάλωση τροφής απαιτεί από τον Κληρικό 1 γύρο και του παρέχει _0.67 φορτίο_ στον ιερό του τόμο.\\n\\n_+2:_ Η κατανάλωση τροφής απαιτεί από τον Κληρικό 1 γύρο και του παρέχει _1 φορτίο_ στον ιερό του τόμο.',
+
+	'port.talent.recall_inscription.title': 'Ανάκληση εγγραφής',
+	'port.talent.recall_inscription.desc': '_+1:_ Ο Κληρικός μπορεί να εκτελέσει το ξόρκι _Ανάκληση εγγραφής,_ ένα ξόρκι που του επιτρέπει να επαναλάβει την επίδραση του τελευταίου ρουνικού λίθου ή παπύρου που χρησιμοποίησε εντός _10 γύρων._\\n\\n_+2:_ Ο Κληρικός μπορεί να εκτελέσει το ξόρκι _Ανάκληση εγγραφής,_ ένα ξόρκι που του επιτρέπει να επαναλάβει την επίδραση του τελευταίου ρουνικού λίθου ή παπύρου που χρησιμοποίησε εντός _300 γύρων._\\n\\nΗ Ανάκληση εγγραφής δεν μπορεί να χρησιμοποιηθεί με παπύρους αναβάθμισης. Το κόστος φορτίου αυτού του ξορκιού ποικίλλει ανάλογα με το αντικείμενο που χρησιμοποιήθηκε πρόσφατα: 2 για ρουνικό λίθο, 3 για πάπυρο, 4 για εξωτικό πάπυρο. Αυτό το κόστος φορτίου διπλασιάζεται επίσης όταν χρησιμοποιείται με πάπυρο μεταστοιχείωσης ή αντικείμενα αλχημείας που πρέπει να κατασκευαστούν με πάπυρο μεταστοιχείωσης ή αναβάθμισης.',
+
+	'port.talent.sunray.title': 'Ηλιακή ακτίνα',
+	'port.talent.sunray.desc': 'Ο Κληρικός μπορεί να εκτελέσει την _Ηλιακή ακτίνα,_ ένα ξόρκι που προκαλεί _4-8 ζημιά_ και τυφλώνει τον στόχο για _4 γύρους_ με κόστος 1 φορτίου.\\n\\nΟ Κληρικός μπορεί να εκτελέσει την _Ηλιακή ακτίνα,_ ένα ξόρκι που προκαλεί _6-12 ζημιά_ και τυφλώνει τον στόχο για _6 γύρους_ με κόστος 1 φορτίου.\\n\\nΑφού χτυπηθεί από το ξόρκι, δεν θα μπορεί να τυφλωθεί ξανά από αυτό. Ωστόσο, αν χτυπηθεί ξανά ενώ είναι ήδη τυφλωμένος από το ξόρκι, το φως θα γίνει συντριπτικό και θα τον παραλύσει. Η ηλιακή ακτίνα προκαλεί πάντα τη μέγιστη ζημιά σε απέθαντους και δαιμονικούς στόχους.',
+
+	'port.talent.divine_sense.title': 'Θεϊκή αίσθηση',
+	'port.talent.divine_sense.desc': '_+1:_ Ο Κληρικός μπορεί να εκτελέσει τη _Θεϊκή αίσθηση,_ ένα ξόρκι που εκτελείται ακαριαία και του δίνει ενόραση σε _8 τετράγωνα_ για 50 γύρους με κόστος 2 φορτίου.\\n\\n_+2:_ Ο Κληρικός μπορεί να εκτελέσει τη _Θεϊκή αίσθηση,_ ένα ξόρκι που εκτελείται ακαριαία και του δίνει ενόραση σε _12 τετράγωνα_ για 50 γύρους με κόστος 2 φορτίου.',
+
+	'port.talent.bless.title': 'Ευλογία',
+	'port.talent.bless.desc': '_+1:_ Ο Κληρικός μπορεί να εκτελέσει το ξόρκι _Ευλογία,_ το οποίο δίνει _6 γύρους ευλογίας και 10 προστασία_ όταν το κάνει στον εαυτό του ή _10 γύρους ευλογίας και 10 θεραπεία_ όταν το κάνει σε άλλον χαρακτήρα με κόστος 1 φορτίου.\\n\\n_+2:_ Ο Κληρικός μπορεί να εκτελέσει το ξόρκι _Ευλογία,_ το οποίο δίνει _10 γύρους ευλογίας και 10 προστασία_ όταν το κάνει στον εαυτό του ή _15 γύρους ευλογίας και 15 θεραπεία_ όταν το κάνει σε άλλον χαρακτήρα με κόστος 1 φορτίου.\\n\\nΗ πλεονάζουσα θεραπεία από το ξόρκι μετατρέπεται σε προστασία.',
+	'port.talent.cleanse.title': 'Καθαγίαση',
+	'port.talent.cleanse.desc': '_+1:_ Ο Κληρικός μπορεί να εκτελέσει την _Καθαγίαση,_ ένα ξόρκι που _αφαιρεί όλες τις αρνητικές επιδράσεις_ από τον Κληρικό και κάθε κοντινό σύμμαχο και τους παρέχει _10 προστασία_ με κόστος 2 φορτίου.\\n\\n_+2:_ Ο Κληρικός μπορεί να εκτελέσει την _Καθαγίαση,_ ένα ξόρκι που _παρέχει 3 γύρους ανοσίας σε κάθε αρνητική επίδραση_ καθώς και _20 προστασία_ στον Κληρικό και όλους τους κοντινούς συμμάχους, με κόστος 2 φορτίου.\\n\\n_+3:_ Ο Κληρικός μπορεί να εκτελέσει την _Καθαγίαση,_ ένα ξόρκι που _παρέχει 5 γύρους ανοσίας σε κάθε αρνητική επίδραση_ καθώς και _30 προστασία_ στον Κληρικό και όλους τους κοντινούς συμμάχους, με κόστος 2 φορτίου.',
+	'port.talent.light_reading.title': 'Φωτεινό ανάγνωσμα',
+	'port.talent.light_reading.desc': '_+1:_ Ο Κληρικός μπορεί να χρησιμοποιήσει τον ιερό του τόμο όταν δεν είναι εξοπλισμένος, αλλά τότε επαναφορτίζεται με ταχύτητα _25%._\\n\\n_+2:_ Ο Κληρικός μπορεί να χρησιμοποιήσει τον ιερό του τόμο όταν δεν είναι εξοπλισμένος, αλλά τότε επαναφορτίζεται με ταχύτητα _50%._\\n\\n_+3:_ Ο Κληρικός μπορεί να χρησιμοποιήσει τον ιερό του τόμο όταν δεν είναι εξοπλισμένος, αλλά τότε επαναφορτίζεται με ταχύτητα _75%._',
+
+	'port.spell.sunray.name': 'ακτίνα ηλίου',
+	'port.spell.sunray.short_desc': 'Προκαλεί μαγική ζημιά απόστασης και τυφλώνει τον στόχο μία φορά.',
+
+	'port.spell.bless.name': 'ευλογία',
+	'port.spell.bless.short_desc': 'Ευλογεί & προστατεύει τον Κληρικό. Ευλογεί & θεραπεύει τους άλλους.',
+
+	'port.spell.divinesense.name': 'θεϊκή αίσθηση',
+	'port.spell.divinesense.short_desc': 'Λαμβάνεις προσωρινά ενόραση σε ευρεία έκταση.',
+
+	'port.spell.recallinscription.name': 'ανάκληση εγγραφής',
+	'port.spell.recallinscription.short_desc': 'Επαναλαμβάνει τη χρήση ενός πρόσφατου ρουνικού λίθου ή παπύρου.',
+	'port.spell.cleanse.name': 'καθαγίαση',
+	'port.spell.cleanse.short_desc': 'Καθαρίζει τις αρνητικές επιδράσεις και παρέχει ασπίδα.',
+
+	'port.buff.divinesense.name': 'θεϊκή αίσθηση',
+	'port.buff.divinesense.desc': 'This character is temporarily able to see other nearby creatures with their mind!\\n\\nTurns remaining: {0}.',
+	'port.buff.recallused.name': 'πρόσφατα χρησιμοποιημένος ρούνος',
+	'port.buff.recallused.desc': 'Ο Κληρικός χρησιμοποίησε πρόσφατα ένα αντικείμενο στο οποίο μπορεί να λειτουργήσει το ξόρκι «ανάκληση εγγραφής». Μπορεί να εκτελέσει το εν λόγω ξόρκι για να επαναλάβει την επίδραση αυτού του αντικειμένου.\\n\\nΑντικείμενο που χρησιμοποιήθηκε: {0}.\\n\\nΓύροι που απομένουν: {1}.',
+	'port.buff.cleanseimmunity.name': 'εξάγνιση',
+	'port.buff.cleanseimmunity.desc': 'Αυτός ο χαρακτήρας είναι προσωρινά απρόσβλητος από κάθε επιβλαβή επίδραση!\\n\\nΓύροι που απομένουν: {0}.',
+
+	'port.action.cast': 'Εκτέλεση',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': 'βόμβα κρότου λάμψης',
@@ -9249,6 +10958,106 @@ export const PORT_STRINGS_EL: Record<string, string> = {
  */
 
 export const PORT_STRINGS_KO: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': '신성한 무기',
+	'port.buff.holyweapon.desc': '성직자가 현재 착용 중인 무기에 성스러운 마법을 부여해, 현재 마법을 덮어씌우고 무기에 공격당한 적에게 2의 마법 피해를 추가로 입힙니다.\\n\\n남은 턴: {0}.',
+	'port.buff.holyward.name': '신성한 보호구',
+	'port.buff.holyward.desc': '성직자가 현재 착용 중인 방어구에 신성한 빛을 부여해, 현재 상형문자를 덮어씌우고 방어구가 1의 피해를 추가로 막습니다.\\n\\n남은 턴: {0}.',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': '성서',
+	'port.desc.holytome': '성직자는 성서를 매개로 신성력을 발휘합니다. 성서를 사용하면 여러 가지 마법 주문을 시전할 수 있습니다.\\n\\n성직자가 성서를 사용할수록 더욱 강력해집니다. 최대 충전 수가 증가하며 충전 속도가 약간 더 빨라집니다.',
+	'port.log.tomelevelup': '당신의 성서가 더욱 강해졌다!',
+	'port.log.tomenospell': '지금은 주문을 시전할 수 없다.',
+	'port.log.tomecursed': '당신은 저주받은 성서를 사용할 수 없다.',
+	'port.spell.guidinglight.name': '인도하는 빛',
+	'port.spell.guidinglight.short_desc': '원거리 마법 피해를 입히며 다음 공격이 반드시 적중.',
+
+	'port.spell.holyweapon.name': '신성한 무기',
+	'port.spell.holyweapon.short_desc': '무기에 일시적으로 추가 마법 피해를 입히는 마법 부여',
+
+	'port.spell.holyward.name': '신성한 보호구',
+	'port.spell.holyward.short_desc': '방어구에 일시적으로 피해 방어를 향상시키는 상형문자 부여.',
+
+	'port.buff.illuminated.name': '발광',
+	'port.buff.illuminated.desc': '이 캐릭터는 인도하는 빛에 적중하여 발광하고 있습니다. 주변을 밝힐 정도로 밝게 빛나고 있지는 않지만, 모종의 마법을 발휘하여 성직자가 공격을 맞추기 훨씬 쉬워졌습니다.',
+	'port.spell.charge_cost': '충전 소모량: {cost}',
+
+	'port.spell.cast_title': '시전할 주문을 선택',
+	'port.talent.satiated_spells.title': '포만한 주문',
+	'port.talent.satiated_spells.desc': '_+1:_ 식사 후 다음 주문 시전 시 _3의 방어막_을 얻습니다.\\n\\n_+1:_ 식사 후 다음 주문 시전 시 _5의 방어막_을 얻습니다.',
+
+	'port.talent.holy_intuition.title': '신성한 직감',
+	'port.talent.holy_intuition.desc': '_+1:_ 성직자가 _신성한 직감_ 주문을 얻습니다. 신성한 직감은 대상 아이템의 저주 여부를 판단합니다. _충전 소모 : 3_\\n\\n_+2:_ 성직자가 _신성한 직감_ 주문을 얻습니다. 신성한 직감은 대상 아이템의 저주 여부를 판단합니다. _충전 소모 : 2_',
+
+	'port.talent.searing_light.title': '불타는 빛',
+	'port.talent.searing_light.desc': '_+1:_ _인도하는 빛_에 발광한 적에게 가하는 물리 공격이 _3의 추가 피해_를 줍니다.\\n\\n_+2_ _인도하는 빛_에 발광한 적에게 가하는 물리 공격이 _5의 추가 피해_를 줍니다.',
+
+	'port.talent.shield_of_light.title': '빛의 방패',
+	'port.talent.shield_of_light.desc': '_+1:_ 성직자가 _빛의 방패_ 주문을 얻습니다. 빛의 방해는 즉시 시전되며 5턴 동안 대상의 공격에 대해 _2-4 방어력_을 얻습니다. 충전 소모 : 1\\n\\n_+2:_ 성직자가 _빛의 방패_ 주문을 얻습니다. 빛의 방해는 즉시 시전되며 5턴 동안 대상의 공격에 대해 _3-6 방어력_을 얻습니다. 충전 소모 : 1',
+
+	'port.spell.holyintuition.name': '신성한 직감',
+	'port.spell.holyintuition.short_desc': '아이템의 저주 여부를 확인.',
+	'port.spell.holyintuition.prompt': '아이템을 선택하세요',
+	'port.spell.holyintuition.cursed': '당신은 악의로 가득 찬 마법이 아이템에 깃들었음을 느낍니다.',
+	'port.spell.holyintuition.uncursed': '이 아이템에는 악의적인 마법이 없습니다.',
+
+	'port.spell.shieldoflight.name': '빛의 방패',
+	'port.spell.shieldoflight.short_desc': '대상의 공격에 대해 임시 방어력을 얻음.',
+
+	'port.log.clericnotarget': '대상이 없다.',
+
+	'port.buff.satiatedspells.name': '보호의 주문',
+	'port.buff.satiatedspells.desc': '성직자가 다음 주문 시전 시 약간의 방어막을 얻습니다.',
+
+	'port.buff.shieldoflight.name': '빛의 방패',
+	'port.buff.shieldoflight.desc': '얇은 빛의 방패가 캐릭터와 대상 적 사이에 떠 있습니다. 적의 공격을 완전히 막을 만큼 강력하진 않습니다만, 피해를 일부 경감할 수는 있습니다.\\n\\n남은 턴: {0}',
+	'port.talent.enlightening_meal.title': '깨달음의 식사',
+	'port.talent.enlightening_meal.desc': '_+1:_ 식사에 1턴만 소모되며, 식사 시 성서의 충전량이 _0.67_  회복됩니다.\\n\\n_+2:_ 식사에 1턴만 소모되며, 식사 시 성서의 충전량이 _1_ 회복됩니다.',
+
+	'port.talent.recall_inscription.title': '도돌이 각인',
+	'port.talent.recall_inscription.desc': '_+1:_ 성직자가 _도돌이 각인_ 주문을 얻습니다. 도돌이 각인은 지난 _10턴 이내_ 사용한 룬석 또는 주문서 효과를 재발동합니다.\\n\\n_+2:_ 성직자가 _도돌이 각인_ 주문을 얻습니다. 도돌이 각인은 지난 _300턴 이내_ 사용한 룬석 또는 주문서 효과를 재발동합니다.\\n\\n도돌이 각인은 강화의 주문서 효과를 재사용할 수 없습니다. 이 주문의 충전 사용량은 재사용한 효과에 따라 달라집니다. 룬석은 2, 주문서는 3, 신비로운 주문서는 4의 충전을 사용합니다. 변환의 주문서 또는 그 재료로 만든 연금술 아이템을 재발동하는 경우 충전이 2배로 소모됩니다.',
+
+	'port.talent.sunray.title': '태양 광선',
+	'port.talent.sunray.desc': '_+1:_ 성직자가 _태양 광선_ 주문을 얻습니다. 태양 광선은 대상에게 4-8 피해를 주며, _4턴 동안_ 실명시킵니다. 충전 소모 : 1\\n\\n_+2:_ 성직자가 _태양 광선_ 주문을 얻습니다. 태양 광선은 대상에게 6-12 피해를 주며, _6턴 동안_ 실명시킵니다. 충전 소모 : 1\\n\\n태양 광선은 대상을 한 번만 실명시키지만, 이미 실명한 대상이 태양 광선에 적중하면 마비됩니다. 태양 광선은 악마와 언데드 적에게 항상 최대 피해를 줍니다.',
+
+	'port.talent.divine_sense.title': '신성한 감각',
+	'port.talent.divine_sense.desc': '_+1:_ 성직자가 _신성한 감각_ 주문을 얻습니다. 신성한 감각은 즉시 시전되며, 자신의 _8타일 이내_에 50턴 동안 심안 효과를 얻습니다. 충전 소모 : 2\\n\\n_+2:_ 성직자가 _신성한 감각_ 주문을 얻습니다. 신성한 감각은 즉시 시전되며, 자신의 _12타일 이내_에 50턴 동안 심안 효과를 얻습니다. 충전 소모 : 2',
+
+	'port.talent.bless.title': '축복',
+	'port.talent.bless.desc': '_+1:_ 성직자가 _축복_ 주문을 얻습니다. 축복은 자신에게 _6턴의 축복과 10의 방어막_을, 또는 다른 캐릭터에게 _10턴의 축복과 10의 회복_을 부여합니다. 충전 소모 : 1\\n\\n_+2:_ 성직자가 _축복_ 주문을 얻습니다. 축복은 자신에게 _10턴의 축복과 15의 방어막_을, 또는 다른 캐릭터에게 _15턴의 축복과 15의 회복_을 부여합니다. 충전 소모 : 1\\n\\n이 주문으로 초과 치유된 체력은 방어막으로 전환됩니다.',
+	'port.talent.cleanse.title': '정화',
+	'port.talent.cleanse.desc': '_+1:_ 성직자가 _정화_ 주문을 얻습니다. 정화는 성직자와 근처 아군의 _부정적인 효과_를 제거하고, _10의 방어막_을 부여합니다. 충전 소모 : 2\\n\\n_+2:_ 성직자가 _정화_ 주문을 얻습니다. 정화는 성직자와 근처 아군에게 _3턴의 디버프 면역_효과와 _20의 방어막_을 부여합니다. 충전 소모 : 2\\n\\n_+3:_ 성직자가 _정화_ 주문을 얻습니다. 정화는 성직자와 근처 아군에게 _5턴의 디버프 면역_효과와 _30의 방어막_을 부여합니다. 충전 소모 : 2',
+	'port.talent.light_reading.title': '속독',
+	'port.talent.light_reading.desc': '_+1:_ 성직자가 성서를 착용하지 않고도 사용할 수 있지만, 착용하지 않은 성서는 충전 속도가 _25%_로 감소합니다.\\n\\n_+2:_ 성직자가 성서를 착용하지 않고도 사용할 수 있지만, 착용하지 않은 성서는 충전 속도가 _50%_로 감소합니다.\\n\\n_+3:_ 성직자가 성서를 착용하지 않고도 사용할 수 있지만, 착용하지 않은 성서는 충전 속도가 _75%_로 감소합니다.',
+
+	'port.spell.sunray.name': '태양 광선',
+	'port.spell.sunray.short_desc': '대상에게 원거리 마법 피해를 주며 실명시킴.',
+
+	'port.spell.bless.name': '축복',
+	'port.spell.bless.short_desc': '자신을 축복하고 방어막 부여, 타인을 축복하고 회복.',
+
+	'port.spell.divinesense.name': '신성한 감각',
+	'port.spell.divinesense.short_desc': '잠시 동안 넓은 지역에 심안을 얻음.',
+
+	'port.spell.recallinscription.name': '도돌이 각인',
+	'port.spell.recallinscription.short_desc': '가장 최근에 쓴 룬석 또는 주문서를 다시 사용.',
+	'port.spell.cleanse.name': '정화',
+	'port.spell.cleanse.short_desc': '디버프를 정화하고 방어막을 얻음.',
+
+	'port.buff.divinesense.name': '신성한 감각',
+	'port.buff.divinesense.desc': '이 캐릭터는 마음의 눈으로 주변의 존재들을 볼 수 있게 되었습니다!\\n\\n남은 턴: {0}.',
+	'port.buff.recallused.name': '최근에 사용한 룬',
+	'port.buff.recallused.desc': '성직자가 가장 최근에 사용한 아이템을 도돌이 각인 주문으로 재사용할 수 있습니다. 도돌이 각인 주문 시전 시 그 아이템 효과가 재발동합니다.\\n\\n해당 아이템: {0}.\\n\\n남은 턴: {1}.',
+	'port.buff.cleanseimmunity.name': '정화',
+	'port.buff.cleanseimmunity.desc': '모든 해로운 상태 효과에 잠시 면역이 되었습니다!\\n\\n남은 시간: {0}턴',
+
+	'port.action.cast': '시전',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': '섬광탄',
@@ -9776,6 +11585,106 @@ export const PORT_STRINGS_KO: Record<string, string> = {
  */
 
 export const PORT_STRINGS_ZH: Record<string, string> = {
+	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
+	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
+	// markers are carried as `{0}`, the token `buffInfo()` fills.
+	'port.buff.holyweapon.name': '神圣武器',
+	'port.buff.holyweapon.desc': '牧师已赋予其手持武器神圣附魔，临时覆盖任何已有附魔并使武器每次攻击额外造成2点魔法伤害。\\n\\n剩余回合数：{0}',
+	'port.buff.holyward.name': '神圣护甲',
+	'port.buff.holyward.desc': '牧师已赋予其身穿护甲神圣刻印，临时覆盖任何已有刻印并使护甲额外防御1点伤害。\\n\\n剩余回合数：{0}',
+	// HolyTome + the three tier-1 Cleric spells - SPD's own v3.3.8 text and SPD's own
+	// translations of it (the live checkout this extractor reads predates the Cleric,
+	// so these ride `port.*` keys like `port.items.armor.clericarmor.name` does).
+	// `desc_priest`/`desc_paladin`/`desc_generic` variants are not carried: Priest and
+	// Paladin do not exist here yet.
+	'port.name.holytome': '神圣法典',
+	'port.desc.holytome': '这本圣典能够帮助牧师引导、聚焦自身的神圣魔法，从而使牧师能够施放一系列的法术。\\n\\n圣典会随着牧师的使用逐步变强，给予牧师更高的最大充能数并略微提升充能速度。',
+	'port.log.tomelevelup': '你的圣典变得更强大了！',
+	'port.log.tomenospell': '你现在不足以施放该法术。',
+	'port.log.tomecursed': '你不能使用被诅咒的圣典。',
+	'port.spell.guidinglight.name': '神导之光',
+	'port.spell.guidinglight.short_desc': '造成远程魔法必中伤害。',
+
+	'port.spell.holyweapon.name': '神圣武器',
+	'port.spell.holyweapon.short_desc': '临时覆盖附魔以强化武器伤害。',
+
+	'port.spell.holyward.name': '神圣护甲',
+	'port.spell.holyward.short_desc': '临时覆盖刻印以强化护甲防御。',
+
+	'port.buff.illuminated.name': '光耀',
+	'port.buff.illuminated.desc': '该单位因被神导之光击中而获得光耀。光耀的照度不足以照亮周围区域，但其魔法会使牧师对敌人的攻击更容易命中。',
+	'port.spell.charge_cost': '充能消耗：{cost}',
+
+	'port.spell.cast_title': '施放一个法术',
+	'port.talent.satiated_spells.title': '圣餐礼文',
+	'port.talent.satiated_spells.desc': '_+1：_进食会使牧师在下一次施法时为其提供_3点护盾_。\\n\\n_+2：_进食会使牧师在下一次施法时为其提供_5点护盾_。',
+
+	'port.talent.holy_intuition.title': '神圣预知',
+	'port.talent.holy_intuition.desc': '_+1：_牧师可以施放法术_神圣预知_，消耗_3点充能_以揭示物品有无诅咒。\\n\\n_+2：_牧师可以施放法术_神圣预知_，消耗_2点充能_以揭示物品有无诅咒。',
+
+	'port.talent.searing_light.title': '灼热之光',
+	'port.talent.searing_light.desc': '_+1：_牧师对被_神导之光_施加光耀的敌人的物理攻击造成_3点额外伤害_。\\n\\n_+2：_牧师对被_神导之光_施加光耀的敌人的物理攻击造成_5点额外伤害_。',
+
+	'port.talent.shield_of_light.title': '神圣护盾',
+	'port.talent.shield_of_light.desc': '_+1：_牧师可以施放法术_神圣护盾_，消耗1点充能以立即获得在5回合内仅对指定目标有效的_2~4点护甲_。\\n\\n_+2：_牧师可以施放法术_神圣护盾_，消耗1点充能以立即获得在5回合内仅对指定目标有效的_3~6点护甲_。',
+
+	'port.spell.holyintuition.name': '神圣预知',
+	'port.spell.holyintuition.short_desc': '鉴定一个物品有无诅咒。',
+	'port.spell.holyintuition.prompt': '选择一个物品',
+	'port.spell.holyintuition.cursed': '你感觉到这件物品里潜伏着一股充满恶意的魔力。',
+	'port.spell.holyintuition.uncursed': '这个物品没有被诅咒。',
+
+	'port.spell.shieldoflight.name': '神圣护盾',
+	'port.spell.shieldoflight.short_desc': '获得仅对单个目标生效的临时护甲。',
+
+	'port.log.clericnotarget': '那里没有任何目标。',
+
+	'port.buff.satiatedspells.name': '施法护盾',
+	'port.buff.satiatedspells.desc': '牧师下一次施法会为其提供少量护盾。',
+
+	'port.buff.shieldoflight.name': '神圣护盾',
+	'port.buff.shieldoflight.desc': '一面薄弱的圣盾立于该单位与敌人之间。圣盾的强度不足以完全防御攻击，但能将其减弱。\\n\\n剩余回合数：{0}',
+	'port.talent.enlightening_meal.title': '启蒙圣餐',
+	'port.talent.enlightening_meal.desc': '_+1：_牧师进食只花费1回合，并获得_0.67点圣典充能_。\\n\\n_+2：_牧师进食只花费1回合，并获得_1点圣典充能_。',
+
+	'port.talent.recall_inscription.title': '卷藏咒言',
+	'port.talent.recall_inscription.desc': '_+1：_牧师可以施放法术_卷藏咒言_，以再次触发_10回合_内最近一次使用的符石或卷轴效果。\\n\\n_+2：_牧师可以施放法术_卷藏咒言_，以再次触发_300回合_内最近一次使用的符石或卷轴效果。\\n\\n卷藏咒言不能复制升级卷轴，充能消耗根据最近一次使用的物品变化而变化：符石2点充能、卷轴3点充能、秘卷4点充能。复制嬗变卷轴或嬗变/升级卷轴的符石/秘卷时，充能消耗还会翻倍。',
+
+	'port.talent.sunray.title': '阳炎射线',
+	'port.talent.sunray.desc': '_+1：_牧师可以施放法术_阳炎射线_，消耗1点充能造成_4~8_点伤害并使目标失明_4回合_。\\n\\n_+2：_牧师可以施放法术_阳炎射线_，消耗1点充能造成_6~12_点伤害并使目标失明_6回合_。\\n\\n阳炎射线只能致盲目标一次，但若目标已被阳炎射线致盲则会以麻痹代之。阳炎射线必定对恶魔和亡灵敌人造成最大伤害。',
+
+	'port.talent.divine_sense.title': '神圣感知',
+	'port.talent.divine_sense.desc': '_+1：_牧师可以施放法术_神圣感知_，消耗2点充能以不耗时获得持续50回合，_8格范围_的灵视感知。\\n\\n_+2：_牧师可以施放法术_神圣感知_，消耗2点充能以不耗时获得持续50回合，_12格范围_的灵视感知。',
+
+	'port.talent.bless.title': '神圣祝福',
+	'port.talent.bless.desc': '_+1：_牧师可以施放法术_神圣祝福_，消耗1点充能以使自身获得_6回合赐福与10点护盾_或使其他单位获得_10回合赐福与10点治疗_。\\n\\n_+2：_牧师可以施放法术_神圣祝福_，消耗1点充能以使自身获得_10回合赐福与15点护盾_或使其他单位获得_15回合赐福与15点治疗_。\\n\\n该法术的溢出治疗将被转化为护盾。',
+	'port.talent.cleanse.title': '神圣净化',
+	'port.talent.cleanse.desc': '_+1：_牧师可以施放法术_神圣净化_，消耗2点充能以使自身和附近任何盟友_清除负面状态效果_并获得_10点护盾_。\\n\\n_+2：_牧师可以施放法术_神圣净化_，消耗2点充能以使自身和附近任何盟友获得_3回合全面净化_与_20点护盾_。\\n\\n_+3：_牧师可以施放法术_神圣净化_，消消耗2点充能以使自身和附近任何盟友获得_5回合全面净化_与_30点护盾_。',
+	'port.talent.light_reading.title': '轻量阅读',
+	'port.talent.light_reading.desc': '_+1：_牧师不装备圣典也能使用其功能，但未装备时圣典的充能速率会降至_25%_。\\n\\n_+2：_牧师不装备圣典也能使用其功能，但未装备时圣典的充能速率会降至_50%_。\\n\\n_+3：_牧师不装备圣典也能使用其功能，但未装备时圣典的充能速率会降至_75%_。',
+
+	'port.spell.sunray.name': '阳炎射线',
+	'port.spell.sunray.short_desc': '造成远程魔法伤害并致盲目标一次。',
+
+	'port.spell.bless.name': '神圣祝福',
+	'port.spell.bless.short_desc': '使牧师获得祝福和护盾，使其他单位获得祝福和治疗。',
+
+	'port.spell.divinesense.name': '神圣感知',
+	'port.spell.divinesense.short_desc': '短时间内获得大范围的灵视感知。',
+
+	'port.spell.recallinscription.name': '卷藏咒言',
+	'port.spell.recallinscription.short_desc': '重复最近使用的符石或卷轴效果。',
+	'port.spell.cleanse.name': '神圣净化',
+	'port.spell.cleanse.short_desc': '清除减益并获得护盾。',
+
+	'port.buff.divinesense.name': '神圣感知',
+	'port.buff.divinesense.desc': '该单位暂时能以其灵视感知看到附近其他生物！\\n\\n剩余回合数：{0}',
+	'port.buff.recallused.name': '近期已使用符文',
+	'port.buff.recallused.desc': '牧师近期已使用一个兼容卷藏咒言法术效果的物品，可以通过施法再次触发物品效果。\\n\\n已使用物品：{0}\\n\\n剩余回合数：{1}',
+	'port.buff.cleanseimmunity.name': '全面净化',
+	'port.buff.cleanseimmunity.desc': '这个角色暂时免疫所有的负面状态效果！\\n\\n剩余时长：{0}',
+
+	'port.action.cast': '施法',
 	//SPD v3.3.8 FlashbangBomb's own words, housed under port.* until the message catalogue
 	//is re-extracted from v3.3.8 (it still carries the pre-v3.3.8 blinder text).
 	'port.name.flashbang': '闪光弹',
@@ -10295,31 +12204,29 @@ export const PORT_STRINGS_ZH: Record<string, string> = {
 /**
  * Every port-only catalogue, keyed by SPD's language code (`languages.ts`).
  *
- * Assembled here rather than in `index.ts` so tooling can compare the catalogues without
- * importing the `mwg` runtime: `tools/i18nCheck.ts` asserts that each non-English catalogue
- * carries exactly English's key set with exactly its `{placeholder}` tokens, the invariant
- * that silently drifted for five locales before that check existed.
+ * Assembled here rather than in `index.ts`; `tools/i18nCheck.ts` compares every catalogue's keys and placeholders.
  */
-export const PORT_STRINGS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+const PORT_CLERIC_ARMOR_FALLBACK = { 'port.armorability.ascendedform.name': PORT_STRINGS_EN['port.armorability.ascendedform.name'], 'port.armorability.ascendedform.short_desc': PORT_STRINGS_EN['port.armorability.ascendedform.short_desc'], 'port.spell.judgement.name': PORT_STRINGS_EN['port.spell.judgement.name'], 'port.spell.judgement.short_desc': PORT_STRINGS_EN['port.spell.judgement.short_desc'], 'port.spell.flash.name': PORT_STRINGS_EN['port.spell.flash.name'], 'port.spell.flash.short_desc': PORT_STRINGS_EN['port.spell.flash.short_desc'] };
+const completePortStrings = (catalog: Record<string, string>): Readonly<Record<string, string>> => ({ ...catalog, ...PORT_CLERIC_ARMOR_FALLBACK }); export const PORT_STRINGS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
 	en: PORT_STRINGS_EN,
-	fr: PORT_STRINGS_FR,
-	de: PORT_STRINGS_DE,
-	es: PORT_STRINGS_ES,
-	pt: PORT_STRINGS_PT,
-	it: PORT_STRINGS_IT,
-	pl: PORT_STRINGS_PL,
-	ru: PORT_STRINGS_RU,
-	tr: PORT_STRINGS_TR,
-	uk: PORT_STRINGS_UK,
-	hu: PORT_STRINGS_HU,
-	nl: PORT_STRINGS_NL,
-	in: PORT_STRINGS_IN,
-	ja: PORT_STRINGS_JA,
-	cs: PORT_STRINGS_CS,
-	vi: PORT_STRINGS_VI,
-	el: PORT_STRINGS_EL,
-	ko: PORT_STRINGS_KO,
-	zh: PORT_STRINGS_ZH,
+	fr: completePortStrings(PORT_STRINGS_FR),
+	de: completePortStrings(PORT_STRINGS_DE),
+	es: completePortStrings(PORT_STRINGS_ES),
+	pt: completePortStrings(PORT_STRINGS_PT),
+	it: completePortStrings(PORT_STRINGS_IT),
+	pl: completePortStrings(PORT_STRINGS_PL),
+	ru: completePortStrings(PORT_STRINGS_RU),
+	tr: completePortStrings(PORT_STRINGS_TR),
+	uk: completePortStrings(PORT_STRINGS_UK),
+	hu: completePortStrings(PORT_STRINGS_HU),
+	nl: completePortStrings(PORT_STRINGS_NL),
+	in: completePortStrings(PORT_STRINGS_IN),
+	ja: completePortStrings(PORT_STRINGS_JA),
+	cs: completePortStrings(PORT_STRINGS_CS),
+	vi: completePortStrings(PORT_STRINGS_VI),
+	el: completePortStrings(PORT_STRINGS_EL),
+	ko: completePortStrings(PORT_STRINGS_KO),
+	zh: completePortStrings(PORT_STRINGS_ZH),
 };
 
 /**

@@ -194,20 +194,6 @@
       },
       {
         tag: "item",
-        id: "alchemicalCatalyst",
-        name: "items.potions.alchemicalcatalyst.name",
-        slot: "consumable",
-        stackable: true,
-      },
-      {
-        tag: "item",
-        id: "arcaneCatalyst",
-        name: "items.spells.arcanecatalyst.name",
-        slot: "consumable",
-        stackable: true,
-      },
-      {
-        tag: "item",
         id: "seedRotberry",
         name: "plants.rotberry$seed.name",
         slot: "consumable",
@@ -406,6 +392,37 @@
         tag: "item",
         id: "food",
         name: "items.food.food.name",
+        slot: "consumable",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "smallRation",
+        // SmallRation inherits Food's generic localized Ration strings in Java.
+        name: "items.food.food.name",
+        slot: "consumable",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "berry",
+        name: "items.food.berry.name",
+        slot: "consumable",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "supplyRation",
+        // The checked-in SPD catalog predates this v3.3.8 key, so keep the real
+        // item id/effects while using the catalog's generic Ration noun.
+        name: "items.food.food.name",
+        slot: "consumable",
+        stackable: true,
+      },
+      {
+        tag: "item",
+        id: "phantomMeat",
+        name: "items.food.phantommeat.name",
         slot: "consumable",
         stackable: true,
       },
@@ -651,13 +668,6 @@
         tag: "item",
         id: "causticBrew",
         name: "items.potions.brews.causticbrew.name",
-        slot: "consumable",
-        stackable: true,
-      },
-      {
-        tag: "item",
-        id: "aquaBlast",
-        name: "items.spells.aquablast.name",
         slot: "consumable",
         stackable: true,
       },

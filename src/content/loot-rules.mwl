@@ -96,6 +96,12 @@
           },
           {
             tag: "row",
+            monster: "phantomPiranha",
+            chance: 1,
+            kind: "meat",
+          },
+          {
+            tag: "row",
             monster: "dm100",
             chance: 0.25,
             kind: "scroll",

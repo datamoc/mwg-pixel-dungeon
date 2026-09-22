@@ -20,7 +20,7 @@
             // creature-facing blob is fire, so this set is read there.
             tag: "effect",
             apply_to: "blobImmune",
-            set: "spiritHawk,piranha",
+            set: "spiritHawk,piranha,phantomPiranha",
           },
           {
             tag: "effect",
@@ -146,6 +146,11 @@
           },
           {
             tag: "row",
+            variant: "phantomPiranha",
+            base: "piranha",
+          },
+          {
+            tag: "row",
             variant: "pylon",
             base: "pylon",
           },
@@ -175,10 +180,15 @@
           { tag: "row", monster: "mimic", hp_base: 6, hp_per_depth: 6, accuracy_base: 6, accuracy_per_depth: 1, evasion_base: 4, evasion_per_depth: 1, evasion_divisor: 2, damage_min_base: 1, damage_min_per_depth: 1, damage_min_divisor: 0, damage_min_floor: 0, damage_max_base: 2, damage_max_per_depth: 2, damage_max_divisor: 0, damage_max_floor: 0, armor_min_base: 0, armor_min_per_depth: 0, armor_min_divisor: 0, armor_max_base: 2, armor_max_per_depth: 1, armor_max_divisor: 2 },
           { tag: "row", monster: "crystalMimic", hp_base: 6, hp_per_depth: 6, accuracy_base: 6, accuracy_per_depth: 1, evasion_base: 4, evasion_per_depth: 1, evasion_divisor: 2, damage_min_base: 1, damage_min_per_depth: 1, damage_min_divisor: 0, damage_min_floor: 0, damage_max_base: 2, damage_max_per_depth: 2, damage_max_divisor: 0, damage_max_floor: 0, armor_min_base: 0, armor_min_per_depth: 0, armor_min_divisor: 0, armor_max_base: 2, armor_max_per_depth: 1, armor_max_divisor: 2 },
           { tag: "row", monster: "piranha", hp_base: 10, hp_per_depth: 5, accuracy_base: 20, accuracy_per_depth: 2, evasion_base: 10, evasion_per_depth: 2, evasion_divisor: 0, damage_min_base: 0, damage_min_per_depth: 1, damage_min_divisor: 0, damage_min_floor: 0, damage_max_base: 4, damage_max_per_depth: 2, damage_max_divisor: 0, damage_max_floor: 0, armor_min_base: 0, armor_min_per_depth: 0, armor_min_divisor: 0, armor_max_base: 0, armor_max_per_depth: 1, armor_max_divisor: 0 },
+          { tag: "row", monster: "phantomPiranha", hp_base: 10, hp_per_depth: 5, accuracy_base: 20, accuracy_per_depth: 2, evasion_base: 10, evasion_per_depth: 2, evasion_divisor: 0, damage_min_base: 0, damage_min_per_depth: 1, damage_min_divisor: 0, damage_min_floor: 0, damage_max_base: 4, damage_max_per_depth: 2, damage_max_divisor: 0, damage_max_floor: 0, armor_min_base: 0, armor_min_per_depth: 0, armor_min_divisor: 0, armor_max_base: 0, armor_max_per_depth: 1, armor_max_divisor: 0 },
           { tag: "row", monster: "bee", hp_base: 8, hp_per_depth: 4, accuracy_base: 9, accuracy_per_depth: 1, evasion_base: 9, evasion_per_depth: 1, evasion_divisor: 0, damage_min_base: 8, damage_min_per_depth: 4, damage_min_divisor: 10, damage_min_floor: 1, damage_max_base: 8, damage_max_per_depth: 4, damage_max_divisor: 4, damage_max_floor: 1, armor_min_base: 0, armor_min_per_depth: 0, armor_min_divisor: 0, armor_max_base: 0, armor_max_per_depth: 0, armor_max_divisor: 0 },
           { tag: "row", monster: "statue", hp_base: 15, hp_per_depth: 5, accuracy_base: 9, accuracy_per_depth: 1, evasion_base: 4, evasion_per_depth: 1, evasion_divisor: 0, damage_min_base: 2, damage_min_per_depth: 0, damage_min_divisor: 0, damage_min_floor: 0, damage_max_base: 8, damage_max_per_depth: 1, damage_max_divisor: 0, damage_max_floor: 0, armor_min_base: 0, armor_min_per_depth: 0, armor_min_divisor: 0, armor_max_base: 2, armor_max_per_depth: 1, armor_max_divisor: 0 },
           { tag: "row", monster: "armoredStatue", hp_base: 30, hp_per_depth: 10, accuracy_base: 9, accuracy_per_depth: 1, evasion_base: 4, evasion_per_depth: 1, evasion_divisor: 0, damage_min_base: 2, damage_min_per_depth: 0, damage_min_divisor: 0, damage_min_floor: 0, damage_max_base: 8, damage_max_per_depth: 1, damage_max_divisor: 0, damage_max_floor: 0, armor_min_base: 0, armor_min_per_depth: 0, armor_min_divisor: 0, armor_max_base: 4, armor_max_per_depth: 1, armor_max_divisor: 0 },
-          { tag: "row", monster: "sentry", hp_base: 0, hp_per_depth: 0, accuracy_base: 20, accuracy_per_depth: 2, evasion_base: 0, evasion_per_depth: 0, evasion_divisor: 0, damage_min_base: 0, damage_min_per_depth: 0, damage_min_divisor: 0, damage_min_floor: 0, damage_max_base: 0, damage_max_per_depth: 0, damage_max_divisor: 0, damage_max_floor: 0, armor_min_base: 0, armor_min_per_depth: 0, armor_min_divisor: 0, armor_max_base: 0, armor_max_per_depth: 0, armor_max_divisor: 0 },
+          //Sentry: Java `defenseSkill()` is INFINITE_EVASION and `damage()` a no-op, so the
+          //turret is unhittable and unkillable. The depth override must preserve both halves:
+          //evasion stays infinite (the rollHit gate) and HP stays nonzero (the base row's 1),
+          //or the override silently clobbers them to a hittable 0-HP turret one punch can kill.
+          { tag: "row", monster: "sentry", hp_base: 1, hp_per_depth: 0, accuracy_base: 20, accuracy_per_depth: 2, evasion_base: 1000000, evasion_per_depth: 0, evasion_divisor: 0, damage_min_base: 0, damage_min_per_depth: 0, damage_min_divisor: 0, damage_min_floor: 0, damage_max_base: 0, damage_max_per_depth: 0, damage_max_divisor: 0, damage_max_floor: 0, armor_min_base: 0, armor_min_per_depth: 0, armor_min_divisor: 0, armor_max_base: 0, armor_max_per_depth: 0, armor_max_divisor: 0 },
         ],
       },
       {

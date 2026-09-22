@@ -74,7 +74,11 @@ export const ITEM_KEYS: Record<string, string> = {
 	roguearmor: 'items.armor.roguearmor.name',
 	huntressarmor: 'items.armor.huntressarmor.name',
 	duelistarmor: 'items.armor.duelistarmor.name',
-	clericarmor: 'port.items.armor.clericarmor.name',
+	clericarmor: 'port.items.armor.clericarmor.name',	//The Cleric's starting HolyTome: an equip-slot item, not one of the 13 real
+	//artifacts, so it has no `artifacts.mwl` row to derive a name from - the name
+	//is SPD's own tag-`v3.3.8` `items.artifacts.holytome.name` under a `port.*` key
+	//(see `portStrings.ts`), like `clericarmor` above.
+	holyTome: 'port.name.holytome',
 };
 
 /** `items.rings.*`, derived from the MWL item catalogue. */

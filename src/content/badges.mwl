@@ -210,6 +210,14 @@
           },
           {
             tag: "row",
+            id: "death_falling",
+            counter: "death_falling",
+            target: 1,
+            description: "Died from a fall",
+            icon: 21,
+          },
+          {
+            tag: "row",
             id: "death_foe",
             counter: "death_foe",
             target: 1,

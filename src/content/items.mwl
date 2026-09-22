@@ -26,13 +26,6 @@
         id: "weapon_gloves_t1",
         name: "items.weapon.melee.gloves.name",
         slot: "weapon",
-        children: [
-          {
-            tag: "effect",
-            apply_to: "speed",
-            set: 2,
-          },
-        ],
       },
       {
         tag: "item",
