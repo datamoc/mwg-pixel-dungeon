@@ -37,8 +37,8 @@ export function verifyClericSpells(require, check) {
 		assert.equal(auraProcBonus(3, true, true, false), 0);
 	});
 
-	check('tier-1 spell costs are 1/2/2', () => {
-		assert.deepEqual([TOME_SPELL_COST.guidingLight, TOME_SPELL_COST.holyWeapon, TOME_SPELL_COST.holyWard], [1, 2, 2]);
+	check('tier-1 spell costs are 1/2/1 - HolyWard has no chargeUse override in Java', () => {
+		assert.deepEqual([TOME_SPELL_COST.guidingLight, TOME_SPELL_COST.holyWeapon, TOME_SPELL_COST.holyWard], [1, 2, 1]);
 	});
 
 	check('cast gates read cursed, then MagicImmune, then charges', () => {

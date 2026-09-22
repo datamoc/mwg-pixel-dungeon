@@ -325,11 +325,12 @@ assert.equal(findHolyTome({ find: () => undefined }), undefined, 'no tome, no ca
 	assert.equal(typeof tomeCtx.aimed, 'function', 'the bolt aims before it spends');
 }
 {
-	// One charge: only the bolt is affordable, and the purse is re-checked at cast.
+	// One charge: the bolt and HolyWard (cost 1, no Java chargeUse override) are
+	// affordable, HolyWeapon (cost 2) is not; the purse is re-checked at cast.
 	tomeCtx.picked = null;
 	useHolyTomeFlow(tomeCtx({ charge: 1 }));
 	const [rows] = tomeCtx.picked;
-	assert.deepEqual(rows.map((r) => r.affordable), [true, false, false]);
+	assert.deepEqual(rows.map((r) => r.affordable), [true, false, true]);
 	tomeCtx.said = [];
 	castGuidingLightFlow(tomeCtx({ charge: 0 }));
 	assert.ok(tomeCtx.said.some((l) => l.includes('port.log.tomenospell')), 'broke casters refuse');

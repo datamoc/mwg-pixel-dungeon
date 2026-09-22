@@ -83,11 +83,14 @@ export function trinityChargeUsePerEffect(baseCharge: number, itemClass: string,
 	return baseCharge;
 }
 
-/** `chargeUse()`: GuidingLight 1, HolyWeapon/HolyWard 2. */
+/** `ClericSpell.chargeUse()`: default 1, overridden only by `HolyWeapon.chargeUse() = 2`.
+ * `HolyWard.java` has no override at all, so it stays the default 1 - the port previously
+ * had it at 2, matching HolyWeapon's cost with no Java basis (found live, ACP audit-01
+ * finding K, 2026-09-22). */
 export const TOME_SPELL_COST: Record<TomeSpellId, number> = {
 	guidingLight: 1,
 	holyWeapon: 2,
-	holyWard: 2,
+	holyWard: 1,
 };
 
 /** `Hero.heroDamageIntRange(2, 8)`: `Random.NormalIntRange` (clover is unported). */
