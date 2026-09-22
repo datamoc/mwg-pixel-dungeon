@@ -1356,6 +1356,7 @@ export const coreSpawnTilesMethods = {
 		this.targetedCells = new Graphics();
 		this.targetedCells.eventMode = 'none';
 		this.camera.world.addChild(this.targetedCells);
+		this.wardBeams = [];
 		//`SewerLevel`/`PrisonLevel`/`CityLevel`'s `Sink`/`Torch`/`Smoke` decorations, real `WALL_DECO`
 		//cells the ported painter already placed (see `wallDecorations.ts`'s own doc comment).
 		//`CavesLevel`'s own `WALL_DECO` is a Vein/Sparkle effect rather than a Sink, Torch or
@@ -1445,6 +1446,12 @@ export const coreSpawnTilesMethods = {
 		this.camera.world.addChild(this.characterEffects.shadows);
 		this.camera.world.addChild(this.creatureLayer);
 		this.camera.world.addChild(this.effectLayer);
+		//Drawn alongside the particle/effect layer, not the aim/travel overlays grouped with
+		//the tile layers above - a `Beam.DeathRay` is meant to be seen over the actors it
+		//connects, the same as every other zap effect here.
+		this.wardBeamOverlay = new Graphics();
+		this.wardBeamOverlay.eventMode = 'none';
+		this.camera.world.addChild(this.wardBeamOverlay);
 		//wall tops and overhangs draw over the actors, as they do in Java
 		this.camera.world.addChild(this.wallsMap);
 		//`LastLevel`'s three custom tilemaps, drawn over the walls (Java's `customWalls` layer

@@ -479,10 +479,26 @@ below to close the gap was judged not worth the churn against those existing ref
       than ever reaching the fade branch (caught live before landing: a wand-summoned ward's
       corpse hung at a fixed 72% alpha instead of counting down). Live-verified via the
       scene's own `update(dt)` stepped in increments: fade 0/0.5/1/1.5 -> destroyed exactly
-      at 2.0, alpha counting 1 -> 0.75 -> 0.5 -> 0.25 linearly in between. **Left, genuinely**:
-      the Ward DeathRay beam (no beam-drawing primitive exists here beyond Tengu's cone), plus
-      spell-cast bursts / wand-zap trails outside the monster sprites. **Complexity: S** for
-      what's left.
+      at 2.0, alpha counting 1 -> 0.75 -> 0.5 -> 0.25 linearly in between.
+      **Closed 2026-09-22, the Ward DeathRay beam.** `Beam.DeathRay` (`effects/Beam.java`,
+      tag `v3.3.8`) is a textured additive sprite stretched cell-to-cell with a 0.5s fade
+      (`alpha(p)` and `scale.set(scale.x, p)` where `p = timeLeft/duration`) - this port has
+      no beam-image asset, so `wardBeamOverlay`/`wardBeams` (`dungeonScene.ts`) draw a plain
+      fading, thinning line instead (the same "particles are plain squares" reduction
+      `deathBursts.ts` already states for the rest of `WardSprite`'s effects), tinted the same
+      `WardParticle` blue (0x88ccff). Pushed from `takeWardTurn` every zap that has a target,
+      regardless of whether the hit landed (`magicImmune` zeroes only the damage, never the
+      beam, matching Java). **Found and fixed live during verification**: the overlay was
+      first added to the same early world-space group as the aim/travel/targeted-cell
+      highlights, which sits *underneath* the item layer, creature layer, effect layer and
+      wall-tops layer added later in the same setup pass - so the beam rendered, but always
+      hidden beneath the tiles and sprites it was supposed to connect. Moved to sit beside
+      `effectLayer` (the same layer particle bursts already draw into) instead. Live-verified
+      via the scene's own `update(dt)`: a long-lived beam renders visibly over tiles and
+      sprites at the fixed z-order; the normal 0.5s one is gone by the next real frame,
+      consistent with the deterministic stepped-update proof used for the corpse fade above.
+      **Left, genuinely**: spell-cast bursts / wand-zap trails outside the monster sprites.
+      **Complexity: S** for what's left.
 - [x] Audit every static `t('port.*')` call site against `portStrings.ts`'s EN/FR tables. A script
       walk found 45 keys missing from EN and 47 from FR - all fixed (window titles, victory/defeat
       screens, `port.action.bag`/`port.talent.*`, ~20 combat log lines), plus two French-specific

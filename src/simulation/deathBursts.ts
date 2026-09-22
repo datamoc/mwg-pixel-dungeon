@@ -16,11 +16,12 @@
  * - `WardSprite.zap()`: attacker `flash()` + `WardParticle.UP` x2 + RAY sample
  *   + a `Beam.DeathRay` (always drawn, even with no target). This port
  *   reproduces the burst, the RAY cue, and the attacker flash (2026-09-21,
- *   the same `colorAdd` pulse `showDamage` fires); the beam still has no
- *   primitive here (the only beam is Tengu's multi-turn cone) - recorded,
- *   not silently dropped.
- *   `WardSprite.die()`: `WardParticle.UP` x10 (+ a 2s alpha fade this port's
- *   instant-destroy path does not reproduce - recorded below).
+ *   the same `colorAdd` pulse `showDamage` fires). The beam is now live too
+ *   (2026-09-22, `dungeonScene.ts`'s `wardBeamOverlay`/`wardBeams`) - a
+ *   plain fading/thinning line, since Java's textured asset has no
+ *   equivalent here; pushed from `takeWardTurn` alongside this burst.
+ *   `WardSprite.die()`: `WardParticle.UP` x10 (+ a 2s alpha fade, live since
+ *   2026-09-22 via `dyingMonsters`' per-corpse `duration`/`playDieClip`).
  *
  * Deliberate reductions, stated not silent: the port's particles are plain
  * squares (`Texture.WHITE`), so textured shapes do not transfer - HEART's

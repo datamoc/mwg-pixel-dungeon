@@ -1678,10 +1678,17 @@ export const actorTurnsHazardsMethods = {
 			//one-frame `colorAdd` pulse `showDamage` triggers on a landed hit
 			//(`CharSprite.flash()`), fired on the ward itself here since Java's
 			//`attacker.sprite.flash()` means the zapping ward, not the target.
-			//The `Beam.DeathRay` visual stays recorded-open there (no beam
-			//primitive here beyond Tengu's cone).
 			this.sprite(ward).colorAdd = 0xffffff;
 			this.playDeathBursts(wardZapBursts(), ward.x, ward.y);
+			//`Beam.DeathRay(s, e)` (`WardSprite.zap()`, tag `v3.3.8`): a 0.5s fading/thinning
+			//line from the ward's own cell centre to the target's, drawn every zap regardless
+			//of whether the hit actually landed (`magicImmune` still zeroes the damage above,
+			//never the beam). See `dungeonScene.ts`'s `wardBeams`/`wardBeamOverlay`.
+			this.wardBeams.push({
+				x1: (ward.x + 0.5) * TILE, y1: (ward.y + 0.5) * TILE,
+				x2: (target.x + 0.5) * TILE, y2: (target.y + 0.5) * TILE,
+				timeLeft: 0.5,
+			});
 		}
 		const tier = ward.wardTier ?? 1;
 		if (tier <= 3) {
