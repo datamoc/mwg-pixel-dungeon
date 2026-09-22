@@ -534,6 +534,32 @@ export function verifyCombat(require, check) {
 		assert.ok(scene.includes("this.heroClass === 'cleric' && this.weaponId === 'startingWeapon' ? 1.4 : 1"),
 			'cleric accuracy bonus requires the starting cudgel');
 	});
+	check('Grim execute refuses bosses and halves against statues; Lucky pays consumables-or-gold only', () => {
+		// `Grim.proc()` returns early when the defender `isImmune(Grim.class)` (`Grim.java`,
+		// tag `v3.3.8`), and `Char.Property.BOSS` lists `Grim` in its immunities
+		// (`Char.java:1364`) - bosses never suffer the execute. The execute itself is
+		// `round(HP*resist(Grim.class))` (`Char.damage()`), and `Statue` lists `Grim` in its
+		// resistances (`Statue.java`, inherited by `ArmoredStatue`), halving it.
+		// `Lucky.genLoot()` is `RingOfWealth.genConsumableDrop(-5)` (`Lucky.java`/
+		// `RingOfWealth.java`): 80% low (half-gold/stone/potion/scroll) + 20% mid, 0% high -
+		// consumables and gold only, never equipment. Keep these source-level pins beside
+		// the pure combat checks because the scene owns the actual HP writes and heap spawns.
+		const scene = readSceneSource();
+		assert.ok(scene.includes("this.unstableDelegated === 'grim') && defender.hp > 0 && !defender.magicImmune && defender.boss !== true"),
+			'grim execute refuses bosses (BOSS-property immunity)');
+		assert.ok(scene.includes("Math.round(defender.hp * 0.5)"),
+			'grim execute halves against statues (Grim resistance)');
+		assert.ok(!scene.includes("['potion', 'scroll', 'stone', 'potion', 'armor']"),
+			'lucky never drops armor (genConsumableDrop has no equipment tier at -5)');
+		assert.ok(scene.includes('Random.float() < 0.8'),
+			'lucky keeps the 80/20 low/mid tier split');
+		assert.ok(scene.includes("Random.element(['gold', 'stone', 'potion', 'scroll']"),
+			'lucky low tier is half-gold/stone/potion/scroll');
+		assert.ok(scene.includes("luckyKind('bomb')") && scene.includes("luckyKind('honeypot')"),
+			'lucky mid tier reaches bomb and honeypot, never equipment');
+		assert.ok(scene.includes('Math.floor(full / 2)'),
+			'lucky gold is halved at the low tier');
+	});
 	check('GrimTrap mixes half max with half current HP, and the stock-bomb blast is 4+d..12+3d with no falloff', () => {
 		// round(HT/2 + HP/2): full-health 100 -> 100 (hero-capped to 90 at the call site)
 		assert.equal(grimTrapDamage(100, 100), 100);
