@@ -27,6 +27,18 @@ const REGIONS: Record<string, [x: number, y: number, w: number, h: number]> = {
 	challenge: [160, 32, 15, 12],
 	displayPort: [16, 32, 12, 16],
 	displayLand: [32, 32, 16, 12],
+	//`WndSettings`' tab icons and checkbox art, located the same way (template match
+	//against `interfaces/icons.png` at tag `v3.3.8`): this sheet carries Java's
+	//second row at y=32 instead of y=16 and its third row at y=48 instead of y=32,
+	//so every region below is Java's coordinates shifted down one row. Same-row
+	//neighbours never overlap (displayPort 16-28, displayLand 32-48, data 48-62,
+	//audio 64-78, langs 80-94, controller 96-112, keyboard 112-127).
+	data: [48, 32, 14, 15],
+	audio: [64, 32, 14, 14],
+	controller: [96, 32, 16, 12],
+	keyboard: [112, 32, 15, 12],
+	unchecked: [0, 48, 12, 12],
+	checked: [16, 48, 12, 12],
 };
 
 export type TitleIconName = keyof typeof REGIONS;

@@ -17,6 +17,26 @@ export class SpdButton extends Button {
 	}
 }
 
+/**
+ * `ui/RedButton.java` - `StyledButton` over `Chrome.Type.RED_BUTTON` (`chrome.png`
+ * 38,0 6x6, border 2). Java builds almost every dialog, settings row and title-menu
+ * entry from this; the grey skin above stays for the title icon buttons and toolbar
+ * slots (`TitleScene.SettingsButton(GREY_TR...)`, `Toolbar.Tool`), exactly like Java.
+ */
+export class SpdRedButton extends Button {
+	constructor(options: ButtonOptions) {
+		super({
+			...options,
+			skin: {
+				texture: new Texture({ source: runState.sprites.uiChrome.source, frame: new Rectangle(38, 0, 6, 6) }),
+				border: 2,
+				tints: { idle: 0xffffff, hover: 0xffffff, pressed: 0xaaaaaa },
+			},
+			label: { stroke: { color: 0x000000, width: 0.65 }, resolution: 3, roundPixels: true, ...options.label },
+		});
+	}
+}
+
 /** PixelScene's integer zoom, constrained by its portrait/landscape minimum canvas. */
 export function menuScale(width: number, height: number): number {
 	const landscape = width > height;

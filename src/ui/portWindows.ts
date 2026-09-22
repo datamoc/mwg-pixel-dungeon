@@ -1,15 +1,16 @@
 import { Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 import { Game, theme, Window, WindowStack } from 'mwg';
-import { t, language, nextLanguage, setLanguage } from '../i18n/index';
-import { runState, LANGUAGE_KEY, APP_VERSION } from '../runState';
+import { t } from '../i18n/index';
+import { runState } from '../runState';
 import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
 import { CHALLENGES, challenges, challengeDescription, challengeLabel, toggleChallenge } from '../challenges';
 import { rankings } from '../rankings';
-import { applySpdDirection, SPD_TITLE_COLOR } from './spdTheme';
-import { brightness, isMusicMuted, isSfxMuted, musicVolume, playMusicInBackground, screenShake, setBrightness, setPlayMusicInBackground, setScreenShake, setVibration, setZoomOffset, sfxVolume, vibration, zoomOffset } from '../settings';
 import { SpdButton as Button, menuScale } from './spdButton';
 import { SpdLabel as Label } from './spdLabel';
-import { titleIcon } from './titleIcons';
+
+/** `WndSettings`' tabbed window lives in `settingsWindow.ts`; re-exported here so the
+ * title scene and the in-game menu keep their single import. */
+export { showSettingsWindow } from './settingsWindow';
 
 /**
  * The windows SPD opens over a scene, extracted from `TitleScene` so the in-game menu
@@ -47,17 +48,24 @@ export function showInfoWindow(windows: WindowStack, title: string, body: string
 /** `WndOptions`' two-button shape, for the one place this port needs a real yes/no rather than a
  * message: `MissileWeapon.doThrow`'s warning before throwing the last of an upgraded stack.
  * Java builds the same thing out of `WndOptions` with an `onSelect(index)`; this is that, worded
- * with SPD's own `break_upgraded_warn_*` strings. */
-export function showConfirmWindow(windows: WindowStack, title: string, body: string, yes: string, no: string, onYes: () => void): void {
+ * with SPD's own `break_upgraded_warn_*` strings. The chasm-jump warning reuses the same shape
+ * with Java's own `levels.features.chasm.*` strings. */
+export function showConfirmWindow(windows: WindowStack, title: string, body: string, yes: string, no: string, onYes: () => void,
+	//`Chasm.heroJump()`'s 0.2s anti-misclick guard (the window neither hides nor selects
+	//before it): clicks before the delay are ignored, not queued. Defaults to 0, which
+	//keeps the older missile confirmation exactly as it was.
+	minDelayMs = 0): void {
 	const width = windowWidth(180);
 	const label = new Label({ text: body, size: 6, wrapWidth: width - 16, color: theme().color.text });
 	const window = new Window({ width, height: label.height + 70, title, anchor: 'center', blocker: true });
 	window.content.addChild(label);
 	const half = Math.floor((window.contentWidth - 6) / 2);
-	const yesButton = new Button({ width: half, height: 18, text: yes, onClick: () => { window.close(); onYes(); } });
+	const openedAt = Date.now();
+	const tooSoon = () => Date.now() - openedAt < minDelayMs;
+	const yesButton = new Button({ width: half, height: 18, text: yes, onClick: () => { if (tooSoon()) return; window.close(); onYes(); } });
 	yesButton.position.set(0, label.height + 6);
 	window.content.addChild(yesButton);
-	const noButton = new Button({ width: half, height: 18, text: no, onClick: () => window.close() });
+	const noButton = new Button({ width: half, height: 18, text: no, onClick: () => { if (tooSoon()) return; window.close(); } });
 	noButton.position.set(half + 6, label.height + 6);
 	window.content.addChild(noButton);
 	windows.push(window);
@@ -105,213 +113,6 @@ export function showChoiceWindow(
 		window.content.addChild(button);
 		y += rowHeights[index]! + 4;
 	});
-	windows.push(window);
-}
-
-/**
- * Settings: language, challenges, audio and display - `WndSettings`' `AudioTab` mutes plus
- * its 0-10 volume sliders, `DisplayTab` brightness and screen-shake steppers, and the
- * `UITab` vibration toggle, all under real Java labels. Java's sliders are `- value +`
- * steppers in the zoom row's port-original chrome (this port has no slider widget), and
- * the single window co-locates Java's tabs, so vibration sits in the display section.
- * Section headers use `Window.TITLE_COLOR` like Java's `AudioTab` title
- * (`title.hardlight(TITLE_COLOR)`), and the toggle rows reuse the challenges window's
- * own `✓ `-prefix convention rather than Java's checkboxes.
- *
- * A language change rebuilds the whole interface, which the title screen does by switching to
- * itself; `onLanguageChanged` is what a caller wants to happen instead - the title passes its own
- * scene switch, the in-game menu keeps the run and just closes the menu, so a mid-run language
- * change does not abandon the hero (`WndSettings` changes language in place in Java).
- */
-export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () => void): void {
-	const width = windowWidth(180);
-	const window = new Window({ width, height: 100, title: t('port.window.settings.title'), anchor: 'center', blocker: true });
-	//Size the frame to what is actually inside it (the rankings window's pattern) - the old
-	//fixed `136` only ever fit the three rows this window started with.
-	const chrome = window.height - window.contentHeight;
-	const reopen = (): void => {
-		window.close();
-		showSettingsWindow(windows, onLanguageChanged);
-	};
-	let y = 0;
-	const versionLabel = new Label({ text: t('port.window.settings.version', { version: APP_VERSION }), size: 7, color: theme().color.textDim });
-	versionLabel.position.set(0, y);
-	window.content.addChild(versionLabel);
-	y += versionLabel.height + 8;
-	const languageButton = new Button({
-		width: window.contentWidth,
-		height: 22,
-		text: t('port.ui.language', { language: language().nativeName }),
-		icon: titleIcon(runState.sprites.uiIcons, 'langs', 1),
-		onClick: () => {
-			const next = nextLanguage();
-			setLanguage(next);
-			//`theme.direction` follows the active catalogue - see `applySpdDirection`
-			applySpdDirection();
-			try {
-				localStorage.setItem(LANGUAGE_KEY, next.code);
-			} catch {
-				//a browser with storage blocked still gets the language for this session
-			}
-			window.close();
-			onLanguageChanged();
-		},
-	});
-	languageButton.position.set(0, y);
-	window.content.addChild(languageButton);
-	y += 26;
-	const challengeButton = new Button({
-		width: window.contentWidth,
-		height: 22,
-		text: t('windows.wndchallenges.title'),
-		onClick: () => {
-			window.close();
-			showChallengesWindow(windows);
-		},
-	});
-	challengeButton.position.set(0, y);
-	window.content.addChild(challengeButton);
-	y += 26;
-	//`WndSettings$AudioTab` sliders have no slider widget in this port, so each is a
-	//`- value +` stepper in the zoom row's chrome below, under its real Java label.
-	const stepperRow = (label: string, value: string, onDec: () => void, onInc: () => void): void => {
-		const step = 40;
-		const caption = new Label({ text: label, size: 7, color: theme().color.textDim });
-		caption.position.set(0, y);
-		window.content.addChild(caption);
-		y += caption.height + 2;
-		const dec = new Button({ width: step, height: 22, text: '-', onClick: () => { onDec(); reopen(); } });
-		dec.position.set(0, y);
-		window.content.addChild(dec);
-		const inc = new Button({ width: step, height: 22, text: '+', onClick: () => { onInc(); reopen(); } });
-		inc.position.set(window.contentWidth - step, y);
-		window.content.addChild(inc);
-		const current = new Label({
-			text: value, size: 8, wrapWidth: window.contentWidth - step * 2 - 8,
-			align: 'center', color: theme().color.text,
-		});
-		current.position.set(step + 4, y + 11 - current.height / 2);
-		window.content.addChild(current);
-		y += 26;
-	};
-	//`WndSettings$AudioTab`: its title, the two mute rows, and each mute's 0-10 slider.
-	const audioTitle = new Label({ text: t('windows.wndsettings$audiotab.title'), size: 7, color: SPD_TITLE_COLOR });
-	audioTitle.position.set(0, y);
-	window.content.addChild(audioTitle);
-	y += audioTitle.height + 4;
-	const musicButton = new Button({
-		width: window.contentWidth,
-		height: 22,
-		text: `${runState.audio.isMusicMuted() ? '✓ ' : ''}${t('windows.wndsettings$audiotab.music_mute')}`,
-		onClick: () => {
-			runState.audio.setMusicMuted(!runState.audio.isMusicMuted());
-			reopen();
-		},
-	});
-	musicButton.position.set(0, y);
-	window.content.addChild(musicButton);
-	y += 26;
-	stepperRow(t('windows.wndsettings$audiotab.music_vol'), String(musicVolume()),
-		() => runState.audio.setMusicVolume(musicVolume() - 1),
-		() => runState.audio.setMusicVolume(musicVolume() + 1));
-	const sfxButton = new Button({
-		width: window.contentWidth,
-		height: 22,
-		text: `${runState.audio.isSfxMuted() ? '✓ ' : ''}${t('windows.wndsettings$audiotab.sfx_mute')}`,
-		onClick: () => {
-			runState.audio.setSfxMuted(!runState.audio.isSfxMuted());
-			reopen();
-		},
-	});
-	sfxButton.position.set(0, y);
-	window.content.addChild(sfxButton);
-	y += 26;
-	stepperRow(t('windows.wndsettings$audiotab.sfx_vol'), String(sfxVolume()),
-		() => runState.audio.setSfxVolume(sfxVolume() - 1),
-		() => runState.audio.setSfxVolume(sfxVolume() + 1));
-	//`WndSettings$AudioTab.musicBackground()`: the background-play checkbox, same `✓`
-	//chrome as the mutes - `SpdAudio.suspend` reads it live on every page hide.
-	const musicBgButton = new Button({
-		width: window.contentWidth,
-		height: 22,
-		text: `${playMusicInBackground() ? '✓ ' : ''}${t('windows.wndsettings$audiotab.music_bg')}`,
-		onClick: () => {
-			setPlayMusicInBackground(!playMusicInBackground());
-			reopen();
-		},
-	});
-	musicBgButton.position.set(0, y);
-	window.content.addChild(musicBgButton);
-	y += 26;
-	//Zoom management: Java has no settings row for this (desktop zooms with `+`/`-`,
-	//mobile with pinch, both writing the same `SPDSettings.zoom()` offset this persists),
-	//so the `- level +` row is port-original chrome over the ported preference.
-	const displayTitle = new Label({ text: t('windows.wndsettings$displaytab.title'), size: 7, color: SPD_TITLE_COLOR });
-	displayTitle.position.set(0, y);
-	window.content.addChild(displayTitle);
-	y += displayTitle.height + 4;
-	const zoomStep = 40;
-	const zoomOut = new Button({
-		width: zoomStep,
-		height: 22,
-		text: '-',
-		onClick: () => {
-			setZoomOffset(zoomOffset() - 1);
-			reopen();
-		},
-	});
-	zoomOut.position.set(0, y);
-	window.content.addChild(zoomOut);
-	const zoomIn = new Button({
-		width: zoomStep,
-		height: 22,
-		text: '+',
-		onClick: () => {
-			setZoomOffset(zoomOffset() + 1);
-			reopen();
-		},
-	});
-	zoomIn.position.set(window.contentWidth - zoomStep, y);
-	window.content.addChild(zoomIn);
-	const offset = zoomOffset();
-	const zoomLevel = new Label({
-		text: offset === 0 ? '0' : `${offset > 0 ? '+' : '-'}${Math.abs(offset)}`,
-		size: 8,
-		wrapWidth: window.contentWidth - zoomStep * 2 - 8,
-		align: 'center',
-		color: theme().color.text,
-	});
-	zoomLevel.position.set(zoomStep + 4, y + 11 - zoomLevel.height / 2);
-	window.content.addChild(zoomLevel);
-	y += 26;
-	//`WndSettings$DisplayTab`: brightness (-1..1) and screen shake (0..4) steppers - the
-	//fog and `shakeScreen` seams read the levels live, so stepping re-renders in place.
-	stepperRow(t('windows.wndsettings$displaytab.brightness'), String(brightness()),
-		() => setBrightness(brightness() - 1),
-		() => setBrightness(brightness() + 1));
-	stepperRow(t('windows.wndsettings$displaytab.screenshake'), String(screenShake()),
-		() => setScreenShake(screenShake() - 1),
-		() => setScreenShake(screenShake() + 1));
-	//`WndSettings$UITab.vibration()`: Java's UI tab has no seam in this single-window
-	//port, so its toggle lives here - model-only for now (no haptics seam), like the
-	//persisted-only grid/follow settings.
-	const vibrationButton = new Button({
-		width: window.contentWidth,
-		height: 22,
-		text: `${vibration() ? '✓ ' : ''}${t('windows.wndsettings$uitab.vibration')}`,
-		onClick: () => {
-			setVibration(!vibration());
-			reopen();
-		},
-	});
-	vibrationButton.position.set(0, y);
-	window.content.addChild(vibrationButton);
-	y += 26;
-	const close = new Button({ width: window.contentWidth, height: 18, text: t('port.window.close'), onClick: () => window.close() });
-	close.position.set(0, y);
-	window.content.addChild(close);
-	y += 18;
-	window.resize(width, chrome + y + 8);
 	windows.push(window);
 }
 

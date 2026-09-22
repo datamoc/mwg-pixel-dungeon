@@ -43,6 +43,10 @@ export interface InventoryPanelContext {
 	/** `SPDSettings.interfaceSize()`: large mode gets the wide 10-column bag grid. */
 	readonly wide: boolean;
 	readonly itemDisplayName: (id: string, identified: boolean, instanceId?: string) => string;
+	/** Per-appearance sprite frame (`Potion.reset()`'s shuffled look); absent when the
+	 * context has no appearance table, in which case potions/scrolls keep the generic
+	 * family frame below. */
+	readonly appearanceFrame?: (id: string) => number | undefined;
 	readonly itemDescription?: (id: string, identified: boolean) => string | undefined;
 	readonly addToStage: (panel: InventoryWindow) => void;
 	readonly positionInterface: () => void;
@@ -66,8 +70,8 @@ export function refreshInventoryPanel(context: InventoryPanelContext): void {
 			?? (SPECIALTY_BOMB_IDS.has(id) ? MWL_ITEM_ACTION_RULES.bomb : undefined)
 			?? (id.startsWith('stoneOf') ? MWL_ITEM_ACTION_RULES.stone : undefined)
 			?? (id.startsWith('ring_') ? MWL_ITEM_ACTION_RULES.ring : undefined);
-		if (id.startsWith('potion')) frame = MWL_ITEM_FRAMES.potion ?? frame;
-		else if (id.startsWith('scroll')) frame = MWL_ITEM_FRAMES.scroll ?? frame;
+		if (id.startsWith('potion')) frame = context.appearanceFrame?.(id) ?? MWL_ITEM_FRAMES.potion ?? frame;
+		else if (id.startsWith('scroll')) frame = context.appearanceFrame?.(id) ?? MWL_ITEM_FRAMES.scroll ?? frame;
 		else if (id.startsWith('ring_')) frame = MWL_ITEM_FRAMES.ring ?? frame;
 		if (authoredAction) {
 			const translated = t(authoredAction.actionKey);

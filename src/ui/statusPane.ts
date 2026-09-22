@@ -41,12 +41,23 @@ import type { BuffId } from '../simulation/buffs';
 const BUFF_ICON: Record<string, number> = {
 	//BuffIndicator.MIND_VISION = 0 - Monk's Focus uses this icon (tinted green in Java)
 	focus: 0,
+	mindvision: 0,
 	hungry: 5,
 	starving: 6,
 	//FIRE = 2
 	burning: 2,
+	//BLEEDING = 26 (`Bleeding.java`, tag `v3.3.8`)
+	bleeding: 26,
 	//POISON = 3
 	poison: 3,
+	//FROST = 15; BLINDNESS = 16 (`BuffIndicator.java`, tag `v3.3.8`)
+	frost: 15,
+	blindness: 16,
+	//DROWSY = 29; MAGIC_SLEEP = 30; AMOK = 9; TERROR = 10 (`BuffIndicator.java`)
+	drowsy: 29,
+	magicalSleep: 30,
+	amok: 9,
+	terror: 10,
 	//OOZE = 8
 	ooze: 8,
 	//PARALYSIS = 4; ROOTS = 11; INVISIBLE = 12; LEVITATION = 1
@@ -54,24 +65,41 @@ const BUFF_ICON: Record<string, number> = {
 	roots: 11,
 	invisibility: 12,
 	levitation: 1,
+	//ElixirOfFeatherFall.FeatherBuff uses BuffIndicator.LEVITATION = 1.
+	featherFall: 1,
 	//SHADOWS = 13, the Cloak of Shadows buff
 	cloak: 13,
 	//WEAKNESS = 14
 	weakness: 14,
+	//StoneOfAggression.Aggression uses TARGETED = 54; WaywardBuff reuses WEAKNESS = 14.
+	aggression: 54,
+	wayward: 14,
 	//FURY = 18
 	fury: 18,
+	//HEART = 21 (`Charm.java`)
+	charm: 21,
 	//CRIPPLE = 23
 	cripple: 23,
 	//BLESS = 37
 	bless: 37,
 	//BERSERK = 40
 	berserk: 40,
+	//RECHARGING = 34; HASTE = 41 (`BuffIndicator.java`, tag `v3.3.8`)
+	recharging: 34,
+	haste: 41,
 	//VULNERABLE = 46
 	vulnerable: 46,
 	//HEX = 47
 	hex: 47,
 	//DEGRADE = 48
 	degrade: 48,
+	//IMBUE = 55; IMMUNITY = 25 (`BuffIndicator.java`, tag `v3.3.8`)
+	frostImbue: 55,
+	fireImbue: 55,
+	toxicImbue: 55,
+	blobImmunity: 25,
+	//WELL_FED = 43 (`BuffIndicator.java`, tag `v3.3.8`)
+	wellFed: 43,
 	//DAZE = 70
 	daze: 70,
 	//LIGHT = 22
@@ -80,6 +108,25 @@ const BUFF_ICON: Record<string, number> = {
 	invulnerability: 52,
 	//ARMOR = 20, the PrismaticGuard shield-that-isn't (it hatches, it absorbs nothing)
 	prismaticGuard: 20,
+	//HOLY_WEAPON = 73, HOLY_ARMOR = 74, ILLUMINATED = 81 (`BuffIndicator.java`, tag
+	//`v3.3.8`). These cells are blank in the old-checkout sheets, so `ui_buffs.png`
+	//and `ui_large_buffs.png` are the v3.3.8 sheets byte-for-byte (every previously-used
+	//cell verified pixel-identical first - see `src/images.ts`).
+	holyWeapon: 73,
+	holyWard: 74,
+	illuminated: 81,
+	//SPELL_FOOD = 75, LIGHT_SHIELD = 76 (`BuffIndicator.java`, tag `v3.3.8`) -
+	//the same post-checkout sheet cells as the holy trio above.
+	satiatedSpells: 75,
+	shieldOfLight: 76,
+	//HOLY_SIGHT = 77 (`BuffIndicator.java`, tag `v3.3.8`) - same post-checkout row.
+	divineSense: 77,
+	//GLYPH_RECALL = 78 (same file) - the recall tracker's icon. The sunray markers
+	//have no `icon()` override in Java (`NONE`), so they stay unmapped and unshown.
+	recallUsed: 78,
+	//IMMUNITY = 25 (`BuffIndicator.java`, tag `v3.3.8`) - `PotionOfCleansing.Cleanse`'s
+	//own icon, which the Cleric's `Cleanse` spell prolongs (same post-checkout sheet).
+	cleanseImmunity: 25,
 };
 
 /** buffs.png is 128x64 of 7x7 cells, so TextureFilm walks 18 to a row */
@@ -129,6 +176,8 @@ export interface StatusPaneState {
 export class StatusPane extends Container {
 	private hpBar: Bar;
 	private expBar: Bar;
+	private hpFill: Graphics;
+	private expFill: Graphics;
 	private hpText: Label;
 	private levelText: Label;
 	private placeText: Label;
@@ -203,7 +252,16 @@ export class StatusPane extends Container {
 		this.hpBar.x = 30 * SCALE;
 		this.hpBar.y = 3 * SCALE;
 		this.hpBar.scale.set(SCALE);
+		this.hpBar.visible = false;
 		this.addChild(this.hpBar);
+		//The framework Bar keeps the Java texture rectangles and value semantics above, but its
+		//texture-filled Shape2D is not visible with this atlas source in the browser build. Keep a
+		//small explicit pixel fill for the actual HUD presentation so HP cannot silently disappear.
+		this.hpFill = new Graphics().rect(0, 0, BAR_WIDTH, 4).fill({ color: 0xb83a2a });
+		this.hpFill.x = 30 * SCALE;
+		this.hpFill.y = 3 * SCALE;
+		this.hpFill.scale.set(SCALE);
+		this.addChild(this.hpFill);
 
 		//EXP: Image(asset, 0, 44, 16, 1), stretched across the pane's width
 		this.expBar = new Bar({
@@ -216,14 +274,25 @@ export class StatusPane extends Container {
 		this.expBar.x = 0;
 		this.expBar.y = 0;
 		this.expBar.scale.set(PANE_WIDTH / 16 * SCALE, SCALE);
+		this.expBar.visible = false;
 		this.addChild(this.expBar);
+		this.expFill = new Graphics().rect(0, 0, PANE_WIDTH, 1).fill({ color: 0xe3b632 });
+		this.expFill.x = 0;
+		this.expFill.y = 0;
+		this.expFill.scale.set(SCALE);
+		this.addChild(this.expFill);
 
-		//text sizes are Java's native 6-9 px scaled by the same 1.5x-2x the art gets (`SCALE` = 2): at
-		//8/9 px beside 2x art the hp/level/place text was unreadable on a large screen
-		this.hpText = new Label({ size: 12, color: 0xffffff });
-		this.hpText.alpha = 0.85;
-		this.hpText.x = 34 * SCALE;
-		this.hpText.y = 3 * SCALE;
+		//Java's `hpText` (`StatusPane.layout()`'s small branch): a half-scale pixel-font readout
+		//at 0.6 alpha drawn ON the 4px bar (`x = hp.x + 1`, vertically centred on it), so the
+		//numbers sit inside the bar rather than beside it. A size-12 label here stood 1.5x the
+		//bar's own height and covered the fill's left end, which is exactly the "health bar
+		//looks too thin" report - the bar shrinks visually next to giant text. Size 6 (≈ Java's
+		//3px glyphs at 2x) restores Java's proportion; level/place text below stay at 12, which
+		//already matches Java's own text-to-pane ratio.
+		this.hpText = new Label({ size: 6, color: 0xffffff });
+		this.hpText.alpha = 0.6;
+		this.hpText.x = 31 * SCALE;
+		this.hpText.y = 3 * SCALE + 1;
 		this.addChild(this.hpText);
 
 		//the level tag sits in the frame's left-hand plate, where Java draws it at ~27.5,28
@@ -281,12 +350,16 @@ export class StatusPane extends Container {
 		this.talentDot.visible = state.talentPointsAvailable === true;
 		//hp.scale.x = max(0, (health - shield)/max); no shielding here, so health/max
 		const shield = state.shield ?? 0;
-		this.hpBar.setValue(state.maxHp > 0 ? Math.max(0, state.hp - shield) / state.maxHp : 0);
+		const hpFraction = state.maxHp > 0 ? Math.max(0, state.hp - shield) / state.maxHp : 0;
+		this.hpBar.setValue(hpFraction);
+		this.hpFill.scale.x = SCALE * hpFraction;
 		this.hpText.setText(`${Math.max(0, state.hp)}/${state.maxHp}`);
 
 		//exp.scale.x = (width/exp.width) * hero.exp / hero.maxExp() - the width factor is
 		//baked into this bar's own scale, so only the fraction is set here
-		this.expBar.setValue(state.maxExp > 0 ? state.exp / state.maxExp : 0);
+		const expFraction = state.maxExp > 0 ? state.exp / state.maxExp : 0;
+		this.expBar.setValue(expFraction);
+		this.expFill.scale.x = SCALE * expFraction;
 
 		this.levelText.setText(String(state.level));
 		this.placeText.setText(state.place);
@@ -345,6 +418,10 @@ export class StatusPane extends Container {
 			);
 			//Monk's Focus is hardlit green in Java (tintIcon: 0.25, 1.5, 1.0)
 			if (buff === 'focus') icon.tint = 0x40ff80;
+			//`PotionOfCleansing.Cleanse.tintIcon` hardlights the immunity icon pink
+			//(1.0, 0.0, 2.0); a multiply tint cannot exceed 1 per channel, so this
+			//is the closest magenta (red kept, green dropped, blue kept).
+			if (buff === 'cleanseImmunity') icon.tint = 0xff00ff;
 			icon.x = x;
 			icon.scale.set(SCALE);
 			//`WndInfoBuff`: Java opens the buff's own info window on click. `onBuffClick` reads

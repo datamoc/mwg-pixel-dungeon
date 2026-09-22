@@ -38,17 +38,58 @@ const ICON_TEXT_KIND: Partial<Record<BuffId | 'hungry' | 'starving', 'flavour' |
 	hex: 'flavour',
 	daze: 'flavour',
 	weakness: 'flavour',
+	aggression: 'flavour',
+	wayward: 'flavour',
 	vulnerable: 'flavour',
 	cripple: 'flavour',
 	paralysis: 'flavour',
 	roots: 'flavour',
 	levitation: 'flavour',
+	featherFall: 'flavour',
 	invisibility: 'flavour',
 	light: 'flavour',
 	degrade: 'flavour',
+	frost: 'flavour',
+	blindness: 'flavour',
+	mindvision: 'flavour',
+	frostImbue: 'flavour',
+	fireImbue: 'left',
+	toxicImbue: 'left',
+	blobImmunity: 'flavour',
+	drowsy: 'flavour',
+	//Amok extends FlavourBuff and gets Java's countdown text, but does not override
+	//iconFadePercent(), so its icon remains unfaded like the plain Buff default.
+	amok: 'flavour',
+	terror: 'flavour',
+	//`WellFed.iconTextDisplay()` returns `(int)(left / SaltCube.hungerGainMultiplier()) + 1`;
+	//this port has no SaltCube modifier, so the scene's raw left clock is the displayed value.
+	wellFed: 'flavour',
+	//Charm, Recharging and Haste all extend FlavourBuff at tag v3.3.8.
+	charm: 'flavour',
+	recharging: 'flavour',
+	haste: 'flavour',
 	invulnerability: 'flavour',
+	//`HolyWepBuff`/`HolyArmBuff` are `FlavourBuff`s with `DURATION = 50`, so both
+	//show `(int)visualcooldown()`. `Illuminated` is a plain `Buff` with no
+	//`iconTextDisplay()` override - nothing to show, like `Fury`.
+	holyWeapon: 'flavour',
+	holyWard: 'flavour',
+	//`ShieldOfLightTracker`, `DivineSenseTracker` and `UsedItemTracker` are all
+	//`FlavourBuff`s with no `iconTextDisplay()` override (tag `v3.3.8`) - the standard
+	//+1 countdown on large icons.
+	shieldOfLight: 'flavour',
+	divineSense: 'flavour',
+	recallUsed: 'flavour',
+	//`PotionOfCleansing.Cleanse` is a `FlavourBuff` with no `iconTextDisplay()`
+	//override (tag `v3.3.8`) - the standard +1 countdown on large icons, and its
+	//`iconFadePercent()` is the same `DURATION`-based fade the generic branch
+	//computes from the duration table (`DURATION = 5`).
+	cleanseImmunity: 'flavour',
 	burning: 'left',
-	ooze: 'left',
+	//`Bleeding.iconTextDisplay()` is `(int)Math.round(level)`, not a cooldown.
+	//The port stores that intensity in the buff value, so it is the same direct number.
+	bleeding: 'left',
+	 ooze: 'left',
 	//`Poison.iconTextDisplay()` is `(int)left` where `left` is the *damage* pool, while
 	//this port's poison value ticks down as remaining turns - same integer-countdown shape,
 	//different quantity underneath (stated in `PORT_COVERAGE.md`).
@@ -69,6 +110,7 @@ export function buffIconText(id: BuffId | 'hungry' | 'starving', turns: number |
 	const kind = ICON_TEXT_KIND[id];
 	if (!kind || turns === undefined) return null;
 	if (kind === 'flavour') return String(Math.max(0, Math.trunc(turns + 1)));
+	if (id === 'bleeding') return String(Math.max(0, Math.round(turns)));
 	return String(Math.max(0, Math.trunc(turns)));
 }
 
@@ -90,9 +132,20 @@ export function buffIconFade(id: BuffId | 'hungry' | 'starving', turns: number |
 	if (turns === undefined) return 0;
 	const duration = (BUFF_DURATION as Partial<Record<string, number>>)[id] ?? 0;
 	if (!(duration > 0) || duration >= 9999) return 0;
-	if (id === 'burning' || id === 'ooze') {
+	if (id === 'burning' || id === 'ooze' || id === 'fireImbue' || id === 'toxicImbue') {
 		return Math.min(1, Math.max(0, (duration - turns) / duration));
 	}
+	//`WellFed.iconFadePercent()` uses Hunger.STARVING (450) directly, not the visual
+	//left-plus-one value used by FlavourBuff. Keep the Java boundary at a fresh 450.
+	if (id === 'wellFed') return Math.min(1, Math.max(0, (duration - turns) / duration));
+	if (id === 'amok') return 0;
+	//Aggression's Java fade is target-dependent (DURATION 20, or DURATION/4 for
+	//bosses/minibosses), but the compact status value does not retain its target class.
+	//Keep the icon visible rather than applying the wrong fixed fade curve.
+	if (id === 'aggression') return 0;
 	if (ICON_TEXT_KIND[id] !== 'flavour') return 0;
-	return Math.min(1, Math.max(0, (duration - (turns + 1)) / duration));
+	//`UsedItemTracker.iconFadePercent()` reads the rank's own duration (10 or 300);
+	//the table only pins the rank-1 default, so live turns above 10 imply rank 2.
+	const fadeBase = id === 'recallUsed' && (turns ?? 0) > 10 ? 300 : duration;
+	return Math.min(1, Math.max(0, (fadeBase - (turns + 1)) / fadeBase));
 }

@@ -39,9 +39,10 @@ export function openGameMenu({ windows, gameOver, canLeave, saveRun, startNewRun
 	entries.push({
 		label: t('windows.wndgame.settings'),
 		icon: 'prefs',
-		//a language change rebuilds the interface; mid-run that means keeping the run and simply
-		//dismissing the menu (`WndSettings` changes language in place)
-		onClick: closeThen(() => showSettingsWindow(windows, () => undefined)),
+		//a language change rebuilds the interface; mid-run that means keeping the run
+		//and reopening settings with fresh labels (`WndSettings` changes language in
+		//place in Java - this is the closest without a scene rebuild)
+		onClick: closeThen(() => showSettingsWindow(windows, () => showSettingsWindow(windows, () => undefined))),
 	});
 	if (challenges().size > 0) {
 		entries.push({ label: t('windows.wndgame.challenges'), icon: 'challenge', onClick: closeThen(() => showChallengesWindow(windows)) });
