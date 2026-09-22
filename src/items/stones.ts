@@ -1,5 +1,5 @@
 import { Random, Roguelike, type Actors } from 'mwg';
-import { addBuff, type Creature, type Step } from '../combat';
+import { addBuff, reigniteBuff, type Creature, type Step } from '../combat';
 import { t } from '../i18n';
 import { mwlItemEffectValue } from '../mwlContent';
 
@@ -225,8 +225,13 @@ export function useStoneOfShock(scene: StoneContext, instanceId?: string): void 
 			scene.armRecallInscription('StoneOfShock');
 			let hits = 0;
 			for (const creature of scene.creatures) {
-				if (creature.isHero || creature.isNPC || Roguelike.chebyshevDistance(center, creature) > stoneValue('shockBurstRadius')) continue;
-				addBuff(creature, 'paralysis');
+				//`StoneOfShock.activate()` (`StoneOfShock.java`, tag `v3.3.8`) prolongs
+				//`Paralysis` 1 on every `Actor.findChar` in the burst - including the
+				//hero, with no exclusion. The old branch dealt the table-default 3
+				//and skipped the hero outright. NPCs stay excluded by this port's
+				//standing area-effect convention (same as every other blast here).
+				if (creature.isNPC || Roguelike.chebyshevDistance(center, creature) > stoneValue('shockBurstRadius')) continue;
+				reigniteBuff(creature, 'paralysis', 1);
 				hits++;
 			}
 			if (hits > 0) {

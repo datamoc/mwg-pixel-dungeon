@@ -1690,6 +1690,9 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 		assert.equal(Number(lootByMonster.get(kind).chance), chance, kind + ' equipment base chance');
 		assert.equal(String(lootByMonster.get(kind).kind), 'armor', kind + ' weapon-or-armor folds to armor');
 	}
+	//`Monk.lootChance` is 0.083f (`Monk.java`, tag `v3.3.8`), not the round 0.1 the
+	//row carried (ACP #306).
+	assert.equal(Number(lootByMonster.get('monk').chance), 0.083, 'monk food base chance');
 	for (const [id, expected] of Object.entries(EXPECTED_MONSTER_STATS)) {
 		const monster = mwlMonsterById.get(id);
 		assert.ok(monster, `MWL monster is present: ${id}`);
@@ -3853,9 +3856,10 @@ function talismanDrive(overrides = {}) {
 	// `Talent.onFoodEaten()` via `applyMealEatenEffects` (tag `v3.3.8`): the meal talents
 	// shared by ordinary food and `HornOfPlenty.doEatEffect()` (horn callers pass base 0 -
 	// the horn grants satiety, never HP). combat.ts is stubbed: the helper under test never
-	// touches addBuff/reigniteBuff (only the mystery-meat branch does, untested here); the
-	// challenges/i18n stubs above already cover this module's other two imports.
-	writeFileSync(join(out, 'combat.js'), 'exports.addBuff = () => {};\nexports.reigniteBuff = () => {};\n');
+	// touches addBuff/reigniteBuff (only the mystery-meat branch does, untested here), and
+	// nothing under test reads buffBlocked (the retribution branch does - stubbed open);
+	// the challenges/i18n stubs above already cover this module's other two imports.
+	writeFileSync(join(out, 'combat.js'), 'exports.addBuff = () => {};\nexports.reigniteBuff = () => {};\nexports.buffBlocked = () => false;\n');
 	compile(join(root, 'src/talentEffects.ts'), 'talentEffects.js');
 	compile(join(root, 'src/items/consumables.ts'), 'items/consumables.js');
 	const { applyMealEatenEffects, eatFood } = require('./items/consumables.js');
@@ -3963,7 +3967,7 @@ function scrollReadDrive(overrides = {}) {
 		synced: 0, procIdentify: 0, transmuteCalls: [], recalled: [],
 		empowered: 0, weaponAffix: overrides.weaponAffix ?? null, armorGlyph: null,
 	};
-	const hero = { buffs: { ...(overrides.heroBuffs ?? {}) } };
+	const hero = { hp: overrides.heroHp ?? 20, maxHp: overrides.heroMaxHp ?? 20, buffs: { ...(overrides.heroBuffs ?? {}) } };
 	const bag = new Inventory();
 	for (const item of overrides.items ?? []) bag.add(item);
 	const ring = overrides.ring ?? null;
@@ -4080,6 +4084,27 @@ function scrollReadDrive(overrides = {}) {
 	assert.deepEqual(mirror.flags.recalled, ['ScrollOfMirrorImage'], 'mirror images too');
 	const prism = scrollReadDrive({ items: [{ id: 'scrollPrismatic', quantity: 1, identified: true }] });
 	assert.deepEqual(prism.flags.recalled, ['ScrollOfPrismaticImage'], 'and the exotic prismatic');
+	//`ScrollOfRetribution.doRead()` (`ScrollOfRetribution.java`, tag `v3.3.8`): at 75%
+	//missing HP the power is min(4, 4.45*0.75) = 3.3375, so damage is
+	//round(maxHp*0.1 + hp*3.3375*0.225) per visible mob; survivors take daze 10
+	//(the `Blindness` stand-in) and so does the reader, who also takes weakness.
+	const frail = { isHero: false, isNPC: false, hp: 3, maxHp: 100, buffs: {}, x: 1, y: 1 };
+	const hearty = { isHero: false, isNPC: false, hp: 60, maxHp: 100, buffs: {}, x: 2, y: 2 };
+	const retrib = scrollReadDrive({
+		items: [{ id: 'scrollRetribution', quantity: 1, identified: true }],
+		heroHp: 5, heroMaxHp: 20, creatures: [frail, hearty],
+		ctx: { kill: (c) => { c.dead = true; } },
+	});
+	assert.equal(retrib.result, true, 'retribution reads');
+	assert.equal(frail.hp, 3 - 12, 'the frail mob takes round(10 + 3*3.3375*0.225)');
+	assert.equal(frail.dead, true, 'and dies');
+	assert.equal(frail.buffs.daze, undefined, 'the dead take no blindness');
+	assert.equal(hearty.hp, 60 - 55, 'the hearty mob takes round(10 + 60*3.3375*0.225)');
+	assert.equal(hearty.buffs.daze, 10, 'a survivor is blinded');
+	assert.equal(retrib.hero.buffs.daze, 10, 'and so is the reader');
+	//Weakness rides the stubbed `addBuff` (a no-op in this harness), so its call is
+	//pinned at source level instead of behaviorally.
+	assert.match(readFileSync(join(root, 'src/items/scrollEffects.ts'), 'utf8'), /addBuff\(hero, 'weakness'\)/);
 }
 {
 	// A free re-read (RecallInscription's talentChance = 0): the effect runs, but
@@ -4120,6 +4145,14 @@ function scrollReadDrive(overrides = {}) {
 // reports its Java class on activation - even wasted aims and first-click guesses,
 // which is when Java's onThrow/guess-click fires rather than on a hit or a consume.
 const { useStoneOfFlock, useStoneOfFear, useStoneOfIntuition, recastStone } = require('./items/stones.js');
+// `StoneOfShock.activate()` (`StoneOfShock.java`, tag `v3.3.8`) prolongs `Paralysis`
+// 1 on every `findChar` in the burst - including the hero - not the table-default 3
+// on mobs only. Pinned at source level because `combat` is stubbed in this harness.
+{
+	const stones = readFileSync(join(root, 'src/items/stones.ts'), 'utf8');
+	assert.match(stones, /reigniteBuff\(creature, 'paralysis', 1\)/);
+	assert.doesNotMatch(stones, /creature\.isHero \|\| creature\.isNPC/);
+}
 function stoneDrive(overrides = {}) {
 	const said = [];
 	const armed = [];

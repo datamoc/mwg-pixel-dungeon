@@ -217,6 +217,13 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	if (defender.kind === 'fetidRat') {
 		ctx.stenchGas.seed(defender.x, defender.y, 20);
 	}
+	//`Acidic.defenseProc()` (`Acidic.java`, tag `v3.3.8`): a struck acidic oozes an
+	//adjacent attacker (`Dungeon.level.adjacent`, i.e. Chebyshev 1). The attacker-side
+	//ooze above covers the acidic's own hits; nothing covered hitting one back.
+	if (defender.kind === 'acidic' && Roguelike.chebyshevDistance(defender, attacker) === 1) {
+		addBuff(attacker, 'ooze');
+		ctx.say(t(attacker.isHero ? 'port.log.oozedhero' : 'port.log.oozed', { who: capitalize(attacker.name) }), 'negative');
+	}
 	if (attacker.kind === 'fetidRat' && Random.chance(1 / 3)) {
 		addBuff(defender, 'ooze');
 		ctx.say(t(defender.isHero ? 'port.log.oozedhero' : 'port.log.oozed', { who: capitalize(defender.name) }), 'negative');
@@ -257,13 +264,21 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 			ctx.say(t('port.log.trickstervenom'), 'negative');
 		}
 	}
-	//Succubus: 1/3 charm (daze) and feeds 5+damage on a charmed victim
+	//Succubus.attackProc() (`Succubus.java`, tag `v3.3.8`): feeds ONLY on a victim
+	//that arrives already charmed - a fresh 1/3 charm (with `ignoreNextHit`) never
+	//feeds the same hit - and converts feed overflow past full HP into a `Barrier`
+	//shield. The old branch checked daze after applying it, feeding on the very hit
+	//that landed the charm. The shield half has no expression (no per-mob shield
+	//pool exists - the same precedent the Bless row states), so the feed still caps
+	//at missing HP, stated rather than upgraded silently. Any live `daze` reads as
+	//charmed (the stand-in), even from non-succubus sources - inherent to it.
 	if (attacker.kind === 'succubus' && defender.isHero) {
+		const alreadyCharmed = defender.buffs['daze'] !== undefined;
 		if (Random.chance(1 / 3)) {
 			addBuff(defender, 'daze');
 			ctx.say(t('port.log.charm'), 'negative');
 		}
-		if (defender.buffs['daze']) {
+		if (alreadyCharmed) {
 			const feed = Math.min(5 + damage, attacker.maxHp - attacker.hp);
 			if (feed > 0) {
 				attacker.hp += feed;

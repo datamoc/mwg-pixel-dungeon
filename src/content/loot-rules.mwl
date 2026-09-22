@@ -175,7 +175,7 @@
           {
             tag: "row",
             monster: "monk",
-            chance: 0.1,
+            chance: 0.083,
             kind: "food",
           },
           {

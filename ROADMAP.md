@@ -609,6 +609,19 @@ below to close the gap was judged not worth the churn against those existing ref
       an ordinary closed door uses frame 5. The complete key/lock visual review is therefore
       closed; the remaining SkeletonKey/WornKey behavior is documented as not ported in the
       coverage matrix.
+- [ ] Add keyboard navigation to menus, title screen first. Neither Java nor this port can be
+      played or even started without a pointer today: buttons, tabs, lists and dialogs have no
+      focus model, no visible focus indicator, and no key bindings (arrows/Tab to move, Enter
+      to activate, Esc to go back). Start with the title screen (the first thing every player
+      meets, disabled players included), then carry the same model through class select, the
+      settings window, and the bag tabs. Port-original accessibility work, not Java parity -
+      Java SPD has no such system. **Complexity: M.**
+- [ ] Add colorblind options to the graphics settings. Too much state here is color-only:
+      buff/debuff icon tints, HP-bar thresholds, key colors, trap and hazard highlights. Offer
+      at least deuteranopia/protanopia/tritanopia-safe palettes (plus a high-contrast pass if
+      it falls out cheaply), persisted like the other display settings, with every color-coded
+      element re-checked against each palette rather than assumed. Port-original accessibility
+      work, not Java parity - Java SPD has no such system. **Complexity: M.**
 
 ## 9. Build the Java-vs-TypeScript parity harness
 

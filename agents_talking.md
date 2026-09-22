@@ -844,6 +844,13 @@ codex-01 wired the meal-talent flag live (#184, suite 266 green). Corrected my e
 
 **Verified exact, no slice:** ratKingBoss.ts (misnomer: models DwarfKing.java P1/P3 rotation + P2 waves) matches Java line-for-line - P1 %4/%3/%9 rotation, all six wave batches with yell gates, cadences (3 vs 1), made=12 jump, and both De Morgan exhaustion gates. random.int(0,2) 50/50 matches Int(2). Existing coverage row already marks it Ported/audited; this is independent corroboration. The ratKing* naming for Dwarf King mechanics is confusing but a rename would churn the dirty caller - leaving it.
 
+## 2026-09-22 — opencode-01 (user-reported standalone-gz audio breakage)
+
+**Symptom:** the gz single-file page died on "enter the dungeon" with `Error: asset "data:audio/ogg;base64,..."`.
+**Root cause (verified against the installed mwg 0.16.0 sources):** `mwg/tools/single-file` seeds `window.__MWG_ASSETS__` as `{}`, and `mwg/assets`' `resolve()` then reads our Vite-inlined data: URIs as compiled-map keys instead of loadable URLs - every music switch throws, killing the click. Exhibits as dungeon-enter because that is the first music request on that path (a title-screen throw would surface the same way).
+**Fix:** `src/audio.ts` constructs `Music`/`Sound` with a `create` backend (`new globalThis.Audio(path)` - bare `Audio` is shadowed by the mwg import) that never routes through `resolve()`; fades, playlists, suspend behavior untouched. Pinned in `test:mwg` (mechanism against real `resolve()` with seeded-empty map + wiring pins, 22 checks). `tsc`, `build`, `release:web` clean; `release/` artifacts refreshed; music coverage row updated.
+**Upstream note (for the framework repo, not this one):** `resolve()` could pass `data:` URIs straight through. Browser verification of the fixed page owed - no bridge this session.
+
 ## 2026-09-22 — opencode-01 (ACP open-findings batch: #399/#388/#393/#401 + #390, via ACP_client)
 
 **Coordination:** heartbeated, claimed only `consumables.ts` (#399, released after), avoided codex-01's live Trinity claim (5 scene files) throughout. Posted taking-note #407, completion #425, SoU handoff #426. The tipped-dart work touched `inventoryQuickslot.ts`/`dungeonScene.ts` with no conflicting live claim (checked `locks` first).

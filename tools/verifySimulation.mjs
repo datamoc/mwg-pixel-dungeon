@@ -424,7 +424,7 @@ check('the moved hero plant-effect switch fires every branch', () => {
 	assert.deepEqual(r.rec.shakes, []);
 	//Blindweed: a Warden turns invisible, everyone else is dazed and crippled.
 	r = drive('blindweed');
-	assert.deepEqual(r.rec.grants, [['daze', undefined]]);
+	assert.deepEqual(r.rec.grants, [['daze', 10]], 'blindness arrives as daze for the whole Blindness.DURATION');
 	assert.deepEqual(r.rec.prolongs, [['cripple', undefined]]);
 	assert.ok(r.rec.said[0].line.includes('clouds your senses'));
 	r = drive('blindweed', {}, 'warden');
@@ -481,7 +481,7 @@ check('the moved hero plant-effect switch fires every branch', () => {
 	r = drive('stormvine', {}, 'warden');
 	assert.deepEqual(r.rec.grants, [['levitation', 10]]);
 	r = drive('stormvine');
-	assert.deepEqual(r.rec.grants, [['daze', undefined]]);
+	assert.deepEqual(r.rec.grants, [['daze', 10]], 'vertigo arrives as daze for the whole Vertigo.DURATION');
 	//Swiftthistle banks seven bubble turns, plus one hasted turn for a Warden.
 	r = drive('swiftthistle');
 	assert.equal(r.rec.bubble, 7);
@@ -536,7 +536,7 @@ check('the moved mob plant-effect switch fires every branch', () => {
 	}
 	//Blindweed dazes, cripples, blinds to patrol and marks.
 	let m = driveMob('blindweed');
-	assert.deepEqual(m.rec.grants, [['daze', undefined]]);
+	assert.deepEqual(m.rec.grants, [['daze', 10]]);
 	assert.deepEqual(m.rec.prolongs, [['cripple', undefined]]);
 	assert.equal(m.creature.seesHero, false);
 	assert.deepEqual(m.creature.patrolTarget, { x: 0, y: 0 });
@@ -556,7 +556,7 @@ check('the moved mob plant-effect switch fires every branch', () => {
 	assert.deepEqual(m.rec.hazards, ['rat']);
 	//Stormvine dazes and marks.
 	m = driveMob('stormvine');
-	assert.deepEqual(m.rec.grants, [['daze', undefined]]);
+	assert.deepEqual(m.rec.grants, [['daze', 10]]);
 	assert.deepEqual(m.rec.hazards, ['rat']);
 	//Icecap freezes all nine passable neighbours and marks the 3x3, with no status.
 	m = driveMob('icecap');

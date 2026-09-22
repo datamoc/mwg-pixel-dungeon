@@ -25886,7 +25886,7 @@ export const gameData = {
 							"tag": "row",
 							"attributes": {
 								"monster": "monk",
-								"chance": "0.1",
+								"chance": "0.083",
 								"kind": "food"
 							},
 							"children": [],

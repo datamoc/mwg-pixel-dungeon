@@ -1055,7 +1055,9 @@ export const monsterAiMethods = {
 		}
 		this.spawnProjectile(monster, target);
 		const type = monster.elementalType ?? 'fire';
-		if (type === 'fire' && this.level.get(target.x, target.y) !== WATER) addBuff(target, 'burning');
+		//`FireElemental.rangedProc()` (`Elemental.java`, tag `v3.3.8`) reignites
+		//Burning with an explicit 4, not the table-default 8.
+		if (type === 'fire' && this.level.get(target.x, target.y) !== WATER) reigniteBuff(target, 'burning', 4);
 		else if (type === 'frost') {
 			target.buffs = applyChillFreeze(target.buffs).buffs;
 		} else if (type === 'shock') addBuff(target, 'daze');

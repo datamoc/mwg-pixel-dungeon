@@ -698,6 +698,19 @@ export function verifyCombat(require, check) {
 		assert.ok(scene.includes('Math.floor(full / 2)'),
 			'lucky gold is halved at the low tier');
 	});
+	check('FireElemental reignites at 4 and Acidic oozes adjacent attackers', () => {
+		// `FireElemental.rangedProc()` reignites Burning with an explicit 4f, not the
+		// table-default 8 (`Elemental.java`, tag `v3.3.8`); `Acidic.defenseProc()`
+		// (`Acidic.java`) oozes adjacent (Chebyshev-1) attackers. Keep these
+		// source-level pins beside the pure combat checks because the scene and
+		// the mob-hit seam own the actual buff writes.
+		const scene = readSceneSource();
+		assert.ok(scene.includes("reigniteBuff(target, 'burning', 4)"),
+			'fire elemental ranged reignite is the explicit 4');
+		const mobOnHit = readFileSync(new URL('../src/scenes/mobOnHit.ts', import.meta.url), 'utf8');
+		assert.ok(mobOnHit.includes("defender.kind === 'acidic'") && mobOnHit.includes('Roguelike.chebyshevDistance(defender, attacker) === 1'),
+			'acidic oozes adjacent attackers on the defender seam');
+	});
 	check('GrimTrap mixes half max with half current HP, and the stock-bomb blast is 4+d..12+3d with no falloff', () => {
 		// round(HT/2 + HP/2): full-health 100 -> 100 (hero-capped to 90 at the call site)
 		assert.equal(grimTrapDamage(100, 100), 100);

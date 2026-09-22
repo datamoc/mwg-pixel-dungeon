@@ -1,6 +1,6 @@
 import { Actors, Roguelike } from 'mwg';
 import { CLASS_AMMO, type ClassId } from '../classes';
-import { addBuff, type BuffId, type Creature, type Step } from '../combat';
+import { addBuff, buffBlocked, type BuffId, type Creature, type Step } from '../combat';
 import { t } from '../i18n/index';
 import { mwlItemEffectValue } from '../mwlContent';
 import { prismaticGuardMaxHp } from '../simulation/prismatic';
@@ -119,8 +119,16 @@ export function applyScrollEffect(id: string, context: ScrollEffectsContext): bo
 			creature.hp -= damage;
 			context.showDamage(creature, damage);
 			if (creature.hp <= 0) context.kill(creature);
+			//`ScrollOfRetribution.doRead()` (`ScrollOfRetribution.java`, tag `v3.3.8`)
+			//prolongs `Blindness` (10) on every damaged survivor plus the reader.
+			//Java's Blindness is vision-only (no `act()` override, no stat touch -
+			//blinded chars just see less far), which has no seam here; `daze` is the
+			//standing stand-in (same as the Dazzling curse), overstating slightly
+			//since it also halves rolls. Survivors only, matching Java's `isAlive()`.
+			else if (!buffBlocked(creature, 'daze')) creature.buffs['daze'] = Math.max(creature.buffs['daze'] ?? 0, 10);
 		}
 		addBuff(hero, 'weakness');
+		if (!buffBlocked(hero, 'daze')) hero.buffs['daze'] = Math.max(hero.buffs['daze'] ?? 0, 10);
 		context.say(t('items.scrolls.scrollofretribution.blast'), 'warning');
 		return true;
 	}

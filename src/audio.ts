@@ -19,6 +19,24 @@ function asset(folder: 'music' | 'sounds', name: string): string {
 	return found;
 }
 
+/**
+ * Element factory for `mwg`'s audio backend: `new Audio(path)` directly, never through
+ * `mwg/assets`' `resolve()`. This build inlines every clip as a `data:` URI (see
+ * `vite.config.ts`'s `assetsInlineLimit`), and a data URI is already loadable - but
+ * `resolve()` reads it as a *key* into the compiled asset map, and the standalone page
+ * seeds that map as an empty `{}` (`mwg/tools/single-file`), so the lookup misses and
+ * every music switch throws `asset "data:audio/ogg;..." is not in this build`, which is
+ * what killed the "enter the dungeon" click (the first music request on that path).
+ * Bypassing resolution keeps the fades, playlists and suspend behavior - all of that
+ * lives in `Music`/`Sound` themselves - while making playback independent of the map.
+ * Pinned by `test:mwg` against the real 0.16.0 `resolve()` with a seeded-empty map.
+ */
+function createElement(path: string): HTMLAudioElement {
+	//`Audio` alone would resolve to `mwg`'s imported `Audio` namespace here, not the
+	//DOM constructor - hence the explicit `globalThis`.
+	return new globalThis.Audio(path);
+}
+
 export type AudioRegion = 'sewers' | 'prison' | 'caves' | 'city' | 'halls';
 
 const MUSIC_BASE_VOLUME = 0.42;
@@ -27,7 +45,7 @@ export class SpdAudio {
 	/** This port's full-volume music level - Java plays `Music` at device volume, this port
 	 * at a fixed base the volume slider scales quadratically (`volumeCurve`), so 10 keeps
 	 * today's level exactly. */
-	private readonly music = new Audio.Music({ volume: MUSIC_BASE_VOLUME * volumeCurve(musicVolume()) });
+	private readonly music = new Audio.Music({ volume: MUSIC_BASE_VOLUME * volumeCurve(musicVolume()), create: createElement });
 	private readonly cues = new Map<string, Audio.Sound>();
 	private currentTrack: string | null = null;
 	private musicOff = isMusicMuted();
@@ -137,7 +155,7 @@ export class SpdAudio {
 		if (this.sfxOff) return;
 		let sound = this.cues.get(name);
 		if (!sound) {
-			sound = new Audio.Sound(asset('sounds', `${name}.mp3`), { poolSize: name === 'step' ? 6 : 4, volume });
+			sound = new Audio.Sound(asset('sounds', `${name}.mp3`), { poolSize: name === 'step' ? 6 : 4, volume, create: createElement });
 			this.cues.set(name, sound);
 		}
 		// Ready-made sfx path - Java's `Sample.play(id, volume)` multiplies the call-site

@@ -20,6 +20,8 @@ import { TargetingController, MultiTurnBeam, coneSector } from 'mwg/roguelike';
 import { EntityRegistry } from 'mwg/core';
 import { contentCatalog, validateCatalog, compileSources } from 'mwg/mwl';
 import { craft } from 'mwg/actors';
+import { resolve as resolveAssetPath } from 'mwg/assets/paths';
+import { readFileSync } from 'node:fs';
 
 const checks = [];
 const pass = (label, condition) => {
@@ -102,6 +104,36 @@ const tableReferenceProbe = validateCatalog(compileSources([]), {
 pass(
 	'adopted: validateCatalog honors tableReferences',
 	tableReferenceProbe.some((diagnostic) => diagnostic.code === 'MWL_TABLE_REFERENCE')
+);
+
+// Standalone-gz audio regression (user report: "enter the dungeon" dies with
+// `Error: asset "data:audio/ogg;..."`): the single-file page seeds
+// `window.__MWG_ASSETS__` as `{}`, and mwg's `resolve()` then reads our
+// Vite-inlined data: URIs as map keys instead of loadable URLs, throwing on the
+// first music switch. `src/audio.ts` therefore constructs `Music`/`Sound` with a
+// `create` backend that builds `new Audio(path)` directly, never resolving.
+const standaloneGlobals = globalThis.window;
+globalThis.window = { __MWG_ASSETS__: {} };
+let resolveThrew = null;
+try {
+	resolveAssetPath('data:audio/ogg;base64,T2dnUwACAAAAAAAAAAB1NAAAAAAAAFWwkSsBHgF2b3JiaXMAAAAAAkSs');
+} catch (error) {
+	resolveThrew = String(error);
+}
+pass(
+	'mwg resolve() rejects a data: URI against a seeded-empty asset map (the standalone env)',
+	typeof resolveThrew === 'string' && resolveThrew.includes('is not in this build')
+);
+if (standaloneGlobals === undefined) delete globalThis.window;
+else globalThis.window = standaloneGlobals;
+const audioSource = readFileSync(new URL('../src/audio.ts', import.meta.url), 'utf8');
+pass(
+	'audio backend builds elements directly (no mwg resolve)',
+	audioSource.includes('return new globalThis.Audio(path);')
+);
+pass(
+	'Music and Sound both use the direct backend',
+	(audioSource.match(/create: createElement/g) ?? []).length === 2
 );
 
 console.log(`${checks.length} MWG compatibility checks passed.`);

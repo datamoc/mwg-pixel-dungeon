@@ -119,14 +119,15 @@ export function runHeroPlantEffect(
 			if (ctx.isVisible(x, y)) ctx.shake(1, 0.4);
 			break;
 		case 'blindweed':
-			//`Blindweed.activate(ch)`: a Warden gets `Invisibility.DURATION/2` (10, not the
-			//table's whole 20); everyone else gets `Blindness` + `Cripple`, both prolonged
-			//the whole `DURATION` (10 each - the table's cripple is exact now). Blindness
-			//itself arrives as the port's `daze` stand-in: the `blindness` id exists but is
-			//inert for the hero (no hero-FOV-emptying seam), so a faithful-but-silent buff
-			//would be worse than a felt one - see the matrix for the standing seam.
-			if (ctx.subclass() === 'warden') ctx.grantBuff(hero, 'invisibility', 10);
-			else { ctx.grantBuff(hero, 'daze'); ctx.prolongBuff(hero, 'cripple'); }
+		//`Blindweed.activate(ch)`: a Warden gets `Invisibility.DURATION/2` (10, not the
+		//table's whole 20); everyone else gets `Blindness` + `Cripple`, both prolonged
+		//the whole `DURATION` (10 each - the table's cripple is exact now). Blindness
+		//itself arrives as the port's `daze` stand-in at an explicit 10 (not the
+		//table's 5): the `blindness` id exists but is inert for the hero (no
+		//hero-FOV-emptying seam), so a faithful-but-silent buff would be worse than
+		//a felt one - see the matrix for the standing seam.
+		if (ctx.subclass() === 'warden') ctx.grantBuff(hero, 'invisibility', 10);
+		else { ctx.grantBuff(hero, 'daze', 10); ctx.prolongBuff(hero, 'cripple'); }
 			ctx.say(ctx.subclass() === 'warden' ? 'The blindweed shrouds you from sight.' : 'The blindweed clouds your senses.', ctx.subclass() === 'warden' ? 'positive' : 'negative');
 			break;
 		case 'fadeleaf': {
@@ -225,12 +226,12 @@ export function runHeroPlantEffect(
 			ctx.say(ctx.t('port.log.firebloomignite'), 'negative');
 			break;
 		case 'stormvine':
-			//`Stormvine.activate(ch)`: a Warden gets `Levitation.DURATION/2` (10, not the
-			//table's whole 20); everyone else gets `Vertigo.DURATION` (10) of Vertigo,
-			//which arrives as the port's `daze` stand-in at its exact table 5 the way the
-			//confusion-gas row already documents.
-			if (ctx.subclass() === 'warden') ctx.grantBuff(hero, 'levitation', 10);
-			else ctx.grantBuff(hero, 'daze');
+		//`Stormvine.activate(ch)`: a Warden gets `Levitation.DURATION/2` (10, not the
+		//table's whole 20); everyone else gets `Vertigo.DURATION` (10) of Vertigo,
+		//which arrives as the port's `daze` stand-in at an explicit 10 (not the
+		//table's 5).
+		if (ctx.subclass() === 'warden') ctx.grantBuff(hero, 'levitation', 10);
+		else ctx.grantBuff(hero, 'daze', 10);
 			ctx.say(ctx.t('port.log.stormvinetwist'), 'negative');
 			break;
 		case 'swiftthistle':
@@ -303,7 +304,7 @@ export function runMobPlantEffect(
 	//special Warden variants are hero-only; ordinary monsters receive the base effect.
 	switch (kind) {
 		case 'blindweed':
-			ctx.grantBuff(creature, 'daze');
+			ctx.grantBuff(creature, 'daze', 10);
 			//`Blindweed.activate(ch)`: `prolong` (keep-max) `Blindness.DURATION` and
 			//`Cripple.DURATION` - both whole 10s. Blindness itself arrives as the `daze`
 			//stand-in (see the hero branch); the cripple keeps Java's prolong shape.
@@ -332,7 +333,9 @@ export function runMobPlantEffect(
 			ctx.markHazardMob(creature);
 			break;
 		case 'stormvine':
-			ctx.grantBuff(creature, 'daze');
+			//`Stormvine.activate(ch)`: `Vertigo.DURATION` (10), as the `daze`
+			//stand-in at an explicit 10 like the hero half.
+			ctx.grantBuff(creature, 'daze', 10);
 			ctx.markHazardMob(creature);
 			break;
 		case 'icecap':
