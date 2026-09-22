@@ -627,7 +627,18 @@ below to close the gap was judged not worth the churn against those existing ref
       is focused). Browser-verified live via dispatched keyboard events: default focus on
       "Enter the Dungeon", arrow-key movement through the grid, Enter opening the focused
       window, Escape closing it without moving focus, and the ring relocating correctly after
-      a portrait-width resize. Class select, the settings window, and the bag tabs remain open.
+      a portrait-width resize.
+      **Progress 2026-09-22 (second slice): class select is done.** `ClassSelectScene`
+      carries the same focused-portrait/ring model over its 6-class grid (grid-aware:
+      3x2 in landscape, 1x6 in portrait, reusing the layout pass's own bounds). `Confirm`
+      mirrors a portrait click (select) the first time; pressed again on the
+      *already-selected* portrait it dispatches Start directly instead of re-selecting
+      it, so a keyboard player never needs to separately reach the on-screen Start
+      button - a port-original interaction, not Java parity (Java has no keyboard path
+      here at all). `Cancel` already returned to the title screen before this pass.
+      Browser-verified live: default focus, arrow movement across the grid, Enter
+      selecting Rogue (splash art/name/description/Start button all updated), a second
+      Enter beginning the run as Rogue. The settings window and the bag tabs remain open.
 - [ ] Add colorblind options to the graphics settings. Too much state here is color-only:
       buff/debuff icon tints, HP-bar thresholds, key colors, trap and hazard highlights. Offer
       at least deuteranopia/protanopia/tritanopia-safe palettes (plus a high-contrast pass if

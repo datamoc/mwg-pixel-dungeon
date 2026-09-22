@@ -81,9 +81,42 @@ export class ClassSelectScene extends Scene2D {
 		});
 		const back = new Button({ width: 20, height: 20, icon: titleIcon(runState.sprites.uiIcons, 'exit', 1), onClick: () => Game.current.switchScene(TitleScene) });
 		root.addChild(back);
+		//Port-original keyboard-navigation accessibility work (ROADMAP.md section 8 - Java has
+		//no such system), continuing `TitleScene`'s model to the class-select screen: a single
+		//focused portrait, moved by the movement actions, drawn with the same visible ring.
+		//`Confirm` mirrors a portrait click (select) the first time; pressed again on the
+		//*already-selected* portrait it starts the run instead of re-selecting it, so a
+		//keyboard player never needs to reach the separate on-screen Start button.
+		let focusedIndex = 0;
+		const buttonBounds: { x: number; y: number; w: number; h: number }[] = ids.map(() => ({ x: 0, y: 0, w: 0, h: 0 }));
+		const focusRing = new Graphics();
+		focusRing.eventMode = 'none';
+		root.addChild(focusRing);
+		const drawFocusRing = () => {
+			const b = buttonBounds[focusedIndex]!;
+			focusRing.clear().rect(b.x - 2, b.y - 2, b.w + 4, b.h + 4).stroke({ width: 2, color: 0xffffff, alpha: 0.9 });
+		};
+		let focusCols = 3;
+		const moveFocus = (dRow: number, dCol: number): void => {
+			const row = Math.floor(focusedIndex / focusCols), col = focusedIndex % focusCols;
+			const rowCount = Math.ceil(ids.length / focusCols);
+			const nextRow = Math.max(0, Math.min(rowCount - 1, row + dRow));
+			const nextCol = Math.max(0, Math.min(focusCols - 1, col + dCol));
+			const next = nextRow * focusCols + nextCol;
+			focusedIndex = next < ids.length ? next : ids.length - 1;
+			drawFocusRing();
+		};
 		const onAction = (action: string) => {
 			if (action === 'cancel') Game.current.switchScene(TitleScene);
-			if (action === 'confirm' && this.selected) start.onClick.dispatch();
+			if (action === 'up') moveFocus(-1, 0);
+			if (action === 'down') moveFocus(1, 0);
+			if (action === 'left') moveFocus(0, -1);
+			if (action === 'right') moveFocus(0, 1);
+			if (action === 'confirm') {
+				const focusedId = ids[focusedIndex]!;
+				if (this.selected === focusedId && start.visible) start.onClick.dispatch();
+				else buttons[focusedIndex]!.onClick.dispatch();
+			}
 		};
 		Input.onAction.add(onAction);
 		this.onDestroy.add(() => Input.onAction.remove(onAction));
@@ -108,22 +141,30 @@ export class ClassSelectScene extends Scene2D {
 				if (uiHeight >= 180) spacing -= 6;
 				heading.position.set(leftArea / 2, (h - uiHeight) / 2);
 				const bh = uiHeight >= 180 ? 30 : 24;
+				focusCols = 3;
 				buttons.forEach((b, i) => {
 					b.resize(35, bh);
 					b.position.set(Math.round((leftArea - 107) / 2 + (i % 3) * 36), Math.round(heading.y + heading.height + spacing + Math.floor(i / 3) * (bh + 1)));
+					buttonBounds[i] = { x: b.x, y: b.y, w: 35, h: bh };
 				});
 				name.position.set(leftArea / 2, buttons[5].y + bh + 5);
 				description.position.set(leftArea / 2, name.y + name.height + 5);
 				start.position.set(Math.round((leftArea - 80) / 2), heading.y + uiHeight - 21);
 			} else {
 				const bw = Math.min(35, w / ids.length);
-				buttons.forEach((b, i) => { b.resize(bw, 24); b.position.set((w - bw * ids.length) / 2 + i * bw, h - 24); });
+				focusCols = ids.length;
+				buttons.forEach((b, i) => {
+					b.resize(bw, 24);
+					b.position.set((w - bw * ids.length) / 2 + i * bw, h - 24);
+					buttonBounds[i] = { x: b.x, y: b.y, w: bw, h: 24 };
+				});
 				heading.position.set(w / 2, h - 24 - heading.height - 4);
 				name.position.set(w / 2, h - 115);
 				description.position.set(w / 2, h - 100);
 				start.position.set((w - 80) / 2, h - 65);
 			}
 			back.position.set(w - 20, 0);
+			drawFocusRing();
 		};
 		this.layout();
 	}
