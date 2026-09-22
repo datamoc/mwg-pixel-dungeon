@@ -78,14 +78,15 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 		ctx.charmTargets.set(attacker.id, defender.id);
 	}
 	//`Metabolism.proc()` (`items/armor/curses/Metabolism.java`, tag `v3.3.8`):
-	//1-in-6 x arcana, healing `min(STARVING/100, missing HP)` for 10 hunger
-	//each - never while starving, and nothing when already full. What stood
-	//here healed a flat 1 HP for a flat 10 hunger, so a badly-hurt hero got a
-	//fifth of Java's healing for the same price.
+	//1-in-6 x arcana, healing `min(STARVING/100, missing HP)` - and the price is
+	//hunger ADDED, not removed: Java calls `hunger.affectHunger(healing * -10)` and
+	//`affectHunger` subtracts its argument, so the hero gets hungrier by 10x the
+	//healing, capped at STARVING and never while starving. What stood here
+	//subtracted (satiated), making the curse heal and feed - a pure benefit.
 	if (defender.isHero && armorGlyph('metabolism') && ctx.hunger < STARVING && ctx.hero.hp < ctx.hero.maxHp && Random.chance((1 / 6) * ctx.genericProcMultiplier())) {
 		const healing = Math.min(Math.floor(STARVING / 100), ctx.hero.maxHp - ctx.hero.hp);
 		if (healing > 0) {
-			ctx.hunger = Math.max(0, ctx.hunger - healing * 10);
+			ctx.hunger = Math.min(STARVING, ctx.hunger + healing * 10);
 			ctx.hero.hp += healing;
 			ctx.showHeal(ctx.hero, healing);
 		}

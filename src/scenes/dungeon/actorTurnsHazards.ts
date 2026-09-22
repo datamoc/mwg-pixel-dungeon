@@ -31,6 +31,7 @@ import { getCurse } from '../../items/itemCurses';
 import { Cat, randomUsingDefaults } from '../../items/generator';
 import { MWL_WAND_WARD_RULES } from '../../mwlContent';
 import { FLOOR, SOLID, TILE, WALL, WATER } from '../../dungeonConstants';
+import { STARVING } from '../../simulation/hunger';
 import { NEGATIVE_BUFFS, absorbShield, addBuff, reigniteBuff, rollHit, setBleeding, tickBuffs, type BuffId, type Creature, type Step } from '../../combat';
 import { BOSSES, IMMOVABLE_KINDS } from '../../monsters';
 
@@ -270,7 +271,11 @@ export const actorTurnsHazardsMethods = {
 			if (getCurse(this.weaponAffix ?? '')) this.weaponAffix = null;
 			if (getCurse(this.armorGlyph ?? '')) this.armorGlyph = null;
 			if (this.equippedRing?.cursed) this.equippedRing.cursed = false;
-			this.hunger = Math.max(this.hunger, 300);
+			//`WaterOfHealth.affectHero()` (`actors/blobs/WaterOfHealth.java`, tag `v3.3.8`)
+			//satiates via `buff(Hunger).satisfy(STARVING)` - hunger minus 450 floored at
+			//zero. What stood here forced hunger UP to 300 (HUNGRY), so a satiated hero
+			//drinking the well woke up hungry.
+			this.hunger = Math.max(0, this.hunger - STARVING);
 			//`WaterOfHealth.affectHero()`'s own presentation - found missing from a live player
 			//report ("no red crosses"): Java plays `hero.sprite.showStatusWithIcon(POSITIVE, HT,
 			//HEALING)` (the floating heal amount) and `emitter().start(Speck.factory(HEALING),

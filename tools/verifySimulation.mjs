@@ -163,6 +163,12 @@ const { selectRangedTarget, findEnemyAlly, pursueTarget } = require('./simulatio
 		}
 		assert.ok(quickslot.includes('else scene.triggerEmptyPlantAt(cell.x, cell.y)'), 'an empty root dispatches the null-Char path');
 	});
+	check('Health well satiates like Java instead of force-feeding hunger', () => {
+		//`WaterOfHealth.affectHero()` (tag `v3.3.8`) runs `buff(Hunger).satisfy(STARVING)`,
+		//i.e. hunger minus 450 floored at zero - never a jump toward HUNGRY.
+		const hazards = readFileSync(new URL('../src/scenes/dungeon/actorTurnsHazards.ts', import.meta.url), 'utf8');
+		assert.match(hazards, /this\.hunger = Math\.max\(0, this\.hunger - STARVING\)/);
+	});
 	check('Java blob evolution diffuses through four neighbours and loses one volume', () => {
 		const before = new Array(25).fill(0);
 		before[12] = 5;
@@ -1449,6 +1455,23 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		//the exact Java distinction between CUR_DELAY and INITIAL_DELAY on SentryRoom$Sentry.
 		const scene = readSceneSource();
 		assert.ok(scene.includes('warmup: monster.sentryWarmup ?? monster.sentryInitialWarmup'), 'turn hook keeps both delays');
+	});
+	check('STRONGER_BOSSES raises DM300 and King HP to Java floors', () => {
+		//`DM300`/`DwarfKing` HP=HT lines (tag `v3.3.8`): 300 normally, 400/450 under
+		//the challenge - the same ternary shape Goo/Tengu/pylon already use here.
+		const { monsterSpawnProfile } = require('./actors/monsterSpawn');
+		const { toggleChallenge, isChallengeEnabled } = require('./challenges');
+		if (!isChallengeEnabled('stronger_bosses')) toggleChallenge('stronger_bosses');
+		try {
+			assert.equal(monsterSpawnProfile('dm300', 15, false, false, false, 1).adjustedDef.hp, 400);
+			assert.equal(monsterSpawnProfile('king', 20, false, false, false, 1).adjustedDef.hp, 450);
+			assert.equal(monsterSpawnProfile('goo', 5, false, false, false, 1).adjustedDef.hp, 120);
+			assert.equal(monsterSpawnProfile('tengu', 10, false, false, false, 1).adjustedDef.hp, 250);
+		} finally {
+			if (isChallengeEnabled('stronger_bosses')) toggleChallenge('stronger_bosses');
+		}
+		assert.equal(monsterSpawnProfile('dm300', 15, false, false, false, 1).adjustedDef.hp, 300);
+		assert.equal(monsterSpawnProfile('king', 20, false, false, false, 1).adjustedDef.hp, 300);
 	});
 	check('Piranha deaths feed the PIRANHAS badge at six kills', () => {
 		//`Piranha.die()` (tag `v3.3.8`): every death counts, any cause.

@@ -15,6 +15,7 @@ export function verifyCombat(require, check) {
 	const blastSource = readFileSync(new URL('../src/scenes/dungeon/panelsSingleUse.ts', import.meta.url), 'utf8');
 	const geyserSource = readFileSync(new URL('../src/simulation/geyserTrap.ts', import.meta.url), 'utf8');
 	const saveSource = readFileSync(new URL('../src/scenes/dungeon/deathSaveRefresh.ts', import.meta.url), 'utf8');
+	const mobOnHitSource = readFileSync(new URL('../src/scenes/mobOnHit.ts', import.meta.url), 'utf8');
 	const fixture = JSON.parse(readFileSync(new URL('./fixtures/combat-before-extraction.json', import.meta.url), 'utf8'));
 	const base = (extra = {}) => ({ x: 0, y: 0, hp: 20, maxHp: 20, accuracy: 10,
 		evasion: 5, damage: [2, 8], armor: [0, 3], buffs: {}, ...extra });
@@ -204,6 +205,13 @@ export function verifyCombat(require, check) {
 		assert.match(trapSource, /ch\.buffs\['spectatorFreeze'\]/);
 		assert.match(trapSource, /target\.buffs\.spectatorFreeze/);
 		assert.match(geyserSource, /creature\.buffs\['spectatorFreeze'\]/);
+	});
+	check('Metabolism curse charges hunger instead of feeding it', () => {
+		//`Metabolism.proc()` (`items/armor/curses/Metabolism.java`, tag `v3.3.8`) calls
+		//`hunger.affectHunger(healing * -10)`, and `affectHunger` subtracts its argument -
+		//so the hero gets HUNGRIER by 10x the healing, capped at STARVING. The curse must
+		//never satiate: as written it would heal and feed, a pure benefit with no cost.
+		assert.match(mobOnHitSource, /ctx\.hunger = Math\.min\(STARVING, ctx\.hunger \+ healing \* 10\)/);
 	});
 	check('Preparation keeps Java turnsInvis across save/load', () => {
 		// Java stores Preparation.turnsInvis as buff payload state, then rebuilds its derived
