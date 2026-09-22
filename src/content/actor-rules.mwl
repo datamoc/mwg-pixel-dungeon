@@ -96,6 +96,16 @@
           },
           {
             tag: "row",
+            variant: "gnollExile",
+            base: "gnoll",
+          },
+          {
+            tag: "row",
+            variant: "hermitCrab",
+            base: "crab",
+          },
+          {
+            tag: "row",
             variant: "causticSlime",
             base: "slime",
           },

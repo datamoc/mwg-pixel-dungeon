@@ -27,6 +27,8 @@ export function planMonsterPopulation(
 	} as Partial<Record<number, MonsterId>>)[depth];
 	const altByBase: Partial<Record<MonsterId, AnyMonsterId>> = {
 		rat: 'albino',
+		gnoll: 'gnollExile',
+		crab: 'hermitCrab',
 		slime: 'causticSlime',
 		thief: 'bandit',
 		necromancer: 'spectralNecromancer',
@@ -39,8 +41,8 @@ export function planMonsterPopulation(
 	//(`MobSpawner.swapMobAlts`, tag `v3.3.8`); this port has no trinket system, so the
 	//multiplier is always its default of 1 (the ParchmentScrap precedent in
 	//`src/items/generator.ts`, and the chaos roll in `src/actors/monsterSpawn.ts`).
-	//`GnollExile`/`HermitCrab` have no kinds here (see PORT_COVERAGE), so the gnoll
-	//and crab swaps are moot until they exist; the chaos swap rides `Elemental.random`.
+	//The two gnoll/crab variants reuse their base AI and presentation; their authored stats
+	//live in `monsters.mwl`, while the 1/50 rotation alternative is carried here.
 	const roster = roguelike.rollRoster(
 		baseRoster.map((value) => ({
 			value,

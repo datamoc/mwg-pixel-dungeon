@@ -232,10 +232,11 @@ const { selectRangedTarget, findEnemyAlly, pursueTarget } = require('./simulatio
 		assert.deepEqual(plan.roster, ['rat', 'crab']);
 		//Depth 4 adds the Thief at 0.025 (9: Bat, 14: Ghoul, 19: Succubus).
 		assert.deepEqual(seen.rare, [{ value: 'thief', chance: 0.025 }]);
-		//rat swaps to albino at 1/50; crab has no alt (HermitCrab unported).
+		//The runtime roster now carries the two Java rare alternatives as well;
+		//the pure population planner still receives the already-rolled roster.
 		assert.deepEqual(seen.regular, [
 			{ value: 'rat', alternative: { value: 'albino', chance: 1 / 50 } },
-			{ value: 'crab', alternative: undefined },
+			{ value: 'crab', alternative: { value: 'hermitCrab', chance: 1 / 50 } },
 		]);
 		for (const [depth, mob, chance] of [[9, 'bat', 0.025], [14, 'ghoul', 0.025], [19, 'succubus', 0.025]]) {
 			planMonsterPopulation(depth, [], false, { int: () => 0 }, roguelike);
