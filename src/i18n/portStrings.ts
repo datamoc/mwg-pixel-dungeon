@@ -32,10 +32,8 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.buff.powerofmany.desc': 'This ally deals 25% more melee damage and takes reduced damage.\\n\\nTurns Remaining: {0}.',
 	'port.armorability.powerofmany.name': 'power of many',
 	'port.armorability.powerofmany.short_desc': 'Empower an ally with the Cleric’s Power of Many.',
-	'port.ally.lightally.name': 'Light Ally',
-	'port.ally.already_powered': 'An ally is already empowered.',
-	'port.ally.order.attack': 'Your light ally moves to attack!',
-	'port.ally.order.defend': 'Your light ally moves to that position.',
+	'port.ally.lightally.name': 'Light Ally', 'port.ally.already_powered': 'An ally is already empowered.',
+	'port.ally.order.attack': 'Your light ally moves to attack!', 'port.ally.order.defend': 'Your light ally moves to that position.',
 	'port.ally.order.follow': 'Your light ally moves to follow you.',
 	'port.ally.novision': 'You cannot see that spot.',
 	'port.ally.invalidtarget': 'That spot cannot be used.',
@@ -12244,10 +12242,8 @@ export const PORT_STRINGS_ZH: Record<string, string> = {
  */
 const PORT_CLERIC_ARMOR_FALLBACK = { 'port.armorability.ascendedform.name': PORT_STRINGS_EN['port.armorability.ascendedform.name'], 'port.armorability.ascendedform.short_desc': PORT_STRINGS_EN['port.armorability.ascendedform.short_desc'], 'port.armorability.powerofmany.name': PORT_STRINGS_EN['port.armorability.powerofmany.name'], 'port.armorability.powerofmany.short_desc': PORT_STRINGS_EN['port.armorability.powerofmany.short_desc'], 'port.buff.powerofmany.name': PORT_STRINGS_EN['port.buff.powerofmany.name'], 'port.buff.powerofmany.desc': PORT_STRINGS_EN['port.buff.powerofmany.desc'], 'port.spell.hallowedground.name': PORT_STRINGS_EN['port.spell.hallowedground.name'], 'port.spell.hallowedground.short_desc': PORT_STRINGS_EN['port.spell.hallowedground.short_desc'], 'port.spell.walloflight.name': PORT_STRINGS_EN['port.spell.walloflight.name'], 'port.spell.walloflight.short_desc': PORT_STRINGS_EN['port.spell.walloflight.short_desc'], 'port.spell.divineintervention.name': PORT_STRINGS_EN['port.spell.divineintervention.name'], 'port.spell.divineintervention.short_desc': PORT_STRINGS_EN['port.spell.divineintervention.short_desc'], 'port.spell.judgement.name': PORT_STRINGS_EN['port.spell.judgement.name'], 'port.spell.judgement.short_desc': PORT_STRINGS_EN['port.spell.judgement.short_desc'], 'port.spell.flash.name': PORT_STRINGS_EN['port.spell.flash.name'], 'port.spell.flash.short_desc': PORT_STRINGS_EN['port.spell.flash.short_desc'] };
 Object.assign(PORT_CLERIC_ARMOR_FALLBACK, {
-	'port.ally.lightally.name': PORT_STRINGS_EN['port.ally.lightally.name'],
-	'port.ally.already_powered': PORT_STRINGS_EN['port.ally.already_powered'],
-	'port.ally.order.attack': PORT_STRINGS_EN['port.ally.order.attack'],
-	'port.ally.order.defend': PORT_STRINGS_EN['port.ally.order.defend'],
+	'port.ally.lightally.name': PORT_STRINGS_EN['port.ally.lightally.name'], 'port.ally.already_powered': PORT_STRINGS_EN['port.ally.already_powered'],
+	'port.ally.order.attack': PORT_STRINGS_EN['port.ally.order.attack'], 'port.ally.order.defend': PORT_STRINGS_EN['port.ally.order.defend'],
 	'port.ally.order.follow': PORT_STRINGS_EN['port.ally.order.follow'],
 	'port.ally.novision': PORT_STRINGS_EN['port.ally.novision'],
 	'port.ally.invalidtarget': PORT_STRINGS_EN['port.ally.invalidtarget'],
