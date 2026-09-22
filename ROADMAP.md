@@ -508,9 +508,24 @@ below to close the gap was judged not worth the churn against those existing ref
       telegraph). Live-verified via a forced render pass (`renderer.render(stage)`) plus pixel
       extraction on the overlay, since the screenshot tool's own capture can race the game's
       normal render loop for a manually-stepped `update()` - not a rendering bug, a test-
-      methodology gap the pixel check closes. **Left, genuinely**: spell-cast bursts (Cleric
-      tome effects, potion/scroll casts) - a separate, unscoped remainder of this line, not
-      estimated this pass. **Complexity: S** for what's left.
+      methodology gap the pixel check closes.
+      **Closed 2026-09-22, the Sunray spell-cast burst - the one concretely-scoped piece of
+      this line's "spell-cast bursts" half.** `Sunray.java`'s own cast draws two effects: `new
+      Beam.SunRay(...)` (Java's own `1f`-duration, `tint(1,1,0.25,1)` yellow `Beam` subclass -
+      `zapBeams`/`zapBeamOverlay` gained a per-beam `duration` field, since it previously
+      hardcoded `DeathRay`/wand trails' shared `0.5f`, so this reuses the exact same primitive
+      at Java's own `1f`) and `ch.sprite.burst(0xFFFFFF44, 5)` on the resolved target (a new
+      `spawnHitFlash`/`burstSunrayFlash` in `ui/effectBursts.ts`, the same quick-poof shape
+      `spawnCleanseFlare` already established, tinted white). Both fire from `resolveSunray`.
+      Live-verified: the beam and a live `effectBursts` entry both appear from a scripted
+      Sunray cast (talent gate bypassed for the test, matching this project's own "call the
+      private method directly" diagnostic convention), and the beam renders visibly via the
+      same forced-render check used above. **Left, genuinely**: every other Cleric tome
+      spell's own cast presentation (GuidingLight's `MagicMissile.boltFromChar` travelling
+      bolt - a different, moving-projectile primitive this port has none of, not another
+      `Beam` - Bless/DivineSense/HolyWeapon/Judgement/Flash/HolyWard's own effects), plus
+      potion/scroll cast presentation generally - a large remainder, not estimated this pass.
+      **Complexity: S** for what's left in this specific line; the rest is unscoped.
 - [x] Audit every static `t('port.*')` call site against `portStrings.ts`'s EN/FR tables. A script
       walk found 45 keys missing from EN and 47 from FR - all fixed (window titles, victory/defeat
       screens, `port.action.bag`/`port.talent.*`, ~20 combat log lines), plus two French-specific

@@ -1687,7 +1687,7 @@ export const actorTurnsHazardsMethods = {
 			this.zapBeams.push({
 				x1: (ward.x + 0.5) * TILE, y1: (ward.y + 0.5) * TILE,
 				x2: (target.x + 0.5) * TILE, y2: (target.y + 0.5) * TILE,
-				timeLeft: 0.5, color: 0x88ccff,
+				timeLeft: 0.5, duration: 0.5, color: 0x88ccff,
 			});
 		}
 		const tier = ward.wardTier ?? 1;

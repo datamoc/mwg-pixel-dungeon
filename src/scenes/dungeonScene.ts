@@ -1246,13 +1246,12 @@ export class DungeonScene extends Scene2D {
 	 * `deathBursts.ts` already states for `WardSprite`'s own effects - one shared primitive,
 	 * tinted per source (Ward's own `WardParticle` blue; a wand's own `ZAP_WAND_COLOR`). */
 	zapBeamOverlay: Graphics | null = null;
-	/** Active zap lines, each a cell-centre-to-cell-centre segment counting down from Java's
-	 * own `duration = 0.5f` (`DeathRay`'s own value - reused for every wand trail too, since
-	 * Java's other `Beam` subclasses (`LightRay`/`SunRay`/`HealthRay`) belong to spell/potion
-	 * casts this item's own "spell-cast bursts" half, not a wand zap); `alpha`/width both
+	/** Active zap lines, each a cell-centre-to-cell-centre segment counting down from its own
+	 * `duration` - Java's own per-subclass value (`DeathRay`/wand trails `0.5f`, `SunRay`
+	 * `1f`, matching each `Beam` subclass's own constructor argument); `alpha`/width both
 	 * scale with the remaining fraction, matching `Beam.update()`'s `p = timeLeft/duration`
 	 * driving both `alpha(p)` and `scale.set(scale.x, p)`. */
-	zapBeams: { x1: number; y1: number; x2: number; y2: number; timeLeft: number; color: number }[] = [];
+	zapBeams: { x1: number; y1: number; x2: number; y2: number; timeLeft: number; duration: number; color: number }[] = [];
 	/** True once the overlay has drawn a live beam - one more redraw is owed after the last
 	 * beam expires, purely to erase it (see the `update()` loop's own comment). */
 	zapBeamsWereDrawn = false;
@@ -2403,9 +2402,8 @@ export class DungeonScene extends Scene2D {
 		if (this.zapBeamOverlay && (this.zapBeams.length > 0 || this.zapBeamsWereDrawn)) {
 			this.zapBeams = this.zapBeams.filter((beam) => (beam.timeLeft -= dt) > 0);
 			this.zapBeamOverlay.clear();
-			const DURATION = 0.5;
 			for (const beam of this.zapBeams) {
-				const p = beam.timeLeft / DURATION;
+				const p = beam.timeLeft / beam.duration;
 				this.zapBeamOverlay.moveTo(beam.x1, beam.y1).lineTo(beam.x2, beam.y2)
 					.stroke({ width: Math.max(1, 3 * p), color: beam.color, alpha: p });
 			}

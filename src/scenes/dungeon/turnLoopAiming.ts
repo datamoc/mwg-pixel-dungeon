@@ -100,7 +100,7 @@ export const turnLoopAimingMethods = {
 		this.zapBeams.push({
 			x1: (this.hero.x + 0.5) * TILE, y1: (this.hero.y + 0.5) * TILE,
 			x2: (target.x + 0.5) * TILE, y2: (target.y + 0.5) * TILE,
-			timeLeft: 0.5, color: this.wandZapTrailColor(wandType),
+			timeLeft: 0.5, duration: 0.5, color: this.wandZapTrailColor(wandType),
 		});
 		//WandOfMagicMissile.onZap calls ch.damage() directly in Java - never a hit
 		//roll. Fireblast and Lightning use their real level-0/level-scaling rolls too.

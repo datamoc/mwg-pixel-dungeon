@@ -66,6 +66,26 @@ export function spawnCleanseFlare(layer: Container, alive: LiveBurst[], x: numbe
 	track(layer, alive, emitter, x, y, 8, 2);
 }
 
+/** `ch.sprite.burst(0xFFFFFF44, 5)` (`Sunray.java`'s hit flash, tag `v3.3.8`):
+ * `CharSprite.burst()` is a quick outward poof of `count` particles in the
+ * caller's tint/alpha, life ~0.4-1s per particle - reused here (not a
+ * dedicated Sunray-only shape) since Java's own method is itself generic. */
+export function spawnHitFlash(layer: Container, alive: LiveBurst[], x: number, y: number, count: number, color: number): void {
+	const emitter = new ParticleEmitter({
+		texture: Texture.WHITE,
+		max: count,
+		rate: 0,
+		life: 0.6,
+		speed: [8, 20] as [number, number],
+		angle: [-Math.PI, 0] as [number, number],
+		scale: [3, 0] as [number, number],
+		alpha: (t: number) => 0.27 * (1 - t),
+		tint: color,
+		spawn: { shape: 'rect', width: TILE, height: TILE },
+	});
+	track(layer, alive, emitter, x, y, count, 0.6);
+}
+
 /** Rising purple motes: the curse infusion's five, and the death-burst
  * table's guard/succubus/ward counts through `spawnDeathBursts` below. */
 export function spawnShadowBurst(layer: Container, alive: LiveBurst[], x: number, y: number, count: number): void {

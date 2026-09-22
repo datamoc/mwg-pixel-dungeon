@@ -3,7 +3,7 @@ import { refreshInventoryPanel as refreshInventoryPanelView, type InventoryPanel
 import { createJournalWindow } from '../../../ui/journalWindow';
 import { createJournalTabs } from '../../../ui/journalContent';
 import { Actors, Blob, Camera, Game, Random, Roguelike, TintedSprite, Window } from 'mwg';
-import { spawnCleanseFlare, spawnDeathBursts, spawnShadowBurst, spawnTeleportBurst, syncBlobCells, syncPourAuras } from '../../../ui/effectBursts';
+import { spawnCleanseFlare, spawnDeathBursts, spawnHitFlash, spawnShadowBurst, spawnTeleportBurst, syncBlobCells, syncPourAuras } from '../../../ui/effectBursts';
 import { BOOMERANG_RETURN_ACC_FACTOR, BOOMERANG_RETURN_TURNS, MISSILE_DEFAULT_QUANTITY, MISSILE_MAX_DURABILITY, bolasCrippleTurns, missileDamageRange, missileStackId, recordMissileUpgrade, tomahawkBleedRange } from '../../../items/missiles';
 import { applyMealEatenEffects, type ConsumableContext } from '../../../items/consumables'; import { eatBerrySeed } from '../../../items/berry';
 import { readScrollFlow, recallPortScrollId, recallTrackedPortId } from '../../../items/scrollEffects';
@@ -1105,8 +1105,18 @@ export const inventoryQuickslotMethods = {
 				this.say(t('items.wands.wand.self_target'), 'negative');
 				return;
 			}
+			//`new Beam.SunRay(hero.sprite.center(), collisionPos)` (`Sunray.java`, tag
+			//`v3.3.8`): `SunRay extends Beam` with Java's own `1f` duration and a yellow
+			//`tint(1, 1, 0.25, 1)` - reuses the same `zapBeams` primitive `WardSprite.zap()`'s
+			//`DeathRay`/wand trails already draw, with its own duration rather than their `0.5f`.
+			this.zapBeams.push({
+				x1: (this.hero.x + 0.5) * TILE, y1: (this.hero.y + 0.5) * TILE,
+				x2: (cell.x + 0.5) * TILE, y2: (cell.y + 0.5) * TILE,
+				timeLeft: 1, duration: 1, color: 0xffff44,
+			});
 			const victim = this.creatureAt(cell.x, cell.y);
 			if (victim) {
+				this.burstSunrayFlash(victim);
 				const roll = sunrayDamage(rank, isUndeadOrDemonic(victim.kind));
 				const damage = 'flat' in roll ? roll.flat : Random.normalRange(roll.min, roll.max);
 				//A `ClericSpell` hit clears the boss-challenge badge like any other
@@ -1841,6 +1851,14 @@ export const inventoryQuickslotMethods = {
 	burstCleanseFlare(this: DungeonScene, cell: Step): void {
 		if (!this.fov.isVisible(cell.x, cell.y)) return;
 		spawnCleanseFlare(this.effectLayer, this.effectBursts, cell.x, cell.y);
+	},
+
+	//`ch.sprite.burst(0xFFFFFF44, 5)` (`Sunray.java`, tag `v3.3.8`) - the hero-cast
+	//spell-cast bursts half of ROADMAP.md's sprite/effect-animations item, alongside
+	//the DeathRay/wand-trail `zapBeams` half. FOV-gated like `burstCleanseFlare` above.
+	burstSunrayFlash(this: DungeonScene, cell: Step): void {
+		if (!this.fov.isVisible(cell.x, cell.y)) return;
+		spawnHitFlash(this.effectLayer, this.effectBursts, cell.x, cell.y, 5, 0xffffff);
 	},
 
 	/**
