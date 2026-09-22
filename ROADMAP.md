@@ -616,6 +616,18 @@ below to close the gap was judged not worth the churn against those existing ref
       meets, disabled players included), then carry the same model through class select, the
       settings window, and the bag tabs. Port-original accessibility work, not Java parity -
       Java SPD has no such system. **Complexity: M.**
+      **Progress 2026-09-22: the title screen slice is done.** `TitleScene` tracks a single
+      `focusedIndex` into the same row/column grid its own layout already lays buttons into,
+      moved by the existing `up`/`down`/`left`/`right` movement actions (only while no window
+      is open, so a window's own input is never fought over the same keys), drawn with a
+      visible white ring redrawn on every layout pass (so it survives a resize/orientation
+      change), and activated by `confirm` - which now dispatches the *focused* button's
+      `onClick`, not unconditionally `begin()` as before (a pointer click already goes to
+      whichever button was clicked; keyboard confirm now does the same for whichever button
+      is focused). Browser-verified live via dispatched keyboard events: default focus on
+      "Enter the Dungeon", arrow-key movement through the grid, Enter opening the focused
+      window, Escape closing it without moving focus, and the ring relocating correctly after
+      a portrait-width resize. Class select, the settings window, and the bag tabs remain open.
 - [ ] Add colorblind options to the graphics settings. Too much state here is color-only:
       buff/debuff icon tints, HP-bar thresholds, key colors, trap and hazard highlights. Offer
       at least deuteranopia/protanopia/tritanopia-safe palettes (plus a high-contrast pass if

@@ -1,5 +1,5 @@
 import { SpdLabel as Label } from '../ui/spdLabel';
-import { Container, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
+import { Container, Graphics, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 import { Game, Scene2D, Input, WindowStack } from 'mwg';
 import { t } from '../i18n/index';
 import { titleIcon, type TitleIconName } from '../ui/titleIcons';
@@ -95,10 +95,39 @@ export class TitleScene extends Scene2D {
 		makeButton(t('scenes.titlescene.about'), () => info(t('port.window.about.title'), t('port.window.about.body', { version: APP_VERSION })), 'shpx');
 		const version = new Label({ text: `v${APP_VERSION}`, size: 8, color: 0x888888 });
 		this.stage.addChild(version);
+		//Port-original keyboard-navigation accessibility work (ROADMAP.md section 8) - Java SPD
+		//has no such system, so there is no source behavior to match, only this port's own
+		//model: a single focused button, moved by the existing movement actions and activated
+		//by `confirm`, with a visible ring so the focus is never invisible to a non-pointer
+		//player. Drawn above every button (added to the stage after them, swept into `menu`
+		//below in the same order) so it never disappears behind one.
+		const focusRing = new Graphics();
+		focusRing.eventMode = 'none';
+		this.stage.addChild(focusRing);
 		const menu = new Container();
 		for (const child of [...this.stage.children]) menu.addChild(child);
 		this.stage.addChild(menu);
 		this.stage.addChild(this.windows);
+		//The visual grid both layouts below lay buttons into: a top row of two half-width
+		//buttons, then two rows of three thirds - identical grouping in landscape and portrait,
+		//only the geometry differs. `moveFocus` walks this grid by row/column rather than
+		//needing a generic nearest-neighbour search.
+		const focusRows: readonly (readonly number[])[] = [[0, 1], [2, 3, 4], [5, 6, 7]];
+		let focusedIndex = 0;
+		const buttonBounds: { x: number; y: number; w: number; h: number }[] = menuButtons.map(() => ({ x: 0, y: 0, w: 0, h: 0 }));
+		const drawFocusRing = () => {
+			const b = buttonBounds[focusedIndex];
+			focusRing.clear().rect(b.x - 2, b.y - 2, b.w + 4, b.h + 4).stroke({ width: 2, color: 0xffffff, alpha: 0.9 });
+		};
+		const moveFocus = (dRow: number, dCol: number): void => {
+			const row = focusRows.findIndex((r) => r.includes(focusedIndex));
+			const col = row >= 0 ? focusRows[row].indexOf(focusedIndex) : 0;
+			const nextRow = Math.max(0, Math.min(focusRows.length - 1, row + dRow));
+			const nextCols = focusRows[nextRow];
+			const nextCol = Math.max(0, Math.min(nextCols.length - 1, col + dCol));
+			focusedIndex = nextCols[nextCol];
+			drawFocusRing();
+		};
 
 		this.layout = () => {
 			const { width, height } = Game.current;
@@ -125,8 +154,10 @@ export class TitleScene extends Scene2D {
 			const landscape = w > h;
 			const gap = Math.max(2, Math.floor(Math.floor((h - topRegion - (landscape ? 3 : 4) * 20) / 3) / (landscape ? 3 : 5)));
 			const rect = (i: number, x: number, y: number, bw: number) => {
-				menuButtons[i].position.set(Math.round(x), Math.round(y));
+				const rx = Math.round(x), ry = Math.round(y);
+				menuButtons[i].position.set(rx, ry);
 				menuButtons[i].resize(bw, 20);
+				buttonBounds[i] = { x: rx, y: ry, w: bw, h: 20 };
 			};
 			const y = topRegion + gap;
 			if (landscape) {
@@ -144,6 +175,7 @@ export class TitleScene extends Scene2D {
 			version.position.set(w - version.width - 4, h - version.height - 2);
 			this.windows.scale.set(scale);
 			this.windows.setViewport(w, h);
+			drawFocusRing();
 		};
 		this.layout();
 
@@ -151,14 +183,25 @@ export class TitleScene extends Scene2D {
 			//The windows are asked first (MWG 0.8.0's public `WindowStack.handleAction`, item 325),
 			//so an open window consumes its keys before the scene ever sees them - this handler
 			//can no longer starve a window by returning `true` early, whatever it returns.
+			//Keyboard navigation likewise only moves this scene's own focus while no window is
+			//open, so a window's own tab/list handling (if it has any) is never fought over the
+			//same arrow keys.
+			if (this.windows.isEmpty) {
+				if (action === 'up') { moveFocus(-1, 0); return; }
+				if (action === 'down') { moveFocus(1, 0); return; }
+				if (action === 'left') { moveFocus(0, -1); return; }
+				if (action === 'right') { moveFocus(0, 1); return; }
+			}
 			//`Input.onAction` is a stack-mode `Signal`, so listeners added later are offered the
 			//action *first* (`Signal`'s constructor doc: "new listeners are added at the front ...
 			//so the most recently opened window is offered the event first") - this scene listener
 			//runs before `WindowStack`'s own, which is why the chain goes through the stack
 			//explicitly rather than relying on registration order. 'confirm' has no window-side
 			//handler, so it is guarded here instead, or Enter would begin a run out from under
-			//an open Support/Rankings/Badges/etc. window rather than dismissing it.
-			if (!this.windows.handleAction(action) && action === 'confirm' && this.windows.isEmpty) this.begin();
+			//an open Support/Rankings/Badges/etc. window rather than dismissing it. Activates
+			//whichever button keyboard focus is currently on, not always "Enter the Dungeon" -
+			//a pointer user's click already goes straight to the button they clicked.
+			if (!this.windows.handleAction(action) && action === 'confirm' && this.windows.isEmpty) menuButtons[focusedIndex].onClick.dispatch();
 		};
 		Input.onAction.add(this.onAction);
 		this.onDestroy.add(() => Input.onAction.remove(this.onAction));
