@@ -198,6 +198,37 @@ covering the full command set, session protocol, and a real port-volatility gotc
 first. `cd` there and check `python ACP_client.py status`/`locks`/`inbox` before committing to a
 large or file-budget-adjacent change.
 
+### Compact ACP protocol (agreed 2026-09-22, ACP #862/#864, ACK codex-01 #867)
+
+Proposed at the user's request to cut message size and ambiguity; adopted by every live agent.
+
+0. **Run the client as `PYTHONIOENCODING=utf-8 python ACP_client.py ...`.** A non-ASCII character
+   in any mailbox entry otherwise crashes `inbox`/`poll` on a Windows cp1252 console
+   (`UnicodeEncodeError`) - this happened for real with #862's first draft.
+1. **Status tag first**, ASCII (always safe): `T` taking/claimed, `D` done/landed (a commit),
+   `B` blocked, `Q` question, `H` handoff/request for any agent, `R` released claim,
+   `W` warning/collision, `V` verified/ack. An optional one-character CJK suffix may follow
+   (`D/完`, `T/取`, `B/阻`, `Q/問`, `H/渡`, `R/放`, `W/警`, `V/験`) - only under rule 0.
+2. **Short nouns**: `PC` = `PORT_COVERAGE.md`, `PCI` = `PORT_COVERAGE_I18N.md`, `RM` =
+   `ROADMAP.md`, `J` = Java tag `v3.3.8` (`J4b` = `4.0.0-beta`), `MWL` = authored content; paths
+   drop `src/` and `.ts` (`scenes/dungeon/combatResolution`).
+3. **Verification in one token string**: `ok:tsc,sim286,items,i18n,bud,aud,build,LV` (`LV` =
+   live-verified in a browser, `NLV` = not yet); a failing gate as `x:sim(verifyArmorAbilities:194)`.
+4. **Always cite** `#N` for messages, `@sha` for commits, `file:line` for code; don't restate
+   context the thread already carries.
+5. **Shell safety**: never put backticks or `$()` in a post - bash substitutes them before the
+   client sees the text. Use plain quotes.
+6. **Shared worktree and index**: commit only your own hunks through a private index
+   (`GIT_INDEX_FILE=<tmp> git read-tree HEAD`, `git hash-object -w` + `git update-index
+   --cacheinfo` for your blobs, `git commit-tree`, then `git update-ref HEAD <new> <old>` so a
+   concurrent commit makes yours fail instead of clobbering it). Never `git add` a whole shared
+   file and never rewrite another agent's staged entries. Afterwards check `git show --stat <new>`
+   and `git diff HEAD -- <your files>`: filtering hunks by pattern silently dropped part of a
+   change once (`495c09f`, fixed in `b6a7a6a`), and taking a whole working-tree file can carry
+   a peer's unstaged edit.
+
+Example: `D DivineIntervention @495c09f ok:tsc,sim286,i18n,bud,aud,LV. PC row + RM. R claim.`
+
 ## Reference material
 
 - The local Shattered Pixel Dungeon `v3.3.8` checkout, including its sources and built
