@@ -64,7 +64,8 @@ export function waterFrames(context: DungeonTileFrameContext): number[] {
 	//EMPTY_DECO 20, SIGN 23, WELL 24, STATUE 25, ALCHEMY 28, DOOR 5, OPEN_DOOR 6,
 	//LOCKED_DOOR 10, CRYSTAL_DOOR 31. A water cell next to trampled grass missed
 	//its shoreline bit before 30 joined this set.
-	const dry = new Set<number>([1, 2, 3, 7, 8, 9, 13, 15, 17, 18, 19, 20, 23, 24, 25, 28, 30, 5, 6, 10, 31]);
+	//v3.3.8 adds MINE_CRYSTAL 35 and MINE_BOULDER 36 (`MiningLevel`'s quest terrains).
+	const dry = new Set<number>([1, 2, 3, 7, 8, 9, 13, 15, 17, 18, 19, 20, 23, 24, 25, 28, 30, 5, 6, 10, 31, 35, 36]);
 	const frames: number[] = [];
 	for (let y = 0; y < context.height; y++) for (let x = 0; x < context.width; x++) {
 		if (context.terrainAt(x, y) !== WATER) { frames.push(-1); continue; }
@@ -99,4 +100,33 @@ export function wallFrames(context: DungeonTileFrameContext): number[] {
 	const frames: number[] = [];
 	for (let y = 0; y < context.height; y++) for (let x = 0; x < context.width; x++) frames.push(wallFrameAt(context, x, y));
 	return frames;
+}
+
+/**
+ * `MiningLevel`'s quest terrains on the v3.3.8 crystal/gnoll caves atlas (`DungeonTileSheet`, tag
+ * `v3.3.8`, 16-wide): the raised tile is `RAISED_OTHER + 12` (`xy(9, 8)` = 120, so 132) and its
+ * overhang, drawn on the cell above, `OTHER_OVERHANG + 12` (`xy(9, 15)` = 232, so 244). Crystal and
+ * boulder share the slots - the atlas tells them apart. `getVisualWithAlts`: variance >= 95 takes
+ * the rare alt (+2), >= 50 the common one (+1); the overhang reads the mine cell's own variance.
+ */
+function mineVisualWithAlts(base: number, variance: number): number {
+	return variance >= 95 ? base + 2 : variance >= 50 ? base + 1 : base;
+}
+
+export function mineTileFrames(context: DungeonTileFrameContext): { raised: number[]; overhang: number[] } {
+	const raised: number[] = [];
+	const overhang: number[] = [];
+	const isMine = (x: number, y: number): boolean => {
+		const raw = context.rawTerrainAt(x, y);
+		return raw === Terrain.MINE_CRYSTAL || raw === Terrain.MINE_BOULDER;
+	};
+	for (let y = 0; y < context.height; y++) for (let x = 0; x < context.width; x++) {
+		raised.push(isMine(x, y) ? mineVisualWithAlts(132, context.tileVariance[x + y * context.width] ?? 0) : -1);
+		const rawHere = context.rawTerrainAt(x, y);
+		//`DungeonWallsTilemap.getTileVisual()` returns `EXIT_UNDERHANG` first for an exit tile.
+		const exitTile = rawHere === Terrain.LOCKED_EXIT || rawHere === 22;
+		overhang.push(!exitTile && y + 1 < context.height && isMine(x, y + 1)
+			? mineVisualWithAlts(244, context.tileVariance[x + (y + 1) * context.width] ?? 0) : -1);
+	}
+	return { raised, overhang };
 }

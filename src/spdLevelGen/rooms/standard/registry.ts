@@ -30,6 +30,7 @@ import { paintRuinsRoom } from './ruinsRoom';
 import { paintChasmRoom } from './chasmRoom';
 import { paintSkullsRoom } from './skullsRoom';
 import { paintBlacksmithRoom } from './blacksmithRoom';
+import { paintMineEntrance, paintMineGiantRoom, paintMineLargeRoom, paintMineSmallRoom } from '../quest/mineRooms';
 import { paintPlantsRoom } from './plantsRoom';
 import { paintAquariumRoom } from './aquariumRoom';
 import { paintPlatformRoom } from './platformRoom';
@@ -95,6 +96,11 @@ const PAINTERS: Record<StandardRoomKind, PaintFn> = {
 	gooWalled: paintGooWalledRoom,
 	gooThinPillars: paintGooThinPillarsRoom,
 	gooThickPillars: paintGooThickPillarsRoom,
+	// Never in STANDARD_ROOM_CLASS_ORDER - placed directly by `MiningLevel.initRooms()` (miningLevel.ts).
+	mineEntrance: paintMineEntrance,
+	mineGiant: paintMineGiantRoom,
+	mineLarge: paintMineLargeRoom,
+	mineSmall: paintMineSmallRoom,
 };
 
 /** Dispatches to the concrete room's `paint()` port, including 'entrance'/'exit' (not part of

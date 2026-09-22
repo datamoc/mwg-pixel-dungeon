@@ -30,8 +30,9 @@ export const Feeling = { CHASM: 0, WATER: 1, GRASS: 2, DARK: 3, LARGE: 4, TRAPS:
  * before anything else in `paint()` (`rooms` is never null in this port's flow, so the
  * null-rooms/pre-initialized-level branch is out of scope).
  */
-export function layoutAndCreateLevel(rooms: Room[], feeling: number | null = null): PaintLevel {
-	const padding = feeling === Feeling.CHASM ? 2 : 1;
+export function layoutAndCreateLevel(rooms: Room[], feeling: number | null = null, paddingOverride?: number): PaintLevel {
+	// `padding(level)`: 1, 2 on a chasm floor; `MiningLevelPainter` overrides it to a flat 3.
+	const padding = paddingOverride ?? (feeling === Feeling.CHASM ? 2 : 1);
 	let leftMost = Infinity, topMost = Infinity;
 	for (const r of rooms) { leftMost = Math.min(leftMost, r.left); topMost = Math.min(topMost, r.top); }
 	leftMost -= padding; topMost -= padding;
@@ -60,7 +61,7 @@ function getPoints(rect: RectBounds): { x: number; y: number }[] {
 	return pts;
 }
 
-function placeDoors(r: Room): void {
+export function placeDoors(r: Room): void {
 	for (const n of r.connected.keys()) {
 		if (r.connected.get(n)) continue; // already placed from the other room's turn
 		const i = r.intersect(n);
@@ -106,7 +107,10 @@ const SOLID = new Set<number>([
 	Terrain.WALL, Terrain.WALL_DECO, Terrain.LOCKED_DOOR, Terrain.CRYSTAL_DOOR,
 	Terrain.BARRICADE, Terrain.SECRET_DOOR, Terrain.BOOKSHELF, Terrain.DOOR,
 	Terrain.LOCKED_EXIT, Terrain.SIGN, Terrain.STATUE, Terrain.STATUE_SP, Terrain.ALCHEMY,
+	Terrain.MINE_CRYSTAL, Terrain.MINE_BOULDER,
 ]);
+/** `(Terrain.flags[tile] & Terrain.SOLID) != 0`. */
+export function isSolidTerrain(terrain: number): boolean { return SOLID.has(terrain); }
 function canMergeAt(level: PaintLevel, room: Room, p: { x: number; y: number }, mergeTerrain: number): boolean {
 	// `GooBossRoom.canMerge()` is unconditional `false` - the arena never merges, so its
 	// doors are always written. Missing this merged the arena into neighbours wherever the
@@ -311,7 +315,7 @@ function paintDoorsForDepth(level: PaintLevel, rooms: Room[], depth: number, fee
 }
 
 /** `Graph.buildDistanceMap`: BFS over `Room.edges()` (EMPTY/TUNNEL/UNLOCKED/REGULAR doors only). */
-function buildDistanceMap(rooms: Room[], focus: Room): void {
+export function buildDistanceMap(rooms: Room[], focus: Room): void {
 	for (const r of rooms) r.distance = Infinity;
 	focus.distance = 0;
 	const queue: Room[] = [focus];
@@ -331,7 +335,7 @@ function buildDistanceMap(rooms: Room[], focus: Room): void {
 }
 
 /** `RegularPainter.paintWater()`. */
-function paintWater(level: PaintLevel, rooms: Room[], fill: number, smoothness: number): void {
+export function paintWater(level: PaintLevel, rooms: Room[], fill: number, smoothness: number): void {
 	const lake = spdPatchGenerate(level.w, level.h, fill, smoothness, true);
 	for (const r of rooms) {
 		for (let x = r.left; x <= r.right; x++) {
@@ -348,7 +352,7 @@ function paintWater(level: PaintLevel, rooms: Room[], fill: number, smoothness: 
 }
 
 /** `RegularPainter.paintGrass()`. */
-function paintGrass(level: PaintLevel, rooms: Room[], fill: number, smoothness: number): void {
+export function paintGrass(level: PaintLevel, rooms: Room[], fill: number, smoothness: number): void {
 	const grass = spdPatchGenerate(level.w, level.h, fill, smoothness, true);
 	const grassCells: number[] = [];
 	for (const r of rooms) {

@@ -16,14 +16,17 @@ export const ALL = 0, LEFT = 1, TOP = 2, RIGHT = 3, BOTTOM = 4;
 export type Direction = typeof ALL | typeof LEFT | typeof TOP | typeof RIGHT | typeof BOTTOM;
 
 /** `Room.Door.Type` - ordinal order matters (`Door.set` only raises, never lowers, the type). */
-export enum DoorType { EMPTY, TUNNEL, WATER, REGULAR, UNLOCKED, HIDDEN, BARRICADE, LOCKED, CRYSTAL }
+export enum DoorType { EMPTY, TUNNEL, WATER, REGULAR, UNLOCKED, HIDDEN, BARRICADE, LOCKED, CRYSTAL, WALL }
 
 export class Door {
 	x = 0;
 	y = 0;
 	type: DoorType = DoorType.EMPTY;
+	/** `Door.typeLocked` (`Room.java`, tag `v3.3.8`): the mine rooms freeze a door's type once rolled. */
+	private typeLocked = false;
+	lockTypeChanges(lock: boolean): void { this.typeLocked = lock; }
 	set(type: DoorType): void {
-		if (type > this.type) this.type = type;
+		if (!this.typeLocked && type > this.type) this.type = type;
 	}
 }
 
@@ -99,7 +102,11 @@ export type StandardRoomKind =
 	// directly, same shape as `blacksmith`/`ritualSite` above: never selected through
 	// `StandardRoom.chances[]`, placed directly by `SewerBossLevel.initRooms()`'s
 	// `GooBossRoom.randomGooRoom()` (`Random.Int(4)`, ported in `rooms/sewerBoss/gooBossRoom.ts`).
-	| 'gooDiamond' | 'gooWalled' | 'gooThinPillars' | 'gooThickPillars';
+	| 'gooDiamond' | 'gooWalled' | 'gooThinPillars' | 'gooThickPillars'
+	// `MiningLevel.initRooms()`'s four `CaveRoom` subclasses (`rooms/quest/Mine*.java`, tag
+	// `v3.3.8`), placed directly like `blacksmith` above. `mineEntrance` is also the level's
+	// entrance (`MineEntrance.isEntrance()`), which the builder reads - see `isEntranceRoom`.
+	| 'mineEntrance' | 'mineGiant' | 'mineLarge' | 'mineSmall';
 
 interface StandardRoomMeta {
 	/** `sizeCatProbs()` - defaults to StandardRoom's own `[1,0,0]` (always NORMAL) when omitted. */
@@ -162,7 +169,19 @@ export const STANDARD_ROOM_META: Record<StandardRoomKind, StandardRoomMeta> = {
 	gooWalled: { sizeCatProbs: [0, 1, 0] },
 	gooThinPillars: { sizeCatProbs: [0, 1, 0] },
 	gooThickPillars: { sizeCatProbs: [0, 1, 0] },
+	// `CaveRoom` floors both axes at 5; each mine room narrows its `sizeCatProbs()` to one band.
+	// `MineEntrance` = max(super, 7); `MineLargeRoom` returns a flat 11 (LARGE's own floor is 10,
+	// so a max(10, 11) floor is the same number); `MineSmallRoom` = max(6, super).
+	mineEntrance: { sizeCatProbs: [1, 0, 0], minDimFloor: 7 },
+	mineGiant: { sizeCatProbs: [0, 0, 1], minDimFloor: 5 },
+	mineLarge: { sizeCatProbs: [0, 1, 0], minDimFloor: 11 },
+	mineSmall: { sizeCatProbs: [1, 0, 0], minDimFloor: 6 },
 };
+
+/** `Room.isEntrance()`: an `EntranceRoom`, or a `MineEntrance` (a `CaveRoom` that answers true). */
+export function isEntranceRoom(r: Room): boolean {
+	return r.kind === 'entrance' || (r.kind === 'standard' && r.standardKind === 'mineEntrance');
+}
 
 /**
  * The 21 `SpecialRoom` subclasses actually reachable via `SpecialRoom.createRoom()`'s
@@ -232,12 +251,14 @@ export const SPECIAL_ROOM_META: Record<SpecialRoomKind, SpecialRoomMeta> = {
 export type SecretRoomKind =
 	| 'garden' | 'laboratory' | 'library' | 'larder' | 'well' | 'runestone'
 	| 'artillery' | 'chestChasm' | 'honeypot' | 'hoard' | 'maze' | 'summoning'
-	| 'ratKing';
+	| 'ratKing' | 'mine';
 
 interface SecretRoomMeta { minWidth?: number; maxWidth?: number; minHeight?: number; maxHeight?: number; }
 /** Per-class `minWidth()`/`maxWidth()`/`minHeight()`/`maxHeight()` overrides (base `SecretRoom`,
  *  via `SpecialRoom`, is 5/10 both axes - same base as `SpecialRoomKind`). */
 export const SECRET_ROOM_META: Record<SecretRoomKind, SecretRoomMeta> = {
+	// `MineSecretRoom.maxWidth()`/`maxHeight()` = 7 (tag `v3.3.8`).
+	mine: { maxWidth: 7, maxHeight: 7 },
 	garden: {}, laboratory: {}, well: {}, runestone: {}, artillery: {}, honeypot: {}, hoard: {},
 	library: { minWidth: 7, minHeight: 7 },
 	larder: { minWidth: 6, minHeight: 6 },

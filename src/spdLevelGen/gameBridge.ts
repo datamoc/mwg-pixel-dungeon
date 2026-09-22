@@ -33,7 +33,10 @@ import { routeTrapBehaviour } from '../dungeonConstants';
 import { resetSpecialRoomRunState } from './rooms/special/registry';
 import { resetSecretRoomRunState } from './rooms/secret/registry';
 import { resetWandmakerRunState } from './wandmaker';
-import { blacksmithQuestUsesBlood, resetBlacksmithRunState } from './blacksmith';
+import { blacksmithQuestType, resetBlacksmithRunState, type BlacksmithQuestType } from './blacksmith';
+import { generateMiningLevel } from './miningLevel';
+/** The mine rooms' quest-actor kinds, beside the `PortedFloor.mobs` entries that carry them. */
+export { MINE_QUEST_ACTOR_KINDS } from './rooms/quest/mineRooms';
 import { entranceRoomContext } from './rooms/standard/entranceRoom';
 import { generatorFullReset } from '../items/generator';
 import { resetShopRunState } from '../items/shopItems';
@@ -71,6 +74,10 @@ export type GameKindCodes = Record<GameKindName, number>;
  *   movement boundary because Java mobs cannot deliberately walk into pits.
  * - `BARRICADE` -> `wall`. Java's is flammable and can be burned through; here it is permanent.
  * - `LOCKED_EXIT` -> `wall`. Boss-floor gating; unreachable on the ported regular floors.
+ * - `MINE_CRYSTAL`/`MINE_BOULDER` -> `wall`. Both are `SOLID` only in Java, so they block
+ *   movement but not sight; the coarse kinds have no solid-but-transparent member (the same loss
+ *   `STATUE` below takes), so they also block sight here. The raw grid keeps them for the art and
+ *   for the pickaxe (`mineMiningWall`).
  * - `STATUE`/`STATUE_SP` -> `wall`. Java's statue mob is restored by `main.ts` from the
  *   room's mob payload; its occupied cell is opened back to a floor at adoption time so the
  *   live actor can participate in collision/combat.
@@ -133,6 +140,8 @@ export const SPD_TERRAIN_TO_GAME_KIND: Record<number, GameKindName> = {
 	[Terrain.ALCHEMY]: 'wall',
 	[Terrain.WATER]: 'water',
 	[Terrain.CRYSTAL_DOOR]: 'doorClosed',
+	[Terrain.MINE_CRYSTAL]: 'wall',
+	[Terrain.MINE_BOULDER]: 'wall',
 };
 
 /* Trap behaviour routing for ported floors (previously `TRAP_BEHAVIOUR` here).
@@ -210,13 +219,17 @@ export interface PortedFloor {
 	secretDoors: { x: number; y: number }[];
 	traps: PortedTrap[];
 	/** NPCs and special mobs placed by a Java room painter (shopkeeper, Wandmaker, etc.). */
-	mobs: { x: number; y: number; kind: string; loot?: string; initialWarmup?: number }[];
+	mobs: {
+		x: number; y: number; kind: string; loot?: string; initialWarmup?: number;
+		/** Mine-room payloads: a sapper's home cell and linked guard, a spawn-time shield. */
+		spawnPos?: { x: number; y: number }; partnerPos?: { x: number; y: number }; shield?: number;
+	}[];
 	/** Room drops emitted by the real Painter, reduced to positions and source item ids. */
 	groundItems: { x: number; y: number; kind: string; note?: string; sourceClass?: string; quantity?: number }[];
 	/** Items queued through Java's Level.addItemToSpawn(), placed after room painting. */
 	queuedItems: string[];
-	/** Run-level Blacksmith.Quest.alternative, carried out of the generator for gameplay. */
-	blacksmithAlternative: boolean;
+	/** Run-level `Blacksmith.Quest.type` (0 until the quest room has been rolled). */
+	blacksmithQuestType: BlacksmithQuestType;
 	feeling: number | null;
 	/** `buildRoomGraph` attempts for this floor (Java's dump header reports the same count) -
 	 * surfaced for the section-9 parity triage: attempts > 1 means attempt 1's graph failed
@@ -292,24 +305,12 @@ function generateFloor(seed: bigint, depth: number, strongerBosses: boolean) {
 	}
 }
 
-/** Java MiningLevel: a branch-only 32x32 CaveRoom with a 3x3 entrance clearing. */
-function generateMiningBranch(seed: bigint, depth: number): PortedFloor {
-	const floorSeed = spdSeedForDepth(seed, depth, 1);
-	SpdRandom.pushGenerator(floorSeed);
+/** `MiningLevel` (tag `v3.3.8`) on its own branch-1 `seedCurDepth()` stream - see `miningLevel.ts`. */
+function generateMiningBranch(seed: bigint, depth: number, questType: BlacksmithQuestType, darkness: boolean): PortedFloor {
+	SpdRandom.pushGenerator(spdSeedForDepth(seed, depth, 1));
 	try {
-		const paint = new PaintLevel(32, 32);
-		const room = new Room('standard', 'cave');
-		room.left = 1; room.top = 1; room.right = 31; room.bottom = 31;
-		paintCaveRoom(paint, room);
-		for (let y = 15; y <= 17; y++) for (let x = 15; x <= 17; x++) set(paint, x, y, Terrain.EMPTY);
-		set(paint, 16, 16, Terrain.ENTRANCE);
-		// MiningLevel invokes CavesPainter.setWater(0.35f, 6).setGrass(0.10f, 3)
-		// with a null room list, which applies the patches globally to existing EMPTY cells.
-		paintStandaloneTerrain(paint, { fill: Math.fround(0.35), smoothness: 6 }, { fill: Math.fround(0.10), smoothness: 3 });
-		// CavesPainter.decorate() then performs its two global scans in null-room mode:
-		// floor decoration followed by mineable WALL_DECO ore veins.
-		decorateStandaloneCaves(paint);
-		return extract(paint, [room], null);
+		const { paint, rooms, attempts } = generateMiningLevel(questType, depth, darkness);
+		return extract(paint, rooms, null, attempts);
 	} finally {
 		SpdRandom.popGenerator();
 	}
@@ -347,8 +348,8 @@ export function portedFloor(seed: bigint, depth: number, strongerBosses = false)
 }
 
 /** Generates the Blacksmith branch without perturbing the main run-level floor cache. */
-export function miningBranchFloor(seed: bigint, depth: number): PortedFloor {
-	return generateMiningBranch(seed, depth);
+export function miningBranchFloor(seed: bigint, depth: number, questType: BlacksmithQuestType, darkness = false): PortedFloor {
+	return generateMiningBranch(seed, depth, questType, darkness);
 }
 
 /** Discards the cached run, so the next `portedFloor` call re-runs `Dungeon.init()`'s resets. */
@@ -420,12 +421,15 @@ function extract(paint: PaintLevel, rooms: Room[], feeling: number | null, attem
 		sourceClass: item.sourceClass ?? item.kind.split('|')[1],
 		quantity: item.quantity,
 	}));
+	const toXY = (cell: number) => ({ x: cell % w, y: Math.floor(cell / w) });
 	const mobs = paint.mobs.map((mob) => ({
-		x: mob.pos % w,
-		y: Math.floor(mob.pos / w),
+		...toXY(mob.pos),
 		kind: mob.kind,
 		loot: mob.loot,
 		initialWarmup: mob.initialWarmup,
+		...(mob.spawnPos === undefined ? {} : { spawnPos: toXY(mob.spawnPos) }),
+		...(mob.partnerPos === undefined ? {} : { partnerPos: toXY(mob.partnerPos) }),
+		...(mob.shield === undefined ? {} : { shield: mob.shield }),
 	}));
 
 	// `main.ts`'s `populate()` finds a boss floor's boss room as `this.level.rooms[rooms.length-1]`
@@ -455,7 +459,7 @@ function extract(paint: PaintLevel, rooms: Room[], feeling: number | null, attem
 		mobs,
 		groundItems,
 		queuedItems: [...paint.itemsToSpawn],
-		blacksmithAlternative: blacksmithQuestUsesBlood(),
+		blacksmithQuestType: blacksmithQuestType(),
 		feeling,
 		paint,
 		...(attempts === undefined ? {} : { attempts }),

@@ -16,7 +16,7 @@ import { type TransmuteFlowContext } from '../../items/transmutation';
 import { examineTileOutcome } from '../../ui/examineText';
 import { ringElementsMultiplier, ringEnergyMultiplier, ringSharpshootingDurabilityMultiplier, type EquippedRing } from '../../items/ringModifiers';
 import { has, t, titleCase } from '../../i18n/index';
-import { type PortedFloor } from '../../spdLevelGen/gameBridge';
+import { MINE_QUEST_ACTOR_KINDS, type PortedFloor } from '../../spdLevelGen/gameBridge';
 import { cityGroundDescKey, cityGroundLayer, cityGroundNameKey } from '../../spdLevelGen/cityBossVisuals';
 import { insideRitualMarker } from '../../spdLevelGen/ritualMarkerVisuals';
 import { cavesArenaDescKey, cavesArenaNameKey } from '../../spdLevelGen/cavesBossVisuals';
@@ -565,9 +565,8 @@ export const environmentFireTrapsMethods = {
 	 *   is kept on the trap for display.  See gameBridge's TRAP_BEHAVIOUR.
 	 */
 	adoptPortedFeatures(this: DungeonScene, floor: PortedFloor): void {
-		//The run-level flag becomes known when the Blacksmith room is generated. Never clear a
-		//true value when a later floor is extracted before the quest is consumed.
-		this.blacksmithAlternative ||= floor.blacksmithAlternative;
+		//The run-level quest type becomes known once the Blacksmith room is generated; later floors keep it.
+		if (this.blacksmithQuestType === 0) this.blacksmithQuestType = floor.blacksmithQuestType;
 		this.portedWellWater.clear();
 		//`ToxicGasRoom.paint()` seeds 30 ToxicGas on every interior EMPTY cell before its
 		//vents are placed. The room generator records those Java blob seeds separately from
@@ -796,15 +795,9 @@ export const environmentFireTrapsMethods = {
 			//falling remains possible; Java's flying actors are the exception to the grounded-mob rule.
 			if (!this.level.passable(mob.x, mob.y) || (this.isChasmCell(mob.x, mob.y) && !FLYING_KINDS.has(mob.kind as AnyMonsterId))
 				|| ((mob.kind === 'piranha' || mob.kind === 'phantomPiranha') && this.level.get(mob.x, mob.y) !== WATER) || this.creatureAt(mob.x, mob.y)) continue;
-			//Painter markers (`alchemyBlob`, `eternalFire`) are filtered upstream, but any
-			//future unknown kind must refuse cleanly here instead of crashing inside
-			//`spawnMonster` reading `.frame` off an undefined catalogue entry - that exact
-			//TypeError was this project's open section-10 item, root-caused to these markers
-			//rather than the suspected asset-load race.
-			if (!MONSTERS[mob.kind as AnyMonsterId]) {
-				this.say(t('port.log.unknownmob', { kind: mob.kind }), 'negative');
-				continue;
-			}
+			//An unknown kind refuses cleanly (`spawnMonster` would crash reading `.frame` - the old section-10
+			//TypeError); the mine's quest actors, placed before their monster rows exist, skip without a warning.
+			if (!MONSTERS[mob.kind as AnyMonsterId]) { if (!MINE_QUEST_ACTOR_KINDS.has(mob.kind)) this.say(t('port.log.unknownmob', { kind: mob.kind }), 'negative'); continue; }
 			this.spawnMonster(mob.kind as AnyMonsterId, { x: mob.x, y: mob.y }, false, mob.loot, false, undefined, false, mob.initialWarmup);
 		}
 		this.portedMobSpawns = [];

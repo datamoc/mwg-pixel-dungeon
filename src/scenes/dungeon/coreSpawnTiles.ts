@@ -36,7 +36,7 @@ import { menuScale } from '../../ui/spdButton';
 import { allyIdentityColorAdd, buildMonsterCreature, buildMonsterSprite } from '../monsterSpawn';
 import { repairBossUnsealStairs } from '../bossUnseal';
 import { timeBubbleTurnCost } from '../../simulation/timeBubble';
-import { foregroundGrassFrames as buildForegroundGrassFrames, terrainFrameAt as buildTerrainFrameAt, terrainFrames as buildTerrainFrames, wallFrameAt as buildWallFrameAt, wallFrames as buildWallFrames, waterFrames as buildWaterFrames, type DungeonTileFrameContext } from '../dungeonTileFrames';
+import { mineTileFrames, foregroundGrassFrames as buildForegroundGrassFrames, terrainFrameAt as buildTerrainFrameAt, terrainFrames as buildTerrainFrames, wallFrameAt as buildWallFrameAt, wallFrames as buildWallFrames, waterFrames as buildWaterFrames, type DungeonTileFrameContext } from '../dungeonTileFrames';
 import { bindZoomShortcuts } from './zoomShortcuts';
 import { STARTING_WEAPON_CLASS, armorReductionRange, isClassArmorId, weaponCombat } from '../../items/catalog';
 import { MWL_HERO_BASE_STATS, MWL_HERO_LEVEL_GROWTH } from '../../mwlContent';
@@ -1079,6 +1079,10 @@ export const coreSpawnTilesMethods = {
 		this.waterSurface?.destroy({ children: true });
 		this.miningBorder?.destroy();
 		this.miningBorder = null;
+		this.mineTiles?.destroy();
+		this.mineTiles = null;
+		this.mineOverhangs?.destroy();
+		this.mineOverhangs = null;
 		this.branchQuestEntrance?.destroy();
 		this.branchQuestEntrance = null;
 		this.demonSpawnerFloor?.destroy();
@@ -1165,7 +1169,7 @@ export const coreSpawnTilesMethods = {
 		//on revisits instead.
 		ritualSiteState.ritualPos = -1;
 		const ported = this.miningBranchActive
-			? miningBranchFloor(this.runSeedLong, this.depth)
+			? miningBranchFloor(this.runSeedLong, this.depth, this.blacksmithQuestType, isChallengeEnabled('darkness'))
 			: isPortedDepth(this.depth) ? portedFloor(this.runSeedLong, this.depth, isChallengeEnabled('stronger_bosses')) : null;
 		this.portedFloorActive = ported !== null;
 		this.portedPaint = ported?.paint ?? null;
@@ -1351,6 +1355,17 @@ export const coreSpawnTilesMethods = {
 			this.miningBorder = new TileMap({ width: this.level.width, height: this.level.height, sheet: SpriteSheet.fromTexture(runState.sprites.cavesQuest, TILE) });
 			this.miningBorder.addLayer('border', border);
 			this.camera.world.addChild(this.miningBorder);
+			//`MiningLevel.tilesTex()`: the quest type picks the atlas the mine tiles come from.
+			const mineAtlas = this.blacksmithQuestType === 1 ? runState.sprites.cavesCrystal
+				: this.blacksmithQuestType === 2 ? runState.sprites.cavesGnoll : null;
+			if (mineAtlas) {
+				const frames = mineTileFrames(this.tileFrameContext());
+				this.mineTiles = new TileMap({ width: this.level.width, height: this.level.height, sheet: SpriteSheet.fromTexture(mineAtlas, TILE) });
+				this.mineTiles.addLayer('mine', frames.raised);
+				this.camera.world.addChild(this.mineTiles);
+				this.mineOverhangs = new TileMap({ width: this.level.width, height: this.level.height, sheet: SpriteSheet.fromTexture(mineAtlas, TILE) });
+				this.mineOverhangs.addLayer('overhang', frames.overhang);
+			}
 		}
 		if (!this.miningBranchActive && this.portedBranchExitCells.size > 0) {
 			// BlacksmithRoom.QuestEntrance is a one-cell CustomTilemap using atlas tile 0.
@@ -1509,6 +1524,7 @@ export const coreSpawnTilesMethods = {
 		this.camera.world.addChild(this.zapBeamOverlay);
 		//wall tops and overhangs draw over the actors, as they do in Java
 		this.camera.world.addChild(this.wallsMap);
+		if (this.mineOverhangs) this.camera.world.addChild(this.mineOverhangs);
 		//`LastLevel`'s three custom tilemaps, drawn over the walls (Java's `customWalls` layer
 		//sits above the wall tilemap too, and its floor strip has no wall cell in its rect, so a
 		//single sheet above both is the same picture with one less layer to keep in order).

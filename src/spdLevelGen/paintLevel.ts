@@ -55,6 +55,10 @@ export const Terrain = {
 	CRYSTAL_DOOR: 31,
 	REGION_DECO: 33,
 	REGION_DECO_ALT: 34,
+	/** `MiningLevel`'s two quest terrains (tag `v3.3.8`): both `SOLID` only - they block movement
+	 *  but not sight, and a pickaxe mines them like a wall. */
+	MINE_CRYSTAL: 35,
+	MINE_BOULDER: 36,
 } as const;
 
 /**
@@ -73,7 +77,13 @@ const PASSABLE_TERRAIN = new Set<number>([
 export function isPassableTerrain(terrain: number): boolean { return PASSABLE_TERRAIN.has(terrain); }
 
 export interface GroundItem { pos: number; kind: string; note?: string; sourceClass?: string; quantity?: number; }
-export interface PlacedMob { pos: number; kind: string; loot?: string; initialWarmup?: number; }
+export interface PlacedMob {
+	pos: number; kind: string; loot?: string; initialWarmup?: number;
+	/** `GnollSapper.spawnPos` and `linkPartner(guard)` (`MineLargeRoom`, tag `v3.3.8`). */
+	spawnPos?: number; partnerPos?: number;
+	/** A `ShieldBuff` the room grants at spawn (`GnollGeomancer.RockArmor.setShield(50)`). */
+	shield?: number;
+}
 export interface PlacedTrap { kind: string; hidden: boolean; active: boolean; }
 export interface SeededBlob { pos: number; kind: 'toxicGas' | 'toxicGasSeed'; amount: number; }
 export interface Transition { pos: number; type: 'surface' | 'regularEntrance' | 'regularExit' | 'branchExit'; branch?: number; }

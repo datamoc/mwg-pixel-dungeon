@@ -156,6 +156,11 @@ const MODELED_TRAP_CLASSES: Readonly<Record<string, TrapKind>> = {
 	warping: 'warping',
 	gripping: 'gripping',
 	rockfall: 'rockfall',
+	//`GnollRockfallTrap extends RockfallTrap` (tag `v3.3.8`), placed revealed by the Gnoll mine's
+	//large rooms. Its own `activate()` (5x5 flood skipping barricade-adjacent cells, armor-ignoring
+	//6-12, Paralysis 10 on guards / 3 otherwise, a 1-in-2 MINE_BOULDER on empty cells) is not
+	//ported: it rides the parent rockfall behaviour rather than the poison-dart fallback.
+	gnollRockfall: 'rockfall',
 	pitfall: 'pitfall',
 	frost: 'frost',
 	geyser: 'geyser',

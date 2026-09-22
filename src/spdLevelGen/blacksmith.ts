@@ -16,18 +16,28 @@
 import { SpdRandom } from '../spdRng';
 import { Room } from './room';
 
+/** `Blacksmith.Quest.CRYSTAL`/`GNOLL`/`FUNGI` (tag `v3.3.8`); 0 = no quest rolled this run. */
+export const BLACKSMITH_QUEST = { NONE: 0, CRYSTAL: 1, GNOLL: 2, FUNGI: 3 } as const;
+export type BlacksmithQuestType = typeof BLACKSMITH_QUEST[keyof typeof BLACKSMITH_QUEST];
+
 let spawned = false;
-let alternative = false;
+let questType: BlacksmithQuestType = BLACKSMITH_QUEST.NONE;
 
 /** `Blacksmith.Quest.reset()`. Consumes no RNG. */
 export function resetBlacksmithRunState(): void {
 	spawned = false;
-	alternative = false;
+	questType = BLACKSMITH_QUEST.NONE;
 }
 
-/** Whether this run's Blacksmith quest asks for a blood-stained pickaxe. */
-export function blacksmithQuestUsesBlood(): boolean {
-	return alternative;
+/** `Blacksmith.Quest.Type()`: which mine this run's Blacksmith sends the hero into. */
+export function blacksmithQuestType(): BlacksmithQuestType {
+	return questType;
+}
+
+/** Restores the run-level type from a save before the mining branch is generated (the same role
+ * `setWandmakerQuestType` plays): the branch is painted from this module state. */
+export function setBlacksmithQuestType(type: BlacksmithQuestType): void {
+	questType = type;
 }
 
 /**
@@ -45,9 +55,11 @@ export function blacksmithSpawnRooms(rooms: Room[], depth: number): Room[] {
 	if (!spawned && depth > 11 && SpdRandom.int(15 - depth) === 0) {
 		rooms.push(new Room('standard', 'blacksmith'));
 		spawned = true;
-		// `alternative = Random.Int(2) == 0` - Java chooses this immediately after appending
-		// the room, and the result is part of the run-level quest state.
-		alternative = SpdRandom.int(2) === 0;
+		// `type = Random.IntRange(1, 2)` (tag `v3.3.8`: "Currently cannot roll the fungi quest,
+		// as it is not fully implemented"). `IntRange(1, 2)` is `1 + Int(2)`, the same single
+		// draw the pre-v2.2 `alternative = Random.Int(2) == 0` bat-blood roll made, so moving to
+		// the real quest types leaves every later levelgen draw where it was.
+		questType = SpdRandom.intRange(1, 2) as BlacksmithQuestType;
 	}
 	return rooms;
 }

@@ -253,6 +253,9 @@ export const panelsSingleUseMethods = {
 		this.suckerPunchTargets = new Set(s.suckerPunchTargets ?? []);
 		this.upgradeScrollDrops = s.upgradeScrollDrops ?? 0;
 		this.blacksmithAlternative = s.blacksmithAlternative ?? this.blacksmithAlternative;
+		this.blacksmithQuestType = s.blacksmithQuestType ?? this.blacksmithQuestType;
+		//A save from before the entry prompt existed and already inside the quest keeps its access.
+		this.blacksmithQuestStarted = s.blacksmithQuestStarted ?? (s.blacksmithQuestType !== undefined ? false : this.quests.status('blacksmith') === 'active');
 		this.blacksmithFavor = s.blacksmithFavor ?? 0;
 		this.blacksmithBossBeaten = s.blacksmithBossBeaten ?? false;
 		this.hallsBossSealed = s.hallsBossSealed ?? false;

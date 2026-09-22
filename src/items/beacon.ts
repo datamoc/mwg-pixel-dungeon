@@ -38,6 +38,16 @@ export function beaconChargeCap(item: BeaconItem): number {
 	return mwlItemEffectValue('beacon', 'chargeCapBase') + mwlItemEffectValue('beacon', 'chargeCapPerLevel') * level;
 }
 
+/** `LloydsBeacon.upgrade()` (`LloydsBeacon.java`, tag `v3.3.8`): +1 level unless already at
+ * `levelCap` (3, authored in `item-rules.mwl`), in which case it is a no-op - the boss-`die()`
+ * upgrade Tengu, DM300 and the Dwarf King call (Goo and Yog never do). Returns whether the
+ * level moved, so the caller can say the `levelup` line only on a real upgrade. */
+export function upgradeBeaconLevel(item: BeaconItem): boolean {
+	if ((item.level ?? 0) >= mwlItemEffectValue('beacon', 'levelCap')) return false;
+	item.level = (item.level ?? 0) + 1;
+	return true;
+}
+
 /** The zap price: 1 charge down to depth 20, 2 deeper (`LloydsBeacon.zap()`'s own threshold). */
 export function beaconZapCost(depth: number): number {
 	return depth > mwlItemEffectValue('beacon', 'zapCostDepthThreshold')

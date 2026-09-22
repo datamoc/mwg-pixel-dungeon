@@ -19,7 +19,7 @@ import { interactWithGhost as runGhostInteraction, interactWithImp as runImpInte
 import { groundKindForItem } from '../../items/itemKinds';
 import { startTransmutationPick } from '../../items/transmutation';
 import { RING_DEFS } from '../../items/ringModifiers';
-import { CLASS_KEYS, RING_KEYS, WAND_KEYS, has, language, t } from '../../i18n/index';
+import { CLASS_KEYS, RING_KEYS, WAND_KEYS, capitalize, has, language, t } from '../../i18n/index';
 import { SPD_STATUS_COLOR } from '../../ui/spdTheme';
 import { SpdRandom } from '../../spdRng';
 import { vaultCenterVisualFrames, vaultCenterWallFrames, vaultFloorFrames } from '../../spdLevelGen/vaultVisuals';
@@ -31,7 +31,7 @@ import { runState } from '../../runState';
 import { recordRun } from '../../rankings';
 import { isChallengeEnabled } from '../../challenges';
 import { CLASSES } from '../../classes';
-import { showChoiceWindow, showConfirmWindow } from '../../ui/portWindows';
+import { showChoiceWindow, showConfirmWindow, showInfoWindow } from '../../ui/portWindows';
 import { confirmBlacksmithCashout, confirmBlacksmithSmith, openBlacksmithWindow, type BlacksmithWindowContext } from '../../ui/blacksmithWindow';
 import { getCurse } from '../../items/itemCurses';
 import { Cat, blacksmithSmithRewards, generatorRandom, ghostQuestReward, randomArmor, randomArtifact, randomCategory, randomUsingDefaults, randomWeapon, setGeneratorDepth, type GenItem } from '../../items/generator';
@@ -48,6 +48,7 @@ import { nextEntityId } from '../../simulation/entityId';
 import { markRingTypesKnown } from '../../simulation/ringKnow';
 import { BOSSES, FLYING_KINDS, mobRosterForDepth, type MonsterId } from '../../monsters';
 import { BLACKSMITH_SMITH_COST, STARTING_WEAPON_CLASS, WANDMAKER_CLASS_INTROS, scenarioQuest } from './shared';
+import { mineTileFrames } from '../dungeonTileFrames';
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `npcShopBlacksmith`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
@@ -131,6 +132,14 @@ export const npcShopBlacksmithMethods = {
 	 * surroundings - without this a revealed secret door keeps the wall face it was hiding
 	 * behind, and an opened door keeps its shut art.
 	 */
+	/** Redraws the mine crystal/boulder layers after the pickaxe changes the raw grid. */
+	refreshMineTiles(this: DungeonScene): void {
+		if (!this.mineTiles || !this.mineOverhangs) return;
+		const frames = mineTileFrames(this.tileFrameContext());
+		this.mineTiles.setLayerData('mine', frames.raised);
+		this.mineOverhangs.setLayerData('overhang', frames.overhang);
+	},
+
 	restitchTilesAround(this: DungeonScene, x: number, y: number): void {
 		for (let dy = -1; dy <= 1; dy++) {
 			for (let dx = -1; dx <= 1; dx++) {
@@ -607,14 +616,31 @@ export const npcShopBlacksmithMethods = {
 		});
 	},
 
-	/** Troll Blacksmith quest: pickaxe + payment in, then persistent favor for forge services. */
+	/**
+	 * `Blacksmith.interact()` (tag `v3.3.8`). Not yet given: the class greeting and the mine
+	 * pitch (`intro_quest_*`), the pickaxe, then the quest type's own warning in a second window.
+	 * Given but not complete: the reminder plus its quest-type line. Completed: the reward
+	 * window (`WndBlacksmith`) or `get_lost`. The quest itself completes on the way *out of the
+	 * mine* (`tryLeaveMiningBranch`), as Java's `MiningLevel.activateTransition()` does - the old
+	 * turn-in-at-the-anvil below survives only for a pre-v2.2 blood-pickaxe save.
+	 */
 	interactWithBlacksmith(this: DungeonScene): void {
 		const status = this.quests.status('blacksmith');
 		if (status === 'available') {
 			this.quests.start('blacksmith');
 			this.quests.advanceStage('blacksmith', this.gameState);
 			this.bag.add({ id: 'pickaxe', quantity: 1, identified: true });
-			this.say(t(this.blacksmithAlternative ? 'port.npc.blacksmith.bloodoffer' : 'port.npc.blacksmith.offer'));
+			if (this.blacksmithAlternative) {
+				this.say(t('port.npc.blacksmith.bloodoffer'));
+				return;
+			}
+			const title = capitalize(t('actors.mobs.npcs.blacksmith.name'));
+			const typeLine = this.blacksmithQuestType === 1 ? t('port.blacksmith.intro_quest_crystal')
+				: this.blacksmithQuestType === 2 ? t('port.blacksmith.intro_quest_gnoll') : '';
+			//`WndQuest.hide()` opens the second window: pushed first, it waits under the intro.
+			if (typeLine) showInfoWindow(this.gameWindows, title, typeLine);
+			showInfoWindow(this.gameWindows, title, `${t(`port.blacksmith.intro_quest_${this.heroClass}`)}\n\n${t('port.blacksmith.intro_quest_start')}`);
+			this.say(capitalize(t('actors.hero.hero.you_now_have', { '0': this.itemDisplayName('pickaxe', true) })));
 			return;
 		}
 		if (status === 'complete') {
@@ -631,37 +657,112 @@ export const npcShopBlacksmithMethods = {
 			this.openBlacksmithWindow();
 			return;
 		}
+		if (!this.blacksmithAlternative) {
+			const typeLine = this.blacksmithQuestType === 1 ? t('port.blacksmith.reminder_crystal')
+				: this.blacksmithQuestType === 2 ? t('port.blacksmith.reminder_gnoll') : '';
+			showInfoWindow(this.gameWindows, capitalize(t('actors.mobs.npcs.blacksmith.name')),
+				typeLine ? `${t('port.blacksmith.reminder')}\n\n${typeLine}` : t('port.blacksmith.reminder'));
+			return;
+		}
 		const pick = this.bag.find('pickaxe');
-		if (this.blacksmithAlternative) {
-			if (!pick || pick.affix !== 'bloodStained') {
-				this.say(t('port.npc.blacksmith.bloodremind'));
-				return;
-			}
-			this.bag.remove('pickaxe', 1);
-			//Old Java's alternative branch (`Blacksmith.java` before the v3.0 quest rework)
-			//grants no favor at all and scores a flat `questScores[2] = 3000`, which clears
-			//that version's `score >= 2500` free-buy-back gate. This port tracks no
-			//quest-score table, so the observable half is recorded directly: no favor,
-			//and the buy-back is free.
-			this.blacksmithPickaxeFree = true;
-		} else {
-		const gold = this.bag.find('darkGold');
-		if (!pick || !gold || gold.quantity < 15) {
-			this.say(t('port.npc.blacksmith.remind', { gold: gold?.quantity ?? 0 }));
+		if (!pick || pick.affix !== 'bloodStained') {
+			this.say(t('port.npc.blacksmith.bloodremind'));
 			return;
 		}
 		this.bag.remove('pickaxe', 1);
-		this.blacksmithFavor = blacksmithTurnInFavor(gold?.quantity ?? 0, this.blacksmithBossBeaten);
-		this.bag.remove('darkGold', gold?.quantity ?? 0);
-		}
+		//Old Java's alternative branch (`Blacksmith.java` before the v3.0 quest rework)
+		//grants no favor at all and scores a flat `questScores[2] = 3000`, which clears
+		//that version's `score >= 2500` free-buy-back gate. This port tracks no
+		//quest-score table, so the observable half is recorded directly: no favor,
+		//and the buy-back is free.
+		this.blacksmithPickaxeFree = true;
+		this.finishBlacksmithQuest();
+		this.say(t('windows.wndblacksmith.prompt', { '0': this.blacksmithFavor }), 'positive');
+	},
+
+	/** The shared tail of both completions: switch, the quest's last two stages, the retained pickaxe. */
+	finishBlacksmithQuest(this: DungeonScene): void {
 		this.gameState.setSwitch('blacksmithDone', true);
 		this.quests.advanceStage('blacksmith', this.gameState);
 		// The authored quest has a final empty post-turn-in milestone. MWG advances only one
 		// stage per call, so consume that milestone here or the service window remains unreachable.
 		this.quests.advanceStage('blacksmith', this.gameState);
 		this.blacksmithPickaxeAvailable = true;
-		if (!this.blacksmithAlternative) this.blacksmithPickaxeFree = this.blacksmithFavor >= BLACKSMITH_FREE_PICKAXE_FAVOR;
-		this.say(t('windows.wndblacksmith.prompt', { '0': this.blacksmithFavor }), 'positive');
+	},
+
+	/** Carried DarkGold across every stack. */
+	carriedDarkGold(this: DungeonScene): number {
+		return this.bag.items.filter((it) => it.id === 'darkGold').reduce((sum, it) => sum + (it.quantity ?? 1), 0);
+	},
+
+	/**
+	 * `Blacksmith.Quest.complete()` (tag `v3.3.8`): every carried DarkGold is worth 50 favor
+	 * (capped at 2000) and is taken, the pickaxe is taken back (retained for the buy-back), a
+	 * beaten quest boss adds 1000, and 2500+ favor makes the buy-back free.
+	 */
+	completeBlacksmithQuest(this: DungeonScene): void {
+		const gold = this.carriedDarkGold();
+		this.blacksmithFavor = blacksmithTurnInFavor(gold, this.blacksmithBossBeaten);
+		if (gold > 0) this.bag.remove('darkGold', gold);
+		if (this.bag.find('pickaxe')) this.bag.remove('pickaxe', 1);
+		this.finishBlacksmithQuest();
+		this.blacksmithPickaxeFree = this.blacksmithFavor >= BLACKSMITH_FREE_PICKAXE_FAVOR;
+	},
+
+	/**
+	 * `CavesLevel.activateTransition()` for the mine's `BRANCH_EXIT` (tag `v3.3.8`): refused
+	 * (`entrance_blocked`) unless the Blacksmith is on the floor and the quest was given and is
+	 * not complete; a hero without the pickaxe hears `lost_pick`; the first entry asks
+	 * `quest_start_prompt` and marks the quest started, after which the ladder is free to use.
+	 */
+	tryEnterMiningBranch(this: DungeonScene): void {
+		const given = this.quests.status('blacksmith') !== 'available';
+		const completed = this.quests.status('blacksmith') === 'complete';
+		if (given && !completed && this.blacksmithQuestStarted) {
+			this.enterMiningBranch();
+			return;
+		}
+		const title = capitalize(t('actors.mobs.npcs.blacksmith.name'));
+		if (!this.creatures.some((c) => c.kind === 'blacksmith') || !given || completed) {
+			this.say(t('port.blacksmith.entrance_blocked'), 'warning');
+		} else if (!this.bag.find('pickaxe')) {
+			showInfoWindow(this.gameWindows, title, t('actors.mobs.npcs.blacksmith.lost_pick'));
+		} else {
+			showConfirmWindow(this.gameWindows, title, t('port.blacksmith.quest_start_prompt'),
+				t('port.blacksmith.enter_yes'), t('port.blacksmith.enter_no'), () => {
+					this.blacksmithQuestStarted = true;
+					this.enterMiningBranch();
+				});
+		}
+	},
+
+	/**
+	 * `MiningLevel.activateTransition()` for the mine's `BRANCH_ENTRANCE` (tag `v3.3.8`): until
+	 * the quest is complete, leaving needs the pickaxe (`lost_pick` otherwise) and a confirmation
+	 * graded by the DarkGold carried (<10 none, <20 low, <30 med, <40 high, else full), plus the
+	 * boss line while the quest boss lives. Confirming completes the quest, then climbs out.
+	 */
+	tryLeaveMiningBranch(this: DungeonScene): void {
+		if (this.quests.status('blacksmith') === 'complete' || this.blacksmithAlternative) {
+			this.leaveMiningBranch();
+			return;
+		}
+		const title = capitalize(t('actors.mobs.npcs.blacksmith.name'));
+		if (!this.bag.find('pickaxe')) {
+			showInfoWindow(this.gameWindows, title, t('actors.mobs.npcs.blacksmith.lost_pick'));
+			return;
+		}
+		const gold = this.carriedDarkGold();
+		let warn = t(gold < 10 ? 'port.blacksmith.exit_warn_none' : gold < 20 ? 'port.blacksmith.exit_warn_low'
+			: gold < 30 ? 'port.blacksmith.exit_warn_med' : gold < 40 ? 'port.blacksmith.exit_warn_high' : 'port.blacksmith.exit_warn_full');
+		if (!this.blacksmithBossBeaten) {
+			if (this.blacksmithQuestType === 1) warn += `\n\n${t('port.blacksmith.exit_warn_crystal')}`;
+			else if (this.blacksmithQuestType === 2) warn += `\n\n${t('port.blacksmith.exit_warn_gnoll')}`;
+		}
+		showConfirmWindow(this.gameWindows, title, warn, t('port.blacksmith.exit_yes'), t('port.blacksmith.exit_no'), () => {
+			this.completeBlacksmithQuest();
+			this.leaveMiningBranch();
+		});
 	},
 
 	blacksmithReforgeCost(this: DungeonScene): number { return itemBlacksmithReforgeCost(this.blacksmithReforges); },

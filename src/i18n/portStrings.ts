@@ -1,3 +1,4 @@
+import { PORT_MINE_STRINGS } from './portMineStrings';
 /**
  * The strings this port invented, which have no SPD original to borrow a translation from.
  *
@@ -7838,7 +7839,6 @@ export const PORT_STRINGS_NL: Record<string, string> = {
 };
 
 
-
 /**
  * MT: Indonesian (`in`), status `unreviewed` per SPD's own convention
  * (`languages.ts`). MT: machine-translated draft, not a native speaker's pass - adapted
@@ -12249,25 +12249,25 @@ Object.assign(PORT_CLERIC_ARMOR_FALLBACK, {
 	'port.ally.invalidtarget': PORT_STRINGS_EN['port.ally.invalidtarget'],
 });
 const completePortStrings = (catalog: Record<string, string>): Readonly<Record<string, string>> => ({ ...catalog, ...PORT_CLERIC_ARMOR_FALLBACK }); export const PORT_STRINGS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
-	en: PORT_STRINGS_EN,
-	fr: completePortStrings(PORT_STRINGS_FR),
-	de: completePortStrings(PORT_STRINGS_DE),
-	es: completePortStrings(PORT_STRINGS_ES),
-	pt: completePortStrings(PORT_STRINGS_PT),
-	it: completePortStrings(PORT_STRINGS_IT),
-	pl: completePortStrings(PORT_STRINGS_PL),
-	ru: completePortStrings(PORT_STRINGS_RU),
-	tr: completePortStrings(PORT_STRINGS_TR),
-	uk: completePortStrings(PORT_STRINGS_UK),
-	hu: completePortStrings(PORT_STRINGS_HU),
-	nl: completePortStrings(PORT_STRINGS_NL),
-	in: completePortStrings(PORT_STRINGS_IN),
-	ja: completePortStrings(PORT_STRINGS_JA),
-	cs: completePortStrings(PORT_STRINGS_CS),
-	vi: completePortStrings(PORT_STRINGS_VI),
-	el: completePortStrings(PORT_STRINGS_EL),
-	ko: completePortStrings(PORT_STRINGS_KO),
-	zh: completePortStrings(PORT_STRINGS_ZH),
+	en: { ...PORT_STRINGS_EN, ...PORT_MINE_STRINGS.en },
+	fr: completePortStrings({ ...PORT_STRINGS_FR, ...PORT_MINE_STRINGS.fr }),
+	de: completePortStrings({ ...PORT_STRINGS_DE, ...PORT_MINE_STRINGS.de }),
+	es: completePortStrings({ ...PORT_STRINGS_ES, ...PORT_MINE_STRINGS.es }),
+	pt: completePortStrings({ ...PORT_STRINGS_PT, ...PORT_MINE_STRINGS.pt }),
+	it: completePortStrings({ ...PORT_STRINGS_IT, ...PORT_MINE_STRINGS.it }),
+	pl: completePortStrings({ ...PORT_STRINGS_PL, ...PORT_MINE_STRINGS.pl }),
+	ru: completePortStrings({ ...PORT_STRINGS_RU, ...PORT_MINE_STRINGS.ru }),
+	tr: completePortStrings({ ...PORT_STRINGS_TR, ...PORT_MINE_STRINGS.tr }),
+	uk: completePortStrings({ ...PORT_STRINGS_UK, ...PORT_MINE_STRINGS.uk }),
+	hu: completePortStrings({ ...PORT_STRINGS_HU, ...PORT_MINE_STRINGS.hu }),
+	nl: completePortStrings({ ...PORT_STRINGS_NL, ...PORT_MINE_STRINGS.nl }),
+	in: completePortStrings({ ...PORT_STRINGS_IN, ...PORT_MINE_STRINGS.in }),
+	ja: completePortStrings({ ...PORT_STRINGS_JA, ...PORT_MINE_STRINGS.ja }),
+	cs: completePortStrings({ ...PORT_STRINGS_CS, ...PORT_MINE_STRINGS.cs }),
+	vi: completePortStrings({ ...PORT_STRINGS_VI, ...PORT_MINE_STRINGS.vi }),
+	el: completePortStrings({ ...PORT_STRINGS_EL, ...PORT_MINE_STRINGS.el }),
+	ko: completePortStrings({ ...PORT_STRINGS_KO, ...PORT_MINE_STRINGS.ko }),
+	zh: completePortStrings({ ...PORT_STRINGS_ZH, ...PORT_MINE_STRINGS.zh }),
 };
 
 /**

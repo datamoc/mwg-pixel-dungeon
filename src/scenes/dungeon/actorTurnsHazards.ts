@@ -206,9 +206,9 @@ export const actorTurnsHazardsMethods = {
 			if (this.fallThroughChasm(target.x, target.y)) return;
 			if (this.miningBranchActive && this.miningBranchEntrance
 				&& target.x === this.miningBranchEntrance.x && target.y === this.miningBranchEntrance.y) {
-				this.leaveMiningBranch();
+				this.tryLeaveMiningBranch();
 			} else if (!this.miningBranchActive && this.portedBranchExitCells.has(this.level.index(target.x, target.y))) {
-				this.enterMiningBranch();
+				this.tryEnterMiningBranch();
 			}
 			if (this.hasStairs && target.x === this.stairs.x && target.y === this.stairs.y) {
 				this.depth++;
@@ -695,25 +695,57 @@ export const actorTurnsHazardsMethods = {
 		return Boolean(this.bag.find('pickaxe') && this.miningBranchActive && this.portedPaint);
 	},
 
+	/**
+	 * `Hero.actMine()` (tag `v3.3.8`). Every swing costs one turn. A vein (`WALL_DECO`) yields
+	 * DarkGold - its pickup's own turn is refunded (`spend(-TICK)`), not the swing's - announcing
+	 * the total at every multiple of 5; a plain wall costs 3 extra hunger (4 with the turn); a `MINE_CRYSTAL` shatters
+	 * to `EMPTY` and a `MINE_BOULDER` breaks to `EMPTY_DECO`. Any swing but a vein then shatters
+	 * every crystal around the struck cell. `Level.insideMap()` keeps the outer ring unmineable.
+	 */
 	mineMiningWall(this: DungeonScene, x: number, y: number): boolean {
 		const paint = this.portedPaint;
 		if (!this.bag.find('pickaxe') || !paint || !this.level.inside(x, y) || this.level.get(x, y) !== WALL) return false;
+		if (x <= 0 || y <= 0 || x >= this.level.width - 1 || y >= this.level.height - 1) return false;
 		const cell = this.level.index(x, y);
-		const vein = paint.map[cell] === Terrain.WALL_DECO;
-		if (paint.map[cell] !== Terrain.WALL && !vein) return false;
-		paint.map[cell] = Terrain.EMPTY_DECO;
-		this.level.set(x, y, FLOOR);
-		//`Hero.java` 1299/1310: mining shakes once (0.5, half a second) whichever it struck - the
-		//DarkGold vein and the plain wall branch both do it, beside their own burst and sound.
-		this.shakeScreen(0.5, 0.5);
-		if (vein) {
-			this.bag.add({ id: 'darkGold', quantity: 1, stackable: true, identified: true });
-			this.say(t('port.log.pickup', { item: t('items.quest.darkgold.name') }), 'positive');
+		const struck = paint.map[cell];
+		if (struck !== Terrain.WALL && struck !== Terrain.WALL_DECO && struck !== Terrain.MINE_CRYSTAL && struck !== Terrain.MINE_BOULDER) return false;
+		const around: [number, number][] = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
+		let crystalAdjacent = around.some(([dx, dy]) => paint.map[cell + dx + dy * this.level.width] === Terrain.MINE_CRYSTAL);
+		if (struck === Terrain.WALL_DECO) {
+			paint.map[cell] = Terrain.EMPTY_DECO;
+			this.shakeScreen(0.5, 0.5);
 			runState.audio.cue('evoke', 0.7);
-		} else {
+			const gold = this.bag.add({ id: 'darkGold', quantity: 1, stackable: true, identified: true });
+			const total = this.bag.items.filter((it) => it.id === 'darkGold').reduce((sum, it) => sum + (it.quantity ?? 1), 0);
+			if (gold && total % 5 === 0) this.say(t('port.darkgold.you_now_have', { count: total }), total >= 40 ? 'positive' : 'info');
+			//"mining gold doesn't break crystals"
+			crystalAdjacent = false;
+		} else if (struck === Terrain.WALL) {
+			paint.map[cell] = Terrain.EMPTY_DECO;
+			this.shakeScreen(0.5, 0.5);
 			runState.audio.cue('mine', 0.7);
+			this.simulation.exertHunger(3);
+		} else if (struck === Terrain.MINE_CRYSTAL) {
+			paint.map[cell] = Terrain.EMPTY;
+			runState.audio.cue('shatter', 0.7);
+		} else {
+			paint.map[cell] = Terrain.EMPTY_DECO;
+			runState.audio.cue('mine', 0.6 * 0.7);
+		}
+		this.level.set(x, y, FLOOR);
+		if (crystalAdjacent) {
+			let broke = false;
+			for (const [dx, dy] of around) {
+				const n = cell + dx + dy * this.level.width;
+				if (paint.map[n] !== Terrain.MINE_CRYSTAL) continue;
+				paint.map[n] = Terrain.EMPTY;
+				this.level.set(x + dx, y + dy, FLOOR);
+				broke = true;
+			}
+			if (broke) runState.audio.cue('shatter', 0.7);
 		}
 		this.restitchTilesAround(x, y);
+		this.refreshMineTiles();
 		this.actionSpentTurn = true;
 		this.spendHeroTurn(1);
 		return true;

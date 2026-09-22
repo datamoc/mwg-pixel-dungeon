@@ -11,6 +11,7 @@ import { MWL_PROGRESSION, MWL_QUEST_DEFINITIONS, MWL_SCENARIO_QUESTS } from '../
 import { type WandType } from '../../items/wands';
 import { type SandalsFlowContext } from '../../items/sandals';
 import { wandmakerQuestType } from '../../spdLevelGen/wandmaker';
+import { type BlacksmithQuestType } from '../../spdLevelGen/blacksmith';
 import { type FloorState } from '../floorState';
 import { FLOOR, GRASS, HIGH_GRASS, WATERSKIN_MAX, type GroundItemKind, type TrapKind } from '../../dungeonConstants';
 import { REGION_GRASS, patchGenerate } from '../../genericDungeon';
@@ -465,6 +466,8 @@ export interface SaveShape {
 	blacksmithSpawned?: boolean;
 	impSpawned?: boolean;
 	blacksmithAlternative?: boolean;
+	blacksmithQuestType?: BlacksmithQuestType;
+	blacksmithQuestStarted?: boolean;
 	blacksmithFavor?: number;
 	blacksmithBossBeaten?: boolean;
 	/** `HallsBossLevel.seal()` spent (depth 25): entrance tile + Yog already risen. */

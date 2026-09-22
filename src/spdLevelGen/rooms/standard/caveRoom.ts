@@ -5,14 +5,15 @@ import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset } from '../../paintLevel';
 import { setupPatch, xyToPatchCoords, cleanDiagonalEdges } from './patchRoom';
 
-export function paintCaveRoom(level: PaintLevel, room: Room): void {
+/** `fillOverride` is a subclass's `fill()` (the mine rooms' 0.70/0.55/0.40); omitted, CaveRoom's own scale. */
+export function paintCaveRoom(level: PaintLevel, room: Room, fillOverride?: number): void {
 	fillRoom(level, room, Terrain.WALL);
 	fillRoomInset(level, room, 1, Terrain.EMPTY);
 	for (const door of room.connected.values()) door?.set(DoorType.REGULAR);
 
 	// fill scales from ~30% at 4x4 to ~60% at 18x18 (normal/large/giant bands per the Java comment).
 	const scale = Math.min(room.width() * room.height(), 18 * 18);
-	const fill = 0.3 + scale / 1024;
+	const fill = fillOverride ?? 0.3 + scale / 1024;
 
 	const patch = setupPatch(room, fill, 3, room.connected.size > 0);
 	cleanDiagonalEdges(patch, room.width() - 2);

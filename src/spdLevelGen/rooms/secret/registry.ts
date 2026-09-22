@@ -33,6 +33,7 @@ import { paintHoardRoom } from './hoardRoom';
 import { paintMazeRoom } from './mazeRoom';
 import { paintSummoningRoom } from './summoningRoom';
 import { paintRatKingRoom } from '../sewerBoss/ratKingRoom';
+import { paintMineSecretRoom } from '../quest/mineRooms';
 
 /** `SecretRoom.ALL_SECRETS`'s real declaration order - `createRoom()`'s selection index is rolled
  *  against this list's current order (post-shuffle, post-rotation), so the order matters. */
@@ -110,6 +111,8 @@ const PAINTERS: Record<SecretRoomKind, PaintFn> = {
 	summoning: (l, r) => paintSummoningRoom(l, r),
 	// Never in `ALL_SECRETS`/`createSecretRoom()` - placed directly by `sewerBossInitRooms()`.
 	ratKing: (l, r) => paintRatKingRoom(l, r),
+	// Never in `ALL_SECRETS` - placed directly by `MiningLevel.initRooms()` (miningLevel.ts).
+	mine: (l, r) => paintMineSecretRoom(l, r),
 };
 
 export function paintSecretRoom(level: PaintLevel, room: Room, depth: number): void {

@@ -113,7 +113,8 @@ export class FigureEightBuilder extends RegularBuilder {
 		}
 
 		const secondLoopTemp: Room[] = [landmark, ...roomsToLoop];
-		secondLoopTemp.splice(Math.floor((secondLoopTemp.length + 1) / 2), 0, this.exit!);
+		// `if (exit != null)`: a branch level (`MiningLevel`) has an entrance but no exit room.
+		if (this.exit) secondLoopTemp.splice(Math.floor((secondLoopTemp.length + 1) / 2), 0, this.exit);
 
 		this.secondLoop = [];
 		for (const r of secondLoopTemp) {

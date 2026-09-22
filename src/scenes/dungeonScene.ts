@@ -248,6 +248,7 @@ import { itemDescription, itemStatsLine, itemDisplayName as resolveItemDisplayNa
 import { weaponSTRReq, canSurpriseAttack } from '../items/strReq';
 import { useStoneById as routeStoneAction, type StoneActionContext } from '../items/stoneActions';
 import { setWandmakerQuestType, setWandmakerQuestWands, wandmakerQuestType, wandmakerQuestWands } from '../spdLevelGen/wandmaker';
+import { type BlacksmithQuestType } from '../spdLevelGen/blacksmith';
 import type { FloorState, SavedCreature } from './floorState';
 import { monsterSpawnProfile } from '../actors/monsterSpawn';
 import { ritualSiteState } from '../spdLevelGen/rooms/standard/ritualSiteRoom';
@@ -674,8 +675,10 @@ export class DungeonScene extends Scene2D {
 	/** `Shopkeeper.processHarm()`'s one-warning buffer before fleeing for good. */
 	shopkeeperWarned = false;
 	blacksmithSpawned = false;
-	/** Java Blacksmith.Quest.alternative: blood-stained pickaxe instead of 15 DarkGold. */
+	/** Pre-v2.2 `Quest.alternative` (blood pickaxe): never rolled now, kept so an old save's quest can finish. */
 	blacksmithAlternative = false;
+	/** `Blacksmith.Quest.type` (tag `v3.3.8`, CRYSTAL 1 / GNOLL 2, 0 until rolled) and `started` (first descent). */
+	blacksmithQuestType: BlacksmithQuestType = 0; blacksmithQuestStarted = false;
 	/** `Blacksmith.Quest.bossBeaten`: set by the quest-branch bosses' deaths
 	 * (`CrystalSpire`, `FungalCore`, `GnollGeomancer` call `Quest.beatBoss()`).
 	 * None of the three mobs is ported, so nothing sets this yet - the field and
@@ -1379,6 +1382,8 @@ export class DungeonScene extends Scene2D {
 	wallDecorations: WallDecorationLayer | null = null;
 	/** MiningLevel.BorderDarken equivalent: the custom caves quest border overlay. */
 	miningBorder: TileMap | null = null;
+	/** `MiningLevel`'s crystal/boulder tiles and their overhangs, on the quest type's own atlas. */
+	mineTiles: TileMap | null = null; mineOverhangs: TileMap | null = null;
 	branchQuestEntrance: TileMap | null = null;
 	/** Halls' DemonSpawnerRoom.CustomFloor overlay, rebuilt from the live spawner state. */
 	demonSpawnerFloor: TileMap | null = null;

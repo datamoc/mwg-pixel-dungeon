@@ -1302,6 +1302,8 @@ export const deathSaveRefreshMethods = {
 			suckerPunchTargets: [...this.suckerPunchTargets],
 			upgradeScrollDrops: this.upgradeScrollDrops,
 			blacksmithAlternative: this.blacksmithAlternative,
+			blacksmithQuestType: this.blacksmithQuestType,
+			blacksmithQuestStarted: this.blacksmithQuestStarted,
 			blacksmithFavor: this.blacksmithFavor,
 			blacksmithBossBeaten: this.blacksmithBossBeaten,
 			hallsBossSealed: this.hallsBossSealed,

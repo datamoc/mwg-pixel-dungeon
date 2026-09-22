@@ -8,6 +8,11 @@ import effectsUrl from './assets/effects.png';
 import terrainFeaturesUrl from './assets/terrain_features.png';
 // `levels/MiningLevel.BorderDarken`'s exact 4-tile custom atlas.
 import cavesQuestUrl from './assets/caves_quest.png';
+// `Assets.Environment.TILES_CAVES_CRYSTAL`/`TILES_CAVES_GNOLL` (`MiningLevel.tilesTex()`), byte-for-byte
+// from tag `v3.3.8`. They follow v3.3.8's sheet layout, not the v2.1.4 one `tiles_caves.png` does, so
+// only their mine tiles are drawn (see `mineTileFrame`), on their own layers.
+import cavesCrystalUrl from './assets/tiles_caves_crystal.png';
+import cavesGnollUrl from './assets/tiles_caves_gnoll.png';
 // `DemonSpawnerRoom.CustomFloor`'s exact HALLS_SP custom atlas.
 import hallsSpecialUrl from './assets/halls_special.png';
 import cavesBossUrl from './assets/caves_boss.png';
@@ -358,6 +363,8 @@ export interface SpdSprites {
 	effects: Texture;
 	terrainFeatures: Texture;
 	cavesQuest: Texture;
+	cavesCrystal: Texture;
+	cavesGnoll: Texture;
 	hallsSpecial: Texture;
 	cavesBoss: Texture;
 	/** `Assets.Environment.CITY_BOSS` - `CityBossLevel`'s `CustomGroundVisuals`/`CustomWallVisuals` atlas. */
@@ -543,6 +550,8 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		effects,
 		terrainFeatures,
 		cavesQuest,
+		cavesCrystal,
+		cavesGnoll,
 		hallsSpecial,
 		cavesBoss,
 		cityBoss,
@@ -651,6 +660,8 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(effectsUrl),
 		loadImage(terrainFeaturesUrl),
 		loadImage(cavesQuestUrl),
+		loadImage(cavesCrystalUrl),
+		loadImage(cavesGnollUrl),
 		loadImage(hallsSpecialUrl),
 		loadImage(cavesBossUrl),
 		loadImage(cityBossUrl),
@@ -762,6 +773,8 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		effects: Texture.from(effects),
 		terrainFeatures: Texture.from(terrainFeatures),
 		cavesQuest: Texture.from(cavesQuest),
+		cavesCrystal: Texture.from(cavesCrystal),
+		cavesGnoll: Texture.from(cavesGnoll),
 		hallsSpecial: Texture.from(hallsSpecial),
 		cavesBoss: Texture.from(cavesBoss),
 		cityBoss: Texture.from(cityBoss),

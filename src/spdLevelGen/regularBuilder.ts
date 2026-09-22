@@ -4,7 +4,7 @@
  * table (`chances[depth]`, 6 concrete subclasses) is ported for RNG-order fidelity, but the
  * concrete subclasses themselves aren't - see `connectionRoom.ts`.
  */
-import { Room, ALL } from './room';
+import { Room, ALL, isEntranceRoom } from './room';
 import { placeRoom } from './builder';
 import { SpdRandom } from '../spdRng';
 import { createConnectionRoom } from './connectionRoom';
@@ -34,7 +34,7 @@ export class RegularBuilder {
 		this.multiConnections = [];
 
 		for (const r of rooms) {
-			if (r.kind === 'entrance') this.entrance = r;
+			if (isEntranceRoom(r)) this.entrance = r;
 			else if (r.kind === 'exit') this.exit = r;
 			else if (r.kind === 'shop' && r.maxConnections(ALL) === 1) this.shop = r;
 			else if (r.maxConnections(ALL) > 1) this.multiConnections.push(r);
