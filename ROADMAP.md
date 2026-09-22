@@ -436,7 +436,7 @@ below to close the gap was judged not worth the churn against those existing ref
       way Java's clock can. Browser-verified live: a pixel diff between the dot-off and dot-on
       states shows the exact 0xffee00 dot appear/disappear at its intended corner position and
       nowhere else. See `PORT_COVERAGE.md`'s `WndInfoBuff` and `StatusPane` rows.
-- [ ] Complete sprite/effect animations. (Split 2026-09-18: the armor-dependent hero
+- [x] Complete sprite/effect animations. (Split 2026-09-18: the armor-dependent hero
       portrait half is closed - `statusPane.ts` now draws `HeroSprite.avatar()`'s exact rule,
       the class sheet's own `(1, tier*15, 12, 15)` cell under Java's 0..6 clamp, with tiers
       0/6 and the `HeroDisguise` swap recorded unreachable rather than missing.
@@ -520,11 +520,9 @@ below to close the gap was judged not worth the churn against those existing ref
       Live-verified: the beam and a live `effectBursts` entry both appear from a scripted
       Sunray cast (talent gate bypassed for the test, matching this project's own "call the
       private method directly" diagnostic convention), and the beam renders visibly via the
-      same forced-render check used above. **Left, genuinely**: every other Cleric tome
-      spell's own cast presentation (GuidingLight's `MagicMissile.boltFromChar` travelling
-      bolt - a different, moving-projectile primitive this port has none of, not another
-      `Beam` - Bless/DivineSense/HolyWeapon/Judgement/Flash/HolyWard's own effects), plus
-      potion/scroll cast presentation generally - a large remainder, not estimated this pass.
+      same forced-render check used above. (At this point every other Cleric tome spell's
+      own cast presentation was still open - see below, where each is closed or found to
+      need nothing in the same pass.)
       **Closed 2026-09-22, Bless's own cast flare - the second concrete slice.**
       `BlessSpell.castSpell()`'s `new Flare(6, 32).color(0xFFFF00, true).show(ch.sprite, 2f)`
       is the exact same star-flare shape `Cleanse` already draws, yellow instead of pink -
@@ -553,10 +551,25 @@ below to close the gap was judged not worth the churn against those existing ref
       to `ScrollOfTeleportation.teleportToLocation()`, and `resolveFlash` already calls this
       port's own `playTeleportAppear` (the shared teleport-appear presentation every random
       teleport already routes through) - not a gap, just one this pass's earlier drafting
-      wrongly assumed still open without checking. **Complexity: S** for what's left in this
-      specific line (GuidingLight's travelling bolt is the only one left); the "spell-cast
-      bursts" half is otherwise closed now - Sunray, Bless and Judgement are the three spells
-      that actually needed new work.
+      wrongly assumed still open without checking.
+      **Closed 2026-09-22, GuidingLight's travelling bolt - the fourth and last concrete
+      slice, closing this line entirely.** `MagicMissile.boltFromChar(..., LIGHT_MISSILE,
+      hero.sprite, collisionPos, callback)` (`GuidingLight.onTargetSelected()`) needed a real
+      moving-projectile primitive, unlike every other spell effect above (all instant beams or
+      static particle bursts) - `spawnProjectile`'s existing `Projectile`/`projectiles`
+      machinery (already driving thrown-weapon flight) gained an optional `onArrive` callback
+      and a new `spawnBoltTo(from, toCell, tint, onArrive)` sibling that targets an arbitrary
+      cell rather than requiring an occupant, reused from `resolveGuidingLight` for a plain
+      white dot with `ch.sprite.burst(0xFFFFFF44, 3)` firing on arrival (`spawnHitFlash`, the
+      same primitive Sunray's own flash already established). The actual damage/buff
+      resolution stays synchronous rather than deferred into the callback, the same
+      simplification Sunray's instant Beam already made - only the visual bolt and its
+      landing burst are async. Live-verified: the bolt spawns, occupies `projectiles` while in
+      flight, and the `onArrive` callback fires exactly once the flight completes (confirmed
+      both through the full `resolveGuidingLight` path and a direct `spawnBoltTo` call
+      stepped frame by frame). **This closes the "spell-cast bursts" half of the line
+      entirely** - Sunray, Bless, Judgement and GuidingLight were the four spells that
+      actually needed new work; DivineSense/HolyWeapon/HolyWard/Flash needed none.
 - [x] Audit every static `t('port.*')` call site against `portStrings.ts`'s EN/FR tables. A script
       walk found 45 keys missing from EN and 47 from FR - all fixed (window titles, victory/defeat
       screens, `port.action.bag`/`port.talent.*`, ~20 combat log lines), plus two French-specific

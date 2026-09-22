@@ -669,6 +669,29 @@ export const turnLoopAimingMethods = {
 		});
 	},
 
+	/**
+	 * `MagicMissile.boltFromChar(parent, type, from, toPos, callback)` (tag `v3.3.8`):
+	 * a plain travelling dot from a creature's own cell to an arbitrary cell (not
+	 * necessarily an occupant), tinted per missile kind, running `onArrive` once it
+	 * lands - the shape `GuidingLight.onTargetSelected()` uses for its own
+	 * `LIGHT_MISSILE` bolt. Reuses the same `Projectile`/`projectiles` primitive
+	 * `spawnProjectile` above drives for thrown weapons, just without requiring a
+	 * `Creature` at the destination.
+	 */
+	spawnBoltTo(this: DungeonScene, from: Creature, to: { x: number; y: number }, tint: number, onArrive?: () => void): void {
+		const sprite = new TintedSprite(this.dotTexture);
+		sprite.tint = tint;
+		this.creatureLayer.addChild(sprite);
+		const [fx, fy] = this.worldOf(from);
+		const tx = (to.x + 0.5) * TILE, ty = (to.y + 0.5) * TILE;
+		this.projectiles.push({
+			flight: new Projectile(sprite, { x: fx, y: fy }, { x: tx, y: ty }, { speed: 300 }),
+			sprite,
+			spin: 0,
+			onArrive,
+		});
+	},
+
 	// -------------------------------------------------------------- the loop
 
 	runTurns(this: DungeonScene): void {

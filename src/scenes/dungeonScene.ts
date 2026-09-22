@@ -572,7 +572,7 @@ export class DungeonScene extends Scene2D {
 	 * bag stack it came from are the same stack, so this is what travels when it is stashed back
 	 * (see `wieldMissile`). A projectile breaks only at 0. */
 	ammoDurability = MISSILE_MAX_DURABILITY;
-	projectiles: Array<{ flight: Projectile; sprite: TintedSprite; spin: number }> = [];
+	projectiles: Array<{ flight: Projectile; sprite: TintedSprite; spin: number; onArrive?: () => void }> = [];
 	/** A thrown item flies its own item sprite (`MissileSprite.view(item)`); anything
 	 * without flight art - wand bolts, monster zaps - keeps the plain dot, which is
 	 * what those effects approximate here rather than a stand-in for a real sprite. */
@@ -2489,6 +2489,7 @@ export class DungeonScene extends Scene2D {
 			if (thrown.flight.update(dt)) {
 				thrown.sprite.destroy();
 				this.projectiles.splice(i, 1);
+				thrown.onArrive?.();
 			}
 		}
 

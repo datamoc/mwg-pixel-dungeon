@@ -856,6 +856,13 @@ export const inventoryQuickslotMethods = {
 			}
 			const tome = findHolyTome(this.bag, instanceId);
 			if (!tome) return;
+			//`GuidingLight.onTargetSelected()`'s own presentation (tag `v3.3.8`):
+			//`MagicMissile.boltFromChar(..., LIGHT_MISSILE, hero.sprite, collisionPos, ...)`
+			//- a plain white travelling dot, then `ch.sprite.burst(0xFFFFFF44, 3)` on arrival.
+			//This port resolves the damage/buff below synchronously rather than deferring it
+			//into the bolt's own arrival callback (same simplification Sunray's instant Beam
+			//already established) - only the visual bolt and its landing burst are async.
+			this.spawnBoltTo(this.hero, cell, 0xffffff, () => spawnHitFlash(this.effectLayer, this.effectBursts, cell.x, cell.y, 3, 0xffffff));
 			const victim = this.creatureAt(cell.x, cell.y);
 			if (victim) {
 				const damage = Random.normalRange(GUIDING_LIGHT_DAMAGE[0], GUIDING_LIGHT_DAMAGE[1]);
