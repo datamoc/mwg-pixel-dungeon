@@ -52,6 +52,10 @@ Every simplification or deviation from real Java behavior must be explicitly doc
 
 Never silently drop a piece of real behavior without a corresponding "Not ported" line.
 
+An Internationalisation/`messages/Messages.java`/i18n row goes in `PORT_COVERAGE_I18N.md`
+instead, split out 2026-09-21 once `PORT_COVERAGE.md` passed ~530KB - see that file's own
+header. Every other row still goes in `PORT_COVERAGE.md`.
+
 ## Fidelity policy: iso is no longer the goal
 
 Settled 2026-09-11. Matching Java behaviour exactly is **not** an objective in itself any more,
@@ -180,8 +184,25 @@ Prefer a skill's own workflow over improvising an equivalent one. If a relevant 
 installed but genuinely inapplicable, that is fine — but the judgement should be explicit,
 not an omission by default.
 
+## Concurrent agent sessions
+
+More than one Claude Code session sometimes works this repo at the same time. `agents_talking.md`
+at the repo root is a scratch coordination log — check it before starting broad, structural, or
+file-budget-adjacent work if a peer session isn't reachable directly.
+
+A faster channel also exists for this: a small local ACP (Agent Communication Protocol) server at
+`C:/Users/miche/dev/acp-agent-coordination` gives concurrent sessions a shared mailbox, file/area
+claims, task requests and a presence roster in near real time, layered on top of (not instead of)
+`agents_talking.md`. It has its own `acp-client` skill there (`.claude/skills/acp-client/SKILL.md`)
+covering the full command set, session protocol, and a real port-volatility gotcha worth reading
+first. `cd` there and check `python ACP_client.py status`/`locks`/`inbox` before committing to a
+large or file-budget-adjacent change.
+
 ## Reference material
 
+- The local Shattered Pixel Dungeon `v3.3.8` checkout, including its sources and built
+  version, is `C:\Users\miche\dev\shattered-pixel-dungeon\spd-3.3.8-build`. Use this path
+  when comparing the port against the Java build or reading the period-accurate source.
 - Real Java source not present in this checkout's history is fetched with
   `git -C <path-to-SPD-checkout> show refs/tags/<tag>:<path>` (e.g. `4.0.0-beta`,
   `v3.3.8`) — used to confirm exact values/behavior or pull period-accurate assets rather

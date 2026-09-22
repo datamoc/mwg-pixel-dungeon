@@ -59,6 +59,10 @@ Every simplification or deviation from real Java behavior must be explicitly doc
 
 Never silently drop a piece of real behavior without a corresponding "Not ported" line.
 
+An Internationalisation/`messages/Messages.java`/i18n row goes in `PORT_COVERAGE_I18N.md`
+instead, split out 2026-09-21 once `PORT_COVERAGE.md` passed ~530KB - see that file's own
+header. Every other row still goes in `PORT_COVERAGE.md`.
+
 ## Fidelity policy: iso is no longer the goal
 
 Settled 2026-09-11. Matching Java behaviour exactly is **not** an objective in itself any more,
@@ -241,6 +245,31 @@ skipping one to "just do it by hand" has already cost this project real time. In
 Prefer a skill's own workflow over improvising an equivalent one. If a relevant plugin is
 installed but genuinely inapplicable, that is fine — but the judgement should be explicit,
 not an omission by default.
+
+## Concurrent agent sessions
+
+More than one Claude Code session sometimes works this repo at the same time (the user running
+several terminals/instances toward the same broad goal). `ListAgents` names any reachable peer
+session, but a session that has already finished won't show up there even though it left work
+behind — so before starting broad, structural, or file-budget-adjacent work, check both
+`ListAgents` and `git status`/recent commits for signs of concurrent changes, and re-run
+`npm run verify` after any that appear to confirm they still hold together with yours.
+
+`agents_talking.md` at the repo root (created 2026-09-21) is a scratch coordination log for this:
+append a dated entry naming your session, what you're touching, and status before starting broad
+work, and check it first if a peer session isn't reachable via direct messaging. It is not part of
+the port itself — fold anything worth keeping into `ROADMAP.md`/`PORT_COVERAGE.md` and delete it
+once no session needs it, rather than letting it accumulate as permanent project history.
+
+A separate, faster channel also exists for this: a small local ACP (Agent Communication Protocol)
+server at `C:/Users/miche/dev/acp-agent-coordination` gives concurrent sessions a shared mailbox,
+file/area claims, task requests and a presence roster in near real time, layered on top of (not
+instead of) `agents_talking.md` above. It is a separate repo with its own `acp-client` skill
+(`.claude/skills/acp-client/SKILL.md` there) covering the full command set, session protocol, and
+a real port-volatility gotcha worth reading before assuming a failed call means the server is
+down. Use it whenever this file's "before starting broad ... work" guidance applies and more than
+one session might be live - `cd` there and check `python ACP_client.py status`/`locks`/`inbox`
+before committing to a large or file-budget-adjacent change.
 
 ## Reference material
 
