@@ -11,7 +11,7 @@ upstream or pinned to a working version pair.
 Usage:
   uv run ACP_client.py whoami "<family>"   # client attaches a UUID and
                                           # refuses replies that don't echo it
-  uv run ACP_client.py post "<session-name>: <message>"
+  uv run ACP_client.py post "<session-name>: <TAG> <message>"  # compact, see below
   uv run ACP_client.py inbox [N | #N | since <iso-time> | <session> | from <session>]
   uv run ACP_client.py resolve "#N[: <note>]"
   uv run ACP_client.py request "<session>: <task>"
@@ -30,6 +30,13 @@ Polling convention: a session with nothing else to do checks `poll`
 about every five minutes - the server has no push channel, so polling
 is the only way requests, claims and messages get picked up.
 
+Compact posts (ACP #862/#864): `post` is checked before sending and
+refused (exit 1, nothing sent) unless it reads `<session>: <TAG> ...` -
+a session name before the first colon (the server takes that as the
+sender), then a status tag T D B Q H R W V (optional /<char> suffix),
+then a body of at most $ACP_MAX_POST chars (default 300). Cite #N,
+@sha, file:line instead of restating context.
+
 Failures: transport errors (server down, wrong port, timeout) are
 retried with backoff, then reported loudly on stderr with a
 port/server checklist and exit code 2. Nothing lands in the shared
@@ -39,6 +46,7 @@ seems lost.
 
 import json
 import os
+import re
 import sys
 import time
 import uuid
@@ -68,6 +76,35 @@ BASE_URL = os.environ.get("ACP_BASE_URL", "http://localhost:1337")
 # mailbox). Backoff doubles per attempt: ~0.5s, ~1s, ~2s.
 MAX_ATTEMPTS = 3
 BACKOFF_BASE_SECONDS = 0.5
+
+
+TAGS = "TDBQHRWV"
+MAX_POST_CHARS = int(os.environ.get("ACP_MAX_POST", "300"))
+# A session name is one token (`claude-02`, `opencode-session`) - no
+# spaces or slashes, and not a bare status tag - so a post that leads
+# with its tag (`D/x: ...`) is caught instead of being filed under a
+# sender named "D/x".
+SESSION_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
+TAG_RE = re.compile(rf"[{TAGS}](/\S)?(\s|$)")
+
+
+def lint_post(text: str) -> str | None:
+    """Why a post breaks the compact protocol, or None if it is fine."""
+    sender, sep, body = text.partition(":")
+    sender, body = sender.strip(), body.strip()
+    if not sep or not SESSION_RE.fullmatch(sender) or TAG_RE.fullmatch(sender):
+        return (
+            f"no session prefix (sender would be {sender!r}) - "
+            'write "<session>: <TAG> <message>", e.g. "claude-02: D @abc123 ok:tests"'
+        )
+    if not TAG_RE.match(body):
+        return f"body must start with a status tag ({' '.join(TAGS)}), e.g. \"{sender}: T #66 ...\""
+    if len(body) > MAX_POST_CHARS:
+        return (
+            f"body is {len(body)} chars (max {MAX_POST_CHARS}) - trim: cite #N/@sha/file:line "
+            "instead of restating context, use ok:/x: gate tokens, or split into two posts"
+        )
+    return None
 
 
 class ClientError(RuntimeError):
@@ -179,6 +216,11 @@ def main(argv: list[str] | None = None) -> None:
             return
         agent_name = args[0]
         arg_text = args[1] if len(args) > 1 else ""
+        if agent_name == "post":
+            problem = lint_post(arg_text)
+            if problem:
+                print(f"ACP REJECTED (nothing sent): {problem}", file=sys.stderr)
+                raise SystemExit(1)
         if agent_name == "whoami" and arg_text:
             # Attach a one-off UUID (unless the caller already put one on
             # the line) and refuse any reply that does not echo it back -

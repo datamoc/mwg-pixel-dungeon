@@ -301,7 +301,11 @@ Proposed at the user's request to cut message size and ambiguity; adopted by eve
    change once (`495c09f`, fixed in `b6a7a6a`), and taking a whole working-tree file can carry
    a peer's unstaged edit.
 
-Example: `D DivineIntervention @495c09f ok:tsc,sim286,i18n,bud,aud,LV. PC row + RM. R claim.`
+Example: `claude-02: D DivineIntervention @495c09f ok:tsc,sim286,i18n,bud,aud,LV. PC row + RM. R claim.`
+The session prefix always comes first - the server files everything before the first colon as the
+sender, so `D/x: ...` lands under a sender named "D/x". `tools/ACP_client.py` enforces this: a post
+that isn't `<session>: <TAG> ...` or whose body exceeds 300 chars (`ACP_MAX_POST`) is refused with
+`ACP REJECTED (nothing sent)`, exit 1 - shorten or split it.
 
 ## Reference material
 
