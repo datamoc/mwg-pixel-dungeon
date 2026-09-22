@@ -17,6 +17,7 @@ import { CLASS_AMMO } from '../../classes';
 import { applyDM300DeathUnseal, applyGooDeathUnseal, applyKingDeathUnseal, applyYogDeathUnseal } from '../bossUnseal';
 import { processSacrifice } from '../../simulation/environmentalBlobs';
 import { nearestFreeCell as nearestFreeCellFlow } from '../../simulation/wandering';
+import { buildYogMinionDeck } from '../../simulation/yogBoss';
 import { deathBurstsFor } from '../../simulation/deathBursts';
 import { colorblind } from '../../settings';
 import { ringTypesKnownFor } from '../../simulation/ringKnow';
@@ -822,14 +823,27 @@ export const deathSaveRefreshMethods = {
 		return true;
 	},
 
-	/** `YogDzewa.act()`'s regularSummons deck. Larva/Ripper/Eye/Scorpio now each supply their real
-	 * combat kit (Larva has its own stats/sprite since it was promoted to a standalone kind); the
-	 * exact seeded deck order Java draws still remains outside this compact roster. */
+	/** `YogDzewa.act()`'s `regularSummons` deck (`actors/mobs/YogDzewa.java`, tag `v3.3.8`):
+	 * built once per Yog from the live spawner count (`Statistics.spawnersAlive` - here
+	 * the live `demonSpawner` creatures, the only ones observable mid-fight), shuffled,
+	 * then drawn cyclically. Normal: the first `spawnersAlive` slots are rippers, the
+	 * rest larvae; challenge: eye/scorpio under the count, larvae to index 4, rippers
+	 * for the last two (see `buildYogMinionDeck`). Every arrival is `maxLvl = -2`
+	 * (`YogRipper`/`YogEye`/`YogScorpio`/`Larva`), i.e. the shared `noExp` flag: no XP
+	 * and no loot, like the King's servants. Simplified and stated: Java builds the deck
+	 * at Yog construction on the dungeon-wide counter (including skipped off-floor
+	 * spawners); this port builds it at the first summon from the live arena count,
+	 * since the spawn path cannot see the scene roster. */
 	summonYogMinion(this: DungeonScene, yog: Creature): boolean {
 		const challenge = isChallengeEnabled('stronger_bosses');
-		const normalDeck: AnyMonsterId[] = ['ripperDemon', 'larva', 'ripperDemon', 'larva'];
-		const challengeDeck: AnyMonsterId[] = ['eye', 'scorpio', 'ripperDemon', 'ripperDemon', 'ripperDemon', 'ripperDemon'];
-		const deck = challenge ? challengeDeck : normalDeck;
+		if (!yog.yogMinionDeck) {
+			const spawnersAlive = this.creatures.filter((c) => c.kind === 'demonSpawner' && c.hp > 0).length;
+			const deck = buildYogMinionDeck(challenge, spawnersAlive);
+			Random.shuffle(deck);
+			yog.yogMinionDeck = deck;
+			yog.yogSummonIndex = 0;
+		}
+		const deck = yog.yogMinionDeck;
 		const index = yog.yogSummonIndex ?? 0;
 		const kind = deck[index % deck.length]!;
 		yog.yogSummonIndex = index + 1;
@@ -839,6 +853,9 @@ export const deathSaveRefreshMethods = {
 		minion.sleeping = false;
 		minion.seesHero = true;
 		minion.lastSeen = { x: this.hero.x, y: this.hero.y };
+		//`YogRipper`/`YogEye`/`YogScorpio`/`Larva` are all `maxLvl = -2`: arrivals grant
+		//no XP and roll no loot - the same `noExp` flag the King's servants carry.
+		minion.noExp = true;
 		return true;
 	},
 

@@ -94,6 +94,7 @@ export interface SavedCreature {
 	shamanType?: 'red' | 'blue' | 'purple';
 	yogSummonCd?: number;
 	yogSummonIndex?: number;
+	yogMinionDeck?: AnyMonsterId[];
 	yogBeamCd?: number;
 	/** `YogDzewa.targetedCells`: aim stores cells and the next turn fires the beams. */
 	yogTargeted?: number[];

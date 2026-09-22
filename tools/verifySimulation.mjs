@@ -884,7 +884,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	const { takeSentryTurn } = require('./simulation/sentryTurn');
 	const { ratKingP1Summon, planRatKingWave } = require('./simulation/ratKingBoss');
 	const { chooseDM300Ability, dm300VentPath, planDM300Rockfall, planDM300Knockback } = require('./simulation/dm300Boss');
-	const { aimYogDeathGaze } = require('./simulation/yogBoss');
+	const { aimYogDeathGaze, buildYogMinionDeck } = require('./simulation/yogBoss');
 	const { Scheduler } = require('./scheduler');
 	const talents = require('./talentEffects');
 	const buffDurations = require('./simulation/buffs');
@@ -1268,6 +1268,37 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 			maxHp: 400, hp, neighbours: neighbours8, index: (x, y) => y * 9 + x, passable: () => true,
 			trace: diagonal, random: { int: () => 0 } }).length;
 		assert.deepEqual([241, 240, 81, 80].map(beamCount), [1, 2, 2, 3]);
+	});
+	check('Yog minion deck follows the live spawner count and grants nothing', () => {
+		//`YogDzewa.regularSummons` (tag `v3.3.8`): normal is four slots with rippers
+		//for the first `spawnersAlive` and larvae after; challenge is six slots with
+		//eye/scorpio under the count (eye first), larvae to index 4, rippers last.
+		assert.deepEqual(buildYogMinionDeck(false, 4),
+			['ripperDemon', 'ripperDemon', 'ripperDemon', 'ripperDemon']);
+		assert.deepEqual(buildYogMinionDeck(false, 2),
+			['ripperDemon', 'ripperDemon', 'larva', 'larva']);
+		assert.deepEqual(buildYogMinionDeck(false, 0),
+			['larva', 'larva', 'larva', 'larva']);
+		assert.deepEqual(buildYogMinionDeck(true, 4),
+			['eye', 'scorpio', 'eye', 'scorpio', 'ripperDemon', 'ripperDemon']);
+		assert.deepEqual(buildYogMinionDeck(true, 2),
+			['eye', 'scorpio', 'larva', 'larva', 'ripperDemon', 'ripperDemon']);
+		assert.deepEqual(buildYogMinionDeck(true, 0),
+			['larva', 'larva', 'larva', 'larva', 'ripperDemon', 'ripperDemon']);
+		//Structural: the scene builds the deck once per Yog from the live spawner
+		//count, shuffles, cycles by index, and flags every arrival noExp (all four
+		//are `maxLvl = -2`, so neither XP nor loot - the King's-servant precedent).
+		const scene = readSceneSource();
+		assert.ok(scene.includes('buildYogMinionDeck(challenge, spawnersAlive)'),
+			'scene builds the minion deck from the live spawner count');
+		assert.ok(scene.includes('Random.shuffle(deck)') && scene.includes('yog.yogMinionDeck = deck'),
+			'scene shuffles once and caches the deck on the Yog');
+		assert.ok(scene.includes('deck[index % deck.length]'),
+			'scene draws the cached deck cyclically');
+		assert.ok(scene.includes('minion.noExp = true'),
+			'every Yog arrival carries the noExp flag');
+		assert.ok(scene.includes('yogMinionDeck: saved.yogMinionDeck'),
+			'the cached deck persists through save/restore');
 	});
 	check('mirror images read Java\'s hero-derived combat stats at half damage', () => {
 		//42nd matrix (`MirrorImage.java`, tag `v3.3.8`): `attackSkill()` is

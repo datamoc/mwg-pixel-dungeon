@@ -64,3 +64,28 @@ export function aimYogDeathGaze(context: YogDeathGazeAimContext): number[] {
 	if (allAdjacentTargeted) targets.pop();
 	return targets;
 }
+
+/** The four `YogDzewa` regular-summon kinds. A local union (not `AnyMonsterId`) so
+ * this renderer-free module keeps its light imports; every member is a real
+ * `MonsterId` the scene widens on store. */
+export type YogMinionKind = 'ripperDemon' | 'larva' | 'eye' | 'scorpio';
+
+/** `YogDzewa`'s `regularSummons` deck (`actors/mobs/YogDzewa.java`, tag `v3.3.8`),
+ * in build order (Java `Random.shuffle`s it after). Normal: four slots, the first
+ * `spawnersAlive` of them rippers, the rest larvae. Stronger Bosses: six slots,
+ * indices under the spawner count alternate eye/scorpio (eye first), indices from
+ * the count up to 4 are larvae, and the last two are always rippers. Pure so the
+ * suite pins the composition matrix without a scene. */
+export function buildYogMinionDeck(challenge: boolean, spawnersAlive: number): YogMinionKind[] {
+	const deck: YogMinionKind[] = [];
+	if (challenge) {
+		for (let i = 0; i < 6; i++) {
+			if (i >= 4) deck.push('ripperDemon');
+			else if (i >= spawnersAlive) deck.push('larva');
+			else deck.push(i % 2 === 0 ? 'eye' : 'scorpio');
+		}
+	} else {
+		for (let i = 0; i < 4; i++) deck.push(i >= spawnersAlive ? 'larva' : 'ripperDemon');
+	}
+	return deck;
+}

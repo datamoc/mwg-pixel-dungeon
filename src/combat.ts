@@ -325,6 +325,10 @@ export interface Creature extends Combatant {
 	shamanType?: 'red' | 'blue' | 'purple';
 	yogSummonCd?: number;
 	yogSummonIndex?: number;
+	/** `YogDzewa.regularSummons`: the per-fight minion deck, built once from the live
+	 * spawner count and cycled draw-and-replace. `AnyMonsterId` here (the scene widens
+	 * the sim module's own narrow union on store). */
+	yogMinionDeck?: AnyMonsterId[];
 	yogBeamCd?: number;
 	/** `YogFist.rangedCooldown` (a float bundle field, 0 on a fresh fist): the four
 	 * elemental fists (burning/soiled/rotting/rusted) add `NormalFloat(8, 12)` on every
