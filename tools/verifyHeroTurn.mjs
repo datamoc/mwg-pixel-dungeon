@@ -10,7 +10,7 @@ export function verifyHeroTurn(require, check) {
 		const state = { hp };
 		const effects = { isAlive: () => state.hp > 0 };
 		for (const name of ['advanceClock', 'advanceHunger', 'recoverWandCharge',
-			'recoverTomeCharge', 'recoverArmorCharge', 'tickEndureTracker', 'tickDoubleJumpTracker', 'tickWeaponAbility', 'tickNaturesPowerTracker', 'spreadFire', 'applyBuffDamage', 'updatePreparation', 'spendScheduledTurn', 'runAutomaticTurns']) {
+			'recoverTomeCharge', 'recoverArmorCharge', 'recoverHolyTomeCharge', 'tickEndureTracker', 'tickDoubleJumpTracker', 'tickAscendedForm', 'tickWeaponAbility', 'tickNaturesPowerTracker', 'spreadFire', 'applyBuffDamage', 'updatePreparation', 'spendScheduledTurn', 'runAutomaticTurns']) {
 			effects[name] = () => { calls.push(name); return false; };
 		}
 		return { calls, state, effects };
@@ -24,13 +24,25 @@ export function verifyHeroTurn(require, check) {
 		const f = fixture();
 		assert.equal(finishHeroTurn(f.effects), 'spent');
 		assert.deepEqual(f.calls, ['advanceClock', 'advanceHunger', 'recoverWandCharge',
-			'recoverTomeCharge', 'recoverArmorCharge', 'tickEndureTracker', 'tickDoubleJumpTracker', 'tickWeaponAbility', 'tickNaturesPowerTracker', 'spreadFire', 'applyBuffDamage', 'updatePreparation', 'spendScheduledTurn', 'runAutomaticTurns']);
+			'recoverTomeCharge', 'recoverArmorCharge', 'recoverHolyTomeCharge', 'tickEndureTracker', 'tickDoubleJumpTracker', 'tickAscendedForm', 'tickWeaponAbility', 'tickNaturesPowerTracker', 'spreadFire', 'applyBuffDamage', 'updatePreparation', 'spendScheduledTurn', 'runAutomaticTurns']);
 	});
 	check('the shared SimulationRuntime routes hero-turn effects without changing their order', () => {
 		const f = fixture();
 		assert.equal(runHeroTurn(f.effects, 0.75), 'spent');
 		assert.deepEqual(f.calls, ['advanceClock', 'advanceHunger', 'recoverWandCharge',
-			'recoverTomeCharge', 'recoverArmorCharge', 'tickEndureTracker', 'tickDoubleJumpTracker', 'tickWeaponAbility', 'tickNaturesPowerTracker', 'spreadFire', 'applyBuffDamage', 'updatePreparation', 'spendScheduledTurn', 'runAutomaticTurns']);
+			'recoverTomeCharge', 'recoverArmorCharge', 'recoverHolyTomeCharge', 'tickEndureTracker', 'tickDoubleJumpTracker', 'tickAscendedForm', 'tickWeaponAbility', 'tickNaturesPowerTracker', 'spreadFire', 'applyBuffDamage', 'updatePreparation', 'spendScheduledTurn', 'runAutomaticTurns']);
+	});
+	check('the shared hero-turn seam forwards variable cost to cost-aware effects', () => {
+		const f = fixture();
+		const costs = {};
+		for (const name of ['advanceHunger', 'recoverWandCharge', 'recoverTomeCharge', 'spreadFire', 'applyBuffDamage', 'spendScheduledTurn']) {
+			f.effects[name] = (cost) => { costs[name] = cost; };
+		}
+		assert.equal(runHeroTurn(f.effects, 2), 'spent');
+		assert.deepEqual(costs, {
+			advanceHunger: 2, recoverWandCharge: 2, recoverTomeCharge: 2,
+			spreadFire: 2, applyBuffDamage: 2, spendScheduledTurn: 2,
+		});
 	});
 	check('the shared SimulationRuntime routes monster actions, hooks, and variable cost in order', () => {
 		const calls = [];
@@ -45,7 +57,7 @@ export function verifyHeroTurn(require, check) {
 		const f = fixture();
 		f.effects.applyBuffDamage = () => { f.state.hp = 0; return true; };
 		assert.equal(finishHeroTurn(f.effects), 'buff-death');
-		assert.deepEqual(f.calls, ['advanceClock', 'advanceHunger', 'recoverWandCharge', 'recoverTomeCharge', 'recoverArmorCharge', 'tickEndureTracker', 'tickDoubleJumpTracker', 'tickWeaponAbility', 'tickNaturesPowerTracker', 'spreadFire']);
+		assert.deepEqual(f.calls, ['advanceClock', 'advanceHunger', 'recoverWandCharge', 'recoverTomeCharge', 'recoverArmorCharge', 'recoverHolyTomeCharge', 'tickEndureTracker', 'tickDoubleJumpTracker', 'tickAscendedForm', 'tickWeaponAbility', 'tickNaturesPowerTracker', 'spreadFire']);
 	});
 	check('starvation death retains legacy continuation and next-turn dead guard', () => {
 		const f = fixture(1);

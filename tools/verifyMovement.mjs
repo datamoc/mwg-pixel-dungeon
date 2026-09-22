@@ -12,13 +12,13 @@ export function verifyMovement(require, check) {
 				const calls = [];
 				const result = planMovement(position, Object.freeze({ x: -1, y: 1 }), {
 					occupantAt: target => { assert.deepEqual(target, { x: 3, y: 9 }); calls.push('actor'); return occupant; },
-					closedDoorAt: () => { calls.push('door'); return door; },
 					isRooted: () => { calls.push('roots'); return roots; },
+					closedDoorAt: () => { calls.push('door'); return door; },
 					passable: () => { calls.push('terrain'); return passable; },
 				});
-				const kind = occupant ? (occupant === 'npc' ? 'interact' : 'attack') : door ? 'door' : roots ? 'rooted' : passable ? 'move' : 'wall';
+				const kind = occupant ? (occupant === 'npc' ? 'interact' : 'attack') : roots ? 'rooted' : door ? 'door' : passable ? 'move' : 'wall';
 				assert.deepEqual(result, { kind, target: { x: 3, y: 9 } });
-				assert.deepEqual(calls, ['actor', 'door', 'roots', 'terrain'].slice(0, occupant ? 1 : door ? 2 : roots ? 3 : 4));
+				assert.deepEqual(calls, ['actor', 'roots', 'door', 'terrain'].slice(0, occupant ? 1 : roots ? 2 : door ? 3 : 4));
 			}
 		}
 	});

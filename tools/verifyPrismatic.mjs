@@ -27,6 +27,33 @@ export function verifyPrismatic(require, check) {
 		assert.deepEqual(prismaticImageStats(10, 1.3, 1.125),
 			{ accuracy: 24, evasion: 14, damageMin: 4, damageMax: 9, maxHp: 35 });
 	});
+	check('both images zero their evasion under Mob\'s super-defense conditions', () => {
+		// `MirrorImage.defenseSkill()` / `PrismaticImage.defenseSkill()` (tag
+		// `v3.3.8`) multiply the blended evasion by `super.defenseSkill(enemy)`,
+		// which is 0 - not the 1 field - when the image is surprised,
+		// paralysed, illuminated under a Cleric hero, or facing the hero
+		// itself (`Mob.java` 684-705). The `superDefense` tail carries it;
+		// only evasion moves, every other stat is untouched.
+		const { prismaticImageStats } = require('./simulation/prismatic');
+		const { mirrorImageStats, imageSuperDefenseSkill } = require('./simulation/mirrorImage');
+		assert.deepEqual(prismaticImageStats(10, 1, 1, 0),
+			{ accuracy: 19, evasion: 0, damageMin: 4, damageMax: 9, maxHp: 35 });
+		assert.deepEqual(mirrorImageStats(10, 1, 1, 4, 7, 0),
+			{ accuracy: 19, evasion: 0, damageMin: 2, damageMax: 4 });
+		assert.equal(prismaticImageStats(10, 1, 1).evasion, 14, 'default super stays 1');
+		assert.equal(mirrorImageStats(10, 1, 1, 4, 7).evasion, 14, 'default super stays 1');
+		const clear = { surprised: false, paralysed: false, illuminated: false, heroIsCleric: false, attackerIsHero: false, attackerWeaponStrOk: false };
+		assert.equal(imageSuperDefenseSkill(clear), 1);
+		assert.equal(imageSuperDefenseSkill({ ...clear, surprised: true }), 0);
+		assert.equal(imageSuperDefenseSkill({ ...clear, paralysed: true }), 0);
+		assert.equal(imageSuperDefenseSkill({ ...clear, attackerIsHero: true }), 0, 'an amok hero faces evasion 0 from its own image');
+		assert.equal(imageSuperDefenseSkill({ ...clear, illuminated: true, heroIsCleric: true }), 0, 'non-hero attacker under Cleric illumination');
+		assert.equal(imageSuperDefenseSkill({ ...clear, illuminated: true, heroIsCleric: true, attackerIsHero: true, attackerWeaponStrOk: false }), 0,
+			'even the too-heavy-weapon fall-through zeroes for images via the hero-facing clause');
+		assert.equal(imageSuperDefenseSkill({ ...clear, illuminated: true, heroIsCleric: true, attackerIsHero: true, attackerWeaponStrOk: true }), 0,
+			'a STR-sufficient hero weapon zeroes outright (the Cleric auto-hit)');
+		assert.equal(imageSuperDefenseSkill({ ...clear, illuminated: true, heroIsCleric: false }), 1, 'illumination alone zeroes nothing without a Cleric hero');
+	});
 	check('the guard hatch picks the closest free neighbour, ties to the first', () => {
 		// `PrismaticGuard.act()`: the free passable neighbour minimizing
 		// `trueDistance` to the enemy, strict `<` keeping the earliest.
@@ -67,6 +94,9 @@ export function verifyPrismatic(require, check) {
 		// spawn check and verifyRings' multiplier checks do.
 		const source = readSceneSource();
 		for (const site of [
+			"imageSuperDefenseSkill({",
+			"const sheep = this.spawnSheep({ x: cx, y: cy }, 6)",
+			"this.triggerMobTrapAt(sheep)",
 			'spawnPrismaticImage(at, Math.floor(pool))',
 			'this.tickPrismaticGuard(turnCost)',
 			'this.enterPrismaticFade(victim, dealt)',

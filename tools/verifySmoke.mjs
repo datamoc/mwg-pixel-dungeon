@@ -12,8 +12,8 @@ export function verifySmoke(require, check) {
 		const open = smokeBombSeedPlan(7, 7, () => false, 3, 3);
 		assert.equal(open.seeds.length, 24, 'Chebyshev layers 0..2 hold 25 cells minus the center');
 		assert.ok(open.seeds.every((seed) => seed.volume === 40));
-		assert.ok(open.seeds.every((seed) => seed.x !== 3 || seed.y !== 3), 'the center is never seeded');
-		assert.equal(open.centerVolume, 0, 'a full 25-cell flood spends the whole 1000 budget');
+		assert.ok(open.seeds.every((seed) => seed.x !== 3 || seed.y !== 3), 'the center rides in centerVolume, not seeds');
+		assert.equal(open.centerVolume, 40, 'a full 25-cell flood leaves only the center\'s own 40');
 	});
 	check('a walled-in blast piles the unplaced share onto the center', () => {
 		// `centerVolume = 1000; for (...) centerVolume -= 40;` - the loop only runs over
@@ -22,10 +22,10 @@ export function verifySmoke(require, check) {
 		const ringAt = new Set(['2,2', '3,2', '4,2', '2,3', '4,3', '2,4', '3,4', '4,4']);
 		const boxed = smokeBombSeedPlan(7, 7, (x, y) => ringAt.has(`${x},${y}`), 3, 3);
 		assert.equal(boxed.seeds.length, 0);
-		assert.equal(boxed.centerVolume, 960, 'the lone center key still costs its 40 from the budget');
+		assert.equal(boxed.centerVolume, 1000, 'the lone center seeds its own 40 plus the 960 remainder');
 		const crossAt = new Set(['3,2', '3,4', '2,3', '4,3']);
 		const partial = smokeBombSeedPlan(7, 7, (x, y) => crossAt.has(`${x},${y}`), 3, 3);
 		assert.equal(partial.seeds.length, 20, 'the flood leaks diagonally, then spreads a second step');
-		assert.equal(partial.centerVolume, 160, 'twenty-one flood keys cost 840, the rest piles onto the center');
+		assert.equal(partial.centerVolume, 200, 'twenty-one flood keys cost 840; the center totals its own 40 plus the 160 remainder');
 	});
 }

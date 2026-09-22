@@ -17,7 +17,10 @@ export function verifyShakes(require, check) {
 			['DM300Sprite.slam (3, 0.7f) on the melee swing', "if (attacker.kind === 'dm300') this.shakeScreen(3, 0.7);"],
 			['Hero 1385 rooted stair refusal (1, 1f)', "else if (plan.kind === 'rooted') { this.shakeScreen(1, 1);"],
 			['DelayedRockFall 68 / RockfallTrap 117 impact (3, 0.7f)', 'this.shakeScreen(3, 0.7);\n\t\t\tconst challenge = isChallengeEnabled'],
-			['WandOfLightning on the hero (2, 0.3f)', "if (victim.isHero && this.wandType === 'lightning') this.shakeScreen(2, 0.3);"],
+			//Relocated by the `fireWandShot` extraction: the zap body (including this
+			//shake) now takes its wand class as a parameter rather than reading the
+			//wielded scalar, so `WildMagic` can fire spare wands through the same code.
+			['WandOfLightning on the hero (2, 0.3f)', "if (victim.isHero && wandType === 'lightning') this.shakeScreen(2, 0.3);"],
 		];
 		for (const [java, fragment] of sites) assert.ok(source.includes(fragment), `${java} must stay wired`);
 		//Relocated by the plant-trigger extraction (file-size refactor): the hero half's

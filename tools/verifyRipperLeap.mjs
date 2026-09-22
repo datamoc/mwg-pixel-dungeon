@@ -53,5 +53,11 @@ export function verifyRipperLeap(require, check) {
 		// (4,5) is distance 3 from the ripper; (6,5) and (5,6) are farther.
 		assert.deepEqual(end, { x: 4, y: 5 });
 		assert.equal(chooseRipperBounceEnd(from, leap, () => false), null);
+		//Java's second sweep: no free *passable* neighbour, but a free *non-solid*
+		//one - the leap lands there instead of aborting; both sweeps empty aborts.
+		const nonSolid = new Set(['5,6']);
+		assert.deepEqual(chooseRipperBounceEnd(from, leap, () => false,
+			(cell) => nonSolid.has(`${cell.x},${cell.y}`)), { x: 5, y: 6 });
+		assert.equal(chooseRipperBounceEnd(from, leap, () => false, () => false), null);
 	});
 }

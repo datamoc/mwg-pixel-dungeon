@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import ts from 'typescript';
 import { readSceneSource } from './sceneSource.mjs';
@@ -10,6 +10,11 @@ export function verifyCombat(require, check) {
 	const record = process.env.RECORD_FIXTURES === '1';
 	const facade = require('./combat');
 	const { Random } = require('mwg');
+	const bombSource = readFileSync(new URL('../src/items/bombEffects.ts', import.meta.url), 'utf8');
+	const trapSource = readFileSync(new URL('../src/scenes/dungeon/environmentFireTraps.ts', import.meta.url), 'utf8');
+	const blastSource = readFileSync(new URL('../src/scenes/dungeon/panelsSingleUse.ts', import.meta.url), 'utf8');
+	const geyserSource = readFileSync(new URL('../src/simulation/geyserTrap.ts', import.meta.url), 'utf8');
+	const saveSource = readFileSync(new URL('../src/scenes/dungeon/deathSaveRefresh.ts', import.meta.url), 'utf8');
 	const fixture = JSON.parse(readFileSync(new URL('./fixtures/combat-before-extraction.json', import.meta.url), 'utf8'));
 	const base = (extra = {}) => ({ x: 0, y: 0, hp: 20, maxHp: 20, accuracy: 10,
 		evasion: 5, damage: [2, 8], armor: [0, 3], buffs: {}, ...extra });
@@ -135,6 +140,17 @@ export function verifyCombat(require, check) {
 		assert.equal(applyBuff(original, 'poison').event.fresh, true);
 		assert.equal(applyBuff({ poison: 0 }, 'poison').event.fresh, false);
 		assert.equal(applyBuff({ poison: undefined }, 'poison').event.fresh, true);
+        // Java Poison.set(duration) keeps the longer active clock; a weaker
+        // reapplication must not shorten damage over time.
+        assert.equal(applyBuff({ poison: 8 }, 'poison', 3).buffs.poison, 8);
+        assert.equal(applyBuff({ poison: 3 }, 'poison', 8).buffs.poison, 8);
+	});
+	check('Cape of Thorns retaliation is wired after the attacker read phase', () => {
+		const scene = readSceneSource();
+		const artifact = readFileSync(new URL('../src/items/artifactActions.ts', import.meta.url), 'utf8');
+		assert.ok(scene.includes('onRetaliate: (deflected) => { capeRetaliation += deflected; }'));
+		assert.ok(scene.includes('this.applyBlastDamage(attacker, capeRetaliation, true'));
+		assert.ok(artifact.includes('scene.onRetaliate?.(deflected)'));
 	});
 	check('shield pools absorb before HP on every damage seam', () => {
 		//`ShieldBuff.processDamage()`: the pool takes first, HP takes the rest. One
@@ -143,6 +159,58 @@ export function verifyCombat(require, check) {
 		assert.deepEqual(absorbShield(300, 20), { shield: 280, damage: 0 });
 		assert.deepEqual(absorbShield(10, 25), { shield: 0, damage: 15 });
 		assert.deepEqual(absorbShield(0, 25), { shield: 0, damage: 25 });
+	});
+	check('Geyser bomb-damage hits only FIERY subtypes', () => {
+		//Java `Char.Property.FIERY` is carried only by `FireElemental` (and its
+		//newborn heir) and `BurningFist` - frost/shock/chaos elementals and the other
+		//fists take no bomb damage. A kind-only gate soaked the former and missed the
+		//latter (whose kind is plain `yogFist`); the gate must read the subtype.
+		const { activateGeyserTrap } = require('./simulation/geyserTrap');
+		const mk = (kind, extra = {}) => ({ x: 0, y: 0, hp: 50, maxHp: 50, buffs: {}, kind, isHero: false, ...extra });
+		const fire = mk('elemental', { elementalType: 'fire' });
+		const frost = mk('elemental', { elementalType: 'frost' });
+		const burning = mk('yogFist', { yogFistType: 'burning' });
+		const rotting = mk('yogFist', { yogFistType: 'rotting' });
+		const rat = mk('rat', {});
+		const ring = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0]];
+		[fire, frost, burning, rotting, rat].forEach((c, i) => { c.x = 5 + ring[i][0]; c.y = 5 + ring[i][1]; });
+		const creatures = [fire, frost, burning, rotting, rat];
+		const waters = [];
+		activateGeyserTrap({
+			depth: 10, width: 11, height: 11,
+			random: { int: () => 1, float: () => 0, normalRange: () => 30, range: (a) => a, chance: () => false },
+			neighbourOffsets: [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]],
+			randomElement: (values) => values[0] ?? null,
+			distanceMap: () => new Array(121).fill(1),
+			passable: () => true,
+			setWater: (x, y) => { waters.push([x, y]); },
+			clearFire: () => {}, restitch: () => {},
+			creatureAt: (x, y) => creatures.find((c) => c.x === x && c.y === y) ?? null,
+			hero: mk('hero', { isHero: true }),
+			absorbHeroDamage: (damage) => damage,
+			showDamage: () => {},
+			kill: (target) => { target.hp = 0; },
+			moveTo: (creature, destination) => { creature.x = destination.x; creature.y = destination.y; },
+		}, 5, 5);
+		//Floor(30 * 0.67) = 20 off the fiery two; everyone else untouched.
+		assert.deepEqual([fire.hp, frost.hp, burning.hp, rotting.hp, rat.hp], [30, 50, 30, 50, 50]);
+	});
+	check('Challenge spectator freeze reaches every direct blast/trap damage seam', () => {
+		// `Challenge.SpectatorFreeze` makes Java `Char.isInvulnerable()` true for every
+		// damage source, not only attacks. Keep this source-level pin beside the pure
+		// combat checks because these three scene/item seams own the actual HP writes.
+		assert.match(bombSource, /target\.buffs\['spectatorFreeze'\].*return false/s);
+		assert.match(blastSource, /c\.buffs\['spectatorFreeze'\].*return false/s);
+		assert.match(trapSource, /ch\.buffs\['spectatorFreeze'\]/);
+		assert.match(trapSource, /target\.buffs\.spectatorFreeze/);
+		assert.match(geyserSource, /creature\.buffs\['spectatorFreeze'\]/);
+	});
+	check('Preparation keeps Java turnsInvis across save/load', () => {
+		// Java stores Preparation.turnsInvis as buff payload state, then rebuilds its derived
+		// attack level. Keep the scene save and load seams paired so this cannot regress to a
+		// buff-only round trip that silently resets a prepared Assassin to level 1.
+		assert.match(saveSource, /prepInvisibleTurns:\s*this\.prepInvisibleTurns/);
+		assert.match(blastSource, /this\.prepInvisibleTurns\s*=\s*Math\.max\(0, s\.prepInvisibleTurns \?\? 0\)/);
 	});
 	check('undefined buffs neither tick nor draw; zero-duration buffs still damage then expire', () => {
 		const original = freeze({ roots: undefined, burning: 0 });
@@ -192,6 +260,42 @@ export function verifyCombat(require, check) {
 		const thawed = base();
 		facade.addBuff(thawed, 'chill');
 		assert.equal(thawed.buffs.chill, facade.BUFF_DURATION.chill);
+	});
+	check("Char.add()'s cleansing clause refuses every negative while it runs", () => {
+		//Java refuses NEGATIVE minus AllyBuff/LostInventory (both unmodeled here);
+		//positives still attach, and everything lands again once it lapses.
+		const cleansed = base({ buffs: { cleanseImmunity: 2 } });
+		for (const id of ['poison', 'burning', 'bleeding', 'cripple', 'weakness', 'vulnerable',
+			'paralysis', 'roots', 'terror', 'amok', 'aggression', 'ooze', 'charm', 'degrade',
+			'daze', 'chill', 'frost', 'hex', 'wayward', 'blindness', 'feintConfusion', 'soulmark',
+			'illuminated']) {
+			facade.addBuff(cleansed, id);
+			assert.equal(cleansed.buffs[id], undefined, `cleanse immunity must block ${id}`);
+		}
+		facade.setBleeding(cleansed, 9);
+		assert.equal(cleansed.buffs.bleeding, undefined, 'cleanse immunity must block setBleeding too');
+		for (const id of ['bless', 'haste', 'invisibility', 'cleanseImmunity']) {
+			facade.addBuff(cleansed, id);
+			assert.notEqual(cleansed.buffs[id], undefined, `cleanse immunity must not block ${id}`);
+		}
+		delete cleansed.buffs.cleanseImmunity;
+		facade.addBuff(cleansed, 'poison');
+		assert.equal(cleansed.buffs.poison, facade.BUFF_DURATION.poison, 'poison lands once immunity lapses');
+		facade.setBleeding(cleansed, 9);
+		assert.equal(cleansed.buffs.bleeding, 9, 'bleeding lands once immunity lapses');
+	});
+	check('setBleeding tracks source only alongside a winning (higher) level, like Bleeding.set()', () => {
+		const bleeder = base();
+		facade.setBleeding(bleeder, 5, 'chasm');
+		assert.equal(bleeder.bleedSource, 'chasm');
+		facade.setBleeding(bleeder, 3, 'sacrificial');
+		assert.equal(bleeder.buffs.bleeding, 5, 'a lower level must not overwrite the active bleed');
+		assert.equal(bleeder.bleedSource, 'chasm', 'a losing setBleeding call must not overwrite the source either');
+		facade.setBleeding(bleeder, 9, 'harvestBleed');
+		assert.equal(bleeder.buffs.bleeding, 9);
+		assert.equal(bleeder.bleedSource, 'harvestBleed', 'a winning call updates both fields together');
+		facade.setBleeding(bleeder, 12);
+		assert.equal(bleeder.bleedSource, undefined, 'an untagged winning call clears a stale source');
 	});
 	check('adapter ignores sprite and skeleton graph and observes the current random stack', () => {
 		const creature = base();
@@ -249,6 +353,10 @@ export function verifyCombat(require, check) {
 		try {
 			assert.equal(accRollMulti(rat), ASCENSION_MOD.rat);
 			assert.equal(rollDamage(rat, base(), zero), 1 * ASCENSION_MOD.rat);
+			const armoredRat = base({ kind: 'rat', armor: [2, 2] });
+			const unscaledAttacker = base({ kind: 'goo', damage: [10, 10] });
+			assert.equal(rollDamage(unscaledAttacker, armoredRat, zero), 0,
+				'Ascension scales the defender drRoll before subtraction');
 		} finally {
 			setAscensionActive(false);
 		}
@@ -522,8 +630,8 @@ export function verifyCombat(require, check) {
 			'blast seam converts rotting hits like attack() does');
 		assert.ok(!scene.includes("case 'burning': addBuff(defender, 'burning')"),
 			'no invented burning contact rider');
-		assert.ok(scene.includes("creature.yogFistType === 'bright')"),
-			'death daze is bright-only');
+		assert.ok(scene.includes("creature.yogFistType === 'bright' && !buffBlocked(this.hero, 'daze')"),
+			'death daze is bright-only and honors the shared immunity gate');
 	});
 	check("Cudgel's 1.4 accuracy lives on the starting weapon, not the Cleric class", () => {
 		// `Cudgel.ACC = 1.40` (Cudgel.java, tag v3.3.8) is a weapon factor applied in
@@ -533,6 +641,36 @@ export function verifyCombat(require, check) {
 		const scene = readSceneSource();
 		assert.ok(scene.includes("this.heroClass === 'cleric' && this.weaponId === 'startingWeapon' ? 1.4 : 1"),
 			'cleric accuracy bonus requires the starting cudgel');
+	});
+	check('ShockElemental arcs round(dmg*0.4) with no armor, keeping the defender off dry ground', () => {
+		// `ShockElemental.meleeProc` (Elemental.java, tag v3.3.8): `Shocking.arc` gathers
+		// the chars around the melee target, then `ch.damage(round(damage*0.4))` per hit -
+		// `Char.damage` never rolls armor, so the arc pierces. A dry-land defender is
+		// removed from the set; standing water keeps them in.
+		const { planShockElementalArc } = require('./simulation/shockArc');
+		const creatures = [
+			{ id: 'shock', x: 0, y: 0, hp: 30 },
+			{ id: 'defender', x: 1, y: 0, hp: 30 },
+			{ id: 'nearby', x: 2, y: 0, hp: 30 },
+		];
+		const distanceMap = (origin) => {
+			const width = 5;
+			const map = new Array(25).fill(-1);
+			for (let y = 0; y < 5; y++) for (let x = 0; x < 5; x++)
+				map[y * width + x] = Math.abs(x - origin.x) + Math.abs(y - origin.y);
+			return map;
+		};
+		const dry = planShockElementalArc('shock', creatures[1], 10, creatures,
+			distanceMap, (x, y) => y * 5 + x, () => false, () => false);
+		assert.equal(dry.damage, 4, 'round(10*0.4)');
+		assert.deepEqual(dry.targetIds, ['nearby'], 'a dry defender takes no arc hit themselves');
+		const wet = planShockElementalArc('shock', creatures[1], 10, creatures,
+			distanceMap, (x, y) => y * 5 + x, () => false, () => true);
+		assert.ok(wet.targetIds.includes('defender'), 'standing water keeps the defender in the arc');
+		assert.equal(wet.damage, 4);
+		const scene = readSceneSource();
+		assert.ok(scene.includes('this.applyBlastDamage(target, arc.damage, true, \'foe\')'),
+			'the scene lands arc hits through the armor-piercing blast seam');
 	});
 	check('Grim execute refuses bosses and halves against statues; Lucky pays consumables-or-gold only', () => {
 		// `Grim.proc()` returns early when the defender `isImmune(Grim.class)` (`Grim.java`,

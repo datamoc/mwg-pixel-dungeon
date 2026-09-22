@@ -73,7 +73,11 @@ export function verifyCombatRolls(require, check) {
 		assert.equal(rollDamage(hero, { ...foe, armor: [9, 9] }, minStub), 0);
 	});
 
-	check('the attacker multiplier chain compounds in Java order', () => {
+	//Each factor is pinned alone: float multiplication commutes, so ordering
+	//is unobservable here - Java's own sequence (berserk, fury, PowerOfMany,
+	//champions, ascension, endures, arena, aura, meditate, weakness,
+	//aggression, then vulnerable-after-armor) needs no order pins.
+	check('the attacker multipliers compound', () => {
 		assert.equal(rollDamage({ ...hero, hp: 10, buffs: { fury: 1 } }, foe, maxStub), 10);
 		assert.equal(rollDamage({ ...hero, hp: 11, buffs: { fury: 1 } }, foe, maxStub), 6);
 		assert.equal(rollDamage({ ...hero, buffs: { weakness: 1 } }, foe, maxStub), 4);

@@ -51,7 +51,7 @@ try {
 		'adapters/hungerSimulation', 'simulation/random', 'simulation/combatState', 'simulation/mwlBuffDurations', 'simulation/mwlStatusImmunities', 'simulation/mwlMonsterImmunities', 'simulation/mwlMonsterStateStats', 'simulation/buffs', 'simulation/combat', 'simulation/entityId', 'talentEffects',
 		'adapters/combatSimulation', 'adapters/mwgRandom', 'combat', 'simulation/heroActions', 'adapters/heroActionSimulation', 'adapters/heroActions',
 	'simulation/search', 'adapters/searchSimulation', 'adapters/movementSimulation', 'simulation/attackResolution', 'adapters/attackSimulation', 'simulation/warriorAbilities', 'simulation/huntressAbilities', 'simulation/duelistAbilities', 'simulation/mageAbilities', 'simulation/rogueAbilities', 'simulation/ratmogrify', 'talents', 'armorAbilities', 'simulation/tenguAbility', 'simulation/tenguBeam', 'simulation/gooBoss', 'simulation/ratKingBoss', 'simulation/dm300Boss', 'simulation/yogBoss', 'simulation/defenderDamageCurves', 'simulation/preparation', 'simulation/disintegration', 'items/wands', 'items/missiles', 'mechanics/cone', 'dungeonConstants',
-	'simulation/javaBlob', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/sentryTurn', 'simulation/brews', 'simulation/smoke', 'simulation/deathBursts', 'simulation/pourAuras', 'simulation/ringKnow', 'simulation/actorCollision', 'simulation/wandering', 'simulation/zoomStep', 'simulation/chasmJump', 'simulation/spareWands', 'simulation/clericSpells', 'ui/buffOverlays',
+	'simulation/javaBlob', 'simulation/fireSpread', 'simulation/environmentalBlobs', 'simulation/wraith', 'simulation/plantPools', 'simulation/plantDrops', 'simulation/plantTriggers', 'simulation/teleport', 'simulation/teleportAppear', 'simulation/timeBubble', 'simulation/targeting', 'simulation/ripperLeap', 'simulation/succubusBlink', 'simulation/prismatic', 'simulation/mirrorImage', 'simulation/sentryTurn', 'simulation/brews', 'simulation/levelPopulation', 'simulation/smoke', 'simulation/deathBursts', 'simulation/pourAuras', 'simulation/skeletonExplosion', 	'simulation/ringKnow', 'simulation/actorCollision', 'simulation/wandering', 'simulation/zoomStep', 'simulation/chasmJump', 'simulation/spareWands', 'simulation/clericSpells', 'simulation/shockArc', 'simulation/geyserTrap', 'simulation/cursedWand', 'ui/buffOverlays',
 	// `actors/monsterSpawn` (plus its `monsters`/`challenges`/i18n chain) for the spawn-profile
 	// checks: the chaos-elemental roll, the rare-alt table, and the unported-mob absences.
 	'monsters', 'challenges', 'i18n/index', 'i18n/portStrings', 'i18n/languages', 'i18n/spdKeys', 'generated/spdMessages', 'items/artifacts', 'actors/monsterSpawn',
@@ -96,7 +96,7 @@ try {
 	writeFileSync(join(output, 'node_modules', 'mwg', 'index.js'),
 		`const random = require(${JSON.stringify(join(dist, 'core', 'Random.js'))}); exports.Random = random; exports.Generator = random.Generator; exports.I18n = require(${JSON.stringify(join(dist, 'i18n', 'index.js'))}); exports.Roguelike = require(${JSON.stringify(join(dist, 'roguelike', 'index.js'))});\n`);
 	const require = createRequire(join(output, 'tests.cjs'));
-	const { advanceHunger } = require('./simulation/hunger');
+	const { advanceHunger, advanceWellFed, exertHunger } = require('./simulation/hunger');
 	const { runHungerStep } = require('./adapters/hungerSimulation');
 	const { runMovement } = require('./adapters/movementSimulation');
 	const { resolveAttack } = require('./simulation/attackResolution');
@@ -108,6 +108,8 @@ try {
 	const { SceneSimulationAdapter } = require('./adapters/sceneSimulation');
 	const { trampleHighGrass } = require('./simulation/highGrass');
 	const { evolveElectricity, evolveJavaBlob } = require('./simulation/javaBlob');
+	const { planFireSpread } = require('./simulation/fireSpread');
+	const { planMonsterPopulation } = require('./simulation/levelPopulation');
 	const { wraithCombatStats, dustSpawnerStep, dustSpawnerCap } = require('./simulation/wraith');
 const { grantSungrassHealth, tickSungrassHealth, grantEarthrootArmor, absorbEarthrootArmor } = require('./simulation/plantPools');
 const { plantDropCandidates, plantDropCount } = require('./simulation/plantDrops');
@@ -116,8 +118,14 @@ const { TIME_BUBBLE_TURNS: MOB_BUBBLE_TURNS } = require('./simulation/timeBubble
 const { teleportCandidates, disarmBubblePresses } = require('./simulation/teleport');
 const { teleportAppearPlan } = require('./simulation/teleportAppear');
 const { selectRangedTarget, findEnemyAlly, pursueTarget } = require('./simulation/targeting');
-const { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } = require('./simulation/timeBubble');
+	const { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } = require('./simulation/timeBubble');
+	const { wanderBlocked, isPatrolTargetValid, randomPatrolDestination } = require('./simulation/wandering');
+	const { skeletonBoneExplosionDamage } = require('./simulation/skeletonExplosion');
 	const { applyEnvironmentalBlobs, spreadSacrificialFire, sacrificeCost, processSacrifice } = require('./simulation/environmentalBlobs');
+	check('Skeleton bone explosion subtracts two defender rolls and clamps at zero', () => {
+		assert.equal(skeletonBoneExplosionDamage(12, 2, 3), 7);
+		assert.equal(skeletonBoneExplosionDamage(6, 4, 4), 0);
+	});
 	// The four coefficients `HighGrass.trample` reads, as the port's MWL rows carry them.
 	const grassRules = { seedChanceBase: 25, seedChancePerLevel: 4, dewChanceBase: 6, dewChanceLevelDivisor: 2 };
 	check('Huntress furrows high grass before clearing it without drops', () => {
@@ -146,6 +154,15 @@ const { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } = require('
 		assert.equal(grassy.drops.seedChance, 1 / 17);
 		assert.equal(grassy.drops.dewChance, 1 / 10);
 	});
+	check('Sandals roots activate Java empty-cell plant effects', () => {
+		const hazards = readFileSync(new URL('../src/scenes/dungeon/actorTurnsHazards.ts', import.meta.url), 'utf8');
+		const quickslot = readFileSync(new URL('../src/scenes/dungeon/hero/inventoryQuickslot.ts', import.meta.url), 'utf8');
+		assert.ok(hazards.includes('triggerEmptyPlantAt'), 'the scene has an empty-cell plant trigger');
+		for (const effect of ["case 'firebloom': this.fire.seed(x, y, 2)", "case 'rotberry': this.plantGas.seed(x, y, 100)", "case 'dewcatcher': this.dropPlantNeighbourLoot(x, y, 3, 6, 'dew')", "case 'seedpod': this.dropPlantNeighbourLoot(x, y, 2, 4, 'seed')"]) {
+			assert.ok(hazards.includes(effect), `empty-cell effect is wired: ${effect}`);
+		}
+		assert.ok(quickslot.includes('else scene.triggerEmptyPlantAt(cell.x, cell.y)'), 'an empty root dispatches the null-Char path');
+	});
 	check('Java blob evolution diffuses through four neighbours and loses one volume', () => {
 		const before = new Array(25).fill(0);
 		before[12] = 5;
@@ -155,6 +172,77 @@ const { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } = require('
 		assert.equal(next[0], 0);
 		const blocked = evolveJavaBlob(5, 5, before, (x, y) => x === 2 && y === 1);
 		assert.equal(blocked[7], 0);
+	});
+	check('Fire extinguishes frozen cells and never ignites them', () => {
+		//`Fire.evolve()` (`Fire.java`, tag `v3.3.8`): a burning frozen cell goes
+		//out outright (`freeze.clear`, `off = cur = 0`, no burn, no destroy) and a
+		//frozen empty cell never ignites. The `isFrozen` tail carries Java's
+		//`freeze.volume > 0 && freeze.cur[cell] > 0`; 5x5, seed at (2,2) = cell 12.
+		const seed = (volume) => Object.assign(new Array(25).fill(0), { 12: volume });
+		const at = (plan, x, y) => plan.burning.some((c) => c.x === x && c.y === y);
+		const out = (plan, x, y) => plan.burntOut.some((c) => c.x === x && c.y === y);
+		//Legacy shape (no frost): the seed ages 5->4 and lights its ring at 4.
+		const plain = planFireSpread(5, 5, seed(5), () => true);
+		assert.equal(plain.next[12], 4);
+		for (const cell of [7, 11, 13, 17]) assert.equal(plain.next[cell], 4);
+		//A frozen burning cell goes out: no burn record, no destroy record, and a
+		//frost-clear record for the scene (`freeze.clear(cell)` in Java)...
+		const doused = planFireSpread(5, 5, seed(5), () => true, (x, y) => x === 2 && y === 2);
+		assert.equal(doused.next[12], 0);
+		assert.equal(at(doused, 2, 2), false);
+		assert.equal(out(doused, 2, 2), false);
+		assert.deepEqual(doused.extinguished, [{ x: 2, y: 2 }]);
+		assert.deepEqual(plain.extinguished, []);
+		//...but its unfrozen ring still catches from it.
+		for (const cell of [7, 11, 13, 17]) assert.equal(doused.next[cell], 4);
+		//A frozen empty cell never ignites even beside fire.
+		const held = planFireSpread(5, 5, seed(5), () => true, (x, y) => x === 2 && y === 1);
+		assert.equal(held.next[7], 0);
+		assert.equal(at(held, 2, 1), false);
+		//An unfrozen ember (volume 1) burns out with a destroy record; frozen, silently.
+		const ember = planFireSpread(5, 5, seed(1), () => true);
+		assert.equal(ember.next[12], 0);
+		assert.equal(at(ember, 2, 2), true);
+		assert.equal(out(ember, 2, 2), true);
+		const coldEmber = planFireSpread(5, 5, seed(1), () => true, () => true);
+		assert.equal(coldEmber.next[12], 0);
+		assert.equal(at(coldEmber, 2, 2), false);
+		assert.equal(out(coldEmber, 2, 2), false);
+		//The live scene must pass the frost predicate and apply the planner's
+		//extinguished cells; otherwise the pure planner pin would not protect
+		//the actual turn loop.
+		const scene = readSceneSource();
+		assert.ok(scene.includes('this.plantFreeze.volumeAt(x, y) > 0'), 'scene reads Freezing for fire evolution');
+		assert.ok(scene.includes('for (const cell of plan.extinguished) this.plantFreeze.clear(cell.x, cell.y)'),
+			'scene clears frost where fire extinguishes it');
+	});
+	check('mob population carries Java roster, rare table and count rules', () => {
+		//`MobSpawner.addRareMobs()`/`swapMobAlts()` plus `RegularLevel.mobLimit()`
+		//and the floor-1 eight (`createMobs`), all tag `v3.3.8`. The framework roll
+		//is stubbed to capture the entries; only the plan shape is pinned here.
+		let seen = null;
+		const roguelike = { rollRoster: (regular, rare) => { seen = { regular, rare }; return { roster: regular.map((e) => e.value) }; } };
+		const plan = planMonsterPopulation(4, ['rat', 'crab'], false, { int: () => 0 }, roguelike);
+		assert.deepEqual(plan.roster, ['rat', 'crab']);
+		//Depth 4 adds the Thief at 0.025 (9: Bat, 14: Ghoul, 19: Succubus).
+		assert.deepEqual(seen.rare, [{ value: 'thief', chance: 0.025 }]);
+		//rat swaps to albino at 1/50; crab has no alt (HermitCrab unported).
+		assert.deepEqual(seen.regular, [
+			{ value: 'rat', alternative: { value: 'albino', chance: 1 / 50 } },
+			{ value: 'crab', alternative: undefined },
+		]);
+		for (const [depth, mob, chance] of [[9, 'bat', 0.025], [14, 'ghoul', 0.025], [19, 'succubus', 0.025]]) {
+			planMonsterPopulation(depth, [], false, { int: () => 0 }, roguelike);
+			assert.deepEqual(seen.rare, [{ value: mob, chance }]);
+		}
+		planMonsterPopulation(5, [], false, { int: () => 0 }, roguelike);
+		assert.deepEqual(seen.rare, []);
+		//Counts: floor-1 eight; 3 + depth%5 + Int(3); LARGE ceils 1.33x.
+		const count = (depth, large, roll) => planMonsterPopulation(depth, [], large, { int: () => roll }, roguelike).count;
+		assert.equal(count(1, false, 0), 8);
+		assert.equal(count(6, false, 0), 4);
+		assert.equal(count(6, true, 0), 6);
+		assert.equal(count(2, false, 2), 7);
 	});
 	check('Electricity conducts full power through connected water, then loses one volume', () => {
 		//5x5: water is the middle row plus a cell below its centre; the seed sits dry above.
@@ -789,21 +877,29 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	const { mirrorImageStats } = require('./simulation/mirrorImage');
 	const { takeSentryTurn } = require('./simulation/sentryTurn');
 	const { ratKingP1Summon, planRatKingWave } = require('./simulation/ratKingBoss');
-	const { chooseDM300Ability, dm300VentPath, planDM300Rockfall } = require('./simulation/dm300Boss');
+	const { chooseDM300Ability, dm300VentPath, planDM300Rockfall, planDM300Knockback } = require('./simulation/dm300Boss');
 	const { aimYogDeathGaze } = require('./simulation/yogBoss');
 	const { Scheduler } = require('./scheduler');
 	const talents = require('./talentEffects');
+	const buffDurations = require('./simulation/buffs');
 	const initial = (extra = {}) => ({ hunger: 0, partialDamage: 0, hp: 20, maxHp: 20, ...extra });
+	check('WellFed pauses hunger, heals every 18 turns, and expires after its Java clock', () => {
+		assert.deepEqual(advanceWellFed(450, 10, 20), { remaining: 449, heal: 0 });
+		assert.deepEqual(advanceWellFed(433, 10, 20), { remaining: 432, heal: 1 });
+		assert.deepEqual(advanceWellFed(432, 20, 20), { remaining: 431, heal: 0 });
+		assert.deepEqual(advanceWellFed(150, 10, 20), { remaining: 149, heal: 0 });
+		assert.deepEqual(advanceWellFed(0, 10, 20), { remaining: null, heal: 0 });
+	});
 	check('movement runtime preserves the pure decision and lazy query order', () => {
 		const calls = [];
 		const plan = runMovement({ x: 4, y: 8 }, { x: -1, y: 1 }, {
 			occupantAt: target => { assert.deepEqual(target, { x: 3, y: 9 }); calls.push('actor'); return null; },
+			isRooted: () => { calls.push('rooted'); return false; },
 			closedDoorAt: () => { calls.push('door'); return true; },
-			isRooted: () => { throw new Error('queried after closed door'); },
 			passable: () => { throw new Error('queried after closed door'); },
 		});
 		assert.deepEqual(plan, { kind: 'door', target: { x: 3, y: 9 } });
-		assert.deepEqual(calls, ['actor', 'door']);
+		assert.deepEqual(calls, ['actor', 'rooted', 'door']);
 		assert.deepEqual(runMovement({ x: 4, y: 8 }, { x: 0, y: 0 }, {}), { kind: 'wait' });
 	});
 	check('attack resolution preserves hit short-circuit and base damage rolls', () => {
@@ -831,7 +927,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.equal(talents.rejuvenatingStepHeal(3, 4, 10, 20, 2), 0);
 		assert.equal(talents.lethalHasteDuration(1), 4);
 		assert.equal(talents.lethalHasteDuration(2), 6);
-		assert.equal(talents.LETHAL_HASTE_COOLDOWN, 100);
+		assert.equal(buffDurations.BUFF_DURATION['lethalHasteCooldown'], 100);
 		assert.equal(talents.weaponRechargingDamage(100, 2), 103);
 		assert.equal(talents.weaponRechargingDamage(40, 1), 41);
 		assert.equal(talents.farsightMultiplier('sniper', 2), 1.5);
@@ -946,6 +1042,23 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.deepEqual(result.events, [{ type: 'starving' }, { type: 'starvation-damage', damage: 1 }]);
 		assert.equal(result.state.hp, 19);
 		assert.equal(result.state.hunger, 450);
+		//Java clamps the level at STARVING on the crossing tick: a bulk step
+		//lands on 450, never 451+, so later subtractive food eats the same base.
+		const bulk = advanceHunger(initial({ hunger: 449, hp: 20 }), 2);
+		assert.equal(bulk.state.hunger, 450);
+		assert.deepEqual(bulk.events, [{ type: 'starving' }, { type: 'starvation-damage', damage: 1 }]);
+		//Java's `1f/hungerDelay`: cloak stealth (delay 1.5) climbs two-thirds as fast.
+		assert.equal(advanceHunger(initial({ hunger: 0 }), 3, 1.5).state.hunger, 2);
+		assert.equal(advanceHunger(initial({ hunger: 0 }), 1, 1.5).state.hunger, 1 / 1.5);
+		//Search exertion mirrors affectHunger with negative energy: direct bump
+		//with crossing lines, STARVING clamp, and excess into partialDamage.
+		const exert = exertHunger(initial({ hunger: 296, hp: 20 }), 4);
+		assert.equal(exert.state.hunger, 300);
+		assert.deepEqual(exert.events, [{ type: 'hungry' }]);
+		const exertStarve = exertHunger(initial({ hunger: 449, hp: 20 }), 4);
+		assert.equal(exertStarve.state.hunger, 450);
+		assert.deepEqual(exertStarve.events, [{ type: 'starving' }, { type: 'starvation-damage', damage: 1 }]);
+		assert.equal(exertStarve.state.hp, 19);
 	});
 	check('once starving, level freezes and partialDamage accrues HT/1000 per turn (Hunger.act isStarving branch)', () => {
 		//Java accrues a flat HT/1000 per act with no STEP factor: at HT 20 the strict
@@ -1104,6 +1217,20 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		const rockfall = planDM300Rockfall({ x: 3, y: 3 }, { x: 0, y: 0 }, 7, 7, () => true, random);
 		assert.deepEqual(rockfall.safe, { x: 2, y: 2 });
 		assert.equal(rockfall.cells.length, 48);
+		//`DM300.dropRocks()`'s opening knockback (tag `v3.3.8`): power 2 adjacent, 1 at
+		//distance 2, pure displacement whose landing is the 7x7's rockCenter.
+		const open = { blocked: () => false, occupied: () => false, immovable: false };
+		assert.deepEqual(planDM300Knockback({ x: 3, y: 3 }, { x: 3, y: 4 }, 2, open), { x: 3, y: 6 });
+		assert.deepEqual(planDM300Knockback({ x: 3, y: 3 }, { x: 3, y: 4 }, 1, open), { x: 3, y: 5 });
+		assert.deepEqual(planDM300Knockback({ x: 0, y: 0 }, { x: 1, y: 1 }, 2, open), { x: 3, y: 3 });
+		assert.deepEqual(planDM300Knockback({ x: 3, y: 3 }, { x: 3, y: 4 }, 0, open), { x: 3, y: 4 });
+		assert.deepEqual(planDM300Knockback({ x: 3, y: 3 }, { x: 3, y: 4 }, 2, { ...open, immovable: true }), { x: 3, y: 4 });
+		//A solid cell stops the throw in front of it; an occupied landing steps back
+		//one, matching `throwChar`'s `findChar` branch.
+		assert.deepEqual(planDM300Knockback({ x: 3, y: 3 }, { x: 3, y: 4 }, 2,
+			{ ...open, blocked: (x, y) => x === 3 && y === 5 }), { x: 3, y: 4 });
+		assert.deepEqual(planDM300Knockback({ x: 3, y: 3 }, { x: 3, y: 4 }, 2,
+			{ ...open, occupied: (x, y) => x === 3 && y === 6 }), { x: 3, y: 5 });
 		const yog = aimYogDeathGaze({ width: 9, height: 9, hero: { x: 4, y: 4 }, yog: { x: 0, y: 0 }, maxHp: 400, hp: 400,
 			neighbours: [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]],
 			index: (x, y) => y * 9 + x, passable: () => true, trace: (from, to) => {
@@ -1112,13 +1239,40 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 				cells.push({ x, y }); return cells;
 			}, random });
 		assert.deepEqual(yog, [40]);
+		//Duplicate extra beams survive: Java paints into an `ArrayList` and fires the
+		//cell twice, so the planner returns a list, not a set.
+		const neighbours8 = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
+		const diagonal = (from, to) => {
+			const cells = []; let x = from.x, y = from.y;
+			while (x !== to.x || y !== to.y) { cells.push({ x, y }); x += Math.sign(to.x - x); y += Math.sign(to.y - y); }
+			cells.push({ x, y }); return cells;
+		};
+		const dupe = aimYogDeathGaze({ width: 9, height: 9, hero: { x: 4, y: 4 }, yog: { x: 0, y: 0 }, maxHp: 800, hp: 0,
+			neighbours: neighbours8, index: (x, y) => y * 9 + x, passable: () => true, trace: diagonal, random: { int: () => 0 } });
+		assert.deepEqual(dupe, [40, 30, 30]);
+		//Java's blanket check sweeps `NEIGHBOURS9`: the hero's own cell counts. A trace
+		//covering all eight neighbours but not the center keeps every beam.
+		const blanket = aimYogDeathGaze({ width: 9, height: 9, hero: { x: 4, y: 4 }, yog: { x: 0, y: 0 }, maxHp: 800, hp: 400,
+			neighbours: neighbours8, index: (x, y) => y * 9 + x, passable: () => true,
+			trace: () => neighbours8.map(([dx, dy]) => ({ x: 4 + dx, y: 4 + dy })), random: { int: () => 0 } });
+		assert.deepEqual(blanket, [40, 30]);
+		//Yog's 400-HP scaling preserves Java's escalation fractions (2nd beam at 60%
+		//HP remaining, 3rd at 20%): a literal /400 divisor would never exceed one beam.
+		const beamCount = (hp) => aimYogDeathGaze({ width: 9, height: 9, hero: { x: 4, y: 4 }, yog: { x: 0, y: 0 },
+			maxHp: 400, hp, neighbours: neighbours8, index: (x, y) => y * 9 + x, passable: () => true,
+			trace: diagonal, random: { int: () => 0 } }).length;
+		assert.deepEqual([241, 240, 81, 80].map(beamCount), [1, 2, 2, 3]);
 	});
 	check('mirror images read Java\'s hero-derived combat stats at half damage', () => {
 		//42nd matrix (`MirrorImage.java`, tag `v3.3.8`): `attackSkill()` is
 		//`(9 + lvl) * accuracyMultiplier`, `defenseSkill()` is
-		//`1 * (baseEvasion + heroEvasion) / 2` with `baseEvasion = 4 + lvl`, and
-		//`damageRoll()` halves the hero roll rounded up (`(damage+1)/2` in
-		//integer math is `ceil(d/2)`). The `(int)` casts truncate.
+		//`super.defenseSkill(enemy) * (baseEvasion + heroEvasion) / 2` with
+		//`baseEvasion = 4 + lvl` - the `super` 0/1 multiplier (surprised,
+		//paralysed, illuminated-vs-Cleric, facing the hero; `Mob.java`
+		//684-705) rides the optional `superDefense` tail, pinned alongside
+		//the prismatic twin in `verifyPrismatic` - and `damageRoll()` halves
+		//the hero roll rounded up (`(damage+1)/2` in integer math is
+		//`ceil(d/2)`). The `(int)` casts truncate.
 		assert.deepEqual(mirrorImageStats(1, 1, 1, 3, 9),
 			{ accuracy: 10, evasion: 5, damageMin: 2, damageMax: 5 });
 		assert.deepEqual(mirrorImageStats(10, 1.3, 1.125, 11, 30),
@@ -1175,13 +1329,13 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		cells[2].solid = true;
 		cells[3].flammable = true;
 		cells[4].victim = cells[4].eligibleVictim = true;
-		cells[5].victim = true; // an NPC/passive target: present, but not an eligible hit
+		cells[5].victim = cells[5].eligibleVictim = true; // NPCs count through Actor.findChar
 		const plan = planDisintegration(1, cells);
 		assert.equal(plan.maxDistance, 8);
-		assert.deepEqual(plan.victimCells, [1, 4]);
+		assert.deepEqual(plan.victimCells, [1, 4, 5]);
 		assert.deepEqual(plan.flammableCells, [3]);
 		assert.equal(plan.terrainBonus, 1);
-		assert.equal(plan.effectiveLevel, 3); // wand 1 + one extra hit + one terrain level
+		assert.equal(plan.effectiveLevel, 4); // wand 1 + two extra hits + one terrain level
 	});
 	check('wand categories centralize identity and category-specific formulas', () => {
 		const classes = [
@@ -1207,10 +1361,20 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	verifyCombat(require, check);
 	check('Freezing escalates capped Chill into the shared Frost immobilization', () => {
 		const { applyChillFreeze, BUFF_DURATION } = require('./simulation/buffs');
+		//One `Freezing.freeze()` impact extends Chill by 3 dry (5 in water), it does
+		//not refresh it to full - the old full-refresh froze after two contacts.
 		const chilled = applyChillFreeze({ burning: 4 });
 		assert.equal(chilled.frozen, false);
-		assert.equal(chilled.buffs.chill, BUFF_DURATION.chill);
+		assert.equal(chilled.buffs.chill, 3);
 		assert.equal(chilled.buffs.burning, 4);
+		assert.equal(applyChillFreeze({ burning: 4 }, 5).buffs.chill, 5);
+		const building = applyChillFreeze({ chill: 6 });
+		assert.equal(building.frozen, false);
+		assert.equal(building.buffs.chill, 9);
+		const capped = applyChillFreeze({ chill: 8 });
+		assert.equal(capped.frozen, true);
+		assert.equal(capped.buffs.chill, undefined);
+		assert.equal(capped.buffs.frost, BUFF_DURATION.frost);
 		const frozen = applyChillFreeze({ chill: BUFF_DURATION.chill, paralysis: 1 });
 		assert.equal(frozen.frozen, true);
 		assert.equal(frozen.buffs.chill, undefined);
@@ -1264,14 +1428,76 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.ok(scene.includes('bee: (monster) => { this.takeBeeTurn(monster); return true; }'), 'bee hunts through its own override');
 		assert.ok(scene.includes('potPos: creature.potPos') && scene.includes('potPos: saved.potPos'), 'pot anchor persists through save/restore');
 	});
+	check('Sentry spawns unhittable with nonzero HP like Java', () => {
+		//`SentryRoom$Sentry` (tag `v3.3.8`): `defenseSkill()` is INFINITE_EVASION and
+		//`damage()` a no-op, so the turret can neither be hit nor killed. The base
+		//`monsters.mwl` row already carries evasion 1000000 and hp 1 - this pins that
+		//the `monsterDepthStats` override preserves both instead of clobbering them
+		//to a hittable 0-HP turret (its accuracy half, 20+2*depth, is unaffected).
+		const { monsterSpawnProfile } = require('./actors/monsterSpawn');
+		const sentryAt = (depth) => monsterSpawnProfile('sentry', depth, false, false, false, 1).adjustedDef;
+		assert.deepEqual([sentryAt(3).hp, sentryAt(3).accuracy, sentryAt(3).evasion], [1, 26, 1000000]);
+		assert.deepEqual([sentryAt(10).hp, sentryAt(10).accuracy, sentryAt(10).evasion], [1, 40, 1000000]);
+	});
+	check('Sentry initial warmup survives a pre-activation floor save', () => {
+		const floorState = readFileSync(new URL('../src/scenes/floorState.ts', import.meta.url), 'utf8');
+		const spawn = readFileSync(new URL('../src/scenes/dungeon/coreSpawnTiles.ts', import.meta.url), 'utf8');
+		assert.ok(floorState.includes('sentryInitialWarmup?: number'), 'save schema carries the room delay');
+		assert.ok(spawn.includes('sentryInitialWarmup: creature.sentryInitialWarmup'), 'capture writes the room delay');
+		assert.ok(spawn.includes('sentryInitialWarmup: saved.sentryInitialWarmup'), 'restore reads the room delay');
+		//The turn hook prefers a consumed current delay, then the persisted room delay. This is
+		//the exact Java distinction between CUR_DELAY and INITIAL_DELAY on SentryRoom$Sentry.
+		const scene = readSceneSource();
+		assert.ok(scene.includes('warmup: monster.sentryWarmup ?? monster.sentryInitialWarmup'), 'turn hook keeps both delays');
+	});
 	check('Piranha deaths feed the PIRANHAS badge at six kills', () => {
 		//`Piranha.die()` (tag `v3.3.8`): every death counts, any cause.
 		const badges = readFileSync(new URL('../src/content/badges.mwl', import.meta.url), 'utf8');
 		assert.ok(badges.includes('id: "piranhas"'), 'the piranhas badge row exists');
 		assert.ok(badges.includes('counter: "piranhas"'), 'the row counts piranha kills');
 		const scene = readSceneSource();
-		assert.ok(scene.includes("if (creature.kind === 'piranha') this.awardBadge('piranhas');"),
+		assert.ok(scene.includes("creature.kind === 'piranha' || creature.kind === 'phantomPiranha'"),
 			'every piranha death counts');
+	});
+	check('Piranhas remain confined to water in both wandering helpers', () => {
+		const water = 7;
+		const hero = { x: 2, y: 2 };
+		const creatures = [{ kind: 'piranha', x: 1, y: 1 }, { kind: 'phantomPiranha', x: 3, y: 3 }, hero];
+		const ctx = {
+			width: 5, height: 5, cellCount: 25, waterTerrain: water,
+			passable: () => true, inside: (x, y) => x >= 0 && y >= 0 && x < 5 && y < 5,
+			terrainAt: (x, y) => (x === 1 && y === 2 ? water : 0),
+			terrainAtCell: (cell) => cell === 11 ? water : 0,
+			cellIndex: (x, y) => y * 5 + x, isChasm: () => false,
+			creatureAt: (x, y) => creatures.find((c) => c.x === x && c.y === y) ?? null,
+			creatures, hero, blockExtraInto: () => {}, pickElement: (items) => items[0],
+		};
+		const blocked = wanderBlocked(creatures[0], false, ctx);
+		assert.ok(blocked.has(ctx.cellIndex(0, 0)), 'land is blocked for piranhas');
+		assert.ok(!blocked.has(ctx.cellIndex(1, 2)), 'water remains available');
+		assert.equal(isPatrolTargetValid({ x: 1, y: 2 }, true, ctx), true);
+		assert.equal(isPatrolTargetValid({ x: 0, y: 0 }, true, ctx), false);
+		assert.deepEqual(randomPatrolDestination(true, ctx), { x: 1, y: 2 });
+	});
+	check('PhantomPiranha keeps Java room rolls and remote-defense hooks', () => {
+		const pool = readFileSync(new URL('../src/spdLevelGen/rooms/special/poolRoom.ts', import.meta.url), 'utf8');
+		const aquarium = readFileSync(new URL('../src/spdLevelGen/rooms/standard/aquariumRoom.ts', import.meta.url), 'utf8');
+		const combat = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
+		assert.ok(pool.includes("phantom ? 'phantomPiranha' : 'piranha'"), 'pool rooms instantiate the rolled variant');
+		assert.ok(aquarium.includes("phantom ? 'phantomPiranha' : 'piranha'"), 'aquariums instantiate the rolled variant');
+		assert.ok(combat.includes("defender.kind === 'phantomPiranha'"), 'remote damage reads the variant');
+		assert.ok(combat.includes('phantomPiranhaTeleport'), 'live variants teleport after surviving remote damage');
+		const blasts = readFileSync(new URL('../src/scenes/dungeon/panelsSingleUse.ts', import.meta.url), 'utf8');
+		const environment = readFileSync(new URL('../src/scenes/dungeon/environmentFireTraps.ts', import.meta.url), 'utf8');
+		assert.ok(blasts.includes("const phantomDirect = c.kind === 'phantomPiranha'"), 'blast seams halve direct phantom damage');
+		assert.ok(environment.includes("const phantomDirect = target.kind === 'phantomPiranha'"), 'environment seams halve direct phantom damage');
+	});
+	check('HolyWard gates beneficial armor glyphs and refreshes derived state', () => {
+		const scene = readSceneSource();
+		assert.ok(scene.includes('armorGlyphActive'), 'armor glyph paths share the HolyWard gate');
+		assert.ok(scene.includes("this.hero.buffs['holyWard'] === undefined"), 'the gate observes the live HolyWard buff');
+		assert.ok(scene.includes("if (spell === 'holyWard') this.syncHeroFromStats()"), 'casting HolyWard refreshes derived hero state');
+		assert.ok(scene.includes('hadHolyWard'), 'HolyWard expiry refreshes derived hero state');
 	});
 	check('Shock elementals halve lightning-family damage, rounded', () => {
 		//`Char.Property.ELECTRIC` (tag `v3.3.8`): `Char.damage()` halves with
@@ -1417,6 +1643,47 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.equal(wildMagicBoostedLevel(0, 1, true), 3, 'rank 1 coin lands +3 at the cap');
 		assert.equal(wildMagicBoostedLevel(1, 4, true), 5, 'rank 4 coin lands +4 below its cap of 7');
 		assert.equal(wildMagicBoostedLevel(3, 0, false), 3, 'no boost at or above the cap');
+	});
+	check('cursedWand picks the six ported Common effects uniformly and reads the exact Java tables', () => {
+		//`CursedWand.cursedZap()`'s Common tier (`simulation/cursedWand.ts` has the full
+		//scoping rationale for why only 6 of 8 are modeled).
+		const { CURSED_COMMON_EFFECT_IDS, pickCursedCommonEffect, CURSED_RANDOM_GAS, pickBurnAndFreeze,
+			CURSED_UNCOMMON_EFFECT_IDS, pickCursedUncommonEffect, pickCursedTier, CURSED_PLANT_KINDS,
+			CURSED_RARE_EFFECT_IDS, pickCursedRareEffect, CONE_OF_COLORS_STATUSES, pickConeOfColorsStatus } = require('./simulation/cursedWand');
+		assert.deepEqual(CURSED_COMMON_EFFECT_IDS, ['burnAndFreeze', 'randomTeleport', 'randomGas', 'bubbles', 'randomWand', 'selfOoze']);
+		assert.equal(pickCursedCommonEffect((n) => { assert.equal(n, 6); return 0; }), 'burnAndFreeze');
+		assert.equal(pickCursedCommonEffect((n) => { assert.equal(n, 6); return 5; }), 'selfOoze');
+		assert.deepEqual(CURSED_UNCOMMON_EFFECT_IDS, ['healthTransfer', 'geyser', 'summonSheep', 'levitate', 'alarm', 'randomPlant', 'explosion', 'lightningBolt']);
+		assert.equal(pickCursedUncommonEffect((n) => { assert.equal(n, 8); return 0; }), 'healthTransfer');
+		assert.equal(pickCursedUncommonEffect((n) => { assert.equal(n, 8); return 7; }), 'lightningBolt');
+		assert.deepEqual(CURSED_PLANT_KINDS, ['blindweed', 'earthroot', 'fadeleaf', 'firebloom', 'icecap', 'mageroyal',
+			'rotberry', 'sorrowmoss', 'starflower', 'stormvine', 'sungrass', 'swiftthistle']);
+		assert.deepEqual(CURSED_RARE_EFFECT_IDS, ['massInvuln', 'coneOfColors', 'sheepPolymorph']);
+		assert.equal(pickCursedRareEffect((n) => { assert.equal(n, 3); return 0; }), 'massInvuln');
+		assert.equal(pickCursedRareEffect((n) => { assert.equal(n, 3); return 1; }), 'coneOfColors');
+		assert.equal(pickCursedRareEffect((n) => { assert.equal(n, 3); return 2; }), 'sheepPolymorph');
+		//ConeOfColors.effect()'s Random.Int(5): burning/frost/poison/ooze/electricity.
+		assert.deepEqual(CONE_OF_COLORS_STATUSES, ['burning', 'frost', 'poison', 'ooze', 'electricity']);
+		assert.equal(pickConeOfColorsStatus((n) => { assert.equal(n, 5); return 0; }), 'burning');
+		assert.equal(pickConeOfColorsStatus((n) => { assert.equal(n, 5); return 4; }), 'electricity');
+		//EFFECT_CAT_CHANCES's real common/uncommon/rare weights (60/30/9 of 99, VeryRare's 1%
+		//folded into Rare).
+		assert.equal(pickCursedTier((n) => { assert.equal(n, 99); return 0; }), 'common');
+		assert.equal(pickCursedTier((n) => { assert.equal(n, 99); return 59; }), 'common');
+		assert.equal(pickCursedTier((n) => { assert.equal(n, 99); return 60; }), 'uncommon');
+		assert.equal(pickCursedTier((n) => { assert.equal(n, 99); return 89; }), 'uncommon');
+		assert.equal(pickCursedTier((n) => { assert.equal(n, 99); return 90; }), 'rare');
+		assert.equal(pickCursedTier((n) => { assert.equal(n, 99); return 98; }), 'rare');
+		//RandomGas.effect()'s Random.Int(3): ConfusionGas 800, ToxicGas 500, ParalyticGas 200.
+		assert.deepEqual(CURSED_RANDOM_GAS, [
+			{ id: 'confusionGas', volume: 800 },
+			{ id: 'toxicGas', volume: 500 },
+			{ id: 'paralyticGas', volume: 200 },
+		]);
+		//BurnAndFreeze.effect()'s Random.Int(2): true (Int==0) gives the user Frost and the
+		//target Burning; false gives the user Burning and the target Frost.
+		assert.deepEqual(pickBurnAndFreeze(true), { userStatus: 'frost', targetStatus: 'burning' });
+		assert.deepEqual(pickBurnAndFreeze(false), { userStatus: 'burning', targetStatus: 'frost' });
 	});
 	check('the vault branch stays fully absent (VaultSentry + rooms + quest)', () => {
 		//PORT_COVERAGE.md's VaultSentry row: the mob only spawns from the

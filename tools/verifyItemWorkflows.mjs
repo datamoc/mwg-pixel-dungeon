@@ -1125,6 +1125,28 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 		assert.deepEqual(freeScene.recalled, [], '...arming nothing back');
 		assert.equal(freeScene.empoweredZaps, 0, '...not even mage zaps');
 	}
+	{
+		// `ScrollOfTransmutation.changeTippedDart()` detaches one dart, unlike the
+		// ordinary missile `detachAll` path. A stack of five therefore leaves four.
+		const { completeTransmutation: completeDartTransmutation } = require('./items/transmutation.js');
+		const dartBag = new Inventory();
+		dartBag.add({ id: 'missile_tippeddart', quantity: 5, stackable: true, identified: true,
+			sourceClass: 'TippedDart', tippedSeed: 'firebloom', level: 2, durability: 40, maxDurability: 100,
+			missileSet: 'm-5', instanceId: 'm-5:2' });
+		dartBag.add({ id: 'scrollTransmutation', quantity: 1, stackable: true, identified: true });
+		const dartScene = {
+			bag: dartBag, heroClass: 'cleric', miningBranchActive: false,
+			hero: { maxHp: 100, hp: 100, magicImmune: false }, talentRank: () => 0,
+			newItemInstanceId: (kind) => `test-${kind}-dart`, syncHeroFromStats: () => {}, say: () => {},
+			equippedRing: null, ringHtBonus: 0, missileThresholds: new Map(), empoweredZaps: 0,
+			armRecallInscription: () => {},
+		};
+		completeDartTransmutation(dartScene, { id: 'missile_tippeddart', instanceId: 'm-5:2' });
+		assert.equal(dartBag.find('missile_tippeddart')?.quantity, 4,
+			'transmuting one tipped dart preserves the rest of its stack');
+		assert.equal(dartBag.items.filter((item) => item.id === 'missile_tippeddart').length, 2,
+			'the fresh rerolled tipped dart is added beside the remaining stack');
+	}
 	// `ExoticPotion.PotionToExotic` (tag `v3.3.8`): one regular potion, cost 4, into its
 	// exotic - only the Invisibility -> ShroudingFog pair exists here so far.
 	assert.equal(potionExoticResult('potionInvis'), 'potionShrouding');
@@ -1292,6 +1314,10 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 		assert.match(consumables, /addBuff\(scene\.hero, 'recharging'/);
 		assert.match(consumables, /food\.id === 'phantomMeat'/);
 		assert.match(consumables, /PotionOfHealing\.cure/);
+		// `MysteryMeat.effect()` rolls Java's full `Random.Int(5)` (`MysteryMeat.java`,
+		// tag `v3.3.8`): the unmodeled slow case and Java's own no-op share the nothing
+		// outcome, so each modeled effect holds its real 20% instead of 25%.
+		assert.match(consumables, /function applyMysteryMeatEffect[\s\S]*?switch \(Random\.int\(0, 5\)\)/);
 		assert.match(readFileSync(join(root, 'src/items/itemKinds.ts'), 'utf8'), /id: 'phantomMeat'/);
 	}
 	// Java's Dewdrop.doPickUp removes the heap only after consumeDew accepts it. A full,
@@ -4295,7 +4321,8 @@ function upgradeGearDrive(overrides = {}) {
 // twenty-ninth extraction, behavior-identical): the registry calls the module functions
 // directly now. Driven headlessly with a scripted heal pool - the cure list (burning
 // and the daze stand-in deliberately kept), the max-rule pool, the willpower/agility
-// riders, purity's poison-plus-burning clear, and the registry wiring itself.
+// riders, purity's nothing-cured quaff plus its `protected` line, and the registry
+// wiring itself.
 // (`combat` is stubbed here, so the restored_nature roots and the stubbed-off
 // no_healing challenge branch stay live-only by construction.)
 const { applyPotionHealing, applyPotionPurity, cureHeroBuffs } = require('./items/potionEffects.js');
@@ -4346,13 +4373,26 @@ function healingDrive(overrides = {}) {
 	assert.equal(agi.flags.synced, 1, 'and resyncs');
 	const pure = healingDrive({ heroBuffs: { poison: 2, burning: 1, weakness: 1 } });
 	applyPotionPurity(pure.hero, pure.ctx.say);
-	assert.deepEqual(pure.hero.buffs, { weakness: 1 }, 'purity clears poison and burning only');
-	assert.ok(pure.said.some((l) => l.includes('port.log.purity')), 'announced');
+	//`combat` is stubbed to a no-op here, so the prolong itself lands live-only;
+	//what this pins is that the quaff cures nothing itself (Java's `apply()` only
+	//prolongs `BlobImmunity`) and announces the real `protected` line.
+	assert.deepEqual(pure.hero.buffs, { poison: 2, burning: 1, weakness: 1 }, 'purity quaff cures nothing');
+	assert.ok(pure.said.some((l) => l.includes('items.potions.potionofpurity.protected')), 'announced');
 	const wired = healingDrive();
 	createPotionEffects(wired.ctx).potionHealing();
 	assert.equal(wired.pool.left, Math.round(0.8 * 20 + 14), 'the registry reaches the moved healer');
 	createPotionEffects(wired.ctx).potionPurity();
-	assert.ok(wired.said.some((l) => l.includes('port.log.purity')), 'and the moved purifier');
+	assert.ok(wired.said.some((l) => l.includes('items.potions.potionofpurity.protected')), 'and the moved purifier');
+}
+// `PotionOfPurity.apply()` (`PotionOfPurity.java`, tag `v3.3.8`) prolongs
+// `BlobImmunity` for the full `DURATION` (20) and cures nothing - the old
+// poison/burning deletion misattributed the shatter path's radius clearing to
+// the quaff. Pinned at source level because `combat` is stubbed in this
+// harness; the keep-max primitive itself is pinned in `test:simulation`.
+{
+	const potionSource = readFileSync(join(root, 'src/items/potionEffects.ts'), 'utf8');
+	assert.match(potionSource, /function applyPotionPurity[\s\S]*?reigniteBuff\(hero, 'blobImmunity', 20\)/);
+	assert.doesNotMatch(potionSource, /function applyPotionPurity[\s\S]*?delete hero\.buffs\[/);
 }
 // Dew-drop collection moved to `items/consumables.ts` as `collectDewdrop` (the
 // file-size refactor's thirtieth extraction, behavior-identical): driven headlessly

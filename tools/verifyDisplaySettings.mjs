@@ -203,6 +203,74 @@ try {
 		assert.equal(store.dump().get('camera_follow'), '1');
 	});
 
+	check('fullscreen defaults on, ui sliders gate their Java ranges', () => {
+		const store = freshStore();
+		settings.setSettingsStore(store);
+		assert.equal(settings.isFullscreen(), true);
+		assert.equal(settings.uiMode(), 2);
+		assert.equal(settings.uiScale(), 2);
+		settings.setFullscreen(false);
+		settings.setUiMode(99);
+		settings.setUiScale(99);
+		assert.equal(settings.isFullscreen(), false);
+		assert.equal(settings.uiMode(), 2);
+		assert.equal(settings.uiScale(), 4);
+		settings.setUiMode(-1);
+		settings.setUiScale(0);
+		assert.equal(settings.uiMode(), 0);
+		assert.equal(settings.uiScale(), 1);
+		assert.equal(store.dump().get('fullscreen'), 'false');
+		assert.equal(store.dump().get('full_ui'), '0');
+		assert.equal(store.dump().get('scale'), '1');
+	});
+
+	check('flip-tags and system font default off and round-trip', () => {
+		const store = freshStore();
+		settings.setSettingsStore(store);
+		assert.equal(settings.flipTags(), false);
+		assert.equal(settings.systemFont(), false);
+		settings.setFlipTags(true);
+		settings.setSystemFont(true);
+		assert.equal(settings.flipTags(), true);
+		assert.equal(settings.systemFont(), true);
+		assert.equal(store.dump().get('flip_tags'), 'true');
+		assert.equal(store.dump().get('system_font'), 'true');
+	});
+
+	check('connectivity flags default news/updates/wifi on, betas off', () => {
+		const store = freshStore();
+		settings.setSettingsStore(store);
+		assert.equal(settings.newsEnabled(), true);
+		assert.equal(settings.updatesEnabled(), true);
+		assert.equal(settings.betasEnabled(), false);
+		assert.equal(settings.wifiOnly(), true);
+		settings.setNewsEnabled(false);
+		settings.setUpdatesEnabled(false);
+		settings.setBetasEnabled(true);
+		settings.setWifiOnly(false);
+		assert.equal(store.dump().get('news'), 'false');
+		assert.equal(store.dump().get('updates'), 'false');
+		assert.equal(store.dump().get('betas'), 'true');
+		assert.equal(store.dump().get('wifi'), 'false');
+	});
+
+	check('sensitivities default 5 and 3 with Java gates', () => {
+		const store = freshStore();
+		settings.setSettingsStore(store);
+		assert.equal(settings.controllerSensitivity(), 5);
+		assert.equal(settings.movementSensitivity(), 3);
+		settings.setControllerSensitivity(99);
+		settings.setMovementSensitivity(99);
+		assert.equal(settings.controllerSensitivity(), 10);
+		assert.equal(settings.movementSensitivity(), 4);
+		settings.setControllerSensitivity(0);
+		settings.setMovementSensitivity(-1);
+		assert.equal(settings.controllerSensitivity(), 1);
+		assert.equal(settings.movementSensitivity(), 0);
+		assert.equal(store.dump().get('controller_sens'), '1');
+		assert.equal(store.dump().get('move_sens'), '0');
+	});
+
 	console.log(`\nAll ${passed} display-settings checks passed.`);
 } catch (error) {
 	console.error(`FAIL after ${passed} passed:`, error);

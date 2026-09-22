@@ -60,6 +60,7 @@ export function verifyActorCollision(require, check) {
 			neighbourOffsets: neighbours8,
 			chebyshev,
 			hero,
+			isChasm: () => false,
 		};
 		// Seven of eight neighbours taken: the only improving free cell is (4,6).
 		assert.deepEqual(fleeStep({ x: 5, y: 5 }, ctx), { x: 4, y: 6 });

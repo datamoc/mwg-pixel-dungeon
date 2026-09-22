@@ -26,6 +26,7 @@ export function verifyArmorAbilities(require, check) {
 	const { exposeWeaknessDuration, feignedRetreatHaste, closeTheGapRange, eliminationMatchFactor, invigoratingVictoryHeal, combinedLethalityTest, elementalStrikeCone, elementalPowerMulti, directedPowerBoost, elementalBlockingShield, elementalVampiricHeal, elementalSacrificialSelf, elementalBlobAmount, elementalBloomingBudget, elementalFurrowStep, elementalBaseDamage, elementalKineticSplash, elementalRootsDuration, elementalKnockback, elementalLuckyChance, elementalProjectingSplash, elementalCorruptingChance, elementalGrimChance, elementalCurseChance, elementalAnnoyingChance, elementalSacrificialOther, elementalStrikeResisted } = require('./simulation/duelistAbilities');
 	const { ELEMENTAL_BLAST_DAMAGE_FACTORS, elementalBlastEffectMulti, elementalBlastAoeSize, elementalBlastAim, elementalBlastDamage, elementalBlastUndeadDamage, elementalBlastTransfusionSplit, elementalBlastCorrosion, elementalBlastParalysisDuration, elementalBlastFrostDuration, elementalBlastBlindnessDuration, elementalBlastLightDuration, elementalBlastCharmDuration, elementalBlastAmokDuration, elementalBlastRootsDuration, elementalBlastRechargingDuration, elementalBlastRegrowthChance, elementalBlastKnockback, elementalBlastReactiveShield } = require('./simulation/mageAbilities');
 	const { BUFF_DURATION } = require('./simulation/buffs');
+	const { trinityBodyDuration, trinityMindItemLevel, trinitySpiritRingLevel, trinitySpiritArtifactLevel, trinityChargeUsePerEffect } = require('./simulation/clericSpells');
 
 	//`HeroClass.armorAbilities()`, in its own order.
 	check('every class offers its three real armor abilities, in Java order', () => {
@@ -34,9 +35,10 @@ export function verifyArmorAbilities(require, check) {
 		assert.deepEqual(ARMOR_ABILITIES.rogue, ['smokebomb', 'deathmark', 'shadowclone']);
 		assert.deepEqual(ARMOR_ABILITIES.huntress, ['spectralblades', 'naturespower', 'spirithawk']);
 		assert.deepEqual(ARMOR_ABILITIES.duelist, ['challenge', 'elementalstrike', 'feint']);
-		//The Cleric's three (`Trinity`/`PowerOfMany`/`AscendedForm`) are unported and unnamed by
-		//this port's message catalogue - see `talents.ts`'s own note.
-		assert.deepEqual(ARMOR_ABILITIES.cleric, []);
+		//The Cleric's three (`AscendedForm`/`Trinity`/`PowerOfMany`) carry Java's own values;
+		//the base AscendedForm window is now live, while the spell-heavy alternatives remain
+		//unoffered until their ally/tome systems exist.
+		assert.deepEqual(ARMOR_ABILITIES.cleric, ['ascendedform', 'trinity', 'powerofmany']);
 	});
 
 	check('base charge use and targeting are Java\'s per ability', () => {
@@ -45,7 +47,7 @@ export function verifyArmorAbilities(require, check) {
 		const expected = {
 			heroicleap: [35, 'cell'], shockwave: [35, 'cell'], endure: [50, 'none'],
 			elementalblast: [35, 'none'], warpbeacon: [35, 'beacon'], wildmagic: [25, 'cell'],
-			smokebomb: [50, 'cell'], deathmark: [25, 'cell'], shadowclone: [35, 'clone'],
+			smokebomb: [50, 'cell'], deathmark: [25, 'cell'], shadowclone: [35, 'clone'], ascendedform: [50, 'none'],
 			spectralblades: [25, 'cell'], naturespower: [35, 'none'], spirithawk: [35, 'hawk'],
 			challenge: [35, 'cell'], elementalstrike: [25, 'cell'], feint: [50, 'cell'],
 		};
@@ -54,6 +56,37 @@ export function verifyArmorAbilities(require, check) {
 			assert.equal(def.baseChargeUse, charge, `${id} charge`);
 			assert.equal(def.targeting, targeting, `${id} targeting`);
 		}
+	});
+
+	check('Trinity form rules keep Java\'s authored duration, levels, and charge multipliers', () => {
+		//`BodyForm.duration`, `MindForm.itemLevel`, `SpiritForm.ringLevel`/
+		//`artifactLevel`, and `Trinity.trinityChargeUsePerEffect` (tag `v3.3.8`).
+		assert.deepEqual([0, 1, 2, 3, 4].map(trinityBodyDuration), [13, 20, 27, 33, 40]);
+		assert.deepEqual([0, 1, 4].map(trinityMindItemLevel), [2, 3, 6]);
+		assert.deepEqual([0, 1, 4].map(trinitySpiritRingLevel), [0, 1, 4]);
+		assert.deepEqual([0, 1, 4].map(trinitySpiritArtifactLevel), [2, 4, 10]);
+		assert.equal(trinityChargeUsePerEffect(25, 'Corrupting', 'body'), 50);
+		assert.equal(trinityChargeUsePerEffect(25, 'WandOfFireblast', 'mind'), 50);
+		assert.equal(trinityChargeUsePerEffect(25, 'DriedRose', 'spirit'), 50);
+		assert.equal(trinityChargeUsePerEffect(25, 'EtherealChains', 'spirit'), 35);
+		assert.equal(trinityChargeUsePerEffect(25, 'RingOfMight', 'spirit'), 25);
+	});
+
+	check('Stench armor curse seeds Java ToxicGas, while FetidRat keeps StenchGas', () => {
+		const mobOnHit = readFileSync(new URL('../src/scenes/mobOnHit.ts', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+		const branch = mobOnHit.slice(mobOnHit.indexOf('//Stench.proc()'), mobOnHit.indexOf("if (attacker.kind === 'bat'", mobOnHit.indexOf('//Stench.proc()')));
+		assert.match(branch, /ctx\.toxicGas\.seed\(ctx\.hero\.x, ctx\.hero\.y, 250\)/,
+			'Armor.java Stench imports ToxicGas and seeds it at the defender\'s cell');
+		assert.doesNotMatch(branch, /ctx\.stenchGas\.seed/,
+			'armor Stench must not use the separate FetidRat StenchGas blob');
+		assert.match(mobOnHit, /FetidRat\.defenseProc\(\).*?ctx\.stenchGas\.seed/s,
+			'FetidRat remains the distinct StenchGas producer');
+	});
+
+	check('Displacing weapon curse refuses Java IMMOVABLE targets', () => {
+		const source = readSceneSource();
+		assert.match(source, /this\.weaponAffix === 'displacing'[\s\S]*?IMMOVABLE_KINDS\.has\(defender\.kind\)/,
+			'Displacing must preserve Java\'s IMMOVABLE target gate');
 	});
 
 	check('Ratmogrify has its own row: 50 charge, cell targeting, three rat talents, classless key', () => {
@@ -70,6 +103,7 @@ export function verifyArmorAbilities(require, check) {
 		//in `abilities` - so unlike the eighteen class abilities its key has no class segment.
 		assert.equal(armorAbilityKey('ratmogrify', 'warrior'), 'actors.hero.abilities.ratmogrify');
 		assert.equal(armorAbilityKey('heroicleap', 'warrior'), 'actors.hero.abilities.warrior.heroicleap');
+		assert.equal(armorAbilityKey('ascendedform', 'cleric'), 'port.armorability.ascendedform');
 		//The row feeds the tier-4 window for every hero: three rat talents plus HEROIC_ENERGY.
 		assert.deepEqual(armorTalentDefinitions('ratmogrify', 'mage').map((d) => d.id),
 			['ratsistance', 'ratlomacy', 'ratforcements', 'heroic_energy']);
@@ -97,8 +131,9 @@ export function verifyArmorAbilities(require, check) {
 		assert.deepEqual(armorAbilityDef('shockwave').talents, ['expanding_wave', 'striking_wave', 'shock_force']);
 		assert.deepEqual(armorAbilityDef('endure').talents, ['sustained_retribution', 'shrug_it_off', 'even_the_odds']);
 		assert.deepEqual(armorAbilityDef('feint').talents, ['feigned_retreat', 'expose_weakness', 'counter_ability']);
+		assert.deepEqual(armorAbilityDef('wildmagic').talents, ['wild_power', 'fire_everything', 'conserved_magic']);
 		for (const def of ['heroicleap', 'shockwave', 'endure', 'elementalblast', 'warpbeacon', 'wildmagic',
-			'smokebomb', 'deathmark', 'shadowclone', 'spectralblades', 'naturespower', 'spirithawk',
+			'smokebomb', 'deathmark', 'shadowclone', 'spectralblades', 'naturespower', 'spirithawk', 'ascendedform',
 			'challenge', 'elementalstrike', 'feint'].map(armorAbilityDef)) {
 			assert.equal(def.talents.length, 3, `${def.id} talent count`);
 		}
@@ -116,15 +151,31 @@ export function verifyArmorAbilities(require, check) {
 	});
 
 	check('only implemented abilities are offered, and the charge meter is Java\'s', () => {
-		//The Warrior's three, the Rogue's Smoke Bomb, Death Mark and Shadow Clone, the
-		//Huntress's Spectral Blades, Nature's Power and Spirit Hawk, the Mage's Warp Beacon,
-		//and the Duelist's Challenge, Elemental Strike and Feint are the ported set; a
-		//class with none of its own offers nothing, which is what keeps a choice panel
-		//from listing an ability that cannot run.
+		//The Warrior's three, the Cleric's AscendedForm and Trinity selector, the Rogue's Smoke Bomb, Death Mark and Shadow Clone, the
+		//Huntress's Spectral Blades, Nature's Power and Spirit Hawk, the Mage's Warp Beacon
+		//and Wild Magic, and the Duelist's Challenge, Elemental Strike and Feint are the
+		//ported set; a class with none of its own offers nothing, which is what keeps a
+		//choice panel from listing an ability that cannot run.
 		assert.deepEqual(armorAbilitiesFor('warrior'), ['heroicleap', 'shockwave', 'endure']);
 		assert.deepEqual(armorAbilitiesFor('rogue'), ['smokebomb', 'deathmark', 'shadowclone']);
 		assert.deepEqual(armorAbilitiesFor('huntress'), ['spectralblades', 'naturespower', 'spirithawk']);
-		assert.deepEqual(armorAbilitiesFor('mage'), ['warpbeacon']);
+		assert.deepEqual(armorAbilitiesFor('mage'), ['elementalblast', 'warpbeacon', 'wildmagic']);
+		assert.deepEqual(armorAbilitiesFor('cleric'), ['ascendedform', 'trinity']);
+	check('ElementalBlast erupts the imbued class down the roomiest cardinal', () => {
+		//`ElementalBlast.activate()` (tag `v3.3.8`): the scene half is Pixi-bound, so
+		//the wiring is pinned at source level while the arithmetic lives in
+		//`test:simulation` (`simulation/mageAbilities.ts`).
+		const source = readSceneSource();
+		assert.ok(source.includes(": id === 'elementalblast' ? this.activateElementalBlast(def, cost)"), 'the ability dispatches without a target cell');
+		assert.ok(source.includes('const wandType = staffImbueFor(this);'), 'the blast reads the imbued class');
+		assert.ok(source.includes('elementalBlastAim(this.hero.x, this.hero.y'), 'the aim ignores the target cell');
+		assert.ok(source.includes('elementalBlastDamage(Random.normalRange(15, 25), multi, factor)'), 'damage rolls the real range through the class factor');
+		assert.ok(source.includes('elementalBlastUndeadDamage('), 'transfusion smites the undead');
+		assert.ok(source.includes('elementalBlastTransfusionSplit('), 'transfusion heals allies and the charmed');
+		assert.ok(source.includes('elementalBlastReactiveShield(charsHit,'), 'the reactive barrier counts what the blast caught');
+		assert.ok(source.includes("this.bumpDoor(at.x, at.y);"), 'fireblast opens doors in the cone');
+		assert.ok(source.includes('this.featuresMap?.setLayerData('), 'regrown grass restitches the tiles');
+	});
 		assert.deepEqual(armorAbilitiesFor('duelist'), ['challenge', 'elementalstrike', 'feint']);
 		assert.equal(ARMOR_CHARGE_MAX, 100);
 		assert.equal(ARMOR_CHARGE_START, 50);
@@ -132,6 +183,93 @@ export function verifyArmorAbilities(require, check) {
 		assert.equal(ARMOR_CHARGE_PER_TURN, 0.2);
 	});
 
+	check('WildMagic fires spare wands with Java\'s selection, spend and boost', () => {
+		//`WildMagic.activate()` (tag `v3.3.8`): the scene half is Pixi-bound, so the
+		//wiring is pinned at source level while the pure selection/spend/boost live
+		//in `test:simulation` (`simulation/spareWands.ts`).
+		const source = readSceneSource();
+		assert.ok(source.includes(": id === 'wildmagic' ? this.activateWildMagic(def, cost, cell)"), 'the ability dispatches');
+		assert.ok(source.includes("t('actors.hero.abilities.mage.wildmagic.no_wands')"), 'an empty volley says no_wands with no charge spent');
+		assert.ok(source.includes('wildMagicShots('), 'shots come from the ported selection');
+		assert.ok(source.includes('wildMagicBoostedLevel('), 'shots fire at the Wild-Power-boosted level');
+		assert.ok(source.includes('spendWildMagicShot(state, shotCost)'), 'every shot spends its own partial charge');
+		assert.ok(source.includes('if (spare.entry.cursed) this.castCursedWandEffect(aim, cell);'),
+			'cursed spares now fire through the cursed effect table instead of sitting out');
+		assert.ok(source.includes('if (Random.int(4) >= conserved) this.spendHeroAction(1);'), 'the turn is free only under a conserved roll');
+	});
+	check('castCursedWandCommonEffect ports CursedWand.cursedZap\'s Common tier (6 of 8 effects, scoped)', () => {
+		//`simulation/cursedWand.ts` has the full scoping rationale: only the Common tier
+		//(60% of Java's category weight) is modeled, and only 6 of its 8 effects - the two
+		//left out need a generic Regrowth/Freezing blob type this port has no infrastructure
+		//for at all.
+		const source = readSceneSource();
+		for (const marker of [
+			"pickCursedCommonEffect((bound) => Random.int(bound))",
+			"effect === 'burnAndFreeze'",
+			"effect === 'randomTeleport'",
+			"effect === 'randomGas'",
+			"effect === 'bubbles'",
+			"effect === 'randomWand'",
+		]) {
+			assert.ok(source.includes(marker), `castCursedWandCommonEffect must branch on ${marker}`);
+		}
+		assert.ok(source.includes('addBuff(creature, \'ooze\')'), 'the SelfOoze fallthrough branch applies Ooze');
+		assert.ok(source.includes("distances[this.level.index(creature.x, creature.y)]"),
+			'SelfOoze reads a walkable-distance flood from the caster, not a raw radius');
+	});
+	check('castCursedWandUncommonEffect ports all 8 of CursedWand.cursedZap\'s Uncommon effects', () => {
+		const source = readSceneSource();
+		for (const marker of [
+			"pickCursedUncommonEffect((bound) => Random.int(bound))",
+			"effect === 'healthTransfer'",
+			"effect === 'geyser'",
+			"effect === 'summonSheep'",
+			"effect === 'levitate'",
+		]) {
+			assert.ok(source.includes(marker), `castCursedWandUncommonEffect must branch on ${marker}`);
+		}
+		assert.ok(source.includes('this.spawnSheep({ x: cx, y: cy }, 6)'), 'SummonSheep reuses the flock-trap spawn shape');
+		assert.ok(source.includes("activateGeyserTrapFlow({"), 'Geyser reuses the ported geyser-trap flow');
+		assert.ok(source.includes("addBuff(targetEligible ? target : this.hero, 'levitation')"), 'Levitate falls back to the caster when the target is ineligible');
+		assert.ok(source.includes("if (!mob.fleeing) mob.lastSeen = { x: this.hero.x, y: this.hero.y };"), 'Alarm wakes mobs toward the caster');
+		//AntiMagic.RESISTS lists CursedWand as a source class: HealthTransfer's damage half
+		//must zero against a magicImmune victim while its heal half still lands (fixed 2026-09-21).
+		assert.ok(source.includes('if (victim.magicImmune) return;'), 'HealthTransfer must RESISTS-gate its damage half only');
+		assert.ok(source.includes("effect === 'alarm'"), 'Alarm must be an explicit branch, not the catch-all default');
+		assert.ok(source.includes('this.manualPlants.set(plantCellIndex, kind)') && source.includes('this.placePortedFeature(plantCellIndex, kind)'),
+			'RandomPlant reuses the same primitives the hero\'s own plantSeed action uses');
+		assert.ok(source.includes("const rule = MWL_BOMB_RULES.standard;"), 'Explosion resolves through the standard bomb rule, matching ConjuredBomb');
+		assert.ok(source.includes('applyBlastDamage(victim, Math.max(0, Random.normalRange(lo, hi)), false, context)'),
+			'Explosion reuses applyBlastDamage rather than re-deriving the boss-hook edge cases');
+		assert.ok(source.includes("effect === 'explosion'"), 'Explosion must be an explicit branch, not the catch-all default');
+		assert.ok(source.includes('applyBlastDamage(victim, Math.max(0, Random.normalRange(lo, hi)), true, context)'),
+			'LightningBolt reuses applyBlastDamage with pierceArmor true (Electricity source)');
+		assert.ok(source.includes("if (victim.isHero) reigniteBuff(this.hero, 'recharging');"), 'LightningBolt grants Recharging to the hero additively');
+		assert.ok(source.includes("if (victim.hp > 0) reigniteBuff(victim, 'paralysis');"), 'LightningBolt paralyzes every survivor, hero included');
+	});
+	check('castCursedWandEffect dispatches all three modeled tiers, and castCursedWandRareEffect ports MassInvuln + ConeOfColors + SheepPolymorph', () => {
+		const source = readSceneSource();
+		assert.ok(source.includes("if (tier === 'common') this.castCursedWandCommonEffect(target, cell);"), 'the tier dispatch must branch on common');
+		assert.ok(source.includes("else if (tier === 'uncommon') this.castCursedWandUncommonEffect(target, cell);"), 'the tier dispatch must branch on uncommon');
+		assert.ok(source.includes("else this.castCursedWandRareEffect(target, cell);"), 'the tier dispatch must fall through to rare');
+		assert.ok(source.includes("addBuff(creature, 'invulnerability', 10)") && source.includes("addBuff(creature, 'bless')"),
+			'MassInvuln grants every character Invulnerability 10 and a full Bless');
+		assert.ok(source.includes("degrees: 90,") && source.includes("maxDistance: 8,"), 'ConeOfColors must build Java\'s exact 90-degree, 8-radius cone');
+		assert.ok(source.includes("trace: (coneFrom, coneTo) => this.coneRay(coneFrom, coneTo, false),"),
+			'ConeOfColors casts STOP_SOLID alone, so the ray must not stop at a character (coneRay\'s stopAtTarget: false)');
+		assert.ok(source.includes("if (coneCell.x === this.hero.x && coneCell.y === this.hero.y) continue;"),
+			'ConeOfColors excludes the caster\'s own cell from the affected set, matching Java\'s `if (cell == user.pos) continue;`');
+		assert.ok(source.includes("Random.normalRange(5 + this.depth, 10 + this.depth * 2)"),
+			'ConeOfColors damage must be Java\'s NormalIntRange(5 + scalingDepth(), 10 + scalingDepth()*2)');
+		assert.ok(source.includes("victim.buffs['poison'] = Math.max(victim.buffs['poison'] ?? 0, 3 + Math.floor(this.depth / 2))"),
+			'ConeOfColors poison branch must be Java\'s Poison.set(3 + scalingDepth()/2), which is a max-with-current write');
+		assert.ok(source.includes("if (effect === 'sheepPolymorph') {"), 'SheepPolymorph must be an explicit branch, checked before MassInvuln/ConeOfColors');
+		assert.ok(source.includes('!target.isHero && !target.isNPC'), 'SheepPolymorph must refuse the hero and NPCs, matching Java\'s valid() gate');
+		assert.ok(source.includes('!BOSS_KINDS.has(target.kind) && !MINIBOSS_KINDS.has(target.kind)'), 'SheepPolymorph must refuse bosses and minibosses');
+		assert.ok(source.includes('this.spawnSheep(at, 10)'), 'SheepPolymorph must spawn Java\'s 10-turn Sheep at the destroyed target\'s cell');
+		assert.ok(source.includes('this.creatures.splice(this.creatures.indexOf(target), 1)') && source.includes('this.spriteFor.delete(target.id)'),
+			'SheepPolymorph must silently remove the target (no death, no loot), matching destroyAlly\'s own teardown shape');
+	});
 	check('SpiritHawk\'s charge is Java\'s 35, and free while the hawk is already out', () => {
 		const hawk = armorAbilityDef('spirithawk');
 		assert.equal(hawk.baseChargeUse, 35);
@@ -444,6 +582,19 @@ export function verifyArmorAbilities(require, check) {
 		assert.equal(elementalBlastReactiveShield(3, 2, true), 15);
 		assert.equal(elementalBlastReactiveShield(10, 2, false), 0);
 		assert.equal(elementalBlastReactiveShield(0, 4, true), 0);
+		//The frost leg (`ElementalBlast.java`, tag `v3.3.8`) is a direct
+		//`Buff.affect(mob, Frost.class, effectMulti*Frost.DURATION)` - Frost, not
+		//Chill - with Burning/Chill detach and paralysis. dungeonScene.ts cannot
+		//load in this harness (Pixi), so the call site is pinned at source level.
+		const blastSource = readSceneSource();
+		assert.match(blastSource, /addBuff\(mob, 'frost', elementalBlastFrostDuration\(multi\)\)/,
+			'the blast frost leg must apply Frost, not Chill');
+		assert.doesNotMatch(blastSource, /addBuff\(mob, 'chill', elementalBlastFrostDuration/,
+			'the old chill-routed frost leg must be gone');
+		assert.match(blastSource, /delete mob\.buffs\['burning'\];\n\t\t\t\taddBuff\(mob, 'frost', elementalBlastFrostDuration\(multi\)\)/,
+			'the blast must detach Burning around the Frost attach');
+		assert.match(blastSource, /mob\.buffs\['paralysis'\] = Math\.max\(mob\.buffs\['paralysis'\] \?\? 0, elementalBlastFrostDuration\(multi\)\)/,
+			'the blast Frost must carry the paralysis clock');
 	});
 
 	check('Feint\'s charge is Java\'s 50, and FEIGNED_RETREAT/EXPOSE_WEAKNESS scale 2 turns per point', () => {
@@ -561,6 +712,16 @@ export function verifyArmorAbilities(require, check) {
 		assert.deepEqual(live({ targetIsAlly: true, predictedHp: 1 }), { tests: true, executes: false });
 		assert.deepEqual(live({ targetIsBossOrMiniboss: true, predictedHp: 1 }), { tests: true, executes: false });
 		assert.deepEqual(live({ predictedHp: 0 }), { tests: true, executes: false });
+	});
+	check("a hero execute (Combined Lethality or Assassin Preparation KO) suppresses BruteRage revival", () => {
+		//`Char.hit()` (tag `v3.3.8`) runs the identical `enemy.HP = 0` + `BruteRage.detach()`
+		//block for both execute paths - fixed 2026-09-21, this port's own suppression used
+		//to cover only Combined Lethality, letting an Assassin KO still trigger the revive.
+		const source = readSceneSource();
+		assert.match(source, /const heroExecuted = attacker === this\.hero && \(combinedLethality \|\| assassinLethality\)/,
+			'the suppression flag must cover both execute paths, not just Combined Lethality');
+		assert.match(source, /!defender\.hasRaged && !heroExecuted/,
+			'the Brute/ArmoredBrute revival gate must read the combined flag');
 	});
 	check('a consumed Spirit Blades tracker runs the bow nature-proc, never bonus damage', () => {
 		//`Talent.onAttackProc` (Talent.java 896-901, tag `v3.3.8`): with the tracker armed a

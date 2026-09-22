@@ -17,7 +17,13 @@ const { toClassicScript } = await import('mwg/tools/classic-html');
 
 const html = await readFile(join(dist, 'index.html'), 'utf8');
 const result = toClassicScript(html);
-if (!result) throw new Error('could not find the module entry script tag in vite output, check vite.config.ts');
-
-await writeFile(join(dist, 'index.html'), result.html, 'utf8');
-console.log('dist/index.html rewritten for file:// - open it directly, no server needed');
+if (result) {
+	await writeFile(join(dist, 'index.html'), result.html, 'utf8');
+	console.log('dist/index.html rewritten for file:// - open it directly, no server needed');
+} else if (/<script[^>]+src=["']\.\/game\.js["'][^>]*><\/script>/i.test(html)) {
+	// Rollup's IIFE output is already a classic, single-file entry. Vite removes
+	// type="module" before this helper runs, so there is nothing left to rewrite.
+	console.log('dist/index.html already has a classic game.js entry - open it directly, no server needed');
+} else {
+	throw new Error('could not find a module or classic game entry script in vite output');
+}
