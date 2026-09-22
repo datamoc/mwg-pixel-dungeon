@@ -47,6 +47,16 @@ from pathlib import Path
 
 import httpx
 
+# Mailbox content is UTF-8 (✓/→/emoji appear in audit posts); Windows
+# consoles default to cp1252, which crashes poll/inbox printing. Force
+# UTF-8 so the sync commands work without a PYTHONIOENCODING override.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
+del _stream
+
 # Default matches ACP_server.py's actual bound port (1337: 8000/8100 are
 # commonly taken by other dev tools) - override with ACP_BASE_URL if the
 # server is run on a different port.
