@@ -226,7 +226,7 @@ export const armorAbilityUseMethods = {
 		}
 		// Java refuses another cast while any non-LightAlly actor already carries PowerBuff.
 		if (powered) {
-			this.say(t('port.ally.alreadyPowered'), 'warning');
+			this.say(t('port.ally.already_powered'), 'warning');
 			return true;
 		}
 		if (!cell) return false;
