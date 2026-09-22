@@ -1239,20 +1239,23 @@ export class DungeonScene extends Scene2D {
 	aimOverlay: Graphics | null = null;
 	/** `NewbornFireElemental`'s `TargetedCell` telegraph: the red 3x3 its fireball will cover. */
 	targetedCells: Graphics | null = null;
-	/** `Beam.DeathRay` (`effects/Beam.java`, tag `v3.3.8`): `WardSprite.zap()`'s always-drawn
-	 * zap line, world-space like the overlays above. Java's own asset is a textured additive
-	 * sprite the sheet has no equivalent for; this port draws a plain fading/thinning line
-	 * instead, matching the "particles are plain squares" reduction `deathBursts.ts` already
-	 * states for the rest of `WardSprite`'s effects, tinted the same `WardParticle` blue. */
-	wardBeamOverlay: Graphics | null = null;
-	/** Active death-ray lines, each a cell-centre-to-cell-centre segment counting down from
-	 * Java's own `duration = 0.5f`; `alpha`/width both scale with the remaining fraction,
-	 * matching `Beam.update()`'s `p = timeLeft/duration` driving both `alpha(p)` and
-	 * `scale.set(scale.x, p)`. */
-	wardBeams: { x1: number; y1: number; x2: number; y2: number; timeLeft: number }[] = [];
+	/** `Beam` (`effects/Beam.java`, tag `v3.3.8`) - `WardSprite.zap()`'s `DeathRay` and every
+	 * hero wand's own zap trail, world-space like the overlays above. Java's own asset is a
+	 * textured additive sprite the sheet has no equivalent for; this port draws a plain
+	 * fading/thinning line instead, matching the "particles are plain squares" reduction
+	 * `deathBursts.ts` already states for `WardSprite`'s own effects - one shared primitive,
+	 * tinted per source (Ward's own `WardParticle` blue; a wand's own `ZAP_WAND_COLOR`). */
+	zapBeamOverlay: Graphics | null = null;
+	/** Active zap lines, each a cell-centre-to-cell-centre segment counting down from Java's
+	 * own `duration = 0.5f` (`DeathRay`'s own value - reused for every wand trail too, since
+	 * Java's other `Beam` subclasses (`LightRay`/`SunRay`/`HealthRay`) belong to spell/potion
+	 * casts this item's own "spell-cast bursts" half, not a wand zap); `alpha`/width both
+	 * scale with the remaining fraction, matching `Beam.update()`'s `p = timeLeft/duration`
+	 * driving both `alpha(p)` and `scale.set(scale.x, p)`. */
+	zapBeams: { x1: number; y1: number; x2: number; y2: number; timeLeft: number; color: number }[] = [];
 	/** True once the overlay has drawn a live beam - one more redraw is owed after the last
 	 * beam expires, purely to erase it (see the `update()` loop's own comment). */
-	wardBeamsWereDrawn = false;
+	zapBeamsWereDrawn = false;
 	/** Live Tengu fire cones, keyed by creature. MWG 0.7.7's `MultiTurnBeam` owns the ring-per-turn
 	 * traversal; the creature's own `tenguFire` carries that beam's `toJSON()` for saves, so this
 	 * map is rebuilt from it on load and never serialized itself. */
@@ -2395,18 +2398,18 @@ export class DungeonScene extends Scene2D {
 			}
 		}
 		//Cleared and redrawn every frame a beam is live, plus one extra frame after the last
-		//one expires (`wardBeamsWereDrawn`) so its last-drawn line is actually erased rather
-		//than left on screen once `wardBeams` empties.
-		if (this.wardBeamOverlay && (this.wardBeams.length > 0 || this.wardBeamsWereDrawn)) {
-			this.wardBeams = this.wardBeams.filter((beam) => (beam.timeLeft -= dt) > 0);
-			this.wardBeamOverlay.clear();
+		//one expires (`zapBeamsWereDrawn`) so its last-drawn line is actually erased rather
+		//than left on screen once `zapBeams` empties.
+		if (this.zapBeamOverlay && (this.zapBeams.length > 0 || this.zapBeamsWereDrawn)) {
+			this.zapBeams = this.zapBeams.filter((beam) => (beam.timeLeft -= dt) > 0);
+			this.zapBeamOverlay.clear();
 			const DURATION = 0.5;
-			for (const beam of this.wardBeams) {
+			for (const beam of this.zapBeams) {
 				const p = beam.timeLeft / DURATION;
-				this.wardBeamOverlay.moveTo(beam.x1, beam.y1).lineTo(beam.x2, beam.y2)
-					.stroke({ width: Math.max(1, 3 * p), color: 0x88ccff, alpha: p });
+				this.zapBeamOverlay.moveTo(beam.x1, beam.y1).lineTo(beam.x2, beam.y2)
+					.stroke({ width: Math.max(1, 3 * p), color: beam.color, alpha: p });
 			}
-			this.wardBeamsWereDrawn = this.wardBeams.length > 0;
+			this.zapBeamsWereDrawn = this.zapBeams.length > 0;
 		}
 		for (const [sprite, motion] of this.monsterMotion) {
 			if (!sprite.destroyed) motion.update(dt);

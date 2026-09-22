@@ -1683,11 +1683,11 @@ export const actorTurnsHazardsMethods = {
 			//`Beam.DeathRay(s, e)` (`WardSprite.zap()`, tag `v3.3.8`): a 0.5s fading/thinning
 			//line from the ward's own cell centre to the target's, drawn every zap regardless
 			//of whether the hit actually landed (`magicImmune` still zeroes the damage above,
-			//never the beam). See `dungeonScene.ts`'s `wardBeams`/`wardBeamOverlay`.
-			this.wardBeams.push({
+			//never the beam). See `dungeonScene.ts`'s `zapBeams`/`zapBeamOverlay`.
+			this.zapBeams.push({
 				x1: (ward.x + 0.5) * TILE, y1: (ward.y + 0.5) * TILE,
 				x2: (target.x + 0.5) * TILE, y2: (target.y + 0.5) * TILE,
-				timeLeft: 0.5,
+				timeLeft: 0.5, color: 0x88ccff,
 			});
 		}
 		const tier = ward.wardTier ?? 1;

@@ -483,7 +483,7 @@ below to close the gap was judged not worth the churn against those existing ref
       **Closed 2026-09-22, the Ward DeathRay beam.** `Beam.DeathRay` (`effects/Beam.java`,
       tag `v3.3.8`) is a textured additive sprite stretched cell-to-cell with a 0.5s fade
       (`alpha(p)` and `scale.set(scale.x, p)` where `p = timeLeft/duration`) - this port has
-      no beam-image asset, so `wardBeamOverlay`/`wardBeams` (`dungeonScene.ts`) draw a plain
+      no beam-image asset, so `zapBeamOverlay`/`zapBeams` (`dungeonScene.ts`) draw a plain
       fading, thinning line instead (the same "particles are plain squares" reduction
       `deathBursts.ts` already states for the rest of `WardSprite`'s effects), tinted the same
       `WardParticle` blue (0x88ccff). Pushed from `takeWardTurn` every zap that has a target,
@@ -497,8 +497,20 @@ below to close the gap was judged not worth the churn against those existing ref
       via the scene's own `update(dt)`: a long-lived beam renders visibly over tiles and
       sprites at the fixed z-order; the normal 0.5s one is gone by the next real frame,
       consistent with the deterministic stepped-update proof used for the corpse fade above.
-      **Left, genuinely**: spell-cast bursts / wand-zap trails outside the monster sprites.
-      **Complexity: S** for what's left.
+      **Closed 2026-09-22, wand-zap trails.** Generalized the same `zapBeams`/`zapBeamOverlay`
+      primitive (renamed from the ward-only `wardBeams`) into a shared per-source-tinted zap
+      line: `fireWandShot` pushes one from the hero's own cell to the target's for every one
+      of the 12 hero-cast wand types, colored by a new `wandZapTrailColor` lookup (frost blue,
+      fireblast orange, lightning yellow, etc. - stated representative tints, not values
+      extracted from each wand's own Java particle class, since none of those textured assets
+      exist here). Fired once per zap regardless of the type-specific branch below it
+      (fireblast/regrowth's own cone/AOE shapes stay a stated simplification, not a full
+      telegraph). Live-verified via a forced render pass (`renderer.render(stage)`) plus pixel
+      extraction on the overlay, since the screenshot tool's own capture can race the game's
+      normal render loop for a manually-stepped `update()` - not a rendering bug, a test-
+      methodology gap the pixel check closes. **Left, genuinely**: spell-cast bursts (Cleric
+      tome effects, potion/scroll casts) - a separate, unscoped remainder of this line, not
+      estimated this pass. **Complexity: S** for what's left.
 - [x] Audit every static `t('port.*')` call site against `portStrings.ts`'s EN/FR tables. A script
       walk found 45 keys missing from EN and 47 from FR - all fixed (window titles, victory/defeat
       screens, `port.action.bag`/`port.talent.*`, ~20 combat log lines), plus two French-specific

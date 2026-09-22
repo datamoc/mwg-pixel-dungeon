@@ -59,6 +59,23 @@ export const turnLoopAimingMethods = {
 	 * Returns false on a parry (no bolt fired) so the normal-zap tail still skips exactly
 	 * as the old `else` made it skip; WildMagic ignores the result and spends every shot.
 	 */
+	/**
+	 * Approximate per-wand tint for the shared `zapBeams` trail (see `dungeonScene.ts`'s own
+	 * doc comment) - Java draws each wand's own textured `MagicMissile`/`LightningParticle`/
+	 * etc. bolt sprite, which this port has no assets for; these are representative colors
+	 * picked to read as each element (frost blue, fire orange, lightning yellow...), not
+	 * values extracted from a specific Java particle class. `warding` is omitted: the ward's
+	 * own zap already pushes its own beam directly in `takeWardTurn`, never through here.
+	 */
+	wandZapTrailColor(wandType: WandType): number {
+		const colors: Record<Exclude<WandType, 'warding'>, number> = {
+			magicMissile: 0xffffff, frost: 0x99ddff, fireblast: 0xff8822, lightning: 0xffee55,
+			corrosion: 0x77cc44, corruption: 0x663399, disintegration: 0x8844cc, blastWave: 0xffaa55,
+			livingEarth: 0xaa8855, prismaticLight: 0xff66ff, regrowth: 0x66cc66, transfusion: 0xff4466,
+		};
+		return colors[wandType as Exclude<WandType, 'warding'>] ?? 0xffffff;
+	},
+
 	fireWandShot(this: DungeonScene, wandType: WandType, zapLevel: number, target: Creature, chargesPerCast: number): boolean {
 		//GreatCrab.damage negates wand bolts from a seen hero - kept verbatim
 		//`GreatCrab.damage()` (tag v3.3.8): `enemySeen && state != SLEEPING && paralysed == 0
@@ -72,6 +89,19 @@ export const turnLoopAimingMethods = {
 			this.say(t('port.log.crabparries'), 'negative');
 			return false;
 		}
+		//`Beam` (`effects/Beam.java`, tag `v3.3.8`): every wand zap in Java draws its own
+		//textured bolt from caster to target (`MagicMissile`/`LightningParticle`/etc.); this
+		//port has none of those assets, so it reuses the same plain fading-line primitive
+		//`WardSprite.zap()`'s `DeathRay` already draws, tinted per wand (`wandZapTrailColor`)
+		//- one shared `Beam` reduction, not two. Pushed once here regardless of the
+		//type-specific branch below, since every one of them still zaps from the hero to
+		//`target`'s cell first (fireblast/regrowth's own area shapes are a separate, larger
+		//visual this stays a stated simplification for, not a full cone/AOE telegraph).
+		this.zapBeams.push({
+			x1: (this.hero.x + 0.5) * TILE, y1: (this.hero.y + 0.5) * TILE,
+			x2: (target.x + 0.5) * TILE, y2: (target.y + 0.5) * TILE,
+			timeLeft: 0.5, color: this.wandZapTrailColor(wandType),
+		});
 		//WandOfMagicMissile.onZap calls ch.damage() directly in Java - never a hit
 		//roll. Fireblast and Lightning use their real level-0/level-scaling rolls too.
 		//Fireblast is now Java's whole area routine (`useFireblastWand`: the cone, the fire

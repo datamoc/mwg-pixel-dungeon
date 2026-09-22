@@ -17,8 +17,9 @@
  *   + a `Beam.DeathRay` (always drawn, even with no target). This port
  *   reproduces the burst, the RAY cue, and the attacker flash (2026-09-21,
  *   the same `colorAdd` pulse `showDamage` fires). The beam is now live too
- *   (2026-09-22, `dungeonScene.ts`'s `wardBeamOverlay`/`wardBeams`) - a
- *   plain fading/thinning line, since Java's textured asset has no
+ *   (2026-09-22, `dungeonScene.ts`'s `zapBeamOverlay`/`zapBeams` - shared
+ *   the same day with every hero wand's own zap trail, see `fireWandShot`)
+ *   - a plain fading/thinning line, since Java's textured asset has no
  *   equivalent here; pushed from `takeWardTurn` alongside this burst.
  *   `WardSprite.die()`: `WardParticle.UP` x10 (+ a 2s alpha fade, live since
  *   2026-09-22 via `dyingMonsters`' per-corpse `duration`/`playDieClip`).
