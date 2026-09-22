@@ -16,6 +16,10 @@
  * pinpoints the exact draw where the two implementations part ways. Depths 1-2 are
  * skipped in the trace diff by design (Java's unseeded guidebook generator makes
  * even Java-vs-Java irreproducible there).
+ * Add `--trace-stack-window <first>:<last>` with `--write-ts-traces` to emit
+ * `levelgen_stacks_<seed>_<depth>.txt`, attributing each selected TypeScript draw to
+ * its call stack. This turns a first-difference index into an actionable source location
+ * without enabling stack capture for the whole run.
  *
  * Run with `npm run parity:levelgen -- --java-dump <path>` (defaults to the harness
  * task's output next to the Java checkout when `--spd-root` points at it). Regenerate
@@ -24,7 +28,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { portedFloor, resetPortedRun } from '../src/spdLevelGen/gameBridge';
-import { setTraceDrawLog } from '../src/spdRng';
+import { setTraceDrawLog, setTraceStackWindow, traceStacks } from '../src/spdRng';
 
 interface JavaBlock {
 	seed: string;
@@ -90,6 +94,23 @@ function main(): void {
 	const tsTraceDir = tsTraceArg >= 0 && process.argv[tsTraceArg + 1] && !process.argv[tsTraceArg + 1]!.startsWith('--')
 		? process.argv[tsTraceArg + 1]!
 		: null;
+	const stackArg = process.argv.indexOf('--trace-stack-window');
+	const stackWindowText = stackArg >= 0 && process.argv[stackArg + 1] && !process.argv[stackArg + 1]!.startsWith('--')
+		? process.argv[stackArg + 1]!
+		: null;
+	let stackWindow: [number, number] | null = null;
+	if (stackWindowText !== null) {
+		const values = stackWindowText.split(':').map(Number);
+		if (values.length !== 2 || values.some((value) => !Number.isInteger(value) || value < 0 || value > 10_000_000)) {
+			console.error('usage: --trace-stack-window <first-draw>:<last-draw>');
+			process.exit(2);
+		}
+		stackWindow = [values[0]!, values[1]!];
+	}
+	if (stackWindow !== null && tsTraceDir === null) {
+		console.error('--trace-stack-window requires --write-ts-traces <dir>');
+		process.exit(2);
+	}
 	const javaTraceArg = process.argv.indexOf('--java-traces');
 	const javaTraceDir = javaTraceArg >= 0 && process.argv[javaTraceArg + 1] && !process.argv[javaTraceArg + 1]!.startsWith('--')
 		? process.argv[javaTraceArg + 1]!
@@ -113,11 +134,19 @@ function main(): void {
 			// The trace window mirrors the harness's own arming exactly: everything the
 			// floor push/pop rides on, and nothing of the run-level setup before it.
 			const traceLog: string[] = [];
-			if (tsTraceDir) setTraceDrawLog(traceLog);
+			if (tsTraceDir) {
+				traceStacks.length = 0;
+				setTraceStackWindow(stackWindow);
+				setTraceDrawLog(traceLog);
+			}
 			const floor = portedFloor(BigInt(seed), depth);
 			if (tsTraceDir) {
 				setTraceDrawLog(null);
+				setTraceStackWindow(null);
 				writeFileSync(join(tsTraceDir, `levelgen_trace_${seed}_${depth}.txt`), traceLog.join('\n') + '\n');
+				if (stackWindow !== null) {
+					writeFileSync(join(tsTraceDir, `levelgen_stacks_${seed}_${depth}.txt`), traceStacks.join('\n') + '\n');
+				}
 			}
 			if (javaTraceDir) {
 				const traceName = `levelgen_trace_${seed}_${depth}.txt`;
