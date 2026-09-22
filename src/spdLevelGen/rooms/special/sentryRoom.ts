@@ -23,6 +23,7 @@ export function paintSentryRoom(level: PaintLevel, room: Room): void {
 
 	let sentryPos = { x: 0, y: 0 };
 	let treasurePos = { x: 0, y: 0 };
+	let dangerDist = 0;
 
 	if (entrance.x === room.left) {
 		sentryPos = { x: room.right - 1, y: center.y };
@@ -38,6 +39,7 @@ export function paintSentryRoom(level: PaintLevel, room: Room): void {
 			const cell = x + center.y * level.w;
 			set(level, x, center.y, level.map[cell] === Terrain.EMPTY_SP ? Terrain.STATUE_SP : Terrain.STATUE);
 		}
+		dangerDist = 2 * (room.width() - 5);
 	} else if (entrance.x === room.right) {
 		sentryPos = { x: room.left + 1, y: center.y };
 		fillXY(level, room.right - 1, room.top + 1, 1, room.height() - 2, Terrain.EMPTY);
@@ -52,6 +54,7 @@ export function paintSentryRoom(level: PaintLevel, room: Room): void {
 			const cell = x + center.y * level.w;
 			set(level, x, center.y, level.map[cell] === Terrain.EMPTY_SP ? Terrain.STATUE_SP : Terrain.STATUE);
 		}
+		dangerDist = 2 * (room.width() - 5);
 	} else if (entrance.y === room.top) {
 		sentryPos = { x: center.x, y: room.bottom - 1 };
 		fillXY(level, room.left + 1, room.top + 1, room.width() - 2, 1, Terrain.EMPTY);
@@ -66,6 +69,7 @@ export function paintSentryRoom(level: PaintLevel, room: Room): void {
 			const cell = center.x + y * level.w;
 			set(level, center.x, y, level.map[cell] === Terrain.EMPTY_SP ? Terrain.STATUE_SP : Terrain.STATUE);
 		}
+		dangerDist = 2 * (room.height() - 5);
 	} else {
 		sentryPos = { x: center.x, y: room.top + 1 };
 		fillXY(level, room.left + 1, room.bottom - 1, room.width() - 2, 1, Terrain.EMPTY);
@@ -80,10 +84,15 @@ export function paintSentryRoom(level: PaintLevel, room: Room): void {
 			const cell = center.x + y * level.w;
 			set(level, center.x, y, level.map[cell] === Terrain.EMPTY_SP ? Terrain.STATUE_SP : Terrain.STATUE);
 		}
+		dangerDist = 2 * (room.height() - 5);
 	}
 
 	set(level, sentryPos.x, sentryPos.y, Terrain.PEDESTAL);
-	level.mobs.push({ pos: level.pointToCell(sentryPos), kind: 'sentry' });
+	//`SentryRoom.paint()` (`SentryRoom.java`, tag `v3.3.8`) stores
+	//`initialChargeDelay = dangerDist / 3f + 0.1f` on the turret. Carry that
+	//room-derived value through the compact painter marker instead of forcing
+	//every room to use the old flat two-turn approximation.
+	level.mobs.push({ pos: level.pointToCell(sentryPos), kind: 'sentry', initialWarmup: dangerDist / 3 + 0.1 });
 
 	set(level, treasurePos.x, treasurePos.y, Terrain.PEDESTAL);
 	// `Sentry`'s own construction: `sentry.room = new EmptyRoom()`. `EmptyRoom` extends

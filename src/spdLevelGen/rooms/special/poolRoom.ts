@@ -7,7 +7,7 @@
  * internal - now real via `uncursedWeaponOrArmorPrize()`, whose retry count is driven by the
  * `cursed` flag the Generator rolls (see PORT_COVERAGE.md).
  * `Piranha.random()`'s `Random.Int(50)` phantom-variant roll IS made (one per piranha) - it is a
- * real level-stream draw, even though this port doesn't model the variant itself.
+ * real level-stream draw, now selecting the distinct PhantomPiranha variant.
  */
 import { Room, DoorType } from '../../room';
 import { PaintLevel, Terrain, fillRoom, fillRoomInset, fillXY, set } from '../../paintLevel';
@@ -57,12 +57,12 @@ export function paintPoolRoom(level: PaintLevel, room: Room): void {
 		// one real level-stream draw PER piranha, made BEFORE the position loop. Previously
 		// skipped entirely (documented as an ignorable "variant roll"), which is wrong: the draw
 		// exists whether or not this port models the variant.
-		SpdRandom.int(50);
+		const phantom = SpdRandom.int(50) === 0;
 		let pos2: number;
 		do {
 			const p = room.random();
 			pos2 = level.pointToCell(p);
 		} while (level.map[pos2] !== Terrain.WATER || level.findMob(pos2) !== undefined);
-		level.mobs.push({ pos: pos2, kind: 'piranha' });
+		level.mobs.push({ pos: pos2, kind: phantom ? 'phantomPiranha' : 'piranha' });
 	}
 }

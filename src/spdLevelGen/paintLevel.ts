@@ -73,7 +73,7 @@ const PASSABLE_TERRAIN = new Set<number>([
 export function isPassableTerrain(terrain: number): boolean { return PASSABLE_TERRAIN.has(terrain); }
 
 export interface GroundItem { pos: number; kind: string; note?: string; sourceClass?: string; quantity?: number; }
-export interface PlacedMob { pos: number; kind: string; loot?: string; }
+export interface PlacedMob { pos: number; kind: string; loot?: string; initialWarmup?: number; }
 export interface PlacedTrap { kind: string; hidden: boolean; active: boolean; }
 export interface SeededBlob { pos: number; kind: 'toxicGas' | 'toxicGasSeed'; amount: number; }
 export interface Transition { pos: number; type: 'surface' | 'regularEntrance' | 'regularExit' | 'branchExit'; branch?: number; }

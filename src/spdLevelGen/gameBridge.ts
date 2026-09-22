@@ -29,6 +29,7 @@ import { paintCavesLevel, decorateStandaloneCaves } from './cavesPainter';
 import { paintCityLevel } from './cityPainter';
 import { paintHallsLevel } from './hallsPainter';
 import { SpdRandom, spdSeedForDepth, pushRunInitGenerator } from '../spdRng';
+import { routeTrapBehaviour } from '../dungeonConstants';
 import { resetSpecialRoomRunState } from './rooms/special/registry';
 import { resetSecretRoomRunState } from './rooms/secret/registry';
 import { resetWandmakerRunState } from './wandmaker';
@@ -134,50 +135,15 @@ export const SPD_TERRAIN_TO_GAME_KIND: Record<number, GameKindName> = {
 	[Terrain.CRYSTAL_DOOR]: 'doorClosed',
 };
 
-/**
- * SPD trap class name -> the seven trap behaviours implemented by the scene (`TRAP_KINDS`).
- *
+/* Trap behaviour routing for ported floors (previously `TRAP_BEHAVIOUR` here).
  * The ported painters place traps by their real Java class names and weights, because that is
- * what `Random.chances`/`avoidsHallways` need; trap *behaviour* was never ported. So each real
- * class is routed here to the nearest implemented effect, and the many that have no analogue
- * fall back to `poisonDart` (the most generic "it hurts you" trap) rather than being dropped -
- * a trap that exists in the verified grid should still do something when stepped on.
- *
- * Only `toxic`, `burning`, `poisonDart`, `wornDart`, `confusion` and `corrosion` are genuine
- * matches. `chilling`, `shocking`, `alarm`, `ooze`, `gripping`, `flock`, `summoning`,
- * `teleportation`, `gateway`, `geyser`, `frost`, `storm`, `rockfall`, `guardian`, `warping` and
- * `pitfall` are all stand-ins: their real effects (freezing, chaining lightning, waking the
- * floor, corroding, rooting, confusing, summoning mobs, teleporting, opening a gateway, launching
- * the hero, dropping the hero a floor) need systems this port has none of.
+ * what `Random.chances`/`avoidsHallways` need; the behaviour comes from
+ * `dungeonConstants.routeTrapBehaviour`, shared with the generic floors' `modeledTrapTable`
+ * and pinned by the item workflow suite. Room painters use both spellings (the bare stem
+ * and the full Java class name), and unknown classes fall back to `poisonDart` - the most
+ * generic "it hurts you" trap - rather than being dropped from the verified grid.
+ * Inactive markers (toxic vents, disarmed burned-room traps) never trigger, like Java.
  */
-const TRAP_BEHAVIOUR: Record<string, string> = {
-	toxic: 'toxic',
-	burning: 'burning',
-	poisonDart: 'poisonDart',
-	wornDart: 'poisonDart',
-	chilling: 'toxic',
-	shocking: 'explosive',
-	alarm: 'poisonDart',
-	ooze: 'toxic',
-	gripping: 'poisonDart',
-	confusion: 'confusionGas',
-	flock: 'poisonDart',
-	summoning: 'poisonDart',
-	teleportation: 'poisonDart',
-	gateway: 'poisonDart',
-	geyser: 'explosive',
-	grim: 'grim',
-	explosive: 'explosive',
-	// Caves' trap table (`CavesLevel.trapClasses()`), the four not already covered above.
-	frost: 'toxic',
-	storm: 'explosive',
-	corrosion: 'corrosionGas',
-	rockfall: 'poisonDart',
-	guardian: 'poisonDart',
-	warping: 'poisonDart',
-	pitfall: 'poisonDart',
-};
-
 /**
  * The depths this port generates, in the order they must be generated.
  *
@@ -244,7 +210,7 @@ export interface PortedFloor {
 	secretDoors: { x: number; y: number }[];
 	traps: PortedTrap[];
 	/** NPCs and special mobs placed by a Java room painter (shopkeeper, Wandmaker, etc.). */
-	mobs: { x: number; y: number; kind: string; loot?: string }[];
+	mobs: { x: number; y: number; kind: string; loot?: string; initialWarmup?: number }[];
 	/** Room drops emitted by the real Painter, reduced to positions and source item ids. */
 	groundItems: { x: number; y: number; kind: string; note?: string; sourceClass?: string; quantity?: number }[];
 	/** Items queued through Java's Level.addItemToSpawn(), placed after room painting. */
@@ -441,7 +407,7 @@ function extract(paint: PaintLevel, rooms: Room[], feeling: number | null, attem
 		traps.push({
 			x: cell % w,
 			y: Math.floor(cell / w),
-			behaviour: TRAP_BEHAVIOUR[trap.kind] ?? 'poisonDart',
+			behaviour: routeTrapBehaviour(trap.kind),
 			spdClass: trap.kind,
 			hidden: trap.hidden,
 		});
@@ -459,6 +425,7 @@ function extract(paint: PaintLevel, rooms: Room[], feeling: number | null, attem
 		y: Math.floor(mob.pos / w),
 		kind: mob.kind,
 		loot: mob.loot,
+		initialWarmup: mob.initialWarmup,
 	}));
 
 	// `main.ts`'s `populate()` finds a boss floor's boss room as `this.level.rooms[rooms.length-1]`
