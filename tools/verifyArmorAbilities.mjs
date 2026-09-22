@@ -175,6 +175,10 @@ export function verifyArmorAbilities(require, check) {
 		assert.ok(source.includes('elementalBlastReactiveShield(charsHit,'), 'the reactive barrier counts what the blast caught');
 		assert.ok(source.includes("this.bumpDoor(at.x, at.y);"), 'fireblast opens doors in the cone');
 		assert.ok(source.includes('this.featuresMap?.setLayerData('), 'regrown grass restitches the tiles');
+		assert.ok(source.includes("if (Random.float() < 0.8) low(false);"), 'Lucky uses Java\'s 80% low-tier roll');
+		assert.ok(source.includes('switch (Random.int(6))'), 'Lucky uses Java\'s six-way mid-tier roll');
+		assert.ok(source.includes("kind('bomb')") && source.includes("kind('honeypot')"), 'Lucky includes bomb and honeypot mid-tier drops');
+		assert.ok(source.includes("this.spawnGroundItem('gold'"), 'Lucky includes halved or doubled gold payloads');
 	});
 
 	check('PowerOfMany keeps Java duration and attack damage factors', () => {

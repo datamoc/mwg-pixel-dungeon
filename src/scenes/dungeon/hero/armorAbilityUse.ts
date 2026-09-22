@@ -869,13 +869,41 @@ export const armorAbilityUseMethods = {
 			for (const ch of affected) {
 				if (ch.buffs['luckyTracker'] !== undefined) continue;
 				if (Random.chance(elementalLuckyChance(powerMulti))) {
-					//`Lucky.genLoot()` is `RingOfWealth.genConsumableDrop(-5)` (80/20 common/
-					//uncommon); the port drops a plain consumable by the same neighbour search
-					//its kill-proc stand-in uses, and the tracker caps it at one payout per mob.
-					const at = [{ x: ch.x, y: ch.y }, ...Roguelike.neighbourOffsets(8).map(([ox, oy]) => ({ x: ch.x + ox, y: ch.y + oy }))]
+					//`Lucky.genLoot()` is `RingOfWealth.genConsumableDrop(-5)` (tag `v3.3.8`):
+					//80% low (half-gold/stone/potion/scroll, equal 25% cases) and 20% mid
+					//(doubled-low/exotic-potion/exotic-scroll/unstable/bomb/honeypot, equal
+					//1/6 cases). Exotics and unstable items stand in as their regular potion/
+					//scroll here because those item classes do not exist in this port.
+					const cell = () => [{ x: ch.x, y: ch.y }, ...Roguelike.neighbourOffsets(8).map(([ox, oy]) => ({ x: ch.x + ox, y: ch.y + oy }))]
 						.find((step) => this.level.inside(step.x, step.y) && this.level.passable(step.x, step.y)
 							&& !this.groundItemAt(step.x, step.y) && !this.creatureAt(step.x, step.y));
-					if (at !== undefined) this.spawnGroundItem(Random.element(['potion', 'scroll', 'stone'] as const)!, at.x, at.y);
+					const kind = (id: 'stone' | 'potion' | 'scroll' | 'bomb' | 'honeypot') => {
+						const at = cell();
+						if (at) this.spawnGroundItem(id, at.x, at.y);
+					};
+					const gold = (doubled: boolean) => {
+						const at = cell();
+						if (!at) return;
+						const full = Random.range(30 + this.depth * 10, 60 + this.depth * 20);
+						this.spawnGroundItem('gold', at.x, at.y, { id: 'gold', quantity: Math.max(1, doubled ? full : Math.floor(full / 2)), identified: true });
+					};
+					const low = (doubled: boolean) => {
+						const id = Random.element(['gold', 'stone', 'potion', 'scroll'] as const)!;
+						if (id === 'gold') gold(doubled);
+						else if (doubled) { kind(id); kind(id); }
+						else kind(id);
+					};
+					if (Random.float() < 0.8) low(false);
+					else {
+						switch (Random.int(6)) {
+							case 0: low(true); break;
+							case 1: kind('potion'); break;
+							case 2: kind('scroll'); break;
+							case 3: kind(Random.int(2) === 0 ? 'potion' : 'scroll'); break;
+							case 4: kind('bomb'); break;
+							default: kind('honeypot'); break;
+						}
+					}
 					this.say(t('port.log.lucky'), 'positive');
 					addBuff(ch, 'luckyTracker');
 				}
