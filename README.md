@@ -9,24 +9,40 @@ Debenham, SPD's author, who does not accept code contributions or suggestions of
 for the original project (see `CLAUDE.md`'s "Upstream contributions" section) - this repo
 exists precisely so that work here has somewhere to live on its own.
 
+## Play
+
+- **In the browser:** <https://datamoc.github.io/mwg-pixel-dungeon/> - the gzip
+  standalone single-file build, the same artifact attached to each release, so the
+  webpage and the handed-out file can never drift apart.
+- **From a release** (<https://github.com/datamoc/mwg-pixel-dungeon/releases>):
+  - `spd-on-mwg-<version>-standalone.html` - the whole game in one file. Works from an
+    email attachment or a USB stick; open it directly, no server needed.
+  - `spd-on-mwg-<version>-debug.apk` - Android, debug-signed, sideloadable as-is.
+  - `spd-on-mwg-<version>-desktop.zip` - Windows (.NET WebView2 host): unzip and run
+    `MwgDesktopHost.exe`.
+
 ## Status
 
-In progress, not yet feature-complete. Every deviation from the real Java behavior -
-simplification, stand-in, or outright gap - is tracked honestly in
+v0.2 - the first version this project calls *complete*: a hero can take any class from
+sewer to Yog and win, on real Java numbers. Every deviation from the real Java behavior -
+simplification, deliberate divergence, or outright gap - is tracked honestly in
 [`PORT_COVERAGE.md`](./PORT_COVERAGE.md), and outstanding work is tracked in
 [`ROADMAP.md`](./ROADMAP.md). Broadly:
 
 - All five main regions (Sewers, Prison, Caves, City, Halls) generate from the real Java
   level-generation algorithm, with real terrain, rooms, doors, traps, and hand-placed
-  special rooms.
-- All five boss floors exist at their real fixed layouts; their full arena scripts (Tengu's
-  stage transitions, DM-300's pylons, the Dwarf King's throne sequence, Yog's fist phases)
-  are not yet ported.
-- Hero classes, subclasses, talents, combat, hunger, and most items/scrolls/potions/rings
-  are ported against their real Java formulas; some items, enchantments, and NPC/quest
-  content remain unported or simplified - see `PORT_COVERAGE.md` for the specifics.
-- There is currently no ally-vs-monster combat system, which blocks a few effects
-  (`ScrollOfMirrorImage`'s ally summons, `ScrollOfRage`'s Amok) from being fully real.
+  special rooms. All five boss floors exist at their real fixed layouts with live arena
+  mechanics (Goo, Tengu, DM-300, Dwarf King, Yog).
+- Hero classes, subclasses, talents, armor abilities, combat, hunger, and most
+  items/scrolls/potions/rings are ported against their real Java formulas; a few subclass
+  and armor-ability effects remain unported or simplified - see `PORT_COVERAGE.md` for
+  the specifics.
+- Allies fight: summoned elementals (including imbue/recall), mirror-image and
+  transfusion ally paths are live, not stand-ins.
+- Known player-visible gaps: sprite/effect animation polish, keyboard menu navigation,
+  and colorblind display options. The fixed-seed cross-implementation verification
+  program (action traces, RNG call order, screenshot comparison) is still open work -
+  see `ROADMAP.md`.
 
 ## Running it
 
@@ -78,6 +94,7 @@ node tools/extract-spd-assets.mjs --spd-root <path-to-spd-checkout> --check --st
 - [`PORT_COVERAGE.md`](./PORT_COVERAGE.md) - the authoritative, per-system record of what's
   ported, simplified, or not ported, and why.
 - [`ROADMAP.md`](./ROADMAP.md) - outstanding work, organized by system.
+- [`RELEASING.md`](./RELEASING.md) - release targets and how to cut one.
 - [`SIMULATION_ARCHITECTURE.md`](./SIMULATION_ARCHITECTURE.md) - how the sprite-free
   combat/turn simulation layer is structured and tested.
 - [`MWG_EXTRACTION.md`](./MWG_EXTRACTION.md) - notes on the framework/consumer split and the

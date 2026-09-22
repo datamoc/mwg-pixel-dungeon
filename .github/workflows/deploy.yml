@@ -1,7 +1,13 @@
-# Deploys the built game (dist/) to GitHub Pages. See ROADMAP.md section 12.
+# Deploys the game to GitHub Pages. See ROADMAP.md section 12.
 # Enable Pages in the repo settings first (source: GitHub Actions).
 # Deploys on every push to main plus manual dispatch - ROADMAP.md names this as the
 # open decision (auto-deploy vs tagged/manual); keeping both until the owner picks one.
+#
+# What Pages serves is the gzip standalone single-file page (tools/pack-web.mjs), installed as
+# dist/index.html - not the multi-file build. One self-contained file means no sibling game.js
+# to fetch (31 MB, breaks file:// and email flows) and exactly the artifact the release
+# attaches, so the webpage and the handed-out file can never drift apart. The brotli standalone
+# stays a release extra: mwg 0.11.0 records a real Chrome throwing for DecompressionStream('br').
 name: Deploy to GitHub Pages
 
 on:
@@ -29,6 +35,14 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      # Same packaging path as the release artifacts (tools/pack-web.mjs), then the gzip
+      # standalone becomes the page itself. game.js leaves with it: nothing references it
+      # anymore and Pages should not host a 31 MB orphan.
+      - run: npm run release:web
+      - run: |
+          cp release/spd-on-mwg-*-standalone.html dist/index.html
+          rm -f dist/game.js
+          ls -la dist
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
