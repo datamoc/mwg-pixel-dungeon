@@ -78,10 +78,16 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      # Pinned to the v3 tag's commit rather than the moving tag: it is the one third-party action
-      # in this workflow (everything else is `actions/*`), so it is the one an upstream tag could
-      # retarget under a release build.
-      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+      # The runner image already ships an Android SDK - no third-party setup action. One was
+      # pinned here before (android-actions/setup-android v3), but it unconditionally installs
+      # the obsolete `tools' package (sdkmanager answers `Failed to find package' -
+      # Google removed it), failing every release before gradle even starts. The runner's own
+      # sdkmanager installs exactly what the Capacitor project needs: platform 35, Capacitor 7's
+      # target (see RELEASING.md's local-build notes for the same requirement).
+      - name: Install Android platform 35
+        run: |
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
       - run: npm ci
       - run: npm run build
       - run: test -d android || npx cap add android
