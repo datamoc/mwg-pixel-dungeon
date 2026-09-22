@@ -37,6 +37,21 @@ export function monsterBuffImmune(kind: string | undefined, subtype: string | un
 	return false;
 }
 
+/** `Elemental.add(Buff)` (`actors/mobs/Elemental.java`, tag `v3.3.8`): attaching a
+ * hate-listed opposite-element buff instead deals `NormalIntRange(HT/2, HT*3/5)`
+ * damage with the buff as the source, and the buff never attaches (`return false`).
+ * Fire hates Frost/Chill, Frost hates Burning; Shock and Chaos hate nothing (their
+ * lists are empty in Java). `NewbornFireElemental` inherits Fire's list. Pure
+ * predicate so the suite pins the pairing matrix without a scene; `combat.ts`'s
+ * `addBuff`/`reigniteBuff` deal the damage and refuse the attach live. */
+export function elementalBacklashApplies(kind: string | undefined, elementalType: string | undefined, id: BuffId): boolean {
+	if (kind !== 'elemental' && kind !== 'newbornElemental') return false;
+	const type = kind === 'newbornElemental' ? 'fire' : (elementalType ?? 'fire');
+	if (type === 'fire') return id === 'frost' || id === 'chill';
+	if (type === 'frost') return id === 'burning';
+	return false;
+}
+
 /** `Buff.buffType.NEGATIVE` for every buff this port grants to a *monster* (checked against
  * each buff's own Java class at tag `v3.3.8`: `Poison`/`Burning`/`Cripple`/`Weakness`/
  * `Vulnerable`/`Paralysis`/`Roots`/`Terror`/`Ooze`/`Charm`/`Degrade`/`Daze`/`Hex` all set

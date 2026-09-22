@@ -23,7 +23,7 @@ import { getCurse } from '../../../items/itemCurses';
 import { coneCells } from '../../../mechanics/cone';
 import { traceRayToTarget } from '../../../mechanics/rays';
 import { EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, WATER } from '../../../dungeonConstants';
-import { BUFF_DURATION, addBuff, reigniteBuff, rollDamage, setBleeding, type Creature, type Step } from '../../../combat';
+import { BUFF_DURATION, addBuff, applyElementalBacklash, reigniteBuff, rollDamage, setBleeding, type Creature, type Step } from '../../../combat';
 import { applyChillFreeze } from '../../../simulation/buffs';
 import { BOSSES, IMMOVABLE_KINDS, heroSheet, liveStats, type MonsterId } from '../../../monsters';
 import { HARMFUL_PLANTS, NATURES_POWER_DURATION } from '../shared';
@@ -734,7 +734,9 @@ export const armorAbilityUseMethods = {
 				for (const c of this.creatures) {
 					if (c.hp <= 0 || c.isNPC || c.allyKind === 'sheep' || !coneIndex.has(this.level.index(c.x, c.y))) continue;
 					delete c.buffs['burning'];
-					c.buffs = applyChillFreeze(c.buffs).buffs;
+					//`Elemental.add()`'s hate-listed chill backslashes instead of attaching
+					//(tag `v3.3.8`) - a fire-typed target takes the backlash, never the chill.
+					if (applyElementalBacklash(c, 'chill') === 0) c.buffs = applyChillFreeze(c.buffs).buffs;
 					if (c.hp <= 0) this.kill(c);
 				}
 			}

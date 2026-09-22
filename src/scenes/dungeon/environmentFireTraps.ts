@@ -42,7 +42,7 @@ import { applySandalsNaturalismCharge, sandalsNaturalismLevel } from '../../item
 import { ritualSiteState } from '../../spdLevelGen/rooms/standard/ritualSiteRoom';
 import { DOOR, DOOR_CLOSED, EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, TRAP, WALL, WATER, modeledTrapTable, sewerTrapTable, type TrapKind } from '../../dungeonConstants';
 import { regionForDepth, type Region } from '../../genericDungeon';
-import { absorbShield, addBuff, buffBlocked, explosiveTrapBounds, grimTrapDamage, reigniteBuff, rollDamage, setBleeding, type Creature, type GroundItem, type Step } from '../../combat';
+import { absorbShield, addBuff, applyElementalBacklash, buffBlocked, explosiveTrapBounds, grimTrapDamage, reigniteBuff, rollDamage, setBleeding, type Creature, type GroundItem, type Step } from '../../combat';
 import { applyChillFreeze } from '../../simulation/buffs';
 import { BLOB_IMMUNE_KINDS, BOSSES, FLYING_KINDS, IMMOVABLE_KINDS, INORGANIC_KINDS, MONSTERS, UNDEAD_KINDS, mobRosterForDepth, type AnyMonsterId, type MonsterId } from '../../monsters';
 import { ETERNAL_FIRE_BURN, wardTexture, type BonesShape } from './shared';
@@ -1074,7 +1074,9 @@ export const environmentFireTrapsMethods = {
 			reigniteBurning: (target) => reigniteBuff(target, 'burning'),
 			//NPCs refuse every buff (`add()` returns false, tag `v3.3.8`) - chill writes
 			//straight onto the buff map, bypassing `buffBlocked`, so the gate lives here.
-			applyChill: (target) => { if (!target.isNPC) target.buffs = applyChillFreeze(target.buffs).buffs; },
+			//`Elemental.add()`'s hate-listed chill likewise backslashes instead of
+			//attaching (tag `v3.3.8`) - the shared helper refuses, damages, and presents.
+			applyChill: (target) => { if (applyElementalBacklash(target, 'chill') === 0 && !target.isNPC) target.buffs = applyChillFreeze(target.buffs).buffs; },
 			clearCell: (blob, x, y) => (this[blob] as Blob).clear(x, y),
 			clearFireCell: (x, y) => this.fire.clear(x, y),
 			fireAmountAt: (x, y) => this.fire.volumeAt(x, y),

@@ -311,10 +311,43 @@ export function verifyCombat(require, check) {
 		assert.notEqual(mob.buffs.poison, undefined, 'a non-NPC must still take buffs');
 		assert.ok(trapSource.includes('if (target.isNPC) return true;'),
 			'the blob applyDamage seam must skip NPCs like the sheep/sentry gates');
-		assert.ok(trapSource.includes('if (!target.isNPC) target.buffs = applyChillFreeze'),
+		assert.ok(trapSource.includes("applyElementalBacklash(target, 'chill') === 0 && !target.isNPC"),
 			'the blob chill writer bypasses buffBlocked, so it needs its own NPC gate');
 		assert.ok(trapSource.includes('if (target.isNPC) return;'),
 			'the blob corrosion writer bypasses buffBlocked, so it needs its own NPC gate');
+	});
+	check('Elemental opposite-element attaches backlash instead of landing', () => {
+		//`Elemental.add(Buff)` (tag `v3.3.8`): Fire hates Frost/Chill, Frost hates Burning;
+		//the attach deals `NormalIntRange(HT/2, HT*3/5)` and never lands. Shock and Chaos
+		//hate nothing; `NewbornFireElemental` inherits Fire's list.
+		for (const [kind, type, id, expected] of [
+			['elemental', 'fire', 'frost', true], ['elemental', 'fire', 'chill', true],
+			['elemental', undefined, 'chill', true], ['newbornElemental', undefined, 'frost', true],
+			['elemental', 'frost', 'burning', true], ['elemental', 'frost', 'chill', false],
+			['elemental', 'fire', 'burning', false], ['elemental', 'shock', 'burning', false],
+			['elemental', 'chaos', 'frost', false], ['elemental', 'fire', 'poison', false],
+			['rat', 'fire', 'chill', false],
+		]) assert.equal(facade.elementalBacklashApplies(kind, type, id), expected, `${kind}/${type} + ${id}`);
+		const fireEl = base({ kind: 'elemental', elementalType: 'fire', hp: 60, maxHp: 60 });
+		facade.addBuff(fireEl, 'chill');
+		assert.equal(fireEl.buffs.chill, undefined, 'chill must not attach to a fire elemental');
+		const chillLost = 60 - fireEl.hp;
+		assert.ok(chillLost >= 30 && chillLost <= 36, `fire backlash must deal 30-36, dealt ${chillLost}`);
+		const frostEl = base({ kind: 'elemental', elementalType: 'frost', hp: 60, maxHp: 60 });
+		facade.reigniteBuff(frostEl, 'burning');
+		assert.equal(frostEl.buffs.burning, undefined, 'burning must not attach to a frost elemental');
+		const burnLost = 60 - frostEl.hp;
+		assert.ok(burnLost >= 30 && burnLost <= 36, `frost backlash must deal 30-36, dealt ${burnLost}`);
+		const shockEl = base({ kind: 'elemental', elementalType: 'shock', hp: 60, maxHp: 60 });
+		facade.addBuff(shockEl, 'burning');
+		assert.notEqual(shockEl.buffs.burning, undefined, 'a shock elemental takes burning normally');
+		assert.equal(shockEl.hp, 60, 'nothing off the hate lists deals backlash damage');
+		let shown = null;
+		facade.setAttachBacklash((c, damage) => { shown = { hp: c.hp, damage }; });
+		const doomed = base({ kind: 'elemental', elementalType: 'fire', hp: 10, maxHp: 60 });
+		facade.addBuff(doomed, 'frost');
+		assert.ok(shown !== null && shown.damage >= 30 && shown.hp <= -20, 'a lethal attach must present through the installed hook');
+		facade.setAttachBacklash(null);
 	});
 	check('setBleeding tracks source only alongside a winning (higher) level, like Bleeding.set()', () => {
 		const bleeder = base();

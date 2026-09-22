@@ -8,13 +8,13 @@ import type { MultiTurnBeamSave } from 'mwg/roguelike';
 import type { GroundItemKind } from './dungeonConstants';
 import type { Combatant, Step } from './simulation/combatState';
 import type { BuffId } from './simulation/buffs';
-import { NEGATIVE_BUFFS, monsterBuffImmune } from './simulation/buffs';
+import { NEGATIVE_BUFFS, elementalBacklashApplies, monsterBuffImmune } from './simulation/buffs';
 import { nextEntityId } from './simulation/entityId';
 import { createCombatAdapter } from './adapters/combatSimulation';
 import { simulationRandom } from './adapters/mwgRandom';
 import { STATUS_IMMUNITIES } from './simulation/mwlStatusImmunities';
 export { INFINITE_ACCURACY, INFINITE_EVASION, ASCENSION_MOD, accRollMulti, setAscensionActive, stoneGlyphReduction, grimTrapDamage, explosiveTrapBounds } from './simulation/combat';
-export { BUFF_DURATION, NEGATIVE_BUFFS, absorbShield, type BuffId } from './simulation/buffs';
+export { BUFF_DURATION, NEGATIVE_BUFFS, absorbShield, elementalBacklashApplies, type BuffId } from './simulation/buffs';
 
 const combat = createCombatAdapter(simulationRandom);
 export const rollHit = combat.rollHit;
@@ -411,6 +411,36 @@ export function setAnnounceBuff(hook: ((c: Creature, id: BuffId) => void) | null
 }
 
 /**
+ * Where attach-time backlash damage lands. `addBuff`/`reigniteBuff` are module-level
+ * with dozens of scene call sites, none of which could show the damage or run the
+ * death path - so like `announceBuff` above, the live scene installs itself here
+ * (show the number, kill at zero) instead of every site growing a branch. Buffs the
+ * port applies before a scene exists simply subtract HP with no presentation.
+ */
+export let attachBacklash: ((c: Creature, damage: number) => void) | null = null;
+
+export function setAttachBacklash(hook: ((c: Creature, damage: number) => void) | null): void {
+	attachBacklash = hook;
+}
+
+/** `Elemental.add(Buff)`'s damage half (`actors/mobs/Elemental.java`, tag `v3.3.8`):
+ * a hate-listed opposite-element attach deals `NormalIntRange(HT/2, HT*3/5)` with
+ * the buff as the source instead of attaching. Returns the damage dealt, 0 when the
+ * pairing is not a backlash (and nothing is attached either way here - callers still
+ * route the ordinary path through `buffBlocked`). HT is the port's `maxHp`
+ * (60 on every real elemental); the inclusive Java range rides the same exclusive-
+ * upper-bound `int()` vehicle `advanceBuffs` uses for Burning's own NormalIntRange.
+ * Simplified and stated: the damage bypasses aura/shield reductions - it lands raw,
+ * the way this module's other direct HP writes do. */
+export function applyElementalBacklash(c: Creature, id: BuffId): number {
+	if (!elementalBacklashApplies(c.kind, c.elementalType, id)) return 0;
+	const damage = simulationRandom.int(Math.floor(c.maxHp / 2), Math.floor(c.maxHp * 3 / 5) + 1);
+	c.hp -= damage;
+	attachBacklash?.(c, damage);
+	return damage;
+}
+
+/**
  * Which buffs are worth announcing. `Buff.java` sets `announced` per subclass, so this is
  * not a blanket "all of them": the ones left out here are the ones the hero applies to
  * itself knowingly (`cloak`, `bless`) or that re-land every turn, where a number rising off
@@ -465,6 +495,11 @@ export function buffBlocked(c: Creature, id: BuffId): boolean {
 	//No NPC can ever be buffed - or debuffed - by anything. The flag is MWL's
 	//`npc` actor set, so all seven ids refuse here through the one `isNPC` bit.
 	if (c.isNPC) return true;
+	//`Elemental.add(Buff)` (tag `v3.3.8`) returns false for hate-listed opposite-
+	//element attaches (Fire: Frost/Chill; Frost: Burning) - the damage half rides
+	//`applyElementalBacklash` at the `addBuff`/`reigniteBuff` boundary, this refusal
+	//covers the direct-write sites that consult only this gate and never that one.
+	if (elementalBacklashApplies(c.kind, c.elementalType, id)) return true;
 	//Brimstone.java grants Burning immunity through Char.isImmune(), before the
 	//effect can be attached. Keep this check at the shared buff boundary so fire
 	//from traps, blobs, wands, plants, and enemy attacks all obey it.
@@ -496,6 +531,8 @@ export function buffBlocked(c: Creature, id: BuffId): boolean {
 
 /** `Buff.affect(c, id, duration?)`: set the duration (the table's own unless overridden). */
 export function addBuff(c: Creature, id: BuffId, duration?: number): void {
+	//`Elemental.add()`'s hate-listed attaches never land - they backlash instead.
+	if (applyElementalBacklash(c, id) > 0) return;
 	if (buffBlocked(c, id)) return;
 	const event = combat.addBuff(c, id, duration);
 	if (event.fresh && announceBuff && ANNOUNCED_BUFFS.has(id)) announceBuff(c, id);
@@ -505,6 +542,9 @@ export function addBuff(c: Creature, id: BuffId, duration?: number): void {
  * shorter - see `simulation/buffs.ts`'s `reigniteBuff`. Used by fire itself, which re-arms the
  * burn on every creature standing in it, every turn. */
 export function reigniteBuff(c: Creature, id: BuffId, duration?: number): void {
+	//Same backlash-first shape as `addBuff` above - fire re-arms Burning every turn,
+	//so a frost elemental standing in flames takes the backlash, never the buff.
+	if (applyElementalBacklash(c, id) > 0) return;
 	if (buffBlocked(c, id)) return;
 	const event = combat.reigniteBuff(c, id, duration);
 	if (event.fresh && announceBuff && ANNOUNCED_BUFFS.has(id)) announceBuff(c, id);

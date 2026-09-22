@@ -21,7 +21,7 @@ import { getCurse } from '../../items/itemCurses';
 import { applyCapeOfThornsProc } from '../../items/artifactActions';
 import { canSurpriseAttack, weaponSTRReq } from '../../items/strReq';
 import { EMBERS, FLOOR, GRASS, HIGH_GRASS, VIEW_RADIUS, WATER } from '../../dungeonConstants';
-import { BUFF_DURATION, INFINITE_ACCURACY, INFINITE_EVASION, NEGATIVE_BUFFS, absorbShield, addBuff, buffBlocked, reigniteBuff, rollDamage, rollHit, setBleeding, stoneGlyphReduction, type Creature } from '../../combat';
+import { BUFF_DURATION, INFINITE_ACCURACY, INFINITE_EVASION, NEGATIVE_BUFFS, absorbShield, addBuff, applyElementalBacklash, buffBlocked, reigniteBuff, rollDamage, rollHit, setBleeding, stoneGlyphReduction, type Creature } from '../../combat';
 import { liveStats, IMMOVABLE_KINDS } from '../../monsters';
 import { imageSuperDefenseSkill } from '../../simulation/mirrorImage';
 
@@ -1246,7 +1246,9 @@ export const combatResolutionMethods = {
 				const powerMulti = Math.max(1, procChance);
 				const existing = defender.buffs['chill'] ?? 0;
 				const added = Math.min(Math.round(3 * powerMulti), Math.round(6 * powerMulti) - existing);
-				if (added > 0 && !buffBlocked(defender, 'chill')) defender.buffs['chill'] = existing + added;
+				//`Elemental.add()`'s hate-listed chill backslashes instead of attaching
+				//(tag `v3.3.8`) - the shared helper refuses, damages, and presents.
+				if (added > 0 && applyElementalBacklash(defender, 'chill') === 0 && !buffBlocked(defender, 'chill')) defender.buffs['chill'] = existing + added;
 			}
 		}
 		//`Shocking.proc()`: a flat `1/3 x arcana` chance, then a lightning arc spreading out from the

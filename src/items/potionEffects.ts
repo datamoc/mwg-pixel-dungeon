@@ -1,6 +1,6 @@
 import { Roguelike } from 'mwg';
 import { isChallengeEnabled } from '../challenges';
-import { addBuff, buffBlocked, reigniteBuff, type BuffId, type Creature } from '../combat';
+import { addBuff, applyElementalBacklash, buffBlocked, reigniteBuff, type BuffId, type Creature } from '../combat';
 import { applyChillFreeze } from '../simulation/buffs';
 import { brewNeighbourSeedPlan, SHROUDING_FOG_VOLUME } from '../simulation/brews';
 import { WALL } from '../dungeonConstants';
@@ -184,7 +184,9 @@ export function createPotionEffects(scene: PotionEffectsContext): Record<string,
 			//Found by the 15th monster-analysis matrix (potions).
 			for (const target of targets) {
 				delete target.buffs['burning'];
-				target.buffs = applyChillFreeze(target.buffs).buffs;
+				//`Elemental.add()`'s hate-listed chill backslashes instead of attaching
+				//(tag `v3.3.8`) - a fire-typed target takes the backlash, never the chill.
+				if (applyElementalBacklash(target, 'chill') === 0) target.buffs = applyChillFreeze(target.buffs).buffs;
 				if (target.hp <= 0) scene.kill(target);
 			}
 			scene.say(t('port.log.quafffrost'), 'positive');

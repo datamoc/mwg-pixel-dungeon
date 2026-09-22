@@ -29,7 +29,7 @@ import { fleeStep as fleeStepFlow, isPatrolTargetValid as isPatrolTargetValidFlo
 import { canRipperLeap, chooseRipperBounceEnd, predictRipperLeapTarget, ripperLeapCooldown } from '../../../simulation/ripperLeap';
 import { chooseSuccubusBlinkCell, shouldSuccubusBlink, succubusBlinkCooldown } from '../../../simulation/succubusBlink';
 import { DOOR, DOOR_CLOSED, FLOOR, GAME_KIND_CODES, SOLID, TILE, WALL, WATER } from '../../../dungeonConstants';
-import { NEGATIVE_BUFFS, addBuff, buffBlocked, reigniteBuff, rollDamage, rollHit, setBleeding, type BuffId, type Creature, type GroundItem, type Step } from '../../../combat';
+import { NEGATIVE_BUFFS, addBuff, applyElementalBacklash, buffBlocked, reigniteBuff, rollDamage, rollHit, setBleeding, type BuffId, type Creature, type GroundItem, type Step } from '../../../combat';
 import { applyChillFreeze } from '../../../simulation/buffs';
 import { IMMOVABLE_KINDS, liveStats } from '../../../monsters';
 import { TENGU_CIRCLE8 } from '../shared';
@@ -200,7 +200,9 @@ export const monsterAiMethods = {
 				const power = Math.max(1, chance);
 				const existing = defender.buffs['chill'] ?? 0;
 				const added = Math.min(Math.round(3 * power), Math.round(6 * power) - existing);
-				if (added > 0 && !buffBlocked(defender, 'chill')) defender.buffs['chill'] = existing + added;
+				//`Elemental.add()`'s hate-listed chill backslashes instead of attaching
+				//(tag `v3.3.8`) - the shared helper refuses, damages, and presents.
+				if (added > 0 && applyElementalBacklash(defender, 'chill') === 0 && !buffBlocked(defender, 'chill')) defender.buffs['chill'] = existing + added;
 				return;
 			}
 			case 'shocking':
@@ -1060,7 +1062,9 @@ export const monsterAiMethods = {
 		//Burning with an explicit 4, not the table-default 8.
 		if (type === 'fire' && this.level.get(target.x, target.y) !== WATER) reigniteBuff(target, 'burning', 4);
 		else if (type === 'frost') {
-			target.buffs = applyChillFreeze(target.buffs).buffs;
+			//`Elemental.add()`'s hate-listed chill backslashes instead of attaching
+			//(tag `v3.3.8`) - a fire-typed target takes the backlash, never the chill.
+			if (applyElementalBacklash(target, 'chill') === 0) target.buffs = applyChillFreeze(target.buffs).buffs;
 		} else if (type === 'shock') addBuff(target, 'daze');
 		else addBuff(target, Random.element(['burning', 'chill', 'cripple', 'daze'] as const) ?? 'daze');
 		return true;

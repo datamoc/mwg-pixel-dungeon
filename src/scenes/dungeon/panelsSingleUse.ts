@@ -51,7 +51,7 @@ import { useAlchemizeFlow, useStylusFlow, type AlchemizeContext, type StylusCont
 import { useStoneById as routeStoneAction, type StoneActionContext } from '../../items/stoneActions';
 import { setWandmakerQuestType, setWandmakerQuestWands, wandmakerQuestType } from '../../spdLevelGen/wandmaker';
 import { ITEM_FRAME, WATER } from '../../dungeonConstants';
-import { BUFF_DURATION, absorbShield, addBuff, setAnnounceBuff, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
+import { BUFF_DURATION, absorbShield, addBuff, setAnnounceBuff, setAttachBacklash, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
 import { BOSSES } from '../../monsters';
 import { APPEARANCE_TABLES, AUGMENT_OPTIONS, BLACKSMITH_QUEST, IMP_QUEST, SAD_GHOST_QUEST, SPD_LEVEL_CURVE, SUBCLASS_OPTIONS, SUBCLASS_TRACK, WANDMAKER_QUEST } from './shared';
 
@@ -450,6 +450,13 @@ export const panelsSingleUseMethods = {
 
 		//see announceBuff's comment: the live scene is what turns a landed buff into text
 		setAnnounceBuff((creature, id) => this.showStatus(creature, id, SPD_STATUS_COLOR.warning));
+		//see attachBacklash's comment: the live scene is what turns attach-time backlash
+		//damage into a number and a death - `Elemental.add()`'s hate-listed opposite-
+		//element attaches (tag `v3.3.8`) deal `NormalIntRange(HT/2, HT*3/5)` instead.
+		setAttachBacklash((creature, damage) => {
+			if (damage > 0) this.showDamage(creature, damage);
+			if (creature.hp <= 0) this.kill(creature);
+		});
 
 		//the keybind cheat-sheet used to be concatenated onto the end of the status line,
 		//where it was reread every turn for information that never changes. It sits in the
