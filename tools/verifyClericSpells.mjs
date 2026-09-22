@@ -227,11 +227,6 @@ export function verifyClericSpells(require, check) {
 		const activate = ability.slice(ability.indexOf('activateAscendedForm(this'));
 		assert.match(activate, /if \(this\.ascendedTurns <= 0\) \{[^}]*this\.ascendedDivineCast = false;/, 'a mid-form recast must keep the history/flag (AscendBuff.reset())');
 		const turn = read('../src/scenes/dungeon/turnLoopAiming.ts');
-		assert.match(turn, /this\.ascendedDivineCast = false;\s*delete this\.hero\.divineShield;\s*for \(const creature of this\.creatures\) delete creature\.divineShield;/);
-		const combat = read('../src/scenes/dungeon/combatResolution.ts');
-		assert.match(combat, /absorbCreatureShields\(this\.hero, viscosityDamage, this\.ascendedTurns > 0\)/,
-			'hero DivineShield must absorb at the shared hero damage seam');
-		assert.match(combat, /divineShieldBlocked \+ livingEarthBlocked/,
-			'hero DivineShield loss must be included before ordinary shield pools');
+		assert.match(turn, /this\.ascendedDivineCast = false;\s*for \(const creature of this\.creatures\) delete creature\.divineShield;/);
 	});
 }

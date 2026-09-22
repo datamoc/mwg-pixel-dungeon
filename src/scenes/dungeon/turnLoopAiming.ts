@@ -1291,7 +1291,6 @@ export const turnLoopAimingMethods = {
 					this.ascendedSpellCasts = 0;
 					this.ascendedFlashCasts = 0;
 					this.ascendedDivineCast = false;
-					delete this.hero.divineShield;
 					for (const creature of this.creatures) delete creature.divineShield;
 				}
 			},
