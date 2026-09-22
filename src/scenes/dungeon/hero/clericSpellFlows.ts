@@ -39,6 +39,12 @@ export const clericSpellFlowsMethods = {
 			this.say(t('port.log.tomenospell'), 'negative');
 			return;
 		}
+		//`GameScene.flash(0x80FFFFFF)` (`Judgement.onCast()`, tag `v3.3.8`): a screen-wide
+		//white flash fired once per cast, ahead of the per-target damage loop below (Java
+		//fires it before iterating `Actor.chars()` too). `dungeonScene.ts`'s `screenFlash`
+		//is the generic primitive; duration is a stated approximation (see its own doc
+		//comment), since Java's own `Fader` timing lives outside this checkout's history.
+		this.screenFlash = { color: 0xffffff, timeLeft: 0.3, duration: 0.3 };
 		const base = judgementDamageBase(rank, this.ascendedSpellCasts);
 		for (const victim of this.creatures) {
 			if (victim.isHero || victim.isAlly || victim.hp <= 0 || !this.fov.isVisible(victim.x, victim.y)) continue;

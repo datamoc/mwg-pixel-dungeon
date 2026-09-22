@@ -1255,6 +1255,14 @@ export class DungeonScene extends Scene2D {
 	/** True once the overlay has drawn a live beam - one more redraw is owed after the last
 	 * beam expires, purely to erase it (see the `update()` loop's own comment). */
 	zapBeamsWereDrawn = false;
+	/** `GameScene.flash(color)` (tag `v3.3.8`): a screen-space light-blend flash, added to
+	 * `stage` directly (not `camera.world`) so it covers the viewport regardless of camera
+	 * position. `Judgement.onCast()` is this port's only user so far (`0x80FFFFFF` on its
+	 * damage tick). Java's own fade duration lives in `Fader`, a `noosa` framework class
+	 * outside this checkout's history; `0.3` is a stated reasonable approximation, not a
+	 * value read from Java source. */
+	screenFlashOverlay: Graphics | null = null;
+	screenFlash: { color: number; timeLeft: number; duration: number } | null = null;
 	/** Live Tengu fire cones, keyed by creature. MWG 0.7.7's `MultiTurnBeam` owns the ring-per-turn
 	 * traversal; the creature's own `tenguFire` carries that beam's `toJSON()` for saves, so this
 	 * map is rebuilt from it on load and never serialized itself. */
@@ -1430,6 +1438,9 @@ export class DungeonScene extends Scene2D {
 		//as the zoom subscription above - `FogOfWar.refresh` already re-reads the level.
 		this.onDestroy.add(onBrightnessChanged(() => this.refresh()));
 		this.stage.addChild(this.camera.world);
+		this.screenFlashOverlay = new Graphics();
+		this.screenFlashOverlay.eventMode = 'none';
+		this.stage.addChild(this.screenFlashOverlay);
 		this.itemsSheet = SpriteSheet.fromTexture(runState.sprites.items, 16, 16);
 
 		this.buildInterface();
@@ -2408,6 +2419,21 @@ export class DungeonScene extends Scene2D {
 					.stroke({ width: Math.max(1, 3 * p), color: beam.color, alpha: p });
 			}
 			this.zapBeamsWereDrawn = this.zapBeams.length > 0;
+		}
+		//`GameScene.flash(color)`: a screen-space overlay fading out over its own duration,
+		//redrawn every frame it is live so it tracks the current viewport size (a resize
+		//mid-flash is the one case that needs a fresh rect, not just a fresh alpha).
+		if (this.screenFlashOverlay && this.screenFlash) {
+			this.screenFlash.timeLeft -= dt;
+			if (this.screenFlash.timeLeft <= 0) {
+				this.screenFlashOverlay.clear();
+				this.screenFlash = null;
+			} else {
+				const p = this.screenFlash.timeLeft / this.screenFlash.duration;
+				this.screenFlashOverlay.clear()
+					.rect(0, 0, Game.current.width, Game.current.height)
+					.fill({ color: this.screenFlash.color, alpha: p });
+			}
 		}
 		for (const [sprite, motion] of this.monsterMotion) {
 			if (!sprite.destroyed) motion.update(dt);

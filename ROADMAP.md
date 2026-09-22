@@ -534,8 +534,29 @@ below to close the gap was judged not worth the churn against those existing ref
       other-hero branches (Java's own `ch` covers both). Live-verified: a scripted Bless cast
       (talent gate bypassed for the test) queues a live `effectBursts` entry and applies the
       real shield/buff, through the exact same particle mechanism the already-working Cleanse
-      flare uses. **Complexity: S** for what's left in this specific line; the rest is
-      unscoped.
+      flare uses.
+      **Closed 2026-09-22, Judgement's own cast flash - the third concrete slice.**
+      `GameScene.flash(0x80FFFFFF)` (`Judgement.onCast()`) is a screen-wide light-blend
+      flash, structurally different from every other spell effect closed so far (screen-space,
+      not a world-space beam or per-character particle) - a new `screenFlash`/
+      `screenFlashOverlay` pair on `dungeonScene.ts`, added to `stage` directly so it covers
+      the viewport regardless of camera position, fires from `resolveJudgement` ahead of its
+      damage loop (matching Java's own order) with a stated-approximate `0.3s` fade (Java's
+      own `Fader` duration lives in a `noosa` framework class outside this checkout's
+      history - not a value read from source). Live-verified: a scripted cast (talent/
+      subclass/AscendedForm gates bypassed for the test) sets the flash state and deals real
+      damage; the overlay renders visibly via a forced-render pixel check.
+      DivineSense/HolyWeapon/HolyWard turned out to need nothing further: their Java sources
+      only call `hero.sprite.operate()`, a generic "using an item" pose with no distinct
+      particle/beam effect of its own to port. Flash turned out to need nothing further
+      either, on closer reading: `Flash.onTargetSelected()` delegates its whole presentation
+      to `ScrollOfTeleportation.teleportToLocation()`, and `resolveFlash` already calls this
+      port's own `playTeleportAppear` (the shared teleport-appear presentation every random
+      teleport already routes through) - not a gap, just one this pass's earlier drafting
+      wrongly assumed still open without checking. **Complexity: S** for what's left in this
+      specific line (GuidingLight's travelling bolt is the only one left); the "spell-cast
+      bursts" half is otherwise closed now - Sunray, Bless and Judgement are the three spells
+      that actually needed new work.
 - [x] Audit every static `t('port.*')` call site against `portStrings.ts`'s EN/FR tables. A script
       walk found 45 keys missing from EN and 47 from FR - all fixed (window titles, victory/defeat
       screens, `port.action.bag`/`port.talent.*`, ~20 combat log lines), plus two French-specific
