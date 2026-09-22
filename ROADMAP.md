@@ -1104,8 +1104,12 @@ one.
       The "predicted HP" half
       was a misreading - every reduction lands in `damage` before the test, so the tested
       value is what the HP write leaves - and both execute halves now carry Java's
-      `enemy.isAlive()` guard, so a killing blow no longer also reports an execution.
-      **Complexity: L.**
+       `enemy.isAlive()` guard, so a killing blow no longer also reports an execution.
+       **Progress 2026-09-23:** hidden Mimic contact decisions now live in the pure
+       `simulation/hiddenMimicContact.ts` planner, separating adjacent melee-bump outcomes from
+       successful-hit reveal timing. This also fixed the missed-hit reveal bug and the Crystal
+       Mimic bump path, which now cancels the hero swing and performs its inherited counterattack.
+       **Complexity: L.**
 - [x] Compare `mwg/i18n` against the plan's section 22C "Semantic Messaging" shape before committing
       to SPD-ADR-012. It matches (`SemanticMessage`/`MessageChannel`/`MessageFormatter`/
       `createCatalogFormatter`, `EntityTextResolver`/`GrammaticalEntity`, CLDR plurals, FTL, catalog

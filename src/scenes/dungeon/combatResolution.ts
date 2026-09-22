@@ -3,6 +3,7 @@ import { noteMonsterAttack } from './monsters/monsterSpeed';
 import { faceCharacter, placeCharacterArt } from '../../ui/characterPlacement';
 import { AnimatedSprite, Random, Roguelike, SpriteSheet } from 'mwg';
 import { preparationCanKo } from '../../simulation/preparation';
+import { planHiddenMimicContact } from '../../simulation/hiddenMimicContact';
 import { planShockElementalArc } from '../../simulation/shockArc';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
 import { UNSTABLE_DELEGATES } from '../../items/itemAffixes';
@@ -109,25 +110,30 @@ export const combatResolutionMethods = {
 		//capitalization (mid-sentence) and case (German accusative "dich", Spanish's "a ti") for
 		//an object position.
 		const object = defender.isHero ? t('port.log.object.you') : defender.name;
-		if (defender.kind === 'crystalMimic' && !defender.mimicRevealed) {
-			this.revealCrystalMimic(defender);
+		//Keep the hidden-Mimic reveal/counterattack decision pure; this scene owns only the
+		//reveal presentation and the recursive attack that executes the returned plan.
+		const mimicContact = planHiddenMimicContact({
+			kind: defender.kind,
+			mimicRevealed: defender.mimicRevealed,
+			attackerIsHero: attacker.isHero === true,
+			attackMode: attacker.attackMode,
+			adjacent: Roguelike.chebyshevDistance(attacker, defender) <= 1,
+			invisible: Boolean(attacker.buffs['invisibility']),
+			timeStopped: this.timeBubbleTurns > 0,
+			depth: this.depth,
+		});
+		const revealMimic = () => {
+			if (mimicContact.reveal === 'crystal') this.revealCrystalMimic(defender);
+			if (mimicContact.reveal === 'chest') this.revealMimic(defender);
+		};
+		if (mimicContact.revealWhen === 'beforeAttack') revealMimic();
+		if (mimicContact.counterattack) {
+			const original = { accuracy: defender.accuracy, damage: defender.damage };
+			defender.accuracy = INFINITE_ACCURACY;
+			defender.damage = [mimicContact.counterDamage, mimicContact.counterDamage];
+			try { this.attack(defender, attacker); } finally { defender.accuracy = original.accuracy; defender.damage = original.damage; }
 		}
-		//`Mimic.interact()`/`defenseProc()`/`damage()`: touching or hurting a hidden chest reveals it. A hero
-		//who bumps it (melee) does not get his swing - the mimic strikes first, never missing
-		//(`attackSkill` INFINITE_ACCURACY while NEUTRAL) for the flat `2 + 2*level` a hidden mimic rolls
-		//(`damageRoll`), and the bump costs the hero his turn as usual. Invisible heroes and time-stopped
-		//turns only reveal it. Any other blow (a thrown weapon, a wand, a blast) reveals it and lands normally.
-		if (defender.kind === 'mimic' && defender.mimicRevealed === false) {
-			this.revealMimic(defender);
-			if (attacker.isHero && attacker.attackMode !== 'throw'
-				&& !attacker.buffs['invisibility'] && this.timeBubbleTurns <= 0) {
-				const original = { accuracy: defender.accuracy, damage: defender.damage };
-				defender.accuracy = INFINITE_ACCURACY;
-				defender.damage = [2 + 2 * this.depth, 2 + 2 * this.depth];
-				try { this.attack(defender, attacker); } finally { defender.accuracy = original.accuracy; defender.damage = original.damage; }
-			}
-			if (attacker.isHero && attacker.attackMode !== 'throw') return false;
-		}
+		if (mimicContact.cancelHeroAttack) return false;
 		// Mob.surprisedBy() is not limited to sleeping enemies: it also succeeds when the
 		// target did not see the hero on its most recent turn. In particular, its FOV is
 		// sampled before a chase step, so striking a snake immediately after it enters a
@@ -309,6 +315,8 @@ export const combatResolutionMethods = {
 			this.say(t(attacker.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
 			return false;
 		}
+		//Java's `Mimic.defenseProc()` reveals ordinary hits here; do not reveal on a miss.
+		if (mimicContact.revealWhen === 'onHit') revealMimic();
 
 		let damage = attackRoll.damage;
 		// `Char.attack()` (tag `v3.3.8`): a PowerOfMany-powered ally deals 1.25x melee

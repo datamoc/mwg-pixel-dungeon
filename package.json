@@ -11,7 +11,7 @@
     "verify": "npm run check && npm run test:simulation && npm run test:items && npm run test:lua && npm run test:mwg && npm run test:settings && npm run test:ui && npm run test:bossunseal && npm run test:mining && npm run build",
     "check": "npm run mwl:compile && tsc --noEmit && npm run i18n:verify && node tools/check-file-budget.mjs && node tools/audit-undefined.mjs",
     "mwl:compile": "node tools/compile-mwl.mjs",
-    "test:simulation": "node tools/verifySimulation.mjs && node tools/verifyBanner.mjs && node tools/verifyVault.mjs && node tools/verifyBuffOverlays.mjs",
+    "test:simulation": "node tools/verifySimulation.mjs && node tools/verifyHiddenMimicContact.mjs && node tools/verifyBanner.mjs && node tools/verifyVault.mjs && node tools/verifyBuffOverlays.mjs",
     "test:items": "node tools/verifyItemWorkflows.mjs",
     "test:lua": "node tools/verifyLua.mjs",
     "test:mwg": "node tools/verifyMwgCompatibility.mjs",
