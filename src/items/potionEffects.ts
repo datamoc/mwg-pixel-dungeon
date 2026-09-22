@@ -162,10 +162,13 @@ export function createPotionEffects(scene: PotionEffectsContext): Record<string,
 			for (let dy = -radius; dy <= radius; dy++) for (let dx = -radius; dx <= radius; dx++) {
 				const x = scene.hero.x + dx, y = scene.hero.y + dy;
 				if (scene.eternalFireVolumeAt(x, y) >= 1) touchesFire = true;
-				//`Freezing.evolve()` (tag `v3.3.8`) clears ordinary Fire at every affected
-				//cell before applying its freeze effect. The previous port only cleared the
-				//hero's Burning marker and the separate EternalFire wall.
-				if (scene.level.inside(x, y)) scene.clearFire(x, y);
+			//`Freezing.evolve()` (tag `v3.3.8`) clears ordinary Fire at every affected
+			//cell before applying its freeze effect. The previous port only cleared the
+			//hero's Burning marker and the separate EternalFire wall.
+			//`Freezing` seeds cover NEIGHBOURS9 only, so the clear runs at Chebyshev 1
+			//even though the loop scans the MWL radius (the chill targets below
+			//already use the separate `targetRadius`).
+			if (scene.level.inside(x, y) && Math.max(Math.abs(dx), Math.abs(dy)) <= 1) scene.clearFire(x, y);
 			}
 			if (touchesFire) {
 				scene.clearEternalFire();

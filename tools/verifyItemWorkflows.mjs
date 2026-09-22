@@ -765,6 +765,32 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.deepEqual(missileFlightArt('TippedDart', 'blindweed'), { frame: 172, spin: 0 }, 'tipped darts fly their own tip art');
 	assert.equal(missileFlightArt('NoSuchClass'), null, 'unknown classes keep the dot fallback');
 	assert.equal(missileFlightArt('TippedDart', 'nosuchseed'), null, 'unknown seeds keep the dot fallback');
+	// `applyTippedDartEffect` (`darts/*.java`, tag `v3.3.8`) is scene-bound, so its
+	// branches are pinned at source level: the ally/enemy splits (cleansing strips
+	// negatives + 10-turn immunity on allies, positives on enemies; adrenaline 10 on
+	// allies, cripple 5 on enemies), holy's bless-30 plus the depth-scaled smite,
+	// shocking's status-free depth-scaled damage, rot's boss-split corrosion clock,
+	// poison's pooled clock, chilling's water/dry split, paralysis 5, and healing's
+	// cure plus the pooled heal with the hero-pool max rule. The method lives in its
+	// own `tippedDartEffects` group (a file-budget extraction from
+	// `inventoryQuickslot`, behavior-identical), so the pins read that file.
+	{
+		const quickslot = readFileSync(join(root, 'src/scenes/dungeon/hero/tippedDartEffects.ts'), 'utf8');
+		assert.match(quickslot, /case 'mageroyal'[\s\S]*?NEGATIVE_BUFFS/);
+		assert.match(quickslot, /reigniteBuff\(target, 'cleanseImmunity', 10\)/);
+		assert.match(quickslot, /addBuff\(target, 'adrenalineSurge', 10\)/);
+		assert.match(quickslot, /addBuff\(target, 'cripple', 5\)/);
+		assert.match(quickslot, /addBuff\(target, 'bless', BUFF_DURATION\.bless\)/);
+		assert.match(quickslot, /Random\.normalRange\(10 \+ Math\.floor\(this\.depth \/ 3\), 20 \+ Math\.floor\(this\.depth \/ 3\)\)/);
+		assert.match(quickslot, /Random\.normalRange\(5 \+ Math\.floor\(this\.depth \/ 4\), 10 \+ Math\.floor\(this\.depth \/ 4\)\)/);
+		assert.match(quickslot, /target\.corrosionTurns = 5/);
+		assert.match(quickslot, /target\.corrosionTurns = 10/);
+		assert.match(quickslot, /const pool = 3 \+ Math\.floor\(this\.depth \/ 2\)/);
+		assert.match(quickslot, /reigniteBuff\(target, 'paralysis', 5\)/);
+		assert.match(quickslot, /this\.level\.get\(target\.x, target\.y\) === WATER \? BUFF_DURATION\.chill : 6/);
+		assert.match(quickslot, /cureHeroBuffs\(target\)/);
+		assert.match(quickslot, /Math\.max\(this\.healingLeft/);
+	}
 
 	/** What `bag.add` does to a stack carrying this identity - the *only* merge decision the port
 	 * makes, and therefore the one that has to reproduce `isSimilar`. */
@@ -1292,12 +1318,12 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.equal(mwlItemEffectValue('waterskin', 'healFractionPerDrop'), 0.05);
 	assert.equal(mwlItemEffectValue('wandTransfusion', 'healingPerLevel'), 3);
 	// `Food.energy` at tag `v3.3.8`: ration `Hunger.HUNGRY` (300), SmallRation 150, Berry 100,
-	// PhantomMeat `Hunger.STARVING` (600), MysteryMeat and
+	// PhantomMeat and Blandfruit `Hunger.STARVING` (450), MysteryMeat and
 	// ChargrilledMeat `HUNGRY/2` (150), StewedMeat `HUNGRY/2` (150), MeatPie
 	// `STARVING*2` (900), Pasty `STARVING` (450). PhantomMeat heals HT/4 dynamically.
 	{
 		const { MWL_CONSUMABLE_STATS } = require('./mwlContent.js');
-		for (const [id, hunger] of [['food', 300], ['smallRation', 150], ['berry', 100], ['supplyRation', 200], ['phantomMeat', 600], ['meat', 150], ['chargrilledMeat', 150], ['stewedMeat', 150], ['meatPie', 900], ['pasty', 450]]) {
+		for (const [id, hunger] of [['food', 300], ['smallRation', 150], ['berry', 100], ['supplyRation', 200], ['phantomMeat', 450], ['blandfruit', 450], ['meat', 150], ['chargrilledMeat', 150], ['stewedMeat', 150], ['meatPie', 900], ['pasty', 450]]) {
 			assert.equal(MWL_CONSUMABLE_STATS[id]?.hunger, hunger, `${id} carries Food.energy`);
 			assert.equal(MWL_CONSUMABLE_STATS[id]?.heal, id === 'supplyRation' ? 5 : 0, `${id} carries Food.heal`);
 		}
@@ -4393,6 +4419,9 @@ function healingDrive(overrides = {}) {
 	const potionSource = readFileSync(join(root, 'src/items/potionEffects.ts'), 'utf8');
 	assert.match(potionSource, /function applyPotionPurity[\s\S]*?reigniteBuff\(hero, 'blobImmunity', 20\)/);
 	assert.doesNotMatch(potionSource, /function applyPotionPurity[\s\S]*?delete hero\.buffs\[/);
+	// `Freezing` seeds cover NEIGHBOURS9 only, so the frost fire-clear runs at
+	// Chebyshev 1 even though the scan loop uses the MWL radius (ACP #390).
+	assert.match(potionSource, /Math\.max\(Math\.abs\(dx\), Math\.abs\(dy\)\) <= 1\) scene\.clearFire\(x, y\)/);
 }
 // Dew-drop collection moved to `items/consumables.ts` as `collectDewdrop` (the
 // file-size refactor's thirtieth extraction, behavior-identical): driven headlessly

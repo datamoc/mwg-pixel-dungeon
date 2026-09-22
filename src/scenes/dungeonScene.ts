@@ -322,6 +322,7 @@ import { inventoryQuickslotMethods } from './dungeon/hero/inventoryQuickslot';
 import { clericSpellFlowsMethods } from './dungeon/hero/clericSpellFlows';
 import { armorAbilityUseMethods } from './dungeon/hero/armorAbilityUse';
 import { cursedWandCastMethods } from './dungeon/hero/cursedWandCast';
+import { tippedDartEffectsMethods } from './dungeon/hero/tippedDartEffects';
 import { weaponSpellsGearMethods } from './dungeon/hero/weaponSpellsGear';
 
 export class DungeonScene extends Scene2D {
@@ -2451,5 +2452,5 @@ export class DungeonScene extends Scene2D {
 
 /** The method groups in `./dungeon/` are typed with `this: DungeonScene` and merged onto the prototype here. */
 type Mixed<T> = { [K in keyof T]: OmitThisParameter<T[K]> };
-export interface DungeonScene extends Mixed<typeof coreSpawnTilesMethods>, Mixed<typeof npcShopBlacksmithMethods>, Mixed<typeof environmentFireTrapsMethods>, Mixed<typeof turnLoopAimingMethods>, Mixed<typeof actorTurnsHazardsMethods>, Mixed<typeof monsterAiMethods>, Mixed<typeof bossLogicMethods>, Mixed<typeof combatResolutionMethods>, Mixed<typeof deathSaveRefreshMethods>, Mixed<typeof panelsSingleUseMethods>, Mixed<typeof inventoryQuickslotMethods>, Mixed<typeof clericSpellFlowsMethods>, Mixed<typeof armorAbilityUseMethods>, Mixed<typeof cursedWandCastMethods>, Mixed<typeof weaponSpellsGearMethods> {}
-Object.assign(DungeonScene.prototype, coreSpawnTilesMethods, npcShopBlacksmithMethods, environmentFireTrapsMethods, turnLoopAimingMethods, actorTurnsHazardsMethods, monsterAiMethods, bossLogicMethods, combatResolutionMethods, deathSaveRefreshMethods, panelsSingleUseMethods, inventoryQuickslotMethods, clericSpellFlowsMethods, armorAbilityUseMethods, cursedWandCastMethods, weaponSpellsGearMethods);
+export interface DungeonScene extends Mixed<typeof coreSpawnTilesMethods>, Mixed<typeof npcShopBlacksmithMethods>, Mixed<typeof environmentFireTrapsMethods>, Mixed<typeof turnLoopAimingMethods>, Mixed<typeof actorTurnsHazardsMethods>, Mixed<typeof monsterAiMethods>, Mixed<typeof bossLogicMethods>, Mixed<typeof combatResolutionMethods>, Mixed<typeof deathSaveRefreshMethods>, Mixed<typeof panelsSingleUseMethods>, Mixed<typeof inventoryQuickslotMethods>, Mixed<typeof clericSpellFlowsMethods>, Mixed<typeof armorAbilityUseMethods>, Mixed<typeof cursedWandCastMethods>, Mixed<typeof tippedDartEffectsMethods>, Mixed<typeof weaponSpellsGearMethods> {}
+Object.assign(DungeonScene.prototype, coreSpawnTilesMethods, npcShopBlacksmithMethods, environmentFireTrapsMethods, turnLoopAimingMethods, actorTurnsHazardsMethods, monsterAiMethods, bossLogicMethods, combatResolutionMethods, deathSaveRefreshMethods, panelsSingleUseMethods, inventoryQuickslotMethods, clericSpellFlowsMethods, armorAbilityUseMethods, cursedWandCastMethods, tippedDartEffectsMethods, weaponSpellsGearMethods);
