@@ -147,6 +147,7 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.ui.signdesc': "You can't read the text from here.",
 	'port.ui.journalnotes': 'Notes',
 	'port.ui.titlebadges': 'Badges',
+	'port.ui.colorblind': 'Colorblind palette',
 	'port.name.questweapon': 'quest weapon',
 	'port.name.wand': 'wand',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -858,6 +859,7 @@ export const PORT_STRINGS_FR: Record<string, string> = {
 	'port.ui.signdesc': 'Vous ne pouvez lire le texte d’ici.',
 	'port.ui.journalnotes': 'Notes',
 	'port.ui.titlebadges': 'Badges',
+	'port.ui.colorblind': 'Palette daltonien',
 	'port.name.questweapon': 'arme de quête',
 	'port.name.wand': 'baguette',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -1523,6 +1525,7 @@ export const PORT_STRINGS_DE: Record<string, string> = {
 	'port.ui.signdesc': 'Du kannst den Text von hier aus nicht lesen.',
 	'port.ui.journalnotes': 'Notizen',
 	'port.ui.titlebadges': 'Abzeichen',
+	'port.ui.colorblind': 'Farbenblind-Palette',
 	'port.name.questweapon': 'Questwaffe',
 	'port.name.wand': 'Zauberstab',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -2176,6 +2179,7 @@ export const PORT_STRINGS_ES: Record<string, string> = {
 	'port.ui.signdesc': 'No puedes leer el texto desde aquí.',
 	'port.ui.journalnotes': 'Notas',
 	'port.ui.titlebadges': 'Medallas',
+	'port.ui.colorblind': 'Paleta para daltonismo',
 	'port.name.questweapon': 'arma de misión',
 	'port.name.wand': 'varita',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -2830,6 +2834,7 @@ export const PORT_STRINGS_PT: Record<string, string> = {
 	'port.ui.signdesc': 'Você não consegue ler a placa daqui.',
 	'port.ui.journalnotes': 'Anotações',
 	'port.ui.titlebadges': 'Emblemas',
+	'port.ui.colorblind': 'Paleta para daltonismo',
 	'port.name.questweapon': 'arma de missão',
 	'port.name.wand': 'varinha',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -3483,6 +3488,7 @@ export const PORT_STRINGS_IT: Record<string, string> = {
 	'port.ui.signdesc': 'Non riesci a leggere da qui.',
 	'port.ui.journalnotes': 'Appunti',
 	'port.ui.titlebadges': 'Trofei',
+	'port.ui.colorblind': 'Tavolozza per daltonici',
 	'port.name.questweapon': 'arma della missione',
 	'port.name.wand': 'bacchetta',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -4136,6 +4142,7 @@ export const PORT_STRINGS_PL: Record<string, string> = {
 	'port.ui.signdesc': 'Nie możesz stąd odczytać tekstu.',
 	'port.ui.journalnotes': 'Notatki',
 	'port.ui.titlebadges': 'Odznaki',
+	'port.ui.colorblind': 'Paleta dla daltonistów',
 	'port.name.questweapon': 'broń zadaniowa',
 	'port.name.wand': 'różdżka',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -4791,6 +4798,7 @@ export const PORT_STRINGS_RU: Record<string, string> = {
 	'port.ui.signdesc': 'Вы не можете разобрать, что там написано, с этого расстояния.',
 	'port.ui.journalnotes': 'Заметки',
 	'port.ui.titlebadges': 'Медали',
+	'port.ui.colorblind': 'Палитра для дальтоников',
 	'port.name.questweapon': 'оружие задания',
 	'port.name.wand': 'жезл',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -5422,6 +5430,7 @@ export const PORT_STRINGS_TR: Record<string, string> = {
 	'port.ui.signdesc': 'Yazıyı buradan okuyamıyorsun.',
 	'port.ui.journalnotes': 'Notlar',
 	'port.ui.titlebadges': 'Rozetler',
+	'port.ui.colorblind': 'Renk körü paleti',
 	'port.name.questweapon': 'görev silahı',
 	'port.name.wand': 'asa',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -6053,6 +6062,7 @@ export const PORT_STRINGS_UK: Record<string, string> = {
 	'port.ui.signdesc': 'Ви не можете прочитати текст звідси.',
 	'port.ui.journalnotes': 'Нотатки',
 	'port.ui.titlebadges': 'Відзнаки',
+	'port.ui.colorblind': 'Палітра для дальтоніків',
 	'port.name.questweapon': 'зброя завдання',
 	'port.name.wand': 'жезл',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -6682,6 +6692,7 @@ export const PORT_STRINGS_HU: Record<string, string> = {
 	'port.ui.signdesc': 'Nem tudod elolvasni a szöveget innen.',
 	'port.ui.journalnotes': 'Jegyzetek',
 	'port.ui.titlebadges': 'Medálok',
+	'port.ui.colorblind': 'Színvakbarát paletta',
 	'port.name.questweapon': 'küldetésfegyver',
 	'port.name.wand': 'varázspálca',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -7310,6 +7321,7 @@ export const PORT_STRINGS_NL: Record<string, string> = {
 	'port.ui.signdesc': 'Je kunt de tekst van hieruit niet lezen.',
 	'port.ui.journalnotes': 'Notities',
 	'port.ui.titlebadges': 'Insignes',
+	'port.ui.colorblind': 'Kleurenblind-palet',
 	'port.name.questweapon': 'queestewapen',
 	'port.name.wand': 'toverstaf',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -7939,6 +7951,7 @@ export const PORT_STRINGS_IN: Record<string, string> = {
 	'port.ui.signdesc': 'Anda tidak bisa membaca teks ini dari sini.',
 	'port.ui.journalnotes': 'Catatan',
 	'port.ui.titlebadges': 'Lencana',
+	'port.ui.colorblind': 'Palet buta warna',
 	'port.name.questweapon': 'senjata misi',
 	'port.name.wand': 'tongkat sihir',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -8566,6 +8579,7 @@ export const PORT_STRINGS_JA: Record<string, string> = {
 	'port.ui.signdesc': 'ここからは文面を読み取れない。',
 	'port.ui.journalnotes': 'メモ',
 	'port.ui.titlebadges': 'バッジ',
+	'port.ui.colorblind': '色覚異常対応パレット',
 	'port.name.questweapon': 'クエスト武器',
 	'port.name.wand': '杖',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -9193,6 +9207,7 @@ export const PORT_STRINGS_CS: Record<string, string> = {
 	'port.ui.signdesc': 'Odsud nemůžete text přečíst.',
 	'port.ui.journalnotes': 'Poznámky',
 	'port.ui.titlebadges': 'Odznaky',
+	'port.ui.colorblind': 'Paleta pro barvoslepé',
 	'port.name.questweapon': 'úkolová zbraň',
 	'port.name.wand': 'hůlka',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -9820,6 +9835,7 @@ export const PORT_STRINGS_VI: Record<string, string> = {
 	'port.ui.signdesc': 'Bạn không thể đọc văn bản từ đây.',
 	'port.ui.journalnotes': 'Ghi chú',
 	'port.ui.titlebadges': 'Huy chương',
+	'port.ui.colorblind': 'Bảng màu cho người mù màu',
 	'port.name.questweapon': 'vũ khí nhiệm vụ',
 	'port.name.wand': 'đũa phép',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -10447,6 +10463,7 @@ export const PORT_STRINGS_EL: Record<string, string> = {
 	'port.ui.signdesc': 'Δεν μπορείτε να διαβάσετε το κείμενο από εδώ.',
 	'port.ui.journalnotes': 'Σημειώσεις',
 	'port.ui.titlebadges': 'Παράσημα',
+	'port.ui.colorblind': 'Παλέτα αχρωματοψίας',
 	'port.name.questweapon': 'όπλο αποστολής',
 	'port.name.wand': 'ραβδί',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -11074,6 +11091,7 @@ export const PORT_STRINGS_KO: Record<string, string> = {
 	'port.ui.signdesc': '여기서는 텍스트를 읽을 수 없습니다.',
 	'port.ui.journalnotes': '노트',
 	'port.ui.titlebadges': '배지',
+	'port.ui.colorblind': '색맹 팔레트',
 	'port.name.questweapon': '퀘스트 무기',
 	'port.name.wand': '마법 막대',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from
@@ -11701,6 +11719,7 @@ export const PORT_STRINGS_ZH: Record<string, string> = {
 	'port.ui.signdesc': '你无法从这里读出文字。',
 	'port.ui.journalnotes': '笔记',
 	'port.ui.titlebadges': '徽章',
+	'port.ui.colorblind': '色盲调色板',
 	'port.name.questweapon': '任务武器',
 	'port.name.wand': '法杖',
 	//`items.armor.clericarmor` (`ClassArmor`'s Cleric subclass, tag `v3.3.8`): absent from

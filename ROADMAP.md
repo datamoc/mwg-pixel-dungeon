@@ -634,6 +634,21 @@ below to close the gap was judged not worth the churn against those existing ref
       it falls out cheaply), persisted like the other display settings, with every color-coded
       element re-checked against each palette rather than assumed. Port-original accessibility
       work, not Java parity - Java SPD has no such system. **Complexity: M.**
+      **Progress 2026-09-22: the central status palette is done, not every color-coded
+      element.** A new `settings.colorblind()` boolean (persisted like the other display
+      settings, `port.ui.colorblind` checkbox added to the Display settings tab, all 19
+      locale catalogs) swaps `ui/spdTheme.ts`'s `SPD_STATUS_COLOR` (positive/negative/
+      warning/neutral - the palette the game log, floating combat text and status flashes
+      all read from, 22 call sites across 8 files) and `ui/buffOverlays.ts`'s buff-text
+      tint to one Okabe-Ito-derived safe set. **Deliberate simplification, stated rather
+      than assumed:** one palette, not three separately tuned deuteranopia/protanopia/
+      tritanopia sets - Okabe-Ito is validated jointly distinguishable under all three at
+      once, so one safe set clears the "safe under each" bar without three to keep in
+      sync. Browser-verified live: the checkbox toggles and persists (`localStorage`
+      `colorblind: "true"`). **Not yet covered, still open:** HP-bar thresholds, key
+      colors, and trap/hazard highlights were not audited or touched this pass - the
+      "every color-coded element re-checked" bar is not met yet, only the one central
+      palette. No high-contrast pass either.
 
 ## 9. Build the Java-vs-TypeScript parity harness
 

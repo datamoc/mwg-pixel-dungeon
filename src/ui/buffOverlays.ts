@@ -1,5 +1,6 @@
 import { BUFF_DURATION, NEGATIVE_BUFFS } from '../simulation/buffs';
 import type { BuffId } from '../simulation/buffs';
+import { colorblind } from '../settings';
 
 /**
  * `BuffIndicator.BuffButton`'s icon overlays, split out of `buffInfo.ts` (which needs the
@@ -11,9 +12,16 @@ import type { BuffId } from '../simulation/buffs';
  */
 
 /** `CharSprite.POSITIVE`/`NEGATIVE` - the tint Java's `BuffButton` hardlights its
- * large-mode text (`text.hardlight(buff.type == POSITIVE ? POSITIVE : NEGATIVE)`). */
+ * large-mode text (`text.hardlight(buff.type == POSITIVE ? POSITIVE : NEGATIVE)`). Two
+ * pairs, not one, so `settings.colorblind()` (port-original, ROADMAP.md section 8) can
+ * swap this text the same way `ui/spdTheme.ts`'s `SPD_STATUS_COLOR` does - duplicated
+ * rather than imported from there, since that module pulls in `mwg`/Pixi and this one is
+ * deliberately kept headless for `tools/verifyBuffOverlays.mjs`'s plain-node transpile;
+ * keep the two literal pairs in sync by hand. */
 export const BUFF_TEXT_POSITIVE = 0x00ff00;
 export const BUFF_TEXT_NEGATIVE = 0xff0000;
+export const BUFF_TEXT_POSITIVE_COLORBLIND = 0x009e73;
+export const BUFF_TEXT_NEGATIVE_COLORBLIND = 0xd55e00;
 
 /**
  * Which buffs carry Java's `iconTextDisplay()` countdown on large icons, and in which
@@ -116,7 +124,9 @@ export function buffIconText(id: BuffId | 'hungry' | 'starving', turns: number |
 
 /** The text tint for a buff id - Java's `buff.type == POSITIVE ? POSITIVE : NEGATIVE`. */
 export function buffIconTextColor(id: BuffId | 'hungry' | 'starving'): number {
-	return (NEGATIVE_BUFFS as ReadonlySet<string>).has(id) ? BUFF_TEXT_NEGATIVE : BUFF_TEXT_POSITIVE;
+	const negative = (NEGATIVE_BUFFS as ReadonlySet<string>).has(id);
+	if (colorblind()) return negative ? BUFF_TEXT_NEGATIVE_COLORBLIND : BUFF_TEXT_POSITIVE_COLORBLIND;
+	return negative ? BUFF_TEXT_NEGATIVE : BUFF_TEXT_POSITIVE;
 }
 
 /**

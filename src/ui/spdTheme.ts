@@ -1,5 +1,6 @@
 import { Rectangle, Texture } from 'mwg/two-d/pixi-interop';
 import { I18n, setTheme, theme } from 'mwg';
+import { colorblind } from '../settings';
 
 /**
  * SPD's look, applied to `mwg/ui`'s theme.
@@ -23,13 +24,39 @@ export const SPD_TITLE_COLOR = 0xffff44;
  * `CharSprite`'s status colours, the palette SPD uses for every piece of coloured feedback -
  * the game log, floating combat text and status flashes all read from these.
  */
-export const SPD_STATUS_COLOR = {
+const SPD_STATUS_COLOR_NORMAL = {
 	default: 0xffffff,
 	positive: 0x00ff00,
 	negative: 0xff0000,
 	warning: 0xff8800,
 	neutral: 0xffff00,
 } as const;
+
+/**
+ * The colorblind-safe swap for the palette above (`settings.colorblind()`, ROADMAP.md
+ * section 8 - port-original, no Java source). Derived from the Okabe-Ito qualitative
+ * palette, jointly distinguishable under deuteranopia/protanopia/tritanopia rather than
+ * tuned per type: bluish green for positive, vermillion for negative (still reads
+ * "hot"/dangerous, and stays apart from the greenish positive under every common CVD
+ * simulation), amber for warning, sky blue for neutral.
+ */
+const SPD_STATUS_COLOR_COLORBLIND = {
+	default: 0xffffff,
+	positive: 0x009e73,
+	negative: 0xd55e00,
+	warning: 0xe69f00,
+	neutral: 0x56b4e9,
+} as const;
+
+/** Live palette lookup so every existing `SPD_STATUS_COLOR.xxx` call site picks up a
+ * settings change without touching any of them. */
+export const SPD_STATUS_COLOR = {
+	get default() { return (colorblind() ? SPD_STATUS_COLOR_COLORBLIND : SPD_STATUS_COLOR_NORMAL).default; },
+	get positive() { return (colorblind() ? SPD_STATUS_COLOR_COLORBLIND : SPD_STATUS_COLOR_NORMAL).positive; },
+	get negative() { return (colorblind() ? SPD_STATUS_COLOR_COLORBLIND : SPD_STATUS_COLOR_NORMAL).negative; },
+	get warning() { return (colorblind() ? SPD_STATUS_COLOR_COLORBLIND : SPD_STATUS_COLOR_NORMAL).warning; },
+	get neutral() { return (colorblind() ? SPD_STATUS_COLOR_COLORBLIND : SPD_STATUS_COLOR_NORMAL).neutral; },
+};
 
 export function applySpdTheme(chrome: Texture): void {
 	//Chrome.Type.WINDOW: (0,0) 20x20, border 6

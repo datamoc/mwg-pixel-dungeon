@@ -34,12 +34,13 @@ const approx = (actual, expected) => {
 
 try {
 	writeFileSync(join(output, 'package.json'), '{"type":"commonjs"}');
-	for (const file of ['ui/buffOverlays', 'simulation/buffs', 'simulation/mwlBuffDurations', 'simulation/mwlMonsterImmunities']) {
+	for (const file of ['ui/buffOverlays', 'simulation/buffs', 'simulation/mwlBuffDurations', 'simulation/mwlMonsterImmunities', 'settings']) {
 		compile(new URL(`../src/${file}.ts`, import.meta.url), `${file}.js`);
 	}
 	const require = createRequire(join(output, 'tests.cjs'));
-	const { buffIconText, buffIconTextColor, buffIconFade, BUFF_TEXT_POSITIVE, BUFF_TEXT_NEGATIVE } =
-		require('./ui/buffOverlays');
+	const { buffIconText, buffIconTextColor, buffIconFade, BUFF_TEXT_POSITIVE, BUFF_TEXT_NEGATIVE,
+		BUFF_TEXT_POSITIVE_COLORBLIND, BUFF_TEXT_NEGATIVE_COLORBLIND } = require('./ui/buffOverlays');
+	const settings = require('./settings');
 
 	check('flavour buffs show remaining turns plus one', () => {
 		//Java's `(int)visualcooldown()` with `visualcooldown() == cooldown() + 1`
@@ -117,6 +118,16 @@ try {
 		assert.equal(buffIconTextColor('burning'), 0xff0000);
 		assert.equal(buffIconTextColor('poison'), 0xff0000);
 		assert.equal(buffIconTextColor('hex'), 0xff0000);
+	});
+
+	check('colorblind mode swaps the buff text tint to the safe palette', () => {
+		settings.setSettingsStore({ map: new Map(), getItem(k) { return this.map.get(k) ?? null; }, setItem(k, v) { this.map.set(k, v); } });
+		assert.equal(buffIconTextColor('bless'), BUFF_TEXT_POSITIVE);
+		settings.setColorblind(true);
+		assert.equal(buffIconTextColor('bless'), BUFF_TEXT_POSITIVE_COLORBLIND);
+		assert.equal(buffIconTextColor('hex'), BUFF_TEXT_NEGATIVE_COLORBLIND);
+		settings.setColorblind(false);
+		assert.equal(buffIconTextColor('hex'), BUFF_TEXT_NEGATIVE);
 	});
 
 	check('fresh buffs carry no fade, expiring ones approach one', () => {

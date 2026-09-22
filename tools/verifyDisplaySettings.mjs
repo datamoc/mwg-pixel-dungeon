@@ -271,6 +271,21 @@ try {
 		assert.equal(store.dump().get('move_sens'), '0');
 	});
 
+	check('colorblind defaults off, persists, and notifies subscribers', () => {
+		const store = freshStore();
+		settings.setSettingsStore(store);
+		assert.equal(settings.colorblind(), false);
+		const heard = [];
+		const stop = settings.onColorblindChanged((value) => heard.push(value));
+		settings.setColorblind(true);
+		assert.equal(settings.colorblind(), true);
+		assert.equal(store.dump().get('colorblind'), 'true');
+		settings.setColorblind(false);
+		stop();
+		settings.setColorblind(true);
+		assert.deepEqual(heard, [true, false]);
+	});
+
 	console.log(`\nAll ${passed} display-settings checks passed.`);
 } catch (error) {
 	console.error(`FAIL after ${passed} passed:`, error);

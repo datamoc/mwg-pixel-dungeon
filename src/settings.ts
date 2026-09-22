@@ -69,6 +69,9 @@ export const WIFI_KEY = 'wifi';
 export const CONT_SENS_KEY = 'controller_sens';
 /** `SPDSettings.KEY_MOVE_SENS` - hold-to-move sensitivity 0-4, default 3. */
 export const MOVE_SENS_KEY = 'move_sens';
+/** Port-original (ROADMAP.md section 8) - Java SPD has no colorblind setting at all,
+ * so there is no `SPDSettings` key to reuse; this one is invented for this port. */
+export const COLORBLIND_KEY = 'colorblind';
 
 /** The port's `new Camera({ zoom: 3 })` base - Java's `defaultZoom` is screen-derived,
  * this port's is one fixed value, so the offset gate below is fixed too. */
@@ -418,4 +421,33 @@ export function movementSensitivity(): number {
 
 export function setMovementSensitivity(value: number): void {
 	settingsStore().setItem(MOVE_SENS_KEY, String(gateInt(String(value), 3, 0, 4)));
+}
+
+/**
+ * Port-original accessibility work (ROADMAP.md section 8) - default off. When on, the
+ * status/HP-bar/key palette (`ui/spdTheme.ts`'s `SPD_STATUS_COLOR`, `ui/buffOverlays.ts`'s
+ * `BUFF_TEXT_POSITIVE`/`NEGATIVE`) swaps to one Okabe-Ito-derived safe set instead of
+ * SPD's own red/green/orange/yellow. One palette, not three separately tuned
+ * deuteranopia/protanopia/tritanopia sets: Okabe & Ito's qualitative palette is
+ * specifically validated as jointly distinguishable under all three common forms at
+ * once, which meets the "safe under each" bar with one simpler set to maintain rather
+ * than three to keep in sync.
+ */
+export function colorblind(): boolean {
+	return settingsStore().getItem(COLORBLIND_KEY) === 'true';
+}
+
+export function setColorblind(enabled: boolean): void {
+	settingsStore().setItem(COLORBLIND_KEY, enabled ? 'true' : 'false');
+	colorblindListeners.forEach((listener) => listener(enabled));
+}
+
+type ColorblindListener = (enabled: boolean) => void;
+
+const colorblindListeners = new Set<ColorblindListener>();
+
+/** Mirrors `onBrightnessChanged`: palette consumers re-render live when the setting flips. */
+export function onColorblindChanged(listener: ColorblindListener): () => void {
+	colorblindListeners.add(listener);
+	return () => { colorblindListeners.delete(listener); };
 }
