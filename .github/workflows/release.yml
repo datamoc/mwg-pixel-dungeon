@@ -1,0 +1,143 @@
+# Builds every release target on a version tag and attaches the results to a GitHub Release.
+# See RELEASING.md for what each target needs and what the artifacts are.
+#
+# Releases only, by design: an ordinary push to main already deploys the web build through
+# deploy.yml, and the Android and desktop jobs are minutes long and produce hundreds of megabytes,
+# so nothing here runs on a push that is not a version tag.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+# Every job below reads the repository; the last one needs to create a release and upload assets.
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  # The gate: a tag that cannot pass this project's own bar produces no artifacts at all, rather
+  # than a release whose web build is fine and whose type-check is not.
+  #
+  # Node 22 rather than the 20 `deploy.yml` uses: the suites (`tools/verifySimulation.mjs` and the
+  # rest) require the framework's ESM dist from a CommonJS tree, which needs `require(esm)` - Node
+  # >= 22.12, by that harness's own note. `npm run build` alone does not, which is why the deploy
+  # workflow is fine on 20.
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+
+  web:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # The standalone pages and the self-host folder; `single-file` and `compress-dist` do all the
+      # compression (see tools/pack-web.mjs).
+      - run: npm run release:web -- --version "$GITHUB_REF_NAME"
+      # The self-host tree is the one artifact that needs a container, and the runner's own `zip`
+      # supplies it rather than this repository carrying archive code.
+      - run: cd release && zip -r "spd-on-mwg-$GITHUB_REF_NAME-web-selfhost.zip" selfhost
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web
+          path: |
+            release/spd-on-mwg-*.html
+            release/*-web-selfhost.zip
+          if-no-files-found: error
+
+  # Capacitor's Android platform project is generated here rather than committed (it is in
+  # .gitignore): this project does not customise the scaffold, so regenerating it keeps 50-odd
+  # generated files out of the repository instead of freezing them.
+  android:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      # Pinned to the v3 tag's commit rather than the moving tag: it is the one third-party action
+      # in this workflow (everything else is `actions/*`), so it is the one an upstream tag could
+      # retarget under a release build.
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+      - run: npm ci
+      - run: npm run build
+      - run: test -d android || npx cap add android
+      # `cap add android` writes `versionCode 1` / `versionName "1.0"` once and never revises them,
+      # so the tag is what the APK reports - and what Android compares when updating an install.
+      - run: npm run android:version -- --version "$GITHUB_REF_NAME"
+      - run: npx cap sync android
+      # Debug-signed: installable on a device or emulator as-is. Publishing to Play needs a signing
+      # config and a keystore secret - see RELEASING.md, which names what that requires.
+      - run: cd android && ./gradlew assembleDebug --no-daemon
+      - run: mv android/app/build/outputs/apk/debug/app-debug.apk "spd-on-mwg-$GITHUB_REF_NAME-debug.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: spd-on-mwg-*.apk
+          if-no-files-found: error
+
+  desktop:
+    needs: verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run release:desktop
+      # The runner's own archiver, for the same reason the web job uses `zip`.
+      - shell: pwsh
+        run: Compress-Archive -Path release/desktop/* -DestinationPath "spd-on-mwg-$env:GITHUB_REF_NAME-desktop.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop
+          path: spd-on-mwg-*-desktop.zip
+          if-no-files-found: error
+
+  release:
+    needs: [web, android, desktop]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # Re-running the workflow for an existing tag replaces the assets rather than failing, which
+        # is what a re-run after a transient failure should do.
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" artifacts/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" artifacts/* --title "$GITHUB_REF_NAME" --generate-notes
+          fi

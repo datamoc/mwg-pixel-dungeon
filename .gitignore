@@ -32,3 +32,6 @@ notes/
 desktop/MwgDesktopHost/bin/
 desktop/MwgDesktopHost/obj/
 desktop/.publish-test/
+
+# ACP client poll cursors (runtime state, written beside tools/ACP_client.py).
+.poll_cursor_*.json
