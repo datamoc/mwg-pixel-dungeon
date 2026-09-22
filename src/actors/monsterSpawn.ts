@@ -143,7 +143,8 @@ export function monsterSpawnProfile(
 		//Java's `Mob.state` defaults to SLEEPING and Goo keeps it - he wakes (and seals the
 	//floor) when the hero comes close, is noticed, or takes damage. The other bosses keep
 	//this port's awake-on-spawn until each one's own Java spawn state is verified.
-	sleeping: isAlly ? false : restoring || kind === 'goo' || !(isNPC || isBoss || NEVER_SLEEPS_KINDS.has(kind)),
+	//`GnollGeomancer` is a BOSS that starts `SLEEPING` too (woken only by the pickaxe - `gnollMine.ts`).
+	sleeping: isAlly ? false : restoring || kind === 'goo' || kind === 'gnollGeomancer' || !(isNPC || isBoss || NEVER_SLEEPS_KINDS.has(kind)),
 		champion: rolled.champion,
 		mobsToChampion: rolled.mobsToChampion,
 	};

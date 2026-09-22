@@ -83,6 +83,11 @@ import sentryUrl from './assets/red_sentry.png';
 import rotHeartUrl from './assets/rot_heart.png';
 import rotLasherUrl from './assets/rot_lasher.png';
 import ratkingUrl from './assets/ratking.png';
+// The Blacksmith GNOLL mine quest's actors (`GnollGuardSprite`/`GnollSapperSprite`/
+// `GnollGeomancerSprite`), byte-for-byte from tag `v3.3.8`.
+import gnollGuardUrl from './assets/gnoll_guard.png';
+import gnollSapperUrl from './assets/gnoll_sapper.png';
+import gnollGeomancerUrl from './assets/gnoll_geomancer.png';
 // spawner.png/ripper.png: DemonSpawner/RipperDemon (levels/rooms/special/DemonSpawnerRoom.java),
 // byte-for-byte from this Java checkout's core/src/main/assets/sprites/.
 import spawnerUrl from './assets/spawner.png';
@@ -231,6 +236,9 @@ const MWL_ASSET_URLS: Readonly<Record<string, string>> = {
 	'assets/pylon.png': pylonUrl,
 	'assets/rat.png': ratUrl,
 	'assets/ratking.png': ratkingUrl,
+	'assets/gnoll_guard.png': gnollGuardUrl,
+	'assets/gnoll_sapper.png': gnollSapperUrl,
+	'assets/gnoll_geomancer.png': gnollGeomancerUrl,
 	'assets/red_sentry.png': sentryUrl,
 	'assets/ripper.png': ripperUrl,
 	'assets/rot_heart.png': rotHeartUrl,
@@ -340,6 +348,9 @@ export interface SpdSprites {
 	rotLasher: Texture;
 	/** `RatKingSprite`'s own sheet (16x17 film). */
 	ratking: Texture;
+	gnollGuard: Texture;
+	gnollSapper: Texture;
+	gnollGeomancer: Texture;
 	/** Alias used by the MonsterId key for Yog's summoned fists. */
 	yogFist: Texture;
 	/** `YogDzewa$Larva`'s own sheet, keyed by the standalone `larva` MonsterId. */
@@ -536,6 +547,9 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		rotHeart,
 		rotLasher,
 		ratking,
+		gnollGuard,
+		gnollSapper,
+		gnollGeomancer,
 		blacksmith,
 		imp,
 		demonSpawner,
@@ -646,6 +660,9 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(rotHeartUrl),
 		loadImage(rotLasherUrl),
 		loadImage(ratkingUrl),
+		loadImage(gnollGuardUrl),
+		loadImage(gnollSapperUrl),
+		loadImage(gnollGeomancerUrl),
 		loadImage(blacksmithUrl),
 		loadImage(impUrl),
 		loadImage(spawnerUrl),
@@ -758,6 +775,9 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		rotHeart: Texture.from(rotHeart),
 		rotLasher: Texture.from(rotLasher),
 		ratking: Texture.from(ratking),
+		gnollGuard: Texture.from(gnollGuard),
+		gnollSapper: Texture.from(gnollSapper),
+		gnollGeomancer: Texture.from(gnollGeomancer),
 		yogFist: Texture.from(fists),
 		blacksmith: Texture.from(blacksmith),
 		imp: Texture.from(imp),

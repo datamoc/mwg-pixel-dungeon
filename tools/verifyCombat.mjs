@@ -568,8 +568,8 @@ export function verifyCombat(require, check) {
 	check('the authored MINIBOSS/BOSS flag sets match Java and stay disjoint', () => {
 		// Source-level rather than through `monsters.ts`, which needs Pixi's `SpriteSheet` and so
 		// cannot load in this harness. Java's own `properties().add(Property.MINIBOSS)` sites at
-		// tag v3.3.8, minus the three classes this port does not spawn (CrystalGuardian,
-		// FungalSentry, GnollSapper).
+		// tag v3.3.8, minus the two classes this port does not spawn (CrystalGuardian,
+		// FungalSentry).
 		const mwl = readFileSync(new URL('../src/content/actor-rules.mwl', import.meta.url), 'utf8');
 		const flagSet = (flag) => {
 			const match = new RegExp(`apply_to:\\s*"${flag}"[^}]*?set:\\s*"([^"\\r\\n]+)"`).exec(mwl);
@@ -577,7 +577,7 @@ export function verifyCombat(require, check) {
 			return match[1].split(',').map((k) => k.trim()).sort();
 		};
 		assert.deepEqual(flagSet('miniboss'),
-			['demonSpawner', 'fetidRat', 'gnollTrickster', 'greatCrab', 'newbornElemental', 'pylon', 'rotHeart', 'rotLasher']);
+			['demonSpawner', 'fetidRat', 'gnollSapper', 'gnollTrickster', 'greatCrab', 'newbornElemental', 'pylon', 'rotHeart', 'rotLasher']);
 		// Java checks the two properties separately (`BOSS || MINIBOSS` in the stone's duration
 		// rule, `!BOSS && !MINIBOSS` in CombinedLethality), so a kind in both would double-apply
 		for (const kind of flagSet('miniboss')) assert.ok(!flagSet('boss').includes(kind), `${kind} is both BOSS and MINIBOSS`);

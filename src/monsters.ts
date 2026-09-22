@@ -82,7 +82,10 @@ export type MonsterId =
 	| 'rotLasher'
 	| 'newbornElemental'
 	| 'ratKing'
-	| 'wraith';
+	| 'wraith'
+	| 'gnollGuard'
+	| 'gnollSapper'
+	| 'gnollGeomancer';
 
 // Bestiary.swapMobAlts() variants. They deliberately remain distinct ids even when this
 // checkout has no separate texture sheet for the variant: their Java stats/loot identity and
@@ -222,8 +225,8 @@ export const BOSS_KINDS = mwlActorFlagSet('boss');
  * at tag `v3.3.8`) - every one of those this port spawns. Kept separate from `BOSS_KINDS` because
  * Java checks the two properties separately in several places, and the distinction is not cosmetic:
  * `StoneOfAggression` shortens its mark to a quarter for either, `Talent.CombinedLethality` excludes
- * both, and `MonkEnergy`'s gain differs per property. The three Java classes this port does not spawn
- * (CrystalGuardian, FungalSentry, GnollSapper) are simply absent. */
+ * both, and `MonkEnergy`'s gain differs per property. The two Java classes this port does not spawn
+ * (CrystalGuardian, FungalSentry) are simply absent. */
 export const MINIBOSS_KINDS = mwlActorFlagSet('miniboss');
 
 /** Java's `Char.Property.UNDEAD`: `DwarfKing`/`Ghoul`/`Guard`/`Monk`/`Necromancer`/`RipperDemon`/

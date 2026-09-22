@@ -254,7 +254,8 @@ export const npcShopBlacksmithMethods = {
 
 	populate(this: DungeonScene): void {
 		if (this.miningBranchActive) {
-			this.say(t('port.log.mineabandonedquiet'), 'warning');
+			//`MiningLevel.createMob()`: GNOLL mines hold gnoll guards; the CRYSTAL roster is unported.
+			if (!this.populateMiningBranch()) this.say(t('port.log.mineabandonedquiet'), 'warning');
 			return;
 		}
 		const boss = BOSSES[this.depth];

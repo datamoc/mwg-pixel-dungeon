@@ -636,6 +636,8 @@ export const bossLogicMethods = {
 			//trap kinds themselves are unported (only DM300's volleys fly here).
 			this.shakeScreen(3, 0.7);
 			const challenge = isChallengeEnabled('stronger_bosses');
+			//`GnollGeomancer.GnollRockFall`: its own strike and its 1-in-3 boulder per empty cell (`gnollMine.ts`).
+			if (volley.gnoll) { if (this.landGnollRockFall(volley.cells)) heroDied = true; continue; }
 			for (const cell of volley.cells) {
 				const target = this.creatureAt(cell.x, cell.y);
 				if (!target || target.hp <= 0 || target.kind === 'dm300') continue;

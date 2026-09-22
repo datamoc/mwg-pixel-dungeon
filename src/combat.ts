@@ -359,6 +359,26 @@ export interface Creature extends Combatant {
 	 * pot, not a free hunt - see `takeBeeTurn`. */
 	potPos?: { x: number; y: number };
 	potHolderId?: string;
+	/** The Blacksmith GNOLL mine quest's links (`GnollGuard.sapperID`,
+	 * `GnollGeomancer.sapperID`, `GnollSapper.partnerID`): the partner's creature id. */
+	gnollPartnerId?: string;
+	/** `GnollSapper.spawnPos`, a raw cell index. */
+	gnollSpawnCell?: number;
+	/** `GnollSapper`/`GnollGeomancer.abilityCooldown`, a Java `int`: `damage()`'s `-= dmg/10f`
+	 * narrows back through `(int)`, truncating toward zero (`gnollMineAfterDamage`). */
+	gnollAbilityCd?: number;
+	gnollLastRockfall?: boolean;
+	/** Boulders queued to be thrown on the thrower's next act (`throwingRockFromPos`, or the
+	 * geomancer's `throwingRocksFromPos` array) at `gnollThrowTo`, all raw cell indices. */
+	gnollThrowFrom?: number[];
+	gnollThrowTo?: number;
+	/** The `TargetedCell` warnings of the queued throws, drawn until they resolve. */
+	gnollWarnCells?: number[];
+	/** `GnollGeomancer.hits` (every pickaxe strike on its rock armour, asleep or re-armoured) and `sapperSpawns`. */
+	geomancerHits?: number;
+	geomancerSapperSpawns?: number[];
+	/** `GnollGeomancer.RockArmor`, a `ShieldBuff` pool. */
+	rockArmor?: number;
 }
 
 /** makes a Creature-shaped object with the combat-state fields every spawn needs.
@@ -504,6 +524,9 @@ export function buffBlocked(c: Creature, id: BuffId): boolean {
 	//skips below (melee and zaps already defeat themselves on its infinite
 	//evasion, the same shape as the sheep's).
 	if (c.kind === 'sentry') return true;
+	//`GnollGeomancer.add()` (tag `v3.3.8`) refuses every buff while it is `SLEEPING` - its own
+	//`RockArmor`/`DelayedRockFall` aside, which this port keeps as plain fields, not buffs.
+	if (c.kind === 'gnollGeomancer' && c.sleeping) return true;
 	//Every quest-giver/shop NPC's `add(Buff)` returns false unconditionally (tag
 	//`v3.3.8`): `RatKing`, `Shopkeeper`, `Ghost`, `Wandmaker`, `Blacksmith` and
 	//`Imp` (plus the `ImpShopkeeper` subclass, which inherits `Shopkeeper`'s).

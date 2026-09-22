@@ -7,7 +7,8 @@
  *
  * The actors are recorded as `PlacedMob` kinds (`crystalSpire`, `crystalGuardian`,
  * `gnollGeomancer`, `gnollSapper`, `gnollGuard`) with their room payloads; the live scene stands up
- * only the kinds it has monster rows for (see `PORT_COVERAGE.md`'s MiningLevel row). The FUNGI
+ * only the kinds it has monster rows for - the GNOLL trio, whose payloads `gnollMine.ts` applies
+ * (`PORT_COVERAGE.md`'s "Blacksmith GNOLL mine roster" row); the CRYSTAL actors are not yet. The FUNGI
  * branches are not ported: Java's own `Quest.spawn()` never rolls that type ("not fully
  * implemented"), so they are unreachable there too.
  */

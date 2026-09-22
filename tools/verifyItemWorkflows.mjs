@@ -1421,10 +1421,10 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.deepEqual(tableRows('heroLevelGrowth', 'id'), ['spdHeroLevelGrowth'], 'hero level growth stays authored in actor-rules.mwl');
 	assert.deepEqual(tableRows('monsterSpriteOverrides', 'monster'), [
 		'sheep', 'ninjaLog', 'spiritHawk', 'ward', 'earthGuardian', 'sentry', 'ratKing', 'rotHeart', 'rotLasher',
-		'fetidRat', 'impShopkeeper', 'gnollTrickster', 'gnollExile', 'greatCrab', 'hermitCrab', 'necroSkeleton', 'newbornElemental',
+		'fetidRat', 'impShopkeeper', 'gnollTrickster', 'gnollExile', 'greatCrab', 'hermitCrab', 'gnollGuard', 'gnollSapper', 'gnollGeomancer', 'necroSkeleton', 'newbornElemental',
 		'mimic', 'piranha', 'bee', 'statue',
 	], 'monster sprite-source overrides stay authored in asset-references.mwl');
-	assert.equal(tableRows('monsterSpriteFrames', 'monster').length, 73, 'all monster sprite frame metadata stays authored in asset-references.mwl');
+	assert.equal(tableRows('monsterSpriteFrames', 'monster').length, 76, 'all monster sprite frame metadata stays authored in asset-references.mwl');
 	//`loadSpdSprites` reads its textures through two positionally-paired lists: the `const [a, b, ...]`
 	//destructuring and the `Promise.all([loadImage(aUrl), ...])` array. They were transposed once
 	//(`sheep`/`ninjaLog`) and nothing failed - the Smoke Bomb decoy simply rendered the sheep
@@ -1622,7 +1622,7 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 	// Monster display names are authored on the nodes (`name` message key) with `MOB_KEYS`
 	// derived in `spdKeys.ts` - including the two kinds that had no key at all (larva,
 	// armoredStatue) and rendered as bare ids. Resolution itself is gated by `i18n:verify`.
-	assert.equal(MWL_MONSTER_NODES.length, 73, 'monster roster size');
+	assert.equal(MWL_MONSTER_NODES.length, 76, 'monster roster size');
 	for (const node of MWL_MONSTER_NODES) assert.ok(node.attributes?.name, `monster has a display-name key: ${node.attributes?.id}`);
 	assert.equal(MWL_MONSTER_NODES.find((node) => node.attributes?.id === 'larva')?.attributes?.name, 'actors.mobs.yogdzewa$larva.name', 'larva name key');
 	assert.equal(MWL_MONSTER_NODES.find((node) => node.attributes?.id === 'armoredStatue')?.attributes?.name, 'actors.mobs.armoredstatue.name', 'armoredStatue name key');
@@ -1706,6 +1706,12 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 		rotHeart: [80, 0, 0, 0, 0, 0, 5, 4, 29],
 		// Lasher armor is 0 since the tenth matrix (no Java behind the old 8).
 		rotLasher: [80, 25, 0, 10, 20, 0, 0, 1, 29],
+		// The GNOLL mine roster (`GnollGuard`/`GnollSapper`/`GnollGeomancer.java`, tag `v3.3.8`):
+		// `HP`, `attackSkill()`, `defenseSkill`, adjacent `damageRoll()`, `drRoll()`'s added
+		// 0-6, `EXP`, `maxLvl` (-2 on both minions; the geomancer keeps the Mob default 29).
+		gnollGuard: [35, 20, 15, 6, 12, 0, 6, 7, -2],
+		gnollSapper: [45, 18, 15, 1, 6, 0, 6, 10, -2],
+		gnollGeomancer: [150, 20, 0, 3, 6, 0, 6, 20, 29],
 	};
 	const mwlMonsterById = new Map(MWL_MONSTERS.map((monster) => [String(monster.id), monster]));
 	// `DM200`/`Golem` roll equipment at a real 0.2 base (`lootChance = 0.2f`), and `DM201`
@@ -1727,15 +1733,15 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 			expected, `monster ${id} matches its Java stats`,
 		);
 	}
-	// The mining-quest actors are wholly unported (37th matrix,
-	// `MONSTER_ANALYSIS_UNPORTED_QUEST_MOBS.md`): all eight spawn at weight 0 from quest
-	// rooms Java builds and this port never generates, so no MWL row may exist for them -
+	// The mining-quest actors still unported (37th matrix, `MONSTER_ANALYSIS_UNPORTED_QUEST_MOBS.md`;
+	// the GNOLL trio is ported now, with its AI in `scenes/dungeon/monsters/gnollMine.ts`)
+	// spawn at weight 0 from quest rooms, so no MWL row may exist for them -
 	// a half-added kind (stats without AI, sprites, or quest wiring) would be worse than
 	// the documented absence. Same for the 38th matrix's (`MONSTER_ANALYSIS_RARE_SPAWNS.md`)
 	// unported rare spawns: the mimic tiers,
 	// and the quest-branch spinner (`MobSpawner`/`DelayedRockFall` are a respawn
 	// actor and a buff, not monster ids, so they have no row to forbid).
-	for (const id of ['crystalGuardian', 'crystalSpire', 'crystalWisp', 'fungalSentry', 'fungalCore', 'gnollSapper', 'gnollGeomancer', 'gnollGuard',
+	for (const id of ['crystalGuardian', 'crystalSpire', 'crystalWisp', 'fungalSentry', 'fungalCore',
 		'goldenMimic', 'ebonyMimic', 'fungalSpinner']) {
 		assert.equal(mwlMonsterById.get(id), undefined, `unported mob stays out of the MWL roster: ${id}`);
 	}

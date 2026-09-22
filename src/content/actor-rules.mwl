@@ -31,24 +31,25 @@
             tag: "effect",
             apply_to: "boss",
             // `Property.BOSS` holders at tag `v3.3.8`: the five chapter bosses plus
-            // `YogFist` (all six declare it; `DwarfKing`/`YogDzewa` also declare
+            // `YogFist` and the GNOLL mine's `GnollGeomancer` (unported `CrystalSpire`/
+            // `FungalCore` omitted; all seven declare it; `DwarfKing`/`YogDzewa` also declare
             // `BOSS_MINION` for their servants). Eye, Warlock and Pylon declare no
             // BOSS property - corrected 2026-09-19, when the suite first ran far
             // enough to check: an earlier pass had added all three, over-looting
             // them onto the 15-roll wealth tier.
-            set: "goo,tengu,dm300,king,yog,yogFist",
+            set: "goo,tengu,dm300,king,yog,yogFist,gnollGeomancer",
           },
           {
             tag: "effect",
             apply_to: "miniboss",
             // `Property.MINIBOSS` holders at tag `v3.3.8` (unported CrystalGuardian/
-            // FungalSentry/GnollSapper omitted): only `NewbornFireElemental` carries it
+            // FungalSentry omitted): only `NewbornFireElemental` carries it
             // among the elementals, and Eye/Warlock declare neither BOSS nor MINIBOSS -
             // corrected 2026-09-19, when the suite first ran far enough to check: an
             // earlier pass had added plain Elemental, Eye and Warlock, over-looting
             // them onto the 5-roll wealth tier (Java gives all three the ordinary
             // single roll - `Mob.die()`: 15 for BOSS, 5 for MINIBOSS, else 1).
-            set: "fetidRat,gnollTrickster,greatCrab,demonSpawner,pylon,rotHeart,rotLasher,newbornElemental",
+            set: "fetidRat,gnollTrickster,greatCrab,demonSpawner,pylon,rotHeart,rotLasher,newbornElemental,gnollSapper",
           },
           {
             tag: "effect",
@@ -66,7 +67,7 @@
           {
             tag: "effect",
             apply_to: "immovable",
-            set: "dm201,sentry,rotHeart,rotLasher,pylon,demonSpawner,yog,blacksmith,ninjaLog",
+            set: "dm201,sentry,rotHeart,rotLasher,pylon,demonSpawner,yog,blacksmith,ninjaLog,gnollGeomancer",
           },
           // Java's `Char.Property.INORGANIC` members this port spawns (`Char.java`, v3.3.8 -
           // Wraith/CrystalGuardian/CrystalSpire are unported; dm201/necroSkeleton/armoredStatue

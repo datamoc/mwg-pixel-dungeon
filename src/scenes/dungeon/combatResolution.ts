@@ -215,6 +215,8 @@ export const combatResolutionMethods = {
 			this.say(t('port.log.dm300overcharge'), 'negative');
 			return false;
 		}
+		//`GnollGeomancer.isInvulnerable()`: rock-armoured (the pickaxe aside) or sapper-linked.
+		if (this.gnollMineInvulnerable(defender)) return false;
 
 		//No `SPIRIT_BLADES` damage line here: Java's rank-4 `multi += 0.1f` lives in
 		//`Weapon.Enchantment.genericProcChanceMultiplier()` - an enchant *proc-chance* term,
@@ -556,6 +558,7 @@ export const combatResolutionMethods = {
 		//documented stand-in for Java's path distance on this compact terrain model.
 		damage = this.auraProtectedDamage(defender, damage);
 		damage = applyDefenderDamageCurves(defender.kind, damage, { beamCharged: defender.beamCharged === true });
+		damage = this.gnollMineDamageTaken(defender, damage);
 		//The 41st matrix (Goo/Tengu kits) removed a shake here: it cited
 		//`Goo.damage()` 162-164 for shaking when a pumped Goo is hit, but no such
 		//code exists there - Java's only pump shake is in `Goo.attackProc()`, on a
@@ -834,6 +837,7 @@ export const combatResolutionMethods = {
 			}
 		}
 		if (defender.kind === 'tengu') this.clampTenguBracket(defender, preHp);
+		this.gnollMineAfterDamage(defender, preHp);
 		//`BrightFist`/`DarkFist.damage()`'s half-HP edge (see `brightDarkHalfHp`): only Bright
 		//costs the hero `daze` here - Dark's price is detaching the hero's Light, which this
 		//port has no model for. Java's Blindness is a cosmetic screen darkening (a FlavourBuff

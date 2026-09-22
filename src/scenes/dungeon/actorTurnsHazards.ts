@@ -1,3 +1,4 @@
+import { GNOLL_MINE_KINDS } from './monsters/gnollMine';
 import type { DungeonScene } from '../dungeonScene';
 import { beginMonsterTurn } from './monsters/monsterSpeed';
 import { weaponCombat } from '../../items/catalog';
@@ -164,6 +165,8 @@ export const actorTurnsHazardsMethods = {
 			if (occupant!.isAlly && !occupant!.isNPC && this.tryAllyWarp(occupant!)) return;
 			this.interactWithNPC(occupant!);
 		}
+		//`GnollGeomancer.heroShouldInteract()`: an armoured geomancer is struck with the pickaxe instead.
+		else if (plan.kind === 'attack' && this.tryPickaxeGeomancer(occupant!)) return;
 		else if (plan.kind === 'attack') this.attack(this.hero, occupant!);
 		else if (plan.kind === 'door') this.bumpDoor(target.x, target.y);
 		//`Hero.actTransition()` 1385 (tag `v3.3.8`): a rooted stair attempt shakes
@@ -762,6 +765,8 @@ export const actorTurnsHazardsMethods = {
 	takeMonsterTurn(this: DungeonScene, monster: Creature): void {
 		this.pendingMonsterTurnCost = null;
 		beginMonsterTurn(monster);
+		//The GNOLL mine quest's own `act()` prologue (queued boulder throws, the dormant geomancer) - `gnollMine.ts`.
+		if (monster.kind && GNOLL_MINE_KINDS.has(monster.kind) && this.gnollMinePreTurn(monster)) return;
 		//`Mimic` is PASSIVE while hidden: no waking roll, no hunt, no step - it just waits to be touched.
 		if (monster.kind === 'mimic' && monster.mimicRevealed === false) return;
 		//`Tengu.FireAbility` is a `Buff`: it acts with its host, one ring per turn, whatever else
@@ -1219,6 +1224,7 @@ export const actorTurnsHazardsMethods = {
 			this.attack(monster, this.hero);
 			return;
 		}
+		if (monster.kind && GNOLL_MINE_KINDS.has(monster.kind) && this.takeGnollMineTurn(monster, distance)) return;
 		if (distance === 1) {
 			if (monster.kind === 'crystalMimic') {
 				this.revealCrystalMimic(monster);

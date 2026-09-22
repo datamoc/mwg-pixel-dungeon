@@ -731,6 +731,7 @@ export const deathSaveRefreshMethods = {
 			this.quests.advanceStage('sadGhost', this.gameState);
 			this.say(t('port.npc.ghost.echo'));
 		}
+		if (creature.kind === 'gnollSapper' || creature.kind === 'gnollGeomancer') this.gnollMineDied(creature);
 	},
 
 	/** `RingOfWealth.tryForBonusDrop()` (tag v3.3.8): decrement the persistent missed-drop
@@ -1167,7 +1168,9 @@ export const deathSaveRefreshMethods = {
 	 * behind, `COLOR_HP 0x00EE00` in front).
 	 */
 	refreshHealthBars(this: DungeonScene): void {
-		const boss = this.creatures.find((creature) => creature.kind && BOSSES[this.depth]?.kind === creature.kind);
+		//`BossHealthBar.assignBoss(GnollGeomancer)` once the pickaxe's third strike wakes it (`hits == 3`).
+		const boss = this.creatures.find((creature) => creature.kind && (BOSSES[this.depth]?.kind === creature.kind
+			|| (creature.kind === 'gnollGeomancer' && (creature.geomancerHits ?? 0) >= 3)));
 		if ((boss ?? null) !== this.currentBoss) this.bossBleedLatched = false;
 		this.currentBoss = boss ?? null;
 		if (boss && boss.hp > 0) {

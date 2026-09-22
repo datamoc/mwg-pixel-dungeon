@@ -1158,8 +1158,10 @@ export const monsterAiMethods = {
 		if (!overlay) return;
 		overlay.clear();
 		const pending = this.creatures.find((c) => c.kind === 'newbornElemental' && c.newbornTarget)?.newbornTarget;
-		if (!pending) return;
 		const color = colorblind() ? 0xd55e00 : 0xff0000;
+		//The GNOLL mine's boulder trails and rockfall cells (`GnollGeomancer`/`GnollSapper`'s own `TargetedCell`s).
+		for (const at of this.gnollWarningCells()) overlay.rect(at.x * TILE, at.y * TILE, TILE, TILE).fill({ color, alpha: 0.3 });
+		if (!pending) return;
 		for (let dy = -1; dy <= 1; dy++) {
 			for (let dx = -1; dx <= 1; dx++) {
 				const at = { x: pending.x + dx, y: pending.y + dy };

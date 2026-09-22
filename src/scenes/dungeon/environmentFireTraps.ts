@@ -800,7 +800,7 @@ export const environmentFireTrapsMethods = {
 			if (!MONSTERS[mob.kind as AnyMonsterId]) { if (!MINE_QUEST_ACTOR_KINDS.has(mob.kind)) this.say(t('port.log.unknownmob', { kind: mob.kind }), 'negative'); continue; }
 			this.spawnMonster(mob.kind as AnyMonsterId, { x: mob.x, y: mob.y }, false, mob.loot, false, undefined, false, mob.initialWarmup);
 		}
-		this.portedMobSpawns = [];
+		this.linkMineQuestActors(this.portedMobSpawns); this.portedMobSpawns = [];
 		this.portedMobCells.clear();
 	},
 

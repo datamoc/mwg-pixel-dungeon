@@ -13,8 +13,19 @@ const BLACKSMITH = ['intro_quest_warrior', 'intro_quest_mage', 'intro_quest_rogu
 	'exit_warn_none', 'exit_warn_low', 'exit_warn_med', 'exit_warn_high', 'exit_warn_full', 'exit_warn_crystal', 'exit_warn_gnoll', 'exit_yes', 'exit_no',
 	'entrance_blocked', 'quest_start_prompt', 'enter_yes', 'enter_no'];
 const MINING = ['wall_desc', 'gold_extra_desc', 'crystal_name', 'boulder_name', 'crystal_desc', 'boulder_desc', 'barricade_desc'];
+//The mine quests' own actors (`actors/mobs/Gnoll{Guard,Sapper,Geomancer}.java`,
+//`Crystal{Wisp,Guardian,Spire}.java`), under `port.mob.<javaclass>.<key>`.
+const MINE_MOBS = {
+	gnollguard: ['name', 'def_verb', 'spear_warn', 'desc', 'desc_armor'],
+	gnollsapper: ['name', 'desc'],
+	gnollgeomancer: ['name', 'warning', 'alert', 'rock_kill', 'rockfall_kill', 'desc', 'desc_armor', 'desc_armor_sapper', 'desc_sleeping'],
+	crystalwisp: ['name', 'beam_kill', 'desc'],
+	crystalguardian: ['name', 'def_verb', 'desc'],
+	crystalspire: ['name', 'warning', 'alert', 'desc'],
+};
 const KEYS = [
 	...BLACKSMITH.map((k) => ['actors', `actors.mobs.npcs.blacksmith.${k}`, `port.blacksmith.${k}`]),
+	...Object.entries(MINE_MOBS).flatMap(([mob, keys]) => keys.map((k) => ['actors', `actors.mobs.${mob}.${k}`, `port.mob.${mob}.${k}`])),
 	...MINING.map((k) => ['levels', `levels.mininglevel.${k}`, `port.mininglevel.${k}`]),
 	['levels', 'levels.rooms.quest.mineentrance$questexit.name', 'port.mininglevel.exit_name'],
 	['levels', 'levels.rooms.quest.mineentrance$questexit.desc', 'port.mininglevel.exit_desc'],

@@ -1385,6 +1385,7 @@ export const panelsSingleUseMethods = {
 		//`attack()`. Moved here with the `damage()` curves below, so a bomb or an armor ability
 		//cannot damage a dormant pylon the way `Char.damage()` refuses to.
 		if (c.kind === 'pylon' && !c.pylonActive) return false;
+		if (this.gnollMineInvulnerable(c)) return false;
 		if (!pierceArmor) damage = Math.max(0, damage - Random.normalRange(c.armor[0], c.armor[1]));
 		//`AuraOfProtection.AuraBuff` is a defender-side `Char.damage()` modifier (tag `v3.3.8`),
 		//so blast damage must pass through the same nearby same-alignment reduction as attacks.
@@ -1396,6 +1397,7 @@ export const panelsSingleUseMethods = {
 		//inside `attack()`, which meant a blast or an ability hit a charged pylon or a slime for
 		//far more than Java's curve allows; see `PORT_COVERAGE.md`.
 		damage = applyDefenderDamageCurves(c.kind, damage, { beamCharged: c.beamCharged === true });
+		damage = this.gnollMineDamageTaken(c, damage);
 		//`DwarfKing.damage()` (phase 3) and `RustedFist.damage()` bank every hit into the same
 		//`Viscosity.DeferedDamage` pool instead of losing HP - also a `damage()` override, so also
 		//source-independent.
@@ -1426,6 +1428,7 @@ export const panelsSingleUseMethods = {
 		c.hp -= damage;
 		if (phantomDirect && c.hp > 0) this.phantomPiranhaTeleport(c);
 		if (c.kind === 'tengu') this.clampTenguBracket(c, preHp);
+		this.gnollMineAfterDamage(c, preHp);
 		this.brightDarkHalfHp(c, preHp);
 		if (c.kind === 'yog' && c.hp > 0) this.yogDamageHook(c, preHp);
 		if (c.kind === 'king' && c.hp > 0 && (c.kingPhase ?? 1) === 1) {

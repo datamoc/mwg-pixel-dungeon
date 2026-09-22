@@ -316,6 +316,7 @@ import { turnLoopAimingMethods } from './dungeon/turnLoopAiming';
 import { actorTurnsHazardsMethods } from './dungeon/actorTurnsHazards';
 import { monsterAiMethods } from './dungeon/monsters/monsterAi';
 import { bossLogicMethods } from './dungeon/bosses/bossLogic';
+import { gnollMineMethods } from './dungeon/monsters/gnollMine';
 import { combatResolutionMethods } from './dungeon/combatResolution';
 import { deathSaveRefreshMethods } from './dungeon/deathSaveRefresh';
 import { panelsSingleUseMethods } from './dungeon/panelsSingleUse';
@@ -450,7 +451,7 @@ export class DungeonScene extends Scene2D {
 	manualPlants = new Map<number, string>();
 	furrowedGrass = new Set<number>();
 	/** Java room painters place quest NPCs/special mobs at fixed cells. */
-	portedMobSpawns: { x: number; y: number; kind: string; loot?: string; initialWarmup?: number }[] = [];
+	portedMobSpawns: { x: number; y: number; kind: string; loot?: string; initialWarmup?: number; spawnPos?: Step; partnerPos?: Step; shield?: number }[] = [];
 	portedMobCells = new Set<number>();
 	portedBranchExitCells = new Set<number>();
 	portedWellWater = new Map<number, 'awareness' | 'health' | 'waterOfAwareness' | 'waterOfHealth'>();
@@ -1158,7 +1159,7 @@ export class DungeonScene extends Scene2D {
 	/** PylonEnergy cells, persisted with the Caves boss floor. */
 	cavesBossEnergyCells = new Set<number>();
 	/** In-flight DM300 rockfall volleys on this floor (cells + turns to impact). */
-	fallingRocks: { cells: { x: number; y: number }[]; turns: number }[] = [];
+	fallingRocks: { cells: { x: number; y: number }[]; turns: number; gnoll?: boolean }[] = [];
 	readonly cavesBossPylons = [
 		{ x: 4, y: 13 }, { x: 28, y: 13 }, { x: 4, y: 37 }, { x: 28, y: 37 },
 	] as const;
@@ -2519,5 +2520,5 @@ export class DungeonScene extends Scene2D {
 
 /** The method groups in `./dungeon/` are typed with `this: DungeonScene` and merged onto the prototype here. */
 type Mixed<T> = { [K in keyof T]: OmitThisParameter<T[K]> };
-export interface DungeonScene extends Mixed<typeof coreSpawnTilesMethods>, Mixed<typeof npcShopBlacksmithMethods>, Mixed<typeof environmentFireTrapsMethods>, Mixed<typeof turnLoopAimingMethods>, Mixed<typeof actorTurnsHazardsMethods>, Mixed<typeof monsterAiMethods>, Mixed<typeof bossLogicMethods>, Mixed<typeof combatResolutionMethods>, Mixed<typeof deathSaveRefreshMethods>, Mixed<typeof panelsSingleUseMethods>, Mixed<typeof inventoryQuickslotMethods>, Mixed<typeof clericSpellFlowsMethods>, Mixed<typeof armorAbilityUseMethods>, Mixed<typeof cursedWandCastMethods>, Mixed<typeof tippedDartEffectsMethods>, Mixed<typeof weaponSpellsGearMethods> {}
-Object.assign(DungeonScene.prototype, coreSpawnTilesMethods, npcShopBlacksmithMethods, environmentFireTrapsMethods, turnLoopAimingMethods, actorTurnsHazardsMethods, monsterAiMethods, bossLogicMethods, combatResolutionMethods, deathSaveRefreshMethods, panelsSingleUseMethods, inventoryQuickslotMethods, clericSpellFlowsMethods, armorAbilityUseMethods, cursedWandCastMethods, tippedDartEffectsMethods, weaponSpellsGearMethods);
+export interface DungeonScene extends Mixed<typeof coreSpawnTilesMethods>, Mixed<typeof npcShopBlacksmithMethods>, Mixed<typeof environmentFireTrapsMethods>, Mixed<typeof turnLoopAimingMethods>, Mixed<typeof actorTurnsHazardsMethods>, Mixed<typeof monsterAiMethods>, Mixed<typeof bossLogicMethods>, Mixed<typeof gnollMineMethods>, Mixed<typeof combatResolutionMethods>, Mixed<typeof deathSaveRefreshMethods>, Mixed<typeof panelsSingleUseMethods>, Mixed<typeof inventoryQuickslotMethods>, Mixed<typeof clericSpellFlowsMethods>, Mixed<typeof armorAbilityUseMethods>, Mixed<typeof cursedWandCastMethods>, Mixed<typeof tippedDartEffectsMethods>, Mixed<typeof weaponSpellsGearMethods> {}
+Object.assign(DungeonScene.prototype, coreSpawnTilesMethods, npcShopBlacksmithMethods, environmentFireTrapsMethods, turnLoopAimingMethods, actorTurnsHazardsMethods, monsterAiMethods, bossLogicMethods, gnollMineMethods, combatResolutionMethods, deathSaveRefreshMethods, panelsSingleUseMethods, inventoryQuickslotMethods, clericSpellFlowsMethods, armorAbilityUseMethods, cursedWandCastMethods, tippedDartEffectsMethods, weaponSpellsGearMethods);

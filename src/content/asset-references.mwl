@@ -161,6 +161,9 @@
           { tag: "row", monster: "gnollExile", sprite: "gnoll" },
           { tag: "row", monster: "greatCrab", sprite: "crab" },
           { tag: "row", monster: "hermitCrab", sprite: "crab" },
+          { tag: "row", monster: "gnollGuard", sprite: "gnollGuard" },
+          { tag: "row", monster: "gnollSapper", sprite: "gnollSapper" },
+          { tag: "row", monster: "gnollGeomancer", sprite: "gnollGeomancer" },
           { tag: "row", monster: "necroSkeleton", sprite: "skeleton" },
           { tag: "row", monster: "newbornElemental", sprite: "elemental" },
           { tag: "row", monster: "mimic", sprite: "mimic" },
@@ -248,6 +251,11 @@
           { tag: "row", monster: "rotHeart", frame_width: 16, frame_height: 16, idle: 0 },
           { tag: "row", monster: "rotLasher", frame_width: 12, frame_height: 16, idle: 0 },
           { tag: "row", monster: "ratKing", frame_width: 16, frame_height: 17, idle: 0 },
+          // `GnollGuardSprite`/`GnollSapperSprite`/`GnollGeomancerSprite` (tag `v3.3.8`) films; the
+          // geomancer's rock-armoured "statue" set starts at frame 21 (`updateAnims()`'s `ofs`).
+          { tag: "row", monster: "gnollGuard", frame_width: 12, frame_height: 16, idle: 0 },
+          { tag: "row", monster: "gnollSapper", frame_width: 12, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "gnollGeomancer", frame_width: 12, frame_height: 16, idle: 21 },
         ],
       },
     ],
