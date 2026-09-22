@@ -182,9 +182,7 @@ below to close the gap was judged not worth the churn against those existing ref
       doubling, mirror copy, crab parry) and SPD's own v3.3.8 strings/icons/art (see
       `PORT_COVERAGE.md`'s new tier-1 row, and tier 2 since 2026-09-21 (see the tier-2 paragraph there), and tier 3 since 2026-09-21 (see the tier-3 paragraph there). Still open: tier 4, PRIEST/PALADIN, the
       **Trinity arithmetic progress (2026-09-22):** the pure Body/Mind/Spirit duration, item-level,
-      and per-effect charge rules are now pinned against the v3.3.8 Java sources; the item
-      selection/effect dispatcher remains deliberately unoffered until the required item-effect
-      and selection state can be represented end to end. The three armor abilities' remaining spell/ally branches (AscendedForm's base shield window
+      and per-effect charge rules are now pinned against the v3.3.8 Java sources. **Progress 2026-09-23:** BodyForm's modeled positive weapon-enchantment subset opens from the MWL catalog (excluding the equipped affix), applies through the melee proc path for its Java-authored duration, and was live-verified in the browser. The full Java discovered/stored effect catalog and glyph-trigger effects remain open; MindForm and SpiritForm still record only cosmetic selection state without item-effect dispatch. The three armor abilities' remaining spell/ally branches (AscendedForm's base shield window
       and all three of its tier-4 spells - DivineIntervention since 2026-09-22 - are live; the
       remaining Trinity forms stay open), and the
       rest of the real Cleric talent tree (tiers 1-3 are live since 2026-09-21, see

@@ -19,7 +19,7 @@ import { shadowCloneAccuracy, shadowCloneArmorShare, shadowCloneBladeShare, shad
 import { showChoiceWindow } from '../../../ui/portWindows';
 import { POWER_OF_MANY_TURNS, trinityBodyDuration } from '../../../simulation/clericSpells';
 import { trinityChargeUsePerEffect } from '../../../simulation/clericSpells';
-import { getCurse } from '../../../items/itemCurses';
+import { MWL_WEAPON_ENCHANTS } from '../../../mwlContent';
 import { coneCells } from '../../../mechanics/cone';
 import { traceRayToTarget } from '../../../mechanics/rays';
 import { EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, WATER } from '../../../dungeonConstants';
@@ -150,10 +150,9 @@ export const armorAbilityUseMethods = {
 
 	/**
 	 * `Trinity.activate()` (`actors/hero/abilities/cleric/Trinity.java`, tag `v3.3.8`)
-	 * opens a form selector before spending charge. The three Java form effect dispatchers
-	 * still need their item-specific systems; this port therefore records the selected form
-	 * and BodyForm's authored duration, so the choice is no longer silently discarded. The
-	 * explicit state also gives the eventual effect implementation a stable hand-off point.
+	 * opens a form selector before spending charge. Body Form has its modeled weapon-enchantment
+	 * subset; Mind/Spirit still record only their selection because their item-level effect
+	 * dispatchers need per-item state this port does not yet have.
 	 */
 	activateTrinity(this: DungeonScene, _def: ArmorAbilityDef, cost: number): boolean {
 		showChoiceWindow(this.gameWindows, 'Cleric Trinity', 'Choose a Trinity form.', [
@@ -165,33 +164,28 @@ export const armorAbilityUseMethods = {
 	},
 
 	/**
-	 * The Java ability only exposes BodyForm after the tome has stored an enchantment/glyph.
-	 * Until the tome's catalog picker is ported, the port offers the currently modeled positive
-	 * weapon/armor affixes as a narrow, honest source of stored effects instead of inventing an
-	 * arbitrary enchantment. Charge is still withheld until the effect is actually chosen.
+	 * Java's `Trinity.WndItemtypeSelect` stores a discovered enchantment or glyph on its tome;
+	 * this port has no discovery/stored-item inventory. Its modeled positive weapon enchantments
+	 * all have live melee-proc hooks, so offer that catalog as the supported BodyForm subset.
+	 * Armor glyph BodyForm effects stay unavailable because they need defensive proc routing.
 	 */
 	chooseTrinityBodyEffect(this: DungeonScene, cost: number): void {
-		const candidates = [this.weaponAffix, this.armorGlyph]
-			.filter((id): id is string => typeof id === 'string' && id.length > 0 && getCurse(id) === undefined
-				&& id !== this.weaponAffix && id !== this.armorGlyph);
+		const candidates = MWL_WEAPON_ENCHANTS
+			.filter(({ id, curse }) => !curse && id !== this.weaponAffix && id !== this.armorGlyph);
 		if (candidates.length === 0) {
-			//`Trinity.WndUseTrinity` uses an effect previously stored by its tome picker;
-			//this port has no stored-effect catalogue, so its only candidate sources are the
-			//currently equipped affixes, which Java rejects as duplicates. Do not offer a dead picker.
-			this.say('Trinity has no stored effect that can be applied without duplicating equipped gear.', 'warning');
+			this.say('Trinity has no other supported weapon enchantment to apply.', 'warning');
 			return;
 		}
-		showChoiceWindow(this.gameWindows, 'Trinity Body Form', 'Choose the stored body effect.', candidates.map((id) => ({
-			label: id,
-			onPick: () => this.commitTrinityBodyEffect(id, cost),
+		showChoiceWindow(this.gameWindows, 'Trinity Body Form', 'Choose a supported body effect.', candidates.map((id) => ({
+			label: id.id,
+			onPick: () => this.commitTrinityBodyEffect(id.id, cost),
 		})));
 	},
 
 	commitTrinityBodyEffect(this: DungeonScene, affix: string, baseCost: number): void {
 		//`Trinity.WndUseTrinity` (`Trinity.java`, tag `v3.3.8`) refuses a BodyForm effect
-		//that duplicates the equipped weapon enchantment or armor glyph. This port's narrow
-		//candidate source is current gear, so recheck at commit time and do not spend charge on
-		//an effect that its normal gear proc would already supply (the picker can outlive gear changes).
+		//that duplicates the equipped weapon enchantment or armor glyph. Recheck both at commit
+		//time so a stale picker cannot spend charge on an effect already supplied by gear.
 		if (affix === this.weaponAffix || affix === this.armorGlyph) {
 			this.say('Trinity cannot duplicate an equipped enchantment or glyph.', 'warning');
 			return;
