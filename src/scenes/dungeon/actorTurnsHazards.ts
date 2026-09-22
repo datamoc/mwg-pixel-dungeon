@@ -1143,6 +1143,10 @@ export const actorTurnsHazardsMethods = {
 				this.escapeCrystalMimic(monster);
 				return;
 			}
+			//Boxed with nowhere to run, Java spends the turn waiting (`Mob.Fleeing`
+			//has no attack branch) - it never falls through to attack/approach from
+			//FLEEING (`CrystalMimic.java`, tag `v3.3.8`).
+			return;
 		}
 
 		//The sentry's whole turn lives in `simulation/sentryTurn.ts` as

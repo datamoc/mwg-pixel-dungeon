@@ -346,7 +346,13 @@ export const deathSaveRefreshMethods = {
 					? 'stone'
 					: portItemKind(lootFamily);
 				if (bonusKind) {
-					this.spawnGroundItem(bonusKind, creature.x, creature.y, sourceInventoryItem(lootFamily, lootClass, (kind) => this.newItemInstanceId(kind)));
+					//`CrystalMimic.generatePrize()` (`actors/mobs/CrystalMimic.java`, tag `v3.3.8`)
+					//guarantees the contained prize is never cursed.
+					const prize = sourceInventoryItem(lootFamily, lootClass, (kind) => this.newItemInstanceId(kind));
+					if (prize) {
+						prize.cursed = false;
+						this.spawnGroundItem(bonusKind, creature.x, creature.y, prize);
+					}
 					this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS[bonusKind]) }));
 				}
 				const heldGold = heldGoldText ? Number(heldGoldText) : 0;
@@ -358,13 +364,19 @@ export const deathSaveRefreshMethods = {
 					if (at) this.spawnGroundItem('gold', at.x, at.y, { id: 'gold', quantity: heldGold, identified: true });
 				}
 				if (heldItem) {
-					const [heldFamily, heldClass] = heldItem.split('|', 2);
+					//Three segments since the whole-stack steal (`family|class|qty`); older
+					//two-segment payloads read with quantity 1. Stolen items keep their
+					//curse state - Java only ever uncurses the prize, never the theft.
+					const [heldFamily, heldClass, heldQtyText] = heldItem.split('|', 3);
 					const heldKind = portItemKind(heldFamily);
 					const at = Roguelike.neighbourOffsets(8)
 						.map(([dx, dy]) => ({ x: creature.x + dx, y: creature.y + dy }))
 						.find((candidate) => this.level.passable(candidate.x, candidate.y)
 							&& !this.groundItemAt(candidate.x, candidate.y) && !this.creatureAt(candidate.x, candidate.y));
-					if (heldKind && at) this.spawnGroundItem(heldKind, at.x, at.y, sourceInventoryItem(heldFamily, heldClass, (kind) => this.newItemInstanceId(kind)));
+					const heldQty = Math.max(1, Math.floor(Number(heldQtyText) || 1));
+					const held = sourceInventoryItem(heldFamily, heldClass || undefined, (kind) => this.newItemInstanceId(kind));
+					if (held) held.quantity = heldQty;
+					if (heldKind && at && held) this.spawnGroundItem(heldKind, at.x, at.y, held);
 				}
 			}
 			//Elemental.random()/the four concrete elemental subclasses (Elemental.java and

@@ -1537,6 +1537,22 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.ok(spawnSource.includes("pylonTargetNeighbor: kind === 'pylon' ? Random.int(0, 8) : undefined"),
 			'the pylon cursor starts at a random 0-7 like Java Random.Int(8)');
 	});
+	check('Crystal mimic steals whole stacks, renames on reveal, waits boxed, uncurses prize', () => {
+		//`CrystalMimic` minors (tag `v3.3.8`): `steal()` detaches the whole backpack
+		//stack including gold/keys; `name()` flips to the monster once ENEMY; boxed
+		//FLEEING waits instead of attacking; `generatePrize()` uncurses the prize.
+		const scene = readSceneSource();
+		assert.ok(!scene.includes("!['gold', 'crystalKey', 'ironKey'].includes(candidate.id)"),
+			'steal no longer excludes gold and keys');
+		assert.ok(scene.includes('monster.mimicLoot += `;heldGold:${qty}`'),
+			'stolen gold rides the quantity-preserving heldGold payload');
+		assert.ok(scene.includes("monster.name = t('actors.mobs.crystalmimic.name')"),
+			'reveal flips the name from the chest to the monster');
+		assert.ok(scene.includes('never falls through to attack/approach from'),
+			'boxed FLEEING waits out the turn');
+		assert.ok(scene.includes('prize.cursed = false'),
+			'the restored prize is never cursed');
+	});
 	check('Piranhas remain confined to water in both wandering helpers', () => {
 		const water = 7;
 		const hero = { x: 2, y: 2 };

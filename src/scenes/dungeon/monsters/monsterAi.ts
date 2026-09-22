@@ -1283,10 +1283,13 @@ export const monsterAiMethods = {
 		if (this.fov.isVisible(monster.x, monster.y)) this.say(t('actors.mobs.mimic.reveal'), 'warning');
 	},
 
-	/** `CrystalMimic.stopHiding()`: neutral chests get two hasted turns when revealed. */
+	/** `CrystalMimic.stopHiding()` (`actors/mobs/CrystalMimic.java`, tag `v3.3.8`): neutral
+	 * chests get two hasted turns when revealed, and `name()` flips from the crystal chest
+	 * to the monster once ENEMY (the base mimic's `syncMimicVisual` only knows its own kind). */
 	revealCrystalMimic(this: DungeonScene, monster: Creature): void {
 		if (monster.mimicRevealed) return;
 		monster.mimicRevealed = true;
+		monster.name = t('actors.mobs.crystalmimic.name');
 		monster.sleeping = false;
 		if (!monster.hasteTurns) {
 			monster.hasteBaseSpeed = monster.speed ?? 1;
@@ -1296,9 +1299,12 @@ export const monsterAiMethods = {
 		this.say(t('port.log.mimicreveals'), 'warning');
 	},
 
-	/** CrystalMimic.steal(): the first neutral attack may consume one eligible item from
-	 * the unequipped backpack. The compact creature payload carries the item family and
-	 * concrete class so death can return the same object rather than a generic substitute. */
+	/** `CrystalMimic.steal()` (`actors/mobs/CrystalMimic.java`, tag `v3.3.8`): the first
+	 * neutral attack detaches one eligible backpack stack IN FULL - `randomUnequipped()`
+	 * samples everything including gold and keys (only unique/upgraded entries are
+	 * re-rolled, ten retries), and `detach()` removes the whole stack, not one unit.
+	 * Gold rides the existing `;heldGold:<qty>` death payload; other stacks extend the
+	 * `;held:` payload with their quantity so death returns the same stack. */
 	crystalMimicSteal(this: DungeonScene, monster: Creature): void {
 		if (monster.stolen || !monster.mimicLoot) return;
 		let picked: (typeof this.bag.items)[number] | undefined;
@@ -1308,7 +1314,7 @@ export const monsterAiMethods = {
 			const candidate = Random.element(this.bag.items);
 			if (!candidate) break;
 			const unique = ['pickaxe', 'cloak', 'holyTome', 'spiritBow'].includes(candidate.id);
-			if (!unique && (candidate.level ?? 0) < 1 && !['gold', 'crystalKey', 'ironKey'].includes(candidate.id)) {
+			if (!unique && (candidate.level ?? 0) < 1) {
 				picked = candidate;
 				break;
 			}
@@ -1317,9 +1323,15 @@ export const monsterAiMethods = {
 			monster.stolen = 'none';
 			return;
 		}
+		const qty = picked.quantity ?? 1;
+		this.bag.remove(picked.id, qty, picked.instanceId);
+		if (picked.id === 'gold') {
+			monster.stolen = `gold:${qty}`;
+			monster.mimicLoot += `;heldGold:${qty}`;
+			return;
+		}
 		const sourceClass = (picked as NonNullable<GroundItem['item']>).sourceClass;
-		const held = `${picked.id}${sourceClass ? `|${sourceClass}` : ''}`;
-		this.bag.remove(picked.id, 1, picked.instanceId);
+		const held = `${picked.id}|${sourceClass ?? ''}|${qty}`;
 		monster.stolen = held;
 		monster.mimicLoot += `;held:${held}`;
 	},
