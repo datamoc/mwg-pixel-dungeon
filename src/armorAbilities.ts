@@ -77,8 +77,8 @@ export function armorAbilityDef(id: string): ArmorAbilityDef | undefined {
  * Ported so far: the Warrior's three, the Rogue's Death Mark, Smoke Bomb and Shadow
  * Clone, the Huntress's Spectral Blades, Nature's Power and Spirit Hawk, the Mage's Warp
  * Beacon, Wild Magic and Elemental Blast, and the Duelist's Feint, Challenge and
- * ElementalStrike, plus the Cleric's Trinity form selector and PowerOfMany's powered-ally
- * combat modifier. Every class offers its full set now. See `PORT_COVERAGE.md`'s
+	 * ElementalStrike, plus the Cleric's Trinity form selector and PowerOfMany's ally buff,
+	 * summon, Barrier and direct-order paths. Every class offers its full set now. See `PORT_COVERAGE.md`'s
  * armor-ability rows.
  */
 const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades', 'warpbeacon', 'smokebomb', 'naturespower', 'spirithawk', 'feint', 'shadowclone', 'challenge', 'elementalstrike', 'wildmagic', 'elementalblast', 'ascendedform', 'trinity', 'powerofmany']);
@@ -146,6 +146,7 @@ export function armorChargeUse(
 		shadowStepRank?: number;
 		hawkSummoned?: boolean;
 		cloneSummoned?: boolean;
+		powerOfManyLightAlly?: boolean;
 		eliminationMatchArmed?: boolean;
 		eliminationMatchRank?: number;
 	},
@@ -172,6 +173,8 @@ export function armorChargeUse(
 	if (def.id === 'shadowclone' && options.cloneSummoned) {
 		chargeUse = 0;
 	}
+	//`PowerOfMany.chargeUse()`: directing its existing `LightAlly` costs no charge.
+	if (def.id === 'powerofmany' && options.powerOfManyLightAlly) chargeUse = 0;
 	//`Challenge.chargeUse()`: `ELIMINATION_MATCH` multiplies by `0.84^points` while its
 	//tracker is up. It stacks with (not instead of) `HEROIC_ENERGY`, which already ran above.
 	if (def.id === 'challenge' && options.eliminationMatchArmed) {

@@ -310,8 +310,7 @@ export const combatResolutionMethods = {
 
 		let damage = attackRoll.damage;
 		// `Char.attack()` (tag `v3.3.8`): a PowerOfMany-powered ally deals 1.25x melee
-		// damage. This port currently applies the modifier on ordinary attack() exchanges;
-		// the missing LightAlly actor means only existing allies can receive the buff.
+		// damage. The multiplier applies on the ordinary attack() exchange here.
 		if (attacker.isAlly && attacker.buffs['powerOfMany'] !== undefined) {
 			damage = Math.round(damage * POWER_OF_MANY_ATTACK_FACTOR);
 		}

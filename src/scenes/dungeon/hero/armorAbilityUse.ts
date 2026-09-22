@@ -51,7 +51,10 @@ export const armorAbilityUseMethods = {
 		//SpiritHawk's targeting depends on its own state, not the class's: `targetingPrompt()` is
 		//null while no hawk is out (so the summon fires immediately), and non-null once one is (so
 		//the re-cast opens the cell selector and orders the hawk around).
-		const needsCell = def.targeting === 'cell'
+		const powerOfManyNeedsCell = def.id === 'powerofmany'
+			? this.poweredLightAlly() !== undefined || this.poweredAlly() === undefined
+			: def.targeting === 'cell';
+		const needsCell = powerOfManyNeedsCell
 			|| (def.targeting === 'hawk' && this.spiritHawk() !== undefined)
 			|| (def.targeting === 'clone' && this.shadowClone() !== undefined)
 			|| (def.targeting === 'beacon' && this.warpBeacon === null && this.talentRank('remote_beacon') > 0);
@@ -210,30 +213,60 @@ export const armorAbilityUseMethods = {
 
 	/**
 	 * `PowerOfMany.activate()` (`PowerOfMany.java`, tag `v3.3.8`) lets the player empower an
-	 * existing ally or summon a `LightAlly` on an empty valid cell. This first slice implements
-	 * the existing-ally path only: the port has no LightAlly actor/sprite factory yet, so empty
-	 * cells are refused instead of summoning a different creature and pretending it is Java's.
-	 * Java's 25-shield grant and re-cast direct-order path are also not represented here.
+	 * existing ally or summon a `LightAlly` on an empty valid cell. The LightAlly uses a rat
+	 * record only as its scheduler/combat/save carrier; its sprite, 80 HP, combat stats, command
+	 * behavior, 25-point Barrier and no-loot/no-XP flags are replaced with Java's own values.
 	 */
 	activatePowerOfMany(this: DungeonScene, _def: ArmorAbilityDef, cost: number, cell: Step | null): boolean {
-		if (!cell || !this.fov.isVisible(cell.x, cell.y)) return false;
+		const powered = this.poweredAlly();
+		if (powered?.allyKind === 'lightAlly') {
+			if (!cell) return false;
+			this.directAlly(powered, cell, {
+				defend: 'port.ally.order.defend', follow: 'port.ally.order.follow', attack: 'port.ally.order.attack',
+			});
+			return true;
+		}
+		// Java refuses another cast while any non-LightAlly actor already carries PowerBuff.
+		if (powered) {
+			this.say(t('port.ally.alreadyPowered'), 'warning');
+			return true;
+		}
+		if (!cell) return false;
+		if (!this.fov.isVisible(cell.x, cell.y)) {
+			this.say(t('port.ally.novision'), 'negative');
+			return false;
+		}
 		const ally = this.creatureAt(cell.x, cell.y);
-		if (!ally?.isAlly || ally.isHero || ally.hp <= 0) {
+		if (ally && (!ally.isAlly || ally.isHero || ally.hp <= 0)) {
 			this.say(t('actors.hero.abilities.armorability.no_target'), 'negative');
 			return false;
 		}
-		// If another ally already has PowerBuff, Java's re-cast orders that LightAlly for
-		// free; until this port has that order path, refuse without charging or refreshing it.
-		if (this.creatures.some((creature) => creature.buffs['powerOfMany'] !== undefined)) {
-			this.say(t('actors.hero.abilities.armorability.no_target'), 'negative');
+		// Java accepts `passable || avoid`; this Level wrapper has no separate avoid-cell map.
+		if (!ally && !this.level.passable(cell.x, cell.y)) {
+			this.say(t('port.ally.invalidtarget'), 'negative');
 			return false;
+		}
+		const target = ally ?? this.spawnLightAlly(cell);
+		if (!ally) {
+			this.playTeleportAppear(cell, cell, target);
 		}
 		this.armorCharge = Math.max(0, this.armorCharge - cost);
-		addBuff(ally, 'powerOfMany', POWER_OF_MANY_TURNS);
+		addBuff(target, 'powerOfMany', POWER_OF_MANY_TURNS);
+		target.powerOfManyBarrier = 25;
+		target.powerOfManyBarrierPartial = 0;
 		delete this.hero.buffs['invisibility'];
 		this.say(t('port.log.armorabilitychosen', { ability: t('port.armorability.powerofmany.name') }), 'positive');
 		this.spendHeroAction(1);
 		return true;
+	},
+
+	poweredAlly(this: DungeonScene): Creature | undefined {
+		return this.creatures.find((creature) => creature.buffs['powerOfMany'] !== undefined && creature.hp > 0);
+	},
+
+	poweredLightAlly(this: DungeonScene): Creature | undefined {
+		const ally = this.poweredAlly();
+		return ally?.allyKind === 'lightAlly' ? ally : undefined;
 	},
 
 	/** `Ratmogrify.baseChargeUse` (50, tag `v3.3.8`) is charged like any other ability's, read

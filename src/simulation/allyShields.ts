@@ -4,6 +4,9 @@ import { absorbShield } from './buffs';
 export interface CreatureShields {
 	/** `DivineIntervention.DivineShield`, `shieldUsePriority = 1` (tag `v3.3.8`). */
 	divineShield?: number;
+	/** `PowerOfMany.Barrier`, `shieldUsePriority = 0` (tag `v3.3.8`). */
+	powerOfManyBarrier?: number;
+	powerOfManyBarrierPartial?: number;
 }
 
 /**
@@ -18,6 +21,15 @@ export function absorbCreatureShields(creature: CreatureShields, damage: number,
 		creature.divineShield = absorbed.shield;
 		damage = absorbed.damage;
 		if (creature.divineShield <= 0) delete creature.divineShield;
+	}
+	if ((creature.powerOfManyBarrier ?? 0) > 0) {
+		const absorbed = absorbShield(creature.powerOfManyBarrier ?? 0, damage);
+		creature.powerOfManyBarrier = absorbed.shield;
+		damage = absorbed.damage;
+		if (creature.powerOfManyBarrier <= 0) {
+			delete creature.powerOfManyBarrier;
+			delete creature.powerOfManyBarrierPartial;
+		}
 	}
 	return damage;
 }

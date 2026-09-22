@@ -144,7 +144,12 @@ export interface Creature extends Combatant {
 	/** Java-aligned friendly combatant (MirrorImage and the directable allies). */
 	isAlly?: boolean;
 	/** Friendly summon subtype; sheep are neutral, short-lived and non-combatant. */
-	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'afterImage' | 'shadowClone' | 'prismatic';
+	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'lightAlly' | 'afterImage' | 'shadowClone' | 'prismatic';
+	/** `PowerOfMany.LightAlly`'s Java hero class, used to rebuild its class-specific sprite. */
+	lightAllyClass?: 'warrior' | 'mage' | 'rogue' | 'huntress' | 'duelist';
+	/** `PowerOfMany`'s Barrier pool and Barrier.partialLostShield actor state. */
+	powerOfManyBarrier?: number;
+	powerOfManyBarrierPartial?: number;
 	/**
 	 * `PrismaticGuard`'s HP pool (`actors/buffs/PrismaticGuard.java`, tag `v3.3.8`):
 	 * the latent image's health, capped at `prismaticGuardMaxHp(hero level)`. Present

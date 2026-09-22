@@ -480,7 +480,7 @@ export const coreSpawnTilesMethods = {
 	},
 
 	/** any monster in MONSTERS, cut from its own real sprite sheet at its own real frame size */
-	spawnMonster(this: DungeonScene, kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'afterImage' | 'shadowClone' | 'prismatic', championEligible = false, initialSentryWarmup?: number): Creature {
+	spawnMonster(this: DungeonScene, kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'lightAlly' | 'afterImage' | 'shadowClone' | 'prismatic', championEligible = false, initialSentryWarmup?: number, schedulerDelay?: number): Creature {
 		const profile = monsterSpawnProfile(kind, this.depth, restoring, isAlly, championEligible, this.mobsToChampion);
 		this.mobsToChampion = profile.mobsToChampion;
 		//Data-driven: was a 12-case cascade checking both `kind` and `baseKind` - see
@@ -505,8 +505,54 @@ export const coreSpawnTilesMethods = {
 		this.applyStatueKit(monster);
 		// A restored creature receives its saved scheduler time below. Rolling a fresh stagger
 		// here would both lose turn order and perturb the run's random stream.
-		if (!restoring) this.scheduler.add(monster, Random.float(0.1, 0.9));
+		if (!restoring) this.scheduler.add(monster, schedulerDelay ?? Random.float(0.1, 0.9));
 		return monster;
+	},
+
+	/** `PowerOfMany.LightAlly` (`PowerOfMany.java`, tag `v3.3.8`): the summoned ally is an
+	 * 80-HP DirectableAlly with hero-level attack/defense skills, a 5-30 damage roll and 1-5 DR.
+	 * Java picks one of the five original hero classes in its constructor and draws that class's
+	 * cloth-tier animation; this uses the same five-class pool and sprite frames. */
+	spawnLightAlly(this: DungeonScene, at: Step): Creature {
+		const classes = ['warrior', 'mage', 'rogue', 'huntress', 'duelist'] as const;
+		const heroClass = classes[Random.int(0, classes.length)]!;
+		const ally = this.spawnMonster('rat', at, false, undefined, true, 'lightAlly', false, undefined, 0);
+		ally.name = t('port.ally.lightally.name');
+		ally.hp = ally.maxHp = 80;
+		ally.accuracy = this.progression.level + 9;
+		ally.evasion = this.progression.level + 4;
+		ally.damage = [5, 30];
+		ally.armor = [1, 5];
+		ally.lightAllyClass = heroClass;
+		ally.noExp = true;
+		ally.powerOfManyBarrier = 25;
+		ally.powerOfManyBarrierPartial = 0;
+		this.syncLightAllyVisual(ally);
+		return ally;
+	},
+
+	/** Rebuild `LightAllySprite.setup(cls)` using the real class cloth frames after save/load. */
+	syncLightAllyVisual(this: DungeonScene, ally: Creature): void {
+		if (ally.allyKind !== 'lightAlly') return;
+		this.sprite(ally).destroy();
+		const cls = ally.lightAllyClass ?? 'warrior';
+		const sheet = heroSheet(runState.sprites[cls]);
+		const frame = (index: number) => sheet.get(HERO_IDLE_FRAME + index);
+		const sprite = new AnimatedSprite(frame(0));
+		sprite.add('idle', [0, 0, 0, 1, 0, 0, 1, 1].map(frame), { fps: 1 });
+		sprite.add('run', [2, 3, 4, 5, 6, 7].map(frame), { fps: 20 });
+		sprite.add('attack', [13, 14, 15, 0].map(frame), { fps: 15, loop: false });
+		sprite.add('die', [frame(0)], { fps: 1, loop: false });
+		sprite.play('idle');
+		placeCharacterArt(sprite);
+		sprite.x = ally.x * TILE;
+		sprite.y = ally.y * TILE;
+		sprite.alpha = 0.8;
+		//Java applies a pale gold/white four-channel tint; Pixi's flat tint is this port's
+		//closest single-colour treatment of that glow.
+		sprite.tint = 0xffeeaa;
+		this.creatureLayer.addChild(sprite);
+		this.spriteFor.set(ally.id, sprite);
 	},
 
 	/** ScrollOfMirrorImage's two one-hit-point allied copies use the hero's current combat
@@ -778,6 +824,9 @@ export const coreSpawnTilesMethods = {
 				impShopkeeperGreeted: creature.impShopkeeperGreeted,
 				isAlly: creature.isAlly,
 				allyKind: creature.allyKind,
+				lightAllyClass: creature.lightAllyClass,
+				powerOfManyBarrier: creature.powerOfManyBarrier,
+				powerOfManyBarrierPartial: creature.powerOfManyBarrierPartial,
 				prismaticFade: creature.prismaticFade,
 				sheepTurns: creature.sheepTurns,
 				wardTier: creature.wardTier, wardWandLevel: creature.wardWandLevel, wardTotalZaps: creature.wardTotalZaps,
@@ -937,6 +986,9 @@ export const coreSpawnTilesMethods = {
 				impShopkeeperGreeted: saved.impShopkeeperGreeted ?? false,
 				isAlly: saved.isAlly,
 				allyKind: saved.allyKind,
+				lightAllyClass: saved.lightAllyClass,
+				powerOfManyBarrier: saved.powerOfManyBarrier,
+				powerOfManyBarrierPartial: saved.powerOfManyBarrierPartial,
 				prismaticFade: saved.prismaticFade,
 				sheepTurns: saved.sheepTurns,
 				wardTier: saved.wardTier, wardWandLevel: saved.wardWandLevel, wardTotalZaps: saved.wardTotalZaps,
@@ -947,6 +999,7 @@ export const coreSpawnTilesMethods = {
 				speed: saved.hasteTurns ? (saved.hasteBaseSpeed ?? 1) * 2 : undefined,
 			});
 			this.syncMimicVisual(creature);
+			this.syncLightAllyVisual(creature);
 			this.applyStatueKit(creature);
 			restored.push(creature);
 		}

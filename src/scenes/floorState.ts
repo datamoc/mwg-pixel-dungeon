@@ -144,7 +144,10 @@ export interface SavedCreature {
 	impShopkeeperGreeted?: boolean;
 	nextTurn: number | null;
 	isAlly?: boolean;
-	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'afterImage' | 'shadowClone' | 'prismatic';
+	allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'lightAlly' | 'afterImage' | 'shadowClone' | 'prismatic';
+	lightAllyClass?: 'warrior' | 'mage' | 'rogue' | 'huntress' | 'duelist';
+	powerOfManyBarrier?: number;
+	powerOfManyBarrierPartial?: number;
 	prismaticFade?: number;
 	sheepTurns?: number;
 	wardTier?: number;

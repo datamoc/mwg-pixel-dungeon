@@ -1277,6 +1277,25 @@ export const actorTurnsHazardsMethods = {
 	 * runs it, plus `DirectableAlly`'s standing order. Attack the nearest visible hostile,
 	 * otherwise head for the ordered cell, otherwise stay near the hero. */
 	takeAllyTurn(this: DungeonScene, ally: Creature): void {
+		if (ally.allyKind === 'lightAlly' && ally.buffs['powerOfMany'] === undefined) {
+			//`LightAlly.act()` (`PowerOfMany.java`, tag `v3.3.8`) dies as soon as PowerBuff is gone.
+			this.kill(ally);
+			return;
+		}
+		//`Barrier.act()` accumulates min(1, shielding/20) per actor turn and absorbs one
+		//shield point when the fractional loss reaches 1. HoldFast's decay multiplier is 1 here.
+		if ((ally.powerOfManyBarrier ?? 0) > 0) {
+			ally.powerOfManyBarrierPartial = (ally.powerOfManyBarrierPartial ?? 0)
+				+ Math.min(1, ally.powerOfManyBarrier! / 20);
+			if ((ally.powerOfManyBarrierPartial ?? 0) >= 1) {
+				ally.powerOfManyBarrier = (ally.powerOfManyBarrier ?? 0) - 1;
+				ally.powerOfManyBarrierPartial = 0;
+			}
+			if ((ally.powerOfManyBarrier ?? 0) <= 0) {
+				delete ally.powerOfManyBarrier;
+				delete ally.powerOfManyBarrierPartial;
+			}
+		}
 		if (ally.buffs['paralysis'] || ally.buffs['frost']) return;
 		//`SmokeBomb.NinjaLog` never acts: it is an IMMOVABLE decoy whose whole job is to be attacked
 		//(its `defenseSkill()` is what redirects whatever was hunting the hero). Returning here also
@@ -1378,7 +1397,9 @@ export const actorTurnsHazardsMethods = {
 		}
 		const defend = ally.allyDefendCell;
 		const destination = target ?? defend ?? this.hero;
-		if (!target && Roguelike.chebyshevDistance(ally, this.hero) <= 2 && !defend) return;
+		const returningLightAlly = ally.allyKind === 'lightAlly' && !target && !defend;
+		if (!target && Roguelike.chebyshevDistance(ally, this.hero) <= 2 && !defend && !returningLightAlly) return;
+		const returningFast = returningLightAlly && Roguelike.chebyshevDistance(ally, this.hero) > 1;
 		if (!target && defend && ally.x === defend.x && ally.y === defend.y) return;
 		const blocked = new Set(this.creatures.filter((c) => c !== ally && c !== destination)
 			.map((c) => this.level.index(c.x, c.y)));
@@ -1388,6 +1409,9 @@ export const actorTurnsHazardsMethods = {
 			const from = { x: ally.x, y: ally.y };
 			this.moveTo(ally, next);
 			this.leaveDoor(from.x, from.y, ally);
+			//`LightAlly.speed()` moves at 2x only while Wandering back to the hero,
+			//uncommanded and more than one tile away (`PowerOfMany.java`).
+			if (returningFast) this.pendingMonsterTurnCost = 0.5;
 		}
 	},
 

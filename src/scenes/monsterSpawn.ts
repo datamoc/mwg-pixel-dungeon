@@ -16,7 +16,7 @@ import type { Step } from '../simulation/combatState';
  * record built from its spawn profile.
  */
 export type MonsterProfile = ReturnType<typeof monsterSpawnProfile>;
-export type AllyKind = 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'afterImage' | 'shadowClone' | 'prismatic';
+export type AllyKind = 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'lightAlly' | 'afterImage' | 'shadowClone' | 'prismatic';
 
 /** An ally's persistent identity tint (`spawnMonster`'s own `sprite.colorAdd` set at spawn,
  * matched by the per-frame hit-flash fade-out below, which must restore *this* baseline rather

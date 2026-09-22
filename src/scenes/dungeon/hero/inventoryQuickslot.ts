@@ -2137,6 +2137,7 @@ export const inventoryQuickslotMethods = {
 			shadowStepRank: this.talentRank('shadow_step'),
 			hawkSummoned: this.spiritHawk() !== undefined,
 			cloneSummoned: this.shadowClone() !== undefined,
+			powerOfManyLightAlly: this.poweredLightAlly() !== undefined,
 			eliminationMatchArmed: this.hero.buffs['eliminationMatch'] !== undefined,
 			eliminationMatchRank: this.talentRank('elimination_match'),
 		});
