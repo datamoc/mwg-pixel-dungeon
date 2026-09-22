@@ -2229,7 +2229,9 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 		'yogFist:rotting', 'yogFist:rusted',
 	].sort(), 'monster immunity table covers exactly the Java-immune kinds');
 	assert.deepEqual(immunityByKey.get('ninjaLog:'), ['amok', 'bleeding', 'charm', 'poison', 'terror'], 'the NinjaLog decoy refuses terror/amok/charm plus the INORGANIC pair');
-	assert.deepEqual(immunityByKey.get('pylon:'), ['amok', 'bleeding', 'charm', 'paralysis', 'poison', 'terror'], 'pylon carries INORGANIC + STATIC sets');
+	//2026-09-22: STATIC rows gained frost+chill, the Frost/Chill immunities
+	//Java's STATIC property carries (the table comment always promised them).
+	assert.deepEqual(immunityByKey.get('pylon:'), ['amok', 'bleeding', 'charm', 'chill', 'frost', 'paralysis', 'poison', 'terror'], 'pylon carries INORGANIC + STATIC sets');
 	assert.deepEqual(immunityByKey.get('yogFist:rotting'), ['ooze'], 'rotting fist carries the ACIDIC set');
 	assert.deepEqual(immunityByKey.get('yogFist:rusted'), ['bleeding', 'poison'], 'rusted fist carries the INORGANIC pair');
 	const { monsterBuffImmune } = require('./simulation/buffs.js');

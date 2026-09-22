@@ -480,16 +480,19 @@ export const npcShopBlacksmithMethods = {
 	},
 
 	/**
-	 * `DemonSpawner.act()`'s spawn-cooldown countdown. `spawnCooldown--` every turn, clamped at
-	 * -20 (`if (spawnCooldown < -20) spawnCooldown = -20`) so a long-uncontested spawner doesn't
+	 * `DemonSpawner.act()`'s spawn-cooldown countdown (`DemonSpawner.java`, tag `v3.3.8`).
+	 * `spawnCooldown--` every turn, clamped at -20 so a long-uncontested spawner doesn't
 	 * drift arbitrarily negative; once `<= 0`, an empty+passable 8-neighbour cell gets a fresh
-	 * `RipperDemon`, already `HUNTING` (`sleeping = false`), and the cooldown resets to 60 turns
-	 * minus up to 20 at Halls depths 22-24 (`Math.min(20, (depth-21)*6.67)` - 60/53.33/46.67/40
-	 * turns to spawn on floor 21/22/23/24). No candidates: the cooldown stays `<= 0` and the next
-	 * turn retries, same as Java.
+	 * `RipperDemon`, already `HUNTING` (`sleeping = false`). The clock starts at Java's
+	 * field-init 0 (not 60), so the first turn already attempts a spawn, and a success
+	 * ADDS 60 (`+=`, from the decremented value) minus up to 20 at Halls depths 22-24
+	 * (`Math.min(20, (depth-21)*6.67)` - 60/53.33/46.67/40 turns to spawn on floor
+	 * 21/22/23/24). No candidates: the cooldown stays `<= 0` and the next turn retries,
+	 * same as Java. (The Ascension `> 20` cap has no expression - ascension modifiers
+	 * stay inert here.)
 	 */
 	tickDemonSpawner(this: DungeonScene, spawner: Creature): void {
-		spawner.spawnCooldown = Math.max((spawner.spawnCooldown ?? 60) - 1, -20);
+		spawner.spawnCooldown = Math.max((spawner.spawnCooldown ?? 0) - 1, -20);
 		if (spawner.spawnCooldown > 0) return;
 
 		const candidates: Step[] = [];
@@ -502,9 +505,8 @@ export const npcShopBlacksmithMethods = {
 		const demon = this.spawnMonster('ripperDemon', Random.element(candidates)!);
 		demon.sleeping = false;
 
-		let cooldown = 60;
-		if (this.depth > 21) cooldown -= Math.min(20, (this.depth - 21) * 6.67);
-		spawner.spawnCooldown = cooldown;
+		spawner.spawnCooldown += 60;
+		if (this.depth > 21) spawner.spawnCooldown -= Math.min(20, (this.depth - 21) * 6.67);
 	},
 
 	interactWithNPC(this: DungeonScene, npc: Creature): void {

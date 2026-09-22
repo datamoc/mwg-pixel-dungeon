@@ -29482,7 +29482,7 @@ export const gameData = {
 							"attributes": {
 								"monster": "pylon",
 								"subtype": "",
-								"immunities": "bleeding,poison,terror,amok,charm,paralysis"
+								"immunities": "bleeding,poison,terror,amok,charm,paralysis,frost,chill"
 							},
 							"children": [],
 							"location": {
@@ -29497,7 +29497,7 @@ export const gameData = {
 							"attributes": {
 								"monster": "demonSpawner",
 								"subtype": "",
-								"immunities": "terror,amok,charm,paralysis"
+								"immunities": "terror,amok,charm,paralysis,frost,chill"
 							},
 							"children": [],
 							"location": {
@@ -29512,7 +29512,7 @@ export const gameData = {
 							"attributes": {
 								"monster": "rotHeart",
 								"subtype": "",
-								"immunities": "terror,amok,charm,paralysis"
+								"immunities": "terror,amok,charm,paralysis,frost,chill"
 							},
 							"children": [],
 							"location": {
@@ -29527,7 +29527,7 @@ export const gameData = {
 							"attributes": {
 								"monster": "yog",
 								"subtype": "",
-								"immunities": "terror,amok,charm,paralysis"
+								"immunities": "terror,amok,charm,paralysis,frost,chill"
 							},
 							"children": [],
 							"location": {

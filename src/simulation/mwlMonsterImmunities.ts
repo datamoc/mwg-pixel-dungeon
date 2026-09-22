@@ -81,7 +81,9 @@ export const MONSTER_IMMUNITY_DATA = [
       "terror",
       "amok",
       "charm",
-      "paralysis"
+      "paralysis",
+      "frost",
+      "chill"
     ]
   },
   {
@@ -91,7 +93,9 @@ export const MONSTER_IMMUNITY_DATA = [
       "terror",
       "amok",
       "charm",
-      "paralysis"
+      "paralysis",
+      "frost",
+      "chill"
     ]
   },
   {
@@ -101,7 +105,9 @@ export const MONSTER_IMMUNITY_DATA = [
       "terror",
       "amok",
       "charm",
-      "paralysis"
+      "paralysis",
+      "frost",
+      "chill"
     ]
   },
   {
@@ -111,7 +117,9 @@ export const MONSTER_IMMUNITY_DATA = [
       "terror",
       "amok",
       "charm",
-      "paralysis"
+      "paralysis",
+      "frost",
+      "chill"
     ]
   },
   {

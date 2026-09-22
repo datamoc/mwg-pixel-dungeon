@@ -349,6 +349,24 @@ export function verifyCombat(require, check) {
 		assert.ok(shown !== null && shown.damage >= 30 && shown.hp <= -20, 'a lethal attach must present through the installed hook');
 		facade.setAttachBacklash(null);
 	});
+	check('STATIC holders refuse Frost and Chill like Java immunities', () => {
+		//`Char.Property.STATIC` immunities (tag `v3.3.8`): Terror/Amok/Charm/Sleep/
+		//Paralysis/Frost/Chill/Slow/Speed/Dread/AllyBuff - of which terror, amok,
+		//charm, paralysis, frost and chill exist as port buffs. Holders here are the
+		//Pylon, DemonSpawner, RotHeart and Yog (CrystalSpire is unported).
+		for (const kind of ['pylon', 'demonSpawner', 'rotHeart', 'yog']) {
+			const holder = base({ kind, buffs: {} });
+			facade.addBuff(holder, 'frost');
+			assert.equal(holder.buffs.frost, undefined, `${kind} must refuse frost`);
+			facade.addBuff(holder, 'chill');
+			assert.equal(holder.buffs.chill, undefined, `${kind} must refuse chill`);
+			facade.addBuff(holder, 'terror');
+			assert.equal(holder.buffs.terror, undefined, `${kind} must refuse terror`);
+		}
+		const pylon = base({ kind: 'pylon', buffs: {} });
+		facade.addBuff(pylon, 'burning');
+		assert.notEqual(pylon.buffs.burning, undefined, 'the Pylon still burns like Java');
+	});
 	check('ICY and ELECTRIC damage halves ride one shared gate per property', () => {
 		//`Char.Property` resistances (tag `v3.3.8`): ICY halves `WandOfFrost` (only
 		//the frost elemental holds it); ELECTRIC halves `WandOfLightning`, `Shocking`,

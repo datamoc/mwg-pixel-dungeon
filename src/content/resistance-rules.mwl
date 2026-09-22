@@ -53,10 +53,10 @@
           { tag: "row", monster: "necroSkeleton", subtype: "", immunities: "bleeding,poison" },
           { tag: "row", monster: "statue", subtype: "", immunities: "bleeding,poison" },
           { tag: "row", monster: "armoredStatue", subtype: "", immunities: "bleeding,poison" },
-          { tag: "row", monster: "pylon", subtype: "", immunities: "bleeding,poison,terror,amok,charm,paralysis" },
-          { tag: "row", monster: "demonSpawner", subtype: "", immunities: "terror,amok,charm,paralysis" },
-          { tag: "row", monster: "rotHeart", subtype: "", immunities: "terror,amok,charm,paralysis" },
-          { tag: "row", monster: "yog", subtype: "", immunities: "terror,amok,charm,paralysis" },
+          { tag: "row", monster: "pylon", subtype: "", immunities: "bleeding,poison,terror,amok,charm,paralysis,frost,chill" },
+          { tag: "row", monster: "demonSpawner", subtype: "", immunities: "terror,amok,charm,paralysis,frost,chill" },
+          { tag: "row", monster: "rotHeart", subtype: "", immunities: "terror,amok,charm,paralysis,frost,chill" },
+          { tag: "row", monster: "yog", subtype: "", immunities: "terror,amok,charm,paralysis,frost,chill" },
           // NinjaLog (Smoke Bomb's BODY_REPLACEMENT decoy) adds Dread/Terror/Amok/Charm/Sleep and
           // Java's `AllyBuff` to its immunities, plus INORGANIC's bleeding/poison pair (wood is
           // organic, but the property is what drives the game logic). Dread and Sleep have no

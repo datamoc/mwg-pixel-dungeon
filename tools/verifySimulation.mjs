@@ -1300,6 +1300,16 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.ok(scene.includes('yogMinionDeck: saved.yogMinionDeck'),
 			'the cached deck persists through save/restore');
 	});
+	check('DemonSpawner attempts its first spawn immediately, then adds 60', () => {
+		//`DemonSpawner.act()` (tag `v3.3.8`): the clock starts at the field-init 0,
+		//so the first turn already attempts; a success ADDS 60 (`+=`) minus the
+		//depth cut, it never resets flat.
+		const scene = readSceneSource();
+		assert.ok(scene.includes('(spawner.spawnCooldown ?? 0) - 1'),
+			'the spawner clock starts at Java field-init 0, not 60');
+		assert.ok(scene.includes('spawner.spawnCooldown += 60'),
+			'a successful spawn adds 60 onto the decremented clock');
+	});
 	check('mirror images read Java\'s hero-derived combat stats at half damage', () => {
 		//42nd matrix (`MirrorImage.java`, tag `v3.3.8`): `attackSkill()` is
 		//`(9 + lvl) * accuracyMultiplier`, `defenseSkill()` is
