@@ -638,7 +638,20 @@ below to close the gap was judged not worth the churn against those existing ref
       here at all). `Cancel` already returned to the title screen before this pass.
       Browser-verified live: default focus, arrow movement across the grid, Enter
       selecting Rogue (splash art/name/description/Start button all updated), a second
-      Enter beginning the run as Rogue. The settings window and the bag tabs remain open.
+      Enter beginning the run as Rogue.
+      **Progress 2026-09-22 (third slice): settings-window tab switching is done, in-tab
+      widgets are not.** `showSettingsWindow` registers its own `Input.onAction` listener
+      (stack-mode `Signal`, so it sits in front of the scene's own while this window is
+      open) so left/right cycles the tab strip the same way clicking a tab icon does;
+      removed on close so a lower listener gets the keys back untouched. `Cancel` already
+      closed the window before this pass (`Window`'s own `closable` handling). **Deliberately
+      out of scope, stated rather than assumed:** sliders, checkboxes and the language grid
+      inside each tab stay mouse-only - each widget kind needs its own activate/adjust
+      semantics (a slider needs value-stepping, not just selection), which is a materially
+      bigger task than a focus ring. Browser-verified live: opening Settings from the
+      title screen, arrow-cycling from Display to Interface tab, Escape closing the window
+      with title-screen focus correctly restored to the button that opened it. The bag
+      tabs remain open.
 - [ ] Add colorblind options to the graphics settings. Too much state here is color-only:
       buff/debuff icon tints, HP-bar thresholds, key colors, trap and hazard highlights. Offer
       at least deuteranopia/protanopia/tritanopia-safe palettes (plus a high-contrast pass if

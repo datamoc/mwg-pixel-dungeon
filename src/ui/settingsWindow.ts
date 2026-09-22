@@ -1,5 +1,5 @@
 import { Container, Graphics, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
-import { Game, NinePatch, theme, Window, WindowStack } from 'mwg';
+import { Game, Input, NinePatch, theme, Window, WindowStack } from 'mwg';
 import { detectLanguage } from '../i18n/languages';
 import { LANGUAGES, language, setLanguage, t, titleCase, type Language } from '../i18n/index';
 import { LANGUAGE_KEY, runState } from '../runState';
@@ -854,5 +854,22 @@ export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () =
 		strip.push({ selected, unselected });
 	});
 	window.resize(width, chrome + maxHeight + GAP + stripHeight + 8);
+	//Port-original keyboard-navigation accessibility work (ROADMAP.md section 8 - Java has
+	//no such system), third slice after the title and class-select screens: left/right
+	//cycles the tab strip itself, matching a click on a tab icon. In-tab widgets
+	//(sliders, checkboxes, the language grid) stay mouse-only for now - a materially
+	//bigger task, since each widget kind needs its own activate/adjust semantics, not
+	//just a focus ring - so this covers only getting between tabs, not around inside one.
+	//Registered after `windows.push` so it sits in front of every listener already on
+	//`Input.onAction` (a stack-mode `Signal` offers the newest listener first) while this
+	//window is the top of the stack; removed on close so a lower window (or the scene
+	//itself) gets the keys back untouched.
+	const onTabAction = (action: string): boolean => {
+		if (action === 'left') { select((lastTab - 1 + tabs.length) % tabs.length); return true; }
+		if (action === 'right') { select((lastTab + 1) % tabs.length); return true; }
+		return false;
+	};
+	Input.onAction.add(onTabAction);
+	window.onClose.add(() => Input.onAction.remove(onTabAction));
 	windows.push(window);
 }
