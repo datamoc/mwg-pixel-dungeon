@@ -83,16 +83,27 @@ export function predictRipperLeapTarget(enemy: LeapStep, prevEnemy: LeapStep | n
 
 /**
  * The bounce landing: when the leap ray ends on an occupied cell, Java lands on the
- * free, passable neighbour nearest (by true distance) to its own cell, aborting the
- * leap (`null` here) when every neighbour is taken. `isFree` covers both halves of
- * Java's test (`Actor.findChar(...) == null && Dungeon.level.passable[...]`).
+ * free, passable neighbour nearest (by true distance) to its own cell, sweeping a
+ * second time over free *non-solid* neighbours when the first sweep finds nothing, and
+ * aborting the leap (`null` here) only when both fail. `isFree` covers both halves of
+ * Java's first test (`Actor.findChar(...) == null && Dungeon.level.passable[...]`); the
+ * optional `isFallbackFree` is the second sweep.
  */
-export function chooseRipperBounceEnd(from: LeapStep, leap: LeapStep, isFree: (cell: LeapStep) => boolean): LeapStep | null {
-	let best: LeapStep | null = null;
-	for (const [dx, dy] of RIPPER_NEIGHBOURS8) {
-		const cell = { x: leap.x + dx, y: leap.y + dy };
-		if (!isFree(cell)) continue;
-		if (best === null || ripperTrueDistance(from, cell) < ripperTrueDistance(from, best)) best = cell;
+export function chooseRipperBounceEnd(
+	from: LeapStep,
+	leap: LeapStep,
+	isFree: (cell: LeapStep) => boolean,
+	isFallbackFree?: (cell: LeapStep) => boolean,
+): LeapStep | null {
+	//Java sweeps twice: free *passable* neighbours first, then free *non-solid* ones.
+	for (const pass of isFallbackFree === undefined ? [isFree] : [isFree, isFallbackFree]) {
+		let best: LeapStep | null = null;
+		for (const [dx, dy] of RIPPER_NEIGHBOURS8) {
+			const cell = { x: leap.x + dx, y: leap.y + dy };
+			if (!pass(cell)) continue;
+			if (best === null || ripperTrueDistance(from, cell) < ripperTrueDistance(from, best)) best = cell;
+		}
+		if (best !== null) return best;
 	}
-	return best;
+	return null;
 }

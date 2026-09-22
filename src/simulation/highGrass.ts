@@ -139,7 +139,7 @@ export interface HighGrassApplyContext {
 	readonly rollChance: (p: number) => boolean;
 	readonly rollInt: (min: number, max: number) => number;
 	readonly drawSeedClass: () => string;
-	readonly spawnDrop: (kind: 'seed' | 'dewdrop' | 'food', x: number, y: number, seedClass?: string) => void;
+	readonly spawnDrop: (kind: 'seed' | 'dewdrop' | 'food' | 'berry', x: number, y: number, seedClass?: string) => void;
 	readonly say: (key: string, level: 'positive' | 'negative') => void;
 	readonly isBloomGround: (terrain: number) => boolean;
 	readonly isPlanted: (cell: number) => boolean;
@@ -192,7 +192,7 @@ export function applyHighGrassTrample(context: HighGrassApplyContext, x: number,
 			const chance = context.depth > targetFloor ? 1 / 10 : context.depth === targetFloor ? 1 / 30 : 1 / 90;
 			if (context.rollChance(chance)) {
 				context.natureBerriesDropped++;
-				context.spawnDrop('food', x, y);
+				context.spawnDrop('berry', x, y);
 			}
 		}
 	}
@@ -209,10 +209,8 @@ export function applyHighGrassTrample(context: HighGrassApplyContext, x: number,
 	//Berry food item, capped at 2+2*rank total for the whole run (Talent.NatureBerriesDropped,
 	//a CounterBuff that never resets mid-run). `targetFloor` is the depth the schedule wants
 	//the next berry to land on; behind it the odds are generous (1/10), on it modest (1/30),
-	//ahead of it stingy (1/90). This port has no distinct Berry item (a real Ration-strength
-	//pickup, not modeled separately), so it drops the shared generic `'food'` kind instead -
-	//a real, narrower simplification, not the wrong-mechanic bug this replaces. See the roll
-	//itself above, where Java draws it.
+	//ahead of it stingy (1/90). The live item is now distinct; its two-berry
+	//SeedCounter payout remains documented in eatFood().
 }
 
 /**

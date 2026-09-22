@@ -24,6 +24,7 @@ export const BUFF_DURATION_DATA = {
   "cloak": 9999,
   "focus": 9999,
   "recharging": 30,
+  "wellFed": 450,
   "frostImbue": 15,
   "fireImbue": 15,
   "toxicImbue": 15,
@@ -50,7 +51,23 @@ export const BUFF_DURATION_DATA = {
   "duelParticipant": 10,
   "eliminationMatch": 3,
   "luckyTracker": 9999,
-  "prismaticGuard": 9999
+  "prismaticGuard": 9999,
+  "holyWeapon": 50,
+  "holyWard": 50,
+  "illuminated": 9999,
+  "wasIlluminated": 9999,
+  "satiatedSpells": 9999,
+  "shieldOfLight": 5,
+  "divineSense": 50,
+  "recallUsed": 10,
+  "cleanseImmunity": 5,
+  "sunrayUsed": 9999,
+  "sunrayRecent": 4,
+  "lanceCooldown": 30,
+  "auraProtection": 20,
+  "smiteTracker": 1,
+  "guidingPriestCooldown": 50,
+  "lightWallActive": 20
 } as const;
 export const NEGATIVE_BUFF_DATA = [
   "poison",
@@ -74,5 +91,6 @@ export const NEGATIVE_BUFF_DATA = [
   "wayward",
   "blindness",
   "feintConfusion",
-  "soulmark"
+  "soulmark",
+  "illuminated"
 ] as const;

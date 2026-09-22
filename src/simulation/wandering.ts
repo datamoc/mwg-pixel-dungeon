@@ -38,7 +38,7 @@ export function wanderBlocked(monster: Creature, blockHeroCell: boolean, ctx: Wa
 			.map((c) => ctx.cellIndex(c.x, c.y)),
 	);
 	ctx.blockExtraInto(blocked);
-	if (monster.kind === 'piranha') {
+	if (monster.kind === 'piranha' || monster.kind === 'phantomPiranha') {
 		const heroCell = ctx.cellIndex(ctx.hero.x, ctx.hero.y);
 		for (let cell = 0; cell < ctx.cellCount; cell++) {
 			if (ctx.terrainAtCell(cell) !== ctx.waterTerrain && (blockHeroCell || cell !== heroCell)) blocked.add(cell);
@@ -87,6 +87,7 @@ export interface FleeStepContext {
 	neighbourOffsets: readonly (readonly [number, number])[];
 	chebyshev: (a: Step, b: Step) => number;
 	hero: Step;
+	isChasm: (x: number, y: number) => boolean;
 }
 
 /**
@@ -96,14 +97,18 @@ export interface FleeStepContext {
  * from their tails. Moved here as the file-size refactor's forty-second
  * extraction, behavior-identical - the scene only binds its level, occupants,
  * geometry and hero. Returns null when no neighbour improves, which is also
- * the callers' stay-put signal.
+ * the callers' stay-put signal. **2026-09-21:** candidates now exclude chasm
+ * cells too, matching `Dungeon.flee`'s own `findPassable` map (`nearestFreeCell`/
+ * `isPatrolTargetValid` already had this gate; a retreating monster could
+ * target a chasm cell here that `moveTo` then silently refused, wasting the
+ * turn instead of actually retreating).
  */
 export function fleeStep(from: Step, ctx: FleeStepContext): Step | null {
 	let best: Step | null = null;
 	let bestD = ctx.chebyshev(from, ctx.hero);
 	for (const [dx, dy] of ctx.neighbourOffsets) {
 		const at = { x: from.x + dx, y: from.y + dy };
-		if (!ctx.passable(at.x, at.y) || ctx.creatureAt(at.x, at.y)) continue;
+		if (!ctx.passable(at.x, at.y) || ctx.creatureAt(at.x, at.y) || ctx.isChasm(at.x, at.y)) continue;
 		const d = ctx.chebyshev(at, ctx.hero);
 		if (d > bestD) {
 			bestD = d;
@@ -113,10 +118,9 @@ export function fleeStep(from: Step, ctx: FleeStepContext): Step | null {
 	return best;
 }
 
-/** The flee-step reads plus the inside/chasm gates the summon search needs. */
+/** The flee-step reads plus the `inside` gate the summon search needs. */
 export interface SummonCellContext extends FleeStepContext {
 	inside: (x: number, y: number) => boolean;
-	isChasm: (x: number, y: number) => boolean;
 }
 
 /**

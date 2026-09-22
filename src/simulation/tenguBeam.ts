@@ -10,7 +10,11 @@ export interface TenguConeFrontContext {
 	hasFire: (x: number, y: number) => boolean;
 }
 
-/** `FireAbility.act()`'s advancing cone front, consumed by MWG's MultiTurnBeam adapter. */
+/** `FireAbility.act()`'s advancing cone front, consumed by MWG's MultiTurnBeam adapter.
+ * Java spreads into every `!solid` cell (`Tengu.FireAbility.spreadFromCell`, tag
+ * `v3.3.8`); this port tests `passable` instead, so the cone treats chasms the way
+ * the rest of the port's movement layer does rather than the way Java's solid map
+ * does. Stated simplification, not a silent gap. */
 export function planTenguConeFront(context: TenguConeFrontContext): Step[] {
 	const spreadFrom = context.turn === 0 ? context.previous : context.previous.filter((cell) => context.hasFire(cell.x, cell.y));
 	const previousSet = new Set(context.previous.map((cell) => cell.y * context.width + cell.x));

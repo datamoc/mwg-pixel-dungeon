@@ -15,9 +15,10 @@
  *   (`DriedRose.GhostHero`) use `GhostSprite`, so both burst here.
  * - `WardSprite.zap()`: attacker `flash()` + `WardParticle.UP` x2 + RAY sample
  *   + a `Beam.DeathRay` (always drawn, even with no target). This port
- *   reproduces the burst and the RAY cue; the beam has no primitive here (the
- *   only beam is Tengu's multi-turn cone) and the attacker flash is skipped -
- *   both recorded, not silently dropped.
+ *   reproduces the burst, the RAY cue, and the attacker flash (2026-09-21,
+ *   the same `colorAdd` pulse `showDamage` fires); the beam still has no
+ *   primitive here (the only beam is Tengu's multi-turn cone) - recorded,
+ *   not silently dropped.
  *   `WardSprite.die()`: `WardParticle.UP` x10 (+ a 2s alpha fade this port's
  *   instant-destroy path does not reproduce - recorded below).
  *
@@ -29,12 +30,17 @@
  * `ShadowParticle` 0x440044 size 6->0; `Speck.LIGHT` tint 0xFFDDDD00;
  * `WardParticle` 0x88CCFF; `ShaftParticle` 1.2s at -6px/s).
  *
- * Still open (continuous `pour` auras, needs a persistent-emitter layer, not
- * one-shot bursts): DM300 supercharge sparks, the four elemental auras, Eye
- * charge particles, FetidRat stench, the four fist auras, Golem teleport
- * particles, Goo spray + pump-up cells, Lotus grass leaves, Necromancer
- * summoning bones (+ the Spectral twin's shadow summoning), PhantomPiranha
- * sparkles, RotHeart toxic cloud - twelve sites.
+ * The continuous `pour` half lives in `simulation/pourAuras.ts` (2026-09-21):
+ * the seven creature-following families are live with Java's own intervals -
+ * FetidRat stench, RotHeart cloud, the four elemental auras (+ NewbornFire),
+ * all six fist auras, DM300 supercharge sparks (gated on `dmSupercharged`),
+ * Eye charge (gated on `beamCharged`), Goo spray (gated on `HP*2 <= HT`) -
+ * synced per-frame by `ui/effectBursts.ts`'s `syncPourAuras`. Still open: the
+ * four cell-placed or state-gated sites (Golem teleport pour with no teleport
+ * state here, Goo pump-up cells + Elmo trigger burst, Lotus range leaves, the
+ * Necromancer/Spectral summonings at `summoningPos` with no summoning state)
+ * and PhantomPiranha sparkles (no such kind spawns - the pool-room draw is
+ * consumed but always yields plain piranha).
  */
 export interface DeathBurstSpec {
 	/** Java's own burst count for this particle. */

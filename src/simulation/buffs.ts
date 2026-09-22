@@ -16,7 +16,7 @@ import { MONSTER_IMMUNITY_DATA } from './mwlMonsterImmunities';
  * creature cannot see - or hunt - the hero (see `dungeonScene`'s monster-perception line), and a
  * blinded hero would see nothing. Duration 10 is `Blindness.DURATION`.
  */
-export type BuffId = 'bless' | 'hex' | 'daze' | 'chill' | 'frost' | 'drowsy' | 'magicalSleep' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'featherFall' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'frostImbue' | 'fireImbue' | 'toxicImbue' | 'blobImmunity' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown' | 'wayward' | 'blindness' | 'feintConfusion' | 'counterAbility' | 'light' | 'invulnerability' | 'hazardAssist' | 'spectatorFreeze' | 'duelParticipant' | 'eliminationMatch' | 'luckyTracker' | 'soulmark' | 'prismaticGuard';
+export type BuffId = 'bless' | 'hex' | 'daze' | 'chill' | 'frost' | 'drowsy' | 'magicalSleep' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'featherFall' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'wellFed' | 'frostImbue' | 'fireImbue' | 'toxicImbue' | 'blobImmunity' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown' | 'wayward' | 'blindness' | 'feintConfusion' | 'counterAbility' | 'light' | 'invulnerability' | 'hazardAssist' | 'spectatorFreeze' | 'duelParticipant' | 'eliminationMatch' | 'luckyTracker' | 'soulmark' | 'prismaticGuard' | 'illuminated' | 'wasIlluminated' | 'holyWeapon' | 'holyWard' | 'satiatedSpells' | 'shieldOfLight' | 'divineSense' | 'recallUsed' | 'sunrayUsed' | 'sunrayRecent' | 'cleanseImmunity' | 'lanceCooldown' | 'auraProtection' | 'smiteTracker' | 'guidingPriestCooldown' | 'lightWallActive';
 /** The duration catalogue is authored in MWL and emitted as an isolated simulation module. */
 export const BUFF_DURATION: Record<BuffId, number> = (() => {
 	const values = { ...BUFF_DURATION_DATA } as Record<string, number>;
@@ -62,10 +62,17 @@ export interface BuffAppliedEvent {
  * `duration` is the per-site override - Java's `Buff.affect(target, class, duration)` - and
  * defaults to the class's own `DURATION` from the authored table, which is what most sites use. */
 export function applyBuff(previous: Readonly<BuffState>, id: BuffId, duration = BUFF_DURATION[id]): { buffs: BuffState; event: BuffAppliedEvent } {
-	return {
-		buffs: { ...previous, [id]: duration },
-		event: { type: 'buff-applied', id, fresh: previous[id] === undefined },
-	};
+    // Poison.set(duration) in actors/buffs/Poison.java (tag v3.3.8) keeps the
+    // stronger active clock with Math.max(duration, left) instead of resetting it.
+    // Poison is the only ordinary buff whose Java setter has that max semantics;
+    // all other callers retain the normal Buff.affect replacement used here.
+    const appliedDuration = id === 'poison' && previous[id] !== undefined
+        ? Math.max(duration, previous[id] as number)
+        : duration;
+    return {
+        buffs: { ...previous, [id]: appliedDuration },
+        event: { type: 'buff-applied', id, fresh: previous[id] === undefined },
+    };
 }
 
 /**
@@ -83,21 +90,27 @@ export function reigniteBuff(previous: Readonly<BuffState>, id: BuffId, duration
 }
 
 /**
- * Applies one Java `Freezing` impact to a target.  `Freezing.freeze()` adds Chill until
- * the chill cap is reached; an already-capped Chill instead becomes the explicit Frost
- * immobilization.  Keeping this transition pure prevents potion, wand, and elemental
- * callers from disagreeing about whether the impact freezes immediately or on the next hit.
+ * Applies one Java `Freezing` impact to a target (`Freezing.freeze()`, tag `v3.3.8`).
+ * Each impact *extends* Chill by a few turns (5 in water, 3 dry - `turnsToAdd`, already
+ * capped so the total never passes `Chill.DURATION`), it does not refresh it to full;
+ * a Chill that reaches the cap becomes the explicit Frost immobilization on the same
+ * hit. Callers that compress a whole blob exposure into one application (a quaffed
+ * frost potion, a frost-trap trigger) pass a single dry tick and accept the
+ * under-application - the alternative this replaced, a full refresh every hit, froze
+ * after two contacts where Java needs sustained exposure. Keeping this transition pure
+ * prevents potion, trap, and elemental callers from disagreeing about whether the
+ * impact freezes immediately or on the next hit. Water-cell callers pass 5.
  */
-export function applyChillFreeze(previous: Readonly<BuffState>): { buffs: BuffState; frozen: boolean } {
-	const existing = previous.chill ?? 0;
-	if (existing >= BUFF_DURATION.chill) {
+export function applyChillFreeze(previous: Readonly<BuffState>, turnsToAdd = 3): { buffs: BuffState; frozen: boolean } {
+	const total = Math.min(BUFF_DURATION.chill, (previous.chill ?? 0) + turnsToAdd);
+	if (total >= BUFF_DURATION.chill) {
 		const buffs = { ...previous };
 		delete buffs.chill;
 		buffs.frost = BUFF_DURATION.frost;
 		buffs.paralysis = Math.max(buffs.paralysis ?? 0, BUFF_DURATION.frost);
 		return { buffs, frozen: true };
 	}
-	return { buffs: { ...previous, chill: BUFF_DURATION.chill }, frozen: false };
+	return { buffs: { ...previous, chill: total }, frozen: false };
 }
 
 /**
@@ -128,6 +141,10 @@ export function advanceBuffs(previous: Readonly<BuffState>, random: SimulationRa
 	for (const id of Object.keys(buffs) as BuffId[]) {
 		const left = buffs[id];
 		if (left === undefined) continue;
+		// Java's WellFed.act() owns both its clock and its healing, while Hunger.act() is
+		// skipped entirely. `DungeonScene.hungerStep()` ticks it before hunger, so the
+		// generic creature-buff clock must leave it untouched.
+		if (id === 'wellFed') continue;
 		if (id === 'burning') damage += random.int(1, 4 + Math.floor(scalingDepth / 4));
 		//`Poison.act()` (tag v3.3.8): `(int)(left/3)+1` deals off the *remaining*
 		//duration, not a flat roll - a fresh 6-turn poison hits for 3, decaying as the clock

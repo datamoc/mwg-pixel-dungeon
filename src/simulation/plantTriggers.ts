@@ -21,6 +21,7 @@ import { TIME_BUBBLE_TURNS } from './timeBubble';
  */
 export interface HeroPlantContext {
 	subclass: () => string | null;
+	level: number;
 	depth: number;
 	say: (line: string, level?: LogLevel) => void;
 	t: (key: string) => string;
@@ -38,6 +39,7 @@ export interface HeroPlantContext {
 	isVisible: (x: number, y: number) => boolean;
 	shake: (intensity: number, duration: number) => void;
 	setEarthrootArmor: (level: number, pos: number) => void;
+	setBarkskin: (level: number, interval: number) => void;
 	setTimeBubble: (turns: number) => void;
 	syncHero: () => void;
 	healingLeft: () => number;
@@ -48,6 +50,8 @@ export interface HeroPlantContext {
 	setSungrass: (level: number, partial: number, pos: number) => void;
 	findTeleportCell: () => { x: number; y: number } | null | undefined;
 	cancelTravel: () => void;
+	/** Warden Fadeleaf return; false means the Java interfloor gate is closed. */
+	returnToPreviousFloor: () => boolean;
 	moveHero: (to: { x: number; y: number }) => void;
 	showTeleport: (from: { x: number; y: number }, to: { x: number; y: number }) => void;
 }
@@ -103,9 +107,12 @@ export function runHeroPlantEffect(
 			//.level(ch.HT)` - a block pool of the character's own maximum HP that blocks
 			//`(scalingDepth + 5)/2` per hit and ends when the character leaves the cell. This
 			//port used to grant a full-strength Barrier shield instead, which ignored both the
-			//per-hit cap and the movement rule. The Warden's `Barkskin` variant stays
-			//unmodelled, as it was before.
-			ctx.setEarthrootArmor(hero.maxHp, cell);
+			//per-hit cap and the movement rule. Java's Warden branch does not grant that pool:
+			//`Earthroot.activate` calls `Barkskin.conditionallyAppend(ch, ch.lvl + 5, 5)`.
+			//The port keeps the same level/interval, with the interval represented as whole
+			//hero turns because its scheduler has no fractional actor-time callback.
+			if (ctx.subclass() === 'warden') ctx.setBarkskin(ctx.level + 5, 5);
+			else ctx.setEarthrootArmor(hero.maxHp, cell);
 			//`Earthroot.activate()` (tag `v3.3.8`): the burst shakes (`1, 0.4f`) when
 			//the plant cell is in the hero's FOV - trivially true for the hero's own
 			//trigger, load-bearing for the mob half below.
@@ -131,16 +138,20 @@ export function runHeroPlantEffect(
 			//Mob teleports run through `triggerMobPlantAt`'s fadeleaf branch (with the
 			//tracker); a *Warden* with inter-floor
 			//teleporting allowed is sent one depth back instead of moving within the level - a
-			//floor-return transition this port does not have.
+			//floor-return transition now resolves to the previous floor's regular exit.
 			delete hero.buffs['roots'];
-			const fadeDestination = ctx.findTeleportCell();
-			if (fadeDestination) {
-				//`Fadeleaf.activate(ch)`: `((Hero)ch).curAction = null` - a teleport cancels
-				//whatever the hero was doing, including a queued click-to-travel destination.
-				ctx.cancelTravel();
-				const fadeFrom = { x: hero.x, y: hero.y };
-				ctx.moveHero(fadeDestination);
-				ctx.showTeleport(fadeFrom, fadeDestination);
+			//Fadeleaf.activate clears curAction before either branch. A Warden returns
+			//to the previous depth when Dungeon.interfloorTeleportAllowed() is true;
+			//otherwise Java falls through to ordinary random teleportation.
+			ctx.cancelTravel();
+			const returned = ctx.subclass() === 'warden' && ctx.returnToPreviousFloor();
+			if (!returned) {
+				const fadeDestination = ctx.findTeleportCell();
+				if (fadeDestination) {
+					const fadeFrom = { x: hero.x, y: hero.y };
+					ctx.moveHero(fadeDestination);
+					ctx.showTeleport(fadeFrom, fadeDestination);
+				}
 			}
 			ctx.say(ctx.t('port.log.fadeleafteleport'), 'positive');
 			break;
@@ -227,7 +238,7 @@ export function runHeroPlantEffect(
 			// Count those units at the automatic-actor boundary instead of granting a
 			// free hero action, which would incorrectly skip hunger and buffs. A Warden
 			// additionally gets `Haste` for 1 turn (`Buff.affect(ch, Haste.class, 1f)`).
-			ctx.setTimeBubble(7);
+			ctx.setTimeBubble(TIME_BUBBLE_TURNS);
 			if (ctx.subclass() === 'warden') ctx.grantBuff(hero, 'haste', 1);
 			ctx.say(ctx.t('port.log.swiftthistletime'), 'positive');
 			break;

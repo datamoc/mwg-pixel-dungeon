@@ -22,9 +22,11 @@
  *   given HP and sets `HT = maxHP(hero)`. `damageRoll()` is
  *   `NormalIntRange(2 + lvl/4, 4 + lvl/2)`; `attackSkill()` is
  *   `(9 + lvl) * accuracyMultiplier`; `defenseSkill()` is
- *   `1 * (baseEvasion + heroEvasion) / 2` with `baseEvasion = 4 + lvl` and
- *   `heroEvasion = (4 + lvl) * evasionMultiplier` through the armor's
- *   `evasionFactor`; `drRoll()` adds the hero's own; `defenseProc()` runs the
+ *   `super.defenseSkill(enemy) * (baseEvasion + heroEvasion) / 2` with
+ *   `baseEvasion = 4 + lvl` and `heroEvasion = (4 + lvl) * evasionMultiplier`
+ *   through the armor's `evasionFactor` (plus the armor-proc branch at
+ *   lines 175-177, unmodeled - flat-DR model); `drRoll()` adds the hero's
+ *   own; `defenseProc()` runs the
  *   hero armor's proc and `glyphLevel()` takes the max; `attackProc()` aggros
  *   the mob onto the image. Non-chasm death starts a 5-turn fade (healable,
  *   then destroyed); wandering with no enemy in sight converts back into the
@@ -58,13 +60,19 @@ export function prismaticGuardMaxHp(heroLevel: number): number {
  * evasion term reads the ring-scaled value directly (stated in PORT_COVERAGE).
  * All three truncations are Java's `(int)` casts: `lvl/4` and `lvl/2` divide
  * before the range is built, and the final evasion halves with integer math.
+ * `superDefense` is `Mob.defenseSkill(enemy)`'s 0/1 multiplier
+ * (`imageSuperDefenseSkill` in `simulation/mirrorImage`, shared - both
+ * images multiply the same `super` by the same blend): 0 when the image is
+ * surprised, paralysed, illuminated under a Cleric hero, or facing the hero
+ * itself. It defaults to 1, so existing spawn/sync call sites are unchanged
+ * until the scene threads per-attacker state through.
  */
-export function prismaticImageStats(heroLevel: number, accuracyMult: number, evasionMult: number): PrismaticImageStats {
+export function prismaticImageStats(heroLevel: number, accuracyMult: number, evasionMult: number, superDefense: 0 | 1 = 1): PrismaticImageStats {
 	const baseEvasion = 4 + heroLevel;
 	const heroEvasion = Math.trunc(baseEvasion * evasionMult);
 	return {
 		accuracy: Math.trunc((9 + heroLevel) * accuracyMult),
-		evasion: Math.trunc((baseEvasion + heroEvasion) / 2),
+		evasion: Math.trunc(superDefense * (baseEvasion + heroEvasion) / 2),
 		damageMin: 2 + Math.trunc(heroLevel / 4),
 		damageMax: 4 + Math.trunc(heroLevel / 2),
 		maxHp: prismaticGuardMaxHp(heroLevel),

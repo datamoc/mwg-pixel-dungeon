@@ -210,18 +210,23 @@ export function canBumpAttack(context: PreparationBlinkContext, cell: Step): boo
 }
 
 /**
- * Java's destination search: among the eight cells around the target, the free one with the
- * smallest path distance from the hero (which must be within `distance`), ties broken by the
- * closer true distance. `distanceMap` is MWG's breadth-first flood, the same shape as Java's
+ * Java's destination search (`Preparation.java`, tag `v3.3.8`): among the eight cells around
+ * the target, the free one with the smallest path distance from the hero (which must be within
+ * `distance`). Ties keep the first cell in `NEIGHBOURS8` order - which is dy-outer/dx-inner
+ * row-major, the same walk this loop uses - because Java only replaces on a strictly smaller
+ * distance (`PathFinder.distance[dest] > PathFinder.distance[cell+i]`); there is no
+ * true-distance tiebreak. `distanceMap` is MWG's breadth-first flood, the same shape as Java's
  * `PathFinder.buildDistanceMap(hero.pos, passable, range)` - `-1` marks an unreachable cell
- * where Java uses `Integer.MAX_VALUE`.
+ * where Java uses `Integer.MAX_VALUE`. Java floods `passable OR avoid` and lets a flying hero
+ * land on `avoid` cells; this port has no separate `avoid` array (every hazardous-but-walkable
+ * cell is already `passable`), so the `passable` test alone is the whole gate.
  */
 export function blinkDestination(context: PreparationBlinkContext, cell: Step, distance: number): Step | null {
 	const distances = context.distanceMap({ x: context.hero.x, y: context.hero.y });
 	let best: Step | null = null;
 	let bestSteps = Infinity;
-	let bestTrue = Infinity;
-	//All eight neighbours, one step each - the same `dirLR` walk `PathFinder` uses.
+	//All eight neighbours in NEIGHBOURS8 (row-major) order - first wins ties, as Java's
+	//strict-greater comparison does.
 	for (let dy = -1; dy <= 1; dy++) {
 		for (let dx = -1; dx <= 1; dx++) {
 			if (dx === 0 && dy === 0) continue;
@@ -231,11 +236,9 @@ export function blinkDestination(context: PreparationBlinkContext, cell: Step, d
 			if (!context.level.passable(x, y)) continue;
 			const steps = distances[context.level.index(x, y)] ?? -1;
 			if (steps < 0 || steps > distance) continue;
-			const trueDistance = (x - context.hero.x) ** 2 + (y - context.hero.y) ** 2;
-			if (steps < bestSteps || (steps === bestSteps && trueDistance < bestTrue)) {
+			if (steps < bestSteps) {
 				best = { x, y };
 				bestSteps = steps;
-				bestTrue = trueDistance;
 			}
 		}
 	}

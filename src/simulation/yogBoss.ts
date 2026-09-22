@@ -21,18 +21,27 @@ export interface YogDeathGazeAimContext {
  * a renderer-free beam planner.
  */
 export function aimYogDeathGaze(context: YogDeathGazeAimContext): number[] {
-	const beams = 1 + Math.floor((context.maxHp - context.hp) / 400);
+	//Java's `1 + (HT - HP)/400` with HT 1000 escalates at 40%/80% damage taken.
+	//This port scales Yog to 400 HP, so the literal /400 would never exceed one beam
+	//while alive; dividing by 40% of the live max preserves Java's fractions exactly
+	//(2nd beam at 60% HP remaining, 3rd at 20%). Integer arithmetic throughout: a float
+	//divisor (`maxHp * 0.4`) would sit on a rounding edge at the exact thresholds.
+	const beams = 1 + Math.floor(((context.maxHp - context.hp) * 5) / (context.maxHp * 2));
 	const pathOf = (cell: number): number[] => {
 		const to = { x: cell % context.width, y: Math.floor(cell / context.width) };
 		return context.trace(context.yog, to).map((point) => context.index(point.x, point.y));
 	};
-	const targets = new Set<number>();
+	//Java paints into an `ArrayList`, so two extra beams may roll the same neighbour and
+	//the cell fires twice - a plain list here, not a set, preserves those duplicates.
+	const targets: number[] = [];
 	const affected = new Set<number>();
 	for (let i = 0; i < beams; i++) {
 		let cell = context.index(context.hero.x, context.hero.y);
 		if (i > 0) {
 			const heroDistance = Math.hypot(context.hero.x - context.yog.x, context.hero.y - context.yog.y);
-			for (let attempt = 0; attempt < 20; attempt++) {
+			//Java's `do/while` retries uncapped; termination is guaranteed because the
+			//neighbour towards Yog is always strictly closer (equal counts as accepted).
+			for (;;) {
 				const [dx, dy] = context.neighbours[context.random.int(0, context.neighbours.length)]!;
 				const x = context.hero.x + dx, y = context.hero.y + dy;
 				if (x < 0 || y < 0 || x >= context.width || y >= context.height) continue;
@@ -41,18 +50,17 @@ export function aimYogDeathGaze(context: YogDeathGazeAimContext): number[] {
 				break;
 			}
 		}
-		targets.add(cell);
+		targets.push(cell);
 		for (const pathCell of pathOf(cell)) affected.add(pathCell);
 	}
-	let allAdjacentTargeted = true;
+	//Java sweeps `NEIGHBOURS9` - the hero's own cell counts too, not just the eight
+	//neighbours (it is passable by construction: the hero stands on it).
+	let allAdjacentTargeted = affected.has(context.index(context.hero.x, context.hero.y));
 	for (const [dx, dy] of context.neighbours) {
 		const x = context.hero.x + dx, y = context.hero.y + dy;
 		if (x < 0 || y < 0 || x >= context.width || y >= context.height || !context.passable(x, y)) continue;
 		if (!affected.has(context.index(x, y))) { allAdjacentTargeted = false; break; }
 	}
-	if (allAdjacentTargeted) {
-		const last = [...targets].pop();
-		if (last !== undefined) targets.delete(last);
-	}
-	return [...targets];
+	if (allAdjacentTargeted) targets.pop();
+	return targets;
 }

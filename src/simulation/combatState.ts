@@ -39,4 +39,8 @@ export interface Combatant extends Step {
 	/** `ChampionEnemy.Growing`'s own growth multiplier, starting at 1.19 and rising 0.01/turn
 	 * (`Growing.act()`) - undefined for every other champion type/non-champion. */
 	championPower?: number;
+	/** Barkskin (`actors/buffs/Barkskin.java`, tag `v3.3.8`): independent armor roll. */
+	barkskinLevel?: number;
+	barkskinInterval?: number;
+	barkskinCooldown?: number;
 }

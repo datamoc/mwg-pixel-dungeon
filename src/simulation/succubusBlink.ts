@@ -45,22 +45,36 @@ export const SUCCUBUS_NEIGHBOURS8: ReadonlyArray<readonly [number, number]> = [
 
 /**
  * The blink destination off a traced ray (`cells` runs from the cell after the succubus
- * to the collision cell, mirroring `route.path`/`route.collisionPos`). An occupied
- * collision backs up one cell (`route.path.get(route.dist - 1)`); a landing that is
- * still not free falls back to a uniform draw over the free passable neighbours of the
- * collision, and `null` aborts the blink when none exists. `isFree` covers Java's
- * `passable` plus unoccupied halves; the `avoid`-cell reroute has no port-side map
- * (stated at the call site), so reaching here already means the ray's own answer.
+ * to the collision cell, mirroring `route.path.slice(1)`/`route.collisionPos` - the
+ * port's ray helper keeps the stopping cell, matching Java's `subPath(1, dist)`).
+ * Java backs up one cell only off an OCCUPIED collision (`Actor.findChar(cell) != null
+ * && cell != this.pos` → `route.path.get(route.dist - 1)`); an impassable-but-empty
+ * collision is kept into the avoid-check below. Backing up past the ray's first step
+ * (`dist == 1`, an adjacent occupied collision) lands on the succubus's own cell, and
+ * `ScrollOfTeleportation.appear` there succeeds without moving - a no-op success, not
+ * a failure. A landing that is still not free falls back to a uniform draw over the
+ * free passable neighbours of the collision, and `null` aborts the blink when none
+ * exists. `isFree` covers Java's `passable` plus unoccupied halves; `isOccupied` is
+ * the occupancy half alone (the scene's `creatureAt`), and `ownCell` is the ray
+ * source. Both default to the legacy shape when unthreaded: without them an adjacent
+ * occupied collision falls into the neighbour draw below instead of staying put
+ * (stated). The `avoid`-cell reroute has no port-side map (stated at the call site),
+ * so reaching here already means the ray's own answer.
  */
 export function chooseSuccubusBlinkCell(
 	cells: readonly BlinkStep[],
 	isFree: (cell: BlinkStep) => boolean,
 	random: SimulationRandom,
+	isOccupied: (cell: BlinkStep) => boolean = () => false,
+	ownCell?: BlinkStep,
 ): BlinkStep | null {
 	if (cells.length === 0) return null;
 	const collision = cells[cells.length - 1]!;
 	let landing = collision;
-	if (!isFree(collision) && cells.length >= 2) landing = cells[cells.length - 2]!;
+	const occupied = isOccupied(collision);
+	if (occupied && cells.length >= 2) landing = cells[cells.length - 2]!;
+	else if (occupied && ownCell !== undefined) return { x: ownCell.x, y: ownCell.y };
+	else if (!occupied && !isFree(collision) && cells.length >= 2) landing = cells[cells.length - 2]!;
 	if (isFree(landing)) return { x: landing.x, y: landing.y };
 	const candidates: BlinkStep[] = [];
 	for (const [dx, dy] of SUCCUBUS_NEIGHBOURS8) {

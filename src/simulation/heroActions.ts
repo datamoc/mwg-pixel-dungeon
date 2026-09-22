@@ -13,7 +13,11 @@ export const TURN_COSTS: Record<string, number> = {
 	move: 1,         // movement in a direction
 	wait: 1,         // wait action
 	attack: 1,       // melee attack (part of movement when adjacent)
-	ranged: 1,       // ranged attack attempt (special/eat/quaff/read/upgrade)
+	ranged: 1,       // ranged attack attempt (special/quaff/read/upgrade)
+	//`Food.TIME_TO_EAT = 3f` (`items/food/Food.java`, tag `v3.3.8`): eating spends
+	//three turns via `spend(eatingTime())` - quaffing (`TIME_TO_DRINK = 1f`) and
+	//reading (`TIME_TO_READ = 1f`) stay in the 1-cost ranged bucket, only eat moves.
+	eat: 3,          // eating food (1 with any meal talent, see planHeroAction)
 	//`Hero.TIME_TO_SEARCH = 2f` (tag `v3.3.8`): searching spends two turns via
 	//`spendAndNext`, so monsters get twice the turns a 1-cost action would grant.
 	search: 2,       // search for secrets
@@ -33,11 +37,27 @@ export type HeroActionPlan =
  * Actual effects and whether a consumable/ranged attempt succeeds remain with the caller.
  * Includes turn cost (can be modified by gear/buffs at the call site).
  */
-export function planHeroAction(action: string, paralysed: boolean, turnCostMod: number = 1): HeroActionPlan {
+/**
+ * The six talents that cut eating to a single turn (`Food.eatingTime()`, tag
+ * `v3.3.8`: `TIME_TO_EAT - 2`), in this port's talent-id spelling. The scene
+ * owns rank state; the planner takes the resolved boolean (see planHeroAction).
+ */
+export const MEAL_TALENTS: readonly string[] = [
+	'iron_stomach', 'energizing_meal', 'mystical_meal',
+	'invigorating_meal', 'focused_meal', 'enlightening_meal',
+];
+
+export function planHeroAction(action: string, paralysed: boolean, turnCostMod: number = 1, hasMealTalent = false): HeroActionPlan {
 	if (paralysed && !['save', 'load', 'talents'].includes(action)) return { kind: 'paralysed', turnCost: TURN_COSTS.move * turnCostMod };
 	switch (action) {
 		case 'search': return { kind: 'search', turnCost: TURN_COSTS.search * turnCostMod };
-		case 'special': case 'eat': case 'quaff': case 'read': case 'upgrade':
+		case 'eat':
+			//`Food.eatingTime()`: 3 turns, or 1 with any meal talent. The scene
+			//threads the talent flag through live dispatch (HeroActionPorts
+			//carries it, resolved from MEAL_TALENTS ranks), so both branches
+			//are live - no residual.
+			return { kind: 'attempt', action, turnCost: (hasMealTalent ? 1 : TURN_COSTS.eat) * turnCostMod };
+		case 'special': case 'quaff': case 'read': case 'upgrade':
 			return { kind: 'attempt', action, turnCost: TURN_COSTS.ranged * turnCostMod };
 		case 'examine': case 'talents': case 'buyHeal': case 'buyId': case 'sellFood': case 'buyback': case 'save': case 'load': case 'preparation': case 'armorAbility':
 			return { kind: 'free', action };

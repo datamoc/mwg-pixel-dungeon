@@ -67,8 +67,7 @@ export const ASCENSION_MOD: Record<string, number> = {
  * 50->80, their cooldowns/cadences, `CavesBossLevel`'s trap chance and final-pylon count).
  * Findings and the corrected table are recorded in `PORT_COVERAGE.md`.
  *
- * Unported alongside it, so the port does not claim more than it has: the `statModifier(enemy)`
- * factor Java applies to the defender's `drRoll()`, and its two exemptions
+ * Unported alongside it, so the port does not claim more than it has: its two exemptions
  * (`Ratmogrify.TransmogRat` resolving to its original, and an `AscensionBuffBlocker` holder
  * returning 1).
  */
@@ -221,7 +220,14 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 		dmg *= 0.5;
 		if (defender.kind === 'yog') dmg *= 0.5;
 	}
-	const dr = random.normalRange(defender.armor[0], defender.armor[1]);
+	// `Char.drRoll()` first rolls `NormalIntRange(0, Barkskin.currentLevel(this))`,
+	// then the ordinary armor roll (`Char.java`, tag `v3.3.8`).
+	const rawDr = (defender.barkskinLevel ? random.normalRange(0, defender.barkskinLevel) : 0)
+		+ random.normalRange(defender.armor[0], defender.armor[1]);
+	// `Char.attack()` (Char.java:386, tag v3.3.8) rounds `enemy.drRoll() *
+	// AscensionChallenge.statModifier(enemy)` before subtracting it. The port has no
+	// AscensionBuffBlocker/TransmogRat source marker, so those Java exemptions remain documented.
+	const dr = Math.round(rawDr * (ascensionOn() && defender.kind ? ASCENSION_MOD[defender.kind] ?? 1 : 1));
 	let effective = Math.max(0, Math.round(dmg) - dr);
 	if (defender.buffs['vulnerable']) effective *= 1.33;
 	//ChampionEnemy.Giant.damageTakenFactor()/Growing.damageTakenFactor(): flat 0.2x for Giant,

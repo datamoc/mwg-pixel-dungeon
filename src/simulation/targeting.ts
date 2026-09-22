@@ -95,8 +95,16 @@ export function amokTarget(
  * - including the fall-through when a recorded holder is gone. Moved here
  * verbatim from the scene as the file-size refactor's forty-first extraction,
  * behavior-identical, following this module's own `SimulationRoguelike` seam.
- * The caller keeps the one-line scene adapter.
+ * The caller keeps the one-line scene adapter. **2026-09-21:** the ground-pot
+ * search now excludes a `Char.isInvulnerable()` candidate (`buff(Challenge.
+ * SpectatorFreeze.class) != null || buff(Invulnerability.class) != null`,
+ * `Char.java`'s base override) - the pot-holder branch has no such check in
+ * Java either (`Actor.findById(potHolder)` is unconditional), so it stays as is.
  */
+function isInvulnerableTarget(c: Creature): boolean {
+	return c.buffs['invulnerability'] !== undefined || c.buffs['spectatorFreeze'] !== undefined;
+}
+
 export function beeTarget(
 	bee: Creature,
 	hero: Creature,
@@ -113,9 +121,9 @@ export function beeTarget(
 	if (!target && pot) {
 		target = creatures
 			.filter((c) => !c.isHero && !c.isNPC && !c.isAlly && c.hp > 0
-				&& roguelike.chebyshevDistance(c, pot) <= 3)
+				&& roguelike.chebyshevDistance(c, pot) <= 3 && !isInvulnerableTarget(c))
 			.sort((a, b) => roguelike.chebyshevDistance(bee, a) - roguelike.chebyshevDistance(bee, b))[0] ?? null;
-		if (!target && hero.hp > 0 && roguelike.chebyshevDistance(hero, pot) <= 3) target = hero;
+		if (!target && hero.hp > 0 && roguelike.chebyshevDistance(hero, pot) <= 3 && !isInvulnerableTarget(hero)) target = hero;
 	}
 	return target;
 }

@@ -35,6 +35,12 @@ export function planMonsterPopulation(
 		monk: 'senior',
 		scorpio: 'acidic',
 	};
+	//Java's per-entry roll is `Random.Float() < 1/50 * RatSkull.exoticChanceMultiplier()`
+	//(`MobSpawner.swapMobAlts`, tag `v3.3.8`); this port has no trinket system, so the
+	//multiplier is always its default of 1 (the ParchmentScrap precedent in
+	//`src/items/generator.ts`, and the chaos roll in `src/actors/monsterSpawn.ts`).
+	//`GnollExile`/`HermitCrab` have no kinds here (see PORT_COVERAGE), so the gnoll
+	//and crab swaps are moot until they exist; the chaos swap rides `Elemental.random`.
 	const roster = roguelike.rollRoster(
 		baseRoster.map((value) => ({
 			value,
@@ -42,8 +48,10 @@ export function planMonsterPopulation(
 		})),
 		rareMob ? [{ value: rareMob, chance: 0.025 }] : [],
 	).roster as AnyMonsterId[];
-	// Floor 1 is the tutorial's fixed eight mobs; later floors use 3 + (depth % 5) + Int(3).
-	// LARGE increases the cap by 1.33x, matching the Java mob-limit rule.
+	//Floor 1 spawns 8 pre-set mobs so the player can reach level 2
+	//(`RegularLevel.createMobs`, tag `v3.3.8`); later floors use 3 + (depth % 5) +
+	//`Int(3)` (`RegularLevel.mobLimit`), and LARGE takes the ceiling of 1.33x.
+	//(`int(0, 3)` here is [min, max) like Java's `Int(3)` - see `random.ts`.)
 	const baseCount = depth === 1 ? 8 : 3 + (depth % 5) + random.int(0, 3);
 	return { roster, count: largeFeeling ? Math.ceil(baseCount * 1.33) : baseCount };
 }
