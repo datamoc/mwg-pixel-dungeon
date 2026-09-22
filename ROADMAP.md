@@ -465,10 +465,24 @@ below to close the gap was judged not worth the churn against those existing ref
       PhantomPiranha - each with its missing trigger named). **Closed 2026-09-21, the ward-zap
       attacker flash**: `takeWardTurn` now fires the same one-frame `colorAdd` pulse
       `showDamage` already triggers on a landed hit, matching `WardSprite.zap()`'s
-      `attacker.sprite.flash()`. Left, genuinely: the Ward DeathRay beam (no beam-drawing
-      primitive exists here beyond Tengu's cone) and its death's 2s alpha fade (this port's
-      sprite removal is instant, with no fade/tween mechanism to hang one on), plus spell-cast
-      bursts / wand-zap trails outside the monster sprites. **Complexity: S** for what's left.
+      `attacker.sprite.flash()`. **Closed 2026-09-22, the ward death fade - and the
+      "no fade/tween mechanism exists" premise it was recorded under was stale.** A generic
+      corpse-fade loop (`dyingMonsters`, `dungeonScene.ts`'s `update()`) already existed for
+      every ordinary monster's 3-second post-`die`-clip fade; a ward has no `die` clip at all
+      (`WardSprite.die()` is just `new AlphaTweener(sprite, 0, 2f)`, no animation), so it fell
+      through to instant `destroy()` instead of ever reaching that loop. Fixed by widening the
+      loop to a per-corpse `duration` (3 default, 2 for a ward) and an explicit `playDieClip`
+      flag rather than inferring "has a clip finished" from `AnimatedSprite.isFinished` -
+      every monster's sprite is an `AnimatedSprite` instance regardless of whether it has a
+      `die` clip, and `isFinished` defaults `false` on one that never had `play()` called, so
+      the original `instanceof AnimatedSprite` check alone would have waited forever rather
+      than ever reaching the fade branch (caught live before landing: a wand-summoned ward's
+      corpse hung at a fixed 72% alpha instead of counting down). Live-verified via the
+      scene's own `update(dt)` stepped in increments: fade 0/0.5/1/1.5 -> destroyed exactly
+      at 2.0, alpha counting 1 -> 0.75 -> 0.5 -> 0.25 linearly in between. **Left, genuinely**:
+      the Ward DeathRay beam (no beam-drawing primitive exists here beyond Tengu's cone), plus
+      spell-cast bursts / wand-zap trails outside the monster sprites. **Complexity: S** for
+      what's left.
 - [x] Audit every static `t('port.*')` call site against `portStrings.ts`'s EN/FR tables. A script
       walk found 45 keys missing from EN and 47 from FR - all fixed (window titles, victory/defeat
       screens, `port.action.bag`/`port.talent.*`, ~20 combat log lines), plus two French-specific

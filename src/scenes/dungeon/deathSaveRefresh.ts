@@ -143,7 +143,15 @@ export const deathSaveRefreshMethods = {
 		if (deadSprite instanceof AnimatedSprite && deadSprite.has('die')) {
 			deadSprite.play('die', true);
 			//a monster's corpse is handed to the fade loop; the hero keeps its pose in place
-			if (!creature.isHero) this.dyingMonsters.set(deadSprite, { x: creature.x, y: creature.y, fade: 0 });
+			if (!creature.isHero) this.dyingMonsters.set(deadSprite, { x: creature.x, y: creature.y, fade: 0, duration: 3, playDieClip: true });
+		//`WardSprite.die()` (tag `v3.3.8`): no death clip - just `sprite.parent.add(new
+		//AlphaTweener(sprite, 0, 2f))`, a plain 2-second fade of the static gem sprite in
+		//place. Java's own ordinary `MobSprite.die()` (the `duration: 3` branch above) has
+		//no such tween at all; the two are separate, differently-timed effects that only
+		//looked alike from this port's "no fade exists" note before the fade loop above
+		//grew a generic per-corpse duration.
+		} else if (!creature.isHero && creature.allyKind === 'ward') {
+			this.dyingMonsters.set(deadSprite, { x: creature.x, y: creature.y, fade: 0, duration: 2, playDieClip: false });
 		} else if (!creature.isHero) deadSprite.destroy();
 		//Java's one-shot death bursts (`DM300Sprite.onComplete(die)`, `PylonSprite.play(die)`,
 		//`GuardSprite.play(die)`, `SuccubusSprite.die()`, `GhostSprite.die()`,

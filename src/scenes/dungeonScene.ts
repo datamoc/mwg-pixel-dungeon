@@ -338,7 +338,7 @@ export class DungeonScene extends Scene2D {
 	wallsMap!: TileMap;
 	featuresMap?: TileMap;
 	monsterMotion = new Map<TintedSprite, Tweener>();
-	dyingMonsters = new Map<AnimatedSprite, { x: number; y: number; fade: number }>();
+	dyingMonsters = new Map<TintedSprite, { x: number; y: number; fade: number; duration: number; playDieClip: boolean }>();
 	characterEffects!: CharacterEffects;
 	/** Reused each frame; avoids rebuilding the character-visual array in `update()`. */
 	characterEffectCharacters: Array<{ sprite: TintedSprite; sleeping?: boolean }> = [];
@@ -2367,11 +2367,17 @@ export class DungeonScene extends Scene2D {
 		for (const [sprite, corpse] of this.dyingMonsters) {
 			if (sprite.destroyed) { this.dyingMonsters.delete(sprite); continue; }
 			sprite.visible = this.fov.isVisible(corpse.x, corpse.y);
-			if (!sprite.isFinished) sprite.update(dt);
+			//A ward (`playDieClip: false` - see below) has nothing to finish playing first,
+			//even though its sprite is still an `AnimatedSprite` instance (every monster's
+			//is) - `isFinished` defaults false on one that has never had `play()` called,
+			//which would otherwise wait forever for a clip that was never started. Every
+			//other corpse here has `play('die', true)` already called on it and fades only
+			//once that clip finishes.
+			if (corpse.playDieClip && sprite instanceof AnimatedSprite && !sprite.isFinished) sprite.update(dt);
 			else {
 				corpse.fade += dt;
-				sprite.alpha = Math.max(0, 1 - corpse.fade / 3);
-				if (corpse.fade >= 3) { sprite.destroy(); this.dyingMonsters.delete(sprite); }
+				sprite.alpha = Math.max(0, 1 - corpse.fade / corpse.duration);
+				if (corpse.fade >= corpse.duration) { sprite.destroy(); this.dyingMonsters.delete(sprite); }
 			}
 		}
 		for (const [sprite, motion] of this.monsterMotion) {
