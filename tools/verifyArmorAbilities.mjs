@@ -197,6 +197,9 @@ export function verifyArmorAbilities(require, check) {
 		assert.ok(source.includes("this.say(t('port.ally.novision')"), 'unseen summon targets get Java no-vision feedback');
 		assert.ok(source.includes('!this.level.passable(cell.x, cell.y)'), 'empty-cell placement checks this port\'s available terrain gate');
 		assert.equal(armorChargeUse(armorAbilityDef('powerofmany'), { heroicEnergyRank: 4, powerOfManyLightAlly: true }), 0);
+		const traps = readFileSync(new URL('../src/scenes/dungeon/environmentFireTraps.ts', import.meta.url), 'utf8');
+		assert.ok(traps.includes('absorbCreatureShields(target, damage, this.ascendedTurns > 0)'), 'blob and trap damage drains ally shields');
+		assert.ok(traps.includes('absorbCreatureShields(monster, damage, this.ascendedTurns > 0)'), 'mob-triggered traps drain ally shields');
 	});
 		assert.deepEqual(armorAbilitiesFor('duelist'), ['challenge', 'elementalstrike', 'feint']);
 		assert.equal(ARMOR_CHARGE_MAX, 100);

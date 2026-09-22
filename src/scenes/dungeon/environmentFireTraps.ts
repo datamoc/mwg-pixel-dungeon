@@ -37,6 +37,7 @@ import { burnFireContents as burnFireContentsEffect } from '../../items/fireCont
 import { nearestVisibleEnemy as nearestVisibleEnemyFlow } from '../../simulation/targeting';
 import { getCurse } from '../../items/itemCurses';
 import { Cat, randomUsingDefaults, removeArtifactClass } from '../../items/generator';
+import { absorbCreatureShields } from '../../simulation/allyShields';
 import { mwlItemEffectValue } from '../../mwlContent';
 import { applySandalsNaturalismCharge, sandalsNaturalismLevel } from '../../items/sandals';
 import { ritualSiteState } from '../../spdLevelGen/rooms/standard/ritualSiteRoom';
@@ -1146,6 +1147,7 @@ export const environmentFireTrapsMethods = {
 					target.kingShield = absorbed.shield;
 					damage = absorbed.damage;
 				}
+				damage = absorbCreatureShields(target, damage, this.ascendedTurns > 0);
 				//`Sheep.damage()` (tag `v3.3.8`) is a no-op: no blob seam can damage sheep.
 				if (target.allyKind === 'sheep') return true;
 				//`SentryRoom$Sentry.damage()` (tag `v3.3.8`) is likewise a no-op.
@@ -1544,6 +1546,7 @@ export const environmentFireTrapsMethods = {
 					this.hero.hp -= damage;
 					this.showDamage(this.hero, damage);
 				} else {
+					damage = absorbCreatureShields(ch, damage, this.ascendedTurns > 0);
 					ch.hp -= damage;
 					this.showDamage(ch, damage);
 				}
@@ -1857,16 +1860,18 @@ export const environmentFireTrapsMethods = {
 			}
 		} else if (kind === 'poisonDart') {
 			const damage = Math.max(0, Random.normalRange(4, 8) - Random.normalRange(monster.armor[0], monster.armor[1]));
-			monster.hp -= damage;
-			this.showDamage(monster, damage);
+			const dealt = absorbCreatureShields(monster, damage, this.ascendedTurns > 0);
+			monster.hp -= dealt;
+			this.showDamage(monster, dealt);
 			//`reigniteBuff` keeps the max-duration semantics and routes through the shared
 			//immunity gate, so INORGANIC kinds refuse the dart's poison like Java's isImmune.
 			reigniteBuff(monster, 'poison', 8 + Math.round((2 * this.depth) / 3));
 		} else if (kind === 'wornDart') {
 			//Same dart as poisonDart above, minus the poison, like Java's WornDartTrap.
 			const damage = Math.max(0, Random.normalRange(4, 8) - Random.normalRange(monster.armor[0], monster.armor[1]));
-			monster.hp -= damage;
-			this.showDamage(monster, damage);
+			const dealt = absorbCreatureShields(monster, damage, this.ascendedTurns > 0);
+			monster.hp -= dealt;
+			this.showDamage(monster, dealt);
 		} else if (kind === 'grim') {
 			//`GrimTrap` is one of `AntiMagic.RESISTS`' listed source classes (see the hero branch
 			//above) - an AntiMagic champion caught on one takes none of its damage, though the
@@ -1878,8 +1883,9 @@ export const environmentFireTrapsMethods = {
 			//quarter-max mix with it).
 			if (!monster.magicImmune) {
 				const damage = grimTrapDamage(monster.hp, monster.maxHp);
-				monster.hp -= damage;
-				this.showDamage(monster, damage);
+				const dealt = absorbCreatureShields(monster, damage, this.ascendedTurns > 0);
+				monster.hp -= dealt;
+				this.showDamage(monster, dealt);
 			}
 		} else if (kind === 'shockingTrap') {
 			for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
@@ -1904,8 +1910,9 @@ export const environmentFireTrapsMethods = {
 			//fire seeding.
 			const damage = Math.max(0, Random.normalRange(...explosiveTrapBounds(this.depth))
 				- Random.normalRange(monster.armor[0], monster.armor[1]));
-			monster.hp -= damage;
-			this.showDamage(monster, damage);
+			const dealt = absorbCreatureShields(monster, damage, this.ascendedTurns > 0);
+			monster.hp -= dealt;
+			this.showDamage(monster, dealt);
 			this.applyTrapBlast(monster.x, monster.y);
 		}
 		//Every trap kind modelled for mobs is a Java `HazardAssistTracker` producer:
@@ -1938,6 +1945,7 @@ export const environmentFireTrapsMethods = {
 				target.kingShield = absorbed.shield;
 				damage = absorbed.damage;
 			}
+			damage = absorbCreatureShields(target, damage, this.ascendedTurns > 0);
 			// Java's PhantomPiranha.damage() also halves source-less trap blast damage and relocates survivors.
 			const phantomDirect = target.kind === 'phantomPiranha'; if (phantomDirect) damage = this.phantomPiranhaDamage(target, damage);
 			const preHp = target.hp;
