@@ -310,6 +310,14 @@ export class InventoryWindow extends Container2D {
 			return true;
 		}
 		if (action === 'cancel') { this.close(); return true; }
+		//Port-original keyboard-navigation accessibility work (ROADMAP.md section 8 - Java has
+		//no such system), fourth and final slice after the title, class-select and settings
+		//screens: `menu` (bound to Tab/KeyI, and otherwise unused while the bag is open, since
+		//`IconGrid.handleAction` below only consumes up/down/left/right/confirm/cancel) cycles
+		//through every tab - the four category tabs and the five sub-bag pouches, in the same
+		//order `createList` declares them - reusing `TabbedList.nextTab`'s own disabled-tab
+		//skip rather than a hand-rolled index walk.
+		if (action === 'menu') { this.list.nextTab(1); this.draw(); return true; }
 		if (!this.grid) return true;
 		return this.grid.handleAction(action);
 	}

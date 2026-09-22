@@ -650,8 +650,26 @@ below to close the gap was judged not worth the churn against those existing ref
       semantics (a slider needs value-stepping, not just selection), which is a materially
       bigger task than a focus ring. Browser-verified live: opening Settings from the
       title screen, arrow-cycling from Display to Interface tab, Escape closing the window
-      with title-screen focus correctly restored to the button that opened it. The bag
-      tabs remain open.
+      with title-screen focus correctly restored to the button that opened it.
+      **Progress 2026-09-22 (fourth slice): bag-tab switching is done - the item grid
+      itself already had keyboard support before this pass.** `IconGrid` (`mwg/two-d/ui`,
+      the framework component the bag's item grid is already built from) turned out to
+      already handle `up`/`down`/`left`/`right`/`confirm`/`cancel` internally with its own
+      visible highlight - `InventoryWindow.handleAction` already delegated to it, so a
+      player could already move the highlight and open an item's detail view by keyboard
+      before this session touched anything. What was missing was only the category/pouch
+      tab strip, the same click-only gap the title/class-select/settings screens had:
+      `menu` (Tab/KeyI, otherwise unused while the bag is open, since `IconGrid` doesn't
+      consume it) now calls `TabbedList.nextTab(1)`, cycling all nine tabs (four
+      categories, five sub-bag pouches) in the order `createList` declares them. Browser-
+      verified live: opening the bag, Tab switching from "Tout" to "Usage" with the grid
+      re-filtering, arrow-key movement plus Enter still opening an item's detail view
+      (a food ration) on the new tab, Escape closing both the detail and the bag. **All
+      four slices of this item are landed now** (title screen, class select, settings
+      tab-strip, bag tab-strip); **still open**: focus/activation for the settings
+      window's in-tab widgets (sliders, checkboxes, the language grid) - a materially
+      different, larger problem per widget kind, not part of this item's original
+      four-screen list, and not attempted this session.
 - [ ] Add colorblind options to the graphics settings. Too much state here is color-only:
       buff/debuff icon tints, HP-bar thresholds, key colors, trap and hazard highlights. Offer
       at least deuteranopia/protanopia/tritanopia-safe palettes (plus a high-contrast pass if
