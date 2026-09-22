@@ -1672,7 +1672,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		const dry = /const dry = new Set<number>\(\[([^\]]+)\]\)/.exec(frames);
 		assert.ok(dry, 'waterFrames carries a literal dry set');
 		const ids = dry[1].split(',').map((s) => Number(s.trim())).sort((a, b) => a - b);
-		assert.deepEqual(ids, [1, 2, 3, 5, 6, 7, 8, 9, 10, 13, 15, 17, 18, 19, 20, 23, 24, 25, 28, 30, 31]);
+		assert.deepEqual(ids, [1, 2, 3, 5, 6, 7, 8, 9, 10, 13, 15, 17, 18, 19, 20, 23, 24, 25, 28, 30, 31, 35, 36]);
 		assert.ok(/Terrain\.FURROWED_GRASS\) return alternate\(150\)/.test(frames),
 			'furrowed grass renders its own raised frame');
 		assert.ok(frames.includes('150: 154'), 'furrowed alt variant registered');
