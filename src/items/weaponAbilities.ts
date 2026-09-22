@@ -34,17 +34,17 @@ export interface WeaponChargeState {
 
 /** One turn of `Charger.act()`, scaled by the spent turn cost (this port's whole-turn
  * ticks stand in for the buff's per-tick accrual, the same convention the armor-Charger
- * port uses). `regenOn` is always true here: Java gates only on `LockedFloor`/`Vault`,
- * neither of which this port models. Brawler's stance has no expression either (no such
- * buff exists here) - both stated, not silent. */
+ * port uses). The base gain is gated on `Regeneration.regenOn()` (the boss-arena lock - see
+ * `simulation/regeneration.ts`); the Recharging/ArtifactRecharge bonus is not, as in Java.
+ * Brawler's stance has no expression (no such buff exists here) - stated, not silent. */
 export function accrueWeaponCharge(
 	state: WeaponChargeState,
-	opts: { cap: number; champion: boolean; weaponRechargingRank: number; recharging: boolean; artifactRecharge: boolean },
+	opts: { cap: number; champion: boolean; weaponRechargingRank: number; recharging: boolean; artifactRecharge: boolean; regenOn?: boolean },
 	turns = 1,
 ): WeaponChargeState {
 	let { charges, partial } = state;
 	if (charges < opts.cap) {
-		partial += (1 / (60 - 1.5 * (opts.cap - charges))) * (opts.champion ? 1.5 : 1) * turns;
+		if (opts.regenOn !== false) partial += (1 / (60 - 1.5 * (opts.cap - charges))) * (opts.champion ? 1.5 : 1) * turns;
 		if ((opts.weaponRechargingRank > 0 && opts.recharging) || opts.artifactRecharge) {
 			partial += (1 / (20 - 5 * opts.weaponRechargingRank)) * turns;
 		}

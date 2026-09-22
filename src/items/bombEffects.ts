@@ -35,6 +35,8 @@ export interface BombEffectsContext {
 	readonly yogShielded: (target: Creature) => boolean;
 	readonly guardFist: (target: Creature) => boolean;
 	readonly clampTenguBracket: (target: Creature, previousHp: number) => void;
+	/** `LockedFloor.addTime` from each boss's `damage()` override (`simulation/regeneration.ts`). */
+	readonly onBossDamageTaken?: (target: Creature, dealt: number, hpLost: number) => void;
 	readonly yogDamageHook: (target: Creature, previousHp: number) => void;
 	readonly kingDamageHook: (target: Creature) => void;
 	readonly tenguBracketJump: (target: Creature, previousHp: number) => void;
@@ -94,6 +96,7 @@ export function applyBlastDamage(target: Creature, amount: number, pierceArmor: 
 	const previousHp = target.hp;
 	target.hp -= damage;
 	if (target.kind === 'phantomPiranha' && target.hp > 0) context.phantomPiranhaSurvived?.(target);
+	context.onBossDamageTaken?.(target, damage, previousHp - target.hp);
 	if (target.kind === 'tengu') context.clampTenguBracket(target, previousHp);
 	if (target.kind === 'yog' && target.hp > 0) context.yogDamageHook(target, previousHp);
 	//Phase transitions ride the damage event (`DwarfKing.damage()`), with the P1

@@ -583,7 +583,9 @@ export const deathSaveRefreshMethods = {
 		if (creature.kingDamager === true) {
 			const king = this.creatures.find((c) => c.kind === 'king' && c.hp > 0 && (c.kingPhase ?? 1) === 2);
 			if (king && (king.kingShield ?? 0) > 0) {
-				king.kingShield = Math.max(0, (king.kingShield ?? 0) - Math.floor(king.maxHp / (isChallengeEnabled('stronger_bosses') ? 18 : 12)));
+				const chip = Math.floor(king.maxHp / (isChallengeEnabled('stronger_bosses') ? 18 : 12));
+				king.kingShield = Math.max(0, (king.kingShield ?? 0) - chip);
+				this.lockedFloorBossDamage(king, chip, 0); //`m.damage(HT/12)` -> `DwarfKing.damage()`'s addTime
 				this.kingDamageHook(king);
 			}
 		}
@@ -1112,7 +1114,9 @@ export const deathSaveRefreshMethods = {
 			//The guard's buff-map value is a re-armed sentinel, not a duration: the
 			//status pane (icon text, info window) reads the pool instead, which is
 			//what Java's `iconTextDisplay()`/`desc()` show (`(int)HP`, `{0}/{1}`).
-			buffs: Object.entries(this.hero.buffs).map(([id, turns]) => ({ id: id as BuffId, turns: id === 'prismaticGuard' ? Math.floor(this.hero.prismaticGuardHp ?? 0) : turns })),
+			buffs: [...Object.entries(this.hero.buffs).map(([id, turns]) => ({ id: id as BuffId, turns: id === 'prismaticGuard' ? Math.floor(this.hero.prismaticGuardHp ?? 0) : turns })),
+				//`LockedFloor` has no `iconTextDisplay()` override: icon only.
+				...(this.regeneration.lockLeft !== null ? [{ id: 'lockedFloor' as BuffId, turns: undefined }] : [])],
 			staff: this.heroClass === 'mage' ? { current: this.wandCharges.current, max: this.wandCharges.max } : null,
 			ammo: CLASS_AMMO.has(this.heroClass) ? this.ammo : null,
 			carriedCount,
@@ -1424,6 +1428,8 @@ export const deathSaveRefreshMethods = {
 			regrowthTotalChargesUsed: this.regrowthTotalChargesUsed,
 			regrowthChargesOverLimit: this.regrowthChargesOverLimit,
 			barrierPartialLoss: this.barrierPartialLoss,
+			regenPartial: this.regeneration.partial,
+			lockedFloorLeft: this.regeneration.lockLeft,
 			blockingBarrierState: this.blockingBarrier.toJSON(),
 			blockingTurnsLeft: this.blockingTurnsLeft,
 			sealBarrierState: this.sealBarrier.toJSON(),

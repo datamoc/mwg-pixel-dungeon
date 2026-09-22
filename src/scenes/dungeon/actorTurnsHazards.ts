@@ -951,6 +951,7 @@ export const actorTurnsHazardsMethods = {
 		if (dotDealt > 0 && !(monster.kind === 'yog' && this.yogShielded(monster)) && !(monster.kind === 'yogFist' && this.guardFist(monster))) {
 			const preHp = monster.hp;
 			monster.hp -= dotDealt;
+			this.lockedFloorBossDamage(monster, dotDealt, preHp - monster.hp);
 			if (monster.kind === 'tengu') this.clampTenguBracket(monster, preHp);
 			if (monster.kind === 'yog' && monster.hp > 0) this.yogDamageHook(monster, preHp);
 			if (monster.kind === 'king' && monster.hp > 0 && (monster.kingPhase ?? 1) === 1) {
@@ -1493,10 +1494,8 @@ export const actorTurnsHazardsMethods = {
 		const max = prismaticGuardMaxHp(this.progression.level);
 		const steps = Math.max(1, Math.round(turns));
 		for (let n = 0; n < steps; n++) {
-			//`HP += 0.1f` while hurt and `Regeneration.regenOn()`: the boss-arena
-			//and mining gates ride the established "regen always on" simplification
-			//stated at the seal/book ticks above, so the guard always regens here.
-			const pool = Math.min(max, (this.hero.prismaticGuardHp ?? 0) + 0.1);
+			//`HP += 0.1f` while hurt and `Regeneration.regenOn()` (the boss-arena lock).
+			const pool = Math.min(max, (this.hero.prismaticGuardHp ?? 0) + (this.regenOn() ? 0.1 : 0));
 			this.hero.prismaticGuardHp = pool;
 			addBuff(this.hero, 'prismaticGuard', 9999);
 			if (this.hatchPrismaticImage(pool)) return;

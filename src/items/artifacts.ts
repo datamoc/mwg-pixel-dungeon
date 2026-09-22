@@ -32,9 +32,9 @@
  *
  * **Chalice of Blood is now implemented too (2026-09-14)**, closing that placeholder: see
  * `useChalice` in `src/items/artifactActions.ts` for the active `AC_PRICK` mechanic and its
- * stated simplifications (no armor subtraction on the self-hit, no confirmation modal, and no
- * passive `chaliceRegen` boost since this port has no natural-regeneration system to hook one
- * into). Generation was also fixed in the same pass: every generated artifact other than the
+ * stated simplifications (no armor subtraction on the self-hit, no confirmation modal); the
+ * passive `chaliceRegen` boost is live since 2026-09-23 through `Regeneration`
+ * (`simulation/regeneration.ts`). Generation was also fixed in the same pass: every generated artifact other than the
  * Hourglass used to collapse to `cloak` regardless of its real class - a Chalice of Blood picked
  * up in ordinary play silently became a second Cloak of Shadows - now `generatedInventoryItem`/
  * `sourceInventoryItem` route `ChaliceOfBlood` to its own `chalice` id.
@@ -85,9 +85,8 @@
  * instead. **Not ported**: Java's `Ballistica` line-of-sight collision along the aimed path
  * (a nearer wall or creature can intercept the bolt before the chosen cell - this port
  * resolves on the exact chosen cell, since `beginAiming` only offers clear-LOS cells anyway),
- * the options window naming each action, and the `regenOn()` LockedFloor/MiningLevel gate on
- * the passive recharge (already an established simplification - see the Broken Seal shield's
- * own regen in `dungeonScene.ts`). See `PORT_COVERAGE.md`'s `LloydsBeacon` row.
+ * the options window naming each action, and the passive recharge itself (the beacon has no
+ * per-turn `beaconRecharge` tick here, so its `regenOn()` gate has nothing to gate). See `PORT_COVERAGE.md`'s `LloydsBeacon` row.
  */
 
 import { MWL_ITEM_NODES } from '../mwlContent';

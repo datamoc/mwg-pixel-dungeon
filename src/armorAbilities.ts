@@ -40,9 +40,8 @@ export const ARMOR_CHARGE_START = 50;
 /**
  * `ClassArmor.Charger.act()`: `chargeGain = 100/500f` per `TICK`, i.e. 500 turns from empty to
  * full, times `RingOfEnergy.armorChargeMultiplier(target)` (this port's `ringEnergyMultiplier`,
- * which is that same `1.175^bonusLevel`). Gated on `Regeneration.regenOn()` in Java, which is
- * about starvation/no-regen states this port does not model - the gate is therefore not
- * reproduced, and no state here suppresses regen.
+ * which is that same `1.175^bonusLevel`). Gated on `Regeneration.regenOn()` - the `LockedFloor`
+ * boss-arena lock - at the scene's `recoverArmorCharge`.
  */
 export const ARMOR_CHARGE_PER_TURN = 100 / 500;
 

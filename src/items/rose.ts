@@ -75,9 +75,7 @@ export interface RoseRechargeInput {
 	ghostMaxHp?: number;
 	ringMultiplier: number;
 	magicImmune: boolean;
-	/** Java's `Regeneration.regenOn()`. This port has no regeneration system and no boss-arena
-	 *  lock, so the caller passes `true` - the same simplification the Beacon/Chains/Spellbook
-	 *  regen blocks already state. */
+	/** Java's `Regeneration.regenOn()` - the scene's `regenOn()` (the boss-arena lock). */
 	regenOn: boolean;
 }
 

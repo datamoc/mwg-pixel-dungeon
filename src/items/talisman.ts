@@ -95,8 +95,8 @@ export function talismanApplyScryCost(item: TalismanItem, distance: number): voi
 /** `Foresight.act()`'s per-turn trickle: `chargeGain = 0.05f + level()*0.005f`, scaled by
  *  `RingOfEnergy.artifactChargeMultiplier` - "fully charges in 2000 turns at +0, scaling to 1000
  *  turns at +10". Gated exactly as Java gates it: below the cap, not cursed, no `MagicImmune`,
- *  and `Regeneration.regenOn()` (the port's `regenOn` argument, since it has no regeneration
- *  system of its own to consult - see the caller). Reaching the cap zeroes `partialCharge`
+ *  and `Regeneration.regenOn()` (the port's `regenOn` argument, the scene's boss-arena lock
+ *  gate). Reaching the cap zeroes `partialCharge`
  *  outright. */
 export function applyTalismanPerTurnCharge(
 	item: TalismanItem,

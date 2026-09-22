@@ -1468,6 +1468,9 @@ export const monsterAiMethods = {
 		if (tengu.hp <= (Math.floor(preHp / bracket) - 1) * bracket) {
 			tengu.hp = (Math.floor(preHp / bracket) - 1) * bracket + 1;
 		}
+		//`Tengu.damage()` measures `dmg = beforeHitHP - HP` for `LockedFloor.addTime` here: after
+		//the bracket clamp, before the phase-1 HT/2 clamp below.
+		this.creditLockedFloor('tengu', preHp - tengu.hp, preHp - tengu.hp);
 		if ((tengu.tenguPhase ?? 'cell') === 'cell' && tengu.hp <= Math.floor(tengu.maxHp / 2)) {
 			tengu.hp = Math.floor(tengu.maxHp / 2);
 			tengu.tenguPhase = 'paused';

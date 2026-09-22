@@ -123,6 +123,8 @@ const BUFF_ICON: Record<string, number> = {
 	divineSense: 77,
 	//`PowerOfMany.PowerBuff` uses `BuffIndicator.MANY_POWER = 83`.
 	powerOfMany: 83,
+	//LOCKED_FLOOR = 35 - `LockedFloor.icon()`; shown from the scene's lock state, not `hero.buffs`.
+	lockedFloor: 35,
 	//GLYPH_RECALL = 78 (same file) - the recall tracker's icon. The sunray markers
 	//have no `icon()` override in Java (`NONE`), so they stay unmapped and unshown.
 	recallUsed: 78,

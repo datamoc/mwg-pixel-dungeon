@@ -15,6 +15,8 @@ import { EMPOWERING_SCROLLS_BONUS, arcaneVisionDuration, canImproviseProjectile,
 import { directTomeCharge, findHolyTome } from '../../items/holyTome';
 import { tomeChargeCap, tomeTickRate } from '../../simulation/clericSpells';
 import { advanceWellFed, HUNGRY, STARVING } from '../../simulation/hunger';
+import { addLockedFloorTime, lockedFloorBossTime, regenOn, regenerationDelay, removeLockedFloorTime, tickLockedFloor, tickRegeneration } from '../../simulation/regeneration';
+import { isChallengeEnabled } from '../../challenges';
 import { ARMOR_CHARGE_MAX, ARMOR_CHARGE_PER_TURN } from '../../armorAbilities';
 import { CLASSES } from '../../classes';
 import { drawAimPreview } from '../../ui/aimOverlay';
@@ -1218,6 +1220,7 @@ export const turnLoopAimingMethods = {
 			//two turns, so it must run the transition twice; fractional action costs still
 			//run the one actor tick that the existing scene model assigns to that action.
 			advanceHunger: (cost = 1) => { for (let tick = 0; tick < cost; tick++) this.hungerStep(); },
+			tickRegeneration: () => this.tickNaturalRegeneration(turnCost),
 			// Recharging's Java Charger contribution is an additional recharge tick while the
 			// 30-second flavour buff is active; Charges.advance() is this port's tick primitive.
 			recoverWandCharge: (cost = 1) => {
@@ -1232,7 +1235,8 @@ export const turnLoopAimingMethods = {
 					//RingOfEnergy.wandChargeMultiplier(): 1.175^level, applied straight onto the base rate.
 					//`LIGHT_READING`'s metamorphosed leg (`RingOfEnergy.java`, tag `v3.3.8`): a
 					//non-Cleric who took the talent recharges wands 1+0.2*rank/3 faster.
-					const baseRate = ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune)
+					//`if (Regeneration.regenOn())` gates the base rate only; Recharging still adds.
+					const baseRate = !this.regenOn() ? 0 : ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune)
 						* lightReadingWandMult(this.heroClass, this.talentRank('light_reading')) / turnsToCharge;
 					//Charger.recharge(): Recharging's CHARGE_BUFF_BONUS is a flat `+0.25 * remainder()`
 					//added on top of the base rate, not a 1.25x multiplier on it.
@@ -1258,17 +1262,18 @@ export const turnLoopAimingMethods = {
 			//`turnCost` itself - a three-turn action like Endure regenerates three ticks, the same
 			//amount Java's Charger actor gains while the hero is busy for that long.
 			recoverArmorCharge: () => {
+				if (!this.regenOn()) return; //`ClassArmor.Charger.act()`'s `if (Regeneration.regenOn())`
 				this.armorCharge = Math.min(ARMOR_CHARGE_MAX,
 					this.armorCharge + turnCost * ARMOR_CHARGE_PER_TURN * ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier());
 			},
 			//`HolyTome.TomeRecharge.act()` (tag `v3.3.8`): the carried tome banks the
-			//tick rate while below cap, uncursed and un-immunized (`regenOn` is always
-			//true here, no `LockedFloor`/`Vault`). Carried ticks at the equipped rate by
+			//tick rate while below cap, uncursed, un-immunized and while `regenOn()` (the
+			//boss-arena lock; Java's `Vault` gate has no floor here). Carried ticks at the equipped rate by
 			//the carried-cloak convention above; at cap the partial zeroes outright
 			//(Java's `else` branch). Scales by the spent turn cost like the armor tick.
 			recoverHolyTomeCharge: () => {
 				const tome = findHolyTome(this.bag);
-				if (!tome || tome.cursed === true || this.hero.magicImmune === true) return;
+				if (!tome || tome.cursed === true || this.hero.magicImmune === true || !this.regenOn()) return;
 				const cap = tomeChargeCap(tome.level ?? 0);
 				if ((tome.charge ?? 0) >= cap) { tome.partialCharge = 0; return; }
 				const charged = directTomeCharge(tome.charge ?? 0, tome.partialCharge ?? 0, tome.level ?? 0,
@@ -1341,7 +1346,7 @@ export const turnLoopAimingMethods = {
 								this.cloakStealthTurnsToCost = mwlItemEffectValue('cloak', 'turnsToCost');
 							}
 						}
-					} else if (this.cloakStealthTurnsToCost <= 0 && charge < maxCharge) {
+					} else if (this.cloakStealthTurnsToCost <= 0 && charge < maxCharge && this.regenOn()) {
 						this.cloakChargeProgress += this.lightCloakChargeMultiplier() / Math.max(1, 45 - (maxCharge - charge));
 						while (this.cloakChargeProgress >= 1 && cloak.charges !== maxCharge) {
 							cloak.charges = Math.min(maxCharge, (cloak.charges ?? 0) + 1);
@@ -1367,10 +1372,8 @@ export const turnLoopAimingMethods = {
 				}
 				//BrokenSeal.WarriorShield.act(): regenerates 1/30 per turn (while regen is on)
 				//toward armTier + armLvl + pointsInTalent(IRON_WILL), never decaying on its own.
-				//Java's real `Regeneration.regenOn()` also gates on a `LockedFloor` boss-arena lock
-				//and on `MiningLevel`; neither is modeled here, so the seal always regens - a stated
-				//simplification, not a silent gap.
-				if (this.armorSealed) {
+				//The gain is gated on `Regeneration.regenOn()` (the `LockedFloor` boss-arena lock).
+				if (this.armorSealed && this.regenOn()) {
 					const sealCap = this.armorTier + this.armorLevel + this.talentRank('iron_will');
 					if (this.sealBarrier.total < sealCap) {
 						this.sealPartialGain += 1 / 30;
@@ -1401,11 +1404,10 @@ export const turnLoopAimingMethods = {
 				//`UnstableSpellbook.bookRecharge.act()` (tag `v3.3.8`): `partialCharge += 1/(120 -
 				//(chargeCap-charge)*5)` every actor turn while not cursed - the same shrinking-return
 				//shape as Beacon's/Chains's own regen above (the closer to full, the slower the last
-				//charge fills), and the same "regen always on" simplification already stated there for
-				//the missing `Regeneration.regenOn()` boss-arena-lock/`MiningLevel` gates.
+				//charge fills), gated on `Regeneration.regenOn()` like the other artifact ticks.
 				{
 					const book = this.spellbookItem();
-					if (book && !book.cursed && !this.hero.magicImmune) {
+					if (book && !book.cursed && !this.hero.magicImmune && this.regenOn()) {
 						const level = book.level ?? 0;
 						const chargeCap = spellbookChargeCap(level);
 						let charge = Math.min(chargeCap, book.charge ?? chargeCap);
@@ -1426,15 +1428,14 @@ export const turnLoopAimingMethods = {
 				//(`0.05 + 0.005*level`, scaled by the energy-ring multiplier and capped at 100 - "fully
 				//charges in 2000 turns at +0, scaling to 1000 turns at +10"), then `checkAwareness()`.
 				//Java gates the trickle on `Regeneration.regenOn()` (suppressed by a `LockedFloor` boss
-				//lock and by `MiningLevel`); this port has no lock modelled, so regen is always "on"
-				//here - the same simplification every other artifact regen above already states.
+				//lock - see `simulation/regeneration.ts`).
 				//
 				//The two awareness marks tick down on the same actor turn, which is where Java's
 				//`CharAwareness`/`HeapAwareness` buffs spend themselves.
 				{
 					const talisman = this.talismanItem();
 					if (talisman) {
-						applyTalismanPerTurnCharge(talisman, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true, true);
+						applyTalismanPerTurnCharge(talisman, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true, this.regenOn());
 						this.checkTalismanAwareness();
 					}
 					for (const [creature, turns] of this.awareCreatures) {
@@ -1462,9 +1463,7 @@ export const turnLoopAimingMethods = {
 							...(ghost ? { ghostHp: ghost.hp, ghostMaxHp: ghost.maxHp } : {}),
 							ringMultiplier: ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier(),
 							magicImmune: this.hero.magicImmune === true,
-							//No `LockedFloor` boss lock is modelled in this port - see the Beacon/Chains
-							//blocks above for the same stated simplification.
-							regenOn: true,
+							regenOn: this.regenOn(),
 						});
 						if (ghost && outcome.ghostHealed > 0) {
 							ghost.hp = Math.min(ghost.maxHp, ghost.hp + outcome.ghostHealed);
@@ -1756,11 +1755,92 @@ export const turnLoopAimingMethods = {
 			}
 			return;
 		}
+		//`Hunger.act()` spends its tick doing nothing while `Dungeon.level.locked` (the boss-arena
+		//seal - the LockedFloor buff text's "you will not gain hunger or take damage from starving").
+		if (this.floorLocked()) return;
 		//Java's Hunger uses `hungerDelay = 1.5` while the CloakOfShadows stealth buff is
 		//active; this is the scene-only gate because the pure transition has no cloak state.
 		const hungerDelay = this.cloakStealthTurnsToCost > 0 && this.hero.buffs['invisibility'] ? 1.5 : 1;
 		this.simulation.hungerStep(MWL_TURN_CLOCK.hunger ?? 1, hungerDelay);
 		const reduction = ironStomachReduction(this.heroClass, this.talentRank('iron_stomach'));
 		if (reduction > 0) this.hunger = Math.max(0, this.hunger - reduction);
+	},
+
+	/** `Dungeon.level.locked`: set by each boss floor's `seal()`, cleared by its `unseal()`. The
+	 * port keeps one run-scoped seal flag per boss floor; Tengu's floor has no unseal mark of its
+	 * own (`PrisonBossLevel`'s `WON` state is Tengu's death), so a live Tengu stands in there. */
+	floorLocked(this: DungeonScene): boolean {
+		if (this.bossUnsealedDepths.has(this.depth)) return false;
+		switch (this.depth) {
+			case 5: return this.sewerBossSealed;
+			case 10: return this.tenguFightStarted && this.creatures.some((c) => c.kind === 'tengu' && c.hp > 0);
+			case 15: return this.cavesBossSealed;
+			case 20: return this.cityBossSealed;
+			case 25: return this.hallsBossSealed;
+			default: return false;
+		}
+	},
+
+	/** `Regeneration.regenOn()` - see `simulation/regeneration.ts`. */
+	regenOn(this: DungeonScene): boolean {
+		return regenOn(this.regeneration.lockLeft);
+	},
+
+	/** A boss's `damage()` override buying lock time back (`LockedFloor.addTime`), called right
+	 * after a seam writes HP and before any boss clamp: `dealt` is the amount written, `hpLost` the
+	 * raw HP delta. That is Java's measuring point for DM300 (`dmgTaken` before its supercharge
+	 * clamp) and YogFist; Tengu and Yog measure *after* their own clamps, so they credit from
+	 * `clampTenguBracket`/`yogDamageHook` instead and are skipped here. */
+	lockedFloorBossDamage(this: DungeonScene, creature: Creature, dealt: number, hpLost: number): void {
+		if (creature.kind === 'tengu' || creature.kind === 'yog') return;
+		this.creditLockedFloor(creature.kind, dealt, hpLost);
+	},
+
+	creditLockedFloor(this: DungeonScene, kind: string | undefined, dealt: number, hpLost: number): void {
+		if (this.regeneration.lockLeft === null) return;
+		const time = lockedFloorBossTime(kind, dealt, hpLost, isChallengeEnabled('stronger_bosses'));
+		if (time > 0) this.regeneration.lockLeft = addLockedFloorTime(this.regeneration.lockLeft, time);
+	},
+
+	/** `Goo.act()`'s water heal: `lock.removeTime(healInc * 1.5)`, or `healInc` under Stronger Bosses. */
+	lockedFloorGooHeal(this: DungeonScene, healInc: number): void {
+		this.regeneration.lockLeft = removeLockedFloorTime(this.regeneration.lockLeft,
+			isChallengeEnabled('stronger_bosses') ? healInc : healInc * 1.5);
+	},
+
+	/**
+	 * `Regeneration.act()` then `LockedFloor.act()`, once per spent turn. Regeneration acts at
+	 * `HERO_PRIO - 1` (before every other buff), so it reads the lock before this turn's decrement.
+	 * The heal scales by the action's turn cost (Java's actor acts once per 1.0 of time); the lock
+	 * decrements once per whole tick, like `advanceHunger`.
+	 *
+	 * The carried Chalice of Blood stands in for Java's equipped one (artifacts are carried, not
+	 * slotted, in this port - the convention every artifact here follows). `SpiritForm`'s chalice
+	 * branch is not reachable: SpiritForm has no item-effect dispatch yet (see the Trinity row).
+	 * Java's `hero.resting = false` at full HP has no counterpart: this port has no rest-until-healed.
+	 */
+	tickNaturalRegeneration(this: DungeonScene, turnCost: number): void {
+		const chalice = this.bag.find('chalice') as (typeof this.bag.items[number] & { level?: number }) | undefined;
+		const delay = regenerationDelay({
+			chaliceLevel: chalice ? (chalice.level ?? 0) : -1,
+			chaliceCursed: chalice?.cursed === true,
+			magicImmune: this.hero.magicImmune === true,
+			artifactChargeMultiplier: ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier(),
+		});
+		const next = tickRegeneration(this.hero.hp, this.hero.maxHp, this.regeneration.partial, {
+			regenOn: this.regenOn(), starving: this.hunger >= STARVING, delay, ticks: turnCost,
+		});
+		this.hero.hp = next.hp;
+		this.regeneration.partial = next.partial;
+		//`LockedFloor` acts once per 1.0 of actor time, not per action: carry the fraction so a
+		//hasted half-cost action does not burn a whole lock turn.
+		const locked = this.floorLocked();
+		const stronger = isChallengeEnabled('stronger_bosses');
+		this.regeneration.lockCarry = (this.regeneration.lockCarry ?? 0) + turnCost;
+		if (this.regeneration.lockLeft === null && locked) this.regeneration.lockCarry = 0;
+		if (!locked || this.regeneration.lockLeft === null) this.regeneration.lockLeft = tickLockedFloor(this.regeneration.lockLeft, locked, stronger);
+		for (; this.regeneration.lockCarry >= 1; this.regeneration.lockCarry--) {
+			this.regeneration.lockLeft = tickLockedFloor(this.regeneration.lockLeft, locked, stronger);
+		}
 	},
 };

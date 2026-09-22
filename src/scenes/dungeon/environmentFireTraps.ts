@@ -1160,7 +1160,7 @@ export const environmentFireTrapsMethods = {
 				// Java's PhantomPiranha.damage() halves and relocates source-less blob damage; use random water.
 				const phantomDirect = target.kind === 'phantomPiranha'; if (phantomDirect) damage = this.phantomPiranhaDamage(target, damage);
 				const preHp = target.hp;
-				target.hp -= damage;
+				target.hp -= damage; this.lockedFloorBossDamage(target, damage, preHp - target.hp);
 				if (phantomDirect && target.hp > 0) this.phantomPiranhaTeleport(target);
 				if (this.fadeMirrorOnDamage(target, damage)) return true;
 				if (target.kind === 'yog' && target.hp > 0) this.yogDamageHook(target, preHp);
@@ -1942,7 +1942,7 @@ export const environmentFireTrapsMethods = {
 			// Java's PhantomPiranha.damage() also halves source-less trap blast damage and relocates survivors.
 			const phantomDirect = target.kind === 'phantomPiranha'; if (phantomDirect) damage = this.phantomPiranhaDamage(target, damage);
 			const preHp = target.hp;
-			target.hp -= damage;
+			target.hp -= damage; this.lockedFloorBossDamage(target, damage, preHp - target.hp);
 			if (phantomDirect && target.hp > 0) this.phantomPiranhaTeleport(target);
 			if (target.kind === 'yog' && target.hp > 0) this.yogDamageHook(target, preHp);
 			if (target.kind === 'king' && target.hp > 0 && (target.kingPhase ?? 1) === 1) {

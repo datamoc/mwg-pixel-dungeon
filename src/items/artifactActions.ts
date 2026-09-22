@@ -91,11 +91,9 @@ export function useCloak(scene: ArtifactActionContext, instanceId?: string): voi
  * a stated simplification, not a silent omission. Real Java also shows a `WndOptions`
  * confirmation naming the exact death chance before pricking; this port has no equivalent
  * computed-odds confirmation window (matching every other "use item on self" action here that
- * skips Java's own modal) and pricks immediately. **Not ported at all**: the passive
- * `chaliceRegen` buff, which boosts Java's natural out-of-combat HP regeneration
- * (`Regeneration.act()` calling `Item.charge()`) - this port has no natural regen system for a
- * passive artifact to hook a bonus into, so Chalice here is active-only. See
- * `PORT_COVERAGE.md`'s artifacts row. */
+ * skips Java's own modal) and pricks immediately. The passive `chaliceRegen` half is not here:
+ * `Regeneration.act()` reads the carried chalice's level/curse directly (see
+ * `tickNaturalRegeneration` and `simulation/regeneration.ts`). */
 export function useChalice(scene: ArtifactActionContext, instanceId?: string): void {
 	const chalice = scene.bag.find('chalice', instanceId) as (typeof scene.bag.items[number] & { level?: number }) | undefined;
 	if (!chalice) return;

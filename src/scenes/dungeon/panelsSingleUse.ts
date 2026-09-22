@@ -113,6 +113,7 @@ export const panelsSingleUseMethods = {
 		this.regrowthChargesOverLimit = s.regrowthChargesOverLimit ?? 0;
 		if (!s.heroBarrierState && s.heroShield) this.heroBarrier.add(s.heroShield);
 		this.barrierPartialLoss = s.barrierPartialLoss ?? 0;
+		this.regeneration = { partial: s.regenPartial ?? 0, lockLeft: s.lockedFloorLeft ?? null, lockCarry: 0 };
 		this.blockingBarrier = s.blockingBarrierState
 			? Actors.Barrier.fromJSON(s.blockingBarrierState)
 			: new Actors.Barrier();
@@ -1427,6 +1428,7 @@ export const panelsSingleUseMethods = {
 		const preHp = c.hp;
 		c.hp -= damage;
 		if (phantomDirect && c.hp > 0) this.phantomPiranhaTeleport(c);
+		this.lockedFloorBossDamage(c, damage, preHp - c.hp);
 		if (c.kind === 'tengu') this.clampTenguBracket(c, preHp);
 		this.gnollMineAfterDamage(c, preHp);
 		this.brightDarkHalfHp(c, preHp);
@@ -1510,6 +1512,7 @@ export const panelsSingleUseMethods = {
 			yogShielded: (target) => this.yogShielded(target),
 			guardFist: (target) => this.guardFist(target),
 			clampTenguBracket: (target, previousHp) => this.clampTenguBracket(target, previousHp),
+			onBossDamageTaken: (target, dealt, hpLost) => this.lockedFloorBossDamage(target, dealt, hpLost),
 			yogDamageHook: (target, previousHp) => this.yogDamageHook(target, previousHp),
 			kingDamageHook: (target) => this.kingDamageHook(target),
 			tenguBracketJump: (target, previousHp) => this.tenguBracketJump(target, previousHp),

@@ -874,6 +874,7 @@ export class DungeonScene extends Scene2D {
 	regrowthChargesOverLimit = 0;
 	/** Barrier.partialLostShield (`actors/buffs/Barrier.java`): fractional decay accumulator. */
 	barrierPartialLoss = 0;
+	regeneration = { partial: 0, lockLeft: null as number | null, lockCarry: 0 }; //`Regeneration.partialRegen` + `LockedFloor.left` (`simulation/regeneration.ts`)
 	/** Blocking.BlockBuff's own real shield (`items/weapon/enchantments/Blocking.java`): a separate
 	 * Java `ShieldBuff` from Barrier, so it gets its own pool here too, drained before Barrier's in
 	 * `absorbHeroDamage` (see that method's own 2026-09-14 correction: real `ShieldBuff` has no

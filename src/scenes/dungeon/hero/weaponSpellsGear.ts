@@ -517,6 +517,7 @@ export const weaponSpellsGearMethods = {
 				weaponRechargingRank: this.talentRank('weapon_recharging'),
 				recharging: this.hero.buffs['recharging'] !== undefined,
 				artifactRecharge: this.artifactRechargeTurns > 0,
+				regenOn: this.regenOn(),
 			},
 			turnCost,
 		);

@@ -3,6 +3,8 @@ export interface HeroTurnEffects {
 	isAlive(): boolean;
 	advanceClock(): void;
 	advanceHunger(turnCost?: number): void;
+	/** `Regeneration.act()` + `LockedFloor.act()`: natural HP regen and the boss-arena lock. */
+	tickRegeneration?(): void;
 	recoverWandCharge(turnCost?: number): void;
 	recoverTomeCharge(turnCost?: number): void;
 	/** `ClassArmor.Charger.act()`: armor charge regen, once per spent turn (see the caller's own
@@ -47,6 +49,7 @@ export function finishHeroTurn(effects: HeroTurnEffects, turnCost = 1): HeroTurn
 	if (!effects.isAlive()) return 'already-dead';
 	effects.advanceClock();
 	effects.advanceHunger(turnCost);
+	effects.tickRegeneration?.();
 	effects.recoverWandCharge(turnCost);
 	effects.recoverTomeCharge(turnCost);
 	effects.recoverArmorCharge();

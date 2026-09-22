@@ -729,6 +729,8 @@ export const bossLogicMethods = {
 		this.applyingDeferredDamage = true;
 		monster.hp -= tick;
 		this.applyingDeferredDamage = false;
+		//`Viscosity.DeferedDamage` re-enters `DwarfKing.damage()`, whose lock `addTime` it feeds.
+		this.lockedFloorBossDamage(monster, tick, tick);
 		monster.deferredDamage = Math.max(0, monster.deferredDamage - tick);
 		this.showDamage(monster, tick);
 		if (monster.hp <= 0) {
@@ -1195,6 +1197,7 @@ export const bossLogicMethods = {
 		//clamp above (`int dmgTaken = preHP - HP`), and accelerates both cooldowns
 		//(`-= dmgTaken/10`). Found by the 13th monster-analysis matrix (bosses).
 		const dmgTaken = Math.max(0, preHp - yog.hp);
+		this.creditLockedFloor('yog', dmgTaken, dmgTaken);
 		if (dmgTaken > 0) {
 			yog.yogSummonCd = (yog.yogSummonCd ?? Random.normalRange(10, 15)) - dmgTaken / 10;
 			yog.yogBeamCd = (yog.yogBeamCd ?? Random.normalRange(10, 15)) - dmgTaken / 10;
@@ -1426,6 +1429,7 @@ export const bossLogicMethods = {
 			showHeal: (target, amount) => this.showHeal(target, amount),
 			say: (message, level) => this.say(message, level),
 			foulBossChallenge: () => this.foulBossChallenge(),
+			onWaterHeal: (healInc) => this.lockedFloorGooHeal(healInc),
 			random: simulationRandom,
 			messages: { slam: t('port.log.gooslam'), pump: t('port.log.goopump'), pumpMore: t('port.log.goopumpmore') },
 		});

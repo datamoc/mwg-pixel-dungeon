@@ -18,6 +18,8 @@ export interface GooBossContext {
 	/** Java clears the bosses-challenge flag when Goo heals in water or lands a
 	 * pumped slam (`Goo.java`, tag `v3.3.8` - found by the 41st matrix). */
 	readonly foulBossChallenge: () => void;
+	/** `Goo.act()`'s water heal also calls `LockedFloor.removeTime` with the heal increment. */
+	readonly onWaterHeal?: (healInc: number) => void;
 }
 
 /** Goo's actor turn: healing, pump-up charge turns, and the final amplified slam. */
@@ -29,6 +31,7 @@ export function takeGooTurn(goo: Creature, context: GooBossContext): void {
 		goo.hp += healed;
 		if (healed > 0) context.showHeal(goo, healed);
 		context.foulBossChallenge();
+		context.onWaterHeal?.(healIncrement);
 		if (goo.hp >= goo.maxHp) goo.gooHealInc = 1;
 		else if (context.strongerBosses) goo.gooHealInc = Math.min(3, healIncrement + 1);
 	} else goo.gooHealInc = 1;

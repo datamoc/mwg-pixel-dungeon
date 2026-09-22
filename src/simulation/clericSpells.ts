@@ -482,7 +482,7 @@ export const MNEMONIC_POSITIVE_BUFFS: readonly string[] = [
 /** `HolyTome.TomeRecharge.act()`'s per-turn gain (tag `v3.3.8`): `1/turnsToCharge`
  * with `turnsToCharge = (45-missing)/energyMult` and `missing = cap-charge` plus
  * `5*(level-7)/3` past tome level 7. Gating (cap, cursed, `MagicImmune`, `regenOn` -
- * always true here, no `LockedFloor`/`Vault`) is scene-side; the carried tome ticks
+ * the `LockedFloor` boss-arena lock; no `Vault` floor exists here) is scene-side; the carried tome ticks
  * at this equipped rate by the carried-cloak convention (nothing is ever equipped).
  * `LIGHT_READING`'s `0.75*rank/3` scales only *un*equipped tomes, which cannot exist
  * here, so it has no half in this rate - stated, not silent. */

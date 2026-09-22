@@ -54,6 +54,7 @@ const BUFF_MESSAGE_KEY: Partial<Record<BuffId, string>> = {
 	light: 'actors.buffs.light',
 	invulnerability: 'actors.buffs.ankhinvulnerability',
 	prismaticGuard: 'actors.buffs.prismaticguard',
+	lockedFloor: 'actors.buffs.lockedfloor',
 	//The Cleric buffs postdate the checkout, so their name/desc ride `port.*` keys
 	//carrying SPD's own tag-`v3.3.8` text (see `portStrings.ts`).
 	holyWeapon: 'port.buff.holyweapon',

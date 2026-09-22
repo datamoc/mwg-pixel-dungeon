@@ -668,7 +668,10 @@ export const combatResolutionMethods = {
 			if (linkKing) {
 				const share = Math.ceil(damage / 2);
 				const kingPreHp = linkKing.hp;
-				if (!this.deferMonsterDamage(linkKing, share)) linkKing.hp -= share;
+				if (!this.deferMonsterDamage(linkKing, share)) {
+					linkKing.hp -= share;
+					this.lockedFloorBossDamage(linkKing, share, kingPreHp - linkKing.hp);
+				}
 				if ((linkKing.kingPhase ?? 1) === 1 && linkKing.hp > 0) {
 					const taken = Math.max(0, kingPreHp - linkKing.hp);
 					linkKing.kingSummonCd = (linkKing.kingSummonCd ?? 0) - taken / 8;
@@ -834,6 +837,7 @@ export const combatResolutionMethods = {
 		//HT*2/3 after the second; the Stronger Bosses challenge uses three HT/4 brackets.
 		//The threshold is checked after all armor/proc damage but before death bookkeeping,
 		//matching Java's HP floor and pylon activation edge.
+		this.lockedFloorBossDamage(defender, preHp - defender.hp, preHp - defender.hp);
 		if (defender.kind === 'dm300') {
 			const activated = defender.dmPylonsActivated ?? 0;
 			const threshold = isChallengeEnabled('stronger_bosses')

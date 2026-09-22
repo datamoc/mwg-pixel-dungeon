@@ -624,6 +624,9 @@ export interface SaveShape {
 	regrowthTotalChargesUsed?: number;
 	regrowthChargesOverLimit?: number;
 	barrierPartialLoss?: number;
+	/** `Regeneration`'s `partial_regen` and `LockedFloor`'s `left` (absent/null = no lock). */
+	regenPartial?: number;
+	lockedFloorLeft?: number | null;
 	blockingBarrierState?: { layers: { amount: number; decayPerTick?: number }[] };
 	/** Legacy (pre-two-pool saves): Blocking's share used to live inside `heroBarrier`. */
 	blockingShieldLeft?: number;
