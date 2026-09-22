@@ -58,7 +58,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//normal hero-absorption and kill seams still own HP mutation.
 	if (attacker.kind === 'elemental') {
 		switch (attacker.elementalType ?? 'fire') {
-			case 'fire': if (Random.chance(0.5) && ctx.level.get(defender.x, defender.y) !== WATER) addBuff(defender, 'burning'); break;
+			case 'fire': if (Random.chance(0.5) && ctx.level.get(defender.x, defender.y) !== WATER) reigniteBuff(defender, 'burning'); break;
 			case 'frost': if (Random.chance(1 / 3) || ctx.level.get(defender.x, defender.y) === WATER) addBuff(defender, 'frost'); break;
 			case 'shock': break;
 			case 'chaos': addBuff(defender, Random.element(['burning', 'chill', 'cripple', 'daze'] as const) ?? 'daze'); break;

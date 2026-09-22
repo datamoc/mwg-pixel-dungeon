@@ -349,6 +349,35 @@ export function verifyCombat(require, check) {
 		assert.ok(shown !== null && shown.damage >= 30 && shown.hp <= -20, 'a lethal attach must present through the installed hook');
 		facade.setAttachBacklash(null);
 	});
+	check('ICY and ELECTRIC damage halves ride one shared gate per property', () => {
+		//`Char.Property` resistances (tag `v3.3.8`): ICY halves `WandOfFrost` (only
+		//the frost elemental holds it); ELECTRIC halves `WandOfLightning`, `Shocking`,
+		//`Electricity`, `ShockingDart` and shock-sourced damage on the shock elemental,
+		//DM100, the Pylon and BrightFist - all with `Math.round`.
+		assert.equal(facade.icyDamageHalved('elemental', 'frost'), true);
+		assert.equal(facade.icyDamageHalved('elemental', 'fire'), false);
+		assert.equal(facade.icyDamageHalved('elemental', undefined), false);
+		assert.equal(facade.icyDamageHalved('rat', undefined), false);
+		for (const [kind, type, fist, expected] of [
+			['elemental', 'shock', undefined, true], ['elemental', 'fire', undefined, false],
+			['dm100', undefined, undefined, true], ['pylon', undefined, undefined, true],
+			['yogFist', undefined, 'bright', true], ['yogFist', undefined, 'dark', false],
+			['rat', undefined, undefined, false],
+		]) assert.equal(facade.electricDamageHalved(kind, type, fist), expected, `${kind}/${type}/${fist}`);
+		//Fire melee reignites rather than sets: an already-long burn survives the proc.
+		const scorched = base({ buffs: { burning: 12 } });
+		facade.reigniteBuff(scorched, 'burning');
+		assert.equal(scorched.buffs.burning, 12, 'reignite must prolong, never truncate');
+		const lit = base({});
+		facade.reigniteBuff(lit, 'burning');
+		assert.equal(lit.buffs.burning, facade.BUFF_DURATION.burning, 'reignite arms full on a fresh target');
+		//Structural: every damage seam reads the shared gates.
+		const trapSource = readFileSync(new URL('../src/scenes/dungeon/environmentFireTraps.ts', import.meta.url), 'utf8');
+		assert.ok(trapSource.includes('electricDamageHalved(target.kind, target.elementalType, target.yogFistType)'),
+			'the blob Electricity seam halves every ELECTRIC holder, not just shock');
+		assert.ok(mobOnHitSource.includes("reigniteBuff(defender, 'burning')"),
+			'fire melee reignites Burning to full like Java affect+reignite');
+	});
 	check('setBleeding tracks source only alongside a winning (higher) level, like Bleeding.set()', () => {
 		const bleeder = base();
 		facade.setBleeding(bleeder, 5, 'chasm');
@@ -734,8 +763,12 @@ export function verifyCombat(require, check) {
 		assert.ok(wet.targetIds.includes('defender'), 'standing water keeps the defender in the arc');
 		assert.equal(wet.damage, 4);
 		const scene = readSceneSource();
-		assert.ok(scene.includes('this.applyBlastDamage(target, arc.damage, true, \'foe\')'),
+		assert.ok(scene.includes('this.applyBlastDamage(target,'),
 			'the scene lands arc hits through the armor-piercing blast seam');
+		//2026-09-22: the call now halves per target for ELECTRIC holders
+		//(`Char.Property.ELECTRIC`, tag `v3.3.8`) instead of passing raw damage.
+		assert.ok(scene.includes('electricDamageHalved(target.kind, target.elementalType, target.yogFistType) ? Math.round(arc.damage / 2) : arc.damage'),
+			'ELECTRIC holders take the Math.round half of the shock arc');
 	});
 	check('Grim execute refuses bosses and halves against statues; Lucky pays consumables-or-gold only', () => {
 		// `Grim.proc()` returns early when the defender `isImmune(Grim.class)` (`Grim.java`,

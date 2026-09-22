@@ -14,7 +14,7 @@ import { createCombatAdapter } from './adapters/combatSimulation';
 import { simulationRandom } from './adapters/mwgRandom';
 import { STATUS_IMMUNITIES } from './simulation/mwlStatusImmunities';
 export { INFINITE_ACCURACY, INFINITE_EVASION, ASCENSION_MOD, accRollMulti, setAscensionActive, stoneGlyphReduction, grimTrapDamage, explosiveTrapBounds } from './simulation/combat';
-export { BUFF_DURATION, NEGATIVE_BUFFS, absorbShield, elementalBacklashApplies, type BuffId } from './simulation/buffs';
+export { BUFF_DURATION, NEGATIVE_BUFFS, absorbShield, electricDamageHalved, elementalBacklashApplies, icyDamageHalved, type BuffId } from './simulation/buffs';
 
 const combat = createCombatAdapter(simulationRandom);
 export const rollHit = combat.rollHit;

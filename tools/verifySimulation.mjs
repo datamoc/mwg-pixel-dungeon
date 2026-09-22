@@ -1556,11 +1556,15 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	check('Shock elementals halve lightning-family damage, rounded', () => {
 		//`Char.Property.ELECTRIC` (tag `v3.3.8`): `Char.damage()` halves with
 		//`Math.round` - same rounding the ACIDIC corrosion half uses.
+		//2026-09-22: both gates widened from shock-only to every ELECTRIC holder
+		//(shock elemental, DM100, Pylon, BrightFist) through one shared predicate.
 		const scene = readSceneSource();
-		assert.ok(scene.includes("cause === 'electricity' && !target.isHero && target.kind === 'elemental'"),
-			'the blob seam halves electricity for shock elementals');
-		assert.ok(scene.includes("wandType === 'lightning' && !victim.isHero && victim.kind === 'elemental'"),
-			'the lightning wand halves for shock elementals');
+		assert.ok(scene.includes('electricDamageHalved(target.kind, target.elementalType, target.yogFistType)'),
+			'the blob seam halves electricity for every ELECTRIC holder');
+		assert.ok(scene.includes('electricDamageHalved(victim.kind, victim.elementalType, victim.yogFistType)'),
+			'the lightning wand halves for every ELECTRIC holder');
+		assert.ok(scene.includes('electricDamageHalved(hit.kind, hit.elementalType, hit.yogFistType)'),
+			'the Shocking chain halves per hit');
 	});
 	check('Sentry turrets charge two turns, then gaze every visible turn', () => {
 		//`SentryRoom$Sentry.act()` (tag `v3.3.8`): ~2-turn charge, fire every

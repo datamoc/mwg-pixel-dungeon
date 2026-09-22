@@ -29,7 +29,7 @@ import { applyCapeOfThornsProc, spellbookChargeCap } from '../../items/artifactA
 import { applyTalismanPerTurnCharge } from '../../items/talisman';
 import { applyRoseRecharge } from '../../items/rose';
 import { TILE, WATER } from '../../dungeonConstants';
-import { BUFF_DURATION, addBuff, buffBlocked, rollHit, tickBuffs, type Creature, type Step } from '../../combat';
+import { BUFF_DURATION, addBuff, buffBlocked, electricDamageHalved, icyDamageHalved, rollHit, tickBuffs, type Creature, type Step } from '../../combat';
 import { tickMonsterTurnEnd } from '../../simulation/buffs';
 import { isUndeadOrDemonic } from '../../monsters';
 
@@ -162,13 +162,13 @@ export const turnLoopAimingMethods = {
 				+ (victim === target ? enragedCatalystBonus(this.subclass(), this.talentRank('enraged_catalyst'), this.hero.hp, this.hero.maxHp) + this.wandBonusDamage : 0);
 			if (wandType === 'lightning' && victim === this.hero) damage = Math.round(damage * 0.5);
 		//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`) resists the
-		//`WandOfLightning` class: `Char.damage()` halves with
-		//`Math.round`, so only the shock elemental subtype takes the half
-		//here. The blob seam carries the `Electricity` class below;
-		//Shocking arcs/darts and the Potential talent have no mob-damage
-		//seam of their own to halve through (stated, not silent).
-		if (wandType === 'lightning' && !victim.isHero && victim.kind === 'elemental'
-			&& (victim.elementalType ?? 'fire') === 'shock') damage = Math.round(damage * 0.5);
+		//`WandOfLightning` class: `Char.damage()` halves with `Math.round` on
+		//every holder (shock elemental, DM100, Pylon, BrightFist). The blob seam
+		//carries the `Electricity` class, `shockingArc` and the shock arc carry
+		//`Shocking`; darts and the Potential talent have no mob-damage seam of
+		//their own (stated, not silent).
+		if (wandType === 'lightning' && !victim.isHero
+			&& electricDamageHalved(victim.kind, victim.elementalType, victim.yogFistType)) damage = Math.round(damage * 0.5);
 			if (wandType === 'frost') {
 				//WandOfFrost.onZap() clears Fire at the collision cell. A frozen target
 				//cannot be affected again; otherwise existing Chill reduces this bolt's
@@ -188,6 +188,11 @@ export const turnLoopAimingMethods = {
 				else if (victim.buffs['chill'] !== undefined) {
 					damage = Math.round(damage * Math.pow(0.9333, Math.min(10, victim.buffs['chill'])));
 				}
+				//`Char.Property.ICY` (`Char.java`, tag `v3.3.8`) resists the `WandOfFrost`
+				//class: `Char.damage()` halves with `Math.round` after the chill cut
+				//above (Java computes that cut in `onZap`, then halves in `damage()`).
+				//The only ICY holder is the frost elemental.
+				if (icyDamageHalved(victim.kind, victim.elementalType)) damage = Math.round(damage * 0.5);
 			}
 			if (wandType === 'prismaticLight' && isUndeadOrDemonic(victim.kind)) {
 				//`WandOfPrismaticLight.affectTarget()`: against a `Property.DEMONIC` or
@@ -1102,8 +1107,11 @@ export const turnLoopAimingMethods = {
 			//hero's own allies (hawk, clone, log, mirror, corrupted) are skipped here.
 			//Neutrals (NPCs) are still zapped, exactly as Java's `!=` does to them.
 			if ((hit.isHero || hit.isAlly) && (attacker.isHero || attacker.isAlly)) continue;
-			hit.hp -= arcDamage;
-			this.showDamage(hit, arcDamage);
+			//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`): the arc's source class
+			//is `Shocking`, so every holder takes the `Math.round` half of the chain hit.
+			const dealt = electricDamageHalved(hit.kind, hit.elementalType, hit.yogFistType) ? Math.round(arcDamage / 2) : arcDamage;
+			hit.hp -= dealt;
+			this.showDamage(hit, dealt);
 			if (hit.hp <= 0) this.kill(hit);
 		}
 	},

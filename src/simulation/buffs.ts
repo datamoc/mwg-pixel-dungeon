@@ -52,6 +52,28 @@ export function elementalBacklashApplies(kind: string | undefined, elementalType
 	return false;
 }
 
+/** `Char.Property.ICY`'s damage half (`actors/Char.java`, tag `v3.3.8`): `resist()`
+ * halves `WandOfFrost` (and `FrostElemental`-sourced) damage with `Math.round`.
+ * The only ICY holder in Java is the frost elemental. Pure predicate so each
+ * damage seam pins the same gate; the buff-immunity half (Frost/Chill never
+ * attach) is a separate, still-open gap. */
+export function icyDamageHalved(kind: string | undefined, elementalType: string | undefined): boolean {
+	return kind === 'elemental' && (elementalType ?? 'fire') === 'frost';
+}
+
+/** `Char.Property.ELECTRIC`'s damage half (`actors/Char.java`, tag `v3.3.8`):
+ * `resist()` halves `WandOfLightning`, `Shocking` (enchant procs and the shock
+ * arc), `Electricity`, `ShockingDart` and `ShockElemental`-sourced damage with
+ * `Math.round`. Holders are the shock elemental, DM100, the Pylon and BrightFist.
+ * Pure predicate so the wand, blob and arc seams pin the same gate; `Potential`
+ * has no mob-damage seam here, and shocking darts do not exist as an item. */
+export function electricDamageHalved(kind: string | undefined, elementalType: string | undefined, yogFistType: string | undefined): boolean {
+	if (kind === 'elemental') return (elementalType ?? 'fire') === 'shock';
+	if (kind === 'dm100' || kind === 'pylon') return true;
+	if (kind === 'yogFist') return yogFistType === 'bright';
+	return false;
+}
+
 /** `Buff.buffType.NEGATIVE` for every buff this port grants to a *monster* (checked against
  * each buff's own Java class at tag `v3.3.8`: `Poison`/`Burning`/`Cripple`/`Weakness`/
  * `Vulnerable`/`Paralysis`/`Roots`/`Terror`/`Ooze`/`Charm`/`Degrade`/`Daze`/`Hex` all set

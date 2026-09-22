@@ -21,7 +21,7 @@ import { getCurse } from '../../items/itemCurses';
 import { applyCapeOfThornsProc } from '../../items/artifactActions';
 import { canSurpriseAttack, weaponSTRReq } from '../../items/strReq';
 import { EMBERS, FLOOR, GRASS, HIGH_GRASS, VIEW_RADIUS, WATER } from '../../dungeonConstants';
-import { BUFF_DURATION, INFINITE_ACCURACY, INFINITE_EVASION, NEGATIVE_BUFFS, absorbShield, addBuff, applyElementalBacklash, buffBlocked, reigniteBuff, rollDamage, rollHit, setBleeding, stoneGlyphReduction, type Creature } from '../../combat';
+import { BUFF_DURATION, INFINITE_ACCURACY, INFINITE_EVASION, NEGATIVE_BUFFS, absorbShield, addBuff, applyElementalBacklash, buffBlocked, electricDamageHalved, reigniteBuff, rollDamage, rollHit, setBleeding, stoneGlyphReduction, type Creature } from '../../combat';
 import { liveStats, IMMOVABLE_KINDS } from '../../monsters';
 import { imageSuperDefenseSkill } from '../../simulation/mirrorImage';
 
@@ -905,7 +905,11 @@ export const combatResolutionMethods = {
 				);
 				for (const targetId of arc.targetIds) {
 					const target = this.creatures.find((creature) => creature.id === targetId);
-					if (target && target.hp > 0) this.applyBlastDamage(target, arc.damage, true, 'foe');
+					//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`): the arc hits as
+				//`Shocking`, so every holder takes the `Math.round` half of the 0.4x.
+				if (target && target.hp > 0) this.applyBlastDamage(target,
+					electricDamageHalved(target.kind, target.elementalType, target.yogFistType) ? Math.round(arc.damage / 2) : arc.damage,
+					true, 'foe');
 				}
 			}
 		}

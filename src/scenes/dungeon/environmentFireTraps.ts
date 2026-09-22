@@ -42,7 +42,7 @@ import { applySandalsNaturalismCharge, sandalsNaturalismLevel } from '../../item
 import { ritualSiteState } from '../../spdLevelGen/rooms/standard/ritualSiteRoom';
 import { DOOR, DOOR_CLOSED, EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, TRAP, WALL, WATER, modeledTrapTable, sewerTrapTable, type TrapKind } from '../../dungeonConstants';
 import { regionForDepth, type Region } from '../../genericDungeon';
-import { absorbShield, addBuff, applyElementalBacklash, buffBlocked, explosiveTrapBounds, grimTrapDamage, reigniteBuff, rollDamage, setBleeding, type Creature, type GroundItem, type Step } from '../../combat';
+import { absorbShield, addBuff, applyElementalBacklash, buffBlocked, electricDamageHalved, explosiveTrapBounds, grimTrapDamage, reigniteBuff, rollDamage, setBleeding, type Creature, type GroundItem, type Step } from '../../combat';
 import { applyChillFreeze } from '../../simulation/buffs';
 import { BLOB_IMMUNE_KINDS, BOSSES, FLYING_KINDS, IMMOVABLE_KINDS, INORGANIC_KINDS, MONSTERS, UNDEAD_KINDS, mobRosterForDepth, type AnyMonsterId, type MonsterId } from '../../monsters';
 import { ETERNAL_FIRE_BURN, wardTexture, type BonesShape } from './shared';
@@ -1157,9 +1157,11 @@ export const environmentFireTrapsMethods = {
 				//or anything else routed here - can damage an NPC, the same shape
 				//as the sheep/sentry gates just above.
 				if (target.isNPC) return true;
-				//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`) halves Electricity on shock elementals.
-				if (cause === 'electricity' && !target.isHero && target.kind === 'elemental'
-					&& (target.elementalType ?? 'fire') === 'shock') damage = Math.round(damage / 2);
+				//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`) halves `Electricity`
+				//damage with `Math.round` on every holder: the shock elemental, DM100,
+				//the Pylon and BrightFist.
+				if (cause === 'electricity' && !target.isHero
+					&& electricDamageHalved(target.kind, target.elementalType, target.yogFistType)) damage = Math.round(damage / 2);
 				// Java's PhantomPiranha.damage() halves and relocates source-less blob damage; use random water.
 				const phantomDirect = target.kind === 'phantomPiranha'; if (phantomDirect) damage = this.phantomPiranhaDamage(target, damage);
 				const preHp = target.hp;
