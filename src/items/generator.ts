@@ -771,6 +771,8 @@ export interface StatueLoot {
 	armored: boolean;
 	weapon: GenItem;
 	armor?: GenItem;
+	/** The weapon's enchantment class, rolled when the statue spawns (see `statueWeapons.ts`). */
+	enchant?: string;
 }
 
 export function randomStatue(): StatueLoot {

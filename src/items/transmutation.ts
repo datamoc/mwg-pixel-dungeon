@@ -290,6 +290,9 @@ export interface TransmuteFlowContext {
 	get missileThresholds(): Map<string, number>;
 	set missileThresholds(thresholds: Map<string, number>);
 	set empoweredZaps(zaps: number);
+	/** `Talent.onScrollUsed()`'s Cleric half (tag `v3.3.8`) - the scene
+	 * implementation no-ops unless the hero is a Cleric with the talent. */
+	readonly armRecallInscription: (sourceClass: string) => void;
 }
 
 /**
@@ -329,7 +332,14 @@ export function transmuteCandidates(scene: TransmuteFlowContext): TransmuteCandi
  * scroll's own stack, eligible only at quantity 2+) consumes two units total - one for
  * the read, one as the transmuted target - matching Java's detach-then-detach order.
  */
-export function completeTransmutation(scene: TransmuteFlowContext, pick: { id: string; instanceId?: string }, scrollInstanceId?: string): void {
+/**
+ * `RecallInscription.onCast()`'s stone/scroll half for transmutation (same file as the
+ * scroll re-read): the recalled scroll instance is free (`talentChance = 0`), but the
+ * *picked target* is still consumed exactly like a paid read - Java rerolls a fresh
+ * scroll's selection while detaching the real target. `freeRecast` skips only the
+ * read-scroll consume and the talent arms (empowered zaps, recall re-arm).
+ */
+export function completeTransmutation(scene: TransmuteFlowContext, pick: { id: string; instanceId?: string }, scrollInstanceId?: string, opts?: { freeRecast?: boolean }): void {
 	const live = (scene.bag.items as TransmuteCandidate[]).find(
 		(i) =>
 			i.quantity > 0 &&
@@ -351,16 +361,25 @@ export function completeTransmutation(scene: TransmuteFlowContext, pick: { id: s
 		scene.say(t('items.scrolls.scrolloftransmutation.nothing'), 'negative');
 		return;
 	}
-	scene.bag.remove('scrollTransmutation', 1, scrollInstanceId);
+	const free = opts?.freeRecast === true;
+	if (!free) scene.bag.remove('scrollTransmutation', 1, scrollInstanceId);
 	//`Talent.EMPOWERING_SCROLLS` arms on a successful transmutation read too (see
-	//`readScroll`): the scroll is only consumed here, so this is the exact point.
-	if (scene.heroClass === 'mage' && scene.talentRank('empowering_scrolls') > 0) {
+	//`readScroll`): the scroll is only consumed here, so this is the exact point -
+	//skipped, with the recall re-arm below, on a free re-read (`talentChance = 0`).
+	//A paid read arms with the transmutation class (`Scroll.readAnimation()` reads
+	//with talentChance 1).
+	if (!free && scene.heroClass === 'mage' && scene.talentRank('empowering_scrolls') > 0) {
 		scene.empoweredZaps = empoweringScrollsCharges(scene.talentRank('empowering_scrolls'));
 	}
+	if (!free) scene.armRecallInscription('ScrollOfTransmutation');
 	if (live) {
-		//`changeWeapon`'s missile half detaches the WHOLE stack (`detachAll`) while the
-		//result keeps its quantity - removing one unit here would duplicate the rest.
-		scene.bag.remove(live.id, live.id.startsWith('missile_') ? live.quantity : 1, live.instanceId);
+		//`changeWeapon`'s ordinary missile half detaches the WHOLE stack (`detachAll`)
+		//while the result keeps its quantity. Tipped darts are the exception: Java's
+		//`changeTippedDart` detaches exactly one unit and returns a fresh quantity-1 dart.
+		const removed = live.id === 'missile_tippeddart'
+			? 1
+			: live.id.startsWith('missile_') ? live.quantity : 1;
+		scene.bag.remove(live.id, removed, live.instanceId);
 		scene.bag.add(result);
 		//The reroll mints a new `MissileWeapon.setID`; its level is what the
 		//`UpgradedSetTracker` threshold map records (see `transmuteItem`).
@@ -398,7 +417,7 @@ export function completeTransmutation(scene: TransmuteFlowContext, pick: { id: s
  * list consumes nothing (Java's `result == null` path collects `curItem` back),
  * logging the real `nothing` key. Returns true when the picker takes over.
  */
-export function startTransmutationPick(scene: TransmuteFlowContext, scrollInstanceId?: string): boolean {
+export function startTransmutationPick(scene: TransmuteFlowContext, scrollInstanceId?: string, opts?: { freeRecast?: boolean }): boolean {
 	const candidates = transmuteCandidates(scene);
 	if (candidates.length === 0) {
 		scene.say(t('items.scrolls.scrolloftransmutation.nothing'), 'negative');
@@ -408,7 +427,7 @@ export function startTransmutationPick(scene: TransmuteFlowContext, scrollInstan
 	//the exact scroll instance arrives as a parameter so a stack/duplicate cannot be
 	//consumed from the wrong entry when the picker closes.
 	scene.openItemPicker(t('items.scrolls.scrolloftransmutation.inv_title'), candidates, (entry) =>
-		completeTransmutation(scene, entry, scrollInstanceId)
+		completeTransmutation(scene, entry, scrollInstanceId, opts)
 	);
 	return true;
 }

@@ -14,9 +14,9 @@ export interface EquipWandContext {
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
 }
 
-/** Equips the inventory wand and initializes the shared staff charge pool. */
-export function equipWand(scene: EquipWandContext): void {
-	const wand = scene.bag.find('wand');
+/** Equips the inventory wand and initializes the shared staff charge pool. The tapped entry equips when one is named (a spare wields its own class); otherwise the first match equips, as before. */
+export function equipWand(scene: EquipWandContext, instanceId?: string): void {
+	const wand = (instanceId ? scene.bag.items.find((item) => item.id === 'wand' && item.instanceId === instanceId) : undefined) ?? scene.bag.find('wand');
 	if (!wand) return;
 	const wandType = wandTypeFromSource((wand as typeof wand & { sourceClass?: string }).sourceClass);
 	//An unknown source is invalid item identity, not Magic Missile. Keep it in the bag so a
@@ -24,7 +24,7 @@ export function equipWand(scene: EquipWandContext): void {
 	if (!wandType) return;
 	scene.wandType = wandType;
 	scene.frostWand = scene.wandType === 'frost';
-	scene.bag.remove('wand', 1);
+	scene.bag.remove('wand', 1, (wand as typeof wand & { instanceId?: string }).instanceId);
 	scene.wandCharges = new Actors.Charges({ max: 4, current: 4, regenRate: 1 });
 	//Rank 2 Scholar's Intuition identifies on equip; the identify (and its talent proc)
 	//lands after the pool reset, so `tested_hypothesis`'s banked regen survives it.

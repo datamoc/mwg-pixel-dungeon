@@ -1,5 +1,5 @@
 import { Roguelike, Random } from 'mwg';
-import type { Creature, Step } from '../combat';
+import { buffBlocked, type Creature, type Step } from '../combat';
 import { coneCells } from '../mechanics/cone';
 import { FLOOR, GRASS, HIGH_GRASS } from '../dungeonConstants';
 import { Cat, randomUsingDefaults } from './generator';
@@ -296,7 +296,7 @@ export function useRegrowthWand(context: RegrowthWandContext): void {
 			context.setTerrain(x, y, GRASS);
 			context.restitchAround(x, y);
 		}
-		if (creature) creature.buffs['roots'] = Math.max(creature.buffs['roots'] ?? 0, rule.rootsPerCharge * charges);
+		if (creature && !buffBlocked(creature, 'roots')) creature.buffs['roots'] = Math.max(creature.buffs['roots'] ?? 0, rule.rootsPerCharge * charges);
 	}
 	Random.shuffle(eligible);
 	if (charges >= rule.lotusMinCharges) {

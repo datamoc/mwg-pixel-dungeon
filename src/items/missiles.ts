@@ -128,47 +128,50 @@ export function tippedDartNameKey(seedClass: string | undefined): string {
 /**
  * `MissileSprite` flies the thrown item's own art (`view(item)` over `ItemSpriteSheet`,
  * tag `v3.3.8`) - which is what makes the yellow-dot stand-in wrong, not just ugly.
- * `MISSILE_WEP` is `xy(1, 10)`, slot 161 on this port's byte-identical `items.png`,
- * with each class at its own offset (`SPIRIT_BOW = +0` through `FORCE_CUBE = +15`), and
- * the twelve tipped darts sit at `DARTS = xy(1, 11)` = 177 plus their own offsets
- * (`ROT_DART = +1` through `BLINDING_DART = +12`). Spin is `ANGULAR_SPEEDS`: 0 for
+ * `MISSILE_WEP` is `xy(1, 10)` = slot 144 on this port's byte-identical `items.png`
+ * (`xy` is 1-based: `(x-1) + 16*(y-1)`), with each class at its own offset
+ * (`SPIRIT_BOW = +0` through `FORCE_CUBE = +15`), and the twelve tipped darts sit at
+ * `DARTS = xy(1, 11)` = 160 plus their own offsets (`ROT_DART = +1` through
+ * `BLINDING_DART = +12`). A fencepost here once read 161/177 (one row too low), so
+ * every thrown stone flew as `HEALING_DART` - the "stone renders as a dart" report.
+ * Spin is `ANGULAR_SPEEDS`: 0 for
  * darts/knives/spears (and the spirit arrow), 1440 for boomerang/bolas, 2160 for
  * shuriken - degrees per second, applied to the sprite's own angle while it flies.
  */
 export const MISSILE_ITEM_FRAMES: Readonly<Record<string, number>> = {
-	SpiritArrow: 161,
-	ThrowingSpike: 162,
-	ThrowingKnife: 163,
-	ThrowingStone: 164,
-	FishingSpear: 165,
-	Shuriken: 166,
-	ThrowingClub: 167,
-	ThrowingSpear: 168,
-	Bolas: 169,
-	Kunai: 170,
-	Javelin: 171,
-	Tomahawk: 172,
-	HeavyBoomerang: 173,
-	Trident: 174,
-	ThrowingHammer: 175,
-	ForceCube: 176,
+	SpiritArrow: 144,
+	ThrowingSpike: 145,
+	ThrowingKnife: 146,
+	ThrowingStone: 147,
+	FishingSpear: 148,
+	Shuriken: 149,
+	ThrowingClub: 150,
+	ThrowingSpear: 151,
+	Bolas: 152,
+	Kunai: 153,
+	Javelin: 154,
+	Tomahawk: 155,
+	HeavyBoomerang: 156,
+	Trident: 157,
+	ThrowingHammer: 158,
+	ForceCube: 159,
 };
 
 /** Tipped-dart flight art by seed class (lower-cased), via `TippedDart.types`'s own
  * seed-to-dart-class order read against the `DARTS` offsets above. */
 export const TIPPED_DART_FRAMES: Readonly<Record<string, number>> = {
-	rotberry: 178,
-	sungrass: 181,
-	fadeleaf: 188,
-	icecap: 182,
-	firebloom: 179,
-	sorrowmoss: 184,
-	swiftthistle: 180,
-	blindweed: 189,
-	stormvine: 183,
-	earthroot: 186,
-	mageroyal: 185,
-	starflower: 187,
+	rotberry: 161,
+	sungrass: 164,
+	fadeleaf: 171,
+	icecap: 165,
+	firebloom: 162,
+	sorrowmoss: 167,
+	swiftthistle: 163,
+	blindweed: 172,
+	stormvine: 166,
+	earthroot: 169,
+	mageroyal: 168,
+	starflower: 170,
 };
 
 const MISSILE_SPIN: Readonly<Record<string, number>> = {

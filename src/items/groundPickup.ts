@@ -13,6 +13,21 @@ export interface GroundPickupContext {
 	gold: number;
 	hasItem(id: string): boolean;
 	removeItem(id: string, quantity: number): void;
+	/** `Key.depth`/`isSimilar()` (tag `v3.3.8`): a key only counts toward its own finding depth -
+	 *  `Notes.keyCount(new GoldenKey(Dungeon.depth))`/`CrystalKey` gate the two locked-chest opens
+	 *  the same way `bumpDoor` gates a locked door. Used for `goldenKey`/`crystalKey` only; the
+	 *  door-side `ironKey` check lives scene-side (`bumpDoor`) since it has no ground-pickup path. */
+	hasKeyForDepth(id: string): boolean;
+	removeKeyForDepth(id: string): void;
+	/** Mints the per-key identity `Notes.KeyRecord` gets from the key object itself:
+	 *  depth alone cannot tell two same-kind keys apart once both sit in the bag,
+	 *  so removal targets the depth-matched entry by instance (tag `v3.3.8`). */
+	mintKeyInstanceId(): string;
+	/** `Heap.open()` (tag `v3.3.8`): opening a chest rolls `RingOfWealth.tryForBonusDrop`
+	 *  once. Called after either chest unlock; ordinary ground pickups never roll it -
+	 *  Java rolls in `open()`, which only chests (and skeleton/remains heaps, which this
+	 *  port has no heap kind for) reach. */
+	rollWealthBonusOnOpen(): void;
 	setGold(amount: number): void;
 	shopPrice(item: ItemPayload): number;
 	itemName(id: string, identified: boolean, instanceId?: string): string;
@@ -77,20 +92,22 @@ export interface GroundPickupContext {
 export function pickupGroundItem(context: GroundPickupContext): void {
 	const { item } = context;
 	if (item.chest === 'crystal') {
-		if (!context.hasItem('crystalKey')) {
+		if (!context.hasKeyForDepth('crystalKey')) {
 			context.say(context.messages.crystalChestLocked, 'negative');
 			return;
 		}
-		context.removeItem('crystalKey', 1);
+		context.removeKeyForDepth('crystalKey');
 		context.say(context.messages.unlockCrystalChest, 'positive');
+		context.rollWealthBonusOnOpen();
 	}
 	if (item.chest === 'locked') {
-		if (!context.hasItem('goldenKey')) {
+		if (!context.hasKeyForDepth('goldenKey')) {
 			context.say(context.messages.lockedChestNeedsGoldenKey, 'negative');
 			return;
 		}
-		context.removeItem('goldenKey', 1);
+		context.removeKeyForDepth('goldenKey');
 		context.say(context.messages.unlockChest, 'positive');
+		context.rollWealthBonusOnOpen();
 	}
 	item.chest = undefined;
 	if (item.forSale && item.item) {
@@ -237,7 +254,19 @@ function pickupPayload(context: GroundPickupContext, item: ItemPayload): void {
 		context.addEnergy(payload.quantity);
 		return;
 	}
-	if (['ironKey', 'goldenKey', 'crystalKey'].includes(payload.id)) context.identify(payload);
+	//`Key.depth`/`isSimilar()` (tag `v3.3.8`): every key is stamped with the depth it was found
+	//on, and only ever unlocks that same depth's doors/chests - a key carried down or up a floor
+	//goes stale (Java's `KeyDisplay` even shows a black icon for one). Stamped here, the single
+	//pickup choke point every ground `ironKey`/`goldenKey` (and, via the shop-purchase site
+	//below, `crystalKey`) passes through.
+	if (['ironKey', 'goldenKey', 'crystalKey'].includes(payload.id)) {
+		context.identify(payload);
+		payload.depth = context.depth;
+		//Per-key identity for depth-matched removal (`Notes.remove(Key)` takes a
+		//depth-similar record, not the first stack of the kind): without it two
+		//same-kind keys of different depths are indistinguishable at spend time.
+		payload.instanceId ??= context.mintKeyInstanceId();
+	}
 	context.addItem(payload);
 	context.say(context.messages.pickup(context.itemName(payload.id, payload.identified ?? false, payload.instanceId)), 'positive');
 }

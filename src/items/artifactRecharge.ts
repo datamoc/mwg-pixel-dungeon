@@ -44,7 +44,8 @@ export type ArtifactRechargeEffect =
  * (0.25, and notably with **no** cursed guard - only `MagicImmune`), Master Thieves Armband (0.1,
  * `full`), Unstable Spellbook (0.1), Ethereal Chains (0.5, and capped at **twice** its soft
  * `chargeTarget`), Talisman of Foresight (2, `full_charge`), Sandals of Nature (2), Dried Rose (4,
- * or a heal), Cape of Thorns (a flat `round(4*amount)` of charge), Chalice of Blood (a heal).
+ * or a heal), Cape of Thorns (a flat `round(4*amount)` of charge), Chalice of Blood (a heal),
+ * HolyTome (0.25).
  *
  * Talisman/Sandals/DriedRose override `charge()` *directly*; the first seven reach it through the
  * base class's forwarding `ArtifactBuff.charge()` (`Artifact.java` 275), which is why Java's own
@@ -64,6 +65,11 @@ export const ARTIFACT_RECHARGE_EFFECTS: Readonly<Record<string, ArtifactRecharge
 	rose: { kind: 'rose', rate: 4, guards: 'cursedAndImmune' },
 	cape: { kind: 'addCharge', rate: 4, procAtCap: true, guards: 'none' },
 	chalice: { kind: 'chaliceHeal', guards: 'cursedAndImmune' },
+	//`HolyTome.charge()`: 0.25, zeroing partial at the cap. The LIGHT_READING
+	//scale for an unequipped tome is not modeled: this port has no artifact
+	//equip slot and no such talent, so a carried tome recharges at the full
+	//equipped rate (the carried-cloak convention).
+	holyTome: { kind: 'charge', rate: 0.25, capZeroesPartial: true, guards: 'cursedAndImmune' },
 };
 
 type RechargeEffect = ArtifactRechargeEffect & { guards: RechargeGuards };

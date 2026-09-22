@@ -1,5 +1,5 @@
 import { Random, Roguelike } from 'mwg';
-import { absorbShield, addBuff, BUFF_DURATION, reigniteBuff, type Creature, type GroundItem, type Step } from '../combat';
+import { absorbShield, addBuff, BUFF_DURATION, buffBlocked, reigniteBuff, type Creature, type GroundItem, type Step } from '../combat';
 import { isUndeadOrDemonic } from '../monsters';
 import { MWL_BOMB_RULES, mwlItemEffectValue } from '../mwlContent';
 import { smokeBombSeedPlan } from '../simulation/smoke';
@@ -28,6 +28,7 @@ export interface BombEffectsContext {
 	readonly onBombDeath: () => void;
 	readonly onPharmacophobia: () => void;
 	readonly absorbHeroDamage: (amount: number) => number;
+	readonly protectDamage?: (target: Creature, amount: number) => number;
 	readonly showDamage: (target: Creature, amount: number) => void;
 	readonly kill: (target: Creature, cause?: 'poison' | 'fire' | 'hunger' | 'trap' | 'foe') => void;
 	readonly say: (message: string, level?: 'positive' | 'negative' | 'warning') => void;
@@ -43,13 +44,27 @@ export interface BombEffectsContext {
 	/** Clears the badge when Tengu's own bomb blast catches the hero (`BombAbility.act()`,
 	 * tag `v3.3.8`, fouls on presence in radius, even at zero damage). Optional likewise. */
 	readonly onTenguBombHeroHit?: () => void;
+	/** `PhantomPiranha.damage()` halves direct non-character damage and relocates after a
+	 * surviving hit. Bomb/blob sources are not `Char` instances in Java, so these callbacks
+	 * intentionally use the source-less random-water branch. */
+	readonly phantomPiranhaDamage?: (target: Creature, amount: number) => number;
+	readonly phantomPiranhaSurvived?: (target: Creature) => void;
 }
 
-function applyBlastDamage(target: Creature, amount: number, pierceArmor: boolean, context: BombEffectsContext): boolean {
+/** Exported for `CursedWand.Explosion` (`simulation/cursedWand.ts`'s scoping note): a bare
+ * `Bomb.ConjuredBomb` (an empty `Bomb` subclass with no overrides, tag `v3.3.8`) resolves the
+ * exact same per-character blast damage this function already implements for every ordinary
+ * bomb, so the cursed effect reuses it directly rather than re-deriving the boss-hook/King-
+ * shield/PhantomPiranha/Yog/Tengu edge cases it already covers. */
+export function applyBlastDamage(target: Creature, amount: number, pierceArmor: boolean, context: BombEffectsContext): boolean {
 	//`Sheep.damage()` (tag `v3.3.8`) is a no-op - the blast passes through sheep.
 	if (target.allyKind === 'sheep') return false;
 	//`SentryRoom$Sentry.damage()` (tag `v3.3.8`) is likewise a no-op.
 	if (target.kind === 'sentry') return false;
+	//`Challenge.SpectatorFreeze` makes `Char.isInvulnerable()` true for every damage
+	//source (tag `v3.3.8`), not only melee attacks. Keep the bomb's damage roll above
+	//this seam, then discard the HP change just as Java's `Char.damage()` does.
+	if (!target.isHero && target.buffs['spectatorFreeze'] !== undefined) return false;
 	if (target.isHero) {
 		const damage = context.absorbHeroDamage(amount);
 		context.hero.hp -= damage;
@@ -64,7 +79,7 @@ function applyBlastDamage(target: Creature, amount: number, pierceArmor: boolean
 	if (target.kind === 'yog' && context.yogShielded(target)) return false;
 	if (target.kind === 'yogFist' && context.guardFist(target)) return false;
 	context.onNonWeaponBossDamage?.(target);
-	let damage = amount;
+	let damage = context.protectDamage?.(target, amount) ?? amount;
 	//DKBarrier absorbs on every `Char.damage()` path - the same `absorbShield` block
 	//as the attack tail. The live bomb seam ran without it (like the trap/blob/DoT
 	//seams before their own fix), so bursting a P2 King bled HP through a full
@@ -75,8 +90,10 @@ function applyBlastDamage(target: Creature, amount: number, pierceArmor: boolean
 		damage = absorbed.damage;
 	}
 	if (!pierceArmor) damage = Math.max(0, damage - Random.normalRange(target.armor[0], target.armor[1]));
+	damage = context.phantomPiranhaDamage?.(target, damage) ?? damage;
 	const previousHp = target.hp;
 	target.hp -= damage;
+	if (target.kind === 'phantomPiranha' && target.hp > 0) context.phantomPiranhaSurvived?.(target);
 	if (target.kind === 'tengu') context.clampTenguBracket(target, previousHp);
 	if (target.kind === 'yog' && target.hp > 0) context.yogDamageHook(target, previousHp);
 	//Phase transitions ride the damage event (`DwarfKing.damage()`), with the P1
@@ -147,7 +164,7 @@ export function detonateBomb(ground: GroundItem, chained: Set<string>, context: 
 	const payload: string = String(variant ?? '');
 	if (payload === 'frostBomb') for (const target of affected) {
 		delete target.buffs['burning'];
-		if (target.buffs['chill']) target.buffs['paralysis'] = Math.max(target.buffs['paralysis'] ?? 0, BUFF_DURATION.frost);
+		if (target.buffs['chill'] && !buffBlocked(target, 'paralysis')) target.buffs['paralysis'] = Math.max(target.buffs['paralysis'] ?? 0, BUFF_DURATION.frost);
 		else addBuff(target, 'chill');
 	}
 	else if (payload === 'fireBomb') {
@@ -180,7 +197,7 @@ export function detonateBomb(ground: GroundItem, chained: Set<string>, context: 
 	else if (payload === 'regrowthBomb') {
 		context.cureHeroBuffs();
 		if (context.noHealing) {
-			context.hero.buffs['poison'] = mwlItemEffectValue('regrowthBomb', 'noHealingPoisonBase')
+			if (!buffBlocked(context.hero, 'poison')) context.hero.buffs['poison'] = mwlItemEffectValue('regrowthBomb', 'noHealingPoisonBase')
 				+ Math.floor(context.progressionLevel / mwlItemEffectValue('regrowthBomb', 'noHealingPoisonLevelDivisor'));
 			context.onPharmacophobia();
 		} else context.healHeroFromRegrowth();

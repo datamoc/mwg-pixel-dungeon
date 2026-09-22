@@ -1,9 +1,11 @@
 import { Actors } from 'mwg';
 import { ITEM_KEYS, RING_KEYS, WAND_KEYS, has, t } from '../i18n';
 import { wandTypeFromSource, type WandType } from './wands';
-import { ARMOR_NAME_BY_CLASS, WEAPON_NAME_BY_CLASS, isClassArmorId } from './catalog';
+import { ARMOR_NAME_BY_CLASS, WEAPON_NAME_BY_CLASS, isClassArmorId, weaponCombat } from './catalog';
 import { tippedDartNameKey, missileDamageRange } from './missiles';
 import { armorSTRReq, missileSTRReq, weaponSTRReq } from './strReq';
+import { TOME_SPELL_COST, type SubclassSpellId, type TalentSpellId, type TomeSpellId } from '../simulation/clericSpells';
+import { tomeSpellKey } from './holyTome';
 import { MWL_CONSUMABLE_DESCRIPTION_KEYS, MWL_EQUIPMENT_DESCRIPTION_KEYS, MWL_MISSILE_BY_CLASS, MWL_MISSILE_DESCRIPTION_KEYS, MWL_MISSILE_NAME_KEYS } from '../mwlContent';
 
 /**
@@ -24,6 +26,10 @@ import { MWL_CONSUMABLE_DESCRIPTION_KEYS, MWL_EQUIPMENT_DESCRIPTION_KEYS, MWL_MI
  * show no body rather than the key.
  */
 export function itemDescription(id: string, sourceClass?: string): string | undefined {
+	//The HolyTome is not one of the 13 real artifacts (no `artifacts.mwl` row, so no
+	//authored description key): its body is SPD's own tag-`v3.3.8`
+	//`items.artifacts.holytome.desc` under a `port.*` key (see `portStrings.ts`).
+	if (id === 'holyTome' && !sourceClass) return has('port.desc.holytome') ? t('port.desc.holytome') : undefined;
 	const resolve = (candidate: string | undefined): string | undefined => {
 		if (!candidate) return undefined;
 		const authored = MWL_CONSUMABLE_DESCRIPTION_KEYS[candidate]
@@ -59,8 +65,7 @@ export function itemStatsLine(id: string, opts: { tier?: number; level?: number;
 	};
 	if (id === 'weaponReward' || id === 'startingWeapon') {
 		const tier = opts.tier ?? 1;
-		const min = tier + level;
-		const max = 5 * (tier + 1) + level * (tier + 1);
+		const { min, max } = weaponCombat(opts.sourceClass ?? '', tier, level);
 		const req = weaponSTRReq(tier, level);
 		return t('items.weapon.melee.meleeweapon.stats_known', { '0': tier, '1': min, '2': max, '3': req })
 			+ heavySuffix(req, 'items.weapon.weapon.too_heavy', 'items.weapon.weapon.excess_str');
@@ -94,6 +99,8 @@ export interface ItemDisplayContext {
 	readonly wandType: WandType;
 	readonly weaponId: string; readonly weaponInstanceId?: string; readonly weaponHardened: boolean;
 	readonly armorId: string; readonly armorInstanceId?: string; readonly armorHardened: boolean;
+	/** Ring ids whose type stands revealed while level/curse stay hidden (Thief's Intuition rank 1). */
+	readonly ringTypesKnown: ReadonlySet<string>;
 }
 
 /** Resolves the player-facing name of a bag item, including appearances and enhancement notes. */
@@ -118,6 +125,33 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 	//`DriedRose.actions()`'s own `AC_SUMMON`/`AC_DIRECT` labels, on the same synthetic-id trick.
 	if (id === 'rose' && instanceId === 'rose-summon') return t('items.artifacts.driedrose.ac_summon');
 	if (id === 'rose' && instanceId === 'rose-direct') return t('items.artifacts.driedrose.ac_direct');
+	//`UnstableSpellbook.actions()`'s own `AC_READ`/`AC_ADD` labels, on the same synthetic-id trick.
+	if (id === 'spellbook' && instanceId === 'spellbook-read') return t('items.artifacts.unstablespellbook.ac_read');
+	if (id === 'spellbook' && instanceId === 'spellbook-add') return t('items.artifacts.unstablespellbook.ac_add');
+	//`WndClericSpells` rows: every spell shares the tome's own id (so the tome
+	//icon/frame render) and names itself plus its charge cost - the same
+	//synthetic-id trick the beacon and horn rows above use. The base three keep
+	//their long-standing `name (cost)` line byte-identical; talent rows name the
+	//spell alone (their `note` already prints the rank-aware cost, which this
+	//naming context cannot recompute - no talent rank or tracker rides it).
+	if (id === 'holyTome' && instanceId !== undefined && instanceId.startsWith('tome-')) {
+		const spell = instanceId.slice('tome-'.length) as TomeSpellId | TalentSpellId | SubclassSpellId;
+		const nameKey = spell === 'guidingLight' ? 'port.spell.guidinglight.name'
+			: spell === 'holyWeapon' ? 'port.spell.holyweapon.name'
+			: spell === 'holyWard' ? 'port.spell.holyward.name' : undefined;
+		const cost = spell === 'guidingLight' ? TOME_SPELL_COST.guidingLight
+			: spell === 'holyWeapon' ? TOME_SPELL_COST.holyWeapon
+			: spell === 'holyWard' ? TOME_SPELL_COST.holyWard : undefined;
+		if (nameKey !== undefined && cost !== undefined) return `${t(nameKey)} (${t('port.spell.charge_cost', { cost })})`;
+		//Talent and subclass rows name the spell alone (their `note` already prints
+		//the rank-aware cost). Unknown suffixes fall through to the generic name.
+		if (spell === 'holyIntuition' || spell === 'shieldOfLight' || spell === 'recallInscription'
+			|| spell === 'sunray' || spell === 'divineSense' || spell === 'bless' || spell === 'cleanse'
+			|| spell === 'radiance' || spell === 'holyLance' || spell === 'mnemonicPrayer'
+			|| spell === 'smite' || spell === 'layOnHands' || spell === 'auraOfProtection') {
+			return t(`port.spell.${tomeSpellKey(spell)}.name`);
+		}
+	}
 	//`SummonElemental`'s two actions (`AC_CAST` is Java's generic spell label, `AC_IMBUE` its own).
 	if (id === 'summonElemental' && instanceId === 'summonElemental-cast') return t('items.spells.spell.ac_cast');
 	if (id === 'summonElemental' && instanceId === 'summonElemental-imbue') return t('items.spells.summonelemental.ac_imbue');
@@ -129,8 +163,11 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 		return t(WAND_KEYS[wandTypeFromSource(instanceId.slice('wand-reward:'.length)) ?? 'magicMissile']);
 	}
 	if (id.startsWith('ring_')) {
-		if (!identified) return t('port.name.ring');
+		//`Ring.name()`: the real name shows once the type is known; only a full
+		//identify appends the level and curse suffixes.
+		if (!identified && !scene.ringTypesKnown.has(id)) return t('port.name.ring');
 		const ring = scene.bag.find(id, instanceId);
+		if (!identified) return `${t(RING_KEYS[id.slice(5)] ?? id)}`;
 		const curse = ring?.cursed ? ` (${t('port.name.cursed')})` : '';
 		return `${t(RING_KEYS[id.slice(5)] ?? id)} +${ring?.level ?? 0}${curse}`;
 	}

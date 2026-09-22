@@ -20,7 +20,7 @@ export type HornItem = {
 };
 
 /** The foods the horn accepts, as `storeFoodInHorn` lists them. */
-const HORN_FOOD_IDS = ['food', 'meat', 'chargrilledMeat', 'stewedMeat', 'meatPie', 'pasty'];
+const HORN_FOOD_IDS = ['food', 'smallRation', 'berry', 'supplyRation', 'phantomMeat', 'meat', 'chargrilledMeat', 'stewedMeat', 'meatPie', 'pasty'];
 
 /** `HornOfPlenty`'s charge cap: `chargeCapBase + floor(level/2)`. */
 export function hornChargeCap(horn: { level?: number }): number {
@@ -119,7 +119,7 @@ export function storeFoodInHornFlow(ctx: HornFlowContext, instanceId?: string): 
 		const level = horn.level ?? 0;
 		if (level >= levelCap) return;
 		let energy = MWL_CONSUMABLE_STATS[pick.id]?.hunger ?? 0;
-		if (pick.id === 'pasty') energy += HUNGRY * mwlItemEffectValue('horn', 'pastyBonusFraction');
+		if (pick.id === 'pasty' || pick.id === 'phantomMeat') energy += HUNGRY * mwlItemEffectValue('horn', 'pastyBonusFraction');
 		else if (pick.id === 'meatPie') energy += HUNGRY * mwlItemEffectValue('horn', 'meatPieBonusFraction');
 		ctx.consumeFood(pick.id, pick.instanceId);
 		let storedFoodEnergy = (horn.storedFoodEnergy ?? 0) + energy;

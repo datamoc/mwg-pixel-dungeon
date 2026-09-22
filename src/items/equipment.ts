@@ -1,6 +1,7 @@
 import { Actors } from 'mwg';
 import type { EquippedRing } from './ringModifiers';
 import { ringDef, ringMightBonus } from './ringModifiers';
+import { markRingTypesKnown } from '../simulation/ringKnow';
 import { t } from '../i18n';
 import { getCurse } from './itemCurses';
 import { transferEnhancement } from './itemWorkflows';
@@ -12,6 +13,8 @@ export interface RingEquipmentContext {
 	equippedRing: EquippedRing | null;
 	ringHtBonus: number;
 	talentRank(id: string): number;
+	/** `Ring.setKnown()` on identify - the scene owns the per-run known set. */
+	markRingTypesKnown(ids: string[]): void;
 	/** Test Subject / Tested Hypothesis on any newly-identified item (see the row). */
 	procIdentifyTalents(): void;
 	itemDisplayName(id: string, identified: boolean, instanceId?: string): string;
@@ -24,11 +27,13 @@ export function equipRing(scene: RingEquipmentContext, id: string, instanceId?: 
 	const item = scene.bag.find(id, instanceId);
 	if (!item || !id.startsWith('ring_')) return;
 	const level = item.level ?? 0;
-	//Rank 1 Thief's Intuition only reveals the type in Java. This port has no separate type-known
-	//flag, so only rank 2's full identification is represented.
+	//Rank 1 Thief's Intuition reveals the ring's type in Java (`Ring.setKnown()`,
+	//level/curse stay hidden): `markRingTypesKnown` records exactly that, so rank 2
+	//below is the full identification it has always been.
 	if (scene.heroClass === 'rogue' && scene.talentRank('thiefs_intuition') >= 2) {
 		const newlyIdentified = !item.identified;
 		Actors.identify(item);
+		scene.markRingTypesKnown([id]);
 		if (newlyIdentified) scene.procIdentifyTalents();
 	}
 	if (scene.equippedRing?.cursed && scene.equippedRing.id !== id) {

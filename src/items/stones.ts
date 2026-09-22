@@ -17,6 +17,12 @@ export interface StonePickerEntry {
 export interface StoneContext {
 	readonly bag: Actors.Inventory;
 	readonly hero: Creature;
+	/**
+	 * Arms the Cleric recall tracker for a just-used runestone class
+	 * (`Talent.onRunestoneUsed()`'s Cleric half, tag `v3.3.8`) - the scene
+	 * implementation no-ops unless the hero is a Cleric with the talent.
+	 */
+	readonly armRecallInscription: (sourceClass: string) => void;
 	readonly level: { width: number; height: number; passable(x: number, y: number): boolean };
 	readonly creatureAt: (x: number, y: number) => Creature | null;
 	readonly nearestVisibleEnemy: (range: number) => Creature | null;
@@ -82,8 +88,36 @@ function blastCells(scene: StoneContext, center: Step, radius: number): Set<numb
 }
 
 /** StoneOfFlock.activate(): fill the hero-centred radius used by this port's no-picker path. */
+/**
+ * `RecallInscription.onCast()`'s runestone half (`RecallInscription.java`, tag
+ * `v3.3.8`): a fresh instance of the tracked class activates without being consumed
+ * (`Reflection.newInstance`, anonymized). The caller supplies the free context - a
+ * bag that drops the recalled stone's own consume and a no-op `armRecallInscription`
+ * (the re-cast reports no class back) - so every path below runs untouched.
+ * Returns false for a class this port has no stone for - paired with RECALLABLE_STONES in scrollEffects.ts, extend both. (Exotics can never be tracked,
+ * but the cost table names them, so the dispatch stays total).
+ */
+export function recastStone(scene: StoneContext, stoneClass: string): boolean {
+	switch (stoneClass) {
+		case 'StoneOfFlock': useStoneOfFlock(scene); return true;
+		case 'StoneOfAggression': useStoneOfAggression(scene); return true;
+		case 'StoneOfAugmentation': useStoneOfAugmentation(scene); return true;
+		case 'StoneOfFear': useStoneOfFear(scene); return true;
+		case 'StoneOfDeepSleep': useStoneOfDeepSleep(scene); return true;
+		case 'StoneOfBlink': useStoneOfBlink(scene); return true;
+		case 'StoneOfClairvoyance': useStoneOfClairvoyance(scene); return true;
+		case 'StoneOfShock': useStoneOfShock(scene); return true;
+		case 'StoneOfBlast': useStoneOfBlast(scene); return true;
+		case 'StoneOfEnchantment': useStoneOfEnchantment(scene); return true;
+		case 'StoneOfDetectMagic': useStoneOfDetectMagic(scene); return true;
+		case 'StoneOfIntuition': useStoneOfIntuition(scene); return true;
+		default: return false;
+	}
+}
+
 export function useStoneOfFlock(scene: StoneContext, instanceId?: string): void {
 	scene.bag.remove('stoneOfFlock', 1, instanceId);
+	scene.armRecallInscription('StoneOfFlock');
 	let count = 0;
 	const radius = stoneValue('flockRadius');
 	for (let y = Math.max(0, scene.hero.y - radius); y <= Math.min(scene.level.height - 1, scene.hero.y + radius); y++) {
@@ -101,6 +135,7 @@ export function useStoneOfFlock(scene: StoneContext, instanceId?: string): void 
 /** StoneOfAggression.activate(): apply the ordinary or boss-duration aggression buff. */
 export function useStoneOfAggression(scene: StoneContext, instanceId?: string): void {
 	scene.bag.remove('stoneOfAggression', 1, instanceId);
+	scene.armRecallInscription('StoneOfAggression');
 	const target = scene.nearestVisibleEnemy(stoneValue('targetRange'));
 	if (!target) {
 		scene.say(t('port.log.stonewasted'), 'negative');
@@ -114,6 +149,7 @@ export function useStoneOfAggression(scene: StoneContext, instanceId?: string): 
 /** StoneOfAugmentation: consume the stone and open the scene's augment-choice UI. */
 export function useStoneOfAugmentation(scene: StoneContext, instanceId?: string): void {
 	scene.bag.remove('stoneOfAugmentation', 1, instanceId);
+	scene.armRecallInscription('StoneOfAugmentation');
 	scene.openAugmentChoice();
 }
 
@@ -123,6 +159,7 @@ export function useStoneOfFear(scene: StoneContext, instanceId?: string): void {
 		range: stoneValue('targetRange'),
 		onConfirm: (target) => {
 			const hit = scene.creatureAt(target.x, target.y);
+			scene.armRecallInscription('StoneOfFear');
 			if (hit && !hit.isHero && !hit.isNPC && hit.hp > 0) {
 				scene.bag.remove('stoneOfFear', 1, instanceId);
 				addBuff(hit, 'terror');
@@ -138,6 +175,7 @@ export function useStoneOfDeepSleep(scene: StoneContext, instanceId?: string): v
 		range: stoneValue('targetRange'),
 		onConfirm: (target) => {
 			const hit = scene.creatureAt(target.x, target.y);
+			scene.armRecallInscription('StoneOfDeepSleep');
 			if (hit && !hit.isHero && !hit.isNPC && hit.hp > 0) {
 				scene.bag.remove('stoneOfDeepSleep', 1, instanceId);
 				hit.sleeping = true;
@@ -154,6 +192,7 @@ export function useStoneOfBlink(scene: StoneContext, instanceId?: string): void 
 		validate: (cell) => scene.level.passable(cell.x, cell.y) && !scene.creatureAt(cell.x, cell.y),
 		onConfirm: (target) => {
 			scene.bag.remove('stoneOfBlink', 1, instanceId);
+			scene.armRecallInscription('StoneOfBlink');
 			delete scene.hero.buffs['roots'];
 			const blinkFrom = { x: scene.hero.x, y: scene.hero.y };
 			scene.moveHero(target);
@@ -169,6 +208,7 @@ export function useStoneOfClairvoyance(scene: StoneContext, instanceId?: string)
 		range: stoneValue('targetRange'),
 		onConfirm: (center) => {
 			scene.bag.remove('stoneOfClairvoyance', 1, instanceId);
+			scene.armRecallInscription('StoneOfClairvoyance');
 		scene.revealClairvoyance(center, stoneValue('clairvoyanceDistance'));
 		scene.say(t('port.log.stoneclairvoyance'), 'positive');
 	},
@@ -182,6 +222,7 @@ export function useStoneOfShock(scene: StoneContext, instanceId?: string): void 
 		shape: { kind: 'burst', radius: stoneValue('shockBurstRadius') },
 		onConfirm: (center) => {
 			scene.bag.remove('stoneOfShock', 1, instanceId);
+			scene.armRecallInscription('StoneOfShock');
 			let hits = 0;
 			for (const creature of scene.creatures) {
 				if (creature.isHero || creature.isNPC || Roguelike.chebyshevDistance(center, creature) > stoneValue('shockBurstRadius')) continue;
@@ -203,6 +244,7 @@ export function useStoneOfBlast(scene: StoneContext, instanceId?: string): void 
 		shape: { kind: 'burst', radius: stoneValue('blastRadius') },
 		onConfirm: (center) => {
 			scene.bag.remove('stoneOfBlast', 1, instanceId);
+			scene.armRecallInscription('StoneOfBlast');
 			const radius = stoneValue('blastRadius');
 			const affected = blastCells(scene, center, radius);
 			// `StoneOfBlast` creates a destructive `ConjuredBomb`; Java destroys
@@ -262,6 +304,7 @@ export function useStoneOfEnchantment(scene: StoneContext, instanceId?: string):
 			return;
 		}
 		scene.bag.remove('stoneOfEnchantment', 1, instanceId);
+		scene.armRecallInscription('StoneOfEnchantment');
 		live.affix = rolled;
 		scene.say(t(live.id === 'weaponReward' ? 'items.stones.stoneofenchantment.weapon' : 'items.stones.stoneofenchantment.armor'), 'positive');
 	});
@@ -290,6 +333,7 @@ export function useStoneOfDetectMagic(scene: StoneContext, instanceId?: string):
 		const negative = !!live.cursed || scene.curseOf(live.affix ?? '') !== undefined;
 		const positive = (live.level ?? 0) > 0 || (!!live.affix && scene.curseOf(live.affix) === undefined);
 		scene.bag.remove('stoneOfDetectMagic', 1, instanceId);
+		scene.armRecallInscription('StoneOfDetectMagic');
 		scene.say(t(!positive && !negative ? 'port.stone.detectmagic.detected_none'
 			: positive && negative ? 'port.stone.detectmagic.detected_both'
 			: positive ? 'port.stone.detectmagic.detected_good'
@@ -333,6 +377,7 @@ export function useStoneOfIntuition(scene: StoneContext, instanceId?: string): v
 				for (const same of scene.bag.items.filter((item) => item.id === target.id) as StonePickerEntry[]) scene.identify(same);
 				scene.say(t('items.stones.stoneofintuition$wndguess.correct'), 'positive');
 			} else scene.say(t('items.stones.stoneofintuition$wndguess.incorrect'), 'negative');
+			scene.armRecallInscription('StoneOfIntuition');
 			if (!scene.intuitionTracker) scene.intuitionTracker = true;
 			else {
 				scene.bag.remove('stoneOfIntuition', 1, instanceId);

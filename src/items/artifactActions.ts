@@ -130,7 +130,10 @@ export function useChalice(scene: ArtifactActionContext, instanceId?: string): v
  * same attacker's swing, and damaging/potentially killing the attacker mid-call risks the rest of
  * that large function referencing a creature already removed; scoped out rather than risked, see
  * `PORT_COVERAGE.md`'s `CapeOfThorns` row. Returns the (possibly reduced) damage to apply. */
-export function applyCapeOfThornsProc(scene: Pick<ArtifactActionContext, 'bag' | 'say'>, damage: number): number {
+export function applyCapeOfThornsProc(
+	scene: Pick<ArtifactActionContext, 'bag' | 'say'> & { onRetaliate?: (damage: number) => void },
+	damage: number,
+): number {
 	const cape = scene.bag.find('cape') as (typeof scene.bag.items[number] & { charge?: number; cooldown?: number; level?: number; exp?: number }) | undefined;
 	if (!cape || damage <= 0) return damage;
 	const level = cape.level ?? 0;
@@ -148,6 +151,7 @@ export function applyCapeOfThornsProc(scene: Pick<ArtifactActionContext, 'bag' |
 	if (cooldown > 0) {
 		const deflected = Random.normalRange(0, damage);
 		remaining = damage - deflected;
+		scene.onRetaliate?.(deflected);
 		let exp = (cape.exp ?? 0) + deflected;
 		const levelCap = mwlItemEffectValue('cape', 'levelCap');
 		const expToLevel = (level + 1) * mwlItemEffectValue('cape', 'expPerLevelBase');

@@ -1,6 +1,6 @@
 import { Roguelike } from 'mwg';
 import { isChallengeEnabled } from '../challenges';
-import { addBuff, type BuffId, type Creature } from '../combat';
+import { addBuff, buffBlocked, reigniteBuff, type BuffId, type Creature } from '../combat';
 import { applyChillFreeze } from '../simulation/buffs';
 import { brewNeighbourSeedPlan, SHROUDING_FOG_VOLUME } from '../simulation/brews';
 import { WALL } from '../dungeonConstants';
@@ -62,7 +62,7 @@ export function applyPotionHealing(context: PotionEffectsContext): void {
 		//of the restored_*-talent triggers below fire either, since they key off the heal
 		//actually happening), instead pharmacophobiaProc() sets a fresh Poison(4+lvl/2) -
 		//found dead alongside the other challenge audits this session.
-		context.hero.buffs['poison'] = 4 + Math.floor(context.progression.level / 2);
+		if (!buffBlocked(context.hero, 'poison')) context.hero.buffs['poison'] = 4 + Math.floor(context.progression.level / 2);
 		context.say(t('port.log.pharmacophobia'), 'negative');
 	} else {
 		//PotionOfHealing.heal(): `Buff.affect(ch, Healing.class).setHeal((int)(0.8*HT+14), 0.25, 0)`
@@ -84,12 +84,16 @@ export function applyPotionHealing(context: PotionEffectsContext): void {
 }
 
 export function applyPotionPurity(hero: Creature, say: PotionEffectsContext['say']): void {
-	//PotionOfPurity.apply() itself only clears poison/burning ('potionPurity' - Java's
-	//`GasCloud`/`Fire` extinguish). Every generated potion id now has its own registry
-	//entry above (PotionOfFrost was the last one missing one), so this is genuinely just
-	//Purity's effect. See `PORT_COVERAGE.md`.
-	for (const b of ['poison', 'burning'] as BuffId[]) delete hero.buffs[b];
-	say(t('port.log.purity'), 'positive');
+	//`PotionOfPurity.apply()` (`PotionOfPurity.java`, tag `v3.3.8`) only prolongs
+	//`BlobImmunity` for its full `DURATION` (20) - it cures nothing. The poison/burning
+	//deletion that stood here misattributed the *shatter* path's radius blob-clearing
+	//(`shatter()` clears every blob in `affectedBlobs`, Java's `GasCloud`/`Fire`
+	//extinguish) to the quaff. `reigniteBuff` is the shared prolong (keep-max)
+	//primitive, matching Java's `Buff.prolong`; the duration is explicit because the
+	//authored table's 10 is the Warden Mageroyal half-duration (`DURATION/2f`), not
+	//this quaff's full 20. See `PORT_COVERAGE.md`.
+	reigniteBuff(hero, 'blobImmunity', 20);
+	say(t('items.potions.potionofpurity.protected'), 'positive');
 }
 
 /** Potion subclasses' effects. Scene-dependent services are injected so this registry remains in the item graph. */

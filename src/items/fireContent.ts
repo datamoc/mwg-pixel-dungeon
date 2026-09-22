@@ -17,9 +17,15 @@ export function burnFireContents(context: FireContentContext, x: number, y: numb
 	} else if (ground?.kind === 'bomb' && ground.item) {
 		context.detonateBomb(ground);
 	} else if (ground?.kind === 'meat') {
-		// Java replaces MysteryMeat/FrozenCarpaccio with ChargrilledMeat. The port's compact
-		// `meat` heap is its MysteryMeat stand-in, so preserve the heap and replace its payload.
-		ground.item = { id: 'chargrilledMeat', quantity: 1, identified: true, sourceClass: 'ChargrilledMeat' };
+		// Java replaces MysteryMeat/FrozenCarpaccio with ChargrilledMeat.cook(item.quantity).
+		// The port's compact `meat` heap is its MysteryMeat stand-in, so preserve the whole
+		// stack while replacing its payload; cooking one item used to silently delete extras.
+		ground.item = {
+			id: 'chargrilledMeat',
+			quantity: Math.max(1, ground.item?.quantity ?? 1),
+			identified: true,
+			sourceClass: 'ChargrilledMeat',
+		};
 	}
 	context.removePortedPlant(cell);
 }

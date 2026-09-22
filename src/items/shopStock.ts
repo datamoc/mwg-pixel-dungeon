@@ -167,9 +167,9 @@ export function planShopStock(
 		plans.push({ kind: 'generated', generated: sources.randomUsingDefaults(rng.int(2) === 0 ? sources.potion : sources.scroll), identify: true });
 	}
 
-	//`new SmallRation()` x2: this port's one generic `food` kind is the Ration stand-in its own
-	//`Food` rows document, with one unit per SmallRation.
-	plans.push({ kind: 'item', id: 'food', quantity: 2, identify: true });
+	//`ShopRoom.generateItems()` adds two concrete SmallRations, each as its own stack entry.
+	plans.push({ kind: 'item', id: 'smallRation', quantity: 1, identify: true });
+	plans.push({ kind: 'item', id: 'smallRation', quantity: 1, identify: true });
 
 	switch (rng.int(4)) {
 		case 0: plans.push({ kind: 'item', id: 'bomb', quantity: 1, identify: true }); break;

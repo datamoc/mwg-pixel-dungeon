@@ -11,7 +11,8 @@
  * (`src/scenes/dungeonScene.ts`).
  */
 
-import { MWL_EQUIPMENT_STAT_RULES, MWL_ITEM_NODES, MWL_RING_ITEMS } from '../mwlContent';
+import { MWL_DEFAULT_MELEE_COMBAT, MWL_EQUIPMENT_STAT_RULES, MWL_ITEM_NODES, MWL_RING_ITEMS, MWL_WEAPON_COMBAT_RULES } from '../mwlContent';
+import { evaluateFormula } from './formula';
 
 export interface ItemDef {
 	id: string;
@@ -19,10 +20,7 @@ export interface ItemDef {
 	tier: number;
 }
 
-export interface WeaponDef extends ItemDef {
-	accuracy?: number;
-	speed?: number;
-}
+export interface WeaponDef extends ItemDef {}
 
 export interface ArmorDef extends ItemDef {
 	type: 'cloth' | 'leather' | 'mail' | 'scale' | 'plate';
@@ -85,12 +83,10 @@ const authoredWeapons = authoredEquipment
 	.filter((node) => node.attributes.slot === 'weapon')
 	.map((node): WeaponDef => {
 		const parts = itemIdParts(requiredItemAttribute(node.attributes, 'id'));
-		const speed = effectNumber(node, 'speed');
 		return {
 		id: parts.baseId,
 		nameKey: requiredItemAttribute(node.attributes, 'name'),
 		tier: parts.tier,
-		...(speed === undefined ? {} : { speed }),
 	};
 	});
 
@@ -169,14 +165,10 @@ const authoredWands = authoredEquipment
 
 export const WANDS: Record<number, WandDef[]> = byTier(authoredWands);
 
-/** Evaluates only the two authored equipment formula shapes; arbitrary MWL expressions are not
- * executed. The formulas themselves are content, while this closed evaluator is game logic. */
+/** Authored equipment formulas run through the closed evaluator in `formula.ts` (numbers, `tier`, `level`,
+ * `+ - * /`, parentheses, `round`): the formulas are content, the evaluator is game logic. */
 function evaluateEquipmentFormula(formula: string, tier: number, level: number): number {
-	if (formula === 'tier+level') return tier + level;
-	if (formula === 'level') return level;
-	if (formula === '5*(tier+1)+level*(tier+1)') return 5 * (tier + 1) + level * (tier + 1);
-	if (formula === 'tier*(2+level)') return tier * (2 + level);
-	throw new Error(`Unknown MWL equipment formula: ${formula}`);
+	return evaluateFormula(formula, { tier, level });
 }
 
 function equipmentStatRange(kind: string, tier: number, level: number): [number, number] {
@@ -185,8 +177,54 @@ function equipmentStatRange(kind: string, tier: number, level: number): [number,
 	return [evaluateEquipmentFormula(rule.minFormula, tier, level), evaluateEquipmentFormula(rule.maxFormula, tier, level)];
 }
 
+/**
+ * The melee class each hero class starts with (`HeroClass.initHero()`, tag `v3.3.8`): the port keeps the
+ * run-start weapon under the one id `startingWeapon`, so its real class is a function of the hero class.
+ * The cleric's cudgel has no `weaponCombatRules` row (it is not one of the thirty-one authored classes),
+ * so it, like any unknown key, gets the default `MeleeWeapon` numbers.
+ */
+export const STARTING_WEAPON_CLASS: Readonly<Record<string, string>> = {
+	warrior: 'wornshortsword', mage: 'magesstaff', rogue: 'dagger', huntress: 'gloves', duelist: 'rapier',
+};
+
+/** The default `MeleeWeapon` range for a tier and level. Prefer `weaponCombat` when the class is known: about
+ * twenty-six of the thirty-one melee classes override the maximum. */
 export function weaponDamageRange(tier: number, level: number): [number, number] {
 	return equipmentStatRange('weaponDamage', tier, level);
+}
+
+/** A melee weapon's combat numbers at a tier and level (`Weapon`/`MeleeWeapon`, tag `v3.3.8`). */
+export interface WeaponCombat {
+	min: number;
+	max: number;
+	/** `Weapon.ACC`, the multiplier on the wielder's accuracy. */
+	accuracy: number;
+	/** `Weapon.DLY`, the multiplier on the attack delay (0.5 = two swings a turn). */
+	delay: number;
+	/** `Weapon.RCH`: 1 is plain adjacency. */
+	reach: number;
+	/** `defenseFactor(owner)`: extra defence the weapon adds to its wielder's DR ceiling. */
+	defense: number;
+}
+
+/**
+ * The combat numbers of the melee weapon whose lower-cased Java class name is `weaponClass` (`sword`,
+ * `wornshortsword`, ...), from `weaponCombatRules` in `item-rules.mwl`. A class with no row (a modded id,
+ * a thrown weapon) gets Java's own `MeleeWeapon` defaults (`defaultMeleeCombat` in the same file),
+ * so a lookup never fails.
+ */
+export function weaponCombat(weaponClass: string, tier: number, level: number): WeaponCombat {
+	const rule = MWL_WEAPON_COMBAT_RULES[weaponClass.toLowerCase()];
+	const [min, defaultMax] = weaponDamageRange(tier, level);
+	if (!rule) return { min, max: defaultMax, ...MWL_DEFAULT_MELEE_COMBAT };
+	return {
+		min,
+		max: evaluateEquipmentFormula(rule.maxFormula, tier, level),
+		accuracy: rule.accuracy,
+		delay: rule.delay,
+		reach: rule.reach,
+		defense: evaluateEquipmentFormula(rule.defenseFormula, tier, level),
+	};
 }
 
 export function armorReductionRange(tier: number, level: number): [number, number] {

@@ -176,6 +176,13 @@ export function sourceInventoryItem(id: string, sourceClass: string | undefined,
 	if (id.toLowerCase() === 'seed') return { id: 'seed', quantity: 1, identified: true, sourceClass, ...(sourceClass ? { instanceId: `seed:${sourceClass.toLowerCase()}` } : {}) };
 	const concrete = sourceClass ?? id;
 	const lower = concrete.toLowerCase();
+	// `SmallRation` is a concrete Food subclass with its own shop/inventory id; the
+	// generic consumable alias table intentionally only contains categories with appearance
+	// shuffling, so keep this food alias explicit here.
+	if (concrete === 'SmallRation' || lower === 'smallration') return { id: 'smallRation', quantity: 1, identified: true, sourceClass: 'SmallRation' };
+	if (concrete === 'Berry' || lower === 'berry') return { id: 'berry', quantity: 1, identified: true, sourceClass: 'Berry' };
+	if (concrete === 'SupplyRation' || lower === 'supplyration') return { id: 'supplyRation', quantity: 1, identified: true, sourceClass: 'SupplyRation' };
+	if (concrete === 'PhantomMeat' || lower === 'phantommeat') return { id: 'phantomMeat', quantity: 1, identified: true, sourceClass: 'PhantomMeat' };
 	//A carried missile stack carries its own identity - its own set id and level - rather than
 	//being fungible class ammo (see `src/missiles.ts`'s header). Minted here, at the one place a
 	//floor's missile payloads are built, so two stacks of the same class dropped separately never

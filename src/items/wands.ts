@@ -17,8 +17,10 @@ export type WandType =
 	| 'transfusion' | 'warding';
 
 /** Executable wand categories are derived from the MWL catalogue; this avoids a second content
- * list in TypeScript while retaining a closed union for the effect dispatcher. */
-const WAND_TYPES: readonly WandType[] = [...new Set(MWL_WAND_DEFINITIONS.map((definition) => definition.type))]
+ * list in TypeScript while retaining a closed union for the effect dispatcher. Exported for
+ * `CursedWand.RandomWand`'s uniform pick over `Generator.Category.WAND` (`simulation/cursedWand.ts`'s
+ * scoping note; the port's roster matches Java's 13-class real wand list one for one). */
+export const WAND_TYPES: readonly WandType[] = [...new Set(MWL_WAND_DEFINITIONS.map((definition) => definition.type))]
 	.filter((type): type is WandType => [
 		'magicMissile', 'frost', 'fireblast', 'lightning', 'corrosion', 'corruption', 'disintegration',
 		'blastWave', 'livingEarth', 'prismaticLight', 'regrowth', 'transfusion', 'warding',
@@ -36,11 +38,65 @@ export function wandTypeFromSource(sourceClass?: string): WandType | null {
 	return WAND_SOURCE_TYPES.get(sourceClass.toLowerCase()) ?? null;
 }
 
+/** Load-time guard for the persisted imbue class. */
+export function isWandType(value: unknown): value is WandType {
+	return typeof value === 'string' && (WAND_TYPES as readonly string[]).includes(value);
+}
+
 /** `WandOfDisintegration.distance()`; other current wand families use the scene's normal range. */
 export function wandTargetRange(type: WandType, level: number): number {
 	const rule = MWL_WAND_RANGE_RULES[type] ?? MWL_WAND_RANGE_RULES.default;
 	if (!rule) throw new Error(`MWL wand range rule is missing: ${type}`);
 	return rule.base + rule.perLevel * Math.max(0, level);
+}
+
+/** `Wand.initialCharges()` (`Wand.java`, tag `v3.3.8`): 3 for Magic Missile, 2 for
+ * every other executable class. Spare carried wands arrive full at this count. */
+export function wandInitialCharges(type: WandType): number {
+	return type === 'magicMissile' ? 3 : 2;
+}
+
+/**
+ * Absorb-vs-spare on a ground wand pickup. The shared pool + single scalar can
+ * only ever fire one class, so a pickup of the wielded class (or of unknown
+ * class, which is invalid identity rather than a new wand) absorbs exactly as
+ * before - pool reset, one stackable entry - while a pickup of any *other*
+ * class lands as a spare entry with its own identity and charge state instead
+ * of being silently destroyed. That spare is what `WildMagic` fires and
+ * `MagesStaff.imbueWand()` chooses among.
+ */
+export function resolveWandPickup(wielded: WandType | null, ground: WandType | null): 'absorb' | 'spare' {
+	if (ground === null || ground === wielded) return 'absorb';
+	return 'spare';
+}
+
+/** Imbued-staff holder by scene: the Mage's staff starts on Magic Missile
+ * (`HeroClass.initMage()`: `new MagesStaff(new WandOfMagicMissile())`), and
+ * `ElementalBlast` reads exactly this class back (`staff.wandClass()`). A
+ * dungeonScene.ts field is out of the question (that file sits exactly at its
+ * line budget), so the run state lives here behind the scene key - the same
+ * shape as the chasm-jump latch (`simulation/chasmJump.ts`). */
+const staffImbueByScene = new WeakMap<object, WandType>();
+
+export function staffImbueFor(scene: object): WandType {
+	return staffImbueByScene.get(scene) ?? 'magicMissile';
+}
+
+export function setStaffImbue(scene: object, type: WandType): void {
+	staffImbueByScene.set(scene, type);
+}
+
+/**
+ * `MagesStaff.imbueWand()`'s level sync (`MagesStaff.java`, tag `v3.3.8`):
+ * the staff takes the higher of the two true levels, plus one of its own when
+ * the incoming wand meets or beats a positive staff level.
+ */
+export function imbueStaffLevel(staffLevel: number, wandLevel: number): number {
+	const safeStaff = Math.max(0, staffLevel);
+	const safeWand = Math.max(0, wandLevel);
+	let target = Math.max(safeStaff, safeWand);
+	if (safeWand >= safeStaff && safeStaff > 0) target += 1;
+	return target;
 }
 
 /** `Wand.chargesPerCast()`; only Regrowth and Fireblast scale cost with current charges. */
@@ -105,7 +161,9 @@ export function confirmDisintegrationWand(scene: DisintegrationWandScene, target
 }
 
 export function useDisintegrationWand(scene: DisintegrationWandScene, target: Step): void {
-	const path = Roguelike.ballistica(scene.level, { x: scene.hero.x, y: scene.hero.y }, target, { stop: 'impassable' }).cells.slice(1);
+	//WandOfDisintegration.java's collisionProperties() is WONT_STOP: the beam passes through
+	//walls, still counting each cell (and its terrain/victim bonuses) toward the effect.
+	const path = Roguelike.ballistica(scene.level, { x: scene.hero.x, y: scene.hero.y }, target, { stop: 'none' }).cells.slice(1);
 	const creatures = path.map((cell) => scene.creatureAt(cell.x, cell.y));
 	const plan = planDisintegration(scene.weaponLevel, path.map((cell, index) => {
 		const victim = creatures[index];
@@ -113,7 +171,9 @@ export function useDisintegrationWand(scene: DisintegrationWandScene, target: St
 			solid: scene.level.get(cell.x, cell.y) === SOLID,
 			flammable: scene.isFireFlammableTerrain(cell.x, cell.y),
 			victim: victim !== null,
-			eligibleVictim: victim !== null && !victim.isNPC && victim.hp > 0,
+			//`WandOfDisintegration.onZap()` uses Actor.findChar, so NPCs count as beam
+			//victims too; only an undiscovered passive Mob is filtered by Java.
+			eligibleVictim: victim !== null && victim.hp > 0,
 		};
 	}));
 	for (const index of plan.flammableCells) {
@@ -122,7 +182,7 @@ export function useDisintegrationWand(scene: DisintegrationWandScene, target: St
 	}
 	for (const index of plan.victimCells) {
 		const victim = creatures[index];
-		if (!victim || victim.isNPC || victim.hp <= 0) continue;
+		if (!victim || victim.hp <= 0) continue;
 		const damage = Random.normalRange(2 + plan.effectiveLevel, 8 + 4 * plan.effectiveLevel);
 		victim.hp -= damage;
 		if (scene.fadeMirrorOnDamage(victim, damage)) continue;

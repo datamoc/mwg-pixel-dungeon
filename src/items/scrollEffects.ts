@@ -165,6 +165,8 @@ export interface ReadScrollContext extends ScrollEffectsContext {
 	readonly bag: Actors.Inventory;
 	readonly requestedItemId: string | null;
 	readonly requestedItemInstanceId: string | undefined;
+	/** `Ring.setKnown()` on identify - the scene owns the per-run known set. */
+	readonly markRingTypesKnown: (ids: string[]) => void;
 	readonly heroClass: string;
 	readonly talentRank: (id: string) => number;
 	//Get/set pair (not set-only like TransmuteFlowContext): this builder spreads
@@ -173,6 +175,9 @@ export interface ReadScrollContext extends ScrollEffectsContext {
 	set empoweredZaps(zaps: number);
 	readonly itemDisplayName: (id: string, identified: boolean) => string;
 	readonly procIdentifyTalents: () => void;
+	/** `Talent.onScrollUsed()`'s Cleric half (tag `v3.3.8`) - the scene
+	 * implementation no-ops unless the hero is a Cleric with the talent. */
+	readonly armRecallInscription: (sourceClass: string) => void;
 	readonly startTransmutationPick: (instanceId: string | undefined) => boolean;
 	get weaponAffix(): string | null;
 	set weaponAffix(affix: string | null);
@@ -183,9 +188,86 @@ export interface ReadScrollContext extends ScrollEffectsContext {
 	readonly syncHeroFromStats: () => void;
 }
 
-export function readScrollFlow(context: ReadScrollContext): boolean {
+/**
+ * The `getClass()` Java's `readAnimation` reports to `Talent.onScrollUsed()`
+ * (`items/scrolls/Scroll.java`, tag `v3.3.8`) per port scroll id. Four ids rename
+ * (`scrollCleanse` is `ScrollOfRemoveCurse`, `scrollMapping` is
+ * `ScrollOfMagicMapping`, `scrollMirror` is `ScrollOfMirrorImage`, `scrollPrismatic`
+ * is the exotic `ScrollOfPrismaticImage`); the rest are `ScrollOf` + remainder.
+ * Unknown ids have no Java class and arm nothing (their cost would be 0, which
+ * also fails `canCast`). Upgrade/transmutation never reach the call below -
+ * refused/delegated before the consume - so they need no special case.
+ */
+export function recallScrollClass(id: string): string | undefined {
+	if (id === 'scrollCleanse') return 'ScrollOfRemoveCurse';
+	if (id === 'scrollMapping') return 'ScrollOfMagicMapping';
+	if (id === 'scrollMirror') return 'ScrollOfMirrorImage';
+	if (id === 'scrollPrismatic') return 'ScrollOfPrismaticImage';
+	if (!id.startsWith('scroll')) return undefined;
+	const known = ['scrollIdentify', 'scrollLullaby', 'scrollRage', 'scrollRecharging',
+		'scrollRetribution', 'scrollTeleportation', 'scrollTerror', 'scrollTransmutation', 'scrollUpgrade'];
+	if (!known.includes(id)) return undefined;
+	return `ScrollOf${id.slice('scroll'.length)}`;
+}
+
+/**
+ * `RecallInscription.onCast()`'s re-read (`RecallInscription.java`, tag `v3.3.8`):
+ * the recalled scroll is a fresh instance (`Reflection.newInstance`) read with
+ * `talentChance = 0` - its effect runs fully (identify still identifies, the cleanse
+ * fallback still cleanses) but nothing is consumed from the bag, no talent procs
+ * fire (`EMPOWERING_SCROLLS`, identify talents, the recall re-arm), and no turn is
+ * spent here (Java's `onCast` spends none either). `forceItemId` selects that
+ * scroll directly; transmutation recall keeps its own path (it still consumes the
+ * *target*, so it threads through `startTransmutationPick`, not here).
+ */
+/**
+ * The inverse of `recallScrollClass`: the port id a tracked Java scroll class
+ * re-reads as in `resolveRecall`. Exotic classes have no port effect (this port
+ * generates no exotic scrolls, so they can never be tracked either) and map to
+ * `undefined`, which refuses the cast like a lapsed tracker.
+ */
+export function recallPortScrollId(javaClass: string): string | undefined {
+	switch (javaClass) {
+		case 'ScrollOfRemoveCurse': return 'scrollCleanse';
+		case 'ScrollOfMagicMapping': return 'scrollMapping';
+		case 'ScrollOfMirrorImage': return 'scrollMirror';
+		case 'ScrollOfPrismaticImage': return 'scrollPrismatic';
+		case 'ScrollOfIdentify': return 'scrollIdentify';
+		case 'ScrollOfLullaby': return 'scrollLullaby';
+		case 'ScrollOfRage': return 'scrollRage';
+		case 'ScrollOfRecharging': return 'scrollRecharging';
+		case 'ScrollOfRetribution': return 'scrollRetribution';
+		case 'ScrollOfTeleportation': return 'scrollTeleportation';
+		case 'ScrollOfTerror': return 'scrollTerror';
+		case 'ScrollOfTransmutation': return 'scrollTransmutation';
+		default: return undefined;
+	}
+}
+
+/**
+ * The port bag id a tracked Java class re-activates as (`resolveRecall`) and names
+ * in the tracker's info window: `StoneOfX` stones lowercase their initial, scrolls
+ * invert `recallScrollClass`. `undefined` for classes this port has no effect for
+ * (exotics, unknowns) - which refuses the cast like a lapsed tracker.
+ */
+export function recallTrackedPortId(javaClass: string): string | undefined {
+	if (javaClass.startsWith('StoneOf')) {
+		if (!RECALLABLE_STONES.has(javaClass)) return undefined;
+		return `stone${javaClass.slice('Stone'.length)}`;
+	}
+	return recallPortScrollId(javaClass);
+}
+
+/** The twelve `Runestone` classes `recastStone` (`stones.ts`) reactivates - extend both. */
+const RECALLABLE_STONES: ReadonlySet<string> = new Set(['StoneOfFlock', 'StoneOfAggression',
+	'StoneOfAugmentation', 'StoneOfFear', 'StoneOfDeepSleep', 'StoneOfBlink',
+	'StoneOfClairvoyance', 'StoneOfShock', 'StoneOfBlast', 'StoneOfEnchantment',
+	'StoneOfDetectMagic', 'StoneOfIntuition']);
+
+export function readScrollFlow(context: ReadScrollContext, opts?: { freeRecast?: boolean; forceItemId?: string }): boolean {
 	const { bag } = context;
-	const selectedScroll = selectScrollId({
+	const free = opts?.freeRecast === true;
+	const selectedScroll = opts?.forceItemId ?? selectScrollId({
 		bag,
 		requestedItemId: context.requestedItemId,
 		say: (line, level) => context.say(line, level === 'info' ? undefined : level),
@@ -210,11 +292,18 @@ export function readScrollFlow(context: ReadScrollContext): boolean {
 	//Transmutation targeting and reroll live in `items/transmutation.ts` behind
 	//`TransmuteFlowContext` (file-size refactor) - see `startTransmutationPick`.
 	if (id === 'scrollTransmutation') return context.startTransmutationPick(context.requestedItemInstanceId);
-	bag.remove(id, 1, context.requestedItemInstanceId);
-	if (armEmpowered) context.empoweredZaps = empoweringScrollsCharges(context.talentRank('empowering_scrolls'));
+	if (!free) bag.remove(id, 1, context.requestedItemInstanceId);
+	//`Scroll.readAnimation()`'s `Random.Float() < talentChance` (same file): chance is 1
+	//for every ported scroll, so each successful read below arms the recall tracker -
+	//except a free re-read, whose `talentChance = 0` reports no class back.
+	const recallClass = free ? undefined : recallScrollClass(id);
+	if (recallClass !== undefined) context.armRecallInscription(recallClass);
+	if (armEmpowered && !free) context.empoweredZaps = empoweringScrollsCharges(context.talentRank('empowering_scrolls'));
+
 	if (id === 'scrollIdentify') {
 		if (unidentified) {
 			Actors.identify(unidentified);
+			if (unidentified.id.startsWith('ring_')) context.markRingTypesKnown([unidentified.id]);
 			//**Correction, 2026-09-09 roadmap pass**: a prior audit pass (checking only
 			//Java tags `v3.3.8`/`4.0.0-beta`) wrongly called `test_subject`/`tested_hypothesis`
 			//invented substitutes for the unrelated `PROVOKED_ANGER`/`LINGERING_MAGIC` talents.
@@ -225,7 +314,7 @@ export function readScrollFlow(context: ReadScrollContext): boolean {
 			//`procIdentifyTalents`, which every identify site shares (see its own comment).
 			const heal = context.heroClass === 'warrior' ? context.talentRank('test_subject') : 0;
 			const charge = context.heroClass === 'mage' ? context.talentRank('tested_hypothesis') : 0;
-			if (heal > 0 || charge > 0) context.procIdentifyTalents();
+			if (!free && (heal > 0 || charge > 0)) context.procIdentifyTalents();
 			//The old secret-revealing radius here invoked `arcaneVisionRadius()` - removed
 			//outright: real Arcane Vision (Mage T2, `Wand.wandProc()`) marks the ZAPPED
 			//target with `CharAwareness` for `5+5*points` turns, and has no identify/read
