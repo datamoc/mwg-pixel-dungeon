@@ -3,6 +3,7 @@ import { fallenItemStore } from './fallenItems';
 import { InfoWindow } from '../../ui/infoWindow';
 import { buffInfo } from '../../ui/buffInfo';
 import { recallTrackedPortId } from '../../items/scrollEffects';
+import { getCurse } from '../../items/itemCurses';
 import { showBuffInfoWindow } from '../../ui/buffInfoWindow';
 import { InventoryWindow } from '../../ui/inventoryWindow';
 import { Container, Graphics, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
@@ -169,6 +170,11 @@ export const panelsSingleUseMethods = {
 		this.armorId = s.armorId ?? 'clothArmor';
 		this.armorInstanceId = s.armorInstanceId;
 		this.weaponAffix = s.weaponAffix ?? null;
+		//Older saves carried no independent equipped-item curse bit. Their former equip gate
+		//treated a cursed enchant/glyph as the binding state, so use that only as a migration
+		//fallback; all saves written now persist `weaponCursed`/`armorCursed` separately.
+		this.weaponCursed = s.weaponCursed ?? Boolean(getCurse(this.weaponAffix ?? ''));
+		this.weaponCursedKnown = s.weaponCursedKnown ?? false;
 		//`Swiftness` exists in real Java only as an armor glyph (`Armor.Glyphs.Swiftness` -
 		//checked tag `v3.3.8`: no `Weapon.Enchantments.Swiftness` class at all); this port
 		//previously modeled a phantom 0.9x weapon version too, now removed with no equivalent
@@ -179,6 +185,8 @@ export const panelsSingleUseMethods = {
 		this.charmTargets = new Map(s.charmTargets ?? []);
 		this.charmIgnoreNextHit = new Set(s.charmIgnoreNextHit ?? []);
 		this.armorGlyph = s.armorGlyph ?? null;
+		this.armorCursed = s.armorCursed ?? Boolean(getCurse(this.armorGlyph ?? ''));
+		this.armorCursedKnown = s.armorCursedKnown ?? false;
 		//A save written before the real armor abilities carries the invented `warding`/`arcane`
 		//capstone (see `SUBCLASS_TRACK`); those ids are not abilities any more, so they are dropped
 		//and the hero can choose a real one at the next King's Crown. `ratmogrify` and every real
@@ -1707,6 +1715,8 @@ export const panelsSingleUseMethods = {
 			this.weaponLevel = 0;
 			this.weaponAffix = null;
 			this.weaponHardened = false;
+			this.weaponCursed = false;
+			this.weaponCursedKnown = false;
 			this.weaponIdentified = true;
 			this.weaponCurseInfusionBonus = false;
 		}
@@ -1717,6 +1727,8 @@ export const panelsSingleUseMethods = {
 			this.armorLevel = 0;
 			this.armorGlyph = null;
 			this.armorHardened = false;
+			this.armorCursed = false;
+			this.armorCursedKnown = false;
 			this.armorIdentified = true;
 			this.armorCurseInfusionBonus = false;
 		}

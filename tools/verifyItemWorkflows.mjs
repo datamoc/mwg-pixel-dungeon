@@ -4269,6 +4269,14 @@ function stoneDrive(overrides = {}) {
 // curse removal, incompatible loss, and the hardening replacer with its later floor.
 const { upgradeGearFlow } = require('./items/scrollEffects.js');
 const { MISSILE_DEFAULT_QUANTITY } = require('./items/missiles.js');
+{
+	const saveSource = readFileSync(join(root, 'src/scenes/dungeon/deathSaveRefresh.ts'), 'utf8');
+	const restoreSource = readFileSync(join(root, 'src/scenes/dungeon/panelsSingleUse.ts'), 'utf8');
+	for (const field of ['weaponCursed', 'weaponCursedKnown', 'armorCursed', 'armorCursedKnown']) {
+		assert.ok(saveSource.includes(`${field}: this.${field}`), `${field} persists in the dungeon save`);
+		assert.ok(restoreSource.includes(`this.${field} = s.${field} ??`), `${field} restores from the dungeon save`);
+	}
+}
 function upgradeGearDrive(overrides = {}) {
 	const said = [];
 	const rolls = [...(overrides.rolls ?? [])];
@@ -4287,7 +4295,11 @@ function upgradeGearDrive(overrides = {}) {
 		ammoSetId: overrides.ammoSetId ?? '',
 		thresholds: new Map(),
 		weaponAffix: overrides.weaponAffix ?? null,
+		weaponCursed: overrides.weaponCursed ?? false,
+		weaponCursedKnown: overrides.weaponCursedKnown ?? false,
 		armorGlyph: overrides.armorGlyph ?? null,
+		armorCursed: overrides.armorCursed ?? false,
+		armorCursedKnown: overrides.armorCursedKnown ?? false,
 		weaponHardened: overrides.weaponHardened ?? false,
 		armorHardened: overrides.armorHardened ?? false,
 	};
@@ -4317,8 +4329,14 @@ function upgradeGearDrive(overrides = {}) {
 		wandCharges: { refund: (n) => { flags.refunded = n; } },
 		get weaponAffix() { return state.weaponAffix; },
 		set weaponAffix(v) { state.weaponAffix = v; },
+		get weaponCursed() { return state.weaponCursed; },
+		set weaponCursed(v) { state.weaponCursed = v; },
+		get weaponCursedKnown() { return state.weaponCursedKnown; },
 		get armorGlyph() { return state.armorGlyph; },
 		set armorGlyph(v) { state.armorGlyph = v; },
+		get armorCursed() { return state.armorCursed; },
+		set armorCursed(v) { state.armorCursed = v; },
+		get armorCursedKnown() { return state.armorCursedKnown; },
 		get weaponHardened() { return state.weaponHardened; },
 		set weaponHardened(v) { state.weaponHardened = v; },
 		get armorHardened() { return state.armorHardened; },
@@ -4359,11 +4377,16 @@ function upgradeGearDrive(overrides = {}) {
 	assert.equal(armor.state.armorLevel, 2, 'armor +1 when it lags');
 	assert.ok(armor.said.some((l) => l.includes('port.log.armorupgraded')), 'announced');
 	const curseId = scrollCurses()[0].id;
-	const lifted = upgradeGearDrive({ weaponLevel: 0, armorLevel: 0, weaponAffix: curseId, rolls: [0] });
+	const lifted = upgradeGearDrive({ weaponLevel: 0, armorLevel: 0, weaponAffix: curseId, weaponCursed: true, weaponCursedKnown: true, rolls: [0] });
 	assert.equal(lifted.state.weaponAffix, null, 'a 1-in-3 roll lifts the curse');
+	assert.equal(lifted.state.weaponCursed, false, 'the upgrade clears the separate item curse');
 	assert.ok(lifted.said.some((l) => l.includes('scrollofupgrade.remove_curse')), 'with the curse line');
 	const kept = upgradeGearDrive({ weaponLevel: 0, armorLevel: 0, weaponAffix: curseId, rolls: [1] });
 	assert.equal(kept.state.weaponAffix, curseId, 'other rolls keep it');
+	const weakened = upgradeGearDrive({ weaponLevel: 0, armorLevel: 0, weaponAffix: curseId, weaponCursed: true, weaponCursedKnown: true, rolls: [1] });
+	assert.equal(weakened.state.weaponAffix, curseId, 'the curse enchantment can survive');
+	assert.equal(weakened.state.weaponCursed, false, 'the surviving curse enchantment no longer binds the item');
+	assert.ok(weakened.said.some((l) => l.includes('scrollofupgrade.weaken_curse')), 'known surviving affix announces the weakened item curse');
 	const lowGood = upgradeGearDrive({ weaponLevel: 4, armorLevel: 3, armorGlyph: 'glyphA', rolls: [] });
 	assert.equal(lowGood.state.armorGlyph, 'glyphA', 'below +4 no roll runs');
 	assert.deepEqual(lowGood.rolls, [], 'the queue stays full');

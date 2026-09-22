@@ -511,6 +511,11 @@ export interface SaveShape {
 	/** `Weapon.enchantHardened`/`Armor.glyphHardened` for the equipped gear */
 	weaponHardened?: boolean;
 	armorHardened?: boolean;
+	/** Equipped items' base `Item.cursed` and `cursedKnown` flags; separate from enchant/glyph. */
+	weaponCursed?: boolean;
+	armorCursed?: boolean;
+	weaponCursedKnown?: boolean;
+	armorCursedKnown?: boolean;
 	weaponIdentified?: boolean;
 	armorIdentified?: boolean;
 	blacksmithReforges?: number;

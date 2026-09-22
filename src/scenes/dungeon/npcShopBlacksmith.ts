@@ -872,8 +872,8 @@ export const npcShopBlacksmithMethods = {
 	openBlacksmithUpgrade(this: DungeonScene): void {
 		const candidates: { id: string; instanceId?: string; identified?: boolean; quantity: number }[] = [];
 		const eligible = (instanceId?: string) => instanceId === this.weaponInstanceId || instanceId === this.armorInstanceId;
-		if (this.weaponLevel < 2 && !getCurse(this.weaponAffix ?? '')) candidates.push({ id: this.weaponId, instanceId: this.weaponInstanceId, identified: true, quantity: 1 });
-		if (this.armorLevel < 2 && !getCurse(this.armorGlyph ?? '')) candidates.push({ id: this.armorId, instanceId: this.armorInstanceId, identified: true, quantity: 1 });
+		if (this.weaponLevel < 2 && !this.weaponCursed) candidates.push({ id: this.weaponId, instanceId: this.weaponInstanceId, identified: true, quantity: 1 });
+		if (this.armorLevel < 2 && !this.armorCursed) candidates.push({ id: this.armorId, instanceId: this.armorInstanceId, identified: true, quantity: 1 });
 		for (const item of selectBlacksmithUpgradeItems(this.bag.items, new Set([this.weaponInstanceId, this.armorInstanceId]))) {
 			if (!eligible(item.instanceId)) candidates.push({ id: item.id, instanceId: item.instanceId, identified: true, quantity: 1 });
 		}

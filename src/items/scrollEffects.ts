@@ -368,8 +368,14 @@ export interface UpgradeGearContext {
 	set missileLevel(level: number);
 	get weaponLevel(): number;
 	set weaponLevel(level: number);
+	get weaponCursed(): boolean;
+	set weaponCursed(cursed: boolean);
+	readonly weaponCursedKnown: boolean;
 	get armorLevel(): number;
 	set armorLevel(level: number);
+	get armorCursed(): boolean;
+	set armorCursed(cursed: boolean);
+	readonly armorCursedKnown: boolean;
 	get ammo(): number;
 	set ammo(ammo: number);
 	set ammoDurability(durability: number);
@@ -453,14 +459,16 @@ export function upgradeGearFlow(context: UpgradeGearContext): boolean {
 export function rollUpgradeAffixLoss(context: UpgradeGearContext, slot: 'weapon' | 'armor'): void {
 	const affix = slot === 'weapon' ? context.weaponAffix : context.armorGlyph;
 	const level = slot === 'weapon' ? context.weaponLevel : context.armorLevel;
+	const wasCursed = slot === 'weapon' ? context.weaponCursed : context.armorCursed;
+	const wasCursedKnown = slot === 'weapon' ? context.weaponCursedKnown : context.armorCursedKnown;
+	const hadCurseAffix = Boolean(getCurse(affix ?? ''));
 	//`Weapon.upgrade()`/`Armor.upgrade()`'s hardening branch, which comes *before* the affix
 	//rolls and replaces them: while the item is hardened the enchant cannot be lost at all -
 	//what can be lost is the hardening itself, with the same escalating odds but starting one
 	//step later (`level() >= 6 && Random.Float(10) < 2^(level-6)`, against the ordinary
-	//roll's `level() >= 4 && ... 2^(level-4)`). The hardening branch is guarded on the affix
-	//being present in Java too (`else if (glyph != null)`), which the early return covers.
-	if (!affix) return;
-	if (slot === 'weapon' ? context.weaponHardened : context.armorHardened) {
+	//roll's `level() >= 4 && ... 2^(level-4)`). The affix-loss branch is guarded on the affix
+	//being present in Java too (`else if (glyph != null)`); the separate item curse still clears.
+	if (affix && (slot === 'weapon' ? context.weaponHardened : context.armorHardened)) {
 		if (level >= 6 && context.randomFloat(10) < Math.pow(2, level - 6)) {
 			if (slot === 'weapon') {
 				context.weaponHardened = false;
@@ -470,15 +478,12 @@ export function rollUpgradeAffixLoss(context: UpgradeGearContext, slot: 'weapon'
 				context.say(t('port.log.hardeninggone.armor'), 'warning');
 			}
 		}
-		return;
-	}
-	if (getCurse(affix)) {
+	} else if (affix && getCurse(affix)) {
 		if (context.randomInt(0, 3) === 0) {
 			if (slot === 'weapon') context.weaponAffix = null;
 			else context.armorGlyph = null;
-			context.say(t('items.scrolls.scrollofupgrade.remove_curse'), 'positive');
 		}
-	} else if (level >= 4 && context.randomFloat(10) < Math.pow(2, level - 4)) {
+	} else if (affix && level >= 4 && context.randomFloat(10) < Math.pow(2, level - 4)) {
 		if (slot === 'weapon') {
 			context.weaponAffix = null;
 			context.say(t('items.weapon.weapon.incompatible'), 'warning');
@@ -486,5 +491,17 @@ export function rollUpgradeAffixLoss(context: UpgradeGearContext, slot: 'weapon'
 			context.armorGlyph = null;
 			context.say(t('items.armor.armor.incompatible'), 'warning');
 		}
+	}
+	//`Weapon.upgrade()`/`Armor.upgrade()` (`Weapon.java`/`Armor.java`, tag `v3.3.8`)
+	//always clear the item's `cursed` flag after resolving affix loss. The port previously
+	//tracked enchant/glyph curses but dropped this separate item state, leaving equipped
+	//gear bound after its Java upgrade should have weakened the curse.
+	if (slot === 'weapon') context.weaponCursed = false;
+	else context.armorCursed = false;
+	const currentAffix = slot === 'weapon' ? context.weaponAffix : context.armorGlyph;
+	if (hadCurseAffix && !getCurse(currentAffix ?? '') && wasCursedKnown) {
+		context.say(t('items.scrolls.scrollofupgrade.remove_curse'), 'positive');
+	} else if (wasCursed && wasCursedKnown) {
+		context.say(t('items.scrolls.scrollofupgrade.weaken_curse'), 'positive');
 	}
 }

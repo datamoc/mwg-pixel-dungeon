@@ -630,8 +630,8 @@ export class DungeonScene extends Scene2D {
 	/** `Weapon.enchantHardened`/`Armor.glyphHardened` for the *equipped* gear - the Blacksmith's
 	 * hardening. While it is set, `upgrade()`'s affix-loss roll is replaced by a hardening-loss
 	 * one, so the enchant is protected until the protection itself wears off (from +6). */
-	weaponHardened = false;
-	armorHardened = false;
+	weaponHardened = false; armorHardened = false;
+	weaponCursed = false; armorCursed = false; weaponCursedKnown = false; armorCursedKnown = false; //base `Item.cursed`/`cursedKnown`, independent of a curse enchant/glyph
 	/** Whether the equipped weapon/armor is identified - `Item.identify()` is not implied by
 	 * merely equipping something (see `equipRing`'s `EquippedRing.identified` doc comment).
 	 * Starting gear is always known, hence the `true` default. */

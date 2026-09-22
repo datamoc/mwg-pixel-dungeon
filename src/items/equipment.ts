@@ -3,7 +3,6 @@ import type { EquippedRing } from './ringModifiers';
 import { ringDef, ringMightBonus } from './ringModifiers';
 import { markRingTypesKnown } from '../simulation/ringKnow';
 import { t } from '../i18n';
-import { getCurse } from './itemCurses';
 import { transferEnhancement } from './itemWorkflows';
 
 export interface RingEquipmentContext {
@@ -36,7 +35,7 @@ export function equipRing(scene: RingEquipmentContext, id: string, instanceId?: 
 		scene.markRingTypesKnown([id]);
 		if (newlyIdentified) scene.procIdentifyTalents();
 	}
-	if (scene.equippedRing?.cursed && scene.equippedRing.id !== id) {
+	if (scene.equippedRing?.cursed && scene.hero.magicImmune !== true && scene.equippedRing.id !== id) {
 		scene.say(t('port.log.ringcursed'), 'negative');
 		return;
 	}
@@ -70,13 +69,13 @@ export interface GearEquipmentContext {
 	readonly bag: Actors.Inventory;
 	readonly heroClass: string;
 	readonly hero: { magicImmune?: boolean };
-	armorId: string; armorInstanceId?: string; armorLevel: number; armorTier: number; armorGlyph: string | null; armorHardened: boolean; armorSealed: boolean;
+	armorId: string; armorInstanceId?: string; armorLevel: number; armorTier: number; armorGlyph: string | null; armorHardened: boolean; armorCursed: boolean; armorCursedKnown: boolean; armorSealed: boolean;
 	/** Whether the equipped armor is identified - see `equipRing`'s `EquippedRing.identified`
 	 * doc comment; equipping alone never implies it. */
 	armorIdentified: boolean;
 	/** `Armor.doEquip()`'s seal-transfer offer; the scene owns the window and the rule. */
 	offerSealTransfer(outgoingWasSealed: boolean, incomingCursed: boolean): void;
-	weaponId: string; weaponInstanceId?: string; weaponLevel: number; weaponTier: number; weaponAffix: string | null; weaponHardened: boolean;
+	weaponId: string; weaponInstanceId?: string; weaponLevel: number; weaponTier: number; weaponAffix: string | null; weaponHardened: boolean; weaponCursed: boolean; weaponCursedKnown: boolean;
 	weaponIdentified: boolean;
 	/** `Weapon.curseInfusionBonus`/`Armor.curseInfusionBonus` for the equipped pair, and the
 	 * `level()` reads that carry them - see `effectiveWeaponLevel`'s own doc comment. */
@@ -97,7 +96,11 @@ export interface GearEquipmentContext {
 export function equipArmor(scene: GearEquipmentContext, id: string, instanceId?: string): void {
 	const item = scene.bag.find(id, instanceId);
 	if (!item || scene.armorInstanceId === item.instanceId) return;
-	if (scene.armorId !== 'clothArmor' && getCurse(scene.armorGlyph ?? '')) {
+	//`EquipableItem.doUnequip()` (`EquipableItem.java`, inherited by `Armor`, tag `v3.3.8`)
+	//refuses removal only while the
+	//armor item's own `cursed` flag is set. A curse glyph can remain equipped and still
+	//be removed when that independent item flag is false; MagicImmune bypasses the gate.
+	if (scene.armorId !== 'clothArmor' && scene.armorCursed && scene.hero.magicImmune !== true) {
 		scene.say(t('port.log.armorcursed'), 'negative');
 		return;
 	}
@@ -112,8 +115,8 @@ export function equipArmor(scene: GearEquipmentContext, id: string, instanceId?:
 	else if (scene.armorId !== 'startingArmor') {
 		//Equipping never implies identification (see `equipRing`'s comment on the same rule) -
 		//the outgoing piece returns to the bag with whatever real identified state it had.
-		const previous = { id: scene.armorId, quantity: 1, instanceId: scene.armorInstanceId, identified: scene.armorIdentified, level: scene.armorLevel, tier: scene.armorTier };
-		const returned = { id: scene.armorId, quantity: 1, instanceId: scene.armorInstanceId, identified: scene.armorIdentified, tier: scene.armorTier, affix: undefined as string | undefined, curseInfusionBonus: false };
+		const previous = { id: scene.armorId, quantity: 1, instanceId: scene.armorInstanceId, identified: scene.armorIdentified, cursed: scene.armorCursed, cursedKnown: scene.armorCursedKnown, level: scene.armorLevel, tier: scene.armorTier };
+		const returned = { id: scene.armorId, quantity: 1, instanceId: scene.armorInstanceId, identified: scene.armorIdentified, cursed: scene.armorCursed, cursedKnown: scene.armorCursedKnown, tier: scene.armorTier, affix: undefined as string | undefined, curseInfusionBonus: false };
 		transferEnhancement({ ...previous, affix: scene.armorGlyph ?? undefined, curseInfusionBonus: scene.armorCurseInfusionBonus }, returned);
 		//The infusion marker travels with its item, like the weapon's above.
 		returned.curseInfusionBonus = scene.armorCurseInfusionBonus;
@@ -123,6 +126,8 @@ export function equipArmor(scene: GearEquipmentContext, id: string, instanceId?:
 	scene.armorId = id;
 	scene.armorInstanceId = item.instanceId;
 	scene.armorIdentified = item.identified ?? false;
+	scene.armorCursed = item.cursed ?? false;
+	scene.armorCursedKnown = (item as typeof item & { cursedKnown?: boolean }).cursedKnown ?? false;
 	scene.armorLevel = Math.min(5, item.level ?? 0);
 	scene.armorTier = Math.max(1, Math.min(5, (item as typeof item & { tier?: number }).tier ?? scene.armorTier));
 	scene.setArmorGlyph(item.affix ?? null);
@@ -140,10 +145,10 @@ export function equipArmor(scene: GearEquipmentContext, id: string, instanceId?:
 	scene.syncHeroFromStats();
 	scene.say(t('port.log.armorequipped', { level: scene.effectiveArmorLevel() }), 'positive');
 	//After the equip, as in Java: the offer is about the armor now being worn.
-	scene.offerSealTransfer(outgoingWasSealed, getCurse(item.affix ?? '') !== undefined);
+	scene.offerSealTransfer(outgoingWasSealed, item.cursed ?? false);
 }
 
-export interface ClassArmorState { armorInstanceId?: string; armorLevel: number; armorTier: number; armorGlyph: string | null; armorHardened: boolean; armorIdentified: boolean; armorCurseInfusionBonus: boolean; armorSealed: boolean }
+export interface ClassArmorState { armorInstanceId?: string; armorLevel: number; armorTier: number; armorGlyph: string | null; armorHardened: boolean; armorIdentified: boolean; armorCursed: boolean; armorCursedKnown: boolean; armorCurseInfusionBonus: boolean; armorSealed: boolean }
 export interface ClassArmorTransferContext {
 	readonly bag: Actors.Inventory; readArmor(): ClassArmorState; writeArmor(state: ClassArmorState): void;
 	syncHeroFromStats(): void; say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void; spendTurn(): void;
@@ -160,7 +165,9 @@ export function transferClassArmor(scene: ClassArmorTransferContext, id: string,
 	scene.writeArmor({ armorInstanceId: target.instanceId, armorLevel: Math.min(5, target.level ?? 0),
 		armorTier: Math.max(1, Math.min(5, (target as typeof target & { tier?: number }).tier ?? armor.armorTier)),
 		armorGlyph: target.affix ?? null, armorHardened: (target as typeof target & { hardened?: boolean }).hardened ?? false,
-		armorIdentified: target.identified ?? false, armorCurseInfusionBonus: (target as typeof target & { curseInfusionBonus?: boolean }).curseInfusionBonus ?? false,
+		armorIdentified: target.identified ?? false, armorCursed: target.cursed ?? false,
+		armorCursedKnown: (target as typeof target & { cursedKnown?: boolean }).cursedKnown ?? false,
+		armorCurseInfusionBonus: (target as typeof target & { curseInfusionBonus?: boolean }).curseInfusionBonus ?? false,
 		armorSealed: armor.armorSealed || Boolean((target as typeof target & { seal?: boolean }).seal) });
 	scene.syncHeroFromStats();
 	scene.say('items.armor.classarmor.transfer_complete', 'positive');
@@ -186,7 +193,10 @@ export function openClassArmorTransfer(scene: ClassArmorTransferScene, openPicke
 export function equipWeapon(scene: GearEquipmentContext, id: string, instanceId?: string): void {
 	const item = scene.bag.find(id, instanceId);
 	if (!item || scene.weaponInstanceId === item.instanceId) return;
-	if (scene.weaponId !== 'startingWeapon' && getCurse(scene.weaponAffix ?? '')) {
+	//`EquipableItem.doUnequip()` (`EquipableItem.java`, inherited by `Weapon`, tag `v3.3.8`)
+	//checks the item's own `cursed` flag; a cursed enchantment is separate and does not itself
+	//bind the weapon. Java's MagicImmune gate bypasses this too.
+	if (scene.weaponId !== 'startingWeapon' && scene.weaponCursed && scene.hero.magicImmune !== true) {
 		scene.say(t('port.log.weaponcursed'), 'negative');
 		return;
 	}
@@ -199,8 +209,8 @@ export function equipWeapon(scene: GearEquipmentContext, id: string, instanceId?
 	}
 	if (scene.weaponId !== 'startingWeapon') {
 		//Equipping never implies identification (see `equipRing`'s comment on the same rule).
-		const previous = { id: scene.weaponId, quantity: 1, instanceId: scene.weaponInstanceId, identified: scene.weaponIdentified, level: scene.weaponLevel, tier: scene.weaponTier, affix: scene.weaponAffix ?? undefined, curseInfusionBonus: scene.weaponCurseInfusionBonus };
-		const returned = { id: scene.weaponId, quantity: 1, instanceId: scene.weaponInstanceId, identified: scene.weaponIdentified, tier: scene.weaponTier, affix: undefined as string | undefined, curseInfusionBonus: false };
+		const previous = { id: scene.weaponId, quantity: 1, instanceId: scene.weaponInstanceId, identified: scene.weaponIdentified, cursed: scene.weaponCursed, cursedKnown: scene.weaponCursedKnown, level: scene.weaponLevel, tier: scene.weaponTier, affix: scene.weaponAffix ?? undefined, curseInfusionBonus: scene.weaponCurseInfusionBonus };
+		const returned = { id: scene.weaponId, quantity: 1, instanceId: scene.weaponInstanceId, identified: scene.weaponIdentified, cursed: scene.weaponCursed, cursedKnown: scene.weaponCursedKnown, tier: scene.weaponTier, affix: undefined as string | undefined, curseInfusionBonus: false };
 		transferEnhancement(previous, returned);
 		//The infusion marker travels with its item, the way Java's `curseInfusionBonus` does: a
 		//swapped-out weapon keeps it and the weapon coming in brings its own.
@@ -211,6 +221,8 @@ export function equipWeapon(scene: GearEquipmentContext, id: string, instanceId?
 	scene.weaponId = id;
 	scene.weaponInstanceId = item.instanceId;
 	scene.weaponIdentified = item.identified ?? false;
+	scene.weaponCursed = item.cursed ?? false;
+	scene.weaponCursedKnown = (item as typeof item & { cursedKnown?: boolean }).cursedKnown ?? false;
 	scene.weaponLevel = Math.max(scene.weaponLevel, item.level ?? 0);
 	scene.weaponTier = Math.max(1, Math.min(5, (item as typeof item & { tier?: number }).tier ?? scene.weaponTier));
 	scene.setWeaponAffix(item.affix ?? null);
