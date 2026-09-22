@@ -1162,7 +1162,14 @@ export const combatResolutionMethods = {
 			this.spiritBladesArmed = false;
 			this.applyNaturesPowerOnHit(defender);
 		}
-		const rawAffix = spiritBladesProc ? this.weaponAffix : attacker.attackMode === 'throw' ? sharedEnchantment : this.unstableDelegated ?? this.weaponAffix;
+		//`SpellTrinity`'s Body Form (`SpellTrinity.java` v3.3.8): while armed, the hero's melee
+		//hits proc the stored glyph/enchant affix from the same slot the ordinary weapon-affix
+		//roll would have used - it rides the existing proc path (charge cost is spent up front
+		//at commit time, not per-hit), so it only needs to supply the affix here when nothing
+		//else already claimed the swing.
+		const trinityBodyProc = attacker === this.hero && this.trinityForm === 'body' && this.trinityTurns > 0
+			? this.trinityBodyAffix : null;
+		const rawAffix = spiritBladesProc ? this.weaponAffix : attacker.attackMode === 'throw' ? sharedEnchantment : this.unstableDelegated ?? this.weaponAffix ?? trinityBodyProc;
 		//`Weapon.proc()` (tag `v3.3.8`): HolyWeapon overrides any beneficial enchantment -
 		//the weapon's own affix (including Unstable delegations and the Sniper share)
 		//does not proc while the buff is up. Cursed affixes still proc, and the Paladin
