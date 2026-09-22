@@ -105,7 +105,7 @@ export const HOLY_WARD_BLOCK = 1;
  * Sunray, DivineSense, BlessSpell), each gated on its talent and listed in
  * `getSpellList` order. */
 export type TalentSpellId = 'holyIntuition' | 'shieldOfLight' | 'recallInscription' | 'sunray' | 'divineSense' | 'bless' | 'cleanse';
-export type SubclassSpellId = 'radiance' | 'holyLance' | 'hallowedGround' | 'mnemonicPrayer' | 'smite' | 'layOnHands' | 'auraOfProtection' | 'wallOfLight' | 'judgement' | 'flash';
+export type SubclassSpellId = 'radiance' | 'holyLance' | 'hallowedGround' | 'mnemonicPrayer' | 'smite' | 'layOnHands' | 'auraOfProtection' | 'wallOfLight' | 'divineIntervention' | 'judgement' | 'flash';
 
 /** `HolyIntuition.chargeUse()`: `4 - points` (3 at rank 1, 2 at rank 2). */
 export function holyIntuitionCost(talentRank: number): number {
@@ -194,6 +194,16 @@ export const JUDGEMENT_COST = 3;
 export function judgementDamageBase(talentRank: number, priorSpellCasts: number): number {
 	const base = 5 + 5 * Math.max(0, Math.min(4, talentRank));
 	return base + Math.round(base * Math.max(0, priorSpellCasts) / 3);
+}
+
+/** `DivineIntervention.chargeUse()`, its `setShield(100 + 50*points)` target and its
+ * `AscendBuff.extend(2 + points)` (`DivineIntervention.java`, tag `v3.3.8`). */
+export const DIVINE_INTERVENTION_COST = 5;
+export function divineInterventionShield(talentRank: number): number {
+	return 100 + 50 * Math.max(0, talentRank);
+}
+export function divineInterventionExtension(talentRank: number): number {
+	return 2 + Math.max(0, talentRank);
 }
 
 /** `Flash.chargeUse()` and its empty-cell range (`Flash.java`, tag `v3.3.8`). */

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 /**
  * `src/simulation/clericSpells.ts` - the HolyTome charge cap, cast gates, and
@@ -7,7 +8,7 @@ import assert from 'node:assert/strict';
  * type-check plus browser verification instead.
  */
 export function verifyClericSpells(require, check) {
-	const { tomeChargeCap, tomeCastGate, spendTomeCharge, TOME_SPELL_COST, holyIntuitionCost, SHIELD_OF_LIGHT_COST, satiatedShieldAmount, searingLightBonus, shieldOfLightRange, SHIELD_OF_LIGHT_TURNS, recallTrackerDuration, recallInscriptionCost, sunrayDamage, sunrayBlindDuration, SUNRAY_COST, DIVINE_SENSE_COST, divineSenseRange, BLESS_COST, blessSelfDurations, blessOtherDurations, enlighteningMealCharge, CLEANSE_COST, cleanseImmunityTurns, cleanseShield, JUDGEMENT_COST, judgementDamageBase, flashCost, flashRange, auraDamageFactor, auraProtectedDamage, auraProcBonus } = require('./simulation/clericSpells');
+	const { tomeChargeCap, tomeCastGate, spendTomeCharge, TOME_SPELL_COST, holyIntuitionCost, SHIELD_OF_LIGHT_COST, satiatedShieldAmount, searingLightBonus, shieldOfLightRange, SHIELD_OF_LIGHT_TURNS, recallTrackerDuration, recallInscriptionCost, sunrayDamage, sunrayBlindDuration, SUNRAY_COST, DIVINE_SENSE_COST, divineSenseRange, BLESS_COST, blessSelfDurations, blessOtherDurations, enlighteningMealCharge, CLEANSE_COST, cleanseImmunityTurns, cleanseShield, JUDGEMENT_COST, judgementDamageBase, DIVINE_INTERVENTION_COST, divineInterventionShield, divineInterventionExtension, flashCost, flashRange, auraDamageFactor, auraProtectedDamage, auraProcBonus } = require('./simulation/clericSpells');
 	const { BUFF_DURATION } = require('./simulation/buffs');
 
 	check('the tome cap is min(level+3, 10)', () => {
@@ -200,5 +201,32 @@ export function verifyClericSpells(require, check) {
 		assert.equal(flashCost(3), 5);
 		assert.equal(flashRange(1), 3);
 		assert.equal(flashRange(4), 6);
+	});
+
+	check('DivineIntervention costs 5, shields 100+50*rank and extends the form by 2+rank', () => {
+		assert.equal(DIVINE_INTERVENTION_COST, 5);
+		assert.equal(divineInterventionShield(1), 150);
+		assert.equal(divineInterventionShield(4), 300);
+		assert.equal(divineInterventionExtension(1), 3);
+		assert.equal(divineInterventionExtension(4), 6);
+	});
+
+	check('DivineIntervention resolves its shields and extension before spending the turn, once per form', () => {
+		const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+		const flows = read('../src/scenes/dungeon/hero/clericSpellFlows.ts');
+		const body = flows.slice(flows.indexOf('resolveDivineIntervention(this'), flows.indexOf('resolveJudgement(this'));
+		const order = ['ally.divineShield = Math.max', 'spendTomeForCast(tome, DIVINE_INTERVENTION_COST', 'this.ascendedBarrier.add(shield', 'this.ascendedDivineCast = true', 'this.ascendedTurns += divineInterventionExtension', 'this.spendHeroTurn(1)'];
+		let at = -1;
+		for (const step of order) {
+			const next = body.indexOf(step);
+			assert.ok(next > at, `${step} out of Java's onCast order`);
+			at = next;
+		}
+		assert.match(body, /allyKind === 'sheep' \|\| ally\.allyKind === 'lotus'/);
+		const ability = read('../src/scenes/dungeon/hero/armorAbilityUse.ts');
+		const activate = ability.slice(ability.indexOf('activateAscendedForm(this'));
+		assert.match(activate, /if \(this\.ascendedTurns <= 0\) \{[^}]*this\.ascendedDivineCast = false;/, 'a mid-form recast must keep the history/flag (AscendBuff.reset())');
+		const turn = read('../src/scenes/dungeon/turnLoopAiming.ts');
+		assert.match(turn, /this\.ascendedDivineCast = false;\s*for \(const creature of this\.creatures\) delete creature\.divineShield;/);
 	});
 }

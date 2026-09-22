@@ -1,6 +1,6 @@
 import type { Actors } from 'mwg';
 import type { Step } from '../combat';
-import { AURA_COST, BLESS_COST, CLEANSE_COST, DIVINE_SENSE_COST, HALLOWED_GROUND_COST, HOLY_LANCE_COST, JUDGEMENT_COST, LAY_ON_HANDS_COST, PRAYER_COST, RADIANCE_COST, SHIELD_OF_LIGHT_COST, SMITE_COST, SUNRAY_COST, TOME_SPELL_COST, WALL_OF_LIGHT_COST, flashCost, guidingLightCost, holyIntuitionCost, recallInscriptionCost, tomeCastGate, tomeChargeCap, wallOfLightCost, type SubclassSpellId, type TalentSpellId, type TomeSpellId } from '../simulation/clericSpells';
+import { AURA_COST, BLESS_COST, CLEANSE_COST, DIVINE_INTERVENTION_COST, DIVINE_SENSE_COST, HALLOWED_GROUND_COST, HOLY_LANCE_COST, JUDGEMENT_COST, LAY_ON_HANDS_COST, PRAYER_COST, RADIANCE_COST, SHIELD_OF_LIGHT_COST, SMITE_COST, SUNRAY_COST, TOME_SPELL_COST, WALL_OF_LIGHT_COST, flashCost, guidingLightCost, holyIntuitionCost, recallInscriptionCost, tomeCastGate, tomeChargeCap, wallOfLightCost, type SubclassSpellId, type TalentSpellId, type TomeSpellId } from '../simulation/clericSpells';
 
 /** The `HolyTome` fields the cast flows read and write on the bag entry. */
 export interface TomeBagItem {
@@ -32,7 +32,7 @@ export function tomeSpellKey(spell: TomeSpellId | TalentSpellId | SubclassSpellI
 		: spell === 'radiance' ? 'radiance' : spell === 'holyLance' ? 'holylance'
 		: spell === 'mnemonicPrayer' ? 'mnemonicprayer' : spell === 'smite' ? 'smite'
 		: spell === 'layOnHands' ? 'layonhands' : spell === 'hallowedGround' ? 'hallowedground'
-		: spell === 'wallOfLight' ? 'walloflight' : spell === 'judgement' ? 'judgement' : spell === 'flash' ? 'flash' : 'auraofprotection';
+		: spell === 'wallOfLight' ? 'walloflight' : spell === 'divineIntervention' ? 'divineintervention' : spell === 'judgement' ? 'judgement' : spell === 'flash' ? 'flash' : 'auraofprotection';
 }
 
 /**
@@ -57,6 +57,7 @@ export function tomePickerCost(spell: TomeSpellId | TalentSpellId | SubclassSpel
 	if (spell === 'auraOfProtection') return AURA_COST;
 	if (spell === 'hallowedGround') return HALLOWED_GROUND_COST;
 	if (spell === 'wallOfLight') return WALL_OF_LIGHT_COST;
+	if (spell === 'divineIntervention') return DIVINE_INTERVENTION_COST;
 	if (spell === 'judgement') return JUDGEMENT_COST;
 	if (spell === 'flash') return flashCost(0);
 	return TOME_SPELL_COST[spell];
@@ -108,6 +109,10 @@ export interface HolyTomeContext {
 	readonly wallActive: () => boolean;
 	readonly ascendedActive: () => boolean;
 	readonly ascendedFlashCasts: () => number;
+	/** `AscendBuff.divineInverventionCast`: DivineIntervention is once per Ascended form. */
+	readonly ascendedDivineCast: () => boolean;
+	/** Scene-side DivineIntervention resolution (hero + ally shields, form extension, turn, charge). */
+	resolveDivineIntervention(instanceId?: string): void;
 	openSpellPicker(rows: HolyTomePickerRow[], onPick: (spell: TomeSpellId | TalentSpellId | SubclassSpellId) => void): void;
 	beginSpellAim(onConfirm: (cell: Step) => void, range?: number): void;
 	/** The level's diagonal span - the uncapped rays borrow it like the armor-ability aim. */
@@ -209,8 +214,9 @@ export function useHolyTomeFlow(ctx: HolyTomeContext, instanceId?: string): void
 		//is up - the recast just ends it early), like the GuidingLight row above.
 		if (ctx.talentRank('wall_of_light') > 0) rows.push({ spell: 'wallOfLight', affordable: charge >= wallOfLightCost(ctx.wallActive()) });
 	}
-	// Tier 4 follows the subclass tier in Java's `getSpellList()`; Judgement is
-	// offered only while its AscendedForm gate is live.
+	// Tier 4 follows the subclass tier in Java's `getSpellList()` (DivineIntervention,
+	// Judgement, Flash); each is offered only while its AscendedForm gate is live.
+	if (ctx.ascendedActive() && !ctx.ascendedDivineCast() && ctx.talentRank('divine_intervention') > 0) rows.push({ spell: 'divineIntervention', affordable: charge >= DIVINE_INTERVENTION_COST });
 	if (ctx.ascendedActive() && ctx.talentRank('judgement') > 0) rows.push({ spell: 'judgement', affordable: charge >= JUDGEMENT_COST });
 	if (ctx.ascendedActive() && ctx.talentRank('flash') > 0) rows.push({ spell: 'flash', affordable: charge >= flashCost(ctx.ascendedFlashCasts()) });
 	ctx.openSpellPicker(rows, (spell) => {
@@ -230,6 +236,7 @@ export function useHolyTomeFlow(ctx: HolyTomeContext, instanceId?: string): void
 		else if (spell === 'auraOfProtection') castAuraFlow(ctx, instanceId);
 		else if (spell === 'hallowedGround') castHallowedGroundFlow(ctx, instanceId);
 		else if (spell === 'wallOfLight') castWallOfLightFlow(ctx, instanceId);
+		else if (spell === 'divineIntervention') castDivineInterventionFlow(ctx, instanceId);
 		else if (spell === 'judgement') castJudgementFlow(ctx, instanceId);
 		else if (spell === 'flash') castFlashFlow(ctx, instanceId);
 		else ctx.castHolyBuff(spell, instanceId);
@@ -377,6 +384,20 @@ export function castRadianceFlow(ctx: HolyTomeContext, instanceId?: string): voi
 		return;
 	}
 	ctx.resolveRadiance(instanceId);
+}
+
+/** `DivineIntervention.canCast()` (`actors/hero/spells/DivineIntervention.java`, tag
+ * `v3.3.8`): the talent, a live AscendBuff whose `divineInverventionCast` is still unset,
+ * and the ordinary purse gate; no targeting. */
+export function castDivineInterventionFlow(ctx: HolyTomeContext, instanceId?: string): void {
+	const tome = findHolyTome(ctx.bag, instanceId);
+	if (!tome) return;
+	if (!ctx.ascendedActive() || ctx.ascendedDivineCast() || ctx.talentRank('divine_intervention') <= 0
+		|| tomeCastGate(tome.cursed === true, ctx.magicImmune, tome.charge ?? 0, DIVINE_INTERVENTION_COST) !== 'ok') {
+		ctx.say(ctx.t('port.log.tomenospell'), 'negative');
+		return;
+	}
+	ctx.resolveDivineIntervention(instanceId);
 }
 
 /** `Judgement.onCast()` (`actors/hero/spells/Judgement.java`, tag `v3.3.8`):

@@ -192,6 +192,7 @@ export const coreSpawnTilesMethods = {
 		this.ascendedTurns = 0;
 		this.ascendedSpellCasts = 0;
 		this.ascendedFlashCasts = 0;
+		this.ascendedDivineCast = false;
 		this.blockingBarrier.clear();
 		this.blockingTurnsLeft = 0;
 		this.sealBarrier.clear();
@@ -767,7 +768,7 @@ export const coreSpawnTilesMethods = {
 				leapPrevEnemy: creature.leapPrevEnemy ? { ...creature.leapPrevEnemy } : undefined,
 				pylonActive: creature.pylonActive, pylonTargetNeighbor: creature.pylonTargetNeighbor,
 				rangedCooldown: creature.rangedCooldown, newbornTarget: creature.newbornTarget ? { ...creature.newbornTarget } : undefined,
-				stuckAmmo: creature.stuckAmmo, sentryWarmup: creature.sentryWarmup,
+				stuckAmmo: creature.stuckAmmo, sentryWarmup: creature.sentryWarmup, divineShield: creature.divineShield,
 				sentryInitialWarmup: creature.sentryInitialWarmup,
 				dmAbilityTurns: creature.dmAbilityTurns, dmAbilityCd: creature.dmAbilityCd, dmLastAbility: creature.dmLastAbility,
 				dmSupercharged: creature.dmSupercharged, dmPylonsActivated: creature.dmPylonsActivated, dmBarrier: creature.dmBarrier,
@@ -927,7 +928,7 @@ export const coreSpawnTilesMethods = {
 				leapPrevEnemy: saved.leapPrevEnemy ? { ...saved.leapPrevEnemy } : undefined,
 				pylonActive: saved.pylonActive, pylonTargetNeighbor: saved.pylonTargetNeighbor,
 				rangedCooldown: saved.rangedCooldown, newbornTarget: saved.newbornTarget ? { ...saved.newbornTarget } : undefined,
-				stuckAmmo: saved.stuckAmmo, sentryWarmup: saved.sentryWarmup,
+				stuckAmmo: saved.stuckAmmo, sentryWarmup: saved.sentryWarmup, divineShield: saved.divineShield,
 				sentryInitialWarmup: saved.sentryInitialWarmup,
 				dmAbilityTurns: saved.dmAbilityTurns, dmAbilityCd: saved.dmAbilityCd, dmLastAbility: saved.dmLastAbility,
 				dmSupercharged: saved.dmSupercharged ?? false, dmPylonsActivated: saved.dmPylonsActivated ?? 0, dmBarrier: saved.dmBarrier ?? 0,

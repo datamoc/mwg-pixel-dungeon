@@ -1393,6 +1393,7 @@ export const deathSaveRefreshMethods = {
 			ascendedTurns: this.ascendedTurns,
 			ascendedSpellCasts: this.ascendedSpellCasts,
 			ascendedFlashCasts: this.ascendedFlashCasts,
+			ascendedDivineCast: this.ascendedDivineCast,
 			trinityForm: this.trinityForm,
 			trinityTurns: this.trinityTurns,
 			trinityBodyAffix: this.trinityBodyAffix,

@@ -124,14 +124,20 @@ export const armorAbilityUseMethods = {
 	 * tag `v3.3.8`): reset a separate 30-point ShieldBuff for ten actor turns,
 	 * spend the computed charge, dispel invisibility, and consume one turn. The
 	 * Java extends this state through spell-cast shielding/history and the
-	 * Divine Intervention/Judgement/Flash tome spells. The common shield/history
-	 * behavior plus Judgement and Flash are integrated here; Divine Intervention
-	 * remains separately documented as not ported.
+	 * Divine Intervention/Judgement/Flash tome spells, all integrated here.
+	 * `Buff.affect()` returns the live buff on a mid-form recast, and `reset()` only
+	 * `setShield(30)`s (raise-only) and restores `left` - the cast history, Flash
+	 * count and the once-per-form DivineIntervention flag all carry over.
 	 */
 	activateAscendedForm(this: DungeonScene, _def: ArmorAbilityDef, cost: number): boolean {
 		this.armorCharge = Math.max(0, this.armorCharge - cost);
-		this.ascendedBarrier.clear();
-		this.ascendedBarrier.add(30);
+		if (this.ascendedTurns <= 0) {
+			this.ascendedBarrier.clear();
+			this.ascendedSpellCasts = 0;
+			this.ascendedFlashCasts = 0;
+			this.ascendedDivineCast = false;
+		}
+		if (this.ascendedBarrier.total < 30) this.ascendedBarrier.add(30 - this.ascendedBarrier.total);
 		this.ascendedTurns = 10;
 		this.ascendedSpellCasts = 0;
 		this.ascendedFlashCasts = 0;

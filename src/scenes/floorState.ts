@@ -188,6 +188,8 @@ export interface SavedCreature {
 	newbornTarget?: { x: number; y: number } | null;
 	armoredRageTicks?: number;
 	stuckAmmo?: number;
+	/** `DivineIntervention.DivineShield` pool (see `Creature.divineShield`). */
+	divineShield?: number;
 	ratmogrifiedTurns?: number;
 	ratmogrifiedPermanent?: boolean;
 	deathMarkTurns?: number;

@@ -55,6 +55,12 @@ export const PORT_STRINGS_EN: Record<string, string> = {
 	'port.spell.cast_title': 'cast a spell',
 	'port.armorability.ascendedform.name': 'ascended form',
 	'port.armorability.ascendedform.short_desc': 'Gain a 30-point shield for 10 turns.',
+	'port.spell.hallowedground.name': 'hallowed ground',
+	'port.spell.hallowedground.short_desc': 'Heals allies, slows enemies, and spreads grass in an AOE.',
+	'port.spell.walloflight.name': 'wall of light',
+	'port.spell.walloflight.short_desc': 'Creates a wall that blocks enemies.',
+	'port.spell.divineintervention.name': 'divine intervention',
+	'port.spell.divineintervention.short_desc': 'Massive shield boost to Cleric and allies.',
 	'port.spell.judgement.name': 'judgement',
 	'port.spell.judgement.short_desc': 'Deals area damage to all visible enemies.',
 	'port.spell.flash.name': 'flash',
@@ -12229,7 +12235,7 @@ export const PORT_STRINGS_ZH: Record<string, string> = {
  *
  * Assembled here rather than in `index.ts`; `tools/i18nCheck.ts` compares every catalogue's keys and placeholders.
  */
-const PORT_CLERIC_ARMOR_FALLBACK = { 'port.armorability.ascendedform.name': PORT_STRINGS_EN['port.armorability.ascendedform.name'], 'port.armorability.ascendedform.short_desc': PORT_STRINGS_EN['port.armorability.ascendedform.short_desc'], 'port.armorability.powerofmany.name': PORT_STRINGS_EN['port.armorability.powerofmany.name'], 'port.armorability.powerofmany.short_desc': PORT_STRINGS_EN['port.armorability.powerofmany.short_desc'], 'port.buff.powerofmany.name': PORT_STRINGS_EN['port.buff.powerofmany.name'], 'port.buff.powerofmany.desc': PORT_STRINGS_EN['port.buff.powerofmany.desc'], 'port.spell.judgement.name': PORT_STRINGS_EN['port.spell.judgement.name'], 'port.spell.judgement.short_desc': PORT_STRINGS_EN['port.spell.judgement.short_desc'], 'port.spell.flash.name': PORT_STRINGS_EN['port.spell.flash.name'], 'port.spell.flash.short_desc': PORT_STRINGS_EN['port.spell.flash.short_desc'] };
+const PORT_CLERIC_ARMOR_FALLBACK = { 'port.armorability.ascendedform.name': PORT_STRINGS_EN['port.armorability.ascendedform.name'], 'port.armorability.ascendedform.short_desc': PORT_STRINGS_EN['port.armorability.ascendedform.short_desc'], 'port.armorability.powerofmany.name': PORT_STRINGS_EN['port.armorability.powerofmany.name'], 'port.armorability.powerofmany.short_desc': PORT_STRINGS_EN['port.armorability.powerofmany.short_desc'], 'port.buff.powerofmany.name': PORT_STRINGS_EN['port.buff.powerofmany.name'], 'port.buff.powerofmany.desc': PORT_STRINGS_EN['port.buff.powerofmany.desc'], 'port.spell.hallowedground.name': PORT_STRINGS_EN['port.spell.hallowedground.name'], 'port.spell.hallowedground.short_desc': PORT_STRINGS_EN['port.spell.hallowedground.short_desc'], 'port.spell.walloflight.name': PORT_STRINGS_EN['port.spell.walloflight.name'], 'port.spell.walloflight.short_desc': PORT_STRINGS_EN['port.spell.walloflight.short_desc'], 'port.spell.divineintervention.name': PORT_STRINGS_EN['port.spell.divineintervention.name'], 'port.spell.divineintervention.short_desc': PORT_STRINGS_EN['port.spell.divineintervention.short_desc'], 'port.spell.judgement.name': PORT_STRINGS_EN['port.spell.judgement.name'], 'port.spell.judgement.short_desc': PORT_STRINGS_EN['port.spell.judgement.short_desc'], 'port.spell.flash.name': PORT_STRINGS_EN['port.spell.flash.name'], 'port.spell.flash.short_desc': PORT_STRINGS_EN['port.spell.flash.short_desc'] };
 const completePortStrings = (catalog: Record<string, string>): Readonly<Record<string, string>> => ({ ...catalog, ...PORT_CLERIC_ARMOR_FALLBACK }); export const PORT_STRINGS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
 	en: PORT_STRINGS_EN,
 	fr: completePortStrings(PORT_STRINGS_FR),

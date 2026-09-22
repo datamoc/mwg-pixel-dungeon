@@ -99,6 +99,7 @@ export const panelsSingleUseMethods = {
 		this.ascendedTurns = s.ascendedTurns ?? 0;
 		this.ascendedSpellCasts = s.ascendedSpellCasts ?? 0;
 		this.ascendedFlashCasts = s.ascendedFlashCasts ?? 0;
+		this.ascendedDivineCast = s.ascendedDivineCast ?? false;
 		this.trinityForm = s.trinityForm ?? null;
 		this.trinityTurns = s.trinityTurns ?? 0;
 		this.trinityBodyAffix = s.trinityBodyAffix ?? null;

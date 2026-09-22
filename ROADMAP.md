@@ -185,11 +185,16 @@ below to close the gap was judged not worth the churn against those existing ref
       and per-effect charge rules are now pinned against the v3.3.8 Java sources; the item
       selection/effect dispatcher remains deliberately unoffered until the required item-effect
       and selection state can be represented end to end. The three armor abilities' remaining spell/ally branches (AscendedForm's base shield window
-      and its Judgement and Flash spells are live; DivineIntervention and the remaining Trinity
-      forms stay open), and the
-      rest of the real Cleric talent tree (tier 4 - tiers 1-3 are live since 2026-09-21, see
-      `PORT_COVERAGE.md`'s tier-1 row; DivineIntervention needs a tier-4 talent, so it is
-      blocked on the same tier-4 gap). Every other class now offers its
+      and all three of its tier-4 spells - DivineIntervention since 2026-09-22 - are live; the
+      remaining Trinity forms stay open), and the
+      rest of the real Cleric talent tree (tiers 1-3 are live since 2026-09-21, see
+      `PORT_COVERAGE.md`'s tier-1 row; the AscendedForm tier-4 talents all have live spells).
+      **Progress 2026-09-22: DivineIntervention is ported** (5 charges, once per form, raise-only
+      `100+50*points` shield on the hero after the shared Ascended `+50`, the same target on
+      every ALLY-aligned character as a priority-1 `DivineShield` that dies with the form, and a
+      `2+points` form extension) - and fixed in the same pass, AscendedForm's mid-form recast now
+      keeps the cast history/Flash count/DI flag and raises rather than resets the shield, as
+      Java's `AscendBuff.reset()` does. See `PORT_COVERAGE.md`'s DivineIntervention row. Every other class now offers its
       full set, Mage's two included (closed 2026-09-21, see below).
       **Correction 2026-09-22: "the ward's glyph override" is not open - it was already live,
       the sentence above had just drifted into describing it as a gap.** `Armor.hasGlyph()`'s

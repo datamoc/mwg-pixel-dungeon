@@ -5,7 +5,7 @@ import { isUndeadOrDemonic } from '../../../monsters';
 import { isChallengeEnabled } from '../../../challenges';
 import { t } from '../../../i18n/index';
 import { findHolyTome } from '../../../items/holyTome';
-import { AURA_COST, HALLOWED_GROUND_COST, HALLOWED_GROUND_HEAL, HALLOWED_GROUND_ROOTS_TURNS, HOLY_LANCE_COST, JUDGEMENT_COST, LAY_ON_HANDS_COST, LAY_ON_HANDS_SHIELD_CASTS, MNEMONIC_POSITIVE_BUFFS, PRAYER_COST, RADIANCE_COST, RADIANCE_LIGHT_DARKNESS_TURNS, RADIANCE_LIGHT_TURNS, RADIANCE_PARALYSIS_TURNS, SMITE_COST, WALL_OF_LIGHT_COST, WALL_OF_LIGHT_PARALYSIS_TURNS, WALL_OF_LIGHT_TURNS, flashCost, flashRange, hallowedGroundRadius, holyLanceDamage, judgementDamageBase, layOnHandsHeal, prayerExtension, radianceBonusDamage, smiteBonusDamage, tomeCastGate, tomeChargeCap, wallOfLightCost, wallOfLightWidth } from '../../../simulation/clericSpells';
+import { AURA_COST, DIVINE_INTERVENTION_COST, HALLOWED_GROUND_COST, HALLOWED_GROUND_HEAL, HALLOWED_GROUND_ROOTS_TURNS, HOLY_LANCE_COST, JUDGEMENT_COST, LAY_ON_HANDS_COST, LAY_ON_HANDS_SHIELD_CASTS, MNEMONIC_POSITIVE_BUFFS, PRAYER_COST, RADIANCE_COST, RADIANCE_LIGHT_DARKNESS_TURNS, RADIANCE_LIGHT_TURNS, RADIANCE_PARALYSIS_TURNS, SMITE_COST, WALL_OF_LIGHT_COST, WALL_OF_LIGHT_PARALYSIS_TURNS, WALL_OF_LIGHT_TURNS, flashCost, flashRange, hallowedGroundRadius, holyLanceDamage, judgementDamageBase, layOnHandsHeal, prayerExtension, radianceBonusDamage, smiteBonusDamage, tomeCastGate, tomeChargeCap, wallOfLightCost, wallOfLightWidth, divineInterventionShield, divineInterventionExtension } from '../../../simulation/clericSpells';
 
 /**
  * The HolyTome's Priest/Paladin subclass tier (`ClericSpell.getSpellList()`
@@ -16,6 +16,42 @@ import { AURA_COST, HALLOWED_GROUND_COST, HALLOWED_GROUND_HEAL, HALLOWED_GROUND_
  * `tools/file-budgets.json`.
  */
 export const clericSpellFlowsMethods = {
+	/**
+	 * `DivineIntervention.onCast()` (`DivineIntervention.java`, tag `v3.3.8`): every
+	 * ALLY-aligned character except the hero gets a raise-only `DivineShield` of
+	 * `100+50*points`; then `onSpellCast()` spends the 5 charges and adds the shared
+	 * Ascended `10*chargeUse` shield; only after that is the hero's AscendBuff raised
+	 * to the same target (Java orders it so the two "do not stack"), the once-per-form
+	 * flag set, and the form extended by `2+points`. All of it lands before the turn is
+	 * spent, as Java's buff/charge writes complete before any other actor runs - a cast
+	 * on the form's last turn therefore survives it. Sheep and Lotus are skipped: both are
+	 * Java NEUTRAL NPCs that this port happens to carry as allies. The yellow `Flare`s
+	 * and the `SHIELDED` sprite state are presentation this port does not draw.
+	 */
+	resolveDivineIntervention(this: DungeonScene, instanceId?: string): void {
+		const tome = findHolyTome(this.bag, instanceId);
+		if (!tome) return;
+		const rank = this.talentRank('divine_intervention');
+		if (rank <= 0 || this.ascendedTurns <= 0 || this.ascendedDivineCast
+			|| tomeCastGate(tome.cursed === true, this.hero.magicImmune === true, tome.charge ?? tomeChargeCap(tome.level ?? 0), DIVINE_INTERVENTION_COST) !== 'ok') {
+			this.say(t('port.log.tomenospell'), 'negative');
+			return;
+		}
+		const shield = divineInterventionShield(rank);
+		for (const ally of this.creatures) {
+			if (ally.isHero || !ally.isAlly || ally.hp <= 0 || ally.allyKind === 'sheep' || ally.allyKind === 'lotus') continue;
+			ally.divineShield = Math.max(ally.divineShield ?? 0, shield);
+		}
+		if (this.hero.buffs['invisibility']) delete this.hero.buffs['invisibility'];
+		this.consumeSatiatedSpells();
+		this.spendTomeForCast(tome, DIVINE_INTERVENTION_COST, 'divineIntervention');
+		if (this.ascendedBarrier.total < shield) this.ascendedBarrier.add(shield - this.ascendedBarrier.total);
+		this.ascendedDivineCast = true;
+		this.ascendedTurns += divineInterventionExtension(rank);
+		this.actionSpentTurn = true;
+		this.spendHeroTurn(1);
+	},
+
 	/**
 	 * `Judgement.onCast()` (`Judgement.java`, tag `v3.3.8`): AscendedForm's
 	 * area spell damages every visible hostile character for a normal roll in

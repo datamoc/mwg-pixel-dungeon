@@ -148,7 +148,9 @@ export function itemDisplayName(scene: ItemDisplayContext, id: string, identifie
 		if (spell === 'holyIntuition' || spell === 'shieldOfLight' || spell === 'recallInscription'
 			|| spell === 'sunray' || spell === 'divineSense' || spell === 'bless' || spell === 'cleanse'
 			|| spell === 'radiance' || spell === 'holyLance' || spell === 'mnemonicPrayer'
-			|| spell === 'smite' || spell === 'layOnHands' || spell === 'auraOfProtection') {
+			|| spell === 'smite' || spell === 'layOnHands' || spell === 'auraOfProtection'
+			|| spell === 'hallowedGround' || spell === 'wallOfLight' || spell === 'divineIntervention'
+			|| spell === 'judgement' || spell === 'flash') {
 			return t(`port.spell.${tomeSpellKey(spell)}.name`);
 		}
 	}

@@ -107,9 +107,8 @@ export function subclassTalentDefinitions(subclass: string, classId: ClassId): T
  * charge/targeting/talent values (tag `v3.3.8`), kept for citation the same way every other
  * unported number in this port still comes from the real source. `AscendedForm`'s base shield
  * window and the common Ascended spell-cast shield/history are live, as are the implemented
- * Judgement and Flash tome spells; Divine Intervention and the other two abilities remain
- * excluded from `armorAbilitiesFor()` until their spell/ally systems exist. Listed explicitly in
- * `PORT_COVERAGE.md` rather than silently absent.
+ * DivineIntervention/Judgement/Flash tome spells. Trinity and PowerOfMany are offered with
+ * the partial slices their `PORT_COVERAGE.md` rows state, rather than silently absent.
  */
 const ARMOR_ABILITY_ROWS = MWL_TABLE_ROWS('armorAbilities', 'id');
 const ARMOR_ABILITY_TALENT_ENTRIES = new Map(ARMOR_ABILITY_ROWS.map((row) => [String(row.id), talentsOf(row)]));

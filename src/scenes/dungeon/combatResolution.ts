@@ -22,6 +22,7 @@ import { applyCapeOfThornsProc } from '../../items/artifactActions';
 import { canSurpriseAttack, weaponSTRReq } from '../../items/strReq';
 import { EMBERS, FLOOR, GRASS, HIGH_GRASS, VIEW_RADIUS, WATER } from '../../dungeonConstants';
 import { BUFF_DURATION, INFINITE_ACCURACY, INFINITE_EVASION, NEGATIVE_BUFFS, absorbShield, addBuff, applyElementalBacklash, buffBlocked, electricDamageHalved, reigniteBuff, rollDamage, rollHit, setBleeding, stoneGlyphReduction, type Creature } from '../../combat';
+import { absorbCreatureShields } from '../../simulation/allyShields';
 import { liveStats, IMMOVABLE_KINDS } from '../../monsters';
 import { imageSuperDefenseSkill } from '../../simulation/mirrorImage';
 import { POWER_OF_MANY_ATTACK_FACTOR, powerOfManyDamageFactor } from '../../simulation/clericSpells';
@@ -782,6 +783,7 @@ export const combatResolutionMethods = {
 			this.clAbilityWeaponClass = null;
 			this.clAbilityWeaponInstanceId = undefined;
 		}
+		damage = absorbCreatureShields(defender, damage, this.ascendedTurns > 0);
 		defender.hp -= damage;
 		if (phantomRemote && defender.hp > 0) this.phantomPiranhaTeleport(defender, attacker);
 		if (this.fadeMirrorOnDamage(defender, damage)) {

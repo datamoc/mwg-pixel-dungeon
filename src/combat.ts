@@ -119,6 +119,12 @@ export interface Creature extends Combatant {
 	/** `Blocking`'s `BlockBuff` on a statue: the shield pool and the turns left before it lapses. */
 	blockShield?: number;
 	blockTurns?: number;
+	/**
+	 * `DivineIntervention.DivineShield` (tag `v3.3.8`): an ally's ShieldBuff that never decays,
+	 * absorbs ahead of priority-0 shields (`shieldUsePriority = 1`), and reads as zero - then is
+	 * detached - once the hero's AscendBuff is gone.
+	 */
+	divineShield?: number;
 	/** which MONSTERS entry this is, for its sprite and (for Goo) its special turn logic - absent on the hero */
 	kind?: AnyMonsterId;
 	/** Goo's pump-up counter: 0 idle, 1 first charge turn, 2 primed to unleash next turn - `Goo.java`'s `pumpedUp` field */

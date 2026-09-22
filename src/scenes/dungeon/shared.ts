@@ -571,6 +571,8 @@ export interface SaveShape {
 	ascendedTurns?: number;
 	ascendedSpellCasts?: number;
 	ascendedFlashCasts?: number;
+	/** `AscendBuff.divineInverventionCast`: DivineIntervention already cast this form. */
+	ascendedDivineCast?: boolean;
 	/** Trinity's selected form/window; effect dispatch remains a documented follow-up. */
 	trinityForm?: 'body' | 'mind' | 'spirit' | null;
 	trinityTurns?: number;

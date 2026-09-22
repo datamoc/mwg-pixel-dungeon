@@ -1282,12 +1282,17 @@ export const turnLoopAimingMethods = {
 			tickEndureTracker: () => this.tickEndureDuration(turnCost),
 			tickDoubleJumpTracker: () => this.tickDoubleJump(turnCost),
 			//`AscendedForm.AscendBuff.act()` decrements one actor turn and removes its
-			//ShieldBuff plus every DivineIntervention shield on expiry. The base Ascended
-			//window is live here; its HolyTome spell extensions remain a separate follow-up.
+			//ShieldBuff plus every DivineIntervention shield on expiry.
 			tickAscendedForm: () => {
 				if (this.ascendedTurns <= 0) return;
 				this.ascendedTurns = Math.max(0, this.ascendedTurns - turnCost);
-			if (this.ascendedTurns === 0) { this.ascendedBarrier.clear(); this.ascendedSpellCasts = 0; this.ascendedFlashCasts = 0; }
+				if (this.ascendedTurns === 0) {
+					this.ascendedBarrier.clear();
+					this.ascendedSpellCasts = 0;
+					this.ascendedFlashCasts = 0;
+					this.ascendedDivineCast = false;
+					for (const creature of this.creatures) delete creature.divineShield;
+				}
 			},
 			//Trinity's selected form is a temporary activation window. The Java form buffs
 			//also remove themselves on expiry; this state is the port's explicit hand-off

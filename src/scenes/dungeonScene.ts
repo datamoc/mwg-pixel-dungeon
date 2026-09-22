@@ -764,7 +764,7 @@ export class DungeonScene extends Scene2D {
 	 * receive Barrier's proportional decay, and merging it would silently make the
 	 * Cleric's armor ability weaker every turn. */
 	ascendedBarrier = new Actors.Barrier();
-	ascendedTurns = 0; ascendedSpellCasts = 0; ascendedFlashCasts = 0;
+	ascendedTurns = 0; ascendedSpellCasts = 0; ascendedFlashCasts = 0; ascendedDivineCast = false;
 	/** Selected Trinity form and its remaining window. Item-specific effects are not yet dispatched. */
 	trinityForm: 'body' | 'mind' | 'spirit' | null = null;
 	trinityTurns = 0;
