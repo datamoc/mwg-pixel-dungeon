@@ -24,6 +24,7 @@ import { EMBERS, FLOOR, GRASS, HIGH_GRASS, VIEW_RADIUS, WATER } from '../../dung
 import { BUFF_DURATION, INFINITE_ACCURACY, INFINITE_EVASION, NEGATIVE_BUFFS, absorbShield, addBuff, applyElementalBacklash, buffBlocked, electricDamageHalved, reigniteBuff, rollDamage, rollHit, setBleeding, stoneGlyphReduction, type Creature } from '../../combat';
 import { liveStats, IMMOVABLE_KINDS } from '../../monsters';
 import { imageSuperDefenseSkill } from '../../simulation/mirrorImage';
+import { POWER_OF_MANY_ATTACK_FACTOR, powerOfManyDamageFactor } from '../../simulation/clericSpells';
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `combatResolution`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
@@ -307,6 +308,12 @@ export const combatResolutionMethods = {
 		}
 
 		let damage = attackRoll.damage;
+		// `Char.attack()` (tag `v3.3.8`): a PowerOfMany-powered ally deals 1.25x melee
+		// damage. This port currently applies the modifier on ordinary attack() exchanges;
+		// the missing LightAlly actor means only existing allies can receive the buff.
+		if (attacker.isAlly && attacker.buffs['powerOfMany'] !== undefined) {
+			damage = Math.round(damage * POWER_OF_MANY_ATTACK_FACTOR);
+		}
 		//Charm.recover()/Charm.object: an actor charmed toward this specific target
 		//does not harm it. This also makes Affection's armor-glyph charm usable by
 		//ordinary monsters, not only by the already-portable Friendly weapon path.
@@ -626,6 +633,13 @@ export const combatResolutionMethods = {
 		//changes there too - the two copies exist because this tail also carries attack-only work
 		//(LifeLink, the execute mechanics, Grim) that the shared seam must not run.
 		if (this.deferMonsterDamage(defender, damage)) return true;
+		// `Char.damage()` (tag `v3.3.8`): PowerOfMany reduces damage taken by 25%, or
+		// by `30% + 5% per LIFE_LINK rank` while the powered ally has that talent.
+		// This scene seam represents the attack() path; direct damage sources still need
+		// a shared actor-damage entry point before they can all use the reduction.
+		if (defender.buffs['powerOfMany'] !== undefined) {
+			damage = Math.round(damage * powerOfManyDamageFactor(this.talentRank('life_link')));
+		}
 		//LifeLink (`Char.damage()`): the hit is divided `ceil(dmg / (links+1))` across
 		//every live link partner, and each partner's share lands on it directly -
 		//so damage to a linked subject splits onto the King AND damage to a linked

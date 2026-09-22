@@ -390,6 +390,16 @@ export function guidingLightCost(subclass: string | null, cooldownArmed: boolean
 /** `LayOnHands`'s shielding cap (tag `v3.3.8`): at most three casts' worth at once. */
 export const LAY_ON_HANDS_SHIELD_CASTS = 3;
 
+/** `PowerOfMany.PowerBuff` (`actors/hero/abilities/cleric/PowerOfMany.java`,
+ * tag `v3.3.8`): a powered ally gets 100 turns of the buff before it expires. */
+export const POWER_OF_MANY_TURNS = 100;
+
+/** `Char.attack()` / `Char.damage()`'s PowerBuff factors (same Java source/tag). */
+export const POWER_OF_MANY_ATTACK_FACTOR = 1.25;
+export function powerOfManyDamageFactor(lifeLinkRank: number): number {
+	return lifeLinkRank > 0 ? 0.70 - 0.05 * Math.min(4, lifeLinkRank) : 0.75;
+}
+
 /** `HallowedGround`'s radius (tag `v3.3.8`): the distance map runs `points` deep. */
 export function hallowedGroundRadius(talentRank: number): number {
 	return Math.max(0, Math.min(3, talentRank));

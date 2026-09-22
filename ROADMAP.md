@@ -170,8 +170,8 @@ below to close the gap was judged not worth the churn against those existing ref
       ported - paired 10-turn duel with spectator freeze, close-the-gap blink, damage ledger,
       victory heal and re-challenge discount, all with Java's numbers; bomb/trap/blast negation
       on frozen spectators is now ported across the direct damage seams. **Still open, and deliberately not offered**
-      (`armorAbilitiesFor()` offers only what can actually run): the Cleric's Trinity and
-      PowerOfMany remain unoffered, while AscendedForm's base window is now live.
+      (`armorAbilitiesFor()` offers only what can actually run): Trinity and PowerOfMany were
+      previously unoffered; PowerOfMany now has a documented existing-ally slice below.
       **Assessed 2026-09-21, an epic not a remainder (corrected same day - the assessment
       was written from stale evidence):** the Cleric HAS a class-select entry (the MWL
       `cleric` trait, victory-gated) and starting gear (`holyTome` + purity/cleanse +
@@ -185,7 +185,8 @@ below to close the gap was judged not worth the churn against those existing ref
       and per-effect charge rules are now pinned against the v3.3.8 Java sources; the item
       selection/effect dispatcher remains deliberately unoffered until the required item-effect
       and selection state can be represented end to end. The three armor abilities' remaining spell/ally branches (AscendedForm's base shield window
-      and its Judgement and Flash spells are live; DivineIntervention and Trinity/PowerOfMany remain unoffered), and the
+      and its Judgement and Flash spells are live; DivineIntervention and the remaining Trinity
+      forms stay open), and the
       rest of the real Cleric talent tree (tier 4 - tiers 1-3 are live since 2026-09-21, see
       `PORT_COVERAGE.md`'s tier-1 row; DivineIntervention needs a tier-4 talent, so it is
       blocked on the same tier-4 gap). Every other class now offers its
@@ -202,6 +203,12 @@ below to close the gap was judged not worth the churn against those existing ref
       source directly while investigating this line's remaining scope: it needs the same
       tier-4 talent gate as the rest of tier 4 (`hero.hasTalent(Talent.DIVINE_INTERVENTION)`),
       so it is not independently offerable without that prerequisite either.
+      **Progress 2026-09-22: PowerOfMany's existing-ally combat path is now available.** An aimed
+      cast empowers one visible existing ally for Java's 100 turns and applies its melee damage
+      increase, incoming-attack reduction, LifeLink rank factor, and `MANY_POWER` status icon.
+      Java's dedicated LightAlly summon, 25-point Barrier and free direct-order re-cast remain
+      explicitly open because their actor/shield/order seams are not available here; the coverage
+      and i18n rows state the reductions and fallback copy.
       **Narrowed 2026-09-19 to the real
       shared root cause, checked directly against both abilities' Java source**: this port's
       hero carries at most one `wand` bag entry at a time (`dungeonScene.ts`'s `wandType: WandType`

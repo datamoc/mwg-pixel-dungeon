@@ -82,6 +82,7 @@ const ICON_TEXT_KIND: Partial<Record<BuffId | 'hungry' | 'starving', 'flavour' |
 	//`iconTextDisplay()` override - nothing to show, like `Fury`.
 	holyWeapon: 'flavour',
 	holyWard: 'flavour',
+	powerOfMany: 'flavour',
 	//`ShieldOfLightTracker`, `DivineSenseTracker` and `UsedItemTracker` are all
 	//`FlavourBuff`s with no `iconTextDisplay()` override (tag `v3.3.8`) - the standard
 	//+1 countdown on large icons.

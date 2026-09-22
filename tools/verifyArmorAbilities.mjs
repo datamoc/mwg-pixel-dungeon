@@ -26,7 +26,7 @@ export function verifyArmorAbilities(require, check) {
 	const { exposeWeaknessDuration, feignedRetreatHaste, closeTheGapRange, eliminationMatchFactor, invigoratingVictoryHeal, combinedLethalityTest, elementalStrikeCone, elementalPowerMulti, directedPowerBoost, elementalBlockingShield, elementalVampiricHeal, elementalSacrificialSelf, elementalBlobAmount, elementalBloomingBudget, elementalFurrowStep, elementalBaseDamage, elementalKineticSplash, elementalRootsDuration, elementalKnockback, elementalLuckyChance, elementalProjectingSplash, elementalCorruptingChance, elementalGrimChance, elementalCurseChance, elementalAnnoyingChance, elementalSacrificialOther, elementalStrikeResisted } = require('./simulation/duelistAbilities');
 	const { ELEMENTAL_BLAST_DAMAGE_FACTORS, elementalBlastEffectMulti, elementalBlastAoeSize, elementalBlastAim, elementalBlastDamage, elementalBlastUndeadDamage, elementalBlastTransfusionSplit, elementalBlastCorrosion, elementalBlastParalysisDuration, elementalBlastFrostDuration, elementalBlastBlindnessDuration, elementalBlastLightDuration, elementalBlastCharmDuration, elementalBlastAmokDuration, elementalBlastRootsDuration, elementalBlastRechargingDuration, elementalBlastRegrowthChance, elementalBlastKnockback, elementalBlastReactiveShield } = require('./simulation/mageAbilities');
 	const { BUFF_DURATION } = require('./simulation/buffs');
-	const { trinityBodyDuration, trinityMindItemLevel, trinitySpiritRingLevel, trinitySpiritArtifactLevel, trinityChargeUsePerEffect } = require('./simulation/clericSpells');
+	const { trinityBodyDuration, trinityMindItemLevel, trinitySpiritRingLevel, trinitySpiritArtifactLevel, trinityChargeUsePerEffect, POWER_OF_MANY_TURNS, POWER_OF_MANY_ATTACK_FACTOR, powerOfManyDamageFactor } = require('./simulation/clericSpells');
 
 	//`HeroClass.armorAbilities()`, in its own order.
 	check('every class offers its three real armor abilities, in Java order', () => {
@@ -151,7 +151,7 @@ export function verifyArmorAbilities(require, check) {
 	});
 
 	check('only implemented abilities are offered, and the charge meter is Java\'s', () => {
-		//The Warrior's three, the Cleric's AscendedForm and Trinity selector, the Rogue's Smoke Bomb, Death Mark and Shadow Clone, the
+		//The Warrior's three, the Cleric's AscendedForm, Trinity selector and existing-ally PowerOfMany path, the Rogue's Smoke Bomb, Death Mark and Shadow Clone, the
 		//Huntress's Spectral Blades, Nature's Power and Spirit Hawk, the Mage's Warp Beacon
 		//and Wild Magic, and the Duelist's Challenge, Elemental Strike and Feint are the
 		//ported set; a class with none of its own offers nothing, which is what keeps a
@@ -160,7 +160,7 @@ export function verifyArmorAbilities(require, check) {
 		assert.deepEqual(armorAbilitiesFor('rogue'), ['smokebomb', 'deathmark', 'shadowclone']);
 		assert.deepEqual(armorAbilitiesFor('huntress'), ['spectralblades', 'naturespower', 'spirithawk']);
 		assert.deepEqual(armorAbilitiesFor('mage'), ['elementalblast', 'warpbeacon', 'wildmagic']);
-		assert.deepEqual(armorAbilitiesFor('cleric'), ['ascendedform', 'trinity']);
+		assert.deepEqual(armorAbilitiesFor('cleric'), ['ascendedform', 'trinity', 'powerofmany']);
 	check('ElementalBlast erupts the imbued class down the roomiest cardinal', () => {
 		//`ElementalBlast.activate()` (tag `v3.3.8`): the scene half is Pixi-bound, so
 		//the wiring is pinned at source level while the arithmetic lives in
@@ -175,6 +175,19 @@ export function verifyArmorAbilities(require, check) {
 		assert.ok(source.includes('elementalBlastReactiveShield(charsHit,'), 'the reactive barrier counts what the blast caught');
 		assert.ok(source.includes("this.bumpDoor(at.x, at.y);"), 'fireblast opens doors in the cone');
 		assert.ok(source.includes('this.featuresMap?.setLayerData('), 'regrown grass restitches the tiles');
+	});
+
+	check('PowerOfMany keeps Java duration and attack damage factors', () => {
+		assert.equal(POWER_OF_MANY_TURNS, 100);
+		assert.equal(POWER_OF_MANY_ATTACK_FACTOR, 1.25);
+		assert.equal(powerOfManyDamageFactor(0), 0.75);
+		assert.ok(Math.abs(powerOfManyDamageFactor(1) - 0.65) < 1e-12);
+		assert.ok(Math.abs(powerOfManyDamageFactor(4) - 0.5) < 1e-12);
+		const source = readSceneSource();
+		assert.ok(source.includes("id === 'powerofmany' ? this.activatePowerOfMany(def, cost, cell)"), 'the ability routes aimed ally selection');
+		assert.ok(source.includes("addBuff(ally, 'powerOfMany', POWER_OF_MANY_TURNS)"), 'cast applies the 100-turn buff');
+		assert.ok(source.includes("attacker.buffs['powerOfMany']"), 'the buff grants its melee damage factor');
+		assert.ok(source.includes("defender.buffs['powerOfMany']"), 'the buff reduces ordinary melee damage taken');
 	});
 		assert.deepEqual(armorAbilitiesFor('duelist'), ['challenge', 'elementalstrike', 'feint']);
 		assert.equal(ARMOR_CHARGE_MAX, 100);

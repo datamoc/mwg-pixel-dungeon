@@ -355,6 +355,14 @@
             duration: 50,
           },
           {
+            // `PowerOfMany.PowerBuff.DURATION` (tag `v3.3.8`): the selected ally
+            // remains empowered for 100 actor turns, unless LifeLink or BeamingRay
+            // refreshes it by spending one tick instead.
+            tag: "row",
+            buff: "powerOfMany",
+            duration: 100,
+          },
+          {
             // `GuidingLight.Illuminated` is a plain `Buff` with no duration - it never
             // expires on its own clock, only detaches on the next damaging attack
             // (`Char.attack()`). 9999 is the catalogue's effectively-permanent

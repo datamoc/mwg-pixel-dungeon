@@ -54,6 +54,7 @@ export const BUFF_DURATION_DATA = {
   "prismaticGuard": 9999,
   "holyWeapon": 50,
   "holyWard": 50,
+  "powerOfMany": 100,
   "illuminated": 9999,
   "wasIlluminated": 9999,
   "satiatedSpells": 9999,

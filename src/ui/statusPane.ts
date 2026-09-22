@@ -121,6 +121,8 @@ const BUFF_ICON: Record<string, number> = {
 	shieldOfLight: 76,
 	//HOLY_SIGHT = 77 (`BuffIndicator.java`, tag `v3.3.8`) - same post-checkout row.
 	divineSense: 77,
+	//`PowerOfMany.PowerBuff` uses `BuffIndicator.MANY_POWER = 83`.
+	powerOfMany: 83,
 	//GLYPH_RECALL = 78 (same file) - the recall tracker's icon. The sunray markers
 	//have no `icon()` override in Java (`NONE`), so they stay unmapped and unshown.
 	recallUsed: 78,

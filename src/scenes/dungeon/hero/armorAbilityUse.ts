@@ -17,7 +17,7 @@ import { SPIRIT_HAWK_LIFESPAN, spiritHawkDodges } from '../../../simulation/hunt
 import { closeTheGapRange, directedPowerBoost, elementalAnnoyingChance, elementalBaseDamage, elementalBlobAmount, elementalBlockingShield, elementalBloomingBudget, elementalCorruptingChance, elementalCurseChance, elementalFurrowStep, elementalGrimChance, elementalKineticSplash, elementalKnockback, elementalLuckyChance, elementalPowerMulti, elementalProjectingSplash, elementalRootsDuration, elementalSacrificialOther, elementalSacrificialSelf, elementalStrikeCone, elementalStrikeResisted, elementalVampiricHeal, invigoratingVictoryHeal, type ElementalStrikeDamageSource } from '../../../simulation/duelistAbilities';
 import { shadowCloneAccuracy, shadowCloneArmorShare, shadowCloneBladeShare, shadowCloneEvasion, shadowCloneHp } from '../../../simulation/rogueAbilities';
 import { showChoiceWindow } from '../../../ui/portWindows';
-import { trinityBodyDuration } from '../../../simulation/clericSpells';
+import { POWER_OF_MANY_TURNS, trinityBodyDuration } from '../../../simulation/clericSpells';
 import { trinityChargeUsePerEffect } from '../../../simulation/clericSpells';
 import { getCurse } from '../../../items/itemCurses';
 import { coneCells } from '../../../mechanics/cone';
@@ -112,8 +112,9 @@ export const armorAbilityUseMethods = {
 														: id === 'wildmagic' ? this.activateWildMagic(def, cost, cell)
 										: id === 'elementalblast' ? this.activateElementalBlast(def, cost)
 											: id === 'ascendedform' ? this.activateAscendedForm(def, cost)
-												: id === 'trinity' ? this.activateTrinity(def, cost)
-												: false;
+								: id === 'trinity' ? this.activateTrinity(def, cost)
+									: id === 'powerofmany' ? this.activatePowerOfMany(def, cost, cell)
+								: false;
 		if (!activated) return;
 		this.refresh();
 	},
@@ -199,6 +200,34 @@ export const armorAbilityUseMethods = {
 		this.trinityTurns = form === 'body' ? trinityBodyDuration(this.talentRank('body_form')) : 1;
 		this.spendHeroAction(1);
 		this.say(`Trinity: ${form} form`, 'positive');
+	},
+
+	/**
+	 * `PowerOfMany.activate()` (`PowerOfMany.java`, tag `v3.3.8`) lets the player empower an
+	 * existing ally or summon a `LightAlly` on an empty valid cell. This first slice implements
+	 * the existing-ally path only: the port has no LightAlly actor/sprite factory yet, so empty
+	 * cells are refused instead of summoning a different creature and pretending it is Java's.
+	 * Java's 25-shield grant and re-cast direct-order path are also not represented here.
+	 */
+	activatePowerOfMany(this: DungeonScene, _def: ArmorAbilityDef, cost: number, cell: Step | null): boolean {
+		if (!cell || !this.fov.isVisible(cell.x, cell.y)) return false;
+		const ally = this.creatureAt(cell.x, cell.y);
+		if (!ally?.isAlly || ally.isHero || ally.hp <= 0) {
+			this.say(t('actors.hero.abilities.armorability.no_target'), 'negative');
+			return false;
+		}
+		// If another ally already has PowerBuff, Java's re-cast orders that LightAlly for
+		// free; until this port has that order path, refuse without charging or refreshing it.
+		if (this.creatures.some((creature) => creature.buffs['powerOfMany'] !== undefined)) {
+			this.say(t('actors.hero.abilities.armorability.no_target'), 'negative');
+			return false;
+		}
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		addBuff(ally, 'powerOfMany', POWER_OF_MANY_TURNS);
+		delete this.hero.buffs['invisibility'];
+		this.say(t('port.log.armorabilitychosen', { ability: t('port.armorability.powerofmany.name') }), 'positive');
+		this.spendHeroAction(1);
+		return true;
 	},
 
 	/** `Ratmogrify.baseChargeUse` (50, tag `v3.3.8`) is charged like any other ability's, read

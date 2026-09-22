@@ -77,10 +77,11 @@ export function armorAbilityDef(id: string): ArmorAbilityDef | undefined {
  * Ported so far: the Warrior's three, the Rogue's Death Mark, Smoke Bomb and Shadow
  * Clone, the Huntress's Spectral Blades, Nature's Power and Spirit Hawk, the Mage's Warp
  * Beacon, Wild Magic and Elemental Blast, and the Duelist's Feint, Challenge and
- * ElementalStrike, plus the Cleric's Trinity form selector. Every class offers its full set now. See `PORT_COVERAGE.md`'s
+ * ElementalStrike, plus the Cleric's Trinity form selector and PowerOfMany's powered-ally
+ * combat modifier. Every class offers its full set now. See `PORT_COVERAGE.md`'s
  * armor-ability rows.
  */
-const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades', 'warpbeacon', 'smokebomb', 'naturespower', 'spirithawk', 'feint', 'shadowclone', 'challenge', 'elementalstrike', 'wildmagic', 'elementalblast', 'ascendedform', 'trinity']);
+const PORTED_ARMOR_ABILITIES: ReadonlySet<string> = new Set(['heroicleap', 'shockwave', 'endure', 'deathmark', 'spectralblades', 'warpbeacon', 'smokebomb', 'naturespower', 'spirithawk', 'feint', 'shadowclone', 'challenge', 'elementalstrike', 'wildmagic', 'elementalblast', 'ascendedform', 'trinity', 'powerofmany']);
 
 /** The implemented abilities for one class, in `HeroClass.armorAbilities()` order (the authored
  *  table's own row order, which `DEFINITIONS` preserves). */
@@ -120,6 +121,7 @@ export function armorAbilityKey(id: string, classId: ClassId): string {
 	// extractor. Keep the live Cleric ability on the port catalogue so a missing
 	// upstream translation cannot leak a raw key into the choice window/log.
 	if (id === 'ascendedform') return 'port.armorability.ascendedform';
+	if (id === 'powerofmany') return 'port.armorability.powerofmany';
 	return `actors.hero.abilities.${classId}.${id}`;
 }
 

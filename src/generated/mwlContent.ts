@@ -7565,13 +7565,27 @@ export const gameData = {
 						{
 							"tag": "row",
 							"attributes": {
+								"buff": "powerOfMany",
+								"duration": "100"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
+								"line": 361,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
 								"buff": "illuminated",
 								"duration": "9999"
 							},
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-								"line": 362,
+								"line": 370,
 								"column": 13
 							},
 							"gettext": []
@@ -7585,7 +7599,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-								"line": 369,
+								"line": 377,
 								"column": 13
 							},
 							"gettext": []
@@ -7599,7 +7613,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-								"line": 378,
+								"line": 386,
 								"column": 13
 							},
 							"gettext": []
@@ -7613,7 +7627,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-								"line": 387,
+								"line": 395,
 								"column": 13
 							},
 							"gettext": []
@@ -7627,7 +7641,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-								"line": 395,
+								"line": 403,
 								"column": 13
 							},
 							"gettext": []
@@ -7641,7 +7655,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-								"line": 404,
+								"line": 412,
 								"column": 13
 							},
 							"gettext": []
@@ -7655,7 +7669,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-								"line": 412,
+								"line": 420,
 								"column": 13
 							},
 							"gettext": []
@@ -7669,7 +7683,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-								"line": 421,
+								"line": 429,
 								"column": 13
 							},
 							"gettext": []
@@ -7683,7 +7697,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-								"line": 429,
+								"line": 437,
 								"column": 13
 							},
 							"gettext": []
@@ -7697,7 +7711,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-								"line": 437,
+								"line": 445,
 								"column": 13
 							},
 							"gettext": []
@@ -7711,7 +7725,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-								"line": 444,
+								"line": 452,
 								"column": 13
 							},
 							"gettext": []
@@ -7725,7 +7739,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-								"line": 453,
+								"line": 461,
 								"column": 13
 							},
 							"gettext": []
@@ -7739,7 +7753,7 @@ export const gameData = {
 							"children": [],
 							"location": {
 								"file": "C:\\Users\\miche\\dev\\mwg-pixel-dungeon\\src\\content\\buff-rules.mwl",
-								"line": 461,
+								"line": 469,
 								"column": 13
 							},
 							"gettext": []

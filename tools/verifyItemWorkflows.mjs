@@ -1800,7 +1800,7 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 			wayward: 10, soulmark: 10, charm: 10, lethalHasteCooldown: 100, blindness: 10, light: 250, invulnerability: 3,
 			feintConfusion: 2, counterAbility: 3, hazardAssist: 50,
 			spectatorFreeze: 10, duelParticipant: 10, eliminationMatch: 3, luckyTracker: 9999,
-			prismaticGuard: 9999, holyWeapon: 50, holyWard: 50, illuminated: 9999, wasIlluminated: 9999,
+			prismaticGuard: 9999, holyWeapon: 50, holyWard: 50, powerOfMany: 100, illuminated: 9999, wasIlluminated: 9999,
 			satiatedSpells: 9999, shieldOfLight: 5, divineSense: 50, recallUsed: 10,
 			sunrayUsed: 9999, sunrayRecent: 4, cleanseImmunity: 5,
 			//`HolyLance.LanceCooldown` 30, `AuraOfProtection.AuraBuff.DURATION` 20 and

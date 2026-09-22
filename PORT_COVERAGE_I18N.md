@@ -10,6 +10,8 @@ everything else still goes in `PORT_COVERAGE.md`.
 
 ## Internationalisation (`messages/Messages.java`, `messages/Languages.java`, `assets/messages/**`)
 
+| Cleric `PowerOfMany` ability and `PowerBuff` name/description | `port.armorability.powerofmany.*` / `port.buff.powerofmany.*` in `portStrings.ts`, `armorAbilityKey`, `buffInfo.ts` | The base checkout does not contain the Cleric message bundle. These four strings therefore use the English fallback for every locale, following the existing Cleric armor-buff fallback; the countdown token follows Java's `FlavourBuff` info shape. |
+
 The mechanism is `mwg/i18n`'s, the words are SPD's own. `mwg/i18n` supplies the catalog shape,
 `{token}` interpolation, CLDR plural selection through `Intl.PluralRules` and the fallback to a
 base language, so none of that is reimplemented; `src/i18n/` adds what is SPD-specific -

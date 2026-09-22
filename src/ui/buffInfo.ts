@@ -58,6 +58,7 @@ const BUFF_MESSAGE_KEY: Partial<Record<BuffId, string>> = {
 	//carrying SPD's own tag-`v3.3.8` text (see `portStrings.ts`).
 	holyWeapon: 'port.buff.holyweapon',
 	holyWard: 'port.buff.holyward',
+	powerOfMany: 'port.buff.powerofmany',
 	illuminated: 'port.buff.illuminated',
 	satiatedSpells: 'port.buff.satiatedspells',
 	shieldOfLight: 'port.buff.shieldoflight',
