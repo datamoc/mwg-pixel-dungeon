@@ -14,6 +14,7 @@ exists precisely so that work here has somewhere to live on its own.
 - **In the browser:** <https://datamoc.github.io/mwg-pixel-dungeon/> - the gzip
   standalone single-file build, the same artifact attached to each release, so the
   webpage and the handed-out file can never drift apart.
+- **Download the standalone HTML:** <https://datamoc.github.io/mwg-pixel-dungeon/spd-on-mwg-0.2.2-standalone.html> - the same single-file game, hosted directly on GitHub Pages.
 - **From a release** (<https://github.com/datamoc/mwg-pixel-dungeon/releases>):
   - `spd-on-mwg-<version>-standalone.html` - the whole game in one file. Works from an
     email attachment or a USB stick; open it directly, no server needed.

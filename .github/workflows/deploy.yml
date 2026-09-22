@@ -41,6 +41,7 @@ jobs:
       - run: npm run release:web
       - run: |
           cp release/spd-on-mwg-*-standalone.html dist/index.html
+          cp release/spd-on-mwg-*-standalone.html dist/
           rm -f dist/game.js
           ls -la dist
       - uses: actions/upload-pages-artifact@v3
