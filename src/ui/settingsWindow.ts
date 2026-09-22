@@ -1,5 +1,5 @@
 import { Container, Graphics, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
-import { Game, Input, NinePatch, theme, Window, WindowStack } from 'mwg';
+import { Button, Game, Input, NinePatch, theme, Window, WindowStack } from 'mwg';
 import { detectLanguage } from '../i18n/languages';
 import { LANGUAGES, language, setLanguage, t, titleCase, type Language } from '../i18n/index';
 import { LANGUAGE_KEY, runState } from '../runState';
@@ -263,7 +263,15 @@ interface SettingsContext {
 interface SettingsTab {
 	id: string;
 	icon: TitleIconName;
-	build: (width: number, ctx: SettingsContext) => { node: Container; height: number };
+	build: (width: number, ctx: SettingsContext) => {
+		node: Container; height: number;
+		/** A `ClassSelectScene`-style row/col button grid (the language picker's own
+		 * `cols`-wide wrap layout) - present only for tabs that have one, keyboard-navigated
+		 * separately from the linear checkbox/slider scan since grid movement needs its own
+		 * row/col math. `items[i]`'s own position/size drives the focus ring; `onClick`
+		 * fires on confirm. */
+		focusGrid?: { items: Button[]; cols: number };
+	};
 }
 
 /** Fullscreen through the browser API; the row reverts when the browser refuses. */
@@ -686,6 +694,7 @@ function langsTab(): SettingsTab {
 			const cols = width > 200 ? 6 : 3;
 			const btnWidth = Math.floor((width - (cols - 1)) / cols);
 			let x = 0;
+			const languageButtons: Button[] = [];
 			for (const lang of orderedLanguages()) {
 				const isCurrent = lang.code === current.code;
 				const color = isCurrent
@@ -713,6 +722,7 @@ function langsTab(): SettingsTab {
 				});
 				button.position.set(x, y);
 				node.addChild(button);
+				languageButtons.push(button);
 				x += btnWidth + 1;
 				if (x + btnWidth > width) {
 					x = 0;
@@ -754,7 +764,7 @@ function langsTab(): SettingsTab {
 				node.addChild(transifex);
 				y += transifex.height;
 			}
-			return { node, height: y };
+			return { node, height: y, focusGrid: { items: languageButtons, cols } };
 		},
 	};
 }
@@ -870,50 +880,88 @@ export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () =
 	});
 	window.resize(width, chrome + maxHeight + GAP + stripHeight + 8);
 	//Port-original keyboard-navigation accessibility work (ROADMAP.md section 8 - Java has
-	//no such system), fourth/sixth slices: up/down moves a focus ring over the current tab's
-	//own checkboxes and sliders (direct children of its `node` - every existing tab builder
-	//adds them flat, not nested, so a shallow scan finds them all, in visual order since
-	//that is add order too). Confirm toggles a focused checkbox through its own
-	//`setChecked(!checked, true)`; left/right adjusts a focused slider through its own new
-	//`step(delta)` (one tick per press) - and only falls back to switching tabs when nothing
-	//adjustable is focused, so the same keys serve both jobs without a mode switch. The
-	//language grid (`langsTab`, a plain `SpdButton` grid) stays mouse-only still - not a
-	//checkbox or a slider, so this scan does not reach it.
+	//no such system), fourth/sixth/seventh slices: up/down moves a focus ring over the
+	//current tab's own checkboxes and sliders (direct children of its `node` - every existing
+	//tab builder adds them flat, not nested, so a shallow scan finds them all, in visual
+	//order since that is add order too). Confirm toggles a focused checkbox through its own
+	//`setChecked(!checked, true)`; left/right adjusts a focused slider through its own
+	//`step(delta)` (one tick per press). `menu` (Tab/KeyI) switches tabs - the same
+	//convention the bag window's own tab strip already uses - rather than left/right, so
+	//adjustment and tab-switching never compete for the same keys on an all-slider tab (see
+	//`onTabAction`'s own comment for the dead end that forced this). The language grid
+	//(`langsTab`) is a `ClassSelectScene`-style row/col button grid instead (`focusGrid` on
+	//the tab's own build result), keyboard-navigated by its own row/col math below rather
+	//than the linear scan, since a grid needs to wrap by `cols` not just step by one.
 	const widgetFocusRing = new Graphics();
 	widgetFocusRing.eventMode = 'none';
 	window.content.addChild(widgetFocusRing);
 	let focusedWidget = 0;
+	let focusedGridIndex = 0;
 	const focusablesIn = (tabIndex: number): (SpdCheckBox | SpdOptionSlider)[] =>
 		built[tabIndex]!.node.children.filter((c): c is SpdCheckBox | SpdOptionSlider =>
 			c instanceof SpdCheckBox || c instanceof SpdOptionSlider);
 	const drawWidgetFocus = (): void => {
-		const widgets = focusablesIn(lastTab);
 		widgetFocusRing.clear();
+		const grid = built[lastTab]!.focusGrid;
+		if (grid && grid.items.length > 0) {
+			focusedGridIndex = Math.min(focusedGridIndex, grid.items.length - 1);
+			const w = grid.items[focusedGridIndex]!;
+			widgetFocusRing.rect(w.x - 2, w.y - 2, w.width + 4, w.height + 4)
+				.stroke({ width: 2, color: 0xffffff, alpha: 0.9 });
+			return;
+		}
+		const widgets = focusablesIn(lastTab);
 		if (widgets.length === 0) return;
 		focusedWidget = Math.min(focusedWidget, widgets.length - 1);
 		const w = widgets[focusedWidget]!;
 		widgetFocusRing.rect(w.x - 2, w.y - 2, w.width + 4, w.height + 4)
 			.stroke({ width: 2, color: 0xffffff, alpha: 0.9 });
 	};
-	onTabSelected = () => { focusedWidget = 0; drawWidgetFocus(); };
+	onTabSelected = () => { focusedWidget = 0; focusedGridIndex = 0; drawWidgetFocus(); };
 	//Registered after `windows.push` so it sits in front of every listener already on
 	//`Input.onAction` (a stack-mode `Signal` offers the newest listener first) while this
 	//window is the top of the stack; removed on close so a lower window (or the scene
 	//itself) gets the keys back untouched.
 	const onTabAction = (action: string): boolean => {
+		//`menu` (Tab/KeyI) switches tabs unconditionally, the same convention the bag window's
+		//own tab strip already uses (`InventoryWindow.handleAction`) - freeing left/right to
+		//always mean "adjust the focused control" with no fallback ambiguity. An earlier
+		//version of this handler used left/right for tab-switching too, falling back to it
+		//only when nothing adjustable was focused - which dead-ended on any tab whose widgets
+		//are all sliders (Input's own two): every left/right adjusted a slider, and neither
+		//`up`/`down` ever landed on a non-slider widget to unstick it, so tab-switching became
+		//unreachable by keyboard on that tab. Found live while browser-testing this slice.
+		if (action === 'menu') { select((lastTab + 1) % tabs.length); return true; }
+		const grid = built[lastTab]!.focusGrid;
+		if (grid && grid.items.length > 0) {
+			const { items, cols } = grid;
+			const row = Math.floor(focusedGridIndex / cols), col = focusedGridIndex % cols;
+			const rowCount = Math.ceil(items.length / cols);
+			if (action === 'up' || action === 'down') {
+				const nextRow = Math.max(0, Math.min(rowCount - 1, row + (action === 'up' ? -1 : 1)));
+				const next = nextRow * cols + col;
+				focusedGridIndex = Math.min(next, items.length - 1);
+				drawWidgetFocus();
+				return true;
+			}
+			if (action === 'left' || action === 'right') {
+				focusedGridIndex = Math.max(0, Math.min(items.length - 1, focusedGridIndex + (action === 'left' ? -1 : 1)));
+				drawWidgetFocus();
+				return true;
+			}
+			if (action === 'confirm') { items[focusedGridIndex]!.onClick.dispatch(); return true; }
+			return false;
+		}
 		const widgets = focusablesIn(lastTab);
 		const focused = widgets[focusedWidget];
-		if (focused instanceof SpdOptionSlider && (action === 'left' || action === 'right')) {
-			focused.step(action === 'left' ? -1 : 1);
+		if (widgets.length === 0) return false;
+		if (action === 'left' || action === 'right') {
+			if (focused instanceof SpdOptionSlider) focused.step(action === 'left' ? -1 : 1);
 			return true;
 		}
-		if (action === 'left') { select((lastTab - 1 + tabs.length) % tabs.length); return true; }
-		if (action === 'right') { select((lastTab + 1) % tabs.length); return true; }
-		if (widgets.length > 0) {
-			if (action === 'up') { focusedWidget = (focusedWidget - 1 + widgets.length) % widgets.length; drawWidgetFocus(); return true; }
-			if (action === 'down') { focusedWidget = (focusedWidget + 1) % widgets.length; drawWidgetFocus(); return true; }
-			if (action === 'confirm' && focused instanceof SpdCheckBox) { focused.setChecked(!focused.isChecked(), true); return true; }
-		}
+		if (action === 'up') { focusedWidget = (focusedWidget - 1 + widgets.length) % widgets.length; drawWidgetFocus(); return true; }
+		if (action === 'down') { focusedWidget = (focusedWidget + 1) % widgets.length; drawWidgetFocus(); return true; }
+		if (action === 'confirm' && focused instanceof SpdCheckBox) { focused.setChecked(!focused.isChecked(), true); return true; }
 		return false;
 	};
 	drawWidgetFocus();

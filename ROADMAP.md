@@ -710,7 +710,7 @@ below to close the gap was judged not worth the churn against those existing ref
       an ordinary closed door uses frame 5. The complete key/lock visual review is therefore
       closed; the remaining SkeletonKey/WornKey behavior is documented as not ported in the
       coverage matrix.
-- [ ] Add keyboard navigation to menus, title screen first. Neither Java nor this port can be
+- [x] Add keyboard navigation to menus, title screen first. Neither Java nor this port can be
       played or even started without a pointer today: buttons, tabs, lists and dialogs have no
       focus model, no visible focus indicator, and no key bindings (arrows/Tab to move, Enter
       to activate, Esc to go back). Start with the title screen (the first thing every player
@@ -791,7 +791,29 @@ below to close the gap was judged not worth the churn against those existing ref
       slider, right-arrow driving its thumb to max: up-arrowing back to a checkbox,
       right-arrow correctly switching tabs instead (no regression), and the new tab's own
       first-widget slider (toolbar config) immediately left/right-adjustable on arrival.
-      **Still open**: the language grid (a plain `SpdButton` grid, untouched by either scan).
+      **Progress 2026-09-22 (seventh and final slice): the language grid is done, and a real
+      keyboard dead-end found along the way is fixed.** `langsTab`'s own build result now
+      carries an optional `focusGrid: { items, cols }`, keyboard-navigated by its own
+      `ClassSelectScene`-style row/col math (up/down move by row, clamped; left/right move by
+      one, clamped; confirm dispatches the focused language button's `onClick`, exactly the
+      same rebuild-and-relabel path a mouse click already takes). **Found and fixed live
+      while testing this slice**: tab-switching had been living on left/right since the third
+      slice, which worked while only checkboxes existed (they never claim those keys) but
+      quietly broke the moment sliders did - Input's own tab is two sliders and nothing else,
+      so every left/right there adjusted one instead of ever reaching another tab, and
+      up/down only ever toggles between the two sliders, never landing on a non-slider widget
+      to unstick it: tab-switching became unreachable by keyboard on that tab, a real dead
+      end no earlier slice's testing happened to hit (their tabs all mix checkboxes in).
+      Fixed by moving tab-switching onto `menu` (Tab/KeyI) - the same convention the bag
+      window's own tab strip already uses - so left/right unambiguously means "adjust the
+      focused control" everywhere, with no fallback and no competing claim. Browser-verified
+      live end to end: Tab cycling all six tabs including the two-slider Input tab (previously
+      the trap), arrow movement across the language grid, confirm selecting Spanish and the
+      whole title screen rebuilding in it exactly as a mouse click would, with the title
+      scene's own keyboard focus still intact afterward. **This closes the entire item**: all
+      four originally-named screens (title, class select, settings, bag) are keyboard-
+      navigable, including every settings-window widget kind (tabs, checkboxes, sliders, the
+      language grid).
 - [ ] Add colorblind options to the graphics settings. Too much state here is color-only:
       buff/debuff icon tints, HP-bar thresholds, key colors, trap and hazard highlights. Offer
       at least deuteranopia/protanopia/tritanopia-safe palettes (plus a high-contrast pass if
