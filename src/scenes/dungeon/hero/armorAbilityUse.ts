@@ -142,8 +142,6 @@ export const armorAbilityUseMethods = {
 		}
 		if (this.ascendedBarrier.total < 30) this.ascendedBarrier.add(30 - this.ascendedBarrier.total);
 		this.ascendedTurns = 10;
-		this.ascendedSpellCasts = 0;
-		this.ascendedFlashCasts = 0;
 		delete this.hero.buffs['invisibility'];
 		this.say(t('port.log.armorabilitychosen', { ability: t('port.armorability.ascendedform.name') }), 'positive');
 		this.spendHeroAction(1);
