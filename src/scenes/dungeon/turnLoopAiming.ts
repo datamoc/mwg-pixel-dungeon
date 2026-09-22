@@ -30,6 +30,9 @@ import { MWL_MISSILE_BY_CLASS, MWL_TURN_CLOCK, mwlItemEffectValue } from '../../
 import { applyCapeOfThornsProc, spellbookChargeCap } from '../../items/artifactActions';
 import { applyTalismanPerTurnCharge } from '../../items/talisman';
 import { applyRoseRecharge } from '../../items/rose';
+import { beaconPassiveRecharge, chainsPassiveRecharge, hourglassPassiveRecharge } from '../../items/artifactPassiveRecharge';
+import { beaconChargeCap } from '../../items/beacon';
+import type { ChainsItem } from '../../items/chains';
 import { TILE, WATER } from '../../dungeonConstants';
 import { BUFF_DURATION, addBuff, buffBlocked, electricDamageHalved, icyDamageHalved, rollHit, tickBuffs, type Creature, type Step } from '../../combat';
 import { tickMonsterTurnEnd } from '../../simulation/buffs';
@@ -1422,6 +1425,36 @@ export const turnLoopAimingMethods = {
 							book.charge = charge;
 							book.partialCharge = partial;
 						}
+					}
+				}
+				//`chainsRecharge`/`beaconRecharge`/`hourglassRecharge.act()` - see
+				//`items/artifactPassiveRecharge.ts` for the three formulas and gates.
+				{
+					const gates = {
+						magicImmune: this.hero.magicImmune === true, regenOn: this.regenOn(),
+						artifactChargeMultiplier: ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier(),
+					};
+					const chains = this.bag.find('chains') as (typeof this.bag.items[number] & ChainsItem) | undefined;
+					if (chains) {
+						const next = chainsPassiveRecharge(chains.level ?? 0, { charge: chains.charge ?? 0, partialCharge: chains.partialCharge ?? 0 }, { ...gates, cursed: chains.cursed === true });
+						chains.charge = next.charge; chains.partialCharge = next.partialCharge;
+						//The cursed branch: `Random.Int(100) == 0` prolongs a 10-turn Cripple.
+						if (chains.cursed && Random.int(0, 100) === 0) addBuff(this.hero, 'cripple', mwlItemEffectValue('chains', 'cursedCrippleDuration'));
+					}
+					const beacon = this.beaconArtifactItem();
+					if (beacon) {
+						const next = beaconPassiveRecharge(beaconChargeCap(beacon), { charge: beacon.charge ?? 0, partialCharge: beacon.partialCharge ?? 0 }, { ...gates, cursed: beacon.cursed === true });
+						beacon.charge = next.charge; beacon.partialCharge = next.partialCharge;
+					}
+					//`charges` undefined reads as full (see `useHourglass`). Java's cursed branch
+					//(`Random.Int(10) == 0` makes the hero lose a turn) is not reproduced: this port's
+					//turn loop has no seam for an artifact to spend the hero's time - stated.
+					const hourglass = this.bag.find('hourglass') as (typeof this.bag.items[number] & { charges?: number; partialCharge?: number }) | undefined;
+					if (hourglass) {
+						const cap = mwlItemEffectValue('hourglass', 'maxChargeBase')
+							+ Math.min(mwlItemEffectValue('hourglass', 'maxChargeLevelCap'), hourglass.level ?? 0) * mwlItemEffectValue('hourglass', 'maxChargePerLevel');
+						const next = hourglassPassiveRecharge(cap, { charge: Math.min(cap, hourglass.charges ?? cap), partialCharge: hourglass.partialCharge ?? 0 }, { ...gates, cursed: hourglass.cursed === true });
+						hourglass.charges = next.charge; hourglass.partialCharge = next.partialCharge;
 					}
 				}
 				//`TalismanOfForesight.Foresight.act()` (tag `v3.3.8`): the per-turn charge trickle

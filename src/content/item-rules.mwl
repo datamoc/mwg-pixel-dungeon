@@ -515,6 +515,10 @@
           { tag: "row", id: "hourglassSandBagCap", item: "hourglass", effect: "sandBagCap", value: 5 },
           { tag: "row", id: "hourglassTurnsPerCharge", item: "hourglass", effect: "turnsPerCharge", value: 2 },
           { tag: "row", id: "hourglassTurnsToCost", item: "hourglass", effect: "turnsToCost", value: 2 },
+          // `hourglassRecharge.act()`: `1/(90 - (chargeCap-charge)*3)` per turn - "90 turns to charge at
+          // full, 60 turns to charge at 0/10" (tag v3.3.8), times the energy multiplier.
+          { tag: "row", id: "hourglassRechargeBase", item: "hourglass", effect: "rechargeBase", value: 90 },
+          { tag: "row", id: "hourglassRechargeCapWeight", item: "hourglass", effect: "rechargeCapWeight", value: 3 },
           { tag: "row", id: "cloakInitialChargeBase", item: "cloak", effect: "initialChargeBase", value: 3 },
           { tag: "row", id: "cloakInitialChargeCap", item: "cloak", effect: "initialChargeCap", value: 10 },
           { tag: "row", id: "cloakTurnsToCost", item: "cloak", effect: "turnsToCost", value: 4 },

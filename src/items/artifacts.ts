@@ -85,8 +85,8 @@
  * instead. **Not ported**: Java's `Ballistica` line-of-sight collision along the aimed path
  * (a nearer wall or creature can intercept the bolt before the chosen cell - this port
  * resolves on the exact chosen cell, since `beginAiming` only offers clear-LOS cells anyway),
- * the options window naming each action, and the passive recharge itself (the beacon has no
- * per-turn `beaconRecharge` tick here, so its `regenOn()` gate has nothing to gate). See `PORT_COVERAGE.md`'s `LloydsBeacon` row.
+ * and the options window naming each action (the passive `beaconRecharge` tick is live in
+ * `items/artifactPassiveRecharge.ts`, gated on `regenOn()`). See `PORT_COVERAGE.md`'s `LloydsBeacon` row.
  */
 
 import { MWL_ITEM_NODES } from '../mwlContent';

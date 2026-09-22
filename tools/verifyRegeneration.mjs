@@ -83,4 +83,31 @@ for (const [file, hook] of [
 ]) assert.ok(read(file).includes(hook), `lock hook wired in ${file}: ${hook.slice(0, 40)}`);
 assert.equal((read('../src/scenes/dungeon/environmentFireTraps.ts').match(/target\.hp -= damage; this\.lockedFloorBossDamage\(target, damage, preHp - target\.hp\);/g) ?? []).length, 2, 'blob + trap-blast seams feed the lock');
 
-console.log('verifyRegeneration: Regeneration/LockedFloor rules and wiring OK');
+//`items/artifactPassiveRecharge.ts` against chainsRecharge/beaconRecharge/hourglassRecharge.act(),
+//with `mwlItemEffectValue` answered from the authored `item-rules.mwl` rows themselves.
+const rules = read('../src/content/item-rules.mwl');
+const effect = (item, name) => {
+	const m = rules.match(new RegExp(`item: "${item}", effect: "${name}", value: ([0-9.]+)`));
+	assert.ok(m, `item-rules.mwl has ${item}.${name}`);
+	return Number(m[1]);
+};
+const passiveSrc = read('../src/items/artifactPassiveRecharge.ts').replace(/^import .*mwlContent.*$/m, '');
+const passive = { exports: {} };
+new Function('module', 'exports', 'mwlItemEffectValue', ts.transpileModule(passiveSrc, {
+	compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+}).outputText)(passive, passive.exports, effect);
+const P = passive.exports;
+const open = { cursed: false, magicImmune: false, regenOn: true, artifactChargeMultiplier: 1 };
+const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, `${msg}: ${a} vs ${b}`);
+near(P.chainsPassiveRecharge(0, { charge: 0, partialCharge: 0 }, open).partialCharge, 1 / 30, 'chains +0 empty: 1/(40-2*5)');
+near(P.chainsPassiveRecharge(0, { charge: 4, partialCharge: 0 }, { ...open, artifactChargeMultiplier: 2 }).partialCharge, 2 / 38, 'chains energy multiplier');
+assert.equal(P.chainsPassiveRecharge(0, { charge: 5, partialCharge: 0.5 }, open).partialCharge, 0.5, 'chains stop at the soft cap');
+assert.equal(P.chainsPassiveRecharge(0, { charge: 0, partialCharge: 0.5 }, { ...open, magicImmune: true }).partialCharge, 0.5, 'chains MagicImmune gate');
+near(P.beaconPassiveRecharge(3, { charge: 0, partialCharge: 0 }, { ...open, artifactChargeMultiplier: 2 }).partialCharge, 1 / 70, 'beacon: 1/(100-10*3), no energy multiplier');
+assert.equal(P.beaconPassiveRecharge(3, { charge: 0, partialCharge: 0.5 }, { ...open, regenOn: false }).partialCharge, 0.5, 'beacon regenOn gate');
+assert.deepEqual(P.beaconPassiveRecharge(3, { charge: 2, partialCharge: 0.99 }, open), { charge: 3, partialCharge: 0 }, 'beacon zeroes the partial at cap');
+near(P.hourglassPassiveRecharge(5, { charge: 0, partialCharge: 0 }, open).partialCharge, 1 / 75, 'hourglass: 1/(90-3*5)');
+assert.equal(P.hourglassPassiveRecharge(5, { charge: 0, partialCharge: 0 }, { ...open, cursed: true }).partialCharge, 0, 'hourglass cursed gate');
+assert.ok(loop.includes('chainsPassiveRecharge(') && loop.includes('beaconPassiveRecharge(') && loop.includes('hourglassPassiveRecharge('), 'the three passive recharges run per turn');
+
+console.log('verifyRegeneration: Regeneration/LockedFloor rules, artifact passive recharge and wiring OK');

@@ -380,8 +380,8 @@ type ChainsItem = { level?: number; charge?: number; partialCharge?: number; exp
  * the same way - `cursed || target.buff(MagicImmune.class) != null` skips the whole call,
  * and Java's own `levelPortion == 0` short-circuit is preserved too (a zero-XP grant would
  * otherwise still run `partialCharge += 0`, harmless but pointless). The passive per-turn
- * regen half of `chainsRecharge` (`act()`) lives in `DungeonScene`'s own per-turn buff
- * block next to `LloydsBeacon`'s equivalent - see the comment there. */
+ * regen half of `chainsRecharge` (`act()`) is `chainsPassiveRecharge`
+ * (`items/artifactPassiveRecharge.ts`), run from the scene's per-turn artifact block. */
 export function applyChainsGainExp(scene: Pick<ArtifactActionContext, 'bag' | 'say'>, levelPortion: number, magicImmune: boolean): void {
 	const chains = findArtifact(scene, 'chains') as (typeof scene.bag.items[number] & ChainsItem) | undefined;
 	if (!chains || chains.cursed || magicImmune || levelPortion === 0) return;
