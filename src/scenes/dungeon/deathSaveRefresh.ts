@@ -18,6 +18,7 @@ import { applyDM300DeathUnseal, applyGooDeathUnseal, applyKingDeathUnseal, apply
 import { processSacrifice } from '../../simulation/environmentalBlobs';
 import { nearestFreeCell as nearestFreeCellFlow } from '../../simulation/wandering';
 import { deathBurstsFor } from '../../simulation/deathBursts';
+import { colorblind } from '../../settings';
 import { ringTypesKnownFor } from '../../simulation/ringKnow';
 import { staffImbueFor } from '../../items/wands';
 import { Banner } from '../../ui/banner';
@@ -1162,11 +1163,19 @@ export const deathSaveRefreshMethods = {
 				continue;
 			}
 			if (!bar) {
+				//Port-original accessibility work (ROADMAP.md section 8 - Java's own bar is
+				//this same green-on-red, so there is no source to diverge from, only this
+				//port's own `settings.colorblind()` swap): the filled/missing portions read
+				//as similarly dark under red-green colorblindness, so `colorblind()` swaps
+				//to the same Okabe-Ito-derived safe pair `ui/spdTheme.ts`'s `SPD_STATUS_COLOR`
+				//already uses (bluish-green filled, vermillion missing). Read once at bar
+				//creation, matching this map's own per-creature caching - a mid-run settings
+				//toggle only affects bars created after it, a stated simplification.
 				bar = new Bar({
 					width: TILE * (4 / 6),
 					height: 1,
-					color: 0x00ee00,
-					background: 0xcc0000,
+					color: colorblind() ? 0x009e73 : 0x00ee00,
+					background: colorblind() ? 0xd55e00 : 0xcc0000,
 					roundUpToPixel: true,
 				});
 				this.healthBars.set(creature, bar);

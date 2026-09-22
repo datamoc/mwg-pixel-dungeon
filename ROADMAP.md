@@ -831,10 +831,20 @@ below to close the gap was judged not worth the churn against those existing ref
       tritanopia sets - Okabe-Ito is validated jointly distinguishable under all three at
       once, so one safe set clears the "safe under each" bar without three to keep in
       sync. Browser-verified live: the checkbox toggles and persists (`localStorage`
-      `colorblind: "true"`). **Not yet covered, still open:** HP-bar thresholds, key
-      colors, and trap/hazard highlights were not audited or touched this pass - the
-      "every color-coded element re-checked" bar is not met yet, only the one central
-      palette. No high-contrast pass either.
+      `colorblind: "true"`).
+      **Progress 2026-09-22: monster HP-bar colors are done.** `refreshHealthBars`'
+      per-creature `Bar` (`deathSaveRefresh.ts`) filled green-on-red (`0x00ee00` on
+      `0xcc0000`) - the filled and missing portions read as similarly dark under red-green
+      colorblindness, and unlike the hero's own HP bar (a real SPD texture strip, not a
+      color fill, so nothing to swap there) this one is this port's own plain `Bar` color
+      fill. `colorblind()` now swaps it to the same Okabe-Ito-derived pair
+      `SPD_STATUS_COLOR` already uses (bluish-green filled, vermillion missing), read once
+      at bar creation (matching this map's own per-creature caching - a mid-run toggle only
+      affects bars created after it). Live-verified: a damaged monster's bar reads exactly
+      `0x009e73`/`0xd55e00` with the setting on. Key art was checked and found to need
+      nothing: each key already reads by its own distinct pixel art (gray/gold/cyan), not a
+      swappable tint, so there is no color-only state there to begin with. **Still open**:
+      trap/hazard highlights (not audited this pass) and a high-contrast pass.
 
 ## 9. Build the Java-vs-TypeScript parity harness
 
