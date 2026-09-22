@@ -24,6 +24,7 @@ try {
 	// Compiled under items/, preserving the real src/items/ nesting - ringModifiers.ts's own
 	// `../mwlContent` import needs its true relative depth to resolve to the mwlContent.js above.
 	compile(join(root, 'src/items/catalog.ts'), 'items/catalog.js');
+	compile(join(root, 'src/items/formula.ts'), 'items/formula.js');
 	compile(join(root, 'src/items/itemWorkflows.ts'), 'items/workflows.js');
 	compile(join(root, 'src/items/ringModifiers.ts'), 'items/ringModifiers.js');
 	compile(join(root, 'src/items/transmutation.ts'), 'items/transmutation.js');
@@ -33,11 +34,16 @@ try {
 	compile(join(root, 'src/items/itemKinds.ts'), 'items/itemKinds.js');
 // `ChooseBag()`'s pick and the bag `canHold` gates - scene-free, tested below.
 compile(join(root, 'src/items/bags.ts'), 'items/bags.js');
+// Spare-wand identity/charges and the per-wand WildMagic model - likewise scene-free.
+compile(join(root, 'src/simulation/disintegration.ts'), 'simulation/disintegration.js');
+compile(join(root, 'src/simulation/spareWands.ts'), 'simulation/spareWands.js');
+compile(join(root, 'src/items/wands.ts'), 'items/wands.js');
 compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	compile(join(root, 'src/items/resurrect.ts'), 'items/resurrect.js');
 	compile(join(root, 'src/items/itemActions.ts'), 'items/itemActions.js');
 	compile(join(root, 'src/items/equipment.ts'), 'items/equipment.js');
 	compile(join(root, 'src/items/shopPricing.ts'), 'items/shopPricing.js');
+	compile(join(root, 'src/items/statueWeapons.ts'), 'items/statueWeapons.js');
 	compile(join(root, 'src/items/shopActions.ts'), 'items/shopActions.js');
 	compile(join(root, 'src/items/blacksmith.ts'), 'items/blacksmith.js');
 	// simulation/buffs.ts is framework-free (its mwg/random import is type-only), so the
@@ -63,6 +69,7 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 		'exports.t = (key, params) => key + (params ? "[" + Object.values(params).join(",") + "]" : "");\n');
 	compile(join(root, 'src/items/alchemy.ts'), 'items/alchemy.js');
 	compile(join(root, 'src/items/groundPickup.ts'), 'items/groundPickup.js');
+	compile(join(root, 'src/items/fireContent.ts'), 'items/fireContent.js');
 	// The Sandals of Nature's rules are scene-free (only the authored MWL rows feed them), so the
 	// artifact's charge economy, seed list and root cost are checked here rather than only live.
 	compile(join(root, 'src/items/sandals.ts'), 'items/sandals.js');
@@ -91,6 +98,7 @@ compile(join(root, 'src/classes.ts'), 'classes.js');
 compile(join(root, 'src/items/scrolls.ts'), 'items/scrolls.js');
 compile(join(root, 'src/simulation/prismatic.ts'), 'simulation/prismatic.js');
 compile(join(root, 'src/items/scrollEffects.ts'), 'items/scrollEffects.js');
+compile(join(root, 'src/items/stones.ts'), 'items/stones.js');
 //The blink family adds `Roguelike` (barrelled) and `../i18n` (stubbed); `../combat`
 //is type-only there, so nothing else new resolves at runtime.
 compile(join(root, 'src/simulation/preparation.ts'), 'simulation/preparation.js');
@@ -115,6 +123,7 @@ compile(join(root, 'src/items/itemWorkflows.ts'), 'items/itemWorkflows.js');
 	compile(join(root, 'src/items/artifactRecharge.ts'), 'items/artifactRecharge.js');
 	// Strength requirements are pure and scene-free, pinned against Java's numbers below.
 	compile(join(root, 'src/items/strReq.ts'), 'items/strReq.js');
+compile(join(root, 'src/items/appearanceFrames.ts'), 'items/appearanceFrames.js');
 	// The framework side is the installed `@datamoc/mw_games` build the game itself ships,
 	// shimmed rather than compiled from a sibling checkout of the framework's sources - the two
 	// are different versions in general, so compiling a checkout would test something this port
@@ -251,6 +260,217 @@ compile(join(root, 'src/items/itemWorkflows.ts'), 'items/itemWorkflows.js');
 	assert.equal(aimed3, 'unset', 'no ritual, no aim');
 	assert.ok(said3.some((line) => String(line).includes('candleneeded')), 'just the needed line');
 }
+// `HolyTome.execute()`'s `AC_CAST` and `GuidingLight.onCast()` (tag `v3.3.8`): the
+// purse/row decisions and the pre-aim gates, driven headlessly. Resolution (damage,
+// press, turn, charge) is scene presentation and covered live instead.
+compile(join(root, 'src/simulation/clericSpells.ts'), 'simulation/clericSpells.js');
+compile(join(root, 'src/items/holyTome.ts'), 'items/holyTome.js');
+const { findHolyTome, useHolyTomeFlow, castGuidingLightFlow, castHolyIntuitionFlow, castShieldOfLightFlow, castRecallFlow, castSunrayFlow, castDivineSenseFlow, castBlessFlow, castCleanseFlow, directTomeCharge, tomePickerCost, tomeSpellKey, isHolyIntuitionCandidate } = require('./items/holyTome.js');
+const tomeCtx = (tome, overrides = {}) => ({
+	bag: { find: () => tome, items: [] },
+	heroLevel: 5,
+	magicImmune: false,
+	talentRank: () => 0,
+	openSpellPicker: (rows, onPick) => { tomeCtx.picked = [rows, onPick]; },
+	beginSpellAim: (onConfirm) => { tomeCtx.aimed = onConfirm; },
+	openBagPicker: (title, entries, onPick) => { tomeCtx.bagged = [title, entries, onPick]; },
+	resolveGuidingLight: () => {},
+	castHolyBuff: (spell) => { tomeCtx.buffed = spell; },
+	resolveHolyIntuition: (pick) => { tomeCtx.intuited = pick; },
+	resolveShieldOfLight: () => {},
+	recallTrackedClass: () => undefined,
+	resolveRecall: () => { tomeCtx.recalled = true; },
+	resolveSunray: () => { tomeCtx.sunrayed = true; },
+	resolveDivineSense: () => { tomeCtx.sensed = true; },
+	resolveBless: () => { tomeCtx.blessed = true; },
+	resolveCleanse: () => { tomeCtx.cleansed = true; },
+	subclass: () => '',
+	hasBuff: () => false,
+	wallActive: () => false,
+	ascendedActive: () => false,
+	ascendedFlashCasts: () => 0,
+	levelSpan: () => 40,
+	resolveRadiance: () => { tomeCtx.radianced = true; },
+	resolveHolyLance: () => { tomeCtx.lanced = true; },
+	resolvePrayer: () => { tomeCtx.prayed = true; },
+	resolveSmite: () => { tomeCtx.smitten = true; },
+	resolveLayOnHands: () => { tomeCtx.laidOnHands = true; },
+	resolveAura: () => { tomeCtx.aura = true; },
+	resolveHallowedGround: () => { tomeCtx.hallowed = true; },
+	resolveWallOfLight: () => { tomeCtx.walled = true; },
+	resolveJudgement: () => { tomeCtx.judged = true; },
+	resolveFlash: () => { tomeCtx.flashed = true; },
+	say: (line, level) => { (tomeCtx.said = tomeCtx.said || []).push(`${level}:${line}`); },
+	t: (key) => key,
+	...overrides,
+});
+assert.equal(findHolyTome({ find: (id) => (id === 'holyTome' ? { id } : undefined) }).id, 'holyTome');
+assert.equal(findHolyTome({ find: () => undefined }), undefined, 'no tome, no cast');
+{
+	// A full tome opens the three tier-1 rows, all affordable.
+	tomeCtx.picked = null;
+	useHolyTomeFlow(tomeCtx({ charge: 3, partialCharge: 0, level: 0, exp: 0 }));
+	const [rows, onPick] = tomeCtx.picked;
+	assert.deepEqual(rows.map((r) => [r.spell, r.affordable]),
+		[['guidingLight', true], ['holyWeapon', true], ['holyWard', true]]);
+	// Picking a buff casts it; picking the bolt opens the aim.
+	tomeCtx.buffed = null;
+	tomeCtx.aimed = null;
+	onPick('holyWeapon');
+	assert.equal(tomeCtx.buffed, 'holyWeapon');
+	onPick('guidingLight');
+	assert.equal(typeof tomeCtx.aimed, 'function', 'the bolt aims before it spends');
+}
+{
+	// One charge: only the bolt is affordable, and the purse is re-checked at cast.
+	tomeCtx.picked = null;
+	useHolyTomeFlow(tomeCtx({ charge: 1 }));
+	const [rows] = tomeCtx.picked;
+	assert.deepEqual(rows.map((r) => r.affordable), [true, false, false]);
+	tomeCtx.said = [];
+	castGuidingLightFlow(tomeCtx({ charge: 0 }));
+	assert.ok(tomeCtx.said.some((l) => l.includes('port.log.tomenospell')), 'broke casters refuse');
+	tomeCtx.said = [];
+	useHolyTomeFlow(tomeCtx({ charge: 3, cursed: true }));
+	assert.ok(tomeCtx.said.some((l) => l.includes('port.log.tomecursed')), 'cursed refuses with its own line');
+	tomeCtx.picked = null;
+	useHolyTomeFlow(tomeCtx({ charge: 3 }, { magicImmune: true }));
+	assert.equal(tomeCtx.picked, null, 'MagicImmune offers no cast at all');
+}
+{
+	// Talent ranks add HolyIntuition (cost 4-points) and ShieldOfLight (cost 1)
+	// after the base three, per ClericSpell.getSpellList tier 1.
+	const ranks = { holy_intuition: 1, shield_of_light: 2 };
+	const ctx = tomeCtx({ charge: 3, partialCharge: 0, level: 0, exp: 0 },
+		{ talentRank: (id) => ranks[id] ?? 0 });
+	tomeCtx.picked = null;
+	useHolyTomeFlow(ctx);
+	const [rows, onPick] = tomeCtx.picked;
+	assert.deepEqual(rows.map((r) => [r.spell, r.affordable]),
+		[['guidingLight', true], ['holyWeapon', true], ['holyWard', true],
+		['holyIntuition', true], ['shieldOfLight', true]]);
+	// Picking intuition opens the bag selector; picking the shield aims.
+	tomeCtx.bagged = null;
+	tomeCtx.aimed = null;
+	onPick('holyIntuition');
+	assert.equal(tomeCtx.bagged[0], 'port.spell.holyintuition.prompt', 'intuition asks for an item');
+	onPick('shieldOfLight');
+	assert.equal(typeof tomeCtx.aimed, 'function', 'the shield aims before it spends');
+	// The purse is re-checked at cast: intuition rank 1 needs 3, the shield 1.
+	tomeCtx.said = [];
+	castHolyIntuitionFlow(tomeCtx({ charge: 2 }, { talentRank: (id) => ranks[id] ?? 0 }));
+	assert.ok(tomeCtx.said.some((l) => l.includes('port.log.tomenospell')), 'short purses refuse intuition');
+	tomeCtx.said = [];
+	castShieldOfLightFlow(tomeCtx({ charge: 0 }, { talentRank: (id) => ranks[id] ?? 0 }));
+	assert.ok(tomeCtx.said.some((l) => l.includes('port.log.tomenospell')), 'short purses refuse the shield');
+	tomeCtx.said = [];
+	castShieldOfLightFlow(tomeCtx({ charge: 3 }));
+	assert.ok(tomeCtx.said.some((l) => l.includes('port.log.tomenospell')), 'no talent, no shield');
+}
+{
+	// HolyIntuition.usableOnItem: unidentified gear with an unknown curse only.
+	assert.equal(isHolyIntuitionCandidate({ id: 'weaponReward', quantity: 1 }), true);
+	assert.equal(isHolyIntuitionCandidate({ id: 'armorReward', quantity: 1 }), true);
+	assert.equal(isHolyIntuitionCandidate({ id: 'ring_garnet', quantity: 1 }), true);
+	assert.equal(isHolyIntuitionCandidate({ id: 'wand', quantity: 1 }), true);
+	assert.equal(isHolyIntuitionCandidate({ id: 'wand', quantity: 1, identified: true }), false, 'known items are out');
+	assert.equal(isHolyIntuitionCandidate({ id: 'wand', quantity: 1, cursedKnown: true }), false, 'known curses are out');
+	assert.equal(isHolyIntuitionCandidate({ id: 'potion_heal', quantity: 1 }), false, 'consumables are out');
+	assert.equal(isHolyIntuitionCandidate({ id: 'wand', quantity: 0 }), false, 'empty stacks are out');
+}
+{
+	// Tier-2 rows join in ClericSpell.getSpellList tier-2 order, each gated on its
+	// talent; Recall's affordability reads the live tracker, the rest a flat purse.
+	const ranks = { recall_inscription: 2, sunray: 1, divine_sense: 1, bless: 2 };
+	const tracked = { cls: 'StoneOfFlock' };
+	const ctx = tomeCtx({ charge: 3, partialCharge: 0, level: 0, exp: 0 },
+		{ talentRank: (id) => ranks[id] ?? 0, recallTrackedClass: () => tracked.cls });
+	tomeCtx.picked = null;
+	useHolyTomeFlow(ctx);
+	const [rows, onPick] = tomeCtx.picked;
+	assert.deepEqual(rows.map((r) => [r.spell, r.affordable]),
+		[['guidingLight', true], ['holyWeapon', true], ['holyWard', true],
+			['recallInscription', true], ['sunray', true], ['divineSense', true], ['bless', true]]);
+	// Sunray and Bless aim; DivineSense and Recall resolve at once.
+	tomeCtx.aimed = null;
+	tomeCtx.sensed = false;
+	tomeCtx.recalled = false;
+	onPick('sunray');
+	assert.equal(typeof tomeCtx.aimed, 'function', 'sunray aims before it spends');
+	tomeCtx.aimed = null;
+	onPick('bless');
+	assert.equal(typeof tomeCtx.aimed, 'function', 'bless aims before it spends');
+	onPick('divineSense');
+	assert.equal(tomeCtx.sensed, true, 'divine sense resolves at once');
+	onPick('recallInscription');
+	assert.equal(tomeCtx.recalled, true, 'recall resolves at once');
+	// The purse is re-checked at cast: the tracked flock stone costs 2.
+	tomeCtx.said = [];
+	castRecallFlow(tomeCtx({ charge: 1 }, { talentRank: (id) => ranks[id] ?? 0, recallTrackedClass: () => tracked.cls }));
+	assert.ok(tomeCtx.said.some((l) => l.includes('port.log.tomenospell')), 'short purses refuse recall');
+	tomeCtx.said = [];
+	castSunrayFlow(tomeCtx({ charge: 0 }, { talentRank: (id) => ranks[id] ?? 0 }));
+	assert.ok(tomeCtx.said.some((l) => l.includes('port.log.tomenospell')), 'short purses refuse sunray');
+	tomeCtx.said = [];
+	castDivineSenseFlow(tomeCtx({ charge: 1 }, { talentRank: (id) => ranks[id] ?? 0 }));
+	assert.ok(tomeCtx.said.some((l) => l.includes('port.log.tomenospell')), 'divine sense needs its 2 charges');
+	tomeCtx.said = [];
+	castBlessFlow(tomeCtx({ charge: 0 }, { talentRank: (id) => ranks[id] ?? 0 }));
+	assert.ok(tomeCtx.said.some((l) => l.includes('port.log.tomenospell')), 'short purses refuse bless');
+	// No tracker, no recall row math: unaffordable and uncastable.
+	tomeCtx.picked = null;
+	useHolyTomeFlow(tomeCtx({ charge: 9 }, { talentRank: (id) => ranks[id] ?? 0 }));
+	const [untracked] = tomeCtx.picked;
+	assert.equal(untracked.find((r) => r.spell === 'recallInscription').affordable, false, 'untracked recall stays tappable but poor');
+	tomeCtx.said = [];
+	castRecallFlow(tomeCtx({ charge: 9 }, { talentRank: (id) => ranks[id] ?? 0 }));
+	assert.ok(tomeCtx.said.some((l) => l.includes('port.log.tomenospell')), 'a lapsed tracker spends nothing');
+	// No talents, no tier-2 rows at all.
+	tomeCtx.picked = null;
+	useHolyTomeFlow(tomeCtx({ charge: 9 }));
+	assert.deepEqual(tomeCtx.picked[0].map((r) => r.spell), ['guidingLight', 'holyWeapon', 'holyWard']);
+}
+{
+	// The tier-3 Cleanse row joins after Bless, gated on its talent, priced at
+	// the flat 2; it resolves at once (no aim - hero plus visible allies).
+	tomeCtx.picked = null;
+	useHolyTomeFlow(tomeCtx({ charge: 3, partialCharge: 0, level: 0, exp: 0 },
+		{ talentRank: (id) => (id === 'cleanse' ? 2 : 0) }));
+	const [rows, onPick] = tomeCtx.picked;
+	assert.deepEqual(rows.map((r) => [r.spell, r.affordable]),
+		[['guidingLight', true], ['holyWeapon', true], ['holyWard', true], ['cleanse', true]]);
+	tomeCtx.cleansed = false;
+	onPick('cleanse');
+	assert.equal(tomeCtx.cleansed, true, 'cleanse resolves at once');
+	// A short purse refuses before resolving.
+	tomeCtx.said = [];
+	tomeCtx.cleansed = false;
+	castCleanseFlow(tomeCtx({ charge: 1, partialCharge: 0, level: 0, exp: 0 },
+		{ talentRank: (id) => (id === 'cleanse' ? 2 : 0) }));
+	assert.equal(tomeCtx.cleansed, false, 'one charge cannot pay cleanse');
+	assert.ok(tomeCtx.said.some((l) => l.includes('port.log.tomenospell')), 'short purses refuse cleanse');
+	// No talent, no cleanse row.
+	tomeCtx.picked = null;
+	useHolyTomeFlow(tomeCtx({ charge: 9 }));
+	assert.deepEqual(tomeCtx.picked[0].map((r) => r.spell), ['guidingLight', 'holyWeapon', 'holyWard']);
+}
+{
+	// directCharge banks partial charges with the cap and no exp; the picker costs
+	// read the gating rank (intuition 4-points) and the live recall price.
+	assert.deepEqual(directTomeCharge(2, 0, 0, 2 / 3), { charge: 2, partialCharge: 2 / 3 });
+	assert.deepEqual(directTomeCharge(2, 0.5, 0, 0.5), { charge: 3, partialCharge: 0 });
+	assert.deepEqual(directTomeCharge(3, 0, 0, 5), { charge: 3, partialCharge: 0 }, 'capped tomes bank nothing');
+	assert.equal(tomePickerCost('holyIntuition', 1), 3);
+	assert.equal(tomePickerCost('shieldOfLight', 0), 1);
+	assert.equal(tomePickerCost('recallInscription', 0, 6), 6, 'recall passes the tracked price through');
+	assert.equal(tomePickerCost('sunray', 0), 1);
+	assert.equal(tomePickerCost('divineSense', 0), 2);
+	assert.equal(tomePickerCost('bless', 0), 1);
+	assert.equal(tomePickerCost('cleanse', 0), 2);
+	assert.equal(tomeSpellKey('recallInscription'), 'recallinscription');
+	assert.equal(tomeSpellKey('divineSense'), 'divinesense');
+	assert.equal(tomeSpellKey('cleanse'), 'cleanse');
+}
 assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and the bow always have +50% accuracy at a distance');
 	assert.equal(missileAdjacentAccFactor(false, false, 0), 1.5, 'the +50% at distance is not hero-gated');
 	// `HeavyBoomerang` (tag `v3.3.8`): `CircleBack.setup` sets `left = 5`, and the return flight's
@@ -258,7 +478,7 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 	// turns into a flat 1.5 rather than the melee-range penalty.
 	assert.equal(BOOMERANG_RETURN_TURNS, 5, 'CircleBack counts down from 5 hero turns');
 	assert.equal(BOOMERANG_RETURN_ACC_FACTOR, 1.5, 'the return throw is a flat 1.5, adjacency or not');
-	const { alchemicalCatalystCost, arcaneCatalystCost, canCraftPotionSeed, craftPotionSeed, craftAlchemicalCatalyst, craftArcaneCatalyst, craftAlchemy, craftScrollToStone, craftAlchemize, craftScrollToExotic, canCraftScrollToExotic, scrollExoticResult, craftPotionToExotic, canCraftPotionToExotic, potionExoticResult, alchemyRecipe, alchemyEnergyFor } = require('./items/alchemy.js');
+	const { canCraftPotionSeed, craftPotionSeed, craftAlchemy, craftScrollToStone, craftAlchemize, craftScrollToExotic, canCraftScrollToExotic, scrollExoticResult, craftPotionToExotic, canCraftPotionToExotic, potionExoticResult, alchemyRecipe, alchemyEnergyFor } = require('./items/alchemy.js');
 
 	// `Item.isUpgradable()` (tag `v3.3.8`) and the two infusion selectors that read it. Java's
 	// default is true with 42 classes overriding it false, so the assertions below are built from
@@ -281,7 +501,7 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 		'seedFirebloom', 'seed', 'stoneOfBlast', 'stoneOfAugmentation', 'food', 'meat', 'pasty', 'bomb', 'doubleBomb',
 		'fireBomb', 'noisemaker', 'flashbang', 'crystalKey', 'ironKey', 'goldenKey', 'gooBlob', 'metalShard',
 		'energyCrystal', 'candle', 'embers', 'corpseDust', 'sandBag', 'alchemize', 'torch', 'curseInfusion', 'magicalInfusion',
-		'aquaBlast', 'featherFall', 'arcaneCatalyst', 'alchemicalCatalyst',
+		'featherFall',
 		//`bags/Bag.isUpgradable()` is false: the starting pouch and the three shop bags.
 		'velvetPouch', 'scrollHolder', 'potionBandolier', 'magicalHolster']) {
 		assert.equal(upgradable({ id }), false, `${id} is not upgradable`);
@@ -377,6 +597,19 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 	}
 	assert.deepEqual(missiles.buyback.map((entry) => entry.quantity), [8], 'whole, in one shelf entry');
 	const { pickupGroundItem } = require('./items/groundPickup.js');
+	const { burnFireContents } = require('./items/fireContent.js');
+	const meatHeap = { kind: 'meat', item: { id: 'meat', quantity: 3 } };
+	const removedCells = [];
+	burnFireContents({
+		cellIndex: () => 12,
+		groundItemAt: () => meatHeap,
+		removeGroundItem: () => removedCells.push(true),
+		detonateBomb: () => { throw new Error('meat must not detonate'); },
+		removePortedPlant: () => {},
+	}, 2, 1);
+	assert.equal(meatHeap.item.id, 'chargrilledMeat', 'fire cooks mystery meat');
+	assert.equal(meatHeap.item.quantity, 3, 'fire preserves the whole cooked meat stack');
+	assert.equal(removedCells.length, 0, 'cooked meat remains on its heap');
 	const { MWL_CONSUMABLE_DESCRIPTION_KEYS, MWL_MISSILE_DESCRIPTION_KEYS, MWL_MISSILE_NAME_KEYS, MWL_GROUND_ITEM_NAME_KEYS, MWL_ITEM_GROUND_KIND_ALIASES, MWL_ITEM_NAME_KEYS, mwlItemEffectValue } = require('./mwlContent.js');
 	const bag = new Inventory();
 	bag.add({ id: 'sword', quantity: 1, stackable: true, instanceId: 'flame', level: 2, affix: 'blazing' });
@@ -428,6 +661,30 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 	const first = looks.appearanceOf('potion', 'a');
 	const restored = Appearances.fromJSON({ potion: { kinds: ['a', 'b'], labels: ['red', 'blue'] } }, looks.toJSON());
 	assert.equal(restored.appearanceOf('potion', 'a'), first);
+// Java's shuffled look (`Potion.reset()`/`Scroll.reset()`): the sprite is the dealt
+// appearance's own, known or not - pinned here against `appearanceItemFrame`.
+const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('./items/appearanceFrames.js');
+{
+	assert.equal(POTION_SHEET_BASE, 336, 'potions row is ItemSpriteSheet POTIONS = xy(1,22)');
+	assert.equal(SCROLL_SHEET_BASE, 288, 'scrolls row is ItemSpriteSheet SCROLLS = xy(1,19)');
+	assert.equal(appearanceItemFrame('potion', 'items.potions.potion.crimson'), 336, 'crimson wears the first cell');
+	assert.equal(appearanceItemFrame('potion', 'items.potions.potion.turquoise'), 340, 'turquoise wears the fifth cell');
+	assert.equal(appearanceItemFrame('potion', 'items.potions.potion.ivory'), 347, 'ivory wears the last cell');
+	assert.equal(appearanceItemFrame('scroll', 'items.scrolls.scroll.kaunan'), 288, 'kaunan wears the first cell');
+	assert.equal(appearanceItemFrame('scroll', 'items.scrolls.scroll.tiwaz'), 299, 'tiwaz wears the last cell');
+	assert.equal(appearanceItemFrame('potion', 'crimson'), 336, 'a bare label resolves the same way');
+	assert.equal(appearanceItemFrame('potion', 'items.potions.potion.placeholder'), undefined, 'an unknown label keeps the family frame');
+	assert.equal(appearanceItemFrame('scroll', 'items.scrolls.scroll.placeholder'), undefined, 'an unknown rune keeps the family frame');
+}
+// Java heaps render the item sprite, so a ground potion/scroll wears its dealt
+// appearance, not the family frame - pinned at source level (the scene needs Pixi).
+{
+	const scene = readSceneSource();
+	assert.match(scene, /let groundFrame = chest === 'crystal' \? CRYSTAL_CHEST_FRAME[\s\S]*chest === 'locked' \? LOCKED_CHEST_FRAME[\s\S]*chest === 'normal' \? CHEST_FRAME[\s\S]*ITEM_FRAME\[kind\];/,
+		'unopened heaps use Java container frames and opened items use their kind frame');
+	assert.match(scene, /appearanceItemFrame\(groundCategory, this\.appearances\.appearanceOf\(groundCategory, item\.id\)\) \?\? groundFrame/,
+		'ground potions/scrolls resolve their dealt appearance, falling back to the family frame');
+}
 	const ring = transmuteItem({ id: 'ring_might', quantity: 1, identified: true, level: 4, cursed: false }, (kind) => `test-${kind}`);
 	assert.ok(ring);
 	assert.equal(ring.level, 4);
@@ -490,21 +747,22 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 		'a freshly minted stack carries its set, its own level and full wear');
 
 	// `MissileSprite` flight art (`items/missiles.ts`): every thrown pile flies its own
-	// `ItemSpriteSheet` frame (`MISSILE_WEP` = slot 161, darts at 177), spinning at the
+	// `ItemSpriteSheet` frame (`MISSILE_WEP` = `xy(1,10)` = slot 144 - `xy` is 1-based,
+// so 161 was one row too low and stones flew as darts - darts at 160), spinning at the
 	// class's `ANGULAR_SPEEDS` rate. Unknown classes keep the dot fallback (null).
 	const { MISSILE_ITEM_FRAMES, TIPPED_DART_FRAMES, missileFlightArt } = require('./items/missiles.js');
-	assert.equal(MISSILE_ITEM_FRAMES.SpiritArrow, 161, 'the spirit arrow is MISSILE_WEP itself');
-	assert.equal(MISSILE_ITEM_FRAMES.ThrowingKnife, 163, 'knives sit at +2');
-	assert.equal(MISSILE_ITEM_FRAMES.HeavyBoomerang, 173, 'the boomerang at +12');
-	assert.equal(MISSILE_ITEM_FRAMES.ForceCube, 176, 'the cube closes the row at +15');
-	assert.equal(TIPPED_DART_FRAMES.blindweed, 189, 'blinding darts are DARTS+12');
-	assert.equal(TIPPED_DART_FRAMES.rotberry, 178, 'rot darts are DARTS+1');
+	assert.equal(MISSILE_ITEM_FRAMES.SpiritArrow, 144, 'the spirit arrow is MISSILE_WEP itself');
+	assert.equal(MISSILE_ITEM_FRAMES.ThrowingKnife, 146, 'knives sit at +2');
+	assert.equal(MISSILE_ITEM_FRAMES.HeavyBoomerang, 156, 'the boomerang at +12');
+	assert.equal(MISSILE_ITEM_FRAMES.ForceCube, 159, 'the cube closes the row at +15');
+	assert.equal(TIPPED_DART_FRAMES.blindweed, 172, 'blinding darts are DARTS+12');
+	assert.equal(TIPPED_DART_FRAMES.rotberry, 161, 'rot darts are DARTS+1');
 	assert.equal(Object.keys(TIPPED_DART_FRAMES).length, 12, 'all twelve dart seeds have art');
-	assert.deepEqual(missileFlightArt('ThrowingKnife'), { frame: 163, spin: 0 }, 'knives fly straight');
-	assert.deepEqual(missileFlightArt('HeavyBoomerang'), { frame: 173, spin: 1440 }, 'boomerangs spin');
-	assert.deepEqual(missileFlightArt('Bolas'), { frame: 169, spin: 1440 }, 'bolas spin');
-	assert.deepEqual(missileFlightArt('Shuriken'), { frame: 166, spin: 2160 }, 'shurikens spin fastest');
-	assert.deepEqual(missileFlightArt('TippedDart', 'blindweed'), { frame: 189, spin: 0 }, 'tipped darts fly their own tip art');
+	assert.deepEqual(missileFlightArt('ThrowingKnife'), { frame: 146, spin: 0 }, 'knives fly straight');
+	assert.deepEqual(missileFlightArt('HeavyBoomerang'), { frame: 156, spin: 1440 }, 'boomerangs spin');
+	assert.deepEqual(missileFlightArt('Bolas'), { frame: 152, spin: 1440 }, 'bolas spin');
+	assert.deepEqual(missileFlightArt('Shuriken'), { frame: 149, spin: 2160 }, 'shurikens spin fastest');
+	assert.deepEqual(missileFlightArt('TippedDart', 'blindweed'), { frame: 172, spin: 0 }, 'tipped darts fly their own tip art');
 	assert.equal(missileFlightArt('NoSuchClass'), null, 'unknown classes keep the dot fallback');
 	assert.equal(missileFlightArt('TippedDart', 'nosuchseed'), null, 'unknown seeds keep the dot fallback');
 
@@ -606,6 +864,71 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 	fullBag.add({ id: 'seed', quantity: 1, stackable: true });
 	pickupGroundItem(gateScene);
 	assert.equal(fullBag.find('seed')?.quantity, 2, 'a mergeable heap still lands when full');
+// `Key.depth`/`isSimilar()` spend semantics (tag `v3.3.8`): a locked chest only
+// opens on a depth match, and spending removes the matched entry - never the
+// first stack of the kind - matching `Notes.remove(Key)`'s similar-record
+// removal. Key pickups stamp finding depth plus a per-key identity so two
+// same-kind keys of different depths stay distinguishable in the bag.
+{
+	const keyed = new Inventory();
+	const said = [];
+	let removedGround = 0;
+	let serial = 0;
+	let wealthOpens = 0;
+	const keySceneFor = (heap, depth) => ({
+		item: heap, depth, heroClass: 'warrior', gold: 0,
+		hasItem: () => false, removeItem: () => {}, setGold: () => {}, shopPrice: () => 0,
+		itemName: (id) => id, offerPurchase: () => {}, missilePickupValid: () => true,
+		removeGround: () => { removedGround++; }, playSound: () => {},
+		addItem: (item, stackable) => keyed.add(stackable ? { ...item, stackable: true } : item),
+		identify: () => {}, say: (line) => { said.push(line); }, showStatus: () => {},
+		collectDewdrop: () => true, collectPetal: () => 'levelup', addSand: () => {}, addEnergy: () => {},
+		addLooseGold: () => {}, recoverStone: () => {}, bagFitsPickup: () => true,
+		pickupArmor: () => true, pickupWeapon: () => true, pickupWand: () => true, pickupAmulet: () => true,
+		pickupRing: () => true, pickupCrystalKey: () => true, addSimpleGroundKind: () => {},
+		//`Heap.open()` rolls the Wealth bonus into every opened chest - refusals roll nothing.
+		rollWealthBonusOnOpen: () => { wealthOpens++; },
+		hasKeyForDepth: (id) => keyed.items.some((it) => it.id === id && it.depth === depth),
+		removeKeyForDepth: (id) => {
+			const entry = keyed.items.find((it) => it.id === id && it.depth === depth);
+			if (entry) keyed.remove(id, 1, entry.instanceId);
+		},
+		mintKeyInstanceId: () => `key-${serial++}`,
+		messages: {
+			pickup: (name) => name, missileDust: 'dust',
+			crystalChestLocked: 'locked', unlockCrystalChest: 'open',
+			lockedChestNeedsGoldenKey: 'locked', unlockChest: 'open',
+		},
+	});
+	const lockedHeap = () => ({ id: 'c1', kind: 'potion', x: 0, y: 0, chest: 'locked' });
+	keyed.add({ id: 'goldenKey', quantity: 1, instanceId: 'k-old', depth: 5 });
+	pickupGroundItem(keySceneFor(lockedHeap(), 6));
+	assert.ok(said.includes('locked'), 'a stale-only key does not open the chest');
+	assert.equal(removedGround, 0, '...and the heap stays');
+	assert.equal(keyed.items.length, 1, '...and the stale key is untouched');
+	assert.equal(wealthOpens, 0, '...and a refused chest rolls no Wealth bonus');
+	keyed.add({ id: 'goldenKey', quantity: 1, instanceId: 'k-new', depth: 6 });
+	pickupGroundItem(keySceneFor(lockedHeap(), 6));
+	assert.ok(said.includes('open'), 'a depth-matched key opens it');
+	assert.equal(removedGround, 1, '...and the heap is taken');
+	assert.equal(wealthOpens, 1, '...and the opened chest rolls the Wealth bonus once');
+	const crystalHeap = () => ({ id: 'c2', kind: 'potion', x: 0, y: 0, chest: 'crystal' });
+	keyed.add({ id: 'crystalKey', quantity: 1, instanceId: 'k-c', depth: 6 });
+	pickupGroundItem(keySceneFor(crystalHeap(), 6));
+	assert.equal(wealthOpens, 2, '...and so does an opened crystal chest');
+	const goldens = keyed.items.filter((it) => it.id === 'goldenKey');
+	assert.equal(goldens.length, 1, '...spending one of two key entries');
+	assert.equal(goldens[0].depth, 5, '...spends the depth-matched entry, not the first stack');
+	assert.equal(goldens[0].instanceId, 'k-old', '...leaving the stale key behind');
+	const ironHeap = () => ({ id: 'k1', kind: 'ironKey', x: 0, y: 0, item: { id: 'ironKey', quantity: 1 } });
+	pickupGroundItem(keySceneFor(ironHeap(), 6));
+	pickupGroundItem(keySceneFor(ironHeap(), 6));
+	const irons = keyed.items.filter((it) => it.id === 'ironKey');
+	assert.equal(irons.length, 2, 'two pickups stay two entries, never one merged stack');
+	assert.ok(irons.every((it) => it.depth === 6), '...both stamped with the finding depth');
+	assert.ok(irons[0].instanceId !== undefined && irons[0].instanceId !== irons[1].instanceId,
+		'...with distinct per-key identities');
+}
 // The six equipment callbacks gate themselves scene-side (Pixi, not loadable here),
 // so their wiring is pinned at source level: five gated stash adds plus the always-true
 // victory, and the adapter that reports refusals back to the pickup.
@@ -618,6 +941,67 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 	assert.ok(sceneSource.includes('this.bagFitsPickup({ id: ringId, quantity: 1, instanceId: ringInstance })'), 'the ring stash gates itself');
 	assert.ok(sceneSource.includes('bagFitsPickup: (incoming) => this.bagFitsPickup(incoming)'), 'the pickup context exposes the gate');
 }
+// A chasm fall plays Java's FALLING cue and a lethal landing books the falling badge:
+// `Chasm.heroFall()` / `Badges.DEATH_FROM_FALLING` (image 21, tag `v3.3.8`). The cue asset
+// was bundled but never played; the badge is a new `badgeCatalogue` row mapped in `kill()`.
+{
+	const sceneSource = readSceneSource();
+	assert.ok(sceneSource.includes("runState.audio.cue('falling')"), 'the chasm fall cues FALLING');
+	assert.ok(sceneSource.includes("cause === 'falling' ? 'death_falling' : 'death_foe'"),
+		'a falling death maps to the falling badge, everything else keeps its bucket');
+	assert.ok(sceneSource.includes("this.kill(this.hero, 'falling')"), 'a lethal chasm landing passes the falling cause');
+	const badgesMwl = readFileSync(join(root, 'src/content/badges.mwl'), 'utf8');
+	assert.ok(badgesMwl.includes('id: "death_falling"'), 'the falling badge has a catalogue row');
+	assert.ok(badgesMwl.includes('icon: 21'), '...cut at Java\'s own DEATH_FROM_FALLING cell');
+	// A delayed kill from the chasm fall's own lingering Bleeding also books the falling badge,
+	// not the generic DoT bucket (`Bleeding.act()`'s `source == Chasm.class` branch, tag
+	// `v3.3.8`) - `bleedSource` tracks which producer set the active bleed (see `combat.ts`).
+	assert.ok(sceneSource.includes("bleedingFatal ? 'falling' : 'poison'"),
+		'a fatal bleed sourced from the chasm fall books the falling cause too');
+	assert.ok(sceneSource.includes("this.hero.bleedSource === 'chasm'"),
+		'the chasm-bleed death check reads the tracked source, not just any active bleed');
+}
+	// Per-carried-wand charges (`Wand.java`): a pickup of the wielded class (or of
+	// unknown class) absorbs as before; any other class lands as a spare entry with
+	// its own identity and full charge state instead of being silently destroyed.
+	{
+	const { wandInitialCharges, resolveWandPickup, imbueStaffLevel, staffImbueFor, setStaffImbue, isWandType } = require('./items/wands.js');
+	const { newSpareWandCharges } = require('./simulation/spareWands.js');
+	const sceneSource = readSceneSource();
+	assert.equal(staffImbueFor({}), 'magicMissile', 'the staff starts on Magic Missile');
+	{
+		const scene = {};
+		setStaffImbue(scene, 'fireblast');
+		assert.equal(staffImbueFor(scene), 'fireblast', 'the imbue class sticks to the scene');
+	}
+	assert.equal(isWandType('fireblast'), true);
+	assert.equal(isWandType('nope'), false);
+	assert.equal(isWandType(undefined), false);
+	assert.equal(imbueStaffLevel(0, 0), 0, 'a level-0 staff takes no bonus');
+	assert.equal(imbueStaffLevel(1, 0), 1, 'a weaker wand leaves the staff level');
+	assert.equal(imbueStaffLevel(1, 2), 3, 'a stronger wand syncs plus one');
+	assert.equal(imbueStaffLevel(2, 2), 3, 'an equal wand on a positive staff syncs plus one');
+	assert.ok(sceneSource.includes('chooseWandUse(this: DungeonScene, instanceId?: string)'), 'tapping a wand routes through the wield/imbue choice');
+	assert.ok(sceneSource.includes("t('items.weapon.melee.magesstaff.ac_imbue')"), 'the choice offers the imbue action');
+	assert.ok(sceneSource.includes("t('items.weapon.melee.magesstaff.id_first')"), 'unidentified spares refuse with id_first');
+	assert.ok(sceneSource.includes("t('items.weapon.melee.magesstaff.cursed')"), 'cursed spares refuse with the cursed line');
+	assert.ok(sceneSource.includes("this.bag.remove('wand', 1, spare.instanceId);"), 'the imbued spare detaches into the staff');
+	assert.ok(sceneSource.includes('staffImbue: staffImbueFor(this)'), 'the imbue class persists through save/load');
+	assert.equal(wandInitialCharges('magicMissile'), 3, 'Magic Missile starts on 3');
+	assert.equal(wandInitialCharges('frost'), 2, 'every other class starts on 2');
+	assert.equal(resolveWandPickup('frost', 'frost'), 'absorb', 'same class absorbs');
+	assert.equal(resolveWandPickup('frost', null), 'absorb', 'unknown class absorbs');
+	assert.equal(resolveWandPickup('frost', 'fireblast'), 'spare', 'another class spares');
+	assert.equal(resolveWandPickup(null, 'fireblast'), 'spare', 'no wielded wand spares');
+	const spareBag = new Inventory();
+	const spare = newSpareWandCharges(wandInitialCharges('fireblast'));
+	spareBag.add({ id: 'wand', quantity: 1, instanceId: 'wand:1', identified: true, ...{ sourceClass: 'WandOfFireblast', wandCur: spare.cur, wandPartial: spare.partial, wandMax: spare.max } });
+	assert.equal(spareBag.items.length, 1, 'the spare keeps its own entry');
+	spareBag.add({ id: 'wand', quantity: 1, stackable: true, identified: true });
+	assert.equal(spareBag.items.length, 2, '...and never merges with the absorb pile');
+	assert.ok(sceneSource.includes("resolveWandPickup(this.wandType, groundType) === 'spare'"), 'the scene stashes other-class pickups as spares');
+	assert.ok(sceneSource.includes('rechargeSpareWand(state, wandRate)'), 'spares recharge on the shared rate each hero turn');
+	}
 	assert.equal(removed, 1, '...with sound and removal as usual');
 }
 	// `Potion.SeedToPotion`: generic seed payloads retain their concrete source class in the
@@ -631,18 +1015,6 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 	assert.equal(canCraftPotionSeed(seedBag), true);
 	assert.deepEqual(craftPotionSeed(seedBag), { id: 'potionHealing', identified: true });
 	assert.equal(seedBag.items.length, 0);
-	const catalystBag = new Inventory();
-	catalystBag.add({ id: 'potionHealing', quantity: 1, stackable: true });
-	catalystBag.add({ id: 'seed', quantity: 1, stackable: true, sourceClass: 'Sungrass', instanceId: 'seed:sungrass' });
-	assert.equal(alchemicalCatalystCost(catalystBag), 0);
-	assert.equal(craftAlchemicalCatalyst(catalystBag), true);
-	assert.ok(catalystBag.find('alchemicalCatalyst'));
-	const arcaneBag = new Inventory();
-	arcaneBag.add({ id: 'scrollIdentify', quantity: 1, stackable: true });
-	arcaneBag.add({ id: 'stoneOfIntuition', quantity: 1, stackable: true });
-	assert.equal(arcaneCatalystCost(arcaneBag), 0);
-	assert.equal(craftArcaneCatalyst(arcaneBag), true);
-	assert.ok(arcaneBag.find('arcaneCatalyst'));
 	// Explicit ingredient selection for the category recipes: chosen units brew, and a bad
 	// selection (wrong count, a non-ingredient, an uncovered unit, the same unit twice)
 	// fails whole with nothing consumed.
@@ -708,6 +1080,7 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 			syncHeroFromStats: () => {}, say: (line, level) => { transmuteSaid.push({ line, level }); },
 			openItemPicker: (title, entries, onPick) => { transmutePicks++; onPick({ id: entries[0].id, instanceId: entries[0].instanceId }); },
 			equippedRing: null, ringHtBonus: 0, missileThresholds: new Map(), empoweredZaps: 0,
+			recalled: [], armRecallInscription(sourceClass) { this.recalled.push(sourceClass); },
 		};
 		assert.equal(transmuteCandidates(transmuteScene).length, 1, 'the lone healing potion is the only candidate (one transmutation scroll cannot target itself)');
 		assert.equal(startTransmutationPick(transmuteScene), true, 'the picker takes over');
@@ -716,6 +1089,7 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 		assert.equal(transmuteBag.find('potionHealing'), undefined, '...and the picked potion is gone');
 		assert.equal(transmuteBag.items.filter((i) => i.id.startsWith('potion')).length, 1, '...rerolled into one potion');
 		assert.equal(transmuteScene.empoweredZaps, empoweringScrollsCharges(2), 'a mage with EMPOWERING_SCROLLS arms zaps on success');
+		assert.deepEqual(transmuteScene.recalled, ['ScrollOfTransmutation'], 'a paid reroll arms its class');
 		assert.ok(transmuteSaid.some((s) => s.line === 'items.scrolls.scrolloftransmutation.morph'), 'the reroll is announced');
 		const emptyBag = new Inventory();
 		emptyBag.add({ id: 'scrollTransmutation', quantity: 1, stackable: true, identified: true });
@@ -727,6 +1101,29 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 		assert.equal(emptyBag.find('scrollTransmutation')?.quantity, 1, '...and the scroll is kept');
 		completeTransmutation(transmuteScene, { id: 'noSuchItem' });
 		assert.equal(transmuteBag.items.length, 1, 'a stale pick consumes nothing');
+	}
+	{
+		// A free re-read (recall): the read scroll is kept and nothing arms, but the
+		// picked target still rerolls - Java detaches the real target either way.
+		const { completeTransmutation: completeFreeTransmutation } = require('./items/transmutation.js');
+		const freeBag = new Inventory();
+		freeBag.add({ id: 'potionHealing', quantity: 1, stackable: true, identified: true });
+		freeBag.add({ id: 'scrollTransmutation', quantity: 1, stackable: true, identified: true });
+		const freeScene = {
+			bag: freeBag, heroClass: 'cleric', miningBranchActive: false,
+			hero: { maxHp: 100, hp: 100, magicImmune: false },
+			talentRank: () => 0,
+			newItemInstanceId: (kind) => `test-${kind}-0`,
+			syncHeroFromStats: () => {}, say: () => {},
+			openItemPicker: () => {},
+			equippedRing: null, ringHtBonus: 0, missileThresholds: new Map(), empoweredZaps: 0,
+			recalled: [], armRecallInscription(sourceClass) { this.recalled.push(sourceClass); },
+		};
+		completeFreeTransmutation(freeScene, { id: 'potionHealing' }, undefined, { freeRecast: true });
+		assert.equal(freeBag.find('scrollTransmutation')?.quantity ?? 0, 1, 'the recalled scroll is kept');
+		assert.equal(freeBag.find('potionHealing'), undefined, '...while the picked target still rerolls');
+		assert.deepEqual(freeScene.recalled, [], '...arming nothing back');
+		assert.equal(freeScene.empoweredZaps, 0, '...not even mage zaps');
 	}
 	// `ExoticPotion.PotionToExotic` (tag `v3.3.8`): one regular potion, cost 4, into its
 	// exotic - only the Invisibility -> ShroudingFog pair exists here so far.
@@ -793,13 +1190,6 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 	smokeBag.add({ id: 'potionInvis', quantity: 1, stackable: true });
 	assert.equal(craftAlchemy(smokeBag, 'enhanceBombSmoke'), true, 'a bomb and an invisibility brew smoke');
 	assert.equal(smokeBag.find('smokeBomb')?.quantity, 1, 'one smoke bomb');
-	const selectCatalyst = new Inventory();
-	selectCatalyst.add({ id: 'potionFrost', quantity: 1, stackable: true });
-	selectCatalyst.add({ id: 'stoneOfBlast', quantity: 1, stackable: true });
-	assert.equal(alchemicalCatalystCost(selectCatalyst, { primary: { id: 'potionFrost' }, secondary: { id: 'potionFrost' } }), undefined, 'the same unit cannot pair with itself');
-	assert.equal(alchemicalCatalystCost(selectCatalyst, { primary: { id: 'potionFrost' }, secondary: { id: 'stoneOfBlast' } }), 1, 'a runestone secondary costs one energy');
-	assert.equal(craftAlchemicalCatalyst(selectCatalyst, { primary: { id: 'potionFrost' }, secondary: { id: 'stoneOfBlast' } }), true, 'the chosen pair catalyzes');
-	assert.ok(selectCatalyst.find('alchemicalCatalyst'));
 	assert.deepEqual(missileDamageRange('ThrowingStone', 0), [2, 5]);
 	assert.deepEqual(missileDamageRange('ThrowingStone', 3), [5, 8]);
 	assert.deepEqual(missileDamageRange('ThrowingKnife', 3, 2), [7, 14]);
@@ -869,7 +1259,7 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 	// missile's display name - the mechanical `missileDefinitions` table has no name column, so it
 	// comes from the authored item node instead.
 	assert.equal(MWL_MISSILE_NAME_KEYS.missile_heavyboomerang, 'items.weapon.missiles.heavyboomerang.name');
-	assert.equal(Object.keys(MWL_CONSUMABLE_DESCRIPTION_KEYS).length, 66);
+	assert.equal(Object.keys(MWL_CONSUMABLE_DESCRIPTION_KEYS).length, 70);
 	assert.equal(MWL_CONSUMABLE_DESCRIPTION_KEYS.seedStarflower, 'plants.starflower.desc');
 	assert.equal(mwlItemEffectValue('scrollMirror', 'imageCount'), 2);
 	assert.equal(mwlItemEffectValue('scrollRetribution', 'maxPower'), 4);
@@ -879,16 +1269,30 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 	assert.equal(mwlItemEffectValue('bombs', 'targetRange'), 8);
 	assert.equal(mwlItemEffectValue('waterskin', 'healFractionPerDrop'), 0.05);
 	assert.equal(mwlItemEffectValue('wandTransfusion', 'healingPerLevel'), 3);
-	// `Food.energy` at tag `v3.3.8`: ration `Hunger.HUNGRY` (300), MysteryMeat and
+	// `Food.energy` at tag `v3.3.8`: ration `Hunger.HUNGRY` (300), SmallRation 150, Berry 100,
+	// PhantomMeat `Hunger.STARVING` (600), MysteryMeat and
 	// ChargrilledMeat `HUNGRY/2` (150), StewedMeat `HUNGRY/2` (150), MeatPie
-	// `STARVING*2` (900), Pasty `STARVING` (450) - and no Java food heals on eat
-	// (only PhantomMeat, unmodeled here, restores HP), so every heal is 0.
+	// `STARVING*2` (900), Pasty `STARVING` (450). PhantomMeat heals HT/4 dynamically.
 	{
 		const { MWL_CONSUMABLE_STATS } = require('./mwlContent.js');
-		for (const [id, hunger] of [['food', 300], ['meat', 150], ['chargrilledMeat', 150], ['stewedMeat', 150], ['meatPie', 900], ['pasty', 450]]) {
+		for (const [id, hunger] of [['food', 300], ['smallRation', 150], ['berry', 100], ['supplyRation', 200], ['phantomMeat', 600], ['meat', 150], ['chargrilledMeat', 150], ['stewedMeat', 150], ['meatPie', 900], ['pasty', 450]]) {
 			assert.equal(MWL_CONSUMABLE_STATS[id]?.hunger, hunger, `${id} carries Food.energy`);
-			assert.equal(MWL_CONSUMABLE_STATS[id]?.heal, 0, `${id} heals nothing on eat`);
+			assert.equal(MWL_CONSUMABLE_STATS[id]?.heal, id === 'supplyRation' ? 5 : 0, `${id} carries Food.heal`);
 		}
+		const scene = readSceneSource();
+		const berrySource = readFileSync(join(root, 'src/items/berry.ts'), 'utf8');
+		assert.match(berrySource, /berryCounter\+\+/);
+		assert.match(berrySource, /berryCounter = 0/);
+		assert.match(berrySource, /sourceInventoryItem\('seed', seedClass/);
+		assert.match(scene, /eatBerrySeed\(scene\)/);
+		assert.match(scene, /berryCounter: this\.berryCounter/);
+		assert.match(scene, /this\.berryCounter = s\.berryCounter \?\? 0/);
+		const consumables = readFileSync(join(root, 'src/items/consumables.ts'), 'utf8');
+		assert.match(consumables, /food\.id === 'supplyRation'/);
+		assert.match(consumables, /addBuff\(scene\.hero, 'recharging'/);
+		assert.match(consumables, /food\.id === 'phantomMeat'/);
+		assert.match(consumables, /PotionOfHealing\.cure/);
+		assert.match(readFileSync(join(root, 'src/items/itemKinds.ts'), 'utf8'), /id: 'phantomMeat'/);
 	}
 	// Java's Dewdrop.doPickUp removes the heap only after consumeDew accepts it. A full,
 	// fully-healed Waterskin refuses ordinary floor pickups, while the entrance/exit force
@@ -951,7 +1355,7 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 	assert.equal(tableRows('wandFireblastRules').length, 3, 'Fireblast charge rule count');
 	assert.equal(tableRows('wandRegrowthRules').length, 3, 'Regrowth charge rule count');
 	assert.deepEqual(tableRows('monsterDepthStats', 'monster'), [
-		'mimic', 'crystalMimic', 'piranha', 'bee', 'statue', 'armoredStatue', 'sentry',
+		'mimic', 'crystalMimic', 'piranha', 'phantomPiranha', 'bee', 'statue', 'armoredStatue', 'sentry',
 	], 'depth-scaled monster formulas stay authored in actor-rules.mwl');
 	assert.deepEqual(tableRows('heroBaseStats', 'id'), ['spdHero'], 'hero base stats stay authored in actor-rules.mwl');
 	assert.deepEqual(tableRows('heroLevelGrowth', 'id'), ['spdHeroLevelGrowth'], 'hero level growth stays authored in actor-rules.mwl');
@@ -960,7 +1364,7 @@ assert.equal(missileAdjacentAccFactor(false, true, 3), 1.5, 'thrown weapons and 
 		'fetidRat', 'impShopkeeper', 'gnollTrickster', 'greatCrab', 'necroSkeleton', 'newbornElemental',
 		'mimic', 'piranha', 'bee', 'statue',
 	], 'monster sprite-source overrides stay authored in asset-references.mwl');
-	assert.equal(tableRows('monsterSpriteFrames', 'monster').length, 70, 'all monster sprite frame metadata stays authored in asset-references.mwl');
+	assert.equal(tableRows('monsterSpriteFrames', 'monster').length, 71, 'all monster sprite frame metadata stays authored in asset-references.mwl');
 	//`loadSpdSprites` reads its textures through two positionally-paired lists: the `const [a, b, ...]`
 	//destructuring and the `Promise.all([loadImage(aUrl), ...])` array. They were transposed once
 	//(`sheep`/`ninjaLog`) and nothing failed - the Smoke Bomb decoy simply rendered the sheep
@@ -1140,7 +1544,7 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 	// Monster display names are authored on the nodes (`name` message key) with `MOB_KEYS`
 	// derived in `spdKeys.ts` - including the two kinds that had no key at all (larva,
 	// armoredStatue) and rendered as bare ids. Resolution itself is gated by `i18n:verify`.
-	assert.equal(MWL_MONSTER_NODES.length, 70, 'monster roster size');
+	assert.equal(MWL_MONSTER_NODES.length, 71, 'monster roster size');
 	for (const node of MWL_MONSTER_NODES) assert.ok(node.attributes?.name, `monster has a display-name key: ${node.attributes?.id}`);
 	assert.equal(MWL_MONSTER_NODES.find((node) => node.attributes?.id === 'larva')?.attributes?.name, 'actors.mobs.yogdzewa$larva.name', 'larva name key');
 	assert.equal(MWL_MONSTER_NODES.find((node) => node.attributes?.id === 'armoredStatue')?.attributes?.name, 'actors.mobs.armoredstatue.name', 'armoredStatue name key');
@@ -1247,11 +1651,11 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 	// rooms Java builds and this port never generates, so no MWL row may exist for them -
 	// a half-added kind (stats without AI, sprites, or quest wiring) would be worse than
 	// the documented absence. Same for the 38th matrix's (`MONSTER_ANALYSIS_RARE_SPAWNS.md`)
-	// unported rare spawns: the gnoll/crab alt exclusives, the mimic tiers, the phantom
-	// piranha, and the quest-branch spinner (`MobSpawner`/`DelayedRockFall` are a respawn
+	// unported rare spawns: the gnoll/crab alt exclusives, the mimic tiers,
+	// and the quest-branch spinner (`MobSpawner`/`DelayedRockFall` are a respawn
 	// actor and a buff, not monster ids, so they have no row to forbid).
 	for (const id of ['crystalGuardian', 'crystalSpire', 'crystalWisp', 'fungalSentry', 'fungalCore', 'gnollSapper', 'gnollGeomancer', 'gnollGuard',
-		'gnollExile', 'hermitCrab', 'goldenMimic', 'ebonyMimic', 'phantomPiranha', 'fungalSpinner']) {
+		'gnollExile', 'hermitCrab', 'goldenMimic', 'ebonyMimic', 'fungalSpinner']) {
 		assert.equal(mwlMonsterById.get(id), undefined, `unported mob stays out of the MWL roster: ${id}`);
 	}
 	// The necromancer's authored accuracy/damage carry its ranged bolt (`Normal(2,10)` via
@@ -1283,10 +1687,11 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 		mimic: { hp: [6, 6], accuracy: [6, 1], evasion: [4, 1, 2], damageMin: [1, 1, 0, 0], damageMax: [2, 2, 0, 0], armorMin: [0, 0, 0], armorMax: [2, 1, 2] },
 		crystalMimic: { hp: [6, 6], accuracy: [6, 1], evasion: [4, 1, 2], damageMin: [1, 1, 0, 0], damageMax: [2, 2, 0, 0], armorMin: [0, 0, 0], armorMax: [2, 1, 2] },
 		piranha: { hp: [10, 5], accuracy: [20, 2], evasion: [10, 2, 0], damageMin: [0, 1, 0, 0], damageMax: [4, 2, 0, 0], armorMin: [0, 0, 0], armorMax: [0, 1, 0] },
+		phantomPiranha: { hp: [10, 5], accuracy: [20, 2], evasion: [10, 2, 0], damageMin: [0, 1, 0, 0], damageMax: [4, 2, 0, 0], armorMin: [0, 0, 0], armorMax: [0, 1, 0] },
 		bee: { hp: [8, 4], accuracy: [9, 1], evasion: [9, 1, 0], damageMin: [8, 4, 10, 1], damageMax: [8, 4, 4, 1], armorMin: [0, 0, 0], armorMax: [0, 0, 0] },
 		statue: { hp: [15, 5], accuracy: [9, 1], evasion: [4, 1, 0], damageMin: [2, 0, 0, 0], damageMax: [8, 1, 0, 0], armorMin: [0, 0, 0], armorMax: [2, 1, 0] },
 		armoredStatue: { hp: [30, 10], accuracy: [9, 1], evasion: [4, 1, 0], damageMin: [2, 0, 0, 0], damageMax: [8, 1, 0, 0], armorMin: [0, 0, 0], armorMax: [4, 1, 0] },
-		sentry: { hp: [0, 0], accuracy: [20, 2], evasion: [0, 0, 0], damageMin: [0, 0, 0, 0], damageMax: [0, 0, 0, 0], armorMin: [0, 0, 0], armorMax: [0, 0, 0] },
+		sentry: { hp: [1, 0], accuracy: [20, 2], evasion: [1000000, 0, 0], damageMin: [0, 0, 0, 0], damageMax: [0, 0, 0, 0], armorMin: [0, 0, 0], armorMax: [0, 0, 0] },
 	};
 	for (const [id, expected] of Object.entries(EXPECTED_DEPTH_RULES)) {
 		const rule = MWL_MONSTER_DEPTH_STATS[id];
@@ -1306,10 +1711,14 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 	}
 	// Buff durations (buff-rules.mwl): durations with a Java `DURATION` constant match it
 	// verbatim here (Bless/Hex 30, Daze 5, Chill/Frost 10, Drowsy 5, Weakness/Vulnerable 20,
-	// Burning 8, Levitation 20, FeatherFall 50, Invisibility 20, Recharging 30, AdrenalineSurge
+	// Burning 8, Levitation 20, FeatherFall 50, Invisibility 20, Recharging 30, WellFed 450,
+	// AdrenalineSurge
 	// 200, MindVision 20, ToxicImbue 15 (50 * 0.3 from Sorrowmoss), BlobImmunity 10 (20 * 0.5 from Mageroyal), Terror 20, Amok 5 via ScrollOfRage, Aggression 20, Awareness 2, Haste
 	// 20, Degrade 30, Ooze 20, Wayward 10, Charm 10, Light 250, Invulnerability 3, HazardAssistTracker 50,
 	// SpectatorFreeze/DuelParticipant 10, EliminationMatchTracker 3, Cripple 10 (`Cripple.DURATION`; the explicit-4 sites pass their own duration at the call site) - all tag `v3.3.8`). The rest are the
+	// HolyWeapon.HolyWepBuff/HolyWard.HolyArmBuff 50 are both classes' real DURATIONs;
+	// Illuminated/WasIlluminatedTracker 9999 are the effectively-permanent stand-in
+	// (duration-less Java buffs). All tag `v3.3.8`.
 	// port's own documented conventions, not Java values: paralysis 3 / roots 3 each
 	// equal a real Java application site (see PORT_COVERAGE.md's BUFF_DURATION row), poison 6
 	// and bleeding 0 have no Java DURATION to match, magicalSleep 0 lasts until woken,
@@ -1327,12 +1736,22 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 			bless: 30, hex: 30, daze: 5, chill: 10, frost: 10, drowsy: 5, magicalSleep: 0, fury: 9999,
 			berserk: 9999, weakness: 20, vulnerable: 20, burning: 8, poison: 6, bleeding: 0, cripple: 10,
 			paralysis: 3, roots: 3, levitation: 20, featherFall: 50, invisibility: 20, cloak: 9999,
-			focus: 9999, recharging: 30, frostImbue: 15, fireImbue: 15, toxicImbue: 15, blobImmunity: 10, adrenalineSurge: 200, mindvision: 20,
+			focus: 9999, recharging: 30, wellFed: 450, frostImbue: 15, fireImbue: 15, toxicImbue: 15, blobImmunity: 10, adrenalineSurge: 200, mindvision: 20,
 			terror: 20, amok: 5, aggression: 20, awareness: 2, haste: 20, degrade: 30, ooze: 20,
 			wayward: 10, soulmark: 10, charm: 10, lethalHasteCooldown: 100, blindness: 10, light: 250, invulnerability: 3,
 			feintConfusion: 2, counterAbility: 3, hazardAssist: 50,
 			spectatorFreeze: 10, duelParticipant: 10, eliminationMatch: 3, luckyTracker: 9999,
-			prismaticGuard: 9999,
+			prismaticGuard: 9999, holyWeapon: 50, holyWard: 50, illuminated: 9999, wasIlluminated: 9999,
+			satiatedSpells: 9999, shieldOfLight: 5, divineSense: 50, recallUsed: 10,
+			sunrayUsed: 9999, sunrayRecent: 4, cleanseImmunity: 5,
+			//`HolyLance.LanceCooldown` 30, `AuraOfProtection.AuraBuff.DURATION` 20 and
+			//`GuidingLight.GuidingLightPriestCooldown` 50 are all real Java `FlavourBuff`
+			//DURATIONs; `Smite.SmiteTracker` 1 only satisfies the table's shape (a
+			//duration-less marker, like `sunrayUsed`). `lightWallActive` is port-only (no
+			//Java DURATION - stated at `resolveWallOfLight`), tracking the 20-turn
+			//`WallOfLight` terrain clock it stands in for.
+			lanceCooldown: 30, auraProtection: 20, smiteTracker: 1, guidingPriestCooldown: 50,
+			lightWallActive: 20,
 		},
 		'buff durations match the authored table',
 	);
@@ -1377,10 +1796,10 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 		const six = planShopStock(6, null, scripted([0, 0, 0, 0]));
 		const sixIds = ids(six);
 		for (const fixed of ['potionHealing', 'scrollIdentify', 'scrollCleanse', 'scrollMapping',
-			'alchemize', 'food', 'stoneOfAugmentation']) {
+			'alchemize', 'smallRation', 'stoneOfAugmentation']) {
 			assert.ok(sixIds.includes(fixed), `depth 6 stocks ${fixed}`);
 		}
-		assert.ok(six.some((p) => p.kind === 'item' && p.id === 'food' && p.quantity === 2), 'two SmallRations');
+		assert.equal(six.filter((p) => p.kind === 'item' && p.id === 'smallRation').length, 2, 'two SmallRations');
 		assert.ok(six.some((p) => p.kind === 'item' && p.id === 'armorReward' && p.tier === 2), 'depth 6 stocks tier-2 armor');
 		assert.ok(six.some((p) => p.kind === 'generated' && p.generated.cat === 2), 'the weapon draw is on the shelf');
 		assert.ok(six.some((p) => p.kind === 'tippedDart' && p.quantity === 2), 'a stack of two tipped darts is on the shelf');
@@ -2741,7 +3160,7 @@ function potDrive(overrides = {}) {
 		set pendingTarget(cell) { flags.pending = cell; },
 		occupantAt: (x, y) => creatures[`${x},${y}`] ?? null,
 		isSpawnFree: (x, y) => freeCells ? freeCells.has(`${x},${y}`) : true,
-		releaseBee: (at, holderId) => { flags.bees.push({ at, holderId }); },
+		releaseBee: (at, potPos, holderId) => { flags.bees.push({ at, potPos, holderId }); },
 		spendTurn: () => { flags.turns++; },
 		...overrides.ctx,
 	};
@@ -2758,17 +3177,17 @@ function potDrive(overrides = {}) {
 	assert.equal(d.flags.aim.validate({ x: 5, y: 5 }), true, 'the validate delegates to the floor');
 	d.flags.aim.onConfirm({ x: 5, y: 5 });
 	assert.equal(d.flags.pending, null, 'the pending cell clears');
-	assert.deepEqual(d.flags.bees, [{ at: { x: 5, y: 5 }, holderId: null }], 'empty cells break ownerless');
+	assert.deepEqual(d.flags.bees, [{ at: { x: 5, y: 5 }, potPos: { x: 5, y: 5 }, holderId: null }], 'empty cells break ownerless');
 	assert.equal(d.flags.consumed, 1, 'detaching one pot');
 	assert.equal(d.flags.turns, 1, 'and spending the turn');
 	const held = potDrive({ creatures: { '5,5': { id: 'r1' } }, freeCells: new Set(['6,5']) });
 	useHoneypotFlow(held.ctx);
 	held.flags.aim.onConfirm({ x: 5, y: 5 });
-	assert.deepEqual(held.flags.bees, [{ at: { x: 6, y: 5 }, holderId: 'r1' }], 'the bee sidesteps, suspecting the rat');
+	assert.deepEqual(held.flags.bees, [{ at: { x: 6, y: 5 }, potPos: { x: 5, y: 5 }, holderId: 'r1' }], 'the bee sidesteps but anchors at the shattered pot, suspecting the rat');
 	const npc = potDrive({ creatures: { '5,5': { id: 'g1', isNPC: true } }, freeCells: new Set(['6,5']) });
 	useHoneypotFlow(npc.ctx);
 	npc.flags.aim.onConfirm({ x: 5, y: 5 });
-	assert.deepEqual(npc.flags.bees, [{ at: { x: 6, y: 5 }, holderId: null }], 'NPC occupants pin no holder');
+	assert.deepEqual(npc.flags.bees, [{ at: { x: 6, y: 5 }, potPos: { x: 5, y: 5 }, holderId: null }], 'NPC occupants pin no holder');
 	const stuck = potDrive({ creatures: { '5,5': { id: 'r1' } }, freeCells: new Set() });
 	useHoneypotFlow(stuck.ctx);
 	stuck.flags.aim.onConfirm({ x: 5, y: 5 });
@@ -2777,7 +3196,7 @@ function potDrive(overrides = {}) {
 	assert.equal(stuck.flags.turns, 0, 'spending nothing');
 	const preset = potDrive({ pending: { x: 5, y: 5 } });
 	assert.equal(preset.flags.aim, null, 'a pending aim shatters at once');
-	assert.deepEqual(preset.flags.bees, [{ at: { x: 5, y: 5 }, holderId: null }], 'breaking where aimed');
+	assert.deepEqual(preset.flags.bees, [{ at: { x: 5, y: 5 }, potPos: { x: 5, y: 5 }, holderId: null }], 'breaking where aimed');
 }
 // The moved bomb aim (`aimBombFlow`, the file-size refactor's twenty-fourth extraction):
 // missing bombs never aim; confirms hand the pending cell to the detonate half.
@@ -2862,6 +3281,98 @@ const { WATERSKIN_MAX } = require('./dungeonConstants.js');
 	assert.equal(turns, 1, 'the turn spent');
 	useTorchFlow(ctx);
 	assert.equal(turns, 1, 'no torch, no second cast');
+}
+// Random trap generation draws from Java's per-region pools (`SewerLevel`..
+// HallsLevel.trapClasses(), tag `v3.3.8`) via the MWL tables the ported painters use,
+// filtered to the kinds with a port effect - pinned here so MWL drift fails loudly:
+// depth 1 is worn darts only, grim waits for the Halls, explosive never spawns randomly.
+// `Statue`'s generated weapon drives its fight (Statue.java + items/weapon/melee/*.java, tag v3.3.8).
+{
+	const { statueWeaponStats } = require('./items/statueWeapons.js');
+	const stats = (cls, tier, lvl = 0) => statueWeaponStats(cls, tier, lvl);
+	// the default MeleeWeapon range: min = tier + lvl, max = 5*(tier+1) + lvl*(tier+1)
+	assert.deepEqual(stats('Sword', 3), { min: 3, max: 20, accuracyFactor: 1, delayFactor: 1, reach: 1, defense: 0 }, 'a sword rolls the plain tier-3 range');
+	assert.equal(stats('Sword', 3, 2).max, 28, 'the default max scales by tier+1 per level');
+	// per-class max overrides
+	assert.equal(stats('Dagger', 1).max, 8, 'dagger max 8 (4*(tier+1))');
+	assert.equal(stats('Greataxe', 5).max, 45, 'greataxe max 5*(tier+4)');
+	assert.equal(stats('Flail', 4).max, 35, 'flail max round(7*(tier+1))');
+	assert.equal(stats('Gauntlet', 5).max, 15, 'gauntlet max round(2.5*(tier+1))');
+	assert.equal(stats('Glaive', 5).max, 40, 'glaive max round(6.67*(tier+1))');
+	assert.equal(stats('Whip', 3).max, 15, 'whip max 5*tier');
+	assert.equal(stats('RoundShield', 3, 2).max, 16, 'round shield max round(3*(tier+1)) + lvl*(tier-1)');
+	// accuracy, delay and reach
+	assert.equal(stats('HandAxe', 2).accuracyFactor, 1.32);
+	assert.equal(stats('Sickle', 2).accuracyFactor, 0.68);
+	assert.equal(stats('Mace', 3).accuracyFactor, 1.28);
+	assert.equal(stats('Sai', 3).delayFactor, 0.5, 'a sai swings twice a turn');
+	assert.equal(stats('Gloves', 1).delayFactor, 0.5);
+	assert.equal(stats('Scimitar', 3).delayFactor, 0.8);
+	assert.deepEqual([stats('Spear', 2).reach, stats('Spear', 2).delayFactor], [2, 1.5], 'a spear reaches two but swings slowly');
+	assert.equal(stats('Glaive', 5).reach, 2);
+	assert.equal(stats('Whip', 3).reach, 3);
+	// defence
+	assert.equal(stats('Greatshield', 5, 1).defense, 8, 'greatshield 6 + 2*level');
+	assert.equal(stats('RoundShield', 3, 2).defense, 6, 'round shield 4 + level');
+	assert.equal(stats('Katana', 4).defense, 4);
+	assert.equal(stats('Quarterstaff', 2).defense, 2);
+	assert.equal(stats('Rapier', 1).defense, 1);
+	assert.equal(stats('Sword', 3).defense, 0, 'an ordinary weapon adds no defence');
+	assert.equal(stats('SomethingUnknown', 2).max, 15, 'an unknown class falls back to the default formula');
+	// the same numbers come from `weaponCombatRules` in the MWL for the hero's own weapon (`catalog.weaponCombat`)
+	const { weaponCombat, weaponDamageRange } = require('./items/catalog.js');
+	assert.deepEqual([weaponCombat('dagger', 1, 0).min, weaponCombat('dagger', 1, 0).max], [1, 8], 'a dagger tops out at 8, not the tier-1 default 10');
+	assert.deepEqual(weaponDamageRange(1, 0), [1, 10], 'the default range is still what an unlisted class gets');
+	assert.deepEqual(weaponCombat('SomeUnlistedThing', 2, 0), { min: 2, max: 15, accuracy: 1, delay: 1, reach: 1, defense: 0 }, 'an unknown class falls back to the default numbers');
+	assert.equal(weaponCombat('wornshortsword', 1, 0).max, 10, 'the worn shortsword keeps the default formula');
+	assert.equal(weaponCombat('Greataxe', 5, 0).max, 45, 'lookup ignores case');
+	assert.equal(weaponCombat('gloves', 1, 0).delay, 0.5, 'gloves swing twice a turn');
+	// every authored melee weapon has exactly one combat row, and no row names a weapon that is not authored
+	const { MWL_WEAPON_COMBAT_RULES } = require('./mwlContent.js');
+	const { WEAPON_TIER_BY_CLASS } = require('./items/catalog.js');
+	assert.deepEqual(Object.keys(MWL_WEAPON_COMBAT_RULES).sort(), Object.keys(WEAPON_TIER_BY_CLASS).sort(), 'weaponCombatRules covers exactly the weapons authored in items.mwl');
+	// the closed formula evaluator
+	const { evaluateFormula } = require('./items/formula.js');
+	const ev = (f, tier = 3, level = 2) => evaluateFormula(f, { tier, level });
+	assert.equal(ev('5*(tier+1)+level*(tier+1)'), 28); assert.equal(ev('tier+level'), 5); assert.equal(ev('-level+10'), 8);
+	assert.equal(ev('round(6.67*(tier+1))'), 27); assert.equal(ev('max(1,min(tier,level))'), 2); assert.equal(ev('(1+2)*3/9'), 1);
+	for (const bad of ['tier+', 'foo', 'round(', '1 2', 'evil()', 'tier ** 2', 'process']) {
+		assert.throws(() => ev(bad), undefined, `the evaluator refuses ${JSON.stringify(bad)}`);
+	}
+	// the statue's enchantment: 50/40/10 rarity, then a uniform pick inside the group
+	const { rollStatueEnchant, statueEnchantChance, UNSTABLE_DELEGATES } = require('./items/statueWeapons.js');
+	const rolled = (roll, index) => rollStatueEnchant(() => roll, (n) => Math.min(index, n - 1));
+	assert.equal(rolled(0.0, 0), 'blazing'); assert.equal(rolled(0.49, 3), 'shocking', 'the common group is blazing/chilling/kinetic/shocking');
+	assert.equal(rolled(0.5, 0), 'blocking'); assert.equal(rolled(0.89, 5), 'unstable', 'the uncommon group ends with unstable');
+	assert.equal(rolled(0.9, 0), 'corrupting'); assert.equal(rolled(0.99, 2), 'vampiric', 'the rare group is corrupting/grim/vampiric');
+	const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, msg);
+	near(statueEnchantChance('blazing', 0), 1 / 3, 'blazing (l+1)/(l+3)'); near(statueEnchantChance('blazing', 2), 3 / 5);
+	near(statueEnchantChance('chilling', 0), 1 / 4, 'chilling (l+1)/(l+4)');
+	near(statueEnchantChance('elastic', 0), 1 / 5, 'elastic (l+1)/(l+5)');
+	near(statueEnchantChance('shocking', 4), 1 / 3, 'shocking is a flat third');
+	near(statueEnchantChance('blocking', 0), 4 / 40, 'blocking (l+4)/(l+40)');
+	near(statueEnchantChance('grim', 2), 0.6, 'grim maximum 0.5 + 0.05*level');
+	near(statueEnchantChance('blazing', -3), 1 / 3, 'a negative level floors at 0');
+	assert.ok(!UNSTABLE_DELEGATES.includes('projecting') && !UNSTABLE_DELEGATES.includes('unstable'), 'unstable never delegates to projecting or itself');
+	assert.equal(UNSTABLE_DELEGATES.length, 11);
+}
+const { modeledTrapTable, sewerTrapTable } = require('./dungeonConstants.js');
+{
+	const d1 = sewerTrapTable(1);
+	assert.deepEqual(d1.classes, ['wornDart'], 'depth 1 is worn darts only');
+	assert.deepEqual(modeledTrapTable(d1.classes, d1.chances), { kinds: ['wornDart'], weights: [1] }, 'depth 1 models cleanly');
+	const sew = sewerTrapTable(3);
+	assert.deepEqual(modeledTrapTable(sew.classes, sew.chances), { kinds: ['chilling', 'shockingTrap', 'toxic', 'wornDart', 'alarm', 'ooze', 'confusionGas', 'flock', 'summoning', 'teleportation', 'gateway'], weights: [4, 4, 4, 4, 2, 2, 1, 1, 1, 1, 1] }, 'the sewers stay gentle (all but the original nine kinds joined 2026-09-20)');
+	const asList = (value) => (Array.isArray(value) ? value.map(String) : String(value).split(','));
+	const modeledRow = (region) => {
+		const row = MWL_TABLE_ROWS('regionTrapTables', 'region').find((r) => r.region === region);
+		assert.ok(row, `MWL region trap table is present: ${region}`);
+		return modeledTrapTable(asList(row.kinds), asList(row.weights).map(Number));
+	};
+	assert.deepEqual(modeledRow('prison'), { kinds: ['chilling', 'shockingTrap', 'toxic', 'burning', 'poisonDart', 'alarm', 'ooze', 'gripping', 'confusionGas', 'flock', 'summoning', 'teleportation', 'gateway', 'geyser'], weights: [4, 4, 4, 4, 4, 2, 2, 2, 1, 1, 1, 1, 1, 1] }, 'burning and poison wait for prison');
+	assert.deepEqual(modeledRow('caves'), { kinds: ['burning', 'poisonDart', 'frost', 'stormTrap', 'corrosionGas', 'gripping', 'rockfall', 'guardian', 'confusionGas', 'summoning', 'warping', 'pitfall', 'gateway', 'geyser'], weights: [4, 4, 4, 4, 4, 2, 2, 2, 1, 1, 1, 1, 1, 1] }, 'storm and corrosion wait for the caves');
+	assert.deepEqual(modeledRow('city'), { kinds: ['frost', 'stormTrap', 'corrosionGas', 'rockfall', 'guardian', 'summoning', 'warping', 'pitfall', 'gateway', 'geyser'], weights: [4, 4, 4, 2, 2, 1, 1, 1, 1, 1] }, 'the city narrows to the icy, stormy and collapsing traps');
+	assert.deepEqual(modeledRow('halls'), { kinds: ['frost', 'stormTrap', 'corrosionGas', 'rockfall', 'guardian', 'summoning', 'warping', 'grim', 'pitfall', 'gateway', 'geyser'], weights: [4, 4, 4, 2, 2, 1, 1, 1, 1, 1, 1] }, 'grim waits for the halls');
 }
 // The moved stylus/alchemize pickers (the file-size refactor's twenty-third extraction):
 // driven headlessly with live-object bags, the real armor predicate and energy table.
@@ -3261,6 +3772,7 @@ function talismanDrive(overrides = {}) {
 	// in the table must be too.
 	assert.deepEqual(artifactRechargeEffect('talisman'), { kind: 'charge', rate: 2, capZeroesPartial: true, fullLineKey: 'items.artifacts.talismanofforesight.full_charge', guards: 'cursedAndImmune' });
 	assert.deepEqual(artifactRechargeEffect('sandals'), { kind: 'charge', rate: 2, capZeroesPartial: true, guards: 'cursedAndImmune' });
+	assert.deepEqual(artifactRechargeEffect('holyTome'), { kind: 'charge', rate: 0.25, capZeroesPartial: true, guards: 'cursedAndImmune' });
 	assert.deepEqual(artifactRechargeEffect('toolkit'), { kind: 'charge', rate: 0.25, capZeroesPartial: false, guards: 'immuneOnly' });
 	assert.deepEqual(artifactRechargeEffect('cape'), { kind: 'addCharge', rate: 4, procAtCap: true, guards: 'none' });
 	assert.deepEqual(artifactRechargeEffect('chains'), { kind: 'charge', rate: 0.5, capZeroesPartial: false, guards: 'cursedAndImmune' });
@@ -3294,7 +3806,24 @@ function talismanDrive(overrides = {}) {
 	writeFileSync(join(out, 'combat.js'), 'exports.addBuff = () => {};\nexports.reigniteBuff = () => {};\n');
 	compile(join(root, 'src/talentEffects.ts'), 'talentEffects.js');
 	compile(join(root, 'src/items/consumables.ts'), 'items/consumables.js');
-	const { applyMealEatenEffects } = require('./items/consumables.js');
+	const { applyMealEatenEffects, eatFood } = require('./items/consumables.js');
+	{
+		const food = { id: 'meatPie', quantity: 1, identified: true };
+		const scene = {
+			requestedItemId: 'meatPie', requestedItemInstanceId: undefined,
+			bag: { find: (id) => id === 'meatPie' ? food : undefined, remove: () => { food.quantity--; } },
+			hero: { hp: 10, maxHp: 20, buffs: {} }, heroClass: 'warrior', hunger: 449,
+			waterskin: 0, ammo: 0, freeTurnNext: false, wandBonusDamage: 0,
+			physicalBonusDamage: 0, physicalBonusAttacks: 0, heroBarrier: { total: 0, add: () => {} },
+			subclass: () => null, talentRank: () => 0, eatBerrySeedPayout: () => {},
+			grantHeroShield: () => {}, wandCharges: { refund: () => {} }, showHeal: () => {},
+			say: () => {}, applyPotionEffect: () => {},
+		};
+		assert.equal(eatFood(scene), true, 'MeatPie is consumed through the ordinary food path');
+		assert.equal(food.quantity, 0);
+		assert.equal(scene.hunger, 0, 'MeatPie subtracts its authored 900 hunger energy');
+		assert.equal(scene.hero.buffs.wellFed, 450, 'MeatPie resets WellFed to STARVING');
+	}
 	const mealScene = (heroClass, ranks, hp = 10) => {
 		const state = {
 			heroClass,
@@ -3373,13 +3902,13 @@ function talismanDrive(overrides = {}) {
 // callbacks - selection priority, upgrade refusal, transmute delegation without
 // arming, identify consume-and-proc with mage zap-arming, the nothing-new line,
 // a registry read, and the unknown-id cleanse fallback.
-const { readScrollFlow } = require('./items/scrollEffects.js');
+const { readScrollFlow, recallScrollClass, recallPortScrollId, recallTrackedPortId } = require('./items/scrollEffects.js');
 const { empoweringScrollsCharges } = require('./talentEffects.js');
 const { getWeaponCurses: scrollCurses } = require('./items/itemCurses.js');
 function scrollReadDrive(overrides = {}) {
 	const said = [];
 	const flags = {
-		synced: 0, procIdentify: 0, transmuteCalls: [],
+		synced: 0, procIdentify: 0, transmuteCalls: [], recalled: [],
 		empowered: 0, weaponAffix: overrides.weaponAffix ?? null, armorGlyph: null,
 	};
 	const hero = { buffs: { ...(overrides.heroBuffs ?? {}) } };
@@ -3414,6 +3943,7 @@ function scrollReadDrive(overrides = {}) {
 		set empoweredZaps(zaps) { flags.empowered = zaps; },
 		itemDisplayName: (id) => id,
 		procIdentifyTalents: () => { flags.procIdentify++; },
+		armRecallInscription: (sourceClass) => { flags.recalled.push(sourceClass); },
 		startTransmutationPick: (instanceId) => { flags.transmuteCalls.push(instanceId); return overrides.transmuteResult ?? true; },
 		get weaponAffix() { return flags.weaponAffix; },
 		set weaponAffix(affix) { flags.weaponAffix = affix; },
@@ -3423,7 +3953,7 @@ function scrollReadDrive(overrides = {}) {
 		syncHeroFromStats: () => { flags.synced++; },
 		...overrides.ctx,
 	};
-	const result = readScrollFlow(ctx);
+	const result = readScrollFlow(ctx, overrides.flowOpts);
 	return { result, ctx, said, flags, hero, bag, ring };
 }
 {
@@ -3434,6 +3964,7 @@ function scrollReadDrive(overrides = {}) {
 	assert.equal(forge.result, false, 'upgrade reads refuse');
 	assert.ok(forge.said.some((l) => l.includes('port.log.scrollisforgear')), 'pointing at gear');
 	assert.equal(forge.bag.find('scrollUpgrade')?.quantity ?? 0, 1, 'refusing consumes nothing');
+	assert.deepEqual(forge.flags.recalled, [], 'refusing arms nothing');
 	const transmute = scrollReadDrive({
 		items: [{ id: 'scrollTransmutation', quantity: 1, identified: true }],
 		heroClass: 'mage', ranks: { empowering_scrolls: 2 }, transmuteResult: false,
@@ -3441,6 +3972,7 @@ function scrollReadDrive(overrides = {}) {
 	assert.equal(transmute.result, false, 'the transmute verdict passes through');
 	assert.deepEqual(transmute.flags.transmuteCalls, [undefined], 'delegating with the instance');
 	assert.equal(transmute.flags.empowered, 0, 'delegating arms nothing');
+	assert.deepEqual(transmute.flags.recalled, [], 'delegating arms no recall either');
 	assert.equal(transmute.bag.find('scrollTransmutation')?.quantity ?? 0, 1, 'and consumes nothing');
 	const identify = scrollReadDrive({
 		items: [
@@ -3454,6 +3986,7 @@ function scrollReadDrive(overrides = {}) {
 	assert.equal(identify.bag.find('scrollRage')?.identified, true, 'identifying the unknown');
 	assert.equal(identify.flags.procIdentify, 1, 'proccing the warrior identify talent');
 	assert.equal(identify.flags.empowered, 0, 'a warrior arms no zaps');
+	assert.deepEqual(identify.flags.recalled, ['ScrollOfIdentify'], 'a paid read arms its Java class');
 	assert.ok(identify.said.some((l) => l.includes('port.log.identify')), 'with the identify line');
 	const known = scrollReadDrive({
 		items: [{ id: 'scrollIdentify', quantity: 1, identified: true }],
@@ -3468,6 +4001,7 @@ function scrollReadDrive(overrides = {}) {
 	});
 	assert.equal(rage.result, true, 'a registry read reads');
 	assert.equal(rage.flags.empowered, empoweringScrollsCharges(2), 'a mage arms zaps on the read');
+	assert.deepEqual(rage.flags.recalled, ['ScrollOfRage'], 'and the recall tracker');
 	assert.equal(mob.sleeping, false, 'rage wakes');
 	assert.equal(mob.seesHero, true, 'and beckons');
 	assert.ok(rage.said.some((l) => l.includes('port.log.rage')), 'with the rage line');
@@ -3487,6 +4021,127 @@ function scrollReadDrive(overrides = {}) {
 	assert.equal(ring.cursed, false, 'and the ring curse');
 	assert.equal(fallback.flags.synced, 1, 'resyncing the hero');
 	assert.ok(fallback.said.some((l) => l.includes('port.log.cleanse')), 'with the cleanse line');
+	assert.deepEqual(fallback.flags.recalled, [], 'unknown ids have no Java class to arm');
+	const mapping = scrollReadDrive({ items: [{ id: 'scrollMapping', quantity: 1, identified: true }] });
+	assert.deepEqual(mapping.flags.recalled, ['ScrollOfMagicMapping'], 'renamed classes arm exactly');
+	const mirror = scrollReadDrive({ items: [{ id: 'scrollMirror', quantity: 1, identified: true }] });
+	assert.deepEqual(mirror.flags.recalled, ['ScrollOfMirrorImage'], 'mirror images too');
+	const prism = scrollReadDrive({ items: [{ id: 'scrollPrismatic', quantity: 1, identified: true }] });
+	assert.deepEqual(prism.flags.recalled, ['ScrollOfPrismaticImage'], 'and the exotic prismatic');
+}
+{
+	// A free re-read (RecallInscription's talentChance = 0): the effect runs, but
+	// nothing is consumed, no zaps arm, no identify talent procs, no re-arm.
+	const free = scrollReadDrive({
+		items: [
+			{ id: 'scrollIdentify', quantity: 1, identified: true },
+			{ id: 'scrollRage', quantity: 1 },
+		],
+		heroClass: 'mage', ranks: { empowering_scrolls: 2, tested_hypothesis: 1 },
+		flowOpts: { freeRecast: true, forceItemId: 'scrollIdentify' },
+	});
+	assert.equal(free.result, true, 'a free re-read still reads');
+	assert.equal(free.bag.find('scrollIdentify')?.quantity ?? 0, 1, 'consuming nothing');
+	assert.deepEqual(free.flags.recalled, [], 're-arming nothing');
+	assert.equal(free.flags.empowered, 0, 'arming no zaps');
+	assert.equal(free.flags.procIdentify, 0, 'proccing no identify talent');
+	assert.equal(free.bag.find('scrollRage')?.identified, true, 'still identifying the unknown');
+	// The scroll class maps round-trip; exotics and unknown ids arm nothing.
+	assert.equal(recallScrollClass('scrollRage'), 'ScrollOfRage');
+	assert.equal(recallScrollClass('scrollCleanse'), 'ScrollOfRemoveCurse');
+	assert.equal(recallScrollClass('scrollMapping'), 'ScrollOfMagicMapping');
+	assert.equal(recallScrollClass('scrollMirror'), 'ScrollOfMirrorImage');
+	assert.equal(recallScrollClass('scrollPrismatic'), 'ScrollOfPrismaticImage');
+	assert.equal(recallScrollClass('scrollMystery'), undefined);
+	assert.equal(recallPortScrollId('ScrollOfRage'), 'scrollRage');
+	assert.equal(recallPortScrollId('ScrollOfRemoveCurse'), 'scrollCleanse');
+	assert.equal(recallPortScrollId('ScrollOfPrismaticImage'), 'scrollPrismatic');
+	assert.equal(recallPortScrollId('ScrollOfTransmutation'), 'scrollTransmutation');
+	assert.equal(recallPortScrollId('ScrollOfMetamorphosis'), undefined, 'exotics have no port effect');
+	assert.equal(recallTrackedPortId('StoneOfFlock'), 'stoneOfFlock');
+	assert.equal(recallTrackedPortId('StoneOfIntuition'), 'stoneOfIntuition');
+	assert.equal(recallTrackedPortId('ScrollOfRage'), 'scrollRage');
+	assert.equal(recallTrackedPortId('ScrollOfMetamorphosis'), undefined);
+	assert.equal(recallTrackedPortId('StoneOfHaste'), undefined, 'unknown stones refuse');
+}
+// Runestone recall arming (`Talent.onRunestoneUsed()`'s Cleric half): every stone
+// reports its Java class on activation - even wasted aims and first-click guesses,
+// which is when Java's onThrow/guess-click fires rather than on a hit or a consume.
+const { useStoneOfFlock, useStoneOfFear, useStoneOfIntuition, recastStone } = require('./items/stones.js');
+function stoneDrive(overrides = {}) {
+	const said = [];
+	const armed = [];
+	const spawned = [];
+	const bag = new Inventory();
+	for (const item of overrides.items ?? []) bag.add(item);
+	const state = { intuition: false };
+	const hero = { x: 2, y: 2, buffs: {}, hp: 20, maxHp: 20, name: 'hero', isHero: true };
+	const ctx = {
+		bag, hero,
+		level: { width: 5, height: 5, passable: () => true },
+		creatureAt: overrides.creatureAt ?? (() => undefined),
+		nearestVisibleEnemy: () => undefined,
+		isChasmCell: () => false,
+		spawnSheep: (at) => { spawned.push(at); },
+		beginAiming: (opts) => { (overrides.aim ?? (() => {}))(opts); },
+		openAugmentChoice: () => {},
+		moveHero: () => {},
+		playTeleportAppear: () => {},
+		revealClairvoyance: () => {},
+		creatures: [],
+		depth: 1,
+		wandCharges: { refund: () => {} },
+		absorbHeroDamage: () => 0,
+		showDamage: () => {},
+		isFlammableTerrain: () => false,
+		burnFlammableTerrain: () => {},
+		explodeGroundItem: () => {},
+		kill: () => {},
+		openItemPicker: (title, entries, onPick) => { onPick(entries[0]); },
+		rollAffix: () => undefined,
+		curseOf: () => undefined,
+		identify: (item) => { item.identified = true; },
+		potionKinds: ['potionHealing'], scrollKinds: ['scrollIdentify'], ringKinds: ['ringMight'],
+		get intuitionTracker() { return state.intuition; },
+		set intuitionTracker(v) { state.intuition = v; },
+		say: (line, level) => { said.push(`${level}:${line}`); },
+		armRecallInscription: (sourceClass) => { armed.push(sourceClass); },
+	};
+	return { ctx, said, armed, spawned, bag, hero, state };
+}
+{
+	const flock = stoneDrive({ items: [{ id: 'stoneOfFlock', quantity: 1 }] });
+	useStoneOfFlock(flock.ctx);
+	assert.deepEqual(flock.armed, ['StoneOfFlock'], 'a flock activation arms its class');
+	assert.equal(flock.bag.find('stoneOfFlock'), undefined, '...consuming the stone');
+	assert.ok(flock.spawned.length > 0, '...and the sheep arrive');
+	// A wasted fear aim still arms: Java fires onRunestoneUsed in onThrow, before
+	// the effect, even when the cell holds nothing hittable.
+	const fear = stoneDrive({
+		items: [{ id: 'stoneOfFear', quantity: 1 }],
+		aim: (opts) => opts.onConfirm({ x: 0, y: 0 }),
+	});
+	useStoneOfFear(fear.ctx);
+	assert.deepEqual(fear.armed, ['StoneOfFear'], 'a wasted aim still arms');
+	assert.ok(fear.said.some((l) => l.includes('port.log.stonewasted')), 'saying so');
+	assert.equal(fear.bag.find('stoneOfFear')?.quantity ?? 0, 1, 'keeping the wasted stone');
+	// A first-click intuition guess arms without consuming: Java arms on every
+	// guess click, outside the consume branch.
+	const guess = stoneDrive({
+		items: [
+			{ id: 'stoneOfIntuition', quantity: 1 },
+			{ id: 'potionHealing', quantity: 1, stackable: true },
+		],
+	});
+	useStoneOfIntuition(guess.ctx);
+	assert.deepEqual(guess.armed, ['StoneOfIntuition'], 'a first guess arms');
+	assert.equal(guess.bag.find('stoneOfIntuition')?.quantity ?? 0, 1, '...without consuming');
+	assert.equal(guess.state.intuition, true, '...setting the tracker instead');
+	// The recall dispatch reactivates known stones for free and refuses the rest.
+	const free = stoneDrive({ items: [{ id: 'stoneOfFlock', quantity: 1 }] });
+	assert.equal(recastStone(free.ctx, 'StoneOfFlock'), true);
+	assert.deepEqual(free.armed, ['StoneOfFlock'], 'reactivating through the same path');
+	assert.equal(recastStone(free.ctx, 'ScrollOfMetamorphosis'), false, 'exotics have no stone path');
 }
 // The `scrollUpgrade` action moved to `items/scrollEffects.ts` as `upgradeGearFlow`
 // (the file-size refactor's twenty-eighth extraction, behavior-identical): the two
@@ -3835,7 +4490,7 @@ function blinkDrive(overrides = {}) {
 	assert.equal(struck.flags.refreshed, 0, 'or refreshing');
 	const far = blinkDrive({ creatures: [{ ...mob, x: 4, y: 1 }] });
 	confirmPreparationBlink(far.ctx, { x: 4, y: 1 }, 2);
-	assert.deepEqual([far.hero.x, far.hero.y], [3, 1], 'blinking onto the cheapest neighbour');
+	assert.deepEqual([far.hero.x, far.hero.y], [3, 0], 'blinking onto the cheapest neighbour - (3,0)/(3,1)/(3,2) tie at distance 2, Java keeps the first in NEIGHBOURS8 row-major order');
 	assert.equal(far.flags.refreshed, 1, 'refreshing from the new cell');
 	assert.equal(far.flags.attacks.length, 1, 'then striking');
 	const missing = blinkDrive();
@@ -4133,8 +4788,8 @@ const { beeTarget } = require('./simulation/targeting.js');
 	const geo = {
 		chebyshevDistance: (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)),
 	};
-	const hero = { id: 'hero-1', x: 0, y: 0, hp: 20 };
-	const mob = { id: 'mob-1', x: 5, y: 5, hp: 10 };
+	const hero = { id: 'hero-1', x: 0, y: 0, hp: 20, buffs: {} };
+	const mob = { id: 'mob-1', x: 5, y: 5, hp: 10, buffs: {} };
 	const folk = [hero, mob];
 	const beeAt = (extra) => ({ id: 'bee-1', x: 5, y: 6, hp: 1, ...extra });
 	assert.equal(beeTarget(beeAt({ potHolderId: 'hero-1', potPos: { x: 5, y: 5 } }), hero, folk, geo), hero, 'living hero holder first');
@@ -4146,6 +4801,18 @@ const { beeTarget } = require('./simulation/targeting.js');
 	assert.equal(beeTarget(beeAt({ potPos: { x: 0, y: 0 } }), hero, folk, geo), hero, 'hero near the pot when no mob is');
 	assert.equal(beeTarget(beeAt({ potPos: { x: 9, y: 9 } }), hero, folk, geo), null, 'nothing near a far pot');
 	assert.equal(beeTarget(beeAt({}), hero, folk, geo), null, 'no pot and no holder, no target');
+	// `Char.isInvulnerable()` (`Char.java`'s base override, tag `v3.3.8`): the ground-pot
+	// search skips an invulnerable candidate; the pot-holder branch has no such check in
+	// Java (`Actor.findById(potHolder)` is unconditional), so an invulnerable holder still
+	// wins outright.
+	const invulnMob = { ...mob, buffs: { invulnerability: 3 } };
+	assert.equal(beeTarget(beeAt({ potPos: { x: 5, y: 5 } }), hero, [hero, invulnMob], geo), null,
+		'an invulnerable mob is skipped in the ground-pot search, leaving nothing near it');
+	const frozenHero = { ...hero, buffs: { spectatorFreeze: 3 } };
+	assert.equal(beeTarget(beeAt({ potPos: { x: 0, y: 0 } }), frozenHero, [frozenHero, { ...mob, x: 9, y: 9 }], geo), null,
+		'a spectator-frozen hero is skipped in the ground-pot hero fallback too');
+	assert.equal(beeTarget(beeAt({ potHolderId: 'mob-1', potPos: { x: 0, y: 0 } }), hero, [hero, invulnMob], geo), invulnMob,
+		'the pot-holder branch has no isInvulnerable check in Java, so an invulnerable holder still wins');
 }
 // `fleeStep` moved to `simulation/wandering.ts` (the file-size refactor's
 // forty-second extraction, behavior-identical, shared by `stepAway` and
@@ -4157,17 +4824,24 @@ const { fleeStep } = require('./simulation/wandering.js');
 	const chebyshev = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 	const offsets = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
 	const heroAt = { x: 0, y: 0 };
-	const ctxWith = (open, occupied) => ({
+	const ctxWith = (open, occupied, chasm = []) => ({
 		passable: (x, y) => open.some(([ox, oy]) => ox === x && oy === y),
 		creatureAt: (x, y) => (occupied.some(([ox, oy]) => ox === x && oy === y) ? {} : null),
 		neighbourOffsets: offsets,
 		chebyshev,
 		hero: heroAt,
+		isChasm: (x, y) => chasm.some(([cx, cy]) => cx === x && cy === y),
 	});
 	assert.deepEqual(fleeStep({ x: 2, y: 2 }, ctxWith([[3, 3], [1, 2]], [])), { x: 3, y: 3 }, 'farthest open neighbour wins, nearer-or-equal refused');
 	assert.deepEqual(fleeStep({ x: 2, y: 2 }, ctxWith([[3, 3], [2, 3]], [[3, 3]])), { x: 2, y: 3 }, 'occupied best falls to the next');
 	assert.equal(fleeStep({ x: 2, y: 2 }, ctxWith([], [])), null, 'boxed-in stays put');
 	assert.equal(fleeStep({ x: 2, y: 2 }, ctxWith([[1, 1]], [])), null, 'nearer-only stays put');
+	// `Dungeon.flee`'s own passable map excludes chasm cells (tag `v3.3.8`) -
+	// a chasm candidate must be skipped exactly like an occupied one, fixed 2026-09-21.
+	assert.deepEqual(fleeStep({ x: 2, y: 2 }, ctxWith([[3, 3], [2, 3]], [], [[3, 3]])), { x: 2, y: 3 },
+		'a chasm best falls to the next, like an occupied one');
+	assert.equal(fleeStep({ x: 2, y: 2 }, ctxWith([[3, 3]], [], [[3, 3]])), null,
+		'chasm-only stays put, matching the boxed-in case');
 }
 // `nearestFreeCell` moved to `simulation/wandering.ts` (the file-size refactor's
 // forty-fourth extraction, behavior-identical, shared by the guardian and Yog

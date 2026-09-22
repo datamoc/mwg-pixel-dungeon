@@ -162,22 +162,6 @@
           },
           {
             tag: "row",
-            id: "alchemicalCatalyst",
-            ingredients: "potionHealing:1,seed:1",
-            result: "alchemicalCatalyst",
-            resultQuantity: 1,
-            energyCost: 0,
-          },
-          {
-            tag: "row",
-            id: "arcaneCatalyst",
-            ingredients: "scrollIdentify:1,stoneOfIntuition:1",
-            result: "arcaneCatalyst",
-            resultQuantity: 1,
-            energyCost: 0,
-          },
-          {
-            tag: "row",
             id: "alchemize",
             ingredients: "seed:1,stoneOfBlast:1",
             result: "alchemize",
@@ -390,20 +374,6 @@
           },
           {
             tag: "row",
-            id: "manifest-alchemicalCatalyst",
-            recipe: "alchemicalCatalyst",
-            group: "two",
-            javaRecipe: "AlchemicalCatalyst.Recipe",
-          },
-          {
-            tag: "row",
-            id: "manifest-arcaneCatalyst",
-            recipe: "arcaneCatalyst",
-            group: "two",
-            javaRecipe: "ArcaneCatalyst.Recipe",
-          },
-          {
-            tag: "row",
             id: "manifest-elixirArcaneArmor",
             recipe: "elixirArcaneArmor",
             group: "two",
@@ -478,13 +448,6 @@
             recipe: "causticBrew",
             group: "two",
             javaRecipe: "CausticBrew.Recipe",
-          },
-          {
-            tag: "row",
-            id: "manifest-aquaBlast",
-            recipe: "aquaBlast",
-            group: "two",
-            javaRecipe: "AquaBlast.Recipe",
           },
           {
             tag: "row",

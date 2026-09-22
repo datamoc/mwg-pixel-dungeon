@@ -12,7 +12,8 @@ export interface ItemActionContext {
 	equipArmor(id: string, instanceId?: string): void;
 	transferClassArmor(id: string, instanceId?: string): void;
 	equipWeapon(id: string, instanceId?: string): void;
-	equipWand(): void;
+	equipWand(instanceId?: string): void;
+	chooseWandUse(instanceId?: string): void;
 	mineWithPickaxe(): void;
 	plantSeed(): void;
 	useHourglass(instanceId?: string): void;
@@ -27,6 +28,7 @@ export interface ItemActionContext {
 	useSandals(instanceId?: string): void;
 	useTalisman(instanceId?: string): void;
 	useSpellbook(instanceId?: string): void;
+	useHolyTome(instanceId?: string): void;
 	wieldMissile(id: string, instanceId?: string): void;
 	useStoneById(id: string, instanceId?: string): void;
 	useCandle(instanceId?: string): void;
@@ -39,6 +41,7 @@ export interface ItemActionContext {
 	useBrokenSeal(instanceId?: string): void;
 	useAlchemize(instanceId?: string): void;
 	useKingsCrown(instanceId?: string): void;
+	useTengusMask(instanceId?: string): void;
 	useFeatherFall(instanceId?: string): void;
 	useWildEnergy(instanceId?: string): void;
 	useTelekineticGrab(instanceId?: string): void;
@@ -49,8 +52,6 @@ export interface ItemActionContext {
 	useCurseInfusion(instanceId?: string): void;
 	useMagicalInfusion(instanceId?: string): void;
 	useBeaconOfReturning(instanceId?: string): void;
-	useAlchemicalCatalyst(instanceId?: string): void;
-	useArcaneCatalyst(instanceId?: string): void;
 	openBag(bag: BagId): void;
 }
 
@@ -129,14 +130,14 @@ export function useItemById(scene: ItemActionContext, id: string, instanceId?: s
 		// `Food.execute(AC_EAT)` covers every Food subclass in Java, including the alchemy
 		// outputs StewedMeat and MeatPie; this port resolves their shared hunger transaction
 		// through `eatFood()` rather than maintaining one action branch per food class.
-		if (id === 'food' || id === 'meat' || id === 'chargrilledMeat' || id === 'stewedMeat' || id === 'meatPie' || id === 'pasty') scene.onAction('eat');
+		if (id === 'food' || id === 'smallRation' || id === 'berry' || id === 'supplyRation' || id === 'phantomMeat' || id === 'meat' || id === 'chargrilledMeat' || id === 'stewedMeat' || id === 'meatPie' || id === 'pasty') scene.onAction('eat');
 		else if (id === 'waterskin' || id.startsWith('potion')) scene.onAction('quaff');
 		else if (id.startsWith('scroll')) scene.onAction(id === 'scrollUpgrade' ? 'upgrade' : 'read');
 		else if (id.startsWith('ring_')) scene.equipRing(id, instanceId);
 		else if (isClassArmorId(id)) scene.transferClassArmor(id, instanceId);
 		else if (id === 'clothArmor' || id === 'armor' || id === 'armorReward') scene.equipArmor(id, instanceId);
 		else if (id === 'weaponReward') scene.equipWeapon(id, instanceId);
-		else if (id === 'wand') scene.equipWand();
+		else if (id === 'wand') scene.chooseWandUse(instanceId);
 		else if (id === 'pickaxe') scene.mineWithPickaxe();
 		else if (id === 'seed') scene.plantSeed();
 		else if (id === 'hourglass') scene.useHourglass(instanceId);
@@ -151,6 +152,7 @@ export function useItemById(scene: ItemActionContext, id: string, instanceId?: s
 		else if (id === 'sandals') scene.useSandals(instanceId);
 		else if (id === 'talisman') scene.useTalisman(instanceId);
 		else if (id === 'spellbook') scene.useSpellbook(instanceId);
+		else if (id === 'holyTome') scene.useHolyTome(instanceId);
 		else if (id.startsWith('missile_')) scene.wieldMissile(id, instanceId);
 		else if (id.startsWith('stoneOf')) scene.useStoneById(id, instanceId);
 		else if (id === 'candle') scene.useCandle(instanceId);
@@ -163,6 +165,7 @@ export function useItemById(scene: ItemActionContext, id: string, instanceId?: s
 		else if (id === 'brokenSeal') scene.useBrokenSeal(instanceId);
 		else if (id === 'alchemize') scene.useAlchemize(instanceId);
 		else if (id === 'kingsCrown') scene.useKingsCrown(instanceId);
+		else if (id === 'tengusMask') scene.useTengusMask(instanceId);
 		else if (id === 'featherFall') scene.useFeatherFall(instanceId);
 		else if (id === 'wildEnergy') scene.useWildEnergy(instanceId);
 		else if (id === 'telekineticGrab') scene.useTelekineticGrab(instanceId);
@@ -173,8 +176,6 @@ export function useItemById(scene: ItemActionContext, id: string, instanceId?: s
 		else if (id === 'curseInfusion') scene.useCurseInfusion(instanceId);
 		else if (id === 'magicalInfusion') scene.useMagicalInfusion(instanceId);
 		else if (id === 'beaconOfReturning') scene.useBeaconOfReturning(instanceId);
-		else if (id === 'alchemicalCatalyst') scene.useAlchemicalCatalyst(instanceId);
-		else if (id === 'arcaneCatalyst') scene.useArcaneCatalyst(instanceId);
 		else if (isBagId(id)) scene.openBag(id);
 	} finally {
 		scene.setRequestedItem(null);
