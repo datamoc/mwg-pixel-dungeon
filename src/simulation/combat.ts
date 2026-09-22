@@ -28,9 +28,9 @@ export const INFINITE_EVASION = 1000000;
 export const ASCENSION_MOD: Record<string, number> = {
 	rat: 10, albino: 10, fetidRat: 10,
 	snake: 9,
-	gnoll: 9, gnollTrickster: 9,
+	gnoll: 9, gnollTrickster: 9, gnollExile: 9,
 	swarm: 8.5,
-	crab: 8, greatCrab: 8,
+	crab: 8, greatCrab: 8, hermitCrab: 8,
 	slime: 8, causticSlime: 8,
 	skeleton: 5, necroSkeleton: 5,
 	thief: 5, bandit: 5,
