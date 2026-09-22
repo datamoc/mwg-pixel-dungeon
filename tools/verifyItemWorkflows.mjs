@@ -3,13 +3,16 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { readSceneSource } from './sceneSource.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const dist = fileURLToPath(new URL('../node_modules/mwg/dist/', import.meta.url));
 const out = mkdtempSync(join(tmpdir(), 'spd-items-'));
-function fileURLToPath(url) { return new URL(url).pathname.replace(/^\//, '').replaceAll('/', '\\'); }
+// NOTE: this file used to shadow the import above with a hand-rolled helper that rewrote
+// every path to Windows backslashes - it worked on dev machines and broke the release
+// workflow's ubuntu gate (v0.2.0) with ENOENT. Always use the real `node:url` helper.
 function compile(source, destination) {
 	const target = join(out, destination);
 	mkdirSync(dirname(target), { recursive: true });
