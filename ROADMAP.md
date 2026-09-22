@@ -814,7 +814,7 @@ below to close the gap was judged not worth the churn against those existing ref
       four originally-named screens (title, class select, settings, bag) are keyboard-
       navigable, including every settings-window widget kind (tabs, checkboxes, sliders, the
       language grid).
-- [ ] Add colorblind options to the graphics settings. Too much state here is color-only:
+- [x] Add colorblind options to the graphics settings. Too much state here is color-only:
       buff/debuff icon tints, HP-bar thresholds, key colors, trap and hazard highlights. Offer
       at least deuteranopia/protanopia/tritanopia-safe palettes (plus a high-contrast pass if
       it falls out cheaply), persisted like the other display settings, with every color-coded
@@ -843,8 +843,19 @@ below to close the gap was judged not worth the churn against those existing ref
       affects bars created after it). Live-verified: a damaged monster's bar reads exactly
       `0x009e73`/`0xd55e00` with the setting on. Key art was checked and found to need
       nothing: each key already reads by its own distinct pixel art (gray/gold/cyan), not a
-      swappable tint, so there is no color-only state there to begin with. **Still open**:
-      trap/hazard highlights (not audited this pass) and a high-contrast pass.
+      swappable tint, so there is no color-only state there to begin with.
+      **Progress 2026-09-22: the one hazard-telegraph highlight is done.** An audit of every
+      floor/tile overlay found exactly one color-only hazard indicator:
+      `NewbornFireElemental.doAttack()`'s red `TargetedCell` telegraph (the 3x3 blast-radius
+      warning, `refreshTargetedCellsOverlay` in `monsterAi.ts`) - pure `0xff0000`, Java's own
+      exact tint. `colorblind()` now substitutes the same Okabe-Ito vermillion
+      `SPD_STATUS_COLOR.negative` already uses: still reads as "danger", but stays
+      distinguishable from the palette's own bluish-green "safe" tones, unlike pure red under
+      red-green colorblindness. Live-verified via a forced render: the 3x3 telegraph around
+      the hero renders in the expected orange/vermillion tone, not pure red. No other
+      color-only trap/hazard indicator was found in the audit (traps and hazard cells are
+      identified by their own distinct sprite art, not a swappable overlay tint, the same
+      shape as the key-art finding above). **Still open**: a high-contrast pass.
 
 ## 9. Build the Java-vs-TypeScript parity harness
 

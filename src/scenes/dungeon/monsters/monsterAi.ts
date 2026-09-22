@@ -13,6 +13,7 @@ import { simulationRandom } from '../../../adapters/mwgRandom';
 import { simulationRoguelike } from '../../../adapters/mwgRoguelike';
 import { wraithCombatStats } from '../../../simulation/wraith';
 import { stepTenguAbility, tenguAbilityCost } from '../../../simulation/tenguAbility';
+import { colorblind } from '../../../settings';
 import { capitalize, has, t } from '../../../i18n/index';
 import { SPD_TERRAIN_TO_GAME_KIND, toGameTerrain } from '../../../spdLevelGen/gameBridge';
 import { CITY_IMP_SHOP, PRISON_ARENA, PRISON_TENGU_CELL, PRISON_TENGU_CELL_CENTER, PRISON_TENGU_CELL_DOOR, prisonBossArena, prisonBossEnd, prisonBossPause } from '../../../spdLevelGen/bossLevels';
@@ -1139,18 +1140,25 @@ export const monsterAiMethods = {
 	 *  `for (int i : NEIGHBOURS9) if (!solid[targetingPos + i]) addToBack(new TargetedCell(cell,
 	 *  0xFF0000))` - a red-tinted cell per non-solid square of the 3x3 the blast will cover. Java
 	 *  tints the cell art itself; this draws a translucent red square per cell on the overlay the
-	 *  aim preview uses, which sits under the actors exactly as `addToBack` does. */
+	 *  aim preview uses, which sits under the actors exactly as `addToBack` does.
+	 *  Port-original accessibility work (ROADMAP.md section 8 - Java's own tint is this exact
+	 *  red, so there is no source to diverge from, only this port's own `settings.colorblind()`
+	 *  swap): under `colorblind()` this substitutes the same Okabe-Ito vermillion
+	 *  `SPD_STATUS_COLOR.negative` already uses, which still reads as "danger" but stays
+	 *  distinguishable from the bluish-green "safe" tones the rest of that palette uses,
+	 *  unlike pure red under red-green colorblindness. */
 	refreshTargetedCellsOverlay(this: DungeonScene): void {
 		const overlay = this.targetedCells;
 		if (!overlay) return;
 		overlay.clear();
 		const pending = this.creatures.find((c) => c.kind === 'newbornElemental' && c.newbornTarget)?.newbornTarget;
 		if (!pending) return;
+		const color = colorblind() ? 0xd55e00 : 0xff0000;
 		for (let dy = -1; dy <= 1; dy++) {
 			for (let dx = -1; dx <= 1; dx++) {
 				const at = { x: pending.x + dx, y: pending.y + dy };
 				if (!this.level.inside(at.x, at.y) || !this.level.passable(at.x, at.y)) continue;
-				overlay.rect(at.x * TILE, at.y * TILE, TILE, TILE).fill({ color: 0xff0000, alpha: 0.3 });
+				overlay.rect(at.x * TILE, at.y * TILE, TILE, TILE).fill({ color, alpha: 0.3 });
 			}
 		}
 	},
