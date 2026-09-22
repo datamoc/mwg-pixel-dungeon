@@ -242,6 +242,16 @@ export class SpdOptionSlider extends Container {
 	getValue(): number {
 		return this.value;
 	}
+
+	/** Keyboard-adjustment counterpart to dragging the thumb: steps by one tick, clamped to
+	 * `[min, max]`, moves the thumb and fires `onChange` exactly like a completed drag does. */
+	step(delta: number): void {
+		const next = Math.max(this.min, Math.min(this.max, this.value + delta));
+		if (next === this.value) return;
+		this.value = next;
+		this.placeThumb(next);
+		this.onChange(next);
+	}
 }
 
 interface SettingsContext {
@@ -860,44 +870,53 @@ export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () =
 	});
 	window.resize(width, chrome + maxHeight + GAP + stripHeight + 8);
 	//Port-original keyboard-navigation accessibility work (ROADMAP.md section 8 - Java has
-	//no such system), fourth slice: up/down moves a focus ring over the current tab's own
-	//checkboxes (direct children of its `node` - every existing tab builder adds its
-	//checkboxes flat, not nested, so a shallow scan finds them all) and confirm toggles the
-	//focused one through its own `setChecked(!checked, true)`. Sliders and the language grid
-	//stay mouse-only still - each needs its own adjust semantics (a slider steps a value, not
-	//just toggles), a materially bigger task than reusing an existing toggle method.
-	const checkboxFocusRing = new Graphics();
-	checkboxFocusRing.eventMode = 'none';
-	window.content.addChild(checkboxFocusRing);
-	let focusedCheckbox = 0;
-	const checkboxesIn = (tabIndex: number): SpdCheckBox[] =>
-		built[tabIndex]!.node.children.filter((c): c is SpdCheckBox => c instanceof SpdCheckBox);
-	const drawCheckboxFocus = (): void => {
-		const boxes = checkboxesIn(lastTab);
-		checkboxFocusRing.clear();
-		if (boxes.length === 0) return;
-		focusedCheckbox = Math.min(focusedCheckbox, boxes.length - 1);
-		const box = boxes[focusedCheckbox]!;
-		checkboxFocusRing.rect(box.x - 2, box.y - 2, box.width + 4, box.height + 4)
+	//no such system), fourth/sixth slices: up/down moves a focus ring over the current tab's
+	//own checkboxes and sliders (direct children of its `node` - every existing tab builder
+	//adds them flat, not nested, so a shallow scan finds them all, in visual order since
+	//that is add order too). Confirm toggles a focused checkbox through its own
+	//`setChecked(!checked, true)`; left/right adjusts a focused slider through its own new
+	//`step(delta)` (one tick per press) - and only falls back to switching tabs when nothing
+	//adjustable is focused, so the same keys serve both jobs without a mode switch. The
+	//language grid (`langsTab`, a plain `SpdButton` grid) stays mouse-only still - not a
+	//checkbox or a slider, so this scan does not reach it.
+	const widgetFocusRing = new Graphics();
+	widgetFocusRing.eventMode = 'none';
+	window.content.addChild(widgetFocusRing);
+	let focusedWidget = 0;
+	const focusablesIn = (tabIndex: number): (SpdCheckBox | SpdOptionSlider)[] =>
+		built[tabIndex]!.node.children.filter((c): c is SpdCheckBox | SpdOptionSlider =>
+			c instanceof SpdCheckBox || c instanceof SpdOptionSlider);
+	const drawWidgetFocus = (): void => {
+		const widgets = focusablesIn(lastTab);
+		widgetFocusRing.clear();
+		if (widgets.length === 0) return;
+		focusedWidget = Math.min(focusedWidget, widgets.length - 1);
+		const w = widgets[focusedWidget]!;
+		widgetFocusRing.rect(w.x - 2, w.y - 2, w.width + 4, w.height + 4)
 			.stroke({ width: 2, color: 0xffffff, alpha: 0.9 });
 	};
-	onTabSelected = () => { focusedCheckbox = 0; drawCheckboxFocus(); };
+	onTabSelected = () => { focusedWidget = 0; drawWidgetFocus(); };
 	//Registered after `windows.push` so it sits in front of every listener already on
 	//`Input.onAction` (a stack-mode `Signal` offers the newest listener first) while this
 	//window is the top of the stack; removed on close so a lower window (or the scene
 	//itself) gets the keys back untouched.
 	const onTabAction = (action: string): boolean => {
+		const widgets = focusablesIn(lastTab);
+		const focused = widgets[focusedWidget];
+		if (focused instanceof SpdOptionSlider && (action === 'left' || action === 'right')) {
+			focused.step(action === 'left' ? -1 : 1);
+			return true;
+		}
 		if (action === 'left') { select((lastTab - 1 + tabs.length) % tabs.length); return true; }
 		if (action === 'right') { select((lastTab + 1) % tabs.length); return true; }
-		const boxes = checkboxesIn(lastTab);
-		if (boxes.length > 0) {
-			if (action === 'up') { focusedCheckbox = (focusedCheckbox - 1 + boxes.length) % boxes.length; drawCheckboxFocus(); return true; }
-			if (action === 'down') { focusedCheckbox = (focusedCheckbox + 1) % boxes.length; drawCheckboxFocus(); return true; }
-			if (action === 'confirm') { const box = boxes[focusedCheckbox]!; box.setChecked(!box.isChecked(), true); return true; }
+		if (widgets.length > 0) {
+			if (action === 'up') { focusedWidget = (focusedWidget - 1 + widgets.length) % widgets.length; drawWidgetFocus(); return true; }
+			if (action === 'down') { focusedWidget = (focusedWidget + 1) % widgets.length; drawWidgetFocus(); return true; }
+			if (action === 'confirm' && focused instanceof SpdCheckBox) { focused.setChecked(!focused.isChecked(), true); return true; }
 		}
 		return false;
 	};
-	drawCheckboxFocus();
+	drawWidgetFocus();
 	Input.onAction.add(onTabAction);
 	window.onClose.add(() => Input.onAction.remove(onTabAction));
 	windows.push(window);

@@ -778,8 +778,20 @@ below to close the gap was judged not worth the churn against those existing ref
       `SpdCheckBox`) is unaffected by this pass's checkbox-only scan. Browser-verified live:
       focus starts on Fullscreen, moves to the colorblind checkbox, confirm toggles it, and
       switching from Display to Interface resets focus to that tab's own first checkbox.
-      **This closes the "buttons" clause of the opening sentence for checkboxes specifically -
-      still open**: slider keyboard-adjustment and the language grid.
+      **Progress 2026-09-22 (sixth slice): sliders are keyboard-adjustable now too.** The
+      checkbox-only focus scan above widened to also find `SpdOptionSlider` instances
+      (`focusablesIn`, still a shallow direct-children scan, still visual order); a new
+      public `SpdOptionSlider.step(delta)` mirrors what a completed drag already does (clamp,
+      move the thumb, fire `onChange`). Left/right now context-switches: it adjusts the
+      focused slider by one tick if one is focused, and only falls back to the previous
+      tab-switch behavior otherwise - so the same two keys serve both jobs without a mode
+      toggle, and a slider that happens to be a tab's first widget (Interface's own
+      "toolbar config" row) is reachable and adjustable immediately on entering that tab.
+      Browser-verified live: down-arrowing past both Display checkboxes onto the brightness
+      slider, right-arrow driving its thumb to max: up-arrowing back to a checkbox,
+      right-arrow correctly switching tabs instead (no regression), and the new tab's own
+      first-widget slider (toolbar config) immediately left/right-adjustable on arrival.
+      **Still open**: the language grid (a plain `SpdButton` grid, untouched by either scan).
 - [ ] Add colorblind options to the graphics settings. Too much state here is color-only:
       buff/debuff icon tints, HP-bar thresholds, key colors, trap and hazard highlights. Offer
       at least deuteranopia/protanopia/tritanopia-safe palettes (plus a high-contrast pass if
