@@ -811,6 +811,10 @@ export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () =
 	const maxHeight = Math.max(...built.map((b) => b.height));
 	const stripHeight = 20;
 	const strip: { selected: NinePatch; unselected: NinePatch }[] = [];
+	//Filled in below once `drawCheckboxFocus` exists - `select` is used by both the mouse
+	//tab-click handlers (further down) and the keyboard tab-switch handler, so both need the
+	//checkbox focus reset that follows a tab change, not just the keyboard path.
+	let onTabSelected: () => void = () => {};
 	const select = (index: number): void => {
 		lastTab = index;
 		built.forEach((b, i) => {
@@ -820,6 +824,7 @@ export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () =
 			s.selected.visible = i === index;
 			s.unselected.visible = i !== index;
 		});
+		onTabSelected();
 	};
 	built.forEach((b, i) => {
 		b.node.visible = i === lastTab;
@@ -855,11 +860,28 @@ export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () =
 	});
 	window.resize(width, chrome + maxHeight + GAP + stripHeight + 8);
 	//Port-original keyboard-navigation accessibility work (ROADMAP.md section 8 - Java has
-	//no such system), third slice after the title and class-select screens: left/right
-	//cycles the tab strip itself, matching a click on a tab icon. In-tab widgets
-	//(sliders, checkboxes, the language grid) stay mouse-only for now - a materially
-	//bigger task, since each widget kind needs its own activate/adjust semantics, not
-	//just a focus ring - so this covers only getting between tabs, not around inside one.
+	//no such system), fourth slice: up/down moves a focus ring over the current tab's own
+	//checkboxes (direct children of its `node` - every existing tab builder adds its
+	//checkboxes flat, not nested, so a shallow scan finds them all) and confirm toggles the
+	//focused one through its own `setChecked(!checked, true)`. Sliders and the language grid
+	//stay mouse-only still - each needs its own adjust semantics (a slider steps a value, not
+	//just toggles), a materially bigger task than reusing an existing toggle method.
+	const checkboxFocusRing = new Graphics();
+	checkboxFocusRing.eventMode = 'none';
+	window.content.addChild(checkboxFocusRing);
+	let focusedCheckbox = 0;
+	const checkboxesIn = (tabIndex: number): SpdCheckBox[] =>
+		built[tabIndex]!.node.children.filter((c): c is SpdCheckBox => c instanceof SpdCheckBox);
+	const drawCheckboxFocus = (): void => {
+		const boxes = checkboxesIn(lastTab);
+		checkboxFocusRing.clear();
+		if (boxes.length === 0) return;
+		focusedCheckbox = Math.min(focusedCheckbox, boxes.length - 1);
+		const box = boxes[focusedCheckbox]!;
+		checkboxFocusRing.rect(box.x - 2, box.y - 2, box.width + 4, box.height + 4)
+			.stroke({ width: 2, color: 0xffffff, alpha: 0.9 });
+	};
+	onTabSelected = () => { focusedCheckbox = 0; drawCheckboxFocus(); };
 	//Registered after `windows.push` so it sits in front of every listener already on
 	//`Input.onAction` (a stack-mode `Signal` offers the newest listener first) while this
 	//window is the top of the stack; removed on close so a lower window (or the scene
@@ -867,8 +889,15 @@ export function showSettingsWindow(windows: WindowStack, onLanguageChanged: () =
 	const onTabAction = (action: string): boolean => {
 		if (action === 'left') { select((lastTab - 1 + tabs.length) % tabs.length); return true; }
 		if (action === 'right') { select((lastTab + 1) % tabs.length); return true; }
+		const boxes = checkboxesIn(lastTab);
+		if (boxes.length > 0) {
+			if (action === 'up') { focusedCheckbox = (focusedCheckbox - 1 + boxes.length) % boxes.length; drawCheckboxFocus(); return true; }
+			if (action === 'down') { focusedCheckbox = (focusedCheckbox + 1) % boxes.length; drawCheckboxFocus(); return true; }
+			if (action === 'confirm') { const box = boxes[focusedCheckbox]!; box.setChecked(!box.isChecked(), true); return true; }
+		}
 		return false;
 	};
+	drawCheckboxFocus();
 	Input.onAction.add(onTabAction);
 	window.onClose.add(() => Input.onAction.remove(onTabAction));
 	windows.push(window);

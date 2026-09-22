@@ -765,12 +765,21 @@ below to close the gap was judged not worth the churn against those existing ref
       categories, five sub-bag pouches) in the order `createList` declares them. Browser-
       verified live: opening the bag, Tab switching from "Tout" to "Usage" with the grid
       re-filtering, arrow-key movement plus Enter still opening an item's detail view
-      (a food ration) on the new tab, Escape closing both the detail and the bag. **All
-      four slices of this item are landed now** (title screen, class select, settings
-      tab-strip, bag tab-strip); **still open**: focus/activation for the settings
-      window's in-tab widgets (sliders, checkboxes, the language grid) - a materially
-      different, larger problem per widget kind, not part of this item's original
-      four-screen list, and not attempted this session.
+      (a food ration) on the new tab, Escape closing both the detail and the bag.
+      **Progress 2026-09-22 (fifth slice): settings-window checkboxes are keyboard-focusable
+      now, sliders and the language grid still aren't.** `showSettingsWindow` scans each
+      tab's built `node` for direct-child `SpdCheckBox` instances (every existing tab builder
+      adds its checkboxes flat, not nested), draws a focus ring over one of them, up/down
+      moves it, confirm calls the checkbox's own `setChecked(!checked, true)` (its existing
+      toggle method - no new activation semantics needed, unlike a slider), and switching tabs
+      resets focus to the first checkbox on the new tab. This is opportunistic reuse of an
+      already-simple widget, not the full "every widget kind" scope: a slider still has no
+      keyboard value-stepping, and the language grid (`langsTab`, a `SpdButton` grid, not
+      `SpdCheckBox`) is unaffected by this pass's checkbox-only scan. Browser-verified live:
+      focus starts on Fullscreen, moves to the colorblind checkbox, confirm toggles it, and
+      switching from Display to Interface resets focus to that tab's own first checkbox.
+      **This closes the "buttons" clause of the opening sentence for checkboxes specifically -
+      still open**: slider keyboard-adjustment and the language grid.
 - [ ] Add colorblind options to the graphics settings. Too much state here is color-only:
       buff/debuff icon tints, HP-bar thresholds, key colors, trap and hazard highlights. Offer
       at least deuteranopia/protanopia/tritanopia-safe palettes (plus a high-contrast pass if
