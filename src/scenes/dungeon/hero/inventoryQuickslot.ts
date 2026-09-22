@@ -3,7 +3,7 @@ import { refreshInventoryPanel as refreshInventoryPanelView, type InventoryPanel
 import { createJournalWindow } from '../../../ui/journalWindow';
 import { createJournalTabs } from '../../../ui/journalContent';
 import { Actors, Blob, Camera, Game, Random, Roguelike, TintedSprite, Window } from 'mwg';
-import { spawnCleanseFlare, spawnDeathBursts, spawnHitFlash, spawnShadowBurst, spawnTeleportBurst, syncBlobCells, syncPourAuras } from '../../../ui/effectBursts';
+import { spawnDeathBursts, spawnFlare, spawnHitFlash, spawnShadowBurst, spawnTeleportBurst, syncBlobCells, syncPourAuras } from '../../../ui/effectBursts';
 import { BOOMERANG_RETURN_ACC_FACTOR, BOOMERANG_RETURN_TURNS, MISSILE_DEFAULT_QUANTITY, MISSILE_MAX_DURABILITY, bolasCrippleTurns, missileDamageRange, missileStackId, recordMissileUpgrade, tomahawkBleedRange } from '../../../items/missiles';
 import { applyMealEatenEffects, type ConsumableContext } from '../../../items/consumables'; import { eatBerrySeed } from '../../../items/berry';
 import { readScrollFlow, recallPortScrollId, recallTrackedPortId } from '../../../items/scrollEffects';
@@ -1198,6 +1198,9 @@ export const inventoryQuickslotMethods = {
 				this.say(t('port.log.clericnotarget'), 'warning');
 				return;
 			}
+			//`BlessSpell.castSpell()`'s own `Flare(6, 32).color(0xFFFF00, true)` fires over
+			//`ch` (the resolved target) in both branches below, self included.
+			this.burstBlessFlare(target);
 			if (target === this.hero) {
 				const self = blessSelfDurations(rank);
 				addBuff(this.hero, 'bless', self.bless);
@@ -1850,7 +1853,7 @@ export const inventoryQuickslotMethods = {
 	//every resolve target is visible by construction anyway.
 	burstCleanseFlare(this: DungeonScene, cell: Step): void {
 		if (!this.fov.isVisible(cell.x, cell.y)) return;
-		spawnCleanseFlare(this.effectLayer, this.effectBursts, cell.x, cell.y);
+		spawnFlare(this.effectLayer, this.effectBursts, cell.x, cell.y, 0xff4cd2);
 	},
 
 	//`ch.sprite.burst(0xFFFFFF44, 5)` (`Sunray.java`, tag `v3.3.8`) - the hero-cast
@@ -1859,6 +1862,13 @@ export const inventoryQuickslotMethods = {
 	burstSunrayFlash(this: DungeonScene, cell: Step): void {
 		if (!this.fov.isVisible(cell.x, cell.y)) return;
 		spawnHitFlash(this.effectLayer, this.effectBursts, cell.x, cell.y, 5, 0xffffff);
+	},
+
+	//`new Flare(6, 32).color(0xFFFF00, true).show(ch.sprite, 2f)` (`BlessSpell.java`, tag
+	//`v3.3.8`) - the same star-flare shape `Cleanse` already draws, yellow instead of pink.
+	burstBlessFlare(this: DungeonScene, cell: Step): void {
+		if (!this.fov.isVisible(cell.x, cell.y)) return;
+		spawnFlare(this.effectLayer, this.effectBursts, cell.x, cell.y, 0xffff00);
 	},
 
 	/**

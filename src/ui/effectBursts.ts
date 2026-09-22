@@ -46,11 +46,13 @@ export function spawnTeleportBurst(layer: Container, alive: LiveBurst[], x: numb
 	track(layer, alive, emitter, x, y, 3, 1);
 }
 
-/** `Cleanse.onCast()`'s `new Flare(6, 32).color(0xFF4CD2, true).show(ch.sprite, 2f)`
- * (`actors/hero/spells/Cleanse.java`, tag `v3.3.8`): a pink 6-point star flashing
- * two seconds over every affected character. This port has no star-sprite flare,
- * so pink sparkles on the same 2s beat stand in (same colour, same duration). */
-export function spawnCleanseFlare(layer: Container, alive: LiveBurst[], x: number, y: number): void {
+/** `new Flare(6, 32).color(color, true).show(ch.sprite, 2f)` - Java's own 6-point
+ * star flare, `Cleanse.onCast()` (`actors/hero/spells/Cleanse.java`, pink 0xFF4CD2)
+ * and `BlessSpell.castSpell()` (`actors/hero/spells/BlessSpell.java`, yellow
+ * 0xFFFF00) both use the identical shape and 2s duration, only the color differs.
+ * This port has no star-sprite flare, so colored sparkles on the same 2s beat
+ * stand in for both (same colour, same duration). */
+export function spawnFlare(layer: Container, alive: LiveBurst[], x: number, y: number, color: number): void {
 	const emitter = new ParticleEmitter({
 		texture: Texture.WHITE,
 		max: 8,
@@ -60,7 +62,7 @@ export function spawnCleanseFlare(layer: Container, alive: LiveBurst[], x: numbe
 		angle: [-Math.PI, 0] as [number, number],
 		scale: [8, 0] as [number, number],
 		alpha: (t: number) => 1 - t,
-		tint: 0xff4cd2,
+		tint: color,
 		spawn: { shape: 'rect', width: TILE, height: TILE },
 	});
 	track(layer, alive, emitter, x, y, 8, 2);

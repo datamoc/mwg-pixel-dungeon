@@ -525,7 +525,17 @@ below to close the gap was judged not worth the churn against those existing ref
       bolt - a different, moving-projectile primitive this port has none of, not another
       `Beam` - Bless/DivineSense/HolyWeapon/Judgement/Flash/HolyWard's own effects), plus
       potion/scroll cast presentation generally - a large remainder, not estimated this pass.
-      **Complexity: S** for what's left in this specific line; the rest is unscoped.
+      **Closed 2026-09-22, Bless's own cast flare - the second concrete slice.**
+      `BlessSpell.castSpell()`'s `new Flare(6, 32).color(0xFFFF00, true).show(ch.sprite, 2f)`
+      is the exact same star-flare shape `Cleanse` already draws, yellow instead of pink -
+      `spawnCleanseFlare` generalized into `spawnFlare(layer, alive, x, y, color)` (its one
+      call site updated to pass Cleanse's own pink explicitly) plus a new `burstBlessFlare`
+      wrapper, fired from `resolveBless` on the resolved target in both the self and
+      other-hero branches (Java's own `ch` covers both). Live-verified: a scripted Bless cast
+      (talent gate bypassed for the test) queues a live `effectBursts` entry and applies the
+      real shield/buff, through the exact same particle mechanism the already-working Cleanse
+      flare uses. **Complexity: S** for what's left in this specific line; the rest is
+      unscoped.
 - [x] Audit every static `t('port.*')` call site against `portStrings.ts`'s EN/FR tables. A script
       walk found 45 keys missing from EN and 47 from FR - all fixed (window titles, victory/defeat
       screens, `port.action.bag`/`port.talent.*`, ~20 combat log lines), plus two French-specific
