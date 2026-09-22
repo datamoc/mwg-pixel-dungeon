@@ -3,7 +3,7 @@ import { fallenItemStore } from './fallenItems';
 import { FogOfWar } from '../../ui/fogOfWar';
 import { wallBlockingFrame } from '../../spdLevelGen/wallBlocking';
 import { Actors, AnimatedSprite, Bar, Game, Random, Roguelike, SaveSystem, theme } from 'mwg';
-import { portItemKind, sourceInventoryItem } from '../../items/itemKinds';
+import { groundKindForItem, portItemKind, sourceInventoryItem } from '../../items/itemKinds';
 import { ringWealthBonus, ringWealthMultiplier } from '../../items/ringModifiers';
 import { GROUND_ITEM_KEYS, MOB_KEYS, REGION_KEYS, capitalize, has, t } from '../../i18n/index';
 import { lethalHasteDuration, soulSiphonCharge } from '../../talentEffects';
@@ -23,7 +23,8 @@ import { colorblind } from '../../settings';
 import { ringTypesKnownFor } from '../../simulation/ringKnow';
 import { staffImbueFor } from '../../items/wands';
 import { Banner } from '../../ui/banner';
-import { type GenItem } from '../../items/generator';
+import { bruteLootArmor, type GenItem } from '../../items/generator';
+import { generatedInventoryItem } from '../../items/generatedItems';
 import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type WealthTrackers } from '../../items/wealthDrops';
 import { wandmakerQuestType, wandmakerQuestWands } from '../../spdLevelGen/wandmaker';
 import { FLOOR, TILE, WALL, WATER, WATERSKIN_MAX } from '../../dungeonConstants';
@@ -447,6 +448,17 @@ export const deathSaveRefreshMethods = {
 				const eligible = ['scrollCleanse', 'scrollMirror', 'scrollRecharging', 'scrollTeleportation', 'scrollLullaby', 'scrollMapping', 'scrollRage', 'scrollRetribution', 'scrollTerror', 'scrollTransmutation'] as const;
 				this.spawnGroundItem('scroll', creature.x, creature.y, { id: Random.element(eligible)!, quantity: 1, identified: false });
 				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.scroll) }));
+			}
+			//ArmoredBrute.createLoot() (`actors/mobs/ArmoredBrute.java`, tag `v3.3.8`):
+			//lootChance 1 inside the maxLvl gate, so the drop is guaranteed here - 1-in-4
+			//PlateArmor, else ScaleArmor, each `.random()`ed. Replaces the generic MWL
+			//`armor` row (removed, like the warlock/scorpio/succubus rows that never
+			//existed for their dedicated blocks). Gameplay-stream draws: `bruteLootArmor`
+			//takes the ambient `Random` directly, never the levelgen stream.
+			if (!overleveled && creature.kind === 'armoredBrute') {
+				const item = generatedInventoryItem(bruteLootArmor(Random), { newItemInstanceId: (kind) => this.newItemInstanceId(kind) });
+				this.spawnGroundItem(groundKindForItem(item, 'armor'), creature.x, creature.y, item);
+				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.armor) }));
 			}
 			for (const entry of MOB_LOOT[creature.kind] ?? []) {
 				//Mob.rollToDropLoot()'s own `maxLvl + 2` gate, sharing `overleveled` above.

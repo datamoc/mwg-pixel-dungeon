@@ -599,6 +599,38 @@ export function randomArmor(floorSet: number = Math.floor(currentDepth / 5)): Ge
 	return itemRandom(Cat.ARMOR, cls);
 }
 
+/** Gameplay-stream draws for kill-time loot rolls (which must never burn the levelgen stream above). */
+export interface KillLootRandom {
+	int(bound: number): number;
+	float(): number;
+	weighted(weights: readonly number[]): number | null;
+}
+
+/** `ArmoredBrute.createLoot()` (`actors/mobs/ArmoredBrute.java`, tag `v3.3.8`):
+ * 1-in-4 `PlateArmor`, else `ScaleArmor`, each `.random()`ed (+0 at 3/4, +1 at
+ * 4/20, +2 at 1/20; 30% cursed; 15% inscribed) - the same body as
+ * `weaponOrArmorRandom` above, but every draw goes through the injected kill-time
+ * RNG. Curse/glyph identities burn their draws and are dropped, like everywhere
+ * else here (only kept/discarded survives); Java runs that half on a pushed
+ * separate generator, which is why no levelgen-stream draw is owed for it. */
+export function bruteLootArmor(random: KillLootRandom): GenItem {
+	const cls = random.int(4) === 0 ? 'PlateArmor' : 'ScaleArmor';
+	let level = 0;
+	if (random.int(4) === 0) level = random.int(5) === 0 ? 2 : 1;
+	let cursed = false;
+	let hasGoodEnchant = false;
+	const effectRoll = random.float();
+	if (effectRoll < 0.3) {
+		random.int(CURSE_POOL_SIZE);
+		cursed = true;
+	} else if (effectRoll >= 0.85) {
+		const type = random.weighted(ENCH_TYPE_CHANCES) ?? 0;
+		random.int(ENCH_POOL_SIZES[type] ?? 0);
+		hasGoodEnchant = true;
+	}
+	return { cat: Cat.ARMOR, cls, cursed, level, quantity: 1, hasGoodEnchant };
+}
+
 /** `Generator.randomWeapon(floorSet, useDefaults)`. */
 export function randomWeapon(
 	floorSet: number = Math.floor(currentDepth / 5),

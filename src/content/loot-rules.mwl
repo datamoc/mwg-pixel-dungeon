@@ -61,12 +61,10 @@
             chance: 0.2,
             kind: "potion",
           },
-          {
-            tag: "row",
-            monster: "armoredBrute",
-            chance: 1,
-            kind: "armor",
-          },
+          //ArmoredBrute.createLoot() (`ArmoredBrute.java`, tag `v3.3.8`) is a dedicated
+          //1-in-4-PlateArmor-else-ScaleArmor roll, each `.random()`ed - handled by its
+          //own kill() block (`bruteLootArmor`), so no generic `armor` row lives here
+          //(the same reason the warlock/scorpio/succubus rows never existed).
           {
             tag: "row",
             monster: "dm201",

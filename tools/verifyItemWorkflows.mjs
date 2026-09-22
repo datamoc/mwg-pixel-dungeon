@@ -35,6 +35,10 @@ try {
 	compile(join(root, 'src/items/missiles.ts'), 'items/missiles.js');
 	compile(join(root, 'src/items/itemCurses.ts'), 'items/itemCurses.js');
 	compile(join(root, 'src/items/itemKinds.ts'), 'items/itemKinds.js');
+// `bruteLootArmor` (ArmoredBrute.createLoot) reads only the RNG seam plus the trait table -
+// no scene, no level stream - so the brute plate/scale split is pinned here.
+	compile(join(root, 'src/spdRng.ts'), 'spdRng.js');
+	compile(join(root, 'src/items/generator.ts'), 'items/generator.js');
 // `ChooseBag()`'s pick and the bag `canHold` gates - scene-free, tested below.
 compile(join(root, 'src/items/bags.ts'), 'items/bags.js');
 // Spare-wand identity/charges and the per-wand WildMagic model - likewise scene-free.
@@ -1592,6 +1596,24 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 	// 2-5, shared by the armor switch and the weapon-tier roll.
 	assert.deepEqual(mwlTraitSet('ghostQuestReward', 'tier_weights').map(Number), [0, 0, 10, 6, 3, 1], 'ghost reward tier weights match Ghost.java');
 	assert.deepEqual(mwlTraitSet('ghostQuestReward', 'armor_classes'), ['ClothArmor', 'LeatherArmor', 'MailArmor', 'ScaleArmor', 'PlateArmor'], 'ghost reward armor classes match Ghost.java');
+	// `ArmoredBrute.createLoot()` (ArmoredBrute.java, tag `v3.3.8`): 1-in-4 PlateArmor,
+	// else ScaleArmor, each `.random()`ed (+0 at 3/4, +1 at 4/20, +2 at 1/20; 30%
+	// cursed; 15% inscribed) on the kill-time stream. Scripted RNG doubles pin the
+	// branches without touching any live stream.
+	const { bruteLootArmor } = require('./items/generator.js');
+	const plate = bruteLootArmor({ int: () => 0, float: () => 0, weighted: () => 0 });
+	assert.equal(plate.cls, 'PlateArmor', 'Int(4)==0 deals plate');
+	assert.equal(plate.level, 2, 'Int(4)+Int(5) zeroes upgrade twice');
+	assert.equal(plate.cursed, true, 'effectRoll 0 curses');
+	assert.equal(plate.quantity, 1, 'single armor piece');
+	const scale = bruteLootArmor({ int: () => 3, float: () => 0.5, weighted: () => 0 });
+	assert.equal(scale.cls, 'ScaleArmor', 'anything else deals scale');
+	assert.equal(scale.level, 0, 'no upgrade without the Int(4) hit');
+	assert.equal(scale.cursed, false, 'effectRoll 0.5 is clean');
+	assert.equal(scale.hasGoodEnchant, false, 'effectRoll 0.5 inscribes nothing');
+	const glyph = bruteLootArmor({ int: () => 3, float: () => 0.9, weighted: () => 1 });
+	assert.equal(glyph.hasGoodEnchant, true, 'effectRoll past 0.85 inscribes');
+	assert.equal(glyph.cursed, false, 'inscribed is not cursed');
 	// Hero shared stats (Hero.java, tag `v3.3.8`): HT 20, STR 10 (`STARTING_STR`), attackSkill 10,
 	// defenseSkill 5, and the level-up `updateHT` (+5) with `attackSkill++`/`defenseSkill++`.
 	// Base evasion equals the starting defense skill (`Hero.evasion()` builds on defenseSkill);
