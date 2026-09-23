@@ -21,7 +21,7 @@ try {
 	compile(fileURLToPath(new URL('../src/simulation/crystalSpire.ts', import.meta.url)), 'simulation/crystalSpire.js');
 	const {
 		spireSpread, planSpireDiamond, planSpireLine, spikeDamage, spikeKnockCell,
-		isOpenSpace, guardianSpeed, spireAbilityDelay, spireIdleFrame,
+		isOpenSpace, guardianSpeed, spireAbilityDelay, spireIdleFrame, usesCrystalPassability,
 	} = require(join(temp, 'simulation/crystalSpire.js'));
 
 	const allOpen = () => true;
@@ -43,9 +43,16 @@ try {
 	assert.equal(guardianSpeed(1, true), 1, 'guardian uses base speed in open space');
 	assert.equal(guardianSpeed(1, false), 0.25, 'guardian has quarter speed outside open space, with Java floor');
 	assert.equal(guardianSpeed(0.6, false), 0.25, 'guardian speed floor applies to slow statuses');
+	assert.equal(usesCrystalPassability('crystalWisp', 100, 1, false), true, 'wisp passes mine crystals on every path');
+	assert.equal(usesCrystalPassability('crystalGuardian', 0, 8, true), true, 'hunting guardian uses crystals when plain route is unreachable');
+	assert.equal(usesCrystalPassability('crystalGuardian', 17, 8, true), true, 'hunting guardian uses crystals beyond twice straight distance');
+	assert.equal(usesCrystalPassability('crystalGuardian', 16, 8, true), false, 'hunting guardian keeps a plain route at exactly twice straight distance');
+	assert.equal(usesCrystalPassability('crystalGuardian', 0, 8, false), false, 'wandering guardian keeps ordinary passability');
+	assert.equal(usesCrystalPassability('crystalGuardian', 8, 8, true), false, 'guardian keeps a sufficiently direct plain route');
+	assert.equal(usesCrystalPassability('crystalSpire', 0, 1, true), false, 'spire never uses the monster movement shortcut');
 	assert.deepEqual([spireAbilityDelay(0), spireAbilityDelay(1.2), spireAbilityDelay(3.1)], [1, 2, 3], 'spire delay is ceil hero cooldown clamped to 1..3');
 	assert.deepEqual([0.91, 0.9, 0.67, 0.33].map((hp) => spireIdleFrame(hp * 300, 300)), [0, 1, 2, 3], 'spire idle frames use strict Java HP thresholds');
-	console.log('PASS crystal mine pure planners (9 helpers)');
+	console.log('PASS crystal mine pure planners (10 helpers)');
 } finally {
 	rmSync(temp, { recursive: true, force: true });
 }

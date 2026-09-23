@@ -7,6 +7,7 @@ import { runState } from '../../../runState';
 import { IMMOVABLE_KINDS } from '../../../monsters';
 import {
 	guardianSpeed, isOpenSpace, planSpireDiamond, planSpireLine, spikeDamage, spikeKnockCell, spireAbilityDelay, spireIdleFrame,
+	usesCrystalPassability,
 } from '../../../simulation/crystalSpire';
 import { SPD_TERRAIN_TO_GAME_KIND } from '../../../spdLevelGen/gameBridge';
 import { Terrain } from '../../../spdLevelGen/paintLevel';
@@ -112,14 +113,26 @@ export const crystalMineMethods = {
 
 	/** A route one step at a time, with `MINE_CRYSTAL` cells treated as passable when `crystals`
 	 * (`CrystalWisp`/`CrystalGuardian.modifyPassable()`), doors opened as usual. `terrainOnly`
-	 * ignores characters, as Java's `PathFinder.buildDistanceMap` does. */
-	crystalRoute(this: DungeonScene, monster: Creature, to: Step, crystals: boolean, terrainOnly = false): Step[] {
+	 * ignores characters, as Java's `PathFinder.buildDistanceMap` does; `blockHeroCell` is used
+	 * when pursuing a last-seen hero cell, matching the normal shared wandering route. */
+	crystalRoute(this: DungeonScene, monster: Creature, to: Step, crystals: boolean, terrainOnly = false, blockHeroCell = false): Step[] {
 		const base = doorAwareLevel(this.level, this.doors, this.secrets);
 		const level = crystals
 			? Object.create(base, { passable: { value: (x: number, y: number) => base.passable(x, y) || (this.level.inside(x, y) && this.crystalRawAt(this.level.index(x, y)) === Terrain.MINE_CRYSTAL) } })
 			: base;
 		const from = { x: monster.x, y: monster.y };
-		return new Roguelike.Pathfinder(level).find(from, to, terrainOnly ? {} : { blocked: this.wanderBlocked(monster, false) });
+		return new Roguelike.Pathfinder(level).find(from, to, terrainOnly ? {} : { blocked: this.wanderBlocked(monster, blockHeroCell) });
+	},
+
+	/** The shared movement route for a target. Wisps use their unconditional Java shortcut;
+	 * guardians open crystal passability only while hunting and for a long or impossible plain route. */
+	crystalMinePath(this: DungeonScene, monster: Creature, to: Step, hunting: boolean, blockHeroCell = false): Step[] {
+		const ordinary = this.crystalRoute(monster, to, false, false, blockHeroCell);
+		const distance = Roguelike.chebyshevDistance(monster, to);
+		if (usesCrystalPassability(monster.kind, ordinary.length, distance, hunting)) {
+			return this.crystalRoute(monster, to, true, false, blockHeroCell);
+		}
+		return ordinary;
 	},
 
 	/**
@@ -154,21 +167,20 @@ export const crystalMineMethods = {
 	/**
 	 * Each crystal mob's hunting turn once the shared turn has resolved sleep, paralysis and sight.
 	 * Returns `true` when it owned the turn; `false` hands an adjacent one to the shared melee, and
-	 * an unseen hero to the shared wandering (which paths without the crystal shortcuts).
+	 * an unseen hero to the shared wandering route below.
 	 */
 	takeCrystalMineTurn(this: DungeonScene, monster: Creature, distance: number): boolean {
 		if (!monster.seesHero || distance <= 1) return false;
 		if (monster.kind === 'crystalWisp') {
 			if (this.gnollClearLine(monster, this.hero)) { this.crystalWispZap(monster); return true; }
-			const path = this.crystalRoute(monster, this.hero, true);
+			const path = this.crystalMinePath(monster, this.hero, true);
 			if (path[0]) this.stepMonster(monster, path[0]);
 			return true;
 		}
 		if (monster.kind === 'crystalGuardian') {
 			//`modifyPassable()` while hunting: stomp through crystals only when the plain route is
 			//more than twice the straight-line distance (or missing).
-			let path = this.crystalRoute(monster, this.hero, false);
-			if (path.length === 0 || path.length > 2 * distance) path = this.crystalRoute(monster, this.hero, true);
+			const path = this.crystalMinePath(monster, this.hero, true);
 			if (path[0]) this.crystalGuardianStep(monster, path[0]);
 			return true;
 		}

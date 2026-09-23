@@ -100,6 +100,16 @@ export function guardianSpeed(baseSpeed: number, openSpace: boolean): number {
 	return openSpace ? baseSpeed : Math.max(0.25, baseSpeed / 4);
 }
 
+/**
+ * `CrystalWisp.modifyPassable()` always opens mine crystals; `CrystalGuardian.modifyPassable()`
+ * does so only while hunting and when its ordinary route exceeds twice straight-line distance.
+ * A missing ordinary route is `Integer.MAX_VALUE` in Java's distance map, so it also qualifies.
+ */
+export function usesCrystalPassability(kind: string | undefined, ordinaryPathLength: number, straightDistance: number, hunting: boolean): boolean {
+	if (kind === 'crystalWisp') return true;
+	return kind === 'crystalGuardian' && hunting && (ordinaryPathLength === 0 || ordinaryPathLength > 2 * straightDistance);
+}
+
 /** `spend(GameMath.gate(TICK, (int)Math.ceil(hero.cooldown()), 3*TICK))` after a spire attack. */
 export function spireAbilityDelay(heroCooldown: number): number {
 	return Math.min(3, Math.max(1, Math.ceil(heroCooldown)));

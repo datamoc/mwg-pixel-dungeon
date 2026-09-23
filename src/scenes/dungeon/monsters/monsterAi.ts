@@ -382,9 +382,11 @@ export const monsterAiMethods = {
 		//(Fleeing is its own state in Java).
 		if (monster.lastSeen && !monster.fleeing) {
 			if (monster.x !== monster.lastSeen.x || monster.y !== monster.lastSeen.y) {
-				const next = this.pathfinder.find(
-					{ x: monster.x, y: monster.y }, monster.lastSeen, { blocked: this.wanderBlocked(monster, true) },
-				)[0];
+				const next = monster.kind === 'crystalWisp' || monster.kind === 'crystalGuardian'
+					? this.crystalMinePath(monster, monster.lastSeen, true, true)[0]
+					: this.pathfinder.find(
+						{ x: monster.x, y: monster.y }, monster.lastSeen, { blocked: this.wanderBlocked(monster, true) },
+					)[0];
 				if (next) {
 					this.stepMonster(monster, next);
 					return true;
@@ -402,9 +404,11 @@ export const monsterAiMethods = {
 			monster.patrolTarget = undefined;
 			return true;
 		}
-		const next = this.pathfinder.find(
-			{ x: monster.x, y: monster.y }, monster.patrolTarget, { blocked: this.wanderBlocked(monster, false) }
-		)[0];
+		const next = monster.kind === 'crystalWisp' || monster.kind === 'crystalGuardian'
+			? this.crystalMinePath(monster, monster.patrolTarget, false)[0]
+			: this.pathfinder.find(
+				{ x: monster.x, y: monster.y }, monster.patrolTarget, { blocked: this.wanderBlocked(monster, false) }
+			)[0];
 		if (next) this.stepMonster(monster, next);
 		else if (monster.kind === 'golem' && this.depth !== 20
 			&& monster.patrolTarget && (monster.golemSelfTeleCooldown ?? 0) <= 0) {
