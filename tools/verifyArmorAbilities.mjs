@@ -175,10 +175,31 @@ export function verifyArmorAbilities(require, check) {
 		assert.ok(source.includes('elementalBlastReactiveShield(charsHit,'), 'the reactive barrier counts what the blast caught');
 		assert.ok(source.includes("this.bumpDoor(at.x, at.y);"), 'fireblast opens doors in the cone');
 		assert.ok(source.includes('this.featuresMap?.setLayerData('), 'regrown grass restitches the tiles');
-		assert.ok(source.includes("if (Random.float() < 0.8) low(false);"), 'Lucky uses Java\'s 80% low-tier roll');
-		assert.ok(source.includes('switch (Random.int(6))'), 'Lucky uses Java\'s six-way mid-tier roll');
-		assert.ok(source.includes("kind('bomb')") && source.includes("kind('honeypot')"), 'Lucky includes bomb and honeypot mid-tier drops');
-		assert.ok(source.includes("this.spawnGroundItem('gold'"), 'Lucky includes halved or doubled gold payloads');
+	});
+
+	check('ElementalStrike Lucky rewards are in the right ability and include Java\'s gold case', () => {
+		//`ElementalStrike.perCharEffect()` (`ElementalStrike.java`, tag `v3.3.8`) handles the
+		//Lucky enchantment; `ElementalBlast.java` has no enchantment/Lucky branch. Scope this
+		//source pin to the owning method so unrelated matching text cannot make it pass.
+		const source = readSceneSource();
+		const strikeStart = source.indexOf('activateElementalStrike(this: DungeonScene');
+		assert.notEqual(strikeStart, -1, 'the ElementalStrike scene method exists');
+		const strikeEnd = source.indexOf('\n\t},', strikeStart);
+		assert.notEqual(strikeEnd, -1, 'the ElementalStrike scene method has an object-method boundary');
+		const strike = source.slice(strikeStart, strikeEnd);
+		assert.ok(strike.includes("ench === 'lucky'"), 'the lucky weapon enchant is handled in ElementalStrike');
+		assert.ok(strike.includes("if (Random.float() < 0.8) low(false);"), 'Lucky uses Java\'s 80% low-tier roll');
+		assert.ok(strike.includes('switch (Random.int(6))'), 'Lucky uses Java\'s six-way mid-tier roll');
+		assert.ok(strike.includes("kind('bomb')") && strike.includes("kind('honeypot')"), 'Lucky includes bomb and honeypot mid-tier drops');
+		assert.ok(strike.includes("Random.element(['gold', 'stone', 'potion', 'scroll']"), 'Lucky low tier includes Java\'s gold case');
+		assert.ok(strike.includes("this.spawnGroundItem('gold'"), 'Lucky halves or doubles the gold amount');
+
+		const blastStart = source.indexOf('activateElementalBlast(this: DungeonScene');
+		assert.notEqual(blastStart, -1, 'the ElementalBlast scene method exists');
+		const blastEnd = source.indexOf('\n\t},', blastStart);
+		assert.notEqual(blastEnd, -1, 'the ElementalBlast scene method has an object-method boundary');
+		assert.doesNotMatch(source.slice(blastStart, blastEnd), /ench === 'lucky'/,
+			'ElementalBlast must not be mistaken for the weapon-enchantment Lucky implementation');
 	});
 
 	check('PowerOfMany keeps Java duration and attack damage factors', () => {

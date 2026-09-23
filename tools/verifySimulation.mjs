@@ -201,8 +201,11 @@ const { selectRangedTarget, findEnemyAlly, pursueTarget } = require('./simulatio
 		assert.equal(out(doused, 2, 2), false);
 		assert.deepEqual(doused.extinguished, [{ x: 2, y: 2 }]);
 		assert.deepEqual(plain.extinguished, []);
-		//...but its unfrozen ring still catches from it.
-		for (const cell of [7, 11, 13, 17]) assert.equal(doused.next[cell], 4);
+		//Java's mutable x-major/y-minor cur scan can ignite an already-visited neighbor
+		//before it douses the source, but later neighbors do not see that source. Deliberately
+		//drop the whole source in this port so fire does not spread asymmetrically from a cell
+		//Freezing extinguishes.
+		for (const cell of [7, 11, 13, 17]) assert.equal(doused.next[cell], 0);
 		//A frozen empty cell never ignites even beside fire.
 		const held = planFireSpread(5, 5, seed(5), () => true, (x, y) => x === 2 && y === 1);
 		assert.equal(held.next[7], 0);

@@ -30,9 +30,13 @@ export function planFireSpread(
 	const burntOut: Step[] = [];
 	const extinguished: Step[] = [];
 	const flammableSources = new Set<number>();
+	const frozenCells = new Set<number>();
+	for (let cell = 0; cell < before.length; cell++) {
+		if (isFrozen(cell % width, Math.floor(cell / width))) frozenCells.add(cell);
+	}
 	for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
 		const cell = x + y * width;
-		const frozen = isFrozen(x, y);
+		const frozen = frozenCells.has(cell);
 		if ((before[cell] ?? 0) > 0) {
 			if (frozen) {
 				//Java's freeze branch: extinguish outright, skipping burn, decay
@@ -48,7 +52,8 @@ export function planFireSpread(
 		if (frozen) continue;
 		for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]] as const) {
 			const nx = x + dx, ny = y + dy;
-			if (inside(nx, ny) && (before[nx + ny * width] ?? 0) > 0) {
+			const neighbour = nx + ny * width;
+			if (inside(nx, ny) && !frozenCells.has(neighbour) && (before[neighbour] ?? 0) > 0) {
 				flammableSources.add(cell);
 				break;
 			}
@@ -61,5 +66,10 @@ export function planFireSpread(
 			burning.push({ x, y });
 		}
 	}
+	//`Fire.evolve()` (`Fire.java`, tag `v3.3.8`) clears `cur[cell]` and continues when
+	//Freezing douses a fire cell, but its in-place x-major/y-minor scan means only already-visited
+	//neighbors may ignite from that cell before it is cleared. Treating some neighbors differently
+	//by scan position is an order-dependent Java bug; this port excludes every frozen source so no
+	//cell catches from fire the same step removes.
 	return { next, burning, burntOut, extinguished };
 }
