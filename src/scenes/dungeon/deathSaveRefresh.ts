@@ -16,8 +16,7 @@ import { skeletonBoneExplosionDamage } from '../../simulation/skeletonExplosion'
 import { CLASS_AMMO } from '../../classes';
 import { applyDM300DeathUnseal, applyGooDeathUnseal, applyKingDeathUnseal, applyYogDeathUnseal } from '../bossUnseal';
 import { processSacrifice } from '../../simulation/environmentalBlobs';
-import { nearestFreeCell as nearestFreeCellFlow } from '../../simulation/wandering';
-import { buildYogMinionDeck } from '../../simulation/yogBoss';
+import { buildYogMinionDeck, chooseYogSpawnCell } from '../../simulation/yogBoss';
 import { deathBurstsFor } from '../../simulation/deathBursts';
 import { colorblind } from '../../settings';
 import { ringTypesKnownFor } from '../../simulation/ringKnow';
@@ -889,8 +888,23 @@ export const deathSaveRefreshMethods = {
 		const index = yog.yogSummonIndex ?? 0;
 		const kind = deck[index % deck.length]!;
 		yog.yogSummonIndex = index + 1;
-		const at = nearestFreeCellFlow({ x: yog.x, y: yog.y }, false, this.summonCellContext());
+		const at = chooseYogSpawnCell({
+			yog: { x: yog.x, y: yog.y },
+			hero: { x: this.hero.x, y: this.hero.y },
+			occupantAt: (x, y) => {
+				const occupant = this.creatureAt(x, y);
+				if (!occupant) return null;
+				return occupant.kind === 'sheep' ? 'sheep' : 'blocked';
+			},
+		});
 		if (!at) return false;
+		//Java's kill-a-sheep fallback (`Actor.findChar(spawnPos).die(null)`): the
+		//port's `kill()` returns before XP/loot for allies, the same path sheep
+		//expiry already uses, so the minion inherits a clean cell either way.
+		if (at.killSheep) {
+			const sheep = this.creatureAt(at.x, at.y);
+			if (sheep) this.kill(sheep);
+		}
 		const minion = this.spawnMonster(kind, at);
 		minion.sleeping = false;
 		minion.seesHero = true;

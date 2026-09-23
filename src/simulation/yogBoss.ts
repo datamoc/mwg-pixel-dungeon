@@ -89,3 +89,50 @@ export function buildYogMinionDeck(challenge: boolean, spawnersAlive: number): Y
 	}
 	return deck;
 }
+
+/** `PathFinder.NEIGHBOURS8` (`com.watabou.utils.PathFinder`, tag `v3.3.8`) in (dx, dy)
+ * form: row-major, so the sweep order below reproduces Java's first-found-wins ties. */
+const YOG_SPAWN_SWEEP: ReadonlyArray<readonly [number, number]> = [
+	[-1, -1], [0, -1], [1, -1],
+	[-1, 0], [1, 0],
+	[-1, 1], [0, 1], [1, 1],
+];
+
+export interface YogSpawnContext {
+	yog: Step;
+	hero: Step;
+	/** null = free; anything else blocks the first pass, 'sheep' opens the fallback. */
+	occupantAt(x: number, y: number): 'sheep' | 'blocked' | null;
+}
+
+export interface YogSpawnCell extends Step {
+	killSheep: boolean;
+}
+
+/**
+ * `YogDzewa.act()`'s regular-summon placement (`actors/mobs/YogDzewa.java`, tag
+ * `v3.3.8`): the free `NEIGHBOURS8` cell nearest the hero by Euclidean
+ * `trueDistance` (strict `>`, so the sweep's first cell wins ties), else the
+ * nearest sheep-occupied one - Java kills it with `die(null)` to make room -
+ * else no spawn. No passability gate: Java checks `Actor.findChar` only, and the
+ * arena neighbours are floor by construction. Squared distances preserve
+ * `trueDistance`'s ordering exactly (monotonic sqrt, integer ties stay ties).
+ */
+export function chooseYogSpawnCell(context: YogSpawnContext): YogSpawnCell | null {
+	let best: YogSpawnCell | null = null;
+	let bestDist = 0;
+	for (let pass = 0; pass < 2; pass++) {
+		for (const [dx, dy] of YOG_SPAWN_SWEEP) {
+			const x = context.yog.x + dx, y = context.yog.y + dy;
+			const occupant = context.occupantAt(x, y);
+			if (pass === 0 ? occupant !== null : occupant !== 'sheep') continue;
+			const dist = (x - context.hero.x) ** 2 + (y - context.hero.y) ** 2;
+			if (best === null || dist < bestDist) {
+				best = { x, y, killSheep: pass === 1 };
+				bestDist = dist;
+			}
+		}
+		if (best !== null) return best;
+	}
+	return null;
+}

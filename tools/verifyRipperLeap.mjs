@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
  */
 export function verifyRipperLeap(require, check) {
 	const { canRipperLeap, predictRipperLeapTarget, chooseRipperBounceEnd, ripperLeapCooldown } = require('./simulation/ripperLeap');
+	const { chooseYogSpawnCell } = require('./simulation/yogBoss');
 
 	check('leap triggers only off cooldown, seen, unrooted and at distance 3+', () => {
 		const base = { cooldown: 0, seesHero: true, rooted: false, distance: 3 };
@@ -59,5 +60,35 @@ export function verifyRipperLeap(require, check) {
 		assert.deepEqual(chooseRipperBounceEnd(from, leap, () => false,
 			(cell) => nonSolid.has(`${cell.x},${cell.y}`)), { x: 5, y: 6 });
 		assert.equal(chooseRipperBounceEnd(from, leap, () => false, () => false), null);
+	});
+
+	check('Yog summons land on the free neighbour nearest the hero, sheep fallback last', () => {
+		// `YogDzewa.act()`'s summon placement (`actors/mobs/YogDzewa.java`, tag
+		// `v3.3.8`): Euclidean `trueDistance` to the hero over `NEIGHBOURS8`, strict
+		// `>` so the first cell wins ties, then the same sweep over sheep-occupied
+		// cells (killed to make room), else no spawn. Yog (5,5), hero (5,8).
+		const yog = { x: 5, y: 5 };
+		const hero = { x: 5, y: 8 };
+		const board = (free, sheep = []) => {
+			const freeSet = new Set(free);
+			const sheepSet = new Set(sheep);
+			return {
+				yog, hero,
+				occupantAt: (x, y) => sheepSet.has(`${x},${y}`) ? 'sheep'
+					: freeSet.has(`${x},${y}`) ? null : 'blocked',
+			};
+		};
+		const all = ['4,4', '5,4', '6,4', '4,5', '6,5', '4,6', '5,6', '6,6'];
+		// all free: (5,6) is Euclidean-nearest (squared 4); Chebyshev ties it with
+		// (4,6)/(6,6) at 2, so this also pins the metric, not just the anchor.
+		assert.deepEqual(chooseYogSpawnCell(board(all)), { x: 5, y: 6, killSheep: false });
+		// tie on distance ((4,6) and (6,6) both squared 5): row-major W wins.
+		assert.deepEqual(chooseYogSpawnCell(board(['4,6', '6,6'])), { x: 4, y: 6, killSheep: false });
+		// a free cell beats a nearer sheep: free (4,4) wins over sheep (5,6).
+		assert.deepEqual(chooseYogSpawnCell(board(['4,4'], ['5,6'])), { x: 4, y: 4, killSheep: false });
+		// no free cell: the nearest sheep cell is taken and flagged for the kill.
+		assert.deepEqual(chooseYogSpawnCell(board([], ['4,4', '5,6'])), { x: 5, y: 6, killSheep: true });
+		// nothing free, no sheep: no spawn.
+		assert.equal(chooseYogSpawnCell(board([])), null);
 	});
 }
