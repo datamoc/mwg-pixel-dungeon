@@ -71,7 +71,7 @@ export const actorTurnsHazardsMethods = {
 		//already lives in the immunity table. Found by the 41st matrix.
 		const acidic = !target.isHero && (target.kind === 'goo' || target.kind === 'causticSlime' || target.kind === 'acidic');
 		const damage = target.isHero
-			? Math.floor(rawCorrosion * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune))
+			? Math.floor(rawCorrosion * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()))
 			: target.kind === 'yogFist' && target.yogFistType === 'rotting' ? 0
 			: acidic ? Math.round(rawCorrosion / 2) : rawCorrosion;
 		if (target.isHero) {

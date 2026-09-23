@@ -19,7 +19,7 @@ import { type AlchemyFlowContext } from '../../items/alchemy';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
 import { rollGeneratedAffix } from '../../items/itemKinds';
 import { ENCHANT_TABLE, GLYPH_TABLE } from '../../items/itemAffixes';
-import { ringBonusLevel, ringFurorMultiplier, ringHasteMultiplier, type EquippedRing } from '../../items/ringModifiers';
+import { ringBonusLevel, ringDef, ringFurorMultiplier, ringHasteMultiplier, type EquippedRing } from '../../items/ringModifiers';
 import { capitalize, has, t, titleCase } from '../../i18n/index';
 import { SPD_STATUS_COLOR } from '../../ui/spdTheme';
 import { GameLog } from '../../ui/gameLog';
@@ -104,6 +104,9 @@ export const panelsSingleUseMethods = {
 		this.trinityForm = s.trinityForm ?? null;
 		this.trinityTurns = s.trinityTurns ?? 0;
 		this.trinityBodyAffix = s.trinityBodyAffix ?? null;
+		this.trinityBodyGlyph = s.trinityBodyGlyph ?? null;
+		this.trinitySpiritEffect = s.trinitySpiritEffect ?? null;
+		this.trinityMindEffect = s.trinityMindEffect ?? null;
 		this.livingEarthArmor = s.livingEarthArmor ?? 0;
 		this.livingEarthWandLevel = s.livingEarthWandLevel ?? 0;
 		this.earthrootArmor = (s.earthrootArmorLevel ?? 0) > 0 ? { level: s.earthrootArmorLevel!, pos: s.earthrootArmorPos ?? -1 } : null;
@@ -790,6 +793,26 @@ export const panelsSingleUseMethods = {
 	},
 
 	/**
+	 * `Trinity.SpiritForm`'s stored ring (`SpiritForm.SpiritFormBuff.ring()`, tag `v3.3.8`):
+	 * an *independent* second ring, granted a 20-turn `SpiritFormBuff` regardless of the
+	 * hero's own equipped ring slot - but Java's real combination rule is a **fallback, not a
+	 * stack**: `Ring.getBuffedBonus()` only adds the spirit ring's bonus when the equipped
+	 * ring's own bonus *for that exact stat* is precisely 0 (an equipped ring of a *different*
+	 * stat, or none at all, still counts as 0 for the stat the spirit ring provides). Every
+	 * ring-formula call site combines both reads through `combinedStatBonusLevel`, never blends
+	 * into one `EquippedRing`. Its level is `SpiritForm.ringLevel() = pointsInTalent(SPIRIT_FORM)`
+	 * (0-3, cursed never - Trinity's synthetic instance has no curse state), read fresh every
+	 * time rather than cached, since the talent rank cannot change while the form is active.
+	 * `null` outside an active ring-effect SpiritForm (including the not-yet-offered Chalice
+	 * case, which shares this buff but is not a `Ring`).
+	 */
+	trinitySpiritRing(this: DungeonScene): EquippedRing | null {
+		if (this.trinityForm !== 'spirit' || this.trinityTurns <= 0 || !this.trinitySpiritEffect) return null;
+		if (!ringDef(this.trinitySpiritEffect)) return null;
+		return { id: this.trinitySpiritEffect, level: this.talentRank('spirit_form'), cursed: false };
+	},
+
+	/**
 	 * `Talent.LIGHT_CLOAK`'s cross-hero half (`meta_desc` in the talent strings): gained by a
 	 * non-Rogue, it raises every artifact's charging speed by 7/13/20% at +1/+2/+3. Rogues
 	 * get nothing here - their half is the unequipped-use rate, which is moot because a
@@ -852,7 +875,7 @@ export const panelsSingleUseMethods = {
 		if (this.hero.buffs['chill']) mod /= Math.max(0.5, 1 - this.hero.buffs['chill']! * 0.1);
 		//RingOfHaste.speedMultiplier(): a higher Char.speed() means less time per action in
 		//real Java; this port's turn-cost multiplier expresses the same relationship inverted.
-		mod /= ringHasteMultiplier(this.effectiveRing(), this.hero.magicImmune);
+		mod /= ringHasteMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 		return mod;
 	},
 
@@ -903,7 +926,7 @@ export const panelsSingleUseMethods = {
 		const danceFactor = this.swordDanceTurns > 0 ? 1 / 1.6 : 1;
 		//`Hero.attackDelay()`: `weapon.delayFactor` - the class's `DLY` (gloves/sai/gauntlet 0.5, scimitar 0.8, spear/glaive 1.5).
 		const weaponDelay = weaponCombat(this.weaponMeleeKey(), this.weaponTier, 0).delay;
-		return (this.getActionTurnCostMod() / ringFurorMultiplier(this.effectiveRing(), this.hero.magicImmune)) * augmentDelayFactor * danceFactor * weaponDelay;
+		return (this.getActionTurnCostMod() / ringFurorMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing())) * augmentDelayFactor * danceFactor * weaponDelay;
 	},
 
 	chooseSubclass(this: DungeonScene, option: string): void {

@@ -38,4 +38,50 @@ export function verifyRings(require, check) {
 		assert.match(source.slice(corrosionStart, corrosionEnd), /ringElementsMultiplier/,
 			'the corrosion hero tick must scale by the Elements ring');
 	});
+
+	check("SpiritForm's ring is a fallback, not a stack (`Ring.getBonus`, tag `v3.3.8`)", () => {
+		//Java applies the spirit ring only when the equipped bonus is exactly 0 -
+		//an equipped same-class ring contributing anything (even a cursed negative)
+		//shuts it out for that formula, a kind mismatch falls through to it.
+		const { ringElementsMultiplier, ringForceBonus, ringMightBonus, ringTenacityMultiplier,
+			ringHasteMultiplier, ringEnergyMultiplier, ringArcanaMultiplier, ringWealthMultiplier,
+			ringWealthBonus, ringFurorMultiplier, ringSharpshootingDurabilityMultiplier,
+			combinedStatBonusLevel } = require('./items/ringModifiers');
+		const elements0 = { id: 'ring_elements', level: 0 };
+		const elements2 = { id: 'ring_elements', level: 2 };
+		const haste = { id: 'ring_haste', level: 4 };
+		//equipped same-class wins even when the spirit ring is bigger
+		assert.equal(ringElementsMultiplier(elements0, false, elements2), Math.pow(0.825, 1));
+		//kind mismatch falls through to the spirit ring
+		assert.equal(ringElementsMultiplier(haste, false, elements2), Math.pow(0.825, 3));
+		assert.equal(ringElementsMultiplier(null, false, elements2), Math.pow(0.825, 3));
+		assert.equal(ringElementsMultiplier(null, false, null), 1);
+		//the gate is == 0: a cursed-negative equipped bonus still shuts the spirit out,
+		//a cursed-exactly-zero one falls through
+		assert.equal(ringElementsMultiplier({ id: 'ring_elements', level: 0, cursed: true }, false, elements2),
+			Math.pow(0.825, -2));
+		assert.equal(ringElementsMultiplier({ id: 'ring_elements', level: 2, cursed: true }, false, elements2),
+			Math.pow(0.825, 3));
+		//AntiMagic zeroes both sides
+		assert.equal(ringElementsMultiplier(elements0, true, elements2), 1);
+		//additive helpers share the gate
+		assert.equal(ringForceBonus({ id: 'ring_force', level: 1 }, false, { id: 'ring_force', level: 3 }), 2);
+		assert.equal(ringForceBonus(haste, false, { id: 'ring_force', level: 0 }), 1);
+		assert.equal(ringMightBonus(null, false, { id: 'ring_might', level: 2 }), 3);
+		assert.equal(ringWealthBonus({ id: 'ring_wealth', level: 0 }, false, null), 1);
+		//multiplicative identity holds with no ring on either side
+		assert.equal(ringHasteMultiplier(null, false, null), 1);
+		assert.equal(ringEnergyMultiplier(null, false, null), 1);
+		assert.equal(ringArcanaMultiplier(null, false, null), 1);
+		assert.equal(ringWealthMultiplier(null, false, null), 1);
+		assert.equal(ringFurorMultiplier(null, false, null), 1);
+		assert.equal(ringSharpshootingDurabilityMultiplier(null, false, null), 1);
+		//tenacity reads the combined level against live HP
+		assert.equal(ringTenacityMultiplier(haste, 50, 100, false, { id: 'ring_tenacity', level: 1 }),
+			Math.pow(0.85, 2 * 0.5));
+		//the combiner itself: match wins, mismatch falls, immune zeroes
+		assert.equal(combinedStatBonusLevel(elements0, elements2, 'elements', false), 1);
+		assert.equal(combinedStatBonusLevel(haste, elements2, 'elements', false), 3);
+		assert.equal(combinedStatBonusLevel(elements0, elements2, 'elements', true), 0);
+	});
 }

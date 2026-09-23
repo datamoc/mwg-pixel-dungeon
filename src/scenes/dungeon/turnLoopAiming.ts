@@ -459,7 +459,7 @@ export const turnLoopAimingMethods = {
 			//`MissileWeapon.min()`/`max()` are authored with the missile identity and its
 			//upgrade increments in MWL; this adapter only applies the live stack level and
 			//Sharpshooting bonus. The hit roll and ammo mutation remain executable behavior.
-			const sharpshooting = ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune);
+			const sharpshooting = ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 			const missile = special.sourceClass ? MWL_MISSILE_BY_CLASS.get(special.sourceClass) : undefined;
 			if (!missile) throw new Error(`MWL missile definition is missing for ${this.heroClass}`);
 			const thrownDamage = missileDamageRange(missile.sourceClass, thrownLevel, sharpshooting);
@@ -625,7 +625,7 @@ export const turnLoopAimingMethods = {
 				//SpiritBow.min()/max(): RingOfSharpshooting's bonus is asymmetric here - +bonus on
 				//the low end, +2*bonus on the high end (unlike MissileWeapon's identical +bonus
 				//on both bounds above).
-				const sharpshooting = ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune);
+				const sharpshooting = ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 				const base = Random.normalRange(special.damage[0] + sharpshooting, special.damage[1] + 2 * sharpshooting);
 				const dr = Random.normalRange(target.armor[0], target.armor[1]);
 				const momentum = projectileMomentumBonus(this.subclass(), this.talentRank('projectile_momentum'), this.projectileMomentumReady);
@@ -1239,7 +1239,7 @@ export const turnLoopAimingMethods = {
 					//`LIGHT_READING`'s metamorphosed leg (`RingOfEnergy.java`, tag `v3.3.8`): a
 					//non-Cleric who took the talent recharges wands 1+0.2*rank/3 faster.
 					//`if (Regeneration.regenOn())` gates the base rate only; Recharging still adds.
-					const baseRate = !this.regenOn() ? 0 : ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune)
+					const baseRate = !this.regenOn() ? 0 : ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing())
 						* lightReadingWandMult(this.heroClass, this.talentRank('light_reading')) / turnsToCharge;
 					//Charger.recharge(): Recharging's CHARGE_BUFF_BONUS is a flat `+0.25 * remainder()`
 					//added on top of the base rate, not a 1.25x multiplier on it.
@@ -1267,7 +1267,7 @@ export const turnLoopAimingMethods = {
 			recoverArmorCharge: () => {
 				if (!this.regenOn()) return; //`ClassArmor.Charger.act()`'s `if (Regeneration.regenOn())`
 				this.armorCharge = Math.min(ARMOR_CHARGE_MAX,
-					this.armorCharge + turnCost * ARMOR_CHARGE_PER_TURN * ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier());
+					this.armorCharge + turnCost * ARMOR_CHARGE_PER_TURN * ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) * this.lightCloakChargeMultiplier());
 			},
 			//`HolyTome.TomeRecharge.act()` (tag `v3.3.8`): the carried tome banks the
 			//tick rate while below cap, uncursed, un-immunized and while `regenOn()` (the
@@ -1280,7 +1280,7 @@ export const turnLoopAimingMethods = {
 				const cap = tomeChargeCap(tome.level ?? 0);
 				if ((tome.charge ?? 0) >= cap) { tome.partialCharge = 0; return; }
 				const charged = directTomeCharge(tome.charge ?? 0, tome.partialCharge ?? 0, tome.level ?? 0,
-					turnCost * tomeTickRate(cap, tome.charge ?? 0, tome.level ?? 0, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune)));
+					turnCost * tomeTickRate(cap, tome.charge ?? 0, tome.level ?? 0, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing())));
 				tome.charge = charged.charge;
 				tome.partialCharge = charged.partialCharge;
 			},
@@ -1311,6 +1311,9 @@ export const turnLoopAimingMethods = {
 				if (this.trinityTurns === 0) {
 					this.trinityForm = null;
 					this.trinityBodyAffix = null;
+					this.trinityBodyGlyph = null;
+					this.trinitySpiritEffect = null;
+					this.trinityMindEffect = null;
 				}
 			},
 			tickWeaponAbility: () => this.tickWeaponAbility(turnCost),
@@ -1432,7 +1435,7 @@ export const turnLoopAimingMethods = {
 				{
 					const gates = {
 						magicImmune: this.hero.magicImmune === true, regenOn: this.regenOn(),
-						artifactChargeMultiplier: ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier(),
+						artifactChargeMultiplier: ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) * this.lightCloakChargeMultiplier(),
 					};
 					const chains = this.bag.find('chains') as (typeof this.bag.items[number] & ChainsItem) | undefined;
 					if (chains) {
@@ -1468,7 +1471,7 @@ export const turnLoopAimingMethods = {
 				{
 					const talisman = this.talismanItem();
 					if (talisman) {
-						applyTalismanPerTurnCharge(talisman, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true, this.regenOn());
+						applyTalismanPerTurnCharge(talisman, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true, this.regenOn());
 						this.checkTalismanAwareness();
 					}
 					for (const [creature, turns] of this.awareCreatures) {
@@ -1494,7 +1497,7 @@ export const turnLoopAimingMethods = {
 						const outcome = applyRoseRecharge(rose, {
 							ghostAlive: ghost !== null,
 							...(ghost ? { ghostHp: ghost.hp, ghostMaxHp: ghost.maxHp } : {}),
-							ringMultiplier: ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier(),
+							ringMultiplier: ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) * this.lightCloakChargeMultiplier(),
 							magicImmune: this.hero.magicImmune === true,
 							regenOn: this.regenOn(),
 						});
@@ -1645,7 +1648,7 @@ export const turnLoopAimingMethods = {
 				//unrelated poison/burning death can't misread it as a chasm-fall death.
 				if (this.hero.buffs['bleeding'] === undefined) this.hero.bleedSource = undefined;
 				if (hadHolyWard !== (this.hero.buffs['holyWard'] !== undefined)) this.syncHeroFromStats();
-				const dot = Math.floor(tickedDamage * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune));
+				const dot = Math.floor(tickedDamage * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()));
 				//`Challenge.DuelParticipant.act()`'s pairing half for the hero side (mob
 				//side runs from `takeMonsterTurn`, right after its own tick, for the same
 				//reason: Java buffs act independently of the char's action gates).
@@ -1705,7 +1708,7 @@ export const turnLoopAimingMethods = {
 				if (this.hero.buffs['ooze'] !== undefined) {
 					const rawOoze = this.depth > 5 ? 1 + Math.floor(this.depth / 5)
 						: this.depth === 5 ? 1 : Random.chance(0.5) ? 1 : 0;
-					const oozeDot = Math.floor(rawOoze * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune));
+					const oozeDot = Math.floor(rawOoze * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()));
 					if (oozeDot > 0) {
 						const blockedOoze = this.absorbHeroDamage(oozeDot);
 						this.hero.hp -= blockedOoze;
@@ -1858,7 +1861,7 @@ export const turnLoopAimingMethods = {
 			chaliceLevel: chalice ? (chalice.level ?? 0) : -1,
 			chaliceCursed: chalice?.cursed === true,
 			magicImmune: this.hero.magicImmune === true,
-			artifactChargeMultiplier: ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier(),
+			artifactChargeMultiplier: ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) * this.lightCloakChargeMultiplier(),
 		});
 		const next = tickRegeneration(this.hero.hp, this.hero.maxHp, this.regeneration.partial, {
 			regenOn: this.regenOn(), starving: this.hunger >= STARVING, delay, ticks: turnCost,

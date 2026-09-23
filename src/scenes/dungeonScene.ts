@@ -774,7 +774,9 @@ export class DungeonScene extends Scene2D {
 	trinityForm: 'body' | 'mind' | 'spirit' | null = null;
 	trinityTurns = 0;
 	/** Java Trinity.BodyFormBuff's stored enchantment/glyph, represented by this port's affix id. */
-	trinityBodyAffix: string | null = null;
+	trinityBodyAffix: string | null = null; trinityBodyGlyph: string | null = null;
+	/** Java Trinity's stored SpiritForm/MindForm effect (a ring/artifact id, a wand/dart id). */
+	trinitySpiritEffect: string | null = null; trinityMindEffect: string | null = null;
 	/** `HeroicLeap.DoubleJumpTracker`'s remaining turns: Java's `Buff.affect(hero,
 	 *  DoubleJumpTracker.class, 3)` is a three-turn `FlavourBuff`, and it is what `chargeUse()`
 	 *  discounts against. A plain latch would keep the discount forever - a ranked warrior would

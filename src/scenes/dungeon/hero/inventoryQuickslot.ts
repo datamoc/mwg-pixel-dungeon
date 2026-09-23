@@ -616,7 +616,7 @@ export const inventoryQuickslotMethods = {
 				armbandOf: (instanceId?: string) => scene.armbandItem(instanceId),
 				beginAim: (opts) => scene.beginAiming(opts),
 				creatureAt: (x, y) => scene.creatureAt(x, y),
-				lootMultiplier: () => ringWealthMultiplier(scene.effectiveRing(), scene.hero.magicImmune) + scene.bountyHunterLootBonus(),
+				lootMultiplier: () => ringWealthMultiplier(scene.effectiveRing(), scene.hero.magicImmune, scene.trinitySpiritRing()) + scene.bountyHunterLootBonus(),
 				heroLevel: () => scene.progression.level,
 				mobLoot: (kind) => MOB_LOOT[kind as MonsterId] ?? [],
 				lootDecay: (kind) => LIMITED_DROP_DECAY[kind as MonsterId],
@@ -1737,7 +1737,7 @@ export const inventoryQuickslotMethods = {
 				//took his place. `circlingBack` is true here, so `HeavyBoomerang.adjacentAccFactor`
 				//returns its flat 1.5 rather than the melee-range penalty.
 				const missile = MWL_MISSILE_BY_CLASS.get(this.ammoSourceClass);
-				const sharpshooting = ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune);
+				const sharpshooting = ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 				const damage = missile ? missileDamageRange(missile.sourceClass, pending.level, sharpshooting) : [1, 1] as [number, number];
 				const hit = this.attack({ ...this.hero, kind: undefined, attackMode: 'throw', damage }, occupant, BOOMERANG_RETURN_ACC_FACTOR);
 				if (hit) {
@@ -1923,7 +1923,7 @@ export const inventoryQuickslotMethods = {
 			if (this.ammoSourceClass === 'Bolas') {
 				addBuff(target, 'cripple', bolasCrippleTurns());
 			} else if (this.ammoSourceClass === 'Tomahawk') {
-				const level = this.missileLevel + ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune);
+				const level = this.missileLevel + ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 				const [min, max] = tomahawkBleedRange(level);
 				const bleed = Random.normalRange(min, max);
 				if (bleed > (target.buffs['bleeding'] ?? 0) && !buffBlocked(target, 'bleeding')) target.buffs['bleeding'] = bleed;

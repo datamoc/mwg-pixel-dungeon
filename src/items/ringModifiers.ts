@@ -132,11 +132,40 @@ export function ringBonusLevel(ring: EquippedRing | null, magicImmune = false): 
 	return ring.cursed ? Math.min(0, ring.level - 2) : ring.level + 1;
 }
 
+/**
+ * SpiritForm's ring fallback (`Ring.getBonus()`/`getBuffedBonus()`, tag `v3.3.8`):
+ * the spirit ring contributes ONLY when the equipped bonus is exactly 0 -
+ *
+ * ```java
+ * if (bonus == 0 && spiritForm != null && spiritForm.ring() != null
+ *         && spiritForm.ring().buffClass == type){
+ *     bonus += spiritForm.ring().soloBonus();
+ * }
+ * ```
+ *
+ * so this is a fallback, not a stack: an equipped ring of the same class contributing
+ * anything (even a cursed negative - the gate is `== 0`, not `<= 0`) shuts the spirit
+ * ring out for that formula, while a kind mismatch (or no equipped ring) falls through
+ * to it. `spiritForm.ring()` re-levels to `ringLevel()` (raw talent points) on every
+ * read, so the caller passes the spirit ring already leveled - this only combines.
+ * `spirit` defaults null, which reduces every helper below to its exact previous shape.
+ */
+export function combinedStatBonusLevel(
+	ring: EquippedRing | null,
+	spirit: EquippedRing | null,
+	stat: string,
+	magicImmune = false,
+): number {
+	const base = !ring || ringDef(ring.id)?.stat !== stat ? 0 : ringBonusLevel(ring, magicImmune);
+	if (base !== 0) return base;
+	if (!spirit || ringDef(spirit.id)?.stat !== stat) return 0;
+	return ringBonusLevel(spirit, magicImmune);
+}
+
 /** `RingOfMight.strengthBonus()`: `getBonus(Might.class)`, i.e. the bonus level itself - which
  * is negative for a cursed ring, so a cursed Might ring really does dock the wearer's STR. */
-export function ringMightBonus(ring: EquippedRing | null, magicImmune = false): number {
-	if (!ring || ringDef(ring.id)?.stat !== 'strength') return 0;
-	return ringBonusLevel(ring, magicImmune);
+export function ringMightBonus(ring: EquippedRing | null, magicImmune = false, spirit: EquippedRing | null = null): number {
+	return combinedStatBonusLevel(ring, spirit, 'strength', magicImmune);
 }
 
 /**
@@ -144,25 +173,22 @@ export function ringMightBonus(ring: EquippedRing | null, magicImmune = false): 
  * *before* this hit lands (matches `Hero.damage()`, which computes it before HP drops) -
  * stronger reduction the lower the wearer's current HP already is.
  */
-export function ringTenacityMultiplier(ring: EquippedRing | null, hp: number, maxHp: number, magicImmune = false): number {
-	if (!ring || ringDef(ring.id)?.stat !== 'tenacity') return 1;
+export function ringTenacityMultiplier(ring: EquippedRing | null, hp: number, maxHp: number, magicImmune = false, spirit: EquippedRing | null = null): number {
 	const missingFraction = (maxHp - hp) / maxHp;
-	return Math.pow(0.85, ringBonusLevel(ring, magicImmune) * missingFraction);
+	return Math.pow(0.85, combinedStatBonusLevel(ring, spirit, 'tenacity', magicImmune) * missingFraction);
 }
 
 /** `RingOfHaste.speedMultiplier()`: `1.175^bonusLevel`. Read by `getActionTurnCostMod` as a turn-
  * cost divisor - Java expresses this as `Char.speed()` scaling upward, this port's
  * fractional-turn-cost model expresses the same thing as the cost per action scaling down. */
-export function ringHasteMultiplier(ring: EquippedRing | null, magicImmune = false): number {
-	if (!ring || ringDef(ring.id)?.stat !== 'speed') return 1;
-	return RING_DEFS.haste!.at(ringBonusLevel(ring, magicImmune));
+export function ringHasteMultiplier(ring: EquippedRing | null, magicImmune = false, spirit: EquippedRing | null = null): number {
+	return RING_DEFS.haste!.at(combinedStatBonusLevel(ring, spirit, 'speed', magicImmune));
 }
 
 /** `RingOfEnergy.wandChargeMultiplier()`: `1.175^bonusLevel` (this port doesn't model the
  * Light Reading talent's further multiplier on top, since that talent itself isn't ported). */
-export function ringEnergyMultiplier(ring: EquippedRing | null, magicImmune = false): number {
-	if (!ring || ringDef(ring.id)?.stat !== 'energy') return 1;
-	return RING_DEFS.energy!.at(ringBonusLevel(ring, magicImmune));
+export function ringEnergyMultiplier(ring: EquippedRing | null, magicImmune = false, spirit: EquippedRing | null = null): number {
+	return RING_DEFS.energy!.at(combinedStatBonusLevel(ring, spirit, 'energy', magicImmune));
 }
 
 /** `RingOfArcana.enchantPowerMultiplier()`: `1.175^bonusLevel`. Real Java's
@@ -175,24 +201,21 @@ export function ringEnergyMultiplier(ring: EquippedRing | null, magicImmune = fa
  * all nine ported enchant procs now roll a real chance in this port (Blazing/Chilling/Shocking/
  * Vampiric gained theirs on 2026-09-12), as do the weapon curses - and Wayward's shape is no longer
  * a flat passive either (it is a real toggle as of the same pass). */
-export function ringArcanaMultiplier(ring: EquippedRing | null, magicImmune = false): number {
-	if (!ring || ringDef(ring.id)?.stat !== 'arcana') return 1;
-	return RING_DEFS.arcana!.at(ringBonusLevel(ring, magicImmune));
+export function ringArcanaMultiplier(ring: EquippedRing | null, magicImmune = false, spirit: EquippedRing | null = null): number {
+	return RING_DEFS.arcana!.at(combinedStatBonusLevel(ring, spirit, 'arcana', magicImmune));
 }
 
 /** `RingOfForce.armedDamageBonus()`: the bonus level (a plain +0 ring already adds 1), read at the
  * hero's own melee-attack site. */
-export function ringForceBonus(ring: EquippedRing | null, magicImmune = false): number {
-	if (!ring || ringDef(ring.id)?.stat !== 'force') return 0;
-	return ringBonusLevel(ring, magicImmune);
+export function ringForceBonus(ring: EquippedRing | null, magicImmune = false, spirit: EquippedRing | null = null): number {
+	return combinedStatBonusLevel(ring, spirit, 'force', magicImmune);
 }
 
 /** `RingOfSharpshooting.levelDamageBonus()`: the bonus level (a plain +0 ring already adds 1), read
  * at the hero's thrown/
  * SpiritBow damage rolls. */
-export function ringSharpshootingBonus(ring: EquippedRing | null, magicImmune = false): number {
-	if (!ring || ringDef(ring.id)?.stat !== 'sharpshooting') return 0;
-	return ringBonusLevel(ring, magicImmune);
+export function ringSharpshootingBonus(ring: EquippedRing | null, magicImmune = false, spirit: EquippedRing | null = null): number {
+	return combinedStatBonusLevel(ring, spirit, 'sharpshooting', magicImmune);
 }
 
 /** `RingOfSharpshooting.durabilityMultiplier()`: `1.2^getBonus(Aim.class)` (the same bonus level,
@@ -202,26 +225,23 @@ export function ringSharpshootingBonus(ring: EquippedRing | null, magicImmune = 
  * authors only its `add=level` damage effect (`RingOfSharpshooting.levelDamageBonus()`), not
  * this second, independent Java formula on the same ring - a real, minor gap in the MWL
  * catalogue rather than a duplication to remove. */
-export function ringSharpshootingDurabilityMultiplier(ring: EquippedRing | null, magicImmune = false): number {
-	if (!ring || ringDef(ring.id)?.stat !== 'sharpshooting') return 1;
-	return Math.pow(1.2, ringBonusLevel(ring, magicImmune));
+export function ringSharpshootingDurabilityMultiplier(ring: EquippedRing | null, magicImmune = false, spirit: EquippedRing | null = null): number {
+	return Math.pow(1.2, combinedStatBonusLevel(ring, spirit, 'sharpshooting', magicImmune));
 }
 
 /** `RingOfWealth.dropChanceMultiplier()`: `1.20^bonusLevel`, read by `kill()`'s `MOB_LOOT` roll.
  * Real Java's separate `tryForBonusDrop()` (an independent bonus-item roll, tracked by its
  * own `TriesToDropTracker`/`dropsToRare` counters, escalating toward guaranteed rare loot the
  * longer it goes unrewarded) is not modeled - this only covers the flat chance multiplier. */
-export function ringWealthMultiplier(ring: EquippedRing | null, magicImmune = false): number {
-	if (!ring || ringDef(ring.id)?.stat !== 'wealth') return 1;
-	return RING_DEFS.wealth!.at(ringBonusLevel(ring, magicImmune));
+export function ringWealthMultiplier(ring: EquippedRing | null, magicImmune = false, spirit: EquippedRing | null = null): number {
+	return RING_DEFS.wealth!.at(combinedStatBonusLevel(ring, spirit, 'wealth', magicImmune));
 }
 
 /** `Ring.getBuffedBonus(Wealth.class)`: only a *positive* bonus level enables the separate
  * tryForBonusDrop tracker, so a cursed or AntiMagic-suppressed ring does not start it (a plain
  * +0 ring does - its bonus level is 1). */
-export function ringWealthBonus(ring: EquippedRing | null, magicImmune = false): number {
-	if (!ring || ringDef(ring.id)?.stat !== 'wealth') return 0;
-	return Math.max(0, ringBonusLevel(ring, magicImmune));
+export function ringWealthBonus(ring: EquippedRing | null, magicImmune = false, spirit: EquippedRing | null = null): number {
+	return Math.max(0, combinedStatBonusLevel(ring, spirit, 'wealth', magicImmune));
 }
 
 /** `RingOfElements.resist()`: `pow(0.825, getBuffedBonus(...))` against elemental sources. Real Java
@@ -229,15 +249,13 @@ export function ringWealthBonus(ring: EquippedRing | null, magicImmune = false):
  * call sites (DoT tick, toxic-gas blob, burning trap) are all in that set by
  * construction, so no per-call gating is needed. Returns 1 when no Elements ring is
  * equipped (or the equipped ring is another type). */
-export function ringElementsMultiplier(ring: EquippedRing | null, magicImmune = false): number {
-	if (!ring || ringDef(ring.id)?.stat !== 'elements') return 1;
-	return RING_DEFS.elements!.at(ringBonusLevel(ring, magicImmune));
+export function ringElementsMultiplier(ring: EquippedRing | null, magicImmune = false, spirit: EquippedRing | null = null): number {
+	return RING_DEFS.elements!.at(combinedStatBonusLevel(ring, spirit, 'elements', magicImmune));
 }
 
 /** `RingOfFuror.attackSpeedMultiplier()`: `pow(1.09051, bonusLevel)`. Real Java multiplies
  * attack speed up (dividing `attackDelay()`); this port's turn-cost model expresses
  * the same thing as the attack's turn cost scaling down (see `getAttackTurnCostMod`). */
-export function ringFurorMultiplier(ring: EquippedRing | null, magicImmune = false): number {
-	if (!ring || ringDef(ring.id)?.stat !== 'furor') return 1;
-	return RING_DEFS.furor!.at(ringBonusLevel(ring, magicImmune));
+export function ringFurorMultiplier(ring: EquippedRing | null, magicImmune = false, spirit: EquippedRing | null = null): number {
+	return RING_DEFS.furor!.at(combinedStatBonusLevel(ring, spirit, 'furor', magicImmune));
 }

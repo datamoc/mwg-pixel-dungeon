@@ -585,6 +585,12 @@ export interface SaveShape {
 	trinityForm?: 'body' | 'mind' | 'spirit' | null;
 	trinityTurns?: number;
 	trinityBodyAffix?: string | null;
+	trinityBodyGlyph?: string | null;
+	/** Which ring/artifact id SpiritForm currently grants (`Trinity.spiritForm`'s stored effect);
+	 * read alongside `trinityForm === 'spirit' && trinityTurns > 0` by `trinitySpiritRing()`. */
+	trinitySpiritEffect?: string | null;
+	/** Which wand/dart id MindForm currently grants (`Trinity.mindForm`'s stored effect). */
+	trinityMindEffect?: string | null;
 	/** `Endure.EndureTracker`'s own bundled fields plus its flavour countdown. */
 	endureTurns?: number;
 	endureEnduring?: boolean;

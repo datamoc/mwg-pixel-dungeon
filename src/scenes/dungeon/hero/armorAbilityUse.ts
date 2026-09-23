@@ -22,6 +22,7 @@ import { POWER_OF_MANY_TURNS, trinityBodyDuration } from '../../../simulation/cl
 import { trinityChargeUsePerEffect } from '../../../simulation/clericSpells';
 import { randomSpellbookScroll } from '../../../items/artifactActions';
 import { applyScrollEffect } from '../../../items/scrollEffects';
+import { RING_DEFS } from '../../../items/ringModifiers';
 import { MWL_ARMOR_GLYPHS, MWL_WEAPON_ENCHANTS } from '../../../mwlContent';
 import { coneCells } from '../../../mechanics/cone';
 import { traceRayToTarget } from '../../../mechanics/rays';
@@ -257,10 +258,11 @@ export const armorAbilityUseMethods = {
 	/**
 	 * Java's `Trinity.WndItemtypeSelect` offers every discovered Ring/Artifact type (this port
 	 * has no discovery/stored-item inventory, the same reduction as BodyForm's catalog); its
-	 * `WndUseTrinity` then either grants a 20-turn `SpiritFormBuff` (Rings and, uniquely,
-	 * `ChaliceOfBlood` - both read a *second*, independent passive slot this port's single
-	 * `equippedRing` field and `chaliceRegen` formula have no room for yet - **not offered**) or
-	 * runs the artifact's one-shot `SpiritForm.applyActiveArtifactEffect()`. Of that dispatch's
+	 * `WndUseTrinity` then either grants a 20-turn `SpiritFormBuff` (Rings, now offered - the
+	 * *independent* second ring slot lives in `trinitySpiritRing()`, read by the ring-formula
+	 * call sites alongside `effectiveRing()`; `ChaliceOfBlood` shares this same buff branch but
+	 * is not a `Ring` and has no port model for a second `chaliceRegen` source - **not offered**)
+	 * or runs the artifact's one-shot `SpiritForm.applyActiveArtifactEffect()`. Of that dispatch's
 	 * ten cases, only `UnstableSpellbook.doReadEffect()` is modeled so far - it runs the *inner*
 	 * read (a fresh scroll draw + apply) with none of `execute()`'s outer equip/charge/cursed
 	 * gates, matching Trinity's own bypass exactly, so no synthetic bag instance is needed at
@@ -275,8 +277,45 @@ export const armorAbilityUseMethods = {
 	 */
 	chooseTrinitySpiritEffect(this: DungeonScene, cost: number): void {
 		showChoiceWindow(this.gameWindows, 'Trinity Spirit Form', 'Choose a supported spirit effect.', [
+			...Object.keys(RING_DEFS).map((key) => ({
+				label: `Ring: ${key}`,
+				onPick: () => this.commitTrinitySpiritRing(`ring_${key}`, cost),
+			})),
 			{ label: 'Unstable Spellbook', onPick: () => this.commitTrinitySpiritSpellbook(cost) },
 		]);
+	},
+
+	/**
+	 * `SpiritForm.applyActiveArtifactEffect`'s Ring branch (`Trinity.java`'s `WndUseTrinity`
+	 * onClick, tag `v3.3.8`): `Buff.prolong(hero, SpiritFormBuff, 20f).setEffect(ring)`. This port
+	 * has no `Buff` object to hang the effect on, so the same 20-turn window rides the existing
+	 * `trinityForm`/`trinityTurns` clock (shared with BodyForm's timed window) and the ring choice
+	 * itself lives in `trinitySpiritEffect`, read back by `trinitySpiritRing()`. Refuses a
+	 * duplicate of the equipped ring's own kind, matching Java's parallel checks for the
+	 * weapon-enchant/glyph BodyForm cases (Trinity has no such check for rings specifically in
+	 * Java, but stacking a *second* copy of the exact kind already worn would double-count the
+	 * same formula rather than adding a distinct one, so this port declines it as a stated
+	 * addition, not a Java-cited rule).
+	 */
+	commitTrinitySpiritRing(this: DungeonScene, ringId: string, baseCost: number): void {
+		if (this.equippedRing?.id === ringId) {
+			this.say('Trinity cannot duplicate the equipped ring.', 'warning');
+			return;
+		}
+		const cost = trinityChargeUsePerEffect(baseCost, 'Ring', 'spirit');
+		if (this.armorCharge < cost) {
+			this.say(t('items.armor.classarmor.low_charge'), 'negative');
+			return;
+		}
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		this.trinitySpiritEffect = ringId;
+		this.trinityMindEffect = null;
+		this.trinityForm = 'spirit';
+		this.trinityTurns = 20;
+		delete this.hero.buffs['invisibility'];
+		this.syncHeroFromStats();
+		this.spendHeroAction(1);
+		this.say(`Trinity spirit form: ${ringId}`, 'positive');
 	},
 
 	/**

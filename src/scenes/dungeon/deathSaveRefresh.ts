@@ -430,7 +430,7 @@ export const deathSaveRefreshMethods = {
 			//`PotionOfHealing`; otherwise a fresh non-healing potion class is redrawn until it
 			//isn't Healing. Reproduced here as a real `potionHealing` drop on the rare branch,
 			//else a uniform pick among this port's 7 already-modeled non-healing potion ids.
-			if (!overleveled && creature.kind === 'warlock' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune) })) {
+			if (!overleveled && creature.kind === 'warlock' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) })) {
 				const warlockHp = this.limitedDrops.warlock ?? 0;
 				if (Random.int(3) === 0 && Random.int(8) > warlockHp) {
 					this.limitedDrops.warlock = warlockHp + 1;
@@ -445,7 +445,7 @@ export const deathSaveRefreshMethods = {
 			//Healing nor Strength (a plain redraw-until-excluded loop, no LimitedDrops counter
 			//involved) - the same generic-'potion'-always-heals mismatch as Warlock above, fixed
 			//the same way: a uniform pick among this port's 6 remaining modeled potion ids.
-			if (!overleveled && creature.kind === 'scorpio' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune) })) {
+			if (!overleveled && creature.kind === 'scorpio' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.5 * ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) })) {
 				const eligible = ['potionFlame', 'potionMindVision', 'potionInvis', 'potionPurity', 'potionExperience', 'potionLevitation'] as const;
 				this.spawnGroundItem('potion', creature.x, creature.y, { id: Random.element(eligible)!, quantity: 1, identified: false });
 				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.potion) }));
@@ -458,7 +458,7 @@ export const deathSaveRefreshMethods = {
 			//other modeled scroll ids (all 10 non-Identify/Upgrade members of Java's real
 			//12-class `SCROLL` pool, now that `scrollTransmutation`'s own appearance-table gap -
 			//found and fixed in the same pass - no longer makes it a crash risk to hand out).
-			if (!overleveled && creature.kind === 'succubus' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.33 * ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune) })) {
+			if (!overleveled && creature.kind === 'succubus' && Actors.rollLoot({ entries: [{ id: 'drop', weight: 1 }], chance: 0.33 * ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) })) {
 				const eligible = ['scrollCleanse', 'scrollMirror', 'scrollRecharging', 'scrollTeleportation', 'scrollLullaby', 'scrollMapping', 'scrollRage', 'scrollRetribution', 'scrollTerror', 'scrollTransmutation'] as const;
 				this.spawnGroundItem('scroll', creature.x, creature.y, { id: Random.element(eligible)!, quantity: 1, identified: false });
 				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.scroll) }));
@@ -497,7 +497,7 @@ export const deathSaveRefreshMethods = {
 				const generationDivisor = creature.kind === 'swarm' ? (creature.generation ?? 0) + 1 : 1;
 				const chance = (decay ? entry.chance * decay(this.limitedDrops[counterKind as MonsterId] ?? 0) : entry.chance)
 					/ generationDivisor
-					* (ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune) + this.bountyHunterLootBonus());
+					* (ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) + this.bountyHunterLootBonus());
 				const drop = Actors.rollLoot({ entries: [{ id: entry.kind, weight: 1 }], chance });
 				if (drop) {
 					if (decay) this.limitedDrops[counterKind as MonsterId] = (this.limitedDrops[counterKind as MonsterId] ?? 0) + 1;
@@ -529,7 +529,7 @@ export const deathSaveRefreshMethods = {
 			//boss/miniboss rule here already keys on, not a hand list (which wrongly gave
 			//goo/dm200/dm201 five rolls each while starving real minibosses). Inside the
 			//same `maxLvl + 2` gate: the bonus block sits past it in rollToDropLoot.
-			if (!overleveled && ringWealthBonus(this.effectiveRing()) > 0) {
+			if (!overleveled && ringWealthBonus(this.effectiveRing(), undefined, this.trinitySpiritRing()) > 0) {
 				const rolls = BOSS_KINDS.has(creature.kind as AnyMonsterId) ? 15
 					: MINIBOSS_KINDS.has(creature.kind as AnyMonsterId) ? 5 : 1;
 				this.tryWealthBonusDrop(creature, rolls);
@@ -757,7 +757,7 @@ export const deathSaveRefreshMethods = {
 	 * independent escalating tracker is retained and every generated reward is a real,
 	 * playable ground payload. */
 		tryWealthBonusDrop(this: DungeonScene, creature: Creature, rolls: number): void {
-			const bonus = ringWealthBonus(this.effectiveRing(), this.hero.magicImmune);
+			const bonus = ringWealthBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 			if (bonus <= 0) return;
 			const rng = {
 				int: (n: number) => Random.int(n),
@@ -1453,6 +1453,9 @@ export const deathSaveRefreshMethods = {
 			trinityForm: this.trinityForm,
 			trinityTurns: this.trinityTurns,
 			trinityBodyAffix: this.trinityBodyAffix,
+			trinityBodyGlyph: this.trinityBodyGlyph,
+			trinitySpiritEffect: this.trinitySpiritEffect,
+			trinityMindEffect: this.trinityMindEffect,
 			livingEarthArmor: this.livingEarthArmor,
 			livingEarthWandLevel: this.livingEarthWandLevel,
 			earthrootArmorLevel: this.earthrootArmor?.level ?? 0,

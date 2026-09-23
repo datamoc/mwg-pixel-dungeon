@@ -1397,7 +1397,7 @@ export const weaponSpellsGearMethods = {
 			const missing = this.wandCharges.max - this.wandCharges.current;
 			const rechargeBase = this.ownsBag('magicalHolster') ? HOLSTER_RECHARGE_BASE : NORMAL_RECHARGE_BASE;
 			const turnsToCharge = 10 + 40 * Math.pow(rechargeBase, Math.max(0, missing));
-			const perTurnRate = ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) / turnsToCharge;
+			const perTurnRate = ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) / turnsToCharge;
 			this.wandCharges.advance(perTurnRate * (charge + 1));
 		}
 	},

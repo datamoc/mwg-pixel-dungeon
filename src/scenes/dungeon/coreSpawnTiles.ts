@@ -9,7 +9,7 @@ import { Container, FillGradient, Graphics, TilingSprite } from 'mwg/two-d/pixi-
 import { Actors, AnimatedSprite, Blob, Game, Label, Random, ReactionTable, Roguelike, SpriteSheet, TileMap, TintedSprite, theme } from 'mwg';
 import { SceneSimulationAdapter } from '../../adapters/sceneSimulation';
 import { weaponAbilityFor } from '../../items/weaponAbilities';
-import { ringBonusLevel, ringDef, ringEnergyMultiplier, ringMightBonus } from '../../items/ringModifiers';
+import { combinedStatBonusLevel, ringDef, ringEnergyMultiplier, ringMightBonus, RING_DEFS } from '../../items/ringModifiers';
 import { MOB_KEYS, has, t } from '../../i18n/index';
 import { evasiveArmorBonus, unencumberedSpiritEvasion } from '../../talentEffects';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth } from '../../spdRng';
@@ -317,7 +317,7 @@ export const coreSpawnTilesMethods = {
 		//hit model in 	akeHeroDamage` is gone with it.
 		if (this.guardTurns > 0) this.hero.evasion = 1000000;
 		if (this.healingEvasionTurns > 0) this.hero.evasion = this.talentRank('restored_agility') >= 2 ? 1000000 : this.hero.evasion * 4;
-		this.hero.str = this.heroStr + ringMightBonus(this.effectiveRing(), this.hero.magicImmune);
+		this.hero.str = this.heroStr + ringMightBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 		if (this.hero.buffs['adrenalineSurge']) this.hero.str += 1;
 		//Strongman is the one always-on T1/T2 talent that changes Hero.STR directly.
 		this.hero.str += Math.floor(this.heroStr * (0.03 + 0.05 * this.talentRank('strongman')));
@@ -380,20 +380,35 @@ export const coreSpawnTilesMethods = {
 		//Accuracy/Evasion ride the StatBlock as source-'ring' modifiers, re-applied whole
 		//through scaledModifiers with the ring's own curve evaluated at its level
 		this.heroStats.removeModifiersFrom('ring');
-		if (this.equippedRing) {
-			const def = ringDef(this.equippedRing.id);
-			const level = ringBonusLevel(this.effectiveRing(), this.hero.magicImmune);
-			//Stats applied outside the StatBlock loop (direct damage/turn-cost reads) are
+		{
+			//Trinity SpiritForm's ring is an *independent* second ring (`trinitySpiritRing()`),
+			//so Accuracy/Evasion - the two stats this StatBlock loop carries - are computed per
+			//stat, not per ring: each reads `combinedStatBonusLevel`'s Java fallback (the
+			//equipped ring's own bonus for that stat, or the spirit ring's when the equipped
+			//one is exactly 0 or absent - `Ring.getBuffedBonus()`, tag `v3.3.8`). An equipped
+			//Accuracy ring and a spirit Evasion ring (or vice versa) both apply at once, since
+			//they are different stats; two of the same stat never do (the fallback, not a sum).
+			const spiritRing = this.trinitySpiritRing();
+			const equippedDef = this.equippedRing ? ringDef(this.equippedRing.id) : undefined;
+			const spiritDef = spiritRing ? ringDef(spiritRing.id) : undefined;
+			//Stats applied outside this StatBlock loop (direct damage/turn-cost reads) are
 			//marker-only here: Might (str), Tenacity (incoming-damage curve), Haste/Energy
 			//(turn-cost/wand-rate divisors), Wealth/Arcana/Force/Sharpshooting (kill-loot,
 			//proc-chance, flat damage bonuses), Elements (elemental-damage multiplier) and
 			//Furor (attack-only turn-cost divisor). A Set, not an OR-chain (see ROADMAP Â§11).
-			if (def && !NON_STATBLOCK_RING_STATS.has(def.stat)) {
-				for (const modifier of Actors.scaledModifiers(level, [{ stat: def.stat, op: def.op, base: def.at(level), perLevel: 0 }])) {
+			const relevantStats = new Set(
+				[equippedDef, spiritDef]
+					.filter((def): def is NonNullable<typeof def> => def !== undefined && !NON_STATBLOCK_RING_STATS.has(def.stat))
+					.map((def) => def.stat),
+			);
+			for (const stat of relevantStats) {
+				const level = combinedStatBonusLevel(this.effectiveRing(), spiritRing, stat, this.hero.magicImmune);
+				const def = RING_DEFS[stat]!;
+				for (const modifier of Actors.scaledModifiers(level, [{ stat, op: def.op, base: def.at(level), perLevel: 0 }])) {
 					this.heroStats.addModifier({ ...modifier, source: 'ring' });
 				}
-				this.hero.evasion = this.heroStats.get('evasion') + (this.heroClass === 'rogue' ? 3 : 0);
 			}
+			if (relevantStats.size > 0) this.hero.evasion = this.heroStats.get('evasion') + (this.heroClass === 'rogue' ? 3 : 0);
 		}
 		//`Weapon.accuracyFactor(this, target)`: while the cursed weapon's own
 		//`Wayward.WaywardBuff` is up, the weapon's `ACC` (1 for every ordinary weapon) is divided
@@ -429,13 +444,13 @@ export const coreSpawnTilesMethods = {
 		if (amount > 0) {
 			const currentLevelMaxExp = SPD_LEVEL_CURVE.experienceFor(this.progression.level + 1) - SPD_LEVEL_CURVE.experienceFor(this.progression.level);
 			if (currentLevelMaxExp > 0) {
-				applyToolkitGainCharge({ bag: this.bag }, amount / currentLevelMaxExp, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true);
+				applyToolkitGainCharge({ bag: this.bag }, amount / currentLevelMaxExp, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true);
 				//`MasterThievesArmband.Thievery.gainCharge()` (tag `v3.3.8`): the same per-XP-grant
 				//hook as the toolkit call just above - see `applyArmbandGainCharge`'s own doc comment.
-				applyArmbandGainCharge({ bag: this.bag }, amount / currentLevelMaxExp, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true);
+				applyArmbandGainCharge({ bag: this.bag }, amount / currentLevelMaxExp, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true);
 				//`HornOfPlenty.hornRecharge.gainCharge()` (tag `v3.3.8`): the same per-XP-grant hook
 				//again - see `applyHornGainCharge`'s own doc comment in `artifactActions.ts`.
-				applyHornGainCharge({ bag: this.bag }, amount / currentLevelMaxExp, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true);
+				applyHornGainCharge({ bag: this.bag }, amount / currentLevelMaxExp, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true);
 				//`EtherealChains.chainsRecharge.gainExp()` (tag `v3.3.8`): unlike the three hooks
 				//above, this one also drives the artifact's own leveling (see `applyChainsGainExp`'s
 				//doc comment in `artifactActions.ts` for how its charge/level math differs from theirs).
@@ -684,9 +699,9 @@ export const coreSpawnTilesMethods = {
 	 */
 	syncMirrorImage(this: DungeonScene, image: Creature): void {
 		const level = this.progression.level;
-		const ring = this.effectiveRing();
-		const accBonus = ring?.id === 'ring_accuracy' ? ringBonusLevel(ring, this.hero.magicImmune) : 0;
-		const evBonus = ring?.id === 'ring_evasion' ? ringBonusLevel(ring, this.hero.magicImmune) : 0;
+		const spiritRing = this.trinitySpiritRing();
+		const accBonus = combinedStatBonusLevel(this.effectiveRing(), spiritRing, 'accuracy', this.hero.magicImmune);
+		const evBonus = combinedStatBonusLevel(this.effectiveRing(), spiritRing, 'evasion', this.hero.magicImmune);
 		const stats = mirrorImageStats(level, Math.pow(1.3, accBonus), Math.pow(1.125, evBonus),
 			this.hero.damage[0], this.hero.damage[1]);
 		image.accuracy = stats.accuracy;
@@ -704,9 +719,9 @@ export const coreSpawnTilesMethods = {
 	 */
 	syncPrismaticImage(this: DungeonScene, image: Creature): void {
 		const level = this.progression.level;
-		const ring = this.effectiveRing();
-		const accBonus = ring?.id === 'ring_accuracy' ? ringBonusLevel(ring, this.hero.magicImmune) : 0;
-		const evBonus = ring?.id === 'ring_evasion' ? ringBonusLevel(ring, this.hero.magicImmune) : 0;
+		const spiritRing = this.trinitySpiritRing();
+		const accBonus = combinedStatBonusLevel(this.effectiveRing(), spiritRing, 'accuracy', this.hero.magicImmune);
+		const evBonus = combinedStatBonusLevel(this.effectiveRing(), spiritRing, 'evasion', this.hero.magicImmune);
 		const stats = prismaticImageStats(level, Math.pow(1.3, accBonus), Math.pow(1.125, evBonus));
 		image.accuracy = stats.accuracy;
 		image.evasion = stats.evasion;

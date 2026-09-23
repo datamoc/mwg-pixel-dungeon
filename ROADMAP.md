@@ -190,7 +190,19 @@ below to close the gap was judged not worth the churn against those existing ref
       cases at all), so there is nothing there to port. What remains open is Trinity (AscendedForm's
       BodyForm/MindForm/SpiritForm item-effect dispatch, below).
       **Trinity arithmetic progress (2026-09-22):** the pure Body/Mind/Spirit duration, item-level,
-      and per-effect charge rules are now pinned against the v3.3.8 Java sources. **Progress 2026-09-23:** BodyForm's modeled positive weapon-enchantment subset opens from the MWL catalog (excluding the equipped affix), applies through the melee proc path for its Java-authored duration, and was live-verified in the browser. The full Java discovered/stored effect catalog and glyph-trigger effects remain open; MindForm and SpiritForm still record only cosmetic selection state without item-effect dispatch.
+      and per-effect charge rules are now pinned against the v3.3.8 Java sources. **Progress 2026-09-23:** BodyForm's modeled positive weapon-enchantment subset opens from the MWL catalog (excluding the equipped affix), applies through the melee proc path for its Java-authored duration, and was live-verified in the browser. The full Java discovered/stored effect catalog and glyph-trigger effects remain open; MindForm still records only cosmetic selection state without item-effect dispatch.
+      **Progress 2026-09-23 (SpiritForm):** two of its three real cases are live. UnstableSpellbook
+      reuses `SpiritForm.applyActiveArtifactEffect()`'s own bypass of `execute()`'s equip/charge/
+      cursed gates - a stateless one-shot scroll draw through the shared `applyScrollEffect` seam,
+      gated only by the Trinity armor's own (doubled) charge cost. Rings are a genuine second,
+      *independent* ring slot (`trinitySpiritRing()`, 20-turn window on the existing `trinityForm`/
+      `trinityTurns` clock) - Java's real combination rule turned out to be a **fallback, not a
+      stack** (`Ring.getBuffedBonus()`: the spirit ring's bonus only counts when the equipped
+      ring's own bonus for that exact stat is precisely 0), now wired at all ~37 ring-formula call
+      sites plus the Accuracy/Evasion StatBlock path and the mirror/prismatic-image stat
+      duplication, via `combinedStatBonusLevel` (`items/ringModifiers.ts`). The other 9 SpiritForm
+      artifact cases and Chalice (which shares the Ring branch's 20-turn buff in Java but is not a
+      `Ring`) remain open - see coord DOC1 for the per-case citations.
       **Scoped 2026-09-23 (not yet coded):** read `Trinity.java`/`BodyForm.java`/`SpiritForm.java` (tag `v3.3.8`)
       in full to size the remaining work precisely, since none of it is a formula gap. BodyForm's
       glyph half cannot reuse `armorGlyphActive()` (which applies HolyWard's suppression) - Java's own

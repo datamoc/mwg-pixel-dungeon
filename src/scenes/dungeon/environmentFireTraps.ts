@@ -276,7 +276,7 @@ export const environmentFireTrapsMethods = {
 				dewChanceLevelDivisor: mwlItemEffectValue('sandals', 'dewChanceLevelDivisor'),
 			},
 			chargeNaturalism: () => {
-				applySandalsNaturalismCharge(scene.sandalsItem(), ringEnergyMultiplier(scene.effectiveRing(), magicImmune) * scene.lightCloakChargeMultiplier(), magicImmune);
+				applySandalsNaturalismCharge(scene.sandalsItem(), ringEnergyMultiplier(scene.effectiveRing(), magicImmune, scene.trinitySpiritRing()) * scene.lightCloakChargeMultiplier(), magicImmune);
 			},
 			camouflageDuration: scene.armorGlyphActive() && scene.armorGlyph === 'camouflage'
 				? Math.round((3 + scene.armorLevel / 2) * scene.genericProcMultiplier())
@@ -1058,7 +1058,7 @@ export const environmentFireTrapsMethods = {
 			electricDamage: (target) => {
 				const raw = Math.round(Random.float(2 + this.depth / 5));
 				return target.isHero
-					? Math.floor(raw * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune))
+					? Math.floor(raw * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()))
 					: raw;
 			},
 			creatureAt: (x, y) => this.creatureAt(x, y),
@@ -1093,7 +1093,7 @@ export const environmentFireTrapsMethods = {
 			},
 			corrosiveStrength: () => this.corrosiveGasStrength,
 			toxicDamage: (target) => target.isHero
-				? Math.floor((1 + Math.floor(this.depth / 5)) * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune))
+				? Math.floor((1 + Math.floor(this.depth / 5)) * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()))
 				: 1 + Math.floor(this.depth / 5),
 			//`Char.Property.IMMOVABLE` immunity to Vertigo (`Char.java`): the daze applied
 			//above is Vertigo's stand-in, so these kinds refuse confusion gas - every other
@@ -1993,7 +1993,7 @@ export const environmentFireTrapsMethods = {
 			const divisor = tippedDartUseDivisor(this.ammoTippedSeed, this.talentRank('durable_tips'), this.subclass() === 'warden');
 			const uses = Math.round(baseUses * Math.pow(1.5, this.missileLevel) / divisor
 				* holsterFactor
-				* ringSharpshootingDurabilityMultiplier(this.effectiveRing(), this.hero.magicImmune));
+				* ringSharpshootingDurabilityMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()));
 			if (uses >= 100) return 0;
 			return 100 / Math.max(1, uses) + 0.001;
 		}
@@ -2002,7 +2002,7 @@ export const environmentFireTrapsMethods = {
 		const uses = Math.round(baseUses * Math.pow(1.5, this.missileLevel)
 			* (durable > 0 ? 1.25 + 0.25 * durable : 1)
 			* holsterFactor
-			* ringSharpshootingDurabilityMultiplier(this.effectiveRing(), this.hero.magicImmune));
+			* ringSharpshootingDurabilityMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()));
 		if (uses >= 100) return 0;
 		return 100 / Math.max(1, uses) + 0.001;
 	},

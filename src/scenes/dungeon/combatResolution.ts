@@ -365,7 +365,7 @@ export const combatResolutionMethods = {
 		//expresses the same way every other hero-only bonus here does: `attacker === this.hero`
 		//is only true for the real bump-attack call site, never `useSpecial`'s throw/shoot/zap
 		//branches (those pass a shallow copy of the hero, not the hero itself).
-		if (attacker === this.hero) damage += ringForceBonus(this.effectiveRing(), this.hero.magicImmune);
+		if (attacker === this.hero) damage += ringForceBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 		//`Unstable.proc()`/`Kinetic.proc()`: an Unstable weapon delegates every swing to one
 		//`Random.element` draw over `UNSTABLE_DELEGATES` (Java's `Random.oneOf(randomEnchants)`
 		//minus the documented exclusions). The pick is stashed so `heroOnHit`'s post-damage
@@ -1130,7 +1130,7 @@ export const combatResolutionMethods = {
 	},
 
 	genericProcMultiplier(this: DungeonScene): number {
-		let multi = ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune);
+		let multi = ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 		if (this.hero.buffs['berserk'] !== undefined) {
 			const missing = this.hero.maxHp > 0 ? 1 - this.hero.hp / this.hero.maxHp : 0;
 			multi += Math.min(1, missing) * 0.15 * this.talentRank('enraged_catalyst');
@@ -1700,7 +1700,7 @@ export const combatResolutionMethods = {
 		}
 		//Hero.damage(): `dmg = ceil(dmg * RingOfTenacity.damageMultiplier())` is applied before
 		//Char.damage()'s own Barrier absorption, so Tenacity scales the raw hit here too.
-		const tenacityMultiplier = ringTenacityMultiplier(this.effectiveRing(), this.hero.hp, this.hero.maxHp, this.hero.magicImmune);
+		const tenacityMultiplier = ringTenacityMultiplier(this.effectiveRing(), this.hero.hp, this.hero.maxHp, this.hero.magicImmune, this.trinitySpiritRing());
 		let scaled = tenacityMultiplier < 1 ? Math.ceil(amount * tenacityMultiplier) : amount;
 		//AntiMagic.drRoll()/Char.damage() (items/armor/glyphs/AntiMagic.java and
 		//actors/Char.java, tag 4.0.0-beta): listed magical sources lose a
