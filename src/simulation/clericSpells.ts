@@ -44,9 +44,20 @@ export const TOME_START_CHARGES = 3;
 export type TomeSpellId = 'guidingLight' | 'holyWeapon' | 'holyWard';
 
 /** Trinity's three item-form families (`BodyForm`, `MindForm`, `SpiritForm`, tag `v3.3.8`).
- * The scene/UI dispatcher is still unported; these pure rules keep its authored numbers in one
- * place so the eventual item-effect implementation cannot guess at them. */
+ * The scene/UI dispatcher uses the BodyForm weapon-enchantment and modeled defensive-glyph
+ * subsets; MindForm and SpiritForm remain unported. These pure rules keep the authored numbers in
+ * one place so the remaining item-effect work cannot guess at them. */
 export type TrinityForm = 'body' | 'mind' | 'spirit';
+
+/** `Armor.proc()`'s independent BodyForm glyph gate (`Armor.java`, tag `v3.3.8`): the
+ * Trinity glyph is skipped when the hero is MagicImmune or it duplicates the worn glyph. */
+export function trinityBodyGlyphActive(
+	form: TrinityForm | null, turns: number, selected: string | null,
+	equipped: string | null, magicImmune: boolean | undefined, glyph: string,
+): boolean {
+	return form === 'body' && turns > 0 && selected === glyph && equipped !== glyph && magicImmune !== true;
+}
+
 
 /** `BodyForm.duration()`: `round(13.33 + 6.67 * points)`, i.e. 20/27/33/40 turns. */
 export function trinityBodyDuration(talentRank: number): number {

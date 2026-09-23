@@ -585,6 +585,7 @@ export interface SaveShape {
 	trinityForm?: 'body' | 'mind' | 'spirit' | null;
 	trinityTurns?: number;
 	trinityBodyAffix?: string | null;
+	trinityBodyGlyph?: string | null;
 	/** `Endure.EndureTracker`'s own bundled fields plus its flavour countdown. */
 	endureTurns?: number;
 	endureEnduring?: boolean;

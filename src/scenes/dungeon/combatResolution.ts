@@ -8,7 +8,7 @@ import { planShockElementalArc } from '../../simulation/shockArc';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
 import { UNSTABLE_DELEGATES } from '../../items/itemAffixes';
 import { ringArcanaMultiplier, ringForceBonus, ringTenacityMultiplier } from '../../items/ringModifiers';
-import { HOLY_WARD_BLOCK, HOLY_WEAPON_BONUS, auraProcBonus, auraProtectedDamage, satiatedShieldAmount, searingLightBonus, shieldOfLightRange } from '../../simulation/clericSpells';
+import { HOLY_WARD_BLOCK, HOLY_WEAPON_BONUS, auraProcBonus, auraProtectedDamage, satiatedShieldAmount, searingLightBonus, shieldOfLightRange, trinityBodyGlyphActive } from '../../simulation/clericSpells';
 import { capitalize, has, t } from '../../i18n/index';
 import { assassinReachBonus, cleaveComboSeed, deathlessFuryTriggers, empoweredStrikeBonus, farsightMultiplier, shieldBatteryGain, weaponRechargingDamage } from '../../talentEffects';
 import { Terrain, type PaintLevel } from '../../spdLevelGen/paintLevel';
@@ -465,7 +465,7 @@ export const combatResolutionMethods = {
 		//reduction, `ceil(damage x hitChance)` clamped to [0.25, 1]. Runs here at
 		//the landed-hit boundary; Java runs it in `defenseProc` pre-armor, the
 		//same stated placement every other defend effect here already carries.
-		if (defender.isHero && this.armorGlyphActive() && this.armorGlyph === 'stone' && damage > 0) {
+		if (defender.isHero && ((this.armorGlyphActive() && this.armorGlyph === 'stone') || this.trinityBodyGlyphIs('stone')) && damage > 0) {
 			damage = Math.ceil(damage * stoneGlyphReduction(liveStats(attacker).accuracy, this.hero.evasion, this.armorProcMultiplier(defender)));
 		}
 		//Displacement.proc(): a 1-in-20 x arcana armor-curse proc teleports the defender
@@ -1005,7 +1005,7 @@ export const combatResolutionMethods = {
 		//it still stops at walls/occupants and lets moveTo apply flying/chasm and piranha
 		//post-move rules. This is deliberately after damage, while Java's armor proc is
 		//inside Char.damage(), because the observable result is the same hit plus displacement.
-		if (defender.isHero && this.armorGlyphActive() && this.armorGlyph === 'repulsion' && attacker.hp > 0
+		if (defender.isHero && ((this.armorGlyphActive() && this.armorGlyph === 'repulsion') || this.trinityBodyGlyphIs('repulsion')) && attacker.hp > 0
 			&& Roguelike.chebyshevDistance(attacker, defender) <= 1) {
 			const level = this.degradedLevel(this.armorLevel);
 			const procChance = ((level + 1) / (level + 5)) * this.armorProcMultiplier(defender);
@@ -1655,6 +1655,14 @@ export const combatResolutionMethods = {
 		return glyph !== null && (this.hero.buffs['holyWard'] === undefined || this.subclass() === 'paladin' || getCurse(glyph) !== undefined);
 	},
 
+	/** Java's `Armor.proc()` runs `BodyFormBuff.glyph()` independently of the worn glyph and
+	 * HolyWard's `Armor.hasGlyph()` suppression. `MagicImmune` disables that entire Trinity branch;
+	 * an effect matching the worn glyph is also skipped to avoid double-proccing it. */
+	trinityBodyGlyphIs(this: DungeonScene, glyph: string): boolean {
+		return trinityBodyGlyphActive(this.trinityForm, this.trinityTurns, this.trinityBodyGlyph,
+			this.armorGlyph, this.hero.magicImmune, glyph);
+	},
+
 	/** Barrier absorbs incoming damage before HP, matching Buff.Barrier's core rule. */
 	absorbHeroDamage(this: DungeonScene, amount: number, magical = false, auraAlreadyApplied = false): number {
 		if (!auraAlreadyApplied) amount = this.auraProtectedDamage(this.hero, amount);
@@ -1707,7 +1715,7 @@ export const combatResolutionMethods = {
 		//NormalIntRange(level*Arcana, (3+1.5*level)*Arcana) roll before shields.
 		//The port's explicit magical flag is used only at its real ranged-magic
 		//callers; physical melee and unclassified environmental damage stay untouched.
-		if (magical && this.armorGlyphActive() && this.armorGlyph === 'antimagic') {
+		if (magical && ((this.armorGlyphActive() && this.armorGlyph === 'antimagic') || this.trinityBodyGlyphIs('antimagic'))) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
 			const multiplier = this.armorProcMultiplier(this.hero);
 			const reduction = Random.normalRange(Math.round(level * multiplier), Math.round((3 + level * 1.5) * multiplier));
@@ -1728,7 +1736,7 @@ export const combatResolutionMethods = {
 		//When Arcana pushes the fraction above 1, Java instead divides the full hit
 		//by that fraction and defers that reduced amount. The shared hero damage
 		//boundary covers melee, missiles, wands, traps, and environmental damage.
-		if (!this.applyingDeferredDamage && this.armorGlyphActive() && this.armorGlyph === 'viscosity' && viscosityDamage > 0) {
+		if (!this.applyingDeferredDamage && ((this.armorGlyphActive() && this.armorGlyph === 'viscosity') || this.trinityBodyGlyphIs('viscosity')) && viscosityDamage > 0) {
 			const level = Math.max(0, this.degradedLevel(this.armorLevel));
 			const percent = ((level + 1) / (level + 6)) * this.armorProcMultiplier(this.hero);
 			const deferred = percent > 1 ? Math.round(viscosityDamage / percent) : Math.ceil(viscosityDamage * percent);

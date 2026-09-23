@@ -104,6 +104,7 @@ export const panelsSingleUseMethods = {
 		this.trinityForm = s.trinityForm ?? null;
 		this.trinityTurns = s.trinityTurns ?? 0;
 		this.trinityBodyAffix = s.trinityBodyAffix ?? null;
+		this.trinityBodyGlyph = s.trinityBodyGlyph ?? null;
 		this.livingEarthArmor = s.livingEarthArmor ?? 0;
 		this.livingEarthWandLevel = s.livingEarthWandLevel ?? 0;
 		this.earthrootArmor = (s.earthrootArmorLevel ?? 0) > 0 ? { level: s.earthrootArmorLevel!, pos: s.earthrootArmorPos ?? -1 } : null;

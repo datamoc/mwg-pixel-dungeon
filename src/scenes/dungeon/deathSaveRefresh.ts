@@ -1453,6 +1453,7 @@ export const deathSaveRefreshMethods = {
 			trinityForm: this.trinityForm,
 			trinityTurns: this.trinityTurns,
 			trinityBodyAffix: this.trinityBodyAffix,
+			trinityBodyGlyph: this.trinityBodyGlyph,
 			livingEarthArmor: this.livingEarthArmor,
 			livingEarthWandLevel: this.livingEarthWandLevel,
 			earthrootArmorLevel: this.earthrootArmor?.level ?? 0,
