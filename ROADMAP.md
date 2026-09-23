@@ -190,7 +190,26 @@ below to close the gap was judged not worth the churn against those existing ref
       cases at all), so there is nothing there to port. What remains open is Trinity (AscendedForm's
       BodyForm/MindForm/SpiritForm item-effect dispatch, below).
       **Trinity arithmetic progress (2026-09-22):** the pure Body/Mind/Spirit duration, item-level,
-      and per-effect charge rules are now pinned against the v3.3.8 Java sources. **Progress 2026-09-23:** BodyForm's modeled positive weapon-enchantment subset opens from the MWL catalog (excluding the equipped affix), applies through the melee proc path for its Java-authored duration, and was live-verified in the browser. The full Java discovered/stored effect catalog and glyph-trigger effects remain open; MindForm and SpiritForm still record only cosmetic selection state without item-effect dispatch. The three armor abilities' remaining spell/ally branches (AscendedForm's base shield window
+      and per-effect charge rules are now pinned against the v3.3.8 Java sources. **Progress 2026-09-23:** BodyForm's modeled positive weapon-enchantment subset opens from the MWL catalog (excluding the equipped affix), applies through the melee proc path for its Java-authored duration, and was live-verified in the browser. The full Java discovered/stored effect catalog and glyph-trigger effects remain open; MindForm and SpiritForm still record only cosmetic selection state without item-effect dispatch.
+      **Scoped 2026-09-23 (not yet coded):** read `Trinity.java`/`BodyForm.java`/`SpiritForm.java` (tag `v3.3.8`)
+      in full to size the remaining work precisely, since none of it is a formula gap. BodyForm's
+      glyph half cannot reuse `armorGlyphActive()` (which applies HolyWard's suppression) - Java's own
+      `Armor.proc()`/`hasGlyph()` run the Trinity glyph as an independent OR-branch that bypasses
+      HolyWard entirely (only refusing a class match with the equipped glyph), so each of this port's
+      six scattered glyph call sites (Stone/Displacement/Repulsion/Obfuscation/Antimagic/Viscosity in
+      `combatResolution.ts`) needs its own added `trinityGlyphIs('x') ||` alternative, not a blended
+      "effective glyph" read. MindForm temporarily wields a discovered Wand or thrown-weapon/dart at
+      `MindForm.itemLevel()` for one throw/zap through `MindForm.targetSelector`; this port has no
+      synthetic "temporary item cast" path today (every wand/dart cast reads a real bag instance).
+      SpiritForm's ring branch needs a second, independent ring-passive slot (Java stacks it on top of
+      any equipped ring) - this port models only one ring slot (`equippedRing`), read at 41 separate
+      formula call sites across 9 files, so every one would need a second read, not a swap; its
+      artifact branch (`applyActiveArtifactEffect`, 9 cases) is the more tractable half, since it can
+      mostly reuse this port's already-ported per-artifact resolve functions
+      (`useHourglass`/`useChalice`/`useToolkit`/`useSpellbook`/`useSandalsFlow`/the talisman scry flow,
+      in `items/artifactActions.ts` and siblings) fed a synthetic instance at
+      `artifactLevel() = 2+2*rank` instead of a real bag item. Full findings, with every Java citation,
+      filed as coord DOC1 ("Trinity MindForm/SpiritForm/BodyForm-glyph scoping"). The three armor abilities' remaining spell/ally branches (AscendedForm's base shield window
       and all three of its tier-4 spells - DivineIntervention since 2026-09-22 - are live; the
       remaining Trinity forms stay open), and the
       rest of the real Cleric talent tree (tiers 1-3 are live since 2026-09-21, see
