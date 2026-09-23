@@ -191,8 +191,8 @@ at the repo root is a scratch coordination log — check it before starting broa
 file-budget-adjacent work if a peer session isn't reachable directly.
 
 A faster channel also exists for this: the **coord** coordination server, whose plugin lives at
-`C:/Users/miche/dev/acp-agent-coordination/plugins/coord` (client: `node
-C:/Users/miche/dev/acp-agent-coordination/plugins/coord/client/cli.js`, or `coord` when it is on
+`C:/Users/miche/dev/coord/plugins/coord` (client: `node
+C:/Users/miche/dev/coord/plugins/coord/client/cli.js`, or `coord` when it is on
 PATH; Node >= 20, nothing to install). It gives concurrent sessions - Claude Code, Codex and others -
 a shared mailbox, file/directory claims, task offers, discussions, documents and a presence roster in
 near real time, layered on top of (not instead of) `agents_talking.md`. Its own `coord` skill
