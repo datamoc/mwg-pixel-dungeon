@@ -19,6 +19,8 @@ import { shadowCloneAccuracy, shadowCloneArmorShare, shadowCloneBladeShare, shad
 import { showChoiceWindow } from '../../../ui/portWindows';
 import { POWER_OF_MANY_TURNS, trinityBodyDuration } from '../../../simulation/clericSpells';
 import { trinityChargeUsePerEffect } from '../../../simulation/clericSpells';
+import { randomSpellbookScroll } from '../../../items/artifactActions';
+import { applyScrollEffect } from '../../../items/scrollEffects';
 import { MWL_WEAPON_ENCHANTS } from '../../../mwlContent';
 import { coneCells } from '../../../mechanics/cone';
 import { traceRayToTarget } from '../../../mechanics/rays';
@@ -158,7 +160,7 @@ export const armorAbilityUseMethods = {
 		showChoiceWindow(this.gameWindows, 'Cleric Trinity', 'Choose a Trinity form.', [
 			{ label: 'Body Form', onPick: () => this.chooseTrinityBodyEffect(cost) },
 			{ label: 'Mind Form', onPick: () => this.commitTrinityForm('mind', cost) },
-			{ label: 'Spirit Form', onPick: () => this.commitTrinityForm('spirit', cost) },
+			{ label: 'Spirit Form', onPick: () => this.chooseTrinitySpiritEffect(cost) },
 		]);
 		return false;
 	},
@@ -213,6 +215,60 @@ export const armorAbilityUseMethods = {
 		this.trinityTurns = form === 'body' ? trinityBodyDuration(this.talentRank('body_form')) : 1;
 		this.spendHeroAction(1);
 		this.say(`Trinity: ${form} form`, 'positive');
+	},
+
+	/**
+	 * Java's `Trinity.WndItemtypeSelect` offers every discovered Ring/Artifact type (this port
+	 * has no discovery/stored-item inventory, the same reduction as BodyForm's catalog); its
+	 * `WndUseTrinity` then either grants a 20-turn `SpiritFormBuff` (Rings and, uniquely,
+	 * `ChaliceOfBlood` - both read a *second*, independent passive slot this port's single
+	 * `equippedRing` field and `chaliceRegen` formula have no room for yet - **not offered**) or
+	 * runs the artifact's one-shot `SpiritForm.applyActiveArtifactEffect()`. Of that dispatch's
+	 * ten cases, only `UnstableSpellbook.doReadEffect()` is modeled so far - it runs the *inner*
+	 * read (a fresh scroll draw + apply) with none of `execute()`'s outer equip/charge/cursed
+	 * gates, matching Trinity's own bypass exactly, so no synthetic bag instance is needed at
+	 * all. The other nine (`AlchemistsToolkit`/`DriedRose`/`EtherealChains`/`HornOfPlenty`/
+	 * `MasterThievesArmband`/`SandalsOfNature`/`TalismanOfForesight`/`TimekeepersHourglass`/
+	 * `SkeletonKey`) are **not yet offered**: five need this scene's cell-targeting flow wired to
+	 * a one-shot artifact action it does not have yet, `TimekeepersHourglass` bypasses its own
+	 * `execute()`/charge entirely for a bespoke `TimeBubble.reset(artifactLevel())` this port's
+	 * time-bubble state has not been checked against, and `AlchemistsToolkit`/`DriedRose` are
+	 * likewise bespoke (a scene switch; a level-scaled Corruption-buffed Wraith spawn) rather than
+	 * a reuse of this port's own persistent-item flows for those artifacts.
+	 */
+	chooseTrinitySpiritEffect(this: DungeonScene, cost: number): void {
+		showChoiceWindow(this.gameWindows, 'Trinity Spirit Form', 'Choose a supported spirit effect.', [
+			{ label: 'Unstable Spellbook', onPick: () => this.commitTrinitySpiritSpellbook(cost) },
+		]);
+	},
+
+	/**
+	 * `SpiritForm.applyActiveArtifactEffect(UnstableSpellbook)` (`SpiritForm.java`, tag `v3.3.8`):
+	 * calls `effect.doReadEffect(hero)` directly, skipping `execute()`'s `isEquipped`/`charge<=0`/
+	 * `cursed` gates entirely - Trinity's synthetic instance is never cursed and its own charge
+	 * pool is never consulted here (`doReadEffect` decrements it, but nothing in this path ever
+	 * reads it back, so this port tracks no persisted charge for it at all - a one-shot ability
+	 * gated only by the Trinity armor's own charge cost, like every other Cleric spell). Draws
+	 * one scroll via the same weighted picker `useSpellbook` uses and applies it through the
+	 * shared `applyScrollEffect` seam the Arcane Catalyst and the real Unstable Spellbook both use
+	 * - the two gaps that seam already has (`scrollIdentify`/`scrollCleanse` unmodeled, the
+	 * `ExoticScroll` empowered-choice window absent) are pre-existing there, not introduced here.
+	 */
+	commitTrinitySpiritSpellbook(this: DungeonScene, baseCost: number): void {
+		const cost = trinityChargeUsePerEffect(baseCost, 'UnstableSpellbook', 'spirit');
+		if (this.armorCharge < cost) {
+			this.say(t('items.armor.classarmor.low_charge'), 'negative');
+			return;
+		}
+		if (this.hero.magicImmune) {
+			this.say(t('port.log.tomenospell'), 'negative');
+			return;
+		}
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		delete this.hero.buffs['invisibility'];
+		applyScrollEffect(randomSpellbookScroll(), this.scrollEffectsContext());
+		this.spendHeroAction(1);
+		this.say('Trinity spirit form: Unstable Spellbook', 'positive');
 	},
 
 	/**
