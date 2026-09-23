@@ -1,3 +1,4 @@
+import { openAlchemyRecipes } from '../../../items/alchemy';
 import type { DungeonScene } from '../../dungeonScene';
 import { elementalStrikeAbilityMethods } from './elementalStrikeAbility';
 import { placeCharacterArt } from '../../../ui/characterPlacement';
@@ -283,8 +284,9 @@ export const armorAbilityUseMethods = {
 	 * `EtherealChains`, `MasterThievesArmband`, `SandalsOfNature` and `TalismanOfForesight` are the
 	 * four cell-targeted ones: Java hands the synthetic instance's own selector listener to the
 	 * cell selector, which here is the ported flow itself run over a synthetic item (see
-	 * `trinitySyntheticFlow`). Only `AlchemistsToolkit`'s scene switch and `SkeletonKey` (whose
-	 * lock/crystal-door interactions have no port artifact behind them at all) are **not yet offered**.
+	 * `trinitySyntheticFlow`). `AlchemistsToolkit` opens the alchemy pot with zero toolkit energy.
+	 * Only `SkeletonKey` (whose lock/crystal-door interactions have no port artifact behind them
+	 * at all) is **not yet offered**.
 	 */
 	chooseTrinitySpiritEffect(this: DungeonScene, cost: number): void {
 		showChoiceWindow(this.gameWindows, 'Trinity Spirit Form', 'Choose a supported spirit effect.', [
@@ -419,6 +421,7 @@ export const armorAbilityUseMethods = {
 		const level = this.trinitySyntheticLevel('talisman');
 		useTalismanFlow(trinitySyntheticFlow(this.talismanFlowContext(), 'talismanOf', { level, charge: mwlItemEffectValue('talisman', 'chargeCap'), exp: -2147483648, cursed: false }), 'trinity-spirit');
 	},
+			{ label: "Alchemist's Toolkit", onPick: () => this.commitTrinitySpiritArtifact(cost, 'AlchemistsToolkit', "Alchemist's Toolkit", () => this.trinitySpiritToolkit()) },
 
 	/** `applyActiveArtifactEffect(HornOfPlenty)`: `doEatEffect(hero, 1)` - see `eatTrinityHornFlow`. */
 	trinitySpiritHorn(this: DungeonScene): void {
@@ -534,6 +537,14 @@ export const armorAbilityUseMethods = {
 	poweredLightAlly(this: DungeonScene): Creature | undefined {
 		const ally = this.poweredAlly();
 		return ally?.allyKind === 'lightAlly' ? ally : undefined;
+	/**
+	 * `applyActiveArtifactEffect(AlchemistsToolkit)`: `AlchemyScene.assignToolkit(effect)` then the alchemy scene.
+	 * The synthetic toolkit's `chargeCap` is 0 so `charge = 0`: no bonus energy, i.e. plain alchemy-pot access.
+	 */
+	trinitySpiritToolkit(this: DungeonScene): void {
+		openAlchemyRecipes(this.alchemyFlowContext());
+	},
+
 	},
 
 	/** `Ratmogrify.baseChargeUse` (50, tag `v3.3.8`) is charged like any other ability's, read

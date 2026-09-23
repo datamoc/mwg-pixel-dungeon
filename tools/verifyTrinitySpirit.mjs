@@ -68,4 +68,10 @@ export function verifyTrinitySpirit(require, check) {
 		}
 		assert.ok(scene.includes("Object.create(ctx, { [lookup]: { value: () => item } }) as C;"), 'lookup override via prototype so live getters stay live');
 	});
+	check('Trinity SpiritForm offers the AlchemistsToolkit case as plain alchemy access', () => {
+		const scene = readSceneSource();
+		assert.ok(scene.includes("'AlchemistsToolkit', \"Alchemist's Toolkit\""), 'picker offers the toolkit at base cost');
+		//synthetic toolkit chargeCap = 0 -> charge 0 -> no bonus energy; only the pot opens.
+		assert.ok(/trinitySpiritToolkit\(this: DungeonScene\): void \{\s*openAlchemyRecipes\(this\.alchemyFlowContext\(\)\);/.test(scene), 'opens the alchemy pot without toolkit energy');
+	});
 }
