@@ -14,6 +14,9 @@ tools/scratch/*.py
 tools/scratch/dump-*.mjs
 tools/scratch/find-invisible.mjs
 tools/scratch/probe*.mjs
+# esbuild outputs that `npm run verify` rebuilds on every run (test:bossunseal, test:mining)
+tools/scratch/verifyBossUnseal.mjs
+tools/scratch/verifyMiningBranch.mjs
 # session-local agent state (worktrees, replays, temp files)
 .qwen/
 # local notes (never committed)
