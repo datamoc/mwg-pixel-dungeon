@@ -104,6 +104,10 @@ compile(join(root, 'src/items/selfUse.ts'), 'items/selfUse.js');
 compile(join(root, 'src/classes.ts'), 'classes.js');
 compile(join(root, 'src/items/scrolls.ts'), 'items/scrolls.js');
 compile(join(root, 'src/simulation/prismatic.ts'), 'simulation/prismatic.js');
+// Rage's CrystalGuardian beckon exception reads the shared Crystal mine rule; compile its
+// renderer-free geometry dependency too so this temporary tree resolves the real helper.
+compile(join(root, 'src/simulation/gnollGeomancer.ts'), 'simulation/gnollGeomancer.js');
+compile(join(root, 'src/simulation/crystalSpire.ts'), 'simulation/crystalSpire.js');
 compile(join(root, 'src/items/scrollEffects.ts'), 'items/scrollEffects.js');
 compile(join(root, 'src/items/stones.ts'), 'items/stones.js');
 //The blink family adds `Roguelike` (barrelled) and `../i18n` (stubbed); `../combat`
