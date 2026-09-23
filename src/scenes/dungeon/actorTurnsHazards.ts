@@ -921,7 +921,20 @@ export const actorTurnsHazardsMethods = {
 		//DwarfKing P3 banks damage into Viscosity's deferred pool instead of losing HP directly;
 		//pay it out on the King's own turn, exactly like the hero's pool above.
 		if (this.tickMonsterDeferredDamage(monster)) return;
-		//dots tick on the sufferer's own turn, like Java's Buff.act()
+		//dots tick on the sufferer's own turn, like Java's Buff.act(). Capture the turn-skipping
+		//statuses (paralysis/frost/feintConfusion/spectatorFreeze) *before* the generic tick below:
+		//`advanceBuffs` decrements every buff uniformly (including these), so reading them
+		//afterward saw a duration already one turn short - a fresh 1-turn Paralysis (WallOfLight,
+		//StoneOfShock's real `1f`) ticked itself to zero in the very turn it was meant to skip and
+		//never gated anything, and every longer paralysis/frost/confusion skipped one turn fewer
+		//than granted. Java's `Char.act()` checks `paralysed > 0` before any of its own buffs
+		//tick (`Buff.act()` runs on independent actor-time), so the skip must read this turn's
+		//still-current value - only the *decision* moves earlier; the tick itself (and every
+		//per-turn effect below it, unchanged) still runs exactly as before, DoTs included, since
+		//Java's Buff.act() is independent of a paralysed Char's own act().
+		const monsterWasParalysed = monster.buffs['paralysis'] !== undefined
+			|| monster.buffs['frost'] !== undefined || monster.buffs['feintConfusion'] !== undefined;
+		const monsterWasFrozenSpectator = monster.buffs['spectatorFreeze'] !== undefined;
 		const monsterWasBurning = monster.buffs['burning'] !== undefined;
 		const monsterWasOozing = monster.buffs['ooze'] !== undefined;
 		const monsterWasDrowsy = monster.buffs['drowsy'] !== undefined;
@@ -1047,12 +1060,14 @@ export const actorTurnsHazardsMethods = {
 			}
 		}
 		//`Mob.act()`: `if (buff(Feint.AfterImage.FeintConfusion.class) != null){ ...; spend(TICK);
-		//return true; }` - wastes the whole turn, same shape as paralysis/frost just above.
-		if (monster.buffs['paralysis'] || monster.buffs['frost'] || monster.buffs['feintConfusion']) return;
+		//return true; }` - wastes the whole turn, same shape as paralysis/frost just above. Gated
+		//on the pre-tick capture above, not a fresh read - see its comment.
+		if (monsterWasParalysed) return;
 		//`Challenge.SpectatorFreeze`: a frozen spectator loses the turn after its own buffs
 		//already ticked above (so the 10-turn clock still runs down). Java pairs this with
-		//`delayChar`; the shared tick-then-skip here is the same observable.
-		if (monster.buffs['spectatorFreeze'] !== undefined) return;
+		//`delayChar`; the shared tick-then-skip here is the same observable. Same pre-tick
+		//capture as the paralysis/frost/feintConfusion gate above.
+		if (monsterWasFrozenSpectator) return;
 		if (monster.buffs['amok']) {
 			this.takeAmokTurn(monster);
 			return;

@@ -26,6 +26,7 @@ import { verifyParticles } from './verifyParticles.mjs';
 import { verifyProjectiles } from './verifyProjectiles.mjs';
 import { verifyClericSpells } from './verifyClericSpells.mjs';
 import { verifyGnollMine } from './verifyGnollMine.mjs';
+import { verifyParalysisOrdering } from './verifyParalysisOrdering.mjs';
 import { readSceneSource } from './sceneSource.mjs';
 
 // Compile the actual implementation into a private temporary CommonJS tree. Type-only
@@ -1809,6 +1810,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	verifyProjectiles(require, check);
 	verifyClericSpells(require, check);
 	verifyGnollMine(require, check);
+	verifyParalysisOrdering(require, check);
 	console.log(`${passed} simulation checks passed.`);
 } finally {
 	// Only the fresh directory returned by mkdtempSync above is removed.
