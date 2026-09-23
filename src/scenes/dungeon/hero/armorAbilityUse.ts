@@ -21,7 +21,7 @@ import { POWER_OF_MANY_TURNS, trinityBodyDuration } from '../../../simulation/cl
 import { trinityChargeUsePerEffect } from '../../../simulation/clericSpells';
 import { randomSpellbookScroll } from '../../../items/artifactActions';
 import { applyScrollEffect } from '../../../items/scrollEffects';
-import { MWL_WEAPON_ENCHANTS } from '../../../mwlContent';
+import { MWL_ARMOR_GLYPHS, MWL_WEAPON_ENCHANTS } from '../../../mwlContent';
 import { coneCells } from '../../../mechanics/cone';
 import { traceRayToTarget } from '../../../mechanics/rays';
 import { EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, WATER } from '../../../dungeonConstants';
@@ -29,6 +29,8 @@ import { BUFF_DURATION, addBuff, applyElementalBacklash, reigniteBuff, rollDamag
 import { applyChillFreeze } from '../../../simulation/buffs';
 import { BOSSES, IMMOVABLE_KINDS, heroSheet, liveStats, type MonsterId } from '../../../monsters';
 import { HARMFUL_PLANTS, NATURES_POWER_DURATION } from '../shared';
+
+const TRINITY_BODY_GLYPH_CLASSES: Readonly<Record<string, string>> = { stone: 'Stone', repulsion: 'Repulsion', antimagic: 'AntiMagic', viscosity: 'Viscosity' };
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `armorAbilityUse`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
@@ -167,24 +169,33 @@ export const armorAbilityUseMethods = {
 
 	/**
 	 * Java's `Trinity.WndItemtypeSelect` stores a discovered enchantment or glyph on its tome;
-	 * this port has no discovery/stored-item inventory. Its modeled positive weapon enchantments
-	 * all have live melee-proc hooks, so offer that catalog as the supported BodyForm subset.
-	 * Armor glyph BodyForm effects stay unavailable because they need defensive proc routing.
+	 * this port has no discovery/stored-item inventory. Offer its modeled positive weapon
+	 * enchantments and the four positive armor glyphs with live defensive proc hooks.
 	 */
 	chooseTrinityBodyEffect(this: DungeonScene, cost: number): void {
+		if (this.hero.magicImmune) { this.say(t('port.log.tomenospell'), 'negative'); return; }
 		const candidates = MWL_WEAPON_ENCHANTS
 			.filter(({ id, curse }) => !curse && id !== this.weaponAffix && id !== this.armorGlyph);
-		if (candidates.length === 0) {
-			this.say('Trinity has no other supported weapon enchantment to apply.', 'warning');
+		const glyphs = MWL_ARMOR_GLYPHS.filter(({ id, curse }) =>
+			!curse && id in TRINITY_BODY_GLYPH_CLASSES && id !== this.armorGlyph);
+		if (candidates.length === 0 && glyphs.length === 0) {
+			this.say('Trinity has no other supported body effect to apply.', 'warning');
 			return;
 		}
-		showChoiceWindow(this.gameWindows, 'Trinity Body Form', 'Choose a supported body effect.', candidates.map((id) => ({
-			label: id.id,
-			onPick: () => this.commitTrinityBodyEffect(id.id, cost),
-		})));
+		showChoiceWindow(this.gameWindows, 'Trinity Body Form', 'Choose a supported body effect.', [
+			...candidates.map(({ id }) => ({
+				label: id,
+				onPick: () => this.commitTrinityBodyEffect(id, cost),
+			})),
+			...glyphs.map(({ id }) => ({
+				label: `Glyph: ${id}`,
+				onPick: () => this.commitTrinityBodyGlyph(id, cost),
+			})),
+		]);
 	},
 
 	commitTrinityBodyEffect(this: DungeonScene, affix: string, baseCost: number): void {
+		if (this.hero.magicImmune) return;
 		//`Trinity.WndUseTrinity` (`Trinity.java`, tag `v3.3.8`) refuses a BodyForm effect
 		//that duplicates the equipped weapon enchantment or armor glyph. Recheck both at commit
 		//time so a stale picker cannot spend charge on an effect already supplied by gear.
@@ -199,10 +210,34 @@ export const armorAbilityUseMethods = {
 		}
 		this.armorCharge = Math.max(0, this.armorCharge - cost);
 		this.trinityBodyAffix = affix;
+		this.trinityBodyGlyph = null;
 		this.trinityForm = 'body';
 		this.trinityTurns = trinityBodyDuration(this.talentRank('body_form'));
+		delete this.hero.buffs['invisibility'];
 		this.spendHeroAction(1);
 		this.say(`Trinity body form: ${affix}`, 'positive');
+	},
+
+	commitTrinityBodyGlyph(this: DungeonScene, glyph: string, baseCost: number): void {
+		if (this.hero.magicImmune) return;
+		if (!(glyph in TRINITY_BODY_GLYPH_CLASSES) || glyph === this.armorGlyph) {
+			this.say('Trinity cannot duplicate an equipped or unsupported armor glyph.', 'warning');
+			return;
+		}
+		const cost = trinityChargeUsePerEffect(baseCost, TRINITY_BODY_GLYPH_CLASSES[glyph]!, 'body');
+		if (this.armorCharge < cost) {
+			this.say(t('items.armor.classarmor.low_charge'), 'negative');
+			return;
+		}
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		this.trinityBodyAffix = null;
+		this.trinityBodyGlyph = glyph;
+		this.trinityForm = 'body';
+		this.trinityTurns = trinityBodyDuration(this.talentRank('body_form'));
+		//Java's `Trinity.WndUseTrinity` onPick runs `Invisibility.dispel()` for either BodyForm effect.
+		delete this.hero.buffs['invisibility'];
+		this.spendHeroAction(1);
+		this.say(`Trinity body form: Glyph: ${glyph}`, 'positive');
 	},
 
 	commitTrinityForm(this: DungeonScene, form: 'body' | 'mind' | 'spirit', cost: number): void {
