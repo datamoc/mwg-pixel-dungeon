@@ -23,6 +23,11 @@ import { trinityChargeUsePerEffect } from '../../../simulation/clericSpells';
 import { randomSpellbookScroll } from '../../../items/artifactActions';
 import { applyScrollEffect } from '../../../items/scrollEffects';
 import { eatTrinityHornFlow } from '../../../items/horn';
+import { useChainsFlow } from '../../../items/chains';
+import { useArmbandFlow } from '../../../items/armband';
+import { beginSandalsRootFlow } from '../../../items/sandals';
+import { useTalismanFlow } from '../../../items/talisman';
+import { mwlItemEffectValue } from '../../../mwlContent';
 import { RING_DEFS } from '../../../items/ringModifiers';
 import { MWL_ARMOR_GLYPHS, MWL_WEAPON_ENCHANTS } from '../../../mwlContent';
 import { coneCells } from '../../../mechanics/cone';
@@ -34,6 +39,11 @@ import { BOSSES, IMMOVABLE_KINDS, heroSheet, liveStats, type MonsterId } from '.
 import { HARMFUL_PLANTS, NATURES_POWER_DURATION } from '../shared';
 
 const TRINITY_BODY_GLYPH_CLASSES: Readonly<Record<string, string>> = { stone: 'Stone', repulsion: 'Repulsion', antimagic: 'AntiMagic', viscosity: 'Viscosity' };
+
+/** A flow context whose item lookup (`chainsOf`, `armbandOf`, ...) returns `item` for any instance id. */
+function trinitySyntheticFlow<C extends object>(ctx: C, lookup: string, item: object): C {
+	return Object.create(ctx, { [lookup]: { value: () => item } }) as C;
+}
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `armorAbilityUse`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
@@ -264,16 +274,17 @@ export const armorAbilityUseMethods = {
 	 * call sites alongside `effectiveRing()`; `ChaliceOfBlood` shares this same buff branch but
 	 * is not a `Ring` and has no port model for a second `chaliceRegen` source - **not offered**)
 	 * or runs the artifact's one-shot `SpiritForm.applyActiveArtifactEffect()`. Of that dispatch's
-	 * ten cases, four are modeled: `UnstableSpellbook.doReadEffect()` runs the *inner* read (a fresh
+	 * ten cases, eight are modeled: `UnstableSpellbook.doReadEffect()` runs the *inner* read (a fresh
 	 * scroll draw + apply) with none of `execute()`'s outer equip/charge/cursed gates, matching
 	 * Trinity's own bypass exactly, so no synthetic bag instance is needed; `HornOfPlenty`
 	 * (`doEatEffect(hero, 1)`), `TimekeepersHourglass` (a bespoke `TimeBubble.reset(artifactLevel())`,
 	 * not the hourglass's own freeze) and `DriedRose` (a corrupted Wraith, HP `20 + 8*artifactLevel`)
 	 * are likewise bespoke or inner-method calls, not reuses of this port's persistent-item flows.
-	 * The other six (`AlchemistsToolkit`'s scene switch, and five - `EtherealChains`/
-	 * `MasterThievesArmband`/`SandalsOfNature`/`TalismanOfForesight`/`SkeletonKey` - that need this
-	 * scene's cell-targeting flow wired to a one-shot artifact action it does not have yet) are
-	 * **not yet offered**.
+	 * `EtherealChains`, `MasterThievesArmband`, `SandalsOfNature` and `TalismanOfForesight` are the
+	 * four cell-targeted ones: Java hands the synthetic instance's own selector listener to the
+	 * cell selector, which here is the ported flow itself run over a synthetic item (see
+	 * `trinitySyntheticFlow`). Only `AlchemistsToolkit`'s scene switch and `SkeletonKey` (whose
+	 * lock/crystal-door interactions have no port artifact behind them at all) are **not yet offered**.
 	 */
 	chooseTrinitySpiritEffect(this: DungeonScene, cost: number): void {
 		showChoiceWindow(this.gameWindows, 'Trinity Spirit Form', 'Choose a supported spirit effect.', [
@@ -285,6 +296,10 @@ export const armorAbilityUseMethods = {
 			{ label: 'Horn of Plenty', onPick: () => this.commitTrinitySpiritArtifact(cost, 'HornOfPlenty', 'Horn of Plenty', () => this.trinitySpiritHorn()) },
 			{ label: "Timekeeper's Hourglass", onPick: () => this.commitTrinitySpiritArtifact(cost, 'TimekeepersHourglass', "Timekeeper's Hourglass", () => this.trinitySpiritHourglass(), true) },
 			{ label: 'Dried Rose', onPick: () => this.commitTrinitySpiritArtifact(cost, 'DriedRose', 'Dried Rose', () => this.trinitySpiritRose(), true) },
+			{ label: 'Ethereal Chains', onPick: () => this.commitTrinitySpiritArtifact(cost, 'EtherealChains', 'Ethereal Chains', () => this.trinitySpiritChains()) },
+			{ label: "Master Thieves' Armband", onPick: () => this.commitTrinitySpiritArtifact(cost, 'MasterThievesArmband', "Master Thieves' Armband", () => this.trinitySpiritArmband()) },
+			{ label: 'Sandals of Nature', onPick: () => this.commitTrinitySpiritArtifact(cost, 'SandalsOfNature', 'Sandals of Nature', () => this.trinitySpiritSandals()) },
+			{ label: 'Talisman of Foresight', onPick: () => this.commitTrinitySpiritArtifact(cost, 'TalismanOfForesight', 'Talisman of Foresight', () => this.trinitySpiritTalisman()) },
 		]);
 	},
 
@@ -361,6 +376,48 @@ export const armorAbilityUseMethods = {
 	 * every synthetic artifact is conjured at. */
 	trinityArtifactLevel(this: DungeonScene): number {
 		return 2 + 2 * this.talentRank('spirit_form');
+	},
+
+	/**
+	 * `Artifact.resetForTrinity(visibleLevel)` (tag `v3.3.8`): the synthetic instance's level is
+	 * `round(artifactLevel * levelCap / 10)`, its charge the cap and its `exp` `Integer.MIN_VALUE`
+	 * (never levels). Each case below hands the ported flow a context whose `<item>Of(instanceId)`
+	 * lookup returns that synthetic item instead of a bag entry (`trinitySyntheticFlow`), leaving the
+	 * flow (its gates, aim, confirm and turn) untouched. The Trinity armor's charge was already
+	 * spent up front, as in Java, so a refused or cancelled aim wastes it there too.
+	 */
+	trinitySyntheticLevel(this: DungeonScene, item: string): number {
+		return Math.round(this.trinityArtifactLevel() * mwlItemEffectValue(item, 'levelCap') / 10);
+	},
+
+	/** `resetForTrinity` for `EtherealChains`: `charge = 5 + level*2` (its soft cap). */
+	trinitySpiritChains(this: DungeonScene): void {
+		const level = this.trinitySyntheticLevel('chains');
+		useChainsFlow(trinitySyntheticFlow(this.chainsFlowContext(), 'chainsOf', { level, charge: 5 + level * 2, exp: -2147483648, cursed: false }), 'trinity-spirit');
+	},
+
+	trinitySpiritArmband(this: DungeonScene): void {
+		const level = this.trinitySyntheticLevel('armband');
+		const charge = mwlItemEffectValue('armband', 'chargeCapBase') + Math.floor(level / 2);
+		useArmbandFlow(trinitySyntheticFlow(this.armbandFlowContext(), 'armbandOf', { level, charge, exp: -2147483648, cursed: false }), 'trinity-spirit');
+	},
+
+	/**
+	 * `SandalsOfNature.resetForTrinity` only clears `curSeedEffect` (it never calls
+	 * `super.resetForTrinity`, so the level stays 0), then `applyActiveArtifactEffect` picks a
+	 * random one of Blindweed/Fadeleaf/Firebloom/Icecap/Sorrowmoss/Stormvine and opens the root
+	 * aim. `cellSelector` checks no charge, so the synthetic sandals carry a full 100 to clear
+	 * the port flow's own charge gate.
+	 */
+	trinitySpiritSandals(this: DungeonScene): void {
+		const kinds = ['blindweed', 'fadeleaf', 'firebloom', 'icecap', 'sorrowmoss', 'stormvine'];
+		const sandals = { level: 0, charge: mwlItemEffectValue('sandals', 'chargeCap'), cursed: false, curSeedEffect: kinds[Random.int(0, kinds.length)]!, seeds: [] as string[] };
+		beginSandalsRootFlow(trinitySyntheticFlow(this.sandalsFlowContext(), 'sandalsOf', sandals), 'trinity-spirit');
+	},
+
+	trinitySpiritTalisman(this: DungeonScene): void {
+		const level = this.trinitySyntheticLevel('talisman');
+		useTalismanFlow(trinitySyntheticFlow(this.talismanFlowContext(), 'talismanOf', { level, charge: mwlItemEffectValue('talisman', 'chargeCap'), exp: -2147483648, cursed: false }), 'trinity-spirit');
 	},
 
 	/** `applyActiveArtifactEffect(HornOfPlenty)`: `doEatEffect(hero, 1)` - see `eatTrinityHornFlow`. */

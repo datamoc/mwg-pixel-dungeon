@@ -50,4 +50,22 @@ export function verifyTrinitySpirit(require, check) {
 		// Shared tail: MagicImmune refusal, armor-charge gate, invisibility dispel, and the turn only for spendAndNext cases.
 		assert.ok(/commitTrinitySpiritArtifact[\s\S]{0,500}magicImmune[\s\S]{0,300}invisibility[\s\S]{0,120}if \(spendsTurn\) this\.spendHeroAction\(1\)/.test(scene), 'shared Spirit-button tail');
 	});
+	check('Trinity SpiritForm offers the four cell-targeted artifacts through synthetic flow contexts', () => {
+		const scene = readSceneSource();
+		for (const label of ["label: 'Ethereal Chains'", 'label: "Master Thieves\' Armband"', "label: 'Sandals of Nature'", "label: 'Talisman of Foresight'"]) {
+			assert.ok(scene.includes(label), `picker offers ${label}`);
+		}
+		// `resetForTrinity`: level = round(artifactLevel * levelCap / 10); chains charge = 5 + level*2; never levels (exp = MIN_VALUE).
+		assert.ok(scene.includes('Math.round(this.trinityArtifactLevel() * mwlItemEffectValue(item, \'levelCap\') / 10)'), 'synthetic level formula');
+		assert.ok(scene.includes('charge: 5 + level * 2'), 'chains soft-cap charge');
+		assert.ok(scene.includes('exp: -2147483648'), 'synthetic items never level');
+		// Sandals never call super.resetForTrinity: level stays 0, random one of six seeds.
+		assert.ok(scene.includes("['blindweed', 'fadeleaf', 'firebloom', 'icecap', 'sorrowmoss', 'stormvine']"), 'the six SpiritForm seeds');
+		assert.ok(/const sandals = \{ level: 0,/.test(scene), 'sandals level stays 0');
+		// The real ported flows are reused with only the item lookup overridden - never a bag item.
+		for (const [flow, lookup] of [['useChainsFlow', 'chainsOf'], ['useArmbandFlow', 'armbandOf'], ['beginSandalsRootFlow', 'sandalsOf'], ['useTalismanFlow', 'talismanOf']]) {
+			assert.ok(scene.includes(flow + '(trinitySyntheticFlow(') && scene.includes("'" + lookup + "'"), `${flow} runs through a synthetic ${lookup}`);
+		}
+		assert.ok(scene.includes("Object.create(ctx, { [lookup]: { value: () => item } }) as C;"), 'lookup override via prototype so live getters stay live');
+	});
 }

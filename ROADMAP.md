@@ -191,7 +191,7 @@ below to close the gap was judged not worth the churn against those existing ref
       BodyForm/MindForm/SpiritForm item-effect dispatch, below).
       **Trinity arithmetic progress (2026-09-22):** the pure Body/Mind/Spirit duration, item-level,
       and per-effect charge rules are now pinned against the v3.3.8 Java sources. **Progress 2026-09-23:** BodyForm's modeled positive weapon-enchantment subset opens from the MWL catalog (excluding the equipped affix), applies through the melee proc path for its Java-authored duration, and was live-verified in the browser. The full Java discovered/stored effect catalog and glyph-trigger effects remain open; MindForm still records only cosmetic selection state without item-effect dispatch.
-      **Progress 2026-09-23 (SpiritForm):** the Ring branch and four of the ten active artifacts (UnstableSpellbook, HornOfPlenty, TimekeepersHourglass's bespoke `TimeBubble`, DriedRose's corrupted Wraith) are live. UnstableSpellbook
+      **Progress 2026-09-23 (SpiritForm):** the Ring branch and eight of the ten active artifacts (UnstableSpellbook, HornOfPlenty, TimekeepersHourglass's bespoke `TimeBubble`, DriedRose's corrupted Wraith, and the four cell-targeted EtherealChains/MasterThievesArmband/SandalsOfNature/TalismanOfForesight through the ported flows over a synthetic item) are live. UnstableSpellbook
       reuses `SpiritForm.applyActiveArtifactEffect()`'s own bypass of `execute()`'s equip/charge/
       cursed gates - a stateless one-shot scroll draw through the shared `applyScrollEffect` seam,
       gated only by the Trinity armor's own (doubled) charge cost. Rings are a genuine second,
@@ -200,9 +200,8 @@ below to close the gap was judged not worth the churn against those existing ref
       stack** (`Ring.getBuffedBonus()`: the spirit ring's bonus only counts when the equipped
       ring's own bonus for that exact stat is precisely 0), now wired at all ~37 ring-formula call
       sites plus the Accuracy/Evasion StatBlock path and the mirror/prismatic-image stat
-      duplication, via `combinedStatBonusLevel` (`items/ringModifiers.ts`). The other six SpiritForm
-      artifact cases (AlchemistsToolkit's scene switch and five cell-targeted ones: EtherealChains, MasterThievesArmband,
-      SandalsOfNature, TalismanOfForesight, SkeletonKey) and Chalice (which shares the Ring branch's 20-turn buff in
+      duplication, via `combinedStatBonusLevel` (`items/ringModifiers.ts`). The other two SpiritForm
+      artifact cases (AlchemistsToolkit's scene switch and SkeletonKey, which this port has no artifact for) and Chalice (which shares the Ring branch's 20-turn buff in
       Java but is not a `Ring`) remain open - see coord DOC1 for the per-case citations.
       **Scoped 2026-09-23 (not yet coded):** read `Trinity.java`/`BodyForm.java`/`SpiritForm.java` (tag `v3.3.8`)
       in full to size the remaining work precisely, since none of it is a formula gap. BodyForm's
