@@ -1,4 +1,5 @@
 import type { DungeonScene } from '../dungeonScene';
+import { missileThrowConfirmationMethods } from './hero/missileThrowConfirmation';
 import { placeCharacterArt } from '../../ui/characterPlacement';
 import { Actors, Blob, Random, Roguelike } from 'mwg';
 import { missileBaseUses, missileBaseUsesOrDefault, tippedDartUseDivisor } from '../../items/missiles';
@@ -25,7 +26,6 @@ import { Terrain } from '../../spdLevelGen/paintLevel';
 import { Feeling } from '../../spdLevelGen/regularPainter';
 import { mwlTrapTable } from '../../spdLevelGen/mwlDungeonRules';
 import { runState } from '../../runState';
-import { showConfirmWindow } from '../../ui/portWindows';
 import { useFireblastWand as useFireblastWandEffect, useRegrowthWand as useRegrowthWandEffect, useTransfusionWand as useTransfusionWandEffect, useWardingWand as useWardingWandEffect } from '../../items/wandEffects';
 import { coneCells } from '../../mechanics/cone';
 import { traceRayToTarget } from '../../mechanics/rays';
@@ -61,6 +61,7 @@ const UNMARKED_TRAPS: ReadonlySet<TrapKind> = new Set<TrapKind>(['alarm', 'telep
 function isUnmarkedTrap(kind: TrapKind): boolean { return UNMARKED_TRAPS.has(kind); }
 
 export const environmentFireTrapsMethods = {
+	...missileThrowConfirmationMethods,
 	scrollEffectsContext(this: DungeonScene): ScrollEffectsContext {
 		return {
 			hero: this.hero,
@@ -1977,34 +1978,7 @@ export const environmentFireTrapsMethods = {
 	 * hardening or mastery state, so the reachable clause is the upgrade level; `extraThrownLeft`
 	 * has no expression here either (it is the flag the same warning is suppressed by).
 	 */
-	missileThrowNeedsConfirm(this: DungeonScene): boolean {
-		return this.missileLevel > 0 && this.ammo === 1 && this.ammoDurability <= this.missileDurabilityCost();
-	},
 
-	/** `WndOptions`' yes/no, worded with SPD's own `break_upgraded_warn_*` strings (title is the
-	 * missile's own name, as Java's `Messages.titleCase(title())` is). "Yes" re-enters
-	 * `useSpecial` with the confirmation latched, so the throw runs its one real path.
-	 *
-	 * **The target has to be handed back explicitly (fixed 2026-09-16).** `useSpecial` consumes
-	 * `specialTarget` as it resolves the target, which happens *before* this warning is raised - so
-	 * re-entering with only the confirmation flag set re-resolved the target from scratch (Java's
-	 * `doThrow` is re-entered with the same `enemy`), and with no other visible candidate the throw
-	 * simply did not happen: the player answered "Yes" and nothing was spent or hit. Passing the
-	 * resolved target through re-latches exactly what Java keeps. */
-	confirmMissileThrow(this: DungeonScene, title: string, target: Creature): void {
-		showConfirmWindow(
-			this.gameWindows,
-			title,
-			t('port.confirm.lastmissile.desc'),
-			t('port.confirm.lastmissile.yes'),
-			t('port.confirm.lastmissile.no'),
-			() => {
-				this.missileThrowConfirmed = true;
-				this.specialTarget = target;
-				this.useSpecial();
-			},
-		);
-	},
 
 	missileDurabilityCost(this: DungeonScene): number {
 		//`TippedDart.durabilityPerUse()` with `Talent.DURABLE_TIPS` (`TippedDart.java`, tag
