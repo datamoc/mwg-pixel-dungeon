@@ -190,22 +190,39 @@ More than one Claude Code session sometimes works this repo at the same time. `a
 at the repo root is a scratch coordination log — check it before starting broad, structural, or
 file-budget-adjacent work if a peer session isn't reachable directly.
 
-A faster channel also exists for this: a small local ACP (Agent Communication Protocol) server at
-`C:/Users/miche/dev/acp-agent-coordination` gives concurrent sessions a shared mailbox, file/area
-claims, task requests and a presence roster in near real time, layered on top of (not instead of)
-`agents_talking.md`. It has its own `acp-client` skill there (`.claude/skills/acp-client/SKILL.md`)
-covering the full command set, session protocol, and a real port-volatility gotcha worth reading
-first. `cd` there and check `python ACP_client.py status`/`locks`/`inbox` before committing to a
-large or file-budget-adjacent change.
+A faster channel also exists for this: the **coord** coordination server, whose plugin lives at
+`C:/Users/miche/dev/acp-agent-coordination/plugins/coord` (client: `node
+C:/Users/miche/dev/acp-agent-coordination/plugins/coord/client/cli.js`, or `coord` when it is on
+PATH; Node >= 20, nothing to install). It gives concurrent sessions - Claude Code, Codex and others -
+a shared mailbox, file/directory claims, task offers, discussions, documents and a presence roster in
+near real time, layered on top of (not instead of) `agents_talking.md`. Its own `coord` skill
+(`plugins/coord/skills/coord/SKILL.md`) is the full reference; in Claude Code the `/coord:join`,
+`/coord:poll`, `/coord:post`, `/coord:claim`, `/coord:release` and `/coord:status` commands wrap it.
+Use it whenever more than one session might be live, before a large or file-budget-adjacent change:
 
-### Compact ACP protocol (agreed 2026-09-22, ACP #862/#864, ACK codex-01 #867)
+- **Join once per conversation**: `coord --json whoami <family>` (`claude`, `codex`, ...), keep the
+  returned `name` and `session_id`, and prefix every later command with
+  `COORD_SESSION=<session_id>`. Do not re-run `whoami` to "check in" - it registers a *second* name
+  (`coord end` that one if it happens). `.coord-session` in the checkout is shared by every session,
+  so never rely on it. Then `heartbeat "<status>"`, `context`, `locks`.
+- **Before editing a shared file**: `coord locks`, then `coord claim <path>` (`<dir>/` for a tree,
+  `--note "why"`); on a conflict, do not edit - `coord ask --claim <C..> --to <session> "..."`.
+  `coord check <files>` before committing, `coord release --all` when done, then `coord end`.
+- **Delegating**: `coord task create "..." --assign <session>` is an offer the assignee answers with
+  `task accept`/`decline`/`done`; offers to you show up in `poll`/`context` - answer them.
+- **Idle**: `coord poll` about every five minutes.
+
+**Retired:** the earlier ACP server (`python ACP_client.py`, `tools/ACP_client.py`, its `acp-client`
+skill and `/acp:*` commands) is superseded by coord - do not use it, and ignore older mailbox
+references (`ACP #862` etc.) in this repo's history as anything but history.
+
+### Compact message protocol (agreed 2026-09-22 on ACP #862/#864, ACK codex-01 #867; carried over to coord)
 
 Proposed at the user's request to cut message size and ambiguity; adopted by every live agent.
 
-0. **UTF-8 is handled by the client.** `tools/ACP_client.py` forces UTF-8 stdout/stderr
-   (`8af15b8`), so non-ASCII in the mailbox no longer crashes `inbox`/`poll` on a Windows
-   cp1252 console (`UnicodeEncodeError`, seen with #862's first draft); `PYTHONIOENCODING=utf-8`
-   is no longer needed.
+0. **Encoding and length.** The coord client is Node and handles UTF-8 on a Windows console. Keep
+   posts under 300 characters - the client warns past that (`consider a document for long
+   analyses`); use `coord doc create` for anything longer.
 1. **Status tag first**, ASCII (always safe): `T` taking/claimed, `D` done/landed (a commit),
    `B` blocked, `Q` question, `H` handoff/request for any agent, `R` released claim,
    `W` warning/collision, `V` verified/ack. An optional one-character CJK suffix may follow
@@ -228,11 +245,10 @@ Proposed at the user's request to cut message size and ambiguity; adopted by eve
    change once (`495c09f`, fixed in `b6a7a6a`), and taking a whole working-tree file can carry
    a peer's unstaged edit.
 
-Example: `claude-02: D DivineIntervention @495c09f ok:tsc,sim286,i18n,bud,aud,LV. PC row + RM. R claim.`
-The session prefix always comes first - the server files everything before the first colon as the
-sender, so `D/x: ...` lands under a sender named "D/x". `tools/ACP_client.py` enforces this: a post
-that isn't `<session>: <TAG> ...` or whose body exceeds 300 chars (`ACP_MAX_POST`) is refused with
-`ACP REJECTED (nothing sent)`, exit 1 - shorten or split it.
+Example: `D DivineIntervention @495c09f ok:tsc,sim286,i18n,bud,aud,LV. PC row + RM. R claim.`
+coord records the sender from the session itself (`claude-01 -> codex-02` in `inbox`), so a
+`<session>:` prefix in the body is optional, not required as it was under ACP; the status tag still
+comes first.
 
 ## Reference material
 
