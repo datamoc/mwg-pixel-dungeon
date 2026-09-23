@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { readSceneSource } from './sceneSource.mjs';
 
 /**
@@ -29,5 +30,24 @@ export function verifyTrinitySpirit(require, check) {
 			'refuses under MagicImmune, matching every other tome-spell gate');
 		assert.ok(/commitTrinitySpiritSpellbook[\s\S]{0,300}armorCharge < cost/.test(scene),
 			'refuses on insufficient armor charge before spending anything');
+	});
+	check('Trinity SpiritForm offers Horn, Hourglass and DriedRose with Java-shaped effects', () => {
+		const scene = readSceneSource();
+		const horn = readFileSync(new URL('../src/items/horn.ts', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+		for (const label of ["label: 'Horn of Plenty'", 'label: "Timekeeper\'s Hourglass"', "label: 'Dried Rose'"]) {
+			assert.ok(scene.includes(label), `picker offers ${label}`);
+		}
+		// Hourglass: Swiftthistle-style bubble of artifactLevel (+1 for the cast's own spend), never the hourglass freeze.
+		assert.ok(scene.includes('this.timeBubbleTurns = this.trinityArtifactLevel() + 1;'), 'bubble is artifactLevel + 1');
+		assert.ok(/trinitySpiritHourglass[\s\S]{0,120}this\.hourglassFreeze = false/.test(scene), 'no hourglass freeze bookkeeping');
+		// Rose: HP = HT = 20 + 8*artifactLevel on a corrupted (ally) wraith beside the hero.
+		assert.ok(scene.includes('wraith.hp = wraith.maxHp = 20 + 8 * this.trinityArtifactLevel();'), 'rose wraith HP');
+		assert.ok(scene.includes("return 2 + 2 * this.talentRank('spirit_form');"), 'artifactLevel = 2 + 2*rank');
+		// Horn: doEatEffect(hero, 1) - one charge of satiety (STARVING/5, a third under no_food), meal talents, TIME_TO_EAT.
+		assert.ok(scene.includes('eatTrinityHornFlow(this.hornFlowContext())'), 'horn routes through the shared meal tail');
+		assert.ok(/export function eatTrinityHornFlow[\s\S]{0,200}hornSatietyPerCharge\(\)/.test(horn), 'one charge of satiety');
+		assert.ok(/export function eatTrinityHornFlow[\s\S]{0,500}ctx\.spendTurn\(ctx\.hasFastEating\(\) \? 1 : 3\)/.test(horn), 'the full meal turn');
+		// Shared tail: MagicImmune refusal, armor-charge gate, invisibility dispel, and the turn only for spendAndNext cases.
+		assert.ok(/commitTrinitySpiritArtifact[\s\S]{0,500}magicImmune[\s\S]{0,300}invisibility[\s\S]{0,120}if \(spendsTurn\) this\.spendHeroAction\(1\)/.test(scene), 'shared Spirit-button tail');
 	});
 }

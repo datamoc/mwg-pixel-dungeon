@@ -22,6 +22,7 @@ import { POWER_OF_MANY_TURNS, trinityBodyDuration } from '../../../simulation/cl
 import { trinityChargeUsePerEffect } from '../../../simulation/clericSpells';
 import { randomSpellbookScroll } from '../../../items/artifactActions';
 import { applyScrollEffect } from '../../../items/scrollEffects';
+import { eatTrinityHornFlow } from '../../../items/horn';
 import { RING_DEFS } from '../../../items/ringModifiers';
 import { MWL_ARMOR_GLYPHS, MWL_WEAPON_ENCHANTS } from '../../../mwlContent';
 import { coneCells } from '../../../mechanics/cone';
@@ -263,17 +264,16 @@ export const armorAbilityUseMethods = {
 	 * call sites alongside `effectiveRing()`; `ChaliceOfBlood` shares this same buff branch but
 	 * is not a `Ring` and has no port model for a second `chaliceRegen` source - **not offered**)
 	 * or runs the artifact's one-shot `SpiritForm.applyActiveArtifactEffect()`. Of that dispatch's
-	 * ten cases, only `UnstableSpellbook.doReadEffect()` is modeled so far - it runs the *inner*
-	 * read (a fresh scroll draw + apply) with none of `execute()`'s outer equip/charge/cursed
-	 * gates, matching Trinity's own bypass exactly, so no synthetic bag instance is needed at
-	 * all. The other nine (`AlchemistsToolkit`/`DriedRose`/`EtherealChains`/`HornOfPlenty`/
-	 * `MasterThievesArmband`/`SandalsOfNature`/`TalismanOfForesight`/`TimekeepersHourglass`/
-	 * `SkeletonKey`) are **not yet offered**: five need this scene's cell-targeting flow wired to
-	 * a one-shot artifact action it does not have yet, `TimekeepersHourglass` bypasses its own
-	 * `execute()`/charge entirely for a bespoke `TimeBubble.reset(artifactLevel())` this port's
-	 * time-bubble state has not been checked against, and `AlchemistsToolkit`/`DriedRose` are
-	 * likewise bespoke (a scene switch; a level-scaled Corruption-buffed Wraith spawn) rather than
-	 * a reuse of this port's own persistent-item flows for those artifacts.
+	 * ten cases, four are modeled: `UnstableSpellbook.doReadEffect()` runs the *inner* read (a fresh
+	 * scroll draw + apply) with none of `execute()`'s outer equip/charge/cursed gates, matching
+	 * Trinity's own bypass exactly, so no synthetic bag instance is needed; `HornOfPlenty`
+	 * (`doEatEffect(hero, 1)`), `TimekeepersHourglass` (a bespoke `TimeBubble.reset(artifactLevel())`,
+	 * not the hourglass's own freeze) and `DriedRose` (a corrupted Wraith, HP `20 + 8*artifactLevel`)
+	 * are likewise bespoke or inner-method calls, not reuses of this port's persistent-item flows.
+	 * The other six (`AlchemistsToolkit`'s scene switch, and five - `EtherealChains`/
+	 * `MasterThievesArmband`/`SandalsOfNature`/`TalismanOfForesight`/`SkeletonKey` - that need this
+	 * scene's cell-targeting flow wired to a one-shot artifact action it does not have yet) are
+	 * **not yet offered**.
 	 */
 	chooseTrinitySpiritEffect(this: DungeonScene, cost: number): void {
 		showChoiceWindow(this.gameWindows, 'Trinity Spirit Form', 'Choose a supported spirit effect.', [
@@ -282,6 +282,9 @@ export const armorAbilityUseMethods = {
 				onPick: () => this.commitTrinitySpiritRing(`ring_${key}`, cost),
 			})),
 			{ label: 'Unstable Spellbook', onPick: () => this.commitTrinitySpiritSpellbook(cost) },
+			{ label: 'Horn of Plenty', onPick: () => this.commitTrinitySpiritArtifact(cost, 'HornOfPlenty', 'Horn of Plenty', () => this.trinitySpiritHorn()) },
+			{ label: "Timekeeper's Hourglass", onPick: () => this.commitTrinitySpiritArtifact(cost, 'TimekeepersHourglass', "Timekeeper's Hourglass", () => this.trinitySpiritHourglass(), true) },
+			{ label: 'Dried Rose', onPick: () => this.commitTrinitySpiritArtifact(cost, 'DriedRose', 'Dried Rose', () => this.trinitySpiritRose(), true) },
 		]);
 	},
 
@@ -330,6 +333,77 @@ export const armorAbilityUseMethods = {
 	 * - the two gaps that seam already has (`scrollIdentify`/`scrollCleanse` unmodeled, the
 	 * `ExoticScroll` empowered-choice window absent) are pre-existing there, not introduced here.
 	 */
+	/**
+	 * The shared tail of `Trinity.WndUseTrinity`'s Spirit button (`Trinity.java`, tag `v3.3.8`):
+	 * refused under MagicImmune (the button is disabled), spends the armor's per-effect charge,
+	 * `Invisibility.dispel()`s, then runs `SpiritForm.applyActiveArtifactEffect()`'s case. Cases
+	 * whose Java branch ends in `spendAndNext(1f)` pass `spendsTurn` (Horn's own `doEatEffect`
+	 * spends its meal time instead). Nothing is spent on a refusal.
+	 */
+	commitTrinitySpiritArtifact(this: DungeonScene, baseCost: number, itemClass: string, label: string, run: () => void, spendsTurn = false): void {
+		const cost = trinityChargeUsePerEffect(baseCost, itemClass, 'spirit');
+		if (this.armorCharge < cost) {
+			this.say(t('items.armor.classarmor.low_charge'), 'negative');
+			return;
+		}
+		if (this.hero.magicImmune) {
+			this.say(t('port.log.tomenospell'), 'negative');
+			return;
+		}
+		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		delete this.hero.buffs['invisibility'];
+		run();
+		if (spendsTurn) this.spendHeroAction(1);
+		this.say(`Trinity spirit form: ${label}`, 'positive');
+	},
+
+	/** `SpiritForm.artifactLevel()` (tag `v3.3.8`): `2 + 2*pointsInTalent(SPIRIT_FORM)`, the level
+	 * every synthetic artifact is conjured at. */
+	trinityArtifactLevel(this: DungeonScene): number {
+		return 2 + 2 * this.talentRank('spirit_form');
+	},
+
+	/** `applyActiveArtifactEffect(HornOfPlenty)`: `doEatEffect(hero, 1)` - see `eatTrinityHornFlow`. */
+	trinitySpiritHorn(this: DungeonScene): void {
+		eatTrinityHornFlow(this.hornFlowContext());
+	},
+
+	/**
+	 * `applyActiveArtifactEffect(TimekeepersHourglass)`: bypasses the hourglass's own charge/
+	 * `timeFreeze` entirely for `Buff.affect(hero, Swiftthistle.TimeBubble).reset(artifactLevel())`
+	 * - a plain Swiftthistle-style bubble of `artifactLevel` absorbed hero actions. `reset(n)`
+	 * stores `n + 1` because the casting action itself is spent inside it; this port's bubble
+	 * counter (`timeBubbleTurns`, ticked in `spendScheduledTurn`) likewise counts that action,
+	 * so `artifactLevel + 1` is armed here and the cast's own `spendHeroAction(1)` consumes one.
+	 * Not `hourglassFreeze` (no hourglass turn-cost bookkeeping). No `onArtifactUsed` in Java's branch.
+	 */
+	trinitySpiritHourglass(this: DungeonScene): void {
+		this.hourglassFreeze = false;
+		this.timeBubbleTurns = this.trinityArtifactLevel() + 1;
+	},
+
+	/**
+	 * `applyActiveArtifactEffect(DriedRose)`: a `Wraith` on a random empty neighbouring cell with
+	 * `HP = HT = 20 + 8*artifactLevel` and the `Corruption` buff, then `Talent.onArtifactUsed` and
+	 * `spendAndNext(1f)`. This port has no `Corruption` buff: the established stand-in is the
+	 * wand-of-corruption conversion (`isAlly` + the shared controlled-ally scheduler, buffs
+	 * cleared), reused here as-is. No room around the hero spawns nothing but still spends the
+	 * turn and charge, as in Java. `spawnWraithAt` keeps its own wraith stat block (level-scaled
+	 * accuracy/evasion/damage); only HP is Trinity's.
+	 */
+	trinitySpiritRose(this: DungeonScene): void {
+		const wraith = this.spawnWraithAt('wraith', this.hero.x, this.hero.y);
+		if (wraith) {
+			wraith.hp = wraith.maxHp = 20 + 8 * this.trinityArtifactLevel();
+			wraith.isAlly = true;
+			wraith.allyKind = 'mirror';
+			wraith.buffs = {};
+			wraith.sleeping = false;
+			wraith.seesHero = false;
+		}
+		this.armEnhancedRingsFromArtifact();
+	},
+
 	commitTrinitySpiritSpellbook(this: DungeonScene, baseCost: number): void {
 		const cost = trinityChargeUsePerEffect(baseCost, 'UnstableSpellbook', 'spirit');
 		if (this.armorCharge < cost) {

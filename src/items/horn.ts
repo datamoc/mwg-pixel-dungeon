@@ -103,6 +103,22 @@ export function eatFromHornFlow(ctx: HornFlowContext, instanceId: string | undef
 	ctx.spendTurn(ctx.hasFastEating() ? 1 : 3);
 }
 
+/**
+ * `SpiritForm.applyActiveArtifactEffect(HornOfPlenty)` (tag `v3.3.8`): Trinity's synthetic horn
+ * runs `doEatEffect(hero, 1)` directly - one charge's satiety (`STARVING/5`, a third under
+ * `no_food`) with the meal talents and the full `TIME_TO_EAT` turn, but no horn behind it, so
+ * there is no charge to spend or store (`charge -= 1` lands on a throwaway instance). The
+ * armor's own charge cost is the caller's gate. Same tail as `eatFromHornFlow`.
+ */
+export function eatTrinityHornFlow(ctx: HornFlowContext): void {
+	ctx.hunger = Math.max(0, ctx.hunger - hornSatietyPerCharge());
+	ctx.say(ctx.t('items.artifacts.hornofplenty.eat'), 'positive');
+	const mealHeal = ctx.applyMealEaten();
+	if (mealHeal > 0) ctx.showHeal(mealHeal);
+	ctx.armEnhancedRings();
+	ctx.spendTurn(ctx.hasFastEating() ? 1 : 3);
+}
+
 /** The store picker: feed carried food into stored energy, leveling every full belly. */
 export function storeFoodInHornFlow(ctx: HornFlowContext, instanceId?: string): void {
 	const horn = ctx.hornOf(instanceId);
