@@ -1304,15 +1304,13 @@ export const turnLoopAimingMethods = {
 			},
 			//Trinity's selected form is a temporary activation window. The Java form buffs
 			//also remove themselves on expiry; this state is the port's explicit hand-off
-			//for BodyForm's supported weapon-enchantment/glyph subset. MindForm and SpiritForm
-			//still have no item-effect dispatch.
+			//until item-specific body/mind/spirit effects are implemented.
 			tickTrinityForm: () => {
 				if (this.trinityTurns <= 0) return;
 				this.trinityTurns = Math.max(0, this.trinityTurns - turnCost);
 				if (this.trinityTurns === 0) {
 					this.trinityForm = null;
 					this.trinityBodyAffix = null;
-					this.trinityBodyGlyph = null;
 				}
 			},
 			tickWeaponAbility: () => this.tickWeaponAbility(turnCost),

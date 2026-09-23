@@ -26,7 +26,7 @@ export function verifyArmorAbilities(require, check) {
 	const { exposeWeaknessDuration, feignedRetreatHaste, closeTheGapRange, eliminationMatchFactor, invigoratingVictoryHeal, combinedLethalityTest, elementalStrikeCone, elementalPowerMulti, directedPowerBoost, elementalBlockingShield, elementalVampiricHeal, elementalSacrificialSelf, elementalBlobAmount, elementalBloomingBudget, elementalFurrowStep, elementalBaseDamage, elementalKineticSplash, elementalRootsDuration, elementalKnockback, elementalLuckyChance, elementalProjectingSplash, elementalCorruptingChance, elementalGrimChance, elementalCurseChance, elementalAnnoyingChance, elementalSacrificialOther, elementalStrikeResisted } = require('./simulation/duelistAbilities');
 	const { ELEMENTAL_BLAST_DAMAGE_FACTORS, elementalBlastEffectMulti, elementalBlastAoeSize, elementalBlastAim, elementalBlastDamage, elementalBlastUndeadDamage, elementalBlastTransfusionSplit, elementalBlastCorrosion, elementalBlastParalysisDuration, elementalBlastFrostDuration, elementalBlastBlindnessDuration, elementalBlastLightDuration, elementalBlastCharmDuration, elementalBlastAmokDuration, elementalBlastRootsDuration, elementalBlastRechargingDuration, elementalBlastRegrowthChance, elementalBlastKnockback, elementalBlastReactiveShield } = require('./simulation/mageAbilities');
 	const { BUFF_DURATION } = require('./simulation/buffs');
-	const { trinityBodyDuration, trinityBodyGlyphActive, trinityMindItemLevel, trinitySpiritRingLevel, trinitySpiritArtifactLevel, trinityChargeUsePerEffect, POWER_OF_MANY_TURNS, POWER_OF_MANY_ATTACK_FACTOR, powerOfManyDamageFactor } = require('./simulation/clericSpells');
+	const { trinityBodyDuration, trinityMindItemLevel, trinitySpiritRingLevel, trinitySpiritArtifactLevel, trinityChargeUsePerEffect, POWER_OF_MANY_TURNS, POWER_OF_MANY_ATTACK_FACTOR, powerOfManyDamageFactor } = require('./simulation/clericSpells');
 
 	//`HeroClass.armorAbilities()`, in its own order.
 	check('every class offers its three real armor abilities, in Java order', () => {
@@ -66,16 +66,10 @@ export function verifyArmorAbilities(require, check) {
 		assert.deepEqual([0, 1, 4].map(trinitySpiritRingLevel), [0, 1, 4]);
 		assert.deepEqual([0, 1, 4].map(trinitySpiritArtifactLevel), [2, 4, 10]);
 		assert.equal(trinityChargeUsePerEffect(25, 'Corrupting', 'body'), 50);
-		assert.equal(trinityChargeUsePerEffect(25, 'AntiMagic', 'body'), 50);
 		assert.equal(trinityChargeUsePerEffect(25, 'WandOfFireblast', 'mind'), 50);
 		assert.equal(trinityChargeUsePerEffect(25, 'DriedRose', 'spirit'), 50);
 		assert.equal(trinityChargeUsePerEffect(25, 'EtherealChains', 'spirit'), 35);
 		assert.equal(trinityChargeUsePerEffect(25, 'RingOfMight', 'spirit'), 25);
-		assert.equal(trinityBodyGlyphActive('body', 1, 'stone', null, false, 'stone'), true);
-		assert.equal(trinityBodyGlyphActive('body', 0, 'stone', null, false, 'stone'), false);
-		assert.equal(trinityBodyGlyphActive('mind', 5, 'stone', null, false, 'stone'), false);
-		assert.equal(trinityBodyGlyphActive('body', 5, 'stone', 'stone', false, 'stone'), false);
-		assert.equal(trinityBodyGlyphActive('body', 5, 'stone', null, true, 'stone'), false);
 	});
 
 	check('Stench armor curse seeds Java ToxicGas, while FetidRat keeps StenchGas', () => {
@@ -181,38 +175,6 @@ export function verifyArmorAbilities(require, check) {
 		assert.ok(source.includes('elementalBlastReactiveShield(charsHit,'), 'the reactive barrier counts what the blast caught');
 		assert.ok(source.includes("this.bumpDoor(at.x, at.y);"), 'fireblast opens doors in the cone');
 		assert.ok(source.includes('this.featuresMap?.setLayerData('), 'regrown grass restitches the tiles');
-	});
-
-	check('Trinity BodyForm offers and persists its modeled defensive glyph effects', () => {
-		//`Trinity.WndItemtypeSelect`/`WndUseTrinity` and `Armor.proc()` (`Trinity.java`,
-		//`BodyForm.java`, `Armor.java`, tag `v3.3.8`): the selected glyph runs as a separate
-		//armor proc, including during HolyWard; MagicImmune and a duplicate worn glyph still gate it.
-		const ability = readFileSync(new URL('../src/scenes/dungeon/hero/armorAbilityUse.ts', import.meta.url), 'utf8');
-		const combat = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
-		const save = readFileSync(new URL('../src/scenes/dungeon/deathSaveRefresh.ts', import.meta.url), 'utf8');
-		const restore = readFileSync(new URL('../src/scenes/dungeon/panelsSingleUse.ts', import.meta.url), 'utf8');
-		const turns = readFileSync(new URL('../src/scenes/dungeon/turnLoopAiming.ts', import.meta.url), 'utf8');
-		assert.match(ability, /const TRINITY_BODY_GLYPH_CLASSES[\s\S]*stone: 'Stone'[\s\S]*repulsion: 'Repulsion'[\s\S]*antimagic: 'AntiMagic'[\s\S]*viscosity: 'Viscosity'/);
-		assert.match(ability, /MWL_ARMOR_GLYPHS\.filter[\s\S]*id in TRINITY_BODY_GLYPH_CLASSES/);
-		assert.ok(ability.includes("this.commitTrinityBodyGlyph(id, cost)"), 'picker commits the selected glyph');
-		const glyphStart = ability.indexOf('commitTrinityBodyGlyph(this: DungeonScene');
-		const glyphEnd = ability.indexOf('\n\t},', glyphStart);
-		assert.notEqual(glyphStart, -1);
-		const glyphCommit = ability.slice(glyphStart, glyphEnd);
-		assert.ok(glyphCommit.includes('if (this.hero.magicImmune) return;'), 'MagicImmune cannot spend charge on a BodyForm glyph');
-		assert.ok(glyphCommit.includes('this.trinityBodyGlyph = glyph'), 'commit stores its glyph');
-		assert.ok(glyphCommit.includes("delete this.hero.buffs['invisibility']"), 'BodyForm selection dispels invisibility');
-		assert.ok(combat.includes("this.trinityBodyGlyphIs('stone')"), 'Stone uses Trinity glyph dispatch');
-		assert.ok(combat.includes("this.trinityBodyGlyphIs('repulsion')"), 'Repulsion uses Trinity glyph dispatch');
-		assert.ok(combat.includes("this.trinityBodyGlyphIs('antimagic')"), 'AntiMagic uses Trinity glyph dispatch');
-		assert.ok(combat.includes("this.trinityBodyGlyphIs('viscosity')"), 'Viscosity uses Trinity glyph dispatch');
-		const helperStart = combat.indexOf('trinityBodyGlyphIs(this: DungeonScene');
-		const helperEnd = combat.indexOf('\n\t},', helperStart);
-		assert.notEqual(helperStart, -1);
-		assert.match(combat.slice(helperStart, helperEnd), /trinityBodyGlyphActive\(/);
-		assert.ok(save.includes('trinityBodyGlyph: this.trinityBodyGlyph'), 'save state carries the BodyForm glyph');
-		assert.ok(restore.includes('this.trinityBodyGlyph = s.trinityBodyGlyph ?? null'), 'load restores the BodyForm glyph');
-		assert.ok(turns.includes('this.trinityBodyGlyph = null'), 'form expiry clears the glyph');
 	});
 
 	check('ElementalStrike Lucky rewards are in the right ability and include Java\'s gold case', () => {
