@@ -180,7 +180,15 @@ below to close the gap was judged not worth the churn against those existing ref
       tome's full charge/spend/upgrade economy, recharge, save/load, combat hooks
       (illuminated consume + auto-hit, holy +2 with enchant override, ward -1, skeleton
       doubling, mirror copy, crab parry) and SPD's own v3.3.8 strings/icons/art (see
-      `PORT_COVERAGE.md`'s new tier-1 row, and tier 2 since 2026-09-21 (see the tier-2 paragraph there), and tier 3 since 2026-09-21 (see the tier-3 paragraph there). Still open: tier 4, PRIEST/PALADIN, the
+      `PORT_COVERAGE.md`'s new tier-1 row, and tier 2 since 2026-09-21 (see the tier-2 paragraph there), and tier 3 since 2026-09-21 (see the tier-3 paragraph there).
+      **Correction 2026-09-23: "Still open: tier 4, PRIEST/PALADIN" was stale, not a real gap.**
+      All six PRIEST/PALADIN subclass tier-3 spells (`HolyLance`/`HallowedGround`/`MnemonicPrayer`,
+      `LayOnHands`/`AuraOfProtection`/`WallOfLight`) were already fully ported since 2026-09-21 -
+      see `PORT_COVERAGE.md`'s "PRIEST/PALADIN subclass tier-3 Cleric spells" row, now also
+      live-verified in the browser (2026-09-23). Java's own tier 4 is an unimplemented `//TBD`
+      placeholder (`Talent.java`'s `initClassTalents()`, tag `v3.3.8` - the `tier4` switch has no
+      cases at all), so there is nothing there to port. What remains open is Trinity (AscendedForm's
+      BodyForm/MindForm/SpiritForm item-effect dispatch, below).
       **Trinity arithmetic progress (2026-09-22):** the pure Body/Mind/Spirit duration, item-level,
       and per-effect charge rules are now pinned against the v3.3.8 Java sources. **Progress 2026-09-23:** BodyForm's modeled positive weapon-enchantment subset opens from the MWL catalog (excluding the equipped affix), applies through the melee proc path for its Java-authored duration, and was live-verified in the browser. The full Java discovered/stored effect catalog and glyph-trigger effects remain open; MindForm and SpiritForm still record only cosmetic selection state without item-effect dispatch. The three armor abilities' remaining spell/ally branches (AscendedForm's base shield window
       and all three of its tier-4 spells - DivineIntervention since 2026-09-22 - are live; the
