@@ -1395,6 +1395,7 @@ export const panelsSingleUseMethods = {
 		//cannot damage a dormant pylon the way `Char.damage()` refuses to.
 		if (c.kind === 'pylon' && !c.pylonActive) return false;
 		if (this.gnollMineInvulnerable(c)) return false;
+		if (this.crystalMineInvulnerable(c)) return false;
 		if (!pierceArmor) damage = Math.max(0, damage - Random.normalRange(c.armor[0], c.armor[1]));
 		//`AuraOfProtection.AuraBuff` is a defender-side `Char.damage()` modifier (tag `v3.3.8`),
 		//so blast damage must pass through the same nearby same-alignment reduction as attacks.
@@ -1439,6 +1440,7 @@ export const panelsSingleUseMethods = {
 		this.lockedFloorBossDamage(c, damage, preHp - c.hp);
 		if (c.kind === 'tengu') this.clampTenguBracket(c, preHp);
 		this.gnollMineAfterDamage(c, preHp);
+		this.crystalMineAfterDamage(c);
 		this.brightDarkHalfHp(c, preHp);
 		if (c.kind === 'yog' && c.hp > 0) this.yogDamageHook(c, preHp);
 		if (c.kind === 'king' && c.hp > 0 && (c.kingPhase ?? 1) === 1) {

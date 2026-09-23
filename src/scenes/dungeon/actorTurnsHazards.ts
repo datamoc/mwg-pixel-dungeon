@@ -1,4 +1,5 @@
 import { GNOLL_MINE_KINDS } from './monsters/gnollMine';
+import { CRYSTAL_MINE_KINDS } from './monsters/crystalMine';
 import type { DungeonScene } from '../dungeonScene';
 import { beginMonsterTurn } from './monsters/monsterSpeed';
 import { weaponCombat } from '../../items/catalog';
@@ -167,6 +168,8 @@ export const actorTurnsHazardsMethods = {
 		}
 		//`GnollGeomancer.heroShouldInteract()`: an armoured geomancer is struck with the pickaxe instead.
 		else if (plan.kind === 'attack' && this.tryPickaxeGeomancer(occupant!)) return;
+		//`CrystalSpire.interact()`: the NEUTRAL spire is only ever struck with the pickaxe.
+		else if (plan.kind === 'attack' && this.tryPickaxeSpire(occupant!)) return;
 		else if (plan.kind === 'attack') this.attack(this.hero, occupant!);
 		else if (plan.kind === 'door') this.bumpDoor(target.x, target.y);
 		//`Hero.actTransition()` 1385 (tag `v3.3.8`): a rooted stair attempt shakes
@@ -767,6 +770,8 @@ export const actorTurnsHazardsMethods = {
 		beginMonsterTurn(monster);
 		//The GNOLL mine quest's own `act()` prologue (queued boulder throws, the dormant geomancer) - `gnollMine.ts`.
 		if (monster.kind && GNOLL_MINE_KINDS.has(monster.kind) && this.gnollMinePreTurn(monster)) return;
+		//The CRYSTAL mine's (a crumpled guardian's recovery, the unreachable-hero sleep, the spire's whole act) - `crystalMine.ts`.
+		if (monster.kind && CRYSTAL_MINE_KINDS.has(monster.kind) && this.crystalMinePreTurn(monster)) return;
 		//`Mimic` is PASSIVE while hidden: no waking roll, no hunt, no step - it just waits to be touched.
 		if (monster.kind === 'mimic' && monster.mimicRevealed === false) return;
 		//`Tengu.FireAbility` is a `Buff`: it acts with its host, one ring per turn, whatever else
@@ -1226,6 +1231,7 @@ export const actorTurnsHazardsMethods = {
 			return;
 		}
 		if (monster.kind && GNOLL_MINE_KINDS.has(monster.kind) && this.takeGnollMineTurn(monster, distance)) return;
+		if (monster.kind && CRYSTAL_MINE_KINDS.has(monster.kind) && this.takeCrystalMineTurn(monster, distance)) return;
 		if (distance === 1) {
 			if (monster.kind === 'crystalMimic') {
 				this.revealCrystalMimic(monster);
@@ -1565,7 +1571,8 @@ export const actorTurnsHazardsMethods = {
 	visibleAllyHostiles(this: DungeonScene, ally: Creature, radius = 8): Creature[] {
 		const allyFov = new Roguelike.FieldOfView(this.level);
 		allyFov.update(ally.x, ally.y, radius);
-		return this.creatures.filter((c) => !c.isHero && !c.isNPC && !c.isAlly && c.hp > 0 && allyFov.isVisible(c.x, c.y));
+		//`CrystalSpire` is `Alignment.NEUTRAL`: Java's allies never pick it as an enemy.
+		return this.creatures.filter((c) => !c.isHero && !c.isNPC && !c.isAlly && c.kind !== 'crystalSpire' && c.hp > 0 && allyFov.isVisible(c.x, c.y));
 	},
 
 	/** The spirit hawk's own `viewDistance` for the current talent ranks. */

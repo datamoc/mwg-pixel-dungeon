@@ -223,6 +223,8 @@ export const combatResolutionMethods = {
 		}
 		//`GnollGeomancer.isInvulnerable()`: rock-armoured (the pickaxe aside) or sapper-linked.
 		if (this.gnollMineInvulnerable(defender)) return false;
+		//`CrystalSpire`/a crumpled `CrystalGuardian`'s `isInvulnerable()` (`crystalMine.ts`).
+		if (this.crystalMineInvulnerable(defender, attacker)) return false;
 
 		//No `SPIRIT_BLADES` damage line here: Java's rank-4 `multi += 0.1f` lives in
 		//`Weapon.Enchantment.genericProcChanceMultiplier()` - an enchant *proc-chance* term,
@@ -850,6 +852,7 @@ export const combatResolutionMethods = {
 		}
 		if (defender.kind === 'tengu') this.clampTenguBracket(defender, preHp);
 		this.gnollMineAfterDamage(defender, preHp);
+		this.crystalMineAfterDamage(defender);
 		//`BrightFist`/`DarkFist.damage()`'s half-HP edge (see `brightDarkHalfHp`): only Bright
 		//costs the hero `daze` here - Dark's price is detaching the hero's Light, which this
 		//port has no model for. Java's Blindness is a cosmetic screen darkening (a FlavourBuff

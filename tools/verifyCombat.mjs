@@ -353,8 +353,8 @@ export function verifyCombat(require, check) {
 		//`Char.Property.STATIC` immunities (tag `v3.3.8`): Terror/Amok/Charm/Sleep/
 		//Paralysis/Frost/Chill/Slow/Speed/Dread/AllyBuff - of which terror, amok,
 		//charm, paralysis, frost and chill exist as port buffs. Holders here are the
-		//Pylon, DemonSpawner, RotHeart and Yog (CrystalSpire is unported).
-		for (const kind of ['pylon', 'demonSpawner', 'rotHeart', 'yog']) {
+		//Pylon, DemonSpawner, RotHeart, Yog and CrystalSpire (whose `add()` refuses every buff outright).
+		for (const kind of ['pylon', 'demonSpawner', 'rotHeart', 'yog', 'crystalSpire']) {
 			const holder = base({ kind, buffs: {} });
 			facade.addBuff(holder, 'frost');
 			assert.equal(holder.buffs.frost, undefined, `${kind} must refuse frost`);
@@ -568,8 +568,7 @@ export function verifyCombat(require, check) {
 	check('the authored MINIBOSS/BOSS flag sets match Java and stay disjoint', () => {
 		// Source-level rather than through `monsters.ts`, which needs Pixi's `SpriteSheet` and so
 		// cannot load in this harness. Java's own `properties().add(Property.MINIBOSS)` sites at
-		// tag v3.3.8, minus the two classes this port does not spawn (CrystalGuardian,
-		// FungalSentry).
+		// tag v3.3.8, minus the one class this port does not spawn (FungalSentry).
 		const mwl = readFileSync(new URL('../src/content/actor-rules.mwl', import.meta.url), 'utf8');
 		const flagSet = (flag) => {
 			const match = new RegExp(`apply_to:\\s*"${flag}"[^}]*?set:\\s*"([^"\\r\\n]+)"`).exec(mwl);
@@ -577,7 +576,7 @@ export function verifyCombat(require, check) {
 			return match[1].split(',').map((k) => k.trim()).sort();
 		};
 		assert.deepEqual(flagSet('miniboss'),
-			['demonSpawner', 'fetidRat', 'gnollSapper', 'gnollTrickster', 'greatCrab', 'newbornElemental', 'pylon', 'rotHeart', 'rotLasher']);
+			['crystalGuardian', 'demonSpawner', 'fetidRat', 'gnollSapper', 'gnollTrickster', 'greatCrab', 'newbornElemental', 'pylon', 'rotHeart', 'rotLasher']);
 		// Java checks the two properties separately (`BOSS || MINIBOSS` in the stone's duration
 		// rule, `!BOSS && !MINIBOSS` in CombinedLethality), so a kind in both would double-apply
 		for (const kind of flagSet('miniboss')) assert.ok(!flagSet('boss').includes(kind), `${kind} is both BOSS and MINIBOSS`);

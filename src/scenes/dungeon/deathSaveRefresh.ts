@@ -88,6 +88,29 @@ export const deathSaveRefreshMethods = {
 		this.hero.buffs['haste'] = Math.max(this.hero.buffs['haste'] ?? 0, lethalHasteDuration(rank));
 	},
 
+	/** `PinCushion.detach()`/`Char.throwItems()`: stuck missiles scatter back out as ground heaps (one item per
+	 * cell here, so extras take neighbouring cells, like statue drops). The heaps keep the pile's set at
+	 * the current level - Java's scattered missiles stay their stack's set, which is what the
+	 * dust rule reads (generic stones have neither field and stay always valid). Run on death, and
+	 * by a crumpled `CrystalGuardian` each recovering turn (`crystalMine.ts`). */
+	scatterStuckAmmo(this: DungeonScene, creature: Creature): void {
+		if (!creature.stuckAmmo || creature.stuckAmmo <= 0) return;
+		const cells = [{ x: creature.x, y: creature.y }, ...Roguelike.neighbourOffsets(8).map(([dx, dy]) => ({ x: creature.x + dx, y: creature.y + dy }))]
+			.filter((at) => this.level.inside(at.x, at.y) && this.level.passable(at.x, at.y) && !this.groundItemAt(at.x, at.y));
+		for (let i = 0; i < Math.min(creature.stuckAmmo, cells.length); i++) {
+			this.spawnGroundItem('stone', cells[i]!.x, cells[i]!.y);
+			const heap = this.groundItemAt(cells[i]!.x, cells[i]!.y);
+			if (heap) {
+				heap.missileLevel = this.missileLevel;
+				heap.missileSet = this.ammoSetId;
+				//Stuck ammo carries no per-unit origin: the scatter keeps the currently
+				//wielded pile's tip, the same simplification as its set and level above.
+				if (this.ammoTippedSeed !== undefined) heap.tippedSeed = this.ammoTippedSeed;
+			}
+		}
+		creature.stuckAmmo = 0;
+	},
+
 	kill(this: DungeonScene, creature: Creature, cause: 'foe' | 'trap' | 'fire' | 'poison' | 'hunger' | 'falling' = 'foe'): void {
 		const index = this.creatures.indexOf(creature);
 		if (index < 0) return;
@@ -125,6 +148,11 @@ export const deathSaveRefreshMethods = {
 			creature.prismaticFade = PRISMATIC_FADE_TURNS;
 			return;
 		}
+		//`CrystalGuardian.isAlive()`: at 0 HP it crumples to 1 HP and recovers instead of dying, whatever
+		//the lethal seam (`crystalMine.ts`).
+		if (creature.kind === 'crystalGuardian' && this.crumpleCrystalGuardian(creature)) return;
+		//`CrystalSpire.damage()`: only the pickaxe lowers its HP, so a non-pickaxe lethal seam is undone.
+		if (creature.kind === 'crystalSpire' && this.restoreSpireHp(creature)) return;
 		if (creature.isHero && this.resurrectPending) return;
 	if (creature.isHero && this.reviveWithBlessedAnkh()) return;
 	if (creature.isHero && this.openResurrectWindow()) return;
@@ -221,6 +249,12 @@ export const deathSaveRefreshMethods = {
 		}
 		//MirrorImage allies are temporary 1-HP summons, not hostile Mob instances: their death
 		//must not award XP, loot, quest progress, or trigger monster-specific death hooks.
+		//`CrystalSpire` is `Alignment.NEUTRAL`: `Mob.die()` grants no EXP and rolls no loot for it;
+		//its own death effects (quest boss beaten, crystals shattered) run in `crystalSpireDied`.
+		if (creature.kind === 'crystalSpire') {
+			this.crystalSpireDied(creature);
+			return;
+		}
 		if (creature.kind === 'pylon') {
 			//Pylon.die() delegates to CavesBossLevel.eliminatePylon(), which calls
 			//DM300.loseSupercharge() even when the pylon is the final one.
@@ -229,26 +263,7 @@ export const deathSaveRefreshMethods = {
 		}
 		if (creature.isAlly) return;
 		this.processSacrifice(creature);
-		//PinCushion: stuck missiles scatter back out as ground heaps (one item per cell here,
-		//so extras take neighbouring cells, like statue drops). The heaps keep the pile's set at
-		//the current level - Java's scattered missiles stay their stack's set, which is what the
-		//dust rule below reads (generic stones have neither field and stay always valid).
-		if (creature.stuckAmmo && creature.stuckAmmo > 0) {
-			const cells = [{ x: creature.x, y: creature.y }, ...Roguelike.neighbourOffsets(8).map(([dx, dy]) => ({ x: creature.x + dx, y: creature.y + dy }))]
-				.filter((at) => this.level.inside(at.x, at.y) && this.level.passable(at.x, at.y) && !this.groundItemAt(at.x, at.y));
-			for (let i = 0; i < Math.min(creature.stuckAmmo, cells.length); i++) {
-				this.spawnGroundItem('stone', cells[i]!.x, cells[i]!.y);
-				const heap = this.groundItemAt(cells[i]!.x, cells[i]!.y);
-				if (heap) {
-					heap.missileLevel = this.missileLevel;
-					heap.missileSet = this.ammoSetId;
-					//Stuck ammo carries no per-unit origin: the scatter keeps the currently
-					//wielded pile's tip, the same simplification as its set and level above.
-					if (this.ammoTippedSeed !== undefined) heap.tippedSeed = this.ammoTippedSeed;
-				}
-			}
-			creature.stuckAmmo = 0;
-		}
+		this.scatterStuckAmmo(creature);
 		if (creature.kind === 'bat' && this.blacksmithAlternative) {
 			const pickaxe = this.bag.find('pickaxe');
 			if (pickaxe && pickaxe.affix !== 'bloodStained') {
@@ -1174,7 +1189,9 @@ export const deathSaveRefreshMethods = {
 	refreshHealthBars(this: DungeonScene): void {
 		//`BossHealthBar.assignBoss(GnollGeomancer)` once the pickaxe's third strike wakes it (`hits == 3`).
 		const boss = this.creatures.find((creature) => creature.kind && (BOSSES[this.depth]?.kind === creature.kind
-			|| (creature.kind === 'gnollGeomancer' && (creature.geomancerHits ?? 0) >= 3)));
+			|| (creature.kind === 'gnollGeomancer' && (creature.geomancerHits ?? 0) >= 3)
+			//`BossHealthBar.assignBoss(CrystalSpire)` from its third pickaxe strike (`hits == 3`).
+			|| (creature.kind === 'crystalSpire' && (creature.spireHits ?? 0) >= 3)));
 		if ((boss ?? null) !== this.currentBoss) this.bossBleedLatched = false;
 		this.currentBoss = boss ?? null;
 		if (boss && boss.hp > 0) {

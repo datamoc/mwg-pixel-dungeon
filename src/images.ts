@@ -88,6 +88,11 @@ import ratkingUrl from './assets/ratking.png';
 import gnollGuardUrl from './assets/gnoll_guard.png';
 import gnollSapperUrl from './assets/gnoll_sapper.png';
 import gnollGeomancerUrl from './assets/gnoll_geomancer.png';
+// The Blacksmith CRYSTAL mine quest's actors (`CrystalWispSprite`/`CrystalGuardianSprite`/
+// `CrystalSpireSprite`), byte-for-byte from tag `v3.3.8`.
+import crystalWispUrl from './assets/crystal_wisp.png';
+import crystalGuardianUrl from './assets/crystal_guardian.png';
+import crystalSpireUrl from './assets/crystal_spire.png';
 // spawner.png/ripper.png: DemonSpawner/RipperDemon (levels/rooms/special/DemonSpawnerRoom.java),
 // byte-for-byte from this Java checkout's core/src/main/assets/sprites/.
 import spawnerUrl from './assets/spawner.png';
@@ -239,6 +244,9 @@ const MWL_ASSET_URLS: Readonly<Record<string, string>> = {
 	'assets/gnoll_guard.png': gnollGuardUrl,
 	'assets/gnoll_sapper.png': gnollSapperUrl,
 	'assets/gnoll_geomancer.png': gnollGeomancerUrl,
+	'assets/crystal_wisp.png': crystalWispUrl,
+	'assets/crystal_guardian.png': crystalGuardianUrl,
+	'assets/crystal_spire.png': crystalSpireUrl,
 	'assets/red_sentry.png': sentryUrl,
 	'assets/ripper.png': ripperUrl,
 	'assets/rot_heart.png': rotHeartUrl,
@@ -351,6 +359,9 @@ export interface SpdSprites {
 	gnollGuard: Texture;
 	gnollSapper: Texture;
 	gnollGeomancer: Texture;
+	crystalWisp: Texture;
+	crystalGuardian: Texture;
+	crystalSpire: Texture;
 	/** Alias used by the MonsterId key for Yog's summoned fists. */
 	yogFist: Texture;
 	/** `YogDzewa$Larva`'s own sheet, keyed by the standalone `larva` MonsterId. */
@@ -550,6 +561,9 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		gnollGuard,
 		gnollSapper,
 		gnollGeomancer,
+		crystalWisp,
+		crystalGuardian,
+		crystalSpire,
 		blacksmith,
 		imp,
 		demonSpawner,
@@ -663,6 +677,9 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(gnollGuardUrl),
 		loadImage(gnollSapperUrl),
 		loadImage(gnollGeomancerUrl),
+		loadImage(crystalWispUrl),
+		loadImage(crystalGuardianUrl),
+		loadImage(crystalSpireUrl),
 		loadImage(blacksmithUrl),
 		loadImage(impUrl),
 		loadImage(spawnerUrl),
@@ -778,6 +795,9 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		gnollGuard: Texture.from(gnollGuard),
 		gnollSapper: Texture.from(gnollSapper),
 		gnollGeomancer: Texture.from(gnollGeomancer),
+		crystalWisp: Texture.from(crystalWisp),
+		crystalGuardian: Texture.from(crystalGuardian),
+		crystalSpire: Texture.from(crystalSpire),
 		yogFist: Texture.from(fists),
 		blacksmith: Texture.from(blacksmith),
 		imp: Texture.from(imp),

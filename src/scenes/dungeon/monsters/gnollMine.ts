@@ -111,18 +111,20 @@ export const gnollMineMethods = {
 			}
 		}
 		for (const creature of this.creatures) if (creature.kind && GNOLL_MINE_KINDS.has(creature.kind)) this.syncGnollMineVisual(creature);
+		this.linkCrystalMineActors(spawns);
 	},
 
 	/**
-	 * `MiningLevel.createMob()`/`mobLimit()` for the GNOLL quest: `mobLimit()` is
-	 * `RegularLevel`'s `3 + depth%5 + Random.Int(3)` less one, every mob a `GnollGuard`.
-	 * Simplified: each one takes a random open cell at least 8 cells from the hero (the
-	 * entrance) instead of `RegularLevel.createMobs()`'s room-by-room pick, and the 3x slower
-	 * respawn (`respawnCooldown()`) is not run - this mine never respawns. The CRYSTAL quest's
-	 * `CrystalWisp` roster is not ported, so that mine stays quiet, as it did before.
+	 * `MiningLevel.createMob()`/`mobLimit()`: `mobLimit()` is `RegularLevel`'s
+	 * `3 + depth%5 + Random.Int(3)` less one, every mob a `GnollGuard` on the GNOLL quest and a
+	 * `CrystalWisp` (its colour rolled) on the CRYSTAL one. Simplified: each one takes a random
+	 * open cell at least 8 cells from the hero (the entrance) instead of
+	 * `RegularLevel.createMobs()`'s room-by-room pick, and the 3x slower respawn
+	 * (`respawnCooldown()`) is not run - this mine never respawns.
 	 */
 	populateMiningBranch(this: DungeonScene): boolean {
-		if (blacksmithQuestType() !== BLACKSMITH_QUEST.GNOLL) return false;
+		const quest = blacksmithQuestType();
+		if (quest !== BLACKSMITH_QUEST.GNOLL && quest !== BLACKSMITH_QUEST.CRYSTAL) return false;
 		const count = 3 + (this.depth % 5) + Random.int(0, 3) - 1;
 		const open = this.level.passableCells().filter((cell) => {
 			const x = cell % this.level.width, y = Math.floor(cell / this.level.width);
@@ -131,8 +133,9 @@ export const gnollMineMethods = {
 		});
 		for (let i = 0; i < count && open.length > 0; i++) {
 			const cell = open.splice(Random.int(0, open.length), 1)[0]!;
-			const guard = this.spawnMonster('gnollGuard', { x: cell % this.level.width, y: Math.floor(cell / this.level.width) });
-			this.syncGnollMineVisual(guard);
+			const at = { x: cell % this.level.width, y: Math.floor(cell / this.level.width) };
+			if (quest === BLACKSMITH_QUEST.CRYSTAL) this.rollCrystalTint(this.spawnMonster('crystalWisp', at));
+			else this.syncGnollMineVisual(this.spawnMonster('gnollGuard', at));
 		}
 		return true;
 	},
@@ -489,6 +492,8 @@ export const gnollMineMethods = {
 		const w = this.level.width;
 		const cells = this.creatures.flatMap((c) => c.gnollWarnCells ?? []).map((cell) => ({ x: cell % w, y: Math.floor(cell / w) }));
 		for (const volley of this.fallingRocks) if (volley.gnoll) cells.push(...volley.cells);
+		//The CRYSTAL mine's spire marks its next spike wave through the same overlay.
+		cells.push(...this.crystalWarningCells());
 		return cells;
 	},
 

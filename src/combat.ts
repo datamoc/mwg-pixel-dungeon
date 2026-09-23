@@ -379,6 +379,19 @@ export interface Creature extends Combatant {
 	geomancerSapperSpawns?: number[];
 	/** `GnollGeomancer.RockArmor`, a `ShieldBuff` pool. */
 	rockArmor?: number;
+	/** The Blacksmith CRYSTAL mine quest (`crystalMine.ts`): each actor's constructor-rolled
+	 * `Blue`/`Green`/`Red` sprite class (`Random.Int(3)`), 0-2. */
+	crystalTint?: number;
+	/** `CrystalGuardian.recovering`: crumpled at 1 HP, healing 5 a turn back to full. */
+	guardianRecovering?: boolean;
+	/** `CrystalSpire.hits` (pickaxe strikes), `abilityCooldown` (a Java `float`) and
+	 * `targetedCells` (the queued spike waves, raw cell indices). */
+	spireHits?: number;
+	/** The spire's real HP, which only the pickaxe lowers (`CrystalSpire.damage()` zeroes every other
+	 * source): any other seam that subtracts `hp` directly is undone against it (`crystalMine.ts`). */
+	spireHp?: number;
+	spireAbilityCd?: number;
+	spireTargets?: number[][];
 }
 
 /** makes a Creature-shaped object with the combat-state fields every spawn needs.
@@ -527,6 +540,8 @@ export function buffBlocked(c: Creature, id: BuffId): boolean {
 	//`GnollGeomancer.add()` (tag `v3.3.8`) refuses every buff while it is `SLEEPING` - its own
 	//`RockArmor`/`DelayedRockFall` aside, which this port keeps as plain fields, not buffs.
 	if (c.kind === 'gnollGeomancer' && c.sleeping) return true;
+	//`CrystalSpire.add()` returns false unconditionally: "immune to all buffs and debuffs".
+	if (c.kind === 'crystalSpire') return true;
 	//Every quest-giver/shop NPC's `add(Buff)` returns false unconditionally (tag
 	//`v3.3.8`): `RatKing`, `Shopkeeper`, `Ghost`, `Wandmaker`, `Blacksmith` and
 	//`Imp` (plus the `ImpShopkeeper` subclass, which inherits `Shopkeeper`'s).

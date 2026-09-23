@@ -164,6 +164,9 @@
           { tag: "row", monster: "gnollGuard", sprite: "gnollGuard" },
           { tag: "row", monster: "gnollSapper", sprite: "gnollSapper" },
           { tag: "row", monster: "gnollGeomancer", sprite: "gnollGeomancer" },
+          { tag: "row", monster: "crystalWisp", sprite: "crystalWisp" },
+          { tag: "row", monster: "crystalGuardian", sprite: "crystalGuardian" },
+          { tag: "row", monster: "crystalSpire", sprite: "crystalSpire" },
           { tag: "row", monster: "necroSkeleton", sprite: "skeleton" },
           { tag: "row", monster: "newbornElemental", sprite: "elemental" },
           { tag: "row", monster: "mimic", sprite: "mimic" },
@@ -256,6 +259,11 @@
           { tag: "row", monster: "gnollGuard", frame_width: 12, frame_height: 16, idle: 0 },
           { tag: "row", monster: "gnollSapper", frame_width: 12, frame_height: 15, idle: 0 },
           { tag: "row", monster: "gnollGeomancer", frame_width: 12, frame_height: 16, idle: 21 },
+          // `CrystalWispSprite`/`CrystalGuardianSprite`/`CrystalSpireSprite` (tag `v3.3.8`) films; each
+          // has Blue/Green/Red colour sets at `texOffset()` 0/13/26, 0/21/42 and 0/5/10 (`crystalMine.ts`).
+          { tag: "row", monster: "crystalWisp", frame_width: 12, frame_height: 14, idle: 0 },
+          { tag: "row", monster: "crystalGuardian", frame_width: 12, frame_height: 15, idle: 0 },
+          { tag: "row", monster: "crystalSpire", frame_width: 24, frame_height: 41, idle: 0 },
         ],
       },
     ],

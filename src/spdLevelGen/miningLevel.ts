@@ -219,8 +219,8 @@ function randomDefaultFood(): string {
  * `MiningLevel.createItems()` (tag `v3.3.8`): one food in a small mine room, a second on the Gnoll
  * quest ("more mining required!"), and a Torch under the Darkness challenge; a drop on high or
  * furrowed grass flattens it to `GRASS` first. **Simplified:** Java runs `createMobs()` just before
- * this on the same stream; the mine's ambient roster (`CrystalWisp`/`GnollGuard`) is not ported,
- * so those draws are absent, and `Bones.get()`'s remains heap (its own pushed generator) is not
+ * this on the same stream; the mine's ambient roster (`CrystalWisp`/`GnollGuard`) is placed by the
+ * scene instead (`populateMiningBranch`), so those draws are absent here, and `Bones.get()`'s remains heap (its own pushed generator) is not
  * ported either.
  */
 function createMiningItems(level: PaintLevel, rooms: Room[], questType: BlacksmithQuestType, darkness: boolean): void {

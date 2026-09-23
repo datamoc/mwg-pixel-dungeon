@@ -11,7 +11,7 @@
           {
             tag: "effect",
             apply_to: "flying",
-            set: "bat,bee,elemental,newbornElemental,eye,swarm,ghost,spiritHawk,wraith,dustWraith",
+            set: "bat,bee,elemental,newbornElemental,eye,swarm,ghost,spiritHawk,wraith,dustWraith,crystalWisp",
           },
           {
             // `BlobImmunity`'s immunities list (`BlobImmunity.java`, tag `v3.3.8`): every
@@ -31,25 +31,25 @@
             tag: "effect",
             apply_to: "boss",
             // `Property.BOSS` holders at tag `v3.3.8`: the five chapter bosses plus
-            // `YogFist` and the GNOLL mine's `GnollGeomancer` (unported `CrystalSpire`/
-            // `FungalCore` omitted; all seven declare it; `DwarfKing`/`YogDzewa` also declare
+            // `YogFist` and the mine bosses `GnollGeomancer`/`CrystalSpire` (unported
+            // `FungalCore` omitted; all eight declare it; `DwarfKing`/`YogDzewa` also declare
             // `BOSS_MINION` for their servants). Eye, Warlock and Pylon declare no
             // BOSS property - corrected 2026-09-19, when the suite first ran far
             // enough to check: an earlier pass had added all three, over-looting
             // them onto the 15-roll wealth tier.
-            set: "goo,tengu,dm300,king,yog,yogFist,gnollGeomancer",
+            set: "goo,tengu,dm300,king,yog,yogFist,gnollGeomancer,crystalSpire",
           },
           {
             tag: "effect",
             apply_to: "miniboss",
-            // `Property.MINIBOSS` holders at tag `v3.3.8` (unported CrystalGuardian/
-            // FungalSentry omitted): only `NewbornFireElemental` carries it
+            // `Property.MINIBOSS` holders at tag `v3.3.8` (unported FungalSentry
+            // omitted): only `NewbornFireElemental` carries it
             // among the elementals, and Eye/Warlock declare neither BOSS nor MINIBOSS -
             // corrected 2026-09-19, when the suite first ran far enough to check: an
             // earlier pass had added plain Elemental, Eye and Warlock, over-looting
             // them onto the 5-roll wealth tier (Java gives all three the ordinary
             // single roll - `Mob.die()`: 15 for BOSS, 5 for MINIBOSS, else 1).
-            set: "fetidRat,gnollTrickster,greatCrab,demonSpawner,pylon,rotHeart,rotLasher,newbornElemental,gnollSapper",
+            set: "fetidRat,gnollTrickster,greatCrab,demonSpawner,pylon,rotHeart,rotLasher,newbornElemental,gnollSapper,crystalGuardian",
           },
           {
             tag: "effect",
@@ -67,16 +67,15 @@
           {
             tag: "effect",
             apply_to: "immovable",
-            set: "dm201,sentry,rotHeart,rotLasher,pylon,demonSpawner,yog,blacksmith,ninjaLog,gnollGeomancer",
+            set: "dm201,sentry,rotHeart,rotLasher,pylon,demonSpawner,yog,blacksmith,ninjaLog,gnollGeomancer,crystalSpire",
           },
-          // Java's `Char.Property.INORGANIC` members this port spawns (`Char.java`, v3.3.8 -
-          // Wraith/CrystalGuardian/CrystalSpire are unported; dm201/necroSkeleton/armoredStatue
+          // Java's `Char.Property.INORGANIC` members this port spawns (`Char.java`, v3.3.8; dm201/necroSkeleton/armoredStatue
           // inherit it from DM200/Skeleton/Statue): immune to Bleeding/ToxicGas/Poison. The two
           // buffs ride `monsterStatusImmunities`; ToxicGas is a blob, so its site reads this set.
           {
             tag: "effect",
             apply_to: "inorganic",
-            set: "dm100,dm200,dm201,dm300,golem,skeleton,necroSkeleton,statue,armoredStatue,pylon,wraith,dustWraith,ninjaLog",
+            set: "dm100,dm200,dm201,dm300,golem,skeleton,necroSkeleton,statue,armoredStatue,pylon,wraith,dustWraith,ninjaLog,crystalWisp,crystalGuardian,crystalSpire",
           },
           {
             tag: "effect",

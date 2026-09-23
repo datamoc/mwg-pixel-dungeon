@@ -254,7 +254,7 @@ export const npcShopBlacksmithMethods = {
 
 	populate(this: DungeonScene): void {
 		if (this.miningBranchActive) {
-			//`MiningLevel.createMob()`: GNOLL mines hold gnoll guards; the CRYSTAL roster is unported.
+			//`MiningLevel.createMob()`: GNOLL mines hold gnoll guards, CRYSTAL mines crystal wisps.
 			if (!this.populateMiningBranch()) this.say(t('port.log.mineabandonedquiet'), 'warning');
 			return;
 		}
