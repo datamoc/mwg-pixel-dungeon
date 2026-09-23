@@ -74,4 +74,9 @@ export function verifyTrinitySpirit(require, check) {
 		//synthetic toolkit chargeCap = 0 -> charge 0 -> no bonus energy; only the pot opens.
 		assert.ok(/trinitySpiritToolkit\(this: DungeonScene\): void \{\s*openAlchemyRecipes\(this\.alchemyFlowContext\(\)\);/.test(scene), 'opens the alchemy pot without toolkit energy');
 	});
+	check('Trinity SpiritForm offers the Chalice as a regeneration passive', () => {
+		const scene = readSceneSource();
+		assert.ok(scene.includes("'ChaliceOfBlood', 'Chalice of Blood', () => this.trinitySpiritChalice(), true)"), 'picker offers the chalice, spending the turn');
+		assert.ok(scene.includes("this.trinitySpiritEffect === 'chalice' ? this.trinityArtifactLevel() : -1"), 'regen reads chaliceLevel = artifactLevel() as the else-if fallback');
+	});
 }

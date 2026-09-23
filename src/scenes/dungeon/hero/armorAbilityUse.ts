@@ -421,6 +421,7 @@ export const armorAbilityUseMethods = {
 		const level = this.trinitySyntheticLevel('talisman');
 		useTalismanFlow(trinitySyntheticFlow(this.talismanFlowContext(), 'talismanOf', { level, charge: mwlItemEffectValue('talisman', 'chargeCap'), exp: -2147483648, cursed: false }), 'trinity-spirit');
 	},
+			{ label: 'Chalice of Blood', onPick: () => this.commitTrinitySpiritArtifact(cost, 'ChaliceOfBlood', 'Chalice of Blood', () => this.trinitySpiritChalice(), true) },
 			{ label: "Alchemist's Toolkit", onPick: () => this.commitTrinitySpiritArtifact(cost, 'AlchemistsToolkit', "Alchemist's Toolkit", () => this.trinitySpiritToolkit()) },
 
 	/** `applyActiveArtifactEffect(HornOfPlenty)`: `doEatEffect(hero, 1)` - see `eatTrinityHornFlow`. */
@@ -536,7 +537,6 @@ export const armorAbilityUseMethods = {
 
 	poweredLightAlly(this: DungeonScene): Creature | undefined {
 		const ally = this.poweredAlly();
-		return ally?.allyKind === 'lightAlly' ? ally : undefined;
 	/**
 	 * `applyActiveArtifactEffect(AlchemistsToolkit)`: `AlchemyScene.assignToolkit(effect)` then the alchemy scene.
 	 * The synthetic toolkit's `chargeCap` is 0 so `charge = 0`: no bonus energy, i.e. plain alchemy-pot access.
@@ -545,6 +545,20 @@ export const armorAbilityUseMethods = {
 		openAlchemyRecipes(this.alchemyFlowContext());
 	},
 
+	/**
+	 * `applyActiveArtifactEffect(ChaliceOfBlood)` only attaches the 20-turn `SpiritFormBuff`; the heal is
+	 * `Regeneration.act()`'s `SpiritFormBuff.artifact() instanceof ChaliceOfBlood` branch
+	 * (`chaliceLevel = SpiritForm.artifactLevel()`), read by `tickNaturalRegeneration` via
+	 * `trinitySpiritEffect === 'chalice'`. Rides the same `trinityForm`/`trinityTurns` clock as the Ring effect.
+	 */
+	trinitySpiritChalice(this: DungeonScene): void {
+		this.trinitySpiritEffect = 'chalice';
+		this.trinityMindEffect = null;
+		this.trinityForm = 'spirit';
+		this.trinityTurns = 20;
+	},
+
+		return ally?.allyKind === 'lightAlly' ? ally : undefined;
 	},
 
 	/** `Ratmogrify.baseChargeUse` (50, tag `v3.3.8`) is charged like any other ability's, read

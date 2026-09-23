@@ -1852,13 +1852,15 @@ export const turnLoopAimingMethods = {
 	 *
 	 * The carried Chalice of Blood stands in for Java's equipped one (artifacts are carried, not
 	 * slotted, in this port - the convention every artifact here follows). `SpiritForm`'s chalice
-	 * branch is not reachable: SpiritForm has no item-effect dispatch yet (see the Trinity row).
+	 * branch reads `trinitySpiritEffect === 'chalice'` (see `trinitySpiritChalice`).
 	 * Java's `hero.resting = false` at full HP has no counterpart: this port has no rest-until-healed.
 	 */
 	tickNaturalRegeneration(this: DungeonScene, turnCost: number): void {
 		const chalice = this.bag.find('chalice') as (typeof this.bag.items[number] & { level?: number }) | undefined;
 		const delay = regenerationDelay({
-			chaliceLevel: chalice ? (chalice.level ?? 0) : -1,
+			//Java's `else if` order: a carried (equipped) chalice wins; else SpiritForm's chalice at `artifactLevel()`.
+			chaliceLevel: chalice ? (chalice.level ?? 0)
+				: this.trinityForm === 'spirit' && this.trinityTurns > 0 && this.trinitySpiritEffect === 'chalice' ? this.trinityArtifactLevel() : -1,
 			chaliceCursed: chalice?.cursed === true,
 			magicImmune: this.hero.magicImmune === true,
 			artifactChargeMultiplier: ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) * this.lightCloakChargeMultiplier(),
