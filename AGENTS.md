@@ -216,27 +216,26 @@ Use it whenever more than one session might be live, before a large or file-budg
 skill and `/acp:*` commands) is superseded by coord - do not use it, and ignore older mailbox
 references (`ACP #862` etc.) in this repo's history as anything but history.
 
-### Compact message protocol (agreed 2026-09-22 on ACP #862/#864, ACK codex-01 #867; carried over to coord)
+### Compact message protocol (agreed 2026-09-22 on ACP #862/#864, ACK codex-01 #867; trimmed for coord 2026-09-23)
 
-Proposed at the user's request to cut message size and ambiguity; adopted by every live agent.
+Keeps posts short and unambiguous.
 
-0. **Encoding and length.** The coord client is Node and handles UTF-8 on a Windows console. Keep
-   posts under 300 characters - the client warns past that (`consider a document for long
-   analyses`); use `coord doc create` for anything longer.
-1. **Status tag first**, ASCII (always safe): `T` taking/claimed, `D` done/landed (a commit),
-   `B` blocked, `Q` question, `H` handoff/request for any agent, `R` released claim,
-   `W` warning/collision, `V` verified/ack. An optional one-character CJK suffix may follow
-   (`D/完`, `T/取`, `B/阻`, `Q/問`, `H/渡`, `R/放`, `W/警`, `V/験`) - safe since rule 0.
-2. **Short nouns**: `PC` = `PORT_COVERAGE.md`, `PCI` = `PORT_COVERAGE_I18N.md`, `RM` =
+1. **Status is the message kind, not a tag.** coord shows the sender and `--kind` on every message
+   (`#11 [...] claude-01 done: ...`), so don't start the body with a letter tag (`T`/`D`/`B`/...,
+   from the ACP days). `--kind done` for a landed commit, `question`, `warning` for a collision or
+   blocker, `proposal` for a handoff (or `coord task create`), `review` for a verification/ack,
+   `info` otherwise. Claims and releases need no post: `coord locks` shows them.
+2. **Under 300 characters** - the client warns past that; use `coord doc create` for anything longer.
+3. **Short nouns**: `PC` = `PORT_COVERAGE.md`, `PCI` = `PORT_COVERAGE_I18N.md`, `RM` =
    `ROADMAP.md`, `J` = Java tag `v3.3.8` (`J4b` = `4.0.0-beta`), `MWL` = authored content; paths
    drop `src/` and `.ts` (`scenes/dungeon/combatResolution`).
-3. **Verification in one token string**: `ok:tsc,sim286,items,i18n,bud,aud,build,LV` (`LV` =
+4. **Verification in one token string**: `ok:tsc,sim286,items,i18n,bud,aud,build,LV` (`LV` =
    live-verified in a browser, `NLV` = not yet); a failing gate as `x:sim(verifyArmorAbilities:194)`.
-4. **Always cite** `#N` for messages, `@sha` for commits, `file:line` for code; don't restate
+5. **Always cite** `#N` for messages, `@sha` for commits, `file:line` for code; don't restate
    context the thread already carries.
-5. **Shell safety**: never put backticks or `$()` in a post - bash substitutes them before the
+6. **Shell safety**: never put backticks or `$()` in a post - bash substitutes them before the
    client sees the text. Use plain quotes.
-6. **Shared worktree and index**: commit only your own hunks through a private index
+7. **Shared worktree and index**: commit only your own hunks through a private index
    (`GIT_INDEX_FILE=<tmp> git read-tree HEAD`, `git hash-object -w` + `git update-index
    --cacheinfo` for your blobs, `git commit-tree`, then `git update-ref HEAD <new> <old>` so a
    concurrent commit makes yours fail instead of clobbering it). Never `git add` a whole shared
@@ -245,10 +244,7 @@ Proposed at the user's request to cut message size and ambiguity; adopted by eve
    change once (`495c09f`, fixed in `b6a7a6a`), and taking a whole working-tree file can carry
    a peer's unstaged edit.
 
-Example: `D DivineIntervention @495c09f ok:tsc,sim286,i18n,bud,aud,LV. PC row + RM. R claim.`
-coord records the sender from the session itself (`claude-01 -> codex-02` in `inbox`), so a
-`<session>:` prefix in the body is optional, not required as it was under ACP; the status tag still
-comes first.
+Example: `coord post --kind done "DivineIntervention @495c09f ok:tsc,sim286,i18n,bud,aud,LV. PC row + RM."`
 
 ## Reference material
 
