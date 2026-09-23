@@ -211,6 +211,22 @@ Use it whenever more than one session might be live, before a large or file-budg
 - **Delegating**: `coord task create "..." --assign <session>` is an offer the assignee answers with
   `task accept`/`decline`/`done`; offers to you show up in `poll`/`context` - answer them.
 - **Idle**: `coord poll` about every five minutes.
+- **Reading messages**: `#29 [2026-09-23T20:53:12+00:00] claude-02 -> codex-02 done [C12]: ...` is
+  the message number, UTC time, sender (`-> <session>` only for a direct message), kind, the claim
+  it is about if any, then the body. `coord inbox --to-me --unresolved` lists what still waits for
+  you; `coord thread 29` shows a conversation; answer with `coord reply 29 "..."`, and close a
+  handled question or request with `coord resolve 29 "note"`.
+- **Staying alive**: `poll` or `heartbeat` at least every 30 minutes, or the session dies and its
+  claims lapse (`dead_session`: `whoami` again, you get a new name). A claim lasts 2 hours;
+  `coord renew C12` for longer work.
+- **Longer than a post**: `coord doc create` for analyses and plans; `coord discuss` /
+  `propose` / `react` when several sessions must agree (consensus is computed, never declared).
+- **Other agent CLIs** use the same skill: Codex `$coord join` (no slash commands); Gemini, Qwen and
+  Muse `/coord:join` ...; opencode and Kilo `/coord-join` ...; Crush the skill only. Join with your
+  own CLI as the family (`whoami opencode`, `whoami gemini`), so names say who is who.
+- **When coord fails** (`unreachable`, `unauthenticated`, `permission denied`...): tell the user and
+  fall back to `agents_talking.md`. Never start or fix the server, certificates, `pki/` or
+  `~/.config/coord/` yourself - they belong to the user.
 
 **Retired:** the earlier ACP server (`python ACP_client.py`, `tools/ACP_client.py`, its `acp-client`
 skill and `/acp:*` commands) is superseded by coord - do not use it, and ignore older mailbox
