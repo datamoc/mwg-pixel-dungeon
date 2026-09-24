@@ -26,6 +26,11 @@ check('GnollExile attacks from two cells only through a free two-step path', () 
 	assert.ok(/gnollExileTurn\(this: DungeonScene, exile: Creature, distance: number\): boolean \{[\s\S]{0,700}this\.creatureAt\(mid\.x, mid\.y\)/.test(scene));
 	assert.ok(scene.includes("monster.kind === 'gnollExile' && this.gnollExileTurn(monster, distance)"), 'dispatched from the monster turn');
 });
+check("GnollExile stays passive until hit or debuffed", () => {
+	assert.ok(/gnollExilePassive\(this: DungeonScene, exile: Creature\): boolean \{[\s\S]{0,900}NEGATIVE_BUFFS\.has/.test(scene));
+	assert.ok(scene.includes("monster.kind === 'gnollExile' && monster.seesHero && this.gnollExilePassive(monster)"), 'gated ahead of the detection roll');
+});
+// live: tools/scratch/gnollexile-passive-livecheck.mjs (passive / hit / poisoned)
 // live: tools/scratch/gnollexile-reach-livecheck.mjs (reach on/off with blockers)
 // live: tools/scratch/gnollexile-loot-livecheck.mjs - 30 kills averaged 2.63 items (expected 2.5)
 

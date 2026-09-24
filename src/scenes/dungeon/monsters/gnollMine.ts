@@ -1,7 +1,10 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { Random, Roguelike, SpriteSheet } from 'mwg';
 import { AnimatedSprite } from 'mwg/two-d/render';
-import { buffBlocked, type Creature, type Step } from '../../../combat';
+import { NEGATIVE_BUFFS, buffBlocked, type BuffId, type Creature, type Step } from '../../../combat';
+
+/** Per-exile `Passive` bookkeeping (see `gnollExilePassive`). */
+const exileState = new WeakMap<object, { aggro: boolean; hp: number }>();
 import { GAME_KIND_CODES } from '../../../dungeonConstants';
 import { t } from '../../../i18n/index';
 import { runState } from '../../../runState';
@@ -192,6 +195,30 @@ export const gnollMineMethods = {
 		if (monster.kind === 'gnollSapper') return this.gnollSapperTurn(monster, distance);
 		if (monster.kind === 'gnollGeomancer') return this.gnollGeomancerTurn(monster, distance);
 		return false;
+	},
+
+	/**
+	 * `GnollExile`'s `Passive` state (tag `v3.3.8`): it starts PASSIVE and never acquires the hero on
+	 * sight; it turns aggressive (Java's WANDERING, then a hunt) the turn after it has been hit
+	 * (`Mob.damage()` sets `alerted`, and `Passive.act()` answers `enemyInFOV && justAlerted` with
+	 * `noticeEnemy()`) or once it carries any negative buff ("swap to aggro if we've been debuffed").
+	 * @returns true while it is still passive, so the shared turn must not let it notice the hero.
+	 * The flag lives in a WeakMap (not saved): a reloaded aggressive exile is passive again until
+	 * next hit - a stated simplification, as is its idle wander (a passive exile holds in place here).
+	 */
+	gnollExilePassive(this: DungeonScene, exile: Creature): boolean {
+		const state = exileState.get(exile) ?? { aggro: false, hp: exile.hp };
+		exileState.set(exile, state);
+		if (state.aggro) return false;
+		const hit = exile.hp < state.hp;
+		state.hp = exile.hp;
+		if (hit || Object.keys(exile.buffs).some((id) => NEGATIVE_BUFFS.has(id as BuffId))) {
+			state.aggro = true;
+			//`justAlerted`: the alerted turn notices the hero outright, with no detection roll
+			if (this.hero.hp > 0) exile.lastSeen = { x: this.hero.x, y: this.hero.y };
+			return false;
+		}
+		return true;
 	},
 
 	/**

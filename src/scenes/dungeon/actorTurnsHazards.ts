@@ -874,6 +874,8 @@ export const actorTurnsHazardsMethods = {
 			}
 			return;
 		}
+		//`GnollExile`'s `Passive` state: no acquisition on sight until hit or debuffed (`gnollExilePassive`).
+		if (monster.kind === 'gnollExile' && monster.seesHero && this.gnollExilePassive(monster)) { monster.seesHero = false; return; }
 		//Mob.Wandering.act(): an awake mob that has not yet acquired the hero rolls
 		//`Random.Float(distance(hero)/2f + hero.stealth()) < 1` before entering HUNTING
 		//(Mob.java, tag v3.3.8). The port has no separate WANDERING state, so the persisted
