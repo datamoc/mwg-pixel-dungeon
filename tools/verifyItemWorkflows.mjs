@@ -1742,10 +1742,10 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 			expected, `monster ${id} matches its Java stats`,
 		);
 	}
-	// The mining-quest actors still unported (37th matrix, `MONSTER_ANALYSIS_UNPORTED_QUEST_MOBS.md`;
-	// the GNOLL and CRYSTAL trios are ported now, with their AI in `scenes/dungeon/monsters/gnollMine.ts`
-	// and `crystalMine.ts`)
-	// spawn at weight 0 from quest rooms, so no MWL row may exist for them -
+	// The still-unported mining-quest actors (37th matrix, `MONSTER_ANALYSIS_UNPORTED_QUEST_MOBS.md`;
+	// Wisp/Guardian/Spire and the GNOLL trio are ported now, with their AI in
+	// `scenes/dungeon/monsters/crystalMine.ts` and `gnollMine.ts`) spawn at weight 0
+	// from quest rooms, so no MWL row may exist for the remaining fungal actors -
 	// a half-added kind (stats without AI, sprites, or quest wiring) would be worse than
 	// the documented absence. Same for the 38th matrix's (`MONSTER_ANALYSIS_RARE_SPAWNS.md`)
 	// unported rare spawns: the mimic tiers,

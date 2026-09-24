@@ -31,8 +31,8 @@
             tag: "effect",
             apply_to: "boss",
             // `Property.BOSS` holders at tag `v3.3.8`: the five chapter bosses plus
-            // `YogFist` and the mine bosses `GnollGeomancer`/`CrystalSpire` (unported
-            // `FungalCore` omitted; all eight declare it; `DwarfKing`/`YogDzewa` also declare
+            // `YogFist` and the mine bosses `GnollGeomancer`/`CrystalSpire` (`FungalCore`
+            // remains unported and is omitted; all eight declare BOSS; `DwarfKing`/`YogDzewa` also declare
             // `BOSS_MINION` for their servants). Eye, Warlock and Pylon declare no
             // BOSS property - corrected 2026-09-19, when the suite first ran far
             // enough to check: an earlier pass had added all three, over-looting
