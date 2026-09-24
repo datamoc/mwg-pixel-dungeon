@@ -798,7 +798,8 @@ export function verifyArmorAbilities(require, check) {
 			'a consumed tracker must run the bow nature-proc');
 		assert.doesNotMatch(source, /damageMultiplier \*= 1\.1/,
 			'the invented x1.1 spirit-blades damage bonus must be gone');
-	});	check('Trinity BodyForm Thorns is offered and follows Java's defensive proc gates', () => {
+	});
+	check('Trinity BodyForm Thorns is offered and follows Java's defensive proc gates', () => {
 		const ability = readFileSync(new URL('../src/scenes/dungeon/hero/armorAbilityUse.ts', import.meta.url), 'utf8');
 		const combat = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
 		const mob = readFileSync(new URL('../src/scenes/mobOnHit.ts', import.meta.url), 'utf8');
