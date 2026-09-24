@@ -74,6 +74,7 @@ export const combatResolutionMethods = {
 	attack(this: DungeonScene, attacker: Creature, defender: Creature, accFactor = 1, damageMultiplier = 1): boolean {
 		if (attacker.isHero) this.cancelHourglassFreeze();
 		else noteMonsterAttack(attacker);
+		if (attacker.kind === 'crystalWisp') this.triggerCrystalWispPulse(attacker);
 		faceCharacter(this.sprite(attacker), attacker.x, defender.x);
 		const attackerSprite = this.sprite(attacker);
 		if (attackerSprite instanceof AnimatedSprite && attackerSprite.has('attack')) attackerSprite.play('attack', true);

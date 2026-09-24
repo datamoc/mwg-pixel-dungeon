@@ -57,6 +57,11 @@ try {
 	assert.match(sceneSource, /Math\.abs\(Math\.sin\(state\.time\)\)/, 'wisp body uses Java sine bob');
 	assert.match(sceneSource, /-0\.8 \* bodyBob/, 'wisp shadow uses Java animated shadow offset');
 	assert.match(sceneSource, /pulseAge \/ 0\.2/, 'wisp attack halo uses Java 0.2-second pulse');
+	assert.match(sceneSource, /pulseSerial !== visual\.pulseSerial/, 'each wisp attack event restarts its halo pulse');
+	assert.match(sceneSource, /triggerCrystalWispPulse\(this: DungeonScene, wisp: Creature\)/, 'wisp pulse event has an explicit scene seam');
+	assert.match(sceneSource, /crystalWispZap\(this: DungeonScene, wisp: Creature\): void \{\s*this\.triggerCrystalWispPulse\(wisp\)/, 'ranged wisp zap triggers its pulse');
+	const combatSource = readFileSync(fileURLToPath(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url)), 'utf8');
+	assert.match(combatSource, /attacker\.kind === 'crystalWisp'\) this\.triggerCrystalWispPulse\(attacker\)/, 'melee wisp attack triggers its pulse');
 	assert.match(sceneSource, /deathAge < 1/, 'wisp halo fades over Java one-second TorchHalo putOut interval');
 	assert.match(sceneSource, /visual\.bob = 0/, 'wisp death clip stops sine bob without shifting the corpse');
 	console.log('PASS crystal mine pure planners (10 helpers) and wisp visual seam');

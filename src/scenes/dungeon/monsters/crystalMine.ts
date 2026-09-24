@@ -33,9 +33,18 @@ const CRYSTAL_SHEETS = {
 
 type Clip = [string, number[], { fps: number; loop: boolean }];
 
-interface WispVisualState { halo: Graphics; sprite: AnimatedSprite; bob: number; pulseAge: number; wasAttacking: boolean; deathAge?: number; deathAlpha?: number; }
-interface CrystalMineVisualState { time: number; wisps: Map<string, WispVisualState>; shadowOffsets: Map<string, number>; }
+interface WispVisualState { halo: Graphics; sprite: AnimatedSprite; bob: number; pulseAge: number; pulseSerial: number; deathAge?: number; deathAlpha?: number; }
+interface CrystalMineVisualState { time: number; wisps: Map<string, WispVisualState>; shadowOffsets: Map<string, number>; pulseSerials: Map<string, number>; }
 const crystalMineVisualStates = new WeakMap<DungeonScene, CrystalMineVisualState>();
+
+function crystalMineVisualStateFor(scene: DungeonScene): CrystalMineVisualState {
+	let state = crystalMineVisualStates.get(scene);
+	if (!state) {
+		state = { time: 0, wisps: new Map(), shadowOffsets: new Map(), pulseSerials: new Map() };
+		crystalMineVisualStates.set(scene, state);
+	}
+	return state;
+}
 
 function wispHalo(color: number): Graphics {
 	//`CrystalWispSprite.link()` creates `TorchHalo(20, blood(), 0.2)`, then sets alpha 0.3
@@ -85,8 +94,7 @@ export const crystalMineMethods = {
 	 * Java's matching `0.25 - 0.8*abs(sin(time))` offset. The real halo's radial sprite shader is
 	 * represented by additive rings; attack/zap brightens it over Java's 0.2-second fade-in. */
 	updateCrystalWispVisuals(this: DungeonScene, dt: number): ReadonlyMap<string, number> {
-		let state = crystalMineVisualStates.get(this);
-		if (!state) { state = { time: 0, wisps: new Map(), shadowOffsets: new Map() }; crystalMineVisualStates.set(this, state); }
+		const state = crystalMineVisualStateFor(this);
 		state.time += dt;
 		state.shadowOffsets.clear();
 		const live = new Set<string>();
@@ -100,7 +108,7 @@ export const crystalMineMethods = {
 				const color = [0x66b3ff, 0x2ee62e, 0xff7f00][creature.crystalTint ?? 0] ?? 0x66b3ff;
 				const halo = wispHalo(color);
 				this.effectLayer.addChild(halo);
-				visual = { halo, sprite, bob: 0, pulseAge: Number.POSITIVE_INFINITY, wasAttacking: false };
+				visual = { halo, sprite, bob: 0, pulseAge: Number.POSITIVE_INFINITY, pulseSerial: 0 };
 				state.wisps.set(creature.id, visual);
 			}
 			const bodyBob = Math.abs(Math.sin(state.time));
@@ -110,15 +118,12 @@ export const crystalMineMethods = {
 			visual.bob = bodyBob;
 			visual.halo.position.set(sprite.x + 8, sprite.y + 8);
 			visual.halo.visible = sprite.visible;
-			const attacking = sprite.playing === 'attack';
-			if (attacking) {
-				if (!visual.wasAttacking) visual.pulseAge = 0;
-			}
+			const pulseSerial = state.pulseSerials.get(creature.id) ?? 0;
+			if (pulseSerial !== visual.pulseSerial) { visual.pulseSerial = pulseSerial; visual.pulseAge = 0; }
 			if (Number.isFinite(visual.pulseAge)) {
 				visual.pulseAge += dt;
 				if (visual.pulseAge >= 0.2) visual.pulseAge = Number.POSITIVE_INFINITY;
 			}
-			visual.wasAttacking = attacking;
 			visual.halo.alpha = Number.isFinite(visual.pulseAge) ? 0.3 + 0.7 * Math.min(1, visual.pulseAge / 0.2) : 0.3;
 			//`CharacterEffects` already includes the baseline +0.25; supply only Java's animated delta.
 			state.shadowOffsets.set(creature.id, -0.8 * bodyBob);
@@ -147,8 +152,17 @@ export const crystalMineMethods = {
 			}
 			visual.halo.destroy();
 			state.wisps.delete(id);
+			state.pulseSerials.delete(id);
 		}
+		for (const id of state.pulseSerials.keys()) if (!live.has(id)) state.pulseSerials.delete(id);
 		return state.shadowOffsets;
+	},
+
+	/** Java's CrystalWispSprite starts a fresh 0.2s halo tween for every attack/zap event, even
+	 * when the attack clip is already playing. Use a serial so repeated attacks restart the pulse. */
+	triggerCrystalWispPulse(this: DungeonScene, wisp: Creature): void {
+		const state = crystalMineVisualStateFor(this);
+		state.pulseSerials.set(wisp.id, (state.pulseSerials.get(wisp.id) ?? 0) + 1);
 	},
 
 	/** Re-applies the crystal sprite's clips for its colour, the guardian's crumple and the spire's
@@ -284,6 +298,7 @@ export const crystalMineMethods = {
 	 * every bolt here. The hero is the only target (the port's hostile AI hunts the hero).
 	 */
 	crystalWispZap(this: DungeonScene, wisp: Creature): void {
+		this.triggerCrystalWispPulse(wisp);
 		this.faceAndSwing(wisp, this.hero);
 		delete wisp.buffs['invisibility'];
 		if (!rollHit(wisp, this.hero, true)) {
