@@ -506,6 +506,11 @@ export const combatResolutionMethods = {
 			damage = 0;
 		}
 		runState.audio.cue('hit', 0.6);
+		//DEVIATION (Gladiator): Java's `Combo` (actors/buffs/Combo.java, tag `v3.3.8`) is a buff
+		//whose `hit()` counts landed hits (decaying 5 turns, 15+15*Cleave after a kill) and unlocks
+		//the finisher moves CLOBBER/SLAM/PARRY/CRUSH/FURY at 2/4/6/8/10 through `WndCombo`; it adds
+		//NO damage to ordinary hits. This port has no Combo buff or move UI, so it keeps an older
+		//stand-in: every third landed hero hit deals +3 (+Enhanced Combo rank). See PORT_COVERAGE.md.
 		if (attacker.isHero && this.subclass() === 'gladiator') {
 			attacker.combo = (attacker.combo ?? 0) + 1;
 			if (attacker.combo % 3 === 0) {
