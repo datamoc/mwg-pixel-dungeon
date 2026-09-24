@@ -1468,7 +1468,12 @@ export const actorTurnsHazardsMethods = {
 			return;
 		}
 		const defend = ally.allyDefendCell;
-		const destination = target ?? defend ?? this.hero;
+		//`DirectableAlly.Hunting.act()` (tag `v3.3.8`): an ally under a standing defend order still auto-attacks
+		//whatever it spontaneously sees (Wandering's own auto-hunt, unaffected by the order), but gives up the
+		//chase back to its post once it cannot reach that spontaneous target this turn - unlike an explicitly
+		//ordered target (`allyTargetChar`), which it keeps chasing across the floor.
+		const chasingSpontaneously = defend !== undefined && target !== undefined && target !== ordered && this.fov.isVisible(defend.x, defend.y);
+		const destination = chasingSpontaneously ? defend : target ?? defend ?? this.hero;
 		const returningLightAlly = ally.allyKind === 'lightAlly' && !target && !defend;
 		if (!target && Roguelike.chebyshevDistance(ally, this.hero) <= 2 && !defend && !returningLightAlly) return;
 		const returningFast = returningLightAlly && Roguelike.chebyshevDistance(ally, this.hero) > 1;
