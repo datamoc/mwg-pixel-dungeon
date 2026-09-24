@@ -803,6 +803,14 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 		assert.match(quickslot, /cureHeroBuffs\(target\)/);
 		assert.match(quickslot, /Math\.max\(this\.healingLeft/);
 	}
+	{
+		// `PowerOfMany.LightAlly` is immune to `AllyBuff` (`PowerOfMany.java`, tag
+		// `v3.3.8`); since this port has no Doom buff, Corruption must not replace its
+		// special ally identity with the generic mirror-ally stand-in.
+		const aiming = readFileSync(join(root, 'src/scenes/dungeon/turnLoopAiming.ts'), 'utf8');
+		assert.match(aiming, /wandType === 'corruption'[\s\S]*?victim\.allyKind !== 'lightAlly'/);
+		assert.match(aiming, /This port has no Doom buff yet; preserve[\s\S]*?LightAlly identity/);
+	}
 
 	/** What `bag.add` does to a stack carrying this identity - the *only* merge decision the port
 	 * makes, and therefore the one that has to reproduce `isSimilar`. */

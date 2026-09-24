@@ -269,11 +269,15 @@ export const turnLoopAimingMethods = {
 					this.moveTo(victim, next);
 				}
 			}
-			if (wandType === 'corruption' && !victim.isHero && !victim.isNPC) {
+			if (wandType === 'corruption' && !victim.isHero && !victim.isNPC && victim.allyKind !== 'lightAlly') {
 				//WandOfCorruption.corruptEnemy() creates a permanent controlled ally
 				//after healing/cleansing it. The port has no separate Corruption buff
 				//or loot-transfer payload, so the existing ally scheduler is used for
 				//the observable controlled-combat result.
+				//`PowerOfMany.LightAlly` is immune to `AllyBuff` in
+				//`PowerOfMany.java` (tag `v3.3.8`), so Java's `corruptEnemy()` applies
+				//Doom instead of converting it. This port has no Doom buff yet; preserve
+				//the LightAlly identity rather than corrupting its special ally state.
 				victim.isAlly = true;
 				victim.allyKind = 'mirror';
 				victim.hp = victim.maxHp;
