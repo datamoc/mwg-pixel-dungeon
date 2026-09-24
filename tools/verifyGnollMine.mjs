@@ -112,6 +112,7 @@ export function verifyGnollMine(require, check) {
 			['bracket rule (blast)', 'this.gnollMineAfterDamage(c, preHp);'],
 			['gnoll rockfall landing', 'if (volley.gnoll) { if (this.landGnollRockFall(volley.cells)) heroDied = true; continue; }'],
 			['room payload links', 'this.linkMineQuestActors(this.portedMobSpawns);'],
+			['geomancer scale survives clip refresh and facing', "if (creature.kind === 'gnollGeomancer') {\n\t\t\t//`GnollGeomancerSprite`'s constructor sets `scale.set(1.25f)`; retain the facing sign\n\t\t\t//used by `faceCharacter()` while refreshing the statue/idle clips.\n\t\t\tsprite.scale.set(sprite.scale.x < 0 ? -1.25 : 1.25, 1.25);\n\t\t}"],
 			['death hooks', "if (creature.kind === 'gnollSapper' || creature.kind === 'gnollGeomancer') this.gnollMineDied(creature);"],
 			['boss bar after the third strike', "(creature.kind === 'gnollGeomancer' && (creature.geomancerHits ?? 0) >= 3)"],
 			['ambient guards', 'if (!this.populateMiningBranch())'],

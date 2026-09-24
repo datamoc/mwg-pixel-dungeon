@@ -71,7 +71,9 @@ export const gnollMineMethods = {
 	},
 
 	/** Re-applies the gnoll sprite's clips; the geomancer swaps to its statue frames while it
-	 * wears rock armour (`GnollGeomancerSprite.idle()`/`link()`). Not ported: the
+	 * wears rock armour (`GnollGeomancerSprite.idle()`/`link()`). Java's `GnollGeomancerSprite`
+	 * constructor also sets a 1.25 scale (tag `v3.3.8`); preserve it across clip refreshes and
+	 * facing changes. Not ported: the
 	 * `EarthParticle` emitter a sapper-linked guard or geomancer wears (no particle seam). */
 	syncGnollMineVisual(this: DungeonScene, creature: Creature): void {
 		const sheetInfo = GNOLL_SHEETS[creature.kind as keyof typeof GNOLL_SHEETS];
@@ -80,6 +82,11 @@ export const gnollMineMethods = {
 		const statue = creature.kind === 'gnollGeomancer' && (creature.rockArmor ?? 0) > 0;
 		const sheet = SpriteSheet.fromTexture(runState.sprites[sheetInfo.sprite], sheetInfo.w, sheetInfo.h);
 		for (const [name, frames, clip] of gnollClips(statue ? 21 : 0, statue)) sprite.add(name, frames.map((f) => sheet.get(f)), clip);
+		if (creature.kind === 'gnollGeomancer') {
+			//`GnollGeomancerSprite`'s constructor sets `scale.set(1.25f)`; retain the facing sign
+			//used by `faceCharacter()` while refreshing the statue/idle clips.
+			sprite.scale.set(sprite.scale.x < 0 ? -1.25 : 1.25, 1.25);
+		}
 		sprite.play('idle', true);
 	},
 
