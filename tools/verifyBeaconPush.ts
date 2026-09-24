@@ -25,6 +25,7 @@ function context(overrides: Partial<BeaconFlowContext> & { beacon: BeaconItem; o
 		cellIndex: (x, y) => y * 20 + x,
 		gridWidth: () => 20,
 		isBossDepth: () => false,
+		isFloorLocked: () => false,
 		hasAmulet: () => false,
   creatureAt: (x, y) => occupants.find((mob) => mob.x === x && mob.y === y) ?? null,
   mobsAt: (x, y) => occupants.filter((mob) => mob.x === x && mob.y === y && !mob.isHero),
@@ -141,6 +142,33 @@ function context(overrides: Partial<BeaconFlowContext> & { beacon: BeaconItem; o
 	}) as ReturnType<typeof context> & { __relocated: { x: number; y: number }[]; __moved: { id: string; to: string }[] };
 	returnBeaconFlow(ctx);
 	check('artifact return directly displaces an immovable NPC because it is a Mob', ctx.__relocated.length === 1 && ctx.__relocated[0]!.x === 5 && ctx.__moved.length === 1);
+}
+
+{
+	//`Dungeon.interfloorTeleportAllowed()` (tag `v3.3.8`): `level.locked` (the LockedFloor boss-arena
+	//lock, `floorLocked()`) refuses interfloor teleport alongside the mining branch and the amulet -
+	//`interfloorTeleportBlocked` was missing this one until 2026-09-24. Java's own gate on the spell
+	//twin sits only on the cross-depth branch (`returnDepth` != the current `ctx.depth`); the
+	//same-depth branch has no such check, in Java or here.
+	const beacon: BeaconItem = { returnDepth: 5, returnBranch: 0, returnPos: 25, returnX: 5, returnY: 1 };
+	let consumed = 0;
+	const ctx = context({ beacon, isFloorLocked: () => true, consumeReturningBeacon: () => { consumed++; } }) as ReturnType<typeof context> & { __relocated: { x: number; y: number }[]; __said: string[] };
+	useReturningBeaconFlow(ctx);
+	check("a locked boss-arena floor refuses the spell twin's cross-depth trip without consuming", consumed === 0 && ctx.__said.includes('items.spells.beaconofreturning.preventing'));
+}
+{
+	//The same-depth branch is unaffected: Java's own `BeaconOfReturning` gate never runs there either.
+	const beacon: BeaconItem = { returnDepth: 3, returnBranch: 0, returnPos: 25, returnX: 5, returnY: 1 };
+	let consumed = 0;
+	const ctx = context({ beacon, isFloorLocked: () => true, consumeReturningBeacon: () => { consumed++; } }) as ReturnType<typeof context> & { __relocated: { x: number; y: number }[] };
+	useReturningBeaconFlow(ctx);
+	check("a locked boss-arena floor does not block the spell twin's same-depth return", ctx.__relocated.length === 1 && consumed === 1);
+}
+{
+	const beacon: BeaconItem = { returnDepth: 3, returnBranch: 0, returnPos: 25, returnX: 5, returnY: 1 };
+	const ctx = context({ beacon, isFloorLocked: () => true }) as ReturnType<typeof context> & { __relocated: { x: number; y: number }[] };
+	returnBeaconFlow(ctx);
+	check('a locked boss-arena floor refuses the artifact (both directions - it gates upfront)', ctx.__relocated.length === 0);
 }
 
 if (failed > 0) { console.error(`${failed} beacon-push check(s) failed`); process.exit(1); }

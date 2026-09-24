@@ -566,6 +566,7 @@ export const inventoryQuickslotMethods = {
 				cellIndex: (x, y) => scene.level.index(x, y),
 				gridWidth: () => scene.level.width,
 				isBossDepth: () => scene.depth in BOSSES,
+				isFloorLocked: () => scene.floorLocked(),
 				hasAmulet: () => scene.bag.find('amulet') !== undefined,
 				creatureAt: (x, y) => {
 					const creature = scene.creatureAt(x, y);

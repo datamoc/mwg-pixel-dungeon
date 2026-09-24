@@ -85,6 +85,8 @@ export interface BeaconFlowContext {
 	readonly depth: number;
 	readonly heroPos: { x: number; y: number };
 	readonly miningBranchActive: boolean;
+	/** `Level.locked` (`LockedFloor`'s boss-arena lock, tag `v3.3.8`) - the port's `floorLocked()`. */
+	isFloorLocked(): boolean;
 	beaconOf(instanceId?: string): BeaconItem | undefined;
 	beaconTitle(): string;
 	openPicker(title: string, entries: { id: string; instanceId?: string; identified: boolean; quantity: number }[], onPick: (entry: { id: string; instanceId?: string }) => void): void;
@@ -114,10 +116,21 @@ export interface BeaconFlowContext {
 	t(key: string, params?: Record<string, string | number>): string;
 }
 
-/** `LloydsBeacon`'s travel block: boss depths, the mining branch, and carrying the amulet all
- *  forbid setting and returning alike. */
+/** `Dungeon.interfloorTeleportAllowed()` (tag `v3.3.8`): `level.locked || MiningLevel || amulet` -
+ *  a locked boss-arena floor, the mining branch, or carrying the amulet all forbid the trip. Shared
+ *  by both classes; `BeaconOfReturning`'s own gate stops here (see `useReturningBeaconFlow` below),
+ *  `LloydsBeacon`'s ORs in `bossLevel()` on top (`beaconTeleportBlocked`). */
+export function interfloorTeleportBlocked(ctx: BeaconFlowContext): boolean {
+	return ctx.isFloorLocked() || ctx.miningBranchActive || ctx.hasAmulet();
+}
+
+/**
+ * `LloydsBeacon`'s travel block (tag `v3.3.8`): `bossLevel() || !interfloorTeleportAllowed()` - boss
+ * depths on top of `interfloorTeleportBlocked`'s own floor-locked/mining/amulet trio - forbid setting
+ * and returning alike.
+ */
 export function beaconTeleportBlocked(ctx: BeaconFlowContext): boolean {
-	return ctx.isBossDepth() || ctx.miningBranchActive || ctx.hasAmulet();
+	return ctx.isBossDepth() || interfloorTeleportBlocked(ctx);
 }
 
 /** The adjacency block Java shares between setting and returning: any hostile neighbour. */
@@ -304,6 +317,9 @@ export function useReturningBeaconFlow(ctx: BeaconFlowContext, instanceId?: stri
 		ctx.say(ctx.t('items.scrolls.scrollofteleportation.no_tele'), 'negative');
 		return;
 	} else if (beacon.returnDepth >= 1 && beacon.returnDepth <= 26) {
+		//`Dungeon.interfloorTeleportAllowed()` (tag `v3.3.8`): only the cross-depth trip gates on it -
+		//Java's own same-depth branch above has no such check, and neither does this port's.
+		if (interfloorTeleportBlocked(ctx)) { ctx.say(ctx.t('items.spells.beaconofreturning.preventing'), 'negative'); return; }
 		ctx.consumeReturningBeacon(instanceId);
 		ctx.travelToDepth(beacon.returnDepth, { x, y });
 		ctx.say(ctx.t('port.log.beaconreturned'), 'positive');
