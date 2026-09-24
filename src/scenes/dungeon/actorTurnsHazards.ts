@@ -162,9 +162,15 @@ export const actorTurnsHazardsMethods = {
 		let { target } = plan;
 		// Interaction plans only arise from the synchronous occupant query above.
 		if (plan.kind === 'interact') {
-			// Allies occupy a cell like a friendly NPC; interactWithNPC intentionally has no
-			// branch for them, so bumping one cannot turn into friendly fire.
-			if (occupant!.isAlly && !occupant!.isNPC && this.tryAllyWarp(occupant!)) return;
+			// Allies occupy a cell like a friendly NPC (so bumping one never becomes friendly fire),
+			// but `Char.interact()` gives them their own default: Ally Warp's instant swap first, then
+			// the ordinary adjacent swap (`trySwapPlaces`); interactWithNPC is the fallback if both refuse.
+			if (occupant!.isAlly && !occupant!.isNPC) {
+				if (this.tryAllyWarp(occupant!)) return;
+				//`Char.interact()`'s default branch: bumping an adjacent ally that Ally Warp did not
+				//already handle swaps places instead - see `trySwapPlaces`'s own comment for the refusals.
+				if (this.trySwapPlaces(occupant!)) return;
+			}
 			this.interactWithNPC(occupant!);
 		}
 		//`GnollGeomancer.heroShouldInteract()`: an armoured geomancer is struck with the pickaxe instead.

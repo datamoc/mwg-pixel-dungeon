@@ -1404,6 +1404,42 @@ export const armorAbilityUseMethods = {
 	},
 
 	/**
+	 * `Char.interact()`'s default branch (tag `v3.3.8`, "swaps places by default" - `ch.interact(this)`
+	 * is called with `this` = the ally being bumped and `c` = the hero, both read below in that same
+	 * orientation): bumping an adjacent ally that Ally Warp did not already handle swaps the hero and
+	 * the ally's positions instead of attacking, and spends the hero's ordinary move turn. Refuses
+	 * (returns `false`, falling through to `interactWithNPC`, a no-op for an ally) when either side
+	 * has restricted movement (paralysis, roots, Vertigo) or is immovable. `move(newPos)` here is
+	 * `Char`'s base one-argument overload, not `Hero.move(step, travelling)`'s two-argument override,
+	 * so - matching Java - a swap presses no trap, picks up no item and triggers no plant or chasm
+	 * fall at the landing cell, unlike an ordinary step. Stated simplifications: Java also refuses a
+	 * LARGE ally into a non-`openSpace` cell and either side onto a hazard the mover cannot fly over -
+	 * this port has neither an `openSpace` map nor a LARGE property (already noted elsewhere in
+	 * `PORT_COVERAGE.md`), and the two allies this port can bump are never on a chasm cell adjacent to
+	 * the hero in practice, so that branch is left unmodeled rather than guessed at. The slide Java's
+	 * `moveSprite`/`sprite.move()` animate here is a direct position set instead, the same
+	 * simplification the neighbouring Ally Warp swap above already makes.
+	 */
+	trySwapPlaces(this: DungeonScene, ally: Creature): boolean {
+		const restricted = (target: Creature): boolean => (target.buffs['paralysis'] ?? 0) > 0
+			|| (target.buffs['roots'] ?? 0) > 0 || target.buffs['vertigo'] !== undefined;
+		if (ally.kind !== undefined && IMMOVABLE_KINDS.has(ally.kind as MonsterId)) return false;
+		if (restricted(this.hero) || restricted(ally)) return false;
+		const from = { x: this.hero.x, y: this.hero.y };
+		const to = { x: ally.x, y: ally.y };
+		this.hero.x = to.x; this.hero.y = to.y;
+		ally.x = from.x; ally.y = from.y;
+		this.sprite(this.hero).x = to.x * TILE;
+		this.sprite(this.hero).y = to.y * TILE;
+		this.sprite(ally).x = from.x * TILE;
+		this.sprite(ally).y = from.y * TILE;
+		this.fov.update(this.hero.x, this.hero.y, this.viewRadius());
+		this.spendHeroTurn(1);
+		this.refresh();
+		return true;
+	},
+
+	/**
 	 * `Talent.SEER_SHOT` (Sniper/Warden T3; desc `actors.hero.talent.seer_shot.desc`): a
 	 * thrown attack lands its arrow at the target's cell and grants vision in the 3x3 around
 	 * it for 5/10/15 turns, on a flat 20-turn cooldown (`SEER_SHOT_COOLDOWN`). Cross-hero it

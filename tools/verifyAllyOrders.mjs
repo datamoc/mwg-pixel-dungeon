@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { readSceneSource } from './sceneSource.mjs';
 
-// Pins `DirectableAlly` order wiring (`actors/mobs/npcs/DirectableAlly.java`, tag `v3.3.8`): the
-// shared `directAlly` order picker (attack/defend/follow), its four callers (PowerOfMany's
-// LightAlly, SpiritHawk, ShadowClone, DriedRose's ghost), and `takeAllyTurn`'s
-// `DirectableAlly.Hunting.act()` give-up-the-spontaneous-chase override.
+// Pins ally bump interactions (tag `v3.3.8`): `DirectableAlly` order wiring
+// (`actors/mobs/npcs/DirectableAlly.java`) - the shared `directAlly` order picker (attack/defend/
+// follow), its four callers (PowerOfMany's LightAlly, SpiritHawk, ShadowClone, DriedRose's ghost),
+// and `takeAllyTurn`'s `DirectableAlly.Hunting.act()` give-up-the-spontaneous-chase override - plus
+// `Char.interact()`'s own default branch, the ordinary adjacent swap-places (`trySwapPlaces`).
 const scene = readSceneSource();
 const rose = readFileSync(new URL('../src/items/rose.ts', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 const check = (name, fn) => { fn(); console.log(`PASS ${name}`); };
@@ -26,6 +27,18 @@ check("a defend-ordered ally under DirectableAlly.Hunting's override breaks off 
 });
 check('an explicitly ordered target (allyTargetChar) is chased regardless - only a spontaneous one gives up', () => {
 	assert.ok(/const ordered = ally\.allyTargetChar !== undefined[\s\S]{0,1700}chasingSpontaneously/.test(scene));
+});
+
+check('trySwapPlaces refuses on an immovable ally or restricted movement (paralysis/roots/Vertigo) on either side', () => {
+	assert.ok(/trySwapPlaces\(this: DungeonScene, ally: Creature\): boolean \{[\s\S]{0,400}IMMOVABLE_KINDS\.has/.test(scene));
+	assert.ok(/const restricted = \(target: Creature\): boolean => \(target\.buffs\['paralysis'\][\s\S]{0,200}target\.buffs\['vertigo'\] !== undefined;/.test(scene));
+	assert.ok(scene.includes('if (restricted(this.hero) || restricted(ally)) return false;'));
+});
+check('the bump dispatch tries Ally Warp, then the default swap, before falling through to interactWithNPC', () => {
+	assert.ok(/if \(occupant!\.isAlly && !occupant!\.isNPC\) \{\s*if \(this\.tryAllyWarp\(occupant!\)\) return;\s*[\s\S]{0,300}if \(this\.trySwapPlaces\(occupant!\)\) return;\s*\}\s*this\.interactWithNPC\(occupant!\);/.test(scene));
+});
+check('a successful swap spends one hero turn, like an ordinary step', () => {
+	assert.ok(/trySwapPlaces\(this: DungeonScene, ally: Creature\): boolean \{[\s\S]{0,1200}this\.spendHeroTurn\(1\);/.test(scene));
 });
 
 console.log('verifyAllyOrders: OK');
