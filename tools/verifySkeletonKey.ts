@@ -8,6 +8,8 @@ import {
 	skeletonKeyGainExp, skeletonKeyTickRecharge, useSkeletonKeyFlow,
 	type SkeletonKeyFlowContext, type SkeletonKeyItem, type SkeletonKeyMob, type SkeletonKeyTarget,
 } from '../src/items/skeletonKey';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 let failed = 0;
 const check = (name: string, ok: boolean, detail = ''): void => {
@@ -216,6 +218,16 @@ const aim = (w: World, target: Cell): void => confirmSkeletonKeyFlow(context(w),
 	check('first use measures the depth and subtracts the lock just opened', tracker.iron[3] === 1 && tracker.golden[3] === 1 && out.iron === 1 && out.golden === 0);
 	const again = processKeyLockOpened(tracker, 3, 'iron', { iron: 0, golden: 0, crystal: 0 }, { iron: 1, golden: 1, crystal: 0 });
 	check('later uses reuse the stored counts and never re-measure', tracker.iron[3] === 0 && again.iron === 1 && again.golden === 0);
+}
+
+// Scene-side regression: hidden Mimics are neutral in Java until their reveal transition.
+{
+	const source = readFileSync(join(process.cwd(), 'src/scenes/dungeon/hero/skeletonKeyScene.ts'), 'utf8');
+	const at = source.indexOf('skeletonKeyPlaceWall(this: DungeonScene');
+	const block = source.slice(at, source.indexOf('\n\t},', at));
+	check('hidden neutral Mimics are not shoved until revealed',
+		block.includes("const hiddenMimic = (mob?.kind === 'mimic' || mob?.kind === 'crystalMimic') && mob.mimicRevealed === false")
+		&& block.includes('!hiddenMimic && !mob.isHero'));
 }
 
 if (failed > 0) {

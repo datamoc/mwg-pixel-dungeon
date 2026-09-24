@@ -139,7 +139,11 @@ export const skeletonKeyMethods = {
 		const turns = mwlItemEffectValue('skeletonkey', 'wallTurns');
 		if (existing) { existing.turns = turns; return; }
 		const mob = this.creatureAt(cell.x, cell.y);
-		if (mob && !mob.isHero && !mob.isAlly) {
+		//`SkeletonKey.placeWall()` shoves only ENEMY (`SkeletonKey.java`, tag `v3.3.8`).
+		//This scene uses `!isHero && !isAlly` as its alignment proxy; hidden Mimics are
+		//excluded because their Java NEUTRAL alignment lasts until reveal (`Mimic.java`).
+		const hiddenMimic = (mob?.kind === 'mimic' || mob?.kind === 'crystalMimic') && mob.mimicRevealed === false;
+		if (mob && !hiddenMimic && !mob.isHero && !mob.isAlly) {
 			const to = { x: cell.x + knockback[0], y: cell.y + knockback[1] };
 			if (this.level.inside(to.x, to.y) && this.level.passable(to.x, to.y) && !this.creatureAt(to.x, to.y)) this.moveTo(mob, to);
 		}
