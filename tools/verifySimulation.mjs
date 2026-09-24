@@ -491,11 +491,11 @@ check('the moved hero plant-effect switch fires every branch', () => {
 	r = drive('firebloom', {}, 'warden');
 	assert.deepEqual(r.hero.buffs.burning, undefined);
 	assert.deepEqual(r.rec.grants, [['fireImbue', undefined]]);
-	//Stormvine levitates a Warden for 10, dazes everyone else.
+	//Stormvine levitates a Warden for 10, gives everyone else Vertigo.
 	r = drive('stormvine', {}, 'warden');
 	assert.deepEqual(r.rec.grants, [['levitation', 10]]);
 	r = drive('stormvine');
-	assert.deepEqual(r.rec.grants, [['daze', 10]], 'vertigo arrives as daze for the whole Vertigo.DURATION');
+	assert.deepEqual(r.rec.grants, [['vertigo', 10]], 'Stormvine grants the real Vertigo buff for the whole Vertigo.DURATION');
 	//Swiftthistle banks seven bubble turns, plus one hasted turn for a Warden.
 	r = drive('swiftthistle');
 	assert.equal(r.rec.bubble, 7);
@@ -568,9 +568,9 @@ check('the moved mob plant-effect switch fires every branch', () => {
 	m = driveMob('sorrowmoss');
 	assert.deepEqual(m.rec.grants, [['poison', 13]]);
 	assert.deepEqual(m.rec.hazards, ['rat']);
-	//Stormvine dazes and marks.
+	//Stormvine grants vertigo and marks.
 	m = driveMob('stormvine');
-	assert.deepEqual(m.rec.grants, [['daze', 10]]);
+	assert.deepEqual(m.rec.grants, [['vertigo', 10]]);
 	assert.deepEqual(m.rec.hazards, ['rat']);
 	//Icecap freezes all nine passable neighbours and marks the 3x3, with no status.
 	m = driveMob('icecap');
