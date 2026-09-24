@@ -73,6 +73,8 @@ export interface RecyclableView {
 	instanceId?: string | undefined;
 	identified?: boolean | undefined;
 	sourceClass?: string | undefined;
+	/** A carried tipped dart's own seed (`TippedDart.tip`), read by the redraw's same-tip reroll. */
+	tippedSeed?: string | undefined;
 }
 
 /** The generator's replacement for a recycled item, as the bag stores it. */
@@ -82,7 +84,7 @@ export interface RecycledItemView {
 }
 
 /** Which generator deck a recycled item redraws from. */
-export type RecycleCategory = 'potion' | 'scroll' | 'seed' | 'stone';
+export type RecycleCategory = 'potion' | 'scroll' | 'seed' | 'stone' | 'tippedDart';
 
 /**
  * The Recycle pick/redraw flow, moved out of the scene behind this context the same
@@ -104,18 +106,22 @@ export interface RecycleContext {
 	t(key: string, params?: Record<string, string | number>): string;
 }
 
-/** `Recycle.onItemSelected()` (tag `v3.3.8`): replace one carried potion, scroll, seed, or
- * runestone with a different default-generated item from the same category. Java also accepts
- * TippedDart and preserves exotic-vs-regular families; neither has a distinct complete item
- * model here. The generic picker supplies the inventory selection, and the existing generator
- * plus `generatedInventoryItem` preserve the category's level-stream generation and payload
- * conversion. The transmuting particles and collection-vs-floor-drop branch are UI-only in
- * this inventory-sized port, whose bag has no capacity limit. */
+/** `Recycle.onItemSelected()` (tag `v3.3.8`): replace one carried potion, scroll, seed,
+ * runestone, or tipped dart with a different default-generated item from the same category
+ * (a tipped dart redraws a different tip, `TippedDart.randomTipped(1)`, matching
+ * `items/transmutation.ts`'s own `changeTippedDart`). Java also preserves exotic-vs-regular
+ * potion/scroll families (`ExoticPotion.regToExo`/`ExoticScroll.regToExo`); this port has no
+ * distinct exotic item model, so a carried exotic potion/scroll (if any existed) would redraw
+ * as an ordinary one - stated, not silent. The generic picker supplies the inventory
+ * selection, and the existing generator plus `generatedInventoryItem` preserve the category's
+ * level-stream generation and payload conversion. The transmuting particles and
+ * collection-vs-floor-drop branch are UI-only in this inventory-sized port, whose bag has no
+ * capacity limit. */
 export function useRecycleFlow(ctx: RecycleContext, instanceId?: string): void {
 	if (!ctx.hasSpell('recycle', instanceId)) return;
 	const candidates = ctx.recyclables().filter((item) => item.quantity > 0 && (
 		item.id.startsWith('potion') || item.id.startsWith('scroll') || item.id === 'seed'
-		|| item.id === 'stone' || item.id.startsWith('stoneOf')
+		|| item.id === 'stone' || item.id.startsWith('stoneOf') || item.id === 'missile_tippeddart'
 	));
 	// Java opens the picker regardless (InventorySpell has no empty-case message, its
 	// WndBag simply shows no rows); an empty candidate list opens and cancels the same
@@ -125,7 +131,8 @@ export function useRecycleFlow(ctx: RecycleContext, instanceId?: string): void {
 		if (!source) return;
 		const category: RecycleCategory = source.id.startsWith('potion') ? 'potion'
 			: source.id.startsWith('scroll') ? 'scroll'
-				: source.id === 'seed' ? 'seed' : 'stone';
+				: source.id === 'seed' ? 'seed'
+					: source.id === 'missile_tippeddart' ? 'tippedDart' : 'stone';
 		const replacement = ctx.drawReplacement(category, source);
 		ctx.replaceRecycled(source, replacement, instanceId);
 		ctx.say(ctx.t('items.spells.recycle.recycled', { 0: ctx.replacementName(replacement) }), 'positive');

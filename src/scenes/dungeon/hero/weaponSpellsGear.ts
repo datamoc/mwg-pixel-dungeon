@@ -16,6 +16,7 @@ import { ratsistanceFactor, useRatmogrifyFlow, type RatmogrifyContext } from '..
 import { markRingTypesKnown, ringTypesKnownFor, thiefsIntuitionKnownIds } from '../../../simulation/ringKnow';
 import { BADGE_DEFS, BADGE_ICON } from '../../../badges';
 import { Cat, randomUsingDefaults, type GenItem } from '../../../items/generator';
+import { MISSILE_MAX_DURABILITY, TIPPED_DART_BY_SEED } from '../../../items/missiles';
 import { weaponCombat } from '../../../items/catalog';
 import { equipWand as equipInventoryWand, type EquipWandContext } from '../../../items/equipWand';
 import { imbueStaffLevel, setStaffImbue, staffImbueFor, wandTypeFromSource } from '../../../items/wands';
@@ -946,7 +947,7 @@ export const weaponSpellsGearMethods = {
 	 */
 	recycleContext(this: DungeonScene): RecycleContext {
 		const scene = this;
-		type Recyclable = { id: string; quantity: number; instanceId?: string; identified?: boolean; sourceClass?: string };
+		type Recyclable = { id: string; quantity: number; instanceId?: string; identified?: boolean; sourceClass?: string; tippedSeed?: string };
 		const carried = () => scene.bag.items as Recyclable[];
 		return {
 			hasSpell: (id, instanceId) => scene.bag.find(id, instanceId) !== undefined,
@@ -955,6 +956,18 @@ export const weaponSpellsGearMethods = {
 			findRecyclable: (id, instanceId) => carried().find((item) => item.quantity > 0
 				&& item.id === id && (item.instanceId ?? undefined) === (instanceId ?? undefined)) ?? null,
 			drawReplacement: (category, source) => {
+				//`TippedDart.randomTipped(1)`: a different tip as one fresh unit (level 0, full
+				//wear, its own new set) - the same redraw `transmutation.ts`'s `changeTippedDart` uses.
+				if (category === 'tippedDart') {
+					const current = (source.tippedSeed ?? '').toLowerCase();
+					const pool = Object.keys(TIPPED_DART_BY_SEED).filter((seed) => seed !== current);
+					const seed = pool[Random.int(0, pool.length)]!;
+					return {
+						id: 'missile_tippeddart', quantity: 1, stackable: true, identified: true, sourceClass: 'TippedDart',
+						tippedSeed: seed, level: 0, durability: MISSILE_MAX_DURABILITY, maxDurability: MISSILE_MAX_DURABILITY,
+						instanceId: scene.newItemInstanceId('missile'),
+					} as NonNullable<GroundItem['item']>;
+				}
 				const deck = category === 'potion' ? Cat.POTION
 					: category === 'scroll' ? Cat.SCROLL
 						: category === 'seed' ? Cat.SEED : Cat.STONE;
