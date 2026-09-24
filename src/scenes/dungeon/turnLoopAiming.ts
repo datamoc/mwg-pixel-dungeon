@@ -36,7 +36,7 @@ import { beaconChargeCap } from '../../items/beacon';
 import type { ChainsItem } from '../../items/chains';
 import { TILE, WATER } from '../../dungeonConstants';
 import { BUFF_DURATION, addBuff, buffBlocked, electricDamageHalved, icyDamageHalved, rollHit, tickBuffs, type Creature, type Step } from '../../combat';
-import { corruptionImmune, tickMonsterTurnEnd } from '../../simulation/buffs';
+import { tickMonsterTurnEnd } from '../../simulation/buffs';
 import { isUndeadOrDemonic } from '../../monsters';
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `turnLoopAiming`). Each takes the scene as `this`;
