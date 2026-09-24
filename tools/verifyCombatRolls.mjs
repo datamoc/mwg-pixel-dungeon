@@ -88,6 +88,8 @@ export function verifyCombatRolls(require, check) {
 		assert.equal(rollDamage({ ...hero, champion: 'growing' }, foe, maxStub), 7);
 		assert.equal(rollDamage({ ...hero, isHero: false }, { ...foe, boss: true, buffs: { aggression: 1 } }, maxStub), 3);
 		assert.equal(rollDamage(hero, { ...foe, buffs: { vulnerable: 1 } }, minStub), 3);
+		//`Doom.class`: +67% to every incoming hit (`simulation/combat.ts`'s `rollDamage`, the WandOfCorruption/DwarfKing seam).
+		assert.equal(rollDamage(hero, { ...foe, buffs: { doom: 1 } }, maxStub), 10);
 		assert.equal(rollDamage(hero, { ...foe, champion: 'giant' }, minStub), 0);
 		assert.equal(rollDamage(hero, { ...foe, champion: 'antimagic' }, minStub), 1);
 		assert.equal(rollDamage(hero, { ...foe, champion: 'growing' }, minStub), 2);

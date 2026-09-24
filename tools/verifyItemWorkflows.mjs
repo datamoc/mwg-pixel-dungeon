@@ -809,7 +809,7 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 		// immunity; keep the port from clearing LightAlly/PowerBuff state instead.
 		const aiming = readFileSync(join(root, 'src/scenes/dungeon/turnLoopAiming.ts'), 'utf8');
 		assert.match(aiming, /wandType === 'corruption'[\s\S]*?corruptionImmune: victim\.allyKind === 'lightAlly'/);
-		assert.match(aiming, /Java's `corruptEnemy\(\)` checks[\s\S]*?attach silently fails/);
+		assert.match(aiming, /outcome\.kind === 'doom'\) addBuff\(victim, 'doom', 9999\)/);
 		const cursedWand = readFileSync(join(root, 'src/scenes/dungeon/hero/cursedWandCast.ts'), 'utf8');
 		assert.match(cursedWand, /status === 'poison'[\s\S]*?if \(!buffBlocked\(victim, 'poison'\)\)/);
 		const combat = readFileSync(join(root, 'src/combat.ts'), 'utf8');
@@ -1869,6 +1869,8 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 			combo: 5,
 			//`MonkEnergy` is a permanent icon carrier; the energy lives on the scene
 			monkEnergy: 9999,
+			//`Doom.class`: permanent until death, no real duration to encode
+			doom: 9999,
 		},
 		'buff durations match the authored table',
 	);

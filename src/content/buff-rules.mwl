@@ -11,7 +11,7 @@
           {
             tag: "effect",
             apply_to: "negative",
-            set: "poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,vertigo,chill,frost,hex,wayward,blindness,feintConfusion,soulmark,illuminated",
+            set: "poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,vertigo,chill,frost,hex,wayward,blindness,feintConfusion,soulmark,illuminated,doom",
           },
         ],
       },
@@ -47,6 +47,13 @@
             // energy itself lives on the scene (`monk.energy`), the buff has no duration of its own.
             tag: "row",
             buff: "monkEnergy",
+            duration: 9999,
+          },
+          {
+            // `Doom` (`actors/buffs/Doom.java`, tag v3.3.8): "permanent, its effects only end in death" -
+            // no real duration to encode, so a long placeholder like the other permanent markers above.
+            tag: "row",
+            buff: "doom",
             duration: 9999,
           },
           {

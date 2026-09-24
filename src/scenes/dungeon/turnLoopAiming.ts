@@ -289,22 +289,22 @@ export const turnLoopAimingMethods = {
 						{ kind: victim.kind ?? '', hp: victim.hp, maxHp: victim.maxHp, exp: MONSTERS[victim.kind as AnyMonsterId]?.exp ?? 1, buffs: victim.buffs },
 						this.depth, (id) => NEGATIVE_BUFFS.has(id as BuffId)),
 					buffs: victim.buffs,
-					alreadyDoomed: false, //`Doom` is not a buff in this tree yet, so nothing can be doomed
+					alreadyDoomed: victim.buffs['doom'] !== undefined,
 					corruptionImmune: victim.allyKind === 'lightAlly',
 					immune: (id) => buffBlocked(victim, id),
 					rolls: { float: () => Random.float() },
 				});
 				if (outcome.kind === 'debuff') addBuff(victim, outcome.id, 6 + zapLevel * 3);
+				//`WandOfCorruption.corruptEnemy()`'s `AllyBuff` fallback (tag `v3.3.8`): a target immune to
+				//Corruption (only `PowerOfMany.LightAlly` here - its own `AllyBuff` immunity, so `corrupt`
+				//never fires for it) is doomed instead. `Doom` is permanent, +67% damage taken (`rollDamage`
+				//in `simulation/combat.ts`) until death.
+				else if (outcome.kind === 'doom') addBuff(victim, 'doom', 9999);
 				else if (outcome.kind === 'corrupt') {
 				//WandOfCorruption.corruptEnemy() creates a permanent controlled ally
 				//after healing/cleansing it. The port has no separate Corruption buff
 				//or loot-transfer payload, so the existing ally scheduler is used for
 				//the observable controlled-combat result.
-				//`PowerOfMany.LightAlly` is immune to `AllyBuff` in
-				//`PowerOfMany.java` (tag `v3.3.8`). Java's `corruptEnemy()` checks
-				//`Corruption` immunity before its Doom fallback, then its `AllyBuff`
-				//attach silently fails for this target. Preserve LightAlly and its
-				//PowerBuff instead of clearing its state; the intended Doom effect is not ported.
 				victim.isAlly = true;
 				victim.allyKind = 'mirror';
 				victim.hp = victim.maxHp;

@@ -55,6 +55,7 @@ const BUFF_MESSAGE_KEY: Partial<Record<BuffId, string>> = {
 	combo: 'actors.buffs.combo',
 	monkEnergy: 'actors.buffs.monkenergy',
 	berserk: 'actors.buffs.berserk',
+	doom: 'actors.buffs.doom',
 	light: 'actors.buffs.light',
 	invulnerability: 'actors.buffs.ankhinvulnerability',
 	prismaticGuard: 'actors.buffs.prismaticguard',
@@ -81,7 +82,7 @@ const BUFF_MESSAGE_KEY: Partial<Record<BuffId, string>> = {
  * ended by a condition, not a clock) - `Shadows`/`Fury` above are two of these; substituting
  * `{0}` into either would print a stray, unused token.
  */
-const NO_TURNS_PARAM = new Set<BuffId>(['cloak', 'fury', 'illuminated', 'satiatedSpells']);
+const NO_TURNS_PARAM = new Set<BuffId>(['cloak', 'fury', 'illuminated', 'satiatedSpells', 'doom']);
 
 export interface BuffInfo {
 	name: string;

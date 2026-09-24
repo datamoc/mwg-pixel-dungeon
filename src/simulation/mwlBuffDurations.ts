@@ -5,6 +5,7 @@ export const BUFF_DURATION_DATA = {
   "daze": 5,
   "blindness": 10,
   "monkEnergy": 9999,
+  "doom": 9999,
   "combo": 5,
   "vertigo": 10,
   "chill": 10,
@@ -97,5 +98,6 @@ export const NEGATIVE_BUFF_DATA = [
   "blindness",
   "feintConfusion",
   "soulmark",
-  "illuminated"
+  "illuminated",
+  "doom"
 ] as const;

@@ -84,6 +84,8 @@ const BUFF_ICON: Record<string, number> = {
 	bless: 37,
 	//BERSERK = 40
 	berserk: 40,
+	//CORRUPT = 36
+	doom: 36,
 	//RECHARGING = 34; HASTE = 41 (`BuffIndicator.java`, tag `v3.3.8`)
 	recharging: 34,
 	haste: 41,

@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run mwl:compile && tsc --noEmit && vite build && node tools/emit.mjs",
-    "verify": "npm run check && npm run test:simulation && npm run test:items && npm run test:lua && npm run test:mwg && npm run test:settings && npm run test:ui && npm run test:bossunseal && npm run test:skeletonkey && npm run test:dropthrow && npm run test:cloak && npm run test:vertigo && npm run test:combo && npm run test:monk && npm run test:seal && npm run test:berserk && npm run test:corruption && npm run test:beacon && npm run test:mining && npm run build",
+    "verify": "npm run check && npm run test:simulation && npm run test:items && npm run test:lua && npm run test:mwg && npm run test:settings && npm run test:ui && npm run test:bossunseal && npm run test:skeletonkey && npm run test:dropthrow && npm run test:cloak && npm run test:vertigo && npm run test:combo && npm run test:monk && npm run test:seal && npm run test:doom && npm run test:berserk && npm run test:corruption && npm run test:beacon && npm run test:mining && npm run build",
     "check": "npm run mwl:compile && tsc --noEmit && npm run i18n:verify && node tools/check-file-budget.mjs && node tools/audit-undefined.mjs",
     "mwl:compile": "node tools/compile-mwl.mjs",
     "test:simulation": "node tools/verifySimulation.mjs && node tools/verifyHiddenMimicContact.mjs && node tools/verifyRegeneration.mjs && node tools/verifyBanner.mjs && node tools/verifyVault.mjs && node tools/verifyBuffOverlays.mjs && node tools/verifyCrystalMine.mjs && node tools/verifyCrystalGuardianScale.mjs && node tools/verifyMindForm.mjs && node tools/verifyHeapStack.mjs && node tools/verifyRecycleTippedDart.mjs && node tools/verifyHermitCrabLoot.mjs && node tools/verifyAllyOrders.mjs",
@@ -20,6 +20,7 @@
     "test:beacon": "esbuild tools/verifyBeaconPush.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyBeaconPush.mjs && node tools/scratch/verifyBeaconPush.mjs",
     "test:berserk": "esbuild tools/verifyBerserkRage.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyBerserkRage.mjs && node tools/scratch/verifyBerserkRage.mjs",
     "test:seal": "esbuild tools/verifySealShield.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifySealShield.mjs && node tools/scratch/verifySealShield.mjs",
+    "test:doom": "node tools/verifyDoom.mjs",
     "test:monk": "esbuild tools/verifyMonkEnergy.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyMonkEnergy.mjs && node tools/scratch/verifyMonkEnergy.mjs",
     "test:combo": "esbuild tools/verifyCombo.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyCombo.mjs && node tools/scratch/verifyCombo.mjs",
     "test:corruption": "esbuild tools/verifyWandCorruption.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyWandCorruption.mjs && node tools/scratch/verifyWandCorruption.mjs",

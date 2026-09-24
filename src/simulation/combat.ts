@@ -229,6 +229,14 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 	const dr = Math.round(rawDr * (ascensionOn() && defender.kind ? ASCENSION_MOD[defender.kind] ?? 1 : 1));
 	let effective = Math.max(0, Math.round(dmg) - dr);
 	if (defender.buffs['vulnerable']) effective *= 1.33;
+	//`Doom.class` (tag `v3.3.8`): +67% to every incoming hit, permanent until death. Java's own
+	//boundary is `Char.damage()`, a universal seam (melee, DoT, traps, bombs alike) this port does
+	//not have yet for monsters (stated on the WandOfCorruption/PowerOfMany rows); this combat-only
+	//placement, alongside Vulnerable above, covers the common case - a doomed target's ordinary
+	//attack damage - and is stated as the reduction it is. Java's one exemption (a phase 2+ Dwarf
+	//King's own `isImmune(Doom.class)`) needs a field this pure module's `Combatant` does not carry
+	//and is not modeled.
+	if (defender.buffs['doom']) effective *= 1.67;
 	//ChampionEnemy.Giant.damageTakenFactor()/Growing.damageTakenFactor(): flat 0.2x for Giant,
 	//0.5x for AntiMagic (Char.damage() applies this to every damage source, not just magic -
 	//the separate AntiMagic.RESISTS status-immunity list is the only magic-specific part, and
