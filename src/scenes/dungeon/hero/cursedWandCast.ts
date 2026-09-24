@@ -1,12 +1,14 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { Random, Roguelike } from 'mwg';
 import { BUFF_DURATION, addBuff, buffBlocked, reigniteBuff, type Creature, type Step } from '../../../combat';
-import { CURSED_PLANT_KINDS, CURSED_RANDOM_GAS, pickBurnAndFreeze, pickConeOfColorsStatus, pickCursedCommonEffect, pickCursedRareEffect, pickCursedTier, pickCursedUncommonEffect } from '../../../simulation/cursedWand';
+import { CURSED_PLANT_KINDS, CURSED_RANDOM_GAS, cursedInterfloorDepthWeights, pickBurnAndFreeze, pickConeOfColorsStatus, pickCursedCommonEffect, pickCursedEquipmentSlot, pickCursedRareEffect, pickCursedTier, pickCursedUncommonEffect } from '../../../simulation/cursedWand';
 import { activateGeyserTrap as activateGeyserTrapFlow } from '../../../simulation/geyserTrap';
 import { applyBlastDamage } from '../../../items/bombEffects';
 import { MWL_BOMB_RULES } from '../../../mwlContent';
+import { getArmorCurses, getWeaponCurses } from '../../../items/itemCurses';
 import { WAND_TYPES } from '../../../items/wands';
 import { WATER } from '../../../dungeonConstants';
+import { t } from '../../../i18n/index';
 import { BOSS_KINDS, FLYING_KINDS, IMMOVABLE_KINDS, MINIBOSS_KINDS } from '../../../monsters';
 import { coneCells } from '../../../mechanics/cone';
 
@@ -234,8 +236,7 @@ export const cursedWandCastMethods = {
 		}
 	},
 
-	/** `CursedWand.cursedZap()`'s Rare tier, 4 of 8 (`simulation/cursedWand.ts` has the scoping
-	 * rationale for the other five, each blocked on real missing infrastructure). */
+	/** `CursedWand.cursedZap()`'s Rare tier, six implemented effects from Java's eight. */
 	castCursedWandRareEffect(this: DungeonScene, target: Creature | undefined, cell: Step): void {
 		const effect = pickCursedRareEffect((bound) => Random.int(bound));
 		if (effect === 'sheepPolymorph') {
@@ -274,6 +275,61 @@ export const cursedWandCastMethods = {
 			//spawns immediately, and omits avoid-cell/chained-trap handling. These are documented
 			//simplifications of the shared utility-trap implementation.
 			this.activateUtilityTrap('summoning', cell.x, cell.y);
+			return;
+		}
+		if (effect === 'curseEquipment') {
+			//`CurseEquipment.effect()` calls `CursingTrap.curse(hero)` for WildMagic's Hero with
+			//`positiveOnly === false`. Java's other branch Hexes the collision target for positive
+			//or non-Hero casts; this path cannot reach that case, so it is omitted here.
+			//Java prioritizes an unenchanted weapon/unglyphed armor, then falls back
+			//to any non-Mage's-Staff weapon or armor, marks the curse known, and adds a matching
+			//curse affix only when none exists. Curse particles/audio are omitted because this
+			//port has no such presentation seam at this call site. The port identifies Mage's
+			//Staff by the Mage's starting-weapon id or a staff id substring; it has no Java item
+			//instance type at this seam.
+			const weaponId = this.weaponId.toLowerCase();
+			const weaponEligible = this.weaponId !== '' && !weaponId.includes('staff')
+				&& !(this.heroClass === 'mage' && weaponId === 'startingweapon');
+			const slot = pickCursedEquipmentSlot(weaponEligible, this.weaponAffix != null,
+				this.armorId !== '', this.armorGlyph != null, (bound) => Random.int(bound));
+			if (slot === 'weapon') {
+				this.weaponCursed = true;
+				this.weaponCursedKnown = true;
+				if (this.weaponAffix == null) this.weaponAffix = Random.element(getWeaponCurses())?.id ?? null;
+			} else if (slot === 'armor') {
+				this.armorCursed = true;
+				this.armorCursedKnown = true;
+				if (this.armorGlyph == null) this.armorGlyph = Random.element(getArmorCurses())?.id ?? null;
+			}
+			this.say(t('levels.traps.cursingtrap.curse'));
+			return;
+		}
+		if (effect === 'interFloorTeleport') {
+			//`InterFloorTeleport.effect()` (`CursedWand.java`, tag `v3.3.8`): WildMagic's
+			//Hero uses weighted inter-floor travel when permitted; Java's other cases use
+			//ScrollOfTeleportation's same-floor teleport. Java checks Dungeon.level.locked;
+			//floorLocked() is this port's live equivalent, including boss-specific unsealing.
+			//The mining branch, depth 1 and a carried Amulet also bar inter-floor travel.
+			const allowed = this.depth > 1 && !this.floorLocked()
+				&& !this.miningBranchActive && !this.bag.find('amulet');
+			const weights = allowed ? cursedInterfloorDepthWeights(this.depth) : [];
+			const destinationIndex = weights.length > 0 ? Random.weighted(weights) : null;
+			if (destinationIndex !== null) {
+				this.disarmTimeBubblePresses();
+				this.depth = destinationIndex + 1;
+				this.miningBranchActive = false;
+				//Java returnPos=-1 selects the destination entrance. Null uses this port's
+				//default entrance cell; {-1,-1} is reserved for Java's distinct returnPos=-2 exit.
+				this.beaconArrival = null;
+				this.enterLevel();
+			} else {
+				const from = { x: this.hero.x, y: this.hero.y };
+				const destination = this.randomFreeCell(this.hero);
+				if (destination) {
+					this.moveTo(this.hero, destination);
+					this.playTeleportAppear(from, destination, this.hero);
+				}
+			}
 			return;
 		}
 		//ConeOfColors.effect(): Java re-does the bolt as `STOP_SOLID` (so it goes through

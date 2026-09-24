@@ -14,7 +14,7 @@
  * reuses the newly-exported `applyBlastDamage` (`items/bombEffects.ts`, which already had a
  * hero branch) and `LightningBolt` turned out to be almost entirely presentation (every
  * `Lightning()` visual and `ScrollOfRecharging.charge()` are pure particle bursts with zero
- * mechanical effect in `v3.3.8`, both skippable) once read past the sprite calls. Rare: 4 of 8 so far - `MassInvuln` (every character gets Invulnerability+Bless), `ConeOfColors` (an 8-radius/90-degree `STOP_SOLID` cone with five existing status/damage effects), `SheepPolymorph` (silently replaces an eligible target with a 10-turn Sheep), and `SummonMonsters` (uses the existing summoning utility trap). That utility chooses a random depth-roster mob instead of Java's level mob rotation, spawns immediately instead of after two turns, and omits avoid-cell and chained-trap handling; the call site documents these simplifications. The other four need new infrastructure: `CurseEquipment` needs a CursingTrap; `Petrify` needs a TimeStasis buff; `InterFloorTeleport` needs weighted-depth floor travel; `FireBall` needs arbitrary-point FOV and knockback. The whole VeryRare tier (folded into Rare's odds above, see the roll
+ * mechanical effect in `v3.3.8`, both skippable) once read past the sprite calls. Rare: 6 of 8 are modeled: `MassInvuln`, `ConeOfColors`, `SheepPolymorph`, `SummonMonsters`, `CurseEquipment`, and `InterFloorTeleport`; the last two reuse equipped-curse state and existing floor-travel wiring, while their details and small reductions are recorded at the call site and coverage row. `Petrify` needs a `TimeStasis` buff and `FireBall` needs arbitrary-point FOV plus knockback.  The whole VeryRare tier (folded into Rare's odds above, see the roll
  * note) is **Not ported**, along with `WondrousResin`'s `positiveOnly` mode (no such artifact
  * here).
  */
@@ -54,8 +54,38 @@ export const CURSED_PLANT_KINDS: readonly string[] = [
 	'rotberry', 'sorrowmoss', 'starflower', 'stormvine', 'sungrass', 'swiftthistle',
 ];
 
-export type CursedRareEffectId = 'massInvuln' | 'coneOfColors' | 'sheepPolymorph' | 'summonMonsters';
-export const CURSED_RARE_EFFECT_IDS: readonly CursedRareEffectId[] = ['massInvuln', 'coneOfColors', 'sheepPolymorph', 'summonMonsters'];
+export type CursedRareEffectId = 'sheepPolymorph' | 'curseEquipment' | 'interFloorTeleport' | 'summonMonsters' | 'fireBall' | 'coneOfColors' | 'massInvuln' | 'petrify';
+export const CURSED_RARE_EFFECT_IDS: readonly CursedRareEffectId[] = ['sheepPolymorph', 'curseEquipment', 'interFloorTeleport', 'summonMonsters', 'coneOfColors', 'massInvuln'];
+
+/** `InterFloorTeleport.effect()` (`CursedWand.java`, tag `v3.3.8`): for depths below
+ * the current floor, weights are 1..10 on the most recent ten eligible floors. */
+export function cursedInterfloorDepthWeights(depth: number): number[] {
+	const weights = Array.from({ length: Math.max(0, Math.floor(depth) - 1) }, () => 0);
+	const start = Math.max(1, Math.floor(depth) - 10);
+	for (let floor = start; floor < depth; floor++) weights[floor - 1] = floor - start + 1;
+	return weights;
+}
+
+/** `CursingTrap.curse(Hero)` prefers equipped weapon/armor without an affix, then falls back
+ * to any supported weapon/armor. Java shuffles each pool and takes its first item; a uniform
+ * index draw preserves that distribution without reproducing the shuffle's RNG call sequence.
+ * The hero's ring is not in Java's candidate pools. */
+export function pickCursedEquipmentSlot(
+	weaponEligible: boolean,
+	weaponHasAffix: boolean,
+	armorEligible: boolean,
+	armorHasAffix: boolean,
+	pick: (bound: number) => number,
+): 'weapon' | 'armor' | undefined {
+	const preferred: ('weapon' | 'armor')[] = [];
+	const fallback: ('weapon' | 'armor')[] = [];
+	if (weaponEligible) (weaponHasAffix ? fallback : preferred).push('weapon');
+	if (armorEligible) (armorHasAffix ? fallback : preferred).push('armor');
+	const pool = preferred.length > 0 ? preferred : fallback;
+	if (pool.length === 0) return undefined;
+	return pool[pick(pool.length)];
+}
+
 
 /** `ConeOfColors.effect()`'s per-character `Random.Int(5)` branch. */
 export type ConeOfColorsStatus = 'burning' | 'frost' | 'poison' | 'ooze' | 'electricity';
@@ -74,7 +104,7 @@ export function pickCursedTier(pick: (bound: number) => number): 'common' | 'unc
 	return roll < 60 ? 'common' : roll < 90 ? 'uncommon' : 'rare';
 }
 
-/** `Random.element(RARE_EFFECTS)`, restricted to the four ported ids, uniform pick. */
+/** `Random.element(RARE_EFFECTS)`, restricted to the six implemented ids, uniform pick. */
 export function pickCursedRareEffect(pick: (bound: number) => number): CursedRareEffectId {
 	return CURSED_RARE_EFFECT_IDS[pick(CURSED_RARE_EFFECT_IDS.length)]!;
 }

@@ -1752,7 +1752,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		//scoping rationale for why only 6 of 8 are modeled).
 		const { CURSED_COMMON_EFFECT_IDS, pickCursedCommonEffect, CURSED_RANDOM_GAS, pickBurnAndFreeze,
 			CURSED_UNCOMMON_EFFECT_IDS, pickCursedUncommonEffect, pickCursedTier, CURSED_PLANT_KINDS,
-			CURSED_RARE_EFFECT_IDS, pickCursedRareEffect, CONE_OF_COLORS_STATUSES, pickConeOfColorsStatus } = require('./simulation/cursedWand');
+			CURSED_RARE_EFFECT_IDS, pickCursedRareEffect, pickCursedEquipmentSlot, cursedInterfloorDepthWeights, CONE_OF_COLORS_STATUSES, pickConeOfColorsStatus } = require('./simulation/cursedWand');
 		assert.deepEqual(CURSED_COMMON_EFFECT_IDS, ['burnAndFreeze', 'randomTeleport', 'randomGas', 'bubbles', 'randomWand', 'selfOoze']);
 		assert.equal(pickCursedCommonEffect((n) => { assert.equal(n, 6); return 0; }), 'burnAndFreeze');
 		assert.equal(pickCursedCommonEffect((n) => { assert.equal(n, 6); return 5; }), 'selfOoze');
@@ -1761,13 +1761,23 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.equal(pickCursedUncommonEffect((n) => { assert.equal(n, 8); return 7; }), 'lightningBolt');
 		assert.deepEqual(CURSED_PLANT_KINDS, ['blindweed', 'earthroot', 'fadeleaf', 'firebloom', 'icecap', 'mageroyal',
 			'rotberry', 'sorrowmoss', 'starflower', 'stormvine', 'sungrass', 'swiftthistle']);
-		assert.deepEqual(CURSED_RARE_EFFECT_IDS, ['massInvuln', 'coneOfColors', 'sheepPolymorph', 'summonMonsters']);
-		assert.equal(pickCursedRareEffect((n) => { assert.equal(n, 4); return 0; }), 'massInvuln');
-		assert.equal(pickCursedRareEffect((n) => { assert.equal(n, 4); return 1; }), 'coneOfColors');
-		assert.equal(pickCursedRareEffect((n) => { assert.equal(n, 4); return 2; }), 'sheepPolymorph');
-		assert.equal(pickCursedRareEffect((n) => { assert.equal(n, 4); return 3; }), 'summonMonsters');
+		assert.deepEqual(CURSED_RARE_EFFECT_IDS, ['sheepPolymorph', 'curseEquipment', 'interFloorTeleport', 'summonMonsters', 'coneOfColors', 'massInvuln']);
+		for (let i = 0; i < CURSED_RARE_EFFECT_IDS.length; i++) assert.equal(pickCursedRareEffect((n) => { assert.equal(n, 6); return i; }), CURSED_RARE_EFFECT_IDS[i]);
+		assert.deepEqual(cursedInterfloorDepthWeights(1), []);
+		assert.deepEqual(cursedInterfloorDepthWeights(2), [1]);
+		assert.deepEqual(cursedInterfloorDepthWeights(11), [1,2,3,4,5,6,7,8,9,10]);
+		assert.deepEqual(cursedInterfloorDepthWeights(15), [0,0,0,0,1,2,3,4,5,6,7,8,9,10]);
+		assert.equal(cursedInterfloorDepthWeights(26).length, 25);
+		assert.deepEqual(cursedInterfloorDepthWeights(26).slice(-10), [1,2,3,4,5,6,7,8,9,10]);
+		assert.equal(pickCursedEquipmentSlot(true, false, true, true, (n) => { assert.equal(n, 1); return 0; }), 'weapon');
+		assert.equal(pickCursedEquipmentSlot(true, true, true, true, (n) => { assert.equal(n, 2); return 1; }), 'armor');
+		assert.equal(pickCursedEquipmentSlot(false, false, false, false, () => { throw new Error('empty pool must not draw'); }), undefined);
 		const cursedWandScene = readFileSync(new URL('../src/scenes/dungeon/hero/cursedWandCast.ts', import.meta.url), 'utf8');
 		assert.match(cursedWandScene, /effect === 'summonMonsters'[\s\S]*?activateUtilityTrap\('summoning', cell\.x, cell\.y\)/);
+		assert.match(cursedWandScene, /effect === 'curseEquipment'[\s\S]*?this\.weaponCursedKnown = true[\s\S]*?getWeaponCurses\(\)/);
+		assert.match(cursedWandScene, /effect === 'interFloorTeleport'[\s\S]*?Random\.weighted\(weights\)[\s\S]*?this\.enterLevel\(\)/);
+		assert.match(cursedWandScene, /this\.depth > 1 && !this\.floorLocked\(\)[\s\S]*?this\.miningBranchActive && !this\.bag\.find\('amulet'\)/);
+		assert.match(cursedWandScene, /Java returnPos=-1 selects the destination entrance[\s\S]*?this\.beaconArrival = null/);
 		//ConeOfColors.effect()'s Random.Int(5): burning/frost/poison/ooze/electricity.
 		assert.deepEqual(CONE_OF_COLORS_STATUSES, ['burning', 'frost', 'poison', 'ooze', 'electricity']);
 		assert.equal(pickConeOfColorsStatus((n) => { assert.equal(n, 5); return 0; }), 'burning');
