@@ -22,6 +22,7 @@ check('vertigo is a 10-turn negative buff', /buff: "vertigo",\s*duration: 10/.te
 check('ConfusionGas and Stormvine grant vertigo, not the daze stand-in', read('../src/simulation/environmentalBlobs.ts').includes("context.addBuff(target, 'vertigo', 2)")
 	&& read('../src/simulation/plantTriggers.ts').includes("ctx.grantBuff(hero, 'vertigo', 10)") && read('../src/simulation/plantTriggers.ts').includes("ctx.grantBuff(creature, 'vertigo', 10)"));
 check('Healing cure detaches vertigo', read('../src/items/potionEffects.ts').includes("'blindness', 'vertigo'] as BuffId[]"));
+check('the generated tables carry the vertigo duration and the Ward immunity (Ward.immunities: Terror, Vertigo)', read('../src/simulation/mwlBuffDurations.ts').includes('"vertigo": 10') && /"monster": "ward",\s*"subtype": "",\s*"immunities": \[\s*"terror",\s*"vertigo"\s*\]/.test(read('../src/simulation/mwlMonsterImmunities.ts')));
 check('the hero and monster step funnels both apply it', read('../src/scenes/dungeon/actorTurnsHazards.ts').includes("this.hero.buffs['vertigo'] !== undefined")
 	&& read('../src/scenes/dungeon/bosses/bossLogic.ts').includes("monster.buffs['vertigo'] !== undefined"));
 

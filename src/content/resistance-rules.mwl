@@ -72,6 +72,9 @@
           { tag: "row", monster: "succubus", subtype: "", immunities: "charm" },
           { tag: "row", monster: "tengu", subtype: "", immunities: "roots,terror,blindness" },
           { tag: "row", monster: "piranha", subtype: "", immunities: "burning" },
+          // `WandOfWarding.Ward`'s instance list (tag `v3.3.8`): Sleep, Terror, Dread, Vertigo and AllyBuff;
+          // only Terror and Vertigo have port buff ids.
+          { tag: "row", monster: "ward", subtype: "", immunities: "terror,vertigo" },
         ],
       },
     ],
