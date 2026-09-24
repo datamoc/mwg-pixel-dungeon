@@ -1896,12 +1896,22 @@ citation-by-citation account):
       rather than inventing a new one.
 - [x] `npx tsc --noEmit` and `npm run build` are clean; `verifySimulation.mjs`'s 295 checks are
       unaffected (confirmed by rerun).
-- [ ] **Not browser-verified.** No browser tool (`claude-in-chrome`, `chrome-devtools-mcp`, or any
-      other) was reachable in the background-job environment this pass ran in. The intended check -
-      teleport the hero to depth 26 via `window.__MWG__.currentScene`, grant the amulet, and walk
-      up through several floors to depth 1 to confirm the loop actually holds end to end in a real
-      browser - was **not performed**. This is flagged here rather than silently skipped; do this
-      before trusting the loop for real play.
+- [x] **Browser-verified live, 2026-09-24.** No MCP browser tool (`claude-in-chrome`,
+      `chrome-devtools-mcp`) was reachable in this session either, but the environment's
+      pre-installed sandbox Chromium is real and reachable via a scripted `playwright-core`
+      client (`npm install playwright-core` into a scratch dir, launched with
+      `executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'`) against a built
+      `dist/` served over plain `http://localhost:8000`. Drove a real run: title -> class select
+      (Warrior) -> Start via dispatched `PointerEvent`s on the canvas, matching this file's own
+      documented pointer-sequence requirement; then via `window.__MWG__.currentScene` gave the
+      hero the Amulet and set `depth = 26`. `tryAscendStairs()` opened the real `Ascension`
+      confirmation window with Java's exact text; clicking "Continue!" set
+      `ascensionChallengeActive = true` and moved to depth 25; 24 more `beginAscendOneFloor()`
+      calls walked depth 25 down to depth 1 with no error at any step; one final call fired the
+      real win (`gameOver = true`, the actual `Victory!` panel: "You escaped with the Amulet at
+      level 1, depth 1!", "Let's call it a day" log line, "New Run" button). Screenshots taken at
+      every step confirm the real UI, not just the state flags. The pickup -> confirm -> climb ->
+      win chain holds end to end with no dead end or unhandled state.
 - [ ] **Not ported at all** (documented, not silently dropped - see `PORT_COVERAGE.md`):
       `Statistics.highestAscent` tracking (no Rankings/high-score screen to show it in this port),
       `AscensionChallenge.onLevelSwitch`'s stack-based damage/haste/slow escalation and its full
