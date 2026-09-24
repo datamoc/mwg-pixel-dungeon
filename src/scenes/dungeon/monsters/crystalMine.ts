@@ -33,7 +33,7 @@ const CRYSTAL_SHEETS = {
 
 type Clip = [string, number[], { fps: number; loop: boolean }];
 
-interface WispVisualState { halo: Graphics; bob: number; pulseAge: number; wasAttacking: boolean; }
+interface WispVisualState { halo: Graphics; sprite: AnimatedSprite; bob: number; pulseAge: number; wasAttacking: boolean; deathAge?: number; deathAlpha?: number; }
 interface CrystalMineVisualState { time: number; wisps: Map<string, WispVisualState>; shadowOffsets: Map<string, number>; }
 const crystalMineVisualStates = new WeakMap<DungeonScene, CrystalMineVisualState>();
 
@@ -100,7 +100,7 @@ export const crystalMineMethods = {
 				const color = [0x66b3ff, 0x2ee62e, 0xff7f00][creature.crystalTint ?? 0] ?? 0x66b3ff;
 				const halo = wispHalo(color);
 				this.effectLayer.addChild(halo);
-				visual = { halo, bob: 0, pulseAge: Number.POSITIVE_INFINITY, wasAttacking: false };
+				visual = { halo, sprite, bob: 0, pulseAge: Number.POSITIVE_INFINITY, wasAttacking: false };
 				state.wisps.set(creature.id, visual);
 			}
 			const bodyBob = Math.abs(Math.sin(state.time));
@@ -113,8 +113,11 @@ export const crystalMineMethods = {
 			const attacking = sprite.playing === 'attack';
 			if (attacking) {
 				if (!visual.wasAttacking) visual.pulseAge = 0;
+			}
+			if (Number.isFinite(visual.pulseAge)) {
 				visual.pulseAge += dt;
-			} else visual.pulseAge = Number.POSITIVE_INFINITY;
+				if (visual.pulseAge >= 0.2) visual.pulseAge = Number.POSITIVE_INFINITY;
+			}
 			visual.wasAttacking = attacking;
 			visual.halo.alpha = Number.isFinite(visual.pulseAge) ? 0.3 + 0.7 * Math.min(1, visual.pulseAge / 0.2) : 0.3;
 			//`CharacterEffects` already includes the baseline +0.25; supply only Java's animated delta.
@@ -122,6 +125,26 @@ export const crystalMineMethods = {
 		}
 		for (const [id, visual] of state.wisps) {
 			if (live.has(id)) continue;
+			// `CrystalWispSprite.die()` starts `TorchHalo.putOut()` immediately, concurrent with
+			// the die clip; `kill()` erases it immediately. Keep the halo with a dying sprite and
+			// fade it over that one-second interval, even after the die clip finishes.
+			const sprite = visual.sprite;
+			if (sprite instanceof AnimatedSprite && !sprite.destroyed) {
+				if (visual.deathAge === undefined && sprite.playing === 'die') {
+					visual.deathAge = 0;
+					visual.deathAlpha = visual.halo.alpha;
+				}
+				if (visual.deathAge !== undefined) {
+					// Java skips the sine bob during `die`; this scene's kill() has already snapped
+					// the corpse to its cell, so clear the remembered offset without moving it.
+					visual.bob = 0;
+					visual.deathAge += dt;
+					visual.halo.position.set(sprite.x + 8, sprite.y + 8);
+					visual.halo.visible = sprite.visible;
+					visual.halo.alpha = (visual.deathAlpha ?? 0.3) * Math.max(0, 1 - visual.deathAge);
+					if (visual.deathAge < 1) continue;
+				}
+			}
 			visual.halo.destroy();
 			state.wisps.delete(id);
 		}

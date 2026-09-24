@@ -56,7 +56,9 @@ try {
 	assert.match(sceneSource, /updateCrystalWispVisuals\(this: DungeonScene, dt: number\)/, 'scene updates the CrystalWisp visual seam');
 	assert.match(sceneSource, /Math\.abs\(Math\.sin\(state\.time\)\)/, 'wisp body uses Java sine bob');
 	assert.match(sceneSource, /-0\.8 \* bodyBob/, 'wisp shadow uses Java animated shadow offset');
-	assert.match(sceneSource, /pulseAge / 0\.2/, 'wisp attack halo uses Java 0.2-second pulse');
+	assert.match(sceneSource, /pulseAge \/ 0\.2/, 'wisp attack halo uses Java 0.2-second pulse');
+	assert.match(sceneSource, /deathAge < 1/, 'wisp halo fades over Java one-second TorchHalo putOut interval');
+	assert.match(sceneSource, /visual\.bob = 0/, 'wisp death clip stops sine bob without shifting the corpse');
 	console.log('PASS crystal mine pure planners (10 helpers) and wisp visual seam');
 } finally {
 	rmSync(temp, { recursive: true, force: true });
