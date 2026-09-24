@@ -1333,7 +1333,7 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	// missile's display name - the mechanical `missileDefinitions` table has no name column, so it
 	// comes from the authored item node instead.
 	assert.equal(MWL_MISSILE_NAME_KEYS.missile_heavyboomerang, 'items.weapon.missiles.heavyboomerang.name');
-	assert.equal(Object.keys(MWL_CONSUMABLE_DESCRIPTION_KEYS).length, 70);
+	assert.equal(Object.keys(MWL_CONSUMABLE_DESCRIPTION_KEYS).length, 71);
 	assert.equal(MWL_CONSUMABLE_DESCRIPTION_KEYS.seedStarflower, 'plants.starflower.desc');
 	assert.equal(mwlItemEffectValue('scrollMirror', 'imageCount'), 2);
 	assert.equal(mwlItemEffectValue('scrollRetribution', 'maxPower'), 4);
@@ -1400,7 +1400,7 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.equal(MWL_ITEM_GROUND_KIND_ALIASES.weaponReward, 'armor');
 	assert.equal(MWL_ITEM_GROUND_KIND_ALIASES.doubleBomb, 'bomb');
 	assert.equal(MWL_ITEM_GROUND_KIND_ALIASES.brokenSeal, 'brokenSeal');
-	assert.equal(Object.keys(MWL_ITEM_GROUND_KIND_ALIASES).length, 31, 'ground-kind alias count (torch has its alias row; skeletonkey is the 31st)');
+	assert.equal(Object.keys(MWL_ITEM_GROUND_KIND_ALIASES).length, 32, 'ground-kind alias count (torch has its alias row; skeletonkey is the 31st, frozenCarpaccio the 32nd)');
 	assert.equal(MWL_ITEM_NAME_KEYS.weaponReward, 'port.name.questweapon');
 	assert.equal(MWL_ITEM_NAME_KEYS.sandBag, 'items.artifacts.timekeepershourglass$sandbag.name');
 	assert.equal(MWL_GROUND_ITEM_NAME_KEYS.bomb, 'items.bombs.bomb.name');
@@ -2772,6 +2772,9 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 		isBossDepth: () => false,
 		hasAmulet: () => false,
 		creatureAt: (x, y) => creatures[`${x},${y}`] ?? null,
+		//`LloydsBeacon.execute(AC_RETURN)` scans `Level.mobs` at the hero's new cell: every scripted creature there
+		mobsAt: (x, y) => (creatures[`${x},${y}`] ? [{ id: `${x},${y}`, x, y, ...creatures[`${x},${y}`] }] : []),
+		displaceMob: (id, cell) => { const [mx, my] = id.split(',').map(Number); flags.moved.push({ from: { x: mx, y: my }, to: { ...cell } }); },
 		isImmovableKind: (kind) => kind === 'statue',
 		randomFreeCellNear: overrides.freeCell ?? (() => ({ x: 1, y: 1 })),
 		moveHeroTo: (cell) => { flags.moved.push({ ...cell }); },
@@ -2866,7 +2869,8 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 	assert.equal(blocked.flags.traveled, null, 'and nothing travels');
 	const occupied = beaconDrive(
 		{ beacon: { level: 0, charge: 10, returnDepth: 5, returnPos: 22, returnX: 2, returnY: 2 }, creatures: { '2,2': { kind: 'rat' } } }, [2]);
-	assert.ok(occupied.log.some((l) => l.includes('creatures')), 'an occupied anchor refuses');
+	assert.deepEqual(occupied.flags.relocated, { x: 2, y: 2 }, 'an occupied anchor still relocates the hero first (LloydsBeacon.AC_RETURN never refuses on a mob)');
+	assert.equal(occupied.flags.moved.length, 1, '...and the mob standing there is displaced');
 	const walled = beaconDrive(
 		{ beacon: { level: 0, charge: 10, returnDepth: 5, returnPos: 22, returnX: 2, returnY: 2 }, passable: () => false }, [2]);
 	assert.ok(walled.log.some((l) => l.includes('no_tele')), 'a blocked anchor refuses');
@@ -2911,8 +2915,8 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 		creatures: { '2,2': { kind: 'rat' } },
 	});
 	useReturningBeaconFlow(blocked.ctx);
-	assert.ok(blocked.log.some((l) => l.includes('creatures')), 'a stranger on the anchor refuses');
-	assert.equal(blocked.flags.turns, 0, 'spending nothing');
+	assert.deepEqual(blocked.flags.relocated, { x: 2, y: 2 }, 'a stranger on the anchor is pushed to a free neighbour (BeaconOfReturning.onCast) and the hero still arrives');
+	assert.equal(blocked.flags.turns, 1, 'spending the turn');
 	const walled = beaconDrive({ spell: { returnDepth: 5, returnPos: 22, returnX: 2, returnY: 2 }, passable: () => false });
 	useReturningBeaconFlow(walled.ctx);
 	assert.ok(walled.log.some((l) => l.includes('no_tele')), 'a blocked anchor refuses');
@@ -4535,7 +4539,7 @@ function healingDrive(overrides = {}) {
 	assert.doesNotMatch(potionSource, /function applyPotionPurity[\s\S]*?delete hero\.buffs\[/);
 	// `Freezing` seeds cover NEIGHBOURS9 only, so the frost fire-clear runs at
 	// Chebyshev 1 even though the scan loop uses the MWL radius (ACP #390).
-	assert.match(potionSource, /Math\.max\(Math\.abs\(dx\), Math\.abs\(dy\)\) <= 1\) scene\.clearFire\(x, y\)/);
+	assert.match(potionSource, /Math\.max\(Math\.abs\(dx\), Math\.abs\(dy\)\) <= 1\) \{ scene\.clearFire\(x, y\); scene\.freezeHeapAt\(x, y\); \}/);
 }
 // Dew-drop collection moved to `items/consumables.ts` as `collectDewdrop` (the
 // file-size refactor's thirtieth extraction, behavior-identical): driven headlessly
