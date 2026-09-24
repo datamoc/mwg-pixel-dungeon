@@ -26,6 +26,9 @@ export interface Combatant extends Step {
 	miniboss?: boolean;
 	/** `Berserk.power` of the hero (0/absent when the Berserker has no rage): the damage roll's `min(1.5, 1 + power/2)`. */
 	berserkPower?: number;
+	/** `DwarfKing.phase` (absent/1 outside the fight): `isImmune(Doom.class)` skips the +67%
+	 * damage-taken multiplier from phase 2 on, though Doom can still attach. */
+	kingPhase?: number;
 	/** `Preparation.AttackLevel` level (1-4) while the attacker's Preparation buff is up, which
 	 * replaces its damage roll and unlocks the assassinate. Absent means no Preparation - Java
 	 * reads the same thing from `buff(Preparation.class) != null`. */

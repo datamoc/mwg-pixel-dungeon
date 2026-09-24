@@ -12,7 +12,7 @@ function combatState(c: Combatant): Combatant {
 		isHero: c.isHero, isAlly: c.isAlly, boss: c.boss, miniboss: c.miniboss,
 		kind: c.kind, sleeping: c.sleeping,
 		champion: c.champion, str: c.str, strReq: c.strReq,
-		raged: c.raged, championPower: c.championPower, berserkPower: c.berserkPower,
+		raged: c.raged, championPower: c.championPower, berserkPower: c.berserkPower, kingPhase: c.kingPhase,
 	};
 }
 

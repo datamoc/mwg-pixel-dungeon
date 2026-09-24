@@ -233,10 +233,9 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 	//boundary is `Char.damage()`, a universal seam (melee, DoT, traps, bombs alike) this port does
 	//not have yet for monsters (stated on the WandOfCorruption/PowerOfMany rows); this combat-only
 	//placement, alongside Vulnerable above, covers the common case - a doomed target's ordinary
-	//attack damage - and is stated as the reduction it is. Java's one exemption (a phase 2+ Dwarf
-	//King's own `isImmune(Doom.class)`) needs a field this pure module's `Combatant` does not carry
-	//and is not modeled.
-	if (defender.buffs['doom']) effective *= 1.67;
+	//attack damage - and is stated as the reduction it is. `DwarfKing.isImmune()`'s phase 2+
+	//exemption from the multiplier (Doom can still attach, it just does nothing) is `doomImmune`.
+	if (defender.buffs['doom'] && !(defender.kind === 'king' && (defender.kingPhase ?? 1) > 1)) effective *= 1.67;
 	//ChampionEnemy.Giant.damageTakenFactor()/Growing.damageTakenFactor(): flat 0.2x for Giant,
 	//0.5x for AntiMagic (Char.damage() applies this to every damage source, not just magic -
 	//the separate AntiMagic.RESISTS status-immunity list is the only magic-specific part, and

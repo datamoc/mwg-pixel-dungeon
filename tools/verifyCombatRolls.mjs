@@ -90,6 +90,9 @@ export function verifyCombatRolls(require, check) {
 		assert.equal(rollDamage(hero, { ...foe, buffs: { vulnerable: 1 } }, minStub), 3);
 		//`Doom.class`: +67% to every incoming hit (`simulation/combat.ts`'s `rollDamage`, the WandOfCorruption/DwarfKing seam).
 		assert.equal(rollDamage(hero, { ...foe, buffs: { doom: 1 } }, maxStub), 10);
+		//`DwarfKing.isImmune()` phase 2+: Doom attaches but its multiplier is skipped.
+		assert.equal(rollDamage(hero, { ...foe, kind: 'king', kingPhase: 2, buffs: { doom: 1 } }, maxStub), rollDamage(hero, { ...foe, kind: 'king', kingPhase: 2 }, maxStub));
+		assert.equal(rollDamage(hero, { ...foe, kind: 'king', kingPhase: 1, buffs: { doom: 1 } }, maxStub), 10);
 		assert.equal(rollDamage(hero, { ...foe, champion: 'giant' }, minStub), 0);
 		assert.equal(rollDamage(hero, { ...foe, champion: 'antimagic' }, minStub), 1);
 		assert.equal(rollDamage(hero, { ...foe, champion: 'growing' }, minStub), 2);
