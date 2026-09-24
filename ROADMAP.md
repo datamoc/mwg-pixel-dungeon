@@ -294,7 +294,27 @@ below to close the gap was judged not worth the churn against those existing ref
       since 2026-09-19 (its own `class: "any"` row opens the tier-4 tab and `RATLOMACY`/`RATFORCEMENTS`
       run, and `RATSISTANCE`'s `0.9^points` factor rides the attack multiplier with a stated
       rounding note). See
-      `PORT_COVERAGE.md`'s armor-ability section for the per-ability reason. **Complexity: L.**
+      `PORT_COVERAGE.md`'s armor-ability section for the per-ability reason.
+      **Progress 2026-09-24 (audit correction, re-checked directly against `src/armorAbilities.ts`
+      and every cited `PORT_COVERAGE.md` row rather than from the item's own stale opening line):**
+      the opening sentence above ("Thirteen abilities are fully ported... browser verification owed
+      for the newest, per section 10") is stale and already superseded by this item's own later
+      notes - `armorAbilities.ts`'s `PORTED_ARMOR_ABILITIES` set lists all 18 real abilities (Warrior
+      x3, Rogue x3, Huntress x3, Mage x3, Duelist x3, Cleric x3) and its own doc comment states
+      "Every class offers its full set now", matching the 2026-09-21 note above (`ElementalBlast`
+      closed) and the Cleric/PowerOfMany notes that follow it. Section 10 itself is fully closed
+      (moved to `CLOSED.md`), so "per section 10" is a dead cross-reference kept only for other
+      items' line numbering, not a live debt tracker. **What is genuinely still open**: unlike the
+      Cleric spells and the `CursedWand` effects (both of which cite explicit browser-verified
+      passes in `PORT_COVERAGE.md`), no row for `ShadowClone`, `Challenge`, `ElementalStrike` or
+      `PowerOfMany`'s existing-ally path cites one - each is pinned only in headless
+      `test:armorAbilities`/`test:simulation`. This pass found no browser tool
+      (`claude-in-chrome`/`chrome-devtools-mcp`) available in this session, so that verification is
+      left undone rather than claimed done. Everything else the opening bar named (the King's Crown
+      `WEAR` choice panel, `ClassArmor.upgrade()`'s state changes, the charge meter's regrowth rate,
+      the four rank-4 talents) is confirmed live by the progress notes throughout this item.
+      **Complexity: S** (browser verification only for the four abilities named above; no remaining
+      unbuilt system blocks any of the 18).
 - [x] Match Java talent timing, identification, recharge, and threshold rules. Tier-4 threshold
       timing is now real (the tier's window, its `armorAbility == null` gate and its point curve are
       Java's `Hero.talentPointsAvailable(4)` rather than the earlier "T4 is never granted"
