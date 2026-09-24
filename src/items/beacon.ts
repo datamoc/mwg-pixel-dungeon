@@ -198,9 +198,34 @@ export function setBeaconFlow(ctx: BeaconFlowContext, instanceId?: string): void
 	ctx.say(ctx.t('items.artifacts.lloydsbeacon.return'), 'positive');
 }
 
-/** `LloydsBeacon.returnBeacon()`: same depth steps the hero to the anchor (refusing blocked
- *  or occupied cells), another depth travels there - the scene owns that travel, this flow
- *  only hands it the anchor. */
+/**
+ * `returnBeacon()`'s occupant handling, shared by the artifact and the spell twin: whoever besides
+ * the hero stands on the anchor is pushed to a random passable, uncrowded `NEIGHBOURS8` cell (an
+ * immovable occupant pushes the hero there instead), and no free cell refuses the whole return
+ * (`ScrollOfTeleportation.no_tele`) rather than only the push.
+ * @returns the (possibly pushed-aside) cell to arrive at, or null to refuse.
+ */
+function beaconClearAnchor(ctx: BeaconFlowContext, x: number, y: number): { x: number; y: number } | null {
+	const occupant = ctx.creatureAt(x, y);
+	if (!occupant || occupant.isHero) return { x, y };
+	const pushHero = ctx.isImmovableKind(occupant.kind);
+	//Java's own `PathFinder.NEIGHBOURS8` scan: any passable, uncrowded adjacent cell (the port has
+	//no `LARGE`/`openSpace` distinction, so that half of Java's extra check does not apply here).
+	let free: { x: number; y: number } | undefined;
+	for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
+		const cell = { x: x + dx, y: y + dy };
+		if (ctx.passable(cell.x, cell.y) && !ctx.creatureAt(cell.x, cell.y)) { free = cell; break; }
+	}
+	if (!free) { ctx.say(ctx.t('items.scrolls.scrollofteleportation.no_tele'), 'negative'); return null; }
+	if (pushHero) return free;
+	ctx.playCreatureTeleport({ x, y }, free, x, y);
+	ctx.moveCreatureTo(x, y, free);
+	return { x, y };
+}
+
+/** `LloydsBeacon.returnBeacon()`: same depth steps the hero to the anchor (pushing aside whoever
+ *  else stands there, or the hero itself if they cannot be moved), another depth travels there -
+ *  the scene owns that travel, this flow only hands it the anchor. */
 export function returnBeaconFlow(ctx: BeaconFlowContext, instanceId?: string): void {
 	const beacon = ctx.beaconOf(instanceId);
 	if (!beacon || beacon.returnDepth === undefined || beacon.returnDepth < 0 || beacon.returnPos === undefined) return;
@@ -211,8 +236,9 @@ export function returnBeaconFlow(ctx: BeaconFlowContext, instanceId?: string): v
 	const y = beacon.returnY ?? Math.floor(beacon.returnPos / width);
 	if (beacon.returnDepth === ctx.depth) {
 		if (!ctx.passable(x, y)) { ctx.say(ctx.t('items.scrolls.scrollofteleportation.no_tele'), 'negative'); return; }
-		if (ctx.creatureAt(x, y)) { ctx.say(ctx.t('items.artifacts.lloydsbeacon.creatures'), 'negative'); return; }
-		ctx.relocateHero(x, y);
+		const arrival = beaconClearAnchor(ctx, x, y);
+		if (!arrival) return;
+		ctx.relocateHero(arrival.x, arrival.y);
 	} else {
 		ctx.travelToDepth(beacon.returnDepth, { x, y });
 	}
@@ -247,12 +273,9 @@ export function useReturningBeaconFlow(ctx: BeaconFlowContext, instanceId?: stri
 	const x = beacon.returnX ?? (beacon.returnPos % width);
 	const y = beacon.returnY ?? Math.floor(beacon.returnPos / width);
 	if (beacon.returnDepth === ctx.depth && ctx.passable(x, y)) {
-		const occupant = ctx.creatureAt(x, y);
-		if (occupant && !(x === ctx.heroPos.x && y === ctx.heroPos.y)) {
-			ctx.say(ctx.t('items.spells.beaconofreturning.creatures'), 'negative');
-			return;
-		}
-		ctx.relocateHero(x, y);
+		const arrival = beaconClearAnchor(ctx, x, y);
+		if (!arrival) return;
+		ctx.relocateHero(arrival.x, arrival.y);
 		ctx.consumeReturningBeacon(instanceId);
 		ctx.say(ctx.t('port.log.beaconreturned'), 'positive');
 	} else if (beacon.returnDepth === ctx.depth) {
