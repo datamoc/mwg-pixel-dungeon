@@ -279,6 +279,12 @@ Example: `coord post --kind done "DivineIntervention @495c09f ok:tsc,sim286,i18n
   (`b81422080`). Between `v3.3.8` and it, 290 Java files changed (new enchantments/curses,
   `RingOfHaste` 1.175 -> 1.15, the `WEP_T3` deck fix, ...). This port's target stays `v3.3.8`:
   cite `v3.3.8` for what the port does, and `4.0.0-beta`/`v4.0.0` only for a real 4.0 difference.
+- If the local `v3.3.8` and `4.0.0-beta` refs appear to omit a feature or behavior being
+  closed in this port, do not treat that as evidence that SPD lacks it or silently close the
+  gap. Verify the refs and search relevant source/history, then consult an authoritative SPD
+  source for the appropriate version and establish provenance. If its behavior still cannot
+  be established, leave the gap explicitly documented as "Not ported" or otherwise label
+  authored behavior; never invent provenance or silently claim completion.
 - When comparing against a real screenshot of the live game, check both the visual (tiles,
   sprites, layout) *and* the actual Java generator/logic source before concluding something
   is a bug versus an intentionally-undocumented gap — then record any newly-found gap in
