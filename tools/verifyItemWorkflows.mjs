@@ -805,11 +805,11 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	}
 	{
 		// `PowerOfMany.LightAlly` is immune to `AllyBuff` (`PowerOfMany.java`, tag
-		// `v3.3.8`); since this port has no Doom buff, Corruption must not replace its
-		// special ally identity with the generic mirror-ally stand-in.
+		// `v3.3.8`). Java's Doom fallback checks Corruption immunity, not AllyBuff
+		// immunity; keep the port from clearing LightAlly/PowerBuff state instead.
 		const aiming = readFileSync(join(root, 'src/scenes/dungeon/turnLoopAiming.ts'), 'utf8');
 		assert.match(aiming, /wandType === 'corruption'[\s\S]*?victim\.allyKind !== 'lightAlly'/);
-		assert.match(aiming, /This port has no Doom buff yet; preserve[\s\S]*?LightAlly identity/);
+		assert.match(aiming, /Java's `corruptEnemy\(\)` checks[\s\S]*?attach silently fails/);
 		const cursedWand = readFileSync(join(root, 'src/scenes/dungeon/hero/cursedWandCast.ts'), 'utf8');
 		assert.match(cursedWand, /status === 'poison'[\s\S]*?if \(!buffBlocked\(victim, 'poison'\)\)/);
 		const combat = readFileSync(join(root, 'src/combat.ts'), 'utf8');

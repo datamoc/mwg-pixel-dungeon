@@ -275,9 +275,10 @@ export const turnLoopAimingMethods = {
 				//or loot-transfer payload, so the existing ally scheduler is used for
 				//the observable controlled-combat result.
 				//`PowerOfMany.LightAlly` is immune to `AllyBuff` in
-				//`PowerOfMany.java` (tag `v3.3.8`), so Java's `corruptEnemy()` applies
-				//Doom instead of converting it. This port has no Doom buff yet; preserve
-				//the LightAlly identity rather than corrupting its special ally state.
+				//`PowerOfMany.java` (tag `v3.3.8`). Java's `corruptEnemy()` checks
+				//`Corruption` immunity before its Doom fallback, then its `AllyBuff`
+				//attach silently fails for this target. Preserve LightAlly and its
+				//PowerBuff instead of clearing its state; the intended Doom effect is not ported.
 				victim.isAlly = true;
 				victim.allyKind = 'mirror';
 				victim.hp = victim.maxHp;
