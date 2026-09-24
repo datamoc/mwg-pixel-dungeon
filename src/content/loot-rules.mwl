@@ -32,6 +32,16 @@
             chance: 0.1666666667,
             kind: "meat",
           },
+          // `HermitCrab.lootChance = 0.5` (`actors/mobs/HermitCrab.java`, tag `v3.3.8`, "3x more
+          // likely to drop meat" than the base Crab's 0.1666667): the guaranteed armor drop is a
+          // separate, always-on `rollToDropLoot()` bonus - not represented in this table at all -
+          // handled in `deathSaveRefresh.ts` next to the other guaranteed-drop mobs.
+          {
+            tag: "row",
+            monster: "hermitCrab",
+            chance: 0.5,
+            kind: "meat",
+          },
           {
             tag: "row",
             monster: "albino",

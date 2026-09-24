@@ -18,11 +18,11 @@ import { applyDM300DeathUnseal, applyGooDeathUnseal, applyKingDeathUnseal, apply
 import { processSacrifice } from '../../simulation/environmentalBlobs';
 import { buildYogMinionDeck, chooseYogSpawnCell } from '../../simulation/yogBoss';
 import { deathBurstsFor } from '../../simulation/deathBursts';
-import { colorblind } from '../../settings';
+import { colorblind, highContrast } from '../../settings';
 import { ringTypesKnownFor } from '../../simulation/ringKnow';
 import { staffImbueFor } from '../../items/wands';
 import { Banner } from '../../ui/banner';
-import { bruteLootArmor, type GenItem } from '../../items/generator';
+import { bruteLootArmor, randomArmor, type GenItem } from '../../items/generator';
 import { generatedInventoryItem } from '../../items/generatedItems';
 import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type WealthTrackers } from '../../items/wealthDrops';
 import { wandmakerQuestType, wandmakerQuestWands } from '../../spdLevelGen/wandmaker';
@@ -471,6 +471,15 @@ export const deathSaveRefreshMethods = {
 			//takes the ambient `Random` directly, never the levelgen stream.
 			if (!overleveled && creature.kind === 'armoredBrute') {
 				const item = generatedInventoryItem(bruteLootArmor(Random), { newItemInstanceId: (kind) => this.newItemInstanceId(kind) });
+				this.spawnGroundItem(groundKindForItem(item, 'armor'), creature.x, creature.y, item);
+				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.armor) }));
+			}
+			//`HermitCrab.rollToDropLoot()` (tag `v3.3.8`): past the shared `maxLvl+2` gate, always
+			//drops one `Generator.randomArmor()` (depth/5 floor set, the same default the wealth-drop
+			//path already uses) alongside its ordinary meat roll below - two separate items, matching
+			//Java's `super.rollToDropLoot()` call before this bonus.
+			if (!overleveled && creature.kind === 'hermitCrab') {
+				const item = generatedInventoryItem(randomArmor(), { newItemInstanceId: (kind) => this.newItemInstanceId(kind) });
 				this.spawnGroundItem(groundKindForItem(item, 'armor'), creature.x, creature.y, item);
 				this.say(t('port.log.drops', { who: capitalize(creature.name), item: t(GROUND_ITEM_KEYS.armor) }));
 			}
