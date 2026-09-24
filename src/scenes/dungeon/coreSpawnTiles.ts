@@ -47,7 +47,7 @@ import { monsterSpawnProfile } from '../../actors/monsterSpawn';
 import { ritualSiteState } from '../../spdLevelGen/rooms/standard/ritualSiteRoom';
 import { DOOR, GAME_KIND_CODES, HIGH_GRASS, SOLID, TERRAIN_KINDS, TILE, WALL, WATER, type GroundItemKind } from '../../dungeonConstants';
 import { REGION_GRASS, REGION_WATER, generateSpdDungeon, regionForDepth, type Region } from '../../genericDungeon';
-import { INFINITE_EVASION, addBuff, baseCreature, rollHit, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
+import { INFINITE_EVASION, addBuff, baseCreature, rollHit, setAscensionActive, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
 import { BOSSES, MONSTERS, heroSheet, type AnyMonsterId } from '../../monsters';
 import { HERO_SCHEDULER_ID, MOB_SCHEDULER_ID_PREFIX, NON_STATBLOCK_RING_STATS, SPD_LEVEL_CURVE, SUBCLASS_OPTIONS, wardTexture } from './shared';
 
@@ -1055,6 +1055,11 @@ export const coreSpawnTilesMethods = {
 	},
 
 	enterLevel(this: DungeonScene): void {
+		//`AscensionChallenge.statModifier` reads a module-level flag in `combat.ts` (that module
+		//has no scene reference), so it is re-synced from the scene's own persisted field on
+		//every floor build - covers a fresh run (false), the ascent buff being granted mid-run,
+		//and a save reload (see `saveRun`/`loadRun`) all from one call site.
+		setAscensionActive(this.ascensionChallengeActive);
 		this.captureActiveFloor();
 		//Ctrl+wheel / Ctrl+plus/minus zoom, bound once per scene (see the module).
 		bindZoomShortcuts(this);

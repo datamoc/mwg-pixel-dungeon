@@ -519,6 +519,10 @@ export class DungeonScene extends Scene2D {
 	hasStairs = false;
 	/** set by takeHeroTurn when a step lands on the stairs and triggers enterLevel() */
 	justDescended = false;
+	/** `Hero.buff(AscensionChallenge.class) != null` - granted once, at depth 26's ascent
+	 * confirmation (`tryAscendStairs`), never cleared. Mirrored into `combat.ts`'s module-level
+	 * `ascensionActive` at the top of every `enterLevel()`, since that module has no scene ref. */
+	ascensionChallengeActive = false;
 	/** thrown-weapon charges left for classes whose special is finite (Warrior/Rogue/Duelist); ignored for the rest */
 	ammo = 0;
 	/** Shared missile upgrade level (all class missiles are tier-1; rogue knives scale max twice as fast - see useSpecial). No cap, like Java. */
@@ -1490,6 +1494,7 @@ export class DungeonScene extends Scene2D {
 		this.ammoSetId = this.newMissileSetId();
 		this.missileThresholds = new Map();
 		this.dustSpawnPower = 0;
+		this.ascensionChallengeActive = false;
 		this.enterLevel();
 
 		const def = CLASSES[this.heroClass];

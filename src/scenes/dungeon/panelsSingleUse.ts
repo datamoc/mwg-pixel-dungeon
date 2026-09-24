@@ -388,6 +388,11 @@ export const panelsSingleUseMethods = {
 		this.armorInstanceId ??= this.bag.find(this.armorId)?.instanceId;
 		this.gameState = new Rpg.GameState();
 		for (const [name, value] of s.switches) this.gameState.setSwitch(name, value);
+		//`Hero.buff(AscensionChallenge.class)`'s persistence: Java bundles the buff like any
+		//other and it survives a save/load, so this port's own stand-in flag (see
+		//`ascensionChallengeActive`'s field comment) does too - `enterLevel()` re-syncs it into
+		//`combat.ts` right after this method calls it, below.
+		this.ascensionChallengeActive = s.ascensionChallengeActive ?? false;
 		this.quests = Rpg.QuestLog.fromJSON(
 			[SAD_GHOST_QUEST, WANDMAKER_QUEST, BLACKSMITH_QUEST, IMP_QUEST],
 			{ stageIndex: s.questStages },

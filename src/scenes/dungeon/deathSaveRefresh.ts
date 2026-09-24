@@ -1414,6 +1414,7 @@ export const deathSaveRefreshMethods = {
 			itemSerial: this.itemSerial,
 			appearances: this.appearances.toJSON(),
 			switches: this.gameState.toJSON().switches,
+			ascensionChallengeActive: this.ascensionChallengeActive,
 			questStages: this.quests.toJSON().stageIndex,
 			equippedRing: this.equippedRing,
 			ringTypesKnown: [...ringTypesKnownFor(this)],

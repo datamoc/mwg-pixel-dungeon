@@ -28,7 +28,6 @@ import { Terrain } from '../../spdLevelGen/paintLevel';
 import { foregroundGrassFrame } from '../../spdLevelGen/visualWalls';
 import { Feeling } from '../../spdLevelGen/regularPainter';
 import { runState } from '../../runState';
-import { recordRun } from '../../rankings';
 import { isChallengeEnabled } from '../../challenges';
 import { CLASSES } from '../../classes';
 import { showChoiceWindow, showConfirmWindow, showInfoWindow } from '../../ui/portWindows';
@@ -1679,8 +1678,22 @@ export const npcShopBlacksmithMethods = {
 				this.gameState.setSwitch('amuletObtained', true); runState.audio.winMusic();
 				if (this.demonSpawnerFloor) this.demonSpawnerFloor.setLayerData('demonSpawnerFloor', this.demonSpawnerFloorFrames(false));
 				if (this.vaultVisuals) { const layers = this.vaultTileLayers(); this.vaultVisuals.setLayerData('vaultFloor', layers.floor); this.vaultVisuals.setLayerData('vaultCenter', layers.center); this.vaultVisuals.setLayerData('vaultCenterWalls', layers.walls); }
-				this.awardBadge('amulet'); this.say(t('port.log.victory'), 'positive'); this.awaitingInput = false; this.gameOver = true;
-			recordRun({ result: 'won', depth: this.depth, level: this.progression.level, gold: this.heroStats.base('gold') }); this.showVictoryPanel();
+				//`Amulet.doPickUp`/`showAmuletScene` (Amulet.java, tag `v3.3.8`): real Java does not
+				//end the run here - it switches to `AmuletScene`, which calls
+				//`Badges.validateVictory()` (the "Escaped with the Amulet" trophy fires on pickup,
+				//not on the later surface exit - see `Badges.java:1016`) and then offers the player
+				//a choice: "Let's call it a day" (an immediate win, `Dungeon.win(Amulet.class)`,
+				//exactly the old always-instant-win behaviour this port used to have unconditionally)
+				//or "I'm not done yet" (stay and keep exploring/climbing). This port has no separate
+				//cutscene scene to host that choice, so it takes Java's "stay" branch unconditionally
+				//and relies on the real climb instead: the hero now carries the Amulet, and walking
+				//onto the entrance tile they arrived on (`tryAscendStairs`, `actorTurnsHazards.ts`)
+				//is the way back up, matching `Dungeon.interfloorTeleportAllowed()` blocking every
+				//other way off this floor while the Amulet is carried (`returnToPreviousFloor`
+				//already enforced that half). The real win only fires at the depth-1 surface exit
+				//(`SewerLevel.activateTransition`'s `LevelTransition.Type.SURFACE` branch) - see
+				//`tryAscendStairs`. PORT_COVERAGE.md: "Post-victory ascent".
+				this.awardBadge('amulet'); this.say(t('scenes.amuletscene.text'), 'positive');
 				return true;
 			},
 			pickupRing: () => {

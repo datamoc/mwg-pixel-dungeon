@@ -1870,6 +1870,49 @@ Fully closed - moved to `CLOSED.md`. Kept as a numbered heading (rather than rem
 because this is the last numbered roadmap section and preserves its section identity in release
 notes and cross-references.
 
+## 13. Post-victory ascent (Amulet climb back to the surface)
+
+**Progress note, 2026-09-24.** The user's stated goal for the project is every hero class
+playable from game start through defeating Yog-Dzewa *and* the post-victory ascent back to the
+surface, ending in a real win state. Before this pass, `PORT_COVERAGE.md` stated plainly "this
+port does not model the post-victory ascent at all" - amulet pickup (`pickupAmulet`,
+`npcShopBlacksmith.ts`) instantly ended the run as a win, and `ASCENSION_MOD`
+(`src/simulation/combat.ts`) was permanently inert because nothing ever set the flag it gates on.
+
+What this pass landed (see `PORT_COVERAGE.md`'s "Post-victory ascent" row for the full
+citation-by-citation account):
+- [x] Amulet pickup no longer force-ends the run; it awards the real pickup-time victory badge
+      (matching Java's actual `Badges.validateVictory()` timing) and lets the hero keep playing.
+- [x] The `AscensionChallenge` per-mob stat table is wired to a real trigger: reaching depth 26's
+      entrance with the Amulet shows Java's real ascent confirmation text and, on "yes", the
+      table becomes live for the rest of the run (`ascensionChallengeActive` in `dungeonScene.ts`,
+      synced into `combat.ts` every `enterLevel()`).
+- [x] Walking back onto each floor's entrance tile while carrying the Amulet climbs one floor up
+      (`tryAscendStairs`/`beginAscendOneFloor`, `actorTurnsHazards.ts`), all the way from depth 26
+      to depth 1. `Dungeon.interfloorTeleportAllowed()`'s Amulet check already existed
+      (`returnToPreviousFloor`) and needed no change.
+- [x] Reaching depth 1's entrance with the Amulet now triggers the actual win
+      (`recordRun`/`showVictoryPanel`/`gameOver`), reusing this port's existing end-of-run UI
+      rather than inventing a new one.
+- [x] `npx tsc --noEmit` and `npm run build` are clean; `verifySimulation.mjs`'s 295 checks are
+      unaffected (confirmed by rerun).
+- [ ] **Not browser-verified.** No browser tool (`claude-in-chrome`, `chrome-devtools-mcp`, or any
+      other) was reachable in the background-job environment this pass ran in. The intended check -
+      teleport the hero to depth 26 via `window.__MWG__.currentScene`, grant the amulet, and walk
+      up through several floors to depth 1 to confirm the loop actually holds end to end in a real
+      browser - was **not performed**. This is flagged here rather than silently skipped; do this
+      before trusting the loop for real play.
+- [ ] **Not ported at all** (documented, not silently dropped - see `PORT_COVERAGE.md`):
+      `Statistics.highestAscent` tracking (no Rankings/high-score screen to show it in this port),
+      `AscensionChallenge.onLevelSwitch`'s stack-based damage/haste/slow escalation and its full
+      narrative ladder (only the depth-1 "almost there" line is reproduced), the
+      `Badge.HAPPY_END`/`HAPPY_END_REMAINS`/`PACIFIST_ASCENT` badges (no matching `badges.mwl`
+      rows), `DemonSpawner`'s reduced-cooldown carve-out past floor 20 during the climb, and the
+      `Ratmogrify.TransmogRat`/`AscensionBuffBlocker` exemptions on the per-mob table itself.
+      `AmuletScene`'s own "Let's call it a day" instant-win shortcut button is also not ported -
+      this port always takes the "stay and keep exploring" branch instead and relies on the real
+      climb, which is arguably the more interesting choice to keep anyway now that the climb works.
+
 ## Definition of done
 
 - Every Java gameplay system has an equivalent TypeScript implementation.
