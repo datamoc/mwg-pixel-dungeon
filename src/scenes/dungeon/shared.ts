@@ -491,6 +491,9 @@ export interface SaveShape {
 	spinTurns?: number;
 	cleaveFreeTurns?: number;
 	guardTurns?: number;
+	comboClobberUsed?: boolean;
+	comboParryUsed?: boolean;
+	comboInitialTime?: number;
 	swordDanceTurns?: number;
 	/** `Talent.CombinedLethalityAbilityTracker` - see the field's own comment. */
 	clAbilityWeaponClass?: string | null;

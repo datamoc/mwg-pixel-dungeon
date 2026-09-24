@@ -701,12 +701,10 @@ export const armorAbilityUseMethods = {
 				//`damage = hero.attackProc(ch, damage)`: the real attack-proc chain, i.e. this port's
 				//`heroOnHit`, and the Gladiator's combo counter (`Shockwave.java` 130-132).
 				this.heroOnHit(this.hero, caught, damage);
-				if (this.subclass() === 'gladiator') {
-					this.hero.combo = (this.hero.combo ?? 0) + 1;
-					if (this.hero.combo % 3 === 0) damage += 3 + this.talentRank('enhanced_combo');
-				}
 			}
 			this.applyAbilityDamage(caught, damage);
+			//`Buff.affect(hero, Combo.class).hit(ch)` for a Gladiator, after the damage (`Shockwave.java` 130-132).
+			if (procs) this.comboHit(caught);
 			if (caught.hp > 0) {
 				if (shockForceParalyses(shockForce, Random.int(0, 4))) addBuff(caught, 'paralysis', 5);
 				else addBuff(caught, 'cripple', 5);

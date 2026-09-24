@@ -10,7 +10,7 @@ import { UNSTABLE_DELEGATES } from '../../items/itemAffixes';
 import { ringArcanaMultiplier, ringForceBonus, ringTenacityMultiplier } from '../../items/ringModifiers';
 import { HOLY_WARD_BLOCK, HOLY_WEAPON_BONUS, auraProcBonus, auraProtectedDamage, satiatedShieldAmount, searingLightBonus, shieldOfLightRange } from '../../simulation/clericSpells';
 import { capitalize, has, t } from '../../i18n/index';
-import { assassinReachBonus, cleaveComboSeed, deathlessFuryTriggers, empoweredStrikeBonus, farsightMultiplier, shieldBatteryGain, weaponRechargingDamage } from '../../talentEffects';
+import { assassinReachBonus, deathlessFuryTriggers, empoweredStrikeBonus, farsightMultiplier, shieldBatteryGain, weaponRechargingDamage } from '../../talentEffects';
 import { Terrain, type PaintLevel } from '../../spdLevelGen/paintLevel';
 import { runState } from '../../runState';
 import { isChallengeEnabled } from '../../challenges';
@@ -314,6 +314,8 @@ export const combatResolutionMethods = {
 		if (!attackRoll.hit) {
 			runState.audio.cue('miss', 0.55);
 			defender.sleeping = false;
+			//`Hero.defenseSkill()`/`defenseVerb()`: a blow that meets the Combo Parry window is parried (and riposted).
+			if (defender === this.hero && this.comboParryTurns > 0) this.comboParried(attacker);
 			this.say(t(attacker.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
 			return false;
 		}
@@ -506,20 +508,6 @@ export const combatResolutionMethods = {
 			damage = 0;
 		}
 		runState.audio.cue('hit', 0.6);
-		//DEVIATION (Gladiator): Java's `Combo` (actors/buffs/Combo.java, tag `v3.3.8`) is a buff
-		//whose `hit()` counts landed hits (decaying 5 turns, 15+15*Cleave after a kill) and unlocks
-		//the finisher moves CLOBBER/SLAM/PARRY/CRUSH/FURY at 2/4/6/8/10 through `WndCombo`; it adds
-		//NO damage to ordinary hits. This port has no Combo buff or move UI, so it keeps an older
-		//stand-in: every third landed hero hit deals +3 (+Enhanced Combo rank). See PORT_COVERAGE.md.
-		if (attacker.isHero && this.subclass() === 'gladiator') {
-			attacker.combo = (attacker.combo ?? 0) + 1;
-			if (attacker.combo % 3 === 0) {
-				damage += 3 + this.talentRank('enhanced_combo');
-				this.say(t('port.log.gladiatorcombo'), 'positive');
-			}
-		} else if (attacker.isHero) {
-			attacker.combo = 0;
-		}
 		if (attacker.isHero && this.heroClass === 'rogue' && surprise) {
 			damage += (this.subclass() === 'assassin' ? 4 : 2) + assassinReachBonus(this.subclass(), this.talentRank('assassins_reach'));
 			this.awardBadge('surprises');
@@ -1086,9 +1074,10 @@ export const combatResolutionMethods = {
             && Roguelike.chebyshevDistance(attacker, defender) <= 1) {
             this.applyBlastDamage(attacker, capeRetaliation, true, 'foe');
         }
+		//`Hero.actAttack()`/`doThrow()`: a landed hit on an enemy feeds the Gladiator's `Combo.hit()` (which also
+		//reads whether that hit killed, hence after the brute-revival block). `Combo.doAttack` swings never do.
+		if (attacker.isHero && !defender.isAlly && !this.comboSuppressHit) this.comboHit(defender);
 		if (defender.hp <= 0) {
-			const cleave = cleaveComboSeed(this.subclass(), this.talentRank('cleave'));
-			if (attacker === this.hero && cleave > 0) attacker.combo = cleave;
 			//Mob.die()'s kill triggers gate on the *cause* (`hero || Weapon || Enchantment`),
 			//so missile kills count too - `isHero` (true for the hero and its thrown-missile
 			//copy alike) rather than the melee-only `attacker === this.hero` reference check.

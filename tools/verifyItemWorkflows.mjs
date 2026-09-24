@@ -1865,6 +1865,8 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 			lightWallActive: 20,
 			//`Vertigo.DURATION` 10 (`buff-rules.mwl`, ported 2026-09-24)
 			vertigo: 10,
+			//`Combo.comboTime` opens at 5 on a first hit (`Combo.hit`), the value of the `combo` buff row
+			combo: 5,
 		},
 		'buff durations match the authored table',
 	);

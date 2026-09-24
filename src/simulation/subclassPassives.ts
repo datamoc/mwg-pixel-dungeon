@@ -16,8 +16,7 @@
  * (`items/weapon/melee/MeleeWeapon.java`, via `weaponAbilities.ts`).
  *
  * Deliberately absent (no port-side system to hang them on, recorded in the
- * matrix, not silently dropped): the five Gladiator combo moves
- * (CLOBBER/SLAM/PARRY/CRUSH/FURY - need `WndCombo` + cell targeting), the five
+ * matrix, not silently dropped): the five
  * Monk abilities (need `WndMonkAbilities` + targeting), the three Sniper bow
  * specials (need bow augment + UI), Champion dual-wield/second weapon (no
  * `secondWep` model), Battlemage per-wand `onHit` effects (no staff imbue),

@@ -43,6 +43,14 @@
             duration: 10,
           },
           {
+            // `Combo` (Gladiator, `actors/buffs/Combo.java`, tag v3.3.8): the value is `comboTime`, the turns
+            // left before the count is lost. A hit lifts it to at least 5 (`hit()`); a kill sets 15 + 15 x
+            // Cleave ranks. The hit count itself lives on the hero (`Creature.combo`).
+            tag: "row",
+            buff: "combo",
+            duration: 5,
+          },
+          {
             // Vertigo.DURATION (`actors/buffs/Vertigo.java`, tag v3.3.8): 10. Applied by ConfusionGas (prolong 2),
             // Stormvine (affect 10) and Combo's clobber (prolong 3); PotionOfHealing.cure() detaches it.
             tag: "row",

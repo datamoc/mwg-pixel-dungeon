@@ -316,6 +316,8 @@ export const coreSpawnTilesMethods = {
 		//runs - every incoming attack misses, not just the first. The old one-negated-
 		//hit model in 	akeHeroDamage` is gone with it.
 		if (this.guardTurns > 0) this.hero.evasion = 1000000;
+		//`Combo.ParryTracker` (`Hero.defenseSkill`): infinite evasion while the Parry window is up.
+		if (this.comboParryTurns > 0) this.hero.evasion = 1000000;
 		if (this.healingEvasionTurns > 0) this.hero.evasion = this.talentRank('restored_agility') >= 2 ? 1000000 : this.hero.evasion * 4;
 		this.hero.str = this.heroStr + ringMightBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 		if (this.hero.buffs['adrenalineSurge']) this.hero.str += 1;

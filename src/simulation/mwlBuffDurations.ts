@@ -4,6 +4,7 @@ export const BUFF_DURATION_DATA = {
   "hex": 30,
   "daze": 5,
   "blindness": 10,
+  "combo": 5,
   "vertigo": 10,
   "chill": 10,
   "frost": 10,

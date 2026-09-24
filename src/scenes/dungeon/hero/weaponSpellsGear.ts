@@ -124,6 +124,11 @@ export const weaponSpellsGearMethods = {
 		//does nothing at all (no message) - the T-key is dead for every other class.
 		//(The port always has a weapon wielded, so the unequipped/swift-equip branches
 		//are vacuous here.)
+		//The Gladiator's T-key opens `WndCombo` (`Combo.doAction()`); the weapon abilities below are the Duelist's.
+		if (this.subclass() === 'gladiator') {
+			this.openComboMenu();
+			return;
+		}
 		if (this.heroClass !== 'duelist') return;
 		const def = weaponAbilityFor(this.weaponSourceClass, this.weaponId);
 		if (!def) {
@@ -498,6 +503,7 @@ export const weaponSpellsGearMethods = {
 		if (this.spinTurns <= 0) this.spinSpins = 0;
 		this.cleaveFreeTurns = Math.max(0, this.cleaveFreeTurns - turnCost);
 		this.guardTurns = Math.max(0, this.guardTurns - turnCost);
+		this.tickComboParry(turnCost);
 		const hadStance = this.defensiveStanceTurns > 0;
 		this.swordDanceTurns = Math.max(0, this.swordDanceTurns - turnCost);
 		this.defensiveStanceTurns = Math.max(0, this.defensiveStanceTurns - turnCost);

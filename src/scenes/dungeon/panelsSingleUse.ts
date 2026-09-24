@@ -288,6 +288,9 @@ export const panelsSingleUseMethods = {
 		this.spinTurns = (s as { spinTurns?: number }).spinTurns ?? 0;
 		this.cleaveFreeTurns = (s as { cleaveFreeTurns?: number }).cleaveFreeTurns ?? 0;
 		this.guardTurns = (s as { guardTurns?: number }).guardTurns ?? 0;
+		this.comboClobberUsed = (s as { comboClobberUsed?: boolean }).comboClobberUsed ?? false;
+		this.comboParryUsed = (s as { comboParryUsed?: boolean }).comboParryUsed ?? false;
+		this.comboInitialTime = (s as { comboInitialTime?: number }).comboInitialTime ?? 0;
 		this.swordDanceTurns = (s as { swordDanceTurns?: number }).swordDanceTurns ?? 0;
 		this.defensiveStanceTurns = (s as { defensiveStanceTurns?: number }).defensiveStanceTurns ?? 0;
 		this.chargedShotArmed = (s as { chargedShotArmed?: boolean }).chargedShotArmed ?? false;
@@ -593,7 +596,8 @@ export const panelsSingleUseMethods = {
 			: this.hero.buffs[buff as BuffId];
 		const info = buffInfo(buff as BuffId | 'hungry' | 'starving', turns,
 			buff === 'prismaticGuard' ? prismaticGuardMaxHp(this.progression.level) : undefined,
-			buff === 'recallUsed' ? this.recallTrackedItemName() : undefined);
+			buff === 'recallUsed' ? this.recallTrackedItemName() : undefined,
+			buff === 'combo' ? this.hero.combo : undefined);
 		if (!info) return;
 		const window = showBuffInfoWindow(info);
 		this.buffInfoOpen = window;

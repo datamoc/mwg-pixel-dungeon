@@ -52,6 +52,7 @@ const BUFF_MESSAGE_KEY: Partial<Record<BuffId, string>> = {
 	wellFed: 'actors.buffs.wellfed',
 	daze: 'actors.buffs.daze',
 	vertigo: 'actors.buffs.vertigo',
+	combo: 'actors.buffs.combo',
 	light: 'actors.buffs.light',
 	invulnerability: 'actors.buffs.ankhinvulnerability',
 	prismaticGuard: 'actors.buffs.prismaticguard',
@@ -109,16 +110,21 @@ function hungerInfo(state: 'hungry' | 'starving'): BuffInfo {
  * arrives separately (the scene feeds `prismaticGuardMaxHp`).
  */
 /**
+ * @param comboCount only for `combo`: the hit count (`Combo.desc()`'s `{0}`); `turns` is its `{1}`.
  * @param itemName only for `recallUsed`: `UsedItemTracker.desc()` names the tracked
  * item (`%1$s`), which the scene maps back from its Java class. `undefined` prints
  * `?` - reachable only if the tracker lapsed without detaching.
  */
-export function buffInfo(id: BuffId | 'hungry' | 'starving', turns: number | undefined, maxHp?: number, itemName?: string): BuffInfo | null {
+export function buffInfo(id: BuffId | 'hungry' | 'starving', turns: number | undefined, maxHp?: number, itemName?: string, comboCount?: number): BuffInfo | null {
 	if (id === 'hungry' || id === 'starving') return hungerInfo(id);
 	const key = BUFF_MESSAGE_KEY[id];
 	if (!key) return null;
 	if (id === 'recallUsed') {
 		return { name: titleCase(t(`${key}.name`)), desc: t(`${key}.desc`, { 0: itemName ?? '?', 1: Math.max(0, turns ?? 0) }) };
+	}
+	if (id === 'combo') {
+		//`Combo.desc()`: `{0}` = the hit count, `{1}` = the turns until it is lost.
+		return { name: titleCase(t(`${key}.name`)), desc: t(`${key}.desc`, { 0: Math.max(0, comboCount ?? 0), 1: Math.max(0, Math.ceil(turns ?? 0)) }) };
 	}
 	if (id === 'prismaticGuard') {
 		return { name: titleCase(t(`${key}.name`)), desc: t(`${key}.desc`, { 0: Math.max(0, Math.trunc(turns ?? 0)), 1: Math.max(0, Math.trunc(maxHp ?? 0)) }) };

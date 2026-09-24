@@ -979,8 +979,8 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.equal(talents.projectileMomentumBonus('sniper', 2, true), 0);
 		assert.equal(talents.enragedCatalystBonus('berserker', 2, 10, 20), 2);
 		assert.equal(talents.enragedCatalystBonus('berserker', 2, 11, 20), 0);
-		assert.equal(talents.cleaveComboSeed('gladiator', 2), 2);
-		assert.equal(talents.cleaveComboSeed('berserker', 2), 0);
+		//`cleaveComboSeed` (start a kill's combo at 2) is gone: Java's Cleave only lengthens `Combo`'s clock after a kill
+		//(`Combo.hit`, `15 + 15*rank`), pinned in `verifyCombo`.
 		assert.equal(talents.deathlessFuryTriggers('berserker', 1, false, 20, 10), true);
 		assert.equal(talents.deathlessFuryTriggers('berserker', 1, true, 20, 10), false);
 		//`enhancedLethalityThreshold` (the flat `0.2*rank` stand-in for the Assassin's execute) is

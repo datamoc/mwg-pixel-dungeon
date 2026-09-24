@@ -126,10 +126,6 @@ export function enragedCatalystBonus(subclass: string | null, rank: number, hp: 
 	return subclass === 'berserker' && hp <= maxHp * 0.5 ? rank : 0;
 }
 
-export function cleaveComboSeed(subclass: string | null, rank: number): number {
-	return subclass === 'gladiator' && rank > 0 ? 2 : 0;
-}
-
 export function deathlessFuryTriggers(subclass: string | null, rank: number, used: boolean, damage: number, hp: number): boolean {
 	return !used && subclass === 'berserker' && rank > 0 && damage >= hp;
 }
