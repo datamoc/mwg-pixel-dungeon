@@ -492,6 +492,7 @@ export interface SaveShape {
 	cleaveFreeTurns?: number;
 	guardTurns?: number;
 	comboClobberUsed?: boolean;
+	monkEnergy?: number;
 	comboParryUsed?: boolean;
 	comboInitialTime?: number;
 	swordDanceTurns?: number;

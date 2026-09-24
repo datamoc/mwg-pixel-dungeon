@@ -1867,6 +1867,8 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 			vertigo: 10,
 			//`Combo.comboTime` opens at 5 on a first hit (`Combo.hit`), the value of the `combo` buff row
 			combo: 5,
+			//`MonkEnergy` is a permanent icon carrier; the energy lives on the scene
+			monkEnergy: 9999,
 		},
 		'buff durations match the authored table',
 	);

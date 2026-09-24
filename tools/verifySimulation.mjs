@@ -968,9 +968,9 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.equal(talents.bountyHunterDropBonus(4, 1), 0.16);
 		assert.equal(talents.bountyHunterDropBonus(1, 3), 0.06);
 		assert.equal(talents.bountyHunterDropBonus(4, 0), 0);
-		assert.equal(talents.unencumberedSpiritEvasion('monk_sub', 2), 2);
+		//`unencumberedSpiritEvasion` / `monasticVigorShield` were invented stand-ins for the Monk's talents; the real ones
+		//(`MonkEnergy.gainEnergy`'s tier bonus, `abilitiesEmpowered`) are pinned in `verifyMonkEnergy`.
 		assert.equal(talents.lethalDefenseShield('gladiator', 2), 2);
-		assert.equal(talents.monasticVigorShield('monk_sub', 2), 2);
 		assert.equal(talents.sharedUpgradeArmor('sniper', 1, 1), 1);
 		assert.equal(talents.sharedUpgradeArmor('sniper', 1, 3), 0);
 		assert.equal(talents.twinUpgradeArmor('champion', 1, 1), 1);

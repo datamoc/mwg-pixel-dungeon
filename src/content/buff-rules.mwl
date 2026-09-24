@@ -43,6 +43,13 @@
             duration: 10,
           },
           {
+            // `MonkEnergy` (Duelist Monk, `actors/buffs/MonkEnergy.java`, tag v3.3.8): a permanent icon carrier - the
+            // energy itself lives on the scene (`monk.energy`), the buff has no duration of its own.
+            tag: "row",
+            buff: "monkEnergy",
+            duration: 9999,
+          },
+          {
             // `Combo` (Gladiator, `actors/buffs/Combo.java`, tag v3.3.8): the value is `comboTime`, the turns
             // left before the count is lost. A hit lifts it to at least 5 (`hit()`); a kill sets 15 + 15 x
             // Cleave ranks. The hit count itself lives on the hero (`Creature.combo`).

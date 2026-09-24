@@ -119,7 +119,15 @@ export const weaponSpellsGearMethods = {
 	 * attack's turn. An armed `COUNTER_ABILITY` tracker refunds `rank*0.375` after the
 	 * spend (`afterAbilityUsed`) instead of discounting it.
 	 */
-	useWeaponAbility(this: DungeonScene): void {
+	useWeaponAbility(this: DungeonScene, skipMonk = false): void {
+		//A Monk has two ability sets (`MonkEnergy`'s floating button and the weapon's own): the key asks which.
+		if (this.subclass() === 'monk_sub' && !skipMonk && !this.abilityAimTarget) {
+			showChoiceWindow(this.gameWindows, t('port.action.ability'), t('actors.buffs.monkenergy.desc', { 0: Math.trunc(this.monk.energy), 1: this.monkEnergyCap() }), [
+				{ label: t('actors.buffs.monkenergy.action'), onPick: () => this.openMonkMenu() },
+				{ label: t('items.weapon.melee.meleeweapon.ac_ability'), onPick: () => this.useWeaponAbility(true) },
+			]);
+			return;
+		}
 		//Java's `MeleeWeapon.execute(AC_ABILITY)`: a non-Duelist with an equipped weapon
 		//does nothing at all (no message) - the T-key is dead for every other class.
 		//(The port always has a weapon wielded, so the unequipped/swift-equip branches
@@ -455,6 +463,8 @@ export const weaponSpellsGearMethods = {
 	 * with a different weapon tests the *old* tracker first and re-arms after, exactly
 	 * like Java's strike -> `afterAbilityUsed` order. */
 	armCombinedLethality(this: DungeonScene): void {
+		//`MeleeWeapon.afterAbilityUsed()` runs for every weapon ability, so the Monk's Combined Energy half rides here too.
+		this.monkCombinedEnergyWeaponUsed();
 		if (this.talentRank('combined_lethality') <= 0) return;
 		const key = this.weaponInstanceId ?? this.weaponId;
 		const stored = this.clAbilityWeaponInstanceId ?? this.clAbilityWeaponClass;
@@ -504,6 +514,7 @@ export const weaponSpellsGearMethods = {
 		this.cleaveFreeTurns = Math.max(0, this.cleaveFreeTurns - turnCost);
 		this.guardTurns = Math.max(0, this.guardTurns - turnCost);
 		this.tickComboParry(turnCost);
+		this.tickMonk(turnCost);
 		const hadStance = this.defensiveStanceTurns > 0;
 		this.swordDanceTurns = Math.max(0, this.swordDanceTurns - turnCost);
 		this.defensiveStanceTurns = Math.max(0, this.defensiveStanceTurns - turnCost);

@@ -4,24 +4,21 @@
  * against Java's numbers. 41st analysis matrix
  * (`MONSTER_ANALYSIS_SUBCLASS_PASSIVES.md`).
  *
- * Covered: Berserker rage (`actors/buffs/Berserk.java`), Gladiator combo
- * (`actors/buffs/Combo.java`, kill window `Talent.CLEAVE`), Warlock soul mark
+ * Covered: Berserker rage (`actors/buffs/Berserk.java`), Warlock soul mark
  * (`items/wands/Wand.java#wandProc`, `actors/mobs/Mob.java#defenseProc`/`die`,
  * `Talent.SOUL_EATER`/`SOUL_SIPHON`), Sniper mark (`Hero.java` SNIPER case,
  * `Talent.SHARED_UPGRADES`), Freerunner momentum (`actors/buffs/Momentum.java`,
- * `Talent.EVASIVE_ARMOR`/`PROJECTILE_MOMENTUM`/`SPEEDY_STEALTH`), Monk energy
- * (`actors/buffs/MonkEnergy.java#gainEnergy`/`energyCap`,
- * `Talent.UNENCUMBERED_SPIRIT`), Battlemage staff charge
+ * `Talent.EVASIVE_ARMOR`/`PROJECTILE_MOMENTUM`/`SPEEDY_STEALTH`), Battlemage staff charge
  * (`items/weapon/melee/MagesStaff.java#proc`), Champion weapon-ability charge
  * (`items/weapon/melee/MeleeWeapon.java`, via `weaponAbilities.ts`).
  *
  * Deliberately absent (no port-side system to hang them on, recorded in the
- * matrix, not silently dropped): the five
- * Monk abilities (need `WndMonkAbilities` + targeting), the three Sniper bow
+ * matrix, not silently dropped): the three Sniper bow
  * specials (need bow augment + UI), Champion dual-wield/second weapon (no
  * `secondWep` model), Battlemage per-wand `onHit` effects (no staff imbue),
- * Warlock `NecromancersMinions` (no Wraith kind), Priest/Paladin everything
- * (no Cleric spell system).
+ * Warlock `NecromancersMinions` (no Wraith kind). The Gladiator's Combo and the
+ * Monk's energy live in `simulation/combo.ts` / `simulation/monkEnergy.ts`; the
+ * Cleric subclasses in `simulation/clericSpells.ts` (this header predates them).
  */
 
 /** `Berserk.damage()`: cap is `1 + 0.1667 x ENDLESS_RAGE ranks`. */

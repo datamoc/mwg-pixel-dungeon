@@ -82,22 +82,8 @@ export function bountyHunterDropBonus(prepLevel: number, rank: number): number {
 	return 0.02 * Math.pow(2, Math.min(Math.max(prepLevel, 1), 4) - 1) * rank;
 }
 
-export function unencumberedSpiritEvasion(subclass: string | null, rank: number): number {
-	return subclass === 'monk_sub' ? rank : 0;
-}
-
 export function lethalDefenseShield(subclass: string | null, rank: number): number {
 	return subclass === 'gladiator' ? rank : 0;
-}
-
-/** Invented substitute for real Java's `MONASTIC_VIGOR` (`MonkEnergy.java`, tag `v3.3.8`):
- * `energy/energyCap() >= 1.2 - 0.2*points`, a threshold on the Monk subclass's own separate
- * energy resource this port doesn't model at all. Absent that resource, this instead grants a
- * flat `rank` shield on the Cleric-shaped Holy Tome heal (`useSpecial`'s `'none'` branch) -
- * undocumented until the 2026-09-09 hero-progression audit; not rebuilt to the real mechanic
- * here since it needs the whole Monk energy resource built first. */
-export function monasticVigorShield(subclass: string | null, rank: number): number {
-	return subclass === 'monk_sub' ? rank : 0;
 }
 
 export function sharedUpgradeArmor(subclass: string | null, rank: number, armorLevel: number): number {

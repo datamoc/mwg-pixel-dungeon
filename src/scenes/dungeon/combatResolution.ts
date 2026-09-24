@@ -10,6 +10,7 @@ import { UNSTABLE_DELEGATES } from '../../items/itemAffixes';
 import { ringArcanaMultiplier, ringForceBonus, ringTenacityMultiplier } from '../../items/ringModifiers';
 import { HOLY_WARD_BLOCK, HOLY_WEAPON_BONUS, auraProcBonus, auraProtectedDamage, satiatedShieldAmount, searingLightBonus, shieldOfLightRange } from '../../simulation/clericSpells';
 import { capitalize, has, t } from '../../i18n/index';
+import { MONK_MEDITATE_DAMAGE_FACTOR } from '../../simulation/monkEnergy';
 import { assassinReachBonus, deathlessFuryTriggers, empoweredStrikeBonus, farsightMultiplier, shieldBatteryGain, weaponRechargingDamage } from '../../talentEffects';
 import { Terrain, type PaintLevel } from '../../spdLevelGen/paintLevel';
 import { runState } from '../../runState';
@@ -180,6 +181,13 @@ export const combatResolutionMethods = {
 			//(Java's `else return 0`) - GuidingLight's own guaranteed hit. Thrown hero
 			//copies ride it too: throws resolve through this same `attack()`.
 			|| (defender.buffs['illuminated'] !== undefined && this.clericIlluminatedHit(defender, attacker));
+		//`Char.hit()`/`Hero.defenseVerb()` (tag `v3.3.8`): the Monk ability's FocusBuff gives infinite evasion, and the
+		//first blow it meets is "parried" and consumes the buff.
+		if (defender === this.hero && this.hero.buffs['focus'] !== undefined && attacker !== this.hero) {
+			delete this.hero.buffs['focus'];
+			this.say(t('actors.mobs.monk.parried'), 'positive');
+			return false;
+		}
 		//Monk Focus: the first attack against a focused monk always misses and spends the
 		//focus (re-earned over ~6 of its own turns via combo in takeMonsterTurn). `Senior
 		//extends Monk` and shares this unchanged - previously excluded here too by the same
@@ -1226,7 +1234,6 @@ export const combatResolutionMethods = {
 		//Battlemage: staff melee feeds the wand (advance 2 per landed hit, simplified from
 		//the per-wand on-hit effects)
 		if (this.subclass() === 'battlemage') this.wandCharges.refund(2 + this.talentRank('mystical_charge'));
-		if (this.subclass() === 'monk_sub' && this.talentRank('combined_energy') > 0) this.tomeCharges.advance(this.talentRank('combined_energy'));
 		//`Weapon.proc()`'s `HolyWepBuff` clause (tag `v3.3.8`): a separate magical hit for
 		//`round(2 x Enchantment.genericProcChanceMultiplier())` - Arcana plus Berserk's
 		//catalyst term through the shared `genericProcMultiplier()` (Smite's +3 and the
@@ -1652,6 +1659,8 @@ export const combatResolutionMethods = {
 	/** Barrier absorbs incoming damage before HP, matching Buff.Barrier's core rule. */
 	absorbHeroDamage(this: DungeonScene, amount: number, magical = false, auraAlreadyApplied = false): number {
 		if (!auraAlreadyApplied) amount = this.auraProtectedDamage(this.hero, amount);
+		//`Hero.damage()` / `Char.attack()`: Meditate's `MeditateResistance` cuts every hit to a fifth while it runs.
+		if (amount > 0 && this.monk.resistTurns > 0) amount = Math.round(amount * MONK_MEDITATE_DAMAGE_FACTOR);
 		//`Hero.damage()`'s `DuelParticipant.addDamage(effectiveDamage)`: every hero hit
 		//that gets past this boundary feeds the duel ledger with its HP-plus-shield pool
 		//loss (Java's `preHP - postHP`, overkill included since the returned hit is

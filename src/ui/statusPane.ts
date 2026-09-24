@@ -102,6 +102,8 @@ const BUFF_ICON: Record<string, number> = {
 	wellFed: 43,
 	//DAZE = 70
 	daze: 70,
+	//MONK_ENERGY = 68
+	monkEnergy: 68,
 	//COMBO = 17
 	combo: 17,
 	//VERTIGO = 33

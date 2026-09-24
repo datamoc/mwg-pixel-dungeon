@@ -289,6 +289,8 @@ export const panelsSingleUseMethods = {
 		this.cleaveFreeTurns = (s as { cleaveFreeTurns?: number }).cleaveFreeTurns ?? 0;
 		this.guardTurns = (s as { guardTurns?: number }).guardTurns ?? 0;
 		this.comboClobberUsed = (s as { comboClobberUsed?: boolean }).comboClobberUsed ?? false;
+		this.monk.energy = (s as { monkEnergy?: number }).monkEnergy ?? 0;
+		this.monkEnsureBuff();
 		this.comboParryUsed = (s as { comboParryUsed?: boolean }).comboParryUsed ?? false;
 		this.comboInitialTime = (s as { comboInitialTime?: number }).comboInitialTime ?? 0;
 		this.swordDanceTurns = (s as { swordDanceTurns?: number }).swordDanceTurns ?? 0;
@@ -595,9 +597,9 @@ export const panelsSingleUseMethods = {
 			: buff === 'prismaticGuard' ? Math.floor(this.hero.prismaticGuardHp ?? 0)
 			: this.hero.buffs[buff as BuffId];
 		const info = buffInfo(buff as BuffId | 'hungry' | 'starving', turns,
-			buff === 'prismaticGuard' ? prismaticGuardMaxHp(this.progression.level) : undefined,
+			buff === 'prismaticGuard' ? prismaticGuardMaxHp(this.progression.level) : buff === 'monkEnergy' ? this.monkEnergyCap() : undefined,
 			buff === 'recallUsed' ? this.recallTrackedItemName() : undefined,
-			buff === 'combo' ? this.hero.combo : undefined);
+			buff === 'combo' ? this.hero.combo : buff === 'monkEnergy' ? this.monk.energy : undefined);
 		if (!info) return;
 		const window = showBuffInfoWindow(info);
 		this.buffInfoOpen = window;
@@ -951,7 +953,8 @@ export const panelsSingleUseMethods = {
 		this.say(t('items.tengusmask.used'), 'positive');
 		this.say(t('port.log.talent', { talent: t(`port.subclass.${option}`) }), 'highlight');
 		if (option === 'berserker') addBuff(this.hero, 'berserk');
-		if (option === 'monk_sub') addBuff(this.hero, 'focus');
+		//`MonkEnergy` starts empty and carries the status icon; the invented `focus` grant that stood here is gone.
+		if (option === 'monk_sub') this.monkEnsureBuff();
 		this.syncHeroFromStats();
 		this.refresh();
 		//`TengusMask.choose()`: `curUser.spend(Actor.TICK)` - wearing it costs a turn.

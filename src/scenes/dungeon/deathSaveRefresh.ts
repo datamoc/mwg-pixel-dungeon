@@ -294,6 +294,8 @@ export const deathSaveRefreshMethods = {
 			//loot, in every phase - Java's `hero.lvl <= maxLvl` and `lvl > maxLvl+2`
 			//gates both fail unconditionally at -2.
 			if (!isClone && creature.noExp !== true && this.progression.level <= def.maxLvl) this.grantExperience(def.exp);
+			//`Mob.rewardExp()` (tag `v3.3.8`): every enemy kill feeds the Monk's `MonkEnergy.gainEnergy`, whatever the XP.
+			if (!creature.isAlly) this.monkGainEnergy(creature);
 			if (this.subclass() === 'warlock' && this.talentRank('soul_eater') > 0) {
 				const heal = this.talentRank('soul_eater');
 				this.hero.hp = Math.min(this.hero.maxHp, this.hero.hp + heal);
@@ -1391,6 +1393,7 @@ export const deathSaveRefreshMethods = {
 			cleaveFreeTurns: this.cleaveFreeTurns,
 			guardTurns: this.guardTurns,
 			comboClobberUsed: this.comboClobberUsed,
+			monkEnergy: this.monk.energy,
 			comboParryUsed: this.comboParryUsed,
 			comboInitialTime: this.comboInitialTime,
 			swordDanceTurns: this.swordDanceTurns,

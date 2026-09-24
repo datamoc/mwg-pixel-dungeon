@@ -11,7 +11,7 @@ import { confirmDisintegrationWand, livingEarthZapRange, useDisintegrationWand, 
 import { ringElementsMultiplier, ringEnergyMultiplier, ringSharpshootingBonus } from '../../items/ringModifiers';
 import { has, t } from '../../i18n/index';
 import { onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../../settings';
-import { EMPOWERING_SCROLLS_BONUS, arcaneVisionDuration, canImproviseProjectile, enragedCatalystBonus, ironStomachReduction, lightReadingWandMult, monasticVigorShield, preservationChance, projectileMomentumBonus } from '../../talentEffects';
+import { EMPOWERING_SCROLLS_BONUS, arcaneVisionDuration, canImproviseProjectile, enragedCatalystBonus, ironStomachReduction, lightReadingWandMult, preservationChance, projectileMomentumBonus } from '../../talentEffects';
 import { directTomeCharge, findHolyTome } from '../../items/holyTome';
 import { tomeChargeCap, tomeTickRate } from '../../simulation/clericSpells';
 import { advanceWellFed, HUNGRY, STARVING } from '../../simulation/hunger';
@@ -357,7 +357,6 @@ export const turnLoopAimingMethods = {
 			}
 			const heal = Math.min(this.hero.maxHp - this.hero.hp, 5 + 2 * this.progression.level);
 			this.hero.hp += heal;
-			this.grantHeroShield(monasticVigorShield(this.subclass(), this.talentRank('monastic_vigor')), this.hero.maxHp);
 			this.say(t('port.log.tomeheal', { heal }), 'positive');
 			return true;
 		}

@@ -53,6 +53,7 @@ const BUFF_MESSAGE_KEY: Partial<Record<BuffId, string>> = {
 	daze: 'actors.buffs.daze',
 	vertigo: 'actors.buffs.vertigo',
 	combo: 'actors.buffs.combo',
+	monkEnergy: 'actors.buffs.monkenergy',
 	light: 'actors.buffs.light',
 	invulnerability: 'actors.buffs.ankhinvulnerability',
 	prismaticGuard: 'actors.buffs.prismaticguard',
@@ -121,6 +122,10 @@ export function buffInfo(id: BuffId | 'hungry' | 'starving', turns: number | und
 	if (!key) return null;
 	if (id === 'recallUsed') {
 		return { name: titleCase(t(`${key}.name`)), desc: t(`${key}.desc`, { 0: itemName ?? '?', 1: Math.max(0, turns ?? 0) }) };
+	}
+	if (id === 'monkEnergy') {
+		//`MonkEnergy.desc()`: `{0}` = the energy (whole part), `{1}` = the cap; the counts arrive as `comboCount` / `maxHp`.
+		return { name: titleCase(t(`${key}.name`)), desc: t(`${key}.desc`, { 0: Math.max(0, Math.trunc(comboCount ?? 0)), 1: Math.max(0, Math.trunc(maxHp ?? 0)) }) };
 	}
 	if (id === 'combo') {
 		//`Combo.desc()`: `{0}` = the hit count, `{1}` = the turns until it is lost.
