@@ -76,7 +76,9 @@ export const berserkRageMethods = {
 
 	/**
 	 * `Berserk.doAction()`: the ability key. Needs the rage at 100% (the action button only exists then) and the broken
-	 * seal on the worn armor, else "You need your broken seal to berserk!".
+	 * seal on the worn armor, else "You need your broken seal to berserk!". Java's exact gate is
+	 * `shield != null && shield.maxShield() > 0` - the seal buff attaches when sealed armor is equipped and never
+	 * reads 0 for any equipped tier - so `armorSealed` is the same refusal for a Warrior in every practical case.
 	 */
 	rageAction(this: DungeonScene): void {
 		if (this.rageState.mode !== 'normal' || this.rageState.power < 1) {
