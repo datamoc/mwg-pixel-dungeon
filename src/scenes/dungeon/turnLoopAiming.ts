@@ -142,6 +142,14 @@ export const turnLoopAimingMethods = {
 			this.corrosiveGas.seed(target.x, target.y, 50 + 10 * zapLevel);
 			this.corrosiveGasStrength = Math.max(this.corrosiveGasStrength, 2 + zapLevel);
 		}
+		//`WandOfFrost.onZap()` opens with `heap.freeze()` at the collision cell, occupant or not.
+		if (wandType === 'frost') this.freezeHeapAt(target.x, target.y);
+		if (wandType === 'frost' && !targetCreature) {
+			//`WandOfFrost.onZap()` clears Fire and EternalFire at a bare collision cell;
+			//the character branch below handles the same cell when it has an occupant.
+			this.fire.clear(target.x, target.y);
+			if (this.eternalFire.volumeAt(target.x, target.y) > 0) this.eternalFire.clear(target.x, target.y);
+		}
 		for (const victim of zapTargets) {
 			//WandOfLightning.onZap() skips characters sharing the caster's alignment,
 			//except for the caster itself, which takes half damage. The target is an
