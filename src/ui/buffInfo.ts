@@ -54,6 +54,7 @@ const BUFF_MESSAGE_KEY: Partial<Record<BuffId, string>> = {
 	vertigo: 'actors.buffs.vertigo',
 	combo: 'actors.buffs.combo',
 	monkEnergy: 'actors.buffs.monkenergy',
+	berserk: 'actors.buffs.berserk',
 	light: 'actors.buffs.light',
 	invulnerability: 'actors.buffs.ankhinvulnerability',
 	prismaticGuard: 'actors.buffs.prismaticguard',
@@ -116,12 +117,27 @@ function hungerInfo(state: 'hungry' | 'starving'): BuffInfo {
  * item (`%1$s`), which the scene maps back from its Java class. `undefined` prints
  * `?` - reachable only if the tracker lapsed without detaching.
  */
-export function buffInfo(id: BuffId | 'hungry' | 'starving', turns: number | undefined, maxHp?: number, itemName?: string, comboCount?: number): BuffInfo | null {
+/** What `Berserk.name()`/`desc()` read: the state, the rage, and the numbers its description quotes. */
+export interface RageInfo { mode: 'normal' | 'berserk' | 'recovering'; power: number; shielding: number; levelRecovery: number; turnRecovery: number; boost: number }
+
+export function buffInfo(id: BuffId | 'hungry' | 'starving', turns: number | undefined, maxHp?: number, itemName?: string, comboCount?: number, rage?: RageInfo): BuffInfo | null {
 	if (id === 'hungry' || id === 'starving') return hungerInfo(id);
 	const key = BUFF_MESSAGE_KEY[id];
 	if (!key) return null;
 	if (id === 'recallUsed') {
 		return { name: titleCase(t(`${key}.name`)), desc: t(`${key}.desc`, { 0: itemName ?? '?', 1: Math.max(0, turns ?? 0) }) };
+	}
+	if (id === 'berserk' && rage) {
+		//`Berserk.name()`/`desc()` by state: angered (rage %, bonus damage %, shield it would give), berserking (shield left),
+		//recovering (levels or turns still owed).
+		const state = rage.mode === 'normal' ? 'angered' : rage.mode === 'berserk' ? 'berserk' : 'recovering';
+		let desc: string;
+		if (rage.mode === 'normal') desc = t(`${key}.angered_desc`, { 0: Math.floor(rage.power * 100), 1: Math.floor(Math.min(1.5, 1 + rage.power / 2) * 10000) / 100 - 100, 2: rage.boost });
+		else if (rage.mode === 'berserk') desc = t(`${key}.berserk_desc`, { 0: rage.shielding });
+		else desc = `${t(`${key}.recovering_desc`)}
+
+${rage.levelRecovery > 0 ? t(`${key}.recovering_desc_levels`, { 0: rage.levelRecovery }) : t(`${key}.recovering_desc_turns`, { 0: rage.turnRecovery })}`;
+		return { name: titleCase(t(`${key}.${state}`)), desc };
 	}
 	if (id === 'monkEnergy') {
 		//`MonkEnergy.desc()`: `{0}` = the energy (whole part), `{1}` = the cap; the counts arrive as `comboCount` / `maxHp`.

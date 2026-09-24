@@ -81,7 +81,9 @@ export function verifyCombatRolls(require, check) {
 		assert.equal(rollDamage({ ...hero, hp: 10, buffs: { fury: 1 } }, foe, maxStub), 10);
 		assert.equal(rollDamage({ ...hero, hp: 11, buffs: { fury: 1 } }, foe, maxStub), 6);
 		assert.equal(rollDamage({ ...hero, buffs: { weakness: 1 } }, foe, maxStub), 4);
-		assert.equal(rollDamage({ ...hero, hp: 5, buffs: { berserk: 1 } }, foe, maxStub), 9);
+		//`Berserk.damageFactor()` reads the rage `power` (built from damage taken), not the missing-HP fraction it used to.
+		assert.equal(rollDamage({ ...hero, berserkPower: 0.75, buffs: { berserk: 1 } }, foe, maxStub), 9);
+		assert.equal(rollDamage({ ...hero, hp: 5, buffs: { berserk: 1 } }, foe, maxStub), rollDamage(hero, foe, maxStub), 'no power, no bonus, whatever the HP');
 		assert.equal(rollDamage({ ...hero, champion: 'blazing' }, foe, maxStub), 8);
 		assert.equal(rollDamage({ ...hero, champion: 'growing' }, foe, maxStub), 7);
 		assert.equal(rollDamage({ ...hero, isHero: false }, { ...foe, boss: true, buffs: { aggression: 1 } }, maxStub), 3);

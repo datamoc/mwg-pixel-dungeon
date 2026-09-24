@@ -11,7 +11,7 @@ import { confirmDisintegrationWand, livingEarthZapRange, useDisintegrationWand, 
 import { ringElementsMultiplier, ringEnergyMultiplier, ringSharpshootingBonus } from '../../items/ringModifiers';
 import { has, t } from '../../i18n/index';
 import { onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../../settings';
-import { EMPOWERING_SCROLLS_BONUS, arcaneVisionDuration, canImproviseProjectile, enragedCatalystBonus, ironStomachReduction, lightReadingWandMult, preservationChance, projectileMomentumBonus } from '../../talentEffects';
+import { EMPOWERING_SCROLLS_BONUS, arcaneVisionDuration, canImproviseProjectile, ironStomachReduction, lightReadingWandMult, preservationChance, projectileMomentumBonus } from '../../talentEffects';
 import { directTomeCharge, findHolyTome } from '../../items/holyTome';
 import { tomeChargeCap, tomeTickRate } from '../../simulation/clericSpells';
 import { advanceWellFed, HUNGRY, STARVING } from '../../simulation/hunger';
@@ -172,7 +172,7 @@ export const turnLoopAimingMethods = {
 						: Random.normalRange(...wandDamageRange('magicMissile', zapLevel));
 			const frostBlocked = wandType === 'frost' && victim.buffs['frost'] !== undefined;
 			let damage = Math.round(raw * lightningMultiplier)
-				+ (victim === target ? enragedCatalystBonus(this.subclass(), this.talentRank('enraged_catalyst'), this.hero.hp, this.hero.maxHp) + this.wandBonusDamage : 0);
+				+ (victim === target ? this.wandBonusDamage : 0);
 			if (wandType === 'lightning' && victim === this.hero) damage = Math.round(damage * 0.5);
 		//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`) resists the
 		//`WandOfLightning` class: `Char.damage()` halves with `Math.round` on
@@ -1427,6 +1427,7 @@ export const turnLoopAimingMethods = {
 				//`BrokenSeal.WarriorShield.act()` (tag `v3.3.8`): the cooldown runs down while regeneration is on, and a shield
 				//left up with no enemy in view (and no Combo) for five turns is dropped, refunding part of the cooldown. It does
 				//NOT regenerate - it activates on a hit (`absorbHeroDamage`). The old 1/30-per-turn regrowth stood here.
+				this.rageTurn();
 				if (this.armorSealed) {
 					const result = sealTick(this.sealState, {
 						regenOn: this.regenOn(), shielding: this.sealBarrier.total, comboActive: this.hero.buffs['combo'] !== undefined,

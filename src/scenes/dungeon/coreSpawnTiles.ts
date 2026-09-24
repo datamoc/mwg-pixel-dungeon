@@ -202,7 +202,8 @@ export const coreSpawnTilesMethods = {
 		this.itemPickerEntries = [];
 		this.itemPickerBody = undefined;
 		this.itemPickerOnPick = null;
-		this.deathlessFuryUsed = false;
+		this.rageState = { mode: 'normal', power: 0, powerLossBuffer: 0, levelRecovery: 0, turnRecovery: 0, zeroHp: false };
+		this.rageBarrier.clear();
 		this.stealthTalentTicks = 0;
 		this.cloakChargeProgress = 0;
 		this.cloakStealthTurnsToCost = 0;
@@ -446,6 +447,8 @@ export const coreSpawnTilesMethods = {
 		if (amount > 0) {
 			const currentLevelMaxExp = SPD_LEVEL_CURVE.experienceFor(this.progression.level + 1) - SPD_LEVEL_CURVE.experienceFor(this.progression.level);
 			if (currentLevelMaxExp > 0) {
+				//`Hero.earnExp()`: `Berserk.recover(percent)` pays a death-berserk's level debt.
+				this.rageOnExperience(amount / currentLevelMaxExp);
 				applyToolkitGainCharge({ bag: this.bag }, amount / currentLevelMaxExp, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true);
 				//`MasterThievesArmband.Thievery.gainCharge()` (tag `v3.3.8`): the same per-XP-grant
 				//hook as the toolkit call just above - see `applyArmbandGainCharge`'s own doc comment.

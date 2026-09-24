@@ -197,10 +197,9 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 	//attack several targets at once - Spectral Blades halves the damage of everything but its
 	//primary target - which is why this is a parameter rather than something read off the attacker.
 	dmg *= damageMultiplier;
-	if (attacker.buffs['berserk']) {
-		const power = 1 - attacker.hp / attacker.maxHp;
-		dmg *= Math.min(1.5, 1 + power / 2);
-	}
+	//`Berserk.damageFactor()` (`Char.attack`, tag `v3.3.8`): the rage `power` built from damage taken, not the missing HP
+	//fraction this used to read (the hero's `berserkPower` is kept in step by `scenes/dungeon/hero/berserkRage.ts`).
+	if (attacker.berserkPower) dmg *= Math.min(1.5, 1 + attacker.berserkPower / 2);
 	if (attacker.buffs['fury'] && attacker.hp <= attacker.maxHp * 0.5) dmg *= 1.5;
 	if (attacker.champion === 'blazing') dmg *= 1.25;
 	if (attacker.champion === 'projecting') dmg *= 1.25;

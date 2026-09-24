@@ -684,7 +684,8 @@ export interface SaveShape {
  	healingPercent?: number;
  	healingFlat?: number;
 	sungrassPos?: number;
-	deathlessFuryUsed?: boolean;
+	rageState?: { mode: 'normal' | 'berserk' | 'recovering'; power: number; powerLossBuffer: number; levelRecovery: number; turnRecovery: number; zeroHp: boolean };
+	rageBarrierState?: { layers: { amount: number; decayPerTick?: number }[] };
 	/** Timed Char buffs survive a save instead of silently clearing on reload. */
 	buffs?: [BuffId, number][];
 	/** `Preparation.turnsInvis`, persisted separately from the invisibility buff in Java's

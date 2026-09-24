@@ -120,6 +120,11 @@ export const weaponSpellsGearMethods = {
 	 * spend (`afterAbilityUsed`) instead of discounting it.
 	 */
 	useWeaponAbility(this: DungeonScene, skipMonk = false): void {
+		//The Berserker's ability is `Berserk.doAction()` (the action button).
+		if (this.subclass() === 'berserker') {
+			this.rageAction();
+			return;
+		}
 		//A Monk has two ability sets (`MonkEnergy`'s floating button and the weapon's own): the key asks which.
 		if (this.subclass() === 'monk_sub' && !skipMonk && !this.abilityAimTarget) {
 			showChoiceWindow(this.gameWindows, t('port.action.ability'), t('actors.buffs.monkenergy.desc', { 0: Math.trunc(this.monk.energy), 1: this.monkEnergyCap() }), [

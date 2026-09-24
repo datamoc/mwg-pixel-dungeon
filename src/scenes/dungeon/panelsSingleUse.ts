@@ -34,6 +34,7 @@ import { runState } from '../../runState';
 import { isChallengeEnabled } from '../../challenges';
 import { CLASS_TALENTS, TALENT_TIERS, armorTalentDefinitions, hasClassTier3Row, subclassTalentDefinitions, talentDescKey, talentTitleKey, type TalentDefinition } from '../../talents';
 import { recallTrackerDuration } from '../../simulation/clericSpells';
+import { berserkShieldBoost } from '../../simulation/subclassPassives';
 import { ARMOR_CHARGE_START, armorAbilitiesFor, armorAbilityDef, armorAbilityKey, isKnownArmorAbility } from '../../armorAbilities';
 import { prismaticGuardMaxHp } from '../../simulation/prismatic';
 import { markRingTypesKnown } from '../../simulation/ringKnow';
@@ -163,7 +164,8 @@ export const panelsSingleUseMethods = {
 		this.healingPercent = s.healingPercent ?? (this.healingLeft > 0 ? 0.25 : 0);
 		this.healingFlat = s.healingFlat ?? 0;
 		this.sungrassPos = s.sungrassPos ?? -1;
-		this.deathlessFuryUsed = s.deathlessFuryUsed ?? false;
+		this.rageState = { mode: 'normal', power: 0, powerLossBuffer: 0, levelRecovery: 0, turnRecovery: 0, zeroHp: false, ...(s.rageState ?? {}) };
+		this.rageBarrier = s.rageBarrierState ? Actors.Barrier.fromJSON(s.rageBarrierState) : new Actors.Barrier();
 		this.weaponLevel = s.weaponLevel;
 		this.weaponTier = s.weaponTier ?? 1;
 		this.armorLevel = s.armorLevel;
@@ -599,7 +601,8 @@ export const panelsSingleUseMethods = {
 		const info = buffInfo(buff as BuffId | 'hungry' | 'starving', turns,
 			buff === 'prismaticGuard' ? prismaticGuardMaxHp(this.progression.level) : buff === 'monkEnergy' ? this.monkEnergyCap() : undefined,
 			buff === 'recallUsed' ? this.recallTrackedItemName() : undefined,
-			buff === 'combo' ? this.hero.combo : buff === 'monkEnergy' ? this.monk.energy : undefined);
+			buff === 'combo' ? this.hero.combo : buff === 'monkEnergy' ? this.monk.energy : undefined,
+			buff === 'berserk' ? { ...this.rageState, shielding: this.rageBarrier.total, boost: berserkShieldBoost(this.hero.hp, this.hero.maxHp, Math.max(0, this.degradedLevel(this.armorLevel)), this.rageState.power) } : undefined);
 		if (!info) return;
 		const window = showBuffInfoWindow(info);
 		this.buffInfoOpen = window;
@@ -952,7 +955,7 @@ export const panelsSingleUseMethods = {
 		this.bag.remove('tengusMask', 1);
 		this.say(t('items.tengusmask.used'), 'positive');
 		this.say(t('port.log.talent', { talent: t(`port.subclass.${option}`) }), 'highlight');
-		if (option === 'berserker') addBuff(this.hero, 'berserk');
+		//`Berserk` attaches on the first blow taken (`Hero.defenseProc`); the always-on buff that stood here is gone.
 		//`MonkEnergy` starts empty and carries the status icon; the invented `focus` grant that stood here is gone.
 		if (option === 'monk_sub') this.monkEnsureBuff();
 		this.syncHeroFromStats();

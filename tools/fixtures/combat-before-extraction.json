@@ -2250,6 +2250,7 @@
         "y": 0,
         "hp": 5,
         "maxHp": 20,
+        "berserkPower": 0.75,
         "accuracy": 10,
         "evasion": 5,
         "damage": [
@@ -2308,6 +2309,7 @@
         "y": 0,
         "hp": 5,
         "maxHp": 20,
+        "berserkPower": 0.75,
         "accuracy": 10,
         "evasion": 5,
         "damage": [
@@ -2366,6 +2368,7 @@
         "y": 0,
         "hp": 5,
         "maxHp": 20,
+        "berserkPower": 0.75,
         "accuracy": 10,
         "evasion": 5,
         "damage": [
@@ -2424,6 +2427,7 @@
         "y": 0,
         "hp": 5,
         "maxHp": 20,
+        "berserkPower": 0.75,
         "accuracy": 10,
         "evasion": 5,
         "damage": [

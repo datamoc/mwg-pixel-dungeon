@@ -96,13 +96,8 @@ export function projectileMomentumBonus(subclass: string | null, rank: number, r
 	return subclass === 'freerunner' && ready ? rank : 0;
 }
 
-export function enragedCatalystBonus(subclass: string | null, rank: number, hp: number, maxHp: number): number {
-	return subclass === 'berserker' && hp <= maxHp * 0.5 ? rank : 0;
-}
-
-export function deathlessFuryTriggers(subclass: string | null, rank: number, used: boolean, damage: number, hp: number): boolean {
-	return !used && subclass === 'berserker' && rank > 0 && damage >= hp;
-}
+//`enragedCatalystBonus` (a flat wand-damage bump at half HP) and `deathlessFuryTriggers` (a once-per-run survive-at-1-HP) were
+//invented stand-ins; the real Enraged Catalyst / Deathless Fury live in `simulation/berserkRage.ts`.
 
 /** `Wand.wandProc()`'s Arcane Vision line: a `CharAwareness`-class mark lasting
  * `5 + 5*points` turns on the zapped target - a per-target reveal, not a secret radius. */

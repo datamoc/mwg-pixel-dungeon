@@ -119,7 +119,7 @@ import { StatusPane } from '../ui/statusPane';
 import { DungeonHud } from '../ui/dungeonHud';
 import { SpdAudio } from '../audio';
 import { onBrightnessChanged, onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../settings';
-import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, deathlessFuryTriggers, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalHasteDuration, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, soulSiphonCharge, weaponRechargingDamage } from '../talentEffects';
+import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalHasteDuration, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, soulSiphonCharge, weaponRechargingDamage } from '../talentEffects';
 import pixelFontUrl from '../assets/pixel_font.ttf';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth, SpdRandom } from '../spdRng';
 import {
@@ -326,7 +326,7 @@ import { clericSpellFlowsMethods } from './dungeon/hero/clericSpellFlows';
 import { armorAbilityUseMethods } from './dungeon/hero/armorAbilityUse';
 import { skeletonKeyMethods } from './dungeon/hero/skeletonKeyScene';
 import { dropThrowMethods } from './dungeon/hero/dropThrowScene';
-import { comboMovesMethods } from './dungeon/hero/comboMoves'; import { monkAbilitiesMethods } from './dungeon/hero/monkAbilities';
+import { comboMovesMethods } from './dungeon/hero/comboMoves'; import { monkAbilitiesMethods } from './dungeon/hero/monkAbilities'; import { berserkRageMethods } from './dungeon/hero/berserkRage';
 import type { KeyReplacementTracker } from '../items/skeletonKey';
 import { cursedWandCastMethods } from './dungeon/hero/cursedWandCast';
 import { tippedDartEffectsMethods } from './dungeon/hero/tippedDartEffects';
@@ -960,7 +960,7 @@ export class DungeonScene extends Scene2D {
 	healingPercent = 0;
 	healingFlat = 0;
 	sungrassPos = -1;
-	deathlessFuryUsed = false;
+	rageState = { mode: 'normal' as 'normal' | 'berserk' | 'recovering', power: 0, powerLossBuffer: 0, levelRecovery: 0, turnRecovery: 0, zeroHp: false }; rageBarrier = new Actors.Barrier(); //`Berserk` (Berserker, `hero/berserkRage.ts`): the rage state machine (+ the death-berserk's 0-HP stand-in) and its extra shield pool
 	freeTurnNext = false;
 	followupTarget: Creature | null = null;
 	followupDamage = 0;
@@ -2536,5 +2536,5 @@ export class DungeonScene extends Scene2D {
 
 /** The method groups in `./dungeon/` are typed with `this: DungeonScene` and merged onto the prototype here. */
 type Mixed<T> = { [K in keyof T]: OmitThisParameter<T[K]> };
-export interface DungeonScene extends Mixed<typeof coreSpawnTilesMethods>, Mixed<typeof npcShopBlacksmithMethods>, Mixed<typeof environmentFireTrapsMethods>, Mixed<typeof turnLoopAimingMethods>, Mixed<typeof actorTurnsHazardsMethods>, Mixed<typeof monsterAiMethods>, Mixed<typeof bossLogicMethods>, Mixed<typeof gnollMineMethods>, Mixed<typeof crystalMineMethods>, Mixed<typeof combatResolutionMethods>, Mixed<typeof deathSaveRefreshMethods>, Mixed<typeof panelsSingleUseMethods>, Mixed<typeof inventoryQuickslotMethods>, Mixed<typeof clericSpellFlowsMethods>, Mixed<typeof armorAbilityUseMethods>, Mixed<typeof skeletonKeyMethods>, Mixed<typeof dropThrowMethods>, Mixed<typeof cursedWandCastMethods>, Mixed<typeof tippedDartEffectsMethods>, Mixed<typeof weaponSpellsGearMethods>, Mixed<typeof comboMovesMethods>, Mixed<typeof monkAbilitiesMethods> {}
-Object.assign(DungeonScene.prototype, coreSpawnTilesMethods, npcShopBlacksmithMethods, environmentFireTrapsMethods, turnLoopAimingMethods, actorTurnsHazardsMethods, monsterAiMethods, bossLogicMethods, gnollMineMethods, crystalMineMethods, combatResolutionMethods, deathSaveRefreshMethods, panelsSingleUseMethods, inventoryQuickslotMethods, clericSpellFlowsMethods, armorAbilityUseMethods, skeletonKeyMethods, dropThrowMethods, cursedWandCastMethods, tippedDartEffectsMethods, weaponSpellsGearMethods, comboMovesMethods, monkAbilitiesMethods);
+export interface DungeonScene extends Mixed<typeof coreSpawnTilesMethods>, Mixed<typeof npcShopBlacksmithMethods>, Mixed<typeof environmentFireTrapsMethods>, Mixed<typeof turnLoopAimingMethods>, Mixed<typeof actorTurnsHazardsMethods>, Mixed<typeof monsterAiMethods>, Mixed<typeof bossLogicMethods>, Mixed<typeof gnollMineMethods>, Mixed<typeof crystalMineMethods>, Mixed<typeof combatResolutionMethods>, Mixed<typeof deathSaveRefreshMethods>, Mixed<typeof panelsSingleUseMethods>, Mixed<typeof inventoryQuickslotMethods>, Mixed<typeof clericSpellFlowsMethods>, Mixed<typeof armorAbilityUseMethods>, Mixed<typeof skeletonKeyMethods>, Mixed<typeof dropThrowMethods>, Mixed<typeof cursedWandCastMethods>, Mixed<typeof tippedDartEffectsMethods>, Mixed<typeof weaponSpellsGearMethods>, Mixed<typeof comboMovesMethods>, Mixed<typeof monkAbilitiesMethods>, Mixed<typeof berserkRageMethods> {}
+Object.assign(DungeonScene.prototype, coreSpawnTilesMethods, npcShopBlacksmithMethods, environmentFireTrapsMethods, turnLoopAimingMethods, actorTurnsHazardsMethods, monsterAiMethods, bossLogicMethods, gnollMineMethods, crystalMineMethods, combatResolutionMethods, deathSaveRefreshMethods, panelsSingleUseMethods, inventoryQuickslotMethods, clericSpellFlowsMethods, armorAbilityUseMethods, skeletonKeyMethods, dropThrowMethods, cursedWandCastMethods, tippedDartEffectsMethods, weaponSpellsGearMethods, comboMovesMethods, monkAbilitiesMethods, berserkRageMethods);

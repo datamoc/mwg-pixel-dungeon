@@ -12,7 +12,8 @@ import { HOLY_WARD_BLOCK, HOLY_WEAPON_BONUS, auraProcBonus, auraProtectedDamage,
 import { capitalize, has, t } from '../../i18n/index';
 import { MONK_MEDITATE_DAMAGE_FACTOR } from '../../simulation/monkEnergy';
 import { sealActivate, sealMaxShield, sealShouldActivate } from '../../simulation/sealShield';
-import { assassinReachBonus, deathlessFuryTriggers, empoweredStrikeBonus, farsightMultiplier, shieldBatteryGain, weaponRechargingDamage } from '../../talentEffects';
+import { rageEnchantFactor } from '../../simulation/berserkRage';
+import { assassinReachBonus, empoweredStrikeBonus, farsightMultiplier, shieldBatteryGain, weaponRechargingDamage } from '../../talentEffects';
 import { Terrain, type PaintLevel } from '../../spdLevelGen/paintLevel';
 import { runState } from '../../runState';
 import { isChallengeEnabled } from '../../challenges';
@@ -924,6 +925,8 @@ export const combatResolutionMethods = {
 		if (attacker.isHero) this.heroOnHit(attacker, defender, damage);
 		else {
 			this.mobOnHit(attacker, defender, damage);
+			//`Hero.defenseProc()`: a blow that lands on a Berserker builds rage.
+			if (defender === this.hero) this.rageOnDamage(damage);
 			// ShockElemental.meleeProc (Elemental.java, tag v3.3.8) calls
 			// Shocking.arc after the primary hit, then `ch.damage(round(dmg*0.4))`
 			// per arc hit - `Char.damage` never rolls armor, so the arc pierces.
@@ -1135,10 +1138,8 @@ export const combatResolutionMethods = {
 
 	genericProcMultiplier(this: DungeonScene): number {
 		let multi = ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
-		if (this.hero.buffs['berserk'] !== undefined) {
-			const missing = this.hero.maxHp > 0 ? 1 - this.hero.hp / this.hero.maxHp : 0;
-			multi += Math.min(1, missing) * 0.15 * this.talentRank('enraged_catalyst');
-		}
+		//`Berserk.enchantFactor()` (`Weapon.java` 545): Enraged Catalyst adds `min(1, power) x 15% x rank`.
+		if (this.hero.buffs['berserk'] !== undefined) multi = rageEnchantFactor(multi, this.rageState.power, this.talentRank('enraged_catalyst'));
 		return multi;
 	},
 
@@ -1774,14 +1775,16 @@ export const combatResolutionMethods = {
 		const blockedBlocking = this.blockingBarrier.absorb(Math.max(0, afterLivingEarth - blockedSeal));
 		const blockedAscended = this.ascendedBarrier.absorb(Math.max(0, afterLivingEarth - blockedSeal - blockedBlocking));
 		const blockedBase = this.heroBarrier.absorb(Math.max(0, afterLivingEarth - blockedSeal - blockedBlocking - blockedAscended));
-		const blocked = livingEarthBlocked + blockedSeal + blockedBlocking + blockedAscended + blockedBase;
+		//`Berserk`'s shield has priority -1: every other shield is consumed first.
+		const blockedRage = this.rageBarrier.absorb(Math.max(0, afterLivingEarth - blockedSeal - blockedBlocking - blockedAscended - blockedBase));
+		const blocked = livingEarthBlocked + blockedSeal + blockedBlocking + blockedAscended + blockedBase + blockedRage;
 		this.wandCharges.refund(shieldBatteryGain(blocked, this.talentRank('shield_battery')));
 		const reduced = Math.max(0, viscosityDamage - blocked);
-		if (deathlessFuryTriggers(this.subclass(), this.talentRank('deathless_fury'), this.deathlessFuryUsed, reduced, this.hero.hp)) {
-			this.deathlessFuryUsed = true;
+		//`Hero.isAlive()`/`Berserk.berserking()`: a fatal blow at 100% rage with Deathless Fury starts the berserk at 0 HP instead
+		//of killing (the hero keeps 1 HP here, `rageState.zeroHp` marking Java's real 0; the berserk's end is where they die).
+		if (reduced >= this.hero.hp && this.rageSurvivesDeath()) {
 			recordDuelDamage(hpBefore - 1);
 			this.hero.hp = 1;
-			addBuff(this.hero, 'berserk');
 			return 0;
 		}
 		recordDuelDamage(reduced);
@@ -1792,7 +1795,7 @@ export const combatResolutionMethods = {
 	 * Earthroot's `level`, the Living Earth rock amount) - the `shielding()` half of the
 	 * duel ledger's pool-loss snapshot. */
 	heroShieldPoolTotal(this: DungeonScene): number {
-		return this.heroBarrier.total + this.sealBarrier.total + this.blockingBarrier.total + this.ascendedBarrier.total
+		return this.heroBarrier.total + this.sealBarrier.total + this.blockingBarrier.total + this.ascendedBarrier.total + this.rageBarrier.total
 			+ (this.earthrootArmor?.level ?? 0) + this.livingEarthArmor;
 	},
 
