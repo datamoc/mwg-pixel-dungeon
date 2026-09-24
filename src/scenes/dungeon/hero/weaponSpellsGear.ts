@@ -802,7 +802,7 @@ export const weaponSpellsGearMethods = {
 		return {
 			...scene.targetedSpellBase(),
 			groundItemAt: (x, y) => scene.groundItemAt(x, y),
-			grabGroundItem: (x, y) => { scene.pickupGroundItemAt(x, y); },
+			grabGroundItem: (x, y) => { scene.pickupGroundItemAt(x, y, true); },
 		};
 	},
 

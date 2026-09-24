@@ -1560,14 +1560,14 @@ export const npcShopBlacksmithMethods = {
 	 * Stepping onto a heap collects it. Java's `Hero.actPickUp` takes the top item per action and leaves
 	 * the rest under the hero for another pick-up; this port has no separate pick-up action, so it keeps
 	 * collecting while the hero stands on the cell and each take succeeds (an entry that stays - a full
-	 * bag, a declined purchase - ends the run). Grabbing from a distance (`TelekineticGrab`) takes only the top.
+	 * bag, a declined purchase - ends the run). `TelekineticGrab` passes `remote` and collects the whole heap from a distance the same way (`while (!h.isEmpty())`, stopping at the first item that will not fit).
 	 */
-	pickupGroundItemAt(this: DungeonScene, x: number, y: number): void {
+	pickupGroundItemAt(this: DungeonScene, x: number, y: number, remote = false): void {
 		for (let guard = 0; guard < 64; guard++) {
 			const top = this.groundItemAt(x, y);
 			if (!top) return;
 			this.pickupTopOfHeap(x, y);
-			if (this.groundItemAt(x, y) === top || this.hero.x !== x || this.hero.y !== y) return;
+			if (this.groundItemAt(x, y) === top || (!remote && (this.hero.x !== x || this.hero.y !== y))) return;
 		}
 	},
 
