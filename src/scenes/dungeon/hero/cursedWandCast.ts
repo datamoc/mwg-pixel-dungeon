@@ -1,6 +1,6 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { Random, Roguelike } from 'mwg';
-import { BUFF_DURATION, addBuff, reigniteBuff, type Creature, type Step } from '../../../combat';
+import { BUFF_DURATION, addBuff, buffBlocked, reigniteBuff, type Creature, type Step } from '../../../combat';
 import { CURSED_PLANT_KINDS, CURSED_RANDOM_GAS, pickBurnAndFreeze, pickConeOfColorsStatus, pickCursedCommonEffect, pickCursedRareEffect, pickCursedTier, pickCursedUncommonEffect } from '../../../simulation/cursedWand';
 import { activateGeyserTrap as activateGeyserTrapFlow } from '../../../simulation/geyserTrap';
 import { applyBlastDamage } from '../../../items/bombEffects';
@@ -306,7 +306,9 @@ export const cursedWandCastMethods = {
 			} else if (status === 'frost') {
 				if (dealDamage()) addBuff(victim, 'frost');
 			} else if (status === 'poison') {
-				victim.buffs['poison'] = Math.max(victim.buffs['poison'] ?? 0, 3 + Math.floor(this.depth / 2));
+				//`Char.Property.INORGANIC` rejects Poison (`Char.java`, tag `v3.3.8`).
+				//This direct `Poison.set` equivalent must use the shared immunity gate too.
+				if (!buffBlocked(victim, 'poison')) victim.buffs['poison'] = Math.max(victim.buffs['poison'] ?? 0, 3 + Math.floor(this.depth / 2));
 				dealDamage();
 			} else if (status === 'ooze') {
 				addBuff(victim, 'ooze');

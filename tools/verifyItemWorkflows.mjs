@@ -810,6 +810,8 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 		const aiming = readFileSync(join(root, 'src/scenes/dungeon/turnLoopAiming.ts'), 'utf8');
 		assert.match(aiming, /wandType === 'corruption'[\s\S]*?victim\.allyKind !== 'lightAlly'/);
 		assert.match(aiming, /This port has no Doom buff yet; preserve[\s\S]*?LightAlly identity/);
+		const cursedWand = readFileSync(join(root, 'src/scenes/dungeon/hero/cursedWandCast.ts'), 'utf8');
+		assert.match(cursedWand, /status === 'poison'[\s\S]*?if \(!buffBlocked\(victim, 'poison'\)\)/);
 	}
 
 	/** What `bag.add` does to a stack carrying this identity - the *only* merge decision the port
