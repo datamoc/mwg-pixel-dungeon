@@ -131,7 +131,7 @@ export function useItemById(scene: ItemActionContext, id: string, instanceId?: s
 		// `Food.execute(AC_EAT)` covers every Food subclass in Java, including the alchemy
 		// outputs StewedMeat and MeatPie; this port resolves their shared hunger transaction
 		// through `eatFood()` rather than maintaining one action branch per food class.
-		if (id === 'food' || id === 'smallRation' || id === 'berry' || id === 'supplyRation' || id === 'phantomMeat' || id === 'meat' || id === 'chargrilledMeat' || id === 'stewedMeat' || id === 'meatPie' || id === 'pasty') scene.onAction('eat');
+		if (id === 'food' || id === 'smallRation' || id === 'berry' || id === 'supplyRation' || id === 'phantomMeat' || id === 'meat' || id === 'chargrilledMeat' || id === 'frozenCarpaccio' || id === 'stewedMeat' || id === 'meatPie' || id === 'pasty') scene.onAction('eat');
 		else if (id === 'waterskin' || id.startsWith('potion')) scene.onAction('quaff');
 		else if (id.startsWith('scroll')) scene.onAction(id === 'scrollUpgrade' ? 'upgrade' : 'read');
 		else if (id.startsWith('ring_')) scene.equipRing(id, instanceId);

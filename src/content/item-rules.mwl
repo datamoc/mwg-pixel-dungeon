@@ -142,6 +142,7 @@
           { tag: "row", item: "phantomMeat", actionKey: "items.food.food.ac_eat", capitalize: true },
           { tag: "row", item: "meat", actionKey: "items.food.food.ac_eat", capitalize: true },
           { tag: "row", item: "chargrilledMeat", actionKey: "items.food.food.ac_eat", capitalize: true },
+          { tag: "row", item: "frozenCarpaccio", actionKey: "items.food.food.ac_eat", capitalize: true },
           { tag: "row", item: "waterskin", actionKey: "items.waterskin.ac_drink", capitalize: true },
           { tag: "row", item: "seed", actionKey: "plants.plant$seed.ac_plant", capitalize: true },
           { tag: "row", item: "pickaxe", actionKey: "port.ui.pickaxemine", capitalize: true },
@@ -258,6 +259,7 @@
           { tag: "row", itemId: "brokenSeal", groundKind: "brokenSeal" },
           { tag: "row", itemId: "honeypot", groundKind: "honeypot" },
           { tag: "row", itemId: "chargrilledMeat", groundKind: "meat" },
+          { tag: "row", itemId: "frozenCarpaccio", groundKind: "meat" },
           { tag: "row", itemId: "alchemize", groundKind: "alchemize" },
           { tag: "row", itemId: "bag", groundKind: "bag" },
           { tag: "row", itemId: "sandBag", groundKind: "sandBag" },
@@ -412,6 +414,8 @@
           { tag: "row", item: "phantomMeat", frame: 445 },
           { tag: "row", item: "meat", frame: 432 },
           { tag: "row", item: "chargrilledMeat", frame: 432 },
+          //`ItemSpriteSheet.CARPACCIO` (`FOOD+4`, `FOOD = xy(1, 28)` = 432 with the 1-indexed `xy`).
+          { tag: "row", item: "frozenCarpaccio", frame: 436 },
           { tag: "row", item: "seed", frame: 58 },
           { tag: "row", item: "waterskin", frame: 480 },
           // `ItemSpriteSheet.BAGS = xy(1,31)` (flat 497): BACKPACK+1 through HOLSTER+5 -
@@ -488,6 +492,8 @@
           { tag: "row", item: "blandfruit", hunger: 450, heal: 0 },
           { tag: "row", item: "meat", hunger: 150, heal: 0 },
           { tag: "row", item: "chargrilledMeat", hunger: 150, heal: 0 },
+          //`FrozenCarpaccio.energy = Hunger.HUNGRY/2` (150 of the 300 HUNGRY threshold), plus its random `effect()`.
+          { tag: "row", item: "frozenCarpaccio", hunger: 150, heal: 0 },
           { tag: "row", item: "stewedMeat", hunger: 150, heal: 0 },
           { tag: "row", item: "meatPie", hunger: 900, heal: 0 },
           { tag: "row", item: "pasty", hunger: 450, heal: 0 },
@@ -862,6 +868,7 @@
           { tag: "row", item: "phantomMeat", descriptionKey: "items.food.phantommeat.desc" },
           { tag: "row", item: "meat", descriptionKey: "items.food.mysterymeat.desc" },
           { tag: "row", item: "chargrilledMeat", descriptionKey: "items.food.chargrilledmeat.desc" },
+          { tag: "row", item: "frozenCarpaccio", descriptionKey: "items.food.frozencarpaccio.desc" },
           { tag: "row", item: "stewedMeat", descriptionKey: "items.food.stewedmeat.desc" },
           { tag: "row", item: "meatPie", descriptionKey: "items.food.meatpie.desc" },
           { tag: "row", item: "bomb", descriptionKey: "items.bombs.bomb.desc" },

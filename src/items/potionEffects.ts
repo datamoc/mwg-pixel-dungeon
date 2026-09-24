@@ -25,6 +25,8 @@ export interface PotionEffectsContext {
 	readonly seedToxicGas: (x: number, y: number, volume: number) => void;
 	readonly seedParalyticGas: (x: number, y: number, volume: number) => void;
 	readonly seedSmoke: (x: number, y: number, volume: number) => void;
+	/** `Freezing.freeze(cell)`'s `heap.freeze()` at one cell. */
+	readonly freezeHeapAt: (x: number, y: number) => void;
 	readonly seedConfusionGas: (x: number, y: number, volume: number) => void;
 	/** Clears every harmful blob (`BlobImmunity.immunities()`) at one cell, `PotionOfPurity.shatter`'s `blob.clear(i)`. */
 	readonly clearHarmfulBlobs: (x: number, y: number) => void;
@@ -237,7 +239,7 @@ export function shatterPotionAt(scene: PotionEffectsContext, id: string, cx: num
 				if (scene.eternalFireVolumeAt(x, y) >= 1) touchesFire = true;
 				//`Freezing.evolve()` clears ordinary Fire at every affected cell; its seeds cover NEIGHBOURS9
 				//only, so the clear runs at Chebyshev 1 even though the loop scans the MWL radius.
-				if (scene.level.inside(x, y) && Math.max(Math.abs(dx), Math.abs(dy)) <= 1) scene.clearFire(x, y);
+				if (scene.level.inside(x, y) && Math.max(Math.abs(dx), Math.abs(dy)) <= 1) { scene.clearFire(x, y); scene.freezeHeapAt(x, y); }
 			}
 			if (touchesFire) {
 				scene.clearEternalFire();

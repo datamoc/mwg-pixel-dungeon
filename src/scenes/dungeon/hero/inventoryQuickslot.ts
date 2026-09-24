@@ -81,6 +81,7 @@ export const inventoryQuickslotMethods = {
 			seedParalyticGas: (x: number, y: number, volume: number) => scene.paralyticGas.seed(x, y, volume),
 			seedSmoke: (x: number, y: number, volume: number) => scene.smokeScreen.seed(x, y, volume),
 			seedConfusionGas: (x: number, y: number, volume: number) => scene.confusionGas.seed(x, y, volume),
+			freezeHeapAt: (x: number, y: number) => scene.freezeHeapAt(x, y),
 			//`BlobImmunity.immunities()`: every harmful blob the port models (the persistent eternal-fire wall is cleared by frost only).
 			clearHarmfulBlobs: (x: number, y: number) => {
 				for (const blob of [scene.fire, scene.plantFreeze, scene.toxicGas, scene.paralyticGas, scene.stenchGas, scene.corrosiveGas, scene.confusionGas, scene.web, scene.electricity, scene.smokeScreen, scene.inferno, scene.blizzard]) blob.clear(x, y);

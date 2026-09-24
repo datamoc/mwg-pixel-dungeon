@@ -47,6 +47,8 @@ export interface EnvironmentalBlobsContext {
 	/** One `Freezing.freeze(cell)` step (the shared chill-then-Frost primitive); blizzard
 	 * calls it twice per cell, like Java. Optional for the same reason. */
 	applyChill?: (target: Creature) => void;
+	/** `Freezing.freeze(cell)`'s `heap.freeze()`: potions in the heap shatter, MysteryMeat becomes FrozenCarpaccio. */
+	freezeHeapCell?: (x: number, y: number) => void;
 	/** Per-cell blob clearing for the inferno/blizzard mutual annihilation (and their
 	 * clearing of `Freezing`/`plantFreeze` cells). Optional for the same reason. */
 	clearCell?: (blob: EnvironmentalBlob, x: number, y: number) => void;
@@ -112,6 +114,7 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 		}
 		const target = context.creatureAt(cell.x, cell.y);
 		if (target && !context.isBlobImmune?.(target)) { context.applyChill?.(target); context.applyChill?.(target); }
+		context.freezeHeapCell?.(cell.x, cell.y);
 	}
 	for (const cell of context.cellsAbove('plantGas', 1)) {
 		const target = context.creatureAt(cell.x, cell.y);
@@ -124,6 +127,7 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 		context.clearFireCell?.(cell.x, cell.y);
 		const target = context.creatureAt(cell.x, cell.y);
 		if (target && !context.isBlobImmune?.(target)) context.applyChill?.(target);
+		context.freezeHeapCell?.(cell.x, cell.y);
 	}
 	for (const cell of context.cellsAbove('toxicGas', 0.0001)) {
 		const target = context.creatureAt(cell.x, cell.y);

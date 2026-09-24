@@ -1086,6 +1086,7 @@ export const environmentFireTrapsMethods = {
 			//`Elemental.add()`'s hate-listed chill likewise backslashes instead of
 			//attaching (tag `v3.3.8`) - the shared helper refuses, damages, and presents.
 			applyChill: (target) => { if (applyElementalBacklash(target, 'chill') === 0 && !target.isNPC) target.buffs = applyChillFreeze(target.buffs).buffs; },
+			freezeHeapCell: (x, y) => this.freezeHeapAt(x, y),
 			clearCell: (blob, x, y) => (this[blob] as Blob).clear(x, y),
 			clearFireCell: (x, y) => this.fire.clear(x, y),
 			fireAmountAt: (x, y) => this.fire.volumeAt(x, y),

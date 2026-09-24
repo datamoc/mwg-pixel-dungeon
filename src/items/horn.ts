@@ -20,7 +20,7 @@ export type HornItem = {
 };
 
 /** The foods the horn accepts, as `storeFoodInHorn` lists them. */
-const HORN_FOOD_IDS = ['food', 'smallRation', 'berry', 'supplyRation', 'phantomMeat', 'meat', 'chargrilledMeat', 'stewedMeat', 'meatPie', 'pasty'];
+const HORN_FOOD_IDS = ['food', 'smallRation', 'berry', 'supplyRation', 'phantomMeat', 'meat', 'chargrilledMeat', 'frozenCarpaccio', 'stewedMeat', 'meatPie', 'pasty'];
 
 /** `HornOfPlenty`'s charge cap: `chargeCapBase + floor(level/2)`. */
 export function hornChargeCap(horn: { level?: number }): number {

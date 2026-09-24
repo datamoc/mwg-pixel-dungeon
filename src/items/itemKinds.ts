@@ -195,6 +195,7 @@ export function sourceInventoryItem(id: string, sourceClass: string | undefined,
 	if (authoredSpecial) return { id: authoredSpecial.itemId, quantity: 1, identified: authoredSpecial.identified, ...(authoredSpecial.cursed ? { cursed: true } : {}), sourceClass: authoredSpecial.sourceClass };
 	const consumableAlias = MWL_CONSUMABLE_CLASS_TO_ID.get(concrete);
 	if (consumableAlias) return { id: consumableAlias, quantity: 1, identified: false, sourceClass: concrete };
+	if (concrete === 'FrozenCarpaccio' || lower === 'frozencarpaccio') return { id: 'frozenCarpaccio', quantity: 1, identified: true, sourceClass: 'FrozenCarpaccio' };
 	if (concrete === 'ChargrilledMeat' || lower === 'chargrilledmeat') return { id: 'chargrilledMeat', quantity: 1, identified: true, sourceClass: 'ChargrilledMeat' };
 	const missile = MWL_MISSILE_BY_CLASS.get(concrete);
 	if (missile) return {

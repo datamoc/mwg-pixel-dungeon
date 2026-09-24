@@ -116,6 +116,24 @@ export const dropThrowMethods = {
 		return false;
 	},
 
+	/**
+	 * `Heap.freeze()` (called by `Freezing.freeze(cell)`): every plain-heap entry that is MysteryMeat becomes
+	 * FrozenCarpaccio and every non-unique potion shatters where it lies (through `shatterPotionAt`, so a frozen
+	 * Toxic flask spills). Chests and shop shelves are not plain heaps and are left alone.
+	 */
+	freezeHeapAt(this: DungeonScene, x: number, y: number): void {
+		for (const entry of [...this.heapItemsAt(x, y)].reverse()) {
+			if (entry.chest || entry.forSale || !this.groundItems.includes(entry)) continue;
+			if (entry.kind === 'meat' && (entry.item === undefined || entry.item.id === 'meat')) {
+				//`FrozenCarpaccio.cook(meat)` keeps the quantity; a payload-less meat heap is one MysteryMeat
+				entry.item = { id: 'frozenCarpaccio', quantity: Math.max(1, entry.item?.quantity ?? 1), identified: true, sourceClass: 'FrozenCarpaccio' };
+			} else if (entry.kind === 'potion' && entry.item?.id.startsWith('potion')) {
+				this.removeGroundItem(entry);
+				shatterPotionAt(this.potionEffectsContext(), entry.item.id, x, y);
+			}
+		}
+	},
+
 	/** Drinking a known malevolent potion asks first (`Potion.execute(AC_DRINK)`'s `harmful` window). */
 	drinkBagPotion(this: DungeonScene, id: string, instanceId?: string): void {
 		if (!MUST_THROW_POTIONS.has(id) || !AREA_SHATTER_POTION_IDS.has(id)) {

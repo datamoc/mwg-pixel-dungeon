@@ -123,6 +123,39 @@ export function applyMealEatenEffects(scene: ConsumableContext, baseHeal: number
 	return heal;
 }
 
+/**
+ * `FrozenCarpaccio.effect()` (tag `v3.3.8`): `Random.Int(5)` picks invisibility (20 turns), Barkskin `HT/4` for one
+ * step, `PotionOfHealing.cure()`, an immediate `HT/4` heal, or nothing (case 4 has no branch). Returns the heal so
+ * the caller can fold it into the meal's own.
+ */
+function applyFrozenCarpaccioEffect(scene: ConsumableContext): number {
+	switch (Random.int(0, 5)) {
+		case 0:
+			scene.say(t('items.food.frozencarpaccio.invis'));
+			addBuff(scene.hero, 'invisibility', BUFF_DURATION_DATA.invisibility);
+			return 0;
+		case 1: {
+			scene.say(t('items.food.frozencarpaccio.hard'));
+			const barkskin = Math.floor(scene.hero.maxHp / 4);
+			if ((scene.hero.barkskinLevel ?? 0) <= barkskin) {
+				scene.hero.barkskinLevel = barkskin;
+				scene.hero.barkskinInterval = 1;
+				scene.hero.barkskinCooldown = 1;
+			}
+			return 0;
+		}
+		case 2:
+			scene.say(t('items.food.frozencarpaccio.refresh'));
+			for (const buff of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'drowsy', 'blindness'] as const) delete scene.hero.buffs[buff];
+			return 0;
+		case 3:
+			scene.say(t('items.food.frozencarpaccio.better'));
+			return Math.floor(scene.hero.maxHp / 4);
+		default:
+			return 0;
+	}
+}
+
 /** Food.satisfy() and the class talents that react to eating. */
 export function eatFood(scene: ConsumableContext): boolean {
 	const food = scene.requestedItemId
@@ -170,6 +203,7 @@ export function eatFood(scene: ConsumableContext): boolean {
 		// keep the small set local so the food workflow remains independently testable.
 		for (const buff of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'drowsy', 'blindness'] as const) delete scene.hero.buffs[buff];
 	}
+	if (food.id === 'frozenCarpaccio') mealHeal += applyFrozenCarpaccioEffect(scene);
 	const heal = applyMealEatenEffects(scene, mealHeal);
 	if (food.id === 'supplyRation') {
 		// `SupplyRation.satisfy()` (tag `v3.3.8`) directly charges a carried Cloak

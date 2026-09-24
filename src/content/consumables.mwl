@@ -442,6 +442,13 @@
       },
       {
         tag: "item",
+        id: "frozenCarpaccio",
+        name: "items.food.frozencarpaccio.name",
+        slot: "consumable",
+        stackable: true,
+      },
+      {
+        tag: "item",
         id: "bomb",
         name: "items.bombs.bomb.name",
         slot: "consumable",
