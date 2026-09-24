@@ -97,6 +97,25 @@ export const dropThrowMethods = {
 		if (this.fov.isVisible(at.x, at.y)) this.say(t('items.potions.potion.shatter'));
 	},
 
+	/**
+	 * `Heap.explode()` for one entry of a blasted heap: a bomb detonates, a potion is removed and SHATTERS where it
+	 * lay (`Potion.shatter(pos)`, so a Toxic flask in the blast spills its gas), unique/equipment stand-ins
+	 * survive and everything else is destroyed. The one place the three blast paths share.
+	 * @returns whether the hero died (a chained bomb).
+	 */
+	explodeHeapEntry(this: DungeonScene, ground: GroundItem, chained: Set<string>): boolean {
+		if (!this.groundItems.includes(ground)) return false;
+		if (ground.kind === 'bomb' && ground.item) return this.detonateGroundBomb(ground, chained);
+		if (ground.kind === 'potion' && ground.item?.id.startsWith('potion')) {
+			this.removeGroundItem(ground);
+			shatterPotionAt(this.potionEffectsContext(), ground.item.id, ground.x, ground.y);
+			return false;
+		}
+		const protectedItem = ['armor', 'wand', 'ring', 'amulet', 'ankh', 'stylus'].includes(ground.kind);
+		if (!protectedItem) this.removeGroundItem(ground);
+		return false;
+	},
+
 	/** Drinking a known malevolent potion asks first (`Potion.execute(AC_DRINK)`'s `harmful` window). */
 	drinkBagPotion(this: DungeonScene, id: string, instanceId?: string): void {
 		if (!MUST_THROW_POTIONS.has(id) || !AREA_SHATTER_POTION_IDS.has(id)) {

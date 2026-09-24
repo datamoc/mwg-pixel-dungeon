@@ -80,6 +80,11 @@ export const inventoryQuickslotMethods = {
 			seedToxicGas: (x: number, y: number, volume: number) => scene.toxicGas.seed(x, y, volume),
 			seedParalyticGas: (x: number, y: number, volume: number) => scene.paralyticGas.seed(x, y, volume),
 			seedSmoke: (x: number, y: number, volume: number) => scene.smokeScreen.seed(x, y, volume),
+			seedConfusionGas: (x: number, y: number, volume: number) => scene.confusionGas.seed(x, y, volume),
+			//`BlobImmunity.immunities()`: every harmful blob the port models (the persistent eternal-fire wall is cleared by frost only).
+			clearHarmfulBlobs: (x: number, y: number) => {
+				for (const blob of [scene.fire, scene.plantFreeze, scene.toxicGas, scene.paralyticGas, scene.stenchGas, scene.corrosiveGas, scene.confusionGas, scene.web, scene.electricity, scene.smokeScreen, scene.inferno, scene.blizzard]) blob.clear(x, y);
+			},
 			eternalFireVolumeAt: (x: number, y: number) => scene.eternalFire.volumeAt(x, y),
 			clearEternalFire: () => { scene.eternalFire = new Blob(scene.level.width, scene.level.height); },
 			showDamage: this.showDamage.bind(this),
@@ -2086,15 +2091,11 @@ export const inventoryQuickslotMethods = {
 			showDamage: this.showDamage.bind(this),
 			isFlammableTerrain: (x, y) => this.isFireFlammableTerrain(x, y),
 			burnFlammableTerrain: (x, y) => this.destroyBombTerrain(x, y),
+			//every entry of the blasted heap, top first (`Heap.explode()` walks the whole stack)
 			explodeGroundItem: (x, y) => {
-				const ground = this.groundItemAt(x, y);
-				if (!ground) return false;
-				if (ground.kind === 'bomb' && ground.item) {
-					return this.detonateGroundBomb(ground, new Set());
-				}
-				const protectedItem = ['armor', 'wand', 'ring', 'amulet', 'ankh', 'stylus'].includes(ground.kind);
-				if (!protectedItem) this.removeGroundItem(ground);
-				return false;
+				let died = false;
+				for (const entry of [...this.heapItemsAt(x, y)].reverse()) if (this.explodeHeapEntry(entry, new Set())) died = true;
+				return died;
 			},
 			kill: (target) => this.kill(target, 'fire'),
 			openItemPicker: (title, items, onPick) => this.openItemPicker(title, items, (entry) => onPick({ ...entry, quantity: 1 })),

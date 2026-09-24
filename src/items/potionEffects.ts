@@ -25,6 +25,9 @@ export interface PotionEffectsContext {
 	readonly seedToxicGas: (x: number, y: number, volume: number) => void;
 	readonly seedParalyticGas: (x: number, y: number, volume: number) => void;
 	readonly seedSmoke: (x: number, y: number, volume: number) => void;
+	readonly seedConfusionGas: (x: number, y: number, volume: number) => void;
+	/** Clears every harmful blob (`BlobImmunity.immunities()`) at one cell, `PotionOfPurity.shatter`'s `blob.clear(i)`. */
+	readonly clearHarmfulBlobs: (x: number, y: number) => void;
 	readonly eternalFireVolumeAt: (x: number, y: number) => number;
 	readonly clearEternalFire: () => void;
 	readonly showDamage: (target: Creature, amount: number) => void;
@@ -176,7 +179,7 @@ function shatterFlame(scene: PotionEffectsContext, cx: number, cy: number): numb
 }
 
 /** The potions whose `shatter(cell)` has an area effect here; every other potion breaks harmlessly. */
-export const AREA_SHATTER_POTION_IDS: ReadonlySet<string> = new Set(['potionFlame', 'potionToxicGas', 'potionParalyticGas', 'potionFrost', 'potionShrouding']);
+export const AREA_SHATTER_POTION_IDS: ReadonlySet<string> = new Set(['potionFlame', 'potionToxicGas', 'potionParalyticGas', 'potionFrost', 'potionShrouding', 'potionLevitation', 'potionPurity']);
 
 /**
  * `Potion.shatter(cell)` for the malevolent potions (tag `v3.3.8`), centred on any cell: quaffing is
@@ -195,6 +198,30 @@ export function shatterPotionAt(scene: PotionEffectsContext, id: string, cx: num
 		case 'potionParalyticGas':
 			scene.seedParalyticGas(cx, cy, mwlItemEffectValue('potionParalyticGas', 'gasVolume'));
 			return;
+		case 'potionLevitation':
+			//`PotionOfLevitation.shatter()`: a flask of 1000 `ConfusionGas` at the cell (not a harmless splash).
+			scene.seedConfusionGas(cx, cy, 1000);
+			return;
+		case 'potionPurity': {
+			//`PotionOfPurity.shatter()`: every harmful blob is cleared from the cells within path distance 3
+			//(a flood over non-solid cells), then SPD's own `freshness` line when the cell is in view.
+			const seen = new Map<number, number>([[cy * scene.level.width + cx, 0]]);
+			const queue: [number, number][] = [[cx, cy]];
+			for (let head = 0; head < queue.length; head++) {
+				const [x, y] = queue[head]!;
+				scene.clearHarmfulBlobs(x, y);
+				const d = seen.get(y * scene.level.width + x)!;
+				if (d >= 3) continue;
+				for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
+					const nx = x + dx, ny = y + dy, key = ny * scene.level.width + nx;
+					if (seen.has(key) || !scene.level.inside(nx, ny) || scene.level.get(nx, ny) === WALL) continue;
+					seen.set(key, d + 1);
+					queue.push([nx, ny]);
+				}
+			}
+			scene.say(t('items.potions.potionofpurity.freshness'));
+			return;
+		}
 		case 'potionShrouding': {
 			//180 `SmokeScreen` on every open NEIGHBOURS8 cell, the centre taking 180 plus 180 per solid neighbour.
 			const plan = brewNeighbourSeedPlan((x, y) => !scene.level.inside(x, y) || scene.level.get(x, y) === WALL, cx, cy, SHROUDING_FOG_VOLUME);

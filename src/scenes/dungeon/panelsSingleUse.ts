@@ -1515,16 +1515,8 @@ export const panelsSingleUseMethods = {
 			level: this.level,
 			isFlammableTerrain: (x, y) => this.isFireFlammableTerrain(x, y),
 			burnFlammableTerrain: (x, y) => this.destroyBombTerrain(x, y),
-			explodeGroundItem: (ground, chained) => {
-				if (!this.groundItems.includes(ground)) return false;
-				if (ground.kind === 'bomb' && ground.item) {
-					return this.detonateGroundBomb(ground, chained);
-				}
-				// Java's Heap.explode() preserves unique, upgradable, and equipable items.
-				const protectedItem = ['armor', 'wand', 'ring', 'amulet', 'ankh', 'stylus'].includes(ground.kind);
-				if (!protectedItem) this.removeGroundItem(ground);
-				return false;
-			},
+			// Java's Heap.explode() preserves unique, upgradable, and equipable items (see `explodeHeapEntry`).
+			explodeGroundItem: (ground, chained) => this.explodeHeapEntry(ground, chained),
 			creatureAt: (x, y) => this.creatureAt(x, y),
 			groundItemAt: (x, y) => this.groundItemAt(x, y),
 			removeGroundItem: (ground) => this.removeGroundItem(ground),

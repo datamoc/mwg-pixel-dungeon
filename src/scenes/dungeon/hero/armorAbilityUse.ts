@@ -750,11 +750,7 @@ export const armorAbilityUseMethods = {
 			if (this.isFireFlammableTerrain(at.x, at.y)) this.destroyBombTerrain(at.x, at.y);
 			//The stone-context `explodeGroundItem` closure, inlined: chained bombs go off,
 			//anything less sturdy than armor/wands/rings burns.
-			const ground = this.groundItemAt(at.x, at.y);
-			if (ground !== null) {
-				if (ground.kind === 'bomb' && ground.item) this.detonateGroundBomb(ground, new Set());
-				else if (!['armor', 'wand', 'ring', 'amulet', 'ankh', 'stylus'].includes(ground.kind)) this.removeGroundItem(ground);
-			}
+			for (const entry of [...this.heapItemsAt(at.x, at.y)].reverse()) this.explodeHeapEntry(entry, new Set());
 		}
 		const blast = new Set(cells.map((at) => this.level.index(at.x, at.y)));
 		for (const creature of [...this.creatures]) {

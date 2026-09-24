@@ -12,7 +12,7 @@ check('items with their own throw keep it (bombs, honeypot, brews, candle, runes
 check('flasks and scrolls take the generic throw', canThrowBagItem('potionToxicGas') && canThrowBagItem('scrollIdentify'));
 check('a known beneficial potion asks before it is thrown; must-throw and can-throw do not', throwNeedsConfirm('potionHealing', true) && !throwNeedsConfirm('potionFrost', true) && !throwNeedsConfirm('potionPurity', true) && !throwNeedsConfirm('potionHealing', false));
 check('a known malevolent potion throws by default', potionThrowsByDefault('potionToxicGas', true) && !potionThrowsByDefault('potionToxicGas', false) && !potionThrowsByDefault('potionHealing', true));
-check('only the five area potions shatter with an effect', ['potionFlame', 'potionToxicGas', 'potionParalyticGas', 'potionFrost', 'potionShrouding'].every(shatterHasEffect) && !shatterHasEffect('potionHealing'));
+check('the seven potions with a real shatter run it (Levitation is a confusion-gas flask, Purity clears blobs); the rest splash harmlessly', ['potionFlame', 'potionToxicGas', 'potionParalyticGas', 'potionFrost', 'potionShrouding', 'potionLevitation', 'potionPurity'].every(shatterHasEffect) && !shatterHasEffect('potionHealing'));
 
 const line = [0, 1, 2, 3, 4, 5].map((x) => ({ x, y: 0 }));
 check('an unobstructed throw lands on the aimed cell', throwLanding(line, () => false, () => false).x === 5);
