@@ -1078,6 +1078,7 @@ export const weaponSpellsGearMethods = {
 			get hourglassFreeze() { return scene.hourglassFreeze; }, set hourglassFreeze(value) { scene.hourglassFreeze = value; },
 			get hourglassTurnsToCost() { return scene.hourglassTurnsToCost; }, set hourglassTurnsToCost(value) { scene.hourglassTurnsToCost = value; },
 			get cloakStealthTurnsToCost() { return scene.cloakStealthTurnsToCost; }, set cloakStealthTurnsToCost(value) { scene.cloakStealthTurnsToCost = value; },
+			spendActivationTurn: () => { scene.armEnhancedRingsFromArtifact(); scene.actionSpentTurn = true; scene.spendHeroTurn(1); },
 			flushTimeBubblePresses: this.flushTimeBubblePresses.bind(this), say: this.say.bind(this),
 			absorbHeroDamage: (amount) => this.absorbHeroDamage(amount),
 			showHeroDamage: (amount) => this.showDamage(this.hero, amount),

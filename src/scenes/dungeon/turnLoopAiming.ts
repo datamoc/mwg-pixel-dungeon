@@ -29,13 +29,14 @@ import { getCurse } from '../../items/itemCurses';
 import { MWL_MISSILE_BY_CLASS, MWL_TURN_CLOCK, mwlItemEffectValue } from '../../mwlContent';
 import { applyCapeOfThornsProc, spellbookChargeCap } from '../../items/artifactActions';
 import { applyTalismanPerTurnCharge } from '../../items/talisman';
+import { cloakChargeCap, cloakGainExp, cloakTurnsToCharge } from '../../items/cloak';
 import { applyRoseRecharge } from '../../items/rose';
 import { beaconPassiveRecharge, chainsPassiveRecharge, hourglassPassiveRecharge } from '../../items/artifactPassiveRecharge';
 import { beaconChargeCap } from '../../items/beacon';
 import type { ChainsItem } from '../../items/chains';
 import { TILE, WATER } from '../../dungeonConstants';
 import { BUFF_DURATION, addBuff, buffBlocked, electricDamageHalved, icyDamageHalved, rollHit, tickBuffs, type Creature, type Step } from '../../combat';
-import { tickMonsterTurnEnd } from '../../simulation/buffs';
+import { corruptionImmune, tickMonsterTurnEnd } from '../../simulation/buffs';
 import { isUndeadOrDemonic } from '../../monsters';
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `turnLoopAiming`). Each takes the scene as `this`;
@@ -1343,23 +1344,30 @@ export const turnLoopAimingMethods = {
 				//CloakOfShadows.cloakRecharge/cloakStealth.act(): recharge while inactive and
 				//spend one charge every four active turns. The Java fractional actor-clock
 				//remainder is retained here, while the port's bag item supplies persistence.
-				const cloak = this.bag.find('cloak') as (typeof this.bag.items[number] & { charges?: number }) | undefined;
+				const cloak = this.bag.find('cloak') as (typeof this.bag.items[number] & { charges?: number; exp?: number }) | undefined;
 				if (cloak && !cloak.cursed) {
-					const maxCharge = Math.min((cloak.level ?? 0) + 3, 10);
+					const maxCharge = cloakChargeCap(cloak.level ?? 0);
 					const charge = Math.min(maxCharge, cloak.charges ?? maxCharge);
 					if (this.cloakStealthTurnsToCost > 0 && this.hero.buffs['invisibility']) {
 						this.cloakStealthTurnsToCost--;
 						if (this.cloakStealthTurnsToCost <= 0) {
 							if (charge <= 0) {
+								//`cloakStealth.act()`: `charge--` below zero detaches the buff with its own line
 								delete this.hero.buffs['invisibility'];
 								this.cloakStealthTurnsToCost = 0;
+								this.say(t('items.artifacts.cloakofshadows$cloakstealth.no_charge'), 'warning');
 							} else {
 								cloak.charges = charge - 1;
+								//each spent charge earns experience that levels the cloak (`cloakStealth.act()`)
+								if (cloakGainExp(cloak, this.progression.level)) this.say(t('items.artifacts.cloakofshadows$cloakstealth.levelup'), 'positive');
 								this.cloakStealthTurnsToCost = mwlItemEffectValue('cloak', 'turnsToCost');
 							}
 						}
-					} else if (this.cloakStealthTurnsToCost <= 0 && charge < maxCharge && this.regenOn()) {
-						this.cloakChargeProgress += this.lightCloakChargeMultiplier() / Math.max(1, 45 - (maxCharge - charge));
+					} else if (this.cloakStealthTurnsToCost <= 0 && charge < maxCharge && this.regenOn() && !this.hero.magicImmune) {
+						//`cloakRecharge.act()`: `45 - missing` (+`5*(level-7)/3` past +7) turns per charge, divided by
+						//`RingOfEnergy.artifactChargeMultiplier`, scaled by the Light Cloak talent when uncarried-as-equipped
+						this.cloakChargeProgress += this.lightCloakChargeMultiplier()
+							/ cloakTurnsToCharge(cloak.level ?? 0, charge, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()));
 						while (this.cloakChargeProgress >= 1 && cloak.charges !== maxCharge) {
 							cloak.charges = Math.min(maxCharge, (cloak.charges ?? 0) + 1);
 							this.cloakChargeProgress -= 1;

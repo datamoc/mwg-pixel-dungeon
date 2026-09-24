@@ -2,6 +2,7 @@ import { Actors, Random } from 'mwg';
 import { t } from '../i18n';
 import { mwlItemEffectValue } from '../mwlContent';
 import { STARVING } from '../simulation/hunger';
+import { cloakChargeCap } from './cloak';
 
 export interface ArtifactActionContext {
 	readonly bag: Actors.Inventory;
@@ -10,6 +11,8 @@ export interface ArtifactActionContext {
 	hourglassFreeze: boolean;
 	hourglassTurnsToCost: number;
 	cloakStealthTurnsToCost: number;
+	/** `CloakOfShadows.execute()`'s `hero.spend(1f)` plus `Talent.onArtifactUsed` for a new activation. */
+	spendActivationTurn?(): void;
 	flushTimeBubblePresses(): void;
 	say(line: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
 	/** Shared hero damage boundary (Tenacity/AntiMagic/Viscosity/RockArmor/Barrier), matching
@@ -66,17 +69,21 @@ export function useHourglass(scene: ArtifactActionContext, instanceId?: string):
 export function useCloak(scene: ArtifactActionContext, instanceId?: string): void {
 	const cloak = scene.bag.find('cloak', instanceId) as (typeof scene.bag.items[number] & { charges?: number }) | undefined;
 	if (!cloak) return;
+	//`execute()`: MagicImmune ends the action before anything else (no message)
+	if (scene.hero.magicImmune) return;
 	if (scene.cloakStealthTurnsToCost > 0) {
+		//cancelling is free (`activeBuff.detach()`, no `spend`)
 		scene.cloakStealthTurnsToCost = 0;
 		delete scene.hero.buffs['invisibility'];
 		return;
 	}
-	if (cloak.cursed || (cloak.charges ?? 0) <= 0) {
-		scene.say(t('port.log.cannotupgrade'), 'negative');
-		return;
-	}
+	//Java's own refusal lines, in its order: cursed, then no charge (an unset charge is a full cloak)
+	if (cloak.cursed) { scene.say(t('items.artifacts.cloakofshadows.cursed'), 'warning'); return; }
+	if ((cloak.charges ?? cloakChargeCap(cloak.level ?? 0)) <= 0) { scene.say(t('items.artifacts.cloakofshadows.no_charge'), 'warning'); return; }
 	scene.cloakStealthTurnsToCost = mwlItemEffectValue('cloak', 'turnsToCost');
 	scene.hero.buffs['invisibility'] = 9999;
+	//activation `hero.spend(1f)` and `Talent.onArtifactUsed`
+	scene.spendActivationTurn?.();
 }
 
 /** `ChaliceOfBlood.execute(AC_PRICK)`/`prick()` (tag `v3.3.8`): real Java rolls
