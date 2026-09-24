@@ -1,6 +1,6 @@
 import { Container, Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 
-interface CharacterVisual { sprite: Sprite; sleeping?: boolean; }
+interface CharacterVisual { sprite: Sprite; sleeping?: boolean; shadowOffset?: number; }
 
 /** CharSprite's flattened sprite shadow and EmoIcon.Sleep's pulsing icon.
  * Java's per-sprite flying/jumping shadow offsets are not modeled yet.
@@ -21,7 +21,7 @@ export class CharacterEffects {
 				entry.shadow.destroy(); entry.sleep?.destroy(); this.entries.delete(sprite);
 			}
 		}
-		for (const { sprite, sleeping } of characters) {
+		for (const { sprite, sleeping, shadowOffset = 0 } of characters) {
 			if (sprite.destroyed) continue;
 			let entry = this.entries.get(sprite);
 			if (!entry) {
@@ -35,7 +35,7 @@ export class CharacterEffects {
 			const shadow = entry.shadow;
 			shadow.texture = sprite.texture;
 			shadow.anchor.set(0.5, 0);
-			shadow.position.set(sprite.x + 8, top + h * 0.75 + 0.25);
+			shadow.position.set(sprite.x + 8, top + h * 0.75 + 0.25 + shadowOffset);
 			shadow.scale.set((sprite.scale.x < 0 ? -1 : 1) * 1.2, 0.25);
 			shadow.alpha = sprite.alpha * 0.6;
 			shadow.visible = sprite.visible;

@@ -52,7 +52,12 @@ try {
 	assert.equal(usesCrystalPassability('crystalSpire', 0, 1, true), false, 'spire never uses the monster movement shortcut');
 	assert.deepEqual([spireAbilityDelay(0), spireAbilityDelay(1.2), spireAbilityDelay(3.1)], [1, 2, 3], 'spire delay is ceil hero cooldown clamped to 1..3');
 	assert.deepEqual([0.91, 0.9, 0.67, 0.33].map((hp) => spireIdleFrame(hp * 300, 300)), [0, 1, 2, 3], 'spire idle frames use strict Java HP thresholds');
-	console.log('PASS crystal mine pure planners (10 helpers)');
+	const sceneSource = readFileSync(fileURLToPath(new URL('../src/scenes/dungeon/monsters/crystalMine.ts', import.meta.url)), 'utf8');
+	assert.match(sceneSource, /updateCrystalWispVisuals\(this: DungeonScene, dt: number\)/, 'scene updates the CrystalWisp visual seam');
+	assert.match(sceneSource, /Math\.abs\(Math\.sin\(state\.time\)\)/, 'wisp body uses Java sine bob');
+	assert.match(sceneSource, /-0\.8 \* bodyBob/, 'wisp shadow uses Java animated shadow offset');
+	assert.match(sceneSource, /pulseAge / 0\.2/, 'wisp attack halo uses Java 0.2-second pulse');
+	console.log('PASS crystal mine pure planners (10 helpers) and wisp visual seam');
 } finally {
 	rmSync(temp, { recursive: true, force: true });
 }

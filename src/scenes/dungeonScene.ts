@@ -346,7 +346,7 @@ export class DungeonScene extends Scene2D {
 	dyingMonsters = new Map<TintedSprite, { x: number; y: number; fade: number; duration: number; playDieClip: boolean }>();
 	characterEffects!: CharacterEffects;
 	/** Reused each frame; avoids rebuilding the character-visual array in `update()`. */
-	characterEffectCharacters: Array<{ sprite: TintedSprite; sleeping?: boolean }> = [];
+	characterEffectCharacters: Array<{ sprite: TintedSprite; sleeping?: boolean; shadowOffset?: number }> = [];
 	fog?: FogOfWar;
 	wallBlocking?: TileMap;
 	level!: Roguelike.Level;
@@ -2455,12 +2455,13 @@ export class DungeonScene extends Scene2D {
 			if (!sprite.destroyed) motion.update(dt);
 			if (sprite.destroyed || !motion.isBusy) { motion.clear(); this.monsterMotion.delete(sprite); }
 		}
+		const crystalShadowOffsets = this.updateCrystalWispVisuals(dt);
 		//The previous map/spread/Array.from expression allocated a new array every frame (the
 		//same visual values, only rebuilt for CharacterEffects' current-set pass). Reuse the buffer;
 		//CharacterEffects still receives an exact current-frame list and owns its own entry cleanup.
 		const characterEffects = this.characterEffectCharacters;
 		characterEffects.length = 0;
-		for (const creature of this.creatures) characterEffects.push({ sprite: this.sprite(creature), sleeping: creature.sleeping && !(creature.kind === 'mimic' && creature.mimicRevealed === false) /* MimicSprite.hideSleep() */ });
+		for (const creature of this.creatures) characterEffects.push({ sprite: this.sprite(creature), sleeping: creature.sleeping && !(creature.kind === 'mimic' && creature.mimicRevealed === false) /* MimicSprite.hideSleep() */, shadowOffset: crystalShadowOffsets.get(creature.id) });
 		for (const sprite of this.dyingMonsters.keys()) characterEffects.push({ sprite });
 		const heroVisual = this.sprite(this.hero);
 		if (this.gameOver && !heroVisual.destroyed) characterEffects.push({ sprite: heroVisual });

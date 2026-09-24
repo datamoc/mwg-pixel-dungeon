@@ -1,6 +1,7 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { Random, Roguelike, SpriteSheet } from 'mwg';
 import { AnimatedSprite } from 'mwg/two-d/render';
+import { Graphics } from 'mwg/two-d/pixi-interop';
 import { addBuff, buffBlocked, rollHit, type BuffId, type Creature, type Step } from '../../../combat';
 import { t } from '../../../i18n/index';
 import { runState } from '../../../runState';
@@ -31,6 +32,22 @@ const CRYSTAL_SHEETS = {
 } as const;
 
 type Clip = [string, number[], { fps: number; loop: boolean }];
+
+interface WispVisualState { halo: Graphics; bob: number; pulseAge: number; wasAttacking: boolean; }
+interface CrystalMineVisualState { time: number; wisps: Map<string, WispVisualState>; shadowOffsets: Map<string, number>; }
+const crystalMineVisualStates = new WeakMap<DungeonScene, CrystalMineVisualState>();
+
+function wispHalo(color: number): Graphics {
+	//`CrystalWispSprite.link()` creates `TorchHalo(20, blood(), 0.2)`, then sets alpha 0.3
+	//and radius 10. Additive rings approximate that soft radial light with Pixi's ordinary Graphics.
+	const halo = new Graphics();
+	halo.blendMode = 'add';
+	halo.circle(0, 0, 14).fill({ color, alpha: 0.035 });
+	halo.circle(0, 0, 10).fill({ color, alpha: 0.06 });
+	halo.circle(0, 0, 6).fill({ color, alpha: 0.12 });
+	halo.eventMode = 'none';
+	return halo;
+}
 
 /** `CrystalWispSprite`/`CrystalGuardianSprite`/`CrystalSpireSprite`'s animations at colour offset `c`.
  * A crumpled guardian plays its `die` film (`crumple = die.clone()`), held on the last frame. */
@@ -63,11 +80,60 @@ function crystalClips(creature: Creature, c: number): Clip[] {
 }
 
 export const crystalMineMethods = {
+	/** `CrystalWispSprite.update()`/`link()`/`attack()`/`zap()`: keep its colour-matched TorchHalo
+	 * under the actor, bob the body by `abs(sin(Game.timeTotal))`, and move the flattened shadow by
+	 * Java's matching `0.25 - 0.8*abs(sin(time))` offset. The real halo's radial sprite shader is
+	 * represented by additive rings; attack/zap brightens it over Java's 0.2-second fade-in. */
+	updateCrystalWispVisuals(this: DungeonScene, dt: number): ReadonlyMap<string, number> {
+		let state = crystalMineVisualStates.get(this);
+		if (!state) { state = { time: 0, wisps: new Map(), shadowOffsets: new Map() }; crystalMineVisualStates.set(this, state); }
+		state.time += dt;
+		state.shadowOffsets.clear();
+		const live = new Set<string>();
+		for (const creature of this.creatures) {
+			if (creature.kind !== 'crystalWisp') continue;
+			const sprite = this.spriteFor.get(creature.id);
+			if (!(sprite instanceof AnimatedSprite) || sprite.destroyed) continue;
+			live.add(creature.id);
+			let visual = state.wisps.get(creature.id);
+			if (!visual) {
+				const color = [0x66b3ff, 0x2ee62e, 0xff7f00][creature.crystalTint ?? 0] ?? 0x66b3ff;
+				const halo = wispHalo(color);
+				this.effectLayer.addChild(halo);
+				visual = { halo, bob: 0, pulseAge: Number.POSITIVE_INFINITY, wasAttacking: false };
+				state.wisps.set(creature.id, visual);
+			}
+			const bodyBob = Math.abs(Math.sin(state.time));
+			//`CrystalWispSprite.update()` anchors `baseY` on every place/point; subtract the previous
+			//frame's offset to recover the current interpolated movement position before applying it.
+			sprite.y = sprite.y - visual.bob + bodyBob;
+			visual.bob = bodyBob;
+			visual.halo.position.set(sprite.x + 8, sprite.y + 8);
+			visual.halo.visible = sprite.visible;
+			const attacking = sprite.playing === 'attack';
+			if (attacking) {
+				if (!visual.wasAttacking) visual.pulseAge = 0;
+				visual.pulseAge += dt;
+			} else visual.pulseAge = Number.POSITIVE_INFINITY;
+			visual.wasAttacking = attacking;
+			visual.halo.alpha = Number.isFinite(visual.pulseAge) ? 0.3 + 0.7 * Math.min(1, visual.pulseAge / 0.2) : 0.3;
+			//`CharacterEffects` already includes the baseline +0.25; supply only Java's animated delta.
+			state.shadowOffsets.set(creature.id, -0.8 * bodyBob);
+		}
+		for (const [id, visual] of state.wisps) {
+			if (live.has(id)) continue;
+			visual.halo.destroy();
+			state.wisps.delete(id);
+		}
+		return state.shadowOffsets;
+	},
+
 	/** Re-applies the crystal sprite's clips for its colour, the guardian's crumple and the spire's
 	 * cracked frames (`CrystalSpireSprite.updateIdle()`). The guardian preserves Java's `1.25`
-	 * scale from `CrystalGuardianSprite` (tag `v3.3.8`) while retaining its current facing. Not
-	 * ported: the wisp's `TorchHalo` light and bobbing, and the spire's `DungeonWallsTilemap.skipCells`
-	 * trick for drawing its 41-pixel height over the walls behind it. */
+	 * scale from `CrystalGuardianSprite` (tag `v3.3.8`) while retaining its current facing. The
+	 * wisp's light and bob are advanced by `updateCrystalWispVisuals`; the spire's
+	 * `DungeonWallsTilemap.skipCells` trick for drawing its 41-pixel height over the walls remains
+	 * unported. */
 	syncCrystalMineVisual(this: DungeonScene, creature: Creature): void {
 		const info = CRYSTAL_SHEETS[creature.kind as keyof typeof CRYSTAL_SHEETS];
 		const sprite = this.spriteFor.get(creature.id);
