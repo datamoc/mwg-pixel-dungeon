@@ -5,7 +5,6 @@ import { capitalize, t } from '../i18n/index';
 import { BASE_KIND_ALIASES, type AnyMonsterId, type MonsterId } from '../monsters';
 import { STARVING } from '../simulation/hunger';
 import type { Step } from '../simulation/combatState';
-import { lethalDefenseShield } from '../talentEffects';
 
 /**
  * What the monster-side on-hit hooks need from the scene. `mobOnHit` was a 287-line scene method; it moves
@@ -44,7 +43,6 @@ export interface MobOnHitContext {
 /** monster-side on-hit hooks (all pre-existing, now grouped) */
 export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Creature, damage: number): void {
 	const armorGlyph = (id: string): boolean => ctx.armorGlyphActive && ctx.armorGlyph === id;
-	if (defender.isHero) ctx.grantHeroShield(lethalDefenseShield(ctx.subclass(), ctx.talentRank('lethal_defense')), ctx.hero.maxHp);
 	//`RottingFist.attackProc` is the only fist subclass with a melee-contact effect:
 	//half of all landed melee hits ooze the victim (`Ooze.DURATION` is the table's own
 	//20). The burning/soiled/rusted/bright/dark contact riders this hook used to carry

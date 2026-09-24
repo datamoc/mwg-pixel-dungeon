@@ -3,6 +3,7 @@ import { Random, Roguelike } from 'mwg';
 import { t } from '../../../i18n/index';
 import { addBuff, type Creature } from '../../../combat';
 import { showChoiceWindow } from '../../../ui/portWindows';
+import { sealReduceCooldown } from '../../../simulation/sealShield';
 import { weaponCombat } from '../../../items/catalog';
 import {
 	COMBO_FURY_MULTIPLIER, COMBO_MOVES, comboCanUse, comboClobberEmpowered, comboCrushMultiplier, comboCrushSplash,
@@ -18,7 +19,7 @@ import {
  *
  * Reductions (stated in `PORT_COVERAGE.md`): no `HoldFast.buffDecayFactor` on the clock, no
  * `ActionIndicator` (the moves open from the ability key / toolbar entry instead of a floating
- * button), `Talent.LETHAL_DEFENSE`'s seal-cooldown refund is not modelled here, CRUSH's splash
+ * button), CRUSH's splash
  * reaches enemies within 3 by the port's passable-only flood (Java: non-solid cells), and the
  * knock-back is the port's straight shove with Java's pit rule.
  */
@@ -53,6 +54,12 @@ export const comboMovesMethods = {
 		this.hero.buffs['combo'] = time;
 		this.comboInitialTime = time;
 		if (comboHighestMove(this.hero.combo) !== null) this.say(t('actors.buffs.combo.combo', { 0: this.hero.combo }), 'positive');
+	},
+
+	/** `Talent.LETHAL_DEFENSE`: a kill made by a finisher (or Crush's splash) cools the seal down by `rank/3` of its cooldown. */
+	comboLethalDefense(this: DungeonScene): void {
+		const rank = this.talentRank('lethal_defense');
+		if (rank > 0) this.sealState.cooldown = sealReduceCooldown(this.sealState.cooldown, rank / 3);
 	},
 
 	/** Whether the hero may strike this creature with a combo move: a visible, hostile, uncharmed foe. */
@@ -182,6 +189,7 @@ export const comboMovesMethods = {
 		else if (move === 'crush') multiplier = comboCrushMultiplier(count);
 		else if (move === 'fury') multiplier = COMBO_FURY_MULTIPLIER;
 		const landed = this.comboSwing(enemy, multiplier, bonus);
+		if (enemy.hp <= 0) this.comboLethalDefense();
 		if (landed) {
 			if (move === 'clobber') {
 				this.comboHit(enemy);
@@ -196,6 +204,7 @@ export const comboMovesMethods = {
 			for (let left = count - 1; left > 0 && enemy.hp > 0 && this.comboValidTarget(enemy)
 				&& Roguelike.canTarget(this.level, this.hero, enemy, { range: this.comboReach() }); left--) {
 				this.comboSwing(enemy, multiplier, 0);
+				if (enemy.hp <= 0) this.comboLethalDefense();
 			}
 			this.comboDetach();
 		} else {
@@ -246,6 +255,7 @@ export const comboMovesMethods = {
 			const damage = comboCrushSplash(roll, count, dr, other.buffs['vulnerable'] !== undefined);
 			if (damage <= 0) continue;
 			this.applyAbilityDamage(other, damage);
+			if (other.hp <= 0) this.comboLethalDefense();
 		}
 	},
 

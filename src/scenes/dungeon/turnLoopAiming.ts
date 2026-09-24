@@ -37,6 +37,7 @@ import type { ChainsItem } from '../../items/chains';
 import { TILE, WATER } from '../../dungeonConstants';
 import { BUFF_DURATION, addBuff, buffBlocked, electricDamageHalved, icyDamageHalved, rollHit, tickBuffs, type Creature, type Step } from '../../combat';
 import { NEGATIVE_BUFFS, tickMonsterTurnEnd, type BuffId } from '../../simulation/buffs';
+import { sealTick } from '../../simulation/sealShield';
 import { corruptingPower, corruptionResistance, resolveCorruptionZap } from '../../simulation/wandCorruption';
 import { MONSTERS, isUndeadOrDemonic, type AnyMonsterId } from '../../monsters';
 
@@ -1423,18 +1424,16 @@ export const turnLoopAimingMethods = {
 						this.barrierPartialLoss = 0;
 					}
 				}
-				//BrokenSeal.WarriorShield.act(): regenerates 1/30 per turn (while regen is on)
-				//toward armTier + armLvl + pointsInTalent(IRON_WILL), never decaying on its own.
-				//The gain is gated on `Regeneration.regenOn()` (the `LockedFloor` boss-arena lock).
-				if (this.armorSealed && this.regenOn()) {
-					const sealCap = this.armorTier + this.armorLevel + this.talentRank('iron_will');
-					if (this.sealBarrier.total < sealCap) {
-						this.sealPartialGain += 1 / 30;
-						while (this.sealPartialGain >= 1 && this.sealBarrier.total < sealCap) {
-							this.sealBarrier.add(1);
-							this.sealPartialGain -= 1;
-						}
-					} else this.sealPartialGain = 0;
+				//`BrokenSeal.WarriorShield.act()` (tag `v3.3.8`): the cooldown runs down while regeneration is on, and a shield
+				//left up with no enemy in view (and no Combo) for five turns is dropped, refunding part of the cooldown. It does
+				//NOT regenerate - it activates on a hit (`absorbHeroDamage`). The old 1/30-per-turn regrowth stood here.
+				if (this.armorSealed) {
+					const result = sealTick(this.sealState, {
+						regenOn: this.regenOn(), shielding: this.sealBarrier.total, comboActive: this.hero.buffs['combo'] !== undefined,
+						enemiesVisible: this.creatures.some((c) => !c.isHero && !c.isNPC && !c.isAlly && c.hp > 0 && this.fov.isVisible(c.x, c.y)),
+					});
+					this.sealState = result.state;
+					if (result.dropShield) this.sealBarrier.clear();
 				}
 			//`ArtifactRecharge.act()`: while the buff is up, every carried artifact is handed
 			//`min(1, left)` and the timer drops by one. This is the only caller of

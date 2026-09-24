@@ -933,8 +933,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	});
 	check('recent talent effects cover thresholds, class gates, and rank scaling', () => {
 		//ironWillReduction was removed (2026-09-14): Iron Will's real effect is a Warrior-only
-		//BrokenSeal shield-cap boost, now read directly as talentRank('iron_will') in
-		//dungeonScene.ts's seal-shield regen tick - see talentEffects.ts's historical note.
+		//BrokenSeal shield-size boost, now `sealMaxShield` (`simulation/sealShield.ts`, pinned in `verifySealShield`).
 		assert.equal(talents.shieldBatteryGain(3, 2), 2);
 		assert.equal(talents.shieldBatteryGain(0, 2), 0);
 		assert.equal(talents.rejuvenatingStepHeal(4, 4, 19, 20, 2), 1);
@@ -970,7 +969,8 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.equal(talents.bountyHunterDropBonus(4, 0), 0);
 		//`unencumberedSpiritEvasion` / `monasticVigorShield` were invented stand-ins for the Monk's talents; the real ones
 		//(`MonkEnergy.gainEnergy`'s tier bonus, `abilitiesEmpowered`) are pinned in `verifyMonkEnergy`.
-		assert.equal(talents.lethalDefenseShield('gladiator', 2), 2);
+		//`lethalDefenseShield` (a shield on every hit taken) was an invented stand-in; the real Lethal Defense (a seal-cooldown
+		//refund on a Combo kill) is pinned in `verifySealShield`.
 		assert.equal(talents.sharedUpgradeArmor('sniper', 1, 1), 1);
 		assert.equal(talents.sharedUpgradeArmor('sniper', 1, 3), 0);
 		assert.equal(talents.twinUpgradeArmor('champion', 1, 1), 1);

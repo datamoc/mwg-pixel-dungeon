@@ -1,15 +1,7 @@
 import type { ClassId } from './classes';
 
 /** Pure, scene-independent rules for the small talent procs implemented by the port. */
-/** `Talent.IRON_WILL`'s real effect (`BrokenSeal.maxShield()`, tag `v3.3.8`): `+points` added to
- * the Warrior's seal-shield cap, `armTier + armLvl + points`. This is not a standalone formula
- * call site any more - `dungeonScene.ts`'s seal-shield regen tick reads `talentRank('iron_will')`
- * directly into that cap - kept only as the historical note that this port used to carry a flat
- * damage-reduction stand-in here (`rank` while below 50% HP) instead, invented before the seal
- * item existed. That stand-in's own citation was also wrong: it claimed the real cap was
- * `3 + 2*armTier + points`, which does not match `BrokenSeal.java`'s actual `armTier + armLvl +
- * points` - not just simplified, factually incorrect, caught only once the real item was read
- * directly rather than re-cited from memory. */
+/** `Talent.IRON_WILL` and `Talent.LETHAL_DEFENSE` have no formula here any more: Iron Will is `+rank` on the Broken Seal's shield size and Lethal Defense a seal-cooldown refund, both in `simulation/sealShield.ts` (the port used to carry a flat damage-reduction / a shield-per-hit-taken stand-in for them, both invented). */
 
 export function shieldBatteryGain(blocked: number, rank: number): number {
 	return blocked > 0 && rank > 0 ? rank : 0;
@@ -80,10 +72,6 @@ export function empoweredStrikeBonus(subclass: string | null, rank: number): num
 export function bountyHunterDropBonus(prepLevel: number, rank: number): number {
 	if (rank <= 0) return 0;
 	return 0.02 * Math.pow(2, Math.min(Math.max(prepLevel, 1), 4) - 1) * rank;
-}
-
-export function lethalDefenseShield(subclass: string | null, rank: number): number {
-	return subclass === 'gladiator' ? rank : 0;
 }
 
 export function sharedUpgradeArmor(subclass: string | null, rank: number, armorLevel: number): number {

@@ -1508,7 +1508,7 @@ export const deathSaveRefreshMethods = {
 			blockingBarrierState: this.blockingBarrier.toJSON(),
 			blockingTurnsLeft: this.blockingTurnsLeft,
 			sealBarrierState: this.sealBarrier.toJSON(),
-			sealPartialGain: this.sealPartialGain,
+			sealState: { ...this.sealState },
 			armorSealed: this.armorSealed,
 			stealthTalentTicks: this.stealthTalentTicks,
 			empoweredZaps: this.empoweredZaps,

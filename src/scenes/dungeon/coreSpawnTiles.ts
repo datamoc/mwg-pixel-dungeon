@@ -196,7 +196,7 @@ export const coreSpawnTilesMethods = {
 		this.blockingBarrier.clear();
 		this.blockingTurnsLeft = 0;
 		this.sealBarrier.clear();
-		this.sealPartialGain = 0;
+		this.sealState = { cooldown: 0, turnsSinceEnemies: 0, initialShield: 0 };
 		this.armorSealed = false;
 		this.itemPickerOpen = false;
 		this.itemPickerEntries = [];

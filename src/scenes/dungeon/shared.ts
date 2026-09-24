@@ -649,7 +649,7 @@ export interface SaveShape {
 	blockingShieldLeft?: number;
 	blockingTurnsLeft?: number;
 	sealBarrierState?: { layers: { amount: number; decayPerTick?: number }[] };
-	sealPartialGain?: number;
+	sealState?: { cooldown: number; turnsSinceEnemies: number; initialShield: number };
 	armorSealed?: boolean;
 	weaponCurseInfusionBonus?: boolean;
 	armorCurseInfusionBonus?: boolean;

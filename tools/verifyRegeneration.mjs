@@ -65,7 +65,7 @@ const loop = read('../src/scenes/dungeon/turnLoopAiming.ts');
 const heroTurn = read('../src/simulation/heroTurn.ts');
 assert.match(heroTurn, /advanceHunger\(turnCost\);\n\teffects\.tickRegeneration\?\.\(\);/, 'Regeneration acts right after the hero (HERO_PRIO - 1)');
 assert.match(loop, /if \(this\.floorLocked\(\)\) return;\n\t\t\/\/Java's Hunger uses/, 'Hunger.act() idles on a locked floor');
-for (const gate of ['this.armorSealed && this.regenOn()', "this.regenOn() ? 0.1", 'regenOn: this.regenOn(),', 'this.hero.magicImmune === true, this.regenOn());', '!this.regenOn() ? 0 :']) {
+for (const gate of ['regenOn: this.regenOn(), shielding: this.sealBarrier.total', "this.regenOn() ? 0.1", 'regenOn: this.regenOn(),', 'this.hero.magicImmune === true, this.regenOn());', '!this.regenOn() ? 0 :']) {
 	assert.ok((loop + read('../src/scenes/dungeon/actorTurnsHazards.ts')).includes(gate), `regenOn gate wired: ${gate}`);
 }
 for (const [file, hook] of [

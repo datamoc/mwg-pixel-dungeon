@@ -11,6 +11,7 @@ import { ringArcanaMultiplier, ringForceBonus, ringTenacityMultiplier } from '..
 import { HOLY_WARD_BLOCK, HOLY_WEAPON_BONUS, auraProcBonus, auraProtectedDamage, satiatedShieldAmount, searingLightBonus, shieldOfLightRange } from '../../simulation/clericSpells';
 import { capitalize, has, t } from '../../i18n/index';
 import { MONK_MEDITATE_DAMAGE_FACTOR } from '../../simulation/monkEnergy';
+import { sealActivate, sealMaxShield, sealShouldActivate } from '../../simulation/sealShield';
 import { assassinReachBonus, deathlessFuryTriggers, empoweredStrikeBonus, farsightMultiplier, shieldBatteryGain, weaponRechargingDamage } from '../../talentEffects';
 import { Terrain, type PaintLevel } from '../../spdLevelGen/paintLevel';
 import { runState } from '../../runState';
@@ -1757,6 +1758,16 @@ export const combatResolutionMethods = {
 		//for that unspecified order, not a reproduction of a real priority field - the seal drains
 		//first here because `HeroClass.initHero()` affixes it before any other buff could exist
 		//for a fresh Warrior, making it the earliest-attached shield in the common case.
+		//`Char.damage()` (tag `v3.3.8`): a hit that leaves the hero at or below half HP - counting the shield already up -
+		//activates a ready `BrokenSeal.WarriorShield` BEFORE the shields absorb, so the fresh shield takes this very hit.
+		if (this.armorSealed && sealShouldActivate({
+			damage: viscosityDamage, hp: this.hero.hp, maxHp: this.hero.maxHp, shielding: this.heroShieldPoolTotal(), coolingDown: this.sealState.cooldown > 0,
+		})) {
+			const size = sealMaxShield(this.armorTier, this.talentRank('iron_will'));
+			this.sealBarrier.add(size);
+			this.sealState = sealActivate(this.sealState, size);
+			this.say(t('port.log.shield', { amount: size }), 'positive');
+		}
 		const afterLivingEarth = Math.max(0, viscosityDamage - livingEarthBlocked);
 		const blockedSeal = this.sealBarrier.absorb(afterLivingEarth);
 		const blockedBlocking = this.blockingBarrier.absorb(Math.max(0, afterLivingEarth - blockedSeal));
@@ -1803,7 +1814,7 @@ export const combatResolutionMethods = {
 	/** Returns the amount actually added (may be less than `amount` if capped). */
 	grantHeroShield(this: DungeonScene, amount: number, cap = 999): number {
 		if (amount <= 0) return 0;
-		const max = cap + this.talentRank('iron_will');
+		const max = cap;
 		const room = Math.max(0, max - this.heroBarrier.total);
 		const added = Math.min(room, amount);
 		this.heroBarrier.add(added);

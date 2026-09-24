@@ -133,7 +133,7 @@ export const panelsSingleUseMethods = {
 		this.sealBarrier = s.sealBarrierState
 			? Actors.Barrier.fromJSON(s.sealBarrierState)
 			: new Actors.Barrier();
-		this.sealPartialGain = s.sealPartialGain ?? 0;
+		this.sealState = { cooldown: 0, turnsSinceEnemies: 0, initialShield: 0, ...(s.sealState ?? {}) };
 		//Pre-seal saves have no record either way; treat a Warrior's pre-existing run as unsealed
 		//rather than guessing whether the equipped armor is still the original starting piece.
 		this.armorSealed = s.armorSealed ?? false;

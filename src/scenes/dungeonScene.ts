@@ -865,7 +865,7 @@ export class DungeonScene extends Scene2D {
 	 * Runic Transference's glyph-transfer half remains unported (that talent is unimplemented). */
 	sealBarrier = new Actors.Barrier();
 	armorSealed = false;
-	sealPartialGain = 0;
+	sealState = { cooldown: 0, turnsSinceEnemies: 0, initialShield: 0 }; //`BrokenSeal.WarriorShield`'s cooldown, idle counter and activation size (`simulation/sealShield.ts`)
 	/** `WandOfLivingEarth.RockArmor`: stored rock armor and the wand level that set its cap. */
 	livingEarthArmor = 0;
 	/** `Earthroot.Armor` (`plants/Earthroot.java`, tag `v3.3.8`): a block *pool* of `level` points
