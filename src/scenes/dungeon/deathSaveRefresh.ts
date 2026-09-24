@@ -18,17 +18,17 @@ import { applyDM300DeathUnseal, applyGooDeathUnseal, applyKingDeathUnseal, apply
 import { processSacrifice } from '../../simulation/environmentalBlobs';
 import { buildYogMinionDeck, chooseYogSpawnCell } from '../../simulation/yogBoss';
 import { deathBurstsFor } from '../../simulation/deathBursts';
-import { colorblind } from '../../settings';
+import { colorblind, highContrast } from '../../settings';
 import { ringTypesKnownFor } from '../../simulation/ringKnow';
 import { staffImbueFor } from '../../items/wands';
 import { Banner } from '../../ui/banner';
-import { bruteLootArmor, randomArmor, type GenItem } from '../../items/generator';
+import { bruteLootArmor, randomArmor, randomUsingDefaultsAnyCategory, type GenItem } from '../../items/generator';
 import { generatedInventoryItem } from '../../items/generatedItems';
 import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type WealthTrackers } from '../../items/wealthDrops';
 import { wandmakerQuestType, wandmakerQuestWands } from '../../spdLevelGen/wandmaker';
 import { FLOOR, TILE, WALL, WATER, WATERSKIN_MAX } from '../../dungeonConstants';
 import { regionForDepth } from '../../genericDungeon';
-import { BUFF_DURATION, addBuff, buffBlocked, reigniteBuff, rollHit, type BuffId, type Creature, type GroundItem } from '../../combat';
+import { BUFF_DURATION, addBuff, buffBlocked, doomDamage, reigniteBuff, rollHit, type BuffId, type Creature, type GroundItem } from '../../combat';
 import { BOSSES, BOSS_KINDS, LIMITED_DROP_DECAY, MINIBOSS_KINDS, MOB_LOOT, MONSTERS, type AnyMonsterId, type MonsterId } from '../../monsters';
 import { SPD_LEVEL_CURVE, isStatueLoot } from './shared';
 
@@ -478,6 +478,21 @@ export const deathSaveRefreshMethods = {
 			//drops one `Generator.randomArmor()` (depth/5 floor set, the same default the wealth-drop
 			//path already uses) alongside its ordinary meat roll below - two separate items, matching
 			//Java's `super.rollToDropLoot()` call before this bonus.
+			//`GnollExile.rollToDropLoot()` (tag `v3.3.8`): past the same gate, two - and on a coin flip three -
+			//`Generator.randomUsingDefaults()` items, each thrown onto a random `NEIGHBOURS9` cell around
+			//the corpse that is not solid-and-impassable (its `lootChance` is 0, so this is its only loot).
+			if (!overleveled && creature.kind === 'gnollExile') {
+				const count = Random.int(2) === 0 ? 3 : 2;
+				for (let i = 0; i < count; i++) {
+					const item = generatedInventoryItem(randomUsingDefaultsAnyCategory(), { newItemInstanceId: (kind) => this.newItemInstanceId(kind) });
+					const cells = [{ x: 0, y: 0 }, ...Roguelike.neighbourOffsets(8).map(([dx, dy]) => ({ x: dx, y: dy }))]
+						.map((o) => ({ x: creature.x + o.x, y: creature.y + o.y }))
+						.filter((c) => this.level.inside(c.x, c.y) && this.level.passable(c.x, c.y));
+					const at = cells.length > 0 ? cells[Random.int(0, cells.length)]! : { x: creature.x, y: creature.y };
+					this.spawnGroundItem(groundKindForItem(item, 'food'), at.x, at.y, item);
+					this.say(t('port.log.drops', { who: capitalize(creature.name), item: this.itemDisplayName(item.id, item.identified ?? false, item.instanceId) }));
+				}
+			}
 			if (!overleveled && creature.kind === 'hermitCrab') {
 				const item = generatedInventoryItem(randomArmor(), { newItemInstanceId: (kind) => this.newItemInstanceId(kind) });
 				this.spawnGroundItem(groundKindForItem(item, 'armor'), creature.x, creature.y, item);

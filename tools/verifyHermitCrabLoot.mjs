@@ -18,4 +18,10 @@ check('a guaranteed armor drop runs past the overleveled gate, alongside the ord
 	assert.ok(/!overleveled && creature\.kind === 'hermitCrab'\) \{\s*const item = generatedInventoryItem\(randomArmor\(\)/.test(scene));
 });
 
+check('GnollExile drops 2 or (coin flip) 3 random items past the same gate', () => {
+	assert.ok(/!overleveled && creature\.kind === 'gnollExile'\) \{\s*const count = Random\.int\(2\) === 0 \? 3 : 2;/.test(scene));
+	assert.ok(scene.includes('randomUsingDefaultsAnyCategory()'), 'the category-free Generator.randomUsingDefaults()');
+});
+// live: tools/scratch/gnollexile-loot-livecheck.mjs - 30 kills averaged 2.63 items (expected 2.5)
+
 console.log('verifyHermitCrabLoot: OK');
