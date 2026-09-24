@@ -14,21 +14,7 @@
  * reuses the newly-exported `applyBlastDamage` (`items/bombEffects.ts`, which already had a
  * hero branch) and `LightningBolt` turned out to be almost entirely presentation (every
  * `Lightning()` visual and `ScrollOfRecharging.charge()` are pure particle bursts with zero
- * mechanical effect in `v3.3.8`, both skippable) once read past the sprite calls. Rare: 1 of 8
- * so far - `MassInvuln` (every character gets Invulnerability+Bless, both already-modeled
- * buffs, no new infra needed), `ConeOfColors` (8-radius/90-degree `STOP_SOLID` cone via
- * `mechanics/cone.ts`'s `coneCells`, five already-modeled status/damage primitives - Burning,
- * Frost, Poison, Ooze, Electricity+Paralysis - uniformly picked per affected character, each
- * independently damage-rolled), and `SheepPolymorph` (a live, non-hero, non-boss/miniboss,
- * non-NPC target at the bolt's collision cell is silently destroyed - the same no-death/no-loot
- * teardown `destroyAlly` already uses - and replaced with a fresh 10-turn `spawnSheep` at its
- * cell, reusing `SummonSheep`'s own factory). The other five each need real new infrastructure
- * this port doesn't have: `SummonMonsters`/`CurseEquipment` need `SummoningTrap`/`CursingTrap`
- * kinds that are declared in `TrapKind`'s union but never actually implemented (dead type
- * entries, a separate, pre-existing gap - see `environmentFireTraps.ts`'s `UTILITY_TRAPS`);
- * `Petrify` needs a `TimeStasis` buff that doesn't exist; `InterFloorTeleport` needs real
- * weighted-depth floor-travel wiring; `FireBall` needs an arbitrary-point FOV cast plus a
- * knockback primitive. The whole VeryRare tier (folded into Rare's odds above, see the roll
+ * mechanical effect in `v3.3.8`, both skippable) once read past the sprite calls. Rare: 4 of 8 so far - `MassInvuln` (every character gets Invulnerability+Bless), `ConeOfColors` (an 8-radius/90-degree `STOP_SOLID` cone with five existing status/damage effects), `SheepPolymorph` (silently replaces an eligible target with a 10-turn Sheep), and `SummonMonsters` (uses the existing summoning utility trap). That utility chooses a random depth-roster mob instead of Java's level mob rotation, spawns immediately instead of after two turns, and omits avoid-cell and chained-trap handling; the call site documents these simplifications. The other four need new infrastructure: `CurseEquipment` needs a CursingTrap; `Petrify` needs a TimeStasis buff; `InterFloorTeleport` needs weighted-depth floor travel; `FireBall` needs arbitrary-point FOV and knockback. The whole VeryRare tier (folded into Rare's odds above, see the roll
  * note) is **Not ported**, along with `WondrousResin`'s `positiveOnly` mode (no such artifact
  * here).
  */
@@ -68,8 +54,8 @@ export const CURSED_PLANT_KINDS: readonly string[] = [
 	'rotberry', 'sorrowmoss', 'starflower', 'stormvine', 'sungrass', 'swiftthistle',
 ];
 
-export type CursedRareEffectId = 'massInvuln' | 'coneOfColors' | 'sheepPolymorph';
-export const CURSED_RARE_EFFECT_IDS: readonly CursedRareEffectId[] = ['massInvuln', 'coneOfColors', 'sheepPolymorph'];
+export type CursedRareEffectId = 'massInvuln' | 'coneOfColors' | 'sheepPolymorph' | 'summonMonsters';
+export const CURSED_RARE_EFFECT_IDS: readonly CursedRareEffectId[] = ['massInvuln', 'coneOfColors', 'sheepPolymorph', 'summonMonsters'];
 
 /** `ConeOfColors.effect()`'s per-character `Random.Int(5)` branch. */
 export type ConeOfColorsStatus = 'burning' | 'frost' | 'poison' | 'ooze' | 'electricity';
@@ -88,7 +74,7 @@ export function pickCursedTier(pick: (bound: number) => number): 'common' | 'unc
 	return roll < 60 ? 'common' : roll < 90 ? 'uncommon' : 'rare';
 }
 
-/** `Random.element(RARE_EFFECTS)`, restricted to the 1 ported id, uniform pick. */
+/** `Random.element(RARE_EFFECTS)`, restricted to the four ported ids, uniform pick. */
 export function pickCursedRareEffect(pick: (bound: number) => number): CursedRareEffectId {
 	return CURSED_RARE_EFFECT_IDS[pick(CURSED_RARE_EFFECT_IDS.length)]!;
 }

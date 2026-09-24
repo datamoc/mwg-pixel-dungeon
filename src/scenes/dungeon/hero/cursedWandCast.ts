@@ -234,7 +234,7 @@ export const cursedWandCastMethods = {
 		}
 	},
 
-	/** `CursedWand.cursedZap()`'s Rare tier, 3 of 8 (`simulation/cursedWand.ts` has the scoping
+	/** `CursedWand.cursedZap()`'s Rare tier, 4 of 8 (`simulation/cursedWand.ts` has the scoping
 	 * rationale for the other five, each blocked on real missing infrastructure). */
 	castCursedWandRareEffect(this: DungeonScene, target: Creature | undefined, cell: Step): void {
 		const effect = pickCursedRareEffect((bound) => Random.int(bound));
@@ -264,6 +264,16 @@ export const cursedWandCastMethods = {
 				addBuff(creature, 'invulnerability', 10);
 				addBuff(creature, 'bless');
 			}
+			return;
+		}
+		if (effect === 'summonMonsters') {
+			//`SummonMonsters.effect()` (`CursedWand.java`, tag `v3.3.8`) activates a
+			//SummoningTrap at the bolt collision cell. Reuse this port's matching utility trap;
+			//Java uses the level mob rotation, supports avoid cells, delays each spawn by two turns
+			//and activates traps under new mobs. The utility instead picks a random depth-roster mob,
+			//spawns immediately, and omits avoid-cell/chained-trap handling. These are documented
+			//simplifications of the shared utility-trap implementation.
+			this.activateUtilityTrap('summoning', cell.x, cell.y);
 			return;
 		}
 		//ConeOfColors.effect(): Java re-does the bolt as `STOP_SOLID` (so it goes through

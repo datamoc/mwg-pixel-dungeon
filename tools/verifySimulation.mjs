@@ -1761,10 +1761,13 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.equal(pickCursedUncommonEffect((n) => { assert.equal(n, 8); return 7; }), 'lightningBolt');
 		assert.deepEqual(CURSED_PLANT_KINDS, ['blindweed', 'earthroot', 'fadeleaf', 'firebloom', 'icecap', 'mageroyal',
 			'rotberry', 'sorrowmoss', 'starflower', 'stormvine', 'sungrass', 'swiftthistle']);
-		assert.deepEqual(CURSED_RARE_EFFECT_IDS, ['massInvuln', 'coneOfColors', 'sheepPolymorph']);
-		assert.equal(pickCursedRareEffect((n) => { assert.equal(n, 3); return 0; }), 'massInvuln');
-		assert.equal(pickCursedRareEffect((n) => { assert.equal(n, 3); return 1; }), 'coneOfColors');
-		assert.equal(pickCursedRareEffect((n) => { assert.equal(n, 3); return 2; }), 'sheepPolymorph');
+		assert.deepEqual(CURSED_RARE_EFFECT_IDS, ['massInvuln', 'coneOfColors', 'sheepPolymorph', 'summonMonsters']);
+		assert.equal(pickCursedRareEffect((n) => { assert.equal(n, 4); return 0; }), 'massInvuln');
+		assert.equal(pickCursedRareEffect((n) => { assert.equal(n, 4); return 1; }), 'coneOfColors');
+		assert.equal(pickCursedRareEffect((n) => { assert.equal(n, 4); return 2; }), 'sheepPolymorph');
+		assert.equal(pickCursedRareEffect((n) => { assert.equal(n, 4); return 3; }), 'summonMonsters');
+		const cursedWandScene = readFileSync(new URL('../src/scenes/dungeon/hero/cursedWandCast.ts', import.meta.url), 'utf8');
+		assert.match(cursedWandScene, /effect === 'summonMonsters'[\s\S]*?activateUtilityTrap\('summoning', cell\.x, cell\.y\)/);
 		//ConeOfColors.effect()'s Random.Int(5): burning/frost/poison/ooze/electricity.
 		assert.deepEqual(CONE_OF_COLORS_STATUSES, ['burning', 'frost', 'poison', 'ooze', 'electricity']);
 		assert.equal(pickConeOfColorsStatus((n) => { assert.equal(n, 5); return 0; }), 'burning');
