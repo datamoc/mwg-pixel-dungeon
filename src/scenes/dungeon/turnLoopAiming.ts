@@ -39,6 +39,9 @@ import { BUFF_DURATION, addBuff, buffBlocked, electricDamageHalved, icyDamageHal
 import { tickMonsterTurnEnd } from '../../simulation/buffs';
 import { isUndeadOrDemonic } from '../../monsters';
 
+/** Whether the hero was paralysed/vertigoed at a queued travel's first step, keyed by that travel's target object (`Hero.interrupt()` on gaining either). */
+const travelStartRestricted = new WeakMap<object, boolean>();
+
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `turnLoopAiming`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
 export const turnLoopAimingMethods = {
@@ -1176,6 +1179,17 @@ export const turnLoopAimingMethods = {
 		//visibility broadly (any such creature currently seen) rather than Java's narrower
 		//"a *newly* seen enemy" - a stated simplification, safer than under-interrupting.
 		if (this.hero.hp < this.travelStartHp) {
+			this.travelTarget = null;
+			this.travelOverlay?.clear();
+			return;
+		}
+		//`Hero.add(Buff)` (tag `v3.3.8`) calls `interrupt()` when the hero GAINS Paralysis or Vertigo,
+		//cancelling the current travel. Gaining is detected as "absent at this travel's first step,
+		//present now" (Java does not interrupt a travel begun while already vertigoed).
+		const restricted = (this.hero.buffs['vertigo'] ?? 0) > 0 || (this.hero.buffs['paralysis'] ?? 0) > 0;
+		const startedRestricted = travelStartRestricted.get(to);
+		if (startedRestricted === undefined) travelStartRestricted.set(to, restricted);
+		else if (restricted && !startedRestricted) {
 			this.travelTarget = null;
 			this.travelOverlay?.clear();
 			return;
