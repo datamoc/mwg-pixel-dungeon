@@ -18,7 +18,7 @@ import { applyDM300DeathUnseal, applyGooDeathUnseal, applyKingDeathUnseal, apply
 import { processSacrifice } from '../../simulation/environmentalBlobs';
 import { buildYogMinionDeck, chooseYogSpawnCell } from '../../simulation/yogBoss';
 import { deathBurstsFor } from '../../simulation/deathBursts';
-import { colorblind, highContrast } from '../../settings';
+import { colorblind } from '../../settings';
 import { ringTypesKnownFor } from '../../simulation/ringKnow';
 import { staffImbueFor } from '../../items/wands';
 import { Banner } from '../../ui/banner';
@@ -28,7 +28,7 @@ import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type Wealt
 import { wandmakerQuestType, wandmakerQuestWands } from '../../spdLevelGen/wandmaker';
 import { FLOOR, TILE, WALL, WATER, WATERSKIN_MAX } from '../../dungeonConstants';
 import { regionForDepth } from '../../genericDungeon';
-import { BUFF_DURATION, addBuff, buffBlocked, doomDamage, reigniteBuff, rollHit, type BuffId, type Creature, type GroundItem } from '../../combat';
+import { BUFF_DURATION, addBuff, buffBlocked, reigniteBuff, rollHit, type BuffId, type Creature, type GroundItem } from '../../combat';
 import { BOSSES, BOSS_KINDS, LIMITED_DROP_DECAY, MINIBOSS_KINDS, MOB_LOOT, MONSTERS, type AnyMonsterId, type MonsterId } from '../../monsters';
 import { SPD_LEVEL_CURVE, isStatueLoot } from './shared';
 
