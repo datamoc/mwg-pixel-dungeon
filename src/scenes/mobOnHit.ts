@@ -27,6 +27,8 @@ export interface MobOnHitContext {
 	creatureAt(x: number, y: number): Creature | null | undefined;
 	degradedLevel(trueLevel: number): number;
 	genericProcMultiplier(): number;
+	armorProcMultiplier(defender: Creature): number;
+	trinityBodyGlyphIs(glyph: string): boolean;
 	grantHeroShield(amount: number, cap?: number): number;
 	isChasmCell(x: number, y: number): boolean;
 	placePortedFeature(cell: number, kind: string): void;
@@ -292,14 +294,16 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
  			reigniteBuff(defender, 'cripple');
 		ctx.say(t('port.log.cripple'), 'negative');
 	}
-	//`Thorns.proc()` (tag v3.3.8): an Arcana-scaled `(level+2)/(level+12)` chance - 16.7% at level
-	//0, 23.1% at 1, 28.5% at 2 - against an attacker of the opposite alignment, applying
-	//`Bleeding` at `round((4 + level) * max(1, chance))`. What stood here was 2 points of
-	//*instant* damage with no roll at all, which fired on every single hit the hero took and
-	//scaled with nothing; Java's glyph is a damage-over-time with a real chance.
-	if (defender.isHero && armorGlyph('thorns') && !attacker.isHero && attacker.hp > 0) {
+	//`Thorns.proc()` (items/armor/glyphs/Thorns.java, tag v3.3.8): an Arcana-scaled
+	//`(level+2)/(level+12)` chance against an opposite-alignment attacker, applying
+	//`Bleeding` at `round((4 + level) * max(1, chance))`. The same proc is reachable through
+	//Trinity's temporary BodyForm glyph. Java runs this in Armor.proc(); the port invokes it
+	//from this shared landed-hit hook after damage has been resolved.
+	if (defender.isHero && !defender.magicImmune
+		&& (armorGlyph('thorns') || ctx.trinityBodyGlyphIs('thorns'))
+		&& !attacker.isHero && !attacker.isAlly && !attacker.isNPC && attacker.hp > 0) {
 		const level = Math.max(0, ctx.degradedLevel(ctx.armorLevel));
-		const procChance = ((level + 2) / (level + 12)) * ctx.genericProcMultiplier();
+		const procChance = ((level + 2) / (level + 12)) * ctx.armorProcMultiplier(defender);
 		if (Random.chance(procChance)) {
 			setBleeding(attacker, Math.round((4 + level) * Math.max(1, procChance)));
 			ctx.say(t('port.log.thorns'), 'positive');

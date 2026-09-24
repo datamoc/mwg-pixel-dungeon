@@ -39,7 +39,7 @@ import { applyChillFreeze } from '../../../simulation/buffs';
 import { BOSSES, IMMOVABLE_KINDS, heroSheet, liveStats, type MonsterId } from '../../../monsters';
 import { HARMFUL_PLANTS, NATURES_POWER_DURATION } from '../shared';
 
-const TRINITY_BODY_GLYPH_CLASSES: Readonly<Record<string, string>> = { stone: 'Stone', repulsion: 'Repulsion', antimagic: 'AntiMagic', viscosity: 'Viscosity' };
+const TRINITY_BODY_GLYPH_CLASSES: Readonly<Record<string, string>> = { stone: 'Stone', repulsion: 'Repulsion', antimagic: 'AntiMagic', viscosity: 'Viscosity', thorns: 'Thorns' };
 
 /** A flow context whose item lookup (`chainsOf`, `armbandOf`, ...) returns `item` for any instance id. */
 function trinitySyntheticFlow<C extends object>(ctx: C, lookup: string, item: object): C {

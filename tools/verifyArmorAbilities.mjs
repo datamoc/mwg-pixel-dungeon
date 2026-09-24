@@ -66,6 +66,7 @@ export function verifyArmorAbilities(require, check) {
 		assert.deepEqual([0, 1, 4].map(trinitySpiritRingLevel), [0, 1, 4]);
 		assert.deepEqual([0, 1, 4].map(trinitySpiritArtifactLevel), [2, 4, 10]);
 		assert.equal(trinityChargeUsePerEffect(25, 'Corrupting', 'body'), 50);
+		assert.equal(trinityChargeUsePerEffect(25, 'Thorns', 'body'), 50);
 		assert.equal(trinityChargeUsePerEffect(25, 'WandOfFireblast', 'mind'), 50);
 		assert.equal(trinityChargeUsePerEffect(25, 'DriedRose', 'spirit'), 50);
 		assert.equal(trinityChargeUsePerEffect(25, 'EtherealChains', 'spirit'), 35);
@@ -797,5 +798,18 @@ export function verifyArmorAbilities(require, check) {
 			'a consumed tracker must run the bow nature-proc');
 		assert.doesNotMatch(source, /damageMultiplier \*= 1\.1/,
 			'the invented x1.1 spirit-blades damage bonus must be gone');
+	});	check('Trinity BodyForm Thorns is offered and follows Java's defensive proc gates', () => {
+		const ability = readFileSync(new URL('../src/scenes/dungeon/hero/armorAbilityUse.ts', import.meta.url), 'utf8');
+		const combat = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
+		const mob = readFileSync(new URL('../src/scenes/mobOnHit.ts', import.meta.url), 'utf8');
+		assert.match(ability, /thorns: 'Thorns'/, 'BodyForm offers Thorns');
+		assert.match(ability, /commitTrinityBodyGlyph[\s\S]*?trinityBodyGlyph = glyph/, 'BodyForm stores the selected glyph');
+		assert.match(combat, /trinityBodyGlyphIs\(this: DungeonScene[\s\S]*?trinityBodyGlyphActive\(/, 'scene applies Java BodyForm active, duplicate, and MagicImmune gates');
+		assert.match(combat, /this\.trinityBodyGlyphIs\('(stone|repulsion|antimagic|viscosity)'\)/, 'all four existing defensive glyph hooks use Trinity state');
+		assert.match(combat, /armorProcMultiplier\(this: DungeonScene, defender: Creature\): number \{[\s\S]*?const arcana = ringArcanaMultiplier\([\s\S]*?return arcana \+ auraProcBonus/, 'defend-side chance excludes the weapon-only catalyst term');
+		assert.match(mob, /armorGlyph\('thorns'\) \|\| ctx\.trinityBodyGlyphIs\('thorns'\)/, 'Thorns uses the temporary Trinity glyph');
+		assert.match(mob, /!attacker\.isHero && !attacker\.isAlly && !attacker\.isNPC && attacker\.hp > 0/, 'Thorns only affects a living opposite-alignment attacker');
+		assert.match(mob, /\(\(level \+ 2\) \/ \(level \+ 12\)\) \* ctx\.armorProcMultiplier\(defender\)/, 'Thorns uses Java's chance and defend-side multiplier');
+		assert.match(mob, /setBleeding\(attacker, Math\.round\(\(4 \+ level\) \* Math\.max\(1, procChance\)\)\)/, 'Thorns applies Java's level-scaled Bleeding');
 	});
 }

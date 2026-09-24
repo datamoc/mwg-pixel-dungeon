@@ -44,8 +44,8 @@ export const TOME_START_CHARGES = 3;
 export type TomeSpellId = 'guidingLight' | 'holyWeapon' | 'holyWard';
 
 /** Trinity's three item-form families (`BodyForm`, `MindForm`, `SpiritForm`, tag `v3.3.8`).
- * The scene/UI dispatcher is still unported; these pure rules keep its authored numbers in one
- * place so the eventual item-effect implementation cannot guess at them. */
+ * The scene/UI dispatcher uses a modeled BodyForm weapon/glyph subset; MindForm and SpiritForm
+ * remain partial. These pure rules keep their authored numbers in one place for scene flows. */
 export type TrinityForm = 'body' | 'mind' | 'spirit';
 
 /** `BodyForm.duration()`: `round(13.33 + 6.67 * points)`, i.e. 20/27/33/40 turns. */
