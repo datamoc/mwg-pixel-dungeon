@@ -223,10 +223,10 @@ export function verifyArmorAbilities(require, check) {
 		assert.ok(source.includes('!this.level.passable(cell.x, cell.y)'), 'empty-cell placement checks this port\'s available terrain gate');
 		assert.equal(armorChargeUse(armorAbilityDef('powerofmany'), { heroicEnergyRank: 4, powerOfManyLightAlly: true }), 0);
 		const allyTurns = readFileSync(new URL('../src/scenes/dungeon/actorTurnsHazards.ts', import.meta.url), 'utf8');
-		assert.match(allyTurns, /const returningLightAlly = ally\.allyKind === 'lightAlly' && !target && !defend;/,
-			'only an uncommanded LightAlly returning to its hero gets the speed rider');
-		assert.match(allyTurns, /const returningFast = returningLightAlly && Roguelike\.chebyshevDistance\(ally, this\.hero\) > 1;/,
-			'Java doubles LightAlly speed only while more than one cell from its hero');
+		assert.match(allyTurns, /const directableReturning = \(ally\.allyKind === 'lightAlly' \|\| ally\.allyKind === 'shadowClone' \|\| ally\.allyKind === 'ghost'\)\s*&& !target && !defend;/,
+			'an uncommanded LightAlly, ShadowAlly or GhostHero returning to its hero gets the speed rider (PowerOfMany/ShadowClone/DriedRose all carry the identical speed() override)');
+		assert.match(allyTurns, /const returningFast = directableReturning && Roguelike\.chebyshevDistance\(ally, this\.hero\) > 1;/,
+			'Java doubles the speed only while more than one cell from the hero');
 		assert.match(allyTurns, /if \(returningFast\) this\.pendingMonsterTurnCost = 0\.5;/,
 			'the twice-speed return advances the scheduler at half the normal turn cost');
 		const traps = readFileSync(new URL('../src/scenes/dungeon/environmentFireTraps.ts', import.meta.url), 'utf8');

@@ -1480,9 +1480,13 @@ export const actorTurnsHazardsMethods = {
 		//ordered target (`allyTargetChar`), which it keeps chasing across the floor.
 		const chasingSpontaneously = defend !== undefined && target !== undefined && target !== ordered && this.fov.isVisible(defend.x, defend.y);
 		const destination = chasingSpontaneously ? defend : target ?? defend ?? this.hero;
-		const returningLightAlly = ally.allyKind === 'lightAlly' && !target && !defend;
-		if (!target && Roguelike.chebyshevDistance(ally, this.hero) <= 2 && !defend && !returningLightAlly) return;
-		const returningFast = returningLightAlly && Roguelike.chebyshevDistance(ally, this.hero) > 1;
+		//`LightAlly`/`ShadowAlly`/`GhostHero`'s identical `speed()` override (`PowerOfMany.java`, `ShadowClone.java`,
+		//`DriedRose.java`, tag `v3.3.8`): WANDERING, no defend order, more than one tile from the hero -> x2 speed.
+		//The Spirit Hawk has its own separate turn function and speed model (`takeSpiritHawkTurn`), not this one.
+		const directableReturning = (ally.allyKind === 'lightAlly' || ally.allyKind === 'shadowClone' || ally.allyKind === 'ghost')
+			&& !target && !defend;
+		if (!target && Roguelike.chebyshevDistance(ally, this.hero) <= 2 && !defend && !directableReturning) return;
+		const returningFast = directableReturning && Roguelike.chebyshevDistance(ally, this.hero) > 1;
 		if (!target && defend && ally.x === defend.x && ally.y === defend.y) return;
 		const blocked = new Set(this.creatures.filter((c) => c !== ally && c !== destination)
 			.map((c) => this.level.index(c.x, c.y)));
@@ -1492,8 +1496,7 @@ export const actorTurnsHazardsMethods = {
 			const from = { x: ally.x, y: ally.y };
 			this.moveTo(ally, next);
 			this.leaveDoor(from.x, from.y, ally);
-			//`LightAlly.speed()` moves at 2x only while Wandering back to the hero,
-			//uncommanded and more than one tile away (`PowerOfMany.java`).
+			//The shared 2x-return speed above (`directableReturning`) - see its own comment.
 			if (returningFast) this.pendingMonsterTurnCost = 0.5;
 		}
 	},
