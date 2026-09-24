@@ -1,6 +1,7 @@
 /**
  * `Regeneration` and `LockedFloor` (`actors/buffs/Regeneration.java`, `actors/buffs/LockedFloor.java`,
- * tag `v3.3.8`, `regenOn()` diffed against `4.0.0-beta` - identical): the hero's natural HP
+ * tag `v3.3.8`; the real `4.0.0-beta` drops `regenOn()`'s `VaultLevel` check, moot here - no
+ * vault levels): the hero's natural HP
  * regeneration, and the boss-arena lock that switches it (and every other "passive while regen is
  * on" effect in the game) off once the hero stalls a boss fight.
  *

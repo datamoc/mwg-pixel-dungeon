@@ -1543,8 +1543,9 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 		weaponDeckT2: { classes: ['Shortsword', 'HandAxe', 'Spear', 'Quarterstaff', 'Dirk', 'Sickle'], probs: [2, 2, 2, 2, 2, 2] },
 		// Deliberate divergence (see PORT_COVERAGE.md's Generator row and src/items/generator.ts):
 		// Java's static init has `WEP_T3.probs = WEP_T1.defaultProbs.clone()` at every tag checked
-		// (v2.1.4 through 4.0.0-beta), so tier 3's live deck copies tier 1 instead of its own
-		// table. The port authors tier 3's own six weights instead. On current Java (six tier-1
+		// (v2.1.4 through v3.3.8), so tier 3's live deck copies tier 1 instead of its own
+		// table. The port authors tier 3's own six weights instead - which is what upstream's
+		// real 4.0.0-beta does too (`WEP_T3.probs = WEP_T3.defaultProbs.clone()`). On current Java (six tier-1
 		// weights) only Mace at index 1 is observably affected; the five-weight v2.1.4 table
 		// additionally stranded Whip past the end of the cloned array.
 		weaponDeckT3: { classes: ['Sword', 'Mace', 'Scimitar', 'RoundShield', 'Sai', 'Whip'], probs: [2, 2, 2, 2, 2, 2] },

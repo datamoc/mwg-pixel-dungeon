@@ -14,7 +14,8 @@
  *
  * **Correction, 2026-09-11.** Nine of the nineteen statuses and two of the native names were
  * wrong - checked against every tag from `v2.1.4` through `4.0.0-beta`, the old values matched
- * none of them. The values below are now `v3.3.8`'s, which `4.0.0-beta` agrees with. The nine
+ * none of them. The values below are now `v3.3.8`'s (the real `4.0.0-beta` changes 17 of
+ * them; that check read `v3.3.8`, which the local `4.0.0-beta` tag aliased until 2026-09-24). The nine
  * were `ko`/`fr`/`ja`/`uk`/`nl` (marked below their real `complete`), `ru`/`it`/`in` (above
  * their real `unreviewed`) and `el` (above its real `unfinished`); `zh`'s native name is
  * `简体中文` (SPD's `CHI_SMPL`) and `in`'s is `indonesia`, not the French `indonésien` that had

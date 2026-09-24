@@ -271,6 +271,14 @@ Example: `coord post --kind done "DivineIntervention @495c09f ok:tsc,sim286,i18n
   `git -C <path-to-SPD-checkout> show refs/tags/<tag>:<path>` (e.g. `4.0.0-beta`,
   `v3.3.8`) — used to confirm exact values/behavior or pull period-accurate assets rather
   than guessing.
+- **Which tags are real (2026-09-24).** The SPD checkout's `4.0.0-beta` tag was, until
+  2026-09-24, a local alias of `v3.3.8`'s commit (`7b8b845`): every lookup "at `4.0.0-beta`"
+  (`J4b`) before then actually read `v3.3.8`. Upstream never tagged its betas; the checkout now
+  carries `v4.0.0` (fetched) plus local tags on upstream's own version-bump commits -
+  `4.0.0-ALPHA-1..3`, `4.0.0-BETA-1..4`, `4.0.0-RC-1` - and `4.0.0-beta` = `4.0.0-BETA-4`
+  (`b81422080`). Between `v3.3.8` and it, 290 Java files changed (new enchantments/curses,
+  `RingOfHaste` 1.175 -> 1.15, the `WEP_T3` deck fix, ...). This port's target stays `v3.3.8`:
+  cite `v3.3.8` for what the port does, and `4.0.0-beta`/`v4.0.0` only for a real 4.0 difference.
 - When comparing against a real screenshot of the live game, check both the visual (tiles,
   sprites, layout) *and* the actual Java generator/logic source before concluding something
   is a bug versus an intentionally-undocumented gap — then record any newly-found gap in
