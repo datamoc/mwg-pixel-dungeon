@@ -66,6 +66,10 @@ export interface GroundPickupContext {
 	pickupAmulet(): boolean;
 	pickupRing(): boolean;
 	pickupCrystalKey(): boolean;
+	/** `Hero.onOperateComplete`'s cursed-skeleton-key distraction: true when the unlock attempt is swallowed. */
+	cursedKeyDistracts?(): boolean;
+	/** `KeyReplacementTracker.process*LockOpened` for a real key's chest. */
+	realKeyLockOpened?(kind: 'golden' | 'crystal'): void;
 	addSimpleGroundKind(kind: GroundKind): void;
 	messages: {
 		crystalChestLocked: string;
@@ -96,7 +100,9 @@ export function pickupGroundItem(context: GroundPickupContext): void {
 			context.say(context.messages.crystalChestLocked, 'negative');
 			return;
 		}
+		if (context.cursedKeyDistracts?.()) return;
 		context.removeKeyForDepth('crystalKey');
+		context.realKeyLockOpened?.('crystal');
 		context.say(context.messages.unlockCrystalChest, 'positive');
 		context.rollWealthBonusOnOpen();
 	}
@@ -105,7 +111,9 @@ export function pickupGroundItem(context: GroundPickupContext): void {
 			context.say(context.messages.lockedChestNeedsGoldenKey, 'negative');
 			return;
 		}
+		if (context.cursedKeyDistracts?.()) return;
 		context.removeKeyForDepth('goldenKey');
+		context.realKeyLockOpened?.('golden');
 		context.say(context.messages.unlockChest, 'positive');
 		context.rollWealthBonusOnOpen();
 	}

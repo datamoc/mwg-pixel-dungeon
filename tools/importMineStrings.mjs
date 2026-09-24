@@ -1,4 +1,4 @@
-// Imports SPD v3.3.8's own MiningLevel/Blacksmith-quest strings, with
+// Imports SPD v3.3.8's own MiningLevel/Blacksmith-quest/SkeletonKey strings, with
 // their shipped translations, under `port.*` keys (the generated catalogue predates them), as
 // `src/i18n/portMineStrings.ts`, which `portStrings.ts` merges into `PORT_STRINGS`.
 // Run: node tools/importMineStrings.mjs <spd-checkout>
@@ -23,6 +23,8 @@ const MINE_MOBS = {
 	crystalguardian: ['name', 'def_verb', 'desc'],
 	crystalspire: ['name', 'warning', 'alert', 'desc'],
 };
+const SKELETON_KEY = ['name', 'ac_insert', 'cursed', 'prompt', 'invalid_target', 'lock_no_space', 'iron_charges', 'gold_charges', 'lock_charges',
+	'wall_charges', 'crystal_charges', 'wont_open', 'locked_with_key', 'force_lock', 'discard', 'levelup', 'desc', 'desc_worn', 'desc_cursed'];
 const KEYS = [
 	...BLACKSMITH.map((k) => ['actors', `actors.mobs.npcs.blacksmith.${k}`, `port.blacksmith.${k}`]),
 	...Object.entries(MINE_MOBS).flatMap(([mob, keys]) => keys.map((k) => ['actors', `actors.mobs.${mob}.${k}`, `port.mob.${mob}.${k}`])),
@@ -30,6 +32,11 @@ const KEYS = [
 	['levels', 'levels.rooms.quest.mineentrance$questexit.name', 'port.mininglevel.exit_name'],
 	['levels', 'levels.rooms.quest.mineentrance$questexit.desc', 'port.mininglevel.exit_desc'],
 	['items', 'items.quest.darkgold.you_now_have', 'port.darkgold.you_now_have'],
+	//`items/artifacts/SkeletonKey.java` (the artifact the generated catalogue predates - its `items.keys.skeletonkey`
+	//is the pre-v2 plain key), its `KeyWall` blob and `Hero`'s `key_distracted` line.
+	...SKELETON_KEY.map((k) => ['items', `items.artifacts.skeletonkey.${k}`, `port.skeletonkey.${k}`]),
+	['items', 'items.artifacts.skeletonkey$keywall.desc', 'port.skeletonkey.keywall_desc'],
+	['actors', 'actors.hero.hero.key_distracted', 'port.skeletonkey.key_distracted'],
 ];
 
 function props(domain, locale) {

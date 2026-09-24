@@ -10,6 +10,7 @@ import { HOLSTER_DURABILITY_FACTOR, ownsBag, type BagId } from '../../items/bags
 import { runSearch } from '../../adapters/searchSimulation';
 import { passiveSearchChance } from '../../simulation/search';
 import { openAlchemyRecipes } from '../../items/alchemy';
+import { HERO_LOCK_ID } from './hero/skeletonKeyScene';
 import { simulationRoguelike } from '../../adapters/mwgRoguelike';
 import { activateGeyserTrap as activateGeyserTrapFlow } from '../../simulation/geyserTrap';
 import { groundKindForItem, portItemKind, sourceInventoryItem } from '../../items/itemKinds';
@@ -812,7 +813,17 @@ export const environmentFireTrapsMethods = {
 		//Opening it flipped `Doors` to open while the terrain stayed WALL; discovery then restored DOOR_CLOSED over an
 		//"open" door - permanently unopenable, and the only way to the stairs on some floors.
 		if (this.secrets.isSecret(x, y)) return false;
-		if (this.doors.isLocked(x, y)) {
+		if (this.doors.isLocked(x, y) && this.doors.requiredKey(x, y) === HERO_LOCK_ID) {
+			//`Hero.actMove`'s `HERO_LKD_DR` branch (tag `v3.3.8`): a door the skeleton key shut refuses
+			//any hand but the key's own; without an uncursed key the lock has weakened and gives way.
+			const skeleton = this.skeletonKeyItem();
+			if (skeleton && !skeleton.cursed) {
+				this.say(t('port.skeletonkey.locked_with_key'), 'warning');
+				return true;
+			}
+			this.doors.unlock(x, y);
+			this.say(t('port.skeletonkey.force_lock'));
+		} else if (this.doors.isLocked(x, y)) {
 			const keyId = this.crystalDoorCells.has(this.level.index(x, y)) ? 'crystalKey' : 'ironKey';
 			//`Notes.keyCount(new IronKey(Dungeon.depth))`: a key counts toward its own depth only.
 			const key = this.bag.items.find((it) => it.id === keyId && (it as { depth?: number }).depth === this.depth);
@@ -830,9 +841,12 @@ export const environmentFireTrapsMethods = {
 		runState.audio.cue('door_open', 0.55);
 		//shut and open doors are different frames now, and the wall above a doorway carries a
 		//matching lip, so the ring has to be restitched rather than left on its shut art
+			//`Hero.onOperateComplete`: a cursed skeleton key swallows five real-key attempts in six.
+			if (this.cursedKeyDistracts()) return true;
 		this.restitchTilesAround(x, y);
 		this.say(t('port.log.opendoor'));
 		return true;
+			this.realKeyLockOpened(keyId === 'crystalKey' ? 'crystal' : 'iron');
 	},
 
 	/** `Door.leave()` (`levels/features/Door.java`, tag `v3.3.8`), called from `Char.move()`

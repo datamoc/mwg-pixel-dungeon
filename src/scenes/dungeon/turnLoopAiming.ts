@@ -1469,6 +1469,8 @@ export const turnLoopAimingMethods = {
 				//The two awareness marks tick down on the same actor turn, which is where Java's
 				//`CharAwareness`/`HeapAwareness` buffs spend themselves.
 				{
+				//`SkeletonKey.keyRecharge.act()` and `KeyWall.evolve()`: the key's own trickle and the walls' countdown.
+				this.tickSkeletonKey();
 					const talisman = this.talismanItem();
 					if (talisman) {
 						applyTalismanPerTurnCharge(talisman, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true, this.regenOn());

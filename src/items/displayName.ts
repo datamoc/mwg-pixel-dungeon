@@ -40,7 +40,15 @@ export function itemDescription(id: string, sourceClass?: string): string | unde
 		const key = `${nameKey.slice(0, -'.name'.length)}.desc`;
 		return has(key) ? t(key) : undefined;
 	};
-	return resolve(sourceClass) ?? resolve(id);
+	const described = resolve(sourceClass) ?? resolve(id);
+	//`SkeletonKey.desc()`: an equipped key appends `desc_worn` (this port carries artifacts rather than
+	//slotting them, so a carried key counts as worn; the cursed variant `desc_cursed` needs the item's own state).
+	if (described !== undefined && (id === 'skeletonkey' || sourceClass?.toLowerCase() === 'skeletonkey') && has('port.skeletonkey.desc_worn')) {
+		return `${described}
+
+${t('port.skeletonkey.desc_worn')}`;
+	}
+	return described;
 }
 
 /**

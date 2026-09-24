@@ -859,6 +859,7 @@ export const coreSpawnTilesMethods = {
 			gatewayTelePos: [...this.gatewayTelePos],
 			secretDoorCells: [...this.secretDoorCells],
 			crystalDoorCells: [...this.crystalDoorCells],
+			keyWalls: [...this.keyWalls].map(([cell, wall]) => [cell, { ...wall }] as [number, { turns: number; original: number }]),
 			fire: this.fire.toJSON(),
 			plantGas: this.plantGas.toJSON(),
 			plantFreeze: this.plantFreeze.toJSON(),
@@ -908,6 +909,7 @@ export const coreSpawnTilesMethods = {
 		this.gatewayTelePos = new Map(state.gatewayTelePos ?? []);
 		this.secretDoorCells = new Set(state.secretDoorCells);
 		this.crystalDoorCells = new Set(state.crystalDoorCells);
+		this.keyWalls = new Map((state.keyWalls ?? []).map(([cell, wall]) => [cell, { ...wall }]));
 		this.fire = Blob.fromJSON(state.fire);
 		this.plantGas = state.plantGas ? Blob.fromJSON(state.plantGas) : new Blob(this.level.width, this.level.height);
 		this.plantFreeze = state.plantFreeze ? Blob.fromJSON(state.plantFreeze) : new Blob(this.level.width, this.level.height);
@@ -1254,6 +1256,7 @@ export const coreSpawnTilesMethods = {
 		this.gatewayTelePos = new Map();
 		this.secretDoorCells = new Set();
 		this.crystalDoorCells = new Set();
+		this.keyWalls = new Map();
 		this.fire = new Blob(this.level.width, this.level.height);
 		this.plantGas = new Blob(this.level.width, this.level.height);
 		this.plantFreeze = new Blob(this.level.width, this.level.height);

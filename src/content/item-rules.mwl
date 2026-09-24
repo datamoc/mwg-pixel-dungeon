@@ -153,6 +153,9 @@
           { tag: "row", item: "armband", actionKey: "items.artifacts.masterthievesarmband.ac_steal", capitalize: true },
           { tag: "row", item: "horn", actionKey: "items.artifacts.hornofplenty.ac_snack", capitalize: true },
           { tag: "row", item: "chains", actionKey: "items.artifacts.etherealchains.ac_cast", capitalize: true },
+          // `SkeletonKey.AC_INSERT` (tag `v3.3.8`), under the port key: the generated catalogue
+          // predates the artifact (see `importMineStrings.mjs`).
+          { tag: "row", item: "skeletonkey", actionKey: "port.skeletonkey.ac_insert", capitalize: true },
           // `HolyTome.AC_CAST` ("Cast", `windows.wndclericspells.cast` under the port key -
           // the live checkout predates the Cleric). The tome is not one of the 13 real
           // artifacts, so this row is the only `artifacts.mwl`-outside action entry.
@@ -243,6 +246,7 @@
           { tag: "row", itemId: "armband", groundKind: "wand" },
           { tag: "row", itemId: "horn", groundKind: "wand" },
           { tag: "row", itemId: "chains", groundKind: "wand" },
+          { tag: "row", itemId: "skeletonkey", groundKind: "wand" },
           { tag: "row", itemId: "wand", groundKind: "wand" },
           { tag: "row", itemId: "bomb", groundKind: "bomb" },
           { tag: "row", itemId: "doubleBomb", groundKind: "bomb" },
@@ -395,6 +399,9 @@
           // `ItemSpriteSheet.ARTIFACT_ROSE1` (257 + 20). Java swaps to ROSE2/ROSE3 at +4 and +9;
           // this table is one static frame per item, so the three-level art ladder is Not ported.
           { tag: "row", item: "rose", frame: 277 },
+          // `ItemSpriteSheet.ARTIFACT_KEY` (`ARTIFACTS+24`, with `ARTIFACTS = xy(1, 16)` = 240 as `xy` is 1-indexed): the cell was blank in this
+          // port's older sheet, so v3.3.8's 16x16 pixels were pasted into it (see `images.ts`).
+          { tag: "row", item: "skeletonkey", frame: 264 },
           { tag: "row", item: "armor", frame: 176 },
           { tag: "row", item: "armorReward", frame: 176 },
           { tag: "row", item: "weaponReward", frame: 96 },
@@ -666,6 +673,24 @@
           { tag: "row", id: "talismanExpUnseen", item: "talisman", effect: "expUnseen", value: 10 },
           { tag: "row", id: "talismanExpSecretTrap", item: "talisman", effect: "expSecretTrap", value: 10 },
           { tag: "row", id: "talismanExpSecretDoor", item: "talisman", effect: "expSecretDoor", value: 100 },
+          // `SkeletonKey` (tag `v3.3.8`): constructor (`levelCap = 10`, `chargeCap = 3 + level/2`),
+          // `keyRecharge.act()` (`1 / (120 - (chargeCap - charge) * 7.5)` per turn), `charge()`'s
+          // 0.133 partial, the `INSERT` targeter's per-lock charge costs, the KeyWall lifetime,
+          // and `gainExp` (`exp > 4 + level` levels up; each use awards 2 plus the lock's cost
+          // when the lock is one a real key could have opened).
+          { tag: "row", id: "skeletonkeyLevelCap", item: "skeletonkey", effect: "levelCap", value: 10 },
+          { tag: "row", id: "skeletonkeyChargeCapBase", item: "skeletonkey", effect: "chargeCapBase", value: 3 },
+          { tag: "row", id: "skeletonkeyRechargeBase", item: "skeletonkey", effect: "rechargeBase", value: 120 },
+          { tag: "row", id: "skeletonkeyRechargePerMissing", item: "skeletonkey", effect: "rechargePerMissing", value: 7.5 },
+          { tag: "row", id: "skeletonkeyPartialPerAmount", item: "skeletonkey", effect: "partialPerAmount", value: 0.133 },
+          { tag: "row", id: "skeletonkeyIronCost", item: "skeletonkey", effect: "ironCost", value: 1 },
+          { tag: "row", id: "skeletonkeyGoldCost", item: "skeletonkey", effect: "goldCost", value: 2 },
+          { tag: "row", id: "skeletonkeyLockCost", item: "skeletonkey", effect: "lockCost", value: 2 },
+          { tag: "row", id: "skeletonkeyWallCost", item: "skeletonkey", effect: "wallCost", value: 2 },
+          { tag: "row", id: "skeletonkeyCrystalCost", item: "skeletonkey", effect: "crystalCost", value: 5 },
+          { tag: "row", id: "skeletonkeyWallTurns", item: "skeletonkey", effect: "wallTurns", value: 10 },
+          { tag: "row", id: "skeletonkeyExpBase", item: "skeletonkey", effect: "expBase", value: 2 },
+          { tag: "row", id: "skeletonkeyExpToLevelBase", item: "skeletonkey", effect: "expToLevelBase", value: 4 },
           // `DriedRose` (tag `v3.3.8`): constructor (`levelCap = 10`, and unlike every other
           // artifact here `charge = chargeCap = 100` - the rose starts full).
           { tag: "row", id: "roseLevelCap", item: "rose", effect: "levelCap", value: 10 },

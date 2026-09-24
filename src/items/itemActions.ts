@@ -27,6 +27,7 @@ export interface ItemActionContext {
 	useArmband(instanceId?: string): void;
 	useSandals(instanceId?: string): void;
 	useTalisman(instanceId?: string): void;
+	useSkeletonKey(instanceId?: string): void;
 	useSpellbook(instanceId?: string): void;
 	useHolyTome(instanceId?: string): void;
 	wieldMissile(id: string, instanceId?: string): void;
@@ -151,6 +152,7 @@ export function useItemById(scene: ItemActionContext, id: string, instanceId?: s
 		else if (id === 'armband') scene.useArmband(instanceId);
 		else if (id === 'sandals') scene.useSandals(instanceId);
 		else if (id === 'talisman') scene.useTalisman(instanceId);
+		else if (id === 'skeletonkey') scene.useSkeletonKey(instanceId);
 		else if (id === 'spellbook') scene.useSpellbook(instanceId);
 		else if (id === 'holyTome') scene.useHolyTome(instanceId);
 		else if (id.startsWith('missile_')) scene.wieldMissile(id, instanceId);

@@ -284,9 +284,8 @@ export const armorAbilityUseMethods = {
 	 * `EtherealChains`, `MasterThievesArmband`, `SandalsOfNature` and `TalismanOfForesight` are the
 	 * four cell-targeted ones: Java hands the synthetic instance's own selector listener to the
 	 * cell selector, which here is the ported flow itself run over a synthetic item (see
-	 * `trinitySyntheticFlow`). `AlchemistsToolkit` opens the alchemy pot with zero toolkit energy.
-	 * Only `SkeletonKey` (whose lock/crystal-door interactions have no port artifact behind them
-	 * at all) is **not yet offered**.
+	 * `trinitySyntheticFlow`). `AlchemistsToolkit` opens the alchemy pot with zero toolkit energy and
+	 * `SkeletonKey` runs its own targeter (`skeletonKeyScene.ts`'s `trinitySpiritSkeletonKey`).
 	 */
 	chooseTrinitySpiritEffect(this: DungeonScene, cost: number): void {
 		showChoiceWindow(this.gameWindows, 'Trinity Spirit Form', 'Choose a supported spirit effect.', [
@@ -421,6 +420,7 @@ export const armorAbilityUseMethods = {
 		const level = this.trinitySyntheticLevel('talisman');
 		useTalismanFlow(trinitySyntheticFlow(this.talismanFlowContext(), 'talismanOf', { level, charge: mwlItemEffectValue('talisman', 'chargeCap'), exp: -2147483648, cursed: false }), 'trinity-spirit');
 	},
+			{ label: 'Skeleton Key', onPick: () => this.commitTrinitySpiritArtifact(cost, 'SkeletonKey', 'Skeleton Key', () => this.trinitySpiritSkeletonKey()) },
 			{ label: 'Chalice of Blood', onPick: () => this.commitTrinitySpiritArtifact(cost, 'ChaliceOfBlood', 'Chalice of Blood', () => this.trinitySpiritChalice(), true) },
 			{ label: "Alchemist's Toolkit", onPick: () => this.commitTrinitySpiritArtifact(cost, 'AlchemistsToolkit', "Alchemist's Toolkit", () => this.trinitySpiritToolkit()) },
 

@@ -324,6 +324,8 @@ import { panelsSingleUseMethods } from './dungeon/panelsSingleUse';
 import { inventoryQuickslotMethods } from './dungeon/hero/inventoryQuickslot';
 import { clericSpellFlowsMethods } from './dungeon/hero/clericSpellFlows';
 import { armorAbilityUseMethods } from './dungeon/hero/armorAbilityUse';
+import { skeletonKeyMethods } from './dungeon/hero/skeletonKeyScene';
+import type { KeyReplacementTracker } from '../items/skeletonKey';
 import { cursedWandCastMethods } from './dungeon/hero/cursedWandCast';
 import { tippedDartEffectsMethods } from './dungeon/hero/tippedDartEffects';
 import { weaponSpellsGearMethods } from './dungeon/hero/weaponSpellsGear';
@@ -1377,6 +1379,10 @@ export class DungeonScene extends Scene2D {
 	/** cells concealing a real SECRET_DOOR, so a search can name what it found */
 	secretDoorCells = new Set<number>();
 	crystalDoorCells = new Set<number>();
+	/** `SkeletonKey.KeyWall`: cells the key has turned to temporary stone, with the turns left and the terrain to restore (persisted per floor). */
+	keyWalls = new Map<number, { turns: number; original: number }>();
+	/** `SkeletonKey.KeyReplacementTracker`: null until the key's first lock use (the buff does not exist before). */
+	skeletonKeyTracker: KeyReplacementTracker | null = null;
 	/** the current ported floor's raw, untranslated `Terrain.java` grid (null off a ported
 	 * depth) - kept around only so `examineTile` can tell an `EMPTY_DECO`/`BOOKSHELF` cell
 	 * apart from plain floor/wall, a distinction `toGameTerrain`'s coarse mapping deliberately
@@ -2524,5 +2530,5 @@ export class DungeonScene extends Scene2D {
 
 /** The method groups in `./dungeon/` are typed with `this: DungeonScene` and merged onto the prototype here. */
 type Mixed<T> = { [K in keyof T]: OmitThisParameter<T[K]> };
-export interface DungeonScene extends Mixed<typeof coreSpawnTilesMethods>, Mixed<typeof npcShopBlacksmithMethods>, Mixed<typeof environmentFireTrapsMethods>, Mixed<typeof turnLoopAimingMethods>, Mixed<typeof actorTurnsHazardsMethods>, Mixed<typeof monsterAiMethods>, Mixed<typeof bossLogicMethods>, Mixed<typeof gnollMineMethods>, Mixed<typeof crystalMineMethods>, Mixed<typeof combatResolutionMethods>, Mixed<typeof deathSaveRefreshMethods>, Mixed<typeof panelsSingleUseMethods>, Mixed<typeof inventoryQuickslotMethods>, Mixed<typeof clericSpellFlowsMethods>, Mixed<typeof armorAbilityUseMethods>, Mixed<typeof cursedWandCastMethods>, Mixed<typeof tippedDartEffectsMethods>, Mixed<typeof weaponSpellsGearMethods> {}
-Object.assign(DungeonScene.prototype, coreSpawnTilesMethods, npcShopBlacksmithMethods, environmentFireTrapsMethods, turnLoopAimingMethods, actorTurnsHazardsMethods, monsterAiMethods, bossLogicMethods, gnollMineMethods, crystalMineMethods, combatResolutionMethods, deathSaveRefreshMethods, panelsSingleUseMethods, inventoryQuickslotMethods, clericSpellFlowsMethods, armorAbilityUseMethods, cursedWandCastMethods, tippedDartEffectsMethods, weaponSpellsGearMethods);
+export interface DungeonScene extends Mixed<typeof coreSpawnTilesMethods>, Mixed<typeof npcShopBlacksmithMethods>, Mixed<typeof environmentFireTrapsMethods>, Mixed<typeof turnLoopAimingMethods>, Mixed<typeof actorTurnsHazardsMethods>, Mixed<typeof monsterAiMethods>, Mixed<typeof bossLogicMethods>, Mixed<typeof gnollMineMethods>, Mixed<typeof crystalMineMethods>, Mixed<typeof combatResolutionMethods>, Mixed<typeof deathSaveRefreshMethods>, Mixed<typeof panelsSingleUseMethods>, Mixed<typeof inventoryQuickslotMethods>, Mixed<typeof clericSpellFlowsMethods>, Mixed<typeof armorAbilityUseMethods>, Mixed<typeof skeletonKeyMethods>, Mixed<typeof cursedWandCastMethods>, Mixed<typeof tippedDartEffectsMethods>, Mixed<typeof weaponSpellsGearMethods> {}
+Object.assign(DungeonScene.prototype, coreSpawnTilesMethods, npcShopBlacksmithMethods, environmentFireTrapsMethods, turnLoopAimingMethods, actorTurnsHazardsMethods, monsterAiMethods, bossLogicMethods, gnollMineMethods, crystalMineMethods, combatResolutionMethods, deathSaveRefreshMethods, panelsSingleUseMethods, inventoryQuickslotMethods, clericSpellFlowsMethods, armorAbilityUseMethods, skeletonKeyMethods, cursedWandCastMethods, tippedDartEffectsMethods, weaponSpellsGearMethods);

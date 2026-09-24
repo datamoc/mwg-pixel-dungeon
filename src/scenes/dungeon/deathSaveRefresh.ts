@@ -1453,6 +1453,7 @@ export const deathSaveRefreshMethods = {
 			trinityForm: this.trinityForm,
 			trinityTurns: this.trinityTurns,
 			trinityBodyAffix: this.trinityBodyAffix,
+			skeletonKeyTracker: this.skeletonKeyTracker,
 			trinityBodyGlyph: this.trinityBodyGlyph,
 			trinitySpiritEffect: this.trinitySpiritEffect,
 			trinityMindEffect: this.trinityMindEffect,

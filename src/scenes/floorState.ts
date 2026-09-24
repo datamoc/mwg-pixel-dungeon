@@ -19,6 +19,8 @@ export interface FloorState {
 	gatewayTelePos?: [number, number][];
 	secretDoorCells: number[];
 	crystalDoorCells: number[];
+	/** `SkeletonKey.KeyWall`: [cell, { turns left, terrain to restore }] for each temporary wall. */
+	keyWalls?: [number, { turns: number; original: number }][];
 	fire: FireState;
 	plantGas?: FireState;
 	ritualPos?: number;

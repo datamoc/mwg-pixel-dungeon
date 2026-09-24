@@ -1557,6 +1557,8 @@ export const npcShopBlacksmithMethods = {
 			//uses (see `interactWithShopkeeper`), one row for this heap, labelled with SPD's real
 			//`windows.wndtradeitem.buy` string and the price. Only its pick pays; a cancel leaves
 			//both the gold and the heap alone.
+			cursedKeyDistracts: () => this.cursedKeyDistracts(),
+			realKeyLockOpened: (kind) => this.realKeyLockOpened(kind),
 			offerPurchase: (name, price, buy) => this.openItemPicker(t(name), [
 				{ id: item.item?.id ?? 'gold', instanceId: item.item?.instanceId, identified: true, quantity: item.item?.quantity ?? 1, note: t('windows.wndtradeitem.buy', { '0': price }) },
 			], () => { buy(); this.pickupGroundItemAt(x, y); }, item.item ? [

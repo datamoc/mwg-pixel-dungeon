@@ -108,6 +108,7 @@ export const panelsSingleUseMethods = {
 		this.trinitySpiritEffect = s.trinitySpiritEffect ?? null;
 		this.trinityMindEffect = s.trinityMindEffect ?? null;
 		this.livingEarthArmor = s.livingEarthArmor ?? 0;
+		this.skeletonKeyTracker = s.skeletonKeyTracker ?? null;
 		this.livingEarthWandLevel = s.livingEarthWandLevel ?? 0;
 		this.earthrootArmor = (s.earthrootArmorLevel ?? 0) > 0 ? { level: s.earthrootArmorLevel!, pos: s.earthrootArmorPos ?? -1 } : null;
 		this.hero.barkskinLevel = s.barkskinLevel;

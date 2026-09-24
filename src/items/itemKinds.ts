@@ -16,7 +16,7 @@ export interface CarriedItem { id: string; sourceClass?: string }
  * `artifacts/Artifact.isUpgradable()` returns false, and DriedRose/TimekeepersHourglass - the two
  * artifacts that do have levels - override it false as well, so every artifact is excluded. */
 const ARTIFACT_IDS = new Set([
-	'toolkit', 'rose', 'chains', 'horn', 'beacon', 'armband', 'sandals', 'talisman', 'spellbook',
+	'toolkit', 'rose', 'chains', 'horn', 'beacon', 'armband', 'sandals', 'talisman', 'spellbook', 'skeletonkey',
 	'cloak', 'hourglass', 'chalice', 'cape',
 ]);
 
@@ -168,6 +168,7 @@ export function sourceInventoryItem(id: string, sourceClass: string | undefined,
 		if (lower.includes('sandalsofnature')) return 'sandals';
 		if (lower.includes('talismanofforesight')) return 'talisman';
 		if (lower.includes('unstablespellbook')) return 'spellbook';
+		if (lower.includes('skeletonkey')) return 'skeletonkey';
 		return undefined;
 	};
 	const namedArtifact = artifactIdByClass(id);
@@ -229,6 +230,7 @@ export function sourceInventoryItem(id: string, sourceClass: string | undefined,
 	if (lower.includes('masterthievesarmband')) return { id: 'armband', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
 	if (lower.includes('sandalsofnature')) return { id: 'sandals', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
 	if (lower.includes('talismanofforesight')) return { id: 'talisman', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
+	if (lower.includes('skeletonkey')) return { id: 'skeletonkey', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
 	if (lower.includes('unstablespellbook')) return { id: 'spellbook', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
 	if (lower.includes('artifact')) return { id: 'cloak', quantity: 1, identified: false, instanceId: newItemInstanceId('artifact'), sourceClass: concrete };
 	if (lower.includes('wand')) return { id: 'wand', quantity: 1, identified: false, instanceId: newItemInstanceId('wand'), sourceClass: concrete };

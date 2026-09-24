@@ -38,6 +38,7 @@ export function generatedInventoryItem(generated: GenItem, context: GeneratedIte
 			: artifactCls.includes('sandalsofnature') ? 'sandals'
 			: artifactCls.includes('talismanofforesight') ? 'talisman'
 			: artifactCls.includes('unstablespellbook') ? 'spellbook'
+			: artifactCls.includes('skeletonkey') ? 'skeletonkey'
 			: 'cloak';
 	}
 	else if (generated.cat === Cat.RING) id = MWL_RING_CLASS_TO_ID.get(cls) ?? (() => { throw new Error(`MWL ring alias is missing generated class: ${cls}`); })();

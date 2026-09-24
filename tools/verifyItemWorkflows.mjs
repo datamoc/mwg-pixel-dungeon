@@ -1386,7 +1386,7 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.equal(MWL_ITEM_GROUND_KIND_ALIASES.weaponReward, 'armor');
 	assert.equal(MWL_ITEM_GROUND_KIND_ALIASES.doubleBomb, 'bomb');
 	assert.equal(MWL_ITEM_GROUND_KIND_ALIASES.brokenSeal, 'brokenSeal');
-	assert.equal(Object.keys(MWL_ITEM_GROUND_KIND_ALIASES).length, 30, 'ground-kind alias count (torch has its alias row)');
+	assert.equal(Object.keys(MWL_ITEM_GROUND_KIND_ALIASES).length, 31, 'ground-kind alias count (torch has its alias row; skeletonkey is the 31st)');
 	assert.equal(MWL_ITEM_NAME_KEYS.weaponReward, 'port.name.questweapon');
 	assert.equal(MWL_ITEM_NAME_KEYS.sandBag, 'items.artifacts.timekeepershourglass$sandbag.name');
 	assert.equal(MWL_GROUND_ITEM_NAME_KEYS.bomb, 'items.bombs.bomb.name');
@@ -1567,7 +1567,7 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 		seedDeck: { classes: ['rotberry', 'sungrass', 'fadeleaf', 'icecap', 'firebloom', 'sorrowmoss', 'swiftthistle', 'blindweed', 'stormvine', 'earthroot', 'mageroyal', 'starflower'], probs: [0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 2] },
 		wandGeneratorDeck: { classes: ['WandOfMagicMissile', 'WandOfLightning', 'WandOfDisintegration', 'WandOfFireblast', 'WandOfCorrosion', 'WandOfBlastWave', 'WandOfLivingEarth', 'WandOfFrost', 'WandOfPrismaticLight', 'WandOfWarding', 'WandOfTransfusion', 'WandOfCorruption', 'WandOfRegrowth'], probs: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3] },
 		ringGeneratorDeck: { classes: ['RingOfAccuracy', 'RingOfArcana', 'RingOfElements', 'RingOfEnergy', 'RingOfEvasion', 'RingOfForce', 'RingOfFuror', 'RingOfHaste', 'RingOfMight', 'RingOfSharpshooting', 'RingOfTenacity', 'RingOfWealth'], probs: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3] },
-		artifactGeneratorDeck: { classes: ['AlchemistsToolkit', 'ChaliceOfBlood', 'CloakOfShadows', 'DriedRose', 'EtherealChains', 'HornOfPlenty', 'MasterThievesArmband', 'SandalsOfNature', 'TalismanOfForesight', 'TimekeepersHourglass', 'UnstableSpellbook'], probs: [1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1] },
+		artifactGeneratorDeck: { classes: ['AlchemistsToolkit', 'ChaliceOfBlood', 'CloakOfShadows', 'DriedRose', 'EtherealChains', 'HornOfPlenty', 'MasterThievesArmband', 'SandalsOfNature', 'SkeletonKey', 'TalismanOfForesight', 'TimekeepersHourglass', 'UnstableSpellbook'], probs: [1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1] },
 		foodGeneratorDeck: { classes: ['Food', 'Pasty', 'MysteryMeat'], probs: [4, 1, 0] },
 		armorGeneratorDeck: { classes: ['ClothArmor', 'LeatherArmor', 'MailArmor', 'ScaleArmor', 'PlateArmor', 'WarriorArmor', 'MageArmor', 'RogueArmor', 'HuntressArmor', 'DuelistArmor'], probs: [1, 1, 1, 1, 1, 0, 0, 0, 0, 0] },
 	};

@@ -480,6 +480,11 @@ export interface SpdSprites {
  * which is the `holyTome` frame in `item-rules.mwl`. The surrounding cells are
  * untouched, so every other icon still reads the old sheet.
  *
+ * A second cell is v3.3.8's too: `ARTIFACT_KEY` (`ARTIFACTS+24`, cell 264 - `ARTIFACTS = xy(1, 16)`, and `xy`
+ * is 1-indexed, so 240) was blank in this sheet, so the tag's 16x16 skeleton-key pixels were pasted into
+ * that same cell (verified empty in the old sheet first); the Skeleton Key's `item-rules.mwl` frame row
+ * is 264. Every other cell is untouched.
+ *
  * `red_sentry.png` is likewise pulled from tag `v3.3.8`
  * (`git show v3.3.8:core/src/main/assets/sprites/red_sentry.png`) - the SentryRoom turret
  * postdates this checkout's own sprite set, and its 8x15 film is cut in `main.ts` from

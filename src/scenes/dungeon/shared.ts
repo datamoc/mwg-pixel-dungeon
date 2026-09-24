@@ -591,6 +591,8 @@ export interface SaveShape {
 	trinitySpiritEffect?: string | null;
 	/** Which wand/dart id MindForm currently grants (`Trinity.mindForm`'s stored effect). */
 	trinityMindEffect?: string | null;
+	/** `SkeletonKey.KeyReplacementTracker`'s per-depth key counts; absent until the key's first lock use. */
+	skeletonKeyTracker?: { iron: number[]; golden: number[]; crystal: number[] } | null;
 	/** `Endure.EndureTracker`'s own bundled fields plus its flavour countdown. */
 	endureTurns?: number;
 	endureEnduring?: boolean;

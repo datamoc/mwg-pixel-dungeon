@@ -45,6 +45,7 @@ import { useSandalsFlow, type SandalsFlowContext } from '../../../items/sandals'
 import { useChainsFlow, type ChainsFlowContext } from '../../../items/chains';
 import { hornChargeCap, useHornFlow, type HornFlowContext } from '../../../items/horn';
 import { useArmbandFlow, type ArmbandFlowContext } from '../../../items/armband';
+import { skeletonKeyChargeCap } from '../../../items/skeletonKey';
 import { checkTalismanAwarenessFlow, useTalismanFlow, type TalismanFlowContext } from '../../../items/talisman';
 import { roseChargeCap, roseGhostMaxHp, rosePetalDropCap, rosePetalPickup, rosePetalsNeeded, useRoseFlow, type RoseFlowContext } from '../../../items/rose';
 import { beaconChargeCap, useBeaconFlow, type BeaconFlowContext, type BeaconItem } from '../../../items/beacon';
@@ -372,7 +373,7 @@ export const inventoryQuickslotMethods = {
 			useChains: this.useChains.bind(this), useHorn: this.useHorn.bind(this),
 			useBeaconArtifact: this.useBeaconArtifact.bind(this),
 			useArmband: this.useArmband.bind(this), useSandals: this.useSandals.bind(this),
-			useTalisman: this.useTalisman.bind(this), useSpellbook: this.useSpellbook.bind(this),
+			useTalisman: this.useTalisman.bind(this), useSkeletonKey: this.useSkeletonKey.bind(this), useSpellbook: this.useSpellbook.bind(this),
 			useHolyTome: this.useHolyTome.bind(this),
 			wieldMissile: this.wieldMissile.bind(this),
 			useStoneById: this.useStoneById.bind(this), useCandle: this.useCandle.bind(this),
@@ -1535,6 +1536,7 @@ export const inventoryQuickslotMethods = {
 				case 'beacon': return beaconChargeCap(item as never);
 				case 'armband': return mwlItemEffectValue('armband', 'chargeCapBase') + Math.floor(level / 2);
 				case 'spellbook': return spellbookChargeCap(level);
+				case 'skeletonkey': return skeletonKeyChargeCap(level);
 				case 'chains': return (mwlItemEffectValue('chains', 'chargeCapBase') + mwlItemEffectValue('chains', 'chargeCapPerLevel') * level) * 2;
 				default: return roseChargeCap();
 			}

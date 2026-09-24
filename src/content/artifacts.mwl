@@ -161,6 +161,19 @@
       },
       {
         tag: "item",
+        id: "artifact_skeletonkey",
+        name: "port.skeletonkey.name",
+        slot: "artifact",
+        children: [
+          {
+            tag: "effect",
+            apply_to: "description",
+            set: "port.skeletonkey.desc",
+          },
+        ],
+      },
+      {
+        tag: "item",
         id: "artifact_spellbook",
         name: "items.artifacts.unstablespellbook.name",
         slot: "artifact",

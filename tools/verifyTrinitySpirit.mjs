@@ -79,4 +79,14 @@ export function verifyTrinitySpirit(require, check) {
 		assert.ok(scene.includes("'ChaliceOfBlood', 'Chalice of Blood', () => this.trinitySpiritChalice(), true)"), 'picker offers the chalice, spending the turn');
 		assert.ok(scene.includes("this.trinitySpiritEffect === 'chalice' ? this.trinityArtifactLevel() : -1"), 'regen reads chaliceLevel = artifactLevel() as the else-if fallback');
 	});
+	check('Trinity SpiritForm offers the SkeletonKey targeter on a 3-charge synthetic key', () => {
+		const scene = readSceneSource();
+		assert.ok(scene.includes("'SkeletonKey', 'Skeleton Key', () => this.trinitySpiritSkeletonKey()"), 'picker offers the key at the doubled artifact cost class');
+		//resetForTrinity leaves chargeCap at the constructor's 3 (only upgrade() widens it): charge 3, exp MIN_VALUE.
+		assert.ok(/trinitySpiritSkeletonKey[\s\S]{0,400}charge: mwlItemEffectValue\('skeletonkey', 'chargeCapBase'\), exp: -2147483648/.test(scene), 'synthetic key: charge 3, never levels');
+		assert.ok(scene.includes("{ keyOf: { value: () => key } }"), 'the ported flow runs with only its key lookup overridden');
+		//the artifact itself: a hero-locked door is a registry lock, the tick drives recharge and wall expiry.
+		assert.ok(scene.includes("this.doors.requiredKey(x, y) === HERO_LOCK_ID"), 'bumpDoor recognises doors the key shut');
+		assert.ok(scene.includes('this.tickSkeletonKey();'), 'the per-turn tick runs keyRecharge and KeyWall');
+	});
 }

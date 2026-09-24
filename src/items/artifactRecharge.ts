@@ -70,6 +70,8 @@ export const ARTIFACT_RECHARGE_EFFECTS: Readonly<Record<string, ArtifactRecharge
 	//equip slot and no such talent, so a carried tome recharges at the full
 	//equipped rate (the carried-cloak convention).
 	holyTome: { kind: 'charge', rate: 0.25, capZeroesPartial: true, guards: 'cursedAndImmune' },
+	//`SkeletonKey.charge()`: `partialCharge += 0.133f*amount`, zeroed at the cap (`skeletonkeyPartialPerAmount`).
+	skeletonkey: { kind: 'charge', rate: 0.133, capZeroesPartial: true, guards: 'cursedAndImmune' },
 };
 
 type RechargeEffect = ArtifactRechargeEffect & { guards: RechargeGuards };
