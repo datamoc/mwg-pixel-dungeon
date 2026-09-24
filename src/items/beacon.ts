@@ -67,6 +67,13 @@ export interface BeaconCreatureView {
 	isAlly?: boolean | undefined;
 }
 
+/** A Java `Level.mobs` entry on a beacon's saved return cell. */
+export interface BeaconMobView extends BeaconCreatureView {
+	id: string;
+	x: number;
+	y: number;
+}
+
 /**
  * The Lloyd's Beacon zap/set/return flow, moved out of the scene behind this context the way
  * the sandals, talisman, chains, horn, armband and rose flows moved before it -
@@ -87,12 +94,14 @@ export interface BeaconFlowContext {
 	isBossDepth(): boolean;
 	hasAmulet(): boolean;
 	creatureAt(x: number, y: number): BeaconCreatureView | null;
+	mobsAt(x: number, y: number): readonly BeaconMobView[];
 	isImmovableKind(kind: AnyMonsterId | undefined): boolean;
 	randomFreeCellNear(x: number, y: number): { x: number; y: number } | undefined;
 	moveHeroTo(cell: { x: number; y: number }): void;
 	playHeroTeleport(from: { x: number; y: number }, to: { x: number; y: number }): void;
 	playCreatureTeleport(from: { x: number; y: number }, to: { x: number; y: number }, atX: number, atY: number): void;
 	moveCreatureTo(x: number, y: number, cell: { x: number; y: number }): void;
+	displaceMob(id: string, cell: { x: number; y: number }): void;
 	passable(x: number, y: number): boolean;
 	relocateHero(x: number, y: number): void;
 	travelToDepth(returnDepth: number, arrival: { x: number; y: number }): void;
@@ -198,20 +207,36 @@ export function setBeaconFlow(ctx: BeaconFlowContext, instanceId?: string): void
 	ctx.say(ctx.t('items.artifacts.lloydsbeacon.return'), 'positive');
 }
 
-/**
- * `returnBeacon()`'s occupant handling, shared by the artifact and the spell twin: whoever besides
- * the hero stands on the anchor is pushed to a random passable, uncrowded `NEIGHBOURS8` cell (an
- * immovable occupant pushes the hero there instead), and no free cell refuses the whole return
- * (`ScrollOfTeleportation.no_tele`) rather than only the push.
- * @returns the (possibly pushed-aside) cell to arrive at, or null to refuse.
+/** `LloydsBeacon.execute(AC_RETURN)` calls `ScrollOfTeleportation.appear(hero, pos)` first, then scans
+ * `Dungeon.level.mobs` and directly advances every mob found at the hero's new cell. This includes
+ * allies, NPC mobs, rooted mobs, and `IMMOVABLE` mobs; the direct position/sprite write
+ * bypasses `Char.move()`. A boxed occupant simply stays under the hero - return still succeeds.
  */
-function beaconClearAnchor(ctx: BeaconFlowContext, x: number, y: number): { x: number; y: number } | null {
+function beaconClearAnchor(ctx: BeaconFlowContext, x: number, y: number): { x: number; y: number } {
+	for (const mob of ctx.mobsAt(x, y)) {
+		//Java's own fixed `PathFinder.NEIGHBOURS8` scan; after each move `Actor.findChar` sees
+		//that new cell occupied, so a stack of mobs is displaced one at a time where possible.
+		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
+			const cell = { x: x + dx, y: y + dy };
+			if (ctx.passable(cell.x, cell.y) && !ctx.creatureAt(cell.x, cell.y)) {
+				ctx.displaceMob(mob.id, cell);
+				break;
+			}
+		}
+	}
+	return { x, y };
+}
+
+/** `BeaconOfReturning.returnBeacon()` is separate Java code: it considers the occupying Char,
+ * chooses a passable uncrowded neighbour, sends the hero there for IMMOVABLE occupants, and
+ * refuses the whole cast if no candidate exists. */
+function spellBeaconClearAnchor(ctx: BeaconFlowContext, x: number, y: number): { x: number; y: number } | null {
 	const occupant = ctx.creatureAt(x, y);
 	if (!occupant || occupant.isHero) return { x, y };
 	const pushHero = ctx.isImmovableKind(occupant.kind);
-	//Java's own `PathFinder.NEIGHBOURS8` scan: any passable, uncrowded adjacent cell (the port has
-	//no `LARGE`/`openSpace` distinction, so that half of Java's extra check does not apply here).
 	let free: { x: number; y: number } | undefined;
+	//Port simplification: Java collects !solid candidates, shuffles them, and applies LARGE/openSpace;
+	//this flow picks the first fixed neighbour that the port marks passable.
 	for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 		const cell = { x: x + dx, y: y + dy };
 		if (ctx.passable(cell.x, cell.y) && !ctx.creatureAt(cell.x, cell.y)) { free = cell; break; }
@@ -223,9 +248,8 @@ function beaconClearAnchor(ctx: BeaconFlowContext, x: number, y: number): { x: n
 	return { x, y };
 }
 
-/** `LloydsBeacon.returnBeacon()`: same depth steps the hero to the anchor (pushing aside whoever
- *  else stands there, or the hero itself if they cannot be moved), another depth travels there -
- *  the scene owns that travel, this flow only hands it the anchor. */
+/** `LloydsBeacon.execute(AC_RETURN)`: same-depth return appears the hero first, then displaces
+ *  mobs from the anchor; another depth travels there - the scene owns that transition. */
 export function returnBeaconFlow(ctx: BeaconFlowContext, instanceId?: string): void {
 	const beacon = ctx.beaconOf(instanceId);
 	if (!beacon || beacon.returnDepth === undefined || beacon.returnDepth < 0 || beacon.returnPos === undefined) return;
@@ -236,9 +260,8 @@ export function returnBeaconFlow(ctx: BeaconFlowContext, instanceId?: string): v
 	const y = beacon.returnY ?? Math.floor(beacon.returnPos / width);
 	if (beacon.returnDepth === ctx.depth) {
 		if (!ctx.passable(x, y)) { ctx.say(ctx.t('items.scrolls.scrollofteleportation.no_tele'), 'negative'); return; }
-		const arrival = beaconClearAnchor(ctx, x, y);
-		if (!arrival) return;
-		ctx.relocateHero(arrival.x, arrival.y);
+		ctx.relocateHero(x, y);
+		beaconClearAnchor(ctx, x, y);
 	} else {
 		ctx.travelToDepth(beacon.returnDepth, { x, y });
 	}
@@ -248,10 +271,9 @@ export function returnBeaconFlow(ctx: BeaconFlowContext, instanceId?: string): v
 /** `BeaconOfReturning.execute()` (tag `v3.3.8`): the single-use spell twin of the artifact's
  *  set/return pair. Unanchored casts anchor instead of travelling; a non-zero branch
  *  refuses (this port has no branches, so the anchor always writes 0 and this is a
- *  defensive re-check); same depth steps to the anchor - passable, and unoccupied
- *  unless the hero never left it - while another depth in 1..26 travels there; anything
- *  else refuses. Every finished cast consumes the spell and spends the turn; every
- *  refusal returns early with its own line and spends nothing. */
+ *  defensive re-check); same-depth occupancy follows `BeaconOfReturning.returnBeacon()`'s
+ *  separate Char/IMMOVABLE/refusal algorithm; another depth in 1..26 travels there. Every
+ *  finished cast consumes the spell and spends the turn; every refusal returns early. */
 export function useReturningBeaconFlow(ctx: BeaconFlowContext, instanceId?: string): void {
 	const beacon = ctx.returningBeaconOf(instanceId);
 	if (!beacon) return;
@@ -273,7 +295,7 @@ export function useReturningBeaconFlow(ctx: BeaconFlowContext, instanceId?: stri
 	const x = beacon.returnX ?? (beacon.returnPos % width);
 	const y = beacon.returnY ?? Math.floor(beacon.returnPos / width);
 	if (beacon.returnDepth === ctx.depth && ctx.passable(x, y)) {
-		const arrival = beaconClearAnchor(ctx, x, y);
+		const arrival = spellBeaconClearAnchor(ctx, x, y);
 		if (!arrival) return;
 		ctx.relocateHero(arrival.x, arrival.y);
 		ctx.consumeReturningBeacon(instanceId);

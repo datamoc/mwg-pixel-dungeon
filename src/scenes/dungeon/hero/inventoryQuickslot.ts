@@ -48,7 +48,7 @@ import { useArmbandFlow, type ArmbandFlowContext } from '../../../items/armband'
 import { skeletonKeyChargeCap } from '../../../items/skeletonKey';
 import { checkTalismanAwarenessFlow, useTalismanFlow, type TalismanFlowContext } from '../../../items/talisman';
 import { roseChargeCap, roseGhostMaxHp, rosePetalDropCap, rosePetalPickup, rosePetalsNeeded, useRoseFlow, type RoseFlowContext } from '../../../items/rose';
-import { beaconChargeCap, useBeaconFlow, type BeaconFlowContext, type BeaconItem } from '../../../items/beacon';
+import { beaconChargeCap, useBeaconFlow, type BeaconFlowContext, type BeaconItem, type BeaconMobView } from '../../../items/beacon';
 import { type WealthDropPlan } from '../../../items/wealthDrops';
 import { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal } from '../../../items/artifactRecharge';
 import { openClassArmorTransfer as openInventoryClassArmorTransfer } from '../../../items/equipment';
@@ -571,6 +571,8 @@ export const inventoryQuickslotMethods = {
 					const creature = scene.creatureAt(x, y);
 					return creature ? { kind: creature.kind, isHero: creature.isHero, isNPC: creature.isNPC, isAlly: creature.isAlly } : null;
 				},
+				mobsAt: (x, y) => scene.creatures.filter((creature) => !creature.isHero && creature.x === x && creature.y === y)
+					.map((creature) => ({ id: creature.id, x: creature.x, y: creature.y, kind: creature.kind, isNPC: creature.isNPC, isAlly: creature.isAlly } as BeaconMobView)),
 				isImmovableKind: (kind) => kind !== undefined && IMMOVABLE_KINDS.has(kind),
 				randomFreeCellNear: (x, y) => scene.randomFreeCell({ x, y }),
 				moveHeroTo: (cell) => {
@@ -585,6 +587,14 @@ export const inventoryQuickslotMethods = {
 				moveCreatureTo: (x, y, cell) => {
 					const creature = scene.creatureAt(x, y);
 					if (creature) scene.moveTo(creature, cell);
+				},
+				displaceMob: (id, cell) => {
+					const mob = scene.creatures.find((creature) => creature.id === id);
+					if (!mob) return;
+					mob.x = cell.x;
+					mob.y = cell.y;
+					scene.sprite(mob).x = cell.x * TILE;
+					scene.sprite(mob).y = cell.y * TILE;
 				},
 				passable: (x, y) => scene.level.passable(x, y),
 				relocateHero: (x, y) => {
