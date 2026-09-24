@@ -1106,8 +1106,11 @@ export const deathSaveRefreshMethods = {
 			this.stairsSprite.visible = this.fov.isExplored(this.stairs.x, this.stairs.y);
 			this.stairsSprite.tint = 0xffffff;
 		}
+		//a stacked heap draws only its top entry (`Heap.peek()`), the last one at each cell
+		const heapTops = new Map<number, typeof this.groundItems[number]>();
+		for (const item of this.groundItems) heapTops.set(this.level.index(item.x, item.y), item);
 		for (const item of this.groundItems) {
-			this.sprite(item).visible = this.fov.isExplored(item.x, item.y);
+			this.sprite(item).visible = heapTops.get(this.level.index(item.x, item.y)) === item && this.fov.isExplored(item.x, item.y);
 			this.sprite(item).tint = 0xffffff;
 		}
 

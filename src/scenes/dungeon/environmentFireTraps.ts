@@ -1279,6 +1279,7 @@ export const environmentFireTrapsMethods = {
 		burnFireContentsEffect({
 			cellIndex: (cellX, cellY) => this.level.index(cellX, cellY),
 			groundItemAt: (cellX, cellY) => this.groundItemAt(cellX, cellY),
+			groundItemsAt: (cellX, cellY) => this.heapItemsAt(cellX, cellY),
 			removeGroundItem: (ground) => this.removeGroundItem(ground),
 			detonateBomb: (ground) => { this.detonateGroundBomb(ground, new Set()); },
 			removePortedPlant: (cell) => {

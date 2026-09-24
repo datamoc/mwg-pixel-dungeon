@@ -549,9 +549,8 @@ export const turnLoopAimingMethods = {
 				} else if (hit && target.hp > 0 && this.heroClass !== 'warrior') {
 					target.stuckAmmo = (target.stuckAmmo ?? 0) + 1;
 				} else {
-					const dropAt = this.freeCellNear(target) ?? target; //one heap per cell: a landing on an occupied cell used to vanish (Java stacks)
-					this.spawnGroundItem('stone', dropAt.x, dropAt.y);
-					const heap = this.groundItemAt(dropAt.x, dropAt.y);
+					const dropAt = target; //`Level.drop()` stacks onto an existing heap; a chest/shelf sends it to a neighbour (`spawnGroundItem`)
+					const heap = this.spawnGroundItem('stone', dropAt.x, dropAt.y);
 					if (heap) {
 						heap.missileLevel = this.missileLevel;
 						heap.missileSet = this.ammoSetId;

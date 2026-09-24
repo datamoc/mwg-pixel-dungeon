@@ -1388,6 +1388,7 @@ export const panelsSingleUseMethods = {
 		this.groundItems.splice(this.groundItems.indexOf(g), 1);
 		this.sprite(g).destroy();
 		this.spriteFor.delete(g.id);
+		this.showTopHeapSprite(g.x, g.y);
 	},
 
 	/** Applies one already-rolled blast damage amount to one creature with exactly the rules the

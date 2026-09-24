@@ -1469,8 +1469,28 @@ export const npcShopBlacksmithMethods = {
 		this.placeRosePetals();
 	},
 
+	/**
+	 * The TOP of the heap at a cell - `Heap.peek()`. A cell may hold several entries (`Heap`'s stack:
+	 * `Level.drop()` onto an existing plain heap adds to it), the newest last, and only the top one is
+	 * drawn, looked at and picked up first.
+	 */
 	groundItemAt(this: DungeonScene, x: number, y: number): GroundItem | null {
-		return this.groundItems.find((i) => i.x === x && i.y === y) ?? null;
+		for (let i = this.groundItems.length - 1; i >= 0; i--) {
+			const g = this.groundItems[i]!;
+			if (g.x === x && g.y === y) return g;
+		}
+		return null;
+	},
+
+	/** Every entry of the heap at a cell, bottom to top (`Heap.items`). */
+	heapItemsAt(this: DungeonScene, x: number, y: number): GroundItem[] {
+		return this.groundItems.filter((g) => g.x === x && g.y === y);
+	},
+
+	/** After an entry leaves a heap, the new top becomes the one drawn (`Heap.updateImage()`). */
+	showTopHeapSprite(this: DungeonScene, x: number, y: number): void {
+		const top = this.groundItemAt(x, y);
+		if (top) this.sprite(top).visible = this.fov.isExplored(x, y);
 	},
 
 	generatedInventoryItem(this: DungeonScene, generated: GenItem): NonNullable<GroundItem['item']> {
@@ -1486,14 +1506,28 @@ export const npcShopBlacksmithMethods = {
 		this.spawnGroundItem(groundKindForItem(item, 'armor'), at.x, at.y, item);
 	},
 
-	spawnGroundItem(this: DungeonScene, kind: GroundItemKind, x: number, y: number, item?: GroundItem['item'], chest?: 'normal' | 'locked' | 'crystal', forSale?: boolean): void {
+	spawnGroundItem(this: DungeonScene, kind: GroundItemKind, x: number, y: number, item?: GroundItem['item'], chest?: 'normal' | 'locked' | 'crystal', forSale?: boolean): GroundItem | null {
 		//`Level.drop()`: an item dropped on a chasm cell falls to the floor below instead of resting here
 		//(a mob killed over a chasm, a thrown item that lands in one) - see `fallenItems.ts`.
 		if (this.isChasmCell(x, y) && !this.miningBranchActive && this.depth < 26) {
 			this.dropToChasm(kind, item, chest);
-			return;
+			return null;
 		}
-		if (this.groundItemAt(x, y)) return; //one item per cell - this port's simplification of Java's stacking heaps
+		//`Level.drop()`: an item dropped onto an occupied cell joins that heap's stack - unless the heap is a
+		//chest or a shop shelf, which never take extra items, so it goes to a random open neighbour instead
+		//(`do { n = cell + NEIGHBOURS8[Random.Int(8)] } while (!passable[n] && !avoid[n])`, bounded here).
+		const under = this.groundItemAt(x, y);
+		if (under && (under.chest === 'locked' || under.chest === 'crystal' || under.forSale)) {
+			for (let attempt = 0; attempt < 24; attempt++) {
+				const n = { x: x + Random.int(-1, 2), y: y + Random.int(-1, 2) };
+				if ((n.x === x && n.y === y) || !this.level.inside(n.x, n.y) || !this.level.passable(n.x, n.y)) continue;
+				const there = this.groundItemAt(n.x, n.y);
+				if (there && (there.chest === 'locked' || there.chest === 'crystal' || there.forSale)) continue;
+				return this.spawnGroundItem(kind, n.x, n.y, item, chest, forSale);
+			}
+			return null;
+		}
+		if (under) this.sprite(under).visible = false; //only the top of a stack is drawn
 
 		//Java heaps show the item's own sprite: a ground potion/scroll wears its dealt
 		//appearance (`Potion.reset()`'s `handler.image(this)`), the same frame the bag
@@ -1518,10 +1552,26 @@ export const npcShopBlacksmithMethods = {
 		const groundItem = { id: nextEntityId('item'), kind, x, y, item, chest, forSale };
 		this.spriteFor.set(groundItem.id, sprite);
 		this.groundItems.push(groundItem);
+		return groundItem;
 	},
 
 	/** stepping onto a ground item's cell picks it up - `GameScene.pickUp` without a "leave it" choice, since there is no inventory UI to offer one through */
+	/**
+	 * Stepping onto a heap collects it. Java's `Hero.actPickUp` takes the top item per action and leaves
+	 * the rest under the hero for another pick-up; this port has no separate pick-up action, so it keeps
+	 * collecting while the hero stands on the cell and each take succeeds (an entry that stays - a full
+	 * bag, a declined purchase - ends the run). Grabbing from a distance (`TelekineticGrab`) takes only the top.
+	 */
 	pickupGroundItemAt(this: DungeonScene, x: number, y: number): void {
+		for (let guard = 0; guard < 64; guard++) {
+			const top = this.groundItemAt(x, y);
+			if (!top) return;
+			this.pickupTopOfHeap(x, y);
+			if (this.groundItemAt(x, y) === top || this.hero.x !== x || this.hero.y !== y) return;
+		}
+	},
+
+	pickupTopOfHeap(this: DungeonScene, x: number, y: number): void {
 		const item = this.groundItemAt(x, y);
 		if (!item) return;
 		//`CorpseDust.doPickUp()`: the chill line on first pickup (the spawner bank it arms is
@@ -1574,6 +1624,7 @@ export const npcShopBlacksmithMethods = {
 				this.groundItems.splice(this.groundItems.indexOf(item), 1);
 				this.sprite(item).destroy();
 				this.spriteFor.delete(item.id);
+				this.showTopHeapSprite(item.x, item.y);
 			},
 			playSound: (kind) => runState.audio.cue(kind === 'gold' ? 'gold' : kind === 'dewdrop' ? 'dewdrop' : 'item', 0.6),
 			addItem: (payload, stackable = false) => {

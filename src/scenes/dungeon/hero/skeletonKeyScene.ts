@@ -103,21 +103,22 @@ export const skeletonKeyMethods = {
 
 	/**
 	 * `Level.set(target, Terrain.HERO_LKD_DR)`: a door shut and locked by the key. Items lying in the
-	 * doorway are thrown to random passable neighbours, as Java scatters the heap's contents (this
-	 * port holds one item per cell, so an occupied neighbour is skipped).
+	 * doorway are thrown to random passable neighbours, as Java scatters the heap's contents (each entry of a stack
+	 * separately, as `Heap.pickUp()` empties it).
 	 */
 	skeletonKeyLockDoor(this: DungeonScene, cell: { x: number; y: number }): void {
 		this.doors.place(cell.x, cell.y, { open: DOOR, closed: DOOR_CLOSED, locked: HERO_LOCK_ID, startOpen: false });
 		this.level.set(cell.x, cell.y, DOOR_CLOSED);
-		const heap = this.groundItemAt(cell.x, cell.y);
-		if (heap) {
-			const candidates = CIRCLE8.map(([dx, dy]) => ({ x: cell.x + dx, y: cell.y + dy }))
-				.filter((c) => this.level.inside(c.x, c.y) && this.level.passable(c.x, c.y) && !this.groundItemAt(c.x, c.y));
-			if (candidates.length > 0) {
+		//`while (!heap.isEmpty()) drop(heap.pickUp(), Random.element(candidates))`: each entry of the stack
+		//goes to its own random neighbour (entries may share one, and stack there).
+		const candidates = CIRCLE8.map(([dx, dy]) => ({ x: cell.x + dx, y: cell.y + dy }))
+			.filter((c) => this.level.inside(c.x, c.y) && this.level.passable(c.x, c.y));
+		if (candidates.length > 0) {
+			for (const entry of [...this.heapItemsAt(cell.x, cell.y)].reverse()) {
 				const to = candidates[Random.int(0, candidates.length)]!;
-				heap.x = to.x;
-				heap.y = to.y;
-				const sprite = this.spriteFor.get(heap.id);
+				entry.x = to.x;
+				entry.y = to.y;
+				const sprite = this.spriteFor.get(entry.id);
 				if (sprite) { sprite.x = to.x * 16; sprite.y = to.y * 16; }
 			}
 		}
