@@ -1126,6 +1126,9 @@ export const environmentFireTrapsMethods = {
 				//`MirrorImage` is immune to `ToxicGas` (same source); Burning rides
 				//its own new `fireImmune` flag the same way.
 				|| target.allyKind === 'mirror'
+				//`PowerOfMany.LightAlly` has Property.INORGANIC (`PowerOfMany.java`, tag `v3.3.8`);
+				//its rat kind is only a scheduler carrier, so include it at this blob seam.
+				|| target.allyKind === 'lightAlly'
 				|| (target.kind !== undefined && INORGANIC_KINDS.has(target.kind))
 				|| (target.kind === 'yogFist' && target.yogFistType === 'rusted')
 				|| (target.kind === 'yog' && this.yogShielded(target))
