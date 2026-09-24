@@ -37,6 +37,17 @@ export function monsterBuffImmune(kind: string | undefined, subtype: string | un
 	return false;
 }
 
+/**
+ * `DM300.resistances.add(Vertigo.class)` (`actors/mobs/DM300.java`, tag `v3.3.8`): `Char.resist(Vertigo.class)`
+ * halves whatever duration `Buff.affect`/`prolong` were about to grant, at every application site (never a full
+ * block, unlike `monsterBuffImmune` above). Java's resistances are per-instance-class, static 50%, non-stacking -
+ * its own comment calls this out as a simplification it has not revisited. No other monster in this port's covered
+ * content carries an instance resistance, so the table is one row; a real second case would grow this into a table
+ * like `monsterBuffImmune`'s instead of adding more literal comparisons. */
+export function vertigoResistFactor(kind: string | undefined): number {
+	return kind === 'dm300' ? 0.5 : 1;
+}
+
 /** `Elemental.add(Buff)` (`actors/mobs/Elemental.java`, tag `v3.3.8`): attaching a
  * hate-listed opposite-element buff instead deals `NormalIntRange(HT/2, HT*3/5)`
  * damage with the buff as the source, and the buff never attaches (`return false`).

@@ -2,6 +2,7 @@ import type { LogLevel } from '../ui/gameLog';
 import type { BuffId, Creature, Step } from '../combat';
 import type { AnyMonsterId } from '../monsters';
 import { grantEarthrootArmor, grantSungrassHealth } from './plantPools';
+import { vertigoResistFactor } from './buffs';
 import { TIME_BUBBLE_TURNS } from './timeBubble';
 
 /**
@@ -332,7 +333,8 @@ export function runMobPlantEffect(
 			break;
 		case 'stormvine':
 			//`Stormvine.activate(ch)`: `Vertigo.DURATION` (10), like the hero half.
-			ctx.grantBuff(creature, 'vertigo', 10);
+			//`Stormvine.activate(ch)`: halved for DM300 (`vertigoResistFactor` - `Char.resist`, the only real Java Vertigo resistance).
+			ctx.grantBuff(creature, 'vertigo', 10 * vertigoResistFactor(creature.kind));
 			ctx.markHazardMob(creature);
 			break;
 		case 'icecap':

@@ -19,9 +19,10 @@ check('a non-adjacent (travelling) move is untouched', vertigoStep(from, { x: 8,
 const read = (p: string) => readFileSync(p.replace('../', ''), 'utf8').split(String.fromCharCode(13)).join(''); //relative to the repo root (npm runs from there)
 const rules = read('../src/content/buff-rules.mwl');
 check('vertigo is a 10-turn negative buff', /buff: "vertigo",\s*duration: 10/.test(rules) && /degrade,daze,vertigo,chill/.test(rules));
-check('ConfusionGas and Stormvine grant vertigo, not the daze stand-in', read('../src/simulation/environmentalBlobs.ts').includes("context.addBuff(target, 'vertigo', 2)")
-	&& read('../src/simulation/plantTriggers.ts').includes("ctx.grantBuff(hero, 'vertigo', 10)") && read('../src/simulation/plantTriggers.ts').includes("ctx.grantBuff(creature, 'vertigo', 10)"));
+check('ConfusionGas and Stormvine grant vertigo, not the daze stand-in', read('../src/simulation/environmentalBlobs.ts').includes("context.addBuff(target, 'vertigo', 2 * vertigoResistFactor(target.kind))")
+	&& read('../src/simulation/plantTriggers.ts').includes("ctx.grantBuff(hero, 'vertigo', 10)") && read('../src/simulation/plantTriggers.ts').includes("ctx.grantBuff(creature, 'vertigo', 10 * vertigoResistFactor(creature.kind))"));
 check('Healing cure detaches vertigo', read('../src/items/potionEffects.ts').includes("'blindness', 'vertigo'] as BuffId[]"));
+check('DM300 resists Vertigo at half duration everywhere it can be applied (environmentalBlobs, plantTriggers, comboMoves)', read('../src/simulation/buffs.ts').includes("kind === 'dm300' ? 0.5 : 1") && read('../src/simulation/environmentalBlobs.ts').includes("2 * vertigoResistFactor(target.kind)") && read('../src/simulation/plantTriggers.ts').includes("10 * vertigoResistFactor(creature.kind)") && read('../src/scenes/dungeon/hero/comboMoves.ts').includes("3 * vertigoResistFactor(enemy.kind)"));
 check('gaining vertigo/paralysis after a travel began cancels it (Hero.add -> interrupt)', read('../src/scenes/dungeon/turnLoopAiming.ts').includes('restricted && !startedRestricted'));
 check('the hero and monster step funnels both apply it', read('../src/scenes/dungeon/actorTurnsHazards.ts').includes("this.hero.buffs['vertigo'] !== undefined")
 	&& read('../src/scenes/dungeon/bosses/bossLogic.ts').includes("monster.buffs['vertigo'] !== undefined"));

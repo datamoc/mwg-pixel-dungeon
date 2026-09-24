@@ -3,6 +3,7 @@ import { Random, Roguelike } from 'mwg';
 import { t } from '../../../i18n/index';
 import { addBuff, type Creature } from '../../../combat';
 import { showChoiceWindow } from '../../../ui/portWindows';
+import { vertigoResistFactor } from '../../../simulation/buffs';
 import { sealReduceCooldown } from '../../../simulation/sealShield';
 import { weaponCombat } from '../../../items/catalog';
 import {
@@ -220,7 +221,8 @@ export const comboMovesMethods = {
 	 * enemy is still where it was struck (`enemy.pos == oldPos`).
 	 */
 	comboKnockBack(this: DungeonScene, enemy: Creature, from: { x: number; y: number }, oldPos: { x: number; y: number }, empowered: boolean): void {
-		if (empowered && enemy.hp > 0) addBuff(enemy, 'vertigo', 3);
+		//Halved for DM300 (`vertigoResistFactor` - `Char.resist`, the only real Java Vertigo resistance).
+		if (empowered && enemy.hp > 0) addBuff(enemy, 'vertigo', 3 * vertigoResistFactor(enemy.kind));
 		if (enemy.x !== oldPos.x || enemy.y !== oldPos.y || enemy.hp <= 0) return;
 		const dx = Math.sign(oldPos.x - from.x);
 		const dy = Math.sign(oldPos.y - from.y);

@@ -1,6 +1,7 @@
 import type { Creature, GroundItem, Step } from '../combat';
 import type { AnyMonsterId } from '../monsters';
 import type { LogLevel } from '../ui/gameLog';
+import { vertigoResistFactor } from './buffs';
 
 export type EnvironmentalBlob = 'plantGas' | 'plantFreeze' | 'toxicGas' | 'paralyticGas' | 'stenchGas' | 'corrosiveGas' | 'confusionGas' | 'web' | 'electricity' | 'smokeScreen' | 'inferno' | 'blizzard';
 
@@ -148,9 +149,10 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 	}
 	for (const cell of context.cellsAbove('confusionGas', 0.0001)) {
 		const target = context.creatureAt(cell.x, cell.y);
-		// `ConfusionGas.affectCell()`: `Buff.prolong(ch, Vertigo.class, 2)` (IMMOVABLE chars are immune).
+		// `ConfusionGas.affectCell()`: `Buff.prolong(ch, Vertigo.class, 2)` (IMMOVABLE chars are immune),
+		// halved for DM300 (`vertigoResistFactor` - `Char.resist`).
 		if (!target || context.isVertigoImmune?.(target) || context.isBlobImmune?.(target)) continue;
-		context.addBuff(target, 'vertigo', 2);
+		context.addBuff(target, 'vertigo', 2 * vertigoResistFactor(target.kind));
 	}
 	//`Web` terrain (`Spinner`'s ranged web, tag `v3.3.8`): Java seeds a persistent 3-cell web
 	//blob rather than a direct debuff. `Level.occupyCell()` (tag `v3.3.8`) consumes the
