@@ -808,7 +808,7 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 		// `v3.3.8`). Java's Doom fallback checks Corruption immunity, not AllyBuff
 		// immunity; keep the port from clearing LightAlly/PowerBuff state instead.
 		const aiming = readFileSync(join(root, 'src/scenes/dungeon/turnLoopAiming.ts'), 'utf8');
-		assert.match(aiming, /wandType === 'corruption'[\s\S]*?victim\.allyKind !== 'lightAlly'/);
+		assert.match(aiming, /wandType === 'corruption'[\s\S]*?corruptionImmune: victim\.allyKind === 'lightAlly'/);
 		assert.match(aiming, /Java's `corruptEnemy\(\)` checks[\s\S]*?attach silently fails/);
 		const cursedWand = readFileSync(join(root, 'src/scenes/dungeon/hero/cursedWandCast.ts'), 'utf8');
 		assert.match(cursedWand, /status === 'poison'[\s\S]*?if \(!buffBlocked\(victim, 'poison'\)\)/);
@@ -1863,6 +1863,8 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 			//`WallOfLight` terrain clock it stands in for.
 			lanceCooldown: 30, auraProtection: 20, smiteTracker: 1, guidingPriestCooldown: 50,
 			lightWallActive: 20,
+			//`Vertigo.DURATION` 10 (`buff-rules.mwl`, ported 2026-09-24)
+			vertigo: 10,
 		},
 		'buff durations match the authored table',
 	);
@@ -2278,7 +2280,7 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 		'acidic:', 'armoredStatue:', 'causticSlime:', 'demonSpawner:', 'dm100:', 'dm200:', 'dm201:',
 		'dm300:', 'goo:', 'golem:', 'necroSkeleton:', 'ninjaLog:', 'pylon:', 'piranha:', 'rotHeart:',
 		'skeleton:', 'statue:', 'succubus:', 'tengu:', 'yog:', 'yogFist:burning',
-		'yogFist:rotting', 'yogFist:rusted',
+		'yogFist:rotting', 'yogFist:rusted', 'ward:',
 	].sort(), 'monster immunity table covers exactly the Java-immune kinds');
 	assert.deepEqual(immunityByKey.get('ninjaLog:'), ['amok', 'bleeding', 'charm', 'poison', 'terror'], 'the NinjaLog decoy refuses terror/amok/charm plus the INORGANIC pair');
 	//2026-09-22: STATIC rows gained frost+chill, the Frost/Chill immunities

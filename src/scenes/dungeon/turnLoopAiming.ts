@@ -36,8 +36,9 @@ import { beaconChargeCap } from '../../items/beacon';
 import type { ChainsItem } from '../../items/chains';
 import { TILE, WATER } from '../../dungeonConstants';
 import { BUFF_DURATION, addBuff, buffBlocked, electricDamageHalved, icyDamageHalved, rollHit, tickBuffs, type Creature, type Step } from '../../combat';
-import { tickMonsterTurnEnd } from '../../simulation/buffs';
-import { isUndeadOrDemonic } from '../../monsters';
+import { NEGATIVE_BUFFS, tickMonsterTurnEnd, type BuffId } from '../../simulation/buffs';
+import { corruptingPower, corruptionResistance, resolveCorruptionZap } from '../../simulation/wandCorruption';
+import { MONSTERS, isUndeadOrDemonic, type AnyMonsterId } from '../../monsters';
 
 /** Whether the hero was paralysed/vertigoed at a queued travel's first step, keyed by that travel's target object (`Hero.interrupt()` on gaining either). */
 const travelStartRestricted = new WeakMap<object, boolean>();
@@ -275,7 +276,25 @@ export const turnLoopAimingMethods = {
 					this.moveTo(victim, next);
 				}
 			}
-			if (wandType === 'corruption' && !victim.isHero && !victim.isNPC && victim.allyKind !== 'lightAlly') {
+			if (wandType === 'corruption' && !victim.isHero && !victim.isNPC) {
+				//`WandOfCorruption.onZap()` resistance model (`simulation/wandCorruption.ts`): the
+				//bolt corrupts only when its power beats the target's resistance, otherwise it lands
+				//a MAJOR or MINOR debuff (`Buff.append(.., 6 + 3*level)`), going up a tier when a
+				//pool is exhausted. Slow has no port buff, so the MAJOR pool is Amok/Hex/Paralysis.
+				//Only the LightAlly is Corruption-immune here (its `Doom` fallback stays unported).
+				const outcome = resolveCorruptionZap({
+					power: corruptingPower(zapLevel),
+					resistance: corruptionResistance(
+						{ kind: victim.kind ?? '', hp: victim.hp, maxHp: victim.maxHp, exp: MONSTERS[victim.kind as AnyMonsterId]?.exp ?? 1, buffs: victim.buffs },
+						this.depth, (id) => NEGATIVE_BUFFS.has(id as BuffId)),
+					buffs: victim.buffs,
+					alreadyDoomed: false, //`Doom` is not a buff in this tree yet, so nothing can be doomed
+					corruptionImmune: victim.allyKind === 'lightAlly',
+					immune: (id) => buffBlocked(victim, id),
+					rolls: { float: () => Random.float() },
+				});
+				if (outcome.kind === 'debuff') addBuff(victim, outcome.id, 6 + zapLevel * 3);
+				else if (outcome.kind === 'corrupt') {
 				//WandOfCorruption.corruptEnemy() creates a permanent controlled ally
 				//after healing/cleansing it. The port has no separate Corruption buff
 				//or loot-transfer payload, so the existing ally scheduler is used for
@@ -291,6 +310,7 @@ export const turnLoopAimingMethods = {
 				victim.buffs = {};
 				victim.sleeping = false;
 				victim.seesHero = false;
+				}
 			}
 			if ((wandType === 'frost') && victim === target && victim.hp > 0 && !frostBlocked) {
 				addBuff(victim, 'chill');
