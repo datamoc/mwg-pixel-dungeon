@@ -30,6 +30,8 @@ export interface InventoryEntry {
 	equipped?: boolean;
 	action?: string;
 	sourceClass?: string;
+	/** `Item.AC_DROP`/`AC_THROW` and, for a known malevolent potion, a guarded Drink - shown as a second row of buttons. */
+	verbs?: { drop: boolean; throw: boolean; drink: boolean };
 }
 
 export type InventoryFilter = 'all' | 'consumables' | 'equipment' | 'quest'
@@ -113,7 +115,11 @@ export class InventoryWindow extends Container2D {
 		this.draw();
 	}
 
-	constructor(private use: (id: string, instanceId?: string) => void, private close: () => void) {
+	constructor(
+		private use: (id: string, instanceId?: string) => void,
+		private close: () => void,
+		private verbs: { drop(id: string, instanceId?: string): void; throw(id: string, instanceId?: string): void; drink(id: string, instanceId?: string): void } | null = null,
+	) {
 		super();
 		this.list = this.createList();
 		this.addChild(this.dim, this.panel, this.detail);
@@ -274,7 +280,7 @@ export class InventoryWindow extends Container2D {
 		this.detail.visible = true;
 		this.panel.alpha = 0.35;
 		this.panel.eventMode = 'none';
-		this.detail.addChild(spdPanel(140, 120));
+		this.detail.addChild(spdPanel(140, 120 + (item.verbs && (item.verbs.drop || item.verbs.throw) ? 18 : 0)));
 		const sprite = this.icon(item.frame); sprite.position.set(8, 9); this.detail.addChild(sprite);
 		const name = new Label({ text: item.name, size: 8, color: 0xffff44, wrapWidth: 102 }); name.position.set(28, 9); this.detail.addChild(name);
 		const stats = new Label({ text: `${item.quantity > 1 ? `${item.quantity}×  ` : ''}${item.identified !== false && item.level ? `+${item.level}` : ''}`, size: 7 });
@@ -288,12 +294,33 @@ export class InventoryWindow extends Container2D {
 			const description = new Label({ text: item.description, size: 6, wrapWidth: 122, color: 0xd0d0c0 });
 			description.position.set(9, 46); this.detail.addChild(description);
 		}
+		let y = item.description ? 84 : 46;
+		//`Potion.defaultAction()`: a known malevolent flask's default is THROW; drinking it moves to the guarded second row.
+		const throwsByDefault = !!(this.verbs && item.verbs?.drink && item.verbs.throw);
 		if (item.action) {
-			const use = new SpdButton({ width: 122, height: 18, text: item.action, onClick: () => { this.dismissDetail(); this.close(); this.use(item.id, item.instanceId); } });
-			use.position.set(9, item.description ? 84 : 46); this.detail.addChild(use);
+			const use = new SpdButton({ width: 122, height: 18, text: throwsByDefault ? t('items.item.ac_throw').toUpperCase() : item.action,
+				onClick: () => { this.dismissDetail(); this.close(); if (throwsByDefault) this.verbs!.throw(item.id, item.instanceId); else this.use(item.id, item.instanceId); } });
+			use.position.set(9, y); this.detail.addChild(use);
+			y += 20;
+		}
+		//`Item.actions()`'s AC_DROP/AC_THROW: two half-width buttons under the default action (a known
+		//malevolent flask offers a guarded Drink in place of Throw, which is then its default).
+		const verbs = this.verbs;
+		if (verbs && item.verbs && (item.verbs.drop || item.verbs.throw)) {
+			const run = (fn: (id: string, instanceId?: string) => void) => () => { this.dismissDetail(); this.close(); fn(item.id, item.instanceId); };
+			const buttons: { text: string; onClick: () => void }[] = [];
+			if (item.verbs.drink) buttons.push({ text: t('items.potions.potion.ac_drink'), onClick: run(verbs.drink) });
+			if (item.verbs.throw && !item.verbs.drink) buttons.push({ text: t('items.item.ac_throw'), onClick: run(verbs.throw) });
+			if (item.verbs.drop) buttons.push({ text: t('items.item.ac_drop'), onClick: run(verbs.drop) });
+			const w = buttons.length === 1 ? 122 : 59;
+			buttons.forEach((b, i) => {
+				const button = new SpdButton({ width: w, height: 16, text: b.text.toUpperCase(), onClick: b.onClick });
+				button.position.set(9 + i * 63, y); this.detail.addChild(button);
+			});
+			y += 18;
 		}
 		const back = new SpdButton({ width: 122, height: 16, text: t('port.window.close'), onClick: () => this.dismissDetail() });
-		back.position.set(9, item.description ? 105 : 67); this.detail.addChild(back);
+		back.position.set(9, y + (item.action || item.verbs ? 1 : 21)); this.detail.addChild(back);
 		this.layout(this.vw, this.vh);
 	}
 
@@ -306,7 +333,7 @@ export class InventoryWindow extends Container2D {
 	handleAction(action: string): boolean {
 		if (this.chosen) {
 			if (action === 'cancel') this.dismissDetail();
-			else if (action === 'confirm' && this.chosen.action) { const id = this.chosen.id; const instanceId = this.chosen.instanceId; this.dismissDetail(); this.close(); this.use(id, instanceId); }
+			else if (action === 'confirm' && this.chosen.action) { const chosen = this.chosen; const id = chosen.id; const instanceId = chosen.instanceId; this.dismissDetail(); this.close(); if (this.verbs && chosen.verbs?.drink && chosen.verbs.throw) this.verbs.throw(id, instanceId); else this.use(id, instanceId); }
 			return true;
 		}
 		if (action === 'cancel') { this.close(); return true; }

@@ -509,6 +509,11 @@ export const panelsSingleUseMethods = {
 		this.inventoryPanel = new InventoryWindow(
 			(id, instanceId) => this.useItemById(id, instanceId),
 			() => { this.inventoryOpen = false; this.inventoryPanel.reset(); this.refreshInventoryPanel(); },
+			{
+				drop: (id, instanceId) => this.dropBagItem(id, instanceId),
+				throw: (id, instanceId) => this.throwBagItem(id, instanceId),
+				drink: (id, instanceId) => this.drinkBagPotion(id, instanceId),
+			},
 		);
 		this.stage.addChild(this.inventoryPanel);
 		this.refreshInventoryPanel();

@@ -48,6 +48,8 @@ export interface InventoryPanelContext {
 	 * family frame below. */
 	readonly appearanceFrame?: (id: string) => number | undefined;
 	readonly itemDescription?: (id: string, identified: boolean) => string | undefined;
+	/** Which extra verbs (`AC_DROP`, `AC_THROW`, a guarded drink) a carried entry offers. */
+	readonly itemVerbs?: (id: string, known: boolean) => { drop: boolean; throw: boolean; drink: boolean };
 	readonly addToStage: (panel: InventoryWindow) => void;
 	readonly positionInterface: () => void;
 }
@@ -85,6 +87,7 @@ export function refreshInventoryPanel(context: InventoryPanelContext): void {
 		return { ...item, quantity: item.quantity ?? 1, name: context.itemDisplayName(id, item.identified ?? false, item.instanceId), frame, action, description };
 	};
 	const rows = context.items.filter(item => (item.quantity ?? 0) > 0).map(entry)
+		.map((row) => ({ ...row, verbs: context.itemVerbs?.(row.id, row.identified === true) }))
 		.sort((a, b) => generatorItemOrder(a.sourceClass, a.id, a.frame) - generatorItemOrder(b.sourceClass, b.id, b.frame));
 	const armor = context.armorId === 'startingArmor' ? null : entry({ id: context.armorId, instanceId: context.armorInstanceId, quantity: 1, identified: true, level: context.armorLevel });
 	// Java lists both AC_DETACH and AC_TRANSFER; the compact detail window has one action button,

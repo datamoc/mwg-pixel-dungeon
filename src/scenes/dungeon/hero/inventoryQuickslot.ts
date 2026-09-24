@@ -218,6 +218,7 @@ export const inventoryQuickslotMethods = {
 			panel: this.inventoryPanel,
 			open: this.inventoryOpen,
 			items: this.bag.items,
+			itemVerbs: (id, known) => this.itemVerbs(id, known),
 			armorId: this.armorId, armorInstanceId: this.armorInstanceId, armorLevel: this.armorLevel, armorSealed: this.armorSealed,
 			weaponInstanceId: this.weaponInstanceId,
 			//`WEAPON_NAME_BY_CLASS` names the hero's real equipped class once it stops being the

@@ -109,13 +109,7 @@ export function createPotionEffects(scene: PotionEffectsContext): Record<string,
 		// PotionOfLiquidFlame.shatter() uses NEIGHBOURS9. Quaffing has no thrown-cell picker,
 		// so the hero cell is the deliberate center used by this port.
 		potionFlame: () => {
-			let seeded = 0;
-			for (const [dx, dy] of Roguelike.neighbourOffsets(8).concat([[0, 0] as [number, number]])) {
-				const x = scene.hero.x + dx, y = scene.hero.y + dy;
-				if (!scene.level.inside(x, y) || scene.level.get(x, y) === WALL) continue;
-				scene.seedFire(x, y, mwlItemEffectValue('potionFlame', 'fireVolume'));
-				seeded++;
-			}
+			const seeded = shatterFlame(scene, scene.hero.x, scene.hero.y);
 			scene.say(seeded > 0 ? t('port.log.hurlflame', { target: t('port.name.you') }) : t('port.log.flaskwasted'), seeded > 0 ? undefined : 'negative');
 		},
 		potionMindVision: () => {
@@ -143,11 +137,11 @@ export function createPotionEffects(scene: PotionEffectsContext): Record<string,
 			scene.say(t('port.log.levitate'), 'positive');
 		},
 		potionToxicGas: () => {
-			scene.seedToxicGas(scene.hero.x, scene.hero.y, mwlItemEffectValue('potionToxicGas', 'gasVolume'));
+			shatterPotionAt(scene, 'potionToxicGas', scene.hero.x, scene.hero.y);
 			scene.say(t('port.log.quafftoxicgas'), 'negative');
 		},
 		potionParalyticGas: () => {
-			scene.seedParalyticGas(scene.hero.x, scene.hero.y, mwlItemEffectValue('potionParalyticGas', 'gasVolume'));
+			shatterPotionAt(scene, 'potionParalyticGas', scene.hero.x, scene.hero.y);
 			scene.say(t('port.log.quaffparalyticgas'), 'negative');
 		},
 		potionHaste: () => {
@@ -155,40 +149,7 @@ export function createPotionEffects(scene: PotionEffectsContext): Record<string,
 			scene.say(t('port.log.quaffhaste'), 'positive');
 		},
 		potionFrost: () => {
-			delete scene.hero.buffs['burning'];
-			scene.hero.buffs = applyChillFreeze(scene.hero.buffs).buffs;
-			let touchesFire = false;
-			const radius = mwlItemEffectValue('potionFrost', 'radius');
-			for (let dy = -radius; dy <= radius; dy++) for (let dx = -radius; dx <= radius; dx++) {
-				const x = scene.hero.x + dx, y = scene.hero.y + dy;
-				if (scene.eternalFireVolumeAt(x, y) >= 1) touchesFire = true;
-			//`Freezing.evolve()` (tag `v3.3.8`) clears ordinary Fire at every affected
-			//cell before applying its freeze effect. The previous port only cleared the
-			//hero's Burning marker and the separate EternalFire wall.
-			//`Freezing` seeds cover NEIGHBOURS9 only, so the clear runs at Chebyshev 1
-			//even though the loop scans the MWL radius (the chill targets below
-			//already use the separate `targetRadius`).
-			if (scene.level.inside(x, y) && Math.max(Math.abs(dx), Math.abs(dy)) <= 1) scene.clearFire(x, y);
-			}
-			if (touchesFire) {
-				scene.clearEternalFire();
-				scene.say(t('port.log.frostfire'), 'positive');
-			}
-			const targets = scene.creatures.filter((creature) => creature.hp > 0
-				&& Roguelike.chebyshevDistance(creature, scene.hero) <= mwlItemEffectValue('potionFrost', 'targetRadius')
-				&& scene.level.passable(creature.x, creature.y));
-			//No Java source deals direct frost damage to elementals: `PotionOfFrost.shatter()`
-			//only seeds `Freezing` blobs (tag `v3.3.8`), and `Freezing` itself only chills.
-			//The maxHp-fraction scald that stood here was invented - and hit frost
-			//elementals with frost besides. Removed; the chill below is what remains.
-			//Found by the 15th monster-analysis matrix (potions).
-			for (const target of targets) {
-				delete target.buffs['burning'];
-				//`Elemental.add()`'s hate-listed chill backslashes instead of attaching
-				//(tag `v3.3.8`) - a fire-typed target takes the backlash, never the chill.
-				if (applyElementalBacklash(target, 'chill') === 0) target.buffs = applyChillFreeze(target.buffs).buffs;
-				if (target.hp <= 0) scene.kill(target);
-			}
+			shatterPotionAt(scene, 'potionFrost', scene.hero.x, scene.hero.y);
 			scene.say(t('port.log.quafffrost'), 'positive');
 		},
 		potionPurity: () => applyPotionPurity(scene.hero, scene.say),
@@ -198,12 +159,74 @@ export function createPotionEffects(scene: PotionEffectsContext): Record<string,
 		//shatter at the hero's feet - no cell picker exists here, and none is needed.
 		//Java logs nothing on the shatter (neither do this port's brews), so neither
 		//does this: the fog itself is the feedback.
-		potionShrouding: () => {
-			const plan = brewNeighbourSeedPlan(
-				(x, y) => !scene.level.inside(x, y) || scene.level.get(x, y) === WALL,
-				scene.hero.x, scene.hero.y, SHROUDING_FOG_VOLUME);
-			for (const seed of plan.seeds) scene.seedSmoke(seed.x, seed.y, seed.volume);
-			scene.seedSmoke(scene.hero.x, scene.hero.y, plan.centerVolume);
-		},
+		potionShrouding: () => { shatterPotionAt(scene, 'potionShrouding', scene.hero.x, scene.hero.y); },
 	};
+}
+
+/** `PotionOfLiquidFlame.shatter()`: Fire on the `NEIGHBOURS9` cells around `(x, y)` that are not wall. */
+function shatterFlame(scene: PotionEffectsContext, cx: number, cy: number): number {
+	let seeded = 0;
+	for (const [dx, dy] of Roguelike.neighbourOffsets(8).concat([[0, 0] as [number, number]])) {
+		const x = cx + dx, y = cy + dy;
+		if (!scene.level.inside(x, y) || scene.level.get(x, y) === WALL) continue;
+		scene.seedFire(x, y, mwlItemEffectValue('potionFlame', 'fireVolume'));
+		seeded++;
+	}
+	return seeded;
+}
+
+/** The potions whose `shatter(cell)` has an area effect here; every other potion breaks harmlessly. */
+export const AREA_SHATTER_POTION_IDS: ReadonlySet<string> = new Set(['potionFlame', 'potionToxicGas', 'potionParalyticGas', 'potionFrost', 'potionShrouding']);
+
+/**
+ * `Potion.shatter(cell)` for the malevolent potions (tag `v3.3.8`), centred on any cell: quaffing is
+ * `apply(hero) = shatter(hero.pos)` and a thrown flask is `onThrow(cell) = shatter(cell)`, so both
+ * routes share this. Frost chills every creature (the hero included) within the MWL target radius of
+ * the cell - the `Freezing` blob's diffusion, applied at once - and clears Fire around it.
+ */
+export function shatterPotionAt(scene: PotionEffectsContext, id: string, cx: number, cy: number): void {
+	switch (id) {
+		case 'potionFlame':
+			shatterFlame(scene, cx, cy);
+			return;
+		case 'potionToxicGas':
+			scene.seedToxicGas(cx, cy, mwlItemEffectValue('potionToxicGas', 'gasVolume'));
+			return;
+		case 'potionParalyticGas':
+			scene.seedParalyticGas(cx, cy, mwlItemEffectValue('potionParalyticGas', 'gasVolume'));
+			return;
+		case 'potionShrouding': {
+			//180 `SmokeScreen` on every open NEIGHBOURS8 cell, the centre taking 180 plus 180 per solid neighbour.
+			const plan = brewNeighbourSeedPlan((x, y) => !scene.level.inside(x, y) || scene.level.get(x, y) === WALL, cx, cy, SHROUDING_FOG_VOLUME);
+			for (const seed of plan.seeds) scene.seedSmoke(seed.x, seed.y, seed.volume);
+			scene.seedSmoke(cx, cy, plan.centerVolume);
+			return;
+		}
+		case 'potionFrost': {
+			let touchesFire = false;
+			const radius = mwlItemEffectValue('potionFrost', 'radius');
+			for (let dy = -radius; dy <= radius; dy++) for (let dx = -radius; dx <= radius; dx++) {
+				const x = cx + dx, y = cy + dy;
+				if (scene.eternalFireVolumeAt(x, y) >= 1) touchesFire = true;
+				//`Freezing.evolve()` clears ordinary Fire at every affected cell; its seeds cover NEIGHBOURS9
+				//only, so the clear runs at Chebyshev 1 even though the loop scans the MWL radius.
+				if (scene.level.inside(x, y) && Math.max(Math.abs(dx), Math.abs(dy)) <= 1) scene.clearFire(x, y);
+			}
+			if (touchesFire) {
+				scene.clearEternalFire();
+				scene.say(t('port.log.frostfire'), 'positive');
+			}
+			const targetRadius = mwlItemEffectValue('potionFrost', 'targetRadius');
+			//No Java source deals direct frost damage: `Freezing` only chills (see the 15th matrix).
+			for (const target of new Set<Creature>([scene.hero, ...scene.creatures])) {
+				if (target.hp <= 0 || Roguelike.chebyshevDistance(target, { x: cx, y: cy }) > targetRadius) continue;
+				if (target !== scene.hero && !scene.level.passable(target.x, target.y)) continue;
+				delete target.buffs['burning'];
+				//`Elemental.add()`'s hate-listed chill backslashes instead of attaching - a fire-typed target takes the backlash.
+				if (target === scene.hero || applyElementalBacklash(target, 'chill') === 0) target.buffs = applyChillFreeze(target.buffs).buffs;
+				if (target.hp <= 0) scene.kill(target);
+			}
+			return;
+		}
+	}
 }
