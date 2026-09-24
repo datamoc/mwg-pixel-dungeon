@@ -51,6 +51,7 @@ const BUFF_MESSAGE_KEY: Partial<Record<BuffId, string>> = {
 	blobImmunity: 'actors.buffs.blobimmunity',
 	wellFed: 'actors.buffs.wellfed',
 	daze: 'actors.buffs.daze',
+	vertigo: 'actors.buffs.vertigo',
 	light: 'actors.buffs.light',
 	invulnerability: 'actors.buffs.ankhinvulnerability',
 	prismaticGuard: 'actors.buffs.prismaticguard',

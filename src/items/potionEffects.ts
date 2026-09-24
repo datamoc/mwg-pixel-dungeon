@@ -52,7 +52,7 @@ export interface PotionEffectsContext {
  * exact), so the `daze` this port grants as a Blindness/Vertigo stand-in is deliberately
  * NOT cleared, matching Java not clearing Daze. */
 export function cureHeroBuffs(hero: Creature): void {
-	for (const b of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'drowsy', 'blindness'] as BuffId[]) delete hero.buffs[b];
+	for (const b of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'drowsy', 'blindness', 'vertigo'] as BuffId[]) delete hero.buffs[b];
 }
 
 export function applyPotionHealing(context: PotionEffectsContext): void {

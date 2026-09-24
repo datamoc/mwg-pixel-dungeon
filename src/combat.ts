@@ -503,6 +503,7 @@ export const ANNOUNCED_BUFFS = new Set<BuffId>([
 	'weakness',
 	'vulnerable',
 	'daze',
+	'vertigo',
 	'hex',
 	'berserk',
 	'fury',

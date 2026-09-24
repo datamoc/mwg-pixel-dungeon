@@ -227,11 +227,9 @@ export function runHeroPlantEffect(
 			break;
 		case 'stormvine':
 		//`Stormvine.activate(ch)`: a Warden gets `Levitation.DURATION/2` (10, not the
-		//table's whole 20); everyone else gets `Vertigo.DURATION` (10) of Vertigo,
-		//which arrives as the port's `daze` stand-in at an explicit 10 (not the
-		//table's 5).
+		//table's whole 20); everyone else gets `Vertigo.DURATION` (10) of Vertigo.
 		if (ctx.subclass() === 'warden') ctx.grantBuff(hero, 'levitation', 10);
-		else ctx.grantBuff(hero, 'daze', 10);
+		else ctx.grantBuff(hero, 'vertigo', 10);
 			ctx.say(ctx.t('port.log.stormvinetwist'), 'negative');
 			break;
 		case 'swiftthistle':
@@ -333,9 +331,8 @@ export function runMobPlantEffect(
 			ctx.markHazardMob(creature);
 			break;
 		case 'stormvine':
-			//`Stormvine.activate(ch)`: `Vertigo.DURATION` (10), as the `daze`
-			//stand-in at an explicit 10 like the hero half.
-			ctx.grantBuff(creature, 'daze', 10);
+			//`Stormvine.activate(ch)`: `Vertigo.DURATION` (10), like the hero half.
+			ctx.grantBuff(creature, 'vertigo', 10);
 			ctx.markHazardMob(creature);
 			break;
 		case 'icecap':

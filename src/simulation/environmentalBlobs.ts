@@ -24,7 +24,7 @@ export interface EnvironmentalBlobsContext {
 	advance: (blob: EnvironmentalBlob, isSolid: (x: number, y: number) => boolean) => void;
 	cellsAbove: (blob: EnvironmentalBlob, threshold: number) => readonly Step[];
 	creatureAt: (x: number, y: number) => Creature | null;
-	addBuff: (target: Creature, id: 'poison' | 'paralysis' | 'ooze' | 'daze' | 'roots', duration?: number) => void;
+	addBuff: (target: Creature, id: 'poison' | 'paralysis' | 'ooze' | 'daze' | 'vertigo' | 'roots', duration?: number) => void;
 	applyCorrosion: (target: Creature, strength: number) => void;
 	corrosiveStrength: () => number;
 	toxicDamage: (target: Creature) => number;
@@ -148,9 +148,9 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 	}
 	for (const cell of context.cellsAbove('confusionGas', 0.0001)) {
 		const target = context.creatureAt(cell.x, cell.y);
-		// ConfusionGas.prolongs Vertigo for 2 turns; daze is this port's movement-confusion stand-in.
+		// `ConfusionGas.affectCell()`: `Buff.prolong(ch, Vertigo.class, 2)` (IMMOVABLE chars are immune).
 		if (!target || context.isVertigoImmune?.(target) || context.isBlobImmune?.(target)) continue;
-		context.addBuff(target, 'daze', 2);
+		context.addBuff(target, 'vertigo', 2);
 	}
 	//`Web` terrain (`Spinner`'s ranged web, tag `v3.3.8`): Java seeds a persistent 3-cell web
 	//blob rather than a direct debuff. `Level.occupyCell()` (tag `v3.3.8`) consumes the

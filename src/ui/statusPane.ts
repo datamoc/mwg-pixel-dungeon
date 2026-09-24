@@ -102,6 +102,8 @@ const BUFF_ICON: Record<string, number> = {
 	wellFed: 43,
 	//DAZE = 70
 	daze: 70,
+	//VERTIGO = 33
+	vertigo: 33,
 	//LIGHT = 22
 	light: 22,
 	//ANKH = 52, the blessed ankh's revive shield

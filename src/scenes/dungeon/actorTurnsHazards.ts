@@ -8,6 +8,7 @@ import { Actors, Random, Roguelike } from 'mwg';
 import { cureHeroBuffs } from '../../items/potionEffects';
 import { runMovement } from '../../adapters/movementSimulation';
 import { simulationRandom } from '../../adapters/mwgRandom';
+import { vertigoStep } from '../../simulation/vertigo';
 import { simulationRoguelike } from '../../adapters/mwgRoguelike';
 import { takeSentryTurn as takeSentryTurnFlow } from '../../simulation/sentryTurn';
 import { sourceInventoryItem } from '../../items/itemKinds';
@@ -158,7 +159,7 @@ export const actorTurnsHazardsMethods = {
 			this.say(t('port.log.wait'));
 			return;
 		}
-		const { target } = plan;
+		let { target } = plan;
 		// Interaction plans only arise from the synchronous occupant query above.
 		if (plan.kind === 'interact') {
 			// Allies occupy a cell like a friendly NPC; interactWithNPC intentionally has no
@@ -178,6 +179,14 @@ export const actorTurnsHazardsMethods = {
 		//transition half.
 		else if (plan.kind === 'rooted') { this.shakeScreen(1, 1); this.say(t('actors.buffs.roots.heromsg'), 'negative'); }
 		else if (plan.kind === 'move') {
+			//`Char.move()` under Vertigo: the step re-rolls to a random neighbour (or goes nowhere - the hero
+			//then stays put and the turn is still spent, as Java's `spendAndNext` after `move()` does).
+			if (this.hero.buffs['vertigo'] !== undefined) {
+				const drunk = vertigoStep({ x: this.hero.x, y: this.hero.y }, target, Random.int(0, 8),
+					(cell) => this.level.inside(cell.x, cell.y) && this.canStepOnto(cell.x, cell.y),
+					(cell) => this.creatureAt(cell.x, cell.y) !== null);
+				target = drunk ?? { x: this.hero.x, y: this.hero.y };
+			}
 			//`Chasm.heroJump()` (`Chasm.java` 60, tag `v3.3.8`): a voluntary step onto a
 			//chasm cell pauses for the yes/no window unless the hero is flying or already
 			//confirmed. `confirmChasmJump` re-enters `takeHeroTurn` on "yes", so the latch

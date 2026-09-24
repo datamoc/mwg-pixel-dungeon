@@ -11,7 +11,7 @@
           {
             tag: "effect",
             apply_to: "negative",
-            set: "poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,chill,frost,hex,wayward,blindness,feintConfusion,soulmark,illuminated",
+            set: "poison,burning,bleeding,cripple,weakness,vulnerable,paralysis,roots,terror,amok,aggression,ooze,charm,degrade,daze,vertigo,chill,frost,hex,wayward,blindness,feintConfusion,soulmark,illuminated",
           },
         ],
       },
@@ -40,6 +40,13 @@
             // `sighted` test), so a blinded mob cannot see - or hunt - the hero at all.
             tag: "row",
             buff: "blindness",
+            duration: 10,
+          },
+          {
+            // Vertigo.DURATION (`actors/buffs/Vertigo.java`, tag v3.3.8): 10. Applied by ConfusionGas (prolong 2),
+            // Stormvine (affect 10) and Combo's clobber (prolong 3); PotionOfHealing.cure() detaches it.
+            tag: "row",
+            buff: "vertigo",
             duration: 10,
           },
           {

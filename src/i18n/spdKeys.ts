@@ -98,6 +98,7 @@ export const BUFF_KEYS: Record<string, string> = {
 	bless: 'actors.buffs.bless.name',
 	hex: 'actors.buffs.hex.name',
 	daze: 'actors.buffs.daze.name',
+	vertigo: 'actors.buffs.vertigo.name',
 	fury: 'actors.buffs.fury.name',
 	berserk: 'port.name.berserk',
 	weakness: 'actors.buffs.weakness.name',
