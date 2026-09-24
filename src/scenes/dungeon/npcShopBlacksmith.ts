@@ -1551,14 +1551,14 @@ export const npcShopBlacksmithMethods = {
 			//chest cell - stepping onto it is what picks it up - so hero position is the
 			//chest position, and `tryWealthBonusDrop` no-ops without a Wealth ring.
 			rollWealthBonusOnOpen: () => this.tryWealthBonusDrop(this.hero, 1),
+			cursedKeyDistracts: () => this.cursedKeyDistracts(),
+			realKeyLockOpened: (kind) => this.realKeyLockOpened(kind),
 			setGold: (amount) => this.heroStats.setBase('gold', amount),
 			shopPrice: (payload) => getShopPrice(payload.id, this.depth, payload.quantity, payload.identified ?? false),
 			//`WndTradeItem`: the shop window is the same generic picker the keeper's own window
 			//uses (see `interactWithShopkeeper`), one row for this heap, labelled with SPD's real
 			//`windows.wndtradeitem.buy` string and the price. Only its pick pays; a cancel leaves
 			//both the gold and the heap alone.
-			cursedKeyDistracts: () => this.cursedKeyDistracts(),
-			realKeyLockOpened: (kind) => this.realKeyLockOpened(kind),
 			offerPurchase: (name, price, buy) => this.openItemPicker(t(name), [
 				{ id: item.item?.id ?? 'gold', instanceId: item.item?.instanceId, identified: true, quantity: item.item?.quantity ?? 1, note: t('windows.wndtradeitem.buy', { '0': price }) },
 			], () => { buy(); this.pickupGroundItemAt(x, y); }, item.item ? [

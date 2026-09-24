@@ -831,9 +831,12 @@ export const environmentFireTrapsMethods = {
 				this.say(t('port.log.locked'), 'negative');
 				return true;
 			}
+			//`Hero.onOperateComplete`: a cursed skeleton key swallows five real-key attempts in six.
+			if (this.cursedKeyDistracts()) return true;
 			//`Notes.remove(Key)`: the depth-matched record goes, not the first stack
 			//of the kind (mwg `remove` without an instance takes the first id-match).
 			this.bag.remove(keyId, 1, key.instanceId);
+			this.realKeyLockOpened(keyId === 'crystalKey' ? 'crystal' : 'iron');
 			this.doors.unlock(x, y);
 			this.say(t('port.log.unlock'), 'positive');
 		}
@@ -841,12 +844,9 @@ export const environmentFireTrapsMethods = {
 		runState.audio.cue('door_open', 0.55);
 		//shut and open doors are different frames now, and the wall above a doorway carries a
 		//matching lip, so the ring has to be restitched rather than left on its shut art
-			//`Hero.onOperateComplete`: a cursed skeleton key swallows five real-key attempts in six.
-			if (this.cursedKeyDistracts()) return true;
 		this.restitchTilesAround(x, y);
 		this.say(t('port.log.opendoor'));
 		return true;
-			this.realKeyLockOpened(keyId === 'crystalKey' ? 'crystal' : 'iron');
 	},
 
 	/** `Door.leave()` (`levels/features/Door.java`, tag `v3.3.8`), called from `Char.move()`

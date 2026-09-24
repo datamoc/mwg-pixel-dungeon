@@ -1460,6 +1460,8 @@ export const turnLoopAimingMethods = {
 						hourglass.charges = next.charge; hourglass.partialCharge = next.partialCharge;
 					}
 				}
+				//`SkeletonKey.keyRecharge.act()` and `KeyWall.evolve()`: the key's own trickle and the walls' countdown.
+				this.tickSkeletonKey();
 				//`TalismanOfForesight.Foresight.act()` (tag `v3.3.8`): the per-turn charge trickle
 				//(`0.05 + 0.005*level`, scaled by the energy-ring multiplier and capped at 100 - "fully
 				//charges in 2000 turns at +0, scaling to 1000 turns at +10"), then `checkAwareness()`.
@@ -1469,8 +1471,6 @@ export const turnLoopAimingMethods = {
 				//The two awareness marks tick down on the same actor turn, which is where Java's
 				//`CharAwareness`/`HeapAwareness` buffs spend themselves.
 				{
-				//`SkeletonKey.keyRecharge.act()` and `KeyWall.evolve()`: the key's own trickle and the walls' countdown.
-				this.tickSkeletonKey();
 					const talisman = this.talismanItem();
 					if (talisman) {
 						applyTalismanPerTurnCharge(talisman, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true, this.regenOn());

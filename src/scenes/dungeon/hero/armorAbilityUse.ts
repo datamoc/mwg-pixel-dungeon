@@ -301,6 +301,9 @@ export const armorAbilityUseMethods = {
 			{ label: "Master Thieves' Armband", onPick: () => this.commitTrinitySpiritArtifact(cost, 'MasterThievesArmband', "Master Thieves' Armband", () => this.trinitySpiritArmband()) },
 			{ label: 'Sandals of Nature', onPick: () => this.commitTrinitySpiritArtifact(cost, 'SandalsOfNature', 'Sandals of Nature', () => this.trinitySpiritSandals()) },
 			{ label: 'Talisman of Foresight', onPick: () => this.commitTrinitySpiritArtifact(cost, 'TalismanOfForesight', 'Talisman of Foresight', () => this.trinitySpiritTalisman()) },
+			{ label: 'Skeleton Key', onPick: () => this.commitTrinitySpiritArtifact(cost, 'SkeletonKey', 'Skeleton Key', () => this.trinitySpiritSkeletonKey()) },
+			{ label: 'Chalice of Blood', onPick: () => this.commitTrinitySpiritArtifact(cost, 'ChaliceOfBlood', 'Chalice of Blood', () => this.trinitySpiritChalice(), true) },
+			{ label: "Alchemist's Toolkit", onPick: () => this.commitTrinitySpiritArtifact(cost, 'AlchemistsToolkit', "Alchemist's Toolkit", () => this.trinitySpiritToolkit()) },
 		]);
 	},
 
@@ -416,13 +419,31 @@ export const armorAbilityUseMethods = {
 		beginSandalsRootFlow(trinitySyntheticFlow(this.sandalsFlowContext(), 'sandalsOf', sandals), 'trinity-spirit');
 	},
 
+	/**
+	 * `applyActiveArtifactEffect(AlchemistsToolkit)`: `AlchemyScene.assignToolkit(effect)` then the alchemy scene.
+	 * The synthetic toolkit's `chargeCap` is 0 so `charge = 0`: no bonus energy, i.e. plain alchemy-pot access.
+	 */
+	trinitySpiritToolkit(this: DungeonScene): void {
+		openAlchemyRecipes(this.alchemyFlowContext());
+	},
+
+	/**
+	 * `applyActiveArtifactEffect(ChaliceOfBlood)` only attaches the 20-turn `SpiritFormBuff`; the heal is
+	 * `Regeneration.act()`'s `SpiritFormBuff.artifact() instanceof ChaliceOfBlood` branch
+	 * (`chaliceLevel = SpiritForm.artifactLevel()`), read by `tickNaturalRegeneration` via
+	 * `trinitySpiritEffect === 'chalice'`. Rides the same `trinityForm`/`trinityTurns` clock as the Ring effect.
+	 */
+	trinitySpiritChalice(this: DungeonScene): void {
+		this.trinitySpiritEffect = 'chalice';
+		this.trinityMindEffect = null;
+		this.trinityForm = 'spirit';
+		this.trinityTurns = 20;
+	},
+
 	trinitySpiritTalisman(this: DungeonScene): void {
 		const level = this.trinitySyntheticLevel('talisman');
 		useTalismanFlow(trinitySyntheticFlow(this.talismanFlowContext(), 'talismanOf', { level, charge: mwlItemEffectValue('talisman', 'chargeCap'), exp: -2147483648, cursed: false }), 'trinity-spirit');
 	},
-			{ label: 'Skeleton Key', onPick: () => this.commitTrinitySpiritArtifact(cost, 'SkeletonKey', 'Skeleton Key', () => this.trinitySpiritSkeletonKey()) },
-			{ label: 'Chalice of Blood', onPick: () => this.commitTrinitySpiritArtifact(cost, 'ChaliceOfBlood', 'Chalice of Blood', () => this.trinitySpiritChalice(), true) },
-			{ label: "Alchemist's Toolkit", onPick: () => this.commitTrinitySpiritArtifact(cost, 'AlchemistsToolkit', "Alchemist's Toolkit", () => this.trinitySpiritToolkit()) },
 
 	/** `applyActiveArtifactEffect(HornOfPlenty)`: `doEatEffect(hero, 1)` - see `eatTrinityHornFlow`. */
 	trinitySpiritHorn(this: DungeonScene): void {
@@ -537,27 +558,6 @@ export const armorAbilityUseMethods = {
 
 	poweredLightAlly(this: DungeonScene): Creature | undefined {
 		const ally = this.poweredAlly();
-	/**
-	 * `applyActiveArtifactEffect(AlchemistsToolkit)`: `AlchemyScene.assignToolkit(effect)` then the alchemy scene.
-	 * The synthetic toolkit's `chargeCap` is 0 so `charge = 0`: no bonus energy, i.e. plain alchemy-pot access.
-	 */
-	trinitySpiritToolkit(this: DungeonScene): void {
-		openAlchemyRecipes(this.alchemyFlowContext());
-	},
-
-	/**
-	 * `applyActiveArtifactEffect(ChaliceOfBlood)` only attaches the 20-turn `SpiritFormBuff`; the heal is
-	 * `Regeneration.act()`'s `SpiritFormBuff.artifact() instanceof ChaliceOfBlood` branch
-	 * (`chaliceLevel = SpiritForm.artifactLevel()`), read by `tickNaturalRegeneration` via
-	 * `trinitySpiritEffect === 'chalice'`. Rides the same `trinityForm`/`trinityTurns` clock as the Ring effect.
-	 */
-	trinitySpiritChalice(this: DungeonScene): void {
-		this.trinitySpiritEffect = 'chalice';
-		this.trinityMindEffect = null;
-		this.trinityForm = 'spirit';
-		this.trinityTurns = 20;
-	},
-
 		return ally?.allyKind === 'lightAlly' ? ally : undefined;
 	},
 
