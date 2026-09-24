@@ -139,11 +139,17 @@ export const skeletonKeyMethods = {
 		const turns = mwlItemEffectValue('skeletonkey', 'wallTurns');
 		if (existing) { existing.turns = turns; return; }
 		const mob = this.creatureAt(cell.x, cell.y);
-		//`SkeletonKey.placeWall()` shoves only ENEMY (`SkeletonKey.java`, tag `v3.3.8`).
-		//This scene uses `!isHero && !isAlly` as its alignment proxy; hidden Mimics are
-		//excluded because their Java NEUTRAL alignment lasts until reveal (`Mimic.java`).
+		//`Mimic.act()`/`CrystalMimic` keep hidden mobs `NEUTRAL` until revealed
+		//(`Mimic.java`/`CrystalMimic.java`, tag `v3.3.8`), so Java's ENEMY-only
+		//`SkeletonKey.placeWall()` does not shove them. `mimicRevealed` carries that
+		//alignment boundary in this port; revealed mimics follow the ordinary enemy path.
 		const hiddenMimic = (mob?.kind === 'mimic' || mob?.kind === 'crystalMimic') && mob.mimicRevealed === false;
-		if (mob && !hiddenMimic && !mob.isHero && !mob.isAlly) {
+		//Java's `placeWall()` only calls `throwChar` for ENEMY alignment, so allies, NPCs
+		//and the hero stay put. For eligible enemies `throwChar` still refuses rooted and
+		//IMMOVABLE characters; the KeyWall is seeded over every occupant regardless.
+		if (mob && !hiddenMimic && !mob.isHero && !mob.isAlly && !mob.isNPC
+			&& mob.buffs['roots'] === undefined
+			&& (mob.kind === undefined || !IMMOVABLE_KINDS.has(mob.kind))) {
 			const to = { x: cell.x + knockback[0], y: cell.y + knockback[1] };
 			if (this.level.inside(to.x, to.y) && this.level.passable(to.x, to.y) && !this.creatureAt(to.x, to.y)) this.moveTo(mob, to);
 		}

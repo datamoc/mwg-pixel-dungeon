@@ -220,14 +220,22 @@ const aim = (w: World, target: Cell): void => confirmSkeletonKeyFlow(context(w),
 	check('later uses reuse the stored counts and never re-measure', tracker.iron[3] === 0 && again.iron === 1 && again.golden === 0);
 }
 
-// Scene-side regression: hidden Mimics are neutral in Java until their reveal transition.
+// `placeWall`'s shove is scene-side (terrain + actors), so this pins its gate at
+// source level: Java knocks only ENEMY occupants, with Mimic's hidden-neutral state
+// retained; for an eligible enemy `throwChar` refuses rooted and IMMOVABLE actors.
 {
 	const source = readFileSync(join(process.cwd(), 'src/scenes/dungeon/hero/skeletonKeyScene.ts'), 'utf8');
 	const at = source.indexOf('skeletonKeyPlaceWall(this: DungeonScene');
 	const block = source.slice(at, source.indexOf('\n\t},', at));
+	check('wall shove skips hero, allies, NPCs, rooted and immovables',
+		block.includes('!mob.isHero && !mob.isAlly && !mob.isNPC')
+		&& block.includes("mob.buffs['roots'] === undefined")
+		&& block.includes('!IMMOVABLE_KINDS.has(mob.kind)'));
 	check('hidden neutral Mimics are not shoved until revealed',
 		block.includes("const hiddenMimic = (mob?.kind === 'mimic' || mob?.kind === 'crystalMimic') && mob.mimicRevealed === false")
 		&& block.includes('!hiddenMimic && !mob.isHero'));
+	check('the wall still raises over an unshoved occupant',
+		block.includes('this.keyWalls.set(idx, { turns, original:'));
 }
 
 if (failed > 0) {
