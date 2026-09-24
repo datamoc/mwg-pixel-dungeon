@@ -542,6 +542,10 @@ export function buffBlocked(c: Creature, id: BuffId): boolean {
 	if (c.kind === 'gnollGeomancer' && c.sleeping) return true;
 	//`CrystalSpire.add()` returns false unconditionally: "immune to all buffs and debuffs".
 	if (c.kind === 'crystalSpire') return true;
+	//`PowerOfMany.LightAlly` has `Property.INORGANIC` (tag `v3.3.8`), which refuses Bleeding
+	//and Poison just like the other inorganic mobs; LightAlly is a rat scheduler carrier, so its
+	//property cannot come through the kind-keyed `monsterStatusImmunities` table.
+	if (c.allyKind === 'lightAlly' && (id === 'bleeding' || id === 'poison')) return true;
 	//Every quest-giver/shop NPC's `add(Buff)` returns false unconditionally (tag
 	//`v3.3.8`): `RatKing`, `Shopkeeper`, `Ghost`, `Wandmaker`, `Blacksmith` and
 	//`Imp` (plus the `ImpShopkeeper` subclass, which inherits `Shopkeeper`'s).
