@@ -18,7 +18,7 @@ import { applyDM300DeathUnseal, applyGooDeathUnseal, applyKingDeathUnseal, apply
 import { processSacrifice } from '../../simulation/environmentalBlobs';
 import { buildYogMinionDeck, chooseYogSpawnCell } from '../../simulation/yogBoss';
 import { deathBurstsFor } from '../../simulation/deathBursts';
-import { colorblind, highContrast } from '../../settings';
+import { colorblind } from '../../settings';
 import { ringTypesKnownFor } from '../../simulation/ringKnow';
 import { staffImbueFor } from '../../items/wands';
 import { Banner } from '../../ui/banner';
