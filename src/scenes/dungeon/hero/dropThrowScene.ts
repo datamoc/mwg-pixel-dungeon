@@ -6,7 +6,7 @@ import { Terrain } from '../../../spdLevelGen/paintLevel';
 import { groundKindForItem } from '../../../items/itemKinds';
 import { showChoiceWindow } from '../../../ui/portWindows';
 import { AREA_SHATTER_POTION_IDS, shatterPotionAt } from '../../../items/potionEffects';
-import { canDropBagItem, canThrowBagItem, potionThrowsByDefault, shatterHasEffect, throwLanding, throwNeedsConfirm, MUST_THROW_POTIONS } from '../../../items/dropThrow';
+import { canDropBagItem, canThrowBagItem, potionThrowsByDefault, shatterHasEffect, snuffBombFuseOnFreeze, throwLanding, throwNeedsConfirm, MUST_THROW_POTIONS } from '../../../items/dropThrow';
 
 /**
  * Scene side of the generic `Item.AC_DROP`/`AC_THROW` verbs (`items/dropThrow.ts`, tag `v3.3.8`): the
@@ -118,8 +118,10 @@ export const dropThrowMethods = {
 
 	/**
 	 * `Heap.freeze()` (called by `Freezing.freeze(cell)`): every plain-heap entry that is MysteryMeat becomes
-	 * FrozenCarpaccio and every non-unique potion shatters where it lies (through `shatterPotionAt`, so a frozen
-	 * Toxic flask spills). Chests and shop shelves are not plain heaps and are left alone.
+	 * FrozenCarpaccio, every non-unique potion shatters where it lies (through `shatterPotionAt`, so a frozen
+	 * Toxic flask spills), and represented active bomb fuses are snuffed. Java's triggered NoisemakerFuse refuses
+	 * to freeze; `noisemakerArmed` preserves that state here. The port has no DoubleBomb triggered phase. Chests
+	 * and shop shelves are not plain heaps and are left alone.
 	 */
 	freezeHeapAt(this: DungeonScene, x: number, y: number): void {
 		for (const entry of [...this.heapItemsAt(x, y)].reverse()) {
@@ -127,6 +129,11 @@ export const dropThrowMethods = {
 			if (entry.kind === 'meat' && (entry.item === undefined || entry.item.id === 'meat')) {
 				//`FrozenCarpaccio.cook(meat)` keeps the quantity; a payload-less meat heap is one MysteryMeat
 				entry.item = { id: 'frozenCarpaccio', quantity: Math.max(1, entry.item?.quantity ?? 1), identified: true, sourceClass: 'FrozenCarpaccio' };
+			} else if (entry.kind === 'bomb' && entry.item && snuffBombFuseOnFreeze(entry.item)) {
+				//`Bomb.Fuse.freeze()` snuffs the fuse but keeps the bomb. Re-render its glow state;
+				//the port does not persist `DoubleBomb.triggered`, so that subtype remains a stated reduction.
+				const sprite = this.spriteFor.get(entry.id);
+				if (sprite) sprite.tint = 0xffffff;
 			} else if (entry.kind === 'potion' && entry.item?.id.startsWith('potion')) {
 				this.removeGroundItem(entry);
 				shatterPotionAt(this.potionEffectsContext(), entry.item.id, x, y);

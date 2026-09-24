@@ -1,7 +1,7 @@
 // Pins `items/dropThrow.ts` (`Item.AC_DROP`/`AC_THROW`, `Potion.mustThrowPots`/`canThrowPots`/`doThrow`, tag `v3.3.8`).
 // The scene wiring (heap drop, aim, shatter, item window) was live-checked in the built game
 // (`tools/scratch/drop-throw-livecheck.mjs`, `dropthrow-ui-shot.mjs`). Run through `npm run test:dropthrow`.
-import { canDropBagItem, canThrowBagItem, potionThrowsByDefault, shatterHasEffect, throwLanding, throwNeedsConfirm } from '../src/items/dropThrow';
+import { canDropBagItem, canThrowBagItem, potionThrowsByDefault, shatterHasEffect, snuffBombFuseOnFreeze, throwLanding, throwNeedsConfirm } from '../src/items/dropThrow';
 
 let failed = 0;
 const check = (name: string, ok: boolean): void => { console.log(`${ok ? 'PASS' : 'FAIL'} ${name}`); if (!ok) failed++; };
@@ -13,6 +13,15 @@ check('flasks and scrolls take the generic throw', canThrowBagItem('potionToxicG
 check('a known beneficial potion asks before it is thrown; must-throw and can-throw do not', throwNeedsConfirm('potionHealing', true) && !throwNeedsConfirm('potionFrost', true) && !throwNeedsConfirm('potionPurity', true) && !throwNeedsConfirm('potionHealing', false));
 check('a known malevolent potion throws by default', potionThrowsByDefault('potionToxicGas', true) && !potionThrowsByDefault('potionToxicGas', false) && !potionThrowsByDefault('potionHealing', true));
 check('the seven potions with a real shatter run it (Levitation is a confusion-gas flask, Purity clears blobs); the rest splash harmlessly', ['potionFlame', 'potionToxicGas', 'potionParalyticGas', 'potionFrost', 'potionShrouding', 'potionLevitation', 'potionPurity'].every(shatterHasEffect) && !shatterHasEffect('potionHealing'));
+
+check('freezing snuffs live bomb fuses but leaves triggered Noisemakers armed', (() => {
+	const bomb = { id: 'bomb', fuseTurns: 1 };
+	const liveNoisemaker = { id: 'noisemaker', fuseTurns: 1 };
+	const armedNoisemaker = { id: 'noisemaker', noisemakerArmed: true };
+	return snuffBombFuseOnFreeze(bomb) && bomb.fuseTurns === undefined
+		&& snuffBombFuseOnFreeze(liveNoisemaker) && liveNoisemaker.fuseTurns === undefined
+		&& !snuffBombFuseOnFreeze(armedNoisemaker) && armedNoisemaker.noisemakerArmed;
+})());
 
 const line = [0, 1, 2, 3, 4, 5].map((x) => ({ x, y: 0 }));
 check('an unobstructed throw lands on the aimed cell', throwLanding(line, () => false, () => false).x === 5);

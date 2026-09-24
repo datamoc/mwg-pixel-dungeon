@@ -1,8 +1,8 @@
-// Throwaway (tools/scratch): live-verify Trinity SpiritForm's Ring branch (state/expiry only -
-// the ring-formula call sites themselves are a separate, larger slice, not yet wired).
+// Throwaway (tools/scratch): live-check Heap.freeze/FrozenCarpaccio in the built game.
+// Run npm run build, serve dist/ at localhost:8000, then node tools/scratch/heap-freeze-livecheck.mjs.
+import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const globalRoot = process.env.GLOBAL_NODE_MODULES ?? 'C:\\Users\\miche\\AppData\\Roaming\\npm\\node_modules';
@@ -13,7 +13,9 @@ const page = await (await browser.newContext({ viewport: { width: 1024, height: 
 page.on('pageerror', (e) => console.log('pageerror:', e.message));
 page.on('console', (m) => { if (m.type() === 'error') console.log('console.error:', m.text()); });
 
-await page.goto(pathToFileURL(path.resolve('dist/index.html')).href + '?seed=trinity-ring', { waitUntil: 'load', timeout: 120000 });
+const targetUrl = new URL(process.env.MWG_VERIFY_URL ?? 'http://localhost:8000/');
+targetUrl.searchParams.set('seed', 'heap-freeze');
+await page.goto(targetUrl.href, { waitUntil: 'load', timeout: 120000 });
 await page.waitForTimeout(6000);
 const tap = async (fx, fy) => {
 	await page.evaluate(([x, y]) => {
@@ -37,10 +39,22 @@ const result = await page.evaluate(async () => {
 	const out = {};
 	const hero = s['hero'];
 	const c = [[2,0],[-2,0],[0,2],[0,-2]].map(([a,b]) => ({ x: hero.x + a, y: hero.y + b })).find((p) => s['level'].passable(p.x, p.y) && !s['groundItemAt'](p.x, p.y));
+	if (!c) throw new Error('no free test cell near hero');
 	s['spawnGroundItem']('meat', c.x, c.y, { id: 'meat', quantity: 2, identified: true });
 	s['spawnGroundItem']('potion', c.x, c.y, { id: 'potionHealing', quantity: 1, identified: true, instanceId: 'q1' });
+	const bomb = s['spawnGroundItem']('bomb', c.x, c.y, { id: 'bomb', quantity: 1, identified: true, fuseTurns: 2 });
+	const liveNoisemaker = s['spawnGroundItem']('bomb', c.x, c.y, { id: 'noisemaker', quantity: 1, identified: true, fuseTurns: 2 });
+	const armedNoisemaker = s['spawnGroundItem']('bomb', c.x, c.y, { id: 'noisemaker', quantity: 1, identified: true, noisemakerArmed: true, noisemakerAlertIn: 3 });
 	s['freezeHeapAt'](c.x, c.y);
+	s['refresh']();
 	out.after = s['heapItemsAt'](c.x, c.y).map((g) => g.item?.id ?? g.kind);
+	out.fuses = {
+		bomb: bomb.item?.fuseTurns ?? null,
+		liveNoisemaker: liveNoisemaker.item?.fuseTurns ?? null,
+		armedNoisemaker: armedNoisemaker.item?.noisemakerArmed ?? false,
+		bombTint: s['spriteFor'].get(bomb.id)?.tint ?? null,
+		armedNoisemakerTint: s['spriteFor'].get(armedNoisemaker.id)?.tint ?? null,
+	};
 	// frost flask thrown at the same cell freezes a fresh stack too
 	s['spawnGroundItem']('meat', c.x, c.y, { id: 'meat', quantity: 1, identified: true });
 	s['bag'].add({ id: 'potionFrost', quantity: 1, identified: true, instanceId: 'pf', stackable: true });
@@ -55,4 +69,15 @@ const result = await page.evaluate(async () => {
 	return out;
 });
 console.log(JSON.stringify(result));
+assert.ok(result.after.includes('frozenCarpaccio'), 'MysteryMeat becomes FrozenCarpaccio');
+assert.ok(!result.after.includes('potionHealing'), 'a potion in the frozen heap shatters');
+assert.ok(result.afterFrost.includes('frozenCarpaccio'), 'a thrown Frost flask also freezes a fresh heap');
+assert.ok(!result.afterFrost.includes('potionFrost'), 'the thrown Frost flask is consumed by its shatter');
+assert.deepEqual(result.fuses, {
+	bomb: null,
+	liveNoisemaker: null,
+	armedNoisemaker: true,
+	bombTint: 0xffffff,
+	armedNoisemakerTint: 0xff4444,
+}, 'freezing snuffs ordinary/untriggered fuses but preserves a triggered Noisemaker');
 await browser.close();

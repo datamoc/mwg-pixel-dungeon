@@ -1111,7 +1111,10 @@ export const deathSaveRefreshMethods = {
 		for (const item of this.groundItems) heapTops.set(this.level.index(item.x, item.y), item);
 		for (const item of this.groundItems) {
 			this.sprite(item).visible = heapTops.get(this.level.index(item.x, item.y)) === item && this.fov.isExplored(item.x, item.y);
-			this.sprite(item).tint = 0xffffff;
+			// `Bomb.glowing()` (`items/bombs/Bomb.java`, tag `v3.3.8`): keep lit fuses red
+			// through FOV/heap refreshes; an armed Noisemaker stays lit after its fuse is spent.
+			const litBomb = item.kind === 'bomb' && (item.item?.fuseTurns !== undefined || item.item?.noisemakerArmed === true);
+			this.sprite(item).tint = litBomb ? 0xff4444 : 0xffffff;
 		}
 
 		const boss = BOSSES[this.depth];

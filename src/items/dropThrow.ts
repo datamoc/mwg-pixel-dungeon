@@ -58,6 +58,15 @@ export function shatterHasEffect(id: string): boolean {
 	return AREA_SHATTER_POTION_IDS.has(id);
 }
 
+/** `Heap.freeze()` -> `Bomb.Fuse.freeze()` (`items/Heap.java`, `items/bombs/Bomb.java`, tag
+ * `v3.3.8`): a live fuse is snuffed. A triggered NoisemakerFuse refuses to freeze; the port
+ * marks that state with `noisemakerArmed` and has no separate DoubleBomb trigger phase. */
+export function snuffBombFuseOnFreeze(item: { id: string; fuseTurns?: number; noisemakerArmed?: boolean }): boolean {
+	if (item.fuseTurns === undefined || (item.id === 'noisemaker' && item.noisemakerArmed === true)) return false;
+	delete item.fuseTurns;
+	return true;
+}
+
 /**
  * Where a thrown item lands (`Item.throwPos`: `Ballistica(hero, dst, PROJECTILE).collisionPos`): walk the aim
  * line from the hero and stop at the first creature (it is hit at its own cell) or, before a blocking cell,
