@@ -18,11 +18,10 @@
  * Run with `npm run i18n`. The output is committed, so a plain `npm run build` neither needs
  * the Java tree nor pays for re-parsing 171 files.
  *
- * A referenced key missing from the pointed working tree fails the run loudly (by design), so a
- * Java key that exists only at this port's pinned tag - `items.weapon.missiles.missileweapon.dust`
- * at `v3.3.8`, absent from the local checkout's divergent branch - cannot ship this way: carry
- * SPD's wording and translations under a `port.*` key in `portStrings.ts` instead (see
- * `port.log.missiledust`).
+ * The live checkout is primary for keys and translations. When a referenced key is absent there,
+ * the pinned-tag checkout is a fallback for that key and its translations; only a key absent
+ * from both sources must move to `port.*`. This keeps legitimate tag-era SPD text (such as
+ * MagesStaff's `imbue_cursed`) from being mistaken for a port-only string.
  *
  * Provenance: the strings this reads are SPD's own, GPL-3.0-or-later, from
  * `core/src/main/assets/messages/` in this same checkout. They stay inside `web-mwg/` and
@@ -77,7 +76,7 @@ const DOMAINS = ['actors', 'items', 'journal', 'levels', 'misc', 'plants', 'scen
 const LOCALES = ['zh', 'ko', 'ru', 'es', 'de', 'fr', 'pt', 'pl', 'it', 'tr', 'ja', 'uk', 'cs', 'in', 'nl', 'hu', 'vi', 'el',
 	//`v3.3.8`'s four locales beyond the live checkout's current 18 - see the header comment above
 	'be', 'eo', 'sv', 'zh-hant'];
-/** the four locales read from `legacyMessages` above, not `messages` */
+/** the four locales not present in the live checkout */
 const LEGACY_ONLY_LOCALES = new Set(['be', 'eo', 'sv', 'zh-hant']);
 
 /** the shape every SPD message key takes: dotted identifiers, `$` for a Java inner class */
@@ -214,24 +213,30 @@ async function referencedKeys() {
 	return keys;
 }
 
-async function readLocale(suffix) {
-	const root = LEGACY_ONLY_LOCALES.has(suffix) ? legacyMessages : messages;
+async function readLocale(suffix, keys, includeLegacyFallback = false) {
+	const roots = LEGACY_ONLY_LOCALES.has(suffix)
+		? [legacyMessages]
+		: [messages, ...(includeLegacyFallback && legacyMessages ? [legacyMessages] : [])];
 	const merged = new Map();
 	//no `--legacy-spd-root` given: this locale ships empty and falls back to English throughout,
 	//the same as any other missing-domain gap below
-	if (!root) return merged;
-	for (const domain of DOMAINS) {
-		const name = suffix === '' ? `${domain}.properties` : `${domain}_${suffix}.properties`;
-		let text;
-		try {
-			text = await readFile(join(root, domain, name), 'utf8');
-		} catch {
-			//a domain may simply not be translated for a locale; the base fills in at runtime
-			continue;
+	for (const root of roots) {
+		if (!root) continue;
+		for (const domain of DOMAINS) {
+			const name = suffix === '' ? `${domain}.properties` : `${domain}_${suffix}.properties`;
+			let text;
+			try {
+				text = await readFile(join(root, domain, name), 'utf8');
+			} catch {
+				//a domain may simply not be translated for a locale; the base fills in at runtime
+				continue;
+			}
+			//Primary checkout wins over the pinned tag, and within either source
+			//`Messages.getFromBundle` takes the first hit in domain order.
+			for (const [key, value] of parseProperties(text)) {
+				if ((!keys || keys.has(key)) && !merged.has(key)) merged.set(key, value);
+			}
 		}
-		//`Messages.getFromBundle` walks the domains in order and takes the first hit, so an
-		//earlier domain wins a duplicate key
-		for (const [key, value] of parseProperties(text)) if (!merged.has(key)) merged.set(key, value);
 	}
 	return merged;
 }
@@ -241,8 +246,13 @@ const referenced = await referencedKeys();
 const wanted = [...new Set([...base.keys(), ...referenced])].filter((key) => !key.startsWith('port.')).sort();
 
 const missing = wanted.filter((key) => !base.has(key));
-if (missing.length > 0) {
-	console.error(`these keys are referenced but exist in no SPD properties file:\n  ${missing.join('\n  ')}`);
+if (missing.length > 0 && legacyMessages) {
+	const fallbackBase = await readLocale('', new Set(missing), true);
+	for (const [key, value] of fallbackBase) base.set(key, value);
+}
+const unresolved = missing.filter((key) => !base.has(key));
+if (unresolved.length > 0) {
+	console.error(`these keys are referenced but exist in no SPD properties file:\n  ${unresolved.join('\n  ')}`);
 	//Do not overwrite the committed generated catalog with a partial result. The old behavior
 	//reported the audit failure but continued into writeFile(), leaving the next build with a
 	//small, silently incomplete SPD catalog. A failed source audit is therefore transactional:
@@ -253,7 +263,7 @@ if (missing.length > 0) {
 
 const catalogs = {};
 for (const suffix of ['', ...LOCALES]) {
-	const table = await readLocale(suffix);
+	const table = await readLocale(suffix, new Set(wanted), true);
 	const picked = {};
 	for (const key of wanted) {
 		const value = table.get(key);
