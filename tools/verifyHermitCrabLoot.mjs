@@ -22,6 +22,11 @@ check('GnollExile drops 2 or (coin flip) 3 random items past the same gate', () 
 	assert.ok(/!overleveled && creature\.kind === 'gnollExile'\) \{\s*const count = Random\.int\(2\) === 0 \? 3 : 2;/.test(scene));
 	assert.ok(scene.includes('randomUsingDefaultsAnyCategory()'), 'the category-free Generator.randomUsingDefaults()');
 });
+check('GnollExile attacks from two cells only through a free two-step path', () => {
+	assert.ok(/gnollExileTurn\(this: DungeonScene, exile: Creature, distance: number\): boolean \{[\s\S]{0,700}this\.creatureAt\(mid\.x, mid\.y\)/.test(scene));
+	assert.ok(scene.includes("monster.kind === 'gnollExile' && this.gnollExileTurn(monster, distance)"), 'dispatched from the monster turn');
+});
+// live: tools/scratch/gnollexile-reach-livecheck.mjs (reach on/off with blockers)
 // live: tools/scratch/gnollexile-loot-livecheck.mjs - 30 kills averaged 2.63 items (expected 2.5)
 
 console.log('verifyHermitCrabLoot: OK');

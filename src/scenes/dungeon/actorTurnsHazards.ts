@@ -1246,6 +1246,7 @@ export const actorTurnsHazardsMethods = {
 			return;
 		}
 		if (monster.kind && GNOLL_MINE_KINDS.has(monster.kind) && this.takeGnollMineTurn(monster, distance)) return;
+		if (monster.kind === 'gnollExile' && this.gnollExileTurn(monster, distance)) return;
 		if (monster.kind && CRYSTAL_MINE_KINDS.has(monster.kind) && this.takeCrystalMineTurn(monster, distance)) return;
 		if (distance === 1) {
 			if (monster.kind === 'crystalMimic') {

@@ -195,6 +195,23 @@ export const gnollMineMethods = {
 	},
 
 	/**
+	 * `GnollExile.canAttack()` (tag `v3.3.8`): adjacent, or within distance 2 when a two-step path to the
+	 * target exists through cells that are neither solid nor held by another character (`buildDistanceMap`
+	 * over `!solid` with every `Char` blocking but the exile's own cell) - "+1 reach". The swing is its
+	 * ordinary attack, unlike the guard's spear. Returns true when it owned the turn (attacked from 2).
+	 */
+	gnollExileTurn(this: DungeonScene, exile: Creature, distance: number): boolean {
+		if (!exile.seesHero || distance !== 2) return false;
+		const open = Roguelike.neighbourOffsets(8).some(([dx, dy]) => {
+			const mid = { x: exile.x + dx, y: exile.y + dy };
+			return Roguelike.chebyshevDistance(mid, this.hero) === 1 && this.level.passable(mid.x, mid.y) && !this.creatureAt(mid.x, mid.y);
+		});
+		if (!open) return false;
+		this.attack(exile, this.hero);
+		return true;
+	},
+
+	/**
 	 * `GnollGuard`: `canAttack()` reaches two cells when both straight `PROJECTILE` lines are clear
 	 * ("cannot 'curve' spear hits"), and `damageRoll()` rolls 16-22 there instead of 6-12, warning
 	 * the hero (`spear_warn`) on a hit over 12 (killing blows included; the HP actually lost stands in
