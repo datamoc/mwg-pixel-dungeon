@@ -2,10 +2,10 @@
 //
 // Enters a real CRYSTAL mining branch and drives the ported `CrystalWisp`/`CrystalGuardian`/
 // `CrystalSpire` (`scenes/dungeon/monsters/crystalMine.ts`) through their Java behaviours.
-// Run after `npm run build`:  node tools/scratch/crystal-mine-livecheck.mjs
+// Build, serve dist at localhost:8000 (or set MWG_VERIFY_URL), then run this script.
 import { createRequire } from 'node:module';
+import assert from 'node:assert/strict';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const globalRoot = process.env.GLOBAL_NODE_MODULES ?? 'C:\\Users\\miche\\AppData\\Roaming\\npm\\node_modules';
@@ -17,7 +17,8 @@ const problems = [];
 page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error') problems.push(`console.error: ${m.text()}`); });
 
-await page.goto(pathToFileURL(path.resolve('dist/index.html')).href + '?seed=crystal-mine', { waitUntil: 'load', timeout: 120000 });
+const url = process.env.MWG_VERIFY_URL ?? 'http://localhost:8000/?seed=crystal-mine';
+await page.goto(url, { waitUntil: 'load', timeout: 120000 });
 await page.waitForTimeout(6000);
 const tap = async (fx, fy) => {
 	await page.evaluate(([x, y]) => {
@@ -164,3 +165,27 @@ await page.waitForTimeout(800);
 await page.screenshot({ path: 'tools/scratch/crystal-mine-after.png' });
 console.log('problems', JSON.stringify(problems));
 await browser.close();
+
+assert.ok(enter.kinds.crystalWisp > 0, 'CRYSTAL mine should spawn wisps');
+assert.ok(enter.kinds.crystalGuardian > 0, 'CRYSTAL mine should spawn guardians');
+assert.equal(enter.kinds.crystalSpire, 1, 'CRYSTAL mine should spawn one spire');
+assert.equal(enter.guardiansAsleep, true, 'guardians should start asleep');
+assert.equal(enter.spireAwake, true, 'spire should start awake');
+assert.equal(behave.spireWeaponHitIgnored, true, 'spire should refuse a weapon hit');
+assert.equal(behave.guardianCrumpled.hp, 1, 'lethal damage should crumple the guardian at 1 HP');
+assert.equal(behave.guardianHealed, 6, 'crumpled guardian should recover 5 HP per turn');
+assert.equal(behave.crumpledInvulnToAlly, true, 'allies should not damage a crumpled guardian');
+assert.equal(behave.crumpledVulnToHero, true, 'hero should be able to finish a crumpled guardian');
+assert.equal(behave.guardianStoodUp.recovering, false, 'guardian should stand once healed to full');
+assert.equal(behave.wisp.stayedAndZapped, true, 'wisp should use its beam without stepping');
+assert.equal(behave.afterThreeStrikes.hits, 3, 'three pickaxe strikes should alert the spire');
+assert.equal(behave.afterThreeStrikes.bossBar, true, 'alerted spire should own the boss bar');
+assert.equal(behave.queuedWaves, 1, 'spire should queue a spike wave');
+assert.equal(behave.waveLanded.heroCellInWave, true, 'queued wave should land on its telegraphed hero cell');
+assert.ok(behave.waveLanded.crystalsGrown > 0, 'wave should grow crystal terrain');
+assert.equal(behave.wandKillRefused.alive, true, 'non-pickaxe damage should not kill the spire');
+assert.equal(behave.allyIgnoresSpire, true, 'allies should not target the neutral spire');
+assert.ok(behave.crystalsWithin5.after < behave.crystalsWithin5.before, 'smashing spire should break nearby crystals');
+assert.equal(behave.spireSmashed.bossBeaten, true, 'smashing the spire should complete its quest');
+assert.deepEqual(problems, [], 'browser should report no runtime or console errors');
+console.log('crystal-mine-livecheck: OK');
