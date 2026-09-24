@@ -253,6 +253,24 @@ export const POTION_TO_EXOTIC: Readonly<Record<string, string>> = {
 	potionInvis: 'potionShrouding',
 };
 
+/**
+ * The other exotics in the same family as `id` (empty for a regular item or a family of one):
+ * `Recycle.onItemSelected()` re-rolls an exotic into a DIFFERENT exotic of its own kind
+ * (`ExoticPotion.regToExo`/`ExoticScroll.regToExo`, tag `v3.3.8`), restricted here to the
+ * exotics this port has as items.
+ */
+export function isExoticItemId(id: string): boolean {
+	return Object.values(POTION_TO_EXOTIC).includes(id) || Object.values(SCROLL_TO_EXOTIC).includes(id);
+}
+
+export function exoticRecycleAlternatives(id: string): string[] {
+	for (const table of [POTION_TO_EXOTIC, SCROLL_TO_EXOTIC]) {
+		const family = Object.values(table);
+		if (family.includes(id)) return family.filter((other) => other !== id);
+	}
+	return [];
+}
+
 export function potionExoticResult(potionId: string): string | undefined {
 	return POTION_TO_EXOTIC[potionId];
 }

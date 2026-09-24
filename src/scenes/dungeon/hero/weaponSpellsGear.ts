@@ -1,5 +1,6 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { Game, Random, Roguelike } from 'mwg';
+import { exoticRecycleAlternatives } from '../../../items/alchemy';
 import { HOLSTER_RECHARGE_BASE, NORMAL_RECHARGE_BASE, ownsBag } from '../../../items/bags';
 import { abilityFlatBoost, accrueWeaponCharge, counterAbilityRefund, gainWeaponCharge, preciseAssaultAccuracy, spendWeaponCharge, weaponAbilityChargeCost, weaponAbilityFor, weaponChargeCap } from '../../../items/weaponAbilities';
 import { runAttackResolution } from '../../../adapters/attackSimulation';
@@ -966,6 +967,13 @@ export const weaponSpellsGearMethods = {
 						id: 'missile_tippeddart', quantity: 1, stackable: true, identified: true, sourceClass: 'TippedDart',
 						tippedSeed: seed, level: 0, durability: MISSILE_MAX_DURABILITY, maxDurability: MISSILE_MAX_DURABILITY,
 						instanceId: scene.newItemInstanceId('missile'),
+					} as NonNullable<GroundItem['item']>;
+				}
+				if (category === 'exotic') {
+					const pool = exoticRecycleAlternatives(source.id);
+					return {
+						id: pool[Random.int(0, pool.length)]!, quantity: 1, stackable: true, identified: source.identified ?? false,
+						instanceId: scene.newItemInstanceId(source.id.startsWith('potion') ? 'potion' : 'scroll'),
 					} as NonNullable<GroundItem['item']>;
 				}
 				const deck = category === 'potion' ? Cat.POTION

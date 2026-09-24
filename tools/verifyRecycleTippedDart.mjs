@@ -22,4 +22,12 @@ check('the draw rerolls a different seed as a fresh level-0, full-durability uni
 	assert.ok(/tippedDart[\s\S]{0,700}level: 0, durability: MISSILE_MAX_DURABILITY, maxDurability: MISSILE_MAX_DURABILITY/.test(scene));
 });
 
+// Exotic families (`Recycle.onItemSelected()`'s `ExoticPotion.regToExo`/`ExoticScroll.regToExo`
+// branch): an exotic never redraws as a regular item, and one with no other exotic is not offered.
+check('an exotic source keeps its family: it is offered only with an alternative and redraws among exotics', () => {
+	assert.ok(spells.includes('exoticRecycleAlternatives(item.id).length > 0'), 'the picker gate');
+	assert.ok(spells.includes("exoticRecycleAlternatives(source.id).length > 0 ? 'exotic'"), 'the category routes to the exotic draw');
+	assert.ok(/category === 'exotic'\) \{\s*const pool = exoticRecycleAlternatives\(source\.id\)/.test(scene));
+});
+
 console.log('verifyRecycleTippedDart: OK');
