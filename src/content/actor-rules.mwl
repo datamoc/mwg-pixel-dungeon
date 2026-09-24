@@ -67,7 +67,12 @@
           {
             tag: "effect",
             apply_to: "immovable",
-            set: "dm201,sentry,rotHeart,rotLasher,pylon,demonSpawner,yog,blacksmith,ninjaLog,gnollGeomancer,crystalSpire",
+            // Found auditing LloydsBeacon.returnBeacon()'s occupant-push (`Char.hasProp(existing,
+            // Property.IMMOVABLE)`): Java's Shopkeeper/Imp NPCs both add IMMOVABLE in their own
+            // constructors (`actors/mobs/npcs/Shopkeeper.java`, `.../Imp.java`, tag `v3.3.8`), so a
+            // push against either should redirect to the hero instead - this set never listed them,
+            // even though both spawn as real `creatures` here (`spawnMonster('shopkeeper', ...)`).
+            set: "dm201,sentry,rotHeart,rotLasher,pylon,demonSpawner,yog,blacksmith,ninjaLog,gnollGeomancer,crystalSpire,shopkeeper,impShopkeeper",
           },
           // Java's `Char.Property.INORGANIC` members this port spawns (`Char.java`, v3.3.8; dm201/necroSkeleton/armoredStatue
           // inherit it from DM200/Skeleton/Statue): immune to Bleeding/ToxicGas/Poison. The two
