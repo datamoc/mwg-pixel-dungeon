@@ -64,8 +64,9 @@ function crystalClips(creature: Creature, c: number): Clip[] {
 
 export const crystalMineMethods = {
 	/** Re-applies the crystal sprite's clips for its colour, the guardian's crumple and the spire's
-	 * cracked frames (`CrystalSpireSprite.updateIdle()`). Not ported: the wisp's `TorchHalo`
-	 * light and bobbing, the guardian's `1.25` scale, and the spire's `DungeonWallsTilemap.skipCells`
+	 * cracked frames (`CrystalSpireSprite.updateIdle()`). The guardian preserves Java's `1.25`
+	 * scale from `CrystalGuardianSprite` (tag `v3.3.8`) while retaining its current facing. Not
+	 * ported: the wisp's `TorchHalo` light and bobbing, and the spire's `DungeonWallsTilemap.skipCells`
 	 * trick for drawing its 41-pixel height over the walls behind it. */
 	syncCrystalMineVisual(this: DungeonScene, creature: Creature): void {
 		const info = CRYSTAL_SHEETS[creature.kind as keyof typeof CRYSTAL_SHEETS];
@@ -74,6 +75,7 @@ export const crystalMineMethods = {
 		const sheet = SpriteSheet.fromTexture(runState.sprites[info.sprite], info.w, info.h);
 		const c = info.ofs[creature.crystalTint ?? 0] ?? 0;
 		for (const [name, frames, clip] of crystalClips(creature, c)) sprite.add(name, frames.map((f) => sheet.get(f)), clip);
+		if (creature.kind === 'crystalGuardian') sprite.scale.set(sprite.scale.x < 0 ? -1.25 : 1.25, 1.25);
 		sprite.play('idle', true);
 	},
 

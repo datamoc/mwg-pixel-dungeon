@@ -7,7 +7,10 @@ export function placeCharacterArt(sprite: Sprite2D, facingLeft = sprite.scale.x 
 	const width = sprite.texture.orig.width;
 	const height = sprite.texture.orig.height;
 	const inset = (16 - width) / 2;
-	sprite.scale.x = facingLeft ? -1 : 1;
+	//Java's `CharSprite.turnTo()` only changes its facing flag, so turning never erases a
+	//sprite-specific scale such as `CrystalGuardianSprite`'s 1.25 (`CharSprite.java`, tag v3.3.8).
+	const scaleX = Math.abs(sprite.scale.x) || 1;
+	sprite.scale.x = facingLeft ? -scaleX : scaleX;
 	sprite.pivot.set(facingLeft ? width + inset : -inset, height - 10);
 }
 
