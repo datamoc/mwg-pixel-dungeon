@@ -74,6 +74,18 @@
             // even though both spawn as real `creatures` here (`spawnMonster('shopkeeper', ...)`).
             set: "dm201,sentry,rotHeart,rotLasher,pylon,demonSpawner,yog,blacksmith,ninjaLog,gnollGeomancer,crystalSpire,shopkeeper,impShopkeeper",
           },
+          {
+            tag: "effect",
+            apply_to: "large",
+            // `Char.Property.LARGE` holders at tag `v3.3.8`, read off `properties.add`
+            // in each file: DM200 (`DM200.java:53`, inherited by DM201), DM300
+            // (`DM300.java:90`), Golem (`Golem.java:55`) and the Ghost
+            // (`Ghost.java:69` - a wandering pin, "not actually large of course", but
+            // the push gates read the property, so it counts here too). The RustedFist
+            // (`YogFist.java:456`) is LARGE by subtype only - MWL sets are kind-level,
+            // so `isLargeCreature` gates `yogFistType === 'rusted'` in code instead.
+            set: "dm200,dm201,golem,dm300,ghost",
+          },
           // Java's `Char.Property.INORGANIC` members this port spawns (`Char.java`, v3.3.8; dm201/necroSkeleton/armoredStatue
           // inherit it from DM200/Skeleton/Statue): immune to Bleeding/ToxicGas/Poison. The two
           // buffs ride `monsterStatusImmunities`; ToxicGas is a blob, so its site reads this set.
