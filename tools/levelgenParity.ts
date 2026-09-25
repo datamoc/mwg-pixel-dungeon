@@ -27,7 +27,7 @@
  */
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { portedFloor, resetPortedRun } from '../src/spdLevelGen/gameBridge';
+import { portedFloor, primeRunState, resetPortedRun } from '../src/spdLevelGen/gameBridge';
 import { setTraceDrawLog, setTraceStackWindow, traceStacks } from '../src/spdRng';
 
 interface JavaBlock {
@@ -128,6 +128,9 @@ function main(): void {
 	let stableTotal = 0;
 	for (const seed of seeds) {
 		resetPortedRun();
+		// Run-init draws (deck pick, category seeds, ...) happen here, OUTSIDE the per-floor
+		// trace window below - matching the harness, which arms its window after run setup.
+		primeRunState(BigInt(seed));
 		for (let depth = 1; depth <= 9; depth++) {
 			const block = java.find((b) => b.seed === seed && b.depth === depth);
 			if (!block) { console.log(`seed=${seed} depth=${depth}: NO JAVA BLOCK`); continue; }

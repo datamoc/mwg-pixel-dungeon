@@ -331,14 +331,28 @@ function generateMiningBranch(seed: bigint, depth: number, questType: Blacksmith
  * from this immutable generated baseline. It snapshots that layer when leaving a depth, so this
  * cache only needs to guarantee that revisits receive the same generated layout.
  */
-export function portedFloor(seed: bigint, depth: number, strongerBosses = false): PortedFloor {
-	if (!isPortedDepth(depth)) {
-		throw new Error(`portedFloor: depth ${depth} is not one of the ported depths (${PORTED_DEPTHS.join(', ')})`);
-	}
+/**
+ * Runs `resetRunState` for a fresh/foreign run without generating any floor. Parity-probe
+ * hook: the levelgen trace tool arms its draw log around `portedFloor`, and on depth 1 the
+ * 106 run-init draws (deck pick, category seeds, label/color/gem shuffles) otherwise leak
+ * into the floor trace while the Java harness window starts after them - a pure methodology
+ * offset (stripping it gives byte-identical depth-1 traces). Priming first keeps the traced
+ * region floor-only. Idempotent; `portedFloor` calls it too, so live-game behavior is
+ * unchanged whichever entry runs first.
+ */
+export function primeRunState(seed: bigint, strongerBosses = false): void {
 	if (!run || run.seed !== seed || run.strongerBosses !== strongerBosses) {
 		resetRunState(seed);
 		run = { seed, strongerBosses, floors: new Map() };
 	}
+}
+
+export function portedFloor(seed: bigint, depth: number, strongerBosses = false): PortedFloor {
+	if (!isPortedDepth(depth)) {
+		throw new Error(`portedFloor: depth ${depth} is not one of the ported depths (${PORTED_DEPTHS.join(', ')})`);
+	}
+	primeRunState(seed, strongerBosses);
+	if (!run) throw new Error('portedFloor: run state missing after prime');
 	for (const d of PORTED_DEPTHS) {
 		if (d > depth) break;
 		if (!run.floors.has(d)) run.floors.set(d, generateFloor(seed, d, strongerBosses));

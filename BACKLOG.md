@@ -63,8 +63,30 @@ then Java burns a category-substream fast-forward long-pair (`Generator.random(C
 push + `dropped` Longs) where TS burns its `chances` float first and the longs later - same
 category, same prize, different `dropped` count. Hypothesis: `dropped` drifted in depths
 1-2 (uncomparable) or an increment site differs; increment sites themselves match
-(`random(Category)` + `randomArtifact` both sides). Next: Java stacks via
-LEVELGEN_STACKWIN=123456789:3:405-430 or per-category drop counts to localize.
+(`random(Category)` + `randomArtifact` both sides). Stacks captured 2026-09-25 -
+hypothesis superseded by the attribution below.
+**Attribution 2026-09-25 (stack-proven both sides, no game-code change):** the harness
+checkout predates `v3.3.8` in `LaboratoryRoom.prize` - checkout hits any queued `Potion`,
+`v3.3.8` (and this port) wants queued `TrinketCatalyst`/`PotionOfStrength` or the deck -
+so on 123456789/d2 (which has a `ToxicGasRoom` queuing `PotionOfPurity` ahead of the lab)
+the harness burns one queue hit + one `POTION` deck draw (`dropped` 0->1) where the port
+burns two `STONE` deck draws. That one-count `dropped` lag cascades: d3 `@416` and d4
+`@404` (skip-Long vs chances, same signature), d7 `@439` (reversed - TS `dropped` higher
+for that category). Oracle-skew inventory for the other floors (`git diff v3.3.8 HEAD` on
+the checkout): `RegularBuilder` fail-bail>100 + exit-null-guard (TS already matches
+`v3.3.8`: `createBranches` returns false, `SizeCat` values identical both sides),
+`CrystalPathRoom` quadrant rewrite (TS deliberately follows HEAD per that file's header),
+`MassGraveRoom` +135 / `RotGardenRoom` +103 (incl. a new `PotionOfLiquidFlame` queue),
+`MazeConnectionRoom`, `PrisonPainter`/`RegularPainter` drift.
+Probe fix landed: `primeRunState` (`gameBridge.ts`) primes run-init outside the trace
+window - depth-1 TS traces were carrying 106 run-init draws; now 6401/6401 zero diffs on
+123456789/d1, same 5 remaining diffs as before (output-unchanged).
+Open (mechanism class known, trigger unlocalized - needs heap/placement replay against
+`v3.3.8` sources, not more trace diffing): 42/d8 `@321` (build-phase `placeRoom`
+connect-vs-retry, identical 321-draw prefix, zero common rects - invisible geometric flip
+earlier; deck state is irrelevant Mazzolini, streams are per-floor fresh) and 999999999999/d9
+`@22626` (one heap/mob-gated `paintGrass` draw gap after an identical 22626-draw prefix;
+no deck drift possible on that seed - no ToxicGas+lab co-occurrence, unlike 123456789/d2).
 
 
 ## B3. from ROADMAP 9. Build the Java-vs-TypeScript parity harness
