@@ -63,6 +63,27 @@ export const combatResolutionMethods = {
 	},
 
 	/**
+	 * T61 slice 1: the swing presentation prelude of `attack()` - facing, the
+	 * attack animation, and the per-kind swing shakes. Pure presentation: no
+	 * rolls, no early returns, no state beyond the sprite lookup - it fires on
+	 * misses too, exactly where it stood, so extracting it changes no behavior.
+	 */
+	presentAttackSwing(this: DungeonScene, attacker: Creature, defender: Creature): void {
+		faceCharacter(this.sprite(attacker), attacker.x, defender.x);
+		const attackerSprite = this.sprite(attacker);
+		if (attackerSprite instanceof AnimatedSprite && attackerSprite.has('attack')) attackerSprite.play('attack', true);
+		//`FistSprite.onComplete()` (tag `v3.3.8`): every Yog fist melee attack shakes
+		//(`4, 0.2f`) when the swing completes - placed with the swing, like the anim,
+		//so it fires on misses too. (The `yogfistslam` log nearby is the fist *summon*,
+		//a different event with no Java shake of its own.)
+		if (attacker.kind === 'yogFist') this.shakeScreen(4, 0.2);
+		//`DM300Sprite.slam()` (tag `v3.3.8`): DM300's melee swing shakes (`3, 0.7f`)
+		//with the slam anim, hit or miss. (`DM300.java` 325's *travelling* shake has
+		//no expression: this port's DM300 has no travelling state.)
+		if (attacker.kind === 'dm300') this.shakeScreen(3, 0.7);
+	},
+
+	/**
 	 * Melee (or missile) exchange with Java's own on-hit hooks: surprise attacks land
 	 * automatically (INFINITE_ACCURACY, inside rollHit) and wake the victim; Rogue's
 	 * SUCKER_PUNCH adds +2 on a surprise hit (+4 as an Assassin); Bat.attackProc heals
@@ -76,18 +97,7 @@ export const combatResolutionMethods = {
 		if (attacker.isHero) this.cancelHourglassFreeze();
 		else noteMonsterAttack(attacker);
 		if (attacker.kind === 'crystalWisp') this.triggerCrystalWispPulse(attacker);
-		faceCharacter(this.sprite(attacker), attacker.x, defender.x);
-		const attackerSprite = this.sprite(attacker);
-		if (attackerSprite instanceof AnimatedSprite && attackerSprite.has('attack')) attackerSprite.play('attack', true);
-		//`FistSprite.onComplete()` (tag `v3.3.8`): every Yog fist melee attack shakes
-		//(`4, 0.2f`) when the swing completes - placed with the swing, like the anim,
-		//so it fires on misses too. (The `yogfistslam` log nearby is the fist *summon*,
-		//a different event with no Java shake of its own.)
-		if (attacker.kind === 'yogFist') this.shakeScreen(4, 0.2);
-		//`DM300Sprite.slam()` (tag `v3.3.8`): DM300's melee swing shakes (`3, 0.7f`)
-		//with the slam anim, hit or miss. (`DM300.java` 325's *travelling* shake has
-		//no expression: this port's DM300 has no travelling state.)
-		if (attacker.kind === 'dm300') this.shakeScreen(3, 0.7);
+		this.presentAttackSwing(attacker, defender);
 		//`Preparation` must be read *before* this dispel: Java reads it into a local at the top of
 		//`Char.attack()` and only calls `Invisibility.dispel()` after the whole attack returns
 		//(`Hero.java` 2325), so the stealth state still applies to this attack's damage roll and
