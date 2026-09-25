@@ -1013,6 +1013,25 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.ok(sceneSource.includes("this.hero.bleedSource === 'chasm'"),
 		'the chasm-bleed death check reads the tracked source, not just any active bleed');
 }
+// The surface win awards Java's `Badges.validateHappyEnd()` trio (`Badges.java:1138`, tag
+// `v3.3.8`): HAPPY_END always, HAPPY_END_REMAINS with a remains item, PACIFIST_ASCENT with an
+// unlowered challenge. The awards live in `showVictoryPanel` - its only caller is
+// `beginAscendOneFloor`'s depth-1 win, the port's `SewerLevel` SURFACE branch.
+{
+	const sceneSource = readSceneSource();
+	assert.ok(sceneSource.includes("this.awardBadge('happy_end')"), 'the surface win books the happy-end badge');
+	assert.ok(sceneSource.includes("PORTED_REMAINS_IDS.some((id) => this.bag.find(id) !== undefined)) this.awardBadge('happy_end_remains')"),
+		'the remains badge gates on a carried remains item');
+	assert.ok(sceneSource.includes("this.ascensionChallengeActive && !this.ascensionStacksLowered) this.awardBadge('pacifist_ascent')"),
+		'the pacifist badge gates on an active, never-lowered challenge');
+	const badgesMwl = readFileSync(join(root, 'src/content/badges.mwl'), 'utf8');
+	assert.ok(badgesMwl.includes('id: "happy_end"'), 'the happy-end badge has a catalogue row');
+	assert.ok(badgesMwl.includes('icon: 99'), '...cut at Java\'s own HAPPY_END cell');
+	assert.ok(badgesMwl.includes('id: "happy_end_remains"'), 'the remains badge has a catalogue row');
+	assert.ok(badgesMwl.includes('icon: 101'), '...cut at Java\'s own HAPPY_END_REMAINS cell');
+	assert.ok(badgesMwl.includes('id: "pacifist_ascent"'), 'the pacifist badge has a catalogue row');
+	assert.ok(badgesMwl.includes('icon: 120'), '...cut at Java\'s own PACIFIST_ASCENT cell');
+}
 	// Per-carried-wand charges (`Wand.java`): a pickup of the wielded class (or of
 	// unknown class) absorbs as before; any other class lands as a spare entry with
 	// its own identity and full charge state instead of being silently destroyed.

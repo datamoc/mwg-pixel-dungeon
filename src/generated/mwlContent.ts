@@ -7045,7 +7045,57 @@ export const gameData = {
 								"column": 13
 							},
 							"gettext": []
-						}
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "happy_end",
+								"counter": "happy_end",
+								"target": "1",
+								"description": "Take the Amulet of Yendor to the surface",
+								"icon": "99"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\AppData\\Local\\Temp\\wtJ\\src\\content\\badges.mwl",
+								"line": 228,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "happy_end_remains",
+								"counter": "happy_end_remains",
+								"target": "1",
+								"description": "Bring a fallen hero's signature item to the surface",
+								"icon": "101"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\AppData\\Local\\Temp\\wtJ\\src\\content\\badges.mwl",
+								"line": 236,
+								"column": 13
+							},
+							"gettext": []
+						},
+						{
+							"tag": "row",
+							"attributes": {
+								"id": "pacifist_ascent",
+								"counter": "pacifist_ascent",
+								"target": "1",
+								"description": "Take the Amulet of Yendor to the surface without ever reducing the severity of its curse",
+								"icon": "120"
+							},
+							"children": [],
+							"location": {
+								"file": "C:\\Users\\miche\\AppData\\Local\\Temp\\wtJ\\src\\content\\badges.mwl",
+								"line": 244,
+								"column": 13
+							},
+							"gettext": []
 					],
 					"location": {
 						"file": "C:\\Users\\miche\\AppData\\Local\\Temp\\wtJ\\src\\content\\badges.mwl",

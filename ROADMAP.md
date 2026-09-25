@@ -205,9 +205,9 @@ citation-by-citation account):
       pathing and hero action-cost scaling this port's turn-based (not actor-clock) movement/AI
       code has no existing seam for, and a rushed attempt risked destabilizing unrelated movement
       code for a chance-based, cosmetic-adjacent effect - deferred rather than rushed. Also still
-      open: the `Badge.HAPPY_END`/`HAPPY_END_REMAINS`/`PACIFIST_ASCENT` badges (no matching
-      `badges.mwl` rows - `ascensionStacksLowered` is now tracked and ready for `PACIFIST_ASCENT`
-      whenever that row is added), `DemonSpawner`'s reduced-cooldown carve-out past floor 20
+      open: the `Badge.HAPPY_END`/`HAPPY_END_REMAINS`/`PACIFIST_ASCENT` badges (**ported
+      2026-09-25, T107** - rows, Java icons/descriptions and `validateHappyEnd()` gates all live;
+      `HAPPY_END_REMAINS` stays unfillable until the remains family is modeled), `DemonSpawner`'s reduced-cooldown carve-out past floor 20
       during the climb (no observable gameplay effect this port models at all), and the
       `Ratmogrify.TransmogRat`/`AscensionBuffBlocker` exemptions on the per-mob table itself.
       `AmuletScene`'s own "Let's call it a day" instant-win shortcut button is also not ported -

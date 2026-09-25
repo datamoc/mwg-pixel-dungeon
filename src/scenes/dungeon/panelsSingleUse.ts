@@ -57,6 +57,13 @@ import { BUFF_DURATION, absorbShield, addBuff, setAnnounceBuff, setAttachBacklas
 import { BOSSES } from '../../monsters';
 import { APPEARANCE_TABLES, AUGMENT_OPTIONS, BLACKSMITH_QUEST, IMP_QUEST, SAD_GHOST_QUEST, SPD_LEVEL_CURVE, SUBCLASS_OPTIONS, SUBCLASS_TRACK, WANDMAKER_QUEST } from './shared';
 
+/**
+ * Java's `RemainsItem` subclasses (`items/remains/`, tag `v3.3.8`) whose presence in
+ * `belongings` earns `HAPPY_END_REMAINS` at the surface win. None is modeled in this port's
+ * item vocabulary yet, so the surface-win gate below is live but unfillable until they are.
+ */
+const PORTED_REMAINS_IDS: readonly string[] = ['bowFragment', 'brokenHilt', 'brokenStaff', 'cloakScrap', 'sealShard', 'tornPage'];
+
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `panelsSingleUse`). Each takes the scene as 	his`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
 export const panelsSingleUseMethods = {
@@ -578,6 +585,20 @@ export const panelsSingleUseMethods = {
 
 	/** LastLevel's Amulet pickup ends the run with a visible, restartable result screen. */
 	showVictoryPanel(this: DungeonScene): void {
+		//`SewerLevel.activateTransition`'s `SURFACE` branch calls `Badges.validateHappyEnd()`
+		//before `Dungeon.win` - this panel is that branch's port-side counterpart (its only
+		//caller is `beginAscendOneFloor`'s depth-1 win), so the three ascent badges are awarded
+		//here with Java's own gates (`Badges.java:1138`, tag `v3.3.8`): `HAPPY_END` unconditionally;
+		//`HAPPY_END_REMAINS` while a `RemainsItem` is carried - none of Java's six remains ids
+		//(`BowFragment`/`BrokenHilt`/`BrokenStaff`/`CloakScrap`/`SealShard`/`TornPage`) exists in
+		//this port's item model yet, so the gate is live code that cannot fill until they do;
+		//`PACIFIST_ASCENT` while the challenge is active and no boosted kill ever lowered its
+		//stacks (`AscensionChallenge.qualifiedForPacifist`). Ordering vs `recordRun` (called just
+		//before this panel) is immaterial here: the port's run record carries depth/level/gold
+		//only and reads no badge state, unlike Java's badge-scored ranking submit.
+		this.awardBadge('happy_end');
+		if (PORTED_REMAINS_IDS.some((id) => this.bag.find(id) !== undefined)) this.awardBadge('happy_end_remains');
+		if (this.ascensionChallengeActive && !this.ascensionStacksLowered) this.awardBadge('pacifist_ascent');
 		showVictoryPanelUi({ panel: this.victoryPanel, level: this.progression.level, depth: this.depth, position: () => this.positionInterface(Game.current.width, Game.current.height) });
 	},
 
