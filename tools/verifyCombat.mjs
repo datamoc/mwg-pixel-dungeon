@@ -864,5 +864,9 @@ export function verifyCombat(require, check) {
 			'a landed hit scales through the damage seam');
 		assert.ok(scene.includes('isCharmedToward(this: DungeonScene, attacker: Creature, defender: Creature): boolean'),
 			'the charm pairing is one shared predicate, read pre-proc for the decay');
+		assert.ok(scene.includes('armStrikeAffix(this: DungeonScene, attacker: Creature, damage: number): number'),
+			'the Unstable/Kinetic arming lives in its own seam');
+		assert.ok(scene.includes('damage = this.armStrikeAffix(attacker, damage);'),
+			'a landed hit arms through the affix seam');
 	});
 }

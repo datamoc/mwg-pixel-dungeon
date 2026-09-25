@@ -153,6 +153,46 @@ export const combatResolutionMethods = {
 	},
 
 	/**
+	 * T61 slice 4: the Unstable/Kinetic arming of a landed `attack()`. The delegate
+	 * draw, the kill-storage arming, and the conserved-damage read-back move verbatim;
+	 * downstream branches read the scene fields (`unstableDelegated`,
+	 * `kineticTrackerHit`, `kineticConservedAdded`), never a local, so the seam
+	 * returns only the adjusted damage.
+	 */
+	armStrikeAffix(this: DungeonScene, attacker: Creature, damage: number): number {
+		//`Unstable.proc()`/`Kinetic.proc()`: an Unstable weapon delegates every swing to one
+		//`Random.element` draw over `UNSTABLE_DELEGATES` (Java's `Random.oneOf(randomEnchants)`
+		//minus the documented exclusions). The pick is stashed so `heroOnHit`'s post-damage
+		//branches resolve the same enchant this swing. `Kinetic.proc()` first reads back any
+		//conserved damage (`damageBonus()` is `ceil(preserved)`, not floor) and detaches it,
+		//then attaches the tracker - on EVERY Kinetic swing, even at zero conserved, which is
+		//why the later kill-store keys off the flag rather than the amount.
+		const strikeAffix = this.weaponAffix === 'unstable' && attacker === this.hero
+			? Random.element(UNSTABLE_DELEGATES)!
+			: this.weaponAffix;
+		this.unstableDelegated = this.weaponAffix === 'unstable' && attacker === this.hero ? strikeAffix : null;
+		//`kineticTrackerHit` arms this swing's kill-storage (used below at the death check) -
+		//true whenever THIS swing resolves as Kinetic, whether directly or via Unstable's
+		//delegation draw, matching `KineticTracker` only ever being attached from inside
+		//`Kinetic.proc()` itself.
+		this.kineticTrackerHit = attacker === this.hero && strikeAffix === 'kinetic';
+		this.kineticConservedAdded = 0;
+		//Read-back is a different condition from arming: both `Kinetic.proc()` AND
+		//`Unstable.proc()` read back and clear any conserved damage unconditionally at the
+		//top of their own proc, before Unstable goes on to delegate to a random enchant - so
+		//this fires on every swing of a Kinetic OR Unstable weapon, not only the swings where
+		//Unstable's delegate happens to redraw Kinetic. **Found in the 2026-09-09 item-system
+		//audit**: this used to gate the read-back on `kineticTrackerHit` too, silently
+		//withholding the stored bonus on ~8/9 of an Unstable weapon's own swings.
+		if (attacker === this.hero && (this.weaponAffix === 'kinetic' || this.weaponAffix === 'unstable') && this.kineticStored > 0) {
+			this.kineticConservedAdded = Math.ceil(this.kineticStored);
+			damage += this.kineticConservedAdded;
+			this.kineticStored = 0;
+		}
+		return damage;
+	},
+
+	/**
 	 * Melee (or missile) exchange with Java's own on-hit hooks: surprise attacks land
 	 * automatically (INFINITE_ACCURACY, inside rollHit) and wake the victim; Rogue's
 	 * SUCKER_PUNCH adds +2 on a surprise hit (+4 as an Assassin); Bat.attackProc heals
@@ -418,35 +458,7 @@ export const combatResolutionMethods = {
 		let damage = this.scaleAttackDamage(attacker, defender, attackRoll.damage);
 		//No `Pylon` curve here: it is a `damage()` override, so it applies after every multiplier
 		//and proc below, not before them - see `applyDefenderDamageCurves`' own note.
-		//`Unstable.proc()`/`Kinetic.proc()`: an Unstable weapon delegates every swing to one
-		//`Random.element` draw over `UNSTABLE_DELEGATES` (Java's `Random.oneOf(randomEnchants)`
-		//minus the documented exclusions). The pick is stashed so `heroOnHit`'s post-damage
-		//branches resolve the same enchant this swing. `Kinetic.proc()` first reads back any
-		//conserved damage (`damageBonus()` is `ceil(preserved)`, not floor) and detaches it,
-		//then attaches the tracker - on EVERY Kinetic swing, even at zero conserved, which is
-		//why the later kill-store keys off the flag rather than the amount.
-		const strikeAffix = this.weaponAffix === 'unstable' && attacker === this.hero
-			? Random.element(UNSTABLE_DELEGATES)!
-			: this.weaponAffix;
-		this.unstableDelegated = this.weaponAffix === 'unstable' && attacker === this.hero ? strikeAffix : null;
-		//`kineticTrackerHit` arms this swing's kill-storage (used below at the death check) -
-		//true whenever THIS swing resolves as Kinetic, whether directly or via Unstable's
-		//delegation draw, matching `KineticTracker` only ever being attached from inside
-		//`Kinetic.proc()` itself.
-		this.kineticTrackerHit = attacker === this.hero && strikeAffix === 'kinetic';
-		this.kineticConservedAdded = 0;
-		//Read-back is a different condition from arming: both `Kinetic.proc()` AND
-		//`Unstable.proc()` read back and clear any conserved damage unconditionally at the
-		//top of their own proc, before Unstable goes on to delegate to a random enchant - so
-		//this fires on every swing of a Kinetic OR Unstable weapon, not only the swings where
-		//Unstable's delegate happens to redraw Kinetic. **Found in the 2026-09-09 item-system
-		//audit**: this used to gate the read-back on `kineticTrackerHit` too, silently
-		//withholding the stored bonus on ~8/9 of an Unstable weapon's own swings.
-		if (attacker === this.hero && (this.weaponAffix === 'kinetic' || this.weaponAffix === 'unstable') && this.kineticStored > 0) {
-			this.kineticConservedAdded = Math.ceil(this.kineticStored);
-			damage += this.kineticConservedAdded;
-			this.kineticStored = 0;
-		}
+		damage = this.armStrikeAffix(attacker, damage);
 		if (attacker === this.hero) damage += empoweredStrikeBonus(this.subclass(), this.talentRank('empowered_strike'));
 		//Talent.java's SUCKER_PUNCH branch: `Random.IntRange(points, 2)` (1-2 at rank 1, flat 2
 		//at rank 2), not a flat `points` bonus - found in the 2026-09-09 hero-progression audit.
