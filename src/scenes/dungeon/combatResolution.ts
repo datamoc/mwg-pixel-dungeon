@@ -596,6 +596,61 @@ export const combatResolutionMethods = {
 		if (defender.kind === 'yog' && defender.hp > 0) this.yogDamageHook(defender, preHp);
 	},
 
+
+	/**
+	 * T61 slice 14: the post-hit presentation of a landed `attack()` - the imbue
+	 * procs, the wake/showDamage/surprise/spawner/aggro/sleep status block, the
+	 * sprite flash, and the hit log line. Verbatim move; read-only on `damage`.
+	 */
+	presentLandedHit(this: DungeonScene, attacker: Creature, defender: Creature, surprise: boolean, subject: string, object: string, damage: number): void {
+	 		// FrostImbue.proc(): a surviving enemy hit receives Chill for two turns. The compact
+	 		// status model uses the same short-duration movement/turn lock as the closest Chill hook.
+	 		if (attacker === this.hero && this.hero.buffs['frostImbue'] && defender.hp > 0 && !defender.isHero && !defender.isNPC && !buffBlocked(defender, 'cripple')) {
+	 			defender.buffs['cripple'] = 2;
+	 		}
+	 		//`FireImbue.proc()` (`actors/buffs/FireImbue.java`, tag `v3.3.8`): a surviving enemy
+	 		//hit reignites Burning on a 1-in-2 (`Buff.affect(enemy, Burning.class).reignite(enemy)`
+	 		//- prolong, never a fresh overwrite - routed through the shared gate like every
+	 		//other fire source, so the holder-immunity and kind refusals still apply).
+	 		if (attacker === this.hero && this.hero.buffs['fireImbue'] && defender.hp > 0 && !defender.isHero && !defender.isNPC) {
+	 			if (Random.int(2) === 0) reigniteBuff(defender, 'burning');
+	 		}
+			//Statue.damage() (Statue.java, tag v3.3.8): any damage flips PASSIVE to HUNTING.
+			//ArmoredStatue inherits it unchanged, so both kinds wake here - previously only
+			//`statue` did, leaving a struck armored statue asleep forever.
+			if (defender.kind === 'statue' || defender.kind === 'armoredStatue') defender.sleeping = false;
+			this.showDamage(defender, damage);
+			//`Mob.defenseProc()` surprise presentation (`Mob.java`, tag `v3.3.8`): a
+			//surprise hit plays `HIT_STRONG` and shows the red `Wound` slash when the
+			//hero attacked with Preparation up, the `!` `Surprise` mark otherwise.
+			if (surprise && attacker.isHero === true && !defender.isHero && !defender.isNPC) {
+				this.showSurpriseMark(defender, attacker.prepLevel !== undefined);
+			}
+			if (defender.kind === 'demonSpawner') {
+				defender.spawnCooldown = Math.max((defender.spawnCooldown ?? 60) - damage, -20);
+			}
+			defender.sleeping = false;
+			//`Mob.defenseProc()` (tag v3.3.8): a mob hit by an enemy `aggro`s it and sets `target = enemy.pos`,
+			//so it heads for where the blow came from even when the attacker is outside its field of view
+			//(a thrown dart, a wand bolt from across the room). `lastSeen` is this port's hunt target; a mob
+			//that still sees the hero refreshes it every turn anyway.
+			if (attacker.isHero && !defender.isHero && !defender.isNPC && !defender.isAlly && !defender.fleeing) {
+				defender.lastSeen = { x: attacker.x, y: attacker.y };
+			}
+			//Char.damage(): incoming damage detaches MagicalSleep before normal damage
+			//resolution; the port's marker/paralysis pair is the equivalent state.
+			if (defender.buffs['magicalSleep'] !== undefined) {
+				delete defender.buffs['magicalSleep'];
+				delete defender.buffs['paralysis'];
+			}
+			this.sprite(defender).setColorAdd(1, 1, 1);
+			//the one log line whose severity depends on which way the blow went: SPD colours
+			//damage the hero takes red and leaves the hero's own hits plain
+			this.say(
+				t('port.log.hit', { subject, verb: t(attacker.isHero ? 'port.log.verb.hithero' : 'port.log.verb.hit'), object, damage }),
+				defender.isHero ? 'negative' : 'info'
+			);
+	},
 	applyExecutesAndDamage(this: DungeonScene, attacker: Creature, defender: Creature, phantomRemote: boolean, damage: number): { damage: number; heroExecuted: boolean; finished: boolean } {
 			//The execute mechanics are Java's last step in `attack()`: they run after
 			//`enemy.damage()` has applied everything above - the `damage()` overrides (including
@@ -1025,53 +1080,7 @@ export const combatResolutionMethods = {
 		damage = execOut.damage;
 		const heroExecuted = execOut.heroExecuted;
 		this.runBossDamageHooks(defender, preHp);
- 		// FrostImbue.proc(): a surviving enemy hit receives Chill for two turns. The compact
- 		// status model uses the same short-duration movement/turn lock as the closest Chill hook.
- 		if (attacker === this.hero && this.hero.buffs['frostImbue'] && defender.hp > 0 && !defender.isHero && !defender.isNPC && !buffBlocked(defender, 'cripple')) {
- 			defender.buffs['cripple'] = 2;
- 		}
- 		//`FireImbue.proc()` (`actors/buffs/FireImbue.java`, tag `v3.3.8`): a surviving enemy
- 		//hit reignites Burning on a 1-in-2 (`Buff.affect(enemy, Burning.class).reignite(enemy)`
- 		//- prolong, never a fresh overwrite - routed through the shared gate like every
- 		//other fire source, so the holder-immunity and kind refusals still apply).
- 		if (attacker === this.hero && this.hero.buffs['fireImbue'] && defender.hp > 0 && !defender.isHero && !defender.isNPC) {
- 			if (Random.int(2) === 0) reigniteBuff(defender, 'burning');
- 		}
-		//Statue.damage() (Statue.java, tag v3.3.8): any damage flips PASSIVE to HUNTING.
-		//ArmoredStatue inherits it unchanged, so both kinds wake here - previously only
-		//`statue` did, leaving a struck armored statue asleep forever.
-		if (defender.kind === 'statue' || defender.kind === 'armoredStatue') defender.sleeping = false;
-		this.showDamage(defender, damage);
-		//`Mob.defenseProc()` surprise presentation (`Mob.java`, tag `v3.3.8`): a
-		//surprise hit plays `HIT_STRONG` and shows the red `Wound` slash when the
-		//hero attacked with Preparation up, the `!` `Surprise` mark otherwise.
-		if (surprise && attacker.isHero === true && !defender.isHero && !defender.isNPC) {
-			this.showSurpriseMark(defender, attacker.prepLevel !== undefined);
-		}
-		if (defender.kind === 'demonSpawner') {
-			defender.spawnCooldown = Math.max((defender.spawnCooldown ?? 60) - damage, -20);
-		}
-		defender.sleeping = false;
-		//`Mob.defenseProc()` (tag v3.3.8): a mob hit by an enemy `aggro`s it and sets `target = enemy.pos`,
-		//so it heads for where the blow came from even when the attacker is outside its field of view
-		//(a thrown dart, a wand bolt from across the room). `lastSeen` is this port's hunt target; a mob
-		//that still sees the hero refreshes it every turn anyway.
-		if (attacker.isHero && !defender.isHero && !defender.isNPC && !defender.isAlly && !defender.fleeing) {
-			defender.lastSeen = { x: attacker.x, y: attacker.y };
-		}
-		//Char.damage(): incoming damage detaches MagicalSleep before normal damage
-		//resolution; the port's marker/paralysis pair is the equivalent state.
-		if (defender.buffs['magicalSleep'] !== undefined) {
-			delete defender.buffs['magicalSleep'];
-			delete defender.buffs['paralysis'];
-		}
-		this.sprite(defender).setColorAdd(1, 1, 1);
-		//the one log line whose severity depends on which way the blow went: SPD colours
-		//damage the hero takes red and leaves the hero's own hits plain
-		this.say(
-			t('port.log.hit', { subject, verb: t(attacker.isHero ? 'port.log.verb.hithero' : 'port.log.verb.hit'), object, damage }),
-			defender.isHero ? 'negative' : 'info'
-		);
+		this.presentLandedHit(attacker, defender, surprise, subject, object, damage);
 
 		//Illuminated already detached up front at the Searing Light site (any attacker,
 		//like Java's `Char.attack()`), so there is nothing left to consume here.

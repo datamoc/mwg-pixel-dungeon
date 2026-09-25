@@ -906,5 +906,9 @@ export function verifyCombat(require, check) {
 			'the boss post-damage hooks live in their own seam');
 		assert.ok(scene.includes('this.runBossDamageHooks(defender, preHp);'),
 			'a landed hit hooks through the boss seam');
+		assert.ok(scene.includes('presentLandedHit(this: DungeonScene, attacker: Creature, defender: Creature, surprise: boolean, subject: string, object: string, damage: number): void'),
+			'the post-hit presentation lives in its own seam');
+		assert.ok(scene.includes('this.presentLandedHit(attacker, defender, surprise, subject, object, damage);'),
+			'a landed hit presents through the post-hit seam');
 	});
 }
