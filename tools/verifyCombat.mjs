@@ -845,4 +845,18 @@ export function verifyCombat(require, check) {
 		assert.deepEqual(explosiveTrapBounds(1), [5, 15]);
 		assert.deepEqual(explosiveTrapBounds(20), [24, 72]);
 	});
+	check('attack() presents swings and misses through its T61 seams', () => {
+		// T61 slices 1-2 moved attack() presentation out of the resolution body
+		// into named seams; the pins guard the seam contents and the call sites
+		// (the parry-interleaved main-miss pair stays inline on purpose).
+		const scene = readSceneSource();
+		assert.ok(scene.includes('presentAttackSwing(this: DungeonScene, attacker: Creature, defender: Creature): void'),
+			'the swing prelude lives in its own seam');
+		assert.ok(scene.includes('this.presentAttackSwing(attacker, defender);'),
+			'attack() opens through the swing seam');
+		assert.ok(scene.includes('presentAttackMiss(this: DungeonScene, attacker: Creature, subject: string, object: string): void'),
+			'the miss cue-plus-log lives in its own seam');
+		assert.ok(scene.includes('this.presentAttackMiss(attacker, subject, object);'),
+			'the afterImage and spiritHawk gates present through the miss seam');
+	});
 }

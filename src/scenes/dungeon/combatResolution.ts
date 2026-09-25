@@ -84,6 +84,16 @@ export const combatResolutionMethods = {
 	},
 
 	/**
+	 * T61 slice 2: the miss presentation of `attack()` - the whiff cue plus the
+	 * hero-/third-person miss log line. The `sleeping = false` wake beside each
+	 * call site stays inline: waking the victim is resolution state, not presentation.
+	 */
+	presentAttackMiss(this: DungeonScene, attacker: Creature, subject: string, object: string): void {
+		runState.audio.cue('miss', 0.55);
+		this.say(t(attacker.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
+	},
+
+	/**
 	 * Melee (or missile) exchange with Java's own on-hit hooks: surprise attacks land
 	 * automatically (INFINITE_ACCURACY, inside rollHit) and wake the victim; Rogue's
 	 * SUCKER_PUNCH adds +2 on a surprise hit (+4 as an Assassin); Bat.attackProc heals
@@ -280,9 +290,8 @@ export const combatResolutionMethods = {
 				}
 				if (this.talentRank('counter_ability') > 0) this.hero.buffs['counterAbility'] = BUFF_DURATION.counterAbility;
 			}
-			runState.audio.cue('miss', 0.55);
 			defender.sleeping = false;
-			this.say(t(attacker.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
+			this.presentAttackMiss(attacker, subject, object);
 			return false;
 		}
 		//`SpiritHawk.HawkAlly.defenseSkill()`: with `SWIFT_SPIRIT` ranked the hawk outright dodges
@@ -291,9 +300,8 @@ export const combatResolutionMethods = {
 		//damage and on-hit effects never run - and the miss is presented like any other.
 		if (defender.allyKind === 'spiritHawk' && (defender.spiritHawkDodges ?? 0) > 0) {
 			defender.spiritHawkDodges = (defender.spiritHawkDodges ?? 0) - 1;
-			runState.audio.cue('miss', 0.55);
 			defender.sleeping = false;
-			this.say(t(attacker.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
+			this.presentAttackMiss(attacker, subject, object);
 			return false;
 		}
 		//`Dagger`/`Dirk`/`AssassinsBlade` surprise passive (`damageRoll`, tag `v3.3.8`):
@@ -336,6 +344,8 @@ export const combatResolutionMethods = {
 			runState.audio.cue('miss', 0.55);
 			defender.sleeping = false;
 			//`Hero.defenseSkill()`/`defenseVerb()`: a blow that meets the Combo Parry window is parried (and riposted).
+			//Stays inline rather than using presentAttackMiss: the riposte interleaves
+			//between the cue and the log line, and reordering it would change behavior.
 			if (defender === this.hero && this.comboParryTurns > 0) this.comboParried(attacker);
 			this.say(t(attacker.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
 			return false;
