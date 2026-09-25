@@ -3,6 +3,7 @@ import { Random, Roguelike, SpriteSheet } from 'mwg';
 import { AnimatedSprite } from 'mwg/two-d/render';
 import { Graphics } from 'mwg/two-d/pixi-interop';
 import { addBuff, buffBlocked, rollHit, type BuffId, type Creature, type Step } from '../../../combat';
+import { spawnCrystalSplash } from '../../../ui/effectBursts';
 import { t } from '../../../i18n/index';
 import { runState } from '../../../runState';
 import { IMMOVABLE_KINDS } from '../../../monsters';
@@ -168,9 +169,8 @@ export const crystalMineMethods = {
 	/** Re-applies the crystal sprite's clips for its colour, the guardian's crumple and the spire's
 	 * cracked frames (`CrystalSpireSprite.updateIdle()`). The guardian preserves Java's `1.25`
 	 * scale from `CrystalGuardianSprite` (tag `v3.3.8`) while retaining its current facing. The
-	 * wisp's light and bob are advanced by `updateCrystalWispVisuals`; the spire's
-	 * `DungeonWallsTilemap.skipCells` trick for drawing its 41-pixel height over the walls remains
-	 * unported. */
+	 * wisp's light and bob are advanced by `updateCrystalWispVisuals`; `DungeonWallsTilemap.skipCells`
+	 * leaves the wall overhang cells above the spire blank for its 41-pixel art. */
 	syncCrystalMineVisual(this: DungeonScene, creature: Creature): void {
 		const info = CRYSTAL_SHEETS[creature.kind as keyof typeof CRYSTAL_SHEETS];
 		const sprite = this.spriteFor.get(creature.id);
@@ -180,6 +180,19 @@ export const crystalMineMethods = {
 		for (const [name, frames, clip] of crystalClips(creature, c)) sprite.add(name, frames.map((f) => sheet.get(f)), clip);
 		if (creature.kind === 'crystalGuardian') sprite.scale.set(sprite.scale.x < 0 ? -1.25 : 1.25, 1.25);
 		sprite.play('idle', true);
+	},
+
+	/** `DungeonWallsTilemap.skipCells` omits the two cells above each live spire so its
+	 * 41px sprite is visible. The mine overhang uses these exact per-cell frames. */
+	crystalSpireSkipCells(this: DungeonScene): Set<number> {
+		const skip = new Set<number>();
+		for (const spire of this.creatures) {
+			if (spire.kind !== 'crystalSpire' || spire.hp <= 0) continue;
+			const cell = this.level.index(spire.x, spire.y);
+			skip.add(cell - this.level.width * 2);
+			skip.add(cell - this.level.width);
+		}
+		return skip;
 	},
 
 	/** The constructor's `switch (Random.Int(3))` colour roll, then the sprite for it. */
@@ -440,6 +453,10 @@ export const crystalMineMethods = {
 		for (const cell of wave) {
 			if (cell === spireCell) continue;
 			this.setMineCell(cell, Terrain.MINE_CRYSTAL);
+			const at = xy(cell);
+			//`CrystalSpire.act()` calls `Splash.at(i, 0xFFFFFF, 5)` for every newly
+			//grown crystal cell; this is the port's five-pixel splash approximation.
+			spawnCrystalSplash(this.effectLayer, this.effectBursts, at.x, at.y);
 		}
 		this.restitchAllTiles();
 		this.refreshMineTiles();
@@ -465,7 +482,7 @@ export const crystalMineMethods = {
 			} else {
 				this.applyBlastDamage(ch, dmg, true, 'foe');
 			}
-			if (ch.hp > 0 && movePos !== cell) this.moveTo(ch, xy(movePos));
+			if (ch.hp > 0 && movePos !== cell) this.pushTo(ch, xy(movePos));
 		}
 		this.shakeScreen(1, 0.7);
 		runState.audio.cue('shatter', 0.7);
@@ -568,10 +585,15 @@ export const crystalMineMethods = {
 		if (paint) {
 			for (let cell = 0; cell < paint.map.length; cell++) {
 				const x = cell % this.level.width, y = Math.floor(cell / this.level.width);
-				if (paint.map[cell] === Terrain.MINE_CRYSTAL && fov.isVisible(x, y)) this.setMineCell(cell, Terrain.EMPTY);
+				if (paint.map[cell] === Terrain.MINE_CRYSTAL && fov.isVisible(x, y)) {
+					this.setMineCell(cell, Terrain.EMPTY);
+					//`CrystalSpire.interact()` splashes each visible shattered crystal too.
+					spawnCrystalSplash(this.effectLayer, this.effectBursts, x, y);
+				}
 			}
 			this.restitchAllTiles();
 			this.refreshMineTiles();
+			this.wallsMap?.setLayerData('walls', this.wallFrames());
 		}
 		for (const mob of [...this.creatures]) {
 			if (mob === spire || mob.hp <= 0 || !fov.isVisible(mob.x, mob.y)) continue;

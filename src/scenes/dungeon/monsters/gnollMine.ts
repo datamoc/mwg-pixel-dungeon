@@ -76,8 +76,8 @@ export const gnollMineMethods = {
 	/** Re-applies the gnoll sprite's clips; the geomancer swaps to its statue frames while it
 	 * wears rock armour (`GnollGeomancerSprite.idle()`/`link()`). Java's `GnollGeomancerSprite`
 	 * constructor also sets a 1.25 scale (tag `v3.3.8`); preserve it across clip refreshes and
-	 * facing changes. Not ported: the
-	 * `EarthParticle` emitter a sapper-linked guard or geomancer wears (no particle seam). */
+	 * facing changes. `EarthParticle` is handled by the scene aura sync only for a linked geomancer,
+	 * as `GnollGeomancerSprite.link()` does in Java; the linked guard has no such emitter. */
 	syncGnollMineVisual(this: DungeonScene, creature: Creature): void {
 		const sheetInfo = GNOLL_SHEETS[creature.kind as keyof typeof GNOLL_SHEETS];
 		const sprite = this.spriteFor.get(creature.id);
@@ -504,7 +504,7 @@ export const gnollMineMethods = {
 					occupied: (x, y) => { const o = this.creatureAt(x, y); return o !== null && o !== hit; },
 					immovable: hit.buffs['roots'] !== undefined,
 				});
-				if (dest.x !== hit.x || dest.y !== hit.y) this.moveTo(hit, dest);
+				if (dest.x !== hit.x || dest.y !== hit.y) this.pushTo(hit, dest);
 			}
 		} else if (!hit) this.triggerTrapAt(landing.x, landing.y);
 	},

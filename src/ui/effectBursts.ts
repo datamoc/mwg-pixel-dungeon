@@ -3,6 +3,7 @@ import { Container, Texture } from 'mwg/two-d/pixi-interop';
 import { TILE } from '../dungeonConstants';
 import type { DeathBurstSpec } from '../simulation/deathBursts';
 import { pourAurasFor, type PourAuraSpec } from '../simulation/pourAuras';
+import type { Creature } from '../combat';
 
 /**
  * One-shot particle-burst constructors, moved verbatim from the scene as the
@@ -88,6 +89,18 @@ export function spawnHitFlash(layer: Container, alive: LiveBurst[], x: number, y
 	track(layer, alive, emitter, x, y, count, 0.6);
 }
 
+/** A short white chip burst for `Splash.at(cell, 0xFFFFFF, 5)` (`CrystalSpire.java`, v3.3.8).
+ * The port uses five shrinking white pixels in place of Java's directional splash film. */
+export function spawnCrystalSplash(layer: Container, alive: LiveBurst[], x: number, y: number): void {
+	const emitter = new ParticleEmitter({
+		texture: Texture.WHITE, max: 5, rate: 0, life: 0.45,
+		speed: [12, 34] as [number, number], angle: [0, Math.PI * 2] as [number, number],
+		scale: [3, 0] as [number, number], alpha: (t: number) => 1 - t, tint: 0xffffff,
+		spawn: { shape: 'rect', width: TILE / 2, height: TILE / 2 },
+	});
+	track(layer, alive, emitter, x, y, 5, 0.45);
+}
+
 /** Rising purple motes: the curse infusion's five, and the death-burst
  * table's guard/succubus/ward counts through `spawnDeathBursts` below. */
 export function spawnShadowBurst(layer: Container, alive: LiveBurst[], x: number, y: number, count: number): void {
@@ -152,9 +165,10 @@ const aurasByScene = new WeakMap<object, Map<unknown, LiveAura[]>>();
 
 /** Minimal scene surface the aura sync reads - everything here already exists. */
 export interface PourAuraScene {
-	creatures: Iterable<{ x: number; y: number; kind?: string; allyKind?: string; elementalType?: 'fire' | 'frost' | 'shock' | 'chaos'; yogFistType?: 'burning' | 'soiled' | 'rotting' | 'rusted' | 'bright' | 'dark'; dmSupercharged?: boolean; beamCharged?: boolean; hp?: number; maxHp?: number }>;
+	creatures: Iterable<Creature & { x: number; y: number; allyKind?: string; elementalType?: 'fire' | 'frost' | 'shock' | 'chaos'; yogFistType?: 'burning' | 'soiled' | 'rotting' | 'rusted' | 'bright' | 'dark'; dmSupercharged?: boolean; beamCharged?: boolean; hasGnollSapper?: boolean }>;
 	fov: { isVisible(x: number, y: number): boolean };
 	effectLayer: Container;
+	gnollHasSapper?: (creature: Creature) => boolean;
 }
 
 /**
@@ -172,7 +186,10 @@ export function syncPourAuras(scene: PourAuraScene): void {
 	const seen = new Set<unknown>();
 	for (const creature of scene.creatures) {
 		seen.add(creature);
-		const specs = pourAurasFor(creature);
+		const specs = pourAurasFor({
+			...creature,
+			hasGnollSapper: creature.kind === 'gnollGeomancer' && (scene.gnollHasSapper?.(creature) ?? false),
+		});
 		const key = auraKey(specs);
 		const current = live.get(creature);
 		if (current && current[0]?.key === key && current.length === specs.length) {

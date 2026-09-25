@@ -42,6 +42,7 @@ export interface PourAuraCreature {
 	beamCharged?: boolean;
 	hp?: number;
 	maxHp?: number;
+	hasGnollSapper?: boolean;
 }
 
 /** `SparkParticle.STATIC`: white, static, life 0.25-0.5, size 5. */
@@ -108,6 +109,15 @@ function goo(rate: number): PourAuraSpec {
 
 /** Continuous pour auras following `creature`, empty when Java shows none. */
 export function pourAurasFor(creature: PourAuraCreature): PourAuraSpec[] {
+	//`GnollGeomancerSprite.link()` pours `EarthParticle.FACTORY` only while
+	//`hasSapper()` is true; GnollGuardSprite has no EarthParticle emitter. EarthParticle
+	//uses 0.15s, 1s life, size 8 and tint 0x444444..0x777766, shrinking by a triangle
+	//curve. This emitter approximates the triangle with linear shrinking and random tint.
+	if (creature.kind === 'gnollGeomancer' && creature.hasGnollSapper) return [{
+		rate: 1 / 0.15, tint: [0x444444, 0x777766], life: 1,
+		speedMin: 0, speedMax: 0, size: 8, shrink: true, gravity: 0,
+		spread: 0, fade: 'linear',
+	}];
 	if (creature.kind === 'fetidRat') return [speck(0x003300, 1 / 0.7)];
 	// `PhantomPiranhaSprite.link()` pours `Speck.LIGHT` every 0.5 seconds.
 	if (creature.kind === 'phantomPiranha') return [sparkStatic(1 / 0.5)];

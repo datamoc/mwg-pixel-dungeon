@@ -507,6 +507,9 @@ export const coreSpawnTilesMethods = {
 		//`SPRITE_KIND_OVERRIDE`'s own doc comment in monsters.ts for why `baseKind` alone
 		//covers every case the original also checked `kind` for.
 		const sprite = buildMonsterSprite(kind, at, profile, wardTexture);
+		//`CrystalSpireSprite` (`v3.3.8`) sets `perspectiveRaise = 7/16f`; at 16px
+		//tiles the scene sprite's anchor is raised by 7px over its logical cell.
+		if (kind === 'crystalSpire') sprite.y -= 7;
 		this.creatureLayer.addChild(sprite);
 
 		const monster = buildMonsterCreature(kind, at, profile, isAlly, allyKind, mimicLoot);
@@ -522,6 +525,7 @@ export const coreSpawnTilesMethods = {
 		//Monk.java: enters HUNTING with Focus (one guaranteed dodge, re-earned over ~6 turns)
 		if (kind === 'monk' || kind === 'senior') addBuff(monster, 'focus');
 		this.creatures.push(monster);
+		if (kind === 'crystalSpire') this.refreshMineTiles();
 		this.applyStatueKit(monster);
 		// A restored creature receives its saved scheduler time below. Rolling a fresh stagger
 		// here would both lose turn order and perturb the run's random stream.
@@ -1393,6 +1397,9 @@ export const coreSpawnTilesMethods = {
 				this.camera.world.addChild(this.mineTiles);
 				this.mineOverhangs = new TileMap({ width: this.level.width, height: this.level.height, sheet: SpriteSheet.fromTexture(mineAtlas, TILE) });
 				this.mineOverhangs.addLayer('overhang', frames.overhang);
+				//Spire actors are spawned before scene tilemaps; apply their Java
+				//`DungeonWallsTilemap.skipCells` cutouts to the first overhang frame set.
+				this.refreshMineTiles();
 			}
 		}
 		if (!this.miningBranchActive && this.portedBranchExitCells.size > 0) {
@@ -1719,7 +1726,11 @@ export const coreSpawnTilesMethods = {
 	},
 
 	wallFrames(this: DungeonScene): number[] {
-		return buildWallFrames(this.tileFrameContext());
+		const frames = buildWallFrames(this.tileFrameContext());
+		//`CrystalSpireSprite.link()` registers the two cells above the spire in
+		//`DungeonWallsTilemap.skipCells`; Java leaves their wall-top art blank.
+		for (const cell of this.crystalSpireSkipCells()) if (cell >= 0 && cell < frames.length) frames[cell] = -1;
+		return frames;
 	},
 
 	tileFrameContext(this: DungeonScene): DungeonTileFrameContext {

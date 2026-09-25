@@ -1569,6 +1569,25 @@ export const bossLogicMethods = {
 		});
 	},
 
+	/** `Pushing.java` (`push()`): forced knockback lands logically at once, then follows
+	 * `delta * (2p - p²)` for 0.15s, easing to rest. Keep `moveTo`'s collision, door,
+	 * trap and hazard handling; replace only its generic movement tween. */
+	pushTo(this: DungeonScene, creature: Creature, to: Step): void {
+		const sprite = this.sprite(creature);
+		const fromX = sprite.x, fromY = sprite.y;
+		this.moveTo(creature, to);
+		if (sprite.destroyed || (creature.x !== to.x || creature.y !== to.y)) return;
+		const motion = this.monsterMotion.get(sprite);
+		if (!motion) return;
+		motion.clear();
+		void motion.tween(0.15, progress => {
+			if (sprite.destroyed) return;
+			const eased = 2 * progress - progress * progress;
+			sprite.position.set(fromX + (to.x * TILE - fromX) * eased, fromY + (to.y * TILE - fromY) * eased);
+			if (progress === 1 && sprite instanceof AnimatedSprite && sprite.playing === 'run') sprite.play('idle');
+		});
+	},
+
 	/**
 	 * A voluntary monster step (`Goo.getCloser()`/`getFurther()`, tag `v3.3.8`):
 	 * any step discharges a pump-up in progress - Java clears `pumpedUp` on

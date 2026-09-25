@@ -132,11 +132,12 @@ export const npcShopBlacksmithMethods = {
 	 * surroundings - without this a revealed secret door keeps the wall face it was hiding
 	 * behind, and an opened door keeps its shut art.
 	 */
-	/** Redraws the mine crystal/boulder layers after the pickaxe changes the raw grid. */
+	/** Redraws mine layers; `CrystalSpireSprite` Java `skipCells` cutouts omit overhangs above it. */
 	refreshMineTiles(this: DungeonScene): void {
 		if (!this.mineTiles || !this.mineOverhangs) return;
 		const frames = mineTileFrames(this.tileFrameContext());
 		this.mineTiles.setLayerData('mine', frames.raised);
+		for (const cell of this.crystalSpireSkipCells()) if (cell >= 0 && cell < frames.overhang.length) frames.overhang[cell] = -1;
 		this.mineOverhangs.setLayerData('overhang', frames.overhang);
 	},
 
