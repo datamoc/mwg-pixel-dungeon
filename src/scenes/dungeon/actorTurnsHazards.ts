@@ -39,6 +39,7 @@ import { FLOOR, SOLID, TILE, WALL, WATER } from '../../dungeonConstants';
 import { STARVING } from '../../simulation/hunger';
 import { NEGATIVE_BUFFS, absorbShield, addBuff, reigniteBuff, rollHit, setAscensionActive, setBleeding, tickBuffs, type BuffId, type Creature, type Step } from '../../combat';
 import { BOSSES, IMMOVABLE_KINDS } from '../../monsters';
+import { absorbCreatureShields } from '../../simulation/allyShields';
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `actorTurnsHazards`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
@@ -1522,6 +1523,29 @@ export const actorTurnsHazardsMethods = {
 			if ((ally.powerOfManyBarrier ?? 0) <= 0) {
 				delete ally.powerOfManyBarrier;
 				delete ally.powerOfManyBarrierPartial;
+			}
+		}
+		//`Buff.act()` for a non-hero char (tag `v3.3.8`): buffs are actors of their own, so an
+		//ally keeps burning/poisoning/bleeding on its own schedule whatever its own `act()`
+		//does. The port ticks the hero in `spendHeroTurn` and enemies in `takeMonsterTurn`, but
+		//`takeAllyTurn` had no tick at all - an empowered ally standing in fire took no damage
+		//and `PowerOfMany`'s Barrier was never drained by ongoing damage, the "ongoing actor
+		//DoT still uses its own seam" half of PORT_COVERAGE's central-`Char.damage()` gap (T63).
+		//Like the enemy path, the total then runs the shared `ShieldBuff.processDamage()`
+		//helper the environmental seams already use, so Barrier absorption covers DoT too.
+		//Immunities are enforced when a buff is *applied*
+		//(`buffBlocked`/the INORGANIC set), so the tick itself needs no per-kind gate; the tick
+		//stays ahead of the paralysis/frost return below for the same reason the enemy path
+		//keeps it ahead of its own state checks - Java's buffs act regardless of the char's
+		//own action gates.
+		const allyDot = tickBuffs(ally, this.depth);
+		if (allyDot > 0) {
+			const dealt = absorbCreatureShields(ally, allyDot, this.ascendedTurns > 0);
+			ally.hp -= dealt;
+			this.showDamage(ally, dealt);
+			if (ally.hp <= 0) {
+				this.kill(ally);
+				return;
 			}
 		}
 		if (ally.buffs['paralysis'] || ally.buffs['frost']) return;
