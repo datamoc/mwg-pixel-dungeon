@@ -910,5 +910,9 @@ export function verifyCombat(require, check) {
 			'the post-hit presentation lives in its own seam');
 		assert.ok(scene.includes('this.presentLandedHit(attacker, defender, surprise, subject, object, damage);'),
 			'a landed hit presents through the post-hit seam');
+		assert.ok(scene.includes('runOnHitHooks(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): void'),
+			'the on-hit dispatch lives in its own seam');
+		assert.ok(scene.includes('this.runOnHitHooks(attacker, defender, damage);'),
+			'a landed hit dispatches through the on-hit seam');
 	});
 }

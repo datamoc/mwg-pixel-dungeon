@@ -602,6 +602,54 @@ export const combatResolutionMethods = {
 	 * procs, the wake/showDamage/surprise/spawner/aggro/sleep status block, the
 	 * sprite flash, and the hit log line. Verbatim move; read-only on `damage`.
 	 */
+
+	/**
+	 * T61 slice 15: the on-hit dispatch of a landed `attack()` - the mirror holy
+	 * bonus, hero/mob on-hit hooks, Berserker rage, and the shock-elemental arc.
+	 * Verbatim move; no early exits, so nothing returns.
+	 */
+	runOnHitHooks(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): void {
+			//`MirrorImage.attackProc()` (tag `v3.3.8`): the image's own landed hits deal the
+			//holy bonus while the hero's buff is up. Arcana reads 1.0 on an image (no rings),
+			//so the `round(2 x multiplier)` is a flat 2; the later `hp <= 0` backstop credits
+			//the kill, as with every other on-hit damage block.
+			if (attacker.allyKind === 'mirror' && this.hero.buffs['holyWeapon'] !== undefined
+				&& !defender.magicImmune && defender.hp > 0) {
+				defender.hp -= HOLY_WEAPON_BONUS;
+				this.showDamage(defender, HOLY_WEAPON_BONUS);
+			}
+			if (attacker.isHero) this.heroOnHit(attacker, defender, damage);
+			else {
+				this.mobOnHit(attacker, defender, damage);
+				//`Hero.defenseProc()`: a blow that lands on a Berserker builds rage.
+				if (defender === this.hero) this.rageOnDamage(damage);
+				// ShockElemental.meleeProc (Elemental.java, tag v3.3.8) calls
+				// Shocking.arc after the primary hit, then `ch.damage(round(dmg*0.4))`
+				// per arc hit - `Char.damage` never rolls armor, so the arc pierces.
+				// The planner reproduces Java's solid-cell radius recursion; each
+				// returned hit uses the armor-piercing blast seam plus death.
+				if (attacker.kind === 'elemental' && attacker.elementalType === 'shock') {
+					const arc = planShockElementalArc(
+						attacker.id,
+						defender,
+						damage,
+						this.creatures,
+						(origin) => this.pathfinder.distanceMap(origin),
+						(x, y) => this.level.index(x, y),
+						(x, y) => !this.level.passable(x, y),
+						(target) => this.level.get(target.x, target.y) === WATER,
+					);
+					for (const targetId of arc.targetIds) {
+						const target = this.creatures.find((creature) => creature.id === targetId);
+						//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`): the arc hits as
+					//`Shocking`, so every holder takes the `Math.round` half of the 0.4x.
+					if (target && target.hp > 0) this.applyBlastDamage(target,
+						electricDamageHalved(target.kind, target.elementalType, target.yogFistType) ? Math.round(arc.damage / 2) : arc.damage,
+						true, 'foe');
+					}
+				}
+			}
+	},
 	presentLandedHit(this: DungeonScene, attacker: Creature, defender: Creature, surprise: boolean, subject: string, object: string, damage: number): void {
 	 		// FrostImbue.proc(): a surviving enemy hit receives Chill for two turns. The compact
 	 		// status model uses the same short-duration movement/turn lock as the closest Chill hook.
@@ -1084,46 +1132,7 @@ export const combatResolutionMethods = {
 
 		//Illuminated already detached up front at the Searing Light site (any attacker,
 		//like Java's `Char.attack()`), so there is nothing left to consume here.
-		//`MirrorImage.attackProc()` (tag `v3.3.8`): the image's own landed hits deal the
-		//holy bonus while the hero's buff is up. Arcana reads 1.0 on an image (no rings),
-		//so the `round(2 x multiplier)` is a flat 2; the later `hp <= 0` backstop credits
-		//the kill, as with every other on-hit damage block.
-		if (attacker.allyKind === 'mirror' && this.hero.buffs['holyWeapon'] !== undefined
-			&& !defender.magicImmune && defender.hp > 0) {
-			defender.hp -= HOLY_WEAPON_BONUS;
-			this.showDamage(defender, HOLY_WEAPON_BONUS);
-		}
-		if (attacker.isHero) this.heroOnHit(attacker, defender, damage);
-		else {
-			this.mobOnHit(attacker, defender, damage);
-			//`Hero.defenseProc()`: a blow that lands on a Berserker builds rage.
-			if (defender === this.hero) this.rageOnDamage(damage);
-			// ShockElemental.meleeProc (Elemental.java, tag v3.3.8) calls
-			// Shocking.arc after the primary hit, then `ch.damage(round(dmg*0.4))`
-			// per arc hit - `Char.damage` never rolls armor, so the arc pierces.
-			// The planner reproduces Java's solid-cell radius recursion; each
-			// returned hit uses the armor-piercing blast seam plus death.
-			if (attacker.kind === 'elemental' && attacker.elementalType === 'shock') {
-				const arc = planShockElementalArc(
-					attacker.id,
-					defender,
-					damage,
-					this.creatures,
-					(origin) => this.pathfinder.distanceMap(origin),
-					(x, y) => this.level.index(x, y),
-					(x, y) => !this.level.passable(x, y),
-					(target) => this.level.get(target.x, target.y) === WATER,
-				);
-				for (const targetId of arc.targetIds) {
-					const target = this.creatures.find((creature) => creature.id === targetId);
-					//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`): the arc hits as
-				//`Shocking`, so every holder takes the `Math.round` half of the 0.4x.
-				if (target && target.hp > 0) this.applyBlastDamage(target,
-					electricDamageHalved(target.kind, target.elementalType, target.yogFistType) ? Math.round(arc.damage / 2) : arc.damage,
-					true, 'foe');
-				}
-			}
-		}
+		this.runOnHitHooks(attacker, defender, damage);
 		if (attacker.statueEnchant) this.statueEnchantProc(attacker, defender, damage);
 		//Weapon-ability riders staged by `useWeaponAbility`: heavy blow dazes 5 turns
 		//(`ability_desc`: "dazes for 5 turns, reducing accuracy and evasion by 50%" - the
