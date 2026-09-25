@@ -564,6 +564,38 @@ export const combatResolutionMethods = {
 	 * returning out of `attack()` directly, and the execute flag returns alongside
 	 * the damage because the Brute-revive branch reads it far below.
 	 */
+	/**
+	 * T61 slice 13: the boss post-damage hooks of a landed `attack()` - the DM-300
+	 * supercharge edge, Tengu/Gnoll/Crystal/Yog hooks, and the fist half-HP edge.
+	 * Verbatim move; every hook reads the same pre-hit HP the inline code did.
+	 */
+	runBossDamageHooks(this: DungeonScene, defender: Creature, preHp: number): void {
+		//DM300.damage()/supercharge(): normal mode stops at HT/3 after the first phase and
+		//HT*2/3 after the second; the Stronger Bosses challenge uses three HT/4 brackets.
+		//The threshold is checked after all armor/proc damage but before death bookkeeping,
+		//matching Java's HP floor and pylon activation edge.
+		this.lockedFloorBossDamage(defender, preHp - defender.hp, preHp - defender.hp);
+		if (defender.kind === 'dm300') {
+			const activated = defender.dmPylonsActivated ?? 0;
+			const threshold = isChallengeEnabled('stronger_bosses')
+				? defender.maxHp / 4 * (3 - activated)
+				: defender.maxHp / 3 * (2 - activated);
+			if (!defender.dmSupercharged && threshold > 0 && defender.hp <= threshold) {
+				defender.hp = threshold;
+				this.dm300Supercharge(defender);
+			}
+		}
+		if (defender.kind === 'tengu') this.clampTenguBracket(defender, preHp);
+		this.gnollMineAfterDamage(defender, preHp);
+		this.crystalMineAfterDamage(defender);
+		//`BrightFist`/`DarkFist.damage()`'s half-HP edge (see `brightDarkHalfHp`): only Bright
+		//costs the hero `daze` here - Dark's price is detaching the hero's Light, which this
+		//port has no model for. Java's Blindness is a cosmetic screen darkening (a FlavourBuff
+		//with no mechanical effect), so the port keeps its `daze` stand-in for Bright's half.
+		this.brightDarkHalfHp(defender, preHp);
+		if (defender.kind === 'yog' && defender.hp > 0) this.yogDamageHook(defender, preHp);
+	},
+
 	applyExecutesAndDamage(this: DungeonScene, attacker: Creature, defender: Creature, phantomRemote: boolean, damage: number): { damage: number; heroExecuted: boolean; finished: boolean } {
 			//The execute mechanics are Java's last step in `attack()`: they run after
 			//`enemy.damage()` has applied everything above - the `damage()` overrides (including
@@ -992,30 +1024,7 @@ export const combatResolutionMethods = {
 		if (execOut.finished) return true;
 		damage = execOut.damage;
 		const heroExecuted = execOut.heroExecuted;
-		//DM300.damage()/supercharge(): normal mode stops at HT/3 after the first phase and
-		//HT*2/3 after the second; the Stronger Bosses challenge uses three HT/4 brackets.
-		//The threshold is checked after all armor/proc damage but before death bookkeeping,
-		//matching Java's HP floor and pylon activation edge.
-		this.lockedFloorBossDamage(defender, preHp - defender.hp, preHp - defender.hp);
-		if (defender.kind === 'dm300') {
-			const activated = defender.dmPylonsActivated ?? 0;
-			const threshold = isChallengeEnabled('stronger_bosses')
-				? defender.maxHp / 4 * (3 - activated)
-				: defender.maxHp / 3 * (2 - activated);
-			if (!defender.dmSupercharged && threshold > 0 && defender.hp <= threshold) {
-				defender.hp = threshold;
-				this.dm300Supercharge(defender);
-			}
-		}
-		if (defender.kind === 'tengu') this.clampTenguBracket(defender, preHp);
-		this.gnollMineAfterDamage(defender, preHp);
-		this.crystalMineAfterDamage(defender);
-		//`BrightFist`/`DarkFist.damage()`'s half-HP edge (see `brightDarkHalfHp`): only Bright
-		//costs the hero `daze` here - Dark's price is detaching the hero's Light, which this
-		//port has no model for. Java's Blindness is a cosmetic screen darkening (a FlavourBuff
-		//with no mechanical effect), so the port keeps its `daze` stand-in for Bright's half.
-		this.brightDarkHalfHp(defender, preHp);
-		if (defender.kind === 'yog' && defender.hp > 0) this.yogDamageHook(defender, preHp);
+		this.runBossDamageHooks(defender, preHp);
  		// FrostImbue.proc(): a surviving enemy hit receives Chill for two turns. The compact
  		// status model uses the same short-duration movement/turn lock as the closest Chill hook.
  		if (attacker === this.hero && this.hero.buffs['frostImbue'] && defender.hp > 0 && !defender.isHero && !defender.isNPC && !buffBlocked(defender, 'cripple')) {

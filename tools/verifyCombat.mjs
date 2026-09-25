@@ -902,5 +902,9 @@ export function verifyCombat(require, check) {
 			'the executes and HP write live in their own seam');
 		assert.ok(scene.includes('const execOut = this.applyExecutesAndDamage(attacker, defender, phantomRemote, damage);'),
 			'a landed hit executes through the damage seam');
+		assert.ok(scene.includes('runBossDamageHooks(this: DungeonScene, defender: Creature, preHp: number): void'),
+			'the boss post-damage hooks live in their own seam');
+		assert.ok(scene.includes('this.runBossDamageHooks(defender, preHp);'),
+			'a landed hit hooks through the boss seam');
 	});
 }
