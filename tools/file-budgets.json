@@ -3,5 +3,7 @@
   "src/i18n/portStrings.ts": 12325,
   "src/scenes/dungeon/environmentFireTraps.ts": 2200,
   "src/scenes/dungeon/hero/inventoryQuickslot.ts": 2228,
-  "src/scenes/dungeon/hero/armorAbilityUse.ts": 2108
+  "src/scenes/dungeon/hero/armorAbilityUse.ts": 2108,
+  "src/scenes/dungeon/actorTurnsHazards.ts": 2045,
+  "src/scenes/dungeon/turnLoopAiming.ts": 2025
 }

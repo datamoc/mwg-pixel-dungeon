@@ -1320,6 +1320,32 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.ok(scene.includes('if (this.ascensionChallengeActive && (spawner.spawnCooldown ?? 0) > 20) spawner.spawnCooldown = 20;'),
 			'the ascent caps the spawner clock at 20 before ticking');
 	});
+	check('Ascension beckons distant enemies and hastes idle ones', () => {
+		//`AscensionChallenge.beckonEnemies()`/`enemySpeedModifier()` (tag `v3.3.8`): at 2+
+		//stacks every enemy mob past 8 cells is pulled onto the hero's trail; at 4+ stacks
+		//non-hunting, non-fleeing enemies move at 2x. The port's trail is `lastSeen`, its
+		//wake pair the rage/swarm `sleeping=false`/`seesHero=true`, its cost hook the
+		//scheduler's `pendingMonsterTurnCost`; Java's distance metric is Chebyshev already.
+		const scene = readSceneSource();
+		assert.ok(scene.includes('if (!this.ascensionChallengeActive || this.ascensionStacks < 2 || this.hero.hp <= 0) return;'),
+			'the beckon sweep gates on an active challenge at 2+ stacks with a living hero');
+		assert.ok(scene.includes('if (mob.isHero || mob.isNPC || mob.isAlly) continue;'),
+			'the beckon sweep pulls enemies only');
+		assert.ok(scene.includes('if (Roguelike.chebyshevDistance(mob, this.hero) <= 8) continue;'),
+			'the beckon sweep reaches only past-8-cell mobs');
+		assert.ok(scene.includes('mob.lastSeen = { x: this.hero.x, y: this.hero.y };'),
+			'the beckon plants the hero cell on the hunt trail');
+		assert.ok(scene.includes('this.beckonAscensionEnemies();'),
+			'the beckon sweep runs once per hero action');
+		assert.ok(scene.includes('this.ascensionStacks >= 4 && !monster.isHero'),
+			'the haste gates on 4+ stacks for non-hero mobs');
+		assert.ok(scene.includes('monster.sleeping !== true && !monster.fleeing'),
+			'the haste spares sleeping and fleeing mobs');
+		assert.ok(scene.includes('!monster.seesHero && monster.lastSeen === undefined'),
+			'the haste spares hunting mobs');
+		assert.ok(scene.includes('this.pendingMonsterTurnCost = (this.pendingMonsterTurnCost ?? 1) * 0.5;'),
+			'the haste halves the scheduled turn cost');
+	});
 	check('mirror images read Java\'s hero-derived combat stats at half damage', () => {
 		//42nd matrix (`MirrorImage.java`, tag `v3.3.8`): `attackSkill()` is
 		//`(9 + lvl) * accuracyMultiplier`, `defenseSkill()` is

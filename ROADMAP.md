@@ -198,13 +198,11 @@ citation-by-citation account):
       final depth/level/gold (`rankings.ts`), not a separate ascent-progress field, and a
       completed ascent already implies "reached depth 1", so there is nothing for this stat to
       show that isn't already implied by a "won" run record - correctly left not-ported, not
-      worth a UI change just to host it. The beckon (>=2 stacks)/haste (>=4)/hero-speed-cap (>=6)
-      *mechanical* effects themselves are also still not ported - their flavor lines fire (see
-      above), but distant enemies are not actually pulled closer, idle enemies do not actually
-      move at 2x, and hero speed is not actually halved; these need a hook into continuous mob-AI
-      pathing and hero action-cost scaling this port's turn-based (not actor-clock) movement/AI
-      code has no existing seam for, and a rushed attempt risked destabilizing unrelated movement
-      code for a chance-based, cosmetic-adjacent effect - deferred rather than rushed. Also still
+      worth a UI change just to host it. The beckon (>=2 stacks) and haste (>=4) *mechanical* effects are **ported 2026-09-25, T107**
+      (trail pull once per hero action; half scheduler cost for idle ENEMY mobs - the seams
+      existed after all). The hero-speed-cap (>=6: halved, capped at 1x) stays **Not ported**:
+      Java slows the hero actor clock, whose port equivalent is doubling mob turns per hero
+      action - a turn-loop architecture change, not a seam edit. Also still
       open: the `Badge.HAPPY_END`/`HAPPY_END_REMAINS`/`PACIFIST_ASCENT` badges (**ported
       2026-09-25, T107** - rows, Java icons/descriptions and `validateHappyEnd()` gates all live;
       `HAPPY_END_REMAINS` stays unfillable until the remains family is modeled), `DemonSpawner`'s reduced-cooldown carve-out past floor 20

@@ -1242,6 +1242,10 @@ export const turnLoopAimingMethods = {
 	 * RingOfFuror/Haste).
 	 */
 	spendHeroTurn(this: DungeonScene, turnCost: number = 1): void {
+		//The ascent challenge's own actor tick (`AscensionChallenge.act()`, tag `v3.3.8`),
+		//collapsed to the hero pass: distant enemies are beckoned once per hero action
+		//while the other per-turn challenge effects ride the cost-scaled bindings below.
+		this.beckonAscensionEnemies();
 		runHeroTurn({
 			isAlive: () => this.hero.hp > 0,
 			advanceClock: () => {

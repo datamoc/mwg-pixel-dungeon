@@ -11,6 +11,7 @@ import { simulationRandom } from '../../adapters/mwgRandom';
 import { vertigoStep } from '../../simulation/vertigo';
 import { simulationRoguelike } from '../../adapters/mwgRoguelike';
 import { takeSentryTurn as takeSentryTurnFlow } from '../../simulation/sentryTurn';
+import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
 import { sourceInventoryItem } from '../../items/itemKinds';
 import { ringElementsMultiplier } from '../../items/ringModifiers';
 import { capitalize, has, t } from '../../i18n/index';
@@ -280,12 +281,14 @@ export const actorTurnsHazardsMethods = {
 	 *   (`turnLoopAiming.ts`'s `applyBuffDamage`). `Statistics.highestAscent` is still not
 	 *   tracked (no Rankings screen reads it); the DemonSpawner sub-20 cooldown carve-out is
 	 *   ported (`tickDemonSpawner` caps above-20 to 20 while the challenge runs, 2026-09-25). The
-	 *   beckon (>=2 stacks: distant enemies pulled to the hero)/haste (>=4: idle enemies move at
-	 *   2x)/hero-speed-cap (>=6: halved, capped at 1x) effects are also not ported - they need a
-	 *   hook into continuous mob-AI pathing and hero action-cost scaling this port's turn-based
-	 *   (not actor-clock) movement/AI code has no seam for; the per-mob `ASCENSION_MOD` combat
-	 *   multiplier (the largest single combat-facing effect) is unaffected and stays live for the
-	 *   whole climb regardless. `PORT_COVERAGE.md`: "Post-victory ascent".
+	 *   beckon (>=2 stacks: distant enemies pulled onto the hero's trail) and haste (>=4:
+	 *   idle enemies move at 2x through the scheduler cost) effects are ported too
+	 *   (`beckonAscensionEnemies`/`pendingMonsterTurnCost`, 2026-09-25); only the hero-speed-cap
+	 *   (>=6: halved, capped at 1x) is still not ported - Java slows the hero's own actor clock,
+	 *   whose port equivalent is doubling mob turns per hero action, a turn-loop change rather
+	 *   than a seam edit. The per-mob `ASCENSION_MOD` combat multiplier (the largest single
+	 *   combat-facing effect) is unaffected and stays live for the whole climb regardless.
+	 *   `PORT_COVERAGE.md`: "Post-victory ascent".
 	 */
 	tryAscendStairs(this: DungeonScene): void {
 		if (this.depth === 26 && !this.ascensionChallengeActive) {
@@ -348,6 +351,34 @@ export const actorTurnsHazardsMethods = {
 		this.justDescended = true;
 		this.disarmTimeBubblePresses();
 		this.enterLevel();
+	},
+
+/**
+	 * `AscensionChallenge.beckonEnemies()` (tag `v3.3.8`): at 2+ stacks, every enemy mob
+	 * farther than 8 cells from the hero is beckoned to the hero's cell. Java's
+	 * `Mob.beckon()` wakes, retargets unconditionally, and drops non-hunting/non-fleeing
+	 * mobs back to wandering; this port's stand-ins are `lastSeen` (the hunt-trail
+	 * `takeMonsterTurn` paths toward while `!fleeing`), `sleeping = false` and
+	 * `seesHero = true` (the same pair ScrollOfRage's and swarm-intelligence's beckons
+	 * use). Fleeing mobs keep their state and only gain the trail, like Java. The
+	 * sleeping-CrystalGuardian refusal rides the shared `ignoresCrystalGuardianBeckon`
+	 * gate. Java's `Level.distance` is Chebyshev (`Math.max(|dx|, |dy|)`), exactly this
+	 * port's `chebyshevDistance` - no metric divergence. Called once per hero action
+	 * from `spendHeroTurn` (the buff's own actor tick, collapsed to the hero pass like
+	 * the rest of the challenge's per-turn effects); the pull itself is silent, matching
+	 * the rage/swarm precedents rather than the wake yell.
+	 */
+	beckonAscensionEnemies(this: DungeonScene): void {
+		if (!this.ascensionChallengeActive || this.ascensionStacks < 2 || this.hero.hp <= 0) return;
+		for (const mob of this.creatures) {
+			if (mob.isHero || mob.isNPC || mob.isAlly) continue;
+			if (Roguelike.chebyshevDistance(mob, this.hero) <= 8) continue;
+			if (ignoresCrystalGuardianBeckon(mob.kind, mob.sleeping === true)) continue;
+			mob.lastSeen = { x: this.hero.x, y: this.hero.y };
+			if (mob.fleeing) continue;
+			mob.sleeping = false;
+			mob.seesHero = true;
+		}
 	},
 
 	/** Consumes a generated Java well once, applying the two WellWater hero effects. */
@@ -907,6 +938,16 @@ export const actorTurnsHazardsMethods = {
 		//Chill.speedFactor() also slows monster actor speed; the scheduler reads this
 		//pending cost after the actor finishes its turn.
 		if (monster.buffs['chill']) this.pendingMonsterTurnCost = 1 / Math.max(0.5, 1 - monster.buffs['chill']! * 0.1);
+//`AscensionChallenge.enemySpeedModifier()` (tag `v3.3.8`): at 4+ stacks, enemies that
+		//are neither hunting nor fleeing move at 2x - scheduler cost x0.5 here. Hunting is
+		//`seesHero`/a live `lastSeen` trail (the port has no HUNTING state; a mob already on
+		//the trail re-acquires without a roll, so it counts as hunting); sleeping mobs keep
+		//their full turn since Java's sleeping act still spends its TICK. Allies and NPCs keep
+		//their own pace - Java gates the whole thing on ENEMY alignment.
+		if (this.ascensionChallengeActive && this.ascensionStacks >= 4 && !monster.isHero
+			&& !monster.isAlly && !monster.isNPC && monster.sleeping !== true && !monster.fleeing
+			&& !monster.seesHero && monster.lastSeen === undefined) {
+			this.pendingMonsterTurnCost = (this.pendingMonsterTurnCost ?? 1) * 0.5;
 		//`Elemental.act()` decrements `rangedCooldown` on every turn the mob is hunting - including
 		//the adjacent melee turns, which never reach the ranged profile below (that dispatch is
 		//non-adjacent only). Same pre-dispatch placement as the golem cooldowns above.
