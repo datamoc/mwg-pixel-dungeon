@@ -6,6 +6,17 @@ Moved 2026-09-24 on the user's decision: these eight items were the only open bo
 
 - [ ] Compare both implementations with fixed seeds and identical action traces. **Complexity: XL.**
 
+**Progress 2026-09-25 (T55 slice 1, TS half):** `tools/parityCombatTrace.ts` (`npm run
+parity:combat`) runs a versioned 20-round scripted bout over the pure `resolveAttack` seam
+with a seeded `SpdJavaRandom` through a `Random.java`-formula adapter, capturing every raw
+draw in the `bits:value` line shape Java's `TracingRandom` writes. `check` gates determinism
+(same seed twice is byte-identical) plus comparator positive/negative controls; `compare`
+diffs two traces reporting the first divergent round. Stated caveat: draws are bit-exact but
+outcomes run in float64 where Java computes float32, so last-ulp flips are the harness's
+target, not its noise. Still open (the Java half): a headless `Char.attack()` driver -
+`Char.attack()` needs `Dungeon.level.heroFOV`, sprites and `Sample`/`Messages`, so it is its
+own boot task, not a flag on the levelgen harness.
+
 ## B2. from ROADMAP 9. Build the Java-vs-TypeScript parity harness
 
 - [ ] Verify RNG call order for level, item, monster, and quest generation. **Complexity: L.**
