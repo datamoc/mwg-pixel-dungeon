@@ -20,13 +20,18 @@
  * `Sample`/`Messages`, so it is a headless-boot task of its own, not a flag on the
  * levelgen harness) can emit the same protocol.
  *
+ * Slice 2 adds script 2 (`--script 2`): the java-natural bout mirroring the Java
+ * `CombatHarness` round list (unarmed L1 Warrior vs Rat, plain/magic/surprise), seeded
+ * through the same MX3 scramble `pushGenerator(seed)` applies, so same-seed TS and Java
+ * traces start from the identical generator state. `compare` diffs them.
+ *
  * Modes (`npm run parity:combat` runs `check`):
- * - `emit --seed <n> --out <file>`: run the versioned script, write the JSONL trace.
- * - `check`: determinism gate (same seed twice is byte-identical) plus the comparator's
- *   positive control (a trace compares clean against itself) and negative control (one
- *   mutated round is reported at exactly that round). No Java checkout needed.
- * - `compare --a <file> --b <file>`: diff two traces (TS-vs-TS today, TS-vs-Java once the
- *   Java driver exists); reports the first divergent round, exit 1 on any difference.
+ * - `emit --seed <n> --script <1|2> --out <file>`: run one script, write the JSONL trace.
+ * - `check`: determinism gates for both scripts (same seed twice is byte-identical) plus
+ *   the comparator's positive control (a trace compares clean against itself) and negative
+ *   control (one mutated round is reported at exactly that round). No Java checkout needed.
+ * - `compare --a <file> --b <file>`: diff two traces (TS-vs-TS or TS-vs-Java); reports the
+ *   first divergent round, exit 1 on any difference.
  */
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -34,10 +39,17 @@ import { join } from 'node:path';
 import { resolveAttack } from '../src/simulation/attackResolution';
 import type { Combatant } from '../src/simulation/combatState';
 import type { SimulationRandom } from '../src/simulation/random';
-import { SpdJavaRandom, setTraceDrawLog } from '../src/spdRng';
+import { SpdJavaRandom, setTraceDrawLog, spdScramble } from '../src/spdRng';
 
-/** Bump when the fixture script below changes; the comparator refuses cross-version diffs. */
-const SCRIPT_VERSION = 1;
+/** Script 1: branch-coverage bout (TS-only shapes: buffs, Preparation, champions). */
+const SCRIPT_VERSION_1 = 1;
+/** Script 2: java-natural bout mirroring the Java `CombatHarness` round list exactly, with
+ * Java's own base stats (unarmed L1 Warrior acc 10 / eva 5, Rat acc 8 / eva 2, unarmed
+ * damage `NormalIntRange(1, max(STR-8, 1))` = [1, 2] at STR 10, Rat `NormalIntRange(1, 4)`).
+ * Known structural draw deltas vs Java, documented not hidden: the Java side burns one
+ * extra clover-check float per unarmed damage roll and a `NormalIntRange(0, 0)` armor pair
+ * on the Rat that this seam skips (same outcome distributions, shifted positions). */
+const SCRIPT_VERSION_2 = 2;
 
 const hero: Combatant = {
 	id: 'hero-1', x: 1, y: 1, hp: 20, maxHp: 20,
@@ -84,18 +96,61 @@ const SCRIPT: ScriptRound[] = [
 	{ attackerPatch: { accuracy: 30 }, defenderPatch: { evasion: 1 } },
 ];
 
+const heroNatural: Combatant = {
+	id: 'hero-1', x: 1, y: 1, hp: 20, maxHp: 20,
+	accuracy: 10, evasion: 5, damage: [1, 2], armor: [0, 0],
+	buffs: {}, isHero: true,
+};
+const ratNatural: Combatant = {
+	id: 'rat-1', x: 2, y: 1, hp: 8, maxHp: 8,
+	accuracy: 8, evasion: 2, damage: [1, 4], armor: [0, 1],
+	buffs: {}, isHero: false,
+};
+
+/** The Java `CombatHarness` round list, in order: plain exchanges, one magic (accMulti 2),
+ * one surprise (no hit draws), plain exchanges. */
+const SCRIPT_V2: ScriptRound[] = [
+	{},
+	{ attacker: 'rat' },
+	{},
+	{ attacker: 'rat' },
+	{ magic: true },
+	{ attacker: 'rat' },
+	{ surprise: true },
+	{ attacker: 'rat' },
+	{},
+	{ attacker: 'rat' },
+];
+
 /** `Random.java` formulas over one seeded `SpdJavaRandom`, so the draw stream - not just the
- * outcome distribution - matches what the Java build would burn for the same script. */
-function seededRandom(seed: bigint): { random: SimulationRandom } {
-	const rng = new SpdJavaRandom(seed);
+ * outcome distribution - matches what the Java build would burn for the same script. The
+ * seed goes through the same MX3 scramble `pushGenerator(seed)` applies, so a TS trace and
+ * a Java trace with the same seed start from the identical generator state. */
+function seededRandom(seed: bigint): { random: SimulationRandom; nextRound: (burnClover: boolean) => void } {
+	const rng = new SpdJavaRandom(spdScramble(seed));
+	// Java's unarmed-hero damage path burns one clover-check float before its NormalIntRange
+	// (`Hero.heroDamageIntRange`, tag `v3.3.8`; chance 0 with no clover, but the draw is still
+	// consumed). The game seam has no unarmed flag on Combatant, so the harness burns it here,
+	// armed per round where the script guarantees an unarmed hero attacker: post-fix call order
+	// per round is bark/armor/damage normals, so the burn goes before the 3rd normalRange call
+	// (a miss makes no damage call and burns nothing, exactly like Java). Game code is
+	// untouched; the delta stays documented in the script-2 header above.
+	let normalsThisRound = 0;
+	let cloverPending = false;
+	const normalRange = (min: number, max: number): number => {
+		if (cloverPending && normalsThisRound === 2) { rng.nextFloat(); cloverPending = false; }
+		normalsThisRound++;
+		return min + Math.floor(((rng.nextFloat() + rng.nextFloat()) * (max - min + 1)) / 2);
+	};
 	return {
 		random: {
 			float: (max) => rng.nextFloat() * max,
-			normalRange: (min, max) => min + Math.floor(((rng.nextFloat() + rng.nextFloat()) * (max - min + 1)) / 2),
+			normalRange,
 			range: (min, max) => min + rng.nextInt(max - min + 1),
 			int: (min, max) => min + rng.nextInt(max - min),
 			chance: (probability) => rng.nextFloat() < probability,
 		},
+		nextRound: (burnClover: boolean) => { normalsThisRound = 0; cloverPending = burnClover; },
 	};
 }
 
@@ -110,20 +165,27 @@ interface TraceRound {
 	draws: string[];
 }
 
-function runScript(seed: bigint): { header: object; rounds: TraceRound[] } {
-	const { random } = seededRandom(seed);
-	const header = { tool: 'parityCombatTrace', scriptVersion: SCRIPT_VERSION, seed: seed.toString() };
-	const rounds: TraceRound[] = SCRIPT.map((step, i) => {
+function runScript(seed: bigint, scriptVersion: number): { header: object; rounds: TraceRound[] } {
+	const { random, nextRound } = seededRandom(seed);
+	const header = { tool: 'parityCombatTrace', scriptVersion, seed: seed.toString() };
+	const script = scriptVersion === SCRIPT_VERSION_2 ? SCRIPT_V2 : SCRIPT;
+	const fighter = (side: 'hero' | 'rat'): Combatant => scriptVersion === SCRIPT_VERSION_2
+		? (side === 'rat' ? ratNatural : heroNatural)
+		: (side === 'rat' ? rat : hero);
+	const rounds: TraceRound[] = script.map((step, i) => {
+		// Script 2's hero is always unarmed (Java `CombatHarness` uses a bare Warrior), so its
+		// damage rolls burn the clover-check float; every other shape burns nothing extra.
+		nextRound(scriptVersion === SCRIPT_VERSION_2 && (step.attacker ?? 'hero') === 'hero');
 		const attacker: Combatant = {
-			...(step.attacker === 'rat' ? rat : hero),
+			...fighter(step.attacker ?? 'hero'),
 			...(step.attackerPatch ?? {}),
-			buffs: { ...((step.attacker === 'rat' ? rat : hero).buffs), ...((step.attackerPatch?.buffs ?? {}) as Combatant['buffs']) },
+			buffs: { ...(fighter(step.attacker ?? 'hero').buffs), ...((step.attackerPatch?.buffs ?? {}) as Combatant['buffs']) },
 		};
 		const defenderBase = step.defender ?? (step.attacker === 'rat' ? 'hero' : 'rat');
 		const defender: Combatant = {
-			...(defenderBase === 'hero' ? hero : rat),
+			...fighter(defenderBase),
 			...(step.defenderPatch ?? {}),
-			buffs: { ...((defenderBase === 'hero' ? hero : rat).buffs), ...((step.defenderPatch?.buffs ?? {}) as Combatant['buffs']) },
+			buffs: { ...(fighter(defenderBase).buffs), ...((step.defenderPatch?.buffs ?? {}) as Combatant['buffs']) },
 		};
 		const log: string[] = [];
 		setTraceDrawLog(log);
@@ -196,20 +258,31 @@ function arg(name: string): string | null {
 }
 
 const mode = process.argv[2];
+function scriptArg(): number {
+	const raw = arg('--script') ?? '1';
+	const version = parseInt(raw, 10);
+	if (version !== SCRIPT_VERSION_1 && version !== SCRIPT_VERSION_2) fail(`unknown script version: ${raw}`);
+	return version;
+}
+
 if (mode === 'emit') {
 	const seedText = arg('--seed') ?? '123456789';
+	const version = scriptArg();
 	const out = arg('--out');
-	if (!out) fail('usage: parityCombatTrace emit --seed <n> --out <file>');
-	const text = toJsonl(runScript(BigInt(seedText)));
+	if (!out) fail('usage: parityCombatTrace emit --seed <n> --script <1|2> --out <file>');
+	const text = toJsonl(runScript(BigInt(seedText), version));
 	writeFileSync(out!, text);
 	const rounds = text.trim().split('\n').length - 2;
-	console.log(`emitted ${rounds} rounds to ${out}`);
+	console.log(`emitted ${rounds} rounds (script ${version}) to ${out}`);
 } else if (mode === 'check') {
 	const seed = BigInt(arg('--seed') ?? '123456789');
-	const first = toJsonl(runScript(seed));
-	const second = toJsonl(runScript(seed));
-	if (first !== second) fail('determinism gate FAILED: same seed produced different traces');
-	console.log(`determinism gate passed: ${SCRIPT.length} rounds byte-identical across two runs`);
+	for (const version of [SCRIPT_VERSION_1, SCRIPT_VERSION_2]) {
+		const first = toJsonl(runScript(seed, version));
+		const second = toJsonl(runScript(seed, version));
+		if (first !== second) fail(`determinism gate FAILED (script ${version}): same seed produced different traces`);
+		console.log(`determinism gate passed (script ${version}): byte-identical across two runs`);
+	}
+	const first = toJsonl(runScript(seed, SCRIPT_VERSION_1));
 	const self = compareJsonl(first, first);
 	if (!self.identical) fail('positive control FAILED: trace differs from itself');
 	console.log('positive control passed: trace compares clean against itself');

@@ -115,9 +115,12 @@ export function verifyCombat(require, check) {
 		rollDamage(attacker, defender, random);
 		advanceBuffs({ poison: 1, burning: 1 }, random, 0);
 		// poison draws no RNG - `(int)(left/3)+1`, hence 1 at duration 1 - and Burning's
-		// depth-scaled `NormalIntRange(1, 3 + scalingDepth/4)` is `int(1, 4)` at depth 0
-		assert.deepEqual(calls, [['float', 10], ['float', 5], ['normalRange', 2, 8],
-			['range', 0, 3], ['normalRange', 0, 3], ['int', 1, 4]]);
+		// depth-scaled `NormalIntRange(1, 3 + scalingDepth/4)` is `int(1, 4)` at depth 0.
+		// Since T55 slice 2 the armor pair leads (Java's `Char.attack()` rolls dr at :386
+		// before the damage roll at 404-412): always-on barkskin `NormalIntRange(0, 0)`,
+		// then armor, then damage plus the excess-STR bonus.
+		assert.deepEqual(calls, [['float', 10], ['float', 5], ['normalRange', 0, 0],
+			['normalRange', 0, 3], ['normalRange', 2, 8], ['range', 0, 3], ['int', 1, 4]]);
 		calls.length = 0;
 		advanceBuffs({ burning: 1 }, random, 16);
 		assert.deepEqual(calls, [['int', 1, 8]], 'and the bound grows with depth');

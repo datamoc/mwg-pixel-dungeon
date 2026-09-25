@@ -17,6 +17,27 @@ target, not its noise. Still open (the Java half): a headless `Char.attack()` dr
 `Char.attack()` needs `Dungeon.level.heroFOV`, sprites and `Sample`/`Messages`, so it is its
 own boot task, not a flag on the levelgen harness.
 
+**Progress 2026-09-25 (T55 slice 2, first live Java-vs-TS diff):** the Java half exists -
+`CombatHarness` + `CombatHarnessLauncher` + `runCombatHarness` task plus a minimal
+`TracingRandom` hook, all uncommitted scratch in the `v3.3.8` worktree at
+`C:/Users/miche/AppData/Local/Temp/claude/spd-v338-worktree` (a bare Warrior and Rat,
+no sprites/buffs/talents, all-false heroFOV, rat woken to HUNTING so it is not surprised,
+both healed between rounds). `npm run parity:combat -- --script 2` (java-natural bout,
+MX3-scrambled seed like `pushGenerator`) diffed against it: **3 seeds (123456789, 1, 42),
+30 rounds, 211 RNG draws - every outcome and every draw byte-identical** (`compare` says
+`traces identical`). Two real findings on the way: (1) Java rolls defender armor BEFORE
+the damage roll (`Char.attack()` :386 vs 404-412) while this port rolled damage first -
+fixed in `src/simulation/combat.ts` (outcome-neutral, stream-aligning), with the 72-case
+fixture recomputed (0 hit flips, 59 damage values moved stream positions, 72 end states)
+and the order-pin + Preparation-stub checks updated; (2) unarmed-hero damage burns a
+clover-check float (`heroDamageIntRange`) the seam cannot see (no unarmed flag on
+Combatant), so the harness adapter burns it per round instead - game code untouched, delta
+documented. Suite note: `test:simulation` passes everything through the combat checks
+(180 PASS) then stops at a pre-existing `verifyArmorAbilities` regex stale since 02417f8
+(peer's `returningFast` refactor, plus uncommitted `returningGhost` churn) - untouched by
+this change, not mine to fix mid-flight.
+
+
 ## B2. from ROADMAP 9. Build the Java-vs-TypeScript parity harness
 
 - [ ] Verify RNG call order for level, item, monster, and quest generation. **Complexity: L.**

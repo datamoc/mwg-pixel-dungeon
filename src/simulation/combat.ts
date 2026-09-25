@@ -186,6 +186,23 @@ export function rollHit(attacker: Readonly<Combatant>, defender: Readonly<Combat
  */
 export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Combatant>, random: SimulationRandom, damageMultiplier = 1): number {
 	const [min, max] = liveStats(attacker).damage;
+	//`Char.attack()` rolls the defender's armor FIRST (Char.java:386, tag `v3.3.8`) and the
+	//damage roll only after (404-412). Rolling damage first is outcome-identical (the rolls
+	//are independent) but shifts every later draw on a shared stream - the B1 combat-trace
+	//diff (T55 slice 2) caught exactly this, so the order here matches Java's.
+	//`Char.drRoll()` always burns `NormalIntRange(0, Barkskin)` - even at level 0 - while the
+	//ordinary armor roll only happens when armor is worn (`Hero.drRoll()` guards on
+	//`belongings.armor() != null`). A bare [0, 0] with no barkskin is this seam's spelling
+	//of "no armor", so that roll is skipped rather than burned (a real worn armor with a
+	//zero max is vanishingly rare, and either spelling rolls value 0).
+	const rawDr = random.normalRange(0, defender.barkskinLevel ?? 0)
+		+ (defender.armor[0] === 0 && defender.armor[1] === 0 && !defender.barkskinLevel
+			? 0
+			: random.normalRange(defender.armor[0], defender.armor[1]));
+	// `Char.attack()` (Char.java:386, tag v3.3.8) rounds `enemy.drRoll() *
+	// AscensionChallenge.statModifier(enemy)` before subtracting it (`ascensionModFor` carries
+	// the table and both exemptions, including the blocked-holder return-1).
+	const dr = Math.round(rawDr * ascensionModFor(defender));
 	/** The attacker's own `damageRoll()`: the stat roll, plus `MeleeWeapon.damageRoll`'s excess-STR
 	 * bonus (up to the whole surplus over the requirement). A function rather than an inline
 	 * expression because `Preparation` rolls it 1-3 times and keeps the best. */
@@ -230,14 +247,6 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 		dmg *= 0.5;
 		if (defender.kind === 'yog') dmg *= 0.5;
 	}
-	// `Char.drRoll()` first rolls `NormalIntRange(0, Barkskin.currentLevel(this))`,
-	// then the ordinary armor roll (`Char.java`, tag `v3.3.8`).
-	const rawDr = (defender.barkskinLevel ? random.normalRange(0, defender.barkskinLevel) : 0)
-		+ random.normalRange(defender.armor[0], defender.armor[1]);
-	// `Char.attack()` (Char.java:386, tag v3.3.8) rounds `enemy.drRoll() *
-	// AscensionChallenge.statModifier(enemy)` before subtracting it (`ascensionModFor` carries
-	// the table and both exemptions, including the blocked-holder return-1).
-	const dr = Math.round(rawDr * ascensionModFor(defender));
 	let effective = Math.max(0, Math.round(dmg) - dr);
 	if (defender.buffs['vulnerable']) effective *= 1.33;
 	//`Doom.class` (tag `v3.3.8`): +67% to every incoming hit, permanent until death. Java's own

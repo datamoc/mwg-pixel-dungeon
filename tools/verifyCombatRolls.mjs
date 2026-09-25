@@ -101,8 +101,8 @@ export function verifyCombatRolls(require, check) {
 
 	check('preparation replaces the roll with the best of its draws plus rank bonus', () => {
 		const seq = (draws) => { let at = 0; return { ...maxStub, normalRange: (min, max) => draws[at++ % draws.length] ?? max }; };
-		assert.equal(rollDamage({ ...hero, prepLevel: 3 }, foe, seq([4, 9, 1])), 11);
-		assert.equal(rollDamage({ ...hero, prepLevel: 1 }, foe, seq([4, 1])), 3);
+		assert.equal(rollDamage({ ...hero, prepLevel: 3 }, foe, seq([0, 1, 4, 9, 1])), 11);
+		assert.equal(rollDamage({ ...hero, prepLevel: 1 }, foe, seq([0, 1, 4, 1])), 3);
 		assert.deepEqual(preparationLevelByNumber(3), { level: 3, turnsReq: 5, damageBonus: 0.35, damageRolls: 2 });
 		assert.equal(preparationDamageRoll(preparationLevelByNumber(4), (() => { const draws = [4, 9, 2]; let at = 0; return () => draws[at++]; })()), 14);
 	});
