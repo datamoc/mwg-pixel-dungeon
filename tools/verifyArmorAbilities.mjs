@@ -518,6 +518,21 @@ export function verifyArmorAbilities(require, check) {
 		assert.equal(shockForceParalyses(3, 2), true);
 	});
 
+	check('Shockwave draws a fresh Unstable delegate per target and restores the swing stash', () => {
+		const source = readSceneSource();
+		const shockStart = source.indexOf('activateShockwave(this: DungeonScene');
+		assert.notEqual(shockStart, -1, 'the Shockwave scene method exists');
+		const shockEnd = source.indexOf('\n\t},', shockStart);
+		assert.notEqual(shockEnd, -1, 'the Shockwave scene method has an object-method boundary');
+		const shock = source.slice(shockStart, shockEnd);
+		assert.ok(shock.includes('let previousDelegation: string | null = null;'),
+			'the cone saves the triggering swing delegation stash');
+		assert.ok(shock.includes("if (this.weaponAffix === 'unstable') this.unstableDelegated = Random.element(UNSTABLE_DELEGATES)!;"),
+			'Unstable draws a fresh delegate per target like Unstable.proc');
+		assert.ok(shock.includes("if (procs && this.weaponAffix === 'unstable') this.unstableDelegated = previousDelegation;"),
+			'the cone hands the stash back before the Gladiator combo');
+	});
+
 	check('Endure halves incoming damage, 0.8^SHRUG_IT_OFF further, banking half of what arrived', () => {
 		assert.equal(endureDamageTaken(40, 0), 20);
 		assert.equal(endureDamageTaken(40, 1), 16);

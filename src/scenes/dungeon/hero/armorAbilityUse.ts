@@ -702,9 +702,17 @@ export const armorAbilityUseMethods = {
 			const effectiveStr = this.hero.str ?? this.heroStr;
 			let damage = shockwaveDamage(effectiveStr, shockForce, Random.normalRange(caught.armor[0], caught.armor[1]), roll);
 			const procs = strikingWaveProcs(strikingWave, Random.int(0, 10));
+			//`Unstable.proc()` draws a fresh delegate per target (`Random.oneOf(randomEnchants)`,
+			//`Unstable.java`, tag `v3.3.8`), serving that target's whole proc. Save/set/restore
+			//around this target's proc-equivalent (heroOnHit, the five mirrors, the Grim
+			//execute below) - like the ElementalStrike Unstable branch - so the cone never
+			//reuses the triggering swing's stash; non-Unstable weapons leave it untouched.
+			let previousDelegation: string | null = null;
 			if (procs) {
 				//`damage = hero.attackProc(ch, damage)`: the real attack-proc chain, i.e. this port's
 				//`heroOnHit`, and the Gladiator's combo counter (`Shockwave.java` 130-132).
+				previousDelegation = this.unstableDelegated;
+				if (this.weaponAffix === 'unstable') this.unstableDelegated = Random.element(UNSTABLE_DELEGATES)!;
 				this.heroOnHit(this.hero, caught, damage);
 				//`attackProc` also runs `wep.proc` - every enchantment, not just the post-hit
 				//half `heroOnHit` owns. The five pre-damage branches are dedicated mirrors
@@ -726,6 +734,9 @@ export const armorAbilityUseMethods = {
 				const grimExtra = this.grimExecuteBonus(caught, true);
 				if (grimExtra > 0) this.applyAbilityDamage(caught, grimExtra);
 			}
+			//Hand the stash back before the combo below: the draw served this target's whole
+			//proc (Java's `Combo.hit` runs after `damage()` returns, outside the enchantment).
+			if (procs && this.weaponAffix === 'unstable') this.unstableDelegated = previousDelegation;
 			//`Buff.affect(hero, Combo.class).hit(ch)` for a Gladiator, after the damage (`Shockwave.java` 130-132).
 			if (procs) this.comboHit(caught);
 			if (caught.hp > 0) {
