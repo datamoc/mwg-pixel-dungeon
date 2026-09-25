@@ -1949,6 +1949,21 @@ citation-by-citation account):
       this port always takes the "stay and keep exploring" branch instead and relies on the real
       climb, which is arguably the more interesting choice to keep anyway now that the climb works.
 
+**Progress note, 2026-09-25 (all-classes smoke test).** Beyond the ascent loop itself, the
+user's goal needs every one of the 6 classes to actually start and play, not just Warrior (the
+only one unlocked on a fresh save - `classUnlocked`, `src/badges.ts`). Live-verified with the
+same `playwright-core`-against-sandbox-Chromium approach as the ascent check above: a small
+script force-unlocks every class in memory for the test session only (`scene.badges.unlocked =
+() => true`, no save write) and drives title -> class-select -> Start for each of the 6 grid
+slots in a fresh page each time. All 6 (Warrior, Mage, Rogue, Huntress, Duelist, Cleric) reached
+a live dungeon scene at depth 1 with zero page errors/console errors and a real, class-specific
+starting-kit log line (spot-checked: slot 4 read "Sewers, floor 1. You are a duelist, wielding a
+rapier." - confirming this wasn't 6 copies of the same default class). Combined with the
+class-by-class ability/boss audit already on record (40+ `MONSTER_ANALYSIS_*` matrices in this
+file) finding no crash/soft-lock-shaped gaps, and the ascent loop's own live verification above,
+this is the closest this project has verified "every class, start to finish, including the
+climb" as a connected whole rather than as separately-audited pieces.
+
 ## Definition of done
 
 - Every Java gameplay system has an equivalent TypeScript implementation.
