@@ -890,5 +890,9 @@ export function verifyCombat(require, check) {
 			'the post-curve absorbs live in their own seam');
 		assert.ok(scene.includes('damage = this.applyPostCurveAbsorbs(attacker, defender, damage);'),
 			'a landed hit absorbs through the post-curve seam');
+		assert.ok(scene.includes('applyHeroDefense(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): { damage: number; capeRetaliation: number }'),
+			'the hero-defense block lives in its own seam');
+		assert.ok(scene.includes('const heroOut = this.applyHeroDefense(attacker, defender, damage);'),
+			'a landed hit defends through the hero seam');
 	});
 }

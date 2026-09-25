@@ -426,6 +426,44 @@ export const combatResolutionMethods = {
 	},
 
 	/**
+	 * T61 slice 10: the hero-defense block of a landed `attack()` - the Skeleton
+	 * ward cut, ShieldOfLight, CapeOfThorns (with its retaliation tally), and the
+	 * hero absorb chain. Verbatim move; the tally returns alongside the damage
+	 * because the post-damage retaliation branch reads it.
+	 */
+	applyHeroDefense(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): { damage: number; capeRetaliation: number } {
+		let capeRetaliation = 0;
+		if (defender.isHero) {
+			//`Skeleton.attackProc()` (tag `v3.3.8`): a skeleton hitting a warded hero deals
+			//2 less on top of the ward's own 1 (the non-Paladin "doubled" amount; the
+			//Paladin's 6 needs the subclass). Placed pre-absorb, where Java's attackProc
+			//sits relative to defenseProc.
+			if (attacker.kind === 'skeleton' && damage > 0 && this.hero.buffs['holyWard'] !== undefined) {
+				damage = Math.max(0, damage - 2);
+			}
+			//`Char.defenseProc()`'s ShieldOfLight half (tag `v3.3.8`): a hit from the
+			//tracked enemy loses `NormalIntRange(min, 2*min)` (`min = 1 + points`),
+			//clamped at zero. The tracker's enemy id rides `shieldOfLightTarget` -
+			//the buff map holds durations only. Placed pre-absorb with the ward line,
+			//where Java's pre-armor `defenseProc` sits relative to `damage()`.
+			if (damage > 0 && this.hero.buffs['shieldOfLight'] !== undefined && this.hero.shieldOfLightTarget === attacker.id) {
+				const [shieldMin, shieldMax] = shieldOfLightRange(this.talentRank('shield_of_light'));
+				damage = Math.max(0, damage - Random.normalRange(shieldMin, shieldMax));
+			}
+			//`Hero.damage()`: `CapeOfThorns.Thorns.proc()` runs before `super.damage()` (the
+			//`Char.damage()` shield-absorption/Tenacity/AntiMagic chain `absorbHeroDamage` models),
+			//so the cape sees the raw incoming hit, not what shields already reduced it to.
+			damage = applyCapeOfThornsProc({
+				bag: this.bag,
+				say: this.say.bind(this),
+				onRetaliate: (deflected) => { capeRetaliation += deflected; },
+			}, damage);
+			damage = this.absorbHeroDamage(damage, false, true);
+		}
+		return { damage, capeRetaliation };
+	},
+
+	/**
 	 * Melee (or missile) exchange with Java's own on-hit hooks: surprise attacks land
 	 * automatically (INFINITE_ACCURACY, inside rollHit) and wake the victim; Rogue's
 	 * SUCKER_PUNCH adds +2 on a surprise hit (+4 as an Assassin); Bat.attackProc heals
@@ -722,34 +760,9 @@ export const combatResolutionMethods = {
 		//reads this pairing, and later pushes must not re-decide it.
 		const phantomRemote = this.isPhantomRemoteHit(attacker, defender);
 		const preHp = defender.hp;
-        let capeRetaliation = 0;
-		if (defender.isHero) {
-			//`Skeleton.attackProc()` (tag `v3.3.8`): a skeleton hitting a warded hero deals
-			//2 less on top of the ward's own 1 (the non-Paladin "doubled" amount; the
-			//Paladin's 6 needs the subclass). Placed pre-absorb, where Java's attackProc
-			//sits relative to defenseProc.
-			if (attacker.kind === 'skeleton' && damage > 0 && this.hero.buffs['holyWard'] !== undefined) {
-				damage = Math.max(0, damage - 2);
-			}
-			//`Char.defenseProc()`'s ShieldOfLight half (tag `v3.3.8`): a hit from the
-			//tracked enemy loses `NormalIntRange(min, 2*min)` (`min = 1 + points`),
-			//clamped at zero. The tracker's enemy id rides `shieldOfLightTarget` -
-			//the buff map holds durations only. Placed pre-absorb with the ward line,
-			//where Java's pre-armor `defenseProc` sits relative to `damage()`.
-			if (damage > 0 && this.hero.buffs['shieldOfLight'] !== undefined && this.hero.shieldOfLightTarget === attacker.id) {
-				const [shieldMin, shieldMax] = shieldOfLightRange(this.talentRank('shield_of_light'));
-				damage = Math.max(0, damage - Random.normalRange(shieldMin, shieldMax));
-			}
-			//`Hero.damage()`: `CapeOfThorns.Thorns.proc()` runs before `super.damage()` (the
-			//`Char.damage()` shield-absorption/Tenacity/AntiMagic chain `absorbHeroDamage` models),
-			//so the cape sees the raw incoming hit, not what shields already reduced it to.
-            damage = applyCapeOfThornsProc({
-                bag: this.bag,
-                say: this.say.bind(this),
-                onRetaliate: (deflected) => { capeRetaliation += deflected; },
-            }, damage);
-			damage = this.absorbHeroDamage(damage, false, true);
-		}
+		const heroOut = this.applyHeroDefense(attacker, defender, damage);
+		damage = heroOut.damage;
+		const capeRetaliation = heroOut.capeRetaliation;
 		//`DwarfKing.damage()` (phase 3) and `RustedFist.damage()` both bank every hit into the same
 		//`Viscosity.DeferedDamage` pool the glyph uses instead of losing HP, paying it out on their
 		//own turns. Checked here, before the linked-add split below, so the King's LifeLink share
