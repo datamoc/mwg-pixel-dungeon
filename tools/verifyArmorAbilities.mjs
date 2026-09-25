@@ -938,7 +938,7 @@ export function verifyArmorAbilities(require, check) {
 		assert.doesNotMatch(source, /damageMultiplier \*= 1\.1/,
 			'the invented x1.1 spirit-blades damage bonus must be gone');
 	});
-	check('Trinity BodyForm Thorns is offered and follows Java's defensive proc gates', () => {
+	check('Trinity BodyForm Thorns is offered and follows Java\'s defensive proc gates', () => {
 		const ability = readFileSync(new URL('../src/scenes/dungeon/hero/armorAbilityUse.ts', import.meta.url), 'utf8');
 		const combat = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
 		const mob = readFileSync(new URL('../src/scenes/mobOnHit.ts', import.meta.url), 'utf8');
@@ -949,7 +949,7 @@ export function verifyArmorAbilities(require, check) {
 		assert.match(combat, /armorProcMultiplier\(this: DungeonScene, defender: Creature\): number \{[\s\S]*?const arcana = ringArcanaMultiplier\([\s\S]*?return arcana \+ auraProcBonus/, 'defend-side chance excludes the weapon-only catalyst term');
 		assert.match(mob, /armorGlyph\('thorns'\) \|\| ctx\.trinityBodyGlyphIs\('thorns'\)/, 'Thorns uses the temporary Trinity glyph');
 		assert.match(mob, /!attacker\.isHero && !attacker\.isAlly && !attacker\.isNPC && attacker\.hp > 0/, 'Thorns only affects a living opposite-alignment attacker');
-		assert.match(mob, /\(\(level \+ 2\) \/ \(level \+ 12\)\) \* ctx\.armorProcMultiplier\(defender\)/, 'Thorns uses Java's chance and defend-side multiplier');
-		assert.match(mob, /setBleeding\(attacker, Math\.round\(\(4 \+ level\) \* Math\.max\(1, procChance\)\)\)/, 'Thorns applies Java's level-scaled Bleeding');
+		assert.match(mob, /\(\(level \+ 2\) \/ \(level \+ 12\)\) \* ctx\.armorProcMultiplier\(defender\)/, 'Thorns uses Java\'s chance and defend-side multiplier');
+		assert.match(mob, /setBleeding\(attacker, Math\.round\(\(4 \+ level\) \* Math\.max\(1, procChance\)\)\)/, 'Thorns applies Java\'s level-scaled Bleeding');
 	});
 }
