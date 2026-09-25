@@ -708,6 +708,18 @@ export function verifyArmorAbilities(require, check) {
 		assert.match(log[1], /allyKind === 'ninjaLog'/,
 			'a new decoy must retire the existing ones first');
 	});
+	check('Deathly Durability pays no barrier for a marked-then-allied target', () => {
+		//`DeathMarkTracker.detach()` (DeathMark.java, tag v3.3.8): the payout is guarded by
+		//`if (shld > 0 && target.alignment != Char.Alignment.ALLY)`, so a target whose
+		//alignment flipped to ALLY after being marked (corruption) dies at mark expiry with
+		//no barrier for the Rogue. Pinned at source level like the check above, since the
+		//scene cannot load in this harness.
+		const mark = readFileSync(new URL('../src/scenes/dungeon/hero/armorAbilityUse.ts', import.meta.url), 'utf8');
+		const tick = /	tickDeathMark\(this: DungeonScene[^)]*\)[^{]*\{([\s\S]*?)\n\t\}/.exec(mark);
+		assert.ok(tick, 'tickDeathMark still exists');
+		assert.match(tick[1], /if \(shield > 0 && !monster\.isAlly\) this\.grantHeroShield/,
+			'the barrier must be withheld from a marked target that is now an ally');
+	});
 	check('the AfterImage decoy takes no buffs and no direct blob damage', () => {
 		//`Feint.AfterImage` (tag `v3.3.8`): `add(Buff)` returns false unconditionally and the
 		//class carries the whole `BlobImmunity` set - the decoy exists to eat one attack, not

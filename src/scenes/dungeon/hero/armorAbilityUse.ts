@@ -1107,9 +1107,9 @@ export const armorAbilityUseMethods = {
 
 	/**
 	 * `DeathMarkTracker`'s five-turn countdown and its two exits. Java's tracker is a real buff, so
-	 * its expiry is its `detach()`: a target that is already at zero HP dies there (with
-	 * `DEATHLY_DURABILITY` paying the hero `round(initialHP * 0.125 * points)` as a barrier), and
-	 * one that survived keeps its HP - the mark is not a damage source.
+	 * its expiry is its `detach()`: a zero-HP target dies there, with `DEATHLY_DURABILITY` paying
+	 * `round(initialHP * 0.125 * points)` under Java's `target.alignment != Char.Alignment.ALLY`
+	 * gate - a marked target corrupted into an ally dies for free (`!monster.isAlly`); survivors keep their HP.
 	 */
 	tickDeathMark(this: DungeonScene, monster: Creature): void {
 		if ((monster.deathMarkTurns ?? 0) <= 0) return;
@@ -1120,7 +1120,7 @@ export const armorAbilityUseMethods = {
 		delete monster.deathMarkInitialHp;
 		if (monster.hp > 0) return;
 		const shield = Math.round(initialHp * (0.125 * this.talentRank('deathly_durability')));
-		if (shield > 0) this.grantHeroShield(shield, this.hero.maxHp);
+		if (shield > 0 && !monster.isAlly) this.grantHeroShield(shield, this.hero.maxHp);
 		this.kill(monster);
 	},
 
