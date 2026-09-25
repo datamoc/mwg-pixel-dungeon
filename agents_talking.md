@@ -872,3 +872,15 @@ codex-01 wired the meal-talent flag live (#184, suite 266 green). Corrected my e
 **Verified:** `tsc` clean, `check` green, `test:simulation` 271 green, full `npm run verify` 376 PASS with no failures, `build` green (standing bundle warning only). Browser verification NOT done (no bridge this session) - the new pins are source-level, same as the suite's other scene seams.
 
 **Committed per user request as the Grim/Lucky unit (code + pins + coverage row + this log entry);** `combatResolution.ts` rides on the already-staged peer extraction base, with only my five hunks added - the peer's own unstaged `@428` Displacing hunk and all other peers' unstaged hunks stay in the worktree for their owners.
+## 2026-09-25 - michel/opencode (coord T103: mwg 0.17.0 issue check)
+
+**Checked 0.17.0 with the package actually swapped into `node_modules` (restored to 0.16.0 afterwards): `npx tsc --noEmit` clean, `npm run test:mwg` 22/22, `npm run test:simulation` 318 + every sub-suite green.** API diff 0.16.0 -> 0.17.0: **0 removed exports**, 13 added (`parseInbound`, `cloneData`/`uncloneablePath`, `MemoryStorage`, `assertSecureUrl`, the `testing` doubles) - nothing this port imports disappears, and every `exports` subpath it uses (`mwg`, `/actors`, `/ai/lua`, `/assets/paths`, `/core`, `/mwl`, `/roguelike`, `/simulation`, `/two-d/*`, `/tools/classic-html`) is still present.
+
+**Two real issues.**
+
+1. **The `@datamoc/mw_games: ^0.17.0` line now in the worktree's `package.json` upgrades nothing.** It sits *beside* `"mwg": "npm:@datamoc/mw_games@^0.16.0"`, so npm installs two copies while every `from 'mwg'` specifier still resolves 0.16.0. The bump has to change the alias itself (`"mwg": "npm:@datamoc/mw_games@^0.17.0"`) and then run the full `npm run verify`. I reverted the `package-lock.json` that my own `npx` runs had written for that stray entry; `package.json` is left exactly as the peer session wrote it.
+2. **0.17.0's CSP fix does not reach this port.** Changelog item 374 puts a Content-Security-Policy on every page `emitPage`/`mwgPage()` produces, but `tools/emit.mjs` only runs `toClassicScript` from `mwg/tools/classic-html`, so `dist/index.html` carries **no** CSP (0 matches) while runs, badges, guide progress and settings all live in `localStorage` through `SaveSystem` - precisely the `file://` cross-page save sharing the fix targets. Reaching it means moving the build onto `emitPage`/`mwgPage`, or writing the meta tag ourselves.
+
+**Compatible behaviour change:** `SaveSystem.load` now returns `null` for a corrupt or tampered slot instead of throwing (`list` skips the slot). All four call sites (`badges.ts:36`, `panelsSingleUse.ts:64`, `environmentFireTraps.ts:715`, `dungeonScene.ts:1497`) already treat a falsy result as "no save", so this only removes a previously uncaught throw.
+
+**Worth adopting as gates:** `mwg-smoke <dist>` (page opens from `file://`, no page error, non-blank pixels, screenshot) would automate the browser verification AGENTS.md still does by hand; `mwg-size` (bundle budget), `mwg-bench` and `npx mwg-i18n --check` are the same idea for size, frame rate and translations.
