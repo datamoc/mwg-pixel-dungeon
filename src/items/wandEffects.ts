@@ -13,6 +13,7 @@ export interface TransfusionWandContext {
 	isUndead: (target: Creature) => boolean;
 	grantHeroShield: (amount: number, cap: number) => number;
 	absorbHeroDamage: (amount: number) => number;
+	applyCharacterDamage: (target: Creature, amount: number) => void;
 	showHeal: (target: Creature, amount: number) => void;
 	showDamage: (target: Creature, amount: number) => void;
 	kill: (target: Creature) => void;
@@ -52,9 +53,7 @@ export function useTransfusionWand(context: TransfusionWandContext): void {
 			//guard - `charm` is already one of `buffBlocked()`'s magic-immunity buffs.
 			const [minDamage, maxDamage] = wandDamageRange('transfusion', level);
 			const damage = context.rollDamage(minDamage, maxDamage);
-			target.hp -= damage;
-			context.showDamage(target, damage);
-			if (target.hp <= 0) context.kill(target);
+			context.applyCharacterDamage(target, damage);
 		} else if (!context.isUndead(target)) {
 			//Java charms for `Charm.DURATION/2` (5), not the full 10 - and `affect`
 			//keeps a longer existing charm, so this prolongs rather than sets.

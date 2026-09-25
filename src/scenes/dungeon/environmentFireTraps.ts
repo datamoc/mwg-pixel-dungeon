@@ -467,6 +467,10 @@ export const environmentFireTrapsMethods = {
 			isUndead: (victim) => victim.kind !== undefined && UNDEAD_KINDS.has(victim.kind),
 			grantHeroShield: (amount, cap) => this.grantHeroShield(amount, cap),
 			absorbHeroDamage: (amount) => this.absorbHeroDamage(amount),
+			applyCharacterDamage: (victim, amount) => this.applyCharacterDamage(victim, amount, {
+				pierceArmor: true, cause: 'foe', skipAura: true,
+				onNonWeaponBossDamage: (creature) => this.disqualifyBossChallenge(creature),
+			}),
 			showHeal: (victim, amount) => this.showHeal(victim, amount),
 			showDamage: (victim, amount) => this.showDamage(victim, amount),
 			kill: (victim) => this.kill(victim),
