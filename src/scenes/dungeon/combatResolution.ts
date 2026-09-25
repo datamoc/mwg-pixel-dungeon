@@ -384,6 +384,48 @@ export const combatResolutionMethods = {
 	},
 
 	/**
+	 * T61 slice 9: the post-curve defender absorbs of a landed `attack()` - the
+	 * Endure counter, mob Earthroot armor, and the PhantomPiranha remote half.
+	 * Verbatim move; runs after the defender curves, before the hero-defense block.
+	 */
+	applyPostCurveAbsorbs(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): number {
+		//`Char.attack()`'s "friendly endure": the hero's own banked counter-attack adds to each
+		//landed hit until the tracker's `hitsLeft` runs out (`EndureTracker.damageFactor`). Java
+		//adds it before the armor subtraction; this port's `damage` is already net of armor by this
+		//point, so the bonus lands a little harder here than in Java - the same stated placement
+		//difference as the reduction half. See `consumeEndureBonus`.
+		if (attacker === this.hero && this.endureHits > 0 && damage > 0) damage = this.consumeEndureBonus(damage);
+		//`Char.defenseProc()`'s `Earthroot.Armor` half for a mob defender: the pool absorbs
+		//`min(damage, earthrootBlocking())` of every landed attack hit and detaches on
+		//exhaustion or once its owner has left the grant cell (see `absorbEarthrootArmor`).
+		//Java runs this pre-armor; this port's damage is already net of armor here, so a hit
+		//burns a little less pool than Java's - the same stated placement as the hero's own
+		//`absorbHeroDamage` half. It still runs before the defender damage curves below,
+		//matching Java's absorb-before-`damage()` order, and wand zaps, bombs, DoTs and traps
+		//never reach `attack()`, so they bypass the pool exactly as Java's direct `damage()`
+		//calls bypass `defenseProc()`.
+		if (!defender.isHero && defender.earthrootArmorLevel !== undefined) {
+			const absorbed = absorbEarthrootArmor(defender.earthrootArmorLevel, damage,
+				this.earthrootBlocking(), this.level.index(defender.x, defender.y) !== defender.earthrootArmorPos);
+			if (absorbed.level === null) {
+				delete defender.earthrootArmorLevel;
+				delete defender.earthrootArmorPos;
+			} else defender.earthrootArmorLevel = absorbed.level;
+			damage = absorbed.damage;
+		}
+		// `PhantomPiranha.damage()` halves damage when its source is not adjacent;
+		// this is after the attack's defense/curve work, matching Java's override
+		// boundary, and it triggers the post-hit relocation while still alive.
+		if (this.isPhantomRemoteHit(attacker, defender)) damage = Math.round(damage / 2);
+		return damage;
+	},
+
+	isPhantomRemoteHit(this: DungeonScene, attacker: Creature, defender: Creature): boolean {
+		return defender.kind === 'phantomPiranha'
+			&& Roguelike.chebyshevDistance(defender, attacker) > 1;
+	},
+
+	/**
 	 * Melee (or missile) exchange with Java's own on-hit hooks: surprise attacks land
 	 * automatically (INFINITE_ACCURACY, inside rollHit) and wake the victim; Rogue's
 	 * SUCKER_PUNCH adds +2 on a surprise hit (+4 as an Assassin); Bat.attackProc heals
@@ -675,36 +717,10 @@ export const combatResolutionMethods = {
 		//landed hit while pumped (dead code in practice: `damageRoll()` already
 		//consumed the pump by proc time), and Java never interrupts the charge on
 		//damage. The shake told a lie, so it is gone rather than moved.
-		//`Char.attack()`'s "friendly endure": the hero's own banked counter-attack adds to each
-		//landed hit until the tracker's `hitsLeft` runs out (`EndureTracker.damageFactor`). Java
-		//adds it before the armor subtraction; this port's `damage` is already net of armor by this
-		//point, so the bonus lands a little harder here than in Java - the same stated placement
-		//difference as the reduction half. See `consumeEndureBonus`.
-		if (attacker === this.hero && this.endureHits > 0 && damage > 0) damage = this.consumeEndureBonus(damage);
-		//`Char.defenseProc()`'s `Earthroot.Armor` half for a mob defender: the pool absorbs
-		//`min(damage, earthrootBlocking())` of every landed attack hit and detaches on
-		//exhaustion or once its owner has left the grant cell (see `absorbEarthrootArmor`).
-		//Java runs this pre-armor; this port's damage is already net of armor here, so a hit
-		//burns a little less pool than Java's - the same stated placement as the hero's own
-		//`absorbHeroDamage` half. It still runs before the defender damage curves below,
-		//matching Java's absorb-before-`damage()` order, and wand zaps, bombs, DoTs and traps
-		//never reach `attack()`, so they bypass the pool exactly as Java's direct `damage()`
-		//calls bypass `defenseProc()`.
-		if (!defender.isHero && defender.earthrootArmorLevel !== undefined) {
-			const absorbed = absorbEarthrootArmor(defender.earthrootArmorLevel, damage,
-				this.earthrootBlocking(), this.level.index(defender.x, defender.y) !== defender.earthrootArmorPos);
-			if (absorbed.level === null) {
-				delete defender.earthrootArmorLevel;
-				delete defender.earthrootArmorPos;
-			} else defender.earthrootArmorLevel = absorbed.level;
-			damage = absorbed.damage;
-		}
-		// `PhantomPiranha.damage()` halves damage when its source is not adjacent;
-		// this is after the attack's defense/curve work, matching Java's override
-		// boundary, and it triggers the post-hit relocation while still alive.
-		const phantomRemote = defender.kind === 'phantomPiranha'
-			&& Roguelike.chebyshevDistance(defender, attacker) > 1;
-		if (phantomRemote) damage = Math.round(damage / 2);
+		damage = this.applyPostCurveAbsorbs(attacker, defender, damage);
+		//Captured here, where the inline flag always sat: the post-damage relocation
+		//reads this pairing, and later pushes must not re-decide it.
+		const phantomRemote = this.isPhantomRemoteHit(attacker, defender);
 		const preHp = defender.hp;
         let capeRetaliation = 0;
 		if (defender.isHero) {

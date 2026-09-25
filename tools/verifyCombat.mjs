@@ -886,5 +886,9 @@ export function verifyCombat(require, check) {
 			'the landed-hit prelude lives in its own seam');
 		assert.ok(scene.includes('damage = this.openLandedHit(attacker, defender, surprise, damage);'),
 			'a landed hit opens through the prelude seam');
+		assert.ok(scene.includes('applyPostCurveAbsorbs(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): number'),
+			'the post-curve absorbs live in their own seam');
+		assert.ok(scene.includes('damage = this.applyPostCurveAbsorbs(attacker, defender, damage);'),
+			'a landed hit absorbs through the post-curve seam');
 	});
 }
