@@ -192,7 +192,7 @@ citation-by-citation account):
       turn) and were silently no-ops on a boss floor; `beginAscendOneFloor()` calls confirmed +2
       stacks per floor; attacking a live depth-1 rat down to 1 HP with stacks=10 and the challenge
       active dropped stacks to 9 and flipped `ascensionStacksLowered` true on the kill.
-- [ ] **Still not ported at all** (documented, not silently dropped - see `PORT_COVERAGE.md`):
+- [x] **Closed 2026-09-25 (T107)** - every sub-item below is now Ported, explicitly Not ported, or a documented Divergence (details in `PORT_COVERAGE.md`; was "Still not ported at all"):
       `Statistics.highestAscent` tracking - checked for a UI consumer this pass: this port's real
       Rankings screen (confirmed to exist and reachable from the title menu) only stores a run's
       final depth/level/gold (`rankings.ts`), not a separate ascent-progress field, and a
@@ -215,6 +215,8 @@ citation-by-citation account):
       `AmuletScene`'s own "Let's call it a day" instant-win shortcut button is also not ported -
       this port always takes the "stay and keep exploring" branch instead and relies on the real
       climb, which is arguably the more interesting choice to keep anyway now that the climb works.
+
+**Close-out 2026-09-25 (T107):** badges (rows, Java icons, `validateHappyEnd` gates), the TransmogRat/BuffBlocker exemptions (structural unwrap + save-persisted flag through a shared helper), the DemonSpawner >20 cap, and the beckon/haste mechanics all ported with pins. Explicitly remaining, by decision rather than oversight: `highestAscent` (no UI consumer - Not ported), the hero-speed-cap (needs doubled mob turns per hero action - Not ported), the AmuletScene instant-win shortcut (documented Not ported - the stay branch is always taken).
 
 **Progress note, 2026-09-25 (all-classes smoke test).** Beyond the ascent loop itself, the
 user's goal needs every one of the 6 classes to actually start and play, not just Warrior (the
