@@ -52,6 +52,21 @@ rounds, 415 draws, zero divergences.
 
 - [ ] Verify RNG call order for level, item, monster, and quest generation. **Complexity: L.**
 
+**Progress 2026-09-25 (T56 census, draw-level):** `levelgenParity` with `--java-traces`
+diffs every floor's raw draw sequence, not just the map: **23 of 28 comparable floors
+(depths 3-9 x seeds 123456789/1/42/999999999999) are TRACE-IDENTICAL**, thousands of
+draws each (e.g. 25666, 25624, 23967). Five divergences with first-diff indices:
+123456789 d3@416, d4@404, d7@439; 42 d8@321; 999999999999 d9@22626 (depths 1-2 stay
+TRACE-SKIP: Java's unseeded guidebook draws). Attributed the d3 case via
+`--trace-stack-window`: both sides agree through draw 415 in the storage-room prize path,
+then Java burns a category-substream fast-forward long-pair (`Generator.random(Category)`
+push + `dropped` Longs) where TS burns its `chances` float first and the longs later - same
+category, same prize, different `dropped` count. Hypothesis: `dropped` drifted in depths
+1-2 (uncomparable) or an increment site differs; increment sites themselves match
+(`random(Category)` + `randomArtifact` both sides). Next: Java stacks via
+LEVELGEN_STACKWIN=123456789:3:405-430 or per-category drop counts to localize.
+
+
 ## B3. from ROADMAP 9. Build the Java-vs-TypeScript parity harness
 
 - [ ] Verify loot, quest outcomes, boss transitions, and save/load state. **Complexity: L.**
