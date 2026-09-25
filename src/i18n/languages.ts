@@ -26,8 +26,11 @@
  * `eo` is `O_COMPLETE`, `sv` and `zh-hant` (`CHI_TRAD`) are both `__UNREVIEW`). Their SPD-side
  * `.properties` catalogs ship in the generated bundle, read from a second `--legacy-spd-root`
  * pointed at a `v3.3.8` checkout (see `tools/i18n-extract.mjs`'s header comment and `LOCALES`);
- * the live checkout's own current branch has dropped these four files entirely, which is why a
- * second root is needed rather than just adding them to the primary one. The port's own `port.*`
+ * the live checkout's own current branch had dropped these four files entirely when this was
+ * written, which is why a second root was needed rather than just adding them to the primary
+ * one - re-measured 2026-09-25, that checkout now carries all 22 locales again (207
+ * `.properties` files), so `--legacy-spd-root` is a tag-era fallback rather than a necessity and
+ * the primary root wins for any key both supply. The port's own `port.*`
  * strings have no catalogs for them yet, so port prose falls back to English there - stated, not
  * silent (see `PORT_COVERAGE.md`'s i18n row).
  */

@@ -1,10 +1,12 @@
 /**
  * Builds `src/generated/spdMessages.ts` from SPD's own `.properties` translation files.
  *
- * SPD ships 171 property files from the live checkout's own branch - 9 domains x English plus
- * 18 locales, ~3,750 base keys - plus 4 more locales (`be`/`eo`/`sv`/`zh-hant`, 36 more files)
- * that only exist at tag `v3.3.8`, read from a second, optional `--legacy-spd-root` (see
- * below). This port now ships every one of them (22 locales total - see
+ * SPD shipped 171 property files when this header was written - 9 domains x English plus 18
+ * locales, ~3,750 base keys - with 4 more locales (`be`/`eo`/`sv`/`zh-hant`, 36 more files) only
+ * at tag `v3.3.8`, read from a second, optional `--legacy-spd-root` (see below). Re-measured
+ * 2026-09-25: that live checkout now carries 207 files, all 22 locales and 4,830 distinct base
+ * keys, so the second root is a tag-era fallback rather than a necessity (the primary root still
+ * wins for any key both supply). This port now ships every locale (22 locales total - see
  * `src/i18n/languages.ts`). Everything here is inlined into `game.js` (the built
  * page runs from `file://`, where `fetch` is unavailable, so a locale cannot be loaded on
  * demand and *every* language ships in the bundle). That makes the complete corpus materially

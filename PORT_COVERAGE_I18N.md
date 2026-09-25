@@ -21,7 +21,7 @@ capitalisation rules.
 | Java block | TS destination | Status |
 | --- | --- | --- |
 | `Messages.get(cls, key, args)`'s key derivation: the class's package path below the SPD root, lowercased, plus the key suffix (`actors.mobs.Rat` + `name` -> `actors.mobs.rat.name`) | `src/i18n/spdKeys.ts` | Ported - the port uses SPD's dotted keys **verbatim**, so any key greps straight back to the Java class that owns it and its `.properties` entry, with no mapping table in between. `$` separates a Java inner class, as in Java |
-| `assets/messages/**/*.properties`: 9 domains x base English + 18 locales, 171 files | `src/generated/spdMessages.ts`, built by `tools/i18n-extract.mjs` (`npm run i18n`) | **Ported in full: 3,753 SPD keys x 19 languages.** The built page runs from `file://`, so the complete catalog is deliberately compiled in rather than fetched on demand. This makes every original string immediately available when its Java screen is ported; the cost is a materially larger game bundle. |
+| `assets/messages/**/*.properties`: 9 domains x base English + 22 locales, 207 files | `src/generated/spdMessages.ts`, built by `tools/i18n-extract.mjs` (`npm run i18n`) | **Ported: 3,754 SPD keys x 23 languages** (re-measured 2026-09-25; written 2026-09-12 as "Ported in full: 3,753 SPD keys x 19 languages" over "171 files / 18 locales" - the live checkout has outgrown both, now carrying 207 files, 22 locales and **4,830** distinct base keys in its nine English files). The built page runs from `file://`, so the complete catalog is deliberately compiled in rather than fetched on demand. This makes every original string immediately available when its Java screen is ported; the cost is a materially larger game bundle. **Open (2026-09-25):** the committed bundle is ~1,076 keys behind that checkout, so "every original string immediately available" no longer holds for keys upstream added after 2026-09-12 - a deliberate `npm run i18n` against a current `SPD_SOURCE_ROOT` closes it, and is deliberately *not* done as a doc sweep, since it pulls the live branch's text rather than `v3.3.8`'s. `i18n:verify` re-derives only what the code references, so it stays green either way. |
 | Java text for screens/windows not yet implemented (`WndBag`/`WndUseItem`/journal entries/full talent trees/shop dialogue etc.) | Complete `src/generated/spdMessages.ts` catalog | Text is ported and callable, but its owning Java UI/feature is still not necessarily ported. This is intentionally distinct from a missing translation: MWG already provides generic windows, stacks, scrolling lists, icon grids and message boxes; each remaining item requires its SPD-specific data and interactions to be implemented. |
 | `Item.itemComparator` / `Generator.Category.order(Item)` (including tier and special subcategory ordering) | `generatorItemOrder()` + `refreshInventoryPanel()` | Ported for the compact inventory payloads: concrete generated classes use the latest matching Java category, bombs sort after missile weapons, and regular potions/scrolls retain their Java subcategory positions. Unknown compact IDs use the Java sprite-order fallback; equal keys retain bag insertion order through the stable display sort. |
 | `.properties` syntax (`=`/`:` separators, `\n`, `\uXXXX`, continuations, comments) and `String.format`'s `%s`/`%d` | `tools/i18n-extract.mjs` | Ported - placeholders are converted to `mwg/i18n`'s `{token}` form at extraction time, not at runtime |
@@ -142,7 +142,9 @@ Two of these are worth calling out beyond "counts match", because a count cannot
   identical rather than a translation oversight. Their `{subject}`/`{object}`/`{damage}`/`{verb}`
   placeholders are re-ordered into natural sentence order, which the token-set comparison
   accepts by design.
-- **A glyph-coverage scan of all 19 locales found no tofu**, and it turned up two curiosities
+- **A glyph-coverage scan of all 19 locales found no tofu** (the set as it stood on 2026-09-12 -
+  the four locales added to the catalog afterwards, `be`/`eo`/`sv`/`zh-hant`, have never been
+  scanned, an open gap recorded 2026-09-25), and it turned up two curiosities
   worth recording for where they live rather than for what they are. Both are in SPD's *own*
   tables, never in a port-only string, and both are harmless - but each is the reason the scan
   must ignore characters that draw nothing *by design* rather than only whitespace, since
@@ -242,7 +244,8 @@ English - which is the entire benefit of matching Java's key names, and worthles
 can pass silently.
 
 **Not visually confirmed.** The Chrome extension has been disconnected for this whole stretch, so
-no locale has been seen rendered. The check above proves 138 keys resolve across 19 languages and
+no locale has been seen rendered. The check above proves 138 keys resolve across every language
+the catalog carried when it ran (19; 23 since the locale set was corrected 2026-09-19) and
 that interpolation produces the expected output; it cannot prove text fits its widget or that the
 font stack actually covers a script. A CJK locale is the one most likely to be wrong, since that
 is where a missing font shows as tofu.
