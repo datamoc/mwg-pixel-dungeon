@@ -96,6 +96,11 @@ Moved 2026-09-24 on the user's decision: these eight items were the only open bo
       attack() reads as gates plus a seam pipeline, ~1100 lines to ~300; RNG
       order and stale reads (charm pairing, phantom pairing) preserved verbatim.
       Browser live-verify still owed (NLV).
+      **Progress 2026-09-25 (T61 split):** the 19 seams moved verbatim to
+      scenes/dungeon/attackSeams.ts as their own method group (merged in
+      dungeonScene.ts like every other group); combatResolution.ts 2272 back
+      to 1370 lines, file budgets hold, two regen pins re-pointed at the new
+      path. attack() is gates plus a seam pipeline.
        **Complexity: L.**
 
 ## B8. from ROADMAP 11. Architecture refactor toward the v3 target
