@@ -5,10 +5,12 @@ import { UNSTABLE_DELEGATES } from '../../../items/itemAffixes';
 import { t } from '../../../i18n/index';
 import { directedPowerBoost, elementalAnnoyingChance, elementalBaseDamage, elementalBlobAmount, elementalBlockingShield, elementalBloomingBudget, elementalCorruptingChance, elementalCurseChance, elementalFurrowStep, elementalGrimChance, elementalKineticSplash, elementalKnockback, elementalLuckyChance, elementalPowerMulti, elementalProjectingSplash, elementalRootsDuration, elementalSacrificialOther, elementalSacrificialSelf, elementalStrikeCone, elementalVampiricHeal } from '../../../simulation/duelistAbilities';
 import { coneCells } from '../../../mechanics/cone';
+import { runState } from '../../../runState';
+import { spawnFlare } from '../../../ui/effectBursts';
 import { EMBERS, FLOOR, GRASS, HIGH_GRASS } from '../../../dungeonConstants';
-import { addBuff, applyElementalBacklash, setBleeding, type Creature, type Step } from '../../../combat';
-import { applyChillFreeze } from '../../../simulation/buffs';
-import { IMMOVABLE_KINDS } from '../../../monsters';
+import { addBuff, buffBlocked, setBleeding, type Creature, type Step } from '../../../combat';
+import { BOSS_KINDS, IMMOVABLE_KINDS, isLargeCreature } from '../../../monsters';
+import { isOpenSpace } from '../../../simulation/crystalSpire';
 
 /** ElementalStrike scene handler extracted behavior-identically to keep the ability table under its file budget. */
 export const elementalStrikeAbilityMethods = {
@@ -32,11 +34,19 @@ export const elementalStrikeAbilityMethods = {
 			trace: (coneFrom, coneTo) => this.coneRay(coneFrom, coneTo, true),
 		});
 		this.armorCharge = Math.max(0, this.armorCharge - cost);
+		//`Sample.INSTANCE.play(Assets.Sounds.CHARGEUP)` fires when the cone is cast
+		//(tag `v3.3.8`); the per-ray MagicMissile cone bolts have no equivalent because
+		//this port has no projectile-flight visuals at all (see PORT_COVERAGE.md).
+		runState.audio.cue('chargeup', 0.7);
 		const ench = this.weaponAffix;
 		const coneIndex = new Set(cone.cells.map((at) => this.level.index(at.x, at.y)));
-		const foeInCone = (c: Creature): boolean => !c.isHero && !c.isAlly && !c.isNPC
-			&& c.allyKind !== 'sheep' && c.hp > 0 && coneIndex.has(this.level.index(c.x, c.y));
-		const targetsHit = this.creatures.filter(foeInCone).length;
+		//`perCharEffect`'s `affected` is `alignment != ALLY` (neutrals take the hit).
+		//Only the counts (`preAttackEffect`/`perCellEffect` `targetsHit`) are `alignment == ENEMY`,
+		//so the foe set and the enemy set stay separate below.
+		const foeInCone = (c: Creature): boolean => !c.isHero && !c.isAlly
+			&& c.hp > 0 && coneIndex.has(this.level.index(c.x, c.y));
+		const foeIsEnemy = (c: Creature): boolean => foeInCone(c) && !c.isNPC && c.allyKind !== 'sheep';
+		const targetsHit = this.creatures.filter(foeIsEnemy).length;
 		//Pre-attack pass: the DirectedPower boost stages onto the primary swing (Java's
 		//one-shot tracker consumed by `Weapon.procDamage` amounts to exactly this), the
 		//Kinetic copy is read before the swing can disturb it, and Blocking/Vampiric/
@@ -65,7 +75,9 @@ export const elementalStrikeAbilityMethods = {
 			//inside `attack()` returns before its own consume block.
 			this.abilityForceHit = true;
 			this.abilityDamageMult = 1 + directedBoost;
-			this.attack(this.hero, primary);
+			//Java layers `HIT_STRONG` over the ordinary `HIT` the landed swing already
+			//plays (`Char` vs `ElementalStrike`, tag `v3.3.8`), so this cues on top too.
+			if (this.attack(this.hero, primary)) runState.audio.cue('hit_strong', 0.6);
 			this.abilityForceHit = false;
 			this.abilityDamageMult = 1;
 		}
@@ -75,22 +87,13 @@ export const elementalStrikeAbilityMethods = {
 			for (const at of cone.cells) {
 				if (ench === 'blazing') this.fire.seed(at.x, at.y, volume);
 				else if (ench === 'shocking') this.electricity.seed(at.x, at.y, volume);
-				//No `Freezing` blob exists in this port: its `Freezing.evolve()` halves are the
-				//fire-clearing the frost potion already models plus a chill on the occupants.
-				else this.fire.clear(at.x, at.y);
-			}
-			if (ench === 'chilling') {
-				for (const c of this.creatures) {
-					if (c.hp <= 0 || c.isNPC || c.allyKind === 'sheep' || !coneIndex.has(this.level.index(c.x, c.y))) continue;
-					delete c.buffs['burning'];
-					//`Elemental.add()`'s hate-listed chill backslashes instead of attaching
-					//(tag `v3.3.8`) - a fire-typed target takes the backlash, never the chill.
-					if (applyElementalBacklash(c, 'chill') === 0) c.buffs = applyChillFreeze(c.buffs).buffs;
-					if (c.hp <= 0) this.kill(c);
-				}
+				//Blob.seed(cell, round(8*powerMulti), Freezing.class): plantFreeze is this
+				//port's persisted Freezing blob, so the chill and fire-clear happen in its
+				//evolve like Java's instead of the ad-hoc per-char loop this replaces.
+				else this.plantFreeze.seed(at.x, at.y, volume);
 			}
 		} else if (ench === 'blooming') {
-			const enemiesVisible = this.creatures.some((c) => foeInCone(c) && c.seesHero);
+			const enemiesVisible = this.creatures.some((c) => foeIsEnemy(c) && c.seesHero);
 			const { furrowed, increment } = elementalFurrowStep(this.elementalFurrow, targetsHit, enemiesVisible);
 			this.elementalFurrow += increment;
 			let budget = elementalBloomingBudget(powerMulti);
@@ -134,32 +137,56 @@ export const elementalStrikeAbilityMethods = {
 		} else if (ench === 'blooming') {
 			for (const ch of affected) addBuff(ch, 'roots', elementalRootsDuration(powerMulti));
 		} else if (ench === 'elastic') {
-			const knockback = elementalKnockback(powerMulti);
+			//WandOfBlastWave.throwChar(ch, trajectory, knockback, false, true, this): BOSS
+			//halves the distance, rooted and IMMOVABLE refuse, LARGE stops at non-open space,
+			//and a cut-short shove deals NormalIntRange(moved, 2*moved) plus
+			//Paralysis.prolong(1 + moved/2) (tag v3.3.8).
+			const elasticWidth = this.level.width;
+			const elasticSolid = (cell: number): boolean => {
+				const nx = cell % elasticWidth, ny = Math.floor(cell / elasticWidth);
+				return !this.level.inside(nx, ny) || !this.level.passable(nx, ny);
+			};
 			const ordered = [...affected].sort((a, b) =>
 				Roguelike.chebyshevDistance(this.hero, b) - Roguelike.chebyshevDistance(this.hero, a));
 			for (const ch of ordered) {
 				if (ch === primary && oldPrimary !== null && (ch.x !== oldPrimary.x || ch.y !== oldPrimary.y)) continue;
+				if (ch.buffs['roots'] !== undefined) continue;
+				if (ch.kind !== undefined && IMMOVABLE_KINDS.has(ch.kind)) continue;
+				let power = elementalKnockback(powerMulti);
+				if (ch.kind !== undefined && BOSS_KINDS.has(ch.kind)) power = Math.floor((power + 1) / 2);
+				const large = isLargeCreature(ch.kind, ch.yogFistType);
 				const dx = Math.sign(ch.x - this.hero.x);
 				const dy = Math.sign(ch.y - this.hero.y);
 				if (dx === 0 && dy === 0) continue;
-				for (let push = 0; push < knockback; push++) {
+				let moved = 0;
+				let collided = false;
+				for (let push = 0; push < power; push++) {
 					const next = { x: ch.x + dx, y: ch.y + dy };
-					if (!this.level.passable(next.x, next.y) || this.creatureAt(next.x, next.y)) break;
+					if (!this.level.passable(next.x, next.y) || this.creatureAt(next.x, next.y)) { collided = true; break; }
+					if (large && !isOpenSpace(this.level.index(next.x, next.y), elasticWidth, elasticSolid)) { collided = true; break; }
 					this.moveTo(ch, next);
+					moved++;
+				}
+				if (collided && moved > 0 && ch.hp > 0) {
+					this.applyBlastDamage(ch, Random.normalRange(moved, 2 * moved), false, 'foe');
+					if (ch.hp > 0 && !buffBlocked(ch, 'paralysis')) {
+						ch.buffs['paralysis'] = Math.max(ch.buffs['paralysis'] ?? 0, 1 + moved / 2);
+					}
 				}
 			}
 		} else if (ench === 'lucky') {
 			for (const ch of affected) {
-				if (ch.buffs['luckyTracker'] !== undefined) continue;
+				//Java rolls only `alignment == ENEMY`: neutrals take the strike but never loot.
+				if (ch.isNPC || ch.allyKind === 'sheep' || ch.buffs['luckyTracker'] !== undefined) continue;
 				if (Random.chance(elementalLuckyChance(powerMulti))) {
 					//`Lucky.genLoot()` is `RingOfWealth.genConsumableDrop(-5)` (tag `v3.3.8`):
 					//80% low (half-gold/stone/potion/scroll, equal 25% cases) and 20% mid
 					//(doubled-low/exotic-potion/exotic-scroll/unstable/bomb/honeypot, equal
 					//1/6 cases). Exotics and unstable items stand in as their regular potion/
 					//scroll here because those item classes do not exist in this port.
-					const cell = () => [{ x: ch.x, y: ch.y }, ...Roguelike.neighbourOffsets(8).map(([ox, oy]) => ({ x: ch.x + ox, y: ch.y + oy }))]
-						.find((step) => this.level.inside(step.x, step.y) && this.level.passable(step.x, step.y)
-							&& !this.groundItemAt(step.x, step.y) && !this.creatureAt(step.x, step.y));
+					//`Dungeon.level.drop(Lucky.genLoot(), ch.pos)`: heaps stack, so the loot
+					//lands on the victim outright - no free-cell search.
+					const cell = () => ({ x: ch.x, y: ch.y });
 					const kind = (id: 'stone' | 'potion' | 'scroll' | 'bomb' | 'honeypot') => {
 						const at = cell();
 						if (at) this.spawnGroundItem(id, at.x, at.y);
@@ -176,8 +203,13 @@ export const elementalStrikeAbilityMethods = {
 						else if (doubled) { kind(id); kind(id); }
 						else kind(id);
 					};
+					//`Lucky.showFlare` is `RingOfWealth.showFlareForBonusDrop`: green for the
+					//low tier (doubled-low included), blue for mid. `spawnFlare` is the port's
+					//6-point star stand-in.
+					let flare = 0x00ff00;
 					if (Random.float() < 0.8) low(false);
 					else {
+						flare = 0x00aaff;
 						switch (Random.int(6)) {
 							case 0: low(true); break;
 							case 1: kind('potion'); break;
@@ -187,6 +219,7 @@ export const elementalStrikeAbilityMethods = {
 							default: kind('honeypot'); break;
 						}
 					}
+					spawnFlare(this.effectLayer, this.effectBursts, ch.x, ch.y, flare);
 					this.say(t('port.log.lucky'), 'positive');
 					addBuff(ch, 'luckyTracker');
 				}
@@ -241,6 +274,11 @@ export const elementalStrikeAbilityMethods = {
 				const from = { x: ch.x, y: ch.y };
 				this.moveTo(ch, destination);
 				this.playTeleportAppear(from, destination, ch);
+				//state == HUNTING becomes WANDERING: mobs have no AI states in this port,
+				//hunting is seesHero, so a teleported hunter loses the hero. NPCs keep theirs
+				//(quest following reads the same flag); a mob that never saw her is untouched,
+				//like the HUNTING-only gate.
+				if (!ch.isNPC) ch.seesHero = false;
 			}
 		} else if (ench === 'dazzling') {
 			for (const ch of affected) {

@@ -4,6 +4,7 @@ import { monsterSpeedFactor } from './monsters/monsterSpeed';
 import { doorAwareLevel } from './monsters/doorAwareLevel';
 import { placeCharacterArt } from '../../ui/characterPlacement';
 import { FogOfWar } from '../../ui/fogOfWar';
+import { syncDoomSpriteTint, syncFrozenSpriteTint } from '../../ui/doomSprite';
 import { WaterSurface } from '../../ui/waterSurface';
 import { Container, FillGradient, Graphics, TilingSprite } from 'mwg/two-d/pixi-interop';
 import { Actors, AnimatedSprite, Blob, Game, Label, Random, ReactionTable, Roguelike, SpriteSheet, TileMap, TintedSprite, theme } from 'mwg';
@@ -106,6 +107,7 @@ export const coreSpawnTilesMethods = {
 			partialDamage: this.hungerPartialDamage,
 			hp: this.hero.hp,
 			maxHp: this.hero.maxHp,
+			...(this.hero.buffs['doom'] !== undefined ? { doom: true } : {}),
 		}),
 		writeHunger: (state) => {
 			this.hunger = state.hunger;
@@ -126,9 +128,15 @@ export const coreSpawnTilesMethods = {
 		});
 	},
 
-	sprite(this: DungeonScene, entity: { id: string }): TintedSprite {
+	sprite(this: DungeonScene, entity: { id: string; buffs?: { doom?: number; spectatorFreeze?: number } }): TintedSprite {
 		const sprite = this.spriteFor.get(entity.id);
 		if (!sprite) throw new Error(`no sprite registered for entity ${entity.id}`);
+		//`Doom.fx()` darkens the actor sprite when the buff attaches; the tint helper
+		//approximates Java's `DarkBlock` overlay and restores the existing tint on detach.
+		syncDoomSpriteTint(sprite, entity.buffs?.doom !== undefined);
+		//`Challenge.SpectatorFreeze.fx()` (`Challenge.java`, tag `v3.3.8`); the PARALYSED
+		//half has no port visual, and `detachDuel` clears the buff which un-darkens here.
+		syncFrozenSpriteTint(sprite, entity.buffs?.spectatorFreeze !== undefined);
 		return sprite;
 	},
 
@@ -1021,6 +1029,7 @@ export const coreSpawnTilesMethods = {
 				spiritHawkTime: saved.spiritHawkTime, spiritHawkDodges: saved.spiritHawkDodges,
 				speed: saved.hasteTurns ? (saved.hasteBaseSpeed ?? 1) * 2 : undefined,
 			});
+			this.sprite(creature);
 			this.syncMimicVisual(creature);
 			this.syncLightAllyVisual(creature);
 			this.applyStatueKit(creature);

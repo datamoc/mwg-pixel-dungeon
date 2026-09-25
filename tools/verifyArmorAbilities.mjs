@@ -203,6 +203,49 @@ export function verifyArmorAbilities(require, check) {
 			'ElementalBlast must not be mistaken for the weapon-enchantment Lucky implementation');
 	});
 
+	check('ElementalStrike splits the foe set from the enemy count like Java alignments', () => {
+		//`perCharEffect` takes `alignment != ALLY` (neutrals hit) while the counts take
+		//`alignment == ENEMY`; the Elastic/Lucky/Freezing/Displacing clauses below match
+		//`WandOfBlastWave.throwChar`, `Lucky.genLoot`, the Freezing blob seed and the
+		//HUNTING-to-WANDERING calm at tag `v3.3.8`.
+		const source = readSceneSource();
+		const strikeStart = source.indexOf('activateElementalStrike(this: DungeonScene');
+		const strikeEnd = source.indexOf('\n\t},', strikeStart);
+		const strike = source.slice(strikeStart, strikeEnd);
+		assert.ok(strike.includes('const foeInCone = (c: Creature): boolean => !c.isHero && !c.isAlly'),
+			'the damage set is alignment != ALLY, neutrals included');
+		assert.ok(strike.includes("const foeIsEnemy = (c: Creature): boolean => foeInCone(c) && !c.isNPC && c.allyKind !== 'sheep';"),
+			'the counts are alignment == ENEMY');
+		assert.ok(strike.includes('this.creatures.filter(foeIsEnemy).length'),
+			'targetsHit counts enemies only');
+		assert.ok(strike.includes('foeIsEnemy(c) && c.seesHero'),
+			'visibleEnemies counts enemies only');
+		assert.ok(!strike.includes('this.fire.clear(at.x, at.y)'),
+			'the ad-hoc fire-clear is gone with the Freezing blob');
+		assert.ok(strike.includes('else this.plantFreeze.seed(at.x, at.y, volume);'),
+			'chilling seeds the Freezing blob like blazing and shocking');
+		assert.ok(strike.includes('if (!ch.isNPC) ch.seesHero = false;'),
+			'displacing calms hunters through seesHero');
+		assert.ok(strike.includes("if (ch.isNPC || ch.allyKind === 'sheep'"),
+			'lucky rolls for enemies only');
+		assert.ok(strike.includes('const cell = () => ({ x: ch.x, y: ch.y });'),
+			'lucky drops on the victim like Dungeon.level.drop');
+		assert.ok(strike.includes('spawnFlare(this.effectLayer, this.effectBursts, ch.x, ch.y, flare);'),
+			'lucky shows the tier flare');
+		assert.ok(strike.includes("this.applyBlastDamage(ch, Random.normalRange(moved, 2 * moved), false, 'foe');"),
+			'elastic deals collision damage on a cut-short shove');
+		assert.ok(strike.includes("ch.buffs['paralysis'] = Math.max(ch.buffs['paralysis'] ?? 0, 1 + moved / 2);"),
+			'elastic prolongs paralysis like throwChar');
+			assert.ok(strike.includes("runState.audio.cue('chargeup', 0.7);"),
+			'the cast plays CHARGEUP like Java');
+			assert.ok(strike.includes("if (this.attack(this.hero, primary)) runState.audio.cue('hit_strong', 0.6);"),
+			'the landed primary layers HIT_STRONG over HIT');
+		const useStart = source.indexOf('applyAbilityDamage(this: DungeonScene');
+		const useEnd = source.indexOf('\n\t},', useStart);
+		assert.ok(!source.slice(useStart, useEnd).includes('target.isNPC'),
+			'the ability-damage filter no longer spares neutrals');
+	});
+
 	check('PowerOfMany keeps Java duration and attack damage factors', () => {
 		assert.equal(POWER_OF_MANY_TURNS, 100);
 		assert.equal(POWER_OF_MANY_ATTACK_FACTOR, 1.25);
