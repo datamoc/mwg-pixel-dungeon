@@ -1661,6 +1661,11 @@ export const actorTurnsHazardsMethods = {
 		//Java's expiry check opens the turn (`if (timeRemaining <= 0) { die(null); hero.interrupt(); }`),
 		//so the hawk acts right up to the turn that empties its clock and dies on the next one.
 		if ((ally.spiritHawkTime ?? SPIRIT_HAWK_LIFESPAN) <= 0) {
+			//Java calls `Dungeon.hero.interrupt()` right after the expiry `die(null)`, cancelling
+			//the hero's rest/away travel. This port's stand-in for `Hero.interrupt()` is dropping
+			//the queued auto-travel destination - the same shape `YogDzewa.act()`'s aiming-turn
+			//interrupt and the Talisman of Foresight warning use (it has no rest-until-healed).
+			this.travelTarget = null;
 			this.kill(ally);
 			return;
 		}

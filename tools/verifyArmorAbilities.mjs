@@ -351,6 +351,18 @@ export function verifyArmorAbilities(require, check) {
 		assert.equal(SPIRIT_HAWK_LIFESPAN, 100);
 	});
 
+	check('the SpiritHawk\'s expiry interrupts the hero\'s travel, as Java does', () => {
+		//`HawkAlly.act()`'s expiry branch is `if (timeRemaining <= 0){ die(null);
+		//Dungeon.hero.interrupt(); }`. This port has no rest-until-healed, so `Hero.interrupt()`'s
+		//stand-in is dropping the queued auto-travel destination - pinned at source level, the
+		//scene cannot load in this harness.
+		const source = readSceneSource();
+		const turn = /	takeSpiritHawkTurn\(this: DungeonScene[^)]*\)[^{]*\{([\s\S]*?)\n\t\}/.exec(source);
+		assert.ok(turn, 'takeSpiritHawkTurn still exists');
+		assert.match(turn[1], /spiritHawkTime[\s\S]{0,400}this\.travelTarget = null/,
+			'the expiry branch must cancel the hero\'s queued travel before the hawk dies');
+	});
+
 	check('GO_FOR_THE_EYES blinds for Java\'s durations and cripples from rank 3', () => {
 		assert.deepEqual([0, 1, 2, 3, 4].map(goForTheEyesEffect), [
 			{ blindness: 0, cripple: 0 },
