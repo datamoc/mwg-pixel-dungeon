@@ -2020,7 +2020,10 @@ export const armorAbilityUseMethods = {
 	 * which that seam does not do.
 	 */
 	applyAbilityDamage(this: DungeonScene, target: Creature, damage: number, strikeSrc?: ElementalStrikeDamageSource): void {
-		if (damage <= 0 || target.isNPC) return;
+		//ElementalStrike and the WarpBeacon telefrag use `alignment != ALLY` in Java
+		//(neutrals take the hit). Shockwave's own caller pre-filters NPCs at selection -
+		//Warrior-area selection, left alone, so this change is moot there.
+		if (damage <= 0) return;
 		//`Char.damage()` zeroes a hit whose source class the target resists
 		//(`isImmune(srcClass)`): the Antimagic champion's RESISTS names `ElementalStrike`
 		//and `Grim`, so those two sources deal it nothing - skipped outright like the
