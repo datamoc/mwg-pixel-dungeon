@@ -107,16 +107,10 @@ export const cursedWandCastMethods = {
 			//(an AntiMagic champion), matching the guard the ordinary wand-zap loop already
 			//has - the heal above still lands regardless, only the damage half is RESISTS-gated.
 			if (victim.magicImmune) return;
-			if (victim === this.hero) {
-				const applied = this.absorbHeroDamage(damage);
-				this.hero.hp -= applied;
-				this.showDamage(this.hero, applied);
-				if (this.hero.hp <= 0) this.kill(this.hero, 'foe');
-			} else {
-				victim.hp -= damage;
-				this.showDamage(victim, damage);
-				if (victim.hp <= 0) this.kill(victim, 'foe');
-			}
+			this.applyCharacterDamage(victim, damage, {
+				pierceArmor: true, cause: 'foe', skipAura: true,
+				onNonWeaponBossDamage: (target) => this.disqualifyBossChallenge(target),
+			});
 		} else if (effect === 'geyser') {
 			//Geyser.effect(): a fresh GeyserTrap activates at the bolt's own cell - the same
 			//flow the port's own geyser utility trap already uses.

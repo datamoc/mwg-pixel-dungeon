@@ -1346,6 +1346,9 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 			'Radiance bonus damage dispatches before its lethal-status gate');
 		assert.ok(scene.includes('this.applyCharacterDamage(victim, rawDamage, { pierceArmor: true, cause: 'foe', skipAura: true });'),
 			'HolyLance dispatches its raw hit after preserving the GreatCrab parry');
+		const cursedWand = readFileSync(new URL('../src/scenes/dungeon/hero/cursedWandCast.ts', import.meta.url), 'utf8');
+		assert.ok(cursedWand.includes('this.applyCharacterDamage(victim, damage, { pierceArmor: true, cause: \'foe\', skipAura: true,'),
+			'CursedWand HealthTransfer uses the common Char.damage tail after its RESISTS check');
 		assert.ok(panels.includes('damage = absorbCreatureShields(c, damage, this.ascendedTurns > 0);'),
 			'the shared non-hero path applies Java priority-ordered ShieldBuff pools before HP');
 	});
