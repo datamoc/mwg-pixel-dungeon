@@ -17,6 +17,7 @@ import { isResurrectKeepCandidate, partitionResurrectKeeps } from '../../items/r
 import { useStoneOfAggression as useItemStoneOfAggression, useStoneOfAugmentation as useItemStoneOfAugmentation, useStoneOfBlast as useItemStoneOfBlast, useStoneOfBlink as useItemStoneOfBlink, useStoneOfClairvoyance as useItemStoneOfClairvoyance, useStoneOfDeepSleep as useItemStoneOfDeepSleep, useStoneOfEnchantment as useItemStoneOfEnchantment, useStoneOfFear as useItemStoneOfFear, useStoneOfFlock as useItemStoneOfFlock, useStoneOfShock as useItemStoneOfShock } from '../../items/stones';
 import { type AlchemyFlowContext } from '../../items/alchemy';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
+import { absorbCreatureShields } from '../../simulation/allyShields';
 import { rollGeneratedAffix } from '../../items/itemKinds';
 import { ENCHANT_TABLE, GLYPH_TABLE } from '../../items/itemAffixes';
 import { ringBonusLevel, ringDef, ringFurorMultiplier, ringHasteMultiplier, type EquippedRing } from '../../items/ringModifiers';
@@ -1495,7 +1496,7 @@ export const panelsSingleUseMethods = {
 		if (!options.pierceArmor) damage = Math.max(0, damage - Random.normalRange(c.armor[0], c.armor[1]));
 		//`AuraOfProtection.AuraBuff` is a defender-side `Char.damage()` modifier (tag `v3.3.8`),
 		//so blast damage must pass through the same nearby same-alignment reduction as attacks.
-		damage = this.auraProtectedDamage(c, damage);
+		if (!options.skipAura) damage = this.auraProtectedDamage(c, damage);
 		//This shared blast/bomb/ability path models Char.damage() for non-hero targets;
 		//apply Doom after Aura and before the target-specific curve and shields.
 		damage = doomDamage(damage, c);
@@ -1533,6 +1534,10 @@ export const panelsSingleUseMethods = {
 		// so the source-less random-water branch is the honest port seam.
 		const phantomDirect = c.kind === 'phantomPiranha';
 		if (phantomDirect) damage = this.phantomPiranhaDamage(c, damage);
+		//`ShieldBuff.processDamage()` (`Char.damage()`, tag `v3.3.8`): all shared buffs
+		//absorb after the target's own damage override and before HP. Keep DivineShield's
+		//AscendedForm gate and PowerOfMany's lower priority in the one common scene seam.
+		damage = absorbCreatureShields(c, damage, this.ascendedTurns > 0);
 		const preHp = c.hp;
 		c.hp -= damage;
 		if (phantomDirect && c.hp > 0) this.phantomPiranhaTeleport(c);

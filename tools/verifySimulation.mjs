@@ -1334,6 +1334,13 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 			'the production bomb context bridges into the same scene dispatcher');
 		assert.ok(bombs.includes('if (context.applyCharacterDamage) {') && bombs.includes('context.applyCharacterDamage(target, amount, {'),
 			'ordinary bomb detonation uses the shared dispatcher when scene-backed');
+		assert.ok(scene.includes('const dot = tickBuffs(monster, this.depth);')
+			&& scene.includes("this.applyCharacterDamage(monster, dotDealt, { pierceArmor: true, cause: 'foe', skipAura: true });"),
+			'monster actor DoT bypasses armor but uses the shared Char.damage tail');
+		assert.ok(scene.includes("this.applyCharacterDamage(monster, ooze, { pierceArmor: true, cause: 'foe', skipAura: true });"),
+			'the monster Ooze actor tick uses the same shared damage tail');
+		assert.ok(panels.includes('damage = absorbCreatureShields(c, damage, this.ascendedTurns > 0);'),
+			'the shared non-hero path applies Java priority-ordered ShieldBuff pools before HP');
 	});
 	check('Ascension beckons distant enemies and hastes idle ones', () => {
 		//`AscensionChallenge.beckonEnemies()`/`enemySpeedModifier()` (tag `v3.3.8`): at 2+

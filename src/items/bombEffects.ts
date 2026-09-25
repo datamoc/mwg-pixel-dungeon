@@ -67,6 +67,8 @@ export interface BombEffectsContext {
 export interface CharacterDamageOptions {
 	readonly pierceArmor: boolean;
 	readonly cause: 'foe' | 'fire';
+	/** Direct `Char.damage()` paths bypass `Char.attack()`'s Aura reduction (`Char.java:465-469`). */
+	readonly skipAura?: boolean;
 	readonly onHeroDeath?: () => void;
 	readonly onNonWeaponBossDamage?: (target: Creature) => void;
 }

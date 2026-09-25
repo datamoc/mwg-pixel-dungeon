@@ -37,7 +37,7 @@ import { Cat, randomUsingDefaults } from '../../items/generator';
 import { MWL_WAND_WARD_RULES } from '../../mwlContent';
 import { FLOOR, SOLID, TILE, WALL, WATER } from '../../dungeonConstants';
 import { STARVING } from '../../simulation/hunger';
-import { NEGATIVE_BUFFS, absorbShield, addBuff, reigniteBuff, rollHit, setAscensionActive, setBleeding, tickBuffs, type BuffId, type Creature, type Step } from '../../combat';
+import { NEGATIVE_BUFFS, addBuff, reigniteBuff, rollHit, setAscensionActive, setBleeding, tickBuffs, type BuffId, type Creature, type Step } from '../../combat';
 import { BOSSES, IMMOVABLE_KINDS } from '../../monsters';
 import { absorbCreatureShields } from '../../simulation/allyShields';
 
@@ -968,9 +968,8 @@ export const actorTurnsHazardsMethods = {
 			//faithful common denominator for the compact scene AI.
 			const dot = tickBuffs(monster, this.depth);
 			if (dot > 0) {
-				monster.hp -= dot;
-				this.showDamage(monster, dot);
-				if (monster.hp <= 0) { this.kill(monster); return; }
+				this.applyCharacterDamage(monster, dot, { pierceArmor: true, cause: 'foe', skipAura: true });
+				if (monster.hp <= 0) return;
 			}
 			if (Roguelike.chebyshevDistance(monster, this.hero) === 1) this.attack(monster, this.hero);
 			else {
@@ -1116,41 +1115,20 @@ export const actorTurnsHazardsMethods = {
 		//`Char.damage()` negates through `isInvulnerable()`, which a `SpectatorFreeze`
 		//carries - frozen spectators take no DoT damage (the roll is still spent, as
 		//Java's own negated `damage()` call would spend it).
-		let dotDealt = soiledBurningOnly || monster.buffs['spectatorFreeze'] !== undefined ? 0 : dot;
+		const dotDealt = soiledBurningOnly || monster.buffs['spectatorFreeze'] !== undefined ? 0 : dot;
 		//`Challenge.DuelParticipant.act()`'s pairing half for the mob side, checked on
 		//every mob turn right after its own buffs tick (Java buffs act independently of
 		//the char's action gates, so this runs even for a paralyzed duelist). The hero
 		//side runs from `spendHeroTurn`.
 		this.tickDuelParticipant(monster);
-		//DKBarrier absorbs on every `Char.damage()` path - same block as the attack
-		//tail (see the trap-blast seam's own copy).
-		if (monster.kind === 'king' && (monster.kingShield ?? 0) > 0) {
-			const absorbed = absorbShield(monster.kingShield ?? 0, dotDealt);
-			monster.kingShield = absorbed.shield;
-			dotDealt = absorbed.damage;
-		}
 		if (monsterWasDrowsy && monster.buffs['drowsy'] === undefined) {
 			//Drowsy.act() attaches MagicalSleep after five turns; monsters have a native
 			//sleeping state here, so this transition needs no second buff.
 			monster.sleeping = true;
 		}
-		if (dotDealt > 0 && !(monster.kind === 'yog' && this.yogShielded(monster)) && !(monster.kind === 'yogFist' && this.guardFist(monster))) {
-			const preHp = monster.hp;
-			monster.hp -= dotDealt;
-			this.lockedFloorBossDamage(monster, dotDealt, preHp - monster.hp);
-			if (monster.kind === 'tengu') this.clampTenguBracket(monster, preHp);
-			if (monster.kind === 'yog' && monster.hp > 0) this.yogDamageHook(monster, preHp);
-			if (monster.kind === 'king' && monster.hp > 0 && (monster.kingPhase ?? 1) === 1) {
-				monster.kingSummonCd = (monster.kingSummonCd ?? 0) - dotDealt / 8;
-				monster.kingAbilityCd = (monster.kingAbilityCd ?? 0) - dotDealt / 8;
-			}
-			if (monster.kind === 'king' && monster.hp > 0) this.kingDamageHook(monster);
-			this.showDamage(monster, dotDealt);
-			if (monster.hp <= 0) {
-				this.kill(monster);
-				return;
-			}
-			if (monster.kind === 'tengu') this.tenguBracketJump(monster, preHp);
+		if (dotDealt > 0) {
+			this.applyCharacterDamage(monster, dotDealt, { pierceArmor: true, cause: 'foe', skipAura: true });
+			if (monster.hp <= 0) return;
 		}
 		//`Sungrass.Health.act()` / `Earthroot.Armor.act()` for a mob pool: the sungrass pool
 		//pays out its gradual heal on the owner's own turn (like every other DoT tick above),
@@ -1192,12 +1170,8 @@ export const actorTurnsHazardsMethods = {
 			const ooze = this.depth > 5 ? 1 + Math.floor(this.depth / 5)
 				: this.depth === 5 ? 1 : Random.chance(0.5) ? 1 : 0;
 			if (ooze > 0) {
-				monster.hp -= ooze;
-				this.showDamage(monster, ooze);
-				if (monster.hp <= 0) {
-					this.kill(monster);
-					return;
-				}
+				this.applyCharacterDamage(monster, ooze, { pierceArmor: true, cause: 'foe', skipAura: true });
+				if (monster.hp <= 0) return;
 			}
 			if (this.level.get(monster.x, monster.y) === WATER && !monster.flying) delete monster.buffs['ooze'];
 		}
