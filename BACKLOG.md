@@ -87,6 +87,15 @@ Moved 2026-09-24 on the user's decision: these eight items were the only open bo
       pair stays inline: the riposte runs between cue and log). The hit/damage roll pair
       already routes through runAttackResolution, so the remaining body is the
       damage-multiplier/proc chain.
+      **Progress 2026-09-25 (T61 slices 3-17):** the rest of the landed-hit
+      pipeline followed - damage, affix arming, talent bonuses, affix procs,
+      defender glyphs (with a consume channel), hit prelude, post-curve absorbs,
+      hero defense, boss soaks, executes + HP write, boss hooks, post-hit
+      presentation, on-hit dispatch, riders, death resolution - each in a named
+      seam on the scene with source-level pins in tools/verifyCombat.mjs.
+      attack() reads as gates plus a seam pipeline, ~1100 lines to ~300; RNG
+      order and stale reads (charm pairing, phantom pairing) preserved verbatim.
+      Browser live-verify still owed (NLV).
        **Complexity: L.**
 
 ## B8. from ROADMAP 11. Architecture refactor toward the v3 target
