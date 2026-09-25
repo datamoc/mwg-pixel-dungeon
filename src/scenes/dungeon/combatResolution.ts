@@ -1176,6 +1176,138 @@ export const combatResolutionMethods = {
 		this.abilityDirectedBonus = 0;
 		return this.genericProcMultiplier() + bonus;
 	},
+/**
+	 * The three pre-armor `Weapon.proc()` curse branches (`Polarized.java`,
+	 * `Sacrificial.java`, `Displacing.java` under `items/weapon/curses/`, tag `v3.3.8`):
+	 * Polarized flips the hit between 1.5x and an outright whiff, Sacrificial bleeds the
+	 * wielder, Displacing teleports the defender. Shockwave's striking-wave hits run them
+	 * through this mirror (`Shockwave.java` 130: `damage = hero.attackProc(ch, damage)` runs
+	 * `wep.proc`, i.e. every enchantment, not just the post-hit half `heroOnHit` owns). A
+	 * deliberate second copy rather than a shared call: `attack()`'s own branches are
+	 * mid-refactor toward delegated `ShadowAlly` swings (uncommitted at T134 time), and
+	 * sharing one body would entangle the two landings - reunite them once that settles.
+	 * The `gearAttacker` parameter keeps the same shape so the reunion is mechanical.
+	 * Returns the possibly-reassigned damage.
+	 */
+	cursedWeaponPreProcs(this: DungeonScene, attacker: Creature, defender: Creature, damage: number, gearAttacker: boolean): number {
+		//Polarized.proc(): real chance is a flat 1/2 - on success it amplifies to 1.5x, on
+		//failure it zeroes the hit outright (a coin-flip between "hits hard" and "whiffs"),
+		//reproduced exactly since it needs no subsystem beyond the damage value itself.
+		if (gearAttacker && this.weaponAffix === 'polarized') {
+			damage = Random.chance(0.5) ? Math.round(damage * 1.5) : 0;
+		}
+		//Sacrificial.proc(): Java rolls 1/10 x Arcana, then rolls a second time against
+		//(HP/HT)^2 * HT / 8 and applies Bleeding at max(1, bleedAmt). The first draft
+		//mistakenly used missing HP and a poison stand-in; both were wrong.
+		if (gearAttacker && this.weaponAffix === 'sacrificial' && Random.chance((1 / 10) * this.enchantProcMultiplier())) {
+			const bleedAmount = (attacker.hp / attacker.maxHp) ** 2 * attacker.maxHp / 8;
+			if (Random.chance(bleedAmount)) setBleeding(attacker, Math.max(1, bleedAmount), 'sacrificial');
+		}
+		//Displacing.proc(): real chance is 1/12 x arcana, skipped against Java's IMMOVABLE targets.
+		//Reuses the same free-cell search this file's Displacement armor curse already
+		//uses in place of Java's ScrollOfTeleportation.teleportChar. Java also resets a fleeing
+		//HUNTING mob back to WANDERING; this port has no such explicit state to reset, but the
+		//next monster-turn FOV recompute (`seesHero`) naturally loses track once far enough away.
+		if (gearAttacker && this.weaponAffix === 'displacing' && !defender.isNPC
+			&& (defender.kind === undefined || !IMMOVABLE_KINDS.has(defender.kind))
+			&& Random.chance((1 / 12) * this.enchantProcMultiplier())) {
+			const destination = this.randomFreeCell(defender);
+			if (destination) {
+				const displaceFrom = { x: defender.x, y: defender.y };
+				this.moveTo(defender, destination);
+				this.playTeleportAppear(displaceFrom, destination, defender);
+			}
+		}
+		return damage;
+	},
+
+	/**
+	 * `Friendly.proc()` (`items/weapon/curses/Friendly.java`, tag `v3.3.8`): an
+	 * already-charmed attacker deals zero damage to the recorded object; a fresh proc
+	 * attaches Charm.DURATION (10) to the attacker and DURATION/2 (5) to the defender,
+	 * records each object's stable id, and makes the defender ignore its next hit (the
+	 * consume site stays in `attack()` - it is `Char.damage()` ordering, not `Weapon.proc`).
+	 * Mirror for Shockwave's striking-wave hits, same deliberate second copy as above.
+	 * Returns the possibly-reassigned damage.
+	 */
+	friendlyCurseProc(this: DungeonScene, attacker: Creature, defender: Creature, damage: number, gearAttacker: boolean): number {
+		if (gearAttacker && this.weaponAffix === 'friendly') {
+			if (attacker.buffs['charm'] !== undefined && this.charmTargets.get(attacker.id) === defender.id) damage = 0;
+			if (Random.chance((1 / 10) * this.enchantProcMultiplier())) {
+				addBuff(attacker, 'charm');
+				this.charmTargets.set(attacker.id, defender.id);
+				addBuff(defender, 'charm');
+				this.charmTargets.set(defender.id, attacker.id);
+				this.charmIgnoreNextHit.add(defender.id);
+			}
+		}
+		return damage;
+	},
+
+	/**
+	 * `Corrupting.proc()` (`items/weapon/enchantments/Corrupting.java`, tag `v3.3.8`):
+	 * a weapon proc, so Java runs it in `attackProc()` - before `enemy.damage()`, and
+	 * therefore on the pre-`damage()`-override value. Its `damage >= defender.HP` guard
+	 * must see that value: a hit that only reaches lethal after the defender's own
+	 * curves cut it down (a Slime's 4+/5 soft cap) still counts as lethal in Java. A
+	 * lethal hit converts a living Mob instead of killing it - the port's ally model
+	 * already provides the permanent controlled actor shape, so keep the target, fully
+	 * heal it, clear negative buffs, and mark it as an ally. Mirror for Shockwave's
+	 * striking-wave hits, same deliberate second copy as above. Returns the
+	 * possibly-reassigned damage (0 on conversion).
+	 */
+	corruptingEnchantProc(this: DungeonScene, attacker: Creature, defender: Creature, damage: number, gearAttacker: boolean): number {
+		if (gearAttacker && (this.weaponAffix === 'corrupting' || this.unstableDelegated === 'corrupting') && damage >= defender.hp
+			&& !defender.isHero && !defender.isNPC && !defender.isAlly && Random.chance(
+			((Math.max(0, this.degradedLevel(this.weaponLevel)) + 5) / (Math.max(0, this.degradedLevel(this.weaponLevel)) + 25))
+				* this.enchantProcMultiplier())) {
+			defender.hp = defender.maxHp;
+			for (const buff of NEGATIVE_BUFFS) delete defender.buffs[buff];
+			this.sprite(defender);
+			defender.isAlly = true;
+			defender.allyKind = 'mirror';
+			defender.sleeping = false;
+			damage = 0;
+			this.say(t('port.log.corrupting', { target: defender.name }), 'positive');
+		}
+		return damage;
+	},
+
+	/**
+	 * `Grim.proc()` defers through `GrimTracker`, resolved inside `Char.damage()`
+	 * (tag `v3.3.8`) - i.e. after the hit lands, against the defender's surviving HP:
+	 * `(0.5 + .05*buffedWeaponLevel) * Arcana`, scaled by the square of the missing-HP
+	 * fraction, dealing `round(currentHP)` extra (halved for statues, never against
+	 * bosses or MagicImmune defenders - see the immunities/resistances below). Returns
+	 * the bonus execute damage WITHOUT applying it, so Shockwave can route it back
+	 * through `applyAbilityDamage` for presentation and death bookkeeping after the hit
+	 * lands (Java's deferred `GrimTracker` inside `Char.damage()`).
+	 */
+	grimExecuteBonus(this: DungeonScene, defender: Creature, gearAttacker: boolean): number {
+		//`Grim` is one of `AntiMagic.RESISTS`' listed enchant classes: `Char.damage()` zeroes any
+		//hit whose source class is in that set for a MagicImmune defender (an AntiMagic champion),
+		//so the proc's bonus execute damage must not apply to one either.
+		//`Grim.proc()` returns early when the defender `isImmune(Grim.class)` (`Grim.java`, tag
+		//`v3.3.8`), and `Char.Property.BOSS` lists `Grim` in its immunities (`Char.java:1364`) -
+		//so bosses never suffer the execute (minibosses carry `MINIBOSS`, whose sets are empty,
+		//and stay eligible). The execute itself is `round(HP*resist(Grim.class))`
+		//(`Char.damage()`, tag `v3.3.8`), and `Statue` lists `Grim` in its resistances
+		//(`Statue.java`, tag `v3.3.8` - inherited by `ArmoredStatue`), each halving it - so a
+		//statue takes half the execute, not the full `round(currentHP)`.
+		if (gearAttacker && (this.weaponAffix === 'grim' || this.unstableDelegated === 'grim') && defender.hp > 0 && !defender.magicImmune && defender.boss !== true) {
+			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
+			const maxChance = (0.5 + 0.05 * level) * this.enchantProcMultiplier();
+			const missingFraction = (defender.maxHp - defender.hp) / defender.maxHp;
+			if (Random.chance(maxChance * missingFraction * missingFraction)) {
+				const resisted = defender.kind === 'statue' || defender.kind === 'armoredStatue';
+				return resisted ? Math.round(defender.hp * 0.5) : Math.round(defender.hp);
+			}
+		}
+		return 0;
+	},
+
+	
+
 
 	/** First free cell at the corpse or beside it for a Lucky bonus heap - Java lets the
 	 * `Heap` stack the drop onto the mob's own cell; this port's one-item-per-cell rule

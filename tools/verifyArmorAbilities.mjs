@@ -802,6 +802,51 @@ export function verifyArmorAbilities(require, check) {
 		assert.doesNotMatch(ench[1], /abilityStrikingWaveBonus = 0/,
 			'Java never detaches it in this read - activateShockwave owns the clear');
 	});
+	check('Shockwave striking-wave hits run every weapon enchantment, like attackProc', () => {
+		//`Shockwave.java` 130 runs `damage = hero.attackProc(ch, damage)` on a won
+		//`Int(10) < 3*points` roll, and `Hero.attackProc` runs `wep.proc` - every
+		//enchantment, not just the post-hit half `heroOnHit` owns. The five pre-damage
+		//curse/enchantment branches (Polarized/Sacrificial/Displacing/Friendly/
+		//Corrupting) run through dedicated mirrors, and `Grim` resolves after the hit
+		//lands (Java's deferred `GrimTracker` inside `Char.damage()`), routed back
+		//through `applyAbilityDamage`. Deliberately mirrors rather than shared calls:
+		//`attack()`'s own branches are mid-refactor toward delegated `ShadowAlly` swings
+		//(uncommitted at T134 time) - reunite once that settles. Pinned at source
+		//level: the scene cannot load in this harness.
+		const wave = readFileSync(new URL('../src/scenes/dungeon/hero/armorAbilityUse.ts', import.meta.url), 'utf8');
+		const body = /	activateShockwave\(this: DungeonScene[^)]*\)[^{]*\{([\s\S]*?)\n\t\},/.exec(wave);
+		assert.ok(body, 'activateShockwave still exists');
+		const hit = body[1].indexOf('this.heroOnHit(this.hero, caught, damage)');
+		const pre = body[1].indexOf('this.cursedWeaponPreProcs(this.hero, caught, damage, true)');
+		const friendly = body[1].indexOf('this.friendlyCurseProc(this.hero, caught, damage, true)');
+		const corrupting = body[1].indexOf('this.corruptingEnchantProc(this.hero, caught, damage, true)');
+		const land = body[1].indexOf('this.applyAbilityDamage(caught, damage)');
+		const grim = body[1].indexOf('this.grimExecuteBonus(caught, true)');
+		for (const [name, at] of [['heroOnHit', hit], ['cursedWeaponPreProcs', pre], ['friendlyCurseProc', friendly], ['corruptingEnchantProc', corrupting], ['applyAbilityDamage', land], ['grimExecuteBonus', grim]]) {
+			assert.ok(at >= 0, `the cone must still call ${name}`);
+		}
+		assert.ok(hit < pre && pre < land,
+			'the pre-damage procs must run inside the striking-wave gate, after heroOnHit and before the damage lands');
+		assert.ok(land < grim,
+			'Grim must resolve after the hit lands, like the deferred GrimTracker');
+		assert.match(body[1], /if \(procs && caught\.hp > 0\)/,
+			'the execute must see the surviving HP, as in attack()');
+		const res = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
+		//The mirrors must carry the same gates as `attack()`'s own branches, so the
+		//cone resolves what an ordinary swing resolves.
+		for (const [method, gate] of [
+			['cursedWeaponPreProcs', "this.weaponAffix === 'polarized'"],
+			['cursedWeaponPreProcs', "this.weaponAffix === 'sacrificial'"],
+			['cursedWeaponPreProcs', "this.weaponAffix === 'displacing'"],
+			['friendlyCurseProc', "this.weaponAffix === 'friendly'"],
+			['corruptingEnchantProc', "this.weaponAffix === 'corrupting'"],
+			['grimExecuteBonus', "this.weaponAffix === 'grim'"],
+		]) {
+			const m = new RegExp(`	${method}\\(this: DungeonScene[^)]*\\)[^{]*\\{([\\s\\S]*?)\\n	\\},`).exec(res);
+			assert.ok(m, `${method} still exists`);
+			assert.ok(m[1].includes(gate), `${method} must still gate on ${gate}`);
+		}
+	});
 	check('the AfterImage decoy takes no buffs and no direct blob damage', () => {
 		//`Feint.AfterImage` (tag `v3.3.8`): `add(Buff)` returns false unconditionally and the
 		//class carries the whole `BlobImmunity` set - the decoy exists to eat one attack, not

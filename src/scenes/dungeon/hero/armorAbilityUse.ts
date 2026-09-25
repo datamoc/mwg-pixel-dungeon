@@ -706,8 +706,26 @@ export const armorAbilityUseMethods = {
 				//`damage = hero.attackProc(ch, damage)`: the real attack-proc chain, i.e. this port's
 				//`heroOnHit`, and the Gladiator's combo counter (`Shockwave.java` 130-132).
 				this.heroOnHit(this.hero, caught, damage);
+				//`attackProc` also runs `wep.proc` - every enchantment, not just the post-hit
+				//half `heroOnHit` owns. The five pre-damage branches are dedicated mirrors
+				//(`cursedWeaponPreProcs`, `friendlyCurseProc`, `corruptingEnchantProc`),
+				//shaped like `attack()`; `Grim` resolves after the hit instead
+				//(Java's deferred `GrimTracker`).
+				damage = this.cursedWeaponPreProcs(this.hero, caught, damage, true);
+				damage = this.friendlyCurseProc(this.hero, caught, damage, true);
+				damage = this.corruptingEnchantProc(this.hero, caught, damage, true);
 			}
 			this.applyAbilityDamage(caught, damage);
+			//Java's deferred `GrimTracker` resolves inside `ch.damage()` - after the hit
+			//lands, against the surviving HP - so the execute rolls here, routed back
+			//through `applyAbilityDamage` for presentation and death bookkeeping, ahead
+			//of the Gladiator combo below (Java's `Combo.hit` runs after `damage()` returns).
+			//Simplification: the blast seam applies its Doom amp and DKBarrier absorb to
+			//the execute, where Java's in-`damage()` execute bypasses both.
+			if (procs && caught.hp > 0) {
+				const grimExtra = this.grimExecuteBonus(caught, true);
+				if (grimExtra > 0) this.applyAbilityDamage(caught, grimExtra);
+			}
 			//`Buff.affect(hero, Combo.class).hit(ch)` for a Gladiator, after the damage (`Shockwave.java` 130-132).
 			if (procs) this.comboHit(caught);
 			if (caught.hp > 0) {
