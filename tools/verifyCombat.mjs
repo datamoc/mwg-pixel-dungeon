@@ -914,5 +914,9 @@ export function verifyCombat(require, check) {
 			'the on-hit dispatch lives in its own seam');
 		assert.ok(scene.includes('this.runOnHitHooks(attacker, defender, damage);'),
 			'a landed hit dispatches through the on-hit seam');
+		assert.ok(scene.includes('runHitRiders(this: DungeonScene, attacker: Creature, defender: Creature, damage: number, charmedForTarget: boolean): void'),
+			'the post-hit riders live in their own seam');
+		assert.ok(scene.includes('this.runHitRiders(attacker, defender, damage, charmedForTarget);'),
+			'a landed hit rides through the rider seam');
 	});
 }

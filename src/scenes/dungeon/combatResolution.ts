@@ -608,6 +608,102 @@ export const combatResolutionMethods = {
 	 * bonus, hero/mob on-hit hooks, Berserker rage, and the shock-elemental arc.
 	 * Verbatim move; no early exits, so nothing returns.
 	 */
+
+	/**
+	 * T61 slice 16: the post-hit riders of a landed `attack()` - the statue
+	 * enchant, crossbow knockback, staged ability riders, charm decay, the
+	 * Repulsion shove, and the crystal-mimic reposition. Verbatim move.
+	 */
+	runHitRiders(this: DungeonScene, attacker: Creature, defender: Creature, damage: number, charmedForTarget: boolean): void {
+			if (attacker.statueEnchant) this.statueEnchantProc(attacker, defender, damage);
+			//Weapon-ability riders staged by `useWeaponAbility`: heavy blow dazes 5 turns
+			//(`ability_desc`: "dazes for 5 turns, reducing accuracy and evasion by 50%" - the
+			//port's shared `daze`), harvest bleeds the stated fraction of the dealt damage, and
+			//Spike knocks the target back (the port's straight shove; lunge only steps the hero - its descs mention no knockback). Consumed on the hit.
+			//`Crossbow` melee with an armed charged shot knocks back 4 and disarms on the
+			//hit, kill or not (`Crossbow.proc`, tag `v3.3.8` - no alive check there either).
+			if (attacker === this.hero && this.chargedShotArmed && this.weaponMeleeKey() === 'crossbow') {
+				const dx = Math.sign(defender.x - this.hero.x);
+				const dy = Math.sign(defender.y - this.hero.y);
+				for (let step = 0; step < 4; step++) {
+					const next = { x: defender.x + dx, y: defender.y + dy };
+					if ((dx === 0 && dy === 0) || !this.level.passable(next.x, next.y) || this.creatureAt(next.x, next.y)) break;
+					this.moveTo(defender, next);
+				}
+				this.chargedShotArmed = false;
+			}
+			if (attacker === this.hero && defender.hp > 0) {
+				if (this.abilityDazeNext) addBuff(defender, 'daze', 5);
+				//Harvest replaces the strike's damage with its flat amount and applies that
+				//same amount as bleeding (`Char.damage` with `HarvestBleedTracker`, tag
+				//`v3.3.8`): `setBleeding` retains the strongest active bleed, matching
+				//`Bleeding.set`. Consumed on the hit (a missed strike keeps it for the next
+				//landed one - see the resolver).
+				if (this.abilityHarvestNext > 0) {
+					setBleeding(defender, this.abilityHarvestNext, 'harvestBleed');
+					this.abilityHarvestNext = 0;
+				}
+				if (this.abilityKnockbackNext) {
+					//`Glaive`/`Spear` spike knockback: the port's established straight shove
+					//(see Heroic Leap above), one cell directly away from the hero.
+					const dx = Math.sign(defender.x - this.hero.x);
+					const dy = Math.sign(defender.y - this.hero.y);
+					const next = { x: defender.x + dx, y: defender.y + dy };
+					if ((dx !== 0 || dy !== 0) && this.level.passable(next.x, next.y) && !this.creatureAt(next.x, next.y)) {
+						this.moveTo(defender, next);
+					}
+				}
+			}
+			this.abilityDazeNext = false;
+			this.abilityKnockbackNext = false;
+			//Charm.recover() spends five turns when the charmed actor reaches its
+			//recorded object; preserve that shortens-on-contact behavior for both
+			//Affection and Friendly charms.
+			if (charmedForTarget && attacker.buffs.charm !== undefined) {
+				attacker.buffs.charm -= 5;
+				if (attacker.buffs.charm <= 0) {
+					delete attacker.buffs.charm;
+					this.charmTargets.delete(attacker.id);
+				}
+			}
+			//Repulsion.proc() (items/armor/glyphs/Repulsion.java, tag 4.0.0-beta): an
+			//adjacent attacker is pushed directly away from the armor wearer with
+			//round(2 * max(1, (level+1)/(level+5) * Arcana)). The port has no Ballistica/
+			//WandOfBlastWave primitive, so the equivalent existing straight shove is used;
+			//it still stops at walls/occupants and lets moveTo apply flying/chasm and piranha
+			//post-move rules. This is deliberately after damage, while Java's armor proc is
+			//inside Char.damage(), because the observable result is the same hit plus displacement.
+			if (defender.isHero && ((this.armorGlyphActive() && this.armorGlyph === 'repulsion') || this.trinityBodyGlyphIs('repulsion')) && attacker.hp > 0
+				&& Roguelike.chebyshevDistance(attacker, defender) <= 1) {
+				const level = this.degradedLevel(this.armorLevel);
+				const procChance = ((level + 1) / (level + 5)) * this.armorProcMultiplier(defender);
+				if (Random.chance(procChance)) {
+					const power = Math.round(2 * Math.max(1, procChance));
+					const dx = Math.sign(attacker.x - defender.x);
+					const dy = Math.sign(attacker.y - defender.y);
+					for (let step = 0; step < power; step++) {
+						const next = { x: attacker.x + dx, y: attacker.y + dy };
+						//a flying attacker may be shoved out over a pit (Java: `avoid`, not `passable`),
+						//but not into a cell Java forced solid - see `canStepOnto`
+						if ((!this.canStepOnto(next.x, next.y) && !(attacker.flying && this.isChasmCell(next.x, next.y))) || this.creatureAt(next.x, next.y)) break;
+						this.moveTo(attacker, next);
+						if (attacker.hp <= 0) break;
+					}
+				}
+			}
+			// CrystalMimic.attackProc(): after its crystal-chest reveal it repositions the
+			// struck hero to a neighbouring free cell instead of dealing bonus damage.
+			if (attacker.kind === 'crystalMimic' && defender.isHero && defender.hp > 0) {
+				const candidates = Roguelike.neighbourOffsets(8)
+					.map(([dx, dy]) => ({ x: defender.x + dx, y: defender.y + dy }))
+					.filter((at) => this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y));
+				const at = Random.element(candidates);
+				if (at) {
+					this.moveTo(this.hero, at);
+					this.say(t('port.log.mimicdisplace'), 'warning');
+				}
+			}
+	},
 	runOnHitHooks(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): void {
 			//`MirrorImage.attackProc()` (tag `v3.3.8`): the image's own landed hits deal the
 			//holy bonus while the hero's buff is up. Arcana reads 1.0 on an image (no rings),
@@ -1133,94 +1229,7 @@ export const combatResolutionMethods = {
 		//Illuminated already detached up front at the Searing Light site (any attacker,
 		//like Java's `Char.attack()`), so there is nothing left to consume here.
 		this.runOnHitHooks(attacker, defender, damage);
-		if (attacker.statueEnchant) this.statueEnchantProc(attacker, defender, damage);
-		//Weapon-ability riders staged by `useWeaponAbility`: heavy blow dazes 5 turns
-		//(`ability_desc`: "dazes for 5 turns, reducing accuracy and evasion by 50%" - the
-		//port's shared `daze`), harvest bleeds the stated fraction of the dealt damage, and
-		//Spike knocks the target back (the port's straight shove; lunge only steps the hero - its descs mention no knockback). Consumed on the hit.
-		//`Crossbow` melee with an armed charged shot knocks back 4 and disarms on the
-		//hit, kill or not (`Crossbow.proc`, tag `v3.3.8` - no alive check there either).
-		if (attacker === this.hero && this.chargedShotArmed && this.weaponMeleeKey() === 'crossbow') {
-			const dx = Math.sign(defender.x - this.hero.x);
-			const dy = Math.sign(defender.y - this.hero.y);
-			for (let step = 0; step < 4; step++) {
-				const next = { x: defender.x + dx, y: defender.y + dy };
-				if ((dx === 0 && dy === 0) || !this.level.passable(next.x, next.y) || this.creatureAt(next.x, next.y)) break;
-				this.moveTo(defender, next);
-			}
-			this.chargedShotArmed = false;
-		}
-		if (attacker === this.hero && defender.hp > 0) {
-			if (this.abilityDazeNext) addBuff(defender, 'daze', 5);
-			//Harvest replaces the strike's damage with its flat amount and applies that
-			//same amount as bleeding (`Char.damage` with `HarvestBleedTracker`, tag
-			//`v3.3.8`): `setBleeding` retains the strongest active bleed, matching
-			//`Bleeding.set`. Consumed on the hit (a missed strike keeps it for the next
-			//landed one - see the resolver).
-			if (this.abilityHarvestNext > 0) {
-				setBleeding(defender, this.abilityHarvestNext, 'harvestBleed');
-				this.abilityHarvestNext = 0;
-			}
-			if (this.abilityKnockbackNext) {
-				//`Glaive`/`Spear` spike knockback: the port's established straight shove
-				//(see Heroic Leap above), one cell directly away from the hero.
-				const dx = Math.sign(defender.x - this.hero.x);
-				const dy = Math.sign(defender.y - this.hero.y);
-				const next = { x: defender.x + dx, y: defender.y + dy };
-				if ((dx !== 0 || dy !== 0) && this.level.passable(next.x, next.y) && !this.creatureAt(next.x, next.y)) {
-					this.moveTo(defender, next);
-				}
-			}
-		}
-		this.abilityDazeNext = false;
-		this.abilityKnockbackNext = false;
-		//Charm.recover() spends five turns when the charmed actor reaches its
-		//recorded object; preserve that shortens-on-contact behavior for both
-		//Affection and Friendly charms.
-		if (charmedForTarget && attacker.buffs.charm !== undefined) {
-			attacker.buffs.charm -= 5;
-			if (attacker.buffs.charm <= 0) {
-				delete attacker.buffs.charm;
-				this.charmTargets.delete(attacker.id);
-			}
-		}
-		//Repulsion.proc() (items/armor/glyphs/Repulsion.java, tag 4.0.0-beta): an
-		//adjacent attacker is pushed directly away from the armor wearer with
-		//round(2 * max(1, (level+1)/(level+5) * Arcana)). The port has no Ballistica/
-		//WandOfBlastWave primitive, so the equivalent existing straight shove is used;
-		//it still stops at walls/occupants and lets moveTo apply flying/chasm and piranha
-		//post-move rules. This is deliberately after damage, while Java's armor proc is
-		//inside Char.damage(), because the observable result is the same hit plus displacement.
-		if (defender.isHero && ((this.armorGlyphActive() && this.armorGlyph === 'repulsion') || this.trinityBodyGlyphIs('repulsion')) && attacker.hp > 0
-			&& Roguelike.chebyshevDistance(attacker, defender) <= 1) {
-			const level = this.degradedLevel(this.armorLevel);
-			const procChance = ((level + 1) / (level + 5)) * this.armorProcMultiplier(defender);
-			if (Random.chance(procChance)) {
-				const power = Math.round(2 * Math.max(1, procChance));
-				const dx = Math.sign(attacker.x - defender.x);
-				const dy = Math.sign(attacker.y - defender.y);
-				for (let step = 0; step < power; step++) {
-					const next = { x: attacker.x + dx, y: attacker.y + dy };
-					//a flying attacker may be shoved out over a pit (Java: `avoid`, not `passable`),
-					//but not into a cell Java forced solid - see `canStepOnto`
-					if ((!this.canStepOnto(next.x, next.y) && !(attacker.flying && this.isChasmCell(next.x, next.y))) || this.creatureAt(next.x, next.y)) break;
-					this.moveTo(attacker, next);
-					if (attacker.hp <= 0) break;
-				}
-			}
-		}
-		// CrystalMimic.attackProc(): after its crystal-chest reveal it repositions the
-		// struck hero to a neighbouring free cell instead of dealing bonus damage.
-		if (attacker.kind === 'crystalMimic' && defender.isHero && defender.hp > 0) {
-			const candidates = Roguelike.neighbourOffsets(8)
-				.map(([dx, dy]) => ({ x: defender.x + dx, y: defender.y + dy }))
-				.filter((at) => this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y));
-			const at = Random.element(candidates);
-			if (at) {
-				this.moveTo(this.hero, at);
-				this.say(t('port.log.mimicdisplace'), 'warning');
-			}
-		}
+		this.runHitRiders(attacker, defender, damage, charmedForTarget);
 		if (defender.hp <= 0 && defender.kind === 'ghoul') this.ghoulDown(defender);
 		//DwarfKing P1: taken damage accelerates both cooldowns (`-= taken/8`).
 		if (defender.kind === 'king' && (defender.kingPhase ?? 1) === 1 && defender.hp > 0) {
