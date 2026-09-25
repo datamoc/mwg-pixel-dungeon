@@ -898,5 +898,9 @@ export function verifyCombat(require, check) {
 			'the boss soaks live in their own seam');
 		assert.ok(scene.includes('const soakOut = this.applyBossSoaks(defender, damage);'),
 			'a landed hit soaks through the boss seam');
+		assert.ok(scene.includes('applyExecutesAndDamage(this: DungeonScene, attacker: Creature, defender: Creature, phantomRemote: boolean, damage: number): { damage: number; heroExecuted: boolean; finished: boolean }'),
+			'the executes and HP write live in their own seam');
+		assert.ok(scene.includes('const execOut = this.applyExecutesAndDamage(attacker, defender, phantomRemote, damage);'),
+			'a landed hit executes through the damage seam');
 	});
 }

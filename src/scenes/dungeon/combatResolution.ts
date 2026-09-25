@@ -558,6 +558,129 @@ export const combatResolutionMethods = {
 	},
 
 	/**
+	 * T61 slice 12: the executes and damage application of a landed `attack()` -
+	 * Combined/Assassin lethality, the shield absorb, the HP write, the fade
+	 * transitions, and Grim. Verbatim move; a fade reports `finished` instead of
+	 * returning out of `attack()` directly, and the execute flag returns alongside
+	 * the damage because the Brute-revive branch reads it far below.
+	 */
+	applyExecutesAndDamage(this: DungeonScene, attacker: Creature, defender: Creature, phantomRemote: boolean, damage: number): { damage: number; heroExecuted: boolean; finished: boolean } {
+			//The execute mechanics are Java's last step in `attack()`: they run after
+			//`enemy.damage()` has applied everything above - the `damage()` overrides (including
+			//`SoiledFist`'s grass reduction just above), the shield pools, and the HP bookkeeping -
+			//and they set the target's HP to zero outright rather than routing a damage value
+			//through steps that could still reduce it. The `defender.hp - damage > 0` guard mirrors
+			//Java's own `enemy.isAlive()` check after `damage()` returned: a hit that already kills
+			//does not also report an execution.
+			//
+			//Java's two mechanics are now both real. `Preparation.canKO` (`Char.java` 524-539) fires
+			//only while the attacker's Preparation buff is up - i.e. only out of invisibility - and
+			//tests the target's HP against `AttackLevel.KOThreshold()`'s table, indexed by the level
+			//reached (1/3/5/9 turns invisible) and the `enhanced_lethality` rank, with a strict `<`
+			//and one fifth of the threshold for a `BOSS`/`MINIBOSS`. `CombinedLethality`
+			//(`Char.java` 541-561) excludes those two properties outright and uses
+			//`<= 0.4*points/3`. Both mechanics test
+			//the HP the hit actually leaves: every reduction above (curves, shields, pools, the
+			//grass cut) lands in `damage` before this point, so `defender.hp - damage` is what the
+			//`defender.hp -= damage` below writes - there is no pre-shield prediction here. Both
+			//also require the hit to have left the target alive (`predictedHp > 0`, Java's own
+			//`enemy.isAlive()` check after `damage()` returned): a hit that already kills reports
+			//the kill below, not an execution.
+			//
+			//`CombinedLethality`'s arming gate is Java's own too (`Char.java` 541-542): the
+			//tracker's weapon must differ from the attacking weapon (`!=`, instance identity),
+			//the attacker must be the hero, and the attacking weapon a `MeleeWeapon`. The port
+			//reads that as: a live tracker, a hero melee swing (never a throw - bow shots and
+			//thrown hits never reach this method anyway), a wielded weapon (never the unarmed
+			//`startingWeapon`), and an instance id (falling back to the bag id) that is not the
+			//stored one. `enemy.alignment != alignment` is the `!defender.isAlly` below (every
+			//hero-targetable creature here is hostile - the ability and throw aimers refuse
+			//allies outright - so the only theoretical miss is Java's NEUTRAL sheep, which
+			//this port spawns as an ally). The tracker detaches unconditionally once the gate
+			//holds, whether or not the threshold fired - Java's `combinedLethality.detach()`.
+			//An executed Brute must not revive (`Char.java` detaches `BruteRage` first on
+			//every hero execute path): `heroExecuted` suppresses this method's own revival
+			//branch below, fixed 2026-09-21 to also cover the Assassin KO half.
+			const predictedHp = defender.hp - damage;
+			const clStoredWeapon = this.clAbilityWeaponInstanceId ?? this.clAbilityWeaponClass;
+			const clSwingWeapon = this.weaponInstanceId ?? this.weaponId;
+			//`attackingWeapon() instanceof MeleeWeapon`: a hero melee swing with a wielded
+			//weapon (never a throw - bow shots and thrown hits never reach this method
+			//anyway - and never the unarmed `startingWeapon`).
+			const clResult = combinedLethalityTest({
+				trackerTurns: this.clAbilityTurns,
+				storedWeapon: clStoredWeapon,
+				swingWeapon: clSwingWeapon,
+				isHeroMelee: attacker === this.hero && attacker.attackMode !== 'throw' && this.weaponId !== 'startingWeapon',
+				targetIsAlly: defender.isAlly === true,
+				targetIsBossOrMiniboss: defender.boss === true || defender.miniboss === true,
+				talentPoints: this.talentRank('combined_lethality'),
+				predictedHp,
+				targetMaxHp: defender.maxHp,
+			});
+			const clGate = clResult.tests;
+			const combinedLethality = clResult.executes;
+			const assassinLethality = attacker.prepLevel !== undefined && predictedHp > 0 && preparationCanKo(
+				predictedHp, defender.maxHp, attacker.prepLevel,
+				this.subclass() === 'assassin' ? this.talentRank('enhanced_lethality') : 0,
+				defender.boss === true || defender.miniboss === true,
+			);
+			if (attacker === this.hero && (combinedLethality || assassinLethality)) {
+				damage = defender.hp;
+				this.say(t('port.log.talentexecute'), 'positive');
+			}
+			//`Char.hit()` (tag `v3.3.8`) runs the identical `enemy.HP = 0` +
+			//`enemy.buff(Brute.BruteRage.class).detach()` block for both the Assassin's
+			//Preparation KO (line 523-537) and Combined Lethality (line 540-554) executes -
+			//a forced kill must stick even against a Brute/ArmoredBrute's revive-with-shield,
+			//not just the Combined Lethality half this port used to suppress it for alone.
+			const heroExecuted = attacker === this.hero && (combinedLethality || assassinLethality);
+			if (clGate) {
+				this.clAbilityTurns = 0;
+				this.clAbilityWeaponClass = null;
+				this.clAbilityWeaponInstanceId = undefined;
+			}
+			damage = absorbCreatureShields(defender, damage, this.ascendedTurns > 0);
+			defender.hp -= damage;
+			if (phantomRemote && defender.hp > 0) this.phantomPiranhaTeleport(defender, attacker);
+			if (this.fadeMirrorOnDamage(defender, damage)) {
+				return { damage, heroExecuted, finished: true };
+			}
+			if (this.enterPrismaticFade(defender, damage)) {
+				return { damage, heroExecuted, finished: true };
+			}
+			//`Grim.proc()`/`Char.damage()` + `GrimTracker` (tag v3.3.8): the enchant arms
+			//after the hit, then rolls against `(0.5 + .05*buffedWeaponLevel) * Arcana`
+			//scaled by the square of the defender's missing-HP fraction. A successful roll
+			//deals `round(currentHP)` extra damage, so it can finish a target immediately.
+			//The old port used a flat 15%/15-damage post-hit stand-in in `heroOnHit`; doing
+			//this at the central damage boundary preserves the real pre-death ordering and
+			//also handles Unstable's delegated Grim effect.
+			//`Grim` is one of `AntiMagic.RESISTS`' listed enchant classes: `Char.damage()` zeroes any
+			//hit whose source class is in that set for a MagicImmune defender (an AntiMagic champion),
+			//so the proc's bonus execute damage must not apply to one either.
+			//`Grim.proc()` returns early when the defender `isImmune(Grim.class)` (`Grim.java`, tag
+			//`v3.3.8`), and `Char.Property.BOSS` lists `Grim` in its immunities (`Char.java:1364`) -
+			//so bosses never suffer the execute (minibosses carry `MINIBOSS`, whose sets are empty,
+			//and stay eligible). The execute itself is `round(HP*resist(Grim.class))`
+			//(`Char.damage()`, tag `v3.3.8`), and `Statue` lists `Grim` in its resistances
+			//(`Statue.java`, tag `v3.3.8` - inherited by `ArmoredStatue`), each halving it - so a
+			//statue takes half the execute, not the full `round(currentHP)`.
+			if (attacker === this.hero && (this.weaponAffix === 'grim' || this.unstableDelegated === 'grim') && defender.hp > 0 && !defender.magicImmune && defender.boss !== true) {
+				const level = Math.max(0, this.degradedLevel(this.weaponLevel));
+				const maxChance = (0.5 + 0.05 * level) * this.enchantProcMultiplier();
+				const missingFraction = (defender.maxHp - defender.hp) / defender.maxHp;
+				if (Random.chance(maxChance * missingFraction * missingFraction)) {
+					const resisted = defender.kind === 'statue' || defender.kind === 'armoredStatue';
+					const extra = resisted ? Math.round(defender.hp * 0.5) : Math.round(defender.hp);
+					defender.hp -= extra;
+					damage += extra;
+				}
+			}
+		return { damage, heroExecuted, finished: false };
+	},
+
+	/**
 	 * Melee (or missile) exchange with Java's own on-hit hooks: surprise attacks land
 	 * automatically (INFINITE_ACCURACY, inside rollHit) and wake the victim; Rogue's
 	 * SUCKER_PUNCH adds +2 on a surprise hit (+4 as an Assassin); Bat.attackProc heals
@@ -865,118 +988,10 @@ export const combatResolutionMethods = {
 		//does no damage to a soiled fist - see the DoT tick, which skips it.
 		damage = this.rottingBleedConvert(defender, damage, attacker === this.hero && this.abilityHarvestNext > 0);
 		damage = this.soiledGrassCut(defender, damage);
-		//The execute mechanics are Java's last step in `attack()`: they run after
-		//`enemy.damage()` has applied everything above - the `damage()` overrides (including
-		//`SoiledFist`'s grass reduction just above), the shield pools, and the HP bookkeeping -
-		//and they set the target's HP to zero outright rather than routing a damage value
-		//through steps that could still reduce it. The `defender.hp - damage > 0` guard mirrors
-		//Java's own `enemy.isAlive()` check after `damage()` returned: a hit that already kills
-		//does not also report an execution.
-		//
-		//Java's two mechanics are now both real. `Preparation.canKO` (`Char.java` 524-539) fires
-		//only while the attacker's Preparation buff is up - i.e. only out of invisibility - and
-		//tests the target's HP against `AttackLevel.KOThreshold()`'s table, indexed by the level
-		//reached (1/3/5/9 turns invisible) and the `enhanced_lethality` rank, with a strict `<`
-		//and one fifth of the threshold for a `BOSS`/`MINIBOSS`. `CombinedLethality`
-		//(`Char.java` 541-561) excludes those two properties outright and uses
-		//`<= 0.4*points/3`. Both mechanics test
-		//the HP the hit actually leaves: every reduction above (curves, shields, pools, the
-		//grass cut) lands in `damage` before this point, so `defender.hp - damage` is what the
-		//`defender.hp -= damage` below writes - there is no pre-shield prediction here. Both
-		//also require the hit to have left the target alive (`predictedHp > 0`, Java's own
-		//`enemy.isAlive()` check after `damage()` returned): a hit that already kills reports
-		//the kill below, not an execution.
-		//
-		//`CombinedLethality`'s arming gate is Java's own too (`Char.java` 541-542): the
-		//tracker's weapon must differ from the attacking weapon (`!=`, instance identity),
-		//the attacker must be the hero, and the attacking weapon a `MeleeWeapon`. The port
-		//reads that as: a live tracker, a hero melee swing (never a throw - bow shots and
-		//thrown hits never reach this method anyway), a wielded weapon (never the unarmed
-		//`startingWeapon`), and an instance id (falling back to the bag id) that is not the
-		//stored one. `enemy.alignment != alignment` is the `!defender.isAlly` below (every
-		//hero-targetable creature here is hostile - the ability and throw aimers refuse
-		//allies outright - so the only theoretical miss is Java's NEUTRAL sheep, which
-		//this port spawns as an ally). The tracker detaches unconditionally once the gate
-		//holds, whether or not the threshold fired - Java's `combinedLethality.detach()`.
-		//An executed Brute must not revive (`Char.java` detaches `BruteRage` first on
-		//every hero execute path): `heroExecuted` suppresses this method's own revival
-		//branch below, fixed 2026-09-21 to also cover the Assassin KO half.
-		const predictedHp = defender.hp - damage;
-		const clStoredWeapon = this.clAbilityWeaponInstanceId ?? this.clAbilityWeaponClass;
-		const clSwingWeapon = this.weaponInstanceId ?? this.weaponId;
-		//`attackingWeapon() instanceof MeleeWeapon`: a hero melee swing with a wielded
-		//weapon (never a throw - bow shots and thrown hits never reach this method
-		//anyway - and never the unarmed `startingWeapon`).
-		const clResult = combinedLethalityTest({
-			trackerTurns: this.clAbilityTurns,
-			storedWeapon: clStoredWeapon,
-			swingWeapon: clSwingWeapon,
-			isHeroMelee: attacker === this.hero && attacker.attackMode !== 'throw' && this.weaponId !== 'startingWeapon',
-			targetIsAlly: defender.isAlly === true,
-			targetIsBossOrMiniboss: defender.boss === true || defender.miniboss === true,
-			talentPoints: this.talentRank('combined_lethality'),
-			predictedHp,
-			targetMaxHp: defender.maxHp,
-		});
-		const clGate = clResult.tests;
-		const combinedLethality = clResult.executes;
-		const assassinLethality = attacker.prepLevel !== undefined && predictedHp > 0 && preparationCanKo(
-			predictedHp, defender.maxHp, attacker.prepLevel,
-			this.subclass() === 'assassin' ? this.talentRank('enhanced_lethality') : 0,
-			defender.boss === true || defender.miniboss === true,
-		);
-		if (attacker === this.hero && (combinedLethality || assassinLethality)) {
-			damage = defender.hp;
-			this.say(t('port.log.talentexecute'), 'positive');
-		}
-		//`Char.hit()` (tag `v3.3.8`) runs the identical `enemy.HP = 0` +
-		//`enemy.buff(Brute.BruteRage.class).detach()` block for both the Assassin's
-		//Preparation KO (line 523-537) and Combined Lethality (line 540-554) executes -
-		//a forced kill must stick even against a Brute/ArmoredBrute's revive-with-shield,
-		//not just the Combined Lethality half this port used to suppress it for alone.
-		const heroExecuted = attacker === this.hero && (combinedLethality || assassinLethality);
-		if (clGate) {
-			this.clAbilityTurns = 0;
-			this.clAbilityWeaponClass = null;
-			this.clAbilityWeaponInstanceId = undefined;
-		}
-		damage = absorbCreatureShields(defender, damage, this.ascendedTurns > 0);
-		defender.hp -= damage;
-		if (phantomRemote && defender.hp > 0) this.phantomPiranhaTeleport(defender, attacker);
-		if (this.fadeMirrorOnDamage(defender, damage)) {
-			return true;
-		}
-		if (this.enterPrismaticFade(defender, damage)) {
-			return true;
-		}
-		//`Grim.proc()`/`Char.damage()` + `GrimTracker` (tag v3.3.8): the enchant arms
-		//after the hit, then rolls against `(0.5 + .05*buffedWeaponLevel) * Arcana`
-		//scaled by the square of the defender's missing-HP fraction. A successful roll
-		//deals `round(currentHP)` extra damage, so it can finish a target immediately.
-		//The old port used a flat 15%/15-damage post-hit stand-in in `heroOnHit`; doing
-		//this at the central damage boundary preserves the real pre-death ordering and
-		//also handles Unstable's delegated Grim effect.
-		//`Grim` is one of `AntiMagic.RESISTS`' listed enchant classes: `Char.damage()` zeroes any
-		//hit whose source class is in that set for a MagicImmune defender (an AntiMagic champion),
-		//so the proc's bonus execute damage must not apply to one either.
-		//`Grim.proc()` returns early when the defender `isImmune(Grim.class)` (`Grim.java`, tag
-		//`v3.3.8`), and `Char.Property.BOSS` lists `Grim` in its immunities (`Char.java:1364`) -
-		//so bosses never suffer the execute (minibosses carry `MINIBOSS`, whose sets are empty,
-		//and stay eligible). The execute itself is `round(HP*resist(Grim.class))`
-		//(`Char.damage()`, tag `v3.3.8`), and `Statue` lists `Grim` in its resistances
-		//(`Statue.java`, tag `v3.3.8` - inherited by `ArmoredStatue`), each halving it - so a
-		//statue takes half the execute, not the full `round(currentHP)`.
-		if (attacker === this.hero && (this.weaponAffix === 'grim' || this.unstableDelegated === 'grim') && defender.hp > 0 && !defender.magicImmune && defender.boss !== true) {
-			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
-			const maxChance = (0.5 + 0.05 * level) * this.enchantProcMultiplier();
-			const missingFraction = (defender.maxHp - defender.hp) / defender.maxHp;
-			if (Random.chance(maxChance * missingFraction * missingFraction)) {
-				const resisted = defender.kind === 'statue' || defender.kind === 'armoredStatue';
-				const extra = resisted ? Math.round(defender.hp * 0.5) : Math.round(defender.hp);
-				defender.hp -= extra;
-				damage += extra;
-			}
-		}
+		const execOut = this.applyExecutesAndDamage(attacker, defender, phantomRemote, damage);
+		if (execOut.finished) return true;
+		damage = execOut.damage;
+		const heroExecuted = execOut.heroExecuted;
 		//DM300.damage()/supercharge(): normal mode stops at HT/3 after the first phase and
 		//HT*2/3 after the second; the Stronger Bosses challenge uses three HT/4 brackets.
 		//The threshold is checked after all armor/proc damage but before death bookkeeping,
