@@ -46,6 +46,10 @@ export interface BombEffectsContext {
 	/** Clears the badge when Tengu's own bomb blast catches the hero (`BombAbility.act()`,
 	 * tag `v3.3.8`, fouls on presence in radius, even at zero damage). Optional likewise. */
 	readonly onTenguBombHeroHit?: () => void;
+	/** Scene-backed `Char.damage()` dispatcher. When present, all production blast callers
+	 * share the scene's target overrides, shields, HP bookkeeping and death hooks; headless
+	 * item-rule callers may omit it and exercise this module's compatibility implementation. */
+	readonly applyCharacterDamage?: (target: Creature, amount: number, options: CharacterDamageOptions) => boolean;
 	/** `PhantomPiranha.damage()` halves direct non-character damage and relocates after a
 	 * surviving hit. Bomb/blob sources are not `Char` instances in Java, so these callbacks
 	 * intentionally use the source-less random-water branch. */
@@ -58,7 +62,24 @@ export interface BombEffectsContext {
  * exact same per-character blast damage this function already implements for every ordinary
  * bomb, so the cursed effect reuses it directly rather than re-deriving the boss-hook/King-
  * shield/PhantomPiranha/Yog/Tengu edge cases it already covers. */
+
+/** Call-specific parts of `Char.damage()` that are not properties of the target itself. */
+export interface CharacterDamageOptions {
+	readonly pierceArmor: boolean;
+	readonly cause: 'foe' | 'fire';
+	readonly onHeroDeath?: () => void;
+	readonly onNonWeaponBossDamage?: (target: Creature) => void;
+}
+
 export function applyBlastDamage(target: Creature, amount: number, pierceArmor: boolean, context: BombEffectsContext): boolean {
+	if (context.applyCharacterDamage) {
+		return context.applyCharacterDamage(target, amount, {
+			pierceArmor,
+			cause: 'fire',
+			onHeroDeath: context.onBombDeath,
+			onNonWeaponBossDamage: context.onNonWeaponBossDamage,
+		});
+	}
 	//`Sheep.damage()` (tag `v3.3.8`) is a no-op - the blast passes through sheep.
 	if (target.allyKind === 'sheep') return false;
 	//`SentryRoom$Sentry.damage()` (tag `v3.3.8`) is likewise a no-op.

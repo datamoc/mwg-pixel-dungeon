@@ -11,7 +11,7 @@ import { Actors, Bar, Blob, Button, Game, Label, Random, Roguelike, Rpg, Window,
 import { MISSILE_MAX_DURABILITY } from '../../items/missiles';
 import { cureHeroBuffs } from '../../items/potionEffects';
 import { aimBombFlow, useBomb as useItemBomb, type BombAimContext } from '../../items/bombs';
-import { detonateBomb, type BombEffectsContext } from '../../items/bombEffects';
+import { detonateBomb, type BombEffectsContext, type CharacterDamageOptions } from '../../items/bombEffects';
 import { isBagId } from '../../items/bags';
 import { isResurrectKeepCandidate, partitionResurrectKeeps } from '../../items/resurrect';
 import { useStoneOfAggression as useItemStoneOfAggression, useStoneOfAugmentation as useItemStoneOfAugmentation, useStoneOfBlast as useItemStoneOfBlast, useStoneOfBlink as useItemStoneOfBlink, useStoneOfClairvoyance as useItemStoneOfClairvoyance, useStoneOfDeepSleep as useItemStoneOfDeepSleep, useStoneOfEnchantment as useItemStoneOfEnchantment, useStoneOfFear as useItemStoneOfFear, useStoneOfFlock as useItemStoneOfFlock, useStoneOfShock as useItemStoneOfShock } from '../../items/stones';
@@ -1443,24 +1443,42 @@ export const panelsSingleUseMethods = {
 		this.showTopHeapSprite(g.x, g.y);
 	},
 
-	/** Applies one already-rolled blast damage amount to one creature with exactly the rules the
-	 * ordinary bomb blast uses - the hero's share through `absorbHeroDamage`/`kill`, a monster's
-	 * through its armor roll (skipped when `pierceArmor`, as `ArcaneBomb` does), Tengu's HP
-	 * bracket, Yog's shield/fist guards, and the sleeping reset. Split out so the non-destructive
-	 * subclasses (Arcane, Shrapnel) can reuse it without their own copy. Returns true when the
-	 * hero died. */
 	applyBlastDamage(this: DungeonScene, c: Creature, damage: number, pierceArmor: boolean, cause: 'foe' | 'fire' = 'fire'): boolean {
+		return this.applyCharacterDamage(c, damage, {
+			pierceArmor,
+			cause,
+			onHeroDeath: () => this.say(t('items.bombs.bomb.ondeath'), 'negative'),
+			onNonWeaponBossDamage: (target) => this.disqualifyBossChallenge(target),
+		});
+	},
+
+	/**
+	 * Shared scene-backed `Char.damage()` boundary for rolled hits that do not first pass through
+	 * `Char.attack()`. Bombs, armor abilities and their sibling blast effects converge here;
+	 * `BombEffectsContext.applyCharacterDamage` bridges ordinary bomb detonation into this same
+	 * method instead of maintaining a second production copy in `items/bombEffects.ts`.
+	 *
+	 * Ordering follows the source call sites: target invulnerability first; optional source-class
+	 * callbacks; hero `Hero.damage()`/shield handling or mob armor; Aura then Doom; defender
+	 * `damage()` curves and special overrides; shields; HP write; damage hooks; wake/death. `DR`
+	 * is already subtracted by callers that pass `pierceArmor: true`.
+	 */
+	applyCharacterDamage(this: DungeonScene, c: Creature, rawDamage: number, options: CharacterDamageOptions): boolean {
+		let damage = rawDamage;
 		if (c.isHero) {
 			damage = this.absorbHeroDamage(damage);
 			this.hero.hp -= damage;
 			this.showDamage(this.hero, damage);
 			if (this.hero.hp <= 0) {
-				this.say(t('items.bombs.bomb.ondeath'), 'negative');
-				this.kill(this.hero, 'fire');
+				options.onHeroDeath?.();
+				this.kill(this.hero, options.cause);
 				return true;
 			}
 			return false;
 		}
+		//`Sheep.damage()` and `SentryRoom$Sentry.damage()` (tag `v3.3.8`) are no-ops for
+		//every source, not just bombs.
+		if (c.allyKind === 'sheep' || c.kind === 'sentry') return false;
 		//`Challenge.SpectatorFreeze` makes `Char.isInvulnerable()` true for every
 		//damage source (tag `v3.3.8`). Bombs, Stone of Blast and the other blast
 		//callers all converge here, so preserve their roll but discard HP damage.
@@ -1473,10 +1491,14 @@ export const panelsSingleUseMethods = {
 		if (c.kind === 'pylon' && !c.pylonActive) return false;
 		if (this.gnollMineInvulnerable(c)) return false;
 		if (this.crystalMineInvulnerable(c)) return false;
-		if (!pierceArmor) damage = Math.max(0, damage - Random.normalRange(c.armor[0], c.armor[1]));
+		options.onNonWeaponBossDamage?.(c);
+		if (!options.pierceArmor) damage = Math.max(0, damage - Random.normalRange(c.armor[0], c.armor[1]));
 		//`AuraOfProtection.AuraBuff` is a defender-side `Char.damage()` modifier (tag `v3.3.8`),
 		//so blast damage must pass through the same nearby same-alignment reduction as attacks.
 		damage = this.auraProtectedDamage(c, damage);
+		//This shared blast/bomb/ability path models Char.damage() for non-hero targets;
+		//apply Doom after Aura and before the target-specific curve and shields.
+		damage = doomDamage(damage, c);
 		//Every defender-side `damage()` override (`Pylon` 14+/15, `Eye` /4 while charging,
 		//`DemonSpawner` 19+/20, `Slime`/`CausticSlime` 4+/5) is part of `Char.damage()`, so it
 		//applies to *any* source that reaches a mob through `damage()` - including a bomb blast
@@ -1528,7 +1550,7 @@ export const panelsSingleUseMethods = {
 		if (c.kind === 'king' && c.hp > 0) this.kingDamageHook(c);
 		this.showDamage(c, damage);
 		c.sleeping = false;
-		if (c.hp <= 0) this.kill(c, cause);
+		if (c.hp <= 0) this.kill(c, options.cause);
 		else if (c.kind === 'tengu') this.tenguBracketJump(c, preHp);
 		return false;
 	},
@@ -1582,6 +1604,7 @@ export const panelsSingleUseMethods = {
 			onBombDeath: () => this.say(t('items.bombs.bomb.ondeath'), 'negative'),
 			onPharmacophobia: () => this.say(t('port.log.pharmacophobia'), 'negative'),
 			absorbHeroDamage: (amount) => this.absorbHeroDamage(amount),
+			applyCharacterDamage: (target, amount, options) => this.applyCharacterDamage(target, amount, options),
 			protectDamage: (target, amount) => this.auraProtectedDamage(target, amount),
 			phantomPiranhaDamage: (target, amount) => this.phantomPiranhaDamage(target, amount),
 			phantomPiranhaSurvived: (target) => this.phantomPiranhaTeleport(target),

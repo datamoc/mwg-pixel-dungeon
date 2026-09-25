@@ -1320,6 +1320,21 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.ok(scene.includes('if (this.ascensionChallengeActive && (spawner.spawnCooldown ?? 0) > 20) spawner.spawnCooldown = 20;'),
 			'the ascent caps the spawner clock at 20 before ticking');
 	});
+	check('scene blast, ability, and bomb damage converge on one Char.damage dispatcher', () => {
+		const scene = readSceneSource();
+		const panels = readFileSync(new URL('../src/scenes/dungeon/panelsSingleUse.ts', import.meta.url), 'utf8');
+		const bombs = readFileSync(new URL('../src/items/bombEffects.ts', import.meta.url), 'utf8');
+		assert.ok(scene.includes('applyBlastDamage(this: DungeonScene, c: Creature, damage: number, pierceArmor: boolean'),
+			'the blast compatibility entrypoint remains for existing callers');
+		assert.ok(scene.includes('return this.applyCharacterDamage(c, damage, {'),
+			'the blast entrypoint delegates into the common scene dispatcher');
+		assert.ok(panels.includes('applyCharacterDamage(this: DungeonScene, c: Creature, rawDamage: number, options: CharacterDamageOptions)'),
+			'the shared dispatcher owns target defenses, overrides, HP hooks, and death');
+		assert.ok(panels.includes('applyCharacterDamage: (target, amount, options) => this.applyCharacterDamage(target, amount, options)'),
+			'the production bomb context bridges into the same scene dispatcher');
+		assert.ok(bombs.includes('if (context.applyCharacterDamage) {') && bombs.includes('context.applyCharacterDamage(target, amount, {'),
+			'ordinary bomb detonation uses the shared dispatcher when scene-backed');
+	});
 	check('Ascension beckons distant enemies and hastes idle ones', () => {
 		//`AscensionChallenge.beckonEnemies()`/`enemySpeedModifier()` (tag `v3.3.8`): at 2+
 		//stacks every enemy mob past 8 cells is pulled onto the hero's trail; at 4+ stacks
