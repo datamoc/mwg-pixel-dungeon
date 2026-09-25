@@ -69,8 +69,10 @@ for (const gate of ['regenOn: this.regenOn(), shielding: this.sealBarrier.total'
 	assert.ok((loop + read('../src/scenes/dungeon/actorTurnsHazards.ts')).includes(gate), `regenOn gate wired: ${gate}`);
 }
 for (const [file, hook] of [
-	['../src/scenes/dungeon/combatResolution.ts', "this.lockedFloorBossDamage(defender, preHp - defender.hp, preHp - defender.hp);\n\t\tif (defender.kind === 'dm300')"],
-	['../src/scenes/dungeon/combatResolution.ts', 'this.lockedFloorBossDamage(linkKing, share, kingPreHp - linkKing.hp);'],
+	//T61 split the attack pipeline into `attackSeams.ts`: the dm300 hook now lives in
+	//`runBossDamageHooks` and the linkKing share in `applyBossSoaks` there.
+	['../src/scenes/dungeon/attackSeams.ts', "this.lockedFloorBossDamage(defender, preHp - defender.hp, preHp - defender.hp);\n\t\tif (defender.kind === 'dm300')"],
+	['../src/scenes/dungeon/attackSeams.ts', 'this.lockedFloorBossDamage(linkKing, share, kingPreHp - linkKing.hp);'],
 	['../src/scenes/dungeon/panelsSingleUse.ts', "this.lockedFloorBossDamage(c, damage, preHp - c.hp);\n\t\tif (c.kind === 'tengu')"],
 	//d5341de rerouted monster DoT ticks through the shared Char.damage dispatch, so the
 	//lock feed no longer sits at the tick site: the tick pins the dispatch call below and
