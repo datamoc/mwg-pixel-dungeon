@@ -25,7 +25,7 @@ Moved 2026-09-24 on the user's decision: these eight items were the only open bo
 
 ## B6. from ROADMAP 11. Architecture refactor toward the v3 target
 
-- [ ] **Next real phase**: wrap the existing per-domain rule functions (`simulation/combat.ts`,
+- [x] **Next real phase**: wrap the existing per-domain rule functions (`simulation/combat.ts`,
       `movement.ts`, `heroActions.ts`, `heroTurn.ts`) behind one
       `SimulationRuntime<SpdGameState, SpdCommand, SpdEvent, Creature>`, migrating `main.ts`'s
       direct-mutation call sites (`attack()`, `moveTo()`, etc.) to `dispatch()` one command type at a
@@ -50,6 +50,7 @@ Moved 2026-09-24 on the user's decision: these eight items were the only open bo
       on that runtime too. The scheduler remains the authoritative consumer of the returned cost,
       so Necromancer's variable summon cost and actor-removal behavior remain unchanged.
       **Complexity: L.**
+      **Closed 2026-09-25 (T60):** the wrap is done - `adapters/gameSimulation.ts` is the single `SimulationRuntime` for all eight command kinds (`attack`, `hero-turn`, `monster-turn`, `hunger`, `hunger-exertion`, `hero-action`, `movement`, `search`) with per-domain facades, and a repo-wide scan confirms no game file imports the covered planners directly (pure queries, deterministic value functions and constants stay direct by design). Pinned by `tools/verifyRuntimeDispatch.mjs`, wired into `npm run check`. The transitional strategies (monster-turn tables, scheduler/random reconciliation) still wait for serializable state and real costs per `SIMULATION_ARCHITECTURE.md`.
 
 ## B7. from ROADMAP 11. Architecture refactor toward the v3 target
 
