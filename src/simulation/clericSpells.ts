@@ -48,6 +48,15 @@ export type TomeSpellId = 'guidingLight' | 'holyWeapon' | 'holyWard';
  * remain partial. These pure rules keep their authored numbers in one place for scene flows. */
 export type TrinityForm = 'body' | 'mind' | 'spirit';
 
+/** `Armor.proc()`'s independent BodyForm glyph gate (`Armor.java`, tag `v3.3.8`): the
+ * Trinity glyph is skipped when the hero is MagicImmune or it duplicates the worn glyph. */
+export function trinityBodyGlyphActive(
+	form: TrinityForm | null, turns: number, selected: string | null,
+	equipped: string | null, magicImmune: boolean | undefined, glyph: string,
+): boolean {
+	return form === 'body' && turns > 0 && selected === glyph && equipped !== glyph && magicImmune !== true;
+}
+
 /** `BodyForm.duration()`: `round(13.33 + 6.67 * points)`, i.e. 20/27/33/40 turns. */
 export function trinityBodyDuration(talentRank: number): number {
 	return Math.round(13.33 + 6.67 * Math.max(0, Math.min(4, talentRank)));

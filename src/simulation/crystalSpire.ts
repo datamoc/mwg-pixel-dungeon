@@ -110,6 +110,11 @@ export function usesCrystalPassability(kind: string | undefined, ordinaryPathLen
 	return kind === 'crystalGuardian' && hunting && (ordinaryPathLength === 0 || ordinaryPathLength > 2 * straightDistance);
 }
 
+/** `CrystalGuardian.Sleeping.beckon()` is a no-op; other guardian states use ordinary beckoning. */
+export function ignoresCrystalGuardianBeckon(kind: string | undefined, sleeping: boolean): boolean {
+	return kind === 'crystalGuardian' && sleeping;
+}
+
 /** `spend(GameMath.gate(TICK, (int)Math.ceil(hero.cooldown()), 3*TICK))` after a spire attack. */
 export function spireAbilityDelay(heroCooldown: number): number {
 	return Math.min(3, Math.max(1, Math.ceil(heroCooldown)));

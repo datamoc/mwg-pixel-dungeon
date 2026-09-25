@@ -259,6 +259,11 @@ export function isUndeadOrDemonic(kind: AnyMonsterId | undefined): boolean {
  * "no push if char is immovable" rule - such an occupant is never shoved aside. */
 export const IMMOVABLE_KINDS = mwlActorFlagSet('immovable');
 
+/** `Char.hasProp(ch, Char.Property.LARGE)` for this port's kind model. */
+export function isLargeCreature(kind: AnyMonsterId | undefined, yogFistType?: string): boolean {
+	return kind !== undefined && (LARGE_KINDS.has(kind) || (kind === 'yogFist' && yogFistType === 'rusted'));
+}
+
 /**
  * Java's `Char.Property.INORGANIC` members this port spawns (`Char.java`, tag `v3.3.8`),
  * authored in `actor-rules.mwl`'s `actorFlags` like every other property set: immune to
