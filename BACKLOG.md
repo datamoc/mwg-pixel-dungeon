@@ -80,6 +80,13 @@ Moved 2026-09-24 on the user's decision: these eight items were the only open bo
        `simulation/hiddenMimicContact.ts` planner, separating adjacent melee-bump outcomes from
        successful-hit reveal timing. This also fixed the missed-hit reveal bug and the Crystal
        Mimic bump path, which now cancels the hero swing and performs its inherited counterattack.
+      **Progress 2026-09-25 (T61 slices 1-2):** attack()'s swing prelude and miss
+      presentation now live in presentAttackSwing/presentAttackMiss seams on the
+      scene (scenes/dungeon/combatResolution.ts, where the method moved from main.ts),
+      pinned at source level in tools/verifyCombat.mjs (the parry-interleaved main-miss
+      pair stays inline: the riposte runs between cue and log). The hit/damage roll pair
+      already routes through runAttackResolution, so the remaining body is the
+      damage-multiplier/proc chain.
        **Complexity: L.**
 
 ## B8. from ROADMAP 11. Architecture refactor toward the v3 target
