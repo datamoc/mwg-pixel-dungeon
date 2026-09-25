@@ -259,6 +259,13 @@ export function isUndeadOrDemonic(kind: AnyMonsterId | undefined): boolean {
  * "no push if char is immovable" rule - such an occupant is never shoved aside. */
 export const IMMOVABLE_KINDS = mwlActorFlagSet('immovable');
 
+/** Java's `Char.Property.LARGE` (`DM200` - inherited by `DM201` - `DM300`/`Golem`/
+ * the `RustedFist`/`Ghost` at tag `v3.3.8`): needs an `openSpace` cell to be pushed
+ * into. The RustedFist is LARGE by subtype only and MWL sets are kind-level, so it
+ * stays out of the set and is gated on `yogFistType` in `isLargeCreature` instead -
+ * the same split the `INORGANIC` row's rusted-fist note already uses. */
+export const LARGE_KINDS = mwlActorFlagSet('large');
+
 /** `Char.hasProp(ch, Char.Property.LARGE)` for this port's kind model. */
 export function isLargeCreature(kind: AnyMonsterId | undefined, yogFistType?: string): boolean {
 	return kind !== undefined && (LARGE_KINDS.has(kind) || (kind === 'yogFist' && yogFistType === 'rusted'));
