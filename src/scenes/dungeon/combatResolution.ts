@@ -94,6 +94,65 @@ export const combatResolutionMethods = {
 	},
 
 	/**
+	 * T61 slice 3: the pre-proc damage adjustments of a landed `attack()` - the
+	 * ally PowerOfMany multiplier, the charm/spectator zeroing guards, the weapon
+	 * augment and Recharging multipliers, and the RingOfForce bonus. Verbatim move;
+	 * the Pylon-curve placement note stays at the call site, where it constrains
+	 * what this seam may grow to cover.
+	 */
+	isCharmedToward(this: DungeonScene, attacker: Creature, defender: Creature): boolean {
+		//Charm.recover()/Charm.object: an actor charmed toward this specific target
+		//does not harm it. Shared by the damage seam and the post-damage charm-decay
+		//below, which both read the same pairing.
+		return attacker.buffs['charm'] !== undefined && this.charmTargets.get(attacker.id) === defender.id;
+	},
+
+	scaleAttackDamage(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): number {
+		// `Char.attack()` (tag `v3.3.8`): a PowerOfMany-powered ally deals 1.25x melee
+		// damage. The multiplier applies on the ordinary attack() exchange here.
+		if (attacker.isAlly && attacker.buffs['powerOfMany'] !== undefined) {
+			damage = Math.round(damage * POWER_OF_MANY_ATTACK_FACTOR);
+		}
+		//This also makes Affection's armor-glyph charm usable by ordinary monsters,
+		//not only by the already-portable Friendly weapon path.
+		if (this.isCharmedToward(attacker, defender)) damage = 0;
+		//`Char.damage()` negates through `isInvulnerable()`, which a
+		//`Challenge.SpectatorFreeze` carries - frozen spectators take no attack
+		//damage, same zeroing shape as the charm line above. Bomb/trap/blast seams
+		//apply the same guard at their own `damage()` boundaries; DoTs are negated
+		//at the mob tick.
+		if (defender.buffs['spectatorFreeze'] !== undefined) damage = 0;
+		//Weapon.Augment: real Java's `Augment` enum (`Weapon.java`, tag `v3.3.8`) trades damage
+		//against attack speed in both directions - `SPEED(0.7f damageFactor, 2/3f delayFactor)`,
+		//`DAMAGE(1.5f damageFactor, 5/3f delayFactor)` - not a flat "20% up, nothing down" this
+		//previously modeled (wrong numbers, and only DAMAGE's half at all). The delay half lives
+		//in `getAttackTurnCostMod()`.
+		if (attacker === this.hero && this.weaponAugment === 'speed') {
+			damage = Math.round(damage * 0.7);
+		} else if (attacker === this.hero && this.weaponAugment === 'damage') {
+			damage = Math.round(damage * 1.5);
+		}
+		//Weapon Recharging (`Hero.damageRoll()`, Duelist T2): `round(dmg*1.025 + 0.025*points)`
+		//while a Recharging-class buff is held - a melee damage multiplier, never the
+		//per-hit wand-charge refund this used to be (that shape had no Java basis at all;
+		//charges still refund through MysticalCharge/ExcessCharge/SoulSiphon below, which are
+		//real). `ArtifactRecharge` counts too in Java; no such buff exists here yet. Gate
+		//note, read before "fixing": both tags gate the Java line on `heroClass != DUELIST`
+		//- unsatisfiable alongside class-locked talents, so the port follows the evident
+		//intent (the talent-holding class) rather than the literal gate.
+		if (attacker === this.hero && this.talentRank('weapon_recharging') > 0 && this.hero.buffs['recharging']) {
+			damage = weaponRechargingDamage(damage, this.talentRank('weapon_recharging'));
+		}
+		//RingOfForce.armedDamageBonus(): flat +level on any armed (non-missile) melee hit -
+		//`Hero.damageRoll()` gates this on `wep instanceof MissileWeapon`, which this port already
+		//expresses the same way every other hero-only bonus here does: `attacker === this.hero`
+		//is only true for the real bump-attack call site, never `useSpecial`'s throw/shoot/zap
+		//branches (those pass a shallow copy of the hero, not the hero itself).
+		if (attacker === this.hero) damage += ringForceBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
+		return damage;
+	},
+
+	/**
 	 * Melee (or missile) exchange with Java's own on-hit hooks: surprise attacks land
 	 * automatically (INFINITE_ACCURACY, inside rollHit) and wake the victim; Rogue's
 	 * SUCKER_PUNCH adds +2 on a surprise hit (+4 as an Assassin); Bat.attackProc heals
@@ -353,52 +412,12 @@ export const combatResolutionMethods = {
 		//Java's `Mimic.defenseProc()` reveals ordinary hits here; do not reveal on a miss.
 		if (mimicContact.revealWhen === 'onHit') revealMimic();
 
-		let damage = attackRoll.damage;
-		// `Char.attack()` (tag `v3.3.8`): a PowerOfMany-powered ally deals 1.25x melee
-		// damage. The multiplier applies on the ordinary attack() exchange here.
-		if (attacker.isAlly && attacker.buffs['powerOfMany'] !== undefined) {
-			damage = Math.round(damage * POWER_OF_MANY_ATTACK_FACTOR);
-		}
-		//Charm.recover()/Charm.object: an actor charmed toward this specific target
-		//does not harm it. This also makes Affection's armor-glyph charm usable by
-		//ordinary monsters, not only by the already-portable Friendly weapon path.
-		const charmedForTarget = attacker.buffs['charm'] !== undefined && this.charmTargets.get(attacker.id) === defender.id;
-		if (charmedForTarget) damage = 0;
-		//`Char.damage()` negates through `isInvulnerable()`, which a
-		//`Challenge.SpectatorFreeze` carries - frozen spectators take no attack
-		//damage, same zeroing shape as the charm line above. Bomb/trap/blast seams
-		//apply the same guard at their own `damage()` boundaries; DoTs are negated
-		//at the mob tick.
-		if (defender.buffs['spectatorFreeze'] !== undefined) damage = 0;
+		//Captured before the procs below: a Friendly proc this same swing attaches a fresh
+		//charm pairing, and the post-damage decay must read the pre-proc pairing, not it.
+		const charmedForTarget = this.isCharmedToward(attacker, defender);
+		let damage = this.scaleAttackDamage(attacker, defender, attackRoll.damage);
 		//No `Pylon` curve here: it is a `damage()` override, so it applies after every multiplier
 		//and proc below, not before them - see `applyDefenderDamageCurves`' own note.
-		//Weapon.Augment: real Java's `Augment` enum (`Weapon.java`, tag `v3.3.8`) trades damage
-		//against attack speed in both directions - `SPEED(0.7f damageFactor, 2/3f delayFactor)`,
-		//`DAMAGE(1.5f damageFactor, 5/3f delayFactor)` - not a flat "20% up, nothing down" this
-		//previously modeled (wrong numbers, and only DAMAGE's half at all). The delay half lives
-		//in `getAttackTurnCostMod()`.
-		if (attacker === this.hero && this.weaponAugment === 'speed') {
-			damage = Math.round(damage * 0.7);
-		} else if (attacker === this.hero && this.weaponAugment === 'damage') {
-			damage = Math.round(damage * 1.5);
-		}
-		//Weapon Recharging (`Hero.damageRoll()`, Duelist T2): `round(dmg*1.025 + 0.025*points)`
-		//while a Recharging-class buff is held - a melee damage multiplier, never the
-		//per-hit wand-charge refund this used to be (that shape had no Java basis at all;
-		//charges still refund through MysticalCharge/ExcessCharge/SoulSiphon below, which are
-		//real). `ArtifactRecharge` counts too in Java; no such buff exists here yet. Gate
-		//note, read before "fixing": both tags gate the Java line on `heroClass != DUELIST`
-		//- unsatisfiable alongside class-locked talents, so the port follows the evident
-		//intent (the talent-holding class) rather than the literal gate.
-		if (attacker === this.hero && this.talentRank('weapon_recharging') > 0 && this.hero.buffs['recharging']) {
-			damage = weaponRechargingDamage(damage, this.talentRank('weapon_recharging'));
-		}
-		//RingOfForce.armedDamageBonus(): flat +level on any armed (non-missile) melee hit -
-		//`Hero.damageRoll()` gates this on `wep instanceof MissileWeapon`, which this port already
-		//expresses the same way every other hero-only bonus here does: `attacker === this.hero`
-		//is only true for the real bump-attack call site, never `useSpecial`'s throw/shoot/zap
-		//branches (those pass a shallow copy of the hero, not the hero itself).
-		if (attacker === this.hero) damage += ringForceBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 		//`Unstable.proc()`/`Kinetic.proc()`: an Unstable weapon delegates every swing to one
 		//`Random.element` draw over `UNSTABLE_DELEGATES` (Java's `Random.oneOf(randomEnchants)`
 		//minus the documented exclusions). The pick is stashed so `heroOnHit`'s post-damage

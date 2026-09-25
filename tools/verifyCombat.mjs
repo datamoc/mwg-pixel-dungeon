@@ -858,5 +858,11 @@ export function verifyCombat(require, check) {
 			'the miss cue-plus-log lives in its own seam');
 		assert.ok(scene.includes('this.presentAttackMiss(attacker, subject, object);'),
 			'the afterImage and spiritHawk gates present through the miss seam');
+		assert.ok(scene.includes('scaleAttackDamage(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): number'),
+			'the pre-proc damage adjustments live in their own seam');
+		assert.ok(scene.includes('let damage = this.scaleAttackDamage(attacker, defender, attackRoll.damage);'),
+			'a landed hit scales through the damage seam');
+		assert.ok(scene.includes('isCharmedToward(this: DungeonScene, attacker: Creature, defender: Creature): boolean'),
+			'the charm pairing is one shared predicate, read pre-proc for the decay');
 	});
 }
