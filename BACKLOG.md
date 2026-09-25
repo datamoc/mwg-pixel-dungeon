@@ -98,7 +98,22 @@ has no hook, and `pickupDelay()` is not modelled. This matrix also corrected the
 `badges`/challenges, `classes` (hero kits), `alchemy` recipes, room and level generation
 (`room-rules`, `generator-decks`/`generator-tables`, `dungeon-rules`), `loot-rules`, the non-DoT
 half of `buff-rules`, a second artifacts matrix (only `ARTIFACTS_ONE` exists), and the generic
-Spell/alchemy-result spells. Monsters and the named item families are now covered by 43 matrices.
+Spell/alchemy-result spells. Monsters and the named item families are now covered by 44 matrices.
+
+**Progress 2026-09-25, forty-fourth matrix:** `garbage/MONSTER_ANALYSIS_BADGES.md` pairs Java's 39
+`Badges.java` validators - the catalogue's only enumeration, since Java declares badges inline as
+`Badge(image, type)` rather than as named classes - against this port's 31-row `badges.mwl`
+catalogue, its 19 `awardBadge` sites and `src/badges.ts`. Every covered validator is mapped
+(piranhas, hazard assists, the boss and boss-challenge rows, the five bag rows, victory at Amulet
+pickup, the happy-end trio, four death causes, four class unlocks), and every award was checked
+against a declared counter with no orphan. Residual recorded: **22 of the 39 Java validators have
+no port row** (MonstersSlain, GoldCollected, LevelReached, StrengthAttained, FoodEaten,
+ItemsCrafted, ItemLevelAquired, CatalogBadges, five death causes, Mastery, MasteryCombo,
+Ratmogrify, TakingTheMick, NoKilling, GrimWeapon, ManyBuffs, GamesPlayed, HighScore, Champion) -
+`badges.ts`'s "smaller invented set" comment decides the family but never enumerates the omissions,
+which is what the matrix now does. Also recorded: the Cleric-unlock divergence (first victory here
+vs `validateClericUnlock`) and the four `unlock_*` rows whose award site no `awardBadge` call
+fires.
 
 ## B9. from ROADMAP 6. Complete hero progression (item closed 2026-09-24)
 
