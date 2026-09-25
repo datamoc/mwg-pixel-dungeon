@@ -72,7 +72,10 @@ for (const [file, hook] of [
 	['../src/scenes/dungeon/combatResolution.ts', "this.lockedFloorBossDamage(defender, preHp - defender.hp, preHp - defender.hp);\n\t\tif (defender.kind === 'dm300')"],
 	['../src/scenes/dungeon/combatResolution.ts', 'this.lockedFloorBossDamage(linkKing, share, kingPreHp - linkKing.hp);'],
 	['../src/scenes/dungeon/panelsSingleUse.ts', "this.lockedFloorBossDamage(c, damage, preHp - c.hp);\n\t\tif (c.kind === 'tengu')"],
-	['../src/scenes/dungeon/actorTurnsHazards.ts', 'this.lockedFloorBossDamage(monster, dotDealt, preHp - monster.hp);'],
+	//d5341de rerouted monster DoT ticks through the shared Char.damage dispatch, so the
+	//lock feed no longer sits at the tick site: the tick pins the dispatch call below and
+	//the dispatch's own lockedFloorBossDamage pin (two lines up) closes the chain.
+	['../src/scenes/dungeon/actorTurnsHazards.ts', "this.applyCharacterDamage(monster, dotDealt, { pierceArmor: true, cause: 'foe', skipAura: true });"],
 	['../src/items/bombEffects.ts', 'context.onBossDamageTaken?.(target, damage, previousHp - target.hp);'],
 	['../src/scenes/dungeon/bosses/bossLogic.ts', 'onWaterHeal: (healInc) => this.lockedFloorGooHeal(healInc),'],
 	['../src/scenes/dungeon/bosses/bossLogic.ts', "const dmgTaken = Math.max(0, preHp - yog.hp);\n\t\tthis.creditLockedFloor('yog', dmgTaken, dmgTaken);"],
