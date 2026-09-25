@@ -732,6 +732,33 @@ export function verifyArmorAbilities(require, check) {
 		assert.match(tick[1], /if \(shield > 0 && !monster\.isAlly\) this\.grantHeroShield/,
 			'the barrier must be withheld from a marked target that is now an ally');
 	});
+	check('Shockwave plants StrikingWaveTracker +0.2 at rank 4 and clears it after the cone', () => {
+		//`Shockwave.java` 121-123 plants `Talent.StrikingWaveTracker` (duration 0) for every
+		//caught char *before* the proc roll, and `Weapon.Enchantment.
+		//genericProcChanceMultiplier()` adds `multi += 0.2f` while it is up and the talent is
+		//rank 4 - without detaching it (RunicSlash/DirectedPower detach, this one does not),
+		//so it lasts exactly as long as the duration-0 buff does, i.e. the cone and no further.
+		//Pinned at source level: the scene cannot load in this harness.
+		const wave = readFileSync(new URL('../src/scenes/dungeon/hero/armorAbilityUse.ts', import.meta.url), 'utf8');
+		const body = /	activateShockwave\(this: DungeonScene[^)]*\)[^{]*\{([\s\S]*?)\n\t\},/.exec(wave);
+		assert.ok(body, 'activateShockwave still exists');
+		const arm = body[1].indexOf('this.abilityStrikingWaveBonus = 0.2');
+		const proc = body[1].indexOf('this.heroOnHit(this.hero, caught, damage)');
+		assert.ok(arm >= 0, 'rank 4 must arm the tracker inside the cone');
+		assert.ok(proc >= 0, 'the striking-wave proc still runs');
+		assert.ok(arm < proc, 'the tracker must be planted before attackProc reads the enchant multiplier');
+		assert.match(body[1], /if \(strikingWave === 4\) this\.abilityStrikingWaveBonus = 0\.2/,
+			'the plant carries Java\'s own rank-4 gate');
+		assert.match(body[1], /this\.abilityStrikingWaveBonus = 0;\r?\n\t\tthis\.shakeScreen/,
+			'the duration-0 tracker must be cleared before the hero can act again');
+		const res = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
+		const ench = /	enchantProcMultiplier\(this: DungeonScene\): number \{([\s\S]*?)\n\t\},/.exec(res);
+		assert.ok(ench, 'enchantProcMultiplier still exists');
+		assert.match(ench[1], /abilityRunicBonus \+ this\.abilityDirectedBonus \+ this\.abilityStrikingWaveBonus/,
+			'the tracker must SUM with the other one-shot bonuses');
+		assert.doesNotMatch(ench[1], /abilityStrikingWaveBonus = 0/,
+			'Java never detaches it in this read - activateShockwave owns the clear');
+	});
 	check('the AfterImage decoy takes no buffs and no direct blob damage', () => {
 		//`Feint.AfterImage` (tag `v3.3.8`): `add(Buff)` returns false unconditionally and the
 		//class carries the whole `BlobImmunity` set - the decoy exists to eat one attack, not

@@ -1160,6 +1160,9 @@ export class DungeonScene extends Scene2D {
 	abilityRunicBonus = 0;
 	/** `DirectedPowerTracker.enchBoost`: the ElementalStrike tracker's pending proc bonus. */
 	abilityDirectedBonus = 0;
+	/** `Talent.StrikingWaveTracker` (duration 0): the rank-4 `STRIKING_WAVE` leg of
+	 * `genericProcChanceMultiplier()`, `+0.2f` on Shockwave's own enchant procs. */
+	abilityStrikingWaveBonus = 0;
 	abilityDazeNext = false;
 	abilityKnockbackNext = false;
 	lastAbilityAttack: string | null = null;

@@ -1124,8 +1124,9 @@ export const combatResolutionMethods = {
 	 * `enchantProcMultiplier` - Java's defend-side procs, reach, stealth and speed
 	 * reads all go through this without detaching the one-shot ability trackers.
 	 * The remaining tracker terms need unmodeled systems (Smite's +3, the Cleric
-	 * spell that arms it) or are recorded residuals (SpiritBlades +0.1 and
-	 * StrikingWave +0.2 at rank 4 - no tracker state for a tenth of proc chance). */
+	 * spell that arms it) or stay recorded residuals (SpiritBlades +0.1, whose own
+	 * rank-4 roll consumes it inside `onAttackProc` before this ever runs);
+	 * StrikingWave +0.2 at rank 4 now rides `enchantProcMultiplier` instead. */
 	/** `Mob.defenseSkill()`'s illuminated half (tag `v3.3.8`) as a predicate: the Cleric
 	 * with the STR for the swung weapon, or any non-hero attacker, auto-hits an
 	 * illuminated defender. Thrown copies carry `isHero`, so they ride the hero half. */
@@ -1164,9 +1165,13 @@ export const combatResolutionMethods = {
 	enchantProcMultiplier(this: DungeonScene): number {
 		//Java's one-shot trackers are separate buffs that SUM at the next proc
 		//roll (`RunicSlashTracker.boost + DirectedPowerTracker.enchBoost + ...`),
-		//so the two slots add rather than overwrite - and both zero together,
-		//matching the shared detach inside `genericProcChanceMultiplier`.
-		const bonus = this.abilityRunicBonus + this.abilityDirectedBonus;
+		//so the slots add rather than overwrite - and Runic/Directed both zero
+		//together, matching the shared detach inside `genericProcChanceMultiplier`.
+		//`StrikingWaveTracker` (rank-4 STRIKING_WAVE) is summed but deliberately
+		//NOT zeroed: Java never detaches it inside `genericProcChanceMultiplier`
+		//- its duration-0 life simply runs out - so `activateShockwave` owns the
+		//clear, at the point the hero could next act.
+		const bonus = this.abilityRunicBonus + this.abilityDirectedBonus + this.abilityStrikingWaveBonus;
 		this.abilityRunicBonus = 0;
 		this.abilityDirectedBonus = 0;
 		return this.genericProcMultiplier() + bonus;

@@ -1,7 +1,7 @@
 {
-  "src/scenes/dungeonScene.ts": 2568,
+  "src/scenes/dungeonScene.ts": 2571,
   "src/i18n/portStrings.ts": 12325,
   "src/scenes/dungeon/environmentFireTraps.ts": 2040,
   "src/scenes/dungeon/hero/inventoryQuickslot.ts": 2228,
-  "src/scenes/dungeon/hero/armorAbilityUse.ts": 2100
+  "src/scenes/dungeon/hero/armorAbilityUse.ts": 2108
 }

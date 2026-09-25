@@ -690,6 +690,11 @@ export const armorAbilityUseMethods = {
 		for (const coneCell of cone.cells) {
 			const caught = this.creatureAt(coneCell.x, coneCell.y);
 			if (!caught || caught === this.hero || caught.isAlly || caught.isNPC || caught.hp <= 0) continue;
+			//`Shockwave.java` 121-123: at STRIKING_WAVE rank 4 every caught char plants a
+			//duration-0 `StrikingWaveTracker`, which `genericProcChanceMultiplier()` reads as
+			//`+0.2f` - so this cone's own enchant procs roll 0.2 hotter. Java never detaches it
+			//there; its life simply runs out, i.e. after this loop (cleared below).
+			if (strikingWave === 4) this.abilityStrikingWaveBonus = 0.2;
 			//`hero.STR()`, which is the *effective* strength: `this.hero.str` is where `syncHeroFromStats`
 			//folds in the Ring of Might and the Strongman talent, so a +3 ring widens the roll exactly
 			//as it does in Java. `this.heroStr` is only the base and would ignore both. (`Creature.str`
@@ -710,6 +715,9 @@ export const armorAbilityUseMethods = {
 				else addBuff(caught, 'cripple', 5);
 			}
 		}
+		//The duration-0 `StrikingWaveTracker` from above is spent by the time the hero could act
+		//again, so it must not leak into the next ordinary swing's enchant roll.
+		this.abilityStrikingWaveBonus = 0;
 		this.shakeScreen(2, 0.5);
 		//`Invisibility.dispel()` (Shockwave.java 147), in the cast callback after the cone resolves.
 		delete this.hero.buffs['invisibility'];
