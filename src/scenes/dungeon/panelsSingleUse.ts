@@ -399,6 +399,11 @@ export const panelsSingleUseMethods = {
 		this.armorInstanceId ??= this.bag.find(this.armorId)?.instanceId;
 		this.gameState = new Rpg.GameState();
 		for (const [name, value] of s.switches) this.gameState.setSwitch(name, value);
+		//`Hero.buff(AscensionChallenge.class)`'s persistence: Java bundles the buff like any
+		//other and it survives a save/load, so this port's own stand-in flag (see
+		//`ascensionChallengeActive`'s field comment) does too - `enterLevel()` re-syncs it into
+		//`combat.ts` right after this method calls it, below.
+		this.ascensionChallengeActive = s.ascensionChallengeActive ?? false;
 		this.quests = Rpg.QuestLog.fromJSON(
 			[SAD_GHOST_QUEST, WANDMAKER_QUEST, BLACKSMITH_QUEST, IMP_QUEST],
 			{ stageIndex: s.questStages },
@@ -611,7 +616,18 @@ export const panelsSingleUseMethods = {
 		this.gameWindows.push(window);
 	},
 
-	/** Small explicit talent window: earned points are assigned to accuracy or evasion. */
+	/** **Simplified UI (found undocumented 2026-09-25):** real Java's talent picker is
+	 * `TalentsPane`/`TalentButton`/`TalentIcon` (`ui/TalentsPane.java` etc., tag `v3.3.8`) - a
+	 * grid of square icon buttons (`Assets.Interfaces.TALENT_BUTTON` background, each talent's
+	 * own `TalentIcon` sprite, a fill-bar under the icon showing `pointsInTalent/maxPoints`) that
+	 * opens `WndInfoTalent` (name/description plus an explicit "Upgrade" confirm button) on
+	 * click, rather than committing the point immediately. This port's `refreshTalentPanel`
+	 * below renders a plain vertical list of text buttons (`"<name>  <rank>/<max>"`) that spend
+	 * the point on the first click, with no icon art and no confirmation step. The tier
+	 * tabs/point-gating/max-rank/cost logic itself is real and correct (see the click handler a
+	 * few lines down) - only the presentation and the two-click confirm flow are reduced. No
+	 * `TALENT_ICON`-equivalent spritesheet asset exists in this port to draw from. Recorded in
+	 * `PORT_COVERAGE.md`. */
 	createTalentWindow(this: DungeonScene): void {
 		const window = new Window({ width: 320, height: 220, title: t('port.action.talents'), anchor: 'center', blocker: true });
 		window.onClose.add(() => {

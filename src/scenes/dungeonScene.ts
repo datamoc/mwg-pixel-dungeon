@@ -452,6 +452,14 @@ export class DungeonScene extends Scene2D {
 	 * once at spawn and never re-registered, so a plain `Map` (not a WeakMap) is fine; entries
 	 * are removed explicitly wherever the sprite is destroyed. */
 	spriteFor = new Map<string, TintedSprite>();
+	/** The King's edge-triggered phase-transition `ReactionTable`, keyed by creature id and kept
+	 * outside `Creature` for the same reason `spriteFor` is - see `kingReactions`' own removal
+	 * note in `combat.ts` and `PORT_COVERAGE.md`'s "King combat crash" row: a `ReactionTable`
+	 * holds live rule-closure functions, and attaching it directly to the `Creature` object made
+	 * every attack against the King (from its second hit onward, once the table existed) fail
+	 * `structuredClone` inside mwg's command journaling, since the hero-vs-defender command
+	 * payload carries the live creature object. */
+	kingReactionsFor = new Map<string, ReactionTable<Creature>>();
 	/** Seeds planted during play on floors whose original PaintLevel has no plant array. */
 	manualPlants = new Map<number, string>();
 	furrowedGrass = new Set<number>();
@@ -523,6 +531,22 @@ export class DungeonScene extends Scene2D {
 	hasStairs = false;
 	/** set by takeHeroTurn when a step lands on the stairs and triggers enterLevel() */
 	justDescended = false;
+	/** `Hero.buff(AscensionChallenge.class) != null` - granted once, at depth 26's ascent
+	 * confirmation (`tryAscendStairs`), never cleared. Mirrored into `combat.ts`'s module-level
+	 * `ascensionActive` at the top of every `enterLevel()`, since that module has no scene ref. */
+	ascensionChallengeActive = false;
+	/** `AscensionChallenge.stacks` (tag `v3.3.8`): +2 per non-boss floor climbed, -1 (-0.5 for
+	 * Ghoul/RipperDemon) per boosted-kind kill, floored at 0. Drives the beckon (>=2)/hero-damage
+	 * (>=8) thresholds below; see `beginAscendOneFloor`/`applyAscensionKillDecay` for the exact
+	 * Java call sites this ports. */
+	ascensionStacks = 0;
+	/** `AscensionChallenge.damageInc` (tag `v3.3.8`): the fractional damage-over-time
+	 * accumulator ticked in `spendHeroTurn`'s `applyBuffDamage`, whole points spent as they cross 1. */
+	ascensionDamageInc = 0;
+	/** `AscensionChallenge.stacksLowered` (tag `v3.3.8`): true once any kill has ever lowered
+	 * stacks - real Java's `qualifiedForPacifist()` gate. Tracked for a future `PACIFIST_ASCENT`
+	 * badge (`PORT_COVERAGE.md`: "Post-victory ascent"); no badge row consumes it yet. */
+	ascensionStacksLowered = false;
 	/** thrown-weapon charges left for classes whose special is finite (Warrior/Rogue/Duelist); ignored for the rest */
 	ammo = 0;
 	/** Shared missile upgrade level (all class missiles are tier-1; rogue knives scale max twice as fast - see useSpecial). No cap, like Java. */
@@ -1503,6 +1527,10 @@ export class DungeonScene extends Scene2D {
 		this.ammoSetId = this.newMissileSetId();
 		this.missileThresholds = new Map();
 		this.dustSpawnPower = 0;
+		this.ascensionChallengeActive = false;
+		this.ascensionStacks = 0;
+		this.ascensionDamageInc = 0;
+		this.ascensionStacksLowered = false;
 		this.enterLevel();
 
 		const def = CLASSES[this.heroClass];

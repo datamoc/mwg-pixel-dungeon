@@ -39,7 +39,7 @@ import { BUFF_DURATION, addBuff, buffBlocked, electricDamageHalved, icyDamageHal
 import { NEGATIVE_BUFFS, tickMonsterTurnEnd, type BuffId } from '../../simulation/buffs';
 import { sealTick } from '../../simulation/sealShield';
 import { corruptingPower, corruptionResistance, resolveCorruptionZap } from '../../simulation/wandCorruption';
-import { MONSTERS, isUndeadOrDemonic, type AnyMonsterId } from '../../monsters';
+import { MONSTERS, BOSSES, isUndeadOrDemonic, type AnyMonsterId } from '../../monsters';
 
 /** Whether the hero was paralysed/vertigoed at a queued travel's first step, keyed by that travel's target object (`Hero.interrupt()` on gaining either). */
 const travelStartRestricted = new WeakMap<object, boolean>();
@@ -1785,6 +1785,31 @@ export const turnLoopAimingMethods = {
 			//damage does. See `tickBombFuses`.
 			if (this.tickBombFuses()) return true;
 			if (this.tickFallingRocks()) return true;
+				//`AscensionChallenge.act()` (tag `v3.3.8`): once stacks reach 8, the amulet burns the
+				//hero directly - `damageInc += (stacks-4)/4`, spending whole points as they accrue -
+				//suppressed on a boss level (`!Dungeon.bossLevel()`; depth 26 itself, where the
+				//climb starts, is the only boss floor reachable while this buff is active, and the
+				//confirmation there always leaves stacks at 0). A fatal tick books Java's own
+				//`on_kill` line and `Dungeon.fail(Amulet.class)`; this port has no separate
+				//amulet-specific fail path, so it reuses the ordinary hero-death pipeline like every
+				//other DoT above.
+				if (this.ascensionChallengeActive && !(this.depth in BOSSES)) {
+					if (this.ascensionStacks >= 8) {
+						this.ascensionDamageInc += (this.ascensionStacks - 4) / 4;
+						if (this.ascensionDamageInc >= 1) {
+							const wholePoints = Math.floor(this.ascensionDamageInc);
+							this.ascensionDamageInc -= wholePoints;
+							const blockedAscension = this.absorbHeroDamage(wholePoints);
+							this.hero.hp -= blockedAscension;
+							this.showDamage(this.hero, blockedAscension);
+							if (this.hero.hp <= 0) {
+								this.say(t('actors.buffs.ascensionchallenge.on_kill'), 'negative');
+								this.kill(this.hero, 'poison');
+								return true;
+							}
+						}
+					} else this.ascensionDamageInc = 0;
+				}
 				if (this.tickCavesBossEnergy()) return true;
 				}
 				return false;

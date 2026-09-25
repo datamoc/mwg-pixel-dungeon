@@ -3,7 +3,6 @@
 // the scene's `spriteFor` registry (see `SIMULATION_ARCHITECTURE.md`'s "Step 6"), not by
 // `Creature`/`GroundItem` here.
 import type { AnyMonsterId } from './monsters';
-import type { ReactionTable } from 'mwg';
 import type { MultiTurnBeamSave } from 'mwg/roguelike';
 import type { GroundItemKind } from './dungeonConstants';
 import type { Combatant, Step } from './simulation/combatState';
@@ -321,11 +320,13 @@ export interface Creature extends Combatant {
 	noExp?: boolean;
 	/** P2-wave King servants carrying `KingDamager` (chip the P2 shield on death). */
 	kingDamager?: boolean;
-	/** Edge-triggered phase-1->2, phase-2->3, and losing-yell rules (`mwg/core`'s
-	 * `ReactionTable`), lazily built per King instance in `takeKingTurn`. Not part of the
-	 * plain `SavedCreature` field list - its own `toJSON()`/`fromJSON()` round-trip is wired
-	 * separately in `captureActiveFloor`/`restoreFloor`. */
-	kingReactions?: ReactionTable<Creature>;
+	// The King's phase-transition ReactionTable used to live here directly (`kingReactions?:
+	// ReactionTable<Creature>`); moved out to `DungeonScene.kingReactionsFor` (keyed by this
+	// creature's id) because a `ReactionTable` holds live rule-closure functions, and mwg's
+	// SimulationRuntime journals the 'attack' command via structuredClone with the full
+	// attacker/defender Creature objects attached - a King carrying this field directly
+	// crashed every attack against it (from the second hit onward) with a real, reproducible
+	// DataCloneError. See `PORT_COVERAGE.md`'s "King combat crash" row.
 	/** YogDzewa phase (1-5; 0-dormancy unmodeled, wakes on entry). */
 	yogPhase?: number;
 	/** YogFist.java's six concrete fist subclasses, selected by Yog's summon deck. */

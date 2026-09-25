@@ -29,13 +29,14 @@ import { disarmBubblePresses } from '../../simulation/teleport';
 import { findEnemyAlly as findEnemyAllyFlow } from '../../simulation/targeting';
 import { nearestFreeCell as nearestFreeCellFlow } from '../../simulation/wandering';
 import { wardZapBursts } from '../../simulation/deathBursts';
+import { recordRun } from '../../rankings';
 import { isClassArmorId } from '../../items/catalog';
 import { getCurse } from '../../items/itemCurses';
 import { Cat, randomUsingDefaults } from '../../items/generator';
 import { MWL_WAND_WARD_RULES } from '../../mwlContent';
 import { FLOOR, SOLID, TILE, WALL, WATER } from '../../dungeonConstants';
 import { STARVING } from '../../simulation/hunger';
-import { NEGATIVE_BUFFS, absorbShield, addBuff, reigniteBuff, rollHit, setBleeding, tickBuffs, type BuffId, type Creature, type Step } from '../../combat';
+import { NEGATIVE_BUFFS, absorbShield, addBuff, reigniteBuff, rollHit, setAscensionActive, setBleeding, tickBuffs, type BuffId, type Creature, type Step } from '../../combat';
 import { BOSSES, IMMOVABLE_KINDS } from '../../monsters';
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `actorTurnsHazards`). Each takes the scene as `this`;
@@ -239,6 +240,9 @@ export const actorTurnsHazardsMethods = {
 				//`Level.beforeTransition()`: delayed TimeBubble presses disarm on the old floor.
 				this.disarmTimeBubblePresses();
 				this.enterLevel();
+			} else if (this.bag.find('amulet') && this.entranceCell
+				&& target.x === this.entranceCell.x && target.y === this.entranceCell.y) {
+				this.tryAscendStairs();
 			}
 			//`Hero.actMove()` calls `search(false)` after a successful move (Hero.java, tag
 			//`v3.3.8`); a stair transition builds a new floor instead and must not scan the old one.
@@ -248,6 +252,102 @@ export const actorTurnsHazardsMethods = {
 		} else {
 			this.say(t('port.log.wall'), 'negative');
 		}
+	},
+
+	/**
+	 * Walking back onto the tile the hero arrived on this floor, carrying the Amulet -
+	 * `LevelTransition.Type.REGULAR_ENTRANCE` (every level) and `.SURFACE` (depth 1 only),
+	 * both handled through `Level.activateTransition` in real Java. Three cases, matching
+	 * three different source methods there:
+	 *
+	 * - Depth 26, buff not yet granted: `HallsBossLevel.activateTransition` - a yes/no
+	 *   confirmation (`Amulet.ascent_title`/`ascent_desc`, real generated strings) before the
+	 *   climb actually starts. "No" leaves the hero on depth 26, free to keep fighting Yog's
+	 *   remains or grab more loot. "Yes" grants `AscensionChallenge` (`Buff.affect` in Java;
+	 *   here `ascensionChallengeActive = true` + `setAscensionActive`, see the field comment)
+	 *   and Java's `Statistics.highestAscent = 25` - this port has no Rankings/high-score
+	 *   screen to feed that into (`PORT_COVERAGE.md`: "Post-victory ascent"), so it is not
+	 *   tracked as a separate stat, only used here to gate the confirmation.
+	 * - Depth 1: `SewerLevel.activateTransition`'s `SURFACE` branch - the real win.
+	 *   `Badges.validateHappyEnd()` has no counterpart badge row in this port's
+	 *   `badges.mwl` (only the pickup-time "Escaped with the Amulet" trophy exists - see
+	 *   `pickupAmulet`'s own comment), so this port does not award a second badge here; the
+	 *   run-completion path itself (`recordRun`/`showVictoryPanel`/`gameOver`) is real.
+	 * - Every other depth: an ordinary step up, `Dungeon.switchLevel` one floor shallower, plus
+	 *   the real `AscensionChallenge.onLevelSwitch`/`act()` escalation - +2 stacks per floor
+	 *   (`beginAscendOneFloor`), -1 (-0.5 Ghoul/RipperDemon) per boosted kill
+	 *   (`deathSaveRefresh.ts`'s `ASCENSION_MOD` gate), and direct hero damage at 8+ stacks
+	 *   (`turnLoopAiming.ts`'s `applyBuffDamage`). `Statistics.highestAscent` and the
+	 *   DemonSpawner sub-20 cooldown carve-out are still not ported (no Rankings screen reads
+	 *   the former; the latter has no observable gameplay effect the port models at all). The
+	 *   beckon (>=2 stacks: distant enemies pulled to the hero)/haste (>=4: idle enemies move at
+	 *   2x)/hero-speed-cap (>=6: halved, capped at 1x) effects are also not ported - they need a
+	 *   hook into continuous mob-AI pathing and hero action-cost scaling this port's turn-based
+	 *   (not actor-clock) movement/AI code has no seam for; the per-mob `ASCENSION_MOD` combat
+	 *   multiplier (the largest single combat-facing effect) is unaffected and stays live for the
+	 *   whole climb regardless. `PORT_COVERAGE.md`: "Post-victory ascent".
+	 */
+	tryAscendStairs(this: DungeonScene): void {
+		if (this.depth === 26 && !this.ascensionChallengeActive) {
+			showConfirmWindow(
+				this.gameWindows,
+				t('items.amulet.ascent_title'),
+				t('items.amulet.ascent_desc'),
+				t('items.amulet.ascent_yes'),
+				t('items.amulet.ascent_no'),
+				() => {
+					this.ascensionChallengeActive = true;
+					setAscensionActive(true);
+					this.beginAscendOneFloor();
+				},
+			);
+			return;
+		}
+		this.beginAscendOneFloor();
+	},
+
+	/** The actual one-floor climb, shared by the depth-26 confirmation's "yes" and every later floor. */
+	beginAscendOneFloor(this: DungeonScene): void {
+		if (this.depth <= 1) {
+			//`SewerLevel.activateTransition`'s `SURFACE` branch, `Statistics.ascended = true` +
+			//`Dungeon.win(Amulet.class)` - the real victory condition this port did not model at
+			//all before now (`PORT_COVERAGE.md`, "does not model the ascent").
+			this.say(t('scenes.amuletscene.exit'), 'positive');
+			this.awaitingInput = false;
+			this.gameOver = true;
+			recordRun({ result: 'won', depth: this.depth, level: this.progression.level, gold: this.heroStats.base('gold') });
+			this.showVictoryPanel();
+			this.justDescended = true;
+			return;
+		}
+		this.depth--;
+		//`AscensionChallenge.onLevelSwitch()` (tag `v3.3.8`): every non-boss floor climbed adds 2
+		//stacks (the boss-floor branch instead satiates hunger and heals - not reachable here,
+		//since depth 26 is a one-time confirmation the hero has already passed by the time this
+		//runs). `Statistics.highestAscent` decay and the sub-20 `DemonSpawner` cooldown carve-out
+		//still aren't ported (`PORT_COVERAGE.md`: "Post-victory ascent") - neither has an observable
+		//gameplay effect on the climb itself (no Rankings screen reads the stat; the carve-out only
+		//shortens a spawner's own cooldown, not modelled here at all).
+		this.ascensionStacks += 2;
+		//`AscensionChallenge.saySwitch()`'s narrative ladder (tag `v3.3.8`): depth 1 always shows
+		//"almost there" regardless of stacks; every other floor picks the highest threshold the
+		//current stack count clears (damage >= slow >= haste >= beckon), falling back to the
+		//ordinary descend line below 2 stacks. Java's separate "weaken_info"/"weaken_info_no_kills"
+		//hint lines (shown *in addition to* the ladder line above 4/8 stacks while no kill has
+		//lowered them yet) are folded into the ladder line's own text rather than added as a
+		//second chat line, since this port's `say()` is one line per turn.
+		this.say(
+			this.depth === 1 ? t('actors.buffs.ascensionchallenge.almost')
+				: this.ascensionStacks >= 8 ? t('actors.buffs.ascensionchallenge.damage')
+				: this.ascensionStacks >= 6 ? t('actors.buffs.ascensionchallenge.slow')
+				: this.ascensionStacks >= 4 ? t('actors.buffs.ascensionchallenge.haste')
+				: this.ascensionStacks >= 2 ? t('actors.buffs.ascensionchallenge.beckon')
+				: t('scenes.gamescene.descend', { 0: this.depth }),
+			'warning',
+		);
+		this.justDescended = true;
+		this.disarmTimeBubblePresses();
+		this.enterLevel();
 	},
 
 	/** Consumes a generated Java well once, applying the two WellWater hero effects. */

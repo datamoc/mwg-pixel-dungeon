@@ -30,6 +30,7 @@ import { FLOOR, TILE, WALL, WATER, WATERSKIN_MAX } from '../../dungeonConstants'
 import { regionForDepth } from '../../genericDungeon';
 import { BUFF_DURATION, addBuff, buffBlocked, reigniteBuff, rollHit, type BuffId, type Creature, type GroundItem } from '../../combat';
 import { BOSSES, BOSS_KINDS, LIMITED_DROP_DECAY, MINIBOSS_KINDS, MOB_LOOT, MONSTERS, type AnyMonsterId, type MonsterId } from '../../monsters';
+import { ASCENSION_MOD } from '../../simulation/combat';
 import { SPD_LEVEL_CURVE, isStatueLoot } from './shared';
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `deathSaveRefresh`). Each takes the scene as 	his`;
@@ -275,6 +276,19 @@ export const deathSaveRefreshMethods = {
 		//Mob.java: `exp = Dungeon.hero.lvl <= maxLvl ? EXP : 0` - a mob outgrown by the hero's
 		//level grants nothing; NPCs never fight and clones past generation 0 grant nothing
 		if (creature.kind && !creature.isNPC) {
+			//`AscensionChallenge.processEnemyKill()` (tag `v3.3.8`): killing any boosted (i.e.
+			//`ASCENSION_MOD`-listed) kind while the challenge is active lowers its stacks by 1 (0.5
+			//for Ghoul/RipperDemon - "half of 13, rounded up" is a separate `EXP`-only carve-out,
+			//not this decay), floored at 0. `stacksLowered` latches true forever on the first such
+			//kill - real Java's `qualifiedForPacifist()` gate, tracked here for a future
+			//`PACIFIST_ASCENT` badge (`PORT_COVERAGE.md`: "Post-victory ascent") though no badge row
+			//reads it yet. The 10-xp-per-stack-cleared max-level bonus is not ported: it only fires
+			//at `Hero.MAX_LEVEL`, a state a climbing hero is already deep past by depth 26.
+			if (this.ascensionChallengeActive && ASCENSION_MOD[creature.kind]) {
+				this.ascensionStacks = Math.max(0, this.ascensionStacks
+					- (creature.kind === 'ghoul' || creature.kind === 'ripperDemon' ? 0.5 : 1));
+				this.ascensionStacksLowered = true;
+			}
 			//Talent.BOUNTY_HUNTER is now its real mechanic: `Mob.lootChance()`'s drop-chance term,
 			//added into the multiplier by `bountyHunterLootBonus()`, gated on the tracker armed by
 			//a prepared attack (`Char.attack()` 407-409). What stood here was a flat gold bonus on
@@ -1464,6 +1478,7 @@ export const deathSaveRefreshMethods = {
 			itemSerial: this.itemSerial,
 			appearances: this.appearances.toJSON(),
 			switches: this.gameState.toJSON().switches,
+			ascensionChallengeActive: this.ascensionChallengeActive,
 			questStages: this.quests.toJSON().stageIndex,
 			equippedRing: this.equippedRing,
 			ringTypesKnown: [...ringTypesKnownFor(this)],

@@ -47,7 +47,7 @@ import { monsterSpawnProfile } from '../../actors/monsterSpawn';
 import { ritualSiteState } from '../../spdLevelGen/rooms/standard/ritualSiteRoom';
 import { DOOR, GAME_KIND_CODES, HIGH_GRASS, SOLID, TERRAIN_KINDS, TILE, WALL, WATER, type GroundItemKind } from '../../dungeonConstants';
 import { REGION_GRASS, REGION_WATER, generateSpdDungeon, regionForDepth, type Region } from '../../genericDungeon';
-import { INFINITE_EVASION, addBuff, baseCreature, rollHit, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
+import { INFINITE_EVASION, addBuff, baseCreature, rollHit, setAscensionActive, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
 import { BOSSES, MONSTERS, heroSheet, type AnyMonsterId } from '../../monsters';
 import { HERO_SCHEDULER_ID, MOB_SCHEDULER_ID_PREFIX, NON_STATBLOCK_RING_STATS, SPD_LEVEL_CURVE, SUBCLASS_OPTIONS, wardTexture } from './shared';
 
@@ -810,7 +810,7 @@ export const coreSpawnTilesMethods = {
 				sungrassLevel: creature.sungrassLevel, sungrassPartial: creature.sungrassPartial, sungrassPos: creature.sungrassPos,
 				earthrootArmorLevel: creature.earthrootArmorLevel, earthrootArmorPos: creature.earthrootArmorPos,
 						barkskinLevel: creature.barkskinLevel, barkskinInterval: creature.barkskinInterval, barkskinCooldown: creature.barkskinCooldown,
-				kingReactionsState: creature.kingReactions?.toJSON(),
+				kingReactionsState: this.kingReactionsFor.get(creature.id)?.toJSON(),
 				weaponLevel: creature.weaponLevel, stolen: creature.stolen, mimicLoot: creature.mimicLoot, generation: creature.generation,
 				armbandStolen: creature.armbandStolen,
 				spawnCooldown: creature.spawnCooldown, seesHero: creature.seesHero,
@@ -973,9 +973,6 @@ export const coreSpawnTilesMethods = {
 				sungrassLevel: saved.sungrassLevel, sungrassPartial: saved.sungrassPartial, sungrassPos: saved.sungrassPos,
 				earthrootArmorLevel: saved.earthrootArmorLevel, earthrootArmorPos: saved.earthrootArmorPos,
 						barkskinLevel: saved.barkskinLevel, barkskinInterval: saved.barkskinInterval, barkskinCooldown: saved.barkskinCooldown,
-				kingReactions: saved.kingReactionsState
-					? ReactionTable.fromJSON(this.kingPhaseRules(creature), saved.kingReactionsState)
-					: undefined,
 				weaponLevel: saved.weaponLevel, stolen: saved.stolen, mimicLoot: saved.mimicLoot, generation: saved.generation,
 				armbandStolen: saved.armbandStolen,
 				spawnCooldown: saved.spawnCooldown, seesHero: saved.seesHero,
@@ -1023,6 +1020,9 @@ export const coreSpawnTilesMethods = {
 			this.syncMimicVisual(creature);
 			this.syncLightAllyVisual(creature);
 			this.applyStatueKit(creature);
+			if (saved.kingReactionsState) {
+				this.kingReactionsFor.set(creature.id, ReactionTable.fromJSON(this.kingPhaseRules(creature), saved.kingReactionsState));
+			}
 			restored.push(creature);
 		}
 		for (let i = 0; i < state.creatures.length; i++) {
@@ -1077,6 +1077,11 @@ export const coreSpawnTilesMethods = {
 	},
 
 	enterLevel(this: DungeonScene): void {
+		//`AscensionChallenge.statModifier` reads a module-level flag in `combat.ts` (that module
+		//has no scene reference), so it is re-synced from the scene's own persisted field on
+		//every floor build - covers a fresh run (false), the ascent buff being granted mid-run,
+		//and a save reload (see `saveRun`/`loadRun`) all from one call site.
+		setAscensionActive(this.ascensionChallengeActive);
 		this.captureActiveFloor();
 		//Ctrl+wheel / Ctrl+plus/minus zoom, bound once per scene (see the module).
 		bindZoomShortcuts(this);

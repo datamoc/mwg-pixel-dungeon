@@ -1,5 +1,6 @@
 import type { DungeonScene } from '../dungeonScene';
 import { Actors, Random, Roguelike, TintedSprite } from 'mwg';
+import { PRISON_START_CELLS } from '../../spdLevelGen/bossLevels';
 import { MISSILE_MAX_DURABILITY, missilePickupValid, missileStackId } from '../../items/missiles';
 import { appearanceItemFrame } from '../../items/appearanceFrames';
 import { eatFood as eatConsumableFood, quaffPotion as quaffConsumablePotion } from '../../items/consumables';
@@ -28,7 +29,6 @@ import { Terrain } from '../../spdLevelGen/paintLevel';
 import { foregroundGrassFrame } from '../../spdLevelGen/visualWalls';
 import { Feeling } from '../../spdLevelGen/regularPainter';
 import { runState } from '../../runState';
-import { recordRun } from '../../rankings';
 import { isChallengeEnabled } from '../../challenges';
 import { CLASSES } from '../../classes';
 import { showChoiceWindow, showConfirmWindow, showInfoWindow } from '../../ui/portWindows';
@@ -271,7 +271,24 @@ export const npcShopBlacksmithMethods = {
 			//`PrisonBossLevel.occupyCell()`'s real `case START:` spawns Tengu himself, once the
 			//hero has moved past the locked door into `tenguCell` - see `checkTenguFightStart`,
 			//which also owns the arrival line.
-			if (boss.kind === 'tengu') return;
+			if (boss.kind === 'tengu') {
+				//`PrisonBossLevel.createItems()` (tag `v3.3.8`): a guaranteed `IronKey(10)` drop
+				//at `randomPrisonCellPos()` - a random interior cell of one of the floor's four
+				//start cells (`PRISON_START_CELLS`, this port's own `startCells`). Missing here
+				//entirely until this pass (found via a live-play automated test that could never
+				//get past the locked Tengu-cell door): `prisonBossEnd()`'s own doc comment already
+				//flagged "Java's IronKey-heap cleanup ... is presentation/item-side, not paint",
+				//correctly scoping the key out of that paint function, but nothing ever picked the
+				//item-side half back up - the locked door existed with no way to ever open it.
+				//Guarded like the Amulet drop below: a re-entry must not mint a second key.
+				if (!this.bag.find('ironKey') && !this.groundItems.some((item) => item.item?.id === 'ironKey')) {
+					const [left, top, right, bottom] = Random.element(PRISON_START_CELLS)!;
+					const x = Random.range(left + 1, right - 2);
+					const y = Random.range(top + 1, bottom - 2);
+					this.spawnGroundItem('ironKey', x, y, { id: 'ironKey', quantity: 1, identified: true, depth: this.depth });
+				}
+				return;
+			}
 			const room = this.level.rooms[this.level.rooms.length - 1] ?? this.level.rooms[1];
 			this.spawnMonster(boss.kind, Roguelike.rectCenter(room));
 			//`Statistics.qualifiedForBossChallengeBadge = true` at each boss fight's start.
@@ -1730,10 +1747,35 @@ export const npcShopBlacksmithMethods = {
 			},
 			pickupAmulet: () => {
 				this.gameState.setSwitch('amuletObtained', true); runState.audio.winMusic();
+				//`incomingPickupStack` (`groundPickup.ts`) returns null for `kind === 'amulet'` - a
+				//pre-existing "no bag stack" classification from when picking the Amulet up
+				//instantly ended the run and had nothing left to carry. Now that the hero keeps
+				//playing and climbing with it, `tryAscendStairs`/`returnToPreviousFloor`
+				//(`actorTurnsHazards.ts`) and the quickslot's `hasAmulet` (`inventoryQuickslot.ts`)
+				//all gate on `this.bag.find('amulet')` - which nothing ever set, so the ascent could
+				//never trigger for a real pickup (only the synthetic tests that injected it directly
+				//via `bag.add` saw it work). Bug found and fixed 2026-09-25 via a scripted
+				//pickup-through-`checkHallsBossSeal`-through-ascent live run that a hand-injected
+				//amulet had been masking.
+				this.bag.add({ id: 'amulet', quantity: 1, identified: true });
 				if (this.demonSpawnerFloor) this.demonSpawnerFloor.setLayerData('demonSpawnerFloor', this.demonSpawnerFloorFrames(false));
 				if (this.vaultVisuals) { const layers = this.vaultTileLayers(); this.vaultVisuals.setLayerData('vaultFloor', layers.floor); this.vaultVisuals.setLayerData('vaultCenter', layers.center); this.vaultVisuals.setLayerData('vaultCenterWalls', layers.walls); }
-				this.awardBadge('amulet'); this.say(t('port.log.victory'), 'positive'); this.awaitingInput = false; this.gameOver = true;
-			recordRun({ result: 'won', depth: this.depth, level: this.progression.level, gold: this.heroStats.base('gold') }); this.showVictoryPanel();
+				//`Amulet.doPickUp`/`showAmuletScene` (Amulet.java, tag `v3.3.8`): real Java does not
+				//end the run here - it switches to `AmuletScene`, which calls
+				//`Badges.validateVictory()` (the "Escaped with the Amulet" trophy fires on pickup,
+				//not on the later surface exit - see `Badges.java:1016`) and then offers the player
+				//a choice: "Let's call it a day" (an immediate win, `Dungeon.win(Amulet.class)`,
+				//exactly the old always-instant-win behaviour this port used to have unconditionally)
+				//or "I'm not done yet" (stay and keep exploring/climbing). This port has no separate
+				//cutscene scene to host that choice, so it takes Java's "stay" branch unconditionally
+				//and relies on the real climb instead: the hero now carries the Amulet, and walking
+				//onto the entrance tile they arrived on (`tryAscendStairs`, `actorTurnsHazards.ts`)
+				//is the way back up, matching `Dungeon.interfloorTeleportAllowed()` blocking every
+				//other way off this floor while the Amulet is carried (`returnToPreviousFloor`
+				//already enforced that half). The real win only fires at the depth-1 surface exit
+				//(`SewerLevel.activateTransition`'s `LevelTransition.Type.SURFACE` branch) - see
+				//`tryAscendStairs`. PORT_COVERAGE.md: "Post-victory ascent".
+				this.awardBadge('amulet'); this.say(t('scenes.amuletscene.text'), 'positive');
 				return true;
 			},
 			pickupRing: () => {

@@ -549,6 +549,7 @@ export interface SaveShape {
 	itemSerial?: number;
 	appearances?: { assigned: [string, [string, string][]][] };
 	switches: [string, boolean][];
+	ascensionChallengeActive?: boolean;
 	questStages: [string, number][];
 	equippedRing?: EquippedRing | null;
 	ringHtBonus?: number;

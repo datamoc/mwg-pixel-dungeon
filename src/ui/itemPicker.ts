@@ -24,9 +24,23 @@ export interface ItemPickerContext {
 	onCancel?: () => void;
 }
 
-/** Creates the shared modal bag picker used by alchemy, transmutation, stones, and shop actions.
- * This is a real MWG Window so the WindowStack owns modality, cancellation, and outside clicks;
- * the picker is not a scene-sized panel masquerading as a window. */
+/** Creates the shared modal bag picker used by alchemy, transmutation, stones, shop actions, and
+ * every one-off item-choice window this port would otherwise need its own class for - the Ghost
+ * quest reward (`WndSadGhost`), the Beacon's action list (`WndUseItem`), etc. This is a real MWG
+ * Window so the WindowStack owns modality, cancellation, and outside clicks; the picker is not a
+ * scene-sized panel masquerading as a window.
+ *
+ * **Simplified UI (same pattern as the talent picker, `panelsSingleUse.ts`'s `createTalentWindow`
+ * - found via the same user comparison, 2026-09-25):** every real Java window this seam stands in
+ * for renders actual item icon art per row (`ItemButton`'s 32x32 sprite) and, in every case this
+ * port has audited so far, a second confirm step before committing (`WndSadGhost`'s `RewardWindow`
+ * extends `WndInfoItem` with explicit Confirm/Cancel buttons; `WndTradeItem`'s Buy button is
+ * likewise a second press, already reproduced here via each row's own `note`/price text). This
+ * picker instead renders one text-label button per row (name + quantity + optional note) with no
+ * icon art, and picking a row commits immediately - a single "Cancel" row is the only escape, not
+ * a per-item confirm/cancel pair. The underlying choice set, gating, and pick logic are real at
+ * every call site (see each site's own `PORT_COVERAGE.md` row); this file's own row documents the
+ * shared presentation gap once instead of repeating it at each of the ~15 call sites. */
 export function createItemPickerWindow({ width, title, body, entries, displayName, onPick, onCancel }: ItemPickerContext): Window {
 	const cols = entries.length > 6 ? 2 : 1;
 	const rows = Math.ceil(entries.length / cols);
