@@ -894,5 +894,9 @@ export function verifyCombat(require, check) {
 			'the hero-defense block lives in its own seam');
 		assert.ok(scene.includes('const heroOut = this.applyHeroDefense(attacker, defender, damage);'),
 			'a landed hit defends through the hero seam');
+		assert.ok(scene.includes('applyBossSoaks(this: DungeonScene, defender: Creature, damage: number): { damage: number; finished: boolean }'),
+			'the boss soaks live in their own seam');
+		assert.ok(scene.includes('const soakOut = this.applyBossSoaks(defender, damage);'),
+			'a landed hit soaks through the boss seam');
 	});
 }

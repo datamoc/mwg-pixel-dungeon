@@ -464,6 +464,100 @@ export const combatResolutionMethods = {
 	},
 
 	/**
+	 * T61 slice 11: the boss soak pools and link splits of a landed `attack()` -
+	 * Viscosity deferral, PowerOfMany taken, the LifeLink split both ways, the
+	 * DKBarrier/statue/DM-300 pools. Verbatim move; a deferred hit or a lethal
+	 * King share reports `finished` instead of returning out of `attack()` directly.
+	 */
+	applyBossSoaks(this: DungeonScene, defender: Creature, damage: number): { damage: number; finished: boolean } {
+		//`DwarfKing.damage()` (phase 3) and `RustedFist.damage()` both bank every hit into the same
+		//`Viscosity.DeferedDamage` pool the glyph uses instead of losing HP, paying it out on their
+		//own turns. Checked here, before the linked-add split below, so the King's LifeLink share
+		//is deferred the same way.
+		//
+		//These are `damage()` overrides and so are source-independent: `applyBlastDamage` carries the
+		//same guards (Viscosity, DKBarrier, DM-300's barrier, the inactive-pylon refusal, plus the
+		//fist overrides - Rotting conversion, Soiled grass cut, Bright/Dark half-HP) for bombs and
+		//armor abilities, which never come through `attack()`. If one of them changes here, it
+		//changes there too - the two copies exist because this tail also carries attack-only work
+		//(LifeLink, the execute mechanics, Grim) that the shared seam must not run.
+		if (this.deferMonsterDamage(defender, damage)) return { damage, finished: true };
+		// `Char.damage()` (tag `v3.3.8`): PowerOfMany reduces damage taken by 25%, or
+		// by `30% + 5% per LIFE_LINK rank` while the powered ally has that talent.
+		// This scene seam represents the attack() path; direct damage sources still need
+		// a shared actor-damage entry point before they can all use the reduction.
+		if (defender.buffs['powerOfMany'] !== undefined) {
+			damage = Math.round(damage * powerOfManyDamageFactor(this.talentRank('life_link')));
+		}
+		//LifeLink (`Char.damage()`): the hit is divided `ceil(dmg / (links+1))` across
+		//every live link partner, and each partner's share lands on it directly -
+		//so damage to a linked subject splits onto the King AND damage to a linked
+		//King splits onto every live subject (the old code halved add damage only,
+		//leaving the King whole no matter how many servants bled for him). A subject
+		//carries exactly one link (the King), hence /2 on this side; the King's
+		//divisor counts his live subjects. Each share runs through the King's P2
+		//shield below like any hit, and the King's P1 cooldowns accelerate off his
+		//own share the way `damage()`'s `taken/8` does (the add-side swing below
+		//never reaches the generic accel block, which measures the ADD's loss).
+		//A share lethal to the King ends the swing here (boss-death transition owns
+		//the rest).
+		if (defender.kind !== 'king' && !defender.isHero) {
+			const linkKing = this.creatures.find((c) => c.kind === 'king' && c.hp > 0 && this.kingLinkedAdds.has(defender));
+			if (linkKing) {
+				const share = Math.ceil(damage / 2);
+				const kingPreHp = linkKing.hp;
+				if (!this.deferMonsterDamage(linkKing, share)) {
+					linkKing.hp -= share;
+					this.lockedFloorBossDamage(linkKing, share, kingPreHp - linkKing.hp);
+				}
+				if ((linkKing.kingPhase ?? 1) === 1 && linkKing.hp > 0) {
+					const taken = Math.max(0, kingPreHp - linkKing.hp);
+					linkKing.kingSummonCd = (linkKing.kingSummonCd ?? 0) - taken / 8;
+					linkKing.kingAbilityCd = (linkKing.kingAbilityCd ?? 0) - taken / 8;
+				}
+				if (linkKing.hp <= 0) {
+					this.kill(linkKing);
+					return { damage, finished: true };
+				}
+				damage = share;
+			}
+		}
+		if (defender.kind === 'king' && defender.hp > 0) {
+			const live = [...this.kingLinkedAdds].filter((s) => s.hp > 0);
+			if (live.length > 0) {
+				const share = Math.ceil(damage / (live.length + 1));
+				for (const subject of live) {
+					subject.hp -= share;
+					if (subject.hp <= 0) this.kill(subject);
+				}
+				damage = share;
+			}
+		}
+		//DKBarrier: the P2 shield pool absorbs before HP (no per-turn regen here - the
+		//`incShield` half of `DKBarrior.act()` has no modeled trigger to hang it on).
+		if (defender.kind === 'king' && (defender.kingShield ?? 0) > 0) {
+			const absorbed = absorbShield(defender.kingShield ?? 0, damage);
+			defender.kingShield = absorbed.shield;
+			damage = absorbed.damage;
+		}
+		//`Blocking`'s `BlockBuff` on a statue absorbs before HP (a short-lived pool, see `takeStatueTurn`).
+		if ((defender.blockShield ?? 0) > 0) {
+			const absorbed = absorbShield(defender.blockShield ?? 0, damage);
+			defender.blockShield = absorbed.shield;
+			damage = absorbed.damage;
+		}
+		//DM300.move()/PylonEnergy: Barrier absorbs damage before HP while the boss is
+		//charged. This is a compact boss-local pool; the generic hero Barrier path cannot
+		//be reused because its decay and save state are hero-specific.
+		if (defender.kind === 'dm300' && (defender.dmBarrier ?? 0) > 0) {
+			const blocked = Math.min(defender.dmBarrier ?? 0, damage);
+			defender.dmBarrier = (defender.dmBarrier ?? 0) - blocked;
+			damage -= blocked;
+		}
+		return { damage, finished: false };
+	},
+
+	/**
 	 * Melee (or missile) exchange with Java's own on-hit hooks: surprise attacks land
 	 * automatically (INFINITE_ACCURACY, inside rollHit) and wake the victim; Rogue's
 	 * SUCKER_PUNCH adds +2 on a surprise hit (+4 as an Assassin); Bat.attackProc heals
@@ -763,90 +857,9 @@ export const combatResolutionMethods = {
 		const heroOut = this.applyHeroDefense(attacker, defender, damage);
 		damage = heroOut.damage;
 		const capeRetaliation = heroOut.capeRetaliation;
-		//`DwarfKing.damage()` (phase 3) and `RustedFist.damage()` both bank every hit into the same
-		//`Viscosity.DeferedDamage` pool the glyph uses instead of losing HP, paying it out on their
-		//own turns. Checked here, before the linked-add split below, so the King's LifeLink share
-		//is deferred the same way.
-		//
-		//These are `damage()` overrides and so are source-independent: `applyBlastDamage` carries the
-		//same guards (Viscosity, DKBarrier, DM-300's barrier, the inactive-pylon refusal, plus the
-		//fist overrides - Rotting conversion, Soiled grass cut, Bright/Dark half-HP) for bombs and
-		//armor abilities, which never come through `attack()`. If one of them changes here, it
-		//changes there too - the two copies exist because this tail also carries attack-only work
-		//(LifeLink, the execute mechanics, Grim) that the shared seam must not run.
-		if (this.deferMonsterDamage(defender, damage)) return true;
-		// `Char.damage()` (tag `v3.3.8`): PowerOfMany reduces damage taken by 25%, or
-		// by `30% + 5% per LIFE_LINK rank` while the powered ally has that talent.
-		// This scene seam represents the attack() path; direct damage sources still need
-		// a shared actor-damage entry point before they can all use the reduction.
-		if (defender.buffs['powerOfMany'] !== undefined) {
-			damage = Math.round(damage * powerOfManyDamageFactor(this.talentRank('life_link')));
-		}
-		//LifeLink (`Char.damage()`): the hit is divided `ceil(dmg / (links+1))` across
-		//every live link partner, and each partner's share lands on it directly -
-		//so damage to a linked subject splits onto the King AND damage to a linked
-		//King splits onto every live subject (the old code halved add damage only,
-		//leaving the King whole no matter how many servants bled for him). A subject
-		//carries exactly one link (the King), hence /2 on this side; the King's
-		//divisor counts his live subjects. Each share runs through the King's P2
-		//shield below like any hit, and the King's P1 cooldowns accelerate off his
-		//own share the way `damage()`'s `taken/8` does (the add-side swing below
-		//never reaches the generic accel block, which measures the ADD's loss).
-		//A share lethal to the King ends the swing here (boss-death transition owns
-		//the rest).
-		if (defender.kind !== 'king' && !defender.isHero) {
-			const linkKing = this.creatures.find((c) => c.kind === 'king' && c.hp > 0 && this.kingLinkedAdds.has(defender));
-			if (linkKing) {
-				const share = Math.ceil(damage / 2);
-				const kingPreHp = linkKing.hp;
-				if (!this.deferMonsterDamage(linkKing, share)) {
-					linkKing.hp -= share;
-					this.lockedFloorBossDamage(linkKing, share, kingPreHp - linkKing.hp);
-				}
-				if ((linkKing.kingPhase ?? 1) === 1 && linkKing.hp > 0) {
-					const taken = Math.max(0, kingPreHp - linkKing.hp);
-					linkKing.kingSummonCd = (linkKing.kingSummonCd ?? 0) - taken / 8;
-					linkKing.kingAbilityCd = (linkKing.kingAbilityCd ?? 0) - taken / 8;
-				}
-				if (linkKing.hp <= 0) {
-					this.kill(linkKing);
-					return true;
-				}
-				damage = share;
-			}
-		}
-		if (defender.kind === 'king' && defender.hp > 0) {
-			const live = [...this.kingLinkedAdds].filter((s) => s.hp > 0);
-			if (live.length > 0) {
-				const share = Math.ceil(damage / (live.length + 1));
-				for (const subject of live) {
-					subject.hp -= share;
-					if (subject.hp <= 0) this.kill(subject);
-				}
-				damage = share;
-			}
-		}
-		//DKBarrier: the P2 shield pool absorbs before HP (no per-turn regen here - the
-		//`incShield` half of `DKBarrior.act()` has no modeled trigger to hang it on).
-		if (defender.kind === 'king' && (defender.kingShield ?? 0) > 0) {
-			const absorbed = absorbShield(defender.kingShield ?? 0, damage);
-			defender.kingShield = absorbed.shield;
-			damage = absorbed.damage;
-		}
-		//`Blocking`'s `BlockBuff` on a statue absorbs before HP (a short-lived pool, see `takeStatueTurn`).
-		if ((defender.blockShield ?? 0) > 0) {
-			const absorbed = absorbShield(defender.blockShield ?? 0, damage);
-			defender.blockShield = absorbed.shield;
-			damage = absorbed.damage;
-		}
-		//DM300.move()/PylonEnergy: Barrier absorbs damage before HP while the boss is
-		//charged. This is a compact boss-local pool; the generic hero Barrier path cannot
-		//be reused because its decay and save state are hero-specific.
-		if (defender.kind === 'dm300' && (defender.dmBarrier ?? 0) > 0) {
-			const blocked = Math.min(defender.dmBarrier ?? 0, damage);
-			defender.dmBarrier = (defender.dmBarrier ?? 0) - blocked;
-			damage -= blocked;
-		}
+		const soakOut = this.applyBossSoaks(defender, damage);
+		if (soakOut.finished) return true;
+		damage = soakOut.damage;
 		//`RottingFist.damage()` converts the blow to Bleeding instead of HP damage, and
 		//`SoiledFist.damage()` blunts it by the grass cut (see both helpers). Burning itself
 		//does no damage to a soiled fist - see the DoT tick, which skips it.
