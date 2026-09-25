@@ -1990,6 +1990,22 @@ actually walked it"), but it closes the gap between "the pieces individually wor
 whole chain a real pickup produces actually reaches victory," which is what the earlier passes
 had not actually established.
 
+**2026-09-25: the remaining gap above - a live, unassisted floor-by-floor clear - is now closed
+for Warrior.** A real per-turn autonomous bot (`takeHeroTurn`/`attack`/`searchForSecrets` called
+turn-by-turn, no depth-teleporting, no state injection beyond a god-mode HP/weapon boost so a
+bounded turn budget could cover melee combat) played from a fresh character select through all 25
+regular floors, real boss fights (Tengu, DM300, the King, Yog-Dzewa with its fist-invulnerability
+mechanic all handled for real), Amulet pickup, the depth-26 ascent confirmation, and the climb
+back through every floor to depth 1, ending on the real `Victory!` panel ("You escaped with the
+Amulet at level 1, depth 1!") with zero page/console errors. This is a test-tooling milestone, not
+a code-fix commit: the bugs found and fixed along the way were all in the `playwright-core` bot
+script itself (scratchpad, not part of the repo) - a diagonal-movement pathfinder that let the bot
+"path" through wall corners real Pixel Dungeon movement forbids, a priority bug that kept
+re-selecting the descend stairs over the ascend-entrance while carrying the Amulet, and the fight
+routine not accounting for Yog-Dzewa's real fist-shielded invulnerability - not in the game's own
+source, which needed no changes to complete this run. See `PORT_COVERAGE.md`'s "Post-victory
+ascent" row for the full account.
+
 ## Definition of done
 
 - Every Java gameplay system has an equivalent TypeScript implementation.
