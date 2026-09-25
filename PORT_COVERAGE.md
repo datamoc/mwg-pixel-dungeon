@@ -704,7 +704,15 @@ concrete MWL id/source class/tier when generated loot crosses into the inventory
 the three starting thrown classes now also carry their source class and per-level damage
 increments in MWL, and `DungeonScene.useSpecial()` consumes that metadata instead of branching
 on the hero class. The compact shared ammo counter remains a deliberate port simplification;
-pickup integration and distinct missile behavior (boomerang return, bolas, etc.) remain open.
+pickup integration and distinct missile behavior are no longer open (corrected 2026-09-25): the
+shared ground-pickup gate routes through `missilePickupValid` (`groundPickup.ts`, scene seam
+`npcShopBlacksmith.ts`), Bolas cripples on every proc through `bolasCrippleTurns()` at both throw
+sites (`armorAbilityUse.ts`, `inventoryQuickslot.ts`), and the HeavyBoomerang return runs as Java's
+five-turn `CircleBack` - `BOOMERANG_RETURN_TURNS`/`BOOMERANG_RETURN_ACC_FACTOR`, the 1.5
+`circlingBack` accuracy factor, the cancel and replace-on-arrival rules - persisted in the save
+shape (`shared.ts`) and restored on load. `PinCushion`'s `stuckAmmo` scatter on death
+(`deathSaveRefresh.ts`) and `MISSILE_MAX_DURABILITY` are live too; the shared ammo counter remains
+the one deliberate simplification.
 Their fifteen localized description keys are now authored alongside the missile catalogue and are
 shown by the inventory inspection detail; executable special behavior remains in TypeScript.
 The same resource now carries the ten limited-drop decay parameters; the linear and power-law
