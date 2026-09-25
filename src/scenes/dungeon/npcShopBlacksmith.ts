@@ -516,10 +516,15 @@ export const npcShopBlacksmithMethods = {
 	 * ADDS 60 (`+=`, from the decremented value) minus up to 20 at Halls depths 22-24
 	 * (`Math.min(20, (depth-21)*6.67)` - 60/53.33/46.67/40 turns to spawn on floor
 	 * 21/22/23/24). No candidates: the cooldown stays `<= 0` and the next turn retries,
-	 * same as Java. (The Ascension `> 20` cap has no expression - ascension modifiers
-	 * stay inert here.)
+	 * same as Java. While the ascent challenge runs, `tickDemonSpawner` caps a cooldown
+	 * above 20 back to it before ticking (`DemonSpawner.act()`'s own first branch).
 	 */
 	tickDemonSpawner(this: DungeonScene, spawner: Creature): void {
+		//`DemonSpawner.act()` (tag `v3.3.8`): while the ascent challenge runs, a cooldown
+		//above 20 is capped back to it before the tick - a spawner deep in its 40-60-turn
+		//post-spawn clock re-fires after ~20 turns instead on the climb back through the
+		//Halls, where these rooms still stand.
+		if (this.ascensionChallengeActive && (spawner.spawnCooldown ?? 0) > 20) spawner.spawnCooldown = 20;
 		spawner.spawnCooldown = Math.max((spawner.spawnCooldown ?? 0) - 1, -20);
 		if (spawner.spawnCooldown > 0) return;
 

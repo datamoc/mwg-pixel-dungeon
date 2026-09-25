@@ -1314,6 +1314,11 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 			'the spawner clock starts at Java field-init 0, not 60');
 		assert.ok(scene.includes('spawner.spawnCooldown += 60'),
 			'a successful spawn adds 60 onto the decremented clock');
+		//`DemonSpawner.act()`'s ascent branch (tag `v3.3.8`): with the challenge running, a
+		//cooldown above 20 is capped back to it before the tick, so Halls spawners re-fire
+		//after ~20 turns on the climb instead of their 40-60-turn post-spawn clock.
+		assert.ok(scene.includes('if (this.ascensionChallengeActive && (spawner.spawnCooldown ?? 0) > 20) spawner.spawnCooldown = 20;'),
+			'the ascent caps the spawner clock at 20 before ticking');
 	});
 	check('mirror images read Java\'s hero-derived combat stats at half damage', () => {
 		//42nd matrix (`MirrorImage.java`, tag `v3.3.8`): `attackSkill()` is

@@ -277,9 +277,9 @@ export const actorTurnsHazardsMethods = {
 	 *   the real `AscensionChallenge.onLevelSwitch`/`act()` escalation - +2 stacks per floor
 	 *   (`beginAscendOneFloor`), -1 (-0.5 Ghoul/RipperDemon) per boosted kill
 	 *   (`deathSaveRefresh.ts`'s `ASCENSION_MOD` gate), and direct hero damage at 8+ stacks
-	 *   (`turnLoopAiming.ts`'s `applyBuffDamage`). `Statistics.highestAscent` and the
-	 *   DemonSpawner sub-20 cooldown carve-out are still not ported (no Rankings screen reads
-	 *   the former; the latter has no observable gameplay effect the port models at all). The
+	 *   (`turnLoopAiming.ts`'s `applyBuffDamage`). `Statistics.highestAscent` is still not
+	 *   tracked (no Rankings screen reads it); the DemonSpawner sub-20 cooldown carve-out is
+	 *   ported (`tickDemonSpawner` caps above-20 to 20 while the challenge runs, 2026-09-25). The
 	 *   beckon (>=2 stacks: distant enemies pulled to the hero)/haste (>=4: idle enemies move at
 	 *   2x)/hero-speed-cap (>=6: halved, capped at 1x) effects are also not ported - they need a
 	 *   hook into continuous mob-AI pathing and hero action-cost scaling this port's turn-based
@@ -324,10 +324,10 @@ export const actorTurnsHazardsMethods = {
 		//`AscensionChallenge.onLevelSwitch()` (tag `v3.3.8`): every non-boss floor climbed adds 2
 		//stacks (the boss-floor branch instead satiates hunger and heals - not reachable here,
 		//since depth 26 is a one-time confirmation the hero has already passed by the time this
-		//runs). `Statistics.highestAscent` decay and the sub-20 `DemonSpawner` cooldown carve-out
-		//still aren't ported (`PORT_COVERAGE.md`: "Post-victory ascent") - neither has an observable
-		//gameplay effect on the climb itself (no Rankings screen reads the stat; the carve-out only
-		//shortens a spawner's own cooldown, not modelled here at all).
+		//runs). `Statistics.highestAscent` decay still isn't ported (`PORT_COVERAGE.md`:
+		//"Post-victory ascent") - no Rankings screen reads the stat; the sub-20 `DemonSpawner`
+		//cooldown carve-out is ported instead (`tickDemonSpawner` caps above-20 while the
+		//challenge runs).
 		this.ascensionStacks += 2;
 		//`AscensionChallenge.saySwitch()`'s narrative ladder (tag `v3.3.8`): depth 1 always shows
 		//"almost there" regardless of stacks; every other floor picks the highest threshold the

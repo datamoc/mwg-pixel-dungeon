@@ -208,7 +208,8 @@ citation-by-citation account):
       open: the `Badge.HAPPY_END`/`HAPPY_END_REMAINS`/`PACIFIST_ASCENT` badges (**ported
       2026-09-25, T107** - rows, Java icons/descriptions and `validateHappyEnd()` gates all live;
       `HAPPY_END_REMAINS` stays unfillable until the remains family is modeled), `DemonSpawner`'s reduced-cooldown carve-out past floor 20
-      during the climb (no observable gameplay effect this port models at all), and the
+      during the climb (**ported 2026-09-25, T107** - `tickDemonSpawner` caps above-20 to 20
+      while the challenge runs), and the
       `Ratmogrify.TransmogRat`/`AscensionBuffBlocker` exemptions on the per-mob table itself
       (**ported 2026-09-25, T107** - transmog resolves structurally via the preserved kind,
       blocked holders return 1 through a shared helper fed by a save-persisted flag on
