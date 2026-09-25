@@ -300,7 +300,8 @@
       {
         tag: "item",
         id: "pasty",
-        name: "items.food.pasty.pasty",
+        // `Pasty.java` inherits `Item.name()` -> `Messages.get(this, "name")`; key is `items.food.pasty.name`.
+        name: "items.food.pasty.name",
         slot: "consumable",
         stackable: true,
       },
@@ -695,7 +696,8 @@
       {
         tag: "item",
         id: "featherFall",
-        name: "items.spells.featherfall.name",
+        // `ElixirOfFeatherFall.java` inherits `Item.name()` -> `Messages.get(this, "name")`.
+        name: "items.potions.elixirs.elixiroffeatherfall.name",
         slot: "consumable",
         stackable: true,
       },

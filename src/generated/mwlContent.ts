@@ -10965,7 +10965,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "pasty",
-						"name": "items.food.pasty.pasty",
+						"name": "items.food.pasty.name",
 						"slot": "consumable",
 						"stackable": "true"
 					},
@@ -11861,7 +11861,7 @@ export const gameData = {
 					"tag": "item",
 					"attributes": {
 						"id": "featherFall",
-						"name": "items.spells.featherfall.name",
+						"name": "items.potions.elixirs.elixiroffeatherfall.name",
 						"slot": "consumable",
 						"stackable": "true"
 					},
