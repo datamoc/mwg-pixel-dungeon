@@ -269,10 +269,10 @@ export const actorTurnsHazardsMethods = {
 	 *   screen to feed that into (`PORT_COVERAGE.md`: "Post-victory ascent"), so it is not
 	 *   tracked as a separate stat, only used here to gate the confirmation.
 	 * - Depth 1: `SewerLevel.activateTransition`'s `SURFACE` branch - the real win.
-	 *   `Badges.validateHappyEnd()` has no counterpart badge row in this port's
-	 *   `badges.mwl` (only the pickup-time "Escaped with the Amulet" trophy exists - see
-	 *   `pickupAmulet`'s own comment), so this port does not award a second badge here; the
-	 *   run-completion path itself (`recordRun`/`showVictoryPanel`/`gameOver`) is real.
+	 *   `Badges.validateHappyEnd()` is ported in `showVictoryPanel` (2026-09-25):
+	 *   `happy_end` unconditionally, `pacifist_ascent` while the ascent is active with
+	 *   unlowered stacks, `happy_end_remains` gated on remains ids (none modeled yet, so
+	 *   unfillable); the run-completion path itself (`recordRun`/`gameOver`) is real.
 	 * - Every other depth: an ordinary step up, `Dungeon.switchLevel` one floor shallower, plus
 	 *   the real `AscensionChallenge.onLevelSwitch`/`act()` escalation - +2 stacks per floor
 	 *   (`beginAscendOneFloor`), -1 (-0.5 Ghoul/RipperDemon) per boosted kill
