@@ -1294,6 +1294,11 @@ export const weaponSpellsGearMethods = {
 		this.weaponLevel = imbueStaffLevel(this.weaponLevel, (spare as typeof spare & { level?: number }).level ?? 0);
 		this.syncHeroFromStats();
 		setStaffImbue(this, spareType);
+		//`MagesStaff.execute(AC_ZAP)` fires the imbued wand itself (`wand.execute(hero,
+		//AC_ZAP)`), so the staff zap follows the new imbue instead of keep firing the
+		//previous class. A later explicit wield re-points it again, as before.
+		this.wandType = spareType;
+		this.frostWand = spareType === 'frost';
 		this.bag.remove('wand', 1, spare.instanceId);
 		this.say(t('items.weapon.melee.magesstaff.imbue', { 0: name }), 'positive');
 	},

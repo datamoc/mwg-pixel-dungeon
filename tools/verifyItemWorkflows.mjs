@@ -1038,6 +1038,8 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.ok(sceneSource.includes("t('items.weapon.melee.magesstaff.id_first')"), 'unidentified spares refuse with id_first');
 	assert.ok(sceneSource.includes("t('items.weapon.melee.magesstaff.cursed')"), 'cursed spares refuse with the cursed line');
 	assert.ok(sceneSource.includes("this.bag.remove('wand', 1, spare.instanceId);"), 'the imbued spare detaches into the staff');
+	assert.ok(sceneSource.includes('this.wandType = spareType;'), 'imbuing re-points the staff zap at the new class');
+	assert.ok(sceneSource.includes("this.frostWand = spareType === 'frost';"), 'imbuing syncs the frost flag with the new class');
 	assert.ok(sceneSource.includes('staffImbue: staffImbueFor(this)'), 'the imbue class persists through save/load');
 	assert.equal(wandInitialCharges('magicMissile'), 3, 'Magic Missile starts on 3');
 	assert.equal(wandInitialCharges('frost'), 2, 'every other class starts on 2');
@@ -1846,7 +1848,7 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 		{
 			bless: 30, hex: 30, daze: 5, chill: 10, frost: 10, drowsy: 5, magicalSleep: 0, fury: 9999,
 			berserk: 9999, weakness: 20, vulnerable: 20, burning: 8, poison: 6, bleeding: 0, cripple: 10,
-			paralysis: 3, roots: 3, levitation: 20, featherFall: 50, invisibility: 20, cloak: 9999,
+			paralysis: 3, roots: 3, levitation: 20, featherFall: 50, invisibility: 20, cloak: 9999, timeStasis: 100,
 			focus: 9999, recharging: 30, wellFed: 450, frostImbue: 15, fireImbue: 15, toxicImbue: 15, blobImmunity: 10, adrenalineSurge: 200, mindvision: 20,
 			terror: 20, amok: 5, aggression: 20, awareness: 2, haste: 20, degrade: 30, ooze: 20,
 			wayward: 10, soulmark: 10, charm: 10, lethalHasteCooldown: 100, blindness: 10, light: 250, invulnerability: 3,
