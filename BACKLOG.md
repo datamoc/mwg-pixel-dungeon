@@ -37,6 +37,16 @@ documented. Suite note: `test:simulation` passes everything through the combat c
 (peer's `returningFast` refactor, plus uncommitted `returningGhost` churn) - untouched by
 this change, not mine to fix mid-flight.
 
+**Progress 2026-09-25 (T55 slice 3, buff rounds):** script 3 adds Bless/Hex/Daze rounds
+(attacker Bless x1.25, defender Hex x0.8, attacker Daze x0.5, combined round 6, magic and
+surprise kept) with real `Buff.append` on the Java side (durations frozen, reset each
+round) and the same patches on the TS side; both emitters record buff names and the
+comparator checks them. **3 more seeds identical: 30 rounds, 194 draws, all outcomes and
+draws byte-identical** (incl. misses on every seed). Script-2 output re-verified
+byte-identical to the slice-2 proof after the harness refactor. Running total: 60 combat
+rounds, 415 draws, zero divergences.
+
+
 
 ## B2. from ROADMAP 9. Build the Java-vs-TypeScript parity harness
 

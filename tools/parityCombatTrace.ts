@@ -50,6 +50,10 @@ const SCRIPT_VERSION_1 = 1;
  * extra clover-check float per unarmed damage roll and a `NormalIntRange(0, 0)` armor pair
  * on the Rat that this seam skips (same outcome distributions, shifted positions). */
 const SCRIPT_VERSION_2 = 2;
+/** Script 3: script 2's bout plus Bless/Hex/Daze rounds, mirrored by the Java
+ * `CombatHarness` (real `Buff.append` on both chars, durations frozen, reset each round).
+ * Buff rounds are the least-verified combat path, hence their own version. */
+const SCRIPT_VERSION_3 = 3;
 
 const hero: Combatant = {
 	id: 'hero-1', x: 1, y: 1, hp: 20, maxHp: 20,
@@ -122,6 +126,22 @@ const SCRIPT_V2: ScriptRound[] = [
 	{ attacker: 'rat' },
 ];
 
+/** Buff bout: plain exchanges plus Bless (attacker acc x1.25), Hex (defender eva x0.8)
+ * and Daze (attacker acc x0.5) rounds, combined on round 6, magic and surprise kept.
+ * Bases are the java-natural fixtures; buffs ride the same patch mechanism as script 1. */
+const SCRIPT_V3: ScriptRound[] = [
+	{},
+	{ attacker: 'rat' },
+	{ attackerPatch: { buffs: { bless: 1 } } },
+	{ defenderPatch: { buffs: { hex: 1 } } },
+	{ attacker: 'rat', attackerPatch: { buffs: { daze: 1 } } },
+	{ attacker: 'rat', defenderPatch: { buffs: { hex: 1 } } },
+	{ attackerPatch: { buffs: { bless: 1 } }, defenderPatch: { buffs: { hex: 1 } } },
+	{ attacker: 'rat' },
+	{ magic: true, attackerPatch: { buffs: { bless: 1 } } },
+	{ attacker: 'rat' },
+];
+
 /** `Random.java` formulas over one seeded `SpdJavaRandom`, so the draw stream - not just the
  * outcome distribution - matches what the Java build would burn for the same script. The
  * seed goes through the same MX3 scramble `pushGenerator(seed)` applies, so a TS trace and
@@ -163,19 +183,22 @@ interface TraceRound {
 	hit: boolean;
 	damage: number;
 	draws: string[];
+	attackerBuffs?: string[];
+	defenderBuffs?: string[];
 }
 
 function runScript(seed: bigint, scriptVersion: number): { header: object; rounds: TraceRound[] } {
 	const { random, nextRound } = seededRandom(seed);
 	const header = { tool: 'parityCombatTrace', scriptVersion, seed: seed.toString() };
-	const script = scriptVersion === SCRIPT_VERSION_2 ? SCRIPT_V2 : SCRIPT;
-	const fighter = (side: 'hero' | 'rat'): Combatant => scriptVersion === SCRIPT_VERSION_2
-		? (side === 'rat' ? ratNatural : heroNatural)
-		: (side === 'rat' ? rat : hero);
+	const script = scriptVersion === SCRIPT_VERSION_3 ? SCRIPT_V3
+		: scriptVersion === SCRIPT_VERSION_2 ? SCRIPT_V2 : SCRIPT;
+	const fighter = (side: 'hero' | 'rat'): Combatant => scriptVersion === SCRIPT_VERSION_1
+		? (side === 'rat' ? rat : hero)
+		: (side === 'rat' ? ratNatural : heroNatural);
 	const rounds: TraceRound[] = script.map((step, i) => {
 		// Script 2's hero is always unarmed (Java `CombatHarness` uses a bare Warrior), so its
 		// damage rolls burn the clover-check float; every other shape burns nothing extra.
-		nextRound(scriptVersion === SCRIPT_VERSION_2 && (step.attacker ?? 'hero') === 'hero');
+		nextRound(scriptVersion !== SCRIPT_VERSION_1 && (step.attacker ?? 'hero') === 'hero');
 		const attacker: Combatant = {
 			...fighter(step.attacker ?? 'hero'),
 			...(step.attackerPatch ?? {}),
@@ -195,10 +218,15 @@ function runScript(seed: bigint, scriptVersion: number): { header: object; round
 		} finally {
 			setTraceDrawLog(null);
 		}
+		const buffNames = (b: Combatant['buffs']): string[] | undefined => {
+			const names = Object.keys(b ?? {});
+			return names.length > 0 ? names : undefined;
+		};
 		return {
 			round: i, attacker: attacker.id as string, defender: defender.id as string,
 			magic: step.magic ?? false, surprise: step.surprise ?? false,
 			hit: result.hit, damage: result.damage, draws: log,
+			attackerBuffs: buffNames(attacker.buffs), defenderBuffs: buffNames(defender.buffs),
 		};
 	});
 	return { header, rounds };
@@ -234,6 +262,13 @@ function compareJsonl(aText: string, bText: string): CompareResult {
 		if (a.hit !== b.hit || a.damage !== b.damage) {
 			return { identical: false, message: `round ${a.round}: outcome differs (hit ${a.hit}/${b.hit}, damage ${a.damage}/${b.damage})` };
 		}
+		const aBuffs = a.attackerBuffs ?? [];
+		const bBuffs = b.attackerBuffs ?? [];
+		const aDebuffs = a.defenderBuffs ?? [];
+		const bDebuffs = b.defenderBuffs ?? [];
+		if (aBuffs.join(',') !== bBuffs.join(',') || aDebuffs.join(',') !== bDebuffs.join(',')) {
+			return { identical: false, message: `round ${a.round}: buffs differ (attackers ${aBuffs}/${bBuffs}, defenders ${aDebuffs}/${bDebuffs})` };
+		}
 		if (a.draws.length !== b.draws.length || a.draws.some((d, k) => d !== b.draws[k])) {
 			const first = a.draws.findIndex((d, k) => d !== b.draws[k]);
 			return { identical: false, message: `round ${a.round}: draw ${first} differs (${a.draws[first] ?? 'missing'} vs ${b.draws[first] ?? 'missing'})` };
@@ -261,7 +296,7 @@ const mode = process.argv[2];
 function scriptArg(): number {
 	const raw = arg('--script') ?? '1';
 	const version = parseInt(raw, 10);
-	if (version !== SCRIPT_VERSION_1 && version !== SCRIPT_VERSION_2) fail(`unknown script version: ${raw}`);
+	if (version !== SCRIPT_VERSION_1 && version !== SCRIPT_VERSION_2 && version !== SCRIPT_VERSION_3) fail(`unknown script version: ${raw}`);
 	return version;
 }
 
@@ -269,14 +304,14 @@ if (mode === 'emit') {
 	const seedText = arg('--seed') ?? '123456789';
 	const version = scriptArg();
 	const out = arg('--out');
-	if (!out) fail('usage: parityCombatTrace emit --seed <n> --script <1|2> --out <file>');
+	if (!out) fail('usage: parityCombatTrace emit --seed <n> --script <1|2|3> --out <file>');
 	const text = toJsonl(runScript(BigInt(seedText), version));
 	writeFileSync(out!, text);
 	const rounds = text.trim().split('\n').length - 2;
 	console.log(`emitted ${rounds} rounds (script ${version}) to ${out}`);
 } else if (mode === 'check') {
 	const seed = BigInt(arg('--seed') ?? '123456789');
-	for (const version of [SCRIPT_VERSION_1, SCRIPT_VERSION_2]) {
+	for (const version of [SCRIPT_VERSION_1, SCRIPT_VERSION_2, SCRIPT_VERSION_3]) {
 		const first = toJsonl(runScript(seed, version));
 		const second = toJsonl(runScript(seed, version));
 		if (first !== second) fail(`determinism gate FAILED (script ${version}): same seed produced different traces`);
