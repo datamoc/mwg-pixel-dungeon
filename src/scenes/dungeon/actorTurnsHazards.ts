@@ -948,6 +948,7 @@ export const actorTurnsHazardsMethods = {
 			&& !monster.isAlly && !monster.isNPC && monster.sleeping !== true && !monster.fleeing
 			&& !monster.seesHero && monster.lastSeen === undefined) {
 			this.pendingMonsterTurnCost = (this.pendingMonsterTurnCost ?? 1) * 0.5;
+		}
 		//`Elemental.act()` decrements `rangedCooldown` on every turn the mob is hunting - including
 		//the adjacent melee turns, which never reach the ranged profile below (that dispatch is
 		//non-adjacent only). Same pre-dispatch placement as the golem cooldowns above.
