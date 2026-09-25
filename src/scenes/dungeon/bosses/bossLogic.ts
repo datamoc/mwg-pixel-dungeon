@@ -819,16 +819,22 @@ export const bossLogicMethods = {
 	 * phase branch ever sees the corpse, so the clamp only ever rescues a survivor -
 	 * hence the `hp > 0` guard, matching `clampTenguBracket`'s and `yogDamageHook`'s.
 	 * Found by the 13th monster-analysis matrix (boss transitions). */
+	/** Kept in `kingReactionsFor` (keyed by creature id), not on the `Creature` object itself -
+	 * see that field's own doc comment and `combat.ts`'s removed `kingReactions` field. */
+	kingReactionsTable(this: DungeonScene, king: Creature): ReactionTable<Creature> {
+		let table = this.kingReactionsFor.get(king.id);
+		if (!table) { table = new ReactionTable<Creature>(this.kingPhaseRules(king)); this.kingReactionsFor.set(king.id, table); }
+		return table;
+	},
+
 	kingDamageHook(this: DungeonScene, king: Creature): void {
 		if (king.kind !== 'king' || king.hp <= 0) return;
-		king.kingReactions ??= new ReactionTable<Creature>(this.kingPhaseRules(king));
-		king.kingReactions.check(king);
+		this.kingReactionsTable(king).check(king);
 	},
 
 	takeKingTurn(this: DungeonScene, king: Creature): void {
 		const challenge = isChallengeEnabled('stronger_bosses');
-		king.kingReactions ??= new ReactionTable<Creature>(this.kingPhaseRules(king));
-		king.kingReactions.check(king);
+		this.kingReactionsTable(king).check(king);
 		const phase = king.kingPhase ?? 1;
 		if (phase === 1) {
 			king.kingSummonCd = (king.kingSummonCd ?? 0) - 1;

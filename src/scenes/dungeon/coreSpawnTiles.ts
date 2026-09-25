@@ -790,7 +790,7 @@ export const coreSpawnTilesMethods = {
 				sungrassLevel: creature.sungrassLevel, sungrassPartial: creature.sungrassPartial, sungrassPos: creature.sungrassPos,
 				earthrootArmorLevel: creature.earthrootArmorLevel, earthrootArmorPos: creature.earthrootArmorPos,
 						barkskinLevel: creature.barkskinLevel, barkskinInterval: creature.barkskinInterval, barkskinCooldown: creature.barkskinCooldown,
-				kingReactionsState: creature.kingReactions?.toJSON(),
+				kingReactionsState: this.kingReactionsFor.get(creature.id)?.toJSON(),
 				weaponLevel: creature.weaponLevel, stolen: creature.stolen, mimicLoot: creature.mimicLoot, generation: creature.generation,
 				armbandStolen: creature.armbandStolen,
 				spawnCooldown: creature.spawnCooldown, seesHero: creature.seesHero,
@@ -951,9 +951,6 @@ export const coreSpawnTilesMethods = {
 				sungrassLevel: saved.sungrassLevel, sungrassPartial: saved.sungrassPartial, sungrassPos: saved.sungrassPos,
 				earthrootArmorLevel: saved.earthrootArmorLevel, earthrootArmorPos: saved.earthrootArmorPos,
 						barkskinLevel: saved.barkskinLevel, barkskinInterval: saved.barkskinInterval, barkskinCooldown: saved.barkskinCooldown,
-				kingReactions: saved.kingReactionsState
-					? ReactionTable.fromJSON(this.kingPhaseRules(creature), saved.kingReactionsState)
-					: undefined,
 				weaponLevel: saved.weaponLevel, stolen: saved.stolen, mimicLoot: saved.mimicLoot, generation: saved.generation,
 				armbandStolen: saved.armbandStolen,
 				spawnCooldown: saved.spawnCooldown, seesHero: saved.seesHero,
@@ -1001,6 +998,9 @@ export const coreSpawnTilesMethods = {
 			this.syncMimicVisual(creature);
 			this.syncLightAllyVisual(creature);
 			this.applyStatueKit(creature);
+			if (saved.kingReactionsState) {
+				this.kingReactionsFor.set(creature.id, ReactionTable.fromJSON(this.kingPhaseRules(creature), saved.kingReactionsState));
+			}
 			restored.push(creature);
 		}
 		for (let i = 0; i < state.creatures.length; i++) {

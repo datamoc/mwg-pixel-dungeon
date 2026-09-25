@@ -2004,6 +2004,39 @@ rather than freshly re-derived:
 No new formula/value bugs found in this direct re-verification; the one real finding is the
 losing-yell edge-trigger-vs-once-lock distinction above.
 
+**Bug found and fixed 2026-09-25 (King combat crash):** the `ReactionTable` adoption above
+attached `king.kingReactions` directly to the `Creature` object. That is a stateful class
+instance holding live rule-closure functions (`when`/`action`), and mwg's
+`SimulationRuntime` journals every dispatched `'attack'` command via `structuredClone` -
+the command payload carries the full live `attacker`/`defender` `Creature` objects
+(`src/adapters/gameSimulation.ts`), not a stripped copy. Once `kingReactions` existed on the
+King (lazily built on its *first* turn/damage event), every subsequent attack *against* the
+King threw a real `DataCloneError` ("could not be cloned") from inside `resolveHeroAbilityAttack`
+- the King was effectively unfightable past the opening exchange, in real play as much as in
+any test, and this had gone undetected because every earlier verification of this feature
+(the `ReactionTable` adoption note above, the live King fights in the boss-transition matrix)
+happened to check state/phase transitions directly rather than running a sustained real melee
+exchange long enough to dispatch a second post-reaction-table attack command through the
+journaling path. Found via a scripted `playwright-core` live fight (teleport to depth 20,
+trigger the King, repeated real `takeHeroTurn` melee swings) - the first hit was clean, the
+King survived it (building the table via `kingDamageHook`), and the very next swing crashed.
+**Fixed:** `kingReactions` no longer lives on `Creature` at all (removed from `combat.ts`);
+it moved to `DungeonScene.kingReactionsFor`, a `Map<creatureId, ReactionTable<Creature>>` kept
+alongside `spriteFor` for the identical reason (per-creature state that must not be part of
+the plain, clonable creature record) - `kingDamageHook`/`takeKingTurn` now go through a shared
+`kingReactionsTable(king)` accessor that gets-or-lazily-builds the entry, and the save/restore
+sites in `coreSpawnTiles.ts` read/write the same map instead of the removed field. Re-verified
+live: a full 3000-turn scripted melee fight against a fresh depth-20 King (Warrior, starting
+gear) now runs start to finish with zero errors, HP dropping from 300 to 47 with no crash at
+any point past the first hit. The same scripted-fight method was run against all five bosses
+(Goo, Tengu, DM300, King, Yog) after the fix, each via real per-turn `takeHeroTurn` combat, not
+an instant kill: Goo died in ~23 real turns confirming the full death/unseal pipeline; the
+other four all took sustained real damage with zero errors within the test's turn budget
+(a base-gear Warrior's melee alone isn't expected to drop a 200-400 HP boss with defenses in a
+bounded turn count - the point of this pass was confirming no crash exists anywhere in the
+attack-resolution path against any boss, which it now does). `npx tsc --noEmit`/`npm run build`
+clean.
+
 | `WandOfLivingEarth.onZap()` / `RockArmor.absorb()` / `EarthGuardian` | `useSpecial` zap branch, `maybeSummonEarthGuardian`, `takeEarthGuardianTurn`, `absorbHeroDamage`, run save/load | Simplified but playable: the wand uses the real depth-scaled roll `NormalIntRange(2, 4 + scalingDepth()/2)` (`livingEarthZapRange`, corrected 2026-09-19 by the 23rd matrix - the old `4+0 / 6+2*lvl` MWL row scaled with wand level and is deleted), stores successful hits as rock armor capped at `2*(8 + 4*level)`, creates the dedicated Java `EarthGuardian` actor at the threshold, heals it when targeted, lets it attack and reform into rock armor when no visible hostile remains, and incoming damage consumes `ceil(damage/2)` rock armor before ordinary barriers. The guardian's particles, exact Ballistica targeting, `NO_ARMOR` challenge-specific DR range, and precise nearest-reachable spawn choice remain simplified. **2026-09-20:** the summon placement moved to `nearestFreeCell` in `src/simulation/wandering.ts` as the file-size refactor's forty-fourth extraction, behavior-identical - shared with the Yog-minion placement (center admitted here, neighbours-only there), the scene keeping the one-line adapter. |
 
 | `WandOfRegrowth.onZap()` / `chargesPerCast()` / degradation counters | `useRegrowthWand`, `regrowthChargeLimit`, `useSpecial` wand branch, run save/load | **Ported (2026-09-12)**: the affected cells are Java's own `ConeAOE` - `src/mechanics/cone.ts` is a line-for-line translation of `mechanics/ConeAOE.java` (arc `20 + 10*charges` degrees, range `2 + 2*charges`, rays every 0.5 degrees, plus the radius-1 ring when the radius is at least 4, each struck cell unioned with its `Ballistica.subPath(1, dist)`; the arc arithmetic keeps Java's `float` precision so the sampled rim matches), with the ray's `STOP_SOLID` half from MWG's `ballistica({stop: 'impassable'})` and the `STOP_TARGET` half from the first creature on the path. The centre line is Java's `bolt.path` through `Roguelike.traceLine` (an uncursed wand's own `collisionProperties` is `WONT_STOP`, `WandOfRegrowth.java` 66-67), the surviving cells are shuffled at Java's own point in the sequence, the 3-charge Lotus takes the aimed cell when free or the first free cell walking that path backwards, and a cell holding an `IMMOVABLE` character is dropped from the cone before the roots pass (Java's `Char.Property.IMMOVABLE`, read here through the MWL actor flags - the same set the necromancer push-aside uses). Browser-verified live (`tools/scratch/regrowth-path-livecheck.mjs`, 10 assertions): the Lotus lands on the cell Java's backwards walk picks, **every** cell the zap changed is inside the sector (where the previous circle version changed cells outside it), a pylon in the cone is neither grassed under nor rooted while an ordinary monster beside it is both, and the bolt line is grassed along the path. The geometry itself is covered headlessly by `tools/verifyCone.mjs`'s seven checks (range clamp, arc bound with the quantisation the algorithm actually has, monotonicity in degrees, rim, wall truncation, and a zero-degree cone being exactly one ray's trace). Still missing: Java's `fx` animation (`WandOfRegrowth.fx()`'s `MagicMissile.FOLIAGE_CONE` rays plus the bolt to half the longest ray, with the `ZAP` sample) is presentation this port does not draw - it resolves the cone without a projectile. **Corrected 2026-09-16**: the "Dwarf King's boss-challenge-badge flag" this row used to list alongside it is not this wand's at all, and not a flag: it is Java's whole `BOSS_CHALLENGE` badge rule (a *weapon-only* boss kill, set at each fight's start and cleared by an unarmed hit without `RingOfForce`, a `Wand` other than `WandOfLightning`, or a `ClericSpell`), which now has its own item in `ROADMAP.md` section 6. The rest of the row stands: the real 1-3 charge cost (`ceil(30% of current charges)`), level-scaled degradation limit, `round((3.67 + level/3)*charges)` grass budget, `4*charges` Roots duration, furrow chance after the limit, Seedpod/Dewcatcher chances, and generated seed activation are reproduced. |

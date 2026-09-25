@@ -448,6 +448,14 @@ export class DungeonScene extends Scene2D {
 	 * once at spawn and never re-registered, so a plain `Map` (not a WeakMap) is fine; entries
 	 * are removed explicitly wherever the sprite is destroyed. */
 	spriteFor = new Map<string, TintedSprite>();
+	/** The King's edge-triggered phase-transition `ReactionTable`, keyed by creature id and kept
+	 * outside `Creature` for the same reason `spriteFor` is - see `kingReactions`' own removal
+	 * note in `combat.ts` and `PORT_COVERAGE.md`'s "King combat crash" row: a `ReactionTable`
+	 * holds live rule-closure functions, and attaching it directly to the `Creature` object made
+	 * every attack against the King (from its second hit onward, once the table existed) fail
+	 * `structuredClone` inside mwg's command journaling, since the hero-vs-defender command
+	 * payload carries the live creature object. */
+	kingReactionsFor = new Map<string, ReactionTable<Creature>>();
 	/** Seeds planted during play on floors whose original PaintLevel has no plant array. */
 	manualPlants = new Map<number, string>();
 	furrowedGrass = new Set<number>();
