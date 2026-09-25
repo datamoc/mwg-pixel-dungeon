@@ -48,6 +48,7 @@ import { absorbShield, addBuff, applyElementalBacklash, buffBlocked, electricDam
 import { applyChillFreeze } from '../../simulation/buffs';
 import { BLOB_IMMUNE_KINDS, BOSSES, FLYING_KINDS, IMMOVABLE_KINDS, INORGANIC_KINDS, MONSTERS, UNDEAD_KINDS, mobRosterForDepth, type AnyMonsterId, type MonsterId } from '../../monsters';
 import { ETERNAL_FIRE_BURN, wardTexture, type BonesShape } from './shared';
+import { spawnTrapSpecks } from '../../ui/effectBursts';
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `environmentFireTraps`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
@@ -1528,12 +1529,14 @@ export const environmentFireTrapsMethods = {
 				setBleeding(c, Math.max(0, 2 + Math.floor(this.depth / 2) - dr));
 				reigniteBuff(c, 'cripple');
 			}
+			if (this.fov.isVisible(x, y)) spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'wound');
 		} else if (kind === 'rockfall') {
 			//`RockfallTrap.activate()`: rocks land on every non-solid cell of the trap's room (a 5x5
 			//flood when it is not in one), each char there taking `NormalIntRange(5+d, 10+2d)` minus its
 			//`drRoll()` and being paralysed for `Paralysis.DURATION`. The trap is never hidden in Java
-			//(`canBeHidden = false`). Not ported: the rock particles and the rocks sound; the room is
-			//this scene's own room rect, so where none contains the trap it falls back to the flood.
+			//(`canBeHidden = false`). Visible cells get the source's falling-rock burst and the
+			//visible-room event plays ROCKS; white pixels replace its unavailable rock film art.
+			//The room is this scene's own room rect, so where none contains the trap it falls back to the flood.
 			const cells: Step[] = [];
 			const room = this.level.rooms.find((rm) => x >= rm.left && x <= rm.right && y >= rm.top && y <= rm.bottom);
 			if (room) {
@@ -1547,7 +1550,12 @@ export const environmentFireTrapsMethods = {
 					if (steps >= 0 && steps <= 2 && this.level.passable(rx, ry)) cells.push({ x: rx, y: ry });
 				}
 			}
-			if (cells.some((cell) => this.fov.isVisible(cell.x, cell.y))) this.shakeScreen(3, 0.7);
+			const seenCells = cells.filter((cell) => this.fov.isVisible(cell.x, cell.y));
+			if (seenCells.length > 0) {
+				this.shakeScreen(3, 0.7);
+				runState.audio.cue('rocks', 0.7);
+				for (const cell of seenCells) spawnTrapSpecks(this.effectLayer, this.effectBursts, cell.x, cell.y - 1, 'rock');
+			}
 			for (const cell of cells) {
 				const ch = this.creatureAt(cell.x, cell.y);
 				if (!ch || ch.hp <= 0) continue;
@@ -1558,6 +1566,7 @@ export const environmentFireTrapsMethods = {
 					damage = this.absorbHeroDamage(damage);
 					this.hero.hp -= damage;
 					this.showDamage(this.hero, damage);
+					if (this.hero.hp <= 0) this.say(t('levels.traps.rockfalltrap.ondeath'), 'negative');
 				} else {
 					damage = absorbCreatureShields(ch, damage, this.ascendedTurns > 0);
 					ch.hp -= damage;
@@ -1578,11 +1587,22 @@ export const environmentFireTrapsMethods = {
 				return false;
 			}
 			const near = Roguelike.chebyshevDistance(this.hero, { x, y }) <= 1;
+			for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
+				const px = x + dx, py = y + dy;
+				if (this.level.inside(px, py) && this.level.passable(px, py) && this.fov.isVisible(px, py)) {
+					spawnTrapSpecks(this.effectLayer, this.effectBursts, px, py, 'pitfall');
+				}
+			}
 			this.say(t(near && this.hero.x === x && this.hero.y === y ? 'levels.traps.pitfalltrap.triggered_hero' : 'levels.traps.pitfalltrap.triggered'), 'negative');
 			return near;
 		} else if (kind === 'frost') {
 			//`FrostTrap.activate()`: `Freezing` volume 20 on every non-solid cell within distance 2 (the
-			//chilling trap seeds 10 on the 3x3 only). Splash and shatter sound not ported.
+			//chilling trap seeds 10 on the 3x3 only). Java's visible ice splash and SHATTER cue
+			//are represented with five tinted pixels and the bundled clip.
+			if (this.fov.isVisible(x, y)) {
+				spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'frost');
+				runState.audio.cue('shatter', 0.7);
+			}
 			const reach = this.pathfinder.distanceMap({ x, y });
 			for (let fy = 0; fy < this.level.height; fy++) for (let fx = 0; fx < this.level.width; fx++) {
 				const steps = reach[this.level.index(fx, fy)] ?? -1;
@@ -1590,14 +1610,21 @@ export const environmentFireTrapsMethods = {
 			}
 		} else if (kind === 'chilling') {
 			//`ChillingTrap.activate()`: `Freezing` volume 10 on every non-solid NEIGHBOURS9 cell (the
-			//icecap plant seeds the same blob with 2). The splash and shatter sound are not ported.
+			//icecap plant seeds the same blob with 2). Java's visible ice splash and SHATTER cue
+			//are represented with five tinted pixels and the bundled clip.
+			if (this.fov.isVisible(x, y)) {
+				spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'frost');
+				runState.audio.cue('shatter', 0.7);
+			}
 			for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
 				if (this.level.inside(x + dx, y + dy) && this.level.passable(x + dx, y + dy)) this.plantFreeze.seed(x + dx, y + dy, 10);
 			}
 		} else if (kind === 'ooze') {
-			//`OozeTrap.activate()`: `Ooze` (its `DURATION`) on every non-flying char in the 3x3. The black
-			//splash is not ported.
+			//`OozeTrap.activate()`: `Ooze` (its `DURATION`) on every non-flying char in the 3x3;
+			//Java also bursts five black pixels on every non-solid cell.
 			for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
+				if (this.level.inside(x + dx, y + dy) && this.level.passable(x + dx, y + dy)
+					&& this.fov.isVisible(x + dx, y + dy)) spawnTrapSpecks(this.effectLayer, this.effectBursts, x + dx, y + dy, 'ooze');
 				const ch = this.level.passable(x + dx, y + dy) ? this.creatureAt(x + dx, y + dy) : null;
 				if (ch && ch.hp > 0 && !ch.flying) addBuff(ch, 'ooze');
 			}
@@ -1614,9 +1641,12 @@ export const environmentFireTrapsMethods = {
 					if (steps < 0 || steps > 2 || !this.level.passable(cx, cy)) continue;
 					if (this.creatureAt(cx, cy) || this.isChasmCell(cx, cy)) continue;
 					const sheep = this.spawnSheep({ x: cx, y: cy }, 6);
+					if (this.fov.isVisible(cx, cy)) spawnTrapSpecks(this.effectLayer, this.effectBursts, cx, cy, 'wool');
 					this.triggerMobTrapAt(sheep);
 				}
 			}
+			runState.audio.cue('puff', 0.7);
+			runState.audio.cue('sheep', 0.7);
 		} else if (kind === 'alarm') {
 			for (const mob of this.creatures) {
 				if (mob.isHero || mob.isNPC || mob.isAlly || mob.hp <= 0) continue;
@@ -1624,7 +1654,11 @@ export const environmentFireTrapsMethods = {
 				mob.sleeping = false;
 				if (!mob.fleeing) mob.lastSeen = { x, y };
 			}
-			if (this.fov.isVisible(x, y)) this.say(t('levels.traps.alarmtrap.alarm'), 'warning');
+			if (this.fov.isVisible(x, y)) {
+				this.say(t('levels.traps.alarmtrap.alarm'), 'warning');
+				spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'scream');
+			}
+			runState.audio.cue('alert', 0.7);
 		} else if (kind === 'teleportation' || kind === 'warping') {
 			//`WarpingTrap` is a `TeleportationTrap` that first wipes the map memory (visited and
 			//mapped cells) when the hero is within one cell of it.

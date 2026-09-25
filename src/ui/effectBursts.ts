@@ -102,6 +102,27 @@ export function spawnCrystalSplash(layer: Container, alive: LiveBurst[], x: numb
 	track(layer, alive, emitter, x, y, 5, 0.45);
 }
 
+/** Particle stand-ins for SPD trap presentation factories (`levels/traps/*.java`,
+ * tag `v3.3.8`). SPD's directional film particles are not available in the generic
+ * white-pixel backend; burst counts, colors and broad direction are carried where known,
+ * while timed emitter cadence and film artwork are simplified. */
+export type TrapSpeckKind = 'scream' | 'light' | 'frost' | 'ooze' | 'wool' | 'wound' | 'rock' | 'pitfall';
+export function spawnTrapSpecks(layer: Container, alive: LiveBurst[], x: number, y: number, kind: TrapSpeckKind): void {
+	const options: Record<TrapSpeckKind, ParticleEmitterOptions & { count: number; duration: number }> = {
+		scream: { texture: Texture.WHITE, max: 3, rate: 0, life: 0.8, speed: [10, 18] as [number, number], angle: [-Math.PI * 0.72, -Math.PI * 0.28] as [number, number], scale: [4, 0] as [number, number], alpha: (t) => 1 - t, tint: 0xFFFF88, spawn: { shape: 'rect', width: TILE / 3, height: TILE / 3 }, count: 3, duration: 0.8 },
+		light: { texture: Texture.WHITE, max: 4, rate: 0, life: 1, speed: [8, 20] as [number, number], angle: [0, Math.PI * 2] as [number, number], scale: [4, 0] as [number, number], alpha: (t) => 1 - t, tint: 0xFFFFAA, spawn: { shape: 'rect', width: TILE, height: TILE }, count: 4, duration: 1 },
+		frost: { texture: Texture.WHITE, max: 5, rate: 0, life: 0.45, speed: [12, 34] as [number, number], angle: [0, Math.PI * 2] as [number, number], scale: [3, 0] as [number, number], alpha: (t) => 1 - t, tint: 0xB2D6FF, spawn: { shape: 'rect', width: TILE / 2, height: TILE / 2 }, count: 5, duration: 0.45 },
+		ooze: { texture: Texture.WHITE, max: 5, rate: 0, life: 0.45, speed: [8, 24] as [number, number], angle: [0, Math.PI * 2] as [number, number], scale: [3, 0] as [number, number], alpha: (t) => 0.8 * (1 - t), tint: 0x000000, spawn: { shape: 'rect', width: TILE / 2, height: TILE / 2 }, count: 5, duration: 0.45 },
+		wool: { texture: Texture.WHITE, max: 4, rate: 0, life: 0.7, speed: [4, 12] as [number, number], angle: [0, Math.PI * 2] as [number, number], scale: [5, 0] as [number, number], alpha: (t) => 1 - t, tint: 0xFFFFFF, spawn: { shape: 'rect', width: TILE / 2, height: TILE / 2 }, count: 4, duration: 0.7 },
+		wound: { texture: Texture.WHITE, max: 5, rate: 0, life: 0.6, speed: [8, 20] as [number, number], angle: [0, Math.PI * 2] as [number, number], scale: [3, 0] as [number, number], alpha: (t) => 0.4 * (1 - t), tint: 0xCC2222, spawn: { shape: 'rect', width: TILE / 2, height: TILE / 2 }, count: 5, duration: 0.6 },
+		rock: { texture: Texture.WHITE, max: 10, rate: 0, life: 0.7, speed: [28, 48] as [number, number], angle: [-Math.PI * 0.58, -Math.PI * 0.42] as [number, number], gravity: { x: 0, y: 90 }, scale: [5, 2] as [number, number], alpha: (t) => 1 - t, tint: 0x777777, spawn: { shape: 'rect', width: TILE, height: TILE / 4 }, count: 10, duration: 0.7 },
+		pitfall: { texture: Texture.WHITE, max: 8, rate: 0, life: 0.8, speed: [8, 22] as [number, number], angle: [Math.PI * 0.35, Math.PI * 0.65] as [number, number], gravity: { x: 0, y: 36 }, scale: [4, 0] as [number, number], alpha: (t) => 1 - t, tint: 0x806044, spawn: { shape: 'rect', width: TILE, height: TILE }, count: 8, duration: 0.8 },
+	};
+	const { count, duration, ...emitterOptions } = options[kind];
+	const emitter = new ParticleEmitter(emitterOptions);
+	track(layer, alive, emitter, x, y, count, duration);
+}
+
 /** Rising purple motes: the curse infusion's five, and the death-burst
  * table's guard/succubus/ward counts through `spawnDeathBursts` below. */
 export function spawnShadowBurst(layer: Container, alive: LiveBurst[], x: number, y: number, count: number): void {
