@@ -1964,6 +1964,32 @@ file) finding no crash/soft-lock-shaped gaps, and the ascent loop's own live ver
 this is the closest this project has verified "every class, start to finish, including the
 climb" as a connected whole rather than as separately-audited pieces.
 
+**Progress note, 2026-09-25 (connected-whole run found and fixed a real showstopper bug).**
+Every verification of the ascent above - including the 2026-09-24 browser pass - exercised the
+climb by hand-injecting the Amulet straight into the bag (`bag.add({id:'amulet',...})`) rather
+than picking it up for real. That masked a genuine defect: `pickupAmulet`
+(`npcShopBlacksmith.ts`) never actually called `bag.add` for the Amulet, so
+`this.bag.find('amulet')` - the exact gate the ascent trigger, the interfloor-teleport block, and
+the quickslot's `hasAmulet` all read - was **always false for a real ground pickup**. The ascent
+could never have fired for an actual player, in any class, despite every earlier
+component-level and state-injected test passing. Found by finally walking the *connected* chain
+in one live run rather than its pieces separately: teleport to depth 25, move away from the
+entrance to trigger the real Yog spawn (`checkHallsBossSeal`, dormant until then), wake and
+`kill()` the genuine 400-HP Yog through the shared death path, advance to depth 26 where the
+real vault places the Amulet at `(8,12)`, pick it up through the actual ground-pickup function
+(not injected), then run the confirm/climb/win sequence - all via the same `playwright-core`
+script driving the sandbox's Chromium. **Fixed** (`pickupAmulet` now calls
+`this.bag.add({id:'amulet',quantity:1,identified:true})`) **and re-verified for all 6 classes**,
+each in a fresh page: Yog found (hp 400) and killed, vault entered, Amulet genuinely present in
+the bag this time, ascent confirmed, climb 25->1, real victory screen - zero page/console errors
+on any class. `npx tsc --noEmit` and `npm run build` both clean. See `PORT_COVERAGE.md`'s
+"Post-victory ascent" row for the full account. This does not itself constitute playing all 25
+floors turn-by-turn for every class (a live, unassisted floor-by-floor clear was not attempted -
+that remains a real gap between "the systems connect correctly end to end" and "a human has
+actually walked it"), but it closes the gap between "the pieces individually work" and "the
+whole chain a real pickup produces actually reaches victory," which is what the earlier passes
+had not actually established.
+
 ## Definition of done
 
 - Every Java gameplay system has an equivalent TypeScript implementation.

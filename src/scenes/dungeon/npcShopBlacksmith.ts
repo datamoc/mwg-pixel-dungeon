@@ -1676,6 +1676,17 @@ export const npcShopBlacksmithMethods = {
 			},
 			pickupAmulet: () => {
 				this.gameState.setSwitch('amuletObtained', true); runState.audio.winMusic();
+				//`incomingPickupStack` (`groundPickup.ts`) returns null for `kind === 'amulet'` - a
+				//pre-existing "no bag stack" classification from when picking the Amulet up
+				//instantly ended the run and had nothing left to carry. Now that the hero keeps
+				//playing and climbing with it, `tryAscendStairs`/`returnToPreviousFloor`
+				//(`actorTurnsHazards.ts`) and the quickslot's `hasAmulet` (`inventoryQuickslot.ts`)
+				//all gate on `this.bag.find('amulet')` - which nothing ever set, so the ascent could
+				//never trigger for a real pickup (only the synthetic tests that injected it directly
+				//via `bag.add` saw it work). Bug found and fixed 2026-09-25 via a scripted
+				//pickup-through-`checkHallsBossSeal`-through-ascent live run that a hand-injected
+				//amulet had been masking.
+				this.bag.add({ id: 'amulet', quantity: 1, identified: true });
 				if (this.demonSpawnerFloor) this.demonSpawnerFloor.setLayerData('demonSpawnerFloor', this.demonSpawnerFloorFrames(false));
 				if (this.vaultVisuals) { const layers = this.vaultTileLayers(); this.vaultVisuals.setLayerData('vaultFloor', layers.floor); this.vaultVisuals.setLayerData('vaultCenter', layers.center); this.vaultVisuals.setLayerData('vaultCenterWalls', layers.walls); }
 				//`Amulet.doPickUp`/`showAmuletScene` (Amulet.java, tag `v3.3.8`): real Java does not
