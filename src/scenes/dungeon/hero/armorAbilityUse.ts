@@ -1739,7 +1739,8 @@ export const armorAbilityUseMethods = {
 		}
 		const blocked = new Set<number>();
 		for (const c of this.creatures) {
-			if (!c.isHero && c.hp > 0) blocked.add(c.y * this.level.width + c.x);
+			//Java seeds this blocked target; MWG's distanceMap rejects a blocked origin, so leave it unblocked here.
+			if (c !== target && !c.isHero && c.hp > 0) blocked.add(c.y * this.level.width + c.x);
 		}
 		const reachMap = this.pathfinder.distanceMap({ x: target.x, y: target.y }, { blocked });
 		const gapPoints = this.talentRank('close_the_gap');
