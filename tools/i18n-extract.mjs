@@ -1,12 +1,10 @@
 /**
  * Builds `src/generated/spdMessages.ts` from SPD's own `.properties` translation files.
  *
- * SPD shipped 171 property files when this header was written - 9 domains x English plus 18
- * locales, ~3,750 base keys - with 4 more locales (`be`/`eo`/`sv`/`zh-hant`, 36 more files) only
- * at tag `v3.3.8`, read from a second, optional `--legacy-spd-root` (see below). Re-measured
- * 2026-09-25: that live checkout now carries 207 files, all 22 locales and 4,830 distinct base
- * keys, so the second root is a tag-era fallback rather than a necessity (the primary root still
- * wins for any key both supply). This port now ships every locale (22 locales total - see
+ * Tag v3.3.8 contains 207 property files: 9 domains x English plus 22 locales, and 4,830
+ * distinct base keys. This pinned tag is the primary corpus; an optional older root supplies
+ * only keys still referenced by the port but absent from v3.3.8. This port ships every locale
+ * (22 locales total - see
  * `src/i18n/languages.ts`). Everything here is inlined into `game.js` (the built
  * page runs from `file://`, where `fetch` is unavailable, so a locale cannot be loaded on
  * demand and *every* language ships in the bundle). That makes the complete corpus materially
@@ -18,12 +16,10 @@
  * the same set and fails if the committed file no longer covers it.
  *
  * Run with `npm run i18n`. The output is committed, so a plain `npm run build` neither needs
- * the Java tree nor pays for re-parsing 171 files.
+ * the Java tree nor pays for re-parsing the source catalog.
  *
- * The live checkout is primary for keys and translations. When a referenced key is absent there,
- * the pinned-tag checkout is a fallback for that key and its translations; only a key absent
- * from both sources must move to `port.*`. This keeps legitimate tag-era SPD text (such as
- * MagesStaff's `imbue_cursed`) from being mistaken for a port-only string.
+ * The pinned v3.3.8 checkout is primary for keys and translations. An optional older checkout
+ * supplies only referenced keys absent from that target corpus; primary values always win.
  *
  * Provenance: the strings this reads are SPD's own, GPL-3.0-or-later, from
  * `core/src/main/assets/messages/` in this same checkout. They stay inside `web-mwg/` and
@@ -51,16 +47,8 @@ if (!spdRoot || spdRoot.startsWith('--')) {
 }
 const messages = join(spdRoot, 'core', 'src', 'main', 'assets', 'messages');
 /**
- * `--spd-root` is the user's live checkout on whatever branch it happens to sit on - which
- * is *older* than `v3.3.8` (pre-`v2.5.3` bomb family) and carries pre-`v3.3.8` keys `v3.3.8`
- * dropped or renamed (`items.potions.alchemicalcatalyst.name`,
- * `items.bombs.flashbang.name`/`shockbomb.name`, `items.spells.aquablast.name`) but has
- * *dropped* four locales `v3.3.8` still ships (`be`/`eo`/`sv`/`zh-hant` - see
- * `src/i18n/languages.ts`). Those four are read from a second, optional root instead:
- * `--legacy-spd-root`/`SPD_LEGACY_SOURCE_ROOT`, pointed at a `v3.3.8` checkout (a
- * `git worktree add --detach <dir> v3.3.8` of the same repo works). Left unset, those four
- * locales simply ship with zero entries and fall back to English everywhere, the same as any
- * other missing-domain gap below.
+ * `--spd-root` points at the exact v3.3.8 source tree. `--legacy-spd-root`/`SPD_LEGACY_SOURCE_ROOT`
+ * is optional and supplies old keys that remain referenced but are absent from v3.3.8.
  */
 const legacyRootArgument = process.argv.indexOf('--legacy-spd-root');
 const legacySpdRoot = legacyRootArgument >= 0 ? process.argv[legacyRootArgument + 1] : process.env.SPD_LEGACY_SOURCE_ROOT;
@@ -78,8 +66,6 @@ const DOMAINS = ['actors', 'items', 'journal', 'levels', 'misc', 'plants', 'scen
 const LOCALES = ['zh', 'ko', 'ru', 'es', 'de', 'fr', 'pt', 'pl', 'it', 'tr', 'ja', 'uk', 'cs', 'in', 'nl', 'hu', 'vi', 'el',
 	//`v3.3.8`'s four locales beyond the live checkout's current 18 - see the header comment above
 	'be', 'eo', 'sv', 'zh-hant'];
-/** the four locales not present in the live checkout */
-const LEGACY_ONLY_LOCALES = new Set(['be', 'eo', 'sv', 'zh-hant']);
 
 /** the shape every SPD message key takes: dotted identifiers, `$` for a Java inner class */
 const KEY_SHAPE = /^[A-Za-z0-9_$]+(?:\.[A-Za-z0-9_$]+)+$/;
@@ -88,7 +74,7 @@ const KEY_SHAPE = /^[A-Za-z0-9_$]+(?:\.[A-Za-z0-9_$]+)+$/;
  * Parses one `.properties` file the way libGDX's `I18NBundle` does for these files.
  *
  * SPD's files are UTF-8 with CRLF, one `key=value` per line, `=` always the separator, and -
- * verified across all 171 files - no backslash line continuations, so a value never spans
+ * verified across the source property files - no backslash line continuations, so a value never spans
  * lines. Keys may contain `$` (Java inner classes, e.g. `championenemy$blazing`). Values
  * carry `\n`, `\t` and `\uXXXX` escapes, which are unescaped here so the runtime never has to.
  *
@@ -216,9 +202,7 @@ async function referencedKeys() {
 }
 
 async function readLocale(suffix, keys, includeLegacyFallback = false) {
-	const roots = LEGACY_ONLY_LOCALES.has(suffix)
-		? [legacyMessages]
-		: [messages, ...(includeLegacyFallback && legacyMessages ? [legacyMessages] : [])];
+	const roots = [messages, ...(includeLegacyFallback && legacyMessages ? [legacyMessages] : [])];
 	const merged = new Map();
 	//no `--legacy-spd-root` given: this locale ships empty and falls back to English throughout,
 	//the same as any other missing-domain gap below
