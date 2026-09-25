@@ -276,6 +276,62 @@ export const combatResolutionMethods = {
 	},
 
 	/**
+	 * T61 slice 7: the defender-side glyph/curse procs of a landed `attack()` - Stone,
+	 * Displacement, Friendly, and the charm-ignore consumption. Verbatim move, except
+	 * the Displacement teleport now reports `consumed` instead of returning out of
+	 * `attack()` directly; the call site honors it at the same point.
+	 */
+	applyDefenderGlyphProcs(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): { damage: number; consumed: boolean } {
+		//`Stone.proc()` (`items/armor/glyphs/Stone.java`, tag `v3.3.8`): the glyph
+		//grants no armor - it replays the to-hit math (attacker accuracy vs the
+		//wearer's evasion) and turns 75% of the dodge chance into damage
+		//reduction, `ceil(damage x hitChance)` clamped to [0.25, 1]. Runs here at
+		//the landed-hit boundary; Java runs it in `defenseProc` pre-armor, the
+		//same stated placement every other defend effect here already carries.
+		if (defender.isHero && ((this.armorGlyphActive() && this.armorGlyph === 'stone') || this.trinityBodyGlyphIs('stone')) && damage > 0) {
+			damage = Math.ceil(damage * stoneGlyphReduction(liveStats(attacker).accuracy, this.hero.evasion, this.armorProcMultiplier(defender)));
+		}
+		//Displacement.proc(): a 1-in-20 x arcana armor-curse proc teleports the defender
+		//and replaces the incoming hit with zero damage.
+		if (defender.isHero && this.armorGlyphActive() && this.armorGlyph === 'displacement' && Random.chance((1 / 20) * this.armorProcMultiplier(defender))) {
+			const armorDisplaceFrom = { x: defender.x, y: defender.y };
+			const destination = this.randomFreeCell(defender);
+			if (destination) {
+				this.moveTo(defender, destination);
+				this.playTeleportAppear(armorDisplaceFrom, destination, defender);
+				defender.sleeping = false;
+				this.say(t('port.log.armordisplace'), 'warning');
+				return { damage: 0, consumed: true };
+			}
+		}
+		//Friendly.proc()/Charm.java (checked against tag v3.3.8): an already-charmed attacker
+		//deals zero damage to the specific object recorded by Charm.object. On a fresh proc,
+		//Friendly attaches Charm.DURATION (10) to the attacker and Charm.DURATION/2 (5) to the
+		//defender, records each object's stable id, and makes the defender ignore its next hit.
+		//The generic buff map stores only durations, so the two small payloads live in these
+		//scene maps and are persisted with the run. This closes the former missing Friendly curse
+		//without pretending Charm is a global, target-free stun.
+		if (attacker === this.hero && this.weaponAffix === 'friendly') {
+			if (this.isCharmedToward(attacker, defender)) damage = 0;
+			if (Random.chance((1 / 10) * this.enchantProcMultiplier())) {
+				addBuff(attacker, 'charm');
+				this.charmTargets.set(attacker.id, defender.id);
+				addBuff(defender, 'charm');
+				this.charmTargets.set(defender.id, attacker.id);
+				this.charmIgnoreNextHit.add(defender.id);
+			}
+		}
+		//Charm.ignoreNextHit is consumed by the next landed hit against that char, before
+		//damage absorption. It is deliberately separate from the attacker's object charm: Java
+		//allows the two flags to coexist on opposite sides of the exchange.
+		if (this.charmIgnoreNextHit.has(defender.id) && defender.buffs['charm'] !== undefined) {
+			this.charmIgnoreNextHit.delete(defender.id);
+			damage = 0;
+		}
+		return { damage, consumed: false };
+	},
+
+	/**
 	 * Melee (or missile) exchange with Java's own on-hit hooks: surprise attacks land
 	 * automatically (INFINITE_ACCURACY, inside rollHit) and wake the victim; Rogue's
 	 * SUCKER_PUNCH adds +2 on a surprise hit (+4 as an Assassin); Bat.attackProc heals
@@ -544,52 +600,9 @@ export const combatResolutionMethods = {
 		damage = this.armStrikeAffix(attacker, damage);
 		damage = this.applyHeroTalentBonuses(attacker, defender, surprise, damage);
 		damage = this.applyWeaponAffixProcs(attacker, defender, damage);
-		//`Stone.proc()` (`items/armor/glyphs/Stone.java`, tag `v3.3.8`): the glyph
-		//grants no armor - it replays the to-hit math (attacker accuracy vs the
-		//wearer's evasion) and turns 75% of the dodge chance into damage
-		//reduction, `ceil(damage x hitChance)` clamped to [0.25, 1]. Runs here at
-		//the landed-hit boundary; Java runs it in `defenseProc` pre-armor, the
-		//same stated placement every other defend effect here already carries.
-		if (defender.isHero && ((this.armorGlyphActive() && this.armorGlyph === 'stone') || this.trinityBodyGlyphIs('stone')) && damage > 0) {
-			damage = Math.ceil(damage * stoneGlyphReduction(liveStats(attacker).accuracy, this.hero.evasion, this.armorProcMultiplier(defender)));
-		}
-		//Displacement.proc(): a 1-in-20 x arcana armor-curse proc teleports the defender
-		//and replaces the incoming hit with zero damage.
-		if (defender.isHero && this.armorGlyphActive() && this.armorGlyph === 'displacement' && Random.chance((1 / 20) * this.armorProcMultiplier(defender))) {
-			const armorDisplaceFrom = { x: defender.x, y: defender.y };
-			const destination = this.randomFreeCell(defender);
-			if (destination) {
-				this.moveTo(defender, destination);
-				this.playTeleportAppear(armorDisplaceFrom, destination, defender);
-				defender.sleeping = false;
-				this.say(t('port.log.armordisplace'), 'warning');
-				return false;
-			}
-		}
-		//Friendly.proc()/Charm.java (checked against tag v3.3.8): an already-charmed attacker
-		//deals zero damage to the specific object recorded by Charm.object. On a fresh proc,
-		//Friendly attaches Charm.DURATION (10) to the attacker and Charm.DURATION/2 (5) to the
-		//defender, records each object's stable id, and makes the defender ignore its next hit.
-		//The generic buff map stores only durations, so the two small payloads live in these
-		//scene maps and are persisted with the run. This closes the former missing Friendly curse
-		//without pretending Charm is a global, target-free stun.
-		if (attacker === this.hero && this.weaponAffix === 'friendly') {
-			if (attacker.buffs['charm'] !== undefined && this.charmTargets.get(attacker.id) === defender.id) damage = 0;
-			if (Random.chance((1 / 10) * this.enchantProcMultiplier())) {
-				addBuff(attacker, 'charm');
-				this.charmTargets.set(attacker.id, defender.id);
-				addBuff(defender, 'charm');
-				this.charmTargets.set(defender.id, attacker.id);
-				this.charmIgnoreNextHit.add(defender.id);
-			}
-		}
-		//Charm.ignoreNextHit is consumed by the next landed hit against that char, before
-		//damage absorption. It is deliberately separate from the attacker's object charm: Java
-		//allows the two flags to coexist on opposite sides of the exchange.
-		if (this.charmIgnoreNextHit.has(defender.id) && defender.buffs['charm'] !== undefined) {
-			this.charmIgnoreNextHit.delete(defender.id);
-			damage = 0;
-		}
+		const glyphOut = this.applyDefenderGlyphProcs(attacker, defender, damage);
+		if (glyphOut.consumed) return false;
+		damage = glyphOut.damage;
 		runState.audio.cue('hit', 0.6);
 		if (attacker.isHero && this.heroClass === 'rogue' && surprise) {
 			damage += (this.subclass() === 'assassin' ? 4 : 2) + assassinReachBonus(this.subclass(), this.talentRank('assassins_reach'));

@@ -876,5 +876,11 @@ export function verifyCombat(require, check) {
 			'the weapon-affix procs live in their own seam');
 		assert.ok(scene.includes('damage = this.applyWeaponAffixProcs(attacker, defender, damage);'),
 			'a landed hit procs through the affix seam');
+		assert.ok(scene.includes('applyDefenderGlyphProcs(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): { damage: number; consumed: boolean }'),
+			'the defender glyph procs live in their own seam');
+		assert.ok(scene.includes('const glyphOut = this.applyDefenderGlyphProcs(attacker, defender, damage);'),
+			'a landed hit glyphs through the defender seam');
+		assert.ok(scene.includes('if (glyphOut.consumed) return false;'),
+			'the Displacement consume still exits attack at the same point');
 	});
 }
