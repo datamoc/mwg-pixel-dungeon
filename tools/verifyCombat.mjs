@@ -868,5 +868,9 @@ export function verifyCombat(require, check) {
 			'the Unstable/Kinetic arming lives in its own seam');
 		assert.ok(scene.includes('damage = this.armStrikeAffix(attacker, damage);'),
 			'a landed hit arms through the affix seam');
+		assert.ok(scene.includes('applyHeroTalentBonuses(this: DungeonScene, attacker: Creature, defender: Creature, surprise: boolean, damage: number): number'),
+			'the hero talent-bonus chain lives in its own seam');
+		assert.ok(scene.includes('damage = this.applyHeroTalentBonuses(attacker, defender, surprise, damage);'),
+			'a landed hit bonuses through the talent seam');
 	});
 }

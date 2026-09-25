@@ -193,6 +193,52 @@ export const combatResolutionMethods = {
 	},
 
 	/**
+	 * T61 slice 5: the hero talent-bonus chain of a landed `attack()` - Empowered
+	 * Strike, Sucker Punch, physical bonus attacks, Patient Strike, Followup, and
+	 * Deadly Followup. Verbatim move; every one-shot flag and tracker clears exactly
+	 * where it did inline, so a second swing sees the same state.
+	 */
+	applyHeroTalentBonuses(this: DungeonScene, attacker: Creature, defender: Creature, surprise: boolean, damage: number): number {
+		if (attacker === this.hero) damage += empoweredStrikeBonus(this.subclass(), this.talentRank('empowered_strike'));
+		//Talent.java's SUCKER_PUNCH branch: `Random.IntRange(points, 2)` (1-2 at rank 1, flat 2
+		//at rank 2), not a flat `points` bonus - found in the 2026-09-09 hero-progression audit.
+		//Real Java attaches a `SuckerPunchTracker` to the enemy on the first proc, so surprising
+		//the same target twice only triggers the bonus once. The port stores that tracker by the
+		//creature's stable id and clears it naturally when a new run starts; it is saved with the
+		//run so save/load cannot reopen the bonus.
+		if (attacker.isHero && surprise) {
+			const rank = this.talentRank('sucker_punch');
+			if (rank > 0 && !this.suckerPunchTargets.has(defender.id)) {
+				damage += Random.range(rank, 2);
+				this.suckerPunchTargets.add(defender.id);
+			}
+		}
+		if (attacker === this.hero && this.physicalBonusAttacks > 0) {
+			damage += this.physicalBonusDamage;
+			this.physicalBonusAttacks--;
+		}
+		if (attacker === this.hero && this.patientStrikeReady) {
+			damage += this.talentRank('patient_strike');
+			this.patientStrikeReady = false;
+		}
+		if (attacker === this.hero && this.followupTarget === defender) {
+			damage += this.followupDamage;
+			this.followupTarget = null;
+			this.followupDamage = 0;
+		}
+		//`Talent.DEADLY_FOLLOWUP`: last in Java's own `onAttackProc` chain, multiplying the
+		//whole accumulated damage rather than adding to it. `attacker === this.hero` already
+		//excludes a thrown hit here (the throw path attacks with a spread copy of `this.hero`,
+		//never the live reference), matching Java's own `attackingWeapon() instanceof
+		//MissileWeapon` exclusion for free.
+		if (attacker === this.hero && this.deadlyFollowupTarget === defender) {
+			damage = Math.round(damage * (1 + 0.08 * this.talentRank('deadly_followup')));
+			this.deadlyFollowupTarget = null;
+		}
+		return damage;
+	},
+
+	/**
 	 * Melee (or missile) exchange with Java's own on-hit hooks: surprise attacks land
 	 * automatically (INFINITE_ACCURACY, inside rollHit) and wake the victim; Rogue's
 	 * SUCKER_PUNCH adds +2 on a surprise hit (+4 as an Assassin); Bat.attackProc heals
@@ -459,42 +505,7 @@ export const combatResolutionMethods = {
 		//No `Pylon` curve here: it is a `damage()` override, so it applies after every multiplier
 		//and proc below, not before them - see `applyDefenderDamageCurves`' own note.
 		damage = this.armStrikeAffix(attacker, damage);
-		if (attacker === this.hero) damage += empoweredStrikeBonus(this.subclass(), this.talentRank('empowered_strike'));
-		//Talent.java's SUCKER_PUNCH branch: `Random.IntRange(points, 2)` (1-2 at rank 1, flat 2
-		//at rank 2), not a flat `points` bonus - found in the 2026-09-09 hero-progression audit.
-		//Real Java attaches a `SuckerPunchTracker` to the enemy on the first proc, so surprising
-		//the same target twice only triggers the bonus once. The port stores that tracker by the
-		//creature's stable id and clears it naturally when a new run starts; it is saved with the
-		//run so save/load cannot reopen the bonus.
-		if (attacker.isHero && surprise) {
-			const rank = this.talentRank('sucker_punch');
-			if (rank > 0 && !this.suckerPunchTargets.has(defender.id)) {
-				damage += Random.range(rank, 2);
-				this.suckerPunchTargets.add(defender.id);
-			}
-		}
-		if (attacker === this.hero && this.physicalBonusAttacks > 0) {
-			damage += this.physicalBonusDamage;
-			this.physicalBonusAttacks--;
-		}
-		if (attacker === this.hero && this.patientStrikeReady) {
-			damage += this.talentRank('patient_strike');
-			this.patientStrikeReady = false;
-		}
-		if (attacker === this.hero && this.followupTarget === defender) {
-			damage += this.followupDamage;
-			this.followupTarget = null;
-			this.followupDamage = 0;
-		}
-		//`Talent.DEADLY_FOLLOWUP`: last in Java's own `onAttackProc` chain, multiplying the
-		//whole accumulated damage rather than adding to it. `attacker === this.hero` already
-		//excludes a thrown hit here (the throw path attacks with a spread copy of `this.hero`,
-		//never the live reference), matching Java's own `attackingWeapon() instanceof
-		//MissileWeapon` exclusion for free.
-		if (attacker === this.hero && this.deadlyFollowupTarget === defender) {
-			damage = Math.round(damage * (1 + 0.08 * this.talentRank('deadly_followup')));
-			this.deadlyFollowupTarget = null;
-		}
+		damage = this.applyHeroTalentBonuses(attacker, defender, surprise, damage);
 		//Polarized.proc(): real chance is a flat 1/2 - on success it amplifies to 1.5x, on
 		//failure it zeroes the hit outright (a coin-flip between "hits hard" and "whiffs"),
 		//reproduced exactly since it needs no subsystem beyond the damage value itself.
