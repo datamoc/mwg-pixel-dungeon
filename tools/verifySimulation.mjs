@@ -1339,6 +1339,8 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 			'monster actor DoT bypasses armor but uses the shared Char.damage tail');
 		assert.ok(scene.includes("this.applyCharacterDamage(monster, ooze, { pierceArmor: true, cause: 'foe', skipAura: true });"),
 			'the monster Ooze actor tick uses the same shared damage tail');
+		assert.ok(scene.includes("this.applyCharacterDamage(victim, rawDamage, { pierceArmor: true, cause: 'foe', skipAura: true });"),
+			'Cleric Judgement sends its rolled direct-spell damage through Char.damage');
 		assert.ok(panels.includes('damage = absorbCreatureShields(c, damage, this.ascendedTurns > 0);'),
 			'the shared non-hero path applies Java priority-ordered ShieldBuff pools before HP');
 	});

@@ -84,12 +84,11 @@ export const clericSpellFlowsMethods = {
 		const base = judgementDamageBase(rank, this.ascendedSpellCasts);
 		for (const victim of this.creatures) {
 			if (victim.isHero || victim.isAlly || victim.hp <= 0 || !this.fov.isVisible(victim.x, victim.y)) continue;
-			const damage = Random.normalRange(base, base * 2);
+			//Java calls Char.damage() here; preserve Judgement's normal-range roll and
+			//let the shared dispatcher apply Doom, defender overrides, shields and death.
+			const rawDamage = Random.normalRange(base, base * 2);
 			this.disqualifyBossChallenge(victim);
-			victim.hp -= damage;
-			this.showDamage(victim, damage);
-			victim.sleeping = false;
-			if (victim.hp <= 0) this.kill(victim);
+			this.applyCharacterDamage(victim, rawDamage, { pierceArmor: true, cause: 'foe', skipAura: true });
 		}
 		if (this.hero.buffs['invisibility']) delete this.hero.buffs['invisibility'];
 		this.actionSpentTurn = true;
