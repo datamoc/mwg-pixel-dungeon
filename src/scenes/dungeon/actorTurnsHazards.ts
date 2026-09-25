@@ -8,7 +8,7 @@ import { Actors, Random, Roguelike } from 'mwg';
 import { cureHeroBuffs } from '../../items/potionEffects';
 import { runMovement } from '../../adapters/movementSimulation';
 import { simulationRandom } from '../../adapters/mwgRandom';
-import { vertigoStep } from '../../simulation/vertigo';
+import { runVertigoStep } from '../../adapters/gameSimulation';
 import { simulationRoguelike } from '../../adapters/mwgRoguelike';
 import { takeSentryTurn as takeSentryTurnFlow } from '../../simulation/sentryTurn';
 import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
@@ -191,9 +191,10 @@ export const actorTurnsHazardsMethods = {
 			//`Char.move()` under Vertigo: the step re-rolls to a random neighbour (or goes nowhere - the hero
 			//then stays put and the turn is still spent, as Java's `spendAndNext` after `move()` does).
 			if (this.hero.buffs['vertigo'] !== undefined) {
-				const drunk = vertigoStep({ x: this.hero.x, y: this.hero.y }, target, Random.int(0, 8),
-					(cell) => this.level.inside(cell.x, cell.y) && this.canStepOnto(cell.x, cell.y),
-					(cell) => this.creatureAt(cell.x, cell.y) !== null);
+				const drunk = runVertigoStep({ x: this.hero.x, y: this.hero.y }, target, Random.int(0, 8), {
+					passable: (cell) => this.level.inside(cell.x, cell.y) && this.canStepOnto(cell.x, cell.y),
+					occupied: (cell) => this.creatureAt(cell.x, cell.y) !== null,
+				});
 				target = drunk ?? { x: this.hero.x, y: this.hero.y };
 			}
 			//`Chasm.heroJump()` (`Chasm.java` 60, tag `v3.3.8`): a voluntary step onto a

@@ -49,6 +49,13 @@ Moved 2026-09-24 on the user's decision: these eight items were the only open bo
       monster action, its post-action hook, and its variable cost read through `runMonsterTurn()`
       on that runtime too. The scheduler remains the authoritative consumer of the returned cost,
       so Necromancer's variable summon cost and actor-removal behavior remain unchanged.
+      **Progress 2026-09-25:** the two Vertigo step funnels (hero in `takeHeroTurn`, monster in
+      `stepMonster`) now dispatch a ninth command type, `vertigo-step`, through the same shared
+      runtime (`runVertigoStep` in `adapters/gameSimulation.ts`), with the level's
+      passable/occupied predicates held behind a numeric world handle like the movement and
+      search worlds - chosen as the cheapest direct-call site still outside `dispatch()`, per
+      this phase's "one command type at a time" rule. Pinned in `tools/verifyVertigo.ts`
+      (both funnels route through `runVertigoStep`, neither calls the rule directly).
       **Complexity: L.**
       **Closed 2026-09-25 (T60):** the wrap is done - `adapters/gameSimulation.ts` is the single `SimulationRuntime` for all eight command kinds (`attack`, `hero-turn`, `monster-turn`, `hunger`, `hunger-exertion`, `hero-action`, `movement`, `search`) with per-domain facades, and a repo-wide scan confirms no game file imports the covered planners directly (pure queries, deterministic value functions and constants stay direct by design). Pinned by `tools/verifyRuntimeDispatch.mjs`, wired into `npm run check`. The transitional strategies (monster-turn tables, scheduler/random reconciliation) still wait for serializable state and real costs per `SIMULATION_ARCHITECTURE.md`.
 

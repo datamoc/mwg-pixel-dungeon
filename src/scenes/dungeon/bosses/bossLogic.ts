@@ -3,7 +3,7 @@ import { faceCharacter } from '../../../ui/characterPlacement';
 import { AnimatedSprite, Blob, Random, ReactionTable, Roguelike, Tweener, type ReactionRule } from 'mwg';
 import { simulationRandom } from '../../../adapters/mwgRandom';
 import { takeGooTurn as runGooTurn } from '../../../simulation/gooBoss';
-import { vertigoStep } from '../../../simulation/vertigo';
+import { runVertigoStep } from '../../../adapters/gameSimulation';
 import { planRatKingWave, ratKingP1Summon, type RatKingAddKind, type RatKingWavePlan } from '../../../simulation/ratKingBoss';
 import { chooseDM300Ability, dm300VentPath, planDM300Knockback, planDM300Rockfall } from '../../../simulation/dm300Boss';
 import { aimYogDeathGaze } from '../../../simulation/yogBoss';
@@ -1602,9 +1602,10 @@ export const bossLogicMethods = {
 		if (monster.kind === 'goo' && (monster.pumped ?? 0) > 0) monster.pumped = 0;
 		//`Char.move()` under Vertigo: an adjacent step re-rolls to a random neighbour, or goes nowhere.
 		if (monster.buffs['vertigo'] !== undefined) {
-			const drunk = vertigoStep({ x: monster.x, y: monster.y }, to, Random.int(0, 8),
-				(cell) => this.level.inside(cell.x, cell.y) && this.level.passable(cell.x, cell.y),
-				(cell) => this.creatureAt(cell.x, cell.y) !== null);
+			const drunk = runVertigoStep({ x: monster.x, y: monster.y }, to, Random.int(0, 8), {
+				passable: (cell) => this.level.inside(cell.x, cell.y) && this.level.passable(cell.x, cell.y),
+				occupied: (cell) => this.creatureAt(cell.x, cell.y) !== null,
+			});
 			if (!drunk) return;
 			to = drunk;
 		}

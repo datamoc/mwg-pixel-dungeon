@@ -27,5 +27,13 @@ check('gaining vertigo/paralysis after a travel began cancels it (Hero.add -> in
 check('the hero and monster step funnels both apply it', read('../src/scenes/dungeon/actorTurnsHazards.ts').includes("this.hero.buffs['vertigo'] !== undefined")
 	&& read('../src/scenes/dungeon/bosses/bossLogic.ts').includes("monster.buffs['vertigo'] !== undefined"));
 
+	//T60 dispatch migration: both Vertigo step funnels route the rule through the shared
+	//SimulationRuntime (`runVertigoStep` in adapters/gameSimulation.ts) instead of calling
+	//`vertigoStep` directly, so the command is journaled like the other domain rules.
+	const vertigoFunnels = read('../src/scenes/dungeon/actorTurnsHazards.ts') + read('../src/scenes/dungeon/bosses/bossLogic.ts');
+	check('both Vertigo steps dispatch through the shared runtime',
+		(vertigoFunnels.match(/runVertigoStep\(/g) ?? []).length === 2
+		&& !/[^\w]vertigoStep\(/.test(vertigoFunnels));
+
 if (failed > 0) { console.error(`${failed} vertigo check(s) failed`); process.exit(1); }
 console.log('verifyVertigo: OK');

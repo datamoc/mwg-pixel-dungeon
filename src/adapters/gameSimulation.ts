@@ -8,6 +8,17 @@ import { planMovement, type MovementPlan, type MovementWorld } from '../simulati
 import { planSearch, type SearchOptions, type SearchOutcome, type SearchWorld } from '../simulation/search';
 import type { SimulationRandom } from '../simulation/random';
 import { finishHeroTurn, type HeroTurnEffects, type HeroTurnResult } from '../simulation/heroTurn';
+import { vertigoStep } from '../simulation/vertigo';
+
+/** `VertigoCell`'s shape: plain board coordinates, kept structural so MWG can clone the command. */
+interface Cell { x: number; y: number }
+
+/** Live level predicates for the `vertigo-step` command - scene callbacks stay outside the
+ * cloned payload, the same boundary every other world handle here uses. */
+interface VertigoWorld {
+	passable: (cell: Cell) => boolean;
+	occupied: (cell: Cell) => boolean;
+}
 
 interface SpdActor extends Actor { id: string; }
 
@@ -25,7 +36,8 @@ type Command =
 	| { kind: 'hunger-exertion'; state: HungerState; amount: number }
 	| { kind: 'hero-action'; action: string; paralysed: boolean; turnCostMod: number; hasMealTalent: boolean }
 	| { kind: 'movement'; position: { x: number; y: number }; move: { x: number; y: number }; worldId: number }
-	| { kind: 'search'; position: { x: number; y: number }; radius: number; worldId: number; options?: SearchOptions };
+	| { kind: 'search'; position: { x: number; y: number }; radius: number; worldId: number; options?: SearchOptions }
+	| { kind: 'vertigo-step'; from: Cell; intended: Cell; roll: number; worldId: number };
 
 type Event =
 	| { type: 'attack-resolution'; resolution: AttackResolution }
@@ -34,7 +46,8 @@ type Event =
 	| { type: 'hunger-transition'; state: HungerState; events: HungerEvent[] }
 	| { type: 'hero-action-plan'; plan: HeroActionPlan }
 	| { type: 'movement-plan'; plan: MovementPlan }
-	| { type: 'search-result'; outcome: SearchOutcome };
+	| { type: 'search-result'; outcome: SearchOutcome }
+	| { type: 'vertigo-step-result'; cell: Cell | null };
 
 interface State { last: Event | null; }
 
@@ -46,6 +59,7 @@ const heroTurnEffects = new Map<number, HeroTurnEffects>();
 const monsterTurnEffects = new Map<number, MonsterTurnEffects>();
 const movementWorlds = new Map<number, MovementWorld>();
 const searchWorlds = new Map<number, SearchWorld>();
+const vertigoWorlds = new Map<number, VertigoWorld>();
 
 const rule: SimulationRuntimeRule<State, Command, Event, SpdActor> = (_state, command) => {
 	switch (command.kind) {
@@ -94,6 +108,12 @@ const rule: SimulationRuntimeRule<State, Command, Event, SpdActor> = (_state, co
 			if (!world) throw new Error(`search world ${command.worldId} is no longer available`);
 			const outcome = planSearch(command.position, command.radius, world, command.options);
 			return { state: { last: { type: 'search-result', outcome } }, events: [{ type: 'search-result', outcome }], status: 'ready', cost: null };
+		}
+		case 'vertigo-step': {
+			const world = vertigoWorlds.get(command.worldId);
+			if (!world) throw new Error(`vertigo world ${command.worldId} is no longer available`);
+			const cell = vertigoStep(command.from, command.intended, command.roll, world.passable, world.occupied);
+			return { state: { last: { type: 'vertigo-step-result', cell } }, events: [{ type: 'vertigo-step-result', cell }], status: 'ready', cost: null };
 		}
 	}
 };
@@ -181,5 +201,19 @@ export function runSearch(position: { x: number; y: number }, radius: number, wo
 		return (dispatch({ kind: 'search', position, radius, worldId, options }) as { type: 'search-result'; outcome: SearchOutcome }).outcome;
 	} finally {
 		searchWorlds.delete(worldId);
+	}
+}
+
+/** Route `Char.move()`'s Vertigo neighbour re-roll through the shared runtime - one more
+ * command type on the T60 dispatch migration. The passable/occupied predicates are live
+ * level callbacks, so only their numeric handle enters MWG's cloned command journal, the
+ * same boundary the movement and search worlds already use. */
+export function runVertigoStep(from: Cell, intended: Cell, roll: number, world: VertigoWorld): Cell | null {
+	const worldId = ++nextHandle;
+	vertigoWorlds.set(worldId, world);
+	try {
+		return (dispatch({ kind: 'vertigo-step', from, intended, roll, worldId }) as { type: 'vertigo-step-result'; cell: Cell | null }).cell;
+	} finally {
+		vertigoWorlds.delete(worldId);
 	}
 }
