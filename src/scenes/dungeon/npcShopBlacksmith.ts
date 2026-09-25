@@ -1,5 +1,6 @@
 import type { DungeonScene } from '../dungeonScene';
 import { Actors, Random, Roguelike, TintedSprite } from 'mwg';
+import { PRISON_START_CELLS } from '../../spdLevelGen/bossLevels';
 import { MISSILE_MAX_DURABILITY, missilePickupValid, missileStackId } from '../../items/missiles';
 import { appearanceItemFrame } from '../../items/appearanceFrames';
 import { eatFood as eatConsumableFood, quaffPotion as quaffConsumablePotion } from '../../items/consumables';
@@ -270,7 +271,24 @@ export const npcShopBlacksmithMethods = {
 			//`PrisonBossLevel.occupyCell()`'s real `case START:` spawns Tengu himself, once the
 			//hero has moved past the locked door into `tenguCell` - see `checkTenguFightStart`,
 			//which also owns the arrival line.
-			if (boss.kind === 'tengu') return;
+			if (boss.kind === 'tengu') {
+				//`PrisonBossLevel.createItems()` (tag `v3.3.8`): a guaranteed `IronKey(10)` drop
+				//at `randomPrisonCellPos()` - a random interior cell of one of the floor's four
+				//start cells (`PRISON_START_CELLS`, this port's own `startCells`). Missing here
+				//entirely until this pass (found via a live-play automated test that could never
+				//get past the locked Tengu-cell door): `prisonBossEnd()`'s own doc comment already
+				//flagged "Java's IronKey-heap cleanup ... is presentation/item-side, not paint",
+				//correctly scoping the key out of that paint function, but nothing ever picked the
+				//item-side half back up - the locked door existed with no way to ever open it.
+				//Guarded like the Amulet drop below: a re-entry must not mint a second key.
+				if (!this.bag.find('ironKey') && !this.groundItems.some((item) => item.item?.id === 'ironKey')) {
+					const [left, top, right, bottom] = Random.element(PRISON_START_CELLS)!;
+					const x = Random.range(left + 1, right - 2);
+					const y = Random.range(top + 1, bottom - 2);
+					this.spawnGroundItem('ironKey', x, y, { id: 'ironKey', quantity: 1, identified: true, depth: this.depth });
+				}
+				return;
+			}
 			const room = this.level.rooms[this.level.rooms.length - 1] ?? this.level.rooms[1];
 			this.spawnMonster(boss.kind, Roguelike.rectCenter(room));
 			//`Statistics.qualifiedForBossChallengeBadge = true` at each boss fight's start.

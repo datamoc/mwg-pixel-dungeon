@@ -1841,6 +1841,29 @@ final-vault music stop is now ported. Caves' four pylon cells are represented as
 dedicated actors rather than inactive trap scenery; their remaining DM-300 lock/supercharge
 coupling is tracked in the boss row above.
 
+**Bug found and fixed 2026-09-25 (Tengu genuinely unreachable):** `PrisonBossLevel.createItems()`
+(`v3.3.8`) drops a guaranteed `IronKey(10)` at `randomPrisonCellPos()` - a random interior cell of
+one of the floor's `startCells` - so a real player can always find the key that opens the locked
+door into Tengu's cell. This port's fixed depth-10 layout (`prisonBoss()`, `bossLevels.ts`) paints
+the door as `Terrain.LOCKED_DOOR` (matching Java) but never placed the key anywhere - confirmed by
+reading `prisonBossEnd()`'s own pre-existing doc comment, which had already correctly noted "Java's
+`IronKey`-heap cleanup ... is presentation/item-side, not paint" without anyone following through
+on the item-side half. The result: **Tengu was completely unreachable by normal play** - the only
+door into his cell could never be unlocked, by any class, in any run. Found via a scripted live
+playthrough (`playwright-core` against the sandbox Chromium) whose exploration bot got
+permanently stuck at that exact door on every attempt; a user's suggestion to cross-check the real
+Java source for the key mechanic (rather than continuing to assume it was a test-script
+limitation) is what surfaced `PrisonBossLevel.createItems()` and confirmed this was a genuine gap.
+**Fixed:** `PRISON_START_CELLS` (this port's own `startCells`, already existing in `bossLevels.ts`
+for the terrain paint) is now exported and read from `populate()`'s `boss.kind === 'tengu'` branch
+(`npcShopBlacksmith.ts`) - a guaranteed `ironKey` ground item spawns at a random interior cell of a
+random start cell, once per floor (guarded against a second mint on re-entry, matching the Amulet
+drop's own guard immediately below in the same function). Live-verified: the key is present at a
+real generated position, a normal walk-onto-cell pickup adds it to the bag, bumping the Tengu-cell
+door consumes it and unlocks/opens the door on the real two-turn bump-then-step sequence
+(`bumpDoor`, `environmentFireTraps.ts`), and the same exploration bot that was stuck now walks
+through, finds, wakes, and fights Tengu for real. `npx tsc --noEmit`/`npm run build` clean.
+
 ## Data-driven dispatch (2026-09-09)
 
 User-flagged code-quality pass: `main.ts` had 205 `kind === '...'`/`id === '...'` string-compare

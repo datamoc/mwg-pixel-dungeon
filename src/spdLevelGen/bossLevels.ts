@@ -70,7 +70,7 @@ const PRISON_ENTRANCE_ROOM = { left: 8, top: 2, right: 13, bottom: 8 } as const;
 const PRISON_START_HALLWAY = { left: 9, top: 7, right: 12, bottom: 24 } as const;
 /** `PrisonBossLevel.startCells` (`v3.3.8`): the four prison cells flanking the hallway, reached
  *  through the four `DOOR`s set across the hallway's own walls below. */
-const PRISON_START_CELLS = [[5, 9, 10, 16], [11, 9, 16, 16], [5, 15, 10, 22], [11, 15, 16, 22]] as const;
+export const PRISON_START_CELLS = [[5, 9, 10, 16], [11, 9, 16, 16], [5, 15, 10, 22], [11, 15, 16, 22]] as const;
 
 /** `PrisonBossLevel.setMapStart()` (`v3.3.8`): the entrance room, hallway, four start cells, and
  *  Tengu's own lower cell behind a locked door. Shared by `setMapPause()`/`setMapEnd()`, which
