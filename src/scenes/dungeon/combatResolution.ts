@@ -332,6 +332,58 @@ export const combatResolutionMethods = {
 	},
 
 	/**
+	 * T61 slice 8: the landed-hit prelude of `attack()` - the hit cue, the rogue
+	 * surprise bonus, the Corrupting conversion, and the illuminated consume with
+	 * Searing Light. Verbatim move; runs after the glyph seam, before the defender
+	 * damage curves, exactly where it did inline.
+	 */
+	openLandedHit(this: DungeonScene, attacker: Creature, defender: Creature, surprise: boolean, damage: number): number {
+		runState.audio.cue('hit', 0.6);
+		if (attacker.isHero && this.heroClass === 'rogue' && surprise) {
+			damage += (this.subclass() === 'assassin' ? 4 : 2) + assassinReachBonus(this.subclass(), this.talentRank('assassins_reach'));
+			this.awardBadge('surprises');
+		}
+		//Corrupting.proc() is a weapon proc, so Java runs it in `attackProc()` - before
+		//`enemy.damage()`, and therefore on the pre-`damage()`-override value. Its
+		//`damage >= defender.HP` guard must see that value: a hit that only reaches lethal
+		//after the defender's own curves cut it down (a Slime's 4+/5 soft cap) still counts
+		//as lethal in Java. A lethal hit converts a living Mob instead of killing it - the
+		//port's ally model already provides the permanent controlled actor shape, so keep
+		//the target, fully heal it, clear negative buffs, and mark it as an ally.
+		if (attacker === this.hero && (this.weaponAffix === 'corrupting' || this.unstableDelegated === 'corrupting') && damage >= defender.hp
+			&& !defender.isHero && !defender.isNPC && !defender.isAlly && Random.chance(
+			((Math.max(0, this.degradedLevel(this.weaponLevel)) + 5) / (Math.max(0, this.degradedLevel(this.weaponLevel)) + 25))
+				* this.enchantProcMultiplier())) {
+			defender.hp = defender.maxHp;
+			for (const buff of NEGATIVE_BUFFS) delete defender.buffs[buff];
+			defender.isAlly = true;
+			defender.allyKind = 'mirror';
+			defender.sleeping = false;
+			damage = 0;
+			this.say(t('port.log.corrupting', { target: defender.name }), 'positive');
+		}
+		//`Char.attack()`'s illuminated half (tag `v3.3.8`): any landed hit on an
+		//illuminated enemy consumes the debuff - Java detaches in `attack()` before
+		//damage resolution, so even a fully absorbed hit clears it, and so does this.
+		//The Cleric hero's own melee hit additionally deals Searing Light's `1 + 2*points`,
+		//placed before the defender curves below, where Java's pre-`defenseProc` add sits
+		//relative to the `damage()` overrides. Two stated placement differences remain:
+		//thrown hero hits bypass it (`MissileWeapon` never calls `Char.attack()` in Java,
+		//hence the `attackMode` gate, the file's melee precedent), and Berserk/Fury do not
+		//multiply it (they scale the roll upstream in `simulation/combat.ts`, where the
+		//defender's illuminated state is not visible). The Priest ally strike needs the
+		//subclass and stays unported.
+		if (defender.buffs['illuminated'] !== undefined) {
+			delete defender.buffs['illuminated'];
+			if (attacker.isHero && attacker.attackMode !== 'throw' && this.heroClass === 'cleric') {
+				const searing = this.talentRank('searing_light');
+				if (searing > 0) damage += searingLightBonus(searing);
+			}
+		}
+		return damage;
+	},
+
+	/**
 	 * Melee (or missile) exchange with Java's own on-hit hooks: surprise attacks land
 	 * automatically (INFINITE_ACCURACY, inside rollHit) and wake the victim; Rogue's
 	 * SUCKER_PUNCH adds +2 on a surprise hit (+4 as an Assassin); Bat.attackProc heals
@@ -603,48 +655,7 @@ export const combatResolutionMethods = {
 		const glyphOut = this.applyDefenderGlyphProcs(attacker, defender, damage);
 		if (glyphOut.consumed) return false;
 		damage = glyphOut.damage;
-		runState.audio.cue('hit', 0.6);
-		if (attacker.isHero && this.heroClass === 'rogue' && surprise) {
-			damage += (this.subclass() === 'assassin' ? 4 : 2) + assassinReachBonus(this.subclass(), this.talentRank('assassins_reach'));
-			this.awardBadge('surprises');
-		}
-		//Corrupting.proc() is a weapon proc, so Java runs it in `attackProc()` - before
-		//`enemy.damage()`, and therefore on the pre-`damage()`-override value. Its
-		//`damage >= defender.HP` guard must see that value: a hit that only reaches lethal
-		//after the defender's own curves cut it down (a Slime's 4+/5 soft cap) still counts
-		//as lethal in Java. A lethal hit converts a living Mob instead of killing it - the
-		//port's ally model already provides the permanent controlled actor shape, so keep
-		//the target, fully heal it, clear negative buffs, and mark it as an ally.
-		if (attacker === this.hero && (this.weaponAffix === 'corrupting' || this.unstableDelegated === 'corrupting') && damage >= defender.hp
-			&& !defender.isHero && !defender.isNPC && !defender.isAlly && Random.chance(
-			((Math.max(0, this.degradedLevel(this.weaponLevel)) + 5) / (Math.max(0, this.degradedLevel(this.weaponLevel)) + 25))
-				* this.enchantProcMultiplier())) {
-			defender.hp = defender.maxHp;
-			for (const buff of NEGATIVE_BUFFS) delete defender.buffs[buff];
-			defender.isAlly = true;
-			defender.allyKind = 'mirror';
-			defender.sleeping = false;
-			damage = 0;
-			this.say(t('port.log.corrupting', { target: defender.name }), 'positive');
-		}
-		//`Char.attack()`'s illuminated half (tag `v3.3.8`): any landed hit on an
-		//illuminated enemy consumes the debuff - Java detaches in `attack()` before
-		//damage resolution, so even a fully absorbed hit clears it, and so does this.
-		//The Cleric hero's own melee hit additionally deals Searing Light's `1 + 2*points`,
-		//placed before the defender curves below, where Java's pre-`defenseProc` add sits
-		//relative to the `damage()` overrides. Two stated placement differences remain:
-		//thrown hero hits bypass it (`MissileWeapon` never calls `Char.attack()` in Java,
-		//hence the `attackMode` gate, the file's melee precedent), and Berserk/Fury do not
-		//multiply it (they scale the roll upstream in `simulation/combat.ts`, where the
-		//defender's illuminated state is not visible). The Priest ally strike needs the
-		//subclass and stays unported.
-		if (defender.buffs['illuminated'] !== undefined) {
-			delete defender.buffs['illuminated'];
-			if (attacker.isHero && attacker.attackMode !== 'throw' && this.heroClass === 'cleric') {
-				const searing = this.talentRank('searing_light');
-				if (searing > 0) damage += searingLightBonus(searing);
-			}
-		}
+		damage = this.openLandedHit(attacker, defender, surprise, damage);
 		//Every defender-side `damage()` override (`Pylon` 14+/15, `Eye` /4 while charging,
 		//`DemonSpawner` 19+/20, `Slime`/`CausticSlime` 4+/5) applies here, at Java's point: after
 		//the attacker's multipliers and procs, before shields and HP. One call rather than four

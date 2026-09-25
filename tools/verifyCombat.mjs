@@ -882,5 +882,9 @@ export function verifyCombat(require, check) {
 			'a landed hit glyphs through the defender seam');
 		assert.ok(scene.includes('if (glyphOut.consumed) return false;'),
 			'the Displacement consume still exits attack at the same point');
+		assert.ok(scene.includes('openLandedHit(this: DungeonScene, attacker: Creature, defender: Creature, surprise: boolean, damage: number): number'),
+			'the landed-hit prelude lives in its own seam');
+		assert.ok(scene.includes('damage = this.openLandedHit(attacker, defender, surprise, damage);'),
+			'a landed hit opens through the prelude seam');
 	});
 }
