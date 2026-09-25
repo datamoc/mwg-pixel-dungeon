@@ -614,6 +614,80 @@ export const combatResolutionMethods = {
 	 * enchant, crossbow knockback, staged ability riders, charm decay, the
 	 * Repulsion shove, and the crystal-mimic reposition. Verbatim move.
 	 */
+
+	/**
+	 * T61 slice 17: the death resolution of a landed `attack()` - the ghoul/king
+	 * hooks, the Brute revival, cape retaliation, combo feed, the kill block,
+	 * and the swarm split. Verbatim move; every path already returned true,
+	 * so the seam returns the same boolean the call site returns.
+	 */
+	resolveAttackDeath(this: DungeonScene, attacker: Creature, defender: Creature, damage: number, preHp: number, heroExecuted: boolean, capeRetaliation: number): boolean {
+			if (defender.hp <= 0 && defender.kind === 'ghoul') this.ghoulDown(defender);
+			//DwarfKing P1: taken damage accelerates both cooldowns (`-= taken/8`).
+			if (defender.kind === 'king' && (defender.kingPhase ?? 1) === 1 && defender.hp > 0) {
+				const taken = Math.max(0, preHp - defender.hp);
+				defender.kingSummonCd = (defender.kingSummonCd ?? 0) - taken / 8;
+				defender.kingAbilityCd = (defender.kingAbilityCd ?? 0) - taken / 8;
+			}
+			//Phase transitions ride the damage event, not the King's next turn (see
+			//`kingDamageHook`): accel first, then the transition, matching Java's order.
+			if (defender.kind === 'king' && defender.hp > 0) this.kingDamageHook(defender);
+			//Tengu bracket jumps resolve after the hit (procs included) but before death.
+			if (defender.kind === 'tengu' && defender.hp > 0) this.tenguBracketJump(defender, preHp);
+
+			//Brute.isAlive()/triggerEnrage(): the first time it would die, it survives instead with
+			//a shield of HT/2+4 (`BruteRage.setShield`) - reproduced here by giving its hp field
+			//that value directly rather than tracking a separate shield pool, so the existing
+			//damage-application code drains it exactly like real hp would. `raged` then boosts its
+			//own damage roll (`liveStats`) and drives the flat 4/turn passive decay in
+			//`takeMonsterTurn`; only ever fires once (`hasRaged`), matching Java exactly.
+			//`ArmoredBrute extends Brute` and overrides `triggerEnrage()` with its own smaller
+			//shield (`HT/2+1`, not `+4`) that decays far slower (1 point every 3 turns via
+			//`ArmoredRage.act()`'s own `spend(3*TICK)`, vs plain `BruteRage`'s 4/turn) - previously
+			//this port's check here was `kind === 'brute'` literally, so ArmoredBrute (a real,
+			//spawnable alternative monster kind) never got the revival at all and could simply be
+			//killed outright, the exact bug this port's own `Brute` fix once corrected for the base
+			//kind. `armoredRageTicks` starts the every-3rd-turn decay counter.
+			if (defender.hp <= 0 && (defender.kind === 'brute' || defender.kind === 'armoredBrute') && !defender.hasRaged && !heroExecuted) {
+				defender.hasRaged = true;
+				defender.raged = true;
+				if (defender.kind === 'armoredBrute') {
+					defender.hp = Math.round(defender.maxHp / 2 + 1);
+					defender.armoredRageTicks = 0;
+				} else {
+					defender.hp = Math.round(defender.maxHp / 2 + 4);
+				}
+				this.say(t('port.log.bruterage'), 'negative');
+				return true;
+			}
+
+	        // Cape of Thorns returns the deflected amount to an adjacent attacker.
+	        // Defer it until this resolver has finished reading the attacker, because the
+	        // direct damage may kill and remove that creature from the scene.
+	        if (capeRetaliation > 0 && attacker.hp > 0 && !attacker.isHero
+	            && Roguelike.chebyshevDistance(attacker, defender) <= 1) {
+	            this.applyBlastDamage(attacker, capeRetaliation, true, 'foe');
+	        }
+			//`Hero.actAttack()`/`doThrow()`: a landed hit on an enemy feeds the Gladiator's `Combo.hit()` (which also
+			//reads whether that hit killed, hence after the brute-revival block). `Combo.doAttack` swings never do.
+			if (attacker.isHero && !defender.isAlly && !this.comboSuppressHit) this.comboHit(defender);
+			if (defender.hp <= 0) {
+				//Mob.die()'s kill triggers gate on the *cause* (`hero || Weapon || Enchantment`),
+				//so missile kills count too - `isHero` (true for the hero and its thrown-missile
+				//copy alike) rather than the melee-only `attacker === this.hero` reference check.
+				//Lethal Momentum's own chance (0.34+0.33/point: 2/3 at rank 1, certain at 2) was
+				//already exact, only its trigger was narrowed to melee; fixed the same way here.
+				//Endless Rage's old free-turn line is gone outright: real `ENDLESS_RAGE` only raises
+				//the Berserk rage cap (`1+0.1667x` max power), which needs the rage gain/decay clock
+				//this port doesn't model (see the Berserk row) - a free turn had no Java basis.
+				if (attacker.isHero && this.heroClass === 'warrior' && this.talentRank('lethal_momentum') > 0 && Random.chance(this.talentRank('lethal_momentum') >= 2 ? 1 : 2 / 3)) this.freeTurnNext = true;
+				if (attacker.isHero) this.lethalHasteOnKill();
+				this.kill(defender);
+				return true;
+			}
+			if (defender.kind === 'swarm') this.swarmSplit(defender, damage, preHp);
+			return true;
+	},
 	runHitRiders(this: DungeonScene, attacker: Creature, defender: Creature, damage: number, charmedForTarget: boolean): void {
 			if (attacker.statueEnchant) this.statueEnchantProc(attacker, defender, damage);
 			//Weapon-ability riders staged by `useWeaponAbility`: heavy blow dazes 5 turns
@@ -1230,71 +1304,7 @@ export const combatResolutionMethods = {
 		//like Java's `Char.attack()`), so there is nothing left to consume here.
 		this.runOnHitHooks(attacker, defender, damage);
 		this.runHitRiders(attacker, defender, damage, charmedForTarget);
-		if (defender.hp <= 0 && defender.kind === 'ghoul') this.ghoulDown(defender);
-		//DwarfKing P1: taken damage accelerates both cooldowns (`-= taken/8`).
-		if (defender.kind === 'king' && (defender.kingPhase ?? 1) === 1 && defender.hp > 0) {
-			const taken = Math.max(0, preHp - defender.hp);
-			defender.kingSummonCd = (defender.kingSummonCd ?? 0) - taken / 8;
-			defender.kingAbilityCd = (defender.kingAbilityCd ?? 0) - taken / 8;
-		}
-		//Phase transitions ride the damage event, not the King's next turn (see
-		//`kingDamageHook`): accel first, then the transition, matching Java's order.
-		if (defender.kind === 'king' && defender.hp > 0) this.kingDamageHook(defender);
-		//Tengu bracket jumps resolve after the hit (procs included) but before death.
-		if (defender.kind === 'tengu' && defender.hp > 0) this.tenguBracketJump(defender, preHp);
-
-		//Brute.isAlive()/triggerEnrage(): the first time it would die, it survives instead with
-		//a shield of HT/2+4 (`BruteRage.setShield`) - reproduced here by giving its hp field
-		//that value directly rather than tracking a separate shield pool, so the existing
-		//damage-application code drains it exactly like real hp would. `raged` then boosts its
-		//own damage roll (`liveStats`) and drives the flat 4/turn passive decay in
-		//`takeMonsterTurn`; only ever fires once (`hasRaged`), matching Java exactly.
-		//`ArmoredBrute extends Brute` and overrides `triggerEnrage()` with its own smaller
-		//shield (`HT/2+1`, not `+4`) that decays far slower (1 point every 3 turns via
-		//`ArmoredRage.act()`'s own `spend(3*TICK)`, vs plain `BruteRage`'s 4/turn) - previously
-		//this port's check here was `kind === 'brute'` literally, so ArmoredBrute (a real,
-		//spawnable alternative monster kind) never got the revival at all and could simply be
-		//killed outright, the exact bug this port's own `Brute` fix once corrected for the base
-		//kind. `armoredRageTicks` starts the every-3rd-turn decay counter.
-		if (defender.hp <= 0 && (defender.kind === 'brute' || defender.kind === 'armoredBrute') && !defender.hasRaged && !heroExecuted) {
-			defender.hasRaged = true;
-			defender.raged = true;
-			if (defender.kind === 'armoredBrute') {
-				defender.hp = Math.round(defender.maxHp / 2 + 1);
-				defender.armoredRageTicks = 0;
-			} else {
-				defender.hp = Math.round(defender.maxHp / 2 + 4);
-			}
-			this.say(t('port.log.bruterage'), 'negative');
-			return true;
-		}
-
-        // Cape of Thorns returns the deflected amount to an adjacent attacker.
-        // Defer it until this resolver has finished reading the attacker, because the
-        // direct damage may kill and remove that creature from the scene.
-        if (capeRetaliation > 0 && attacker.hp > 0 && !attacker.isHero
-            && Roguelike.chebyshevDistance(attacker, defender) <= 1) {
-            this.applyBlastDamage(attacker, capeRetaliation, true, 'foe');
-        }
-		//`Hero.actAttack()`/`doThrow()`: a landed hit on an enemy feeds the Gladiator's `Combo.hit()` (which also
-		//reads whether that hit killed, hence after the brute-revival block). `Combo.doAttack` swings never do.
-		if (attacker.isHero && !defender.isAlly && !this.comboSuppressHit) this.comboHit(defender);
-		if (defender.hp <= 0) {
-			//Mob.die()'s kill triggers gate on the *cause* (`hero || Weapon || Enchantment`),
-			//so missile kills count too - `isHero` (true for the hero and its thrown-missile
-			//copy alike) rather than the melee-only `attacker === this.hero` reference check.
-			//Lethal Momentum's own chance (0.34+0.33/point: 2/3 at rank 1, certain at 2) was
-			//already exact, only its trigger was narrowed to melee; fixed the same way here.
-			//Endless Rage's old free-turn line is gone outright: real `ENDLESS_RAGE` only raises
-			//the Berserk rage cap (`1+0.1667x` max power), which needs the rage gain/decay clock
-			//this port doesn't model (see the Berserk row) - a free turn had no Java basis.
-			if (attacker.isHero && this.heroClass === 'warrior' && this.talentRank('lethal_momentum') > 0 && Random.chance(this.talentRank('lethal_momentum') >= 2 ? 1 : 2 / 3)) this.freeTurnNext = true;
-			if (attacker.isHero) this.lethalHasteOnKill();
-			this.kill(defender);
-			return true;
-		}
-		if (defender.kind === 'swarm') this.swarmSplit(defender, damage, preHp);
-		return true;
+		return this.resolveAttackDeath(attacker, defender, damage, preHp, heroExecuted, capeRetaliation);
 	},
 
 	/** hero-side on-hit hooks: enchants, subclass effects, counters */

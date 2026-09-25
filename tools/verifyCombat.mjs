@@ -918,5 +918,9 @@ export function verifyCombat(require, check) {
 			'the post-hit riders live in their own seam');
 		assert.ok(scene.includes('this.runHitRiders(attacker, defender, damage, charmedForTarget);'),
 			'a landed hit rides through the rider seam');
+		assert.ok(scene.includes('resolveAttackDeath(this: DungeonScene, attacker: Creature, defender: Creature, damage: number, preHp: number, heroExecuted: boolean, capeRetaliation: number): boolean'),
+			'the death resolution lives in its own seam');
+		assert.ok(scene.includes('return this.resolveAttackDeath(attacker, defender, damage, preHp, heroExecuted, capeRetaliation);'),
+			'a landed hit resolves death through the death seam');
 	});
 }
