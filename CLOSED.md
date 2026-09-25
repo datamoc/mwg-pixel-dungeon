@@ -2468,6 +2468,14 @@ positions making the 47 cells. Secret selection is exonerated (honeypot secret b
 sides); the maze-`growMaze` and item-substream theories are withdrawn. User decision:
 keep the `v3.3.8`/`4.0.0-beta` behavior, classify both as oracle skew in
 `PORT_COVERAGE.md` - no port change, 26/28 `TRACE-IDENTICAL` plus 2 classified.
+**Fresh local-oracle probe 2026-09-25:** the parity runner now also checks the trap count
+against the Java dump. Re-running it with the reference checkout's current, locally
+instrumented dump produced 25/28 map/feeling/rect matches on deterministic depths 3+;
+it exposed a further 24-cell map difference at seed `123456789`/depth 7 and reports
+4 TypeScript traps versus 3 Java traps at the already-known seed `42`/depth 8 layout
+divergence. This dump is an uncommitted local artifact, so those observations are audit
+leads only; verify the exact oracle source and regenerate before revising the prior
+version-skew classification.
 Still genuinely unstarted: RNG-call-order comparison
 
 beyond levelgen, and loot/quest/boss-transition/save-load comparison.

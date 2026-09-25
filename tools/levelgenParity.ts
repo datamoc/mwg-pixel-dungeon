@@ -189,6 +189,9 @@ function main(): void {
 			if (feelingName !== block.feeling || (depth === 1 ? block.feelingRoll !== -1 : false)) {
 				diffs.push(`feeling ts=${feelingName} java=${block.feeling}/${block.feelingRoll}`);
 			}
+			if (floor.traps.length !== block.traps) {
+				diffs.push(`traps ts=${floor.traps.length} java=${block.traps}`);
+			}
 			const rects = floor.rooms
 				.map((r) => `${r.left},${r.top},${r.right},${r.bottom}`)
 				.sort();
