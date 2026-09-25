@@ -1,4 +1,4 @@
-import { ParticleEmitter } from 'mwg';
+import { ParticleEmitter, type ParticleEmitterOptions } from 'mwg';
 import { Container, Texture } from 'mwg/two-d/pixi-interop';
 import { TILE } from '../dungeonConstants';
 import type { DeathBurstSpec } from '../simulation/deathBursts';
