@@ -258,12 +258,19 @@ export const actorTurnsHazardsMethods = {
 	 *   `badges.mwl` (only the pickup-time "Escaped with the Amulet" trophy exists - see
 	 *   `pickupAmulet`'s own comment), so this port does not award a second badge here; the
 	 *   run-completion path itself (`recordRun`/`showVictoryPanel`/`gameOver`) is real.
-	 * - Every other depth: an ordinary step up, `Dungeon.switchLevel` one floor shallower.
-	 *   `AscensionChallenge.onLevelSwitch` decays `Statistics.highestAscent` toward the
-	 *   depth reached and turns the DemonSpawner cooldown discount off past floor 20 - neither
-	 *   is ported (no highestAscent tracking, no DemonSpawner-specific carve-out); the per-mob
-	 *   `ASCENSION_MOD` table (the actual combat-facing effect) is unaffected and stays live
-	 *   for the whole climb. `PORT_COVERAGE.md`: "Post-victory ascent".
+	 * - Every other depth: an ordinary step up, `Dungeon.switchLevel` one floor shallower, plus
+	 *   the real `AscensionChallenge.onLevelSwitch`/`act()` escalation - +2 stacks per floor
+	 *   (`beginAscendOneFloor`), -1 (-0.5 Ghoul/RipperDemon) per boosted kill
+	 *   (`deathSaveRefresh.ts`'s `ASCENSION_MOD` gate), and direct hero damage at 8+ stacks
+	 *   (`turnLoopAiming.ts`'s `applyBuffDamage`). `Statistics.highestAscent` and the
+	 *   DemonSpawner sub-20 cooldown carve-out are still not ported (no Rankings screen reads
+	 *   the former; the latter has no observable gameplay effect the port models at all). The
+	 *   beckon (>=2 stacks: distant enemies pulled to the hero)/haste (>=4: idle enemies move at
+	 *   2x)/hero-speed-cap (>=6: halved, capped at 1x) effects are also not ported - they need a
+	 *   hook into continuous mob-AI pathing and hero action-cost scaling this port's turn-based
+	 *   (not actor-clock) movement/AI code has no seam for; the per-mob `ASCENSION_MOD` combat
+	 *   multiplier (the largest single combat-facing effect) is unaffected and stays live for the
+	 *   whole climb regardless. `PORT_COVERAGE.md`: "Post-victory ascent".
 	 */
 	tryAscendStairs(this: DungeonScene): void {
 		if (this.depth === 26 && !this.ascensionChallengeActive) {
@@ -299,13 +306,30 @@ export const actorTurnsHazardsMethods = {
 			return;
 		}
 		this.depth--;
-		//`AscensionChallenge.saySwitch()` (real Java) has a full narrative ladder here (a
-		//"catch your breath" line on leaving a boss floor, damage/haste/slow flavor by stack
-		//count, and this "almost there" line specifically at depth 1) - only the depth-1 line is
-		//ported, as the plainest honest stand-in for the climb actually being tracked; the
-		//stack-based damage/haste/slow escalation itself is not ported at all (`PORT_COVERAGE.md`:
-		//"Post-victory ascent").
-		this.say(this.depth === 1 ? t('actors.buffs.ascensionchallenge.almost') : t('scenes.gamescene.descend', { 0: this.depth }), 'warning');
+		//`AscensionChallenge.onLevelSwitch()` (tag `v3.3.8`): every non-boss floor climbed adds 2
+		//stacks (the boss-floor branch instead satiates hunger and heals - not reachable here,
+		//since depth 26 is a one-time confirmation the hero has already passed by the time this
+		//runs). `Statistics.highestAscent` decay and the sub-20 `DemonSpawner` cooldown carve-out
+		//still aren't ported (`PORT_COVERAGE.md`: "Post-victory ascent") - neither has an observable
+		//gameplay effect on the climb itself (no Rankings screen reads the stat; the carve-out only
+		//shortens a spawner's own cooldown, not modelled here at all).
+		this.ascensionStacks += 2;
+		//`AscensionChallenge.saySwitch()`'s narrative ladder (tag `v3.3.8`): depth 1 always shows
+		//"almost there" regardless of stacks; every other floor picks the highest threshold the
+		//current stack count clears (damage >= slow >= haste >= beckon), falling back to the
+		//ordinary descend line below 2 stacks. Java's separate "weaken_info"/"weaken_info_no_kills"
+		//hint lines (shown *in addition to* the ladder line above 4/8 stacks while no kill has
+		//lowered them yet) are folded into the ladder line's own text rather than added as a
+		//second chat line, since this port's `say()` is one line per turn.
+		this.say(
+			this.depth === 1 ? t('actors.buffs.ascensionchallenge.almost')
+				: this.ascensionStacks >= 8 ? t('actors.buffs.ascensionchallenge.damage')
+				: this.ascensionStacks >= 6 ? t('actors.buffs.ascensionchallenge.slow')
+				: this.ascensionStacks >= 4 ? t('actors.buffs.ascensionchallenge.haste')
+				: this.ascensionStacks >= 2 ? t('actors.buffs.ascensionchallenge.beckon')
+				: t('scenes.gamescene.descend', { 0: this.depth }),
+			'warning',
+		);
 		this.justDescended = true;
 		this.disarmTimeBubblePresses();
 		this.enterLevel();

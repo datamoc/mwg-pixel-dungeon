@@ -523,6 +523,18 @@ export class DungeonScene extends Scene2D {
 	 * confirmation (`tryAscendStairs`), never cleared. Mirrored into `combat.ts`'s module-level
 	 * `ascensionActive` at the top of every `enterLevel()`, since that module has no scene ref. */
 	ascensionChallengeActive = false;
+	/** `AscensionChallenge.stacks` (tag `v3.3.8`): +2 per non-boss floor climbed, -1 (-0.5 for
+	 * Ghoul/RipperDemon) per boosted-kind kill, floored at 0. Drives the beckon (>=2)/hero-damage
+	 * (>=8) thresholds below; see `beginAscendOneFloor`/`applyAscensionKillDecay` for the exact
+	 * Java call sites this ports. */
+	ascensionStacks = 0;
+	/** `AscensionChallenge.damageInc` (tag `v3.3.8`): the fractional damage-over-time
+	 * accumulator ticked in `spendHeroTurn`'s `applyBuffDamage`, whole points spent as they cross 1. */
+	ascensionDamageInc = 0;
+	/** `AscensionChallenge.stacksLowered` (tag `v3.3.8`): true once any kill has ever lowered
+	 * stacks - real Java's `qualifiedForPacifist()` gate. Tracked for a future `PACIFIST_ASCENT`
+	 * badge (`PORT_COVERAGE.md`: "Post-victory ascent"); no badge row consumes it yet. */
+	ascensionStacksLowered = false;
 	/** thrown-weapon charges left for classes whose special is finite (Warrior/Rogue/Duelist); ignored for the rest */
 	ammo = 0;
 	/** Shared missile upgrade level (all class missiles are tier-1; rogue knives scale max twice as fast - see useSpecial). No cap, like Java. */
@@ -1495,6 +1507,9 @@ export class DungeonScene extends Scene2D {
 		this.missileThresholds = new Map();
 		this.dustSpawnPower = 0;
 		this.ascensionChallengeActive = false;
+		this.ascensionStacks = 0;
+		this.ascensionDamageInc = 0;
+		this.ascensionStacksLowered = false;
 		this.enterLevel();
 
 		const def = CLASSES[this.heroClass];

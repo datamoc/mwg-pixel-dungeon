@@ -1912,12 +1912,38 @@ citation-by-citation account):
       level 1, depth 1!", "Let's call it a day" log line, "New Run" button). Screenshots taken at
       every step confirm the real UI, not just the state flags. The pickup -> confirm -> climb ->
       win chain holds end to end with no dead end or unhandled state.
-- [ ] **Not ported at all** (documented, not silently dropped - see `PORT_COVERAGE.md`):
-      `Statistics.highestAscent` tracking (no Rankings/high-score screen to show it in this port),
-      `AscensionChallenge.onLevelSwitch`'s stack-based damage/haste/slow escalation and its full
-      narrative ladder (only the depth-1 "almost there" line is reproduced), the
-      `Badge.HAPPY_END`/`HAPPY_END_REMAINS`/`PACIFIST_ASCENT` badges (no matching `badges.mwl`
-      rows), `DemonSpawner`'s reduced-cooldown carve-out past floor 20 during the climb, and the
+- [x] **2026-09-24/25: the stack escalation itself is real now**, not just its depth-1 flavor
+      line. `AscensionChallenge.onLevelSwitch`/`processEnemyKill`/`act()` (tag `v3.3.8`) are
+      ported as `DungeonScene.ascensionStacks`/`ascensionDamageInc`/`ascensionStacksLowered`:
+      +2 stacks per non-boss floor climbed (`beginAscendOneFloor`), -1 (-0.5 for
+      Ghoul/RipperDemon) per `ASCENSION_MOD`-boosted kill while the challenge is active, floored
+      at 0 (`deathSaveRefresh.ts`'s per-kill hook), and real direct hero damage once stacks reach
+      8 (`damageInc += (stacks-4)/4`, suppressed on boss floors, wired into the same per-turn
+      `applyBuffDamage` pass as Poison/Ooze/Bleeding in `turnLoopAiming.ts`). The full
+      `saySwitch()` narrative ladder now picks the highest threshold cleared (damage/slow/haste/
+      beckon/plain-descend) using the real generated strings, not just the depth-1 line. Live-
+      verified via the same `playwright-core` client as the row above: `spendHeroTurn()` calls at
+      stacks=10 on a non-boss floor ticked 1/2 HP damage alternately (`damageInc` accruing 1.5/
+      turn) and were silently no-ops on a boss floor; `beginAscendOneFloor()` calls confirmed +2
+      stacks per floor; attacking a live depth-1 rat down to 1 HP with stacks=10 and the challenge
+      active dropped stacks to 9 and flipped `ascensionStacksLowered` true on the kill.
+- [ ] **Still not ported at all** (documented, not silently dropped - see `PORT_COVERAGE.md`):
+      `Statistics.highestAscent` tracking - checked for a UI consumer this pass: this port's real
+      Rankings screen (confirmed to exist and reachable from the title menu) only stores a run's
+      final depth/level/gold (`rankings.ts`), not a separate ascent-progress field, and a
+      completed ascent already implies "reached depth 1", so there is nothing for this stat to
+      show that isn't already implied by a "won" run record - correctly left not-ported, not
+      worth a UI change just to host it. The beckon (>=2 stacks)/haste (>=4)/hero-speed-cap (>=6)
+      *mechanical* effects themselves are also still not ported - their flavor lines fire (see
+      above), but distant enemies are not actually pulled closer, idle enemies do not actually
+      move at 2x, and hero speed is not actually halved; these need a hook into continuous mob-AI
+      pathing and hero action-cost scaling this port's turn-based (not actor-clock) movement/AI
+      code has no existing seam for, and a rushed attempt risked destabilizing unrelated movement
+      code for a chance-based, cosmetic-adjacent effect - deferred rather than rushed. Also still
+      open: the `Badge.HAPPY_END`/`HAPPY_END_REMAINS`/`PACIFIST_ASCENT` badges (no matching
+      `badges.mwl` rows - `ascensionStacksLowered` is now tracked and ready for `PACIFIST_ASCENT`
+      whenever that row is added), `DemonSpawner`'s reduced-cooldown carve-out past floor 20
+      during the climb (no observable gameplay effect this port models at all), and the
       `Ratmogrify.TransmogRat`/`AscensionBuffBlocker` exemptions on the per-mob table itself.
       `AmuletScene`'s own "Let's call it a day" instant-win shortcut button is also not ported -
       this port always takes the "stay and keep exploring" branch instead and relies on the real
