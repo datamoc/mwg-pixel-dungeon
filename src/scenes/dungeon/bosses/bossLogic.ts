@@ -1537,6 +1537,8 @@ export const bossLogicMethods = {
 			this.kill(creature);
 			return;
 		}
+		//`HighGrass.trample()` runs inside the same soft press as the trap above, ahead of it in Java (tag `v3.3.8`) - the order is unobservable here, the systems are independent.
+		if (moved) this.trampleMobGrass(creature);
 		if (moved) this.triggerMobTrapAt(creature);
 		if (creature.hp <= 0) return;
 		//`triggerMobPlantAt` returns `true` for almost every branch it takes (including the

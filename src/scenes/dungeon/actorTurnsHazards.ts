@@ -787,6 +787,14 @@ export const actorTurnsHazardsMethods = {
 		if (this.consumeFeatherFall()) return;
  		//`Chasm.java` 143: the shake comes first, before the Cripple and the damage.
  		this.shakeScreen(4, 1);
+		//`Chasm.heroLand()` presses the landing cell (`Dungeon.level.occupyCell(hero)`
+ 		//before the Cripple, tag `v3.3.8`): trap, grass and plant halves, in that
+ 		//order. Web consume rides the existing blob tick; a trap kill here keeps its
+ 		//own cause like Java, instead of collapsing into the falling bucket.
+ 		this.triggerTrapAt(this.hero.x, this.hero.y);
+ 		this.trampleHighGrass(this.hero.x, this.hero.y);
+ 		this.triggerPortedPlantAt(this.hero.x, this.hero.y);
+ 		if (this.hero.hp <= 0) return;
  		//`Buff.prolong(hero, Cripple.class, Cripple.DURATION)`: keep-max whole 10.
  		reigniteBuff(this.hero, 'cripple');
 		setBleeding(this.hero, Math.round(this.hero.maxHp / (6 + 6 * (this.hero.hp / this.hero.maxHp))), 'chasm');

@@ -89,6 +89,9 @@ export const dropThrowMethods = {
 			this.spawnGroundItem('potion', at.x, at.y, { id, quantity: 1, identified: false, instanceId: this.newItemInstanceId('potion') });
 			return;
 		}
+		//`Potion.onThrow` hard-presses the landing cell before `shatter(cell)`
+		//(tag `v3.3.8`) - a flask sets off or reveals whatever lies there.
+		this.pressCellFromFlask(at.x, at.y);
 		this.fire.clear(at.x, at.y);
 		if (shatterHasEffect(id)) {
 			shatterPotionAt(this.potionEffectsContext(), id, at.x, at.y);
@@ -98,13 +101,25 @@ export const dropThrowMethods = {
 	},
 
 	/**
-	 * `Heap.explode()` for one entry of a blasted heap: a bomb detonates, a potion is removed and SHATTERS where it
-	 * lay (`Potion.shatter(pos)`, so a Toxic flask in the blast spills its gas), unique/equipment stand-ins
-	 * survive and everything else is destroyed. The one place the three blast paths share.
+	 * `Heap.explode()` for one entry of a blasted heap: a plain chest breaks open (flag
+	 * cleared, contents stay) while locked/crystal chests and shop stands are left untouched;
+	 * a bomb detonates, a potion is removed and SHATTERS where it lay (`Potion.shatter(pos)`,
+	 * so a Toxic flask in the blast spills its gas), unique/equipment stand-ins survive and
+	 * everything else is destroyed. The one place the three blast paths share.
 	 * @returns whether the hero died (a chained bomb).
 	 */
 	explodeHeapEntry(this: DungeonScene, ground: GroundItem, chained: Set<string>): boolean {
 		if (!this.groundItems.includes(ground)) return false;
+		//`Heap.explode()` breaks open plain chests (and skeletons, which this port
+		//never spawns as a heap kind) instead of destroying them, and leaves every
+		//other non-HEAP container - locked/crystal chests, shop stands - untouched
+		//(tag `v3.3.8`). Clearing the flag is the open: contents stay on the cell.
+		//The heap-sprite drop/link has no port equivalent (see PORT_COVERAGE.md).
+		if (ground.chest === 'normal' && !ground.forSale) {
+			ground.chest = undefined;
+			return false;
+		}
+		if (ground.chest !== undefined || ground.forSale) return false;
 		if (ground.kind === 'bomb' && ground.item) return this.detonateGroundBomb(ground, chained);
 		if (ground.kind === 'potion' && ground.item?.id.startsWith('potion')) {
 			this.removeGroundItem(ground);

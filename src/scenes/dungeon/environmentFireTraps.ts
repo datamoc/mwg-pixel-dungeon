@@ -310,6 +310,29 @@ export const environmentFireTrapsMethods = {
 	 * it, then restitches exactly like `trampleHighGrass` does. Returns whether anything
 	 * was planted, so the caller can spend its plant budget.
 	 */
+/** Soft-press grass half for non-hero steppers (
+`HighGrass.trample()` with a non-hero `ch`, tag `v3.3.8`): high/furrowed
+	 * grass still falls to plain grass and still rolls the naturalism-0 seed/dew
+	 * drops - berries, huntress furrow, Naturalism charge and Camouflage all need
+	 * a hero, so the mob context blanks them (the berries accessors stay a no-op
+	 * pair so the shared applier keeps one shape). Called from `moveTo` next to
+	 * the mob trap seam. */
+	trampleMobGrass(this: DungeonScene, monster: Creature): void {
+		if (monster.isHero || monster.isNPC || monster.flying || monster.hp <= 0) return;
+		const heroCtx = this.highGrassContext();
+		applyHighGrassTrample({ ...heroCtx,
+			hero: { buffs: {} },
+			heroClass: 'mob',
+			talentRank: () => 0,
+			naturalismLevel: 0,
+			chargeNaturalism: () => {},
+			camouflageDuration: null,
+			grantShield: () => {},
+			get natureBerriesDropped() { return 0; },
+			set natureBerriesDropped(_dropped: number) {},
+		}, monster.x, monster.y);
+	},
+
 	plantBloomingGrass(this: DungeonScene, x: number, y: number): boolean {
 		return plantBloomingGrassFlow(this.highGrassContext(), x, y);
 	},
@@ -1384,9 +1407,10 @@ export const environmentFireTrapsMethods = {
 		// activating; none of the small set of traps modelled by this port are magical
 		// airborne effects, so they are all safely bypassed here.
 		if (this.hero.buffs['levitation']) return;
-		if (!this.secrets.isSecret(x, y)) return;
 		if (this.spentTrapCells.has(this.level.index(x, y))) return;
-		this.secrets.discover(x, y);
+		//Java hard press fires a revealed trap too (Trap.trigger() runs regardless of
+		//reveal state, tag `v3.3.8`) - only the reveal itself needs the secret check.
+		if (this.secrets.isSecret(x, y)) this.secrets.discover(x, y);
 		const kind = this.trapKinds.get(this.level.index(x, y)) ?? 'poisonDart';
 		let fallAfter = false;
 		this.featuresMap?.setLayerData('features', this.featureFrames());
@@ -1879,6 +1903,84 @@ export const environmentFireTrapsMethods = {
 		this.justDescended = true;
 		this.enterLevel();
 		this.landFromChasm();
+	},
+
+/** `Potion.onThrow`'s hard `Level.pressCell(cell)` before `shatter(cell)`
+	 * (tag `v3.3.8`): a landed flask sets off or reveals whatever the cell holds.
+	 * AquaBrew and PotionOfStormClouds skip the press in Java (their shatter disarms
+	 * instead); neither brew exists in this port, so every thrown flask presses. A
+	 * trapped cell routes through the same hero/mob branches stepping uses; an empty
+	 * one gets the positional halves below. High grass tramples, a plant triggers,
+	 * and a hard press clears web - wells and chasms already take the flask as an
+	 * ordinary drop, so those halves need no press. Dart/grim traps with nobody on
+	 * them only spend: Java retargets the nearest visible char, which this port has
+	 * no seam for (see PORT_COVERAGE.md). */
+	pressCellFromFlask(this: DungeonScene, x: number, y: number): void {
+		if (!this.level.inside(x, y)) return;
+		const cell = this.level.index(x, y);
+		if (this.trapKinds.has(cell) && !this.spentTrapCells.has(cell)) {
+			if (this.secrets.isSecret(x, y)) this.secrets.discover(x, y);
+			const occupant = this.creatureAt(x, y);
+			//A levitating occupant does not veto the press (Java checks flight in `occupyCell`, never in `pressCell` itself): the trap spends through the unattended halves instead.
+			if (occupant !== null && occupant.isHero && occupant.buffs?.['levitation'] === undefined) this.triggerTrapAt(x, y);
+			else if (occupant !== null && !occupant.isHero && !occupant.isNPC && occupant.hp > 0) this.triggerMobTrapAt(occupant);
+			else this.triggerUnattendedTrapAt(x, y);
+		}
+		this.trampleHighGrass(x, y);
+		this.triggerPortedPlantAt(x, y);
+		if (this.web.volumeAt(x, y) > 0) this.web.clear(x, y);
+	},
+
+	/** The positional halves of a trap trigger with nobody standing on it: gas, fire
+	 * and electricity seed where they always seed, an explosive blast still hits its
+	 * neighbours through `applyTrapBlast`, and utility traps run their shared
+	 * activator (a pitfall with no victim to drop simply spends). Dart and grim
+	 * traps only spend: their Java retarget needs a victim-choosing seam this port
+	 * does not have. Marking mirrors the mob branch. */
+	triggerUnattendedTrapAt(this: DungeonScene, x: number, y: number): void {
+		const cell = this.level.index(x, y);
+		const kind = this.trapKinds.get(cell) ?? 'poisonDart';
+		if (kind === 'toxic') {
+			this.toxicGas.seed(x, y, 300 + 20 * this.depth);
+			this.say(t('port.log.trap.toxic'), 'negative');
+		} else if (kind === 'confusionGas') {
+			this.confusionGas.seed(x, y, 300 + 20 * this.depth);
+			this.say(t('port.log.trap.toxic'), 'negative');
+		} else if (kind === 'corrosionGas') {
+			this.corrosiveGas.seed(x, y, 80 + 5 * this.depth);
+			this.corrosiveGasStrength = Math.max(this.corrosiveGasStrength, 1 + Math.floor(this.depth / 4));
+			this.say(t('port.log.trap.toxic'), 'negative');
+		} else if (kind === 'burning') {
+			for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
+				const nx = x + dx, ny = y + dy;
+				if (this.level.inside(nx, ny) && this.level.passable(nx, ny)) this.fire.seed(nx, ny, 2);
+			}
+		} else if (kind === 'shockingTrap') {
+			for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
+				const nx = x + dx, ny = y + dy;
+				if (this.level.passable(nx, ny)) this.electricity.seed(nx, ny, 10);
+			}
+		} else if (kind === 'stormTrap') {
+			const stormDistances = this.pathfinder.distanceMap({ x, y });
+			for (let floodY = 0; floodY < this.level.height; floodY++) {
+				for (let floodX = 0; floodX < this.level.width; floodX++) {
+					const stormSteps = stormDistances[this.level.index(floodX, floodY)] ?? -1;
+					if (stormSteps >= 0 && stormSteps <= 2 && this.level.passable(floodX, floodY)) this.electricity.seed(floodX, floodY, 20);
+					if (stormSteps >= 0 && stormSteps <= 2) {
+						const floodMob = this.creatureAt(floodX, floodY);
+						if (floodMob) this.markHazardMob(floodMob);
+					}
+				}
+			}
+		} else if (kind === 'explosive') {
+			this.applyTrapBlast(x, y);
+		} else if (isUtilityTrap(kind)) {
+			this.activateUtilityTrap(kind, x, y);
+		}
+		//PoisonDart/WornDart/Grim with no victim mark nothing (their branches only ever
+		//mark the aimed target) and only spend - see above.
+		if (kind !== 'grim' && kind !== 'poisonDart' && kind !== 'wornDart' && kind !== 'stormTrap' && !isUnmarkedTrap(kind)) this.markHazardArea(x, y);
+		if (kind !== 'gateway') this.spentTrapCells.add(cell);
 	},
 
 	/** `Level.occupyCell()`'s soft `pressCell` path and the concrete trap activators in
