@@ -872,5 +872,9 @@ export function verifyCombat(require, check) {
 			'the hero talent-bonus chain lives in its own seam');
 		assert.ok(scene.includes('damage = this.applyHeroTalentBonuses(attacker, defender, surprise, damage);'),
 			'a landed hit bonuses through the talent seam');
+		assert.ok(scene.includes('applyWeaponAffixProcs(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): number'),
+			'the weapon-affix procs live in their own seam');
+		assert.ok(scene.includes('damage = this.applyWeaponAffixProcs(attacker, defender, damage);'),
+			'a landed hit procs through the affix seam');
 	});
 }

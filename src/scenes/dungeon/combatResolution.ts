@@ -239,6 +239,43 @@ export const combatResolutionMethods = {
 	},
 
 	/**
+	 * T61 slice 6: the hero weapon-affix procs of a landed `attack()` - Polarized,
+	 * Sacrificial, Displacing. Verbatim move; the bleed/teleport side effects fire in
+	 * the same order relative to the damage adjustments around them.
+	 */
+	applyWeaponAffixProcs(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): number {
+		//Polarized.proc(): real chance is a flat 1/2 - on success it amplifies to 1.5x, on
+		//failure it zeroes the hit outright (a coin-flip between "hits hard" and "whiffs"),
+		//reproduced exactly since it needs no subsystem beyond the damage value itself.
+		if (attacker === this.hero && this.weaponAffix === 'polarized') {
+			damage = Random.chance(0.5) ? Math.round(damage * 1.5) : 0;
+		}
+		//Sacrificial.proc(): Java rolls 1/10 x Arcana, then rolls a second time against
+		//(HP/HT)^2 * HT / 8 and applies Bleeding at max(1, bleedAmt). The first draft
+		//mistakenly used missing HP and a poison stand-in; both were wrong.
+		if (attacker === this.hero && this.weaponAffix === 'sacrificial' && Random.chance((1 / 10) * this.enchantProcMultiplier())) {
+			const bleedAmount = (attacker.hp / attacker.maxHp) ** 2 * attacker.maxHp / 8;
+			if (Random.chance(bleedAmount)) setBleeding(attacker, Math.max(1, bleedAmount), 'sacrificial');
+		}
+		//Displacing.proc(): real chance is 1/12 x arcana, skipped against Java's IMMOVABLE targets.
+		//Reuses the same free-cell search this file's Displacement armor curse already
+		//uses in place of Java's ScrollOfTeleportation.teleportChar. Java also resets a fleeing
+		//HUNTING mob back to WANDERING; this port has no such explicit state to reset, but the
+		//next monster-turn FOV recompute (`seesHero`) naturally loses track once far enough away.
+		if (attacker === this.hero && this.weaponAffix === 'displacing' && !defender.isNPC
+			&& (defender.kind === undefined || !IMMOVABLE_KINDS.has(defender.kind))
+			&& Random.chance((1 / 12) * this.enchantProcMultiplier())) {
+			const destination = this.randomFreeCell(defender);
+			if (destination) {
+				const displaceFrom = { x: defender.x, y: defender.y };
+				this.moveTo(defender, destination);
+				this.playTeleportAppear(displaceFrom, destination, defender);
+			}
+		}
+		return damage;
+	},
+
+	/**
 	 * Melee (or missile) exchange with Java's own on-hit hooks: surprise attacks land
 	 * automatically (INFINITE_ACCURACY, inside rollHit) and wake the victim; Rogue's
 	 * SUCKER_PUNCH adds +2 on a surprise hit (+4 as an Assassin); Bat.attackProc heals
@@ -506,34 +543,7 @@ export const combatResolutionMethods = {
 		//and proc below, not before them - see `applyDefenderDamageCurves`' own note.
 		damage = this.armStrikeAffix(attacker, damage);
 		damage = this.applyHeroTalentBonuses(attacker, defender, surprise, damage);
-		//Polarized.proc(): real chance is a flat 1/2 - on success it amplifies to 1.5x, on
-		//failure it zeroes the hit outright (a coin-flip between "hits hard" and "whiffs"),
-		//reproduced exactly since it needs no subsystem beyond the damage value itself.
-		if (attacker === this.hero && this.weaponAffix === 'polarized') {
-			damage = Random.chance(0.5) ? Math.round(damage * 1.5) : 0;
-		}
-		//Sacrificial.proc(): Java rolls 1/10 x Arcana, then rolls a second time against
-		//(HP/HT)^2 * HT / 8 and applies Bleeding at max(1, bleedAmt). The first draft
-		//mistakenly used missing HP and a poison stand-in; both were wrong.
-		if (attacker === this.hero && this.weaponAffix === 'sacrificial' && Random.chance((1 / 10) * this.enchantProcMultiplier())) {
-			const bleedAmount = (attacker.hp / attacker.maxHp) ** 2 * attacker.maxHp / 8;
-			if (Random.chance(bleedAmount)) setBleeding(attacker, Math.max(1, bleedAmount), 'sacrificial');
-		}
-		//Displacing.proc(): real chance is 1/12 x arcana, skipped against Java's IMMOVABLE targets.
-		//Reuses the same free-cell search this file's Displacement armor curse already
-		//uses in place of Java's ScrollOfTeleportation.teleportChar. Java also resets a fleeing
-		//HUNTING mob back to WANDERING; this port has no such explicit state to reset, but the
-		//next monster-turn FOV recompute (`seesHero`) naturally loses track once far enough away.
-		if (attacker === this.hero && this.weaponAffix === 'displacing' && !defender.isNPC
-			&& (defender.kind === undefined || !IMMOVABLE_KINDS.has(defender.kind))
-			&& Random.chance((1 / 12) * this.enchantProcMultiplier())) {
-			const destination = this.randomFreeCell(defender);
-			if (destination) {
-				const displaceFrom = { x: defender.x, y: defender.y };
-				this.moveTo(defender, destination);
-				this.playTeleportAppear(displaceFrom, destination, defender);
-			}
-		}
+		damage = this.applyWeaponAffixProcs(attacker, defender, damage);
 		//`Stone.proc()` (`items/armor/glyphs/Stone.java`, tag `v3.3.8`): the glyph
 		//grants no armor - it replays the to-hit math (attacker accuracy vs the
 		//wearer's evasion) and turns 75% of the dodge chance into damage
