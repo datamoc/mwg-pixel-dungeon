@@ -1349,6 +1349,10 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		const cursedWand = readFileSync(new URL('../src/scenes/dungeon/hero/cursedWandCast.ts', import.meta.url), 'utf8');
 		assert.ok(cursedWand.includes('this.applyCharacterDamage(victim, damage, { pierceArmor: true, cause: \'foe\', skipAura: true,'),
 			'CursedWand HealthTransfer uses the common Char.damage tail after its RESISTS check');
+		const stones = readFileSync(new URL('../src/items/stones.ts', import.meta.url), 'utf8');
+		assert.ok(stones.includes('scene.applyCharacterDamage(creature, damage, creature.isHero === true);')
+			&& scene.includes('applyCharacterDamage: (target, amount, pierceArmor) => this.applyCharacterDamage(target, amount, {'),
+			'Stone of Blast delegates its armor-rolled direct hits to the common dispatcher');
 		assert.ok(panels.includes('damage = absorbCreatureShields(c, damage, this.ascendedTurns > 0);'),
 			'the shared non-hero path applies Java priority-ordered ShieldBuff pools before HP');
 	});

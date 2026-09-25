@@ -2099,8 +2099,10 @@ export const inventoryQuickslotMethods = {
 			creatures: this.creatures,
 			depth: this.depth,
 			wandCharges: this.wandCharges,
-			absorbHeroDamage: this.absorbHeroDamage.bind(this),
-			showDamage: this.showDamage.bind(this),
+			applyCharacterDamage: (target, amount, pierceArmor) => this.applyCharacterDamage(target, amount, {
+				pierceArmor, cause: 'fire', skipAura: true,
+				onNonWeaponBossDamage: (creature) => this.disqualifyBossChallenge(creature),
+			}),
 			isFlammableTerrain: (x, y) => this.isFireFlammableTerrain(x, y),
 			burnFlammableTerrain: (x, y) => this.destroyBombTerrain(x, y),
 			//every entry of the blasted heap, top first (`Heap.explode()` walks the whole stack)
@@ -2109,7 +2111,6 @@ export const inventoryQuickslotMethods = {
 				for (const entry of [...this.heapItemsAt(x, y)].reverse()) if (this.explodeHeapEntry(entry, new Set())) died = true;
 				return died;
 			},
-			kill: (target) => this.kill(target, 'fire'),
 			openItemPicker: (title, items, onPick) => this.openItemPicker(title, items, (entry) => onPick({ ...entry, quantity: 1 })),
 			rollAffix: (kind) => rollGeneratedAffix(kind === 'weapon' ? ENCHANT_TABLE : GLYPH_TABLE, false, true),
 			curseOf: (affix) => getCurse(affix)?.id,

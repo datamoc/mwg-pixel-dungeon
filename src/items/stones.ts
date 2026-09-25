@@ -41,8 +41,8 @@ export interface StoneContext {
 	readonly creatures: Creature[];
 	readonly depth: number;
 	readonly wandCharges: { refund(amount: number): void };
-	readonly absorbHeroDamage: (amount: number) => number;
-	readonly showDamage: (target: Creature, amount: number) => void;
+	/** A damage that reaches `Char.damage()` after this item's own source/target formula. */
+	readonly applyCharacterDamage: (target: Creature, amount: number, pierceArmor: boolean) => boolean;
 	readonly isFlammableTerrain: (x: number, y: number) => boolean;
 	readonly burnFlammableTerrain: (x: number, y: number) => void;
 	readonly explodeGroundItem: (x: number, y: number) => void;
@@ -268,18 +268,7 @@ export function useStoneOfBlast(scene: StoneContext, instanceId?: string): void 
 					stoneValue('blastMinBase') + stoneValue('blastMinPerDepth') * scene.depth,
 					stoneValue('blastMaxBase') + stoneValue('blastMaxPerDepth') * scene.depth,
 				));
-				if (creature.isHero) {
-					damage = scene.absorbHeroDamage(damage);
-					creature.hp -= damage;
-					scene.showDamage(creature, damage);
-					if (creature.hp <= 0) scene.kill(creature);
-				} else {
-					damage = Math.max(0, damage - Random.normalRange(creature.armor[0], creature.armor[1]));
-					creature.hp -= damage;
-					scene.showDamage(creature, damage);
-					creature.sleeping = false;
-					if (creature.hp <= 0) scene.kill(creature);
-				}
+				scene.applyCharacterDamage(creature, damage, creature.isHero === true);
 				hits++;
 			}
 			scene.say(t('port.log.stoneblast', { count: hits }), hits > 0 ? 'positive' : 'negative');
