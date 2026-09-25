@@ -30,6 +30,8 @@ export interface ScrollEffectsContext {
 	readonly playTeleportAppear: (from: Step, to: Step, entity: Creature) => void;
 	readonly restitchAllTiles: () => void;
 	readonly showDamage: (target: Creature, amount: number) => void;
+	/** `ScrollOfRetribution`'s direct `Char.damage()` call, adapted by the scene. */
+	readonly applyDamage: (target: Creature, amount: number) => void;
 	readonly showHeal: (target: Creature, amount: number) => void;
 	readonly kill: (target: Creature) => void;
 	readonly say: (message: string, level?: 'positive' | 'negative' | 'warning') => void;
@@ -114,18 +116,16 @@ export function applyScrollEffect(id: string, context: ScrollEffectsContext): bo
 			//`Char.damage()` zeroes this blast for a MagicImmune creature the same way it does
 			//for every other RESISTS-listed source.
 			if (creature.isHero || creature.isNPC || !fov.isVisible(creature.x, creature.y) || creature.magicImmune) continue;
-			const damage = Math.round(creature.maxHp * mwlItemEffectValue('scrollRetribution', 'baseHpFraction')
+			const rawDamage = Math.round(creature.maxHp * mwlItemEffectValue('scrollRetribution', 'baseHpFraction')
 				+ creature.hp * power * mwlItemEffectValue('scrollRetribution', 'targetHpScale'));
-			creature.hp -= damage;
-			context.showDamage(creature, damage);
-			if (creature.hp <= 0) context.kill(creature);
+			context.applyDamage(creature, rawDamage);
 			//`ScrollOfRetribution.doRead()` (`ScrollOfRetribution.java`, tag `v3.3.8`)
 			//prolongs `Blindness` (10) on every damaged survivor plus the reader.
 			//Java's Blindness is vision-only (no `act()` override, no stat touch -
 			//blinded chars just see less far), which has no seam here; `daze` is the
 			//standing stand-in (same as the Dazzling curse), overstating slightly
 			//since it also halves rolls. Survivors only, matching Java's `isAlive()`.
-			else if (!buffBlocked(creature, 'daze')) creature.buffs['daze'] = Math.max(creature.buffs['daze'] ?? 0, 10);
+			if (creature.hp > 0 && !buffBlocked(creature, 'daze')) creature.buffs['daze'] = Math.max(creature.buffs['daze'] ?? 0, 10);
 		}
 		addBuff(hero, 'weakness');
 		if (!buffBlocked(hero, 'daze')) hero.buffs['daze'] = Math.max(hero.buffs['daze'] ?? 0, 10);

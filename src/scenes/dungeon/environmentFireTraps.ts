@@ -79,6 +79,10 @@ export const environmentFireTrapsMethods = {
 			playTeleportAppear: (from, to, entity) => this.playTeleportAppear(from, to, entity),
 			restitchAllTiles: () => this.restitchAllTiles(),
 			showDamage: (target, amount) => this.showDamage(target, amount),
+			applyDamage: (target, amount) => this.applyCharacterDamage(target, amount, {
+				pierceArmor: true, cause: 'foe', skipAura: true,
+				onNonWeaponBossDamage: (creature) => this.disqualifyBossChallenge(creature),
+			}),
 			showHeal: (target, amount) => this.showHeal(target, amount),
 			kill: (target) => this.kill(target),
 			say: (message, level) => this.say(message, level),

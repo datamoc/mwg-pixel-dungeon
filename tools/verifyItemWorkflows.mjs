@@ -4054,6 +4054,7 @@ const { empoweringScrollsCharges } = require('./talentEffects.js');
 const { getWeaponCurses: scrollCurses } = require('./items/itemCurses.js');
 function scrollReadDrive(overrides = {}) {
 	const said = [];
+	const { doomDamage } = require('./combat.js');
 	const flags = {
 		synced: 0, procIdentify: 0, transmuteCalls: [], recalled: [],
 		empowered: 0, weaponAffix: overrides.weaponAffix ?? null, armorGlyph: null,
@@ -4076,6 +4077,7 @@ function scrollReadDrive(overrides = {}) {
 		playTeleportAppear: () => {},
 		restitchAllTiles: () => {},
 		showDamage: () => {},
+		applyDamage: (target, amount) => { target.hp -= doomDamage(amount, target); if (target.hp <= 0) ctx.kill(target); },
 		showHeal: () => {},
 		kill: () => {},
 		say: (line, level) => { said.push(`${level}:${line}`); },
@@ -4196,6 +4198,8 @@ function scrollReadDrive(overrides = {}) {
 	//Weakness rides the stubbed `addBuff` (a no-op in this harness), so its call is
 	//pinned at source level instead of behaviorally.
 	assert.match(readFileSync(join(root, 'src/items/scrollEffects.ts'), 'utf8'), /addBuff\(hero, 'weakness'\)/);
+	assert.match(readFileSync(join(root, 'src/items/scrollEffects.ts'), 'utf8'), /context\.applyDamage\(creature, rawDamage\)/,
+		'Retribution delegates its rolled hit to the scene Char.damage dispatcher');
 }
 {
 	// A free re-read (RecallInscription's talentChance = 0): the effect runs, but
