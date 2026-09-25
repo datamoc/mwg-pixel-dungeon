@@ -56,25 +56,36 @@ export const ASCENSION_MOD: Record<string, number> = {
 /**
  * `statModifier` returns 1 outright unless the hero carries the `AscensionChallenge` buff:
  * `if (Dungeon.hero == null || Dungeon.hero.buff(AscensionChallenge.class) == null) return 1;`.
- * That buff only exists during the post-victory ascent, which this port does not model, so
- * nothing in the game sets this and the table above is inert data.
+ * That buff only exists during the post-victory ascent: `DungeonScene.ascensionChallengeActive`
+ * is the buff stand-in, set by `tryAscendStairs`' depth-26 confirmation and re-synced here by
+ * `setAscensionActive` on every `enterLevel()` (2026-09-24; before that the gate below was
+ * wired to the *Stronger Bosses* challenge instead - see `PORT_COVERAGE.md`).
  *
- * **It must not be a challenge flag.** Until 2026-09-12 this gate was
- * `setStrongerBossesEnabled()`, wired in `main.ts` to the *Stronger Bosses* challenge - so
- * simply selecting that challenge multiplied every ordinary mob's accuracy **and** damage by up
- * to x10 (`rat`), which is the opposite of what Java does: `Challenges.STRONGER_BOSSES`'s every
- * use is on bosses (Goo 100->120 HP, Tengu 200->250, DM300 300->400, DwarfKing 300->450, Pylon
- * 50->80, their cooldowns/cadences, `CavesBossLevel`'s trap chance and final-pylon count).
- * Findings and the corrected table are recorded in `PORT_COVERAGE.md`.
- *
- * Unported alongside it, so the port does not claim more than it has: its two exemptions
- * (`Ratmogrify.TransmogRat` resolving to its original, and an `AscensionBuffBlocker` holder
- * returning 1).
+ * Java's two exemptions live in the factor itself (`AscensionChallenge.java:107-125`, tag
+ * `v3.3.8`): a `Ratmogrify.TransmogRat` resolves to its original before the lookup, and an
+ * `AscensionBuffBlocker` holder returns 1. The first is structural here - a ratmogrified
+ * enemy keeps its original kind (`Creature.ratmogrifiedTurns`), which is exactly the unwrap.
+ * The second is `Combatant.ascensionBuffBlocked`, set only on `RATFORCEMENTS`-summoned ally
+ * rats (`Ratmogrify.java:111`); the hero's own rat form carries no table kind and needs
+ * nothing. The per-kill lowering needs no equivalent: Java only lowers for killed ENEMIES
+ * (`Mob.die`'s alignment gate, `AllyBuff.detach`'s was-enemy path), and this port's hook
+ * already sits past its own `isAlly` early-return - a blocked ally rat reaches neither.
  */
 let ascensionActive = false;
 /** Present so the multiplier stays reachable, documented data rather than a silent gap. */
 export function setAscensionActive(active: boolean): void { ascensionActive = active; }
 const ascensionOn = (): boolean => ascensionActive;
+
+/**
+ * `AscensionChallenge.statModifier(ch)` as a factor: 1 while the challenge is off, for an
+ * unlisted kind, or for a blocked holder; the table value otherwise. Centralizes the three
+ * call sites below (attacker accuracy, attacker damage, defender armor) so the exemptions
+ * cannot drift apart between them.
+ */
+export function ascensionModFor(c: Readonly<Combatant>): number {
+	if (!ascensionOn() || !c.kind || c.ascensionBuffBlocked) return 1;
+	return ASCENSION_MOD[c.kind] ?? 1;
+}
 
 /**
  * Combat numbers that can change turn to turn: Goo (`Goo.java`:
@@ -131,7 +142,7 @@ export function accRollMulti(c: Readonly<Combatant>): number {
 	//ChampionEnemy.Growing.evasionAndAccuracyFactor(): same growth multiplier as its own
 	//damage/damage-taken factors, read on whichever side of the roll this creature is on.
 	if (c.champion === 'growing') m *= c.championPower ?? 1.19;
-	if (ascensionOn() && c.kind && ASCENSION_MOD[c.kind]) m *= ASCENSION_MOD[c.kind]!;
+	m *= ascensionModFor(c);
 	return m;
 }
 
@@ -206,7 +217,7 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 	//ChampionEnemy.Growing.meleeDamageFactor(): its own growth multiplier, same value read
 	//below for damageTakenFactor's inverse.
 	if (attacker.champion === 'growing') dmg *= attacker.championPower ?? 1.19;
-	if (ascensionOn() && attacker.kind && ASCENSION_MOD[attacker.kind]) dmg *= ASCENSION_MOD[attacker.kind]!;
+	dmg *= ascensionModFor(attacker);
 	if (attacker.buffs['weakness']) dmg *= 0.67;
 	//StoneOfAggression.Aggression (Char.attack 480-488, tag v3.3.8): a marked BOSS/MINIBOSS takes
 	//half damage from an attacker of its *own* alignment - which, since a boss is `ENEMY`, means
@@ -224,9 +235,9 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 	const rawDr = (defender.barkskinLevel ? random.normalRange(0, defender.barkskinLevel) : 0)
 		+ random.normalRange(defender.armor[0], defender.armor[1]);
 	// `Char.attack()` (Char.java:386, tag v3.3.8) rounds `enemy.drRoll() *
-	// AscensionChallenge.statModifier(enemy)` before subtracting it. The port has no
-	// AscensionBuffBlocker/TransmogRat source marker, so those Java exemptions remain documented.
-	const dr = Math.round(rawDr * (ascensionOn() && defender.kind ? ASCENSION_MOD[defender.kind] ?? 1 : 1));
+	// AscensionChallenge.statModifier(enemy)` before subtracting it (`ascensionModFor` carries
+	// the table and both exemptions, including the blocked-holder return-1).
+	const dr = Math.round(rawDr * ascensionModFor(defender));
 	let effective = Math.max(0, Math.round(dmg) - dr);
 	if (defender.buffs['vulnerable']) effective *= 1.33;
 	//`Doom.class` (tag `v3.3.8`): +67% to every incoming hit, permanent until death. Java's own

@@ -197,6 +197,8 @@ export interface SavedCreature {
 	divineShield?: number;
 	ratmogrifiedTurns?: number;
 	ratmogrifiedPermanent?: boolean;
+	/** `Combatant.ascensionBuffBlocked` (`RATFORCEMENTS` rats, Java's `AscensionBuffBlocker`). */
+	ascensionBuffBlocked?: boolean;
 	deathMarkTurns?: number;
 	duelTakenDmg?: number;
 	deathMarkInitialHp?: number;

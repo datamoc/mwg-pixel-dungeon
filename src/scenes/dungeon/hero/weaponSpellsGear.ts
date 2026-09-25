@@ -699,6 +699,11 @@ export const weaponSpellsGearMethods = {
 			spawnAwakeAllyRat: (cell) => {
 				const rat = scene.spawnMonster('rat', cell, false, undefined, true);
 				rat.sleeping = false;
+				//`Ratmogrify.java:111` (tag `v3.3.8`) affects every `RATFORCEMENTS` rat with
+				//`AscensionChallenge.AscensionBuffBlocker`, exempting these allies from the
+				//ascent stat table - without it an ascending hero's own rats would fight at
+				//`Rat`'s x10. See `Combatant.ascensionBuffBlocked`.
+				rat.ascensionBuffBlocked = true;
 			},
 			//The flow hands back one of the scene's own creatures, so the cast is exact.
 			grantAdrenaline: (target, turns) => { addBuff(target as Creature, 'adrenalineSurge', turns); },

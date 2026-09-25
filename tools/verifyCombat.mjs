@@ -454,21 +454,30 @@ export function verifyCombat(require, check) {
 		const zero = { float: () => 0, normalRange: (min) => min, range: (min) => min, int: (min) => min };
 		const rat = base({ kind: 'rat', accuracy: 8, evasion: 4, damage: [1, 4], armor: [0, 0] });
 		// `AscensionChallenge.statModifier` returns 1 unless the hero carries the ascension buff
-		// (`AscensionChallenge.java` at v3.3.8), and this port has no ascent - so an ordinary mob
-		// must never be scaled in-game. Pinned because that gate used to be the *Stronger Bosses*
+		// (`AscensionChallenge.java` at v3.3.8) - off-ascent an ordinary mob is never scaled.
+		// Pinned because that gate used to be the *Stronger Bosses*
 		// challenge: selecting it multiplied every ordinary mob's accuracy AND damage by up to
 		// x10 (a rat), while Java's Stronger Bosses only ever touches bosses.
 		assert.equal(accRollMulti(rat), 1);
 		assert.equal(rollDamage(rat, base(), zero), 1);
-		// the gate itself is real and correct for when the ascent does get ported
+		// the gate goes live with the ascent (`setAscensionActive` on every `enterLevel()`)
 		setAscensionActive(true);
 		try {
 			assert.equal(accRollMulti(rat), ASCENSION_MOD.rat);
 			assert.equal(rollDamage(rat, base(), zero), 1 * ASCENSION_MOD.rat);
 			const armoredRat = base({ kind: 'rat', armor: [2, 2] });
-			const unscaledAttacker = base({ kind: 'goo', damage: [10, 10] });
+			const unscaledAttacker = base({ damage: [10, 10] });
 			assert.equal(rollDamage(unscaledAttacker, armoredRat, zero), 0,
 				'Ascension scales the defender drRoll before subtraction');
+			// `AscensionBuffBlocker` holders return 1 (`AscensionChallenge.java:114-116`, tag
+			// `v3.3.8`): a `RATFORCEMENTS`-summoned ally rat keeps ordinary stats mid-ascent
+			// instead of `Rat`'s x10, on all three seats (accuracy, attacker damage, armor).
+			const blockedRat = base({ kind: 'rat', accuracy: 8, evasion: 4, damage: [1, 4], armor: [0, 0], ascensionBuffBlocked: true });
+			assert.equal(accRollMulti(blockedRat), 1, 'a blocked holder keeps unscaled accuracy');
+			assert.equal(rollDamage(blockedRat, base(), zero), 1, 'a blocked holder keeps unscaled damage');
+			const blockedArmoredRat = base({ kind: 'rat', armor: [2, 2], ascensionBuffBlocked: true });
+			assert.equal(rollDamage(unscaledAttacker, blockedArmoredRat, zero), 8,
+				'a blocked holder keeps an unscaled drRoll');
 		} finally {
 			setAscensionActive(false);
 		}

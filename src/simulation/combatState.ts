@@ -35,6 +35,16 @@ export interface Combatant extends Step {
 	prepLevel?: number;
 	/** Plain rule identifier; the scene narrows it to its MonsterId catalogue. */
 	kind?: string;
+	/**
+	 * `AscensionChallenge.AscensionBuffBlocker` (`AscensionChallenge.java:416`, tag `v3.3.8`):
+	 * chars holding it are not boosted by the ascension table. Java's marker is an (empty, no
+	 * `act`/duration/store) `Buff`; this port keeps it as a plain flag instead - behaviorally
+	 * identical, since the buff carries no state and expires with its holder. Set only on
+	 * `RATFORCEMENTS`-summoned ally rats (`Ratmogrify.java:111`); the hero's own rat form has
+	 * no table kind so it needs nothing, and enemy `TransmogRat`s keep their original kind
+	 * (see `Creature.ratmogrifiedTurns`), which is exactly Java's unwrap-to-original.
+	 */
+	ascensionBuffBlocked?: boolean;
 	sleeping?: boolean;
 	champion?: 'blessed' | 'blazing' | 'giant' | 'growing' | 'antimagic' | 'projecting' | null;
 	str?: number;

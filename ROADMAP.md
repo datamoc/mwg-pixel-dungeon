@@ -209,7 +209,10 @@ citation-by-citation account):
       2026-09-25, T107** - rows, Java icons/descriptions and `validateHappyEnd()` gates all live;
       `HAPPY_END_REMAINS` stays unfillable until the remains family is modeled), `DemonSpawner`'s reduced-cooldown carve-out past floor 20
       during the climb (no observable gameplay effect this port models at all), and the
-      `Ratmogrify.TransmogRat`/`AscensionBuffBlocker` exemptions on the per-mob table itself.
+      `Ratmogrify.TransmogRat`/`AscensionBuffBlocker` exemptions on the per-mob table itself
+      (**ported 2026-09-25, T107** - transmog resolves structurally via the preserved kind,
+      blocked holders return 1 through a shared helper fed by a save-persisted flag on
+      `RATFORCEMENTS` rats; the kill hook needed nothing).
       `AmuletScene`'s own "Let's call it a day" instant-win shortcut button is also not ported -
       this port always takes the "stay and keep exploring" branch instead and relies on the real
       climb, which is arguably the more interesting choice to keep anyway now that the climb works.
