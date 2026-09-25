@@ -4,6 +4,7 @@ import { TILE } from '../dungeonConstants';
 import type { DeathBurstSpec } from '../simulation/deathBursts';
 import { pourAurasFor, type PourAuraSpec } from '../simulation/pourAuras';
 import type { Creature } from '../combat';
+import { missingBlobCellEmitterOptions } from './blobCellEmitters';
 
 /**
  * One-shot particle-burst constructors, moved verbatim from the scene as the
@@ -220,23 +221,40 @@ export function syncPourAuras(scene: PourAuraScene): void {
 
 /** Minimal blob-cell surface used by the visual sync below. */
 export interface BlobVisualLayer { id: string; tint: number; volumeAt: (x: number, y: number) => number; }
-export interface BlobVisualScene { level: { width: number; height: number }; fov: { isVisible(x: number, y: number): boolean }; effectLayer: Container; }
+interface BlobVolumeSource { volumeAt(x: number, y: number): number; }
+export interface BlobVisualScene {
+	level: { width: number; height: number };
+	fov: { isVisible(x: number, y: number): boolean };
+	effectLayer: Container;
+	plantFreeze?: BlobVolumeSource; paralyticGas?: BlobVolumeSource; stenchGas?: BlobVolumeSource;
+	confusionGas?: BlobVolumeSource; inferno?: BlobVolumeSource; electricity?: BlobVolumeSource;
+}
 
 const blobCellsByScene = new WeakMap<object, Map<string, LiveAura>>();
 
 /** `FireParticle`/gas `Speck` cell emitters (tag `v3.3.8`): Java shows a small
  * continuous particle stream for each active blob cell. The port has no sprite-specific
  * particle factories, so a tinted white emitter preserves the cell, cadence and FOV gate. */
-export function syncBlobCells(scene: BlobVisualScene, layers: readonly BlobVisualLayer[]): void {
+export function syncBlobCells(scene: BlobVisualScene, layers: readonly BlobVisualLayer[], dt = 0): void {
 	let live = blobCellsByScene.get(scene);
 	if (!live) { live = new Map(); blobCellsByScene.set(scene, live); }
 	const seen = new Set<string>();
-	for (const layer of layers) for (let y = 1; y < scene.level.height - 1; y++) for (let x = 1; x < scene.level.width - 1; x++) {
+	const activeLayers = [...layers];
+	const present = new Set(layers.map((layer) => layer.id));
+	const extras: ReadonlyArray<readonly [string, BlobVolumeSource | undefined, number]> = [
+		['plantFreeze', scene.plantFreeze, 0xFFFFFF], ['paralyticGas', scene.paralyticGas, 0xFFFF66],
+		['stenchGas', scene.stenchGas, 0x003300], ['confusionGas', scene.confusionGas, 0x500080],
+		['inferno', scene.inferno, 0xEE7722], ['electricity', scene.electricity, 0xFFFFFF],
+	];
+	for (const [id, blob, tint] of extras) if (blob && !present.has(id)) activeLayers.push({ id, tint, volumeAt: (x, y) => blob.volumeAt(x, y) });
+	for (const layer of activeLayers) for (let y = 1; y < scene.level.height - 1; y++) for (let x = 1; x < scene.level.width - 1; x++) {
 		if (layer.volumeAt(x, y) <= 0) continue;
 		const key = `${layer.id}:${x}:${y}`; seen.add(key);
 		let current = live.get(key);
 		if (!current) {
-			const emitter = new ParticleEmitter({ texture: Texture.WHITE, max: 5, rate: 2, life: 1.2,
+			const specialized = missingBlobCellEmitterOptions(layer);
+			const emitter = new ParticleEmitter(specialized ?? {
+				texture: Texture.WHITE, max: 5, rate: 2, life: 1.2,
 				speed: [2, 8] as [number, number], angle: [-Math.PI, 0] as [number, number],
 				scale: [4, 0] as [number, number], alpha: (t: number) => 1 - t, tint: layer.tint,
 				spawn: { shape: 'rect', width: TILE, height: TILE } });
@@ -244,6 +262,7 @@ export function syncBlobCells(scene: BlobVisualScene, layers: readonly BlobVisua
 			current = { emitter, key }; live.set(key, current);
 		} else current.emitter.position.set(x * TILE, y * TILE);
 		current.emitter.visible = scene.fov.isVisible(x, y);
+		if (current.emitter.visible && dt > 0) current.emitter.update(dt);
 	}
 	for (const [key, current] of live) if (!seen.has(key)) { current.emitter.destroy(); live.delete(key); }
 }

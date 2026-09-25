@@ -1936,7 +1936,7 @@ export const inventoryQuickslotMethods = {
 			//Continuous pour auras ride the same per-frame tick (see
 			//`ui/effectBursts.ts` syncPourAuras - auras follow cells and
 			//FOV, rebuild on state changes, and die with their creature).
-			syncBlobCells(this, [{ id: 'fire', tint: 0xff6a22, volumeAt: (x, y) => this.fire.volumeAt(x, y) }, { id: 'toxicGas', tint: 0x66dd66, volumeAt: (x, y) => this.toxicGas.volumeAt(x, y) }, { id: 'corrosiveGas', tint: 0x99ff55, volumeAt: (x, y) => this.corrosiveGas.volumeAt(x, y) }, { id: 'blizzard', tint: 0x9bdcff, volumeAt: (x, y) => this.blizzard.volumeAt(x, y) }, { id: 'web', tint: 0xffffff, volumeAt: (x, y) => this.web.volumeAt(x, y) }, { id: 'smokeScreen', tint: 0x999999, volumeAt: (x, y) => this.smokeScreen.volumeAt(x, y) }]); syncPourAuras(this);
+			syncBlobCells(this, [{ id: 'fire', tint: 0xff6a22, volumeAt: (x, y) => this.fire.volumeAt(x, y) }, { id: 'toxicGas', tint: 0x66dd66, volumeAt: (x, y) => this.toxicGas.volumeAt(x, y) }, { id: 'corrosiveGas', tint: 0x99ff55, volumeAt: (x, y) => this.corrosiveGas.volumeAt(x, y) }, { id: 'blizzard', tint: 0x9bdcff, volumeAt: (x, y) => this.blizzard.volumeAt(x, y) }, { id: 'web', tint: 0xffffff, volumeAt: (x, y) => this.web.volumeAt(x, y) }, { id: 'smokeScreen', tint: 0x999999, volumeAt: (x, y) => this.smokeScreen.volumeAt(x, y) }], dt); syncPourAuras(this);
 		},
 
 		applyMissileClassProc(this: DungeonScene, target: Creature): void {
