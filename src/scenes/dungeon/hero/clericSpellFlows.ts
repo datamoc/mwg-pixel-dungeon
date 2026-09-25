@@ -154,15 +154,18 @@ export const clericSpellFlowsMethods = {
 		for (const victim of this.creatures) {
 			if (victim.isHero || victim.isAlly || victim.isNPC || victim.hp <= 0 || !this.fov.isVisible(victim.x, victim.y)) continue;
 			if (victim.buffs['illuminated'] !== undefined) {
-				const damage = radianceBonusDamage(this.progression.level);
-				if (damage > 0) {
+				const rawDamage = radianceBonusDamage(this.progression.level);
+				if (rawDamage > 0) {
 					this.disqualifyBossChallenge(victim);
-					victim.hp -= damage;
-					this.showDamage(victim, damage);
+					this.applyCharacterDamage(victim, rawDamage, { pierceArmor: true, cause: 'foe', skipAura: true });
 				}
+				//Java calls damage() before testing isActive(); a lethal GuidingLight bonus
+				//therefore cannot reattach marks or paralysis to the dead Mob.
+				if (victim.hp <= 0) continue;
+			} else {
+				addBuff(victim, 'illuminated');
+				addBuff(victim, 'wasIlluminated');
 			}
-			addBuff(victim, 'illuminated');
-			addBuff(victim, 'wasIlluminated');
 			victim.sleeping = false;
 			if (victim.hp > 0) addBuff(victim, 'paralysis', RADIANCE_PARALYSIS_TURNS);
 			else this.kill(victim);
@@ -206,17 +209,13 @@ export const clericSpellFlowsMethods = {
 		const victim = this.creatureAt(cell.x, cell.y);
 		if (victim) {
 			const [min, max] = holyLanceDamage(rank);
-			const damage = isUndeadOrDemonic(victim.kind) ? max : Random.normalRange(min, max);
-			if (damage > 0) this.disqualifyBossChallenge(victim);
+			const rawDamage = isUndeadOrDemonic(victim.kind) ? max : Random.normalRange(min, max);
+			if (rawDamage > 0) this.disqualifyBossChallenge(victim);
 			const parried = victim.kind === 'greatCrab' && !victim.sleeping && victim.seesHero
 				&& victim.buffs['paralysis'] === undefined;
 			if (parried) this.say(t('port.log.crabparries'), 'negative');
-			else {
-				victim.hp -= damage;
-				this.showDamage(victim, damage);
-			}
+			else this.applyCharacterDamage(victim, rawDamage, { pierceArmor: true, cause: 'foe', skipAura: true });
 			victim.sleeping = false;
-			if (victim.hp <= 0 && !victim.isAlly) this.kill(victim);
 		}
 		addBuff(this.hero, 'lanceCooldown', BUFF_DURATION['lanceCooldown']);
 		if (this.hero.buffs['invisibility']) delete this.hero.buffs['invisibility'];

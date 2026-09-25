@@ -1341,6 +1341,11 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 			'the monster Ooze actor tick uses the same shared damage tail');
 		assert.ok(scene.includes("this.applyCharacterDamage(victim, rawDamage, { pierceArmor: true, cause: 'foe', skipAura: true });"),
 			'Cleric Judgement sends its rolled direct-spell damage through Char.damage');
+		assert.ok(scene.includes('const rawDamage = radianceBonusDamage(this.progression.level);')
+			&& scene.includes('if (victim.hp <= 0) continue;'),
+			'Radiance bonus damage dispatches before its lethal-status gate');
+		assert.ok(scene.includes('this.applyCharacterDamage(victim, rawDamage, { pierceArmor: true, cause: 'foe', skipAura: true });'),
+			'HolyLance dispatches its raw hit after preserving the GreatCrab parry');
 		assert.ok(panels.includes('damage = absorbCreatureShields(c, damage, this.ascendedTurns > 0);'),
 			'the shared non-hero path applies Java priority-ordered ShieldBuff pools before HP');
 	});
