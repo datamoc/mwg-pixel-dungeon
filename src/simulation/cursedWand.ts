@@ -4,19 +4,34 @@
  * rare) then a uniform pick within that tier's `CursedEffect` list.
  *
  * **Scoped port, documented honestly rather than left as a total exclusion:** Common,
- * Uncommon and Rare are modeled at Java's own real 60/30/9 weights (`pickCursedTier`, over a
- * `pick(99)` draw - VeryRare's remaining 1% is folded into Rare rather than dropped, since a
- * 99-of-100 vs 100-of-100 split has no observable difference at this scale), and a subset of
- * each tier's real effect list. Common: 6 of 8 - the two left out (`SpawnRegrowth`, and
- * `RandomAreaEffect`'s `ChillingTrap` sub-case) need a generic `Regrowth`/`Freezing` blob type
- * this port has no infrastructure for at all (every blob here is a named scene field with its
- * own bespoke evolve hook, not a pluggable class). Uncommon: all 8 are modeled - `Explosion`
+ * Uncommon and Rare are modeled at Java's own real 60/30/9/1 weights (`pickCursedTier`, over a
+ * `pick(100)` draw - VeryRare's remaining 1% is folded into Rare, preserving Java's Common and
+ * Uncommon rates while making the modeled Rare bucket 10%), and a subset of
+ * each tier's real effect list. Common: 8 of 8 - `SpawnRegrowth` has a floor-persisted
+ * Regrowth blob with Java's spreading, terrain growth and rooting; `RandomAreaEffect` is now modeled with the
+ * existing Fire/Freezing/Electricity fields, but its pre-effect `Level.pressCell` on an empty
+ * collision cell and `tryForWandProc` callback remain absent. Uncommon: all 8 are modeled - `Explosion`
  * reuses the newly-exported `applyBlastDamage` (`items/bombEffects.ts`, which already had a
  * hero branch) and `LightningBolt` turned out to be almost entirely presentation (every
  * `Lightning()` visual and `ScrollOfRecharging.charge()` are pure particle bursts with zero
- * mechanical effect in `v3.3.8`, both skippable) once read past the sprite calls. Rare: 6 of 8 are modeled: `MassInvuln`, `ConeOfColors`, `SheepPolymorph`, `SummonMonsters`, `CurseEquipment`, and `InterFloorTeleport`; the last two reuse equipped-curse state and existing floor-travel wiring, while their details and small reductions are recorded at the call site and coverage row. `Petrify` needs a `TimeStasis` buff and `FireBall` needs arbitrary-point FOV plus knockback.  The whole VeryRare tier (folded into Rare's odds above, see the roll
- * note) is **Not ported**, along with `WondrousResin`'s `positiveOnly` mode (no such artifact
- * here).
+ * mechanical effect in `v3.3.8`, both skippable) once read past the sprite calls. Rare: 6 of 8
+ * so far - `MassInvuln` (every character gets Invulnerability+Bless, both already-modeled
+ * buffs, no new infra needed), `ConeOfColors` (8-radius/90-degree `STOP_SOLID` cone via
+ * `mechanics/cone.ts`'s `coneCells`, five already-modeled status/damage primitives - Burning,
+ * Frost, Poison, Ooze, Electricity+Paralysis - uniformly picked per affected character, each
+ * independently damage-rolled), `SheepPolymorph` (a live, non-hero, non-boss/miniboss,
+ * non-NPC target at the bolt's collision cell is silently destroyed - the same no-death/no-loot
+ * teardown `destroyAlly` already uses - and replaced with a fresh 10-turn `spawnSheep` at its
+ * cell, reusing `SummonSheep`'s own factory), `SummonMonsters` (reuses the existing summoning
+ * utility trap; its roster selection and spawn timing are simplified as documented at the call
+ * site), and `CurseEquipment` (uses the existing equipped-curse state and affix pools; item
+ * selection prefers gear without an affix, while the port uses a uniform choice within that
+ * preferred pool), and `InterFloorTeleport` uses the existing floor travel path plus Java's
+ * weighted depth selection. The other two need infrastructure this port doesn't have:
+ * `Petrify` and `FireBall` are now modeled below; the whole VeryRare tier (folded into Rare's odds above, see the roll
+ * note) has its authoritative eight-id catalog represented below, but its scene effects remain
+ * **Not ported** until their individual mechanics are implemented. `WondrousResin`'s
+ * `positiveOnly` mode is also not ported (no such artifact exists here).
  */
 export type CursedCommonEffectId =
 	| 'burnAndFreeze'
@@ -24,11 +39,25 @@ export type CursedCommonEffectId =
 	| 'randomGas'
 	| 'bubbles'
 	| 'randomWand'
-	| 'selfOoze';
+	| 'selfOoze'
+	| 'randomAreaEffect'
+	| 'spawnRegrowth';
 
 export const CURSED_COMMON_EFFECT_IDS: readonly CursedCommonEffectId[] = [
-	'burnAndFreeze', 'randomTeleport', 'randomGas', 'bubbles', 'randomWand', 'selfOoze',
+	//Keep Java's COMMON_EFFECTS insertion order (`CursedWand.java`, tag `v3.3.8`):
+	//Random.element draws an index, so a different order changes which effect each roll selects.
+	'burnAndFreeze', 'spawnRegrowth', 'randomTeleport', 'randomGas', 'randomAreaEffect', 'bubbles', 'randomWand', 'selfOoze',
 ];
+
+export type CursedRandomAreaEffect = 'burningTrap' | 'chillingTrap' | 'shockingTrap';
+export const CURSED_RANDOM_AREA_EFFECTS: readonly CursedRandomAreaEffect[] = [
+	'burningTrap', 'chillingTrap', 'shockingTrap',
+];
+
+/** `RandomAreaEffect.effect()`'s `Random.Int(3)` (`CursedWand.java`, tag `v3.3.8`). */
+export function pickCursedRandomAreaEffect(pick: (bound: number) => number): CursedRandomAreaEffect {
+	return CURSED_RANDOM_AREA_EFFECTS[pick(CURSED_RANDOM_AREA_EFFECTS.length)]!;
+}
 
 export type CursedUncommonEffectId =
 	| 'healthTransfer'
@@ -55,7 +84,50 @@ export const CURSED_PLANT_KINDS: readonly string[] = [
 ];
 
 export type CursedRareEffectId = 'sheepPolymorph' | 'curseEquipment' | 'interFloorTeleport' | 'summonMonsters' | 'fireBall' | 'coneOfColors' | 'massInvuln' | 'petrify';
-export const CURSED_RARE_EFFECT_IDS: readonly CursedRareEffectId[] = ['sheepPolymorph', 'curseEquipment', 'interFloorTeleport', 'summonMonsters', 'coneOfColors', 'massInvuln'];
+export const CURSED_RARE_EFFECT_IDS: readonly CursedRareEffectId[] = ['sheepPolymorph', 'curseEquipment', 'interFloorTeleport', 'summonMonsters', 'fireBall', 'coneOfColors', 'massInvuln', 'petrify'];
+
+/** Java's distinct `VERY_RARE_EFFECTS` catalog (`CursedWand.java`, tag `v3.3.8`).
+ * The runtime dispatches its one-percent tier to a consume bucket (no scene effects
+ * implemented yet); keeping the authoritative order here prevents the catalog itself
+ * from being silently lost. */
+export type CursedVeryRareEffectId = 'forestFire' | 'spawnGoldenMimic' | 'abortRetryFail' | 'randomTransmogrify' | 'heroShapeShift' | 'superNova' | 'sinkHole' | 'gravityChaos';
+export const CURSED_VERY_RARE_EFFECT_IDS: readonly CursedVeryRareEffectId[] = [
+	'forestFire', 'spawnGoldenMimic', 'abortRetryFail', 'randomTransmogrify', 'heroShapeShift', 'superNova', 'sinkHole', 'gravityChaos',
+];
+
+export function pickCursedVeryRareEffect(pick: (bound: number) => number): CursedVeryRareEffectId {
+	return CURSED_VERY_RARE_EFFECT_IDS[pick(CURSED_VERY_RARE_EFFECT_IDS.length)]!;
+}
+
+/** `ForestFire.effect()` (`CursedWand.java`, tag `v3.3.8`): every level cell receives
+ * Regrowth volume 15. The scene owns the actual blob writes; this planner keeps the payload
+ * exact and makes the all-cells rule independently testable. */
+export function cursedForestFireSeeds(width: number, height: number): { x: number; y: number; volume: number }[] {
+	const seeds: { x: number; y: number; volume: number }[] = [];
+	for (let y = 0; y < Math.max(0, Math.floor(height)); y++) {
+		for (let x = 0; x < Math.max(0, Math.floor(width)); x++) seeds.push({ x, y, volume: 15 });
+	}
+	return seeds;
+}
+
+/** `SpawnGoldenMimic.effect()`'s occupied-cell fallback (`CursedWand.java`, tag `v3.3.8`):
+ * choose a free passable neighbour in PathFinder.NEIGHBOURS8 order. A collision cell that is
+ * already empty is returned unchanged; no candidate means a genuine failed effect. */
+export function cursedGoldenMimicSpawnCell(
+	cell: { x: number; y: number },
+	occupied: boolean,
+	passable: (x: number, y: number) => boolean,
+	occupiedAt: (x: number, y: number) => boolean,
+	pick: (bound: number) => number,
+): { x: number; y: number } | undefined {
+	if (!occupied) return { ...cell };
+	const candidates: { x: number; y: number }[] = [];
+	for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0], [1, -1], [1, 1], [-1, 1], [-1, -1]] as const) {
+		const x = cell.x + dx, y = cell.y + dy;
+		if (passable(x, y) && !occupiedAt(x, y)) candidates.push({ x, y });
+	}
+	return candidates.length === 0 ? undefined : candidates[pick(candidates.length)];
+}
 
 /** `InterFloorTeleport.effect()` (`CursedWand.java`, tag `v3.3.8`): for depths below
  * the current floor, weights are 1..10 on the most recent ten eligible floors. */
@@ -86,7 +158,6 @@ export function pickCursedEquipmentSlot(
 	return pool[pick(pool.length)];
 }
 
-
 /** `ConeOfColors.effect()`'s per-character `Random.Int(5)` branch. */
 export type ConeOfColorsStatus = 'burning' | 'frost' | 'poison' | 'ooze' | 'electricity';
 export const CONE_OF_COLORS_STATUSES: readonly ConeOfColorsStatus[] = [
@@ -96,12 +167,12 @@ export function pickConeOfColorsStatus(pick: (bound: number) => number): ConeOfC
 	return CONE_OF_COLORS_STATUSES[pick(CONE_OF_COLORS_STATUSES.length)]!;
 }
 
-/** `EFFECT_CAT_CHANCES`'s real common/uncommon/rare weights (60/30/9, VeryRare's 1% folded
- * into Rare - see the module doc comment). `pick(99)` supplies a uniform `Random.Int(99)`:
- * 0-59 common, 60-89 uncommon, 90-98 rare. */
-export function pickCursedTier(pick: (bound: number) => number): 'common' | 'uncommon' | 'rare' {
-	const roll = pick(99);
-	return roll < 60 ? 'common' : roll < 90 ? 'uncommon' : 'rare';
+/** `EFFECT_CAT_CHANCES` (`CursedWand.java`, tag `v3.3.8`): Java rolls
+ * `Random.chances({60,30,9,1})`. Keep all four buckets distinct even though this port has no
+ * VeryRare handlers yet; mapping that 1% onto Rare would silently change effect odds. */
+export function pickCursedTier(pick: (bound: number) => number): 'common' | 'uncommon' | 'rare' | 'veryRare' {
+	const roll = pick(100);
+	return roll < 60 ? 'common' : roll < 90 ? 'uncommon' : roll < 99 ? 'rare' : 'veryRare';
 }
 
 /** `Random.element(RARE_EFFECTS)`, restricted to the six implemented ids, uniform pick. */
@@ -109,7 +180,7 @@ export function pickCursedRareEffect(pick: (bound: number) => number): CursedRar
 	return CURSED_RARE_EFFECT_IDS[pick(CURSED_RARE_EFFECT_IDS.length)]!;
 }
 
-/** `Random.element(COMMON_EFFECTS)`: a uniform pick, `pick` supplying `Random.Int(n)`. */
+/** `Random.element(COMMON_EFFECTS)`: a uniform pick among this port's implemented Common effects. */
 export function pickCursedCommonEffect(pick: (bound: number) => number): CursedCommonEffectId {
 	return CURSED_COMMON_EFFECT_IDS[pick(CURSED_COMMON_EFFECT_IDS.length)]!;
 }
