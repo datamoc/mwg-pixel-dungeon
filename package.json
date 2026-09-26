@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run mwl:compile && tsc --noEmit && vite build && node tools/emit.mjs",
-    "verify": "npm run check && npm run test:simulation && npm run test:items && npm run test:lua && npm run test:mwg && npm run test:settings && npm run test:ui && npm run test:bossunseal && npm run test:skeletonkey && npm run test:dropthrow && npm run test:cloak && npm run test:vertigo && npm run test:combo && npm run test:monk && npm run test:seal && npm run test:doom && npm run test:berserk && npm run test:corruption && npm run test:beacon && npm run test:mining && npm run build",
+    "verify": "npm run check && npm run test:simulation && npm run test:items && npm run test:lua && npm run test:mwg && npm run test:settings && npm run test:ui && npm run test:bossunseal && npm run test:skeletonkey && npm run test:dropthrow && npm run test:cloak && npm run test:vertigo && npm run test:combo && npm run test:monk && npm run test:seal && npm run test:doom && npm run test:berserk && npm run test:corruption && npm run test:beacon && npm run test:mining && npm run test:visual && npm run build",
     "browser:test": "node tools/browserTest.mjs",
     "check": "npm run mwl:compile && tsc --noEmit && npm run i18n:verify && node tools/check-file-budget.mjs && node tools/audit-undefined.mjs && node tools/verifyRuntimeDispatch.mjs",
     "mwl:compile": "node tools/compile-mwl.mjs",
@@ -33,6 +33,9 @@
     "i18n": "node tools/i18n-extract.mjs",
     "i18n:check": "node tools/i18n-extract.mjs --check",
     "test:mining": "esbuild ./tools/verifyMiningBranch.ts --bundle --platform=node --format=esm --outfile=tools/scratch/verifyMiningBranch.mjs && node tools/scratch/verifyMiningBranch.mjs",
+    "test:visual": "node tools/verifyVisualParity.mjs",
+    "screenshots:capture": "node tools/captureVisualBaseline.mjs",
+    "screenshots:check": "node tools/compareScreenshots.mjs",
     "i18n:verify": "esbuild tools/i18nCheck.ts --bundle --platform=node --format=esm --outfile=tools/scratch/i18nCheck.mjs && node tools/scratch/i18nCheck.mjs",
     "parity:levelgen": "esbuild tools/levelgenParity.ts --bundle --platform=node --format=esm --outfile=tools/scratch/levelgenParity.mjs && node tools/scratch/levelgenParity.mjs",
     "parity:java": "node tools/parity/run-parity.mjs",

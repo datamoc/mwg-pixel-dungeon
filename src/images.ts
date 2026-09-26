@@ -39,8 +39,14 @@ import statueUrl from './assets/statue.png';
 import mimicUrl from './assets/mimic.png';
 import pylonUrl from './assets/pylon.png';
 import snakeUrl from './assets/snake.png';
+// `gnoll.png`: Java rows 0 (base gnoll) and 2 (trickster, c=42) packed at 0-41,
+// plus Java row 1 (exile, c=21) appended at 42-62 - exile/trickster cells verified
+// pixel-identical against tag `v3.3.8` (B4).
 import gnollUrl from './assets/gnoll.png';
 import swarmUrl from './assets/swarm.png';
+// `crab.png`: Java rows 0 (base crab) and 2 (great crab, c=32) packed at 0-31,
+// plus Java row 1 (hermit, c=16) appended at 32-47 - great-crab cells verified
+// pixel-identical against tag `v3.3.8` (B4).
 import crabUrl from './assets/crab.png';
 import slimeUrl from './assets/slime.png';
 import gooUrl from './assets/goo.png';

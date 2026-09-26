@@ -1,0 +1,18 @@
+{
+  "seed": "12345",
+  "hero": 0,
+  "width": 1568,
+  "height": 779,
+  "browser": "chrome",
+  "capturedAt": "2026-09-26T20:08:11.017Z",
+  "state": {
+    "seed": "12345",
+    "depth": 1,
+    "hero": [
+      29,
+      23,
+      20
+    ],
+    "creatures": 9
+  }
+}

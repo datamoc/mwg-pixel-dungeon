@@ -68,6 +68,8 @@ function crystalClips(creature: Creature, c: number): Clip[] {
 			['idle', at([0]), { fps: 1, loop: true }],
 			['run', at([0, 0, 0, 1]), { fps: 12, loop: true }],
 			['attack', at([2, 3, 4, 5]), { fps: 16, loop: false }],
+			//`CrystalWispSprite`: `zap = attack.clone()` (tag `v3.3.8`).
+			['zap', at([2, 3, 4, 5]), { fps: 16, loop: false }],
 			['die', at([6, 7, 8, 9, 10, 11, 12, 11]), { fps: 15, loop: false }],
 		];
 	}
@@ -352,14 +354,6 @@ export const crystalMineMethods = {
 
 	/** `CrystalGuardian.isAlive()`: at 0 HP it drops to 1, loses every buff but Doom and Cripple,
 	 * and crumples into `recovering` - taking no evasion roll (`defenseSkill()` 0) and no armour
-	 * roll (its `defenseProc` damage is "block-bypassing") until it stands again. Returns true. */
-	crumpleCrystalGuardian(this: DungeonScene, guardian: Creature): boolean {
-		guardian.hp = Math.max(1, guardian.hp);
-		//Java keeps `Doom` too; this port has no Doom buff.
-		for (const id of Object.keys(guardian.buffs) as BuffId[]) if (id !== 'cripple') delete guardian.buffs[id];
-		if (!guardian.guardianRecovering) {
-			guardian.guardianRecovering = true;
-			guardian.evasion = 0;
 			guardian.armor = [0, 0];
 			this.syncCrystalMineVisual(guardian);
 		}

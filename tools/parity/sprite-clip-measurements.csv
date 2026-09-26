@@ -1,0 +1,333 @@
+sprite_class,clip,java_fps,java_loop,java_frames,port_fps,port_loop,port_frames,match,notes
+acidic,idle,12,True,15|15|15|15|15|15|15|15|16|17|16|17|16|17,12,True,15|15|15|15|15|15|15|15|16|17|16|17|16|17,MATCH,
+acidic,run,4,True,20|21,4,True,20|21,MATCH,
+acidic,attack,15,False,15|18|19,15,False,15|18|19,MATCH,
+acidic,die,12,False,15|22|23|24|25,12,False,15|22|23|24|25,MATCH,
+acidic,zap,15,False,15|18|19,15,False,15|18|19,MATCH,
+albino,idle,2,True,16|16|16|17,2,True,16|16|16|17,MATCH,
+albino,run,10,True,22|23|24|25|26,10,True,22|23|24|25|26,MATCH,
+albino,attack,15,False,18|19|20|21,15,False,18|19|20|21,MATCH,
+albino,die,10,False,27|28|29|30,10,False,27|28|29|30,MATCH,
+bandit,idle,1,True,21|21|21|22|21|21|21|21|22,1,True,21|21|21|22|21|21|21|21|22,MATCH,
+bandit,run,15,True,21|21|23|24|24|25,15,True,21|21|23|24|24|25,MATCH,
+bandit,attack,12,False,31|32|33,12,False,31|32|33,MATCH,
+bandit,die,10,False,25|27|28|29|30,10,False,25|27|28|29|30,MATCH,
+bat,idle,8,True,0|1,8,True,0|1,MATCH,
+bat,run,12,True,0|1,12,True,0|1,MATCH,
+bat,attack,12,False,2|3|0|1,12,False,2|3|0|1,MATCH,
+bat,die,12,False,4|5|6,12,False,4|5|6,MATCH,
+bee,idle,12,True,0|1|1|0|2|2,12,True,0|1|1|0|2|2,MATCH,
+bee,run,15,True,0|1|1|0|2|2,15,True,0|1|1|0|2|2,MATCH,
+bee,attack,20,False,3|4|5|6,20,False,3|4|5|6,MATCH,
+bee,die,20,False,7|8|9|10,20,False,7|8|9|10,MATCH,
+blacksmith,idle,15,True,0|0|0|0|0|0|0|1|2|2|2|3,15,True,0|0|0|0|0|0|0|1|2|2|2|3,MATCH,
+blacksmith,run,20,True,0,20,True,0,MATCH,
+blacksmith,die,20,False,0,20,False,0,MATCH,
+brute,idle,2,True,0|0|0|1|0|0|1|1,2,True,0|0|0|1|0|0|1|1,MATCH,
+brute,run,12,True,4|5|6|7,12,True,4|5|6|7,MATCH,
+brute,attack,12,False,2|3|0,12,False,2|3|0,MATCH,
+brute,die,12,False,8|9|10,12,False,8|9|10,MATCH,
+causticslime,idle,3,True,9|10|10|9,3,True,9|10|10|9,MATCH,port sheet offset base 9
+causticslime,run,10,True,9|11|12|12|11|9,10,True,9|11|12|12|11|9,MATCH,port sheet offset base 9
+causticslime,attack,15,False,11|12|13|15|14,15,False,11|12|13|15|14,MATCH,port sheet offset base 9
+causticslime,die,10,False,9|14|15|16,10,False,9|14|15|16,MATCH,port sheet offset base 9
+crab,idle,5,True,0|1|0|2,5,True,0|1|0|2,MATCH,
+crab,run,15,True,3|4|5|6,15,True,3|4|5|6,MATCH,
+crab,attack,12,False,7|8|9,12,False,7|8|9,MATCH,
+crab,die,12,False,10|11|12|13,12,False,10|11|12|13,MATCH,
+crystalguardian,idle,2,True,0|0|0|0|0|1|1,,,,EXCLUDED,colour-offset clips live in crystalMine.ts crystalClips
+crystalguardian,run,15,True,2|3|4|5|6|7,,,,EXCLUDED,colour-offset clips live in crystalMine.ts crystalClips
+crystalguardian,attack,12,False,8|9|10,,,,EXCLUDED,colour-offset clips live in crystalMine.ts crystalClips
+crystalguardian,die,5,False,11|12|13|14|15|15,,,,EXCLUDED,colour-offset clips live in crystalMine.ts crystalClips
+crystalspire,idle,1,True,0,,,,EXCLUDED,colour-offset clips live in crystalMine.ts crystalClips
+crystalspire,run,1,True,0,,,,EXCLUDED,colour-offset clips live in crystalMine.ts crystalClips
+crystalspire,attack,1,True,0,,,,EXCLUDED,colour-offset clips live in crystalMine.ts crystalClips
+crystalspire,die,1,False,4,,,,EXCLUDED,colour-offset clips live in crystalMine.ts crystalClips
+crystalspire,zap,1,True,0,,,,EXCLUDED,colour-offset clips live in crystalMine.ts crystalClips
+crystalwisp,idle,1,True,0,,,,EXCLUDED,colour-offset clips live in crystalMine.ts crystalClips
+crystalwisp,run,12,True,0|0|0|1,,,,EXCLUDED,colour-offset clips live in crystalMine.ts crystalClips
+crystalwisp,attack,16,False,2|3|4|5,,,,EXCLUDED,colour-offset clips live in crystalMine.ts crystalClips
+crystalwisp,die,15,False,6|7|8|9|10|11|12|11,,,,EXCLUDED,colour-offset clips live in crystalMine.ts crystalClips
+crystalwisp,zap,16,False,2|3|4|5,,,,EXCLUDED,colour-offset clips live in crystalMine.ts crystalClips
+dm100,idle,1,True,0|1,1,True,0|1,MATCH,
+dm100,run,12,True,6|7|8|9,12,True,6|7|8|9,MATCH,
+dm100,attack,12,False,2|3|4|0,12,False,2|3|4|0,MATCH,
+dm100,die,12,False,10|11|12|13|14|15,12,False,10|11|12|13|14|15,MATCH,
+dm100,zap,8,False,5|5|1,8,False,5|5|1,MATCH,
+dm200,idle,10,True,0|1,10,True,0|1,MATCH,
+dm200,run,10,True,2|3,10,True,2|3,MATCH,
+dm200,attack,15,False,4|5|6,15,False,4|5|6,MATCH,
+dm200,die,8,False,9|10|11,8,False,9|10|11,MATCH,
+dm200,zap,15,False,7|8|8|7,15,False,7|8|8|7,MATCH,
+dm201,idle,2,True,12|13,2,True,12|13,MATCH,port sheet offset base 12
+dm201,run,2,True,12|13,2,True,12|13,MATCH,port sheet offset base 12
+dm201,attack,15,False,16|17|18,15,False,16|17|18,MATCH,port sheet offset base 12
+dm201,die,8,False,21|22|23,8,False,21|22|23,MATCH,port sheet offset base 12
+dm201,zap,15,False,19|20|20|19,15,False,19|20|20|19,MATCH,port sheet offset base 12
+dm300,idle,10,True,0|1,10,True,0|1,MATCH,
+dm300,run,10,True,0|2,10,True,0|2,MATCH,
+dm300,attack,15,False,3|4|5,15,False,3|4|5,MATCH,
+dm300,die,20,False,0|10|0|10|0|10|0|10|0|10|0|10|0|10|0|10|0|10|0|10,20,False,0|10|0|10|0|10|0|10|0|10|0|10|0|10|0|10|0|10|0|10,MATCH,
+dm300,zap,15,False,6|7|7|6,15,False,6|7|7|6,MATCH,
+earthguardian,idle,2,True,0|0|0|0|0|1|1,2,True,0|0|0|0|0|1|1,MATCH,
+earthguardian,run,15,True,2|3|4|5|6|7,15,True,2|3|4|5|6|7,MATCH,
+earthguardian,attack,12,False,8|9|10,12,False,8|9|10,MATCH,
+earthguardian,die,5,False,11|12|13|14|15|15,5,False,11|12|13|14|15|15,MATCH,
+elemental,idle,10,True,0|1|2,10,True,0|1|2,MATCH,
+elemental,run,12,True,0|1|3,12,True,0|1|3,MATCH,
+elemental,attack,15,False,4|5|6,15,False,4|5|6,MATCH,
+elemental,die,15,False,7|8|9|10|11|12|13|12,15,False,7|8|9|10|11|12|13|12,MATCH,
+elemental,zap,15,False,4|5|6,15,False,4|5|6,MATCH,
+eye,idle,8,True,0|1|2,8,True,0|1|2,MATCH,
+eye,run,12,True,5|6,12,True,5|6,MATCH,
+eye,attack,8,False,4|3,8,False,4|3,MATCH,
+eye,die,8,False,7|8|9,8,False,7|8|9,MATCH,
+eye,zap,8,False,4|3,8,False,4|3,MATCH,
+fetidrat,idle,2,True,32|32|32|33,2,True,32|32|32|33,MATCH,
+fetidrat,run,10,True,38|39|40|41|42,10,True,38|39|40|41|42,MATCH,
+fetidrat,attack,15,False,34|35|36|37|32,15,False,34|35|36|37|32,MATCH,
+fetidrat,die,10,False,43|44|45|46,10,False,43|44|45|46,MATCH,
+fist,idle,2,True,0|0|1,2,True,0|0|1,MATCH,
+fist,run,3,True,0|1,3,True,0|1,MATCH,
+fist,attack,3,False,0,3,False,0,MATCH,
+fist,die,10,False,0|2|3|4,10,False,0|2|3|4,MATCH,
+fist,zap,8,False,0|5|6,8,False,0|5|6,MATCH,
+fungalcore,idle,0,True,0,,,,EXCLUDED,no port mob or art yet
+fungalcore,run,0,True,0,,,,EXCLUDED,no port mob or art yet
+fungalcore,attack,24,False,0,,,,EXCLUDED,no port mob or art yet
+fungalcore,die,12,False,0,,,,EXCLUDED,no port mob or art yet
+fungalcore,zap,24,False,0,,,,EXCLUDED,no port mob or art yet
+fungalsentry,idle,0,True,0,,,,EXCLUDED,no port mob or art yet (Java MINIBOSS)
+fungalsentry,run,0,True,0,,,,EXCLUDED,no port mob or art yet (Java MINIBOSS)
+fungalsentry,attack,24,False,0,,,,EXCLUDED,no port mob or art yet (Java MINIBOSS)
+fungalsentry,die,12,False,0,,,,EXCLUDED,no port mob or art yet (Java MINIBOSS)
+fungalsentry,zap,24,False,0,,,,EXCLUDED,no port mob or art yet (Java MINIBOSS)
+fungalspinner,idle,10,True,0|0|0|0|0|1|0|1,,,,EXCLUDED,no port mob or art yet
+fungalspinner,run,15,True,0|2|0|3,,,,EXCLUDED,no port mob or art yet
+fungalspinner,attack,12,False,0|4|5|0,,,,EXCLUDED,no port mob or art yet
+fungalspinner,die,12,False,6|7|8|9,,,,EXCLUDED,no port mob or art yet
+fungalspinner,zap,12,False,0|4|5|0,,,,EXCLUDED,no port mob or art yet
+ghost,idle,5,True,0|1,5,True,0|1,MATCH,
+ghost,run,10,True,0|1,10,True,0|1,MATCH,
+ghost,attack,10,False,0|2|3,10,False,0|2|3,MATCH,
+ghost,die,8,False,0|4|5|6|7,8,False,0|4|5|6|7,MATCH,
+ghoul,idle,2,True,0|0|0|1,2,True,0|0|0|1,MATCH,
+ghoul,run,12,True,2|3|4|5|6|7,12,True,2|3|4|5|6|7,MATCH,
+ghoul,attack,12,False,0|8|9,12,False,0|8|9,MATCH,
+ghoul,die,15,False,0|10|11|12|13,15,False,0|10|11|12|13,MATCH,
+gnollexile,idle,2,True,42|42|42|43|42|42|43|43,2,True,42|42|42|43|42|42|43|43,MATCH,port sheet offset base 42
+gnollexile,run,12,True,46|47|48|49,12,True,46|47|48|49,MATCH,port sheet offset base 42
+gnollexile,attack,12,False,44|45|42,12,False,44|45|42,MATCH,port sheet offset base 42
+gnollexile,die,12,False,50|51|52,12,False,50|51|52,MATCH,port sheet offset base 42
+gnollgeomancer,run,12,True,4|5|6|7,,,,EXCLUDED,statue/base clips live in gnollMine.ts gnollClips (rockArmor toggle)
+gnollgeomancer,attack,12,False,2|3|0,,,,EXCLUDED,statue/base clips live in gnollMine.ts gnollClips (rockArmor toggle)
+gnollgeomancer,die,12,False,8|9|10,,,,EXCLUDED,statue/base clips live in gnollMine.ts gnollClips (rockArmor toggle)
+gnollgeomancer,zap,12,False,2|3|0,,,,EXCLUDED,statue/base clips live in gnollMine.ts gnollClips (rockArmor toggle)
+gnollguard,idle,2,True,0|0|0|1|0|0|1|1,,,,EXCLUDED,base-variant clips live in gnollMine.ts gnollClips
+gnollguard,run,12,True,4|5|6|7,,,,EXCLUDED,base-variant clips live in gnollMine.ts gnollClips
+gnollguard,attack,12,False,2|3|0,,,,EXCLUDED,base-variant clips live in gnollMine.ts gnollClips
+gnollguard,die,12,False,8|9|10,,,,EXCLUDED,base-variant clips live in gnollMine.ts gnollClips
+gnollsapper,idle,2,True,0|0|0|1|0|0|1|1,,,,EXCLUDED,base-variant clips live in gnollMine.ts gnollClips
+gnollsapper,run,12,True,4|5|6|7,,,,EXCLUDED,base-variant clips live in gnollMine.ts gnollClips
+gnollsapper,attack,12,False,2|3|0,,,,EXCLUDED,base-variant clips live in gnollMine.ts gnollClips
+gnollsapper,die,12,False,8|9|10,,,,EXCLUDED,base-variant clips live in gnollMine.ts gnollClips
+gnollsapper,zap,12,False,2|3|0,,,,EXCLUDED,base-variant clips live in gnollMine.ts gnollClips
+gnoll,idle,2,True,0|0|0|1|0|0|1|1,2,True,0|0|0|1|0|0|1|1,MATCH,
+gnoll,run,12,True,4|5|6|7,12,True,4|5|6|7,MATCH,
+gnoll,attack,12,False,2|3|0,12,False,2|3|0,MATCH,
+gnoll,die,12,False,8|9|10,12,False,8|9|10,MATCH,
+gnolltrickster,idle,2,True,21|21|21|22|21|21|22|22,2,True,21|21|21|22|21|21|22|22,MATCH,port sheet offset base 21
+gnolltrickster,run,12,True,25|26|27|28,12,True,25|26|27|28,MATCH,port sheet offset base 21
+gnolltrickster,attack,12,False,23|24|21,12,False,23|24|21,MATCH,port sheet offset base 21
+gnolltrickster,die,12,False,29|30|31,12,False,29|30|31,MATCH,port sheet offset base 21
+golem,idle,4,True,0|1,4,True,0|1,MATCH,
+golem,run,12,True,2|3|4|5,12,True,2|3|4|5,MATCH,
+golem,attack,10,False,6|7|8,10,False,6|7|8,MATCH,
+golem,die,15,False,9|10|11|12|13,15,False,9|10|11|12|13,MATCH,
+golem,zap,10,False,6|7|8,10,False,6|7|8,MATCH,
+goo,idle,10,True,2|1|0|0|1,10,True,2|1|0|0|1,MATCH,
+goo,run,15,True,3|2|1|2,15,True,3|2|1|2,MATCH,
+goo,attack,10,False,8|9|10,10,False,8|9|10,MATCH,
+goo,die,10,False,5|6|7,10,False,5|6|7,MATCH,
+greatcrab,idle,5,True,16|17|16|18,5,True,16|17|16|18,MATCH,port sheet offset base 16
+greatcrab,run,10,True,19|20|21|22,10,True,19|20|21|22,MATCH,port sheet offset base 16
+greatcrab,attack,12,False,23|24|25,12,False,23|24|25,MATCH,port sheet offset base 16
+greatcrab,die,12,False,26|27|28|29,12,False,26|27|28|29,MATCH,port sheet offset base 16
+guard,idle,2,True,0|0|0|1|0|0|1|1,2,True,0|0|0|1|0|0|1|1,MATCH,
+guard,run,15,True,2|3|4|5|6|7,15,True,2|3|4|5|6|7,MATCH,
+guard,attack,12,False,8|9|10,12,False,8|9|10,MATCH,
+guard,die,8,False,11|12|13|14,8,False,11|12|13|14,MATCH,
+hermitcrab,idle,5,True,32|33|32|34,5,True,32|33|32|34,MATCH,port sheet offset base 32
+hermitcrab,run,10,True,35|36|37|38,10,True,35|36|37|38,MATCH,port sheet offset base 32
+hermitcrab,attack,12,False,39|40|41,12,False,39|40|41,MATCH,port sheet offset base 32
+hermitcrab,die,12,False,42|43|44|45,12,False,42|43|44|45,MATCH,port sheet offset base 32
+hero,idle,1,True,0|0|0|1|0|0|1|1,1,True,0|0|0|1|0|0|1|1,MATCH,
+hero,attack,15,False,13|14|15|0,15,False,13|14|15|0,MATCH,
+hero,die,20,False,8|9|10|11|12|11,20,False,8|9|10|11|12|11,MATCH,
+hero,zap,15,False,13|14|15|0,15,False,13|14|15|0,MATCH,
+hero,operate,8,False,16|17|16|17,8,False,16|17|16|17,MATCH,
+imp,idle,10,True,0|1|2|3|0|1|2|3|0|0|0|4|4|4|4|4|4|4|4|4|4|0|1|2|3|0|1|2|3|0|1|3|0|0|0|4|4|4|4|4|4|4|4|0|0|0|4|4|4|4|4|4|4|4,10,True,0|1|2|3|0|1|2|3|0|0|0|4|4|4|4|4|4|4|4|4|4|0|1|2|3|0|1|2|3|0|1|3|0|0|0|4|4|4|4|4|4|4|4|0|0|0|4|4|4|4|4|4|4|4,MATCH,
+imp,run,20,True,0,20,True,0,MATCH,
+imp,die,10,False,0|3|2|1|0|3|2|1|0,10,False,0|3|2|1|0|3|2|1|0,MATCH,
+king,idle,12,True,0|0|0|0|0|0|0|0|0|0|0|0|1|2,12,True,0|0|0|0|0|0|0|0|0|0|0|0|1|2,MATCH,
+king,run,15,True,3|4|5|6|7|8,15,True,3|4|5|6|7|8,MATCH,
+king,attack,15,False,9|10|11,15,False,9|10|11,MATCH,
+king,die,8,False,12|13|14|15,8,False,12|13|14|15,MATCH,
+larva,idle,5,True,4|4|4|4|4|5|5,5,True,4|4|4|4|4|5|5,MATCH,
+larva,run,12,True,0|1|2|3,12,True,0|1|2|3,MATCH,
+larva,attack,15,False,6|5|7,15,False,6|5|7,MATCH,
+larva,die,10,False,8,10,False,8,MATCH,
+lotus,idle,1,True,0,1,True,0,MATCH,
+lotus,run,1,True,0,1,True,0,MATCH,
+lotus,attack,1,False,0,1,False,0,MATCH,
+lotus,die,1,False,0,1,False,0,MATCH,
+mimic,idle,5,True,3|3|3|4|4,5,True,3|3|3|4|4,MATCH,
+mimic,run,10,True,3|4|5|6|6|5|4,10,True,3|4|5|6|6|5|4,MATCH,
+mimic,attack,10,False,3|7|8|9,10,False,3|7|8|9,MATCH,
+mimic,die,5,False,10|11|12,5,False,10|11|12,MATCH,
+mirror,idle,1,True,0|0|0|1|0|0|1|1,1,True,0|0|0|1|0|0|1|1,MATCH,
+mirror,run,20,True,2|3|4|5|6|7,20,True,2|3|4|5|6|7,MATCH,
+mirror,attack,15,False,13|14|15|0,15,False,13|14|15|0,MATCH,
+mirror,die,20,False,0,20,False,0,MATCH,
+monk,idle,6,True,1|0|1|2,6,True,1|0|1|2,MATCH,
+monk,run,15,True,11|12|13|14|15|16,15,True,11|12|13|14|15|16,MATCH,
+monk,attack,12,False,3|4|3|4,12,False,3|4|3|4,MATCH,
+monk,die,15,False,1|7|8|8|9|10,15,False,1|7|8|8|9|10,MATCH,
+necromancer,idle,1,True,0|0|0|1|0|0|0|0|1,1,True,0|0|0|1|0|0|0|0|1,MATCH,
+necromancer,run,8,True,0|0|0|2|3|4,8,True,0|0|0|2|3|4,MATCH,
+necromancer,attack,10,False,5|6|7|8,10,False,5|6|7|8,MATCH,
+necromancer,die,10,False,9|10|11|12,10,False,9|10|11|12,MATCH,
+necromancer,zap,10,False,5|6|7|8,10,False,5|6|7|8,MATCH,
+newbornelemental,idle,10,True,21|22|23,10,True,21|22|23,MATCH,port sheet offset base 21
+newbornelemental,run,12,True,21|22|24,12,True,21|22|24,MATCH,port sheet offset base 21
+newbornelemental,attack,15,False,25|26|27,15,False,25|26|27,MATCH,port sheet offset base 21
+newbornelemental,die,15,False,28|29|30|31|32|33|34|33,15,False,28|29|30|31|32|33|34|33,MATCH,port sheet offset base 21
+phantompiranha,idle,8,True,0|1|2|1,,,,EXCLUDED,explicitly clip-less in buildMonsterSprite
+phantompiranha,run,20,True,0|1|2|1,,,,EXCLUDED,explicitly clip-less in buildMonsterSprite
+phantompiranha,attack,20,False,3|4|5|6|7|8|9|10|11,,,,EXCLUDED,explicitly clip-less in buildMonsterSprite
+phantompiranha,die,4,False,12|13|14,,,,EXCLUDED,explicitly clip-less in buildMonsterSprite
+piranha,idle,8,True,0|1|2|1,8,True,0|1|2|1,MATCH,
+piranha,run,20,True,0|1|2|1,20,True,0|1|2|1,MATCH,
+piranha,attack,20,False,3|4|5|6|7|8|9|10|11,20,False,3|4|5|6|7|8|9|10|11,MATCH,
+piranha,die,4,False,12|13|14,4,False,12|13|14,MATCH,
+pylon,idle,1,False,0,1,False,0,MATCH,
+pylon,run,1,False,0,1,False,0,MATCH,
+pylon,attack,1,False,0,1,False,0,MATCH,
+pylon,die,1,False,2,1,False,2,MATCH,
+ratking,idle,2,True,0|0|0|1,2,True,0|0|0|1,MATCH,
+ratking,run,10,True,2|3|4|5|6,10,True,2|3|4|5|6,MATCH,
+ratking,attack,15,False,0,15,False,0,MATCH,
+ratking,die,10,False,0,10,False,0,MATCH,
+rat,idle,2,True,0|0|0|1,2,True,0|0|0|1,MATCH,
+rat,run,10,True,6|7|8|9|10,10,True,6|7|8|9|10,MATCH,
+rat,attack,15,False,2|3|4|5|0,15,False,2|3|4|5|0,MATCH,
+rat,die,10,False,11|12|13|14,10,False,11|12|13|14,MATCH,
+ripper,idle,4,True,1|0|1|2,4,True,1|0|1|2,MATCH,
+ripper,run,15,True,3|4|5|6|7|8,15,True,3|4|5|6|7|8,MATCH,
+ripper,attack,12,False,0|9|10|9,12,False,0|9|10|9,MATCH,
+ripper,die,15,False,1|13|14|15|16,15,False,1|13|14|15|16,MATCH,
+rotheart,idle,1,True,0,1,True,0,MATCH,
+rotheart,run,1,True,0,1,True,0,MATCH,
+rotheart,attack,1,False,0,1,False,0,MATCH,
+rotheart,die,8,False,1|2|3|4|5|6|7|7|7,8,False,1|2|3|4|5|6|7|7|7,MATCH,
+rotlasher,idle,0,True,0,0,True,0,MATCH,
+rotlasher,run,0,True,0,0,True,0,MATCH,
+rotlasher,attack,24,False,0|1|2|2|1,24,False,0|1|2|2|1,MATCH,
+rotlasher,die,12,False,3|4|5|6,12,False,3|4|5|6,MATCH,
+scorpio,idle,12,True,0|0|0|0|0|0|0|0|1|2|1|2|1|2,12,True,0|0|0|0|0|0|0|0|1|2|1|2|1|2,MATCH,
+scorpio,run,8,True,5|5|6|6,8,True,5|5|6|6,MATCH,
+scorpio,attack,15,False,0|3|4,15,False,0|3|4,MATCH,
+scorpio,die,12,False,0|7|8|9|10,12,False,0|7|8|9|10,MATCH,
+scorpio,zap,15,False,0|3|4,15,False,0|3|4,MATCH,
+senior,idle,6,True,18|17|18|19,6,True,18|17|18|19,MATCH,
+senior,run,15,True,28|29|30|31|32|33,15,True,28|29|30|31|32|33,MATCH,
+senior,attack,12,False,20|21|20|21,12,False,20|21|20|21,MATCH,
+senior,die,15,False,18|24|25|25|26|27,15,False,18|24|25|25|26|27,MATCH,
+shaman,idle,2,True,0|0|0|1|0|0|1|1,2,True,0|0|0|1|0|0|1|1,MATCH,
+shaman,run,12,True,4|5|6|7,12,True,4|5|6|7,MATCH,
+shaman,attack,12,False,2|3|0,12,False,2|3|0,MATCH,
+shaman,die,12,False,8|9|10,12,False,8|9|10,MATCH,
+shaman,zap,12,False,2|3|0,12,False,2|3|0,MATCH,
+sheep,idle,8,True,0|0|0|0|0|0|0|0|0|0|0|0|1|2|3|0,8,True,0|0|0|0|0|0|0|0|0|0|0|0|1|2|3|0,MATCH,
+sheep,run,8,True,0|0|0|0|0|0|0|0|0|0|0|0|1|2|3|0,8,True,0|0|0|0|0|0|0|0|0|0|0|0|1|2|3|0,MATCH,
+sheep,attack,8,True,0|0|0|0|0|0|0|0|0|0|0|0|1|2|3|0,8,True,0|0|0|0|0|0|0|0|0|0|0|0|1|2|3|0,MATCH,
+sheep,die,20,False,0,20,False,0,MATCH,
+shielded,idle,2,True,21|21|21|22|21|21|22|22,2,True,21|21|21|22|21|21|22|22,MATCH,
+shielded,run,12,True,25|26|27|28,12,True,25|26|27|28,MATCH,
+shielded,attack,12,False,23|24,12,False,23|24,MATCH,
+shielded,die,12,False,29|30|31,12,False,29|30|31,MATCH,
+shopkeeper,idle,10,True,1|1|1|1|1|0|0|0|0,10,True,1|1|1|1|1|0|0|0|0,MATCH,
+shopkeeper,run,10,True,1|1|1|1|1|0|0|0|0,10,True,1|1|1|1|1|0|0|0|0,MATCH,
+shopkeeper,attack,10,True,1|1|1|1|1|0|0|0|0,10,True,1|1|1|1|1|0|0|0|0,MATCH,
+shopkeeper,die,20,False,0,20,False,0,MATCH,
+skeleton,idle,12,True,0|0|0|0|0|0|0|0|0|0|0|0|0|1|2|3,12,True,0|0|0|0|0|0|0|0|0|0|0|0|0|1|2|3,MATCH,
+skeleton,run,15,True,4|5|6|7|8|9,15,True,4|5|6|7|8|9,MATCH,
+skeleton,attack,15,False,14|15|16,15,False,14|15|16,MATCH,
+skeleton,die,12,False,10|11|12|13,12,False,10|11|12|13,MATCH,
+slime,idle,3,True,0|1|1|0,3,True,0|1|1|0,MATCH,
+slime,run,10,True,0|2|3|3|2|0,10,True,0|2|3|3|2|0,MATCH,
+slime,attack,15,False,2|3|4|6|5,15,False,2|3|4|6|5,MATCH,
+slime,die,10,False,0|5|6|7,10,False,0|5|6|7,MATCH,
+snake,idle,10,True,0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|1|1|1|1|1|1|1|1|1|1|2|3|2|1|1,10,True,0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|1|1|1|1|1|1|1|1|1|1|2|3|2|1|1,MATCH,
+snake,run,8,True,4|5|6|7,8,True,4|5|6|7,MATCH,
+snake,attack,15,False,8|9|10|9|0,15,False,8|9|10|9|0,MATCH,
+snake,die,10,False,11|12|13,10,False,11|12|13,MATCH,
+spawner,idle,8,True,0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15,8,True,0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15,MATCH,
+spawner,run,8,True,0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15,8,True,0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15,MATCH,
+spawner,attack,8,True,0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15,8,True,0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15,MATCH,
+spawner,die,8,True,0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15,8,True,0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15,MATCH,
+spectralnecromancer,idle,1,True,16|16|16|17|16|16|16|16|17,1,True,16|16|16|17|16|16|16|16|17,MATCH,port sheet offset base 16
+spectralnecromancer,run,8,True,16|16|16|18|19|20,8,True,16|16|16|18|19|20,MATCH,port sheet offset base 16
+spectralnecromancer,attack,10,False,21|22|23|24,10,False,21|22|23|24,MATCH,port sheet offset base 16
+spectralnecromancer,die,10,False,25|26|27|28,10,False,25|26|27|28,MATCH,port sheet offset base 16
+spectralnecromancer,zap,10,False,21|22|23|24,10,False,21|22|23|24,MATCH,port sheet offset base 16
+spinner,idle,10,True,0|0|0|0|0|1|0|1,10,True,0|0|0|0|0|1|0|1,MATCH,
+spinner,run,15,True,0|2|0|3,15,True,0|2|0|3,MATCH,
+spinner,attack,12,False,0|4|5|0,12,False,0|4|5|0,MATCH,
+spinner,die,12,False,6|7|8|9,12,False,6|7|8|9,MATCH,
+spinner,zap,12,False,0|4|5|0,12,False,0|4|5|0,MATCH,
+statue,idle,2,True,0|0|0|0|0|1|1,2,True,0|0|0|0|0|1|1,MATCH,
+statue,run,15,True,2|3|4|5|6|7,15,True,2|3|4|5|6|7,MATCH,
+statue,attack,12,False,8|9|10,12,False,8|9|10,MATCH,
+statue,die,5,False,11|12|13|14|15|15,5,False,11|12|13|14|15|15,MATCH,
+succubus,idle,8,True,0|0|0|0|0|0|0|0|0|0|0|0|0|0|1|2|2|2|2|1,8,True,0|0|0|0|0|0|0|0|0|0|0|0|0|0|1|2|2|2|2|1,MATCH,
+succubus,run,15,True,3|4|5|6|7|8,15,True,3|4|5|6|7|8,MATCH,
+succubus,attack,12,False,9|10|11,12,False,9|10|11,MATCH,
+succubus,die,10,False,12,10,False,12,MATCH,
+swarm,idle,15,True,0|1|2|3|4|5,15,True,0|1|2|3|4|5,MATCH,
+swarm,run,15,True,0|1|2|3|4|5,15,True,0|1|2|3|4|5,MATCH,
+swarm,attack,20,False,6|7|8|9,20,False,6|7|8|9,MATCH,
+swarm,die,15,False,10|11|12|13|14,15,False,10|11|12|13|14,MATCH,
+tengu,idle,2,True,0|0|0|1,2,True,0|0|0|1,MATCH,
+tengu,run,15,False,2|3|4|5|0,15,False,2|3|4|5|0,MATCH,
+tengu,attack,15,False,6|7|7|0,15,False,6|7|7|0,MATCH,
+tengu,die,8,False,8|9|10|10|10|10|10|10,8,False,8|9|10|10|10|10|10|10,MATCH,
+tengu,zap,15,False,6|7|7|0,15,False,6|7|7|0,MATCH,
+thief,idle,1,True,0|0|0|1|0|0|0|0|1,1,True,0|0|0|1|0|0|0|0|1,MATCH,
+thief,run,15,True,0|0|2|3|3|4,15,True,0|0|2|3|3|4,MATCH,
+thief,attack,12,False,10|11|12|0,12,False,10|11|12|0,MATCH,
+thief,die,10,False,5|6|7|8|9,10,False,5|6|7|8|9,MATCH,
+tormentedspirit,idle,5,True,0|1,,,,EXCLUDED,the 1/100 wraith-table roll is not ported
+tormentedspirit,run,10,True,0|1,,,,EXCLUDED,the 1/100 wraith-table roll is not ported
+tormentedspirit,attack,10,False,0|2|3,,,,EXCLUDED,the 1/100 wraith-table roll is not ported
+tormentedspirit,die,8,False,0|4|5|6|7,,,,EXCLUDED,the 1/100 wraith-table roll is not ported
+undead,idle,12,True,0|0|0|0|0|0|0|0|0|0|0|0|0|1|2|3,12,True,0|0|0|0|0|0|0|0|0|0|0|0|0|1|2|3,MATCH,
+undead,run,15,True,4|5|6|7|8|9,15,True,4|5|6|7|8|9,MATCH,
+undead,attack,15,False,14|15|16,15,False,14|15|16,MATCH,
+undead,die,12,False,10|11|12|13,12,False,10|11|12|13,MATCH,
+wandmaker,idle,10,True,0|0|0|0|0|0|0|0|0|0|0|0|0|0|1|2|3|3|3|3|3|3|2|1,10,True,0|0|0|0|0|0|0|0|0|0|0|0|0|0|1|2|3|3|3|3|3|3|2|1,MATCH,
+wandmaker,run,20,True,0,20,True,0,MATCH,
+wandmaker,die,20,False,0,20,False,0,MATCH,
+warlock,idle,2,True,0|0|0|1|0|0|1|1,2,True,0|0|0|1|0|0|1|1,MATCH,
+warlock,run,15,True,0|2|3|4,15,True,0|2|3|4,MATCH,
+warlock,attack,12,False,0|5|6,12,False,0|5|6,MATCH,
+warlock,die,15,False,0|7|8|8|9|10,15,False,0|7|8|8|9|10,MATCH,
+warlock,zap,12,False,0|5|6,12,False,0|5|6,MATCH,
+wraith,idle,5,True,0|1,5,True,0|1,MATCH,
+wraith,run,10,True,0|1,10,True,0|1,MATCH,
+wraith,attack,10,False,0|2|3,10,False,0|2|3,MATCH,
+wraith,die,8,False,0|4|5|6|7,8,False,0|4|5|6|7,MATCH,
+yog,idle,10,True,0|1|2|2|1|0|3|4|4|3|0|5|6|6|5,10,True,0|1|2|2|1|0|3|4|4|3|0|5|6|6|5,MATCH,
+yog,run,12,True,0,12,True,0,MATCH,
+yog,attack,12,False,0,12,False,0,MATCH,
+yog,die,10,False,0|7|8|9,10,False,0|7|8|9,MATCH,

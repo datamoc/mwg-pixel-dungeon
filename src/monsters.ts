@@ -334,10 +334,12 @@ export const DEPTH_SCALED_STATS: Partial<Record<AnyMonsterId, (depth: number) =>
 
 /**
  * Sprite-sheet reuse for kinds with no dedicated asset of their own (a quest miniboss texturing
- * its base family's sheet at its own idle frame, or a mob standing in on a visually-similar
- * sheet - `FetidRatSprite` on `rat.png:32`, `GnollTricksterSprite` on `gnoll.png:21`,
- * `GreatCrabSprite` on `crab.png:16`, all three real Java sprite classes `texture()`-ing their
-	 * base family's sheet unchanged). Was a 12-case cascade in `spawnMonster` checking both
+ * its base family's sheet at its own idle frame - `FetidRatSprite` on `rat.png:32`,
+ * a real Java sprite class `texture()`-ing its base family sheet unchanged).
+ * `GnollTricksterSprite` on `gnoll.png:21` and `GreatCrabSprite` on `crab.png:16`
+ * are not stand-ins: both sheets pack Java atlas row 2 at those indices
+ * (verified pixel-identical against tag `v3.3.8`), so both show their real art;
+ * the exile/hermit rows Java keeps at 21/16 live appended at 42/32. Was a 12-case cascade in `spawnMonster` checking both
  * `kind` and `baseKind` (`kind === 'sentry' ? ... : kind === 'ratKing' ? ... : ... : baseKind
  * === 'fetidRat' ? ... : ...`) - collapses to one lookup keyed by `baseKind` alone, since every
  * kind checked against `kind` directly (`sentry`/`ratKing`/`rotHeart`/`rotLasher`) has no

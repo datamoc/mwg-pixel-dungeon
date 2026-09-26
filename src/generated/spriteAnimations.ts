@@ -1,4 +1,4 @@
-/** Generated from Java sprite classes by tools/extract-sprite-animations.py. */
+/** Generated from Java sprite classes at tag `v3.3.8` by tools/extract-sprite-animations.py. Port sheet-packing deltas live in that script; keys it cannot produce (hand-added, e.g. `ninjalog`) are carried over verbatim - do not edit by hand. */
 export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loop: boolean; frames: number[] }>> = {
   "acidic": {
     "idle": {
@@ -47,6 +47,15 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         23,
         24,
         25
+      ]
+    },
+    "zap": {
+      "fps": 15,
+      "loop": false,
+      "frames": [
+        15,
+        18,
+        19
       ]
     }
   },
@@ -303,6 +312,51 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
       ]
     }
   },
+  "causticslime": {
+    "idle": {
+      "fps": 3,
+      "loop": true,
+      "frames": [
+        9,
+        10,
+        10,
+        9
+      ]
+    },
+    "run": {
+      "fps": 10,
+      "loop": true,
+      "frames": [
+        9,
+        11,
+        12,
+        12,
+        11,
+        9
+      ]
+    },
+    "attack": {
+      "fps": 15,
+      "loop": false,
+      "frames": [
+        11,
+        12,
+        13,
+        15,
+        14
+      ]
+    },
+    "die": {
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        9,
+        14,
+        15,
+        16
+      ]
+    }
+  },
   "crab": {
     "idle": {
       "fps": 5,
@@ -341,6 +395,51 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         11,
         12,
         13
+      ]
+    }
+  },
+  "crystalmimic": {
+    "idle": {
+      "fps": 5,
+      "loop": true,
+      "frames": [
+        35,
+        35,
+        35,
+        36,
+        36
+      ]
+    },
+    "run": {
+      "fps": 10,
+      "loop": true,
+      "frames": [
+        35,
+        36,
+        37,
+        38,
+        38,
+        37,
+        36
+      ]
+    },
+    "attack": {
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        35,
+        39,
+        40,
+        41
+      ]
+    },
+    "die": {
+      "fps": 5,
+      "loop": false,
+      "frames": [
+        42,
+        43,
+        44
       ]
     }
   },
@@ -384,6 +483,15 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         14,
         15
       ]
+    },
+    "zap": {
+      "fps": 8,
+      "loop": false,
+      "frames": [
+        5,
+        5,
+        1
+      ]
     }
   },
   "dm200": {
@@ -419,6 +527,62 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         9,
         10,
         11
+      ]
+    },
+    "zap": {
+      "fps": 15,
+      "loop": false,
+      "frames": [
+        7,
+        8,
+        8,
+        7
+      ]
+    }
+  },
+  "dm201": {
+    "idle": {
+      "fps": 2,
+      "loop": true,
+      "frames": [
+        12,
+        13
+      ]
+    },
+    "attack": {
+      "fps": 15,
+      "loop": false,
+      "frames": [
+        16,
+        17,
+        18
+      ]
+    },
+    "die": {
+      "fps": 8,
+      "loop": false,
+      "frames": [
+        21,
+        22,
+        23
+      ]
+    },
+    "zap": {
+      "fps": 15,
+      "loop": false,
+      "frames": [
+        19,
+        20,
+        20,
+        19
+      ]
+    },
+    "run": {
+      "fps": 2,
+      "loop": true,
+      "frames": [
+        12,
+        13
       ]
     }
   },
@@ -472,6 +636,16 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         10,
         0,
         10
+      ]
+    },
+    "zap": {
+      "fps": 15,
+      "loop": false,
+      "frames": [
+        6,
+        7,
+        7,
+        6
       ]
     }
   },
@@ -564,6 +738,15 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         13,
         12
       ]
+    },
+    "zap": {
+      "fps": 15,
+      "loop": false,
+      "frames": [
+        4,
+        5,
+        6
+      ]
     }
   },
   "eye": {
@@ -599,6 +782,14 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         7,
         8,
         9
+      ]
+    },
+    "zap": {
+      "fps": 8,
+      "loop": false,
+      "frames": [
+        4,
+        3
       ]
     }
   },
@@ -679,6 +870,15 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         2,
         3,
         4
+      ]
+    },
+    "zap": {
+      "fps": 8,
+      "loop": false,
+      "frames": [
+        0,
+        5,
+        6
       ]
     }
   },
@@ -808,6 +1008,50 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
       ]
     }
   },
+  "gnollexile": {
+    "idle": {
+      "fps": 2,
+      "loop": true,
+      "frames": [
+        42,
+        42,
+        42,
+        43,
+        42,
+        42,
+        43,
+        43
+      ]
+    },
+    "run": {
+      "fps": 12,
+      "loop": true,
+      "frames": [
+        46,
+        47,
+        48,
+        49
+      ]
+    },
+    "attack": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        44,
+        45,
+        42
+      ]
+    },
+    "die": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        50,
+        51,
+        52
+      ]
+    }
+  },
   "gnolltrickster": {
     "idle": {
       "fps": 2,
@@ -889,6 +1133,15 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         11,
         12,
         13
+      ]
+    },
+    "zap": {
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        6,
+        7,
+        8
       ]
     }
   },
@@ -1021,6 +1274,47 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
       ]
     }
   },
+  "hermitcrab": {
+    "idle": {
+      "fps": 5,
+      "loop": true,
+      "frames": [
+        32,
+        33,
+        32,
+        34
+      ]
+    },
+    "run": {
+      "fps": 10,
+      "loop": true,
+      "frames": [
+        35,
+        36,
+        37,
+        38
+      ]
+    },
+    "attack": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        39,
+        40,
+        41
+      ]
+    },
+    "die": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        42,
+        43,
+        44,
+        45
+      ]
+    }
+  },
   "hero": {
     "idle": {
       "fps": 1,
@@ -1056,6 +1350,26 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         11,
         12,
         11
+      ]
+    },
+    "operate": {
+      "fps": 8,
+      "loop": false,
+      "frames": [
+        16,
+        17,
+        16,
+        17
+      ]
+    },
+    "zap": {
+      "fps": 15,
+      "loop": false,
+      "frames": [
+        13,
+        14,
+        15,
+        0
       ]
     }
   },
@@ -1267,6 +1581,51 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
       ]
     }
   },
+  "mimic": {
+    "idle": {
+      "fps": 5,
+      "loop": true,
+      "frames": [
+        3,
+        3,
+        3,
+        4,
+        4
+      ]
+    },
+    "run": {
+      "fps": 10,
+      "loop": true,
+      "frames": [
+        3,
+        4,
+        5,
+        6,
+        6,
+        5,
+        4
+      ]
+    },
+    "attack": {
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        3,
+        7,
+        8,
+        9
+      ]
+    },
+    "die": {
+      "fps": 5,
+      "loop": false,
+      "frames": [
+        10,
+        11,
+        12
+      ]
+    }
+  },
   "mirror": {
     "idle": {
       "fps": 1,
@@ -1395,17 +1754,75 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         11,
         12
       ]
+    },
+    "zap": {
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    "attack": {
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        5,
+        6,
+        7,
+        8
+      ]
     }
   },
-  // Hand-added, not generated: `SmokeBomb.NinjaLog` is not an `actors/mobs` sprite class, so
-  // `tools/extract-sprite-animations.py`'s `*Sprite.java` glob over that package never sees it
-  // (`NinjaLogSprite` is a nested class in `abilities/rogue/SmokeBomb.java`). Frames are that
-  // class's own: `idle.frames(frames, 0)` on a 0-speed animation and `die.frames(frames, 1, 2, 3,
-  // 4)` at 12fps. (That generator's own `parents[2]` source path is also stale after this repo
-  // split out of the SPD checkout - a separate, recorded fix, see `PORT_COVERAGE.md`.)
+  "newbornelemental": {
+    "idle": {
+      "fps": 10,
+      "loop": true,
+      "frames": [
+        21,
+        22,
+        23
+      ]
+    },
+    "run": {
+      "fps": 12,
+      "loop": true,
+      "frames": [
+        21,
+        22,
+        24
+      ]
+    },
+    "attack": {
+      "fps": 15,
+      "loop": false,
+      "frames": [
+        25,
+        26,
+        27
+      ]
+    },
+    "die": {
+      "fps": 15,
+      "loop": false,
+      "frames": [
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        33
+      ]
+    }
+  },
+  // Hand-added, not generated: SmokeBomb.NinjaLog is not an actors/mobs sprite class, so the *Sprite.java glob never sees it (NinjaLogSprite is nested in actors/hero/abilities/rogue/SmokeBomb.java). Frames are that class: idle.frames(frames, 0) on a 0-speed animation and die.frames(frames, 1, 2, 3, 4) at 12fps.
   "ninjalog": {
     "idle": {
-      "fps": 1,
+      "fps": 0,
       "loop": true,
       "frames": [
         0
@@ -1419,48 +1836,6 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         2,
         3,
         4
-      ]
-    }
-  },
-  // Hand-added, not generated, for the same reason as `ninjalog` above: `SpiritHawk.HawkSprite`
-  // is a nested class in `abilities/huntress/SpiritHawk.java`, outside the generator's
-  // `actors/mobs/*Sprite.java` glob. Every clip is that class's own, on a `TextureFilm(15, 15)`:
-  // `idle` 6fps `0, 1`; `run` 8fps `0, 1`; `attack` 12fps non-looping `2, 3, 0, 1`; `die` 12fps
-  // non-looping `4, 5, 6` (SpiritHawk.java, tag `v3.3.8`).
-  "spirithawk": {
-    "idle": {
-      "fps": 6,
-      "loop": true,
-      "frames": [
-        0,
-        1
-      ]
-    },
-    "run": {
-      "fps": 8,
-      "loop": true,
-      "frames": [
-        0,
-        1
-      ]
-    },
-    "attack": {
-      "fps": 12,
-      "loop": false,
-      "frames": [
-        2,
-        3,
-        0,
-        1
-      ]
-    },
-    "die": {
-      "fps": 12,
-      "loop": false,
-      "frames": [
-        4,
-        5,
-        6
       ]
     }
   },
@@ -1524,6 +1899,20 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
       "frames": [
         2
       ]
+    },
+    "run": {
+      "fps": 1,
+      "loop": false,
+      "frames": [
+        0
+      ]
+    },
+    "attack": {
+      "fps": 1,
+      "loop": false,
+      "frames": [
+        0
+      ]
     }
   },
   "rat": {
@@ -1567,6 +1956,43 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         12,
         13,
         14
+      ]
+    }
+  },
+  "ratking": {
+    "idle": {
+      "fps": 2,
+      "loop": true,
+      "frames": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    "run": {
+      "fps": 10,
+      "loop": true,
+      "frames": [
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    "attack": {
+      "fps": 15,
+      "loop": false,
+      "frames": [
+        0
+      ]
+    },
+    "die": {
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        0
       ]
     }
   },
@@ -1655,14 +2081,14 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
   },
   "rotlasher": {
     "idle": {
-      "fps": 1,
+      "fps": 0,
       "loop": true,
       "frames": [
         0
       ]
     },
     "run": {
-      "fps": 1,
+      "fps": 0,
       "loop": true,
       "frames": [
         0
@@ -1739,6 +2165,15 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         8,
         9,
         10
+      ]
+    },
+    "zap": {
+      "fps": 15,
+      "loop": false,
+      "frames": [
+        0,
+        3,
+        4
       ]
     }
   },
@@ -1830,6 +2265,15 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         9,
         10
       ]
+    },
+    "zap": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        2,
+        3,
+        0
+      ]
     }
   },
   "sheep": {
@@ -1859,6 +2303,50 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
       "fps": 20,
       "loop": false,
       "frames": [
+        0
+      ]
+    },
+    "run": {
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        2,
+        3,
+        0
+      ]
+    },
+    "attack": {
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        2,
+        3,
         0
       ]
     }
@@ -1926,6 +2414,36 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
       "fps": 20,
       "loop": false,
       "frames": [
+        0
+      ]
+    },
+    "run": {
+      "fps": 10,
+      "loop": true,
+      "frames": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "attack": {
+      "fps": 10,
+      "loop": true,
+      "frames": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
         0
       ]
     }
@@ -2120,6 +2638,131 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         14,
         15
       ]
+    },
+    "run": {
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    "attack": {
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    "die": {
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    }
+  },
+  "spectralnecromancer": {
+    "idle": {
+      "fps": 1,
+      "loop": true,
+      "frames": [
+        16,
+        16,
+        16,
+        17,
+        16,
+        16,
+        16,
+        16,
+        17
+      ]
+    },
+    "run": {
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        16,
+        16,
+        16,
+        18,
+        19,
+        20
+      ]
+    },
+    "die": {
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        25,
+        26,
+        27,
+        28
+      ]
+    },
+    "zap": {
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        21,
+        22,
+        23,
+        24
+      ]
+    },
+    "attack": {
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        21,
+        22,
+        23,
+        24
+      ]
     }
   },
   "spinner": {
@@ -2165,6 +2808,54 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         7,
         8,
         9
+      ]
+    },
+    "zap": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        0,
+        4,
+        5,
+        0
+      ]
+    }
+  },
+  // Hand-added, not generated: SpiritHawk.HawkSprite is nested in actors/hero/abilities/huntress/SpiritHawk.java, outside the glob. Every clip is that class, on a TextureFilm(15, 15): idle 6fps 0, 1; run 8fps 0, 1; attack 12fps non-looping 2, 3, 0, 1; die 12fps non-looping 4, 5, 6.
+  "spirithawk": {
+    "idle": {
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        0,
+        1
+      ]
+    },
+    "run": {
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        0,
+        1
+      ]
+    },
+    "attack": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        2,
+        3,
+        0,
+        1
+      ]
+    },
+    "die": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        4,
+        5,
+        6
       ]
     }
   },
@@ -2364,6 +3055,16 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         10,
         10
       ]
+    },
+    "zap": {
+      "fps": 15,
+      "loop": false,
+      "frames": [
+        6,
+        7,
+        7,
+        0
+      ]
     }
   },
   "thief": {
@@ -2561,6 +3262,15 @@ export const SPRITE_ANIMATIONS: Record<string, Record<string, { fps: number; loo
         8,
         9,
         10
+      ]
+    },
+    "zap": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        0,
+        5,
+        6
       ]
     }
   },

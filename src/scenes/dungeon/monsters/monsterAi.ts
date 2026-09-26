@@ -1,6 +1,6 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { faceCharacter } from '../../../ui/characterPlacement';
-import { Random, Roguelike, SpriteSheet } from 'mwg';
+import { AnimatedSprite, Random, Roguelike, SpriteSheet } from 'mwg';
 import { ARMOR_TIER_BY_CLASS, WEAPON_TIER_BY_CLASS, armorReductionRange } from '../../../items/catalog';
 import { Cat } from '../../../items/generator';
 import { UNSTABLE_DELEGATES, rollStatueEnchant, statueEnchantChance, statueWeaponStats, type StatueEnchant } from '../../../items/statueWeapons';
@@ -10,13 +10,6 @@ import { missileFlightArt } from '../../../items/missiles';
 import { throwTenguBomb } from '../../../items/bombs';
 import { runAttackResolution } from '../../../adapters/attackSimulation';
 import { simulationRandom } from '../../../adapters/mwgRandom';
-import { simulationRoguelike } from '../../../adapters/mwgRoguelike';
-import { wraithCombatStats } from '../../../simulation/wraith';
-import { stepTenguAbility, tenguAbilityCost } from '../../../simulation/tenguAbility';
-import { colorblind } from '../../../settings';
-import { capitalize, has, t } from '../../../i18n/index';
-import { SPD_TERRAIN_TO_GAME_KIND, toGameTerrain } from '../../../spdLevelGen/gameBridge';
-import { CITY_IMP_SHOP, PRISON_ARENA, PRISON_TENGU_CELL, PRISON_TENGU_CELL_CENTER, PRISON_TENGU_CELL_DOOR, prisonBossArena, prisonBossEnd, prisonBossPause } from '../../../spdLevelGen/bossLevels';
 import { hallsCenterPieceLayer, hallsCenterWallLayer } from '../../../spdLevelGen/hallsBossVisuals';
 import { spdPatchGenerate } from '../../../spdLevelGen/spdPatch';
 import { Terrain, type PaintLevel } from '../../../spdLevelGen/paintLevel';
@@ -26,13 +19,6 @@ import { mobOnHit } from '../../mobOnHit';
 import { type BossUnsealContext } from '../../bossUnseal';
 import { aggressionTarget as aggressionTargetFlow, amokTarget as amokTargetFlow, beeTarget as beeTargetFlow, pursueTarget as pursueTargetFlow, selectRangedTarget } from '../../../simulation/targeting';
 import { CIRCLE8_OFFSETS, fleeStep as fleeStepFlow, isPatrolTargetValid as isPatrolTargetValidFlow, wanderBlocked as wanderBlockedFlow, type FleeStepContext, type SummonCellContext, type WanderingContext } from '../../../simulation/wandering';
-import { canRipperLeap, chooseRipperBounceEnd, predictRipperLeapTarget, ripperLeapCooldown } from '../../../simulation/ripperLeap';
-import { chooseSuccubusBlinkCell, shouldSuccubusBlink, succubusBlinkCooldown } from '../../../simulation/succubusBlink';
-import { DOOR, DOOR_CLOSED, FLOOR, GAME_KIND_CODES, SOLID, TILE, WALL, WATER } from '../../../dungeonConstants';
-import { NEGATIVE_BUFFS, addBuff, applyElementalBacklash, buffBlocked, reigniteBuff, rollDamage, rollHit, setBleeding, type BuffId, type Creature, type GroundItem, type Step } from '../../../combat';
-import { applyChillFreeze } from '../../../simulation/buffs';
-import { IMMOVABLE_KINDS, liveStats } from '../../../monsters';
-import { TENGU_CIRCLE8 } from '../shared';
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `monsterAi`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
@@ -257,13 +243,6 @@ export const monsterAiMethods = {
 		}
 	},
 
-	/** Direct enchant damage: the hero's barrier and Tenacity-style reductions apply, armor does not. */
-	damageFromProc(this: DungeonScene, defender: Creature, amount: number): void {
-		const dealt = defender.isHero ? this.absorbHeroDamage(amount, true) : amount;
-		defender.hp -= dealt;
-		this.showDamage(defender, dealt);
-	},
-
 	/**
 	 * `Statue()`/`ArmoredStatue()` (tag `v3.3.8`): the statue fights with the weapon (and armor) it
 	 * generated, not with a flat stat line. `damageRoll()`, `attackSkill()` (`(9 + depth) * ACC`),
@@ -330,14 +309,6 @@ export const monsterAiMethods = {
 			if (target.isHero) {
 				const damage = this.absorbHeroDamage(raw);
 				target.hp -= damage;
-				this.showDamage(target, damage);
-				if (target.hp <= 0) this.kill(target, 'foe');
-			} else {
-				target.hp -= raw;
-				this.showDamage(target, raw);
-				if (target.hp <= 0) this.kill(target, 'foe');
-			}
-		}
 		monster.pylonTargetNeighbor = (cursor + 1) % 8;
 	},
 
@@ -434,16 +405,6 @@ export const monsterAiMethods = {
 
 	/** `Golem.canTele(target)` from `Golem.java` (tag v3.3.8): the zap may route around
 	 * solid terrain, so line-of-sight is not enough. Java builds a bounded distance map from
-	 * the hero and accepts any reachable golem; MWG's pathfinder gives the same passable-cell
-	 * reachability here. Creature occupancy is intentionally ignored, matching Java's map
-	 * (characters are not part of `Level.solid`). */
-	golemCanTeleport(this: DungeonScene, monster: Creature): boolean {
-		return this.pathfinder.find(
-			{ x: monster.x, y: monster.y },
-			{ x: this.hero.x, y: this.hero.y },
-		).length > 0;
-	},
-
 	/** Necromancer/SpectralNecromancer's non-adjacent turn (the adjacent case bolts instead,
 	 * handled at the `distance === 1` dispatch via `zapHero` directly). See the
 	 * `rangedAiOverrides.necromancer` entry's own comment for the Java citation. */
@@ -475,13 +436,6 @@ export const monsterAiMethods = {
 		//Hunting.act()'s teleport branch: an out-of-sight skeleton not already adjacent to
 		//the hero gets teleported to a free cell beside the hero instead, so it can rejoin
 		//the fight rather than being stranded wherever it last wandered. Java picks the
-		//*closest* such cell that is also in the necromancer's own sight
-		//(`fieldOfView[enemy.pos+c]`, strictly smallest `trueDistance` over
-		//`PathFinder.NEIGHBOURS8` order) - this port used to pick any free neighbour.
-		//`openSpace`/LARGE has no counterpart (no LARGE mob exists here); the trigger above
-		//stays the port's own narrower one (unseen skeleton, no path-length clause).
-		if (
-			skel && skel.hp > 0 && !skelVisible && monster.seesHero &&
 			Roguelike.chebyshevDistance(skel, this.hero) > 1
 		) {
 			const necroFov = new Roguelike.FieldOfView(this.level);
@@ -634,14 +588,6 @@ export const monsterAiMethods = {
 	resolveEyeBeamMobHit(this: DungeonScene, monster: Creature, victim: Creature): void {
 		let dmg = Math.max(0, Random.normalRange(30, 50));
 		if (victim.buffs['aggression'] && (victim.boss || victim.miniboss) && !monster.isHero && !monster.isAlly) {
-			dmg *= 0.5;
-			if (victim.kind === 'yog') dmg *= 0.5;
-		}
-		victim.hp -= dmg;
-		this.showDamage(victim, dmg);
-		if (victim.hp <= 0) this.kill(victim);
-	},
-
 	/** `RipperDemon.Hunting.act()`'s leap trigger (`RipperDemon.java`, tag `v3.3.8`): off
  * cooldown, enemy in FOV, unrooted and at least 3 cells away, the ripper arms its landing
  * cell instead of moving. The landing prediction (far side of a moved enemy, direct aim
@@ -797,13 +743,6 @@ export const monsterAiMethods = {
 		if (!roll.hit) {
 			runState.audio.cue('miss', 0.55);
 			victim.sleeping = false;
-			this.say(t(victim.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
-			return;
-		}
-		const damage = victim.isHero ? this.absorbHeroDamage(roll.damage) : roll.damage;
-		victim.hp -= damage;
-		this.showDamage(victim, damage);
-		victim.sleeping = false;
 		this.sprite(victim).setColorAdd(1, 1, 1);
 		runState.audio.cue('hit', 0.6);
 		this.say(
@@ -830,6 +769,8 @@ export const monsterAiMethods = {
 			//unconditionally once charged), there is no fire-time range/LOS
 			//recheck - only the charge itself required `canTarget`.
 			for (const cell of Roguelike.traceLine(monster, this.hero).slice(1)) {
+			//The charged beam fires with the sprite zap (`attack` clone, tag `v3.3.8`).
+			this.playMonsterZap(monster);
 				const victim = cell.x === this.hero.x && cell.y === this.hero.y
 					? this.hero
 					: this.creatureAt(cell.x, cell.y);
@@ -847,18 +788,22 @@ export const monsterAiMethods = {
 					this.say(t('port.log.eyegaze'), 'negative');
 					if (this.hero.hp <= 0) this.kill(this.hero);
 				}
-			}
-			return true;
-		}
-		if ((monster.beamCooldown ?? 0) <= 0 && Roguelike.canTarget(this.level, monster, this.hero, { range: 8 })) {
-			monster.beamCharged = true;
-			this.pendingMonsterTurnCost = 2;
-			this.say(t('port.log.eyecharge'), 'negative');
 			return true;
 		}
 		return false;
 	},
 
+	/** `CharSprite.zap(cell)` (tag `v3.3.8`) plays the sprite `zap` clip; classes
+	 * without one alias it to `attack` (`zap = attack.clone()`), so the fallback
+	 * below is the same rule, not a guess. Ranged presenters call this instead of
+	 * playing `attack` directly.
+	 */
+	playMonsterZap(this: DungeonScene, monster: Creature): void {
+		const sprite = this.sprite(monster);
+		if (!(sprite instanceof AnimatedSprite)) return;
+		if (sprite.has('zap')) sprite.play('zap', true);
+		else if (sprite.has('attack')) sprite.play('attack', true);
+	},
 	/** a magic bolt that never misses its roll the melee way - hit(accMulti 2), then damage.
 	 *
 	 * The damage is applied **unreduced by armor**, which is what Java does for every bolt that
@@ -874,6 +819,8 @@ export const monsterAiMethods = {
 	zapHero(this: DungeonScene, monster: Creature, damage: [number, number]): void {
 		const target = this.rangedTarget(monster, 8);
 		if (!target) return;
+		//`DM100.zap()`/`Shaman.zap()`/`Warlock.zap()` play `sprite.zap()` (tag `v3.3.8`).
+		this.playMonsterZap(monster);
 		if (!rollHit(monster, target, true)) {
 			this.say(t('port.log.boltmisses', { who: capitalize(monster.name) }), 'negative');
 			return;
@@ -950,13 +897,6 @@ export const monsterAiMethods = {
 	 * spends `firstSummon ? TICK : 2*TICK`; turn B summons there), but the placement, push-aside,
 	 * and blocker-damage rules below are all real, collapsed into the single turn this port's
 	 * `necromancerRangedTurn` already spends on a summon. `trueDistance` is Euclidean, so these
-	 * selections use `Math.hypot`, not the Chebyshev ruler used elsewhere here.
-	 * Deliberate simplifications: no one-turn telegraph (no `summoning` sprite state exists);
-	 * no reachability/FOV gating on the pick (passable + unoccupied only); the LARGE/`openSpace`
-	 * gate on push targets is vacuous (no LARGE kinds exist here); the Pushing visual is a log
-	 * line. Notably NOT simplified anymore: the old "push-aside needs a full knockback system"
-	 * claim was wrong - checked against the source, the rule is just an 8-neighbour search
-	 * maximizing distance from the necro, needing no framework primitive at all (and
 	 * `Roguelike.knockbackPath`'s straight-line shove would not have matched its
 	 * direction-choice logic anyway). Real Java's own turn cost is `firstSummon ? TICK :
 	 * 2*TICK` - the very first summon this necromancer ever makes costs the normal 1, every
@@ -1045,18 +985,6 @@ export const monsterAiMethods = {
 			const dmg = this.absorbHeroDamage(raw);
 			this.hero.hp -= dmg;
 			this.showDamage(this.hero, dmg);
-			this.say(t('port.log.necroblockdamagehero', { damage: dmg }), 'negative');
-			if (this.hero.hp <= 0) this.kill(this.hero);
-		} else {
-			//A monster blocker takes the raw roll: the hero's shield pool must not absorb a
-			//hit that never targeted the hero (Java runs this through the blocker's own DR;
-			//this port tracks no per-monster armor outside the attack pipeline, so no reduction).
-			occupant.hp -= raw;
-			this.showDamage(occupant, raw);
-			this.say(t('port.log.necroblockdamage', { who: capitalize(occupant.name), damage: raw }), 'warning');
-			if (occupant.hp <= 0) this.kill(occupant);
-		}
-	},
 
 	/** `Elemental.doAttack()`/the four `rangedProc()` implementations (tag `v3.3.8`).
 	 * Elementals use a magic bolt outside melee, and the bolt **deals no direct damage at all**:
@@ -1077,6 +1005,8 @@ export const monsterAiMethods = {
 	elementalRangedTurn(this: DungeonScene, monster: Creature): boolean {
 		const target = this.rangedTarget(monster, 5);
 		if (!target) return false;
+		//`Elemental.zap()` plays the sprite zap (an `attack` clone, tag `v3.3.8`).
+		this.playMonsterZap(monster);
 		if (!rollHit(monster, target, true)) {
 			this.say(t('port.log.boltmisses', { who: capitalize(monster.name) }), 'negative');
 			return true;
@@ -1086,13 +1016,6 @@ export const monsterAiMethods = {
 		//`FireElemental.rangedProc()` (`Elemental.java`, tag `v3.3.8`) reignites
 		//Burning with an explicit 4, not the table-default 8.
 		if (type === 'fire' && this.level.get(target.x, target.y) !== WATER) reigniteBuff(target, 'burning', 4);
-		else if (type === 'frost') {
-			//`Elemental.add()`'s hate-listed chill backslashes instead of attaching
-			//(tag `v3.3.8`) - a fire-typed target takes the backlash, never the chill.
-			if (applyElementalBacklash(target, 'chill') === 0) target.buffs = applyChillFreeze(target.buffs).buffs;
-		} else if (type === 'shock') addBuff(target, 'daze');
-		else addBuff(target, Random.element(['burning', 'chill', 'cripple', 'daze'] as const) ?? 'daze');
-		return true;
 	},
 
 	/** `Elemental.NewbornFireElemental`'s telegraphed fireball (`Elemental.java`, checked
@@ -1172,51 +1095,19 @@ export const monsterAiMethods = {
 	 *  `for (int i : NEIGHBOURS9) if (!solid[targetingPos + i]) addToBack(new TargetedCell(cell,
 	 *  0xFF0000))` - a red-tinted cell per non-solid square of the 3x3 the blast will cover. Java
 	 *  tints the cell art itself; this draws a translucent red square per cell on the overlay the
-	 *  aim preview uses, which sits under the actors exactly as `addToBack` does.
-	 *  Port-original accessibility work (ROADMAP.md section 8 - Java's own tint is this exact
-	 *  red, so there is no source to diverge from, only this port's own `settings.colorblind()`
-	 *  swap): under `colorblind()` this substitutes the same Okabe-Ito vermillion
-	 *  `SPD_STATUS_COLOR.negative` already uses, which still reads as "danger" but stays
-	 *  distinguishable from the bluish-green "safe" tones the rest of that palette uses,
-	 *  unlike pure red under red-green colorblindness. */
-	refreshTargetedCellsOverlay(this: DungeonScene): void {
-		const overlay = this.targetedCells;
-		if (!overlay) return;
-		overlay.clear();
-		const pending = this.creatures.find((c) => c.kind === 'newbornElemental' && c.newbornTarget)?.newbornTarget;
-		const color = colorblind() ? 0xd55e00 : 0xff0000;
-		//The GNOLL mine's boulder trails and rockfall cells (`GnollGeomancer`/`GnollSapper`'s own `TargetedCell`s).
-		for (const at of this.gnollWarningCells()) overlay.rect(at.x * TILE, at.y * TILE, TILE, TILE).fill({ color, alpha: 0.3 });
-		if (!pending) return;
 		for (let dy = -1; dy <= 1; dy++) {
 			for (let dx = -1; dx <= 1; dx++) {
 				const at = { x: pending.x + dx, y: pending.y + dy };
 				if (!this.level.inside(at.x, at.y) || !this.level.passable(at.x, at.y)) continue;
 				overlay.rect(at.x * TILE, at.y * TILE, TILE, TILE).fill({ color, alpha: 0.3 });
 			}
-		}
-	},
-
-	/** Guard.chain: drag one cell closer through a clear path, then Cripple - once per Guard, ever */
-	chainHero(this: DungeonScene, guard: Creature): void {
-		guard.chainUsed = true;
-		const dx = Math.sign(this.hero.x - guard.x);
-		const dy = Math.sign(this.hero.y - guard.y);
-		const at = { x: this.hero.x - dx, y: this.hero.y - dy };
- 			if ((dx !== 0 || dy !== 0) && this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y)) {
- 				this.moveTo(this.hero, at);
- 			}
- 			//`Guard.pullEnemy`: `Cripple.prolong(enemy, Cripple.class, 4f)` - an explicit 4,
-		//not the table's whole 10, keep-max exactly like Java's `prolong`.
-			reigniteBuff(this.hero, 'cripple', 4);
-		this.say(t('port.log.chain'), 'negative');
-	},
-
 	/** DM200.zap(): toxic gas seeded along the line to the hero (20/cell), 100 at the far end.
 	 *  **Found and fixed 2026-09-16: this seeded `plantGas`, whose effect is `poison`, instead
 	 *  of `toxicGas`, whose effect is Java's direct damage** - every vent used to poison the
 	 *  hero rather than burn through HP the way `ToxicGas` does. Amounts were already Java's. */
 	ventDM200(this: DungeonScene, monster: Creature, enemy: Creature): void {
+		//`DM200.act()` vents with `sprite.zap(enemy.pos)` when visible (tag `v3.3.8`).
+		this.playMonsterZap(monster);
 		monster.ventCooldown = 30;
 		const line = Roguelike.traceLine(monster, enemy);
 		for (let i = 0; i < line.length - 1; i++) this.toxicGas.seed(line[i].x, line[i].y, 20);
@@ -1292,11 +1183,14 @@ export const monsterAiMethods = {
 	 * monster. Runs at spawn, on load and on reveal so the three can never disagree.
 	 */
 	syncMimicVisual(this: DungeonScene, monster: Creature): void {
-		if (monster.kind !== 'mimic') return;
-		const hidden = monster.mimicRevealed === false;
-		monster.name = hidden ? t('items.heap.chest') : t('actors.mobs.mimic.name');
+		if (monster.kind !== 'mimic' && monster.kind !== 'crystalMimic') return;
+		//`MimicSprite.Crystal` is `texOffset()` 32 (tag `v3.3.8`): the crystal
+		//mimic hides and reveals 32 frames over, with the `crystalmimic` clips.
+		const ofs = monster.kind === 'crystalMimic' ? 32 : 0;
+		const hidden = !monster.mimicRevealed;
+		if (monster.kind === 'mimic') monster.name = hidden ? t('items.heap.chest') : t('actors.mobs.mimic.name');
 		const sheet = SpriteSheet.fromTexture(runState.sprites.mimic, 16, 16);
-		this.sprite(monster).texture = sheet.get(hidden ? 0 : 3);
+		this.sprite(monster).texture = sheet.get(hidden ? ofs : 3 + ofs);
 	},
 
 	/** `Mimic.stopHiding()` (tag v3.3.8): the chest drops its disguise and goes hunting. Alignment
@@ -1324,6 +1218,7 @@ export const monsterAiMethods = {
 			monster.speed = monster.hasteBaseSpeed * 2;
 			monster.hasteTurns = 2;
 		}
+		this.syncMimicVisual(monster);
 		this.say(t('port.log.mimicreveals'), 'warning');
 	},
 
@@ -1394,17 +1289,6 @@ export const monsterAiMethods = {
 		//moves, chases, or calls the base unreachable-target handling, so repositioning comes
 		//only from bracket jumps. The port therefore checks the ability before both the
 		//ranged-dart and melee branches, and waits below when neither can fire.
-		if (this.tenguFireAbilityIfReady(tengu)) return;
-		const distance = Roguelike.chebyshevDistance(tengu, this.hero);
-		if (distance > 1) {
-			if (Roguelike.canTarget(this.level, tengu, this.hero, { range: 8 })) {
-				this.say(t('port.log.tengudart'), 'negative');
-				this.attack({ ...tengu, kind: undefined, accuracy: 20 }, this.hero);
-				//Java's `TenguShuriken`: a `MissileSprite` with shuriken art at 2160 spin.
-				this.spawnProjectile(tengu, this.hero, missileFlightArt('Shuriken'));
-			}
-			//else: Java waits here (see above) - no chase step, the turn simply ends.
-		} else {
 			this.attack(tengu, this.hero);
 		}
 	},

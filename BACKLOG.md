@@ -16,11 +16,6 @@ B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as d
 
 - [ ] Verify loot, quest outcomes, boss transitions, and save/load state. **Complexity: L.** Not started; extends `tools/parity/` (see its README, "Extending it").
 
-## B4. Screenshot and animation-timing comparisons
-
-- [ ] Add screenshot and animation-timing comparisons for visual parity. **Complexity: M.** Not started.
-  `tools/browserTest.mjs` (Chrome and Firefox screenshots of the built game) is the capture side; `tools/parity/` is the extension point for Java-side captures.
-
 ## B5. Classify every remaining difference
 
 - [ ] Classify every remaining difference as either an implemented Java behavior or an explicitly accepted platform/UI

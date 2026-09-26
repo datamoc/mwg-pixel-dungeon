@@ -202,9 +202,11 @@
           { tag: "row", monster: "tengu", frame_width: 14, frame_height: 16, idle: 0 },
           { tag: "row", monster: "fetidRat", frame_width: 16, frame_height: 15, idle: 32 },
           { tag: "row", monster: "gnollTrickster", frame_width: 12, frame_height: 15, idle: 21 },
-          { tag: "row", monster: "gnollExile", frame_width: 12, frame_height: 15, idle: 0 },
+          // `GnollExileSprite` c=21 lives appended at 42-62 (tag `v3.3.8`; see `src/images.ts`).
+          { tag: "row", monster: "gnollExile", frame_width: 12, frame_height: 15, idle: 42 },
           { tag: "row", monster: "greatCrab", frame_width: 16, frame_height: 16, idle: 16 },
-          { tag: "row", monster: "hermitCrab", frame_width: 16, frame_height: 16, idle: 0 },
+          // `HermitCrabSprite` c=16 lives appended at 32-47 (tag `v3.3.8`; see `src/images.ts`).
+          { tag: "row", monster: "hermitCrab", frame_width: 16, frame_height: 16, idle: 32 },
           { tag: "row", monster: "bat", frame_width: 15, frame_height: 15, idle: 0 },
           { tag: "row", monster: "brute", frame_width: 12, frame_height: 16, idle: 0 },
           { tag: "row", monster: "shaman", frame_width: 12, frame_height: 15, idle: 0 },
@@ -238,11 +240,13 @@
           { tag: "row", monster: "bandit", frame_width: 12, frame_height: 13, idle: 21 },
           { tag: "row", monster: "spectralNecromancer", frame_width: 16, frame_height: 16, idle: 0 },
           { tag: "row", monster: "armoredBrute", frame_width: 12, frame_height: 16, idle: 21 },
-          { tag: "row", monster: "dm201", frame_width: 21, frame_height: 18, idle: 0 },
+          // `DM201Sprite` c=12 on the shared DM200 sheet (tag `v3.3.8`).
+          { tag: "row", monster: "dm201", frame_width: 21, frame_height: 18, idle: 12 },
           { tag: "row", monster: "senior", frame_width: 15, frame_height: 14, idle: 18 },
           { tag: "row", monster: "acidic", frame_width: 17, frame_height: 17, idle: 15 },
           { tag: "row", monster: "mimic", frame_width: 16, frame_height: 16, idle: 3 },
-          { tag: "row", monster: "crystalMimic", frame_width: 16, frame_height: 16, idle: 3 },
+          // `MimicSprite.Crystal` is `texOffset()` 32 (tag `v3.3.8`).
+          { tag: "row", monster: "crystalMimic", frame_width: 16, frame_height: 16, idle: 35 },
           { tag: "row", monster: "piranha", frame_width: 12, frame_height: 16, idle: 0 },
           // `PhantomPiranhaSprite` uses the same piranha sheet at frames 21+.
           { tag: "row", monster: "phantomPiranha", frame_width: 12, frame_height: 16, idle: 21 },

@@ -26,13 +26,6 @@ export type AllyKind = 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' |
 export function allyIdentityColorAdd(isAlly: boolean | undefined, allyKind: string | undefined): number {
 	if (!isAlly) return 0;
 	switch (allyKind) {
-		case 'sheep': return 0xdddddd;
-		case 'earthGuardian': return 0x997744;
-		case 'lotus': return 0x55aa66;
-		//`mirror`/`ghost`/`ninjaLog`/`spiritHawk`/`afterImage`/`shadowClone` and any future ally
-		//kind all share this one default, exactly as the original inline ternary did.
-		default: return 0x5577aa;
-	}
 }
 
 /** `ChampionEnemy.java`'s own per-type `color` field, in its declaration order - see
@@ -55,13 +48,21 @@ export function buildMonsterSprite(kind: AnyMonsterId, at: Step, profile: Monste
 	// WardSprite's frames are variable-width and therefore cannot be represented by the
 	// regular SpriteSheet grid used by ordinary mobs.
 	//`MimicSprite.hideMimic()`: a hidden mimic shows its chest frames (0 and 1 of the sheet), not its idle
-	//pose - the revealed frame is restored by `syncMimicVisual`.
-	const sprite = new AnimatedSprite(kind === 'ward' ? wardTexture(texture, 1) : sheet.get(kind === 'mimic' ? 0 : def.idle));
+	//pose - the revealed frame is restored by `syncMimicVisual`. The crystal
+	//mimic is `MimicSprite.Crystal` (`texOffset()` 32), so its hidden/revealed
+	//frames are 32/35 and its clips are the `crystalmimic` key.
+	const sprite = new AnimatedSprite(kind === 'ward' ? wardTexture(texture, 1) : sheet.get(kind === 'mimic' ? 0 : kind === 'crystalMimic' ? 32 : def.idle));
 	placeCharacterArt(sprite);
 	// Java's base variants use MWG's player. Shaman/elemental/fist variants and
 	// DM300 supercharge effects still follow the port's reduced gameplay roster.
 	//SPRITE_ANIMATIONS keys off each Java sprite class's own name (SpawnerSprite -> "spawner",
 	//RipperSprite -> "ripper"), not the MonsterId - same reason necroSkeleton/yogFist alias.
+	//Variant kinds whose own art sits at an offset on the shared family sheet get
+	//their own key even though `baseKind` (AI inheritance) points at the family:
+	//`GnollExileSprite` c=21 appended at 42, `HermitCrabSprite` c=16 appended at
+	//32, `CausticSlimeSprite` c=9, `SpectralNecromancerSprite` c=16,
+	//`DM201Sprite` c=12 (all tag `v3.3.8`; port offsets in
+	//`tools/extract-sprite-animations.py` FINAL_BASE).
 	const clips = SPRITE_ANIMATIONS[
 		kind === 'phantomPiranha' ? '__no_phantom_clip__'
 		: kind === 'necroSkeleton' ? 'skeleton'
@@ -69,6 +70,12 @@ export function buildMonsterSprite(kind: AnyMonsterId, at: Step, profile: Monste
 			: kind === 'demonSpawner' ? 'spawner'
 			: kind === 'ripperDemon' ? 'ripper'
 			: kind === 'impShopkeeper' ? 'imp'
+			: kind === 'gnollExile' ? 'gnollexile'
+			: kind === 'hermitCrab' ? 'hermitcrab'
+			: kind === 'causticSlime' ? 'causticslime'
+			: kind === 'spectralNecromancer' ? 'spectralnecromancer'
+			: kind === 'dm201' ? 'dm201'
+			: kind === 'crystalMimic' ? 'crystalmimic'
 			: baseKind.toLowerCase()
 	];
 	if (clips) {

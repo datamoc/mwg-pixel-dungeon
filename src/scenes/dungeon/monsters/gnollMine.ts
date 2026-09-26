@@ -1,10 +1,3 @@
-import type { DungeonScene } from '../../dungeonScene';
-import { Random, Roguelike, SpriteSheet } from 'mwg';
-import { AnimatedSprite } from 'mwg/two-d/render';
-import { NEGATIVE_BUFFS, buffBlocked, type BuffId, type Creature, type Step } from '../../../combat';
-
-/** Per-exile `Passive` bookkeeping (see `gnollExilePassive`). */
-const exileState = new WeakMap<object, { aggro: boolean; hp: number }>();
 import { GAME_KIND_CODES } from '../../../dungeonConstants';
 import { t } from '../../../i18n/index';
 import { runState } from '../../../runState';
@@ -37,6 +30,8 @@ function gnollClips(ofs: number, statue: boolean): [string, number[], { fps: num
 		['idle', [0, 0, 0, 1, 0, 0, 1, 1].map((f) => f + ofs), { fps: statue ? 1 : 2, loop: true }],
 		['run', [4, 5, 6, 7].map((f) => f + ofs), { fps: 12, loop: true }],
 		['attack', [2, 3, 0].map((f) => f + ofs), { fps: 12, loop: false }],
+		//`zap = attack.clone()` (sapper/geomancer; the guard never zaps, tag `v3.3.8`).
+		['zap', [2, 3, 0].map((f) => f + ofs), { fps: 12, loop: false }],
 		['die', [8, 9, 10].map((f) => f + ofs), { fps: 12, loop: false }],
 	];
 }
@@ -365,9 +360,15 @@ export const gnollMineMethods = {
 		return true;
 	},
 
+	//Every `faceAndSwing` caller is a ranged ability (sapper/geomancer casts,
+	//rockfall, wisp zap), so this plays the sprite zap exactly as Java `zap()`
+	//does, falling back to `attack` where the class aliases it (tag `v3.3.8`).
 	faceAndSwing(this: DungeonScene, source: Creature, target: Step): void {
 		const sprite = this.spriteFor.get(source.id);
-		if (sprite instanceof AnimatedSprite && sprite.has('attack')) sprite.play('attack', true);
+		if (sprite instanceof AnimatedSprite) {
+			if (sprite.has('zap')) sprite.play('zap', true);
+			else if (sprite.has('attack')) sprite.play('attack', true);
+		}
 		if (sprite) faceCharacter(sprite, source.x, target.x);
 	},
 
@@ -450,13 +451,6 @@ export const gnollMineMethods = {
 			}
 			this.gnollProlongParalysis(this.hero, 3);
 			return false;
-		}
-		if (this.gnollMineInvulnerable(target)) { this.gnollProlongParalysis(target, 3); return false; }
-		const preHp = target.hp;
-		target.hp -= this.gnollMineDamageTaken(target, dmg);
-		this.gnollMineAfterDamage(target, preHp);
-		this.showDamage(target, preHp - target.hp);
-		if (target.hp <= 0) this.kill(target);
 		else this.gnollProlongParalysis(target, target.kind === 'gnollGuard' ? 10 : 3);
 		return false;
 	},
