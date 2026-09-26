@@ -46,7 +46,7 @@ Every simplification or deviation from real Java behavior must be explicitly doc
 **both**:
 1. A code comment at the point of deviation in `main.ts` (or the relevant file), explaining
    *what* the real Java does and *why* this port differs.
-2. A row in `PORT_COVERAGE.md`, added/updated **in the same commit** as the code change —
+2. A row in the matching `coverage/rows-*.md` file (index: `PORT_COVERAGE.md`), added/updated **in the same commit** as the code change —
    "Ported" (reproduces the real numbers/logic), "Simplified" (reproduces the shape with a
    stated reduction), or "Not ported" (SPD has it, this port doesn't, at all).
 
@@ -54,7 +54,7 @@ Never silently drop a piece of real behavior without a corresponding "Not ported
 
 An Internationalisation/`messages/Messages.java`/i18n row goes in `PORT_COVERAGE_I18N.md`
 instead, split out 2026-09-21 once `PORT_COVERAGE.md` passed ~530KB - see that file's own
-header. Every other row still goes in `PORT_COVERAGE.md`.
+header. Every other row goes in the `coverage/rows-*.md` file for its area (see "Open points vs closed points" below).
 
 ## Fidelity policy: iso is no longer the goal
 
@@ -299,5 +299,5 @@ Example: `coord post --kind done "DivineIntervention @495c09f ok:tsc,sim286,i18n
   it.
 - When comparing against a real screenshot of the live game, check both the visual (tiles,
   sprites, layout) *and* the actual Java generator/logic source before concluding something
-  is a bug versus an intentionally-undocumented gap — then record any newly-found gap in
-  `PORT_COVERAGE.md` even if not yet implemented.
+  is a bug versus an intentionally-undocumented gap — then record any newly-found gap as an open
+  `- [ ] **R-nnn**` item in `ROADMAP.md` even if not yet implemented (coverage rows record closed points only).

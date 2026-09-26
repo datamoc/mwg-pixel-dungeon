@@ -1,5 +1,8 @@
-// Small MWG-based visualizer for this project's own ROADMAP.md: one Bar per `##` section,
-// filled by the fraction of `- [x]` checkboxes it contains, plus an overall bar at the top.
+// Small MWG-based visualizer for this project's own roadmap docs. Since the 2026-09-26 docs restructure
+// `ROADMAP.md` and `BACKLOG.md` hold only OPEN points and `CLOSED.md` only closed ones, so progress is
+// closed (`- [x]` in CLOSED.md) against open (`- [ ]` in ROADMAP.md + BACKLOG.md): one Bar per open `##`
+// section of ROADMAP.md (all unfilled by construction), one for BACKLOG.md, one full bar for CLOSED.md,
+// plus an overall bar at the top.
 // Uses mwg's real two-d.Game/Scene2D lifecycle and ui.Bar/ui.Label widgets (loaded from the
 // standalone global build, see roadmap-progress.html) rather than hand-rolled canvas drawing.
 'use strict';
@@ -45,7 +48,7 @@ class RoadmapScene extends mw_games.Scene2D {
 		const left = 24;
 		let y = 20;
 
-		const title = new mw_games.Label({ text: 'mwg-pixel-dungeon — ROADMAP.md progress', size: 20, bold: true, color: 0xffffff });
+		const title = new mw_games.Label({ text: 'mwg-pixel-dungeon — roadmap progress (closed vs open)', size: 20, bold: true, color: 0xffffff });
 		title.position.set(left, y);
 		this.stage.addChild(title);
 		y += 40;
@@ -76,9 +79,21 @@ class RoadmapScene extends mw_games.Scene2D {
 }
 
 (async () => {
-	const response = await fetch('../ROADMAP.md');
-	const markdown = await response.text();
-	window.__roadmapData = parseRoadmap(markdown);
+	const fetchText = async (path) => (await fetch(path)).text();
+	const [roadmap, backlog, closed] = await Promise.all([fetchText('../ROADMAP.md'), fetchText('../BACKLOG.md'), fetchText('../CLOSED.md')]);
+	const rm = parseRoadmap(roadmap);
+	const bl = parseRoadmap(backlog);
+	const cl = parseRoadmap(closed);
+	// CLOSED.md keeps whatever unchecked boxes historical text quoted; only its checked ones are progress.
+	const closedDone = cl.sections.reduce((n, s) => n + s.done, 0);
+	const sections = [
+		...rm.sections.map((s) => ({ ...s, name: 'ROADMAP: ' + s.name })),
+		...(bl.overallTotal > 0 ? [{ name: 'BACKLOG (open epics)', done: bl.overallDone, total: bl.overallTotal }] : []),
+		{ name: 'CLOSED (history)', done: closedDone, total: closedDone },
+	];
+	const overallDone = closedDone + rm.overallDone + bl.overallDone;
+	const overallTotal = closedDone + rm.overallTotal + bl.overallTotal;
+	window.__roadmapData = { sections, overallDone, overallTotal };
 
 	const game = new mw_games.Game({ background: 0x14161c, resizeTo: window });
 	await game.start(RoadmapScene);

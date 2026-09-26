@@ -1,13 +1,15 @@
-// Maintenance: move a fully-closed `ROADMAP.md` section to `CLOSED.md`.
+// Maintenance: move closed points out of `ROADMAP.md` into `CLOSED.md`.
+// (`ROADMAP.md` and `BACKLOG.md` hold open points only; `CLOSED.md` holds the history.)
 //
-// A section moves only when *every* checkbox in it is `- [x]`; a section with
-// even one remaining `- [ ]` stays. The moved body lands verbatim (bytes kept,
-// so CRLF files stay CRLF) under its own `## ` heading at the end of
-// `CLOSED.md`, and `ROADMAP.md` keeps a numbered stub heading - other bullets
-// cross-reference sections by number, so renumbering is not worth the churn
-// (the same convention sections 3, 4, 5, 7, 10 and 12 already follow).
-// `tools/roadmap-progress.html` only reads `ROADMAP.md`, so moved items leave
-// its progress bars by design. Dry-run by default; pass `--apply` to write.
+//   node tools/close-roadmap-section.mjs <section-number> [--apply]   a whole `## N. ...` section
+//   node tools/close-roadmap-section.mjs R012 [--apply]               one register item (`- [x] **R012** ...`)
+//
+// A section moves only when *every* checkbox in it is `- [x]`; a section with even one remaining
+// `- [ ]` stays. The moved body lands verbatim (bytes kept, so CRLF files stay CRLF) at the end of
+// `CLOSED.md`, and the section (or item line) is REMOVED from `ROADMAP.md` - no stub heading is left
+// behind since the 2026-09-26 restructure. An item is moved only when its box is already checked, under
+// the "Closed open-coverage items" heading of `CLOSED.md`. `tools/roadmapProgress.js` reads ROADMAP.md,
+// BACKLOG.md and CLOSED.md, so closing raises the progress bars. Dry-run by default; `--apply` writes.
 // Runs offline, no dependencies.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -22,17 +24,50 @@ const fail = (message) => {
 	process.exit(1);
 };
 
-const number = process.argv[2];
+const target = process.argv[2];
 const apply = process.argv.includes('--apply');
-if (!/^\d+$/.test(number ?? '')) {
-	fail('usage: node tools/close-roadmap-section.mjs <section-number> [--apply]');
+const endingOf = (text) => (text.includes('\r\n') ? '\r\n' : '\n');
+const stripEnd = (text) => text.replace(/[\r\n]+$/, '');
+
+/** Moves one checked register line (`- [x] **R012** ...`) to CLOSED.md and deletes it from ROADMAP.md. */
+function closeItem(id) {
+	const rmText = readFileSync(ROADMAP, 'utf8');
+	const lines = rmText.split('\n');
+	const idx = lines.findIndex((line) => line.startsWith(`- [x] **${id}**`) || line.startsWith(`- [ ] **${id}**`));
+	if (idx === -1) fail(`no register item ${id} in ROADMAP.md`);
+	if (lines[idx].startsWith('- [ ]')) fail(`${id} is still open (add the coverage row, check its box, then re-run)`);
+	const item = lines[idx].replace(/\r$/, '');
+	console.log(`item ${id}: ${item.slice(0, 100)}...`);
+	if (!apply) {
+		console.log('dry run only - pass --apply to move it');
+		return;
+	}
+	lines.splice(idx, 1);
+	writeFileSync(ROADMAP, lines.join('\n'));
+	const closedText = readFileSync(CLOSED, 'utf8');
+	const eol = endingOf(closedText);
+	const heading = '## Closed open-coverage items (moved from ROADMAP.md)';
+	let closed = stripEnd(closedText) + eol;
+	if (!closedText.split('\n').some((line) => line.replace(/\r$/, '') === heading)) {
+		closed += eol + heading + eol + eol
+			+ 'Register items extracted from PORT_COVERAGE on 2026-09-26 and closed since; the evidence is a row in `coverage/`.' + eol + eol;
+	}
+	writeFileSync(CLOSED, closed + item + eol);
+	console.log(`PASS ${id} moved to CLOSED.md`);
 }
 
-const endingOf = (text) => (text.includes('\r\n') ? '\r\n' : '\n');
+if (/^R\d{3}$/.test(target ?? '')) {
+	closeItem(target);
+	process.exit(0);
+}
+
+const number = target;
+if (!/^\d+$/.test(number ?? '')) {
+	fail('usage: node tools/close-roadmap-section.mjs <section-number | Rnnn> [--apply]');
+}
 
 const rmRaw = readFileSync(ROADMAP, 'utf8');
 const rm = rmRaw.split('\n');
-const rmEnd = endingOf(rmRaw);
 const headIdx = rm.findIndex((line) => line.startsWith(`## ${number}. `));
 if (headIdx === -1) fail(`no '## ${number}. ' heading in ROADMAP.md`);
 if (rm.findIndex((line, i) => i !== headIdx && line.startsWith(`## ${number}. `)) !== -1) {
@@ -59,51 +94,23 @@ if (closedText.split('\n').some((line) => line.replace(/\r$/, '') === heading)) 
 	fail(`CLOSED.md already holds '${heading}' - refusing a duplicate move`);
 }
 
-const firstBullet = boxes[0].slice(0, 80);
 console.log(`section ${number}: '${heading}' - ${boxes.length} closed, 0 open, ${content.length} lines to move`);
-console.log(`  first: ${firstBullet}...`);
+console.log(`  first: ${boxes[0].slice(0, 80)}...`);
 
 if (!apply) {
 	console.log('dry run only - pass --apply to move it');
 	process.exit(0);
 }
 
-const suffix = rmEnd === '\r\n' ? '\r' : '';
-const stubLines = [
-	'',
-	'Fully closed - moved to `CLOSED.md`. Kept as a numbered heading (rather than removed outright)',
-	`because other bullets in this file cross-reference "section ${number}" by number; renumbering everything`,
-	'below to close the gap was judged not worth the churn against those existing references.',
-	'',
-].map((line) => line + suffix);
-const newRm = [...rm.slice(0, headIdx + 1), ...stubLines, ...rm.slice(nextIdx)];
-writeFileSync(ROADMAP, newRm.join('\n'));
+// Remove the section entirely (heading and body): ROADMAP.md keeps open points only.
+writeFileSync(ROADMAP, [...rm.slice(0, headIdx), ...rm.slice(nextIdx)].join('\n'));
 
-let closed = closedText;
-if (!closed.endsWith('\n')) closed += '\n';
 const closedEnd = endingOf(closedText);
 const movedBlock = [heading, '', ...content.map((line) => line.replace(/\r$/, '')), ''].join(closedEnd);
-writeFileSync(CLOSED, closed + movedBlock);
+writeFileSync(CLOSED, stripEnd(closedText) + closedEnd + closedEnd + movedBlock);
 
-const today = new Date().toISOString().slice(0, 10);
-const after = readFileSync(CLOSED, 'utf8');
-const dateMatch = after.match(/Sections moved (.*?); see/);
-if (dateMatch && !dateMatch[1].includes(today)) {
-	const dates = [...dateMatch[1].matchAll(/\d{4}-\d{2}-\d{2}/g)].map((m) => m[0]);
-	dates.push(today);
-	const relisted = dates.length > 1
-		? `${dates.slice(0, -1).join(', ')} and ${dates[dates.length - 1]}`
-		: dates[0];
-	writeFileSync(CLOSED, after.replace(/Sections moved (.*?); see/, `Sections moved ${relisted}; see`));
-	console.log(`CLOSED.md move-date list extended with ${today}`);
-}
-
-// Post-move audit: checkbox totals across both files must be unchanged,
-// and the stubbed section must hold zero boxes.
-const countBoxes = (text) => (text.match(/^- \[( |x)\]/gm) || []).length;
-const before = boxes.length;
-const rmAfter = readFileSync(ROADMAP, 'utf8');
-const stubSlice = rmAfter.split('\n').slice(headIdx + 1, headIdx + 7).join('\n');
-if (countBoxes(stubSlice) !== 0) fail('stub region unexpectedly holds a checkbox');
-console.log(`moved ${before} checkbox(es); stub holds 0; totals preserved by construction (verbatim body)`);
+// Post-move audit: the heading is gone from ROADMAP.md and present in CLOSED.md.
+if (readFileSync(ROADMAP, 'utf8').split('\n').some((line) => line.replace(/\r$/, '') === heading)) fail('heading still in ROADMAP.md');
+if (!readFileSync(CLOSED, 'utf8').split('\n').some((line) => line.replace(/\r$/, '') === heading)) fail('heading missing from CLOSED.md');
+console.log(`moved ${boxes.length} checkbox(es); section removed from ROADMAP.md`);
 console.log(`PASS section ${number} closed into CLOSED.md`);

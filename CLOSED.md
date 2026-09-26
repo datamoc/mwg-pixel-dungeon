@@ -1,12 +1,13 @@
-# Closed roadmap sections
+# Closed points (history)
 
-Fully checked-off sections of `ROADMAP.md`, moved out here to keep the working roadmap focused
-on open items. A section moves here only when *every* checkbox in it is `- [x]`; a section with
-even one remaining `- [ ]` stays in `ROADMAP.md`. Sections moved 2026-09-14, 2026-09-15, 2026-09-16, 2026-09-18, 2026-09-23 and 2026-09-24; see
-`ROADMAP.md`'s "This port's own release plan (news)" section for the versioning this feeds into.
+Everything closed lives here, and **only** closed points: closed sections of the old `ROADMAP.md`, the backlog progress
+logs, the roadmap history as it stood on 2026-09-26, and register items closed since (see "Closed open-coverage items").
+`ROADMAP.md` and `BACKLOG.md` hold open points only; the per-mechanic Ported/Simplified/Divergence record is
+`PORT_COVERAGE.md` + `coverage/`. Move things here with `node tools/close-roadmap-section.mjs` (see its header); a section
+moves only when every checkbox in it is `- [x]`.
 
-`tools/roadmap-progress.html` only reads `ROADMAP.md`, so items here no longer count toward its
-progress bars - that's intentional: they're done, and the bars should reflect remaining work.
+`tools/roadmapProgress.js` counts the `- [x]` boxes in this file as progress against the open boxes of `ROADMAP.md` and
+`BACKLOG.md`. Sections were moved here on 2026-09-14, 09-15, 09-16, 09-18, 09-23, 09-24 and 09-26.
 
 ## Release baseline tracking (informational, not an open implementation item)
 
@@ -3590,3 +3591,530 @@ one.
       no `BOSS_CHALLENGE` rows), and the clearing half's damage-*source* notion, which this port's
       inline monster-damage paths do not thread today. **Complexity: M** for that second half; the
       five badge rows and the award are S on their own.
+
+## Backlog progress log (moved out of `BACKLOG.md` 2026-09-26)
+
+Verbatim copy of `BACKLOG.md` as it stood on 2026-09-26, before the docs restructure that keeps `BACKLOG.md` to open
+points only. Everything below is history: each `Bn` section's checkbox and progress notes, including the B2 close-out
+(T56, closed 2026-09-26: 36/36 floor blocks trace-identical against the checkout oracle). The open remainder of each
+epic is in `BACKLOG.md`.
+
+### Backlog: ongoing epics moved out of `ROADMAP.md`
+
+Moved 2026-09-24 on the user's decision: these eight items were the only open boxes in sections 9 and 11 of `ROADMAP.md`, and none is closable by a finite change (parity harness, incremental refactor, matrix production). Their text is preserved verbatim below; `ROADMAP.md` keeps a checked pointer line for each. Work on them continues here.
+
+#### B1. from ROADMAP 9. Build the Java-vs-TypeScript parity harness
+
+- [ ] Compare both implementations with fixed seeds and identical action traces. **Complexity: XL.**
+
+**Progress 2026-09-25 (T55 slice 1, TS half):** `tools/parityCombatTrace.ts` (`npm run
+parity:combat`) runs a versioned 20-round scripted bout over the pure `resolveAttack` seam
+with a seeded `SpdJavaRandom` through a `Random.java`-formula adapter, capturing every raw
+draw in the `bits:value` line shape Java's `TracingRandom` writes. `check` gates determinism
+(same seed twice is byte-identical) plus comparator positive/negative controls; `compare`
+diffs two traces reporting the first divergent round. Stated caveat: draws are bit-exact but
+outcomes run in float64 where Java computes float32, so last-ulp flips are the harness's
+target, not its noise. Still open (the Java half): a headless `Char.attack()` driver -
+`Char.attack()` needs `Dungeon.level.heroFOV`, sprites and `Sample`/`Messages`, so it is its
+own boot task, not a flag on the levelgen harness.
+
+**Progress 2026-09-25 (T55 slice 2, first live Java-vs-TS diff):** the Java half exists -
+`CombatHarness` + `CombatHarnessLauncher` + `runCombatHarness` task plus a minimal
+`TracingRandom` hook, all uncommitted scratch in the `v3.3.8` worktree at
+`C:/Users/miche/AppData/Local/Temp/claude/spd-v338-worktree` (a bare Warrior and Rat,
+no sprites/buffs/talents, all-false heroFOV, rat woken to HUNTING so it is not surprised,
+both healed between rounds). `npm run parity:combat -- --script 2` (java-natural bout,
+MX3-scrambled seed like `pushGenerator`) diffed against it: **3 seeds (123456789, 1, 42),
+30 rounds, 211 RNG draws - every outcome and every draw byte-identical** (`compare` says
+`traces identical`). Two real findings on the way: (1) Java rolls defender armor BEFORE
+the damage roll (`Char.attack()` :386 vs 404-412) while this port rolled damage first -
+fixed in `src/simulation/combat.ts` (outcome-neutral, stream-aligning), with the 72-case
+fixture recomputed (0 hit flips, 59 damage values moved stream positions, 72 end states)
+and the order-pin + Preparation-stub checks updated; (2) unarmed-hero damage burns a
+clover-check float (`heroDamageIntRange`) the seam cannot see (no unarmed flag on
+Combatant), so the harness adapter burns it per round instead - game code untouched, delta
+documented. Suite note: `test:simulation` passes everything through the combat checks
+(180 PASS) then stops at a pre-existing `verifyArmorAbilities` regex stale since 02417f8
+(peer's `returningFast` refactor, plus uncommitted `returningGhost` churn) - untouched by
+this change, not mine to fix mid-flight.
+
+**Progress 2026-09-25 (T55 slice 3, buff rounds):** script 3 adds Bless/Hex/Daze rounds
+(attacker Bless x1.25, defender Hex x0.8, attacker Daze x0.5, combined round 6, magic and
+surprise kept) with real `Buff.append` on the Java side (durations frozen, reset each
+round) and the same patches on the TS side; both emitters record buff names and the
+comparator checks them. **3 more seeds identical: 30 rounds, 194 draws, all outcomes and
+draws byte-identical** (incl. misses on every seed). Script-2 output re-verified
+byte-identical to the slice-2 proof after the harness refactor. Running total: 60 combat
+rounds, 415 draws, zero divergences.
+
+#### B2. from ROADMAP 9. Build the Java-vs-TypeScript parity harness
+
+- [ ] Verify RNG call order for level, item, monster, and quest generation. **Complexity: L.**
+
+**Progress 2026-09-25 (T56 census, draw-level):** `levelgenParity` with `--java-traces`
+diffs every floor's raw draw sequence, not just the map: **23 of 28 comparable floors
+(depths 3-9 x seeds 123456789/1/42/999999999999) are TRACE-IDENTICAL**, thousands of
+draws each (e.g. 25666, 25624, 23967). Five divergences with first-diff indices:
+123456789 d3@416, d4@404, d7@439; 42 d8@321; 999999999999 d9@22626 (depths 1-2 stay
+TRACE-SKIP: Java's unseeded guidebook draws). Attributed the d3 case via
+`--trace-stack-window`: both sides agree through draw 415 in the storage-room prize path,
+then Java burns a category-substream fast-forward long-pair (`Generator.random(Category)`
+push + `dropped` Longs) where TS burns its `chances` float first and the longs later - same
+category, same prize, different `dropped` count. Hypothesis: `dropped` drifted in depths
+1-2 (uncomparable) or an increment site differs; increment sites themselves match
+(`random(Category)` + `randomArtifact` both sides). Stacks captured 2026-09-25 -
+hypothesis superseded by the attribution below.
+**Attribution 2026-09-25 (stack-proven both sides, no game-code change):** the harness
+checkout predates `v3.3.8` in `LaboratoryRoom.prize` - checkout hits any queued `Potion`,
+`v3.3.8` (and this port) wants queued `TrinketCatalyst`/`PotionOfStrength` or the deck -
+so on 123456789/d2 (which has a `ToxicGasRoom` queuing `PotionOfPurity` ahead of the lab)
+the harness burns one queue hit + one `POTION` deck draw (`dropped` 0->1) where the port
+burns two `STONE` deck draws. That one-count `dropped` lag cascades: d3 `@416` and d4
+`@404` (skip-Long vs chances, same signature), d7 `@439` (reversed - TS `dropped` higher
+for that category). Oracle-skew inventory for the other floors (`git diff v3.3.8 HEAD` on
+the checkout): `RegularBuilder` fail-bail>100 + exit-null-guard (TS already matches
+`v3.3.8`: `createBranches` returns false, `SizeCat` values identical both sides),
+`CrystalPathRoom` quadrant rewrite (TS deliberately follows HEAD per that file's header),
+`MassGraveRoom` +135 / `RotGardenRoom` +103 (incl. a new `PotionOfLiquidFlame` queue),
+`MazeConnectionRoom`, `PrisonPainter`/`RegularPainter` drift.
+Probe fix landed: `primeRunState` (`gameBridge.ts`) primes run-init outside the trace
+window - depth-1 TS traces were carrying 106 run-init draws; now 6401/6401 zero diffs on
+123456789/d1, same 5 remaining diffs as before (output-unchanged).
+Open (mechanism class known, trigger unlocalized - needs heap/placement replay against
+`v3.3.8` sources, not more trace diffing): 42/d8 `@321` (build-phase `placeRoom`
+connect-vs-retry, identical 321-draw prefix, zero common rects - invisible geometric flip
+earlier; deck state is irrelevant Mazzolini, streams are per-floor fresh) and 999999999999/d9
+`@22626` (one heap/mob-gated `paintGrass` draw gap after an identical 22626-draw prefix;
+no deck drift possible on that seed - no ToxicGas+lab co-occurrence, unlike 123456789/d2).
+**Closed 2026-09-26 (T56, 36/36 blocks identical, 28/28 on depths 3+):** user decision
+recorded 2026-09-26: B2 calibrates against the checkout oracle (close-vs-checkout), not a
+v3.3.8 re-port - the port's room tables are byte-identical to the checkout's 4.0-era tables
+while `v3.3.8` has 35 rooms, chances 16/8/8/4/4, variant entrances and a draw-free crystal
+rule, so a v3.3.8 oracle (built at `/tmp/spd338`, retained as a diff tool) matches nothing.
+Three fixes, each a documented Divergence (deliberate) from `v3.3.8` toward the checkout:
+(1) `room.ts` `canConnectPoint` extends the Sentry exact-center refusal (two separate
+`center()` calls with their `Int(2)` draws) to `crystalPath` - checkout
+`CrystalPathRoom.canConnect`, opposite of `v3.3.8`'s draw-free center-only rule (42/d8
+@321 was the missing center draw shifting every later draw); (2) `crystalPathRoom.ts`
+loot `idx` now advances `clockwise`-conditionally (`idx++/idx--` with wrap, Java:152-158),
+not unconditionally - 42/d8 @606 was TS drawing rooms[2]'s odd-span center where Java drew
+rooms[0]'s even one; (3) `laboratoryRoom.ts` prize takes the first queued `Potion.class`
+item (`findPrizeItemOfClass('potion')`, new `potionOfStrength` class-map entry) instead of
+exact `TrinketCatalyst`/`PotionOfStrength` - checkout `prize()`, closing the 123456789
+d2/d3/d4/d7 `dropped`-lag cascade at its root (d2's ToxicGas-queued Purity is now the lab
+prize with zero Generator draws, as on the Java side). Probe scaffolding (`PLACE_DEBUG`
+lines in `builder.ts`, `__floorSeq` in `gameBridge.ts`) reverted before commit; only the
+three fixes plus doc rows landed.
+
+#### B3. from ROADMAP 9. Build the Java-vs-TypeScript parity harness
+
+- [ ] Verify loot, quest outcomes, boss transitions, and save/load state. **Complexity: L.**
+
+#### B4. from ROADMAP 9. Build the Java-vs-TypeScript parity harness
+
+- [ ] Add screenshot and animation-timing comparisons for visual parity. **Complexity: M.**
+
+#### B5. from ROADMAP 9. Build the Java-vs-TypeScript parity harness
+
+- [ ] Classify every remaining difference as either an implemented Java behavior or an explicitly
+      accepted platform/UI difference. **Complexity: M.**
+
+#### B6. from ROADMAP 11. Architecture refactor toward the v3 target
+
+- [ ] **Next real phase**: wrap the existing per-domain rule functions (`simulation/combat.ts`,
+      `movement.ts`, `heroActions.ts`, `heroTurn.ts`) behind one
+      `SimulationRuntime<SpdGameState, SpdCommand, SpdEvent, Creature>`, migrating `main.ts`'s
+      direct-mutation call sites (`attack()`, `moveTo()`, etc.) to `dispatch()` one command type at a
+      time - start with whichever command is cheapest to convert without touching presentation-heavy
+      code, not necessarily `attack()`. No big-bang (plan section 25). **Progress**: search, hunger
+      and movement planning already route through their own runtimes
+      (`adapters/searchSimulation.ts`, `hungerSimulation.ts`, `movementSimulation.ts`); both keep
+      inert local scheduler/random pairs, and reconciling those with the scene's real ones waits for
+      the first command with a real cost. **Progress 2026-09-16:** the scene's monster dispatch now
+      has keyed `monsterTurnHooks`, `specialMonsterTurnOverrides`, and
+      `postAllyMonsterTurnOverrides` tables for pre-turn cooldown maintenance, whole-turn Pylon
+      behavior, and the Statue/Piranha post-ally branches, reducing the same kind-dispatch
+      pressure this phase will eventually move behind the unified runtime. These
+      remain scene-owned transitional strategies until their state and costs are serializable.
+      **Progress 2026-09-16 (hero turn):** `spendHeroTurn()` now routes the extracted
+      `finishHeroTurn` orchestration through `runHeroTurn()` and the same shared runtime; its live
+      effect bindings stay behind a numeric handle, while the command carries the action's turn
+      cost and the scene retains scheduler/presentation ownership. The direct scene call is gone,
+      and the runtime adapter has an ordering regression check.
+      **Progress 2026-09-16 (automatic actors):** `runUntilHeroInput()` now routes each scheduled
+      monster action, its post-action hook, and its variable cost read through `runMonsterTurn()`
+      on that runtime too. The scheduler remains the authoritative consumer of the returned cost,
+      so Necromancer's variable summon cost and actor-removal behavior remain unchanged.
+      **Progress 2026-09-25:** the two Vertigo step funnels (hero in `takeHeroTurn`, monster in
+      `stepMonster`) now dispatch a ninth command type, `vertigo-step`, through the same shared
+      runtime (`runVertigoStep` in `adapters/gameSimulation.ts`), with the level's
+      passable/occupied predicates held behind a numeric world handle like the movement and
+      search worlds - chosen as the cheapest direct-call site still outside `dispatch()`, per
+      this phase's "one command type at a time" rule. Pinned in `tools/verifyVertigo.ts`
+      (both funnels route through `runVertigoStep`, neither calls the rule directly).
+      **Complexity: L.**
+
+#### B7. from ROADMAP 11. Architecture refactor toward the v3 target
+
+- [ ] Extract `main.ts`'s `attack()` pure resolution (hit/damage rolls, weapon-affix/talent branches,
+      event-worthy outcomes like mimic reveal/displacement) from its presentation calls (sprite tint,
+      audio cue, floating text) - the single largest concrete instance of plan section 10's complaint,
+      and the likely vehicle for actually adopting `SimulationRuntime` above rather than a separate
+      step. **Progress**: the hit/damage roll pair is extracted into `simulation/attackResolution.ts`
+      and routed through `adapters/attackSimulation.ts`, and the defender-side `damage()` override
+      family (Pylon, Eye, DemonSpawner, Slime/CausticSlime) is `simulation/defenderDamageCurves.ts`
+      called once at Java's point - which fixed a real ordering bug and surfaced three more ordering
+      deviations in `Char.attack()`, all now closed (Corrupting's pre-curve guard, both execute
+      mechanics after the curves and shield pools, and the boss/miniboss half-damage branch with a
+      real `miniboss` actor property). **Closed 2026-09-19:** the arming gate the 2026-09-18 narrowing called unmodelled was already live in code and is now pinned (`combinedLethalityTest` in `simulation/duelistAbilities.ts`, armed by `armCombinedLethality` at every `afterAbilityUsed` site, consumed one-shot in the execute tail; `verifyArmorAbilities.mjs` asserts same-weapon never tests, changed-weapon tests, the `0.4*points/3` threshold, and the boss/miniboss/ally/killed exclusions).
+      The "predicted HP" half
+      was a misreading - every reduction lands in `damage` before the test, so the tested
+      value is what the HP write leaves - and both execute halves now carry Java's
+       `enemy.isAlive()` guard, so a killing blow no longer also reports an execution.
+       **Progress 2026-09-23:** hidden Mimic contact decisions now live in the pure
+       `simulation/hiddenMimicContact.ts` planner, separating adjacent melee-bump outcomes from
+       successful-hit reveal timing. This also fixed the missed-hit reveal bug and the Crystal
+       Mimic bump path, which now cancels the hero swing and performs its inherited counterattack.
+       **Complexity: L.**
+
+#### B8. from ROADMAP 11. Architecture refactor toward the v3 target
+
+- [ ] Continue producing the section 22A/22B analysis matrix for the remaining monster/item/buff
+      families before migrating each one's code, per SPD-ADR-010. **Progress 2026-09-18:** the sixth matrix, `MONSTER_ANALYSIS_SKELETON_THIEF_GUARD_NECROMANCER.md`, covers the Prison humanoids: a Skeleton with simple stat behavior and one death-triggered bone explosion (Java's only Skeleton-specific mechanic, absent when the matrix ran; now ported and documented in PORT_COVERAGE.md's Skeleton.die() row, with RockArmor's ratio-rounding bug deliberately diverged and the target-health-indicator branch still reduced), the `thief OR bandit` steal-flee loop as the next pilot candidate, the once-ever Guard chain-pull, and the Necromancer companion-master complex (already ported piece by piece, shared free with the Spectral variant) - plus two falsifiable gap records (Bandit's diverged gold loot, the port-invented Necro hero bolt against Java's `canAttack() == false`). **Progress 2026-09-19:** the seventh matrix, `MONSTER_ANALYSIS_BAT_ALBINO_SWARM_SPINNER.md`, covers the Sewer/Cave speedster/variant/splitter/weaver set - Albino as the cleanest variant-inheritance case (one MWL override row plus one keyed branch, no class), Swarm/Spinner as stateful single-kind strategies (`generation`, `webCooldown` + floor blob + `fleeing`), Bat as the schema boundary (its double speed needs a column, not a branch) - and fixed two real bugs in the same pass: Albino's poison stand-in is now real `Bleeding` with the `damage > 0` gate, and split-descendant Swarms now divide loot by `generation + 1`. **Progress 2026-09-19:** the eighth matrix, `MONSTER_ANALYSIS_PIRANHA_STATUE_MIMIC_WRAITH.md`, covers the special-activation set - entry-into-play as the behavior (water gates, payload equipment, disguise, tomb triggers) - and fixed the armored statue's missing inheritance (no PASSIVE turn, no damage wake) by sharing `takeStatueTurn` across both statue kinds, with the woken-statue chase, weapon-driven combat, base-mimic disguise, tomb wraiths, and piranha badge recorded open. **Progress 2026-09-19:** the ninth matrix, `MONSTER_ANALYSIS_SLIME_CAUSTIC_DM100_ELEMENTAL.md`, audited the ooze/Prison-bot set and escaped the family: it restored the global `maxLvl + 2` loot gate, rekeyed wealth rolls onto the BOSS/MINIBOSS sets, completed those sets (eye/warlock/pylon; elemental/eye/warlock), and fixed CausticSlime's invented meat loot plus its missing GooBlob - leaving resistance halving, summon scaling, and meat quantity recorded open. **Progress 2026-09-19:** the tenth matrix, `MONSTER_ANALYSIS_DEMONSPAWNER_SENTRY_ROTHEART_ROTLASHER.md`, covered the immobile-spawner set and fixed three gaps - lasher cripple, heart defense gas, heart Rotberry seed (correctly excluded on burn-destroy) - leaving quest scores, sentry invulnerability, FungalSentry, and lasher armor recorded open. **Progress 2026-09-19:** the eleventh matrix, `MONSTER_ANALYSIS_FETIDRAT_BEE_LARVA.md`, covered the quest strays and fixed FetidRat's missing StenchGas defense plus Larva's missing DEMONIC flag - leaving the honeypot-to-bee chain and quest scores recorded open. **Progress 2026-09-19:** the twelfth matrix, `MONSTER_ANALYSIS_NPCS_GHOST_WANDMAKER_BLACKSMITH_IMP_SHOP_RATKING.md`, covered the NPC set and fixed the Ghost turn-in to Java's weapon-or-armor choice (the both-items plus invented +2 HP are gone). **Progress 2026-09-19:** the thirteenth matrix, `MONSTER_ANALYSIS_BOSS_TRANSITIONS_TENGU_KING_YOG.md`, covered boss transitions and fixed three gaps - King P1->P2/P2->P3 now fire on the damage event instead of a turn late, Yog cooldowns accelerate (`-= dmgTaken/10`, post-clamp) with the gate min-5 reset, larvae die with Yog - while closing the lethal-P1 suspect (Java kills him too) and recording the unported Tengu's Mask. **Progress 2026-09-19:** the fourteenth matrix, `MONSTER_ANALYSIS_DOT_BUFFS_BURNING_POISON_BLEEDING_OOZE_CORROSION.md`, audited the five DoTs and fixed poison damage to Java's `(left/3)+1` (was a flat 1 - a third of Java's strength), leaving re-poison overwrite and bleeding-source gaps recorded open. **Progress 2026-09-19:** the fifteenth matrix, `MONSTER_ANALYSIS_POTIONS_ALL_TWELVE_QUAFF.md`, audited all twelve quaff effects - ten check out - and removed two invented extras (freerunner invisibility-duration extension; frost maxHp-fraction elemental scald), deleting four dead MWL rows. **Progress 2026-09-19:** the sixteenth matrix, `MONSTER_ANALYSIS_SCROLLS_EIGHT_REGISTRY.md`, audited the eight registry read effects - seven exact - and fixed Terror hitting allies (Java exempts them, like Rage). **Progress 2026-09-19:** the seventeenth matrix, `MONSTER_ANALYSIS_WANDS_FOUR_REGISTRY.md`, audited the four registry wands - Transfusion charm is now 5 (not 10) and heals charmed enemies, Ward promotions use Java's own HP deltas (not the zap-heal table), Fireblast statuses prolong (Paralysis 4, not 3); ally overheal-shielding stays recorded open. **Progress 2026-09-19:** the eighteenth matrix, `MONSTER_ANALYSIS_BOMBS_BLAST_SEAMS.md`, wired the live bomb seam into the King shield/transitions (all six seams now honor them) and verified every variant's numbers; ally-sparing and shrapnel line-of-sight stay recorded open. **Progress 2026-09-19:** the nineteenth matrix, `MONSTER_ANALYSIS_RUNESTONES_FOOD.md`, audited all twelve stones (every number exact - flock 2, aggression 20/5, clairvoyance 20, shock refund 1+hits, blast formula) and the six foods - fixing the invented meat heal (replaced by `MysteryMeat.effect()`'s real 5-way roll, Slow case unmodeled) and chargrilled's doubled energy (300 to the real 150) - and corrected four stale stone passages in `PORT_COVERAGE.md` (aiming now serves six stones, all twelve ported, Blast terrain/heaps live, per-call buff durations exist). **Progress 2026-09-19:** the twentieth matrix, `MONSTER_ANALYSIS_SHADOWCLONE.md`, ports the Rogue's ShadowClone armor ability - 80-HP ShadowAlly with Java's accuracy/evasion/damage/armor formulas over the shared ally orders; gear-proc shares, double-speed return, interact range and sprite stay recorded open. **Progress 2026-09-19:** the twenty-first matrix, `MONSTER_ANALYSIS_CHALLENGE.md`, ports the Duelist's Challenge armor ability - paired duel, spectator freeze, gap-closing blink, duel damage ledger, victory heal and elimination discount; bomb/trap/blast negation on frozen spectators stays recorded open. **Progress 2026-09-19:** the twenty-second matrix, `MONSTER_ANALYSIS_ELEMENTALSTRIKE.md`, ports the Duelist's ElementalStrike armor ability - WONT_STOP aim, reach-clamped cone, three talents, and all twenty-one imbuement branches with Java's numbers; Freezing blob, Displacing calm, Elastic collision damage, Lucky 80/20 loot, cast visuals and neutral-NPC immunity stay recorded open. **Progress 2026-09-19:** the twenty-third matrix, `MONSTER_ANALYSIS_WANDS_NINE_ZAP.md`, re-derived all nine remaining wand zap damage rolls against tag `v3.3.8` - eight exact - and fixed LivingEarth's level-scaled stand-in (4+0/6+2*lvl) with Java's real depth-scaled `NormalIntRange(2, 4 + scalingDepth()/2)`, pinned in `test:simulation` - and removed three invented Warlock zap bonuses with no Java source (a +2 on Magic Missile/Frost zaps, a free charge refund on every zap, and the same refund inside Fireblast; Java gives the Warlock SoulMark procs and Battlemage staff effects, never zap damage or refunds). **Progress 2026-09-19:** the twenty-fourth matrix, `MONSTER_ANALYSIS_PLANTS_HERO_MOB.md`, audited hero + mob plant activation against tag `v3.3.8` - Sungrass now grants the additive `boost(HT)` pool through the shared Java-shaped `Health.act()` tick (Warden gets `Healing.setHeal(HT, 0, 1)`, which is why the HoT carries explicit percent/flat rates), exact Warden/others durations on Starflower/Blindweed/Stormvine/Swiftthistle, the Icecap Freezing rework (no direct paralysis), Rotberry gas-only, Sorrowmoss set-not-prolong, Firebloom Warden imbue, shared cure across potion/well/Mageroyal/ankh, and Fadeleaf travel-cancel - leaving only Sorrowmoss's Warden ToxicImbue, Mageroyal's Warden BlobImmunity, and `resting = false` recorded open. **Progress 2026-09-17:** the third matrix, `MONSTER_ANALYSIS_GNOLL_BRUTE_SHAMAN_TRICKSTER.md`, covers the variant-inheritance case (Gnoll/Brute/ArmoredBrute/Shaman/GnollTrickster; Sapper recorded absent) - and the fourth matrix, `MONSTER_ANALYSIS_GHOUL_MONK_WARLOCK_GOLEM.md`, covers the Dwarf court: four single-kind abilities (the easiest table-migration shape), a second Monk/`senior` OR-chain pilot, and the King-court spawn-flag gap (`BOSS_MINION`, partner severing) - and the fifth matrix, `MONSTER_ANALYSIS_SUCCUBUS_EYE_SCORPIO_RIPPER.md`, covers the Halls demons: three finished single-kind kits plus the Ripper leap - ported 2026-09-17 as the first stateful movement-ability pilot (see the AI-overrides line above and its `PORT_COVERAGE.md` row) - its finding is that Brute/ArmoredBrute's per-site kind-ORs are the smallest pilot for the ability-table migration. **Progress 2026-09-16:** the
+      second matrix, `MONSTER_ANALYSIS_DM200_DM300_PYLON.md`, covers an ordinary mob, its variant,
+      a fixed-floor boss, and its supporting actor; it confirms data aliases and keyed strategies
+      rather than Java-style classes. Remaining monster/item/buff families still need the same
+      treatment. **Progress 2026-09-19:** the twenty-fifth matrix, `MONSTER_ANALYSIS_WARRIOR_ABILITIES.md`, audited all three Warrior armor abilities against tag `v3.3.8` - fixing Endure's `damageBonus` int semantics (per-hit banking truncation, truncating ending scales, integer split, post-split-zero detach, all pinned in `test:simulation`) and Heroic Leap's gated shove/`Int(4)` (both now unconditional per neighbouring non-ally; corpses stay put) - and verifying Shockwave unchanged, with striking-proc attackProc reassignment, StrikingWaveTracker accuracy, Vulnerable prolong-vs-set, the NPC-immunity convention, and the hero-armor composition recorded open. **Progress 2026-09-19:** the twenty-sixth matrix, `MONSTER_ANALYSIS_RINGS.md`, re-verified all twelve ring formulas against tag `v3.3.8` with every reader traced to live combat - fixing the two sites that never applied theirs (electricity-blob hero zap and corrosion-DoT hero tick now scale by `ringElementsMultiplier`, pinned in `test:simulation` via the new `tools/verifyRings.mjs`) - and recording the single-ring-slot simplification, the unreachable Force unarmed override, and the unowed freezing-trap/chill gates. **Progress 2026-09-19:** the twenty-seventh matrix, `MONSTER_ANALYSIS_HUNTRESS_ABILITIES.md`, audited all three Huntress armor abilities against tag `v3.3.8` - removing the port-invented rank-4 `x1.1` Spirit-Blades damage (Java's `+0.1` is an unreachable proc-chance term) and running the bow nature-proc on consumed tracker rolls during blade attacks, both pinned in `test:simulation` - and verifying Nature's Power and the SpiritHawk ally unchanged, with flat ability turn costs, hawk-expiry interrupt, and the clamped hawk sight recorded open. **Progress 2026-09-19:** the twenty-eighth matrix, `MONSTER_ANALYSIS_ROGUE_ABILITIES.md`, audited SmokeBomb and DeathMark against tag `v3.3.8` - fixing re-mark window stacking, the bankable DoubleMark discount (now a same-round latch, dropped on clock advance and on load), NinjaLog retirement, and the log's missing INORGANIC half, all pinned in the suites - with the corrupted-ally barrier corner recorded open. **Progress 2026-09-19:** the twenty-ninth matrix, `MONSTER_ANALYSIS_MAGE_ABILITIES.md`, audited WarpBeacon end to end against tag `v3.3.8` - fixing the missing placement invisibility-dispel, pinned in `test:simulation` - and confirmed ElementalBlast stays correctly unoffered (its wand source needs the unbuilt staff-imbue system; the formula layer is pinned and waiting) with the LARGE-push clause recorded open. **Progress 2026-09-19:** the thirtieth matrix, `MONSTER_ANALYSIS_FEINT.md`, audited Feint and the AfterImage against tag `v3.3.8` - giving the decoy Java's full immunity surface (central buff refusal plus toxic/corrosive/electricity skips, pinned in `test:simulation`, closing a permanence hole for held decoys) - with the forced retarget and displacement immunity recorded open. **Progress 2026-09-19:** the thirty-first matrix (Chains/Horn/Toolkit) closed the artifact-action gaps - chain pulls spend the turn and arm EnhancedRings only on success, horn meals run the shared meal-talent path. **Progress 2026-09-19:** the thirty-second matrix, `MONSTER_ANALYSIS_MELEE_ABILITIES.md`, replaced the percent-based ability damage model with Java's flat `dmgBoost` across all 31 weapon classes plus Cudgel, with guard/dance/stance/precise/runic/lash/aim/charged-shot/combo/cleave/retribution/lunge/heavyBlow corrections, Duelist+STR gating, the barrier moved to `takeAbilityCharge`, and the secondary-charge/combined-energy fictions removed. **Progress 2026-09-19:** the thirty-third matrix, `MONSTER_ANALYSIS_ENCHANT_GLYPH_CURSE.md`, re-audited all 13 enchant, 13 glyph and 16 curse procs - fixing Stone (dodge-reduction, not +2 armor), the inverted Bulk curse, the Swiftness radius, Shocking hitting allies, the missing Berserk catalyst on procs, the Metabolism/AntiEntropy/Corrosion numbers, Explosive warnings, Kinetic edges and the DirectedPower tracker, with the Stone formula pinned in `test:simulation`. **Progress 2026-09-19:** the thirty-fourth matrix, `MONSTER_ANALYSIS_DWARF_KING.md`, re-audited the King's full script - TELE moves the King himself first, LifeLink splits two-way `ceil(dmg/(links+1))`, `lastAbility` persists on whiffs, P2 waves pace on the `spend` cadence, the shield chips per dead P2-wave add instead of per wave-turn, servants grant no XP/loot (`maxLvl = -2`), death gained the `defeated` yell/Degrade cleanse/beacon upgrade, LINK alternates the real lifelink yells, and the wave-3 yell fires unconditionally - with wave plans plus cadence pinned in `test:simulation`. **Progress 2026-09-19:** the thirty-fifth matrix, `MONSTER_ANALYSIS_TRAPS.md`, re-audited all 9 modeled trap kinds - Grim is `round(HT/2 + HP/2)` (both branches; mob branch lost its invented armor cut), Explosive is a verbatim stock bomb (`4+d..12+3d`, no falloff, no fire seed, all three blast sites), Burning deals no direct damage (Fire 2 on NEIGHBOURS9, ignition via the fire tick) - with both formulas pure and pinned in `test:simulation`. **Progress 2026-09-19:** the thirty-sixth matrix, `MONSTER_ANALYSIS_YOGFISTS.md`, re-audited all six fists against tag `v3.3.8` - elemental zaps now cool down (`NormalFloat(8, 12)` float, persisted, bright/dark exempt) and only soiled/bright/dark roll to hit, burning zaps reignite plus top-up fire 3x3 (no direct damage) with the per-turn evaporation, soiled furrows reweighted to `chances([0,2,1])`, rotting hits convert to 60% Bleeding on both damage paths with the water heal and harvest exemption, the five invented contact riders are gone (rotting ooze only), dark no longer pays bright's daze prices, bright's invented frost immunity is deleted, and fist rows carry Java's EXP 25 - with immunities plus scene-structure pins in `test:simulation`. **Progress 2026-09-19:** the thirty-seventh matrix, `MONSTER_ANALYSIS_UNPORTED_QUEST_MOBS.md`, audited the eight mining-quest actors Java places only from rooms this port never generates (`CrystalGuardian`/`CrystalSpire`/`CrystalWisp`, `FungalSentry`/`FungalCore`, `GnollSapper`/`GnollGeomancer`/`GnollGuard`) - recorded Not-ported with exact numbers, verified no live references, no roster divergence (all weight 0), and no quest soft-lock, with a suite pin that no MWL row exists for any of them. (2026-09-23: the GNOLL and CRYSTAL trios are ported since - `PORT_COVERAGE.md`'s "Blacksmith GNOLL mine roster" and "Blacksmith CRYSTAL mine roster" rows; the pin now covers the two FUNGI actors that remain.) **Progress 2026-09-19:** the thirty-eighth matrix, `MONSTER_ANALYSIS_RARE_SPAWNS.md`, audited the spawn-time rarity systems - the eight ported alt swaps, four rare injections, and chaos roll check out against `MobSpawner.getMobRotation()`/`swapMobAlts()`/`addRareMobs()` and `Elemental.random()`, with one real fix (chaos rolled 1/51 via inclusive `Random.int(0, 50)`, now `Random.float() < 1/50`, pinned live plus structurally); the remaining unported spawnables (`GnollExile`/`HermitCrab`, `GoldenMimic`/`EbonyMimic`, `PhantomPiranha`, `FungalSpinner`, `MobSpawner`, `DelayedRockFall`) recorded Not-ported with numbers and suite-pinned absent. **Progress 2026-09-19:** the thirty-ninth matrix, `MONSTER_ANALYSIS_CLERIC.md`, audited the Cleric against tag `v3.3.8` - one real fix (the Cudgel's 1.4 accuracy lived on the class, now gated on the implicit starting cudgel, pinned structurally), Cudgel 1-8 verified exact, and the 30-spell roster plus tome economy, all three armor abilities, and both subclasses recorded Not-ported with numbers. **Progress 2026-09-19:** the fortieth matrix, `MONSTER_ANALYSIS_HONEYPOT_BEE.md`, ported the honeypot shatter chain against `Honeypot.java`/`Bee.java` - one action for SHATTER+THROW, hostile bee with persisted pot anchor hunting holder-first at `viewDistance` 4, depth stats pinned live - with the strike-back, honeyed-charm, `ShatteredPot`, and pit-landing residuals stated. **Progress 2026-09-20:** the forty-first matrix, `MONSTER_ANALYSIS_GOO_TENGU.md`, re-audited the Goo and Tengu kits against tag `v3.3.8` - porting Goo's 1-in-3 Ooze proc, the `STRONGER_BOSSES` HP floors (Goo 120, Tengu 250 - the Tengu floor was missing), Tengu's Blindness immunity, the boss-challenge reverse direction (`foulBossChallenge`: Goo heal/slam, Tengu bomb/cone/shocker on the hero), cone ignition at seed time, and the ACIDIC Corrosion halve - while deleting the false pumped-Goo-hit shake (no such Java code exists) - with the bossScores economy, LockedFloor timing, cone terrain/timing, and presentation residuals stated. **Progress 2026-09-20:** the forty-second matrix, `MONSTER_ANALYSIS_MIRROR_SHEEP_PRISMATIC.md`, audited the MirrorImage/Sheep/PrismaticImage kits against tag `v3.3.8` - live-synced mirror stats (accuracy/evasion formulas, half damage, hero DR), mirror gas/burning immunities, producer sheep lifespans (flock 8, woolly 20/200) with full sheep invulnerability (evasion/buffs/damage), and a clean prismatic re-verification - with aggro, proc shares, weapon/armor factors, uniform attackDelay, arm film, reach, Sheep.interact and particles recorded open. **Complexity: M.**
+
+**Progress 2026-09-25, forty-third matrix:** `garbage/MONSTER_ANALYSIS_MISSILES.md` covers the
+fifteen generated missile classes plus the tipped dart against `items/weapon/missiles/*.java` -
+every row's `tier`/`baseUses` and six level-0 damage ranges checked against each class's own
+formula, the three `proc()` overrides, the five-turn boomerang `CircleBack`, durability,
+`PinCushion` and the `UpgradedSetTracker` pickup rule. Three residuals recorded open: the
+stick/drop split in `turnLoopAiming.ts` has no `sticky` filter (stone/club/hammer/forcecube stick
+where Java drops them, and Warriors always drop), `FishingSpear.proc()`'s Piranha `HP/2` guarantee
+has no hook, and `pickupDelay()` is not modelled. This matrix also corrected the stale
+"boomerang return, bolas remain open" claim in `PORT_COVERAGE.md` (commit `add78e8`).
+
+**Remaining families, inventoried 2026-09-25** so the epic has an order of work: `talent-rules`,
+`badges`/challenges, `classes` (hero kits), `alchemy` recipes, room and level generation
+(`room-rules`, `generator-decks`/`generator-tables`, `dungeon-rules`), `loot-rules`, the non-DoT
+half of `buff-rules`, a second artifacts matrix (only `ARTIFACTS_ONE` exists), and the generic
+Spell/alchemy-result spells. Monsters and the named item families are now covered by 44 matrices.
+
+**Progress 2026-09-25, forty-fourth matrix:** `garbage/MONSTER_ANALYSIS_BADGES.md` pairs Java's 39
+`Badges.java` validators - the catalogue's only enumeration, since Java declares badges inline as
+`Badge(image, type)` rather than as named classes - against this port's 31-row `badges.mwl`
+catalogue, its 19 `awardBadge` sites and `src/badges.ts`. Every covered validator is mapped
+(piranhas, hazard assists, the boss and boss-challenge rows, the five bag rows, victory at Amulet
+pickup, the happy-end trio, four death causes, four class unlocks), and every award was checked
+against a declared counter with no orphan. Residual recorded: **22 of the 39 Java validators have
+no port row** (MonstersSlain, GoldCollected, LevelReached, StrengthAttained, FoodEaten,
+ItemsCrafted, ItemLevelAquired, CatalogBadges, five death causes, Mastery, MasteryCombo,
+Ratmogrify, TakingTheMick, NoKilling, GrimWeapon, ManyBuffs, GamesPlayed, HighScore, Champion) -
+`badges.ts`'s "smaller invented set" comment decides the family but never enumerates the omissions,
+which is what the matrix now does. Also recorded: the Cleric-unlock divergence (first victory here
+vs `validateClericUnlock`) and the four `unlock_*` rows whose award site no `awardBadge` call
+fires.
+
+#### B9. from ROADMAP 6. Complete hero progression (item closed 2026-09-24)
+
+**Progress (2026-09-24):** ShadowClone's 2x uncommanded return, `ShadowSprite` Rogue-sheet animation, no-shadow rendering, and `PERFECT_COPY`'s extended `canInteract()`/`interact` place-swap (bump + ranged FOV click, live-verified) are now ported. Remaining clone gaps: gear-proc shares and the `CityLevel.Smoke` pour.
+
+- [ ] Fine-grained armor-ability residuals, each recorded in `PORT_COVERAGE.md`: ShadowClone's remaining gear-proc shares and smoke pour (interact range, no-shadow rendering, 2x return and Rogue-sheet animation are ported); CursedWand's VeryRare scene effects (the authoritative eight-id catalog is now represented in `simulation/cursedWand.ts`, while dispatch still folds its 1% into Rare); Trinity BodyForm's remaining unsupported positive glyph entries (Thorns added 2026-09-24) and MindForm's discovery and projectile reductions. **Closed 2026-09-24:** CursedWand's remaining Rare `Petrify` and `FireBall` effects now use timed stasis/action lock and radius-three FOV fire, respectively; Java's ref-counted stasis and purely visual blast ripple remain simplified. MindForm empty-cell thrown casts now draw the effect-spawned missile to the collision cell with no dropped item; PowerOfMany's Doom response to Corruption, zap/CHARGEUP presentation, and immediate armor-quickslot charge refresh. **Correction (2026-09-24):** LightAlly's `INORGANIC` Bleeding/Poison immunity is enforced in `combat.ts`, ToxicGas immunity in the blob seam, and uncommanded return is already 2x in `actorTurnsHazards.ts`; those effects are not remaining gaps.
+
+## Roadmap as it stood on 2026-09-26 (moved out of `ROADMAP.md`)
+
+Verbatim copy of `ROADMAP.md` before the docs restructure that keeps it to open points only: the release-plan history
+(v0.1 tagged, the v0.2 notable-differences list), the closed-section stubs (3-12), and section 13 (post-victory ascent)
+with all its progress notes. The still-open parts of these are in `ROADMAP.md`.
+
+### TypeScript parity roadmap
+
+Goal: make the TypeScript game functionally equivalent to the Java Shattered Pixel Dungeon
+implementation. Every completed item is checked against the corresponding Java source and recorded
+in `PORT_COVERAGE.md`, which carries the per-mechanic evidence, citations, stated simplifications
+and divergences. **This file tracks what is left to do, not the audit history behind what is
+already done** - when a line's detail and `PORT_COVERAGE.md` disagree, the coverage row wins.
+
+**Complexity** rates the work still open on a line: `trivial`, `S`, `M`, `L`, `XL`. A line with no
+complexity note is fully closed, with nothing left even as a stated simplification.
+
+Each item's category ("Ported" / "Simplified" / "Not ported" / "Divergence (deliberate)") and the
+licensing boundary are defined in `CLAUDE.md`; every divergence must still be documented in both a
+code comment and a `PORT_COVERAGE.md` row.
+
+`tools/roadmap-progress.html` renders this file's own checkbox completion (overall and per `##`
+section) as real `mwg` `two-d.ui.Bar`/`Label` widgets, loaded from the standalone
+`mw_games.global.js` build (no bundler needed). Serve the repo root (e.g
+`python -m http.server 8000` from the repo root - not `dist/`) and open
+`http://localhost:<port>/tools/roadmap-progress.html`; it `fetch()`es `../ROADMAP.md` directly, so
+opening the file via `file://` won't work (see this project's own browser-verification workflow for
+why). Its parser keys on `## ` headings and `- [ ]`/`- [x]` lines only: a malformed marker silently
+drops that item from the totals, so keep both forms intact.
+
+See `CLOSED.md` for fully checked-off sections moved out of this file (release baseline tracking,
+browser-verification debt, MWL game data, dungeon generation, GitHub Pages publishing, boss
+levels, terrain/status mechanics, and build/toolchain decisions).
+
+#### This port's own release plan (news)
+
+Version numbering for *this* project (`package.json`'s `version`, tagged in this repo), not the
+upstream SPD baseline (see `CLOSED.md`).
+
+- **v0.1 (tagged `0.1.0`/`0.1.1`)** - the first more-or-less playable version: a hero can start a
+  run, descend, fight, loot, and die or win, on top of the `mwg` framework. Release notes for this
+  line explain what `mwg` (`@datamoc/mw_games`) *is* and why this project depends on it rather than
+  being a from-scratch engine (see this file's header and `CLAUDE.md`'s "`mwg` dependency" section:
+  a separate, generic, MPL-2.0 game framework the user maintains outside this repo, consumed as a
+  normal npm dependency, supplying rendering (PixiJS-based), the MWL authored-data pipeline, UI
+  widgets, actor/roguelike primitives (`Random`, `Roguelike`, `Blob`, `EntityRegistry`, `Scheduler`)
+  and Capacitor/WebView2 packaging - while every SPD-specific number, rule and asset stays in this
+  GPL-3.0 repository). Not itself a parity milestone; the bar was "playable", not "correct in every
+  detail".
+- **v0.2 (planned, not yet tagged)** - the first version this project calls *complete*: every
+  roadmap section below closed or explicitly marked "Not ported"/"Divergence (deliberate)" with no
+  silent gaps, per the "Definition of done" at the end of this file. Release notes for this line
+  call out the behavioural differences from vanilla Java SPD a player might actually notice,
+  gathered from `PORT_COVERAGE.md` as they're closed - notable ones so far:
+  - Environmental gas/blob propagation (`Blob.evolve()` - ToxicGas, ConfusionGas, Fire, etc.) now
+    uses Java's exact bounded four-neighbour-average/one-volume-loss rule instead of `mwg`'s more
+    generic diffusion-and-decay model, so gas clouds spread and thin out the way the real game's do
+    rather than approximately.
+  - `Generator.java`'s real tier-3 weapon-deck bug (`WEP_T3.probs` accidentally clones `WEP_T1`'s
+    weights instead of its own table) is corrected here rather than faithfully reproduced - a
+    **Divergence (deliberate)** per the fidelity policy, since Java itself won't take the fix. On
+    current Java (six tier-1 weights) only the Mace, at tier-3 index 1, is observably affected; the
+    five-weight v2.1.4 table additionally stranded the tier-3 Whip past the end of the cloned
+    array. See `PORT_COVERAGE.md`'s Generator row for the version-dependent detail.
+  - Tengu's fire-throw and shocker abilities run on their real cadence and damage formulas.
+  - Armor abilities are the real ones where they exist at all: the King's Crown's own `WEAR` action
+    offers the class's real SPD abilities (real names and descriptions, in every offered locale),
+    each costing its own real charge out of a meter that regrows at Java's rate and starts at Java's
+    50, with its four rank-4 tier-4 talents opening up on Java's own point curve. **Corrected
+    2026-09-25 (T45 playable matrix):** all eighteen class abilities - three per class across the
+    port's six classes - are offered now; `src/armorAbilities.ts`'s `PORTED_ARMOR_ABILITIES`
+    covers every authored class row, and `ratmogrify` sits outside that set by design (the Rat
+    King grants it, it is never offered). The rule behind the old "seven abilities" sentence
+    still governs anything outside the set: unoffered rather than offered and inert, so a class
+    whose ability is missing says nothing has changed instead of handing you a dead button.
+    Per-ability residuals stay tracked in their own `PORT_COVERAGE.md` rows.
+  - Golems tick their enemy-teleport and wandering self-teleport cooldowns individually and on every
+    turn (matching `Golem.act()`), not on a shared/simplified timer.
+  - Monster AI generally - this line item is intentionally open-ended rather than a fixed claim;
+    track it against section 5 ("Improve monster behavior and loot") as that section closes, and
+    replace this bullet with the specific, checkable differences once they're known rather than a
+    vague "AI improved".
+  Extend this list as more section-5/7 items close, pulling exact wording from the relevant
+  `PORT_COVERAGE.md` row rather than re-describing it here from memory.
+
+#### 3. Port every boss level and boss script
+
+Fully closed - moved to `CLOSED.md`. Kept as a numbered heading (rather than removed outright)
+because other bullets in this file cross-reference "section 3" by number (the Imp shop's `unseal()`,
+the city visuals); renumbering everything below to close the gap
+was judged not worth the churn against those existing references.
+
+#### 4. Complete NPCs and quests
+
+Fully closed - moved to `CLOSED.md`. Kept as a numbered heading (rather than removed outright)
+because other bullets in this file cross-reference "section 4" by number; renumbering everything
+below to close the gap was judged not worth the churn against those existing references.
+
+#### 5. Improve monster behavior and loot
+
+Fully closed - moved to `CLOSED.md`. Kept as a numbered heading (rather than removed outright)
+because other bullets in this file cross-reference "section 5" by number; renumbering everything
+below to close the gap was judged not worth the churn against those existing references.
+
+#### 6. Complete hero progression
+
+Fully closed - moved to `CLOSED.md`. Kept as a numbered heading (rather than removed outright)
+because other bullets in this file cross-reference "section 6" by number; renumbering everything
+below to close the gap was judged not worth the churn against those existing references.
+
+#### 7. Replace simplified terrain and status mechanics
+
+Fully closed - moved to `CLOSED.md`. Kept as a numbered heading (rather than removed outright)
+because other bullets in this file cross-reference "section 7" by number; renumbering everything
+below to close the gap was judged not worth the churn against those existing references.
+
+#### 8. Complete UI and input parity
+
+Fully closed - moved to `CLOSED.md`. Kept as a numbered heading (rather than removed outright)
+because other bullets in this file cross-reference "section 8" by number; renumbering everything
+below to close the gap was judged not worth the churn against those existing references.
+
+#### 9. Build the Java-vs-TypeScript parity harness
+
+Fully closed - moved to `CLOSED.md`. Kept as a numbered heading (rather than removed outright)
+because other bullets in this file cross-reference "section 9" by number; renumbering everything
+below to close the gap was judged not worth the churn against those existing references.
+
+#### 10. Close the browser-verification debt
+
+Fully closed - moved to `CLOSED.md`. Kept as a numbered heading (rather than removed outright)
+because many bullets elsewhere in this file cross-reference "section 10" by number when noting that
+browser verification is still owed for their own item; renumbering everything below to close the gap
+was judged not worth the churn against those existing references.
+
+#### 11. Architecture refactor toward the v3 target
+
+Fully closed - moved to `CLOSED.md`. Kept as a numbered heading (rather than removed outright)
+because other bullets in this file cross-reference "section 11" by number; renumbering everything
+below to close the gap was judged not worth the churn against those existing references.
+
+#### 12. Build and toolchain
+
+Fully closed - moved to `CLOSED.md`. Kept as a numbered heading (rather than removed outright)
+because this is the last numbered roadmap section and preserves its section identity in release
+notes and cross-references.
+
+#### 13. Post-victory ascent (Amulet climb back to the surface)
+
+**Progress note, 2026-09-24.** The user's stated goal for the project is every hero class
+playable from game start through defeating Yog-Dzewa *and* the post-victory ascent back to the
+surface, ending in a real win state. Before this pass, `PORT_COVERAGE.md` stated plainly "this
+port does not model the post-victory ascent at all" - amulet pickup (`pickupAmulet`,
+`npcShopBlacksmith.ts`) instantly ended the run as a win, and `ASCENSION_MOD`
+(`src/simulation/combat.ts`) was permanently inert because nothing ever set the flag it gates on.
+
+What this pass landed (see `PORT_COVERAGE.md`'s "Post-victory ascent" row for the full
+citation-by-citation account):
+- [x] Amulet pickup no longer force-ends the run; it awards the real pickup-time victory badge
+      (matching Java's actual `Badges.validateVictory()` timing) and lets the hero keep playing.
+- [x] The `AscensionChallenge` per-mob stat table is wired to a real trigger: reaching depth 26's
+      entrance with the Amulet shows Java's real ascent confirmation text and, on "yes", the
+      table becomes live for the rest of the run (`ascensionChallengeActive` in `dungeonScene.ts`,
+      synced into `combat.ts` every `enterLevel()`).
+- [x] Walking back onto each floor's entrance tile while carrying the Amulet climbs one floor up
+      (`tryAscendStairs`/`beginAscendOneFloor`, `actorTurnsHazards.ts`), all the way from depth 26
+      to depth 1. `Dungeon.interfloorTeleportAllowed()`'s Amulet check already existed
+      (`returnToPreviousFloor`) and needed no change.
+- [x] Reaching depth 1's entrance with the Amulet now triggers the actual win
+      (`recordRun`/`showVictoryPanel`/`gameOver`), reusing this port's existing end-of-run UI
+      rather than inventing a new one.
+- [x] `npx tsc --noEmit` and `npm run build` are clean; `verifySimulation.mjs`'s 295 checks are
+      unaffected (confirmed by rerun).
+- [x] **Browser-verified live, 2026-09-24.** No MCP browser tool (`claude-in-chrome`,
+      `chrome-devtools-mcp`) was reachable in this session either, but the environment's
+      pre-installed sandbox Chromium is real and reachable via a scripted `playwright-core`
+      client (`npm install playwright-core` into a scratch dir, launched with
+      `executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'`) against a built
+      `dist/` served over plain `http://localhost:8000`. Drove a real run: title -> class select
+      (Warrior) -> Start via dispatched `PointerEvent`s on the canvas, matching this file's own
+      documented pointer-sequence requirement; then via `window.__MWG__.currentScene` gave the
+      hero the Amulet and set `depth = 26`. `tryAscendStairs()` opened the real `Ascension`
+      confirmation window with Java's exact text; clicking "Continue!" set
+      `ascensionChallengeActive = true` and moved to depth 25; 24 more `beginAscendOneFloor()`
+      calls walked depth 25 down to depth 1 with no error at any step; one final call fired the
+      real win (`gameOver = true`, the actual `Victory!` panel: "You escaped with the Amulet at
+      level 1, depth 1!", "Let's call it a day" log line, "New Run" button). Screenshots taken at
+      every step confirm the real UI, not just the state flags. The pickup -> confirm -> climb ->
+      win chain holds end to end with no dead end or unhandled state.
+- [x] **2026-09-24/25: the stack escalation itself is real now**, not just its depth-1 flavor
+      line. `AscensionChallenge.onLevelSwitch`/`processEnemyKill`/`act()` (tag `v3.3.8`) are
+      ported as `DungeonScene.ascensionStacks`/`ascensionDamageInc`/`ascensionStacksLowered`:
+      +2 stacks per non-boss floor climbed (`beginAscendOneFloor`), -1 (-0.5 for
+      Ghoul/RipperDemon) per `ASCENSION_MOD`-boosted kill while the challenge is active, floored
+      at 0 (`deathSaveRefresh.ts`'s per-kill hook), and real direct hero damage once stacks reach
+      8 (`damageInc += (stacks-4)/4`, suppressed on boss floors, wired into the same per-turn
+      `applyBuffDamage` pass as Poison/Ooze/Bleeding in `turnLoopAiming.ts`). The full
+      `saySwitch()` narrative ladder now picks the highest threshold cleared (damage/slow/haste/
+      beckon/plain-descend) using the real generated strings, not just the depth-1 line. Live-
+      verified via the same `playwright-core` client as the row above: `spendHeroTurn()` calls at
+      stacks=10 on a non-boss floor ticked 1/2 HP damage alternately (`damageInc` accruing 1.5/
+      turn) and were silently no-ops on a boss floor; `beginAscendOneFloor()` calls confirmed +2
+      stacks per floor; attacking a live depth-1 rat down to 1 HP with stacks=10 and the challenge
+      active dropped stacks to 9 and flipped `ascensionStacksLowered` true on the kill.
+- [x] **Closed 2026-09-25 (T107)** - every sub-item below is now Ported, explicitly Not ported, or a documented Divergence (details in `PORT_COVERAGE.md`; was "Still not ported at all"):
+      `Statistics.highestAscent` tracking - checked for a UI consumer this pass: this port's real
+      Rankings screen (confirmed to exist and reachable from the title menu) only stores a run's
+      final depth/level/gold (`rankings.ts`), not a separate ascent-progress field, and a
+      completed ascent already implies "reached depth 1", so there is nothing for this stat to
+      show that isn't already implied by a "won" run record - correctly left not-ported, not
+      worth a UI change just to host it. The beckon (>=2 stacks) and haste (>=4) *mechanical* effects are **ported 2026-09-25, T107**
+      (trail pull once per hero action; half scheduler cost for idle ENEMY mobs - the seams
+      existed after all). The hero-speed-cap (>=6: halved, capped at 1x) stays **Not ported**:
+      Java slows the hero actor clock, whose port equivalent is doubling mob turns per hero
+      action - a turn-loop architecture change, not a seam edit. Also still
+      open: the `Badge.HAPPY_END`/`HAPPY_END_REMAINS`/`PACIFIST_ASCENT` badges (**ported
+      2026-09-25, T107** - rows, Java icons/descriptions and `validateHappyEnd()` gates all live;
+      `HAPPY_END_REMAINS` stays unfillable until the remains family is modeled), `DemonSpawner`'s reduced-cooldown carve-out past floor 20
+      during the climb (**ported 2026-09-25, T107** - `tickDemonSpawner` caps above-20 to 20
+      while the challenge runs), and the
+      `Ratmogrify.TransmogRat`/`AscensionBuffBlocker` exemptions on the per-mob table itself
+      (**ported 2026-09-25, T107** - transmog resolves structurally via the preserved kind,
+      blocked holders return 1 through a shared helper fed by a save-persisted flag on
+      `RATFORCEMENTS` rats; the kill hook needed nothing).
+      `AmuletScene`'s own "Let's call it a day" instant-win shortcut button is also not ported -
+      this port always takes the "stay and keep exploring" branch instead and relies on the real
+      climb, which is arguably the more interesting choice to keep anyway now that the climb works.
+
+**Close-out 2026-09-25 (T107):** badges (rows, Java icons, `validateHappyEnd` gates), the TransmogRat/BuffBlocker exemptions (structural unwrap + save-persisted flag through a shared helper), the DemonSpawner >20 cap, and the beckon/haste mechanics all ported with pins. Explicitly remaining, by decision rather than oversight: `highestAscent` (no UI consumer - Not ported), the hero-speed-cap (needs doubled mob turns per hero action - Not ported), the AmuletScene instant-win shortcut (documented Not ported - the stay branch is always taken).
+
+**Progress note, 2026-09-25 (all-classes smoke test).** Beyond the ascent loop itself, the
+user's goal needs every one of the 6 classes to actually start and play, not just Warrior (the
+only one unlocked on a fresh save - `classUnlocked`, `src/badges.ts`). Live-verified with the
+same `playwright-core`-against-sandbox-Chromium approach as the ascent check above: a small
+script force-unlocks every class in memory for the test session only (`scene.badges.unlocked =
+() => true`, no save write) and drives title -> class-select -> Start for each of the 6 grid
+slots in a fresh page each time. All 6 (Warrior, Mage, Rogue, Huntress, Duelist, Cleric) reached
+a live dungeon scene at depth 1 with zero page errors/console errors and a real, class-specific
+starting-kit log line (spot-checked: slot 4 read "Sewers, floor 1. You are a duelist, wielding a
+rapier." - confirming this wasn't 6 copies of the same default class). Combined with the
+class-by-class ability/boss audit already on record (40+ `MONSTER_ANALYSIS_*` matrices in this
+file) finding no crash/soft-lock-shaped gaps, and the ascent loop's own live verification above,
+this is the closest this project has verified "every class, start to finish, including the
+climb" as a connected whole rather than as separately-audited pieces.
+
+**Progress note, 2026-09-25 (connected-whole run found and fixed a real showstopper bug).**
+Every verification of the ascent above - including the 2026-09-24 browser pass - exercised the
+climb by hand-injecting the Amulet straight into the bag (`bag.add({id:'amulet',...})`) rather
+than picking it up for real. That masked a genuine defect: `pickupAmulet`
+(`npcShopBlacksmith.ts`) never actually called `bag.add` for the Amulet, so
+`this.bag.find('amulet')` - the exact gate the ascent trigger, the interfloor-teleport block, and
+the quickslot's `hasAmulet` all read - was **always false for a real ground pickup**. The ascent
+could never have fired for an actual player, in any class, despite every earlier
+component-level and state-injected test passing. Found by finally walking the *connected* chain
+in one live run rather than its pieces separately: teleport to depth 25, move away from the
+entrance to trigger the real Yog spawn (`checkHallsBossSeal`, dormant until then), wake and
+`kill()` the genuine 400-HP Yog through the shared death path, advance to depth 26 where the
+real vault places the Amulet at `(8,12)`, pick it up through the actual ground-pickup function
+(not injected), then run the confirm/climb/win sequence - all via the same `playwright-core`
+script driving the sandbox's Chromium. **Fixed** (`pickupAmulet` now calls
+`this.bag.add({id:'amulet',quantity:1,identified:true})`) **and re-verified for all 6 classes**,
+each in a fresh page: Yog found (hp 400) and killed, vault entered, Amulet genuinely present in
+the bag this time, ascent confirmed, climb 25->1, real victory screen - zero page/console errors
+on any class. `npx tsc --noEmit` and `npm run build` both clean. See `PORT_COVERAGE.md`'s
+"Post-victory ascent" row for the full account. This does not itself constitute playing all 25
+floors turn-by-turn for every class (a live, unassisted floor-by-floor clear was not attempted -
+that remains a real gap between "the systems connect correctly end to end" and "a human has
+actually walked it"), but it closes the gap between "the pieces individually work" and "the
+whole chain a real pickup produces actually reaches victory," which is what the earlier passes
+had not actually established.
+
+**2026-09-25: the remaining gap above - a live, unassisted floor-by-floor clear - is now closed
+for Warrior.** A real per-turn autonomous bot (`takeHeroTurn`/`attack`/`searchForSecrets` called
+turn-by-turn, no depth-teleporting, no state injection beyond a god-mode HP/weapon boost so a
+bounded turn budget could cover melee combat) played from a fresh character select through all 25
+regular floors, real boss fights (Tengu, DM300, the King, Yog-Dzewa with its fist-invulnerability
+mechanic all handled for real), Amulet pickup, the depth-26 ascent confirmation, and the climb
+back through every floor to depth 1, ending on the real `Victory!` panel ("You escaped with the
+Amulet at level 1, depth 1!") with zero page/console errors. This is a test-tooling milestone, not
+a code-fix commit: the bugs found and fixed along the way were all in the `playwright-core` bot
+script itself (scratchpad, not part of the repo) - a diagonal-movement pathfinder that let the bot
+"path" through wall corners real Pixel Dungeon movement forbids, a priority bug that kept
+re-selecting the descend stairs over the ascend-entrance while carrying the Amulet, and the fight
+routine not accounting for Yog-Dzewa's real fist-shielded invulnerability - not in the game's own
+source, which needed no changes to complete this run. See `PORT_COVERAGE.md`'s "Post-victory
+ascent" row for the full account.
+
+#### Definition of done
+
+- Every Java gameplay system has an equivalent TypeScript implementation.
+- Every intentional deviation is documented in code and in `PORT_COVERAGE.md`.
+- Fixed-seed gameplay traces produce equivalent results across both versions.
+- `npx tsc --noEmit`, `npm run build`, automated verification, and browser verification pass.
+
+See `PORT_COVERAGE.md` for the current implementation status and known simplifications.
