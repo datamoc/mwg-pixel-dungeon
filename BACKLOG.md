@@ -38,9 +38,14 @@ B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as d
 ## B8. Analysis matrices for the remaining families
 
 - [ ] Continue producing the section 22A/22B analysis matrix for the remaining monster/item/buff families before migrating
-  each one's code, per SPD-ADR-010. 44 matrices exist (monsters and the named item families are covered).
-  - Remaining families (inventoried 2026-09-25): `talent-rules`, `badges`/challenges, `classes` (hero kits), `alchemy`
-    recipes, room and level generation (`room-rules`, `generator-decks`/`generator-tables`, `dungeon-rules`), `loot-rules`,
+  each one's code, per SPD-ADR-010. 45 matrices exist (monsters and the named item families are covered).
+  - **Progress 2026-09-26, forty-fifth matrix:** `garbage/MONSTER_ANALYSIS_MOB_LOOT.md` walks all 31 `monsterLoot` rows
+    plus the seven drops the port keeps outside the table against tag `v3.3.8`'s `loot`/`lootChance` fields and
+    `createLoot()` overrides: every chance matches Java's literal, and the two rows that do not reproduce Java's
+    behaviour (`gnollTrickster`'s `Category.MISSILE` drop and the Evil Eye's 2/1/1 dew-seed-stone roll) are registered
+    as `ROADMAP.md` R073.
+  - Remaining families (inventoried 2026-09-25): `talent-rules`, `challenges`, `classes` (hero kits), `alchemy`
+    recipes, room and level generation (`room-rules`, `generator-decks`/`generator-tables`, `dungeon-rules`),
     the non-DoT half of `buff-rules`, a second artifacts matrix (only `ARTIFACTS_ONE` exists), and the generic
     Spell/alchemy-result spells.
   - Residuals recorded open by earlier matrices: the stick/drop split in `turnLoopAiming.ts` has no `sticky` filter (stone,
