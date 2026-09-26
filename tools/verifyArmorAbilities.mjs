@@ -110,7 +110,7 @@ export function verifyArmorAbilities(require, check) {
 		//in `abilities` - so unlike the eighteen class abilities its key has no class segment.
 		assert.equal(armorAbilityKey('ratmogrify', 'warrior'), 'actors.hero.abilities.ratmogrify');
 		assert.equal(armorAbilityKey('heroicleap', 'warrior'), 'actors.hero.abilities.warrior.heroicleap');
-		assert.equal(armorAbilityKey('ascendedform', 'cleric'), 'port.armorability.ascendedform');
+		assert.equal(armorAbilityKey('ascendedform', 'cleric'), 'actors.hero.abilities.cleric.ascendedform');
 		//The row feeds the tier-4 window for every hero: three rat talents plus HEROIC_ENERGY.
 		assert.deepEqual(armorTalentDefinitions('ratmogrify', 'mage').map((d) => d.id),
 			['ratsistance', 'ratlomacy', 'ratforcements', 'heroic_energy']);

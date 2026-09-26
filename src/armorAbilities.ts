@@ -113,14 +113,14 @@ export function isKnownArmorAbility(id: string): boolean {
  *  (`Messages.get` lowercases `actors.hero.abilities.<package>.<Class>`), so the eighteen class
  *  abilities carry their class (`warrior.heroicleap`) while `Ratmogrify`, which lives directly in
  *  the `abilities` package, carries none (`actors.hero.abilities.ratmogrify`, tag `v3.3.8`
- *  `actors.properties:609`). */
+ *  `actors.properties:609`).
+ *
+ *  The tag also carries the Cleric bundle (`cleric.ascendedform`/`powerofmany`/`trinity`
+ *  name/desc in 21-23 locales each), so no `port.*` override is needed: the locales
+ *  missing a key fall back to the English base through the normal catalog fallback,
+ *  like every other SPD string with a missing translation. */
 export function armorAbilityKey(id: string, classId: ClassId): string {
 	if (id === 'ratmogrify') return 'actors.hero.abilities.ratmogrify';
-	// The v3.3.8 checkout predates the Cleric message bundle used by this port's
-	// extractor. Keep the live Cleric ability on the port catalogue so a missing
-	// upstream translation cannot leak a raw key into the choice window/log.
-	if (id === 'ascendedform') return 'port.armorability.ascendedform';
-	if (id === 'powerofmany') return 'port.armorability.powerofmany';
 	return `actors.hero.abilities.${classId}.${id}`;
 }
 
