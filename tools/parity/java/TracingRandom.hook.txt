@@ -1,0 +1,37 @@
+	// RNG-call-order parity facility for the TypeScript port's levelgen probe: while
+	// traceDraws is set, generators pushed by pushGenerator() log every raw next()
+	// draw as `bits:value` lines into traceLog. Off by default: plain generators,
+	// one extra boolean test per draw, no files. The LevelGenHarness gates it behind
+	// -Dlevelgen.trace and writes one file per floor.
+	public static boolean traceDraws = false;
+	public static StringBuilder traceLog = new StringBuilder();
+	// Scratch call-site attribution for the TS port's levelgen probe: while traceDraws
+	// is set, draws whose per-floor index falls in [traceStackLo, traceStackHi] also
+	// append a filtered stack to traceStacks. Armed by LevelGenHarness via env.
+	public static int traceDrawCount = 0;
+	public static int traceStackLo = -1;
+	public static int traceStackHi = -1;
+	public static StringBuilder traceStacks = new StringBuilder();
+	static class TracingRandom extends java.util.Random {
+		TracingRandom(long seed){ super(seed); }
+		@Override protected int next(int bits){
+			int r = super.next(bits);
+			if (Random.traceDraws) {
+				Random.traceLog.append(bits).append(':').append(r).append('\n');
+				if (Random.traceStackLo >= 0 && Random.traceDrawCount >= Random.traceStackLo && Random.traceDrawCount <= Random.traceStackHi) {
+					StringBuilder sb = new StringBuilder();
+					sb.append('#').append(Random.traceDrawCount).append(' ').append(bits).append(':').append(r);
+					for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
+						String cn = e.getClassName();
+						if (cn.startsWith("com.shatteredpixel.") || cn.startsWith("com.watabou.")) {
+							sb.append(" <- ").append(cn.substring(cn.lastIndexOf('.') + 1)).append('.').append(e.getMethodName()).append(':').append(e.getLineNumber());
+						}
+					}
+					sb.append('\n');
+					Random.traceStacks.append(sb);
+				}
+				Random.traceDrawCount++;
+			}
+			return r;
+		}
+	}

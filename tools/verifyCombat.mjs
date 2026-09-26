@@ -19,6 +19,16 @@ export function verifyCombat(require, check) {
 	const fixture = JSON.parse(readFileSync(new URL('./fixtures/combat-before-extraction.json', import.meta.url), 'utf8'));
 	const base = (extra = {}) => ({ x: 0, y: 0, hp: 20, maxHp: 20, accuracy: 10,
 		evasion: 5, damage: [2, 8], armor: [0, 3], buffs: {}, ...extra });
+	check('rollHit rounds each roll factor to float32 like Char.hit() (parity harness finding, B1/T55)', () => {
+		//`Char.hit()` computes `Random.Float(stat)`, `*= 1.25f` (Bless) and `accMulti` (2, magic) in float32, one product at
+		//a time. These two draw pairs sit on a razor edge where the float64 product used to give the opposite answer:
+		//pair A (k1 2851857, k2 7129643): float64 says miss, float32 says hit; pair B (6057495, 15143737): the reverse.
+		const draws = (k1, k2) => { const queue = [k1 / 16777216, k2 / 16777216]; return { float: (max) => queue.shift() * max }; };
+		const attacker = base({ accuracy: 3, buffs: { bless: 30 } });
+		const defender = base({ evasion: 3 });
+		assert.equal(rollHit(attacker, defender, draws(2851857, 7129643), true), true);
+		assert.equal(rollHit(attacker, defender, draws(6057495, 15143737), true), false);
+	});
 	const freeze = (value) => {
 		if (value && typeof value === 'object') {
 			Object.values(value).forEach(freeze);

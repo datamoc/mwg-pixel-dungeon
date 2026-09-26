@@ -4118,3 +4118,14 @@ ascent" row for the full account.
 - `npx tsc --noEmit`, `npm run build`, automated verification, and browser verification pass.
 
 See `PORT_COVERAGE.md` for the current implementation status and known simplifications.
+
+## B1 closed 2026-09-26 (coord T55): the Java-vs-TypeScript parity kit
+
+The slice-by-slice history of B1 is in the backlog progress log above. Close-out: the Java half stopped being uncommitted scratch
+in a temp worktree - `tools/parity/` (`node tools/parity/run-parity.mjs`, `npm run parity:java`) exports the oracle from the SPD
+checkout, installs the project-authored harness classes and the `TracingRandom` hook by text insertion, runs Gradle offline and
+diffs against the TS traces. Result from clean exports: combat 9/9 traces byte-identical (scripts 2-4 x seeds 123456789, 1, 42) and
+levelgen 28/28 deterministic floors trace-identical. Findings: (1) Java rounds every roll factor to float32, the port did one
+float64 product (fixed in `combat.ts`, two razor-edge draw pairs pinned in `verifyCombat.mjs`); (2) the harness's mob was
+unaware (`enemySeen` false), which zeroes `Mob.defenseSkill` - two of the nine traces only matched by luck before. The open
+extension work (loot/quests/boss/save-load traces, visual comparison, classification) is B3-B5 in `BACKLOG.md`.

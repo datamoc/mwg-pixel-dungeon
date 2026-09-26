@@ -146,6 +146,21 @@ export function accRollMulti(c: Readonly<Combatant>): number {
 	return m;
 }
 
+const fround = Math.fround;
+
+/** `Char.hit()`'s per-side roll factors applied the way Java does: `Random.Float(stat)` rounded to float32, then
+ *  Bless 1.25f, Hex 0.8f, Daze 0.5f, the ChampionEnemy factor and the ascension modifier, each product rounded
+ *  to float32 (see `accRollMulti` for the same factors as one double, kept for callers that only need the size). */
+function rollFactors32(base: number, c: Readonly<Combatant>): number {
+	let r = fround(base);
+	if (c.buffs['bless']) r = fround(r * fround(1.25));
+	if (c.buffs['hex']) r = fround(r * fround(0.8));
+	if (c.buffs['daze']) r = fround(r * fround(0.5));
+	if (c.champion === 'blessed') r = fround(r * 4);
+	if (c.champion === 'growing') r = fround(r * fround(c.championPower ?? 1.19));
+	return fround(r * fround(ascensionModFor(c)));
+}
+
 export function rollHit(attacker: Readonly<Combatant>, defender: Readonly<Combatant>, random: SimulationRandom, magic = false, surprise = false, accFactor = 1): boolean {
 	if (liveStats(defender).evasion >= INFINITE_EVASION) return false;
 	let acu = liveStats(attacker).accuracy;
@@ -167,8 +182,12 @@ export function rollHit(attacker: Readonly<Combatant>, defender: Readonly<Combat
 		const adjacent = Math.max(Math.abs(attacker.x - defender.x), Math.abs(attacker.y - defender.y)) <= 1;
 		if (adjacent) return false;
 	}
-	const acuRoll = random.float(acu) * accRollMulti(attacker) * (magic ? 2 : 1);
-	const defRoll = random.float(liveStats(defender).evasion) * accRollMulti(defender);
+	//Java computes both rolls in float32, one multiplication at a time (`acuRoll *= 1.25f` ...), and the
+	//parity harness (tools/parity, B1/T55) found real last-ulp flips against the float64 product this used
+	//to take: `Random.Float(stat)` is `Float() * stat` rounded to float32, then every buff/champion/ascension
+	//factor and the `accMulti` (2 for magic) round again, in `Char.hit()`'s order. Same numbers, Java's rounding.
+	const acuRoll = fround(rollFactors32(random.float(acu), attacker) * (magic ? 2 : 1));
+	const defRoll = rollFactors32(random.float(liveStats(defender).evasion), defender);
 	//Weapon.java under-STR penalty: ACC /= 1.5^encumbrance (delay penalty N/A - turns here
 	//have no fractional duration, documented at the call site rather than silently dropped)
 	if (attacker.str !== undefined && attacker.strReq !== undefined && attacker.str < attacker.strReq) {
