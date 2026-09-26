@@ -10,6 +10,9 @@ import { Container, FillGradient, Graphics, TilingSprite } from 'mwg/two-d/pixi-
 import { Actors, AnimatedSprite, Blob, Game, Label, Random, ReactionTable, Roguelike, SpriteSheet, TileMap, TintedSprite, theme } from 'mwg';
 import { SceneSimulationAdapter } from '../../adapters/sceneSimulation';
 import { weaponAbilityFor } from '../../items/weaponAbilities';
+import { shatterPotionAt } from '../../items/potionEffects';
+import { shatterHasEffect } from '../../items/dropThrow';
+import { releaseBeeFromPot } from '../../items/honeypot';
 import { combinedStatBonusLevel, ringDef, ringEnergyMultiplier, ringMightBonus, RING_DEFS } from '../../items/ringModifiers';
 import { MOB_KEYS, has, t } from '../../i18n/index';
 import { evasiveArmorBonus } from '../../talentEffects';
@@ -65,10 +68,17 @@ export const coreSpawnTilesMethods = {
 
 	/**
 	 * `GameScene`'s arrival block (tag v3.3.8): every item that fell to this depth lands on
-	 * `randomRespawnCell` (a free cell out of the hero's view, else the entrance). Java also shatters
-	 * a fallen potion, plants a fallen seed and shatters a honeypot on landing; here they land as
-	 * ordinary items (stated simplification). One item per cell holds, so an item that cannot find a
-	 * free cell beside the fallback is dropped on the nearest free one.
+	 * `randomRespawnCell` (a free cell out of the hero's view, else the entrance) - kept at this
+	 * port's own cell picker, which prefers a free unseen cell and falls back to a neighbour of
+	 * the hero. The three special landings Java runs there are run too: a fallen potion shatters
+	 * where it lands (`Potion.shatter(cell)` - its own area effect, else SPD's harmless-splash
+	 * line when the cell is in view), a fallen seed plants itself (`Dungeon.level.plant(seed,pos)`,
+	 * skipped under No Herbalism like `Plant.Seed.onThrow`), and a fallen honeypot breaks open and
+	 * releases its bee (`Honeypot.shatter(null,pos)`) - with the pot itself landing if no cell is
+	 * free, exactly as Java drops the pot it gets back. The `ShatteredPot` Java's shatter returns
+	 * and then drops is unmodelled, the same simplification the throw flow already states. One
+	 * item per cell holds, so an item that cannot find a free cell beside the fallback is dropped
+	 * on the nearest free one.
 	 */
 	landFallenItems(this: DungeonScene): void {
 		const store = fallenItemStore(this);
@@ -82,7 +92,29 @@ export const coreSpawnTilesMethods = {
 				at = Roguelike.neighbourOffsets(8).map(([dx, dy]) => ({ x: this.hero.x + dx, y: this.hero.y + dy }))
 					.find((cell) => this.level.passable(cell.x, cell.y) && !this.isChasmCell(cell.x, cell.y) && !this.groundItemAt(cell.x, cell.y));
 			}
-			if (at) this.spawnGroundItem(entry.kind, at.x, at.y, entry.item, entry.chest);
+			if (!at) continue;
+			if (entry.kind === 'potion' && entry.item?.id.startsWith('potion')) {
+				//`Potion.splash` clears Fire at the cell before the potion's own shatter runs
+				//(the throw path additionally hard-presses a trap there; Java's arrival block does not).
+				this.fire.clear(at.x, at.y);
+				if (shatterHasEffect(entry.item.id)) {
+					shatterPotionAt(this.potionEffectsContext(), entry.item.id, at.x, at.y);
+				} else if (this.fov.isVisible(at.x, at.y)) {
+					this.say(t('items.potions.potion.shatter'));
+				}
+				continue;
+			}
+			if (entry.kind === 'seed' && entry.item && !isChallengeEnabled('no_herbalism')) {
+				const kind = this.seedPlantKind(entry.item.sourceClass);
+				if (kind) {
+					const cell = this.level.index(at.x, at.y);
+					this.manualPlants.set(cell, kind);
+					this.placePortedFeature(cell, kind);
+					continue;
+				}
+			}
+			if (entry.kind === 'honeypot' && releaseBeeFromPot(this.honeypotContext(), at)) continue;
+			this.spawnGroundItem(entry.kind, at.x, at.y, entry.item, entry.chest);
 		}
 	},
 

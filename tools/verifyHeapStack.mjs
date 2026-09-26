@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { readSceneSource } from './sceneSource.mjs';
 
 //Stacked heaps (`Heap.items`, `Level.drop()`): source pins on the scene wiring, live-checked in the built game
@@ -25,4 +26,25 @@ check('fire burns every entry of the heap', () => {
 });
 check('stepping onto a heap collects the whole stack while each take succeeds', () => {
 	assert.ok(/for \(let guard = 0; guard < 64; guard\+\+\) \{\s*const top = this\.groundItemAt\(x, y\);/.test(scene));
+});
+check('a fallen item lands through GameScene arrival: potion shatters, seed plants, honeypot breaks', () => {
+	//`GameScene`'s arrival loop (GameScene.java, tag v3.3.8) special-cases those three before
+	//falling back to `Dungeon.level.drop(item, pos)`; the `Level.drop()`-onto-a-chasm row in
+	//coverage/rows-terrain-traps-and-levelgen.md records each one as ported.
+	assert.ok(scene.includes("if (entry.kind === 'potion' && entry.item?.id.startsWith('potion'))"),
+		'the fallen-potion branch exists');
+	assert.ok(scene.includes('shatterPotionAt(this.potionEffectsContext(), entry.item.id, at.x, at.y)'),
+		'a fallen flask shatters where it lands');
+	assert.ok(scene.includes("if (entry.kind === 'seed' && entry.item && !isChallengeEnabled('no_herbalism'))"),
+		'a fallen seed plants itself, gated on No Herbalism like Plant.Seed.onThrow');
+	assert.ok(scene.includes('this.manualPlants.set(cell, kind)'), 'the planted seed persists with the floor');
+	assert.ok(scene.includes('releaseBeeFromPot(this.honeypotContext(), at)'),
+		'a fallen honeypot breaks open and releases its bee');
+	assert.ok(scene.includes('this.spawnGroundItem(entry.kind, at.x, at.y, entry.item, entry.chest)'),
+		'everything else lands as it fell');
+	const honeypot = readFileSync(new URL('../src/items/honeypot.ts', import.meta.url), 'utf8');
+	assert.ok(honeypot.includes('export function releaseBeeFromPot('),
+		'the bee release is shared between the throw flow and the landing');
+	assert.ok(/export function shatterHoneypotFlow[\s\S]*?if \(!releaseBeeFromPot\(ctx, at\)\) return;\s*ctx\.consumePot\(instanceId\);\s*ctx\.spendTurn\(\);/.test(honeypot),
+		'the throw flow still consumes the pot and spends the turn');
 });

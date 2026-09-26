@@ -56,12 +56,12 @@ export function useHoneypotFlow(ctx: HoneypotFlowContext, instanceId?: string): 
 	shatterHoneypotFlow(ctx, target, instanceId);
 }
 
-/** `Honeypot.shatter(owner, pos)`: detach one pot, break it at the cell (or a free
- * cardinal neighbour when occupied - the ShatteredPot item Java drops is unmodeled, so
- * nothing lands), and release the bee with `setPotInfo`. No free cell means no bee and
- * the pot stays, exactly like Java returning the pot itself. Silent either way - Java
- * logs nothing on the shatter. Spends the hero's turn like both Java actions. */
-export function shatterHoneypotFlow(ctx: HoneypotFlowContext, at: { x: number; y: number }, instanceId?: string): void {
+/** `Honeypot.shatter(owner, pos)`'s bee half: break at `at`, or at a free cardinal neighbour
+ * when something stands there (the bee still anchors to `at` - Java's `potPos` - so it hunts
+ * around the broken pot, not around its spawn cell). No free cell means no bee and the pot
+ * survives, exactly like Java returning the pot itself.
+ * @returns the cell the bee spawns on, or `null` when nothing broke. */
+export function releaseBeeFromPot(ctx: HoneypotFlowContext, at: { x: number; y: number }): { x: number; y: number } | null {
 	//`shatter`'s owner is whoever stands on the landing cell (the bee's first suspect);
 	//an empty cell breaks ownerless (`setPotInfo(pos, null)` - no holder, a ground pot).
 	const occupant = ctx.occupantAt(at.x, at.y);
@@ -69,11 +69,21 @@ export function shatterHoneypotFlow(ctx: HoneypotFlowContext, at: { x: number; y
 		? Roguelike.neighbourOffsets(4).map(([dx, dy]) => ({ x: at.x + dx, y: at.y + dy }))
 		: [at];
 	const free = cands.find((cell) => ctx.isSpawnFree(cell.x, cell.y));
-	if (!free) return;
-	ctx.consumePot(instanceId);
+	if (!free) return null;
 	//Java's `Honeypot.shatter()` sets `Bee.potPos` to the original `pos`, even when
 	//the bee must spawn on a free cardinal neighbour. Keeping those cells separate is
 	//important: the bee hunts around the broken pot, not around its spawn cell.
 	ctx.releaseBee(free, at, occupant && !occupant.isNPC ? occupant.id : null);
+	return free;
+}
+
+/** `Honeypot.shatter(owner, pos)`: detach one pot, break it at the cell (or a free
+ * cardinal neighbour when occupied - the ShatteredPot item Java drops is unmodeled, so
+ * nothing lands), and release the bee with `setPotInfo`. No free cell means no bee and
+ * the pot stays, exactly like Java returning the pot itself. Silent either way - Java
+ * logs nothing on the shatter. Spends the hero's turn like both Java actions. */
+export function shatterHoneypotFlow(ctx: HoneypotFlowContext, at: { x: number; y: number }, instanceId?: string): void {
+	if (!releaseBeeFromPot(ctx, at)) return;
+	ctx.consumePot(instanceId);
 	ctx.spendTurn();
 }
