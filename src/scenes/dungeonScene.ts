@@ -1848,7 +1848,8 @@ export class DungeonScene extends Scene2D {
 				monster.leapCooldown = (monster.leapCooldown ?? 0) - 1;
 			}
 			monster.leapPrevEnemy = monster.leapLastEnemy;
-			monster.leapLastEnemy = { x: this.hero.x, y: this.hero.y };
+			const foe = this.huntEnemy(monster);
+			monster.leapLastEnemy = { x: foe.x, y: foe.y };
 		},
 	};
 

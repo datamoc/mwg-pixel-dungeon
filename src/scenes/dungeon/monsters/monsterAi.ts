@@ -74,6 +74,14 @@ export const monsterAiMethods = {
 		return selectRangedTarget(this.level, monster, this.hero, this.creatures, range, simulationRoguelike);
 	},
 
+	/** The character a hunting monster is currently after: `Mob.enemy` in Java. The port keeps no
+	 * per-monster field for it (that is the open "ally orders" work), so it is derived on demand as
+	 * the nearest hero-or-ally the monster can target, falling back to the hero - so ordinary hero
+	 * fights keep their previous behaviour and random stream. */
+	huntEnemy(this: DungeonScene, monster: Creature): Creature {
+		return this.rangedTarget(monster, 99) ?? this.hero;
+	},
+
 	/**
 	 * `Mob.chooseEnemy()`'s Aggression priority lives in `simulation/targeting.ts`
 	 * as `aggressionTarget` - the file-size refactor's thirty-sixth extraction,
@@ -534,12 +542,12 @@ export const monsterAiMethods = {
 	 *  and `DOOR_CLOSED` kinds - Java's `SOLID`-flagged set (walls, locked doors, statues,
 	 *  bookshelves, bars) collapses onto those two, while open doors, water, chasms and
 	 *  traps stay traversable on both sides. */
-	dm200CanVent(this: DungeonScene, monster: Creature): boolean {
+	dm200CanVent(this: DungeonScene, monster: Creature, enemy: Creature): boolean {
 		if ((monster.ventCooldown ?? 0) > 0) return false;
 		const w = this.level.width, h = this.level.height;
-		const maxDist = Roguelike.chebyshevDistance(monster, this.hero) + 1;
+		const maxDist = Roguelike.chebyshevDistance(monster, enemy) + 1;
 		const seen = new Int8Array(w * h);
-		const start = this.level.index(this.hero.x, this.hero.y);
+		const start = this.level.index(enemy.x, enemy.y);
 		seen[start] = 1;
 		let frontier = [start];
 		for (let dist = 0; dist < maxDist && frontier.length > 0; dist++) {
@@ -571,11 +579,20 @@ export const monsterAiMethods = {
 	 *  Java tries `getCloser(target)` and only vents on *that* failing too (the vent retry);
 	 *  reaching here without a step means the shared mover below takes the approach, so this
 	 *  returns false exactly when Java would move, and vents when Java would vent. */
-	dm200HuntingTurn(this: DungeonScene, monster: Creature, distance: number): boolean {
+	dm200HuntingTurn(this: DungeonScene, monster: Creature, heroDistance: number): boolean {
+		//`DM200.zap()`/`canVent()` read `enemy`, which may be a friendly summon. Port model: the
+		//nearest of hero and living allies by Chebyshev distance, no line of sight (the vent
+		//needs none). Ties keep the hero, so ordinary runs keep their random stream.
+		let enemy: Creature = this.hero;
+		for (const c of this.creatures) {
+			if (!c.isAlly || c.hp <= 0 || c === monster || c.buffs['invisibility'] !== undefined) continue;
+			if (Roguelike.chebyshevDistance(monster, c) < Roguelike.chebyshevDistance(monster, enemy)) enemy = c;
+		}
+		const distance = enemy === this.hero ? heroDistance : Roguelike.chebyshevDistance(monster, enemy);
 		if (distance >= 1
 			&& Random.int(Math.max(1, Math.floor(100 / distance))) === 0
-			&& this.dm200CanVent(monster)) {
-			this.ventDM200(monster);
+			&& this.dm200CanVent(monster, enemy)) {
+			this.ventDM200(monster, enemy);
 			return true;
 		}
 		const blocked = new Set(
@@ -588,8 +605,8 @@ export const monsterAiMethods = {
 			{ blocked },
 		)[0];
 		if (step) return false;
-		if (this.dm200CanVent(monster)) {
-			this.ventDM200(monster);
+		if (this.dm200CanVent(monster, enemy)) {
+			this.ventDM200(monster, enemy);
 			return true;
 		}
 		return false;
@@ -665,12 +682,13 @@ export const monsterAiMethods = {
 			seesHero: monster.seesHero === true,
 			rooted: monster.buffs['roots'] !== undefined,
 			fleeing: monster.fleeing === true,
-			distance,
+			//`Succubus.getCloser(target)` reads its enemy, which may be a friendly summon
+			distance: Roguelike.chebyshevDistance(monster, this.huntEnemy(monster)),
 		})) {
 			monster.blinkCooldown = (monster.blinkCooldown ?? 0) - 1;
 			return false;
 		}
-		const ray = traceRayToTarget(this.level, monster, this.hero, (x, y) => this.creatureAt(x, y));
+		const ray = traceRayToTarget(this.level, monster, this.huntEnemy(monster), (x, y) => this.creatureAt(x, y));
 		const landing = chooseSuccubusBlinkCell(ray, (cell) =>
 			this.level.passable(cell.x, cell.y) && !this.creatureAt(cell.x, cell.y), simulationRandom,
 			(cell) => this.creatureAt(cell.x, cell.y) !== null, monster);
@@ -688,13 +706,14 @@ export const monsterAiMethods = {
 			cooldown: monster.leapCooldown ?? 0,
 			seesHero: monster.seesHero === true,
 			rooted: monster.buffs['roots'] !== undefined,
-			distance,
+			distance: Roguelike.chebyshevDistance(monster, this.huntEnemy(monster)),
 		})) return false;
-		let aim = predictRipperLeapTarget(this.hero, monster.leapPrevEnemy);
+		const foe = this.huntEnemy(monster);
+		let aim = predictRipperLeapTarget(foe, monster.leapPrevEnemy);
 		let landing = this.traceRipperLeap(monster, aim);
 		if ((!landing || landing.x !== aim.x || landing.y !== aim.y)
-			&& (aim.x !== this.hero.x || aim.y !== this.hero.y)) {
-			aim = { x: this.hero.x, y: this.hero.y };
+			&& (aim.x !== foe.x || aim.y !== foe.y)) {
+			aim = { x: foe.x, y: foe.y };
 			landing = this.traceRipperLeap(monster, aim);
 		}
 		if (!landing || landing.x !== aim.x || landing.y !== aim.y) return false;
@@ -1126,9 +1145,12 @@ export const monsterAiMethods = {
 			return true;
 		}
 		if ((monster.rangedCooldown ?? 0) > 0) return false;
-		if (!Roguelike.canTarget(this.level, monster, this.hero, { range: 8 })) return false;
+		//`NewbornFireElemental`'s telegraphed blast aims at its `enemy`, which may be a friendly
+		//summon; the port picks the nearest hero-or-ally in range like every other ranged attack.
+		const foe = this.rangedTarget(monster, 8);
+		if (!foe) return false;
 		const candidates = Roguelike.neighbourOffsets(8)
-			.map(([dx, dy]) => ({ x: this.hero.x + dx, y: this.hero.y + dy }))
+			.map(([dx, dy]) => ({ x: foe.x + dx, y: foe.y + dy }))
 			.filter((at) => !(at.x === monster.x && at.y === monster.y)
 				&& Roguelike.canTarget(this.level, monster, at, { range: 8 }));
 		if (candidates.length === 0) {
@@ -1194,9 +1216,9 @@ export const monsterAiMethods = {
 	 *  **Found and fixed 2026-09-16: this seeded `plantGas`, whose effect is `poison`, instead
 	 *  of `toxicGas`, whose effect is Java's direct damage** - every vent used to poison the
 	 *  hero rather than burn through HP the way `ToxicGas` does. Amounts were already Java's. */
-	ventDM200(this: DungeonScene, monster: Creature): void {
+	ventDM200(this: DungeonScene, monster: Creature, enemy: Creature): void {
 		monster.ventCooldown = 30;
-		const line = Roguelike.traceLine(monster, this.hero);
+		const line = Roguelike.traceLine(monster, enemy);
 		for (let i = 0; i < line.length - 1; i++) this.toxicGas.seed(line[i].x, line[i].y, 20);
 		const last = line[line.length - 1]!;
 		this.toxicGas.seed(last.x, last.y, 100);
