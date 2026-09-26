@@ -1776,8 +1776,9 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 		wraith: [1, 10, 50, 1, 2, 0, 0, 0, -2],
 		dustWraith: [1, 10, 50, 1, 2, 0, 0, 0, -2],
 		rotHeart: [80, 0, 0, 0, 0, 0, 5, 4, 29],
-		// Lasher armor is 0 since the tenth matrix (no Java behind the old 8).
-		rotLasher: [80, 25, 0, 10, 20, 0, 0, 1, 29],
+		// `RotLasher.drRoll()` = `super.drRoll() + NormalIntRange(0, 8)` (RotLasher.java 116-119, same in v3.3.0/v3.3.8/4.0.0-beta/v4.0.0).
+		// The tenth matrix's "no Java behind the old 8" was wrong; the parity kit's mob-data stage (tools/parity) read 0-8 out of the class.
+		rotLasher: [80, 25, 0, 10, 20, 0, 8, 1, 29],
 		// The GNOLL mine roster (`GnollGuard`/`GnollSapper`/`GnollGeomancer.java`, tag `v3.3.8`):
 		// `HP`, `attackSkill()`, `defenseSkill`, adjacent `damageRoll()`, `drRoll()`'s added
 		// 0-6, `EXP`, `maxLvl` (-2 on both minions; the geomancer keeps the Mob default 29).

@@ -33,6 +33,7 @@ import { routeTrapBehaviour } from '../dungeonConstants';
 import { resetSpecialRoomRunState } from './rooms/special/registry';
 import { resetSecretRoomRunState } from './rooms/secret/registry';
 import { resetWandmakerRunState } from './wandmaker';
+import { ritualSiteState } from './rooms/standard/ritualSiteRoom';
 import { blacksmithQuestType, resetBlacksmithRunState, type BlacksmithQuestType } from './blacksmith';
 import { generateMiningLevel } from './miningLevel';
 /** The mine rooms' quest-actor kinds, beside the `PortedFloor.mobs` entries that carry them. */
@@ -203,6 +204,8 @@ export interface PortedTrap {
 
 /** What `main.ts` needs to stand a ported floor up, extracted from the verified `PaintLevel`. */
 export interface PortedFloor {
+	/** `CeremonialCandle.ritualPos` of this floor's ritual site (a raw cell index on its own grid), when it has one. */
+	ritualPos?: number;
 	width: number;
 	height: number;
 	/** cell -> `main.ts` terrain code, already mapped */
@@ -355,11 +358,26 @@ export function portedFloor(seed: bigint, depth: number, strongerBosses = false)
 	if (!run) throw new Error('portedFloor: run state missing after prime');
 	for (const d of PORTED_DEPTHS) {
 		if (d > depth) break;
-		if (!run.floors.has(d)) run.floors.set(d, generateFloor(seed, d, strongerBosses));
+		if (!run.floors.has(d)) {
+			//`ritualSiteState` is one module-level cell the ritual room writes while a floor is painted. Floors are generated
+			//lazily and in order up to the requested depth, so every skipped-over floor writes it too: capture it per floor,
+			//right after that floor's own generation, instead of letting the scene read whatever was generated last (a
+			//floor built after a jump, or a first visit to a floor generated ahead of time, got another floor's ritual site
+			//and crashed on a marker that does not fit its grid - found by tools/verifySaveLoad.mjs).
+			ritualSiteState.ritualPos = -1;
+			run.floors.set(d, generateFloor(seed, d, strongerBosses));
+			ritualPosByDepth.set(d, ritualSiteState.ritualPos);
+		}
 	}
 	const floor = run.floors.get(depth)!;
-	return extract(floor.paint, floor.rooms, floor.feeling, floor.attempts);
+	const ported = extract(floor.paint, floor.rooms, floor.feeling, floor.attempts);
+	const ritualPos = ritualPosByDepth.get(depth);
+	if (ritualPos !== undefined && ritualPos >= 0) ported.ritualPos = ritualPos;
+	return ported;
 }
+
+/** `CeremonialCandle.ritualPos` of each generated floor, captured at its own generation (see `portedFloor`). */
+const ritualPosByDepth = new Map<number, number>();
 
 /** Generates the Blacksmith branch without perturbing the main run-level floor cache. */
 export function miningBranchFloor(seed: bigint, depth: number, questType: BlacksmithQuestType, darkness = false): PortedFloor {
@@ -369,6 +387,7 @@ export function miningBranchFloor(seed: bigint, depth: number, questType: Blacks
 /** Discards the cached run, so the next `portedFloor` call re-runs `Dungeon.init()`'s resets. */
 export function resetPortedRun(): void {
 	run = null;
+	ritualPosByDepth.clear();
 }
 
 // **** PaintLevel -> PortedFloor ****

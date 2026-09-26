@@ -1,0 +1,10 @@
+{
+  "ArmoredBrute.lootChance": "Java drops armor at lootChance 1 (Generator.Category.ARMOR); the port reproduces it in the dedicated armoredBrute kill block of scenes/dungeon/deathSaveRefresh.ts (bruteLootArmor), not in a MOB_LOOT row",
+  "Scorpio.lootChance": "Java Scorpio.createLoot: flat 0.5, a potion that is neither of two excluded classes; reproduced by the dedicated scorpio kill block in deathSaveRefresh.ts (0.5), not a MOB_LOOT row",
+  "Succubus.lootChance": "Java Succubus.createLoot: flat 0.33, a scroll that is neither of two excluded classes; reproduced by the dedicated succubus kill block in deathSaveRefresh.ts (0.33), not a MOB_LOOT row",
+  "Warlock.lootChance": "Java Warlock.createLoot: flat 0.5 potion drop; reproduced by the dedicated warlock kill block in deathSaveRefresh.ts (0.5), not a MOB_LOOT row",
+  "GnollGuard.lootChance": "dead on both sides: Java sets loot = Spear at 0.1 but maxLvl -2, and Mob.rollToDropLoot returns before rolling whenever hero.lvl > maxLvl + 2, which every hero level satisfies, so the drop can never happen",
+  "DemonSpawner.damage": "the spawner never attacks (STATIC, IMMOVABLE, canAttack irrelevant): Java's Char.damageRoll() default is 1, the port's authored row says 0; neither is ever rolled",
+  "Pylon.damage": "the pylon never attacks (STATIC, IMMOVABLE): Java's Char.damageRoll() default is 1, the port's authored row says 0; neither is ever rolled",
+  "Pylon.exp": "no observable effect: Java EXP is 1 but maxLvl is -2, and Mob.die awards experience only while hero.lvl <= maxLvl (Mob.java line 853), which no hero level satisfies; the port's 0 is equivalent"
+}

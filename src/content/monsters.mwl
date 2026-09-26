@@ -1085,10 +1085,12 @@
     evasion: 0,
     damage_min: 10,
     damage_max: 20,
-    // No `drRoll` override in RotLasher.java (tag v3.3.8) - flat 0, not the 8 this
-    // row used to carry.
+    // `RotLasher.drRoll()` is `super.drRoll() + Random.NormalIntRange(0, 8)` (`RotLasher.java`
+    // lines 116-119; identical in v3.3.0, v3.3.8, 4.0.0-beta and v4.0.0). This row used to say
+    // "no drRoll override - flat 0", a wrong claim an earlier audit recorded; the parity kit's
+    // mob-data stage (tools/parity, B3/T57) read the real value out of the Java class: 0-8.
     armor_min: 0,
-    armor_max: 0,
+    armor_max: 8,
     experience: 1,
     max_level: 29,
     image: "assets/rot_lasher.png",

@@ -7,6 +7,7 @@
  *   node tools/parity/run-parity.mjs --stage combat      Char.attack() rounds, Java v3.3.8 vs TS (~4 min)
  *   node tools/parity/run-parity.mjs --stage loot        derived Mob.lootChance() drop chance, Java v3.3.8 vs TS
  *   node tools/parity/run-parity.mjs --stage levelgen    floor generation RNG draws, checkout oracle vs TS
+ *   node tools/parity/run-parity.mjs --stage mobdata     every Java mob class's stats/loot (v3.3.8) vs the port's monster tables
  *   options: --spd <SPD checkout>   (default $SPD_CHECKOUT or ~/dev/shattered-pixel-dungeon; a git repo with the tags/commits)
  *            --work <dir>           scratch dir for the Java trees (default <os tmp>/mwg-parity; reused between runs)
  *            --combat-ref v3.3.8    Java ref for the combat oracle
@@ -65,10 +66,11 @@ function exportTree(dir, ref) {
 }
 
 /** Copies our harness classes in, inserts the trace hook into Random.java and makes sure the Gradle tasks exist. */
-function installHarness(dir, { combat, levelgen, loot }) {
+function installHarness(dir, { combat, levelgen, loot, mobdata }) {
 	const put = (name, rel) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); copyFileSync(join(JAVA_SRC, name), join(dir, rel)); };
 	if (combat) { put('CombatHarness.java', `${CORE}/actors/mobs/CombatHarness.java`); put('CombatHarnessLauncher.java', `${DESKTOP}/CombatHarnessLauncher.java`); }
 	if (levelgen) { put('LevelGenHarness.java', `${CORE}/levels/LevelGenHarness.java`); put('LevelGenHarnessLauncher.java', `${DESKTOP}/LevelGenHarnessLauncher.java`); }
+	if (mobdata) { put('MobDataHarness.java', `${CORE}/actors/mobs/MobDataHarness.java`); put('MobDataHarnessLauncher.java', `${DESKTOP}/MobDataHarnessLauncher.java`); }
 	if (loot) { put('LootHarness.java', `${CORE}/actors/mobs/LootHarness.java`); put('LootHarnessLauncher.java', `${DESKTOP}/LootHarnessLauncher.java`); }
 
 	const randomFile = join(dir, 'SPD-classes/src/main/java/com/watabou/utils/Random.java');
@@ -89,6 +91,7 @@ function installHarness(dir, { combat, levelgen, loot }) {
 	const task = (name, main) => `${nl}// parity harness (tools/parity/run-parity.mjs)${nl}tasks.register('${name}', JavaExec) {${nl}    classpath = sourceSets.main.runtimeClasspath${nl}    ignoreExitValue = true${nl}    mainClass = "com.shatteredpixel.shatteredpixeldungeon.desktop.${main}"${nl}}${nl}`;
 	if (combat && !gradle.includes("'runCombatHarness'")) gradle += task('runCombatHarness', 'CombatHarnessLauncher');
 	if (levelgen && !/runHarness/.test(gradle)) gradle += task('runHarness', 'LevelGenHarnessLauncher');
+	if (mobdata && !gradle.includes("'runMobData'")) gradle += task('runMobData', 'MobDataHarnessLauncher');
 	if (loot && !gradle.includes("'runLootHarness'")) gradle += task('runLootHarness', 'LootHarnessLauncher');
 	writeFileSync(gradleFile, gradle);
 }
@@ -150,6 +153,27 @@ function lootStage() {
 	gate('loot: every derived drop chance matches Java (within float32 rounding) or is documented in loot-known.json', r.status === 0, `report: ${join(outDir, 'loot-report.txt')}`);
 }
 
+function mobdataStage() {
+	console.log(`\n== mobdata: every Java ${combatRef} mob class (stats, loot) vs the port's monster and loot tables ==`);
+	const dir = join(work, `spd-${combatRef}`);
+	exportTree(dir, combatRef);
+	installHarness(dir, { combat: true, mobdata: true });
+	const outDir = join(work, 'mobdata'); mkdirSync(outDir, { recursive: true });
+	const javaOut = join(outDir, 'mobdata_java_out.txt');
+	rmSync(javaOut, { force: true });
+	const g = gradle(dir, 'runMobData', { MOBDATA_DIR: join(dir, CORE, 'actors', 'mobs'), MOBDATA_OUT: javaOut });
+	if (!existsSync(javaOut)) { gate('mobdata Java dump produced', false, g.out.slice(-400)); return; }
+	gate('mobdata Java dump produced', true, `${readFileSync(javaOut, 'utf8').split('\n').filter(Boolean).length} mobs`);
+	const tsRunner = tsBundle('tools/parity/mobDataParity.ts', 'mobDataParity.mjs');
+	const r = run(process.execPath, [tsRunner, '--java', javaOut, '--known', join(ROOT, 'tools', 'parity', 'mobdata-known.json'), '--report', join(outDir, 'mobdata-report.txt')]);
+	console.log(r.out.trim().split('\n').slice(0, 60).join('\n'));
+	gate('mobdata: every difference is documented in mobdata-known.json (and none is stale)', r.status === 0, `full report: ${join(outDir, 'mobdata-report.txt')}`);
+}
+
+/** B3 / T57, loot domain: what Java's own `Mob.lootChance()` returns (the value
+ * `Mob.rollToDropLoot()` rolls `Random.Float()` against) against this port's composition of the
+ * same number from its authored `monsterLoot` + `limitedDropDecay` rows. */
+
 function levelgenStage() {
 
 	console.log(`\n== levelgen: floor-generation RNG draws, oracle ${prebuiltLevelgenTree ? prebuiltLevelgenTree : levelgenRef} vs this port (depths 3-9, 4 seeds) ==`);
@@ -172,6 +196,7 @@ function levelgenStage() {
 
 try {
 	if (stage === 'all' || stage === 'combat') combatStage();
+	if (stage === 'all' || stage === 'mobdata') mobdataStage();
 	if (stage === 'all' || stage === 'loot') lootStage();
 	if (stage === 'all' || stage === 'levelgen') levelgenStage();
 } catch (e) {

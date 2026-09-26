@@ -11,7 +11,7 @@ const scene = readSceneSource();
 const check = (name, fn) => { fn(); console.log(`PASS ${name}`); };
 
 check("hermitCrab's loot row is 0.5 (3x the base crab's 0.1666666667)", () => {
-	assert.ok(/monster: "crab",\s*chance: 0\.1666666667,\s*kind: "meat",/.test(loot), 'the base crab row is unchanged');
+	assert.ok(/monster: "crab",\s*chance: 0\.167,\s*kind: "meat",/.test(loot), 'the base crab row is Java\'s Crab.lootChance 0.167f');
 	assert.ok(/monster: "hermitCrab",\s*chance: 0\.5,\s*kind: "meat",/.test(loot), 'hermitCrab has its own 0.5 row');
 });
 check('a guaranteed armor drop runs past the overleveled gate, alongside the ordinary loot roll', () => {

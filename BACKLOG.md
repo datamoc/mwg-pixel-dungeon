@@ -15,6 +15,7 @@ B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as d
 ## B3. Verify loot, quest outcomes, boss transitions and save/load state
 
 - [ ] Verify loot, quest outcomes, boss transitions, and save/load state. **Complexity: L.** extends `tools/parity/` (see its README, "Extending it").
+  - **Progress 2026-09-27, save/load and mob tables (T57):** `npm run verify:saveload` (Chrome and Firefox: five floors incl. two boss floors, save/load/save fixed point, fresh-page resume) found and fixed four real bugs (duplicated floor items and resurrected keys on every revisit/load, keys re-queued to the floor below, secret doors revealed by loading, a stale ritual site crashing a first visit) - see the coverage row "Floor restore on revisit and load". The `mobdata` stage diffs every Java mob class against the monster/loot tables (440 field checks, 8 documented differences) and corrected RotLasher DR to 0-8.
   - **Progress 2026-09-26, loot domain:** `node tools/parity/run-parity.mjs --stage loot` compares Java's own
     `Mob.lootChance()` - the value `Mob.rollToDropLoot()` rolls its `Random.Float()` against - across 76 cases
     (13 plain-field control mobs, the ten `LimitedDrops` decays walked across their counts, Swarm across three
@@ -22,7 +23,7 @@ B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as d
     the new `src/simulation/mobLoot.ts` `mobLootChance()` seam the scene's `kill()` funnel now shares: 41 cases
     bit-exact, 20 within float32/float64 rounding, 15 documented in `tools/parity/loot-known.json` (Swarm's runtime
     `1/(6*(generation+1))` base vs the authored `0.1667` field), 0 undocumented, 0 stale.
-  - Remaining: quest outcomes, boss transitions and save/load state.
+  - Remaining: quest outcomes (Ghost/Wandmaker/Blacksmith/Imp reward generation and completion state) and boss transitions (Goo, Tengu, DM-300, Dwarf King, Yog phase changes) have no Java-side trace yet.
 
 ## B6. `SimulationRuntime` migration
 

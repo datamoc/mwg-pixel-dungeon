@@ -41,7 +41,6 @@ import { Cat, randomUsingDefaults, removeArtifactClass } from '../../items/gener
 import { absorbCreatureShields } from '../../simulation/allyShields';
 import { mwlItemEffectValue } from '../../mwlContent';
 import { applySandalsNaturalismCharge, sandalsNaturalismLevel } from '../../items/sandals';
-import { ritualSiteState } from '../../spdLevelGen/rooms/standard/ritualSiteRoom';
 import { DOOR, DOOR_CLOSED, EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, TRAP, WALL, WATER, modeledTrapTable, sewerTrapTable, type TrapKind } from '../../dungeonConstants';
 import { regionForDepth, type Region } from '../../genericDungeon';
 import { absorbShield, addBuff, applyElementalBacklash, buffBlocked, electricDamageHalved, explosiveTrapBounds, grimTrapDamage, reigniteBuff, rollDamage, setBleeding, type Creature, type GroundItem, type Step } from '../../combat';
@@ -634,8 +633,8 @@ export const environmentFireTrapsMethods = {
 		}
 		//`CeremonialCandle.ritualPos` arrives as a raw cell index on the painted level's own
 		//grid, which matches this floor's live grid exactly (same dimensions by construction).
-		if (ritualSiteState.ritualPos >= 0 && ritualSiteState.ritualPos < this.level.cellCount) {
-			this.ritualPos = ritualSiteState.ritualPos;
+		if (floor.ritualPos !== undefined && floor.ritualPos >= 0 && floor.ritualPos < this.level.cellCount) {
+			this.ritualPos = floor.ritualPos;
 		}
 		this.portedMobSpawns = floor.mobs.filter((mob) => {
 			if (mob.kind === 'sacrificialFire') {

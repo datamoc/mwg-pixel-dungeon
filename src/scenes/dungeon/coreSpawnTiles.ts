@@ -954,6 +954,10 @@ export const coreSpawnTilesMethods = {
 		this.level.terrain.set(state.terrain);
 		this.secrets = Roguelike.Secrets.fromJSON(this.level, state.secrets);
 		this.doors = Roguelike.Doors.fromJSON(this.level, state.doors);
+		//`Doors.fromJSON` writes each registered door's own terrain back, and a secret door is registered there while
+		//`Secrets` disguises it as WALL - so restoring the registry silently revealed every undiscovered secret door on any
+		//revisit or load (found by tools/verifySaveLoad.mjs). The saved terrain already holds the exact disguise; lay it down again.
+		this.level.terrain.set(state.terrain);
 		this.trapKinds = new Map(state.trapKinds);
 		this.spentTrapCells = new Set(state.spentTrapCells ?? []);
 		this.gatewayTelePos = new Map(state.gatewayTelePos ?? []);
@@ -988,6 +992,13 @@ export const coreSpawnTilesMethods = {
 		this.sacrificialFireCharge = state.sacrificialFireCharge ?? 0;
 		this.sacrificialFireCell = state.sacrificialFireCell ?? -1;
 		this.sacrificialFirePrize = state.sacrificialFirePrize;
+		//`enterLevel` regenerates the floor from the seed before calling this, and `adoptPortedFeatures` has
+		//already spawned the painter's baseline items (queued prizes, gold, crystal/iron keys) as if this were a first visit.
+		//On a revisit or a load the saved list is the truth - anything picked up or moved since is absent from it - so drop
+		//the baseline first. Without this every revisit and every F9 load duplicated the floor's items and resurrected keys
+		//that had been picked up (found by the save/load check, tools/verifySaveLoad.mjs, BACKLOG B3).
+		for (const sprite of this.itemLayer.removeChildren()) sprite.destroy();
+		this.groundItems = [];
 		for (const item of state.groundItems) {
 			this.spawnGroundItem(item.kind, item.x, item.y, item.item, item.chest, item.forSale);
 			const heap = this.groundItemAt(item.x, item.y);
@@ -1381,6 +1392,12 @@ export const coreSpawnTilesMethods = {
 		//Java's own fill numbers and in Java's own positions, so these generic passes would
 		//only overwrite verified output; its doors and traps are registered from the generated
 		//grid instead (adoptPortedFeatures).
+		//Adoption spawns the painter's baseline items as on a first visit; any that land on a chasm cell are recorded in the
+		//fallen-item store for the floor below. On a saved floor `restoreFloor` replaces those items, but not that side effect,
+		//so every revisit and load re-queued them and they landed again downstairs (duplicated keys): undo it when the floor
+		//comes from a save.
+		const fallenStore = fallenItemStore(this);
+		const fallenBeforeAdoption = savedFloor ? structuredClone(fallenStore) : null;
 		if (ported) {
 			this.adoptPortedFeatures(ported);
 		} else {
@@ -1391,7 +1408,10 @@ export const coreSpawnTilesMethods = {
 		// The generated layout above is the baseline for a first visit. On a revisit or a load,
 		// replace its mutable layer before drawing anything, so doors/traps and terrain frames
 		// agree with the state the player left behind.
-		if (savedFloor) this.restoreFloor(savedFloor);
+		if (savedFloor) {
+			this.restoreFloor(savedFloor);
+			if (fallenBeforeAdoption) { fallenStore.clear(); for (const [depth, entries] of fallenBeforeAdoption) fallenStore.set(depth, entries); }
+		}
 		repairBossUnsealStairs(this.bossUnsealContext());
 		const foresight = this.talentRank('rogues_foresight');
 		if (this.heroClass === 'rogue' && foresight > 0 && Random.chance(foresight === 1 ? 0.5 : 0.75)) {

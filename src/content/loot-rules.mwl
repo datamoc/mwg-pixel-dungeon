@@ -29,11 +29,11 @@
           {
             tag: "row",
             monster: "crab",
-            chance: 0.1666666667,
+            chance: 0.167,
             kind: "meat",
           },
           // `HermitCrab.lootChance = 0.5` (`actors/mobs/HermitCrab.java`, tag `v3.3.8`, "3x more
-          // likely to drop meat" than the base Crab's 0.1666667): the guaranteed armor drop is a
+          // likely to drop meat" than the base Crab's 0.167): the guaranteed armor drop is a
           // separate, always-on `rollToDropLoot()` bonus - not represented in this table at all -
           // handled in `deathSaveRefresh.ts` next to the other guaranteed-drop mobs.
           {
@@ -129,7 +129,7 @@
           {
             tag: "row",
             monster: "bat",
-            chance: 0.1666666667,
+            chance: 0.1667,
             kind: "potion",
           },
           {
@@ -221,7 +221,7 @@
             // `Skeleton.java` (tag v3.3.8): `loot = Generator.Category.WEAPON` in its
             // constructor - always a weapon, never armor. Same fix as the row above.
             monster: "skeleton",
-            chance: 0.1666666667,
+            chance: 0.1667,
             kind: "weapon",
           },
           {
@@ -233,7 +233,7 @@
           {
             tag: "row",
             monster: "swarm",
-            chance: 0.1666666667,
+            chance: 0.1667,
             kind: "potion",
           },
         ],
