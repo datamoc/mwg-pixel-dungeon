@@ -36,7 +36,7 @@ import { beaconChargeCap } from '../../items/beacon';
 import type { ChainsItem } from '../../items/chains';
 import { TILE, WATER } from '../../dungeonConstants';
 import { BUFF_DURATION, addBuff, buffBlocked, electricDamageHalved, icyDamageHalved, rollHit, tickBuffs, type Creature, type Step } from '../../combat';
-import { NEGATIVE_BUFFS, tickMonsterTurnEnd, type BuffId } from '../../simulation/buffs';
+import { NEGATIVE_BUFFS, corruptionImmune, tickMonsterTurnEnd, type BuffId } from '../../simulation/buffs';
 import { sealTick } from '../../simulation/sealShield';
 import { corruptingPower, corruptionResistance, resolveCorruptionZap } from '../../simulation/wandCorruption';
 import { MONSTERS, BOSSES, isUndeadOrDemonic, type AnyMonsterId } from '../../monsters';
@@ -297,7 +297,9 @@ export const turnLoopAimingMethods = {
 				//bolt corrupts only when its power beats the target's resistance, otherwise it lands
 				//a MAJOR or MINOR debuff (`Buff.append(.., 6 + 3*level)`), going up a tier when a
 				//pool is exhausted. Slow has no port buff, so the MAJOR pool is Amok/Hex/Paralysis.
-				//Only the LightAlly is Corruption-immune here (its `Doom` fallback stays unported).
+				//Corruption immunity is the shared `corruptionImmune` gate: BOSS/MINIBOSS
+				//kinds, STATIC kinds and the AllyBuff-immune ally summons (LightAlly
+				//among them) are doomed instead of converted.
 				const outcome = resolveCorruptionZap({
 					power: corruptingPower(zapLevel),
 					resistance: corruptionResistance(
@@ -305,7 +307,7 @@ export const turnLoopAimingMethods = {
 						this.depth, (id) => NEGATIVE_BUFFS.has(id as BuffId)),
 					buffs: victim.buffs,
 					alreadyDoomed: victim.buffs['doom'] !== undefined,
-					corruptionImmune: victim.allyKind === 'lightAlly',
+					corruptionImmune: corruptionImmune(victim),
 					immune: (id) => buffBlocked(victim, id),
 					rolls: { float: () => Random.float() },
 				});

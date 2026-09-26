@@ -37,6 +37,37 @@ export function monsterBuffImmune(kind: string | undefined, subtype: string | un
 	return false;
 }
 
+/** `Char.Property.STATIC` holders (tag `v3.3.8`): STATIC carries `AllyBuff` immunity,
+ * which is what makes them (and BOSS/MINIBOSS kinds, and the AllyBuff-immune ally
+ * summons) refuse `WandOfCorruption.corruptEnemy()` into `Doom` instead.
+ * `crystalSpire` is this port's mine boss rather than a v3.3.8 class; it is listed
+ * here for the same STATIC-shaped reason and is independently covered by the port's
+ * own `boss` actor flag. */
+const CORRUPTION_IMMUNE_KINDS: ReadonlySet<string> = new Set([
+	'crystalSpire', 'demonSpawner', 'pylon', 'rotHeart', 'yog',
+]);
+
+/** Ally-summon kinds carrying Java's own `immunities.add(AllyBuff.class)`
+ * (`MirrorImage`, `PrismaticImage`, `ShadowClone`, `SpiritHawk`, `NinjaLog`,
+ * `EarthGuardian`, `Ward`, `PowerOfMany.LightAlly`, tag `v3.3.8`). WandOfRegrowth.Lotus
+ * is separately immune through `Property.STATIC`; Sheep, Ghost and AfterImage have no such
+ * immunity, so corruption still takes them. */
+const CORRUPTION_IMMUNE_ALLIES: ReadonlySet<string> = new Set([
+	'mirror', 'prismatic', 'shadowClone', 'spiritHawk', 'ninjaLog', 'earthGuardian', 'ward', 'lightAlly', 'lotus',
+]);
+
+/**
+ * Who `WandOfCorruption.corruptEnemy()` dooms instead of corrupting: anything immune
+ * to `Corruption` (an `AllyBuff` subclass), i.e. BOSS/MINIBOSS properties, STATIC
+ * kinds and the AllyBuff-immune ally summons above. Pure so the zap seam and the
+ * suite pin the same gate. */
+export function corruptionImmune(defender: { boss?: boolean; miniboss?: boolean; kind?: string; allyKind?: string }): boolean {
+	if (defender.boss || defender.miniboss) return true;
+	if (defender.kind !== undefined && CORRUPTION_IMMUNE_KINDS.has(defender.kind)) return true;
+	if (defender.allyKind !== undefined && CORRUPTION_IMMUNE_ALLIES.has(defender.allyKind)) return true;
+	return false;
+}
+
 /**
  * `DM300.resistances.add(Vertigo.class)` (`actors/mobs/DM300.java`, tag `v3.3.8`): `Char.resist(Vertigo.class)`
  * halves whatever duration `Buff.affect`/`prolong` were about to grant, at every application site (never a full

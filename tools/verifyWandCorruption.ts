@@ -1,5 +1,6 @@
 // Pins `simulation/wandCorruption.ts` against `WandOfCorruption.onZap()` (tag `v3.3.8`). Run through `npm run test:corruption`.
 import { corruptingPower, corruptionResistance, resolveCorruptionZap } from '../src/simulation/wandCorruption';
+import { corruptionImmune } from '../src/simulation/buffs';
 
 let failed = 0;
 const check = (name: string, ok: boolean): void => { console.log(`${ok ? 'PASS' : 'FAIL'} ${name}`); if (!ok) failed++; };
@@ -33,6 +34,9 @@ check('present or immune debuffs drop out; an empty MINOR pool goes up to MAJOR'
 check('an exhausted MAJOR pool corrupts', zap({ buffs: { amok: 1, hex: 1, paralysis: 1 }, rolls: rolls(0.0) }).kind === 'corrupt');
 check('an already-doomed target is debuffed, and refused once both tiers are spent', zap({ alreadyDoomed: true, rolls: rolls(0.0, 0.0) }).kind === 'debuff'
 	&& zap({ alreadyDoomed: true, buffs: { doom: 1, amok: 1, hex: 1, paralysis: 1 }, rolls: rolls(0.0) }).kind === 'refuse');
+check('LightAlly has Java AllyBuff immunity and therefore receives Doom instead of conversion',
+	corruptionImmune({ allyKind: 'lightAlly' })
+		&& zap({ power: 20, corruptionImmune: corruptionImmune({ allyKind: 'lightAlly' }) }).kind === 'doom');
 
 if (failed > 0) { console.log(`verifyWandCorruption: ${failed} FAILED`); process.exit(1); }
 console.log('verifyWandCorruption: OK');
