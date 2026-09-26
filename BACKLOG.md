@@ -9,7 +9,8 @@ These epics were moved out of `ROADMAP.md` on 2026-09-24 because none is closabl
 incremental refactor, matrix production). Open items that used to sit in `PORT_COVERAGE.md` rows are tracked in
 `ROADMAP.md`'s "Open coverage items" register, not here.
 
-B2 (RNG call order for level/item/monster/quest generation) closed 2026-09-26 (T56) and moved to `CLOSED.md`.
+B2 (RNG call order for level/item/monster/quest generation) closed 2026-09-26 (T56) and moved to `CLOSED.md`. Its coord task T56 was closed the same day.
+B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as duplicates of T46-T48); the register check is T160.
 
 ## B1. Java-vs-TypeScript parity harness
 
@@ -43,6 +44,8 @@ B2 (RNG call order for level/item/monster/quest generation) closed 2026-09-26 (T
   - Remaining: the commands not yet routed through a runtime; the inert per-runtime scheduler/random pairs
     (search, hunger, movement) still have to be reconciled with the scene's real ones, which waits for the first command
     with a real cost. What is already routed is recorded in `CLOSED.md`'s progress log.
+    Coord T60 ("Unify per-domain rule functions behind one SimulationRuntime dispatch") is done and covers the routed
+    tranche only; this epic stays open for the commands above (reconciled with coord 2026-09-26).
 
 ## B7. Extract `attack()`'s pure resolution
 
