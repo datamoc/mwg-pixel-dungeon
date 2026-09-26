@@ -87,6 +87,25 @@ connect-vs-retry, identical 321-draw prefix, zero common rects - invisible geome
 earlier; deck state is irrelevant Mazzolini, streams are per-floor fresh) and 999999999999/d9
 `@22626` (one heap/mob-gated `paintGrass` draw gap after an identical 22626-draw prefix;
 no deck drift possible on that seed - no ToxicGas+lab co-occurrence, unlike 123456789/d2).
+**Closed 2026-09-26 (T56, 36/36 blocks identical, 28/28 on depths 3+):** user decision
+recorded 2026-09-26: B2 calibrates against the checkout oracle (close-vs-checkout), not a
+v3.3.8 re-port - the port's room tables are byte-identical to the checkout's 4.0-era tables
+while `v3.3.8` has 35 rooms, chances 16/8/8/4/4, variant entrances and a draw-free crystal
+rule, so a v3.3.8 oracle (built at `/tmp/spd338`, retained as a diff tool) matches nothing.
+Three fixes, each a documented Divergence (deliberate) from `v3.3.8` toward the checkout:
+(1) `room.ts` `canConnectPoint` extends the Sentry exact-center refusal (two separate
+`center()` calls with their `Int(2)` draws) to `crystalPath` - checkout
+`CrystalPathRoom.canConnect`, opposite of `v3.3.8`'s draw-free center-only rule (42/d8
+@321 was the missing center draw shifting every later draw); (2) `crystalPathRoom.ts`
+loot `idx` now advances `clockwise`-conditionally (`idx++/idx--` with wrap, Java:152-158),
+not unconditionally - 42/d8 @606 was TS drawing rooms[2]'s odd-span center where Java drew
+rooms[0]'s even one; (3) `laboratoryRoom.ts` prize takes the first queued `Potion.class`
+item (`findPrizeItemOfClass('potion')`, new `potionOfStrength` class-map entry) instead of
+exact `TrinketCatalyst`/`PotionOfStrength` - checkout `prize()`, closing the 123456789
+d2/d3/d4/d7 `dropped`-lag cascade at its root (d2's ToxicGas-queued Purity is now the lab
+prize with zero Generator draws, as on the Java side). Probe scaffolding (`PLACE_DEBUG`
+lines in `builder.ts`, `__floorSeq` in `gameBridge.ts`) reverted before commit; only the
+three fixes plus doc rows landed.
 
 
 ## B3. from ROADMAP 9. Build the Java-vs-TypeScript parity harness

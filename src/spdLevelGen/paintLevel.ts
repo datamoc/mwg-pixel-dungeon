@@ -18,6 +18,7 @@ import { SpdRandom } from '../spdRng';
 const ITEM_CLASS_OF_KIND: Record<string, 'potion' | 'scroll' | 'stone'> = {
 	potionOfLevitation: 'potion', potionOfLiquidFlame: 'potion', potionOfFrost: 'potion',
 	potionOfInvisibility: 'potion', potionOfHaste: 'potion', potionOfPurity: 'potion',
+	potionOfStrength: 'potion', // Potion.class isInstance also hits Strength (lab prize names it)
 };
 
 /** `Terrain.java`'s real int constants (only the ones any of the 14 ported rooms touch). */

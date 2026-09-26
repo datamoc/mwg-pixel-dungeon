@@ -150,7 +150,17 @@ export function paintCrystalPathRoom(level: PaintLevel, room: Room, depth: numbe
 			else if (pick === 2) level.drop('seed', cell, 'src:starflowerSeed');
 			else level.drop('potion', cell, 'src:potionOfExperience');
 		}
-		idx = (idx + 1) % 4;
+		// `if (clockwise){ idx++; if (idx > 3) idx = 0; } else { idx--; if (idx < 0) idx = 3; }`
+		// (CrystalPathRoom.java:152-158) - the loot order follows the door rotation
+		// direction; an unconditional increment desynced every later draw on seed 42
+		// depth 8 (TS drew rooms[2]'s odd-span center where Java drew rooms[0]'s even one).
+		if (clockwise) {
+			idx++;
+			if (idx > 3) idx = 0;
+		} else {
+			idx--;
+			if (idx < 0) idx = 3;
+		}
 	}
 
 	level.drop('crystalKey', 0, 'itemToSpawn');

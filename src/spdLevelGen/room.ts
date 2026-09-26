@@ -563,25 +563,16 @@ export class Room {
 		// was a real RNG-count bug found via the Phase 2 harness: when both width and height are
 		// even, Java's two `if` guards are both false and `center()` is never invoked at all
 		// (0 rolls), where a hoisted call would always burn 1-2.
-		if (this.kind === 'special' && this.specialKind === 'sentry') {
+		if (this.kind === 'special' && (this.specialKind === 'sentry' || this.specialKind === 'crystalPath')) {
 			if (this.width() % 2 === 1 && p.x === this.center().x) return false;
 			if (this.height() % 2 === 1 && p.y === this.center().y) return false;
 		}
-		// CrystalPathRoom.canConnect(Point): the OPPOSITE rule from Sentry's - a door is only
-		// allowed within the center strip, everywhere else is refused. Java computes the midpoint
-		// directly as `right - (width()-1)/2f` (which reduces to the plain `(left+right)/2f`
-		// average, since `width()-1 == right-left`), never through `center()`, so - unlike
-		// Sentry's check above - this burns no `Random.Int(2)` roll. A previous pass wrongly
-		// folded this into Sentry's "refuse the center" rule, which is both backwards (Java
-		// *requires* the center here, not forbids it) and consumed spurious RNG rolls via
-		// `center()`; found while re-reading `CrystalPathRoom.java`'s real `canConnect(Point)`.
-		if (this.kind === 'special' && this.specialKind === 'crystalPath') {
-			const midX = (this.left + this.right) / 2;
-			const midY = (this.top + this.bottom) / 2;
-			if (Math.abs(p.x - midX) < 1) return true;
-			if (Math.abs(p.y - midY) < 1) return true;
-			return false;
-		}
+		// Divergence (deliberate, B2 close-vs-checkout): the condition above covers
+		// CrystalPathRoom with the checkout HEAD's rule ("don't place door in the exact
+		// center", via two separate center() calls with their Int(2) draws). Tag v3.3.8's
+		// CrystalPathRoom.canConnect is the OPPOSITE rule ("only place doors in the
+		// center", pure arithmetic, no draws). B2 calibrates against the checkout oracle,
+		// so this port follows the checkout here, not v3.3.8.
 		return true;
 	}
 	canConnect(r: Room): boolean {
