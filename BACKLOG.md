@@ -14,7 +14,15 @@ B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as d
 
 ## B3. Verify loot, quest outcomes, boss transitions and save/load state
 
-- [ ] Verify loot, quest outcomes, boss transitions, and save/load state. **Complexity: L.** Not started; extends `tools/parity/` (see its README, "Extending it").
+- [ ] Verify loot, quest outcomes, boss transitions, and save/load state. **Complexity: L.** extends `tools/parity/` (see its README, "Extending it").
+  - **Progress 2026-09-26, loot domain:** `node tools/parity/run-parity.mjs --stage loot` compares Java's own
+    `Mob.lootChance()` - the value `Mob.rollToDropLoot()` rolls its `Random.Float()` against - across 76 cases
+    (13 plain-field control mobs, the ten `LimitedDrops` decays walked across their counts, Swarm across three
+    generations) against this port's composition of the same number from `monsterLoot` + `limitedDropDecay`, through
+    the new `src/simulation/mobLoot.ts` `mobLootChance()` seam the scene's `kill()` funnel now shares: 41 cases
+    bit-exact, 20 within float32/float64 rounding, 15 documented in `tools/parity/loot-known.json` (Swarm's runtime
+    `1/(6*(generation+1))` base vs the authored `0.1667` field), 0 undocumented, 0 stale.
+  - Remaining: quest outcomes, boss transitions and save/load state.
 
 ## B6. `SimulationRuntime` migration
 

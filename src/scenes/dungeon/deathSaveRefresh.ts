@@ -11,6 +11,7 @@ import { SpdRandom } from '../../spdRng';
 import { runState } from '../../runState';
 import { bruteLootArmor, randomArmor, randomUsingDefaultsAnyCategory, type GenItem } from '../../items/generator';
 import { generatedInventoryItem } from '../../items/generatedItems';
+import { mobLootChance } from '../../simulation/mobLoot';
 import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type WealthTrackers } from '../../items/wealthDrops';
 
 					this.kill(target, 'foe');
@@ -483,9 +484,13 @@ import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type Wealt
 				//MWL 1/6 base is the generation-0 value, so split descendants divide by
 				//their own generation+1 here; the `(5-n)/5` LimitedDrops half rides `decay`.
 				const generationDivisor = creature.kind === 'swarm' ? (creature.generation ?? 0) + 1 : 1;
-				const chance = (decay ? entry.chance * decay(this.limitedDrops[counterKind as MonsterId] ?? 0) : entry.chance)
-					/ generationDivisor
-					* (ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) + this.bountyHunterLootBonus());
+				const chance = mobLootChance({
+					baseChance: entry.chance,
+					decay,
+					decayCount: this.limitedDrops[counterKind as MonsterId] ?? 0,
+					generationDivisor,
+					dropBonus: ringWealthMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) + this.bountyHunterLootBonus(),
+				});
 				const drop = Actors.rollLoot({ entries: [{ id: entry.kind, weight: 1 }], chance });
 				if (drop) {
 					if (decay) this.limitedDrops[counterKind as MonsterId] = (this.limitedDrops[counterKind as MonsterId] ?? 0) + 1;
