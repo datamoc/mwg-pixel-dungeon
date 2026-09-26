@@ -12,6 +12,7 @@ export const BUFF_DURATION_DATA = {
   "frost": 10,
   "drowsy": 5,
   "magicalSleep": 0,
+  "timeStasis": 100,
   "fury": 9999,
   "berserk": 9999,
   "weakness": 20,

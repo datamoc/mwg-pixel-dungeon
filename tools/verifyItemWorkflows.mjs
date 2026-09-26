@@ -8,6 +8,10 @@ import ts from 'typescript';
 import { readSceneSource } from './sceneSource.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+const elementalCastSource = readFileSync(join(root, 'src/scenes/dungeon/hero/inventoryQuickslot.ts'), 'utf8');
+assert.match(elementalCastSource,
+	/const existing = this\.creatures\.find\(\(c\) => c\.isAlly === true[\s\S]*?c\.kind === 'newbornElemental' \|\| c\.kind === 'elemental'[\s\S]*?c\.hp > 0\)/,
+	'SummonElemental recall must find both summoned newborn and mature elemental allies');
 const dist = fileURLToPath(new URL('../node_modules/mwg/dist/', import.meta.url));
 const out = mkdtempSync(join(tmpdir(), 'spd-items-'));
 // NOTE: this file used to shadow the import above with a hand-rolled helper that rewrote
@@ -58,6 +62,23 @@ compile(join(root, 'src/items/weaponAbilities.ts'), 'items/weaponAbilities.js');
 	compile(join(root, 'src/simulation/mwlMonsterImmunities.ts'), 'simulation/mwlMonsterImmunities.js');
 	compile(join(root, 'src/simulation/mwlBuffDurations.ts'), 'simulation/mwlBuffDurations.js');
 	compile(join(root, 'src/simulation/buffs.ts'), 'simulation/buffs.js');
+	// Several item modules import `doomDamage` (and friends) as a *value* from `../combat`
+	// since the Doom work landed; `wands.js` is the first of them required below. Node
+	// caches the module on first load, so this stub must exist before any of those
+	// requires — writing it only at the meal-test site below is too late. Re-export the
+	// pure helpers from the already-compiled real buffs module; keep `addCalls` for the
+	// meal assertions, and leave `addBuff`/`reigniteBuff`/`buffBlocked` as observation
+	// stubs (this drive still never observes real buff application).
+	writeFileSync(join(out, 'combat.js'), `const buffs = require('./simulation/buffs.js');
+exports.BUFF_DURATION = buffs.BUFF_DURATION;
+exports.NEGATIVE_BUFFS = buffs.NEGATIVE_BUFFS;
+exports.doomDamage = buffs.doomDamage;
+exports.absorbShield = buffs.absorbShield;
+exports.addCalls = [];
+exports.addBuff = (target, id, duration) => exports.addCalls.push({ target, id, duration });
+exports.reigniteBuff = () => {};
+exports.buffBlocked = () => false;
+`);
 	// alchemy.ts reads the no_healing challenge toggle for the AlchemicalCatalyst reroll rule via
 	// `isChallengeEnabled`; the real challenges.ts also pulls in the full i18n/message catalogue
 	// (for its display strings), which this narrow harness has no need to load - a tiny stub
@@ -93,6 +114,13 @@ compile(join(root, 'src/mechanics/cone.ts'), 'mechanics/cone.js');
 compile(join(root, 'src/dungeonConstants.ts'), 'dungeonConstants.js');
 	// The Dried Rose's ghost stats, recharge clock and petal economy are scene-free the same way.
 	compile(join(root, 'src/items/rose.ts'), 'items/rose.js');
+	//`beacon.js` reads `isOpenSpace` off `simulation/crystalSpire.js` (itself just
+	//`gnollGeomancer.js` offsets) since the recall push learned the LARGE/open-space
+	//gate. The LARGE read itself stays behind the flow context's `isLargeKind`, so
+	//`monsters.js` (whose `simulation/combat` re-export this harness never loads)
+	//stays out of this tree.
+	compile(join(root, 'src/simulation/gnollGeomancer.ts'), 'simulation/gnollGeomancer.js');
+	compile(join(root, 'src/simulation/crystalSpire.ts'), 'simulation/crystalSpire.js');
 compile(join(root, 'src/items/beacon.ts'), 'items/beacon.js');
 compile(join(root, 'src/items/spells.ts'), 'items/spells.js');
 compile(join(root, 'src/items/honeypot.ts'), 'items/honeypot.js');
@@ -808,8 +836,9 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 		// `v3.3.8`). Java's Doom fallback checks Corruption immunity, not AllyBuff
 		// immunity; keep the port from clearing LightAlly/PowerBuff state instead.
 		const aiming = readFileSync(join(root, 'src/scenes/dungeon/turnLoopAiming.ts'), 'utf8');
-		assert.match(aiming, /wandType === 'corruption'[\s\S]*?corruptionImmune: victim\.allyKind === 'lightAlly'/);
-		assert.match(aiming, /outcome\.kind === 'doom'\) addBuff\(victim, 'doom', 9999\)/);
+		assert.match(aiming, /wandType === 'corruption'[\s\S]*?corruptionImmune: corruptionImmune\(victim\)/);
+		assert.match(aiming, /LightAlly keeps PowerBuff through it/);
+		assert.match(aiming, /outcome\.kind === 'doom'\) \{\s*addBuff\(victim, 'doom', 9999\)/);
 		const cursedWand = readFileSync(join(root, 'src/scenes/dungeon/hero/cursedWandCast.ts'), 'utf8');
 		assert.match(cursedWand, /status === 'poison'[\s\S]*?if \(!buffBlocked\(victim, 'poison'\)\)/);
 		const combat = readFileSync(join(root, 'src/combat.ts'), 'utf8');
@@ -1387,6 +1416,9 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 		assert.match(consumables, /addBuff\(scene\.hero, 'recharging'/);
 		assert.match(consumables, /food\.id === 'phantomMeat'/);
 		assert.match(consumables, /PotionOfHealing\.cure/);
+		assert.match(consumables, /POTION_OF_HEALING_CURED_BUFFS[\s\S]*?'vertigo'/);
+		assert.match(consumables, /POTION_OF_HEALING_CURED_BUFFS[\s\S]*?'blindness'/);
+		assert.doesNotMatch(consumables, /POTION_OF_HEALING_CURED_BUFFS[\s\S]*?'slow'/);
 		// `MysteryMeat.effect()` rolls Java's full `Random.Int(5)` (`MysteryMeat.java`,
 		// tag `v3.3.8`): the unmodeled slow case and Java's own no-op share the nothing
 		// outcome, so each modeled effect holds its real 20% instead of 25%.
@@ -1421,7 +1453,7 @@ const { appearanceItemFrame, POTION_SHEET_BASE, SCROLL_SHEET_BASE } = require('.
 	assert.equal(MWL_ITEM_GROUND_KIND_ALIASES.weaponReward, 'armor');
 	assert.equal(MWL_ITEM_GROUND_KIND_ALIASES.doubleBomb, 'bomb');
 	assert.equal(MWL_ITEM_GROUND_KIND_ALIASES.brokenSeal, 'brokenSeal');
-	assert.equal(Object.keys(MWL_ITEM_GROUND_KIND_ALIASES).length, 32, 'ground-kind alias count (torch has its alias row; skeletonkey is the 31st, frozenCarpaccio the 32nd)');
+	assert.equal(Object.keys(MWL_ITEM_GROUND_KIND_ALIASES).length, 32, 'ground-kind alias count (torch has its alias row; skeletonkey and the new authored alias are included)');
 	assert.equal(MWL_ITEM_NAME_KEYS.weaponReward, 'port.name.questweapon');
 	assert.equal(MWL_ITEM_NAME_KEYS.sandBag, 'items.artifacts.timekeepershourglass$sandbag.name');
 	assert.equal(MWL_GROUND_ITEM_NAME_KEYS.bomb, 'items.bombs.bomb.name');
@@ -1854,7 +1886,7 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 	// port's own documented conventions, not Java values: paralysis 3 / roots 3 each
 	// equal a real Java application site (see PORT_COVERAGE.md's BUFF_DURATION row), poison 6
 	// and bleeding 0 have no Java DURATION to match, magicalSleep 0 lasts until woken,
-	// fury/berserk/cloak/focus 9999 are state markers, frostImbue/fireImbue 15 (each imbue's class DURATION 50, granted at 0.3 by its plant) and lethalHasteCooldown 100
+	// fury/berserk/cloak/focus/monkEnergy 9999 are state markers, combo 5 is Combo.comboTime, frostImbue/fireImbue 15 (each imbue's class DURATION 50, granted at 0.3 by its plant) and lethalHasteCooldown 100
 	// are port-side cooldowns (see simulation/buffs.ts). Two more differ from their Java
 	// `affect()` argument for the same reason cripple/paralysis/roots do - a real Java
 	// application site, adjusted to this port's decrement-before-read tick order: feintConfusion
@@ -1865,12 +1897,12 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 	assert.deepEqual(
 		Object.fromEntries(buffRows.map((row) => [String(row.buff), Number(row.duration)])),
 		{
-			bless: 30, hex: 30, daze: 5, chill: 10, frost: 10, drowsy: 5, magicalSleep: 0, fury: 9999,
-			berserk: 9999, weakness: 20, vulnerable: 20, burning: 8, poison: 6, bleeding: 0, cripple: 10,
+			bless: 30, hex: 30, daze: 5, blindness: 10, monkEnergy: 9999, combo: 5, vertigo: 10, chill: 10, frost: 10, drowsy: 5, magicalSleep: 0, fury: 9999,
+			berserk: 9999, doom: 9999, weakness: 20, vulnerable: 20, burning: 8, poison: 6, bleeding: 0, cripple: 10,
 			paralysis: 3, roots: 3, levitation: 20, featherFall: 50, invisibility: 20, cloak: 9999, timeStasis: 100,
 			focus: 9999, recharging: 30, wellFed: 450, frostImbue: 15, fireImbue: 15, toxicImbue: 15, blobImmunity: 10, adrenalineSurge: 200, mindvision: 20,
 			terror: 20, amok: 5, aggression: 20, awareness: 2, haste: 20, degrade: 30, ooze: 20,
-			wayward: 10, soulmark: 10, charm: 10, lethalHasteCooldown: 100, blindness: 10, light: 250, invulnerability: 3,
+		wayward: 10, soulmark: 10, charm: 10, lethalHasteCooldown: 100, light: 250, invulnerability: 3,
 			feintConfusion: 2, counterAbility: 3, hazardAssist: 50,
 			spectatorFreeze: 10, duelParticipant: 10, eliminationMatch: 3, luckyTracker: 9999,
 			prismaticGuard: 9999, holyWeapon: 50, holyWard: 50, powerOfMany: 100, illuminated: 9999, wasIlluminated: 9999,
@@ -1884,14 +1916,6 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 			//`WallOfLight` terrain clock it stands in for.
 			lanceCooldown: 30, auraProtection: 20, smiteTracker: 1, guidingPriestCooldown: 50,
 			lightWallActive: 20,
-			//`Vertigo.DURATION` 10 (`buff-rules.mwl`, ported 2026-09-24)
-			vertigo: 10,
-			//`Combo.comboTime` opens at 5 on a first hit (`Combo.hit`), the value of the `combo` buff row
-			combo: 5,
-			//`MonkEnergy` is a permanent icon carrier; the energy lives on the scene
-			monkEnergy: 9999,
-			//`Doom.class`: permanent until death, no real duration to encode
-			doom: 9999,
 		},
 		'buff durations match the authored table',
 	);
@@ -2307,7 +2331,7 @@ for (const id of Object.values(CLASS_ARMOR_ID_BY_CLASS)) assert.ok(isBlacksmithG
 		'acidic:', 'armoredStatue:', 'causticSlime:', 'demonSpawner:', 'dm100:', 'dm200:', 'dm201:',
 		'dm300:', 'goo:', 'golem:', 'necroSkeleton:', 'ninjaLog:', 'pylon:', 'piranha:', 'rotHeart:',
 		'skeleton:', 'statue:', 'succubus:', 'tengu:', 'yog:', 'yogFist:burning',
-		'yogFist:rotting', 'yogFist:rusted', 'ward:',
+		'yogFist:rotting', 'yogFist:rusted',
 	].sort(), 'monster immunity table covers exactly the Java-immune kinds');
 	assert.deepEqual(immunityByKey.get('ninjaLog:'), ['amok', 'bleeding', 'charm', 'poison', 'terror'], 'the NinjaLog decoy refuses terror/amok/charm plus the INORGANIC pair');
 	//2026-09-22: STATIC rows gained frost+chill, the Frost/Chill immunities
@@ -2778,6 +2802,9 @@ function roseDrive(overrides = {}, pickScript = [0]) {
 // The moved beacon flow (`BeaconFlowContext`, the file-size refactor's fourteenth extraction):
 // driven headlessly with a scripted picker and stub floor.
 const { useBeaconFlow, useReturningBeaconFlow, beaconChargeCap, beaconZapCost, beaconZapRange, beaconTeleportBlocked, beaconAdjacentEnemy } = require('./items/beacon.js');
+//The `large` actor-flag set, read off the MWL source so this stub tracks the same
+//single source of truth the scene reads through `LARGE_KINDS`.
+const beaconLargeKinds = new Set((/apply_to: "large",[\s\S]*?set: "([^"]*)"/.exec(readFileSync(new URL('../src/content/actor-rules.mwl', import.meta.url), 'utf8'))?.[1] ?? '').split(',').map((entry) => entry.trim()).filter(Boolean));
 function beaconDrive(overrides = {}, pickScript = [0]) {
 	const log = [];
 	const flags = { aim: null, moved: [], teleports: [], relocated: null, traveled: null, rootsCleared: false, uncloaked: false, turns: 0, consumed: false };
@@ -2799,17 +2826,18 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 		cellIndex: (x, y) => y * 10 + x,
 		gridWidth: () => 10,
 		isBossDepth: () => false,
+		//The flow context's LARGE read over the MWL set above; the rusted-fist clause
+		//mirrors `isLargeCreature`, since this harness never loads `monsters.js`.
+		isLargeKind: (kind, yogFistType) => (kind === 'yogFist' && yogFistType === 'rusted') || (kind !== undefined && beaconLargeKinds.has(kind)),
 		hasAmulet: () => false,
 		creatureAt: (x, y) => creatures[`${x},${y}`] ?? null,
-		//`LloydsBeacon.execute(AC_RETURN)` scans `Level.mobs` at the hero's new cell: every scripted creature there
-		mobsAt: (x, y) => (creatures[`${x},${y}`] ? [{ id: `${x},${y}`, x, y, ...creatures[`${x},${y}`] }] : []),
-		displaceMob: (id, cell) => { const [mx, my] = id.split(',').map(Number); flags.moved.push({ from: { x: mx, y: my }, to: { ...cell } }); },
 		isImmovableKind: (kind) => kind === 'statue',
 		randomFreeCellNear: overrides.freeCell ?? (() => ({ x: 1, y: 1 })),
 		moveHeroTo: (cell) => { flags.moved.push({ ...cell }); },
 		playHeroTeleport: (from, to) => { flags.teleports.push({ who: 'hero' }); },
 		playCreatureTeleport: (from, to, x, y) => { flags.teleports.push({ who: 'mob', at: { x, y } }); },
 		moveCreatureTo: (x, y, cell) => { flags.moved.push({ from: { x, y }, to: { ...cell } }); },
+		displaceMob: (id, cell) => { flags.moved.push({ id, to: { ...cell } }); },
 		passable: overrides.passable ?? (() => true),
 		relocateHero: (x, y) => { flags.relocated = { x, y }; },
 		travelToDepth: (returnDepth, arrival) => { flags.traveled = { depth: returnDepth, arrival }; },
@@ -2822,6 +2850,7 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 		t: (key) => key,
 		...overrides.ctx,
 	};
+	if (typeof ctx.mobsAt !== 'function') ctx.mobsAt = (x, y) => creatures[`${x},${y}`] ? [creatures[`${x},${y}`]] : [];
 	useBeaconFlow(ctx, undefined);
 	return { ctx, log, flags, beacon, spell };
 }
@@ -2898,8 +2927,8 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 	assert.equal(blocked.flags.traveled, null, 'and nothing travels');
 	const occupied = beaconDrive(
 		{ beacon: { level: 0, charge: 10, returnDepth: 5, returnPos: 22, returnX: 2, returnY: 2 }, creatures: { '2,2': { kind: 'rat' } } }, [2]);
-	assert.deepEqual(occupied.flags.relocated, { x: 2, y: 2 }, 'an occupied anchor still relocates the hero first (LloydsBeacon.AC_RETURN never refuses on a mob)');
-	assert.equal(occupied.flags.moved.length, 1, '...and the mob standing there is displaced');
+	assert.deepEqual(occupied.flags.relocated, { x: 2, y: 2 }, 'an ordinary mob is displaced before the hero returns');
+	assert.equal(occupied.flags.moved.length, 1, 'the anchor occupant is moved out of the landing cell');
 	const walled = beaconDrive(
 		{ beacon: { level: 0, charge: 10, returnDepth: 5, returnPos: 22, returnX: 2, returnY: 2 }, passable: () => false }, [2]);
 	assert.ok(walled.log.some((l) => l.includes('no_tele')), 'a blocked anchor refuses');
@@ -2944,8 +2973,8 @@ function beaconDrive(overrides = {}, pickScript = [0]) {
 		creatures: { '2,2': { kind: 'rat' } },
 	});
 	useReturningBeaconFlow(blocked.ctx);
-	assert.deepEqual(blocked.flags.relocated, { x: 2, y: 2 }, 'a stranger on the anchor is pushed to a free neighbour (BeaconOfReturning.onCast) and the hero still arrives');
-	assert.equal(blocked.flags.turns, 1, 'spending the turn');
+	assert.equal(blocked.flags.moved.length, 1, 'an ordinary stranger is displaced from the return landing');
+	assert.equal(blocked.flags.turns, 1, 'a successful same-depth return spends its turn');
 	const walled = beaconDrive({ spell: { returnDepth: 5, returnPos: 22, returnX: 2, returnY: 2 }, passable: () => false });
 	useReturningBeaconFlow(walled.ctx);
 	assert.ok(walled.log.some((l) => l.includes('no_tele')), 'a blocked anchor refuses');
@@ -3950,7 +3979,7 @@ function talismanDrive(overrides = {}) {
 	// touches addBuff/reigniteBuff (only the mystery-meat branch does, untested here), and
 	// nothing under test reads buffBlocked (the retribution branch does - stubbed open);
 	// the challenges/i18n stubs above already cover this module's other two imports.
-	writeFileSync(join(out, 'combat.js'), 'exports.addBuff = () => {};\nexports.reigniteBuff = () => {};\nexports.buffBlocked = () => false;\n');
+	writeFileSync(join(out, 'combat.js'), 'exports.BUFF_DURATION = { aggression: 20 };\nexports.addCalls = [];\nexports.addBuff = (target, id, duration) => exports.addCalls.push({ target, id, duration });\nexports.reigniteBuff = () => {};\nexports.buffBlocked = () => false;\n');
 	compile(join(root, 'src/talentEffects.ts'), 'talentEffects.js');
 	compile(join(root, 'src/items/consumables.ts'), 'items/consumables.js');
 	const { applyMealEatenEffects, eatFood } = require('./items/consumables.js');
@@ -4239,7 +4268,8 @@ function scrollReadDrive(overrides = {}) {
 // Runestone recall arming (`Talent.onRunestoneUsed()`'s Cleric half): every stone
 // reports its Java class on activation - even wasted aims and first-click guesses,
 // which is when Java's onThrow/guess-click fires rather than on a hit or a consume.
-const { useStoneOfFlock, useStoneOfFear, useStoneOfIntuition, recastStone } = require('./items/stones.js');
+const { useStoneOfFlock, useStoneOfAggression, useStoneOfFear, useStoneOfIntuition, recastStone } = require('./items/stones.js');
+const combatStub = require('./combat.js');
 // `StoneOfShock.activate()` (`StoneOfShock.java`, tag `v3.3.8`) prolongs `Paralysis`
 // 1 on every `findChar` in the burst - including the hero - not the table-default 3
 // on mobs only. Pinned at source level because `combat` is stubbed in this harness.
@@ -4295,6 +4325,56 @@ function stoneDrive(overrides = {}) {
 	assert.deepEqual(flock.armed, ['StoneOfFlock'], 'a flock activation arms its class');
 	assert.equal(flock.bag.find('stoneOfFlock'), undefined, '...consuming the stone');
 	assert.ok(flock.spawned.length > 0, '...and the sheep arrive');
+	// `Runestone.onThrow()` selects its cell before consumption; `StoneOfAggression.activate(cell)`
+	// affects any occupant, including allies, with Buff.prolong's max-duration semantics.
+	combatStub.addCalls.length = 0;
+	const ordinary = { x: 4, y: 1, hp: 10, maxHp: 10, name: 'ordinary ally', isAlly: true, buffs: {} };
+	const aggression = stoneDrive({
+		items: [{ id: 'stoneOfAggression', quantity: 1 }],
+		creatureAt: (x, y) => x === 4 && y === 1 ? ordinary : null,
+		ctx: { nearestVisibleEnemy: () => { throw new Error('Aggression must use the chosen cell'); } },
+	});
+	useStoneOfAggression(aggression.ctx);
+	assert.equal(aggression.bag.find('stoneOfAggression')?.quantity, 1, 'aim cancellation leaves the stone');
+	assert.deepEqual(aggression.armed, [], 'aim cancellation does not report a runestone use');
+	// Re-enter with an aim callback so the test controls the exact selected cell.
+	const selected = stoneDrive({
+		items: [{ id: 'stoneOfAggression', quantity: 1 }],
+		creatureAt: (x, y) => x === 4 && y === 1 ? ordinary : null,
+		ctx: { nearestVisibleEnemy: () => { throw new Error('Aggression must use the chosen cell'); } },
+		 aim: (opts) => { assert.equal(opts.range, 8); opts.onConfirm({ x: 4, y: 1 }); },
+	});
+	useStoneOfAggression(selected.ctx);
+	assert.equal(selected.bag.find('stoneOfAggression'), undefined, 'confirmed cell consumes the stone');
+	assert.deepEqual(selected.armed, ['StoneOfAggression'], 'confirmed cell arms its class');
+	assert.deepEqual(combatStub.addCalls.splice(0), [{ target: ordinary, id: 'aggression', duration: undefined }], 'ordinary allies get Java’s full default 20-turn mark');
+	assert.ok(selected.said.some((l) => l.includes('port.log.stoneaggression')), 'the port reports the affected occupant');
+	const boss = { ...ordinary, boss: true, buffs: { aggression: 20 } };
+	const bossStone = stoneDrive({
+		items: [{ id: 'stoneOfAggression', quantity: 1 }],
+		creatureAt: () => boss,
+		 aim: (opts) => opts.onConfirm({ x: 1, y: 3 }),
+	});
+	useStoneOfAggression(bossStone.ctx);
+	assert.deepEqual(combatStub.addCalls, [], 'a shorter boss mark does not shorten an existing 20 turns');
+	const miniboss = { ...ordinary, miniboss: true, buffs: {} };
+	const miniStone = stoneDrive({
+		items: [{ id: 'stoneOfAggression', quantity: 1 }],
+		creatureAt: () => miniboss,
+		 aim: (opts) => opts.onConfirm({ x: 1, y: 3 }),
+	});
+	useStoneOfAggression(miniStone.ctx);
+	assert.deepEqual(combatStub.addCalls.splice(0), [{ target: miniboss, id: 'aggression', duration: 5 }], 'minibosses receive Java’s quarter-duration mark');
+	const empty = stoneDrive({
+		items: [{ id: 'stoneOfAggression', quantity: 1 }],
+		creatureAt: () => null,
+		 aim: (opts) => opts.onConfirm({ x: 1, y: 3 }),
+	});
+	useStoneOfAggression(empty.ctx);
+	assert.equal(empty.bag.find('stoneOfAggression'), undefined, 'an empty selected cell still consumes the thrown stone');
+	assert.deepEqual(empty.armed, ['StoneOfAggression'], 'empty-cell throws still arm recall');
+	assert.deepEqual(combatStub.addCalls, [], 'an empty cell receives no buff');
+	assert.ok(empty.said.some((l) => l.includes('port.log.stonewasted')), 'empty-cell feedback stays visible');
 	// A wasted fear aim still arms: Java fires onRunestoneUsed in onThrow, before
 	// the effect, even when the cell holds nothing hittable.
 	const fear = stoneDrive({

@@ -26,7 +26,7 @@ export function verifyArmorAbilities(require, check) {
 	const { exposeWeaknessDuration, feignedRetreatHaste, closeTheGapRange, eliminationMatchFactor, invigoratingVictoryHeal, combinedLethalityTest, elementalStrikeCone, elementalPowerMulti, directedPowerBoost, elementalBlockingShield, elementalVampiricHeal, elementalSacrificialSelf, elementalBlobAmount, elementalBloomingBudget, elementalFurrowStep, elementalBaseDamage, elementalKineticSplash, elementalRootsDuration, elementalKnockback, elementalLuckyChance, elementalProjectingSplash, elementalCorruptingChance, elementalGrimChance, elementalCurseChance, elementalAnnoyingChance, elementalSacrificialOther, elementalStrikeResisted } = require('./simulation/duelistAbilities');
 	const { ELEMENTAL_BLAST_DAMAGE_FACTORS, elementalBlastEffectMulti, elementalBlastAoeSize, elementalBlastAim, elementalBlastDamage, elementalBlastUndeadDamage, elementalBlastTransfusionSplit, elementalBlastCorrosion, elementalBlastParalysisDuration, elementalBlastFrostDuration, elementalBlastBlindnessDuration, elementalBlastLightDuration, elementalBlastCharmDuration, elementalBlastAmokDuration, elementalBlastRootsDuration, elementalBlastRechargingDuration, elementalBlastRegrowthChance, elementalBlastKnockback, elementalBlastReactiveShield } = require('./simulation/mageAbilities');
 	const { BUFF_DURATION } = require('./simulation/buffs');
-	const { trinityBodyDuration, trinityMindItemLevel, trinitySpiritRingLevel, trinitySpiritArtifactLevel, trinityChargeUsePerEffect, POWER_OF_MANY_TURNS, POWER_OF_MANY_ATTACK_FACTOR, powerOfManyDamageFactor } = require('./simulation/clericSpells');
+	const { trinityBodyDuration, trinityBodyGlyphActive, trinityMindItemLevel, trinitySpiritRingLevel, trinitySpiritArtifactLevel, trinityChargeUsePerEffect, POWER_OF_MANY_TURNS, POWER_OF_MANY_ATTACK_FACTOR, powerOfManyDamageFactor } = require('./simulation/clericSpells');
 
 	//`HeroClass.armorAbilities()`, in its own order.
 	check('every class offers its three real armor abilities, in Java order', () => {
@@ -66,11 +66,17 @@ export function verifyArmorAbilities(require, check) {
 		assert.deepEqual([0, 1, 4].map(trinitySpiritRingLevel), [0, 1, 4]);
 		assert.deepEqual([0, 1, 4].map(trinitySpiritArtifactLevel), [2, 4, 10]);
 		assert.equal(trinityChargeUsePerEffect(25, 'Corrupting', 'body'), 50);
+		assert.equal(trinityChargeUsePerEffect(25, 'AntiMagic', 'body'), 50);
 		assert.equal(trinityChargeUsePerEffect(25, 'Thorns', 'body'), 50);
 		assert.equal(trinityChargeUsePerEffect(25, 'WandOfFireblast', 'mind'), 50);
 		assert.equal(trinityChargeUsePerEffect(25, 'DriedRose', 'spirit'), 50);
 		assert.equal(trinityChargeUsePerEffect(25, 'EtherealChains', 'spirit'), 35);
 		assert.equal(trinityChargeUsePerEffect(25, 'RingOfMight', 'spirit'), 25);
+		assert.equal(trinityBodyGlyphActive('body', 1, 'stone', null, false, 'stone'), true);
+		assert.equal(trinityBodyGlyphActive('body', 0, 'stone', null, false, 'stone'), false);
+		assert.equal(trinityBodyGlyphActive('mind', 5, 'stone', null, false, 'stone'), false);
+		assert.equal(trinityBodyGlyphActive('body', 5, 'stone', 'stone', false, 'stone'), false);
+		assert.equal(trinityBodyGlyphActive('body', 5, 'stone', null, true, 'stone'), false);
 	});
 
 	check('Stench armor curse seeds Java ToxicGas, while FetidRat keeps StenchGas', () => {
@@ -178,6 +184,49 @@ export function verifyArmorAbilities(require, check) {
 		assert.ok(source.includes('this.featuresMap?.setLayerData('), 'regrown grass restitches the tiles');
 	});
 
+	check('Trinity BodyForm offers and persists its modeled defensive glyph effects', () => {
+		//`Trinity.WndItemtypeSelect`/`WndUseTrinity` and `Armor.proc()` (`Trinity.java`,
+		//`BodyForm.java`, `Armor.java`, tag `v3.3.8`): the selected glyph runs as a separate
+		//armor proc, including during HolyWard; MagicImmune and a duplicate worn glyph still gate it.
+		const ability = readFileSync(new URL('../src/scenes/dungeon/hero/armorAbilityUse.ts', import.meta.url), 'utf8');
+		const combat = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
+		const mobOnHit = readFileSync(new URL('../src/scenes/mobOnHit.ts', import.meta.url), 'utf8');
+		const save = readFileSync(new URL('../src/scenes/dungeon/deathSaveRefresh.ts', import.meta.url), 'utf8');
+		const restore = readFileSync(new URL('../src/scenes/dungeon/panelsSingleUse.ts', import.meta.url), 'utf8');
+		const turns = readFileSync(new URL('../src/scenes/dungeon/turnLoopAiming.ts', import.meta.url), 'utf8');
+		assert.match(ability, /const TRINITY_BODY_GLYPH_CLASSES[\s\S]*stone: 'Stone'[\s\S]*repulsion: 'Repulsion'[\s\S]*antimagic: 'AntiMagic'[\s\S]*viscosity: 'Viscosity'[\s\S]*thorns: 'Thorns'/);
+		assert.match(ability, /MWL_ARMOR_GLYPHS\.filter[\s\S]*id in TRINITY_BODY_GLYPH_CLASSES/);
+		assert.ok(ability.includes("this.commitTrinityBodyGlyph(id, cost)"), 'picker commits the selected glyph');
+		const glyphStart = ability.indexOf('commitTrinityBodyGlyph(this: DungeonScene');
+		const glyphEnd = ability.indexOf('\n\t},', glyphStart);
+		assert.notEqual(glyphStart, -1);
+		const glyphCommit = ability.slice(glyphStart, glyphEnd);
+		assert.ok(glyphCommit.includes('if (this.hero.magicImmune) return;'), 'MagicImmune cannot spend charge on a BodyForm glyph');
+		assert.ok(glyphCommit.includes('this.trinityBodyGlyph = glyph'), 'commit stores its glyph');
+		assert.ok(glyphCommit.includes("delete this.hero.buffs['invisibility']"), 'BodyForm selection dispels invisibility');
+		assert.ok(combat.includes("this.trinityBodyGlyphIs('stone')"), 'Stone uses Trinity glyph dispatch');
+		assert.ok(combat.includes("this.trinityBodyGlyphIs('repulsion')"), 'Repulsion uses Trinity glyph dispatch');
+		assert.ok(combat.includes("this.trinityBodyGlyphIs('antimagic')"), 'AntiMagic uses Trinity glyph dispatch');
+		assert.ok(combat.includes("this.trinityBodyGlyphIs('viscosity')"), 'Viscosity uses Trinity glyph dispatch');
+		assert.match(combat, /armorProcMultiplier\(this: DungeonScene, defender: Creature\): number \{[\s\S]*?const arcana = ringArcanaMultiplier\([\s\S]*?return arcana \+ auraProcBonus/,
+			'defend-side glyph chances use Arcana and Aura, never the weapon-only Berserk catalyst');
+		assert.match(combat, /armorProcMultiplier: \(defender\) => scene\.armorProcMultiplier\(defender\)/,
+			'the mob hit adapter forwards the defend-side proc multiplier');
+		assert.match(mobOnHit, /armorGlyph\('thorns'\) \|\| ctx\.trinityBodyGlyphIs\('thorns'\)/,
+			'Thorns can proc as worn armor or as the temporary Trinity glyph');
+		assert.match(mobOnHit, /\(\(level \+ 2\) \/ \(level \+ 12\)\) \* ctx\.armorProcMultiplier\(defender\)/,
+			'Thorns uses Java\'s level chance with the armor-side multiplier');
+		assert.match(mobOnHit, /setBleeding\(attacker, Math\.round\(\(4 \+ level\) \* Math\.max\(1, procChance\)\)\)/,
+			'Thorns applies Java\'s level-scaled Bleeding value');
+		const helperStart = combat.indexOf('trinityBodyGlyphIs(this: DungeonScene');
+		const helperEnd = combat.indexOf('\n\t},', helperStart);
+		assert.notEqual(helperStart, -1);
+		assert.match(combat.slice(helperStart, helperEnd), /trinityBodyGlyphActive\(/);
+		assert.ok(save.includes('trinityBodyGlyph: this.trinityBodyGlyph'), 'save state carries the BodyForm glyph');
+		assert.ok(restore.includes('this.trinityBodyGlyph = s.trinityBodyGlyph ?? null'), 'load restores the BodyForm glyph');
+		assert.ok(turns.includes('this.trinityBodyGlyph = null'), 'form expiry clears the glyph');
+	});
+
 	check('ElementalStrike Lucky rewards are in the right ability and include Java\'s gold case', () => {
 		//`ElementalStrike.perCharEffect()` (`ElementalStrike.java`, tag `v3.3.8`) handles the
 		//Lucky enchantment; `ElementalBlast.java` has no enchantment/Lucky branch. Scope this
@@ -245,7 +294,6 @@ export function verifyArmorAbilities(require, check) {
 		assert.ok(!source.slice(useStart, useEnd).includes('target.isNPC'),
 			'the ability-damage filter no longer spares neutrals');
 	});
-
 	check('PowerOfMany keeps Java duration and attack damage factors', () => {
 		assert.equal(POWER_OF_MANY_TURNS, 100);
 		assert.equal(POWER_OF_MANY_ATTACK_FACTOR, 1.25);
@@ -253,8 +301,17 @@ export function verifyArmorAbilities(require, check) {
 		assert.ok(Math.abs(powerOfManyDamageFactor(1) - 0.65) < 1e-12);
 		assert.ok(Math.abs(powerOfManyDamageFactor(4) - 0.5) < 1e-12);
 		const source = readSceneSource();
+		const toolbar = readFileSync(new URL('../src/ui/toolbar.ts', import.meta.url), 'utf8');
 		assert.ok(source.includes("id === 'powerofmany' ? this.activatePowerOfMany(def, cost, cell)"), 'the ability routes aimed ally selection');
 		assert.ok(source.includes("addBuff(target, 'powerOfMany', POWER_OF_MANY_TURNS)"), 'cast applies the 100-turn buff');
+		assert.match(source, /activatePowerOfMany\(this: DungeonScene[\s\S]*?this\.zapBeams\.push\([\s\S]*?runState\.audio\.cue\('chargeup'/,
+			'PowerOfMany zaps the empowered cell and plays Java\'s CHARGEUP cue');
+		assert.match(source, /this\.armorCharge = Math\.max\(0, this\.armorCharge - cost\);[\s\S]*?this\.actionBar\.setArmorAbility\(this\.armorAbilityLabel\(\)\)/,
+			'PowerOfMany refreshes Java quickslot charge status immediately after spending charge');
+		assert.match(toolbar, /setArmorAbility\(label: string \| null\): boolean[\s\S]*?this\.armorAbilityLabel = label;/,
+			'the toolbar caches the last armor label so refreshes only relayout on a real change');
+		assert.match(source, /if \(powered\?\.allyKind === 'lightAlly'\)[\s\S]*?this\.directAlly\(powered, cell,[\s\S]*?return true;[\s\S]*?this\.zapBeams\.push\(/,
+			'commanding the existing LightAlly returns before the summon/empower zap');
 		assert.ok(source.includes("attacker.buffs['powerOfMany']"), 'the buff grants its melee damage factor');
 		assert.ok(source.includes("defender.buffs['powerOfMany']"), 'the buff reduces ordinary melee damage taken');
 		assert.ok(source.includes('this.spawnLightAlly(cell)'), 'an empty valid cell summons LightAlly');
@@ -267,15 +324,15 @@ export function verifyArmorAbilities(require, check) {
 		assert.ok(source.includes('!this.level.passable(cell.x, cell.y)'), 'empty-cell placement checks this port\'s available terrain gate');
 		assert.equal(armorChargeUse(armorAbilityDef('powerofmany'), { heroicEnergyRank: 4, powerOfManyLightAlly: true }), 0);
 		const allyTurns = readFileSync(new URL('../src/scenes/dungeon/actorTurnsHazards.ts', import.meta.url), 'utf8');
-		assert.match(allyTurns, /const directableReturning = \(ally\.allyKind === 'lightAlly' \|\| ally\.allyKind === 'shadowClone' \|\| ally\.allyKind === 'ghost'\)\s*&& !target && !defend;/,
-			'an uncommanded LightAlly, ShadowAlly or GhostHero returning to its hero gets the speed rider (PowerOfMany/ShadowClone/DriedRose all carry the identical speed() override)');
-		assert.match(allyTurns, /const returningFast = directableReturning && Roguelike\.chebyshevDistance\(ally, this\.hero\) > 1;/,
-			'Java doubles the speed only while more than one cell from the hero');
+		assert.match(allyTurns, /const returningLightAlly = ally\.allyKind === 'lightAlly' && !target && !defend;/,
+			'only an uncommanded LightAlly returning to its hero gets the speed rider');
+		assert.match(allyTurns, /const returningFast = \(returningLightAlly \|\| returningShadowClone \|\| returningGhost\) && heroDistance > 1;/,
+			'Java doubles LightAlly, ShadowClone and GhostHero return speed only while more than one cell from the hero (GhostHero.speed, DriedRose.java v3.3.8)');
 		assert.match(allyTurns, /if \(returningFast\) this\.pendingMonsterTurnCost = 0\.5;/,
 			'the twice-speed return advances the scheduler at half the normal turn cost');
 		const traps = readFileSync(new URL('../src/scenes/dungeon/environmentFireTraps.ts', import.meta.url), 'utf8');
 		assert.ok(traps.includes('absorbCreatureShields(target, damage, this.ascendedTurns > 0)'), 'blob and trap damage drains ally shields');
-		assert.ok(traps.includes('absorbCreatureShields(monster, damage, this.ascendedTurns > 0)'), 'mob-triggered traps drain ally shields');
+		assert.ok(traps.includes('absorbCreatureShields(monster, doomDamage(damage, monster), this.ascendedTurns > 0)'), 'mob-triggered traps apply Doom before draining ally shields');
 	});
 		assert.deepEqual(armorAbilitiesFor('duelist'), ['challenge', 'elementalstrike', 'feint']);
 		assert.equal(ARMOR_CHARGE_MAX, 100);
@@ -298,11 +355,8 @@ export function verifyArmorAbilities(require, check) {
 			'cursed spares now fire through the cursed effect table instead of sitting out');
 		assert.ok(source.includes('if (Random.int(4) >= conserved) this.spendHeroAction(1);'), 'the turn is free only under a conserved roll');
 	});
-	check('castCursedWandCommonEffect ports CursedWand.cursedZap\'s Common tier (6 of 8 effects, scoped)', () => {
-		//`simulation/cursedWand.ts` has the full scoping rationale: only the Common tier
-		//(60% of Java's category weight) is modeled, and only 6 of its 8 effects - the two
-		//left out need a generic Regrowth/Freezing blob type this port has no infrastructure
-		//for at all.
+	check('castCursedWandCommonEffect ports all 8 of CursedWand.cursedZap\'s Common effects', () => {
+		//`simulation/cursedWand.ts` documents the remaining cell-press and wand-proc reductions.
 		const source = readSceneSource();
 		for (const marker of [
 			"pickCursedCommonEffect((bound) => Random.int(bound))",
@@ -311,6 +365,8 @@ export function verifyArmorAbilities(require, check) {
 			"effect === 'randomGas'",
 			"effect === 'bubbles'",
 			"effect === 'randomWand'",
+			"effect === 'randomAreaEffect'",
+			"effect === 'spawnRegrowth'",
 		]) {
 			assert.ok(source.includes(marker), `castCursedWandCommonEffect must branch on ${marker}`);
 		}
@@ -348,11 +404,11 @@ export function verifyArmorAbilities(require, check) {
 		assert.ok(source.includes("if (victim.isHero) reigniteBuff(this.hero, 'recharging');"), 'LightningBolt grants Recharging to the hero additively');
 		assert.ok(source.includes("if (victim.hp > 0) reigniteBuff(victim, 'paralysis');"), 'LightningBolt paralyzes every survivor, hero included');
 	});
-	check('castCursedWandEffect dispatches all three modeled tiers, and castCursedWandRareEffect ports MassInvuln + ConeOfColors + SheepPolymorph', () => {
+	check('castCursedWandEffect dispatches all tiers, and castCursedWandRareEffect ports six Rare effects', () => {
 		const source = readSceneSource();
 		assert.ok(source.includes("if (tier === 'common') this.castCursedWandCommonEffect(target, cell);"), 'the tier dispatch must branch on common');
 		assert.ok(source.includes("else if (tier === 'uncommon') this.castCursedWandUncommonEffect(target, cell);"), 'the tier dispatch must branch on uncommon');
-		assert.ok(source.includes("else this.castCursedWandRareEffect(target, cell);"), 'the tier dispatch must fall through to rare');
+		assert.ok(source.includes("else if (tier === 'rare') this.castCursedWandRareEffect(target, cell);"), 'the tier dispatch must branch on rare, leaving VeryRare separate (Java rolls common/uncommon/rare/v.rare at 60/30/9/1, CursedWand.java v3.3.8)');
 		assert.ok(source.includes("addBuff(creature, 'invulnerability', 10)") && source.includes("addBuff(creature, 'bless')"),
 			'MassInvuln grants every character Invulnerability 10 and a full Bless');
 		assert.ok(source.includes("degrees: 90,") && source.includes("maxDistance: 8,"), 'ConeOfColors must build Java\'s exact 90-degree, 8-radius cone');
@@ -368,6 +424,10 @@ export function verifyArmorAbilities(require, check) {
 		assert.ok(source.includes('!target.isHero && !target.isNPC'), 'SheepPolymorph must refuse the hero and NPCs, matching Java\'s valid() gate');
 		assert.ok(source.includes('!BOSS_KINDS.has(target.kind) && !MINIBOSS_KINDS.has(target.kind)'), 'SheepPolymorph must refuse bosses and minibosses');
 		assert.ok(source.includes('this.spawnSheep(at, 10)'), 'SheepPolymorph must spawn Java\'s 10-turn Sheep at the destroyed target\'s cell');
+		assert.ok(source.includes("this.activateUtilityTrap('summoning', cell.x, cell.y)"), 'SummonMonsters reuses the summoning utility trap');
+		assert.ok(source.includes("effect === 'curseEquipment'") && source.includes('this.weaponCursedKnown = true'), 'CurseEquipment curses and identifies an eligible equipped item');
+		assert.ok(source.includes("effect === 'interFloorTeleport'") && source.includes('Random.weighted(weights)'), 'InterFloorTeleport selects a weighted destination');
+		assert.ok(source.includes('!this.floorLocked()') && source.includes("!this.bag.find('amulet')"), 'InterFloorTeleport respects the live floor seal and Amulet gate');
 		assert.ok(source.includes('this.creatures.splice(this.creatures.indexOf(target), 1)') && source.includes('this.spriteFor.delete(target.id)'),
 			'SheepPolymorph must silently remove the target (no death, no loot), matching destroyAlly\'s own teardown shape');
 	});
@@ -518,21 +578,6 @@ export function verifyArmorAbilities(require, check) {
 		assert.equal(shockForceParalyses(3, 2), true);
 	});
 
-	check('Shockwave draws a fresh Unstable delegate per target and restores the swing stash', () => {
-		const source = readSceneSource();
-		const shockStart = source.indexOf('activateShockwave(this: DungeonScene');
-		assert.notEqual(shockStart, -1, 'the Shockwave scene method exists');
-		const shockEnd = source.indexOf('\n\t},', shockStart);
-		assert.notEqual(shockEnd, -1, 'the Shockwave scene method has an object-method boundary');
-		const shock = source.slice(shockStart, shockEnd);
-		assert.ok(shock.includes('let previousDelegation: string | null = null;'),
-			'the cone saves the triggering swing delegation stash');
-		assert.ok(shock.includes("if (this.weaponAffix === 'unstable') this.unstableDelegated = Random.element(UNSTABLE_DELEGATES)!;"),
-			'Unstable draws a fresh delegate per target like Unstable.proc');
-		assert.ok(shock.includes("if (procs && this.weaponAffix === 'unstable') this.unstableDelegated = previousDelegation;"),
-			'the cone hands the stash back before the Gladiator combo');
-	});
-
 	check('Endure halves incoming damage, 0.8^SHRUG_IT_OFF further, banking half of what arrived', () => {
 		assert.equal(endureDamageTaken(40, 0), 20);
 		assert.equal(endureDamageTaken(40, 1), 16);
@@ -571,7 +616,7 @@ export function verifyArmorAbilities(require, check) {
 		assert.equal(armorChargeUse(clone, { heroicEnergyRank: 0, cloneSummoned: true }), 0);
 		assert.equal(armorChargeUse(clone, { heroicEnergyRank: 4, cloneSummoned: true }), 0);
 		assert.equal(armorChargeUse(armorAbilityDef('smokebomb'), { heroicEnergyRank: 0, cloneSummoned: true }), 50);
-		const { SHADOW_CLONE_HP, shadowCloneHp, shadowCloneAccuracy, shadowCloneEvasion, shadowCloneBladeShare, shadowCloneArmorShare } = require('./simulation/rogueAbilities');
+		const { SHADOW_CLONE_HP, shadowCloneHp, shadowCloneAccuracy, shadowCloneEvasion, shadowCloneBladeShare, shadowCloneArmorShare, shadowCloneCanInteract, shadowCloneBladeProc, shadowCloneArmorProc } = require('./simulation/rogueAbilities');
 		assert.equal(SHADOW_CLONE_HP, 80);
 		//`15 + 5*heroLevel`, plus 10% per PERFECT_COPY point: level 10 rank 0 is 80, rank 2 is 93.
 		assert.equal(shadowCloneHp(10, 0), 80);
@@ -590,6 +635,74 @@ export function verifyArmorAbilities(require, check) {
 		assert.equal(shadowCloneArmorShare(0, 10), 0);
 		assert.equal(shadowCloneArmorShare(3, 10), 4);
 		assert.equal(shadowCloneArmorShare(4, 10), 5);
+		//`ShadowAlly.canInteract`: adjacency OR distance <= PERFECT_COPY points = max(1, points).
+		assert.equal(shadowCloneCanInteract(1, 0), true);
+		assert.equal(shadowCloneCanInteract(2, 0), false);
+		assert.equal(shadowCloneCanInteract(2, 1), false);
+		assert.equal(shadowCloneCanInteract(1, 1), true);
+		assert.equal(shadowCloneCanInteract(4, 4), true);
+		assert.equal(shadowCloneCanInteract(5, 4), false);
+		//`ShadowAlly.attackProc()`: `Random.Int(4) < pointsInTalent(SHADOW_BLADE)` AND the hero
+		//has a weapon - the roll is drawn first (Java's `&&` order), so an empty-handed hero
+		//still consumes it, and rank 0 never passes.
+		assert.equal(shadowCloneBladeProc(0, 1, true), true);
+		assert.equal(shadowCloneBladeProc(1, 1, true), false);
+		assert.equal(shadowCloneBladeProc(2, 3, true), true);
+		assert.equal(shadowCloneBladeProc(3, 3, true), false);
+		assert.equal(shadowCloneBladeProc(0, 0, true), false);
+		assert.equal(shadowCloneBladeProc(0, 4, true), true);
+		assert.equal(shadowCloneBladeProc(0, 2, false), false);
+		//`ShadowAlly.defenseProc()`: the same draw-first shape against CLONED_ARMOR and the hero's
+		//armor - one roll per landed attack, consumed even when the hero wears nothing.
+		assert.equal(shadowCloneArmorProc(0, 1, true), true);
+		assert.equal(shadowCloneArmorProc(1, 1, true), false);
+		assert.equal(shadowCloneArmorProc(2, 3, true), true);
+		assert.equal(shadowCloneArmorProc(3, 3, true), false);
+		assert.equal(shadowCloneArmorProc(0, 0, true), false);
+		assert.equal(shadowCloneArmorProc(0, 4, true), true);
+		assert.equal(shadowCloneArmorProc(0, 2, false), false);
+		const cloneCombat = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+		assert.match(cloneCombat, /const cloneGearSwing = attacker !== this\.hero && attacker\.allyKind === 'shadowClone'\s*&& shadowCloneBladeProc\(Random\.int\(4\), this\.talentRank\('shadow_blade'\), this\.weaponId != null\)/,
+			'attack() draws Java Int(4) before testing the hero weapon');
+		assert.match(cloneCombat, /if \(cloneGearSwing\) \{\s*this\.heroOnHit\(attacker, defender, damage, true\)/,
+			'the delegated Weapon.proc half runs through heroOnHit');
+		assert.match(cloneCombat, /if \(delegatedGearSwing\) return 1;/,
+			'a delegated swing rolls at Java base proc chance and keeps the hero trackers armed');
+		assert.match(cloneCombat, /if \(!gearDelegated && this\.subclass\(\) === 'battlemage'\)/,
+			'Battlemage/Monk subclass hooks stay hero-only on a delegated swing');
+		assert.match(cloneCombat, /const cloneDefenderGate = defender\.allyKind === 'shadowClone'\s*&& shadowCloneArmorProc\(Random\.int\(4\), this\.talentRank\('cloned_armor'\), this\.armorGlyph != null\)/,
+			'attack() draws the single defenseProc roll for a landed attack on the clone');
+		assert.match(cloneCombat, /if \(defender\.allyKind === 'shadowClone'\) this\.mobOnHit\(attacker, defender, damage, cloneDefenderGate\)/,
+			'the hero-as-attacker path reaches the clone defend-side glyphs too');
+		const cloneMobOnHit = readFileSync(new URL('../src/scenes/mobOnHit.ts', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+		assert.match(cloneMobOnHit, /const glyphDefender = defender\.isHero \|\| cloneDefenderGate;/,
+			'generic defend-side glyph sites accept the clone');
+		assert.match(cloneMobOnHit, /if \(defender\.isHero && armorGlyph\('metabolism'\)/,
+			'hero-scoped glyph sites stay keyed on the hero');
+		const scene = readSceneSource();
+		assert.match(scene, /heroSheet\(runState\.sprites\.rogue\)/, 'ShadowSprite uses Java HeroClass.ROGUE spritesheet');
+		assert.match(scene, /sprite\.add\('idle', \[0, 0, 0, 1, 0, 0, 1, 1\]\.map\(frame\), \{ fps: 1 \}\)/, 'ShadowSprite ports Java idle frames');
+		assert.match(scene, /sprite\.add\('run', \[2, 3, 4, 5, 6, 7\]\.map\(frame\), \{ fps: 20 \}\)/, 'ShadowSprite ports Java run frames');
+		assert.match(scene, /sprite\.add\('die', \[0\]\.map\(frame\), \{ fps: 20, loop: false \}\)/, 'ShadowSprite ports Java die frame');
+		assert.match(scene, /sprite\.add\('attack', \[13, 14, 15, 0\]\.map\(frame\), \{ fps: 15, loop: false \}\)/, 'ShadowSprite ports Java attack frames');
+		assert.match(scene, /sprite\.alpha = 0\.8/, 'ShadowSprite uses Java alpha');
+		assert.match(scene, /sprite\.silhouette\(0x000000\)/, 'ShadowSprite resetColor keeps Java\'s black silhouette');
+		const effects = readFileSync(new URL('../src/ui/characterEffects.ts', import.meta.url), 'utf8');
+		assert.match(effects, /shadow\.visible = castsShadow && sprite\.visible/, 'CharacterEffects honors renderShadow=false');
+		const runtime = readFileSync(new URL('../src/scenes/dungeonScene.ts', import.meta.url), 'utf8');
+		assert.match(runtime, /castsShadow: creature\.allyKind !== 'shadowClone'/, 'only ShadowClone suppresses the flattened character shadow');
+		const spawn = readFileSync(new URL('../src/scenes/monsterSpawn.ts', import.meta.url), 'utf8');
+		assert.match(spawn, /case 'shadowClone': return 0;/, 'the generic ally blue tint does not wash out the black silhouette');
+		assert.match(scene, /const returningShadowClone = ally\.allyKind === 'shadowClone' && !target && !defend;/, 'ShadowClone only uses its fast return while uncommanded');
+		assert.match(scene, /const followStopRange = returningShadowClone \? 1 : 2;/, 'ShadowClone follows to Java adjacency');
+		assert.match(scene, /const returningFast = \(returningLightAlly \|\| returningShadowClone \|\| returningGhost\) && heroDistance > 1;/, 'LightAlly, ShadowClone and GhostHero double return speed only beyond adjacency');
+		//PERFECT_COPY's free place-swap: pure range helper, scene method, bump wiring.
+		assert.match(scene, /tryShadowCloneSwap\(this: DungeonScene, ally: Creature\): boolean \{/, 'ShadowAlly.interact(PERFECT_COPY) is a dedicated scene seam');
+		assert.match(scene, /if \(occupant!\.isAlly && !occupant!\.isNPC && this\.tryShadowCloneSwap\(occupant!\)\) return;/, 'the ally bump tries ShadowAlly.interact before ALLY_WARP');
+		assert.match(scene, /if \(!this\.level\.passable\(ally\.x, ally\.y\) && this\.hero\.buffs\['levitation'\] === undefined\) return true;/, 'Java refuses the swap on an impassable clone cell while the hero is not flying');
+		assert.match(scene, /if \(\(reach\[this\.level\.index\(ally\.x, ally\.y\)\] \?\? -1\) < 0\) return true;/, 'Java refuses the swap when the pathfinder cannot reach the clone');
+		//`Hero.handle`'s ranged Interact: a FOV ally click runs tryShadowCloneSwap before travel.
+		assert.match(scene, /&& this\.tryShadowCloneSwap\(clickAlly\)\) \{/, 'a map click on a FOV ally intercepts into ShadowAlly.interact');
 	});
 
 	check('ElementalStrike\'s cone, talents and imbuement arithmetic are Java\'s', () => {
@@ -898,6 +1011,16 @@ export function verifyArmorAbilities(require, check) {
 		assert.match(place[1], /delete this\.hero\.buffs\['invisibility'\]/,
 			'placing the beacon must dispel invisibility');
 	});
+	check('WarpBeacon recall only pushes a LARGE occupant into open space', () => {
+		//`WarpBeacon.returnBeacon()` (tag `v3.3.8`): `!LARGE || openSpace[cell]` on every
+		//push candidate. The scene is Pixi-bound, so this pins the call site at source
+		//level; the behavior itself is pinned in `test:beacon` for the spell twin.
+		const source = readSceneSource();
+		assert.match(source, /const pushLarge = isLargeCreature\(occupant\.kind, occupant\.yogFistType\);/,
+			'the recall must read the LARGE property off the occupant');
+		assert.match(source, /\(!pushLarge \|\| isOpenSpace\(this\.level\.index\(next\.x, next\.y\), pushWidth, pushSolid\)\)/,
+			'a large occupant must only move into open space');
+	});
 	check('CombinedLethality tests only on a weapon-changed hero melee swing, executing at `0.4*points/3`', () => {
 		//`Char.java` 541-561: the tracker's weapon must differ from the attacking weapon
 		//(`!=` instance identity), the attacker must be the hero, and the attacking weapon
@@ -952,19 +1075,5 @@ export function verifyArmorAbilities(require, check) {
 			'a consumed tracker must run the bow nature-proc');
 		assert.doesNotMatch(source, /damageMultiplier \*= 1\.1/,
 			'the invented x1.1 spirit-blades damage bonus must be gone');
-	});
-	check('Trinity BodyForm Thorns is offered and follows Java\'s defensive proc gates', () => {
-		const ability = readFileSync(new URL('../src/scenes/dungeon/hero/armorAbilityUse.ts', import.meta.url), 'utf8');
-		const combat = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
-		const mob = readFileSync(new URL('../src/scenes/mobOnHit.ts', import.meta.url), 'utf8');
-		assert.match(ability, /thorns: 'Thorns'/, 'BodyForm offers Thorns');
-		assert.match(ability, /commitTrinityBodyGlyph[\s\S]*?trinityBodyGlyph = glyph/, 'BodyForm stores the selected glyph');
-		assert.match(combat, /trinityBodyGlyphIs\(this: DungeonScene[\s\S]*?trinityBodyGlyphActive\(/, 'scene applies Java BodyForm active, duplicate, and MagicImmune gates');
-		assert.match(combat, /this\.trinityBodyGlyphIs\('(stone|repulsion|antimagic|viscosity)'\)/, 'all four existing defensive glyph hooks use Trinity state');
-		assert.match(combat, /armorProcMultiplier\(this: DungeonScene, defender: Creature\): number \{[\s\S]*?const arcana = ringArcanaMultiplier\([\s\S]*?return arcana \+ auraProcBonus/, 'defend-side chance excludes the weapon-only catalyst term');
-		assert.match(mob, /armorGlyph\('thorns'\) \|\| ctx\.trinityBodyGlyphIs\('thorns'\)/, 'Thorns uses the temporary Trinity glyph');
-		assert.match(mob, /!attacker\.isHero && !attacker\.isAlly && !attacker\.isNPC && attacker\.hp > 0/, 'Thorns only affects a living opposite-alignment attacker');
-		assert.match(mob, /\(\(level \+ 2\) \/ \(level \+ 12\)\) \* ctx\.armorProcMultiplier\(defender\)/, 'Thorns uses Java\'s chance and defend-side multiplier');
-		assert.match(mob, /setBleeding\(attacker, Math\.round\(\(4 \+ level\) \* Math\.max\(1, procChance\)\)\)/, 'Thorns applies Java\'s level-scaled Bleeding');
 	});
 }

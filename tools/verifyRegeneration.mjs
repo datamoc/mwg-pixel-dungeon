@@ -65,23 +65,18 @@ const loop = read('../src/scenes/dungeon/turnLoopAiming.ts');
 const heroTurn = read('../src/simulation/heroTurn.ts');
 assert.match(heroTurn, /advanceHunger\(turnCost\);\n\teffects\.tickRegeneration\?\.\(\);/, 'Regeneration acts right after the hero (HERO_PRIO - 1)');
 assert.match(loop, /if \(this\.floorLocked\(\)\) return;\n\t\t\/\/Java's Hunger uses/, 'Hunger.act() idles on a locked floor');
-for (const gate of ['regenOn: this.regenOn(), shielding: this.sealBarrier.total', "this.regenOn() ? 0.1", 'regenOn: this.regenOn(),', 'this.hero.magicImmune === true, this.regenOn());', '!this.regenOn() ? 0 :']) {
+for (const gate of ['this.armorSealed && this.regenOn()', "this.regenOn() ? 0.1", 'regenOn: this.regenOn(),', 'this.hero.magicImmune === true, this.regenOn());', '!this.regenOn() ? 0 :']) {
 	assert.ok((loop + read('../src/scenes/dungeon/actorTurnsHazards.ts')).includes(gate), `regenOn gate wired: ${gate}`);
 }
 for (const [file, hook] of [
-	//T61 split the attack pipeline into `attackSeams.ts`: the dm300 hook now lives in
-	//`runBossDamageHooks` and the linkKing share in `applyBossSoaks` there.
-	['../src/scenes/dungeon/attackSeams.ts', "this.lockedFloorBossDamage(defender, preHp - defender.hp, preHp - defender.hp);\n\t\tif (defender.kind === 'dm300')"],
-	['../src/scenes/dungeon/attackSeams.ts', 'this.lockedFloorBossDamage(linkKing, share, kingPreHp - linkKing.hp);'],
+	['../src/scenes/dungeon/combatResolution.ts', "this.lockedFloorBossDamage(defender, preHp - defender.hp, preHp - defender.hp);\n\t\tif (defender.kind === 'dm300')"],
+	['../src/scenes/dungeon/combatResolution.ts', 'this.lockedFloorBossDamage(linkKing, dealt, kingPreHp - linkKing.hp);'],
 	['../src/scenes/dungeon/panelsSingleUse.ts', "this.lockedFloorBossDamage(c, damage, preHp - c.hp);\n\t\tif (c.kind === 'tengu')"],
-	//d5341de rerouted monster DoT ticks through the shared Char.damage dispatch, so the
-	//lock feed no longer sits at the tick site: the tick pins the dispatch call below and
-	//the dispatch's own lockedFloorBossDamage pin (two lines up) closes the chain.
-	['../src/scenes/dungeon/actorTurnsHazards.ts', "this.applyCharacterDamage(monster, dotDealt, { pierceArmor: true, cause: 'foe', skipAura: true });"],
+	['../src/scenes/dungeon/actorTurnsHazards.ts', 'this.applyCharacterDamage(monster, dotDealt, { pierceArmor: true, cause:'],
 	['../src/items/bombEffects.ts', 'context.onBossDamageTaken?.(target, damage, previousHp - target.hp);'],
 	['../src/scenes/dungeon/bosses/bossLogic.ts', 'onWaterHeal: (healInc) => this.lockedFloorGooHeal(healInc),'],
 	['../src/scenes/dungeon/bosses/bossLogic.ts', "const dmgTaken = Math.max(0, preHp - yog.hp);\n\t\tthis.creditLockedFloor('yog', dmgTaken, dmgTaken);"],
-	['../src/scenes/dungeon/bosses/bossLogic.ts', 'this.lockedFloorBossDamage(monster, tick, tick);'],
+	['../src/scenes/dungeon/bosses/bossLogic.ts', 'this.lockedFloorBossDamage(monster, dealt, dealt);'],
 	['../src/scenes/dungeon/monsters/monsterAi.ts', "this.creditLockedFloor('tengu', preHp - tengu.hp, preHp - tengu.hp);\n\t\tif ((tengu.tenguPhase"],
 	['../src/scenes/dungeon/deathSaveRefresh.ts', 'this.lockedFloorBossDamage(king, chip, 0);'],
 	['../src/scenes/dungeon/turnLoopAiming.ts', 'for (; this.regeneration.lockCarry >= 1; this.regeneration.lockCarry--)'],

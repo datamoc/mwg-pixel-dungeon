@@ -7,13 +7,13 @@ import type { MultiTurnBeamSave } from 'mwg/roguelike';
 import type { GroundItemKind } from './dungeonConstants';
 import type { Combatant, Step } from './simulation/combatState';
 import type { BuffId } from './simulation/buffs';
-import { NEGATIVE_BUFFS, elementalBacklashApplies, monsterBuffImmune } from './simulation/buffs';
+import { NEGATIVE_BUFFS, doomDamage, elementalBacklashApplies, fieryDamageHalved, fieryElementalSourceDamage, fieryResistedDamage, icyBuffImmune, monsterBuffImmune } from './simulation/buffs';
 import { nextEntityId } from './simulation/entityId';
 import { createCombatAdapter } from './adapters/combatSimulation';
 import { simulationRandom } from './adapters/mwgRandom';
 import { STATUS_IMMUNITIES } from './simulation/mwlStatusImmunities';
 export { INFINITE_ACCURACY, INFINITE_EVASION, ASCENSION_MOD, accRollMulti, setAscensionActive, stoneGlyphReduction, grimTrapDamage, explosiveTrapBounds } from './simulation/combat';
-export { BUFF_DURATION, NEGATIVE_BUFFS, absorbShield, electricDamageHalved, elementalBacklashApplies, icyDamageHalved, type BuffId } from './simulation/buffs';
+export { BUFF_DURATION, NEGATIVE_BUFFS, absorbShield, doomDamage, electricDamageHalved, elementalBacklashApplies, fieryDamageHalved, fieryElementalSourceDamage, fieryResistedDamage, icyBuffImmune, icyDamageHalved, type BuffId } from './simulation/buffs';
 
 const combat = createCombatAdapter(simulationRandom);
 export const rollHit = combat.rollHit;
@@ -173,6 +173,11 @@ export interface Creature extends Combatant {
 	 *  save/load drops a standing order (the ally simply follows the hero again). */
 	allyDefendCell?: { x: number; y: number };
 	allyTargetChar?: Creature;
+	/** `DirectableAlly.movingToDefendPos`: true from the moment a defend cell is ordered until
+	 *  the ally actually arrives (or gives up on an unreachable post). While set, the ally
+	 *  ignores enemies entirely and marches to the cell - see `takeAllyTurn`'s order branch.
+	 *  Not persisted, like the other two order fields above. */
+	allyMovingToDefend?: boolean;
 	/** `SpiritHawk.HawkAlly`'s two instance fields: the `SWIFT_SPIRIT` dodge pool already spent,
 	 *  and its 100-unit lifespan. Java keeps them on the ally rather than in a stat, so they live
 	 *  here too - and, like the two order fields above, are not persisted. */
@@ -192,6 +197,9 @@ export interface Creature extends Combatant {
 	impShopkeeperGreeted?: boolean;
 	/** GnollTrickster.combo: attacks escalate the longer it keeps hitting */
 	combo?: number;
+	/** Port-owned mirror of the rage power for the damage roll (`hero/berserkRage.ts`):
+	 * Java keeps it on the buff, this port reads it off the hero when arming strikes. */
+	berserkPower?: number;
 	/** GreatCrab.moving: only really advances every 3rd turn */
 	moving?: number;
 	/** Necromancer.mySkeleton: its summoned skeleton, null until it summons one */
@@ -483,7 +491,7 @@ export function setAttachBacklash(hook: ((c: Creature, damage: number) => void) 
  * the way this module's other direct HP writes do. */
 export function applyElementalBacklash(c: Creature, id: BuffId): number {
 	if (!elementalBacklashApplies(c.kind, c.elementalType, id)) return 0;
-	const damage = simulationRandom.int(Math.floor(c.maxHp / 2), Math.floor(c.maxHp * 3 / 5) + 1);
+	const damage = doomDamage(simulationRandom.int(Math.floor(c.maxHp / 2), Math.floor(c.maxHp * 3 / 5) + 1), c);
 	c.hp -= damage;
 	attachBacklash?.(c, damage);
 	return damage;
@@ -503,6 +511,7 @@ export const ANNOUNCED_BUFFS = new Set<BuffId>([
 	'cripple',
 	'weakness',
 	'vulnerable',
+	'doom',
 	'daze',
 	'vertigo',
 	'hex',
@@ -534,6 +543,9 @@ export function buffBlocked(c: Creature, id: BuffId): boolean {
 	//`Sheep.add(Buff)` (tag `v3.3.8`) returns false unconditionally - the sheep
 	//takes no buffs at all. Same shared boundary as the decoy above.
 	if (c.allyKind === 'sheep') return true;
+	//`WandOfRegrowth.Lotus.add(Buff)` (tag `v3.3.8`) returns false unconditionally, and it
+	//explicitly lists Doom in its immunities. The scheduler carrier is tagged as allyKind=lotus.
+	if (c.allyKind === 'lotus') return true;
 	//`SentryRoom$Sentry.add()` (tag `v3.3.8`) likewise returns false - the beam
 	//turret takes no buffs either. Its `damage()` no-op rides the blob/bomb
 	//skips below (melee and zaps already defeat themselves on its infinite
@@ -559,6 +571,11 @@ export function buffBlocked(c: Creature, id: BuffId): boolean {
 	//`applyElementalBacklash` at the `addBuff`/`reigniteBuff` boundary, this refusal
 	//covers the direct-write sites that consult only this gate and never that one.
 	if (elementalBacklashApplies(c.kind, c.elementalType, id)) return true;
+	//`Char.Property.ICY` (`Char.java`, tag `v3.3.8`) refuses Frost and Chill on FrostElemental.
+	if (icyBuffImmune(c.kind, c.elementalType, id)) return true;
+	//`Char.Property.FIERY` (Char.java, tag `v3.3.8`) refuses Burning and Blazing
+	//for every Elemental and BurningFist, even when a direct caller skips fire spread.
+	if (fieryDamageHalved(c.kind, c.elementalType, c.yogFistType) && id === 'burning') return true;
 	//Brimstone.java grants Burning immunity through Char.isImmune(), before the
 	//effect can be attached. Keep this check at the shared buff boundary so fire
 	//from traps, blobs, wands, plants, and enemy attacks all obey it.
@@ -594,6 +611,10 @@ export function addBuff(c: Creature, id: BuffId, duration?: number): void {
 	if (applyElementalBacklash(c, id) > 0) return;
 	if (buffBlocked(c, id)) return;
 	const event = combat.addBuff(c, id, duration);
+	//`Mob.add(Amok)` switches the mob directly to HUNTING (tag `v3.3.8`), without going through
+	//`Mob.Sleeping.awaken()`. A visible CrystalGuardian can therefore wake from ScrollOfRage's
+	//Amok after its `beckon()` override correctly did nothing; keep the port's sleeping flag in step.
+	if (event.fresh && id === 'amok' && !c.isHero && !c.isNPC) c.sleeping = false;
 	if (event.fresh && announceBuff && ANNOUNCED_BUFFS.has(id)) announceBuff(c, id);
 }
 

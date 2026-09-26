@@ -66,7 +66,7 @@
           },
           {
             // Vertigo.DURATION (`actors/buffs/Vertigo.java`, tag v3.3.8): 10. Applied by ConfusionGas (prolong 2),
-            // Stormvine (affect 10) and Combo's clobber (prolong 3); PotionOfHealing.cure() detaches it.
+            // Stormvine (affect 10) and Combo's clobber (prolong 3, Combo.java:381); PotionOfHealing.cure() detaches it.
             tag: "row",
             buff: "vertigo",
             duration: 10,
@@ -90,6 +90,12 @@
             tag: "row",
             buff: "magicalSleep",
             duration: 0,
+          },
+          {
+            //TimeStasis.DURATION (`CursedWand.java`/`Petrify.java`, tag v3.3.8): 100 turns.
+            tag: "row",
+            buff: "timeStasis",
+            duration: 100,
           },
           {
             tag: "row",

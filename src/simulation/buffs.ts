@@ -16,7 +16,7 @@ import { MONSTER_IMMUNITY_DATA } from './mwlMonsterImmunities';
  * creature cannot see - or hunt - the hero (see `dungeonScene`'s monster-perception line), and a
  * blinded hero would see nothing. Duration 10 is `Blindness.DURATION`.
  */
-export type BuffId = 'bless' | 'hex' | 'daze' | 'vertigo' | 'combo' | 'monkEnergy' | 'doom' | 'chill' | 'frost' | 'drowsy' | 'magicalSleep' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'featherFall' | 'invisibility' | 'cloak' | 'focus' | 'recharging' | 'wellFed' | 'frostImbue' | 'fireImbue' | 'toxicImbue' | 'blobImmunity' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown' | 'wayward' | 'blindness' | 'feintConfusion' | 'counterAbility' | 'light' | 'invulnerability' | 'hazardAssist' | 'spectatorFreeze' | 'duelParticipant' | 'eliminationMatch' | 'luckyTracker' | 'soulmark' | 'prismaticGuard' | 'illuminated' | 'wasIlluminated' | 'holyWeapon' | 'holyWard' | 'powerOfMany' | 'satiatedSpells' | 'shieldOfLight' | 'divineSense' | 'recallUsed' | 'sunrayUsed' | 'sunrayRecent' | 'cleanseImmunity' | 'lanceCooldown' | 'auraProtection' | 'smiteTracker' | 'guidingPriestCooldown' | 'lightWallActive' | 'lockedFloor';
+export type BuffId = 'bless' | 'hex' | 'daze' | 'vertigo' | 'combo' | 'monkEnergy' | 'chill' | 'frost' | 'drowsy' | 'magicalSleep' | 'fury' | 'berserk' | 'weakness' | 'vulnerable' | 'doom' | 'burning' | 'poison' | 'bleeding' | 'cripple' | 'paralysis' | 'roots' | 'levitation' | 'featherFall' | 'invisibility' | 'timeStasis' | 'cloak' | 'focus' | 'recharging' | 'wellFed' | 'frostImbue' | 'fireImbue' | 'toxicImbue' | 'blobImmunity' | 'adrenalineSurge' | 'mindvision' | 'terror' | 'amok' | 'aggression' | 'awareness' | 'haste' | 'degrade' | 'ooze' | 'charm' | 'lethalHasteCooldown' | 'wayward' | 'blindness' | 'feintConfusion' | 'counterAbility' | 'light' | 'invulnerability' | 'hazardAssist' | 'spectatorFreeze' | 'duelParticipant' | 'eliminationMatch' | 'luckyTracker' | 'soulmark' | 'prismaticGuard' | 'illuminated' | 'wasIlluminated' | 'holyWeapon' | 'holyWard' | 'powerOfMany' | 'satiatedSpells' | 'shieldOfLight' | 'divineSense' | 'recallUsed' | 'sunrayUsed' | 'sunrayRecent' | 'cleanseImmunity' | 'lanceCooldown' | 'auraProtection' | 'smiteTracker' | 'guidingPriestCooldown' | 'lightWallActive' | 'lockedFloor';
 /** The duration catalogue is authored in MWL and emitted as an isolated simulation module. */
 export const BUFF_DURATION: Record<BuffId, number> = (() => {
 	const values = { ...BUFF_DURATION_DATA } as Record<string, number>;
@@ -60,7 +60,8 @@ const CORRUPTION_IMMUNE_ALLIES: ReadonlySet<string> = new Set([
  * Who `WandOfCorruption.corruptEnemy()` dooms instead of corrupting: anything immune
  * to `Corruption` (an `AllyBuff` subclass), i.e. BOSS/MINIBOSS properties, STATIC
  * kinds and the AllyBuff-immune ally summons above. Pure so the zap seam and the
- * suite pin the same gate. */
+ * suite pin the same gate.
+ */
 export function corruptionImmune(defender: { boss?: boolean; miniboss?: boolean; kind?: string; allyKind?: string }): boolean {
 	if (defender.boss || defender.miniboss) return true;
 	if (defender.kind !== undefined && CORRUPTION_IMMUNE_KINDS.has(defender.kind)) return true;
@@ -77,6 +78,25 @@ export function corruptionImmune(defender: { boss?: boolean; miniboss?: boolean;
  * like `monsterBuffImmune`'s instead of adding more literal comparisons. */
 export function vertigoResistFactor(kind: string | undefined): number {
 	return kind === 'dm300' ? 0.5 : 1;
+}
+
+/** `Doom` damage amplification (`Char.damage()`, `DwarfKing.isImmune()`,
+ * `WandOfRegrowth.Lotus`, tag `v3.3.8`). Doom persists until death. A phase 2/3 Dwarf King
+ * may still carry it but is dynamically immune to its multiplier; Lotus rejects every buff.
+ * Callers that model incoming HP damage use this shared rule so exceptions do not drift. */
+export function doomDamage(damage: number, target: {
+	buffs?: Readonly<BuffState>;
+	hasDoom?: boolean;
+	kind?: string;
+	kingPhase?: number;
+	allyKind?: string;
+	isNPC?: boolean;
+}): number {
+	if (!(target.hasDoom || target.buffs?.doom !== undefined) || target.isNPC || target.allyKind === 'lotus') return damage;
+	if (target.kind === 'king' && (target.kingPhase ?? 1) > 1) return damage;
+	// `Char.damage()` keeps a float through source resistance and champion reduction, then
+	// Math.rounds once. This helper models the Doom multiply followed by that rounding point.
+	return Math.floor(Math.fround(damage * Math.fround(1.67)) + 0.5);
 }
 
 /** `Elemental.add(Buff)` (`actors/mobs/Elemental.java`, tag `v3.3.8`): attaching a
@@ -103,6 +123,41 @@ export function icyDamageHalved(kind: string | undefined, elementalType: string 
 	return kind === 'elemental' && (elementalType ?? 'fire') === 'frost';
 }
 
+/** `Char.Property.ICY` immunity half (`actors/Char.java`, tag `v3.3.8`): FrostElemental
+ * refuses `Frost` and `Chill` through `Char.isImmune`, independently of its Burning backlash. */
+export function icyBuffImmune(kind: string | undefined, elementalType: string | undefined, id: BuffId): boolean {
+	return kind === 'elemental' && (elementalType ?? 'fire') === 'frost' && (id === 'frost' || id === 'chill');
+}
+
+/** `Char.Property.FIERY`'s damage half (`actors/Char.java`, tag `v3.3.8`):
+ * `resist()` halves WandOfFireblast and FireElemental-sourced damage with `Math.round`.
+ * Every real Elemental (including its Newborn heir) and BurningFist owns this property.
+ * Brimstone separately carries only Burning immunity; it does not halve fire damage. */
+export function fieryDamageHalved(kind: string | undefined, elementalType: string | undefined, yogFistType: string | undefined): boolean {
+	if (kind === 'elemental' || kind === 'newbornElemental') return kind === 'newbornElemental' || (elementalType ?? 'fire') === 'fire';
+	return kind === 'yogFist' && yogFistType === 'burning';
+}
+
+/** `Char.damage()` rounds once after applying FIERY's 0.5 source resistance. */
+export function fieryResistedDamage(damage: number, kind: string | undefined, elementalType: string | undefined, yogFistType: string | undefined): number {
+	return fieryDamageHalved(kind, elementalType, yogFistType) ? Math.round(damage * 0.5) : damage;
+}
+
+/** `Char.Property.FIERY.resist(FireElemental.class)` halves FireElemental-sourced
+ * damage only when the target is itself FIERY (including BurningFist). */
+export function fieryElementalSourceDamage(
+	damage: number,
+	sourceKind: string | undefined,
+	sourceType: string | undefined,
+	targetKind: string | undefined,
+	targetType: string | undefined,
+	targetFistType: string | undefined,
+): number {
+	const fireSource = sourceKind === 'newbornElemental'
+		|| (sourceKind === 'elemental' && (sourceType ?? 'fire') === 'fire');
+	return fireSource && fieryDamageHalved(targetKind, targetType, targetFistType) ? Math.round(damage * 0.5) : damage;
+}
+
 /** `Char.Property.ELECTRIC`'s damage half (`actors/Char.java`, tag `v3.3.8`):
  * `resist()` halves `WandOfLightning`, `Shocking` (enchant procs and the shock
  * arc), `Electricity`, `ShockingDart` and `ShockElemental`-sourced damage with
@@ -118,7 +173,7 @@ export function electricDamageHalved(kind: string | undefined, elementalType: st
 
 /** `Buff.buffType.NEGATIVE` for every buff this port grants to a *monster* (checked against
  * each buff's own Java class at tag `v3.3.8`: `Poison`/`Burning`/`Cripple`/`Weakness`/
- * `Vulnerable`/`Paralysis`/`Roots`/`Terror`/`Ooze`/`Charm`/`Degrade`/`Daze`/`Hex` all set
+ * `Vulnerable`/`Doom`/`Paralysis`/`Roots`/`Terror`/`Ooze`/`Charm`/`Degrade`/`Daze`/`Hex` all set
  * `type = buffType.NEGATIVE`). Used by `Mob.Sleeping.act()`'s "debuffs cause mobs to wake as
  * well" unconditional wake check - a sleeping monster with any of these active wakes
  * immediately, no detection roll needed (e.g. standing in fire/gas already ignites/poisons a
@@ -224,6 +279,8 @@ export function advanceBuffs(previous: Readonly<BuffState>, random: SimulationRa
 		// skipped entirely. `DungeonScene.hungerStep()` ticks it before hunger, so the
 		// generic creature-buff clock must leave it untouched.
 		if (id === 'wellFed') continue;
+		// `Doom` has no duration or act method in Java: it lasts until the target dies.
+		if (id === 'doom') continue;
 		if (id === 'burning') damage += random.int(1, 4 + Math.floor(scalingDepth / 4));
 		//`Poison.act()` (tag v3.3.8): `(int)(left/3)+1` deals off the *remaining*
 		//duration, not a flat roll - a fresh 6-turn poison hits for 3, decaying as the clock

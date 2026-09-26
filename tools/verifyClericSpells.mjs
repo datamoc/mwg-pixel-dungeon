@@ -229,4 +229,11 @@ export function verifyClericSpells(require, check) {
 		const turn = read('../src/scenes/dungeon/turnLoopAiming.ts');
 		assert.match(turn, /this\.ascendedDivineCast = false;\s*for \(const creature of this\.creatures\) delete creature\.divineShield;/);
 	});
+
+	check('Judgement damage passes through Doom scaling like Java Char.damage()', () => {
+		const flows = readFileSync(new URL('../src/scenes/dungeon/hero/clericSpellFlows.ts', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+		const body = flows.slice(flows.indexOf('resolveJudgement(this'), flows.indexOf('resolveFlash(this'));
+		assert.match(body, /const rawDamage = Random\.normalRange\(base, base \* 2\);/);
+		assert.match(body, /this\.applyCharacterDamage\(victim, rawDamage, \{ pierceArmor: true/);
+	});
 }

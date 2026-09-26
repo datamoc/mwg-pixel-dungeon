@@ -124,11 +124,23 @@ const { teleportAppearPlan } = require('./simulation/teleportAppear');
 const { selectRangedTarget, findEnemyAlly, pursueTarget } = require('./simulation/targeting');
 	const { TIME_BUBBLE_TURNS, timeBubbleTurnCost, spendTimeBubbleTurn } = require('./simulation/timeBubble');
 	const { CIRCLE8_OFFSETS, wanderBlocked, isPatrolTargetValid, randomPatrolDestination } = require('./simulation/wandering');
-	const { skeletonBoneExplosionDamage } = require('./simulation/skeletonExplosion');
+	const { SKELETON_BONE_NEIGHBOURS, skeletonBoneEarthrootDamage, skeletonBoneExplosionDamage, skeletonBoneShieldOfLightDamage } = require('./simulation/skeletonExplosion');
 	const { applyEnvironmentalBlobs, spreadSacrificialFire, sacrificeCost, processSacrifice } = require('./simulation/environmentalBlobs');
-	check('Skeleton bone explosion subtracts two defender rolls and clamps at zero', () => {
+	check('Skeleton bone explosion visits Java neighbours in RNG order and applies direct reductions', () => {
+		assert.deepEqual(SKELETON_BONE_NEIGHBOURS, [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]);
+		assert.equal(skeletonBoneEarthrootDamage(9, 3), 3, 'Earthroot spends 3 pool but blocks 6 damage');
+		assert.equal(skeletonBoneShieldOfLightDamage(8, 3, 4), 1, 'Shield of Light rolls twice');
+		assert.equal(skeletonBoneShieldOfLightDamage(5, 3, 4), 0, 'Shield of Light clamps after both rolls');
 		assert.equal(skeletonBoneExplosionDamage(12, 2, 3), 7);
 		assert.equal(skeletonBoneExplosionDamage(6, 4, 4), 0);
+		const death = readFileSync(new URL('../src/scenes/dungeon/deathSaveRefresh.ts', import.meta.url), 'utf8');
+		assert.match(death, /for \(const \[dx, dy\] of SKELETON_BONE_NEIGHBOURS\)/);
+		assert.match(death, /shieldOfLightRange\(this\.talentRank\('shield_of_light'\)\)/);
+		assert.match(death, /raw -= this\.subclass\(\) === 'paladin' \? 6 : 2/);
+		assert.match(death, /skeletonBoneEarthrootDamage\(raw, blocked\)/);
+		assert.match(death, /this\.absorbHeroDamage\(damage, false, false, \{ skipEarthroot: true, skipHolyWard: true \}\)/);
+		const damageBoundary = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
+		assert.match(damageBoundary, /skipDefenseHooks: \{ skipEarthroot\?: boolean; skipHolyWard\?: boolean \}/);
 	});
 	// The four coefficients `HighGrass.trample` reads, as the port's MWL rows carry them.
 	const grassRules = { seedChanceBase: 25, seedChancePerLevel: 4, dewChanceBase: 6, dewChanceLevelDivisor: 2 };
@@ -933,7 +945,8 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 	});
 	check('recent talent effects cover thresholds, class gates, and rank scaling', () => {
 		//ironWillReduction was removed (2026-09-14): Iron Will's real effect is a Warrior-only
-		//BrokenSeal shield-size boost, now `sealMaxShield` (`simulation/sealShield.ts`, pinned in `verifySealShield`).
+		//BrokenSeal shield-cap boost, now read directly as talentRank('iron_will') in
+		//dungeonScene.ts's seal-shield regen tick - see talentEffects.ts's historical note.
 		assert.equal(talents.shieldBatteryGain(3, 2), 2);
 		assert.equal(talents.shieldBatteryGain(0, 2), 0);
 		assert.equal(talents.rejuvenatingStepHeal(4, 4, 19, 20, 2), 1);
@@ -967,19 +980,21 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.equal(talents.bountyHunterDropBonus(4, 1), 0.16);
 		assert.equal(talents.bountyHunterDropBonus(1, 3), 0.06);
 		assert.equal(talents.bountyHunterDropBonus(4, 0), 0);
-		//`unencumberedSpiritEvasion` / `monasticVigorShield` were invented stand-ins for the Monk's talents; the real ones
-		//(`MonkEnergy.gainEnergy`'s tier bonus, `abilitiesEmpowered`) are pinned in `verifyMonkEnergy`.
-		//`lethalDefenseShield` (a shield on every hit taken) was an invented stand-in; the real Lethal Defense (a seal-cooldown
-		//refund on a Combo kill) is pinned in `verifySealShield`.
+		assert.equal(talents.unencumberedSpiritEvasion('monk_sub', 2), 2);
+		assert.equal(talents.lethalDefenseShield('gladiator', 2), 2);
+		assert.equal(talents.monasticVigorShield('monk_sub', 2), 2);
 		assert.equal(talents.sharedUpgradeArmor('sniper', 1, 1), 1);
 		assert.equal(talents.sharedUpgradeArmor('sniper', 1, 3), 0);
 		assert.equal(talents.twinUpgradeArmor('champion', 1, 1), 1);
 		assert.equal(talents.soulSiphonCharge('warlock', 2), 2);
 		assert.equal(talents.projectileMomentumBonus('freerunner', 2, true), 2);
 		assert.equal(talents.projectileMomentumBonus('sniper', 2, true), 0);
-		//`enragedCatalystBonus` / `deathlessFuryTriggers` were invented stand-ins; the real talents are pinned in `verifyBerserkRage`.
-		//`cleaveComboSeed` (start a kill's combo at 2) is gone: Java's Cleave only lengthens `Combo`'s clock after a kill
-		//(`Combo.hit`, `15 + 15*rank`), pinned in `verifyCombo`.
+		assert.equal(talents.enragedCatalystBonus('berserker', 2, 10, 20), 2);
+		assert.equal(talents.enragedCatalystBonus('berserker', 2, 11, 20), 0);
+		assert.equal(talents.cleaveComboSeed('gladiator', 2), 2);
+		assert.equal(talents.cleaveComboSeed('berserker', 2), 0);
+		assert.equal(talents.deathlessFuryTriggers('berserker', 1, false, 20, 10), true);
+		assert.equal(talents.deathlessFuryTriggers('berserker', 1, true, 20, 10), false);
 		//`enhancedLethalityThreshold` (the flat `0.2*rank` stand-in for the Assassin's execute) is
 		//gone: the talent now feeds `AttackLevel.KOThreshold()`'s table column directly, and that
 		//whole table is pinned in verifyCombat.
@@ -1053,6 +1068,9 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.deepEqual(result.events, [{ type: 'starving' }, { type: 'starvation-damage', damage: 1 }]);
 		assert.equal(result.state.hp, 19);
 		assert.equal(result.state.hunger, 450);
+		const doomed = advanceHunger(initial({ hunger: 449, hp: 20, doom: true }));
+		assert.deepEqual(doomed.events, [{ type: 'starving' }, { type: 'starvation-damage', damage: 2 }]);
+		assert.equal(doomed.state.hp, 18, 'Hunger.damage passes through Doom x1.67');
 		//Java clamps the level at STARVING on the crossing tick: a bulk step
 		//lands on 450, never 451+, so later subtractive food eats the same base.
 		const bulk = advanceHunger(initial({ hunger: 449, hp: 20 }), 2);
@@ -1070,6 +1088,8 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.equal(exertStarve.state.hunger, 450);
 		assert.deepEqual(exertStarve.events, [{ type: 'starving' }, { type: 'starvation-damage', damage: 1 }]);
 		assert.equal(exertStarve.state.hp, 19);
+		assert.equal(exertHunger(initial({ hunger: 449, hp: 20, doom: true }), 4).state.hp, 18,
+			'search-exertion starvation damage also passes through Doom');
 	});
 	check('once starving, level freezes and partialDamage accrues HT/1000 per turn (Hunger.act isStarving branch)', () => {
 		//Java accrues a flat HT/1000 per act with no STEP factor: at HT 20 the strict
@@ -1339,26 +1359,27 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 			'monster actor DoT bypasses armor but uses the shared Char.damage tail');
 		assert.ok(scene.includes("this.applyCharacterDamage(monster, ooze, { pierceArmor: true, cause: 'foe', skipAura: true });"),
 			'the monster Ooze actor tick uses the same shared damage tail');
-		assert.ok(scene.includes("this.applyCharacterDamage(victim, rawDamage, { pierceArmor: true, cause: 'foe', skipAura: true });"),
-			'Cleric Judgement sends its rolled direct-spell damage through Char.damage');
-		assert.ok(scene.includes('const rawDamage = radianceBonusDamage(this.progression.level);')
-			&& scene.includes('if (victim.hp <= 0) continue;'),
-			'Radiance bonus damage dispatches before its lethal-status gate');
-		assert.ok(scene.includes('this.applyCharacterDamage(victim, rawDamage, { pierceArmor: true, cause: 'foe', skipAura: true });'),
-			'HolyLance dispatches its raw hit after preserving the GreatCrab parry');
+		assert.ok(panels.includes('damage = absorbCreatureShields(c, damage, this.ascendedTurns > 0);'),
+			'the shared non-hero path applies Java priority-ordered ShieldBuff pools before HP');
+		assert.ok(scene.includes("this.applyCharacterDamage(victim, rawDamage, { pierceArmor: true, cause: 'foe', skipAura: true });")
+			&& scene.includes('const rawDamage = radianceBonusDamage(this.progression.level);')
+			&& scene.includes('const rawDamage = isUndeadOrDemonic(victim.kind) ? max : Random.normalRange(min, max);'),
+			'Judgement, Radiance and HolyLance keep their rolls while delegating damage effects');
 		const cursedWand = readFileSync(new URL('../src/scenes/dungeon/hero/cursedWandCast.ts', import.meta.url), 'utf8');
 		assert.ok(cursedWand.includes('this.applyCharacterDamage(victim, damage, { pierceArmor: true, cause: \'foe\', skipAura: true,'),
 			'CursedWand HealthTransfer uses the common Char.damage tail after its RESISTS check');
 		const stones = readFileSync(new URL('../src/items/stones.ts', import.meta.url), 'utf8');
-		assert.ok(stones.includes('scene.applyCharacterDamage(creature, damage, creature.isHero === true);')
+		assert.ok(stones.includes('scene.applyCharacterDamage(creature, damage, false);')
 			&& scene.includes('applyCharacterDamage: (target, amount, pierceArmor) => this.applyCharacterDamage(target, amount, {'),
 			'Stone of Blast delegates its armor-rolled direct hits to the common dispatcher');
 		const wandEffects = readFileSync(new URL('../src/items/wandEffects.ts', import.meta.url), 'utf8');
 		assert.ok(wandEffects.includes('context.applyCharacterDamage(target, damage);')
 			&& scene.includes('applyCharacterDamage: (victim, amount) => this.applyCharacterDamage(victim, amount, {'),
 			'Wand of Transfusion delegates its non-armor damage half to Char.damage');
-		assert.ok(panels.includes('damage = absorbCreatureShields(c, damage, this.ascendedTurns > 0);'),
-			'the shared non-hero path applies Java priority-ordered ShieldBuff pools before HP');
+		assert.ok(wandEffects.includes('context.applyDamage(victim, damage);')
+			&& scene.includes('applyDamage: (victim, damage) => this.applyCharacterDamage(victim, damage, {')
+			&& scene.includes('skipAura: true, skipDoom: true,'),
+			'Fireblast keeps its fire-resistance/Doom roll, then dispatches the resolved hit once');
 	});
 	check('Ascension beckons distant enemies and hastes idle ones', () => {
 		//`AscensionChallenge.beckonEnemies()`/`enemySpeedModifier()` (tag `v3.3.8`): at 2+
@@ -1517,7 +1538,7 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		// float for fire (<.4)/frost (<.8)/shock. The old `Random.int(0, 50) === 0` rolled over
 		// 51 inclusive values - no sane sample distinguishes 1/51 from 1/50, so the exact draw
 		// shape is pinned structurally while the live distribution gets a wide sanity band over
-		// 20000 spawns (chaos 400, fire/frost 7840 each, shock 3920 - all Â±10Ïƒ and then some).
+		// 20000 spawns (chaos 400, fire/frost 7840 each, shock 3920 - all ±10σ and then some).
 		const { monsterSpawnProfile } = require('./actors/monsterSpawn');
 		const counts = { chaos: 0, fire: 0, frost: 0, shock: 0 };
 		for (let i = 0; i < 20000; i++) {
@@ -1818,49 +1839,57 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.equal(wildMagicBoostedLevel(1, 4, true), 5, 'rank 4 coin lands +4 below its cap of 7');
 		assert.equal(wildMagicBoostedLevel(3, 0, false), 3, 'no boost at or above the cap');
 	});
-	check('cursedWand picks the six ported Common effects uniformly and reads the exact Java tables', () => {
+	check('cursedWand picks the eight ported Common effects uniformly and reads the exact Java tables', () => {
 		//`CursedWand.cursedZap()`'s Common tier (`simulation/cursedWand.ts` has the full
-		//scoping rationale for why only 6 of 8 are modeled).
+		//scoping rationale, including the remaining tier gaps).
 		const { CURSED_COMMON_EFFECT_IDS, pickCursedCommonEffect, CURSED_RANDOM_GAS, pickBurnAndFreeze,
 			CURSED_UNCOMMON_EFFECT_IDS, pickCursedUncommonEffect, pickCursedTier, CURSED_PLANT_KINDS,
 			CURSED_RARE_EFFECT_IDS, pickCursedRareEffect, pickCursedEquipmentSlot, cursedInterfloorDepthWeights, CONE_OF_COLORS_STATUSES, pickConeOfColorsStatus } = require('./simulation/cursedWand');
-		assert.deepEqual(CURSED_COMMON_EFFECT_IDS, ['burnAndFreeze', 'randomTeleport', 'randomGas', 'bubbles', 'randomWand', 'selfOoze']);
-		assert.equal(pickCursedCommonEffect((n) => { assert.equal(n, 6); return 0; }), 'burnAndFreeze');
-		assert.equal(pickCursedCommonEffect((n) => { assert.equal(n, 6); return 5; }), 'selfOoze');
+		assert.deepEqual(CURSED_COMMON_EFFECT_IDS, ['burnAndFreeze', 'spawnRegrowth', 'randomTeleport', 'randomGas', 'randomAreaEffect', 'bubbles', 'randomWand', 'selfOoze']);
+		assert.equal(pickCursedCommonEffect((n) => { assert.equal(n, 8); return 0; }), 'burnAndFreeze');
+		assert.equal(pickCursedCommonEffect((n) => { assert.equal(n, 8); return 1; }), 'spawnRegrowth');
 		assert.deepEqual(CURSED_UNCOMMON_EFFECT_IDS, ['healthTransfer', 'geyser', 'summonSheep', 'levitate', 'alarm', 'randomPlant', 'explosion', 'lightningBolt']);
 		assert.equal(pickCursedUncommonEffect((n) => { assert.equal(n, 8); return 0; }), 'healthTransfer');
 		assert.equal(pickCursedUncommonEffect((n) => { assert.equal(n, 8); return 7; }), 'lightningBolt');
 		assert.deepEqual(CURSED_PLANT_KINDS, ['blindweed', 'earthroot', 'fadeleaf', 'firebloom', 'icecap', 'mageroyal',
 			'rotberry', 'sorrowmoss', 'starflower', 'stormvine', 'sungrass', 'swiftthistle']);
-		assert.deepEqual(CURSED_RARE_EFFECT_IDS, ['sheepPolymorph', 'curseEquipment', 'interFloorTeleport', 'summonMonsters', 'coneOfColors', 'massInvuln']);
-		for (let i = 0; i < CURSED_RARE_EFFECT_IDS.length; i++) assert.equal(pickCursedRareEffect((n) => { assert.equal(n, 6); return i; }), CURSED_RARE_EFFECT_IDS[i]);
+	assert.deepEqual(CURSED_RARE_EFFECT_IDS, ['sheepPolymorph', 'curseEquipment', 'interFloorTeleport', 'summonMonsters', 'fireBall', 'coneOfColors', 'massInvuln', 'petrify']);
+		for (let i = 0; i < CURSED_RARE_EFFECT_IDS.length; i++) {
+			assert.equal(pickCursedRareEffect((n) => { assert.equal(n, 8); return i; }), CURSED_RARE_EFFECT_IDS[i]);
+		}
 		assert.deepEqual(cursedInterfloorDepthWeights(1), []);
 		assert.deepEqual(cursedInterfloorDepthWeights(2), [1]);
-		assert.deepEqual(cursedInterfloorDepthWeights(11), [1,2,3,4,5,6,7,8,9,10]);
-		assert.deepEqual(cursedInterfloorDepthWeights(15), [0,0,0,0,1,2,3,4,5,6,7,8,9,10]);
+		assert.deepEqual(cursedInterfloorDepthWeights(11), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+		assert.deepEqual(cursedInterfloorDepthWeights(15), [0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 		assert.equal(cursedInterfloorDepthWeights(26).length, 25);
-		assert.deepEqual(cursedInterfloorDepthWeights(26).slice(-10), [1,2,3,4,5,6,7,8,9,10]);
-		assert.equal(pickCursedEquipmentSlot(true, false, true, true, (n) => { assert.equal(n, 1); return 0; }), 'weapon');
-		assert.equal(pickCursedEquipmentSlot(true, true, true, true, (n) => { assert.equal(n, 2); return 1; }), 'armor');
+		assert.deepEqual(cursedInterfloorDepthWeights(26).slice(-10), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+		assert.equal(pickCursedEquipmentSlot(true, false, true, true, (n) => { assert.equal(n, 1); return 0; }), 'weapon',
+			'CursingTrap prefers an unechanted weapon over already-affixed armor');
+		assert.equal(pickCursedEquipmentSlot(true, false, true, false, (n) => { assert.equal(n, 2); return 1; }), 'armor');
+		assert.equal(pickCursedEquipmentSlot(true, true, true, true, (n) => { assert.equal(n, 2); return 0; }), 'weapon',
+			'when all eligible gear already has an affix, CursingTrap falls back to either item');
+		assert.equal(pickCursedEquipmentSlot(false, false, true, false, (n) => { assert.equal(n, 1); return 0; }), 'armor',
+			"Mage's Staff is excluded while armor remains eligible");
 		assert.equal(pickCursedEquipmentSlot(false, false, false, false, () => { throw new Error('empty pool must not draw'); }), undefined);
 		const cursedWandScene = readFileSync(new URL('../src/scenes/dungeon/hero/cursedWandCast.ts', import.meta.url), 'utf8');
+		assert.match(cursedWandScene, /effect === 'curseEquipment'[\s\S]*?this\.weaponCursedKnown = true[\s\S]*?getWeaponCurses\(\)[\s\S]*?getArmorCurses\(\)/);
 		assert.match(cursedWandScene, /effect === 'summonMonsters'[\s\S]*?activateUtilityTrap\('summoning', cell\.x, cell\.y\)/);
-		assert.match(cursedWandScene, /effect === 'curseEquipment'[\s\S]*?this\.weaponCursedKnown = true[\s\S]*?getWeaponCurses\(\)/);
 		assert.match(cursedWandScene, /effect === 'interFloorTeleport'[\s\S]*?Random\.weighted\(weights\)[\s\S]*?this\.enterLevel\(\)/);
-		assert.match(cursedWandScene, /this\.depth > 1 && !this\.floorLocked\(\)[\s\S]*?this\.miningBranchActive && !this\.bag\.find\('amulet'\)/);
+		assert.match(cursedWandScene, /this\.depth > 1 && !this\.floorLocked\(\)[\s\S]*?this\.miningBranchActive && !this\.bag\.find\('amulet'\)/,
+			'InterFloorTeleport checks the live boss seal state, mine branch and carried Amulet');
 		assert.match(cursedWandScene, /Java returnPos=-1 selects the destination entrance[\s\S]*?this\.beaconArrival = null/);
 		//ConeOfColors.effect()'s Random.Int(5): burning/frost/poison/ooze/electricity.
 		assert.deepEqual(CONE_OF_COLORS_STATUSES, ['burning', 'frost', 'poison', 'ooze', 'electricity']);
 		assert.equal(pickConeOfColorsStatus((n) => { assert.equal(n, 5); return 0; }), 'burning');
 		assert.equal(pickConeOfColorsStatus((n) => { assert.equal(n, 5); return 4; }), 'electricity');
-		//EFFECT_CAT_CHANCES's real common/uncommon/rare weights (60/30/9 of 99, VeryRare's 1%
-		//folded into Rare).
-		assert.equal(pickCursedTier((n) => { assert.equal(n, 99); return 0; }), 'common');
-		assert.equal(pickCursedTier((n) => { assert.equal(n, 99); return 59; }), 'common');
-		assert.equal(pickCursedTier((n) => { assert.equal(n, 99); return 60; }), 'uncommon');
-		assert.equal(pickCursedTier((n) => { assert.equal(n, 99); return 89; }), 'uncommon');
-		assert.equal(pickCursedTier((n) => { assert.equal(n, 99); return 90; }), 'rare');
-		assert.equal(pickCursedTier((n) => { assert.equal(n, 99); return 98; }), 'rare');
+		//EFFECT_CAT_CHANCES's real 60/30/9/1 weights (CursedWand.java v3.3.8): rolls 0-59 Common,
+		//60-89 Uncommon, 90-98 Rare, 99 VeryRare (unsupported effects are consumed, never redirected to Rare).
+		assert.equal(pickCursedTier((n) => { assert.equal(n, 100); return 0; }), 'common');
+		assert.equal(pickCursedTier((n) => { assert.equal(n, 100); return 59; }), 'common');
+		assert.equal(pickCursedTier((n) => { assert.equal(n, 100); return 60; }), 'uncommon');
+		assert.equal(pickCursedTier((n) => { assert.equal(n, 100); return 89; }), 'uncommon');
+		assert.equal(pickCursedTier((n) => { assert.equal(n, 100); return 90; }), 'rare');
+		assert.equal(pickCursedTier((n) => { assert.equal(n, 100); return 99; }), 'veryRare');
 		//RandomGas.effect()'s Random.Int(3): ConfusionGas 800, ToxicGas 500, ParalyticGas 200.
 		assert.deepEqual(CURSED_RANDOM_GAS, [
 			{ id: 'confusionGas', volume: 800 },

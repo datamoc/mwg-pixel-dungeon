@@ -12,7 +12,7 @@ import { createJournalWindow } from '../ui/journalWindow';
 import { createJournalTabs } from '../ui/journalContent';
 import { Container, FillGradient, Graphics, Rectangle, Sprite, Texture, TilingSprite } from 'mwg/two-d/pixi-interop';
 import { Bar, Blob, FloatingTextStack, Game, Scene2D, Input, Random, SaveSystem, Achievements, ReactionTable, type ReactionRule } from 'mwg';
-import { spawnDeathBursts, spawnShadowBurst, spawnTeleportBurst, type LiveBurst } from '../ui/effectBursts';
+import { spawnDeathBursts, spawnShadowBurst, spawnTeleportBurst, syncPourAuras, type LiveBurst } from '../ui/effectBursts';
 import { SceneSimulationAdapter } from '../adapters/sceneSimulation';
 import { dispatchHeroAction, type HeroActionPorts } from '../adapters/heroActions';
 import { BOOMERANG_RETURN_ACC_FACTOR, BOOMERANG_RETURN_TURNS, MISSILE_DEFAULT_QUANTITY, MISSILE_MAX_DURABILITY, bolasCrippleTurns, missileAdjacentAccFactor, missileBaseUses, missileDamageRange, missileFlightArt, missilePickupValid, missileStackFields, missileStackId, recordMissileUpgrade, tippedDartUseDivisor, tomahawkBleedRange, type MissileFlightArt } from '../items/missiles';
@@ -119,7 +119,7 @@ import { StatusPane } from '../ui/statusPane';
 import { DungeonHud } from '../ui/dungeonHud';
 import { SpdAudio } from '../audio';
 import { onBrightnessChanged, onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../settings';
-import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalHasteDuration, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, soulSiphonCharge, weaponRechargingDamage } from '../talentEffects';
+import { arcaneVisionDuration, assassinReachBonus, bountyHunterDropBonus, canImproviseProjectile, cleaveComboSeed, deathlessFuryTriggers, EMPOWERING_SCROLLS_BONUS, enhancedRingsDuration, enragedCatalystBonus, evasiveArmorBonus, empoweredStrikeBonus, farsightMultiplier, ironStomachReduction, lethalHasteDuration, lightCloakArtifactBonus, lightCloakRechargeRate, allyWarpRange, monasticVigorShield, preservationChance, projectileMomentumBonus, rejuvenatingStepHeal, seerShotDuration, SEER_SHOT_COOLDOWN, shieldBatteryGain, soulSiphonCharge, unencumberedSpiritEvasion, weaponRechargingDamage } from '../talentEffects';
 import pixelFontUrl from '../assets/pixel_font.ttf';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth, SpdRandom } from '../spdRng';
 import {
@@ -324,7 +324,7 @@ import { deathSaveRefreshMethods } from './dungeon/deathSaveRefresh';
 import { panelsSingleUseMethods } from './dungeon/panelsSingleUse';
 import { inventoryQuickslotMethods } from './dungeon/hero/inventoryQuickslot';
 import { clericSpellFlowsMethods } from './dungeon/hero/clericSpellFlows';
-import { armorAbilityUseMethods } from './dungeon/hero/armorAbilityUse';
+import { armorAbilityUseMethods } from './dungeon/hero/armorAbilityUse'; import { powerOfManyMethods } from './dungeon/hero/powerOfMany';
 import { skeletonKeyMethods } from './dungeon/hero/skeletonKeyScene';
 import { dropThrowMethods } from './dungeon/hero/dropThrowScene';
 import { comboMovesMethods } from './dungeon/hero/comboMoves'; import { monkAbilitiesMethods } from './dungeon/hero/monkAbilities'; import { berserkRageMethods } from './dungeon/hero/berserkRage';
@@ -349,7 +349,7 @@ export class DungeonScene extends Scene2D {
 	dyingMonsters = new Map<TintedSprite, { x: number; y: number; fade: number; duration: number; playDieClip: boolean }>();
 	characterEffects!: CharacterEffects;
 	/** Reused each frame; avoids rebuilding the character-visual array in `update()`. */
-	characterEffectCharacters: Array<{ sprite: TintedSprite; sleeping?: boolean; shadowOffset?: number }> = [];
+	characterEffectCharacters: Array<{ sprite: TintedSprite; sleeping?: boolean; shadowOffset?: number; castsShadow?: boolean }> = [];
 	fog?: FogOfWar;
 	wallBlocking?: TileMap;
 	level!: Roguelike.Level;
@@ -373,7 +373,7 @@ export class DungeonScene extends Scene2D {
 	simulation = this.buildSimulation();
 
 	readonly heroActions: HeroActionPorts = {
-		isParalysed: () => !!this.hero.buffs['paralysis'] || !!this.hero.buffs['frost'],
+		isParalysed: () => !!this.hero.buffs['paralysis'] || !!this.hero.buffs['frost'] || !!this.hero.buffs['timeStasis'],
 		beginTurn: () => { this.awaitingInput = false; this.settleEndure(); },
 		spendTurn: (turnCost?: number) => {
 			//A Nature's-Powered bow shot stashes its own speed divisor (see `useSpecial`'s
@@ -439,9 +439,8 @@ export class DungeonScene extends Scene2D {
 	};
 	actionSpentTurn = false;
 	creatureLayer = new Container();
-	/** One-shot effect emitters (the curse infusion's shadow motes). Recovered as a reference whose
-	 *  declaration the truncation took: placed in the world between the actors and the wall tops,
-	 *  which is where Java draws its `effects` group. */
+	/** One-shot bursts and continuous per-character auras (including the curse infusion's shadow
+	 *  motes), drawn between the actors and wall tops like Java's `effects` group. */
 	effectLayer = new Container();
 	itemLayer = new Container();
 	itemsSheet!: SpriteSheet;
@@ -891,6 +890,7 @@ export class DungeonScene extends Scene2D {
 	sealBarrier = new Actors.Barrier();
 	armorSealed = false;
 	sealState = { cooldown: 0, turnsSinceEnemies: 0, initialShield: 0 }; //`BrokenSeal.WarriorShield`'s cooldown, idle counter and activation size (`simulation/sealShield.ts`)
+	sealPartialGain = 0;
 	/** `WandOfLivingEarth.RockArmor`: stored rock armor and the wand level that set its cap. */
 	livingEarthArmor = 0;
 	/** `Earthroot.Armor` (`plants/Earthroot.java`, tag `v3.3.8`): a block *pool* of `level` points
@@ -986,6 +986,7 @@ export class DungeonScene extends Scene2D {
 	healingFlat = 0;
 	sungrassPos = -1;
 	rageState = { mode: 'normal' as 'normal' | 'berserk' | 'recovering', power: 0, powerLossBuffer: 0, levelRecovery: 0, turnRecovery: 0, zeroHp: false }; rageBarrier = new Actors.Barrier(); //`Berserk` (Berserker, `hero/berserkRage.ts`): the rage state machine (+ the death-berserk's 0-HP stand-in) and its extra shield pool
+	deathlessFuryUsed = false;
 	freeTurnNext = false;
 	followupTarget: Creature | null = null;
 	followupDamage = 0;
@@ -1042,7 +1043,9 @@ export class DungeonScene extends Scene2D {
 	/** Java `CorrosiveGas.strength`; the current Ooze stand-in cannot carry intensity. */
 	corrosiveGas!: Blob;
 	corrosiveGasStrength = 0;
-	/** Java `ConfusionGas` blob; its Vertigo effect uses the port's daze stand-in. */
+	/** Java `ConfusionGas` blob; its Vertigo effect prolongs the real `vertigo` buff for 2 turns
+	 *  (`Buff.prolong(ch, Vertigo.class, 2)`, `simulation/environmentalBlobs.ts` - the old daze
+	 *  stand-in is gone as of 2026-09-24). IMMOVABLE kinds refuse it via `isVertigoImmune`. */
 	confusionGas!: Blob;
 	/** Spinner web volume; persisted with the floor while the actor's web cooldown remains on the
 	 * creature. The current port only needs the field for save compatibility. */
@@ -1945,8 +1948,13 @@ export class DungeonScene extends Scene2D {
 		//every time the hero re-enters range - previously unmodeled, letting a Guard chain-pull
 		//and Cripple-lock the hero repeatedly, something the real game never allows.
 		guard: (monster, distance) => {
-			if (monster.chainUsed || distance < 2 || distance >= 5 || !Roguelike.canTarget(this.level, monster, this.hero, { range: 5 })) return false;
-			this.chainHero(monster);
+			//`Guard.chain()` holds the nearest in-range enemy - hero or friendly summon - one cell
+			//closer and Cripples it (`Guard.Hunting.act()` reads `this.enemy`).
+			const chainTarget = this.rangedTarget(monster, 5);
+			if (!chainTarget || monster.chainUsed) return false;
+			const chainDistance = Roguelike.chebyshevDistance(monster, chainTarget);
+			if (chainDistance < 2 || chainDistance >= 5) return false;
+			this.chainHero(monster, chainTarget);
 			return true;
 		},
 		//DM200.Hunting.act()/canVent() - see `dm200HuntingTurn`/`dm200CanVent`'s own doc
@@ -1962,23 +1970,27 @@ export class DungeonScene extends Scene2D {
 		},
 		//Spinner.Hunting.act()/shootWeb() (tag `v3.3.8`): while not adjacent and off a 10-turn
 		//cooldown, seeds Java's persistent 3-cell `Web` blob (the aimed cell plus its two
-		//neighbours) and roots the hero on the shot. The blob persists via `spreadPlantBlobs`
+		//neighbours) and roots the aimed enemy on the shot. The blob persists via `spreadPlantBlobs`
 		//(`web` volume roots whoever stands in it), so the direct root is the impact and the
 		//terrain is the aftermath, exactly Java's two halves.
 		spinner: (monster, distance) => {
 			if (distance < 2) return false;
 			monster.webCooldown = (monster.webCooldown ?? 0) - 1;
-			if ((monster.webCooldown ?? 0) > 0 || !Roguelike.canTarget(this.level, monster, this.hero, { range: 6 })) return false;
+			//`Spinner.shootWeb()` aims at its `enemy` (hero or a friendly summon), not the hero
+			//specifically - `webPos()` reads `this.enemy`. The port's simplified three-cell web
+			//(the aimed cell plus its two horizontal neighbours) now follows the same target.
+			const webTarget = this.rangedTarget(monster, 6);
+			if ((monster.webCooldown ?? 0) > 0 || !webTarget || Roguelike.chebyshevDistance(monster, webTarget) < 2) return false;
 			monster.webCooldown = 10;
-			this.web.seed(this.hero.x, this.hero.y, 10);
+			this.web.seed(webTarget.x, webTarget.y, 10);
 			for (const step of [{ x: 1, y: 0 }, { x: -1, y: 0 }]) {
-				const nx = this.hero.x + step.x;
-				const ny = this.hero.y + step.y;
+				const nx = webTarget.x + step.x;
+				const ny = webTarget.y + step.y;
 				if (nx >= 0 && ny >= 0 && nx < this.level.width && ny < this.level.height && this.level.passable(nx, ny)) {
 					this.web.seed(nx, ny, 10);
 				}
 			}
-			addBuff(this.hero, 'roots');
+			addBuff(webTarget, 'roots');
 			this.say(t('port.log.spinnerweb'), 'negative');
 			return true;
 		},
@@ -1992,38 +2004,42 @@ export class DungeonScene extends Scene2D {
 			if (distance < 2) return false;
 			//`Golem.teleportEnemy()` restores the target's own position when it has
 			//`MagicImmune`; teleporting the hero would otherwise bypass the port's existing
-			//anti-magic state gate.
-			if (this.hero.magicImmune) return false;
-			if ((monster.golemTeleCooldown ?? 0) > 0 || !this.golemCanTeleport(monster)) return false;
+			//anti-magic state gate. Java teleports its `enemy`, so the shared ranged target picks
+			//the hero or a friendly summon.
+			const teleTarget = this.rangedTarget(monster, this.level.width + this.level.height);
+			if (!teleTarget || teleTarget.magicImmune) return false;
+			const teleDistance = Roguelike.chebyshevDistance(monster, teleTarget);
+			if (teleDistance < 2) return false;
+			if ((monster.golemTeleCooldown ?? 0) > 0 || !this.golemCanTeleport(monster, teleTarget)) return false;
 			//`Golem.Hunting.act()` first gives the ability a `Random.Int(100/distance) == 0`
 			//chance. The old port always teleported whenever the line was available, making
 			//the cooldown the only gate and turning a probabilistic ability into a guaranteed one.
 			//When the direct roll fails, Java first tries `getCloser(target)` and only teleports
 			//if that approach cannot find a step. Ask the same pathfinder here so a blocked line
 			//with an open route still produces an ordinary approach turn.
-			if (Random.int(0, Math.max(1, Math.floor(100 / distance))) !== 0) {
+			if (Random.int(0, Math.max(1, Math.floor(100 / teleDistance))) !== 0) {
 				const blocked = new Set(this.creatures
-					.filter((c) => c !== monster && c !== this.hero)
+					.filter((c) => c !== monster && c !== teleTarget)
 					.map((c) => this.level.index(c.x, c.y)));
 				this.eternalFireBlockedInto(blocked);
 				if (this.pathfinder.find(
 					{ x: monster.x, y: monster.y },
-					{ x: this.hero.x, y: this.hero.y },
+					{ x: teleTarget.x, y: teleTarget.y },
 					{ blocked },
 				)[0]) return false;
 			}
 			let best: { x: number; y: number } | null = null;
 			let bestDistance = -1;
 			for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
-				const at = { x: this.hero.x + dx, y: this.hero.y + dy };
+				const at = { x: teleTarget.x + dx, y: teleTarget.y + dy };
 				if (!this.level.passable(at.x, at.y) || this.creatureAt(at.x, at.y)) continue;
 				const fromGolem = Roguelike.chebyshevDistance(at, monster);
 				if (fromGolem > bestDistance) { bestDistance = fromGolem; best = at; }
 			}
 			if (!best) return false;
-			const golemTeleFrom = { x: this.hero.x, y: this.hero.y };
-			this.moveTo(this.hero, best);
-			this.playTeleportAppear(golemTeleFrom, best, this.hero);
+			const golemTeleFrom = { x: teleTarget.x, y: teleTarget.y };
+			this.moveTo(teleTarget, best);
+			this.playTeleportAppear(golemTeleFrom, best, teleTarget);
 			monster.golemTeleCooldown = 20;
 			this.say(t('port.log.golemteleport'), 'negative');
 			return true;
@@ -2499,11 +2515,14 @@ export class DungeonScene extends Scene2D {
 		//CharacterEffects still receives an exact current-frame list and owns its own entry cleanup.
 		const characterEffects = this.characterEffectCharacters;
 		characterEffects.length = 0;
-		for (const creature of this.creatures) characterEffects.push({ sprite: this.sprite(creature), sleeping: creature.sleeping && !(creature.kind === 'mimic' && creature.mimicRevealed === false) /* MimicSprite.hideSleep() */, shadowOffset: crystalShadowOffsets.get(creature.id) });
+		for (const creature of this.creatures) characterEffects.push({ sprite: this.sprite(creature), sleeping: creature.sleeping && !(creature.kind === 'mimic' && creature.mimicRevealed === false) /* MimicSprite.hideSleep() */, shadowOffset: crystalShadowOffsets.get(creature.id), castsShadow: creature.allyKind !== 'shadowClone' });
 		for (const sprite of this.dyingMonsters.keys()) characterEffects.push({ sprite });
 		const heroVisual = this.sprite(this.hero);
 		if (this.gameOver && !heroVisual.destroyed) characterEffects.push({ sprite: heroVisual });
 		this.characterEffects.update(dt, characterEffects);
+		//`CharSprite.update()` keeps Java's continuous `Emitter` auras positioned and FOV-gated
+		//every frame. The item-use refresh is only an eager update after an action, not a frame loop.
+		syncPourAuras(this, dt);
 		this.camera.update(dt);
 		this.map?.cull(this.camera);
 		this.wallsMap?.cull(this.camera);
@@ -2569,5 +2588,5 @@ export class DungeonScene extends Scene2D {
 
 /** The method groups in `./dungeon/` are typed with `this: DungeonScene` and merged onto the prototype here. */
 type Mixed<T> = { [K in keyof T]: OmitThisParameter<T[K]> };
-export interface DungeonScene extends Mixed<typeof coreSpawnTilesMethods>, Mixed<typeof npcShopBlacksmithMethods>, Mixed<typeof environmentFireTrapsMethods>, Mixed<typeof turnLoopAimingMethods>, Mixed<typeof actorTurnsHazardsMethods>, Mixed<typeof monsterAiMethods>, Mixed<typeof bossLogicMethods>, Mixed<typeof gnollMineMethods>, Mixed<typeof crystalMineMethods>, Mixed<typeof combatResolutionMethods>, Mixed<typeof attackSeamMethods>, Mixed<typeof deathSaveRefreshMethods>, Mixed<typeof panelsSingleUseMethods>, Mixed<typeof inventoryQuickslotMethods>, Mixed<typeof clericSpellFlowsMethods>, Mixed<typeof armorAbilityUseMethods>, Mixed<typeof skeletonKeyMethods>, Mixed<typeof dropThrowMethods>, Mixed<typeof cursedWandCastMethods>, Mixed<typeof tippedDartEffectsMethods>, Mixed<typeof weaponSpellsGearMethods>, Mixed<typeof comboMovesMethods>, Mixed<typeof monkAbilitiesMethods>, Mixed<typeof berserkRageMethods> {}
-Object.assign(DungeonScene.prototype, coreSpawnTilesMethods, npcShopBlacksmithMethods, environmentFireTrapsMethods, turnLoopAimingMethods, actorTurnsHazardsMethods, monsterAiMethods, bossLogicMethods, gnollMineMethods, crystalMineMethods, combatResolutionMethods, attackSeamMethods, deathSaveRefreshMethods, panelsSingleUseMethods, inventoryQuickslotMethods, clericSpellFlowsMethods, armorAbilityUseMethods, skeletonKeyMethods, dropThrowMethods, cursedWandCastMethods, tippedDartEffectsMethods, weaponSpellsGearMethods, comboMovesMethods, monkAbilitiesMethods, berserkRageMethods);
+export interface DungeonScene extends Mixed<typeof coreSpawnTilesMethods>, Mixed<typeof npcShopBlacksmithMethods>, Mixed<typeof environmentFireTrapsMethods>, Mixed<typeof turnLoopAimingMethods>, Mixed<typeof actorTurnsHazardsMethods>, Mixed<typeof monsterAiMethods>, Mixed<typeof bossLogicMethods>, Mixed<typeof gnollMineMethods>, Mixed<typeof crystalMineMethods>, Mixed<typeof combatResolutionMethods>, Mixed<typeof attackSeamMethods>, Mixed<typeof deathSaveRefreshMethods>, Mixed<typeof panelsSingleUseMethods>, Mixed<typeof inventoryQuickslotMethods>, Mixed<typeof clericSpellFlowsMethods>, Mixed<typeof armorAbilityUseMethods>, Mixed<typeof powerOfManyMethods>, Mixed<typeof skeletonKeyMethods>, Mixed<typeof dropThrowMethods>, Mixed<typeof cursedWandCastMethods>, Mixed<typeof tippedDartEffectsMethods>, Mixed<typeof weaponSpellsGearMethods>, Mixed<typeof comboMovesMethods>, Mixed<typeof monkAbilitiesMethods>, Mixed<typeof berserkRageMethods> {}
+Object.assign(DungeonScene.prototype, coreSpawnTilesMethods, npcShopBlacksmithMethods, environmentFireTrapsMethods, turnLoopAimingMethods, actorTurnsHazardsMethods, monsterAiMethods, bossLogicMethods, gnollMineMethods, crystalMineMethods, combatResolutionMethods, attackSeamMethods, deathSaveRefreshMethods, panelsSingleUseMethods, inventoryQuickslotMethods, clericSpellFlowsMethods, armorAbilityUseMethods, powerOfManyMethods, skeletonKeyMethods, dropThrowMethods, cursedWandCastMethods, tippedDartEffectsMethods, weaponSpellsGearMethods, comboMovesMethods, monkAbilitiesMethods, berserkRageMethods);
