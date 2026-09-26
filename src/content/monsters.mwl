@@ -254,10 +254,13 @@
     id: "necromancer",
     name: "actors.mobs.necromancer.name",
     hp: 40,
-    accuracy: 10,
+    // No melee stats in Java (`Necromancer.java`, tag `v3.3.8`, sets neither): `Char.attackSkill()`
+    // base returns 0 and `Char.damageRoll()` base returns 1 (B5 mobdata: java 0 / [1,1]).
+    // Adjacent necros used to slap for 10-acc 2-10; Java always misses for 1.
+    accuracy: 0,
     evasion: 14,
-    damage_min: 2,
-    damage_max: 10,
+    damage_min: 1,
+    damage_max: 1,
     armor_min: 0,
     armor_max: 5,
     experience: 7,
@@ -850,10 +853,11 @@
     id: "spectralNecromancer",
     name: "actors.mobs.spectralnecromancer.name",
     hp: 40,
-    accuracy: 10,
+    // `extends Necromancer` with no stat overrides (tag `v3.3.8`): same 0 / 1-1 melee as above (B5 mobdata).
+    accuracy: 0,
     evasion: 14,
-    damage_min: 2,
-    damage_max: 10,
+    damage_min: 1,
+    damage_max: 1,
     armor_min: 0,
     armor_max: 5,
     experience: 7,

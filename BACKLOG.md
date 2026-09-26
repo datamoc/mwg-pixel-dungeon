@@ -16,11 +16,6 @@ B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as d
 
 - [ ] Verify loot, quest outcomes, boss transitions, and save/load state. **Complexity: L.** Not started; extends `tools/parity/` (see its README, "Extending it").
 
-## B5. Classify every remaining difference
-
-- [ ] Classify every remaining difference as either an implemented Java behavior or an explicitly accepted platform/UI
-  difference. **Complexity: M.** Consumes the harness output from B1, B3 and B4.
-
 ## B6. `SimulationRuntime` migration
 
 - [ ] Wrap the per-domain rule functions (`simulation/combat.ts`, `movement.ts`, `heroActions.ts`, `heroTurn.ts`) behind one
