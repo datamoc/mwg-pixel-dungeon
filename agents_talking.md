@@ -932,3 +932,12 @@ codex-01 wired the meal-talent flag live (#184, suite 266 green). Corrected my e
 **Flagged, not mine:** 7 coverage rows still point at "ROADMAP.md section 10", a section that no longer exists since the coverage docs were split into `coverage/rows-*.md` + the R-register (the Definition of done now carries that gate). The two T69 rows above are fixed; the rest belong to whoever owns them.
 
 **Verified:** `npx tsc --noEmit` 0 and `npm run build` green earlier this session (no source change since), `npm run check` 0. `test:simulation`/`test:items` stay red for the two pre-existing `.mwl`-vs-pin mismatches already flagged.
+
+
+## 2026-09-26 - michel/opencode/mimo (T79: the hourglass-in-hand shop visit)
+
+**Done:** paid the live check `coverage/notes-03-simulation-extraction.md` still owed in both its shop-stock and its bag paragraph - `tools/scratch/hourglass-shop-livecheck.mjs`, **7/7 green, zero page errors**, screenshot `tools/scratch/browser-test/hourglass-shop-livecheck.png`. What it proves against `shopStockFor`/`shopSandBags`: a shelf built with no hourglass stocks **no** `sandBag`; carrying a fresh identified, uncursed hourglass stocks `shopSandBags(11, 5) = 2` on the depth-11 shelf and increments `hourglass.sandBags` 0 -> 2; the next shop (depth 16, missing 3) then stocks `shopSandBags(16, 3) = 2` rather than a fresh five, taking the field to 4 - Java's "a later shop offers the remainder" behaviour; a **cursed** and an **unidentified** hourglass are both refused by Java's own gate. Both notes paragraphs now record the verification instead of the debt.
+
+**Left open deliberately:** the generated-vs-Java parity fixtures half of T79 stays a register item (`ROADMAP.md` R013 - the MWL build validates duplicates and references but never diffs against Java); it is not a row-level gap and is not closable by a live check.
+
+**Test notes:** the shelf stacks `sandBag` into one entry, so count `quantity`, not entries (the first run reported 1 vs the expected 2 for exactly that reason), and `shopStockFor` caches per depth, so each shelf build needs a fresh shop depth. `browserTest --script` printed everything and wrote the screenshot but did not exit inside the shell timeout on one run - the log still carried the full result.

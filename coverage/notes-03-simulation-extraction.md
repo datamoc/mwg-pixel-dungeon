@@ -438,8 +438,7 @@ no Java entry is absent any more (the `ChooseBag` pick IS stocked now - see the 
 rather than substituted - the TippedDart stack, the three depth-20/21 Torches, the one-Ankh-per-shop, and the `ChooseBag` pick ARE all stocked now,
 per `shopStock.ts`'s own header comment. Verified by `tools/verifyItemWorkflows.mjs`'s "the generated shop shelf" block
 (fixed-entry presence, tier-matched armor per depth, the depth-20/21 torch trio at unit price 8,
-the bomb/rare rolls, and the sandbag count formula), a live browser boot (Warrior run, depth 1, no console errors), and the live shop-depth visit below
-the hourglass-in-hand shop visit is still owed.
+the bomb/rare rolls, and the sandbag count formula), a live browser boot (Warrior run, depth 1, no console errors), and the live shop-depth visit below. **Hourglass-in-hand shop visit browser-verified 2026-09-26** (`tools/scratch/hourglass-shop-livecheck.mjs`, 7/7 green, screenshot `tools/scratch/browser-test/hourglass-shop-livecheck.png`): a shelf built with no hourglass stocks no `sandBag`; carrying a fresh identified, uncursed hourglass stocks `shopSandBags(11, 5) = 2` on the depth-11 shelf and increments `hourglass.sandBags` 0 -> 2; the next shop (depth 16) then stocks `shopSandBags(16, 3) = 2` rather than a fresh five, taking the field to 4; a cursed or an unidentified hourglass is refused by Java's own gate (`hourglass != null && isIdentified() && !cursed`); zero page errors.
 
 The pick is `chooseShopBag` (`src/items/bags.ts`): the real argmax over the not-yet-dropped
 bags (velvet base weight 1, the rest 0, plus one per holdable backpack entry), stocked in Java's
@@ -455,7 +454,7 @@ position, values, shelf price) and live (`tools/scratch/bag-shop-livecheck.mjs`,
 starts dropped, the depth-6 shelf stocks the scroll holder the starting kit's scrolls vote for, the
 flag drops exactly once, the shelf note reads the real 400g price, the picker-to-detail-to-buy path
 pays it and moves the holder into the bag, and an exhausted flag field stocks no bag) -
-the hourglass-in-hand shop visit is still owed. **Three container-half stat effects are now
+the hourglass-in-hand shop visit is now paid too (2026-09-26, same livecheck: the sandbag the shelf stocks while the hourglass is in the bag, and the running `sandBags` field that makes a later shop offer the remainder instead of a fresh five). **Three container-half stat effects are now
 live (2026-09-18, all checked against tag `v3.3.8`)**: the Magical Holster's `0.85`
 recharge base (normal `0.875`) and `1.2x` missile-use durability, read off holster ownership
 (Java gates on the item sitting *inside* the holster; the flat bag keeps no per-item location,
