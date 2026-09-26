@@ -121,6 +121,15 @@ Before calling any non-trivial change complete:
 
 ## Browser verification workflow
 
+**Fast path (any agent, Chrome and Firefox, no extra install): `tools/browserTest.mjs`** - a dependency-free harness
+(Chrome over CDP, Firefox over WebDriver BiDi, Node built-ins only) that serves `dist/` on a free port itself, so the
+port-exclusion pitfall below cannot bite. `npm run build`, then `npm run browser:test` (smoke: boot, start a Warrior,
+screenshot to `tools/scratch/browser-test/`, no console errors), `-- --browser firefox|both`, `-- --eval "scene.hero.hp"`,
+or `-- --script my.mjs` (`export default async (game) => {...}`; `game.startGame/eval/tap/tapText/screenshot/consoleErrors`,
+see the file header and `tools/scratch/bt-example.mjs`). Buttons are found by label in the Pixi tree, so layout changes
+do not break it. It does not replace looking at the screenshot: read the PNG. The manual workflow below remains the
+fallback.
+
 `file://` can't run ES modules or fetch, so:
 1. `npm run build`, then serve `dist/` locally, e.g. `python -m http.server <port>` from
    `dist/`. **Port pitfall**: Windows reserves dynamic-port-exclusion ranges that silently
