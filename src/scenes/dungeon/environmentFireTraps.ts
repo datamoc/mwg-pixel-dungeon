@@ -359,9 +359,13 @@ export const environmentFireTrapsMethods = {
 	 * Java's own `ConeAOE` rather than a target-centred circle: range `2 + 2*charges`, arc
 	 * `20 + 10*charges` degrees, rays cast with `STOP_SOLID | STOP_TARGET` (see `coneCells`).
 	 */
-	useRegrowthWand(this: DungeonScene, target: Creature, charges: number): void {
-		const level = Math.max(0, this.degradedLevel(this.effectiveZapLevel()));
+	useRegrowthWand(this: DungeonScene, target: Step, charges: number, levelOverride?: number): void {
+		const level = levelOverride ?? Math.max(0, this.degradedLevel(this.effectiveZapLevel()));
 		const limit = this.regrowthChargeLimit();
+		//A conjured (Trinity MindForm) cast is a fresh item with zero charge history -
+		//Java would run it off its own counters, so it neither reads nor writes the
+		//wielded wand's persistent furrow/total books.
+		const conjured = levelOverride !== undefined;
 		useRegrowthWandEffect({
 			target,
 			hero: this.hero,
@@ -369,7 +373,7 @@ export const environmentFireTrapsMethods = {
 			charges,
 			width: this.level.width,
 			height: this.level.height,
-			furrowedChance: this.regrowthTotalChargesUsed >= limit ? (this.regrowthChargesOverLimit + 1) / 5 : 0,
+			furrowedChance: !conjured && this.regrowthTotalChargesUsed >= limit ? (this.regrowthChargesOverLimit + 1) / 5 : 0,
 			traceRay: (from, to) => this.coneRay(from, to),
 			getTerrain: (x, y) => this.level.get(x, y),
 			setTerrain: (x, y, terrain) => this.level.set(x, y, terrain),
@@ -388,9 +392,10 @@ export const environmentFireTrapsMethods = {
 			},
 			refreshFeatures: () => this.featuresMap?.setLayerData('features', this.featureFrames()),
 			chargeLimit: () => limit,
-			getTotalCharges: () => this.regrowthTotalChargesUsed,
-			getChargesOverLimit: () => this.regrowthChargesOverLimit,
+			getTotalCharges: () => (conjured ? 0 : this.regrowthTotalChargesUsed),
+			getChargesOverLimit: () => (conjured ? 0 : this.regrowthChargesOverLimit),
 			setChargeState: (total, overLimit) => {
+				if (conjured) return;
 				this.regrowthTotalChargesUsed = total;
 				this.regrowthChargesOverLimit = overLimit;
 			},
@@ -418,12 +423,14 @@ export const environmentFireTrapsMethods = {
 	 * explicit 4 - see the buff-durations row; the port prolongs Cripple/Paralysis keep-max
 	 * where Java's `affect` spends (adds 4 onto the live clock), a stated divergence).
 	 */
-	useFireblastWand(this: DungeonScene, target: Creature, chargesPerCast: number): void {
+	useFireblastWand(this: DungeonScene, target: Step, chargesPerCast: number, levelOverride?: number): void {
 		useFireblastWandEffect({
 			target,
 			hero: this.hero,
 			charges: chargesPerCast,
-			weaponLevel: this.effectiveZapLevel(),
+			//A conjured (Trinity MindForm) cast runs at its own level, not the wielded
+			//wand's - Java conjures a fresh item rather than firing the carried one.
+			weaponLevel: levelOverride ?? this.effectiveZapLevel(),
 			width: this.level.width,
 			height: this.level.height,
 			traceRay: (from, to) => this.coneRay(from, to),
@@ -458,8 +465,10 @@ export const environmentFireTrapsMethods = {
 	 * for the enemy branch. Targeting an ally is auto-preferred because this port has no cell
 	 * picker, while the enemy fallback keeps the wand useful before ally combat is present.
 	 */
-	useTransfusionWand(this: DungeonScene, target: Creature): void {
-		const level = Math.max(0, this.degradedLevel(this.effectiveZapLevel()));
+	useTransfusionWand(this: DungeonScene, target: Creature, levelOverride?: number): void {
+		//Same conjured-item rule as the regrowth adapter above: an explicit level
+		//replaces the wielded wand's degraded level outright, never stacked with it.
+		const level = levelOverride ?? Math.max(0, this.degradedLevel(this.effectiveZapLevel()));
 		useTransfusionWandEffect({
 			target,
 			hero: this.hero,

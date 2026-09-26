@@ -47,8 +47,8 @@ export interface MindFormContext {
 	occupantAt(cell: { x: number; y: number }): MindFormTarget | null;
 	pickMindEffect(options: MindFormOption[], onPick: (effect: MindFormEffect | null) => void): void;
 	aimMindEffect(effect: MindFormEffect, onConfirm: (cell: { x: number; y: number }) => void): void;
-	fireMindWand(wandType: string, level: number, targetId: string): boolean;
-	fireMindThrown(missileClass: string, level: number, targetId: string): boolean;
+	fireMindWand(wandType: string, level: number, targetCell: { x: number; y: number }, targetId: string | null): boolean;
+	fireMindThrown(missileClass: string, level: number, targetCell: { x: number; y: number }, targetId: string | null): boolean;
 	spendTurn(): void;
 	say(key: string, level?: 'info' | 'positive' | 'negative' | 'warning'): void;
 	/** `Trinity.mindForm`'s slot (a `mind:<kind>:<key>` id, or null). Owned and
@@ -127,21 +127,15 @@ export function confirmMindFormAim(
 		collisionOccupied: ctx.occupantAt(collision) !== null,
 	});
 	if (decided.status === 'refused') {
-		ctx.say(decided.reason === 'self' ? 'items.wands.wand.self_target' : 'actors.hero.abilities.armorability.no_target', 'negative');
+		ctx.say('items.wands.wand.self_target', 'negative');
 		return false;
 	}
 	const targetCell = decided.target === 'aim' ? cell : collision;
 	const target = ctx.occupantAt(targetCell);
-	if (!target) {
-		//Unreachable through the planner above (it reports 'empty' first) - kept so a
-		//stale occupant read between resolve and fire refuses instead of misfiring.
-		ctx.say('actors.hero.abilities.armorability.no_target', 'negative');
-		return false;
-	}
 	const level = ctx.mindItemLevel();
 	const fired = isWand
-		? ctx.fireMindWand(effect.wandType, level, target.id)
-		: ctx.fireMindThrown(effect.missileClass, level, target.id);
+		? ctx.fireMindWand(effect.wandType, level, targetCell, target?.id ?? null)
+		: ctx.fireMindThrown(effect.missileClass, level, targetCell, target?.id ?? null);
 	if (!fired) return false;
 	ctx.spendArmor(cost);
 	if (!isWand) ctx.spendTurn();

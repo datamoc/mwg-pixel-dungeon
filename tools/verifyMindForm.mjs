@@ -54,7 +54,7 @@ try {
 		assert.deepEqual(resolveMindFormAim({ heroCell: hero, aimCell: { x: 2, y: 0 }, collisionCell: { x: 4, y: 0 }, aimOccupied: false, collisionOccupied: true }),
 			{ status: 'ok', target: 'collision' });
 		assert.deepEqual(resolveMindFormAim({ heroCell: hero, aimCell: { x: 2, y: 0 }, collisionCell: { x: 4, y: 0 }, aimOccupied: false, collisionOccupied: false }),
-			{ status: 'refused', reason: 'empty' });
+			{ status: 'ok', target: 'cell' });
 	});
 
 	check('the Trinity slot round-trips, and rejects foreign ids', () => {
@@ -88,8 +88,8 @@ try {
 			occupantAt: (cell) => (cell.x === 2 && cell.y === 0 ? { id: 'rat-1' } : null),
 			pickMindEffect: (options, onPick) => { state.picked = options.length; onPick(options[0].value); },
 			aimMindEffect: (effect, onConfirm) => { state.aimed = true; onConfirm({ x: 2, y: 0 }); },
-			fireMindWand: (wandType, level, targetId) => { state.fired.push(['wand', wandType, level, targetId]); return true; },
-			fireMindThrown: (missileClass, level, targetId) => { state.fired.push(['thrown', missileClass, level, targetId]); return true; },
+			fireMindWand: (wandType, level, targetCell, targetId) => { state.fired.push(['wand', wandType, level, targetCell, targetId]); return true; },
+			fireMindThrown: (missileClass, level, targetCell, targetId) => { state.fired.push(['thrown', missileClass, level, targetCell, targetId]); return true; },
 			spendTurn: () => { state.turns += 1; },
 			say: (key, level) => { said.push([key, level]); },
 			storeMindEffect: (id) => { state.stored = id; },
@@ -107,17 +107,26 @@ try {
 		startMindFormFlow(ctx, catalog);
 		assert.equal(state.stored, 'mind:wand:fireblast');
 		assert.equal(state.aimed, true);
-		assert.deepEqual(state.fired, [['wand', 'fireblast', 5, 'rat-1']]);
+		assert.deepEqual(state.fired, [['wand', 'fireblast', 5, { x: 2, y: 0 }, 'rat-1']]);
 		assert.equal(state.armor, 75);
 		assert.equal(state.turns, 0);
 		assert.deepEqual(state.said, []);
+	});
+
+	check('an empty wand aim fires at the Java collision cell and spends the cast cost', () => {
+		const { state, ctx } = stub();
+		ctx.aimMindEffect = (_effect, onConfirm) => onConfirm({ x: 6, y: 0 });
+		assert.equal(confirmMindFormAim(ctx, catalog.wands[0].value, { x: 6, y: 0 }), true);
+		assert.deepEqual(state.fired, [['wand', 'fireblast', 5, { x: 4, y: 0 }, null]]);
+		assert.equal(state.armor, 75);
+		assert.equal(state.turns, 0);
 	});
 
 	check('a thrown pick spends a turn, a failed fire spends nothing', () => {
 		const onlyThrown = { wands: [], thrown: catalog.thrown };
 		const first = stub();
 		startMindFormFlow(first.ctx, onlyThrown);
-		assert.deepEqual(first.state.fired, [['thrown', 'javelin', 5, 'rat-1']]);
+		assert.deepEqual(first.state.fired, [['thrown', 'javelin', 5, { x: 2, y: 0 }, 'rat-1']]);
 		assert.equal(first.state.armor, 75);
 		assert.equal(first.state.turns, 1);
 		const fizzle = stub();
@@ -125,6 +134,17 @@ try {
 		startMindFormFlow(fizzle.ctx, onlyThrown);
 		assert.equal(fizzle.state.armor, 100);
 		assert.equal(fizzle.state.turns, 0);
+	});
+
+	check('an effect-spawned thrown missile flies to an empty collision cell without dropping', () => {
+		const { state, ctx } = stub();
+		ctx.occupantAt = () => null;
+		ctx.aimMindEffect = (_effect, onConfirm) => onConfirm({ x: 6, y: 0 });
+		assert.equal(confirmMindFormAim(ctx, catalog.thrown[0].value, { x: 6, y: 0 }), true);
+		assert.deepEqual(state.fired, [['thrown', 'javelin', 5, { x: 4, y: 0 }, null]]);
+		assert.equal(state.armor, 75);
+		assert.equal(state.turns, 1);
+		assert.deepEqual(state.said, []);
 	});
 
 	check('short charge and self aim refuse with Java-shaped lines and spend nothing', () => {
@@ -145,7 +165,7 @@ try {
 		ctx.storeMindEffect('mind:thrown:javelin');
 		reaimStoredMindForm(ctx, catalog);
 		assert.equal(state.aimed, true);
-		assert.deepEqual(state.fired, [['thrown', 'javelin', 5, 'rat-1']]);
+		assert.deepEqual(state.fired, [['thrown', 'javelin', 5, { x: 2, y: 0 }, 'rat-1']]);
 		const stale = stub();
 		stale.ctx.storeMindEffect('mind:wand:');
 		reaimStoredMindForm(stale.ctx, catalog);
@@ -165,15 +185,21 @@ try {
 			'the Trinity ability offers a Mind picker');
 		assert.match(scene, /mindFormFlowContext\(this: DungeonScene, baseCost: number\)/,
 			'the flow context is bound scene-side');
-		assert.match(scene, /this\.fireWandShot\(wandType as WandType, level, target, 0\)/,
-			'conjured zaps spend zero bag charges');
+		assert.match(scene, /wandChargesPerCast\(type, fullCharges\)/,
+			'conjured wands compute charge-scaled effects from their own full charge count');
+		assert.match(scene, /this\.fireWandShot\(type, level, target \?\? targetCell, wandChargesPerCast\(type, fullCharges\), level\)/,
+			'conjured zaps retain bare cell targets, run at the conjured level, and spend no bag charges');
+		assert.match(scene, /fireMindThrown: \(missileClass, level, targetCell, targetId\)[\s\S]{0,420}spawnBoltTo\(this\.hero, targetCell, 0xffffff, undefined, missileFlightArt\(missileClass\)\)/,
+			'effect-spawned thrown misses fly to the selected cell without entering item-drop handling');
 		assert.match(scene, /trinityChargeUsePerEffect\(baseCost,[\s\S]{0,200}'mind'\)/,
 			'conjured fires spend the Trinity armor charge per effect class');
 		assert.doesNotMatch(scene, /commitTrinityForm\(this: DungeonScene/,
 			'the cosmetic form-commit is gone once Mind fires for real');
 		const traps = readFileSync(new URL('../src/scenes/dungeon/environmentFireTraps.ts', import.meta.url), 'utf8');
-		assert.match(traps, /useRegrowthWand\(this: DungeonScene, target: Creature, charges: number, levelOverride\?: number\)/,
-			'regrowth accepts a conjured level override');
+		assert.match(traps, /useRegrowthWand\(this: DungeonScene, target: Step, charges: number, levelOverride\?: number\)/,
+			'regrowth accepts a conjured level override and bare cell');
+		assert.match(traps, /useFireblastWand\(this: DungeonScene, target: Step, chargesPerCast: number, levelOverride\?: number\)/,
+			'fireblast accepts a conjured level override and bare cell');
 		assert.match(traps, /weaponLevel: levelOverride \?\? this\.effectiveZapLevel\(\)/,
 			'fireblast runs a conjured cast at its own level');
 	});

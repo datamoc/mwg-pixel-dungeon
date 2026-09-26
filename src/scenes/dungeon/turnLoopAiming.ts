@@ -87,7 +87,13 @@ export const turnLoopAimingMethods = {
 		return colors[wandType as Exclude<WandType, 'warding'>] ?? 0xffffff;
 	},
 
-	fireWandShot(this: DungeonScene, wandType: WandType, zapLevel: number, target: Creature, chargesPerCast: number): boolean {
+	fireWandShot(this: DungeonScene, wandType: WandType, zapLevel: number, target: Creature | Step, chargesPerCast: number, conjuredLevel?: number): boolean {
+		//A `Step` is only `{x, y}`; a creature always carries numeric HP. Never
+		//discriminate with `in` here: flag fields are sparse (the hero carries
+		//`isHero: true` while ordinary monsters omit every false-valued flag), so
+		//`'isHero' in target` is false for every mob and every zap aimed at one
+		//would fizzle with an empty victim list.
+		const targetCreature: Creature | null = typeof (target as Creature).hp === 'number' ? (target as Creature) : null;
 		//GreatCrab.damage negates wand bolts from a seen hero - kept verbatim
 		//`GreatCrab.damage()` (tag v3.3.8): `enemySeen && state != SLEEPING && paralysed == 0
 		//&& src instanceof Wand && enemy == Dungeon.hero && enemy.invisible == 0`. This port\u2019s
@@ -96,7 +102,7 @@ export const turnLoopAimingMethods = {
 		//set), so only the missing `paralysed == 0` term needed adding; `!target.sleeping`
 		//alone previously let a paralysed crab (which cannot act, let alone react to a hit)
 		//still parry every wand hit.
-		if (target.kind === 'greatCrab' && !target.sleeping && target.seesHero && target.buffs['paralysis'] === undefined) {
+		if (targetCreature?.kind === 'greatCrab' && !targetCreature.sleeping && targetCreature.seesHero && targetCreature.buffs['paralysis'] === undefined) {
 			this.say(t('port.log.crabparries'), 'negative');
 			return false;
 		}
@@ -106,6 +112,9 @@ export const turnLoopAimingMethods = {
 		//`WardSprite.zap()`'s `DeathRay` already draws, tinted per wand (`wandZapTrailColor`)
 		//- one shared `Beam` reduction, not two. Pushed once here regardless of the
 		//type-specific branch below, since every one of them still zaps from the hero to
+		//MindForm passes Java's Ballistica collision cell when no character occupies it;
+		//Fireblast and Regrowth consume that cell directly, while other wand handlers still
+		//reduce unoccupied-cell effects to their modeled cell-level subset.
 		//`target`'s cell first (fireblast/regrowth's own area shapes are a separate, larger
 		//visual this stays a stated simplification for, not a full cone/AOE telegraph).
 		this.zapBeams.push({
@@ -120,20 +129,20 @@ export const turnLoopAimingMethods = {
 		//ignition, and the per-charge damage and statuses). Lightning still arcs to visible
 		//adjacent foes instead of Java's Ballistica chain.
 		if (wandType === 'regrowth') {
-			this.useRegrowthWand(target, chargesPerCast);
+			this.useRegrowthWand(target, chargesPerCast, conjuredLevel);
 		} else if (wandType === 'fireblast') {
-			this.useFireblastWand(target, chargesPerCast);
+			this.useFireblastWand(target, chargesPerCast, conjuredLevel);
 		} else if (wandType === 'transfusion') {
-			this.useTransfusionWand(target);
+			if (targetCreature) this.useTransfusionWand(targetCreature, conjuredLevel);
 		} else {
 		const zapTargets = wandType === 'blastWave'
 			? this.creatures.filter((c) => !c.isNPC && c.hp > 0 && Roguelike.chebyshevDistance(c, target) <= 1)
 			: wandType === 'lightning'
-			? this.lightningTargets(target)
+			? targetCreature ? this.lightningTargets(targetCreature) : []
 			: wandType === 'corrosion'
-				? [target, ...this.creatures.filter((c) => c !== target && !c.isHero && !c.isNPC && c.hp > 0
+				? [...(targetCreature ? [targetCreature] : []), ...this.creatures.filter((c) => c !== targetCreature && !c.isHero && !c.isNPC && c.hp > 0
 					&& Roguelike.chebyshevDistance(target, c) <= 1 && this.fov.isVisible(c.x, c.y))]
-			: [target];
+			: targetCreature ? [targetCreature] : [];
 		//WandOfLightning.onZap() (tag `v3.3.8`) promotes the multiplier to 1 when
 		//the collision cell is water, so a conductive water strike deals full damage
 		//to every affected character rather than sharing the ordinary chain penalty.
@@ -150,6 +159,12 @@ export const turnLoopAimingMethods = {
 		}
 		//`WandOfFrost.onZap()` opens with `heap.freeze()` at the collision cell, occupant or not.
 		if (wandType === 'frost') this.freezeHeapAt(target.x, target.y);
+		if (wandType === 'frost' && !targetCreature) {
+			//`WandOfFrost.onZap()` clears Fire and EternalFire at a bare collision cell;
+			//the character branch below handles the same cell when it has an occupant.
+			this.fire.clear(target.x, target.y);
+			if (this.eternalFire.volumeAt(target.x, target.y) > 0) this.eternalFire.clear(target.x, target.y);
+		}
 		for (const victim of zapTargets) {
 			//WandOfLightning.onZap() skips characters sharing the caster's alignment,
 			//except for the caster itself, which takes half damage. The target is an
@@ -718,16 +733,16 @@ export const turnLoopAimingMethods = {
 	 * `spawnProjectile` above drives for thrown weapons, just without requiring a
 	 * `Creature` at the destination.
 	 */
-	spawnBoltTo(this: DungeonScene, from: Creature, to: { x: number; y: number }, tint: number, onArrive?: () => void): void {
-		const sprite = new TintedSprite(this.dotTexture);
-		sprite.tint = tint;
+	spawnBoltTo(this: DungeonScene, from: Creature, to: { x: number; y: number }, tint: number, onArrive?: () => void, art?: MissileFlightArt | null): void {
+		const sprite = new TintedSprite(art ? this.itemsSheet.get(art.frame) : this.dotTexture);
+		if (!art) sprite.tint = tint;
 		this.creatureLayer.addChild(sprite);
 		const [fx, fy] = this.worldOf(from);
 		const tx = (to.x + 0.5) * TILE, ty = (to.y + 0.5) * TILE;
 		this.projectiles.push({
 			flight: new Projectile(sprite, { x: fx, y: fy }, { x: tx, y: ty }, { speed: 300 }),
 			sprite,
-			spin: 0,
+			spin: art?.spin ?? 0,
 			onArrive,
 		});
 	},

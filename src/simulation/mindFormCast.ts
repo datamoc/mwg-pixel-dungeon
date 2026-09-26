@@ -45,15 +45,16 @@ export interface MindFormAim {
 }
 
 export type MindFormTarget =
-	| { status: 'ok'; target: 'aim' | 'collision' }
-	| { status: 'refused'; reason: 'self' | 'empty' };
+	| { status: 'ok'; target: 'aim' | 'collision' | 'cell' }
+	| { status: 'refused'; reason: 'self' };
 
 /**
  * `targetSelector.onSelect()`: aiming at (or colliding with) the hero's own cell
  * refuses with the wand `self_target` line; otherwise Java targets the occupant at
- * the aimed cell, else the one at the collision cell, else fires at the bare cell.
- * This port's targeting is creature-based everywhere (see the section-8 audit), so
- * the bare-cell outcome is a refusal, not a terrain zap - stated, not silent.
+ * the aimed cell, else the one at the collision cell, else fires at the bare collision
+ * cell. Fireblast and Regrowth can execute their cell-shaped terrain effects in this
+ * port; direct-creature-only wands may still have reduced empty-cell effects, documented
+ * at their effect seams and in PORT_COVERAGE.md.
  */
 export function resolveMindFormAim(aim: MindFormAim): MindFormTarget {
 	const same = (a: { x: number; y: number }, b: { x: number; y: number }) => a.x === b.x && a.y === b.y;
@@ -62,5 +63,5 @@ export function resolveMindFormAim(aim: MindFormAim): MindFormTarget {
 	}
 	if (aim.aimOccupied) return { status: 'ok', target: 'aim' };
 	if (aim.collisionOccupied) return { status: 'ok', target: 'collision' };
-	return { status: 'refused', reason: 'empty' };
+	return { status: 'ok', target: 'cell' };
 }

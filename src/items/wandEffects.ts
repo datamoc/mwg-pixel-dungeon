@@ -138,7 +138,7 @@ export function useWardingWand(context: WardingWandContext): void {
 }
 
 export interface FireblastWandContext {
-	target: Creature;
+	target: Step;
 	hero: Creature;
 	charges: number;
 	weaponLevel: number;
@@ -237,7 +237,7 @@ export function useFireblastWand(context: FireblastWandContext): void {
 }
 
 export interface RegrowthWandContext {
-	target: Creature;
+	target: Step;
 	hero: Creature;
 	level: number;
 	charges: number;

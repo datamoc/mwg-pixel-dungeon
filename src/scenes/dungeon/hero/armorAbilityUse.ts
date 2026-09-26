@@ -8,7 +8,7 @@ import { capitalize, has, t } from '../../../i18n/index';
 import { SEER_SHOT_COOLDOWN, allyWarpRange, seerShotDuration } from '../../../talentEffects';
 import { runState } from '../../../runState';
 import { armorAbilityDef, armorChargeUse, type ArmorAbilityDef } from '../../../armorAbilities';
-import { wandTypeFromSource, type WandType } from '../../../items/wands';
+import { wandChargesPerCast, wandInitialCharges, wandTypeFromSource, WAND_TYPES, wandTargetRange, type WandType } from '../../../items/wands';
 import { staffImbueFor } from '../../../items/wands';
 import { ELEMENTAL_BLAST_DAMAGE_FACTORS, elementalBlastAim, elementalBlastAoeSize, elementalBlastAmokDuration, elementalBlastBlindnessDuration, elementalBlastCharmDuration, elementalBlastCorrosion, elementalBlastDamage, elementalBlastEffectMulti, elementalBlastFrostDuration, elementalBlastKnockback, elementalBlastLightDuration, elementalBlastParalysisDuration, elementalBlastReactiveShield, elementalBlastRechargingDuration, elementalBlastRegrowthChance, elementalBlastRootsDuration, elementalBlastTransfusionSplit, elementalBlastUndeadDamage } from '../../../simulation/mageAbilities';
 import { UNDEAD_KINDS } from '../../../monsters';
@@ -19,7 +19,7 @@ import { SPIRIT_HAWK_LIFESPAN, spiritHawkDodges } from '../../../simulation/hunt
 import { closeTheGapRange, directedPowerBoost, elementalAnnoyingChance, elementalBaseDamage, elementalBlobAmount, elementalBlockingShield, elementalBloomingBudget, elementalCorruptingChance, elementalCurseChance, elementalFurrowStep, elementalGrimChance, elementalKineticSplash, elementalKnockback, elementalLuckyChance, elementalPowerMulti, elementalProjectingSplash, elementalRootsDuration, elementalSacrificialOther, elementalSacrificialSelf, elementalStrikeCone, elementalStrikeResisted, elementalVampiricHeal, invigoratingVictoryHeal, type ElementalStrikeDamageSource } from '../../../simulation/duelistAbilities';
 import { shadowCloneAccuracy, shadowCloneArmorShare, shadowCloneBladeShare, shadowCloneEvasion, shadowCloneHp } from '../../../simulation/rogueAbilities';
 import { showChoiceWindow } from '../../../ui/portWindows';
-import { POWER_OF_MANY_TURNS, trinityBodyDuration } from '../../../simulation/clericSpells';
+import { POWER_OF_MANY_TURNS, trinityBodyDuration, trinityMindItemLevel } from '../../../simulation/clericSpells';
 import { trinityChargeUsePerEffect } from '../../../simulation/clericSpells';
 import { randomSpellbookScroll } from '../../../items/artifactActions';
 import { applyScrollEffect } from '../../../items/scrollEffects';
@@ -28,13 +28,15 @@ import { useChainsFlow } from '../../../items/chains';
 import { useArmbandFlow } from '../../../items/armband';
 import { beginSandalsRootFlow } from '../../../items/sandals';
 import { useTalismanFlow } from '../../../items/talisman';
-import { mwlItemEffectValue } from '../../../mwlContent';
-import { RING_DEFS } from '../../../items/ringModifiers';
-import { MWL_ARMOR_GLYPHS, MWL_WEAPON_ENCHANTS } from '../../../mwlContent';
+import { bolasCrippleTurns, missileAdjacentAccFactor, missileDamageRange, missileFlightArt, tomahawkBleedRange } from '../../../items/missiles';
+import { RING_DEFS, ringSharpshootingBonus } from '../../../items/ringModifiers';
+import { MWL_ARMOR_GLYPHS, MWL_MISSILE_BY_CLASS, MWL_WEAPON_ENCHANTS, mwlItemEffectValue } from '../../../mwlContent';
+import { parseMindEffect, reaimStoredMindForm, startMindFormFlow, type MindFormContext } from '../../../items/mindForm';
+import type { MindFormEffect } from '../../../simulation/mindFormCast';
 import { coneCells } from '../../../mechanics/cone';
 import { traceRayToTarget } from '../../../mechanics/rays';
 import { EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, WATER } from '../../../dungeonConstants';
-import { BUFF_DURATION, addBuff, applyElementalBacklash, reigniteBuff, rollDamage, setBleeding, type Creature, type Step } from '../../../combat';
+import { BUFF_DURATION, addBuff, applyElementalBacklash, buffBlocked, reigniteBuff, rollDamage, setBleeding, type Creature, type Step } from '../../../combat';
 import { applyChillFreeze } from '../../../simulation/buffs';
 import { BOSSES, IMMOVABLE_KINDS, heroSheet, liveStats, type MonsterId } from '../../../monsters';
 import { HARMFUL_PLANTS, NATURES_POWER_DURATION } from '../shared';
@@ -169,14 +171,13 @@ export const armorAbilityUseMethods = {
 
 	/**
 	 * `Trinity.activate()` (`actors/hero/abilities/cleric/Trinity.java`, tag `v3.3.8`)
-	 * opens a form selector before spending charge. Body Form has its modeled weapon-enchantment
-	 * subset; Mind/Spirit still record only their selection because their item-level effect
-	 * dispatchers need per-item state this port does not yet have.
+	 * opens a form selector before spending charge. Body, Mind and Spirit dispatch their
+	 * modeled effects through item-level flows after selection.
 	 */
 	activateTrinity(this: DungeonScene, _def: ArmorAbilityDef, cost: number): boolean {
 		showChoiceWindow(this.gameWindows, 'Cleric Trinity', 'Choose a Trinity form.', [
 			{ label: 'Body Form', onPick: () => this.chooseTrinityBodyEffect(cost) },
-			{ label: 'Mind Form', onPick: () => this.commitTrinityForm('mind', cost) },
+			{ label: 'Mind Form', onPick: () => this.chooseTrinityMindEffect(cost) },
 			{ label: 'Spirit Form', onPick: () => this.chooseTrinitySpiritEffect(cost) },
 		]);
 		return false;
@@ -255,16 +256,142 @@ export const armorAbilityUseMethods = {
 		this.say(`Trinity body form: Glyph: ${glyph}`, 'positive');
 	},
 
-	commitTrinityForm(this: DungeonScene, form: 'body' | 'mind' | 'spirit', cost: number): void {
-		if (this.armorCharge < cost) {
-			this.say(t('items.armor.classarmor.low_charge'), 'negative');
+	/**
+	 * MindForm's synthetic item cast (`MindForm.targetSelector` plus the `WndUseTrinity`
+	 * Mind button, tag `v3.3.8`): the picked wand or thrown weapon is conjured at
+	 * `trinityMindItemLevel()` and fired once with no bag behind it - wands arrive
+	 * full-charged and identified, thrown repaired - and only armor charge is spent
+	 * per fire (`trinityChargeUsePerEffect`). A wand spends no hero turn and does not
+	 * dispel invisibility (Java's wand branch does neither); a throw spends one
+	 * `TURN_COSTS.ranged` turn and breaks invisibility through the normal attack path.
+	 * The pick is offered from every modeled wand and thrown kind (the same
+	 * no-discovery-gate simplification BodyForm's picker makes), except `TippedDart`
+	 * (there is no seed to tip the conjured dart with) and `warding` (the synthetic
+	 * path cannot place wards - the same standing degradation WildMagic wards have).
+	 * Conjured missiles resolve hit/damage through the shared throw path with
+	 * Bolas/Tomahawk procs, but carry no durability, drops, stickiness, boomerang
+	 * return, FishingSpear floor, or wielded-gear riders (charged shot, follow-ups,
+	 * seer, nature, class procs) - there is no wielded stack behind them. The 20-turn
+	 * window mirrors `SpiritFormBuff.DURATION` (Java's MindForm is stateless and
+	 * re-fires indefinitely; this port's shared Trinity clock needs a window, and
+	 * expiry clears the slot like every other form). No tome-charge spell step: the
+	 * ability window is the entry (BodyForm does the same). `wand.wandUsed()` is ID
+	 * accounting on an already-identified item, and the WondrousResin extra roll
+	 * needs trinkets - neither has a seam here. Java accepts a bare collision cell for wands;
+	 * this port forwards that cell to Fireblast/Regrowth terrain effects, corrosion gas and
+	 * Frost fire clearing. Other wand-specific terrain effects and thrown-item landing remain
+	 * simplified and are documented in PORT_COVERAGE.md.
+	 */
+	chooseTrinityMindEffect(this: DungeonScene, cost: number): void {
+		const catalog = {
+			wands: WAND_TYPES.filter((type) => type !== 'warding').map((type) => ({
+				value: { kind: 'wand', wandType: type, isMultiCharge: type === 'fireblast' || type === 'regrowth' } as MindFormEffect,
+				label: type,
+			})),
+			thrown: [...MWL_MISSILE_BY_CLASS.keys()].filter((missileClass) => missileClass !== 'TippedDart').map((missileClass) => ({
+				value: { kind: 'thrown', missileClass } as MindFormEffect,
+				label: missileClass,
+			})),
+		};
+		const ctx = this.mindFormFlowContext(cost);
+		//`WndUseTrinity`'s Mind button fires the stored pick; re-picking overwrites it
+		//(Java re-casts the MindForm spell for that). The stored pick is only offered
+		//while its form window is still live - past expiry the slot is already cleared.
+		const stored = parseMindEffect(this.trinityMindEffect);
+		const storedKnown = stored !== null && this.trinityForm === 'mind' && this.trinityTurns > 0
+			&& (stored.kind === 'wand'
+				? catalog.wands.some((option) => option.value.kind === 'wand' && option.value.wandType === stored.wandType)
+				: catalog.thrown.some((option) => option.value.kind === 'thrown' && option.value.missileClass === stored.missileClass));
+		if (storedKnown) {
+			const label = stored.kind === 'wand' ? stored.wandType : stored.missileClass;
+			showChoiceWindow(this.gameWindows, 'Trinity Mind Form', 'Fire the stored effect or choose another.', [
+				{ label: `Fire ${label}`, onPick: () => reaimStoredMindForm(ctx, catalog) },
+				{ label: 'Choose effect...', onPick: () => startMindFormFlow(ctx, catalog) },
+			]);
 			return;
 		}
-		this.armorCharge = Math.max(0, this.armorCharge - cost);
-		this.trinityForm = form;
-		this.trinityTurns = form === 'body' ? trinityBodyDuration(this.talentRank('body_form')) : 1;
-		this.spendHeroAction(1);
-		this.say(`Trinity: ${form} form`, 'positive');
+		startMindFormFlow(ctx, catalog);
+	},
+
+	/** Binds `items/mindForm.ts`' conjured cast to live scene seams. Levels come from
+	 * `trinityMindItemLevel()`, costs from `trinityChargeUsePerEffect(..., 'mind')`
+	 * (fireblast/regrowth pay double, like every other multi-charge effect). */
+	mindFormFlowContext(this: DungeonScene, baseCost: number): MindFormContext {
+		return {
+			mindItemLevel: () => trinityMindItemLevel(this.talentRank('mind_form')),
+			mindEffectCost: (effect) => trinityChargeUsePerEffect(baseCost,
+				effect.kind === 'wand'
+					? (effect.wandType === 'fireblast' ? 'WandOfFireblast' : effect.wandType === 'regrowth' ? 'WandOfRegrowth' : 'Wand')
+					: 'MissileWeapon',
+				'mind'),
+			armorCharge: () => this.armorCharge,
+			spendArmor: (amount) => { this.armorCharge = Math.max(0, this.armorCharge - amount); },
+			isMagicImmune: () => this.hero.magicImmune === true,
+			heroCell: () => ({ x: this.hero.x, y: this.hero.y }),
+			rayCollision: (from, to) => {
+				const path = traceRayToTarget(this.level, from, to, (x, y) => this.creatureAt(x, y), true);
+				return path.length > 0 ? path[path.length - 1]! : from;
+			},
+			occupantAt: (cell) => {
+				const found = this.creatureAt(cell.x, cell.y);
+				return found ? { id: found.id } : null;
+			},
+			pickMindEffect: (options, onPick) => showChoiceWindow(this.gameWindows, 'Trinity Mind Form', 'Choose a supported mind effect.',
+				options.map((option) => ({
+					label: option.label,
+					onPick: () => {
+						//Java's `WndItemConfirm` stores the pick with operate/teleport
+						//presentation and no charge, turn, invis-dispel or log line -
+						//this port has no seam for that presentation, so the window
+						//writes below are the whole observable confirm.
+						this.trinitySpiritEffect = null;
+						this.trinityForm = 'mind';
+						this.trinityTurns = 20;
+						onPick(option.value);
+					},
+				}))),
+			aimMindEffect: (effect, onConfirm) => {
+				const level = trinityMindItemLevel(this.talentRank('mind_form'));
+				const range = effect.kind === 'wand' ? wandTargetRange(effect.wandType as WandType, level) : 6;
+				this.beginAiming({ range, onConfirm: (cell) => onConfirm(cell) });
+			},
+			fireMindWand: (wandType, level, targetCell, targetId) => {
+				const target = targetId ? this.creatures.find((creature) => creature.id === targetId) : null;
+				if (targetId && (!target || target.hp <= 0)) return false;
+				const type = wandType as WandType;
+				const fullCharges = Math.min(wandInitialCharges(type) + level, 10);
+				return this.fireWandShot(type, level, target ?? targetCell, wandChargesPerCast(type, fullCharges), level);
+			},
+			fireMindThrown: (missileClass, level, targetCell, targetId) => {
+				const target = targetId ? this.creatures.find((creature) => creature.id === targetId) : null;
+				if (targetId && (!target || target.hp <= 0)) return false;
+				if (!target) {
+					//Java's `MissileWeapon.cast(hero, cell)` creates a `spawnedForEffect`
+					//missile: a bare-cell miss spends the cast but never drops an item.
+					this.spawnBoltTo(this.hero, targetCell, 0xffffff, undefined, missileFlightArt(missileClass));
+					return true;
+				}
+				const [lo, hi] = missileDamageRange(missileClass, level);
+				const adjacent = Roguelike.chebyshevDistance(this.hero, target) === 1;
+				const acc = missileAdjacentAccFactor(adjacent, true, this.talentRank('point_blank'));
+				const hit = this.attack({ ...this.hero, kind: undefined, attackMode: 'throw', damage: [lo, hi] }, target, acc);
+				if (hit) {
+					if (missileClass === 'Bolas') addBuff(target, 'cripple', bolasCrippleTurns());
+					else if (missileClass === 'Tomahawk') {
+						const procLevel = level + ringSharpshootingBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
+						const [mn, mx] = tomahawkBleedRange(procLevel);
+						const bleed = Random.normalRange(mn, mx);
+						if (bleed > (target.buffs['bleeding'] ?? 0) && !buffBlocked(target, 'bleeding')) target.buffs['bleeding'] = bleed;
+					}
+				}
+				this.spawnProjectile(this.hero, target, missileFlightArt(missileClass));
+				return true;
+			},
+			spendTurn: () => this.spendHeroAction(1),
+			say: (key, level) => this.say(t(key), level),
+			storeMindEffect: (id) => { this.trinityMindEffect = id; },
+			readMindEffect: () => this.trinityMindEffect ?? null,
+		};
 	},
 
 	/**
