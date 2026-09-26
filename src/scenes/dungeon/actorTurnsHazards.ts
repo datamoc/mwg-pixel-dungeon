@@ -39,7 +39,6 @@ import { FLOOR, SOLID, TILE, WALL, WATER } from '../../dungeonConstants';
 import { STARVING } from '../../simulation/hunger';
 import { NEGATIVE_BUFFS, addBuff, reigniteBuff, rollHit, setAscensionActive, setBleeding, tickBuffs, type BuffId, type Creature, type Step } from '../../combat';
 import { BOSSES, IMMOVABLE_KINDS } from '../../monsters';
-import { absorbCreatureShields } from '../../simulation/allyShields';
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `actorTurnsHazards`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
@@ -1502,26 +1501,27 @@ export const actorTurnsHazardsMethods = {
 		}
 		//`Buff.act()` for a non-hero char (tag `v3.3.8`): buffs are actors of their own, so an
 		//ally keeps burning/poisoning/bleeding on its own schedule whatever its own `act()`
-		//does. The port ticks the hero in `spendHeroTurn` and enemies in `takeMonsterTurn`, but
-		//`takeAllyTurn` had no tick at all - an empowered ally standing in fire took no damage
-		//and `PowerOfMany`'s Barrier was never drained by ongoing damage, the "ongoing actor
-		//DoT still uses its own seam" half of PORT_COVERAGE's central-`Char.damage()` gap (T63).
-		//Like the enemy path, the total then runs the shared `ShieldBuff.processDamage()`
-		//helper the environmental seams already use, so Barrier absorption covers DoT too.
-		//Immunities are enforced when a buff is *applied*
-		//(`buffBlocked`/the INORGANIC set), so the tick itself needs no per-kind gate; the tick
-		//stays ahead of the paralysis/frost return below for the same reason the enemy path
-		//keeps it ahead of its own state checks - Java's buffs act regardless of the char's
-		//own action gates.
+		//does. The port ticks the hero in `spendHeroTurn` and enemies in `takeMonsterTurn`,
+		//and `takeAllyTurn` now routes its total through the same shared `Char.damage()`
+		//dispatch both of those funnels use (`applyCharacterDamage`), so an ally gets the
+		//gates, the defender-side `damage()` curves, Doom and the shared shield absorption
+		//every other character gets - closing the "ally-side DoT still uses the shared shield
+		//helper directly" clause of PORT_COVERAGE's central `Char.damage()` gap (T63). What
+		//that buys over the old direct `absorbCreatureShields` + HP write: a Sheep ally takes
+		//nothing at all (Java's `Sheep.damage()` is a no-op), a `SpectatorFreeze`d ally takes
+		//nothing (`Char.isInvulnerable()`), Doom amplifies the tick, and a corrupted
+		//mine/gnoll-crystal ally keeps the same invulnerability its mob side would. The
+		//`pierceArmor`/`skipAura` pair mirrors the enemy path's own DoT call: a buff tick
+		//carries no attack roll to subtract armor from, and `Aura` reduces damage coming from
+		//a nearby same-alignment *attacker*, which a DoT has not got. Immunities are enforced
+		//when a buff is *applied*(`buffBlocked`/the INORGANIC set), so the tick itself needs
+		//no per-kind gate; the tick stays ahead of the paralysis/frost return below for the
+		//same reason the enemy path keeps it ahead of its own state checks - Java's buffs act
+		//regardless of the char's own action gates.
 		const allyDot = tickBuffs(ally, this.depth);
 		if (allyDot > 0) {
-			const dealt = absorbCreatureShields(ally, allyDot, this.ascendedTurns > 0);
-			ally.hp -= dealt;
-			this.showDamage(ally, dealt);
-			if (ally.hp <= 0) {
-				this.kill(ally);
-				return;
-			}
+			this.applyCharacterDamage(ally, allyDot, { pierceArmor: true, cause: 'foe', skipAura: true });
+			if (ally.hp <= 0) return;
 		}
 		if (ally.buffs['paralysis'] || ally.buffs['frost']) return;
 		//`SmokeBomb.NinjaLog` never acts: it is an IMMOVABLE decoy whose whole job is to be attacked

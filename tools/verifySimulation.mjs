@@ -1357,6 +1357,9 @@ check('StenchGas applies its distinct two-turn paralysis effect', () => {
 		assert.ok(scene.includes('const dot = tickBuffs(monster, this.depth);')
 			&& scene.includes("this.applyCharacterDamage(monster, dotDealt, { pierceArmor: true, cause: 'foe', skipAura: true });"),
 			'monster actor DoT bypasses armor but uses the shared Char.damage tail');
+		assert.ok(scene.includes('const allyDot = tickBuffs(ally, this.depth);')
+			&& scene.includes("this.applyCharacterDamage(ally, allyDot, { pierceArmor: true, cause: 'foe', skipAura: true });"),
+			'ally actor DoT runs that same tail (T63: the last direct absorbCreatureShields caller is gone)');
 		assert.ok(scene.includes("this.applyCharacterDamage(monster, ooze, { pierceArmor: true, cause: 'foe', skipAura: true });"),
 			'the monster Ooze actor tick uses the same shared damage tail');
 		assert.ok(panels.includes('damage = absorbCreatureShields(c, damage, this.ascendedTurns > 0);'),
