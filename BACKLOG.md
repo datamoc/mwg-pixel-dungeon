@@ -45,6 +45,19 @@ comparator checks them. **3 more seeds identical: 30 rounds, 194 draws, all outc
 draws byte-identical** (incl. misses on every seed). Script-2 output re-verified
 byte-identical to the slice-2 proof after the harness refactor. Running total: 60 combat
 rounds, 415 draws, zero divergences.
+**Progress 2026-09-26 (T55 slice 4, crab bout):** script 4 replays script 2's round
+list (plain exchanges, one magic via the real 4-arg `attack()` overload with accMulti 2,
+one surprise via `attacker.invisible`) against a Crab (HP 15, acc 12, eva 5, damage
+`NormalIntRange(1, 7)`, DR `NormalIntRange(0, 4)`) instead of the Rat - the first bout
+with real defender armor, covering the slice-2 armor-before-damage order under
+non-degenerate armor. The Java harness sources had vanished from the v3.3.8 worktree, so
+`CombatHarness` was rewritten in `/tmp/spd338` from the B1 description (bare Warrior,
+`damageInterrupt=false` headless guard, per-round HP reset, damage read as HP delta,
+per-round draw slicing of the TracingRandom log) and certified byte-identical to the
+original outputs on scripts 2 and 3 before use. **3 seeds identical: 30 rounds, all
+outcomes and draws byte-identical** (incl. misses on every seed). Running total: 90
+combat rounds, zero divergences. (An armed-hero script is out of scope: the extracted
+seam models flat damage only, no weapon rolls.)
 
 
 

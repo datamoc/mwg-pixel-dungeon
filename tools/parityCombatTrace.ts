@@ -26,7 +26,7 @@
  * traces start from the identical generator state. `compare` diffs them.
  *
  * Modes (`npm run parity:combat` runs `check`):
- * - `emit --seed <n> --script <1|2> --out <file>`: run one script, write the JSONL trace.
+ * - `emit --seed <n> --script <1|2|3|4> --out <file>`: run one script, write the JSONL trace.
  * - `check`: determinism gates for both scripts (same seed twice is byte-identical) plus
  *   the comparator's positive control (a trace compares clean against itself) and negative
  *   control (one mutated round is reported at exactly that round). No Java checkout needed.
@@ -50,6 +50,12 @@ const SCRIPT_VERSION_1 = 1;
  * extra clover-check float per unarmed damage roll and a `NormalIntRange(0, 0)` armor pair
  * on the Rat that this seam skips (same outcome distributions, shifted positions). */
 const SCRIPT_VERSION_2 = 2;
+/** Script 4: script 2's bout against a Crab instead of the Rat - the first bout
+ * with real defender armor (Crab drRoll is NormalIntRange(0, 4) where the Rat's is
+ * NormalIntRange(0, 1)), covering the armor-before-damage order slice 2 established
+ * under non-degenerate armor, plus Crab damage NormalIntRange(1, 7) and acc/eva 12/5.
+ * Mirrored by the Java CombatHarness (same round list, Crab woken to HUNTING). */
+const SCRIPT_VERSION_4 = 4;
 /** Script 3: script 2's bout plus Bless/Hex/Daze rounds, mirrored by the Java
  * `CombatHarness` (real `Buff.append` on both chars, durations frozen, reset each round).
  * Buff rounds are the least-verified combat path, hence their own version. */
@@ -67,8 +73,8 @@ const rat: Combatant = {
 };
 
 interface ScriptRound {
-	attacker: 'hero' | 'rat';
-	defender: 'hero' | 'rat';
+	attacker: 'hero' | 'rat' | 'crab';
+	defender: 'hero' | 'rat' | 'crab';
 	magic?: boolean;
 	surprise?: boolean;
 	attackerPatch?: Partial<Combatant>;
@@ -110,6 +116,11 @@ const ratNatural: Combatant = {
 	accuracy: 8, evasion: 2, damage: [1, 4], armor: [0, 1],
 	buffs: {}, isHero: false,
 };
+const crabNatural: Combatant = {
+	id: 'crab-1', x: 2, y: 1, hp: 15, maxHp: 15,
+	accuracy: 12, evasion: 5, damage: [1, 7], armor: [0, 4],
+	buffs: {}, isHero: false,
+};
 
 /** The Java `CombatHarness` round list, in order: plain exchanges, one magic (accMulti 2),
  * one surprise (no hit draws), plain exchanges. */
@@ -140,6 +151,22 @@ const SCRIPT_V3: ScriptRound[] = [
 	{ attacker: 'rat' },
 	{ magic: true, attackerPatch: { buffs: { bless: 1 } } },
 	{ attacker: 'rat' },
+];
+
+/** Crab bout: script 2's round list (plain exchanges, one magic, one surprise) with the
+ * Rat replaced by the Crab. Same unarmed hero, same clover-burn rule (hero attacker rounds
+ * only); the crab attacker rounds burn nothing extra, exactly like the rat's. */
+const SCRIPT_V4: ScriptRound[] = [
+	{},
+	{ attacker: 'crab' },
+	{},
+	{ attacker: 'crab' },
+	{ magic: true },
+	{ attacker: 'crab' },
+	{ surprise: true },
+	{ attacker: 'crab' },
+	{},
+	{ attacker: 'crab' },
 ];
 
 /** `Random.java` formulas over one seeded `SpdJavaRandom`, so the draw stream - not just the
@@ -190,11 +217,13 @@ interface TraceRound {
 function runScript(seed: bigint, scriptVersion: number): { header: object; rounds: TraceRound[] } {
 	const { random, nextRound } = seededRandom(seed);
 	const header = { tool: 'parityCombatTrace', scriptVersion, seed: seed.toString() };
-	const script = scriptVersion === SCRIPT_VERSION_3 ? SCRIPT_V3
+	const script = scriptVersion === SCRIPT_VERSION_4 ? SCRIPT_V4
+		: scriptVersion === SCRIPT_VERSION_3 ? SCRIPT_V3
 		: scriptVersion === SCRIPT_VERSION_2 ? SCRIPT_V2 : SCRIPT;
-	const fighter = (side: 'hero' | 'rat'): Combatant => scriptVersion === SCRIPT_VERSION_1
+	const foe = scriptVersion === SCRIPT_VERSION_4 ? 'crab' : 'rat';
+	const fighter = (side: 'hero' | 'rat' | 'crab'): Combatant => scriptVersion === SCRIPT_VERSION_1
 		? (side === 'rat' ? rat : hero)
-		: (side === 'rat' ? ratNatural : heroNatural);
+		: (side === 'crab' ? crabNatural : side === 'rat' ? ratNatural : heroNatural);
 	const rounds: TraceRound[] = script.map((step, i) => {
 		// Script 2's hero is always unarmed (Java `CombatHarness` uses a bare Warrior), so its
 		// damage rolls burn the clover-check float; every other shape burns nothing extra.
@@ -204,7 +233,8 @@ function runScript(seed: bigint, scriptVersion: number): { header: object; round
 			...(step.attackerPatch ?? {}),
 			buffs: { ...(fighter(step.attacker ?? 'hero').buffs), ...((step.attackerPatch?.buffs ?? {}) as Combatant['buffs']) },
 		};
-		const defenderBase = step.defender ?? (step.attacker === 'rat' ? 'hero' : 'rat');
+		const attackerBase = step.attacker ?? 'hero';
+		const defenderBase = step.defender ?? (attackerBase === 'hero' ? foe : 'hero');
 		const defender: Combatant = {
 			...fighter(defenderBase),
 			...(step.defenderPatch ?? {}),
@@ -296,7 +326,7 @@ const mode = process.argv[2];
 function scriptArg(): number {
 	const raw = arg('--script') ?? '1';
 	const version = parseInt(raw, 10);
-	if (version !== SCRIPT_VERSION_1 && version !== SCRIPT_VERSION_2 && version !== SCRIPT_VERSION_3) fail(`unknown script version: ${raw}`);
+	if (version !== SCRIPT_VERSION_1 && version !== SCRIPT_VERSION_2 && version !== SCRIPT_VERSION_3 && version !== SCRIPT_VERSION_4) fail(`unknown script version: ${raw}`);
 	return version;
 }
 
@@ -304,14 +334,14 @@ if (mode === 'emit') {
 	const seedText = arg('--seed') ?? '123456789';
 	const version = scriptArg();
 	const out = arg('--out');
-	if (!out) fail('usage: parityCombatTrace emit --seed <n> --script <1|2|3> --out <file>');
+	if (!out) fail('usage: parityCombatTrace emit --seed <n> --script <1|2|3|4> --out <file>');
 	const text = toJsonl(runScript(BigInt(seedText), version));
 	writeFileSync(out!, text);
 	const rounds = text.trim().split('\n').length - 2;
 	console.log(`emitted ${rounds} rounds (script ${version}) to ${out}`);
 } else if (mode === 'check') {
 	const seed = BigInt(arg('--seed') ?? '123456789');
-	for (const version of [SCRIPT_VERSION_1, SCRIPT_VERSION_2, SCRIPT_VERSION_3]) {
+	for (const version of [SCRIPT_VERSION_1, SCRIPT_VERSION_2, SCRIPT_VERSION_3, SCRIPT_VERSION_4]) {
 		const first = toJsonl(runScript(seed, version));
 		const second = toJsonl(runScript(seed, version));
 		if (first !== second) fail(`determinism gate FAILED (script ${version}): same seed produced different traces`);
