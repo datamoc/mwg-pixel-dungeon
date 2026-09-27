@@ -35,6 +35,21 @@ B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as d
   - Remaining: quest outcomes (Ghost/Blacksmith/Imp reward generation and completion state - the Wandmaker's quest
     type is covered by `--stage quest` above) and boss transitions (Goo, Tengu, DM-300, Dwarf King, Yog phase
     changes) have no Java-side trace yet.
+  - **Scoping note for the boss-transitions domain (2026-09-27, read before starting it):** both sides are blocked
+    for a node-only stage, and the blockers are structural rather than missing code. *Java*: the transitions are
+    interleaved with presentation a headless harness cannot satisfy - `Goo.doAttack()`'s non-visible branch calls
+    `((GooSprite)sprite).triggerEmitters()`, `Goo.act()` calls `sprite.idle()` when it drops out of HUNTING with
+    `pumpedUp > 0`, `Goo.attackProc()` hits `enemy.sprite.burst(...)` on one attack in three and then
+    `PixelScene.shake(...)`, `DwarfKing.damage()` phase 3 writes `sprite.showStatus(...)`, and v3.3.8 has no
+    `Mob.chooseAbility()` to call instead (zero hits in the tag). *Port*: the phase fields (`kingPhase`,
+    `dmSupercharged`, `yogPhase`, `tenguPhase`) live in scene-side modules (`combatState.ts`, `floorState.ts`,
+    `pourAuras.ts`, `deathBursts.ts`), not in the pure `simulation/*Boss.ts` planners those rows cite - the planners
+    cover ability and wave *choices*, not the phase change - so `tools/parity*Trace.ts` has nothing pure to drive
+    either. The two-sided shape that follows: (a) a Java harness that constructs real sprites for the boss and the
+    hero under the launcher (the `MobDataHarness` launcher already boots the Gdx context) and adds them to a `Group`
+    so `sprite.parent` exists, plus a stub or FOV gate for `BossHealthBar`/`GLog`; and (b) a B6-style extraction of
+    each phase transition into a pure seam, the way `mobLootChance()` did for the loot decision. Both halves are
+    needed - neither alone gives a comparison.
 
 ## B6. `SimulationRuntime` migration
 
