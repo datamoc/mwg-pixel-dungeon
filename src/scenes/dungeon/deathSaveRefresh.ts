@@ -486,6 +486,7 @@ import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type Wealt
 				const generationDivisor = creature.kind === 'swarm' ? (creature.generation ?? 0) + 1 : 1;
 				const chance = mobLootChance({
 					baseChance: entry.chance,
+					kind: creature.kind,
 					decay,
 					decayCount: this.limitedDrops[counterKind as MonsterId] ?? 0,
 					generationDivisor,

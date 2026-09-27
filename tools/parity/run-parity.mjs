@@ -8,6 +8,7 @@
  *   node tools/parity/run-parity.mjs --stage loot        derived Mob.lootChance() drop chance, Java v3.3.8 vs TS
  *   node tools/parity/run-parity.mjs --stage levelgen    floor generation RNG draws, checkout oracle vs TS
  *   node tools/parity/run-parity.mjs --stage mobdata     every Java mob class's stats/loot (v3.3.8) vs the port's monster tables
+ *   node tools/parity/run-parity.mjs --stage quest       run-level Wandmaker quest type rolled during levelgen, checkout oracle vs TS
  *   options: --spd <SPD checkout>   (default $SPD_CHECKOUT or ~/dev/shattered-pixel-dungeon; a git repo with the tags/commits)
  *            --work <dir>           scratch dir for the Java trees (default <os tmp>/mwg-parity; reused between runs)
  *            --combat-ref v3.3.8    Java ref for the combat oracle
@@ -174,6 +175,31 @@ function mobdataStage() {
  * `Mob.rollToDropLoot()` rolls `Random.Float()` against) against this port's composition of the
  * same number from its authored `monsterLoot` + `limitedDropDecay` rows. */
 
+/** B3 / T57, quest domain: the run-level quest type Java rolls while generating Prison floors -
+ * `Wandmaker.Quest.type` in `PrisonLevel.initRooms()` - against this port's own generator for the
+ * same seeds and depths. The Blacksmith quest (Caves, depth 12-14) is not walked here: the
+ * levelgen oracle checkout predates v3.3.8's CRYSTAL/GNOLL/FUNGI model, so it needs a harness
+ * that compiles against v3.3.8 - recorded as remaining T57 work. */
+function questStage() {
+	//Quest rooms are level-generation behaviour, so this rides the levelgen oracle (the same ref
+	//and tree B2 calibrated this port's room tables against) rather than the combat ref.
+	console.log(`\n== quest: Java run-level Wandmaker quest type from ${prebuiltLevelgenTree ? prebuiltLevelgenTree : levelgenRef} vs this port's generator ==`);
+	const dir = prebuiltLevelgenTree ? resolve(prebuiltLevelgenTree) : join(work, `spd-levelgen-${levelgenRef}`);
+	if (!prebuiltLevelgenTree) { exportTree(dir, levelgenRef); installHarness(dir, { levelgen: true }); }
+	const desktop = join(dir, 'desktop');
+	const questsFile = join(desktop, 'levelgen_quests.txt');
+	rmSync(questsFile, { force: true });
+	const g = gradle(dir, 'runHarness', { LEVELGEN_QUESTS: 'true' });
+	if (!existsSync(questsFile)) { gate('quest Java dump produced', false, g.out.slice(-400)); return; }
+	const lines = readFileSync(questsFile, 'utf8').split('\n').filter(Boolean).length;
+	gate('quest Java dump produced', true, `${lines} (seed, depth) lines`);
+	const outDir = join(work, 'quest'); mkdirSync(outDir, { recursive: true });
+	const tsRunner = tsBundle('tools/parityQuestTrace.ts', 'parityQuestTrace.mjs');
+	const r = run(process.execPath, [tsRunner, '--java', questsFile, '--report', join(outDir, 'quest-report.txt')]);
+	console.log(r.out.trim());
+	gate('quest: the port rolls the same Wandmaker quest type as Java', r.status === 0, `report: ${join(outDir, 'quest-report.txt')}`);
+}
+
 function levelgenStage() {
 
 	console.log(`\n== levelgen: floor-generation RNG draws, oracle ${prebuiltLevelgenTree ? prebuiltLevelgenTree : levelgenRef} vs this port (depths 3-9, 4 seeds) ==`);
@@ -198,6 +224,7 @@ try {
 	if (stage === 'all' || stage === 'combat') combatStage();
 	if (stage === 'all' || stage === 'mobdata') mobdataStage();
 	if (stage === 'all' || stage === 'loot') lootStage();
+	if (stage === 'all' || stage === 'quest') questStage();
 	if (stage === 'all' || stage === 'levelgen') levelgenStage();
 } catch (e) {
 	gate('runner', false, e.message);

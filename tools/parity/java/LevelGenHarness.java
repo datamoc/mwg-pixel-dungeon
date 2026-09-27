@@ -44,7 +44,14 @@ public class LevelGenHarness {
 
 	public static String captureOutput() {
 		long[] seeds = {123456789L, 1L, 42L, 999999999999L};
-		int[] depths = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+		//LEVELGEN_QUESTS (BACKLOG B3 / coord T57) widens the walk to the Caves - the Blacksmith
+		//quest room rolls in CavesLevel.initRooms() at depth 12-14 - and emits levelgen_quests.txt.
+		//Off, this harness's floor set, stream and output are exactly what the levelgen stage runs.
+		boolean quests = "true".equals(System.getenv("LEVELGEN_QUESTS"));
+		int[] depths = quests
+			? new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9}
+			: new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9};
+		questLines.setLength(0);
 
 		StringBuilder out = new StringBuilder();
 
@@ -69,6 +76,13 @@ public class LevelGenHarness {
 			// Dungeon.init() also resets the Wandmaker quest's run-level state (spawned/type).
 			// Costs no RNG, so its position in this sequence doesn't matter.
 			com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Wandmaker.Quest.reset();
+			if (quests) {
+				//Dungeon.init() resets every quest's run-level state (Dungeon.java:276-279); the
+				//levelgen stage keeps its single Wandmaker reset so that stream stays untouched.
+				com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Blacksmith.Quest.reset();
+				com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Ghost.Quest.reset();
+				com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs.Imp.Quest.reset();
+			}
 			Generator.fullReset();
 			Random.popGenerator();
 
@@ -154,6 +168,7 @@ Random.pushGenerator(Dungeon.seedCurDepth());
 				} while (!ok);
 
 				Random.popGenerator();
+				if (quests) questLine(seed, depth);
 				if (trace) {
 					Random.traceDraws = false;
 					try {
@@ -176,7 +191,42 @@ Random.pushGenerator(Dungeon.seedCurDepth());
 			}
 		}
 
+		if (quests) {
+			try {
+				java.io.FileWriter w = new java.io.FileWriter("levelgen_quests.txt");
+				w.write(questLines.toString());
+				w.close();
+			} catch (java.io.IOException e) { throw new RuntimeException(e); }
+		}
 		return out.toString();
+	}
+
+	/** One JSON line per (seed, depth): the run-level quest type both sides author. The Blacksmith
+	 *  quest (Caves, depth 12-14) is not walked here - see questType()'s note. */
+	private static final StringBuilder questLines = new StringBuilder();
+
+	private static void questLine(long seed, int depth) {
+		questLines.append("{\"seed\":").append(seed)
+			.append(",\"depth\":").append(depth)
+			.append(",\"wandmaker\":").append(questType("Wandmaker"))
+			.append("}\n");
+	}
+
+	/** `Wandmaker.Quest.type` (1 corpse dust / 2 embers / 3 rotberry) is a private static int;
+	 *  read it reflectively. `Blacksmith.Quest` is deliberately absent: this walk stops at the
+	 *  Prison (its quest rolls in CavesLevel.initRooms(), depth 12-14) and the levelgen oracle
+	 *  checkout predates v3.3.8's CRYSTAL/GNOLL/FUNGI trio - it has a boolean `alternative`
+	 *  instead of a `type` field - so Blacksmith parity needs a harness that compiles against
+	 *  v3.3.8, which LevelGenHarness does not (Terrain.SIGN, HashSet inference). */
+	private static int questType(String npc) {
+		try {
+			Class<?> quest = Class.forName("com.shatteredpixel.shatteredpixeldungeon.actors.mobs.npcs." + npc + "$Quest");
+			java.lang.reflect.Field f = quest.getDeclaredField("type");
+			f.setAccessible(true);
+			return f.getInt(null);
+		} catch (Throwable t) {
+			throw new RuntimeException("cannot read " + npc + ".Quest.type", t);
+		}
 	}
 
 	private static final char[] CHAR_BY_TERRAIN = buildCharMap();

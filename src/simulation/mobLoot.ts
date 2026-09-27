@@ -23,6 +23,8 @@
 export interface MobLootChanceInputs {
 	/** Java's `lootChance` field, the authored `MOB_LOOT` chance for this kind. */
 	baseChance: number;
+	/** The port's monster id - only `swarm` reads it (see the override inside). */
+	kind?: string;
 	/** `LIMITED_DROP_DECAY[kind]`; absent when Java's class keeps the plain field. */
 	decay?: ((count: number) => number) | undefined;
 	/** `Dungeon.LimitedDrops.<X>.count` - how many times this drop already happened this run. */
@@ -35,6 +37,12 @@ export interface MobLootChanceInputs {
 
 /** The chance `rollToDropLoot()` rolls `Random.Float() <` against. */
 export function mobLootChance(inputs: MobLootChanceInputs): number {
-	const decayed = inputs.decay ? inputs.baseChance * inputs.decay(inputs.decayCount ?? 0) : inputs.baseChance;
+	//`Swarm.lootChance()` (Swarm.java, tag v3.3.8) *replaces* its own `lootChance` field
+	//(0.1667f) with `1f/(6*(generation+1))` before applying the SWARM_HP decay, so the field
+	//only survives as the value `monsterLoot` authors (and `mobdata` diffs against Java's own
+	//field). The runtime base is restored here, where the composition happens: without it every
+	//Swarm case sat 2e-4 above Java - found by the `loot` parity stage, 2026-09-26.
+	const base = inputs.kind === 'swarm' ? 1 / 6 : inputs.baseChance;
+	const decayed = inputs.decay ? base * inputs.decay(inputs.decayCount ?? 0) : base;
 	return (decayed / (inputs.generationDivisor ?? 1)) * (inputs.dropBonus ?? 1);
 }

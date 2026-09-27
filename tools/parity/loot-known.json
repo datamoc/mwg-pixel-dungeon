@@ -1,3 +1,1 @@
-{
-  "Swarm.lootChance": "Java Swarm.lootChance() replaces its own lootChance field (0.1667f) with 1f/(6*(generation+1)) before applying the SWARM_HP decay, while the port composes the authored monsterLoot field and divides by generation+1 - so every Swarm case sits 2.00e-4 (0.1667 vs 1/6) above Java. Closing it means authoring the method's base in loot-rules.mwl's swarm row, which also needs the matching mobdata-known.json entry (that row and that allowlist are uncommitted peer work), so the difference is recorded here instead."
-}
+{}

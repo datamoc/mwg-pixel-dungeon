@@ -110,6 +110,7 @@ export function main(argv: string[]): number {
 		const generationDivisor = id === 'swarm' ? c.generation + 1 : 1;
 		const chance = mobLootChance({
 			baseChance,
+			kind: id,
 			decay,
 			decayCount: c.count,
 			generationDivisor,

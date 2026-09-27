@@ -23,7 +23,18 @@ B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as d
     the new `src/simulation/mobLoot.ts` `mobLootChance()` seam the scene's `kill()` funnel now shares: 41 cases
     bit-exact, 20 within float32/float64 rounding, 15 documented in `tools/parity/loot-known.json` (Swarm's runtime
     `1/(6*(generation+1))` base vs the authored `0.1667` field), 0 undocumented, 0 stale.
-  - Remaining: quest outcomes (Ghost/Wandmaker/Blacksmith/Imp reward generation and completion state) and boss transitions (Goo, Tengu, DM-300, Dwarf King, Yog phase changes) have no Java-side trace yet.
+  - **Progress 2026-09-26, quest domain (Wandmaker):** `--stage quest` runs `LevelGenHarness` with
+    `LEVELGEN_QUESTS=true`, which resets all four quests per run the way `Dungeon.init()` does and writes one
+    `levelgen_quests.txt` line per (seed, depth) after each floor's build; `tools/parityQuestTrace.ts` rebuilds
+    each run with `resetPortedRun()` + `primeRunState()` and compares `wandmakerQuestType()`. **36/36 lines agree**
+    across the four seeds, covering all three variants they roll (corpse dust x5, embers x1, rotberry x1). The
+    **Blacksmith** quest is deliberately not walked: it rolls in `CavesLevel.initRooms()` at depths 12-14, and the
+    levelgen oracle checkout predates v3.3.8's CRYSTAL/GNOLL/FUNGI trio (it has a boolean `alternative` instead of
+    a `type` field), so that half needs a harness which compiles against v3.3.8 - `LevelGenHarness` currently does
+    not (`Terrain.SIGN` and a `HashSet` inference error are the two it trips over).
+  - Remaining: quest outcomes (Ghost/Blacksmith/Imp reward generation and completion state - the Wandmaker's quest
+    type is covered by `--stage quest` above) and boss transitions (Goo, Tengu, DM-300, Dwarf King, Yog phase
+    changes) have no Java-side trace yet.
 
 ## B6. `SimulationRuntime` migration
 
