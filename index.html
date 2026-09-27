@@ -46,7 +46,31 @@
 		// the reason is only visible to whoever opens the devtools console. Print it onto the
 		// page instead, so a screenshot carries the diagnosis.
 		(function () {
+			//V8 captures only the 10 innermost frames by default, which cuts a stack
+			//overflow down to its last few calls (the 2026-09-27 phone RangeError showed
+			//just say->Label->Color with the whole recursion below cut off). Raise the
+			//cap while the handler installs so a future report shows the repeating body.
+			try { Error.stackTraceLimit = 200; } catch (e) {}
 			var shown = 0;
+			//Best-effort one-liner for a crash screenshot: viewport, pixel ratio and
+			//user agent (phone reports otherwise carry none of these), plus the live
+			//scene and run position when the game got far enough to have one.
+			function context() {
+				try {
+					var scene = (window.__MWG__ || {}).currentScene;
+					var name = scene ? (scene.constructor && scene.constructor.name) || typeof scene : 'none';
+					var extra = '';
+					if (scene) {
+						if (scene.depth !== undefined) extra += ' depth=' + scene.depth;
+						if (scene.turn !== undefined) extra += ' turn=' + scene.turn;
+						if (scene.hero) extra += ' heroHp=' + scene.hero.hp + '/' + scene.hero.maxHp;
+					}
+					return 'scene=' + name + extra
+						+ ' viewport=' + window.innerWidth + 'x' + window.innerHeight
+						+ ' dpr=' + (window.devicePixelRatio || 1)
+						+ ' ua=' + navigator.userAgent;
+				} catch (e) { return 'context-unavailable'; }
+			}
 			function show(title, detail) {
 				if (shown++ > 6) return;
 				var box = document.getElementById('crash');
@@ -57,7 +81,7 @@
 				}
 				var entry = document.createElement('div');
 				entry.innerHTML = '<b>' + title + '</b>\n';
-				entry.appendChild(document.createTextNode(detail + '\n\n'));
+				entry.appendChild(document.createTextNode('[' + context() + ']\n' + detail + '\n\n'));
 				box.appendChild(entry);
 			}
 			addEventListener('error', function (e) {
