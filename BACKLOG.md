@@ -50,6 +50,14 @@ B9's coord tasks are T159 (residuals, re-filed after T18-T21 were cancelled as d
     so `sprite.parent` exists, plus a stub or FOV gate for `BossHealthBar`/`GLog`; and (b) a B6-style extraction of
     each phase transition into a pure seam, the way `mobLootChance()` did for the loot decision. Both halves are
     needed - neither alone gives a comparison.
+  - **Scoping for the remaining quest halves (2026-09-27):** the Ghost quest's gate and target type mirror Java
+    line-for-line by inspection (`Random.Int(5 - depth) == 0` and `type = Dungeon.depth - 1`, `Ghost.Quest.spawn`
+    vs `maybeSpawnGhost`), but the spawn runs in `SewerLevel.createItems()`, which the harness deliberately skips,
+    and on this side in a scene method (`npcShopBlacksmith.ts`) - so that comparison needs the same two halves:
+    `createMobs()`/`createItems()` under the `LEVELGEN_QUESTS` flag (which the harness's own comment says never
+    touches the level generator's stream) plus a pure seam for the spawn decision. The Imp quest is the same shape
+    at City depth 16+, which the walk does not reach at all, and Blacksmith needs the v3.3.8-capable harness noted
+    above.
 
 ## B6. `SimulationRuntime` migration
 
