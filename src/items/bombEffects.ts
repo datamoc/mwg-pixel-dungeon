@@ -1,5 +1,5 @@
 import { Random, Roguelike } from 'mwg';
-import { absorbShield, addBuff, BUFF_DURATION, buffBlocked, reigniteBuff, type Creature, type GroundItem, type Step } from '../combat';
+import { absorbShield, addBuff, BUFF_DURATION, buffBlocked, doomDamage, reigniteBuff, type Creature, type GroundItem, type Step } from '../combat';
 import { isUndeadOrDemonic } from '../monsters';
 import { MWL_BOMB_RULES, mwlItemEffectValue } from '../mwlContent';
 import { smokeBombSeedPlan } from '../simulation/smoke';
@@ -57,22 +57,23 @@ export interface BombEffectsContext {
 	readonly phantomPiranhaSurvived?: (target: Creature) => void;
 }
 
-/** Exported for `CursedWand.Explosion` (`simulation/cursedWand.ts`'s scoping note): a bare
- * `Bomb.ConjuredBomb` (an empty `Bomb` subclass with no overrides, tag `v3.3.8`) resolves the
- * exact same per-character blast damage this function already implements for every ordinary
- * bomb, so the cursed effect reuses it directly rather than re-deriving the boss-hook/King-
- * shield/PhantomPiranha/Yog/Tengu edge cases it already covers. */
-
 /** Call-specific parts of `Char.damage()` that are not properties of the target itself. */
 export interface CharacterDamageOptions {
 	readonly pierceArmor: boolean;
 	readonly cause: 'foe' | 'fire';
+	/** A source policy that already applied `Doom` before this shared dispatch. */
+	readonly skipDoom?: boolean;
 	/** Direct `Char.damage()` paths bypass `Char.attack()`'s Aura reduction (`Char.java:465-469`). */
 	readonly skipAura?: boolean;
 	readonly onHeroDeath?: () => void;
 	readonly onNonWeaponBossDamage?: (target: Creature) => void;
 }
 
+/** Exported for `CursedWand.Explosion` (`simulation/cursedWand.ts`'s scoping note): a bare
+ * `Bomb.ConjuredBomb` (an empty `Bomb` subclass with no overrides, tag `v3.3.8`) resolves the
+ * exact same per-character blast damage this function already implements for every ordinary
+ * bomb, so the cursed effect reuses it directly rather than re-deriving the boss-hook/King-
+ * shield/PhantomPiranha/Yog/Tengu edge cases it already covers. */
 export function applyBlastDamage(target: Creature, amount: number, pierceArmor: boolean, context: BombEffectsContext): boolean {
 	if (context.applyCharacterDamage) {
 		return context.applyCharacterDamage(target, amount, {
@@ -105,6 +106,9 @@ export function applyBlastDamage(target: Creature, amount: number, pierceArmor: 
 	if (target.kind === 'yogFist' && context.guardFist(target)) return false;
 	context.onNonWeaponBossDamage?.(target);
 	let damage = context.protectDamage?.(target, amount) ?? amount;
+	if (!pierceArmor) damage = Math.max(0, damage - Random.normalRange(target.armor[0], target.armor[1]));
+	//`Bomb.explode()` rolls armor before `Char.damage()` applies Doom (Char.java).
+	damage = doomDamage(damage, target);
 	//DKBarrier absorbs on every `Char.damage()` path - the same `absorbShield` block
 	//as the attack tail. The live bomb seam ran without it (like the trap/blob/DoT
 	//seams before their own fix), so bursting a P2 King bled HP through a full
@@ -114,7 +118,6 @@ export function applyBlastDamage(target: Creature, amount: number, pierceArmor: 
 		target.kingShield = absorbed.shield;
 		damage = absorbed.damage;
 	}
-	if (!pierceArmor) damage = Math.max(0, damage - Random.normalRange(target.armor[0], target.armor[1]));
 	damage = context.phantomPiranhaDamage?.(target, damage) ?? damage;
 	const previousHp = target.hp;
 	target.hp -= damage;

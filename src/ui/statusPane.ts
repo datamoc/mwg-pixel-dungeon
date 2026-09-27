@@ -84,13 +84,13 @@ const BUFF_ICON: Record<string, number> = {
 	bless: 37,
 	//BERSERK = 40
 	berserk: 40,
-	//CORRUPT = 36
-	doom: 36,
 	//RECHARGING = 34; HASTE = 41 (`BuffIndicator.java`, tag `v3.3.8`)
 	recharging: 34,
 	haste: 41,
 	//VULNERABLE = 46
 	vulnerable: 46,
+	//CORRUPT = 36 (`Doom.java`'s icon, tag `v3.3.8`)
+	doom: 36,
 	//HEX = 47
 	hex: 47,
 	//DEGRADE = 48
@@ -104,10 +104,6 @@ const BUFF_ICON: Record<string, number> = {
 	wellFed: 43,
 	//DAZE = 70
 	daze: 70,
-	//MONK_ENERGY = 68
-	monkEnergy: 68,
-	//COMBO = 17
-	combo: 17,
 	//VERTIGO = 33
 	vertigo: 33,
 	//LIGHT = 22

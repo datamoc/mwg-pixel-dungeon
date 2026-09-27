@@ -26,8 +26,10 @@ export interface PourAuraSpec {
 	gravity: number;
 	/** Half-angle of the upward cone in radians (PI covers every direction). */
 	spread: number;
-	/** Alpha curve: plain linear fade, or `ShadowParticle`'s own ramp. */
-	fade: 'linear' | 'shadow';
+	/** Alpha curve: plain linear fade, `ShadowParticle`'s ramp, or `CityLevel.SmokeParticle`'s ramp. */
+	fade: 'linear' | 'shadow' | 'smoke';
+	/** Offset the cone from vertical; `Emitter` cannot express independent x/y speed ranges. */
+	angleOffset?: number;
 	/** Grow from birth size to death size (`MagicParticle`'s 1 -> 4). */
 	grow?: readonly [number, number];
 }
@@ -117,6 +119,14 @@ export function pourAurasFor(creature: PourAuraCreature): PourAuraSpec[] {
 		rate: 1 / 0.15, tint: [0x444444, 0x777766], life: 1,
 		speedMin: 0, speedMax: 0, size: 8, shrink: true, gravity: 0,
 		spread: 0, fade: 'linear',
+	}];
+	//`ShadowClone.ShadowSprite.link()` pours `CityLevel.Smoke.factory` every 0.2s.
+	//SmokeParticle is black, lives 2s, rises with x velocity -2..4/y -3..-6,
+	//grows 3..6px, and uses its remaining-life alpha ramp. The radial emitter
+	//approximates the independent component ranges with a slightly right-tilted cone.
+	if (creature.allyKind === 'shadowClone') return [{
+		rate: 5, tint: 0x000000, life: 2, speedMin: Math.hypot(2, 3), speedMax: Math.hypot(4, 6),
+		size: 3, grow: [3, 6], shrink: false, gravity: 0, spread: 0.76, angleOffset: 0.17, fade: 'smoke',
 	}];
 	if (creature.kind === 'fetidRat') return [speck(0x003300, 1 / 0.7)];
 	// `PhantomPiranhaSprite.link()` pours `Speck.LIGHT` every 0.5 seconds.

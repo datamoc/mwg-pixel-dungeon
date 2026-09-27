@@ -8,10 +8,10 @@ import { Actors, Random, Roguelike } from 'mwg';
 import { cureHeroBuffs } from '../../items/potionEffects';
 import { runMovement } from '../../adapters/movementSimulation';
 import { simulationRandom } from '../../adapters/mwgRandom';
+import { canDefaultPlaceSwap } from '../../simulation/vertigo';
 import { runVertigoStep } from '../../adapters/gameSimulation';
 import { simulationRoguelike } from '../../adapters/mwgRoguelike';
 import { takeSentryTurn as takeSentryTurnFlow } from '../../simulation/sentryTurn';
-import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
 import { sourceInventoryItem } from '../../items/itemKinds';
 import { ringElementsMultiplier } from '../../items/ringModifiers';
 import { capitalize, has, t } from '../../i18n/index';
@@ -37,8 +37,16 @@ import { Cat, randomUsingDefaults } from '../../items/generator';
 import { MWL_WAND_WARD_RULES } from '../../mwlContent';
 import { FLOOR, SOLID, TILE, WALL, WATER } from '../../dungeonConstants';
 import { STARVING } from '../../simulation/hunger';
-import { NEGATIVE_BUFFS, addBuff, reigniteBuff, rollHit, setAscensionActive, setBleeding, tickBuffs, type BuffId, type Creature, type Step } from '../../combat';
+import { NEGATIVE_BUFFS, addBuff, doomDamage, reigniteBuff, rollHit, setAscensionActive, setBleeding, tickBuffs, type BuffId, type Creature, type Step } from '../../combat';
 import { BOSSES, IMMOVABLE_KINDS } from '../../monsters';
+import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
+
+/** `Mob.intelligentAlly` (tag `v3.3.8`) is set by `DirectableAlly` subclasses - the Dried
+ * Rose's `GhostHero`, `HawkAlly`, `PowerOfMany.LightAlly`, `ShadowClone.ShadowAlly` - and by
+ * `PrismaticImage`. Those allies skip `SLEEPING`/`WANDERING` mobs when choosing a target
+ * (`Mob.chooseEnemy()`); every other summon (MirrorImage, AfterImage, Sheep, Ward, Lotus,
+ * EarthGuardian) keeps the plain nearest-visible-hostile rule. */
+const INTELLIGENT_ALLY_KINDS: ReadonlySet<string> = new Set(['ghost', 'spiritHawk', 'lightAlly', 'shadowClone', 'prismatic']);
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `actorTurnsHazards`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
@@ -73,7 +81,7 @@ export const actorTurnsHazardsMethods = {
 		//converts instead (handled just above); the Ooze-buff half of ACIDIC
 		//already lives in the immunity table. Found by the 41st matrix.
 		const acidic = !target.isHero && (target.kind === 'goo' || target.kind === 'causticSlime' || target.kind === 'acidic');
-		const damage = target.isHero
+		let damage = target.isHero
 			? Math.floor(rawCorrosion * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()))
 			: target.kind === 'yogFist' && target.yogFistType === 'rotting' ? 0
 			: acidic ? Math.round(rawCorrosion / 2) : rawCorrosion;
@@ -82,6 +90,7 @@ export const actorTurnsHazardsMethods = {
 			target.hp -= blocked;
 			this.showDamage(target, damage);
 		} else {
+			damage = doomDamage(damage, target);
 			target.hp -= damage;
 			this.showDamage(target, damage);
 		}
@@ -164,14 +173,23 @@ export const actorTurnsHazardsMethods = {
 		let { target } = plan;
 		// Interaction plans only arise from the synchronous occupant query above.
 		if (plan.kind === 'interact') {
-			// Allies occupy a cell like a friendly NPC (so bumping one never becomes friendly fire),
-			// but `Char.interact()` gives them their own default: Ally Warp's instant swap first, then
-			// the ordinary adjacent swap (`trySwapPlaces`); interactWithNPC is the fallback if both refuse.
+			// Allies occupy a cell like a friendly NPC; interactWithNPC intentionally has no
+			// branch for them, so bumping one cannot turn into friendly fire. The two
+			// run first: PERFECT_COPY's ShadowAlly place-swap (`tryShadowCloneSwap`, Java
+			// `ShadowAlly.interact`) and ALLY_WARP (`tryAllyWarp`). Java runs ALLY_WARP
+			// *before* Char.interact's restricted-movement (Vertigo/paralysis/rooted) check
+			// - so neither is Vertigo-gated here. The default Char.interact place-swap
+			// (non-ALLY_WARP / non-PERFECT_COPY allies, with that Vertigo refusal at
+			// Char.java 284-288) uses the normal restriction gates after those overrides.
+			if (occupant!.isAlly && !occupant!.isNPC && this.tryShadowCloneSwap(occupant!)) return;
+			if (occupant!.isAlly && !occupant!.isNPC && this.tryAllyWarp(occupant!)) return;
 			if (occupant!.isAlly && !occupant!.isNPC) {
-				if (this.tryAllyWarp(occupant!)) return;
-				//`Char.interact()`'s default branch: bumping an adjacent ally that Ally Warp did not
-				//already handle swaps places instead - see `trySwapPlaces`'s own comment for the refusals.
-				if (this.trySwapPlaces(occupant!)) return;
+				//Sheep overrides Char.interact() with its neutral speech action, so it does
+				//not use the inherited place-swap.
+				if (occupant!.allyKind !== 'sheep') {
+					this.tryDefaultAllyPlaceSwap(occupant!);
+				}
+				return;
 			}
 			this.interactWithNPC(occupant!);
 		}
@@ -354,7 +372,7 @@ export const actorTurnsHazardsMethods = {
 		this.enterLevel();
 	},
 
-/**
+	/**
 	 * `AscensionChallenge.beckonEnemies()` (tag `v3.3.8`): at 2+ stacks, every enemy mob
 	 * farther than 8 cells from the hero is beckoned to the hero's cell. Java's
 	 * `Mob.beckon()` wakes, retargets unconditionally, and drops non-hunting/non-fleeing
@@ -819,7 +837,7 @@ export const actorTurnsHazardsMethods = {
 		if (this.consumeFeatherFall()) return;
  		//`Chasm.java` 143: the shake comes first, before the Cripple and the damage.
  		this.shakeScreen(4, 1);
-		//`Chasm.heroLand()` presses the landing cell (`Dungeon.level.occupyCell(hero)`
+ 		//`Chasm.heroLand()` presses the landing cell (`Dungeon.level.occupyCell(hero)`
  		//before the Cripple, tag `v3.3.8`): trap, grass and plant halves, in that
  		//order. Web consume rides the existing blob tick; a trap kill here keeps its
  		//own cause like Java, instead of collapsing into the falling bucket.
@@ -939,7 +957,7 @@ export const actorTurnsHazardsMethods = {
 		//Chill.speedFactor() also slows monster actor speed; the scheduler reads this
 		//pending cost after the actor finishes its turn.
 		if (monster.buffs['chill']) this.pendingMonsterTurnCost = 1 / Math.max(0.5, 1 - monster.buffs['chill']! * 0.1);
-//`AscensionChallenge.enemySpeedModifier()` (tag `v3.3.8`): at 4+ stacks, enemies that
+		//`AscensionChallenge.enemySpeedModifier()` (tag `v3.3.8`): at 4+ stacks, enemies that
 		//are neither hunting nor fleeing move at 2x - scheduler cost x0.5 here. Hunting is
 		//`seesHero`/a live `lastSeen` trail (the port has no HUNTING state; a mob already on
 		//the trail re-acquires without a roll, so it counts as hunting); sleeping mobs keep
@@ -1013,24 +1031,36 @@ export const actorTurnsHazardsMethods = {
 			&& monsterFov.isVisible(this.hero.x, this.hero.y)
 			&& !this.smokeBlocksSight(monster.x, monster.y, this.hero.x, this.hero.y)
 			&& (monster.kind === 'sentry' || !this.hero.buffs['invisibility']);
-		//Mob.findEnemy(): a hostile mob may pursue a visible allied Char when the hero is not
-		//currently its enemy. The compact AI still has hero-shaped ranged overrides, so route
-		//this case through ordinary pathing/melee only; that is the documented reduction for
-		//special attacks against allies, while MirrorImage can now be reached and attacked.
-		//`Mob.findEnemy()`'s ally branch lives in `simulation/targeting.ts` as
-	//`findEnemyAlly` - the file-size refactor's forty-third extraction,
-	//behavior-identical. The scene only binds the mob's FOV and smoke gate here.
-	const visibleAllyTarget = findEnemyAllyFlow(monster, this.creatures,
+		//`Mob.findEnemy()`: a hostile mob may pursue a visible allied Char when the hero is not
+		//currently its enemy. `Mob.chooseEnemy()`'s ally branch lives in `simulation/targeting.ts`
+		// as `findEnemyAlly` - the file-size refactor's forty-third extraction, behavior-identical.
+		// The scene binds the mob's FOV and smoke gate here.
+		const visibleAllyTarget = findEnemyAllyFlow(monster, this.creatures,
 			(x, y) => monsterFov.isVisible(x, y),
 			(fx, fy, tx, ty) => this.smokeBlocksSight(fx, fy, tx, ty),
 			simulationRoguelike);
-		if (!monster.seesHero && visibleAllyTarget) {
-			if (Roguelike.chebyshevDistance(monster, visibleAllyTarget) === 1) this.attack(monster, visibleAllyTarget);
+		//`Mob.chooseEnemy()`'s decoy rule: if the closest enemy would be the hero, any visible
+		//`Feint.AfterImage` becomes the target instead (`if (closest == Dungeon.hero) ...`). This
+		//is what makes Feint's decoy draw a hit even when the hero is in plain sight, so it is
+		//checked even while `seesHero` - the port previously only reacted to an afterImage that
+		//happened to stand adjacent.
+		const visibleDecoy = monster.seesHero
+			? this.creatures.find((c) => c.isAlly && c.allyKind === 'afterImage' && c.hp > 0
+				&& monsterFov.isVisible(c.x, c.y)
+				&& !this.smokeBlocksSight(monster.x, monster.y, c.x, c.y))
+			: undefined;
+		const allyTarget = !monster.seesHero ? visibleAllyTarget : visibleDecoy;
+		if (allyTarget) {
+			//Java's `enemy` persists on the mob across turns; this port's `lastSeen` trail - the
+			//hero's own hunt memory - carries the ally's cell too, so a mob that loses sight of a
+			//summon keeps pursuing where it last saw it rather than forgetting on the spot.
+			monster.lastSeen = { x: allyTarget.x, y: allyTarget.y };
+			if (Roguelike.chebyshevDistance(monster, allyTarget) === 1) this.attack(monster, allyTarget);
 			else {
-				const blocked = new Set(this.creatures.filter((c) => c !== monster && c !== visibleAllyTarget)
+				const blocked = new Set(this.creatures.filter((c) => c !== monster && c !== allyTarget)
 					.map((c) => this.level.index(c.x, c.y)));
 				this.eternalFireBlockedInto(blocked);
-				const decision = Roguelike.decideMonsterAI(this.level, this.pathfinder, monster, monster.hp / monster.maxHp, visibleAllyTarget, {
+				const decision = Roguelike.decideMonsterAI(this.level, this.pathfinder, monster, monster.hp / monster.maxHp, allyTarget, {
 					sightRadius: this.viewRadius(),
 					fleeBelow: 0,
 					blocked,
@@ -1126,6 +1156,17 @@ export const actorTurnsHazardsMethods = {
 			//sleeping state here, so this transition needs no second buff.
 			monster.sleeping = true;
 		}
+		//`Burning.act()`'s ground-ignition tail, same Java citation as the hero-side
+		//tick (`actors/buffs/Burning.java`, tag `v3.3.8`): a burning char on flammable
+		//ground with no fire volume seeds `Fire` at volume 4. This runs before the
+		//damage block below on purpose - Java damages first and seeds after, but the
+		//seed depends on neither the damage nor the buff surviving the tick (it fires
+		//even on the detach path), so seeding up front also covers the fresh-corpse
+		//edge Java's fall-through covers: a monster killed by this very tick still
+		//leaves its fire behind. No flying gate, matching Java (only the water
+		//extinguish below checks flight); the web half joins the terrain predicate
+		//exactly like `spreadFire`'s own.
+		if (monsterWasBurning && (this.isFireFlammableTerrain(monster.x, monster.y) || this.web.volumeAt(monster.x, monster.y) > 0) && this.fire.volumeAt(monster.x, monster.y) === 0) this.fire.seed(monster.x, monster.y, 4);
 		if (dotDealt > 0) {
 			this.applyCharacterDamage(monster, dotDealt, { pierceArmor: true, cause: 'foe', skipAura: true });
 			if (monster.hp <= 0) return;
@@ -1181,7 +1222,7 @@ export const actorTurnsHazardsMethods = {
 		//actually reaches 0 this time, the Brute stays dead - `hasRaged` was already set true at
 		//the revival, so there is no second one.
 		if (monster.kind === 'brute' && monster.raged) {
-			monster.hp -= 4;
+			monster.hp -= doomDamage(4, monster);
 			if (monster.hp <= 0) {
 				this.kill(monster);
 				return;
@@ -1194,7 +1235,7 @@ export const actorTurnsHazardsMethods = {
 			monster.armoredRageTicks = (monster.armoredRageTicks ?? 0) + 1;
 			if (monster.armoredRageTicks >= 3) {
 				monster.armoredRageTicks = 0;
-				monster.hp -= 1;
+				monster.hp -= doomDamage(1, monster);
 				if (monster.hp <= 0) {
 					this.kill(monster);
 					return;
@@ -1298,6 +1339,8 @@ export const actorTurnsHazardsMethods = {
 			if (isChallengeEnabled('swarm_intelligence')) {
 				for (const other of this.creatures) {
 					if (other === monster || other.isHero || other.isNPC || other.buffs['paralysis']) continue;
+					//The Java hook calls `beckon()`; a sleeping CrystalGuardian's override refuses it.
+					if (ignoresCrystalGuardianBeckon(other.kind, other.sleeping === true)) continue;
 					if (other.sleeping === false && other.seesHero) continue;
 					if (Roguelike.chebyshevDistance(monster, other) > 8) continue;
 					other.sleeping = false;
@@ -1566,8 +1609,11 @@ export const actorTurnsHazardsMethods = {
 		if (ally.allyKind === 'ghost') {
 			const rose = this.roseItem();
 			if (!rose || rose.identified === false || this.hero.magicImmune === true) {
-				ally.hp -= 1;
-				this.showDamage(ally, 1);
+				// Java routes NoRoseDamage through Char.damage(), so Doom's standard
+				// 1.67 multiplier applies despite the source bypassing armor.
+				const dealt = doomDamage(1, ally);
+				ally.hp -= dealt;
+				this.showDamage(ally, dealt);
 				if (ally.hp <= 0) {
 					this.kill(ally);
 					this.roseGhost = null;
@@ -1596,19 +1642,29 @@ export const actorTurnsHazardsMethods = {
 			.sort((a, b) => Roguelike.chebyshevDistance(ally, a) - Roguelike.chebyshevDistance(ally, b));
 		//`DirectableAlly`'s standing order, if this ally has one: an ordered attack target takes
 		//precedence over the nearest hostile, and an ordered defend cell replaces the hero as the
-		//fallback destination. The rose's ghost and the spirit hawk are the two allies that carry
-		//one, so both lines below are inert for every other ally kind. Java's `defendPos` leaves the
-		//ally WANDERING with no target, so an ally that still *sees* an enemy fights it on the way -
-		//which is what the shared `hostiles` ordering below already does; what the order changes is
-		//where it goes when nothing is in sight, and that it stops there instead of following the hero.
+		//fallback destination. Four allies carry one (the rose's ghost, the spirit hawk, the
+		//cleric's light ally and the rogue's shadow clone), so the branch below is inert for
+		//every other ally kind.
 		const ordered = ally.allyTargetChar !== undefined && ally.allyTargetChar.hp > 0 ? ally.allyTargetChar : undefined;
-		const target = ordered ?? hostiles[0];
+		const defend = ally.allyDefendCell;
+		//`DirectableAlly.Wandering.act()`: an explicit attack order always hunts. An automatic
+		//ally hunts only when it is not still marching to a newly ordered post, and either it has
+		//no post, the hero has lost sight of that post, or the nearest enemy is already in reach
+		//(Java's `canAttack`). A posted ally with an out-of-reach enemy holds the post instead of
+		//chasing - the behaviour the port previously lacked entirely.
+		const defendVisible = defend !== undefined && this.fov.isVisible(defend.x, defend.y);
+		const nearest = hostiles[0];
+		const huntsAutomatically = ally.attacksAutomatically !== false
+			&& ally.allyMovingToDefend !== true
+			&& (defend === undefined || !defendVisible
+				|| (nearest !== undefined && Roguelike.chebyshevDistance(ally, nearest) === 1));
+		const target = ordered ?? (huntsAutomatically ? nearest : undefined);
 		//`PrismaticImage.Wandering.act()`: with no enemy in sight the image rejoins its
 		//master - the guard pool is set to the image's current HP (`set(image)`), the
 		//actor is destroyed with the teleport effect, and no guard spawns while one is
 		//already owed (there is only ever one pool; hatching spends it). The shared
 		//follow-the-hero fallback below never runs for this kind.
-		if (ally.allyKind === 'prismatic' && !target && !ordered && !ally.allyDefendCell) {
+		if (ally.allyKind === 'prismatic' && !target && !ordered && !defend) {
 			this.hero.prismaticGuardHp = ally.hp;
 			addBuff(this.hero, 'prismaticGuard', 9999);
 			this.destroyAlly(ally);
@@ -1622,21 +1678,23 @@ export const actorTurnsHazardsMethods = {
 			this.attack(ally, target);
 			return;
 		}
-		const defend = ally.allyDefendCell;
-		//`DirectableAlly.Hunting.act()` (tag `v3.3.8`): an ally under a standing defend order still auto-attacks
-		//whatever it spontaneously sees (Wandering's own auto-hunt, unaffected by the order), but gives up the
-		//chase back to its post once it cannot reach that spontaneous target this turn - unlike an explicitly
-		//ordered target (`allyTargetChar`), which it keeps chasing across the floor.
-		const chasingSpontaneously = defend !== undefined && target !== undefined && target !== ordered && this.fov.isVisible(defend.x, defend.y);
-		const destination = chasingSpontaneously ? defend : target ?? defend ?? this.hero;
-		//`LightAlly`/`ShadowAlly`/`GhostHero`'s identical `speed()` override (`PowerOfMany.java`, `ShadowClone.java`,
-		//`DriedRose.java`, tag `v3.3.8`): WANDERING, no defend order, more than one tile from the hero -> x2 speed.
-		//The Spirit Hawk has its own separate turn function and speed model (`takeSpiritHawkTurn`), not this one.
-		const directableReturning = (ally.allyKind === 'lightAlly' || ally.allyKind === 'shadowClone' || ally.allyKind === 'ghost')
-			&& !target && !defend;
-		if (!target && Roguelike.chebyshevDistance(ally, this.hero) <= 2 && !defend && !directableReturning) return;
-		const returningFast = directableReturning && Roguelike.chebyshevDistance(ally, this.hero) > 1;
-		if (!target && defend && ally.x === defend.x && ally.y === defend.y) return;
+		const destination = target ?? defend ?? this.hero;
+		const returningLightAlly = ally.allyKind === 'lightAlly' && !target && !defend;
+		//`ShadowClone.ShadowAlly.Wandering` follows to adjacency, then its `speed()` doubles
+		//movement while uncommanded and more than one tile from the hero (`ShadowClone.java`, v3.3.8).
+		const returningShadowClone = ally.allyKind === 'shadowClone' && !target && !defend;
+		//`DriedRose.GhostHero.speed()` doubles while returning to the hero with no standing order
+		//(`GhostHero.java`, tag `v3.3.8`) - the same 2x return the light ally and shadow clone take.
+		const returningGhost = ally.allyKind === 'ghost' && !target && !defend;
+		const heroDistance = Roguelike.chebyshevDistance(ally, this.hero);
+		const followStopRange = returningShadowClone ? 1 : 2;
+		if (!target && heroDistance <= followStopRange && !defend && !returningLightAlly) return;
+		const returningFast = (returningLightAlly || returningShadowClone || returningGhost) && heroDistance > 1;
+		if (!target && defend && ally.x === defend.x && ally.y === defend.y) {
+			//Arrived at the ordered post: Java clears `movingToDefendPos` here.
+			ally.allyMovingToDefend = false;
+			return;
+		}
 		const blocked = new Set(this.creatures.filter((c) => c !== ally && c !== destination)
 			.map((c) => this.level.index(c.x, c.y)));
 		this.eternalFireBlockedInto(blocked);
@@ -1645,8 +1703,16 @@ export const actorTurnsHazardsMethods = {
 			const from = { x: ally.x, y: ally.y };
 			this.moveTo(ally, next);
 			this.leaveDoor(from.x, from.y, ally);
-			//The shared 2x-return speed above (`directableReturning`) - see its own comment.
+			if (!target && defend && ally.x === defend.x && ally.y === defend.y) ally.allyMovingToDefend = false;
+			//`LightAlly.speed()` moves at 2x only while Wandering back to the hero,
+			//uncommanded and more than one tile away (`PowerOfMany.java`); the ghost and
+			//shadow clone share the shape (see each comment above).
 			if (returningFast) this.pendingMonsterTurnCost = 0.5;
+		} else if (!target && defend && ally.allyMovingToDefend) {
+			//`DirectableAlly.Wandering.act()`: if it cannot move closer to the ordered post it
+			//gives up and defends where it stands (`defendingPos = pos; movingToDefendPos = false`).
+			ally.allyDefendCell = { x: ally.x, y: ally.y };
+			ally.allyMovingToDefend = false;
 		}
 	},
 
@@ -1709,6 +1775,37 @@ export const actorTurnsHazardsMethods = {
 	 * are NOT excluded: the hero FOV carries potion reveals indistinguishably
 	 * (stated in PORT_COVERAGE.md).
 	 */
+	tryDefaultAllyPlaceSwap(this: DungeonScene, ally: Creature): boolean {
+		//Java's Char.interact() refuses this swap for an unsafe destination, either
+		//IMMOVABLE character, or either character's Paralysis/Roots/Vertigo. The app
+		//spends its ordinary hero bump cost; Java spends 1/speed on the ally actor.
+		const allowed = canDefaultPlaceSwap({
+			allyCellPassable: this.level.passable(ally.x, ally.y),
+			heroFlying: this.hero.buffs['levitation'] !== undefined,
+			heroImmovable: false,
+			allyImmovable: ally.allyKind === 'ward' || ally.allyKind === 'lotus'
+				|| (ally.kind !== undefined && IMMOVABLE_KINDS.has(ally.kind)),
+			heroParalysed: (this.hero.buffs['paralysis'] ?? 0) > 0,
+			allyParalysed: (ally.buffs['paralysis'] ?? 0) > 0,
+			heroRooted: (this.hero.buffs['roots'] ?? 0) > 0,
+			allyRooted: (ally.buffs['roots'] ?? 0) > 0,
+			heroVertigo: (this.hero.buffs['vertigo'] ?? 0) > 0,
+			allyVertigo: (ally.buffs['vertigo'] ?? 0) > 0,
+		});
+		if (!allowed) return true;
+		const heroFrom = { x: this.hero.x, y: this.hero.y };
+		const allyFrom = { x: ally.x, y: ally.y };
+		this.hero.x = allyFrom.x; this.hero.y = allyFrom.y;
+		ally.x = heroFrom.x; ally.y = heroFrom.y;
+		//Java's Sprite.move() animates this inherited swap. This port moves the two
+		//sprites immediately, as its existing ally-warp swap does; no teleport flare.
+		this.sprite(this.hero).position.set(allyFrom.x * TILE, allyFrom.y * TILE);
+		this.sprite(ally).position.set(heroFrom.x * TILE, heroFrom.y * TILE);
+		this.fov.update(this.hero.x, this.hero.y, this.viewRadius());
+		this.refresh();
+		return true;
+	},
+
 	hatchPrismaticImage(this: DungeonScene, pool: number): boolean {
 		let closest: Creature | undefined;
 		let best = Infinity;
@@ -1757,12 +1854,34 @@ export const actorTurnsHazardsMethods = {
 	 * Halls cap and grows with Farsight, none of which touches an ally's own eyes.
 	 * (The shared hero/monster sight radius elsewhere is a separate, documented
 	 * simplification.)
+	 *
+	 * `Mob.chooseEnemy()`'s `intelligentAlly` clause is honoured here too: a DirectableAlly
+	 * (`GhostHero`, `HawkAlly`, `LightAlly`, `ShadowAlly`) and `PrismaticImage` never pick a
+	 * `SLEEPING` or `WANDERING` mob as a target. The port has no explicit state machine, so
+	 * sleeping is the real flag and "wandering" is the inverse of the alerted set the rest of
+	 * the AI reads (`seesHero`, a live `lastSeen` trail, `fleeing`), plus the bosses/turret,
+	 * which Java leaves in `HUNTING` from spawn.
 	 */
 	visibleAllyHostiles(this: DungeonScene, ally: Creature, radius = 8): Creature[] {
 		const allyFov = new Roguelike.FieldOfView(this.level);
 		allyFov.update(ally.x, ally.y, radius);
+		const intelligent = ally.allyKind !== undefined && INTELLIGENT_ALLY_KINDS.has(ally.allyKind);
 		//`CrystalSpire` is `Alignment.NEUTRAL`: Java's allies never pick it as an enemy.
-		return this.creatures.filter((c) => !c.isHero && !c.isNPC && !c.isAlly && c.kind !== 'crystalSpire' && c.hp > 0 && allyFov.isVisible(c.x, c.y));
+		//A hidden Mimic is `state = PASSIVE` and disguised as a chest, so no ally targets it
+		//(Java's `mob.state != mob.PASSIVE` clause, which applies to every ally).
+		return this.creatures.filter((c) => !c.isHero && !c.isNPC && !c.isAlly && c.kind !== 'crystalSpire' && c.hp > 0 && allyFov.isVisible(c.x, c.y)
+			&& !(c.kind === 'mimic' && c.mimicRevealed === false)
+			&& (!intelligent || this.isAlertedHostile(c)));
+	},
+
+	/** The port's proxy for `Mob.state != WANDERING && Mob.state != SLEEPING`, for the
+	 * `intelligentAlly` target filter above. */
+	isAlertedHostile(this: DungeonScene, hostile: Creature): boolean {
+		if (hostile.sleeping === true) return false;
+		if (hostile.seesHero === true || hostile.lastSeen !== undefined || hostile.fleeing === true) return true;
+		//Bosses, minibosses and the sentry never enter Java's WANDERING state in this port's
+		//modeled fights, so an ally may target them before they have noticed the hero.
+		return hostile.boss === true || hostile.miniboss === true || hostile.kind === 'sentry';
 	},
 
 	/** The spirit hawk's own `viewDistance` for the current talent ranks. */
@@ -1934,8 +2053,9 @@ export const actorTurnsHazardsMethods = {
 			if (!target.magicImmune) {
 				const wandLevel = ward.wardWandLevel ?? 0;
 				const damage = Random.normalRange(2 + wandLevel, 8 + 4 * wandLevel);
-				target.hp -= damage;
-				this.showDamage(target, damage);
+				const dealt = target.isHero ? this.absorbHeroDamage(damage, true) : doomDamage(damage, target);
+				target.hp -= dealt;
+				this.showDamage(target, dealt);
 				target.sleeping = false;
 				if (target.hp <= 0) this.kill(target);
 			}

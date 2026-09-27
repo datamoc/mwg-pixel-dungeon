@@ -491,10 +491,6 @@ export interface SaveShape {
 	spinTurns?: number;
 	cleaveFreeTurns?: number;
 	guardTurns?: number;
-	comboClobberUsed?: boolean;
-	monkEnergy?: number;
-	comboParryUsed?: boolean;
-	comboInitialTime?: number;
 	swordDanceTurns?: number;
 	/** `Talent.CombinedLethalityAbilityTracker` - see the field's own comment. */
 	clAbilityWeaponClass?: string | null;
@@ -650,7 +646,7 @@ export interface SaveShape {
 	blockingShieldLeft?: number;
 	blockingTurnsLeft?: number;
 	sealBarrierState?: { layers: { amount: number; decayPerTick?: number }[] };
-	sealState?: { cooldown: number; turnsSinceEnemies: number; initialShield: number };
+	sealPartialGain?: number;
 	armorSealed?: boolean;
 	weaponCurseInfusionBonus?: boolean;
 	armorCurseInfusionBonus?: boolean;
@@ -685,8 +681,7 @@ export interface SaveShape {
  	healingPercent?: number;
  	healingFlat?: number;
 	sungrassPos?: number;
-	rageState?: { mode: 'normal' | 'berserk' | 'recovering'; power: number; powerLossBuffer: number; levelRecovery: number; turnRecovery: number; zeroHp: boolean };
-	rageBarrierState?: { layers: { amount: number; decayPerTick?: number }[] };
+	deathlessFuryUsed?: boolean;
 	/** Timed Char buffs survive a save instead of silently clearing on reload. */
 	buffs?: [BuffId, number][];
 	/** `Preparation.turnsInvis`, persisted separately from the invisibility buff in Java's

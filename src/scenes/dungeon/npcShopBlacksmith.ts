@@ -207,22 +207,28 @@ export const npcShopBlacksmithMethods = {
 		return true;
 	},
 
-	/** the down staircase sprite - SPD's real `EXIT` tile, not the door tile this port used to reuse for it. `this.stairs` is already decided by `enterLevel`, before water/doors are painted */
+	/** the down staircase sprite - SPD's real `EXIT` tile, not the door tile this port used to reuse for it. `this.stairs` is already decided by `enterLevel`, before water/doors are painted.
+	 * Java draws stairs in `DungeonTilemap` (terrain, under every sprite); this draws a
+	 * sprite, so it goes to the BOTTOM of the creature layer - appended on top, it masked
+	 * whoever stood on the cell (the hero at build, since the hero sprite is re-added
+	 * before this runs, and anyone present when boss-exit stairs land mid-run). */
 	drawStairsSprite(this: DungeonScene): void {
 		this.stairsSprite = new TintedSprite(this.terrainSheet.get(TERRAIN_FRAME.exit));
 		this.stairsSprite.x = this.stairs.x * TILE;
 		this.stairsSprite.y = this.stairs.y * TILE;
-		this.creatureLayer.addChild(this.stairsSprite);
+		this.creatureLayer.addChildAt(this.stairsSprite, 0);
 	},
 
-	/** the up staircase the hero arrived by - SPD's real `ENTRANCE` tile. Every floor has one except the first, which has nothing above it to lead back to */
+	/** the up staircase the hero arrived by - SPD's real `ENTRANCE` tile. Every floor has one except the first, which has nothing above it to lead back to.
+	 * Bottom of the creature layer for the same reason as the stairs above (the hero
+	 * arrives standing on this cell, so an appended sprite would mask them at once). */
 	placeEntrance(this: DungeonScene, at: Step): void {
 		if (this.depth <= 1) return;
 
 		const sprite = new TintedSprite(this.terrainSheet.get(TERRAIN_FRAME.entrance));
 		sprite.x = at.x * TILE;
 		sprite.y = at.y * TILE;
-		this.creatureLayer.addChild(sprite);
+		this.creatureLayer.addChildAt(sprite, 0);
 	},
 
 	/**
@@ -1309,6 +1315,8 @@ export const npcShopBlacksmithMethods = {
 				note: t('windows.wndtradeitem.buy', { '0': getShopPrice(stockItem.id, this.depth) }),
 			}));
 		if (entries.length === 0) return;
+		//Java opens one `WndTradeItem` per FOR_SALE heap; this port groups the shelf into one
+		//picker, so that port-owned shared window needs its own localized title.
 		this.openItemPicker(t('port.ui.shop.title'), entries, (pick) => this.openShelfItemDetail(pick));
 	},
 

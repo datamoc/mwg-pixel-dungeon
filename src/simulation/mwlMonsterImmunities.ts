@@ -198,13 +198,5 @@ export const MONSTER_IMMUNITY_DATA = [
     "immunities": [
       "burning"
     ]
-  },
-  {
-    "monster": "ward",
-    "subtype": "",
-    "immunities": [
-      "terror",
-      "vertigo"
-    ]
   }
 ] as const;

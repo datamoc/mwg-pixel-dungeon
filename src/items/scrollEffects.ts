@@ -4,6 +4,7 @@ import { addBuff, buffBlocked, type BuffId, type Creature, type Step } from '../
 import { t } from '../i18n/index';
 import { mwlItemEffectValue } from '../mwlContent';
 import { prismaticGuardMaxHp } from '../simulation/prismatic';
+import { ignoresCrystalGuardianBeckon } from '../simulation/crystalSpire';
 import { empoweringScrollsCharges, sharedUpgradeArmor, twinUpgradeArmor } from '../talentEffects';
 import { getCurse } from './itemCurses';
 import { MISSILE_DEFAULT_QUANTITY, MISSILE_MAX_DURABILITY, recordMissileUpgrade } from './missiles';
@@ -30,7 +31,7 @@ export interface ScrollEffectsContext {
 	readonly playTeleportAppear: (from: Step, to: Step, entity: Creature) => void;
 	readonly restitchAllTiles: () => void;
 	readonly showDamage: (target: Creature, amount: number) => void;
-	/** `ScrollOfRetribution`'s direct `Char.damage()` call, adapted by the scene. */
+	/** A rolled direct hit that calls Java `Char.damage()` rather than `Char.attack()`. */
 	readonly applyDamage: (target: Creature, amount: number) => void;
 	readonly showHeal: (target: Creature, amount: number) => void;
 	readonly kill: (target: Creature) => void;
@@ -46,8 +47,13 @@ export function applyScrollEffect(id: string, context: ScrollEffectsContext): bo
 	if (id === 'scrollRage') {
 		for (const creature of creatures) {
 			if (creature.isHero || creature.isNPC) continue;
-			creature.sleeping = false;
-			creature.seesHero = true;
+			//`ScrollOfRage.doRead()` calls `mob.beckon(hero.pos)` before Amok. A sleeping
+			//CrystalGuardian ignores the beckon, but visible targets receive Amok, whose `Mob.add()`
+			//switches state directly to HUNTING; its Sleeping.awaken() reach gate is not involved.
+			if (!ignoresCrystalGuardianBeckon(creature.kind, creature.sleeping === true)) {
+				creature.sleeping = false;
+				creature.seesHero = true;
+			}
 			if (!creature.isAlly && fov.isVisible(creature.x, creature.y)) addBuff(creature, 'amok');
 		}
 		context.say(t('port.log.rage'));

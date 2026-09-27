@@ -286,6 +286,40 @@ try {
 		assert.deepEqual(heard, [true, false]);
 	});
 
+	check('highcontrast defaults off and persists under its own key', () => {
+		const store = freshStore();
+		settings.setSettingsStore(store);
+		assert.equal(settings.highContrast(), false);
+		settings.setHighContrast(true);
+		assert.equal(settings.highContrast(), true);
+		assert.equal(store.dump().get('highcontrast'), 'true');
+		settings.setHighContrast(false);
+		assert.equal(settings.highContrast(), false);
+		assert.equal(store.dump().get('highcontrast'), 'false');
+	});
+
+	check('highcontrast reaches the Pixi-bound consumers with HC-first precedence', () => {
+		//`spdTheme.ts`, `monsterAi.ts` and `settingsWindow.ts` pull in `mwg`/Pixi, so
+		//they cannot join the headless transpile above - pin their wiring as source
+		//shape instead, the same convention `verifyArmorAbilities.mjs` uses.
+		const theme = readFileSync(new URL('../src/ui/spdTheme.ts', import.meta.url), 'utf8');
+		assert.match(theme, /positive: 0x00ffff/, 'HC positive is full-saturation cyan');
+		assert.match(theme, /negative: 0xff00ff/, 'HC negative is full-saturation magenta');
+		assert.match(theme, /if \(highContrast\(\)\) return SPD_STATUS_COLOR_HIGH_CONTRAST/,
+			'high contrast wins over colorblind in the status palette');
+		const telegraph = readFileSync(new URL('../src/scenes/dungeon/monsters/monsterAi.ts', import.meta.url), 'utf8');
+		assert.match(telegraph, /highContrast\(\) \? 0xff00ff : colorblind\(\) \? 0xd55e00 : 0xff0000/,
+			'the hazard telegraph follows the same HC-first precedence');
+		const window = readFileSync(new URL('../src/ui/settingsWindow.ts', import.meta.url), 'utf8');
+		assert.match(window, /t\('port\.ui\.highcontrast'\), highContrast\(\), \(checked\) => setHighContrast\(checked\)/,
+			'the Display tab offers a high-contrast checkbox wired to the setting');
+		const bars = readFileSync(new URL('../src/scenes/dungeon/deathSaveRefresh.ts', import.meta.url), 'utf8');
+		assert.match(bars, /color: highContrast\(\) \? 0x00ffff : colorblind\(\) \? 0x009e73 : 0x00ee00/,
+			'the monster HP bar uses cyan in high contrast, then Okabe-Ito green, then the SPD green');
+		assert.match(bars, /background: highContrast\(\) \? 0xff00ff : colorblind\(\) \? 0xd55e00 : 0xcc0000/,
+			'the monster HP bar uses magenta in high contrast, then Okabe-Ito vermillion, then the SPD red');
+	});
+
 	console.log(`\nAll ${passed} display-settings checks passed.`);
 } catch (error) {
 	console.error(`FAIL after ${passed} passed:`, error);

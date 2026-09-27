@@ -6,7 +6,7 @@ import { readSceneSource } from './sceneSource.mjs';
 // Called by verifySimulation.mjs after compiling actual production modules into its temp tree.
 export function verifyCombat(require, check) {
 	const { rollHit, rollDamage, liveStats, stoneGlyphReduction, grimTrapDamage, explosiveTrapBounds } = require('./simulation/combat');
-	const { applyBuff, advanceBuffs, reigniteBuff, absorbShield, BUFF_DURATION } = require('./simulation/buffs');
+	const { applyBuff, advanceBuffs, reigniteBuff, absorbShield, doomDamage, BUFF_DURATION } = require('./simulation/buffs');
 	const record = process.env.RECORD_FIXTURES === '1';
 	const facade = require('./combat');
 	const { Random } = require('mwg');
@@ -51,6 +51,24 @@ export function verifyCombat(require, check) {
 				} finally { Random.pop(); }
 			}
 		}
+	});
+	check('Doom persists and respects Lotus and Dwarf King immunity', () => {
+		//`Doom` has no duration/act in Java and lasts until death. `Char.damage()` scales
+		//damage via float 1.67f then rounds at Char.damage's final rounding point; Lotus rejects every buff and DwarfKing
+		//is immune to Doom amplification from phase 2 onward while Doom may remain attached.
+		assert.equal(doomDamage(2, { buffs: { doom: 1 } }), 3);
+		assert.equal(doomDamage(10, { buffs: { doom: 1 } }), 17);
+		assert.equal(doomDamage(10, { buffs: { doom: 1 }, kind: 'king', kingPhase: 2 }), 10);
+		assert.equal(doomDamage(10, { buffs: { doom: 1 }, allyKind: 'lotus' }), 10);
+		assert.equal(doomDamage(10, { buffs: { doom: 1 }, isNPC: true }), 10);
+		const lotus = base({ allyKind: 'lotus', isAlly: true });
+		facade.addBuff(lotus, 'doom');
+		assert.equal(lotus.buffs.doom, undefined, 'WandOfRegrowth.Lotus refuses Doom and every other buff');
+		assert.equal(require('./simulation/buffs').corruptionImmune(lotus), true, 'Lotus Property.STATIC refuses Corruption');
+		const advanced = advanceBuffs({ doom: 9999 }, { int: () => { throw new Error('Doom has no tick'); } });
+		assert.deepEqual(advanced, { buffs: { doom: 9999 }, damage: 0 });
+		const guardian = readFileSync(new URL('../src/scenes/dungeon/monsters/crystalMine.ts', import.meta.url), 'utf8');
+		assert.ok(guardian.includes("id !== 'cripple' && id !== 'doom'"), 'crumpling CrystalGuardian retains Doom');
 	});
 	check('five pre-extraction buff scenarios preserve timing, damage, and random stream', () => {
 		for (const item of fixture.buffs) {
@@ -282,6 +300,36 @@ export function verifyCombat(require, check) {
 		facade.addBuff(thawed, 'chill');
 		assert.equal(thawed.buffs.chill, facade.BUFF_DURATION.chill);
 	});
+	check('PowerOfMany LightAlly carries Java INORGANIC Bleeding, Poison, and ToxicGas immunities', () => {
+		//`PowerOfMany.LightAlly` adds Property.INORGANIC (PowerOfMany.java, tag v3.3.8):
+		//Char.Property.INORGANIC rejects Bleeding, Poison, and ToxicGas. This ally's rat
+		//scheduler carrier means the first two need an allyKind boundary, and ToxicGas needs
+		//the parallel check at the blob seam.
+		const ally = base({ allyKind: 'lightAlly', isAlly: true });
+		facade.addBuff(ally, 'poison');
+		facade.addBuff(ally, 'bleeding');
+		facade.setBleeding(ally, 9);
+		assert.equal(ally.buffs.poison, undefined, 'LightAlly must refuse Poison');
+		assert.equal(ally.buffs.bleeding, undefined, 'LightAlly must refuse Bleeding via addBuff and setBleeding');
+		facade.addBuff(ally, 'haste');
+		assert.equal(ally.buffs.haste, facade.BUFF_DURATION.haste, 'INORGANIC does not refuse positive buffs');
+		assert.ok(trapSource.includes("|| target.allyKind === 'lightAlly'"), 'ToxicGas blob seam must treat LightAlly as INORGANIC');
+		const ordinary = base({ allyKind: 'spiritHawk', isAlly: true });
+		facade.addBuff(ordinary, 'poison');
+		assert.equal(ordinary.buffs.poison, facade.BUFF_DURATION.poison, 'other directable allies do not gain the immunity');
+	});
+	check('Mob.add(Amok) wakes sleeping mobs directly into HUNTING', () => {
+		//`Mob.add()` switches Amok targets to HUNTING (Mob.java, tag v3.3.8), bypassing
+		//Sleeping.awaken() and CrystalGuardian's reach-gated override; the port records that
+		//transition by clearing `sleeping` when a mob first receives Amok.
+		const guardian = base({ kind: 'crystalGuardian', sleeping: true });
+		facade.addBuff(guardian, 'amok');
+		assert.equal(guardian.sleeping, false, 'a sleeping mob must wake when Amok is newly attached');
+		assert.equal(guardian.buffs.amok, facade.BUFF_DURATION.amok);
+		const hero = base({ isHero: true, sleeping: true });
+		facade.addBuff(hero, 'amok');
+		assert.equal(hero.sleeping, true, 'Hero is not an actors.mobs.Mob and must not take the HUNTING transition');
+	});
 	check("Char.add()'s cleansing clause refuses every negative while it runs", () => {
 		//Java refuses NEGATIVE minus AllyBuff/LostInventory (both unmodeled here);
 		//positives still attach, and everything lands again once it lapses.
@@ -351,6 +399,13 @@ export function verifyCombat(require, check) {
 		assert.equal(frostEl.buffs.burning, undefined, 'burning must not attach to a frost elemental');
 		const burnLost = 60 - frostEl.hp;
 		assert.ok(burnLost >= 30 && burnLost <= 36, `frost backlash must deal 30-36, dealt ${burnLost}`);
+		assert.equal(facade.icyBuffImmune('elemental', 'frost', 'frost'), true);
+		assert.equal(facade.icyBuffImmune('elemental', 'frost', 'chill'), true);
+		assert.equal(facade.icyBuffImmune('elemental', 'fire', 'chill'), false);
+		facade.addBuff(frostEl, 'frost');
+		facade.addBuff(frostEl, 'chill');
+		assert.equal(frostEl.buffs.frost, undefined, 'ICY refuses Frost');
+		assert.equal(frostEl.buffs.chill, undefined, 'ICY refuses Chill');
 		const shockEl = base({ kind: 'elemental', elementalType: 'shock', hp: 60, maxHp: 60 });
 		facade.addBuff(shockEl, 'burning');
 		assert.notEqual(shockEl.buffs.burning, undefined, 'a shock elemental takes burning normally');
@@ -380,7 +435,7 @@ export function verifyCombat(require, check) {
 		facade.addBuff(pylon, 'burning');
 		assert.notEqual(pylon.buffs.burning, undefined, 'the Pylon still burns like Java');
 	});
-	check('ICY and ELECTRIC damage halves ride one shared gate per property', () => {
+	check('FIERY, ICY and ELECTRIC damage properties use the Java subtype matrix', () => {
 		//`Char.Property` resistances (tag `v3.3.8`): ICY halves `WandOfFrost` (only
 		//the frost elemental holds it); ELECTRIC halves `WandOfLightning`, `Shocking`,
 		//`Electricity`, `ShockingDart` and shock-sourced damage on the shock elemental,
@@ -389,6 +444,23 @@ export function verifyCombat(require, check) {
 		assert.equal(facade.icyDamageHalved('elemental', 'fire'), false);
 		assert.equal(facade.icyDamageHalved('elemental', undefined), false);
 		assert.equal(facade.icyDamageHalved('rat', undefined), false);
+		for (const [kind, type, fist, expected] of [
+			['elemental', 'fire', undefined, true], ['elemental', 'frost', undefined, false],
+			['elemental', 'shock', undefined, false], ['elemental', 'chaos', undefined, false],
+			['newbornElemental', undefined, undefined, true],
+			['yogFist', undefined, 'burning', true], ['yogFist', undefined, 'soiled', false],
+			['rat', undefined, undefined, false],
+		]) assert.equal(facade.fieryDamageHalved(kind, type, fist), expected, `${kind}/${type}/${fist}`);
+		assert.equal(facade.fieryResistedDamage(5, 'elemental', 'fire'), 3, 'FIERY rounds half damage once');
+		assert.equal(facade.fieryResistedDamage(5, 'elemental', 'frost'), 5, 'non-FIERY types keep the full hit');
+		assert.equal(facade.fieryElementalSourceDamage(5, 'elemental', 'fire', 'yogFist', undefined, 'burning'), 3,
+			'FireElemental source is halved on BurningFist');
+		assert.equal(facade.fieryElementalSourceDamage(5, 'newbornElemental', undefined, 'elemental', 'fire'), 3,
+			'NewbornFireElemental inherits the FireElemental source class');
+		assert.equal(facade.fieryElementalSourceDamage(5, 'elemental', 'frost', 'elemental', 'fire'), 5,
+			'FrostElemental source is not FireElemental-resisted');
+		assert.equal(facade.fieryElementalSourceDamage(5, 'elemental', 'fire', 'rat'), 5,
+			'ordinary targets have no FIERY resistance');
 		for (const [kind, type, fist, expected] of [
 			['elemental', 'shock', undefined, true], ['elemental', 'fire', undefined, false],
 			['dm100', undefined, undefined, true], ['pylon', undefined, undefined, true],
@@ -408,6 +480,27 @@ export function verifyCombat(require, check) {
 			'the blob Electricity seam halves every ELECTRIC holder, not just shock');
 		assert.ok(mobOnHitSource.includes("reigniteBuff(defender, 'burning')"),
 			'fire melee reignites Burning to full like Java affect+reignite');
+		const wandSource = readFileSync(new URL('../src/items/wandEffects.ts', import.meta.url), 'utf8');
+		assert.match(wandSource, /fieryResistedDamage\([\s\S]*victim\.kind, victim\.elementalType, victim\.yogFistType/,
+			'Fireblast damage must use FIERY resistance');
+		const resolution = readFileSync(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url), 'utf8');
+		assert.ok(resolution.includes('fieryElementalSourceDamage(damage, attacker.kind, attacker.elementalType'),
+			'FireElemental source resistance must apply on the normal melee damage seam');
+		const facadeSource = readFileSync(new URL('../src/combat.ts', import.meta.url), 'utf8');
+		assert.match(facadeSource, /fieryDamageHalved\(c\.kind, c\.elementalType, c\.yogFistType\) && id === 'burning'/,
+			'FIERY holders reject Burning');
+		for (const [file, source] of [
+			['environmentFireTraps.ts', trapSource],
+			['monsterAi.ts', readFileSync(new URL('../src/scenes/dungeon/monsters/monsterAi.ts', import.meta.url), 'utf8')],
+			//ElementalStrike chilling seeds the Freezing blob instead of writing Chill (see below).
+			['potionEffects.ts', readFileSync(new URL('../src/items/potionEffects.ts', import.meta.url), 'utf8')],
+		]) assert.ok(source.includes('icyBuffImmune('), `${file} direct Chill writes must honor ICY`);
+		//The Freezing-blob chill path carries the same gate for the seeded blob above.
+		assert.ok(trapSource.includes("applyChill: (target) => { if (applyElementalBacklash(target, 'chill') === 0 && !target.isNPC")
+			&& trapSource.includes("icyBuffImmune(target.kind, target.elementalType, 'chill')"),
+			'the Freezing-blob chill path honors backlash, NPC refusal and ICY');
+		const aiming = readFileSync(new URL('../src/scenes/dungeon/turnLoopAiming.ts', import.meta.url), 'utf8');
+		assert.ok(aiming.includes("!buffBlocked(victim, 'chill')"), 'FrostWand duration write must honor ICY');
 	});
 	check('setBleeding tracks source only alongside a winning (higher) level, like Bleeding.set()', () => {
 		const bleeder = base();
@@ -858,82 +951,37 @@ export function verifyCombat(require, check) {
 		assert.deepEqual(explosiveTrapBounds(1), [5, 15]);
 		assert.deepEqual(explosiveTrapBounds(20), [24, 72]);
 	});
-	check('attack() presents swings and misses through its T61 seams', () => {
-		// T61 slices 1-2 moved attack() presentation out of the resolution body
-		// into named seams; the pins guard the seam contents and the call sites
-		// (the parry-interleaved main-miss pair stays inline on purpose).
-		const scene = readSceneSource();
-		assert.ok(scene.includes('presentAttackSwing(this: DungeonScene, attacker: Creature, defender: Creature): void'),
-			'the swing prelude lives in its own seam');
-		assert.ok(scene.includes('this.presentAttackSwing(attacker, defender);'),
-			'attack() opens through the swing seam');
-		assert.ok(scene.includes('presentAttackMiss(this: DungeonScene, attacker: Creature, subject: string, object: string): void'),
-			'the miss cue-plus-log lives in its own seam');
-		assert.ok(scene.includes('this.presentAttackMiss(attacker, subject, object);'),
-			'the afterImage and spiritHawk gates present through the miss seam');
-		assert.ok(scene.includes('scaleAttackDamage(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): number'),
-			'the pre-proc damage adjustments live in their own seam');
-		assert.ok(scene.includes('let damage = this.scaleAttackDamage(attacker, defender, attackRoll.damage);'),
-			'a landed hit scales through the damage seam');
-		assert.ok(scene.includes('isCharmedToward(this: DungeonScene, attacker: Creature, defender: Creature): boolean'),
-			'the charm pairing is one shared predicate, read pre-proc for the decay');
-		assert.ok(scene.includes('armStrikeAffix(this: DungeonScene, attacker: Creature, damage: number): number'),
-			'the Unstable/Kinetic arming lives in its own seam');
-		assert.ok(scene.includes('damage = this.armStrikeAffix(attacker, damage);'),
-			'a landed hit arms through the affix seam');
-		assert.ok(scene.includes('applyHeroTalentBonuses(this: DungeonScene, attacker: Creature, defender: Creature, surprise: boolean, damage: number): number'),
-			'the hero talent-bonus chain lives in its own seam');
-		assert.ok(scene.includes('damage = this.applyHeroTalentBonuses(attacker, defender, surprise, damage);'),
-			'a landed hit bonuses through the talent seam');
-		assert.ok(scene.includes('applyWeaponAffixProcs(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): number'),
-			'the weapon-affix procs live in their own seam');
-		assert.ok(scene.includes('damage = this.applyWeaponAffixProcs(attacker, defender, damage);'),
-			'a landed hit procs through the affix seam');
-		assert.ok(scene.includes('applyDefenderGlyphProcs(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): { damage: number; consumed: boolean }'),
-			'the defender glyph procs live in their own seam');
-		assert.ok(scene.includes('const glyphOut = this.applyDefenderGlyphProcs(attacker, defender, damage);'),
-			'a landed hit glyphs through the defender seam');
-		assert.ok(scene.includes('if (glyphOut.consumed) return false;'),
-			'the Displacement consume still exits attack at the same point');
-		assert.ok(scene.includes('openLandedHit(this: DungeonScene, attacker: Creature, defender: Creature, surprise: boolean, damage: number): number'),
-			'the landed-hit prelude lives in its own seam');
-		assert.ok(scene.includes('damage = this.openLandedHit(attacker, defender, surprise, damage);'),
-			'a landed hit opens through the prelude seam');
-		assert.ok(scene.includes('applyPostCurveAbsorbs(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): number'),
-			'the post-curve absorbs live in their own seam');
-		assert.ok(scene.includes('damage = this.applyPostCurveAbsorbs(attacker, defender, damage);'),
-			'a landed hit absorbs through the post-curve seam');
-		assert.ok(scene.includes('applyHeroDefense(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): { damage: number; capeRetaliation: number }'),
-			'the hero-defense block lives in its own seam');
-		assert.ok(scene.includes('const heroOut = this.applyHeroDefense(attacker, defender, damage);'),
-			'a landed hit defends through the hero seam');
-		assert.ok(scene.includes('applyBossSoaks(this: DungeonScene, defender: Creature, damage: number): { damage: number; finished: boolean }'),
-			'the boss soaks live in their own seam');
-		assert.ok(scene.includes('const soakOut = this.applyBossSoaks(defender, damage);'),
-			'a landed hit soaks through the boss seam');
-		assert.ok(scene.includes('applyExecutesAndDamage(this: DungeonScene, attacker: Creature, defender: Creature, phantomRemote: boolean, damage: number): { damage: number; heroExecuted: boolean; finished: boolean }'),
-			'the executes and HP write live in their own seam');
-		assert.ok(scene.includes('const execOut = this.applyExecutesAndDamage(attacker, defender, phantomRemote, damage);'),
-			'a landed hit executes through the damage seam');
-		assert.ok(scene.includes('runBossDamageHooks(this: DungeonScene, defender: Creature, preHp: number): void'),
-			'the boss post-damage hooks live in their own seam');
-		assert.ok(scene.includes('this.runBossDamageHooks(defender, preHp);'),
-			'a landed hit hooks through the boss seam');
-		assert.ok(scene.includes('presentLandedHit(this: DungeonScene, attacker: Creature, defender: Creature, surprise: boolean, subject: string, object: string, damage: number): void'),
-			'the post-hit presentation lives in its own seam');
-		assert.ok(scene.includes('this.presentLandedHit(attacker, defender, surprise, subject, object, damage);'),
-			'a landed hit presents through the post-hit seam');
-		assert.ok(scene.includes('runOnHitHooks(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): void'),
-			'the on-hit dispatch lives in its own seam');
-		assert.ok(scene.includes('this.runOnHitHooks(attacker, defender, damage);'),
-			'a landed hit dispatches through the on-hit seam');
-		assert.ok(scene.includes('runHitRiders(this: DungeonScene, attacker: Creature, defender: Creature, damage: number, charmedForTarget: boolean): void'),
-			'the post-hit riders live in their own seam');
-		assert.ok(scene.includes('this.runHitRiders(attacker, defender, damage, charmedForTarget);'),
-			'a landed hit rides through the rider seam');
-		assert.ok(scene.includes('resolveAttackDeath(this: DungeonScene, attacker: Creature, defender: Creature, damage: number, preHp: number, heroExecuted: boolean, capeRetaliation: number): boolean'),
-			'the death resolution lives in its own seam');
-		assert.ok(scene.includes('return this.resolveAttackDeath(attacker, defender, damage, preHp, heroExecuted, capeRetaliation);'),
-			'a landed hit resolves death through the death seam');
+	check('Burning chars ignite flammable ground at Fire volume 4', () => {
+		// `Burning.act()`'s ground-ignition tail (`actors/buffs/Burning.java`, tag
+		// `v3.3.8`): a flammable cell with zero fire volume seeds `Fire` at volume 4,
+		// even on the tick the buff detaches - so both tick sites gate on their
+		// pre-tick flag, not the current buff map. Keep these source-level pins beside
+		// the pure combat checks because the scene owns the actual blob writes.
+		const heroTurn = readFileSync(new URL('../src/scenes/dungeon/turnLoopAiming.ts', import.meta.url), 'utf8');
+		assert.ok(heroTurn.includes("if (burning && (this.isFireFlammableTerrain(this.hero.x, this.hero.y)"),
+			'hero ignition gates on the pre-tick burning flag and the flammable predicate');
+		assert.ok(heroTurn.includes('this.fire.volumeAt(this.hero.x, this.hero.y) === 0'),
+			'hero ignition requires zero existing fire volume');
+		assert.ok(heroTurn.includes('this.fire.seed(this.hero.x, this.hero.y, 4)'),
+			'hero ignition seeds Fire at volume 4');
+		const mobTurn = readFileSync(new URL('../src/scenes/dungeon/actorTurnsHazards.ts', import.meta.url), 'utf8');
+		assert.ok(mobTurn.includes("if (monsterWasBurning && (this.isFireFlammableTerrain(monster.x, monster.y)"),
+			'monster ignition gates on the pre-tick burning flag and the flammable predicate');
+		assert.ok(mobTurn.includes('this.fire.volumeAt(monster.x, monster.y) === 0'),
+			'monster ignition requires zero existing fire volume');
+		assert.ok(mobTurn.includes('this.fire.seed(monster.x, monster.y, 4)'),
+			'monster ignition seeds Fire at volume 4');
+	});
+
+	check('fireWandShot tells creatures from cells without the in operator', () => {
+		//Creature flag fields are sparse (the hero carries `isHero: true`, ordinary
+		//monsters omit every false-valued flag), so `'isHero' in target` is false for
+		//every mob and every zap aimed at one would fizzle with an empty victim list.
+		//A `Step` is only `{x, y}`; a creature always carries numeric HP.
+		const aiming = readFileSync(new URL('../src/scenes/dungeon/turnLoopAiming.ts', import.meta.url), 'utf8');
+		assert.ok(aiming.includes("typeof (target as Creature).hp === 'number'"),
+			'the zap target discriminant reads numeric HP, not flag presence');
+		assert.ok(!aiming.includes("'isHero' in target ? target"),
+			'no presence check on sparse flag fields remains in the zap path');
 	});
 }

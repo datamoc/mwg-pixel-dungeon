@@ -1,5 +1,5 @@
 import { Random, Roguelike, type Actors } from 'mwg';
-import { addBuff, reigniteBuff, type Creature, type Step } from '../combat';
+import { addBuff, BUFF_DURATION, reigniteBuff, type Creature, type Step } from '../combat';
 import { t } from '../i18n';
 import { mwlItemEffectValue } from '../mwlContent';
 
@@ -46,7 +46,6 @@ export interface StoneContext {
 	readonly isFlammableTerrain: (x: number, y: number) => boolean;
 	readonly burnFlammableTerrain: (x: number, y: number) => void;
 	readonly explodeGroundItem: (x: number, y: number) => void;
-	readonly kill: (target: Creature) => void;
 	readonly openItemPicker: (title: string, items: StonePickerEntry[], onPick: (entry: StonePickerEntry) => void) => void;
 	readonly rollAffix: (kind: 'weapon' | 'armor') => string | undefined;
 	readonly curseOf: (affix: string) => string | undefined;
@@ -132,18 +131,36 @@ export function useStoneOfFlock(scene: StoneContext, instanceId?: string): void 
 	scene.say(t('port.log.stoneflock', { count }), 'positive');
 }
 
-/** StoneOfAggression.activate(): apply the ordinary or boss-duration aggression buff. */
+/**
+ * `Runestone.onThrow()`/`StoneOfAggression.activate(cell)` (tag `v3.3.8`): select a map cell,
+ * consume the stone on confirmation, then `Buff.prolong()` Aggression on whichever character
+ * occupies that cell. Java has no hostility/visibility filter here; only BOSS/MINIBOSS targets
+ * use the quarter-duration. `Buff.prolong()` postpones to at least that duration, so use the
+ * max-preserving buff seam rather than resetting a longer active mark. The localized log lines
+ * below keep empty/occupied throws observable in this UI, where Java uses only cell specks and
+ * the READ sample.
+ */
 export function useStoneOfAggression(scene: StoneContext, instanceId?: string): void {
-	scene.bag.remove('stoneOfAggression', 1, instanceId);
-	scene.armRecallInscription('StoneOfAggression');
-	const target = scene.nearestVisibleEnemy(stoneValue('targetRange'));
-	if (!target) {
-		scene.say(t('port.log.stonewasted'), 'negative');
-		return;
-	}
-	addBuff(target, 'aggression');
-	if (target.boss === true || target.miniboss === true) target.buffs.aggression = stoneValue('aggressionBossDuration');
-	scene.say(t('port.log.stoneaggression', { target: target.name }), 'positive');
+	scene.beginAiming({
+		range: stoneValue('targetRange'),
+		onConfirm: (cell) => {
+			scene.bag.remove('stoneOfAggression', 1, instanceId);
+			scene.armRecallInscription('StoneOfAggression');
+			const target = scene.creatureAt(cell.x, cell.y);
+			if (!target) {
+				scene.say(t('port.log.stonewasted'), 'negative');
+				return;
+			}
+			const duration = target.boss === true || target.miniboss === true
+				? stoneValue('aggressionBossDuration')
+				: undefined;
+			const requested = duration ?? BUFF_DURATION.aggression;
+			//`Buff.prolong()` delegates to Actor.postpone(), so a fresh mark is applied only
+			//when its requested end time exceeds the active one; never shorten a longer mark.
+			if ((target.buffs.aggression ?? 0) < requested) addBuff(target, 'aggression', duration);
+			scene.say(t('port.log.stoneaggression', { target: target.name }), 'positive');
+		},
+	});
 }
 
 /** StoneOfAugmentation: consume the stone and open the scene's augment-choice UI. */
@@ -268,7 +285,11 @@ export function useStoneOfBlast(scene: StoneContext, instanceId?: string): void 
 					stoneValue('blastMinBase') + stoneValue('blastMinPerDepth') * scene.depth,
 					stoneValue('blastMaxBase') + stoneValue('blastMaxPerDepth') * scene.depth,
 				));
-				scene.applyCharacterDamage(creature, damage, creature.isHero === true);
+				if (creature.isHero) {
+					scene.applyCharacterDamage(creature, damage, true);
+				} else {
+					scene.applyCharacterDamage(creature, damage, false);
+				}
 				hits++;
 			}
 			scene.say(t('port.log.stoneblast', { count: hits }), hits > 0 ? 'positive' : 'negative');

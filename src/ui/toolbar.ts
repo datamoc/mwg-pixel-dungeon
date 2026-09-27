@@ -143,6 +143,7 @@ export class SpdToolbar extends Container {
 	setArmorAbility(label: string | null): boolean {
 		const changed = this.armorAbilityButton.visible !== (label !== null) || this.armorAbilityLabel !== label;
 		if (label !== null) this.armorAbilityButton.setText(label);
+		this.armorAbilityLabel = label;
 		this.armorAbilityButton.visible = label !== null;
 		this.actions.visible = this.preparationButton.visible || this.armorAbilityButton.visible
 			|| this.quickslots.some((button) => button.visible);

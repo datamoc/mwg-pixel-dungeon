@@ -9,11 +9,91 @@ import { GROUND_ITEM_KEYS, MOB_KEYS, REGION_KEYS, capitalize, has, t } from '../
 import { lethalHasteDuration, soulSiphonCharge } from '../../talentEffects';
 import { SpdRandom } from '../../spdRng';
 import { runState } from '../../runState';
+import { recordRun } from '../../rankings';
+import { isChallengeEnabled } from '../../challenges';
+import { PRISMATIC_FADE_TURNS } from '../../simulation/prismatic';
+import { shieldOfLightRange } from '../../simulation/clericSpells';
+import { absorbEarthrootArmor } from '../../simulation/plantPools';
+import { mobLootChance } from '../../simulation/mobLoot';
+import { SKELETON_BONE_NEIGHBOURS, skeletonBoneEarthrootDamage, skeletonBoneExplosionDamage, skeletonBoneShieldOfLightDamage } from '../../simulation/skeletonExplosion';
+import { CLASS_AMMO } from '../../classes';
+import { applyDM300DeathUnseal, applyGooDeathUnseal, applyKingDeathUnseal, applyYogDeathUnseal } from '../bossUnseal';
+import { processSacrifice } from '../../simulation/environmentalBlobs';
+import { buildYogMinionDeck, chooseYogSpawnCell } from '../../simulation/yogBoss';
+import { deathBurstsFor } from '../../simulation/deathBursts';
+import { colorblind, highContrast } from '../../settings';
+import { ringTypesKnownFor } from '../../simulation/ringKnow';
+import { staffImbueFor } from '../../items/wands';
+import { Banner } from '../../ui/banner';
 import { bruteLootArmor, randomArmor, randomUsingDefaultsAnyCategory, type GenItem } from '../../items/generator';
 import { generatedInventoryItem } from '../../items/generatedItems';
-import { mobLootChance } from '../../simulation/mobLoot';
 import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type WealthTrackers } from '../../items/wealthDrops';
+import { wandmakerQuestType, wandmakerQuestWands } from '../../spdLevelGen/wandmaker';
+import { FLOOR, TILE, WALL, WATER, WATERSKIN_MAX } from '../../dungeonConstants';
+import { regionForDepth } from '../../genericDungeon';
+import { BUFF_DURATION, addBuff, buffBlocked, doomDamage, reigniteBuff, rollHit, type BuffId, type Creature, type GroundItem } from '../../combat';
+import { BOSSES, BOSS_KINDS, LIMITED_DROP_DECAY, MINIBOSS_KINDS, MOB_LOOT, MONSTERS, type AnyMonsterId, type MonsterId } from '../../monsters';
+import { ASCENSION_MOD } from '../../simulation/combat';
+import { SPD_LEVEL_CURVE, isStatueLoot } from './shared';
 
+/** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `deathSaveRefresh`). Each takes the scene as 	his`;
+ * `dungeonScene.ts` merges them back onto the class prototype. */
+export const deathSaveRefreshMethods = {
+	/** `Skeleton.die()`'s bone explosion (tag `v3.3.8`): every living character in Java's
+	 * `PathFinder.NEIGHBOURS8` order gets a fresh 6..12 roll, then its direct Earthroot,
+	 * ShieldOfLight and HolyWard reductions, then two defender armor rolls. The shared blast
+	 * seam supplies remaining mob damage/death handling; the hero boundary supplies barriers,
+	 * AuraOfProtection and death saves without repeating the direct Earthroot/HolyWard hooks.
+	 * **Divergences:** AscensionChallenge has no run-state here; the target-health-indicator
+	 * talent branch has no target-indicator state. Java's second RockArmor ratio-rounding pass
+	 * can zero an odd hit discontinuously; the port keeps LivingEarth's ordinary half-block once
+	 * rather than reproducing that bug. */
+	skeletonBoneExplosion(this: DungeonScene, skeleton: Creature, cause: 'foe' | 'trap' | 'fire' | 'poison' | 'hunger' | 'falling'): void {
+		if (cause === 'falling') return;
+		let heroKilled = false;
+		for (const [dx, dy] of SKELETON_BONE_NEIGHBOURS) {
+			const target = this.creatureAt(skeleton.x + dx, skeleton.y + dy);
+			if (!target || target.hp <= 0) continue;
+			let raw = Random.normalRange(6, 12);
+			//`Skeleton.die()` explicitly doubles Earthroot's flat absorb. Java does this
+			//before drRoll(); mob direct-damage normally bypasses `defenseProc`, so handle
+			//each target's plant pool here. The hero's common boundary is told to skip its
+			//single-hit Earthroot pass after this Java-specific double application.
+			if (target.isHero && this.earthrootArmor) {
+				if (this.earthrootArmor.pos !== this.level.index(target.x, target.y)) this.earthrootArmor = null;
+				else if (raw > 0) {
+					const blocked = Math.min(raw, this.earthrootBlocking());
+					this.earthrootArmor.level -= blocked;
+					raw = skeletonBoneEarthrootDamage(raw, blocked);
+					if (this.earthrootArmor.level <= 0) this.earthrootArmor = null;
+				}
+			} else if (!target.isHero && target.earthrootArmorLevel !== undefined) {
+				const absorbed = absorbEarthrootArmor(target.earthrootArmorLevel, raw,
+					this.earthrootBlocking(), this.level.index(target.x, target.y) !== target.earthrootArmorPos);
+				if (absorbed.level === null) {
+					delete target.earthrootArmorLevel;
+					delete target.earthrootArmorPos;
+				} else target.earthrootArmorLevel = absorbed.level;
+				if (absorbed.damage !== raw) raw = skeletonBoneEarthrootDamage(raw, raw - absorbed.damage);
+			}
+			//`Skeleton.die()`'s direct ShieldOfLightTracker branch is separate from the
+			//ordinary attackProc path: two rolls, then one clamp, before Char.damage().
+			if (!target.magicImmune && target.isHero && target.buffs['shieldOfLight'] !== undefined
+				&& target.shieldOfLightTarget === skeleton.id) {
+				const [min, max] = shieldOfLightRange(this.talentRank('shield_of_light'));
+				raw = skeletonBoneShieldOfLightDamage(raw, Random.normalRange(min, max), Random.normalRange(min, max));
+			}
+			if (!target.magicImmune && target.buffs['holyWard'] !== undefined) {
+				raw -= this.subclass() === 'paladin' ? 6 : 2;
+			}
+			const damage = skeletonBoneExplosionDamage(raw,
+				Random.normalRange(target.armor[0], target.armor[1]),
+				Random.normalRange(target.armor[0], target.armor[1]));
+			if (target.isHero) {
+				const dealt = this.absorbHeroDamage(damage, false, false, { skipEarthroot: true, skipHolyWard: true });
+				target.hp -= dealt;
+				this.showDamage(target, dealt);
+				if (target.hp <= 0) {
 					this.kill(target, 'foe');
 					heroKilled = true;
 				}
@@ -262,6 +342,12 @@ import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type Wealt
 			const def = MONSTERS[creature.kind];
 			const isClone = creature.kind === 'swarm' && (creature.generation ?? 0) > 0;
 			//`noExp` is a `maxLvl = -2` summon (the King's servants): neither XP nor
+			//loot, in every phase - Java's `hero.lvl <= maxLvl` and `lvl > maxLvl+2`
+			//gates both fail unconditionally at -2.
+			if (!isClone && creature.noExp !== true && this.progression.level <= def.maxLvl) this.grantExperience(def.exp);
+			if (this.subclass() === 'warlock' && this.talentRank('soul_eater') > 0) {
+				const heal = this.talentRank('soul_eater');
+				this.hero.hp = Math.min(this.hero.maxHp, this.hero.hp + heal);
 				this.showHeal(this.hero, heal);
 			}
 			this.wandCharges.refund(soulSiphonCharge(this.subclass(), this.talentRank('soul_siphon')));
@@ -846,6 +932,13 @@ import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type Wealt
 				//or Dark's `Light.weaken(50)` (no light model here). A lethal zap on the
 				//hero validates the enemy-magic death badge in Java; this port's death
 				//causes have no magic bucket (electric kills already land in `foe`), so
+				//both land there too - stated, not silent.
+				let dealt = Random.normalRange(10, 20);
+				if (target.isHero) dealt = this.absorbHeroDamage(dealt, true);
+				else dealt = doomDamage(dealt, target);
+				target.hp -= dealt;
+				this.showDamage(target, dealt);
+				if (type === 'bright') addBuff(target, 'daze');
 				this.say(t('port.log.bolthits', { who: capitalize(fist.name), damage: dealt }), 'negative');
 				if (target.hp <= 0) this.kill(target);
 				return true;
@@ -1098,6 +1191,14 @@ import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type Wealt
 		}
 		//a stacked heap draws only its top entry (`Heap.peek()`), the last one at each cell
 		const heapTops = new Map<number, typeof this.groundItems[number]>();
+		for (const item of this.groundItems) heapTops.set(this.level.index(item.x, item.y), item);
+		for (const item of this.groundItems) {
+			this.sprite(item).visible = heapTops.get(this.level.index(item.x, item.y)) === item && this.fov.isExplored(item.x, item.y);
+			//`Bomb.glowing()` (`items/bombs/Bomb.java`, tag `v3.3.8`): keep lit fuses red
+			//through FOV/heap refreshes; an armed Noisemaker stays lit after its fuse is spent.
+			const litBomb = item.kind === 'bomb' && (item.item?.fuseTurns !== undefined || item.item?.noisemakerArmed === true);
+			this.sprite(item).tint = litBomb ? 0xff4444 : 0xffffff;
+		}
 
 		const boss = BOSSES[this.depth];
 		const region = regionForDepth(this.depth);
@@ -1227,6 +1328,22 @@ import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type Wealt
 			let bar = this.healthBars.get(creature);
 			if (!show) {
 				if (bar) bar.visible = false;
+				continue;
+			}
+			if (!bar) {
+				//Port-original accessibility work (ROADMAP.md section 8 - Java's bar is
+				//green-on-red, so both colorblind and highcontrast swaps are port-owned):
+				//colorblind uses the palette's Okabe-Ito pair; highcontrast uses its cyan/magenta
+				//pair and takes precedence. Read once at bar creation, matching per-creature
+				//caching; a mid-run toggle only affects bars created after it.
+				bar = new Bar({
+					width: TILE * (4 / 6),
+					height: 1,
+					color: highContrast() ? 0x00ffff : colorblind() ? 0x009e73 : 0x00ee00,
+					background: highContrast() ? 0xff00ff : colorblind() ? 0xd55e00 : 0xcc0000,
+					roundUpToPixel: true,
+				});
+				this.healthBars.set(creature, bar);
 				this.camera.world.addChild(bar);
 			}
 			bar.visible = true;
@@ -1326,6 +1443,12 @@ import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type Wealt
 			weaponCharge: this.weaponCharge,
 			weaponPartialCharge: this.weaponPartialCharge,
 			spinSpins: this.spinSpins,
+			spinTurns: this.spinTurns,
+			cleaveFreeTurns: this.cleaveFreeTurns,
+			guardTurns: this.guardTurns,
+			swordDanceTurns: this.swordDanceTurns,
+			defensiveStanceTurns: this.defensiveStanceTurns,
+			chargedShotArmed: this.chargedShotArmed,
 			clAbilityWeaponClass: this.clAbilityWeaponClass,
 			clAbilityWeaponInstanceId: this.clAbilityWeaponInstanceId,
 			clAbilityTurns: this.clAbilityTurns,
@@ -1414,6 +1537,16 @@ import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type Wealt
 			ascendedSpellCasts: this.ascendedSpellCasts,
 			ascendedFlashCasts: this.ascendedFlashCasts,
 			ascendedDivineCast: this.ascendedDivineCast,
+			trinityForm: this.trinityForm,
+			trinityTurns: this.trinityTurns,
+			trinityBodyAffix: this.trinityBodyAffix,
+			trinityBodyGlyph: this.trinityBodyGlyph,
+			trinitySpiritEffect: this.trinitySpiritEffect,
+			trinityMindEffect: this.trinityMindEffect,
+			skeletonKeyTracker: this.skeletonKeyTracker,
+			livingEarthArmor: this.livingEarthArmor,
+			livingEarthWandLevel: this.livingEarthWandLevel,
+			earthrootArmorLevel: this.earthrootArmor?.level ?? 0,
 			earthrootArmorPos: this.earthrootArmor?.pos ?? -1,
 				barkskinLevel: this.hero.barkskinLevel,
 				barkskinInterval: this.hero.barkskinInterval,
@@ -1423,6 +1556,13 @@ import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type Wealt
 			barrierPartialLoss: this.barrierPartialLoss,
 			regenPartial: this.regeneration.partial,
 			lockedFloorLeft: this.regeneration.lockLeft,
+			blockingBarrierState: this.blockingBarrier.toJSON(),
+			blockingTurnsLeft: this.blockingTurnsLeft,
+			sealBarrierState: this.sealBarrier.toJSON(),
+			sealPartialGain: this.sealPartialGain,
+			armorSealed: this.armorSealed,
+			stealthTalentTicks: this.stealthTalentTicks,
+			empoweredZaps: this.empoweredZaps,
 			enhancedRingsTurns: this.enhancedRingsTurns,
 			seerShotCooldown: this.seerShotCooldown,
 			seerCells: [...this.seerCells],
@@ -1443,6 +1583,13 @@ import { initialiseWealthTrackers, planWealthDrops, wealthEquipBonus, type Wealt
 			sungrassHealing: this.sungrassHealing,
 			sungrassPartial: this.sungrassPartial,
  			healingLeft: this.healingLeft,
+ 			healingPercent: this.healingPercent,
+ 			healingFlat: this.healingFlat,
+			sungrassPos: this.sungrassPos,
+			deathlessFuryUsed: this.deathlessFuryUsed,
+			alchemyEnergy: this.alchemyEnergy,
+			weaponAffix: this.weaponAffix,
+			weaponCurseDurability: this.weaponCurseDurability,
 			weaponAugment: this.weaponAugment,
 			charmTargets: [...this.charmTargets.entries()],
 			charmIgnoreNextHit: [...this.charmIgnoreNextHit],

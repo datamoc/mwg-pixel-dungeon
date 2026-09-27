@@ -14,6 +14,12 @@ export class WaterSurface extends Container {
 		this.rippleTexture = new Texture({ source: effects.source, frame: new Rectangle(0, 0, 16, 16) });
 		for (let y = 0; y < rows; y++) for (let x = 0; x < columns; x++) if (isWater(x, y)) {
 			const tile = new TilingSprite({ texture, width: 16, height: 16 });
+			//Pure visuals must never capture pointer hits: the container's own
+			//'none' does not disable its children, so an interactive-default tile
+			//sits above the map TileMap in hit order and swallows every tap on its
+			//cell (the hero could never be tapped onto water - found by the T52 bot,
+			//2026-09-26). Opt every child out explicitly.
+			tile.eventMode = 'none';
 			tile.position.set(x * 16, y * 16); tile.tilePosition.set(-x * 16, -y * 16); tile.visible = false;
 			this.cells.set(x + y * columns, tile); this.addChild(tile);
 		}
@@ -24,7 +30,7 @@ export class WaterSurface extends Container {
 	}
 	ripple(x: number, y: number): void {
 		if (!this.cells.get(x + y * this.columns)?.visible) return;
-		const sprite = new Sprite(this.rippleTexture); sprite.anchor.set(0.5); sprite.position.set(x * 16 + 8, y * 16 + 8);
+		const sprite = new Sprite(this.rippleTexture); sprite.eventMode = 'none'; sprite.anchor.set(0.5); sprite.position.set(x * 16 + 8, y * 16 + 8);
 		sprite.scale.set(0); this.addChild(sprite); this.ripples.push({ sprite, age: 0 });
 	}
 	update(dt: number): void {

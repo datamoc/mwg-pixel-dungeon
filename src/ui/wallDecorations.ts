@@ -52,6 +52,7 @@ export class WallDecorationLayer extends Container {
 		this.kind = kind;
 		this.spots = cells.map((cell) => {
 			const emitter = new ParticleEmitter(decorationOptions(kind));
+			emitter.eventMode = 'none';
 			emitter.position.set(cell.x * TILE + TILE / 2, cell.y * TILE + TILE / 2 + (kind === 'sink' ? 3 : kind === 'torch' ? 2 : 0));
 			this.addChild(emitter);
 			return { ...cell, emitter, glow: null, visible: false };
@@ -62,7 +63,7 @@ export class WallDecorationLayer extends Container {
 				const glow = new Graphics()
 					.circle(0, 0, 10)
 					.fill({ color: 0xffffcc, alpha: 0.18 });
-				glow.position.set(spot.x * TILE + TILE / 2, spot.y * TILE + TILE / 2);
+				glow.position.set(spot.x * TILE + TILE / 2, spot.y * TILE + TILE / 2); glow.eventMode = 'none';
 				glow.visible = false;
 				this.addChild(glow);
 				spot.glow = glow;
@@ -173,7 +174,7 @@ export class WellRippleLayer extends Container {
 	constructor(cells: { x: number; y: number }[]) {
 		super();
 		this.wells = cells.map((cell, index) => {
-			const gfx = new Graphics();
+			const gfx = new Graphics(); gfx.eventMode = 'none';
 			this.addChild(gfx);
 			return { ...cell, phase: (index * 0.37) % 1.2, gfx };
 		});

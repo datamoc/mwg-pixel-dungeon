@@ -34,13 +34,15 @@ const approx = (actual, expected) => {
 
 try {
 	writeFileSync(join(output, 'package.json'), '{"type":"commonjs"}');
-	for (const file of ['ui/buffOverlays', 'simulation/buffs', 'simulation/mwlBuffDurations', 'simulation/mwlMonsterImmunities', 'settings']) {
+	for (const file of ['ui/buffOverlays', 'ui/doomSprite', 'simulation/buffs', 'simulation/mwlBuffDurations', 'simulation/mwlMonsterImmunities', 'settings']) {
 		compile(new URL(`../src/${file}.ts`, import.meta.url), `${file}.js`);
 	}
 	const require = createRequire(join(output, 'tests.cjs'));
 	const { buffIconText, buffIconTextColor, buffIconFade, BUFF_TEXT_POSITIVE, BUFF_TEXT_NEGATIVE,
-		BUFF_TEXT_POSITIVE_COLORBLIND, BUFF_TEXT_NEGATIVE_COLORBLIND } = require('./ui/buffOverlays');
+		BUFF_TEXT_POSITIVE_COLORBLIND, BUFF_TEXT_NEGATIVE_COLORBLIND,
+		BUFF_TEXT_POSITIVE_HIGH_CONTRAST, BUFF_TEXT_NEGATIVE_HIGH_CONTRAST } = require('./ui/buffOverlays');
 	const settings = require('./settings');
+	const { syncDoomSpriteTint } = require('./ui/doomSprite');
 
 	check('flavour buffs show remaining turns plus one', () => {
 		//Java's `(int)visualcooldown()` with `visualcooldown() == cooldown() + 1`
@@ -68,6 +70,32 @@ try {
 		for (const id of ['charm', 'recharging', 'haste']) assert.equal(buffIconText(id, 4), '5');
 	});
 
+	check('Doom darkens sprites once, tracks later tint changes, and restores them on detach', () => {
+		const sprite = { tint: 0xff8800 };
+		syncDoomSpriteTint(sprite, true);
+		assert.equal(sprite.tint, 0x663600);
+		syncDoomSpriteTint(sprite, true);
+		assert.equal(sprite.tint, 0x663600, 'repeated updates must not compound the darkening');
+		sprite.tint = 0x4488cc;
+		syncDoomSpriteTint(sprite, true);
+		assert.equal(sprite.tint, 0x1b3652, 'new sprite effects retain their own color beneath Doom');
+		syncDoomSpriteTint(sprite, false);
+		assert.equal(sprite.tint, 0x4488cc, 'removing Doom restores the latest non-Doom tint');
+	});
+
+	check('Frozen composes with Doom darkening instead of fighting it', () => {
+		//`Challenge.SpectatorFreeze.fx()` darkens like `Doom.fx()` (tag `v3.3.8`).
+		const { syncFrozenSpriteTint } = require('./ui/doomSprite');
+		const sprite = { tint: 0xff8800 };
+		syncDoomSpriteTint(sprite, true);
+		assert.equal(sprite.tint, 0x663600);
+		syncFrozenSpriteTint(sprite, true);
+		assert.equal(sprite.tint, 0x663600, 'a second reason keeps the same darkening');
+		syncDoomSpriteTint(sprite, false);
+		assert.equal(sprite.tint, 0x663600, 'one remaining reason keeps the darkening');
+		syncFrozenSpriteTint(sprite, false);
+		assert.equal(sprite.tint, 0xff8800, 'the last reason restores the base tint');
+	});
 	check('the cleric trackers show the standard flavour countdown', () => {
 		//ShieldOfLightTracker, DivineSenseTracker and UsedItemTracker are FlavourBuffs
 		//with no iconTextDisplay() override (tag v3.3.8).
@@ -127,6 +155,23 @@ try {
 		assert.equal(buffIconTextColor('bless'), BUFF_TEXT_POSITIVE_COLORBLIND);
 		assert.equal(buffIconTextColor('hex'), BUFF_TEXT_NEGATIVE_COLORBLIND);
 		settings.setColorblind(false);
+		assert.equal(buffIconTextColor('hex'), BUFF_TEXT_NEGATIVE);
+	});
+
+	check('highcontrast swaps the buff text tint and wins over colorblind', () => {
+		settings.setSettingsStore({ map: new Map(), getItem(k) { return this.map.get(k) ?? null; }, setItem(k, v) { this.map.set(k, v); } });
+		assert.equal(BUFF_TEXT_POSITIVE_HIGH_CONTRAST, 0x00ffff);
+		assert.equal(BUFF_TEXT_NEGATIVE_HIGH_CONTRAST, 0xff00ff);
+		settings.setHighContrast(true);
+		assert.equal(buffIconTextColor('bless'), BUFF_TEXT_POSITIVE_HIGH_CONTRAST);
+		assert.equal(buffIconTextColor('hex'), BUFF_TEXT_NEGATIVE_HIGH_CONTRAST);
+		settings.setColorblind(true);
+		assert.equal(buffIconTextColor('bless'), BUFF_TEXT_POSITIVE_HIGH_CONTRAST);
+		assert.equal(buffIconTextColor('hex'), BUFF_TEXT_NEGATIVE_HIGH_CONTRAST);
+		settings.setHighContrast(false);
+		assert.equal(buffIconTextColor('bless'), BUFF_TEXT_POSITIVE_COLORBLIND);
+		settings.setColorblind(false);
+		settings.setHighContrast(false);
 		assert.equal(buffIconTextColor('hex'), BUFF_TEXT_NEGATIVE);
 	});
 

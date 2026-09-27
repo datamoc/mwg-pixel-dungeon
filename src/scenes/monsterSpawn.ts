@@ -26,6 +26,16 @@ export type AllyKind = 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' |
 export function allyIdentityColorAdd(isAlly: boolean | undefined, allyKind: string | undefined): number {
 	if (!isAlly) return 0;
 	switch (allyKind) {
+		case 'sheep': return 0xdddddd;
+		case 'earthGuardian': return 0x997744;
+		case 'lotus': return 0x55aa66;
+		//`ShadowSprite` is a black silhouette (`ShadowClone.java`'s `resetColor()`), so its
+		//identity tint must not add blue back over `silhouette(0x000000)`.
+		case 'shadowClone': return 0;
+		//`mirror`/`ghost`/`ninjaLog`/`spiritHawk`/`afterImage` and any future ally
+		//kind all share this one default, exactly as the original inline ternary did.
+		default: return 0x5577aa;
+	}
 }
 
 /** `ChampionEnemy.java`'s own per-type `color` field, in its declaration order - see

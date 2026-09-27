@@ -4,6 +4,7 @@ import { planDisintegration } from '../simulation/disintegration';
 import { preservationChance } from '../talentEffects';
 import { SOLID } from '../dungeonConstants';
 import type { Creature, Step } from '../combat';
+import { doomDamage } from '../combat';
 
 /** Wand identity and pure shared rules.
  *
@@ -183,7 +184,7 @@ export function useDisintegrationWand(scene: DisintegrationWandScene, target: St
 	for (const index of plan.victimCells) {
 		const victim = creatures[index];
 		if (!victim || victim.hp <= 0) continue;
-		const damage = Random.normalRange(2 + plan.effectiveLevel, 8 + 4 * plan.effectiveLevel);
+		const damage = doomDamage(Random.normalRange(2 + plan.effectiveLevel, 8 + 4 * plan.effectiveLevel), victim);
 		victim.hp -= damage;
 		if (scene.fadeMirrorOnDamage(victim, damage)) continue;
 		scene.showDamage(victim, damage);

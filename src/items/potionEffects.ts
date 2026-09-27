@@ -1,6 +1,6 @@
 import { Roguelike } from 'mwg';
 import { isChallengeEnabled } from '../challenges';
-import { addBuff, applyElementalBacklash, buffBlocked, reigniteBuff, type BuffId, type Creature } from '../combat';
+import { addBuff, applyElementalBacklash, buffBlocked, icyBuffImmune, reigniteBuff, type BuffId, type Creature } from '../combat';
 import { applyChillFreeze } from '../simulation/buffs';
 import { brewNeighbourSeedPlan, SHROUDING_FOG_VOLUME } from '../simulation/brews';
 import { WALL } from '../dungeonConstants';
@@ -49,8 +49,9 @@ export interface PotionEffectsContext {
  * and by the blessed-ankh revive. Java detaches Poison/Cripple/Weakness/Vulnerable/Bleeding/
  * Blindness/Drowsy/Slow/Vertigo, never Burning: Slow has no model here, and Java's own Daze
  * is a different buff (accuracy ×0.5, `Daze.DURATION` 5 - this port's `daze` table value is
- * exact), so the `daze` this port grants as a Blindness/Vertigo stand-in is deliberately
- * NOT cleared, matching Java not clearing Daze. */
+ * exact). Vertigo is now the real `vertigo` buff (cleared above, 2026-09-24); `daze` remains
+ * only this port's Blindness stand-in and is deliberately NOT cleared, matching Java not
+ * clearing Daze. */
 export function cureHeroBuffs(hero: Creature): void {
 	for (const b of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'drowsy', 'blindness', 'vertigo'] as BuffId[]) delete hero.buffs[b];
 }
@@ -252,7 +253,8 @@ export function shatterPotionAt(scene: PotionEffectsContext, id: string, cx: num
 				if (target !== scene.hero && !scene.level.passable(target.x, target.y)) continue;
 				delete target.buffs['burning'];
 				//`Elemental.add()`'s hate-listed chill backslashes instead of attaching - a fire-typed target takes the backlash.
-				if (target === scene.hero || applyElementalBacklash(target, 'chill') === 0) target.buffs = applyChillFreeze(target.buffs).buffs;
+				if (target === scene.hero || (applyElementalBacklash(target, 'chill') === 0
+					&& !icyBuffImmune(target.kind, target.elementalType, 'chill'))) target.buffs = applyChillFreeze(target.buffs).buffs;
 				if (target.hp <= 0) scene.kill(target);
 			}
 			return;

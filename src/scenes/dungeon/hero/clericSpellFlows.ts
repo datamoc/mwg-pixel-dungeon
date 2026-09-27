@@ -1,6 +1,6 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { Random, Roguelike } from 'mwg';
-import { addBuff, BUFF_DURATION, NEGATIVE_BUFFS, type BuffId } from '../../../combat';
+import { addBuff, BUFF_DURATION, doomDamage, NEGATIVE_BUFFS, type BuffId } from '../../../combat';
 import { isUndeadOrDemonic } from '../../../monsters';
 import { isChallengeEnabled } from '../../../challenges';
 import { t } from '../../../i18n/index';
@@ -168,7 +168,6 @@ export const clericSpellFlowsMethods = {
 			}
 			victim.sleeping = false;
 			if (victim.hp > 0) addBuff(victim, 'paralysis', RADIANCE_PARALYSIS_TURNS);
-			else this.kill(victim);
 		}
 		addBuff(this.hero, 'light', isChallengeEnabled('darkness') ? RADIANCE_LIGHT_DARKNESS_TURNS : RADIANCE_LIGHT_TURNS);
 		if (this.hero.buffs['invisibility']) delete this.hero.buffs['invisibility'];
@@ -308,7 +307,7 @@ export const clericSpellFlowsMethods = {
 			return;
 		}
 		const [min, max] = smiteBonusDamage(this.progression.level);
-		const damage = isUndeadOrDemonic(target.kind) ? max : Random.normalRange(min, max);
+		const damage = doomDamage(isUndeadOrDemonic(target.kind) ? max : Random.normalRange(min, max), target);
 		if (damage > 0) this.disqualifyBossChallenge(target);
 		const parried = target.kind === 'greatCrab' && !target.sleeping && target.seesHero
 			&& target.buffs['paralysis'] === undefined;

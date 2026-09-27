@@ -442,6 +442,23 @@ export function setColorblind(enabled: boolean): void {
 	colorblindListeners.forEach((listener) => listener(enabled));
 }
 
+/** Port-original (ROADMAP.md section 8) - the high-contrast pass over the same
+ * palette `colorblind()` swaps: default off, wins over `colorblind()` where both
+ * are on. No listener set: every consumer reads a live getter (`SPD_STATUS_COLOR`,
+ * `buffIconTextColor`, the telegraph tint), and the one read-once consumer (monster
+ * HP bars in `deathSaveRefresh.ts`) already documents the same mid-run limitation
+ * for `colorblind()` - a second listener with zero subscribers would be dead code
+ * (`onColorblindChanged` itself has none). */
+export const HIGH_CONTRAST_KEY = 'highcontrast';
+
+export function highContrast(): boolean {
+	return settingsStore().getItem(HIGH_CONTRAST_KEY) === 'true';
+}
+
+export function setHighContrast(enabled: boolean): void {
+	settingsStore().setItem(HIGH_CONTRAST_KEY, enabled ? 'true' : 'false');
+}
+
 type ColorblindListener = (enabled: boolean) => void;
 
 const colorblindListeners = new Set<ColorblindListener>();

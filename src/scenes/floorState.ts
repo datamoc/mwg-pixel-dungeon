@@ -26,6 +26,8 @@ export interface FloorState {
 	ritualPos?: number;
 	ritualCandles?: boolean[];
 	plantFreeze?: FireState;
+	/** `Regrowth` blob volume, including its live spreading front. */
+	regrowth?: FireState;
 	toxicGas?: FireState;
 	/** `ToxicGasRoom.ToxicGasSeed`'s persistent vent sources: [cell, current volume]. */
 	toxicGasVents?: [number, number][];

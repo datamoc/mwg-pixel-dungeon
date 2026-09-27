@@ -4,7 +4,8 @@ import { t } from '../../../i18n/index';
 import { DOOR, DOOR_CLOSED, ITEM_FRAME, WALL } from '../../../dungeonConstants';
 import { Terrain } from '../../../spdLevelGen/paintLevel';
 import { mwlItemEffectValue } from '../../../mwlContent';
-import { IMMOVABLE_KINDS } from '../../../monsters';
+import { IMMOVABLE_KINDS, isLargeCreature } from '../../../monsters';
+import { isOpenSpace } from '../../../simulation/crystalSpire';
 import { ringEnergyMultiplier } from '../../../items/ringModifiers';
 import {
 	CIRCLE8, newKeyReplacementTracker, processKeyLockOpened, skeletonKeyTickRecharge, useSkeletonKeyFlow,
@@ -55,11 +56,20 @@ export const skeletonKeyMethods = {
 			isCellKnown: (x, y) => scene.fov.isExplored(x, y) || scene.fov.isVisible(x, y),
 			targetAt: (x, y) => scene.skeletonKeyTargetAt(x, y),
 			isSolid: (x, y) => !scene.level.inside(x, y) || (!scene.level.passable(x, y) && scene.level.get(x, y) !== DOOR_CLOSED),
-			isOpenSpace: (x, y) => scene.level.passable(x, y),
+			//`Level.buildFlagMaps()`' `openSpace` (ported as `isOpenSpace`): solid here is
+			//plain off-passable, which matches Java's SOLID flag for every door state
+			//(a closed door is `passable == false`, an open one `true`).
+			isOpenSpace: (x, y) => {
+				const w = scene.level.width;
+				return isOpenSpace(scene.level.index(x, y), w, (c) => {
+					const nx = c % w, ny = Math.floor(c / w);
+					return !scene.level.inside(nx, ny) || !scene.level.passable(nx, ny);
+				});
+			},
 			mobAt: (x, y) => {
 				const mob = scene.creatureAt(x, y);
 				if (!mob || mob.isHero) return null;
-				return { enemy: !mob.isAlly, immovable: mob.kind !== undefined && IMMOVABLE_KINDS.has(mob.kind), large: false };
+				return { enemy: !mob.isAlly, immovable: mob.kind !== undefined && IMMOVABLE_KINDS.has(mob.kind), large: isLargeCreature(mob.kind, mob.yogFistType) };
 			},
 			trueDistance: (a, b) => Math.hypot(a.x - b.x, a.y - b.y),
 			openLock: (cell, kind) => scene.skeletonKeyOpenLock(cell, kind),

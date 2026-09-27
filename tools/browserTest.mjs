@@ -105,6 +105,23 @@ const TAP_SOURCE = (fx, fy) => `(() => {
 	return true;
 })()`;
 
+// Keyboard: name -> [CDP key, CDP code, virtual key code, CDP text, WebDriver BiDi key value].
+const KEYS = {
+	ArrowUp: ['ArrowUp', 'ArrowUp', 38, '', ''], ArrowDown: ['ArrowDown', 'ArrowDown', 40, '', ''],
+	ArrowLeft: ['ArrowLeft', 'ArrowLeft', 37, '', ''], ArrowRight: ['ArrowRight', 'ArrowRight', 39, '', ''],
+	Enter: ['Enter', 'Enter', 13, '\r', ''], Escape: ['Escape', 'Escape', 27, '', ''],
+	Space: [' ', 'Space', 32, ' ', ' '], Shift: ['Shift', 'ShiftLeft', 16, '', ''], Tab: ['Tab', 'Tab', 9, '', ''],
+	F5: ['F5', 'F5', 116, '', ''], F9: ['F9', 'F9', 120, '', ''],
+};
+function keyInfo(name) {
+	if (KEYS[name]) return KEYS[name];
+	if (/^[a-zA-Z0-9]$/.test(name)) {
+		const up = name.toUpperCase();
+		return [name, /[0-9]/.test(name) ? `Digit${name}` : `Key${up}`, up.charCodeAt(0), name, name];
+	}
+	throw new Error(`unknown key ${name}`);
+}
+
 // ---------------------------------------------------------------- Chrome (CDP)
 
 async function connectWs(url) {
@@ -177,6 +194,13 @@ async function launchChrome({ headed, width, height, url }) {
 			return r.result.value;
 		},
 		async screenshot() { return Buffer.from((await rpc.send('Page.captureScreenshot', { format: 'png' })).data, 'base64'); },
+		async press(name, holdMs) {
+			const [key, code, vk, text] = keyInfo(name);
+			const base = { key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk };
+			await rpc.send('Input.dispatchKeyEvent', { type: text ? 'keyDown' : 'rawKeyDown', ...base, ...(text ? { text } : {}) });
+			await sleep(holdMs);
+			await rpc.send('Input.dispatchKeyEvent', { type: 'keyUp', ...base });
+		},
 		async close() { try { await rpc.send('Browser.close'); } catch { /* already gone */ } await stopBrowser(child, profile); },
 	};
 }
@@ -221,6 +245,10 @@ async function launchFirefox({ headed, width, height, url }) {
 			return r.result.value;
 		},
 		async screenshot() { return Buffer.from((await rpc.send('browsingContext.captureScreenshot', { context })).data, 'base64'); },
+		async press(name, holdMs) {
+			const value = keyInfo(name)[4];
+			await rpc.send('input.performActions', { context, actions: [{ type: 'key', id: 'kbd', actions: [{ type: 'keyDown', value }, { type: 'pause', duration: holdMs }, { type: 'keyUp', value }] }] });
+		},
 		async close() { try { await rpc.send('browser.close'); } catch { /* already gone */ } await stopBrowser(child, profile); },
 	};
 }
@@ -248,6 +276,10 @@ export async function openGame({ browser = 'chrome', dist = join(ROOT, 'dist'), 
 	const game = {
 		browser, url: target, width, height,
 		async eval(code) { const raw = await b.evaluate(wrapEval(code)); return raw === undefined || raw === null ? null : JSON.parse(raw); },
+		/** Presses and releases a real key (ArrowUp/Down/Left/Right, Enter, Escape, Space, Shift, Tab, F5, F9, letters, digits). */
+		async press(name, { hold = 60, times = 1, gap = 120 } = {}) {
+			for (let i = 0; i < times; i++) { await b.press(name, hold); await sleep(gap); }
+		},
 		/** Full pointer sequence at a fraction (0-1) of the canvas. */
 		async tap(fx, fy) { return b.evaluate(TAP_SOURCE(fx, fy)); },
 		async screenshot(path) {

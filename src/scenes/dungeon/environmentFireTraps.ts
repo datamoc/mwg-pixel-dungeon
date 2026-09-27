@@ -39,11 +39,13 @@ import { nearestVisibleEnemy as nearestVisibleEnemyFlow } from '../../simulation
 import { getCurse } from '../../items/itemCurses';
 import { Cat, randomUsingDefaults, removeArtifactClass } from '../../items/generator';
 import { absorbCreatureShields } from '../../simulation/allyShields';
+import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
 import { mwlItemEffectValue } from '../../mwlContent';
 import { applySandalsNaturalismCharge, sandalsNaturalismLevel } from '../../items/sandals';
+import { regrowthMethods } from './regrowth';
 import { DOOR, DOOR_CLOSED, EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, TRAP, WALL, WATER, modeledTrapTable, sewerTrapTable, type TrapKind } from '../../dungeonConstants';
 import { regionForDepth, type Region } from '../../genericDungeon';
-import { absorbShield, addBuff, applyElementalBacklash, buffBlocked, electricDamageHalved, explosiveTrapBounds, grimTrapDamage, reigniteBuff, rollDamage, setBleeding, type Creature, type GroundItem, type Step } from '../../combat';
+import { absorbShield, addBuff, applyElementalBacklash, buffBlocked, doomDamage, electricDamageHalved, explosiveTrapBounds, grimTrapDamage, icyBuffImmune, reigniteBuff, rollDamage, setBleeding, type Creature, type GroundItem, type Step } from '../../combat';
 import { applyChillFreeze } from '../../simulation/buffs';
 import { BLOB_IMMUNE_KINDS, BOSSES, FLYING_KINDS, IMMOVABLE_KINDS, INORGANIC_KINDS, MONSTERS, UNDEAD_KINDS, mobRosterForDepth, type AnyMonsterId, type MonsterId } from '../../monsters';
 import { ETERNAL_FIRE_BURN, wardTexture, type BonesShape } from './shared';
@@ -62,6 +64,7 @@ const UNMARKED_TRAPS: ReadonlySet<TrapKind> = new Set<TrapKind>(['alarm', 'telep
 function isUnmarkedTrap(kind: TrapKind): boolean { return UNMARKED_TRAPS.has(kind); }
 
 export const environmentFireTrapsMethods = {
+	...regrowthMethods,
 	...missileThrowConfirmationMethods,
 	scrollEffectsContext(this: DungeonScene): ScrollEffectsContext {
 		return {
@@ -313,7 +316,7 @@ export const environmentFireTrapsMethods = {
 	 * it, then restitches exactly like `trampleHighGrass` does. Returns whether anything
 	 * was planted, so the caller can spend its plant budget.
 	 */
-/** Soft-press grass half for non-hero steppers (
+	/** Soft-press grass half for non-hero steppers (
 `HighGrass.trample()` with a non-hero `ch`, tag `v3.3.8`): high/furrowed
 	 * grass still falls to plain grass and still rolls the naturalism-0 seed/dew
 	 * drops - berries, huntress furrow, Naturalism charge and Camouflage all need
@@ -444,6 +447,10 @@ export const environmentFireTrapsMethods = {
 			inside: (x, y) => this.level.inside(x, y),
 			creatureAt: (x, y) => this.creatureAt(x, y),
 			fadeMirrorOnDamage: (victim, damage) => this.fadeMirrorOnDamage(victim, damage),
+			applyDamage: (victim, damage) => this.applyCharacterDamage(victim, damage, {
+				pierceArmor: true, cause: 'fire', skipAura: true, skipDoom: true,
+				onNonWeaponBossDamage: (target) => this.disqualifyBossChallenge(target),
+			}),
 			showDamage: (victim, damage) => this.showDamage(victim, damage),
 			setColorAdd: (victim, red, green, blue) => this.sprite(victim).setColorAdd(red, green, blue),
 			kill: (victim) => this.kill(victim),
@@ -1090,6 +1097,7 @@ export const environmentFireTrapsMethods = {
 	/** Applies the Java plant blobs to every actor standing in an active cell. */
 	spreadPlantBlobs(this: DungeonScene): void {
 		this.emitToxicGasVents();
+		this.advanceRegrowth();
 		applyEnvironmentalBlobs({
 			creatures: this.creatures,
 			passable: (x, y) => this.level.passable(x, y),
@@ -1125,7 +1133,8 @@ export const environmentFireTrapsMethods = {
 			//straight onto the buff map, bypassing `buffBlocked`, so the gate lives here.
 			//`Elemental.add()`'s hate-listed chill likewise backslashes instead of
 			//attaching (tag `v3.3.8`) - the shared helper refuses, damages, and presents.
-			applyChill: (target) => { if (applyElementalBacklash(target, 'chill') === 0 && !target.isNPC) target.buffs = applyChillFreeze(target.buffs).buffs; },
+			applyChill: (target) => { if (applyElementalBacklash(target, 'chill') === 0 && !target.isNPC
+				&& !icyBuffImmune(target.kind, target.elementalType, 'chill')) target.buffs = applyChillFreeze(target.buffs).buffs; },
 			freezeHeapCell: (x, y) => this.freezeHeapAt(x, y),
 			clearCell: (blob, x, y) => (this[blob] as Blob).clear(x, y),
 			clearFireCell: (x, y) => this.fire.clear(x, y),
@@ -1150,8 +1159,8 @@ export const environmentFireTrapsMethods = {
 			toxicDamage: (target) => target.isHero
 				? Math.floor((1 + Math.floor(this.depth / 5)) * ringElementsMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()))
 				: 1 + Math.floor(this.depth / 5),
-			//`Char.Property.IMMOVABLE` immunity to Vertigo (`Char.java`): the daze applied
-			//above is Vertigo's stand-in, so these kinds refuse confusion gas - every other
+			//`Char.Property.IMMOVABLE` immunity to Vertigo (`Char.java`): confusion gas
+			//prolongs the real `vertigo` buff, and immovable kinds refuse it - every other
 			//daze source still lands, since those are not Vertigo.
 			isVertigoImmune: (target) => target.kind !== undefined && IMMOVABLE_KINDS.has(target.kind),
 			isToxicImmune: (target) =>
@@ -1164,12 +1173,9 @@ export const environmentFireTrapsMethods = {
 				//`PrismaticImage` is immune to `ToxicGas` (same source); Burning is
 				//covered by its `fireImmune` flag on the fire paths, like Brimstone.
 				|| target.allyKind === 'prismatic'
-				//`MirrorImage` is immune to `ToxicGas` (same source); Burning rides
-				//its own new `fireImmune` flag the same way.
-				|| target.allyKind === 'mirror'
-				//`PowerOfMany.LightAlly` has Property.INORGANIC (`PowerOfMany.java`, tag `v3.3.8`);
-				//its rat kind is only a scheduler carrier, so include it at this blob seam.
-				|| target.allyKind === 'lightAlly'
+				//`MirrorImage` is immune to `ToxicGas` (same source); Burning uses its own `fireImmune` flag.
+				//`PowerOfMany.LightAlly` has Java's `Property.INORGANIC` (PowerOfMany.java, tag `v3.3.8`); rat is only its scheduler carrier.
+				|| target.allyKind === 'mirror' || target.allyKind === 'lightAlly'
 				|| (target.kind !== undefined && INORGANIC_KINDS.has(target.kind))
 				|| (target.kind === 'yogFist' && target.yogFistType === 'rusted')
 				|| (target.kind === 'yog' && this.yogShielded(target))
@@ -1192,6 +1198,7 @@ export const environmentFireTrapsMethods = {
 					}
 					return true;
 				}
+				damage = doomDamage(damage, target);
 				//DKBarrier absorbs on every `Char.damage()` path - same block as the
 				//attack tail (see the trap-blast seam's own copy).
 				if (target.kind === 'king' && (target.kingShield ?? 0) > 0) {
@@ -1423,6 +1430,11 @@ export const environmentFireTrapsMethods = {
 		// activating; none of the small set of traps modelled by this port are magical
 		// airborne effects, so they are all safely bypassed here.
 		if (this.hero.buffs['levitation']) return;
+		//Java's `Level.pressCell` only fires a registered trap (`traps.get(cell)`,
+		//tag `v3.3.8`) - stepping on a trapless cell does nothing. Without this
+		//guard the `?? 'poisonDart'` fallback below fired a phantom poison dart on
+		//EVERY hero step (found by the T52 bot dying to trapless darts, 2026-09-26).
+		if (!this.trapKinds.has(this.level.index(x, y))) return;
 		if (this.spentTrapCells.has(this.level.index(x, y))) return;
 		//Java hard press fires a revealed trap too (Trap.trigger() runs regardless of
 		//reveal state, tag `v3.3.8`) - only the reveal itself needs the secret check.
@@ -1440,7 +1452,7 @@ export const environmentFireTrapsMethods = {
 			this.say(t('port.log.trap.toxic'), 'negative');
 		} else if (kind === 'confusionGas') {
 			//ConfusionTrap.activate() (tag v3.3.8) seeds 300 + 20*depth ConfusionGas;
-			//the blob applies Java's two-turn Vertigo shape through the port's daze stand-in.
+			//the blob prolongs the real `vertigo` buff for 2 turns (not a daze stand-in).
 			this.confusionGas.seed(x, y, 300 + 20 * this.depth);
 			this.say(t('port.log.trap.toxic'), 'negative');
 		} else if (kind === 'corrosionGas') {
@@ -1562,7 +1574,8 @@ export const environmentFireTrapsMethods = {
 			//`GrippingTrap.activate()`: whoever stands on it (unless flying) gets `Bleeding` of
 			//`max(0, 2 + depth/2 - drRoll/2)` and a keep-max `Cripple`. Java leaves this trap armed
 			//(`disarmedByActivation = false`); here, like every trap in this port, it is spent once
-			//revealed (stated simplification). The wound splash is not ported.
+			//revealed (stated simplification). `Wound.hit()` is a red hardlight sprite fade with
+			//no sound; the port substitutes a short red mote burst because that sprite atlas is absent.
 			const c = this.creatureAt(x, y);
 			if (c && c.hp > 0 && !c.flying) {
 				const dr = Math.floor(Random.normalRange(c.armor[0], c.armor[1]) / 2);
@@ -1608,7 +1621,7 @@ export const environmentFireTrapsMethods = {
 					this.showDamage(this.hero, damage);
 					if (this.hero.hp <= 0) this.say(t('levels.traps.rockfalltrap.ondeath'), 'negative');
 				} else {
-					damage = absorbCreatureShields(ch, damage, this.ascendedTurns > 0);
+					damage = absorbCreatureShields(ch, doomDamage(damage, ch), this.ascendedTurns > 0);
 					ch.hp -= damage;
 					this.showDamage(ch, damage);
 				}
@@ -1691,6 +1704,8 @@ export const environmentFireTrapsMethods = {
 			for (const mob of this.creatures) {
 				if (mob.isHero || mob.isNPC || mob.isAlly || mob.hp <= 0) continue;
 				if (mob.kind !== undefined && IMMOVABLE_KINDS.has(mob.kind as MonsterId)) continue;
+				//AlarmTrap calls `beckon(pos)`; preserve the sleeping guardian's Java no-op override.
+				if (ignoresCrystalGuardianBeckon(mob.kind, mob.sleeping === true)) continue;
 				mob.sleeping = false;
 				if (!mob.fleeing) mob.lastSeen = { x, y };
 			}
@@ -1772,7 +1787,7 @@ export const environmentFireTrapsMethods = {
 	 * the linking one) then gathers everything in the trap's own 3x3 around the recorded
 	 * cell: chars ride `teleportToLocation` onto free cells around it (center preferred),
 	 * heaps are dropped on it. Stated simplifications: LARGE chars' `openSpace` shortlist has
-	 * no counterpart (no size property here - everyone draws from the one shuffled list);
+	 * no counterpart here (a size property exists now - `LARGE_KINDS` - but this draw still doesn't gate; everyone draws from the one shuffled list);
 	 * heap stacking collapses to one payload per cell (a blocked destination leaves the heap
 	 * where it is); `Honeypot.ShatteredPot`'s pot-link move has no counterpart (no shattered
 	 * pot item here); the TELEPORT sample/speck presentation is the shared appear effect.
@@ -1921,7 +1936,7 @@ export const environmentFireTrapsMethods = {
 		this.landFromChasm();
 	},
 
-/** `Potion.onThrow`'s hard `Level.pressCell(cell)` before `shatter(cell)`
+	/** `Potion.onThrow`'s hard `Level.pressCell(cell)` before `shatter(cell)`
 	 * (tag `v3.3.8`): a landed flask sets off or reveals whatever the cell holds.
 	 * AquaBrew and PotionOfStormClouds skip the press in Java (their shatter disarms
 	 * instead); neither brew exists in this port, so every thrown flask presses. A
@@ -2025,7 +2040,7 @@ export const environmentFireTrapsMethods = {
 			}
 		} else if (kind === 'poisonDart') {
 			const damage = Math.max(0, Random.normalRange(4, 8) - Random.normalRange(monster.armor[0], monster.armor[1]));
-			const dealt = absorbCreatureShields(monster, damage, this.ascendedTurns > 0);
+			const dealt = absorbCreatureShields(monster, doomDamage(damage, monster), this.ascendedTurns > 0);
 			monster.hp -= dealt;
 			this.showDamage(monster, dealt);
 			//`reigniteBuff` keeps the max-duration semantics and routes through the shared
@@ -2034,7 +2049,7 @@ export const environmentFireTrapsMethods = {
 		} else if (kind === 'wornDart') {
 			//Same dart as poisonDart above, minus the poison, like Java's WornDartTrap.
 			const damage = Math.max(0, Random.normalRange(4, 8) - Random.normalRange(monster.armor[0], monster.armor[1]));
-			const dealt = absorbCreatureShields(monster, damage, this.ascendedTurns > 0);
+			const dealt = absorbCreatureShields(monster, doomDamage(damage, monster), this.ascendedTurns > 0);
 			monster.hp -= dealt;
 			this.showDamage(monster, dealt);
 		} else if (kind === 'grim') {
@@ -2048,7 +2063,7 @@ export const environmentFireTrapsMethods = {
 			//quarter-max mix with it).
 			if (!monster.magicImmune) {
 				const damage = grimTrapDamage(monster.hp, monster.maxHp);
-				const dealt = absorbCreatureShields(monster, damage, this.ascendedTurns > 0);
+				const dealt = absorbCreatureShields(monster, doomDamage(damage, monster), this.ascendedTurns > 0);
 				monster.hp -= dealt;
 				this.showDamage(monster, dealt);
 			}
@@ -2075,7 +2090,7 @@ export const environmentFireTrapsMethods = {
 			//fire seeding.
 			const damage = Math.max(0, Random.normalRange(...explosiveTrapBounds(this.depth))
 				- Random.normalRange(monster.armor[0], monster.armor[1]));
-			const dealt = absorbCreatureShields(monster, damage, this.ascendedTurns > 0);
+			const dealt = absorbCreatureShields(monster, doomDamage(damage, monster), this.ascendedTurns > 0);
 			monster.hp -= dealt;
 			this.showDamage(monster, dealt);
 			this.applyTrapBlast(monster.x, monster.y);
@@ -2104,6 +2119,7 @@ export const environmentFireTrapsMethods = {
 			let damage = Math.max(0, Random.normalRange(...explosiveTrapBounds(this.depth)));
 			damage = Math.max(0, damage - Random.normalRange(target.armor[0], target.armor[1]));
 			damage = this.auraProtectedDamage(target, damage);
+			damage = doomDamage(damage, target);
 			//DKBarrier absorbs on every Java `Char.damage()` path, not just attacks and bomb blasts.
 			if (target.kind === 'king' && (target.kingShield ?? 0) > 0) {
 				const absorbed = absorbShield(target.kingShield ?? 0, damage);
@@ -2141,16 +2157,6 @@ export const environmentFireTrapsMethods = {
 	 * follows the *wielded class* (`missiles.mwl`, Java's field default 8 when the pile names
 	 * no authored class) - the old hero-class rule wore every non-duelist spike as a 5-use stone.
 	 */
-	/**
-	 * `MissileWeapon.doThrow()`'s warning condition: the stack is down to its last missile, that
-	 * throw would break it (`durabilityLeft() <= durabilityPerUse()`), and the stack is worth
-	 * warning about - in Java "known and upgraded, or with a good enchant, or a mastery potion
-	 * bonus, or hardened". This port's ammo is fungible class ammo with no per-stack enchant,
-	 * hardening or mastery state, so the reachable clause is the upgrade level; `extraThrownLeft`
-	 * has no expression here either (it is the flag the same warning is suppressed by).
-	 */
-
-
 	missileDurabilityCost(this: DungeonScene): number {
 		//`TippedDart.durabilityPerUse()` with `Talent.DURABLE_TIPS` (`TippedDart.java`, tag
 		//`v3.3.8`): the use cost is divided by `1 + points` while a Warden throws tipped darts

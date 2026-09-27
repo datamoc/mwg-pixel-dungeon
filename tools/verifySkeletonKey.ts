@@ -180,6 +180,16 @@ const aim = (w: World, target: Cell): void => confirmSkeletonKeyFlow(context(w),
 	for (const [dx, dy] of CIRCLE8) boxed.solid.add(`${6 + dx},${5 + dy}`);
 	aim(boxed, at(boxed, 1, 0));
 	check('no free cell behind the door refuses', boxed.log.join() === 'lock_no_space');
+	const big = world({ level: 0, charge: 3 });
+	big.terrain.set(id(at(big, 1, 0)), 'door');
+	big.mobs.set(id(at(big, 1, 0)), { enemy: true, immovable: false, large: true });
+	confirmSkeletonKeyFlow({ ...context(big), isOpenSpace: () => false }, at(big, 1, 0));
+	check('a LARGE mob with no open space refuses (lock_no_space)', big.log.join() === 'lock_no_space' && big.locks.length === 0 && big.turns === 0);
+	const bigOpen = world({ level: 0, charge: 3 });
+	bigOpen.terrain.set(id(at(bigOpen, 1, 0)), 'door');
+	bigOpen.mobs.set(id(at(bigOpen, 1, 0)), { enemy: true, immovable: false, large: true });
+	aim(bigOpen, at(bigOpen, 1, 0));
+	check('a LARGE mob with open space is pushed like a small one', bigOpen.pushes.join() === '6,5->6,4' && bigOpen.locks.length === 1);
 }
 {
 	//walls: cardinal = 3 cells, diagonal = 5 cells; costs 2; a solid neighbour refuses

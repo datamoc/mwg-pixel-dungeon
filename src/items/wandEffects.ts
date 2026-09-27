@@ -1,5 +1,5 @@
 import { Roguelike, Random } from 'mwg';
-import { buffBlocked, type Creature, type Step } from '../combat';
+import { buffBlocked, doomDamage, fieryResistedDamage, type Creature, type Step } from '../combat';
 import { coneCells } from '../mechanics/cone';
 import { FLOOR, GRASS, HIGH_GRASS } from '../dungeonConstants';
 import { Cat, randomUsingDefaults } from './generator';
@@ -155,6 +155,8 @@ export interface FireblastWandContext {
 	inside: (x: number, y: number) => boolean;
 	creatureAt: (x: number, y: number) => Creature | null;
 	fadeMirrorOnDamage: (target: Creature, damage: number) => boolean;
+	/** Direct `Char.damage()` call after this effect applies its fire-specific resistance. */
+	applyDamage: (target: Creature, damage: number) => void;
 	showDamage: (target: Creature, damage: number) => void;
 	setColorAdd: (target: Creature, red: number, green: number, blue: number) => void;
 	kill: (target: Creature) => void;
@@ -215,17 +217,17 @@ export function useFireblastWand(context: FireblastWandContext): void {
 		//`ChampionEnemy.AntiMagic`'s `immunities.addAll(RESISTS)`) - no damage, no burn/cripple/
 		//paralysis, though the cone's own terrain fire still seeds around it as normal.
 		if (victim.magicImmune) continue;
-		const damage = context.rollDamage(minimum, maximum);
-		victim.hp -= damage;
+		//`Char.Property.FIERY` halves WandOfFireblast damage before Java's one final
+		//round in Char.damage(); its FIERY holders are the Elementals and BurningFist.
+		const damageAfterFireResistance = fieryResistedDamage(
+			context.rollDamage(minimum, maximum), victim.kind, victim.elementalType, victim.yogFistType,
+		);
+		const damage = doomDamage(damageAfterFireResistance, victim);
 		if (context.fadeMirrorOnDamage(victim, damage)) continue;
-		context.showDamage(victim, damage);
-		victim.sleeping = false;
+		context.applyDamage(victim, damage);
 		context.setColorAdd(victim, 0.6, 0.7, 1);
 		context.say(context.message(victim, damage), 'positive');
-		if (victim.hp <= 0 && !victim.isAlly) {
-			context.kill(victim);
-			continue;
-		}
+		if (victim.hp <= 0) continue;
 		//Burning `reignite`s; Cripple/Paralysis are Java's `affect` with an explicit 4
 		//(not their class DURATIONs). The port prolongs (keep-max) rather than spending:
 		//Java's `affect` adds 4 onto the live clock (`Buff.spend`), so re-zapping a

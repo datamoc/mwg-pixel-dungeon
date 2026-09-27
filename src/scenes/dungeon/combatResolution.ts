@@ -7,13 +7,11 @@ import { planHiddenMimicContact } from '../../simulation/hiddenMimicContact';
 import { planShockElementalArc } from '../../simulation/shockArc';
 import { applyDefenderDamageCurves } from '../../simulation/defenderDamageCurves';
 import { UNSTABLE_DELEGATES } from '../../items/itemAffixes';
+import { shadowCloneArmorProc, shadowCloneBladeProc } from '../../simulation/rogueAbilities';
 import { ringArcanaMultiplier, ringForceBonus, ringTenacityMultiplier } from '../../items/ringModifiers';
 import { HOLY_WARD_BLOCK, HOLY_WEAPON_BONUS, auraProcBonus, auraProtectedDamage, satiatedShieldAmount, searingLightBonus, shieldOfLightRange, trinityBodyGlyphActive } from '../../simulation/clericSpells';
 import { capitalize, has, t } from '../../i18n/index';
-import { MONK_MEDITATE_DAMAGE_FACTOR } from '../../simulation/monkEnergy';
-import { sealActivate, sealMaxShield, sealShouldActivate } from '../../simulation/sealShield';
-import { rageEnchantFactor } from '../../simulation/berserkRage';
-import { assassinReachBonus, empoweredStrikeBonus, farsightMultiplier, shieldBatteryGain, weaponRechargingDamage } from '../../talentEffects';
+import { assassinReachBonus, cleaveComboSeed, deathlessFuryTriggers, empoweredStrikeBonus, farsightMultiplier, shieldBatteryGain, weaponRechargingDamage } from '../../talentEffects';
 import { Terrain, type PaintLevel } from '../../spdLevelGen/paintLevel';
 import { runState } from '../../runState';
 import { isChallengeEnabled } from '../../challenges';
@@ -25,11 +23,20 @@ import { getCurse } from '../../items/itemCurses';
 import { applyCapeOfThornsProc } from '../../items/artifactActions';
 import { canSurpriseAttack, weaponSTRReq } from '../../items/strReq';
 import { EMBERS, FLOOR, GRASS, HIGH_GRASS, VIEW_RADIUS, WATER } from '../../dungeonConstants';
-import { BUFF_DURATION, INFINITE_ACCURACY, INFINITE_EVASION, NEGATIVE_BUFFS, absorbShield, addBuff, applyElementalBacklash, buffBlocked, electricDamageHalved, reigniteBuff, rollDamage, rollHit, setBleeding, stoneGlyphReduction, type Creature } from '../../combat';
+import { BUFF_DURATION, INFINITE_ACCURACY, INFINITE_EVASION, NEGATIVE_BUFFS, absorbShield, addBuff, applyElementalBacklash, buffBlocked, doomDamage, electricDamageHalved, fieryElementalSourceDamage, reigniteBuff, rollDamage, rollHit, setBleeding, stoneGlyphReduction, type Creature } from '../../combat';
 import { absorbCreatureShields } from '../../simulation/allyShields';
 import { liveStats, IMMOVABLE_KINDS } from '../../monsters';
 import { imageSuperDefenseSkill } from '../../simulation/mirrorImage';
 import { POWER_OF_MANY_ATTACK_FACTOR, powerOfManyDamageFactor } from '../../simulation/clericSpells';
+
+/**
+ * True only while a *delegated* `ShadowAlly` swing resolves in `attack()`/`heroOnHit`:
+ * `enchantProcMultiplier()` then returns Java's base `1.0`, because
+ * `Weapon.genericProcChanceMultiplier(attacker)` (`Weapon.java` 543+) reads Arcana, Berserk and
+ * the Runic/Smite/Directed trackers **off the attacker** - the clone carries none, so its swing
+ * must not drain the hero's own one-shot trackers either.
+ */
+let delegatedGearSwing = false;
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `combatResolution`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
@@ -62,27 +69,6 @@ export const combatResolutionMethods = {
 		return target.kind === 'phantomPiranha' ? Math.round(amount / 2) : amount;
 	},
 
-
-
-	/**
-	 * T61 slice 14: the post-hit presentation of a landed `attack()` - the imbue
-	 * procs, the wake/showDamage/surprise/spawner/aggro/sleep status block, the
-	 * sprite flash, and the hit log line. Verbatim move; read-only on `damage`.
-	 */
-
-	/**
-	 * T61 slice 15: the on-hit dispatch of a landed `attack()` - the mirror holy
-	 * bonus, hero/mob on-hit hooks, Berserker rage, and the shock-elemental arc.
-	 * Verbatim move; no early exits, so nothing returns.
-	 */
-
-	/**
-	 * T61 slice 16: the post-hit riders of a landed `attack()` - the statue
-	 * enchant, crossbow knockback, staged ability riders, charm decay, the
-	 * Repulsion shove, and the crystal-mimic reposition. Verbatim move.
-	 */
-
-
 	/**
 	 * Melee (or missile) exchange with Java's own on-hit hooks: surprise attacks land
 	 * automatically (INFINITE_ACCURACY, inside rollHit) and wake the victim; Rogue's
@@ -94,10 +80,24 @@ export const combatResolutionMethods = {
 	 * splits (numbers verbatim); Fury kindles below half HP.
 	 */
 	attack(this: DungeonScene, attacker: Creature, defender: Creature, accFactor = 1, damageMultiplier = 1): boolean {
+		//Reset before any early return below, so a previous delegated `ShadowAlly` swing can never
+		//leak into a later `heroOnHit` call from another path (`armorAbilityUse`, elemental strike).
+		delegatedGearSwing = false;
 		if (attacker.isHero) this.cancelHourglassFreeze();
 		else noteMonsterAttack(attacker);
 		if (attacker.kind === 'crystalWisp') this.triggerCrystalWispPulse(attacker);
-		this.presentAttackSwing(attacker, defender);
+		faceCharacter(this.sprite(attacker), attacker.x, defender.x);
+		const attackerSprite = this.sprite(attacker);
+		if (attackerSprite instanceof AnimatedSprite && attackerSprite.has('attack')) attackerSprite.play('attack', true);
+		//`FistSprite.onComplete()` (tag `v3.3.8`): every Yog fist melee attack shakes
+		//(`4, 0.2f`) when the swing completes - placed with the swing, like the anim,
+		//so it fires on misses too. (The `yogfistslam` log nearby is the fist *summon*,
+		//a different event with no Java shake of its own.)
+		if (attacker.kind === 'yogFist') this.shakeScreen(4, 0.2);
+		//`DM300Sprite.slam()` (tag `v3.3.8`): DM300's melee swing shakes (`3, 0.7f`)
+		//with the slam anim, hit or miss. (`DM300.java` 325's *travelling* shake has
+		//no expression: this port's DM300 has no travelling state.)
+		if (attacker.kind === 'dm300') this.shakeScreen(3, 0.7);
 		//`Preparation` must be read *before* this dispel: Java reads it into a local at the top of
 		//`Char.attack()` and only calls `Invisibility.dispel()` after the whole attack returns
 		//(`Hero.java` 2325), so the stealth state still applies to this attack's damage roll and
@@ -194,13 +194,6 @@ export const combatResolutionMethods = {
 			//(Java's `else return 0`) - GuidingLight's own guaranteed hit. Thrown hero
 			//copies ride it too: throws resolve through this same `attack()`.
 			|| (defender.buffs['illuminated'] !== undefined && this.clericIlluminatedHit(defender, attacker));
-		//`Char.hit()`/`Hero.defenseVerb()` (tag `v3.3.8`): the Monk ability's FocusBuff gives infinite evasion, and the
-		//first blow it meets is "parried" and consumes the buff.
-		if (defender === this.hero && this.hero.buffs['focus'] !== undefined && attacker !== this.hero) {
-			delete this.hero.buffs['focus'];
-			this.say(t('actors.mobs.monk.parried'), 'positive');
-			return false;
-		}
 		//Monk Focus: the first attack against a focused monk always misses and spends the
 		//focus (re-earned over ~6 of its own turns via combo in takeMonsterTurn). `Senior
 		//extends Monk` and shares this unchanged - previously excluded here too by the same
@@ -280,8 +273,9 @@ export const combatResolutionMethods = {
 				}
 				if (this.talentRank('counter_ability') > 0) this.hero.buffs['counterAbility'] = BUFF_DURATION.counterAbility;
 			}
+			runState.audio.cue('miss', 0.55);
 			defender.sleeping = false;
-			this.presentAttackMiss(attacker, subject, object);
+			this.say(t(attacker.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
 			return false;
 		}
 		//`SpiritHawk.HawkAlly.defenseSkill()`: with `SWIFT_SPIRIT` ranked the hawk outright dodges
@@ -290,8 +284,9 @@ export const combatResolutionMethods = {
 		//damage and on-hit effects never run - and the miss is presented like any other.
 		if (defender.allyKind === 'spiritHawk' && (defender.spiritHawkDodges ?? 0) > 0) {
 			defender.spiritHawkDodges = (defender.spiritHawkDodges ?? 0) - 1;
+			runState.audio.cue('miss', 0.55);
 			defender.sleeping = false;
-			this.presentAttackMiss(attacker, subject, object);
+			this.say(t(attacker.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
 			return false;
 		}
 		//`Dagger`/`Dirk`/`AssassinsBlade` surprise passive (`damageRoll`, tag `v3.3.8`):
@@ -333,29 +328,273 @@ export const combatResolutionMethods = {
 		if (!attackRoll.hit) {
 			runState.audio.cue('miss', 0.55);
 			defender.sleeping = false;
-			//`Hero.defenseSkill()`/`defenseVerb()`: a blow that meets the Combo Parry window is parried (and riposted).
-			//Stays inline rather than using presentAttackMiss: the riposte interleaves
-			//between the cue and the log line, and reordering it would change behavior.
-			if (defender === this.hero && this.comboParryTurns > 0) this.comboParried(attacker);
 			this.say(t(attacker.isHero ? 'port.log.misshero' : 'port.log.miss', { subject, object }), 'negative');
 			return false;
 		}
 		//Java's `Mimic.defenseProc()` reveals ordinary hits here; do not reveal on a miss.
 		if (mimicContact.revealWhen === 'onHit') revealMimic();
 
-		//Captured before the procs below: a Friendly proc this same swing attaches a fresh
-		//charm pairing, and the post-damage decay must read the pre-proc pairing, not it.
-		const charmedForTarget = this.isCharmedToward(attacker, defender);
-		let damage = this.scaleAttackDamage(attacker, defender, attackRoll.damage);
+		let damage = attackRoll.damage;
+		// `Char.attack()` (tag `v3.3.8`): a PowerOfMany-powered ally deals 1.25x melee
+		// damage. The multiplier applies on the ordinary attack() exchange here.
+		if (attacker.isAlly && attacker.buffs['powerOfMany'] !== undefined) {
+			damage = Math.round(damage * POWER_OF_MANY_ATTACK_FACTOR);
+		}
+		//Charm.recover()/Charm.object: an actor charmed toward this specific target
+		//does not harm it. This also makes Affection's armor-glyph charm usable by
+		//ordinary monsters, not only by the already-portable Friendly weapon path.
+		const charmedForTarget = attacker.buffs['charm'] !== undefined && this.charmTargets.get(attacker.id) === defender.id;
+		if (charmedForTarget) damage = 0;
+		//`Char.damage()` negates through `isInvulnerable()`, which a
+		//`Challenge.SpectatorFreeze` carries - frozen spectators take no attack
+		//damage, same zeroing shape as the charm line above. Bomb/trap/blast seams
+		//apply the same guard at their own `damage()` boundaries; DoTs are negated
+		//at the mob tick.
+		if (defender.buffs['spectatorFreeze'] !== undefined) damage = 0;
 		//No `Pylon` curve here: it is a `damage()` override, so it applies after every multiplier
 		//and proc below, not before them - see `applyDefenderDamageCurves`' own note.
-		damage = this.armStrikeAffix(attacker, damage);
-		damage = this.applyHeroTalentBonuses(attacker, defender, surprise, damage);
-		damage = this.applyWeaponAffixProcs(attacker, defender, damage);
-		const glyphOut = this.applyDefenderGlyphProcs(attacker, defender, damage);
-		if (glyphOut.consumed) return false;
-		damage = glyphOut.damage;
-		damage = this.openLandedHit(attacker, defender, surprise, damage);
+		//Weapon.Augment: real Java's `Augment` enum (`Weapon.java`, tag `v3.3.8`) trades damage
+		//against attack speed in both directions - `SPEED(0.7f damageFactor, 2/3f delayFactor)`,
+		//`DAMAGE(1.5f damageFactor, 5/3f delayFactor)` - not a flat "20% up, nothing down" this
+		//previously modeled (wrong numbers, and only DAMAGE's half at all). The delay half lives
+		//in `getAttackTurnCostMod()`.
+		if (attacker === this.hero && this.weaponAugment === 'speed') {
+			damage = Math.round(damage * 0.7);
+		} else if (attacker === this.hero && this.weaponAugment === 'damage') {
+			damage = Math.round(damage * 1.5);
+		}
+		//Weapon Recharging (`Hero.damageRoll()`, Duelist T2): `round(dmg*1.025 + 0.025*points)`
+		//while a Recharging-class buff is held - a melee damage multiplier, never the
+		//per-hit wand-charge refund this used to be (that shape had no Java basis at all;
+		//charges still refund through MysticalCharge/ExcessCharge/SoulSiphon below, which are
+		//real). `ArtifactRecharge` counts too in Java; no such buff exists here yet. Gate
+		//note, read before "fixing": both tags gate the Java line on `heroClass != DUELIST`
+		//- unsatisfiable alongside class-locked talents, so the port follows the evident
+		//intent (the talent-holding class) rather than the literal gate.
+		if (attacker === this.hero && this.talentRank('weapon_recharging') > 0 && this.hero.buffs['recharging']) {
+			damage = weaponRechargingDamage(damage, this.talentRank('weapon_recharging'));
+		}
+		//RingOfForce.armedDamageBonus(): flat +level on any armed (non-missile) melee hit -
+		//`Hero.damageRoll()` gates this on `wep instanceof MissileWeapon`, which this port already
+		//expresses the same way every other hero-only bonus here does: `attacker === this.hero`
+		//is only true for the real bump-attack call site, never `useSpecial`'s throw/shoot/zap
+		//branches (those pass a shallow copy of the hero, not the hero itself).
+		if (attacker === this.hero) damage += ringForceBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
+		//`Unstable.proc()`/`Kinetic.proc()`: an Unstable weapon delegates every swing to one
+		//`Random.element` draw over `UNSTABLE_DELEGATES` (Java's `Random.oneOf(randomEnchants)`
+		//minus the documented exclusions). The pick is stashed so `heroOnHit`'s post-damage
+		//branches resolve the same enchant this swing. `Kinetic.proc()` first reads back any
+		//conserved damage (`damageBonus()` is `ceil(preserved)`, not floor) and detaches it,
+		//then attaches the tracker - on EVERY Kinetic swing, even at zero conserved, which is
+		//why the later kill-store keys off the flag rather than the amount.
+		//`ShadowAlly.attackProc()` (`ShadowClone.java` 218-226, tag `v3.3.8`): a landed clone swing
+		//runs the *hero's* `Weapon.proc` when `Random.Int(4) < pointsInTalent(SHADOW_BLADE)` and the
+		//hero has a weapon, so every `weaponAffix`/`unstableDelegated` branch below and every
+		//affix-keyed branch of `heroOnHit` fires for it too - all of them Java's `Weapon.proc`
+		//enchantments/curses. Java draws the `Int(4)` before testing the weapon and only from
+		//`attackProc`, i.e. after the hit roll above, which this reproduces exactly. Kinetic's
+		//read-back and kill-store stay hero-only: Java's tracker lives on the attacker while this
+		//port keeps one hero-scoped `kineticStored`.
+		const cloneGearSwing = attacker !== this.hero && attacker.allyKind === 'shadowClone'
+			&& shadowCloneBladeProc(Random.int(4), this.talentRank('shadow_blade'), this.weaponId != null);
+		delegatedGearSwing = cloneGearSwing;
+		const gearAttacker = attacker === this.hero || cloneGearSwing;
+		const strikeAffix = this.weaponAffix === 'unstable' && gearAttacker
+			? Random.element(UNSTABLE_DELEGATES)!
+			: this.weaponAffix;
+		this.unstableDelegated = this.weaponAffix === 'unstable' && gearAttacker ? strikeAffix : null;
+		//`kineticTrackerHit` arms this swing's kill-storage (used below at the death check) -
+		//true whenever THIS swing resolves as Kinetic, whether directly or via Unstable's
+		//delegation draw, matching `KineticTracker` only ever being attached from inside
+		//`Kinetic.proc()` itself.
+		this.kineticTrackerHit = attacker === this.hero && strikeAffix === 'kinetic';
+		this.kineticConservedAdded = 0;
+		//Read-back is a different condition from arming: both `Kinetic.proc()` AND
+		//`Unstable.proc()` read back and clear any conserved damage unconditionally at the
+		//top of their own proc, before Unstable goes on to delegate to a random enchant - so
+		//this fires on every swing of a Kinetic OR Unstable weapon, not only the swings where
+		//Unstable's delegate happens to redraw Kinetic. **Found in the 2026-09-09 item-system
+		//audit**: this used to gate the read-back on `kineticTrackerHit` too, silently
+		//withholding the stored bonus on ~8/9 of an Unstable weapon's own swings.
+		if (attacker === this.hero && (this.weaponAffix === 'kinetic' || this.weaponAffix === 'unstable') && this.kineticStored > 0) {
+			this.kineticConservedAdded = Math.ceil(this.kineticStored);
+			damage += this.kineticConservedAdded;
+			this.kineticStored = 0;
+		}
+		if (attacker === this.hero) damage += empoweredStrikeBonus(this.subclass(), this.talentRank('empowered_strike'));
+		//Talent.java's SUCKER_PUNCH branch: `Random.IntRange(points, 2)` (1-2 at rank 1, flat 2
+		//at rank 2), not a flat `points` bonus - found in the 2026-09-09 hero-progression audit.
+		//Real Java attaches a `SuckerPunchTracker` to the enemy on the first proc, so surprising
+		//the same target twice only triggers the bonus once. The port stores that tracker by the
+		//creature's stable id and clears it naturally when a new run starts; it is saved with the
+		//run so save/load cannot reopen the bonus.
+		if (attacker.isHero && surprise) {
+			const rank = this.talentRank('sucker_punch');
+			if (rank > 0 && !this.suckerPunchTargets.has(defender.id)) {
+				damage += Random.range(rank, 2);
+				this.suckerPunchTargets.add(defender.id);
+			}
+		}
+		if (attacker === this.hero && this.physicalBonusAttacks > 0) {
+			damage += this.physicalBonusDamage;
+			this.physicalBonusAttacks--;
+		}
+		if (attacker === this.hero && this.patientStrikeReady) {
+			damage += this.talentRank('patient_strike');
+			this.patientStrikeReady = false;
+		}
+		if (attacker === this.hero && this.followupTarget === defender) {
+			damage += this.followupDamage;
+			this.followupTarget = null;
+			this.followupDamage = 0;
+		}
+		//`Talent.DEADLY_FOLLOWUP`: last in Java's own `onAttackProc` chain, multiplying the
+		//whole accumulated damage rather than adding to it. `attacker === this.hero` already
+		//excludes a thrown hit here (the throw path attacks with a spread copy of `this.hero`,
+		//never the live reference), matching Java's own `attackingWeapon() instanceof
+		//MissileWeapon` exclusion for free.
+		if (attacker === this.hero && this.deadlyFollowupTarget === defender) {
+			damage = Math.round(damage * (1 + 0.08 * this.talentRank('deadly_followup')));
+			this.deadlyFollowupTarget = null;
+		}
+		//Polarized.proc(): real chance is a flat 1/2 - on success it amplifies to 1.5x, on
+		//failure it zeroes the hit outright (a coin-flip between "hits hard" and "whiffs"),
+		//reproduced exactly since it needs no subsystem beyond the damage value itself.
+		if (gearAttacker && this.weaponAffix === 'polarized') {
+			damage = Random.chance(0.5) ? Math.round(damage * 1.5) : 0;
+		}
+		//Sacrificial.proc(): Java rolls 1/10 x Arcana, then rolls a second time against
+		//(HP/HT)^2 * HT / 8 and applies Bleeding at max(1, bleedAmt). The first draft
+		//mistakenly used missing HP and a poison stand-in; both were wrong.
+		if (gearAttacker && this.weaponAffix === 'sacrificial' && Random.chance((1 / 10) * this.enchantProcMultiplier())) {
+			const bleedAmount = (attacker.hp / attacker.maxHp) ** 2 * attacker.maxHp / 8;
+			if (Random.chance(bleedAmount)) setBleeding(attacker, Math.max(1, bleedAmount), 'sacrificial');
+		}
+		//Displacing.proc(): real chance is 1/12 x arcana, skipped against Java's IMMOVABLE targets.
+		//Reuses the same free-cell search this file's Displacement armor curse already
+		//uses in place of Java's ScrollOfTeleportation.teleportChar. Java also resets a fleeing
+		//HUNTING mob back to WANDERING; this port has no such explicit state to reset, but the
+		//next monster-turn FOV recompute (`seesHero`) naturally loses track once far enough away.
+		if (gearAttacker && this.weaponAffix === 'displacing' && !defender.isNPC
+			&& (defender.kind === undefined || !IMMOVABLE_KINDS.has(defender.kind))
+			&& Random.chance((1 / 12) * this.enchantProcMultiplier())) {
+			const destination = this.randomFreeCell(defender);
+			if (destination) {
+				const displaceFrom = { x: defender.x, y: defender.y };
+				this.moveTo(defender, destination);
+				this.playTeleportAppear(displaceFrom, destination, defender);
+			}
+		}
+		//`Stone.proc()` (`items/armor/glyphs/Stone.java`, tag `v3.3.8`): the glyph
+		//grants no armor - it replays the to-hit math (attacker accuracy vs the
+		//wearer's evasion) and turns 75% of the dodge chance into damage
+		//reduction, `ceil(damage x hitChance)` clamped to [0.25, 1]. Runs here at
+		//the landed-hit boundary; Java runs it in `defenseProc` pre-armor, the
+		//same stated placement every other defend effect here already carries.
+		//`ShadowAlly.defenseProc()` (`ShadowClone.java` 249-257, tag `v3.3.8`): a landed attack on
+		//the clone runs the *hero's* `Armor.proc` when `Random.Int(4) < pointsInTalent(CLONED_ARMOR)`
+		//and the hero is armored. Java makes exactly one `defenseProc` call per attack, so the roll
+		//is drawn once here - after the attacker's own `attackProc` above, matching Java's order -
+		//and the result is handed to `mobOnHit` instead of being re-rolled per glyph site.
+		const cloneDefenderGate = defender.allyKind === 'shadowClone'
+			&& shadowCloneArmorProc(Random.int(4), this.talentRank('cloned_armor'), this.armorGlyph != null);
+		if ((defender.isHero || cloneDefenderGate) && ((this.armorGlyphActive() && this.armorGlyph === 'stone') || this.trinityBodyGlyphIs('stone')) && damage > 0) {
+			damage = Math.ceil(damage * stoneGlyphReduction(liveStats(attacker).accuracy, this.hero.evasion, this.armorProcMultiplier(defender)));
+		}
+		//Displacement.proc(): a 1-in-20 x arcana armor-curse proc teleports the defender
+		//and replaces the incoming hit with zero damage.
+		if ((defender.isHero || cloneDefenderGate) && this.armorGlyphActive() && this.armorGlyph === 'displacement' && Random.chance((1 / 20) * this.armorProcMultiplier(defender))) {
+			const armorDisplaceFrom = { x: defender.x, y: defender.y };
+			const destination = this.randomFreeCell(defender);
+			if (destination) {
+				this.moveTo(defender, destination);
+				this.playTeleportAppear(armorDisplaceFrom, destination, defender);
+				defender.sleeping = false;
+				this.say(t('port.log.armordisplace'), 'warning');
+				return false;
+			}
+		}
+		//Friendly.proc()/Charm.java (checked against tag v3.3.8): an already-charmed attacker
+		//deals zero damage to the specific object recorded by Charm.object. On a fresh proc,
+		//Friendly attaches Charm.DURATION (10) to the attacker and Charm.DURATION/2 (5) to the
+		//defender, records each object's stable id, and makes the defender ignore its next hit.
+		//The generic buff map stores only durations, so the two small payloads live in these
+		//scene maps and are persisted with the run. This closes the former missing Friendly curse
+		//without pretending Charm is a global, target-free stun.
+		if (gearAttacker && this.weaponAffix === 'friendly') {
+			if (attacker.buffs['charm'] !== undefined && this.charmTargets.get(attacker.id) === defender.id) damage = 0;
+			if (Random.chance((1 / 10) * this.enchantProcMultiplier())) {
+				addBuff(attacker, 'charm');
+				this.charmTargets.set(attacker.id, defender.id);
+				addBuff(defender, 'charm');
+				this.charmTargets.set(defender.id, attacker.id);
+				this.charmIgnoreNextHit.add(defender.id);
+			}
+		}
+		//Charm.ignoreNextHit is consumed by the next landed hit against that char, before
+		//damage absorption. It is deliberately separate from the attacker's object charm: Java
+		//allows the two flags to coexist on opposite sides of the exchange.
+		if (this.charmIgnoreNextHit.has(defender.id) && defender.buffs['charm'] !== undefined) {
+			this.charmIgnoreNextHit.delete(defender.id);
+			damage = 0;
+		}
+		runState.audio.cue('hit', 0.6);
+		//DEVIATION (Gladiator): Java's `Combo` (actors/buffs/Combo.java, tag `v3.3.8`) is a buff
+		//whose `hit()` counts landed hits (decaying 5 turns, 15+15*Cleave after a kill) and unlocks
+		//the finisher moves CLOBBER/SLAM/PARRY/CRUSH/FURY at 2/4/6/8/10 through `WndCombo`; it adds
+		//NO damage to ordinary hits. This port has no Combo buff or move UI, so it keeps an older
+		//stand-in: every third landed hero hit deals +3 (+Enhanced Combo rank). See PORT_COVERAGE.md.
+		if (attacker.isHero && this.subclass() === 'gladiator') {
+			attacker.combo = (attacker.combo ?? 0) + 1;
+			if (attacker.combo % 3 === 0) {
+				damage += 3 + this.talentRank('enhanced_combo');
+				this.say(t('port.log.gladiatorcombo'), 'positive');
+			}
+		} else if (attacker.isHero) {
+			attacker.combo = 0;
+		}
+		if (attacker.isHero && this.heroClass === 'rogue' && surprise) {
+			damage += (this.subclass() === 'assassin' ? 4 : 2) + assassinReachBonus(this.subclass(), this.talentRank('assassins_reach'));
+			this.awardBadge('surprises');
+		}
+		//Corrupting.proc() is a weapon proc, so Java runs it in `attackProc()` - before
+		//`enemy.damage()`, and therefore on the pre-`damage()`-override value. Its
+		//`damage >= defender.HP` guard must see that value: a hit that only reaches lethal
+		//after the defender's own curves cut it down (a Slime's 4+/5 soft cap) still counts
+		//as lethal in Java. A lethal hit converts a living Mob instead of killing it - the
+		//port's ally model already provides the permanent controlled actor shape, so keep
+		//the target, fully heal it, clear negative buffs, and mark it as an ally.
+		if (gearAttacker && (this.weaponAffix === 'corrupting' || this.unstableDelegated === 'corrupting') && damage >= defender.hp
+			&& !defender.isHero && !defender.isNPC && !defender.isAlly && Random.chance(
+			((Math.max(0, this.degradedLevel(this.weaponLevel)) + 5) / (Math.max(0, this.degradedLevel(this.weaponLevel)) + 25))
+				* this.enchantProcMultiplier())) {
+			defender.hp = defender.maxHp;
+			for (const buff of NEGATIVE_BUFFS) delete defender.buffs[buff];
+			this.sprite(defender);
+			defender.isAlly = true;
+			defender.allyKind = 'mirror';
+			defender.sleeping = false;
+			damage = 0;
+			this.say(t('port.log.corrupting', { target: defender.name }), 'positive');
+		}
+		//`Char.attack()`'s illuminated half (tag `v3.3.8`): any landed hit on an
+		//illuminated enemy consumes the debuff - Java detaches in `attack()` before
+		//damage resolution, so even a fully absorbed hit clears it, and so does this.
+		//The Cleric hero's own melee hit additionally deals Searing Light's `1 + 2*points`,
+		//placed before the defender curves below, where Java's pre-`defenseProc` add sits
+		//relative to the `damage()` overrides. Two stated placement differences remain:
+		//thrown hero hits bypass it (`MissileWeapon` never calls `Char.attack()` in Java,
+		//hence the `attackMode` gate, the file's melee precedent), and Berserk/Fury do not
+		//multiply it (they scale the roll upstream in `simulation/combat.ts`, where the
+		//defender's illuminated state is not visible). The Priest ally strike needs the
+		//subclass and stays unported.
+		if (defender.buffs['illuminated'] !== undefined) {
+			delete defender.buffs['illuminated'];
+			if (attacker.isHero && attacker.attackMode !== 'throw' && this.heroClass === 'cleric') {
+				const searing = this.talentRank('searing_light');
+				if (searing > 0) damage += searingLightBonus(searing);
+			}
+		}
 		//Every defender-side `damage()` override (`Pylon` 14+/15, `Eye` /4 while charging,
 		//`DemonSpawner` 19+/20, `Slime`/`CausticSlime` 4+/5) applies here, at Java's point: after
 		//the attacker's multipliers and procs, before shields and HP. One call rather than four
@@ -375,34 +614,553 @@ export const combatResolutionMethods = {
 		//landed hit while pumped (dead code in practice: `damageRoll()` already
 		//consumed the pump by proc time), and Java never interrupts the charge on
 		//damage. The shake told a lie, so it is gone rather than moved.
-		damage = this.applyPostCurveAbsorbs(attacker, defender, damage);
-		//Captured here, where the inline flag always sat: the post-damage relocation
-		//reads this pairing, and later pushes must not re-decide it.
-		const phantomRemote = this.isPhantomRemoteHit(attacker, defender);
+		//`Char.attack()`'s "friendly endure": the hero's own banked counter-attack adds to each
+		//landed hit until the tracker's `hitsLeft` runs out (`EndureTracker.damageFactor`). Java
+		//adds it before the armor subtraction; this port's `damage` is already net of armor by this
+		//point, so the bonus lands a little harder here than in Java - the same stated placement
+		//difference as the reduction half. See `consumeEndureBonus`.
+		if (attacker === this.hero && this.endureHits > 0 && damage > 0) damage = this.consumeEndureBonus(damage);
+		//`Char.defenseProc()`'s `Earthroot.Armor` half for a mob defender: the pool absorbs
+		//`min(damage, earthrootBlocking())` of every landed attack hit and detaches on
+		//exhaustion or once its owner has left the grant cell (see `absorbEarthrootArmor`).
+		//Java runs this pre-armor; this port's damage is already net of armor here, so a hit
+		//burns a little less pool than Java's - the same stated placement as the hero's own
+		//`absorbHeroDamage` half. It still runs before the defender damage curves below,
+		//matching Java's absorb-before-`damage()` order, and wand zaps, bombs, DoTs and traps
+		//never reach `attack()`, so they bypass the pool exactly as Java's direct `damage()`
+		//calls bypass `defenseProc()`.
+		if (!defender.isHero && defender.earthrootArmorLevel !== undefined) {
+			const absorbed = absorbEarthrootArmor(defender.earthrootArmorLevel, damage,
+				this.earthrootBlocking(), this.level.index(defender.x, defender.y) !== defender.earthrootArmorPos);
+			if (absorbed.level === null) {
+				delete defender.earthrootArmorLevel;
+				delete defender.earthrootArmorPos;
+			} else defender.earthrootArmorLevel = absorbed.level;
+			damage = absorbed.damage;
+		}
+		// `PhantomPiranha.damage()` halves damage when its source is not adjacent;
+		// this is after the attack's defense/curve work, matching Java's override
+		// boundary, and it triggers the post-hit relocation while still alive.
+		const phantomRemote = defender.kind === 'phantomPiranha'
+			&& Roguelike.chebyshevDistance(defender, attacker) > 1;
+		if (phantomRemote) damage = Math.round(damage / 2);
 		const preHp = defender.hp;
-		const heroOut = this.applyHeroDefense(attacker, defender, damage);
-		damage = heroOut.damage;
-		const capeRetaliation = heroOut.capeRetaliation;
-		const soakOut = this.applyBossSoaks(defender, damage);
-		if (soakOut.finished) return true;
-		damage = soakOut.damage;
+        let capeRetaliation = 0;
+		if (defender.isHero) {
+			//`Skeleton.attackProc()` (tag `v3.3.8`): a skeleton hitting a warded hero deals
+			//2 less on top of the ward's own 1 (the non-Paladin "doubled" amount; the
+			//Paladin's 6 needs the subclass). Placed pre-absorb, where Java's attackProc
+			//sits relative to defenseProc.
+			if (attacker.kind === 'skeleton' && damage > 0 && this.hero.buffs['holyWard'] !== undefined) {
+				damage = Math.max(0, damage - 2);
+			}
+			//`Char.defenseProc()`'s ShieldOfLight half (tag `v3.3.8`): a hit from the
+			//tracked enemy loses `NormalIntRange(min, 2*min)` (`min = 1 + points`),
+			//clamped at zero. The tracker's enemy id rides `shieldOfLightTarget` -
+			//the buff map holds durations only. Placed pre-absorb with the ward line,
+			//where Java's pre-armor `defenseProc` sits relative to `damage()`.
+			if (damage > 0 && this.hero.buffs['shieldOfLight'] !== undefined && this.hero.shieldOfLightTarget === attacker.id) {
+				const [shieldMin, shieldMax] = shieldOfLightRange(this.talentRank('shield_of_light'));
+				damage = Math.max(0, damage - Random.normalRange(shieldMin, shieldMax));
+			}
+			//`Hero.damage()`: `CapeOfThorns.Thorns.proc()` runs before `super.damage()` (the
+			//`Char.damage()` shield-absorption/Tenacity/AntiMagic chain `absorbHeroDamage` models),
+			//so the cape sees the raw incoming hit, not what shields already reduced it to.
+            damage = applyCapeOfThornsProc({
+                bag: this.bag,
+                say: this.say.bind(this),
+                onRetaliate: (deflected) => { capeRetaliation += deflected; },
+            }, damage);
+			damage = this.absorbHeroDamage(damage, false, true);
+		}
+		//`DwarfKing.damage()` (phase 3) and `RustedFist.damage()` both bank every hit into the same
+		//`Viscosity.DeferedDamage` pool the glyph uses instead of losing HP, paying it out on their
+		//own turns. Checked here, before the linked-add split below, so the King's LifeLink share
+		//is deferred the same way.
+		//
+		//These are `damage()` overrides and so are source-independent: `applyBlastDamage` carries the
+		//same guards (Viscosity, DKBarrier, DM-300's barrier, the inactive-pylon refusal, plus the
+		//fist overrides - Rotting conversion, Soiled grass cut, Bright/Dark half-HP) for bombs and
+		//armor abilities, which never come through `attack()`. If one of them changes here, it
+		//changes there too - the two copies exist because this tail also carries attack-only work
+		//(LifeLink, the execute mechanics, Grim) that the shared seam must not run.
+		if (this.deferMonsterDamage(defender, damage)) return true;
+		// `Char.damage()` (tag `v3.3.8`): PowerOfMany reduces damage taken by 25%, or
+		// by `30% + 5% per LIFE_LINK rank` while the powered ally has that talent.
+		// This scene seam represents the attack() path; direct damage sources still need
+		// a shared actor-damage entry point before they can all use the reduction.
+		if (defender.buffs['powerOfMany'] !== undefined) {
+			damage = Math.round(damage * powerOfManyDamageFactor(this.talentRank('life_link')));
+		}
+		//LifeLink (`Char.damage()`): the hit is divided `ceil(dmg / (links+1))` across
+		//every live link partner, and each partner's share lands on it directly -
+		//so damage to a linked subject splits onto the King AND damage to a linked
+		//King splits onto every live subject (the old code halved add damage only,
+		//leaving the King whole no matter how many servants bled for him). A subject
+		//carries exactly one link (the King), hence /2 on this side; the King's
+		//divisor counts his live subjects. Each share runs through the King's P2
+		//shield below like any hit, and the King's P1 cooldowns accelerate off his
+		//own share the way `damage()`'s `taken/8` does (the add-side swing below
+		//never reaches the generic accel block, which measures the ADD's loss).
+		//A share lethal to the King ends the swing here (boss-death transition owns
+		//the rest).
+		if (defender.kind !== 'king' && !defender.isHero) {
+			const linkKing = this.creatures.find((c) => c.kind === 'king' && c.hp > 0 && this.kingLinkedAdds.has(defender));
+			if (linkKing) {
+				const share = Math.ceil(damage / 2);
+				const dealt = doomDamage(share, linkKing);
+				const kingPreHp = linkKing.hp;
+				if (!this.deferMonsterDamage(linkKing, dealt)) {
+					linkKing.hp -= dealt;
+					this.lockedFloorBossDamage(linkKing, dealt, kingPreHp - linkKing.hp);
+				}
+				if ((linkKing.kingPhase ?? 1) === 1 && linkKing.hp > 0) {
+					const taken = Math.max(0, kingPreHp - linkKing.hp);
+					linkKing.kingSummonCd = (linkKing.kingSummonCd ?? 0) - taken / 8;
+					linkKing.kingAbilityCd = (linkKing.kingAbilityCd ?? 0) - taken / 8;
+				}
+				if (linkKing.hp <= 0) {
+					this.kill(linkKing);
+					return true;
+				}
+				damage = share;
+			}
+		}
+		if (defender.kind === 'king' && defender.hp > 0) {
+			const live = [...this.kingLinkedAdds].filter((s) => s.hp > 0);
+			if (live.length > 0) {
+				const share = Math.ceil(damage / (live.length + 1));
+				for (const subject of live) {
+					subject.hp -= doomDamage(share, subject);
+					if (subject.hp <= 0) this.kill(subject);
+				}
+				damage = share;
+			}
+		}
+		//LifeLink distributes the incoming hit before each linked Char.damage() applies Doom;
+		//scale the defender's own share here, after the split and before every shield pool.
+		if (!defender.isHero) {
+			//`Char.Property.FIERY.resist(FireElemental.class)` (`Char.java`, tag `v3.3.8`)
+			//halves FireElemental melee hits on FIERY targets before Char.damage() rounds.
+			damage = fieryElementalSourceDamage(damage, attacker.kind, attacker.elementalType,
+				defender.kind, defender.elementalType, defender.yogFistType);
+			damage = doomDamage(damage, defender);
+		}
+		//DKBarrier: the P2 shield pool absorbs before HP (no per-turn regen here - the
+		//`incShield` half of `DKBarrior.act()` has no modeled trigger to hang it on).
+		if (defender.kind === 'king' && (defender.kingShield ?? 0) > 0) {
+			const absorbed = absorbShield(defender.kingShield ?? 0, damage);
+			defender.kingShield = absorbed.shield;
+			damage = absorbed.damage;
+		}
+		//`Blocking`'s `BlockBuff` on a statue absorbs before HP (a short-lived pool, see `takeStatueTurn`).
+		if ((defender.blockShield ?? 0) > 0) {
+			const absorbed = absorbShield(defender.blockShield ?? 0, damage);
+			defender.blockShield = absorbed.shield;
+			damage = absorbed.damage;
+		}
+		//DM300.move()/PylonEnergy: Barrier absorbs damage before HP while the boss is
+		//charged. This is a compact boss-local pool; the generic hero Barrier path cannot
+		//be reused because its decay and save state are hero-specific.
+		if (defender.kind === 'dm300' && (defender.dmBarrier ?? 0) > 0) {
+			const blocked = Math.min(defender.dmBarrier ?? 0, damage);
+			defender.dmBarrier = (defender.dmBarrier ?? 0) - blocked;
+			damage -= blocked;
+		}
 		//`RottingFist.damage()` converts the blow to Bleeding instead of HP damage, and
 		//`SoiledFist.damage()` blunts it by the grass cut (see both helpers). Burning itself
 		//does no damage to a soiled fist - see the DoT tick, which skips it.
 		damage = this.rottingBleedConvert(defender, damage, attacker === this.hero && this.abilityHarvestNext > 0);
 		damage = this.soiledGrassCut(defender, damage);
-		const execOut = this.applyExecutesAndDamage(attacker, defender, phantomRemote, damage);
-		if (execOut.finished) return true;
-		damage = execOut.damage;
-		const heroExecuted = execOut.heroExecuted;
-		this.runBossDamageHooks(defender, preHp);
-		this.presentLandedHit(attacker, defender, surprise, subject, object, damage);
+		//The execute mechanics are Java's last step in `attack()`: they run after
+		//`enemy.damage()` has applied everything above - the `damage()` overrides (including
+		//`SoiledFist`'s grass reduction just above), the shield pools, and the HP bookkeeping -
+		//and they set the target's HP to zero outright rather than routing a damage value
+		//through steps that could still reduce it. The `defender.hp - damage > 0` guard mirrors
+		//Java's own `enemy.isAlive()` check after `damage()` returned: a hit that already kills
+		//does not also report an execution.
+		//
+		//Java's two mechanics are now both real. `Preparation.canKO` (`Char.java` 524-539) fires
+		//only while the attacker's Preparation buff is up - i.e. only out of invisibility - and
+		//tests the target's HP against `AttackLevel.KOThreshold()`'s table, indexed by the level
+		//reached (1/3/5/9 turns invisible) and the `enhanced_lethality` rank, with a strict `<`
+		//and one fifth of the threshold for a `BOSS`/`MINIBOSS`. `CombinedLethality`
+		//(`Char.java` 541-561) excludes those two properties outright and uses
+		//`<= 0.4*points/3`. Both mechanics test
+		//the HP the hit actually leaves: every reduction above (curves, shields, pools, the
+		//grass cut) lands in `damage` before this point, so `defender.hp - damage` is what the
+		//`defender.hp -= damage` below writes - there is no pre-shield prediction here. Both
+		//also require the hit to have left the target alive (`predictedHp > 0`, Java's own
+		//`enemy.isAlive()` check after `damage()` returned): a hit that already kills reports
+		//the kill below, not an execution.
+		//
+		//`CombinedLethality`'s arming gate is Java's own too (`Char.java` 541-542): the
+		//tracker's weapon must differ from the attacking weapon (`!=`, instance identity),
+		//the attacker must be the hero, and the attacking weapon a `MeleeWeapon`. The port
+		//reads that as: a live tracker, a hero melee swing (never a throw - bow shots and
+		//thrown hits never reach this method anyway), a wielded weapon (never the unarmed
+		//`startingWeapon`), and an instance id (falling back to the bag id) that is not the
+		//stored one. `enemy.alignment != alignment` is the `!defender.isAlly` below (every
+		//hero-targetable creature here is hostile - the ability and throw aimers refuse
+		//allies outright - so the only theoretical miss is Java's NEUTRAL sheep, which
+		//this port spawns as an ally). The tracker detaches unconditionally once the gate
+		//holds, whether or not the threshold fired - Java's `combinedLethality.detach()`.
+		//An executed Brute must not revive (`Char.java` detaches `BruteRage` first on
+		//every hero execute path): `heroExecuted` suppresses this method's own revival
+		//branch below, fixed 2026-09-21 to also cover the Assassin KO half.
+		const predictedHp = defender.hp - damage;
+		const clStoredWeapon = this.clAbilityWeaponInstanceId ?? this.clAbilityWeaponClass;
+		const clSwingWeapon = this.weaponInstanceId ?? this.weaponId;
+		//`attackingWeapon() instanceof MeleeWeapon`: a hero melee swing with a wielded
+		//weapon (never a throw - bow shots and thrown hits never reach this method
+		//anyway - and never the unarmed `startingWeapon`).
+		const clResult = combinedLethalityTest({
+			trackerTurns: this.clAbilityTurns,
+			storedWeapon: clStoredWeapon,
+			swingWeapon: clSwingWeapon,
+			isHeroMelee: attacker === this.hero && attacker.attackMode !== 'throw' && this.weaponId !== 'startingWeapon',
+			targetIsAlly: defender.isAlly === true,
+			targetIsBossOrMiniboss: defender.boss === true || defender.miniboss === true,
+			talentPoints: this.talentRank('combined_lethality'),
+			predictedHp,
+			targetMaxHp: defender.maxHp,
+		});
+		const clGate = clResult.tests;
+		const combinedLethality = clResult.executes;
+		const assassinLethality = attacker.prepLevel !== undefined && predictedHp > 0 && preparationCanKo(
+			predictedHp, defender.maxHp, attacker.prepLevel,
+			this.subclass() === 'assassin' ? this.talentRank('enhanced_lethality') : 0,
+			defender.boss === true || defender.miniboss === true,
+		);
+		if (attacker === this.hero && (combinedLethality || assassinLethality)) {
+			damage = defender.hp;
+			this.say(t('port.log.talentexecute'), 'positive');
+		}
+		//`Char.hit()` (tag `v3.3.8`) runs the identical `enemy.HP = 0` +
+		//`enemy.buff(Brute.BruteRage.class).detach()` block for both the Assassin's
+		//Preparation KO (line 523-537) and Combined Lethality (line 540-554) executes -
+		//a forced kill must stick even against a Brute/ArmoredBrute's revive-with-shield,
+		//not just the Combined Lethality half this port used to suppress it for alone.
+		const heroExecuted = attacker === this.hero && (combinedLethality || assassinLethality);
+		if (clGate) {
+			this.clAbilityTurns = 0;
+			this.clAbilityWeaponClass = null;
+			this.clAbilityWeaponInstanceId = undefined;
+		}
+		damage = absorbCreatureShields(defender, damage, this.ascendedTurns > 0);
+		defender.hp -= damage;
+		if (phantomRemote && defender.hp > 0) this.phantomPiranhaTeleport(defender, attacker);
+		if (this.fadeMirrorOnDamage(defender, damage)) {
+			return true;
+		}
+		if (this.enterPrismaticFade(defender, damage)) {
+			return true;
+		}
+		//`Grim.proc()`/`Char.damage()` + `GrimTracker` (tag v3.3.8): the enchant arms
+		//after the hit, then rolls against `(0.5 + .05*buffedWeaponLevel) * Arcana`
+		//scaled by the square of the defender's missing-HP fraction. A successful roll
+		//deals `round(currentHP)` extra damage, so it can finish a target immediately.
+		//The old port used a flat 15%/15-damage post-hit stand-in in `heroOnHit`; doing
+		//this at the central damage boundary preserves the real pre-death ordering and
+		//also handles Unstable's delegated Grim effect.
+		//`Grim` is one of `AntiMagic.RESISTS`' listed enchant classes: `Char.damage()` zeroes any
+		//hit whose source class is in that set for a MagicImmune defender (an AntiMagic champion),
+		//so the proc's bonus execute damage must not apply to one either.
+		//`Grim.proc()` returns early when the defender `isImmune(Grim.class)` (`Grim.java`, tag
+		//`v3.3.8`), and `Char.Property.BOSS` lists `Grim` in its immunities (`Char.java:1364`) -
+		//so bosses never suffer the execute (minibosses carry `MINIBOSS`, whose sets are empty,
+		//and stay eligible). The execute itself is `round(HP*resist(Grim.class))`
+		//(`Char.damage()`, tag `v3.3.8`), and `Statue` lists `Grim` in its resistances
+		//(`Statue.java`, tag `v3.3.8` - inherited by `ArmoredStatue`), each halving it - so a
+		//statue takes half the execute, not the full `round(currentHP)`.
+		if (gearAttacker && (this.weaponAffix === 'grim' || this.unstableDelegated === 'grim') && defender.hp > 0 && !defender.magicImmune && defender.boss !== true) {
+			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
+			const maxChance = (0.5 + 0.05 * level) * this.enchantProcMultiplier();
+			const missingFraction = (defender.maxHp - defender.hp) / defender.maxHp;
+			if (Random.chance(maxChance * missingFraction * missingFraction)) {
+				const resisted = defender.kind === 'statue' || defender.kind === 'armoredStatue';
+				const extra = doomDamage(resisted ? Math.round(defender.hp * 0.5) : Math.round(defender.hp), defender);
+				defender.hp -= extra;
+				damage += extra;
+			}
+		}
+		//DM300.damage()/supercharge(): normal mode stops at HT/3 after the first phase and
+		//HT*2/3 after the second; the Stronger Bosses challenge uses three HT/4 brackets.
+		//The threshold is checked after all armor/proc damage but before death bookkeeping,
+		//matching Java's HP floor and pylon activation edge.
+		this.lockedFloorBossDamage(defender, preHp - defender.hp, preHp - defender.hp);
+		if (defender.kind === 'dm300') {
+			const activated = defender.dmPylonsActivated ?? 0;
+			const threshold = isChallengeEnabled('stronger_bosses')
+				? defender.maxHp / 4 * (3 - activated)
+				: defender.maxHp / 3 * (2 - activated);
+			if (!defender.dmSupercharged && threshold > 0 && defender.hp <= threshold) {
+				defender.hp = threshold;
+				this.dm300Supercharge(defender);
+			}
+		}
+		if (defender.kind === 'tengu') this.clampTenguBracket(defender, preHp);
+		this.gnollMineAfterDamage(defender, preHp);
+		this.crystalMineAfterDamage(defender);
+		//`BrightFist`/`DarkFist.damage()`'s half-HP edge (see `brightDarkHalfHp`): only Bright
+		//costs the hero `daze` here - Dark's price is detaching the hero's Light, which this
+		//port has no model for. Java's Blindness is a cosmetic screen darkening (a FlavourBuff
+		//with no mechanical effect), so the port keeps its `daze` stand-in for Bright's half.
+		this.brightDarkHalfHp(defender, preHp);
+		if (defender.kind === 'yog' && defender.hp > 0) this.yogDamageHook(defender, preHp);
+ 		// FrostImbue.proc(): a surviving enemy hit receives Chill for two turns. The compact
+ 		// status model uses the same short-duration movement/turn lock as the closest Chill hook.
+ 		if (attacker === this.hero && this.hero.buffs['frostImbue'] && defender.hp > 0 && !defender.isHero && !defender.isNPC && !buffBlocked(defender, 'cripple')) {
+ 			defender.buffs['cripple'] = 2;
+ 		}
+ 		//`FireImbue.proc()` (`actors/buffs/FireImbue.java`, tag `v3.3.8`): a surviving enemy
+ 		//hit reignites Burning on a 1-in-2 (`Buff.affect(enemy, Burning.class).reignite(enemy)`
+ 		//- prolong, never a fresh overwrite - routed through the shared gate like every
+ 		//other fire source, so the holder-immunity and kind refusals still apply).
+ 		if (attacker === this.hero && this.hero.buffs['fireImbue'] && defender.hp > 0 && !defender.isHero && !defender.isNPC) {
+ 			if (Random.int(2) === 0) reigniteBuff(defender, 'burning');
+ 		}
+		//Statue.damage() (Statue.java, tag v3.3.8): any damage flips PASSIVE to HUNTING.
+		//ArmoredStatue inherits it unchanged, so both kinds wake here - previously only
+		//`statue` did, leaving a struck armored statue asleep forever.
+		if (defender.kind === 'statue' || defender.kind === 'armoredStatue') defender.sleeping = false;
+		this.showDamage(defender, damage);
+		//`Mob.defenseProc()` surprise presentation (`Mob.java`, tag `v3.3.8`): a
+		//surprise hit plays `HIT_STRONG` and shows the red `Wound` slash when the
+		//hero attacked with Preparation up, the `!` `Surprise` mark otherwise.
+		if (surprise && attacker.isHero === true && !defender.isHero && !defender.isNPC) {
+			this.showSurpriseMark(defender, attacker.prepLevel !== undefined);
+		}
+		if (defender.kind === 'demonSpawner') {
+			defender.spawnCooldown = Math.max((defender.spawnCooldown ?? 60) - damage, -20);
+		}
+		defender.sleeping = false;
+		//`Mob.defenseProc()` (tag v3.3.8): a mob hit by an enemy `aggro`s it and sets `target = enemy.pos`,
+		//so it heads for where the blow came from even when the attacker is outside its field of view
+		//(a thrown dart, a wand bolt from across the room). `lastSeen` is this port's hunt target; a mob
+		//that still sees the hero refreshes it every turn anyway.
+		if (attacker.isHero && !defender.isHero && !defender.isNPC && !defender.isAlly && !defender.fleeing) {
+			defender.lastSeen = { x: attacker.x, y: attacker.y };
+		}
+		//Char.damage(): incoming damage detaches MagicalSleep before normal damage
+		//resolution; the port's marker/paralysis pair is the equivalent state.
+		if (defender.buffs['magicalSleep'] !== undefined) {
+			delete defender.buffs['magicalSleep'];
+			delete defender.buffs['paralysis'];
+		}
+		this.sprite(defender).setColorAdd(1, 1, 1);
+		//the one log line whose severity depends on which way the blow went: SPD colours
+		//damage the hero takes red and leaves the hero's own hits plain
+		this.say(
+			t('port.log.hit', { subject, verb: t(attacker.isHero ? 'port.log.verb.hithero' : 'port.log.verb.hit'), object, damage }),
+			defender.isHero ? 'negative' : 'info'
+		);
 
 		//Illuminated already detached up front at the Searing Light site (any attacker,
 		//like Java's `Char.attack()`), so there is nothing left to consume here.
-		this.runOnHitHooks(attacker, defender, damage);
-		this.runHitRiders(attacker, defender, damage, charmedForTarget);
-		return this.resolveAttackDeath(attacker, defender, damage, preHp, heroExecuted, capeRetaliation);
+		//`MirrorImage.attackProc()` (tag `v3.3.8`): the image's own landed hits deal the
+		//holy bonus while the hero's buff is up. Arcana reads 1.0 on an image (no rings),
+		//so the `round(2 x multiplier)` is a flat 2; the later `hp <= 0` backstop credits
+		//the kill, as with every other on-hit damage block.
+		if (attacker.allyKind === 'mirror' && this.hero.buffs['holyWeapon'] !== undefined
+			&& !defender.magicImmune && defender.hp > 0) {
+			const dealt = doomDamage(HOLY_WEAPON_BONUS, defender);
+			defender.hp -= dealt;
+			this.showDamage(defender, dealt);
+		}
+		if (attacker.isHero) {
+			this.heroOnHit(attacker, defender, damage);
+			//The clone's `defenseProc` must also run when the *hero* attacks it - the defend-side
+			//glyph sites live in `mobOnHit`, which the branch below otherwise reaches only for a
+			//non-hero attacker. Same single roll, same gate.
+			if (defender.allyKind === 'shadowClone') this.mobOnHit(attacker, defender, damage, cloneDefenderGate);
+		} else {
+			//`ShadowAlly.attackProc()`'s delegated `Weapon.proc` half lives in `heroOnHit`, which
+			//owns the affix-keyed branches; `gearDelegated` keeps it to the weapon slot, so the
+			//hero-only Battlemage/Monk hooks there never fire for a clone.
+			if (cloneGearSwing) {
+				this.heroOnHit(attacker, defender, damage, true);
+				delegatedGearSwing = false;
+			}
+			this.mobOnHit(attacker, defender, damage, cloneDefenderGate);
+			// ShockElemental.meleeProc (Elemental.java, tag v3.3.8) calls
+			// Shocking.arc after the primary hit, then `ch.damage(round(dmg*0.4))`
+			// per arc hit - `Char.damage` never rolls armor, so the arc pierces.
+			// The planner reproduces Java's solid-cell radius recursion; each
+			// returned hit uses the armor-piercing blast seam plus death.
+			if (attacker.kind === 'elemental' && attacker.elementalType === 'shock') {
+				const arc = planShockElementalArc(
+					attacker.id,
+					defender,
+					damage,
+					this.creatures,
+					(origin) => this.pathfinder.distanceMap(origin),
+					(x, y) => this.level.index(x, y),
+					(x, y) => !this.level.passable(x, y),
+					(target) => this.level.get(target.x, target.y) === WATER,
+				);
+				for (const targetId of arc.targetIds) {
+					const target = this.creatures.find((creature) => creature.id === targetId);
+					//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`): the arc hits as
+				//`Shocking`, so every holder takes the `Math.round` half of the 0.4x.
+				if (target && target.hp > 0) this.applyBlastDamage(target,
+					electricDamageHalved(target.kind, target.elementalType, target.yogFistType) ? Math.round(arc.damage / 2) : arc.damage,
+					true, 'foe');
+				}
+			}
+		}
+		if (attacker.statueEnchant) this.statueEnchantProc(attacker, defender, damage);
+		//Weapon-ability riders staged by `useWeaponAbility`: heavy blow dazes 5 turns
+		//(`ability_desc`: "dazes for 5 turns, reducing accuracy and evasion by 50%" - the
+		//port's shared `daze`), harvest bleeds the stated fraction of the dealt damage, and
+		//Spike knocks the target back (the port's straight shove; lunge only steps the hero - its descs mention no knockback). Consumed on the hit.
+		//`Crossbow` melee with an armed charged shot knocks back 4 and disarms on the
+		//hit, kill or not (`Crossbow.proc`, tag `v3.3.8` - no alive check there either).
+		if (attacker === this.hero && this.chargedShotArmed && this.weaponMeleeKey() === 'crossbow') {
+			const dx = Math.sign(defender.x - this.hero.x);
+			const dy = Math.sign(defender.y - this.hero.y);
+			for (let step = 0; step < 4; step++) {
+				const next = { x: defender.x + dx, y: defender.y + dy };
+				if ((dx === 0 && dy === 0) || !this.level.passable(next.x, next.y) || this.creatureAt(next.x, next.y)) break;
+				this.moveTo(defender, next);
+			}
+			this.chargedShotArmed = false;
+		}
+		if (attacker === this.hero && defender.hp > 0) {
+			if (this.abilityDazeNext) addBuff(defender, 'daze', 5);
+			//Harvest replaces the strike's damage with its flat amount and applies that
+			//same amount as bleeding (`Char.damage` with `HarvestBleedTracker`, tag
+			//`v3.3.8`): `setBleeding` retains the strongest active bleed, matching
+			//`Bleeding.set`. Consumed on the hit (a missed strike keeps it for the next
+			//landed one - see the resolver).
+			if (this.abilityHarvestNext > 0) {
+				setBleeding(defender, this.abilityHarvestNext, 'harvestBleed');
+				this.abilityHarvestNext = 0;
+			}
+			if (this.abilityKnockbackNext) {
+				//`Glaive`/`Spear` spike knockback: the port's established straight shove
+				//(see Heroic Leap above), one cell directly away from the hero.
+				const dx = Math.sign(defender.x - this.hero.x);
+				const dy = Math.sign(defender.y - this.hero.y);
+				const next = { x: defender.x + dx, y: defender.y + dy };
+				if ((dx !== 0 || dy !== 0) && this.level.passable(next.x, next.y) && !this.creatureAt(next.x, next.y)) {
+					this.moveTo(defender, next);
+				}
+			}
+		}
+		this.abilityDazeNext = false;
+		this.abilityKnockbackNext = false;
+		//Charm.recover() spends five turns when the charmed actor reaches its
+		//recorded object; preserve that shortens-on-contact behavior for both
+		//Affection and Friendly charms.
+		if (charmedForTarget && attacker.buffs.charm !== undefined) {
+			attacker.buffs.charm -= 5;
+			if (attacker.buffs.charm <= 0) {
+				delete attacker.buffs.charm;
+				this.charmTargets.delete(attacker.id);
+			}
+		}
+		//Repulsion.proc() (items/armor/glyphs/Repulsion.java, tag 4.0.0-beta): an
+		//adjacent attacker is pushed directly away from the armor wearer with
+		//round(2 * max(1, (level+1)/(level+5) * Arcana)). The port has no Ballistica/
+		//WandOfBlastWave primitive, so the equivalent existing straight shove is used;
+		//it still stops at walls/occupants and lets moveTo apply flying/chasm and piranha
+		//post-move rules. This is deliberately after damage, while Java's armor proc is
+		//inside Char.damage(), because the observable result is the same hit plus displacement.
+		if ((defender.isHero || cloneDefenderGate) && ((this.armorGlyphActive() && this.armorGlyph === 'repulsion') || this.trinityBodyGlyphIs('repulsion')) && attacker.hp > 0
+			&& Roguelike.chebyshevDistance(attacker, defender) <= 1) {
+			const level = this.degradedLevel(this.armorLevel);
+			const procChance = ((level + 1) / (level + 5)) * this.armorProcMultiplier(defender);
+			if (Random.chance(procChance)) {
+				const power = Math.round(2 * Math.max(1, procChance));
+				const dx = Math.sign(attacker.x - defender.x);
+				const dy = Math.sign(attacker.y - defender.y);
+				for (let step = 0; step < power; step++) {
+					const next = { x: attacker.x + dx, y: attacker.y + dy };
+					//a flying attacker may be shoved out over a pit (Java: `avoid`, not `passable`),
+					//but not into a cell Java forced solid - see `canStepOnto`
+					if ((!this.canStepOnto(next.x, next.y) && !(attacker.flying && this.isChasmCell(next.x, next.y))) || this.creatureAt(next.x, next.y)) break;
+					this.moveTo(attacker, next);
+					if (attacker.hp <= 0) break;
+				}
+			}
+		}
+		// CrystalMimic.attackProc(): after its crystal-chest reveal it repositions the
+		// struck hero to a neighbouring free cell instead of dealing bonus damage.
+		if (attacker.kind === 'crystalMimic' && defender.isHero && defender.hp > 0) {
+			const candidates = Roguelike.neighbourOffsets(8)
+				.map(([dx, dy]) => ({ x: defender.x + dx, y: defender.y + dy }))
+				.filter((at) => this.level.passable(at.x, at.y) && !this.creatureAt(at.x, at.y));
+			const at = Random.element(candidates);
+			if (at) {
+				this.moveTo(this.hero, at);
+				this.say(t('port.log.mimicdisplace'), 'warning');
+			}
+		}
+		if (defender.hp <= 0 && defender.kind === 'ghoul') this.ghoulDown(defender);
+		//DwarfKing P1: taken damage accelerates both cooldowns (`-= taken/8`).
+		if (defender.kind === 'king' && (defender.kingPhase ?? 1) === 1 && defender.hp > 0) {
+			const taken = Math.max(0, preHp - defender.hp);
+			defender.kingSummonCd = (defender.kingSummonCd ?? 0) - taken / 8;
+			defender.kingAbilityCd = (defender.kingAbilityCd ?? 0) - taken / 8;
+		}
+		//Phase transitions ride the damage event, not the King's next turn (see
+		//`kingDamageHook`): accel first, then the transition, matching Java's order.
+		if (defender.kind === 'king' && defender.hp > 0) this.kingDamageHook(defender);
+		//Tengu bracket jumps resolve after the hit (procs included) but before death.
+		if (defender.kind === 'tengu' && defender.hp > 0) this.tenguBracketJump(defender, preHp);
+
+		//Brute.isAlive()/triggerEnrage(): the first time it would die, it survives instead with
+		//a shield of HT/2+4 (`BruteRage.setShield`) - reproduced here by giving its hp field
+		//that value directly rather than tracking a separate shield pool, so the existing
+		//damage-application code drains it exactly like real hp would. `raged` then boosts its
+		//own damage roll (`liveStats`) and drives the flat 4/turn passive decay in
+		//`takeMonsterTurn`; only ever fires once (`hasRaged`), matching Java exactly.
+		//`ArmoredBrute extends Brute` and overrides `triggerEnrage()` with its own smaller
+		//shield (`HT/2+1`, not `+4`) that decays far slower (1 point every 3 turns via
+		//`ArmoredRage.act()`'s own `spend(3*TICK)`, vs plain `BruteRage`'s 4/turn) - previously
+		//this port's check here was `kind === 'brute'` literally, so ArmoredBrute (a real,
+		//spawnable alternative monster kind) never got the revival at all and could simply be
+		//killed outright, the exact bug this port's own `Brute` fix once corrected for the base
+		//kind. `armoredRageTicks` starts the every-3rd-turn decay counter.
+		if (defender.hp <= 0 && (defender.kind === 'brute' || defender.kind === 'armoredBrute') && !defender.hasRaged && !heroExecuted) {
+			defender.hasRaged = true;
+			defender.raged = true;
+			if (defender.kind === 'armoredBrute') {
+				defender.hp = Math.round(defender.maxHp / 2 + 1);
+				defender.armoredRageTicks = 0;
+			} else {
+				defender.hp = Math.round(defender.maxHp / 2 + 4);
+			}
+			this.say(t('port.log.bruterage'), 'negative');
+			return true;
+		}
+
+        // Cape of Thorns returns the deflected amount to an adjacent attacker.
+        // Defer it until this resolver has finished reading the attacker, because the
+        // direct damage may kill and remove that creature from the scene.
+        if (capeRetaliation > 0 && attacker.hp > 0 && !attacker.isHero
+            && Roguelike.chebyshevDistance(attacker, defender) <= 1) {
+            this.applyBlastDamage(attacker, capeRetaliation, true, 'foe');
+        }
+		if (defender.hp <= 0) {
+			const cleave = cleaveComboSeed(this.subclass(), this.talentRank('cleave'));
+			if (attacker === this.hero && cleave > 0) attacker.combo = cleave;
+			//Mob.die()'s kill triggers gate on the *cause* (`hero || Weapon || Enchantment`),
+			//so missile kills count too - `isHero` (true for the hero and its thrown-missile
+			//copy alike) rather than the melee-only `attacker === this.hero` reference check.
+			//Lethal Momentum's own chance (0.34+0.33/point: 2/3 at rank 1, certain at 2) was
+			//already exact, only its trigger was narrowed to melee; fixed the same way here.
+			//Endless Rage's old free-turn line is gone outright: real `ENDLESS_RAGE` only raises
+			//the Berserk rage cap (`1+0.1667x` max power), which needs the rage gain/decay clock
+			//this port doesn't model (see the Berserk row) - a free turn had no Java basis.
+			if (attacker.isHero && this.heroClass === 'warrior' && this.talentRank('lethal_momentum') > 0 && Random.chance(this.talentRank('lethal_momentum') >= 2 ? 1 : 2 / 3)) this.freeTurnNext = true;
+			if (attacker.isHero) this.lethalHasteOnKill();
+			this.kill(defender);
+			return true;
+		}
+		if (defender.kind === 'swarm') this.swarmSplit(defender, damage, preHp);
+		return true;
 	},
 
 	/** hero-side on-hit hooks: enchants, subclass effects, counters */
@@ -436,8 +1194,10 @@ export const combatResolutionMethods = {
 
 	genericProcMultiplier(this: DungeonScene): number {
 		let multi = ringArcanaMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
-		//`Berserk.enchantFactor()` (`Weapon.java` 545): Enraged Catalyst adds `min(1, power) x 15% x rank`.
-		if (this.hero.buffs['berserk'] !== undefined) multi = rageEnchantFactor(multi, this.rageState.power, this.talentRank('enraged_catalyst'));
+		if (this.hero.buffs['berserk'] !== undefined) {
+			const missing = this.hero.maxHp > 0 ? 1 - this.hero.hp / this.hero.maxHp : 0;
+			multi += Math.min(1, missing) * 0.15 * this.talentRank('enraged_catalyst');
+		}
 		return multi;
 	},
 
@@ -460,6 +1220,9 @@ export const combatResolutionMethods = {
 	},
 
 	enchantProcMultiplier(this: DungeonScene): number {
+		//A delegated `ShadowAlly` swing (`attack()`'s `cloneGearSwing`) rolls at Java's base
+		//1.0 and must not drain the hero's one-shot trackers - see `delegatedGearSwing`.
+		if (delegatedGearSwing) return 1;
 		//Java's one-shot trackers are separate buffs that SUM at the next proc
 		//roll (`RunicSlashTracker.boost + DirectedPowerTracker.enchBoost + ...`),
 		//so the slots add rather than overwrite - and Runic/Directed both zero
@@ -473,7 +1236,8 @@ export const combatResolutionMethods = {
 		this.abilityDirectedBonus = 0;
 		return this.genericProcMultiplier() + bonus;
 	},
-/**
+
+	/**
 	 * The three pre-armor `Weapon.proc()` curse branches (`Polarized.java`,
 	 * `Sacrificial.java`, `Displacing.java` under `items/weapon/curses/`, tag `v3.3.8`):
 	 * Polarized flips the hit between 1.5x and an outright whiff, Sacrificial bleeds the
@@ -597,14 +1361,11 @@ export const combatResolutionMethods = {
 			const missingFraction = (defender.maxHp - defender.hp) / defender.maxHp;
 			if (Random.chance(maxChance * missingFraction * missingFraction)) {
 				const resisted = defender.kind === 'statue' || defender.kind === 'armoredStatue';
-				return resisted ? Math.round(defender.hp * 0.5) : Math.round(defender.hp);
+				return doomDamage(resisted ? Math.round(defender.hp * 0.5) : Math.round(defender.hp), defender);
 			}
 		}
 		return 0;
 	},
-
-	
-
 
 	/** First free cell at the corpse or beside it for a Lucky bonus heap - Java lets the
 	 * `Heap` stack the drop onto the mob's own cell; this port's one-item-per-cell rule
@@ -615,7 +1376,7 @@ export const combatResolutionMethods = {
 				&& !this.groundItemAt(cell.x, cell.y) && !this.creatureAt(cell.x, cell.y));
 	},
 
-	heroOnHit(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): void {
+	heroOnHit(this: DungeonScene, attacker: Creature, defender: Creature, damage: number, gearDelegated = false): void {
 		//Both halves of an Unstable swing resolve the same delegated enchant (see `attack()`).
 		//MissileWeapon has no enchantment of its own. Sniper's Shared Enchantment is the
 		//narrow Java exception: on a thrown hit, re-run the equipped SpiritBow enchant with
@@ -673,7 +1434,11 @@ export const combatResolutionMethods = {
 		}
 		//Battlemage: staff melee feeds the wand (advance 2 per landed hit, simplified from
 		//the per-wand on-hit effects)
-		if (this.subclass() === 'battlemage') this.wandCharges.refund(2 + this.talentRank('mystical_charge'));
+		//`gearDelegated`: a delegated `ShadowAlly` swing only borrows the weapon slot. These two
+		//are `Hero` subclass hooks (Battlemage wand charge, Monk tome charge), not `Weapon.proc`,
+		//so Java never runs them off `ShadowAlly.attackProc`.
+		if (!gearDelegated && this.subclass() === 'battlemage') this.wandCharges.refund(2 + this.talentRank('mystical_charge'));
+		if (!gearDelegated && this.subclass() === 'monk_sub' && this.talentRank('combined_energy') > 0) this.tomeCharges.advance(this.talentRank('combined_energy'));
 		//`Weapon.proc()`'s `HolyWepBuff` clause (tag `v3.3.8`): a separate magical hit for
 		//`round(2 x Enchantment.genericProcChanceMultiplier())` - Arcana plus Berserk's
 		//catalyst term through the shared `genericProcMultiplier()` (Smite's +3 and the
@@ -683,7 +1448,7 @@ export const combatResolutionMethods = {
 		//`hp <= 0` backstop credits the kill, as with every other on-hit damage block.
 		if (attacker === this.hero && this.hero.buffs['holyWeapon'] !== undefined
 			&& !defender.magicImmune && defender.hp > 0) {
-			const holy = Math.round(HOLY_WEAPON_BONUS * this.genericProcMultiplier());
+			const holy = doomDamage(Math.round(HOLY_WEAPON_BONUS * this.genericProcMultiplier()), defender);
 			if (holy > 0) {
 				defender.hp -= holy;
 				this.showDamage(defender, holy);
@@ -706,7 +1471,7 @@ export const combatResolutionMethods = {
 					powerMulti -= 1;
 				}
 				if (powerMulti > 0 && defender.hp > 0) {
-					const burnDamage = Math.round(Random.normalRange(1, 3 + Math.floor(this.depth / 4)) * 0.67 * powerMulti);
+					const burnDamage = doomDamage(Math.round(Random.normalRange(1, 3 + Math.floor(this.depth / 4)) * 0.67 * powerMulti), defender);
 					if (burnDamage > 0) {
 						defender.hp -= burnDamage;
 						this.showDamage(defender, burnDamage);
@@ -824,7 +1589,7 @@ export const combatResolutionMethods = {
 		//the attack trajectory beyond its cell by `round(2 * max(1, chance))` cells.
 		//The scene already owns forced movement and collision rules in `moveTo`, so a
 		//straight grid shove reproduces the meaningful result without a new actor type.
-		if (affix === 'elastic' && defender.hp > 0 && attacker === this.hero) {
+		if (affix === 'elastic' && defender.hp > 0 && (attacker === this.hero || gearDelegated)) {
 			const level = Math.max(0, this.degradedLevel(this.weaponLevel));
 			const procChance = ((level + 1) / (level + 5)) * this.enchantProcMultiplier();
 			if (Random.chance(procChance)) {
@@ -1096,19 +1861,18 @@ export const combatResolutionMethods = {
 		return glyph !== null && (this.hero.buffs['holyWard'] === undefined || this.subclass() === 'paladin' || getCurse(glyph) !== undefined);
 	},
 
-	/** Java's Armor.proc() runs BodyFormBuff.glyph() independently of the worn glyph and
-	 * HolyWard's Armor.hasGlyph() suppression. MagicImmune disables that Trinity branch; an
-	 * effect matching the worn glyph is also skipped to avoid double-proccing it. */
+	/** Java's `Armor.proc()` runs `BodyFormBuff.glyph()` independently of the worn glyph and
+	 * HolyWard's `Armor.hasGlyph()` suppression. `MagicImmune` disables that entire Trinity branch;
+	 * an effect matching the worn glyph is also skipped to avoid double-proccing it. */
 	trinityBodyGlyphIs(this: DungeonScene, glyph: string): boolean {
 		return trinityBodyGlyphActive(this.trinityForm, this.trinityTurns, this.trinityBodyGlyph,
 			this.armorGlyph, this.hero.magicImmune, glyph);
 	},
 
 	/** Barrier absorbs incoming damage before HP, matching Buff.Barrier's core rule. */
-	absorbHeroDamage(this: DungeonScene, amount: number, magical = false, auraAlreadyApplied = false): number {
+	absorbHeroDamage(this: DungeonScene, amount: number, magical = false, auraAlreadyApplied = false,
+		skipDefenseHooks: { skipEarthroot?: boolean; skipHolyWard?: boolean } = {}): number {
 		if (!auraAlreadyApplied) amount = this.auraProtectedDamage(this.hero, amount);
-		//`Hero.damage()` / `Char.attack()`: Meditate's `MeditateResistance` cuts every hit to a fifth while it runs.
-		if (amount > 0 && this.monk.resistTurns > 0) amount = Math.round(amount * MONK_MEDITATE_DAMAGE_FACTOR);
 		//`Hero.damage()`'s `DuelParticipant.addDamage(effectiveDamage)`: every hero hit
 		//that gets past this boundary feeds the duel ledger with its HP-plus-shield pool
 		//loss (Java's `preHP - postHP`, overkill included since the returned hit is
@@ -1139,7 +1903,7 @@ export const combatResolutionMethods = {
 		//shield - while this port's absorption point sits after the damage roll, which has already
 		//taken armor off; a hit therefore burns a little less of the pool here than in Java (stated
 		//in PORT_COVERAGE.md rather than silently). Keep-max, as Java's own `level(value)` is.
-		if (this.earthrootArmor) {
+		if (!skipDefenseHooks.skipEarthroot && this.earthrootArmor) {
 			if (this.earthrootArmor.pos !== this.level.index(this.hero.x, this.hero.y)) {
 				this.earthrootArmor = null;
 			} else if (amount > 0) {
@@ -1153,6 +1917,9 @@ export const combatResolutionMethods = {
 		//Char.damage()'s own Barrier absorption, so Tenacity scales the raw hit here too.
 		const tenacityMultiplier = ringTenacityMultiplier(this.effectiveRing(), this.hero.hp, this.hero.maxHp, this.hero.magicImmune, this.trinitySpiritRing());
 		let scaled = tenacityMultiplier < 1 ? Math.ceil(amount * tenacityMultiplier) : amount;
+		//Hero.damage() applies Hero-only modifiers before Char.damage(); Doom then multiplies
+		//the resulting hit before MagicImmune resistance and the shield pool.
+		scaled = doomDamage(scaled, this.hero);
 		//AntiMagic.drRoll()/Char.damage() (items/armor/glyphs/AntiMagic.java and
 		//actors/Char.java, tag 4.0.0-beta): listed magical sources lose a
 		//NormalIntRange(level*Arcana, (3+1.5*level)*Arcana) roll before shields.
@@ -1169,7 +1936,7 @@ export const combatResolutionMethods = {
 		//Arcana plus the aura term, never the attack-side Berserk term
 		//(`Armor.Glyph.genericProcChanceMultiplier()`, `Armor.java` 821-831). Placed
 		//pre-shield, where the armor stage sits in Java's `defenseProc()` chain.
-		if (scaled > 0 && this.hero.buffs['holyWard'] !== undefined) {
+		if (!skipDefenseHooks.skipHolyWard && scaled > 0 && this.hero.buffs['holyWard'] !== undefined) {
 			scaled = Math.max(0, scaled - Math.round(HOLY_WARD_BLOCK * this.armorProcMultiplier(this.hero)));
 		}
 		let viscosityDamage = Math.max(0, scaled);
@@ -1205,31 +1972,19 @@ export const combatResolutionMethods = {
 		//for that unspecified order, not a reproduction of a real priority field - the seal drains
 		//first here because `HeroClass.initHero()` affixes it before any other buff could exist
 		//for a fresh Warrior, making it the earliest-attached shield in the common case.
-		//`Char.damage()` (tag `v3.3.8`): a hit that leaves the hero at or below half HP - counting the shield already up -
-		//activates a ready `BrokenSeal.WarriorShield` BEFORE the shields absorb, so the fresh shield takes this very hit.
-		if (this.armorSealed && sealShouldActivate({
-			damage: viscosityDamage, hp: this.hero.hp, maxHp: this.hero.maxHp, shielding: this.heroShieldPoolTotal(), coolingDown: this.sealState.cooldown > 0,
-		})) {
-			const size = sealMaxShield(this.armorTier, this.talentRank('iron_will'));
-			this.sealBarrier.add(size);
-			this.sealState = sealActivate(this.sealState, size);
-			this.say(t('port.log.shield', { amount: size }), 'positive');
-		}
 		const afterLivingEarth = Math.max(0, viscosityDamage - livingEarthBlocked);
 		const blockedSeal = this.sealBarrier.absorb(afterLivingEarth);
 		const blockedBlocking = this.blockingBarrier.absorb(Math.max(0, afterLivingEarth - blockedSeal));
 		const blockedAscended = this.ascendedBarrier.absorb(Math.max(0, afterLivingEarth - blockedSeal - blockedBlocking));
 		const blockedBase = this.heroBarrier.absorb(Math.max(0, afterLivingEarth - blockedSeal - blockedBlocking - blockedAscended));
-		//`Berserk`'s shield has priority -1: every other shield is consumed first.
-		const blockedRage = this.rageBarrier.absorb(Math.max(0, afterLivingEarth - blockedSeal - blockedBlocking - blockedAscended - blockedBase));
-		const blocked = livingEarthBlocked + blockedSeal + blockedBlocking + blockedAscended + blockedBase + blockedRage;
+		const blocked = livingEarthBlocked + blockedSeal + blockedBlocking + blockedAscended + blockedBase;
 		this.wandCharges.refund(shieldBatteryGain(blocked, this.talentRank('shield_battery')));
 		const reduced = Math.max(0, viscosityDamage - blocked);
-		//`Hero.isAlive()`/`Berserk.berserking()`: a fatal blow at 100% rage with Deathless Fury starts the berserk at 0 HP instead
-		//of killing (the hero keeps 1 HP here, `rageState.zeroHp` marking Java's real 0; the berserk's end is where they die).
-		if (reduced >= this.hero.hp && this.rageSurvivesDeath()) {
+		if (deathlessFuryTriggers(this.subclass(), this.talentRank('deathless_fury'), this.deathlessFuryUsed, reduced, this.hero.hp)) {
+			this.deathlessFuryUsed = true;
 			recordDuelDamage(hpBefore - 1);
 			this.hero.hp = 1;
+			addBuff(this.hero, 'berserk');
 			return 0;
 		}
 		recordDuelDamage(reduced);
@@ -1240,7 +1995,7 @@ export const combatResolutionMethods = {
 	 * Earthroot's `level`, the Living Earth rock amount) - the `shielding()` half of the
 	 * duel ledger's pool-loss snapshot. */
 	heroShieldPoolTotal(this: DungeonScene): number {
-		return this.heroBarrier.total + this.sealBarrier.total + this.blockingBarrier.total + this.ascendedBarrier.total + this.rageBarrier.total
+		return this.heroBarrier.total + this.sealBarrier.total + this.blockingBarrier.total + this.ascendedBarrier.total
 			+ (this.earthrootArmor?.level ?? 0) + this.livingEarthArmor;
 	},
 
@@ -1263,7 +2018,7 @@ export const combatResolutionMethods = {
 	/** Returns the amount actually added (may be less than `amount` if capped). */
 	grantHeroShield(this: DungeonScene, amount: number, cap = 999): number {
 		if (amount <= 0) return 0;
-		const max = cap;
+		const max = cap + this.talentRank('iron_will');
 		const room = Math.max(0, max - this.heroBarrier.total);
 		const added = Math.min(room, amount);
 		this.heroBarrier.add(added);
@@ -1290,7 +2045,7 @@ export const combatResolutionMethods = {
 	},
 
 	/** monster-side on-hit hooks (all pre-existing, now grouped) */
-	mobOnHit(this: DungeonScene, attacker: Creature, defender: Creature, damage: number): void {
+	mobOnHit(this: DungeonScene, attacker: Creature, defender: Creature, damage: number, cloneDefenseGate?: boolean): void {
 		const scene = this;
 		mobOnHit({
 			get armorGlyph() { return scene.armorGlyph; }, set armorGlyph(value) { scene.armorGlyph = value; },
@@ -1308,6 +2063,10 @@ export const combatResolutionMethods = {
 			showHeal: (target, amount) => scene.showHeal(target, amount), spawnMonster: (kind, at) => scene.spawnMonster(kind, at),
 			subclass: () => scene.subclass(), talentRank: (id) => scene.talentRank(id), thiefSteal: (thief) => scene.thiefSteal(thief),
 			triggerPortedPlantAt: (x, y) => scene.triggerPortedPlantAt(x, y),
+			//`ShadowAlly.defenseProc`'s single roll, drawn in `attack()`; omitted by callers that
+			//are not an ordinary landed attack (e.g. `monsterAi`'s own hook), in which case
+			//`mobOnHit` draws it itself.
+			cloneDefenseGate,
 		}, attacker, defender, damage);
 	},
 

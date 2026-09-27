@@ -15,7 +15,7 @@ import { shatterHasEffect } from '../../items/dropThrow';
 import { releaseBeeFromPot } from '../../items/honeypot';
 import { combinedStatBonusLevel, ringDef, ringEnergyMultiplier, ringMightBonus, RING_DEFS } from '../../items/ringModifiers';
 import { MOB_KEYS, has, t } from '../../i18n/index';
-import { evasiveArmorBonus } from '../../talentEffects';
+import { evasiveArmorBonus, unencumberedSpiritEvasion } from '../../talentEffects';
 import { SpdJavaRandom, spdScramble, spdSeedForDepth } from '../../spdRng';
 import { isPortedDepth, miningBranchFloor, portedFloor, toGameTerrain } from '../../spdLevelGen/gameBridge';
 import { CITY_BOTTOM_DOOR, CITY_TOP_DOOR, HALLS_EXIT_CELL } from '../../spdLevelGen/bossLevels';
@@ -236,14 +236,13 @@ export const coreSpawnTilesMethods = {
 		this.blockingBarrier.clear();
 		this.blockingTurnsLeft = 0;
 		this.sealBarrier.clear();
-		this.sealState = { cooldown: 0, turnsSinceEnemies: 0, initialShield: 0 };
+		this.sealPartialGain = 0;
 		this.armorSealed = false;
 		this.itemPickerOpen = false;
 		this.itemPickerEntries = [];
 		this.itemPickerBody = undefined;
 		this.itemPickerOnPick = null;
-		this.rageState = { mode: 'normal', power: 0, powerLossBuffer: 0, levelRecovery: 0, turnRecovery: 0, zeroHp: false };
-		this.rageBarrier.clear();
+		this.deathlessFuryUsed = false;
 		this.stealthTalentTicks = 0;
 		this.cloakChargeProgress = 0;
 		this.cloakStealthTurnsToCost = 0;
@@ -350,15 +349,13 @@ export const coreSpawnTilesMethods = {
 		this.heroStats.setBase('accuracy', Math.floor(this.heroAttackSkill * (this.heroClass === 'cleric' && this.weaponId === 'startingWeapon' ? 1.4 : 1)) + this.talentAccuracy);
 		this.heroStats.setBase('evasion', this.heroDefenseSkill + this.talentEvasion);
 		this.hero.accuracy = this.heroStats.get('accuracy');
-		this.hero.evasion = this.heroStats.get('evasion') + evasiveArmorBonus(this.subclass(), this.talentRank('evasive_armor'), this.armorLevel);
+		this.hero.evasion = this.heroStats.get('evasion') + evasiveArmorBonus(this.subclass(), this.talentRank('evasive_armor'), this.armorLevel) + unencumberedSpiritEvasion(this.subclass(), this.talentRank('unencumbered_spirit'));
 		//`Quarterstaff` defensive stance: triples evasion while up (`ability_desc`).
 		if (this.defensiveStanceTurns > 0) this.hero.evasion *= 3;
 		//Guard (`Hero.defenseSkill`, tag `v3.3.8`): infinite evasion while the tracker
 		//runs - every incoming attack misses, not just the first. The old one-negated-
 		//hit model in 	akeHeroDamage` is gone with it.
 		if (this.guardTurns > 0) this.hero.evasion = 1000000;
-		//`Combo.ParryTracker` (`Hero.defenseSkill`): infinite evasion while the Parry window is up.
-		if (this.comboParryTurns > 0) this.hero.evasion = 1000000;
 		if (this.healingEvasionTurns > 0) this.hero.evasion = this.talentRank('restored_agility') >= 2 ? 1000000 : this.hero.evasion * 4;
 		this.hero.str = this.heroStr + ringMightBonus(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing());
 		if (this.hero.buffs['adrenalineSurge']) this.hero.str += 1;
@@ -487,8 +484,6 @@ export const coreSpawnTilesMethods = {
 		if (amount > 0) {
 			const currentLevelMaxExp = SPD_LEVEL_CURVE.experienceFor(this.progression.level + 1) - SPD_LEVEL_CURVE.experienceFor(this.progression.level);
 			if (currentLevelMaxExp > 0) {
-				//`Hero.earnExp()`: `Berserk.recover(percent)` pays a death-berserk's level debt.
-				this.rageOnExperience(amount / currentLevelMaxExp);
 				applyToolkitGainCharge({ bag: this.bag }, amount / currentLevelMaxExp, ringEnergyMultiplier(this.effectiveRing(), this.hero.magicImmune, this.trinitySpiritRing()) * this.lightCloakChargeMultiplier(), this.hero.magicImmune === true);
 				//`MasterThievesArmband.Thievery.gainCharge()` (tag `v3.3.8`): the same per-XP-grant
 				//hook as the toolkit call just above - see `applyArmbandGainCharge`'s own doc comment.
@@ -913,6 +908,7 @@ export const coreSpawnTilesMethods = {
 			fire: this.fire.toJSON(),
 			plantGas: this.plantGas.toJSON(),
 			plantFreeze: this.plantFreeze.toJSON(),
+			regrowth: this.regrowth.toJSON(),
 			toxicGas: this.toxicGas.toJSON(),
 			toxicGasVents: [...this.toxicGasVents],
 			paralyticGas: this.paralyticGas.toJSON(),
@@ -967,6 +963,7 @@ export const coreSpawnTilesMethods = {
 		this.fire = Blob.fromJSON(state.fire);
 		this.plantGas = state.plantGas ? Blob.fromJSON(state.plantGas) : new Blob(this.level.width, this.level.height);
 		this.plantFreeze = state.plantFreeze ? Blob.fromJSON(state.plantFreeze) : new Blob(this.level.width, this.level.height);
+		this.regrowth = state.regrowth ? Blob.fromJSON(state.regrowth) : new Blob(this.level.width, this.level.height);
 		this.toxicGas = state.toxicGas ? Blob.fromJSON(state.toxicGas) : new Blob(this.level.width, this.level.height);
 		this.toxicGasVents = new Map(state.toxicGasVents ?? []);
 		this.paralyticGas = state.paralyticGas ? Blob.fromJSON(state.paralyticGas) : new Blob(this.level.width, this.level.height);
@@ -1328,6 +1325,7 @@ export const coreSpawnTilesMethods = {
 		this.fire = new Blob(this.level.width, this.level.height);
 		this.plantGas = new Blob(this.level.width, this.level.height);
 		this.plantFreeze = new Blob(this.level.width, this.level.height);
+		this.regrowth = new Blob(this.level.width, this.level.height);
 		this.toxicGas = new Blob(this.level.width, this.level.height);
 		this.toxicGasVents = new Map();
 		this.paralyticGas = new Blob(this.level.width, this.level.height);

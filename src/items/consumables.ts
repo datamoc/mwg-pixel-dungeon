@@ -146,7 +146,7 @@ function applyFrozenCarpaccioEffect(scene: ConsumableContext): number {
 		}
 		case 2:
 			scene.say(t('items.food.frozencarpaccio.refresh'));
-			for (const buff of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'drowsy', 'blindness'] as const) delete scene.hero.buffs[buff];
+			for (const buff of POTION_OF_HEALING_CURED_BUFFS) delete scene.hero.buffs[buff];
 			return 0;
 		case 3:
 			scene.say(t('items.food.frozencarpaccio.better'));
@@ -155,6 +155,13 @@ function applyFrozenCarpaccioEffect(scene: ConsumableContext): number {
 			return 0;
 	}
 }
+
+// `PotionOfHealing.cure()` (tag `v3.3.8`) detaches Poison, Cripple, Weakness, Vulnerable,
+// Bleeding, Blindness, Drowsy, Slow, and Vertigo. Both foods call it in Java. Slow has no
+// BuffId in this port yet; clear every represented debuff, including Vertigo, in both paths.
+const POTION_OF_HEALING_CURED_BUFFS = [
+	'poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'drowsy', 'blindness', 'vertigo',
+] as const;
 
 /** Food.satisfy() and the class talents that react to eating. */
 export function eatFood(scene: ConsumableContext): boolean {
@@ -199,9 +206,8 @@ export function eatFood(scene: ConsumableContext): boolean {
 		}
 		addBuff(scene.hero, 'invisibility', BUFF_DURATION_DATA.invisibility);
 		mealHeal = barkskin;
-		// `PotionOfHealing.cure()` (tag `v3.3.8`) clears this same shared list;
-		// keep the small set local so the food workflow remains independently testable.
-		for (const buff of ['poison', 'bleeding', 'weakness', 'vulnerable', 'cripple', 'drowsy', 'blindness'] as const) delete scene.hero.buffs[buff];
+		// `PotionOfHealing.cure()` (tag `v3.3.8`) clears the shared complete debuff list.
+		for (const buff of POTION_OF_HEALING_CURED_BUFFS) delete scene.hero.buffs[buff];
 	}
 	if (food.id === 'frozenCarpaccio') mealHeal += applyFrozenCarpaccioEffect(scene);
 	const heal = applyMealEatenEffects(scene, mealHeal);

@@ -11,7 +11,7 @@ import { confirmDisintegrationWand, livingEarthZapRange, useDisintegrationWand, 
 import { ringElementsMultiplier, ringEnergyMultiplier, ringSharpshootingBonus } from '../../items/ringModifiers';
 import { has, t } from '../../i18n/index';
 import { onZoomChanged, screenShake, setZoomOffset, zoomForOffset, zoomOffset } from '../../settings';
-import { EMPOWERING_SCROLLS_BONUS, arcaneVisionDuration, canImproviseProjectile, ironStomachReduction, lightReadingWandMult, preservationChance, projectileMomentumBonus } from '../../talentEffects';
+import { EMPOWERING_SCROLLS_BONUS, arcaneVisionDuration, canImproviseProjectile, enragedCatalystBonus, ironStomachReduction, lightReadingWandMult, monasticVigorShield, preservationChance, projectileMomentumBonus } from '../../talentEffects';
 import { directTomeCharge, findHolyTome } from '../../items/holyTome';
 import { tomeChargeCap, tomeTickRate } from '../../simulation/clericSpells';
 import { advanceWellFed, HUNGRY, STARVING } from '../../simulation/hunger';
@@ -35,9 +35,8 @@ import { beaconPassiveRecharge, chainsPassiveRecharge, hourglassPassiveRecharge 
 import { beaconChargeCap } from '../../items/beacon';
 import type { ChainsItem } from '../../items/chains';
 import { TILE, WATER } from '../../dungeonConstants';
-import { BUFF_DURATION, addBuff, buffBlocked, electricDamageHalved, icyDamageHalved, rollHit, tickBuffs, type Creature, type Step } from '../../combat';
+import { BUFF_DURATION, addBuff, buffBlocked, doomDamage, electricDamageHalved, icyDamageHalved, rollHit, tickBuffs, type Creature, type Step } from '../../combat';
 import { NEGATIVE_BUFFS, corruptionImmune, tickMonsterTurnEnd, type BuffId } from '../../simulation/buffs';
-import { sealTick } from '../../simulation/sealShield';
 import { corruptingPower, corruptionResistance, resolveCorruptionZap } from '../../simulation/wandCorruption';
 import { MONSTERS, BOSSES, isUndeadOrDemonic, type AnyMonsterId } from '../../monsters';
 
@@ -112,11 +111,11 @@ export const turnLoopAimingMethods = {
 		//`WardSprite.zap()`'s `DeathRay` already draws, tinted per wand (`wandZapTrailColor`)
 		//- one shared `Beam` reduction, not two. Pushed once here regardless of the
 		//type-specific branch below, since every one of them still zaps from the hero to
+		//`target`'s cell first (fireblast/regrowth's own area shapes are a separate, larger
+		//visual this stays a stated simplification for, not a full cone/AOE telegraph).
 		//MindForm passes Java's Ballistica collision cell when no character occupies it;
 		//Fireblast and Regrowth consume that cell directly, while other wand handlers still
 		//reduce unoccupied-cell effects to their modeled cell-level subset.
-		//`target`'s cell first (fireblast/regrowth's own area shapes are a separate, larger
-		//visual this stays a stated simplification for, not a full cone/AOE telegraph).
 		this.zapBeams.push({
 			x1: (this.hero.x + 0.5) * TILE, y1: (this.hero.y + 0.5) * TILE,
 			x2: (target.x + 0.5) * TILE, y2: (target.y + 0.5) * TILE,
@@ -187,7 +186,7 @@ export const turnLoopAimingMethods = {
 						: Random.normalRange(...wandDamageRange('magicMissile', zapLevel));
 			const frostBlocked = wandType === 'frost' && victim.buffs['frost'] !== undefined;
 			let damage = Math.round(raw * lightningMultiplier)
-				+ (victim === target ? this.wandBonusDamage : 0);
+				+ (victim === targetCreature ? enragedCatalystBonus(this.subclass(), this.talentRank('enraged_catalyst'), this.hero.hp, this.hero.maxHp) + this.wandBonusDamage : 0);
 			if (wandType === 'lightning' && victim === this.hero) damage = Math.round(damage * 0.5);
 		//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`) resists the
 		//`WandOfLightning` class: `Char.damage()` halves with `Math.round` on
@@ -229,7 +228,7 @@ export const turnLoopAimingMethods = {
 				//previously missing entirely, so holy light hit a demon for no bonus at all.
 				damage = Math.round(damage * 1.333);
 			}
-			this.wandBonusDamage = victim === target ? 0 : this.wandBonusDamage;
+			this.wandBonusDamage = victim === targetCreature ? 0 : this.wandBonusDamage;
 			//`AntiMagic.RESISTS` lists `WandOfBlastWave`/`WandOfDisintegration`/`WandOfFrost`/
 			//`WandOfLightning`/`WandOfLivingEarth`/`WandOfMagicMissile`/`WandOfPrismaticLight`
 			//by name: `Char.damage()` zeroes any hit whose source class is in that set for a
@@ -249,7 +248,7 @@ export const turnLoopAimingMethods = {
 				//`DwarfKing.damage()` 459-467: any `Wand` except `WandOfLightning` clears the
 				//boss-challenge flag. Lightning keeps it (Java's explicit exception).
 				if (wandType !== 'lightning' && damage > 0) this.disqualifyBossChallenge(victim);
-				const dealt = victim.isHero ? this.absorbHeroDamage(damage, true) : damage;
+				const dealt = victim.isHero ? this.absorbHeroDamage(damage, true) : doomDamage(damage, victim);
 				victim.hp -= dealt;
 				//`WandOfLightning.onZap()` (tag `v3.3.8`): the burst shakes
 				//(`2, 0.3f`) for every affected char that is the hero.
@@ -293,13 +292,22 @@ export const turnLoopAimingMethods = {
 				}
 			}
 			if (wandType === 'corruption' && !victim.isHero && !victim.isNPC) {
+				//WandOfCorruption.corruptEnemy() creates a permanent controlled ally
+				//after healing/cleansing it. The port has no separate Corruption buff
+				//or loot-transfer payload, so the existing ally scheduler is used for
+				//the observable controlled-combat result.
+				//Java checks immunity first: a Corruption-immune target (`AllyBuff`
+				//immunity - BOSS/MINIBOSS/STATIC kinds and the ally summons, LightAlly
+				//among them) takes `Doom` instead, and an already-doomed one refuses
+				//with `already_corrupted`. Doom is permanent there and here (9999),
+				//so it never needs reapplying; the Corruption-buff half of that check
+				//has no port model (re-corrupting a converted ally is indistinguishable
+				//from a first cast, stated). Doom neither clears nor disturbs the
+				//victim's other buffs, so a LightAlly keeps PowerBuff through it.
 				//`WandOfCorruption.onZap()` resistance model (`simulation/wandCorruption.ts`): the
 				//bolt corrupts only when its power beats the target's resistance, otherwise it lands
 				//a MAJOR or MINOR debuff (`Buff.append(.., 6 + 3*level)`), going up a tier when a
 				//pool is exhausted. Slow has no port buff, so the MAJOR pool is Amok/Hex/Paralysis.
-				//Corruption immunity is the shared `corruptionImmune` gate: BOSS/MINIBOSS
-				//kinds, STATIC kinds and the AllyBuff-immune ally summons (LightAlly
-				//among them) are doomed instead of converted.
 				const outcome = resolveCorruptionZap({
 					power: corruptingPower(zapLevel),
 					resistance: corruptionResistance(
@@ -311,34 +319,30 @@ export const turnLoopAimingMethods = {
 					immune: (id) => buffBlocked(victim, id),
 					rolls: { float: () => Random.float() },
 				});
-				if (outcome.kind === 'debuff') addBuff(victim, outcome.id, 6 + zapLevel * 3);
-				//`WandOfCorruption.corruptEnemy()`'s `AllyBuff` fallback (tag `v3.3.8`): a target immune to
-				//Corruption (only `PowerOfMany.LightAlly` here - its own `AllyBuff` immunity, so `corrupt`
-				//never fires for it) is doomed instead. `Doom` is permanent, +67% damage taken (`rollDamage`
-				//in `simulation/combat.ts`) until death.
-				else if (outcome.kind === 'doom') addBuff(victim, 'doom', 9999);
-				else if (outcome.kind === 'corrupt') {
-				//WandOfCorruption.corruptEnemy() creates a permanent controlled ally
-				//after healing/cleansing it. The port has no separate Corruption buff
-				//or loot-transfer payload, so the existing ally scheduler is used for
-				//the observable controlled-combat result.
-				victim.isAlly = true;
-				victim.allyKind = 'mirror';
-				victim.hp = victim.maxHp;
-				victim.buffs = {};
-				victim.sleeping = false;
-				victim.seesHero = false;
+				if (outcome.kind === 'refuse') {
+					this.say(t('items.wands.wandofcorruption.already_corrupted'), 'warning');
+				} else if (outcome.kind === 'debuff') {
+					addBuff(victim, outcome.id, 6 + zapLevel * 3);
+				} else if (outcome.kind === 'doom') {
+					addBuff(victim, 'doom', 9999);
+				} else {
+					victim.isAlly = true;
+					victim.allyKind = 'mirror';
+					victim.hp = victim.maxHp;
+					victim.buffs = {};
+					victim.sleeping = false;
+					victim.seesHero = false;
+					this.say(t('port.log.wandcorruption', { target: victim.name }), 'positive');
 				}
 			}
-			if ((wandType === 'frost') && victim === target && victim.hp > 0 && !frostBlocked) {
+			if ((wandType === 'frost') && victim === target && victim.hp > 0 && !frostBlocked && !buffBlocked(victim, 'chill')) {
 				addBuff(victim, 'chill');
 				victim.buffs.chill = Math.max(victim.buffs.chill ?? 0, (this.level.get(victim.x, victim.y) === WATER ? 4 : 2) + zapLevel);
 			}
 			if (wandType === 'prismaticLight' && Random.int(0, 5 + zapLevel) >= 3) addBuff(victim, 'daze');
 			this.sprite(victim).setColorAdd(0.6, 0.7, 1);
 			if (wandType === 'corrosion') this.say(t('port.log.wandcorrosion', { target: victim.name }), 'positive');
-			else if (wandType === 'corruption') this.say(t('port.log.wandcorruption', { target: victim.name }), 'positive');
-			else this.say(t('port.log.wandhits', { target: victim.name, damage }), 'positive');
+			else if (wandType !== 'corruption') this.say(t('port.log.wandhits', { target: victim.name, damage }), 'positive');
 			if (victim.hp <= 0 && !victim.isAlly) this.kill(victim);
 		}
 		}
@@ -375,6 +379,7 @@ export const turnLoopAimingMethods = {
 			}
 			const heal = Math.min(this.hero.maxHp - this.hero.hp, 5 + 2 * this.progression.level);
 			this.hero.hp += heal;
+			this.grantHeroShield(monasticVigorShield(this.subclass(), this.talentRank('monastic_vigor')), this.hero.maxHp);
 			this.say(t('port.log.tomeheal', { heal }), 'positive');
 			return true;
 		}
@@ -676,7 +681,7 @@ export const turnLoopAimingMethods = {
 				const base = Random.normalRange(special.damage[0] + sharpshooting, special.damage[1] + 2 * sharpshooting);
 				const dr = Random.normalRange(target.armor[0], target.armor[1]);
 				const momentum = projectileMomentumBonus(this.subclass(), this.talentRank('projectile_momentum'), this.projectileMomentumReady);
-				const damage = Math.max(0, Math.round(base * multiplier * (this.subclass() === 'sniper' ? 1.15 : 1)) - dr) + momentum;
+				const damage = doomDamage(Math.max(0, Math.round(base * multiplier * (this.subclass() === 'sniper' ? 1.15 : 1)) - dr) + momentum, target);
 				this.projectileMomentumReady = false;
 				target.hp -= damage;
 				this.showDamage(target, damage);
@@ -905,6 +910,18 @@ export const turnLoopAimingMethods = {
 			this.aiming.controller.moveTo(target);
 			this.refreshAimOverlay();
 			this.confirmAiming();
+			return;
+		}
+		//`Hero.handle()` builds an Interact action for a non-ENEMY FOV mob (the shadow
+		//clone with `PERFECT_COPY` can swap from `max(1, points)` cells, not just on a
+		//bump); `tryShadowCloneSwap` gates the talent range itself. Rank 0 / out-of-range
+		//falls through to travel, which is `Hero.getCloser` walking next to the clone.
+		const clickAlly = this.creatureAt(target.x, target.y);
+		if (clickAlly && clickAlly.isAlly && !clickAlly.isNPC
+			&& this.fov.isVisible(target.x, target.y)
+			&& this.tryShadowCloneSwap(clickAlly)) {
+			this.travelOverlay?.clear();
+			this.travelTarget = null;
 			return;
 		}
 		const dx = Math.sign(target.x - this.hero.x);
@@ -1161,7 +1178,8 @@ export const turnLoopAimingMethods = {
 			if ((hit.isHero || hit.isAlly) && (attacker.isHero || attacker.isAlly)) continue;
 			//`Char.Property.ELECTRIC` (`Char.java`, tag `v3.3.8`): the arc's source class
 			//is `Shocking`, so every holder takes the `Math.round` half of the chain hit.
-			const dealt = electricDamageHalved(hit.kind, hit.elementalType, hit.yogFistType) ? Math.round(arcDamage / 2) : arcDamage;
+			const rawDealt = electricDamageHalved(hit.kind, hit.elementalType, hit.yogFistType) ? Math.round(arcDamage / 2) : arcDamage;
+			const dealt = hit.isHero ? this.absorbHeroDamage(rawDealt, true) : doomDamage(rawDealt, hit);
 			hit.hp -= dealt;
 			this.showDamage(hit, dealt);
 			if (hit.hp <= 0) this.kill(hit);
@@ -1284,7 +1302,9 @@ export const turnLoopAimingMethods = {
 			//`Hunger.act()` is an actor-clock tick, not a once-per-input hook. A search costs
 			//two turns, so it must run the transition twice; fractional action costs still
 			//run the one actor tick that the existing scene model assigns to that action.
-			advanceHunger: (cost = 1) => { for (let tick = 0; tick < cost; tick++) this.hungerStep(); },
+			//`TimeStasis` suppresses Hunger.act() while the petrified Hero is frozen; its
+			//dedicated timer also participates in the hero action lock in dungeonScene.ts.
+			advanceHunger: (cost = 1) => { if (this.hero.buffs['timeStasis'] === undefined) for (let tick = 0; tick < cost; tick++) this.hungerStep(); },
 			tickRegeneration: () => this.tickNaturalRegeneration(turnCost),
 			// Recharging's Java Charger contribution is an additional recharge tick while the
 			// 30-second flavour buff is active; Charges.advance() is this port's tick primitive.
@@ -1366,7 +1386,8 @@ export const turnLoopAimingMethods = {
 			},
 			//Trinity's selected form is a temporary activation window. The Java form buffs
 			//also remove themselves on expiry; this state is the port's explicit hand-off
-			//until item-specific body/mind/spirit effects are implemented.
+			//for BodyForm's supported weapon-enchantment/glyph subset. MindForm and SpiritForm
+			//still have no item-effect dispatch.
 			tickTrinityForm: () => {
 				if (this.trinityTurns <= 0) return;
 				this.trinityTurns = Math.max(0, this.trinityTurns - turnCost);
@@ -1445,17 +1466,18 @@ export const turnLoopAimingMethods = {
 						this.barrierPartialLoss = 0;
 					}
 				}
-				//`BrokenSeal.WarriorShield.act()` (tag `v3.3.8`): the cooldown runs down while regeneration is on, and a shield
-				//left up with no enemy in view (and no Combo) for five turns is dropped, refunding part of the cooldown. It does
-				//NOT regenerate - it activates on a hit (`absorbHeroDamage`). The old 1/30-per-turn regrowth stood here.
-				this.rageTurn();
-				if (this.armorSealed) {
-					const result = sealTick(this.sealState, {
-						regenOn: this.regenOn(), shielding: this.sealBarrier.total, comboActive: this.hero.buffs['combo'] !== undefined,
-						enemiesVisible: this.creatures.some((c) => !c.isHero && !c.isNPC && !c.isAlly && c.hp > 0 && this.fov.isVisible(c.x, c.y)),
-					});
-					this.sealState = result.state;
-					if (result.dropShield) this.sealBarrier.clear();
+				//BrokenSeal.WarriorShield.act(): regenerates 1/30 per turn (while regen is on)
+				//toward armTier + armLvl + pointsInTalent(IRON_WILL), never decaying on its own.
+				//The gain is gated on `Regeneration.regenOn()` (the `LockedFloor` boss-arena lock).
+				if (this.armorSealed && this.regenOn()) {
+					const sealCap = this.armorTier + this.armorLevel + this.talentRank('iron_will');
+					if (this.sealBarrier.total < sealCap) {
+						this.sealPartialGain += 1 / 30;
+						while (this.sealPartialGain >= 1 && this.sealBarrier.total < sealCap) {
+							this.sealBarrier.add(1);
+							this.sealPartialGain -= 1;
+						}
+					} else this.sealPartialGain = 0;
 				}
 			//`ArtifactRecharge.act()`: while the buff is up, every carried artifact is handed
 			//`min(1, left)` and the timer drops by one. This is the only caller of
@@ -1761,6 +1783,15 @@ export const turnLoopAimingMethods = {
 						this.burnHeroInventoryItem();
 					}
 				} else if (!burning) this.burningIncrement = 0;
+				//`Burning.act()`'s ground-ignition tail (`actors/buffs/Burning.java`, tag
+				//`v3.3.8`): a burning char on flammable ground with no fire volume seeds
+				//`Fire` at volume 4. Java runs this even on the tick the buff detaches, so
+				//the pre-tick `burning` flag gates it rather than the current buff map; the
+				//web half joins the terrain predicate exactly like `spreadFire`'s own
+				//(`Web.onUpdateCellFlags()` marks webbed cells flammable). Water cells are
+				//never flammable, so the extinguish below cannot misfire this. A hero death
+				//returns above - game over, with nothing left to observe the cell.
+				if (burning && (this.isFireFlammableTerrain(this.hero.x, this.hero.y) || this.web.volumeAt(this.hero.x, this.hero.y) > 0) && this.fire.volumeAt(this.hero.x, this.hero.y) === 0) this.fire.seed(this.hero.x, this.hero.y, 4);
 				//MagicalSleep.act(): a sleeping ally restores exactly 1 HP per actor turn,
 				//then wakes and removes its paralysis as soon as it reaches full health. A
 				//fresh Drowsy transition waits until the next turn before healing, matching

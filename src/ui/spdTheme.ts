@@ -1,6 +1,6 @@
 import { Rectangle, Texture } from 'mwg/two-d/pixi-interop';
 import { I18n, setTheme, theme } from 'mwg';
-import { colorblind } from '../settings';
+import { colorblind, highContrast } from '../settings';
 
 /**
  * SPD's look, applied to `mwg/ui`'s theme.
@@ -48,14 +48,38 @@ const SPD_STATUS_COLOR_COLORBLIND = {
 	neutral: 0x56b4e9,
 } as const;
 
+/**
+ * The high-contrast pass over the palette above (`settings.highContrast()`,
+ * ROADMAP.md section 8 - port-original, no Java source). Where the colorblind set
+ * re-hues everything into Okabe-Ito, this one keeps full-saturation primaries and
+ * re-hues only the red/green pair red-green colour vision confuses: positive goes
+ * cyan, negative magenta, each owning a distinct dominant channel pattern
+ * (positive GB, negative RB, warning R+G, neutral R+G full, default RGB) at maximum
+ * luminance. Not clinically validated - a maximum-separation draft, stated as such.
+ * Wins over the colorblind set where both settings are on.
+ */
+const SPD_STATUS_COLOR_HIGH_CONTRAST = {
+	default: 0xffffff,
+	positive: 0x00ffff,
+	negative: 0xff00ff,
+	warning: 0xff8800,
+	neutral: 0xffff00,
+} as const;
+
 /** Live palette lookup so every existing `SPD_STATUS_COLOR.xxx` call site picks up a
  * settings change without touching any of them. */
+function activeStatusPalette() {
+	if (highContrast()) return SPD_STATUS_COLOR_HIGH_CONTRAST;
+	if (colorblind()) return SPD_STATUS_COLOR_COLORBLIND;
+	return SPD_STATUS_COLOR_NORMAL;
+}
+
 export const SPD_STATUS_COLOR = {
-	get default() { return (colorblind() ? SPD_STATUS_COLOR_COLORBLIND : SPD_STATUS_COLOR_NORMAL).default; },
-	get positive() { return (colorblind() ? SPD_STATUS_COLOR_COLORBLIND : SPD_STATUS_COLOR_NORMAL).positive; },
-	get negative() { return (colorblind() ? SPD_STATUS_COLOR_COLORBLIND : SPD_STATUS_COLOR_NORMAL).negative; },
-	get warning() { return (colorblind() ? SPD_STATUS_COLOR_COLORBLIND : SPD_STATUS_COLOR_NORMAL).warning; },
-	get neutral() { return (colorblind() ? SPD_STATUS_COLOR_COLORBLIND : SPD_STATUS_COLOR_NORMAL).neutral; },
+	get default() { return activeStatusPalette().default; },
+	get positive() { return activeStatusPalette().positive; },
+	get negative() { return activeStatusPalette().negative; },
+	get warning() { return activeStatusPalette().warning; },
+	get neutral() { return activeStatusPalette().neutral; },
 };
 
 export function applySpdTheme(chrome: Texture): void {

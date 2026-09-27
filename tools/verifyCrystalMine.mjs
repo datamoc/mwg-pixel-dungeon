@@ -19,9 +19,11 @@ function compile(source, destination) {
 try {
 	compile(fileURLToPath(new URL('../src/simulation/gnollGeomancer.ts', import.meta.url)), 'simulation/gnollGeomancer.js');
 	compile(fileURLToPath(new URL('../src/simulation/crystalSpire.ts', import.meta.url)), 'simulation/crystalSpire.js');
+	compile(fileURLToPath(new URL('../src/simulation/pourAuras.ts', import.meta.url)), 'simulation/pourAuras.js');
 	const {
 		spireSpread, planSpireDiamond, planSpireLine, spikeDamage, spikeKnockCell,
 		isOpenSpace, guardianSpeed, spireAbilityDelay, spireIdleFrame, usesCrystalPassability,
+		ignoresCrystalGuardianBeckon,
 	} = require(join(temp, 'simulation/crystalSpire.js'));
 
 	const allOpen = () => true;
@@ -50,9 +52,19 @@ try {
 	assert.equal(usesCrystalPassability('crystalGuardian', 0, 8, false), false, 'wandering guardian keeps ordinary passability');
 	assert.equal(usesCrystalPassability('crystalGuardian', 8, 8, true), false, 'guardian keeps a sufficiently direct plain route');
 	assert.equal(usesCrystalPassability('crystalSpire', 0, 1, true), false, 'spire never uses the monster movement shortcut');
+	assert.equal(ignoresCrystalGuardianBeckon('crystalGuardian', true), true, 'a sleeping guardian ignores beckon like Java');
+	assert.equal(ignoresCrystalGuardianBeckon('crystalGuardian', false), false, 'an awake guardian accepts beckon');
+	assert.equal(ignoresCrystalGuardianBeckon('crystalWisp', true), false, 'other sleeping mine mobs retain normal beckoning');
 	assert.deepEqual([spireAbilityDelay(0), spireAbilityDelay(1.2), spireAbilityDelay(3.1)], [1, 2, 3], 'spire delay is ceil hero cooldown clamped to 1..3');
 	assert.deepEqual([0.91, 0.9, 0.67, 0.33].map((hp) => spireIdleFrame(hp * 300, 300)), [0, 1, 2, 3], 'spire idle frames use strict Java HP thresholds');
 	const sceneSource = readFileSync(fileURLToPath(new URL('../src/scenes/dungeon/monsters/crystalMine.ts', import.meta.url)), 'utf8');
+	const dungeonSceneSource = readFileSync(fileURLToPath(new URL('../src/scenes/dungeonScene.ts', import.meta.url)), 'utf8');
+	assert.match(dungeonSceneSource, /syncPourAuras\(this,\s*dt\)/, 'continuous creature auras are synchronized and advanced from the scene frame loop');
+	const { pourAurasFor } = require(join(temp, 'simulation/pourAuras.js'));
+	const smoke = pourAurasFor({ allyKind: 'shadowClone' })[0];
+	assert.deepEqual(smoke && { rate: smoke.rate, tint: smoke.tint, life: smoke.life, speedMin: smoke.speedMin, speedMax: smoke.speedMax, size: smoke.size, grow: smoke.grow, spread: smoke.spread, angleOffset: smoke.angleOffset, fade: smoke.fade }, {
+		rate: 5, tint: 0, life: 2, speedMin: 3.6055512754639896, speedMax: 7.211102550927979, size: 3, grow: [3, 6], spread: 0.76, angleOffset: 0.17, fade: 'smoke',
+	}, 'ShadowClone pours the source-derived black Smoke aura');
 	assert.match(sceneSource, /updateCrystalWispVisuals\(this: DungeonScene, dt: number\)/, 'scene updates the CrystalWisp visual seam');
 	assert.match(sceneSource, /Math\.abs\(Math\.sin\(state\.time\)\)/, 'wisp body uses Java sine bob');
 	assert.match(sceneSource, /-0\.8 \* bodyBob/, 'wisp shadow uses Java animated shadow offset');
@@ -62,9 +74,9 @@ try {
 	assert.match(sceneSource, /crystalWispZap\(this: DungeonScene, wisp: Creature\): void \{\s*this\.triggerCrystalWispPulse\(wisp\)/, 'ranged wisp zap triggers its pulse');
 	const combatSource = readFileSync(fileURLToPath(new URL('../src/scenes/dungeon/combatResolution.ts', import.meta.url)), 'utf8');
 	assert.match(combatSource, /attacker\.kind === 'crystalWisp'\) this\.triggerCrystalWispPulse\(attacker\)/, 'melee wisp attack triggers its pulse');
-	assert.match(sceneSource, /deathAge < 1/, 'wisp halo fades over Java one-second TorchHalo putOut interval');
+	assert.match(sceneSource, /deathAge < 1/, 'wisp halo remains through Java one-second TorchHalo putOut fade');
 	assert.match(sceneSource, /visual\.bob = 0/, 'wisp death clip stops sine bob without shifting the corpse');
-	console.log('PASS crystal mine pure planners (10 helpers) and wisp visual seam');
+	console.log('PASS crystal mine pure planners (11 helpers) and wisp visual seam');
 } finally {
 	rmSync(temp, { recursive: true, force: true });
 }

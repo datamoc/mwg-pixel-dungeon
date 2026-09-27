@@ -35,9 +35,9 @@ import { runState } from '../../runState';
 import { isChallengeEnabled } from '../../challenges';
 import { CLASS_TALENTS, TALENT_TIERS, armorTalentDefinitions, hasClassTier3Row, subclassTalentDefinitions, talentDescKey, talentTitleKey, type TalentDefinition } from '../../talents';
 import { recallTrackerDuration } from '../../simulation/clericSpells';
-import { berserkShieldBoost } from '../../simulation/subclassPassives';
 import { ARMOR_CHARGE_START, armorAbilitiesFor, armorAbilityDef, armorAbilityKey, isKnownArmorAbility } from '../../armorAbilities';
 import { prismaticGuardMaxHp } from '../../simulation/prismatic';
+import { ignoresCrystalGuardianBeckon } from '../../simulation/crystalSpire';
 import { markRingTypesKnown } from '../../simulation/ringKnow';
 import { isWandType, setStaffImbue } from '../../items/wands';
 import { CLASSES } from '../../classes';
@@ -54,7 +54,7 @@ import { useAlchemizeFlow, useStylusFlow, type AlchemizeContext, type StylusCont
 import { useStoneById as routeStoneAction, type StoneActionContext } from '../../items/stoneActions';
 import { setWandmakerQuestType, setWandmakerQuestWands, wandmakerQuestType } from '../../spdLevelGen/wandmaker';
 import { ITEM_FRAME, WATER } from '../../dungeonConstants';
-import { BUFF_DURATION, absorbShield, addBuff, setAnnounceBuff, setAttachBacklash, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
+import { BUFF_DURATION, absorbShield, addBuff, doomDamage, setAnnounceBuff, setAttachBacklash, type BuffId, type Creature, type GroundItem, type Step } from '../../combat';
 import { BOSSES } from '../../monsters';
 import { APPEARANCE_TABLES, AUGMENT_OPTIONS, BLACKSMITH_QUEST, IMP_QUEST, SAD_GHOST_QUEST, SPD_LEVEL_CURVE, SUBCLASS_OPTIONS, SUBCLASS_TRACK, WANDMAKER_QUEST } from './shared';
 
@@ -116,8 +116,8 @@ export const panelsSingleUseMethods = {
 		this.trinityBodyGlyph = s.trinityBodyGlyph ?? null;
 		this.trinitySpiritEffect = s.trinitySpiritEffect ?? null;
 		this.trinityMindEffect = s.trinityMindEffect ?? null;
-		this.livingEarthArmor = s.livingEarthArmor ?? 0;
 		this.skeletonKeyTracker = s.skeletonKeyTracker ?? null;
+		this.livingEarthArmor = s.livingEarthArmor ?? 0;
 		this.livingEarthWandLevel = s.livingEarthWandLevel ?? 0;
 		this.earthrootArmor = (s.earthrootArmorLevel ?? 0) > 0 ? { level: s.earthrootArmorLevel!, pos: s.earthrootArmorPos ?? -1 } : null;
 		this.hero.barkskinLevel = s.barkskinLevel;
@@ -142,7 +142,7 @@ export const panelsSingleUseMethods = {
 		this.sealBarrier = s.sealBarrierState
 			? Actors.Barrier.fromJSON(s.sealBarrierState)
 			: new Actors.Barrier();
-		this.sealState = { cooldown: 0, turnsSinceEnemies: 0, initialShield: 0, ...(s.sealState ?? {}) };
+		this.sealPartialGain = s.sealPartialGain ?? 0;
 		//Pre-seal saves have no record either way; treat a Warrior's pre-existing run as unsealed
 		//rather than guessing whether the equipped armor is still the original starting piece.
 		this.armorSealed = s.armorSealed ?? false;
@@ -172,8 +172,7 @@ export const panelsSingleUseMethods = {
 		this.healingPercent = s.healingPercent ?? (this.healingLeft > 0 ? 0.25 : 0);
 		this.healingFlat = s.healingFlat ?? 0;
 		this.sungrassPos = s.sungrassPos ?? -1;
-		this.rageState = { mode: 'normal', power: 0, powerLossBuffer: 0, levelRecovery: 0, turnRecovery: 0, zeroHp: false, ...(s.rageState ?? {}) };
-		this.rageBarrier = s.rageBarrierState ? Actors.Barrier.fromJSON(s.rageBarrierState) : new Actors.Barrier();
+		this.deathlessFuryUsed = s.deathlessFuryUsed ?? false;
 		this.weaponLevel = s.weaponLevel;
 		this.weaponTier = s.weaponTier ?? 1;
 		this.armorLevel = s.armorLevel;
@@ -298,11 +297,6 @@ export const panelsSingleUseMethods = {
 		this.spinTurns = (s as { spinTurns?: number }).spinTurns ?? 0;
 		this.cleaveFreeTurns = (s as { cleaveFreeTurns?: number }).cleaveFreeTurns ?? 0;
 		this.guardTurns = (s as { guardTurns?: number }).guardTurns ?? 0;
-		this.comboClobberUsed = (s as { comboClobberUsed?: boolean }).comboClobberUsed ?? false;
-		this.monk.energy = (s as { monkEnergy?: number }).monkEnergy ?? 0;
-		this.monkEnsureBuff();
-		this.comboParryUsed = (s as { comboParryUsed?: boolean }).comboParryUsed ?? false;
-		this.comboInitialTime = (s as { comboInitialTime?: number }).comboInitialTime ?? 0;
 		this.swordDanceTurns = (s as { swordDanceTurns?: number }).swordDanceTurns ?? 0;
 		this.defensiveStanceTurns = (s as { defensiveStanceTurns?: number }).defensiveStanceTurns ?? 0;
 		this.chargedShotArmed = (s as { chargedShotArmed?: boolean }).chargedShotArmed ?? false;
@@ -626,10 +620,8 @@ export const panelsSingleUseMethods = {
 			: buff === 'prismaticGuard' ? Math.floor(this.hero.prismaticGuardHp ?? 0)
 			: this.hero.buffs[buff as BuffId];
 		const info = buffInfo(buff as BuffId | 'hungry' | 'starving', turns,
-			buff === 'prismaticGuard' ? prismaticGuardMaxHp(this.progression.level) : buff === 'monkEnergy' ? this.monkEnergyCap() : undefined,
-			buff === 'recallUsed' ? this.recallTrackedItemName() : undefined,
-			buff === 'combo' ? this.hero.combo : buff === 'monkEnergy' ? this.monk.energy : undefined,
-			buff === 'berserk' ? { ...this.rageState, shielding: this.rageBarrier.total, boost: berserkShieldBoost(this.hero.hp, this.hero.maxHp, Math.max(0, this.degradedLevel(this.armorLevel)), this.rageState.power) } : undefined);
+			buff === 'prismaticGuard' ? prismaticGuardMaxHp(this.progression.level) : undefined,
+			buff === 'recallUsed' ? this.recallTrackedItemName() : undefined);
 		if (!info) return;
 		const window = showBuffInfoWindow(info);
 		this.buffInfoOpen = window;
@@ -993,9 +985,8 @@ export const panelsSingleUseMethods = {
 		this.bag.remove('tengusMask', 1);
 		this.say(t('items.tengusmask.used'), 'positive');
 		this.say(t('port.log.talent', { talent: t(`port.subclass.${option}`) }), 'highlight');
-		//`Berserk` attaches on the first blow taken (`Hero.defenseProc`); the always-on buff that stood here is gone.
-		//`MonkEnergy` starts empty and carries the status icon; the invented `focus` grant that stood here is gone.
-		if (option === 'monk_sub') this.monkEnsureBuff();
+		if (option === 'berserker') addBuff(this.hero, 'berserk');
+		if (option === 'monk_sub') addBuff(this.hero, 'focus');
 		this.syncHeroFromStats();
 		this.refresh();
 		//`TengusMask.choose()`: `curUser.spend(Actor.TICK)` - wearing it costs a turn.
@@ -1444,6 +1435,8 @@ export const panelsSingleUseMethods = {
 		this.showTopHeapSprite(g.x, g.y);
 	},
 
+	/** Compatibility name for blast callers; all already-rolled damage enters the same
+	 * `Char.damage()` dispatch below. Returns true when the hero died. */
 	applyBlastDamage(this: DungeonScene, c: Creature, damage: number, pierceArmor: boolean, cause: 'foe' | 'fire' = 'fire'): boolean {
 		return this.applyCharacterDamage(c, damage, {
 			pierceArmor,
@@ -1499,7 +1492,7 @@ export const panelsSingleUseMethods = {
 		if (!options.skipAura) damage = this.auraProtectedDamage(c, damage);
 		//This shared blast/bomb/ability path models Char.damage() for non-hero targets;
 		//apply Doom after Aura and before the target-specific curve and shields.
-		damage = doomDamage(damage, c);
+		if (!options.skipDoom) damage = doomDamage(damage, c);
 		//Every defender-side `damage()` override (`Pylon` 14+/15, `Eye` /4 while charging,
 		//`DemonSpawner` 19+/20, `Slime`/`CausticSlime` 4+/5) is part of `Char.damage()`, so it
 		//applies to *any* source that reaches a mob through `damage()` - including a bomb blast
@@ -1631,6 +1624,8 @@ export const panelsSingleUseMethods = {
 	beckonMobs(this: DungeonScene): void {
 		for (const c of this.creatures) {
 			if (c.isHero || c.isNPC) continue;
+			//ScrollOfRage's beckon and NoisemakerFuse's alarm both honor the same Java override.
+			if (ignoresCrystalGuardianBeckon(c.kind, c.sleeping === true)) continue;
 			c.sleeping = false;
 			c.seesHero = true;
 			c.lastSeen = { x: this.hero.x, y: this.hero.y };

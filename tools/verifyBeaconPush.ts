@@ -3,6 +3,7 @@
 // (`tools/scratch/beacon-push-livecheck.mjs`: a rat on the anchor cell is pushed aside and the
 // hero lands there). Run through `npm run test:beacon`.
 import { returnBeaconFlow, useReturningBeaconFlow, type BeaconFlowContext, type BeaconItem, type BeaconMobView } from '../src/items/beacon';
+import { LARGE_KINDS, isLargeCreature } from '../src/monsters';
 
 let failed = 0;
 const check = (name: string, ok: boolean): void => { console.log(`${ok ? 'PASS' : 'FAIL'} ${name}`); if (!ok) failed++; };
@@ -25,11 +26,11 @@ function context(overrides: Partial<BeaconFlowContext> & { beacon: BeaconItem; o
 		cellIndex: (x, y) => y * 20 + x,
 		gridWidth: () => 20,
 		isBossDepth: () => false,
-		isFloorLocked: () => false,
 		hasAmulet: () => false,
   creatureAt: (x, y) => occupants.find((mob) => mob.x === x && mob.y === y) ?? null,
   mobsAt: (x, y) => occupants.filter((mob) => mob.x === x && mob.y === y && !mob.isHero),
  isImmovableKind: (kind) => kind === 'statue',
+	isLargeKind: (kind, yogFistType) => isLargeCreature(kind, yogFistType),
 		randomFreeCellNear: () => ({ x: 0, y: 0 }),
 		moveHeroTo: () => undefined,
 		playHeroTeleport: () => undefined,
@@ -144,31 +145,39 @@ function context(overrides: Partial<BeaconFlowContext> & { beacon: BeaconItem; o
 	check('artifact return directly displaces an immovable NPC because it is a Mob', ctx.__relocated.length === 1 && ctx.__relocated[0]!.x === 5 && ctx.__moved.length === 1);
 }
 
+//A LARGE occupant is only pushed into open space (`WarpBeacon.returnBeacon()`'s
+//`!LARGE || openSpace[cell]` clause): with only a walled-in neighbour passable, the
+//spell twin refuses without consuming, while a small mob in the same layout still moves.
 {
-	//`Dungeon.interfloorTeleportAllowed()` (tag `v3.3.8`): `level.locked` (the LockedFloor boss-arena
-	//lock, `floorLocked()`) refuses interfloor teleport alongside the mining branch and the amulet -
-	//`interfloorTeleportBlocked` was missing this one until 2026-09-24. Java's own gate on the spell
-	//twin sits only on the cross-depth branch (`returnDepth` != the current `ctx.depth`); the
-	//same-depth branch has no such check, in Java or here.
-	const beacon: BeaconItem = { returnDepth: 5, returnBranch: 0, returnPos: 25, returnX: 5, returnY: 1 };
-	let consumed = 0;
-	const ctx = context({ beacon, isFloorLocked: () => true, consumeReturningBeacon: () => { consumed++; } }) as ReturnType<typeof context> & { __relocated: { x: number; y: number }[]; __said: string[] };
-	useReturningBeaconFlow(ctx);
-	check("a locked boss-arena floor refuses the spell twin's cross-depth trip without consuming", consumed === 0 && ctx.__said.includes('items.spells.beaconofreturning.preventing'));
-}
-{
-	//The same-depth branch is unaffected: Java's own `BeaconOfReturning` gate never runs there either.
 	const beacon: BeaconItem = { returnDepth: 3, returnBranch: 0, returnPos: 25, returnX: 5, returnY: 1 };
+	const passable = (x: number, y: number): boolean => (x === 5 && y === 1) || (x === 5 && y === 0);
 	let consumed = 0;
-	const ctx = context({ beacon, isFloorLocked: () => true, consumeReturningBeacon: () => { consumed++; } }) as ReturnType<typeof context> & { __relocated: { x: number; y: number }[] };
+	const ctx = context({ beacon, occupants: [{ id: 'golem', x: 5, y: 1, kind: 'golem' }], passable, consumeReturningBeacon: () => { consumed++; } }) as ReturnType<typeof context> & { __relocated: { x: number; y: number }[]; __said: string[]; __occupants: BeaconMobView[] };
 	useReturningBeaconFlow(ctx);
-	check("a locked boss-arena floor does not block the spell twin's same-depth return", ctx.__relocated.length === 1 && consumed === 1);
+	check('the spell twin refuses a LARGE occupant with no open-space neighbour', ctx.__relocated.length === 0 && consumed === 0 && ctx.__said.includes('items.scrolls.scrollofteleportation.no_tele') && ctx.__occupants[0]!.x === 5 && ctx.__occupants[0]!.y === 1);
 }
 {
 	const beacon: BeaconItem = { returnDepth: 3, returnBranch: 0, returnPos: 25, returnX: 5, returnY: 1 };
-	const ctx = context({ beacon, isFloorLocked: () => true }) as ReturnType<typeof context> & { __relocated: { x: number; y: number }[] };
-	returnBeaconFlow(ctx);
-	check('a locked boss-arena floor refuses the artifact (both directions - it gates upfront)', ctx.__relocated.length === 0);
+	const passable = (x: number, y: number): boolean => (x === 5 && y === 1) || (x === 5 && y === 0);
+	let consumed = 0;
+	const ctx = context({ beacon, occupants: [{ id: 'rat', x: 5, y: 1, kind: 'rat' }], passable, consumeReturningBeacon: () => { consumed++; } }) as ReturnType<typeof context> & { __relocated: { x: number; y: number }[]; __occupants: BeaconMobView[] };
+	useReturningBeaconFlow(ctx);
+	check('a small occupant in the same walled-in layout is still pushed', ctx.__relocated.length === 1 && consumed === 1 && (ctx.__occupants[0]!.x !== 5 || ctx.__occupants[0]!.y !== 1));
+}
+{
+	const beacon: BeaconItem = { returnDepth: 3, returnBranch: 0, returnPos: 25, returnX: 5, returnY: 1 };
+	const passable = (x: number, y: number): boolean => x >= 4 && x <= 6 && y >= 0 && y <= 2;
+	let consumed = 0;
+	const ctx = context({ beacon, occupants: [{ id: 'golem', x: 5, y: 1, kind: 'golem' }], passable, consumeReturningBeacon: () => { consumed++; } }) as ReturnType<typeof context> & { __relocated: { x: number; y: number }[]; __occupants: BeaconMobView[] };
+	useReturningBeaconFlow(ctx);
+	check('a LARGE occupant with open space around is pushed and the cast is consumed', ctx.__relocated.length === 1 && consumed === 1 && (ctx.__occupants[0]!.x !== 5 || ctx.__occupants[0]!.y !== 1));
+}
+
+//`Char.Property.LARGE` holders at tag v3.3.8: DM200 (inherited by DM201), DM300,
+//Golem and the Ghost; the RustedFist is LARGE by subtype, gated in `isLargeCreature`.
+{
+	check('LARGE_KINDS carries Java holders and nothing small', (['dm200', 'dm201', 'dm300', 'ghost', 'golem'] as const).every((kind) => LARGE_KINDS.has(kind)) && !LARGE_KINDS.has('rat') && !LARGE_KINDS.has('yogFist'));
+	check('isLargeCreature gates the rusted subtype', isLargeCreature('golem', undefined) && isLargeCreature('dm201', undefined) && isLargeCreature('ghost', undefined) && isLargeCreature('yogFist', 'rusted') && !isLargeCreature('yogFist', 'burning') && !isLargeCreature('yogFist', undefined) && !isLargeCreature('rat', undefined) && !isLargeCreature(undefined, undefined));
 }
 
 if (failed > 0) { console.error(`${failed} beacon-push check(s) failed`); process.exit(1); }

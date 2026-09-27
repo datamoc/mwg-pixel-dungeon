@@ -1,3 +1,10 @@
+import type { DungeonScene } from '../../dungeonScene';
+import { Random, Roguelike, SpriteSheet } from 'mwg';
+import { AnimatedSprite } from 'mwg/two-d/render';
+import { NEGATIVE_BUFFS, buffBlocked, doomDamage, type BuffId, type Creature, type Step } from '../../../combat';
+
+/** Per-exile `Passive` bookkeeping (see `gnollExilePassive`). */
+const exileState = new WeakMap<object, { aggro: boolean; hp: number }>();
 import { GAME_KIND_CODES } from '../../../dungeonConstants';
 import { t } from '../../../i18n/index';
 import { runState } from '../../../runState';
@@ -451,6 +458,13 @@ export const gnollMineMethods = {
 			}
 			this.gnollProlongParalysis(this.hero, 3);
 			return false;
+		}
+		if (this.gnollMineInvulnerable(target)) { this.gnollProlongParalysis(target, 3); return false; }
+		const preHp = target.hp;
+		target.hp -= doomDamage(this.gnollMineDamageTaken(target, dmg), target);
+		this.gnollMineAfterDamage(target, preHp);
+		this.showDamage(target, preHp - target.hp);
+		if (target.hp <= 0) this.kill(target);
 		else this.gnollProlongParalysis(target, target.kind === 'gnollGuard' ? 10 : 3);
 		return false;
 	},

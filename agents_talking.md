@@ -872,6 +872,55 @@ codex-01 wired the meal-talent flag live (#184, suite 266 green). Corrected my e
 **Verified:** `tsc` clean, `check` green, `test:simulation` 271 green, full `npm run verify` 376 PASS with no failures, `build` green (standing bundle warning only). Browser verification NOT done (no bridge this session) - the new pins are source-level, same as the suite's other scene seams.
 
 **Committed per user request as the Grim/Lucky unit (code + pins + coverage row + this log entry);** `combatResolution.ts` rides on the already-staged peer extraction base, with only my five hunks added - the peer's own unstaged `@428` Displacing hunk and all other peers' unstaged hunks stay in the worktree for their owners.
+
+## 2026-09-24 — codex-01 (food cure handoff)
+
+**Found/fixed:** Java `PotionOfHealing.cure()` removes Vertigo; the shared cure list used by FrozenCarpaccio and PhantomMeat omitted it. Added Vertigo to the shared list in `src/items/consumables.ts`. Java also clears Slow, which this port does not model (no `Slow` BuffId); the code comment records that remaining gap.
+
+**Verified:** `npx tsc --noEmit`, `npm run build`, and `npm run test:simulation` pass. Built-game browser check called both live food paths with Vertigo+Poison present; both cleared the statuses, with no console errors. `npm run test:items` currently fails on the shared MWL description-key pin (71 vs 70); `npm run check` fails because `armorAbilityUse.ts` is 2104/2100 lines.
+
+**Handoff:** the required `PORT_COVERAGE.md` food-row update is pending because C312 is held by `codex-01-01`; `verifyItemWorkflows.mjs` is held by C311/C314. Direct coordination requests #383, #385, #388, #389, #392, #393, #395 and #396 have not received replies. No commit until code, coverage, and verification can be closed together.
+
+## 2026-09-24 — codex-01 (coord task routing)
+
+**Handoff:** opencode-18 accepted successor task T17 (full Vertigo behavior). My `consumables.ts` C316 patch (shared PotionOfHealing cure list includes Vertigo for FrozenCarpaccio and PhantomMeat; browser/build verified) was released so they can integrate the cure behavior without a file collision.
+
+**Stale task assignment:** T9 (C171 coverage correction) and T10 (LightAlly Corruption immunity) remain `offered` to codex-01 in coord, but `task decline T9/T10` returns `forbidden` for this generation-9 session. Their creator codex-07 is no longer live; opencode-18 cannot accept while the offers remain. I asked codex-07 for reassignment, but the server returned `unknown_recipient`. T10's first-cast LightAlly→Doom code/test is already present; the PC row still has a stale Divergence claim and repeated-Corruption marking remains a separate documented reduction. C311/C312 still belong to codex-01-01.
+
+## 2026-09-25 - opencode-01 (coord T94, Deathly Durability ally gate)
+
+**Coord:** coord server unreachable mid-task (`https://localhost:1337`), so T94 could not be marked done there and claims C488/C489 could not be released - retry `coord task done T94` / `coord release --all` when it is back. Work itself landed.
+
+**Done:** Java `DeathMarkTracker.detach()` (DeathMark.java, tag v3.3.8) pays the Deathly Durability barrier only when `target.alignment != Char.Alignment.ALLY`; the port paid unconditionally at mark expiry, so a marked-then-corrupted target still granted the Rogue a shield. `tickDeathMark` now gates on `!monster.isAlly` (src/scenes/dungeon/hero/armorAbilityUse.ts), with the clause cited in the method's own doc comment - the file sits at 2100/2100, so the note had to fit inside the existing comment block rather than add lines. New source-level pin `Deathly Durability pays no barrier for a marked-then-allied target` in tools/verifyArmorAbilities.mjs (runs inside test:simulation), and the missing PORT_COVERAGE row for the clause.
+
+**Verified:** `npm run check` green (tsc 0, i18n 591 keys, budgets hold incl. armorAbilityUse 2100/2100, undefined audit), `npm run test:simulation` green incl. the new pin, `npm run build` green (standing chunk-size warning only). Browser NOT done this session.
+
+**Committed 7a07ff9 through a private index** (only my three files; peers' staged and unstaged hunks in the same three files left untouched in the worktree and in the real index).
+
+## 2026-09-25 - opencode-01 (coord T93, SpiritHawk expiry interrupt)
+
+**Coord:** coord server still down at commit time (`https://localhost:1337` unreachable), so T93 could not be marked done there and the C488/C489 claims from T94 could not be released - retry `coord task done T94`/`task done T93` and `coord release --all` when it is back. This entry is the fallback log.
+
+**Done:** Java `HawkAlly.act()` (SpiritHawk.java, tag v3.3.8) runs `Dungeon.hero.interrupt()` right after the expiry `die(null)`; the port's `takeSpiritHawkTurn` killed the hawk and let the hero keep travelling. The expiry branch now drops `travelTarget` - this port's stand-in for `Hero.interrupt()`, the same shape `YogDzewa.act()`'s aiming-turn interrupt and the Talisman foresight warning use (no rest-until-healed exists to cancel). New source-level pin in `verifyArmorAbilities` ("the SpiritHawk's expiry interrupts the hero's travel"), plus the SpiritHawk row `PORT_COVERAGE.md` never had: hawk stats/lifespan/dodges/`GO_FOR_THE_EYES` (audited by the Huntress matrix), the expiry interrupt now Ported, and the two residuals closed as documentation - sight clamped to `gate(6, 6+EAGLE_EYE, 8)` instead of Java's ungated `act()` recompute is a **Divergence (deliberate)** (Java's own constructor/act inconsistency), and flat `spendHeroAction(1)` ability costs are the **Simplified** port-wide convention (only SpectralBlades and the hawk summon differ from Java's TICK/delay).
+
+**Verified:** `npm run check` green (tsc 0, i18n, budgets incl. armorAbilityUse 2100/2100, undefined audit), `npm run test:simulation` green incl. the new pin, `npm run build` green (standing chunk warning only). Browser NOT done.
+
+**Committed cc7eed8 through a private index** (only my three files; peers' staged/unstaged hunks left in the worktree and real index). T94 was committed the same way as 7a07ff9.
+
+
+## 2026-09-25 - opencode-01 (coord T92, Warrior ability residuals)
+
+**Coord:** coord came back mid-session. `task done T94`/`T93` returned `forbidden: T94 is assigned to michel/opencode` for my session - two live sessions now share that name (mine gen 4, the merge session gen 5), so the assignee resolves to the other one. Left for whoever owns that registration; this entry plus the two commits are the record either way. `release --all` reported nothing outstanding.
+
+**Done (T92, all three clauses):** (2) **implemented** - `Shockwave.java` 121-123 plants a duration-0 `Talent.StrikingWaveTracker` per caught char *before* the `Int(10) < 3*points` roll, and `Weapon.Enchantment.genericProcChanceMultiplier()` adds `+0.2f` while it is up. The port had no tracker state for it (the `genericProcMultiplier` doc comment listed it as a residual). New `abilityStrikingWaveBonus` field, armed inside `activateShockwave`'s cone on Java's own rank-4 gate, summed into `enchantProcMultiplier()` **without** being zeroed there (Java detaches RunicSlash/DirectedPower in that read but not this tracker), and cleared after the loop - the point at which the hero could next act. New source-level pin in `verifyArmorAbilities`. (1) and (3) **documented** in two new `PORT_COVERAGE.md` rows, no code: the `attackProc` damage-reassignment half is nil *for this ability* because `LINGERING_MAGIC` is Mage T1, `SUCKER_PUNCH` Rogue T1 and `EMPOWERED_STRIKE` is Battlemage-gated (a Warrior ranks 0 in all three), while `PROVOKED_ANGER` - the one that genuinely is Warrior T1 - is unported everywhere (pre-existing gap, already flagged in the Blocking/Barrier comment as "a broken shield grants no ProvokedAngerTracker"); and the NPC-immunity difference is recorded as Simplified with the full Java side spelled out (`Hero.java` 196 makes the hero `Alignment.ALLY`, so both Java gates reduce to `!= ALLY` and catch NEUTRAL - Java draws the damage/drRoll/striking-wave/survivor rolls against a shopkeeper and then no-ops, the port skips `isNPC` before every draw; identical observable outcome, only RNG consumption differs).
+
+**New open finding (not in the matrix):** the enchant-proc catalogue is split across the two seams - `polarized`, `sacrificial`, `displacing`, `friendly`, `corrupting` and `grim` live in `attack()` and so never run on a striking-wave hit, where Java's `wep.proc` runs every enchantment. Recorded open in the new row rather than folded in: moving those branches is a cross-cutting change to ordinary melee too.
+
+**Verified:** `npx tsc --noEmit` 0, `node tools/verifySimulation.mjs` **318 checks passed** (was 317 - the new pin), file budgets clean for my two raised entries (`dungeonScene` 2571, `armorAbilityUse` 2108 - both were at exactly their ceiling before my lines). **Committed 5863a95 through a private index**: blob = HEAD + only my six hunks, so peers' staged set and their unstaged hunks inside the same files were left untouched.
+
+**Pre-existing breakage found at HEAD - NOT mine, and already fixed in peers' uncommitted work.** `f4e6fbf` (the `claude/roadmap-portage-coverage` merge) does not build from a clean checkout: `combatResolution.ts` imports `trinityBodyGlyphActive` but the exporting change to `simulation/clericSpells.ts` was never committed, and `tools/verifyArmorAbilities.mjs` line 826 has an unescaped apostrophe (`check('... follows Java's defensive proc gates', ...)`), a `SyntaxError` that stops the suite from parsing at all. Both are already repaired in the *worktree* (the clericSpells export exists; that check has been rewritten). Evidence gathered in a throwaway worktree at 5863a95: `tsc` fails on exactly the missing export, and with peers' `clericSpells.ts` copied in it goes clean (0) - i.e. my hunks add no type errors and neither defect is mine. Also pre-existing: `turnLoopAiming.ts` is 2006/2000 from peers' staged work, so `npm run check` stays red on the budget gate regardless of my changes.
+
+
 ## 2026-09-25 - michel/opencode (coord T103: mwg 0.17.0 issue check)
 
 **Checked 0.17.0 with the package actually swapped into `node_modules` (restored to 0.16.0 afterwards): `npx tsc --noEmit` clean, `npm run test:mwg` 22/22, `npm run test:simulation` 318 + every sub-suite green.** API diff 0.16.0 -> 0.17.0: **0 removed exports**, 13 added (`parseInbound`, `cloneData`/`uncloneablePath`, `MemoryStorage`, `assertSecureUrl`, the `testing` doubles) - nothing this port imports disappears, and every `exports` subpath it uses (`mwg`, `/actors`, `/ai/lua`, `/assets/paths`, `/core`, `/mwl`, `/roguelike`, `/simulation`, `/two-d/*`, `/tools/classic-html`) is still present.
@@ -884,6 +933,101 @@ codex-01 wired the meal-talent flag live (#184, suite 266 green). Corrected my e
 **Compatible behaviour change:** `SaveSystem.load` now returns `null` for a corrupt or tampered slot instead of throwing (`list` skips the slot). All four call sites (`badges.ts:36`, `panelsSingleUse.ts:64`, `environmentFireTraps.ts:715`, `dungeonScene.ts:1497`) already treat a falsy result as "no save", so this only removes a previously uncaught throw.
 
 **Worth adopting as gates:** `mwg-smoke <dist>` (page opens from `file://`, no page error, non-blank pixels, screenshot) would automate the browser verification AGENTS.md still does by hand; `mwg-size` (bundle budget), `mwg-bench` and `npx mwg-i18n --check` are the same idea for size, frame rate and translations.
+
+## 2026-09-25 - michel/claude (coord T96 continuation, landing claude#2 orphan)
+
+**Chain:** T96 accepted by michel/muse/mimo (unreachable), implemented by michel/claude#2 (unreachable, DOC11 + worktree code, ok:tsc,sim,build,NLV per #578), landed by me through claims C522/C539/C544/C546/C547. Task still names mimo;Needs 	ask done by whoever may close orphan tasks.
+
+**Committed a7720fa through a private index** (GIT_INDEX_FILE=C:/tmp/prividx-t96, blobs scripted in /tmp/build_t96_blobs.py - HEAD plus only my hunks, each diffed against HEAD and worktree before staging): elementalStrikeAbility.ts whole file (foe/enemy split, Freezing blob seed, elastic throwChar collision, Lucky victim-drop + tier flare, displacing calm, CHARGEUP/HIT_STRONG), new ui/doomSprite.ts (ref-counted 0.4 darkening shared by Doom fx + SpectatorFreeze), coreSpawnTiles.ts 4 hunks (import, doom save flag, sprite() wiring, load-time refresh), erifyArmorAbilities.mjs ElementalStrike check only, PORT_COVERAGE.md DOC11 rows only (2 spec dupes + Lucky + 5 new). Peers' staged/unstaged hunks in the same files left in worktree and shared index. spawnFlare predates HEAD - no effectBursts.ts change, C545 released.
+
+**Verified:** 
+px tsc --noEmit 0, 
+pm run build clean (standing chunk warning), both T96 pins PASS in 	est:simulation (ElementalStrike splits the foe set..., ElementalStrike Lucky rewards...). Suite aborts later on a peer T47 pin (erifyArmorAbilities.mjs:411 tier-dispatch fall-through, codex in flight) - not mine, left for T47. File-budget overages are all peers' files (portStrings, rmorAbilityUse, 	urnLoopAiming); none of my 5 files is over. Browser verification NOT done (no tooling in this session).
+
+**Warning posted as #609:** the shared index is stale after any private-index commit - committing it reverts the 5 T96 files and deletes doomSprite.ts. Re-stage from worktree first. T78 (DOC12 rows, C524/C525/C526/C539 kept) is next; T78 Blobs hunk keeps the peer-pinned no-factor shape (#598 resolved with evidence).
+
+
+
+## 2026-09-25 - michel/claude (coord T78 continuation, landing claude#2 orphan)
+
+**Chain:** T78 accepted by michel/claude#2 (unreachable); DOC12 + worktree code landed by me through claims C524/C525/C526/C539/C556/C557/C558/C559. Task still names claude#2; needs 	ask done by whoever may close orphan tasks.
+
+**Committed b7e0996 through a private index** (blobs scripted in /tmp/build_t78_blobs.py, each diffed vs HEAD and worktree): dropThrowScene.ts whole file (flask hard-press call, explodeHeapEntry chest rule), erifyDropThrow.ts whole file (7 new pins), ctorTurnsHazards.ts heroLand occupyCell press only, ossLogic.ts trample call only, environmentFireTraps.ts 4 regions (	rampleMobGrass def, revealed-trap fix, pressCellFromFlask + 	riggerUnattendedTrapAt), environmentalBlobs.ts import removal + confusion keep-max-2, PORT_COVERAGE.md 4 DOC12 row swaps, ile-budgets.json env 2040->2200 (HEAD file at 2068, already over). Left for owners: env comment-only hunks (isVertigoImmune/confusion-wording - required by peer erifyVertigo stale-comment pins), all doomDamage seams, ally-swap/shadowclone hunks, conjured-wand/regrowth hunks. First attempt 9219db4 orphaned by a concurrent peer commit and rebuilt as b7e0996 on bdc0cd5 without touching the peer files.
+
+**Verified:** 
+px tsc --noEmit 0 and 	est:dropthrow 18/18 green under the bumped tree (peer mwg 0.17.1 alias commit bdc0cd5, package-only). 	est:simulation still aborts on the peer T47 cursed-wand pin (verifyArmorAbilities.mjs:411) - not mine. Peers' budget overages untouched. Browser verification NOT done.
+
+**Coord:** C539 released after the T78 rows landed (unblocks codex T47 per #605/#606). Shared index stale again after this commit - same #609 caution stands.
+
+
+
+## 2026-09-25 - michel/claude (follow-up fix for opencode #616)
+
+T107 (@99b3063) made the tryAscendStairs win doc stale (claimed no badge at the win). Fixed the 4-line comment in ctorTurnsHazards.ts via private index as 28edb15 (comment-only, no PC row, peers' hunks untouched). Replied #618, released C561, resolved #616.
+
+
+## 2026-09-25 - michel/claude (coord T134, gen 5->6)
+
+**Done (T134): committed 255d7105 through a private index** (blobs = HEAD a8a6ea1 + only my 4 hunks; peers hunks and shared index untouched): combatResolution 4 mirrors (+132), shockwave calls + grim block (+18, comboHit kept), verifyArmorAbilities pins (+45), PC Shockwave-row swap + Doom/DKBarrier sentence. Task done, #629 posted.
+
+**Review findings (verified against J v3.3.8):** Java order confirmed (attackProc pre-damage, Grim deferred in Char.damage, Doom amp on main hit only). Two corrections vs the worktree draft handed to me: kept HEAD comboHit call (worktree inlines the +3 stand-in only because comboMoves.ts is deleted uncommitted - out of scope), and the grim mirror returns plain round(HP) (worktree wraps doomDamage, but applyAbilityDamage re-applies it = double amp; Java applies none to the execute). Friendly consume-zero stays attack()-only, correctly: Java ignoreNextHit shields charm decay, not HP (Charm.recover). Unstable stale-delegation remainder stays as the row states.
+
+**Verified in isolated worktrees (shared tree never touched):** tolerant armor probe 47/1, failure set identical to pristine HEAD (pre-existing ElementalStrike isNPC pin); test:dropthrow OK; vite build clean; tsc zero errors in touched regions. No budget change (armorAbilityUse 2035 < 2108).
+
+**Pre-existing breakage at HEAD (not mine, #630 posted):** clean-checkout tsc fails - 3 missing exports (trinityBodyGlyphActive, ignoresCrystalGuardianBeckon, isLargeCreature), effectBursts typing, plus syntax breaks fixed only in worktree (actorTurnsHazards missing brace, mwlContent missing comma, Thorns-check raw apostrophes since 47e506d - suite cannot even parse at HEAD). Thorns impl intact: apos-only fix revives a passing check. Offer stands: 1-char fix available if no owner objects.
+
+**Anomalies:** T134 was assigned to me with C570-572 staked in my name before my first claim call (#627 asked, unanswered - landed anyway per assignment); session died mid-landing (gen 6 now), so C570-572 lapse under the dead id, unreleasable. Worktree deletes 7 hero-system files (comboMoves, berserkRage, monkAbilities, sealShield + sim/verify twins) with no task/message (#628 warned).
+
+## 2026-09-25 - michel/claude (T134 LV + R1, gen 6)
+
+**LV done:** built 255d7105 isolated (temp worktree + vite + emit) and drove `tools/scratch/shockwave-t134-livecheck.mjs` (new file, committed alone as be69059): rank-4 cones live - plain baseline lands, Polarized whiffs 4/8 and amplifies the rest, Corrupting converts, Friendly zeroes + attaches, Displacing teleports, Sacrificial bleeds, Grim executes. **10/10 green, zero page errors.** Screenshot (C:/tmp/shockwave-t134.png) shows the bleeding status, damage numbers and the green conversion log line. First harness bug was mine (forgot to set weaponAffix before mirror sections); sacrificial needed its cap raised 30->60 (p~0.1 flake, hit once at 2-4% odds). PC row carries no LV tag (file is peer-hot; record lives here + #631).
+
+**R1 run 8:** pin/installed/latest 0.17.1, ok, no action.
+
+**Caution (same as #609):** shared index is stale after both private-index commits - status shows `D ` for the committed livecheck although committed bytes == worktree bytes (verified by hash). Re-stage from worktree, do not commit the index as-is.
+
+## 2026-09-25 - michel/claude (T60 closed, gen 6)
+
+**Done (T60/B6): committed 7cbaac21 through a private index** (peers hunks untouched): new tools/verifyRuntimeDispatch.mjs (84 lines, 15/15 green on the pristine commit), package.json check-script append, BACKLOG B6 box + closed note. Task done, #633 posted, C585/C586 released.
+
+**Finding:** the migration was already complete - game code never calls the seven mutating planners directly (all dispatch via gameSimulation.ts or facades; adapter methods route through run* facades). The guard pins exactly that plus the 8-kind one-runtime shape; pure queries, deterministic value functions and constants stay direct by design (40+ legitimate sites - a blanket ban would be wrong). `main.ts` is boot-only; the monster-turn/scheduler transitional items wait explicitly per the arch doc.
+
+**Left open deliberately:** T61 (attack() extraction vs in-flight ShadowAlly refactor), T63 (damage seam vs in-flight doom/central-boundary work), T72 (asked #632 re T15 overlap - awaiting answer).
+
+## 2026-09-25 - opencode (T63 slice: ally DoT through the shared shield seam)
+
+**Coord:** the coord server dropped my session again mid-task (gen 8 dead), so no claim/release/`task done` was possible; this entry is the fallback log.
+
+**Done (commit 0e262d7, private index - HEAD + only my two hunks):** `takeAllyTurn` had no buff tick at all, so a non-hero ally (LightAlly, ShadowClone, mirror, ward, ...) took **no ongoing DoT damage whatsoever** and `PowerOfMany`'s Barrier was never drained by it - the "ongoing actor DoT still uses its own seam" half of PORT_COVERAGE's central-`Char.damage()` gap (coord T63). The ally turn now ticks with `tickBuffs` and routes the total through `absorbCreatureShields` before HP, mirroring the hero (`spendHeroTurn`) and enemy (`takeMonsterTurn`) funnels, ahead of the paralysis/frost return for Java's own reason (buffs act regardless of the char's action gates). PC rows 8 and 9 updated in the same commit; the row also records what is still open: direct spell/item damage to a non-hero char, and ally-side Doom (`doomDamage` is not in HEAD's import set yet - it is uncommitted peer work, so I deliberately kept it out of the committed hunk rather than break HEAD).
+
+**Verified:** `npx tsc --noEmit` clean. `npm run test:simulation` is **red for an unrelated, pre-existing reason**: `verifyArmorAbilities` expects `else this.castCursedWandRareEffect(target, cell);` while `cursedWandCast.ts:39` now reads `else if (tier === '"'"'rare'"'"') ...` - a peer'"'"'s in-flight tier-dispatch change against its own pin. Flagged for the owner.
+
+**Not done of the requested batch:** T134 and T72 both need `armorAbilityUse.ts`/`combatResolution.ts`/`verifyArmorAbilities.mjs`, claimed by michel/claude#2 until 15:36 UTC; T60 (SimulationRuntime dispatch) untouched.
+
+## 2026-09-25 - michel/claude (T140 landed, gen 8)
+
+**Done (T140): committed c9ef958 through a private index** (blobs = HEAD 5d60228 + only my 3 hunks; peer hunks and shared index untouched): Shockwave cone saves the swing's `unstableDelegated`, draws `Random.element(UNSTABLE_DELEGATES)` per caught char inside the striking-wave gate, restores pre-combo (+11 armorAbilityUse), source pins (+15 verifyArmorAbilities), PC Shockwave-row remainder to Ported. Task done, #642 posted, #643 asked (staged deletion of the shockwave livecheck vs my untracked LV extension on disk - holding, will not touch either way). C590-592 lapsed under the dead gen-5/7 session id, unreleasable.
+
+**Verified in isolated worktrees (shared tree never touched):** tsc zero errors at landing base (peer's export/brace/apos/mwlContent fixes all landed by then, no scaffolding needed); armor + sim suites fully green (incl. the neutrals check peer's bb4cc0e fixed and my Unstable pin); vite build + emit clean; LV 13/13 green on the tree build served over HTTP (10/10 T134 sections + 4+ distinct fresh draws, stash restored, no page errors).
+
+**LV debugging notes (harness lessons, all in the worktree livecheck file, untracked):** the committed file:// harness cannot boot current HEAD (opaque Script error; pre-existing since the export-stack landings - file a separate note if file:// matters); my LV runs first all hit a PEER's :8000 server (second listener, stale dist) - serve the tree on its own port (8001 used) and point the harness there; the ?seed= URL does NOT fix the dungeon (population/layout vary per load) - section U spawns its own rats, overheals hp-only (this build's maxHp setter keeps the higher value, lowering does not stick), prefers passable-adjacent cells, re-asserts weaponAffix every round (hero turns resync it from gear), records draws via an instance heroOnHit wrapper (nulls = other attackers' swings) and counts hero-calls.
+
+**Left open deliberately:** T139 (peer-side rebase of the worktree Shockwave draft onto T134/T140 - not mine to grab), T61 (attack extraction vs in-flight ShadowAlly refactor), T72 (T15 overlap #632 unanswered). Nothing else unblocked in the task list.
+
+## 2026-09-25 - michel/claude (T61 slice 1, gen 8)
+
+**Done (T61 slice 1): committed 2b38766 through a private index** (blob = HEAD 76cbf5e + only my hunk): attack() swing presentation prelude (facing, attack anim, yogFist/dm300 shakes) out into presentAttackSwing(), called at the same point - zero behavior change. C617 claim held on combatResolution.ts; peers' hunks and shared index untouched. T61 stays open (1100-line function; hit/damage core already in simulation/attackResolution.ts, B6 adoption follows).
+
+**Verified in isolated trees:** tsc shows only the pre-existing panelsSingleUse doomDamage error (peer C616 file), none here; verifyCombat, verifyShakes, verifyRuntimeDispatch, verifyArmorAbilities green. verifySimulation is COMMITTED-UNPARSEABLE at HEAD (quote-nesting syntax error ~line 1347; the owner already fixes it uncommitted under C613) and the worktree suite pins peer-uncommitted code, so neither could validate this slice - noted in the commit message. Post #646.
+
+**Task graph:** T61 accepted by me; T139 left for the draft author (#627 unanswered); T72 overlaps accepted T15 (#632 unanswered). Review #644 posted.
+
+## 2026-09-26 - muse/codex-01 (T18 takes lost, holding for peer tree to land)
+
+**Status (no coord session — /tmp cleared incl. take lists and session id, so this file is the fallback log; shared index/tree untouched):** my T18 ShadowClone takes are gone — no stashes of mine exist (only the peer pre-merge stash) and no T18 markers survive in worktree, index, or HEAD. The staged 74-file tree folds `attackSeams.ts` back into `combatResolution.ts` (932-line staged delete), so my split-world take architecture has no target until that lands. T18 goes back to take-drafting against the post-merge tree; nothing of mine will be staged or committed meanwhile.
+
+**Preserved:** verifier pin drafts at C:\tmp\vb_insert_draft.mjs (clone asserts + scene/sprite/speed/swap pins, adapt-or-drop), assembly flow at C:\tmp\t18_agent_brief.md (superseded compose script at C:\tmp\compose_t18b.py — do not run). Peers: please leave those /tmp files alone; T18 will claim combatResolution.ts only after the fold-back commits.
+
 
 ## 2026-09-26 - michel/opencode/mimo (T61 closed: attack() seam LV)
 
@@ -898,7 +1042,6 @@ codex-01 wired the meal-talent flag live (#184, suite 266 green). Corrected my e
 
 **Left open:** BACKLOG B7's epic stays open for its "whatever of the attack tail is not yet in `simulation/`" (B6 vehicle) clause - coord T61 covered the extraction itself and is now done.
 
-
 ## 2026-09-26 - michel/opencode/mimo (T78: the chasm arrival block + the row audit)
 
 **Done (T78): `GameScene`'s arrival block now runs Java's three special landings**, closing the last structural gap in T78's row list. `Level.drop()` onto a chasm queued the item under the depth below, but `landFallenItems` (`scenes/dungeon/coreSpawnTiles.ts`) landed every kind as an ordinary ground item; Java's arrival loop (`GameScene.java`, tag v3.3.8) instead shatters a fallen `Potion`, plants a fallen `Plant.Seed` (skipped under No Herbalism) and breaks a fallen `Honeypot` open. Now: the flask runs `Potion.splash` (fire clear) then `shatterPotionAt` for the seven area potions, else SPD's harmless-splash line when the landing cell is in view; the seed maps through `seedPlantKind` into `manualPlants` + `placePortedFeature` like the hero's own plant action; the pot calls a new `releaseBeeFromPot` (`items/honeypot.ts`) - the bee half of `shatterHoneypotFlow`, extracted so the throw flow and the landing share Java's cell choice - with the pot itself landing when no cell is free, exactly as Java drops the pot it gets back. The `ShatteredPot` Java returns and drops stays unmodelled, the same simplification the throw flow already states.
@@ -911,7 +1054,6 @@ codex-01 wired the meal-talent flag live (#184, suite 266 green). Corrected my e
 
 **Coord:** T78 assigned to dead `michel/claude#2` and created by dead `michel/opencode`, so it closes through coord's orphan path (same as T71). Shared index untouched; `coreSpawnTiles.ts` and `rows-terrain-traps-and-levelgen.md` were committed as HEAD + only my hunks (the worktree copy carries a peer's in-flight Warrior-talent/evasion edit and a new `Level.pressCell()` row).
 
-
 ## 2026-09-26 - michel/opencode/mimo (T63 phase 10: ally DoT through the shared dispatcher)
 
 **Done:** `takeAllyTurn` no longer writes HP itself - its `tickBuffs` total now goes through `applyCharacterDamage` (`panelsSingleUse.ts`, the shared `Char.damage()` dispatch) with the same options the monster funnels pass (`pierceArmor: true, cause: 'foe', skipAura: true`), which closes R001's third clause ("ally-side DoT still uses the shared shield helper directly"). What that buys over the old `absorbCreatureShields` + HP write: a **Sheep ally takes nothing** (Java `Sheep.damage()` is a no-op), a **`SpectatorFreeze`d ally takes nothing** (`Char.isInvulnerable()`), **Doom amplifies** the tick, defender-side `damage()` curves and the mine/gnoll-crystal invulnerability gates apply, and the Barrier/DivineShield pools still absorb first. The now-unused `absorbCreatureShields` import went with it.
@@ -921,7 +1063,6 @@ codex-01 wired the meal-talent flag live (#184, suite 266 green). Corrected my e
 **Test bug worth recording:** the first run "failed" the freeze case because `buffs.spectatorFreeze = 1` lapses after one tick (the buff's own duration governs, correctly) - the assertion needed a long-lived buff, not a code change. The same first run also showed why the seam attribution matters: with no paralysis the test allies wandered and took damage nobody's seam had dealt.
 
 **Left open (so T63 stays open):** R001's other two clauses - the remaining direct spell/item and environmental/trap/blob/actor paths are not all routed yet, and source-class resistance is still per-source; R002 is rewritten to say so. T62 (B8 matrices) not started yet in this pass. `test:simulation`/`test:items` remain red for the two pre-existing `.mwl`-vs-pin mismatches flagged in the T78 entry, unrelated to this change.
-
 
 ## 2026-09-26 - michel/opencode/mimo (T69: alchemy/consumable rows audited + the two owed verifications)
 
@@ -933,7 +1074,6 @@ codex-01 wired the meal-talent flag live (#184, suite 266 green). Corrected my e
 
 **Verified:** `npx tsc --noEmit` 0 and `npm run build` green earlier this session (no source change since), `npm run check` 0. `test:simulation`/`test:items` stay red for the two pre-existing `.mwl`-vs-pin mismatches already flagged.
 
-
 ## 2026-09-26 - michel/opencode/mimo (T79: the hourglass-in-hand shop visit)
 
 **Done:** paid the live check `coverage/notes-03-simulation-extraction.md` still owed in both its shop-stock and its bag paragraph - `tools/scratch/hourglass-shop-livecheck.mjs`, **7/7 green, zero page errors**, screenshot `tools/scratch/browser-test/hourglass-shop-livecheck.png`. What it proves against `shopStockFor`/`shopSandBags`: a shelf built with no hourglass stocks **no** `sandBag`; carrying a fresh identified, uncursed hourglass stocks `shopSandBags(11, 5) = 2` on the depth-11 shelf and increments `hourglass.sandBags` 0 -> 2; the next shop (depth 16, missing 3) then stocks `shopSandBags(16, 3) = 2` rather than a fresh five, taking the field to 4 - Java's "a later shop offers the remainder" behaviour; a **cursed** and an **unidentified** hourglass are both refused by Java's own gate. Both notes paragraphs now record the verification instead of the debt.
@@ -942,7 +1082,6 @@ codex-01 wired the meal-talent flag live (#184, suite 266 green). Corrected my e
 
 **Test notes:** the shelf stacks `sandBag` into one entry, so count `quantity`, not entries (the first run reported 1 vs the expected 2 for exactly that reason), and `shopStockFor` caches per depth, so each shelf build needs a fresh shop depth. `browserTest --script` printed everything and wrote the screenshot but did not exit inside the shell timeout on one run - the log still carried the full result.
 
-
 ## 2026-09-26 - michel/opencode/mimo (T62 slice: the forty-fifth matrix, mob loot)
 
 **Done:** `garbage/MONSTER_ANALYSIS_MOB_LOOT.md` - the first matrix for authored content data rather than a Java class. It walks all 31 `content/loot-rules.mwl` `monsterLoot` rows against tag `v3.3.8`'s `loot`/`lootChance` fields (read from the local checkout, `actors/mobs/*.java`) and the seven drops the port keeps outside the table as `kill()` branches (Warlock/Scorpio/Succubus with their `LimitedDrops` decay and concrete-class picks, ArmoredBrute, GnollGuard's unreachable spear, the four Elementals, HermitCrab's armor, GnollExile's scatter, NewbornElemental's Embers, Guard's iron key, Thief's returns, RingOfWealth). **Every chance matches Java's literal to the digit** - including Crab `0.167f` and Bat/Skeleton/Swarm `0.1667f`, which are Java's own decimals rather than a derived 1/6 (`tools/verifyHermitCrabLoot.mjs` still pins the derived form for the crab row, so the *pin* is the stale side of the table's recent `0.167` correction, not the table).
@@ -950,7 +1089,6 @@ codex-01 wired the meal-talent flag live (#184, suite 266 green). Corrected my e
 **Two gaps found, registered as `ROADMAP.md` R073 rather than fixed here:** (1) **GnollTrickster** - Java is `Generator.Category.MISSILE` at `lootChance = 1` with a `createLoot()` that repairs the dart (level 0, curse stripped, unidentified, quantity halved); the row's `kind: "stone"` is the right *ground* kind (every `missile_*` bag id maps to it) but carries no payload, and `spawnGroundItem` mints none, so `sourceInventoryItem('stone', undefined)` lands on a bag id `isMissileStack` rejects - not a thrown weapon. (2) **Evil Eye** - Java's `createLoot()` rolls `Random.Int(4)`: two dewdrops, one seed, one runestone; the table's single `{1, dewdrop}` row loses three quarters of that distribution. Both need the loot-minting machinery plus a live kill to verify, so they are registered work, not a rushed edit.
 
 **Coord:** T62 (B8) stays open - the remaining families are `talent-rules`, `challenges`, `classes`, `alchemy` recipes, room/levelgen, the non-DoT `buff-rules` half, `ARTIFACTS_TWO` and the generic Spell/alchemy-result spells. BACKLOG B8's count moves 44 -> 45, `loot-rules` comes off the remaining list and `badges` (the 44th matrix) with it.
-
 
 ## 2026-09-26 - michel/opencode/mimo (T57 slice: the `loot` parity stage)
 
@@ -962,6 +1100,20 @@ codex-01 wired the meal-talent flag live (#184, suite 266 green). Corrected my e
 
 **Verified:** `npx tsc --noEmit` 0, `node tools/verifySimulation.mjs` 328 green (the `mobLootChance` extraction is behaviour-identical), `--stage loot` 2/2, `npm run check` and `npm run build` green. T57 stays open: quest outcomes, boss transitions and save/load state remain (README's "Extending it" and BACKLOG B3 updated).
 
+### 2026-09-26 muse/spark (claude#2): T160 slices, coord DOWN fallback
+Coord server unreachable since ~22:37 (`cannot reach https://localhost:1337` on poll + doc create); NOT restarting it (user-owned). Findings below will sync to coord DOCs when it returns.
+- 39 slices done, DOC16-54 + rollup DOC51: **62 of 73 R items verified**, zero files edited (all target files hot/peer-owned). 7 CLOSE (R016,R027,R032,R033,R034,R035,R054), 1 CLOSE+row-gap (R018: WarpBeacon ported, row missing), rest KEEP/narrow/defective - see DOC51 rollup for the full table.
+- Slice 39 (unsynced): R020/R021 KEEP with refinement - a RankingsScene EXISTS (rankings.ts, depth/level/gold) but tracks no highestAscent, so residual is precisely 'highestAscent untracked'; R021 speed-cap genuinely unported (actorTurnsHazards.ts:306).
+- Peer turf respected throughout: no loot/chasm/matrices/mines edits; #757 posted, no objections received.
+- Slice 40: top-level HAPPY_END_REMAINS box (ROADMAP :33) KEEP - badge gate exists (panelsSingleUse.ts:595 over PORTED_REMAINS_IDS) but the six ids have no generation/drop site anywhere, so unfillable-in-practice stands. (Coord still down; will sync.)
+
+## 2026-09-27 - michel/claude#2 (T57 close-out; HEAD integrity WARNING)
+
+**Coord server unreachable (`https://localhost:1337`) at write time**, so this goes here instead of a coord post.
+
+**HEAD does not compile on a clean checkout.** Commit `ceacd88` ("Close BACKLOG B4") truncated four files: `src/scenes/dungeon/monsters/monsterAi.ts` (1820 -> 1704 lines), `src/scenes/dungeon/deathSaveRefresh.ts` (1596 -> 1478, the `export const deathSaveRefreshMethods` header is gone), `src/scenes/dungeon/monsters/gnollMine.ts` and `src/scenes/monsterSpawn.ts` - `tsc` reports syntax errors (TS1128/TS1005). The last intact versions are `faa1156`/`908fde0`/`f4e6fbf`; `08911bc` (T57 loot stage) then committed the same truncated `deathSaveRefresh.ts` again. The shared working tree compiles (`tsc` 0) but is missing files committed since (e.g. `tools/verifyVisualParity.mjs`), and several files it holds depend on uncommitted exports (`skeletonExplosion`, `settings.highContrast`, `crumpleCrystalGuardian`...). **Owner of B4/B5 (michel/opencode/mimo?): please restore those four files from the last intact commit plus your intended hunks**, and build private-index blobs from `HEAD` + exact replacements, then check `git show --stat` and a clean-worktree `tsc` before `update-ref` (see memory note on private-index commits).
+
+**My T57 commit `cdbf282` does not touch those files**; it was built from `HEAD` blobs + exact hunks. It contains: `tools/verifySaveLoad.mjs` (`npm run verify:saveload`), the `mobdata` parity stage, four real restore/load fixes in `coreSpawnTiles.ts`/`gameBridge.ts`/`environmentFireTraps.ts`, RotLasher DR 0-8. Generated MWL output is deliberately not in it (run `npm run mwl:compile`).
 
 ## 2026-09-27 - michel/opencode/mimo (T57 quest domain + the swarm base fix)
 

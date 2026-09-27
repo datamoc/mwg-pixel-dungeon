@@ -53,8 +53,8 @@ import { type WealthDropPlan } from '../../../items/wealthDrops';
 import { artifactRechargeEffect, bankArtifactCharge, chaliceRechargeHeal, roseRechargeGhostHeal } from '../../../items/artifactRecharge';
 import { openClassArmorTransfer as openInventoryClassArmorTransfer } from '../../../items/equipment';
 import { FLOOR, GRASS, HIGH_GRASS, TILE } from '../../../dungeonConstants';
-import { BUFF_DURATION, NEGATIVE_BUFFS, addBuff, buffBlocked, reigniteBuff, type BuffId, type Creature, type GroundItem, type Step } from '../../../combat';
-import { BOSSES, IMMOVABLE_KINDS, LIMITED_DROP_DECAY, MOB_LOOT, MONSTERS, isUndeadOrDemonic, type MonsterId } from '../../../monsters';
+import { BUFF_DURATION, NEGATIVE_BUFFS, addBuff, buffBlocked, doomDamage, reigniteBuff, type BuffId, type Creature, type GroundItem, type Step } from '../../../combat';
+import { BOSSES, IMMOVABLE_KINDS, LIMITED_DROP_DECAY, MOB_LOOT, MONSTERS, isLargeCreature, isUndeadOrDemonic, type MonsterId } from '../../../monsters';
 import { APPEARANCE_TABLES, SPD_LEVEL_CURVE, effectMarkSheet } from '../shared';
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `inventoryQuickslot`). Each takes the scene as `this`;
@@ -566,15 +566,15 @@ export const inventoryQuickslotMethods = {
 				cellIndex: (x, y) => scene.level.index(x, y),
 				gridWidth: () => scene.level.width,
 				isBossDepth: () => scene.depth in BOSSES,
-				isFloorLocked: () => scene.floorLocked(),
 				hasAmulet: () => scene.bag.find('amulet') !== undefined,
 				creatureAt: (x, y) => {
 					const creature = scene.creatureAt(x, y);
-					return creature ? { kind: creature.kind, isHero: creature.isHero, isNPC: creature.isNPC, isAlly: creature.isAlly } : null;
+					return creature ? { kind: creature.kind, isHero: creature.isHero, isNPC: creature.isNPC, isAlly: creature.isAlly, yogFistType: creature.yogFistType } : null;
 				},
 				mobsAt: (x, y) => scene.creatures.filter((creature) => !creature.isHero && creature.x === x && creature.y === y)
 					.map((creature) => ({ id: creature.id, x: creature.x, y: creature.y, kind: creature.kind, isNPC: creature.isNPC, isAlly: creature.isAlly } as BeaconMobView)),
 				isImmovableKind: (kind) => kind !== undefined && IMMOVABLE_KINDS.has(kind),
+				isLargeKind: (kind, yogFistType) => isLargeCreature(kind, yogFistType),
 				randomFreeCellNear: (x, y) => scene.randomFreeCell({ x, y }),
 				moveHeroTo: (cell) => {
 					scene.moveTo(scene.hero, cell);
@@ -899,8 +899,9 @@ export const inventoryQuickslotMethods = {
 					&& victim.buffs['paralysis'] === undefined;
 				if (parried) this.say(t('port.log.crabparries'), 'negative');
 				else {
-					victim.hp -= damage;
-					this.showDamage(victim, damage);
+					const dealt = doomDamage(damage, victim);
+					victim.hp -= dealt;
+					this.showDamage(victim, dealt);
 				}
 				victim.sleeping = false;
 				if (victim.hp > 0) {
@@ -1154,8 +1155,9 @@ export const inventoryQuickslotMethods = {
 					&& victim.buffs['paralysis'] === undefined;
 				if (parried) this.say(t('port.log.crabparries'), 'negative');
 				else {
-					victim.hp -= damage;
-					this.showDamage(victim, damage);
+					const dealt = doomDamage(damage, victim);
+					victim.hp -= dealt;
+					this.showDamage(victim, dealt);
 				}
 				victim.sleeping = false;
 				if (victim.hp > 0) {
@@ -1578,7 +1580,10 @@ export const inventoryQuickslotMethods = {
 				return;
 			}
 			const at = spawnPoints[Random.int(0, spawnPoints.length - 1)]!;
-			const existing = this.creatures.find((c) => c.isAlly === true && c.kind === 'newbornElemental' && c.hp > 0);
+			//`SummonElemental.onCast()` finds any `Elemental` carrying `InvisAlly` (tag `v3.3.8`),
+			//including an imbued mature summon; both elemental actor kinds can therefore be recalled.
+			const existing = this.creatures.find((c) => c.isAlly === true
+				&& (c.kind === 'newbornElemental' || c.kind === 'elemental') && c.hp > 0);
 			if (existing) {
 				this.moveTo(existing, at);
 				//Java logs nothing for the recall - the elemental simply appears where it was called.
@@ -1614,6 +1619,9 @@ export const inventoryQuickslotMethods = {
 			this.say(t('port.log.summonelemental'), 'positive');
 			this.actionSpentTurn = true;
 			this.spendHeroTurn(1);
+			//Not ported: `SummonElemental.onCast()` calls `Talent.onScrollUsed` (`SummonElemental.java`/
+			//`Talent.java`, tag `v3.3.8`), which can trigger Mage `INSCRIBED_POWER` or Rogue
+			//`INSCRIBED_STEALTH` (and `ScrollEmpower`); those talents/buff are not modeled.
 		},
 
 			beginElementalImbue(this: DungeonScene, instanceId?: string): void {
@@ -1936,7 +1944,20 @@ export const inventoryQuickslotMethods = {
 			//Continuous pour auras ride the same per-frame tick (see
 			//`ui/effectBursts.ts` syncPourAuras - auras follow cells and
 			//FOV, rebuild on state changes, and die with their creature).
-			syncBlobCells(this, [{ id: 'fire', tint: 0xff6a22, volumeAt: (x, y) => this.fire.volumeAt(x, y) }, { id: 'toxicGas', tint: 0x66dd66, volumeAt: (x, y) => this.toxicGas.volumeAt(x, y) }, { id: 'corrosiveGas', tint: 0x99ff55, volumeAt: (x, y) => this.corrosiveGas.volumeAt(x, y) }, { id: 'blizzard', tint: 0x9bdcff, volumeAt: (x, y) => this.blizzard.volumeAt(x, y) }, { id: 'web', tint: 0xffffff, volumeAt: (x, y) => this.web.volumeAt(x, y) }, { id: 'smokeScreen', tint: 0x999999, volumeAt: (x, y) => this.smokeScreen.volumeAt(x, y) }], dt); syncPourAuras(this);
+			//`Fire.use`/`ToxicGas.use`/`CorrosiveGas.use`/`Blizzard.use`/`Web.use`/`SmokeScreen.use`
+			//(tag `v3.3.8`): each blob pours its own factory - `FlameParticle` 0xEE7722, Speck.TOXIC
+			//`syncBlobCells` auto-discovers the six other active blob layers from the scene;
+			//its per-kind emitter table cites each Java factory and states visual reductions.
+			//Cadence follows each blob's own Java `pour(interval)` via `blobCellEmitterOptions`
+			//(`rate = 1/interval`; Web multiplies by its 3-per-emit) - no shared rate:2.
+			syncBlobCells(this, [
+				{ id: 'fire', tint: 0xEE7722, volumeAt: (x, y) => this.fire.volumeAt(x, y) },
+				{ id: 'toxicGas', tint: 0x50FF60, volumeAt: (x, y) => this.toxicGas.volumeAt(x, y) },
+				{ id: 'corrosiveGas', tint: 0xAAAAAA, volumeAt: (x, y) => this.corrosiveGas.volumeAt(x, y) },
+				{ id: 'blizzard', tint: 0xFFFFFF, volumeAt: (x, y) => this.blizzard.volumeAt(x, y) },
+				{ id: 'web', tint: 0xCCCCCC, volumeAt: (x, y) => this.web.volumeAt(x, y) },
+				{ id: 'smokeScreen', tint: 0x000000, volumeAt: (x, y) => this.smokeScreen.volumeAt(x, y) },
+			], dt); syncPourAuras(this);
 		},
 
 		applyMissileClassProc(this: DungeonScene, target: Creature): void {

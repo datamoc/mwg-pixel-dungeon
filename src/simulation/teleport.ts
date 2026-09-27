@@ -8,8 +8,9 @@
  * shared free-cell search, so the constraints live here once.
  *
  * Pure functions of their inputs so the suite can pin them without a scene; the scene
- * owns the level reads. Deliberately not here: LARGE chars needing `openSpace` (no
- * open-space concept exists here), the try-cap failure mode (the port collects the
+ * owns the level reads. Deliberately not here: LARGE chars needing `openSpace`
+ * (LARGE kinds and `isOpenSpace` exist now, but this shared draw still doesn't gate),
+ * the try-cap failure mode (the port collects the
  * accepted set instead of probing with a cap, so it never fails spuriously where Java
  * can return -1), and `teleportPreferringUnseen`'s unseen-room preference.
  */

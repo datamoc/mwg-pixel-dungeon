@@ -2,7 +2,8 @@ import { openAlchemyRecipes } from '../../../items/alchemy';
 import type { DungeonScene } from '../../dungeonScene';
 import { elementalStrikeAbilityMethods } from './elementalStrikeAbility';
 import { placeCharacterArt } from '../../../ui/characterPlacement';
-import { Random, Roguelike, TintedSprite } from 'mwg';
+import { Random, Roguelike } from 'mwg';
+import { AnimatedSprite } from 'mwg/two-d/render';
 import { UNSTABLE_DELEGATES } from '../../../items/itemAffixes';
 import { capitalize, has, t } from '../../../i18n/index';
 import { SEER_SHOT_COOLDOWN, allyWarpRange, seerShotDuration } from '../../../talentEffects';
@@ -17,9 +18,9 @@ import { spendWildMagicShot, wildMagicBoostedLevel, wildMagicShotCost, wildMagic
 import { bodySlamDamage, impactWaveStrength, impactWaveVulnerable, shockForceParalyses, shockwaveCone, shockwaveDamage, strikingWaveProcs, type DamageRoll } from '../../../simulation/warriorAbilities';
 import { SPIRIT_HAWK_LIFESPAN, spiritHawkDodges } from '../../../simulation/huntressAbilities';
 import { closeTheGapRange, directedPowerBoost, elementalAnnoyingChance, elementalBaseDamage, elementalBlobAmount, elementalBlockingShield, elementalBloomingBudget, elementalCorruptingChance, elementalCurseChance, elementalFurrowStep, elementalGrimChance, elementalKineticSplash, elementalKnockback, elementalLuckyChance, elementalPowerMulti, elementalProjectingSplash, elementalRootsDuration, elementalSacrificialOther, elementalSacrificialSelf, elementalStrikeCone, elementalStrikeResisted, elementalVampiricHeal, invigoratingVictoryHeal, type ElementalStrikeDamageSource } from '../../../simulation/duelistAbilities';
-import { shadowCloneAccuracy, shadowCloneArmorShare, shadowCloneBladeShare, shadowCloneEvasion, shadowCloneHp } from '../../../simulation/rogueAbilities';
+import { shadowCloneAccuracy, shadowCloneArmorShare, shadowCloneBladeShare, shadowCloneCanInteract, shadowCloneEvasion, shadowCloneHp } from '../../../simulation/rogueAbilities';
 import { showChoiceWindow } from '../../../ui/portWindows';
-import { POWER_OF_MANY_TURNS, trinityBodyDuration, trinityMindItemLevel } from '../../../simulation/clericSpells';
+import { trinityBodyDuration, trinityMindItemLevel } from '../../../simulation/clericSpells';
 import { trinityChargeUsePerEffect } from '../../../simulation/clericSpells';
 import { randomSpellbookScroll } from '../../../items/artifactActions';
 import { applyScrollEffect } from '../../../items/scrollEffects';
@@ -28,9 +29,9 @@ import { useChainsFlow } from '../../../items/chains';
 import { useArmbandFlow } from '../../../items/armband';
 import { beginSandalsRootFlow } from '../../../items/sandals';
 import { useTalismanFlow } from '../../../items/talisman';
-import { bolasCrippleTurns, missileAdjacentAccFactor, missileDamageRange, missileFlightArt, tomahawkBleedRange } from '../../../items/missiles';
 import { RING_DEFS, ringSharpshootingBonus } from '../../../items/ringModifiers';
 import { MWL_ARMOR_GLYPHS, MWL_MISSILE_BY_CLASS, MWL_WEAPON_ENCHANTS, mwlItemEffectValue } from '../../../mwlContent';
+import { bolasCrippleTurns, missileAdjacentAccFactor, missileDamageRange, missileFlightArt, tomahawkBleedRange } from '../../../items/missiles';
 import { parseMindEffect, reaimStoredMindForm, startMindFormFlow, type MindFormContext } from '../../../items/mindForm';
 import type { MindFormEffect } from '../../../simulation/mindFormCast';
 import { coneCells } from '../../../mechanics/cone';
@@ -38,7 +39,8 @@ import { traceRayToTarget } from '../../../mechanics/rays';
 import { EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, WATER } from '../../../dungeonConstants';
 import { BUFF_DURATION, addBuff, applyElementalBacklash, buffBlocked, reigniteBuff, rollDamage, setBleeding, type Creature, type Step } from '../../../combat';
 import { applyChillFreeze } from '../../../simulation/buffs';
-import { BOSSES, IMMOVABLE_KINDS, heroSheet, liveStats, type MonsterId } from '../../../monsters';
+import { BOSSES, IMMOVABLE_KINDS, heroSheet, isLargeCreature, liveStats, type MonsterId } from '../../../monsters';
+import { isOpenSpace } from '../../../simulation/crystalSpire';
 import { HARMFUL_PLANTS, NATURES_POWER_DURATION } from '../shared';
 
 const TRINITY_BODY_GLYPH_CLASSES: Readonly<Record<string, string>> = { stone: 'Stone', repulsion: 'Repulsion', antimagic: 'AntiMagic', viscosity: 'Viscosity', thorns: 'Thorns' };
@@ -186,7 +188,7 @@ export const armorAbilityUseMethods = {
 	/**
 	 * Java's `Trinity.WndItemtypeSelect` stores a discovered enchantment or glyph on its tome;
 	 * this port has no discovery/stored-item inventory. Offer its modeled positive weapon
-	 * enchantments and the four positive armor glyphs with live defensive proc hooks.
+	 * enchantments and positive armor glyphs with live defensive proc hooks.
 	 */
 	chooseTrinityBodyEffect(this: DungeonScene, cost: number): void {
 		if (this.hero.magicImmune) { this.say(t('port.log.tomenospell'), 'negative'); return; }
@@ -360,7 +362,7 @@ export const armorAbilityUseMethods = {
 				if (targetId && (!target || target.hp <= 0)) return false;
 				const type = wandType as WandType;
 				const fullCharges = Math.min(wandInitialCharges(type) + level, 10);
-				return this.fireWandShot(type, level, target ?? targetCell, wandChargesPerCast(type, fullCharges), level);
+				return this.fireWandShot(type, level, target ?? targetCell, wandChargesPerCast(type, fullCharges));
 			},
 			fireMindThrown: (missileClass, level, targetCell, targetId) => {
 				const target = targetId ? this.creatures.find((creature) => creature.id === targetId) : null;
@@ -402,7 +404,7 @@ export const armorAbilityUseMethods = {
 	 * call sites alongside `effectiveRing()`; `ChaliceOfBlood` shares this same buff branch but
 	 * is not a `Ring` and has no port model for a second `chaliceRegen` source - **not offered**)
 	 * or runs the artifact's one-shot `SpiritForm.applyActiveArtifactEffect()`. Of that dispatch's
-	 * ten cases, eight are modeled: `UnstableSpellbook.doReadEffect()` runs the *inner* read (a fresh
+	 * ten cases, four are modeled: `UnstableSpellbook.doReadEffect()` runs the *inner* read (a fresh
 	 * scroll draw + apply) with none of `execute()`'s outer equip/charge/cursed gates, matching
 	 * Trinity's own bypass exactly, so no synthetic bag instance is needed; `HornOfPlenty`
 	 * (`doEatEffect(hero, 1)`), `TimekeepersHourglass` (a bespoke `TimeBubble.reset(artifactLevel())`,
@@ -628,64 +630,6 @@ export const armorAbilityUseMethods = {
 		applyScrollEffect(randomSpellbookScroll(), this.scrollEffectsContext());
 		this.spendHeroAction(1);
 		this.say('Trinity spirit form: Unstable Spellbook', 'positive');
-	},
-
-	/**
-	 * `PowerOfMany.activate()` (`PowerOfMany.java`, tag `v3.3.8`) lets the player empower an
-	 * existing ally or summon a `LightAlly` on an empty valid cell. The LightAlly uses a rat
-	 * record only as its scheduler/combat/save carrier; its sprite, 80 HP, combat stats, command
-	 * behavior, 25-point Barrier and no-loot/no-XP flags are replaced with Java's own values.
-	 */
-	activatePowerOfMany(this: DungeonScene, _def: ArmorAbilityDef, cost: number, cell: Step | null): boolean {
-		const powered = this.poweredAlly();
-		if (powered?.allyKind === 'lightAlly') {
-			if (!cell) return false;
-			this.directAlly(powered, cell, {
-				defend: 'port.ally.order.defend', follow: 'port.ally.order.follow', attack: 'port.ally.order.attack',
-			});
-			return true;
-		}
-		// Java refuses another cast while any non-LightAlly actor already carries PowerBuff.
-		if (powered) {
-			this.say(t('port.ally.already_powered'), 'warning');
-			return true;
-		}
-		if (!cell) return false;
-		if (!this.fov.isVisible(cell.x, cell.y)) {
-			this.say(t('port.ally.novision'), 'negative');
-			return false;
-		}
-		const ally = this.creatureAt(cell.x, cell.y);
-		if (ally && (!ally.isAlly || ally.isHero || ally.hp <= 0)) {
-			this.say(t('actors.hero.abilities.armorability.no_target'), 'negative');
-			return false;
-		}
-		// Java accepts `passable || avoid`; this Level wrapper has no separate avoid-cell map.
-		if (!ally && !this.level.passable(cell.x, cell.y)) {
-			this.say(t('port.ally.invalidtarget'), 'negative');
-			return false;
-		}
-		const target = ally ?? this.spawnLightAlly(cell);
-		if (!ally) {
-			this.playTeleportAppear(cell, cell, target);
-		}
-		this.armorCharge = Math.max(0, this.armorCharge - cost);
-		addBuff(target, 'powerOfMany', POWER_OF_MANY_TURNS);
-		target.powerOfManyBarrier = 25;
-		target.powerOfManyBarrierPartial = 0;
-		delete this.hero.buffs['invisibility'];
-		this.say(t('port.log.armorabilitychosen', { ability: t('port.armorability.powerofmany.name') }), 'positive');
-		this.spendHeroAction(1);
-		return true;
-	},
-
-	poweredAlly(this: DungeonScene): Creature | undefined {
-		return this.creatures.find((creature) => creature.buffs['powerOfMany'] !== undefined && creature.hp > 0);
-	},
-
-	poweredLightAlly(this: DungeonScene): Creature | undefined {
-		const ally = this.poweredAlly();
-		return ally?.allyKind === 'lightAlly' ? ally : undefined;
 	},
 
 	/** `Ratmogrify.baseChargeUse` (50, tag `v3.3.8`) is charged like any other ability's, read
@@ -1181,8 +1125,6 @@ export const armorAbilityUseMethods = {
 		return true;
 	},
 
-
-
 	/**
 	 * `Endure.activate()`: twelve turns of `EndureTracker`, three turns of Gladiator combo time,
 	 * and `hero.spendAndNext(3f)` - the only armor ability that costs more than one turn.
@@ -1495,9 +1437,19 @@ export const armorAbilityUseMethods = {
 				if (occupant.hp > 0) {
 					const candidates: Step[] = [];
 					if (!IMMOVABLE_KINDS.has(occupant.kind as MonsterId)) {
+						//`(!Char.hasProp(toPush, Char.Property.LARGE) || openSpace[cell])`
+						//(`WarpBeacon.returnBeacon()`, tag `v3.3.8`): a large occupant only
+						//moves into open space.
+						const pushWidth = this.level.width;
+						const pushLarge = isLargeCreature(occupant.kind, occupant.yogFistType);
+						const pushSolid = (cell: number): boolean => {
+							const nx = cell % pushWidth, ny = Math.floor(cell / pushWidth);
+							return !this.level.inside(nx, ny) || !this.level.passable(nx, ny);
+						};
 						for (const [dx, dy] of Roguelike.neighbourOffsets(8) as ReadonlyArray<readonly [number, number]>) {
 							const next = { x: beacon.x + dx, y: beacon.y + dy };
-							if (this.level.passable(next.x, next.y) && !this.creatureAt(next.x, next.y)) candidates.push(next);
+							if (this.level.passable(next.x, next.y) && !this.creatureAt(next.x, next.y)
+							&& (!pushLarge || isOpenSpace(this.level.index(next.x, next.y), pushWidth, pushSolid))) candidates.push(next);
 						}
 					}
 					if (candidates.length === 0) {
@@ -1536,15 +1488,7 @@ export const armorAbilityUseMethods = {
 	},
 
 	/**
-	 * `Talent.ALLY_WARP` (Battlemage/Warlock T3; desc `actors.hero.talent.ally_warp.desc`):
-	 * the Mage bumps an ally to swap places with it instantly, at 2/4/6 tiles range by rank,
-	 * never with an immovable ally. The bump is always adjacent so the range check below is
-	 * belt-and-braces, kept because Java states it. Costs no turn - like every other ally
-	 * order here (`directAlly`'s defend/follow/attack all resolve without spending one) -
-	 * and plays the shared teleport presentation on both parties with no log line. Returns
-	 * true when the swap happened, false to fall through to the ordinary NPC interact.
-	 * Stated simplification: Java's tap targets the ally at range through the cell selector;
-	 * this port has no tap-creature seam, so the bump (adjacent by construction) is the tap.
+	 * `Talent.ALLY_WARP` (Battlemage/Warlock T3): the Mage bumps an ally to swap places instantly, 2/4/6 tiles by rank, never with an immovable ally. Always adjacent so the range check is belt-and-braces Java states. Free; true on swap, false falls through to NPC interact. Java's tap is a range cell selector; the bump is the tap. Java's `Char.interact` runs ALLY_WARP *before* its restricted-movement check (paralysed/rooted/Vertigo; `Char.java` 264-282 then 284-288), so ally warp is intentionally not Vertigo-gated - only IMMOVABLE blocks it.
 	 */
 	tryAllyWarp(this: DungeonScene, ally: Creature): boolean {
 		if (this.heroClass !== 'mage') return false;
@@ -1560,35 +1504,40 @@ export const armorAbilityUseMethods = {
 		this.sprite(this.hero).y = to.y * TILE;
 		this.sprite(ally).x = from.x * TILE;
 		this.sprite(ally).y = from.y * TILE;
-		this.playTeleportAppear(from, to, this.hero);
-		this.playTeleportAppear(to, from, ally);
-		this.fov.update(this.hero.x, this.hero.y, this.viewRadius());
-		this.refresh();
-		return true;
-	},
+			this.playTeleportAppear(from, to, this.hero);
+			this.playTeleportAppear(to, from, ally);
+			this.fov.update(this.hero.x, this.hero.y, this.viewRadius());
+			this.refresh();
+			return true;
+		},
 
 	/**
-	 * `Char.interact()`'s default branch (tag `v3.3.8`, "swaps places by default" - `ch.interact(this)`
-	 * is called with `this` = the ally being bumped and `c` = the hero, both read below in that same
-	 * orientation): bumping an adjacent ally that Ally Warp did not already handle swaps the hero and
-	 * the ally's positions instead of attacking, and spends the hero's ordinary move turn. Refuses
-	 * (returns `false`, falling through to `interactWithNPC`, a no-op for an ally) when either side
-	 * has restricted movement (paralysis, roots, Vertigo) or is immovable. `move(newPos)` here is
-	 * `Char`'s base one-argument overload, not `Hero.move(step, travelling)`'s two-argument override,
-	 * so - matching Java - a swap presses no trap, picks up no item and triggers no plant or chasm
-	 * fall at the landing cell, unlike an ordinary step. Stated simplifications: Java also refuses a
-	 * LARGE ally into a non-`openSpace` cell and either side onto a hazard the mover cannot fly over -
-	 * this port has neither an `openSpace` map nor a LARGE property (already noted elsewhere in
-	 * `PORT_COVERAGE.md`), and the two allies this port can bump are never on a chasm cell adjacent to
-	 * the hero in practice, so that branch is left unmodeled rather than guessed at. The slide Java's
-	 * `moveSprite`/`sprite.move()` animate here is a direct position set instead, the same
-	 * simplification the neighbouring Ally Warp swap above already makes.
+	 * `ShadowAlly.interact(c)` with `PERFECT_COPY` taken (tag `v3.3.8`): a free place-swap
+	 * with the hero, range `max(1, points)` via `shadowCloneCanInteract`. Java returns
+	 * void on both the refusals and the swap (Hero already `ready()`ed), so this method's
+	 * `true` means "handled" - the bump must not fall through to NPC interact. Refusals:
+	 * the clone's cell not terrain-passable while the hero is not flying (`isFlying` here
+	 * is the levitation buff, matching every other flying check in the port), and a
+	 * `PathFinder` flood from the hero that cannot reach the clone. The flood is the
+	 * port's passable-only map where Java uses `passable|avoid`, so a route that only
+	 * exists through avoid cells (a chasm) refuses here and succeeds in Java - the same
+	 * stated nuance as sneak's `ability_target_range`. Not modeled: Java's LARGE-creature
+	 * open-space gate (this port has no large ally size). Without `PERFECT_COPY` (rank 0)
+	 * this returns `false` so the bump falls through to `tryDefaultAllyPlaceSwap`
+	 * (`Char.interact`'s default place-swap with its restriction gates), which is what
+	 * Java's `super.interact` does. Free, like `tryAllyWarp`.
 	 */
-	trySwapPlaces(this: DungeonScene, ally: Creature): boolean {
-		const restricted = (target: Creature): boolean => (target.buffs['paralysis'] ?? 0) > 0
-			|| (target.buffs['roots'] ?? 0) > 0 || target.buffs['vertigo'] !== undefined;
-		if (ally.kind !== undefined && IMMOVABLE_KINDS.has(ally.kind as MonsterId)) return false;
-		if (restricted(this.hero) || restricted(ally)) return false;
+	tryShadowCloneSwap(this: DungeonScene, ally: Creature): boolean {
+		if (ally.allyKind !== 'shadowClone' || ally.hp <= 0) return false;
+		const points = this.talentRank('perfect_copy');
+		if (points <= 0) return false;
+		if (!shadowCloneCanInteract(Roguelike.chebyshevDistance(this.hero, ally), points)) return false;
+		if (!this.level.passable(ally.x, ally.y) && this.hero.buffs['levitation'] === undefined) return true;
+		const reach = this.pathfinder.distanceMap({ x: this.hero.x, y: this.hero.y });
+		//MWG's flood marks unreachable cells -1 where Java uses MAX_VALUE.
+		if ((reach[this.level.index(ally.x, ally.y)] ?? -1) < 0) return true;
+		//`appear(clone, hero.pos)` / `appear(hero, clone.pos)` - Java always swaps with
+		//`Dungeon.hero`, and the bump only ever passes the hero as `c` anyway.
 		const from = { x: this.hero.x, y: this.hero.y };
 		const to = { x: ally.x, y: ally.y };
 		this.hero.x = to.x; this.hero.y = to.y;
@@ -1597,8 +1546,9 @@ export const armorAbilityUseMethods = {
 		this.sprite(this.hero).y = to.y * TILE;
 		this.sprite(ally).x = from.x * TILE;
 		this.sprite(ally).y = from.y * TILE;
+		this.playTeleportAppear(from, to, this.hero);
+		this.playTeleportAppear(to, from, ally);
 		this.fov.update(this.hero.x, this.hero.y, this.viewRadius());
-		this.spendHeroTurn(1);
 		this.refresh();
 		return true;
 	},
@@ -1647,17 +1597,23 @@ export const armorAbilityUseMethods = {
 			|| (occupied !== this.hero && !this.isHostileToAlly(occupied))) {
 			ally.allyDefendCell = { x: cell.x, y: cell.y };
 			ally.allyTargetChar = undefined;
+			//`DirectableAlly.defendPos()` also sets `movingToDefendPos = true`, so the ally walks
+			//to the post without being distracted by enemies on the way (and gives up on an
+			//unreachable post rather than jittering in place - see `takeAllyTurn`).
+			ally.allyMovingToDefend = true;
 			this.say(t(lines.defend), 'positive');
 			return;
 		}
 		if (occupied === this.hero) {
 			ally.allyDefendCell = undefined;
 			ally.allyTargetChar = undefined;
+			ally.allyMovingToDefend = false;
 			this.say(t(lines.follow), 'positive');
 			return;
 		}
 		ally.allyDefendCell = undefined;
 		ally.allyTargetChar = occupied;
+		ally.allyMovingToDefend = false;
 		this.say(t(lines.attack), 'positive');
 	},
 
@@ -1812,8 +1768,10 @@ export const armorAbilityUseMethods = {
 	 * heroLevel + 4` (the port's accuracy 10 / evasion 5 base is Java's own attack 10 /
 	 * defense 5 scale, so `attackSkill = defenseSkill + 5` and `defenseSkill` land
 	 * directly on `accuracy`/`evasion`), and the `NormalIntRange(10, 20)` damage base.
-	 * The sprite is the hero's own class sheet darkened - this port has no
-	 * `ShadowSprite` art, so the mirror-image factory plus a shadow tint stands in.
+	 * `ShadowClone.ShadowSprite` uses the Rogue sheet and its own idle/run/attack/die frame
+	 * lists. Java hides its flattened shadow, forces brightness to 0 (a black silhouette), and
+	 * pours CityLevel smoke. The silhouette and shadow are ported; smoke uses the shared aura
+	 * emitter, with its radial direction documented as an approximation in pourAuras.ts.
 	 */
 	spawnShadowClone(this: DungeonScene, at: Step): Creature {
 		const hp = shadowCloneHp(this.progression.level, this.talentRank('perfect_copy'));
@@ -1826,14 +1784,21 @@ export const armorAbilityUseMethods = {
 		this.syncShadowClone(clone);
 		const carrier = this.sprite(clone);
 		carrier.destroy();
-		const sheet = heroSheet(runState.sprites[this.heroClass]);
-		const frame = Math.max(0, Math.min(5, this.armorTier)) * 21;
-		const sprite = new TintedSprite(sheet.get(frame));
+		const sheet = heroSheet(runState.sprites.rogue);
+		const frame = (index: number) => sheet.get(index);
+		const sprite = new AnimatedSprite(frame(0));
+		sprite.add('idle', [0, 0, 0, 1, 0, 0, 1, 1].map(frame), { fps: 1 });
+		sprite.add('run', [2, 3, 4, 5, 6, 7].map(frame), { fps: 20 });
+		sprite.add('die', [0].map(frame), { fps: 20, loop: false });
+		sprite.add('attack', [13, 14, 15, 0].map(frame), { fps: 15, loop: false });
+		sprite.play('idle');
 		placeCharacterArt(sprite);
 		sprite.x = at.x * TILE;
 		sprite.y = at.y * TILE;
-		sprite.tint = 0x555566;
-		sprite.alpha = 0.9;
+		sprite.alpha = 0.8;
+		//`ShadowSprite.resetColor()` calls `brightness(0.0f)` (ShadowClone.java / Visual.java,
+		//tag `v3.3.8`), making the Rogue frames a black silhouette while retaining alpha 0.8.
+		sprite.silhouette(0x000000);
 		this.creatureLayer.addChild(sprite);
 		this.spriteFor.set(clone.id, sprite);
 		return clone;
@@ -1847,9 +1812,23 @@ export const armorAbilityUseMethods = {
 	 * Java rolls the hero's damage and DR live per swing/defense; this port reads the
 	 * means of the hero's current ranges once per clone turn (no extra RNG draws) and
 	 * divides by the attack-cost rate, which is this port's expression of
-	 * `attackDelay()`. Not modeled: the `Int(4) < points` weapon-enchantment and
-	 * armor-glyph/proc shares (`attackProc`/`defenseProc`/`glyphLevel`), which need a
-	 * gear-proc call path for non-hero attackers that does not exist here.
+	 * `attackDelay()`. **Ported (2026-09-24):** the `Int(4) < points` *weapon* share -
+	 * `ShadowAlly.attackProc()` now delegates the hero's `Weapon.proc` to a landed clone swing
+	 * (`cloneGearSwing` in `combatResolution.attack()`, which runs the affix-keyed half of that
+	 * proc through `heroOnHit(..., gearDelegated)`), so every `weaponAffix` fires for the clone
+	 * at Java's base proc chance (Java reads Arcana/Berserk/trackers off the *attacker*, which
+	 * is what `delegatedGearSwing` enforces). **Ported (2026-09-25):** the `CLONED_ARMOR` half -
+	 * `ShadowAlly.defenseProc()` - draws exactly one `Int(4)` per landed attack in `attack()`
+	 * (`cloneDefenderGate`, the same draw-first order) and runs the hero's glyph at the generic
+	 * defend-side sites: stone/displacement/repulsion inline in `attack()`, and
+	 * thorns/corrosion/stench/multiplicity/affection through `mobOnHit(..., cloneDefenderGate)`,
+	 * which the hero-as-attacker path also reaches so the clone is covered whichever way it is
+	 * hit. **Still reduced:** `metabolism`/`overgrowth` heal `ctx.hero` rather than the wearer,
+	 * `entanglement` writes the hero-scoped `earthrootArmor` pool at the hero's own cell, and
+	 * `potential`/`antientropy` charge the hero's wands and hunger (nil for a clone in Java) -
+	 * those five stay keyed `defender.isHero`; `glyphLevel()` still has no non-hero consumer at
+	 * all (Swiftness/Flow/Bulk speed, AntiMagic dr, Obfuscation stealth, Brimstone and Camouflage
+	 * all read hero-scoped scene state).
 	 */
 	syncShadowClone(this: DungeonScene, clone: Creature): void {
 		const heroLevel = this.progression.level;

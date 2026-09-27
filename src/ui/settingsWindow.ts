@@ -8,10 +8,10 @@ import { menuScale, SpdRedButton } from './spdButton';
 import { SpdLabel as Label } from './spdLabel';
 import { titleIcon, type TitleIconName } from './titleIcons';
 import {
-	betasEnabled, brightness, cameraFollow, colorblind, controllerSensitivity, flipTags, isFullscreen,
+	betasEnabled, brightness, cameraFollow, colorblind, controllerSensitivity, flipTags, highContrast, isFullscreen,
 	isMusicMuted, isSfxMuted, movementSensitivity, musicVolume, newsEnabled, playMusicInBackground,
 	screenShake, setBetasEnabled, setBrightness, setCameraFollow, setColorblind, setControllerSensitivity,
-	setFlipTags, setFullscreen, setMovementSensitivity, setMusicVolume, setNewsEnabled,
+	setFlipTags, setFullscreen, setHighContrast, setMovementSensitivity, setMusicVolume, setNewsEnabled,
 	setPlayMusicInBackground, setScreenShake, setSfxVolume, setSystemFont, setUiMode, setUiScale,
 	setUpdatesEnabled, setVibration, setVisualGrid, setWifiOnly, setZoomOffset, sfxVolume,
 	systemFont, uiMode, uiScale, updatesEnabled, vibration, visualGrid, wifiOnly, zoomOffset,
@@ -328,10 +328,18 @@ function displayTab(): SettingsTab {
 			//Port-original accessibility row (ROADMAP.md section 8) - Java has no such
 			//setting; swaps `ui/spdTheme.ts`'s `SPD_STATUS_COLOR` and `ui/buffOverlays.ts`'s
 			//buff-text tint to a colorblind-safe palette (see `settings.colorblind()`'s doc).
-			const colorblindBox = new SpdCheckBox(width, t('port.ui.colorblind'), colorblind(), (checked) => setColorblind(checked));
-			colorblindBox.position.set(0, y);
-			node.addChild(colorblindBox);
-			y += BTN_HEIGHT + GAP;
+		const colorblindBox = new SpdCheckBox(width, t('port.ui.colorblind'), colorblind(), (checked) => setColorblind(checked));
+		colorblindBox.position.set(0, y);
+		node.addChild(colorblindBox);
+		y += BTN_HEIGHT + GAP;
+		//Port-original accessibility row (ROADMAP.md section 8) - the high-contrast
+		//pass over the same palette (see `settings.highContrast()`'s doc); wins over
+		//the colorblind row above where both are on. A direct-child `SpdCheckBox`
+		//like its neighbour, so the settings-window keyboard pass reaches it too.
+		const highContrastBox = new SpdCheckBox(width, t('port.ui.highcontrast'), highContrast(), (checked) => setHighContrast(checked));
+		highContrastBox.position.set(0, y);
+		node.addChild(highContrastBox);
+		y += BTN_HEIGHT + GAP;
 			const sep2 = separator(width);
 			sep2.position.set(0, y);
 			node.addChild(sep2);

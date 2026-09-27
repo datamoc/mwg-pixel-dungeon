@@ -1,9 +1,12 @@
 /** Plain data at the hunger boundary; independent of sprites, saves, and framework state. */
+import { doomDamage } from './buffs';
+
 export interface HungerState {
 	hunger: number;
 	partialDamage: number;
 	hp: number;
 	maxHp: number;
+	doom?: boolean;
 }
 
 export type HungerEvent =
@@ -59,8 +62,9 @@ export function advanceHunger(previous: Readonly<HungerState>, step = STEP, hung
 	if (state.hunger >= STARVING) {
 		state.partialDamage += (step * state.maxHp) / 1000;
 		if (state.partialDamage > 1) {
-			const damage = Math.trunc(state.partialDamage);
-			state.partialDamage -= damage;
+			const rawDamage = Math.trunc(state.partialDamage);
+			state.partialDamage -= rawDamage;
+			const damage = doomDamage(rawDamage, { hasDoom: state.doom });
 			state.hp -= damage;
 			events.push({ type: 'starvation-damage', damage });
 			if (state.hp <= 0) events.push({ type: 'starvation-death' });
@@ -69,8 +73,9 @@ export function advanceHunger(previous: Readonly<HungerState>, step = STEP, hung
 		const newLevel = state.hunger + step / hungerDelay;
 		if (newLevel >= STARVING) {
 			events.push({ type: 'starving' });
-			state.hp -= 1;
-			events.push({ type: 'starvation-damage', damage: 1 });
+			const damage = doomDamage(1, { hasDoom: state.doom });
+			state.hp -= damage;
+			events.push({ type: 'starvation-damage', damage });
 			if (state.hp <= 0) events.push({ type: 'starvation-death' });
 		} else if (newLevel >= HUNGRY && state.hunger < HUNGRY) {
 			events.push({ type: 'hungry' });
@@ -100,8 +105,9 @@ export function exertHunger(previous: Readonly<HungerState>, amount: number): Hu
 		state.hunger = STARVING;
 		state.partialDamage += (excess * state.maxHp) / 1000;
 		if (state.partialDamage > 1) {
-			const damage = Math.trunc(state.partialDamage);
-			state.partialDamage -= damage;
+			const rawDamage = Math.trunc(state.partialDamage);
+			state.partialDamage -= rawDamage;
+			const damage = doomDamage(rawDamage, { hasDoom: state.doom });
 			state.hp -= damage;
 			events.push({ type: 'starvation-damage', damage });
 			if (state.hp <= 0) events.push({ type: 'starvation-death' });
@@ -114,8 +120,9 @@ export function exertHunger(previous: Readonly<HungerState>, amount: number): Hu
 		events.push({ type: 'hungry' });
 	} else if (state.hunger >= STARVING && previous.hunger < STARVING) {
 		events.push({ type: 'starving' });
-		state.hp -= 1;
-		events.push({ type: 'starvation-damage', damage: 1 });
+		const damage = doomDamage(1, { hasDoom: state.doom });
+		state.hp -= damage;
+		events.push({ type: 'starvation-damage', damage });
 		if (state.hp <= 0) events.push({ type: 'starvation-death' });
 	}
 	return { state, events };

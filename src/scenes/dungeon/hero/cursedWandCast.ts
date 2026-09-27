@@ -1,7 +1,7 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { Random, Roguelike } from 'mwg';
-import { BUFF_DURATION, addBuff, buffBlocked, reigniteBuff, type Creature, type Step } from '../../../combat';
-import { CURSED_PLANT_KINDS, CURSED_RANDOM_GAS, cursedInterfloorDepthWeights, pickBurnAndFreeze, pickConeOfColorsStatus, pickCursedCommonEffect, pickCursedEquipmentSlot, pickCursedRareEffect, pickCursedTier, pickCursedUncommonEffect } from '../../../simulation/cursedWand';
+import { BUFF_DURATION, addBuff, buffBlocked, doomDamage, reigniteBuff, type Creature, type Step } from '../../../combat';
+import { CURSED_PLANT_KINDS, CURSED_RANDOM_GAS, cursedForestFireSeeds, cursedInterfloorDepthWeights, pickBurnAndFreeze, pickConeOfColorsStatus, pickCursedCommonEffect, pickCursedEquipmentSlot, pickCursedRandomAreaEffect, pickCursedRareEffect, pickCursedTier, pickCursedUncommonEffect } from '../../../simulation/cursedWand';
 import { activateGeyserTrap as activateGeyserTrapFlow } from '../../../simulation/geyserTrap';
 import { applyBlastDamage } from '../../../items/bombEffects';
 import { MWL_BOMB_RULES } from '../../../mwlContent';
@@ -9,6 +9,8 @@ import { getArmorCurses, getWeaponCurses } from '../../../items/itemCurses';
 import { WAND_TYPES } from '../../../items/wands';
 import { WATER } from '../../../dungeonConstants';
 import { t } from '../../../i18n/index';
+import { runState } from '../../../runState';
+import { spawnTrapSpecks } from '../../../ui/effectBursts';
 import { BOSS_KINDS, FLYING_KINDS, IMMOVABLE_KINDS, MINIBOSS_KINDS } from '../../../monsters';
 import { coneCells } from '../../../mechanics/cone';
 
@@ -17,6 +19,14 @@ import { coneCells } from '../../../mechanics/cone';
  * branch grew past that group's own budget, behavior-identical. Called from `activateWildMagic`;
  * `simulation/cursedWand.ts` carries the full scoping rationale for what is and isn't ported. */
 export const cursedWandCastMethods = {
+	/** `ForestFire.effect()` (`CursedWand.java`, tag `v3.3.8`): seed Regrowth 15 on every
+	 * level cell. This is exposed as a scene seam while the remaining VeryRare effects are
+	 * still being wired into the tier dispatcher. Java's positiveOnly fire suppression is not
+	 * reachable from WildMagic, so this path also seeds the existing Fire field at random free
+	 * destinations only when a caller supplies that mode later. */
+	castCursedWandForestFire(this: DungeonScene): void {
+		for (const seed of cursedForestFireSeeds(this.level.width, this.level.height)) this.regrowth.seed(seed.x, seed.y, seed.volume);
+	},
 
 	/** `CursedWand.cursedZap()`'s tier roll plus effect dispatch. Called once per selected cursed
 	 * spare in `activateWildMagic`'s firing loop in place of a normal `fireWandShot`. `target` is
@@ -26,10 +36,16 @@ export const cursedWandCastMethods = {
 		const tier = pickCursedTier((bound) => Random.int(bound));
 		if (tier === 'common') this.castCursedWandCommonEffect(target, cell);
 		else if (tier === 'uncommon') this.castCursedWandUncommonEffect(target, cell);
-		else this.castCursedWandRareEffect(target, cell);
+		else if (tier === 'rare') this.castCursedWandRareEffect(target, cell);
+		else {
+			//Java chooses one of eight VeryRare effects here. Their handlers are not ported, so
+			//the correctly weighted 1% bucket consumes the cursed zap without borrowing a Rare
+			//effect; this keeps unsupported effects out of the player-visible dispatcher.
+			return;
+		}
 	},
 
-	/** `CursedWand.cursedZap()`'s Common tier (six of Java's eight Common `CursedEffect`s,
+	/** `CursedWand.cursedZap()`'s Common tier (all eight of Java's Common `CursedEffect`s,
 	 * picked uniformly). `RandomGas`/`Bubbles` run regardless of whether anything stands at
 	 * `cell`. */
 	castCursedWandCommonEffect(this: DungeonScene, target: Creature | undefined, cell: Step): void {
@@ -74,7 +90,7 @@ export const cursedWandCastMethods = {
 				const type = WAND_TYPES[Random.int(WAND_TYPES.length)]!;
 				this.fireWandShot(type, this.weaponLevel > 0 ? this.weaponLevel : 0, target, 1);
 			}
-		} else {
+		} else if (effect === 'selfOoze') {
 			//SelfOoze.effect(): every character within Chebyshev-ish distance 2 of the caster
 			//(Java's own `PathFinder.buildDistanceMap(user.pos, ..., 2)`, a walkable-distance
 			//flood, not a raw radius) gets Ooze at its full duration; the splash particles are
@@ -84,6 +100,27 @@ export const cursedWandCastMethods = {
 				const dist = distances[this.level.index(creature.x, creature.y)] ?? -1;
 				if (dist >= 0 && dist <= 2) addBuff(creature, 'ooze');
 			}
+		} else if (effect === 'randomAreaEffect') {
+			//RandomAreaEffect.effect() (`CursedWand.java`, tag `v3.3.8`): Java first calls
+			//tryForWandProc, then Level.pressCell on an empty collision cell, then activates a
+			//uniform BurningTrap/ChillingTrap/ShockingTrap at that same cell. This port lacks
+			//those two generic seams, but the trap payloads are already represented by the same
+			//Fire, Freezing, and Electricity fields as the ordinary traps, so preserve the area
+			//effect itself. As in those trap handlers, this uses `passable` for Java's `!solid`.
+			const areaEffect = pickCursedRandomAreaEffect((bound) => Random.int(bound));
+			for (const [dx, dy] of [[0, 0], ...Roguelike.neighbourOffsets(8)] as const) {
+				const x = cell.x + dx, y = cell.y + dy;
+				if (!this.level.inside(x, y) || !this.level.passable(x, y)) continue;
+				if (areaEffect === 'burningTrap') this.fire.seed(x, y, 2);
+				else if (areaEffect === 'chillingTrap') this.plantFreeze.seed(x, y, 10);
+				else this.electricity.seed(x, y, 10);
+			}
+		} else if (effect === 'spawnRegrowth') {
+			//`SpawnRegrowth.effect()` (`CursedWand.java`, tag `v3.3.8`) seeds 30 volume at
+			//the collision cell even when occupied; the persistent floor blob grows terrain
+			//and roots on subsequent environmental turns. Its `Level.pressCell` call on empty
+			//cells is still omitted because the port has no generic cell-press seam here.
+			this.regrowth.seed(cell.x, cell.y, 30);
 		}
 	},
 
@@ -107,10 +144,13 @@ export const cursedWandCastMethods = {
 			//(an AntiMagic champion), matching the guard the ordinary wand-zap loop already
 			//has - the heal above still lands regardless, only the damage half is RESISTS-gated.
 			if (victim.magicImmune) return;
-			this.applyCharacterDamage(victim, damage, {
-				pierceArmor: true, cause: 'foe', skipAura: true,
-				onNonWeaponBossDamage: (target) => this.disqualifyBossChallenge(target),
-			});
+			if (victim === this.hero) {
+				this.applyCharacterDamage(victim, damage, { pierceArmor: true, cause: 'foe', skipAura: true,
+					onNonWeaponBossDamage: (target) => this.disqualifyBossChallenge(target) });
+			} else {
+				this.applyCharacterDamage(victim, damage, { pierceArmor: true, cause: 'foe', skipAura: true,
+					onNonWeaponBossDamage: (target) => this.disqualifyBossChallenge(target) });
+			}
 		} else if (effect === 'geyser') {
 			//Geyser.effect(): a fresh GeyserTrap activates at the bolt's own cell - the same
 			//flow the port's own geyser utility trap already uses.
@@ -230,7 +270,7 @@ export const cursedWandCastMethods = {
 		}
 	},
 
-	/** `CursedWand.cursedZap()`'s Rare tier, six implemented effects from Java's eight. */
+	/** `CursedWand.cursedZap()`'s Rare tier, all eight of Java's effects. */
 	castCursedWandRareEffect(this: DungeonScene, target: Creature | undefined, cell: Step): void {
 		const effect = pickCursedRareEffect((bound) => Random.int(bound));
 		if (effect === 'sheepPolymorph') {
@@ -266,8 +306,8 @@ export const cursedWandCastMethods = {
 			//SummoningTrap at the bolt collision cell. Reuse this port's matching utility trap;
 			//Java uses the level mob rotation, supports avoid cells, delays each spawn by two turns
 			//and activates traps under new mobs. The utility instead picks a random depth-roster mob,
-			//spawns immediately, and omits avoid-cell/chained-trap handling. These are documented
-			//simplifications of the shared utility-trap implementation.
+			//spawns immediately, and omits avoid-cell/chained-trap handling. Those are the stated
+			//simplifications for this shared utility-trap implementation.
 			this.activateUtilityTrap('summoning', cell.x, cell.y);
 			return;
 		}
@@ -326,6 +366,55 @@ export const cursedWandCastMethods = {
 			}
 			return;
 		}
+		if (effect === 'petrify') {
+			//`Petrify.effect()` (`CursedWand.java`, tag `v3.3.8`) only accepts Hero and applies
+			//TimeStasis for 100 actor turns. This port represents its held action lock and
+			//invisibility with timed states and pauses hunger while `timeStasis` is active.
+			//Unlike Java's ref-counted buffs this max-duration mapping cannot preserve
+			//overlap counts, but it does preserve longer pre-existing control states. Its
+			//TELEPORT cue, ten STEAM specks, and warning line are retained with shared audio
+			//and a white-pixel approximation for Java's film art.
+			this.hero.buffs['paralysis'] = Math.max(this.hero.buffs['paralysis'] ?? 0, 100);
+			this.hero.buffs['invisibility'] = Math.max(this.hero.buffs['invisibility'] ?? 0, 100);
+			this.hero.buffs['timeStasis'] = Math.max(this.hero.buffs['timeStasis'] ?? 0, 100);
+			spawnTrapSpecks(this.effectLayer, this.effectBursts, this.hero.x, this.hero.y, 'steam');
+			runState.audio.cue('teleport', 0.7);
+			this.say(t('items.wands.cursedwand.petrify'), 'warning');
+			return;
+		}
+		if (effect === 'fireBall') {
+			//`FireBall.effect()` (`CursedWand.java`, tag `v3.3.8`): radius-3 shadowcast from
+			//the bolt collision cell, damage/ignite visible non-solid cells, then a radius-6
+			//BlastWave used only for its visual ripple (no knockback or damage); FlameParticle,
+			//BLAST and BURNING presentation use white-pixel stand-ins and the shipped sound clips.
+			//The generic FOV consumes `transparent`, so the port inherits its terrain opacity mapping.
+			const fov = new Roguelike.FieldOfView(this.level);
+			fov.update(cell.x, cell.y, 3);
+			for (let y = 0; y < this.level.height; y++) for (let x = 0; x < this.level.width; x++) {
+				if (!fov.isVisible(x, y) || !this.level.transparent(x, y)) continue;
+				spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'flame');
+				const victim = this.creatureAt(x, y);
+				if (victim && victim.hp > 0) {
+					reigniteBuff(victim, 'burning');
+					const damage = Math.max(0, Random.normalRange(5 + this.depth, 10 + 2 * this.depth));
+					if (victim.isHero) {
+						const applied = this.absorbHeroDamage(damage, true);
+						victim.hp -= applied;
+						this.showDamage(victim, applied);
+						if (victim.hp <= 0) this.kill(victim, 'fire');
+					} else {
+						const applied = doomDamage(damage, victim);
+						victim.hp -= applied;
+						this.showDamage(victim, applied);
+						if (victim.hp <= 0) this.kill(victim, 'fire');
+					}
+				}
+				if (this.isFireFlammableTerrain(x, y)) this.fire.seed(x, y, 4);
+			}
+			runState.audio.cue('blast', 0.7);
+			runState.audio.cue('burning', 0.7);
+			return;
+		}
 		//ConeOfColors.effect(): Java re-does the bolt as `STOP_SOLID` (so it goes through
 		//characters) before building an 8-radius, 90-degree `ConeAOE` from it - `coneRay`'s own
 		//`stopAtTarget: false` is that same STOP_SOLID-alone stop mode. `positiveOnly` is never
@@ -353,8 +442,9 @@ export const cursedWandCastMethods = {
 					this.showDamage(this.hero, applied);
 					if (this.hero.hp <= 0) { this.kill(this.hero, 'foe'); return false; }
 				} else {
-					victim.hp -= dmg;
-					this.showDamage(victim, dmg);
+					const dealt = doomDamage(dmg, victim);
+					victim.hp -= dealt;
+					this.showDamage(victim, dealt);
 					if (victim.hp <= 0) { this.kill(victim, 'foe'); return false; }
 				}
 				return true;

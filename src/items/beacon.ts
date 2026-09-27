@@ -17,6 +17,7 @@
 import { Roguelike } from 'mwg';
 import { mwlItemEffectValue } from '../mwlContent';
 import type { AnyMonsterId } from '../monsters';
+import { isOpenSpace } from '../simulation/crystalSpire';
 
 /** The beacon fields the flow reads and writes (`LloydsBeacon`'s return-point triple plus the
  *  shared artifact charge pair; `returnBranch` is always 0 here - this port has no branches). */
@@ -59,12 +60,15 @@ export function beaconZapRange(): number {
 	return mwlItemEffectValue('beacon', 'zapRange');
 }
 
+/** The Yog-fist subtype (`Creature.yogFistType`); only `rusted` is LARGE in Java. */
+export type YogFistSubtype = 'burning' | 'soiled' | 'rotting' | 'rusted' | 'bright' | 'dark' | undefined;
 /** A creature where the beacon flow needs one: the zap's victim check and the adjacency scan. */
 export interface BeaconCreatureView {
 	kind?: AnyMonsterId | undefined;
 	isHero?: boolean | undefined;
 	isNPC?: boolean | undefined;
 	isAlly?: boolean | undefined;
+	yogFistType?: YogFistSubtype;
 }
 
 /** A Java `Level.mobs` entry on a beacon's saved return cell. */
@@ -85,8 +89,6 @@ export interface BeaconFlowContext {
 	readonly depth: number;
 	readonly heroPos: { x: number; y: number };
 	readonly miningBranchActive: boolean;
-	/** `Level.locked` (`LockedFloor`'s boss-arena lock, tag `v3.3.8`) - the port's `floorLocked()`. */
-	isFloorLocked(): boolean;
 	beaconOf(instanceId?: string): BeaconItem | undefined;
 	beaconTitle(): string;
 	openPicker(title: string, entries: { id: string; instanceId?: string; identified: boolean; quantity: number }[], onPick: (entry: { id: string; instanceId?: string }) => void): void;
@@ -98,6 +100,8 @@ export interface BeaconFlowContext {
 	creatureAt(x: number, y: number): BeaconCreatureView | null;
 	mobsAt(x: number, y: number): readonly BeaconMobView[];
 	isImmovableKind(kind: AnyMonsterId | undefined): boolean;
+	/** `Char.hasProp(ch, Char.Property.LARGE)` - the scene reads it off `LARGE_KINDS`, the way `isImmovableKind` already does for its own set. */
+	isLargeKind(kind: AnyMonsterId | undefined, yogFistType?: YogFistSubtype): boolean;
 	randomFreeCellNear(x: number, y: number): { x: number; y: number } | undefined;
 	moveHeroTo(cell: { x: number; y: number }): void;
 	playHeroTeleport(from: { x: number; y: number }, to: { x: number; y: number }): void;
@@ -116,21 +120,10 @@ export interface BeaconFlowContext {
 	t(key: string, params?: Record<string, string | number>): string;
 }
 
-/** `Dungeon.interfloorTeleportAllowed()` (tag `v3.3.8`): `level.locked || MiningLevel || amulet` -
- *  a locked boss-arena floor, the mining branch, or carrying the amulet all forbid the trip. Shared
- *  by both classes; `BeaconOfReturning`'s own gate stops here (see `useReturningBeaconFlow` below),
- *  `LloydsBeacon`'s ORs in `bossLevel()` on top (`beaconTeleportBlocked`). */
-export function interfloorTeleportBlocked(ctx: BeaconFlowContext): boolean {
-	return ctx.isFloorLocked() || ctx.miningBranchActive || ctx.hasAmulet();
-}
-
-/**
- * `LloydsBeacon`'s travel block (tag `v3.3.8`): `bossLevel() || !interfloorTeleportAllowed()` - boss
- * depths on top of `interfloorTeleportBlocked`'s own floor-locked/mining/amulet trio - forbid setting
- * and returning alike.
- */
+/** `LloydsBeacon`'s travel block: boss depths, the mining branch, and carrying the amulet all
+ *  forbid setting and returning alike. */
 export function beaconTeleportBlocked(ctx: BeaconFlowContext): boolean {
-	return ctx.isBossDepth() || interfloorTeleportBlocked(ctx);
+	return ctx.isBossDepth() || ctx.miningBranchActive || ctx.hasAmulet();
 }
 
 /** The adjacency block Java shares between setting and returning: any hostile neighbour. */
@@ -247,12 +240,20 @@ function spellBeaconClearAnchor(ctx: BeaconFlowContext, x: number, y: number): {
 	const occupant = ctx.creatureAt(x, y);
 	if (!occupant || occupant.isHero) return { x, y };
 	const pushHero = ctx.isImmovableKind(occupant.kind);
+	const width = ctx.gridWidth();
+	const large = ctx.isLargeKind(occupant.kind, occupant.yogFistType);
+	const solid = (cell: number): boolean => !ctx.passable(cell % width, Math.floor(cell / width));
 	let free: { x: number; y: number } | undefined;
-	//Port simplification: Java collects !solid candidates, shuffles them, and applies LARGE/openSpace;
-	//this flow picks the first fixed neighbour that the port marks passable.
+	//`(!Char.hasProp(toPush, Char.Property.LARGE) || Dungeon.level.openSpace[cell])`
+	//(`WarpBeacon.returnBeacon()`, tag `v3.3.8`): a large occupant only moves into open
+	//space. `isOpenSpace` ports `Level.buildFlagMaps()`' rule; solid here is just
+	//off-passable, like the loop below.
+	//Port simplification: Java collects !solid candidates and shuffles them; this flow
+	//picks the first fixed neighbour that the port marks passable.
 	for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 		const cell = { x: x + dx, y: y + dy };
-		if (ctx.passable(cell.x, cell.y) && !ctx.creatureAt(cell.x, cell.y)) { free = cell; break; }
+		if (ctx.passable(cell.x, cell.y) && !ctx.creatureAt(cell.x, cell.y)
+			&& (!large || isOpenSpace(ctx.cellIndex(cell.x, cell.y), width, solid))) { free = cell; break; }
 	}
 	if (!free) { ctx.say(ctx.t('items.scrolls.scrollofteleportation.no_tele'), 'negative'); return null; }
 	if (pushHero) return free;
@@ -317,9 +318,6 @@ export function useReturningBeaconFlow(ctx: BeaconFlowContext, instanceId?: stri
 		ctx.say(ctx.t('items.scrolls.scrollofteleportation.no_tele'), 'negative');
 		return;
 	} else if (beacon.returnDepth >= 1 && beacon.returnDepth <= 26) {
-		//`Dungeon.interfloorTeleportAllowed()` (tag `v3.3.8`): only the cross-depth trip gates on it -
-		//Java's own same-depth branch above has no such check, and neither does this port's.
-		if (interfloorTeleportBlocked(ctx)) { ctx.say(ctx.t('items.spells.beaconofreturning.preventing'), 'negative'); return; }
 		ctx.consumeReturningBeacon(instanceId);
 		ctx.travelToDepth(beacon.returnDepth, { x, y });
 		ctx.say(ctx.t('port.log.beaconreturned'), 'positive');

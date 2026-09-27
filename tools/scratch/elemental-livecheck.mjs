@@ -114,9 +114,20 @@ const probe = await page.evaluate(async () => {
 	await sleep(200);
 	const mature = allies()[0];
 	const matureSummon = mature ? { kind: mature.kind, element: mature.elementalType ?? null, rangedCooldown: mature.rangedCooldown } : null;
+	const matureBefore = mature ? { x: mature.x, y: mature.y } : null;
+	bag.add({ id: 'summonElemental', quantity: 1, identified: true, instanceId: 'spell-mature-recall' });
+	s['castSummonElemental']('spell-mature-recall');
+	await sleep(200);
+	const matureAfter = allies();
+	const matureRecall = {
+		count: matureAfter.length,
+		same: mature !== undefined && matureAfter.includes(mature),
+		moved: mature && matureBefore ? (mature.x !== matureBefore.x || mature.y !== matureBefore.y) : null,
+		spellKept: bag.find('summonElemental', 'spell-mature-recall') !== undefined,
+	};
 
 	await sleep(50);
-	return { rows, labels, newborn, spellAfterCast, recall, imbued, matureSummon, bagIds: bag.items.map((i) => `${i.id}(${i.quantity})`) };
+	return { rows, labels, newborn, spellAfterCast, recall, imbued, matureSummon, matureRecall, bagIds: bag.items.map((i) => `${i.id}(${i.quantity})`) };
 });
 
 console.log('probe results:', JSON.stringify(probe, null, 1));
@@ -139,6 +150,9 @@ const expect = [
 		probe.imbued.element === 'fire' && probe.imbued.potionGone === true],
 	['and a later cast raises a mature elemental of that element instead',
 		probe.matureSummon !== null && probe.matureSummon.kind === 'elemental' && probe.matureSummon.element === 'fire'],
+	['a later cast recalls the mature elemental without creating a duplicate',
+		probe.matureRecall.count === 1 && probe.matureRecall.same && probe.matureRecall.moved],
+	['and retains the spell used to recall it', probe.matureRecall.spellKept],
 ];
 let failed = 0;
 for (const [label, ok] of expect) {

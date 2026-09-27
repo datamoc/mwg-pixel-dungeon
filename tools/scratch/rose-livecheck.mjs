@@ -138,14 +138,15 @@ const probe = await page.evaluate(async () => {
 	s['chooseItemPicker'](directRows.indexOf('rose-direct'));
 	const aimingOpened = !!s['aiming'];
 	if (aimingOpened) { s['aiming'].controller.moveTo(defendCell); s['confirmAiming'](); }
-	const ordered = { aim: aimingOpened, defend: ghost.ghostDefendCell ?? null, target: ghost.ghostTargetChar ?? null };
+	const ordered = { aim: aimingOpened, defend: ghost.allyDefendCell ?? null, target: ghost.allyTargetChar ?? null };
 	const start = { x: ghost.x, y: ghost.y };
 	for (let i = 0; i < 6; i++) s['takeAllyTurn'](ghost);
 	const moved = { from: start, to: { x: ghost.x, y: ghost.y }, reached: ghost.x === defendCell.x && ghost.y === defendCell.y };
 	// an enemy cell means "attack that character" and the ghost closes on it
 	const rat = s['spawnMonster']('rat', { x: hero.x + 1, y: hero.y });
-	s['directRoseGhost']({ x: rat.x, y: rat.y });
-	const attackOrder = ghost.ghostTargetChar === rat;
+	const roseCtx = s['roseFlowContext']();
+	roseCtx.directAlly(ghost, { x: rat.x, y: rat.y }, { defend: 'defend', follow: 'follow', attack: 'attack' });
+	const attackOrder = ghost.allyTargetChar === rat;
 	for (let i = 0; i < 8; i++) {
 		if (!ghost || ghost.hp <= 0) break;
 		s['takeAllyTurn'](ghost);
@@ -191,12 +192,17 @@ const probe = await page.evaluate(async () => {
 	bag.remove('rose', 1, FRESH);
 	s['takeAllyTurn'](ghost);
 	const orphanTick = { hpBefore: hpBeforeTick, hpAfter: ghost.hp };
+	ghost.buffs.doom = 9999;
+	const doomedHpBeforeTick = ghost.hp;
+	s['takeAllyTurn'](ghost);
+	const doomedOrphanTick = { hpBefore: doomedHpBeforeTick, hpAfter: ghost.hp };
+	delete ghost.buffs.doom;
 	bag.add(removed);
 
 	await sleep(50);
 	return {
 		questApi, questBefore, uncharged, noQuest, questAfter, summonRows, summoned, healed, chargedBack,
-		ordered, moved, attacked, beforePetal, afterPetal, capped, orphan, orphanTick,
+		ordered, moved, attacked, beforePetal, afterPetal, capped, orphan, orphanTick, doomedOrphanTick,
 	};
 });
 
@@ -247,6 +253,7 @@ const expect = [
 	['at the level cap a petal is consumed and wasted', probe.capped.level === 10 && probe.capped.petalGone === true],
 	['with no rose the pickup is refused and the petal stays on the floor', probe.orphan.petalStillThere === true],
 	['and a rose-less ghost loses 1 HP on its turn', probe.orphanTick.hpAfter === probe.orphanTick.hpBefore - 1],
+	['Doom amplifies NoRoseDamage through Char.damage to 2 HP', probe.doomedOrphanTick.hpAfter === probe.doomedOrphanTick.hpBefore - 2],
 ];
 let failed = 0;
 for (const [label, ok] of expect) {

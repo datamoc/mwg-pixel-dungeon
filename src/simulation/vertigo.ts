@@ -7,6 +7,28 @@
  */
 export type VertigoCell = { x: number; y: number };
 
+export interface PlaceSwapRestrictions {
+	allyCellPassable: boolean;
+	heroFlying: boolean;
+	heroImmovable: boolean;
+	allyImmovable: boolean;
+	heroParalysed: boolean;
+	allyParalysed: boolean;
+	heroRooted: boolean;
+	allyRooted: boolean;
+	heroVertigo: boolean;
+	allyVertigo: boolean;
+}
+
+/** `Char.interact()`'s default place-swap gates (`Char.java`, tag `v3.3.8`),
+ * after the earlier ALLY_WARP override. */
+export function canDefaultPlaceSwap(state: PlaceSwapRestrictions): boolean {
+	if (!state.allyCellPassable && !state.heroFlying) return false;
+	if (state.heroImmovable || state.allyImmovable) return false;
+	return !(state.heroParalysed || state.allyParalysed || state.heroRooted || state.allyRooted
+		|| state.heroVertigo || state.allyVertigo);
+}
+
 const NEIGHBOURS8: readonly (readonly [number, number])[] = [
 	[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1],
 ];

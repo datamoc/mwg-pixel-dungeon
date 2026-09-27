@@ -4,7 +4,9 @@ import { WATER } from '../dungeonConstants';
 import { capitalize, t } from '../i18n/index';
 import { BASE_KIND_ALIASES, type AnyMonsterId, type MonsterId } from '../monsters';
 import { STARVING } from '../simulation/hunger';
+import { shadowCloneArmorProc } from '../simulation/rogueAbilities';
 import type { Step } from '../simulation/combatState';
+import { lethalDefenseShield } from '../talentEffects';
 
 /**
  * What the monster-side on-hit hooks need from the scene. `mobOnHit` was a 287-line scene method; it moves
@@ -15,6 +17,9 @@ export interface MobOnHitContext {
 	armorGlyph: string | null;
 	readonly armorGlyphActive: boolean;
 	readonly armorLevel: number;
+	/** `ShadowAlly.defenseProc`'s roll, precomputed once by `attack()` (one roll per landed
+	 * attack, as Java's single `defenseProc` call costs). Callers without it draw their own. */
+	readonly cloneDefenseGate?: boolean;
 	hunger: number;
 	earthrootArmor: { level: number; pos: number } | null;
 	readonly hero: Creature;
@@ -45,6 +50,21 @@ export interface MobOnHitContext {
 /** monster-side on-hit hooks (all pre-existing, now grouped) */
 export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Creature, damage: number): void {
 	const armorGlyph = (id: string): boolean => ctx.armorGlyphActive && ctx.armorGlyph === id;
+	//`ShadowAlly.defenseProc()` (`ShadowClone.java` 249-257, tag v3.3.8): the clone defends with
+	//the *hero's* armor glyph when `Random.Int(4) < pointsInTalent(CLONED_ARMOR)` and the hero is
+	//armored. Java's `&&` draws the roll before testing the armor, so an unarmored hero still
+	//consumes it; the port reads "armored" as "wearing an identified glyph", which is
+	//observationally identical here because `Armor.proc` with no glyph does nothing. `attack()`
+	//passes its own single roll in; any other caller (a special-attack hook) draws one here.
+	const cloneDefenderGate = ctx.cloneDefenseGate ?? (defender.allyKind === 'shadowClone'
+		&& shadowCloneArmorProc(Random.int(4), ctx.talentRank('cloned_armor'), ctx.armorGlyph != null));
+	//Which glyph sites may run for the clone. `metabolism`/`overgrowth` heal `ctx.hero`,
+	//`entanglement` writes the hero-scoped `earthrootArmor` pool at the hero's own cell, and
+	//`potential`/`antientropy` charge the hero's wands and hunger (Java's clone carries neither,
+	//so those two are nil for it in Java) - those five stay keyed on `defender.isHero`; every
+	//site below that treats `defender`/`attacker` generically takes the clone too.
+	const glyphDefender = defender.isHero || cloneDefenderGate;
+	if (defender.isHero) ctx.grantHeroShield(lethalDefenseShield(ctx.subclass(), ctx.talentRank('lethal_defense')), ctx.hero.maxHp);
 	//`RottingFist.attackProc` is the only fist subclass with a melee-contact effect:
 	//half of all landed melee hits ooze the victim (`Ooze.DURATION` is the table's own
 	//20). The burning/soiled/rusted/bright/dark contact riders this hook used to carry
@@ -69,7 +89,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//(level+3)/(level+20) x Arcana chance, for round(10 x max(1, chance)).
 	//The existing charm target map supplies Java's object payload; direct map
 	//assignment preserves the level-scaled duration that addBuff alone cannot set.
-	if (defender.isHero && armorGlyph('affection') && attacker.hp > 0
+	if (glyphDefender && armorGlyph('affection') && attacker.hp > 0
 		&& Random.chance(((Math.max(0, ctx.degradedLevel(ctx.armorLevel)) + 3) / (Math.max(0, ctx.degradedLevel(ctx.armorLevel)) + 20)) * ctx.genericProcMultiplier())) {
 		const level = Math.max(0, ctx.degradedLevel(ctx.armorLevel));
 		const chance = ((level + 3) / (level + 20)) * ctx.genericProcMultiplier();
@@ -107,7 +127,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//1-in-10 x arcana proc oozes NEIGHBOURS9 - the wearer's own cell included -
 	//at `Ooze.DURATION/2` (10). What stood here skipped the wearer and applied
 	//the table's whole-20 duration.
-	if (defender.isHero && armorGlyph('corrosion') && Random.chance((1 / 10) * ctx.genericProcMultiplier())) {
+	if (glyphDefender && armorGlyph('corrosion') && Random.chance((1 / 10) * ctx.genericProcMultiplier())) {
 		addBuff(ctx.hero, 'ooze', 10);
 		for (const [dx, dy] of Roguelike.neighbourOffsets(8)) {
 			const nearby = ctx.creatureAt(ctx.hero.x + dx, ctx.hero.y + dy);
@@ -126,7 +146,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//modelled: the random-mob substitution itself (an excluded attacker simply goes
 	//un-duplicated here), and mirror-image duplication, which has no separate actor type -
 	//which is why Java's hero half is skipped.
-	if (defender.isHero && armorGlyph('multiplicity') && !attacker.isHero && !attacker.isNPC
+	if (glyphDefender && armorGlyph('multiplicity') && !attacker.isHero && !attacker.isNPC
 		&& !attacker.boss && !attacker.miniboss && Random.chance((1 / 20) * ctx.genericProcMultiplier())) {
 		const adjacent = Roguelike.neighbourOffsets(8)
 			.map(([dx, dy]) => ({ x: ctx.hero.x + dx, y: ctx.hero.y + dy }))
@@ -154,7 +174,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//Stench.proc() (Armor.java, tag v3.3.8): 1/8 x arcana chance when hit seeds a
 	//250-volume ToxicGas blob at the wearer's own feet. Java's Stench.java imports
 	//ToxicGas; only FetidRat's defenseProc seeds the distinct StenchGas blob.
-	if (defender.isHero && armorGlyph('stench') && Random.chance((1 / 8) * ctx.genericProcMultiplier())) {
+	if (glyphDefender && armorGlyph('stench') && Random.chance((1 / 8) * ctx.genericProcMultiplier())) {
 		ctx.toxicGas.seed(ctx.hero.x, ctx.hero.y, 250);
 		ctx.say(t('port.log.stenchcurse'), 'negative');
 	}
@@ -299,7 +319,7 @@ export function mobOnHit(ctx: MobOnHitContext, attacker: Creature, defender: Cre
 	//`Bleeding` at `round((4 + level) * max(1, chance))`. The same proc is reachable through
 	//Trinity's temporary BodyForm glyph. Java runs this in Armor.proc(); the port invokes it
 	//from this shared landed-hit hook after damage has been resolved.
-	if (defender.isHero && !defender.magicImmune
+	if (glyphDefender && !defender.magicImmune
 		&& (armorGlyph('thorns') || ctx.trinityBodyGlyphIs('thorns'))
 		&& !attacker.isHero && !attacker.isAlly && !attacker.isNPC && attacker.hp > 0) {
 		const level = Math.max(0, ctx.degradedLevel(ctx.armorLevel));

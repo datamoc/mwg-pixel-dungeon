@@ -187,8 +187,8 @@ try {
 			'the flow context is bound scene-side');
 		assert.match(scene, /wandChargesPerCast\(type, fullCharges\)/,
 			'conjured wands compute charge-scaled effects from their own full charge count');
-		assert.match(scene, /this\.fireWandShot\(type, level, target \?\? targetCell, wandChargesPerCast\(type, fullCharges\), level\)/,
-			'conjured zaps retain bare cell targets, run at the conjured level, and spend no bag charges');
+		assert.match(scene, /this\.fireWandShot\(type, level, target \?\? targetCell, wandChargesPerCast\(type, fullCharges\)\)/,
+			'conjured zaps retain bare cell targets without spending bag charges');
 		assert.match(scene, /fireMindThrown: \(missileClass, level, targetCell, targetId\)[\s\S]{0,420}spawnBoltTo\(this\.hero, targetCell, 0xffffff, undefined, missileFlightArt\(missileClass\)\)/,
 			'effect-spawned thrown misses fly to the selected cell without entering item-drop handling');
 		assert.match(scene, /trinityChargeUsePerEffect\(baseCost,[\s\S]{0,200}'mind'\)/,

@@ -354,6 +354,13 @@ export const crystalMineMethods = {
 
 	/** `CrystalGuardian.isAlive()`: at 0 HP it drops to 1, loses every buff but Doom and Cripple,
 	 * and crumples into `recovering` - taking no evasion roll (`defenseSkill()` 0) and no armour
+	 * roll (its `defenseProc` damage is "block-bypassing") until it stands again. Returns true. */
+	crumpleCrystalGuardian(this: DungeonScene, guardian: Creature): boolean {
+		guardian.hp = Math.max(1, guardian.hp);
+		for (const id of Object.keys(guardian.buffs) as BuffId[]) if (id !== 'cripple' && id !== 'doom') delete guardian.buffs[id];
+		if (!guardian.guardianRecovering) {
+			guardian.guardianRecovering = true;
+			guardian.evasion = 0;
 			guardian.armor = [0, 0];
 			this.syncCrystalMineVisual(guardian);
 		}

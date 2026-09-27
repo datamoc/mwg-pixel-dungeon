@@ -1,5 +1,4 @@
 import type { Creature, GroundItem, Step } from '../combat';
-import { vertigoResistFactor } from './buffs';
 import type { AnyMonsterId } from '../monsters';
 import type { LogLevel } from '../ui/gameLog';
 
@@ -32,10 +31,10 @@ export interface EnvironmentalBlobsContext {
 	isToxicImmune: (target: Creature) => boolean;
 	/** `BlobImmunity` covers every harmful environmental blob; optional for headless callers. */
 	isBlobImmune?: (target: Creature) => boolean;
-	/** Java's IMMOVABLE immunity to Vertigo: the confusion-gas daze here IS Vertigo's
-	 *  stand-in, so immovable kinds refuse it - while daze from every other source (prismatic
-	 *  light, fists, plants) still lands, since those are not Vertigo. Optional so headless
-	 *  callers keep working. */
+	/** Java's IMMOVABLE immunity to Vertigo (`Char.java`): confusion gas prolongs the real
+	 *  `vertigo` buff, so immovable kinds refuse it - while daze from every other source
+	 *  (prismatic light, fists, plants) still lands, since those are not Vertigo. Optional
+	 *  so headless callers keep working. */
 	isVertigoImmune?: (target: Creature) => boolean;
 	applyDamage: (target: Creature, damage: number, cause?: 'poison' | 'electricity') => boolean;
 	/** Cell charge of a blob volume (mirrors `Blob.volumeAt`); needed for electricity's odd-charge damage. */
@@ -152,8 +151,7 @@ export function applyEnvironmentalBlobs(context: EnvironmentalBlobsContext): voi
 		// `ConfusionGas.affectCell()`: `Buff.prolong(ch, Vertigo.class, 2)` (IMMOVABLE chars are immune).
 		if (!target || context.isVertigoImmune?.(target) || context.isBlobImmune?.(target)) continue;
 		//`prolong`, not `affect`: a longer live clock (Stormvine's 10) survives the gas instead of resetting to 2 (tag `v3.3.8`).
-		//Java's `prolong`/`affect` both multiply by `target.resist()`, so DM300's Vertigo resistance halves this site too (`vertigoResistFactor`).
-		if ((target.buffs?.['vertigo'] ?? 0) < 2) context.addBuff(target, 'vertigo', 2 * vertigoResistFactor(target.kind));
+		if ((target.buffs?.['vertigo'] ?? 0) < 2) context.addBuff(target, 'vertigo', 2);
 	}
 	//`Web` terrain (`Spinner`'s ranged web, tag `v3.3.8`): Java seeds a persistent 3-cell web
 	//blob rather than a direct debuff. `Level.occupyCell()` (tag `v3.3.8`) consumes the

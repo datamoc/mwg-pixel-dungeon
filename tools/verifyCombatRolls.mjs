@@ -81,18 +81,11 @@ export function verifyCombatRolls(require, check) {
 		assert.equal(rollDamage({ ...hero, hp: 10, buffs: { fury: 1 } }, foe, maxStub), 10);
 		assert.equal(rollDamage({ ...hero, hp: 11, buffs: { fury: 1 } }, foe, maxStub), 6);
 		assert.equal(rollDamage({ ...hero, buffs: { weakness: 1 } }, foe, maxStub), 4);
-		//`Berserk.damageFactor()` reads the rage `power` (built from damage taken), not the missing-HP fraction it used to.
-		assert.equal(rollDamage({ ...hero, berserkPower: 0.75, buffs: { berserk: 1 } }, foe, maxStub), 9);
-		assert.equal(rollDamage({ ...hero, hp: 5, buffs: { berserk: 1 } }, foe, maxStub), rollDamage(hero, foe, maxStub), 'no power, no bonus, whatever the HP');
+		assert.equal(rollDamage({ ...hero, hp: 5, buffs: { berserk: 1 } }, foe, maxStub), 9);
 		assert.equal(rollDamage({ ...hero, champion: 'blazing' }, foe, maxStub), 8);
 		assert.equal(rollDamage({ ...hero, champion: 'growing' }, foe, maxStub), 7);
 		assert.equal(rollDamage({ ...hero, isHero: false }, { ...foe, boss: true, buffs: { aggression: 1 } }, maxStub), 3);
 		assert.equal(rollDamage(hero, { ...foe, buffs: { vulnerable: 1 } }, minStub), 3);
-		//`Doom.class`: +67% to every incoming hit (`simulation/combat.ts`'s `rollDamage`, the WandOfCorruption/DwarfKing seam).
-		assert.equal(rollDamage(hero, { ...foe, buffs: { doom: 1 } }, maxStub), 10);
-		//`DwarfKing.isImmune()` phase 2+: Doom attaches but its multiplier is skipped.
-		assert.equal(rollDamage(hero, { ...foe, kind: 'king', kingPhase: 2, buffs: { doom: 1 } }, maxStub), rollDamage(hero, { ...foe, kind: 'king', kingPhase: 2 }, maxStub));
-		assert.equal(rollDamage(hero, { ...foe, kind: 'king', kingPhase: 1, buffs: { doom: 1 } }, maxStub), 10);
 		assert.equal(rollDamage(hero, { ...foe, champion: 'giant' }, minStub), 0);
 		assert.equal(rollDamage(hero, { ...foe, champion: 'antimagic' }, minStub), 1);
 		assert.equal(rollDamage(hero, { ...foe, champion: 'growing' }, minStub), 2);
@@ -122,5 +115,36 @@ export function verifyCombatRolls(require, check) {
 		assert.equal(stoneGlyphReduction(10, 5, 1), 0.8125);
 		assert.equal(grimTrapDamage(20, 20), 20);
 		assert.deepEqual(explosiveTrapBounds(3), [7, 21]);
+	});
+
+	check('Doom waits for Char.damage after the pure hit roll', () => {
+		//`Doom` (`actors/buffs/Doom.java`, tag `v3.3.8`) is applied in Char.damage(),
+		//after attack-side modifiers. Keeping it out of rollDamage prevents double-scaling
+		//when the scene routes the resolved hit through its incoming-damage seam.
+		assert.equal(rollDamage(hero, { ...foe, buffs: { doom: 9999 } }, maxStub), 6);
+		assert.equal(rollDamage(hero, { ...foe, buffs: { doom: 9999, vulnerable: 20 } }, maxStub), 8);
+		assert.equal(rollDamage(hero, foe, maxStub), 6);
+	});
+
+	check('Corruption immunity is BOSS/MINIBOSS/STATIC/AllyBuff-immune summons', () => {
+		//`WandOfCorruption.corruptEnemy()` dooms instead of corrupting anything immune
+		//to `Corruption` (an `AllyBuff` subclass): BOSS/MINIBOSS properties, STATIC
+		//kinds and the summons carrying Java's own `immunities.add(AllyBuff.class)`.
+		const { corruptionImmune } = require('./simulation/buffs');
+		assert.equal(corruptionImmune({ boss: true }), true);
+		assert.equal(corruptionImmune({ miniboss: true }), true);
+		for (const kind of ['crystalSpire', 'demonSpawner', 'pylon', 'rotHeart', 'yog']) {
+			assert.equal(corruptionImmune({ kind }), true, `${kind} is STATIC`);
+		}
+		for (const allyKind of ['mirror', 'prismatic', 'shadowClone', 'spiritHawk', 'ninjaLog', 'earthGuardian', 'ward', 'lightAlly']) {
+			assert.equal(corruptionImmune({ allyKind }), true, `${allyKind} refuses AllyBuff`);
+		}
+		assert.equal(corruptionImmune({ kind: 'rat' }), false);
+		assert.equal(corruptionImmune({ kind: 'goo', boss: false }), false);
+		assert.equal(corruptionImmune({ allyKind: 'lotus' }), true, 'Lotus is STATIC and rejects every buff');
+		for (const allyKind of ['sheep', 'ghost', 'afterImage']) {
+			assert.equal(corruptionImmune({ allyKind }), false, `${allyKind} has no Corruption immunity`);
+		}
+		assert.equal(corruptionImmune({}), false);
 	});
 }

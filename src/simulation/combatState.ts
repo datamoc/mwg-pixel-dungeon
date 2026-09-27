@@ -24,11 +24,6 @@ export interface Combatant extends Step {
 	 * them - the two properties are checked separately by name in several Java rules. */
 	boss?: boolean;
 	miniboss?: boolean;
-	/** `Berserk.power` of the hero (0/absent when the Berserker has no rage): the damage roll's `min(1.5, 1 + power/2)`. */
-	berserkPower?: number;
-	/** `DwarfKing.phase` (absent/1 outside the fight): `isImmune(Doom.class)` skips the +67%
-	 * damage-taken multiplier from phase 2 on, though Doom can still attach. */
-	kingPhase?: number;
 	/** `Preparation.AttackLevel` level (1-4) while the attacker's Preparation buff is up, which
 	 * replaces its damage roll and unlocks the assassinate. Absent means no Preparation - Java
 	 * reads the same thing from `buff(Preparation.class) != null`. */
@@ -45,6 +40,11 @@ export interface Combatant extends Step {
 	 * (see `Creature.ratmogrifiedTurns`), which is exactly Java's unwrap-to-original.
 	 */
 	ascensionBuffBlocked?: boolean;
+	/** `DwarfKing.isImmune(Doom.class)` changes at phase 2 while Doom may remain attached. */
+	kingPhase?: number;
+	/** NPC and summon identity for Java `Char.damage()` Doom immunity edge cases. */
+	isNPC?: boolean;
+	allyKind?: string;
 	sleeping?: boolean;
 	champion?: 'blessed' | 'blazing' | 'giant' | 'growing' | 'antimagic' | 'projecting' | null;
 	str?: number;

@@ -1,7 +1,15 @@
 import type { ClassId } from './classes';
 
 /** Pure, scene-independent rules for the small talent procs implemented by the port. */
-/** `Talent.IRON_WILL` and `Talent.LETHAL_DEFENSE` have no formula here any more: Iron Will is `+rank` on the Broken Seal's shield size and Lethal Defense a seal-cooldown refund, both in `simulation/sealShield.ts` (the port used to carry a flat damage-reduction / a shield-per-hit-taken stand-in for them, both invented). */
+/** `Talent.IRON_WILL`'s real effect (`BrokenSeal.maxShield()`, tag `v3.3.8`): `+points` added to
+ * the Warrior's seal-shield cap, `armTier + armLvl + points`. This is not a standalone formula
+ * call site any more - `dungeonScene.ts`'s seal-shield regen tick reads `talentRank('iron_will')`
+ * directly into that cap - kept only as the historical note that this port used to carry a flat
+ * damage-reduction stand-in here (`rank` while below 50% HP) instead, invented before the seal
+ * item existed. That stand-in's own citation was also wrong: it claimed the real cap was
+ * `3 + 2*armTier + points`, which does not match `BrokenSeal.java`'s actual `armTier + armLvl +
+ * points` - not just simplified, factually incorrect, caught only once the real item was read
+ * directly rather than re-cited from memory. */
 
 export function shieldBatteryGain(blocked: number, rank: number): number {
 	return blocked > 0 && rank > 0 ? rank : 0;
@@ -74,6 +82,24 @@ export function bountyHunterDropBonus(prepLevel: number, rank: number): number {
 	return 0.02 * Math.pow(2, Math.min(Math.max(prepLevel, 1), 4) - 1) * rank;
 }
 
+export function unencumberedSpiritEvasion(subclass: string | null, rank: number): number {
+	return subclass === 'monk_sub' ? rank : 0;
+}
+
+export function lethalDefenseShield(subclass: string | null, rank: number): number {
+	return subclass === 'gladiator' ? rank : 0;
+}
+
+/** Invented substitute for real Java's `MONASTIC_VIGOR` (`MonkEnergy.java`, tag `v3.3.8`):
+ * `energy/energyCap() >= 1.2 - 0.2*points`, a threshold on the Monk subclass's own separate
+ * energy resource this port doesn't model at all. Absent that resource, this instead grants a
+ * flat `rank` shield on the Cleric-shaped Holy Tome heal (`useSpecial`'s `'none'` branch) -
+ * undocumented until the 2026-09-09 hero-progression audit; not rebuilt to the real mechanic
+ * here since it needs the whole Monk energy resource built first. */
+export function monasticVigorShield(subclass: string | null, rank: number): number {
+	return subclass === 'monk_sub' ? rank : 0;
+}
+
 export function sharedUpgradeArmor(subclass: string | null, rank: number, armorLevel: number): number {
 	return subclass === 'sniper' && rank > 0 && armorLevel < 3 ? 1 : 0;
 }
@@ -96,8 +122,17 @@ export function projectileMomentumBonus(subclass: string | null, rank: number, r
 	return subclass === 'freerunner' && ready ? rank : 0;
 }
 
-//`enragedCatalystBonus` (a flat wand-damage bump at half HP) and `deathlessFuryTriggers` (a once-per-run survive-at-1-HP) were
-//invented stand-ins; the real Enraged Catalyst / Deathless Fury live in `simulation/berserkRage.ts`.
+export function enragedCatalystBonus(subclass: string | null, rank: number, hp: number, maxHp: number): number {
+	return subclass === 'berserker' && hp <= maxHp * 0.5 ? rank : 0;
+}
+
+export function cleaveComboSeed(subclass: string | null, rank: number): number {
+	return subclass === 'gladiator' && rank > 0 ? 2 : 0;
+}
+
+export function deathlessFuryTriggers(subclass: string | null, rank: number, used: boolean, damage: number, hp: number): boolean {
+	return !used && subclass === 'berserker' && rank > 0 && damage >= hp;
+}
 
 /** `Wand.wandProc()`'s Arcane Vision line: a `CharAwareness`-class mark lasting
  * `5 + 5*points` turns on the zapped target - a per-target reveal, not a secret radius. */

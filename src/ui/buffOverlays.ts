@@ -1,6 +1,6 @@
 import { BUFF_DURATION, NEGATIVE_BUFFS } from '../simulation/buffs';
 import type { BuffId } from '../simulation/buffs';
-import { colorblind } from '../settings';
+import { colorblind, highContrast } from '../settings';
 
 /**
  * `BuffIndicator.BuffButton`'s icon overlays, split out of `buffInfo.ts` (which needs the
@@ -12,16 +12,19 @@ import { colorblind } from '../settings';
  */
 
 /** `CharSprite.POSITIVE`/`NEGATIVE` - the tint Java's `BuffButton` hardlights its
- * large-mode text (`text.hardlight(buff.type == POSITIVE ? POSITIVE : NEGATIVE)`). Two
- * pairs, not one, so `settings.colorblind()` (port-original, ROADMAP.md section 8) can
- * swap this text the same way `ui/spdTheme.ts`'s `SPD_STATUS_COLOR` does - duplicated
- * rather than imported from there, since that module pulls in `mwg`/Pixi and this one is
+ * large-mode text (`text.hardlight(buff.type == POSITIVE ? POSITIVE : NEGATIVE)`). Three
+ * pairs, not one, so `settings.colorblind()` (port-original, ROADMAP.md section 8) and
+ * `settings.highContrast()` (same section's high-contrast pass) can each swap this
+ * text the same way `ui/spdTheme.ts`'s `SPD_STATUS_COLOR` does - duplicated rather
+ * than imported from there, since that module pulls in `mwg`/Pixi and this one is
  * deliberately kept headless for `tools/verifyBuffOverlays.mjs`'s plain-node transpile;
- * keep the two literal pairs in sync by hand. */
+ * keep the three literal pairs in sync by hand. */
 export const BUFF_TEXT_POSITIVE = 0x00ff00;
 export const BUFF_TEXT_NEGATIVE = 0xff0000;
 export const BUFF_TEXT_POSITIVE_COLORBLIND = 0x009e73;
 export const BUFF_TEXT_NEGATIVE_COLORBLIND = 0xd55e00;
+export const BUFF_TEXT_POSITIVE_HIGH_CONTRAST = 0x00ffff;
+export const BUFF_TEXT_NEGATIVE_HIGH_CONTRAST = 0xff00ff;
 
 /**
  * Which buffs carry Java's `iconTextDisplay()` countdown on large icons, and in which
@@ -123,9 +126,11 @@ export function buffIconText(id: BuffId | 'hungry' | 'starving', turns: number |
 	return String(Math.max(0, Math.trunc(turns)));
 }
 
-/** The text tint for a buff id - Java's `buff.type == POSITIVE ? POSITIVE : NEGATIVE`. */
+/** The text tint for a buff id - Java's `buff.type == POSITIVE ? POSITIVE : NEGATIVE`.
+ * High contrast wins over colorblind where both settings are on. */
 export function buffIconTextColor(id: BuffId | 'hungry' | 'starving'): number {
 	const negative = (NEGATIVE_BUFFS as ReadonlySet<string>).has(id);
+	if (highContrast()) return negative ? BUFF_TEXT_NEGATIVE_HIGH_CONTRAST : BUFF_TEXT_POSITIVE_HIGH_CONTRAST;
 	if (colorblind()) return negative ? BUFF_TEXT_NEGATIVE_COLORBLIND : BUFF_TEXT_POSITIVE_COLORBLIND;
 	return negative ? BUFF_TEXT_NEGATIVE : BUFF_TEXT_POSITIVE;
 }

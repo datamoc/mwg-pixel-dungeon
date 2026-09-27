@@ -1,6 +1,6 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { Random } from 'mwg';
-import { BUFF_DURATION, NEGATIVE_BUFFS, addBuff, reigniteBuff, type BuffId, type Creature } from '../../../combat';
+import { BUFF_DURATION, NEGATIVE_BUFFS, addBuff, doomDamage, reigniteBuff, type BuffId, type Creature } from '../../../combat';
 import { TILE, WATER } from '../../../dungeonConstants';
 import { cureHeroBuffs } from '../../../items/potionEffects';
 import { isUndeadOrDemonic } from '../../../monsters';
@@ -81,7 +81,7 @@ export const tippedDartEffectsMethods = {
 				//25% of max HP on undead only. No allied undead exists in the roster,
 				//so the ally/enemy bless halves collapse into one non-undead branch.
 				if (isUndeadOrDemonic(target.kind)) {
-					const smite = Random.normalRange(10 + Math.floor(this.depth / 3), 20 + Math.floor(this.depth / 3));
+					const smite = doomDamage(Random.normalRange(10 + Math.floor(this.depth / 3), 20 + Math.floor(this.depth / 3)), target);
 					target.hp -= smite;
 					this.showDamage(target, smite);
 					if (target.hp <= 0) this.kill(target);
@@ -93,7 +93,7 @@ export const tippedDartEffectsMethods = {
 				//status at all - the old daze-3 with no damage was invented. (The
 				//lightning-arc presentation has no seam here.)
 				{
-					const shock = Random.normalRange(5 + Math.floor(this.depth / 4), 10 + Math.floor(this.depth / 4));
+					const shock = doomDamage(Random.normalRange(5 + Math.floor(this.depth / 4), 10 + Math.floor(this.depth / 4)), target);
 					target.hp -= shock;
 					this.showDamage(target, shock);
 					if (target.hp <= 0) this.kill(target);
@@ -132,6 +132,7 @@ export const tippedDartEffectsMethods = {
 				//hero is this port's standing stand-in for that reset.
 				if (target.isAlly === true || target.isHero === true) {
 					for (const id of NEGATIVE_BUFFS) delete target.buffs[id];
+					this.sprite(target);
 					reigniteBuff(target, 'cleanseImmunity', 10);
 				} else {
 					for (const buff of ['bless', 'haste', 'adrenalineSurge', 'fury', 'berserk'] as BuffId[]) delete target.buffs[buff];

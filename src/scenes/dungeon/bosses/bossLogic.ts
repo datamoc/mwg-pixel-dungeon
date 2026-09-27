@@ -22,7 +22,7 @@ import { planTenguConeFront } from '../../../simulation/tenguBeam';
 import { teleportCandidates, type TeleportCell } from '../../../simulation/teleport';
 import { randomPatrolDestination as randomPatrolDestinationFlow } from '../../../simulation/wandering';
 import { DOOR, DOOR_CLOSED, EMBERS, FLOOR, GRASS, HIGH_GRASS, TILE, TRAP, WALL, WATER, type TrapKind } from '../../../dungeonConstants';
-import { addBuff, buffBlocked, reigniteBuff, rollDamage, rollHit, setBleeding, type Creature, type Step } from '../../../combat';
+import { addBuff, buffBlocked, doomDamage, reigniteBuff, rollDamage, rollHit, setBleeding, type Creature, type Step } from '../../../combat';
 import { IMMATERIAL_KINDS, IMMOVABLE_KINDS, YOG_FIST_SUMMON_STATS, liveStats } from '../../../monsters';
 
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `bossLogic`). Each takes the scene as `this`;
@@ -163,7 +163,7 @@ export const bossLogicMethods = {
 				//`Sheep.damage()` is a no-op (tag `v3.3.8`) - see the blob seam.
 				if (target.allyKind === 'sheep') continue;
 				const raw = 2 + this.depth;
-				const dealt = target.isHero ? this.absorbHeroDamage(raw, true) : raw;
+			const dealt = target.isHero ? this.absorbHeroDamage(raw, true) : doomDamage(raw, target);
 				target.hp -= dealt;
 				this.showDamage(target, dealt);
 				//`ShockerAbility`'s pulse fouls the bosses challenge when it strikes the
@@ -452,7 +452,7 @@ export const bossLogicMethods = {
 			//`CavesBossLevel.PylonEnergy.evolve()` prolongs the tracker onto mob victims.
 			if (!target.isHero) this.markHazardMob(target);
 			const damage = Random.normalRange(6, 12);
-			const dealt = target.isHero ? this.absorbHeroDamage(damage) : damage;
+			const dealt = target.isHero ? this.absorbHeroDamage(damage) : doomDamage(damage, target);
 			target.hp -= dealt;
 			this.showDamage(target, dealt);
 			if (target.isHero) this.say(t('port.log.affliction', { damage: dealt }), 'negative');
@@ -642,7 +642,7 @@ export const bossLogicMethods = {
 			for (const cell of volley.cells) {
 				const target = this.creatureAt(cell.x, cell.y);
 				if (!target || target.hp <= 0 || target.kind === 'dm300') continue;
-				const dmg = Random.normalRange(challenge ? 10 : 6, challenge ? 20 : 12);
+				let dmg = Random.normalRange(challenge ? 10 : 6, challenge ? 20 : 12);
 				if (target.isHero) {
 					const blocked = this.absorbHeroDamage(dmg);
 					this.hero.hp -= blocked;
@@ -659,6 +659,7 @@ export const bossLogicMethods = {
 					//`Char.java`'s own "we already reduced it in Char.attack" note). This used to
 					//subtract the target's armor roll, making rocks weaker than Java's against any
 					//armored monster.
+					dmg = doomDamage(dmg, target);
 					target.hp -= dmg;
 					if (this.fadeMirrorOnDamage(target, dmg)) continue;
 					this.showDamage(target, dmg);
@@ -728,12 +729,13 @@ export const bossLogicMethods = {
 		}
 		const tick = Math.max(1, Math.floor(monster.deferredDamage * 0.1));
 		this.applyingDeferredDamage = true;
-		monster.hp -= tick;
+		const dealt = doomDamage(tick, monster);
+		monster.hp -= dealt;
 		this.applyingDeferredDamage = false;
 		//`Viscosity.DeferedDamage` re-enters `DwarfKing.damage()`, whose lock `addTime` it feeds.
-		this.lockedFloorBossDamage(monster, tick, tick);
+		this.lockedFloorBossDamage(monster, dealt, dealt);
 		monster.deferredDamage = Math.max(0, monster.deferredDamage - tick);
-		this.showDamage(monster, tick);
+		this.showDamage(monster, dealt);
 		if (monster.hp <= 0) {
 			this.kill(monster);
 			return true;
@@ -1143,6 +1145,7 @@ export const bossLogicMethods = {
 			//made the final boss's beam weaker than Java's against an armored hero.
 			let dmg = Random.normalRange(stronger ? 30 : 20, stronger ? 50 : 30);
 			if (target.isHero) dmg = this.absorbHeroDamage(dmg, true);
+			else dmg = doomDamage(dmg, target);
 			target.hp -= dmg;
 			this.showDamage(target, dmg);
 			if (target.hp <= 0) this.kill(target, 'foe');
@@ -1449,7 +1452,7 @@ export const bossLogicMethods = {
 		//collects the accepted set instead of probing with a cap, so it never fails spuriously
 		//where Java can return -1. Chasms read passable in this port's level (the hero can
 		//fall in), so they need the explicit refusal Java's own `passable[]` gives it.
-		//LARGE chars needing `openSpace` stay unmodeled (no open-space concept here), as does
+		//LARGE chars needing `openSpace` stay unmodeled here (LARGE kinds and `isOpenSpace` exist now, but this respawn draw still doesn't gate), as does
 		//`teleportPreferringUnseen`'s unseen-room preference for the scroll itself.
 		const cells: TeleportCell[] = [];
 		for (let y = 1; y < this.level.height - 1; y++) {

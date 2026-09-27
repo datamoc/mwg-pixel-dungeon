@@ -244,9 +244,10 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 	//attack several targets at once - Spectral Blades halves the damage of everything but its
 	//primary target - which is why this is a parameter rather than something read off the attacker.
 	dmg *= damageMultiplier;
-	//`Berserk.damageFactor()` (`Char.attack`, tag `v3.3.8`): the rage `power` built from damage taken, not the missing HP
-	//fraction this used to read (the hero's `berserkPower` is kept in step by `scenes/dungeon/hero/berserkRage.ts`).
-	if (attacker.berserkPower) dmg *= Math.min(1.5, 1 + attacker.berserkPower / 2);
+	if (attacker.buffs['berserk']) {
+		const power = 1 - attacker.hp / attacker.maxHp;
+		dmg *= Math.min(1.5, 1 + power / 2);
+	}
 	if (attacker.buffs['fury'] && attacker.hp <= attacker.maxHp * 0.5) dmg *= 1.5;
 	if (attacker.champion === 'blazing') dmg *= 1.25;
 	if (attacker.champion === 'projecting') dmg *= 1.25;
@@ -268,13 +269,8 @@ export function rollDamage(attacker: Readonly<Combatant>, defender: Readonly<Com
 	}
 	let effective = Math.max(0, Math.round(dmg) - dr);
 	if (defender.buffs['vulnerable']) effective *= 1.33;
-	//`Doom.class` (tag `v3.3.8`): +67% to every incoming hit, permanent until death. Java's own
-	//boundary is `Char.damage()`, a universal seam (melee, DoT, traps, bombs alike) this port does
-	//not have yet for monsters (stated on the WandOfCorruption/PowerOfMany rows); this combat-only
-	//placement, alongside Vulnerable above, covers the common case - a doomed target's ordinary
-	//attack damage - and is stated as the reduction it is. `DwarfKing.isImmune()`'s phase 2+
-	//exemption from the multiplier (Doom can still attach, it just does nothing) is `doomImmune`.
-	if (defender.buffs['doom'] && !(defender.kind === 'king' && (defender.kingPhase ?? 1) > 1)) effective *= 1.67;
+	//Doom belongs to Char.damage(), after this roll and the scene's attack-side modifiers.
+	//It is applied at the shared incoming-damage seams, not in this pure roll formula.
 	//ChampionEnemy.Giant.damageTakenFactor()/Growing.damageTakenFactor(): flat 0.2x for Giant,
 	//0.5x for AntiMagic (Char.damage() applies this to every damage source, not just magic -
 	//the separate AntiMagic.RESISTS status-immunity list is the only magic-specific part, and

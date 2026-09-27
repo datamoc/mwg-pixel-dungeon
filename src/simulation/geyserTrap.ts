@@ -1,5 +1,6 @@
 import type { SimulationRandom } from './random';
 import type { Creature, Step } from '../combat';
+import { doomDamage } from './buffs';
 
 export interface GeyserTrapContext {
 	depth: number;
@@ -55,6 +56,7 @@ export function activateGeyserTrap(ctx: GeyserTrapContext, x: number, y: number)
 			//`Challenge.SpectatorFreeze` makes `Char.isInvulnerable()` true for
 			//GeyserTrap's damage source too; the douse/push tail still runs.
 		} else {
+			damage = doomDamage(damage, creature);
 			creature.hp -= damage;
 			ctx.showDamage(creature, damage);
 			if (creature.hp <= 0) ctx.kill(creature, 'trap');
