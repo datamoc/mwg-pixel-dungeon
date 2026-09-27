@@ -4,7 +4,7 @@ import { loadSpdSprites } from './images';
 import { initI18n } from './i18n';
 import { applySpdTheme } from './ui/spdTheme';
 import { SpdAudio } from './audio';
-import { runState, LANGUAGE_KEY } from './runState';
+import { runState, LANGUAGE_KEY, APP_VERSION } from './runState';
 import { TitleScene } from './scenes/titleScene';
 import pixelFontUrl from './assets/pixel_font.ttf';
 
@@ -52,6 +52,10 @@ async function revealTitleSplash(): Promise<void> {
 }
 
 async function main(): Promise<void> {
+	//Stamp the testing version onto the loading curtain first, so a screenshot of it
+	//tells which build (0.2.3a, 0.2.3b, …) a report came from.
+	const versionStamp = document.getElementById('loading-version');
+	if (versionStamp) versionStamp.textContent = `v${APP_VERSION}`;
 	updateStartupProgress(0.05, 'Initialisation…');
 	//before any table is read or any widget built: a catalog installed later would leave
 	//already-built strings in the previous language
