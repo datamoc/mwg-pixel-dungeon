@@ -4156,3 +4156,4 @@ Register items extracted from PORT_COVERAGE on 2026-09-26 and closed since; the 
 
 - [x] **R057** _(Shaman.random() subtype and Shaman.zap() debuff)_ Dedicated colour sprites and debuff audio remain unported.
 - [x] **R018** _(Mage `WarpBeacon` (`actors/hero/abilities/mage/WarpBeacon.java`, tag `v3.3.8`))_ Stale register item: this ability was already ported on 2026-09-16; its coverage row was lost during the register lift and has now been restored in `coverage/rows-hero-and-armor-abilities.md`.
+- [x] **R019** _(GnollExile/HermitCrab alt-table swap mobs (Gnoll.java/Crab.java, tag v3.3.8))_ The prior gap description was stale: GnollExile's passive behavior, two-cell reach and extra loot, HermitCrab's variant loot, and the 1/50 alternate swap are ported. The port uses Java's baseline multiplier 1 because it has no trinket system; its remaining GnollExile state reductions are recorded in `coverage/rows-monsters-bosses-and-combat.md`.
