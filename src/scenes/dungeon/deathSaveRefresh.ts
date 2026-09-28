@@ -1615,6 +1615,7 @@ export const deathSaveRefreshMethods = {
 			kineticStored: this.kineticStored,
 			elementalFurrow: this.elementalFurrow,
 			timeBubbleTurns: this.timeBubbleTurns,
+			superNova: this.superNova,
 			timeBubblePresses: [...this.timeBubblePresses],
 			hourglassFreeze: this.hourglassFreeze,
 			hourglassTurnsToCost: this.hourglassTurnsToCost,

@@ -224,6 +224,7 @@ export const panelsSingleUseMethods = {
 		this.kineticStored = s.kineticStored ?? 0;
 		this.elementalFurrow = s.elementalFurrow ?? 0;
 		this.timeBubbleTurns = s.timeBubbleTurns ?? 0;
+		this.superNova = s.superNova ?? null;
 		this.timeBubblePresses = new Set(s.timeBubblePresses ?? []);
 		this.mnemonicExtended = s.mnemonicExtended ?? [];
 		this.hourglassFreeze = s.hourglassFreeze ?? false;

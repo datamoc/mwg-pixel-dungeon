@@ -1894,6 +1894,7 @@ export const turnLoopAimingMethods = {
 		//state on this clock (`naturesPowerTurns` scales by turn cost inside the runtime; these
 		//are flat Java turn counts - 3/6/9, 20, 5/10/15 - so they tick by exactly one here,
 		//after the runtime call, next to `healingEvasionTurns`).
+		this.tickSuperNova();
 		if (this.enhancedRingsTurns > 0) { this.enhancedRingsTurns = Math.max(0, this.enhancedRingsTurns - turnCost); this.syncHeroFromStats(); }
 		if (this.seerShotCooldown > 0) this.seerShotCooldown = Math.max(0, this.seerShotCooldown - turnCost);
 		if (this.seerCells.size > 0) {

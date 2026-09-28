@@ -37,14 +37,14 @@ export const cursedWandCastMethods = {
 		if (tier === 'common') this.castCursedWandCommonEffect(target, cell);
 		else if (tier === 'uncommon') this.castCursedWandUncommonEffect(target, cell);
 		else if (tier === 'rare') this.castCursedWandRareEffect(target, cell);
-		else this.castCursedWandVeryRareEffect();
+		else this.castCursedWandVeryRareEffect(cell);
 	},
 
 	/** `CursedWand.cursedZap()`'s VeryRare tier (`CursedWand.java`, tag `v4.0.0`: eight effects;
-	 * `v3.3.8` had only four, without HeroShapeShift/SuperNova/SinkHole/GravityChaos). Ported:
+	 * `v3.3.8` had only four, without HeroShapeShift/SuperNova/SinkHole/GravityChaos). Ported: `SuperNova`,
 	 * `ForestFire` and `AbortRetryFail`. The other six are picked and then do nothing (see the
 	 * `PORT_COVERAGE` CursedWand row) rather than borrowing another tier's effect. */
-	castCursedWandVeryRareEffect(this: DungeonScene): void {
+	castCursedWandVeryRareEffect(this: DungeonScene, cell: Step): void {
 		const effect = pickCursedVeryRareEffect((bound) => Random.int(bound));
 		if (effect === 'forestFire') {
 			this.castCursedWandForestFire();
@@ -57,11 +57,65 @@ export const cursedWandCastMethods = {
 			runState.audio.cue('teleport', 0.7);
 			this.say(t('items.wands.cursedwand.grass'), 'positive');
 			this.say(t('items.wands.cursedwand.fire'), 'warning');
+		} else if (effect === 'superNova') {
+			//`SuperNova.effect()`: `Buff.append(SuperNovaTracker)` at the bolt's collision cell. Java's
+			//`positiveOnly`/`harmsAllies=false` branch is unreachable from WildMagic (ROADMAP R061,
+			//WondrousResin), so the blast always harms everyone.
+			this.superNova = { x: cell.x, y: cell.y, depth: this.depth, turnsLeft: 10 };
+			this.say(t('items.wands.cursedwand.supernova'), 'warning');
 		} else if (effect === 'abortRetryFail') {
 			//Java saves, then shows an English-only "CURSED WAND ERROR" dialog whose every button calls
 			//`Game.instance.finish()`. Deliberate divergence: a web port must not close the tab, so the
 			//joke is a warning line and the zap is consumed (Java's non-English path also does nothing).
 			this.say('CURSED WAND ERROR: this application will now self-destruct', 'warning');
+		}
+	},
+
+	/** `SuperNovaTracker.act()` (`v4.0.0`), once per hero action: ten countdown ticks, then a
+	 * `ConjuredBomb` at every non-solid cell of a radius-8 field of view from the target cell (a
+	 * cell inside takes up to nine bombs). Java ticks per actor time unit and waits while the hero is
+	 * on another floor; this ticks per hero action on the same floor only. Deliberate reductions:
+	 * the growing halo/floating countdown and `Level.destroy(cell)` (door/barricade removal) are not
+	 * presented, and FOV reads terrain transparency in place of Java's `solid`. */
+	tickSuperNova(this: DungeonScene): void {
+		const nova = this.superNova;
+		if (!nova || nova.depth !== this.depth) return;
+		if (nova.turnsLeft-- > 0) return;
+		this.superNova = null;
+		const fov = new Roguelike.FieldOfView(this.level);
+		fov.update(nova.x, nova.y, 8);
+		const cells: { x: number; y: number }[] = [];
+		for (let y = 0; y < this.level.height; y++) for (let x = 0; x < this.level.width; x++) {
+			if (fov.isVisible(x, y) && this.level.transparent(x, y)) cells.push({ x, y });
+		}
+		runState.audio.cue('blast', 0.7);
+		this.shakeScreen(5, 2);
+		for (const cell of cells) this.explodeConjuredBomb(cell);
+	},
+
+	/** `new Bomb.ConjuredBomb().explode(cell)`, shared by `Explosion` and `SuperNova`. */
+	explodeConjuredBomb(this: DungeonScene, cell: { x: number; y: number }): void {
+		const rule = MWL_BOMB_RULES.standard;
+		if (rule && rule.baseBlast) {
+			const context = this.bombEffectsContext();
+			for (let y = cell.y - rule.affectedRadius; y <= cell.y + rule.affectedRadius; y++) {
+				for (let x = cell.x - rule.affectedRadius; x <= cell.x + rule.affectedRadius; x++) {
+					if (!this.level.inside(x, y) || Roguelike.chebyshevDistance(cell, { x, y }) > rule.affectedRadius) continue;
+					if (context.isFlammableTerrain(x, y)) context.burnFlammableTerrain(x, y);
+				}
+			}
+			const chained = new Set<string>();
+			for (const other of [...context.groundItems]) {
+				if (!context.groundItems.includes(other) || Roguelike.chebyshevDistance(cell, other) > rule.affectedRadius) continue;
+				context.explodeGroundItem(other, chained);
+			}
+			const lo = rule.minBase + rule.minPerDepth * this.depth;
+			const hi = rule.maxBase + rule.maxPerDepth * this.depth;
+			for (const victim of [...context.creatures]) {
+				if (victim.isNPC || victim.hp <= 0 || !this.level.passable(victim.x, victim.y)
+					|| Roguelike.chebyshevDistance(cell, victim) > rule.affectedRadius) continue;
+				applyBlastDamage(victim, Math.max(0, Random.normalRange(lo, hi)), false, context);
+			}
 		}
 	},
 
@@ -231,28 +285,7 @@ export const cursedWandCastMethods = {
 			//'standard' MWL_BOMB_RULES entry. Reuses `detonateBomb`'s own three base-blast loops
 			//(terrain burn, ground-item chain, character damage) rather than re-deriving them,
 			//since there is no ground item to remove/chain from here.
-			const rule = MWL_BOMB_RULES.standard;
-			if (rule && rule.baseBlast) {
-				const context = this.bombEffectsContext();
-				for (let y = cell.y - rule.affectedRadius; y <= cell.y + rule.affectedRadius; y++) {
-					for (let x = cell.x - rule.affectedRadius; x <= cell.x + rule.affectedRadius; x++) {
-						if (!this.level.inside(x, y) || Roguelike.chebyshevDistance(cell, { x, y }) > rule.affectedRadius) continue;
-						if (context.isFlammableTerrain(x, y)) context.burnFlammableTerrain(x, y);
-					}
-				}
-				const chained = new Set<string>();
-				for (const other of [...context.groundItems]) {
-					if (!context.groundItems.includes(other) || Roguelike.chebyshevDistance(cell, other) > rule.affectedRadius) continue;
-					context.explodeGroundItem(other, chained);
-				}
-				const lo = rule.minBase + rule.minPerDepth * this.depth;
-				const hi = rule.maxBase + rule.maxPerDepth * this.depth;
-				for (const victim of [...context.creatures]) {
-					if (victim.isNPC || victim.hp <= 0 || !this.level.passable(victim.x, victim.y)
-						|| Roguelike.chebyshevDistance(cell, victim) > rule.affectedRadius) continue;
-					applyBlastDamage(victim, Math.max(0, Random.normalRange(lo, hi)), false, context);
-				}
-			}
+			this.explodeConjuredBomb(cell);
 		} else {
 			//LightningBolt.effect(): every `Lightning()` visual call and `ScrollOfRecharging.
 			//charge()` are pure particle bursts with zero mechanical effect in `v3.3.8`, both
