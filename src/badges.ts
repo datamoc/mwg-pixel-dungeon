@@ -17,6 +17,11 @@ export const BADGE_DEFS: { id: string; counter: string; target: number; descript
 	description: String(row.description),
 }));
 
+/** `Badges` stores the English source description; the badge window resolves its display text by this key. */
+export function badgeDescriptionKey(id: string): string {
+	return `port.badges.${id}.description`;
+}
+
 /**
  * `Badges.Badge.image` - the real 16x16-cell index each of `BADGE_DEFS`' entries cuts from
  * `badges.png`. Not a 1:1 mapping: `BADGE_DEFS` is its own smaller, invented set of

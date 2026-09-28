@@ -2,7 +2,7 @@ import { Rectangle, Sprite, Texture } from 'mwg/two-d/pixi-interop';
 import { Game, theme, Window, WindowStack } from 'mwg';
 import { t } from '../i18n/index';
 import { runState } from '../runState';
-import { BADGE_DEFS, BADGE_ICON, loadBadges } from '../badges';
+import { BADGE_DEFS, BADGE_ICON, badgeDescriptionKey, loadBadges } from '../badges';
 import { CHALLENGES, challenges, challengeDescription, challengeLabel, toggleChallenge } from '../challenges';
 import { rankings } from '../rankings';
 import { SpdButton as Button, menuScale } from './spdButton';
@@ -192,7 +192,7 @@ export function showBadgesWindow(windows: WindowStack): void {
 		icon.position.set(10 + i % 5 * 26, 2 + Math.floor(i / 5) * 24);
 		icon.tint = badges.unlocked(def.id) ? 0xffffff : 0x555555;
 		icon.eventMode = 'static'; icon.cursor = 'pointer';
-		const describe = () => description.setText(`${def.description}${badges.unlocked(def.id) ? '' : ` — ${t('port.window.badges.locked')}`}`);
+		const describe = () => description.setText(`${t(badgeDescriptionKey(def.id))}${badges.unlocked(def.id) ? '' : ` — ${t('port.window.badges.locked')}`}`);
 		icon.on('pointerover', describe); icon.on('pointertap', describe);
 		window.content.addChild(icon);
 	});

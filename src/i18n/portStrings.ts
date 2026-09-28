@@ -22,6 +22,38 @@ import { PORT_MINE_STRINGS } from './portMineStrings';
 
 // HUMAN: English source copy for strings invented by this port.
 export const PORT_STRINGS_EN: Record<string, string> = {
+	// The compact achievement set is authored in MWL with English descriptions. Give each
+	// visible badge-window line a stable key so translated locales can override it.
+	'port.badges.boss1.description': 'Slew Goo',
+	'port.badges.boss2.description': 'Slew Tengu',
+	'port.badges.boss3.description': 'Slew DM-300',
+	'port.badges.boss4.description': 'Slew the Dwarf King',
+	'port.badges.victory.description': 'Escaped with the Amulet',
+	'port.badges.boss_challenge_1.description': 'Slew Goo with weapon only',
+	'port.badges.boss_challenge_2.description': 'Slew Tengu with weapon only',
+	'port.badges.boss_challenge_3.description': 'Slew DM-300 with weapon only',
+	'port.badges.boss_challenge_4.description': 'Slew the Dwarf King with weapon only',
+	'port.badges.boss_challenge_5.description': 'Slew Yog-Dzewa with weapon only',
+	'port.badges.enemy_hazards.description': '10 hazard-assisted kills',
+	'port.badges.piranhas.description': 'Slew 6 piranhas',
+	'port.badges.bag_velvet.description': 'Owned the Velvet Pouch',
+	'port.badges.bag_holder.description': 'Owned the Scroll Holder',
+	'port.badges.bag_bandolier.description': 'Owned the Potion Bandolier',
+	'port.badges.bag_holster.description': 'Owned the Magical Holster',
+	'port.badges.bags_all.description': 'Owned all four bags',
+	'port.badges.unlock_mage.description': 'Used an upgrade scroll',
+	'port.badges.unlock_rogue.description': '10 surprise attacks',
+	'port.badges.unlock_huntress.description': '10 thrown attacks',
+	'port.badges.unlock_duelist.description': 'Raised a weapon to +2',
+	'port.badges.death_trap.description': 'Died to a trap',
+	'port.badges.death_fire.description': 'Died to fire',
+	'port.badges.death_poison.description': 'Died to poison',
+	'port.badges.death_hunger.description': 'Starved to death',
+	'port.badges.death_falling.description': 'Died from a fall',
+	'port.badges.death_foe.description': 'Slain by a foe',
+	'port.badges.happy_end.description': 'Take the Amulet of Yendor to the surface',
+	'port.badges.happy_end_remains.description': "Bring a fallen hero's signature item to the surface",
+	'port.badges.pacifist_ascent.description': 'Take the Amulet of Yendor to the surface without ever reducing the severity of its curse',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
@@ -757,6 +789,36 @@ export const PORT_STRINGS_EN: Record<string, string> = {
  */
 // HUMAN: French translation reviewed by the project owner.
 export const PORT_STRINGS_FR: Record<string, string> = {
+	'port.badges.boss1.description': 'Vaincre Goo',
+	'port.badges.boss2.description': 'Vaincre Tengu',
+	'port.badges.boss3.description': 'Vaincre DM-300',
+	'port.badges.boss4.description': 'Vaincre le Roi Nain',
+	'port.badges.victory.description': "S'échapper avec l'Amulette",
+	'port.badges.boss_challenge_1.description': 'Vaincre Goo uniquement avec une arme',
+	'port.badges.boss_challenge_2.description': 'Vaincre Tengu uniquement avec une arme',
+	'port.badges.boss_challenge_3.description': 'Vaincre DM-300 uniquement avec une arme',
+	'port.badges.boss_challenge_4.description': 'Vaincre le Roi Nain uniquement avec une arme',
+	'port.badges.boss_challenge_5.description': 'Vaincre Yog-Dzewa uniquement avec une arme',
+	'port.badges.enemy_hazards.description': '10 éliminations aidées par des dangers',
+	'port.badges.piranhas.description': 'Tuer 6 piranhas',
+	'port.badges.bag_velvet.description': 'Posséder la bourse de velours',
+	'port.badges.bag_holder.description': 'Posséder le porte-parchemins',
+	'port.badges.bag_bandolier.description': 'Posséder la bandoulière à potions',
+	'port.badges.bag_holster.description': 'Posséder l’étui magique',
+	'port.badges.bags_all.description': 'Posséder les quatre sacs',
+	'port.badges.unlock_mage.description': 'Utiliser un parchemin d’amélioration',
+	'port.badges.unlock_rogue.description': 'Effectuer 10 attaques surprises',
+	'port.badges.unlock_huntress.description': 'Toucher un ennemi avec 10 armes de jet',
+	'port.badges.unlock_duelist.description': 'Améliorer une arme au niveau +2',
+	'port.badges.death_trap.description': 'Mourir à cause d’un piège',
+	'port.badges.death_fire.description': 'Mourir dans les flammes',
+	'port.badges.death_poison.description': 'Mourir empoisonné',
+	'port.badges.death_hunger.description': 'Mourir de faim',
+	'port.badges.death_falling.description': 'Mourir d’une chute',
+	'port.badges.death_foe.description': 'Être tué par un ennemi',
+	'port.badges.happy_end.description': 'Remonter à la surface avec l’Amulette de Yendor',
+	'port.badges.happy_end_remains.description': 'Remonter à la surface avec l’objet signature d’un héros tombé',
+	'port.badges.pacifist_ascent.description': 'Remonter à la surface avec l’Amulette de Yendor sans jamais réduire la puissance de sa malédiction',
 	// HolyTome buff names/descriptions (`WndInfoBuff`) - SPD's own v3.3.8 text and
 	// SPD's own translations of it, like the spell rows above. `%s` turns-remaining
 	// markers are carried as `{0}`, the token `buffInfo()` fills.
@@ -12275,6 +12337,7 @@ export const PORT_STRINGS_ZH: Record<string, string> = {
  * Assembled here rather than in `index.ts`; `tools/i18nCheck.ts` compares every catalogue's keys and placeholders.
  */
 const PORT_CLERIC_ARMOR_FALLBACK = { 'port.buff.powerofmany.name': PORT_STRINGS_EN['port.buff.powerofmany.name'], 'port.buff.powerofmany.desc': PORT_STRINGS_EN['port.buff.powerofmany.desc'], 'port.spell.hallowedground.name': PORT_STRINGS_EN['port.spell.hallowedground.name'], 'port.spell.hallowedground.short_desc': PORT_STRINGS_EN['port.spell.hallowedground.short_desc'], 'port.spell.walloflight.name': PORT_STRINGS_EN['port.spell.walloflight.name'], 'port.spell.walloflight.short_desc': PORT_STRINGS_EN['port.spell.walloflight.short_desc'], 'port.spell.divineintervention.name': PORT_STRINGS_EN['port.spell.divineintervention.name'], 'port.spell.divineintervention.short_desc': PORT_STRINGS_EN['port.spell.divineintervention.short_desc'], 'port.spell.judgement.name': PORT_STRINGS_EN['port.spell.judgement.name'], 'port.spell.judgement.short_desc': PORT_STRINGS_EN['port.spell.judgement.short_desc'], 'port.spell.flash.name': PORT_STRINGS_EN['port.spell.flash.name'], 'port.spell.flash.short_desc': PORT_STRINGS_EN['port.spell.flash.short_desc'] };
+const PORT_BADGE_ENGLISH_FALLBACK = Object.fromEntries(Object.entries(PORT_STRINGS_EN).filter(([key]) => key.startsWith('port.badges.')));
 Object.assign(PORT_CLERIC_ARMOR_FALLBACK, {
 	'port.ally.lightally.name': PORT_STRINGS_EN['port.ally.lightally.name'], 'port.ally.already_powered': PORT_STRINGS_EN['port.ally.already_powered'],
 	'port.ally.order.attack': PORT_STRINGS_EN['port.ally.order.attack'], 'port.ally.order.defend': PORT_STRINGS_EN['port.ally.order.defend'],
@@ -12282,7 +12345,7 @@ Object.assign(PORT_CLERIC_ARMOR_FALLBACK, {
 	'port.ally.novision': PORT_STRINGS_EN['port.ally.novision'],
 	'port.ally.invalidtarget': PORT_STRINGS_EN['port.ally.invalidtarget'],
 });
-const completePortStrings = (catalog: Record<string, string>): Readonly<Record<string, string>> => ({ ...catalog, ...PORT_CLERIC_ARMOR_FALLBACK }); export const PORT_STRINGS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+const completePortStrings = (catalog: Record<string, string>): Readonly<Record<string, string>> => ({ ...catalog, ...PORT_CLERIC_ARMOR_FALLBACK, ...Object.fromEntries(Object.entries(PORT_BADGE_ENGLISH_FALLBACK).filter(([key]) => catalog[key] === undefined)) }); export const PORT_STRINGS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
 	en: { ...PORT_STRINGS_EN, ...PORT_MINE_STRINGS.en },
 	fr: completePortStrings({ ...PORT_STRINGS_FR, ...PORT_MINE_STRINGS.fr }),
 	de: completePortStrings({ ...PORT_STRINGS_DE, ...PORT_MINE_STRINGS.de }),
