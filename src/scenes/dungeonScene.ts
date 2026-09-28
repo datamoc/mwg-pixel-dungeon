@@ -2421,10 +2421,10 @@ export class DungeonScene extends Scene2D {
 			transition.backdrop.tilePosition.y += dt * 5;
 			const p = Math.min(1, transition.elapsed / transition.duration);
 			//InterlevelScene uses exact 0.33s fades around a static middle phase.
-			const fade = 0.33;
-			transition.curtain.alpha = transition.elapsed < fade ? 1 - transition.elapsed / fade
-				: transition.elapsed > transition.duration - fade ? (transition.elapsed - (transition.duration - fade)) / fade : 0;
-			transition.message.alpha = 1 - transition.curtain.alpha;
+			//Java: gradient up throughout, `aa` adds <= 0.333 opacity at both ends, text fades over each `fadeTime`.
+			const half = transition.duration / 2, left = transition.duration - transition.elapsed;
+			transition.curtain.alpha = Math.max(0, 0.333 - Math.min(transition.elapsed, left));
+			transition.message.alpha = Math.min(transition.elapsed, left) / half;
 			if (p >= 1) {
 				transition.root.destroy({ children: true });
 				this.interlevel = null;

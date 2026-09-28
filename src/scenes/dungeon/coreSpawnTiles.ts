@@ -1741,7 +1741,7 @@ export const coreSpawnTilesMethods = {
 		backdrop.tileScale.set(4);
 		//InterlevelScene's rotated five-stop black gradient, whose opacity is separately
 		//animated below. A flat black veil loses the original scene's subtle depth.
-		const curtain = new Graphics().rect(0, 0, Game.current.width, Game.current.height).fill(new FillGradient({
+		const gradient = new Graphics().rect(0, 0, Game.current.width, Game.current.height).fill(new FillGradient({
 			type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, textureSpace: 'local',
 			colorStops: [
 				{ offset: 0, color: 'rgba(0,0,0,0.67)' }, { offset: 0.25, color: 'rgba(0,0,0,0.73)' },
@@ -1749,15 +1749,19 @@ export const coreSpawnTilesMethods = {
 				{ offset: 1, color: 'rgba(0,0,0,1)' },
 			],
 		}));
+		//Java's `aa` term (extra opacity in the first/last 0.333s of the fades) is a black veil over the gradient.
+		const curtain = new Graphics().rect(0, 0, Game.current.width, Game.current.height).fill(0x000000);
 		const message = new Label({ text: t('scenes.interlevelscene$mode.descend'), size: 9 * menuScale(Game.current.width, Game.current.height), color: theme().color.text });
 		message.anchor.set(0.5);
 		message.position.set(Game.current.width / 2, Game.current.height / 2);
-		root.addChild(backdrop, curtain, message);
+		root.addChild(backdrop, gradient, curtain, message);
 		this.stage.addChild(root);
-		//Java's SLOW_FADE applies to a fresh run and to the first floor of a new region;
-		//the 0.33s in/out fades are added either side of its central dwell time.
-		const slow = this.depth === 1 || this.depth % 5 === 1;
-		this.interlevel = { root, backdrop, elapsed: 0, duration: slow ? 1.66 : 1.33, curtain, message };
+		//Java's `fadeTime` (`InterlevelScene.create`): SLOW_FADE 1.0 for a fresh run and the first visit to
+		//floors 6/11/16/21, FAST_FADE 0.5 for a floor already reached, else NORM_FADE 0.67; the scene shows
+		//FADE_IN then FADE_OUT of `fadeTime` each. Generation here is instant, so there is no STATIC wait, and
+		//`deepestDepth` may already count this floor on a first visit (stated approximation).
+		const fadeTime = this.deepestDepth > this.depth ? 0.5 : (this.depth === 1 || this.depth % 5 === 1) ? 1 : 0.67;
+		this.interlevel = { root, backdrop, elapsed: 0, duration: 2 * fadeTime, curtain, message };
 		this.awaitingInput = false;
 	},
 
