@@ -34,6 +34,13 @@ import { applyChillFreeze } from '../../../simulation/buffs';
 import { IMMOVABLE_KINDS, liveStats } from '../../../monsters';
 import { TENGU_CIRCLE8 } from '../shared';
 
+/** Java's ShamanSprite selects both its shared-sheet colour block and MagicMissile particle family by subtype. */
+const SHAMAN_BOLT_TINT: Record<NonNullable<Creature['shamanType']>, number> = {
+	red: 0xBF3333,
+	blue: 0x4070BF,
+	purple: 0x8C26BF,
+};
+
 /** DungeonScene methods, moved verbatim from `dungeonScene.ts` (group `monsterAi`). Each takes the scene as `this`;
  * `dungeonScene.ts` merges them back onto the class prototype. */
 export const monsterAiMethods = {
@@ -894,6 +901,13 @@ export const monsterAiMethods = {
 		if (!target) return;
 		//`DM100.zap()`/`Shaman.zap()`/`Warlock.zap()` play `sprite.zap()` (tag `v3.3.8`).
 		this.playMonsterZap(monster);
+		if (this.fov.isVisible(monster.x, monster.y) || this.fov.isVisible(target.x, target.y)) runState.audio.cue('zap');
+		const shaman = monster.kind === 'shaman';
+		if (shaman) {
+			//Java's MagicMissile emits a stream of ShamanParticles before its callback resolves
+			//the hit roll; this uses the existing single travelling dot in that subtype's colour.
+			this.spawnBoltTo(monster, target, SHAMAN_BOLT_TINT[monster.shamanType ?? 'red']);
+		}
 		if (!rollHit(monster, target, true)) {
 			this.say(t('port.log.boltmisses', { who: capitalize(monster.name) }), 'negative');
 			return;
@@ -905,14 +919,16 @@ export const monsterAiMethods = {
 		this.showDamage(target, dmg);
 		this.sprite(target).setColorAdd(0.6, 0.7, 1);
 		this.say(t('port.log.bolthits', { who: capitalize(monster.name), damage: dmg }), 'negative');
-		this.spawnProjectile(monster, target);
+		if (!shaman) this.spawnProjectile(monster, target);
 		//Shaman.zap() (Shaman.java, tag v3.3.8): on a landed magic bolt, the
-		//colour-specific debuff is applied on a 1-in-2 roll. The compact port keeps
-		//the subtype on the shared Shaman actor and reuses its existing timed buffs.
+		//colour-specific debuff is applied on a 1-in-2 roll. The subtype selects the
+		//matching shared-sheet sprite block and the colour of the bolt above.
 		if (monster.kind === 'shaman' && Random.int(0, 2) === 0) {
 			if (monster.shamanType === 'red') addBuff(target, 'weakness');
 			else if (monster.shamanType === 'blue') addBuff(target, 'vulnerable');
 			else addBuff(target, 'hex');
+			//Shaman.zap() plays DEBUFF only when the hero receives the landed, successful proc.
+			if (target.isHero) runState.audio.cue('debuff');
 		}
 		//Warlock DarkBolt: a LANDED ranged zap applies the Degrade buff half the time
 		//(`Random.Int(2) == 0`, melee never does) - previously a 25% permanent weapon-level

@@ -535,8 +535,11 @@ export const coreSpawnTilesMethods = {
 	},
 
 	/** any monster in MONSTERS, cut from its own real sprite sheet at its own real frame size */
-	spawnMonster(this: DungeonScene, kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'lightAlly' | 'afterImage' | 'shadowClone' | 'prismatic', championEligible = false, initialSentryWarmup?: number, schedulerDelay?: number): Creature {
+	spawnMonster(this: DungeonScene, kind: AnyMonsterId, at: Step, restoring = false, mimicLoot?: string, isAlly = false, allyKind?: 'mirror' | 'sheep' | 'ward' | 'earthGuardian' | 'lotus' | 'ghost' | 'ninjaLog' | 'spiritHawk' | 'lightAlly' | 'afterImage' | 'shadowClone' | 'prismatic', championEligible = false, initialSentryWarmup?: number, schedulerDelay?: number, restoredShamanType?: Creature['shamanType']): Creature {
 		const profile = monsterSpawnProfile(kind, this.depth, restoring, isAlly, championEligible, this.mobsToChampion);
+		//A restored Shaman keeps the saved Java subtype without drawing a new Random.Float().
+		//The same subtype selects its ShamanSprite sheet block and its spell effects.
+		if (kind === 'shaman' && restoring) profile.shamanType = restoredShamanType ?? 'red';
 		this.mobsToChampion = profile.mobsToChampion;
 		//Data-driven: was a 12-case cascade checking both `kind` and `baseKind` - see
 		//`SPRITE_KIND_OVERRIDE`'s own doc comment in monsters.ts for why `baseKind` alone
@@ -1010,12 +1013,12 @@ export const coreSpawnTilesMethods = {
 		this.scheduler.now = state.schedulerNow;
 		const restored: Creature[] = [];
 		for (const saved of state.creatures) {
-			const creature = this.spawnMonster(saved.kind, saved, true, saved.mimicLoot, saved.isAlly, saved.allyKind);
+			const creature = this.spawnMonster(saved.kind, saved, true, saved.mimicLoot, saved.isAlly, saved.allyKind, false, undefined, undefined, saved.shamanType);
 			Object.assign(creature, {
 				hp: saved.hp, maxHp: saved.maxHp, accuracy: saved.accuracy, evasion: saved.evasion,
 				damage: [...saved.damage] as [number, number], armor: [...saved.armor] as [number, number],
 				buffs: Object.fromEntries(saved.buffs), sleeping: saved.sleeping, champion: saved.champion,
-				championPower: saved.championPower, pumped: saved.pumped, gooHealInc: saved.gooHealInc, focusCooldown: saved.focusCooldown, shamanType: saved.shamanType, combo: saved.combo, moving: saved.moving, arenaJumps: saved.arenaJumps, tenguPhase: saved.tenguPhase, tenguAbilityCd: saved.tenguAbilityCd, tenguAbilityUses: saved.tenguAbilityUses, tenguLastAbility: saved.tenguLastAbility, tenguFire: saved.tenguFire, tenguShockers: saved.tenguShockers,
+				championPower: saved.championPower, pumped: saved.pumped, gooHealInc: saved.gooHealInc, focusCooldown: saved.focusCooldown, shamanType: saved.shamanType ?? (saved.kind === 'shaman' ? 'red' : undefined), combo: saved.combo, moving: saved.moving, arenaJumps: saved.arenaJumps, tenguPhase: saved.tenguPhase, tenguAbilityCd: saved.tenguAbilityCd, tenguAbilityUses: saved.tenguAbilityUses, tenguLastAbility: saved.tenguLastAbility, tenguFire: saved.tenguFire, tenguShockers: saved.tenguShockers,
 				yogPhase: saved.yogPhase, yogFistType: saved.yogFistType, elementalType: saved.elementalType, yogSummonCd: saved.yogSummonCd, yogSummonIndex: saved.yogSummonIndex, yogBeamCd: saved.yogBeamCd, yogTargeted: saved.yogTargeted, yogFistDeck: saved.yogFistDeck, yogChallengeDeck: saved.yogChallengeDeck, yogMinionDeck: saved.yogMinionDeck, fistZapCd: saved.fistZapCd,
 				potPos: saved.potPos ? { ...saved.potPos } : undefined, potHolderId: saved.potHolderId,
 				kingPhase: saved.kingPhase, kingSummonsMade: saved.kingSummonsMade, kingSummonCd: saved.kingSummonCd,

@@ -4149,3 +4149,9 @@ B4 CSV 50 exclusions: 31 implemented via authored tables or bypass (crystalClips
 Audit finds filed as B3 inputs, not fixed here: spectralNecromancer's guaranteed RemoveCurse scroll (`rollToDropLoot` override, tag `v3.3.8`) has no port kill block. Necromancer's NECRO_HP LimitedDrops scaling rides the generic `limitedDropDecay` table (linear 6), like the warlock counter the warlock block keeps manually.
 
 Known.json proposal for the mobdata owner (8 accepted/by-design entries): warlock/scorpio/succubus/armoredBrute lootChance (dedicated kill blocks, generic field intentionally empty), gnollGuard lootChance 0.1 (dead field, maxLvl -2 both sides), demonSpawner damage [1,1] (dead data, accuracy 0), pylon damage [1,1] (dead, inline zap) + pylon EXP 1 (dead, maxLvl -2).
+
+## Closed open-coverage items (moved from ROADMAP.md)
+
+Register items extracted from PORT_COVERAGE on 2026-09-26 and closed since; the evidence is a row in `coverage/`.
+
+- [x] **R057** _(Shaman.random() subtype and Shaman.zap() debuff)_ Dedicated colour sprites and debuff audio remain unported.

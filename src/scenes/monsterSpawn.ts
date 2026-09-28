@@ -55,13 +55,19 @@ export function buildMonsterSprite(kind: AnyMonsterId, at: Step, profile: Monste
 	const { def, adjustedDef, baseKind } = profile;
 	const texture = runState.sprites[SPRITE_KIND_OVERRIDE[baseKind] ?? (baseKind as keyof typeof runState.sprites)];
 	const sheet = SpriteSheet.fromTexture(texture, adjustedDef.frame[0], adjustedDef.frame[1]);
+	//`ShamanSprite.RedShaman/BlueShaman/PurpleShaman.texOffset()` selects 21-frame
+	//blocks at 0/21/42 in the shared sheet (ShamanSprite.java, tag v3.3.8).
+	const frameOffset = kind === 'shaman'
+		? profile.shamanType === 'blue' ? 21 : profile.shamanType === 'purple' ? 42 : 0
+		: 0;
+	const frame = (index: number) => sheet.get(frameOffset + index);
 	// WardSprite's frames are variable-width and therefore cannot be represented by the
 	// regular SpriteSheet grid used by ordinary mobs.
 	//`MimicSprite.hideMimic()`: a hidden mimic shows its chest frames (0 and 1 of the sheet), not its idle
 	//pose - the revealed frame is restored by `syncMimicVisual`. The crystal
 	//mimic is `MimicSprite.Crystal` (`texOffset()` 32), so its hidden/revealed
 	//frames are 32/35 and its clips are the `crystalmimic` key.
-	const sprite = new AnimatedSprite(kind === 'ward' ? wardTexture(texture, 1) : sheet.get(kind === 'mimic' ? 0 : kind === 'crystalMimic' ? 32 : def.idle));
+	const sprite = new AnimatedSprite(kind === 'ward' ? wardTexture(texture, 1) : frame(kind === 'mimic' ? 0 : kind === 'crystalMimic' ? 32 : def.idle));
 	placeCharacterArt(sprite);
 	// Java's base variants use MWG's player. Shaman/elemental/fist variants and
 	// DM300 supercharge effects still follow the port's reduced gameplay roster.
@@ -89,7 +95,7 @@ export function buildMonsterSprite(kind: AnyMonsterId, at: Step, profile: Monste
 			: baseKind.toLowerCase()
 	];
 	if (clips) {
-		for (const [name, clip] of Object.entries(clips)) sprite.add(name, clip.frames.map(frame => sheet.get(frame)), clip);
+		for (const [name, clip] of Object.entries(clips)) sprite.add(name, clip.frames.map(index => frame(index)), clip);
 		sprite.play('idle');
 	}
 	sprite.x = at.x * TILE;
