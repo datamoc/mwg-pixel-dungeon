@@ -23,5 +23,5 @@ assert.deepEqual(tiers.slice(90, 99), Array(9).fill('rare'));
 assert.deepEqual(tiers.slice(99), ['veryRare']);
 
 const scene = readFileSync(new URL('../src/scenes/dungeon/hero/cursedWandCast.ts', import.meta.url), 'utf8');
-assert.match(scene, /else if \(tier === 'rare'\) this\.castCursedWandRareEffect[\s\S]*?else \{[\s\S]*?VeryRare effects here[\s\S]*?return;/);
+assert.match(scene, /else if \(tier === 'rare'\) this\.castCursedWandRareEffect[\s\S]*?else this\.castCursedWandVeryRareEffect\(\);/);
 console.log('PASS CursedWand keeps Java’s 60/30/9/1 tier weights and does not redirect unsupported VeryRare casts.');

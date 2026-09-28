@@ -86,7 +86,7 @@ export const CURSED_PLANT_KINDS: readonly string[] = [
 export type CursedRareEffectId = 'sheepPolymorph' | 'curseEquipment' | 'interFloorTeleport' | 'summonMonsters' | 'fireBall' | 'coneOfColors' | 'massInvuln' | 'petrify';
 export const CURSED_RARE_EFFECT_IDS: readonly CursedRareEffectId[] = ['sheepPolymorph', 'curseEquipment', 'interFloorTeleport', 'summonMonsters', 'fireBall', 'coneOfColors', 'massInvuln', 'petrify'];
 
-/** Java's distinct `VERY_RARE_EFFECTS` catalog (`CursedWand.java`, tag `v3.3.8`).
+/** Java's distinct `VERY_RARE_EFFECTS` catalog (`CursedWand.java`, tag `v4.0.0`; `v3.3.8` had only four).
  * The runtime dispatches its one-percent tier to a consume bucket (no scene effects
  * implemented yet); keeping the authoritative order here prevents the catalog itself
  * from being silently lost. */

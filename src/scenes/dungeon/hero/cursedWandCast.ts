@@ -1,7 +1,7 @@
 import type { DungeonScene } from '../../dungeonScene';
 import { Random, Roguelike } from 'mwg';
 import { BUFF_DURATION, addBuff, buffBlocked, doomDamage, reigniteBuff, type Creature, type Step } from '../../../combat';
-import { CURSED_PLANT_KINDS, CURSED_RANDOM_GAS, cursedForestFireSeeds, cursedInterfloorDepthWeights, pickBurnAndFreeze, pickConeOfColorsStatus, pickCursedCommonEffect, pickCursedEquipmentSlot, pickCursedRandomAreaEffect, pickCursedRareEffect, pickCursedTier, pickCursedUncommonEffect } from '../../../simulation/cursedWand';
+import { CURSED_PLANT_KINDS, CURSED_RANDOM_GAS, cursedForestFireSeeds, cursedInterfloorDepthWeights, pickBurnAndFreeze, pickConeOfColorsStatus, pickCursedCommonEffect, pickCursedEquipmentSlot, pickCursedRandomAreaEffect, pickCursedRareEffect, pickCursedTier, pickCursedUncommonEffect, pickCursedVeryRareEffect } from '../../../simulation/cursedWand';
 import { activateGeyserTrap as activateGeyserTrapFlow } from '../../../simulation/geyserTrap';
 import { applyBlastDamage } from '../../../items/bombEffects';
 import { MWL_BOMB_RULES } from '../../../mwlContent';
@@ -37,11 +37,31 @@ export const cursedWandCastMethods = {
 		if (tier === 'common') this.castCursedWandCommonEffect(target, cell);
 		else if (tier === 'uncommon') this.castCursedWandUncommonEffect(target, cell);
 		else if (tier === 'rare') this.castCursedWandRareEffect(target, cell);
-		else {
-			//Java chooses one of eight VeryRare effects here. Their handlers are not ported, so
-			//the correctly weighted 1% bucket consumes the cursed zap without borrowing a Rare
-			//effect; this keeps unsupported effects out of the player-visible dispatcher.
-			return;
+		else this.castCursedWandVeryRareEffect();
+	},
+
+	/** `CursedWand.cursedZap()`'s VeryRare tier (`CursedWand.java`, tag `v4.0.0`: eight effects;
+	 * `v3.3.8` had only four, without HeroShapeShift/SuperNova/SinkHole/GravityChaos). Ported:
+	 * `ForestFire` and `AbortRetryFail`. The other six are picked and then do nothing (see the
+	 * `PORT_COVERAGE` CursedWand row) rather than borrowing another tier's effect. */
+	castCursedWandVeryRareEffect(this: DungeonScene): void {
+		const effect = pickCursedVeryRareEffect((bound) => Random.int(bound));
+		if (effect === 'forestFire') {
+			this.castCursedWandForestFire();
+			//Java: Fire 10 at `Level.randomDestination(null)` until `Random.Int(5) == 0`; the
+			//port's `randomFreeCell` stands in for randomDestination (it also skips occupied cells).
+			do {
+				const cell = this.randomFreeCell(this.hero);
+				if (cell) this.fire.seed(cell.x, cell.y, 10);
+			} while (Random.int(5) !== 0);
+			runState.audio.cue('teleport', 0.7);
+			this.say(t('items.wands.cursedwand.grass'), 'positive');
+			this.say(t('items.wands.cursedwand.fire'), 'warning');
+		} else if (effect === 'abortRetryFail') {
+			//Java saves, then shows an English-only "CURSED WAND ERROR" dialog whose every button calls
+			//`Game.instance.finish()`. Deliberate divergence: a web port must not close the tab, so the
+			//joke is a warning line and the zap is consumed (Java's non-English path also does nothing).
+			this.say('CURSED WAND ERROR: this application will now self-destruct', 'warning');
 		}
 	},
 
