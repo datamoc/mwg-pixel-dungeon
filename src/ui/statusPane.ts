@@ -172,7 +172,7 @@ export interface StatusPaneState {
 	carriedCount: number;
 	/** `HeroSprite.updateArmor()` tier row (1-5 cloth..plate) for the avatar portrait. */
 	armorTier?: number;
-	/** `SPDSettings.interfaceSize()`: 0 small, 1 large. Large renders 1.5x with a taller row. */
+	/** `SPDSettings.interfaceSize()`: the port's normalized 0|1 for Java's 0/1/2 - 0 small, 1 large (Java's exact cuts, see the header). */
 	interfaceSize?: 0 | 1;
 	/** Whether the hero is busy (an action is resolving): shows the busy pip. */
 	busy?: boolean;

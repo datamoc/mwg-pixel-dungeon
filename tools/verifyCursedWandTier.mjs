@@ -28,7 +28,7 @@ assert.deepEqual(rolls.slice(90, 99), Array(9).fill('rare'));
 assert.deepEqual(rolls.slice(99), ['veryRare']);
 assert.match(readFileSync(new URL('../src/scenes/dungeon/hero/cursedWandCast.ts', import.meta.url), 'utf8'),
 	/else if \(tier === 'rare'\)[\s\S]*?else this\.castCursedWandVeryRareEffect\(cell\);/);
-console.log('PASS CursedWand keeps Java 60/30/9/1 weights and suppresses unsupported VeryRare dispatch.');
+console.log('PASS CursedWand keeps Java 60/30/9/1 weights and routes the VeryRare tier to its own handler.');
 
 assert.deepEqual(CURSED_COMMON_EFFECT_IDS, ['burnAndFreeze', 'spawnRegrowth', 'randomTeleport', 'randomGas', 'randomAreaEffect', 'bubbles', 'randomWand', 'selfOoze']);
 assert.equal(pickCursedCommonEffect((bound) => { assert.equal(bound, 8); return 4; }), 'randomAreaEffect');

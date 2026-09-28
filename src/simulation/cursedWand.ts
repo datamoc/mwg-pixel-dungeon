@@ -87,9 +87,10 @@ export type CursedRareEffectId = 'sheepPolymorph' | 'curseEquipment' | 'interFlo
 export const CURSED_RARE_EFFECT_IDS: readonly CursedRareEffectId[] = ['sheepPolymorph', 'curseEquipment', 'interFloorTeleport', 'summonMonsters', 'fireBall', 'coneOfColors', 'massInvuln', 'petrify'];
 
 /** Java's distinct `VERY_RARE_EFFECTS` catalog (`CursedWand.java`, tag `v4.0.0`; `v3.3.8` had only four).
- * The runtime dispatches its one-percent tier to a consume bucket (no scene effects
- * implemented yet); keeping the authoritative order here prevents the catalog itself
- * from being silently lost. */
+ * The runtime's one-percent tier dispatches to `castCursedWandVeryRareEffect`, which implements five of
+ * these eight (`forestFire`, `abortRetryFail`, `superNova`, `sinkHole`, `gravityChaos`); the remaining
+ * three (`spawnGoldenMimic`, `randomTransmogrify`, `heroShapeShift`) are picked and then do nothing.
+ * Keeping the authoritative order here prevents the catalog itself from being silently lost. */
 export type CursedVeryRareEffectId = 'forestFire' | 'spawnGoldenMimic' | 'abortRetryFail' | 'randomTransmogrify' | 'heroShapeShift' | 'superNova' | 'sinkHole' | 'gravityChaos';
 export const CURSED_VERY_RARE_EFFECT_IDS: readonly CursedVeryRareEffectId[] = [
 	'forestFire', 'spawnGoldenMimic', 'abortRetryFail', 'randomTransmogrify', 'heroShapeShift', 'superNova', 'sinkHole', 'gravityChaos',

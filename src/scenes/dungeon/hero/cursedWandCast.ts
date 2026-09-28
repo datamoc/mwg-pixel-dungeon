@@ -42,11 +42,14 @@ export const cursedWandCastMethods = {
 
 	/** `CursedWand.cursedZap()`'s VeryRare tier (`CursedWand.java`, tag `v4.0.0`: eight effects;
 	 * `v3.3.8` had only four, without HeroShapeShift/SuperNova/SinkHole/GravityChaos). Ported: `SinkHole`, `GravityChaos`, `SuperNova`,
-	 * `ForestFire` and `AbortRetryFail`. The other six are picked and then do nothing (see the
-	 * `PORT_COVERAGE` CursedWand row) rather than borrowing another tier's effect. */
+	 * `ForestFire` and `AbortRetryFail`. The other three - `SpawnGoldenMimic`, `RandomTransmogrify`
+	 * and `HeroShapeShift` - are picked and then do nothing (see the `PORT_COVERAGE` CursedWand row)
+	 * rather than borrowing another tier's effect. */
 	castCursedWandVeryRareEffect(this: DungeonScene, cell: Step): void {
 		//`randomValidVeryRareEffect`: re-roll until `valid()`; SinkHole refuses on boss floors, past depth 25
-		//and off the main branch (`PitfallTrap`'s own gate). The other five checks are always true here.
+		//and off the main branch (`PitfallTrap`'s own gate). Only `RandomTransmogrify` and `HeroShapeShift`
+		//also override `valid()` (3 of the 8 have a gate), and both pass for the hero's own zap: the wand is
+		//carried by the caster, who is the hero.
 		const sinkHoleAllowed = !(this.depth in BOSSES) && this.depth <= 25 && !this.miningBranchActive;
 		let effect;
 		do effect = pickCursedVeryRareEffect((bound) => Random.int(bound));
