@@ -457,7 +457,7 @@ export const panelsSingleUseMethods = {
 		this.stage.addChild(this.statusPane);
 		//GameScene.java's compact top-right chrome is separate from StatusPane: it carries the
 		//version, floor label, carried key counters and the entry point for WndGame.
-		this.dungeonHud = new DungeonHud(() => this.onAction('gameMenu'));
+		this.dungeonHud = new DungeonHud(() => this.onAction('gameMenu'), () => this.openJournal());
 		this.stage.addChild(this.dungeonHud);
 		this.statusPane.on('pointertap', () => {
 			//InfoWindow is a spent Window after close, so create a fresh instance for each opening.

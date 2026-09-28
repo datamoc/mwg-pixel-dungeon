@@ -96,9 +96,10 @@ export class SpdToolbar extends Container {
 		[['read', 'port.action.scroll'], ['quaff', 'port.action.potion'], ['eat', 'port.action.eat'], ['special', 'port.action.special']].forEach(([action, key], i) => {
 			add(action, key, 64, 22, 24, new Sprite(itemTextures[i]));
 		});
-		add('inventory', 'port.action.bag', 0, 24, 26, new Sprite(crop(160, 0, 16, 16)));
+		//`Toolbar.layout()`: search, wait, then the backpack as the right-hand cap of the row.
 		add('search', 'port.action.search', 44, 20, 26, new Sprite(crop(192, 0, 16, 16)));
 		add('wait', 'port.action.wait', 24, 20, 26, new Sprite(crop(176, 0, 16, 16)));
+		add('inventory', 'port.action.bag', 0, 24, 26, new Sprite(crop(160, 0, 16, 16)));
 		//Java's four `QuickslotButton`s sit above the row; each uses its assigned item on tap.
 		for (let slot = 0; slot < 4; slot++) {
 			const button = new SpdButton({ width: 22, height: 22, text: `Q${slot + 1}`, onClick: () => onAction(`quickslot${slot}`) });

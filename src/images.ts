@@ -121,6 +121,8 @@ import guardianUrl from './assets/guardian.png';
 //`ui_` here to keep it apart from the sprite sheets above
 import uiToolbarUrl from './assets/ui_toolbar.png';
 import uiChromeUrl from './assets/ui_chrome.png';
+import uiMenuPaneUrl from './assets/ui_menu_pane.png';
+import uiMenuButtonUrl from './assets/ui_menu_button.png';
 import uiStatusPaneUrl from './assets/ui_status_pane.png';
 import uiBuffsUrl from './assets/ui_buffs.png';
 //`SPDSettings.interfaceSize()`'s large variant: `BuffIcon`'s own `Assets.Interfaces.BUFFS_LARGE`,
@@ -207,6 +209,8 @@ const MWL_ASSET_URLS: Readonly<Record<string, string>> = {
 	'assets/ui_boss_hp.png': uiBossHpUrl,
 	'assets/ui_buffs.png': uiBuffsUrl,
 	'assets/ui_chrome.png': uiChromeUrl,
+	'assets/ui_menu_pane.png': uiMenuPaneUrl,
+	'assets/ui_menu_button.png': uiMenuButtonUrl,
 	'assets/ui_icons.png': uiIconsUrl,
 	'assets/ui_large_buffs.png': uiLargeBuffsUrl,
 	'assets/ui_status_pane.png': uiStatusPaneUrl,
@@ -405,6 +409,9 @@ export interface SpdSprites {
 	water3: Texture;
 	water4: Texture;
 	uiChrome: Texture;
+	/** `interfaces/menu_pane.png` / `menu_button.png` (`MenuPane`, v3.3.8, byte-for-byte). */
+	uiMenuPane: Texture;
+	uiMenuButton: Texture;
 	/** `interfaces/status_pane.png` - the hero pane frame and its HP/EXP bar fills */
 	uiStatusPane: Texture;
 	/** `interfaces/buffs.png` - 7x7 buff icons, indexed by `BuffIndicator`'s constants */
@@ -602,6 +609,8 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		water3,
 		water4,
 		uiChrome,
+		uiMenuPane,
+		uiMenuButton,
 		uiStatusPane,
 		uiBuffs,
 		uiLargeBuffs,
@@ -718,6 +727,8 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		loadImage(water3Url),
 		loadImage(water4Url),
 		loadImage(uiChromeUrl),
+		loadImage(uiMenuPaneUrl),
+		loadImage(uiMenuButtonUrl),
 		loadImage(uiStatusPaneUrl),
 		loadImage(uiBuffsUrl),
 		loadImage(uiLargeBuffsUrl),
@@ -837,6 +848,8 @@ export async function loadSpdSprites(): Promise<SpdSprites> {
 		water3: Texture.from(water3),
 		water4: Texture.from(water4),
 		uiChrome: Texture.from(uiChrome),
+		uiMenuPane: Texture.from(uiMenuPane),
+		uiMenuButton: Texture.from(uiMenuButton),
 		uiStatusPane: Texture.from(uiStatusPane),
 		uiBuffs: Texture.from(uiBuffs),
 		uiLargeBuffs: Texture.from(uiLargeBuffs),

@@ -1255,6 +1255,7 @@ export const deathSaveRefreshMethods = {
 			sum + (it.id === id && (it as { depth?: number }).depth === this.depth ? it.quantity : 0), 0);
 		this.dungeonHud.update({
 			place,
+			depth: this.depth,
 			keys: {
 				iron: keyOfDepth('ironKey'),
 				golden: keyOfDepth('goldenKey'),
