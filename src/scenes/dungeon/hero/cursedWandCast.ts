@@ -11,7 +11,7 @@ import { WATER } from '../../../dungeonConstants';
 import { t } from '../../../i18n/index';
 import { runState } from '../../../runState';
 import { spawnTrapSpecks } from '../../../ui/effectBursts';
-import { BOSS_KINDS, FLYING_KINDS, IMMOVABLE_KINDS, MINIBOSS_KINDS } from '../../../monsters';
+import { BOSSES, BOSS_KINDS, FLYING_KINDS, IMMOVABLE_KINDS, MINIBOSS_KINDS } from '../../../monsters';
 import { coneCells } from '../../../mechanics/cone';
 
 /** `CursedWand.cursedZap()` (`items/wands/CursedWand.java`, tag `v3.3.8`) - moved verbatim from
@@ -41,11 +41,16 @@ export const cursedWandCastMethods = {
 	},
 
 	/** `CursedWand.cursedZap()`'s VeryRare tier (`CursedWand.java`, tag `v4.0.0`: eight effects;
-	 * `v3.3.8` had only four, without HeroShapeShift/SuperNova/SinkHole/GravityChaos). Ported: `GravityChaos`, `SuperNova`,
+	 * `v3.3.8` had only four, without HeroShapeShift/SuperNova/SinkHole/GravityChaos). Ported: `SinkHole`, `GravityChaos`, `SuperNova`,
 	 * `ForestFire` and `AbortRetryFail`. The other six are picked and then do nothing (see the
 	 * `PORT_COVERAGE` CursedWand row) rather than borrowing another tier's effect. */
 	castCursedWandVeryRareEffect(this: DungeonScene, cell: Step): void {
-		const effect = pickCursedVeryRareEffect((bound) => Random.int(bound));
+		//`randomValidVeryRareEffect`: re-roll until `valid()`; SinkHole refuses on boss floors, past depth 25
+		//and off the main branch (`PitfallTrap`'s own gate). The other five checks are always true here.
+		const sinkHoleAllowed = !(this.depth in BOSSES) && this.depth <= 25 && !this.miningBranchActive;
+		let effect;
+		do effect = pickCursedVeryRareEffect((bound) => Random.int(bound));
+		while (effect === 'sinkHole' && !sinkHoleAllowed);
 		if (effect === 'forestFire') {
 			this.castCursedWandForestFire();
 			//Java: Fire 10 at `Level.randomDestination(null)` until `Random.Int(5) == 0`; the
@@ -69,6 +74,17 @@ export const cursedWandCastMethods = {
 			this.gravityChaos = { left: Math.round(Random.normalRange(30, 70)), wait: 0 };
 			runState.audio.cue('teleport', 0.7);
 			this.say(t('items.wands.cursedwand.gravity'), 'warning');
+		} else if (effect === 'sinkHole') {
+			//`SinkHole.effect()`: a `DelayedPit` over every cell within distance 5 of the caster, so the hero
+			//(distance 0, not flying) always falls. Same stated simplification as the pitfall trap: only the hero
+			//falls, immediately rather than a turn later; mobs and heaps in the area stay put (Java drops them).
+			const reach = this.pathfinder.distanceMap({ x: this.hero.x, y: this.hero.y });
+			for (let y = 0; y < this.level.height; y++) for (let x = 0; x < this.level.width; x++) {
+				const steps = reach[this.level.index(x, y)] ?? -1;
+				if (steps >= 0 && steps <= 5 && this.fov.isVisible(x, y)) spawnTrapSpecks(this.effectLayer, this.effectBursts, x, y, 'pitfall');
+			}
+			this.say(t('items.wands.cursedwand.sinkhole'), 'warning');
+			this.pitfallDrop();
 		} else if (effect === 'abortRetryFail') {
 			//Java saves, then shows an English-only "CURSED WAND ERROR" dialog whose every button calls
 			//`Game.instance.finish()`. Deliberate divergence: a web port must not close the tab, so the
